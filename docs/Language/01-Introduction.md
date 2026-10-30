@@ -26,13 +26,13 @@ they share, so a span, a text change, or a diagnostic means the same thing which
 
 | Package | Parses | Entry point |
 | --- | --- | --- |
-| `Meziantou.Framework.Language.Css` | Style sheets and declaration lists, with nesting, selectors and at-rules | `CssSyntaxTree`. See [CSS](08-Css.md). |
-| `Meziantou.Framework.Language.Ini` | INI files, in the dialect you choose | `IniSyntaxTree`. See [INI](06-Ini.md). |
-| `Meziantou.Framework.Language.Json` | JSON, with comments and trailing commas | `JsonSyntaxTree`. See [JSON](04-Json.md). |
-| `Meziantou.Framework.Language.Regex` | Regular expression patterns: .NET, JavaScript, PCRE, POSIX | `RegexSyntaxTree`. See [Regular expressions](09-Regex/01-Overview.md). |
-| `Meziantou.Framework.Language.Shell` | Scripts: sh, bash, zsh, PowerShell, cmd | `ShellSyntaxTree`. See [Shell scripts](10-Shell/01-Overview.md). |
-| `Meziantou.Framework.Language.Toml` | TOML 1.0 and 1.1 | `TomlSyntaxTree`. See [TOML](07-Toml.md). |
-| `Meziantou.Framework.Language.Xml` | XML, with XPath queries and a formatter | `XmlSyntaxTree`. See [XML](05-Xml.md). |
+| `Meziantou.Framework.Language.Css` | Style sheets and declaration lists, with nesting, selectors and at-rules | [CssSyntaxTree](cref:Meziantou.Framework.Language.Css.CssSyntaxTree). See [CSS](08-Css.md). |
+| `Meziantou.Framework.Language.Ini` | INI files, in the dialect you choose | [IniSyntaxTree](cref:Meziantou.Framework.Language.Ini.IniSyntaxTree). See [INI](06-Ini.md). |
+| `Meziantou.Framework.Language.Json` | JSON, with comments and trailing commas | [JsonSyntaxTree](cref:Meziantou.Framework.Language.Json.JsonSyntaxTree). See [JSON](04-Json.md). |
+| `Meziantou.Framework.Language.Regex` | Regular expression patterns: .NET, JavaScript, PCRE, POSIX | [RegexSyntaxTree](cref:Meziantou.Framework.Language.Regex.RegexSyntaxTree). See [Regular expressions](09-Regex/01-Overview.md). |
+| `Meziantou.Framework.Language.Shell` | Scripts: sh, bash, zsh, PowerShell, cmd | [ShellSyntaxTree](cref:Meziantou.Framework.Language.Shell.ShellSyntaxTree). See [Shell scripts](10-Shell/01-Overview.md). |
+| `Meziantou.Framework.Language.Toml` | TOML 1.0 and 1.1 | [TomlSyntaxTree](cref:Meziantou.Framework.Language.Toml.TomlSyntaxTree). See [TOML](07-Toml.md). |
+| `Meziantou.Framework.Language.Xml` | XML, with XPath queries and a formatter | [XmlSyntaxTree](cref:Meziantou.Framework.Language.Xml.XmlSyntaxTree). See [XML](05-Xml.md). |
 | `Meziantou.Framework.Language.Tool` | All of the above, from the command line | `Meziantou.Framework.Language.Tool syntax`. See [Command-line tool](11-CommandLineTool.md). |
 
 `Meziantou.Framework.Language` is not useful on its own: install the package of the language you parse, and it comes
@@ -47,7 +47,7 @@ only need the data, a serializer is simpler and uses less memory.
 | --- | --- |
 | Update a value in a `package.json`, a `.csproj`, an `.editorconfig` or a `Cargo.toml`, and keep the rest of the file as it is | The language package: [Editing trees](03-Concepts/06-EditingTrees.md) |
 | Report the problems of a file with their line and column | The language package: [Diagnostics](03-Concepts/05-Diagnostics.md) |
-| Find which group of a regular expression, or which command of a script, is at a position | `RegexSyntaxTree` or `ShellSyntaxTree` with `FindToken` |
+| Find which group of a regular expression, or which command of a script, is at a position | [RegexSyntaxTree](cref:Meziantou.Framework.Language.Regex.RegexSyntaxTree) or [ShellSyntaxTree](cref:Meziantou.Framework.Language.Shell.ShellSyntaxTree) with [FindToken](cref:Meziantou.Framework.Language.SyntaxNode.FindToken) |
 | Load a TOML file into your own types, or save them | `Meziantou.Framework.Toml`: see [TOML](../Toml/01-Introduction.md) |
 | Highlight code in a web page | `Meziantou.Framework.SyntaxHighlighting`: see [Syntax highlighting](../SyntaxHighlighting/01-Introduction.md) |
 
@@ -59,7 +59,7 @@ gives you a tree to read and edit the text, with the same model as the other lan
 
 | Namespace | Contains |
 | --- | --- |
-| [Meziantou.Framework.Language](cref:Meziantou.Framework.Language) | What every language shares: `SyntaxTree`, `SyntaxNode`, `SyntaxToken`, `SyntaxTrivia`, the lists, `SourceText`, `TextSpan`, `TextChange`, `Location`, `Diagnostic`, `SyntaxAnnotation`, and the editing extension methods (`ReplaceNode`, `RemoveNode`, …) |
+| [Meziantou.Framework.Language](cref:Meziantou.Framework.Language) | What every language shares: [SyntaxTree](cref:Meziantou.Framework.Language.SyntaxTree), [SyntaxNode](cref:Meziantou.Framework.Language.SyntaxNode), [SyntaxToken](cref:Meziantou.Framework.Language.SyntaxToken), [SyntaxTrivia](cref:Meziantou.Framework.Language.SyntaxTrivia), the lists, [SourceText](cref:Meziantou.Framework.Language.SourceText), [TextSpan](cref:Meziantou.Framework.Language.TextSpan), [TextChange](cref:Meziantou.Framework.Language.TextChange), [Location](cref:Meziantou.Framework.Language.Location), [Diagnostic](cref:Meziantou.Framework.Language.Diagnostic), [SyntaxAnnotation](cref:Meziantou.Framework.Language.SyntaxAnnotation), and the editing extension methods ([ReplaceNode](cref:Meziantou.Framework.Language.SyntaxNodeExtensions.ReplaceNode), [RemoveNode](cref:Meziantou.Framework.Language.SyntaxNodeExtensions.RemoveNode), …) |
 | `Meziantou.Framework.Language.<Language>` | The tree, the nodes, the options, the visitors, `SyntaxKind`, `SyntaxFactory` and `SyntaxFacts` of one language, such as `Meziantou.Framework.Language.Json` |
 
 Each language namespace is a child of [Meziantou.Framework.Language](cref:Meziantou.Framework.Language), so a file that has

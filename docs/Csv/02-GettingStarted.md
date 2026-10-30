@@ -15,7 +15,7 @@ The examples of this documentation omit the `using` directives: they need `using
 
 ## Read a file
 
-Create a `CsvReader` over a `StreamReader`, and call `ReadRowAsync` until it returns `null`. With `HasHeaderRow`, the
+Create a [CsvReader](cref:Meziantou.Framework.Csv.CsvReader) over a `StreamReader`, and call [ReadRowAsync](cref:Meziantou.Framework.Csv.CsvReader.ReadRowAsync) until it returns `null`. With [HasHeaderRow](cref:Meziantou.Framework.Csv.CsvReader.HasHeaderRow), the
 first row gives the names of the columns, and each row gives its values by name:
 
 <!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvReaderTests.cs;region=CsvReader_ReadFile;format=md-fenced-code-block;dedent=true -->
@@ -36,14 +36,14 @@ Assert.Equal(55, totalAge);
 ```
 <!-- endref -->
 
-- The header row is not returned: the first row `ReadRowAsync` returns is the first row of data.
+- The header row is not returned: the first row [ReadRowAsync](cref:Meziantou.Framework.Csv.CsvReader.ReadRowAsync) returns is the first row of data.
 - Values are strings. Parse them with the invariant culture when the file comes from another program, so that the
   result does not depend on the culture of the machine.
 - The reader does not own the `StreamReader`: dispose it yourself.
 
 ## Write a file
 
-`WriteRowAsync` writes a row. Write the header row first, like any other row:
+[WriteRowAsync](cref:Meziantou.Framework.Csv.CsvWriter.WriteRowAsync) writes a row. Write the header row first, like any other row:
 
 <!-- ref:../../tests/Meziantou.Framework.Csv.Tests/CsvWriterTests.cs;region=CsvWriter_WriteFile;format=md-fenced-code-block;dedent=true -->
 ```csharp

@@ -12,7 +12,7 @@ dotnet add package Meziantou.Framework.Language.Json
 
 ## Parse a document
 
-`JsonSyntaxTree.ParseText` reads a string. Comments and trailing commas are accepted without a diagnostic:
+[JsonSyntaxTree.ParseText](cref:Meziantou.Framework.Language.Json.JsonSyntaxTree.ParseText) reads a string. Comments and trailing commas are accepted without a diagnostic:
 
 <!-- ref:../../tests/Meziantou.Framework.Language.Json.Tests/JsonSyntaxTreeTests.cs;region=JsonSyntaxTree_Overview;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -34,21 +34,21 @@ Assert.Equal(tree.GetText().Text, tree.GetRoot().ToFullString());
 
 ## The shape of a tree
 
-A `JsonDocumentSyntax` holds the root value in `Value`. A document with several values, which is an error, keeps them
-all in `Values`.
+A [JsonDocumentSyntax](cref:Meziantou.Framework.Language.Json.JsonDocumentSyntax) holds the root value in `Value`. A document with several values, which is an error, keeps them
+all in [Values](cref:Meziantou.Framework.Language.Json.JsonDocumentSyntax.Values).
 
 | Node | Is | Holds |
 | --- | --- | --- |
-| `JsonObjectSyntax` | `{ … }` | `Members`, a separated list of `JsonMemberSyntax`, and `GetMember(name)` |
-| `JsonMemberSyntax` | `"name": value` | `NameToken`, `Name`, `ColonToken`, `Value` |
-| `JsonArraySyntax` | `[ … ]` | `Elements`, a separated list of values |
-| `JsonStringSyntax` | `"text"` | `Value`, the string without its quotes and escapes |
-| `JsonNumberSyntax` | `42`, `-1.5e3` | `Text`, the number as written |
-| `JsonLiteralSyntax` | `true`, `false`, `null` | `LiteralToken`; its kind tells which literal it is |
-| `JsonSkippedTextSyntax` | Text the parser could not use | The skipped tokens |
+| [JsonObjectSyntax](cref:Meziantou.Framework.Language.Json.JsonObjectSyntax) | `{ … }` | [Members](cref:Meziantou.Framework.Language.Json.JsonObjectSyntax.Members), a separated list of [JsonMemberSyntax](cref:Meziantou.Framework.Language.Json.JsonMemberSyntax), and `GetMember(name)` |
+| [JsonMemberSyntax](cref:Meziantou.Framework.Language.Json.JsonMemberSyntax) | `"name": value` | [NameToken](cref:Meziantou.Framework.Language.Json.JsonMemberSyntax.NameToken), [Name](cref:Meziantou.Framework.Language.Json.JsonMemberSyntax.Name), [ColonToken](cref:Meziantou.Framework.Language.Json.JsonMemberSyntax.ColonToken), `Value` |
+| [JsonArraySyntax](cref:Meziantou.Framework.Language.Json.JsonArraySyntax) | `[ … ]` | [Elements](cref:Meziantou.Framework.Language.Json.JsonArraySyntax.Elements), a separated list of values |
+| [JsonStringSyntax](cref:Meziantou.Framework.Language.Json.JsonStringSyntax) | `"text"` | `Value`, the string without its quotes and escapes |
+| [JsonNumberSyntax](cref:Meziantou.Framework.Language.Json.JsonNumberSyntax) | `42`, `-1.5e3` | [Text](cref:Meziantou.Framework.Language.Json.JsonNumberSyntax.Text), the number as written |
+| [JsonLiteralSyntax](cref:Meziantou.Framework.Language.Json.JsonLiteralSyntax) | `true`, `false`, `null` | [LiteralToken](cref:Meziantou.Framework.Language.Json.JsonLiteralSyntax.LiteralToken); its kind tells which literal it is |
+| [JsonSkippedTextSyntax](cref:Meziantou.Framework.Language.Json.JsonSkippedTextSyntax) | Text the parser could not use | The skipped tokens |
 
 The commas belong to the lists, not to the values: see [Lists](03-Concepts/02-NodesAndTokens.md#lists). A member name is a
-token of its member, not a `JsonStringSyntax`.
+token of its member, not a [JsonStringSyntax](cref:Meziantou.Framework.Language.Json.JsonStringSyntax).
 
 Whitespace and comments up to the end of a line belong to the token that ends the line, and the rest to the next
 token, so a comment on its own line goes with the member below it. See [Trivia](03-Concepts/03-Trivia.md).
@@ -56,7 +56,7 @@ token, so a comment on its own line goes with the member below it. See [Trivia](
 ## Query with JSONPath
 
 The package includes extension methods that run a [JSONPath](../JsonPath/01-Introduction.md) query on a tree.
-`EvaluateValue` returns the node of a single result, and `Evaluate` every result:
+[EvaluateValue](cref:Meziantou.Framework.Language.Json.JsonPathExtensions.EvaluateValue) returns the node of a single result, and [Evaluate](cref:Meziantou.Framework.Language.Json.JsonPathExtensions.Evaluate) every result:
 
 <!-- ref:../../tests/Meziantou.Framework.Language.Json.Tests/JsonSyntaxTreeTests.cs;region=JsonSyntaxTree_JsonPath;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -67,11 +67,11 @@ Assert.Equal("2", value?.ToString());
 ```
 <!-- endref -->
 
-`JsonPath` is in the [Meziantou.Framework.Json](cref:Meziantou.Framework.Json) namespace. The results are nodes of the tree, so you can replace them.
+[JsonPath](cref:Meziantou.Framework.Json.JsonPath) is in the [Meziantou.Framework.Json](cref:Meziantou.Framework.Json) namespace. The results are nodes of the tree, so you can replace them.
 
 ## Edit a document
 
-Replace a value with a node built by `SyntaxFactory`. The rest of the document is kept as it is:
+Replace a value with a node built by [SyntaxFactory](cref:Meziantou.Framework.Language.Json.SyntaxFactory). The rest of the document is kept as it is:
 
 <!-- ref:../../tests/Meziantou.Framework.Language.Json.Tests/JsonSyntaxTreeTests.cs;region=JsonSyntaxTree_Editing;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -84,11 +84,11 @@ Assert.Equal("""{ "version": "2.0.0", "other": 1 }""", updated.ToFullString());
 ```
 <!-- endref -->
 
-- `SyntaxFactory.JsonString`, `JsonNumber`, `JsonObject`, `JsonMember`, `JsonArray` and `JsonLiteral` build values;
-  `JsonString` escapes what JSON requires. `SyntaxFactory.ParseValue` reads a value written as text.
-- `JsonMemberSyntax.WithName` renames a member, `JsonStringSyntax.WithValue` and `JsonNumberSyntax.WithText` change a
-  value, and `AddMembers` and `AddElements` add to an object or an array.
-- Removing a member or an element removes its comma, and `SyntaxRemoveOptions` says what to do with its comments. See
+- [SyntaxFactory.JsonString](cref:Meziantou.Framework.Language.Json.SyntaxFactory.JsonString), [JsonNumber](cref:Meziantou.Framework.Language.Json.SyntaxFactory.JsonNumber), [JsonObject](cref:Meziantou.Framework.Language.Json.SyntaxFactory.JsonObject), [JsonMember](cref:Meziantou.Framework.Language.Json.SyntaxFactory.JsonMember), [JsonArray](cref:Meziantou.Framework.Language.Json.SyntaxFactory.JsonArray) and [JsonLiteral](cref:Meziantou.Framework.Language.Json.SyntaxFactory.JsonLiteral) build values;
+  [JsonString](cref:Meziantou.Framework.Language.Json.SyntaxFactory.JsonString) escapes what JSON requires. [SyntaxFactory.ParseValue](cref:Meziantou.Framework.Language.Json.SyntaxFactory.ParseValue) reads a value written as text.
+- [JsonMemberSyntax.WithName](cref:Meziantou.Framework.Language.Json.JsonMemberSyntax.WithName) renames a member, [JsonStringSyntax.WithValue](cref:Meziantou.Framework.Language.Json.JsonStringSyntax.WithValue) and [JsonNumberSyntax.WithText](cref:Meziantou.Framework.Language.Json.JsonNumberSyntax.WithText) change a
+  value, and [AddMembers](cref:Meziantou.Framework.Language.Json.JsonObjectSyntax.AddMembers) and [AddElements](cref:Meziantou.Framework.Language.Json.JsonArraySyntax.AddElements) add to an object or an array.
+- Removing a member or an element removes its comma, and [SyntaxRemoveOptions](cref:Meziantou.Framework.Language.SyntaxRemoveOptions) says what to do with its comments. See
   [Remove a node](03-Concepts/06-EditingTrees.md#remove-a-node).
 
 ## Diagnostics
@@ -146,5 +146,5 @@ A common mistake is reported once and read as what it was meant to be, so the re
 
 ## Walk a tree
 
-`JsonSyntaxWalker`, `JsonSyntaxVisitor` and `JsonSyntaxRewriter` have a method per node type, such as `VisitJsonObject`
+[JsonSyntaxWalker](cref:Meziantou.Framework.Language.Json.JsonSyntaxWalker), [JsonSyntaxVisitor](cref:Meziantou.Framework.Language.Json.JsonSyntaxVisitor) and [JsonSyntaxRewriter](cref:Meziantou.Framework.Language.Json.JsonSyntaxRewriter) have a method per node type, such as `VisitJsonObject`
 and `VisitJsonString`. See [Visitors and rewriters](03-Concepts/08-VisitorsAndRewriters.md), whose examples use JSON.

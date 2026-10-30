@@ -31,8 +31,8 @@ var bytes = pdf.ToByteArray();
 ```
 <!-- endref -->
 
-`PrintToPdf` returns a `PdfDocument`, or writes the PDF to a stream. It takes the `PrintOptions` of the printing (the size
-of the pages, the margins, the header and the footer) and the `PdfPrintOptions` of the PDF:
+[PrintToPdf](cref:Meziantou.Framework.WebPlatform.PdfRendering.PdfPrintExtensions.PrintToPdf) returns a [PdfDocument](cref:Meziantou.Framework.Pdf.PdfDocument), or writes the PDF to a stream. It takes the [PrintOptions](cref:Meziantou.Framework.WebPlatform.Dom.PrintOptions) of the printing (the size
+of the pages, the margins, the header and the footer) and the [PdfPrintOptions](cref:Meziantou.Framework.WebPlatform.PdfRendering.PdfPrintOptions) of the PDF:
 
 <!-- ref:../../../tests/Meziantou.Framework.WebPlatform.PdfRendering.Tests/PdfPrintTests.cs;region=WebPlatformPdf_PrintOptions;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -62,8 +62,8 @@ context.PrintToPdf(stream, new PrintOptions
 
 - **Text** that can be selected, searched and extracted: the glyphs of the fonts the layout used, embedded as subsets, at
   the positions the layout computed.
-- **Images**, embedded once each. A JPEG image is embedded as it is. The browsing context needs a `RenderingBackend`
-  (`ImagingRenderingBackend`) to keep the bytes of the images.
+- **Images**, embedded once each. A JPEG image is embedded as it is. The browsing context needs a [RenderingBackend](cref:Meziantou.Framework.WebPlatform.Rendering.RenderingBackend)
+  ([ImagingRenderingBackend](cref:Meziantou.Framework.WebPlatform.Imaging.ImagingRenderingBackend)) to keep the bytes of the images.
 - **Links**: the `a` elements are link annotations; a link to a fragment of the document goes to its place in the PDF.
 - **Bookmarks**: the headings are the outline of the document.
 - **Metadata**: the title, the language, the author, the description and the keywords of the document.
@@ -72,18 +72,18 @@ context.PrintToPdf(stream, new PrintOptions
 
 ## PDF options
 
-| `PdfPrintOptions` | Default | Effect |
+| [PdfPrintOptions](cref:Meziantou.Framework.WebPlatform.PdfRendering.PdfPrintOptions) | Default | Effect |
 | --- | --- | --- |
-| `Tagged` | true | Writes the structure tree |
-| `IncludeLinks` | true | Writes the link annotations |
-| `IncludeOutlines` | true | Writes the bookmarks |
-| `PdfUAConformance` | none | Writes a PDF/UA-1 document (accessible PDF) |
-| `PdfAConformance` | none | Writes a PDF/A document (archiving) |
-| `Title` | the `title` element | The title of the PDF |
-| `RasterizationScale` | 2 | The pixels per CSS pixel of what PDF cannot draw |
+| [Tagged](cref:Meziantou.Framework.WebPlatform.PdfRendering.PdfPrintOptions.Tagged) | true | Writes the structure tree |
+| [IncludeLinks](cref:Meziantou.Framework.WebPlatform.PdfRendering.PdfPrintOptions.IncludeLinks) | true | Writes the link annotations |
+| [IncludeOutlines](cref:Meziantou.Framework.WebPlatform.PdfRendering.PdfPrintOptions.IncludeOutlines) | true | Writes the bookmarks |
+| [PdfUAConformance](cref:Meziantou.Framework.Pdf.PdfUAConformance) | none | Writes a PDF/UA-1 document (accessible PDF) |
+| [PdfAConformance](cref:Meziantou.Framework.Pdf.PdfAConformance) | none | Writes a PDF/A document (archiving) |
+| [Title](cref:Meziantou.Framework.WebPlatform.PdfRendering.PdfPrintOptions.Title) | the `title` element | The title of the PDF |
+| [RasterizationScale](cref:Meziantou.Framework.WebPlatform.PdfRendering.PdfPrintOptions.RasterizationScale) | 2 | The pixels per CSS pixel of what PDF cannot draw |
 
 ## What is drawn as an image
 
 PDF cannot draw everything that CSS can: the blurred shadows, the filters, the masks, the compositing operators other
-than the default one (source-over), the 3D transforms, the conic gradients and the color glyphs are drawn as images, at `RasterizationScale`
+than the default one (source-over), the 3D transforms, the conic gradients and the color glyphs are drawn as images, at [RasterizationScale](cref:Meziantou.Framework.WebPlatform.PdfRendering.PdfPrintOptions.RasterizationScale)
 pixels per CSS pixel, in place.

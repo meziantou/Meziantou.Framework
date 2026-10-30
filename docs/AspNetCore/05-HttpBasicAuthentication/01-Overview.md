@@ -66,9 +66,9 @@ A request without credentials, or with wrong ones, gets `401 Unauthorized` with 
 
 ## Two ways to validate credentials
 
-- [Validating credentials](02-ValidatingCredentials.md): `AddHttpBasic` calls your delegate with the username and
+- [Validating credentials](02-ValidatingCredentials.md): [AddHttpBasic](cref:Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationExtensions.AddHttpBasic) calls your delegate with the username and
   the password. Use it for a fixed account, a configuration file, or credentials stored in your own database.
-- [ASP.NET Core Identity](03-AspNetCoreIdentity.md): `AddHttpBasicIdentity<TUser>` checks the password with Identity,
+- [ASP.NET Core Identity](03-AspNetCoreIdentity.md): [AddHttpBasicIdentity\<TUser\>](cref:Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationIdentityExtensions.AddHttpBasicIdentity) checks the password with Identity,
   with its lockout and two-factor rules.
 
 ## When to use HTTP Basic

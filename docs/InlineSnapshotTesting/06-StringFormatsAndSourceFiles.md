@@ -8,17 +8,17 @@ or adds it when it is missing. These settings control how.
 
 ## String formats
 
-`AllowedStringFormats` lists the C# string literals the library may write, as `CSharpStringFormats` flags:
+[AllowedStringFormats](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings.AllowedStringFormats) lists the C# string literals the library may write, as [CSharpStringFormats](cref:Meziantou.Framework.InlineSnapshotTesting.CSharpStringFormats) flags:
 
 | Flag | Literal |
 | --- | --- |
-| `Quoted` | `"Name: meziantou"`, for a single line without escape sequences |
-| `Verbatim` | `@"..."`, for several lines, backslashes or quotes |
-| `Raw` | A raw string literal, `"""..."""`, indented like the calling code (C# 11 or later) |
-| `LeftAlignedRaw` | A raw string literal whose content and closing quotes start at the first column of the file |
-| `DetermineFeatureFromPdb` | Reads the C# version of the project from the PDB, and does not use a literal it does not support. Requires a portable PDB |
+| [Quoted](cref:Meziantou.Framework.InlineSnapshotTesting.CSharpStringFormats.Quoted) | `"Name: meziantou"`, for a single line without escape sequences |
+| [Verbatim](cref:Meziantou.Framework.InlineSnapshotTesting.CSharpStringFormats.Verbatim) | `@"..."`, for several lines, backslashes or quotes |
+| [Raw](cref:Meziantou.Framework.InlineSnapshotTesting.CSharpStringFormats.Raw) | A raw string literal, `"""..."""`, indented like the calling code (C# 11 or later) |
+| [LeftAlignedRaw](cref:Meziantou.Framework.InlineSnapshotTesting.CSharpStringFormats.LeftAlignedRaw) | A raw string literal whose content and closing quotes start at the first column of the file |
+| [DetermineFeatureFromPdb](cref:Meziantou.Framework.InlineSnapshotTesting.CSharpStringFormats.DetermineFeatureFromPdb) | Reads the C# version of the project from the PDB, and does not use a literal it does not support. Requires a portable PDB |
 
-The default, `CSharpStringFormats.Default`, is `Quoted | Verbatim | Raw | DetermineFeatureFromPdb`: a quoted string for
+The default, [CSharpStringFormats.Default](cref:Meziantou.Framework.InlineSnapshotTesting.CSharpStringFormats.Default), is `Quoted | Verbatim | Raw | DetermineFeatureFromPdb`: a quoted string for
 a simple single line, and for several lines a raw string when the project uses C# 11 or later, a verbatim string
 otherwise.
 
@@ -30,7 +30,7 @@ InlineSnapshot
 ```
 <!-- endref -->
 
-With `Raw` only, even a single line is written as a raw string:
+With [Raw](cref:Meziantou.Framework.InlineSnapshotTesting.CSharpStringFormats.Raw) only, even a single line is written as a raw string:
 
 <!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_RawString;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -42,7 +42,7 @@ InlineSnapshot
 ```
 <!-- endref -->
 
-With `LeftAlignedRaw`, the content and the closing quotes of the snapshot start at the first column of the file, whatever
+With [LeftAlignedRaw](cref:Meziantou.Framework.InlineSnapshotTesting.CSharpStringFormats.LeftAlignedRaw), the content and the closing quotes of the snapshot start at the first column of the file, whatever
 the indentation of the calling code:
 
 <!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_LeftAlignedRawString;format=md-fenced-code-block -->
@@ -58,7 +58,7 @@ the indentation of the calling code:
 ## Indentation, line endings and encoding
 
 By default, the indentation, the line endings and the encoding are detected from the source file, so an edit looks like
-the code around it. Set `Indentation`, `EndOfLine` and `FileEncoding` to choose them:
+the code around it. Set [Indentation](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings.Indentation), [EndOfLine](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings.EndOfLine) and [FileEncoding](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings.FileEncoding) to choose them:
 
 <!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_FileFormat;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -76,13 +76,13 @@ InlineSnapshot
 ## How the call is found
 
 The library finds the call to update from the `[CallerFilePath]` and `[CallerLineNumber]` that the compiler passes to
-`Validate`, and parses the source file to find the expected argument of that call.
+[Validate](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshot.Validate), and parses the source file to find the expected argument of that call.
 
 - **The source file must be on disk.** The tests must run where the source code is, from a build of that code.
-- **The PDB is used to check the location.** By default (`ValidateSourceFilePathUsingPdbInfoWhenAvailable`), the file is
+- **The PDB is used to check the location.** By default ([ValidateSourceFilePathUsingPdbInfoWhenAvailable](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings.ValidateSourceFilePathUsingPdbInfoWhenAvailable)), the file is
   checked against the call stack read from the PDB, and the update fails when they differ, which may happen with a
   Release build. Set the property to `false` to skip the check.
-  `ValidateLineNumberUsingPdbInfoWhenAvailable`, disabled by default, also checks the line. The PDB gives the line where
+  [ValidateLineNumberUsingPdbInfoWhenAvailable](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings.ValidateLineNumberUsingPdbInfoWhenAvailable), disabled by default, also checks the line. The PDB gives the line where
   the expression starts, and `[CallerLineNumber]` the line of the call, which differ when the expression spans several
   lines.
 - **Deterministic paths are mapped back to the disk.** See
@@ -95,5 +95,5 @@ The library finds the call to update from the `[CallerFilePath]` and `[CallerLin
 When the call cannot be updated, the test fails with the reason and the snapshot difference, so you can copy the value
 yourself.
 
-A helper method that calls `Validate` must say which of its parameters holds the snapshot and forward the caller
+A helper method that calls [Validate](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshot.Validate) must say which of its parameters holds the snapshot and forward the caller
 information. See [Helper methods](07-HelperMethods.md).

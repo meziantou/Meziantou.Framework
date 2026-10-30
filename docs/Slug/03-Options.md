@@ -3,16 +3,16 @@ title: Options
 description: Change the maximum length, the separator, the case and the allowed characters of a slug, or replace characters.
 ---
 
-`Slug.Create(text, options)` takes a `SlugOptions`. `null` uses the default options.
+`Slug.Create(text, options)` takes a [SlugOptions](cref:Meziantou.Framework.SlugOptions). `null` uses the default options.
 
 | Option | Default | Description |
 | --- | --- | --- |
-| `MaximumLength` | `80` (`SlugOptions.DefaultMaximumLength`) | Maximum length of the slug. `0` or a negative value means no limit |
-| `Separator` | `"-"` (`SlugOptions.DefaultSeparator`) | Text written in place of the characters that are not allowed. It cannot be `null`, but it can be empty |
-| `CanEndWithSeparator` | `false` | Keeps a separator at the end of the slug |
-| `CasingTransformation` | `PreserveCase` | `PreserveCase`, `ToLowerCase` or `ToUpperCase` |
-| `Culture` | `null` | Culture of the case transformation. `null` uses the invariant casing rules |
-| `AllowedRanges` | `a`-`z`, `A`-`Z`, `0`-`9` | Unicode ranges of the characters kept in the slug |
+| [MaximumLength](cref:Meziantou.Framework.SlugOptions.MaximumLength) | `80` ([SlugOptions.DefaultMaximumLength](cref:Meziantou.Framework.SlugOptions.DefaultMaximumLength)) | Maximum length of the slug. `0` or a negative value means no limit |
+| [Separator](cref:Meziantou.Framework.SlugOptions.Separator) | `"-"` ([SlugOptions.DefaultSeparator](cref:Meziantou.Framework.SlugOptions.DefaultSeparator)) | Text written in place of the characters that are not allowed. It cannot be `null`, but it can be empty |
+| [CanEndWithSeparator](cref:Meziantou.Framework.SlugOptions.CanEndWithSeparator) | `false` | Keeps a separator at the end of the slug |
+| [CasingTransformation](cref:Meziantou.Framework.CasingTransformation) | [PreserveCase](cref:Meziantou.Framework.CasingTransformation.PreserveCase) | [PreserveCase](cref:Meziantou.Framework.CasingTransformation.PreserveCase), [ToLowerCase](cref:Meziantou.Framework.CasingTransformation.ToLowerCase) or [ToUpperCase](cref:Meziantou.Framework.CasingTransformation.ToUpperCase) |
+| [Culture](cref:Meziantou.Framework.SlugOptions.Culture) | `null` | Culture of the case transformation. `null` uses the invariant casing rules |
+| [AllowedRanges](cref:Meziantou.Framework.SlugOptions.AllowedRanges) | `a`-`z`, `A`-`Z`, `0`-`9` | Unicode ranges of the characters kept in the slug |
 
 ## Limit the length
 
@@ -54,11 +54,11 @@ Assert.Equal("RELEASE_NOTES_V2_", Slug.Create("Release notes: v2!", options));
 <!-- endref -->
 
 Use a separator made of characters that are not allowed. When the text itself contains an allowed separator character,
-it is kept as content, so a trailing one stays even when `CanEndWithSeparator` is `false`.
+it is kept as content, so a trailing one stays even when [CanEndWithSeparator](cref:Meziantou.Framework.SlugOptions.CanEndWithSeparator) is `false`.
 
 ## Allow more characters
 
-`AllowedRanges` is a list of `UnicodeRange` (from `System.Text.Unicode`). Add ranges to keep more characters:
+[AllowedRanges](cref:Meziantou.Framework.SlugOptions.AllowedRanges) is a list of `UnicodeRange` (from `System.Text.Unicode`). Add ranges to keep more characters:
 
 <!-- ref:../../tests/Meziantou.Framework.Slug.Tests/SlugTests.cs;region=Slug_AllowedRanges;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -99,11 +99,11 @@ unfiltered, with its spaces, punctuation and diacritics, and only the case trans
 
 ## Replace characters
 
-`SlugOptions` has two virtual methods that run for each character of the text:
+[SlugOptions](cref:Meziantou.Framework.SlugOptions) has two virtual methods that run for each character of the text:
 
-- `IsAllowed(Rune)` tells whether the character is kept. The default implementation checks `AllowedRanges`.
+- `IsAllowed(Rune)` tells whether the character is kept. The default implementation checks [AllowedRanges](cref:Meziantou.Framework.SlugOptions.AllowedRanges).
 - `Replace(Rune)` returns the text written for a kept character. The default implementation applies
-  `CasingTransformation`.
+  [CasingTransformation](cref:Meziantou.Framework.CasingTransformation).
 
 Override them to write a character differently:
 
@@ -127,6 +127,6 @@ Assert.Equal("Tom-and-Jerry", Slug.Create("Tom & Jerry", new AmpersandSlugOption
 <!-- endref -->
 
 The text is decomposed before these methods run, so a letter and its accents are separate characters: `é` is `e`
-followed by a combining accent. `IsAllowed` receives the character before `Replace` and the case transformation. An
-accent that is not allowed is dropped without writing a separator. A replacement is never cut by `MaximumLength`: it is
+followed by a combining accent. [IsAllowed](cref:Meziantou.Framework.SlugOptions.IsAllowed) receives the character before [Replace](cref:Meziantou.Framework.SlugOptions.Replace) and the case transformation. An
+accent that is not allowed is dropped without writing a separator. A replacement is never cut by [MaximumLength](cref:Meziantou.Framework.SlugOptions.MaximumLength): it is
 kept whole or dropped.

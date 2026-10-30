@@ -12,8 +12,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <item><description>
 /// Color: RGB is converted to BT.601 limited-range Y'CbCr (the inverse of the decoder matrix), chroma averaged over each 2x2
 /// block (weighted by alpha when the block is partly transparent, so hidden colors do not bleed into visible pixels); the
-/// luma of fully transparent pixels is replaced by the mean luma of the visible pixels of their 4x4 block (lossy output does
-/// not preserve hidden colors). The planes are extended to whole macroblocks by repeating the last column and row.
+/// luma of fully transparent pixels is replaced by the mean luma of the visible pixels of their 4x4 block, and each run of
+/// fully transparent 8x8 blocks takes one value (lossy output does not preserve hidden colors: hidden areas then cost almost
+/// no bits, see <see cref="FlattenTransparentRuns"/>). The planes are extended to whole macroblocks by repeating the last column
+/// and row.
 /// </description></item>
 /// <item><description>
 /// Quantization: one quantizer index for the frame, <c>round((100 - quality) * 127 / 100)</c>, with the standard VP8 steps
@@ -31,6 +33,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// the distortion of the filtered reconstruction. Token probabilities are updated in the frame header when the counted
 /// statistics save bits. One token partition; the skip flag is used for macroblocks without coefficients.
 /// </description></item>
+/// <item><description>
+/// First partition (19-bit size, 512 KiB): when the modes chosen freely do not fit, the frame is analyzed once more under a
+/// budget for the mode bits, which always fits (see <see cref="Encode(AllocationScope, ReadOnlySpan{byte}, int, int, int, int, int, CancellationToken)"/>).
+/// Only very large detailed frames reach it (photographs of about 40 megapixels and more at high quality).
+/// </description></item>
 /// </list>
 /// Memory (<see cref="AllocationKind.Temporary"/>): the source and reconstructed planes, the quantized levels of every
 /// macroblock (800 bytes per macroblock) and the two partitions. Encoding is deterministic.
@@ -38,7 +45,24 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal sealed class Vp8Encoder : IDisposable
 {
     private const int MaxLevel = 2048;
-    private const int MaxFirstPartitionSize = (1 << 19) - 1;
+
+    /// <summary>The largest first partition: its size is a 19-bit field of the frame tag.</summary>
+    internal const int MaxFirstPartitionSize = (1 << 19) - 1;
+
+    /// <summary>
+    /// The bits reserved for the frame header in the first partition: its fixed fields, and every token probability updated
+    /// (an update flag of at most 8 bits and an 8-bit value each).
+    /// </summary>
+    private const int FrameHeaderReserveBits = 256 + (4 * 8 * 3 * Vp8Tables.TokenNodes * 16);
+
+    /// <summary>The share of the remaining first-partition bits given to the modes, for the overhead of the boolean coder.</summary>
+    private const double ModeBitMargin = 0.98;
+
+    /// <summary>An upper bound of the bits per macroblock of the skip flag, whose probability is the frequency of skipped macroblocks.</summary>
+    private const double SkipFlagBits = 1.05;
+
+    /// <summary>The largest weight of the mode bits in the cost of a mode under a mode-bit budget.</summary>
+    private const double MaxModeBitWeight = 1 << 16;
 
     private static ReadOnlySpan<sbyte> KeyFrameYModeTree => [-Vp8Tables.BPred, 2, 4, 6, -Vp8Tables.DcPred, -Vp8Tables.VPred, -Vp8Tables.HPred, -Vp8Tables.TmPred];
 
@@ -62,6 +86,12 @@ internal sealed class Vp8Encoder : IDisposable
     private static readonly double[] UVModeCosts = CreateModeCosts(UVModeTree, Vp8Tables.KeyFrameUVModeProbabilities, 4, contexts: 1);
     private static readonly double[] BModeCosts = CreateModeCosts(BModeTree, Vp8Tables.KeyFrameBModeProbabilities, 10, contexts: 100);
 
+    /// <summary>The bits of the cheapest 16x16 luma mode: modes cost the same in every context.</summary>
+    private static readonly double MinLumaModeBits = Math.Min(Math.Min(YModeCosts[Vp8Tables.DcPred], YModeCosts[Vp8Tables.VPred]), Math.Min(YModeCosts[Vp8Tables.HPred], YModeCosts[Vp8Tables.TmPred]));
+
+    /// <summary>The bits of the cheapest chroma mode.</summary>
+    private static readonly double MinChromaModeBits = Math.Min(Math.Min(UVModeCosts[Vp8Tables.DcPred], UVModeCosts[Vp8Tables.VPred]), Math.Min(UVModeCosts[Vp8Tables.HPred], UVModeCosts[Vp8Tables.TmPred]));
+
     private readonly AllocationScope _scope;
     private readonly CancellationToken _cancellationToken;
     private readonly int _width;
@@ -69,6 +99,7 @@ internal sealed class Vp8Encoder : IDisposable
     private readonly int _mbWidth;
     private readonly int _mbHeight;
     private readonly int _effort;
+    private readonly int _maxFirstPartitionSize;
     private readonly int _quantizerIndex;
     private readonly Quantizer _q;
     private readonly double _lambda;
@@ -79,11 +110,19 @@ internal sealed class Vp8Encoder : IDisposable
     private readonly Macroblock[] _macroblocks;
     private readonly PooledBuffer _levelBuffer = null!;
     private int _filterLevel;
+    private bool _skipFlag = true;
+
+    /// <summary>The bits the modes of the frame may use (infinite: no budget).</summary>
+    private double _modeBitBudget = double.PositiveInfinity;
+    private double _modeBitsUsed;
+
+    /// <summary>The weight of the mode bits in the cost of a mode: 1, or more while the modes use their budget too fast.</summary>
+    private double _modeBitWeight = 1;
 
     /// <summary>Gets the quantized levels: 25 blocks of 16 raster-order values per macroblock (luma 0-15, U 16-19, V 20-23, Y2 24).</summary>
     private Span<short> Levels => unsafe(MemoryMarshal.Cast<byte, short>(_levelBuffer.RawBuffer.AsSpan()))[..(_macroblocks.Length * 25 * 16)];
 
-    private Vp8Encoder(AllocationScope scope, int width, int height, int quality, int effort, CancellationToken cancellationToken)
+    private Vp8Encoder(AllocationScope scope, int width, int height, int quality, int effort, int maxFirstPartitionSize, CancellationToken cancellationToken)
     {
         _scope = scope;
         _width = width;
@@ -91,6 +130,7 @@ internal sealed class Vp8Encoder : IDisposable
         _mbWidth = (width + 15) >> 4;
         _mbHeight = (height + 15) >> 4;
         _effort = effort;
+        _maxFirstPartitionSize = maxFirstPartitionSize;
         _cancellationToken = cancellationToken;
         _quantizerIndex = (int)Math.Round((100 - quality) * 127 / 100.0, MidpointRounding.AwayFromZero);
         _q = Quantizer.Create(_quantizerIndex);
@@ -125,25 +165,47 @@ internal sealed class Vp8Encoder : IDisposable
     /// <param name="cancellationToken">Checked between macroblock rows.</param>
     /// <returns>The VP8 chunk payload; the caller disposes it.</returns>
     public static PooledPayloadWriter Encode(AllocationScope scope, ReadOnlySpan<byte> rgba, int width, int height, int quality, int effort, CancellationToken cancellationToken)
+        => Encode(scope, rgba, width, height, quality, effort, MaxFirstPartitionSize, cancellationToken);
+
+    /// <summary>Encodes 8-bit RGBA pixels as a VP8 key frame whose first partition is at most <paramref name="maxFirstPartitionSize"/> bytes.</summary>
+    /// <remarks>
+    /// The modes are chosen without constraint first. When they do not fit the first partition, the frame is analyzed once
+    /// more with a budget for the mode bits (<see cref="TryGetModeBitBudget"/>): the bits of every mode are known exactly
+    /// (key frames code modes with fixed probabilities), the weight of the mode bits in the cost of a mode rises while the
+    /// macroblocks use the budget faster than their share, and a macroblock never uses bits that would leave the next ones
+    /// unable to afford the cheapest modes. 4x4 prediction stays available where it pays most, rather than being disabled
+    /// for the whole frame.
+    /// </remarks>
+    internal static PooledPayloadWriter Encode(AllocationScope scope, ReadOnlySpan<byte> rgba, int width, int height, int quality, int effort, int maxFirstPartitionSize, CancellationToken cancellationToken)
     {
-        using var encoder = new Vp8Encoder(scope, width, height, quality, effort, cancellationToken);
+        using var encoder = new Vp8Encoder(scope, width, height, quality, effort, maxFirstPartitionSize, cancellationToken);
         encoder.LoadSource(rgba);
-        var allowSubBlocks = effort >= 2;
-        while (true)
-        {
-            encoder.AnalyzeFrame(allowSubBlocks);
-            encoder.ChooseFilterLevel();
-            encoder.UpdateProbabilities();
-            if (encoder.WriteFrame())
-                return encoder.TakeOutput();
+        encoder.EncodeFrame();
+        if (encoder.WriteFrame())
+            return encoder.TakeOutput();
 
-            if (!allowSubBlocks)
-                throw new UnsupportedImageFeatureException(string.Create(CultureInfo.InvariantCulture, $"The {width}x{height} image needs a VP8 first partition larger than 512 KiB even with 16x16 prediction only; encode it losslessly or reduce its size."), ImageFormat.WebP, "VP8 first partition size");
+        if (!TryGetModeBitBudget(encoder._macroblocks.Length, maxFirstPartitionSize, out encoder._modeBitBudget, out encoder._skipFlag))
+            throw new UnsupportedImageFeatureException(string.Create(CultureInfo.InvariantCulture, $"The {width}x{height} image needs a VP8 first partition larger than {maxFirstPartitionSize} bytes even with the cheapest modes; encode it losslessly or reduce its size."), ImageFormat.WebP, "VP8 first partition size");
 
-            // The modes do not fit the 19-bit first-partition size: retry with the cheaper 16x16 modes only
-            allowSubBlocks = false;
-            Vp8Tables.DefaultTokenProbabilities.CopyTo(encoder._probabilities);
-        }
+        encoder.EncodeFrame();
+        if (encoder.WriteFrame())
+            return encoder.TakeOutput();
+
+        throw new InvalidOperationException("The VP8 modes chosen under a mode-bit budget do not fit the first partition.");
+    }
+
+    /// <summary>
+    /// Computes the bits the modes of a frame may use in a first partition of <paramref name="maxFirstPartitionSize"/> bytes,
+    /// after the frame header and the skip flags; the skip flag is left out when the cheapest modes would not fit with it.
+    /// </summary>
+    /// <returns><see langword="false"/> when the cheapest modes of every macroblock do not fit.</returns>
+    internal static bool TryGetModeBitBudget(int macroblockCount, int maxFirstPartitionSize, out double budget, out bool skipFlag)
+    {
+        var available = ((maxFirstPartitionSize * 8.0) - FrameHeaderReserveBits) * ModeBitMargin;
+        var minimum = macroblockCount * (MinLumaModeBits + MinChromaModeBits);
+        skipFlag = available - (macroblockCount * SkipFlagBits) >= minimum;
+        budget = skipFlag ? available - (macroblockCount * SkipFlagBits) : available;
+        return budget >= minimum;
     }
 
     public void Dispose()
@@ -183,17 +245,6 @@ internal sealed class Vp8Encoder : IDisposable
         }
 
         FlattenTransparentLuma(rgba, y, yStride);
-        for (var row = 0; row < _height; row++)
-        {
-            var luma = y.Slice(row * yStride, yStride);
-            luma[_width..paddedWidth].Fill(luma[_width - 1]);
-        }
-
-        for (var row = _height; row < paddedHeight; row++)
-        {
-            y.Slice((_height - 1) * yStride, yStride).CopyTo(y.Slice(row * yStride, yStride));
-        }
-
         var chromaWidth = (_width + 1) >> 1;
         var chromaHeight = (_height + 1) >> 1;
         for (var cy = 0; cy < chromaHeight; cy++)
@@ -242,7 +293,22 @@ internal sealed class Vp8Encoder : IDisposable
                 u[(cy * uvStride) + cx] = ClampByte(128 + (int)Math.Floor((cu / 65536.0) + 0.5));
                 v[(cy * uvStride) + cx] = ClampByte(128 + (int)Math.Floor((cv / 65536.0) + 0.5));
             }
+        }
 
+        FlattenTransparentRuns(rgba);
+        for (var row = 0; row < _height; row++)
+        {
+            var luma = y.Slice(row * yStride, yStride);
+            luma[_width..paddedWidth].Fill(luma[_width - 1]);
+        }
+
+        for (var row = _height; row < paddedHeight; row++)
+        {
+            y.Slice((_height - 1) * yStride, yStride).CopyTo(y.Slice(row * yStride, yStride));
+        }
+
+        for (var cy = 0; cy < chromaHeight; cy++)
+        {
             u.Slice(cy * uvStride, uvStride)[chromaWidth..].Fill(u[(cy * uvStride) + chromaWidth - 1]);
             v.Slice(cy * uvStride, uvStride)[chromaWidth..].Fill(v[(cy * uvStride) + chromaWidth - 1]);
         }
@@ -303,9 +369,88 @@ internal sealed class Vp8Encoder : IDisposable
         }
     }
 
-    /// <summary>Chooses the modes of every macroblock, quantizes its residuals and reconstructs it.</summary>
-    private void AnalyzeFrame(bool allowSubBlocks)
+    private void EncodeFrame()
     {
+        AnalyzeFrame();
+        ChooseFilterLevel();
+        UpdateProbabilities();
+    }
+
+    /// <summary>
+    /// Gives each run of fully transparent 8x8 blocks of a block row (4x4 in chroma) one value: the value of the transparent
+    /// block above the first block of the run, or the value of that first block (as libwebp's <c>WebPCleanupTransparentArea</c>).
+    /// A transparent area then has a single value that the blocks predict exactly, so hidden areas cost almost no bits.
+    /// </summary>
+    private void FlattenTransparentRuns(ReadOnlySpan<byte> rgba)
+    {
+        var y = _source.Y;
+        var u = _source.U;
+        var v = _source.V;
+        var yStride = _source.YStride;
+        var uvStride = _source.UVStride;
+        var transparentAbove = new bool[(_width + 7) / 8];
+        for (var by = 0; by < _height; by += 8)
+        {
+            var blockHeight = Math.Min(8, _height - by);
+            var startRun = true;
+            byte fillY = 0, fillU = 0, fillV = 0;
+            for (var bx = 0; bx < _width; bx += 8)
+            {
+                var blockWidth = Math.Min(8, _width - bx);
+                if (!IsTransparentBlock(rgba, bx, by, blockWidth, blockHeight))
+                {
+                    startRun = true;
+                    transparentAbove[bx / 8] = false;
+                    continue;
+                }
+
+                if (startRun)
+                {
+                    // The transparent block above already holds the value of its run
+                    var source = transparentAbove[bx / 8] ? by - 8 : by;
+                    fillY = y[(source * yStride) + bx];
+                    fillU = u[(source / 2 * uvStride) + (bx / 2)];
+                    fillV = v[(source / 2 * uvStride) + (bx / 2)];
+                    startRun = false;
+                }
+
+                transparentAbove[bx / 8] = true;
+
+                for (var row = by; row < by + blockHeight; row++)
+                {
+                    y.Slice((row * yStride) + bx, blockWidth).Fill(fillY);
+                }
+
+                var chromaWidth = (blockWidth + 1) / 2;
+                for (var row = by / 2; row < (by + blockHeight + 1) / 2; row++)
+                {
+                    u.Slice((row * uvStride) + (bx / 2), chromaWidth).Fill(fillU);
+                    v.Slice((row * uvStride) + (bx / 2), chromaWidth).Fill(fillV);
+                }
+            }
+        }
+    }
+
+    private bool IsTransparentBlock(ReadOnlySpan<byte> rgba, int x, int y, int width, int height)
+    {
+        for (var row = y; row < y + height; row++)
+        {
+            var pixels = rgba.Slice(((row * _width) + x) * 4, width * 4);
+            for (var i = 3; i < pixels.Length; i += 4)
+            {
+                if (pixels[i] != 0)
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>Chooses the modes of every macroblock, quantizes its residuals and reconstructs it.</summary>
+    private void AnalyzeFrame()
+    {
+        _modeBitsUsed = 0;
+        _modeBitWeight = 1;
         var aboveModes = new byte[_mbWidth * 4];
         Span<byte> leftModes = stackalloc byte[4];
         var aboveNonZero = new byte[_mbWidth * 9];
@@ -320,12 +465,12 @@ internal sealed class Vp8Encoder : IDisposable
             leftNonZero.Clear();
             for (var mbX = 0; mbX < _mbWidth; mbX++)
             {
-                AnalyzeMacroblock(mbX, mbY, allowSubBlocks, aboveModes.AsSpan(mbX * 4, 4), leftModes, aboveNonZero.AsSpan(mbX * 9, 9), leftNonZero);
+                AnalyzeMacroblock(mbX, mbY, aboveModes.AsSpan(mbX * 4, 4), leftModes, aboveNonZero.AsSpan(mbX * 9, 9), leftNonZero);
             }
         }
     }
 
-    private void AnalyzeMacroblock(int mbX, int mbY, bool allowSubBlocks, Span<byte> aboveModes, Span<byte> leftModes, Span<byte> aboveNonZero, Span<byte> leftNonZero)
+    private void AnalyzeMacroblock(int mbX, int mbY, Span<byte> aboveModes, Span<byte> leftModes, Span<byte> aboveNonZero, Span<byte> leftNonZero)
     {
         var index = (mbY * _mbWidth) + mbX;
         var levels = Levels.Slice(index * 25 * 16, 25 * 16);
@@ -335,6 +480,11 @@ internal sealed class Vp8Encoder : IDisposable
         var stride = _reconstruction.YStride;
         var offset = (mbY * 16 * stride) + (mbX * 16);
 
+        // The mode bits this macroblock may use while every later one can still afford the cheapest modes (infinite without
+        // budget); the cheapest modes are always allowed
+        var modeBitLimit = _modeBitBudget - _modeBitsUsed - ((_macroblocks.Length - index - 1) * (MinLumaModeBits + MinChromaModeBits));
+        var modeLambda = _lambda * _modeBitWeight;
+
         // 16x16 luma modes
         Span<short> bestLevels = stackalloc short[17 * 16];
         Span<short> trialLevels = stackalloc short[17 * 16];
@@ -343,8 +493,11 @@ internal sealed class Vp8Encoder : IDisposable
         var bestCost = double.MaxValue;
         for (var mode = Vp8Tables.DcPred; mode <= Vp8Tables.TmPred; mode++)
         {
+            if (YModeCosts[mode] > MinLumaModeBits && YModeCosts[mode] + MinChromaModeBits > modeBitLimit)
+                continue;
+
             Vp8Reconstruction.PredictBlock(recon, stride, offset, 16, mbX, mbY, mode);
-            var cost = EncodeLuma16(offset, trialLevels, aboveNonZero, leftNonZero) + (_lambda * YModeCosts[mode]);
+            var cost = EncodeLuma16(offset, trialLevels, aboveNonZero, leftNonZero) + (modeLambda * YModeCosts[mode]);
             if (cost < bestCost)
             {
                 bestCost = cost;
@@ -355,13 +508,16 @@ internal sealed class Vp8Encoder : IDisposable
         }
 
         var useSubBlocks = false;
+        var lumaModeBits = YModeCosts[bestMode];
         Span<byte> subModes = stackalloc byte[16];
-        if (allowSubBlocks)
+        if (_effort >= 2 && YModeCosts[Vp8Tables.BPred] + MinChromaModeBits <= modeBitLimit)
         {
             Span<short> subLevels = stackalloc short[16 * 16];
-            var subCost = EncodeSubBlocks(mbX, mbY, offset, subModes, subLevels, aboveModes, leftModes, aboveNonZero, leftNonZero) + (_lambda * YModeCosts[Vp8Tables.BPred]);
-            if (subCost < bestCost)
+            var subCost = EncodeSubBlocks(mbX, mbY, offset, subModes, subLevels, aboveModes, leftModes, aboveNonZero, leftNonZero, out var subModeBits) + (modeLambda * YModeCosts[Vp8Tables.BPred]);
+            subModeBits += YModeCosts[Vp8Tables.BPred];
+            if (subCost < bestCost && subModeBits + MinChromaModeBits <= modeBitLimit)
             {
+                lumaModeBits = subModeBits;
                 useSubBlocks = true;
                 subLevels.CopyTo(levels[..(16 * 16)]);
             }
@@ -400,9 +556,12 @@ internal sealed class Vp8Encoder : IDisposable
         bestCost = double.MaxValue;
         for (var mode = Vp8Tables.DcPred; mode <= Vp8Tables.TmPred; mode++)
         {
+            if (UVModeCosts[mode] > MinChromaModeBits && lumaModeBits + UVModeCosts[mode] > modeBitLimit)
+                continue;
+
             Vp8Reconstruction.PredictBlock(_reconstruction.U, uvStride, uvOffset, 8, mbX, mbY, mode);
             Vp8Reconstruction.PredictBlock(_reconstruction.V, uvStride, uvOffset, 8, mbX, mbY, mode);
-            var cost = EncodeChroma(uvOffset, uvLevels, aboveNonZero, leftNonZero) + (_lambda * UVModeCosts[mode]);
+            var cost = EncodeChroma(uvOffset, uvLevels, aboveNonZero, leftNonZero) + (modeLambda * UVModeCosts[mode]);
             if (cost < bestCost)
             {
                 bestCost = cost;
@@ -422,6 +581,14 @@ internal sealed class Vp8Encoder : IDisposable
         UpdateContexts(levels, info.YMode != Vp8Tables.BPred, aboveNonZero, leftNonZero, out var hasCoefficients);
         info.HasCoefficients = hasCoefficients;
         _macroblocks[index] = info;
+
+        _modeBitsUsed += lumaModeBits + UVModeCosts[bestUvMode];
+        if (!double.IsPositiveInfinity(_modeBitBudget))
+        {
+            // Pacing: the weight rises while the modes use more than the share of the budget of the macroblocks done so far
+            var share = _modeBitBudget * (index + 1) / _macroblocks.Length;
+            _modeBitWeight = _modeBitsUsed > share ? Math.Min(_modeBitWeight * 1.1, MaxModeBitWeight) : Math.Max(1, _modeBitWeight / 1.1);
+        }
     }
 
     /// <summary>Quantizes and reconstructs a 16x16 luma prediction already written at <paramref name="offset"/>.</summary>
@@ -481,8 +648,11 @@ internal sealed class Vp8Encoder : IDisposable
     }
 
     /// <summary>Chooses, quantizes and reconstructs the 16 sub-blocks of a B_PRED macroblock in raster order.</summary>
-    private double EncodeSubBlocks(int mbX, int mbY, int offset, Span<byte> subModes, Span<short> levels, Span<byte> aboveModes, Span<byte> leftModes, ReadOnlySpan<byte> aboveNonZero, ReadOnlySpan<byte> leftNonZero)
+    /// <returns>The rate-distortion cost of the sub-blocks; <paramref name="modeBits"/> receives the bits of their modes.</returns>
+    private double EncodeSubBlocks(int mbX, int mbY, int offset, Span<byte> subModes, Span<short> levels, Span<byte> aboveModes, Span<byte> leftModes, ReadOnlySpan<byte> aboveNonZero, ReadOnlySpan<byte> leftNonZero, out double modeBits)
     {
+        modeBits = 0;
+        var modeWeight = _modeBitWeight;
         var recon = _reconstruction.Y;
         var source = _source.Y;
         var stride = _reconstruction.YStride;
@@ -540,10 +710,10 @@ internal sealed class Vp8Encoder : IDisposable
 
                 // The token bits are not negative and the operations are monotonic: when the cost without them is not below
                 // the best cost, the full cost is not either, and the mode cannot be chosen
-                if (distortion + (_lambda * modeCosts[mode]) >= bestCost)
+                if (distortion + (_lambda * (modeWeight * modeCosts[mode])) >= bestCost)
                     continue;
 
-                var cost = distortion + (_lambda * (TokenBits(trial, 0, 3, context) + modeCosts[mode]));
+                var cost = distortion + (_lambda * (TokenBits(trial, 0, 3, context) + (modeWeight * modeCosts[mode])));
                 if (cost < bestCost)
                 {
                     bestCost = cost;
@@ -556,6 +726,7 @@ internal sealed class Vp8Encoder : IDisposable
             RestoreBlock(recon, stride, blockOffset, bestPixels, 4);
             best.CopyTo(levels.Slice(block * 16, 16));
             subModes[block] = (byte)bestMode;
+            modeBits += modeCosts[bestMode];
             modesAbove[bx] = modesLeft[by] = (byte)bestMode;
             nzAbove[bx] = nzLeft[by] = HasLevels(best, 0) ? (byte)1 : (byte)0;
             total += bestCost;
@@ -1208,7 +1379,7 @@ internal sealed class Vp8Encoder : IDisposable
                 var levels = Levels.Slice(index * 25 * 16, 25 * 16);
                 var above = aboveNonZero.AsSpan(mbX * 9, 9);
                 var hasY2 = mb.YMode != Vp8Tables.BPred;
-                if (!mb.HasCoefficients)
+                if (!mb.HasCoefficients && _skipFlag)
                 {
                     // Skipped: the decoder clears the contexts (the Y2 contexts only for 16x16 macroblocks)
                     above[..8].Clear();
@@ -1370,7 +1541,11 @@ internal sealed class Vp8Encoder : IDisposable
                 var hasY2 = mb.YMode != Vp8Tables.BPred;
 
                 // Modes (first partition)
-                header.WriteBool(_skipProbability, !mb.HasCoefficients);
+                if (_skipFlag)
+                {
+                    header.WriteBool(_skipProbability, !mb.HasCoefficients);
+                }
+
                 header.WriteTree(KeyFrameYModeTree, Vp8Tables.KeyFrameYModeProbabilities, mb.YMode);
                 var above = aboveModes.AsSpan(mbX * 4, 4);
                 if (!hasY2)
@@ -1403,7 +1578,7 @@ internal sealed class Vp8Encoder : IDisposable
 
                 // Tokens
                 var nonZeroAbove = aboveNonZero.AsSpan(mbX * 9, 9);
-                if (!mb.HasCoefficients)
+                if (!mb.HasCoefficients && _skipFlag)
                 {
                     nonZeroAbove[..8].Clear();
                     leftNonZero.AsSpan(0, 8).Clear();
@@ -1427,7 +1602,7 @@ internal sealed class Vp8Encoder : IDisposable
         header.Flush();
         tokens.Flush();
         var firstPartition = header.WrittenMemory.Span;
-        if (firstPartition.Length > MaxFirstPartitionSize)
+        if (firstPartition.Length > _maxFirstPartitionSize)
             return false;
 
         _output?.Dispose();
@@ -1486,7 +1661,14 @@ internal sealed class Vp8Encoder : IDisposable
             }
         }
 
-        // The skip flag: its probability from the macroblock statistics
+        // The skip flag (left out when the modes need its bits: every macroblock then codes its tokens): its probability from
+        // the macroblock statistics
+        if (!_skipFlag)
+        {
+            d.WriteBit(false);
+            return;
+        }
+
         var skipped = 0;
         foreach (var mb in _macroblocks)
         {

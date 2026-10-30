@@ -3,12 +3,12 @@ title: Query strings
 description: Parse a query string, and add, replace or remove the query string parameters of a URL.
 ---
 
-`QueryStringUtilities` reads the parameters of a query string and returns new URLs with parameters added, replaced or
+[QueryStringUtilities](cref:Meziantou.Framework.QueryStringUtilities) reads the parameters of a query string and returns new URLs with parameters added, replaced or
 removed. The URLs are strings, absolute or relative, and the fragment (`#…`) is kept at the end.
 
 ## Parse a query string
 
-`ParseQuery` returns a `QueryStringParameterCollection`: the parameters in the order of the query string, each with
+[ParseQuery](cref:Meziantou.Framework.QueryStringUtilities.ParseQuery) returns a [QueryStringParameterCollection](cref:Meziantou.Framework.QueryStringParameterCollection): the parameters in the order of the query string, each with
 its values as `StringValues`:
 
 <!-- ref:../../tests/Meziantou.Framework.Uri.Tests/QueryStringUtilitiesTests.cs;region=QueryStringUtilities_ParseQuery;format=md-fenced-code-block;dedent=true -->
@@ -40,7 +40,7 @@ Assert.True(QueryStringUtilities.ParseQuery("?").IsEmpty);
 - A name that appears several times has several values, in order. A name is compared with the exact case: `Tag` and
   `tag` are two parameters.
 - A missing name returns `StringValues.Empty`.
-- `ParseNullableQuery` returns `null` for an empty query string, where `ParseQuery` returns an empty collection.
+- [ParseNullableQuery](cref:Meziantou.Framework.QueryStringUtilities.ParseNullableQuery) returns `null` for an empty query string, where [ParseQuery](cref:Meziantou.Framework.QueryStringUtilities.ParseQuery) returns an empty collection.
 
 ## Add, replace and remove parameters
 
@@ -48,10 +48,10 @@ Each method takes a URL and returns a new one:
 
 | Method | Effect |
 | --- | --- |
-| `AddQueryString` | Appends parameters after the existing ones, which stay as they are. |
-| `AddOrReplaceQueryString` | Replaces every value of the parameters that exist, keeping their position, and appends the others. |
-| `RemoveQueryString` | Removes a parameter and all its values. |
-| `SetQueryString` | Replaces the whole query string. |
+| [AddQueryString](cref:Meziantou.Framework.QueryStringUtilities.AddQueryString) | Appends parameters after the existing ones, which stay as they are. |
+| [AddOrReplaceQueryString](cref:Meziantou.Framework.QueryStringUtilities.AddOrReplaceQueryString) | Replaces every value of the parameters that exist, keeping their position, and appends the others. |
+| [RemoveQueryString](cref:Meziantou.Framework.QueryStringUtilities.RemoveQueryString) | Removes a parameter and all its values. |
+| [SetQueryString](cref:Meziantou.Framework.QueryStringUtilities.SetQueryString) | Replaces the whole query string. |
 
 <!-- ref:../../tests/Meziantou.Framework.Uri.Tests/QueryStringUtilitiesTests.cs;region=QueryStringUtilities_EditQuery;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -82,14 +82,14 @@ Assert.Equal("https://example.com/?q=a%20b&debug=&page=2", QueryStringUtilities.
 - Names and values are percent-encoded; a space becomes `%20`.
 - The overloads take one name and value, or several parameters as tuples, `KeyValuePair` values or a dictionary, with
   `string` or `StringValues` values.
-- A `null` value adds nothing. With `AddOrReplaceQueryString`, it removes the parameter.
-- `AddOrReplaceQueryString`, `RemoveQueryString` and `SetQueryString` write the whole query string again, so the
+- A `null` value adds nothing. With [AddOrReplaceQueryString](cref:Meziantou.Framework.QueryStringUtilities.AddOrReplaceQueryString), it removes the parameter.
+- [AddOrReplaceQueryString](cref:Meziantou.Framework.QueryStringUtilities.AddOrReplaceQueryString), [RemoveQueryString](cref:Meziantou.Framework.QueryStringUtilities.RemoveQueryString) and [SetQueryString](cref:Meziantou.Framework.QueryStringUtilities.SetQueryString) write the whole query string again, so the
   parameters they keep are encoded again: `?q=a+b` becomes `?q=a%20b`, which has the same meaning, and `?debug` becomes
   `?debug=`.
 
 ## Edit a parsed query string
 
-For several changes, edit the `QueryStringParameterCollection` and write it back with `SetQueryString`:
+For several changes, edit the [QueryStringParameterCollection](cref:Meziantou.Framework.QueryStringParameterCollection) and write it back with [SetQueryString](cref:Meziantou.Framework.QueryStringUtilities.SetQueryString):
 
 <!-- ref:../../tests/Meziantou.Framework.Uri.Tests/QueryStringUtilitiesTests.cs;region=QueryStringParameterCollection_Edit;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -113,8 +113,8 @@ Assert.Equal(
 | `Set(name, values)`, the indexer | Replaces the values of the parameter, or adds it at the end. |
 | `Append(name, value)` | Adds values to the parameter, or adds it at the end. |
 | `Remove(name)` | Removes the parameter and all its values. |
-| `Clear()` | Removes every parameter. |
-| `Count`, `IsEmpty` | The number of distinct parameter names. |
+| [Clear()](cref:Meziantou.Framework.QueryStringParameterCollection.Clear) | Removes every parameter. |
+| [Count](cref:Meziantou.Framework.QueryStringParameterCollection.Count), [IsEmpty](cref:Meziantou.Framework.QueryStringParameterCollection.IsEmpty) | The number of distinct parameter names. |
 
 ## Next steps
 

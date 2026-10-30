@@ -7,7 +7,7 @@ The grammars flag some constructs as illegal, such as a character where the lang
 illegal lexeme is written as plain text and the rest of the code is still highlighted, so a snippet with a typo, or a
 fragment cut from a larger file, is still readable.
 
-Set `HighlightOptions.IgnoreIllegals` to `false` to get the whole result as plain text instead, as soon as the code has
+Set [HighlightOptions.IgnoreIllegals](cref:Meziantou.Framework.SyntaxHighlighting.HighlightOptions.IgnoreIllegals) to `false` to get the whole result as plain text instead, as soon as the code has
 an illegal lexeme:
 
 <!-- ref:../../tests/Meziantou.Framework.SyntaxHighlighting.Tests/HighlighterTests.cs;region=SyntaxHighlighter_IgnoreIllegals;format=md-fenced-code-block;dedent=true -->

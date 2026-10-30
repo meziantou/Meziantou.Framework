@@ -360,6 +360,25 @@ public sealed class GeometryTests
     }
 
     [Fact]
+    public void ComposingAffineTransformsThatOverflowNamesTheSecondTransform()
+    {
+        var scale = AffineTransform.CreateScale(1e200, 1);
+        var translation = AffineTransform.CreateTranslation(double.MaxValue, 0);
+        foreach (var (first, second) in new[] { (scale, scale), (translation, translation) })
+        {
+            var exception = Assert.Throws<ArgumentException>("next", () => first.Then(second));
+            Assert.StartsWith("A coefficient of the combined transformation is not a finite number.", exception.Message);
+            Assert.Throws<ArgumentException>("second", () => AffineTransform.Multiply(first, second));
+            Assert.Throws<ArgumentException>("right", () => _ = first * second);
+        }
+
+        var large = AffineTransform.CreateScale(Math.ScaleB(1, 500), 1);
+        Assert.Equal(AffineTransform.CreateScale(Math.ScaleB(1, 1000), 1), large.Then(large));
+        Assert.Equal(AffineTransform.CreateScale(Math.ScaleB(1, 1000), 1), large * large);
+        Assert.Equal(AffineTransform.Identity, translation.Then(AffineTransform.CreateTranslation(-double.MaxValue, 0)));
+    }
+
+    [Fact]
     public void TheDefaultProjectiveTransformIsTheIdentity()
     {
         var identity = default(ProjectiveTransform);
@@ -472,6 +491,26 @@ public sealed class GeometryTests
         Assert.Throws<ArgumentOutOfRangeException>(() => Transform3D.CreatePerspective(-1));
         Assert.Throws<ArgumentException>(() => new ProjectiveTransform(1e200, 0, 0, 0, 1, 0, 0, 0, 1).Then(new ProjectiveTransform(1e200, 0, 0, 0, 1, 0, 0, 0, 1)));
         Assert.Throws<ArgumentException>(() => Transform3D.CreateScale(1e200, 1, 1).Then(Transform3D.CreateScale(1e200, 1, 1)));
+    }
+
+    [Fact]
+    public void ComposingPerspectiveTransformsThatOverflowNamesTheSecondTransform()
+    {
+        var plane = new ProjectiveTransform(1e200, 0, 0, 0, 1, 0, 0, 0, 1);
+        var exception = Assert.Throws<ArgumentException>("next", () => plane.Then(plane));
+        Assert.StartsWith("A coefficient of the combined transformation is not a finite number.", exception.Message);
+        Assert.Throws<ArgumentException>("second", () => ProjectiveTransform.Multiply(plane, plane));
+        Assert.Throws<ArgumentException>("right", () => _ = plane * plane);
+
+        var space = Transform3D.CreateScale(1e200, 1, 1);
+        Assert.Throws<ArgumentException>("next", () => space.Then(space));
+        Assert.Throws<ArgumentException>("second", () => Transform3D.Multiply(space, space));
+        Assert.Throws<ArgumentException>("right", () => _ = space * space);
+
+        var largePlane = new ProjectiveTransform(Math.ScaleB(1, 500), 0, 0, 0, 1, 0, 0, 0, 1);
+        Assert.Equal(new ProjectiveTransform(Math.ScaleB(1, 1000), 0, 0, 0, 1, 0, 0, 0, 1), largePlane * largePlane);
+        var largeSpace = Transform3D.CreateScale(Math.ScaleB(1, 500), 1, 1);
+        Assert.Equal(Transform3D.CreateScale(Math.ScaleB(1, 1000), 1, 1), largeSpace * largeSpace);
     }
 
     [Fact]

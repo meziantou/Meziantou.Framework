@@ -1602,6 +1602,77 @@ public sealed class HeicEncoderTests
     }
 
     [Fact]
+    public void TheLevelHoldsTheLargestCodedPicture()
+    {
+        // A lossless picture of noise has about one byte per sample: more than the Monochrome profile allows at level 1
+        // (ITU-T H.265, clause A.4.2, item g: FormatCapabilityFactor 1.0 x 36,864 samples / MinCr 2 = 18,432 bytes), at
+        // levels 2 and 2.1 (the same limit) and at level 3 (MaxLumaSr / 300 = 55,296 samples: 27,648 bytes), but not at
+        // level 3.1 (110,592 samples: 55,296 bytes). A flat picture of that size is at level 1
+        var configuration = new ImageConfiguration { MaxDegreeOfParallelism = 2 };
+        var noise = new byte[192 * 192];
+        new Random(42).NextBytes(noise);
+        using var image = Image.ImportPixelBytes<Gray8>(noise, 192, 192, configuration: configuration);
+        var data = Encode(image, new HeicEncoder { Effort = 0 });
+        var reader = ReferenceHeif.Parse(data);
+        var item = reader.PrimaryItem!;
+        var length = reader.ReadItemData(item).Length;
+        Assert.True(length is > 27_648 and <= 55_000, $"{length} bytes");
+        Assert.Equal((93, false), (item.HevcConfiguration!.LevelIdc, item.HevcConfiguration.TierFlag));
+        AssertStream(item.HevcConfiguration, StreamKind.Still, chromaFormat: 0, bitDepth: 8, codedSize: (192, 192));
+        AssertPixels(data, noise);
+
+        // The tiles of a grid share their configuration, which holds the largest tile, whichever worker codes it: the first
+        // tile is flat, and the second one, which the second worker codes, is the noise
+        var pixels = new byte[384 * 192];
+        for (var y = 0; y < 192; y++)
+        {
+            pixels.AsSpan(y * 384, 192).Fill(100);
+            noise.AsSpan(y * 192, 192).CopyTo(pixels.AsSpan((y * 384) + 192));
+        }
+
+        using var grid = Image.ImportPixelBytes<Gray8>(pixels, 384, 192, configuration: configuration);
+        data = Encode(grid, new HeicEncoder { Effort = 0, GridTileSize = new Size(192, 192) });
+        reader = ReferenceHeif.Parse(data);
+        var tiles = reader.GetGridTiles(reader.PrimaryItem!);
+        Assert.HasCount(2, tiles);
+        Assert.HasCountLessThan(18_432, reader.ReadItemData(tiles[0]));
+        Assert.HasCountGreaterThan(27_648, reader.ReadItemData(tiles[1]));
+        foreach (var tile in tiles)
+        {
+            Assert.Equal((93, false), (tile.HevcConfiguration!.LevelIdc, tile.HevcConfiguration.TierFlag));
+            AssertStream(tile.HevcConfiguration, StreamKind.Still, chromaFormat: 0, bitDepth: 8, codedSize: (192, 192));
+        }
+
+        AssertPixels(data, pixels);
+
+        // A sequence whose first image is flat and whose second image is the noise: the track holds both, and the first
+        // image, which is also the primary item, has the configuration of the track
+        using var sequence = new Image<Gray8>(192, 192, new Gray8(100), configuration);
+        sequence.AppendFrame(image.Frames[0]);
+        data = Encode(sequence, new HeicEncoder { Effort = 0 });
+        reader = ReferenceHeif.Parse(data);
+        var track = reader.ColorTrack!;
+        Assert.True(track.Samples[0].Size < 18_432);
+        Assert.True(track.Samples[1].Size > 27_648);
+        Assert.Equal((93, false), (track.HevcConfiguration!.LevelIdc, track.HevcConfiguration.TierFlag));
+        AssertStream(track.HevcConfiguration, StreamKind.Sequence, chromaFormat: 0, bitDepth: 8, codedSize: (192, 192));
+        Assert.Equal(track.ConfigurationRecord.ToArray(), reader.PrimaryItem!.Find("hvcC")!.Payload.ToArray());
+        using var decoded = Image.Load<Gray8>(data);
+        Assert.HasCount(2, decoded.Frames);
+        var actual = new byte[192 * 192];
+        decoded.Frames[1].CopyPixelBytesTo(actual);
+        Assert.Equal(noise, actual);
+
+        static void AssertPixels(byte[] data, byte[] expected)
+        {
+            using var decoded = Image.Load<Gray8>(data);
+            var actual = new byte[expected.Length];
+            decoded.Frames[0].CopyPixelBytesTo(actual);
+            Assert.Equal(expected, actual);
+        }
+    }
+
+    [Fact]
     public void ImagesLargerThanThePicturesOfTheFormatAreRejected()
     {
         // The sizes of the pictures are 16-bit fields of the sample entry of a track, and a picture is a whole number of

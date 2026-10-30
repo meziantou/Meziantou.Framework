@@ -5,7 +5,7 @@ description: Call the exports of your own files, of npm packages and of built-in
 
 ## Call an export
 
-`InvokeAsync` imports a module and calls one of its exports. The examples below use these three files, in the `scripts`
+[InvokeAsync](cref:Meziantou.Framework.NodeJs.NodeJsHost.InvokeAsync) imports a module and calls one of its exports. The examples below use these three files, in the `scripts`
 folder of the output directory.
 
 `slug.mjs`, an ES module with named exports:
@@ -91,9 +91,9 @@ Modules are loaded using `import()`, so the module specifier follows the rules o
 - **A built-in module**, such as `node:path` or `node:fs/promises`.
 - **An npm package name**, such as `marked`.
 
-`InvokeAsync` accepts no other URL: a `data:` URL, which contains the code to run, is rejected.
+[InvokeAsync](cref:Meziantou.Framework.NodeJs.NodeJsHost.InvokeAsync) accepts no other URL: a `data:` URL, which contains the code to run, is rejected.
 
-The working directory is `NodeJsHostOptions.WorkingDirectory`, or the current directory of your application when it is
+The working directory is [NodeJsHostOptions.WorkingDirectory](cref:Meziantou.Framework.NodeJs.NodeJsHostOptions.WorkingDirectory), or the current directory of your application when it is
 not set. See [Configuring the Node.js process](07-ConfiguringTheProcess.md).
 
 ## Use npm packages

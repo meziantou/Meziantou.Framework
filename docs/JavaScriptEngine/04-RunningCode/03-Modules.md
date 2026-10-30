@@ -6,7 +6,7 @@ description: Write a module loader, run an ES module and its imports, load JSON,
 ## Write a module loader
 
 The engine does not read files: the modules that a script or a module imports are given by the module loader of the
-engine, a class that derives from `JsModuleLoader`. This loader serves the files of a dictionary, JSON and text files
+engine, a class that derives from [JsModuleLoader](cref:Meziantou.Framework.JavaScriptEngine.JsModuleLoader). This loader serves the files of a dictionary, JSON and text files
 for the `type` import attribute, and a module implemented in .NET:
 
 <!-- ref:../../../samples/Meziantou.Framework.JavaScriptEngine.Samples/AppModuleLoader.cs;region=JavaScriptEngine_ModuleLoader;format=md-fenced-code-block;dedent=true -->
@@ -82,16 +82,16 @@ public sealed class AppModuleLoader(IReadOnlyDictionary<string, string> files, I
 ```
 <!-- endref -->
 
-- `LoadImportedModule` receives each request: its `Specifier` (`'./format.js'`), its `Type` (the `type` import
-  attribute, or null), its `Realm` (where to create the module), and the module or script that imports it
-  (`ReferrerModule`, `ReferrerUrl`). Resolve relative specifiers against `ReferrerUrl` when your modules are in folders.
-- Complete the request with `Complete`, or fail it with `Fail`. A loader can complete a request later, for instance
+- [LoadImportedModule](cref:Meziantou.Framework.JavaScriptEngine.JsModuleLoader.LoadImportedModule) receives each request: its [Specifier](cref:Meziantou.Framework.JavaScriptEngine.JsModuleLoadRequest.Specifier) (`'./format.js'`), its [Type](cref:Meziantou.Framework.JavaScriptEngine.JsModuleLoadRequest.Type) (the `type` import
+  attribute, or null), its [Realm](cref:Meziantou.Framework.JavaScriptEngine.JsModuleLoadRequest.Realm) (where to create the module), and the module or script that imports it
+  ([ReferrerModule](cref:Meziantou.Framework.JavaScriptEngine.JsModuleLoadRequest.ReferrerModule), [ReferrerUrl](cref:Meziantou.Framework.JavaScriptEngine.JsModuleLoadRequest.ReferrerUrl)). Resolve relative specifiers against [ReferrerUrl](cref:Meziantou.Framework.JavaScriptEngine.JsModuleLoadRequest.ReferrerUrl) when your modules are in folders.
+- Complete the request with [Complete](cref:Meziantou.Framework.JavaScriptEngine.JsModuleLoadRequest.Complete), or fail it with [Fail](cref:Meziantou.Framework.JavaScriptEngine.JsModuleLoadRequest.Fail). A loader can complete a request later, for instance
   once a file is downloaded.
 - The same specifier from the same module must give the same module object each time: keep the modules you created.
-- `realm.ParseModule` creates a JavaScript module; `CreateJsonModule`, `CreateTextModule` and `CreateBytesModule`
-  create the modules of the `json`, `text` and `bytes` types; `CreateSyntheticModule` creates a module whose exports
+- `realm.ParseModule` creates a JavaScript module; [CreateJsonModule](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.CreateJsonModule), [CreateTextModule](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.CreateTextModule) and [CreateBytesModule](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.CreateBytesModule)
+  create the modules of the `json`, `text` and `bytes` types; [CreateSyntheticModule](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.CreateSyntheticModule) creates a module whose exports
   are set from .NET.
-- `InitializeImportMeta` fills the `import.meta` object of each JavaScript module.
+- [InitializeImportMeta](cref:Meziantou.Framework.JavaScriptEngine.JsModuleLoader.InitializeImportMeta) fills the `import.meta` object of each JavaScript module.
 
 ## Run a module
 
@@ -139,13 +139,13 @@ using (engine.Enter())
 ```
 <!-- endref -->
 
-- `LoadRequestedModules` asks the loader for every module of the graph. It returns a promise, settled from `RunJobs`.
-- `Link` resolves the imports. It throws a `JsException` (a `SyntaxError`) when a module does not export a name that
+- [LoadRequestedModules](cref:Meziantou.Framework.JavaScriptEngine.JsModule.LoadRequestedModules) asks the loader for every module of the graph. It returns a promise, settled from [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs).
+- [Link](cref:Meziantou.Framework.JavaScriptEngine.JsModule.Link) resolves the imports. It throws a [JsException](cref:Meziantou.Framework.JavaScriptEngine.JsException) (a `SyntaxError`) when a module does not export a name that
   another one imports.
-- `Evaluate` runs the modules and returns a promise. A module that uses top-level `await` completes from `RunJobs`.
-- `GetNamespace` returns the namespace object of a linked module: its exports are its properties, and the default
+- [Evaluate](cref:Meziantou.Framework.JavaScriptEngine.JsModule.Evaluate) runs the modules and returns a promise. A module that uses top-level `await` completes from [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs).
+- [GetNamespace](cref:Meziantou.Framework.JavaScriptEngine.JsModule.GetNamespace) returns the namespace object of a linked module: its exports are its properties, and the default
   export is the `default` property.
-- `Status` tells where the module is (`Unlinked`, `Linked`, `Evaluated`...).
+- [Status](cref:Meziantou.Framework.JavaScriptEngine.JsModule.Status) tells where the module is ([Unlinked](cref:Meziantou.Framework.JavaScriptEngine.JsModuleStatus.Unlinked), [Linked](cref:Meziantou.Framework.JavaScriptEngine.JsModuleStatus.Linked), [Evaluated](cref:Meziantou.Framework.JavaScriptEngine.JsModuleStatus.Evaluated)...).
 
 A module without imports needs no loader: parse it and run the same steps.
 
@@ -175,13 +175,13 @@ Assert.Equal("TypeError: Cannot find the module './missing.js'", engine.ToString
 
 - `Fail(string)` rejects the loading with a `TypeError`; `Fail(JsException)` rejects it with the error of the
   exception, such as the `SyntaxError` of a module that is not valid.
-- When the evaluation throws, `module.HasEvaluationError` is true, `EvaluationError` is the thrown value and
-  `EvaluationErrorLocation` is where it was thrown.
-- `realm.ParseModule` itself throws a `JsException` (a `SyntaxError`) for a module that is not valid.
+- When the evaluation throws, `module.HasEvaluationError` is true, [EvaluationError](cref:Meziantou.Framework.JavaScriptEngine.JsModule.EvaluationError) is the thrown value and
+  [EvaluationErrorLocation](cref:Meziantou.Framework.JavaScriptEngine.JsModule.EvaluationErrorLocation) is where it was thrown.
+- `realm.ParseModule` itself throws a [JsException](cref:Meziantou.Framework.JavaScriptEngine.JsException) (a `SyntaxError`) for a module that is not valid.
 
 ## Import modules from scripts
 
-A script can import a module with `import()`. The request goes to the same loader, with `IsDynamicImport` set, and the
+A script can import a module with `import()`. The request goes to the same loader, with [IsDynamicImport](cref:Meziantou.Framework.JavaScriptEngine.JsModuleLoadRequest.IsDynamicImport) set, and the
 module loads from the job queue:
 
 <!-- ref:../../../tests/Meziantou.Framework.JavaScriptEngine.Tests/JsEngineTests.cs;region=JavaScriptEngine_DynamicImport;format=md-fenced-code-block;dedent=true -->
@@ -207,6 +207,6 @@ Without a module loader, the scripts and the modules cannot import modules.
 ## Source phase imports
 
 `import source x from '...'` and `import.source()` give the *module source* of a module, set by the loader in
-`module.ModuleSource` before it completes the request. The object is a `JsHostObject` that extends
-`realm.AbstractModuleSource` and whose `ModuleSourceClassName` is set (for instance `WebAssembly.Module`). The source
+`module.ModuleSource` before it completes the request. The object is a [JsHostObject](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject) that extends
+`realm.AbstractModuleSource` and whose [ModuleSourceClassName](cref:Meziantou.Framework.JavaScriptEngine.JsHostObject.ModuleSourceClassName) is set (for instance `WebAssembly.Module`). The source
 phase import of a module without module source, such as a JavaScript module, throws a `SyntaxError`.

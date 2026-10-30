@@ -8,26 +8,26 @@ media queries, the viewport units (`vw`, `vh`), the layout and the screenshots u
 
 ## Set the viewport
 
-Set `BrowsingContextOptions.Viewport` when you create the browsing context, or `BrowsingContext.Viewport` later: the
+Set [BrowsingContextOptions.Viewport](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.Viewport) when you create the browsing context, or [BrowsingContext.Viewport](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContext.Viewport) later: the
 styles and the layout follow the new viewport.
 
-| `ViewportOptions` | Effect |
+| [ViewportOptions](cref:Meziantou.Framework.WebPlatform.Dom.ViewportOptions) | Effect |
 | --- | --- |
-| `Width`, `Height` | The size of the viewport, in CSS pixels |
-| `DevicePixelRatio` | The number of device pixels per CSS pixel: the `resolution` media feature and the size of the screenshots |
-| `ScreenWidth`, `ScreenHeight` | The size of the screen (`device-width`, `screen.width`): the viewport by default |
-| `IsMobile`, `HasTouch` | A mobile device: the `viewport` meta element sets the layout viewport; a touch screen: `pointer: coarse`, `hover: none` |
-| `MediaType` | `screen` (default) or `print` |
-| `PreferredColorScheme`, `PreferredContrast` | `prefers-color-scheme`, `prefers-contrast` |
-| `PrefersReducedMotion`, `PrefersReducedTransparency` | `prefers-reduced-motion`, `prefers-reduced-transparency` |
-| `ForcedColors`, `ForcedColorsTheme` | The forced colors mode (`forced-colors: active`) and its palette |
-| `ScrollbarsVisible`, `ScrollbarThickness` | Classic scrollbars, which take space in the layout, or overlay scrollbars |
+| [Width](cref:Meziantou.Framework.WebPlatform.Dom.ViewportOptions.Width), [Height](cref:Meziantou.Framework.WebPlatform.Dom.ViewportOptions.Height) | The size of the viewport, in CSS pixels |
+| [DevicePixelRatio](cref:Meziantou.Framework.WebPlatform.Dom.ViewportOptions.DevicePixelRatio) | The number of device pixels per CSS pixel: the `resolution` media feature and the size of the screenshots |
+| [ScreenWidth](cref:Meziantou.Framework.WebPlatform.Dom.ViewportOptions.ScreenWidth), [ScreenHeight](cref:Meziantou.Framework.WebPlatform.Dom.ViewportOptions.ScreenHeight) | The size of the screen (`device-width`, `screen.width`): the viewport by default |
+| [IsMobile](cref:Meziantou.Framework.WebPlatform.Dom.ViewportOptions.IsMobile), [HasTouch](cref:Meziantou.Framework.WebPlatform.Dom.ViewportOptions.HasTouch) | A mobile device: the `viewport` meta element sets the layout viewport; a touch screen: `pointer: coarse`, `hover: none` |
+| [MediaType](cref:Meziantou.Framework.WebPlatform.Dom.ViewportOptions.MediaType) | `screen` (default) or `print` |
+| [PreferredColorScheme](cref:Meziantou.Framework.WebPlatform.Dom.PreferredColorScheme), [PreferredContrast](cref:Meziantou.Framework.WebPlatform.Dom.PreferredContrast) | `prefers-color-scheme`, `prefers-contrast` |
+| [PrefersReducedMotion](cref:Meziantou.Framework.WebPlatform.Dom.ViewportOptions.PrefersReducedMotion), [PrefersReducedTransparency](cref:Meziantou.Framework.WebPlatform.Dom.ViewportOptions.PrefersReducedTransparency) | `prefers-reduced-motion`, `prefers-reduced-transparency` |
+| [ForcedColors](cref:Meziantou.Framework.WebPlatform.Dom.ViewportOptions.ForcedColors), [ForcedColorsTheme](cref:Meziantou.Framework.WebPlatform.Dom.ForcedColorsTheme) | The forced colors mode (`forced-colors: active`) and its palette |
+| [ScrollbarsVisible](cref:Meziantou.Framework.WebPlatform.Dom.ViewportOptions.ScrollbarsVisible), [ScrollbarThickness](cref:Meziantou.Framework.WebPlatform.Dom.ViewportOptions.ScrollbarThickness) | Classic scrollbars, which take space in the layout, or overlay scrollbars |
 
-`BrowsingContextOptions.UserAgent` sets `navigator.userAgent` and the `User-Agent` header of the requests.
+[BrowsingContextOptions.UserAgent](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.UserAgent) sets `navigator.userAgent` and the `User-Agent` header of the requests.
 
 ## Emulate a device
 
-`DeviceDescriptor` describes a device with the names of the device descriptors of Playwright, and creates its viewport.
+[DeviceDescriptor](cref:Meziantou.Framework.WebPlatform.Dom.DeviceDescriptor) describes a device with the names of the device descriptors of Playwright, and creates its viewport.
 The library has no list of devices: copy the values of the device you need.
 
 <!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Dom/CssomViewTests.cs;region=DeviceDescriptor_Example;format=md-fenced-code-block;dedent=true -->

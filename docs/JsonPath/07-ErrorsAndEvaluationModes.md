@@ -8,7 +8,7 @@ the document does not have the expected shape.
 
 ## Invalid queries
 
-`JsonPath.Parse` throws a `FormatException`, and `JsonPath.TryParse` returns `false`, for every query that is not
+[JsonPath.Parse](cref:Meziantou.Framework.Json.JsonPath.Parse) throws a `FormatException`, and [JsonPath.TryParse](cref:Meziantou.Framework.Json.JsonPath.TryParse) returns `false`, for every query that is not
 well-formed and valid, as RFC 9535 requires. Some of them look plausible:
 
 <!-- ref:../../tests/Meziantou.Framework.JsonPath.Tests/JsonPathEvaluateTests.cs;region=JsonPath_InvalidQueries;format=md-fenced-code-block;dedent=true -->
@@ -24,17 +24,17 @@ Assert.False(JsonPath.TryParse("$[?@.name =~ /^A/]", out _));          // use ma
 ```
 <!-- endref -->
 
-The message of the `FormatException` describes the problem. Use `TryParse` for queries that users type or that come
-from configuration files, and `Parse` for queries written in your code. The rules for comparisons and functions are in
+The message of the `FormatException` describes the problem. Use [TryParse](cref:Meziantou.Framework.Json.JsonPath.TryParse) for queries that users type or that come
+from configuration files, and [Parse](cref:Meziantou.Framework.Json.JsonPath.Parse) for queries written in your code. The rules for comparisons and functions are in
 [Filters](04-Filters.md#rules-for-the-queries-in-a-test) and [Functions](05-Functions.md#type-rules).
 
 ## Lax and strict evaluation
 
-`Evaluate` and `EvaluateValue` take an optional `JsonPathEvaluationMode`:
+[Evaluate](cref:Meziantou.Framework.Json.JsonPath.Evaluate) and [EvaluateValue](cref:Meziantou.Framework.Json.JsonPath.EvaluateValue) take an optional [JsonPathEvaluationMode](cref:Meziantou.Framework.Json.JsonPathEvaluationMode):
 
-- `JsonPathEvaluationMode.Lax`, the default, follows RFC 9535: a selector that does not apply selects nothing. A missing
+- [JsonPathEvaluationMode.Lax](cref:Meziantou.Framework.Json.JsonPathEvaluationMode.Lax), the default, follows RFC 9535: a selector that does not apply selects nothing. A missing
   member, an index outside the array or a name on an array is not an error.
-- `JsonPathEvaluationMode.Strict` throws a `JsonPathEvaluationException` for these cases instead. Use it when the
+- [JsonPathEvaluationMode.Strict](cref:Meziantou.Framework.Json.JsonPathEvaluationMode.Strict) throws a [JsonPathEvaluationException](cref:Meziantou.Framework.Json.JsonPathEvaluationException) for these cases instead. Use it when the
   document must have the shape the query expects, for example to validate a configuration file.
 
 <!-- ref:../../tests/Meziantou.Framework.JsonPath.Tests/JsonPathEvaluateTests.cs;region=JsonPath_EvaluationModes;format=md-fenced-code-block;dedent=true -->
@@ -86,9 +86,9 @@ result is returned.
 
 | Exception | Thrown by | When |
 | --- | --- | --- |
-| `FormatException` | `Parse` | The query is not valid JSONPath, or nests filters and function calls more than 64 levels deep |
-| `ArgumentNullException` | `Parse`, `Evaluate`, `EvaluateValue` | The query or the navigator is `null` |
-| `JsonPathEvaluationException` | `Evaluate`, `EvaluateValue` | A path error in strict mode; in both modes, a descendant segment or a comparison that goes more than 256 levels deep |
+| `FormatException` | [Parse](cref:Meziantou.Framework.Json.JsonPath.Parse) | The query is not valid JSONPath, or nests filters and function calls more than 64 levels deep |
+| `ArgumentNullException` | [Parse](cref:Meziantou.Framework.Json.JsonPath.Parse), [Evaluate](cref:Meziantou.Framework.Json.JsonPath.Evaluate), [EvaluateValue](cref:Meziantou.Framework.Json.JsonPath.EvaluateValue) | The query or the navigator is `null` |
+| [JsonPathEvaluationException](cref:Meziantou.Framework.Json.JsonPathEvaluationException) | [Evaluate](cref:Meziantou.Framework.Json.JsonPath.Evaluate), [EvaluateValue](cref:Meziantou.Framework.Json.JsonPath.EvaluateValue) | A path error in strict mode; in both modes, a descendant segment or a comparison that goes more than 256 levels deep |
 
-`JsonPathEvaluationException` derives from `InvalidOperationException`. The depth limits are described in
+[JsonPathEvaluationException](cref:Meziantou.Framework.Json.JsonPathEvaluationException) derives from `InvalidOperationException`. The depth limits are described in
 [Limitations](09-Limitations.md#limits).

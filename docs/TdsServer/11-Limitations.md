@@ -21,7 +21,7 @@ The library implements the protocol of SQL Server, not a database. This page lis
 - **No output parameters, return values or row counts**: `ExecuteNonQuery` returns -1.
 - **Errors close the `SqlClient` connection**: the server sends errors with the "server error" status, which
   `SqlClient` treats as severe. See [Return an error](06-ReturningResults.md#return-an-error).
-- **Text columns use one collation.** `Variant`, `UserDefined` and `Table` columns are sent as `nvarchar` text.
+- **Text columns use one collation.** [Variant](cref:Meziantou.Framework.Tds.Handler.TdsColumnType.Variant), [UserDefined](cref:Meziantou.Framework.Tds.Handler.TdsColumnType.UserDefined) and `Table` columns are sent as `nvarchar` text.
 - **No SQL Server Browser**: clients connect with `host,port`, not with an instance name.
 
 ## Authentication and encryption

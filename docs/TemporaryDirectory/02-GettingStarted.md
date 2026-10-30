@@ -38,10 +38,10 @@ Assert.False(Directory.Exists(directoryPath));
 ```
 <!-- endref -->
 
-- `TemporaryDirectory.Create` creates a new, empty folder with a unique name in the temporary folder of the user.
-- `CreateTextFile` creates a file in it, and the folders that contain the file.
-- The `/` operator combines the folder with a relative path and returns a `FullPath`, without creating anything.
-- Disposing the `TemporaryDirectory` deletes the folder and its content.
+- [TemporaryDirectory.Create](cref:Meziantou.Framework.TemporaryDirectory.Create) creates a new, empty folder with a unique name in the temporary folder of the user.
+- [CreateTextFile](cref:Meziantou.Framework.TemporaryDirectory.CreateTextFile) creates a file in it, and the folders that contain the file.
+- The `/` operator combines the folder with a relative path and returns a [FullPath](cref:Meziantou.Framework.FullPath), without creating anything.
+- Disposing the [TemporaryDirectory](cref:Meziantou.Framework.TemporaryDirectory) deletes the folder and its content.
 
 ## Use it in tests
 

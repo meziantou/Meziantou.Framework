@@ -5,13 +5,13 @@ description: Read the intermediate renderings of progressive JPEG, interlaced PN
 
 Some files store an image at increasing levels of detail: a coarse version comes first, then finer ones. A viewer can
 show the coarse version as soon as its bytes arrive, as a browser does with a slow download. The readers of the library
-give these intermediate renderings with `ReadFrameRefinementInto`.
+give these intermediate renderings with [ReadFrameRefinementInto](cref:Meziantou.Framework.Imaging.ImageReader{TPixel}.ReadFrameRefinementInto).
 
 ## Read the renderings of a frame
 
-Open a reader on the stream, create an image of the size of the canvas, and call `ReadFrameRefinementInto` until it
+Open a reader on the stream, create an image of the size of the canvas, and call [ReadFrameRefinementInto](cref:Meziantou.Framework.Imaging.ImageReader{TPixel}.ReadFrameRefinementInto) until it
 returns the final rendering. Each call writes a complete image of the frame's size into your image, and returns a
-`FrameRefinement` that describes it:
+[FrameRefinement](cref:Meziantou.Framework.Imaging.FrameRefinement) that describes it:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_ProgressiveRead;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -41,14 +41,14 @@ The first three renderings of a progressive JPEG file, then the frame itself:
 
 ![Four versions of a landscape: made of 8x8 blocks, then sharper but with soft edges, then nearly sharp, then the final image](images/ProgressiveJpegRenderings.png)
 
-| `FrameRefinement` property | Meaning |
+| [FrameRefinement](cref:Meziantou.Framework.Imaging.FrameRefinement) property | Meaning |
 | --- | --- |
-| `IsFinal` | `true` when the image holds the frame itself: the same pixels as `ReadFrameInto`. The next call starts the next frame of an animation. |
-| `Downsampling` | How coarse the rendering is in each direction: 8 when it has one value per block of 8x8 pixels, then 4 and 2, and 1 for full detail. The image always has the size of the frame. |
-| `CompletedPasses` | The number of passes or scans of the frame that the rendering holds. |
+| [IsFinal](cref:Meziantou.Framework.Imaging.FrameRefinement.IsFinal) | `true` when the image holds the frame itself: the same pixels as [ReadFrameInto](cref:Meziantou.Framework.Imaging.ImageReader{TPixel}.ReadFrameInto). The next call starts the next frame of an animation. |
+| [Downsampling](cref:Meziantou.Framework.Imaging.FrameRefinement.Downsampling) | How coarse the rendering is in each direction: 8 when it has one value per block of 8x8 pixels, then 4 and 2, and 1 for full detail. The image always has the size of the frame. |
+| [CompletedPasses](cref:Meziantou.Framework.Imaging.FrameRefinement.CompletedPasses) | The number of passes or scans of the frame that the rendering holds. |
 
-`ReadFrameRefinementIntoAsync` does the same with asynchronous I/O and a `CancellationToken`. `ReadFrame` and
-`ReadFrameInto` can be called at any time to skip the remaining renderings and read the frame itself. See
+[ReadFrameRefinementIntoAsync](cref:Meziantou.Framework.Imaging.ImageReader{TPixel}.ReadFrameRefinementIntoAsync) does the same with asynchronous I/O and a `CancellationToken`. [ReadFrame](cref:Meziantou.Framework.Imaging.ImageReader{TPixel}.ReadFrame) and
+[ReadFrameInto](cref:Meziantou.Framework.Imaging.ImageReader{TPixel}.ReadFrameInto) can be called at any time to skip the remaining renderings and read the frame itself. See
 [Streaming readers and writers](05-StreamingReadersAndWriters.md) for the readers.
 
 ## What each format gives
@@ -58,24 +58,24 @@ The first three renderings of a progressive JPEG file, then the frame itself:
 | Progressive JPEG | One after each scan, once every color component has its first scan |
 | Interlaced PNG (Adam7) | The passes completed by each piece of data that arrives; each missing pixel takes the value of a pixel of its block |
 | Progressive JPEG XL | The image at one eighth of its detail, then one rendering for each pass |
-| Any other file | None: the first call returns the frame, with `IsFinal` set |
+| Any other file | None: the first call returns the frame, with [IsFinal](cref:Meziantou.Framework.Imaging.FrameRefinement.IsFinal) set |
 
 - An interlaced PNG file gives renderings as its data arrives. When the whole file is already available, from a local
   file or bytes in memory, the first call can return the frame itself.
 - A small JPEG XL frame stored in a single section gives the frame at once.
 - The number of renderings and their pixels can change from one version of the library to the next: only the final
   rendering is guaranteed. Do not compare intermediate renderings in tests.
-- The renderings count toward the `MaxTotalPixels` limit, like frames. See [Resource limits](07-ResourceLimits.md).
+- The renderings count toward the [MaxTotalPixels](cref:Meziantou.Framework.Imaging.ImageResourceLimits.MaxTotalPixels) limit, like frames. See [Resource limits](07-ResourceLimits.md).
 
-To write files that can be shown this way, see the `Process` option of [JPEG](../10-Formats/04-Jpeg.md), the
-`Interlaced` option of [PNG](../10-Formats/02-Png.md) and the `Progressive` option of
+To write files that can be shown this way, see the [Process](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.Process) option of [JPEG](../10-Formats/04-Jpeg.md), the
+[Interlaced](cref:Meziantou.Framework.Imaging.Formats.PngEncoder.Interlaced) option of [PNG](../10-Formats/02-Png.md) and the [Progressive](cref:Meziantou.Framework.Imaging.Formats.JpegXlEncoder.Progressive) option of
 [JPEG XL](../10-Formats/15-JpegXl.md).
 
 ## Partial downloads
 
 An input that ends before the frame is complete is malformed, never a clean end. When the format allows it, the read
 that reaches the end of the input returns a last intermediate rendering of what was decoded, as a browser shows a
-partial download, and the next read throws an `InvalidImageContentException`:
+partial download, and the next read throws an [InvalidImageContentException](cref:Meziantou.Framework.Imaging.InvalidImageContentException):
 
 - the coefficients decoded so far of a progressive JPEG frame;
 - the passes decoded so far of an interlaced PNG image;

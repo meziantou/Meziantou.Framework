@@ -5,7 +5,7 @@ description: Strikethrough, subscript and highlight, typographic quotes and dash
 
 ## Strikethrough and other emphasis
 
-CommonMark has two kinds of emphasis: `*emphasis*` and `**strong**`. `UseEmphasisExtras` adds strikethrough,
+CommonMark has two kinds of emphasis: `*emphasis*` and `**strong**`. [UseEmphasisExtras](cref:Meziantou.Framework.Markdown.MarkdownExtensions.UseEmphasisExtras) adds strikethrough,
 subscript, superscript, inserted and marked text:
 
 <!-- ref:../../../tests/Meziantou.Framework.Markdown.Tests/TestEmphasisExtraOptions.cs;region=MarkdownExtensions_UseEmphasisExtras;format=md-fenced-code-block;dedent=true -->
@@ -19,13 +19,13 @@ Assert.Equal("<p><del>old</del> H<sub>2</sub>O x<sup>2</sup> <ins>inserted</ins>
 ```
 <!-- endref -->
 
-| Syntax | HTML | `EmphasisExtraOptions` flag |
+| Syntax | HTML | [EmphasisExtraOptions](cref:Meziantou.Framework.Markdown.Extensions.EmphasisExtras.EmphasisExtraOptions) flag |
 | --- | --- | --- |
-| `~~text~~` | `<del>` | `Strikethrough` |
-| `~text~` | `<sub>` | `Subscript` |
-| `^text^` | `<sup>` | `Superscript` |
-| `++text++` | `<ins>` | `Inserted` |
-| `==text==` | `<mark>` | `Marked` |
+| `~~text~~` | `<del>` | [Strikethrough](cref:Meziantou.Framework.Markdown.Extensions.EmphasisExtras.EmphasisExtraOptions.Strikethrough) |
+| `~text~` | `<sub>` | [Subscript](cref:Meziantou.Framework.Markdown.Extensions.EmphasisExtras.EmphasisExtraOptions.Subscript) |
+| `^text^` | `<sup>` | [Superscript](cref:Meziantou.Framework.Markdown.Extensions.EmphasisExtras.EmphasisExtraOptions.Superscript) |
+| `++text++` | `<ins>` | [Inserted](cref:Meziantou.Framework.Markdown.Extensions.EmphasisExtras.EmphasisExtraOptions.Inserted) |
+| `==text==` | `<mark>` | [Marked](cref:Meziantou.Framework.Markdown.Extensions.EmphasisExtras.EmphasisExtraOptions.Marked) |
 
 Pass the flags you want to enable only some of them. With strikethrough alone, as on GitHub, a single `~` stays a
 character:
@@ -44,7 +44,7 @@ Assert.Equal("<p><del>old</del> about ~20 items</p>\n", html);
 
 ## Typographic punctuation
 
-`UseSmartyPants` replaces straight quotes with curly quotes, `--` and `---` with dashes, `...` with an ellipsis, and
+[UseSmartyPants](cref:Meziantou.Framework.Markdown.MarkdownExtensions.UseSmartyPants) replaces straight quotes with curly quotes, `--` and `---` with dashes, `...` with an ellipsis, and
 `<<` `>>` with angle quotes:
 
 <!-- ref:../../../tests/Meziantou.Framework.Markdown.Tests/TestSmartyPants.cs;region=MarkdownExtensions_UseSmartyPants;format=md-fenced-code-block;dedent=true -->
@@ -58,7 +58,7 @@ Assert.Equal("<p>&ldquo;Hello&rdquo; &ndash; it's done&hellip; &laquo;right&raqu
 ```
 <!-- endref -->
 
-The replacements are HTML entities. `SmartyPantOptions.Mapping` changes them, for instance to follow the typographic
+The replacements are HTML entities. [SmartyPantOptions.Mapping](cref:Meziantou.Framework.Markdown.Extensions.SmartyPants.SmartyPantOptions.Mapping) changes them, for instance to follow the typographic
 rules of a language:
 
 <!-- ref:../../../tests/Meziantou.Framework.Markdown.Tests/TestSmartyPants.cs;region=SmartyPantOptions_Mapping;format=md-fenced-code-block;dedent=true -->
@@ -76,13 +76,13 @@ Assert.Equal("<p>«&nbsp;Bonjour&nbsp;»</p>\n", html);
 ```
 <!-- endref -->
 
-The keys of the mapping are the values of `SmartyPantType`: `Quote`, `LeftQuote`, `RightQuote`, `DoubleQuote`,
-`LeftDoubleQuote`, `RightDoubleQuote`, `LeftAngleQuote`, `RightAngleQuote`, `Ellipsis`, `Dash2` and `Dash3`. The values
+The keys of the mapping are the values of [SmartyPantType](cref:Meziantou.Framework.Markdown.Extensions.SmartyPants.SmartyPantType): [Quote](cref:Meziantou.Framework.Markdown.Extensions.SmartyPants.SmartyPantType.Quote), [LeftQuote](cref:Meziantou.Framework.Markdown.Extensions.SmartyPants.SmartyPantType.LeftQuote), [RightQuote](cref:Meziantou.Framework.Markdown.Extensions.SmartyPants.SmartyPantType.RightQuote), [DoubleQuote](cref:Meziantou.Framework.Markdown.Extensions.SmartyPants.SmartyPantType.DoubleQuote),
+[LeftDoubleQuote](cref:Meziantou.Framework.Markdown.Extensions.SmartyPants.SmartyPantType.LeftDoubleQuote), [RightDoubleQuote](cref:Meziantou.Framework.Markdown.Extensions.SmartyPants.SmartyPantType.RightDoubleQuote), [LeftAngleQuote](cref:Meziantou.Framework.Markdown.Extensions.SmartyPants.SmartyPantType.LeftAngleQuote), [RightAngleQuote](cref:Meziantou.Framework.Markdown.Extensions.SmartyPants.SmartyPantType.RightAngleQuote), [Ellipsis](cref:Meziantou.Framework.Markdown.Extensions.SmartyPants.SmartyPantType.Ellipsis), [Dash2](cref:Meziantou.Framework.Markdown.Extensions.SmartyPants.SmartyPantType.Dash2) and [Dash3](cref:Meziantou.Framework.Markdown.Extensions.SmartyPants.SmartyPantType.Dash3). The values
 are written to the HTML as they are.
 
 ## Emojis
 
-`UseEmojiAndSmiley` replaces shortcodes, such as `:tada:`, and smileys, such as `:)`, with emojis. Pass
+[UseEmojiAndSmiley](cref:Meziantou.Framework.Markdown.MarkdownExtensions.UseEmojiAndSmiley) replaces shortcodes, such as `:tada:`, and smileys, such as `:)`, with emojis. Pass
 `enableSmileys: false` to replace the shortcodes only:
 
 <!-- ref:../../../tests/Meziantou.Framework.Markdown.Tests/TestCustomEmojis.cs;region=MarkdownExtensions_UseEmojiAndSmiley;format=md-fenced-code-block;dedent=true -->
@@ -96,7 +96,7 @@ Assert.Equal("<p>Well done 🎉 😃</p>\n", html);
 ```
 <!-- endref -->
 
-To add shortcodes, or to replace the list, create an `EmojiMapping` (namespace
+To add shortcodes, or to replace the list, create an [EmojiMapping](cref:Meziantou.Framework.Markdown.Extensions.Emoji.EmojiMapping) (namespace
 [Meziantou.Framework.Markdown.Extensions.Emoji](cref:Meziantou.Framework.Markdown.Extensions.Emoji)) from a dictionary of shortcodes and a dictionary of smileys:
 
 <!-- ref:../../../tests/Meziantou.Framework.Markdown.Tests/TestCustomEmojis.cs;region=EmojiMapping_Custom;format=md-fenced-code-block;dedent=true -->
@@ -117,7 +117,7 @@ Assert.Equal("<p>🐿️ 🎉</p>\n", html);
 
 ## Abbreviations
 
-`UseAbbreviations` reads the definitions of abbreviations, written `*[ABBR]: Definition` on their own line, and renders
+[UseAbbreviations](cref:Meziantou.Framework.Markdown.MarkdownExtensions.UseAbbreviations) reads the definitions of abbreviations, written `*[ABBR]: Definition` on their own line, and renders
 each occurrence of the abbreviation as an `<abbr>` with the definition as its title. The definitions are not rendered:
 
 <!-- ref:../../../tests/Meziantou.Framework.Markdown.Tests/TestCoreApi.cs;region=MarkdownExtensions_UseAbbreviations;format=md-fenced-code-block;dedent=true -->
@@ -135,7 +135,7 @@ Assert.Equal("<p>The <abbr title=\"Hyper Text Markup Language\">HTML</abbr> outp
 
 CommonMark decides whether `*` and `_` open or close emphasis from the characters around them, with rules designed for
 languages that put spaces between words. In Chinese, Japanese and Korean text, the emphasis next to punctuation is then
-often not recognized. `UseCjkFriendlyEmphasis` adapts these rules to these languages:
+often not recognized. [UseCjkFriendlyEmphasis](cref:Meziantou.Framework.Markdown.MarkdownExtensions.UseCjkFriendlyEmphasis) adapts these rules to these languages:
 
 <!-- ref:../../../tests/Meziantou.Framework.Markdown.Tests/TestCjkFriendlyEmphasis.cs;region=MarkdownExtensions_UseCjkFriendlyEmphasis;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -151,7 +151,7 @@ Assert.Equal("<p><strong>この文を強調できますか？</strong>残念な�
 
 ## Right-to-left text
 
-`UseGlobalization` adds `dir="rtl"` to the headings, paragraphs and other elements whose text is written from right to
+[UseGlobalization](cref:Meziantou.Framework.Markdown.MarkdownExtensions.UseGlobalization) adds `dir="rtl"` to the headings, paragraphs and other elements whose text is written from right to
 left, such as Arabic or Hebrew text:
 
 <!-- ref:../../../tests/Meziantou.Framework.Markdown.Tests/TestCoreApi.cs;region=MarkdownExtensions_UseGlobalization;format=md-fenced-code-block;dedent=true -->

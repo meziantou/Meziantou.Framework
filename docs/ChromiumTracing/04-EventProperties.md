@@ -5,7 +5,7 @@ description: Set the name, category, time, process, thread, color, stack trace a
 
 ## Common properties
 
-Every event has the properties of `ChromiumTracingEvent`. Each one is written to a field of the format, and the
+Every event has the properties of [ChromiumTracingEvent](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent). Each one is written to a field of the format, and the
 properties left to `null` are not written:
 
 <!-- ref:../../tests/Meziantou.Framework.ChromiumTracing.Tests/WriterTests.cs;region=ChromiumTracing_CommonProperties;format=md-fenced-code-block;dedent=true -->
@@ -41,38 +41,38 @@ Assert.Equal("""
 
 | Property | Field | Description |
 | --- | --- | --- |
-| `Name` | `name` | The name of the event, shown on the timeline |
-| `Category` | `cat` | The category of the event; separate several categories with commas. Viewers can filter the events by category |
-| `Timestamp` | `ts` | When the event occurred |
-| `ThreadTimestamp` | `tts` | The thread clock when the event occurred |
-| `ProcessId` | `pid` | The process of the event |
-| `ThreadId` | `tid` | The thread of the event |
-| `ColorName` | `cname` | The name of a color of the viewer's palette |
-| `StackTrace` | `stack` | The stack trace of the event, as a list of frames |
-| `Arguments` | `args` | Data attached to the event, shown when you select it |
+| [Name](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent.Name) | `name` | The name of the event, shown on the timeline |
+| [Category](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent.Category) | `cat` | The category of the event; separate several categories with commas. Viewers can filter the events by category |
+| [Timestamp](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent.Timestamp) | `ts` | When the event occurred |
+| [ThreadTimestamp](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent.ThreadTimestamp) | `tts` | The thread clock when the event occurred |
+| [ProcessId](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent.ProcessId) | `pid` | The process of the event |
+| [ThreadId](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent.ThreadId) | `tid` | The thread of the event |
+| [ColorName](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent.ColorName) | `cname` | The name of a color of the viewer's palette |
+| [StackTrace](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent.StackTrace) | `stack` | The stack trace of the event, as a list of frames |
+| [Arguments](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent.Arguments) | `args` | Data attached to the event, shown when you select it |
 
-Some event types add their own properties: `Duration` for a complete event, `Id` for asynchronous, counter and object
-events, `Scope` for an instant event. See [Event types](03-EventTypes.md).
+Some event types add their own properties: [Duration](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingCompleteEvent.Duration) for a complete event, `Id` for asynchronous, counter and object
+events, [Scope](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingInstantEvent.Scope) for an instant event. See [Event types](03-EventTypes.md).
 
 ## Timestamps and durations
 
-`Timestamp` and `ThreadTimestamp` are `DateTimeOffset` values, written in microseconds from the UTC time. The offset is
-ignored: the same instant gives the same value, whatever the time zone of the `DateTimeOffset`. `Duration` and
-`ThreadDuration` are `TimeSpan` values, written in microseconds too, so a precision finer than a microsecond is lost.
+[Timestamp](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent.Timestamp) and [ThreadTimestamp](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent.ThreadTimestamp) are `DateTimeOffset` values, written in microseconds from the UTC time. The offset is
+ignored: the same instant gives the same value, whatever the time zone of the `DateTimeOffset`. [Duration](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingCompleteEvent.Duration) and
+[ThreadDuration](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingCompleteEvent.ThreadDuration) are `TimeSpan` values, written in microseconds too, so a precision finer than a microsecond is lost.
 
 Use `DateTimeOffset.UtcNow` for the start of an operation, and a `Stopwatch` for its duration: the clock can be adjusted
 while the operation runs, the elapsed time of a `Stopwatch` cannot.
 
 ## Arguments
 
-`Arguments` is an `IReadOnlyDictionary<string, object?>`. Its values are serialized according to their runtime type, and
+[Arguments](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent.Arguments) is an `IReadOnlyDictionary<string, object?>`. Its values are serialized according to their runtime type, and
 the writer knows these types out of the box:
 
 - `string`, `bool`, `char`, `Guid`, `Uri`
 - `byte`, `sbyte`, `short`, `ushort`, `int`, `uint`, `long`, `ulong`, `float`, `double`, `decimal`
 - `DateTime`, `DateTimeOffset`, `TimeSpan`
 
-`WriteEventAsync` throws a `NotSupportedException` for a value of another type. The event is not written, and the trace
+[WriteEventAsync](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingWriter.WriteEventAsync) throws a `NotSupportedException` for a value of another type. The event is not written, and the trace
 stays a valid JSON document.
 
 ## Arguments of your own types
@@ -119,5 +119,5 @@ Assert.Equal("/orders", trace.RootElement[0].GetProperty("args").GetProperty("re
 ```
 <!-- endref -->
 
-Every factory method and constructor of `ChromiumTracingWriter` has an overload that takes a `JsonSerializerContext`.
+Every factory method and constructor of [ChromiumTracingWriter](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingWriter) has an overload that takes a `JsonSerializerContext`.
 The context uses source-generated metadata, so the writer stays compatible with trimming and native AOT.

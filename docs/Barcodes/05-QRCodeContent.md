@@ -1,10 +1,10 @@
 ---
 title: QR code content
-description: Build the text of QR codes that phones act on: Wi-Fi networks, contacts, email, phone calls, SMS, places, events, authenticators and payments.
+description: "Build the text of QR codes that phones act on: Wi-Fi networks, contacts, email, phone calls, SMS, places, events, authenticators and payments."
 ---
 
 A phone that scans a QR code acts on its text when it recognizes a format: it joins a Wi-Fi network, adds a contact,
-opens a mail. `QRCodePayload` builds these texts; pass the result to `QRCode.Create`:
+opens a mail. [QRCodePayload](cref:Meziantou.Framework.Barcodes.QRCodePayload) builds these texts; pass the result to [QRCode.Create](cref:Meziantou.Framework.Barcodes.QRCode.Create):
 
 <!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/QRCodePayloadTests.cs;region=QRCodePayload_WifiQRCode;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -75,21 +75,21 @@ Assert.StartsWith("BCD\n002\n1\nSCT\n", sepa);
 
 | Method | Gives | Notes |
 | --- | --- | --- |
-| `Wifi` | `WIFI:` | `WifiAuthentication.None`, `WEP` or `WPA`; `hidden` for a network that does not broadcast its name |
-| `VCard` | A vCard 3.0 | Lines end with CRLF on every platform |
-| `MeCard` | `MECARD:` | A compact contact format |
-| `Email` | `mailto:` | The subject and the body are escaped |
-| `Phone` | `tel:` | |
-| `Sms` | `smsto:` | |
-| `Geolocation` | `geo:` | Latitude and longitude in decimal degrees |
-| `CalendarEvent` | A `VEVENT` | The start and the end are in UTC |
-| `OneTimePassword` | `otpauth://` | The setup of an authenticator app: TOTP or HOTP, the secret in base 32, the algorithm (`SHA1` by default), the digits (6) and the period (30 seconds) |
-| `Bitcoin` | `bitcoin:` | A payment request of BIP 21 |
-| `SepaPayment` | An EPC QR code | A SEPA credit transfer, in euros |
+| [Wifi](cref:Meziantou.Framework.Barcodes.QRCodePayload.Wifi) | `WIFI:` | [WifiAuthentication.None](cref:Meziantou.Framework.Barcodes.WifiAuthentication.None), [WEP](cref:Meziantou.Framework.Barcodes.WifiAuthentication.WEP) or [WPA](cref:Meziantou.Framework.Barcodes.WifiAuthentication.WPA); `hidden` for a network that does not broadcast its name |
+| [VCard](cref:Meziantou.Framework.Barcodes.QRCodePayload.VCard) | A vCard 3.0 | Lines end with CRLF on every platform |
+| [MeCard](cref:Meziantou.Framework.Barcodes.QRCodePayload.MeCard) | `MECARD:` | A compact contact format |
+| [Email](cref:Meziantou.Framework.Barcodes.QRCodePayload.Email) | `mailto:` | The subject and the body are escaped |
+| [Phone](cref:Meziantou.Framework.Barcodes.QRCodePayload.Phone) | `tel:` | |
+| [Sms](cref:Meziantou.Framework.Barcodes.QRCodePayload.Sms) | `smsto:` | |
+| [Geolocation](cref:Meziantou.Framework.Barcodes.QRCodePayload.Geolocation) | `geo:` | Latitude and longitude in decimal degrees |
+| [CalendarEvent](cref:Meziantou.Framework.Barcodes.QRCodePayload.CalendarEvent) | A `VEVENT` | The start and the end are in UTC |
+| [OneTimePassword](cref:Meziantou.Framework.Barcodes.QRCodePayload.OneTimePassword) | `otpauth://` | The setup of an authenticator app: TOTP or HOTP, the secret in base 32, the algorithm ([SHA1](cref:Meziantou.Framework.Barcodes.OneTimePasswordAlgorithm.SHA1) by default), the digits (6) and the period (30 seconds) |
+| [Bitcoin](cref:Meziantou.Framework.Barcodes.QRCodePayload.Bitcoin) | `bitcoin:` | A payment request of BIP 21 |
+| [SepaPayment](cref:Meziantou.Framework.Barcodes.QRCodePayload.SepaPayment) | An EPC QR code | A SEPA credit transfer, in euros |
 
 - The values are escaped for their format: a `;` or a line feed in a name cannot change the fields of a vCard, and a
   `?` in an email address cannot add parameters to the `mailto:` link.
-- `SepaPayment` follows the limits of the format: an amount from 0.01 to 999,999,999.99, a beneficiary name of 70
+- [SepaPayment](cref:Meziantou.Framework.Barcodes.QRCodePayload.SepaPayment) follows the limits of the format: an amount from 0.01 to 999,999,999.99, a beneficiary name of 70
   characters at most, and either a structured reference or a text. A value that contains a control character, which the
   format cannot escape, throws an `ArgumentException` instead of shifting the fields.
 - A payload is plain text: you can also write your own, such as a URL.

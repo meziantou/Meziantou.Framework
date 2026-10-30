@@ -3,7 +3,7 @@ title: Default no-cache header
 description: Make responses non-cacheable unless they set their own Cache-Control header, and place the middleware correctly.
 ---
 
-`UseNoCache` adds `Cache-Control: no-cache,no-store,must-revalidate` to the responses that do not define
+[UseNoCache](cref:Meziantou.AspNetCore.NoCacheApplicationBuilderExtensions.UseNoCache) adds `Cache-Control: no-cache,no-store,must-revalidate` to the responses that do not define
 `Cache-Control`:
 
 <!-- ref:../../../samples/Meziantou.AspNetCore.Samples/AspNetCoreExamples.cs;region=NoCacheMiddleware_Usage;format=md-fenced-code-block;dedent=true -->
@@ -31,8 +31,8 @@ opts into.
 
 ## Placement
 
-Register `UseNoCache` **after** the middleware that serve cacheable content, such as `UseStaticFiles`. The static file
-middleware sets `ETag` and `Last-Modified` but no `Cache-Control`: when `UseNoCache` runs first, every static file
+Register [UseNoCache](cref:Meziantou.AspNetCore.NoCacheApplicationBuilderExtensions.UseNoCache) **after** the middleware that serve cacheable content, such as `UseStaticFiles`. The static file
+middleware sets `ETag` and `Last-Modified` but no `Cache-Control`: when [UseNoCache](cref:Meziantou.AspNetCore.NoCacheApplicationBuilderExtensions.UseNoCache) runs first, every static file
 becomes non-cacheable.
 
 To cache an endpoint, set the header in the endpoint, for instance with `context.Response.Headers.CacheControl =

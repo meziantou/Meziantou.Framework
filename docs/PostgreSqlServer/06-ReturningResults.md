@@ -3,11 +3,11 @@ title: Returning results
 description: Return rows of typed columns, command tags and affected rows, notices, PostgreSQL errors, and the transaction state.
 ---
 
-A `PostgreSqlQueryResult` holds the answer to a request: result sets, a command tag, notices, or an error.
+A [PostgreSqlQueryResult](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlQueryResult) holds the answer to a request: result sets, a command tag, notices, or an error.
 
 ## Return rows
 
-A `PostgreSqlResultSet` has `Columns` and `Rows`. Each row is a list of values, in the order of the columns:
+A [PostgreSqlResultSet](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlResultSet) has [Columns](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlResultSet.Columns) and [Rows](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlResultSet.Rows). Each row is a list of values, in the order of the columns:
 
 <!-- ref:../../tests/Meziantou.Framework.PostgreSqlServer.Tests/PostgreSqlServerProtocolTests.cs;region=PostgreSqlServer_ColumnTypes;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -66,35 +66,35 @@ Assert.True(reader.IsDBNull(6));
 - Every row must have one value per column.
 - The server sends the values in text or in binary format, as the client asks; the values must be convertible to the
   type of their column in both.
-- `PostgreSqlColumn` takes an optional `isNullable`; it is information for your own code, and is not sent to the
+- [PostgreSqlColumn](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlColumn) takes an optional `isNullable`; it is information for your own code, and is not sent to the
   client.
 
 ### Column types
 
-| `PostgreSqlColumnType` | PostgreSQL type | Values |
+| [PostgreSqlColumnType](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlColumnType) | PostgreSQL type | Values |
 | --- | --- | --- |
-| `Boolean` | `bool` | `bool` |
-| `Int16`, `Int32`, `Int64` | `int2`, `int4`, `int8` | Integers |
-| `Single`, `Double` | `float4`, `float8` | `float`, `double` |
-| `Numeric` | `numeric` | `decimal` |
-| `Text`, `VarChar` | `text`, `varchar` | `string` |
-| `Bytea` | `bytea` | `byte[]` |
-| `Uuid` | `uuid` | `Guid` |
-| `Date` | `date` | `DateOnly`, `DateTime` |
-| `Timestamp` | `timestamp` | `DateTime` |
-| `TimestampTz` | `timestamptz` | `DateTimeOffset` |
-| `Json`, `Jsonb` | `json`, `jsonb` | `string` (the JSON text) |
+| [Boolean](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlColumnType.Boolean) | `bool` | `bool` |
+| [Int16](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlColumnType.Int16), [Int32](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlColumnType.Int32), [Int64](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlColumnType.Int64) | `int2`, `int4`, `int8` | Integers |
+| [Single](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlColumnType.Single), [Double](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlColumnType.Double) | `float4`, `float8` | `float`, `double` |
+| [Numeric](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlColumnType.Numeric) | `numeric` | `decimal` |
+| [Text](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlColumnType.Text), [VarChar](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlColumnType.VarChar) | `text`, `varchar` | `string` |
+| [Bytea](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlColumnType.Bytea) | `bytea` | `byte[]` |
+| [Uuid](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlColumnType.Uuid) | `uuid` | `Guid` |
+| [Date](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlColumnType.Date) | `date` | `DateOnly`, `DateTime` |
+| [Timestamp](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlColumnType.Timestamp) | `timestamp` | `DateTime` |
+| [TimestampTz](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlColumnType.TimestampTz) | `timestamptz` | `DateTimeOffset` |
+| [Json](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlColumnType.Json), [Jsonb](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlColumnType.Jsonb) | `json`, `jsonb` | `string` (the JSON text) |
 
 Numbers are converted with the invariant culture, so a numeric value of another .NET type, or a numeric string, works
 too. Prefer the types of the table: a value that cannot be converted to its column type closes the connection, after
-the rows already sent, and is only reported in the log. For `TimestampTz`, pass `DateTimeOffset` values rather than
+the rows already sent, and is only reported in the log. For [TimestampTz](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlColumnType.TimestampTz), pass `DateTimeOffset` values rather than
 `DateTime`.
 
 ### Several result sets
 
 A result can hold several result sets, for a simple query with several statements. Each one is sent with its own
 columns. Clients that use the extended protocol, such as Npgsql, expect one result set per command, described by
-`Describe`: return several only for simple queries.
+[Describe](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlQueryRequestType.Describe): return several only for simple queries.
 
 ## Command tags and affected rows
 
@@ -123,20 +123,20 @@ return ValueTask.FromResult(new PostgreSqlQueryResult
 ```
 <!-- endref -->
 
-| `CommandTag` | `AffectedRowCount` | Tag sent |
+| [CommandTag](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlQueryResult.CommandTag) | [AffectedRowCount](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlQueryResult.AffectedRowCount) | Tag sent |
 | --- | --- | --- |
 | `null`, with result sets | `null` | `SELECT n`, `n` being the number of rows |
 | `null`, without result sets | `null` | `OK 0` |
 | `"UPDATE"` | `5` | `UPDATE 5` |
 | `"INSERT 0 1"` (ends with a number) | any | `INSERT 0 1`, as is |
 
-A tag without a number gets `AffectedRowCount`, or 0, appended: `"BEGIN"` is sent as `BEGIN 0`. Npgsql reports -1 for
-a tag it does not know, such as `OK 0`: set `CommandTag` to the PostgreSQL tag of the command (`INSERT 0 n`, `UPDATE n`,
+A tag without a number gets [AffectedRowCount](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlQueryResult.AffectedRowCount), or 0, appended: `"BEGIN"` is sent as `BEGIN 0`. Npgsql reports -1 for
+a tag it does not know, such as `OK 0`: set [CommandTag](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlQueryResult.CommandTag) to the PostgreSQL tag of the command (`INSERT 0 n`, `UPDATE n`,
 `DELETE n`) for `ExecuteNonQuery` to return the count.
 
 ## Send notices
 
-`Notices` are informational messages, sent before the result, with the severity `NOTICE`:
+[Notices](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlQueryResult.Notices) are informational messages, sent before the result, with the severity `NOTICE`:
 
 <!-- ref:../../tests/Meziantou.Framework.PostgreSqlServer.Tests/PostgreSqlServerProtocolTests.cs;region=PostgreSqlServer_Notices;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -171,33 +171,33 @@ Assert.Equal(["3 rows deleted, 2 rows kept"], notices);
 
 ## Return an error
 
-`PostgreSqlQueryResult.FromError` returns an error instead of a result, as in the command tag example above. The client
+[PostgreSqlQueryResult.FromError](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlQueryResult.FromError) returns an error instead of a result, as in the command tag example above. The client
 raises it as an exception (`PostgresException` with Npgsql, whose `SqlState` is the code), and the connection stays
 usable.
 
-| `PostgreSqlQueryError` property | Default | Use |
+| [PostgreSqlQueryError](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlQueryError) property | Default | Use |
 | --- | --- | --- |
-| `Message` | (required) | The message the client shows |
-| `Code` | `XX000` (internal error) | The SQLSTATE, such as `42601` (syntax error), `42P01` (undefined table) or `23505` (unique violation) |
-| `Severity` | `ERROR` | The severity label. Another label, even `FATAL`, does not close the connection. |
+| [Message](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlQueryError.Message) | (required) | The message the client shows |
+| [Code](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlQueryError.Code) | `XX000` (internal error) | The SQLSTATE, such as `42601` (syntax error), `42P01` (undefined table) or `23505` (unique violation) |
+| [Severity](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlQueryError.Severity) | `ERROR` | The severity label. Another label, even `FATAL`, does not close the connection. |
 
-When `Error` is set, the result sets and the notices are not sent. The message, the code and the severity must not be
+When [Error](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlQueryResult.Error) is set, the result sets and the notices are not sent. The message, the code and the severity must not be
 empty.
 
 ## Report the transaction state
 
-After each command, the server tells the client whether a transaction is open. Set `TransactionStatus` when you
+After each command, the server tells the client whether a transaction is open. Set [TransactionStatus](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlQueryResult.TransactionStatus) when you
 implement `BEGIN`, `COMMIT` and `ROLLBACK`:
 
-| `PostgreSqlTransactionStatus` | Meaning |
+| [PostgreSqlTransactionStatus](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlTransactionStatus) | Meaning |
 | --- | --- |
-| `Idle` (default) | Not in a transaction |
-| `InTransaction` | In a transaction block |
-| `Failed` | In a failed transaction block, until `ROLLBACK` |
+| [Idle](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlTransactionStatus.Idle) (default) | Not in a transaction |
+| [InTransaction](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlTransactionStatus.InTransaction) | In a transaction block |
+| [Failed](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlTransactionStatus.Failed) | In a failed transaction block, until `ROLLBACK` |
 
-- The status of each result replaces the previous one. Since the default is `Idle`, return `InTransaction` with every
+- The status of each result replaces the previous one. Since the default is [Idle](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlTransactionStatus.Idle), return [InTransaction](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlTransactionStatus.InTransaction) with every
   result inside a transaction, not only for `BEGIN`.
-- An error returned with `InTransaction` is reported as `Failed`.
+- An error returned with [InTransaction](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlTransactionStatus.InTransaction) is reported as [Failed](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlTransactionStatus.Failed).
 - The server does not track transactions: it passes `BEGIN`, `COMMIT` and the commands of a failed transaction to the
   handler like any other command. The handler has no connection identifier to keep the state; use
-  `RemoteEndPoint` (one per connection) as the key, and remove the state when the transaction ends.
+  [RemoteEndPoint](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlQueryContext.RemoteEndPoint) (one per connection) as the key, and remove the state when the transaction ends.

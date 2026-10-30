@@ -18,17 +18,17 @@ Assert.Equal(FullPath.GetTempPath() / "reports", file.Parent);
 
 | Member | Returns | Equivalent string API |
 | --- | --- | --- |
-| `Name` | The file or folder name, with its extension | `Path.GetFileName` |
-| `NameWithoutExtension` | The name without its last extension | `Path.GetFileNameWithoutExtension` |
-| `Extension` | The last extension, with its leading dot, or an empty string | `Path.GetExtension` |
-| `Parent` | The folder that contains the path | `Path.GetDirectoryName` |
+| [Name](cref:Meziantou.Framework.FullPath.Name) | The file or folder name, with its extension | `Path.GetFileName` |
+| [NameWithoutExtension](cref:Meziantou.Framework.FullPath.NameWithoutExtension) | The name without its last extension | `Path.GetFileNameWithoutExtension` |
+| [Extension](cref:Meziantou.Framework.FullPath.Extension) | The last extension, with its leading dot, or an empty string | `Path.GetExtension` |
+| [Parent](cref:Meziantou.Framework.FullPath.Parent) | The folder that contains the path | `Path.GetDirectoryName` |
 
-`Name`, `NameWithoutExtension` and `Extension` return a `string`; `Parent` returns a `FullPath`. As the path has no
+[Name](cref:Meziantou.Framework.FullPath.Name), [NameWithoutExtension](cref:Meziantou.Framework.FullPath.NameWithoutExtension) and [Extension](cref:Meziantou.Framework.FullPath.Extension) return a `string`; [Parent](cref:Meziantou.Framework.FullPath.Parent) returns a [FullPath](cref:Meziantou.Framework.FullPath). As the path has no
 trailing separator, the name of a folder is its last segment.
 
 ## The parent of a root folder
 
-A root folder, such as `/` or `C:\`, has no parent: `Parent` returns the empty path, where `Path.GetDirectoryName`
+A root folder, such as `/` or `C:\`, has no parent: [Parent](cref:Meziantou.Framework.FullPath.Parent) returns the empty path, where `Path.GetDirectoryName`
 returns `null`:
 
 <!-- ref:../../tests/Meziantou.Framework.FullPath.Tests/FullPathTests.cs;region=FullPath_ParentOfRoot;format=md-fenced-code-block;dedent=true -->
@@ -67,11 +67,11 @@ Assert.Equal("details.gz", file.WithNameWithoutExtension("details").Name);
   extension is optional, and `null` removes the extension.
 - `WithExtension(extension, replaceAllTrailingExtensions: true)` replaces all the extensions, such as `.tar.gz`.
   `WithExtension(extension, extensionCount)` replaces the given number of extensions; the count must be greater than 0.
-- `WithName` replaces the name and keeps the folder. `WithNameWithoutExtension` replaces the name and keeps the
+- [WithName](cref:Meziantou.Framework.FullPath.WithName) replaces the name and keeps the folder. [WithNameWithoutExtension](cref:Meziantou.Framework.FullPath.WithNameWithoutExtension) replaces the name and keeps the
   extension.
 - These methods return a new path: they do not rename the file on disk. Pass both paths to `File.Move` to rename it.
 
 ## Create the parent folder
 
-`CreateParentDirectory` creates the folder that contains the path, and its own parents, when they do not exist. Call
+[CreateParentDirectory](cref:Meziantou.Framework.FullPath.CreateParentDirectory) creates the folder that contains the path, and its own parents, when they do not exist. Call
 it before you create a file in a folder that may not exist yet. It does nothing on the empty path and on a root folder.

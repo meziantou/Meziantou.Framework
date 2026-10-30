@@ -5,7 +5,7 @@ description: Read and write Windows icons and cursors with several sizes, PNG or
 
 An icon (`.ico`) or a cursor (`.cur`) file holds several representations of one drawing, usually at several sizes, from
 which Windows picks the one it shows. A cursor also stores a hotspot per representation: the pixel that points.
-`IcoEncoder` writes both.
+[IcoEncoder](cref:Meziantou.Framework.Imaging.Formats.IcoEncoder) writes both.
 
 ## What is read and written
 
@@ -16,12 +16,12 @@ which Windows picks the one it shows. A cursor also stores a hotspot per represe
 | Hotspots | Read for each representation of a cursor | Written for each representation of a cursor |
 | Metadata | None | None |
 
-`Image.Load` reads the largest representation (then the deepest), with the hotspot of a cursor on its frame. Every
-representation stored as a bitmap loads as `Rgba32`.
+[Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) reads the largest representation (then the deepest), with the hotspot of a cursor on its frame. Every
+representation stored as a bitmap loads as [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32).
 
 ## Write an icon and a cursor of several sizes
 
-Every representation is an entry of an `ImageCollection` of `Representations`. `SelectBySize` returns the entry that
+Every representation is an entry of an [ImageCollection](cref:Meziantou.Framework.Imaging.ImageCollection) of [Representations](cref:Meziantou.Framework.Imaging.ImageCollectionKind.Representations). [SelectBySize](cref:Meziantou.Framework.Imaging.ImageCollection.SelectBySize) returns the entry that
 fits a size best, without resizing anything:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_IcoRepresentations;format=md-fenced-code-block;dedent=true -->
@@ -50,25 +50,25 @@ public static Point WriteAndReadIcon(string inputPath, string iconPath, string c
 ```
 <!-- endref -->
 
-`Image.Save` writes an icon or a cursor of one representation. See
+[Image.Save](cref:Meziantou.Framework.Imaging.Image.Save) writes an icon or a cursor of one representation. See
 [Pages and representations](../04-Concepts/03-PagesAndRepresentations.md).
 
 ## Options
 
 | Option | What it does | Default |
 | --- | --- | --- |
-| `Kind` | `Icon` or `Cursor` | `Icon` (`Cursor` for the `.cur` extension) |
-| `PayloadFormat` | `Auto` writes a 32-bit DIB up to 64 pixels per side and a PNG above, or for 16-bit pixels; `Png` always writes PNG (which readers older than Windows Vista do not understand); `Dib` always writes a 32-bit DIB | `Auto` |
-| `MetadataHandling` | What to do with metadata, which an icon cannot store, and with hotspots in an icon | `Strict` |
+| [Kind](cref:Meziantou.Framework.Imaging.Formats.IcoEncoder.Kind) | [Icon](cref:Meziantou.Framework.Imaging.Formats.IconKind.Icon) or [Cursor](cref:Meziantou.Framework.Imaging.Formats.IconKind.Cursor) | [Icon](cref:Meziantou.Framework.Imaging.Formats.IconKind.Icon) ([Cursor](cref:Meziantou.Framework.Imaging.Formats.IconKind.Cursor) for the `.cur` extension) |
+| [PayloadFormat](cref:Meziantou.Framework.Imaging.Formats.IcoEncoder.PayloadFormat) | [Auto](cref:Meziantou.Framework.Imaging.Formats.IconPayloadFormat.Auto) writes a 32-bit DIB up to 64 pixels per side and a PNG above, or for 16-bit pixels; [Png](cref:Meziantou.Framework.Imaging.Formats.IconPayloadFormat.Png) always writes PNG (which readers older than Windows Vista do not understand); [Dib](cref:Meziantou.Framework.Imaging.Formats.IconPayloadFormat.Dib) always writes a 32-bit DIB | [Auto](cref:Meziantou.Framework.Imaging.Formats.IconPayloadFormat.Auto) |
+| [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling) | What to do with metadata, which an icon cannot store, and with hotspots in an icon | [Strict](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strict) |
 
 ## Pitfalls
 
-- An icon cannot store a hotspot: an entry or a frame that has one follows `MetadataHandling`, which rejects it by
+- An icon cannot store a hotspot: an entry or a frame that has one follows [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling), which rejects it by
   default. The example discards them for the icon. A cursor always stores one, the top-left corner when the entry has none.
-- A representation larger than 256 pixels per side is rejected with an `UnsupportedImageFeatureException`: resize it
+- A representation larger than 256 pixels per side is rejected with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException): resize it
   first.
-- A DIB stores 8-bit samples: `Auto` writes 16-bit pixels as PNG, and `Dib` rejects them instead of reducing them.
+- A DIB stores 8-bit samples: [Auto](cref:Meziantou.Framework.Imaging.Formats.IconPayloadFormat.Auto) writes 16-bit pixels as PNG, and [Dib](cref:Meziantou.Framework.Imaging.Formats.IconPayloadFormat.Dib) rejects them instead of reducing them.
 - Animated images are rejected: an animated cursor is an [ANI](12-Ani.md) file.
 - The file stores no metadata: an ICC profile, EXIF, XMP, a resolution, an orientation or text entries follow
-  `MetadataHandling`. PNG payloads are written without metadata.
+  [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling). PNG payloads are written without metadata.
 - The destination does not need to be seekable: each payload is encoded in memory before it is written.

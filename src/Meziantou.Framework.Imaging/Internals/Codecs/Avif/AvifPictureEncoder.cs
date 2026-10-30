@@ -10,6 +10,9 @@ internal sealed class AvifPictureEncoder : HeifPictureEncoder
 
     public AvifPictureEncoder(AllocationScope scope, in HeifPictureSettings settings)
     {
+        // The layout of the tiles depends on the size of the picture only (a tile of a grid has its own), so that the
+        // file is the same whatever the number of workers
+        var (tileColsLog2, tileRowsLog2) = settings.AutoTiling ? Av1Encoder.GetAutoTileLayout(settings.Width, settings.Height) : (0, 0);
         _encoder = new Av1Encoder(scope, new Av1EncoderSettings(
             settings.Width,
             settings.Height,
@@ -27,7 +30,9 @@ internal sealed class AvifPictureEncoder : HeifPictureEncoder
             settings.Quality,
             settings.Effort,
             settings.KeyFrameInterval,
-            settings.MaxDegreeOfParallelism));
+            settings.MaxDegreeOfParallelism,
+            tileColsLog2,
+            tileRowsLog2));
         Description = new AvifStreamDescription(_encoder.Sequence);
     }
 

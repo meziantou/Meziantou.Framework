@@ -40,7 +40,7 @@ A destination is a page and how it is shown:
 | `PdfDestination.FitBoundingBox(page, kind, coordinate)` | The bounding box of the content of the page, its width or its height |
 
 A coordinate or a zoom left `null` keeps the current one of the reader. PDF/UA-2 requires destinations that also name
-the structure element they show: see `WithStructureElement` in
+the structure element they show: see [WithStructureElement](cref:Meziantou.Framework.Pdf.PdfDestination.WithStructureElement) in
 [Tagged PDF and PDF/UA](../08-AccessibilityAndArchiving/02-TaggedPdfAndPdfUA.md#pdfua-2).
 
 ## Style the outline
@@ -58,9 +58,9 @@ document.Outlines.Insert(0, new PdfOutlineItem("Cover", PdfDestination.Fit(page)
 ```
 <!-- endref -->
 
-- `IsBold`, `IsItalic` and `Color` (an RGB color, `null` for black) style the title.
-- `IsOpen` shows the children of the item when the document is opened.
-- `Outlines` and `Children` are lists: `Insert`, `Remove`, `RemoveAt`, `Clear` and the indexer change them.
+- [IsBold](cref:Meziantou.Framework.Pdf.PdfOutlineItem.IsBold), [IsItalic](cref:Meziantou.Framework.Pdf.PdfOutlineItem.IsItalic) and [Color](cref:Meziantou.Framework.Pdf.PdfOutlineItem.Color) (an RGB color, `null` for black) style the title.
+- [IsOpen](cref:Meziantou.Framework.Pdf.PdfOutlineItem.IsOpen) shows the children of the item when the document is opened.
+- [Outlines](cref:Meziantou.Framework.Pdf.PdfDocument.Outlines) and [Children](cref:Meziantou.Framework.Pdf.PdfOutlineItem.Children) are lists: [Insert](cref:Meziantou.Framework.Pdf.PdfOutlineCollection.Insert), `Remove`, [RemoveAt](cref:Meziantou.Framework.Pdf.PdfOutlineCollection.RemoveAt), [Clear](cref:Meziantou.Framework.Pdf.PdfOutlineCollection.Clear) and the indexer change them.
 
 ## Read the bookmarks and links
 
@@ -94,8 +94,8 @@ foreach (var link in document.Pages[0].Annotations.OfType<PdfLinkAnnotation>())
 
 - The `Destination` of an item is `null` when it has none, or when it has an action of another kind; the other entries of
   an item read from a file, such as its action, are kept when the document is saved.
-- The `Uri` of a link is `null` when the link opens no web address or when its address is not a valid URI; its
+- The [Uri](cref:Meziantou.Framework.Pdf.PdfLinkAnnotation.Uri) of a link is `null` when the link opens no web address or when its address is not a valid URI; its
   `Destination` is set when it goes to a page of the document.
-- `PdfPage.Annotations` holds every annotation of the page: links (`PdfLinkAnnotation`), file attachments
-  (`PdfFileAttachmentAnnotation`), and the other kinds as `PdfAnnotation`, with their `Subtype`, `Rectangle`,
-  `Contents` and `Dictionary`. `Remove` removes one.
+- [PdfPage.Annotations](cref:Meziantou.Framework.Pdf.PdfPage.Annotations) holds every annotation of the page: links ([PdfLinkAnnotation](cref:Meziantou.Framework.Pdf.PdfLinkAnnotation)), file attachments
+  ([PdfFileAttachmentAnnotation](cref:Meziantou.Framework.Pdf.PdfFileAttachmentAnnotation)), and the other kinds as [PdfAnnotation](cref:Meziantou.Framework.Pdf.PdfAnnotation), with their [Subtype](cref:Meziantou.Framework.Pdf.PdfAnnotation.Subtype), [Rectangle](cref:Meziantou.Framework.Pdf.PdfAnnotation.Rectangle),
+  [Contents](cref:Meziantou.Framework.Pdf.PdfAnnotation.Contents) and [Dictionary](cref:Meziantou.Framework.Pdf.PdfAnnotation.Dictionary). `Remove` removes one.

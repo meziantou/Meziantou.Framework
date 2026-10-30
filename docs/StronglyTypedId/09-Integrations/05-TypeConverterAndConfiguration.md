@@ -22,7 +22,7 @@ Assert.Equal("42", converter.ConvertToInvariantString(ProjectId.FromInt32(42)));
 The converter converts:
 
 - **from** a `string` (with `Parse`), the underlying type or the ID itself;
-- **to** a `string` (`ValueAsString`), the underlying type or the ID itself.
+- **to** a `string` ([ValueAsString](cref:Meziantou.Framework.IStronglyTypedId.ValueAsString)), the underlying type or the ID itself.
 
 The culture given to the converter is ignored: the conversion always uses the invariant culture. A `string` that does
 not parse throws a `FormatException`.

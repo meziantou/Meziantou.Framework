@@ -61,6 +61,14 @@ rendering also changes the images of the pages (`DocumentationImageTests`).
   | Invalid argument / invalid state / use after dispose | `ArgumentException` family / `InvalidOperationException` / `ObjectDisposedException` |
   | I/O failure, cancellation | `IOException` and `OperationCanceledException`, propagated unchanged |
 
+- **Lenient decoding is opt-in and listed.** `ImageConfiguration.DecodingStrictness` defaults to `Strict`, and the
+  structure parsers and decoders read it through `ImageCodecContext.IsLenient`. A repair is accepted only when the
+  reference decoders of the format (and the browsers, for web formats) agree on its result, measured on a fixture, never
+  assumed. It is deterministic, keeps every resource limit and its accounting unchanged, and never invents pixels: a
+  deviation whose repair would guess samples stays an `InvalidImageContentException` in both modes. Each repair has a
+  row in the "Lenient decoding" table of `readme.md` and a note on the page of its format, and a test that loads the
+  fixture in both modes (strict rejects it, lenient gives the reference result). Identify, eager loads, readers and
+  collections share the parsers, so they accept the same files.
 - **Validate before doing anything.** Argument and pixel-type validation happens before any I/O or allocation; keep the
   existing validation order when changing a member.
 - **Resource limits** (`ImageResourceLimits`) are enforced incrementally, before allocating or consuming. They are
@@ -359,6 +367,13 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     brand of the file (`HeicBinding.WriteFileTypeBrands`, from the color images only).
   - A sequence is IDR pictures and P pictures that refer to the previous picture, in output order: the encoder writes no
     composition offsets. The parameter sets are in the configuration record (`hvc1`), never in the samples.
+  - The level is the lowest one of the Main tier, then of the High tier, that holds the size of the pictures and the
+    size of the largest coded picture (`HevcLevels`: the coded picture buffer of clause A.4.1, and the minimum
+    compression ratio of clause A.4.2 for the video profiles, at any picture rate of the level). It is only known once
+    the pictures are coded: the session records each coded picture (`HeifStreamDescription.RecordCodedPicture`), and
+    `HeicStreamDescription` rewrites the video and sequence parameter sets of its configuration record when the level
+    rises. The items of the first image of a sequence get the configuration of the tracks when the sequence completes
+    (the size of an `hvcC` box does not depend on the level).
   - `HeifRgbConverter` computes subsampled chroma where the codec puts it: at the luma samples of even columns for HEVC
     (`HeifCodecBinding.HasCositedChromaColumns`), between two columns for AV1. The video usability information always
     states the range, the color description and the chroma sample location.
@@ -1162,10 +1177,11 @@ thin public types over its `FontFace`.
     the tiles of a column share it), treats blocks outside it as unavailable, and writes the frame only where its blocks
     are; the worker of `context_update_tile_id` saves its own distributions, and the coding diagnostics (`Av1Tools`) are
     merged after each run. The tile sizes are read on the calling thread first. The encoder codes the tiles of a frame
-    that has several (the layout is the minimum, so frames wider than 4096 pixels; never a function of the worker count)
-    with an `Av1EncoderWorkspace` per worker that shares the source planes, and appends them in order; intrabc frames use
-    one worker. A size-based layout (4x2 tiles for 3840x2160, like libavif's autotiling) would cost +0.3% (effort 5) to
-    +0.6% (effort 0) at equal PSNR, so it is not the default. `Av1TileWorkers.TestReverseOrder` runs the tiles from the
+    that has several (the layout is the minimum, so frames wider than 4096 pixels, unless `AvifEncoder.AutoTiling` asks for
+    `Av1Encoder.GetAutoTileLayout`; never a function of the worker count) with an `Av1EncoderWorkspace` per worker that
+    shares the source planes, and appends them in order; intrabc frames use one worker. The size-based layout (4x2 tiles
+    for 3840x2160, like libavif's autotiling) costs +0.3% (effort 5) to +0.6% (effort 0) at equal PSNR even with one
+    worker, so it is an opt-in. `Av1TileWorkers.TestReverseOrder` runs the tiles from the
     last one so that the tests check independence whatever the scheduling (`DecodedPlanesDoNotDependOnTheNumberOfWorkers`,
     `TilesDecodedByWorkersFailWithTheErrorOfTheFirstFailingTile`, `TilesEncodedByWorkersAreTheTilesOfOneWorker`).
   - HEVC (`HevcSliceCoder.Substreams.cs`, `HevcSubstreamWorkers`): the substreams of a slice segment that start at an

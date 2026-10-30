@@ -6,7 +6,7 @@ description: Which NTP replies the client accepts, Kiss-o'-Death refusals, and w
 ## What the client checks
 
 The socket of the client is connected to the server, so the operating system drops datagrams from any other address.
-With `ValidateResponse` set to `true`, the default, the client also requires that a reply:
+With [ValidateResponse](cref:Meziantou.Framework.Ntp.NtpClientOptions.ValidateResponse) set to `true`, the default, the client also requires that a reply:
 
 - echoes the transmit timestamp of the request in its originate timestamp, byte for byte (RFC 5905 TEST2), which ties
   the reply to this request;
@@ -15,8 +15,8 @@ With `ValidateResponse` set to `true`, the default, the client also requires tha
 - does not report an alarm condition (`LeapIndicator.AlarmCondition`), which means the clock of the server is not
   synchronized.
 
-A reply that fails is ignored, and the client keeps waiting for a valid one until `Timeout`: a single stray or forged
-datagram cannot make the query fail. Even with `ValidateResponse` set to `false`, the client ignores packets that are
+A reply that fails is ignored, and the client keeps waiting for a valid one until [Timeout](cref:Meziantou.Framework.Ntp.NtpClientOptions.Timeout): a single stray or forged
+datagram cannot make the query fail. Even with [ValidateResponse](cref:Meziantou.Framework.Ntp.NtpClientOptions.ValidateResponse) set to `false`, the client ignores packets that are
 too short, and replies without receive and transmit timestamps.
 
 ## Kiss-o'-Death replies
@@ -25,10 +25,10 @@ A server that refuses to answer sends a Kiss-o'-Death packet: stratum 0, and a f
 identifier, such as `RATE` (the client queries too often), `DENY` or `RSTR` (the client is not allowed). With
 validation on, the client ignores it and the query ends with `TimeoutException`.
 
-To see the code, set `ValidateResponse` to `false`, then check `IsKissOfDeath` and `KissCode` on the response. The
+To see the code, set [ValidateResponse](cref:Meziantou.Framework.Ntp.NtpClientOptions.ValidateResponse) to `false`, then check [IsKissOfDeath](cref:Meziantou.Framework.Ntp.NtpResponse.IsKissOfDeath) and [KissCode](cref:Meziantou.Framework.Ntp.NtpResponse.KissCode) on the response. The
 timestamps of such a reply carry no time: do not use its offset. When a server sends `RATE`, query it less often.
 
-This only works with servers whose refusal carries timestamps: the `RATE` reply of `NtpServer` has none, so the client
+This only works with servers whose refusal carries timestamps: the `RATE` reply of [NtpServer](cref:Meziantou.Framework.Ntp.NtpServer) has none, so the client
 ignores it even with validation off. See [Rate limiting](05-RunningAServer.md#rate-limiting).
 
 ## What the checks do not protect against
@@ -38,4 +38,4 @@ The checks tie a reply to the request; they do not authenticate the server. The 
 can still choose the time the client reports.
 
 Do not use the result alone for a security decision, such as the validity period of a certificate or a token. To limit
-the risk, query several servers and compare their answers, and check `RootDispersion` and `Stratum`.
+the risk, query several servers and compare their answers, and check [RootDispersion](cref:Meziantou.Framework.Ntp.NtpResponse.RootDispersion) and [Stratum](cref:Meziantou.Framework.Ntp.NtpResponse.Stratum).

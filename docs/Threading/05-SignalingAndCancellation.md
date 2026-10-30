@@ -5,7 +5,7 @@ description: Wake a waiting task with AsyncAutoResetEvent, and reuse a cancellat
 
 ## Wake a waiting task with AsyncAutoResetEvent
 
-`AsyncAutoResetEvent` lets a task wait asynchronously until another one signals it. Each call to `Set` releases one
+[AsyncAutoResetEvent](cref:Meziantou.Framework.Threading.AsyncAutoResetEvent) lets a task wait asynchronously until another one signals it. Each call to [Set](cref:Meziantou.Framework.Threading.AsyncAutoResetEvent.Set) releases one
 waiter:
 
 <!-- ref:../../tests/Meziantou.Framework.Threading.Tests/AsyncAutoResetEventTests.cs;region=AsyncAutoResetEvent_Usage;format=md-fenced-code-block;dedent=true -->
@@ -25,13 +25,13 @@ Assert.Equal("Event was set!", await waitingTask);
 ```
 <!-- endref -->
 
-- `Set` releases the oldest waiter. When nobody waits, the event stays signaled and the next `WaitAsync` completes
+- [Set](cref:Meziantou.Framework.Threading.AsyncAutoResetEvent.Set) releases the oldest waiter. When nobody waits, the event stays signaled and the next [WaitAsync](cref:Meziantou.Framework.Threading.AsyncAutoResetEvent.WaitAsync) completes
   immediately and resets it.
-- The event is signaled or not: calling `Set` several times while nobody waits stores a single signal, not one per call.
-- `new AsyncAutoResetEvent(initialState: true)` starts signaled, so the first `WaitAsync` completes immediately.
+- The event is signaled or not: calling [Set](cref:Meziantou.Framework.Threading.AsyncAutoResetEvent.Set) several times while nobody waits stores a single signal, not one per call.
+- `new AsyncAutoResetEvent(initialState: true)` starts signaled, so the first [WaitAsync](cref:Meziantou.Framework.Threading.AsyncAutoResetEvent.WaitAsync) completes immediately.
 - `WaitAsync(cancellationToken)` gives up waiting when the token is canceled.
 - `new AsyncAutoResetEvent(initialState, allowInliningAwaiters: true)` lets the released waiter continue synchronously on
-  the thread that calls `Set`. By default, it continues asynchronously.
+  the thread that calls [Set](cref:Meziantou.Framework.Threading.AsyncAutoResetEvent.Set). By default, it continues asynchronously.
 
 <!-- ref:../../tests/Meziantou.Framework.Threading.Tests/AsyncAutoResetEventTests.cs;region=AsyncAutoResetEvent_SetBeforeWait;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -53,7 +53,7 @@ await secondWait;
 
 ## Reuse a cancellation token source
 
-A `CancellationTokenSource` cannot be reused once it is canceled. `ResettableCancellationTokenSource` can: `Reset` gives a
+A `CancellationTokenSource` cannot be reused once it is canceled. [ResettableCancellationTokenSource](cref:Meziantou.Framework.Threading.ResettableCancellationTokenSource) can: [Reset](cref:Meziantou.Framework.Threading.ResettableCancellationTokenSource.Reset) gives a
 fresh token, so one instance can serve, for instance, every search of a search box, canceling the previous search when
 a new one starts.
 
@@ -72,12 +72,12 @@ await Task.Delay(1, cts.Token);
 ```
 <!-- endref -->
 
-`Token`, `IsCancellationRequested`, `Cancel` and `CancelAfter` work like the `CancellationTokenSource` members of the same
+[Token](cref:Meziantou.Framework.Threading.ResettableCancellationTokenSource.Token), [IsCancellationRequested](cref:Meziantou.Framework.Threading.ResettableCancellationTokenSource.IsCancellationRequested), [Cancel](cref:Meziantou.Framework.Threading.ResettableCancellationTokenSource.Cancel) and [CancelAfter](cref:Meziantou.Framework.Threading.ResettableCancellationTokenSource.CancelAfter) work like the `CancellationTokenSource` members of the same
 name. All the members are safe to call concurrently.
 
 ### Cancel on reset and on dispose
 
-The options decide whether `Reset` and `Dispose` cancel the current token:
+The options decide whether [Reset](cref:Meziantou.Framework.Threading.ResettableCancellationTokenSource.Reset) and [Dispose](cref:Meziantou.Framework.Threading.ResettableCancellationTokenSource.Dispose) cancel the current token:
 
 | Constructor | Reset cancels the token | Dispose cancels the token |
 | --- | --- | --- |
@@ -86,7 +86,7 @@ The options decide whether `Reset` and `Dispose` cancel the current token:
 | `new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.CancelOnReset)` | Yes | No |
 | `new ResettableCancellationTokenSource(ResettableCancellationTokenSourceOptions.CancelOnDispose)` | No | Yes |
 
-`ResettableCancellationTokenSourceOptions` is a flags enum: combine `CancelOnReset | CancelOnDispose` to get both.
+[ResettableCancellationTokenSourceOptions](cref:Meziantou.Framework.Threading.ResettableCancellationTokenSourceOptions) is a flags enum: combine `CancelOnReset | CancelOnDispose` to get both.
 
 <!-- ref:../../tests/Meziantou.Framework.Threading.Tests/ResettableCancellationTokenSourceTests.cs;region=ResettableCancellationTokenSource_Options;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -108,20 +108,20 @@ Assert.True(token.IsCancellationRequested);
 
 ### Read Token again after a reset
 
-`Reset` reuses the underlying `CancellationTokenSource` when it can, so a token read before the reset behaves
+[Reset](cref:Meziantou.Framework.Threading.ResettableCancellationTokenSource.Reset) reuses the underlying `CancellationTokenSource` when it can, so a token read before the reset behaves
 differently depending on the state of the source:
 
-- When cancellation was already requested (by `Cancel`, an elapsed `CancelAfter` delay, or `CancelOnReset`), the
-  source is replaced. The old token stays canceled and never reacts to a later `Cancel`.
-- Otherwise the same source is reused: the old token is the one `Token` returns after the reset, and it reacts to a later
-  `Cancel`. The reset removes the callbacks registered on it, which are never invoked, and disarms a pending
-  `CancelAfter` delay.
+- When cancellation was already requested (by [Cancel](cref:Meziantou.Framework.Threading.ResettableCancellationTokenSource.Cancel), an elapsed [CancelAfter](cref:Meziantou.Framework.Threading.ResettableCancellationTokenSource.CancelAfter) delay, or [CancelOnReset](cref:Meziantou.Framework.Threading.ResettableCancellationTokenSourceOptions.CancelOnReset)), the
+  source is replaced. The old token stays canceled and never reacts to a later [Cancel](cref:Meziantou.Framework.Threading.ResettableCancellationTokenSource.Cancel).
+- Otherwise the same source is reused: the old token is the one [Token](cref:Meziantou.Framework.Threading.ResettableCancellationTokenSource.Token) returns after the reset, and it reacts to a later
+  [Cancel](cref:Meziantou.Framework.Threading.ResettableCancellationTokenSource.Cancel). The reset removes the callbacks registered on it, which are never invoked, and disarms a pending
+  [CancelAfter](cref:Meziantou.Framework.Threading.ResettableCancellationTokenSource.CancelAfter) delay.
 
-Read `Token` again after each reset rather than relying on either behavior.
+Read [Token](cref:Meziantou.Framework.Threading.ResettableCancellationTokenSource.Token) again after each reset rather than relying on either behavior.
 
 ### Callbacks
 
-The callbacks registered on `Token` run while the internal lock is held when `Cancel`, `Reset` or `Dispose` cancels the
-token: a callback must not block waiting for another thread that uses the same instance. `DisposeAsync` runs the
-callbacks on another thread and awaits them instead, so a callback can use the instance. When a callback throws, `Reset`
-and `Dispose` still complete before the exception reaches the caller.
+The callbacks registered on [Token](cref:Meziantou.Framework.Threading.ResettableCancellationTokenSource.Token) run while the internal lock is held when [Cancel](cref:Meziantou.Framework.Threading.ResettableCancellationTokenSource.Cancel), [Reset](cref:Meziantou.Framework.Threading.ResettableCancellationTokenSource.Reset) or [Dispose](cref:Meziantou.Framework.Threading.ResettableCancellationTokenSource.Dispose) cancels the
+token: a callback must not block waiting for another thread that uses the same instance. [DisposeAsync](cref:Meziantou.Framework.Threading.ResettableCancellationTokenSource.DisposeAsync) runs the
+callbacks on another thread and awaits them instead, so a callback can use the instance. When a callback throws, [Reset](cref:Meziantou.Framework.Threading.ResettableCancellationTokenSource.Reset)
+and [Dispose](cref:Meziantou.Framework.Threading.ResettableCancellationTokenSource.Dispose) still complete before the exception reaches the caller.

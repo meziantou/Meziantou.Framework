@@ -38,5 +38,5 @@ every platform.
 | `Meziantou.Framework.HumanReadableSerializer.Html` | A formatter that normalizes HTML values |
 
 The serializer, its options, the attributes and the converter base classes are in the [Meziantou.Framework.HumanReadable](cref:Meziantou.Framework.HumanReadable)
-namespace. The formatters are in [Meziantou.Framework.HumanReadable.ValueFormatters](cref:Meziantou.Framework.HumanReadable.ValueFormatters), and the HTTP options in
+namespace. The formatters are in [Meziantou.Framework.HumanReadable.ValueFormatters](cref:Meziantou.Framework.HumanReadableSerializer!N:Meziantou.Framework.HumanReadable.ValueFormatters), and the HTTP options in
 [Meziantou.Framework.HumanReadable.Converters](cref:Meziantou.Framework.HumanReadable.Converters).

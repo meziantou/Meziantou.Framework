@@ -5,7 +5,7 @@ description: The exceptions the library throws, and how to open the files of unt
 
 ## Handle the errors of a file
 
-Each kind of problem throws its own exception, and they all derive from `PdfException`. An application that accepts
+Each kind of problem throws its own exception, and they all derive from [PdfException](cref:Meziantou.Framework.Pdf.PdfException). An application that accepts
 files from its users can tell them what is wrong:
 
 <!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfDocumentTests.cs;region=Pdf_DescribeUpload;format=md-fenced-code-block;dedent=true -->
@@ -39,10 +39,10 @@ public static async Task<string> DescribeUploadAsync(Stream upload, Cancellation
 
 | Exception | Thrown when |
 | --- | --- |
-| `InvalidPdfContentException` | The data is not a PDF document, or it is damaged beyond repair |
-| `UnsupportedPdfFeatureException` | The document uses a feature the library does not support, such as a security handler other than the standard one; or a font cannot be embedded |
-| `PdfResourceLimitException` | The document exceeds a limit of `PdfReadOptions`, or a page exceeds a limit of the rendering |
-| `PdfPasswordException` | The document is encrypted, and the password of the options is neither its user nor its owner password |
+| [InvalidPdfContentException](cref:Meziantou.Framework.Pdf.InvalidPdfContentException) | The data is not a PDF document, or it is damaged beyond repair |
+| [UnsupportedPdfFeatureException](cref:Meziantou.Framework.Pdf.UnsupportedPdfFeatureException) | The document uses a feature the library does not support, such as a security handler other than the standard one; or a font cannot be embedded |
+| [PdfResourceLimitException](cref:Meziantou.Framework.Pdf.PdfResourceLimitException) | The document exceeds a limit of [PdfReadOptions](cref:Meziantou.Framework.Pdf.PdfReadOptions), or a page exceeds a limit of the rendering |
+| [PdfPasswordException](cref:Meziantou.Framework.Pdf.PdfPasswordException) | The document is encrypted, and the password of the options is neither its user nor its owner password |
 
 The mistakes of the code that uses the library throw the usual exceptions: `ArgumentException` and its derived types
 for a wrong argument, `InvalidOperationException` for a call that is not allowed in the current state (a text operator
@@ -54,9 +54,9 @@ A file can be written to make a reader use a lot of memory or time: a small stre
 nested very deeply, a page tree or an outline that loops. Everything a file can make grow is bounded, so that a file
 takes time and memory in proportion to its size, and the loops are detected.
 
-- Lower `MaxDecodedStreamLength` (256 MiB by default) to the size of the documents you expect: it is checked while a
+- Lower [MaxDecodedStreamLength](cref:Meziantou.Framework.Pdf.PdfReadOptions.MaxDecodedStreamLength) (256 MiB by default) to the size of the documents you expect: it is checked while a
   stream is decoded, so the data is never decoded past the limit.
-- A page that is rendered is bounded by `PdfRenderOptions.MaxOperations`, and the extraction of its text by a limit of
+- A page that is rendered is bounded by [PdfRenderOptions.MaxOperations](cref:Meziantou.Framework.Pdf.Rendering.PdfRenderOptions.MaxOperations), and the extraction of its text by a limit of
   its own: see [Rendering](../06-Rendering/01-Overview.md).
 - No other exception than those above escapes the reader on a damaged or hostile file: the library is tested against
   public corpora of broken files and by fuzzing.

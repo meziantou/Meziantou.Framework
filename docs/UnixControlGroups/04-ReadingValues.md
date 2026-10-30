@@ -5,7 +5,7 @@ description: Read the limits, the current usage and the statistics of a control 
 
 ## Values that can be absent
 
-A getter that reads a kernel file returns a `CGroupValue<T>` rather than a nullable value, because a value can be
+A getter that reads a kernel file returns a [CGroupValue\<T\>](cref:Meziantou.Framework.Unix.ControlGroups.CGroupValue{T}) rather than a nullable value, because a value can be
 absent for different reasons, which call for different decisions. "The memory controller is not enabled" and "the memory
 is unlimited" must not be confused by code that decides whether to apply its own limit.
 
@@ -36,40 +36,40 @@ parent.Delete();
 ```
 <!-- endref -->
 
-`State` tells what the file holds:
+[State](cref:Meziantou.Framework.Unix.ControlGroups.CGroupValue{T}.State) tells what the file holds:
 
-| `State` | Meaning |
+| [State](cref:Meziantou.Framework.Unix.ControlGroups.CGroupValue{T}.State) | Meaning |
 | --- | --- |
-| `Configured` | The file holds a value: `Value` returns it |
-| `NotConfigured` | The file holds no limit (`max`) |
-| `Unavailable` | The file does not exist: the controller is not enabled on the parent, or the kernel does not support the feature |
-| `Invalid` | The file holds content the library does not understand; `RawValue` keeps it |
+| [Configured](cref:Meziantou.Framework.Unix.ControlGroups.CGroupValueState.Configured) | The file holds a value: `Value` returns it |
+| [NotConfigured](cref:Meziantou.Framework.Unix.ControlGroups.CGroupValueState.NotConfigured) | The file holds no limit (`max`) |
+| [Unavailable](cref:Meziantou.Framework.Unix.ControlGroups.CGroupValueState.Unavailable) | The file does not exist: the controller is not enabled on the parent, or the kernel does not support the feature |
+| [Invalid](cref:Meziantou.Framework.Unix.ControlGroups.CGroupValueState.Invalid) | The file holds content the library does not understand; [RawValue](cref:Meziantou.Framework.Unix.ControlGroups.CGroupValue{T}.RawValue) keeps it |
 
 Read the value the way that fits your code:
 
-- `switch` on `State` when the cases call for different actions.
-- `TryGetValue` when only a value matters.
+- `switch` on [State](cref:Meziantou.Framework.Unix.ControlGroups.CGroupValue{T}.State) when the cases call for different actions.
+- [TryGetValue](cref:Meziantou.Framework.Unix.ControlGroups.CGroupValue{T}.TryGetValue) when only a value matters.
 - `GetValueOrDefault(fallback)` when a fallback is good enough.
-- `Value` throws an `InvalidOperationException` when the state is not `Configured`.
+- `Value` throws an `InvalidOperationException` when the state is not [Configured](cref:Meziantou.Framework.Unix.ControlGroups.CGroupValueState.Configured).
 
-`RawValue` gives the content of the file without its surrounding whitespace, or `null` when the file does not exist.
+[RawValue](cref:Meziantou.Framework.Unix.ControlGroups.CGroupValue{T}.RawValue) gives the content of the file without its surrounding whitespace, or `null` when the file does not exist.
 
 ## Limits and usage
 
 | Getter | Returns |
 | --- | --- |
-| `GetCpuWeight()` | The CPU weight |
-| `GetCpuMax()` | A `CpuMax`: `MaxMicroseconds`, `null` when unlimited, and `PeriodMicroseconds`. The state is never `NotConfigured`, because the period is meaningful without a limit |
-| `GetMemoryMax()`, `GetMemoryHigh()`, `GetMemoryLow()`, `GetMemoryMin()`, `GetSwapMax()` | The memory limits, in bytes |
-| `GetMemoryCurrent()` | The memory the group uses, in bytes |
-| `GetPidsMax()`, `GetPidsCurrent()` | The process limit and the current number of processes |
-| `GetCpusetCpus()`, `GetCpusetCpusEffective()`, `GetCpusetMems()`, `GetCpusetMemsEffective()` | The CPUs and memory nodes |
-| `GetCpusetPartition()` | The partition type |
+| [GetCpuWeight()](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.GetCpuWeight) | The CPU weight |
+| [GetCpuMax()](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.GetCpuMax) | A [CpuMax](cref:Meziantou.Framework.Unix.ControlGroups.CpuMax): [MaxMicroseconds](cref:Meziantou.Framework.Unix.ControlGroups.CpuMax.MaxMicroseconds), `null` when unlimited, and [PeriodMicroseconds](cref:Meziantou.Framework.Unix.ControlGroups.CpuMax.PeriodMicroseconds). The state is never [NotConfigured](cref:Meziantou.Framework.Unix.ControlGroups.CGroupValueState.NotConfigured), because the period is meaningful without a limit |
+| [GetMemoryMax()](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.GetMemoryMax), [GetMemoryHigh()](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.GetMemoryHigh), [GetMemoryLow()](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.GetMemoryLow), [GetMemoryMin()](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.GetMemoryMin), [GetSwapMax()](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.GetSwapMax) | The memory limits, in bytes |
+| [GetMemoryCurrent()](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.GetMemoryCurrent) | The memory the group uses, in bytes |
+| [GetPidsMax()](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.GetPidsMax), [GetPidsCurrent()](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.GetPidsCurrent) | The process limit and the current number of processes |
+| [GetCpusetCpus()](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.GetCpusetCpus), [GetCpusetCpusEffective()](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.GetCpusetCpusEffective), [GetCpusetMems()](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.GetCpusetMems), [GetCpusetMemsEffective()](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.GetCpusetMemsEffective) | The CPUs and memory nodes |
+| [GetCpusetPartition()](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.GetCpusetPartition) | The partition type |
 | `GetHugeTlbMax(pageSize)`, `GetHugeTlbCurrent(pageSize)`, `GetHugeTlbEventsMax(pageSize)` | The huge page limit, usage and refused allocations |
 
 ## Statistics
 
-`GetCpuStat` and `GetMemoryStat` read the statistics of the group:
+[GetCpuStat](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.GetCpuStat) and [GetMemoryStat](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.GetMemoryStat) read the statistics of the group:
 
 <!-- ref:../../tests/Meziantou.Framework.Unix.ControlGroups.Tests/CGroup2Tests.cs;region=CGroup2_Statistics;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -90,12 +90,12 @@ group.Delete();
 ```
 <!-- endref -->
 
-- `CpuStat` gives the CPU time the processes used, in microseconds: `UsageMicroseconds`, split into
-  `UserMicroseconds` and `SystemMicroseconds`. `NumberOfPeriods`, `NumberOfThrottled` and `ThrottledMicroseconds` tell
+- [CpuStat](cref:Meziantou.Framework.Unix.ControlGroups.CpuStat) gives the CPU time the processes used, in microseconds: [UsageMicroseconds](cref:Meziantou.Framework.Unix.ControlGroups.CpuStat.UsageMicroseconds), split into
+  [UserMicroseconds](cref:Meziantou.Framework.Unix.ControlGroups.CpuStat.UserMicroseconds) and [SystemMicroseconds](cref:Meziantou.Framework.Unix.ControlGroups.CpuStat.SystemMicroseconds). [NumberOfPeriods](cref:Meziantou.Framework.Unix.ControlGroups.CpuStat.NumberOfPeriods), [NumberOfThrottled](cref:Meziantou.Framework.Unix.ControlGroups.CpuStat.NumberOfThrottled) and [ThrottledMicroseconds](cref:Meziantou.Framework.Unix.ControlGroups.CpuStat.ThrottledMicroseconds) tell
   how often and how long the CPU limit throttled the group; they are `null` when the kernel does not report them, such as
   when the `cpu` controller is not enabled.
-- `MemoryStat` details the memory of the group in bytes, such as `Anon` (the memory the processes allocated), `File`
-  (the file cache), `Kernel` and `Sock`, and counts events such as `PageFault` and `PageMajorFault`.
+- [MemoryStat](cref:Meziantou.Framework.Unix.ControlGroups.MemoryStat) details the memory of the group in bytes, such as [Anon](cref:Meziantou.Framework.Unix.ControlGroups.MemoryStat.Anon) (the memory the processes allocated), `File`
+  (the file cache), [Kernel](cref:Meziantou.Framework.Unix.ControlGroups.MemoryStat.Kernel) and [Sock](cref:Meziantou.Framework.Unix.ControlGroups.MemoryStat.Sock), and counts events such as [PageFault](cref:Meziantou.Framework.Unix.ControlGroups.MemoryStat.PageFault) and [PageMajorFault](cref:Meziantou.Framework.Unix.ControlGroups.MemoryStat.PageMajorFault).
 - A statistic the running kernel does not report is `null`.
 
 To watch a group, read these values periodically: the CPU time grows, so the difference between two readings divided

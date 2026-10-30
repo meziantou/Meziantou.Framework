@@ -5,7 +5,7 @@ description: Check that an action raises an event, get its sender and arguments,
 
 ## Check that an event is raised
 
-`Raise` attaches a handler to the event, runs the action, detaches the handler, and returns the event that was raised:
+[Raise](cref:Meziantou.Framework.Assertions.Assert.Raise) attaches a handler to the event, runs the action, detaches the handler, and returns the event that was raised:
 
 <!-- ref:../../tests/Meziantou.Framework.Assertions.Tests/AssertRaiseTests.cs;region=Assert_Raise;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -23,11 +23,11 @@ Assert.Same(EventArgs.Empty, raised.Arguments);
 <!-- endref -->
 
 The first two delegates attach and detach the handler: C# cannot pass an event as an argument, only a delegate that
-subscribes to it. The returned `RaisedEvent<TEventArgs>` has the `Sender` and the `Arguments` of the event.
+subscribes to it. The returned [RaisedEvent\<TEventArgs\>](cref:Meziantou.Framework.Assertions.RaisedEvent{TEventArgs}) has the [Sender](cref:Meziantou.Framework.Assertions.RaisedEvent{TEventArgs}.Sender) and the [Arguments](cref:Meziantou.Framework.Assertions.RaisedEvent{TEventArgs}.Arguments) of the event.
 
 ## Events with event arguments
 
-For an `EventHandler<TEventArgs>` event, use `Raise<TEventArgs>`. For an event of another delegate type, such as
+For an `EventHandler<TEventArgs>` event, use [Raise\<TEventArgs\>](cref:Meziantou.Framework.Assertions.Assert.Raise). For an event of another delegate type, such as
 `PropertyChangedEventHandler`, attach `handler.Invoke`: it converts the handler to the delegate type of the event, and
 detaching `handler.Invoke` removes it.
 
@@ -58,9 +58,9 @@ Assert.DoesNotRaise<PropertyChangedEventArgs>(
 | `DoesNotRaise<T>(attach, detach, action)` | no event whose arguments are exactly of type `T` |
 | `DoesNotRaiseAny<T>(attach, detach, action)` | no event whose arguments are of type `T` or a derived type |
 
-- When the event is raised several times, `Raise` returns the first event whose arguments match: here, the
+- When the event is raised several times, [Raise](cref:Meziantou.Framework.Assertions.Assert.Raise) returns the first event whose arguments match: here, the
   `PropertyChanged` event of `Count`, raised before the one of `Item[]`.
-- An event raised with `null` arguments matches any type of arguments. `DoesNotRaise` fails for it too.
+- An event raised with `null` arguments matches any type of arguments. [DoesNotRaise](cref:Meziantou.Framework.Assertions.Assert.DoesNotRaise) fails for it too.
 - Without a type parameter, the assertions take an `EventHandler` event and its `EventArgs`.
 
 ## Asynchronous actions
@@ -68,5 +68,5 @@ Assert.DoesNotRaise<PropertyChangedEventArgs>(
 When the action returns a `Task` or a `ValueTask`, the assertion awaits it before it detaches the handler, and returns
 a task: await the assertion, as for [exceptions](08-Exceptions.md#asynchronous-code).
 
-The names `Raises`, `RaisesAny`, `RaisesAsync`, `RaisesAnyAsync`, `NotRaisedAny` and `NotRaisedAnyAsync` are also
+The names [Raises](cref:Meziantou.Framework.Assertions.Assert.Raises), [RaisesAny](cref:Meziantou.Framework.Assertions.Assert.RaisesAny), [RaisesAsync](cref:Meziantou.Framework.Assertions.Assert.RaisesAsync), [RaisesAnyAsync](cref:Meziantou.Framework.Assertions.Assert.RaisesAnyAsync), [NotRaisedAny](cref:Meziantou.Framework.Assertions.Assert.NotRaisedAny) and [NotRaisedAnyAsync](cref:Meziantou.Framework.Assertions.Assert.NotRaisedAnyAsync) are also
 available.

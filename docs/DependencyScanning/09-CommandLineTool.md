@@ -63,11 +63,11 @@ Commit or stash your changes before running it, so that you can review the chang
 
 | Type | Source of the versions |
 | --- | --- |
-| `NuGet` | The NuGet sources of the `nuget.config` files of the repository, or nuget.org when there is none |
-| `Npm` | The registry of the `.npmrc` files of the repository, or `https://registry.npmjs.org/` |
-| `DockerImage` | The registry of the image |
-| `GitHubActions` | The tags of the repository of the action, on GitHub |
-| `DotNetSdk` | The latest SDK of each .NET release channel |
+| [NuGet](cref:Meziantou.Framework.DependencyScanning.DependencyType.NuGet) | The NuGet sources of the `nuget.config` files of the repository, or nuget.org when there is none |
+| [Npm](cref:Meziantou.Framework.DependencyScanning.DependencyType.Npm) | The registry of the `.npmrc` files of the repository, or `https://registry.npmjs.org/` |
+| [DockerImage](cref:Meziantou.Framework.DependencyScanning.DependencyType.DockerImage) | The registry of the image |
+| [GitHubActions](cref:Meziantou.Framework.DependencyScanning.DependencyType.GitHubActions) | The tags of the repository of the action, on GitHub |
+| [DotNetSdk](cref:Meziantou.Framework.DependencyScanning.DependencyType.DotNetSdk) | The latest SDK of each .NET release channel |
 
 The new version must be compatible with the current one:
 

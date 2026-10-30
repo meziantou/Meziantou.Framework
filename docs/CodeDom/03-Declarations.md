@@ -5,7 +5,7 @@ description: Declare namespaces, classes, structs, records, interfaces, enums, d
 
 ## Compilation units and namespaces
 
-A `CompilationUnit` is a file. It contains `using` directives, namespaces and types. A `NamespaceDeclaration` can also
+A [CompilationUnit](cref:Meziantou.Framework.CodeDom.CompilationUnit) is a file. It contains `using` directives, namespaces and types. A [NamespaceDeclaration](cref:Meziantou.Framework.CodeDom.NamespaceDeclaration) can also
 have its own `using` directives and nested namespaces:
 
 <!-- ref:../../tests/Meziantou.Framework.CodeDom.Tests/CSharpCodeGeneratorTests.cs;region=CompilationUnit_Example;format=md-fenced-code-block;dedent=true -->
@@ -39,15 +39,15 @@ Assert.Contains("class MyClass", code);
 
 | Class | Declares |
 | --- | --- |
-| `ClassDeclaration` | A class, with an optional `BaseType`. |
-| `StructDeclaration` | A struct. |
-| `RecordDeclaration`, `RecordStructDeclaration` | A record class or a record struct. |
-| `InterfaceDeclaration` | An interface. |
-| `EnumerationDeclaration` | An enum, with its `BaseType` and its `EnumerationMember` items. |
-| `DelegateDeclaration` | A delegate, with its return type and arguments. |
+| [ClassDeclaration](cref:Meziantou.Framework.CodeDom.ClassDeclaration) | A class, with an optional [BaseType](cref:Meziantou.Framework.CodeDom.ClassDeclaration.BaseType). |
+| [StructDeclaration](cref:Meziantou.Framework.CodeDom.StructDeclaration) | A struct. |
+| [RecordDeclaration](cref:Meziantou.Framework.CodeDom.RecordDeclaration), [RecordStructDeclaration](cref:Meziantou.Framework.CodeDom.RecordStructDeclaration) | A record class or a record struct. |
+| [InterfaceDeclaration](cref:Meziantou.Framework.CodeDom.InterfaceDeclaration) | An interface. |
+| [EnumerationDeclaration](cref:Meziantou.Framework.CodeDom.EnumerationDeclaration) | An enum, with its [BaseType](cref:Meziantou.Framework.CodeDom.EnumerationDeclaration.BaseType) and its [EnumerationMember](cref:Meziantou.Framework.CodeDom.EnumerationMember) items. |
+| [DelegateDeclaration](cref:Meziantou.Framework.CodeDom.DelegateDeclaration) | A delegate, with its return type and arguments. |
 
-Every type has `Modifiers` and `CustomAttributes`. Classes, structs, records and interfaces have `Members`, generic
-`Parameters` and the interfaces they `Implements`:
+Every type has [Modifiers](cref:Meziantou.Framework.CodeDom.Modifiers) and [CustomAttributes](cref:Meziantou.Framework.CodeDom.TypeDeclaration.CustomAttributes). Classes, structs, records and interfaces have [Members](cref:Meziantou.Framework.CodeDom.ClassOrStructDeclaration.Members), generic
+[Parameters](cref:Meziantou.Framework.CodeDom.ClassOrStructDeclaration.Parameters) and the interfaces they [Implements](cref:Meziantou.Framework.CodeDom.ClassOrStructDeclaration.Implements):
 
 <!-- ref:../../tests/Meziantou.Framework.CodeDom.Tests/CSharpCodeGeneratorTests.cs;region=ClassDeclaration_Example;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -112,7 +112,7 @@ Assert.Equal("""
 ```
 <!-- endref -->
 
-`Modifiers` is a flags enum: combine the values with `|`, such as `Modifiers.Public | Modifiers.Static |
+[Modifiers](cref:Meziantou.Framework.CodeDom.Modifiers) is a flags enum: combine the values with `|`, such as `Modifiers.Public | Modifiers.Static |
 Modifiers.Partial`.
 
 ### Enums and delegates
@@ -150,7 +150,7 @@ Assert.Equal("""
 
 ### Generic types
 
-A `TypeParameter` added to `Parameters` declares a type parameter. It converts to a type reference, so it can be used
+A [TypeParameter](cref:Meziantou.Framework.CodeDom.TypeParameter) added to [Parameters](cref:Meziantou.Framework.CodeDom.ClassOrStructDeclaration.Parameters) declares a type parameter. It converts to a type reference, so it can be used
 as the type of a member:
 
 <!-- ref:../../tests/Meziantou.Framework.CodeDom.Tests/CSharpCodeGeneratorTests.cs;region=InterfaceDeclaration_Example;format=md-fenced-code-block;dedent=true -->
@@ -166,21 +166,21 @@ Assert.Contains("Get();", code);
 ```
 <!-- endref -->
 
-The `Constraints` of a type parameter accept the `class`, `struct`, `unmanaged`, `new()` and base type constraints
-(`ClassTypeParameterConstraint`, `ValueTypeTypeParameterConstraint`, `UnmanagedTypeParameterConstraint`,
-`ConstructorParameterConstraint` and `BaseTypeParameterConstraint`).
+The [Constraints](cref:Meziantou.Framework.CodeDom.TypeParameter.Constraints) of a type parameter accept the `class`, `struct`, `unmanaged`, `new()` and base type constraints
+([ClassTypeParameterConstraint](cref:Meziantou.Framework.CodeDom.ClassTypeParameterConstraint), [ValueTypeTypeParameterConstraint](cref:Meziantou.Framework.CodeDom.ValueTypeTypeParameterConstraint), [UnmanagedTypeParameterConstraint](cref:Meziantou.Framework.CodeDom.UnmanagedTypeParameterConstraint),
+[ConstructorParameterConstraint](cref:Meziantou.Framework.CodeDom.ConstructorParameterConstraint) and [BaseTypeParameterConstraint](cref:Meziantou.Framework.CodeDom.BaseTypeParameterConstraint)).
 
 ## Members
 
 | Class | Declares |
 | --- | --- |
-| `FieldDeclaration` | A field, with an optional initializer. |
-| `PropertyDeclaration` | A property, with a `Getter` and a `Setter`. |
-| `MethodDeclaration` | A method, with its return type, arguments, type parameters and statements. |
-| `ConstructorDeclaration` | A constructor, with an optional `base(...)` or `this(...)` initializer. |
-| `EventFieldDeclaration` | An event. |
-| `OperatorDeclaration` | An operator, including implicit and explicit conversions. |
-| `EnumerationMember` | A member of an enum. |
+| [FieldDeclaration](cref:Meziantou.Framework.CodeDom.FieldDeclaration) | A field, with an optional initializer. |
+| [PropertyDeclaration](cref:Meziantou.Framework.CodeDom.PropertyDeclaration) | A property, with a [Getter](cref:Meziantou.Framework.CodeDom.PropertyDeclaration.Getter) and a [Setter](cref:Meziantou.Framework.CodeDom.PropertyDeclaration.Setter). |
+| [MethodDeclaration](cref:Meziantou.Framework.CodeDom.MethodDeclaration) | A method, with its return type, arguments, type parameters and statements. |
+| [ConstructorDeclaration](cref:Meziantou.Framework.CodeDom.ConstructorDeclaration) | A constructor, with an optional `base(...)` or `this(...)` initializer. |
+| [EventFieldDeclaration](cref:Meziantou.Framework.CodeDom.EventFieldDeclaration) | An event. |
+| [OperatorDeclaration](cref:Meziantou.Framework.CodeDom.OperatorDeclaration) | An operator, including implicit and explicit conversions. |
+| [EnumerationMember](cref:Meziantou.Framework.CodeDom.EnumerationMember) | A member of an enum. |
 
 <!-- ref:../../tests/Meziantou.Framework.CodeDom.Tests/CSharpCodeGeneratorTests.cs;region=FieldDeclaration_Example;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -232,7 +232,7 @@ Assert.Equal("""
 ```
 <!-- endref -->
 
-A property accessor is a `PropertyAccessorDeclaration`. A statement converts to an accessor, and an accessor without
+A property accessor is a [PropertyAccessorDeclaration](cref:Meziantou.Framework.CodeDom.PropertyAccessorDeclaration). A statement converts to an accessor, and an accessor without
 statements is written as an auto-implemented accessor (`get;`):
 
 <!-- ref:../../tests/Meziantou.Framework.CodeDom.Tests/CSharpCodeGeneratorTests.cs;region=PropertyDeclaration_Example;format=md-fenced-code-block;dedent=true -->
@@ -261,7 +261,7 @@ Assert.Equal("""
 
 ## Attributes
 
-A `CustomAttribute` has a type and `Arguments`. A `CustomAttributeArgument` with a `PropertyName` is a named argument.
+A [CustomAttribute](cref:Meziantou.Framework.CodeDom.CustomAttribute) has a type and [Arguments](cref:Meziantou.Framework.CodeDom.CustomAttribute.Arguments). A [CustomAttributeArgument](cref:Meziantou.Framework.CodeDom.CustomAttributeArgument) with a [PropertyName](cref:Meziantou.Framework.CodeDom.CustomAttributeArgument.PropertyName) is a named argument.
 Add attributes to the `CustomAttributes` collection of a type, a member, an argument or an accessor:
 
 <!-- ref:../../tests/Meziantou.Framework.CodeDom.Tests/CSharpCodeGeneratorTests.cs;region=CustomAttribute_Example;format=md-fenced-code-block;dedent=true -->

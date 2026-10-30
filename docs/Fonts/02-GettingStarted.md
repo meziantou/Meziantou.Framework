@@ -12,11 +12,11 @@ dotnet add package Meziantou.Framework.Fonts
 ```
 
 The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework.Fonts;`, and
-`using Meziantou.Framework;` for the Unicode types (`UnicodeScript`).
+`using Meziantou.Framework;` for the Unicode types ([UnicodeScript](cref:Meziantou.Framework.UnicodeScript)).
 
 ## Load a font and read it
 
-`FontLoader.Load` reads a font file and gives its faces. A `PooledFontEnvironment` gives the limits of the font code
+[FontLoader.Load](cref:Meziantou.Framework.Fonts.FontLoader.Load) reads a font file and gives its faces. A [PooledFontEnvironment](cref:Meziantou.Framework.Fonts.PooledFontEnvironment) gives the limits of the font code
 and the storage of its temporary buffers:
 
 <!-- ref:../../tests/Meziantou.Framework.Imaging.Tests/FontTests.cs;region=Fonts_LoadFontFace;format=md-fenced-code-block;dedent=true -->
@@ -43,10 +43,10 @@ With the regular face of Noto Sans, the result is
 
 - A font file gives one face, and a font collection (`.ttc`, `.otc`) one face per font. The format is detected from
   the content, never from the file name; WOFF and WOFF2 files are expanded in memory.
-- The values of a font are in font units: divide them by `UnitsPerEm` and multiply them by the size of the text to
+- The values of a font are in font units: divide them by [UnitsPerEm](cref:Meziantou.Framework.Fonts.FontFace.UnitsPerEm) and multiply them by the size of the text to
   get pixels or points.
-- `MapCodePoint` gives the glyph of a character, or 0, the missing glyph, when the font does not have it.
-- Load a font once and reuse it: a `FontFace` is immutable and can be used by several threads at the same time.
+- [MapCodePoint](cref:Meziantou.Framework.Fonts.FontFace.MapCodePoint) gives the glyph of a character, or 0, the missing glyph, when the font does not have it.
+- Load a font once and reuse it: a [FontFace](cref:Meziantou.Framework.Fonts.FontFace) is immutable and can be used by several threads at the same time.
 
 ## Next steps
 

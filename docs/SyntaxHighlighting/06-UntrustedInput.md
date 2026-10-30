@@ -16,8 +16,8 @@ yourself, such as a `language-…` class built from a language identifier of you
 
 ## Unknown languages
 
-`Highlight` throws a `NotSupportedException` when it does not know the language. When the identifier comes from your
-users, such as the language of a Markdown code block, use `TryHighlight`, or check it with `IsSupported`, and render the
+[Highlight](cref:Meziantou.Framework.SyntaxHighlighting.SyntaxHighlighter.Highlight) throws a `NotSupportedException` when it does not know the language. When the identifier comes from your
+users, such as the language of a Markdown code block, use [TryHighlight](cref:Meziantou.Framework.SyntaxHighlighting.SyntaxHighlighter.TryHighlight), or check it with [IsSupported](cref:Meziantou.Framework.SyntaxHighlighting.SyntaxHighlighter.IsSupported), and render the
 code as plain text otherwise:
 
 <!-- ref:../../tests/Meziantou.Framework.SyntaxHighlighting.Tests/HighlighterTests.cs;region=SyntaxHighlighter_TryHighlight;format=md-fenced-code-block;dedent=true -->
@@ -38,7 +38,7 @@ Assert.Equal("&lt;b&gt;Hello&lt;/b&gt;", html);
 ## Bound the matching time
 
 The grammars are regular expressions, and a hostile input can make some of them slow. Set
-`HighlightOptions.MatchTimeout` to bound each match. When a match takes longer, the code is returned as plain, encoded
+[HighlightOptions.MatchTimeout](cref:Meziantou.Framework.SyntaxHighlighting.HighlightOptions.MatchTimeout) to bound each match. When a match takes longer, the code is returned as plain, encoded
 text rather than blocking the caller:
 
 <!-- ref:../../tests/Meziantou.Framework.SyntaxHighlighting.Tests/HighlighterTests.cs;region=SyntaxHighlighter_MatchTimeout;format=md-fenced-code-block;dedent=true -->

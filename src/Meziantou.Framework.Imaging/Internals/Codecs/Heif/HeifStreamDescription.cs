@@ -22,6 +22,16 @@ internal abstract class HeifStreamDescription
     public virtual Size? OutputSize => null;
 
     /// <summary>
+    /// Records a coded picture of the stream (an image, a tile of a grid or a sample of a track) before its configuration
+    /// box is written: the configuration of a codec can depend on the size of the coded pictures (the level of an HEVC
+    /// stream). A configuration box describes the pictures recorded when it is written.
+    /// </summary>
+    /// <param name="length">The number of bytes of the coded data of the picture, as the container stores them.</param>
+    public virtual void RecordCodedPicture(int length)
+    {
+    }
+
+    /// <summary>
     /// Writes the box that holds the configuration record of the codec (<see cref="HeifCodecBinding.ConfigurationBoxType"/>):
     /// a property of an image item, and a box of the sample entry of a track.
     /// </summary>

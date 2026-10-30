@@ -280,7 +280,7 @@ internal sealed class ImageReaderCore : IDisposable, IAsyncDisposable
         options ??= ImageReaderOptions.Default;
         var session = new SequentialDecodeSession();
         var context = new ImageCodecContext(options.Configuration, "ImageReader", session, cancellationToken);
-        var input = new ImageInputBuffer(stream, ownsStream || !options.LeaveOpen, context, ImageInputBuffer.GetDecodeCapacity(stream, ownsStream, context));
+        var input = ImageInputBuffer.CreateForDecode(stream, ownsStream, disposeStream: ownsStream || !options.LeaveOpen, context);
         return new ImageReaderCore(context, input, session, options, pixelFormat);
     }
 

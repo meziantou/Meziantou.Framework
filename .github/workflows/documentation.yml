@@ -1,0 +1,78 @@
+name: Documentation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+      - 'docgen.json'
+      - 'dotnet-tools.json'
+      - '.github/workflows/documentation.yml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+      - 'docgen.json'
+      - 'dotnet-tools.json'
+      - '.github/workflows/documentation.yml'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref == 'refs/heads/main' && github.run_id || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: 1
+  DOTNET_NOLOGO: true
+
+defaults:
+  run:
+    shell: pwsh
+
+jobs:
+  build_documentation:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Setup .NET
+        uses: $/.github/actions/setup-dotnet
+      - name: Restore tools
+        run: dotnet tool restore
+      # Downloads the packages listed in docgen.json (kept up to date by eng/update-all.cs) and generates the site
+      # in artifacts/docs. Broken links and invalid pages are errors; the warnings are about the XML documentation of
+      # the packages and of their references, so they do not fail the build.
+      - name: Build documentation
+        run: dotnet Meziantou.DocumentationGenerator build
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: documentation
+          path: artifacts/docs
+          if-no-files-found: error
+
+  publish_documentation:
+    if: github.ref == 'refs/heads/main'
+    needs: build_documentation
+    runs-on: ubuntu-26.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: documentation
+          path: artifacts/docs
+      - uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
+        with:
+          path: artifacts/docs
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4

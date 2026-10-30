@@ -26,16 +26,16 @@ var url = new UriBuilder("http", "127.0.0.1", hostPort).Uri;
 - `Ports.Add(hostPort, containerPort)` publishes the port on a fixed host port. The host port comes first.
 - A container port is published on one host port only: adding it twice throws an `ArgumentException`. `Ports.Remove`
   removes it, for instance from a [database definition](../03-Databases.md) you want to publish differently.
-- `GetMappedPort` returns the host port of a published container port. It throws an `InvalidOperationException` before
-  `StartAsync`, and for a port that is not published.
+- [GetMappedPort](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.GetMappedPort) returns the host port of a published container port. It throws an `InvalidOperationException` before
+  [StartAsync](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.StartAsync), and for a port that is not published.
 
-When a random host port is taken by another process between the creation of the container and its start, `StartAsync`
-creates a new container with other ports, unless the container has a `ReuseId`.
+When a random host port is taken by another process between the creation of the container and its start, [StartAsync](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.StartAsync)
+creates a new container with other ports, unless the container has a [ReuseId](cref:Meziantou.Framework.TemporaryContainers.ContainerDefinition.ReuseId).
 
 ## Listen on another address
 
-Ports are published on the loopback address (`127.0.0.1`, the `ContainerPort.DefaultHostIp` constant): the container is
-reachable from this machine only, so a test database is not exposed to the network. Set `HostIp` to publish a port on
+Ports are published on the loopback address (`127.0.0.1`, the [ContainerPort.DefaultHostIp](cref:Meziantou.Framework.TemporaryContainers.ContainerPort.DefaultHostIp) constant): the container is
+reachable from this machine only, so a test database is not exposed to the network. Set [HostIp](cref:Meziantou.Framework.TemporaryContainers.ContainerPort.HostIp) to publish a port on
 another address:
 
 <!-- ref:../../../samples/Meziantou.Framework.TemporaryContainers.Samples/ReadmeExamples.cs;region=TemporaryContainers_HostIp;format=md-fenced-code-block;dedent=true -->
@@ -49,5 +49,5 @@ address is not passed to them. Apple's `container` cannot publish a port on an I
 
 ## After a restart
 
-`StartAsync` and `RestartAsync` read the port mapping again, since a container that starts again may get other host
-ports. Call `GetMappedPort` after them rather than keeping the port of an earlier start.
+[StartAsync](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.StartAsync) and [RestartAsync](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.RestartAsync) read the port mapping again, since a container that starts again may get other host
+ports. Call [GetMappedPort](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.GetMappedPort) after them rather than keeping the port of an earlier start.

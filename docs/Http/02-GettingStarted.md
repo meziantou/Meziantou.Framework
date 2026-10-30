@@ -17,7 +17,7 @@ The [introduction](01-Introduction.md#packages) lists every package. The types a
 
 | Package | Namespace |
 | --- | --- |
-| `Meziantou.Framework.Http`, `.Hsts`, `.Htpasswd` | [Meziantou.Framework.Http](cref:Meziantou.Framework.Http) |
+| `Meziantou.Framework.Http`, `.Hsts`, `.Htpasswd` | [Meziantou.Framework.Http](cref:Meziantou.Framework.Http!N:Meziantou.Framework.Http) |
 | `Meziantou.Framework.Http.Caching` | [Meziantou.Framework.Http.Caching](cref:Meziantou.Framework.Http.Caching) |
 | `Meziantou.Framework.Http.Caching.InMemory`, `.Sqlite`, `.Redis` | [Meziantou.Framework.Http.Caching.InMemory](cref:Meziantou.Framework.Http.Caching.InMemory), `.Sqlite`, `.Redis` |
 | `Meziantou.Framework.Http.Recording` | [Meziantou.Framework.Http.Recording](cref:Meziantou.Framework.Http.Recording) |
@@ -40,7 +40,7 @@ using var response = await client.GetAsync("http://github.com");
 ```
 <!-- endref -->
 
-Every request sent by this client goes through `HstsClientHandler` before it reaches the network. With
+Every request sent by this client goes through [HstsClientHandler](cref:Meziantou.Framework.Http.HstsClientHandler) before it reaches the network. With
 `disposeHandler: true`, disposing the client disposes the handlers.
 
 A handler is a link of a chain: its inner handler can itself be a `DelegatingHandler`. Each page says what a handler

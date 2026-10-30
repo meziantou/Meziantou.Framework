@@ -12,12 +12,12 @@ with them.
 dotnet add package Meziantou.Framework.Unicode.Dictionaries
 ```
 
-The package depends on `Meziantou.Framework.Unicode`, and its types are in the [Meziantou.Framework](cref:Meziantou.Framework) namespace too.
+The package depends on `Meziantou.Framework.Unicode`, and its types are in the [Meziantou.Framework](cref:Meziantou.Framework.Unicode.Dictionaries!N:Meziantou.Framework) namespace too.
 
 ## Wrap text
 
-`IcuWordDictionary.CreateLineBreakDictionary` gives a `LineBreakDictionary` with the words of Thai, Lao, Khmer and
-Burmese, for `Unicode.EnumerateLineBreaks`:
+[IcuWordDictionary.CreateLineBreakDictionary](cref:Meziantou.Framework.IcuWordDictionary.CreateLineBreakDictionary) gives a [LineBreakDictionary](cref:Meziantou.Framework.LineBreakDictionary) with the words of Thai, Lao, Khmer and
+Burmese, for [Unicode.EnumerateLineBreaks](cref:Meziantou.Framework.Unicode.EnumerateLineBreaks):
 
 <!-- ref:../../tests/Meziantou.Framework.Unicode.Dictionaries.Tests/IcuDictionaryTests.cs;region=IcuWordDictionary_LineBreaks;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -36,13 +36,13 @@ Assert.Equal([4, 7, 11, 14, 19], breaks); // before each word, and at the end of
 <!-- endref -->
 
 The dictionary also works with the text layout of [Meziantou.Framework.Imaging](../Imaging/08-Text/04-TextLayout.md#hyphenation-and-scripts-without-spaces)
-(`TextLayoutOptions.LineBreakDictionary`). A `LineBreakDictionary` segments text with its own rule, described in
+([TextLayoutOptions.LineBreakDictionary](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.LineBreakDictionary)). A [LineBreakDictionary](cref:Meziantou.Framework.LineBreakDictionary) segments text with its own rule, described in
 [Line breaking](08-LineBreaking.md#how-the-words-are-chosen): its breaks are close to the ones of the engines below, but
 not always the same.
 
 ## Find the words of a run
 
-An engine finds the words inside a run of the characters it handles (`Handles`). The positions it writes are where the
+An engine finds the words inside a run of the characters it handles ([Handles](cref:Meziantou.Framework.IcuDictionaryBreakEngine.Handles)). The positions it writes are where the
 words start, other than the start of the run:
 
 <!-- ref:../../tests/Meziantou.Framework.Unicode.Dictionaries.Tests/IcuDictionaryTests.cs;region=IcuDictionaryBreakEngine_FindBreaks;format=md-fenced-code-block;dedent=true -->
@@ -59,7 +59,7 @@ Assert.Equal([4, 7, 11, 14], breaks[..count].ToArray());
 <!-- endref -->
 
 The engines do not find the runs: apply the rules of your segmentation, such as the word or line breaking rules of
-Unicode, and give each run of the characters of an engine to that engine. `IcuDictionaryBreakEngine.GetEngine` returns
+Unicode, and give each run of the characters of an engine to that engine. [IcuDictionaryBreakEngine.GetEngine](cref:Meziantou.Framework.IcuDictionaryBreakEngine.GetEngine) returns
 the engine of a character, or `null`:
 
 <!-- ref:../../tests/Meziantou.Framework.Unicode.Dictionaries.Tests/IcuDictionaryTests.cs;region=IcuDictionaryBreakEngine_Segment;format=md-fenced-code-block;dedent=true -->
@@ -104,14 +104,14 @@ Assert.Equal(["ພາສາ", "ລາວ", "ງ່າຍ"], SplitWords("ພາ�
 
 | Engine | Characters | How the words are chosen |
 | --- | --- | --- |
-| `ChineseJapanese` | Han, Hiragana and Katakana | The segmentation whose words have the smallest total cost; the run is normalized to NFKC before the words are looked up |
-| `Thai`, `Lao`, `Khmer`, `Burmese` | The characters of these scripts whose line breaking class is `Complex_Context` | The longest words that are followed by other words of the list, with up to three words of lookahead; the characters that start no word are attached to the word before them |
+| [ChineseJapanese](cref:Meziantou.Framework.IcuDictionaryBreakEngine.ChineseJapanese) | Han, Hiragana and Katakana | The segmentation whose words have the smallest total cost; the run is normalized to NFKC before the words are looked up |
+| [Thai](cref:Meziantou.Framework.IcuDictionaryBreakEngine.Thai), [Lao](cref:Meziantou.Framework.IcuDictionaryBreakEngine.Lao), [Khmer](cref:Meziantou.Framework.IcuDictionaryBreakEngine.Khmer), [Burmese](cref:Meziantou.Framework.IcuDictionaryBreakEngine.Burmese) | The characters of these scripts whose line breaking class is `Complex_Context` | The longest words that are followed by other words of the list, with up to three words of lookahead; the characters that start no word are attached to the word before them |
 
 The engines are stateless and can be used by several threads at the same time.
 
 ## Word lists
 
-`IcuWordDictionary.Get` gives the list of a language. A list is loaded the first time it is used: an application that
+[IcuWordDictionary.Get](cref:Meziantou.Framework.IcuWordDictionary.Get) gives the list of a language. A list is loaded the first time it is used: an application that
 only segments Thai text only loads the Thai list.
 
 <!-- ref:../../tests/Meziantou.Framework.Unicode.Dictionaries.Tests/IcuDictionaryTests.cs;region=IcuWordDictionary_Contains;format=md-fenced-code-block;dedent=true -->
@@ -133,5 +133,5 @@ to 3 MB (Chinese and Japanese).
 ## Licenses
 
 The word lists and the engines are under the Unicode License v3, and the lists of Chinese and Japanese, Lao and Burmese
-have additional notices: the `THIRD-PARTY-NOTICES.md` file of the package has them. `IcuWordDictionary.IcuVersion`
+have additional notices: the `THIRD-PARTY-NOTICES.md` file of the package has them. [IcuWordDictionary.IcuVersion](cref:Meziantou.Framework.IcuWordDictionary.IcuVersion)
 gives the version of the data.

@@ -18,7 +18,7 @@ Assert.Equal("draft_x46_", IOUtilities.ToValidFileName("draft."));
 ```
 <!-- endref -->
 
-`IOUtilities.ToValidFileName` turns any text, such as a title, into a file name:
+[IOUtilities.ToValidFileName](cref:Meziantou.Framework.IOUtilities.ToValidFileName) turns any text, such as a title, into a file name:
 
 - The characters that are invalid in a file name on the current operating system are replaced by `_x<code>_`, where
   `<code>` is the decimal code of the character. Windows forbids more characters than Linux and macOS, so the result
@@ -54,14 +54,14 @@ Assert.False(Directory.Exists(destination));
 ```
 <!-- endref -->
 
-- `PathCreateDirectory` creates the folder that contains a file, and its parents, when they do not exist.
-- `CopyDirectory` copies the files and subfolders of a folder. It throws a `DirectoryNotFoundException` when the source
+- [PathCreateDirectory](cref:Meziantou.Framework.IOUtilities.PathCreateDirectory) creates the folder that contains a file, and its parents, when they do not exist.
+- [CopyDirectory](cref:Meziantou.Framework.IOUtilities.CopyDirectory) copies the files and subfolders of a folder. It throws a `DirectoryNotFoundException` when the source
   does not exist, and an `IOException` when a file already exists in the destination.
-- `Delete` deletes a file, or a folder and its content, and does nothing when the path does not exist. It removes the
+- [Delete](cref:Meziantou.Framework.IOUtilities.Delete) deletes a file, or a folder and its content, and does nothing when the path does not exist. It removes the
   read-only attribute that prevents deleting a file, and retries when a file is temporarily locked by another process,
   such as an antivirus. Symbolic links and junctions are deleted as links: the content of their target is kept.
-- `DeleteAsync` does the same and waits asynchronously between the retries.
-- `PathUnprotect` removes the read-only attribute of a file, and `IsSharingViolation` tells whether an `IOException` was
+- [DeleteAsync](cref:Meziantou.Framework.IOUtilities.DeleteAsync) does the same and waits asynchronously between the retries.
+- [PathUnprotect](cref:Meziantou.Framework.IOUtilities.PathUnprotect) removes the read-only attribute of a file, and [IsSharingViolation](cref:Meziantou.Framework.IOUtilities.IsSharingViolation) tells whether an `IOException` was
   caused by a file locked by another process.
 
 ## Read a stream completely
@@ -83,14 +83,14 @@ Assert.Equal([3, 4, 5], rest);
 ```
 <!-- endref -->
 
-- `TryReadAll` fills the buffer, and returns the number of bytes read: fewer than the length of the buffer only when the
+- [TryReadAll](cref:Meziantou.Framework.StreamExtensions.TryReadAll) fills the buffer, and returns the number of bytes read: fewer than the length of the buffer only when the
   end of the stream is reached first.
-- `ReadToEnd` and `ReadToEndAsync` return the remaining bytes of the stream as an array.
-- `ToMemoryStreamAsync` copies the remaining bytes to a new `MemoryStream`, positioned at its beginning.
+- [ReadToEnd](cref:Meziantou.Framework.StreamExtensions.ReadToEnd) and [ReadToEndAsync](cref:Meziantou.Framework.StreamExtensions.ReadToEndAsync) return the remaining bytes of the stream as an array.
+- [ToMemoryStreamAsync](cref:Meziantou.Framework.StreamExtensions.ToMemoryStreamAsync) copies the remaining bytes to a new `MemoryStream`, positioned at its beginning.
 
 ## Restrict a stream
 
-`RestrictedStream` wraps a stream and only allows the operations you choose. Use it to give a stream to code you do not
+[RestrictedStream](cref:Meziantou.Framework.RestrictedStream) wraps a stream and only allows the operations you choose. Use it to give a stream to code you do not
 control, or to test how your code behaves with a stream that cannot seek or returns small chunks:
 
 <!-- ref:../../tests/Meziantou.Framework.Tests/RestrictedStreamTests.cs;region=RestrictedStream_Usage;format=md-fenced-code-block;dedent=true -->
@@ -113,14 +113,14 @@ Assert.Throws<NotSupportedException>(() => stream.Write([5]));
 ```
 <!-- endref -->
 
-| `RestrictedStreamOptions` property | Allows |
+| [RestrictedStreamOptions](cref:Meziantou.Framework.RestrictedStreamOptions) property | Allows |
 | --- | --- |
-| `AllowReading` | Reading |
-| `AllowWriting` | Writing |
-| `AllowSeeking` | Seeking and setting the position |
-| `AllowSynchronousCalls` | The synchronous methods |
-| `AllowAsynchronousCalls` | The asynchronous methods |
-| `MaxReadLength` | At most this number of bytes per read; 0 or less means no limit |
+| [AllowReading](cref:Meziantou.Framework.RestrictedStreamOptions.AllowReading) | Reading |
+| [AllowWriting](cref:Meziantou.Framework.RestrictedStreamOptions.AllowWriting) | Writing |
+| [AllowSeeking](cref:Meziantou.Framework.RestrictedStreamOptions.AllowSeeking) | Seeking and setting the position |
+| [AllowSynchronousCalls](cref:Meziantou.Framework.RestrictedStreamOptions.AllowSynchronousCalls) | The synchronous methods |
+| [AllowAsynchronousCalls](cref:Meziantou.Framework.RestrictedStreamOptions.AllowAsynchronousCalls) | The asynchronous methods |
+| [MaxReadLength](cref:Meziantou.Framework.RestrictedStreamOptions.MaxReadLength) | At most this number of bytes per read; 0 or less means no limit |
 
 Every option is `false` by default. A forbidden operation throws a `NotSupportedException`, and `CanRead`, `CanWrite`
 and `CanSeek` reflect the options and the wrapped stream.

@@ -14,7 +14,7 @@ There are two places to do it:
 
 ## Scrub values by type
 
-`ScrubValue<T>` replaces each distinct value of a type with `<Type>_<index>`. Equal values get the same replacement, so
+[ScrubValue\<T\>](cref:Meziantou.Framework.InlineSnapshotTesting.HumanReadableSerializerScrubExtensions.ScrubValue) replaces each distinct value of a type with `<Type>_<index>`. Equal values get the same replacement, so
 the snapshot still shows which values are the same:
 
 <!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_ScrubValue;format=md-fenced-code-block;dedent=true -->
@@ -62,7 +62,7 @@ InlineSnapshot
 
 ## Scrub GUIDs
 
-`ScrubGuid` replaces each distinct GUID with a sequential one, and keeps `Guid.Empty`:
+[ScrubGuid](cref:Meziantou.Framework.InlineSnapshotTesting.HumanReadableSerializerScrubExtensions.ScrubGuid) replaces each distinct GUID with a sequential one, and keeps `Guid.Empty`:
 
 <!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_ScrubGuid;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -79,8 +79,8 @@ InlineSnapshot
 
 ## Relative dates
 
-`UseRelativeDateTime` writes `DateTime` values as their difference with a reference time. `UseRelativeDateTimeOffset`
-and `UseRelativeTimeSpan` do the same for `DateTimeOffset` and `TimeSpan` values:
+[UseRelativeDateTime](cref:Meziantou.Framework.InlineSnapshotTesting.HumanReadableSerializerScrubExtensions.UseRelativeDateTime) writes `DateTime` values as their difference with a reference time. [UseRelativeDateTimeOffset](cref:Meziantou.Framework.InlineSnapshotTesting.HumanReadableSerializerScrubExtensions.UseRelativeDateTimeOffset)
+and [UseRelativeTimeSpan](cref:Meziantou.Framework.InlineSnapshotTesting.HumanReadableSerializerScrubExtensions.UseRelativeTimeSpan) do the same for `DateTimeOffset` and `TimeSpan` values:
 
 <!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_RelativeDateTime;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -94,7 +94,7 @@ InlineSnapshot
 
 ## Scrub JSON and XML values
 
-`ScrubJsonValue` replaces the nodes a JSONPath selects in JSON values:
+[ScrubJsonValue](cref:Meziantou.Framework.InlineSnapshotTesting.HumanReadableSerializerScrubExtensions.ScrubJsonValue) replaces the nodes a JSONPath selects in JSON values:
 
 <!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_ScrubJsonValue;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -109,7 +109,7 @@ InlineSnapshot
 ```
 <!-- endref -->
 
-`ScrubXmlAttribute` and `ScrubXmlNode` replace the attributes and nodes an XPath selects in XML values. Overloads take an
+[ScrubXmlAttribute](cref:Meziantou.Framework.InlineSnapshotTesting.HumanReadableSerializerScrubExtensions.ScrubXmlAttribute) and [ScrubXmlNode](cref:Meziantou.Framework.InlineSnapshotTesting.HumanReadableSerializerScrubExtensions.ScrubXmlNode) replace the attributes and nodes an XPath selects in XML values. Overloads take an
 `IXmlNamespaceResolver` for namespaced documents:
 
 <!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_ScrubXmlAttribute;format=md-fenced-code-block;dedent=true -->
@@ -171,9 +171,9 @@ InlineSnapshot
 ```
 <!-- endref -->
 
-`ScrubUserName` and `ScrubMachineName` replace the name of the current user and of the machine where they form a whole
-word, ignoring case. For anything else, derive from `Scrubber`, implement `Scrub(string text)`, and add an instance to
-`InlineSnapshotSettings.Scrubbers`.
+[ScrubUserName](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettingsScrubberExtensions.ScrubUserName) and [ScrubMachineName](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettingsScrubberExtensions.ScrubMachineName) replace the name of the current user and of the machine where they form a whole
+word, ignoring case. For anything else, derive from [Scrubber](cref:Meziantou.Framework.InlineSnapshotTesting.Scrubber), implement `Scrub(string text)`, and add an instance to
+[InlineSnapshotSettings.Scrubbers](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings.Scrubbers).
 
 ## Invisible characters
 

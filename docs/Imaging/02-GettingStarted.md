@@ -26,16 +26,16 @@ image.Save("thumbnail.gif");
 ```
 <!-- endref -->
 
-- `Image.Load` detects the format from the content of the file. The input here is an animated GIF: every frame is
+- [Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) detects the format from the content of the file. The input here is an animated GIF: every frame is
   loaded.
-- `Resize` resizes every frame. By default, the image fits inside the requested size and keeps its aspect ratio.
-- `Save` chooses the format from the extension of the file. The animation, its frame durations and its loop count are
+- [Resize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Resize) resizes every frame. By default, the image fits inside the requested size and keeps its aspect ratio.
+- [Save](cref:Meziantou.Framework.Imaging.Image.Save) chooses the format from the extension of the file. The animation, its frame durations and its loop count are
   kept.
-- `Image` is disposable: the `using` declaration releases its memory.
+- [Image](cref:Meziantou.Framework.Imaging.Image) is disposable: the `using` declaration releases its memory.
 
 ## Choose the format and its settings
 
-To choose the format and its options, pass an encoder to `Save`. Some formats store one picture only: a JPEG file
+To choose the format and its options, pass an encoder to [Save](cref:Meziantou.Framework.Imaging.Image.Save). Some formats store one picture only: a JPEG file
 cannot hold an animation, so export the frame you want explicitly instead of letting the library drop the others:
 
 <!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/ReadmeSnippets.cs;region=Imaging_QuickStartWithEncoders;format=md-fenced-code-block;dedent=true -->
@@ -50,8 +50,8 @@ image.Frames[0].Save("first.jpg",                         // JPEG stores one fra
 <!-- endref -->
 
 Saving an animation to a JPEG file, or an image with transparency to a format without it, throws an
-`UnsupportedImageFeatureException` instead of losing information. The settings that allow a conversion, such as
-`BackgroundColor` above, are described in [Saving images](05-LoadingAndSaving/04-SavingImages.md).
+[UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException) instead of losing information. The settings that allow a conversion, such as
+[BackgroundColor](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.BackgroundColor) above, are described in [Saving images](05-LoadingAndSaving/04-SavingImages.md).
 
 ## Create an image and draw on it
 

@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -23,6 +24,11 @@ internal sealed class Av1Encoder : IDisposable
 {
     // The number of superblocks of 64x64 samples from which a lossless frame of screen content looks for blocks to copy
     private const int MinBlockCopySuperblocks = 16;
+
+    // The layout of AvifEncoder.AutoTiling: a tile of at least 512x512 pixels, and at most 8 tiles, which is 4x2 tiles
+    // for 3840x2160 pixels, like the --autotiling option of libavif
+    private const int MinAutoTileArea = 512 * 512;
+    private const int MaxAutoTiles = 8;
 
     private readonly AllocationScope _scope;
     private readonly Av1EncoderSettings _settings;
@@ -263,6 +269,42 @@ internal sealed class Av1Encoder : IDisposable
     /// the quantizer index 0 with no delta is the lossless coding, which is selected on its own.
     /// </summary>
     public static int GetQuantizerIndex(int quality) => Math.Clamp(((100 - quality) * 255 + 50) / 100, 1, 255);
+
+    /// <summary>
+    /// Returns the tile layout that <c>AvifEncoder.AutoTiling</c> asks for, as the base 2 logarithms of the numbers of tile
+    /// columns and rows (<see cref="Av1EncoderSettings.MinTileColsLog2"/>, <see cref="Av1EncoderSettings.MinTileRowsLog2"/>):
+    /// the largest power of two of tiles, up to <see cref="MaxAutoTiles"/>, that leaves <see cref="MinAutoTileArea"/>
+    /// pixels to each tile, split along the longer side of the tiles first, and never more tiles along a side than its
+    /// superblocks. The layout depends on the size of the frame only, never on the number of workers.
+    /// </summary>
+    public static (int ColsLog2, int RowsLog2) GetAutoTileLayout(int width, int height)
+    {
+        var tiles = Math.Min((long)width * height / MinAutoTileArea, MaxAutoTiles);
+        var tilesLog2 = tiles > 0 ? BitOperations.Log2((ulong)tiles) : 0;
+        var superblockCols = (width + 63) >> 6;
+        var superblockRows = (height + 63) >> 6;
+        var colsLog2 = 0;
+        var rowsLog2 = 0;
+        for (var i = 0; i < tilesLog2; i++)
+        {
+            var canSplitCols = (2 << colsLog2) <= superblockCols;
+            var canSplitRows = (2 << rowsLog2) <= superblockRows;
+            if (canSplitCols && (!canSplitRows || (width >> colsLog2) >= (height >> rowsLog2)))
+            {
+                colsLog2++;
+            }
+            else if (canSplitRows)
+            {
+                rowsLog2++;
+            }
+            else
+            {
+                break;
+            }
+        }
+
+        return (colsLog2, rowsLog2);
+    }
 
     // Whether the frame looks like the content of a screen rather than like a photograph: such a frame is coded with
     // palettes (allow_screen_content_tools), which cost a flag in every block that could have one. The luma plane is

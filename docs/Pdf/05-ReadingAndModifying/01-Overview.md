@@ -3,7 +3,7 @@ title: Reading and modifying
 description: Open existing PDF documents, extract their text, change their pages and metadata, and save them in full or incrementally.
 ---
 
-`PdfDocument.Open` reads an existing document: every member of `PdfDocument` then works on it as on a document you
+[PdfDocument.Open](cref:Meziantou.Framework.Pdf.PdfDocument.Open) reads an existing document: every member of [PdfDocument](cref:Meziantou.Framework.Pdf.PdfDocument) then works on it as on a document you
 create. Pages can be read, drawn on, added and removed; the metadata, the outline and the attachments can be changed;
 and the document is saved again.
 

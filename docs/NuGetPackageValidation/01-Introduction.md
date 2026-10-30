@@ -33,17 +33,17 @@ fail when a package does not follow them.
 
 ## Namespace
 
-The types are in the [Meziantou.Framework.NuGetPackageValidation](cref:Meziantou.Framework.NuGetPackageValidation) namespace. The package path is a `FullPath`, from the
-[Meziantou.Framework](cref:Meziantou.Framework) namespace:
+The types are in the [Meziantou.Framework.NuGetPackageValidation](cref:Meziantou.Framework.NuGetPackageValidation) namespace. The package path is a [FullPath](cref:Meziantou.Framework.FullPath), from the
+[Meziantou.Framework](cref:Meziantou.Framework.FullPath!N:Meziantou.Framework) namespace:
 
 | Type | Contains |
 | --- | --- |
-| `NuGetPackageValidator` | `ValidateAsync`, which validates a package |
-| `NuGetPackageValidationRules` | The built-in rules, and the `Default` set |
-| `NuGetPackageValidationOptions` | The rules, the excluded error codes, the symbol servers and the HTTP configuration |
-| `NuGetPackageValidationResult` | `IsValid` and the `Errors` |
-| `NuGetPackageValidationError` | The `ErrorCode`, `Message`, `HelpText` and `FileName` of an error |
-| `NuGetPackageValidationRule`, `NuGetPackageValidationContext` | The base class and the context of a custom rule |
+| [NuGetPackageValidator](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidator) | [ValidateAsync](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidator.ValidateAsync), which validates a package |
+| [NuGetPackageValidationRules](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRules) | The built-in rules, and the [Default](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRules.Default) set |
+| [NuGetPackageValidationOptions](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationOptions) | The rules, the excluded error codes, the symbol servers and the HTTP configuration |
+| [NuGetPackageValidationResult](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationResult) | [IsValid](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationResult.IsValid) and the [Errors](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationResult.Errors) |
+| [NuGetPackageValidationError](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationError) | The [ErrorCode](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationError.ErrorCode), [Message](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationError.Message), [HelpText](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationError.HelpText) and [FileName](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationError.FileName) of an error |
+| [NuGetPackageValidationRule](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRule), [NuGetPackageValidationContext](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationContext) | The base class and the context of a custom rule |
 
 ## Next steps
 

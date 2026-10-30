@@ -15,8 +15,8 @@ The examples of this documentation omit the `using` directives: they need `using
 
 ## Read the arguments
 
-`CommandLineParser.Current` holds the arguments of the current process. Parse another array, such as the arguments of a
-test, with `Parse`:
+[CommandLineParser.Current](cref:Meziantou.Framework.CommandLineParser.Current) holds the arguments of the current process. Parse another array, such as the arguments of a
+test, with [Parse](cref:Meziantou.Framework.CommandLineParser.Parse):
 
 <!-- ref:../../tests/Meziantou.Framework.CommandLineTests/CommandLineParserTests.cs;region=CommandLineParser_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -42,12 +42,12 @@ Assert.False(parser.HelpRequested);
 ```
 <!-- endref -->
 
-- `HasArgument` tells whether a named argument is present, with or without a value.
+- [HasArgument](cref:Meziantou.Framework.CommandLineParser.HasArgument) tells whether a named argument is present, with or without a value.
 - `GetArgument(string)` returns the value of a named argument, and `GetArgument(int)` the argument at a position. Both
   return `null` when the argument does not exist.
-- `HelpRequested` is `true` when one of `-?`, `/?`, `-help`, `/help` or `--help` is present.
+- [HelpRequested](cref:Meziantou.Framework.CommandLineParser.HelpRequested) is `true` when one of `-?`, `/?`, `-help`, `/help` or `--help` is present.
 
-`CommandLineParser.Current` does not include the path of the executable: position 0 is the first argument, as in the
+[CommandLineParser.Current](cref:Meziantou.Framework.CommandLineParser.Current) does not include the path of the executable: position 0 is the first argument, as in the
 `args` array of the entry point.
 
 ## Next steps

@@ -17,7 +17,7 @@ description: The scalar types, collections and dictionaries the serializer handl
 | Dictionaries | `Dictionary<,>`, `OrderedDictionary<,>`, `FrozenDictionary<,>`, `IDictionary<,>`, `IReadOnlyDictionary<,>` |
 | Pairs | `KeyValuePair<,>`, written as a mapping with a `Key` and a `Value` entry |
 | Untyped | `object`, `object[]`, `List<object>`, `Dictionary<string, object>` |
-| Documents | any node of the [document object model](../05-DocumentObjectModel.md) (`YamlMapping`, `YamlSequence`, `YamlValue`, …) |
+| Documents | any node of the [document object model](../05-DocumentObjectModel.md) ([YamlMapping](cref:Meziantou.Framework.Yaml.Model.YamlMapping), [YamlSequence](cref:Meziantou.Framework.Yaml.Model.YamlSequence), [YamlValue](cref:Meziantou.Framework.Yaml.Model.YamlValue), …) |
 | Unions | [C# unions](09-Unions.md) |
 
 Every value type of the table also works as `Nullable<T>`. Any other type is written as a mapping of its members, as
@@ -75,7 +75,7 @@ Assert.Equal(443L, ports[1]);
 <!-- endref -->
 
 The keys of the dictionary are resolved like the values: `1` is a `long` and `'1'` is a `string`. A null key, or a key
-that is a sequence or a mapping, throws a `YamlException`. When the document has no fixed shape, the
+that is a sequence or a mapping, throws a [YamlException](cref:Meziantou.Framework.Yaml.YamlException). When the document has no fixed shape, the
 [document object model](../05-DocumentObjectModel.md) is often easier to use than untyped values.
 
 ## Objects
@@ -101,17 +101,17 @@ Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<Endpoint>("Timeout
 ```
 <!-- endref -->
 
-A parameter without a default value is required: a missing key throws a `YamlException`. Set
-`RespectRequiredConstructorParameters` to `false` to accept it. When a type declares several public constructors, mark
-the one to use with `[YamlConstructor]`, which also selects a non-public constructor. A struct is created without
-calling a constructor, unless one has `[YamlConstructor]`.
+A parameter without a default value is required: a missing key throws a [YamlException](cref:Meziantou.Framework.Yaml.YamlException). Set
+[RespectRequiredConstructorParameters](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.RespectRequiredConstructorParameters) to `false` to accept it. When a type declares several public constructors, mark
+the one to use with [\[YamlConstructor\]](cref:Meziantou.Framework.Yaml.Serialization.YamlConstructorAttribute), which also selects a non-public constructor. A struct is created without
+calling a constructor, unless one has [\[YamlConstructor\]](cref:Meziantou.Framework.Yaml.Serialization.YamlConstructorAttribute).
 
-Properties declared with the `required` keyword, and members marked with `[YamlRequired]`, must also be present in the
+Properties declared with the `required` keyword, and members marked with [\[YamlRequired\]](cref:Meziantou.Framework.Yaml.Serialization.YamlRequiredAttribute), must also be present in the
 YAML.
 
 A null scalar, such as `~` or `null`, sets `null` on a member whose type accepts it. A non-nullable value type, such as
-`int`, rejects it with a `YamlException` instead of using the default value. A reference type declared non-nullable,
-such as `string` in a nullable-enabled project, rejects it too, unless you set `RespectNullableAnnotations` to `false`.
+`int`, rejects it with a [YamlException](cref:Meziantou.Framework.Yaml.YamlException) instead of using the default value. A reference type declared non-nullable,
+such as `string` in a nullable-enabled project, rejects it too, unless you set [RespectNullableAnnotations](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.RespectNullableAnnotations) to `false`.
 
 Members are written from the base type down to the type itself, and within a type the properties before the fields,
 in declaration order. To change the order, the names, or the members that are written, see

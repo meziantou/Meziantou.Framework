@@ -49,9 +49,9 @@ remote Docker daemon.
 
 - **Safe by default.** Ports are published on the loopback address only, and the database definitions generate a random
   password, so a test database is not reachable from the network.
-- **Ready means ready.** `StartAsync` returns once the wait strategies agree that the service accepts connections, not
+- **Ready means ready.** [StartAsync](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.StartAsync) returns once the wait strategies agree that the service accepts connections, not
   when the process starts.
-- **Explicit failures.** A runtime that refuses an operation throws a `ContainerRuntimeException` that tells what it ran
+- **Explicit failures.** A runtime that refuses an operation throws a [ContainerRuntimeException](cref:Meziantou.Framework.TemporaryContainers.ContainerRuntimeException) that tells what it ran
   and what it answered; a container that is not ready in time throws a `TimeoutException` with its state and its last
   log lines. See [Troubleshooting](10-Troubleshooting.md).
 - **Everything is labeled.** Every container, volume and built image records the process that created it, so a later

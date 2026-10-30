@@ -6,8 +6,8 @@ description: Read the YAML metadata at the top of a document, such as its title,
 ## Read the front matter
 
 Many tools put metadata at the top of a Markdown file, between two `---` lines: the title of the page, its date, its
-tags. Without the extension, CommonMark renders these lines as text and a horizontal rule. `UseYamlFrontMatter` reads
-them as a `YamlFrontMatterBlock` (namespace [Meziantou.Framework.Markdown.Extensions.Yaml](cref:Meziantou.Framework.Markdown.Extensions.Yaml)), which is not rendered:
+tags. Without the extension, CommonMark renders these lines as text and a horizontal rule. [UseYamlFrontMatter](cref:Meziantou.Framework.Markdown.MarkdownExtensions.UseYamlFrontMatter) reads
+them as a [YamlFrontMatterBlock](cref:Meziantou.Framework.Markdown.Extensions.Yaml.YamlFrontMatterBlock) (namespace [Meziantou.Framework.Markdown.Extensions.Yaml](cref:Meziantou.Framework.Markdown.Extensions.Yaml)), which is not rendered:
 
 <!-- ref:../../../tests/Meziantou.Framework.Markdown.Tests/TestYamlFrontMatterExtension.cs;region=MarkdownExtensions_UseYamlFrontMatter;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -28,7 +28,7 @@ Assert.Equal("<h1>Install the package</h1>\n", document.ToHtml(pipeline));
 ```
 <!-- endref -->
 
-The library does not parse the YAML itself: pass the text of `Lines` to the YAML library of your choice.
+The library does not parse the YAML itself: pass the text of [Lines](cref:Meziantou.Framework.Markdown.Syntax.LeafBlock.Lines) to the YAML library of your choice.
 
 ## Rules
 
@@ -36,7 +36,7 @@ The library does not parse the YAML itself: pass the text of `Lines` to the YAML
 - It ends with a `---` or `...` line.
 - When there is no closing line, the lines are parsed as Markdown.
 
-Set `AllowInMiddleOfDocument` to accept a front matter block anywhere in the document:
+Set [AllowInMiddleOfDocument](cref:Meziantou.Framework.Markdown.Extensions.Yaml.YamlFrontMatterExtension.AllowInMiddleOfDocument) to accept a front matter block anywhere in the document:
 
 <!-- ref:../../../tests/Meziantou.Framework.Markdown.Tests/TestYamlFrontMatterExtension.cs;region=YamlFrontMatterExtension_AllowInMiddleOfDocument;format=md-fenced-code-block;dedent=true -->
 ```csharp

@@ -13,7 +13,7 @@ dotnet add package Meziantou.Framework.Language.Xml
 
 ## Parse, find and edit
 
-`XmlSyntaxTree.ParseText` reads a string. `ReplaceNode` with an XPath expression finds a node and replaces it with what
+[XmlSyntaxTree.ParseText](cref:Meziantou.Framework.Language.Xml.XmlSyntaxTree.ParseText) reads a string. [ReplaceNode](cref:Meziantou.Framework.Language.Xml.XmlDocumentSyntax.ReplaceNode) with an XPath expression finds a node and replaces it with what
 your function returns:
 
 <!-- ref:../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs;region=XmlSyntaxTree_Overview;format=md-fenced-code-block;dedent=true -->
@@ -32,21 +32,21 @@ Assert.Equal("<root><item version='2.0.0' /></root>", updated.ToFullString());
 ```
 <!-- endref -->
 
-`ReplaceNode` throws an `InvalidOperationException` when the expression matches nothing.
+[ReplaceNode](cref:Meziantou.Framework.Language.Xml.XmlDocumentSyntax.ReplaceNode) throws an `InvalidOperationException` when the expression matches nothing.
 
 ## The shape of a tree
 
-An `XmlDocumentSyntax` holds its top-level nodes in `Nodes`. A node of a document or of the content of an element is one
+An [XmlDocumentSyntax](cref:Meziantou.Framework.Language.Xml.XmlDocumentSyntax) holds its top-level nodes in [Nodes](cref:Meziantou.Framework.Language.Xml.XmlDocumentSyntax.Nodes). A node of a document or of the content of an element is one
 of:
 
 | Node | Is |
 | --- | --- |
-| `XmlElementSyntax` | `<item>…</item>`: `StartTag`, `Content`, `EndTag` |
-| `XmlEmptyElementSyntax` | `<item />`: attributes, but no content and no end tag |
-| `XmlTextSyntax` | Character data, whitespace between tags included |
-| `XmlCommentSyntax`, `XmlCDataSectionSyntax`, `XmlProcessingInstructionSyntax` | `<!-- -->`, `<![CDATA[ ]]>`, `<?target data?>` |
-| `XmlDeclarationSyntax`, `XmlDocumentTypeSyntax` | `<?xml … ?>`, `<!DOCTYPE …>` |
-| `XmlSkippedTextSyntax` | Text the parser could not use |
+| [XmlElementSyntax](cref:Meziantou.Framework.Language.Xml.XmlElementSyntax) | `<item>…</item>`: [StartTag](cref:Meziantou.Framework.Language.Xml.XmlElementSyntax.StartTag), [Content](cref:Meziantou.Framework.Language.Xml.XmlElementSyntax.Content), [EndTag](cref:Meziantou.Framework.Language.Xml.XmlElementSyntax.EndTag) |
+| [XmlEmptyElementSyntax](cref:Meziantou.Framework.Language.Xml.XmlEmptyElementSyntax) | `<item />`: attributes, but no content and no end tag |
+| [XmlTextSyntax](cref:Meziantou.Framework.Language.Xml.XmlTextSyntax) | Character data, whitespace between tags included |
+| [XmlCommentSyntax](cref:Meziantou.Framework.Language.Xml.XmlCommentSyntax), [XmlCDataSectionSyntax](cref:Meziantou.Framework.Language.Xml.XmlCDataSectionSyntax), [XmlProcessingInstructionSyntax](cref:Meziantou.Framework.Language.Xml.XmlProcessingInstructionSyntax) | `<!-- -->`, `<![CDATA[ ]]>`, `<?target data?>` |
+| [XmlDeclarationSyntax](cref:Meziantou.Framework.Language.Xml.XmlDeclarationSyntax), [XmlDocumentTypeSyntax](cref:Meziantou.Framework.Language.Xml.XmlDocumentTypeSyntax) | `<?xml … ?>`, `<!DOCTYPE …>` |
+| [XmlSkippedTextSyntax](cref:Meziantou.Framework.Language.Xml.XmlSkippedTextSyntax) | Text the parser could not use |
 
 `<item/>` and `<item></item>` are different node types. Both have `Name`, `Attributes` and `GetAttribute(name)`. Every
 character is a token, including `<`, `/>`, `=` and the quotes of an attribute value:
@@ -64,7 +64,7 @@ Assert.Equal("1.0.0", attribute.Value);
 
 ## Whitespace and text
 
-Inside a tag, whitespace is trivia. Between tags, it is text: an `XmlTextSyntax` in the content of the element, because
+Inside a tag, whitespace is trivia. Between tags, it is text: an [XmlTextSyntax](cref:Meziantou.Framework.Language.Xml.XmlTextSyntax) in the content of the element, because
 it is character data an application may read:
 
 <!-- ref:../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs;region=XmlSyntaxTree_Trivia;format=md-fenced-code-block;dedent=true -->
@@ -82,7 +82,7 @@ Assert.Equal("\n  ", ((XmlTextSyntax)root.Content[0]).Text);
 
 ## Values
 
-The tree keeps the text as written, references included. `XmlAttributeSyntax.Value` and `XmlTextSyntax.Value` are what
+The tree keeps the text as written, references included. [XmlAttributeSyntax.Value](cref:Meziantou.Framework.Language.Xml.XmlAttributeSyntax.Value) and [XmlTextSyntax.Value](cref:Meziantou.Framework.Language.Xml.XmlTextSyntax.Value) are what
 an XML processor reads: character references and the five predefined entities are resolved, line breaks become `\n`, and
 an attribute value turns each tab and line break into a space. Other entities are left as written, since resolving them
 means reading the DTD.
@@ -104,12 +104,12 @@ Assert.Equal("<note title='Tom &amp; Jerry&apos;s'>1 &lt; 2</note>", updated.ToF
 ```
 <!-- endref -->
 
-`WithValue` escapes what XML requires, and writes a tab or a line break as a character reference, so the value it sets
+[WithValue](cref:Meziantou.Framework.Language.Xml.XmlAttributeSyntax.WithValue) escapes what XML requires, and writes a tab or a line break as a character reference, so the value it sets
 is the value read back.
 
 ## Find nodes with XPath
 
-`SelectSyntaxNodes` and `SelectSingleSyntaxNode` return the nodes an XPath expression selects:
+[SelectSyntaxNodes](cref:Meziantou.Framework.Language.Xml.XmlSyntaxNode.SelectSyntaxNodes) and [SelectSingleSyntaxNode](cref:Meziantou.Framework.Language.Xml.XmlSyntaxNode.SelectSingleSyntaxNode) return the nodes an XPath expression selects:
 
 <!-- ref:../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs;region=XmlSyntaxTree_SelectSyntaxNodes;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -148,13 +148,13 @@ Assert.Equal("1.0.0", ((XmlAttributeSyntax)version!).Value);
 ```
 <!-- endref -->
 
-`SelectNodes` and `SelectSingleNode` return `XPathNavigator`s instead, and `CreateNavigator()` returns a navigator over
-a node. An `XmlDocumentSyntax` is an `IXPathNavigable`, so it can be passed to the .NET APIs that take one.
+[SelectNodes](cref:Meziantou.Framework.Language.Xml.XmlSyntaxNode.SelectNodes) and [SelectSingleNode](cref:Meziantou.Framework.Language.Xml.XmlSyntaxNode.SelectSingleNode) return `XPathNavigator`s instead, and [CreateNavigator()](cref:Meziantou.Framework.Language.Xml.XmlSyntaxNode.CreateNavigator) returns a navigator over
+a node. An [XmlDocumentSyntax](cref:Meziantou.Framework.Language.Xml.XmlDocumentSyntax) is an `IXPathNavigable`, so it can be passed to the .NET APIs that take one.
 
 ## Edit a document
 
-Every node has a `With…` method for each of its parts: `XmlAttributeSyntax.WithValue` and `WithName`,
-`XmlElementSyntax.WithInnerText`, `WithName` and `WithContent`, and so on. `SyntaxFactory` builds new nodes:
+Every node has a `With…` method for each of its parts: [XmlAttributeSyntax.WithValue](cref:Meziantou.Framework.Language.Xml.XmlAttributeSyntax.WithValue) and [WithName](cref:Meziantou.Framework.Language.Xml.XmlAttributeSyntax.WithName),
+[XmlElementSyntax.WithInnerText](cref:Meziantou.Framework.Language.Xml.XmlElementSyntax.WithInnerText), [WithName](cref:Meziantou.Framework.Language.Xml.XmlElementSyntax.WithName) and [WithContent](cref:Meziantou.Framework.Language.Xml.XmlElementSyntax.WithContent), and so on. `SyntaxFactory` builds new nodes:
 
 <!-- ref:../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs;region=SyntaxFactory_XmlDocument;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -164,12 +164,12 @@ Assert.Equal("<package version=\"1.0.0\" />", document.ToFullString());
 ```
 <!-- endref -->
 
-A replacement does not take the trivia of the node it replaces: use `WithTriviaFrom` to keep it. See
+A replacement does not take the trivia of the node it replaces: use [WithTriviaFrom](cref:Meziantou.Framework.Language.SyntaxNodeExtensions.WithTriviaFrom) to keep it. See
 [Editing trees](03-Concepts/06-EditingTrees.md).
 
 ## Format a document
 
-`Formatter.Format` lays a document out again: each element whose content is only elements, comments and processing
+[Formatter.Format](cref:Meziantou.Framework.Language.Xml.Formatter.Format) lays a document out again: each element whose content is only elements, comments and processing
 instructions gets each child on its own line, indented one level deeper. It is the only API of these packages that
 reformats, and it never changes text: an element that contains text or CDATA, and the elements under
 `xml:space="preserve"`, are kept as they are.
@@ -182,7 +182,7 @@ Assert.Equal("<root>\n  <item />\n</root>", formatted.ToFullString());
 ```
 <!-- endref -->
 
-`XmlFormattingOptions` sets the layout:
+[XmlFormattingOptions](cref:Meziantou.Framework.Language.Xml.XmlFormattingOptions) sets the layout:
 
 <!-- ref:../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs;region=XmlFormattingOptions_Format;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -195,15 +195,15 @@ Assert.Equal("<root>\r\n    <item id = \"1\" />\r\n</root>", formatted.ToFullStr
 
 | Option | Default | Sets |
 | --- | --- | --- |
-| `IndentationSize` | 2 | The number of spaces per level |
-| `UseTabs` | `false` | Whether each level is a tab |
-| `NewLine` | `"\n"` | The line break between the nodes the formatter puts on their own line |
-| `PreserveSingleLineElements` | `false` | Whether an element written on one line is kept as it is |
-| `AttributeWrapping` | `false` | Whether each attribute of an element that has more than one goes on its own line |
-| `SpaceAroundEquals` | `false` | Whether `=` has a space on both sides |
-| `SpaceBeforeSelfClosingSlash` | `true` | Whether a self-closing tag ends with ` />` rather than `/>` |
+| [IndentationSize](cref:Meziantou.Framework.Language.Xml.XmlFormattingOptions.IndentationSize) | 2 | The number of spaces per level |
+| [UseTabs](cref:Meziantou.Framework.Language.Xml.XmlFormattingOptions.UseTabs) | `false` | Whether each level is a tab |
+| [NewLine](cref:Meziantou.Framework.Language.Xml.XmlFormattingOptions.NewLine) | `"\n"` | The line break between the nodes the formatter puts on their own line |
+| [PreserveSingleLineElements](cref:Meziantou.Framework.Language.Xml.XmlFormattingOptions.PreserveSingleLineElements) | `false` | Whether an element written on one line is kept as it is |
+| [AttributeWrapping](cref:Meziantou.Framework.Language.Xml.XmlFormattingOptions.AttributeWrapping) | `false` | Whether each attribute of an element that has more than one goes on its own line |
+| [SpaceAroundEquals](cref:Meziantou.Framework.Language.Xml.XmlFormattingOptions.SpaceAroundEquals) | `false` | Whether `=` has a space on both sides |
+| [SpaceBeforeSelfClosingSlash](cref:Meziantou.Framework.Language.Xml.XmlFormattingOptions.SpaceBeforeSelfClosingSlash) | `true` | Whether a self-closing tag ends with ` />` rather than `/>` |
 
-`XmlDocumentSyntax.NormalizeWhitespace()` formats a document with the default options.
+[XmlDocumentSyntax.NormalizeWhitespace()](cref:Meziantou.Framework.Language.Xml.XmlDocumentSyntax.NormalizeWhitespace) formats a document with the default options.
 
 ## Diagnostics
 
@@ -252,8 +252,8 @@ or a parameter entity reference, which could declare it where the parser cannot 
 The parser keeps the shape the author most likely meant, so one mistake gives one diagnostic:
 
 - An end tag that matches an element further up closes the elements left open in between, each reported as missing its
-  end tag. An end tag that matches no open element is kept as `XmlSkippedTextSyntax`.
-- A start tag without its `>` still opens its element, with a missing `GreaterThanToken`.
+  end tag. An end tag that matches no open element is kept as [XmlSkippedTextSyntax](cref:Meziantou.Framework.Language.Xml.XmlSkippedTextSyntax).
+- A start tag without its `>` still opens its element, with a missing [GreaterThanToken](cref:Meziantou.Framework.Language.Xml.XmlElementStartTagSyntax.GreaterThanToken).
 - Text a tag cannot use, as in `<a @ b="1">`, is kept as skipped text trivia, and the rest of the attributes are read as
   usual.
 - An attribute value that meets what looks like the next tag before its closing quote stops there.
@@ -262,8 +262,8 @@ The parser keeps the shape the author most likely meant, so one mistake gives on
 
 ## Walk a tree
 
-`XmlSyntaxWalker`, `XmlSyntaxVisitor` and `XmlSyntaxRewriter` have a method per node type, such as `VisitElement` and
-`VisitAttribute`. `VisitElement` is not called for an `XmlEmptyElementSyntax`, which has `VisitEmptyElement`:
+[XmlSyntaxWalker](cref:Meziantou.Framework.Language.Xml.XmlSyntaxWalker), [XmlSyntaxVisitor](cref:Meziantou.Framework.Language.Xml.XmlSyntaxVisitor) and [XmlSyntaxRewriter](cref:Meziantou.Framework.Language.Xml.XmlSyntaxRewriter) have a method per node type, such as `VisitElement` and
+`VisitAttribute`. `VisitElement` is not called for an [XmlEmptyElementSyntax](cref:Meziantou.Framework.Language.Xml.XmlEmptyElementSyntax), which has `VisitEmptyElement`:
 
 <!-- ref:../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs;region=XmlSyntaxVisitor_ElementCounter;format=md-fenced-code-block;dedent=true -->
 ```csharp

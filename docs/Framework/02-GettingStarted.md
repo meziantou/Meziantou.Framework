@@ -73,7 +73,7 @@ See [Sequences](07-Sequences.md).
 
 ## Keep the last items
 
-`CircularBuffer<T>` keeps a fixed number of items, and can overwrite the oldest one when it is full:
+[CircularBuffer\<T\>](cref:Meziantou.Framework.Collections.CircularBuffer{T}) keeps a fixed number of items, and can overwrite the oldest one when it is full:
 
 <!-- ref:../../tests/Meziantou.Framework.Tests/Collections/CircularBufferTests.cs;region=CircularBuffer_AllowOverwrite;format=md-fenced-code-block;dedent=true -->
 ```csharp

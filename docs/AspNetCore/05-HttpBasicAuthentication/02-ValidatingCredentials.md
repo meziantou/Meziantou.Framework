@@ -3,7 +3,7 @@ title: Validating credentials
 description: Validate the username and password with your own delegate, configure the realm and the size limit, and register several schemes.
 ---
 
-`AddHttpBasic` calls `options.ValidateCredentials` with the `HttpContext`, the username and the password. Return a
+[AddHttpBasic](cref:Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationExtensions.AddHttpBasic) calls `options.ValidateCredentials` with the `HttpContext`, the username and the password. Return a
 `ClaimsPrincipal` to authenticate the request, or `null` to reject it:
 
 <!-- ref:../../../samples/Meziantou.AspNetCore.Samples/HttpBasicExamples.cs;region=HttpBasic_Usage;format=md-fenced-code-block;dedent=true -->
@@ -48,10 +48,10 @@ app.Run();
 ```
 <!-- endref -->
 
-The delegate is an `HttpBasicCredentialValidator` and returns a `ValueTask<ClaimsPrincipal?>`, so it can query a
+The delegate is an [HttpBasicCredentialValidator](cref:Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicCredentialValidator) and returns a `ValueTask<ClaimsPrincipal?>`, so it can query a
 database or a remote service. Use `context.RequestServices` to resolve the services it needs.
 
-When `ValidateCredentials` is not set, every request is rejected.
+When [ValidateCredentials](cref:Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationOptions.ValidateCredentials) is not set, every request is rejected.
 
 ## Build the principal
 
@@ -78,17 +78,17 @@ The username is untrusted input: escape it before you write it to a log.
 
 | Option | Default | Description |
 | --- | --- | --- |
-| `Realm` | `Restricted` | The `realm` of the `WWW-Authenticate` header. `null` omits it. Only printable ASCII (U+0020 to U+007E) is allowed: other characters throw an `ArgumentException` when the option is set |
-| `MaxCredentialLength` | `4096` (`HttpBasicAuthenticationOptions.DefaultMaxCredentialLength`) | The maximum length, in characters, of the Base64 payload. Longer payloads are rejected before being decoded |
-| `ValidateCredentials` | Rejects everything | Your validation delegate |
-| `AllowTwoFactorEnabledAccounts` | `false` | Only used by the [Identity integration](03-AspNetCoreIdentity.md#two-factor-authentication) |
+| [Realm](cref:Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationOptions.Realm) | `Restricted` | The `realm` of the `WWW-Authenticate` header. `null` omits it. Only printable ASCII (U+0020 to U+007E) is allowed: other characters throw an `ArgumentException` when the option is set |
+| [MaxCredentialLength](cref:Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationOptions.MaxCredentialLength) | `4096` ([HttpBasicAuthenticationOptions.DefaultMaxCredentialLength](cref:Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationOptions.DefaultMaxCredentialLength)) | The maximum length, in characters, of the Base64 payload. Longer payloads are rejected before being decoded |
+| [ValidateCredentials](cref:Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationOptions.ValidateCredentials) | Rejects everything | Your validation delegate |
+| [AllowTwoFactorEnabledAccounts](cref:Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationOptions.AllowTwoFactorEnabledAccounts) | `false` | Only used by the [Identity integration](03-AspNetCoreIdentity.md#two-factor-authentication) |
 
 The options derive from `AuthenticationSchemeOptions`, so the usual options of ASP.NET Core authentication handlers
 (`Events`, `ForwardDefault`, ...) are available too.
 
 ## Several schemes
 
-The default scheme name is `HttpBasicAuthenticationDefaults.AuthenticationScheme` (`"Basic"`). The overloads
+The default scheme name is [HttpBasicAuthenticationDefaults.AuthenticationScheme](cref:Meziantou.AspNetCore.Authentication.HttpBasic.HttpBasicAuthenticationDefaults.AuthenticationScheme) (`"Basic"`). The overloads
 `AddHttpBasic(authenticationScheme, configureOptions)` and `AddHttpBasic(authenticationScheme, displayName,
 configureOptions)` register more schemes, for instance one per kind of client, each with its own delegate and realm.
 Select a scheme for an endpoint with an authorization policy (`AddAuthenticationSchemes`).

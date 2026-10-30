@@ -5,7 +5,7 @@ description: Read the types, members, signatures and attributes of the public AP
 
 ## Read an assembly
 
-`PublicApi.ReadAssembly` returns a `PublicApiAssembly`, a structured model of the public API. This example lists the
+[PublicApi.ReadAssembly](cref:Meziantou.Framework.PublicApiGenerator.PublicApi.ReadAssembly) returns a [PublicApiAssembly](cref:Meziantou.Framework.PublicApiGenerator.PublicApiAssembly), a structured model of the public API. This example lists the
 methods of `Meziantou.Framework.PublicApiGenerator.dll` and their parameters:
 
 <!-- ref:../../../tests/Meziantou.Framework.PublicApiGenerator.Tests/PublicApiGeneratorTests.cs;region=PublicApi_ReadAssembly;format=md-fenced-code-block;dedent=true -->
@@ -40,15 +40,15 @@ Assert.Contains("    None Meziantou.Framework.PublicApiGenerator.PublicApiReadOp
 ```
 <!-- endref -->
 
-- `ReadAssembly` reads the metadata of a file, or of a stream that contains a PE image. The assembly, its attributes and
+- [ReadAssembly](cref:Meziantou.Framework.PublicApiGenerator.PublicApi.ReadAssembly) reads the metadata of a file, or of a stream that contains a PE image. The assembly, its attributes and
   its references are never loaded or executed. A stream is not closed.
 - The model does not keep any reference to the file, the stream or the metadata reader: it remains usable after they are
   disposed.
-- `PublicApiReadOptions` is optional. `TargetFramework` is kept as provided (for instance `net10.0` or
+- [PublicApiReadOptions](cref:Meziantou.Framework.PublicApiGenerator.PublicApiReadOptions) is optional. [TargetFramework](cref:Meziantou.Framework.PublicApiGenerator.PublicApiReadOptions.TargetFramework) is kept as provided (for instance `net10.0` or
   `.NETCoreApp,Version=v10.0`); when it is not set, it is inferred from the `TargetFrameworkAttribute` of the assembly.
-  `InputIdentity` is described in [Identifying symbols](04-IdentifyingSymbols.md). `IncludeInternalSymbols` is
+  [InputIdentity](cref:Meziantou.Framework.PublicApiGenerator.PublicApiReadOptions.InputIdentity) is described in [Identifying symbols](04-IdentifyingSymbols.md). [IncludeInternalSymbols](cref:Meziantou.Framework.PublicApiGenerator.PublicApiReadOptions.IncludeInternalSymbols) is
   described in [Internal symbols](#internal-symbols).
-- `Types` lists the top-level types; `GetAllTypes()` includes the nested types, and `GetAllSymbols()` returns every type
+- [Types](cref:Meziantou.Framework.PublicApiGenerator.PublicApiAssembly.Types) lists the top-level types; [GetAllTypes()](cref:Meziantou.Framework.PublicApiGenerator.PublicApiAssembly.GetAllTypes) includes the nested types, and [GetAllSymbols()](cref:Meziantou.Framework.PublicApiGenerator.PublicApiAssembly.GetAllSymbols) returns every type
   and member.
 
 ## What the model contains
@@ -56,33 +56,33 @@ Assert.Contains("    None Meziantou.Framework.PublicApiGenerator.PublicApiReadOp
 - The types and members that are visible outside the assembly (`public`, `protected`, `protected internal`), and the
   explicit implementations of interfaces that are visible outside the assembly. Members with names that cannot be
   written in C# (such as `<Clone>$`), static constructors and compiler-generated types are excluded. Other
-  compiler-generated members, such as the members of records, are included: `IsCompilerGenerated` identifies them.
-- Accessors, available from `PublicApiProperty.GetMethod`, `SetMethod`, `PublicApiEvent.AddMethod`... Accessors that are
+  compiler-generated members, such as the members of records, are included: [IsCompilerGenerated](cref:Meziantou.Framework.PublicApiGenerator.PublicApiSymbol.IsCompilerGenerated) identifies them.
+- Accessors, available from [PublicApiProperty.GetMethod](cref:Meziantou.Framework.PublicApiGenerator.PublicApiProperty.GetMethod), [SetMethod](cref:Meziantou.Framework.PublicApiGenerator.PublicApiProperty.SetMethod), [PublicApiEvent.AddMethod](cref:Meziantou.Framework.PublicApiGenerator.PublicApiEvent.AddMethod)... Accessors that are
   not visible outside the assembly (such as a `private set`) are not exposed.
-- The signature of delegates, through `PublicApiType.DelegateInvokeMethod`. The other members of delegates are not
+- The signature of delegates, through [PublicApiType.DelegateInvokeMethod](cref:Meziantou.Framework.PublicApiGenerator.PublicApiType.DelegateInvokeMethod). The other members of delegates are not
   exposed.
 - C# 14 extension blocks, through the static methods the compiler generates for them (such as `get_Length(string)`).
 - All the custom attributes of each symbol, parameter, return value and generic parameter, including the ones that are
   not written in the API files (such as `EditorBrowsableAttribute` or `NullableAttribute`), with their decoded
   arguments.
-- Type references (`PublicApiTypeReference`) that preserve nested types, type arguments, arrays, pointers, function
+- Type references ([PublicApiTypeReference](cref:Meziantou.Framework.PublicApiGenerator.PublicApiTypeReference)) that preserve nested types, type arguments, arrays, pointers, function
   pointers, ref kinds, nullable annotations, tuple element names and the referenced assembly.
-- The `new` modifier of the members and nested types that hide an inherited member (`PublicApiMember.IsNew` and
-  `PublicApiType.IsNew`).
+- The `new` modifier of the members and nested types that hide an inherited member ([PublicApiMember.IsNew](cref:Meziantou.Framework.PublicApiGenerator.PublicApiMember.IsNew) and
+  [PublicApiType.IsNew](cref:Meziantou.Framework.PublicApiGenerator.PublicApiType.IsNew)).
 
 Members are in the same order as in the API files: see [Order of the declarations](../03-ApiFiles.md#order-of-the-declarations).
 
 ## Internal symbols
 
-Set `PublicApiReadOptions.IncludeInternalSymbols` to `true` to also read the `internal` types and members. Use it when
+Set [PublicApiReadOptions.IncludeInternalSymbols](cref:Meziantou.Framework.PublicApiGenerator.PublicApiReadOptions.IncludeInternalSymbols) to `true` to also read the `internal` types and members. Use it when
 the internal symbols of an assembly are an API, for instance to document an assembly compiled from the C# files of a
 source package (`contentFiles/cs/{tfm}/`): these files are compiled into the project that references the package, so
 their `internal` types are part of its API.
 
 - The model also contains the `internal` types, members and accessors, the types nested in `internal` types, the
   `internal` interfaces a type implements and the explicit implementations of their members.
-- `Accessibility` reports the declared accessibility (such as `PublicApiAccessibility.Internal`), so
-  `PublicApiFormatter` writes `internal` (such as `public int Value { get; internal set; }`).
+- [Accessibility](cref:Meziantou.Framework.PublicApiGenerator.PublicApiSymbol.Accessibility) reports the declared accessibility (such as [PublicApiAccessibility.Internal](cref:Meziantou.Framework.PublicApiGenerator.PublicApiAccessibility.Internal)), so
+  [PublicApiFormatter](cref:Meziantou.Framework.PublicApiGenerator.PublicApiFormatter) writes `internal` (such as `public int Value { get; internal set; }`).
 - A member that hides an `internal` member inherited from a type declared in the same assembly is reported as `new`.
 - `private` and `private protected` symbols are still excluded, and so are the `internal` types generated by the
   compiler (such as the embedded `NullableAttribute`, `<PrivateImplementationDetails>` or the types declared with the
@@ -112,7 +112,7 @@ public class Derived : Base
 
 Only the inherited members that are visible outside their assembly (`public`, `protected` and `protected internal`) are
 considered. A member that hides an `internal` member is not reported as `new`, as the hidden member is not part of the
-public API, unless `PublicApiReadOptions.IncludeInternalSymbols` is set and the hidden member is declared in the same
+public API, unless [PublicApiReadOptions.IncludeInternalSymbols](cref:Meziantou.Framework.PublicApiGenerator.PublicApiReadOptions.IncludeInternalSymbols) is set and the hidden member is declared in the same
 assembly.
 
 When a base type is declared in another assembly, the metadata of that assembly is read to find the inherited members.
@@ -122,7 +122,7 @@ its own base types are ignored, so the members that hide them are not reported a
 
 ## Memory safety rules
 
-`PublicApiAssembly.UsesUpdatedMemorySafetyRules` tells whether the assembly was compiled with the updated memory safety
-rules. For these assemblies only, `PublicApiMember.RequiresUnsafe` reports the members the compiler marked as requiring
+[PublicApiAssembly.UsesUpdatedMemorySafetyRules](cref:Meziantou.Framework.PublicApiGenerator.PublicApiAssembly.UsesUpdatedMemorySafetyRules) tells whether the assembly was compiled with the updated memory safety
+rules. For these assemblies only, [PublicApiMember.RequiresUnsafe](cref:Meziantou.Framework.PublicApiGenerator.PublicApiMember.RequiresUnsafe) reports the members the compiler marked as requiring
 an unsafe context. The API files apply the same rules to the `unsafe` modifier: see
 [Compiling the files](../03-ApiFiles.md#compiling-the-files).

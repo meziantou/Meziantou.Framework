@@ -21,9 +21,9 @@ long ago it was.
 
 ## When the text is computed
 
-`RelativeDate.Get` stores the date, not the text. The text is computed each time you call `ToString`, from the current
-time of the time provider, so a `RelativeDate` that you keep and display again later gives an up-to-date text.
+[RelativeDate.Get](cref:Meziantou.Framework.RelativeDate.Get) stores the date, not the text. The text is computed each time you call [ToString](cref:Meziantou.Framework.RelativeDate.ToString), from the current
+time of the time provider, so a [RelativeDate](cref:Meziantou.Framework.RelativeDate) that you keep and display again later gives an up-to-date text.
 
 ## Namespaces
 
-`RelativeDate`, `ILocalizationProvider` and `LocalizationProvider` are in the [Meziantou.Framework](cref:Meziantou.Framework) namespace.
+[RelativeDate](cref:Meziantou.Framework.RelativeDate), [ILocalizationProvider](cref:Meziantou.Framework.ILocalizationProvider) and [LocalizationProvider](cref:Meziantou.Framework.LocalizationProvider) are in the [Meziantou.Framework](cref:Meziantou.Framework.RelativeDate!N:Meziantou.Framework) namespace.

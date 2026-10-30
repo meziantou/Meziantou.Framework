@@ -10,14 +10,14 @@ of the color space of the image (see [Color management](../09-Color/03-ColorMana
 ## Grayscale
 
 `image.Grayscale()` replaces every color by its Rec. 709 luma, at the precision of the storage. The pixel format and
-alpha are kept: an `Rgba32` image stays an `Rgba32` image with gray pixels. To store one sample per pixel, convert the
-image with `CloneAs<Gray8>()` or `CloneAs<Gray16>()` (see [Pixel formats](../04-Concepts/05-PixelFormats.md)).
-`Grayscale` throws an `UnsupportedImageFeatureException` when the ICC profile of the image does not match its pixel
+alpha are kept: an [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32) image stays an [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32) image with gray pixels. To store one sample per pixel, convert the
+image with [CloneAs\<Gray8\>()](cref:Meziantou.Framework.Imaging.Image.CloneAs) or [CloneAs\<Gray16\>()](cref:Meziantou.Framework.Imaging.Image.CloneAs) (see [Pixel formats](../04-Concepts/05-PixelFormats.md)).
+[Grayscale](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Grayscale) throws an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException) when the ICC profile of the image does not match its pixel
 format.
 
 ## Color matrices
 
-`ApplyColorMatrix` gives each pixel a color computed from its own color with a `ColorMatrix`: four rows, for the red,
+[ApplyColorMatrix](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ApplyColorMatrix) gives each pixel a color computed from its own color with a [ColorMatrix](cref:Meziantou.Framework.Imaging.ColorMatrix): four rows, for the red,
 green, blue and alpha of the result, of five coefficients, for the red, green, blue and alpha of the pixel and a
 constant. This is the matrix of the `feColorMatrix` filter of SVG.
 
@@ -70,15 +70,15 @@ Other matrices:
 - `CreateDuotone(dark, light)` gives every pixel the color between two inks that its gray level says.
 - `CreateLightness(amount)` adds `amount`, from -1 to 1, to every color.
 - `CreateColorBlindness(type)` shows the colors as a person with protanopia, deuteranopia, tritanopia, or an anomaly
-  of the same cones (`ColorBlindnessType`) sees them. Its matrices are defined on linear light: they are exact on a
-  linear-light `RgbaFloat` image, and an approximation on usual sRGB images, as in most simulators.
-- `Polaroid`, `Kodachrome`, `Lomograph` and `BlackWhite` are photo presets.
+  of the same cones ([ColorBlindnessType](cref:Meziantou.Framework.Imaging.ColorBlindnessType)) sees them. Its matrices are defined on linear light: they are exact on a
+  linear-light [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat) image, and an approximation on usual sRGB images, as in most simulators.
+- [Polaroid](cref:Meziantou.Framework.Imaging.ColorMatrix.Polaroid), [Kodachrome](cref:Meziantou.Framework.Imaging.ColorMatrix.Kodachrome), [Lomograph](cref:Meziantou.Framework.Imaging.ColorMatrix.Lomograph) and [BlackWhite](cref:Meziantou.Framework.Imaging.ColorMatrix.BlackWhite) are photo presets.
 
-`Then` makes one matrix of two: the colors are computed once, and are not rounded or clamped in between, so a chain of
+[Then](cref:Meziantou.Framework.Imaging.ColorMatrix.Then) makes one matrix of two: the colors are computed once, and are not rounded or clamped in between, so a chain of
 adjustments is applied in one pass. Matrices are immutable: create them once and reuse them.
 
 The computation uses only multiplications and additions on the stored samples: the result is the same on every
-platform, and `CreateGrayscale()` gives the pixels of `Grayscale`, bit for bit. A pixel format without alpha gets the
+platform, and [CreateGrayscale()](cref:Meziantou.Framework.Imaging.ColorMatrix.CreateGrayscale) gives the pixels of [Grayscale](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Grayscale), bit for bit. A pixel format without alpha gets the
 color of the result over black, and a gray format gets the luma of the result. In a drawing, `canvas.Filter` and
 `canvas.FilterBackdrop` apply a matrix to a part of the image, as in the example above (see
 [Layers, masks and filters](../07-Drawing/05-LayersMasksAndFilters.md)).
@@ -105,7 +105,7 @@ public static void MakeBackgroundTransparent(string inputPath, string outputPath
 The tolerance is a fraction of the range of a sample, from 0 (the exact color only) to 1; `1 / 255` accepts one 8-bit
 level on each side. Each of the four samples of a pixel, alpha included, must be within the tolerance. The replacement
 is converted to the pixel format as a drawn color is: on a format without alpha, its alpha is lost, which is why the
-example loads the image as `Rgba32`.
+example loads the image as [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32).
 
 ## Spatial effects
 
@@ -162,10 +162,10 @@ public static void ApplyPhotoEffects(string photoPath, string outputDirectory)
 ```
 <!-- endref -->
 
-- `Vignette` and `Glow` keep the alpha of every pixel: a transparent pixel stays transparent. To paint over
+- [Vignette](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Vignette) and [Glow](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Glow) keep the alpha of every pixel: a transparent pixel stays transparent. To paint over
   transparent pixels too, draw a radial gradient instead (see [Brushes and pens](../07-Drawing/03-BrushesAndPens.md)).
-- The means of `Pixelate` and `OilPaint` are weighted by alpha, so the hidden color of a transparent pixel takes no
+- The means of [Pixelate](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Pixelate) and [OilPaint](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.OilPaint) are weighted by alpha, so the hidden color of a transparent pixel takes no
   part in them.
-- `Flatten` gives the pixels of a conversion to a format without alpha with a background color, and a format without
-  alpha is left as it is. An encoder of a format without alpha, such as `JpegEncoder`, can also composite the pixels
-  itself with its `BackgroundColor` (see [Saving images](../05-LoadingAndSaving/04-SavingImages.md)).
+- [Flatten](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Flatten) gives the pixels of a conversion to a format without alpha with a background color, and a format without
+  alpha is left as it is. An encoder of a format without alpha, such as [JpegEncoder](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder), can also composite the pixels
+  itself with its [BackgroundColor](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.BackgroundColor) (see [Saving images](../05-LoadingAndSaving/04-SavingImages.md)).

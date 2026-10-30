@@ -3,7 +3,7 @@ title: Process animated images
 description: Resize and edit GIF, APNG and WebP animations, change their speed or loop count, extract a frame, choose a GIF palette.
 ---
 
-An animated GIF, APNG or WebP file loads as one `Image` whose `Frames` are the full pictures that a viewer shows, each
+An animated GIF, APNG or WebP file loads as one [Image](cref:Meziantou.Framework.Imaging.Image) whose [Frames](cref:Meziantou.Framework.Imaging.Image.Frames) are the full pictures that a viewer shows, each
 with its exact duration. You never deal with the partial rectangles and the disposal methods that the files store: edit
 the frames as complete pictures, and the encoder computes what to store. See
 [Images, frames and animations](../04-Concepts/02-ImagesFramesAndAnimations.md) for the model.
@@ -27,15 +27,15 @@ public static void ResizeAnimation(string inputPath, string outputPath)
 
 - Crop, resize, rotate, flip, blur, color adjustments and drawing change every frame, and the poster frame of an APNG
   file. A geometry change (crop, resize, rotation) is all or nothing: when it fails, no frame has changed.
-- `Save` writes the frames, their durations and the loop count. The output format must store animations: GIF, PNG
-  (APNG), WebP, AVIF, HEIC or JPEG XL. A JPEG output throws an `UnsupportedImageFeatureException` instead of keeping the
+- [Save](cref:Meziantou.Framework.Imaging.Image.Save) writes the frames, their durations and the loop count. The output format must store animations: GIF, PNG
+  (APNG), WebP, AVIF, HEIC or JPEG XL. A JPEG output throws an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException) instead of keeping the
   first frame silently.
 - To change one frame only, use the frame overloads of the pixel operations, such as `Frames[i].Draw`. See
   [Drawing on animations](../07-Drawing/07-DrawingOnAnimations.md).
 
 ## Change the speed and the loop count
 
-`Frames[i].Metadata.Duration` is a `FrameDuration`: an exact fraction of a second, never rounded on load.
+`Frames[i].Metadata.Duration` is a [FrameDuration](cref:Meziantou.Framework.Imaging.FrameDuration): an exact fraction of a second, never rounded on load.
 `Animation.TotalPlays` is the number of times the animation plays, the first play included, or `null` for an infinite
 loop:
 
@@ -65,17 +65,17 @@ exactly (`DurationRounding`):
 
 | Format | Durations | Default rounding |
 | --- | --- | --- |
-| GIF | Hundredths of a second, up to 655.35 s | To the nearest hundredth (`RoundToNearest`) |
-| APNG | A fraction with a 16-bit numerator and denominator | Exact, or `UnsupportedImageFeatureException` (`RequireExact`) |
-| WebP | Milliseconds | To the nearest millisecond (`RoundToNearest`) |
+| GIF | Hundredths of a second, up to 655.35 s | To the nearest hundredth ([RoundToNearest](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RoundToNearest)) |
+| APNG | A fraction with a 16-bit numerator and denominator | Exact, or [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException) ([RequireExact](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RequireExact)) |
+| WebP | Milliseconds | To the nearest millisecond ([RoundToNearest](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RoundToNearest)) |
 
 A GIF file stores the number of repetitions after the first play: a file that loops 2 times plays 3 times, and
-`TotalPlays` is 3. The library converts both ways. Zero durations are kept as they are: the minimum delays that some
+[TotalPlays](cref:Meziantou.Framework.Imaging.Metadata.AnimationMetadata.TotalPlays) is 3. The library converts both ways. Zero durations are kept as they are: the minimum delays that some
 players apply are not imitated.
 
 ## Build an animation
 
-`AppendFrame` adds a frame. A still image that gets a second frame becomes an animation, with default settings (an
+[AppendFrame](cref:Meziantou.Framework.Imaging.Image.AppendFrame) adds a frame. A still image that gets a second frame becomes an animation, with default settings (an
 infinite loop):
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_BuildAnimation;format=md-fenced-code-block;dedent=true -->
@@ -103,7 +103,7 @@ public static void BuildAnimation(string apngPath, string gifPath)
 ```
 <!-- endref -->
 
-`InsertFrame`, `RemoveFrame` and `MoveFrame` edit the list of frames. A frame added from another image must have the
+[InsertFrame](cref:Meziantou.Framework.Imaging.Image.InsertFrame), [RemoveFrame](cref:Meziantou.Framework.Imaging.Image.RemoveFrame) and [MoveFrame](cref:Meziantou.Framework.Imaging.Image.MoveFrame) edit the list of frames. A frame added from another image must have the
 same size and pixel format: frames are never resized or converted implicitly.
 
 ## Save or extract a frame
@@ -176,15 +176,15 @@ public static void SaveGifWithSharedPalette(string inputPath, string outputPath)
 ```
 <!-- endref -->
 
-The settings of `GifEncoder`:
+The settings of [GifEncoder](cref:Meziantou.Framework.Imaging.Formats.GifEncoder):
 
 | Setting | Effect |
 | --- | --- |
 | `Quantization.MaxColors` | The largest palette of a frame, from 2 to 256 (default), the transparent entry included. Fewer colors, smaller file |
-| `Quantization.Palette` | One fixed palette for every frame, such as the one of `PaletteBuilder` above |
-| `Quantization.Dithering` | Mixes palette colors to simulate the missing ones: error diffusion (`FloydSteinberg`...) or ordered (`Bayer4x4`...). `None` by default |
-| `AlphaMode` | `Threshold` (default): pixels whose alpha is below `AlphaThreshold` (128) become transparent, the others opaque. `Flatten`: blended on the opaque `BackgroundColor` |
-| `DurationRounding` | `RoundToNearest` hundredth (default) or `RequireExact` |
+| `Quantization.Palette` | One fixed palette for every frame, such as the one of [PaletteBuilder](cref:Meziantou.Framework.Imaging.PaletteBuilder) above |
+| `Quantization.Dithering` | Mixes palette colors to simulate the missing ones: error diffusion ([FloydSteinberg](cref:Meziantou.Framework.Imaging.DitheringMode.FloydSteinberg)...) or ordered ([Bayer4x4](cref:Meziantou.Framework.Imaging.DitheringMode.Bayer4x4)...). [None](cref:Meziantou.Framework.Imaging.DitheringMode.None) by default |
+| [AlphaMode](cref:Meziantou.Framework.Imaging.Formats.GifEncoder.AlphaMode) | [Threshold](cref:Meziantou.Framework.Imaging.Formats.GifAlphaMode.Threshold) (default): pixels whose alpha is below [AlphaThreshold](cref:Meziantou.Framework.Imaging.Formats.GifEncoder.AlphaThreshold) (128) become transparent, the others opaque. [Flatten](cref:Meziantou.Framework.Imaging.Formats.GifAlphaMode.Flatten): blended on the opaque [BackgroundColor](cref:Meziantou.Framework.Imaging.Formats.GifEncoder.BackgroundColor) |
+| [DurationRounding](cref:Meziantou.Framework.Imaging.Formats.GifEncoder.DurationRounding) | [RoundToNearest](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RoundToNearest) hundredth (default) or [RequireExact](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RequireExact) |
 
 GIF stores no partial transparency and no 16-bit samples: choosing GIF is the opt-in to these losses. To keep every
 color and soft edges, save the animation as APNG or WebP instead. See [GIF](../10-Formats/03-Gif.md) and
@@ -192,7 +192,7 @@ color and soft edges, save the animation as APNG or WebP instead. See [GIF](../1
 
 ## Long animations
 
-`Image.Load` decodes every frame into memory. To process an animation of thousands of frames, or one larger than the
+[Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) decodes every frame into memory. To process an animation of thousands of frames, or one larger than the
 default limit of 1,000 frames, read and write it one frame at a time: see
 [Streaming readers and writers](../05-LoadingAndSaving/05-StreamingReadersAndWriters.md) and
 [Resource limits](../05-LoadingAndSaving/07-ResourceLimits.md).

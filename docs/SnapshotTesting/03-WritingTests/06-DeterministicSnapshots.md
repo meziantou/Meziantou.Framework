@@ -36,20 +36,20 @@ Name: John
 ```
 <!-- endref -->
 
-`ScrubGuid` replaces each distinct GUID with a sequential one (`00000000-0000-0000-0000-000000000001`, `...0002`), so
-two equal GUIDs stay equal in the snapshot. `ScrubLinesContaining` removes the lines that contain one of the texts.
+[ScrubGuid](cref:Meziantou.Framework.SnapshotTesting.HumanReadableSerializerScrubExtensions.ScrubGuid) replaces each distinct GUID with a sequential one (`00000000-0000-0000-0000-000000000001`, `...0002`), so
+two equal GUIDs stay equal in the snapshot. [ScrubLinesContaining](cref:Meziantou.Framework.SnapshotTesting.SnapshotSettingsScrubberExtensions.ScrubLinesContaining) removes the lines that contain one of the texts.
 
 `SnapshotSettings.Default with { }` creates a copy of the default settings, so the scrubbers only apply to this test. To
-scrub every snapshot, configure `SnapshotSettings.Default` once (see [Settings](../04-Settings.md)).
+scrub every snapshot, configure [SnapshotSettings.Default](cref:Meziantou.Framework.SnapshotTesting.SnapshotSettings.Default) once (see [Settings](../04-Settings.md)).
 
 ## Serializer options
 
-These extension methods of `HumanReadableSerializerOptions` are available in `ConfigureHumanReadableSerializer`:
+These extension methods of [HumanReadableSerializerOptions](cref:Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions) are available in [ConfigureHumanReadableSerializer](cref:Meziantou.Framework.SnapshotTesting.SnapshotSettingsHumanReadableSerializerExtensions.ConfigureHumanReadableSerializer):
 
 | Method | Effect |
 | --- | --- |
-| `ScrubGuid()` | Replaces each distinct GUID with a sequential one |
-| `ScrubValue<T>()` | Replaces each distinct value of type `T` with `<Type>_<index>` (`String_0`, `String_1`). Overloads take an equality comparer or a function that formats the value from the value and its index |
+| [ScrubGuid()](cref:Meziantou.Framework.SnapshotTesting.HumanReadableSerializerScrubExtensions.ScrubGuid) | Replaces each distinct GUID with a sequential one |
+| [ScrubValue\<T\>()](cref:Meziantou.Framework.SnapshotTesting.HumanReadableSerializerScrubExtensions.ScrubValue) | Replaces each distinct value of type `T` with `<Type>_<index>` (`String_0`, `String_1`). Overloads take an equality comparer or a function that formats the value from the value and its index |
 | `UseRelativeDateTime(origin)` | Writes `DateTime` values as their difference with `origin` |
 | `UseRelativeDateTimeOffset(origin)` | Writes `DateTimeOffset` values as their difference with `origin` |
 | `UseRelativeTimeSpan(origin)` | Writes `TimeSpan` values as their difference with `origin` |
@@ -78,7 +78,7 @@ The other options of the serializer, such as ignoring members or ordering proper
 
 ## Scrubbers
 
-These extension methods of `SnapshotSettings` add a scrubber to `SnapshotSettings.Scrubbers`:
+These extension methods of [SnapshotSettings](cref:Meziantou.Framework.SnapshotTesting.SnapshotSettings) add a scrubber to [SnapshotSettings.Scrubbers](cref:Meziantou.Framework.SnapshotTesting.SnapshotSettings.Scrubbers):
 
 | Method | Effect |
 | --- | --- |
@@ -86,19 +86,19 @@ These extension methods of `SnapshotSettings` add a scrubber to `SnapshotSetting
 | `ScrubLinesContaining(params string[])` | Removes the lines that contain one of the texts. An overload takes a `StringComparison` |
 | `ScrubLinesMatching(pattern)` | Removes the lines that match a regular expression, given as a `Regex` or a pattern with options and a timeout |
 | `ScrubLinesWithReplace(replaceLine)` | Replaces each line with the result of the function. Return `null` to remove the line |
-| `ScrubUserName()` | Replaces the name of the current user with `TheUserName` |
-| `ScrubMachineName()` | Replaces the name of the machine with `TheMachineName` |
+| [ScrubUserName()](cref:Meziantou.Framework.SnapshotTesting.SnapshotSettingsScrubberExtensions.ScrubUserName) | Replaces the name of the current user with `TheUserName` |
+| [ScrubMachineName()](cref:Meziantou.Framework.SnapshotTesting.SnapshotSettingsScrubberExtensions.ScrubMachineName) | Replaces the name of the machine with `TheMachineName` |
 
 The line scrubbers split the text on `\r\n`, `\r` and `\n` only, and keep the line endings. A text that ends with a line
 break has no empty last line: `ScrubLinesWithReplace(line => "// " + line)` turns `"a\nb\n"` into `"// a\n// b\n"`. A
 leading UTF-8 byte order mark is removed before the scrubbers run, so a pattern anchored at the start of the first line
 matches.
 
-`ScrubUserName` and `ScrubMachineName` only replace whole words, ignoring case: with the user `runner`,
+[ScrubUserName](cref:Meziantou.Framework.SnapshotTesting.SnapshotSettingsScrubberExtensions.ScrubUserName) and [ScrubMachineName](cref:Meziantou.Framework.SnapshotTesting.SnapshotSettingsScrubberExtensions.ScrubMachineName) only replace whole words, ignoring case: with the user `runner`,
 `/home/runner/work` is scrubbed but `xunit.runner.visualstudio` is not.
 
-For anything else, derive from `Scrubber`, implement `Scrub(string text)`, and add an instance to
-`SnapshotSettings.Scrubbers`.
+For anything else, derive from [Scrubber](cref:Meziantou.Framework.SnapshotTesting.Scrubber), implement `Scrub(string text)`, and add an instance to
+[SnapshotSettings.Scrubbers](cref:Meziantou.Framework.SnapshotTesting.SnapshotSettings.Scrubbers).
 
 ## Line endings
 

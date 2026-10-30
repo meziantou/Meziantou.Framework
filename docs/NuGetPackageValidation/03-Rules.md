@@ -4,11 +4,11 @@ description: What each validation rule checks, the errors it reports, and how to
 ---
 
 A rule checks one aspect of a package and reports one or more [error codes](04-ErrorCodes.md). The rules are the
-properties of `NuGetPackageValidationRules`, and the command-line tool takes the same names.
+properties of [NuGetPackageValidationRules](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRules), and the command-line tool takes the same names.
 
 ## Default rules
 
-`NuGetPackageValidationRules.Default` holds the rules that apply to most packages. `ValidateAsync` and the command-line
+[NuGetPackageValidationRules.Default](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRules.Default) holds the rules that apply to most packages. [ValidateAsync](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidator.ValidateAsync) and the command-line
 tool use them when you do not choose the rules.
 
 ### AssembliesMustBeOptimized
@@ -124,7 +124,7 @@ that IDEs show the documentation of its API. Satellite assemblies and executable
 
 ## Additional rules
 
-These rules are not in `Default`: add them explicitly.
+These rules are not in [Default](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRules.Default): add them explicitly.
 
 ### PackageIdAvailableOnNuGetOrg
 

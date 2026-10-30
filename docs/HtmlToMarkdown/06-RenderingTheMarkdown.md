@@ -34,7 +34,7 @@ Assert.Contains("<td><del>1.50</del> 1.20</td>", html, StringComparison.Ordinal)
 | Task lists, from checkboxes | [Task lists](../Markdown/04-Extensions/05-Blocks.md#task-lists) |
 | `~~`, from `del`, `s` and `strike` | [Strikethrough](../Markdown/04-Extensions/04-TextFormatting.md#strikethrough-and-other-emphasis) |
 | Definition lists, from `dl` | [Definition lists](../Markdown/04-Extensions/05-Blocks.md#definition-lists) |
-| Shortcodes, with `EmojiShortcodeMode` | [Emojis](../Markdown/04-Extensions/04-TextFormatting.md#emojis), not enabled by `UseAdvancedExtensions` |
+| Shortcodes, with [EmojiShortcodeMode](cref:Meziantou.Framework.EmojiShortcodeMode) | [Emojis](../Markdown/04-Extensions/04-TextFormatting.md#emojis), not enabled by `UseAdvancedExtensions` |
 
 ## Round trip
 

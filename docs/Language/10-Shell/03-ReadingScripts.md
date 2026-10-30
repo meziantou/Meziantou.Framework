@@ -5,12 +5,12 @@ description: Find the commands of a script, read their names and arguments, reac
 
 ## The shape of a script
 
-A `ShellScriptSyntax` holds a `ShellStatementListSyntax`, whose `Statements` are the statements of the script.
+A [ShellScriptSyntax](cref:Meziantou.Framework.Language.Shell.ShellScriptSyntax) holds a [ShellStatementListSyntax](cref:Meziantou.Framework.Language.Shell.ShellStatementListSyntax), whose `Statements` are the statements of the script.
 A statement is a command, a pipeline, a command list (`a && b`), or a compound statement such as `if`, `for` or a
 function definition, which holds statement lists of its own.
 
-The separators belong to the lists: a statement list, a pipeline and a command list are separated lists, where `Count`
-counts the statements and `SeparatorCount` the `;`, `|` or `&&` between them. See
+The separators belong to the lists: a statement list, a pipeline and a command list are separated lists, where [Count](cref:Meziantou.Framework.Language.SeparatedSyntaxList{TNode}.Count)
+counts the statements and [SeparatorCount](cref:Meziantou.Framework.Language.SeparatedSyntaxList{TNode}.SeparatorCount) the `;`, `|` or `&&` between them. See
 [Lists](../03-Concepts/02-NodesAndTokens.md#lists).
 
 <!-- ref:../../../tests/Meziantou.Framework.Language.Shell.Tests/ShellSyntaxVisitorTests.cs;region=ShellSyntaxNode_DescendantNodes;format=md-fenced-code-block;dedent=true -->
@@ -29,18 +29,18 @@ Assert.Equal([SyntaxKind.StatementList, SyntaxKind.Command, SyntaxKind.Word, Syn
 
 ## Commands and words
 
-A `ShellCommandSyntax` is a simple command. Its `Elements` are its parts in the order of the text, and named properties
+A [ShellCommandSyntax](cref:Meziantou.Framework.Language.Shell.ShellCommandSyntax) is a simple command. Its [Elements](cref:Meziantou.Framework.Language.Shell.ShellCommandSyntax.Elements) are its parts in the order of the text, and named properties
 sort them:
 
 | Property | Holds |
 | --- | --- |
-| `Name`, `NameValue` | The word of the command name, and its value |
-| `Arguments` | The words after the name |
-| `Assignments` | The `NAME=value` in front of the command |
-| `Redirections` | The `>file`, `2>&1`, `<<EOF` of the command |
+| [Name](cref:Meziantou.Framework.Language.Shell.ShellCommandSyntax.Name), [NameValue](cref:Meziantou.Framework.Language.Shell.ShellCommandSyntax.NameValue) | The word of the command name, and its value |
+| [Arguments](cref:Meziantou.Framework.Language.Shell.ShellCommandSyntax.Arguments) | The words after the name |
+| [Assignments](cref:Meziantou.Framework.Language.Shell.ShellCommandSyntax.Assignments) | The `NAME=value` in front of the command |
+| [Redirections](cref:Meziantou.Framework.Language.Shell.ShellCommandSyntax.Redirections) | The `>file`, `2>&1`, `<<EOF` of the command |
 
-A `ShellWordSyntax` is made of parts: literal text, quoted strings, variable references, command substitutions, globs.
-Its `Value` is the word with its quotes and escapes resolved, or `null` when it depends on an expansion, such as a
+A [ShellWordSyntax](cref:Meziantou.Framework.Language.Shell.ShellWordSyntax) is made of parts: literal text, quoted strings, variable references, command substitutions, globs.
+Its [Value](cref:Meziantou.Framework.Language.Shell.ShellWordSyntax.Value) is the word with its quotes and escapes resolved, or `null` when it depends on an expansion, such as a
 variable:
 
 <!-- ref:../../../tests/Meziantou.Framework.Language.Shell.Tests/ShellSyntaxTreeTests.cs;region=ShellSyntaxTree_ParseCommand;format=md-fenced-code-block;dedent=true -->
@@ -77,9 +77,9 @@ Assert.Equal(3, commandCount);
 What an expression is differs between shells, so there is no entry point to parse one. Reach them through the nodes that
 contain them:
 
-- `PosixArithmeticExpansionSyntax.Expression` for `$(( ))`;
-- `PosixDelimitedExpressionStatementSyntax.Expression` for `(( ))` and `[[ ]]`;
-- `PowerShellExpressionStatementSyntax.Expression` for a PowerShell expression statement.
+- [PosixArithmeticExpansionSyntax.Expression](cref:Meziantou.Framework.Language.Shell.PosixArithmeticExpansionSyntax.Expression) for `$(( ))`;
+- [PosixDelimitedExpressionStatementSyntax.Expression](cref:Meziantou.Framework.Language.Shell.PosixDelimitedExpressionStatementSyntax.Expression) for `(( ))` and `[[ ]]`;
+- [PowerShellExpressionStatementSyntax.Expression](cref:Meziantou.Framework.Language.Shell.PowerShellExpressionStatementSyntax.Expression) for a PowerShell expression statement.
 
 Precedence is in the tree: a binary expression holds its operands, which can be binary expressions themselves.
 
@@ -97,7 +97,7 @@ Assert.IsType<ShellBinaryExpressionSyntax>(binary.Right);
 
 ## Comments
 
-Comments are trivia: they do not change the structure, and `DescendantComments()` returns them:
+Comments are trivia: they do not change the structure, and [DescendantComments()](cref:Meziantou.Framework.Language.Shell.ShellSyntaxNode.DescendantComments) returns them:
 
 <!-- ref:../../../tests/Meziantou.Framework.Language.Shell.Tests/ShellSyntaxTreeTests.cs;region=ShellSyntaxTree_Comments;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -115,7 +115,7 @@ Assert.Equal(["0: # build", "13: # all targets"], comments);
 
 ## Walk a script
 
-`ShellSyntaxWalker` has a method per node type, such as `VisitCommand`:
+[ShellSyntaxWalker](cref:Meziantou.Framework.Language.Shell.ShellSyntaxWalker) has a method per node type, such as [VisitCommand](cref:Meziantou.Framework.Language.Shell.ShellSyntaxVisitor.VisitCommand):
 
 <!-- ref:../../../tests/Meziantou.Framework.Language.Shell.Tests/ShellSyntaxVisitorTests.cs;region=ShellSyntaxWalker_SimpleCommandCounter;format=md-fenced-code-block;dedent=true -->
 ```csharp

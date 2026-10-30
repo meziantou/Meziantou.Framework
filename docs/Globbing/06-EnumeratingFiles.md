@@ -5,7 +5,7 @@ description: List the files or the directories that match a pattern, set the enu
 
 ## Enumerate files
 
-`EnumerateFiles` lists the files of a directory that match the pattern, and returns their full paths:
+[EnumerateFiles](cref:Meziantou.Framework.Globbing.GlobExtensions.EnumerateFiles) lists the files of a directory that match the pattern, and returns their full paths:
 
 <!-- ref:../../tests/Meziantou.Framework.Globbing.Tests/GlobTests.cs;region=Glob_EnumerateFiles;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -27,14 +27,14 @@ Assert.Equal([Path.Combine(rootDirectory.FullPath, "src", "a", "abc.txt")], file
 <!-- endref -->
 
 - The pattern is matched against the path of each file relative to the directory you pass.
-- The enumeration only goes into the directories that can hold a match, as `IsPartialMatch` decides. A pattern such as
+- The enumeration only goes into the directories that can hold a match, as [IsPartialMatch](cref:Meziantou.Framework.Globbing.Glob.IsPartialMatch) decides. A pattern such as
   `**/*.txt` visits the whole tree; `src/*.txt` only goes into `src`.
 - The results are returned as they are found, in the order of the file system. Sort them if you need a stable order.
 - A pattern that only matches directories, such as a standard pattern that ends with a `/`, returns no file.
 
 ## Enumerate directories
 
-`EnumerateFileSystemEntries` returns the files and the directories that match. With a pattern that ends with a `/`,
+[EnumerateFileSystemEntries](cref:Meziantou.Framework.Globbing.GlobExtensions.EnumerateFileSystemEntries) returns the files and the directories that match. With a pattern that ends with a `/`,
 it returns directories only:
 
 <!-- ref:../../tests/Meziantou.Framework.Globbing.Tests/GlobTests.cs;region=Glob_EnumerateFileSystemEntries;format=md-fenced-code-block;dedent=true -->
@@ -93,7 +93,7 @@ Assert.Equal([Path.Combine(rootDirectory.FullPath, "logs", "app.log")], files);
 ## Use a pattern with System.IO.Enumeration
 
 To return something else than a path, or to add your own conditions, use a `FileSystemEnumerable<T>` (namespace
-`System.IO.Enumeration`) and call the `IsMatch` and `IsPartialMatch` overloads that take a `FileSystemEntry`:
+`System.IO.Enumeration`) and call the [IsMatch](cref:Meziantou.Framework.Globbing.Glob.IsMatch) and [IsPartialMatch](cref:Meziantou.Framework.Globbing.Glob.IsPartialMatch) overloads that take a `FileSystemEntry`:
 
 <!-- ref:../../tests/Meziantou.Framework.Globbing.Tests/GlobTests.cs;region=Glob_FileSystemEnumerable;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -117,6 +117,6 @@ Assert.Equal([("readme.txt", 0L)], enumerable.ToList());
 ```
 <!-- endref -->
 
-These overloads match the path of the entry relative to the root directory of the enumeration, and `IsMatch` tells
-the pattern whether the entry is a file or a directory. To write a reusable enumerator instead, derive from `GlobFileSystemEnumerator<T>` and override
+These overloads match the path of the entry relative to the root directory of the enumeration, and [IsMatch](cref:Meziantou.Framework.Globbing.Glob.IsMatch) tells
+the pattern whether the entry is a file or a directory. To write a reusable enumerator instead, derive from [GlobFileSystemEnumerator\<T\>](cref:Meziantou.Framework.Globbing.GlobFileSystemEnumerator{T}) and override
 `TransformEntry`: it already includes the entries that match and skips the directories that cannot.

@@ -3700,7 +3700,12 @@ public static Image LoadCmykJpeg(string path)
   ISO 18619): the black of the source is the color of its device black (for a CMYK output profile, of the inks its
   perceptual table gives for black); the black of a table-based destination is read from the round trip of a
   lightness ramp through the profile. It changes nothing when both blacks are black, as between two display
-  profiles, and never applies to the absolute colorimetric intent.
+  profiles, and never applies to the absolute colorimetric intent. The perceptual and saturation tables of a version 4
+  profile give black the lightness of the perceptual reference medium (L* = 3.1373), where version 2 tables and
+  matrix-based profiles usually give it 0: the compensation maps one to the other, and without it nothing does (black
+  becomes a dark gray from a version 4 table to a version 2 or matrix-based profile, and the darkest grays become black
+  the other way). The ICC recommends against connecting version 2 and version 4 perceptual tables. LittleCMS
+  compensates a version 4 destination for these intents even when asked not to; the library does what the option says.
 
 A malformed profile is an `InvalidImageContentException`; a valid profile of another kind (version 5, device link,
 abstract, named color, other data color spaces), or one that cannot be a destination (no table from the connection

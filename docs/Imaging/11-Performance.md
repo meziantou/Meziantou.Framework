@@ -86,8 +86,8 @@ public static void ResizeWithAllCores(string inputPath, string outputPath)
 
   The gain depends on the share of the work that stays on one thread. OpenEXR, JPEG 2000 and TIFF scale well. JPEG
   gains the least: its entropy decoding, a third to half of the time, stays on one thread. The files of the AVIF and
-  HEIC encoders have a single tile and no wavefront, unless they are grids or AVIF frames wider than 4,096 pixels, so
-  they decode with less parallelism than files with several tiles.
+  HEIC encoders have a single tile and no wavefront, unless they are grids, AVIF frames wider than 4,096 pixels or AVIF
+  files encoded with `AvifEncoder.AutoTiling`, so they decode with less parallelism than files with several tiles.
 - The other decoders and encoders, drawing and the other operations run on one thread.
 - The result does not depend on the number of threads: the pixels and the encoded bytes are the same.
 - Each worker needs its own working memory, which counts against the memory limit of the image.
@@ -101,6 +101,8 @@ public static void ResizeWithAllCores(string inputPath, string outputPath)
   size; raise it for assets that are encoded once and downloaded many times.
 - **Large AVIF and HEIC images can be cut in tiles.** `GridTileSize` encodes a large image as a grid of tiles, which
   bounds the memory of the encoder and lets several workers encode it.
+- **`AvifEncoder.AutoTiling` makes large AVIF images faster to encode and decode with several workers.** It splits each
+  frame into up to 8 AV1 tiles, for a file about 0.3% larger.
 
 ## Read files efficiently
 

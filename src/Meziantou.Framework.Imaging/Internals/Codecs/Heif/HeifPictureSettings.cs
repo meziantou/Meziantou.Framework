@@ -28,6 +28,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// The largest number of workers that the codec may use for a picture (the independent tiles of an AV1 frame): 1 when
 /// the pictures are coded at the same time as others. The output does not depend on it.
 /// </param>
+/// <param name="AutoTiling">
+/// Whether the codec splits a picture into independent parts from its size (the AV1 tiles of <c>AvifEncoder.AutoTiling</c>),
+/// so that workers can code and decode them at once; the fewest parts otherwise.
+/// </param>
 [StructLayout(LayoutKind.Auto)]
 internal readonly record struct HeifPictureSettings(
     int Width,
@@ -45,4 +49,5 @@ internal readonly record struct HeifPictureSettings(
     int Quality,
     int Effort,
     int KeyFrameInterval,
-    int MaxDegreeOfParallelism = 1);
+    int MaxDegreeOfParallelism = 1,
+    bool AutoTiling = false);

@@ -1177,10 +1177,11 @@ thin public types over its `FontFace`.
     the tiles of a column share it), treats blocks outside it as unavailable, and writes the frame only where its blocks
     are; the worker of `context_update_tile_id` saves its own distributions, and the coding diagnostics (`Av1Tools`) are
     merged after each run. The tile sizes are read on the calling thread first. The encoder codes the tiles of a frame
-    that has several (the layout is the minimum, so frames wider than 4096 pixels; never a function of the worker count)
-    with an `Av1EncoderWorkspace` per worker that shares the source planes, and appends them in order; intrabc frames use
-    one worker. A size-based layout (4x2 tiles for 3840x2160, like libavif's autotiling) would cost +0.3% (effort 5) to
-    +0.6% (effort 0) at equal PSNR, so it is not the default. `Av1TileWorkers.TestReverseOrder` runs the tiles from the
+    that has several (the layout is the minimum, so frames wider than 4096 pixels, unless `AvifEncoder.AutoTiling` asks for
+    `Av1Encoder.GetAutoTileLayout`; never a function of the worker count) with an `Av1EncoderWorkspace` per worker that
+    shares the source planes, and appends them in order; intrabc frames use one worker. The size-based layout (4x2 tiles
+    for 3840x2160, like libavif's autotiling) costs +0.3% (effort 5) to +0.6% (effort 0) at equal PSNR even with one
+    worker, so it is an opt-in. `Av1TileWorkers.TestReverseOrder` runs the tiles from the
     last one so that the tests check independence whatever the scheduling (`DecodedPlanesDoNotDependOnTheNumberOfWorkers`,
     `TilesDecodedByWorkersFailWithTheErrorOfTheFirstFailingTile`, `TilesEncodedByWorkersAreTheTilesOfOneWorker`).
   - HEVC (`HevcSliceCoder.Substreams.cs`, `HevcSubstreamWorkers`): the substreams of a slice segment that start at an

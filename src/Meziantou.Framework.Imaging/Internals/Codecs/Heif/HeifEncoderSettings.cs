@@ -23,6 +23,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <param name="CleanAperture">The part of the image that readers show, or <see langword="null"/> for the whole image.</param>
 /// <param name="PremultiplyAlpha">Whether the colors are stored multiplied by the alpha of their pixel.</param>
 /// <param name="GridTileSize">The size of the tiles of the grid of a still image, or <see langword="null"/> for an image that is one coded item.</param>
+/// <param name="AutoTiling">Whether the pictures are split into independent parts from their size (<see cref="HeifPictureSettings.AutoTiling"/>).</param>
 [StructLayout(LayoutKind.Auto)]
 internal readonly record struct HeifEncoderSettings(
     string EncoderName,
@@ -40,4 +41,5 @@ internal readonly record struct HeifEncoderSettings(
     MetadataHandling MetadataHandling,
     Rectangle? CleanAperture = null,
     bool PremultiplyAlpha = false,
-    Size? GridTileSize = null);
+    Size? GridTileSize = null,
+    bool AutoTiling = false);

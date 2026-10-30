@@ -33,6 +33,7 @@ public sealed class AvifEncoderTests
         Assert.Null(encoder.CleanAperture);
         Assert.False(encoder.PremultiplyAlpha);
         Assert.Null(encoder.GridTileSize);
+        Assert.False(encoder.AutoTiling);
         Assert.Equal(0, encoder.KeyFrameInterval);
         Assert.Equal(FrameDurationRounding.RequireExact, encoder.DurationRounding);
         Assert.Equal(MetadataHandling.Strict, encoder.MetadataHandling);
@@ -481,6 +482,85 @@ public sealed class AvifEncoderTests
         using var tallWithWorkers = WithWorkers(tall, workers);
         var grid = new AvifEncoder { Compression = AvifCompression.Lossy, GridTileSize = new Size(4160, 64), Effort = 0 };
         Assert.Equal(Encode(tall, grid), Encode(tallWithWorkers, grid));
+    }
+
+    [Theory]
+    [InlineData(511, 512, 0, 0)] // less than one tile of 512x512 pixels
+    [InlineData(1023, 512, 0, 0)] // less than two: one tile
+    [InlineData(1024, 512, 1, 0)]
+    [InlineData(512, 1024, 0, 1)]
+    [InlineData(1024, 1024, 1, 1)]
+    [InlineData(1920, 1080, 1, 1)] // 7.9 tiles of 512x512 pixels: 4
+    [InlineData(3840, 2160, 2, 1)] // 31.6: at most 8, along the longer side of the tiles first
+    [InlineData(2160, 3840, 1, 2)]
+    [InlineData(65536, 65536, 2, 1)]
+    [InlineData(16384, 512, 3, 0)] // 8 columns of tiles of 2048x512
+    [InlineData(64, 65536, 0, 3)] // one column of superblocks: rows only
+    public void AutoTilingHasALayoutThatDependsOnTheSizeOnly(int width, int height, int colsLog2, int rowsLog2)
+    {
+        Assert.Equal((colsLog2, rowsLog2), Av1Encoder.GetAutoTileLayout(width, height));
+    }
+
+    [Fact]
+    public void AutoTilingSplitsTheFramesIntoTiles()
+    {
+        // Off by default: the fewest tiles, one tile up to 4096 pixels of width
+        using var image = CreateSmoothImage(1024, 1024, transparent: false);
+        var untiled = new AvifEncoder { Compression = AvifCompression.Lossy, Effort = 0 };
+        var autoTiled = new AvifEncoder { Compression = AvifCompression.Lossy, Effort = 0, AutoTiling = true };
+        var (expected, tiles) = EncodeCountingTiles(image, untiled);
+        Assert.Equal(1, tiles);
+        Assert.Equal(expected, Encode(image, new AvifEncoder { Compression = AvifCompression.Lossy, Effort = 0, AutoTiling = false }));
+
+        // 2x2 tiles of 512x512 pixels, which the decoder decodes by one worker or by several
+        var (tiled, autoTiles) = EncodeCountingTiles(image, autoTiled);
+        Assert.Equal(4, autoTiles);
+        Assert.NotEqual(expected, tiled);
+        using var decoded = Image.Load<Rgba32>(tiled);
+        Assert.Equal((1024, 1024), (decoded.Width, decoded.Height));
+        using var decodedByWorkers = Image.Load<Rgba32>(tiled, new ImageDecodeOptions { Configuration = new ImageConfiguration { MaxDegreeOfParallelism = 4 } });
+        Assert.Equal(GetBytes(decoded), GetBytes(decodedByWorkers));
+
+        // The tiles of a grid have the layout of their own size: the data of a tile is the image of its pixels coded alone
+        var grid = new AvifEncoder { Compression = AvifCompression.Lossy, Effort = 0, AutoTiling = true, GridTileSize = new Size(1024, 512) };
+        var reader = ReferenceHeif.Parse(Encode(image, grid));
+        var firstTile = reader.ReadItemData(reader.GetGridTiles(reader.PrimaryItem!)[0]);
+        using var top = image.Clone();
+        top.Crop(new Rectangle(0, 0, 1024, 512), TestContext.Current.CancellationToken);
+        var (alone, topTiles) = EncodeCountingTiles(top, autoTiled);
+        Assert.Equal(2, topTiles);
+        var aloneReader = ReferenceHeif.Parse(alone);
+        Assert.Equal(aloneReader.ReadItemData(aloneReader.PrimaryItem!), firstTile);
+
+        // An image smaller than two tiles of 512x512 pixels has one tile, and a frame wider than 4096 pixels the two
+        // tiles it needs: the same files as without the setting
+        using var small = CreateSmoothImage(1023, 512, transparent: false);
+        Assert.Equal(Encode(small, untiled), Encode(small, autoTiled));
+        using var wide = CreateSmoothImage(4160, 64, transparent: false);
+        Assert.Equal(Encode(wide, untiled), Encode(wide, autoTiled));
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(16)]
+    public void AutoTiledFramesAreCodedByWorkersAsByOne(int workers)
+    {
+        // 2x1 tiles in the color image and in the alpha plane: lossless, and lossy at an effort whose tiles are written
+        // once the frame is filtered. The layout does not depend on the number of workers, nor the file
+        using var image = CreateSmoothImage(1024, 512, transparent: true);
+        using var withWorkers = WithWorkers(image, workers);
+        var lossless = new AvifEncoder { Effort = 0, AutoTiling = true };
+        var expected = Encode(image, lossless);
+        Assert.Equal(expected, Encode(withWorkers, lossless));
+        var lossy = new AvifEncoder { Compression = AvifCompression.Lossy, Effort = 0, AutoTiling = true };
+        Assert.Equal(Encode(image, lossy), Encode(withWorkers, lossy));
+
+        // Every sample of the image is decoded back, by one worker and by several
+        using var decoded = Image.Load<Rgba32>(expected);
+        Assert.Equal(GetBytes(image), GetBytes(decoded));
+        using var decodedByWorkers = Image.Load<Rgba32>(expected, new ImageDecodeOptions { Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers } });
+        Assert.Equal(GetBytes(image), GetBytes(decodedByWorkers));
     }
 
     [Fact]
@@ -1259,5 +1339,30 @@ public sealed class AvifEncoderTests
         image.Save(stream, encoder);
 
         return stream.ToArray();
+    }
+
+    // The file, and the number of AV1 tiles of its frames: workers code the tiles 0 to n - 1 of a frame that has several,
+    // and the calling thread codes a frame of one tile on its own
+    private static (byte[] Data, int Tiles) EncodeCountingTiles(Image<Rgba32> image, AvifEncoder encoder)
+    {
+        using var withWorkers = WithWorkers(image, 16);
+        var tiles = new HashSet<int>();
+        var gate = new Lock();
+        Av1TileWorkers.TestTileStarting = tile =>
+        {
+            lock (gate)
+            {
+                tiles.Add(tile);
+            }
+        };
+        try
+        {
+            var data = Encode(withWorkers, encoder);
+            return (data, Math.Max(tiles.Count, 1));
+        }
+        finally
+        {
+            Av1TileWorkers.TestTileStarting = null;
+        }
     }
 }

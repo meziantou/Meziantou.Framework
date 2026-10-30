@@ -2768,6 +2768,7 @@ namespace Meziantou.Framework.Imaging.Formats
     public sealed class AvifEncoder : Meziantou.Framework.Imaging.Formats.ImageEncoder
     {
         public bool AllowBitDepthReduction { get => throw null; init { } }
+        public bool AutoTiling { get => throw null; init { } }
         public int? BitDepth { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.AvifChromaSubsampling ChromaSubsampling { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Rectangle? CleanAperture { get => throw null; init { } }

@@ -130,7 +130,8 @@ needs `ImageWriterOptions.ExpectedFrameCount`, because the frame count precedes 
 ## Malformed files
 
 A malformed file is rejected with an `InvalidImageContentException`. With
-[lenient decoding](../05-LoadingAndSaving/08-ErrorHandling.md), two deviations that browsers tolerate are accepted:
+[lenient decoding](../05-LoadingAndSaving/08-ErrorHandling.md#accept-the-files-browsers-accept), two deviations that
+browsers tolerate are accepted:
 
 - A grayscale or RGB transparency key (`tRNS`) that is too short is ignored: the pixels are opaque.
 - An APNG with fewer frames than it declares (one at least) is the frames it has. Identifying its header still reports

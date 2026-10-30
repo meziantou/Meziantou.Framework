@@ -469,21 +469,165 @@ public sealed class ParallelConvolutionTests
     [Fact]
     public void ParallelScratchIsCheckedAgainstTheLiveAllocationLimit()
     {
-        // The limit that a single worker needs is not enough for four: the operation fails before any pixel changes
+        // The limit that a single worker needs is not enough for four: the operation runs with one worker, and fails before
+        // any pixel changes only when one worker does not fit either
         long needed;
+        byte[] expected;
         using (var probe = CreateImage(800, 600, workers: 1))
         {
             var before = probe.Owner.Scope.LiveBytes;
             probe.Convolve(Blur, Ct);
             needed = probe.Owner.Scope.GetDiagnostics().PeakLiveBytes;
             Assert.True(needed > before);
+            expected = CopyBytes(probe);
         }
 
-        using var image = CreateImage(800, 600, workers: 4, limit: needed);
-        var pixels = CopyBytes(image);
-        Assert.Throws<ImageResourceLimitException>(() => image.Convolve(Blur, Ct));
-        Assert.Equal(pixels, CopyBytes(image));
-        Assert.Equal(PixelStorageBytes(image), image.Owner.Scope.LiveBytes);
+        using (var image = CreateImage(800, 600, workers: 4, limit: needed))
+        {
+            var bands = new ConcurrentBag<int>();
+            Convolver.TestBandObserver = (band, started) =>
+            {
+                if (started)
+                {
+                    bands.Add(band);
+                }
+            };
+
+            try
+            {
+                image.Convolve(Blur, Ct);
+            }
+            finally
+            {
+                Convolver.TestBandObserver = null;
+            }
+
+            Assert.Equal([0], bands);
+            Assert.Equal(expected, CopyBytes(image));
+            Assert.Equal(needed, image.Owner.Scope.GetDiagnostics().PeakLiveBytes);
+            Assert.Equal(PixelStorageBytes(image), image.Owner.Scope.LiveBytes);
+        }
+
+        using var tooSmall = CreateImage(800, 600, workers: 4, limit: needed - 1);
+        var pixels = CopyBytes(tooSmall);
+        Assert.Throws<ImageResourceLimitException>(() => tooSmall.Convolve(Blur, Ct));
+        Assert.Equal(pixels, CopyBytes(tooSmall));
+        Assert.Equal(PixelStorageBytes(tooSmall), tooSmall.Owner.Scope.LiveBytes);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(5)]
+    [InlineData(8)]
+    public void PrepareUsesTheLargestWorkerCountWhoseScratchFits(int fitting)
+    {
+        var size = new Size(600, 600);
+        var kernel = new ConvolutionKernel(1, 41, Enumerable.Repeat(1.0 / 41, 41).ToArray());
+        var unlimited = new AllocationScope(ImageResourceLimits.Default);
+        using var probe = new ConvolutionPlan(kernel, ConvolutionEdgeMode.Mirror, preserveAlpha: false, linear: false, PixelFormat.Rgba32, size, maxDegreeOfParallelism: 8);
+        Assert.Equal(8, probe.Workers);
+        var bytes = Enumerable.Range(1, 8).Select(workers => probe.GetScratchBytes(unlimited, workers)).ToArray();
+        for (var i = 1; i < bytes.Length; i++)
+        {
+            Assert.True(bytes[i] > bytes[i - 1]);
+        }
+
+        // Exactly the scratch of the fitting worker count: one more worker does not fit
+        var scope = new AllocationScope(new ImageResourceLimits { MaxLiveAllocationBytes = bytes[fitting - 1] });
+        using (var plan = new ConvolutionPlan(kernel, ConvolutionEdgeMode.Mirror, preserveAlpha: false, linear: false, PixelFormat.Rgba32, size, maxDegreeOfParallelism: 8))
+        {
+            plan.Prepare(scope);
+            Assert.Equal(fitting, plan.Workers);
+            Assert.Equal(bytes[fitting - 1], plan.ScratchBytes);
+            Assert.Equal(bytes[fitting - 1], scope.LiveBytes);
+        }
+
+        Assert.Equal(0, scope.LiveBytes);
+    }
+
+    [Fact]
+    public void PrepareFailsWhenOneWorkerDoesNotFit()
+    {
+        var size = new Size(600, 600);
+        var unlimited = new AllocationScope(ImageResourceLimits.Default);
+        using var probe = new ConvolutionPlan(Blur.Kernel, ConvolutionEdgeMode.Clamp, preserveAlpha: false, linear: false, PixelFormat.Rgba32, size, maxDegreeOfParallelism: 4);
+        var scope = new AllocationScope(new ImageResourceLimits { MaxLiveAllocationBytes = probe.GetScratchBytes(unlimited, workers: 1) - 1 });
+        using var plan = new ConvolutionPlan(Blur.Kernel, ConvolutionEdgeMode.Clamp, preserveAlpha: false, linear: false, PixelFormat.Rgba32, size, maxDegreeOfParallelism: 4);
+        Assert.Throws<ImageResourceLimitException>(() => plan.Prepare(scope));
+        Assert.Equal(1, plan.Workers);
+        Assert.Equal(0, scope.LiveBytes);
+    }
+
+    [Theory]
+    [InlineData(ConvolutionEdgeMode.Clamp, 2)]     // the first and the last row
+    [InlineData(ConvolutionEdgeMode.Mirror, 20)]   // every row, read on both sides
+    [InlineData(ConvolutionEdgeMode.Wrap, 20)]
+    [InlineData(ConvolutionEdgeMode.Zero, 0)]      // nothing beyond the image
+    public void AKernelTallerThanTheImageReservesOneRowPerImageRow(ConvolutionEdgeMode mode, int haloRows)
+    {
+        // 81 rows read 40 rows on each side of a frame of 20 rows: the ring holds the 20 rows of the frame, and the 80
+        // positions of the halo share the rows they map to
+        var scope = new AllocationScope(ImageResourceLimits.Default);
+        using var plan = new ConvolutionPlan(new ConvolutionKernel(1, 81, Enumerable.Repeat(1.0 / 81, 81).ToArray()), mode, preserveAlpha: false, linear: false, PixelFormat.Rgba32, new Size(300, 20));
+        var layout = Assert.Single(plan.GetBandLayouts(1));
+        Assert.Equal(20, layout.RingSize);
+        Assert.Equal(haloRows, layout.Halo.RowCount);
+
+        // Ring and halo rows (300 pixels of 4 samples, no padding for one column) and the accumulator
+        var expected = scope.GetChargedSize(((1200L * (20 + haloRows)) + 1200) * sizeof(double));
+        Assert.Equal(expected, plan.GetScratchBytes(scope, workers: 1));
+        plan.Prepare(scope);
+        Assert.Equal(expected, plan.ScratchBytes);
+    }
+
+    [Theory]
+    [InlineData(ConvolutionEdgeMode.Clamp, new[] { 2, 2, 2, 2 })]
+    [InlineData(ConvolutionEdgeMode.Zero, new[] { 1, 2, 2, 1 })]   // nothing above the first band or below the last one
+    public void TheScratchOfEveryWorkerHasAnExactSize(ConvolutionEdgeMode mode, int[] haloRows)
+    {
+        // 400 rows in bands of 100 rows. The kernel is separable: the ring and halo rows (300 pixels of 4 samples) are
+        // filtered horizontally from one input row padded by one pixel on each side
+        var scope = new AllocationScope(ImageResourceLimits.Default);
+        using var plan = new ConvolutionPlan(Blur.Kernel, mode, preserveAlpha: false, linear: false, PixelFormat.Rgba32, new Size(300, 400), maxDegreeOfParallelism: 4);
+        var layouts = plan.GetBandLayouts(4);
+        Assert.Equal([3, 3, 3, 3], layouts.Select(layout => layout.RingSize));
+        Assert.Equal(haloRows, layouts.Select(layout => layout.Halo.RowCount));
+
+        Assert.True(plan.IsSeparable);
+        var expected = haloRows.Sum(rows => scope.GetChargedSize(((1200L * (3 + rows)) + 1200 + 1208) * sizeof(double)));
+        Assert.Equal(expected, plan.GetScratchBytes(scope, workers: 4));
+        plan.Prepare(scope);
+        Assert.Equal(4, plan.Workers);
+        Assert.Equal(expected, plan.ScratchBytes);
+    }
+
+    [Theory]
+    [InlineData(ConvolutionEdgeMode.Clamp)]
+    [InlineData(ConvolutionEdgeMode.Mirror)]
+    [InlineData(ConvolutionEdgeMode.Wrap)]
+    [InlineData(ConvolutionEdgeMode.Zero)]
+    public void ALargeGaussianBlurWithFewerWorkersThanRequestedHasTheSamePixels(ConvolutionEdgeMode mode)
+    {
+        // A deviation of 25 reads 75 rows on each side: eight workers need much more scratch than one, and the limit only
+        // leaves room for some of them
+        byte[] expected;
+        long needed;
+        using (var probe = CreateImage(500, 400, workers: 1))
+        {
+            probe.GaussianBlur(25, mode, cancellationToken: Ct);
+            expected = CopyBytes(probe);
+            needed = probe.Owner.Scope.GetDiagnostics().PeakLiveBytes;
+        }
+
+        foreach (var limit in new[] { needed, needed * 3 / 2, needed * 3 })
+        {
+            using var image = CreateImage(500, 400, workers: 8, limit);
+            image.GaussianBlur(25, mode, cancellationToken: Ct);
+            Assert.Equal(expected, CopyBytes(image));
+            Assert.True(image.Owner.Scope.GetDiagnostics().PeakLiveBytes <= limit);
+        }
     }
 
     [Fact]

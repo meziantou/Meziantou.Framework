@@ -23,7 +23,10 @@ namespace Meziantou.Framework.Imaging.Typography;
 /// </para>
 /// <para>
 /// <b>Direction.</b> Each paragraph is ordered by the Unicode Bidirectional Algorithm (UAX #9): left-to-right and
-/// right-to-left text can be mixed, and each line is put in display order.
+/// right-to-left text can be mixed, and each line is put in display order. A vertical tab, a form feed and a line
+/// separator (U+2028) end a line but not the direction of the paragraph: with <see cref="TextDirection.Auto"/>, the
+/// text after them takes the direction of the text before them, and the next direction is found after the other
+/// line breaks.
 /// </para>
 /// <para>
 /// <b>Geometry.</b> Positions are in pixels from the top-left corner of the layout, with the y axis down. A line is as

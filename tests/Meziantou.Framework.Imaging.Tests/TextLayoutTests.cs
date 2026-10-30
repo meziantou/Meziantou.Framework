@@ -470,6 +470,56 @@ public sealed class TextLayoutTests
         AssertRectangles(layout, new PointD(0, 0), A(0, 0), C(16, 0));
     }
 
+    [Theory]
+    [InlineData("\u2028", true)]
+    [InlineData("\u000B", true)]
+    [InlineData("\u000C", true)]
+    [InlineData("\n", false)]
+    [InlineData("\r", false)]
+    [InlineData("\r\n", false)]
+    [InlineData("\u0085", false)]
+    [InlineData("\u2029", false)]
+    public void OnlyAParagraphSeparatorResetsTheDirection(string lineBreak, bool keepsDirection)
+    {
+        var style = new TextStyle(Extended, 16);
+
+        // Alef (C, 12 pixels), then B (8 pixels) on the next line. A line separator, a vertical tab and a form feed end
+        // a line, not the right-to-left paragraph: B starts from the right. After a paragraph separator, B starts a
+        // left-to-right paragraph.
+        var layout = TextLayout.Create("\u05D0" + lineBreak + "B", style, new TextLayoutOptions { MaxWidth = 40 });
+        Assert.Equal(2, layout.LineCount);
+        Assert.True(layout.Lines[0].IsRightToLeft);
+        Assert.Equal(keepsDirection, layout.Lines[1].IsRightToLeft);
+        Assert.Equal(keepsDirection ? 32 : 0, layout.Lines[1].X);
+        AssertRectangles(layout, new PointD(0, 0), C(28, 0), B(keepsDirection ? 32 : 0, 16));
+
+        // The same with a left-to-right paragraph and a Hebrew letter on the next line
+        layout = TextLayout.Create("B" + lineBreak + "\u05D0", style, new TextLayoutOptions { MaxWidth = 40 });
+        Assert.False(layout.Lines[0].IsRightToLeft);
+        Assert.Equal(!keepsDirection, layout.Lines[1].IsRightToLeft);
+        AssertRectangles(layout, new PointD(0, 0), B(0, 0), C(keepsDirection ? 0 : 28, 16));
+    }
+
+    [Fact]
+    public void TheLinesOfAParagraphThatALineSeparatorEndsKeepItsDirection()
+    {
+        var style = new TextStyle(Extended, 16);
+
+        // The direction found at the first line holds until a line feed, and the empty line after a line separator at
+        // the end of the text is right-to-left too.
+        var layout = TextLayout.Create("\u05D0\u2028B\u000BB\nB\u2028", style, new TextLayoutOptions { MaxWidth = 40 });
+        Assert.Equal([true, true, true, false, false], layout.Lines.Select(line => line.IsRightToLeft));
+        layout = TextLayout.Create("\u05D0\u2028", style, new TextLayoutOptions { MaxWidth = 40 });
+        Assert.Equal([true, true], layout.Lines.Select(line => line.IsRightToLeft));
+        Assert.Equal(new RectangleD(40, 16, 0, 16), layout.GetCaretRectangle(2));
+
+        // The space that ends the second line follows the direction of the paragraph (rule L1), not the direction of
+        // the B around it: it is on the left of the B, at the end of the line. The line is 16 pixels wide.
+        layout = TextLayout.Create("\u05D0\u2028B \u2028B", style, new TextLayoutOptions { MaxWidth = 40 });
+        Assert.Equal(new TextLine(2, 3, 24, 16, 16, 16, 13, true), layout.Lines[1]);
+        AssertRectangles(layout, new PointD(0, 0), C(28, 0), B(32, 16), B(32, 32));
+    }
+
     [Fact]
     public void MirroredCharactersAreMirroredInRightToLeftText()
     {

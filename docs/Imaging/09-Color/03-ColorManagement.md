@@ -185,7 +185,9 @@ public static byte[] ConvertSamplesToSrgb(IccProfile sourceProfile, ReadOnlySpan
   uses its perceptual table.
 - `BlackPointCompensation` (on by default) maps the darkest color of the source to the darkest color of the
   destination, so that shadow detail is neither clipped nor lifted. It changes nothing between two display profiles,
-  and does not apply to the absolute colorimetric intent.
+  and does not apply to the absolute colorimetric intent. Keep it on when a version 4 profile meets a version 2 or
+  matrix-based one with the perceptual or saturation intent: the black of version 4 tables is that of the perceptual
+  reference medium (L* = 3.1373), not 0, and without compensation nothing maps one black to the other.
 
 ## Supported profiles
 

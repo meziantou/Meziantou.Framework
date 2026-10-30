@@ -637,11 +637,10 @@ public class QRCodePayloadTests
         Assert.Throws<ArgumentException>(() => QRCodePayload.SepaPayment("Name", "DE89370400440532013000", 10m, remittanceText: new string('a', 141)));
     }
 
+    public static TheoryData<decimal> SepaPaymentOutOfRangeAmounts() => [0m, -1m, 0.009m, 1000000000m];
+
     [Theory]
-    [InlineData(0)]
-    [InlineData(-1)]
-    [InlineData(0.009)]
-    [InlineData(1000000000)]
+    [MemberData(nameof(SepaPaymentOutOfRangeAmounts))]
     public void SepaPayment_ThrowsWhenAmountIsOutOfRange(decimal amount)
     {
         Assert.Throws<ArgumentOutOfRangeException>(() => QRCodePayload.SepaPayment("Name", "DE89370400440532013000", amount));

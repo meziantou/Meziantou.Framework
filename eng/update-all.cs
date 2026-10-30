@@ -4,6 +4,7 @@
 #:project ../src/Meziantou.Framework.LLMContext/Meziantou.Framework.LLMContext.csproj
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
@@ -62,6 +63,29 @@ var rootPath = GetRepositoryRoot();
 
 bool ShouldRunStep(string stepName) => selectedSteps.Count is 0 ? defaultSteps.Contains(stepName, StringComparer.OrdinalIgnoreCase) : selectedSteps.Contains(stepName);
 
+var latestTargetFramework = GetLatestTargetFramework(rootPath);
+var templatingToolProject = rootPath / "src" / "Meziantou.Framework.Templating.Tool" / "Meziantou.Framework.Templating.Tool.csproj";
+var publicSuffixGeneratorProject = rootPath / "tools" / "Meziantou.Framework.Uri.PublicSuffix.Generator" / "Meziantou.Framework.Uri.PublicSuffix.Generator.csproj";
+
+// The tools run by the steps are built by a single 'dotnet build', so MSBuild builds their shared dependencies once.
+// Concurrent builds of projects that share dependencies fail with file locks (MSB3026).
+var toolsTask = Task.FromResult(new ToolSet([], new Dictionary<FullPath, ToolCommand>()));
+if (ShouldRunStep(StepReadme) || ShouldRunStep(StepTemplates) || ShouldRunStep(StepPublicSuffix))
+{
+    List<FullPath> requiredTools = [];
+    if (ShouldRunStep(StepTemplates))
+    {
+        requiredTools.Add(templatingToolProject);
+    }
+
+    if (ShouldRunStep(StepPublicSuffix))
+    {
+        requiredTools.Add(publicSuffixGeneratorProject);
+    }
+
+    toolsTask = Task.Run(() => PrepareTools(rootPath, latestTargetFramework, requiredTools, includeCommandLineTools: ShouldRunStep(StepReadme)));
+}
+
 var tasks = new List<Task>();
 if (ShouldRunStep(StepReadme))
 {
@@ -106,15 +130,15 @@ if (ShouldRunStep(StepDocs))
     tasks.Add(Task.Run(() => RunValidateDocumentationCrefLinksStep(rootPath)));
 }
 
-await Task.WhenAll(tasks);
-
-// Builds projects that the parallel steps also build, which would fail with file locks (MSB3026) if run at the same time
 if (ShouldRunStep(StepPublicSuffix))
 {
     Console.WriteLine("[update-all] Running public-suffix");
-    RunValidatePublicSuffixListStep(rootPath);
+    tasks.Add(Task.Run(() => RunValidatePublicSuffixListStep(rootPath)));
 }
 
+await Task.WhenAll(tasks);
+
+// Normalizes the files that the other steps write
 if (ShouldRunStep(StepBom))
 {
     Console.WriteLine("[update-all] Running bom");
@@ -160,29 +184,24 @@ if (!updatedFiles.IsEmpty)
 
 return 0;
 
-void RunTemplateStep(FullPath rootPath)
+async Task RunTemplateStep(FullPath rootPath)
 {
-    var latestTargetFramework = GetLatestTargetFramework(rootPath);
     var templatesRootPath = rootPath / "src";
     var templateFiles = Directory.EnumerateFiles(templatesRootPath, "*.tt", SearchOption.AllDirectories)
         .Select(FullPath.FromPath)
         .OrderBy(path => path.Value, StringComparer.Ordinal)
         .ToArray();
 
+    var templatingTool = (await toolsTask).Commands[templatingToolProject];
     Parallel.ForEach(templateFiles, templateFile =>
     {
         var relativeTemplatePath = templateFile.MakePathRelativeTo(rootPath);
         Console.WriteLine($"[update-all] Transforming {relativeTemplatePath}");
         var exitCode = RunProcessAndReturnExitCodeWithRetry(
             rootPath,
-            "dotnet",
+            templatingTool.FileName,
             [
-                "run",
-                "--project",
-                "./src/Meziantou.Framework.Templating.Tool",
-                "--framework",
-                latestTargetFramework,
-                "--",
+                .. templatingTool.Arguments,
                 "--input",
                 templateFile.Value,
                 "--start-code-block-delimiter",
@@ -260,12 +279,10 @@ void RunUpdateSnippetsStep(FullPath rootPath)
 
 // Checks that the rules embedded in Meziantou.Framework.Uri are generated from the public suffix list shared with
 // Meziantou.Framework.WebPlatform. Regenerating them needs the network and bumps the package version, so this step only checks.
-void RunValidatePublicSuffixListStep(FullPath rootPath)
+async Task RunValidatePublicSuffixListStep(FullPath rootPath)
 {
-    var latestTargetFramework = GetLatestTargetFramework(rootPath);
-    var csprojPath = rootPath / "tools" / "Meziantou.Framework.Uri.PublicSuffix.Generator" / "Meziantou.Framework.Uri.PublicSuffix.Generator.csproj";
-    BuildToolProjectWithRetry(csprojPath, latestTargetFramework);
-    var exitCode = RunProcessAndReturnExitCode(rootPath, "dotnet", ["run", "--project", csprojPath, "--no-build", "--framework", latestTargetFramework, "--", "--check"]);
+    var generator = (await toolsTask).Commands[publicSuffixGeneratorProject];
+    var exitCode = RunProcessAndReturnExitCode(rootPath, generator.FileName, [.. generator.Arguments, "--check"]);
     if (exitCode is not 0)
     {
         Console.WriteLine("ERROR: The public suffix list of Meziantou.Framework.Uri is out of date. Run 'dotnet run --project tools/Meziantou.Framework.Uri.PublicSuffix.Generator'");
@@ -1252,62 +1269,18 @@ async Task RunUpdateReadmeStep(FullPath rootPath)
         }
     }
 
-    void UpdateToolReadmes()
+    async Task UpdateToolReadmes()
     {
-        var directoryBuildProps = XDocument.Load(rootPath / "Directory.Build.props");
-        var latestTfm = directoryBuildProps.Root?.Descendants("LatestTargetFramework").FirstOrDefault()?.Value ?? throw new InvalidOperationException("Cannot find LatestTargetFramework");
-        var maxDegreeOfParallelism = GetUpdateReadmeMaxDegreeOfParallelism();
+        var tools = await toolsTask;
+        var orderedToolProjects = tools.CommandLineTools.ToArray();
 
-        WriteIfNotLlm($"[update-tool-readme] Starting tool project discovery (max-degree-of-parallelism={maxDegreeOfParallelism})");
-
-        var discoveryStopwatch = Stopwatch.StartNew();
-        var csprojFiles = Directory.EnumerateFiles(srcRootPath, "*.csproj", SearchOption.AllDirectories).ToArray();
-        var scannedProjectCount = csprojFiles.Length;
-        var executableProjectCount = 0;
-        var commandLineProjectCount = 0;
-        var toolProjects = new ConcurrentQueue<ToolProject>();
-        var missingReadmeErrors = new ConcurrentQueue<string>();
-        var parallelOptions = new ParallelOptions { MaxDegreeOfParallelism = maxDegreeOfParallelism };
-        Parallel.ForEach(csprojFiles, parallelOptions, csproj =>
+        var missingReadmeErrors = orderedToolProjects
+            .Where(project => !File.Exists(project.ToolReadme))
+            .Select(project => $"ERROR: Tool {project.Csproj} does not have a readme.md file")
+            .ToArray();
+        if (missingReadmeErrors.Length > 0)
         {
-            var doc = XDocument.Load(csproj);
-            if (!IsExecutableProject(csproj, latestTfm))
-            {
-                return;
-            }
-
-            Interlocked.Increment(ref executableProjectCount);
-            var referencesSystemCommandLine = doc.Root?
-                .Descendants("PackageReference")
-                .Any(node => string.Equals(
-                    node.Attribute("Include")?.Value ?? node.Attribute("Update")?.Value,
-                    "System.CommandLine",
-                    StringComparison.OrdinalIgnoreCase)) is true;
-            if (!referencesSystemCommandLine)
-            {
-                return;
-            }
-
-            Interlocked.Increment(ref commandLineProjectCount);
-            var toolName = doc.Root?.Descendants("ToolCommandName").FirstOrDefault()?.Value;
-
-            var toolReadme = FullPath.FromPath(csproj).Parent / "readme.md";
-            if (!File.Exists(toolReadme))
-            {
-                missingReadmeErrors.Enqueue($"ERROR: Tool {csproj} does not have a readme.md file");
-                return;
-            }
-
-            toolProjects.Enqueue(new ToolProject(csproj, toolName, toolReadme));
-        });
-        var orderedToolProjects = toolProjects.OrderBy(project => project.Csproj, StringComparer.OrdinalIgnoreCase).ToArray();
-
-        discoveryStopwatch.Stop();
-        WriteIfNotLlm($"[update-tool-readme] Discovery metrics: scanned={scannedProjectCount}, executable={executableProjectCount}, system-commandline={commandLineProjectCount}, tool-projects={orderedToolProjects.Length}, elapsed={discoveryStopwatch.Elapsed.TotalSeconds:F2}s");
-
-        if (!missingReadmeErrors.IsEmpty)
-        {
-            foreach (var error in missingReadmeErrors.OrderBy(error => error, StringComparer.Ordinal))
+            foreach (var error in missingReadmeErrors)
             {
                 Console.Error.WriteLine(error);
             }
@@ -1320,16 +1293,12 @@ async Task RunUpdateReadmeStep(FullPath rootPath)
         var generationStopwatch = Stopwatch.StartNew();
         var helpSectionPattern = new Regex("(?<=<!-- help -->)(.*?)(?=<!-- help -->)", RegexOptions.Singleline | RegexOptions.ExplicitCapture, Timeout.InfiniteTimeSpan);
         var readmeUpdates = new ToolReadmeUpdate?[orderedToolProjects.Length];
-        Parallel.For(0, orderedToolProjects.Length, parallelOptions, index =>
+        Parallel.For(0, orderedToolProjects.Length, index =>
         {
             var project = orderedToolProjects[index];
-            WriteIfNotLlm($"[update-tool-readme] [{index + 1}/{orderedToolProjects.Length}] Building tool project: {project.Csproj}");
-
-            BuildToolProjectWithRetry(project.Csproj, latestTfm);
-
             WriteIfNotLlm($"[update-tool-readme] [{index + 1}/{orderedToolProjects.Length}] Generating help output for tool project: {project.Csproj}");
 
-            var helpMarkdown = BuildToolHelpMarkdown(project.Csproj, latestTfm, project.ToolName);
+            var helpMarkdown = BuildToolHelpMarkdown(project.Csproj, tools.Commands[FullPath.FromPath(project.Csproj)], project.ToolName);
 
             var toolReadmeContent = File.ReadAllText(project.ToolReadme);
             var newToolReadmeContent = helpSectionPattern.Replace(toolReadmeContent, $"\n{helpMarkdown}\n");
@@ -1656,7 +1625,7 @@ static int GetUpdateReadmeMaxDegreeOfParallelism()
     var value = Environment.GetEnvironmentVariable("UPDATE_README_MAX_PARALLELISM");
     if (string.IsNullOrWhiteSpace(value))
     {
-        return Math.Clamp(Environment.ProcessorCount, 1, 4);
+        return Environment.ProcessorCount;
     }
 
     if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var parsedValue) && parsedValue > 0)
@@ -1667,11 +1636,11 @@ static int GetUpdateReadmeMaxDegreeOfParallelism()
     throw new InvalidOperationException($"Environment variable UPDATE_README_MAX_PARALLELISM must be a positive integer. Current value: '{value}'.");
 }
 
-static string BuildToolHelpMarkdown(string csproj, string latestTfm, string? toolName)
+static string BuildToolHelpMarkdown(string csproj, ToolCommand tool, string? toolName)
 {
     var sections = new List<(string[] CommandPath, string HelpText)>();
     var visitedCommandPaths = new HashSet<string>(StringComparer.Ordinal);
-    AppendToolHelpSection(sections, visitedCommandPaths, csproj, latestTfm, toolName, []);
+    AppendToolHelpSection(sections, visitedCommandPaths, csproj, tool, toolName, []);
 
     var hasRootSection = false;
     for (var i = 0; i < sections.Count; i++)
@@ -1725,7 +1694,7 @@ static void AppendToolHelpSection(
     List<(string[] CommandPath, string HelpText)> sections,
     HashSet<string> visitedCommandPaths,
     string csproj,
-    string latestTfm,
+    ToolCommand tool,
     string? toolName,
     string[] commandPath)
 {
@@ -1735,31 +1704,29 @@ static void AppendToolHelpSection(
         return;
     }
 
-    var helpText = GetToolHelpText(csproj, latestTfm, toolName, commandPath);
+    var helpText = GetToolHelpText(csproj, tool, toolName, commandPath);
     sections.Add((commandPath, helpText));
 
-    foreach (var subcommandName in GetSubcommandNames(csproj, latestTfm, commandPath))
+    foreach (var subcommandName in GetSubcommandNames(csproj, tool, commandPath))
     {
         var subcommandPath = new string[commandPath.Length + 1];
         commandPath.CopyTo(subcommandPath, 0);
         subcommandPath[^1] = subcommandName;
-        AppendToolHelpSection(sections, visitedCommandPaths, csproj, latestTfm, toolName, subcommandPath);
+        AppendToolHelpSection(sections, visitedCommandPaths, csproj, tool, toolName, subcommandPath);
     }
 }
 
-static string GetToolHelpText(string csproj, string latestTfm, string? toolName, string[] commandPath)
+static string GetToolHelpText(string csproj, ToolCommand tool, string? toolName, string[] commandPath)
 {
-    var runArgs = new List<string> { "run", "--no-build", "--project", csproj, "--framework", latestTfm, "--" };
-    runArgs.AddRange(commandPath);
-    runArgs.Add("--help");
-    Console.WriteLine($"[update-tool-readme] Getting --help for '{csproj}' command '{FormatCommandPath(commandPath)}' using: dotnet {string.Join(' ', runArgs)}");
+    string[] runArgs = [.. tool.Arguments, .. commandPath, "--help"];
+    Console.WriteLine($"[update-tool-readme] Getting --help for '{csproj}' command '{FormatCommandPath(commandPath)}' using: {tool.FileName} {string.Join(' ', runArgs)}");
 
-    var (standardOutput, standardError) = RunProcessAndCaptureOutputs("dotnet", [.. runArgs], timeout: TimeSpan.FromMinutes(2));
+    var (standardOutput, standardError) = RunProcessAndCaptureOutputs(tool.FileName, runArgs, timeout: TimeSpan.FromMinutes(2));
     var helpText = string.IsNullOrWhiteSpace(standardOutput) ? standardError : standardOutput;
     helpText = TrimEndOfLines(helpText).TrimEnd('\r', '\n');
     if (string.IsNullOrWhiteSpace(helpText))
     {
-        throw new InvalidOperationException($"Process 'dotnet {string.Join(' ', runArgs)}' produced empty help output.");
+        throw new InvalidOperationException($"Process '{tool.FileName} {string.Join(' ', runArgs)}' produced empty help output.");
     }
 
     var projectName = Path.GetFileNameWithoutExtension(csproj);
@@ -1783,13 +1750,13 @@ static string RewriteUsageCommandName(string helpText, string projectName, strin
     return helpText;
 }
 
-static IReadOnlyList<string> GetSubcommandNames(string csproj, string latestTfm, string[] commandPath)
+static IReadOnlyList<string> GetSubcommandNames(string csproj, ToolCommand tool, string[] commandPath)
 {
     var commandLine = commandPath.Length is 0 ? string.Empty : string.Join(' ', commandPath) + " ";
     var suggestDirective = $"[suggest:{commandLine.Length}]";
-    var runArgs = new List<string> { "run", "--no-build", "--project", csproj, "--framework", latestTfm, "--", suggestDirective, commandLine };
-    Console.WriteLine($"[update-tool-readme] Getting subcommands for '{csproj}' command '{FormatCommandPath(commandPath)}' using: dotnet {string.Join(' ', runArgs)}");
-    var (standardOutput, standardError) = RunProcessAndCaptureOutputs("dotnet", [.. runArgs], timeout: TimeSpan.FromMinutes(2));
+    string[] runArgs = [.. tool.Arguments, suggestDirective, commandLine];
+    Console.WriteLine($"[update-tool-readme] Getting subcommands for '{csproj}' command '{FormatCommandPath(commandPath)}' using: {tool.FileName} {string.Join(' ', runArgs)}");
+    var (standardOutput, standardError) = RunProcessAndCaptureOutputs(tool.FileName, runArgs, timeout: TimeSpan.FromMinutes(2));
     var suggestionsOutput = string.IsNullOrWhiteSpace(standardOutput) ? standardError : standardOutput;
     suggestionsOutput = TrimEndOfLines(suggestionsOutput).TrimEnd('\r', '\n');
 
@@ -1822,11 +1789,90 @@ static IReadOnlyList<string> GetSubcommandNames(string csproj, string latestTfm,
     return result;
 }
 
-static void BuildToolProjectWithRetry(string csproj, string latestTfm)
+// Builds the tools run by the steps, and returns the command that starts each of them. When includeCommandLineTools is
+// set, it also finds the System.CommandLine tools of src/, whose readme contains their --help output.
+ToolSet PrepareTools(FullPath rootPath, string targetFramework, IReadOnlyList<FullPath> requiredProjects, bool includeCommandLineTools)
 {
-    string[] buildArgs = ["build", csproj, "--framework", latestTfm, "-p:RunAnalyzers=false", "-p:RunAnalyzersDuringBuild=false"];
+    var stopwatch = Stopwatch.StartNew();
+    var commandLineToolCandidates = new List<ToolProject>();
+    if (includeCommandLineTools)
+    {
+        // Reading the project file is enough to exclude most projects; only the remaining ones need an MSBuild evaluation
+        foreach (var csproj in Directory.EnumerateFiles(rootPath / "src", "*.csproj", SearchOption.AllDirectories))
+        {
+            var doc = XDocument.Load(csproj);
+            var referencesSystemCommandLine = doc.Root?
+                .Descendants("PackageReference")
+                .Any(node => string.Equals(
+                    node.Attribute("Include")?.Value ?? node.Attribute("Update")?.Value,
+                    "System.CommandLine",
+                    StringComparison.OrdinalIgnoreCase)) is true;
+            if (referencesSystemCommandLine)
+            {
+                var toolName = doc.Root?.Descendants("ToolCommandName").FirstOrDefault()?.Value;
+                commandLineToolCandidates.Add(new ToolProject(csproj, toolName, FullPath.FromPath(csproj).Parent / "readme.md"));
+            }
+        }
+    }
+
+    var projectsToEvaluate = requiredProjects.Concat(commandLineToolCandidates.Select(project => FullPath.FromPath(project.Csproj))).Distinct().ToArray();
+    var evaluations = new ConcurrentDictionary<FullPath, (bool IsExecutable, ToolCommand Command)>();
+    Parallel.ForEach(projectsToEvaluate, new ParallelOptions { MaxDegreeOfParallelism = GetUpdateReadmeMaxDegreeOfParallelism() }, csproj => evaluations[csproj] = EvaluateToolProject(csproj, targetFramework));
+
+    var commandLineTools = commandLineToolCandidates
+        .Where(project => evaluations[FullPath.FromPath(project.Csproj)].IsExecutable)
+        .OrderBy(project => project.Csproj, StringComparer.OrdinalIgnoreCase)
+        .ToArray();
+
+    var projectsToBuild = requiredProjects.Concat(commandLineTools.Select(project => FullPath.FromPath(project.Csproj))).Distinct().ToArray();
+    WriteIfNotLlm($"[update-all] Building {projectsToBuild.Length} tool projects (evaluated {projectsToEvaluate.Length} projects in {stopwatch.Elapsed.TotalSeconds:F2}s)");
+    BuildProjects(rootPath, projectsToBuild, targetFramework);
+    WriteIfNotLlm($"[update-all] Tools ready in {stopwatch.Elapsed.TotalSeconds:F2}s");
+
+    return new ToolSet(commandLineTools, projectsToBuild.ToDictionary(project => project, project => evaluations[project].Command));
+}
+
+static (bool IsExecutable, ToolCommand Command) EvaluateToolProject(FullPath csproj, string targetFramework)
+{
+    string[] arguments = ["msbuild", csproj, "-nologo", "-v:q", "-p:TargetFramework=" + targetFramework, "-getProperty:OutputKind", "-getProperty:OutputType", "-getProperty:RunCommand", "-getProperty:RunArguments", "-getProperty:RunWorkingDirectory"];
+    using var output = JsonDocument.Parse(RunProcessAndCaptureOutput("dotnet", arguments));
+    var properties = output.RootElement.GetProperty("Properties");
+    string GetProperty(string name) => properties.TryGetProperty(name, out var value) ? value.GetString() ?? "" : "";
+
+    var outputKind = GetProperty("OutputKind");
+    var isExecutable = outputKind is not ""
+        ? string.Equals(outputKind, "Exe", StringComparison.OrdinalIgnoreCase) || string.Equals(outputKind, "ConsoleApplication", StringComparison.OrdinalIgnoreCase)
+        : string.Equals(GetProperty("OutputType"), "Exe", StringComparison.OrdinalIgnoreCase);
+
+    // Starting the apphost, as 'dotnet run' does, is much faster than 'dotnet run --no-build', which evaluates the project at each call.
+    // 'dotnet run' sets DOTNET_ROOT for this script, so the apphost finds the same runtime.
+    var runCommand = GetProperty("RunCommand");
+    var command = runCommand is not "" && GetProperty("RunArguments") is "" && GetProperty("RunWorkingDirectory") is ""
+        ? new ToolCommand(runCommand, [])
+        : new ToolCommand("dotnet", ["run", "--no-build", "--project", csproj, "--framework", targetFramework, "--"]);
+    return (isExecutable, command);
+}
+
+// 'dotnet build' takes a single project, so the projects are listed in a temporary solution. Building them together lets
+// MSBuild build their shared dependencies once, instead of several builds racing on the same files.
+static void BuildProjects(FullPath rootPath, IReadOnlyCollection<FullPath> projects, string targetFramework)
+{
+    if (projects.Count is 0)
+        return;
+
+    var solutionPath = rootPath / "artifacts" / "update-all" / "tools.slnx";
+    Directory.CreateDirectory(solutionPath.Parent);
+    var solution = new XElement("Solution", projects
+        .Select(project => project.MakePathRelativeTo(solutionPath.Parent).Replace('\\', '/'))
+        .Order(StringComparer.Ordinal)
+        .Select(path => new XElement("Project", new XAttribute("Path", path))));
+    File.WriteAllText(solutionPath, solution.ToString() + "\n");
+
+    // Use the same properties as a regular build: otherwise each build recompiles the dependencies shared with the other
+    // builds, including Meziantou.Framework.FullPath that this script references, which recompiles this script at its next start.
+    string[] buildArgs = ["build", solutionPath, "--framework", targetFramework];
     TimeSpan[] retryDelays = [TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(5), TimeSpan.FromSeconds(15)];
-    _ = RunProcessAndCaptureOutput("dotnet", buildArgs, timeout: TimeSpan.FromMinutes(2), retryDelays: retryDelays);
+    _ = RunProcessAndCaptureOutput("dotnet", buildArgs, timeout: TimeSpan.FromMinutes(15), retryDelays: retryDelays);
 }
 
 static string RunProcessAndCaptureOutput(string fileName, string[] arguments, TimeSpan? timeout = null, IReadOnlyList<TimeSpan>? retryDelays = null)
@@ -1873,7 +1919,8 @@ static (string StandardOutput, string StandardError) RunProcessAndCaptureOutputs
     var standardErrorTask = process.StandardError.ReadToEndAsync();
     if (!process.WaitForExit((int)effectiveTimeout.TotalMilliseconds))
     {
-        process.Kill(entireProcessTree: true);
+        // On .NET 11 RC macOS, killing the process tree never returns when another child process exits meanwhile (dotnet/runtime#131944)
+        process.Kill(entireProcessTree: !OperatingSystem.IsMacOS());
         throw new TimeoutException($"Process '{fileName} {string.Join(' ', arguments)}' did not complete within {effectiveTimeout}.");
     }
 
@@ -1915,28 +1962,6 @@ static string BuildProcessFailureMessage(string fileName, string[] arguments, in
     }
 
     return sb.ToString();
-}
-
-static bool IsExecutableProject(string csproj, string targetFramework)
-{
-    string[] arguments = ["msbuild", csproj, "-nologo", "-v:q", "-p:TargetFramework=" + targetFramework, "-getProperty:OutputKind", "-getProperty:OutputType"];
-
-    var output = RunProcessAndCaptureOutput("dotnet", arguments);
-    var outputKind = ExtractMsBuildPropertyValue(output, "OutputKind");
-    if (!string.IsNullOrEmpty(outputKind))
-    {
-        return string.Equals(outputKind, "Exe", StringComparison.OrdinalIgnoreCase) ||
-               string.Equals(outputKind, "ConsoleApplication", StringComparison.OrdinalIgnoreCase);
-    }
-
-    var outputType = ExtractMsBuildPropertyValue(output, "OutputType");
-    return string.Equals(outputType, "Exe", StringComparison.OrdinalIgnoreCase);
-}
-
-static string? ExtractMsBuildPropertyValue(string output, string propertyName)
-{
-    var match = Regex.Match(output, $"\"{Regex.Escape(propertyName)}\"\\s*:\\s*\"(?<value>[^\"]*)\"", RegexOptions.CultureInvariant, Timeout.InfiniteTimeSpan);
-    return match.Success ? match.Groups["value"].Value : null;
 }
 
 static string TrimEndOfLines(string text)
@@ -2016,6 +2041,10 @@ internal readonly record struct AnalyzerRule(
     bool IsEnabledByDefault);
 
 internal readonly record struct ToolProject(string Csproj, string? ToolName, string ToolReadme);
+
+internal sealed record ToolCommand(string FileName, string[] Arguments);
+
+internal sealed record ToolSet(IReadOnlyList<ToolProject> CommandLineTools, IReadOnlyDictionary<FullPath, ToolCommand> Commands);
 
 internal readonly record struct ToolReadmeUpdate(string ToolReadme, string OriginalContent, string NewContent)
 {

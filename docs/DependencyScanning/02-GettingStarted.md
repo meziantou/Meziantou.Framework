@@ -16,7 +16,7 @@ The examples of this documentation omit the `using` directives: they need
 
 ## Scan a folder
 
-`DependencyScanner.ScanDirectoryAsync` scans a folder and its subfolders with all the built-in scanners:
+[DependencyScanner.ScanDirectoryAsync](cref:Meziantou.Framework.DependencyScanning.DependencyScanner.ScanDirectoryAsync) scans a folder and its subfolders with all the built-in scanners:
 
 <!-- ref:../../tests/Meziantou.Framework.DependencyScanning.Tests/DependencyScannerTests.cs;region=DependencyScanning_ScanDirectory;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -43,15 +43,15 @@ Assert.Equal(
 
 - `options: null` uses the default options: every built-in scanner, every subfolder, and 16 files scanned in parallel.
   See [Configuring the scan](04-ConfiguringTheScan.md).
-- The result is a collection of `Dependency`. `Type` says what the dependency is, such as `DependencyType.NuGet`, and
-  `Name` and `Version` are the values written in the file.
+- The result is a collection of [Dependency](cref:Meziantou.Framework.DependencyScanning.Dependency). [Type](cref:Meziantou.Framework.DependencyScanning.Dependency.Type) says what the dependency is, such as [DependencyType.NuGet](cref:Meziantou.Framework.DependencyScanning.DependencyType.NuGet), and
+  [Name](cref:Meziantou.Framework.DependencyScanning.Dependency.Name) and [Version](cref:Meziantou.Framework.DependencyScanning.Dependency.Version) are the values written in the file.
 - The order of the result is not specified, as files are scanned in parallel. Sort the dependencies when the order
   matters.
 - The project SDK, `Microsoft.NET.Sdk`, is not reported: it has no version in the file.
 
 ## Print the dependencies
 
-`Dependency.ToString` returns the type, the name, the version and the location of the version, which is handy in logs:
+[Dependency.ToString](cref:Meziantou.Framework.DependencyScanning.Dependency.ToString) returns the type, the name, the version and the location of the version, which is handy in logs:
 
 <!-- ref:../../samples/DependencyScannerSample/ReadmeExamples.cs;region=DependencyScanner_ScanDirectory;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -84,6 +84,6 @@ See [Command-line tool](09-CommandLineTool.md).
 
 ## Next steps
 
-- [Scanning files](03-ScanningFiles.md): scan files and content, and what a `Dependency` holds.
+- [Scanning files](03-ScanningFiles.md): scan files and content, and what a [Dependency](cref:Meziantou.Framework.DependencyScanning.Dependency) holds.
 - [Supported files](05-SupportedFiles/01-Overview.md): the files each scanner reads.
 - [Updating dependencies](06-UpdatingDependencies.md): change a version in place.

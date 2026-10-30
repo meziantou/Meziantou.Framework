@@ -11,7 +11,7 @@ depend on the underlying type, such as `FromInt32`, follow the table of [underly
 | Member | Description |
 | --- | --- |
 | `Value` | The underlying value. |
-| `ValueAsString` | The value formatted with the invariant culture. See [how values are formatted](04-UnderlyingTypes.md#how-values-are-formatted-and-parsed). |
+| [ValueAsString](cref:Meziantou.Framework.IStronglyTypedId.ValueAsString) | The value formatted with the invariant culture. See [how values are formatted](04-UnderlyingTypes.md#how-values-are-formatted-and-parsed). |
 | `FromInt32(int value)` | Creates an ID. |
 | `New()` | `Guid` IDs only: creates an ID from a new `Guid`. See [Create Guid values](07-Options.md#create-guid-values). |
 | Constructor `ProjectId(int value)` | `private`, or `protected` in a class that is not `sealed`. Write your own to [validate the value](06-ValidationAndCustomMembers.md). |
@@ -35,7 +35,7 @@ Attributes on the type register them, so you never use them directly. See [Integ
 | `ISpanFormattable` | The target framework has it (.NET 6 or later). |
 | `IParsable<T>`, `ISpanParsable<T>` | The target framework has them (.NET 7 or later) and the project uses C# 11 or later. |
 | `IUtf8SpanFormattable`, `IUtf8SpanParsable<T>` | The target framework has them (.NET 8 or later); `IUtf8SpanParsable<T>` also needs C# 11. |
-| `IStronglyTypedId`, `IStronglyTypedId<TValue>` | The project references the [interfaces package](10-Interfaces.md). |
+| [IStronglyTypedId](cref:Meziantou.Framework.IStronglyTypedId), [IStronglyTypedId\<TValue\>](cref:Meziantou.Framework.IStronglyTypedId{T}) | The project references the [interfaces package](10-Interfaces.md). |
 | `IComparable`, `IComparable<T>` | The type declares one of them. |
 
 The members of `IParsable<T>`, `ISpanParsable<T>`, `IUtf8SpanParsable<T>`, `IFormattable`, `ISpanFormattable` and

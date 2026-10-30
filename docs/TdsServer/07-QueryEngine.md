@@ -12,7 +12,7 @@ The query engine is a ready-made query handler. It answers two kinds of requests
 
 ## Set up the query engine
 
-Configure a `TdsQueryEngineOptions`, then use it as the query handler:
+Configure a [TdsQueryEngineOptions](cref:Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions), then use it as the query handler:
 
 <!-- ref:../../tests/Meziantou.Framework.TdsServer.Tests/TdsQueryEngineTests.cs;region=TdsServer_QueryEngineQuickStart;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -80,7 +80,7 @@ their .NET types set the column types:
 
 Nullable value types (`int?`) give nullable columns.
 
-The factory is called for every query, with the `TdsQueryContext` of the request. Use it to return the data the user
+The factory is called for every query, with the [TdsQueryContext](cref:Meziantou.Framework.Tds.Handler.TdsQueryContext) of the request. Use it to return the data the user
 is allowed to see, before the SQL statement adds its own filters. Here, `Customer` is a `record Customer(int Id,
 string Name)`, and the user identifier comes from the claims set by the [authentication handler](04-Authentication.md):
 
@@ -129,7 +129,7 @@ The statements the engine can translate are listed in [Supported SQL](08-Support
 
 ## Stored procedures
 
-`StoredProcedures` maps procedure names (case-insensitive) to delegates. The parameters of the delegate receive the
+[StoredProcedures](cref:Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions.StoredProcedures) maps procedure names (case-insensitive) to delegates. The parameters of the delegate receive the
 parameters of the call, matched by name without the `@` prefix and converted to the type of the delegate parameter:
 
 <!-- ref:../../tests/Meziantou.Framework.TdsServer.Tests/TdsQueryEngineTests.cs;region=TdsServer_QueryEngineStoredProcedure;format=md-fenced-code-block;dedent=true -->
@@ -152,7 +152,7 @@ queryEngineOptions.StoredProcedures.Add(
 <!-- endref -->
 
 - A parameter with a default value is optional; a missing parameter without one returns an error.
-- A `TdsQueryContext` parameter receives the request (and its `UserContext`), and a `CancellationToken` parameter the
+- A [TdsQueryContext](cref:Meziantou.Framework.Tds.Handler.TdsQueryContext) parameter receives the request (and its [UserContext](cref:Meziantou.Framework.Tds.Handler.TdsQueryContext.UserContext)), and a `CancellationToken` parameter the
   token of the request. They are not parameters of the procedure.
 - The delegate can be asynchronous: the engine awaits a `Task`, `Task<T>`, `ValueTask` or `ValueTask<T>`.
 
@@ -160,12 +160,12 @@ What the delegate returns becomes the result:
 
 | Returned value | Result |
 | --- | --- |
-| A `TdsQueryResult` | Sent as is |
+| A [TdsQueryResult](cref:Meziantou.Framework.Tds.Handler.TdsQueryResult) | Sent as is |
 | A collection or an `IQueryable` of objects | One row per item, one column per public property or field |
 | A collection of scalar values (`int`, `string`, …) | One column named `Value`, one row per item |
 | A scalar value, or `null` | One column named `Value`, one row |
 
-A returned `IQueryable` is enumerated synchronously: `MaterializeAsync` only runs the queries translated from SQL text.
+A returned `IQueryable` is enumerated synchronously: [MaterializeAsync](cref:Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions.MaterializeAsync) only runs the queries translated from SQL text.
 For an asynchronous source, make the delegate asynchronous and return the materialized rows.
 
 The client calls the procedure as a SQL Server stored procedure. See [Connecting clients](10-ConnectingClients.md).
@@ -175,7 +175,7 @@ runs its SQL text as a query.
 
 ## Authorization
 
-`IsAuthorized` is called before a stored procedure or a query root is used, with the request, the kind of resource and
+[IsAuthorized](cref:Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions.IsAuthorized) is called before a stored procedure or a query root is used, with the request, the kind of resource and
 its name. Return `false` to deny access:
 
 <!-- ref:../../samples/Meziantou.Framework.TdsServer.Samples/ReadmeExamples.cs;region=TdsServer_Authorization;format=md-fenced-code-block;dedent=true -->
@@ -202,19 +202,19 @@ queryEngineOptions.IsAuthorized = (context, resourceKind, resourceName) =>
 <!-- endref -->
 
 A denied access returns the SQL Server permission error 229 (class 14), for instance "The SELECT permission was denied
-on the object 'admin_customers'." Replace `NotAuthorizedErrorFactory` to return another `TdsQueryError`. The name is
+on the object 'admin_customers'." Replace [NotAuthorizedErrorFactory](cref:Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions.NotAuthorizedErrorFactory) to return another [TdsQueryError](cref:Meziantou.Framework.Tds.Handler.TdsQueryError). The name is
 the table name without its schema or database, so a qualified name cannot reach a denied query root.
 
 ## Run the queries with your provider
 
 By default, the engine runs the translated query by enumerating the `IQueryable` synchronously. Replace
-`MaterializeAsync` to run it with the asynchronous API of your provider, for instance `ToListAsync` with Entity
+[MaterializeAsync](cref:Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions.MaterializeAsync) to run it with the asynchronous API of your provider, for instance `ToListAsync` with Entity
 Framework Core. It receives the translated `IQueryable` and the `CancellationToken` of the request, and returns the
 rows as an `IReadOnlyList<object?>`.
 
 The translated query uses standard LINQ operators, but whether a provider can run it depends on the provider:
 functions such as `string.ToUpperInvariant` are not supported by every provider. Map the SQL functions to methods your
-provider supports with `AddScalarFunction`:
+provider supports with [AddScalarFunction](cref:Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions.AddScalarFunction):
 
 <!-- ref:../../tests/Meziantou.Framework.TdsServer.Tests/TdsQueryEngineTests.cs;region=TdsServer_QueryEngineScalarFunction;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -225,7 +225,7 @@ queryEngineOptions.AddScalarFunction(
 <!-- endref -->
 
 The function receives the arguments of the SQL function as LINQ expressions and returns the expression of the call.
-`ScalarFunctions` lists the mappings, keyed by SQL function name. A replaced mapping also replaces the handling of
+[ScalarFunctions](cref:Meziantou.Framework.Tds.QueryEngine.TdsQueryEngineOptions.ScalarFunctions) lists the mappings, keyed by SQL function name. A replaced mapping also replaces the handling of
 `NULL` arguments: `UPPER(NULL)` returns `NULL` with the built-in mapping, and calls `ToUpper` on `null` with this one.
 
 ## Errors

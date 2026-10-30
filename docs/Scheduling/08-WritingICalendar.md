@@ -5,7 +5,7 @@ description: Create events, write them as an iCalendar file with their time zone
 
 ## Write a calendar
 
-Fill an `InternetCalendar` with events, then call `ToIcs`:
+Fill an [InternetCalendar](cref:Meziantou.Framework.Scheduling.InternetCalendar) with events, then call [ToIcs](cref:Meziantou.Framework.Scheduling.InternetCalendar.ToIcs):
 
 <!-- ref:../../tests/Meziantou.Framework.Scheduling.Tests/InternetCalendarTests.cs;region=InternetCalendar_WriteEvent;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -48,13 +48,13 @@ Assert.Equal("""
 ```
 <!-- endref -->
 
-- `ToIcs()` returns a `string`; `ToIcs(TextWriter)` and `ToIcs(Stream)` write to a writer or, in UTF-8, to a stream,
+- [ToIcs()](cref:Meziantou.Framework.Scheduling.InternetCalendar.ToIcs) returns a `string`; `ToIcs(TextWriter)` and `ToIcs(Stream)` write to a writer or, in UTF-8, to a stream,
   such as a file or an HTTP response.
-- RFC 5545 requires `DTSTAMP` in an event. Set `DateTimeStamp`, for instance to `DateTime.UtcNow`: the library never
+- RFC 5545 requires `DTSTAMP` in an event. Set [DateTimeStamp](cref:Meziantou.Framework.Scheduling.Event.DateTimeStamp), for instance to `DateTime.UtcNow`: the library never
   reads the clock, so its output only depends on the model.
 - `CREATED`, `LAST-MODIFIED`, `DTSTAMP`, `DTSTART`, `DTEND`, `STATUS` and `DESCRIPTION` are not written when they are not
-  set. An organizer or an attendee without an `Address` is not written.
-- `InternetCalendarUserAddress` takes an email address, written as a `mailto:` URI, or an absolute `Uri`.
+  set. An organizer or an attendee without an [Address](cref:Meziantou.Framework.Scheduling.Attendee.Address) is not written.
+- [InternetCalendarUserAddress](cref:Meziantou.Framework.Scheduling.InternetCalendarUserAddress) takes an email address, written as a `mailto:` URI, or an absolute `Uri`.
 
 The calendar can be read back:
 
@@ -76,12 +76,12 @@ Assert.Equal("Lunch", Assert.Single(parsed.Events).Summary);
 
 ## Dates and time zones
 
-How `Start` and `End` are written depends on the event:
+How [Start](cref:Meziantou.Framework.Scheduling.Event.Start) and [End](cref:Meziantou.Framework.Scheduling.Event.End) are written depends on the event:
 
 | Event | Written as |
 | --- | --- |
-| `IsAllDay` is `true` | `DTSTART;VALUE=DATE:20240610`, the date only |
-| `TimeZone` is set | `DTSTART;TZID=Europe/Paris:20240610T090000`, and a `VTIMEZONE` component |
+| [IsAllDay](cref:Meziantou.Framework.Scheduling.Event.IsAllDay) is `true` | `DTSTART;VALUE=DATE:20240610`, the date only |
+| [TimeZone](cref:Meziantou.Framework.Scheduling.Event.TimeZone) is set | `DTSTART;TZID=Europe/Paris:20240610T090000`, and a `VTIMEZONE` component |
 | The `Kind` is `Utc` or `Local` | `DTSTART:20240610T070000Z`, in UTC |
 | The `Kind` is `Unspecified` | `DTSTART:20240610T090000`, a floating time |
 
@@ -105,7 +105,7 @@ Assert.Contains("DTSTART;TZID=America/New_York:20240102T080000\r\n", ics);
 ```
 <!-- endref -->
 
-An all-day event ignores the time zone. As in RFC 5545, its `End` is excluded: an event on June 10, 11 and 12 ends on
+An all-day event ignores the time zone. As in RFC 5545, its [End](cref:Meziantou.Framework.Scheduling.Event.End) is excluded: an event on June 10, 11 and 12 ends on
 June 13:
 
 <!-- ref:../../tests/Meziantou.Framework.Scheduling.Tests/InternetCalendarTests.cs;region=InternetCalendar_AllDayEvent;format=md-fenced-code-block;dedent=true -->
@@ -137,9 +137,9 @@ a date for an all-day event, a floating time for a floating start, and UTC for a
 
 ## Properties of your own
 
-- `AdditionalProperties` writes a property from a name and a value. The value of a text property, such as `LOCATION` or
+- [AdditionalProperties](cref:Meziantou.Framework.Scheduling.Event.AdditionalProperties) writes a property from a name and a value. The value of a text property, such as `LOCATION` or
   an `X-` property, is escaped; the value of another property, such as `URL` or `GEO`, is written as is.
-- `RawProperties` writes an `InternetCalendarProperty` as is, with its parameters, after the `AdditionalProperties`:
+- [RawProperties](cref:Meziantou.Framework.Scheduling.Event.RawProperties) writes an [InternetCalendarProperty](cref:Meziantou.Framework.Scheduling.InternetCalendarProperty) as is, with its parameters, after the [AdditionalProperties](cref:Meziantou.Framework.Scheduling.Event.AdditionalProperties):
 
   <!-- ref:../../tests/Meziantou.Framework.Scheduling.Tests/InternetCalendarTests.cs;region=InternetCalendar_RawProperties;format=md-fenced-code-block;dedent=true -->
   ```csharp
@@ -150,10 +150,10 @@ a date for an all-day event, a floating time for a floating start, and UTC for a
   <!-- endref -->
 
 - A property named after one the writer emits itself, such as `UID`, `DTSTART` or `SUMMARY`, is not written. The
-  exception is `RRULE` in `RawProperties`, which is written after the rule of `RecurrenceRule`.
+  exception is `RRULE` in [RawProperties](cref:Meziantou.Framework.Scheduling.Event.RawProperties), which is written after the rule of [RecurrenceRule](cref:Meziantou.Framework.Scheduling.RecurrenceRule).
 - A `TZID` parameter of any written property gets a `VTIMEZONE` component too, when the identifier resolves.
 
-The parameters of `Organizer`, `Attendees` and the `…Parameters` collections of the event are written with their
+The parameters of [Organizer](cref:Meziantou.Framework.Scheduling.Organizer), [Attendees](cref:Meziantou.Framework.Scheduling.Event.Attendees) and the `…Parameters` collections of the event are written with their
 property:
 
 <!-- ref:../../tests/Meziantou.Framework.Scheduling.Tests/InternetCalendarTests.cs;region=InternetCalendar_AttendeeParameters;format=md-fenced-code-block;dedent=true -->
@@ -174,7 +174,7 @@ between quotes when it needs them, with `^`, line feeds and `"` encoded as RFC 6
 
 - Lines longer than 75 bytes are folded, never inside a character.
 - Text values drop the control characters other than tabs; line feeds are escaped as `\n`.
-- `InternetCalendarProperty`, `Organizer.Parameters`, `Attendee.Parameters` and the parameter collections of `Event`
+- [InternetCalendarProperty](cref:Meziantou.Framework.Scheduling.InternetCalendarProperty), [Organizer.Parameters](cref:Meziantou.Framework.Scheduling.Organizer.Parameters), [Attendee.Parameters](cref:Meziantou.Framework.Scheduling.Attendee.Parameters) and the parameter collections of [Event](cref:Meziantou.Framework.Scheduling.Event)
   check names, parameters and values when they are created or added, so a value cannot inject a line into the file.
-- The calendar is formatted before anything is written: a value that cannot be written, such as a `Status` that is not a
-  member of `EventStatus`, throws an `InvalidOperationException`, and nothing reaches the `TextWriter` or the `Stream`.
+- The calendar is formatted before anything is written: a value that cannot be written, such as a [Status](cref:Meziantou.Framework.Scheduling.Event.Status) that is not a
+  member of [EventStatus](cref:Meziantou.Framework.Scheduling.EventStatus), throws an `InvalidOperationException`, and nothing reaches the `TextWriter` or the `Stream`.

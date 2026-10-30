@@ -51,11 +51,11 @@ Assert.Equal(80, endpoint!.Port);
 
 | Attribute | Effect |
 | --- | --- |
-| `[TomlPropertyName]` | Sets the key of the member. It wins over the naming policy. |
-| `[TomlIgnore]` | Ignores the member, always or only when its value is `null` or default (`Condition = TomlIgnoreCondition.WhenWritingNull` or `WhenWritingDefault`). |
-| `[TomlInclude]` | Includes a non-public member, or a field. |
-| `[TomlPropertyOrder]` | Sets the position of the member in its table. |
-| `[TomlRequired]` | The key must be present: a missing key throws a `TomlException`. |
+| [\[TomlPropertyName\]](cref:Meziantou.Framework.Toml.Serialization.TomlPropertyNameAttribute) | Sets the key of the member. It wins over the naming policy. |
+| [\[TomlIgnore\]](cref:Meziantou.Framework.Toml.Serialization.TomlIgnoreAttribute) | Ignores the member, always or only when its value is `null` or default (`Condition = TomlIgnoreCondition.WhenWritingNull` or [WhenWritingDefault](cref:Meziantou.Framework.Toml.TomlIgnoreCondition.WhenWritingDefault)). |
+| [\[TomlInclude\]](cref:Meziantou.Framework.Toml.Serialization.TomlIncludeAttribute) | Includes a non-public member, or a field. |
+| [\[TomlPropertyOrder\]](cref:Meziantou.Framework.Toml.Serialization.TomlPropertyOrderAttribute) | Sets the position of the member in its table. |
+| [\[TomlRequired\]](cref:Meziantou.Framework.Toml.Serialization.TomlRequiredAttribute) | The key must be present: a missing key throws a [TomlException](cref:Meziantou.Framework.Toml.TomlException). |
 
 The C# `required` modifier makes a member required too, unless the constructor used has `[SetsRequiredMembers]`.
 
@@ -63,17 +63,17 @@ The C# `required` modifier makes a member required too, unless the constructor u
 
 A type without a parameterless constructor, such as a positional record, is created with its constructor: each
 parameter receives the value of the key with the same name. When a type has several constructors, mark the one to use
-with `[TomlConstructor]`, as `Endpoint` does above.
+with [\[TomlConstructor\]](cref:Meziantou.Framework.Toml.Serialization.TomlConstructorAttribute), as `Endpoint` does above.
 
 A constructor parameter without a default value must be present in the document, unless
-`RespectRequiredConstructorParameters` is `false`: it then receives the default value of its type.
+[RespectRequiredConstructorParameters](cref:Meziantou.Framework.Toml.TomlSerializerOptions.RespectRequiredConstructorParameters) is `false`: it then receives the default value of its type.
 
 ## Fill existing values
 
 By default, reading assigns new values to the members that have a setter, and leaves read-only members untouched
-(`TomlObjectCreationHandling.Replace`). `Populate` reuses the objects and collections the members already hold, and
-appends to collections instead of clearing them. Set it on a type, on a member with `[TomlObjectCreationHandling]`, or
-for every type with `PreferredObjectCreationHandling`:
+([TomlObjectCreationHandling.Replace](cref:Meziantou.Framework.Toml.TomlObjectCreationHandling.Replace)). [Populate](cref:Meziantou.Framework.Toml.TomlObjectCreationHandling.Populate) reuses the objects and collections the members already hold, and
+appends to collections instead of clearing them. Set it on a type, on a member with [\[TomlObjectCreationHandling\]](cref:Meziantou.Framework.Toml.Serialization.TomlObjectCreationHandlingAttribute), or
+for every type with [PreferredObjectCreationHandling](cref:Meziantou.Framework.Toml.TomlSerializerOptions.PreferredObjectCreationHandling):
 
 <!-- ref:../../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlObjectCreationHandling_Populate;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -93,14 +93,14 @@ Assert.Equal(["stable", "beta"], configuration!.Channels);
 ```
 <!-- endref -->
 
-- `Populate` on a member that cannot be populated, such as a struct without a setter, throws. On a type or in the
+- [Populate](cref:Meziantou.Framework.Toml.TomlObjectCreationHandling.Populate) on a member that cannot be populated, such as a struct without a setter, throws. On a type or in the
   options, it is a preference: such members are left unchanged.
-- `Populate` does not apply to types created with a constructor that has parameters.
+- [Populate](cref:Meziantou.Framework.Toml.TomlObjectCreationHandling.Populate) does not apply to types created with a constructor that has parameters.
 - A member with a converter is always replaced.
 
 ## Accept a single value or an array
 
-A collection member requires an array. With `[TomlSingleOrArray]`, it also accepts a single value:
+A collection member requires an array. With [\[TomlSingleOrArray\]](cref:Meziantou.Framework.Toml.Serialization.TomlSingleOrArrayAttribute), it also accepts a single value:
 
 <!-- ref:../../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlSingleOrArray_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -129,10 +129,10 @@ Implement the callback interfaces to validate or prepare an object:
 
 | Interface | Called |
 | --- | --- |
-| `ITomlOnSerializing` | Before the object is written. |
-| `ITomlOnSerialized` | After the object is written. |
-| `ITomlOnDeserializing` | When the instance is created, before its members are set. Constructor arguments are already set. |
-| `ITomlOnDeserialized` | After the members are read. |
+| [ITomlOnSerializing](cref:Meziantou.Framework.Toml.Serialization.ITomlOnSerializing) | Before the object is written. |
+| [ITomlOnSerialized](cref:Meziantou.Framework.Toml.Serialization.ITomlOnSerialized) | After the object is written. |
+| [ITomlOnDeserializing](cref:Meziantou.Framework.Toml.Serialization.ITomlOnDeserializing) | When the instance is created, before its members are set. Constructor arguments are already set. |
+| [ITomlOnDeserialized](cref:Meziantou.Framework.Toml.Serialization.ITomlOnDeserialized) | After the members are read. |
 
 <!-- ref:../../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlLifecycleCallbacks_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -156,13 +156,13 @@ Assert.Throws<InvalidOperationException>(() => TomlSerializer.Deserialize<Valida
 ```
 <!-- endref -->
 
-An exception thrown by a callback or a setter is not wrapped: it reaches your code as it is, and `TryDeserialize` does
-not catch it. An exception thrown by a constructor is reported as a `TomlException`.
+An exception thrown by a callback or a setter is not wrapped: it reaches your code as it is, and [TryDeserialize](cref:Meziantou.Framework.Toml.TomlSerializer.TryDeserialize) does
+not catch it. An exception thrown by a constructor is reported as a [TomlException](cref:Meziantou.Framework.Toml.TomlException).
 
 ## Keep unknown keys
 
-`[TomlExtensionData]` collects the keys that match no member. The member is a dictionary with `string` keys, such as
-`IDictionary<string, object?>` or `TomlTable`:
+[\[TomlExtensionData\]](cref:Meziantou.Framework.Toml.Serialization.TomlExtensionDataAttribute) collects the keys that match no member. The member is a dictionary with `string` keys, such as
+`IDictionary<string, object?>` or [TomlTable](cref:Meziantou.Framework.Toml.Model.TomlTable):
 
 <!-- ref:../../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlExtensionData_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -186,8 +186,8 @@ Assert.Equal(2L, config.Extra!["version"]);
 <!-- endref -->
 
 The values have the types of the [document model](../07-DocumentModel.md): `string`, `long`, `double`, `bool`,
-`TomlDateTime`, `TomlTable`, `TomlArray` and
-`TomlTableArray`.
+[TomlDateTime](cref:Meziantou.Framework.Toml.TomlDateTime), [TomlTable](cref:Meziantou.Framework.Toml.Model.TomlTable), [TomlArray](cref:Meziantou.Framework.Toml.Model.TomlArray) and
+[TomlTableArray](cref:Meziantou.Framework.Toml.Model.TomlTableArray).
 
 ## Reject unknown keys
 

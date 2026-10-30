@@ -42,13 +42,13 @@ using var screenshot = canvas.TakeScreenshot();
 
 ![A bar chart of five blue and orange bars over a dark axis](images/CanvasChart.png)
 
-- `CanvasRenderingContext2D` has all the members of the canvas of the browsers: paths, rectangles, text, images,
-  gradients and patterns, transformations, shadows, filters, compositing, `GetImageData` and `PutImageData`.
-- The bitmap of a canvas has 8 bits per component, as in the browsers. `ToDataUrl()` and `ToBlob()` serialize it as PNG,
+- [CanvasRenderingContext2D](cref:Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2D) has all the members of the canvas of the browsers: paths, rectangles, text, images,
+  gradients and patterns, transformations, shadows, filters, compositing, [GetImageData](cref:Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2DBase.GetImageData) and [PutImageData](cref:Meziantou.Framework.WebPlatform.Dom.CanvasRenderingContext2DBase.PutImageData).
+- The bitmap of a canvas has 8 bits per component, as in the browsers. [ToDataUrl()](cref:Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement.ToDataUrl) and [ToBlob()](cref:Meziantou.Framework.WebPlatform.Dom.HtmlCanvasElement.ToBlob) serialize it as PNG,
   JPEG or WebP.
 - A canvas is rendered only when scripting is enabled: as in a browser, a page without scripting shows the fallback
-  content of the `canvas` element. Set `ScriptingEnabled` (or give a script engine) when you draw from .NET.
-- `OffscreenCanvas` works the same way, also in the workers.
+  content of the `canvas` element. Set [ScriptingEnabled](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.ScriptingEnabled) (or give a script engine) when you draw from .NET.
+- [OffscreenCanvas](cref:Meziantou.Framework.WebPlatform.Dom.OffscreenCanvas) works the same way, also in the workers.
 - Without a backend, `GetContext("2d")` returns null, as in a browser without canvas support.
 
 The canvas layers (`beginLayer()`) and the `float16` canvases are not implemented.

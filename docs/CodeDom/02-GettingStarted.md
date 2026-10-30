@@ -14,7 +14,7 @@ directives, and check their results with assertions such as `Assert.Equal`.
 
 ## Build a file
 
-A file is a `CompilationUnit`. Add `using` directives and namespaces to it, types to the namespaces, members to the
+A file is a [CompilationUnit](cref:Meziantou.Framework.CodeDom.CompilationUnit). Add `using` directives and namespaces to it, types to the namespaces, members to the
 types, and statements to the members. The `Add*` extension methods attach an object to its parent and return it, so you
 can keep building on it:
 
@@ -42,15 +42,15 @@ var generatedCode = unit.ToCsharpString();
 ```
 <!-- endref -->
 
-- `AddUsing`, `AddNamespace`, `AddType`, `AddMember` and `AddArgument` create and attach the declarations.
-- `ReturnType = typeof(string)` converts the `Type` to a `TypeReference`.
-- `Expression.Add` builds `"Hello " + name + "!"`. The string literals convert to `LiteralExpression`, and the argument
+- [AddUsing](cref:Meziantou.Framework.CodeDom.Extensions.AddUsing), [AddNamespace](cref:Meziantou.Framework.CodeDom.Extensions.AddNamespace), [AddType](cref:Meziantou.Framework.CodeDom.Extensions.AddType), [AddMember](cref:Meziantou.Framework.CodeDom.Extensions.AddMember) and [AddArgument](cref:Meziantou.Framework.CodeDom.Extensions.AddArgument) create and attach the declarations.
+- `ReturnType = typeof(string)` converts the `Type` to a [TypeReference](cref:Meziantou.Framework.CodeDom.TypeReference).
+- [Expression.Add](cref:Meziantou.Framework.CodeDom.Expression.Add) builds `"Hello " + name + "!"`. The string literals convert to [LiteralExpression](cref:Meziantou.Framework.CodeDom.LiteralExpression), and the argument
   declaration to a reference to the argument.
-- `Statements` accepts a single statement, which converts to a collection.
+- [Statements](cref:Meziantou.Framework.CodeDom.MethodDeclaration.Statements) accepts a single statement, which converts to a collection.
 
 ## Write the code
 
-`ToCsharpString()` writes any code object, from a whole compilation unit to a single expression:
+[ToCsharpString()](cref:Meziantou.Framework.CodeDom.CodeObject.ToCsharpString) writes any code object, from a whole compilation unit to a single expression:
 
 <!-- ref:../../tests/Meziantou.Framework.CodeDom.Tests/CSharpCodeGeneratorTests.cs;region=CodeDom_UsageOutput;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -69,7 +69,7 @@ namespace Demo
 ```
 <!-- endref -->
 
-To write to a file or a stream, use `CSharpCodeGenerator`: it writes to a `TextWriter`, with `\n` line endings and four
+To write to a file or a stream, use [CSharpCodeGenerator](cref:Meziantou.Framework.CodeDom.CSharpCodeGenerator): it writes to a `TextWriter`, with `\n` line endings and four
 spaces of indentation. See [Writing code](06-WritingCode.md).
 
 ## Next steps

@@ -3,8 +3,8 @@ title: Shapes and colors
 description: Draw rectangles, circles, polygons and curves, fill and outline them in gray, RGB or CMYK, style the lines, and move, turn and clip the drawing.
 ---
 
-A shape is drawn in two steps: the path is built (`Rectangle`, `Circle`, `MoveTo`, `LineTo`, `CurveTo`...), then painted
-(`Fill`, `Stroke`...) with the colors and the line style of the graphics state.
+A shape is drawn in two steps: the path is built ([Rectangle](cref:Meziantou.Framework.Pdf.PdfContentBuilder.Rectangle), [Circle](cref:Meziantou.Framework.Pdf.PdfContentBuilder.Circle), [MoveTo](cref:Meziantou.Framework.Pdf.PdfContentBuilder.MoveTo), [LineTo](cref:Meziantou.Framework.Pdf.PdfContentBuilder.LineTo), [CurveTo](cref:Meziantou.Framework.Pdf.PdfContentBuilder.CurveTo)...), then painted
+([Fill](cref:Meziantou.Framework.Pdf.PdfContentBuilder.Fill), [Stroke](cref:Meziantou.Framework.Pdf.PdfContentBuilder.Stroke)...) with the colors and the line style of the graphics state.
 
 ## Fill and outline shapes
 
@@ -42,21 +42,21 @@ public static void DrawShapes(string outputPath)
 | --- | --- |
 | A rectangle | `Rectangle(x, y, width, height)` or `Rectangle(PdfRectangle)`, from its lower-left corner |
 | A circle, an ellipse | `Circle(centerX, centerY, radius)`, `Ellipse(centerX, centerY, radiusX, radiusY)` |
-| Lines | `MoveTo` starts a subpath, `LineTo` adds a straight line, `ClosePath` goes back to the start |
-| Curves | `CurveTo` adds a cubic Bézier curve; `CurveToFromCurrentPoint` and `CurveToEndPoint` take one control point from the ends |
+| Lines | [MoveTo](cref:Meziantou.Framework.Pdf.PdfContentBuilder.MoveTo) starts a subpath, [LineTo](cref:Meziantou.Framework.Pdf.PdfContentBuilder.LineTo) adds a straight line, [ClosePath](cref:Meziantou.Framework.Pdf.PdfContentBuilder.ClosePath) goes back to the start |
+| Curves | [CurveTo](cref:Meziantou.Framework.Pdf.PdfContentBuilder.CurveTo) adds a cubic Bézier curve; [CurveToFromCurrentPoint](cref:Meziantou.Framework.Pdf.PdfContentBuilder.CurveToFromCurrentPoint) and [CurveToEndPoint](cref:Meziantou.Framework.Pdf.PdfContentBuilder.CurveToEndPoint) take one control point from the ends |
 
 | To paint the path | Call |
 | --- | --- |
-| Fill it | `Fill` |
-| Draw its outline | `Stroke`, or `CloseAndStroke` to close it first |
-| Both | `FillAndStroke`, `CloseFillAndStroke` |
-| Neither (after a clip) | `EndPath` |
+| Fill it | [Fill](cref:Meziantou.Framework.Pdf.PdfContentBuilder.Fill) |
+| Draw its outline | [Stroke](cref:Meziantou.Framework.Pdf.PdfContentBuilder.Stroke), or [CloseAndStroke](cref:Meziantou.Framework.Pdf.PdfContentBuilder.CloseAndStroke) to close it first |
+| Both | [FillAndStroke](cref:Meziantou.Framework.Pdf.PdfContentBuilder.FillAndStroke), [CloseFillAndStroke](cref:Meziantou.Framework.Pdf.PdfContentBuilder.CloseFillAndStroke) |
+| Neither (after a clip) | [EndPath](cref:Meziantou.Framework.Pdf.PdfContentBuilder.EndPath) |
 
-- A path can have several subpaths: they are painted together. The fill rule decides what is inside: `NonZero` (the
-  default) fills a shape inside another one, `EvenOdd` makes it a hole.
-- The fill color is set with `SetFillGray`, `SetFillRgb`, `SetFillCmyk` or `SetFillColor`, the outline color with the
-  `SetStroke...` methods. The components go from 0 to 1. `PdfColor` holds a color: `FromGray`, `FromRgb`, `FromRgb24`
-  (0 to 255), `FromCmyk`, `Black` and `White`.
+- A path can have several subpaths: they are painted together. The fill rule decides what is inside: [NonZero](cref:Meziantou.Framework.Pdf.PdfFillRule.NonZero) (the
+  default) fills a shape inside another one, [EvenOdd](cref:Meziantou.Framework.Pdf.PdfFillRule.EvenOdd) makes it a hole.
+- The fill color is set with [SetFillGray](cref:Meziantou.Framework.Pdf.PdfContentBuilder.SetFillGray), [SetFillRgb](cref:Meziantou.Framework.Pdf.PdfContentBuilder.SetFillRgb), [SetFillCmyk](cref:Meziantou.Framework.Pdf.PdfContentBuilder.SetFillCmyk) or [SetFillColor](cref:Meziantou.Framework.Pdf.PdfContentBuilder.SetFillColor), the outline color with the
+  `SetStroke...` methods. The components go from 0 to 1. [PdfColor](cref:Meziantou.Framework.Pdf.PdfColor) holds a color: [FromGray](cref:Meziantou.Framework.Pdf.PdfColor.FromGray), [FromRgb](cref:Meziantou.Framework.Pdf.PdfColor.FromRgb), [FromRgb24](cref:Meziantou.Framework.Pdf.PdfColor.FromRgb24)
+  (0 to 255), [FromCmyk](cref:Meziantou.Framework.Pdf.PdfColor.FromCmyk), [Black](cref:Meziantou.Framework.Pdf.PdfColor.Black) and [White](cref:Meziantou.Framework.Pdf.PdfColor.White).
 - The fill color also paints text. Gradients and patterns are colors as well: see
   [Gradients and patterns](06-GradientsAndPatterns.md).
 
@@ -93,10 +93,10 @@ public static void DrawLineStyles(string outputPath)
 
 ![Three thick lines with butt, round and square ends, three peaks with a sharp, a round and a cut corner, a dashed line and a dotted line](images/DrawLineStyles.png)
 
-- `SetLineWidth` sets the width, centered on the path. A width of 0 is the thinnest line the device can draw.
-- `SetLineCap` sets the ends of open lines and dashes; `SetLineJoin` the corners. A miter join longer than
-  `SetMiterLimit` times the width is beveled.
-- `SetDashPattern` takes the lengths of the dashes and the gaps, and a phase where the pattern starts; an empty array
+- [SetLineWidth](cref:Meziantou.Framework.Pdf.PdfContentBuilder.SetLineWidth) sets the width, centered on the path. A width of 0 is the thinnest line the device can draw.
+- [SetLineCap](cref:Meziantou.Framework.Pdf.PdfContentBuilder.SetLineCap) sets the ends of open lines and dashes; [SetLineJoin](cref:Meziantou.Framework.Pdf.PdfContentBuilder.SetLineJoin) the corners. A miter join longer than
+  [SetMiterLimit](cref:Meziantou.Framework.Pdf.PdfContentBuilder.SetMiterLimit) times the width is beveled.
+- [SetDashPattern](cref:Meziantou.Framework.Pdf.PdfContentBuilder.SetDashPattern) takes the lengths of the dashes and the gaps, and a phase where the pattern starts; an empty array
   draws solid lines again.
 
 ## Move, turn and clip
@@ -142,10 +142,10 @@ public static void DrawTransformations(string outputPath)
 
 ![Six square outlines turned around the same center, from dark blue to green, and orange vertical stripes inside a circle](images/DrawTransformations.png)
 
-- `Translate`, `Rotate` and `Scale` change the coordinates of what follows; `Transform` applies any `PdfMatrix`
-  (`CreateTranslation`, `CreateRotation`, `CreateScale`, `Multiply`). Each change applies to the coordinates the
+- [Translate](cref:Meziantou.Framework.Pdf.PdfContentBuilder.Translate), [Rotate](cref:Meziantou.Framework.Pdf.PdfContentBuilder.Rotate) and [Scale](cref:Meziantou.Framework.Pdf.PdfContentBuilder.Scale) change the coordinates of what follows; [Transform](cref:Meziantou.Framework.Pdf.PdfContentBuilder.Transform) applies any [PdfMatrix](cref:Meziantou.Framework.Pdf.PdfMatrix)
+  ([CreateTranslation](cref:Meziantou.Framework.Pdf.PdfMatrix.CreateTranslation), [CreateRotation](cref:Meziantou.Framework.Pdf.PdfMatrix.CreateRotation), [CreateScale](cref:Meziantou.Framework.Pdf.PdfMatrix.CreateScale), [Multiply](cref:Meziantou.Framework.Pdf.PdfMatrix.Multiply)). Each change applies to the coordinates the
   previous ones made: translate first, then rotate, to turn around a point.
-- `Clip` intersects the clip with the current path, which must then be painted or ended with `EndPath`. The clip can only
+- [Clip](cref:Meziantou.Framework.Pdf.PdfContentBuilder.Clip) intersects the clip with the current path, which must then be painted or ended with [EndPath](cref:Meziantou.Framework.Pdf.PdfContentBuilder.EndPath). The clip can only
   shrink: save the graphics state before, and restore it to remove the clip.
-- `SaveGraphicsState` and `RestoreGraphicsState` must be balanced in a content stream: `RestoreGraphicsState` without a
+- [SaveGraphicsState](cref:Meziantou.Framework.Pdf.PdfContentBuilder.SaveGraphicsState) and [RestoreGraphicsState](cref:Meziantou.Framework.Pdf.PdfContentBuilder.RestoreGraphicsState) must be balanced in a content stream: [RestoreGraphicsState](cref:Meziantou.Framework.Pdf.PdfContentBuilder.RestoreGraphicsState) without a
   save throws `InvalidOperationException`.

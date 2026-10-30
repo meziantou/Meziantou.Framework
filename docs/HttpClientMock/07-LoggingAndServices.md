@@ -81,5 +81,5 @@ A bare `null` matches several of these constructors, and does not compile. Name 
 ## Startup errors
 
 The mock starts when the first client or handler is created. When the application fails to start, for instance because
-a hosted service added with `configureServices` throws while starting, `CreateHttpClient` and
-`CreateHttpMessageHandler` throw that error.
+a hosted service added with `configureServices` throws while starting, [CreateHttpClient](cref:Meziantou.Framework.HttpClientMock.CreateHttpClient) and
+[CreateHttpMessageHandler](cref:Meziantou.Framework.HttpClientMock.CreateHttpMessageHandler) throw that error.

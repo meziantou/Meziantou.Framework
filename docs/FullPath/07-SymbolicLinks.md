@@ -33,24 +33,24 @@ Assert.Equal(canonicalFile, canonicalLink);
 
 ## Detect a link and read its target
 
-- `IsSymbolicLink` tells whether the path is a symbolic link. It is `false` for the empty path.
-- `TryGetSymbolicLinkTarget` returns the target of the link, as a `FullPath`. A relative target is resolved against the
+- [IsSymbolicLink](cref:Meziantou.Framework.FullPath.IsSymbolicLink) tells whether the path is a symbolic link. It is `false` for the empty path.
+- [TryGetSymbolicLinkTarget](cref:Meziantou.Framework.FullPath.TryGetSymbolicLinkTarget) returns the target of the link, as a [FullPath](cref:Meziantou.Framework.FullPath). A relative target is resolved against the
   folder of the link. The method returns `false` when the path is not a symbolic link.
 
-The `SymbolicLinkResolutionMode` parameter chooses how far to follow the links:
+The [SymbolicLinkResolutionMode](cref:Meziantou.Framework.SymbolicLinkResolutionMode) parameter chooses how far to follow the links:
 
 | Mode | Result |
 | --- | --- |
-| `Immediate` (the default) | The target stored in the link, which can be another link |
-| `FinalTarget` | The first target that is not a link |
-| `AllSymbolicLinks` | The path with the links of every segment resolved, including the parent folders |
+| [Immediate](cref:Meziantou.Framework.SymbolicLinkResolutionMode.Immediate) (the default) | The target stored in the link, which can be another link |
+| [FinalTarget](cref:Meziantou.Framework.SymbolicLinkResolutionMode.FinalTarget) | The first target that is not a link |
+| [AllSymbolicLinks](cref:Meziantou.Framework.SymbolicLinkResolutionMode.AllSymbolicLinks) | The path with the links of every segment resolved, including the parent folders |
 
-`FinalTarget` and `AllSymbolicLinks` throw an `IOException` after 40 links, which usually means that the links form a
+[FinalTarget](cref:Meziantou.Framework.SymbolicLinkResolutionMode.FinalTarget) and [AllSymbolicLinks](cref:Meziantou.Framework.SymbolicLinkResolutionMode.AllSymbolicLinks) throw an `IOException` after 40 links, which usually means that the links form a
 cycle.
 
 ## The canonical path
 
-`TryGetCanonicalPath` returns the final path of an existing file or folder: the operating system resolves the symbolic
+[TryGetCanonicalPath](cref:Meziantou.Framework.FullPath.TryGetCanonicalPath) returns the final path of an existing file or folder: the operating system resolves the symbolic
 links and the reparse points of every segment. It returns `false` when the path does not exist or cannot be resolved.
 
 A link and its target have the same canonical path. Compare canonical paths when links matter, for instance

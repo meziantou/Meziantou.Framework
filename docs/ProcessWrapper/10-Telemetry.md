@@ -35,7 +35,7 @@ Assert.IsType<string>(activity.GetTagItem("process.executable.path"));
 | Status | `Error` when the [validation](06-ExitCodesAndErrors.md) fails, with the error message as description |
 
 The activity starts when the process starts and stops when it exits. Its status is not set when the execution is
-canceled. The activity is not the ambient activity of your code: the code that runs after `ExecuteAsync` keeps its own
+canceled. The activity is not the ambient activity of your code: the code that runs after [ExecuteAsync](cref:Meziantou.Framework.ProcessWrapper.ExecuteAsync) keeps its own
 `Activity.Current`.
 
 The error description is the message of the exception, so it shows the command as allowed by the

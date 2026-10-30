@@ -45,18 +45,18 @@ public static void DrawLandscape(string outputPath)
 
 ![A blue sky gradient with a glowing sun above a green hill, in a thin dark frame](images/DrawLandscape.png)
 
-- `ImageFrame.Draw` hands a `DrawingCanvas` to a callback, for one frame. `Image.Draw` does the same for the whole
+- [ImageFrame.Draw](cref:Meziantou.Framework.Imaging.ImageFrame.Draw) hands a [DrawingCanvas](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas) to a callback, for one frame. [Image.Draw](cref:Meziantou.Framework.Imaging.Image.Draw) does the same for the whole
   image, and paints every frame and the poster frame identically: see
   [Drawing on animations](07-DrawingOnAnimations.md).
 - The callback runs once, while the pixels are leased. The canvas is only valid inside it, and other pixel accesses or
   geometry changes on the same image throw `InvalidOperationException` until it returns.
-- Each call paints over what is already there, in order. A color (`Rgba32`, `Rgba64`) converts to a solid brush.
+- Each call paints over what is already there, in order. A color ([Rgba32](cref:Meziantou.Framework.Imaging.Rgba32), [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64)) converts to a solid brush.
 - The canvas works on every pixel format. Brush colors are converted to the pixel format of the frame, and a frame
   without alpha stays opaque.
 
 ## Coordinates
 
-Positions are `double` values in pixels: `PointD` and `RectangleD` (the integer `Point` and `Rectangle` convert to them
+Positions are `double` values in pixels: [PointD](cref:Meziantou.Framework.Imaging.PointD) and [RectangleD](cref:Meziantou.Framework.Imaging.RectangleD) (the integer [Point](cref:Meziantou.Framework.Imaging.Point) and [Rectangle](cref:Meziantou.Framework.Imaging.Rectangle) convert to them
 implicitly). The origin is the top-left corner and Y grows downward. Integer coordinates are the boundaries between
 pixels: the pixel `(x, y)` covers the square from `(x, y)` to `(x + 1, y + 1)`. So:
 
@@ -67,8 +67,8 @@ pixels: the pixel `(x, y)` covers the square from `(x, y)` to `(x + 1, y + 1)`. 
 
 Shapes are clipped to the canvas. A coordinate must be finite (`ArgumentException`) and no larger than 16,777,216 in
 magnitude (`ArgumentOutOfRangeException`). Angles are in degrees, and a positive angle turns clockwise on the image.
-`PointD` has the usual arithmetic (`+`, `-`, `*`, `/`, `DistanceTo`) and `RectangleD` the usual helpers (`Center`,
-`Contains`, `Intersect`, `Union`, `Offset`, `Inflate`).
+[PointD](cref:Meziantou.Framework.Imaging.PointD) has the usual arithmetic (`+`, `-`, `*`, `/`, [DistanceTo](cref:Meziantou.Framework.Imaging.PointD.DistanceTo)) and [RectangleD](cref:Meziantou.Framework.Imaging.RectangleD) the usual helpers ([Center](cref:Meziantou.Framework.Imaging.RectangleD.Center),
+[Contains](cref:Meziantou.Framework.Imaging.RectangleD.Contains), [Intersect](cref:Meziantou.Framework.Imaging.RectangleD.Intersect), [Union](cref:Meziantou.Framework.Imaging.RectangleD.Union), [Offset](cref:Meziantou.Framework.Imaging.RectangleD.Offset), [Inflate](cref:Meziantou.Framework.Imaging.RectangleD.Inflate)).
 
 ## Brushes, pens and paths
 
@@ -76,9 +76,9 @@ What is drawn is described by three kinds of objects, all immutable and safe to 
 
 | Type | Describes | Page |
 | --- | --- | --- |
-| `Brush` | How a shape is painted: a color, a gradient, an image, a pattern | [Brushes and pens](03-BrushesAndPens.md) |
-| `Pen` | How an outline is drawn: a brush, a width, joins, caps, dashes | [Brushes and pens](03-BrushesAndPens.md) |
-| `VectorPath` | Any shape: lines, curves, arcs, several contours | [Shapes and paths](02-ShapesAndPaths.md) |
+| [Brush](cref:Meziantou.Framework.Imaging.Drawing.Brush) | How a shape is painted: a color, a gradient, an image, a pattern | [Brushes and pens](03-BrushesAndPens.md) |
+| [Pen](cref:Meziantou.Framework.Imaging.Drawing.Pen) | How an outline is drawn: a brush, a width, joins, caps, dashes | [Brushes and pens](03-BrushesAndPens.md) |
+| [VectorPath](cref:Meziantou.Framework.Imaging.Drawing.VectorPath) | Any shape: lines, curves, arcs, several contours | [Shapes and paths](02-ShapesAndPaths.md) |
 
 Create them once and reuse them: once the working storage of the canvas has grown to the largest shape, drawing a shape
 allocates nothing. The overloads that take a state and a static callback avoid the allocation of a closure as well.

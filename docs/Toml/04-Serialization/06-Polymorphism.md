@@ -8,7 +8,7 @@ and reads it to create the right type.
 
 ## Declare the derived types
 
-Mark the base type with `[TomlPolymorphic]`, and list the derived types with `[TomlDerivedType]`:
+Mark the base type with [\[TomlPolymorphic\]](cref:Meziantou.Framework.Toml.Serialization.TomlPolymorphicAttribute), and list the derived types with [\[TomlDerivedType\]](cref:Meziantou.Framework.Toml.Serialization.TomlDerivedTypeAttribute):
 
 <!-- ref:../../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlPolymorphism_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -32,7 +32,7 @@ public sealed class Dog : Animal
 ```
 <!-- endref -->
 
-The discriminator key is `$type` by default; `TypeDiscriminatorPropertyName` renames it, here to `kind`. Each table
+The discriminator key is `$type` by default; [TypeDiscriminatorPropertyName](cref:Meziantou.Framework.Toml.TomlPolymorphismOptions.TypeDiscriminatorPropertyName) renames it, here to `kind`. Each table
 says which type it holds:
 
 <!-- ref:../../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlPolymorphism_Read;format=md-fenced-code-block;dedent=true -->
@@ -57,8 +57,8 @@ Assert.Equal("Rex", animals[1].Name);
 <!-- endref -->
 
 - An integer discriminator (`[TomlDerivedType(typeof(Circle), 1)]`) is written as a string.
-- To change the discriminator key of every type, set `TomlPolymorphismOptions.TypeDiscriminatorPropertyName` in the
-  `PolymorphismOptions` of the options.
+- To change the discriminator key of every type, set [TomlPolymorphismOptions.TypeDiscriminatorPropertyName](cref:Meziantou.Framework.Toml.TomlPolymorphismOptions.TypeDiscriminatorPropertyName) in the
+  [PolymorphismOptions](cref:Meziantou.Framework.Toml.TomlSerializerOptions.PolymorphismOptions) of the options.
 
 ## Handle unknown types
 
@@ -66,7 +66,7 @@ Assert.Equal("Rex", animals[1].Name);
   or unknown, and it is written without a discriminator. `System.Text.Json` throws on an unknown discriminator instead.
 - Without a default type, an unknown discriminator throws. Set
   `UnknownDerivedTypeHandling = TomlUnknownDerivedTypeHandling.FallBackToBaseType`, on the attribute or on
-  `TomlPolymorphismOptions`, to read it as the base type instead.
+  [TomlPolymorphismOptions](cref:Meziantou.Framework.Toml.TomlPolymorphismOptions), to read it as the base type instead.
 
 ## Register derived types from another project
 
@@ -89,7 +89,7 @@ var options = new TomlSerializerOptions
 ```
 <!-- endref -->
 
-With the source generator, register them on the context with `[TomlDerivedTypeMapping]`:
+With the source generator, register them on the context with [\[TomlDerivedTypeMapping\]](cref:Meziantou.Framework.Toml.Serialization.TomlDerivedTypeMappingAttribute):
 
 <!-- ref:../../../tests/Meziantou.Framework.Toml.Tests/CrossProjectPolymorphismTests.cs;region=TomlDerivedTypeMapping_Context;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -100,6 +100,6 @@ internal sealed partial class AnimalContext : TomlSerializerContext;
 ```
 <!-- endref -->
 
-The registrations are merged. `[TomlDerivedType]` on the base type wins over the mappings of the context, which win
-over the mappings of the options. When the base type of a mapping has no polymorphism configuration, such as `[TomlPolymorphic]`,
+The registrations are merged. [\[TomlDerivedType\]](cref:Meziantou.Framework.Toml.Serialization.TomlDerivedTypeAttribute) on the base type wins over the mappings of the context, which win
+over the mappings of the options. When the base type of a mapping has no polymorphism configuration, such as [\[TomlPolymorphic\]](cref:Meziantou.Framework.Toml.Serialization.TomlPolymorphicAttribute),
 the generator reports the warning `MFTOML010` and the default settings of the serializer are used.

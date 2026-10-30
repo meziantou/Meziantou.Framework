@@ -5,7 +5,7 @@ description: Stream the output of a process line by line, collect it, write it t
 
 ## Send the output somewhere
 
-`WithOutputStream` and `WithErrorStream` choose where standard output and standard error go while the process runs:
+[WithOutputStream](cref:Meziantou.Framework.ProcessWrapper.WithOutputStream) and [WithErrorStream](cref:Meziantou.Framework.ProcessWrapper.WithErrorStream) choose where standard output and standard error go while the process runs:
 
 <!-- ref:../../samples/Meziantou.Framework.ProcessWrapper.Samples/ReadmeExamples.cs;region=ProcessWrapper_OutputHandling;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -78,40 +78,40 @@ await ProcessWrapper.Create("my-command")
 ```
 <!-- endref -->
 
-The targets are `OutputTarget` values. Create them with its static methods, or pass the object directly, which converts
+The targets are [OutputTarget](cref:Meziantou.Framework.OutputTarget) values. Create them with its static methods, or pass the object directly, which converts
 implicitly:
 
 | Target | Created with | Receives |
 | --- | --- | --- |
-| A callback | `OutputTarget.ToTextDelegate`, or an `Action<string>` | Each line, without its line break |
-| A `TextWriter` | `OutputTarget.ToTextWriter`, or the writer | Each line, written with `WriteLine` |
-| A `ProcessOutputCollection` | `OutputTarget.ToProcessOutputCollection`, or the collection | Each line, with its stream and the time it was received |
-| A `StringBuilder` | `OutputTarget.ToStringBuilder`, or the builder | The decoded text, line breaks included |
-| A `Stream` | `OutputTarget.ToStream`, or the stream | The raw bytes |
-| A byte callback | `OutputTarget.ToBytesDelegate` | Each chunk of raw bytes |
-| A `ProcessPipe` | `OutputTarget.ToProcessPipe`, or the pipe | The raw bytes, for another process: see [Input and pipes](05-InputAndPipes.md) |
+| A callback | [OutputTarget.ToTextDelegate](cref:Meziantou.Framework.OutputTarget.ToTextDelegate), or an `Action<string>` | Each line, without its line break |
+| A `TextWriter` | [OutputTarget.ToTextWriter](cref:Meziantou.Framework.OutputTarget.ToTextWriter), or the writer | Each line, written with `WriteLine` |
+| A [ProcessOutputCollection](cref:Meziantou.Framework.ProcessOutputCollection) | [OutputTarget.ToProcessOutputCollection](cref:Meziantou.Framework.OutputTarget.ToProcessOutputCollection), or the collection | Each line, with its stream and the time it was received |
+| A `StringBuilder` | [OutputTarget.ToStringBuilder](cref:Meziantou.Framework.OutputTarget.ToStringBuilder), or the builder | The decoded text, line breaks included |
+| A `Stream` | [OutputTarget.ToStream](cref:Meziantou.Framework.OutputTarget.ToStream), or the stream | The raw bytes |
+| A byte callback | [OutputTarget.ToBytesDelegate](cref:Meziantou.Framework.OutputTarget.ToBytesDelegate) | Each chunk of raw bytes |
+| A [ProcessPipe](cref:Meziantou.Framework.ProcessPipe) | [OutputTarget.ToProcessPipe](cref:Meziantou.Framework.OutputTarget.ToProcessPipe), or the pipe | The raw bytes, for another process: see [Input and pipes](05-InputAndPipes.md) |
 
-- `With*` replaces the targets of the stream, and `Add*` (`AddOutputStream`, `AddErrorStream`) adds targets to the
+- `With*` replaces the targets of the stream, and `Add*` ([AddOutputStream](cref:Meziantou.Framework.ProcessWrapper.AddOutputStream), [AddErrorStream](cref:Meziantou.Framework.ProcessWrapper.AddErrorStream)) adds targets to the
   existing ones. Both accept several targets at once.
 - Text and byte targets can be combined on the same stream: each one receives the whole output.
 - A stream that has no target is not redirected: the process writes to the console of the current process.
 
-Several processes can write to the same `ProcessOutputCollection`, `StringBuilder`, `TextWriter` or `Stream`: the
+Several processes can write to the same [ProcessOutputCollection](cref:Meziantou.Framework.ProcessOutputCollection), `StringBuilder`, `TextWriter` or `Stream`: the
 writes are synchronized.
 
 ## Capture everything
 
-`ExecuteBufferedAsync` adds a `ProcessOutputCollection` that receives both streams, and returns it in
+[ExecuteBufferedAsync](cref:Meziantou.Framework.ProcessWrapper.ExecuteBufferedAsync) adds a [ProcessOutputCollection](cref:Meziantou.Framework.ProcessOutputCollection) that receives both streams, and returns it in
 `result.Output` (see [Getting started](02-GettingStarted.md)). The targets you configured still receive the output.
 
-`ProcessOutputCollection` is thread-safe. Enumerating it, or its `StandardOutput` and `StandardError` properties,
-enumerates a snapshot. Each `ProcessOutput` has a `Type` (`StandardOutput` or `StandardError`), a `Text` and a
-`TimestampUtc`, and deconstructs into `(type, text)` or `(type, text, timestampUtc)`. `ToString` on the collection
+[ProcessOutputCollection](cref:Meziantou.Framework.ProcessOutputCollection) is thread-safe. Enumerating it, or its [StandardOutput](cref:Meziantou.Framework.ProcessOutputCollection.StandardOutput) and [StandardError](cref:Meziantou.Framework.ProcessOutputCollection.StandardError) properties,
+enumerates a snapshot. Each [ProcessOutput](cref:Meziantou.Framework.ProcessOutput) has a [Type](cref:Meziantou.Framework.ProcessOutput.Type) ([StandardOutput](cref:Meziantou.Framework.ProcessOutputCollection.StandardOutput) or [StandardError](cref:Meziantou.Framework.ProcessOutputCollection.StandardError)), a [Text](cref:Meziantou.Framework.ProcessOutput.Text) and a
+[TimestampUtc](cref:Meziantou.Framework.ProcessOutput.TimestampUtc), and deconstructs into `(type, text)` or `(type, text, timestampUtc)`. `ToString` on the collection
 returns all the lines, one per line.
 
 ## Encoding
 
-The output is decoded as UTF-8. Use `WithOutputEncoding` and `WithErrorEncoding` for a process that writes another
+The output is decoded as UTF-8. Use [WithOutputEncoding](cref:Meziantou.Framework.ProcessWrapper.WithOutputEncoding) and [WithErrorEncoding](cref:Meziantou.Framework.ProcessWrapper.WithErrorEncoding) for a process that writes another
 encoding, as in the last example above. The encoding only matters to the text targets: byte targets receive the bytes
 as the process wrote them.
 

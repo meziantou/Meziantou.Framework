@@ -24,18 +24,18 @@ filter.Remove("alice@example.com");
 ```
 <!-- endref -->
 
-- `CountingBloomFilterSize.CreateOptimalSize` sizes the filter like `BloomFilterSize.CreateOptimalSize`, with a number
+- [CountingBloomFilterSize.CreateOptimalSize](cref:Meziantou.Framework.BloomFilters.CountingBloomFilterSize.CreateOptimalSize) sizes the filter like [BloomFilterSize.CreateOptimalSize](cref:Meziantou.Framework.BloomFilters.BloomFilterSize.CreateOptimalSize), with a number
   of counters instead of a number of bits. Each counter takes one byte, so a counting filter uses 8 times the memory of
   a Bloom filter with the same false positive probability.
-- `CountingBloomFilter` has the same factory methods as `BloomFilter`, one per [hash algorithm](06-HashAlgorithms.md).
-- `GetEstimatedCount` returns the smallest counter of the value: the number of times it was added, or more when other
+- [CountingBloomFilter](cref:Meziantou.Framework.BloomFilters.CountingBloomFilter) has the same factory methods as [BloomFilter](cref:Meziantou.Framework.BloomFilters.BloomFilter), one per [hash algorithm](06-HashAlgorithms.md).
+- [GetEstimatedCount](cref:Meziantou.Framework.BloomFilters.ICountingBloomFilter.GetEstimatedCount) returns the smallest counter of the value: the number of times it was added, or more when other
   values share all its counters. It never returns less, as long as only added values are removed.
-- `Remove` decrements the counters of the value. The value was added twice here, so it is still present after one
+- [Remove](cref:Meziantou.Framework.BloomFilters.ICountingBloomFilter.Remove) decrements the counters of the value. The value was added twice here, so it is still present after one
   removal.
 
 ## Only remove values that were added
 
-`Remove` ignores a value when one of its counters is zero: the filter knows the value is absent. But a value that was
+[Remove](cref:Meziantou.Framework.BloomFilters.ICountingBloomFilter.Remove) ignores a value when one of its counters is zero: the filter knows the value is absent. But a value that was
 never added and is reported as present (a false positive) decrements counters that belong to other values, and those
 values may then be reported as absent: the filter then has false negatives.
 
@@ -70,7 +70,7 @@ Assert.True(filter.MayContain("alice@example.com"));
 ```
 <!-- endref -->
 
-- `GetEstimatedCount` returns at most 255.
+- [GetEstimatedCount](cref:Meziantou.Framework.BloomFilters.ICountingBloomFilter.GetEstimatedCount) returns at most 255.
 - A value whose counters all saturated can no longer be removed: it keeps being reported as present, but it is never
   reported as absent.
 

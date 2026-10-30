@@ -8,7 +8,7 @@ must say which type it is: a discriminator key, such as `$type: dog`, or a YAML 
 
 ## Declare the derived types
 
-Mark the base type with `[YamlPolymorphic]` and register each derived type with `[YamlDerivedType]` and its
+Mark the base type with [\[YamlPolymorphic\]](cref:Meziantou.Framework.Yaml.Serialization.YamlPolymorphicAttribute) and register each derived type with [\[YamlDerivedType\]](cref:Meziantou.Framework.Yaml.Serialization.YamlDerivedTypeAttribute) and its
 discriminator:
 
 <!-- ref:../../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlSerializerApiTests.cs;region=YamlPolymorphicAttribute_Usage;format=md-fenced-code-block;dedent=true -->
@@ -54,16 +54,16 @@ A type cannot register the same derived type, discriminator or tag twice: the se
 
 | Setting | Values | Description |
 | --- | --- | --- |
-| `DiscriminatorStyle` | `Property` (default), `Tag`, `Both` | Whether the type is identified by a key, by a YAML tag, or both. |
-| `TypeDiscriminatorPropertyName` | `$type` by default | The key used by the `Property` style. |
-| `UnknownDerivedTypeHandling` | `Fail` (default), `FallBackToBase` | What happens when reading a discriminator that matches no derived type. |
-| `InferClosedTypePolymorphism` | `false` by default | See [Closed hierarchies](#closed-hierarchies). |
+| [DiscriminatorStyle](cref:Meziantou.Framework.Yaml.YamlPolymorphismOptions.DiscriminatorStyle) | [Property](cref:Meziantou.Framework.Yaml.YamlTypeDiscriminatorStyle.Property) (default), [Tag](cref:Meziantou.Framework.Yaml.YamlTypeDiscriminatorStyle.Tag), [Both](cref:Meziantou.Framework.Yaml.YamlTypeDiscriminatorStyle.Both) | Whether the type is identified by a key, by a YAML tag, or both. |
+| [TypeDiscriminatorPropertyName](cref:Meziantou.Framework.Yaml.YamlPolymorphismOptions.TypeDiscriminatorPropertyName) | `$type` by default | The key used by the [Property](cref:Meziantou.Framework.Yaml.YamlTypeDiscriminatorStyle.Property) style. |
+| [UnknownDerivedTypeHandling](cref:Meziantou.Framework.Yaml.YamlPolymorphismOptions.UnknownDerivedTypeHandling) | [Fail](cref:Meziantou.Framework.Yaml.YamlUnknownDerivedTypeHandling.Fail) (default), [FallBackToBase](cref:Meziantou.Framework.Yaml.YamlUnknownDerivedTypeHandling.FallBackToBase) | What happens when reading a discriminator that matches no derived type. |
+| [InferClosedTypePolymorphism](cref:Meziantou.Framework.Yaml.YamlPolymorphismOptions.InferClosedTypePolymorphism) | `false` by default | See [Closed hierarchies](#closed-hierarchies). |
 
-Set them on `[YamlPolymorphic]` for one base type, or on `YamlSerializerOptions.PolymorphismOptions` for every type.
+Set them on [\[YamlPolymorphic\]](cref:Meziantou.Framework.Yaml.Serialization.YamlPolymorphicAttribute) for one base type, or on [YamlSerializerOptions.PolymorphismOptions](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.PolymorphismOptions) for every type.
 
 ## Identify the type with a tag
 
-With the `Tag` style, the type is a YAML tag on the mapping:
+With the [Tag](cref:Meziantou.Framework.Yaml.YamlTypeDiscriminatorStyle.Tag) style, the type is a YAML tag on the mapping:
 
 <!-- ref:../../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlTagOnlyDerivedTypeTests.cs;region=YamlTypeDiscriminatorStyle_Tag;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -101,15 +101,15 @@ var options = new YamlSerializerOptions
 <!-- endref -->
 
 These registrations are merged with the attributes of the base type; the attributes win on conflicts. Assigning the
-`YamlPolymorphismOptions` to the serializer options copies the mappings and makes the instance read-only: changing them
+[YamlPolymorphismOptions](cref:Meziantou.Framework.Yaml.YamlPolymorphismOptions) to the serializer options copies the mappings and makes the instance read-only: changing them
 afterwards throws a `NotSupportedException`.
 
-With a [generated context](../04-SourceGeneration.md), declare these registrations with `[YamlDerivedTypeMapping]` on
+With a [generated context](../04-SourceGeneration.md), declare these registrations with [\[YamlDerivedTypeMapping\]](cref:Meziantou.Framework.Yaml.Serialization.YamlDerivedTypeMappingAttribute) on
 the context class instead: it is the form that the source generator understands.
 
 ## Generic base types
 
-`[YamlDerivedType]` accepts an open generic derived type on a generic base type. It is closed for each use of the
+[\[YamlDerivedType\]](cref:Meziantou.Framework.Yaml.Serialization.YamlDerivedTypeAttribute) accepts an open generic derived type on a generic base type. It is closed for each use of the
 base type:
 
 <!-- ref:../../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlPolymorphismTests.cs;region=YamlDerivedTypeAttribute_OpenGeneric;format=md-fenced-code-block;dedent=true -->
@@ -128,7 +128,7 @@ internal sealed class Dog<T> : Animal<T>  // Animal<string> uses Dog<string>, An
 
 ## Closed hierarchies
 
-A `closed` class lists its derived types itself, so they do not need `[YamlDerivedType]`:
+A `closed` class lists its derived types itself, so they do not need [\[YamlDerivedType\]](cref:Meziantou.Framework.Yaml.Serialization.YamlDerivedTypeAttribute):
 
 <!-- ref:../../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlTagOnlyDerivedTypeTests.cs;region=YamlPolymorphism_ClosedHierarchy;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -142,7 +142,7 @@ public sealed class Square : Shape { public double Side { get; set; } }
 ```
 <!-- endref -->
 
-Set `InferClosedTypePolymorphism` to register every derived type of a closed base type, with the name of the type as
+Set [InferClosedTypePolymorphism](cref:Meziantou.Framework.Yaml.YamlPolymorphismOptions.InferClosedTypePolymorphism) to register every derived type of a closed base type, with the name of the type as
 its discriminator:
 
 <!-- ref:../../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlTagOnlyDerivedTypeTests.cs;region=YamlPolymorphismOptions_InferClosedTypePolymorphism;format=md-fenced-code-block;dedent=true -->
@@ -170,7 +170,7 @@ public closed class Shape
 ```
 <!-- endref -->
 
-- A type with `[YamlDerivedType]` or runtime mappings registers those types only: nothing is inferred.
+- A type with [\[YamlDerivedType\]](cref:Meziantou.Framework.Yaml.Serialization.YamlDerivedTypeAttribute) or runtime mappings registers those types only: nothing is inferred.
 - A derived type that is itself `closed` brings its own derived types, so the most derived type of a fully closed
   hierarchy is the one written and read. A derived type that is not `closed` ends the inference.
 - Enabling the inference on a type that is not `closed` throws an `InvalidOperationException`.
@@ -180,7 +180,7 @@ public closed class Shape
 ## Choose the type from the content
 
 When the YAML has no discriminator, a type classifier can choose the derived type from the content, such as the keys
-of the mapping. Derive from `YamlTypeClassifierFactory`, and add it to `YamlSerializerOptions.TypeClassifiers`:
+of the mapping. Derive from [YamlTypeClassifierFactory](cref:Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierFactory), and add it to [YamlSerializerOptions.TypeClassifiers](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.TypeClassifiers):
 
 <!-- ref:../../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlPolymorphicClassifierTests.cs;region=YamlTypeClassifierFactory_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -210,11 +210,11 @@ internal sealed class ShapeClassifier : YamlTypeClassifierFactory
 ```
 <!-- endref -->
 
-- `CanClassify` receives a context whose `Kind` is `YamlTypeClassifierKind.PolymorphicType` for a base type, or
-  `Union` for a [C# union](09-Unions.md).
+- [CanClassify](cref:Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierFactory.CanClassify) receives a context whose [Kind](cref:Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierContext.Kind) is [YamlTypeClassifierKind.PolymorphicType](cref:Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierKind.PolymorphicType) for a base type, or
+  [Union](cref:Meziantou.Framework.Yaml.Serialization.YamlTypeClassifierKind.Union) for a [C# union](09-Unions.md).
 - The classifier reads a copy of the value, so it can move the reader freely.
 - It runs only when no discriminator or tag selected the type. Returning `null` falls back to the default derived type,
   or to the usual error.
 
-`YamlTypeClassification.Classify` and `ClassifyBufferedNode` expose the buffering that classifiers use, to inspect a
+[YamlTypeClassification.Classify](cref:Meziantou.Framework.Yaml.Serialization.YamlTypeClassification.Classify) and [ClassifyBufferedNode](cref:Meziantou.Framework.Yaml.Serialization.YamlTypeClassification.ClassifyBufferedNode) expose the buffering that classifiers use, to inspect a
 node and let the serializer read it afterwards.

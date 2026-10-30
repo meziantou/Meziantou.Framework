@@ -3,7 +3,7 @@ title: Custom rules
 description: Write a rule that enforces your own conventions, and run it with the built-in rules.
 ---
 
-A rule derives from `NuGetPackageValidationRule` and overrides `ExecuteAsync`. This one checks that the id of the
+A rule derives from [NuGetPackageValidationRule](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRule) and overrides [ExecuteAsync](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRule.ExecuteAsync). This one checks that the id of the
 package starts with a prefix:
 
 <!-- ref:../../tests/Meziantou.Framework.NuGetPackageValidation.Tests/NuGetPackageValidatorTests.cs;region=NuGetPackageValidation_CustomRuleDefinition;format=md-fenced-code-block;dedent=true -->
@@ -46,21 +46,21 @@ Assert.Equal("The package id 'Release_Author' does not start with 'Contoso.'", e
 
 ## The validation context
 
-`ExecuteAsync` receives a `NuGetPackageValidationContext`:
+[ExecuteAsync](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRule.ExecuteAsync) receives a [NuGetPackageValidationContext](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationContext):
 
 | Member | Use |
 | --- | --- |
-| `Package` | The reader of the package: its metadata (`NuspecReader`), its files and their content |
-| `SymbolPackage` | The reader of the `.snupkg` file next to the package, or `null` when there is none |
-| `PackagePath` | The path of the package |
-| `SymbolServers` | The symbol servers of the options, as URLs that end with `/` |
-| `CancellationToken` | The token passed to `ValidateAsync` |
-| `ReportError` | Reports an error, with an optional help text and file name |
-| `IsRuleExcluded` | Whether an error code is excluded, to skip expensive work whose errors would be ignored |
+| [Package](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationContext.Package) | The reader of the package: its metadata (`NuspecReader`), its files and their content |
+| [SymbolPackage](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationContext.SymbolPackage) | The reader of the `.snupkg` file next to the package, or `null` when there is none |
+| [PackagePath](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationContext.PackagePath) | The path of the package |
+| [SymbolServers](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationContext.SymbolServers) | The symbol servers of the options, as URLs that end with `/` |
+| [CancellationToken](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationContext.CancellationToken) | The token passed to [ValidateAsync](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidator.ValidateAsync) |
+| [ReportError](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationContext.ReportError) | Reports an error, with an optional help text and file name |
+| [IsRuleExcluded](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationContext.IsRuleExcluded) | Whether an error code is excluded, to skip expensive work whose errors would be ignored |
 
-- `ReportError` ignores the excluded codes, so a rule does not have to check them before reporting.
+- [ReportError](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationContext.ReportError) ignores the excluded codes, so a rule does not have to check them before reporting.
 - Use codes that the built-in rules do not use. The built-in codes are below 200: see [Error codes](04-ErrorCodes.md).
-- The rules run one after the other, in the order of the `Rules` set, which is not guaranteed. Do not make a rule depend
+- The rules run one after the other, in the order of the [Rules](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationOptions.Rules) set, which is not guaranteed. Do not make a rule depend
   on another one.
 - The package and its symbol package are disposed when the validation ends: do not keep them.
 

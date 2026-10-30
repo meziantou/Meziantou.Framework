@@ -5,14 +5,14 @@ description: Load hosts files, domain lists and Adblock-style lists, combine the
 
 ## Formats
 
-`AddFromList` and `DnsFilterListReader` take the text of a list and a `DnsFilterListFormat`:
+[AddFromList](cref:Meziantou.Framework.DnsFilter.DnsFilterRuleSet.AddFromList) and [DnsFilterListReader](cref:Meziantou.Framework.DnsFilter.DnsFilterListReader) take the text of a list and a [DnsFilterListFormat](cref:Meziantou.Framework.DnsFilter.DnsFilterListFormat):
 
 | Format | Lines | Rules |
 | --- | --- | --- |
-| `Hosts` | `0.0.0.0 ads.example.com`: an IP address followed by one or more names | Blocks each name exactly, not its subdomains |
-| `DomainsOnly` | `ads.example.com`: one name per line | Blocks each name exactly, not its subdomains |
-| `AdBlock` | `||ads.example.com^`, `@@||safe.example.com^`, `/regex/`, with `$` modifiers | See [Rule syntax](03-RuleSyntax.md) |
-| `AutoDetect` | Any of the above | The default: the format with the most matching lines wins |
+| [Hosts](cref:Meziantou.Framework.DnsFilter.DnsFilterListFormat.Hosts) | `0.0.0.0 ads.example.com`: an IP address followed by one or more names | Blocks each name exactly, not its subdomains |
+| [DomainsOnly](cref:Meziantou.Framework.DnsFilter.DnsFilterListFormat.DomainsOnly) | `ads.example.com`: one name per line | Blocks each name exactly, not its subdomains |
+| [AdBlock](cref:Meziantou.Framework.DnsFilter.DnsFilterListFormat.AdBlock) | `||ads.example.com^`, `@@||safe.example.com^`, `/regex/`, with `$` modifiers | See [Rule syntax](03-RuleSyntax.md) |
+| [AutoDetect](cref:Meziantou.Framework.DnsFilter.DnsFilterListFormat.AutoDetect) | Any of the above | The default: the format with the most matching lines wins |
 
 - In a hosts file, the IP address does not matter: every entry is a block, as if it were `0.0.0.0`. To answer with an
   address, use a `$dnsrewrite` rule. See [Rewrites](05-Rewrites.md).
@@ -46,13 +46,13 @@ Assert.Equal(DnsFilterAction.Block, engine.Evaluate("malware.example.net").Actio
 ```
 <!-- endref -->
 
-`AddFromList` also takes a `TextReader`, to read a large list from a file or a stream without loading it as one string.
+[AddFromList](cref:Meziantou.Framework.DnsFilter.DnsFilterRuleSet.AddFromList) also takes a `TextReader`, to read a large list from a file or a stream without loading it as one string.
 The engine applies the rules of all the lists together: an exception rule of one list can allow a domain that another
 list blocks. See [Priorities](03-RuleSyntax.md#priorities).
 
 ## See the lines that were skipped
 
-A line that does not become a rule is reported, instead of silently producing fewer rules. `AddFromList` returns the
+A line that does not become a rule is reported, instead of silently producing fewer rules. [AddFromList](cref:Meziantou.Framework.DnsFilter.DnsFilterRuleSet.AddFromList) returns the
 diagnostics:
 
 <!-- ref:../../../tests/Meziantou.Framework.DnsFilter.Tests/DnsFilterEngineTests.cs;region=DnsFilter_Diagnostics;format=md-fenced-code-block;dedent=true -->
@@ -74,17 +74,17 @@ Parsing is strict: a rule with a modifier the library does not support, or a mod
 rather than applied without the modifier. Applying `||x^$dnstype=SVCB` without its modifier would block every record
 type of the domain, and `@@||x^$script` would become an exception for the whole domain.
 
-Each `DnsFilterParseDiagnostic` has the `LineNumber`, the `Line`, the `Error` and a `Detail`:
+Each [DnsFilterParseDiagnostic](cref:Meziantou.Framework.DnsFilter.DnsFilterParseDiagnostic) has the [LineNumber](cref:Meziantou.Framework.DnsFilter.DnsFilterParseDiagnostic.LineNumber), the [Line](cref:Meziantou.Framework.DnsFilter.DnsFilterParseDiagnostic.Line), the [Error](cref:Meziantou.Framework.DnsFilter.DnsFilterParseDiagnostic.Error) and a [Detail](cref:Meziantou.Framework.DnsFilter.DnsFilterParseDiagnostic.Detail):
 
-| `DnsFilterParseError` | Cause |
+| [DnsFilterParseError](cref:Meziantou.Framework.DnsFilter.DnsFilterParseError) | Cause |
 | --- | --- |
-| `UnsupportedModifier` | The rule has a modifier the library does not implement, such as `$third-party` |
-| `InvalidModifierValue` | A modifier value cannot be parsed, such as `$dnstype=FOO` |
-| `InvalidRegex` | A `/regex/` rule is not a valid regular expression |
-| `InvalidPattern` | The line is not a valid name, hosts entry or pattern |
+| [UnsupportedModifier](cref:Meziantou.Framework.DnsFilter.DnsFilterParseError.UnsupportedModifier) | The rule has a modifier the library does not implement, such as `$third-party` |
+| [InvalidModifierValue](cref:Meziantou.Framework.DnsFilter.DnsFilterParseError.InvalidModifierValue) | A modifier value cannot be parsed, such as `$dnstype=FOO` |
+| [InvalidRegex](cref:Meziantou.Framework.DnsFilter.DnsFilterParseError.InvalidRegex) | A `/regex/` rule is not a valid regular expression |
+| [InvalidPattern](cref:Meziantou.Framework.DnsFilter.DnsFilterParseError.InvalidPattern) | The line is not a valid name, hosts entry or pattern |
 
-`DnsFilterListReader.ParseWithDiagnostics` parses a list without a rule set, and also returns the format that
-auto-detection chose. `DnsFilterListReader.Parse` returns the rules only:
+[DnsFilterListReader.ParseWithDiagnostics](cref:Meziantou.Framework.DnsFilter.DnsFilterListReader.ParseWithDiagnostics) parses a list without a rule set, and also returns the format that
+auto-detection chose. [DnsFilterListReader.Parse](cref:Meziantou.Framework.DnsFilter.DnsFilterListReader.Parse) returns the rules only:
 
 <!-- ref:../../../tests/Meziantou.Framework.DnsFilter.Tests/DnsFilterEngineTests.cs;region=DnsFilter_ParseWithDiagnostics;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -114,7 +114,7 @@ ruleSet.AddRange(result.Rules);
 
 ## Add rules from code
 
-`DnsFilterRule.CreateBlock` and `DnsFilterRule.CreateAllow` create rules without list text, for instance from a
+[DnsFilterRule.CreateBlock](cref:Meziantou.Framework.DnsFilter.DnsFilterRule.CreateBlock) and [DnsFilterRule.CreateAllow](cref:Meziantou.Framework.DnsFilter.DnsFilterRule.CreateAllow) create rules without list text, for instance from a
 database or a user setting:
 
 <!-- ref:../../../tests/Meziantou.Framework.DnsFilter.Tests/DnsFilterEngineTests.cs;region=DnsFilter_BuildRules;format=md-fenced-code-block;dedent=true -->
@@ -133,7 +133,7 @@ Assert.Equal(DnsFilterAction.Allow, engine.Evaluate("safe.ads.example.com").Acti
 
 ## Reload the rules
 
-Lists change. Build a new rule set and pass it to `Reload`: the engine swaps the rules atomically, so the queries being
+Lists change. Build a new rule set and pass it to [Reload](cref:Meziantou.Framework.DnsFilter.DnsFilterEngine.Reload): the engine swaps the rules atomically, so the queries being
 evaluated see either the old rules or the new ones, never a mix:
 
 <!-- ref:../../../tests/Meziantou.Framework.DnsFilter.Tests/DnsFilterEngineTests.cs;region=DnsFilter_Reload;format=md-fenced-code-block;dedent=true -->
@@ -156,4 +156,4 @@ Assert.Equal(DnsFilterAction.Block, engine.Evaluate("tracking.example.org").Acti
 <!-- endref -->
 
 Building the engine indexes the rules, which takes time for lists of hundreds of thousands of lines: build the new rule
-set and call `Reload` in the background, not on the path of a query.
+set and call [Reload](cref:Meziantou.Framework.DnsFilter.DnsFilterEngine.Reload) in the background, not on the path of a query.

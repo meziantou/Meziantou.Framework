@@ -9,9 +9,9 @@ parses the query, the values and the dates, and combines your handlers with `AND
 
 ## What you can do with it
 
-- **Filter objects in memory** with `QueryBuilder<T>`: a query becomes a predicate you evaluate on each object. See
+- **Filter objects in memory** with [QueryBuilder\<T\>](cref:Meziantou.Framework.SimpleQueryLanguage.QueryBuilder{T}): a query becomes a predicate you evaluate on each object. See
   [In-memory queries](04-InMemoryQueries.md).
-- **Filter database queries** with `ExpressionQueryBuilder<T>`: a query becomes an expression tree that Entity Framework
+- **Filter database queries** with [ExpressionQueryBuilder\<T\>](cref:Meziantou.Framework.SimpleQueryLanguage.ExpressionQueryBuilder{T}): a query becomes an expression tree that Entity Framework
   Core, or another LINQ provider, translates to SQL. See [Database queries](05-DatabaseQueries.md).
 - **Give users a familiar syntax**: free text, key-value terms, comparisons, ranges, `AND`, `OR`, `NOT`, `-` and
   parentheses. See [Query syntax](03-QuerySyntax.md).
@@ -26,14 +26,14 @@ parses the query once and returns an object you reuse:
 
 | Builder | Handlers | Result | Use it with |
 | --- | --- | --- | --- |
-| `QueryBuilder<T>` | Delegates | `Query<T>`, with `Evaluate(T)` | Objects in memory. |
-| `ExpressionQueryBuilder<T>` | Expressions | `ExpressionQuery<T>`, with `Apply(IQueryable<T>)` | Entity Framework Core and other `IQueryable<T>`. |
+| [QueryBuilder\<T\>](cref:Meziantou.Framework.SimpleQueryLanguage.QueryBuilder{T}) | Delegates | [Query\<T\>](cref:Meziantou.Framework.SimpleQueryLanguage.Query{T}), with `Evaluate(T)` | Objects in memory. |
+| [ExpressionQueryBuilder\<T\>](cref:Meziantou.Framework.SimpleQueryLanguage.ExpressionQueryBuilder{T}) | Expressions | [ExpressionQuery\<T\>](cref:Meziantou.Framework.SimpleQueryLanguage.ExpressionQuery{T}), with `Apply(IQueryable<T>)` | Entity Framework Core and other `IQueryable<T>`. |
 
 Both builders read the same syntax.
 
 ## Namespace
 
-The builders and the queries are in the [Meziantou.Framework.SimpleQueryLanguage](cref:Meziantou.Framework.SimpleQueryLanguage) namespace. `RangeSyntax<T>`, the
+The builders and the queries are in the [Meziantou.Framework.SimpleQueryLanguage](cref:Meziantou.Framework.SimpleQueryLanguage) namespace. [RangeSyntax\<T\>](cref:Meziantou.Framework.SimpleQueryLanguage.Ranges.RangeSyntax{T}), the
 value of a range handler, is in [Meziantou.Framework.SimpleQueryLanguage.Ranges](cref:Meziantou.Framework.SimpleQueryLanguage.Ranges).
 
 ## Next steps

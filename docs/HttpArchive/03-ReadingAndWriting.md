@@ -5,7 +5,7 @@ description: Parse a HAR document from a string or a stream, create one, and wri
 
 ## Read an archive
 
-`HarDocument` reads JSON from three sources:
+[HarDocument](cref:Meziantou.Framework.HttpArchive.HarDocument) reads JSON from three sources:
 
 | Method | Source |
 | --- | --- |
@@ -18,7 +18,7 @@ Property names are matched case-insensitively. Invalid JSON throws a `JsonExcept
 
 ## Create and write an archive
 
-Build the model with object initializers, then write it with `WriteTo` or `WriteToAsync`, to any stream:
+Build the model with object initializers, then write it with [WriteTo](cref:Meziantou.Framework.HttpArchive.HarDocument.WriteTo) or [WriteToAsync](cref:Meziantou.Framework.HttpArchive.HarDocument.WriteToAsync), to any stream:
 
 <!-- ref:../../tests/Meziantou.Framework.HttpArchive.Tests/HarDocumentTests.cs;region=HarDocument_CreateAndWrite;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -57,7 +57,7 @@ await document.WriteToAsync(stream, indented: true);
 ```
 <!-- endref -->
 
-To write to a file, pass the `FileStream` returned by `File.Create("output.har")`. `ToJsonString` returns the JSON as a
+To write to a file, pass the `FileStream` returned by `File.Create("output.har")`. [ToJsonString](cref:Meziantou.Framework.HttpArchive.HarDocument.ToJsonString) returns the JSON as a
 string:
 
 <!-- ref:../../tests/Meziantou.Framework.HttpArchive.Tests/HarDocumentTests.cs;region=HarDocument_ToJsonString;format=md-fenced-code-block;dedent=true -->
@@ -80,9 +80,9 @@ Assert.Equal(204, Assert.Single(copy.Log.Entries!).Response!.Status);
 <!-- endref -->
 
 - `indented: true` formats the JSON on several lines. The default is compact JSON.
-- A new `HarDocument` already has a `Log` with `Version` `1.2`, a `Creator` and an empty `Entries` list, so you can
+- A new [HarDocument](cref:Meziantou.Framework.HttpArchive.HarDocument) already has a [Log](cref:Meziantou.Framework.HttpArchive.HarDocument.Log) with [Version](cref:Meziantou.Framework.HttpArchive.HarLog.Version) `1.2`, a [Creator](cref:Meziantou.Framework.HttpArchive.HarLog.Creator) and an empty [Entries](cref:Meziantou.Framework.HttpArchive.HarLog.Entries) list, so you can
   add entries to it.
-- A new `HarEntry` has empty `Request`, `Response`, `Cache` and `Timings` objects; set the values you know.
+- A new [HarEntry](cref:Meziantou.Framework.HttpArchive.HarEntry) has empty [Request](cref:Meziantou.Framework.HttpArchive.HarEntry.Request), [Response](cref:Meziantou.Framework.HttpArchive.HarEntry.Response), [Cache](cref:Meziantou.Framework.HttpArchive.HarEntry.Cache) and [Timings](cref:Meziantou.Framework.HttpArchive.HarEntry.Timings) objects; set the values you know.
 - A property whose value is `null` is not written.
 
 ## Custom fields

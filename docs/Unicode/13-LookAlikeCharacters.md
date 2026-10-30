@@ -5,11 +5,11 @@ description: Detect user names and domain names that imitate others with charact
 
 Many characters look like others: the Cyrillic `а` looks like the Latin `a`. An attacker can register `раураl`,
 written with Cyrillic letters, to pass for `paypal`. [UTS #39](https://unicode.org/reports/tr39/) defines how to detect
-such names, and `Unicode` implements it.
+such names, and [Unicode](cref:Meziantou.Framework.Unicode) implements it.
 
 ## Detect names that look alike
 
-`Unicode.AreConfusable` tells whether two strings look alike:
+[Unicode.AreConfusable](cref:Meziantou.Framework.Unicode.AreConfusable) tells whether two strings look alike:
 
 <!-- ref:../../tests/Meziantou.Framework.Unicode.Tests/UnicodeTests.cs;region=Unicode_AreConfusable;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -20,7 +20,7 @@ Assert.False(Unicode.AreConfusable("paypal", "example"));
 <!-- endref -->
 
 To find the collisions in a set of names, such as the user names of an application, store the skeleton of each name
-and look new names up by their skeleton. `Unicode.GetConfusableSkeleton` gives it:
+and look new names up by their skeleton. [Unicode.GetConfusableSkeleton](cref:Meziantou.Framework.Unicode.GetConfusableSkeleton) gives it:
 
 <!-- ref:../../tests/Meziantou.Framework.Unicode.Tests/UnicodeTests.cs;region=Unicode_GetConfusableSkeleton;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -40,8 +40,8 @@ Assert.Equal(Unicode.GetConfusableSkeleton("paypal"), skeleton);
 
 ## Detect mixed scripts
 
-A spoofed name usually mixes writing systems. `Unicode.IsMixedScript` applies the resolved script set rules of UTS #39,
-and `Unicode.IsSingleScript` is its opposite:
+A spoofed name usually mixes writing systems. [Unicode.IsMixedScript](cref:Meziantou.Framework.Unicode.IsMixedScript) applies the resolved script set rules of UTS #39,
+and [Unicode.IsSingleScript](cref:Meziantou.Framework.Unicode.IsSingleScript) is its opposite:
 
 <!-- ref:../../tests/Meziantou.Framework.Unicode.Tests/UnicodeTests.cs;region=Unicode_IsMixedScript;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -58,8 +58,8 @@ Assert.False(Unicode.IsMixedScript("user123")); // digits match any script
 
 ## Replace look-alike characters
 
-`Unicode.ReplaceConfusablesCharacters` replaces each character that has a look-alike by its prototype, and
-`Unicode.IsConfusableCharacter` tells whether a character has one:
+[Unicode.ReplaceConfusablesCharacters](cref:Meziantou.Framework.Unicode.ReplaceConfusablesCharacters) replaces each character that has a look-alike by its prototype, and
+[Unicode.IsConfusableCharacter](cref:Meziantou.Framework.Unicode.IsConfusableCharacter) tells whether a character has one:
 
 <!-- ref:../../tests/Meziantou.Framework.Unicode.Tests/UnicodeTests.cs;region=Unicode_ReplaceConfusablesCharacters;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -70,5 +70,5 @@ Assert.Equal("paypal", normalized);
 ```
 <!-- endref -->
 
-To compare strings, prefer `AreConfusable`: it also normalizes the strings, so that a composed and a decomposed accent
+To compare strings, prefer [AreConfusable](cref:Meziantou.Framework.Unicode.AreConfusable): it also normalizes the strings, so that a composed and a decomposed accent
 compare equal.

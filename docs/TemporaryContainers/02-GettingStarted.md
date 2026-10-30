@@ -33,10 +33,10 @@ var connectionString = container.GetConnectionString();
 ```
 <!-- endref -->
 
-- `CreatePostgreSql` returns a definition that is already configured: the image, the port, a random password, and the
+- [CreatePostgreSql](cref:Meziantou.Framework.TemporaryContainers.ContainerDefinitionPostgreSqlExtensions.CreatePostgreSql) returns a definition that is already configured: the image, the port, a random password, and the
   checks that tell when PostgreSQL accepts connections.
-- `CreateContainer` creates the object that manages the container; nothing runs yet.
-- `StartAsync` pulls the image when it is not on the machine, creates and starts the container, and returns once the
+- [CreateContainer](cref:Meziantou.Framework.TemporaryContainers.ContainerDefinition.CreateContainer) creates the object that manages the container; nothing runs yet.
+- [StartAsync](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.StartAsync) pulls the image when it is not on the machine, creates and starts the container, and returns once the
   server is ready.
 - The port of the container is published on a random free port of `127.0.0.1`, so tests that run at the same time do
   not collide. The connection string contains it.
@@ -46,7 +46,7 @@ The other ready-made definitions are described in [Databases](03-Databases.md).
 
 ## Run your own image
 
-Any image works. Describe the container with a `ContainerDefinition`, then create and start it:
+Any image works. Describe the container with a [ContainerDefinition](cref:Meziantou.Framework.TemporaryContainers.ContainerDefinition), then create and start it:
 
 <!-- ref:../../samples/Meziantou.Framework.TemporaryContainers.Samples/ReadmeExamples.cs;region=TemporaryContainers_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -63,11 +63,11 @@ var hostPort = container.GetMappedPort(6379);
 ```
 <!-- endref -->
 
-- `Ports.Add` publishes a port of the container; `GetMappedPort` returns the host port it was given.
-- `WaitStrategies.Add` tells `StartAsync` what "ready" means. Without one, `StartAsync` returns as soon as the container
+- `Ports.Add` publishes a port of the container; [GetMappedPort](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.GetMappedPort) returns the host port it was given.
+- `WaitStrategies.Add` tells [StartAsync](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.StartAsync) what "ready" means. Without one, [StartAsync](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.StartAsync) returns as soon as the container
   is started, which is usually before the service inside it accepts connections. See
   [Wait strategies](04-Configuration/06-WaitStrategies.md).
-- `CreateContainer` copies the definition: changing `definition` afterward does not change the container.
+- [CreateContainer](cref:Meziantou.Framework.TemporaryContainers.ContainerDefinition.CreateContainer) copies the definition: changing `definition` afterward does not change the container.
 
 ## Next steps
 

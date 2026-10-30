@@ -8,19 +8,19 @@ needs that come up regularly.
 
 | Collection | Use it to | Page |
 | --- | --- | --- |
-| `CircularBuffer<T>` | Keep a fixed number of items, optionally overwriting the oldest ones | [Queues and buffers](02-QueuesAndBuffers.md) |
-| `DoubleEndedQueue<T>` | Add and remove items at both ends, and read them by index | [Queues and buffers](02-QueuesAndBuffers.md) |
-| `LimitList<T>` | Keep the most recent items, such as a list of recent files | [Queues and buffers](02-QueuesAndBuffers.md) |
-| `AppendOnlyCollection<T>` | Add items from several threads while others read them | [Queues and buffers](02-QueuesAndBuffers.md) |
-| `SortedList<T>` | Keep items sorted, duplicates included, with access by index | [Sorted collections](03-SortedCollections.md) |
-| `SkipList<T>` | Keep unique items sorted | [Sorted collections](03-SortedCollections.md) |
-| `BTree<T>` | Keep unique items sorted in a B-tree | [Sorted collections](03-SortedCollections.md) |
-| `MultiValueDictionary<TKey, TValue>` | Associate several values with a key | [Dictionaries and tries](04-DictionariesAndTries.md) |
-| `Trie<TValue>` | Find the keys that start with a prefix | [Dictionaries and tries](04-DictionariesAndTries.md) |
-| `PruningRadixTree` | Suggest the most frequent completions of a prefix | [Dictionaries and tries](04-DictionariesAndTries.md) |
-| `UnsafeListDictionary<TKey, TValue>` | Build a list of key-value pairs without checking for duplicates | [Dictionaries and tries](04-DictionariesAndTries.md) |
-| `ImmutableEquatableArray<T>`, `ImmutableEquatableSet<T>`, `ImmutableEquatableDictionary<TKey, TValue>` | Compare collections by their content | [Equatable collections](05-EquatableCollections.md) |
+| [CircularBuffer\<T\>](cref:Meziantou.Framework.Collections.CircularBuffer{T}) | Keep a fixed number of items, optionally overwriting the oldest ones | [Queues and buffers](02-QueuesAndBuffers.md) |
+| [DoubleEndedQueue\<T\>](cref:Meziantou.Framework.Collections.DoubleEndedQueue{T}) | Add and remove items at both ends, and read them by index | [Queues and buffers](02-QueuesAndBuffers.md) |
+| [LimitList\<T\>](cref:Meziantou.Framework.Collections.LimitList{T}) | Keep the most recent items, such as a list of recent files | [Queues and buffers](02-QueuesAndBuffers.md) |
+| [AppendOnlyCollection\<T\>](cref:Meziantou.Framework.Collections.AppendOnlyCollection{T}) | Add items from several threads while others read them | [Queues and buffers](02-QueuesAndBuffers.md) |
+| [SortedList\<T\>](cref:Meziantou.Framework.Collections.SortedList{T}) | Keep items sorted, duplicates included, with access by index | [Sorted collections](03-SortedCollections.md) |
+| [SkipList\<T\>](cref:Meziantou.Framework.Collections.SkipList{T}) | Keep unique items sorted | [Sorted collections](03-SortedCollections.md) |
+| [BTree\<T\>](cref:Meziantou.Framework.Collections.BTree{T}) | Keep unique items sorted in a B-tree | [Sorted collections](03-SortedCollections.md) |
+| [MultiValueDictionary\<TKey, TValue\>](cref:Meziantou.Framework.Collections.MultiValueDictionary{TKey,TValue}) | Associate several values with a key | [Dictionaries and tries](04-DictionariesAndTries.md) |
+| [Trie\<TValue\>](cref:Meziantou.Framework.Collections.Trie{TValue}) | Find the keys that start with a prefix | [Dictionaries and tries](04-DictionariesAndTries.md) |
+| [PruningRadixTree](cref:Meziantou.Framework.Collections.PruningRadixTree) | Suggest the most frequent completions of a prefix | [Dictionaries and tries](04-DictionariesAndTries.md) |
+| [UnsafeListDictionary\<TKey, TValue\>](cref:Meziantou.Framework.Collections.UnsafeListDictionary{TKey,TValue}) | Build a list of key-value pairs without checking for duplicates | [Dictionaries and tries](04-DictionariesAndTries.md) |
+| [ImmutableEquatableArray\<T\>](cref:Meziantou.Framework.Collections.ImmutableEquatableArray{T}), [ImmutableEquatableSet\<T\>](cref:Meziantou.Framework.Collections.ImmutableEquatableSet{T}), [ImmutableEquatableDictionary\<TKey, TValue\>](cref:Meziantou.Framework.Collections.ImmutableEquatableDictionary{TKey,TValue}) | Compare collections by their content | [Equatable collections](05-EquatableCollections.md) |
 
-The collections are not thread-safe, except `AppendOnlyCollection<T>` and the immutable equatable collections. For
+The collections are not thread-safe, except [AppendOnlyCollection\<T\>](cref:Meziantou.Framework.Collections.AppendOnlyCollection{T}) and the immutable equatable collections. For
 thread-safe collections, see [concurrent collections](../../Threading/06-ConcurrentCollections.md) in
 `Meziantou.Framework.Threading`.

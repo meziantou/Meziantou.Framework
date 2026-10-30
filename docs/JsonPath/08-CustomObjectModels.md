@@ -4,12 +4,12 @@ description: Evaluate JSONPath queries on your own tree of values by implementin
 ---
 
 To query a tree that is not a `System.Text.Json` type, such as the model of a YAML or TOML parser or your own
-configuration objects, implement a `JsonPathNavigator<TValue>`. The query runs on your values directly: there is no
+configuration objects, implement a [JsonPathNavigator\<TValue\>](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}). The query runs on your values directly: there is no
 conversion to JSON first.
 
 ## Evaluate a query on your model
 
-Pass the root value and the navigator to `Evaluate` or `EvaluateValue`:
+Pass the root value and the navigator to [Evaluate](cref:Meziantou.Framework.Json.JsonPath.Evaluate) or [EvaluateValue](cref:Meziantou.Framework.Json.JsonPath.EvaluateValue):
 
 <!-- ref:../../tests/Meziantou.Framework.JsonPath.Tests/JsonPathEvaluateTests.cs;region=JsonPath_CustomNavigator;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -34,7 +34,7 @@ Assert.Equal(["$['items'][0]: a"], matches);
 ```
 <!-- endref -->
 
-The result is a `JsonPathResult<TValue>`: each match has the `Value` of your type and its normalized `Path`. Every
+The result is a [JsonPathResult\<TValue\>](cref:Meziantou.Framework.Json.JsonPathResult{TValue}): each match has the [Value](cref:Meziantou.Framework.Json.JsonPathMatch{TValue}.Value) of your type and its normalized [Path](cref:Meziantou.Framework.Json.JsonPathMatch{TValue}.Path). Every
 part of the syntax works, filters and functions included, and the evaluation modes apply as for JSON.
 
 ## Write the navigator
@@ -126,22 +126,22 @@ A navigator answers the questions the evaluator asks about a value:
 
 | Method | Returns |
 | --- | --- |
-| `GetKind` | Whether the value is an object, an array, a string, a number, a Boolean or `null` (`JsonPathNodeKind`) |
-| `GetProperties` | The members of an object, as `JsonPathProperty<TValue>` (name and value), in their order |
-| `TryGetPropertyValue` | The value of one member of an object, and whether the member exists |
-| `GetArrayLength` | The number of elements of an array |
-| `TryGetElement` | The element at a zero-based index, and whether it exists |
-| `TryGetString`, `TryGetNumber`, `TryGetBoolean` | The scalar value, and whether the value has that type |
+| [GetKind](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.GetKind) | Whether the value is an object, an array, a string, a number, a Boolean or `null` ([JsonPathNodeKind](cref:Meziantou.Framework.Json.JsonPathNodeKind)) |
+| [GetProperties](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.GetProperties) | The members of an object, as [JsonPathProperty\<TValue\>](cref:Meziantou.Framework.Json.JsonPathProperty{TValue}) (name and value), in their order |
+| [TryGetPropertyValue](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetPropertyValue) | The value of one member of an object, and whether the member exists |
+| [GetArrayLength](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.GetArrayLength) | The number of elements of an array |
+| [TryGetElement](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetElement) | The element at a zero-based index, and whether it exists |
+| [TryGetString](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetString), [TryGetNumber](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetNumber), [TryGetBoolean](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetBoolean) | The scalar value, and whether the value has that type |
 
 ## Rules for a navigator
 
-- **Represent JSON `null` your way.** `null` or a dedicated value of your model can stand for JSON `null`: `GetKind`
+- **Represent JSON `null` your way.** `null` or a dedicated value of your model can stand for JSON `null`: [GetKind](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.GetKind)
   says which values are `null`. The matches then hold that value.
-- **Return `false` for what does not exist.** `TryGetPropertyValue` and `TryGetElement` return `false` for a missing
+- **Return `false` for what does not exist.** [TryGetPropertyValue](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetPropertyValue) and [TryGetElement](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetElement) return `false` for a missing
   member or an index outside the array; this is what lax mode turns into "no match" and strict mode into an exception.
-- **Keep the order stable.** The order of `GetProperties` is the order of the wildcard, descendant and filter results.
-- **Numbers are `double`.** `TryGetNumber` returns a `double`, so filters compare your numbers as `double` values; see
+- **Keep the order stable.** The order of [GetProperties](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.GetProperties) is the order of the wildcard, descendant and filter results.
+- **Numbers are `double`.** [TryGetNumber](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetNumber) returns a `double`, so filters compare your numbers as `double` values; see
   [Number precision](09-Limitations.md#number-precision).
 - **Expose a tree, not a graph.** A cycle, such as a back-reference to the parent, is reported as a depth error
-  (`JsonPathEvaluationException`) when a descendant segment or a comparison walks it, instead of looping forever.
-- **Make `TryGetElement` fast.** The evaluator reads elements by index: back arrays with a list or an array.
+  ([JsonPathEvaluationException](cref:Meziantou.Framework.Json.JsonPathEvaluationException)) when a descendant segment or a comparison walks it, instead of looping forever.
+- **Make [TryGetElement](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetElement) fast.** The evaluator reads elements by index: back arrays with a list or an array.

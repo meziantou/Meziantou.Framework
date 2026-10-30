@@ -376,6 +376,39 @@ public sealed class JpegLosslessDecoderTests
     }
 
     [Fact]
+    public void LenientDecodingRepairsRestartNumbersAndAMissingEndOfImageMarker()
+    {
+        // libjpeg-turbo 3.1 and FFmpeg decode a lossless file whose restart marker is 3 to 5 after the expected one, or that
+        // has no EOI marker, to the pixels of the file (Apple ImageIO does not read lossless files reliably)
+        var image = JpegLosslessTestImage.CreateRandom(12, 7, Layouts["4:2:0"], 8, seed: 9);
+        var expected = image.GetExpectedPixels();
+        var data = image.Encode(new JpegLosslessTestOptions { Predictor = 4, RestartRows = 1 });
+        var restarts = FindRestartMarkers(data);
+        var configuration = new ImageConfiguration { DecodingStrictness = DecodingStrictness.Lenient };
+        var lenient = new ImageDecodeOptions { Configuration = configuration };
+        var garbled = data.ToArray();
+        garbled[restarts[1] + 1] = 0xD5;
+        Assert.Contains("out of sequence", Assert.Throws<InvalidImageContentException>(() => Image.Load(garbled)).Message, StringComparison.Ordinal);
+        using (var decoded = Image.Load(garbled, lenient))
+        {
+            AssertPixels(expected, decoded, "RST5 for RST1");
+        }
+
+        garbled[restarts[1] + 1] = 0xD3;
+        Assert.Contains("out of sequence", Assert.Throws<InvalidImageContentException>(() => Image.Load(garbled, lenient)).Message, StringComparison.Ordinal);
+
+        var cut = data[..^2];
+        Assert.StartsWith("The JPEG data is truncated", Assert.Throws<InvalidImageContentException>(() => Image.Load(cut)).Message, StringComparison.Ordinal);
+        using (var decoded = Image.Load(cut, lenient))
+        {
+            AssertPixels(expected, decoded, "without EOI marker");
+        }
+
+        Assert.Equal(12, Image.Identify(cut, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan, Configuration = configuration }).Width);
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(data.AsSpan(..restarts[^1]), lenient));
+    }
+
+    [Fact]
     public void TruncatedInputsAreInvalidAtEveryLength()
     {
         var image = JpegLosslessTestImage.CreateRandom(11, 9, Layouts["4:2:0"], 12, seed: 4);

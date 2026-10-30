@@ -10,8 +10,8 @@ The pages of this group cover the two kinds of code that a realm runs, and what 
 - A **module** is parsed by `realm.ParseModule`, then loaded, linked and evaluated. Its `import` declarations go
   through the module loader of the engine, and its variables are its own.
 
-In both cases, an uncaught error is thrown to .NET as a `JsException`, and a script stopped by a limit throws a
-`JsTerminationException`.
+In both cases, an uncaught error is thrown to .NET as a [JsException](cref:Meziantou.Framework.JavaScriptEngine.JsException), and a script stopped by a limit throws a
+[JsTerminationException](cref:Meziantou.Framework.JavaScriptEngine.JsTerminationException).
 
 ## Pages of this group
 

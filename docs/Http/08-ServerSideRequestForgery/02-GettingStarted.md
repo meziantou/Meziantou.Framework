@@ -13,7 +13,7 @@ The examples omit the `using` directives: they need `using Meziantou.Framework.H
 
 ## Protect an HttpClient
 
-Wrap a `SocketsHttpHandler` in a `ServerSideRequestForgeryClientHandler`, and send the requests that target
+Wrap a `SocketsHttpHandler` in a [ServerSideRequestForgeryClientHandler](cref:Meziantou.Framework.Http.ServerSideRequestForgery.ServerSideRequestForgeryClientHandler), and send the requests that target
 user-supplied URLs through it:
 
 <!-- ref:../../../tests/Meziantou.Framework.Http.ServerSideRequestForgery.Tests/ServerSideRequestForgeryClientHandlerTests.cs;region=ServerSideRequestForgeryClientHandler_Example;format=md-fenced-code-block;dedent=true -->
@@ -39,7 +39,7 @@ Assert.IsType<ServerSideRequestForgeryException>(exception.InnerException);
 ## Catch a rejected request
 
 A rejected connection surfaces as an `HttpRequestException` whose `InnerException` is a
-`ServerSideRequestForgeryException`, because the runtime wraps what the connection callback throws:
+[ServerSideRequestForgeryException](cref:Meziantou.Framework.Http.ServerSideRequestForgery.ServerSideRequestForgeryException), because the runtime wraps what the connection callback throws:
 
 <!-- ref:../../../tests/Meziantou.Framework.Http.ServerSideRequestForgery.Tests/ServerSideRequestForgeryConnectPipelineTests.cs;region=ServerSideRequestForgery_CatchRejection;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -59,11 +59,11 @@ Assert.NotNull(rejection);
 <!-- endref -->
 
 An HTTP/3 request is rejected before it reaches the `SocketsHttpHandler`, so that one arrives as a
-`ServerSideRequestForgeryException` directly. See [Handling rejections](04-HandlingRejections.md).
+[ServerSideRequestForgeryException](cref:Meziantou.Framework.Http.ServerSideRequestForgery.ServerSideRequestForgeryException) directly. See [Handling rejections](04-HandlingRejections.md).
 
 ## Configure a SocketsHttpHandler directly
 
-`ConfigureSsrf` applies the same validation to a `SocketsHttpHandler` without the wrapping handler, and returns the
+[ConfigureSsrf](cref:Meziantou.Framework.Http.ServerSideRequestForgery.SocketHttpHandlerServerSideRequestForgeryExtensions.ConfigureSsrf) applies the same validation to a `SocketsHttpHandler` without the wrapping handler, and returns the
 handler:
 
 <!-- ref:../../../tests/Meziantou.Framework.Http.ServerSideRequestForgery.Tests/ServerSideRequestForgeryConnectPipelineTests.cs;region=ServerSideRequestForgery_ConfigureSsrf;format=md-fenced-code-block;dedent=true -->
@@ -73,7 +73,7 @@ handler.ConfigureSsrf(options);
 ```
 <!-- endref -->
 
-Prefer `ServerSideRequestForgeryClientHandler`: `ConfigureSsrf` alone does not reject the requests that may use HTTP/3,
+Prefer [ServerSideRequestForgeryClientHandler](cref:Meziantou.Framework.Http.ServerSideRequestForgery.ServerSideRequestForgeryClientHandler): [ConfigureSsrf](cref:Meziantou.Framework.Http.ServerSideRequestForgery.SocketHttpHandlerServerSideRequestForgeryExtensions.ConfigureSsrf) alone does not reject the requests that may use HTTP/3,
 which are not validated at all. See [Proxies and HTTP/3](05-ProxiesAndHttp3.md).
 
 Both work by setting `SocketsHttpHandler.ConnectCallback`. A handler that already has a `ConnectCallback` throws an

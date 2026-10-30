@@ -3,7 +3,7 @@ title: IBufferWriter
 description: Use the stream as an IBufferWriter<byte>, for Utf8JsonWriter and other serializers, and where the data goes.
 ---
 
-`PooledMemoryStream` implements `IBufferWriter<byte>`, the interface that `Utf8JsonWriter`, `System.IO.Pipelines` and
+[PooledMemoryStream](cref:Meziantou.Framework.PooledMemoryStream) implements `IBufferWriter<byte>`, the interface that `Utf8JsonWriter`, `System.IO.Pipelines` and
 many serializers write to. Through it, they write directly into the pooled blocks of the stream, without an
 intermediate buffer.
 

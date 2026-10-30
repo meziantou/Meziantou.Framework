@@ -28,23 +28,23 @@ Assert.Equal(new DateTime(2026, 10, 29, 14, 30, 15), date.TruncateMilliseconds()
 | Method | Returns |
 | --- | --- |
 | `StartOfWeek(DayOfWeek)` | The last given day of the week on or before the date, at the same time of day |
-| `StartOfWeek()` | The same, with the first day of the week of the current culture |
-| `StartOfMonth()`, `StartOfYear()` | The first day of the month or the year, at midnight |
+| [StartOfWeek()](cref:Meziantou.Framework.DateTimeExtensions.StartOfWeek) | The same, with the first day of the week of the current culture |
+| [StartOfMonth()](cref:Meziantou.Framework.DateTimeExtensions.StartOfMonth), [StartOfYear()](cref:Meziantou.Framework.DateTimeExtensions.StartOfYear) | The first day of the month or the year, at midnight |
 | `StartOfMonth(keepTime: true)`, `StartOfYear(keepTime: true)` | The first day of the month or the year, at the same time of day |
-| `EndOfMonth()` | The last day of the month, at midnight |
-| `TruncateMilliseconds()` | The date without its fraction of a second |
+| [EndOfMonth()](cref:Meziantou.Framework.DateTimeExtensions.EndOfMonth) | The last day of the month, at midnight |
+| [TruncateMilliseconds()](cref:Meziantou.Framework.DateTimeExtensions.TruncateMilliseconds) | The date without its fraction of a second |
 
-- `StartOfWeek` keeps the time of day: use `.Date` on the result to get midnight.
-- `EndOfMonth` returns midnight of the last day, not the last moment of the month. To select the dates of a month, compare
+- [StartOfWeek](cref:Meziantou.Framework.DateTimeExtensions.StartOfWeek) keeps the time of day: use `.Date` on the result to get midnight.
+- [EndOfMonth](cref:Meziantou.Framework.DateTimeExtensions.EndOfMonth) returns midnight of the last day, not the last moment of the month. To select the dates of a month, compare
   with the start of the next month instead: `date >= start && date < start.AddMonths(1)`.
 - The results keep the `Kind` of the date (`Utc`, `Local` or `Unspecified`).
-- `StartOfWeek()` depends on the current culture: Monday in most of Europe, Sunday in the United States. Pass the day
+- [StartOfWeek()](cref:Meziantou.Framework.DateTimeExtensions.StartOfWeek) depends on the current culture: Monday in most of Europe, Sunday in the United States. Pass the day
   explicitly when the result must not depend on the user's settings.
 
 ## Ranges
 
-`Range<T>` holds two bounds, `From` and `To`, of any type that implements `IComparable<T>`, and checks whether a value or
-another range is between them. `Range.Create` infers the type of the bounds:
+[Range\<T\>](cref:Meziantou.Framework.Range{T}) holds two bounds, [From](cref:Meziantou.Framework.Range{T}.From) and [To](cref:Meziantou.Framework.Range{T}.To), of any type that implements `IComparable<T>`, and checks whether a value or
+another range is between them. [Range.Create](cref:Meziantou.Framework.Range.Create) infers the type of the bounds:
 
 <!-- ref:../../tests/Meziantou.Framework.Tests/RangeTests.cs;region=Range_Boundaries;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -64,16 +64,16 @@ Assert.False(range.IsInRangeInclusive(Range.Create(5, 15)));
 
 | Method | Lower bound | Upper bound |
 | --- | --- | --- |
-| `IsInRangeInclusive` | Included | Included |
-| `IsInRangeExclusive` | Excluded | Excluded |
-| `IsInRangeLowerInclusive` | Included | Excluded |
-| `IsInRangeUpperInclusive` | Excluded | Included |
+| [IsInRangeInclusive](cref:Meziantou.Framework.Range{T}.IsInRangeInclusive) | Included | Included |
+| [IsInRangeExclusive](cref:Meziantou.Framework.Range{T}.IsInRangeExclusive) | Excluded | Excluded |
+| [IsInRangeLowerInclusive](cref:Meziantou.Framework.Range{T}.IsInRangeLowerInclusive) | Included | Excluded |
+| [IsInRangeUpperInclusive](cref:Meziantou.Framework.Range{T}.IsInRangeUpperInclusive) | Excluded | Included |
 
-- Each method has an overload that takes a `Range<T>`: it returns `true` when both bounds of that range pass the check.
+- Each method has an overload that takes a [Range\<T\>](cref:Meziantou.Framework.Range{T}): it returns `true` when both bounds of that range pass the check.
 - For a reference type, such as `string`, a `null` bound is not checked: the range is open on that side.
-- `Range<T>` is a read-only struct. Two ranges are equal when their bounds are equal.
+- [Range\<T\>](cref:Meziantou.Framework.Range{T}) is a read-only struct. Two ranges are equal when their bounds are equal.
 
-`Meziantou.Framework.Range` and `Meziantou.Framework.Range<T>` have the same name as `System.Range`, the type of the
+[Meziantou.Framework.Range](cref:Meziantou.Framework.Range) and [Meziantou.Framework.Range\<T\>](cref:Meziantou.Framework.Range{T}) have the same name as `System.Range`, the type of the
 `..` operator. When both namespaces are imported, qualify the name or add a `using` alias.
 
 ## Copy the sign of a number
@@ -86,7 +86,7 @@ For `int`, `long` and `decimal`, the result is 0 when `sign` is 0. For `float` a
 
 ## Random values
 
-`RandomExtensions` adds methods to `Random` for the types it does not cover, and for picking values from a list:
+[RandomExtensions](cref:Meziantou.Framework.RandomExtensions) adds methods to `Random` for the types it does not cover, and for picking values from a list:
 
 <!-- ref:../../tests/Meziantou.Framework.Tests/RandomExtensionsTests.cs;region=RandomExtensions_Values;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -110,17 +110,17 @@ Assert.Equal(2026, date.Year);
 
 | Method | Returns |
 | --- | --- |
-| `NextBoolean()` | `true` or `false` |
-| `NextByte`, `NextSByte`, `NextInt16`, `NextInt32`, `NextInt64`, `NextUInt16`, `NextUInt32`, `NextUInt64` | An integer, from `min` (included) to `max` (excluded) |
-| `NextSingle`, `NextDouble`, `NextDecimal` | A number from `min` (included) to `max` (excluded) |
+| [NextBoolean()](cref:Meziantou.Framework.RandomExtensions.NextBoolean) | `true` or `false` |
+| [NextByte](cref:Meziantou.Framework.RandomExtensions.NextByte), [NextSByte](cref:Meziantou.Framework.RandomExtensions.NextSByte), [NextInt16](cref:Meziantou.Framework.RandomExtensions.NextInt16), [NextInt32](cref:Meziantou.Framework.RandomExtensions.NextInt32), [NextInt64](cref:Meziantou.Framework.RandomExtensions.NextInt64), [NextUInt16](cref:Meziantou.Framework.RandomExtensions.NextUInt16), [NextUInt32](cref:Meziantou.Framework.RandomExtensions.NextUInt32), [NextUInt64](cref:Meziantou.Framework.RandomExtensions.NextUInt64) | An integer, from `min` (included) to `max` (excluded) |
+| [NextSingle](cref:Meziantou.Framework.RandomExtensions.NextSingle), [NextDouble](cref:Meziantou.Framework.RandomExtensions.NextDouble), [NextDecimal](cref:Meziantou.Framework.RandomExtensions.NextDecimal) | A number from `min` (included) to `max` (excluded) |
 | `NextDateTime(min, max)` | A date from `min` (included) to `max` (excluded) |
 | `NextFromList(list)` | A random element of an array, a list, a collection, a span or a memory |
 | `NextString(length, chars)` | A string of `length` characters taken from `chars` |
 | `NextString(minLength, maxLength, chars)` | The same, with a length from `minLength` to `maxLength`, both included |
 
 - The `min` and `max` parameters are optional: they default to the whole range of the type, or to 0 and 1 for
-  `NextSingle` and `NextDouble`.
-- `NextInt64` and `NextDecimal` scale the result of `Random.NextDouble`, so they cannot return every value of a large
-  range. `NextUInt64` uses the 64 bits of a random value.
+  [NextSingle](cref:Meziantou.Framework.RandomExtensions.NextSingle) and [NextDouble](cref:Meziantou.Framework.RandomExtensions.NextDouble).
+- [NextInt64](cref:Meziantou.Framework.RandomExtensions.NextInt64) and [NextDecimal](cref:Meziantou.Framework.RandomExtensions.NextDecimal) scale the result of `Random.NextDouble`, so they cannot return every value of a large
+  range. [NextUInt64](cref:Meziantou.Framework.RandomExtensions.NextUInt64) uses the 64 bits of a random value.
 - These methods are not suited for security. Use `System.Security.Cryptography.RandomNumberGenerator` for passwords,
   tokens or keys.

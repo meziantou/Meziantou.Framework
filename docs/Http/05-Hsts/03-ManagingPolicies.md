@@ -3,12 +3,12 @@ title: Managing policies
 description: Add, check, expire and remove HSTS policies in an HstsDomainPolicyCollection, share or isolate a collection, and bound what servers can add.
 ---
 
-An `HstsDomainPolicyCollection` holds the policies that `HstsClientHandler` applies. You can use it on its own, to
+An [HstsDomainPolicyCollection](cref:Meziantou.Framework.Http.HstsDomainPolicyCollection) holds the policies that [HstsClientHandler](cref:Meziantou.Framework.Http.HstsClientHandler) applies. You can use it on its own, to
 decide whether a URL must be upgraded, or edit it to add hosts that the preload list and the headers do not cover.
 
 ## Add a policy and check a host
 
-`Add` registers a host for a duration, or until a date with the `DateTimeOffset` overload. `MustUpgradeRequest` tells
+[Add](cref:Meziantou.Framework.Http.HstsDomainPolicyCollection.Add) registers a host for a duration, or until a date with the `DateTimeOffset` overload. [MustUpgradeRequest](cref:Meziantou.Framework.Http.HstsDomainPolicyCollection.MustUpgradeRequest) tells
 whether a request to a host must be sent over HTTPS:
 
 <!-- ref:../../../tests/Meziantou.Framework.Http.Hsts.Tests/HstsDomainPolicyCollectionTests.cs;region=HstsDomainPolicyCollection_Example;format=md-fenced-code-block;dedent=true -->
@@ -29,8 +29,8 @@ Assert.True(policies.MustUpgradeRequest("www.example.com"));
 - Adding a host that already has a policy replaces it.
 - `includeSubdomains: true` covers every subdomain of the host.
 - Host names are compared case-insensitively, and a trailing dot is ignored. An internationalized name can be given in
-  its Unicode or its Punycode form; the policy stores the Punycode form, which `HstsDomainPolicy.Host` reports.
-- `Add` throws an `ArgumentException` for a value that is not a host name, such as one with a scheme, a port, a path,
+  its Unicode or its Punycode form; the policy stores the Punycode form, which [HstsDomainPolicy.Host](cref:Meziantou.Framework.Http.HstsDomainPolicy.Host) reports.
+- [Add](cref:Meziantou.Framework.Http.HstsDomainPolicyCollection.Add) throws an `ArgumentException` for a value that is not a host name, such as one with a scheme, a port, a path,
   user information, whitespace or an empty label: a request could never match it.
 
 ## Expiration
@@ -57,7 +57,7 @@ when its host is looked up, and by a sweep that runs from time to time as polici
 
 ## Read the policy of a host
 
-`TryGetPolicy` returns the policy registered for a host, with its expiration date, whether it includes the subdomains,
+[TryGetPolicy](cref:Meziantou.Framework.Http.HstsDomainPolicyCollection.TryGetPolicy) returns the policy registered for a host, with its expiration date, whether it includes the subdomains,
 and whether it comes from the preload list:
 
 <!-- ref:../../../tests/Meziantou.Framework.Http.Hsts.Tests/HstsDomainPolicyCollectionTests.cs;region=HstsDomainPolicyCollection_TryGetPolicy;format=md-fenced-code-block;dedent=true -->
@@ -72,7 +72,7 @@ if (policies.TryGetPolicy("github.com", out var policy))
 <!-- endref -->
 
 It reports the policy of that exact host. A host covered only by the policy of a parent domain has none of its own:
-use `MustUpgradeRequest` to know whether a request to it is upgraded.
+use [MustUpgradeRequest](cref:Meziantou.Framework.Http.HstsDomainPolicyCollection.MustUpgradeRequest) to know whether a request to it is upgraded.
 
 <!-- ref:../../../tests/Meziantou.Framework.Http.Hsts.Tests/HstsDomainPolicyCollectionTests.cs;region=HstsDomainPolicyCollection_TryGetPolicyOfASubdomain;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -86,13 +86,13 @@ Assert.False(policies.TryGetPolicy("www.example.com", out _));
 <!-- endref -->
 
 The collection is also enumerable. Enumeration is a snapshot that goes through the whole preload list, in no
-particular order, and it can include expired policies, so prefer `MustUpgradeRequest` and `TryGetPolicy` to answer a
+particular order, and it can include expired policies, so prefer [MustUpgradeRequest](cref:Meziantou.Framework.Http.HstsDomainPolicyCollection.MustUpgradeRequest) and [TryGetPolicy](cref:Meziantou.Framework.Http.HstsDomainPolicyCollection.TryGetPolicy) to answer a
 question about one host.
 
 ## Remove policies
 
-`Remove` takes a host off the collection, including a host of the preload list. `ClearLearnedPolicies` drops the
-policies added with `Add` or learned from headers, and restores the preloaded hosts that `Remove` took off:
+[Remove](cref:Meziantou.Framework.Http.HstsDomainPolicyCollection.Remove) takes a host off the collection, including a host of the preload list. [ClearLearnedPolicies](cref:Meziantou.Framework.Http.HstsDomainPolicyCollection.ClearLearnedPolicies) drops the
+policies added with [Add](cref:Meziantou.Framework.Http.HstsDomainPolicyCollection.Add) or learned from headers, and restores the preloaded hosts that [Remove](cref:Meziantou.Framework.Http.HstsDomainPolicyCollection.Remove) took off:
 
 <!-- ref:../../../tests/Meziantou.Framework.Http.Hsts.Tests/HstsDomainPolicyCollectionTests.cs;region=HstsDomainPolicyCollection_RemoveAndClear;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -115,7 +115,7 @@ modified.
 
 ## The preload list is a floor
 
-A policy added for a preloaded host, by `Add` or by a header, can widen what the preload list covers but never narrow
+A policy added for a preloaded host, by [Add](cref:Meziantou.Framework.Http.HstsDomainPolicyCollection.Add) or by a header, can widen what the preload list covers but never narrow
 it: neither `max-age=0` nor a short `max-age` nor `includeSubdomains: false` takes a host off the built-in list:
 
 <!-- ref:../../../tests/Meziantou.Framework.Http.Hsts.Tests/HstsDomainPolicyCollectionTests.cs;region=HstsDomainPolicyCollection_PreloadListIsAFloor;format=md-fenced-code-block;dedent=true -->
@@ -128,20 +128,20 @@ Assert.True(policies.MustUpgradeRequest("sub.github.com")); // still true, now a
 ```
 <!-- endref -->
 
-`Remove` is the only way to take a preloaded host off a collection.
+[Remove](cref:Meziantou.Framework.Http.HstsDomainPolicyCollection.Remove) is the only way to take a preloaded host off a collection.
 
 ## The shared collection
 
-`HstsDomainPolicyCollection.Default` is a single collection for the whole process, with the preload list. Every
-`HstsClientHandler` created without a collection uses it, so each of them applies the policies the others learned.
+[HstsDomainPolicyCollection.Default](cref:Meziantou.Framework.Http.HstsDomainPolicyCollection.Default) is a single collection for the whole process, with the preload list. Every
+[HstsClientHandler](cref:Meziantou.Framework.Http.HstsClientHandler) created without a collection uses it, so each of them applies the policies the others learned.
 
 Create your own collection to isolate a client, for instance a client that talks to test servers, or tests that must
 not see each other's policies. `Default.ClearLearnedPolicies()` returns the shared collection to its initial state.
 
 ## Bound the learned policies
 
-Any server your application talks to can add a policy, so a collection keeps at most `MaxLearnedPolicies` of the
-policies added with `Add` or learned from headers: 10,000 by default (`DefaultMaxLearnedPolicies`). The preloaded hosts
+Any server your application talks to can add a policy, so a collection keeps at most [MaxLearnedPolicies](cref:Meziantou.Framework.Http.HstsDomainPolicyCollection.MaxLearnedPolicies) of the
+policies added with [Add](cref:Meziantou.Framework.Http.HstsDomainPolicyCollection.Add) or learned from headers: 10,000 by default ([DefaultMaxLearnedPolicies](cref:Meziantou.Framework.Http.HstsDomainPolicyCollection.DefaultMaxLearnedPolicies)). The preloaded hosts
 do not count. Raise the limit for an application that talks to many HSTS hosts:
 
 <!-- ref:../../../tests/Meziantou.Framework.Http.Hsts.Tests/HstsDomainPolicyCollectionTests.cs;region=HstsDomainPolicyCollection_MaxLearnedPolicies;format=md-fenced-code-block;dedent=true -->

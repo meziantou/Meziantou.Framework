@@ -5,7 +5,7 @@ description: Handle the arguments that the next instances send to the first one,
 
 ## Send and receive the arguments
 
-The first instance handles the `NewInstance` event. The next instances call `NotifyFirstInstance` with their
+The first instance handles the [NewInstance](cref:Meziantou.Framework.SingleInstance.NewInstance) event. The next instances call [NotifyFirstInstance](cref:Meziantou.Framework.SingleInstance.NotifyFirstInstance) with their
 command-line arguments:
 
 <!-- ref:../../tests/Meziantou.Framework.SingleInstance.Tests/SingleInstanceTests.cs;region=SingleInstance_ReceiveNotification;format=md-fenced-code-block;dedent=true -->
@@ -27,18 +27,18 @@ Assert.Equal(Environment.ProcessId, received.ProcessId);
 ```
 <!-- endref -->
 
-The `SingleInstanceEventArgs` of the event gives:
+The [SingleInstanceEventArgs](cref:Meziantou.Framework.SingleInstanceEventArgs) of the event gives:
 
-- `Arguments`: the arguments that the other instance passed to `NotifyFirstInstance`. They are sent as they are: pass
+- [Arguments](cref:Meziantou.Framework.SingleInstanceEventArgs.Arguments): the arguments that the other instance passed to [NotifyFirstInstance](cref:Meziantou.Framework.SingleInstance.NotifyFirstInstance). They are sent as they are: pass
   the `args` of `Main`, or any other strings, such as full file paths when the arguments are paths relative to the
   current directory of the other process.
-- `ProcessId`: the id of the process that sent the notification.
+- [ProcessId](cref:Meziantou.Framework.SingleInstanceEventArgs.ProcessId): the id of the process that sent the notification.
 
-The `sender` of the event is the `SingleInstance` object of the first instance.
+The `sender` of the event is the [SingleInstance](cref:Meziantou.Framework.SingleInstance) object of the first instance.
 
 ## Update the user interface
 
-`NewInstance` is raised on a thread-pool thread, not on the thread that called `StartApplication`. A desktop
+[NewInstance](cref:Meziantou.Framework.SingleInstance.NewInstance) is raised on a thread-pool thread, not on the thread that called [StartApplication](cref:Meziantou.Framework.SingleInstance.StartApplication). A desktop
 application that updates its windows from the handler must move to the UI thread first. Capture the
 `SynchronizationContext` of the UI thread and post the work to it:
 
@@ -78,7 +78,7 @@ Keep these rules in mind when you write the handler:
 
 ## When the first instance does not answer
 
-`NotifyFirstInstance` returns `true` when the message was sent. It returns `false`, and never throws, when it cannot
+[NotifyFirstInstance](cref:Meziantou.Framework.SingleInstance.NotifyFirstInstance) returns `true` when the message was sent. It returns `false`, and never throws, when it cannot
 reach the first instance: no instance is listening, the first instance does not accept the connection in time, or it
 stops listening while the message is being sent.
 
@@ -95,9 +95,9 @@ Assert.False(singleInstance.NotifyFirstInstance(["open", "report.txt"]));
 ```
 <!-- endref -->
 
-- `ClientConnectionTimeout` is the time `NotifyFirstInstance` waits for the first instance to accept the connection.
+- [ClientConnectionTimeout](cref:Meziantou.Framework.SingleInstance.ClientConnectionTimeout) is the time [NotifyFirstInstance](cref:Meziantou.Framework.SingleInstance.NotifyFirstInstance) waits for the first instance to accept the connection.
   The default is 3 seconds. `Timeout.InfiniteTimeSpan` waits forever.
 - `false` happens, for instance, when the first instance was started with `StartServer = false`, or when it is
   exiting. Decide what the application does then: show a message, or exit silently.
-- `NotifyFirstInstance` does not need `StartApplication` to be called first, and does not tell whether the first
+- [NotifyFirstInstance](cref:Meziantou.Framework.SingleInstance.NotifyFirstInstance) does not need [StartApplication](cref:Meziantou.Framework.SingleInstance.StartApplication) to be called first, and does not tell whether the first
   instance handled the arguments: it returns once the message is sent.

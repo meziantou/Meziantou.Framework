@@ -7,9 +7,9 @@ Keep the state of a page, such as a search or a page number, in the URL, so it c
 
 ## Synchronize component properties
 
-`QueryStringService` reads and writes the properties that have both `[Parameter]` and `[SupplyParameterFromQuery]`.
-Register it with `builder.Services.AddQueryStringParameters()`, then call `SetParametersFromQueryString` to fill the
-properties and `UpdateQueryString` to write them to the URL:
+[QueryStringService](cref:Meziantou.AspNetCore.Components.QueryStringService) reads and writes the properties that have both `[Parameter]` and `[SupplyParameterFromQuery]`.
+Register it with `builder.Services.AddQueryStringParameters()`, then call [SetParametersFromQueryString](cref:Meziantou.AspNetCore.Components.QueryStringService.SetParametersFromQueryString) to fill the
+properties and [UpdateQueryString](cref:Meziantou.AspNetCore.Components.QueryStringService.UpdateQueryString) to write them to the URL:
 
 <!-- ref:../../../samples/BlazorAppSample/Examples/QueryStringServiceExample.razor;format=md-fenced-code-block -->
 ```razor
@@ -43,12 +43,12 @@ properties and `UpdateQueryString` to write them to the URL:
 <!-- endref -->
 
 - The name in the query string is the `Name` of `[SupplyParameterFromQuery]`, or the property name.
-- `SetParametersFromQueryString` uses the first value of the parameter. The query string comes from the user: a value
+- [SetParametersFromQueryString](cref:Meziantou.AspNetCore.Components.QueryStringService.SetParametersFromQueryString) uses the first value of the parameter. The query string comes from the user: a value
   that cannot be converted to the type of the property leaves the property unchanged instead of throwing.
-- `UpdateQueryString` writes the properties that are not `null` and removes the parameters of the properties that are.
+- [UpdateQueryString](cref:Meziantou.AspNetCore.Components.QueryStringService.UpdateQueryString) writes the properties that are not `null` and removes the parameters of the properties that are.
   The other parameters of the URL are kept.
 
-By default, `UpdateQueryString` navigates to the new URL: this is a client-side navigation, not a page reload, and the
+By default, [UpdateQueryString](cref:Meziantou.AspNetCore.Components.QueryStringService.UpdateQueryString) navigates to the new URL: this is a client-side navigation, not a page reload, and the
 router renders the page again. Pass `reloadPage: false` to change the URL in place with the history API of the
 browser: nothing is rendered again, and no history entry is added.
 
@@ -91,7 +91,7 @@ written as strings.
 
 ## Read a value
 
-`GetQueryStringParameterValue` returns the first value of a parameter, or `null`, and `GetQueryStringParameterValues`
+[GetQueryStringParameterValue](cref:Meziantou.AspNetCore.Components.NavigationManagerExtensions.GetQueryStringParameterValue) returns the first value of a parameter, or `null`, and [GetQueryStringParameterValues](cref:Meziantou.AspNetCore.Components.NavigationManagerExtensions.GetQueryStringParameterValues)
 returns all its values:
 
 <!-- ref:../../../samples/BlazorAppSample/Documentation/QueryStringReadExample.razor;format=md-fenced-code-block -->

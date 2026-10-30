@@ -35,6 +35,12 @@ internal sealed class AtomicFileOutput
     /// <summary>Gets a value indicating whether the destination was replaced.</summary>
     public bool IsPublished { get; private set; }
 
+    /// <summary>Gets a value indicating whether the output was aborted: the temporary file is closed and deleted, and is no longer owned.</summary>
+    public bool IsAborted { get; private set; }
+
+    /// <summary>Gets a value indicating whether the output was aborted by <see cref="AbortAsync"/> (tests only).</summary>
+    internal bool IsAbortedAsynchronously { get; private set; }
+
     /// <summary>Creates the temporary file next to <paramref name="path"/>.</summary>
     /// <param name="path">The destination path.</param>
     /// <param name="asynchronous">Whether the file is opened for asynchronous I/O.</param>
@@ -94,11 +100,16 @@ internal sealed class AtomicFileOutput
         IsPublished = true;
     }
 
-    /// <summary>Closes and deletes the temporary file, leaving the destination untouched. Best effort: never throws.</summary>
+    /// <summary>
+    /// Closes and deletes the temporary file, leaving the destination untouched. Best effort: never throws. Only the first
+    /// abort deletes the file: once deleted, its name is no longer owned.
+    /// </summary>
     public void Abort()
     {
-        if (IsPublished)
+        if (IsPublished || IsAborted)
             return;
+
+        IsAborted = true;
 
         try
         {
@@ -113,11 +124,14 @@ internal sealed class AtomicFileOutput
         DeleteTemporaryFile();
     }
 
-    /// <summary>Asynchronously closes and deletes the temporary file. Best effort: never throws.</summary>
+    /// <summary>Asynchronously closes and deletes the temporary file, like <see cref="Abort"/>. Best effort: never throws.</summary>
     public async ValueTask AbortAsync()
     {
-        if (IsPublished)
+        if (IsPublished || IsAborted)
             return;
+
+        IsAborted = true;
+        IsAbortedAsynchronously = true;
 
         try
         {

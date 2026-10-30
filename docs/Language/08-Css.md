@@ -42,8 +42,8 @@ The parser reads:
 
 ## Parse a declaration list
 
-The `style` attribute of an HTML element holds declarations, not rules. Set `CssParseOptions.SourceKind` to
-`DeclarationList` to parse it:
+The `style` attribute of an HTML element holds declarations, not rules. Set [CssParseOptions.SourceKind](cref:Meziantou.Framework.Language.Css.CssParseOptions.SourceKind) to
+[DeclarationList](cref:Meziantou.Framework.Language.Css.CssSourceKind.DeclarationList) to parse it:
 
 <!-- ref:../../tests/Meziantou.Framework.Language.Css.Tests/CssSyntaxTreeTests.cs;region=CssSyntaxTree_DeclarationList;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -62,37 +62,37 @@ Assert.Equal(["color: red (important: False)", "margin: 0 auto (important: True)
 ```
 <!-- endref -->
 
-`CssParseOptions.MaxDepth`, 128 by default, limits how deeply blocks, functions, selectors and conditions nest. What
+[CssParseOptions.MaxDepth](cref:Meziantou.Framework.Language.Css.CssParseOptions.MaxDepth), 128 by default, limits how deeply blocks, functions, selectors and conditions nest. What
 nests deeper is kept as skipped text and reported; nesting deeper than the stack can hold is reported too, whatever the
 limit says.
 
 ## The shape of a tree
 
-A `CssStyleSheetSyntax` holds its `Statements`; `Rules` and `Declarations` filter them. A block holds declarations and
+A [CssStyleSheetSyntax](cref:Meziantou.Framework.Language.Css.CssStyleSheetSyntax) holds its [Statements](cref:Meziantou.Framework.Language.Css.CssStyleSheetSyntax.Statements); [Rules](cref:Meziantou.Framework.Language.Css.CssStyleSheetSyntax.Rules) and [Declarations](cref:Meziantou.Framework.Language.Css.CssStyleSheetSyntax.Declarations) filter them. A block holds declarations and
 rules side by side, as nesting allows:
 
 | Node | Example | Holds |
 | --- | --- | --- |
-| `CssQualifiedRuleSyntax` | `a { color: red }` | `Prelude` and `Block`. Its kind is `StyleRule`, `KeyframeRule` or `QualifiedRule` |
-| `CssAtRuleSyntax` | `@media print { }`, `@import "a.css";` | `AtKeywordToken`, `Prelude`, then `Block` or `SemicolonToken` |
-| `CssDeclarationSyntax` | `color: red !important;` | `Name`, `Values`, `IsImportant`, `GetValueText()` |
-| `CssBadDeclarationSyntax` | `foo bar;` in a block | What a browser drops |
-| `CssIgnoredTokenSyntax` | A stray `;` | A token CSS ignores |
+| [CssQualifiedRuleSyntax](cref:Meziantou.Framework.Language.Css.CssQualifiedRuleSyntax) | `a { color: red }` | [Prelude](cref:Meziantou.Framework.Language.Css.CssQualifiedRuleSyntax.Prelude) and `Block`. Its kind is [StyleRule](cref:Meziantou.Framework.Language.Css.SyntaxKind.StyleRule), [KeyframeRule](cref:Meziantou.Framework.Language.Css.SyntaxKind.KeyframeRule) or [QualifiedRule](cref:Meziantou.Framework.Language.Css.SyntaxKind.QualifiedRule) |
+| [CssAtRuleSyntax](cref:Meziantou.Framework.Language.Css.CssAtRuleSyntax) | `@media print { }`, `@import "a.css";` | [AtKeywordToken](cref:Meziantou.Framework.Language.Css.CssAtRuleSyntax.AtKeywordToken), [Prelude](cref:Meziantou.Framework.Language.Css.CssAtRuleSyntax.Prelude), then `Block` or [SemicolonToken](cref:Meziantou.Framework.Language.Css.CssAtRuleSyntax.SemicolonToken) |
+| [CssDeclarationSyntax](cref:Meziantou.Framework.Language.Css.CssDeclarationSyntax) | `color: red !important;` | [Name](cref:Meziantou.Framework.Language.Css.CssDeclarationSyntax.Name), [Values](cref:Meziantou.Framework.Language.Css.CssDeclarationSyntax.Values), [IsImportant](cref:Meziantou.Framework.Language.Css.CssDeclarationSyntax.IsImportant), [GetValueText()](cref:Meziantou.Framework.Language.Css.CssDeclarationSyntax.GetValueText) |
+| [CssBadDeclarationSyntax](cref:Meziantou.Framework.Language.Css.CssBadDeclarationSyntax) | `foo bar;` in a block | What a browser drops |
+| [CssIgnoredTokenSyntax](cref:Meziantou.Framework.Language.Css.CssIgnoredTokenSyntax) | A stray `;` | A token CSS ignores |
 
-Each at-rule has a kind of its own, such as `MediaRule`, `LayerRule` or `PageMarginRule`. As for a browser, `@top-left`
-is a `PageMarginRule` only inside `@page`; elsewhere, it is an `UnknownAtRule`.
+Each at-rule has a kind of its own, such as [MediaRule](cref:Meziantou.Framework.Language.Css.SyntaxKind.MediaRule), [LayerRule](cref:Meziantou.Framework.Language.Css.SyntaxKind.LayerRule) or [PageMarginRule](cref:Meziantou.Framework.Language.Css.SyntaxKind.PageMarginRule). As for a browser, `@top-left`
+is a [PageMarginRule](cref:Meziantou.Framework.Language.Css.SyntaxKind.PageMarginRule) only inside `@page`; elsewhere, it is an [UnknownAtRule](cref:Meziantou.Framework.Language.Css.SyntaxKind.UnknownAtRule).
 
-A declaration's value is a list of component values: `CssTokenValueSyntax` for a single token, `CssFunctionSyntax` for
-`rgb(…)`, and `CssSimpleBlockSyntax` for `(…)`, `[…]` and `{…}`. There is no grammar for the value of each property, and
+A declaration's value is a list of component values: [CssTokenValueSyntax](cref:Meziantou.Framework.Language.Css.CssTokenValueSyntax) for a single token, [CssFunctionSyntax](cref:Meziantou.Framework.Language.Css.CssFunctionSyntax) for
+`rgb(…)`, and [CssSimpleBlockSyntax](cref:Meziantou.Framework.Language.Css.CssSimpleBlockSyntax) for `(…)`, `[…]` and `{…}`. There is no grammar for the value of each property, and
 `!important` is not part of the values.
 
 ### Preludes
 
-The prelude of a rule that has a grammar is parsed with it: a `CssSelectorListSyntax` for a style rule, a
-`CssMediaQueryListSyntax` for `@media`, a `CssConditionPreludeSyntax` for `@supports`, a `CssContainerPreludeSyntax`
-for `@container`, a `CssLayerPreludeSyntax` for `@layer`, a `CssImportPreludeSyntax` for `@import`, and so on. A
-prelude that does not match its grammar is kept as a `CssGenericPreludeSyntax`, with a diagnostic. The prelude of an
-unknown at-rule is a `CssGenericPreludeSyntax` too, without a diagnostic.
+The prelude of a rule that has a grammar is parsed with it: a [CssSelectorListSyntax](cref:Meziantou.Framework.Language.Css.CssSelectorListSyntax) for a style rule, a
+[CssMediaQueryListSyntax](cref:Meziantou.Framework.Language.Css.CssMediaQueryListSyntax) for `@media`, a [CssConditionPreludeSyntax](cref:Meziantou.Framework.Language.Css.CssConditionPreludeSyntax) for `@supports`, a [CssContainerPreludeSyntax](cref:Meziantou.Framework.Language.Css.CssContainerPreludeSyntax)
+for `@container`, a [CssLayerPreludeSyntax](cref:Meziantou.Framework.Language.Css.CssLayerPreludeSyntax) for `@layer`, a [CssImportPreludeSyntax](cref:Meziantou.Framework.Language.Css.CssImportPreludeSyntax) for `@import`, and so on. A
+prelude that does not match its grammar is kept as a [CssGenericPreludeSyntax](cref:Meziantou.Framework.Language.Css.CssGenericPreludeSyntax), with a diagnostic. The prelude of an
+unknown at-rule is a [CssGenericPreludeSyntax](cref:Meziantou.Framework.Language.Css.CssGenericPreludeSyntax) too, without a diagnostic.
 
 ## Selectors
 
@@ -115,18 +115,18 @@ Assert.Equal(["None: nav", "Child: a.active:hover", "None: [href^='https' i]"], 
 ```
 <!-- endref -->
 
-- Whitespace is trivia, so the descendant combinator has no node: a part without a `Combinator` after the first one is a
-  descendant of the part before it, and its `CombinatorKind` says so. A comment is not whitespace: `a/**/.b` is one
+- Whitespace is trivia, so the descendant combinator has no node: a part without a [Combinator](cref:Meziantou.Framework.Language.Css.CssComplexSelectorPartSyntax.Combinator) after the first one is a
+  descendant of the part before it, and its [CombinatorKind](cref:Meziantou.Framework.Language.Css.CssComplexSelectorPartSyntax.CombinatorKind) says so. A comment is not whitespace: `a/**/.b` is one
   compound selector. When you build a selector, put whitespace between two compound selectors that are meant to be
   descendants.
 - The argument of a functional pseudo-class depends on it: a selector list for `:is()`, `:where()`, `:not()` and
-  `:has()`, a `CssNthArgumentSyntax` for `:nth-child()` and the like, whose `CssAnPlusBSyntax` computes `A` and `B`, and a
+  `:has()`, a [CssNthArgumentSyntax](cref:Meziantou.Framework.Language.Css.CssNthArgumentSyntax) for `:nth-child()` and the like, whose [CssAnPlusBSyntax](cref:Meziantou.Framework.Language.Css.CssAnPlusBSyntax) computes [A](cref:Meziantou.Framework.Language.Css.CssAnPlusBSyntax.A) and [B](cref:Meziantou.Framework.Language.Css.CssAnPlusBSyntax.B), and a
   compound selector for `:host()` and `::slotted()`.
-- `:is()` and `:where()` are forgiving: a selector of their list that does not parse is a `CssInvalidSelectorSyntax`,
+- `:is()` and `:where()` are forgiving: a selector of their list that does not parse is a [CssInvalidSelectorSyntax](cref:Meziantou.Framework.Language.Css.CssInvalidSelectorSyntax),
   which matches nothing and leaves the rest of the list alone. A media query that does not parse is a
-  `CssInvalidMediaQuerySyntax`, in the same way.
+  [CssInvalidMediaQuerySyntax](cref:Meziantou.Framework.Language.Css.CssInvalidMediaQuerySyntax), in the same way.
 - An unknown pseudo-class or pseudo-element is reported as a warning, since it may only be newer than the parser. One with
-  a vendor prefix is not reported. `SyntaxFacts.IsKnownPseudoClass` and `IsKnownPseudoElement` tell which ones the
+  a vendor prefix is not reported. [SyntaxFacts.IsKnownPseudoClass](cref:Meziantou.Framework.Language.Css.SyntaxFacts.IsKnownPseudoClass) and [IsKnownPseudoElement](cref:Meziantou.Framework.Language.Css.SyntaxFacts.IsKnownPseudoElement) tell which ones the
   parser knows.
 
 ## Edit a style sheet
@@ -141,8 +141,8 @@ Assert.Equal("a { color: blue; /* keep */ }", updated.ToFullString());
 ```
 <!-- endref -->
 
-`SyntaxFactory.Identifier`, `StringToken`, `Hash`, `AtKeyword` and `FunctionToken` escape what CSS requires, and
-`Number`, `Percentage` and `Dimension` write numbers that read back as themselves. `Declaration` builds a whole
+[SyntaxFactory.Identifier](cref:Meziantou.Framework.Language.Css.SyntaxFactory.Identifier), [StringToken](cref:Meziantou.Framework.Language.Css.SyntaxFactory.StringToken), [Hash](cref:Meziantou.Framework.Language.Css.SyntaxFactory.Hash), [AtKeyword](cref:Meziantou.Framework.Language.Css.SyntaxFactory.AtKeyword) and [FunctionToken](cref:Meziantou.Framework.Language.Css.SyntaxFactory.FunctionToken) escape what CSS requires, and
+[Number](cref:Meziantou.Framework.Language.Css.SyntaxFactory.Number), [Percentage](cref:Meziantou.Framework.Language.Css.SyntaxFactory.Percentage) and [Dimension](cref:Meziantou.Framework.Language.Css.SyntaxFactory.Dimension) write numbers that read back as themselves. [Declaration](cref:Meziantou.Framework.Language.Css.SyntaxFactory.Declaration) builds a whole
 declaration:
 
 <!-- ref:../../tests/Meziantou.Framework.Language.Css.Tests/CssSyntaxTreeTests.cs;region=SyntaxFactory_Declaration;format=md-fenced-code-block;dedent=true -->
@@ -152,12 +152,12 @@ Assert.Equal("color: red;", declaration.ToFullString());
 ```
 <!-- endref -->
 
-A tree made from an edited root, with `WithRoot` or `CssSyntaxTree.Create`, parses its text again for its diagnostics,
+A tree made from an edited root, with [WithRoot](cref:Meziantou.Framework.Language.Css.CssSyntaxTree.WithRoot) or [CssSyntaxTree.Create](cref:Meziantou.Framework.Language.Css.CssSyntaxTree.Create), parses its text again for its diagnostics,
 so a node built by code that does not read back as itself is reported.
 
 ## Rewrite a style sheet
 
-`CssSyntaxRewriter` has a method per node type, such as `VisitClassSelector` or `VisitDeclaration`. This one renames a
+[CssSyntaxRewriter](cref:Meziantou.Framework.Language.Css.CssSyntaxRewriter) has a method per node type, such as [VisitClassSelector](cref:Meziantou.Framework.Language.Css.CssSyntaxRewriter.VisitClassSelector) or [VisitDeclaration](cref:Meziantou.Framework.Language.Css.CssSyntaxRewriter.VisitDeclaration). This one renames a
 class everywhere:
 
 <!-- ref:../../tests/Meziantou.Framework.Language.Css.Tests/CssSyntaxTreeTests.cs;region=CssSyntaxRewriter_RenameClass;format=md-fenced-code-block;dedent=true -->
@@ -179,7 +179,7 @@ Assert.Equal(".new, .other .new { color: red; }", updated?.ToFullString());
 ```
 <!-- endref -->
 
-`CssSyntaxWalker` visits every node, nested rules included:
+[CssSyntaxWalker](cref:Meziantou.Framework.Language.Css.CssSyntaxWalker) visits every node, nested rules included:
 
 <!-- ref:../../tests/Meziantou.Framework.Language.Css.Tests/CssSyntaxTreeTests.cs;region=CssSyntaxWalker_DeclarationCounter;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -235,7 +235,7 @@ browser accepts, or that may only be newer than the parser.
 | `CSS0013` | A declaration where only rules may be |
 | `CSS0014` | A rule or an at-rule where it may not be, such as `@font-face` in a style rule |
 | `CSS0015` | An at-rule that requires a block and has none, or the reverse |
-| `CSS0016` | Blocks, functions, selectors and conditions nested deeper than `MaxDepth` |
+| `CSS0016` | Blocks, functions, selectors and conditions nested deeper than [MaxDepth](cref:Meziantou.Framework.Language.Css.CssParseOptions.MaxDepth) |
 | `CSS0017` | A misplaced `@import` or `@namespace`, which a browser ignores (warning) |
 | `CSS0018` | A `!` that is not followed by `important` |
 | `CSS0019` | An unknown at-rule (warning) |

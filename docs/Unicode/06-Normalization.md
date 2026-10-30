@@ -7,7 +7,7 @@ description: Normalize text to NFC, NFD, NFKC or NFKD the same way on every plat
 
 The same text can be written with different code points: `é` is one code point, or an `e` followed by a combining
 acute accent. Normalization gives one form to texts that are the same, so that you can compare them, use them as keys,
-or search them. `UnicodeNormalization` implements the four forms of [UAX #15](https://www.unicode.org/reports/tr15/):
+or search them. [UnicodeNormalization](cref:Meziantou.Framework.UnicodeNormalization) implements the four forms of [UAX #15](https://www.unicode.org/reports/tr15/):
 
 <!-- ref:../../tests/Meziantou.Framework.Unicode.Tests/UnicodeTests.cs;region=Unicode_Normalization;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -25,11 +25,11 @@ Assert.Equal('\u00E9', composite);
 ```
 <!-- endref -->
 
-- `Normalize` uses NFC by default, the composed form most text is in. It returns the same instance when the text is
+- [Normalize](cref:Meziantou.Framework.UnicodeNormalization.Normalize) uses NFC by default, the composed form most text is in. It returns the same instance when the text is
   already normalized.
-- `IsNormalized` checks a text without allocating.
-- `TryNormalize` writes into a buffer, and `GetNormalizedLength` gives the length it needs.
-- `TryComposeCanonical`, `TryDecomposeCanonical` and `GetCanonicalDecomposition` work on code points.
+- [IsNormalized](cref:Meziantou.Framework.UnicodeNormalization.IsNormalized) checks a text without allocating.
+- [TryNormalize](cref:Meziantou.Framework.UnicodeNormalization.TryNormalize) writes into a buffer, and [GetNormalizedLength](cref:Meziantou.Framework.UnicodeNormalization.GetNormalizedLength) gives the length it needs.
+- [TryComposeCanonical](cref:Meziantou.Framework.UnicodeNormalization.TryComposeCanonical), [TryDecomposeCanonical](cref:Meziantou.Framework.UnicodeNormalization.TryDecomposeCanonical) and [GetCanonicalDecomposition](cref:Meziantou.Framework.UnicodeNormalization.GetCanonicalDecomposition) work on code points.
 
 Unlike `string.Normalize`, the results do not depend on the globalization library of the platform: they are the same
 everywhere, including in globalization-invariant mode, where `string.Normalize` only handles ASCII.

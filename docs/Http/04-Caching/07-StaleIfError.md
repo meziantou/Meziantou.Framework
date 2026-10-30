@@ -44,5 +44,5 @@ timeout of `HttpClient.Timeout`, which cancels the token the handler receives.
 - The stored response has `must-revalidate` or `no-cache`: the cache never serves it without the server's approval.
 - The response is still fresh: the cache serves it without contacting the server anyway.
 
-The stored response is kept while it can be served on errors: `PruneObsoleteEntriesAsync` does not remove it. See
+The stored response is kept while it can be served on errors: [PruneObsoleteEntriesAsync](cref:Meziantou.Framework.Http.Caching.IHttpCacheStore.PruneObsoleteEntriesAsync) does not remove it. See
 [Cache stores](03-CacheStores.md#removing-obsolete-entries).

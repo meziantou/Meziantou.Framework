@@ -4,7 +4,7 @@ description: The list of the error codes, with the rule that reports each of the
 ---
 
 Each error has a numeric code. Use it to [ignore an error](05-ConfiguringValidation.md#ignore-some-errors) with
-`ExcludedRuleIds` or the `--excluded-rule-ids` option of the tool. The codes are grouped by tens, one group per topic.
+[ExcludedRuleIds](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationOptions.ExcludedRuleIds) or the `--excluded-rule-ids` option of the tool. The codes are grouped by tens, one group per topic.
 [Rules](03-Rules.md) explains how to fix each of them.
 
 | Code | Name | Reported by |

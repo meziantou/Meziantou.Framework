@@ -9,8 +9,8 @@ PDF, which PDF readers provide.
 
 ## Measure text with a standard font
 
-The metrics of the 14 standard fonts are embedded: `AfmFontMetrics.GetStandardFont` gives them by name, and
-`StandardFontNames` lists the names.
+The metrics of the 14 standard fonts are embedded: [AfmFontMetrics.GetStandardFont](cref:Meziantou.Framework.Fonts.AfmFontMetrics.GetStandardFont) gives them by name, and
+[StandardFontNames](cref:Meziantou.Framework.Fonts.AfmFontMetrics.StandardFontNames) lists the names.
 
 <!-- ref:../../tests/Meziantou.Framework.Imaging.Tests/FontTests.cs;region=AfmFontMetrics_StandardFont;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -36,13 +36,13 @@ Assert.HasCount(14, AfmFontMetrics.StandardFontNames);
 <!-- endref -->
 
 - The metrics are in 1/1000 of the point size.
-- `GetStandardFont` returns `null` for another name; the names are case-sensitive (`Helvetica`, not `helvetica`).
-- A character is found by its name (`GetCharacter`, `GetWidth`) or by its code in the encoding of the font
-  (`GetCharacterByCode`).
+- [GetStandardFont](cref:Meziantou.Framework.Fonts.AfmFontMetrics.GetStandardFont) returns `null` for another name; the names are case-sensitive (`Helvetica`, not `helvetica`).
+- A character is found by its name ([GetCharacter](cref:Meziantou.Framework.Fonts.AfmFontMetrics.GetCharacter), [GetWidth](cref:Meziantou.Framework.Fonts.AfmFontMetrics.GetWidth)) or by its code in the encoding of the font
+  ([GetCharacterByCode](cref:Meziantou.Framework.Fonts.AfmFontMetrics.GetCharacterByCode)).
 
 ## Read an AFM file
 
-`AfmFontMetrics.Parse` reads the text of a file, and `Load` and `LoadAsync` read a stream or bytes:
+[AfmFontMetrics.Parse](cref:Meziantou.Framework.Fonts.AfmFontMetrics.Parse) reads the text of a file, and [Load](cref:Meziantou.Framework.Fonts.AfmFontMetrics.Load) and [LoadAsync](cref:Meziantou.Framework.Fonts.AfmFontMetrics.LoadAsync) read a stream or bytes:
 
 <!-- ref:../../tests/Meziantou.Framework.Imaging.Tests/FontTests.cs;region=AfmFontMetrics_Load;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -71,12 +71,12 @@ Assert.Equal(15.168, width);
 
 | Members | Gives |
 | --- | --- |
-| `FontName`, `FullName`, `FamilyName`, `Weight`, `Version`, `Notice` | The names of the font |
-| `FontBBox`, `Ascender`, `Descender`, `CapHeight`, `XHeight`, `StdHW`, `StdVW` | The global metrics |
-| `CharacterMetrics`, `GetCharacter`, `GetCharacterByCode`, `GetWidth`, `GetVerticalWidth` | The characters: code, name, width, box and ligatures |
-| `KerningPairs`, `GetKerning`, `VerticalKerningPairs`, `GetVerticalKerning` | The kerning of pairs |
-| `TrackKerning`, `GetTrackKerning` | The kerning that depends on the size |
-| `Composites` | The characters made of other characters |
+| [FontName](cref:Meziantou.Framework.Fonts.AfmFontMetrics.FontName), [FullName](cref:Meziantou.Framework.Fonts.AfmFontMetrics.FullName), [FamilyName](cref:Meziantou.Framework.Fonts.AfmFontMetrics.FamilyName), [Weight](cref:Meziantou.Framework.Fonts.AfmFontMetrics.Weight), `Version`, [Notice](cref:Meziantou.Framework.Fonts.AfmFontMetrics.Notice) | The names of the font |
+| [FontBBox](cref:Meziantou.Framework.Fonts.AfmFontMetrics.FontBBox), [Ascender](cref:Meziantou.Framework.Fonts.AfmFontMetrics.Ascender), [Descender](cref:Meziantou.Framework.Fonts.AfmFontMetrics.Descender), [CapHeight](cref:Meziantou.Framework.Fonts.AfmFontMetrics.CapHeight), [XHeight](cref:Meziantou.Framework.Fonts.AfmFontMetrics.XHeight), [StdHW](cref:Meziantou.Framework.Fonts.AfmFontMetrics.StdHW), [StdVW](cref:Meziantou.Framework.Fonts.AfmFontMetrics.StdVW) | The global metrics |
+| [CharacterMetrics](cref:Meziantou.Framework.Fonts.AfmFontMetrics.CharacterMetrics), [GetCharacter](cref:Meziantou.Framework.Fonts.AfmFontMetrics.GetCharacter), [GetCharacterByCode](cref:Meziantou.Framework.Fonts.AfmFontMetrics.GetCharacterByCode), [GetWidth](cref:Meziantou.Framework.Fonts.AfmFontMetrics.GetWidth), [GetVerticalWidth](cref:Meziantou.Framework.Fonts.AfmFontMetrics.GetVerticalWidth) | The characters: code, name, width, box and ligatures |
+| [KerningPairs](cref:Meziantou.Framework.Fonts.AfmFontMetrics.KerningPairs), [GetKerning](cref:Meziantou.Framework.Fonts.AfmFontMetrics.GetKerning), [VerticalKerningPairs](cref:Meziantou.Framework.Fonts.AfmFontMetrics.VerticalKerningPairs), [GetVerticalKerning](cref:Meziantou.Framework.Fonts.AfmFontMetrics.GetVerticalKerning) | The kerning of pairs |
+| [TrackKerning](cref:Meziantou.Framework.Fonts.AfmFontMetrics.TrackKerning), [GetTrackKerning](cref:Meziantou.Framework.Fonts.AfmFontMetrics.GetTrackKerning) | The kerning that depends on the size |
+| [Composites](cref:Meziantou.Framework.Fonts.AfmFontMetrics.Composites) | The characters made of other characters |
 
-The `Load` methods take `FontResourceLimits`: a file from an untrusted source is bounded like a font. The multiple master
+The [Load](cref:Meziantou.Framework.Fonts.AfmFontMetrics.Load) methods take [FontResourceLimits](cref:Meziantou.Framework.Fonts.FontResourceLimits): a file from an untrusted source is bounded like a font. The multiple master
 (AMFM) and composite (ACFM) metrics files are not supported.

@@ -15,7 +15,7 @@ The examples of this documentation omit the `using` directives: they need `using
 
 ## Generate a QR code
 
-`QRCode.Create` encodes a text in the smallest QR code that holds it, and `ToPng` renders it as the bytes of a PNG
+[QRCode.Create](cref:Meziantou.Framework.Barcodes.QRCode.Create) encodes a text in the smallest QR code that holds it, and [ToPng](cref:Meziantou.Framework.Barcodes.QRCodePngRenderer.ToPng) renders it as the bytes of a PNG
 file:
 
 <!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/QRCodeTests.cs;region=QRCode_GettingStarted;format=md-fenced-code-block;dedent=true -->
@@ -29,9 +29,9 @@ var png = qrCode.ToPng(new QRCodePngOptions { ModuleSize = 4 });
 
 ![A black and white QR code that encodes the address of a website](images/GettingStartedQRCode.png)
 
-- `ModuleSize` is the size of a module, the small square of a QR code, in pixels. It is 10 by default.
+- [ModuleSize](cref:Meziantou.Framework.Barcodes.QRCodePngOptions.ModuleSize) is the size of a module, the small square of a QR code, in pixels. It is 10 by default.
 - The image includes the quiet zone, the light margin a scanner needs around the code: 4 modules by default.
-- `ToPng` is an extension method; `WriteToPng` writes to a stream, and `ToSvg` gives an SVG document. See
+- [ToPng](cref:Meziantou.Framework.Barcodes.QRCodePngRenderer.ToPng) is an extension method; [WriteToPng](cref:Meziantou.Framework.Barcodes.QRCodePngRenderer.WriteToPng) writes to a stream, and [ToSvg](cref:Meziantou.Framework.Barcodes.QRCodeSvgRenderer.ToSvg) gives an SVG document. See
   [SVG and PNG](06-SvgAndPng.md).
 
 ## Generate a barcode

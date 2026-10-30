@@ -43,7 +43,7 @@ Assert.Equal("json", result.Pathname.Groups["format"]);
 ```
 <!-- endref -->
 
-Two groups of the same component cannot have the same name: `UrlPattern.Create` throws a `UrlPatternException`.
+Two groups of the same component cannot have the same name: [UrlPattern.Create](cref:Meziantou.Framework.UrlPattern.Create) throws a [UrlPatternException](cref:Meziantou.Framework.UrlPatternException).
 
 ## Wildcards
 
@@ -69,7 +69,7 @@ Assert.False(subdomains.IsMatch("https://example.org/v1/users"));
 ## Regular expressions
 
 Parentheses hold a regular expression. After a name, it replaces what the named group matches; alone, it is a group
-numbered like a wildcard. `HasRegExpGroups` tells whether a pattern contains one:
+numbered like a wildcard. [HasRegExpGroups](cref:Meziantou.Framework.UrlPattern.HasRegExpGroups) tells whether a pattern contains one:
 
 <!-- ref:../../tests/Meziantou.Framework.Uri.Tests/UrlPatternTests.cs;region=UrlPattern_RegexGroups;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -181,7 +181,7 @@ Assert.True(portPattern.IsMatch("https://example.com/books"));
 ```
 <!-- endref -->
 
-- The pattern properties (`Pathname`, `Port`…) return the normalized form.
+- The pattern properties ([Pathname](cref:Meziantou.Framework.UrlPattern.Pathname), [Port](cref:Meziantou.Framework.UrlPattern.Port)…) return the normalized form.
 - A host name written with non-ASCII characters is converted to its ASCII form (`xn--…`). See
   [Limitations](08-Limitations.md).
 - The text that a group captures is in the normalized form of the URL: a group that matches `café` in a path

@@ -5,7 +5,7 @@ description: Run tasks on a single dedicated thread with MonoThreadedTaskSchedul
 
 ## Run tasks on a dedicated thread
 
-`MonoThreadedTaskScheduler` is a `TaskScheduler` that runs every task queued to it on one thread it creates, one task at a
+[MonoThreadedTaskScheduler](cref:Meziantou.Framework.Threading.MonoThreadedTaskScheduler) is a `TaskScheduler` that runs every task queued to it on one thread it creates, one task at a
 time. Use it for code that must always run on the same thread, such as a component that is not thread-safe or that
 requires thread affinity:
 
@@ -47,22 +47,22 @@ Assert.Equal(threadIds[0], threadIds[1]);
 
 ### Dispose the scheduler
 
-Dispose the scheduler to stop its thread. No task is accepted after `Dispose` is called.
+Dispose the scheduler to stop its thread. No task is accepted after [Dispose](cref:Meziantou.Framework.Threading.MonoThreadedTaskScheduler.Dispose) is called.
 
 | Property | Default | Effect |
 | --- | --- | --- |
-| `DequeueOnDispose` | `false` | `true` runs every task already queued before the thread exits. `false` abandons the tasks that have not started: they never complete |
-| `DisposeThreadJoinTimeout` | 1 second | How long `Dispose` waits for the thread to finish. The wait is skipped when `Dispose` is called from the scheduler's own thread |
-| `WaitTimeout` | `Timeout.InfiniteTimeSpan` | How long the idle thread waits before waking up. Queuing a task or disposing the scheduler wakes it anyway, so set a finite value only to wake it periodically |
+| [DequeueOnDispose](cref:Meziantou.Framework.Threading.MonoThreadedTaskScheduler.DequeueOnDispose) | `false` | `true` runs every task already queued before the thread exits. `false` abandons the tasks that have not started: they never complete |
+| [DisposeThreadJoinTimeout](cref:Meziantou.Framework.Threading.MonoThreadedTaskScheduler.DisposeThreadJoinTimeout) | 1 second | How long [Dispose](cref:Meziantou.Framework.Threading.MonoThreadedTaskScheduler.Dispose) waits for the thread to finish. The wait is skipped when [Dispose](cref:Meziantou.Framework.Threading.MonoThreadedTaskScheduler.Dispose) is called from the scheduler's own thread |
+| [WaitTimeout](cref:Meziantou.Framework.Threading.MonoThreadedTaskScheduler.WaitTimeout) | `Timeout.InfiniteTimeSpan` | How long the idle thread waits before waking up. Queuing a task or disposing the scheduler wakes it anyway, so set a finite value only to wake it periodically |
 
-- `QueueCount` gives the number of tasks waiting to run.
+- [QueueCount](cref:Meziantou.Framework.Threading.MonoThreadedTaskScheduler.QueueCount) gives the number of tasks waiting to run.
 - `MaximumConcurrencyLevel` is always 1.
-- When an exception terminates the thread, `WorkerException` holds it and the scheduler refuses new tasks. The thread is
+- When an exception terminates the thread, [WorkerException](cref:Meziantou.Framework.Threading.MonoThreadedTaskScheduler.WorkerException) holds it and the scheduler refuses new tasks. The thread is
   not replaced, because that would break the guarantee that every task runs on the same thread.
 
 ## Process items that produce more items
 
-`MixedConsumerProducer.Process` processes items in parallel, and the processing of an item can add new items to process,
+[MixedConsumerProducer.Process](cref:Meziantou.Framework.Threading.MixedConsumerProducer.Process) processes items in parallel, and the processing of an item can add new items to process,
 for instance the links found on a crawled page. It completes once every item, including the added ones, is processed:
 
 <!-- ref:../../tests/Meziantou.Framework.Threading.Tests/MixedConsumerProducerTests.cs;region=MixedConsumerProducer_Process;format=md-fenced-code-block;dedent=true -->
@@ -99,13 +99,13 @@ Assert.Equal(["https://example.com/", "https://example.com/a", "https://example.
 ```
 <!-- endref -->
 
-- The action receives a `MixedConsumerProducerContext<T>`, whose `Enqueue` method adds an item, the item to process, and a
+- The action receives a [MixedConsumerProducerContext\<T\>](cref:Meziantou.Framework.Threading.MixedConsumerProducerContext{T}), whose [Enqueue](cref:Meziantou.Framework.Threading.MixedConsumerProducerContext{T}.Enqueue) method adds an item, the item to process, and a
   `CancellationToken`.
 - `ParallelOptions.MaxDegreeOfParallelism`, `CancellationToken` and `TaskScheduler` are honored. The default
   `MaxDegreeOfParallelism`, -1, uses one consumer per processor.
-- An exception thrown by the action does not stop the processing: the other items are still processed, and `Process`
+- An exception thrown by the action does not stop the processing: the other items are still processed, and [Process](cref:Meziantou.Framework.Threading.MixedConsumerProducer.Process)
   then throws an `AggregateException` with all the exceptions.
-- Canceling `ParallelOptions.CancellationToken` makes `Process` throw an `OperationCanceledException`.
+- Canceling `ParallelOptions.CancellationToken` makes [Process](cref:Meziantou.Framework.Threading.MixedConsumerProducer.Process) throw an `OperationCanceledException`.
 - Items are not deduplicated: an item enqueued twice is processed twice. Track the processed items yourself, for instance
   with a [`ConcurrentHashSet<T>`](06-ConcurrentCollections.md#a-thread-safe-set-with-concurrenthashset), when the same
   item can be found several times.

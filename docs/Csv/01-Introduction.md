@@ -3,8 +3,8 @@ title: Introduction
 description: Read and write CSV data row by row, with or without a header row, with any separator and quote character.
 ---
 
-`Meziantou.Framework.Csv` reads and writes CSV data. `CsvReader` reads rows from any `TextReader`, such as a
-`StreamReader` over a file, and `CsvWriter` writes rows to any `TextWriter`. Every value is a `string`: the library
+`Meziantou.Framework.Csv` reads and writes CSV data. [CsvReader](cref:Meziantou.Framework.Csv.CsvReader) reads rows from any `TextReader`, such as a
+`StreamReader` over a file, and [CsvWriter](cref:Meziantou.Framework.Csv.CsvWriter) writes rows to any `TextWriter`. Every value is a `string`: the library
 splits and quotes the data, and you convert the values to the types you need.
 
 ## What you can do with it
@@ -19,7 +19,7 @@ splits and quotes the data, and you convert the values to the types you need.
 
 ## Namespace
 
-Every type is in the [Meziantou.Framework.Csv](cref:Meziantou.Framework.Csv) namespace: `CsvReader`, `CsvRow`, `CsvColumn` and `CsvWriter`.
+Every type is in the [Meziantou.Framework.Csv](cref:Meziantou.Framework.Csv) namespace: [CsvReader](cref:Meziantou.Framework.Csv.CsvReader), [CsvRow](cref:Meziantou.Framework.Csv.CsvRow), [CsvColumn](cref:Meziantou.Framework.Csv.CsvColumn) and [CsvWriter](cref:Meziantou.Framework.Csv.CsvWriter).
 
 ## Next steps
 

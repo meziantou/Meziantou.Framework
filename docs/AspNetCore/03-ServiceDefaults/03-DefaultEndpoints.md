@@ -3,7 +3,7 @@ title: Default endpoints and middleware
 description: The middleware and endpoints added by MapMeziantouDefaultEndpoints, their order, and what to check before production.
 ---
 
-Call `MapMeziantouDefaultEndpoints` right after `builder.Build()`, before your own middleware and endpoints:
+Call [MapMeziantouDefaultEndpoints](cref:Meziantou.AspNetCore.ServiceDefaults.MeziantouServiceDefaults.MapMeziantouDefaultEndpoints) right after `builder.Build()`, before your own middleware and endpoints:
 
 <!-- ref:../../../samples/Meziantou.AspNetCore.Samples/ServiceDefaultsExamples.cs;region=ServiceDefaults_BasicSetup;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -25,7 +25,7 @@ app.Run();
 
 ## Middleware, in order
 
-`MapMeziantouDefaultEndpoints` adds these middleware to the pipeline, so they run before the middleware you add after
+[MapMeziantouDefaultEndpoints](cref:Meziantou.AspNetCore.ServiceDefaults.MeziantouServiceDefaults.MapMeziantouDefaultEndpoints) adds these middleware to the pipeline, so they run before the middleware you add after
 the call:
 
 1. **Forwarded headers**, with the headers of `ForwardedHeaders.ForwardedHeaders`.

@@ -34,10 +34,10 @@ var pages = context.RenderPagesAsPng(new PrintOptions { PageWidth = 794, PageHei
 
 ## What the backend does
 
-Give an `ImagingRenderingBackend` to `BrowsingContextOptions.RenderingBackend`. It is used for:
+Give an [ImagingRenderingBackend](cref:Meziantou.Framework.WebPlatform.Imaging.ImagingRenderingBackend) to [BrowsingContextOptions.RenderingBackend](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.RenderingBackend). It is used for:
 
 - the screenshots of the pages and of the elements, and the pages printed as images;
-- the 2D canvases (`canvas.getContext("2d")`, `OffscreenCanvas`) and the images of the paint worklets;
+- the 2D canvases (`canvas.getContext("2d")`, [OffscreenCanvas](cref:Meziantou.Framework.WebPlatform.Dom.OffscreenCanvas)) and the images of the paint worklets;
 - the decoding of the images of the pages: PNG (and animated PNG), JPEG, GIF, WebP, AVIF, JPEG XL, BMP and ICO, with their
   EXIF orientation and their color profile;
 - the encoding of the canvases as JPEG and WebP (`toDataURL()`, `toBlob()`).

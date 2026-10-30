@@ -9,7 +9,7 @@ protect against deliberate changes: anyone can compute the checksum of modified 
 
 ## CRC-32
 
-`Crc32` computes the CRC-32 of ISO 3309 (CRC-32/ISO-HDLC): the CRC of zlib, gzip, ZIP, PNG and Ethernet.
+[Crc32](cref:Meziantou.Framework.Hashing.Crc32) computes the CRC-32 of ISO 3309 (CRC-32/ISO-HDLC): the CRC of zlib, gzip, ZIP, PNG and Ethernet.
 
 <!-- ref:../../tests/Meziantou.Framework.Hashing.Tests/ChecksumTests.cs;region=Crc32_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -30,7 +30,7 @@ Assert.Equal(crc, running);
 
 ## Adler-32
 
-`Adler32` computes the Adler-32 checksum of RFC 1950: the checksum of zlib streams.
+[Adler32](cref:Meziantou.Framework.Hashing.Adler32) computes the Adler-32 checksum of RFC 1950: the checksum of zlib streams.
 
 <!-- ref:../../tests/Meziantou.Framework.Hashing.Tests/ChecksumTests.cs;region=Adler32_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -44,12 +44,12 @@ Assert.Equal(checksum, running);
 ```
 <!-- endref -->
 
-`Compute` and `Append` work like the ones of `Crc32`, except that the checksum of empty data is 1: start from 1 when
+[Compute](cref:Meziantou.Framework.Hashing.Adler32.Compute) and [Append](cref:Meziantou.Framework.Hashing.Adler32.Append) work like the ones of [Crc32](cref:Meziantou.Framework.Hashing.Crc32), except that the checksum of empty data is 1: start from 1 when
 there is no preceding data.
 
 ## Performance
 
 Both types use the instructions of the processor when they are available: the CRC32 instructions of Arm64 processors
-and the carry-less multiplication of x64 processors for `Crc32`, the vector instructions (AdvSimd, AVX2, SSSE3) for
-`Adler32`. Every path computes the same value. Pass large buffers rather than a few bytes at a time to benefit from
+and the carry-less multiplication of x64 processors for [Crc32](cref:Meziantou.Framework.Hashing.Crc32), the vector instructions (AdvSimd, AVX2, SSSE3) for
+[Adler32](cref:Meziantou.Framework.Hashing.Adler32). Every path computes the same value. Pass large buffers rather than a few bytes at a time to benefit from
 them.

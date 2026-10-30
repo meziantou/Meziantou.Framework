@@ -5,17 +5,17 @@ description: The supported container runtimes, how one is detected automatically
 
 The library does not run containers itself: it drives a container runtime installed on the machine.
 
-| Runtime | `ContainerRuntime` | Talks to |
+| Runtime | [ContainerRuntime](cref:Meziantou.Framework.TemporaryContainers.ContainerRuntime) | Talks to |
 | --- | --- | --- |
-| Docker Engine API | `ContainerRuntime.DockerApi` | The Docker daemon, over its socket or named pipe, without the `docker` CLI |
-| Docker | `ContainerRuntime.Docker` | The `docker` CLI |
-| Podman | `ContainerRuntime.Podman` | The `podman` CLI |
-| Apple container | `ContainerRuntime.AppleContainer` | Apple's `container` CLI (macOS) |
-| WSL containers | `ContainerRuntime.Wslc` | The `wslc` CLI (Windows) |
+| Docker Engine API | [ContainerRuntime.DockerApi](cref:Meziantou.Framework.TemporaryContainers.ContainerRuntime.DockerApi) | The Docker daemon, over its socket or named pipe, without the `docker` CLI |
+| Docker | [ContainerRuntime.Docker](cref:Meziantou.Framework.TemporaryContainers.ContainerRuntime.Docker) | The `docker` CLI |
+| Podman | [ContainerRuntime.Podman](cref:Meziantou.Framework.TemporaryContainers.ContainerRuntime.Podman) | The `podman` CLI |
+| Apple container | [ContainerRuntime.AppleContainer](cref:Meziantou.Framework.TemporaryContainers.ContainerRuntime.AppleContainer) | Apple's `container` CLI (macOS) |
+| WSL containers | [ContainerRuntime.Wslc](cref:Meziantou.Framework.TemporaryContainers.ContainerRuntime.Wslc) | The `wslc` CLI (Windows) |
 
 ## Automatic detection
 
-A definition uses `ContainerRuntime.Auto` unless you set another runtime. It uses the first runtime of this list that
+A definition uses [ContainerRuntime.Auto](cref:Meziantou.Framework.TemporaryContainers.ContainerRuntime.Auto) unless you set another runtime. It uses the first runtime of this list that
 is available:
 
 1. `wslc`, on Windows.
@@ -29,7 +29,7 @@ answers. A daemon that is installed but stopped does not count: start Docker Des
 `container` service (`container system start`) before the tests. The first runtime that answers is kept for the rest of
 the process; when none answers, the next attempt probes them again, so a daemon started later is still found.
 
-When no runtime is available, `StartAsync` throws an `InvalidOperationException` that lists the runtimes it looked for.
+When no runtime is available, [StartAsync](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.StartAsync) throws an `InvalidOperationException` that lists the runtimes it looked for.
 
 On a machine that has several runtimes, the order matters: a Mac with both Apple's `container` and Docker Desktop
 uses Apple's `container` as long as its service runs, and a Windows machine with `wslc` uses it. Choose the runtime
@@ -37,7 +37,7 @@ explicitly to use another one.
 
 ## Choose a runtime
 
-Set `Runtime` on the definition:
+Set [Runtime](cref:Meziantou.Framework.TemporaryContainers.ContainerDefinition.Runtime) on the definition:
 
 <!-- ref:../../samples/Meziantou.Framework.TemporaryContainers.Samples/DocumentationExamples.cs;region=TemporaryContainers_SelectRuntime;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -64,8 +64,8 @@ if (!await runtime.IsSupportedAsync())
 ```
 <!-- endref -->
 
-`IsSupportedAsync` runs a command or opens a connection to the daemon. It caches a success, not a failure.
-`VolumeDefinition.Runtime` chooses the runtime of a volume the same way.
+[IsSupportedAsync](cref:Meziantou.Framework.TemporaryContainers.ContainerRuntime.IsSupportedAsync) runs a command or opens a connection to the daemon. It caches a success, not a failure.
+[VolumeDefinition.Runtime](cref:Meziantou.Framework.TemporaryContainers.VolumeDefinition.Runtime) chooses the runtime of a volume the same way.
 
 ## Connect to a Docker daemon
 
@@ -82,16 +82,16 @@ The Docker Engine API runtime reads the same environment variables as the docker
 
 | | Docker Engine API, Docker | Podman | Apple container | wslc |
 | --- | --- | --- | --- | --- |
-| Volumes (`TemporaryVolume`) | Yes | Yes | Yes, no driver | No |
+| Volumes ([TemporaryVolume](cref:Meziantou.Framework.TemporaryContainers.TemporaryVolume)) | Yes | Yes | Yes, no driver | No |
 | Pause, restart | Yes | Yes | No (a restart is a stop and a start) | Pause only (a restart is a stop and a start) |
-| `Hostname`, `Network.Alias` | Yes | Yes | No | Yes |
-| `HostIp` of a port | Yes, except Windows containers | Yes | Yes, IPv4 only | No, loopback forwarding of WSL |
-| `PullPolicy.Never` | Yes | Yes | Yes | No |
+| [Hostname](cref:Meziantou.Framework.TemporaryContainers.ContainerDefinition.Hostname), `Network.Alias` | Yes | Yes | No | Yes |
+| [HostIp](cref:Meziantou.Framework.TemporaryContainers.ContainerPort.HostIp) of a port | Yes, except Windows containers | Yes | Yes, IPv4 only | No, loopback forwarding of WSL |
+| [PullPolicy.Never](cref:Meziantou.Framework.TemporaryContainers.PullPolicy.Never) | Yes | Yes | Yes | No |
 | Built images removed and cleaned up | Yes | Yes | Yes | No, they are not labeled |
 | Anonymous volumes removed with the container | Yes | Yes | Yes | No |
 | [Reaper](07-Cleanup.md#remove-the-containers-as-soon-as-the-process-dies) | Yes | Yes | No | No |
 
-The Docker Engine API cannot send `ExecOptions.StandardInput` to a daemon reached over a named pipe, the default on
+The Docker Engine API cannot send [ExecOptions.StandardInput](cref:Meziantou.Framework.TemporaryContainers.ExecOptions.StandardInput) to a daemon reached over a named pipe, the default on
 Windows: use the `docker` runtime there.
 
-Every runtime reports a failed operation with a `ContainerRuntimeException`. See [Troubleshooting](10-Troubleshooting.md).
+Every runtime reports a failed operation with a [ContainerRuntimeException](cref:Meziantou.Framework.TemporaryContainers.ContainerRuntimeException). See [Troubleshooting](10-Troubleshooting.md).

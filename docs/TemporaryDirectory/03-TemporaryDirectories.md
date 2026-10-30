@@ -5,8 +5,8 @@ description: Create files and folders in a temporary folder, keep paths inside i
 
 ## Create files and folders
 
-`TemporaryDirectory` creates files and folders from paths relative to the temporary folder, and returns their
-`FullPath`:
+[TemporaryDirectory](cref:Meziantou.Framework.TemporaryDirectory) creates files and folders from paths relative to the temporary folder, and returns their
+[FullPath](cref:Meziantou.Framework.FullPath):
 
 <!-- ref:../../tests/Meziantou.Framework.TemporaryDirectory.Tests/TemporaryDirectoryTests.cs;region=TemporaryDirectory_Files;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -35,11 +35,11 @@ Assert.False(File.Exists(report));
 | `CreateEmptyFile(relativePath)` | Creates an empty file, emptying an existing one |
 | `CreateDirectory(relativePath)` | Creates a folder |
 | `GetFullPath(relativePath)` | Returns the path, without creating anything |
-| `/` operator | The same as `GetFullPath` |
+| `/` operator | The same as [GetFullPath](cref:Meziantou.Framework.TemporaryDirectory.GetFullPath) |
 
 - A relative path can contain several segments, separated by `/` or by the separator of the platform. The methods that
   create a file or a folder create the missing parent folders.
-- `CreateTextFile` and `CreateTextFileAsync` write the text as `File.WriteAllText` does, in UTF-8 without a byte order
+- [CreateTextFile](cref:Meziantou.Framework.TemporaryDirectory.CreateTextFile) and [CreateTextFileAsync](cref:Meziantou.Framework.TemporaryDirectory.CreateTextFileAsync) write the text as `File.WriteAllText` does, in UTF-8 without a byte order
   mark.
 
 Asynchronous code can write files and dispose the folder asynchronously:
@@ -77,7 +77,7 @@ Assert.Throws<ArgumentException>(() => directory / rootedPath);
 
 ## Pass the folder to other APIs
 
-`TemporaryDirectory` converts implicitly to `string`, to `FullPath` and to `DirectoryInfo`, so you can pass the
+[TemporaryDirectory](cref:Meziantou.Framework.TemporaryDirectory) converts implicitly to `string`, to [FullPath](cref:Meziantou.Framework.FullPath) and to `DirectoryInfo`, so you can pass the
 instance itself where an API expects a folder:
 
 <!-- ref:../../tests/Meziantou.Framework.TemporaryDirectory.Tests/TemporaryDirectoryTests.cs;region=TemporaryDirectory_Conversions;format=md-fenced-code-block;dedent=true -->
@@ -97,12 +97,12 @@ Assert.Equal(directory.FullPath.Value, info.FullName);
 ```
 <!-- endref -->
 
-The `FullPath` property gives the path explicitly. It stays readable after the instance is disposed, although the folder
+The [FullPath](cref:Meziantou.Framework.FullPath) property gives the path explicitly. It stays readable after the instance is disposed, although the folder
 no longer exists. See [FullPath](../FullPath/01-Introduction.md) to combine, compare and inspect the paths.
 
 ## Choose where the folder is created
 
-By default, `TemporaryDirectory.Create` creates the folder in a `MezTD` folder of the temporary folder of the user
+By default, [TemporaryDirectory.Create](cref:Meziantou.Framework.TemporaryDirectory.Create) creates the folder in a `MezTD` folder of the temporary folder of the user
 (`Path.GetTempPath()`). Pass another folder to create it there instead:
 
 <!-- ref:../../tests/Meziantou.Framework.TemporaryDirectory.Tests/TemporaryDirectoryTests.cs;region=TemporaryDirectory_RootDirectory;format=md-fenced-code-block;dedent=true -->
@@ -118,12 +118,12 @@ Assert.Equal(root, directory.FullPath.Parent);
 - The root folder is created if it does not exist. It is not deleted: only the unique folder created in it is.
 - The name of the unique folder is the UTC date and time (`yyyyMMdd_HHmmss`), an underscore and a GUID.
 - On Linux and macOS, only the current user can access the root folder. When it already exists and other users can
-  access it, its permissions are tightened. When it belongs to another user, `Create` throws an
+  access it, its permissions are tightened. When it belongs to another user, [Create](cref:Meziantou.Framework.TemporaryDirectory.Create) throws an
   `UnauthorizedAccessException`: choose a root folder of your own.
 
 ## Deletion
 
-Disposing the instance (`Dispose` or `DisposeAsync`) deletes the folder and everything it contains:
+Disposing the instance ([Dispose](cref:Meziantou.Framework.TemporaryDirectory.Dispose) or [DisposeAsync](cref:Meziantou.Framework.TemporaryDirectory.DisposeAsync)) deletes the folder and everything it contains:
 
 - Read-only files are deleted: their read-only attribute is removed first.
 - A file that another process holds open is retried a few times, a short time apart, before the error is reported.
@@ -134,5 +134,5 @@ Disposing the instance (`Dispose` or `DisposeAsync`) deletes the folder and ever
 
 ## Windows Explorer
 
-On Windows, `OpenInExplorer` opens the folder in Windows Explorer, which helps to look at the files while debugging a
+On Windows, [OpenInExplorer](cref:Meziantou.Framework.TemporaryDirectory.OpenInExplorer) opens the folder in Windows Explorer, which helps to look at the files while debugging a
 test.

@@ -124,7 +124,7 @@ Assert.Equal(
   (`@@ -8 +8,2 @@`), as `diff -u` does.
 - A line without a line terminator, at the end of a text, is followed by `\ No newline at end of file`.
 - It uses the default options. A patch is meant to be applied to the old text, so keep the default options when you
-  write one: with `IgnoreCase`, for instance, a line whose casing changed would not appear in the patch.
+  write one: with [IgnoreCase](cref:Meziantou.Framework.TextDiffOptions.IgnoreCase), for instance, a line whose casing changed would not appear in the patch.
 
 ## Highlight the changed words
 
@@ -192,7 +192,7 @@ Assert.Equal(
 ```
 <!-- endref -->
 
-- A `Replace` line is written from its children, the word diff of the old and the new line. Since `Append` calls
+- A [Replace](cref:Meziantou.Framework.TextDiffHierarchyOperation.Replace) line is written from its children, the word diff of the old and the new line. Since `Append` calls
   itself for the children, it works with any number of levels.
 - Consecutive deleted or inserted chunks share one element, so `lazy` and the space after it are one insertion.
 - Every chunk is encoded with `WebUtility.HtmlEncode` (in `System.Net`): the texts can contain `<` or `&`.

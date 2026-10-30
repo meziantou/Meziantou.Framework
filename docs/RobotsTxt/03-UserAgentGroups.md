@@ -4,12 +4,12 @@ description: Find the group of directives that applies to a crawler, and how the
 ---
 
 A `robots.txt` file is a list of groups. Each group starts with one or more `User-agent` lines and holds the `Allow`,
-`Disallow` and `Crawl-delay` directives that apply to those agents. `IsAllowed` and `GetCrawlDelay` first select the
+`Disallow` and `Crawl-delay` directives that apply to those agents. [IsAllowed](cref:Meziantou.Framework.RobotsTxt.RobotsFile.IsAllowed) and [GetCrawlDelay](cref:Meziantou.Framework.RobotsTxt.RobotsFile.GetCrawlDelay) first select the
 group of the user agent, then read it.
 
 ## Select the group of a crawler
 
-`GetGroup` returns the group that applies to a user agent:
+[GetGroup](cref:Meziantou.Framework.RobotsTxt.RobotsFile.GetGroup) returns the group that applies to a user agent:
 
 <!-- ref:../../tests/Meziantou.Framework.RobotsTxt.Tests/RobotsFileTests.cs;region=RobotsFile_UserAgentGroups;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -46,14 +46,14 @@ Assert.Equal(["MyCrawler", "OtherCrawler"], group.UserAgents);
 - The `*` group applies to every agent that no group names.
 - The user agent must equal a `User-agent` value: pass the product token of your crawler (`MyCrawler`), not the full
   `User-Agent` header (`MyCrawler/2.1 (+https://example.com/bot)`), which matches no named group.
-- `UserAgents` lists the agents a group applies to, and `Rules` and `CrawlDelay` hold its directives.
+- [UserAgents](cref:Meziantou.Framework.RobotsTxt.RobotsGroup.UserAgents) lists the agents a group applies to, and [Rules](cref:Meziantou.Framework.RobotsTxt.RobotsGroup.Rules) and [CrawlDelay](cref:Meziantou.Framework.RobotsTxt.RobotsGroup.CrawlDelay) hold its directives.
 
-`RobotsGroup.Matches` tells whether a group applies to a user agent, counting `*` as a match. To find the group that
-`IsAllowed` uses, call `GetGroup`: it is the one that prefers the exact match.
+[RobotsGroup.Matches](cref:Meziantou.Framework.RobotsTxt.RobotsGroup.Matches) tells whether a group applies to a user agent, counting `*` as a match. To find the group that
+[IsAllowed](cref:Meziantou.Framework.RobotsTxt.RobotsGroup.IsAllowed) uses, call [GetGroup](cref:Meziantou.Framework.RobotsTxt.RobotsFile.GetGroup): it is the one that prefers the exact match.
 
 ## No matching group
 
-When no group names the agent and the file has no `*` group, `GetGroup` returns `null` and every path is allowed:
+When no group names the agent and the file has no `*` group, [GetGroup](cref:Meziantou.Framework.RobotsTxt.RobotsFile.GetGroup) returns `null` and every path is allowed:
 
 <!-- ref:../../tests/Meziantou.Framework.RobotsTxt.Tests/RobotsFileTests.cs;region=RobotsFile_NoMatchingGroup;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -94,9 +94,9 @@ Assert.False(robots.IsAllowed("MyCrawler", "/b/page"));
 ```
 <!-- endref -->
 
-`Groups` still holds the groups as they appear in the file. The merged group that `GetGroup` returns is a new
+[Groups](cref:Meziantou.Framework.RobotsTxt.RobotsFile.Groups) still holds the groups as they appear in the file. The merged group that [GetGroup](cref:Meziantou.Framework.RobotsTxt.RobotsFile.GetGroup) returns is a new
 instance: it lists the agents of every merged group, their rules in file order, and the first `Crawl-delay` of the
-merged groups. When a single group matches, `GetGroup` returns that instance of `Groups`. The `*` groups are merged
+merged groups. When a single group matches, [GetGroup](cref:Meziantou.Framework.RobotsTxt.RobotsFile.GetGroup) returns that instance of [Groups](cref:Meziantou.Framework.RobotsTxt.RobotsFile.Groups). The `*` groups are merged
 the same way.
 
 ## Where a group starts and ends

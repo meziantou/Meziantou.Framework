@@ -32,7 +32,7 @@ Assert.Equal(
 
 - The `Kind` of the start date is ignored: it is a wall-clock time in the time zone, as `DTSTART;TZID=America/New_York:`
   is in an iCalendar file.
-- `CronExpression` has the same overloads:
+- [CronExpression](cref:Meziantou.Framework.Scheduling.CronExpression) has the same overloads:
 
   <!-- ref:../../tests/Meziantou.Framework.Scheduling.Tests/CronExpressionTests.cs;region=CronExpression_TimeZone;format=md-fenced-code-block;dedent=true -->
   ```csharp

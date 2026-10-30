@@ -15,8 +15,8 @@ The examples of this documentation omit the `using` directives: they need `using
 
 ## Detect an LLM context
 
-`LLMContextDetector.IsLLMContext()` returns `true` when the environment variables of the process match at least one
-known tool, and `LLMContextDetector.Detect()` returns the tools it matches:
+[LLMContextDetector.IsLLMContext()](cref:Meziantou.Framework.LLMContext.LLMContextDetector.IsLLMContext) returns `true` when the environment variables of the process match at least one
+known tool, and [LLMContextDetector.Detect()](cref:Meziantou.Framework.LLMContext.LLMContextDetector.Detect) returns the tools it matches:
 
 <!-- ref:../../tests/Meziantou.Framework.LLMContext.Tests/LLMContextDetectorTests.cs;region=LLMContextDetector_Detect;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -30,7 +30,7 @@ if (LLMContextDetector.IsLLMContext())
 
 ## List the detected tools
 
-`Detect` returns an `IReadOnlyList<LLMContextKind>`: one value per tool whose variables are set, or an empty list.
+[Detect](cref:Meziantou.Framework.LLMContext.LLMContextDetector.Detect) returns an `IReadOnlyList<LLMContextKind>`: one value per tool whose variables are set, or an empty list.
 Several tools can be detected at once, for instance when an agent runs inside an editor that is detected too:
 
 <!-- ref:../../tests/Meziantou.Framework.LLMContext.Tests/LLMContextDetectorTests.cs;region=LLMContextDetector_ListContexts;format=md-fenced-code-block;dedent=true -->
@@ -54,9 +54,9 @@ Assert.Equal(LLMContextDetector.Detect().Count > 0, LLMContextDetector.IsLLMCont
 ```
 <!-- endref -->
 
-- The values are always returned in the same order, the order of the `LLMContextKind` enumeration, whatever the order
+- The values are always returned in the same order, the order of the [LLMContextKind](cref:Meziantou.Framework.LLMContext.LLMContextKind) enumeration, whatever the order
   of the variables.
-- `LLMContextKind.GenericAgent` is not a specific tool: it is the `AGENT_CLI` variable, that any agent can set. See
+- [LLMContextKind.GenericAgent](cref:Meziantou.Framework.LLMContext.LLMContextKind.GenericAgent) is not a specific tool: it is the `AGENT_CLI` variable, that any agent can set. See
   [Detection rules](03-DetectionRules.md).
 - Each call reads the environment variables again: a variable set or removed with
   `Environment.SetEnvironmentVariable` changes the result of the next call.

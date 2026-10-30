@@ -4,7 +4,7 @@ description: Call a method known only by its MethodInfo, synchronous or asynchro
 ---
 
 `Meziantou.Framework.ObjectMethodExecutor` calls a method from its `MethodInfo`, like `MethodInfo.Invoke`, and handles
-the asynchronous methods for you: `ExecuteAsync` awaits whatever the method returns, a `Task`, a `ValueTask`, an F#
+the asynchronous methods for you: [ExecuteAsync](cref:Meziantou.Framework.ObjectMethodExecutor.ExecuteAsync) awaits whatever the method returns, a `Task`, a `ValueTask`, an F#
 `Async` or any type with a `GetAwaiter` method, and gives you the result as an `object`.
 
 <!-- ref:../../tests/Meziantou.Framework.ObjectMethodExecutor.Tests/ObjectMethodExecutorTests.cs;region=ObjectMethodExecutor_Example;format=md-fenced-code-block;dedent=true -->
@@ -41,6 +41,6 @@ reflection again.
 ## Next steps
 
 - [Getting started](02-GettingStarted.md): create an executor and call a method.
-- [Asynchronous methods](03-AsynchronousMethods.md): the awaitable types, `async void`, and when to use `Execute`.
+- [Asynchronous methods](03-AsynchronousMethods.md): the awaitable types, `async void`, and when to use [Execute](cref:Meziantou.Framework.ObjectMethodExecutor.Execute).
 - [Parameters](04-Parameters.md): pass the arguments and the default values.
 - [Trimming and Native AOT](05-TrimmingAndNativeAot.md): what the executor requires at run time.

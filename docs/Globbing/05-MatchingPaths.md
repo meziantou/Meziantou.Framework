@@ -24,9 +24,9 @@ Assert.False(glob.IsMatch("src/App", "Folder.cs", PathItemType.Directory));
 <!-- endref -->
 
 - The overloads take a `string` or a `ReadOnlySpan<char>`.
-- Without a `PathItemType`, a path that ends with a separator is a directory, and any other path is a file. A pattern
+- Without a [PathItemType](cref:Meziantou.Framework.Globbing.PathItemType), a path that ends with a separator is a directory, and any other path is a file. A pattern
   matches files or directories as described in [Files and directories](03-PatternSyntax.md#files-and-directories).
-- `IsMatch` only reads the text of the path: the file does not have to exist.
+- [IsMatch](cref:Meziantou.Framework.Globbing.Glob.IsMatch) only reads the text of the path: the file does not have to exist.
 
 ## Use relative paths
 
@@ -39,7 +39,7 @@ except in the MSBuild dialect, which accepts both.
 
 ## Skip the directories that cannot match
 
-`IsPartialMatch` tells whether a directory can hold a path that matches the pattern. Use it to skip a whole directory
+[IsPartialMatch](cref:Meziantou.Framework.Globbing.Glob.IsPartialMatch) tells whether a directory can hold a path that matches the pattern. Use it to skip a whole directory
 when you walk a tree yourself:
 
 <!-- ref:../../tests/Meziantou.Framework.Globbing.Tests/GlobTests.cs;region=Glob_IsPartialMatch;format=md-fenced-code-block;dedent=true -->
@@ -54,10 +54,10 @@ Assert.False(glob.IsPartialMatch("docs"));
 ```
 <!-- endref -->
 
-`IsPartialMatch` returns `true` when it cannot rule the directory out: a `true` means "look inside", not "something
+[IsPartialMatch](cref:Meziantou.Framework.Globbing.Glob.IsPartialMatch) returns `true` when it cannot rule the directory out: a `true` means "look inside", not "something
 matches". [Enumerating files](06-EnumeratingFiles.md) calls it for you.
 
 ## Match patterns together
 
-`Glob` and `GlobCollection` both implement `IGlobEvaluatable`, so `IsMatch` and `IsPartialMatch` work the same on a
+[Glob](cref:Meziantou.Framework.Globbing.Glob) and [GlobCollection](cref:Meziantou.Framework.Globbing.GlobCollection) both implement [IGlobEvaluatable](cref:Meziantou.Framework.Globbing.IGlobEvaluatable), so `IsMatch` and `IsPartialMatch` work the same on a
 single pattern and on a collection of patterns. See [Combining patterns](07-CombiningPatterns.md).

@@ -36,7 +36,7 @@ Pages, and Blazor components. Each package is independent: install only the ones
 - **Opt-in pieces.** Every component, middleware and service is added explicitly. The only exception is the
   auto-register generator, whose whole purpose is to add the service defaults for you.
 - **Safe defaults.** The pipeline debug endpoint answers only in Development, HTTP Basic rejects accounts that need a
-  second factor, `InputUrl` rejects `javascript:` URLs, and the log viewer renders only `http` and `https` links.
+  second factor, [InputUrl](cref:Meziantou.AspNetCore.Components.InputUrl{TValue}) rejects `javascript:` URLs, and the log viewer renders only `http` and `https` links.
 - **Your settings win.** The no-cache middleware never replaces a `Cache-Control` header you set, and the browser fetch
   handler never replaces an option set on a request.
 

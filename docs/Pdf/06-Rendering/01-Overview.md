@@ -3,7 +3,7 @@ title: Rendering
 description: Render the pages of a document to images for previews and thumbnails, choose the resolution and the background, and bound the work of hostile pages.
 ---
 
-`PdfRenderer` draws a page to an image of `Meziantou.Framework.Imaging`, which can then be saved to PNG, JPEG, WebP and
+[PdfRenderer](cref:Meziantou.Framework.Pdf.Rendering.PdfRenderer) draws a page to an image of `Meziantou.Framework.Imaging`, which can then be saved to PNG, JPEG, WebP and
 the other formats it writes, resized or drawn on. The types are in the [Meziantou.Framework.Pdf.Rendering](cref:Meziantou.Framework.Pdf.Rendering) namespace.
 
 <!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfRendererTests.cs;region=PdfRendering_RenderPage;format=md-fenced-code-block;dedent=true -->
@@ -18,7 +18,7 @@ image.Save(png, new Imaging.Formats.PngEncoder());
 <!-- endref -->
 
 `PdfRenderer.RenderPage(page, options)` and the extension method `page.Render(options)` are the same. The image is the
-crop box of the page, turned by its `Rotation`, as viewers show it, in sRGB. It is an `Image<Rgba32>`: dispose of it.
+crop box of the page, turned by its [Rotation](cref:Meziantou.Framework.Pdf.PdfPage.Rotation), as viewers show it, in sRGB. It is an [Image\<Rgba32\>](cref:Meziantou.Framework.Imaging.Image{TPixel}): dispose of it.
 
 ## Render thumbnails
 
@@ -55,14 +55,14 @@ public static void RenderThumbnails(string pdfPath, string outputDirectory)
 
 | Option | Default | Effect |
 | --- | --- | --- |
-| `Dpi` | 72 | The resolution: 72 renders one pixel per point, 144 two |
-| `Background` | White | The color painted before the content; `null` for a transparent background |
-| `RenderAnnotations` | `true` | Draws the appearances of the annotations, such as stamps and form fields |
-| `FontResolver`, `UseSystemFonts` | none, `true` | The fonts that replace the fonts the document does not embed: see [Fonts that are not embedded](02-FontsThatAreNotEmbedded.md) |
-| `MaxOperations` | 50,000,000 | The work a page may do: see below |
-| `Configuration` | `null` | The configuration of the image: its limits and allocation scope (see [Resource limits](../../Imaging/05-LoadingAndSaving/07-ResourceLimits.md)) |
+| [Dpi](cref:Meziantou.Framework.Pdf.Rendering.PdfRenderOptions.Dpi) | 72 | The resolution: 72 renders one pixel per point, 144 two |
+| [Background](cref:Meziantou.Framework.Pdf.Rendering.PdfRenderOptions.Background) | White | The color painted before the content; `null` for a transparent background |
+| [RenderAnnotations](cref:Meziantou.Framework.Pdf.Rendering.PdfRenderOptions.RenderAnnotations) | `true` | Draws the appearances of the annotations, such as stamps and form fields |
+| [FontResolver](cref:Meziantou.Framework.Pdf.Rendering.PdfRenderOptions.FontResolver), [UseSystemFonts](cref:Meziantou.Framework.Pdf.Rendering.PdfRenderOptions.UseSystemFonts) | none, `true` | The fonts that replace the fonts the document does not embed: see [Fonts that are not embedded](02-FontsThatAreNotEmbedded.md) |
+| [MaxOperations](cref:Meziantou.Framework.Pdf.Rendering.PdfRenderOptions.MaxOperations) | 50,000,000 | The work a page may do: see below |
+| [Configuration](cref:Meziantou.Framework.Pdf.Rendering.PdfRenderOptions.Configuration) | `null` | The configuration of the image: its limits and allocation scope (see [Resource limits](../../Imaging/05-LoadingAndSaving/07-ResourceLimits.md)) |
 
-`PdfRenderOptions` is immutable: create the options once and render many pages with them.
+[PdfRenderOptions](cref:Meziantou.Framework.Pdf.Rendering.PdfRenderOptions) is immutable: create the options once and render many pages with them.
 
 ## What is drawn
 
@@ -83,9 +83,9 @@ public static void RenderThumbnails(string pdfPath, string outputDirectory)
 A damaged content is drawn as viewers draw it: an operator whose operands or resources are invalid is skipped, and a
 font, an image or a shading that cannot be read is not drawn. The rest of the page is drawn.
 
-The work of a page is bounded: `MaxOperations` limits the operators, glyphs and pixels it processes (a content can paint
+The work of a page is bounded: [MaxOperations](cref:Meziantou.Framework.Pdf.Rendering.PdfRenderOptions.MaxOperations) limits the operators, glyphs and pixels it processes (a content can paint
 forms and patterns many times), and the images, the shadings, the nesting of forms and the clips have limits of their
-own. A page beyond a limit, or too large at the resolution, throws `PdfResourceLimitException`. For the files of
+own. A page beyond a limit, or too large at the resolution, throws [PdfResourceLimitException](cref:Meziantou.Framework.Pdf.PdfResourceLimitException). For the files of
 untrusted users, also bound the read: see [Errors and limits](../05-ReadingAndModifying/06-ErrorsAndLimits.md).
 
 ## In this section

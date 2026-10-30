@@ -3,9 +3,16 @@
   "isRoot": true,
   "tools": {
     "meziantou.filereferencer": {
-      "version": "1.0.6",
+      "version": "1.0.8",
       "commands": [
         "Meziantou.FileReferencer"
+      ],
+      "rollForward": false
+    },
+    "meziantou.documentationgenerator": {
+      "version": "0.5.0",
+      "commands": [
+        "Meziantou.DocumentationGenerator"
       ],
       "rollForward": false
     }

@@ -38,7 +38,7 @@ InlineSnapshot.Validate(user, """
 | Snapshot name | Built from the test; must be unique | None: the snapshot is where the call is |
 | Failed assertion | Writes an `.actual` file | Shows the difference in the failure message |
 | Approval | [Approval tool](06-UpdatingSnapshots/03-ApprovalTool.md), update strategy or merge tool | Update strategy or merge tool, which edit the source file |
-| Settings | `SnapshotSettings` | `InlineSnapshotSettings` |
+| Settings | [SnapshotSettings](cref:Meziantou.Framework.SnapshotTesting.SnapshotSettings) | `InlineSnapshotSettings` |
 | Environment variables | `SNAPSHOTTESTING_STRATEGY`, `SNAPSHOTTESTING_AUTODETECT_CONTINUOUS_ENVIRONMENT` | `INLINESNAPSHOTTESTING_STRATEGY`, `INLINESNAPSHOTTESTING_AUTODETECT_CONTINUOUS_ENVIRONMENT` |
 
 Both packages share the same update strategies (`Disallow` by default, `Overwrite`, `OverwriteWithoutFailure`,

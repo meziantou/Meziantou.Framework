@@ -3,7 +3,7 @@ title: HTTP messages
 description: Write HttpRequestMessage and HttpResponseMessage values with their headers and content, and hide the headers that change.
 ---
 
-`HttpRequestMessage`, `HttpResponseMessage`, `HttpContent` and HTTP headers have converters. `AddHttpConverters` writes
+`HttpRequestMessage`, `HttpResponseMessage`, `HttpContent` and HTTP headers have converters. [AddHttpConverters](cref:Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpExtensions.AddHttpConverters) writes
 the messages in a compact form, with the members in a fixed order and without the values that change on every call:
 
 <!-- ref:../../tests/Meziantou.Framework.HumanReadableSerializer.Tests/HumanReadableSerializerOptionsTests.cs;region=HumanReadableSerializer_HttpResponse;format=md-fenced-code-block;dedent=true -->
@@ -38,20 +38,20 @@ Assert.Equal("""
 - The content is written with its headers and its value. A JSON, XML, HTML or form value is formatted when the
   [formatter of its media type](06-JsonXmlAndHtml.md) is registered.
 - Empty header collections, `IsSuccessStatusCode` and `ReasonPhrase` are not written.
-- `OmitProtocolVersion` (`true` by default) skips the HTTP version when it is 1.1.
+- [OmitProtocolVersion](cref:Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpMessageOptions.OmitProtocolVersion) (`true` by default) skips the HTTP version when it is 1.1.
 - The response headers `Date` and `Alt-Svc` are excluded by default, as they change on every response.
 
 ## Options
 
-`HumanReadableHttpOptions` has a `RequestMessageOptions` and a `ResponseMessageOptions`:
+[HumanReadableHttpOptions](cref:Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpOptions) has a [RequestMessageOptions](cref:Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpOptions.RequestMessageOptions) and a [ResponseMessageOptions](cref:Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpOptions.ResponseMessageOptions):
 
 | Option | Applies to | Description |
 | --- | --- | --- |
-| `ExcludedHeaderNames` | Requests, responses | Names of the headers to skip, ignoring case, in the message and in its content |
-| `HeaderValueTransformer` | Requests, responses | `HttpHeaderValueFormatter` instances that rewrite header values |
-| `OmitProtocolVersion` | Requests, responses | Skips the HTTP version when it is 1.1, and the default version policy of requests |
-| `RequestMessageFormat` | Responses | How the `RequestMessage` of a response is written: `NotSerialized` (the default), `MethodAndUri`, or `Full` |
-| `RedactContentSecurityPolicyNonce` | Responses | Replaces the nonces of the `Content-Security-Policy` header with `[redacted]` |
+| [ExcludedHeaderNames](cref:Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpMessageOptions.ExcludedHeaderNames) | Requests, responses | Names of the headers to skip, ignoring case, in the message and in its content |
+| [HeaderValueTransformer](cref:Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpMessageOptions.HeaderValueTransformer) | Requests, responses | [HttpHeaderValueFormatter](cref:Meziantou.Framework.HumanReadable.Converters.HttpHeaderValueFormatter) instances that rewrite header values |
+| [OmitProtocolVersion](cref:Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpMessageOptions.OmitProtocolVersion) | Requests, responses | Skips the HTTP version when it is 1.1, and the default version policy of requests |
+| [RequestMessageFormat](cref:Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpResponseMessageOptions.RequestMessageFormat) | Responses | How the `RequestMessage` of a response is written: [NotSerialized](cref:Meziantou.Framework.HumanReadable.Converters.HttpRequestMessageFormat.NotSerialized) (the default), [MethodAndUri](cref:Meziantou.Framework.HumanReadable.Converters.HttpRequestMessageFormat.MethodAndUri), or [Full](cref:Meziantou.Framework.HumanReadable.Converters.HttpRequestMessageFormat.Full) |
+| [RedactContentSecurityPolicyNonce](cref:Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpResponseMessageOptions.RedactContentSecurityPolicyNonce) | Responses | Replaces the nonces of the `Content-Security-Policy` header with `[redacted]` |
 
 ## Hide or rewrite headers
 
@@ -89,7 +89,7 @@ Assert.Equal("""
 ```
 <!-- endref -->
 
-`AddHttpConverters` copies the options. Calling it again replaces the previous configuration, so you can change the
+[AddHttpConverters](cref:Meziantou.Framework.HumanReadable.Converters.HumanReadableHttpExtensions.AddHttpConverters) copies the options. Calling it again replaces the previous configuration, so you can change the
 HTTP options of a snapshot library that already called it.
 
 ## Content

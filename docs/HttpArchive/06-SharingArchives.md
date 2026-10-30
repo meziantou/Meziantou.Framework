@@ -33,8 +33,8 @@ foreach (var entry in document.Log?.Entries ?? [])
 Then write the document as usual (see [Reading and writing](03-ReadingAndWriting.md)). Headers and cookies are not the
 only places secrets hide; check the rest of the archive too:
 
-- `HarRequest.Url` and `HarRequest.QueryString`, for tokens and API keys passed in the query string.
-- `HarRequest.PostData`, for passwords and tokens sent in a form or a JSON body.
+- [HarRequest.Url](cref:Meziantou.Framework.HttpArchive.HarRequest.Url) and [HarRequest.QueryString](cref:Meziantou.Framework.HttpArchive.HarRequest.QueryString), for tokens and API keys passed in the query string.
+- [HarRequest.PostData](cref:Meziantou.Framework.HttpArchive.HarRequest.PostData), for passwords and tokens sent in a form or a JSON body.
 - `HarResponse.Content.Text`, for tokens returned by the server.
 - The headers of your own API, such as `X-Api-Key`.
 - `ExtensionData`, where tools store the fields they add.

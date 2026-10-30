@@ -3,7 +3,7 @@ title: Diagnostics
 description: Read the problems a parser reports, with their identifier, severity, message and position.
 ---
 
-A parser never throws on invalid text: it reports each problem as a `Diagnostic` and keeps going. `GetDiagnostics()` on
+A parser never throws on invalid text: it reports each problem as a [Diagnostic](cref:Meziantou.Framework.Language.Diagnostic) and keeps going. [GetDiagnostics()](cref:Meziantou.Framework.Language.SyntaxTree.GetDiagnostics) on
 a tree returns them:
 
 <!-- ref:../../../tests/Meziantou.Framework.Language.Xml.Tests/XmlSyntaxTreeTests.cs;region=Diagnostic_GetDiagnostics;format=md-fenced-code-block;dedent=true -->
@@ -24,12 +24,12 @@ Assert.Equal(["XML0001 at (0,6)-(0,13): Missing end tag for 'child'."], messages
 
 | Property | Holds |
 | --- | --- |
-| `Id` | A stable identifier, prefixed by the language: `JSON0007`, `XML0001`, `CSS0011`, … Each language page lists its identifiers. |
-| `Severity` | `Error` or `Warning` (`DiagnosticSeverity` also has `Info` and `Hidden`) |
-| `Message` | A sentence for a person, which may change between versions: test the `Id` in code, not the message |
-| `Location` | Where the problem is: a span of the tree's text |
+| [Id](cref:Meziantou.Framework.Language.Diagnostic.Id) | A stable identifier, prefixed by the language: `JSON0007`, `XML0001`, `CSS0011`, … Each language page lists its identifiers. |
+| [Severity](cref:Meziantou.Framework.Language.Diagnostic.Severity) | [Error](cref:Meziantou.Framework.Language.DiagnosticSeverity.Error) or [Warning](cref:Meziantou.Framework.Language.DiagnosticSeverity.Warning) ([DiagnosticSeverity](cref:Meziantou.Framework.Language.DiagnosticSeverity) also has [Info](cref:Meziantou.Framework.Language.DiagnosticSeverity.Info) and [Hidden](cref:Meziantou.Framework.Language.DiagnosticSeverity.Hidden)) |
+| [Message](cref:Meziantou.Framework.Language.Diagnostic.Message) | A sentence for a person, which may change between versions: test the [Id](cref:Meziantou.Framework.Language.Diagnostic.Id) in code, not the message |
+| [Location](cref:Meziantou.Framework.Language.Location) | Where the problem is: a span of the tree's text |
 
-`ToString()` writes the identifier, the position and the message.
+[ToString()](cref:Meziantou.Framework.Language.Diagnostic.ToString) writes the identifier, the position and the message.
 
 ## Errors and warnings
 
@@ -81,11 +81,11 @@ See [Source text and positions](04-SourceTextAndPositions.md#lines-and-columns).
 returns them. A diagnostic belongs to the node it is about, and moves with it when you edit the tree.
 
 A few problems depend on the whole document rather than on one node, such as a key defined twice in TOML: the tree
-works them out when you call `GetDiagnostics()`. See the page of your language.
+works them out when you call [GetDiagnostics()](cref:Meziantou.Framework.Language.SyntaxTree.GetDiagnostics). See the page of your language.
 
 ## Diagnostics after an edit
 
-A tree you create from an edited root, with `WithRoot` or `Create`, reports the diagnostics its nodes carry: a node you
+A tree you create from an edited root, with [WithRoot](cref:Meziantou.Framework.Language.SyntaxTree.WithRoot) or `Create`, reports the diagnostics its nodes carry: a node you
 removed takes its diagnostics with it. CSS and TOML go further and parse the text of the new root again, so they also
 report a node built by code that does not read back as itself. To check the text of any edited tree, parse
 `root.ToFullString()` again.

@@ -34,8 +34,8 @@ When `TValue` is `DateTime`, `DateTimeOffset` or `DateOnly`, or their nullable v
 | `this_year` or `"this year"` | The current year. |
 | `last_year` or `"last year"` | The previous year. |
 
-Days, weeks, months and years are in UTC, and the keywords are case-insensitive. They work with `AddRangeHandler` and
-with `ExpressionQueryBuilder<T>.AddHandler<TValue>`. The other handlers of `QueryBuilder<T>` receive a single date, not
+Days, weeks, months and years are in UTC, and the keywords are case-insensitive. They work with [AddRangeHandler](cref:Meziantou.Framework.SimpleQueryLanguage.QueryBuilder{T}.AddRangeHandler) and
+with [ExpressionQueryBuilder\<T\>.AddHandler\<TValue\>](cref:Meziantou.Framework.SimpleQueryLanguage.ExpressionQueryBuilder{T}.AddHandler). The other handlers of [QueryBuilder\<T\>](cref:Meziantou.Framework.SimpleQueryLanguage.QueryBuilder{T}) receive a single date, not
 a range, so they do not accept them.
 
 ## Relative dates
@@ -85,7 +85,7 @@ A query built yesterday still means yesterday's `today`: build the query again w
 
 ## Parse your own values
 
-Pass a `ScalarParser<TValue>` to a handler to accept values of your own. It works like a `TryParse` method, and is
+Pass a [ScalarParser\<TValue\>](cref:Meziantou.Framework.SimpleQueryLanguage.ScalarParser{T}) to a handler to accept values of your own. It works like a `TryParse` method, and is
 also used for the bounds of a range:
 
 <!-- ref:../../tests/Meziantou.Framework.SimpleQueryLanguage.Tests/QueryBuilderTests.cs;region=QueryBuilder_CustomParser;format=md-fenced-code-block;dedent=true -->

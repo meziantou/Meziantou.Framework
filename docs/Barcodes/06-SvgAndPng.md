@@ -83,28 +83,28 @@ draw the code on an image, see [Images](08-Images.md).
 
 ## Options
 
-| QR code (`QRCodeSvgOptions`, `QRCodePngOptions`) | Default | Description |
+| QR code ([QRCodeSvgOptions](cref:Meziantou.Framework.Barcodes.QRCodeSvgOptions), [QRCodePngOptions](cref:Meziantou.Framework.Barcodes.QRCodePngOptions)) | Default | Description |
 | --- | --- | --- |
 | `ModuleSize` | 10 | The size of a module |
 | `QuietZoneModules` | 4 | The width of the margin around the code, in modules |
-| `DarkColor` | `Color.Black` | The color of the dark modules |
-| `LightColor` | `Color.White` | The color of the light modules and of the margin |
-| `LogoImageHref` | `null` | SVG only: the image drawn in the middle of the code |
-| `LogoSizePercent` | 20 | SVG only: the size of the logo, in percent of the smallest side, from 1 to 100 |
+| `DarkColor` | [Color.Black](cref:Meziantou.Framework.Barcodes.Color.Black) | The color of the dark modules |
+| `LightColor` | [Color.White](cref:Meziantou.Framework.Barcodes.Color.White) | The color of the light modules and of the margin |
+| [LogoImageHref](cref:Meziantou.Framework.Barcodes.QRCodeSvgOptions.LogoImageHref) | `null` | SVG only: the image drawn in the middle of the code |
+| [LogoSizePercent](cref:Meziantou.Framework.Barcodes.QRCodeSvgOptions.LogoSizePercent) | 20 | SVG only: the size of the logo, in percent of the smallest side, from 1 to 100 |
 
-| Barcode (`BarcodeSvgOptions`, `BarcodePngOptions`) | Default | Description |
+| Barcode ([BarcodeSvgOptions](cref:Meziantou.Framework.Barcodes.BarcodeSvgOptions), [BarcodePngOptions](cref:Meziantou.Framework.Barcodes.BarcodePngOptions)) | Default | Description |
 | --- | --- | --- |
 | `ModuleWidth` | 2 | The width of a module |
 | `ModuleHeight` | 80 | The height of the bars |
 | `QuietZoneModules` | 10 | The width of the margins on the left and on the right, in modules |
-| `DarkColor` | `Color.Black` | The color of the bars |
-| `LightColor` | `Color.White` | The color of the spaces and of the margins |
+| `DarkColor` | [Color.Black](cref:Meziantou.Framework.Barcodes.Color.Black) | The color of the bars |
+| `LightColor` | [Color.White](cref:Meziantou.Framework.Barcodes.Color.White) | The color of the spaces and of the margins |
 
 Scanners need a quiet zone: reduce it only when the code is already surrounded by a light area.
 
 ## Colors
 
-`Color` is a color with an alpha channel. Create one from its components, or parse the forms of CSS:
+[Color](cref:Meziantou.Framework.Barcodes.Color) is a color with an alpha channel. Create one from its components, or parse the forms of CSS:
 
 <!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/ColorTests.cs;region=Color_Parse;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -121,9 +121,9 @@ Assert.Equal("rgba(0,0,0,0.502)", Color.FromArgb(128, 0, 0, 0).ToCssString());
 ```
 <!-- endref -->
 
-`Parse` accepts `#RGB`, `#ARGB`, `#RRGGBB`, `#AARRGGBB`, `rgb(r,g,b)` and `rgba(r,g,b,a)`, and throws an
-`ArgumentException` for another form; `TryParse` returns `false` instead. Unlike CSS, the alpha of a hexadecimal color
-comes first. `ToCssString` gives the form an SVG document uses.
+[Parse](cref:Meziantou.Framework.Barcodes.Color.Parse) accepts `#RGB`, `#ARGB`, `#RRGGBB`, `#AARRGGBB`, `rgb(r,g,b)` and `rgba(r,g,b,a)`, and throws an
+`ArgumentException` for another form; [TryParse](cref:Meziantou.Framework.Barcodes.Color.TryParse) returns `false` instead. Unlike CSS, the alpha of a hexadecimal color
+comes first. [ToCssString](cref:Meziantou.Framework.Barcodes.Color.ToCssString) gives the form an SVG document uses.
 
 <!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/QRCodePngRendererTests.cs;region=QRCode_Colors;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -145,9 +145,9 @@ background.
 
 ## Add a logo
 
-`LogoImageHref` draws an image in the middle of an SVG QR code: a URL, or a data URI to keep the document
+[LogoImageHref](cref:Meziantou.Framework.Barcodes.QRCodeSvgOptions.LogoImageHref) draws an image in the middle of an SVG QR code: a URL, or a data URI to keep the document
 self-contained. The logo hides the modules under it, which the scanner must recover with the error correction: create
-the code with `ErrorCorrectionLevel.H`, keep the logo small, and check that the result scans.
+the code with [ErrorCorrectionLevel.H](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.H), keep the logo small, and check that the result scans.
 
 The PNG renderer does not draw logos. To draw a logo on a PNG or any other image, draw the code and the logo with
 `Meziantou.Framework.Imaging`: see [Images](08-Images.md).

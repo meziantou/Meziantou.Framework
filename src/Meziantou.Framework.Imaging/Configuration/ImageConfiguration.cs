@@ -22,6 +22,28 @@ public sealed class ImageConfiguration
         }
     } = ImageResourceLimits.Default;
 
+    /// <summary>
+    /// Gets how the decoders treat files that deviate from their specification. Defaults to
+    /// <see cref="DecodingStrictness.Strict"/>, which rejects them with an <see cref="InvalidImageContentException"/>.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="DecodingStrictness.Lenient"/> accepts the deviations that the reference decoders and the browsers accept,
+    /// in identification, eager loads, sequential readers and collections alike. The resource limits are the same in both
+    /// modes. Encoders and the other operations ignore the value.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="Imaging.DecodingStrictness"/>.</exception>
+    public DecodingStrictness DecodingStrictness
+    {
+        get;
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The decoding strictness is not valid.");
+
+            field = value;
+        }
+    }
+
     /// <summary>Gets the environment of the fonts loaded with this configuration.</summary>
     internal Internals.ImageFontEnvironment FontEnvironment => field ??= new Internals.ImageFontEnvironment(this);
 

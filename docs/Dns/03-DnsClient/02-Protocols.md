@@ -25,18 +25,18 @@ using var httpsClient = new DnsClient("https://dns.example.net/dns-query", DnsCl
 
 | Transport | Use it when |
 | --- | --- |
-| `Udp` | The server is on a network you trust. It is the fastest: one datagram each way. |
-| `Tcp` | Answers are large (zone data, many records), or UDP is blocked. |
-| `Tls` | The queries cross a network you do not trust, and port 853 is open. |
-| `Https` | The queries cross a network you do not trust, and only HTTPS goes through. |
-| `Quic` | The server supports DNS over QUIC and the machine supports QUIC. |
+| [Udp](cref:Meziantou.Framework.DnsClient.DnsClientProtocol.Udp) | The server is on a network you trust. It is the fastest: one datagram each way. |
+| [Tcp](cref:Meziantou.Framework.DnsClient.DnsClientProtocol.Tcp) | Answers are large (zone data, many records), or UDP is blocked. |
+| [Tls](cref:Meziantou.Framework.DnsClient.DnsClientProtocol.Tls) | The queries cross a network you do not trust, and port 853 is open. |
+| [Https](cref:Meziantou.Framework.DnsClient.DnsClientProtocol.Https) | The queries cross a network you do not trust, and only HTTPS goes through. |
+| [Quic](cref:Meziantou.Framework.DnsClient.DnsClientProtocol.Quic) | The server supports DNS over QUIC and the machine supports QUIC. |
 
-`Udp` and `Tcp` send the queries in clear text. `Tls`, `Https` and `Quic` encrypt them and check the certificate of the
+[Udp](cref:Meziantou.Framework.DnsClient.DnsClientProtocol.Udp) and [Tcp](cref:Meziantou.Framework.DnsClient.DnsClientProtocol.Tcp) send the queries in clear text. [Tls](cref:Meziantou.Framework.DnsClient.DnsClientProtocol.Tls), [Https](cref:Meziantou.Framework.DnsClient.DnsClientProtocol.Https) and [Quic](cref:Meziantou.Framework.DnsClient.DnsClientProtocol.Quic) encrypt them and check the certificate of the
 server with the trust store of the machine.
 
 ## Server address
 
-For `Udp`, `Tcp`, `Tls` and `Quic`, the server is an IP address or a host name, with an optional port:
+For [Udp](cref:Meziantou.Framework.DnsClient.DnsClientProtocol.Udp), [Tcp](cref:Meziantou.Framework.DnsClient.DnsClientProtocol.Tcp), [Tls](cref:Meziantou.Framework.DnsClient.DnsClientProtocol.Tls) and [Quic](cref:Meziantou.Framework.DnsClient.DnsClientProtocol.Quic), the server is an IP address or a host name, with an optional port:
 
 | Address | Port |
 | --- | --- |
@@ -46,12 +46,12 @@ For `Udp`, `Tcp`, `Tls` and `Quic`, the server is an IP address or a host name, 
 
 - A host name is resolved once, when the client is created, and the client keeps the first address. Create a new
   client to pick up a change of address.
-- For `Tls` and `Quic`, the host name is also the name checked against the certificate of the server. Pass the host
+- For [Tls](cref:Meziantou.Framework.DnsClient.DnsClientProtocol.Tls) and [Quic](cref:Meziantou.Framework.DnsClient.DnsClientProtocol.Quic), the host name is also the name checked against the certificate of the server. Pass the host
   name rather than its IP address unless the certificate contains the IP address.
 - The constructor throws when the address is invalid (`ArgumentException`) and when the host name cannot be resolved.
 
 By default the host name is resolved by the system resolver. To resolve it another way, for instance with a fixed
-address, set `ServerAddressResolver`:
+address, set [ServerAddressResolver](cref:Meziantou.Framework.DnsClient.DnsClientOptions.ServerAddressResolver):
 
 <!-- ref:../../../samples/Meziantou.Framework.DnsClient.Samples/ReadmeExamples.cs;region=DnsClient_ServerAddressResolver;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -65,7 +65,7 @@ var client = new DnsClient("dns.example.net", DnsClientProtocol.Tls, new DnsClie
 
 ## DNS over HTTPS
 
-For `Https`, the server is the URL of the endpoint, such as `https://dns.example.net/dns-query`. The scheme must be
+For [Https](cref:Meziantou.Framework.DnsClient.DnsClientProtocol.Https), the server is the URL of the endpoint, such as `https://dns.example.net/dns-query`. The scheme must be
 `https`: an `http://` URL throws `ArgumentException`, because it would send the queries in clear text.
 
 The client sends the queries with `HttpClient`. The HTTP options apply to this transport only:
@@ -89,12 +89,12 @@ var response = await client.QueryAsync("example.com", DnsQueryType.A);
 ```
 <!-- endref -->
 
-- `HttpHandler`: the handler of the `HttpClient`, for a proxy, client certificates or connection settings. The client
+- [HttpHandler](cref:Meziantou.Framework.DnsClient.DnsClientOptions.HttpHandler): the handler of the `HttpClient`, for a proxy, client certificates or connection settings. The client
   does not dispose it. Without one, the client creates a `SocketsHttpHandler` that renews its connections every two
   minutes.
-- `HttpVersion`: HTTP/2 by default, which every DNS over HTTPS server supports. Requesting HTTP/3 costs a failed QUIC
+- [HttpVersion](cref:Meziantou.Framework.DnsClient.DnsClientOptions.HttpVersion): HTTP/2 by default, which every DNS over HTTPS server supports. Requesting HTTP/3 costs a failed QUIC
   attempt per connection on machines or servers without it.
-- `HttpVersionPolicy`: `RequestVersionOrLower` by default, so the client falls back to an older version.
+- [HttpVersionPolicy](cref:Meziantou.Framework.DnsClient.DnsClientOptions.HttpVersionPolicy): `RequestVersionOrLower` by default, so the client falls back to an older version.
 
 ## DNS over QUIC
 
@@ -121,7 +121,7 @@ catch (PlatformNotSupportedException)
 ## Truncated responses
 
 A UDP response is limited in size. When an answer does not fit, the server sets the truncation (TC) flag, and the
-client sends the query again over TCP, to the same server, as RFC 1035 requires. Set `RetryTruncatedOverTcp` to
+client sends the query again over TCP, to the same server, as RFC 1035 requires. Set [RetryTruncatedOverTcp](cref:Meziantou.Framework.DnsClient.DnsClientOptions.RetryTruncatedOverTcp) to
 `false` to get the truncated response instead:
 
 <!-- ref:../../../tests/Meziantou.Framework.DnsClient.Tests/DnsClientIntegrationTests.cs;region=DnsClient_Truncation;format=md-fenced-code-block;dedent=true -->
@@ -142,6 +142,6 @@ Assert.True(truncatedResponse.Header.IsTruncated);
 ```
 <!-- endref -->
 
-The retry only applies to `Udp`. `EdnsUdpPayloadSize` (1232 bytes by default, as RFC 9715 recommends) is the size the
+The retry only applies to [Udp](cref:Meziantou.Framework.DnsClient.DnsClientProtocol.Udp). [EdnsUdpPayloadSize](cref:Meziantou.Framework.DnsClient.DnsClientOptions.EdnsUdpPayloadSize) (1232 bytes by default, as RFC 9715 recommends) is the size the
 client advertises to the server; a larger value lets more answers fit in UDP, but large datagrams are often dropped by
 the network.

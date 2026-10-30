@@ -28,9 +28,9 @@ Assert.Equal("Hello, world!", result.AsString());
 ```
 <!-- endref -->
 
-- `JsEngine` runs the code and owns its limits and its job queue. It is disposable.
-- `JsRealm` is a global environment: a global object and its built-ins (`Array`, `Math`, `JSON`...).
-- `Execute` returns the value of the last statement of the script, as a `JsValue`. `AsString` reads a string value.
+- [JsEngine](cref:Meziantou.Framework.JavaScriptEngine.JsEngine) runs the code and owns its limits and its job queue. It is disposable.
+- [JsRealm](cref:Meziantou.Framework.JavaScriptEngine.JsRealm) is a global environment: a global object and its built-ins (`Array`, `Math`, `JSON`...).
+- [Execute](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.Execute) returns the value of the last statement of the script, as a [JsValue](cref:Meziantou.Framework.JavaScriptEngine.JsValue). [AsString](cref:Meziantou.Framework.JavaScriptEngine.JsValue.AsString) reads a string value.
 
 ## Expose a function, run promises, catch errors
 
@@ -67,13 +67,13 @@ Assert.StartsWith("TypeError", exception.Message, StringComparison.Ordinal);
 ```
 <!-- endref -->
 
-- `JsEngineOptions` sets the limits of each entry into JavaScript. See
+- [JsEngineOptions](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions) sets the limits of each entry into JavaScript. See
   [Limits and sandboxing](07-LimitsAndSandboxing.md).
-- `CreateFunction` creates a JavaScript function implemented by a .NET delegate. Reading and writing properties, such
+- [CreateFunction](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.CreateFunction) creates a JavaScript function implemented by a .NET delegate. Reading and writing properties, such
   as `GlobalObject.SetProperty`, happens inside `engine.Enter()`. See [Engines and realms](03-EnginesAndRealms.md) and
   [Functions](05-Interop/04-Functions.md).
-- The callbacks of promises run when you call `RunJobs`. See [Async code and promises](06-AsyncAndPromises.md).
-- An uncaught JavaScript error is thrown as a `JsException`. See
+- The callbacks of promises run when you call [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs). See [Async code and promises](06-AsyncAndPromises.md).
+- An uncaught JavaScript error is thrown as a [JsException](cref:Meziantou.Framework.JavaScriptEngine.JsException). See
   [Handling errors](04-RunningCode/04-HandlingErrors.md).
 
 ## Next steps

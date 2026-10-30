@@ -8,12 +8,12 @@ them once and reuse them.
 
 ## Paint with a color
 
-An `Rgba32` or an `Rgba64` converts to a `SolidBrush`, so a color can be passed wherever a brush is expected. Colors
-come from the `Colors` class (the named colors of CSS), from a constructor (`new Rgba32(255, 200, 0, 128)`, the last
+An [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32) or an [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64) converts to a [SolidBrush](cref:Meziantou.Framework.Imaging.Drawing.SolidBrush), so a color can be passed wherever a brush is expected. Colors
+come from the [Colors](cref:Meziantou.Framework.Imaging.Colors) class (the named colors of CSS), from a constructor (`new Rgba32(255, 200, 0, 128)`, the last
 value being the alpha), or from `Rgba32.ParseHex("#E63946")`.
 
-Every brush has an `Opacity`, as `globalAlpha` of the HTML canvas: it multiplies the alpha of the paint at each pixel.
-A brush also has a `BlendMode` and a `CompositeMode`, which say how its paint is mixed with the pixels under it: see
+Every brush has an [Opacity](cref:Meziantou.Framework.Imaging.Drawing.Brush.Opacity), as `globalAlpha` of the HTML canvas: it multiplies the alpha of the paint at each pixel.
+A brush also has a [BlendMode](cref:Meziantou.Framework.Imaging.Drawing.BlendMode) and a [CompositeMode](cref:Meziantou.Framework.Imaging.Drawing.CompositeMode), which say how its paint is mixed with the pixels under it: see
 [Layers, masks and filters](05-LayersMasksAndFilters.md).
 
 The color of a brush is a set of sample values of the image: no color profile is applied, unless the drawing says what
@@ -63,28 +63,28 @@ public static void DrawGradients(string outputPath)
 
 | Brush | Colors change |
 | --- | --- |
-| `LinearGradientBrush` | Along the line between two points |
-| `RadialGradientBrush` | From a center up to a radius (a circle, or an ellipse with two radii) |
-| `SweepGradientBrush` | Around a center, with the angle, clockwise from `StartAngle` to `EndAngle` (a full turn from the right of the center by default) |
-| `PathGradientBrush` | Across a polygon, from the color of each corner to the color of a center |
+| [LinearGradientBrush](cref:Meziantou.Framework.Imaging.Drawing.LinearGradientBrush) | Along the line between two points |
+| [RadialGradientBrush](cref:Meziantou.Framework.Imaging.Drawing.RadialGradientBrush) | From a center up to a radius (a circle, or an ellipse with two radii) |
+| [SweepGradientBrush](cref:Meziantou.Framework.Imaging.Drawing.SweepGradientBrush) | Around a center, with the angle, clockwise from [StartAngle](cref:Meziantou.Framework.Imaging.Drawing.SweepGradientBrush.StartAngle) to [EndAngle](cref:Meziantou.Framework.Imaging.Drawing.SweepGradientBrush.EndAngle) (a full turn from the right of the center by default) |
+| [PathGradientBrush](cref:Meziantou.Framework.Imaging.Drawing.PathGradientBrush) | Across a polygon, from the color of each corner to the color of a center |
 
-- A `GradientStop` is an offset from 0 to 1 and a color. Two stops with the same offset make a hard edge. Stops are
+- A [GradientStop](cref:Meziantou.Framework.Imaging.Drawing.GradientStop) is an offset from 0 to 1 and a color. Two stops with the same offset make a hard edge. Stops are
   mixed on alpha-premultiplied values, so a transparent stop does not tint its neighbors.
-- Gradients are placed in the coordinates of the canvas, whatever the shape they fill. Their `Transform` places them
+- Gradients are placed in the coordinates of the canvas, whatever the shape they fill. Their [Transform](cref:Meziantou.Framework.Imaging.Drawing.GradientBrush.Transform) places them
   differently: a rotation turns a gradient, and a scaling that differs on both axes makes a radial gradient
   elliptical.
-- `SpreadMode` gives the colors beyond the first and the last stops: `Pad` (the default) extends them, `Repeat` and
+- [SpreadMode](cref:Meziantou.Framework.Imaging.Drawing.GradientBrush.SpreadMode) gives the colors beyond the first and the last stops: `Pad` (the default) extends them, `Repeat` and
   `Reflect` repeat the gradient, and `Transparent` paints nothing there.
-- A radial gradient can spread from a `FocalPoint` that is not its center, a highlight on a sphere. With a
-  `FocalRadius`, it starts on a circle around that point instead, as the radial gradients of SVG 2 and of the HTML
+- A radial gradient can spread from a [FocalPoint](cref:Meziantou.Framework.Imaging.Drawing.RadialGradientBrush.FocalPoint) that is not its center, a highlight on a sphere. With a
+  [FocalRadius](cref:Meziantou.Framework.Imaging.Drawing.RadialGradientBrush.FocalRadius), it starts on a circle around that point instead, as the radial gradients of SVG 2 and of the HTML
   canvas do.
 - The colors of a sweep gradient change abruptly at its start angle, unless it ends on the color it starts with.
-- A `PathGradientBrush` mixes its colors across the triangles from the center to each side, and paints nothing outside
+- A [PathGradientBrush](cref:Meziantou.Framework.Imaging.Drawing.PathGradientBrush) mixes its colors across the triangles from the center to each side, and paints nothing outside
   them. The center is the mean of the points unless one is given. Its cost grows with the number of points.
 
 ## Choose how the colors of a gradient mix
 
-`ColorSpace` says in which space the colors of two stops are mixed. Each row is the same gradient from blue to yellow:
+[ColorSpace](cref:Meziantou.Framework.Imaging.Drawing.GradientBrush.ColorSpace) says in which space the colors of two stops are mixed. Each row is the same gradient from blue to yellow:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/DrawingExamples.cs;region=Imaging_GradientColorSpaces;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -113,19 +113,19 @@ public static void DrawGradientColorSpaces(string outputPath)
 
 ![Four bars from blue to yellow: the first one goes through a dull gray, the second one through a light gray, the third one through a light blue-gray, and the fourth one through bright cyan and green](images/DrawGradientColorSpaces.png)
 
-| `GradientColorSpace` | Mixes | Half way from red to green |
+| [GradientColorSpace](cref:Meziantou.Framework.Imaging.Drawing.GradientColorSpace) | Mixes | Half way from red to green |
 | --- | --- | --- |
-| `Encoded` (the default, as CSS and SVG) | The stored sample values | A dark olive, (128, 128, 0) |
-| `LinearSrgb` | Light, as light does | A yellow, (188, 188, 0) |
-| `Oklab` | A space where lightness and hue change evenly: no dull band between two saturated colors | (208, 168, 0) |
-| `Oklch` | The lightness, the chroma and the hue of Oklab, the hue along the shorter arc as CSS does | An orange |
+| [Encoded](cref:Meziantou.Framework.Imaging.Drawing.GradientColorSpace.Encoded) (the default, as CSS and SVG) | The stored sample values | A dark olive, (128, 128, 0) |
+| [LinearSrgb](cref:Meziantou.Framework.Imaging.Drawing.GradientColorSpace.LinearSrgb) | Light, as light does | A yellow, (188, 188, 0) |
+| [Oklab](cref:Meziantou.Framework.Imaging.Oklab) | A space where lightness and hue change evenly: no dull band between two saturated colors | (208, 168, 0) |
+| [Oklch](cref:Meziantou.Framework.Imaging.Oklch) | The lightness, the chroma and the hue of Oklab, the hue along the shorter arc as CSS does | An orange |
 
-The stops are taken as sRGB colors. From blue to yellow, `Oklab` goes through a gray where `Oklch` goes through a teal.
+The stops are taken as sRGB colors. From blue to yellow, [Oklab](cref:Meziantou.Framework.Imaging.Oklab) goes through a gray where [Oklch](cref:Meziantou.Framework.Imaging.Oklch) goes through a teal.
 
 ## Draw an image
 
-`DrawImage` draws a frame of another image: at a position (its pixels as they are), stretched to a rectangle, a region
-of it stretched to a rectangle (a sprite of a sheet), or placed by an `AffineTransform` (turned, skewed, mirrored), with
+[DrawImage](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.DrawImage) draws a frame of another image: at a position (its pixels as they are), stretched to a rectangle, a region
+of it stretched to a rectangle (a sprite of a sheet), or placed by an [AffineTransform](cref:Meziantou.Framework.Imaging.AffineTransform) (turned, skewed, mirrored), with
 an optional opacity:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DrawCard;format=md-fenced-code-block;dedent=true -->
@@ -165,30 +165,30 @@ public static void ComposeCard(string photoPath, string outputPath)
 - An image drawn on whole pixels without scaling keeps its pixels exactly. A quarter turn or a mirror keeps them too.
 - Its pixels are converted to the pixel format of the canvas, and no color profile is applied.
 - The frame cannot be one of the frames the canvas draws on. It can be another frame of the same image when the drawing
-  is on one frame (`ImageFrame.Draw`).
+  is on one frame ([ImageFrame.Draw](cref:Meziantou.Framework.Imaging.ImageFrame.Draw)).
 
-The `ImageSampling` says how the image is read when it is not drawn on whole pixels:
+The [ImageSampling](cref:Meziantou.Framework.Imaging.Drawing.ImageSampling) says how the image is read when it is not drawn on whole pixels:
 
-| `ImageSampling` | Reads |
+| [ImageSampling](cref:Meziantou.Framework.Imaging.Drawing.ImageSampling) | Reads |
 | --- | --- |
-| `Bilinear` (the default) | The four pixels around a position, interpolated |
-| `Nearest` | The pixel that contains the position: an enlarged image keeps square pixels (pixel art) |
-| `Bicubic` | The sixteen pixels around a position, as browsers draw a scaled image with high quality |
-| `Smooth` | Every pixel of the image a pixel of the canvas covers: a photo drawn as a thumbnail has no aliasing |
-| `Box` | The average of what a pixel of the canvas covers: sharper on stripes reduced by a whole factor |
+| [Bilinear](cref:Meziantou.Framework.Imaging.Drawing.ImageSampling.Bilinear) (the default) | The four pixels around a position, interpolated |
+| [Nearest](cref:Meziantou.Framework.Imaging.Drawing.ImageSampling.Nearest) | The pixel that contains the position: an enlarged image keeps square pixels (pixel art) |
+| [Bicubic](cref:Meziantou.Framework.Imaging.Drawing.ImageSampling.Bicubic) | The sixteen pixels around a position, as browsers draw a scaled image with high quality |
+| [Smooth](cref:Meziantou.Framework.Imaging.Drawing.ImageSampling.Smooth) | Every pixel of the image a pixel of the canvas covers: a photo drawn as a thumbnail has no aliasing |
+| [Box](cref:Meziantou.Framework.Imaging.Drawing.ImageSampling.Box) | The average of what a pixel of the canvas covers: sharper on stripes reduced by a whole factor |
 
 With the first three, an image drawn much smaller than it is skips pixels. Each pixel of the canvas reads as many pixels
-of the image as it covers: `Resize` an image that is drawn many times (see
+of the image as it covers: [Resize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Resize) an image that is drawn many times (see
 [Resizing](../06-Processing/03-Resizing.md)).
 
-An `ImageBrush` paints any shape, or a text, with an image. Its `Transform` places the image on the canvas, and
-`WrapMode` gives the colors around it: `Transparent` (the default), `Pad`, `Repeat` (tiles) or `Reflect`. `WrapModeX`
-and `WrapModeY` set each direction (a row of tiles), `SourceRegion` uses a part of the image, and `Sampling` and
-`Opacity` work as above.
+An [ImageBrush](cref:Meziantou.Framework.Imaging.Drawing.ImageBrush) paints any shape, or a text, with an image. Its [Transform](cref:Meziantou.Framework.Imaging.Drawing.ImageBrush.Transform) places the image on the canvas, and
+[WrapMode](cref:Meziantou.Framework.Imaging.Drawing.ImageBrush.WrapMode) gives the colors around it: `Transparent` (the default), `Pad`, `Repeat` (tiles) or `Reflect`. [WrapModeX](cref:Meziantou.Framework.Imaging.Drawing.ImageBrush.WrapModeX)
+and [WrapModeY](cref:Meziantou.Framework.Imaging.Drawing.ImageBrush.WrapModeY) set each direction (a row of tiles), [SourceRegion](cref:Meziantou.Framework.Imaging.Drawing.ImageBrush.SourceRegion) uses a part of the image, and [Sampling](cref:Meziantou.Framework.Imaging.Drawing.ImageBrush.Sampling) and
+[Opacity](cref:Meziantou.Framework.Imaging.Drawing.ImageBrush.Opacity) work as above.
 
 ## Draw an image in perspective
 
-`DrawImage` with four points draws an image on a quadrilateral, as a plane seen in perspective: a screenshot on the
+[DrawImage](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.DrawImage) with four points draws an image on a quadrilateral, as a plane seen in perspective: a screenshot on the
 screen of a photo, a label on a wall.
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DrawPerspective;format=md-fenced-code-block;dedent=true -->
@@ -217,13 +217,13 @@ public static void DrawOnScreen(string photoPath, string screenshotPath, string 
 
 The four corners of the image go to the four points, in the order top-left, top-right, bottom-right, bottom-left.
 The points must be the corners of a convex quadrilateral, in order around it (the other way around mirrors the image).
-Straight lines stay straight, and what is further away is smaller. With `ImageSampling.Smooth`, each pixel reads what it
-covers of the image, which changes from the near side to the far side. A `ProjectiveTransform` can place an image the
+Straight lines stay straight, and what is further away is smaller. With [ImageSampling.Smooth](cref:Meziantou.Framework.Imaging.Drawing.ImageSampling.Smooth), each pixel reads what it
+covers of the image, which changes from the near side to the far side. A [ProjectiveTransform](cref:Meziantou.Framework.Imaging.ProjectiveTransform) can place an image the
 same way: see [Transformations](04-Transformations.md).
 
 ## Paint with a pattern
 
-A `PatternBrush` repeats a tile: a ready-made hatch, or a drawing made by a callback.
+A [PatternBrush](cref:Meziantou.Framework.Imaging.Drawing.PatternBrush) repeats a tile: a ready-made hatch, or a drawing made by a callback.
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/DrawingExamples.cs;region=Imaging_DrawPatterns;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -258,21 +258,21 @@ public static void DrawPatterns(string outputPath)
 
 ![Three rounded squares: a blue diagonal cross-hatch on white, a fine dark gray and light gray checkerboard, and red dots in diagonal rows on pale pink](images/DrawPatterns.png)
 
-- A `HatchStyle` and two colors make a tile of 8 by 8 pixels: lines (`Horizontal`, `Vertical`, `Cross`,
-  `ForwardDiagonal`, `BackwardDiagonal`, `DiagonalCross`) or a fraction of the pixels (`Percent10` to `Percent90`). The
+- A [HatchStyle](cref:Meziantou.Framework.Imaging.Drawing.HatchStyle) and two colors make a tile of 8 by 8 pixels: lines ([Horizontal](cref:Meziantou.Framework.Imaging.Drawing.HatchStyle.Horizontal), [Vertical](cref:Meziantou.Framework.Imaging.Drawing.HatchStyle.Vertical), [Cross](cref:Meziantou.Framework.Imaging.Drawing.HatchStyle.Cross),
+  [ForwardDiagonal](cref:Meziantou.Framework.Imaging.Drawing.HatchStyle.ForwardDiagonal), [BackwardDiagonal](cref:Meziantou.Framework.Imaging.Drawing.HatchStyle.BackwardDiagonal), [DiagonalCross](cref:Meziantou.Framework.Imaging.Drawing.HatchStyle.DiagonalCross)) or a fraction of the pixels ([Percent10](cref:Meziantou.Framework.Imaging.Drawing.HatchStyle.Percent10) to [Percent90](cref:Meziantou.Framework.Imaging.Drawing.HatchStyle.Percent90)). The
   tile starts at the origin of the canvas, so shapes painted with the same hatch line up, and on whole pixels each pixel
   has exactly the color of the tile.
 - A tile drawn by a callback is a rectangle of the coordinates of the pattern. It is drawn once at the size it has on
   the canvas, then repeated: an enlarged pattern stays sharp. What the callback draws outside the tile is not painted.
 - The callback must draw the same thing every time: it runs again when the size of the tile changes. It can use any
   brush but its own pattern.
-- `Transform` places and turns the tiles, `SpacingX` and `SpacingY` leave a gap after each tile, and `WrapModeX` and
-  `WrapModeY` say how tiles are laid in each direction (`Repeat` by default; `Transparent` paints one tile in that
+- [Transform](cref:Meziantou.Framework.Imaging.Drawing.PatternBrush.Transform) places and turns the tiles, [SpacingX](cref:Meziantou.Framework.Imaging.Drawing.PatternBrush.SpacingX) and [SpacingY](cref:Meziantou.Framework.Imaging.Drawing.PatternBrush.SpacingY) leave a gap after each tile, and [WrapModeX](cref:Meziantou.Framework.Imaging.Drawing.PatternBrush.WrapModeX) and
+  [WrapModeY](cref:Meziantou.Framework.Imaging.Drawing.PatternBrush.WrapModeY) say how tiles are laid in each direction (`Repeat` by default; `Transparent` paints one tile in that
   direction).
 
 ## Choose the width, the joins and the caps of a pen
 
-A `Pen` is a brush and a width, centered on the outline it draws:
+A [Pen](cref:Meziantou.Framework.Imaging.Drawing.Pen) is a brush and a width, centered on the outline it draws:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/DrawingExamples.cs;region=Imaging_DrawJoinsAndCaps;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -313,14 +313,14 @@ public static void DrawJoinsAndCaps(string outputPath)
 
 | Property | Values |
 | --- | --- |
-| `LineJoin` (the corners) | `Miter` (the default; beveled beyond `MiterLimit`), `Round`, `Bevel` |
-| `LineCap` (the ends of open contours) | `Butt` (the default: the stroke ends at the end of the path), `Round`, `Square` (it goes beyond by half the width) |
-| `Alignment` | `Center` (the default), `Inside` or `Outside` what the path fills |
-| `ScalesWithTransform` | `true` by default: see [Transformations](04-Transformations.md) |
+| [LineJoin](cref:Meziantou.Framework.Imaging.Drawing.LineJoin) (the corners) | [Miter](cref:Meziantou.Framework.Imaging.Drawing.LineJoin.Miter) (the default; beveled beyond [MiterLimit](cref:Meziantou.Framework.Imaging.Drawing.Pen.MiterLimit)), [Round](cref:Meziantou.Framework.Imaging.Drawing.LineJoin.Round), [Bevel](cref:Meziantou.Framework.Imaging.Drawing.LineJoin.Bevel) |
+| [LineCap](cref:Meziantou.Framework.Imaging.Drawing.LineCap) (the ends of open contours) | [Butt](cref:Meziantou.Framework.Imaging.Drawing.LineCap.Butt) (the default: the stroke ends at the end of the path), [Round](cref:Meziantou.Framework.Imaging.Drawing.LineCap.Round), [Square](cref:Meziantou.Framework.Imaging.Drawing.LineCap.Square) (it goes beyond by half the width) |
+| [Alignment](cref:Meziantou.Framework.Imaging.Drawing.Pen.Alignment) | [Center](cref:Meziantou.Framework.Imaging.Drawing.PenAlignment.Center) (the default), [Inside](cref:Meziantou.Framework.Imaging.Drawing.PenAlignment.Inside) or [Outside](cref:Meziantou.Framework.Imaging.Drawing.PenAlignment.Outside) what the path fills |
+| [ScalesWithTransform](cref:Meziantou.Framework.Imaging.Drawing.Pen.ScalesWithTransform) | `true` by default: see [Transformations](04-Transformations.md) |
 
 - The parts of a stroke that overlap are painted once, also with a translucent paint.
-- `PenAlignment.Inside` keeps an outline inside its shape, so that it does not make the shape larger or go over what is
-  next to it, as the border of the chart in [Shapes and paths](02-ShapesAndPaths.md) does. `Outside` keeps it outside,
+- [PenAlignment.Inside](cref:Meziantou.Framework.Imaging.Drawing.PenAlignment.Inside) keeps an outline inside its shape, so that it does not make the shape larger or go over what is
+  next to it, as the border of the chart in [Shapes and paths](02-ShapesAndPaths.md) does. [Outside](cref:Meziantou.Framework.Imaging.Drawing.PenAlignment.Outside) keeps it outside,
   so that it does not cover the shape: the outline of a text.
 - A pen of width 0 is a hairline: one pixel of the canvas wide, whatever the transformation.
 
@@ -358,15 +358,15 @@ public static void DrawDashes(string outputPath)
 
 ![Three blue lines: dashed, dotted, and alternating long and short dashes; below, a red curve with a dot at its start and an arrow head at its end](images/DrawDashes.png)
 
-- `DashPattern` is a list of lengths in pixels, alternately of a dash and of a gap, repeated along each contour. A
-  pattern of an odd number of lengths is used twice: `[4]` is dashes of 4 and gaps of 4. `DashOffset` is where a
+- [DashPattern](cref:Meziantou.Framework.Imaging.Drawing.Pen.DashPattern) is a list of lengths in pixels, alternately of a dash and of a gap, repeated along each contour. A
+  pattern of an odd number of lengths is used twice: `[4]` is dashes of 4 and gaps of 4. [DashOffset](cref:Meziantou.Framework.Imaging.Drawing.Pen.DashOffset) is where a
   contour starts in the pattern.
 - Each dash gets the caps of the pen at both ends. A dash of length 0 is drawn by its caps alone: `[0, 5]` with round
   caps is a dotted line, and nothing with butt caps.
 - On a closed contour, the last dash continues with the first one when the contour ends in the middle of a dash.
-- `StartMarker` and `EndMarker` draw a shape at the ends of open contours: `LineMarker.Arrow` (whose tip is exactly the
-  end of the path), `Circle`, `Square` and `Diamond`. A marker is scaled by the width of the pen and turned to the
+- [StartMarker](cref:Meziantou.Framework.Imaging.Drawing.Pen.StartMarker) and [EndMarker](cref:Meziantou.Framework.Imaging.Drawing.Pen.EndMarker) draw a shape at the ends of open contours: [LineMarker.Arrow](cref:Meziantou.Framework.Imaging.Drawing.LineMarker.Arrow) (whose tip is exactly the
+  end of the path), [Circle](cref:Meziantou.Framework.Imaging.Drawing.LineMarker.Circle), [Square](cref:Meziantou.Framework.Imaging.Drawing.LineMarker.Square) and [Diamond](cref:Meziantou.Framework.Imaging.Drawing.LineMarker.Diamond). A marker is scaled by the width of the pen and turned to the
   direction of the path. Closed contours have no marker; a dashed contour has them at its ends.
-- `new LineMarker(shape, inset)` makes a marker of any `VectorPath`, in units of the width of the pen, with the end of
+- `new LineMarker(shape, inset)` makes a marker of any [VectorPath](cref:Meziantou.Framework.Imaging.Drawing.VectorPath), in units of the width of the pen, with the end of
   the contour at its origin and the direction of the contour along its x axis. The inset shortens the stroke so that it
   does not show beyond a marker that narrows to a point.

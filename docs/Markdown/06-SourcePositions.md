@@ -7,9 +7,9 @@ description: Map each block and inline back to its line, column and character ra
 
 Every element of the [syntax tree](05-SyntaxTree.md) has a position in the source text:
 
-- `Line` and `Column` are zero-based: the first character of the document is at line 0, column 0.
-- `Span` is a `SourceSpan`: the offset of its first character (`Start`) and of its last character (`End`) in the
-  source text. Both are included, so `Length` is `End - Start + 1`.
+- [Line](cref:Meziantou.Framework.Markdown.Syntax.MarkdownObject.Line) and [Column](cref:Meziantou.Framework.Markdown.Syntax.MarkdownObject.Column) are zero-based: the first character of the document is at line 0, column 0.
+- [Span](cref:Meziantou.Framework.Markdown.Syntax.MarkdownObject.Span) is a [SourceSpan](cref:Meziantou.Framework.Markdown.Syntax.SourceSpan): the offset of its first character ([Start](cref:Meziantou.Framework.Markdown.Syntax.SourceSpan.Start)) and of its last character ([End](cref:Meziantou.Framework.Markdown.Syntax.SourceSpan.End)) in the
+  source text. Both are included, so [Length](cref:Meziantou.Framework.Markdown.Syntax.SourceSpan.Length) is `End - Start + 1`.
 
 <!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/TestSourcePosition.cs;region=MarkdownObject_BlockPositions;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -24,13 +24,13 @@ Assert.Equal("Some *text* here.", markdown.Substring(paragraph.Span.Start, parag
 ```
 <!-- endref -->
 
-The offsets are in characters of the string you parsed. `ToPositionText()` formats the position of an element as
+The offsets are in characters of the string you parsed. [ToPositionText()](cref:Meziantou.Framework.Markdown.Syntax.MarkdownObject.ToPositionText) formats the position of an element as
 `line, column, start-end`, for error messages and logs.
 
 ## Positions of inlines
 
-By default, the parser computes the position of the blocks only: the inlines have a `Span` of `0-0`. Enable
-`UsePreciseSourceLocation` when you need the position of the inlines, for instance to highlight a link in an editor:
+By default, the parser computes the position of the blocks only: the inlines have a [Span](cref:Meziantou.Framework.Markdown.Syntax.MarkdownObject.Span) of `0-0`. Enable
+[UsePreciseSourceLocation](cref:Meziantou.Framework.Markdown.MarkdownExtensions.UsePreciseSourceLocation) when you need the position of the inlines, for instance to highlight a link in an editor:
 
 <!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/TestSourcePosition.cs;region=MarkdownPipelineBuilder_UsePreciseSourceLocation;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -51,12 +51,12 @@ Assert.Equal(5, emphasis.Column);
 ```
 <!-- endref -->
 
-Computing these positions makes parsing slower: enable it only when you use them. `UsePipeTables` enables it too,
+Computing these positions makes parsing slower: enable it only when you use them. [UsePipeTables](cref:Meziantou.Framework.Markdown.MarkdownExtensions.UsePipeTables) enables it too,
 because the parser of tables needs the positions.
 
 ## Find the element at a position
 
-`FindBlockAtPosition` returns the innermost block that contains an offset of the source, for instance the position of
+[FindBlockAtPosition](cref:Meziantou.Framework.Markdown.Syntax.BlockExtensions.FindBlockAtPosition) returns the innermost block that contains an offset of the source, for instance the position of
 the caret in an editor:
 
 <!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/TestSourcePosition.cs;region=BlockExtensions_FindBlockAtPosition;format=md-fenced-code-block;dedent=true -->
@@ -75,12 +75,12 @@ Assert.IsType<ListItemBlock>(block!.Parent);
 <!-- endref -->
 
 On a blank line between two blocks, no child contains the offset: it returns the container, here the document. It
-returns `null` only when the offset is outside the block you search. `ContainsPosition` and `CompareToPosition` test the
-position of one block, and `FindClosestBlock` finds the block closest to a line.
+returns `null` only when the offset is outside the block you search. [ContainsPosition](cref:Meziantou.Framework.Markdown.Syntax.BlockExtensions.ContainsPosition) and [CompareToPosition](cref:Meziantou.Framework.Markdown.Syntax.BlockExtensions.CompareToPosition) test the
+position of one block, and [FindClosestBlock](cref:Meziantou.Framework.Markdown.Syntax.BlockExtensions.FindClosestBlock) finds the block closest to a line.
 
 ## Synchronize an editor and a preview
 
-`UsePragmaLines` gives the outermost block that starts on each line an `id` with its line number, `pragma-line-<line>`,
+[UsePragmaLines](cref:Meziantou.Framework.Markdown.MarkdownExtensions.UsePragmaLines) gives the outermost block that starts on each line an `id` with its line number, `pragma-line-<line>`,
 so that a preview can scroll to the element that the editor shows:
 
 <!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/TestPragmaLines.cs;region=MarkdownExtensions_UsePragmaLines;format=md-fenced-code-block;dedent=true -->
@@ -94,7 +94,7 @@ Assert.Equal("<h1 id=\"pragma-line-0\">Title</h1>\n<p id=\"pragma-line-2\">Some 
 ```
 <!-- endref -->
 
-The line of the editor is not always the first line of a block. `FindClosestLine` returns the closest line that has a
+The line of the editor is not always the first line of a block. [FindClosestLine](cref:Meziantou.Framework.Markdown.Syntax.BlockExtensions.FindClosestLine) returns the closest line that has a
 `pragma-line` identifier:
 
 <!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/TestPragmaLines.cs;region=BlockExtensions_FindClosestLine;format=md-fenced-code-block;dedent=true -->

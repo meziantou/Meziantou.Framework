@@ -14,7 +14,7 @@ A connection string for the server looks like
 | Keyword | Use |
 | --- | --- |
 | `Host`, `Port` | The address of a listener. Port 5432 by default. |
-| `Username`, `Password` | Sent to the authentication handler (`UserName`, and the password checked by `ValidatePassword`). |
+| `Username`, `Password` | Sent to the authentication handler ([UserName](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlAuthenticationContext.UserName), and the password checked by [ValidatePassword](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlAuthenticationContext.ValidatePassword)). |
 | `Database` | Sent to the authentication handler (`Database`). |
 | `Application Name` | Sent as the `application_name` startup parameter. |
 | `Server Compatibility Mode=NoTypeLoading` | Required. Without it, Npgsql queries the system catalog of PostgreSQL (`pg_type`) when it opens the connection, and the open fails unless your handler answers that query. |
@@ -27,7 +27,7 @@ A connection string for the server looks like
 ## Run commands
 
 Npgsql sends every command through the extended query protocol, with or without parameters: the handler gets a
-`Describe`, then an `ExtendedQuery` request. See [Answer Describe](05-HandlingQueries.md#answer-describe). Results are
+[Describe](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlQueryRequestType.Describe), then an [ExtendedQuery](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlQueryRequestType.ExtendedQuery) request. See [Answer Describe](05-HandlingQueries.md#answer-describe). Results are
 read as usual, with the typed getters:
 
 <!-- ref:../../tests/Meziantou.Framework.PostgreSqlServer.Tests/PostgreSqlServerProtocolTests.cs;region=PostgreSqlServer_ColumnTypesClient;format=md-fenced-code-block;dedent=true -->

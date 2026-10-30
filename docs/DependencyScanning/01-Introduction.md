@@ -43,12 +43,12 @@ The types are in the [Meziantou.Framework.DependencyScanning](cref:Meziantou.Fra
 
 | Type | Contains |
 | --- | --- |
-| `DependencyScanner` | `ScanDirectoryAsync`, `ScanFilesAsync` and `ScanFileAsync`, and the base class of the scanners |
-| `ScannerOptions` | The scanners, the filters, the parallelism, the error callback and the file system |
-| `Dependency` | A dependency: its `Type`, `Name`, `Version`, locations, `Metadata` and `Tags` |
-| `DependencyType` | The kinds of dependencies, such as `NuGet`, `Npm` or `DockerImage` |
-| `Location` | Where a value is written, and `UpdateAsync` to change it |
-| `RegexScanner` | A scanner configured with file patterns and a regular expression |
+| [DependencyScanner](cref:Meziantou.Framework.DependencyScanning.DependencyScanner) | [ScanDirectoryAsync](cref:Meziantou.Framework.DependencyScanning.DependencyScanner.ScanDirectoryAsync), [ScanFilesAsync](cref:Meziantou.Framework.DependencyScanning.DependencyScanner.ScanFilesAsync) and [ScanFileAsync](cref:Meziantou.Framework.DependencyScanning.DependencyScanner.ScanFileAsync), and the base class of the scanners |
+| [ScannerOptions](cref:Meziantou.Framework.DependencyScanning.ScannerOptions) | The scanners, the filters, the parallelism, the error callback and the file system |
+| [Dependency](cref:Meziantou.Framework.DependencyScanning.Dependency) | A dependency: its [Type](cref:Meziantou.Framework.DependencyScanning.Dependency.Type), [Name](cref:Meziantou.Framework.DependencyScanning.Dependency.Name), [Version](cref:Meziantou.Framework.DependencyScanning.Dependency.Version), locations, [Metadata](cref:Meziantou.Framework.DependencyScanning.Dependency.Metadata) and [Tags](cref:Meziantou.Framework.DependencyScanning.Dependency.Tags) |
+| [DependencyType](cref:Meziantou.Framework.DependencyScanning.DependencyType) | The kinds of dependencies, such as [NuGet](cref:Meziantou.Framework.DependencyScanning.DependencyType.NuGet), [Npm](cref:Meziantou.Framework.DependencyScanning.DependencyType.Npm) or [DockerImage](cref:Meziantou.Framework.DependencyScanning.DependencyType.DockerImage) |
+| [Location](cref:Meziantou.Framework.DependencyScanning.Location) | Where a value is written, and [UpdateAsync](cref:Meziantou.Framework.DependencyScanning.Location.UpdateAsync) to change it |
+| [RegexScanner](cref:Meziantou.Framework.DependencyScanning.Scanners.RegexScanner) | A scanner configured with file patterns and a regular expression |
 
 ## Next steps
 

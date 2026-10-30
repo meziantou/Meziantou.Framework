@@ -3,13 +3,13 @@ title: Allowed attributes and styles
 description: Allow attributes by name or by prefix, keep event handlers and identifiers out, and format content without CSS.
 ---
 
-An attribute is kept when its name is in `ValidAttributes` or starts with one of the prefixes of
-`ValidAttributePrefixes`; every other attribute is removed. Names and prefixes are compared without regard to case. The
+An attribute is kept when its name is in [ValidAttributes](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.ValidAttributes) or starts with one of the prefixes of
+[ValidAttributePrefixes](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.ValidAttributePrefixes); every other attribute is removed. Names and prefixes are compared without regard to case. The
 sets apply to every element: there is no list of attributes per element.
 
 ## Allow or remove attributes
 
-Add or remove names in `ValidAttributes`:
+Add or remove names in [ValidAttributes](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.ValidAttributes):
 
 <!-- ref:../../tests/Meziantou.Framework.HtmlSanitizer.Tests/HtmlSanitizerTests.cs;region=HtmlSanitizer_CustomAttributes;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -29,12 +29,12 @@ Assert.Equal("<a data-custom=\"value\" href=\"https://example.com\">link</a>", r
 ```
 <!-- endref -->
 
-Adding a name to `ValidAttributes` keeps its value as it is. When the attribute holds a URL, add it to `UriAttributes`
+Adding a name to [ValidAttributes](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.ValidAttributes) keeps its value as it is. When the attribute holds a URL, add it to [UriAttributes](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.UriAttributes)
 too, so its value is validated. See [URLs](06-Urls.md#validate-your-own-url-attributes).
 
 ## Allow attributes by prefix
 
-`ValidAttributePrefixes` allows every attribute whose name starts with a prefix. It contains `aria-` by default:
+[ValidAttributePrefixes](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.ValidAttributePrefixes) allows every attribute whose name starts with a prefix. It contains `aria-` by default:
 
 <!-- ref:../../tests/Meziantou.Framework.HtmlSanitizer.Tests/HtmlSanitizerTests.cs;region=HtmlSanitizer_AttributePrefixes;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -51,7 +51,7 @@ Assert.Equal("<p data-id=\"1\">test</p>", result);
 ```
 <!-- endref -->
 
-An attribute allowed by a prefix is URL-validated only when its name is in `UriAttributes`. Frameworks such as htmx or
+An attribute allowed by a prefix is URL-validated only when its name is in [UriAttributes](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.UriAttributes). Frameworks such as htmx or
 Knockout run the value of some `data-*` attributes (`data-hx-on:click`, `data-bind`), so only allow `data-` when your
 pages do not use such a framework.
 
@@ -71,7 +71,7 @@ The library does not sanitize CSS. By default the `style` attribute is removed a
 its content; the `style` element can never be allowed (see
 [Allowed elements](04-AllowedElements.md#elements-that-cannot-be-allowed)).
 
-Adding `style` to `ValidAttributes` keeps the CSS exactly as it was written:
+Adding `style` to [ValidAttributes](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.ValidAttributes) keeps the CSS exactly as it was written:
 
 <!-- ref:../../tests/Meziantou.Framework.HtmlSanitizer.Tests/HtmlSanitizerTests.cs;region=HtmlSanitizer_StyleIsNotSanitized;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -91,6 +91,6 @@ with elements instead:
 - **Formatting elements** such as `b`, `em`, `code`, `sub`, `h1`–`h6` or `table` are allowed by default.
 - **`class`** is allowed by default. Its value is not checked, so the content can use any class of your stylesheets.
   Check that none of them lets the content pass for part of your page, for instance with fixed positioning, or remove
-  `class` from `ValidAttributes`.
+  `class` from [ValidAttributes](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.ValidAttributes).
 - **Presentational attributes** such as `align`, `bgcolor`, `color`, `face`, `width` and `height` are allowed by
   default.

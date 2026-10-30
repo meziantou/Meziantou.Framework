@@ -5,7 +5,7 @@ description: Convert objects to and from strings, files and streams, configure a
 
 ## Strings
 
-`YamlSerializer.Serialize` returns the YAML text of a value, and `YamlSerializer.Deserialize<T>` creates a value from
+[YamlSerializer.Serialize](cref:Meziantou.Framework.Yaml.YamlSerializer.Serialize) returns the YAML text of a value, and [YamlSerializer.Deserialize\<T\>](cref:Meziantou.Framework.Yaml.YamlSerializer.Deserialize) creates a value from
 YAML text:
 
 <!-- ref:../../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlSerializerApiTests.cs;region=YamlSerializer_SerializeAndDeserialize;format=md-fenced-code-block;dedent=true -->
@@ -65,16 +65,16 @@ private static Product? LoadProduct(string path)
 | `Stream` holding UTF-8 text | `Stream`, written as UTF-8 |
 | | `IBufferWriter<char>` |
 
-The methods are synchronous. Each one has a generic form (`Deserialize<T>`) and a form that takes a `Type`, for a type
+The methods are synchronous. Each one has a generic form ([Deserialize\<T\>](cref:Meziantou.Framework.Yaml.YamlSerializer.Deserialize)) and a form that takes a `Type`, for a type
 known at run time only.
 
-A stream can hold several documents separated by `---`. `Deserialize` binds the first one; to read all of them, load
+A stream can hold several documents separated by `---`. [Deserialize](cref:Meziantou.Framework.Yaml.YamlSerializer.Deserialize) binds the first one; to read all of them, load
 the stream with [`YamlStream`](../05-DocumentObjectModel.md#read-several-documents) and convert each document with
-`ToObject<T>`.
+[ToObject\<T\>](cref:Meziantou.Framework.Yaml.Model.YamlNode.ToObject).
 
 ## Options
 
-`YamlSerializerOptions` configures both directions. `YamlSerializerOptions.Default` holds the default values, and is
+[YamlSerializerOptions](cref:Meziantou.Framework.Yaml.YamlSerializerOptions) configures both directions. [YamlSerializerOptions.Default](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.Default) holds the default values, and is
 used when you pass no options. The options are a `record` with `init` properties: create an instance with the values you
 need, or derive one from another with `with`:
 
@@ -93,29 +93,29 @@ Assert.Throws<YamlException>(() => YamlSerializer.Deserialize<Product>("Id: 1\nP
 An instance cannot change after it is created, so you can create it once, for instance in a `static readonly` field,
 and use it for every call.
 
-Every method accepts, instead of the options, a `YamlSerializerContext` or a `YamlTypeInfo` produced by the
+Every method accepts, instead of the options, a [YamlSerializerContext](cref:Meziantou.Framework.Yaml.Serialization.YamlSerializerContext) or a [YamlTypeInfo](cref:Meziantou.Framework.Yaml.YamlTypeInfo) produced by the
 [source generator](../04-SourceGeneration.md).
 
 The options are described on the page of the feature they control:
 
-- [Members and names](04-MembersAndNames.md): `PropertyNamingPolicy`, `DictionaryKeyPolicy`, `IncludeFields`,
-  `DefaultIgnoreCondition`, `IgnoreReadOnlyProperties`, `IgnoreReadOnlyFields`.
-- [Output format](05-OutputFormat.md): `WriteIndented`, `IndentSize`, `IndentBlockSequences`, `MappingOrder`,
-  `BlockSequenceMappingStyle`, `BlockSequenceSequenceStyle`, `ScalarStylePreferences`.
-- [Reading behavior](06-ReadingBehavior.md): `UnmappedMemberHandling`, `PropertyNameCaseInsensitive`,
-  `RespectRequiredConstructorParameters`, `RespectNullableAnnotations`, `PreferredObjectCreationHandling`,
-  `DuplicateKeyHandling`.
-- [Custom converters](07-CustomConverters.md): `Converters`.
-- [Polymorphism](08-Polymorphism.md) and [C# unions](09-Unions.md): `PolymorphismOptions`, `TypeClassifiers`.
-- [Anchors, aliases and merge keys](10-AnchorsAliasesAndMergeKeys.md): `ReferenceHandling`.
-- [Schemas](11-Schemas.md): `Schema`, `UseSchema`.
-- [Handling errors](../08-ErrorHandling.md): `SourceName`.
-- [Reading untrusted YAML](../09-UntrustedInput.md): `MaxDepth`, `AllowAnchors`, `AllowAliases`,
-  `MaxAliasExpansionNodeCount`, `UnsafeAllowDeserializeFromTagTypeName`.
+- [Members and names](04-MembersAndNames.md): [PropertyNamingPolicy](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.PropertyNamingPolicy), [DictionaryKeyPolicy](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.DictionaryKeyPolicy), [IncludeFields](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.IncludeFields),
+  [DefaultIgnoreCondition](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.DefaultIgnoreCondition), [IgnoreReadOnlyProperties](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.IgnoreReadOnlyProperties), [IgnoreReadOnlyFields](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.IgnoreReadOnlyFields).
+- [Output format](05-OutputFormat.md): [WriteIndented](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.WriteIndented), [IndentSize](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.IndentSize), [IndentBlockSequences](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.IndentBlockSequences), [MappingOrder](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.MappingOrder),
+  [BlockSequenceMappingStyle](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.BlockSequenceMappingStyle), [BlockSequenceSequenceStyle](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.BlockSequenceSequenceStyle), [ScalarStylePreferences](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.ScalarStylePreferences).
+- [Reading behavior](06-ReadingBehavior.md): [UnmappedMemberHandling](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.UnmappedMemberHandling), [PropertyNameCaseInsensitive](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.PropertyNameCaseInsensitive),
+  [RespectRequiredConstructorParameters](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.RespectRequiredConstructorParameters), [RespectNullableAnnotations](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.RespectNullableAnnotations), [PreferredObjectCreationHandling](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.PreferredObjectCreationHandling),
+  [DuplicateKeyHandling](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.DuplicateKeyHandling).
+- [Custom converters](07-CustomConverters.md): [Converters](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.Converters).
+- [Polymorphism](08-Polymorphism.md) and [C# unions](09-Unions.md): [PolymorphismOptions](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.PolymorphismOptions), [TypeClassifiers](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.TypeClassifiers).
+- [Anchors, aliases and merge keys](10-AnchorsAliasesAndMergeKeys.md): [ReferenceHandling](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.ReferenceHandling).
+- [Schemas](11-Schemas.md): [Schema](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.Schema), [UseSchema](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.UseSchema).
+- [Handling errors](../08-ErrorHandling.md): [SourceName](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.SourceName).
+- [Reading untrusted YAML](../09-UntrustedInput.md): [MaxDepth](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.MaxDepth), [AllowAnchors](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.AllowAnchors), [AllowAliases](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.AllowAliases),
+  [MaxAliasExpansionNodeCount](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.MaxAliasExpansionNodeCount), [UnsafeAllowDeserializeFromTagTypeName](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.UnsafeAllowDeserializeFromTagTypeName).
 
 ## Read without exceptions
 
-`TryDeserialize` returns `false` instead of throwing a `YamlException` when the YAML is invalid or does not match the
+[TryDeserialize](cref:Meziantou.Framework.Yaml.YamlSerializer.TryDeserialize) returns `false` instead of throwing a [YamlException](cref:Meziantou.Framework.Yaml.YamlException) when the YAML is invalid or does not match the
 type:
 
 <!-- ref:../../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlSerializerApiTests.cs;region=YamlSerializer_TryDeserialize;format=md-fenced-code-block;dedent=true -->

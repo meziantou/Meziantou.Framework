@@ -18,7 +18,7 @@ Assert.Equal("00:30:00", TimeSpan.FromMinutes(30).ToStringInvariant());
 ```
 <!-- endref -->
 
-`ToStringInvariant` exists for the numeric types (`int`, `long`, `double`, `decimal`, `Half` and the others), for
+[ToStringInvariant](cref:Meziantou.Framework.NumberExtensions.ToStringInvariant) exists for the numeric types (`int`, `long`, `double`, `decimal`, `Half` and the others), for
 `DateTime`, `DateOnly` and `TimeOnly`, and for any `IFormattable`, with or without a format string.
 
 ## Append invariant values
@@ -36,10 +36,10 @@ Assert.Equal("1234.5 25 % of 1,000 3.14", sb.ToString());
 ```
 <!-- endref -->
 
-- `AppendInvariant` appends a number, a nullable number, an `IFormattable` or an object, formatted with the invariant
+- [AppendInvariant](cref:Meziantou.Framework.StringBuilderExtensions.AppendInvariant) appends a number, a nullable number, an `IFormattable` or an object, formatted with the invariant
   culture.
-- With an interpolated string, `AppendInvariant` formats every hole with the invariant culture.
-- `AppendFormatInvariant` is `AppendFormat` with the invariant culture.
+- With an interpolated string, [AppendInvariant](cref:Meziantou.Framework.StringBuilderExtensions.AppendInvariant) formats every hole with the invariant culture.
+- [AppendFormatInvariant](cref:Meziantou.Framework.StringBuilderExtensions.AppendFormatInvariant) is `AppendFormat` with the invariant culture.
 
 ## Run code with another culture
 
@@ -56,14 +56,14 @@ Assert.True(canadianFrench.NeutralEquals(CultureInfo.GetCultureInfo("fr-FR")));
 ```
 <!-- endref -->
 
-- `CultureInfoUtilities.UseCulture` sets the current culture and the current UI culture of the thread, runs the
+- [CultureInfoUtilities.UseCulture](cref:Meziantou.Framework.CultureInfoUtilities.UseCulture) sets the current culture and the current UI culture of the thread, runs the
   delegate, and restores the previous cultures, even when the delegate throws. It takes a culture or a culture name,
   and an `Action` or a `Func<T>`.
 - The delegate is synchronous. With an `async` lambda, the cultures are restored at the first `await` that does not
   complete synchronously.
-- `SetCurrentThreadCulture` sets both cultures without restoring them.
-- `GetCulture` returns a culture from its name or its LCID, or `null` when it does not exist.
-- `GetNeutralCulture` returns the neutral culture (`fr` for `fr-CA`), and `NeutralEquals` tells whether two cultures
+- [SetCurrentThreadCulture](cref:Meziantou.Framework.CultureInfoUtilities.SetCurrentThreadCulture) sets both cultures without restoring them.
+- [GetCulture](cref:Meziantou.Framework.CultureInfoUtilities.GetCulture) returns a culture from its name or its LCID, or `null` when it does not exist.
+- [GetNeutralCulture](cref:Meziantou.Framework.CultureInfoUtilities.GetNeutralCulture) returns the neutral culture (`fr` for `fr-CA`), and [NeutralEquals](cref:Meziantou.Framework.CultureInfoUtilities.NeutralEquals) tells whether two cultures
   share the same neutral culture.
 
 Named cultures are not available when the application runs in invariant globalization mode.
@@ -81,7 +81,7 @@ Assert.Equal("2e", NumberExtensions.ToFrenchOrdinal(2, CultureInfo.InvariantCult
 ```
 <!-- endref -->
 
-`ToEnglishOrdinal` and `ToFrenchOrdinal` add the English or French ordinal suffix to a positive number. Zero and
+[ToEnglishOrdinal](cref:Meziantou.Framework.NumberExtensions.ToEnglishOrdinal) and [ToFrenchOrdinal](cref:Meziantou.Framework.NumberExtensions.ToFrenchOrdinal) add the English or French ordinal suffix to a positive number. Zero and
 negative numbers are returned without a suffix. The format provider formats the number; without it, the current culture
 is used.
 
@@ -98,5 +98,5 @@ Assert.Equal("\U0001F1EB\U0001F1F7", flag2); // FR flag emoji
 ```
 <!-- endref -->
 
-`Country.GetUnicodeFlag` returns the flag emoji of a country, from a `RegionInfo` or a two-letter ISO region code. The
+[Country.GetUnicodeFlag](cref:Meziantou.Framework.Country.GetUnicodeFlag) returns the flag emoji of a country, from a `RegionInfo` or a two-letter ISO region code. The
 emoji is made of two regional indicator symbols: how it is displayed depends on the fonts of the system.

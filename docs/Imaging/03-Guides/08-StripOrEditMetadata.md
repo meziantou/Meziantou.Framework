@@ -5,7 +5,7 @@ description: Remove the GPS position and the other private data of a photo befor
 
 A photo carries more than its pixels: EXIF data (the GPS position, the date, the camera and its settings), XMP data, text
 comments, a color profile and an orientation. Some of it is private and should not be published; some of it changes how
-the photo looks and must not be lost. `Image.Metadata` holds all of it, and the encoder decides what is written.
+the photo looks and must not be lost. [Image.Metadata](cref:Meziantou.Framework.Imaging.Image.Metadata) holds all of it, and the encoder decides what is written.
 
 ## Remove the private data and keep the colors
 
@@ -29,21 +29,21 @@ public static void RemovePrivateMetadata(string inputPath, string outputPath)
 ```
 <!-- endref -->
 
-- **The orientation first.** The orientation of a photo is an EXIF tag. `AutoOrient` turns the pixels and resets
-  `Metadata.Orientation` to `TopLeft`, so the photo stays upright without its EXIF data.
-- **EXIF and XMP are removed whole.** `ExifProfile` and `XmpProfile` hold the raw bytes of the blocks: the library does
+- **The orientation first.** The orientation of a photo is an EXIF tag. [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient) turns the pixels and resets
+  `Metadata.Orientation` to [TopLeft](cref:Meziantou.Framework.Imaging.Metadata.ExifOrientation.TopLeft), so the photo stays upright without its EXIF data.
+- **EXIF and XMP are removed whole.** [ExifProfile](cref:Meziantou.Framework.Imaging.Metadata.ExifProfile) and [XmpProfile](cref:Meziantou.Framework.Imaging.Metadata.XmpProfile) hold the raw bytes of the blocks: the library does
   not edit their tags one by one. Setting them to `null` removes the GPS position with the rest.
 - **Text entries** are the comments and the text chunks of the file, such as the `Comment` of a JPEG or GIF file and
   the text chunks of a PNG file.
 - **The ICC profile is kept.** It describes the colors of the pixels and nothing else: without it, a photo of a phone
   labeled Display P3 looks dull.
 
-The format of the output follows the extension of its path, with the default `MetadataHandling.Strict`: what is left is
-written as it is, or `Save` throws when the format cannot store it.
+The format of the output follows the extension of its path, with the default [MetadataHandling.Strict](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strict): what is left is
+written as it is, or [Save](cref:Meziantou.Framework.Imaging.Image.Save) throws when the format cannot store it.
 
 ## Remove all the metadata
 
-`MetadataHandling.Strip` writes no optional metadata at all: no EXIF, XMP, text, resolution, ICC profile or orientation.
+[MetadataHandling.Strip](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strip) writes no optional metadata at all: no EXIF, XMP, text, resolution, ICC profile or orientation.
 Since the orientation and the profile change how the pixels look, apply them to the pixels first:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/GuideExamples.cs;region=Imaging_StripAllMetadata;format=md-fenced-code-block;dedent=true -->
@@ -62,26 +62,26 @@ public static void StripAllMetadata(string inputPath, string outputPath)
 ```
 <!-- endref -->
 
-The three policies of `ImageEncoder.MetadataHandling`:
+The three policies of [ImageEncoder.MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.ImageEncoder.MetadataHandling):
 
 | Policy | Writes | When the format cannot store some metadata |
 | --- | --- | --- |
-| `Strict` (default) | Everything the image has | Throws an `UnsupportedImageFeatureException` before writing anything |
-| `DiscardUnsupported` | What the format can store | Drops the rest |
-| `Strip` | Nothing optional | Nothing to drop |
+| [Strict](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strict) (default) | Everything the image has | Throws an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException) before writing anything |
+| [DiscardUnsupported](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.DiscardUnsupported) | What the format can store | Drops the rest |
+| [Strip](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strip) | Nothing optional | Nothing to drop |
 
 The frame durations and the loop count of an animation are not metadata: no policy removes them. A cursor keeps its
 hotspot in the formats that are made for it (CUR and ANI).
 
 ## Check what a file contains
 
-`Image.Identify` returns the metadata of a file without decoding its pixels: `info.Metadata.ExifProfile`,
-`XmpProfile`, `IccProfile`, `TextEntries` and `Orientation`. Use `ImageIdentifyMode.FullScan` to also read the metadata
+[Image.Identify](cref:Meziantou.Framework.Imaging.Image.Identify) returns the metadata of a file without decoding its pixels: `info.Metadata.ExifProfile`,
+[XmpProfile](cref:Meziantou.Framework.Imaging.Metadata.XmpProfile), [IccProfile](cref:Meziantou.Framework.Imaging.Metadata.IccProfile), [TextEntries](cref:Meziantou.Framework.Imaging.Metadata.ImageMetadata.TextEntries) and [Orientation](cref:Meziantou.Framework.Imaging.Metadata.ImageMetadata.Orientation). Use [ImageIdentifyMode.FullScan](cref:Meziantou.Framework.Imaging.ImageIdentifyMode.FullScan) to also read the metadata
 stored after the pixels, which some formats allow. See [Identifying images](../05-LoadingAndSaving/03-IdentifyingImages.md).
 
 ## Edit the metadata
 
-The properties of `Image.Metadata` can be set before saving:
+The properties of [Image.Metadata](cref:Meziantou.Framework.Imaging.Image.Metadata) can be set before saving:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_EditMetadata;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -97,14 +97,14 @@ public static void EditMetadata(string path)
 
 | Property | Contains |
 | --- | --- |
-| `Orientation` | How viewers must turn the pixels (`ExifOrientation`); `TopLeft` means as stored |
-| `Resolution` | The pixel density, in dots per inch (`ImageResolution`), used for printing |
-| `TextEntries` | Key and value pairs (`ImageTextEntry`): a title, a comment, a copyright |
-| `IccProfile` | The color profile that labels the pixels |
-| `ExifProfile`, `XmpProfile` | The raw EXIF and XMP blocks |
+| [Orientation](cref:Meziantou.Framework.Imaging.Metadata.ImageMetadata.Orientation) | How viewers must turn the pixels ([ExifOrientation](cref:Meziantou.Framework.Imaging.Metadata.ExifOrientation)); [TopLeft](cref:Meziantou.Framework.Imaging.Metadata.ExifOrientation.TopLeft) means as stored |
+| [Resolution](cref:Meziantou.Framework.Imaging.Metadata.ImageMetadata.Resolution) | The pixel density, in dots per inch ([ImageResolution](cref:Meziantou.Framework.Imaging.Metadata.ImageResolution)), used for printing |
+| [TextEntries](cref:Meziantou.Framework.Imaging.Metadata.ImageMetadata.TextEntries) | Key and value pairs ([ImageTextEntry](cref:Meziantou.Framework.Imaging.Metadata.ImageTextEntry)): a title, a comment, a copyright |
+| [IccProfile](cref:Meziantou.Framework.Imaging.Metadata.IccProfile) | The color profile that labels the pixels |
+| [ExifProfile](cref:Meziantou.Framework.Imaging.Metadata.ExifProfile), [XmpProfile](cref:Meziantou.Framework.Imaging.Metadata.XmpProfile) | The raw EXIF and XMP blocks |
 
-- **Orientation.** Setting `Orientation` changes how viewers display the image without moving a pixel; the EXIF
-  orientation tag is rewritten from it when the file is saved. `AutoOrient` does the opposite: it moves the pixels and
+- **Orientation.** Setting [Orientation](cref:Meziantou.Framework.Imaging.Metadata.ImageMetadata.Orientation) changes how viewers display the image without moving a pixel; the EXIF
+  orientation tag is rewritten from it when the file is saved. [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient) does the opposite: it moves the pixels and
   resets the orientation.
 - **The library keeps the EXIF data consistent.** On save, the dimension tags of the EXIF block are updated to the size
   of the image, and an EXIF thumbnail that a crop, a resize or a color conversion made stale is removed, so it can no
@@ -114,6 +114,6 @@ public static void EditMetadata(string path)
   [Metadata and orientation](../09-Color/02-MetadataAndOrientation.md).
 - **Saving re-encodes the pixels.** The library writes a file from the image, so editing the metadata of a JPEG file and
   saving it as JPEG compresses its pixels again.
-- **Colors are never converted by a label change.** Setting `IccProfile` relabels the pixels without changing them; to
-  convert the colors to another profile, use `ConvertColorProfile` (see
+- **Colors are never converted by a label change.** Setting [IccProfile](cref:Meziantou.Framework.Imaging.Metadata.IccProfile) relabels the pixels without changing them; to
+  convert the colors to another profile, use [ConvertColorProfile](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ConvertColorProfile) (see
   [Color management](../09-Color/03-ColorManagement.md)).

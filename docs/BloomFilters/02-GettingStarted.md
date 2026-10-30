@@ -33,13 +33,13 @@ Assert.Equal(2, estimatedItemCount, tolerance: 0.1);
 ```
 <!-- endref -->
 
-- `BloomFilterSize.CreateOptimalSize` computes the size of a filter for the number of values you expect to add and the
+- [BloomFilterSize.CreateOptimalSize](cref:Meziantou.Framework.BloomFilters.BloomFilterSize.CreateOptimalSize) computes the size of a filter for the number of values you expect to add and the
   false positive probability you accept. See [Sizing a filter](03-SizingAFilter.md).
-- `BloomFilter.CreateXXHash3` creates a filter of that size that hashes the values with XXH3. Each hash algorithm has
+- [BloomFilter.CreateXXHash3](cref:Meziantou.Framework.BloomFilters.BloomFilter.CreateXXHash3) creates a filter of that size that hashes the values with XXH3. Each hash algorithm has
   its factory method; see [Hash algorithms](06-HashAlgorithms.md).
-- `Add` adds a value. `MayContain` returns `false` when the value was certainly not added, and `true` when it probably
+- [Add](cref:Meziantou.Framework.BloomFilters.IBloomFilter.Add) adds a value. [MayContain](cref:Meziantou.Framework.BloomFilters.IBloomFilter.MayContain) returns `false` when the value was certainly not added, and `true` when it probably
   was.
-- `GetEstimateCount` estimates the number of distinct values added, from the number of bits set.
+- [GetEstimateCount](cref:Meziantou.Framework.BloomFilters.BloomFilter.GetEstimateCount) estimates the number of distinct values added, from the number of bits set.
 
 ## Use the filter in front of a lookup
 
@@ -48,7 +48,7 @@ Ask the filter first, and only do the expensive lookup when it answers `true`. T
 
 1. Add every existing value to the filter, for instance at startup.
 2. Add each new value when it is created.
-3. For a value to look up, call `MayContain`. When it returns `false`, the value does not exist: skip the lookup.
+3. For a value to look up, call [MayContain](cref:Meziantou.Framework.BloomFilters.IBloomFilter.MayContain). When it returns `false`, the value does not exist: skip the lookup.
 
 A Bloom filter cannot forget a value. When values are deleted, rebuild the filter from time to time, or use a
 [counting Bloom filter](05-CountingBloomFilters.md).

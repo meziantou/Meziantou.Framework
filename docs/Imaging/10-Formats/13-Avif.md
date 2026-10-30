@@ -91,6 +91,7 @@ public static void SaveAvif(string photoPath, string avifPath, string losslessPa
 | `ClearTransparentColors` | Replaces the color of fully transparent pixels with black, which makes the file smaller | `false` |
 | `PremultiplyAlpha` | Stores colors multiplied by their alpha; the colors of nearly transparent pixels are rounded | `false` |
 | `GridTileSize` | Cuts a still image larger than a tile into tiles coded separately (64 to 65,536 pixels per side) | `null` |
+| `AutoTiling` | Splits each frame into AV1 tiles from its size (4x2 for 3840x2160), which workers encode and decode at once; files are slightly larger | `false` |
 | `CleanAperture` | The rectangle readers show; every pixel is still stored | `null` |
 | `KeyFrameInterval` | The number of images from a key frame to the next in a sequence; 0 makes the first image the only key frame | 0 |
 | `DurationRounding` | `RequireExact` stores durations exactly or throws; `RoundToNearest` rounds them to microseconds when they need it | `RequireExact` |
@@ -102,6 +103,13 @@ Encoding a large image takes time: a lower `Effort` encodes faster, with larger 
 `GridTileSize` (512 x 512 is a common tile size) is coded tile by tile, with bounded memory; with
 `ImageConfiguration.MaxDegreeOfParallelism` above 1, the tiles are coded concurrently and the file is identical. Lossy
 output can show the edges of the tiles.
+
+`AutoTiling` splits each frame into up to 8 AV1 tiles of at least 512 x 512 pixels (4x2 tiles for 3840 x 2160), which
+the workers of `ImageConfiguration.MaxDegreeOfParallelism` encode at once, and which the decoder decodes at once. The
+layout depends on the size of the image only, so the file is the same whatever the number of workers. The tiles cost
+size even with one worker: on a 3840 x 2160 photo, the file is 0.3% larger at the default effort (0.6% at effort 0,
+0.04% losslessly); with 8 workers it is encoded about 6.5 times faster (2 times at effort 0) and decoded about 1.9 times
+faster.
 
 ## Pitfalls
 

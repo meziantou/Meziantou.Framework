@@ -92,6 +92,7 @@ public sealed class DefaultsTests
         Assert.Null(avif.CleanAperture);
         Assert.False(avif.PremultiplyAlpha);
         Assert.Null(avif.GridTileSize);
+        Assert.False(avif.AutoTiling);
         Assert.Equal(0, avif.KeyFrameInterval);
         Assert.Equal(FrameDurationRounding.RequireExact, avif.DurationRounding);
         Assert.Equal(MetadataHandling.Strict, avif.MetadataHandling);

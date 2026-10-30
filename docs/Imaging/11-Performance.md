@@ -71,7 +71,9 @@ public static void ResizeWithAllCores(string inputPath, string outputPath)
 - The configuration is set when the image is loaded or created; every operation on the image uses it.
 - Resizing, transformations, convolutions, blurs, sharpening and edge detection split large frames into bands.
 - The HEIC and AVIF decoders decode the tiles of large grid images (the photos of phones) concurrently, and the HEIC and
-  AVIF encoders encode the tiles concurrently when `GridTileSize` is set.
+  AVIF encoders encode the tiles concurrently when `GridTileSize` is set. The AV1 tiles of an AVIF frame are encoded and
+  decoded concurrently too: a frame has several when it is wider than 4096 pixels, or when `AvifEncoder.AutoTiling` is
+  set.
 - The other decoders and encoders, drawing and the other operations run on one thread.
 - The result does not depend on the number of threads: the pixels and the encoded bytes are the same.
 - Each worker needs its own working memory, which counts against the memory limit of the image.
@@ -85,6 +87,8 @@ public static void ResizeWithAllCores(string inputPath, string outputPath)
   size; raise it for assets that are encoded once and downloaded many times.
 - **Large AVIF and HEIC images can be cut in tiles.** `GridTileSize` encodes a large image as a grid of tiles, which
   bounds the memory of the encoder and lets several workers encode it.
+- **`AvifEncoder.AutoTiling` makes large AVIF images faster to encode and decode with several workers.** It splits each
+  frame into up to 8 AV1 tiles, for a file about 0.3% larger.
 
 ## Read files efficiently
 

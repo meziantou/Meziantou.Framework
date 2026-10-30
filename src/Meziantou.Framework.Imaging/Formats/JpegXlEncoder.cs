@@ -90,9 +90,13 @@ public sealed class JpegXlEncoder : ImageEncoder
     /// the file size that <see cref="Quality"/> aims at.
     /// </summary>
     /// <remarks>
-    /// Lossless output: efforts 0 to 2 use a fixed color transform and a fixed predictor; from 3 on, the color transform and
-    /// the predictor are searched; from 7 on, the weighted predictor is also tried. At every effort, each group of samples
-    /// is written with prefix codes or with ANS, whichever is smaller. Lossy output: efforts 0 to 2 only use the 8x8
+    /// Lossless output: efforts 0 to 2 code each group with a fixed color transform and a fixed predictor. From 3 on, a tree
+    /// of contexts is learned for the whole frame from samples of its rows, each context with its own predictor, and the
+    /// frame is coded with a palette of its colors (screenshots, graphics) or with a reversible color transform; from 4 on,
+    /// each cluster of contexts codes its values in its own way; from 5 on, repeated runs of values are copied (LZ77). The
+    /// higher efforts learn from more samples, properties, predictors (the weighted predictor from 7 on) and contexts, and
+    /// search further for copies. At every effort, the samples are written with prefix codes or with ANS, whichever is
+    /// smaller. Lossy output: efforts 0 to 2 only use the 8x8
     /// transform and quantize every block alike; from 3 on, each block has its own quantization steps
     /// (see <see cref="Quality"/>), each area has the 8x8 or the 16x16 transform, whichever costs less, each tile has its own
     /// factors of the chroma from luma prediction and the predictor of the alpha channel is searched; from 6 on, the

@@ -347,7 +347,7 @@ internal static class JpegXlModularEncoder
     }
 
     /// <summary>The forward transforms of the reversible color transforms the encoder uses, which the decoder undoes.</summary>
-    private static void ApplyColorTransform(int transform, Span<int> red, Span<int> green, Span<int> blue)
+    internal static void ApplyColorTransform(int transform, Span<int> red, Span<int> green, Span<int> blue)
     {
         switch (transform)
         {
@@ -384,7 +384,7 @@ internal static class JpegXlModularEncoder
     /// Estimates the number of bits of a channel coded with a predictor: the entropy of the tokens of its residuals, plus
     /// the bits that follow the tokens.
     /// </summary>
-    private static double EstimateCost(JpegXlModularChannel channel, int predictor, Span<uint> residuals, AllocationScope scope)
+    internal static double EstimateCost(JpegXlModularChannel channel, int predictor, Span<uint> residuals, AllocationScope scope)
     {
         residuals = residuals[..channel.Samples.Length];
         ComputeResiduals(channel, predictor, residuals, scope);

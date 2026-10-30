@@ -511,6 +511,140 @@ public sealed class Av1EncoderRoundTripTests
         Assert.Null(streamDecoder.DecodeNextOutputFrame(TestContext.Current.CancellationToken));
     }
 
+    [Theory]
+    [InlineData("frame")]
+    [InlineData("frame-with-tile-positions")]
+    [InlineData("tile-group-with-tile-positions")]
+    [InlineData("tile-group-per-tile")]
+    public void TileStartAndEndPositionsOfAFrameWithTwoTiles(string layout)
+    {
+        // A frame of two columns of tiles (a tile is at most 4096 samples wide). The tile group of a frame OBU has no tile
+        // positions (section 6.10.1), while tile group OBUs can split the tiles of a frame
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(TileStartAndEndPositionsOfAFrameWithTwoTiles));
+        var settings = new Av1EncoderSettings(4100, 8, 8, Monochrome: true, 1, 1, 1, 13, 6, FullRange: true, ChromaSamplePosition: 0, StillPicture: false, Lossless: true, Quality: 100, Effort: 0, KeyFrameInterval: 0);
+        using var encoder = new Av1Encoder(scope, settings);
+        var buffer = encoder.GetSourcePlane(0);
+        var samples = CreateSamples("photo", buffer.Width, buffer.Height, 8, seed: 11);
+        for (var y = 0; y < buffer.Height; y++)
+        {
+            samples.AsSpan(y * buffer.Width, buffer.Width).CopyTo(buffer.GetRow(y));
+        }
+
+        encoder.BeginFrame();
+        while (!encoder.Encode(TestContext.Current.CancellationToken))
+        {
+        }
+
+        var payload = encoder.Payload.ToArray();
+        var sequenceHeaderObu = Av1ObuHeader.Read(payload);
+        Assert.Equal(Av1Constants.ObuSequenceHeader, sequenceHeaderObu.Type);
+        var sequenceHeader = payload.AsSpan(sequenceHeaderObu.HeaderLength, sequenceHeaderObu.PayloadLength).ToArray();
+        var frameObu = Av1ObuHeader.Read(payload.AsSpan(sequenceHeaderObu.TotalLength));
+        Assert.Equal(Av1Constants.ObuFrame, frameObu.Type);
+        var frameData = payload.AsSpan(sequenceHeaderObu.TotalLength + frameObu.HeaderLength, frameObu.PayloadLength).ToArray();
+
+        // The frame header is written again from the header that the decoder reads: ended with a byte alignment in the frame
+        // OBU, and with trailing bits in a frame header OBU
+        byte[] frameHeader;
+        int frameHeaderLength;
+        int tileSizeBytes;
+        using (var decoder = new Av1Decoder(scope))
+        {
+            decoder.SetInput(payload, 0, payload.Length);
+            var frame = decoder.DecodeNextOutputFrame(TestContext.Current.CancellationToken);
+            Assert.NotNull(frame);
+            try
+            {
+                // Without screen content tools: force_integer_mv, which the decoder sets for an intra frame, is not coded
+                Assert.Equal((2, 1, false), (frame.Header.TileCount, frame.Header.TileColsLog2 + frame.Header.TileRowsLog2, frame.Header.AllowScreenContentTools));
+                tileSizeBytes = frame.Header.TileSizeBytes;
+                using var output = new PooledPayloadWriter(scope);
+                var writer = new Av1BitWriter(output);
+                Av1HeaderWriter.WriteFrameHeader(ref writer, frame.Sequence, frame.Header);
+                writer.ByteAlign();
+                frameHeaderLength = output.Length;
+                Assert.True(frameData.AsSpan(0, frameHeaderLength).SequenceEqual(output.WrittenSpan), "the frame header is not the one of the frame OBU");
+
+                output.Reset();
+                writer = new Av1BitWriter(output);
+                Av1HeaderWriter.WriteFrameHeader(ref writer, frame.Sequence, frame.Header);
+                writer.WriteTrailingBits();
+                frameHeader = output.WrittenSpan.ToArray();
+            }
+            finally
+            {
+                frame.Release();
+            }
+        }
+
+        // The tile group of the frame OBU: tile_start_and_end_present_flag (0) and its byte alignment, the size of the first
+        // tile, then the tiles
+        var tileGroup = frameData.AsSpan(frameHeaderLength).ToArray();
+        Assert.Equal(0, tileGroup[0]);
+        var firstTileSize = 1;
+        for (var i = 0; i < tileSizeBytes; i++)
+        {
+            firstTileSize += tileGroup[1 + i] << (8 * i);
+        }
+
+        var firstTile = tileGroup.AsSpan(1 + tileSizeBytes, firstTileSize).ToArray();
+        var secondTile = tileGroup.AsSpan(1 + tileSizeBytes + firstTileSize).ToArray();
+
+        // A tile group header with tile positions: the flag (1), tg_start and tg_end of one bit each, then the byte alignment
+        static byte TileGroupHeader(int start, int end) => (byte)(0x80 | (start << 6) | (end << 5));
+
+        using var stream = new PooledPayloadWriter(scope);
+        Av1ObuWriter.WriteTemporalDelimiter(stream);
+        Av1ObuWriter.Write(stream, Av1Constants.ObuSequenceHeader, sequenceHeader);
+        switch (layout)
+        {
+            case "frame":
+                Av1ObuWriter.Write(stream, Av1Constants.ObuFrame, frameData);
+                break;
+            case "frame-with-tile-positions":
+                Av1ObuWriter.Write(stream, Av1Constants.ObuFrame, [.. frameData.AsSpan(0, frameHeaderLength), TileGroupHeader(0, 1), .. tileGroup.AsSpan(1)]);
+                break;
+            case "tile-group-with-tile-positions":
+                Av1ObuWriter.Write(stream, Av1Constants.ObuFrameHeader, frameHeader);
+                Av1ObuWriter.Write(stream, Av1Constants.ObuTileGroup, [TileGroupHeader(0, 1), .. tileGroup.AsSpan(1)]);
+                break;
+            case "tile-group-per-tile":
+                Av1ObuWriter.Write(stream, Av1Constants.ObuFrameHeader, frameHeader);
+                Av1ObuWriter.Write(stream, Av1Constants.ObuTileGroup, [TileGroupHeader(0, 0), .. firstTile]);
+                Av1ObuWriter.Write(stream, Av1Constants.ObuTileGroup, [TileGroupHeader(1, 1), .. secondTile]);
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(layout), layout, message: null);
+        }
+
+        var input = stream.WrittenSpan.ToArray();
+        using var streamDecoder = new Av1Decoder(scope);
+        streamDecoder.SetInput(input, 0, input.Length);
+        if (layout is "frame-with-tile-positions")
+        {
+            var exception = Assert.Throws<InvalidImageContentException>(() => streamDecoder.DecodeNextOutputFrame(TestContext.Current.CancellationToken));
+            Assert.Contains("tile start and end positions", exception.Message, StringComparison.Ordinal);
+            return;
+        }
+
+        var decoded = streamDecoder.DecodeNextOutputFrame(TestContext.Current.CancellationToken);
+        Assert.NotNull(decoded);
+        try
+        {
+            var plane = decoded.GetPlane(0);
+            for (var y = 0; y < plane.Height; y++)
+            {
+                Assert.True(samples.AsSpan(y * plane.Width, plane.Width).SequenceEqual(plane.GetRow(y)), $"row {y} is not the encoded row");
+            }
+        }
+        finally
+        {
+            decoded.Release();
+        }
+
+        Assert.Null(streamDecoder.DecodeNextOutputFrame(TestContext.Current.CancellationToken));
+    }
+
     [Fact]
     public void EncodingIsDeterministic()
     {

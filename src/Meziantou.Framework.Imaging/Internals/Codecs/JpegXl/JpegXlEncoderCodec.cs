@@ -13,8 +13,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <item><description>
 /// Lossless layout: grayscale pixel formats are one gray channel, the others three color channels; a pixel format with
 /// alpha adds an alpha channel of the same depth. Every frame is a regular Modular frame that covers the image and
-/// replaces it, in groups of 256 samples: a frame of one group is a single section, otherwise each group is a section
-/// that holds its own tree and its own codes, so that a frame is compressed group by group.
+/// replaces it, in groups of 256 samples: a frame of one group is a single section, otherwise each group is a section.
+/// Below the effort 3 (<see cref="JpegXlLosslessFrameEncoder.MinEffort"/>), each group holds its own tree and its own
+/// codes, so that a frame is compressed group by group; from it, one tree and one code learned from the whole frame are
+/// in <c>LfGlobal</c> (<see cref="JpegXlLosslessFrameEncoder"/>), and a frame of one group is also coded the first way, the
+/// smaller of the two being kept.
 /// </description></item>
 /// <item><description>
 /// Lossy layout: the image is stored in XYB and every frame is a VarDCT frame (<see cref="JpegXlVarDctEncoder"/>); the
@@ -409,7 +412,38 @@ internal sealed class JpegXlEncoderCodec : ImageEncoderCodec
 
                 // LfGlobal starts with the default LF dequantization
                 writer.WriteBool(true);
-                if (columns * rows == 1)
+                if (_encoder.Effort >= JpegXlLosslessFrameEncoder.MinEffort)
+                {
+                    var storage = lease.Storage;
+                    var encoder = new JpegXlLosslessFrameEncoder(_width, _height, colorChannelCount, _hasAlpha, _bitsPerSample, _encoder.Effort, Options.Configuration.MaxDegreeOfParallelism, (image, x, y, width, height) => LoadChannels(image, storage, x, y, width, height), scope, CancellationToken);
+                    encoder.Encode(writer, sizes, ref total, EndSection);
+                    if (columns * rows == 1)
+                    {
+                        // The tree, the transform and the code of the learned frame cost a few dozen bytes: a small image can
+                        // be smaller with a leaf per channel, which is cheap to try on a single group
+                        LsbBitWriter? simple = new LsbBitWriter(scope);
+                        try
+                        {
+                            simple.WriteBool(true);
+                            simple.WriteBool(false);
+                            EncodeGroup(simple, lease.Storage, 0, 0, colorChannelCount);
+                            simple.ZeroPadToByte();
+                            if (simple.Length < writer.Length)
+                            {
+                                writer.Dispose();
+                                writer = owned = simple;
+                                simple = null;
+                                sizes.Clear();
+                                sizes.Add(writer.Length);
+                            }
+                        }
+                        finally
+                        {
+                            simple?.Dispose();
+                        }
+                    }
+                }
+                else if (columns * rows == 1)
                 {
                     // A single group: no global tree, the global Modular data are the whole image, and the frame is one section
                     writer.WriteBool(false);

@@ -61,6 +61,14 @@ rendering also changes the images of the pages (`DocumentationImageTests`).
   | Invalid argument / invalid state / use after dispose | `ArgumentException` family / `InvalidOperationException` / `ObjectDisposedException` |
   | I/O failure, cancellation | `IOException` and `OperationCanceledException`, propagated unchanged |
 
+- **Lenient decoding is opt-in and listed.** `ImageConfiguration.DecodingStrictness` defaults to `Strict`, and the
+  structure parsers and decoders read it through `ImageCodecContext.IsLenient`. A repair is accepted only when the
+  reference decoders of the format (and the browsers, for web formats) agree on its result, measured on a fixture, never
+  assumed. It is deterministic, keeps every resource limit and its accounting unchanged, and never invents pixels: a
+  deviation whose repair would guess samples stays an `InvalidImageContentException` in both modes. Each repair has a
+  row in the "Lenient decoding" table of `readme.md` and a note on the page of its format, and a test that loads the
+  fixture in both modes (strict rejects it, lenient gives the reference result). Identify, eager loads, readers and
+  collections share the parsers, so they accept the same files.
 - **Validate before doing anything.** Argument and pixel-type validation happens before any I/O or allocation; keep the
   existing validation order when changing a member.
 - **Resource limits** (`ImageResourceLimits`) are enforced incrementally, before allocating or consuming. They are
@@ -401,8 +409,8 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   but for a few bytes, with 2.4 to 3.2 times fewer instructions for the 64x64 and 8x8 transforms. The blocks of a VarDCT
   frame do not predict each other, so the encoder does not reconstruct what it writes; its decisions use float32 in a
   fixed order. `JpegXlEntropyCodeBuilder` clusters the contexts of the streams that share a code. Every Modular
-  sub-stream, of a lossless frame or of a lossy one (LF image, block fields, alpha channel), goes through
-  `JpegXlEntropyEncoder`, which writes the smaller of prefix codes and ANS at every effort
+  sub-stream coded group by group, of a lossless frame below the effort 3 or of a lossy one (LF image, block fields,
+  alpha channel), goes through `JpegXlEntropyEncoder`, which writes the smaller of prefix codes and ANS at every effort
   (`JpegXlEntropyCoding.Smallest`, decided from the token counts): a prefix code spends one bit per sample at least,
   which made a constant channel larger than the colors, and the description of an ANS distribution is longer than a
   small group. The effort only selects what is searched; `jxl-quality` shows the sizes per effort. A change of the
@@ -419,6 +427,42 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     7,105/65535 on the macOS wallpaper thumbnails). It reads the colorants of a synthetic version 4 profile with a D65
     `wtpt` and no `chad` as adapted from D65, unlike djxl, the library and its own handling of Apple's real profiles.
     Compare the pixels in gamut only.
+- **Lossless JPEG XL tools** (`JpegXlLosslessFrameEncoder`, from the effort 3; below it, `JpegXlModularEncoder` codes each
+  group with a leaf per channel, as the progressive output, the alpha channel of a lossy frame and its LF image still
+  do). One tree and one entropy code for the whole frame are in `LfGlobal` and every group uses them, so the
+  distributions are written once; the transform (palette or color transform) is declared in the global data, the
+  palette channel is coded there (the tree splits on the sub-bitstream first). The tree is learned per channel from rows
+  sampled in every group (`JpegXlTreeLearner`: properties quantized to ranges at sample quantiles plus -1 and 0, the leaf
+  that saves the most bits split first, each leaf with the predictor that suits it); `JpegXlTreeCoder` computes the
+  properties and residuals with the helpers of `JpegXlModularDecoder`, so the encoder cannot drift from the decoder.
+  `JpegXlModularEntropyCode` clusters the contexts (up to 256), gives each cluster the hybrid integer configuration that
+  codes its values in the fewest bits (counted as fine tokens, from which the token of every candidate configuration
+  follows), and keeps the smaller of prefix codes and ANS. `JpegXlLz77Parser` finds copies with a hash chain and the left
+  and above distances, priced with the token costs of a first count without copies; the code with copies is kept only
+  when its estimated size is smaller. The samples are computed twice (counted, then written) instead of being kept,
+  so the memory is the samples of the tree and one group per worker. Decisions that were measured (2026-10-30, 12
+  images: photographs, screenshots rendered by WebPlatform, charts, text, repeated tiles; cjxl 0.12.0 at the same effort,
+  one thread):
+  - Size against cjxl (geometric mean): effort 3 0.77, 5 0.67, 7 0.69, 9 0.79 (before: 1.07, 1.61, 1.70, 1.94).
+    Photographs are within 3 % of cjxl at every effort; screenshots and graphics are 2 to 80 % smaller, mostly from
+    LZ77 (-27 to -57 % on screenshots at the effort 7) and the palette. CPU time is 2.2 times the one of cjxl at the
+    efforts 3 and 5, 2.9 times at 7 and the same at 9. The scratch harness (a project referencing the library that
+    encodes PNG inputs at each effort, checks the round trip, runs `cjxl -d 0 -e N --num_threads=0` under
+    `/usr/bin/time`, and decodes every output with djxl and jxl-oxide) is not committed: rerun it before changing a
+    constant of `JpegXlLosslessFrameEncoder.Settings`.
+  - *Palette*: up to 64 colors always; above, the palette unless the trial (a tree of 32 leaves learned on 32K samples
+    of each transform) estimates it 25 % larger (`PaletteTrialMargin`). The trial underestimates the palette: palettes
+    estimated 16 % larger wrote 0 to 28 % smaller screenshots; a photograph (14,535 colors) and smooth gradient tiles
+    (3,801 colors) were 2.3 and 3 times larger with one. The indexes do not get the weighted predictor (it made them larger).
+  - *Samples*: 16K, 32K, 64K per channel at efforts 3 to 5; doubling them gains 0.3 to 1 %, for the time of the learning.
+    More leaves than 128 per channel made screenshots up to 4 % larger: the cost of a split (`SplitCost`) does not count
+    the distribution a new context may need.
+  - *Small frames*: a frame of one group is also coded with a leaf per channel, which wins below a few thousand samples
+    (the tree, the transform and the distributions cost a few dozen bytes).
+  - *Interoperability*: when the global data code no channel (several groups, no palette) and the code uses ANS,
+    jxl-oxide 0.12.6 reads the state of the ANS coder there and libjxl does not: the encoder writes an empty stream (the
+    initial state) after the global header, which both read. Only frames of several groups show it
+    (`LearnedTreesDecodeExactlyInLibJxlAndJxlOxide`); the corpus fixtures are a single group.
 - **Lossy JPEG XL quality tools** (`JpegXlVarDctEncoder`). Each one is kept or left out on measurements, not on what
   other encoders do: file size at equal PSNR, SSIM, MS-SSIM, XPSNR and VMAF (FFmpeg and the `vmaf` tool on djxl output)
   over photographs of several sizes, with cjxl at its efforts 3 and 7 as the yardstick. Measure again before changing a
@@ -472,6 +516,27 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
       at least;
     - the field is computed from the image once: the encoder does not decode the frame to measure it and refine
       the field.
+- **WebP lossless encoder** (`Vp8LEncoder` and its partial files). The transforms of a frame are chosen by measurement
+  (`RankConfigurations`: each candidate is encoded at effort 2 into `LsbBitWriter.CreateCounter`), the main image is
+  parsed a second time against a cost model from effort 5 (`Vp8LEncoder.CostModel.cs`), and an entropy image splits the
+  prefix codes from effort 3 (`Vp8LEncoder.EntropyImage.cs`). `cwebp -lossless -exact -z <effort> -metadata none` (in the
+  prebuilt tools, not used by the tests) is the yardstick, and `cwebp -v` prints the transforms it chose. Measured on
+  screenshots, UI icons, photographs, smooth graphics, gradients and synthetic images (2026-10, against the encoder with
+  one group and fixed transforms): effort 3 -8.7 %, effort 5 -11.4 % (0.99 x the size of `cwebp -z 5`), effort 9
+  -10.1 %, for 1.3x, 2.3x and 7x the CPU time. What decided the design:
+  - Screenshots and flat graphics are 30 % smaller without the predictor (subtract green alone): their repetitions are
+    exact and backward references find them. Images where fewer than half the pixels repeat a neighbor always lose
+    without it, so the candidate is skipped there (`IsFlat`).
+  - A color table loses to the predictor (on the colors or on the indexes) on smooth ramps of up to 256 colors, by 2 to
+    4 times; with 16 colors or fewer the bundled indexes win below effort 7.
+  - Predictor tiles of 16 and 64 pixels differ by 2 % at most, so effort 5 tries one size.
+  - The second parse is most of the CPU time: committing references of 128 pixels or more (below effort 9) and not
+    searching the hash chains while a match of 16 pixels is known removed 40 % of it for 0.4 % of size.
+  - Ranking without the second parse can misrank text images, where the cost model gains more with a color table:
+    effort 9 encodes the two best candidates fully. Rank on a sample (bands of 64 rows, a quarter of a large image):
+    whole-image ranking gained 0.3 %.
+  Measure CPU time per thread (`clock_gettime(CLOCK_THREAD_CPUTIME_ID)`), not wall time: other sessions load this
+  machine and wall times varied 3x between identical runs.
 - **Progressive reading.** `ImageReader.ReadFrameRefinementInto` is the only way to see a frame before it is complete.
   The walker stops at the lengths the decoder asks for (the end of the sections of a stage); an intermediate rendering
   decodes the sections again from the buffered payload (`JpegXlFrameDecoder.DecodePartial`), never changes the state of
@@ -1085,8 +1150,8 @@ thin public types over its `FontFace`.
   16-bit conversion is still evaluated: its inputs are the doubles that come out of a matrix, not 65,536 values.
 - Default parallelism is one worker (`ImageConfiguration.MaxDegreeOfParallelism`). Only `Resize`, the transformations,
   `Convolve`, the blurs (`GaussianBlur`, `BoxBlur`, `MedianBlur`), `Sharpen`, `DetectEdges`, the `Pixelate`, `OilPaint` and
-  `Flatten` effects (`EffectScratch`) and the `ImageSimilarity` metrics (SSIM, PSNR, SSIMULACRA 2, Butteraugli) are
-  parallel, and their result must not depend on the worker count (`ParallelConvolutionTests`,
+  `Flatten` effects (`EffectScratch`), the `ImageSimilarity` metrics (SSIM, PSNR, SSIMULACRA 2, Butteraugli) and the
+  codec work listed below are parallel, and their result must not depend on the worker count (`ParallelConvolutionTests`,
   `ImageSimilarityTests.Metrics_DoNotDependOnTheWorkerCount`: a frame needs 65,536 pixels to get several workers). Split
   rows with `RowBands`: a worker writes only its own rows, and reads the rows of its neighbors from copies taken before any
   row is rewritten (halos). A floating-point sum is never split by worker: sum bands of `RowBands.SumBandRows` rows, a
@@ -1126,7 +1191,79 @@ thin public types over its `FontFace`.
   (`JpegXlRestorationFilters`), each with its own pipeline: they filter in place, so the rows a band reads around it (the
   sum of the reaches of the filters, 7 rows at most) are copied before any band starts, and each filter of a band also
   produces the rows around it that the next filters read (`RestorationFiltersMatchTheFiltersAppliedToTheWholeFrame`
-  splits frames down to bands of one row). Other decoding, encoding and drawing stay sequential.
+  splits frames down to bands of one row). The codecs below (issue #3752) follow the same contract: the input parser
+  and the `InputResourceTracker` stay on the calling thread, every worker's state is rented on the calling thread before
+  the work starts, and the bytes, the pixels and the error (the first failing unit in order, a cancellation first) are
+  those of one worker. A codec called by an already-parallel caller (a JPEG or JPEG 2000 block of a TIFF, a tile of a
+  HEIC or AVIF grid decoded alongside others) uses one worker, so the threads never multiply.
+  - JPEG (`JpegReconstruction`, `JpegEncoderCodec.TransformRows`): batches of 4 MCU rows per worker. The entropy-coded
+    data is decoded and coded on the calling thread, in order. The decoder keeps the quantized coefficients of a batch
+    (a ring that `JpegSequentialScanDecoder` fills with `deferTransforms` for a streamed Huffman frame, or the whole
+    coefficients of a progressive frame at EOI), runs the inverse DCT by row ranges, then writes the bands that have
+    their lower context row, each worker with its own `JpegBandWriter`, into planes that hold the batch and the two rows
+    before it. A truncated frame first reconstructs its decoded rows, so it shows the rows of one worker. The encoder
+    converts, downsamples and transforms a batch, stores the coefficients and codes them in order. Arithmetic-coded
+    sequential frames, lossless frames and datastreams handed to a `JpegSampleReceiver` (TIFF) use one worker. Restart
+    intervals are not decoded in parallel: entropy decoding is 35-50% of the decoding time, and keeping the error of one
+    worker would need a pause hook in the push parser. The gain is small (about 1.3-1.5x with 8 workers on 2048x1536
+    baseline) and sensitive to machine load, since the batches are short (`FramesDecodedByWorkersHaveThePixelsOfTheContract`,
+    `FramesReconstructedByWorkersHaveThePixelsOfTheContract`, `FilesWrittenByWorkersAreTheFilesOfOneWorker`).
+  - TIFF (`TiffBlockWorkers`): LZW, Deflate and CCITT strips and tiles, by batches of one block per worker. The calling
+    thread reads and charges the input (`TiffBlockReader.Fetch`) and writes the rows in order; each worker decompresses,
+    undoes the predictors and converts YCbCr units in a `TiffBlockReader.Workspace` rented whole after everything else of
+    the decode, so the worker count is capped by the live bytes left (`GetWorkerBytes`) and a limit fails as it does for
+    one worker. Uncompressed and PackBits blocks (a copy) and JPEG and JPEG 2000 blocks stay on the calling thread. The
+    encoder compresses LZW and Deflate strips into outputs pre-grown to a proven bound (`TiffLzwEncoder.GetMaxEncodedLength`,
+    9/8 for Deflate) and appends them one per `EncodeStrip` call, so the bytes and the flushes are those of one worker
+    (`BlocksDecodedByWorkersHaveThePixelsOfOneWorker`, `StripsCompressedByWorkersAreTheFileOfOneWorker`).
+  - OpenEXR (`ExrDecoder`, `ExrEncoderCodec`): a chunk is compressed on its own and covers pixels no other chunk covers
+    (one offset per index, and a chunk carries its coordinates). The chunks are copied to a batch (at least 2 chunks and
+    1 MiB per worker) that the workers decode, each with its own `ExrChunkDecompressor`. The structure parser has the
+    batch decoded before it asks for more input or throws (`ExrStructureParser.NeedChunkBytes`, the catch in `Parse`), so a
+    pending chunk never outlives a `Parse` call; its requests read the next batch ahead, so a stream gives it whole. The
+    encoder checks the samples by row bands (`RunParallelInBandOrder`) and compresses batches of chunks into slots as
+    large as the one-worker buffer, written in order (`ChunksDecodedByWorkersHaveThePixelsOfOneWorker`,
+    `WorkersReportTheErrorOfTheFirstChunkOfTheFileThatFails`, `FilesWrittenByWorkersAreTheFilesOfOneWorker`).
+  - JPEG 2000 (`Jpeg2000Workers`): the packets are read in order on the calling thread; then each worker takes the next
+    code-block of a tile with block decoders of its own (Tier-1, HT and its SigProp flags, the buffer that joins
+    segments), sized to the largest code-block of the tile. A code-block reads only its own segments and writes only its
+    own area. The wavelet transformations are split by bands of rows and of 64-column strips, one pass after the other
+    (`Jpeg2000Dwt` overloads with a scratch per worker), and the component transformation and level shift by ranges of
+    samples. The encoder codes the code-blocks by batches (worker w of n codes blocks w, w+n, ...) into buffers of its
+    own, appended in order before `Assemble`. Tiles are still decoded one after the other, and `Jpeg2000SampleDecoder`
+    (TIFF) uses one worker. `Jpeg2000Workers.TestIgnoreMinimumSize` makes `Jpeg2000DecoderConformanceTests` decode every
+    fixture with 2, 3 and 16 workers.
+  - AV1 (`Av1TileWorkers`): the tiles of a tile group. A tile starts from the frame context, clears the above context of
+    its columns (per worker: `Av1TileScratch.PrepareAboveContext`, since the clear reaches 32 entries past the tile and
+    the tiles of a column share it), treats blocks outside it as unavailable, and writes the frame only where its blocks
+    are; the worker of `context_update_tile_id` saves its own distributions, and the coding diagnostics (`Av1Tools`) are
+    merged after each run. The tile sizes are read on the calling thread first. The encoder codes the tiles of a frame
+    that has several (the layout is the minimum, so frames wider than 4096 pixels, unless `AvifEncoder.AutoTiling` asks for
+    `Av1Encoder.GetAutoTileLayout`; never a function of the worker count) with an `Av1EncoderWorkspace` per worker that
+    shares the source planes, and appends them in order; intrabc frames use one worker. The size-based layout (4x2 tiles
+    for 3840x2160, like libavif's autotiling) costs +0.3% (effort 5) to +0.6% (effort 0) at equal PSNR even with one
+    worker, so it is an opt-in. `Av1TileWorkers.TestReverseOrder` runs the tiles from the
+    last one so that the tests check independence whatever the scheduling (`DecodedPlanesDoNotDependOnTheNumberOfWorkers`,
+    `TilesDecodedByWorkersFailWithTheErrorOfTheFirstFailingTile`, `TilesEncodedByWorkersAreTheTilesOfOneWorker`).
+  - HEVC (`HevcSliceCoder.Substreams.cs`, `HevcSubstreamWorkers`): the substreams of a slice segment that start at an
+    entry point (its tiles, and its rows of the wavefront). A substream starts with initialized or synchronized contexts
+    and SliceQpY, and reads no block of another tile; a row of the wavefront waits until the row above has decoded the
+    next column (or its tile's last), and starts from the contexts that row stored after its second coding tree block.
+    The entry points and the errors are then checked in substream order, as the sequential decoding does. When a slice
+    segment ends before its last entry point (kvazaar), the blocks decoded past its end are reset to their
+    `BeginPicture` state (`HevcPictureState.ClearCodingTreeBlocks`). Slices or slice segments that each hold one tile or
+    row, and the in-loop filters, stay sequential. The encoder writes no tiles. `HeicPictureEncoder` turns on
+    `HevcEncoderSettings.Wavefront` (one substream and entry point per CTB row) for a still picture of at least
+    `RowBands.MinPixelsForParallelism` samples with 2+ CTB rows and columns, so that our own files decode in parallel;
+    never for grid tiles (`HeifPictureSettings.GridTile`: the tiles are already decoded one per worker) nor for the
+    pictures of a sequence. On a 3840x2160 photo at effort 5 and equal PSNR it costs +0.63% at quality 30, +0.10% at 50 and
+    nothing from 75 up (-0.02% at 75, +0.002% at 90, -0.06% lossless); a near-flat synthetic image whose file is 28 KB
+    pays +1.9% at quality 50 (one entry point per row weighs more in a tiny file). There is no public opt-out (the user's call).
+    `HeicPictureEncoder.TestWavefront` forces it on every picture, for the test that decodes a grid of wavefront tiles.
+    `HevcDecoder.TestIgnoreMinimumSize` makes `HevcDecoderConformanceTests` decode the tile and
+    wavefront vectors by 2, 3 and 16 workers.
+
+  Other decoding, encoding and drawing stay sequential.
 - Static row callbacks allocate nothing per row (`PerformanceContractTests`).
 - This repository builds with the updated memory-safety rules: wrap `MemoryMarshal`, `Unsafe` and `Vector*.LoadUnsafe` /
   `StoreUnsafe` calls in `unsafe(...)`, or in an `unsafe { }` block for a statement.

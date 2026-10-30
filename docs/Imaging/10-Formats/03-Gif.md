@@ -114,5 +114,9 @@ alpha throws an `ArgumentException`. The palette and the dithering modes are des
   [PNG and APNG](02-Png.md)).
 - The plain-text extension (text rendered by the viewer) is rejected with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). Other
   unknown extensions, such as XMP or ICC application extensions, are skipped.
+- A GIF without its trailer, or with `0x00` bytes before its end, is rejected. The
+  [lenient mode](../05-LoadingAndSaving/08-ErrorHandling.md#accept-the-files-browsers-accept) reads these files, and
+  skips plain-text extensions without drawing their text, as browsers and the reference decoders do. A file that ends
+  inside an image is still rejected.
 - The background color of the file is never painted: areas a frame clears are transparent black.
 - A writer created with [Image.CreateWriter](cref:Meziantou.Framework.Imaging.Image.CreateWriter) streams frames as they come and does not need to know the frame count.

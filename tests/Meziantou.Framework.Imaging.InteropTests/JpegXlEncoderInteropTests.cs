@@ -82,6 +82,40 @@ public sealed class JpegXlEncoderInteropTests
         }
     }
 
+    /// <summary>
+    /// Frames of several groups coded with a learned tree, which every group uses from the global data, and its transform:
+    /// a palette (screenshots, whose palette is in the global data), a color transform (gradient tiles, noise), copies of
+    /// previous values from the effort 5; djxl and jxl-oxide decode exactly the source samples. The global data of a frame
+    /// without a palette code no channel, which jxl-oxide reads differently from libjxl when the code uses ANS.
+    /// </summary>
+    [Theory]
+    [InlineData("screenshot", PixelFormat.Rgb24, 3)]
+    [InlineData("screenshot", PixelFormat.Rgba32, 5)]
+    [InlineData("screenshot", PixelFormat.Gray8, 7)]
+    [InlineData("screenshot", PixelFormat.Rgb24, 9)]
+    [InlineData("tiles", PixelFormat.Rgb24, 3)]
+    [InlineData("tiles", PixelFormat.Rgba64, 5)]
+    [InlineData("tiles", PixelFormat.Rgb24, 8)]
+    [InlineData("noise", PixelFormat.Rgba32, 4)]
+    [InlineData("noise", PixelFormat.Gray16, 7)]
+    [InlineData("noise", PixelFormat.Rgb24, 9)]
+    public async Task LearnedTreesDecodeExactlyInLibJxlAndJxlOxide(string kind, PixelFormat format, int effort)
+    {
+        var jxl = await RequiredTools.LibJxlAsync();
+        var oxide = await RequiredTools.JxlOxideAsync();
+        var layout = ImageSnapshots.GetLayout(format);
+        var source = kind == "noise" ? CreatePattern(600, 300, layout, seed: 6) : CreateContent(kind, 600, 300, layout);
+        using var image = EncoderSources.CreateImage(source, format);
+        var path = InteropSettings.GetArtifactsDirectory(nameof(LearnedTreesDecodeExactlyInLibJxlAndJxlOxide)) / $"{kind}-{format}-e{effort}.jxl";
+        await image.SaveAsync(path, new JpegXlEncoder { Effort = effort }, XunitCancellationToken);
+        var context = $"{kind} as {format} (effort {effort})";
+
+        var reference = await jxl.DecodeAsync(path, XunitCancellationToken);
+        AssertRgba(source, reference.Rgba.Span, $"{context}: djxl {jxl.Version} decodes different samples.");
+        var frames = await oxide.DecodeFramesAsync(path, XunitCancellationToken);
+        AssertSamples(source, frames.ToIntegerSamples(0, layout.MaxSampleValue, out _), $"{context}: jxl-oxide {oxide.Version} decodes different samples.");
+    }
+
     [Theory]
     [InlineData(false, PixelFormat.Rgba32, null)]
     [InlineData(true, PixelFormat.Rgba32, 4)]
@@ -368,6 +402,107 @@ public sealed class JpegXlEncoderInteropTests
     }
 
     /// <summary>Flat areas, gradients and noise; every channel and position has its own values, hidden colors of transparent pixels included.</summary>
+    /// <summary>
+    /// A screenshot (glyphs in three colors with four levels of coverage on a light background, buttons, a gradient band) or
+    /// tiles of four gradient patterns, as the samples of a layout (8-bit values, scaled to 16 bits).
+    /// </summary>
+    private static RawPixelBuffer CreateContent(string kind, int width, int height, RawPixelLayout layout)
+    {
+        var colors = new (int R, int G, int B)[width * height];
+        if (kind == "tiles")
+        {
+            for (var y = 0; y < height; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    var tile = (((x / 64) * 7) + ((y / 48) * 3)) % 4;
+                    var (u, v) = (x % 64, y % 48);
+                    var inside = ((u - 32) * (u - 32)) + ((v - 24) * (v - 24)) < 300;
+                    colors[(y * width) + x] = inside ? (u * 4, v * 5, tile * 60) : u < 2 || v < 2 ? (40, 40, 40) : (tile * 50, 120, 200 - (tile * 30));
+                }
+            }
+        }
+        else
+        {
+            var state = 12345u;
+            int Next(int max)
+            {
+                state = (state * 1664525) + 1013904223;
+                return (int)((state >> 16) % (uint)max);
+            }
+
+            var background = (245, 247, 250);
+            colors.AsSpan().Fill(background);
+            var glyphs = new int[12][];
+            for (var i = 0; i < glyphs.Length; i++)
+            {
+                glyphs[i] = new int[70];
+                for (var j = 0; j < 70; j++)
+                {
+                    glyphs[i][j] = Math.Max(0, Next(8) - 3);
+                }
+            }
+
+            (int R, int G, int B)[] inks = [(20, 24, 31), (9, 105, 218), (207, 34, 46)];
+            for (var y = 0; y < 20; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    colors[(y * width) + x] = (30 + (x * 200 / width), 41, 59);
+                }
+            }
+
+            for (var line = 0; (line * 14) + 30 < height - 10; line++)
+            {
+                var ink = inks[line % 3 == 2 ? Next(3) : 0];
+                for (var x = 10; x + 8 < width - 10; x += 8)
+                {
+                    if (Next(6) == 0)
+                        continue;
+
+                    var glyph = glyphs[Next(glyphs.Length)];
+                    for (var gy = 0; gy < 10; gy++)
+                    {
+                        for (var gx = 0; gx < 7; gx++)
+                        {
+                            var coverage = glyph[(gy * 7) + gx];
+                            colors[((((line * 14) + 30 + gy) * width) + x + gx)] = (Mix(background.Item1, ink.R, coverage), Mix(background.Item2, ink.G, coverage), Mix(background.Item3, ink.B, coverage));
+                        }
+                    }
+                }
+            }
+        }
+
+        var data = new byte[layout.GetByteLength(width, height)];
+        var offset = 0;
+        foreach (var (r, g, b) in colors)
+        {
+            for (var channel = 0; channel < layout.ChannelCount; channel++)
+            {
+                var value = channel == layout.AlphaChannel ? 255 : !layout.IsColor ? ((2 * r) + (5 * g) + b) / 8 : channel switch
+                {
+                    0 => r,
+                    1 => g,
+                    _ => b,
+                };
+
+                if (layout.BytesPerSample == 1)
+                {
+                    data[offset++] = (byte)value;
+                }
+                else
+                {
+                    data[offset++] = (byte)value;
+                    data[offset++] = (byte)value;
+                }
+            }
+        }
+
+        return RawPixelBuffer.Create(width, height, layout, data);
+
+        static int Mix(int from, int to, int coverage) => from + ((to - from) * coverage / 4);
+    }
+
     private static RawPixelBuffer CreatePattern(int width, int height, RawPixelLayout layout, int seed)
     {
         var data = new byte[layout.GetByteLength(width, height)];

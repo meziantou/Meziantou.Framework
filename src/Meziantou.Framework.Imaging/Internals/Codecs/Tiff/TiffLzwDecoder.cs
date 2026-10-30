@@ -51,9 +51,11 @@ internal sealed class TiffLzwDecoder : IDisposable
     /// <summary>The largest number of bits of a code.</summary>
     public const int MaxCodeSize = 12;
 
+    /// <summary>The number of bytes of the code table, rented from the scope.</summary>
+    public const int StateLength = LengthOffset + (MaxCodes * sizeof(ushort));
+
     private const int OffsetOffset = 0;
     private const int LengthOffset = OffsetOffset + (MaxCodes * sizeof(int));
-    private const int StateLength = LengthOffset + (MaxCodes * sizeof(ushort));
 
     private PooledBuffer? _state;
 

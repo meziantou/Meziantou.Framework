@@ -11,7 +11,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <remarks>
 /// The substreams of a slice segment (tiles, rows of coding tree blocks of the wavefront) are decoded one after the other,
 /// in the order of the bitstream: the entry points are only compared with the positions where the substreams end, and no
-/// read nor allocation depends on their values.
+/// read nor allocation depends on their values. With workers (<see cref="HevcSubstreamWorkers"/>), the substreams that
+/// start at an entry point inside the data are decoded concurrently from there (<c>HevcSliceCoder.Substreams.cs</c>), and
+/// the entry points are then compared, in order, with the positions where the substreams end.
 /// </remarks>
 internal ref partial struct HevcSliceCoder
 {
@@ -27,6 +29,8 @@ internal ref partial struct HevcSliceCoder
     private readonly HevcReferencePictureLists? _refs;
     private readonly Span<HevcMotion> _motion;
     private readonly CancellationToken _cancellationToken;
+    private readonly HevcSubstreamWorkers? _workers;
+    private readonly int _maxWorkers;
     private readonly Span<byte> _cuFlags;
     private readonly Span<sbyte> _qpYMap;
     private readonly Span<byte> _intraPredModeY;
@@ -97,8 +101,12 @@ internal ref partial struct HevcSliceCoder
     /// <param name="rbsp">The payload of the NAL unit of the slice segment.</param>
     /// <param name="references">The reference picture lists of the slice of the slice segment; <see langword="null"/> for an I slice.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests, checked at every coding tree unit.</param>
-    public HevcSliceCoder(HevcPictureLayout layout, HevcSliceSegmentHeader header, HevcPicture picture, HevcPictureState state, HevcCabacDecoder cabac, HevcSliceScratch scratch, HevcRbspBuffer rbsp, HevcReferencePictureLists? references, CancellationToken cancellationToken)
+    /// <param name="workers">The memory of the workers that decode the substreams that start at an entry point; <see langword="null"/> to decode them on the calling thread.</param>
+    /// <param name="maxWorkers">The largest number of workers.</param>
+    public HevcSliceCoder(HevcPictureLayout layout, HevcSliceSegmentHeader header, HevcPicture picture, HevcPictureState state, HevcCabacDecoder cabac, HevcSliceScratch scratch, HevcRbspBuffer rbsp, HevcReferencePictureLists? references, CancellationToken cancellationToken, HevcSubstreamWorkers? workers = null, int maxWorkers = 1)
     {
+        _workers = workers;
+        _maxWorkers = maxWorkers;
         _layout = layout;
         _sps = layout.Sps;
         _pps = layout.Pps;
@@ -162,7 +170,29 @@ internal ref partial struct HevcSliceCoder
         }
 
         _qpY = _state.LastQpY;
-        InitializeSubstream(position, isSliceSegmentStart: true);
+        if (_workers is not null && _maxWorkers > 1 && _header.EntryPointOffsetMinus1.Length > 0)
+        {
+            switch (DecodeSubstreamsConcurrently(position, out var next))
+            {
+                case HevcSubstreamOutcome.EndOfSliceSegment:
+                    _state.Tools = _tools;
+                    return;
+
+                case HevcSubstreamOutcome.EndOfSubset:
+                    // The substreams that do not start at an entry point inside the data are decoded on the calling thread
+                    InitializeSubstream(next, isSliceSegmentStart: false);
+                    break;
+
+                default:
+                    InitializeSubstream(position, isSliceSegmentStart: true);
+                    break;
+            }
+        }
+        else
+        {
+            InitializeSubstream(position, isSliceSegmentStart: true);
+        }
+
         var picSizeInCtbsY = _sps.PicSizeInCtbsY;
         while (true)
         {
@@ -240,6 +270,12 @@ internal ref partial struct HevcSliceCoder
             CheckEntryPoint(position);
         }
 
+        InitializeSubstream(position, isSliceSegmentStart, _state.ContextsWpp, _state.StatCoeffWpp);
+    }
+
+    // InitializeSubstream, with the context variables that the synchronization process of the wavefront reads
+    private void InitializeSubstream(int position, bool isSliceSegmentStart, ReadOnlySpan<byte> contextsWpp, ReadOnlySpan<byte> statCoeffWpp)
+    {
         var firstInTile = _ctbAddrInTs is 0 || _tileId[_ctbAddrInTs] != _tileId[_ctbAddrInTs - 1];
         var firstInRow = _pps.EntropyCodingSyncEnabledFlag
             && (_ctbAddrInRs % _picWidthInCtbsY is 0 || _tileId[_ctbAddrInTs] != _tileId[_ctbAddrRsToTs[_ctbAddrInRs - 1]]);
@@ -257,8 +293,8 @@ internal ref partial struct HevcSliceCoder
             if (IsAvailable(x0, y0, x0 + (1 << _ctbLog2SizeY), y0 - (1 << _ctbLog2SizeY)))
             {
                 // Clause 9.3.2.5 "Synchronization process"
-                _cabac.LoadContexts(_state.ContextsWpp);
-                LoadStatCoeff(_state.StatCoeffWpp);
+                _cabac.LoadContexts(contextsWpp);
+                LoadStatCoeff(statCoeffWpp);
             }
             else
             {
@@ -356,6 +392,7 @@ internal ref partial struct HevcSliceCoder
 
         // In another coding tree block: it precedes the current one in tile scan, and is in its slice and in its tile
         var ctbAddrNbTs = _ctbAddrRsToTs[ctbAddrNbRs];
-        return ctbAddrNbTs < _ctbAddrInTs && _sliceIndex[ctbAddrNbRs] == _sliceIdx && _tileId[ctbAddrNbTs] == _tileId[_ctbAddrInTs];
+        // The slice of a block of another tile is not read: the workers write the blocks of other tiles at the same time
+        return ctbAddrNbTs < _ctbAddrInTs && _tileId[ctbAddrNbTs] == _tileId[_ctbAddrInTs] && _sliceIndex[ctbAddrNbRs] == _sliceIdx;
     }
 }

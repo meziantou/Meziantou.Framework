@@ -1,3 +1,4 @@
+using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.TestHarness.Heif;
@@ -185,6 +186,55 @@ public sealed class HeicDecodingTests
         last.GetItem(tiles[13]).Data = EndOfSequence;
         var other = Assert.Throws<InvalidImageContentException>(() => Image.Load(last.Build(), WithWorkers(workers)));
         Assert.NotEqual(expected.Message, other.Message);
+    }
+
+    /// <summary>
+    /// An image whose rows of coding tree blocks are substreams of the wavefront, as the encoder writes a large still image
+    /// (and x265 its streams): the rows of the image are decoded by the workers, and a grid of such tiles, which the
+    /// encoder writes only for the tests, by one worker per tile, with the pixels of one worker.
+    /// </summary>
+    [Theory]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(16)]
+    public void TheRowsOfTheWavefrontAreDecodedByWorkersAsByOne(int workers)
+    {
+        const int Width = 352;
+        const int Height = 272;
+        var pixels = new Rgb24[Width * Height];
+        for (var y = 0; y < Height; y++)
+        {
+            for (var x = 0; x < Width; x++)
+            {
+                var (r, g, b) = HeicTestFiles.GetBlockSample(x, y);
+                pixels[(y * Width) + x] = new Rgb24((byte)(r ^ (x * y)), (byte)g, (byte)(b + x));
+            }
+        }
+
+        using var source = Image.ImportPixelData<Rgb24>(pixels, Width, Height);
+        using var output = new MemoryStream();
+        source.Save(output, new HeicEncoder { Compression = HeicCompression.Lossy, Quality = 60, Effort = 1 });
+        var still = output.ToArray();
+        byte[] grid;
+        Internals.HeicPictureEncoder.TestWavefront = true;
+        try
+        {
+            output.SetLength(0);
+            source.Save(output, new HeicEncoder { Compression = HeicCompression.Lossy, Quality = 60, Effort = 1, GridTileSize = new Size(192, 160) });
+            grid = output.ToArray();
+        }
+        finally
+        {
+            Internals.HeicPictureEncoder.TestWavefront = false;
+        }
+
+        foreach (var data in (byte[][])[still, grid])
+        {
+            using var expected = Image.Load(data);
+            using var image = Image.Load(data, WithWorkers(workers));
+            Assert.Equal((Width, Height), (image.Width, image.Height));
+            Assert.Equal(ImageSnapshots.CaptureFrame(expected.Frames[0]).ToArray(), ImageSnapshots.CaptureFrame(image.Frames[0]).ToArray());
+        }
     }
 
     // An access unit with one NAL unit of 4-byte length: end_of_seq_rbsp (type 36), with no slice

@@ -28,6 +28,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// with an invalid predictor or point transform (see <see cref="ValidateLosslessScan"/>), and truncation (including a
 /// missing EOI) are
 /// <see cref="InvalidImageContentException"/>. Table contents (DQT/DHT/DAC) are validated by the decoder only.
+/// <para>
+/// Lenient decoding (<see cref="ImageCodecContext.IsLenient"/>, JPEG files only): the input may end without EOI marker, or
+/// with its first byte only, once the frame is complete (<see cref="IsFrameComplete"/>). The walk then ends the last scan
+/// (<see cref="JpegDecodeObserver.OnScanEndAtEndOfInput"/>, which checks that it has all its MCUs) and the image as at
+/// EOI. libjpeg-turbo, FFmpeg and Apple ImageIO decode such a file to the pixels of the file with its EOI marker.
+/// </para>
 /// </remarks>
 internal sealed class JpegStructureParser : ImageParser<ImageInfo>
 {
@@ -65,10 +71,14 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
     private readonly StructureWalk _walk;
     private readonly JpegDecodeObserver? _observer;
     private readonly DecodedMetadataBuilder _metadata;
+    private readonly bool _lenient;
 
     private State _state;
     private int _scanCount;
     private bool _firstScanReached;
+
+    // The components coded by a scan (bit i for the component i of the frame header)
+    private int _scannedComponents;
     private SortedDictionary<int, byte[]>? _iccChunks;
     private int _iccChunkCount;
     private bool _iccInvalid;
@@ -91,6 +101,7 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
         _walk = walk;
         _observer = walk == StructureWalk.Decode ? observer : null;
         _metadata = new DecodedMetadataBuilder(context.Tracker, ImageFormat.Jpeg);
+        _lenient = context.IsLenient && _observer is not { IsEmbedded: true };
     }
 
     private enum State
@@ -191,7 +202,18 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
                 case State.Marker:
                 {
                     if (remaining.Length < 2)
-                        return ParseStatus.NeedMoreData(2);
+                    {
+                        if (!CanEndWithoutEndOfImage(remaining))
+                            return ParseStatus.NeedMoreData(2);
+
+                        if (!isEndOfInput)
+                            return ParseStatus.NeedMoreDataOrEnd(2);
+
+                        // Lenient decoding: the input ends where the EOI marker is expected
+                        consumed += remaining.Length;
+                        OnEndOfImage();
+                        return ParseStatus.Complete;
+                    }
 
                     if (remaining[0] != 0xFF)
                         throw Invalid(string.Create(CultureInfo.InvariantCulture, $"A JPEG marker was expected, found 0x{remaining[0]:X2}."));
@@ -258,7 +280,18 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
                 case State.EntropyCodedData:
                 {
                     if (remaining.IsEmpty)
-                        return ParseStatus.NeedMoreData(1);
+                    {
+                        if (!CanEndWithoutEndOfImage(remaining))
+                            return ParseStatus.NeedMoreData(1);
+
+                        if (!isEndOfInput)
+                            return ParseStatus.NeedMoreDataOrEnd(1);
+
+                        if (!EndScanAtEndOfInput())
+                            return ParseStatus.Complete;
+
+                        break;
+                    }
 
                     var index = remaining.IndexOf((byte)0xFF);
                     if (index != 0)
@@ -270,7 +303,20 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
                     }
 
                     if (remaining.Length < 2)
-                        return ParseStatus.NeedMoreData(2);
+                    {
+                        if (!CanEndWithoutEndOfImage(remaining))
+                            return ParseStatus.NeedMoreData(2);
+
+                        if (!isEndOfInput)
+                            return ParseStatus.NeedMoreDataOrEnd(2);
+
+                        // The first byte of the EOI marker
+                        consumed++;
+                        if (!EndScanAtEndOfInput())
+                            return ParseStatus.Complete;
+
+                        break;
+                    }
 
                     var next = remaining[1];
                     if (next == 0x00 || next is >= 0xD0 and <= 0xD7)
@@ -335,6 +381,43 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
     }
 
     private bool TryYield() => _walk == StructureWalk.Decode && _context.TryConsumeYield();
+
+    /// <summary>
+    /// Gets a value indicating whether every coefficient of every component is coded: each component by a scan of a
+    /// sequential or lossless frame, or to its last bit (<c>Al = 0</c>) by the scans of a progressive frame. Arithmetic
+    /// coding never is: its decoder reads missing bytes as zeros (T.81 D.2.6), so a cut in its last scan would not be
+    /// detected.
+    /// </summary>
+    private bool IsFrameComplete()
+    {
+        if (IsArithmetic || Components.Count == 0)
+            return false;
+
+        if (_coefficientBits is not null)
+            return !_coefficientBits.AsSpan().ContainsAnyExcept((sbyte)0);
+
+        return _scannedComponents == (1 << Components.Count) - 1;
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether the input may end here, before the EOI marker (lenient decoding): what remains is
+    /// nothing or the first byte of a marker, and the frame is complete.
+    /// </summary>
+    private bool CanEndWithoutEndOfImage(ReadOnlySpan<byte> remaining) => _lenient && remaining is [] or [0xFF] && IsFrameComplete();
+
+    /// <summary>Ends the last scan where the input ends (lenient decoding); the walk then reaches the end of the image.</summary>
+    /// <returns><see langword="false"/> when the walk stops.</returns>
+    private bool EndScanAtEndOfInput()
+    {
+        _state = State.Marker;
+        if (_observer?.OnScanEndAtEndOfInput() == false)
+        {
+            _state = State.Done;
+            return false;
+        }
+
+        return !TryYield();
+    }
 
     private void OnEndOfImage()
     {
@@ -520,9 +603,13 @@ internal sealed class JpegStructureParser : ImageParser<ImageInfo>
         {
             var id = payload[1 + (2 * i)];
             var found = false;
-            foreach (var component in Components)
+            for (var index = 0; index < Components.Count; index++)
             {
-                found |= component.Id == id;
+                if (Components[index].Id == id)
+                {
+                    found = true;
+                    _scannedComponents |= 1 << index;
+                }
             }
 
             if (!found)

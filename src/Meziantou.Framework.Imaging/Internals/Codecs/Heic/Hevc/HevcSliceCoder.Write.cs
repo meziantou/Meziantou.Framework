@@ -56,8 +56,8 @@ internal ref partial struct HevcSliceCoder
         _qpY = header.SliceQpY;
 
         // The encoder writes one slice of one tile, whose coding units have the quantization parameter of the slice and
-        // none of the tools of the range extensions
-        Debug.Assert(!_pps.TilesEnabledFlag && !_pps.EntropyCodingSyncEnabledFlag && !_pps.CuQpDeltaEnabledFlag && !_sps.PcmEnabledFlag);
+        // none of the tools of the range extensions; its rows may be substreams of the wavefront
+        Debug.Assert(!_pps.TilesEnabledFlag && !_pps.CuQpDeltaEnabledFlag && !_sps.PcmEnabledFlag);
         Debug.Assert(!_pps.CrossComponentPredictionEnabledFlag && !_header.CuChromaQpOffsetEnabledFlag && !_sps.PersistentRiceAdaptationEnabledFlag);
         Debug.Assert(!_sps.TransformSkipContextEnabledFlag && !_sps.ImplicitRdpcmEnabledFlag && !_sps.ExplicitRdpcmEnabledFlag && !_sps.TransformSkipRotationEnabledFlag);
     }
@@ -71,7 +71,11 @@ internal ref partial struct HevcSliceCoder
     /// Whether each coding tree unit is written once it is searched, with <c>end_of_slice_segment_flag</c>; the records are
     /// kept for <see cref="WriteCodingTreeUnits"/> otherwise.
     /// </param>
-    public void SearchCodingTreeUnits(int ry, bool write)
+    /// <param name="contextsWpp">
+    /// Where the context variables are stored after the second coding tree unit of the row, for the next row of the
+    /// wavefront (clause 9.3.2.4); empty without wavefront.
+    /// </param>
+    public void SearchCodingTreeUnits(int ry, bool write, Span<byte> contextsWpp = default)
     {
         var workspace = _workspace;
         for (var rx = 0; rx < _picWidthInCtbsY; rx++)
@@ -87,7 +91,16 @@ internal ref partial struct HevcSliceCoder
             _sink.Mode = HevcBinSinkMode.Cost;
             SearchCodingQuadtree(rx << _ctbLog2SizeY, ry << _ctbLog2SizeY, _ctbLog2SizeY, 0);
             if (!write)
+            {
+                // The search of the next row of the wavefront starts with the context variables of the search after the
+                // second coding tree unit of this row, as the writing of the row does
+                if (rx is 1 && !contextsWpp.IsEmpty)
+                {
+                    _cabac.SaveContexts(contextsWpp);
+                }
+
                 continue;
+            }
 
             // The context variables after the search are those of a decoder after the coding tree unit: the search ends
             // every coding unit with the costs of its syntax elements, in the order of the syntax
@@ -102,6 +115,10 @@ internal ref partial struct HevcSliceCoder
             // end_of_slice_segment_flag
             _sink.EncodeTerminate(_ctbAddrInRs == _sps.PicSizeInCtbsY - 1 ? 1 : 0);
             workspace.RecordCount = start;
+            if (rx is 1 && !contextsWpp.IsEmpty)
+            {
+                _cabac.SaveContexts(contextsWpp);
+            }
         }
     }
 
@@ -111,7 +128,8 @@ internal ref partial struct HevcSliceCoder
     /// syntax precedes the coding quadtree.
     /// </summary>
     /// <param name="ry">The row of coding tree blocks.</param>
-    public void WriteCodingTreeUnits(int ry)
+    /// <param name="contextsWpp">Where the context variables are stored after the second coding tree unit of the row; empty without wavefront.</param>
+    public void WriteCodingTreeUnits(int ry, Span<byte> contextsWpp = default)
     {
         for (var rx = 0; rx < _picWidthInCtbsY; rx++)
         {
@@ -127,6 +145,10 @@ internal ref partial struct HevcSliceCoder
             _sink.Mode = HevcBinSinkMode.Encode;
             WriteCodingQuadtree(rx << _ctbLog2SizeY, ry << _ctbLog2SizeY, _ctbLog2SizeY, 0);
             _sink.EncodeTerminate(_ctbAddrInRs == _sps.PicSizeInCtbsY - 1 ? 1 : 0);
+            if (rx is 1 && !contextsWpp.IsEmpty)
+            {
+                _cabac.SaveContexts(contextsWpp);
+            }
         }
     }
 

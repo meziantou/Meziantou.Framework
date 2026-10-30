@@ -157,7 +157,7 @@ internal ref partial struct Av1TileCoder
         if (_availL)
             leftN = (_paletteSizes[MiIndex(_miRow, _miCol - 1)] >> shift) & 0xF;
 
-        var above = _state.AbovePaletteColors.Slice((plane * Av1Constants.PaletteColors * (_miCols + Av1FrameState.AboveContextMargin)) + (_miCol * Av1Constants.PaletteColors), Av1Constants.PaletteColors);
+        var above = _scratch.AbovePaletteColors.Slice((plane * Av1Constants.PaletteColors * (_miCols + Av1TileScratch.AboveContextMargin)) + (_miCol * Av1Constants.PaletteColors), Av1Constants.PaletteColors);
         var left = _scratch.GetLeftPaletteColors(plane).Slice((_miRow & 31) * Av1Constants.PaletteColors, Av1Constants.PaletteColors);
         var aboveIdx = 0;
         var leftIdx = 0;

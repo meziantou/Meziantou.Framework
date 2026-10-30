@@ -50,6 +50,9 @@ internal readonly record struct HevcPictureParameters(int InitQp)
     /// <summary>Gets <c>transquant_bypass_enabled_flag</c>.</summary>
     public bool TransquantBypassEnabled { get; init; }
 
+    /// <summary>Gets a value indicating whether each row of coding tree blocks is a substream of the wavefront (<c>entropy_coding_sync_enabled_flag</c>).</summary>
+    public bool EntropyCodingSyncEnabled { get; init; }
+
     /// <summary>Gets <c>deblocking_filter_override_enabled_flag</c>.</summary>
     public bool DeblockingFilterOverrideEnabled { get; init; }
 

@@ -14,14 +14,20 @@ internal static class ExrZlib
     /// <param name="compressed">The stored data of the chunk, copied to a buffer of the scope.</param>
     /// <param name="destination">Receives exactly its length of bytes.</param>
     /// <exception cref="InvalidImageContentException">The datastream is malformed, produces another number of bytes, or is followed by other bytes.</exception>
-    public static void Inflate(PooledBuffer compressed, Span<byte> destination)
+    public static void Inflate(PooledBuffer compressed, Span<byte> destination) => Inflate(new ArraySegment<byte>(compressed.RawBuffer, 0, compressed.Length), destination);
+
+    /// <summary>Decompresses a chunk.</summary>
+    /// <param name="compressed">The stored data of the chunk, in a buffer of the scope.</param>
+    /// <param name="destination">Receives exactly its length of bytes.</param>
+    /// <exception cref="InvalidImageContentException">The datastream is malformed, produces another number of bytes, or is followed by other bytes.</exception>
+    public static void Inflate(ArraySegment<byte> compressed, Span<byte> destination)
     {
-        if (compressed.Length < 6)
+        if (compressed.Count < 6)
             throw ExrFormat.Invalid("the zlib data of a chunk are truncated.");
 
         try
         {
-            using var input = new MemoryStream(compressed.RawBuffer, 0, compressed.Length, writable: false);
+            using var input = new MemoryStream(compressed.Array!, compressed.Offset, compressed.Count, writable: false);
             using var zlib = new ZLibStream(input, CompressionMode.Decompress);
             var written = 0;
             while (written < destination.Length)
@@ -49,7 +55,7 @@ internal static class ExrZlib
 
         // ZLibStream reports a truncated stream as a clean end, and does not tell where the stream ends: the checksum
         // must be the last four bytes of the chunk
-        var expected = BinaryPrimitives.ReadUInt32BigEndian(compressed.Span[^4..]);
+        var expected = BinaryPrimitives.ReadUInt32BigEndian(compressed.AsSpan()[^4..]);
         if (Adler32.Compute(destination) != expected)
             throw ExrFormat.Invalid("the zlib data of a chunk are truncated, followed by other bytes, or do not match their checksum.");
     }

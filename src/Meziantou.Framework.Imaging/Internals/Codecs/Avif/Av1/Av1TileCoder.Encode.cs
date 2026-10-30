@@ -1707,8 +1707,8 @@ internal ref partial struct Av1TileCoder
     // Saves or restores the level and DC contexts above and to the left of a transform block: 4 lines of 16 contexts at most
     private readonly void CopyTransformBlockContexts(Span<byte> snapshot, int plane, int x4, int y4, int w4, int h4, bool save)
     {
-        var aboveLevel = _state.GetAboveLevelContext(plane).Slice(x4, w4);
-        var aboveDc = _state.GetAboveDcContext(plane).Slice(x4, w4);
+        var aboveLevel = _scratch.GetAboveLevelContext(plane).Slice(x4, w4);
+        var aboveDc = _scratch.GetAboveDcContext(plane).Slice(x4, w4);
         var leftLevel = _scratch.GetLeftLevelContext(plane);
         var leftDc = _scratch.GetLeftDcContext(plane);
         if (save)
@@ -1786,9 +1786,9 @@ internal ref partial struct Av1TileCoder
             var nx = ((c + bw4 + subX) >> subX) - x0;
             var y0 = r >> subY;
             var ny = ((r + bh4 + subY) >> subY) - y0;
-            Copy(_state.GetAboveLevelContext(plane).Slice(x0, nx), snapshot.Slice(position, nx), save);
+            Copy(_scratch.GetAboveLevelContext(plane).Slice(x0, nx), snapshot.Slice(position, nx), save);
             position += nx;
-            Copy(_state.GetAboveDcContext(plane).Slice(x0, nx), snapshot.Slice(position, nx), save);
+            Copy(_scratch.GetAboveDcContext(plane).Slice(x0, nx), snapshot.Slice(position, nx), save);
             position += nx;
             var leftLevel = _scratch.GetLeftLevelContext(plane);
             var leftDc = _scratch.GetLeftDcContext(plane);
@@ -1820,10 +1820,10 @@ internal ref partial struct Av1TileCoder
             // The palettes of the blocks above and to the left, which predict the colors of the palette of a block
             var width = Math.Min(bw4, _miCols - c) * Av1Constants.PaletteColors;
             var height = bh4 * Av1Constants.PaletteColors;
-            var abovePlaneLength = Av1Constants.PaletteColors * (_miCols + Av1FrameState.AboveContextMargin);
+            var abovePlaneLength = Av1Constants.PaletteColors * (_miCols + Av1TileScratch.AboveContextMargin);
             for (var plane = 0; plane < 2; plane++)
             {
-                CopyColors(_state.AbovePaletteColors.Slice((plane * abovePlaneLength) + (c * Av1Constants.PaletteColors), width), snapshot.Slice(position, width * sizeof(ushort)), save);
+                CopyColors(_scratch.AbovePaletteColors.Slice((plane * abovePlaneLength) + (c * Av1Constants.PaletteColors), width), snapshot.Slice(position, width * sizeof(ushort)), save);
                 position += width * sizeof(ushort);
                 CopyColors(_scratch.GetLeftPaletteColors(plane).Slice((r & 31) * Av1Constants.PaletteColors, height), snapshot.Slice(position, height * sizeof(ushort)), save);
                 position += height * sizeof(ushort);

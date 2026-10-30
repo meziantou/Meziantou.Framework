@@ -23,6 +23,16 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <item><description>
 /// A code-block whose last coding passes are not in the codestream is decoded as far as it goes: it is not an error.
 /// </description></item>
+/// <item><description>
+/// Parallelism (<see cref="Jpeg2000Workers"/>): the packets are read in their order on the calling thread, which gives
+/// every code-block its codeword segments. A code-block is then decoded from its own segments, with contexts and states
+/// that never cross its edges (the code-block styles only change the passes of one code-block), into its own area of the
+/// plane: the code-blocks of a tile of at least <see cref="RowBands.MinPixelsForParallelism"/> pixels are decoded by
+/// several workers, each taking the next code-block that is left, with its own block decoders and buffers. The wavelet
+/// transformation is then split by rows and by strips of columns, and the component transformation and the level shift
+/// by ranges of samples. The samples, the features and the error (the one of the first code-block that fails, a
+/// cancellation first) are those of one worker.
+/// </description></item>
 /// </list>
 /// </remarks>
 internal sealed class Jpeg2000TileDecoder : IDisposable
@@ -30,26 +40,23 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
     private const int MaxBlockSamples = 4096;
     private const int MaxSegments = 128;
 
-    private readonly ImageCodecContext _context;
-    private readonly Jpeg2000Tier1Decoder _blockDecoder;
-    private Jpeg2000HtBlockDecoder? _highThroughputDecoder;
-    private readonly Av1PooledArray<int> _blockSamples;
-    private Av1PooledArray<int>? _scratch;
-    private PooledBuffer? _blockData;
+    // The smallest number of samples of a range of the level shift that a worker takes
+    private const int MinSamplesPerRange = 16 * 1024;
 
-    public Jpeg2000TileDecoder(ImageCodecContext context)
+    private readonly ImageCodecContext _context;
+    private readonly int _maxDegreeOfParallelism;
+
+    // The state of the calling thread, then the states of the other workers, kept from a tile to the next one
+    private readonly List<BlockWorker> _workers = [];
+
+    /// <summary>Initializes a new instance of the <see cref="Jpeg2000TileDecoder"/> class.</summary>
+    /// <param name="context">The decoding context.</param>
+    /// <param name="maxDegreeOfParallelism">The largest number of workers that decode a tile: one when the caller is already parallel.</param>
+    public Jpeg2000TileDecoder(ImageCodecContext context, int maxDegreeOfParallelism = 1)
     {
         _context = context;
-        _blockDecoder = new Jpeg2000Tier1Decoder(context.Scope);
-        try
-        {
-            _blockSamples = Av1PooledArray<int>.Rent(context.Scope, MaxBlockSamples, clear: false);
-        }
-        catch
-        {
-            _blockDecoder.Dispose();
-            throw;
-        }
+        _maxDegreeOfParallelism = maxDegreeOfParallelism;
+        _workers.Add(new BlockWorker(context.Scope));
     }
 
     /// <summary>Decodes a tile: on return, the plane of each tile-component of <paramref name="geometry"/> holds its samples.</summary>
@@ -77,16 +84,16 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
             }
         }
 
-        if (_scratch is null || _scratch.Length < scratchLength)
-        {
-            _scratch?.Dispose();
-            _scratch = null;
-            _scratch = Av1PooledArray<int>.Rent(scope, scratchLength, clear: false);
-        }
+        var main = _workers[0];
+        main.EnsureScratch(scratchLength);
+        var workers = Jpeg2000Workers.GetWorkerCount(_maxDegreeOfParallelism, (geometry.X1 - geometry.X0) * (geometry.Y1 - geometry.Y0), geometry.Blocks.Length);
+        if (workers > 1)
+            return tools | DecodeByWorkers(coding, geometry, packets, tile.Body.Data, scratchLength, workers);
 
         var contributions = packets.Contributions;
         var body = tile.Body.Data;
         var blockCount = 0;
+        var scratch = main.Scratch!;
         foreach (var component in geometry.Components)
         {
             var levels = component.Style.DecompositionLevels;
@@ -111,7 +118,7 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
                             _context.CancellationToken.ThrowIfCancellationRequested();
                         }
 
-                        tools |= DecodeBlock(component, in band, in block, contributions, body);
+                        tools |= DecodeBlock(main, component, in band, in block, contributions, body);
                     }
                 }
             }
@@ -121,11 +128,11 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
 
             if (component.Style.IsReversible)
             {
-                Jpeg2000Dwt.InverseReversible(component.Samples, component.Width, resolutions, _scratch.Span);
+                Jpeg2000Dwt.InverseReversible(component.Samples, component.Width, resolutions, scratch.Span);
             }
             else
             {
-                Jpeg2000Dwt.InverseIrreversible(component.Coefficients, component.Width, resolutions, unsafe(MemoryMarshal.Cast<int, float>(_scratch.Span)));
+                Jpeg2000Dwt.InverseIrreversible(component.Coefficients, component.Width, resolutions, unsafe(MemoryMarshal.Cast<int, float>(scratch.Span)));
             }
         }
 
@@ -136,14 +143,152 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
 
     public void Dispose()
     {
-        _blockDecoder.Dispose();
-        _highThroughputDecoder?.Dispose();
-        _highThroughputDecoder = null;
-        _blockSamples.Dispose();
-        _scratch?.Dispose();
-        _scratch = null;
-        _blockData?.Dispose();
-        _blockData = null;
+        foreach (var worker in _workers)
+        {
+            worker.Dispose();
+        }
+
+        _workers.Clear();
+    }
+
+    /// <summary>
+    /// Decodes the code-blocks of a tile by several workers, then transforms its planes by several workers: what
+    /// <see cref="Decode"/> does with one worker.
+    /// </summary>
+    private Jpeg2000Tools DecodeByWorkers(Jpeg2000TileCoding coding, Jpeg2000TileGeometry geometry, Jpeg2000PacketReader packets, byte[] body, long scratchLength, int workers)
+    {
+        var scope = _context.Scope;
+        var cancellationToken = _context.CancellationToken;
+        var components = geometry.Components;
+        var bands = geometry.Bands;
+
+        // The component of each sub-band, and what the workers need: everything is rented here, on the calling thread
+        var bandComponents = new int[bands.Length];
+        var usesHighThroughput = false;
+        foreach (var component in components)
+        {
+            usesHighThroughput |= (component.Style.CodeBlockStyle & Jpeg2000CodingStyle.StyleHighThroughput) != 0;
+            var resolutions = geometry.Resolutions.AsSpan(component.FirstResolution, component.Style.DecompositionLevels + 1);
+            foreach (ref readonly var resolution in resolutions)
+            {
+                bandComponents.AsSpan(resolution.FirstBand, resolution.BandCount).Fill(component.Index);
+            }
+        }
+
+        var dataLength = GetLargestJoinedLength(geometry.Blocks, packets.Contributions);
+        var scratch = new Av1PooledArray<int>[workers];
+        for (var w = 0; w < workers; w++)
+        {
+            if (w == _workers.Count)
+            {
+                _workers.Add(new BlockWorker(scope));
+            }
+
+            var worker = _workers[w];
+            worker.EnsureScratch(scratchLength);
+            if (usesHighThroughput)
+            {
+                worker.GetHighThroughputDecoder().RentSignificancePropagationFlags();
+            }
+
+            if (dataLength > 0)
+            {
+                worker.RentData(dataLength, _context.Limits);
+            }
+
+            worker.Tools = Jpeg2000Tools.None;
+            scratch[w] = worker.Scratch!;
+        }
+
+        Jpeg2000Workers.Run(workers, geometry.Blocks.Length, (w, index) =>
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var bandIndex = FindBand(geometry.Bands, index);
+            ref readonly var band = ref geometry.Bands[bandIndex];
+            ref readonly var block = ref geometry.Blocks[index];
+            var component = geometry.Components[bandComponents[bandIndex]];
+            if (block.PassCount == 0)
+            {
+                ClearBlock(component, in band, in block);
+                return;
+            }
+
+            var worker = _workers[w];
+            worker.Tools |= DecodeBlock(worker, component, in band, in block, packets.Contributions, body);
+        });
+
+        var tools = Jpeg2000Tools.None;
+        for (var w = 0; w < workers; w++)
+        {
+            tools |= _workers[w].Tools;
+        }
+
+        foreach (var component in components)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            if (component.Width == 0 || component.Height == 0)
+                continue;
+
+            var resolutions = new ArraySegment<Jpeg2000ResolutionGeometry>(geometry.Resolutions, component.FirstResolution, component.Style.DecompositionLevels + 1);
+            if (component.Style.IsReversible)
+            {
+                Jpeg2000Dwt.InverseReversible(component.Plane!, component.Width, resolutions, scratch, workers);
+            }
+            else
+            {
+                Jpeg2000Dwt.InverseIrreversible(component.Plane!, component.Width, resolutions, scratch, workers);
+            }
+        }
+
+        cancellationToken.ThrowIfCancellationRequested();
+        FinishSamples(coding, geometry, workers);
+        return tools;
+    }
+
+    /// <summary>Gets the length of the largest code-block whose segments several contributions hold: the buffer that makes them contiguous.</summary>
+    private static long GetLargestJoinedLength(ReadOnlySpan<Jpeg2000CodeBlock> blocks, ReadOnlySpan<Jpeg2000Contribution> contributions)
+    {
+        var largest = 0L;
+        foreach (ref readonly var block in blocks)
+        {
+            if (block.PassCount == 0 || contributions[block.FirstContribution].Next < 0)
+                continue;
+
+            var total = 0L;
+            for (var index = block.FirstContribution; index >= 0; index = contributions[index].Next)
+            {
+                total += contributions[index].Length;
+            }
+
+            // A code-block that is too long fails when its turn comes, as with one worker
+            if (total <= CheckedSizes.MaxBufferLength)
+            {
+                largest = Math.Max(largest, total);
+            }
+        }
+
+        return largest;
+    }
+
+    /// <summary>Gets the sub-band of a code-block of the tile: the last one that starts at or before it.</summary>
+    private static int FindBand(Jpeg2000BandGeometry[] bands, int block)
+    {
+        var low = 0;
+        var high = bands.Length - 1;
+        while (low < high)
+        {
+            var middle = (low + high + 1) / 2;
+            if (bands[middle].FirstBlock <= block)
+            {
+                low = middle;
+            }
+            else
+            {
+                high = middle - 1;
+            }
+        }
+
+        return low;
     }
 
     private static void FinishSamples(Jpeg2000TileCoding coding, Jpeg2000TileGeometry geometry)
@@ -163,27 +308,85 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
 
         foreach (var component in components)
         {
-            if (component.Style.IsReversible)
-            {
-                Jpeg2000ColorTransform.ShiftLevel(component.Samples, component.Precision);
-            }
-            else
-            {
-                Jpeg2000ColorTransform.ShiftLevel(component.Coefficients, component.Samples, component.Precision);
-            }
+            ShiftLevel(component);
         }
     }
 
-    private Jpeg2000Tools DecodeBlock(Jpeg2000TileComponent component, in Jpeg2000BandGeometry band, in Jpeg2000CodeBlock block, ReadOnlySpan<Jpeg2000Contribution> contributions, byte[] body)
+    /// <summary>
+    /// The component transformation and the level shift by ranges of samples, one per worker: both work on each sample on
+    /// its own, so that a range gives the samples of the whole plane.
+    /// </summary>
+    private static void FinishSamples(Jpeg2000TileCoding coding, Jpeg2000TileGeometry geometry, int workers)
+    {
+        var components = geometry.Components;
+        var length = 0;
+        foreach (var component in components)
+        {
+            length = Math.Max(length, component.Samples.Length);
+        }
+
+        var ranges = Jpeg2000Workers.GetBandCount(workers, length, length, MinSamplesPerRange);
+        if (ranges == 1)
+        {
+            FinishSamples(coding, geometry);
+            return;
+        }
+
+        Jpeg2000Workers.RunBands(ranges, range =>
+        {
+            if (coding.Defaults.UsesComponentTransform)
+            {
+                var (start, count) = GetRange(components[0].Samples.Length, range, ranges);
+                if (components[0].Style.IsReversible)
+                {
+                    Jpeg2000ColorTransform.InverseReversible(components[0].Samples.Slice(start, count), components[1].Samples.Slice(start, count), components[2].Samples.Slice(start, count));
+                }
+                else
+                {
+                    Jpeg2000ColorTransform.InverseIrreversible(components[0].Coefficients.Slice(start, count), components[1].Coefficients.Slice(start, count), components[2].Coefficients.Slice(start, count));
+                }
+            }
+
+            foreach (var component in components)
+            {
+                var (start, count) = GetRange(component.Samples.Length, range, ranges);
+                ShiftLevel(component, start, count);
+            }
+        });
+
+        static (int Start, int Count) GetRange(int length, int range, int ranges)
+        {
+            // The ranges start at a multiple of 64 samples, so that the vector paths cover them
+            var start = range == 0 ? 0 : Math.Min(length, Jpeg2000Workers.GetBandStart(length, range, ranges) & ~63);
+            var end = range == ranges - 1 ? length : Math.Min(length, Jpeg2000Workers.GetBandStart(length, range + 1, ranges) & ~63);
+            return (start, end - start);
+        }
+    }
+
+    private static void ShiftLevel(Jpeg2000TileComponent component) => ShiftLevel(component, 0, component.Samples.Length);
+
+    private static void ShiftLevel(Jpeg2000TileComponent component, int start, int count)
+    {
+        if (component.Style.IsReversible)
+        {
+            Jpeg2000ColorTransform.ShiftLevel(component.Samples.Slice(start, count), component.Precision);
+        }
+        else
+        {
+            Jpeg2000ColorTransform.ShiftLevel(component.Coefficients.Slice(start, count), component.Samples.Slice(start, count), component.Precision);
+        }
+    }
+
+    private Jpeg2000Tools DecodeBlock(BlockWorker worker, Jpeg2000TileComponent component, in Jpeg2000BandGeometry band, in Jpeg2000CodeBlock block, ReadOnlySpan<Jpeg2000Contribution> contributions, byte[] body)
     {
         var tools = Jpeg2000Tools.None;
         var style = component.Style.CodeBlockStyle;
         int width = block.Width;
         int height = block.Height;
-        var samples = _blockSamples.Span[..(width * height)];
+        var samples = worker.Samples.Span[..(width * height)];
         if ((style & Jpeg2000CodingStyle.StyleHighThroughput) != 0)
         {
-            tools = DecodeHighThroughputBlock(samples, in band, in block, contributions, body, (style & Jpeg2000CodingStyle.StyleVerticallyCausal) != 0);
+            tools = DecodeHighThroughputBlock(worker, samples, in band, in block, contributions, body, (style & Jpeg2000CodingStyle.StyleVerticallyCausal) != 0);
             StoreBlock(component, in band, in block, samples);
             return tools;
         }
@@ -212,7 +415,7 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
                 total += contributions[index].Length;
             }
 
-            data = RentBlockData(total);
+            data = worker.RentData(total, _context.Limits);
             var position = 0;
             var pass = 0;
             var segmentOffset = 0;
@@ -246,13 +449,13 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
             }
         }
 
-        _blockDecoder.Decode(samples, width, height, band.Orientation, style, bitPlanes, data, segments[..segmentCount]);
+        worker.Tier1.Decode(samples, width, height, band.Orientation, style, bitPlanes, data, segments[..segmentCount]);
         StoreBlock(component, in band, in block, samples);
         return tools;
     }
 
     /// <summary>Decodes a code-block of the high-throughput block coder (T.814): its HT cleanup segment, then its HT refinement segment.</summary>
-    private Jpeg2000Tools DecodeHighThroughputBlock(Span<int> samples, in Jpeg2000BandGeometry band, in Jpeg2000CodeBlock block, ReadOnlySpan<Jpeg2000Contribution> contributions, byte[] body, bool isVerticallyCausal)
+    private Jpeg2000Tools DecodeHighThroughputBlock(BlockWorker worker, Span<int> samples, in Jpeg2000BandGeometry band, in Jpeg2000CodeBlock block, ReadOnlySpan<Jpeg2000Contribution> contributions, byte[] body, bool isVerticallyCausal)
     {
         // The packet reader made one contribution of the placeholder passes and the HT cleanup pass; the others hold the
         // HT SigProp and HT MagRef passes, which several packets may share (T.814, B.3)
@@ -279,7 +482,7 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
                     total += contributions[index].Length;
                 }
 
-                data = RentBlockData(total);
+                data = worker.RentData(total, _context.Limits);
                 var position = 0;
                 for (var index = block.FirstContribution; index >= 0; index = contributions[index].Next)
                 {
@@ -294,31 +497,14 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
 
                 refinementOffset = cleanup.Length;
                 refinementLength = position - cleanup.Length;
-                _highThroughputDecoder ??= new Jpeg2000HtBlockDecoder(_context.Scope);
-                return _highThroughputDecoder.Decode(samples, block.Width, block.Height, isVerticallyCausal, band.BitPlanes, block.ZeroBitPlanes + block.PlaceholderSets, GetPassCount(refinementPasses, refinementLength), data, 0, cleanup.Length, refinementOffset, refinementLength) | Jpeg2000Tools.SplitSegment;
+                return worker.GetHighThroughputDecoder().Decode(samples, block.Width, block.Height, isVerticallyCausal, band.BitPlanes, block.ZeroBitPlanes + block.PlaceholderSets, GetPassCount(refinementPasses, refinementLength), data, 0, cleanup.Length, refinementOffset, refinementLength) | Jpeg2000Tools.SplitSegment;
             }
         }
 
-        _highThroughputDecoder ??= new Jpeg2000HtBlockDecoder(_context.Scope);
-        return _highThroughputDecoder.Decode(samples, block.Width, block.Height, isVerticallyCausal, band.BitPlanes, block.ZeroBitPlanes + block.PlaceholderSets, GetPassCount(refinementPasses, refinementLength), data, cleanup.Offset, cleanup.Length, refinementOffset, refinementLength);
+        return worker.GetHighThroughputDecoder().Decode(samples, block.Width, block.Height, isVerticallyCausal, band.BitPlanes, block.ZeroBitPlanes + block.PlaceholderSets, GetPassCount(refinementPasses, refinementLength), data, cleanup.Offset, cleanup.Length, refinementOffset, refinementLength);
 
         // T.814, B.3: the passes of an empty HT refinement segment are not decoded (Z_blk)
         static int GetPassCount(int refinementPasses, int refinementLength) => refinementLength == 0 ? 1 : 1 + refinementPasses;
-    }
-
-    private byte[] RentBlockData(long length)
-    {
-        if (_blockData is null || _blockData.Length < length)
-        {
-            if (length > CheckedSizes.MaxBufferLength)
-                throw CheckedSizes.CreateOverflowException(_context.Limits);
-
-            _blockData?.Dispose();
-            _blockData = null;
-            _blockData = _context.Scope.Rent((int)length, AllocationKind.DecoderState, clear: false);
-        }
-
-        return _blockData.RawBuffer;
     }
 
     /// <summary>Clears the area of a code-block in the plane of its tile-component.</summary>
@@ -470,6 +656,80 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
 
             var coefficient = magnitude * halfStep;
             destination[x] = value < 0 ? -coefficient : coefficient;
+        }
+    }
+
+    /// <summary>The state of a worker: its block decoders, the coefficients of its code-block, its buffers.</summary>
+    private sealed class BlockWorker : IDisposable
+    {
+        private readonly AllocationScope _scope;
+        private Jpeg2000HtBlockDecoder? _highThroughputDecoder;
+        private PooledBuffer? _data;
+
+        public BlockWorker(AllocationScope scope)
+        {
+            _scope = scope;
+            Tier1 = new Jpeg2000Tier1Decoder(scope);
+            try
+            {
+                Samples = Av1PooledArray<int>.Rent(scope, MaxBlockSamples, clear: false);
+            }
+            catch
+            {
+                Tier1.Dispose();
+                throw;
+            }
+        }
+
+        public Jpeg2000Tier1Decoder Tier1 { get; }
+
+        /// <summary>Gets the coefficients of the code-block being decoded.</summary>
+        public Av1PooledArray<int> Samples { get; }
+
+        /// <summary>Gets the scratch of the wavelet transformation.</summary>
+        public Av1PooledArray<int>? Scratch { get; private set; }
+
+        /// <summary>Gets or sets the features of the code-blocks the worker decoded.</summary>
+        public Jpeg2000Tools Tools { get; set; }
+
+        public Jpeg2000HtBlockDecoder GetHighThroughputDecoder() => _highThroughputDecoder ??= new Jpeg2000HtBlockDecoder(_scope);
+
+        public void EnsureScratch(long length)
+        {
+            if (Scratch is null || Scratch.Length < length)
+            {
+                Scratch?.Dispose();
+                Scratch = null;
+                Scratch = Av1PooledArray<int>.Rent(_scope, length, clear: false);
+            }
+        }
+
+        /// <summary>Gets a buffer of at least <paramref name="length"/> bytes, which joins the segments of a code-block.</summary>
+        public byte[] RentData(long length, ImageResourceLimits limits)
+        {
+            if (_data is null || _data.Length < length)
+            {
+                if (length > CheckedSizes.MaxBufferLength)
+                    throw CheckedSizes.CreateOverflowException(limits);
+
+                _data?.Dispose();
+                _data = null;
+                _data = _scope.Rent((int)length, AllocationKind.DecoderState, clear: false);
+            }
+
+            return _data.RawBuffer;
+        }
+
+        public void Dispose()
+        {
+            Tier1.Dispose();
+            _highThroughputDecoder?.Dispose();
+            _highThroughputDecoder = null;
+            Samples.Dispose();
+            Scratch?.Dispose();
+            Scratch = null;
+            _data?.Dispose();
+            _data = null;
         }
     }
 }

@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
@@ -24,6 +25,8 @@ namespace Meziantou.Framework.Imaging.Tests;
 public sealed class JpegDecoderTests
 {
     private static readonly ImageDecodeOptions InkOptions = new() { CmykConversion = CmykConversionOptions.Default };
+
+    private static readonly ImageConfiguration Lenient = new() { DecodingStrictness = DecodingStrictness.Lenient };
 
     // Interleaved scans have at most 10 blocks per MCU (T.81 B.2.3)
     private static readonly Dictionary<string, (int H, int V)[]> InkLayouts = new(StringComparer.Ordinal)
@@ -514,6 +517,160 @@ public sealed class JpegDecoderTests
     }
 
     [Fact]
+    public void LenientDecodingReadsAGarbledRestartNumberAsTheExpectedOne()
+    {
+        // libjpeg-turbo 3.1 (djpeg, Pillow, ImageMagick), FFmpeg and Apple ImageIO decode a file whose restart marker is 3 to
+        // 5 after the expected one to the pixels of the file; one or two away, libjpeg-turbo and ImageIO take it for a lost or
+        // a spurious marker and give other pixels than FFmpeg, which ignores the numbers
+        var image = JpegTestImage.CreateRandom(40, 24, Layouts["4:2:0"], seed: 9);
+        var expected = image.GetExpectedPixels();
+        var data = image.Encode(new JpegTestEncodeOptions { RestartInterval = 1 });
+        var restarts = FindRestartMarkers(data);
+        Assert.HasCount(5, restarts); // 3x2 MCUs
+        var lenient = new ImageDecodeOptions { Configuration = Lenient };
+        for (var number = 0; number < 8; number++)
+        {
+            if (number == 2)
+                continue;
+
+            var garbled = data.ToArray();
+            garbled[restarts[2] + 1] = (byte)(0xD0 + number);
+            var message = string.Create(CultureInfo.InvariantCulture, $"The JPEG restart marker RST{number} is out of sequence (RST2 expected).");
+            Assert.Equal(message, Assert.Throws<InvalidImageContentException>(() => Image.Load(garbled)).Message);
+            if (number < 5)
+            {
+                Assert.Equal(message, Assert.Throws<InvalidImageContentException>(() => Image.Load(garbled, lenient)).Message);
+                continue;
+            }
+
+            using (var decoded = Image.Load(garbled, lenient))
+            {
+                AssertPixels(expected, decoded, $"RST{number}");
+            }
+
+            Assert.Equal(new Size(40, 24), Image.Identify(garbled, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan, Configuration = Lenient }).Size);
+            using var reader = Image.OpenReader<Rgb24>(new TestInputStream(garbled) { Seekable = false, MaxBytesPerRead = 5 }, new ImageReaderOptions { Configuration = Lenient });
+            using var frame = reader.ReadFrame();
+            Assert.NotNull(frame);
+            AssertPixels(expected, frame, $"reader, RST{number}");
+            Assert.Null(reader.ReadFrame());
+        }
+
+        // The marker counts as the expected one: the next marker is expected after it (RST0 is 5 after RST3), as libjpeg-turbo
+        // and ImageIO read it
+        var twice = data.ToArray();
+        twice[restarts[2] + 1] = 0xD6;
+        twice[restarts[3] + 1] = 0xD0;
+        using (var decoded = Image.Load(twice, lenient))
+        {
+            AssertPixels(expected, decoded, "two garbled markers");
+        }
+
+        // The data of the interval must still be complete, and the limits are the same
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(Remove(twice, restarts[2] - 2, 2), lenient));
+        var limits = new ImageResourceLimits { MaxEncodedBytes = twice.Length - 1 };
+        Assert.Equal(ImageResourceLimitKind.EncodedBytes, Assert.Throws<ImageResourceLimitException>(() => Image.Load(twice, new ImageDecodeOptions { Configuration = new ImageConfiguration { DecodingStrictness = DecodingStrictness.Lenient, Limits = limits } })).Kind);
+        limits = new ImageResourceLimits { MaxEncodedBytes = twice.Length, MaxFramePixels = 40 * 24 };
+        using (var atLimit = Image.Load(twice, new ImageDecodeOptions { Configuration = new ImageConfiguration { DecodingStrictness = DecodingStrictness.Lenient, Limits = limits } }))
+        {
+            AssertPixels(expected, atLimit, "at the limits");
+        }
+
+        // Arithmetic coding: libjpeg-turbo and ImageIO agree (FFmpeg does not read it)
+        var arithmetic = image.Encode(new JpegTestEncodeOptions { Arithmetic = true, RestartInterval = 1 });
+        arithmetic[FindRestartMarkers(arithmetic)[2] + 1] = 0xD6;
+        Assert.Contains("out of sequence", Assert.Throws<InvalidImageContentException>(() => Image.Load(arithmetic)).Message, StringComparison.Ordinal);
+        using (var decoded = Image.Load(arithmetic, lenient))
+        {
+            AssertPixels(expected, decoded, "arithmetic coding");
+        }
+    }
+
+    [Fact]
+    public void LenientDecodingEndsACompleteFrameWithoutEndOfImageMarker()
+    {
+        // libjpeg-turbo 3.1 (djpeg, ImageMagick), FFmpeg and Apple ImageIO decode a file without EOI marker (or with its first
+        // byte only) to the pixels of the whole file; Pillow reports it as truncated unless LOAD_TRUNCATED_IMAGES is set, and
+        // then gives the same pixels
+        var image = JpegTestImage.CreateRandom(30, 20, Layouts["4:2:0"], seed: 14);
+        var expected = image.GetExpectedPixels();
+        var data = image.Encode(new JpegTestEncodeOptions { RestartInterval = 2 });
+        var lenient = new ImageDecodeOptions { Configuration = Lenient };
+        var fullScan = new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan };
+        var lenientFullScan = new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan, Configuration = Lenient };
+        foreach (var cut in new[] { data[..^2], data[..^1] })
+        {
+            Assert.StartsWith("The JPEG data is truncated", Assert.Throws<InvalidImageContentException>(() => Image.Load(cut)).Message, StringComparison.Ordinal);
+            Assert.Throws<InvalidImageContentException>(() => Image.Identify(cut, fullScan));
+            using (var stream = new TestInputStream(cut) { Seekable = false })
+            {
+                Assert.Throws<InvalidImageContentException>(() => Image.Load(stream));
+            }
+
+            using (var decoded = Image.Load(cut, lenient))
+            {
+                AssertPixels(expected, decoded, $"{cut.Length} bytes");
+            }
+
+            // A stream only reports its end once it is read past it
+            using (var stream = new TestInputStream(cut) { Seekable = false, MaxBytesPerRead = 3 })
+            {
+                using var decoded = Image.Load(stream, lenient);
+                AssertPixels(expected, decoded, $"{cut.Length} bytes, stream");
+            }
+
+            Assert.Equal(new Size(30, 20), Image.Identify(cut, lenientFullScan).Size);
+            using (var stream = new TestInputStream(cut) { Seekable = false })
+            {
+                Assert.Equal(new Size(30, 20), Image.Identify(stream, lenientFullScan).Size);
+            }
+
+            using (var reader = Image.OpenReader<Rgb24>(new TestInputStream(cut) { Seekable = false, MaxBytesPerRead = 5 }, new ImageReaderOptions { Configuration = Lenient }))
+            {
+                using var frame = reader.ReadFrame();
+                Assert.NotNull(frame);
+                AssertPixels(expected, frame, $"{cut.Length} bytes, reader");
+                Assert.Null(reader.ReadFrame());
+            }
+
+            // The input length is enough, and one byte less is the limit, from a span and from a stream
+            foreach (var seekable in new[] { true, false })
+            {
+                var below = new ImageDecodeOptions { Configuration = new ImageConfiguration { DecodingStrictness = DecodingStrictness.Lenient, Limits = new ImageResourceLimits { MaxEncodedBytes = cut.Length - 1 } } };
+                using (var stream = new TestInputStream(cut) { Seekable = seekable })
+                {
+                    Assert.Equal(ImageResourceLimitKind.EncodedBytes, Assert.Throws<ImageResourceLimitException>(() => Image.Load(stream, below)).Kind);
+                }
+
+                Assert.Equal(ImageResourceLimitKind.EncodedBytes, Assert.Throws<ImageResourceLimitException>(() => Image.Load(cut, below)).Kind);
+                var atLimit = new ImageDecodeOptions { Configuration = new ImageConfiguration { DecodingStrictness = DecodingStrictness.Lenient, Limits = new ImageResourceLimits { MaxEncodedBytes = cut.Length } } };
+                using var input = new TestInputStream(cut) { Seekable = seekable };
+                using var decoded = Image.Load(input, atLimit);
+                AssertPixels(expected, decoded, $"{cut.Length} bytes at the limit");
+            }
+        }
+
+        // Missing data is never invented: a cut at the end of an interval, a cut inside one, a frame without its last scan
+        var restarts = FindRestartMarkers(data);
+        Assert.Equal("The JPEG data ends before the last MCU of its last scan.", Assert.Throws<InvalidImageContentException>(() => Image.Load(data.AsSpan(..restarts[^1]), lenient)).Message);
+        Assert.Equal(new Size(30, 20), Image.Identify(data.AsSpan(..restarts[^1]), lenientFullScan).Size); // the walk does not decode the scans
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(data.AsSpan(..(restarts[^1] - 2)), lenient));
+        var scans = image.Encode(new JpegTestEncodeOptions { Scans = [[0], [1], [2]] });
+        var lastScan = scans.AsSpan().LastIndexOf((ReadOnlySpan<byte>)[0xFF, 0xDA]);
+        Assert.StartsWith("The JPEG data is truncated", Assert.Throws<InvalidImageContentException>(() => Image.Load(scans.AsSpan(..lastScan), lenient)).Message, StringComparison.Ordinal);
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(scans.AsSpan(..lastScan), lenientFullScan));
+        using (var decoded = Image.Load(scans.AsSpan(..^2), lenient))
+        {
+            AssertPixels(expected, decoded, "three scans");
+        }
+
+        // Arithmetic coding reads missing bytes as zeros, so a cut would decode: the EOI marker is required
+        var arithmetic = image.Encode(new JpegTestEncodeOptions { Arithmetic = true });
+        Assert.StartsWith("The JPEG data is truncated", Assert.Throws<InvalidImageContentException>(() => Image.Load(arithmetic.AsSpan(..^2), lenient)).Message, StringComparison.Ordinal);
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(arithmetic.AsSpan(..^2), lenientFullScan));
+    }
+
+    [Fact]
     public void RgbSamplesAreCopiedWithoutColorTransform()
     {
         foreach (var sampling in new[] { Layouts["4:4:4"], Layouts["4:2:0"] })
@@ -950,6 +1107,185 @@ public sealed class JpegDecoderTests
         static ImageDecodeOptions Options(ImageResourceLimits limits) => new() { Configuration = new ImageConfiguration { Limits = limits } };
     }
 
+    [Theory]
+    [InlineData("4:2:0", "baseline")]
+    [InlineData("4:2:0", "restart-1")]
+    [InlineData("4:2:2", "restart-7")]
+    [InlineData("4:4:4", "baseline")]
+    [InlineData("gray", "restart-7")]
+    [InlineData("4:1:0", "baseline")]
+    [InlineData("mixed-chroma", "baseline")]
+    [InlineData("4:2:0", "separate-scans")]
+    [InlineData("4:2:0", "twelve-bit")]
+    [InlineData("4:4:0", "arithmetic")]
+    public void FramesDecodedByWorkersHaveThePixelsOfTheContract(string layout, string coding)
+    {
+        // 259x301 pixels (more than 65,536: several workers transform the blocks and write the rows), whose last MCU row and
+        // column are partial; 2, 3 and 16 workers make batches of 8 to 32 MCU rows, whose ends fall inside restart intervals
+        var image = JpegTestImage.CreateRandom(259, 301, Layouts[layout], seed: layout.Length + coding.Length, acDensity: 0.3, precision: coding == "twelve-bit" ? 12 : 8);
+        var expected = image.GetExpectedPixels();
+        var data = image.Encode(coding switch
+        {
+            "restart-1" => new JpegTestEncodeOptions { RestartInterval = 1 },
+            "restart-7" => new JpegTestEncodeOptions { RestartInterval = 7, Huffman = JpegTestHuffmanStyle.Skewed },
+            "separate-scans" => new JpegTestEncodeOptions { Scans = [[2], [0], [1]] },
+            "arithmetic" => new JpegTestEncodeOptions { Arithmetic = true, RestartInterval = 5 },
+            _ => new JpegTestEncodeOptions(),
+        });
+        foreach (var workers in (int[])[1, 2, 3, 16])
+        {
+            using var decoded = Image.Load(data, WorkerOptions(workers));
+            AssertPixels(expected, decoded, $"{layout} {coding}, {workers} workers");
+        }
+    }
+
+    [Fact]
+    public void InksDecodedByWorkersHaveThePixelsOfOneWorker()
+    {
+        var image = JpegTestImage.CreateRandom(259, 301, InkLayouts["chroma-2x2"], seed: 41, inks: JpegTestInkCoding.Ycck);
+        foreach (var data in new[] { image.Encode(), image.Encode(new JpegTestEncodeOptions { RestartInterval = 3 }) })
+        {
+            using var single = Image.Load(data, WorkerOptions(1, InkOptions.CmykConversion));
+            var expected = GetBytes(single);
+            foreach (var workers in (int[])[2, 3, 16])
+            {
+                using var decoded = Image.Load(data, WorkerOptions(workers, InkOptions.CmykConversion));
+                AssertPixels(expected, decoded, $"{workers} workers");
+            }
+        }
+    }
+
+    [Fact]
+    public void LenientRepairsDecodedByWorkersHaveThePixelsOfOneWorker()
+    {
+        // 320x240 pixels (more than 65,536): the frame without EOI marker and the garbled restart number are repaired before
+        // the workers reconstruct the rows, from a span and from a stream that ends in the entropy-coded data
+        var image = JpegTestImage.CreateRandom(320, 240, Layouts["4:2:0"], seed: 23, acDensity: 0.3);
+        var expected = image.GetExpectedPixels();
+        var data = image.Encode(new JpegTestEncodeOptions { RestartInterval = 3 });
+        var garbled = data.ToArray();
+        garbled[FindRestartMarkers(garbled)[4] + 1] = 0xD0 + ((4 + 5) % 8);
+        foreach (var (name, input) in new[] { ("no EOI", data[..^2]), ("half EOI", data[..^1]), ("garbled restart", garbled) })
+        {
+            foreach (var workers in (int[])[1, 2, 16])
+            {
+                var options = new ImageDecodeOptions { Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers, DecodingStrictness = DecodingStrictness.Lenient } };
+                using (var decoded = Image.Load(input, options))
+                {
+                    AssertPixels(expected, decoded, $"{name}, {workers} workers");
+                }
+
+                using var stream = new TestInputStream(input) { Seekable = false, MaxBytesPerRead = 4096 };
+                using var streamed = Image.Load(stream, options);
+                AssertPixels(expected, streamed, $"{name}, {workers} workers, stream");
+            }
+        }
+    }
+
+    [Fact]
+    public void CorruptFramesFailLikeOneWorker()
+    {
+        // Bytes changed in the entropy-coded data: the frame decodes to the same pixels, or fails with the same error, whatever
+        // the number of workers (the entropy-coded data is decoded in order, the reconstruction cannot fail)
+        var image = JpegTestImage.CreateRandom(259, 301, Layouts["4:2:0"], seed: 43, acDensity: 0.3);
+        var failures = 0;
+        foreach (var options in new[] { new JpegTestEncodeOptions(), new JpegTestEncodeOptions { RestartInterval = 5 } })
+        {
+            var data = image.Encode(options);
+            var scan = FindSegment(data, 0xDA) + 20;
+            for (var i = 0; i < 24; i++)
+            {
+                var corrupt = data.ToArray();
+                corrupt[scan + ((data.Length - scan - 4) * i / 24)] ^= 0x5A;
+                var expected = Decode(corrupt, 1);
+                failures += expected.StartsWith("Invalid", StringComparison.Ordinal) ? 1 : 0;
+                Assert.Equal(expected, Decode(corrupt, 3));
+                Assert.Equal(expected, Decode(corrupt, 16));
+            }
+        }
+
+        Assert.True(failures > 10, $"{failures} failures");
+
+        static string Decode(byte[] data, int workers)
+        {
+            try
+            {
+                using var decoded = Image.Load(data, WorkerOptions(workers));
+                return Convert.ToHexString(SHA256.HashData(GetBytes(decoded)));
+            }
+            catch (ImageException exception)
+            {
+                return exception.GetType().Name + ": " + exception.Message;
+            }
+        }
+    }
+
+    [Fact]
+    public void ATruncatedFrameDecodedByWorkersShowsTheRowsOfOneWorker()
+    {
+        // The rendering of a prefix has the rows that one worker writes: every MCU row but the last one decoded
+        var image = JpegTestImage.CreateRandom(259, 301, Layouts["4:2:0"], seed: 44, acDensity: 0.3);
+        var data = image.Encode(new JpegTestEncodeOptions { RestartInterval = 9 });
+        var sos = FindSegment(data, 0xDA);
+        for (var length = sos + 14; length < data.Length - 2; length += (data.Length - sos) / 13)
+        {
+            var expected = Render(data[..length], 1);
+            Assert.Equal(expected, Render(data[..length], 3));
+            Assert.Equal(expected, Render(data[..length], 16));
+        }
+
+        static byte[] Render(byte[] data, int workers)
+        {
+            using var reader = Image.OpenReader<Rgb24>(new MemoryStream(data), new ImageReaderOptions { Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers } });
+            using var destination = new Image<Rgb24>(259, 301, new Rgb24(1, 2, 3));
+            Assert.NotNull(reader.ReadFrameRefinementInto(destination));
+            Assert.Throws<InvalidImageContentException>(() => reader.ReadFrameRefinementInto(destination));
+            return GetBytes(destination);
+        }
+    }
+
+    [Fact]
+    public void WorkersChargeTheirBuffersToTheLiveAllocationLimit()
+    {
+        // Each worker has its own rows, and a batch of MCU rows has its coefficients and samples: all rented on the calling
+        // thread, so a limit fails at the same allocation every time, and a decoding that fits releases everything
+        var image = JpegTestImage.CreateRandom(259, 301, Layouts["4:2:0"], seed: 45);
+        var data = image.Encode(new JpegTestEncodeOptions { RestartInterval = 4 });
+        var one = GetPeak(data, 1, long.MaxValue);
+        var four = GetPeak(data, 4, long.MaxValue);
+        Assert.True(four > one, $"{four} bytes with 4 workers, {one} with one");
+        Assert.Equal(four, GetPeak(data, 4, four));
+        Assert.Equal(one, GetPeak(data, 1, one));
+        foreach (var (workers, limit) in new[] { (4, four - 1), (4, one), (1, one - 1), (4, one - 1), (4, 32 * 1024) })
+        {
+            var exception = Assert.Throws<ImageResourceLimitException>(() => Image.Load<Rgb24>(data, Limited(workers, limit)));
+            Assert.Equal(ImageResourceLimitKind.LiveAllocationBytes, exception.Kind);
+            Assert.Equal(exception.Message, Assert.Throws<ImageResourceLimitException>(() => Image.Load<Rgb24>(data, Limited(workers, limit))).Message);
+        }
+
+        static long GetPeak(byte[] data, int workers, long limit)
+        {
+            using var decoded = Image.Load<Rgb24>(data, Limited(workers, limit));
+            var scope = decoded.Owner.Scope;
+            Assert.Equal(0, scope.GetLiveBytes(AllocationKind.DecoderState));
+            return scope.GetDiagnostics().PeakLiveBytes;
+        }
+
+        static ImageDecodeOptions Limited(int workers, long limit) => new() { Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers, Limits = new ImageResourceLimits { MaxLiveAllocationBytes = limit } } };
+    }
+
+    [Fact]
+    public async Task CancellationStopsTheWorkers()
+    {
+        var data = JpegTestImage.CreateRandom(259, 301, Layouts["4:2:0"], seed: 46, acDensity: 0.6).Encode();
+        foreach (var position in new[] { data.Length / 2, data.Length - 3 })
+        {
+            using var source = new CancellationTokenSource();
+            await using var stream = new TestInputStream(data) { CancellationSource = source, CancelAtPosition = position, MaxBytesPerRead = 256 };
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Image.LoadAsync<Rgb24>(stream, WorkerOptions(4), source.Token));
+        }
+    }
+
     [Fact]
     public void MetadataIsDecodedButNeverApplied()
     {
@@ -1324,6 +1660,9 @@ public sealed class JpegDecoderTests
 
         return offset;
     }
+
+    private static ImageDecodeOptions WorkerOptions(int workers, CmykConversionOptions? cmykConversion = null)
+        => new() { CmykConversion = cmykConversion, Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers } };
 
     private static byte[] Remove(byte[] data, int offset, int count) => [.. data.AsSpan(0, offset), .. data.AsSpan(offset + count)];
 

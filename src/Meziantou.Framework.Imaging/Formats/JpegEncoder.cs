@@ -22,6 +22,11 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// Metadata (subject to <see cref="ImageEncoder.MetadataHandling"/>): EXIF (APP1, orientation and dimensions reconciled), standard
 /// XMP (APP1), ICC profile (APP2, split into chunks), resolution (JFIF density) and <c>Comment</c> text entries (COM, Latin-1).
 /// </para>
+/// <para>
+/// The MCU rows of a frame of at least 65,536 pixels are converted, transformed and quantized by up to
+/// <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> workers of the configuration of the image, a batch of rows at a
+/// time; the entropy coding stays sequential, so the output does not depend on the number of workers.
+/// </para>
 /// </remarks>
 public sealed class JpegEncoder : ImageEncoder
 {

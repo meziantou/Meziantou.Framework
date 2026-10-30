@@ -14,6 +14,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// that is returned belongs to the caller, which releases it with <see cref="HevcPicture.Release"/>; its samples stay
 /// valid until then, whatever the decoder does.
 /// </para>
+/// <para>
+/// With <see cref="MaxDegreeOfParallelism"/> above 1, the substreams of a slice segment of a picture of at least
+/// <see cref="RowBands.MinPixelsForParallelism"/> samples that start at an entry point (its tiles, and its rows of coding
+/// tree blocks of the wavefront) are decoded by that many workers at once (<see cref="HevcSubstreamWorkers"/>): the
+/// pictures and the errors are those of the decoding on the calling thread. The in-loop filters run on the calling thread.
+/// </para>
 /// <para>After an exception the state of the decoder is undefined: it must be disposed.</para>
 /// <para>
 /// The decoder decodes the base layer: the NAL units of the other layers (<c>nuh_layer_id</c> greater than 0) are
@@ -24,6 +30,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </remarks>
 internal sealed class HevcDecoder : IDisposable
 {
+    private static readonly AsyncLocal<bool> TestIgnoreMinimumSizeValue = new();
+
     private readonly AllocationScope _scope;
     private readonly InputResourceTracker? _tracker;
     private readonly HevcParameterSetStore _parameterSets = new();
@@ -32,6 +40,7 @@ internal sealed class HevcDecoder : IDisposable
     private readonly HevcRbspBuffer _rbsp;
     private readonly HevcSeiMessages _sei = new();
     private HevcSliceScratch? _scratch;
+    private HevcSubstreamWorkers? _substreamWorkers;
     private HevcPictureLayout? _layout;
     private HevcPictureState? _state;
     private HevcPicture? _current;
@@ -63,6 +72,23 @@ internal sealed class HevcDecoder : IDisposable
         _tracker = tracker;
         _rbsp = new HevcRbspBuffer(scope);
     }
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the pictures decoded on the current asynchronous flow use the workers they are
+    /// given whatever their size, instead of the minimum size of <see cref="RowBands.MinPixelsForParallelism"/> samples.
+    /// Tests decode small streams by several workers.
+    /// </summary>
+    internal static bool TestIgnoreMinimumSize
+    {
+        get => TestIgnoreMinimumSizeValue.Value;
+        set => TestIgnoreMinimumSizeValue.Value = value;
+    }
+
+    /// <summary>
+    /// Gets or sets the largest number of workers that decode the substreams of a slice segment (tiles and rows of the
+    /// wavefront that start at an entry point); 1, the default, decodes them on the calling thread.
+    /// </summary>
+    public int MaxDegreeOfParallelism { get; set; } = 1;
 
     /// <summary>Gets or sets the in-loop filters applied to the pictures: a diagnostic, <see cref="HevcInLoopFilters.All"/> otherwise.</summary>
     public HevcInLoopFilters InLoopFilters { get; set; } = HevcInLoopFilters.All;
@@ -361,8 +387,21 @@ internal sealed class HevcDecoder : IDisposable
         }
 
         _previousSliceSegment = header;
-        var coder = new HevcSliceCoder(layout, header, _current!, state, _cabac, _scratch!, _rbsp, _references, cancellationToken);
+        var coder = new HevcSliceCoder(layout, header, _current!, state, _cabac, _scratch!, _rbsp, _references, cancellationToken, GetSubstreamWorkers(layout, header), MaxDegreeOfParallelism);
         coder.DecodeSliceSegment();
+    }
+
+    // The workers of the substreams of a slice segment, for a picture that is large enough to share between them
+    private HevcSubstreamWorkers? GetSubstreamWorkers(HevcPictureLayout layout, HevcSliceSegmentHeader header)
+    {
+        var sps = layout.Sps;
+        if (MaxDegreeOfParallelism <= 1 || header.EntryPointOffsetMinus1.Length is 0)
+            return null;
+
+        if (!TestIgnoreMinimumSize && (long)sps.PicWidthInLumaSamples * sps.PicHeightInLumaSamples < RowBands.MinPixelsForParallelism)
+            return null;
+
+        return _substreamWorkers ??= new HevcSubstreamWorkers(_scope);
     }
 
     // Clause 8.3.4 "Decoding process for reference picture lists construction"
@@ -609,6 +648,8 @@ internal sealed class HevcDecoder : IDisposable
         _state = null;
         _scratch?.Dispose();
         _scratch = null;
+        _substreamWorkers?.Dispose();
+        _substreamWorkers = null;
         _rbsp.Dispose();
     }
 }

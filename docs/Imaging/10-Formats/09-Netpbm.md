@@ -106,4 +106,7 @@ back as [Gray8](cref:Meziantou.Framework.Imaging.Gray8), with one bit per compon
 - Netpbm stores no metadata: an ICC profile, EXIF, XMP, an orientation, a resolution or text entries follow
   [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling), which rejects them by default.
 - PAM tuple types other than the standard black and white, gray and RGB forms are rejected.
+- A comment written right after a number of the header, without a space (`4#comment`), is rejected. The
+  [lenient mode](../05-LoadingAndSaving/08-ErrorHandling.md#accept-the-files-browsers-accept) reads it as Netpbm does:
+  the comment ends the number.
 - The truncation of a plain file cannot always be detected: its prefix can be a valid file with a smaller last sample.

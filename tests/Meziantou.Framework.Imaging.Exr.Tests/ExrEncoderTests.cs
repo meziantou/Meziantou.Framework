@@ -231,6 +231,92 @@ public sealed class ExrEncoderTests
         Assert.Null(new OpenExrEncoder().PixelType);
     }
 
+    /// <summary>
+    /// The chunks of an image of at least 65,536 pixels are coded by several workers when the configuration allows it: the
+    /// file is the one of one worker, for every compression, float and half samples, pixels converted to floats first, a
+    /// partial last chunk (300x251 pixels) and a gray image.
+    /// </summary>
+    [Theory]
+    [InlineData(OpenExrCompression.None)]
+    [InlineData(OpenExrCompression.Rle)]
+    [InlineData(OpenExrCompression.Zips)]
+    [InlineData(OpenExrCompression.Zip)]
+    [InlineData(OpenExrCompression.Piz)]
+    public void FilesWrittenByWorkersAreTheFilesOfOneWorker(OpenExrCompression compression)
+    {
+        const int Width = 300;
+        const int Height = 251;
+        var random = new Random(251);
+        var floats = new RgbaFloat[Width * Height];
+        var bytes = new Rgb24[Width * Height];
+        var grays = new Gray16[Width * Height];
+        for (var i = 0; i < floats.Length; i++)
+        {
+            // Smooth colors with some noise, so that the chunks shrink by different amounts
+            var x = i % Width;
+            var y = i / Width;
+            floats[i] = new RgbaFloat((x / 100f) + (float)random.NextDouble(), y / 50f, (float)random.NextDouble() * 4, (x + y) % 3 * 0.5f);
+            bytes[i] = new Rgb24((byte)x, (byte)(y + random.Next(4)), (byte)random.Next(256));
+            grays[i] = new Gray16((ushort)((x * y) + random.Next(16)));
+        }
+
+        foreach (var (pixels, pixelType) in new (Func<ImageConfiguration, Image> Create, OpenExrPixelType? PixelType)[]
+        {
+            (configuration => Image.ImportPixelData<RgbaFloat>(floats, Width, Height, configuration: configuration), null),
+            (configuration => Image.ImportPixelData<RgbaFloat>(floats, Width, Height, configuration: configuration), OpenExrPixelType.Half),
+            (configuration => Image.ImportPixelData<Rgb24>(bytes, Width, Height, configuration: configuration), null),
+            (configuration => Image.ImportPixelData<Gray16>(grays, Width, Height, configuration: configuration), null),
+        })
+        {
+            var encoder = new OpenExrEncoder { Compression = compression, PixelType = pixelType, AllowBitDepthReduction = pixelType is not null };
+            var expected = EncodeWith(1);
+            foreach (var workers in (int[])[2, 3, 16])
+            {
+                Assert.Equal(expected, EncodeWith(workers));
+            }
+
+            byte[] EncodeWith(int workers)
+            {
+                using var image = pixels(new ImageConfiguration { MaxDegreeOfParallelism = workers });
+                image.Metadata.TransferFunction = ColorTransferFunction.Linear;
+                return Encode(image, encoder);
+            }
+        }
+    }
+
+    /// <summary>
+    /// The samples of an image of at least 65,536 pixels are checked by several workers, which report the first sample of the
+    /// image that half samples cannot hold, as one worker does, and write nothing.
+    /// </summary>
+    [Fact]
+    public void ValidationByWorkersReportsTheFirstSampleBeyondTheRange()
+    {
+        foreach (var workers in (int[])[1, 3, 16])
+        {
+            using var image = new Image<RgbaFloat>(300, 251, new RgbaFloat(0.5f, 1f, 2f, 1f), new ImageConfiguration { MaxDegreeOfParallelism = workers });
+            image.Frames[0][17, 200] = new RgbaFloat(1e6f, 0f, 0f, 1f);
+            image.Frames[0][5, 120] = new RgbaFloat(0f, 70000f, 0f, 1f);
+            using var stream = new MemoryStream();
+            var exception = Assert.Throws<UnsupportedImageFeatureException>(() => image.Save(stream, new OpenExrEncoder { PixelType = OpenExrPixelType.Half, AllowBitDepthReduction = true }));
+            Assert.Contains("The color 70000 of the row 120 ", exception.Message, StringComparison.Ordinal);
+            Assert.Equal(0, stream.Length);
+        }
+    }
+
+    /// <summary>The workers stop when the encoding is canceled.</summary>
+    [Fact]
+    public async Task WorkersHonorCancellation()
+    {
+        foreach (var workers in (int[])[1, 16])
+        {
+            using var image = new Image<RgbaHalf>(300, 251, new RgbaHalf((Half)0.5f, (Half)1f, (Half)2f, Half.One), new ImageConfiguration { MaxDegreeOfParallelism = workers });
+            image.Metadata.TransferFunction = ColorTransferFunction.Linear;
+            using var cancellation = new CancellationTokenSource();
+            using var stream = new CancelingStream(cancellation, threshold: 50_000);
+            await Assert.ThrowsAny<OperationCanceledException>(() => image.SaveAsync(stream, new OpenExrEncoder { Compression = OpenExrCompression.None }, cancellation.Token));
+        }
+    }
+
     private static byte[] Encode(Image image, OpenExrEncoder encoder)
     {
         using var stream = new MemoryStream();
@@ -401,6 +487,32 @@ public sealed class ExrEncoderTests
             var value = Encoding.ASCII.GetString(data, position, end - position);
             position = end + 1;
             return value;
+        }
+    }
+
+    /// <summary>A stream that cancels a token once it has received a number of bytes.</summary>
+    private sealed class CancelingStream(CancellationTokenSource cancellation, int threshold) : MemoryStream
+    {
+        // The span and asynchronous writes of a derived memory stream end in this one
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            base.Write(buffer, offset, count);
+            if (Length >= threshold)
+            {
+                cancellation.Cancel();
+            }
+        }
+
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            Write(buffer.Span);
+            return ValueTask.CompletedTask;
+        }
+
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            Write(buffer, offset, count);
+            return Task.CompletedTask;
         }
     }
 }

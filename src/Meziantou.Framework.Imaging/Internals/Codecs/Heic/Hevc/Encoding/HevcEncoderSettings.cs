@@ -20,6 +20,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// The number of pictures from a key frame to the next one: 1 when every picture is a key frame, 0 when the first picture
 /// is the only one. The other pictures are predicted from the picture that precedes them.
 /// </param>
+/// <param name="Wavefront">
+/// Whether each row of coding tree blocks is a substream of the wavefront (<c>entropy_coding_sync_enabled_flag</c>), with
+/// an entry point, which decoders can decode concurrently. The coding decisions are the same as without wavefront, apart
+/// from the rates, which are those of the context variables of the wavefront.
+/// </param>
 [StructLayout(LayoutKind.Auto)]
 internal readonly record struct HevcEncoderSettings(
     int Width,
@@ -35,4 +40,5 @@ internal readonly record struct HevcEncoderSettings(
     bool Lossless,
     int Quality,
     int Effort,
-    int KeyFrameInterval = 0);
+    int KeyFrameInterval = 0,
+    bool Wavefront = false);

@@ -395,6 +395,63 @@ public sealed class JpegProgressiveDecoderTests
     }
 
     [Fact]
+    public void LenientDecodingKeepsTheRestartNumbersOfProgressiveScans()
+    {
+        // Apple ImageIO rejects a progressive file whose restart marker has another number, whatever the number (libjpeg-turbo
+        // and FFmpeg read RST(n+4) as RSTn): the repair of the sequential scans does not apply to progressive scans
+        var image = JpegTestImage.CreateRandom(40, 24, Layouts["4:2:0"], seed: 9);
+        var data = image.Encode(Progressive(ColorStandard, restartInterval: 1));
+        var scans = FindSegments(data, 0xDA);
+        var markers = FindRestartMarkers(data, scans[1], scans[2]);
+        var renumbered = data.ToArray();
+        renumbered[markers[5] + 1] = 0xD1;
+        var lenient = new ImageDecodeOptions { Configuration = new ImageConfiguration { DecodingStrictness = DecodingStrictness.Lenient } };
+        Assert.Equal("The JPEG restart marker RST1 is out of sequence (RST5 expected).", Assert.Throws<InvalidImageContentException>(() => Image.Load(renumbered)).Message);
+        Assert.Equal("The JPEG restart marker RST1 is out of sequence (RST5 expected).", Assert.Throws<InvalidImageContentException>(() => Image.Load(renumbered, lenient)).Message);
+    }
+
+    [Fact]
+    public void LenientDecodingEndsAFullyRefinedFrameWithoutEndOfImageMarker()
+    {
+        // libjpeg-turbo 3.1, FFmpeg and Apple ImageIO decode a progressive file without EOI marker to the pixels of the whole
+        // file. They also decode a file cut between two scans, to fewer refinements: the library only ends a frame whose
+        // coefficients are all coded to their last bit, since a lost scan cannot be told from a progression that stops
+        var image = JpegTestImage.CreateRandom(16, 16, Layouts["4:2:0"], seed: 4, acDensity: 0.3);
+        var expected = image.GetExpectedPixels();
+        var data = image.Encode(Progressive(ColorStandard, restartInterval: 2));
+        var configuration = new ImageConfiguration { DecodingStrictness = DecodingStrictness.Lenient };
+        var lenient = new ImageDecodeOptions { Configuration = configuration };
+        foreach (var cut in new[] { data[..^2], data[..^1] })
+        {
+            Assert.StartsWith("The JPEG data is truncated", Assert.Throws<InvalidImageContentException>(() => Image.Load(cut)).Message, StringComparison.Ordinal);
+            using (var decoded = Image.Load(cut, lenient))
+            {
+                AssertPixels(expected, decoded, $"{cut.Length} bytes");
+            }
+
+            Assert.Equal(16, Image.Identify(cut, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan, Configuration = configuration }).Width);
+            using var reader = Image.OpenReader<Rgb24>(new TestInputStream(cut) { Seekable = false, MaxBytesPerRead = 7 }, new ImageReaderOptions { Configuration = configuration });
+            using var frame = reader.ReadFrame();
+            Assert.NotNull(frame);
+            AssertPixels(expected, frame, $"{cut.Length} bytes, reader");
+            Assert.Null(reader.ReadFrame());
+        }
+
+        var lastScan = data.AsSpan().LastIndexOf((ReadOnlySpan<byte>)[0xFF, 0xDA]);
+        Assert.StartsWith("The JPEG data is truncated", Assert.Throws<InvalidImageContentException>(() => Image.Load(data.AsSpan(..lastScan), lenient)).Message, StringComparison.Ordinal);
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(data.AsSpan(..lastScan), new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan, Configuration = configuration }));
+
+        // A progression that stops before the last bit of a coefficient needs its EOI marker
+        var partial = image.Encode(new JpegTestEncodeOptions { Progression = JpegTestProgressiveScan.ParseScript("0,1,2: 0 0 0 0; 0: 1 63 0 0; 1: 1 63 0 0; 2: 1 63 0 1") });
+        using (var decoded = Image.Load(partial, lenient))
+        {
+            Assert.Equal(16, decoded.Width);
+        }
+
+        Assert.StartsWith("The JPEG data is truncated", Assert.Throws<InvalidImageContentException>(() => Image.Load(partial.AsSpan(..^2), lenient)).Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void TruncatedInputsAreInvalidExceptAtScanBoundaries()
     {
         var image = JpegTestImage.CreateRandom(16, 16, Layouts["4:2:0"], seed: 4, acDensity: 0.3);
@@ -712,6 +769,110 @@ public sealed class JpegProgressiveDecoderTests
         }
     }
 
+    [Theory]
+    [InlineData("4:2:0", ColorStandard, 0, 8)]
+    [InlineData("4:4:4", ColorSpectral, 3, 8)]
+    [InlineData("gray", GrayStandard, 0, 8)]
+    [InlineData("4:1:1", ColorStandard, 1, 8)]
+    [InlineData("mixed-chroma", ColorDeep, 2, 12)]
+    [InlineData("gray", GrayDeep, 0, 12)]
+    public void FramesReconstructedByWorkersHaveThePixelsOfTheContract(string layout, string script, int restartInterval, int precision)
+    {
+        // 259x301 pixels (more than 65,536: several workers transform the coefficients at EOI and write the rows), whose last
+        // MCU row and column are partial, Huffman and arithmetic coded; 2, 3 and 16 workers make batches of 8 to 32 MCU rows
+        var image = JpegTestImage.CreateRandom(259, 301, Layouts[layout], seed: layout.Length + script.Length + precision, acDensity: 0.3, precision: precision);
+        var expected = image.GetExpectedPixels();
+        foreach (var options in new[] { Progressive(script, restartInterval), Arithmetic(script, restartInterval) })
+        {
+            var data = image.Encode(options);
+            foreach (var workers in (int[])[1, 2, 3, 16])
+            {
+                using var decoded = Image.Load(data, WorkerOptions(workers));
+                AssertPixels(expected, decoded, $"{layout} {precision} bits, {(options.Arithmetic ? "arithmetic" : "Huffman")}, {workers} workers");
+            }
+        }
+    }
+
+    [Fact]
+    public void FramesWithoutEndOfImageMarkerAreReconstructedByWorkersInLenientDecoding()
+    {
+        // The lenient end of a fully refined frame (no EOI marker, or its first byte only) reconstructs the coefficients as EOI
+        // does: by the workers, from a span and from a stream
+        var image = JpegTestImage.CreateRandom(320, 240, Layouts["4:2:0"], seed: 29, acDensity: 0.3);
+        var expected = image.GetExpectedPixels();
+        var data = image.Encode(Progressive(ColorStandard, restartInterval: 2));
+        foreach (var input in new[] { data[..^2], data[..^1] })
+        {
+            foreach (var workers in (int[])[1, 2, 16])
+            {
+                var options = new ImageDecodeOptions { Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers, DecodingStrictness = DecodingStrictness.Lenient } };
+                using (var decoded = Image.Load(input, options))
+                {
+                    AssertPixels(expected, decoded, $"{input.Length} bytes, {workers} workers");
+                }
+
+                using var stream = new TestInputStream(input) { Seekable = false, MaxBytesPerRead = 4096 };
+                using var streamed = Image.Load(stream, options);
+                AssertPixels(expected, streamed, $"{input.Length} bytes, {workers} workers, stream");
+            }
+        }
+    }
+
+    [Fact]
+    public void RenderingsOfWorkersAreTheImagesOfTheScansSoFar()
+    {
+        var image = JpegTestImage.CreateRandom(259, 301, Layouts["4:2:0"], seed: 47, acDensity: 0.3);
+        var scans = JpegTestProgressiveScan.ParseScript(ColorStandard);
+        var data = image.Encode(new JpegTestEncodeOptions { Progression = scans, RestartInterval = 6 });
+        using var reader = Image.OpenReader<Rgb24>(new MemoryStream(data), new ImageReaderOptions { Configuration = new ImageConfiguration { MaxDegreeOfParallelism = 4 } });
+        using var destination = new Image<Rgb24>(259, 301);
+        for (var completed = 1; completed <= scans.Length; completed++)
+        {
+            Assert.NotNull(reader.ReadFrameRefinementInto(destination));
+            AssertPixels(Approximate(image, scans[..completed]).GetExpectedPixels(), destination, $"{completed} scans");
+        }
+
+        Assert.True(reader.ReadFrameRefinementInto(destination)!.IsFinal);
+        AssertPixels(image.GetExpectedPixels(), destination, "frame");
+    }
+
+    [Fact]
+    public async Task CancellationDuringTheReconstructionStopsTheWorkers()
+    {
+        var data = JpegTestImage.CreateRandom(259, 301, Layouts["4:2:0"], seed: 48).Encode(Progressive(ColorStandard));
+        var codec = new CapturingJpegCodec();
+        using var registry = ImageCodecRegistry.Override(new ImageCodecRegistry([codec]));
+        using var cancellation = new CancellationTokenSource();
+        codec.BeforeEnd = cancellation.Cancel;
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Image.LoadAsync(new MemoryStream(data), WorkerOptions(4), cancellation.Token));
+        Assert.Equal(0, codec.LastContext!.Scope.LiveBytes);
+    }
+
+    [Fact]
+    public void WorkersChargeTheirPlanesToTheLiveAllocationLimit()
+    {
+        var data = JpegTestImage.CreateRandom(259, 301, Layouts["4:2:0"], seed: 49).Encode(Progressive(ColorStandard));
+        var one = GetPeak(data, 1, long.MaxValue);
+        var four = GetPeak(data, 4, long.MaxValue);
+        Assert.True(four > one, $"{four} bytes with 4 workers, {one} with one");
+        Assert.Equal(four, GetPeak(data, 4, four));
+        foreach (var (workers, limit) in new[] { (4, four - 1), (4, one), (1, one - 1) })
+        {
+            var exception = Assert.Throws<ImageResourceLimitException>(() => Image.Load<Rgb24>(data, Limited(workers, limit)));
+            Assert.Equal(ImageResourceLimitKind.LiveAllocationBytes, exception.Kind);
+        }
+
+        static long GetPeak(byte[] data, int workers, long limit)
+        {
+            using var decoded = Image.Load<Rgb24>(data, Limited(workers, limit));
+            var scope = decoded.Owner.Scope;
+            Assert.Equal(0, scope.GetLiveBytes(AllocationKind.DecoderState));
+            return scope.GetDiagnostics().PeakLiveBytes;
+        }
+
+        static ImageDecodeOptions Limited(int workers, long limit) => new() { Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers, Limits = new ImageResourceLimits { MaxLiveAllocationBytes = limit } } };
+    }
+
     [Fact]
     public void ResourceLimitsApplyToDecoding()
     {
@@ -937,6 +1098,8 @@ public sealed class JpegProgressiveDecoderTests
 
         return result;
     }
+
+    private static ImageDecodeOptions WorkerOptions(int workers) => new() { Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers } };
 
     private static byte[] Remove(byte[] data, int offset, int count) => [.. data.AsSpan(0, offset), .. data.AsSpan(offset + count)];
 

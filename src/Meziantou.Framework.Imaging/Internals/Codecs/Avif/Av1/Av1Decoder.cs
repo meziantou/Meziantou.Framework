@@ -1,12 +1,24 @@
+using System.Runtime.ExceptionServices;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
 /// Decodes a sequence of AV1 open bitstream units into frames (AV1 specification, section 7 "Decoding process"). The decoder
 /// keeps the state that frames depend on (the sequence header and the 8 reference frames) between the temporal units it is
-/// given, and decodes on the calling thread.
+/// given, and decodes on the calling thread, unless <see cref="MaxDegreeOfParallelism"/> gives it workers.
 /// </summary>
 /// <remarks>
 /// <para>After an exception the state of the decoder is undefined: it must be disposed.</para>
+/// <para>
+/// Tiles (section 7.3): the tiles of a tile group are decoded by up to <see cref="MaxDegreeOfParallelism"/> workers when
+/// the frame has at least <see cref="RowBands.MinPixelsForParallelism"/> pixels. A tile depends on no other tile of its
+/// frame: it starts from the frame context, clears the above context of its columns and the left context of its rows,
+/// treats the blocks outside it as not available (prediction, contexts, motion vector candidates, intra block copy), and
+/// writes the frame only at the positions of its blocks; the in-loop filters run once every tile is decoded. Each worker
+/// has its own symbol decoder, distributions and scratch (above context included), rented before the tiles start. The
+/// planes, the saved distributions (<c>context_update_tile_id</c>) and the errors are those of one worker: the error of
+/// the first tile that fails, a cancellation first.
+/// </para>
 /// <para>
 /// Scalability (section 7.18.1 "Output process"): the units outside the selected operating point are dropped. When the
 /// operating point has several spatial layers, the decoder outputs one frame per temporal unit, the shown frame of the
@@ -47,8 +59,9 @@ internal sealed class Av1Decoder : IDisposable
     public Av1InLoopFilters InLoopFilters { get; set; } = Av1InLoopFilters.All;
 
     /// <summary>
-    /// Gets or sets the largest number of workers of the post-processing filters of a frame (<see cref="Av1PostFilter.Apply"/>):
-    /// the frames are the same whatever the value. Defaults to 1, the calling thread only.
+    /// Gets or sets the largest number of workers that decode the tiles of a tile group and run the post-processing filters
+    /// of a frame (<see cref="Av1PostFilter.Apply"/>): the frames are the same whatever the value. Defaults to 1, the calling
+    /// thread only.
     /// </summary>
     public int MaxDegreeOfParallelism { get; set; } = 1;
 
@@ -68,7 +81,7 @@ internal sealed class Av1Decoder : IDisposable
     public int OutputSpatialId { get; private set; }
 
     /// <summary>Gets the coding tools used by the blocks decoded so far: a diagnostic.</summary>
-    public Av1Tools Tools => _coding.State.Tools;
+    public Av1Tools Tools => _coding.Scratch?.Tools ?? Av1Tools.None;
 
     /// <summary>Gets the active sequence header, or <see langword="null"/> before the first one is decoded.</summary>
     public Av1SequenceHeader? Sequence => _sequence;
@@ -318,33 +331,20 @@ internal sealed class Av1Decoder : IDisposable
         if (position > end)
             throw Av1Errors.Truncated();
 
-        for (; _tileNum <= tgEnd; _tileNum++)
+        var workers = Av1TileWorkers.GetWorkerCount(MaxDegreeOfParallelism, tgEnd - _tileNum + 1, (long)header.UpscaledWidth * header.FrameHeight);
+        if (workers > 1)
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            int tileSize;
-            if (_tileNum == tgEnd)
+            DecodeTilesInParallel(frame, position, end, tgEnd, workers, cancellationToken);
+        }
+        else
+        {
+            for (; _tileNum <= tgEnd; _tileNum++)
             {
-                tileSize = end - position;
+                cancellationToken.ThrowIfCancellationRequested();
+                var tileSize = ReadTileSize(header, ref position, end, isLast: _tileNum == tgEnd);
+                DecodeTile(frame, _tileNum, position, tileSize, _symbols, _coding.Scratch!, _coding.InterScratch, _coding.TileContext, cancellationToken);
+                position += tileSize;
             }
-            else
-            {
-                if (end - position < header.TileSizeBytes)
-                    throw Av1Errors.Truncated();
-
-                var sizeReader = new Av1BitReader(_data.AsSpan(position, header.TileSizeBytes));
-                var tileSizeMinus1 = sizeReader.ReadLittleEndian(header.TileSizeBytes);
-                position += header.TileSizeBytes;
-                if (tileSizeMinus1 >= (uint)(end - position))
-                    throw Av1Errors.Truncated();
-
-                tileSize = (int)tileSizeMinus1 + 1;
-            }
-
-            if (tileSize is 0)
-                throw Av1Errors.Truncated();
-
-            DecodeTile(frame, position, tileSize, cancellationToken);
-            position += tileSize;
         }
 
         if (tgEnd != tileCount - 1)
@@ -355,21 +355,124 @@ internal sealed class Av1Decoder : IDisposable
         return DecodeFrameWrapup(frame, cancellationToken);
     }
 
-    private void DecodeTile(Av1FrameBuffer frame, int position, int tileSize, CancellationToken cancellationToken)
+    // Reads tile_size_minus_1 (section 5.11.1), which the last tile of a tile group does not have: it takes the rest of
+    // the tile group. Advances position to the data of the tile
+    private int ReadTileSize(Av1FrameHeader header, ref int position, int end, bool isLast)
+    {
+        int tileSize;
+        if (isLast)
+        {
+            tileSize = end - position;
+        }
+        else
+        {
+            if (end - position < header.TileSizeBytes)
+                throw Av1Errors.Truncated();
+
+            var sizeReader = new Av1BitReader(_data.AsSpan(position, header.TileSizeBytes));
+            var tileSizeMinus1 = sizeReader.ReadLittleEndian(header.TileSizeBytes);
+            position += header.TileSizeBytes;
+            if (tileSizeMinus1 >= (uint)(end - position))
+                throw Av1Errors.Truncated();
+
+            tileSize = (int)tileSizeMinus1 + 1;
+        }
+
+        if (tileSize is 0)
+            throw Av1Errors.Truncated();
+
+        return tileSize;
+    }
+
+    private void DecodeTile(Av1FrameBuffer frame, int tileNum, int position, int tileSize, Av1SymbolDecoder symbols, Av1TileScratch scratch, Av1InterScratch? interScratch, Span<ushort> tileContext, CancellationToken cancellationToken)
     {
         var header = frame.Header;
-        var tileRow = _tileNum / header.TileCols;
-        var tileCol = _tileNum % header.TileCols;
+        var tileRow = tileNum / header.TileCols;
+        var tileCol = tileNum % header.TileCols;
 
         // init_symbol: the tile decodes with a copy of the frame context, and with the default intra frame y mode distributions
-        var tileContext = _coding.BeginTile();
-        _symbols.Initialize(_data, position, tileSize, header.DisableCdfUpdate);
+        _coding.BeginTile(tileContext);
+        symbols.Initialize(_data, position, tileSize, header.DisableCdfUpdate);
 
-        var decoder = new Av1TileCoder(frame, _coding.State, _symbols, _coding.Scratch!, _coding.References, _coding.InterScratch, tileContext, cancellationToken);
+        var decoder = new Av1TileCoder(frame, _coding.State, symbols, scratch, _coding.References, interScratch, tileContext, cancellationToken);
         decoder.DecodeTile(tileRow, tileCol);
 
-        _symbols.Exit();
-        _coding.EndTile(header, _tileNum);
+        symbols.Exit();
+        _coding.EndTile(header, tileNum, tileContext);
+    }
+
+    // Decodes the tiles of a tile group by several workers, each taking the next tile that is left. The tile sizes are read
+    // first, on the calling thread; the tiles before the first size that cannot be read are decoded, and its error comes
+    // after theirs, as in a sequential decoding. The first worker uses the state of the decoder, the other ones a state of
+    // their own, rented here before any tile starts
+    private void DecodeTilesInParallel(Av1FrameBuffer frame, int position, int end, int tgEnd, int workers, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var header = frame.Header;
+        var first = _tileNum;
+        var count = tgEnd - first + 1;
+        var positions = new int[count];
+        var sizes = new int[count];
+        ExceptionDispatchInfo? sizeError = null;
+        var located = 0;
+        while (located < count)
+        {
+            try
+            {
+                sizes[located] = ReadTileSize(header, ref position, end, isLast: first + located == tgEnd);
+            }
+            catch (InvalidImageContentException ex)
+            {
+                sizeError = ExceptionDispatchInfo.Capture(ex);
+                break;
+            }
+
+            positions[located] = position;
+            position += sizes[located];
+            located++;
+        }
+
+        workers = Math.Min(workers, located);
+        var states = new TileWorker?[Math.Max(workers - 1, 0)];
+        try
+        {
+            for (var i = 0; i < states.Length; i++)
+            {
+                states[i] = new TileWorker(_scope, header);
+            }
+
+            if (located > 0)
+            {
+                Av1TileWorkers.Run(workers, located, (worker, tile) =>
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    if (worker is 0)
+                    {
+                        DecodeTile(frame, first + tile, positions[tile], sizes[tile], _symbols, _coding.Scratch!, _coding.InterScratch, _coding.TileContext, cancellationToken);
+                    }
+                    else
+                    {
+                        var state = states[worker - 1]!;
+                        DecodeTile(frame, first + tile, positions[tile], sizes[tile], state.Symbols, state.Scratch, state.InterScratch, state.Context.Span, cancellationToken);
+                    }
+                });
+            }
+
+            foreach (var state in states)
+            {
+                _coding.Scratch!.Tools |= state!.Scratch.Tools;
+            }
+        }
+        finally
+        {
+            foreach (var state in states)
+            {
+                state?.Dispose();
+            }
+        }
+
+        sizeError?.Throw();
+        _tileNum = tgEnd + 1;
     }
 
     // Section 7.4 "Decode frame wrapup process"
@@ -390,5 +493,43 @@ internal sealed class Av1Decoder : IDisposable
         _heldOutput?.Release();
         _heldOutput = null;
         _coding.Dispose();
+    }
+
+    // What a worker that decodes tiles at the same time as the decoder needs of its own: a symbol decoder, the
+    // distributions of its tile, the working buffers of the blocks (above context included) and of the inter prediction
+    private sealed class TileWorker : IDisposable
+    {
+        public TileWorker(AllocationScope scope, Av1FrameHeader header)
+        {
+            try
+            {
+                Scratch = new Av1TileScratch(scope);
+                Scratch.PrepareAboveContext(scope, header.MiCols);
+                if (!header.FrameIsIntra || header.AllowIntrabc)
+                    InterScratch = new Av1InterScratch(scope);
+
+                Context = Av1PooledArray<ushort>.Rent(scope, Av1CdfLayout.TotalLength, clear: false);
+            }
+            catch
+            {
+                Dispose();
+                throw;
+            }
+        }
+
+        public Av1SymbolDecoder Symbols { get; } = new();
+
+        public Av1TileScratch Scratch { get; }
+
+        public Av1InterScratch? InterScratch { get; }
+
+        public Av1PooledArray<ushort> Context { get; }
+
+        public void Dispose()
+        {
+            Scratch?.Dispose();
+            InterScratch?.Dispose();
+            Context?.Dispose();
+        }
     }
 }

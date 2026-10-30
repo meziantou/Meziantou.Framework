@@ -170,6 +170,99 @@ public sealed class Jpeg2000WaveletTests
         }
     }
 
+    /// <summary>
+    /// The transformations by several workers split each level into bands of rows and of strips of columns: they compute the
+    /// coefficients of one worker bit for bit, on planes large enough to be split, and on small ones split down to one row
+    /// or strip per worker (<see cref="Jpeg2000Workers.TestIgnoreMinimumSize"/>).
+    /// </summary>
+    [Theory]
+    [InlineData(331, 223, 5, false)]
+    [InlineData(64, 1100, 3, false)]
+    [InlineData(37, 21, 3, true)]
+    [InlineData(1, 9, 2, true)]
+    [InlineData(130, 1, 2, true)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void TransformationsByWorkersGiveTheCoefficientsOfOneWorker(int width, int height, int levels, bool ignoreMinimumSize)
+    {
+        var resolutions = new Jpeg2000ResolutionGeometry[levels + 1];
+        for (var r = 0; r <= levels; r++)
+        {
+            var shift = levels - r;
+            resolutions[r] = new Jpeg2000ResolutionGeometry
+            {
+                X0 = Jpeg2000TileGeometry.CeilingShift(3, shift),
+                Y0 = Jpeg2000TileGeometry.CeilingShift(1, shift),
+                X1 = Jpeg2000TileGeometry.CeilingShift(3 + width, shift),
+                Y1 = Jpeg2000TileGeometry.CeilingShift(1 + height, shift),
+            };
+        }
+
+        var random = new Random(width + height);
+        var samples = new int[width * height];
+        for (var i = 0; i < samples.Length; i++)
+        {
+            samples[i] = random.Next(-2048, 2048);
+        }
+
+        var scratchLength = Jpeg2000Dwt.GetScratchLength(width, height);
+        var reversible = (int[])samples.Clone();
+        var irreversible = Array.ConvertAll(samples, sample => (float)sample);
+        var scratch = new int[scratchLength];
+        var floatScratch = new float[scratchLength];
+        Jpeg2000Dwt.ForwardReversible(reversible, width, resolutions, scratch);
+        Jpeg2000Dwt.ForwardIrreversible(irreversible, width, resolutions, floatScratch);
+        var reversibleInverse = (int[])reversible.Clone();
+        var irreversibleInverse = (float[])irreversible.Clone();
+        Jpeg2000Dwt.InverseReversible(reversibleInverse, width, resolutions, scratch);
+        Jpeg2000Dwt.InverseIrreversible(irreversibleInverse, width, resolutions, floatScratch);
+
+        Jpeg2000Workers.TestIgnoreMinimumSize = ignoreMinimumSize;
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(TransformationsByWorkersGiveTheCoefficientsOfOneWorker));
+        try
+        {
+            foreach (var workers in (int[])[2, 3, 16])
+            {
+                var scratches = new Av1PooledArray<int>[workers];
+                using var plane = Av1PooledArray<int>.Rent(scope, samples.Length);
+                try
+                {
+                    for (var w = 0; w < workers; w++)
+                    {
+                        scratches[w] = Av1PooledArray<int>.Rent(scope, scratchLength);
+                    }
+
+                    samples.CopyTo(plane.Span);
+                    Jpeg2000Dwt.ForwardReversible(plane, width, resolutions, scratches, workers);
+                    Assert.True(plane.Span.SequenceEqual(reversible), $"{workers} workers: forward reversible");
+                    Jpeg2000Dwt.InverseReversible(plane, width, resolutions, scratches, workers);
+                    Assert.True(plane.Span.SequenceEqual(reversibleInverse), $"{workers} workers: inverse reversible");
+
+                    var coefficients = unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<int, float>(plane.Span));
+                    for (var i = 0; i < samples.Length; i++)
+                    {
+                        coefficients[i] = samples[i];
+                    }
+
+                    Jpeg2000Dwt.ForwardIrreversible(plane, width, resolutions, scratches, workers);
+                    Assert.True(plane.Span.SequenceEqual(unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<float, int>(irreversible.AsSpan()))), $"{workers} workers: forward irreversible");
+                    Jpeg2000Dwt.InverseIrreversible(plane, width, resolutions, scratches, workers);
+                    Assert.True(plane.Span.SequenceEqual(unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<float, int>(irreversibleInverse.AsSpan()))), $"{workers} workers: inverse irreversible");
+                }
+                finally
+                {
+                    foreach (var array in scratches)
+                    {
+                        array?.Dispose();
+                    }
+                }
+            }
+        }
+        finally
+        {
+            Jpeg2000Workers.TestIgnoreMinimumSize = false;
+        }
+    }
+
     [Fact]
     public void ReversibleComponentTransformationIsExactOnEveryCornerOfTheRange()
     {

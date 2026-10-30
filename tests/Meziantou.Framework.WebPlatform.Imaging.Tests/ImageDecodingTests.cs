@@ -750,6 +750,27 @@ public sealed class ImageDecodingTests : IDisposable
         Assert.Equal([0, 0, 255, 255], decoded.Value.Pixels[4..]);
     }
 
+    [Fact]
+    public void Codecs_DecodeLeniently()
+    {
+        // The deviations that the strict codecs reject and the browsers accept are decoded: a tRNS chunk of an RGB image
+        // shorter than its color (ignored), and a GIF image without its trailer
+        var png = InsertPngChunk(PngEncoder.Encode(1, 1, [255, 0, 0, 255], hasAlpha: false), "tRNS", [0, 0]);
+        Assert.ThrowsAny<ImageException>(() => Image.Load<Rgba32>(png).Dispose());
+        var decodedPng = Decode(png);
+        Assert.NotNull(decodedPng);
+        Assert.Equal([255, 0, 0, 255], decodedPng.Value.Pixels);
+
+        var gif = CreateTestImage("gif");
+        Assert.Equal((byte)';', gif[^1]);
+        gif = gif[..^1];
+        Assert.ThrowsAny<ImageException>(() => Image.Load<Rgba32>(gif).Dispose());
+        var decodedGif = Decode(gif);
+        Assert.NotNull(decodedGif);
+        AssertPixel(Colors.Red, decodedGif.Value.Pixels, 16, 0, 0);
+        AssertPixel(Colors.Blue, decodedGif.Value.Pixels, 16, 15, 15);
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

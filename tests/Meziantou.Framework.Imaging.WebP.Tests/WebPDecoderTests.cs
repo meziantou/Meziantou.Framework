@@ -453,6 +453,84 @@ public sealed class WebPDecoderTests
         Assert.Contains("not complete", exception.Message);
     }
 
+    [Fact]
+    public void ColorCacheCodesInsertTheirPixelIntoTheCache()
+    {
+        // Pixels: literal V (cached in slot 0), cache key 0 (V), cache key 1 (never written: 0, which belongs to slot 0),
+        // cache key 0 (0 since the previous pixel was inserted, as libwebp does)
+        const uint V = 0xFF110033u;
+        Assert.Equal(0u, Vp8LDecoder.ColorCacheHash(V, 1));
+        var data = ColorCacheStream();
+        uint[] expected = [V, V, 0u, 0u];
+        Assert.Equal(expected, ReferenceVp8L.DecodeImageStream(data, width: 4, height: 1));
+
+        var scope = new AllocationScope(new ImageResourceLimits());
+        using var pixels = Vp8LDecoder.DecodeImageStream(scope, data, 0, data.Length, width: 4, height: 1, XunitCancellationToken);
+        Assert.Equal(expected, Enumerable.Range(0, 4).Select(i => BitConverter.ToUInt32(pixels.Memory.Span.Slice(i * sizeof(uint), sizeof(uint)))));
+    }
+
+    /// <summary>
+    /// A headerless 4x1 VP8L image stream with a 2-entry color cache: the literal <c>0xFF110033</c>, then the cache keys 0,
+    /// 1 and 0. Green is a normal code (symbol 0: <c>0</c>, cache key 0: <c>10</c>, cache key 1: <c>11</c>); red, blue,
+    /// alpha and distance are single-symbol codes.
+    /// </summary>
+    private static byte[] ColorCacheStream()
+    {
+        using var writer = new LsbBitWriter(new AllocationScope(new ImageResourceLimits()));
+        writer.WriteBits(0, 1); // no transform
+        writer.WriteBits(1, 1); // color cache
+        writer.WriteBits(1, 4); // 1 bit: 2 entries
+        writer.WriteBits(0, 1); // no meta prefix codes
+
+        // Green (282 symbols): the code-length code gives the lengths 1, 2, 17 and 18 two bits each (00, 01, 10, 11)
+        writer.WriteBits(0, 1);
+        writer.WriteBits(1, 4); // 5 code-length code lengths, for the symbols 17, 18, 0, 1 and 2
+        writer.WriteBits(2, 3);
+        writer.WriteBits(2, 3);
+        writer.WriteBits(0, 3);
+        writer.WriteBits(2, 3);
+        writer.WriteBits(2, 3);
+        writer.WriteBits(0, 1); // no maximum symbol count
+        WriteCode(writer, "00"); // symbol 0: length 1
+        WriteCode(writer, "11"); // symbols 1-138: zero (18, 11 + 127)
+        writer.WriteBits(127, 7);
+        WriteCode(writer, "11"); // symbols 139-276: zero
+        writer.WriteBits(127, 7);
+        WriteCode(writer, "10"); // symbols 277-279: zero (17, 3 + 0)
+        writer.WriteBits(0, 3);
+        WriteCode(writer, "01"); // symbol 280 (cache key 0): length 2
+        WriteCode(writer, "01"); // symbol 281 (cache key 1): length 2
+
+        WriteSimpleCode(writer, 0x11); // red
+        WriteSimpleCode(writer, 0x33); // blue
+        WriteSimpleCode(writer, 0xFF); // alpha
+        WriteSimpleCode(writer, 0); // distance
+
+        WriteCode(writer, "0"); // literal
+        WriteCode(writer, "10"); // cache key 0
+        WriteCode(writer, "11"); // cache key 1
+        WriteCode(writer, "10"); // cache key 0
+        writer.WriteBits(0, 32);
+        writer.Finish();
+        return writer.WrittenSpan.ToArray();
+
+        static void WriteCode(LsbBitWriter writer, string bits)
+        {
+            foreach (var bit in bits)
+            {
+                writer.WriteBits(bit == '1' ? 1u : 0u, 1);
+            }
+        }
+
+        static void WriteSimpleCode(LsbBitWriter writer, int symbol)
+        {
+            writer.WriteBits(1, 1);
+            writer.WriteBits(0, 1);
+            writer.WriteBits(1, 1); // 8-bit symbol
+            writer.WriteBits((uint)symbol, 8);
+        }
+    }
+
     /// <summary>
     /// A headerless 8x1 VP8L image stream with a 2x1 entropy image (blocks of 4 pixels) holding the meta codes 65535 and 3:
     /// group 65535 is <c>0x80AABBCC</c>, group 3 <c>0xFF112233</c>, and the other groups are single-symbol codes, or, for

@@ -4080,6 +4080,11 @@ public static Image LoadLeniently(string path)
 | GIF | `0x00` bytes where a block is expected, followed only by the trailer or the end of the input | Skipped. Followed by another block, they are still rejected: Apple ImageIO and FFmpeg stop there, while ImageMagick and Pillow decode the next images |
 | GIF | Plain-text extension | Skipped, without rendering its text and without a frame; a Graphic Control Extension before it applies to the next image (delay, transparent index and disposal), as in FFmpeg, ImageMagick, Pillow and Apple ImageIO |
 | Netpbm | A `#` comment right after the digits of a header token (`4#comment` for the width) | The comment ends the token, and the line feed or carriage return that ends the comment delimits it (a binary raster starts after it), as Netpbm, ImageMagick and FFmpeg read it and as the Netpbm specification describes comments. Pillow and Apple ImageIO reject these headers or join the digits around the comment |
+| TIFF | One `BitsPerSample` value for several samples | The value is the width of every sample |
+| TIFF | More `BitsPerSample` or `SampleFormat` values than samples | The values past the number of samples are ignored, even when they differ |
+| TIFF | More `StripByteCounts` or `TileByteCounts` values than blocks | The values past the number of blocks are ignored |
+| TIFF | A page of one uncompressed strip or tile (not YCbCr) without byte counts, or one strip whose byte count is smaller than its rows | The block is read for the length of its rows (a full tile); a block that runs past the end of the file is still rejected |
+| OpenEXR | An offset table with entries before its own end (zeros, typically: a writer that stopped before patching the table) | The table is rebuilt from the chunks, which must follow it without a gap: scan lines in their line order (increasing for random order), tiles in any order; the valid entries must give the offsets of their chunks, and a missing, repeated or truncated chunk is still rejected |
 
 ## Format reference
 
@@ -4502,6 +4507,13 @@ the offsets of the strips it describes.
   more compressed bytes are read than a block of its size can need (16 times its size, and room for the tables of a
   JPEG datastream), whatever its byte count declares: many blocks that point at the same bytes cost no more than
   their pixels.
+- **Malformed directories.** `BitsPerSample` values in another number than the samples, more `SampleFormat` values than
+  samples (fewer are accepted when they agree), byte counts in another number than the strips or tiles, missing byte
+  counts and an uncompressed block shorter than its rows are `InvalidImageContentException`. The lenient decoding reads some of them the way libtiff, Pillow and
+  Apple ImageIO all do (see [Lenient decoding](#lenient-decoding)); the ones they disagree on stay rejected: two
+  `BitsPerSample` values for three samples, fewer byte counts than blocks, several strips or tiles without byte counts,
+  a short tile, a short strip among several, and compressed blocks without byte counts (their length is not given by
+  their rows).
 - **CCITT.** A white run is the sample 0, and `PhotometricInterpretation` says what 0 displays as, as for any bilevel
   data. The encoder writes `WhiteIsZero` pages; Group 3 is written in one dimension, with an end-of-line code before
   each row and no fill bits, and Group 4 strips end with the end-of-facsimile-block sequence.
@@ -4976,7 +4988,10 @@ public static Image<Rgba32> ConvertOpenExr(string exrPath, string pizPath)
 `Image.Identify` reads the header: its `Header` mode stops before the offset table, and `FullScan` walks every chunk (its
 coordinates and size) without decompressing it. Every chunk is read, so a file that is cut is
 `InvalidImageContentException`; a chunk that is not at the offset the table gives, that carries the coordinates of
-another chunk, or that overlaps the next one is an error too. A typed load into an integer pixel format converts the
+another chunk, or that overlaps the next one is an error too, and so is an offset table with entries before its own end
+(zeros left by a writer that stopped before patching it). The lenient decoding rebuilds such a table from the chunks as
+OpenEXR does (see [Lenient decoding](#lenient-decoding)); an entry past the end of the file stays a truncated file,
+since the input is read forward without knowing its length. A typed load into an integer pixel format converts the
 whole image like `CloneAs` does: samples outside [0, 1] are rejected unless the conversion clips or tone maps them, and
 the peak of a tone mapping is the one of the image.
 

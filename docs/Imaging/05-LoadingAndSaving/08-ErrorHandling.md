@@ -52,6 +52,29 @@ These exceptions derive from `ImageException`, which you can catch to handle the
 A malformed or truncated input always throws: it is never reported as the clean end of an animation, and never
 returns a partial image.
 
+## Accept the files browsers accept
+
+Some files in the wild break their specification in ways that browsers and the reference decoders tolerate: a GIF
+without its trailer, for example. By default the library rejects them with an `InvalidImageContentException`. To load
+them, read them leniently:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_LenientDecoding;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static Image LoadLeniently(string path)
+{
+    var configuration = new ImageConfiguration { DecodingStrictness = DecodingStrictness.Lenient };
+    return Image.Load(path, new ImageDecodeOptions { Configuration = configuration });
+}
+```
+<!-- endref -->
+
+The lenient mode accepts a fixed list of deviations, given on the page of each [format](../10-Formats/01-Overview.md),
+and repairs them the way the reference decoders do. Everything else stays the same:
+
+- The [resource limits](07-ResourceLimits.md) apply exactly as they do in the strict mode.
+- A file that could only be repaired by guessing pixels is still rejected.
+- It applies to `Identify`, `Load`, the readers and the collections, so they agree on which files they accept.
+
 ## The other exceptions
 
 The other failures use the standard .NET exceptions:

@@ -84,6 +84,7 @@ copied from code that compiles, and most of them also run in the test suite.
   - [Streaming readers and writers](#streaming-readers-and-writers)
   - [Saving files](#saving-files)
   - [Errors](#errors)
+  - [Lenient decoding](#lenient-decoding)
 - [Format reference](#format-reference)
   - [PNG and APNG](#png-and-apng)
   - [GIF](#gif)
@@ -4051,6 +4052,30 @@ public static Image? TryLoad(string path, ImageConfiguration configuration)
 }
 ```
 <!-- endref -->
+
+### Lenient decoding
+
+By default (`DecodingStrictness.Strict`), a file that deviates from its specification is an
+`InvalidImageContentException`. `ImageConfiguration.DecodingStrictness = DecodingStrictness.Lenient` accepts the
+deviations listed below, which the reference decoders and the browsers accept, and repairs them the way they do. It
+applies to identification, eager loads, sequential readers and collections alike.
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_LenientDecoding;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static Image LoadLeniently(string path)
+{
+    var configuration = new ImageConfiguration { DecodingStrictness = DecodingStrictness.Lenient };
+    return Image.Load(path, new ImageDecodeOptions { Configuration = configuration });
+}
+```
+<!-- endref -->
+
+- The resource limits are the same in both modes: a repair is charged and bounded like the rest of the file.
+- A repair never invents pixels: a deviation that could only be repaired by guessing samples is still rejected.
+- Only the deviations of the table are accepted; every other malformed file is rejected as in strict mode.
+
+| Format | Deviation | Lenient behavior |
+| --- | --- | --- |
 
 ## Format reference
 

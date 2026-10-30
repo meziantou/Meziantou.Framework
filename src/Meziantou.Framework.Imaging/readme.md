@@ -3068,6 +3068,8 @@ of their characters and were not compared with a font.
 - **Direction.** Each paragraph is ordered by the Unicode Bidirectional Algorithm (UAX #9): left-to-right and
   right-to-left text can be mixed, mirrored characters are mirrored, and each line is put in display order.
   `Direction` imposes the base direction of the paragraphs; by default it is the one of their first strong character.
+  A vertical tab, a form feed and U+2028 end a line, not the direction: the text after them keeps the direction of
+  the text before them, which only a line feed, a carriage return, U+0085 or U+2029 resets.
   `Alignment` is relative to it: `Start` is the left of a left-to-right paragraph and the right of a right-to-left one.
 - **Vertical text.** With `WritingMode = VerticalRightToLeft`, lines go from the top to the bottom and follow each
   other to the left, as Chinese, Japanese and Korean are set; with `VerticalLeftToRight` they follow each other to the

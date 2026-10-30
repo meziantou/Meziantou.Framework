@@ -3,25 +3,25 @@ title: Formatting options
 description: Choose the syntax of headings, emphasis, code blocks, lists, horizontal rules and line breaks, and convert punctuation and emoji.
 ---
 
-`HtmlToMarkdownOptions` chooses the Markdown syntax of the elements that Markdown can write in several ways. Create it
-once and pass it to every call of `HtmlToMarkdown.Convert`.
+[HtmlToMarkdownOptions](cref:Meziantou.Framework.HtmlToMarkdownOptions) chooses the Markdown syntax of the elements that Markdown can write in several ways. Create it
+once and pass it to every call of [HtmlToMarkdown.Convert](cref:Meziantou.Framework.HtmlToMarkdown.Convert).
 
 | Option | Default | Values |
 | --- | --- | --- |
-| `HeadingStyle` | `Atx` | `Atx` (`# Title`), `Setext` (title underlined with `=` or `-`) |
-| `EmphasisMarker` | `Asterisk` | `Asterisk` (`*em*`, `**strong**`), `Underscore` (`_em_`, `__strong__`) |
-| `CodeBlockStyle` | `Fenced` | `Fenced`, `Indented` (four spaces, no language) |
-| `CodeBlockFenceCharacter` | `` ` `` | `` ` `` or `~` |
-| `UnorderedListMarker` | `-` | `-`, `*` or `+` |
-| `ThematicBreak` | `---` | The text of a horizontal rule (`hr`) |
-| `LineBreakStyle` | `TrailingSpaces` | `TrailingSpaces`, `Backslash` |
-| `UseSimplePunctuation` | `false` | `true` replaces the typographic punctuation with ASCII characters |
-| `EmojiShortcodeMode` | `None` | `None`, `GitHub` (`:heart:`), `Unicode` (`:red_heart:`) |
-| `UnknownElementHandling` | `PassThrough` | `PassThrough`, `Strip`, `StripKeepContent`: see [Unknown elements](05-UnknownElementsAndUntrustedHtml.md) |
+| [HeadingStyle](cref:Meziantou.Framework.HeadingStyle) | [Atx](cref:Meziantou.Framework.HeadingStyle.Atx) | [Atx](cref:Meziantou.Framework.HeadingStyle.Atx) (`# Title`), [Setext](cref:Meziantou.Framework.HeadingStyle.Setext) (title underlined with `=` or `-`) |
+| [EmphasisMarker](cref:Meziantou.Framework.EmphasisMarker) | [Asterisk](cref:Meziantou.Framework.EmphasisMarker.Asterisk) | [Asterisk](cref:Meziantou.Framework.EmphasisMarker.Asterisk) (`*em*`, `**strong**`), [Underscore](cref:Meziantou.Framework.EmphasisMarker.Underscore) (`_em_`, `__strong__`) |
+| [CodeBlockStyle](cref:Meziantou.Framework.CodeBlockStyle) | [Fenced](cref:Meziantou.Framework.CodeBlockStyle.Fenced) | [Fenced](cref:Meziantou.Framework.CodeBlockStyle.Fenced), [Indented](cref:Meziantou.Framework.CodeBlockStyle.Indented) (four spaces, no language) |
+| [CodeBlockFenceCharacter](cref:Meziantou.Framework.HtmlToMarkdownOptions.CodeBlockFenceCharacter) | `` ` `` | `` ` `` or `~` |
+| [UnorderedListMarker](cref:Meziantou.Framework.HtmlToMarkdownOptions.UnorderedListMarker) | `-` | `-`, `*` or `+` |
+| [ThematicBreak](cref:Meziantou.Framework.HtmlToMarkdownOptions.ThematicBreak) | `---` | The text of a horizontal rule (`hr`) |
+| [LineBreakStyle](cref:Meziantou.Framework.LineBreakStyle) | [TrailingSpaces](cref:Meziantou.Framework.LineBreakStyle.TrailingSpaces) | [TrailingSpaces](cref:Meziantou.Framework.LineBreakStyle.TrailingSpaces), [Backslash](cref:Meziantou.Framework.LineBreakStyle.Backslash) |
+| [UseSimplePunctuation](cref:Meziantou.Framework.HtmlToMarkdownOptions.UseSimplePunctuation) | `false` | `true` replaces the typographic punctuation with ASCII characters |
+| [EmojiShortcodeMode](cref:Meziantou.Framework.EmojiShortcodeMode) | [None](cref:Meziantou.Framework.EmojiShortcodeMode.None) | [None](cref:Meziantou.Framework.EmojiShortcodeMode.None), [GitHub](cref:Meziantou.Framework.EmojiShortcodeMode.GitHub) (`:heart:`), [Unicode](cref:Meziantou.Framework.EmojiShortcodeMode.Unicode) (`:red_heart:`) |
+| [UnknownElementHandling](cref:Meziantou.Framework.UnknownElementHandling) | [PassThrough](cref:Meziantou.Framework.UnknownElementHandling.PassThrough) | [PassThrough](cref:Meziantou.Framework.UnknownElementHandling.PassThrough), [Strip](cref:Meziantou.Framework.UnknownElementHandling.Strip), [StripKeepContent](cref:Meziantou.Framework.UnknownElementHandling.StripKeepContent): see [Unknown elements](05-UnknownElementsAndUntrustedHtml.md) |
 
 ## Headings
 
-`HeadingStyle.Setext` underlines the `h1` headings with `=` and the `h2` headings with `-`. Markdown has no Setext
+[HeadingStyle.Setext](cref:Meziantou.Framework.HeadingStyle.Setext) underlines the `h1` headings with `=` and the `h2` headings with `-`. Markdown has no Setext
 syntax for the other levels: they stay ATX headings.
 
 <!-- ref:../../tests/Meziantou.Framework.HtmlToMarkdown.Tests/HtmlToMarkdownConverterTests.cs;region=HtmlToMarkdown_SetextHeadings;format=md-fenced-code-block;dedent=true -->
@@ -44,7 +44,7 @@ Assert.Equal("""
 
 ## Emphasis, lists and horizontal rules
 
-`EmphasisMarker`, `UnorderedListMarker` and `ThematicBreak` follow the style of the documents you add the Markdown to:
+[EmphasisMarker](cref:Meziantou.Framework.EmphasisMarker), [UnorderedListMarker](cref:Meziantou.Framework.HtmlToMarkdownOptions.UnorderedListMarker) and [ThematicBreak](cref:Meziantou.Framework.HtmlToMarkdownOptions.ThematicBreak) follow the style of the documents you add the Markdown to:
 
 <!-- ref:../../tests/Meziantou.Framework.HtmlToMarkdown.Tests/HtmlToMarkdownConverterTests.cs;region=HtmlToMarkdown_MarkdownStyle;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -65,8 +65,8 @@ Assert.Equal("""
 ```
 <!-- endref -->
 
-`ThematicBreak` is written as is: give a valid Markdown horizontal rule, such as `---`, `***`, `___` or `* * *`.
-`UnorderedListMarker` and `CodeBlockFenceCharacter` throw an `ArgumentOutOfRangeException` when they are set to another
+[ThematicBreak](cref:Meziantou.Framework.HtmlToMarkdownOptions.ThematicBreak) is written as is: give a valid Markdown horizontal rule, such as `---`, `***`, `___` or `* * *`.
+[UnorderedListMarker](cref:Meziantou.Framework.HtmlToMarkdownOptions.UnorderedListMarker) and [CodeBlockFenceCharacter](cref:Meziantou.Framework.HtmlToMarkdownOptions.CodeBlockFenceCharacter) throw an `ArgumentOutOfRangeException` when they are set to another
 character:
 
 <!-- ref:../../tests/Meziantou.Framework.HtmlToMarkdown.Tests/HtmlToMarkdownConverterTests.cs;region=HtmlToMarkdown_InvalidOptionValue;format=md-fenced-code-block;dedent=true -->
@@ -79,13 +79,13 @@ Assert.Throws<ArgumentOutOfRangeException>("value", () => options.CodeBlockFence
 
 ## Code blocks
 
-`CodeBlockStyle.Indented` writes the code indented by four spaces. An indented block has no language: use the fenced
+[CodeBlockStyle.Indented](cref:Meziantou.Framework.CodeBlockStyle.Indented) writes the code indented by four spaces. An indented block has no language: use the fenced
 style, the default, to keep it. [Code blocks](03-ConvertedElements.md#code-blocks) shows both styles.
 
 ## Line breaks
 
 A `br` becomes two spaces at the end of the line by default. The spaces are invisible and some editors remove them:
-`LineBreakStyle.Backslash` writes a `\` instead.
+[LineBreakStyle.Backslash](cref:Meziantou.Framework.LineBreakStyle.Backslash) writes a `\` instead.
 
 <!-- ref:../../tests/Meziantou.Framework.HtmlToMarkdown.Tests/HtmlToMarkdownConverterTests.cs;region=HtmlToMarkdown_LineBreaks;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -104,7 +104,7 @@ In a table cell, a `br` stays `<br>` whatever the option: a row of a pipe table 
 
 ## Simple punctuation
 
-`UseSimplePunctuation` replaces the typographic quotes, dashes, ellipsis and guillemets of the text with ASCII
+[UseSimplePunctuation](cref:Meziantou.Framework.HtmlToMarkdownOptions.UseSimplePunctuation) replaces the typographic quotes, dashes, ellipsis and guillemets of the text with ASCII
 characters: `“` and `”` with `"`, `‘` and `’` with `'`, `–` with `--`, `—` with `---`, `…` with `...`, `«` with `<<` and
 `»` with `>>`:
 
@@ -124,7 +124,7 @@ characters `-`, `<` and `>`. Only the text is changed: the code blocks and code 
 
 ## Emoji shortcodes
 
-`EmojiShortcodeMode` replaces the emoji of the text with shortcodes, such as the ones of GitHub:
+[EmojiShortcodeMode](cref:Meziantou.Framework.EmojiShortcodeMode) replaces the emoji of the text with shortcodes, such as the ones of GitHub:
 
 <!-- ref:../../tests/Meziantou.Framework.HtmlToMarkdown.Tests/HtmlToMarkdownConverterTests.cs;region=HtmlToMarkdown_EmojiShortcodes;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -142,9 +142,9 @@ Assert.Equal("I :red_heart: Markdown", unicodeMarkdown);
 ```
 <!-- endref -->
 
-- `GitHub` uses the shortcodes of GitHub. It also finds an emoji written with or without its variation selector (the
+- [GitHub](cref:Meziantou.Framework.EmojiShortcodeMode.GitHub) uses the shortcodes of GitHub. It also finds an emoji written with or without its variation selector (the
   invisible character that asks for the emoji presentation).
-- `Unicode` uses shortcodes made from the Unicode names of the emoji.
+- [Unicode](cref:Meziantou.Framework.EmojiShortcodeMode.Unicode) uses shortcodes made from the Unicode names of the emoji.
 
 An emoji that has no shortcode stays as it is. As with the punctuation, the code blocks and code spans are not changed.
 To render the shortcodes as emoji, the Markdown renderer must support them: see

@@ -5,7 +5,7 @@ description: Parse bencode from memory, a stream or a pipe, navigate the values,
 
 ## Parse bencode
 
-`BencodeDocument` parses bencode from three sources. Each returns a document whose `Root` is the decoded value:
+[BencodeDocument](cref:Meziantou.Framework.Bencode.BencodeDocument) parses bencode from three sources. Each returns a document whose [Root](cref:Meziantou.Framework.Bencode.BencodeDocument.Root) is the decoded value:
 
 | Method | Source |
 | --- | --- |
@@ -43,16 +43,16 @@ The data must hold exactly one value: bytes after it are an error. The asynchron
 
 ## Navigate the values
 
-Every value derives from `BencodeValue`, and its `Kind` tells which of the four kinds it is:
+Every value derives from [BencodeValue](cref:Meziantou.Framework.Bencode.BencodeValue), and its [Kind](cref:Meziantou.Framework.Bencode.BencodeValue.Kind) tells which of the four kinds it is:
 
 | Type | Content |
 | --- | --- |
-| `BencodeInteger` | `Value`, a `long`. |
-| `BencodeString` | `Value`, the bytes as a `ReadOnlyMemory<byte>`. |
-| `BencodeList` | An `IReadOnlyList<BencodeValue>`. |
-| `BencodeDictionary` | An `IReadOnlyDictionary<BencodeString, BencodeValue>`. |
+| [BencodeInteger](cref:Meziantou.Framework.Bencode.BencodeInteger) | `Value`, a `long`. |
+| [BencodeString](cref:Meziantou.Framework.Bencode.BencodeString) | `Value`, the bytes as a `ReadOnlyMemory<byte>`. |
+| [BencodeList](cref:Meziantou.Framework.Bencode.BencodeList) | An `IReadOnlyList<BencodeValue>`. |
+| [BencodeDictionary](cref:Meziantou.Framework.Bencode.BencodeDictionary) | An `IReadOnlyDictionary<BencodeString, BencodeValue>`. |
 
-Match the values with a `switch`, and look keys up with the indexer or `TryGetValue`:
+Match the values with a `switch`, and look keys up with the indexer or [TryGetValue](cref:Meziantou.Framework.Bencode.BencodeDictionary.TryGetValue):
 
 <!-- ref:../../tests/Meziantou.Framework.Bencode.Tests/BencodeDocumentTests.cs;region=BencodeDocument_ReadValues;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -83,7 +83,7 @@ static string Describe(BencodeValue value) => value switch
 <!-- endref -->
 
 - Keys are compared byte by byte. Create them from bytes, such as a `u8` string literal.
-- The indexer throws a `KeyNotFoundException` for a missing key; use `TryGetValue` when the key is optional.
+- The indexer throws a `KeyNotFoundException` for a missing key; use [TryGetValue](cref:Meziantou.Framework.Bencode.BencodeDictionary.TryGetValue) when the key is optional.
 - Enumerating a dictionary returns its entries in the order of the data, not sorted.
 
 ## Read strings
@@ -106,7 +106,7 @@ Assert.Throws<DecoderFallbackException>(() => value.ToUtf8String());
 <!-- endref -->
 
 - `Value` returns the bytes, which is what binary data such as hashes needs.
-- `ToUtf8String` decodes UTF-8 and throws a `DecoderFallbackException` when the bytes are not valid UTF-8.
+- [ToUtf8String](cref:Meziantou.Framework.Bencode.BencodeString.ToUtf8String) decodes UTF-8 and throws a `DecoderFallbackException` when the bytes are not valid UTF-8.
 - `ToString` is for logs and the debugger: it returns the text when the bytes are valid UTF-8, and hexadecimal
   otherwise, shortened after 32 bytes.
 
@@ -136,4 +136,4 @@ The parsers are written for data from the network:
 - When parsing from a stream or a pipe, the buffer of a string grows with the bytes that arrive, not with the length
   the data declares, and the digits of an integer or a length are bounded. A peer cannot make the parser allocate a
   large buffer by declaring a large string.
-- `Parse` reads from memory, so the data is already in memory: limit its size before reading it.
+- [Parse](cref:Meziantou.Framework.Bencode.BencodeDocument.Parse) reads from memory, so the data is already in memory: limit its size before reading it.

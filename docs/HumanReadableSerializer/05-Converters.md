@@ -5,7 +5,7 @@ description: Write a type your way with a HumanReadableConverter, registered in 
 
 ## Write a value as a single line
 
-Derive from `HumanReadableConverter<T>` and write the value with the `HumanReadableTextWriter`:
+Derive from [HumanReadableConverter\<T\>](cref:Meziantou.Framework.HumanReadable.HumanReadableConverter{T}) and write the value with the [HumanReadableTextWriter](cref:Meziantou.Framework.HumanReadable.HumanReadableTextWriter):
 
 <!-- ref:../../tests/Meziantou.Framework.HumanReadableSerializer.Tests/HumanReadableSerializerOptionsTests.cs;region=HumanReadableSerializer_Converter;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -23,7 +23,7 @@ private sealed class TemperatureConverter : HumanReadableConverter<Temperature>
 ```
 <!-- endref -->
 
-Add it to `Converters`:
+Add it to [Converters](cref:Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions.Converters):
 
 <!-- ref:../../tests/Meziantou.Framework.HumanReadableSerializer.Tests/HumanReadableSerializerOptionsTests.cs;region=HumanReadableSerializer_ConverterUsage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -47,9 +47,9 @@ without calling the converter.
 
 The serializer picks the converter of a value in this order:
 
-1. The `[HumanReadableConverter]` attribute of the member being written.
-2. The first converter of `Converters` that can convert the type.
-3. The `[HumanReadableConverter]` attribute of the type, including one added with `AddAttribute(type, attribute)` or
+1. The [\[HumanReadableConverter\]](cref:Meziantou.Framework.HumanReadable.HumanReadableConverterAttribute) attribute of the member being written.
+2. The first converter of [Converters](cref:Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions.Converters) that can convert the type.
+3. The [\[HumanReadableConverter\]](cref:Meziantou.Framework.HumanReadable.HumanReadableConverterAttribute) attribute of the type, including one added with `AddAttribute(type, attribute)` or
    declared on an interface that the type implements.
 4. The built-in converters.
 
@@ -58,7 +58,7 @@ The serializer picks the converter of a value in this order:
 
 ## Write an object or a list
 
-`HumanReadableTextWriter` writes the structure of the text. Call `HumanReadableSerializer.Serialize(writer, value,
+[HumanReadableTextWriter](cref:Meziantou.Framework.HumanReadable.HumanReadableTextWriter) writes the structure of the text. Call `HumanReadableSerializer.Serialize(writer, value,
 options)` to write a nested value with its own converter:
 
 <!-- ref:../../tests/Meziantou.Framework.HumanReadableSerializer.Tests/HumanReadableSerializerOptionsTests.cs;region=HumanReadableSerializer_ObjectConverter;format=md-fenced-code-block;dedent=true -->
@@ -97,18 +97,18 @@ Assert.Equal("""
 | Method | Writes |
 | --- | --- |
 | `WriteValue(text)` | A value. A multi-line value is written below its property name |
-| `WriteNullValue()` | `<null>` |
+| [WriteNullValue()](cref:Meziantou.Framework.HumanReadable.HumanReadableTextWriter.WriteNullValue) | `<null>` |
 | `WriteFormattedValue(mediaType, text)` | A value through the formatter of a media type, such as `application/json`. See [JSON, XML and HTML values](06-JsonXmlAndHtml.md) |
-| `StartObject()`, `WritePropertyName(name)`, `EndObject()` | An object, one property at a time |
-| `WriteEmptyObject()` | `{}` |
-| `StartArray()`, `StartArrayItem()`, `EndArrayItem()`, `EndArray()` | A list, one item at a time |
-| `WriteEmptyArray()` | `[]` |
+| [StartObject()](cref:Meziantou.Framework.HumanReadable.HumanReadableTextWriter.StartObject), `WritePropertyName(name)`, [EndObject()](cref:Meziantou.Framework.HumanReadable.HumanReadableTextWriter.EndObject) | An object, one property at a time |
+| [WriteEmptyObject()](cref:Meziantou.Framework.HumanReadable.HumanReadableTextWriter.WriteEmptyObject) | `{}` |
+| [StartArray()](cref:Meziantou.Framework.HumanReadable.HumanReadableTextWriter.StartArray), [StartArrayItem()](cref:Meziantou.Framework.HumanReadable.HumanReadableTextWriter.StartArrayItem), [EndArrayItem()](cref:Meziantou.Framework.HumanReadable.HumanReadableTextWriter.EndArrayItem), [EndArray()](cref:Meziantou.Framework.HumanReadable.HumanReadableTextWriter.EndArray) | A list, one item at a time |
+| [WriteEmptyArray()](cref:Meziantou.Framework.HumanReadable.HumanReadableTextWriter.WriteEmptyArray) | `[]` |
 
 ## Converter factories
 
-To handle a family of types, such as every `Result<T>`, derive from `HumanReadableConverterFactory`: `CanConvert(type)`
+To handle a family of types, such as every `Result<T>`, derive from [HumanReadableConverterFactory](cref:Meziantou.Framework.HumanReadable.HumanReadableConverterFactory): `CanConvert(type)`
 tells whether the factory handles a type, and `CreateConverter(type, options)` returns the converter for it, or `null`
 to let the next converter handle the type.
 
 `HumanReadableSerializerOptions.GetOrSetSerializationData(name, factory)` stores data for the duration of one
-`Serialize` call, for converters that number the values they write, for instance.
+[Serialize](cref:Meziantou.Framework.HumanReadable.HumanReadableSerializer.Serialize) call, for converters that number the values they write, for instance.

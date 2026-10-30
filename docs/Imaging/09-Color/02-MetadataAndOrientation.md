@@ -8,23 +8,23 @@ and you can read and change it in between.
 
 | Member | What it is |
 | --- | --- |
-| `Orientation` | The EXIF orientation: which way is up |
-| `IccProfile` | The ICC color profile that describes the samples |
-| `ExifProfile`, `XmpProfile` | The EXIF and XMP payloads, kept byte for byte |
-| `TextEntries` | Text entries, such as the `tEXt` chunks of PNG or the comments of GIF and JPEG |
-| `Resolution` | The horizontal and vertical resolution, in dots per inch |
-| `PixelAspectRatio` | The relative width and height of a pixel, for formats whose pixels are not square |
-| `Cicp`, `TransferFunction`, `ContentLightLevel`, `MasteringDisplay` | Color descriptions of AVIF, HEIC, PNG, JPEG XL and QOI images: see [Color management](03-ColorManagement.md) |
-| `SourceFormat` | The format the image was loaded from, for information only |
+| [Orientation](cref:Meziantou.Framework.Imaging.Metadata.ImageMetadata.Orientation) | The EXIF orientation: which way is up |
+| [IccProfile](cref:Meziantou.Framework.Imaging.Metadata.IccProfile) | The ICC color profile that describes the samples |
+| [ExifProfile](cref:Meziantou.Framework.Imaging.Metadata.ExifProfile), [XmpProfile](cref:Meziantou.Framework.Imaging.Metadata.XmpProfile) | The EXIF and XMP payloads, kept byte for byte |
+| [TextEntries](cref:Meziantou.Framework.Imaging.Metadata.ImageMetadata.TextEntries) | Text entries, such as the `tEXt` chunks of PNG or the comments of GIF and JPEG |
+| [Resolution](cref:Meziantou.Framework.Imaging.Metadata.ImageMetadata.Resolution) | The horizontal and vertical resolution, in dots per inch |
+| [PixelAspectRatio](cref:Meziantou.Framework.Imaging.Metadata.PixelAspectRatio) | The relative width and height of a pixel, for formats whose pixels are not square |
+| [Cicp](cref:Meziantou.Framework.Imaging.Metadata.ImageMetadata.Cicp), [TransferFunction](cref:Meziantou.Framework.Imaging.Metadata.ImageMetadata.TransferFunction), [ContentLightLevel](cref:Meziantou.Framework.Imaging.Metadata.ContentLightLevel), [MasteringDisplay](cref:Meziantou.Framework.Imaging.Metadata.ImageMetadata.MasteringDisplay) | Color descriptions of AVIF, HEIC, PNG, JPEG XL and QOI images: see [Color management](03-ColorManagement.md) |
+| [SourceFormat](cref:Meziantou.Framework.Imaging.Metadata.ImageMetadata.SourceFormat) | The format the image was loaded from, for information only |
 
 Each frame also has its own metadata (`frame.Metadata`): its duration in an animation, and the hotspot of a cursor.
-Decoded metadata is bounded by `MaxMetadataBytes` (16 MiB by default), decompressed text included: see
+Decoded metadata is bounded by [MaxMetadataBytes](cref:Meziantou.Framework.Imaging.ImageResourceLimits.MaxMetadataBytes) (16 MiB by default), decompressed text included: see
 [Resource limits](../05-LoadingAndSaving/07-ResourceLimits.md).
 
 ## Apply the EXIF orientation
 
 A camera stores a photo as its sensor saw it, and records in its EXIF orientation how to turn it. Decoders report that
-orientation and never move a pixel. Call `AutoOrient` to make the pixels upright:
+orientation and never move a pixel. Call [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient) to make the pixels upright:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/ColorExamples.cs;region=Imaging_ApplyExifOrientation;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -46,13 +46,13 @@ public static ExifOrientation ApplyOrientation(string inputPath, string outputPa
 ```
 <!-- endref -->
 
-- `AutoOrient` handles the eight orientations (turns and mirrors) of every frame, and sets `Orientation` to `TopLeft`.
+- [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient) handles the eight orientations (turns and mirrors) of every frame, and sets [Orientation](cref:Meziantou.Framework.Imaging.Metadata.ImageMetadata.Orientation) to [TopLeft](cref:Meziantou.Framework.Imaging.Metadata.ExifOrientation.TopLeft).
   It is all or nothing, like the other geometry changes.
 - Apply the orientation before you crop, resize or draw: the coordinates you give are those of the stored pixels.
-- On save, `Orientation` is authoritative: the orientation and dimension tags of the EXIF block are rewritten, and a
+- On save, [Orientation](cref:Meziantou.Framework.Imaging.Metadata.ImageMetadata.Orientation) is authoritative: the orientation and dimension tags of the EXIF block are rewritten, and a
   thumbnail that a geometry change made stale is removed.
-- A format without EXIF (GIF, QOI, BMP, TGA, Netpbm) cannot store another orientation than `TopLeft`. Apply the
-  orientation first: otherwise saving throws, or with `MetadataHandling.DiscardUnsupported` the orientation is dropped
+- A format without EXIF (GIF, QOI, BMP, TGA, Netpbm) cannot store another orientation than [TopLeft](cref:Meziantou.Framework.Imaging.Metadata.ExifOrientation.TopLeft). Apply the
+  orientation first: otherwise saving throws, or with [MetadataHandling.DiscardUnsupported](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.DiscardUnsupported) the orientation is dropped
   and the picture is shown as it is stored.
 
 See [Handle phone photos](../03-Guides/05-HandlePhonePhotos.md) for a complete solution.
@@ -81,14 +81,14 @@ See [Strip or edit metadata](../03-Guides/08-StripOrEditMetadata.md) for a compl
 
 ## Choose what saving does with metadata
 
-Each format stores some metadata and not others. `ImageEncoder.MetadataHandling` says what happens to the metadata
+Each format stores some metadata and not others. [ImageEncoder.MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.ImageEncoder.MetadataHandling) says what happens to the metadata
 the output format cannot store:
 
-| `MetadataHandling` | Behavior |
+| [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling) | Behavior |
 | --- | --- |
-| `Strict` (the default) | Throws an `UnsupportedImageFeatureException`: nothing is lost silently |
-| `DiscardUnsupported` | Writes what the format can store and drops the rest |
-| `Strip` | Writes no optional metadata |
+| [Strict](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strict) (the default) | Throws an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException): nothing is lost silently |
+| [DiscardUnsupported](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.DiscardUnsupported) | Writes what the format can store and drops the rest |
+| [Strip](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strip) | Writes no optional metadata |
 
 Animation timing is never affected by this setting. What each format stores:
 
@@ -112,5 +112,5 @@ limits of each container.
 
 The hotspot of a cursor is the metadata of each frame (`frame.Metadata.Hotspot`). CUR and ANI files always store one per
 image, the top-left corner when a frame has none. Every other format cannot store it: the hotspot follows
-`MetadataHandling` like other metadata, so a cursor is never saved as a plain picture without an explicit choice. See
+[MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling) like other metadata, so a cursor is never saved as a plain picture without an explicit choice. See
 [ICO and CUR](../10-Formats/11-IcoAndCur.md) and [ANI](../10-Formats/12-Ani.md).

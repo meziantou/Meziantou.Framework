@@ -4,7 +4,7 @@ description: Write shared and cyclic references as anchors and aliases, read ali
 ---
 
 YAML can name a node with an anchor (`&name`) and repeat it with an alias (`*name`). The serializer uses them for
-shared references when `ReferenceHandling` asks for it. The examples of this page use this model:
+shared references when [ReferenceHandling](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.ReferenceHandling) asks for it. The examples of this page use this model:
 
 <!-- ref:../../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlReferenceHandlingTests.cs;region=YamlReferenceHandling_Model;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -26,14 +26,14 @@ internal sealed class Section
 
 ## Write shared references
 
-By default, an object referenced twice is written twice, and a cycle fails when it reaches `MaxDepth`.
-`ReferenceHandling` changes this:
+By default, an object referenced twice is written twice, and a cycle fails when it reaches [MaxDepth](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.MaxDepth).
+[ReferenceHandling](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.ReferenceHandling) changes this:
 
 | Value | Behavior |
 | --- | --- |
-| `None` (default) | References are written in full every time. A cycle throws. |
-| `Preserve` | Every object gets an anchor, and the next references to it become aliases. Cycles are supported. |
-| `PreserveMinimal` | Only the objects referenced more than once, or part of a cycle, get an anchor. |
+| [None](cref:Meziantou.Framework.Yaml.YamlReferenceHandling.None) (default) | References are written in full every time. A cycle throws. |
+| [Preserve](cref:Meziantou.Framework.Yaml.YamlReferenceHandling.Preserve) | Every object gets an anchor, and the next references to it become aliases. Cycles are supported. |
+| [PreserveMinimal](cref:Meziantou.Framework.Yaml.YamlReferenceHandling.PreserveMinimal) | Only the objects referenced more than once, or part of a cycle, get an anchor. |
 
 <!-- ref:../../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlReferenceHandlingTests.cs;region=YamlReferenceHandling_PreserveMinimalOutput;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -54,14 +54,14 @@ Assert.Same(config!.First, config.Second);
 ```
 <!-- endref -->
 
-`PreserveMinimal` gives the more readable output. To find the shared objects, it serializes the value twice: the first
+[PreserveMinimal](cref:Meziantou.Framework.Yaml.YamlReferenceHandling.PreserveMinimal) gives the more readable output. To find the shared objects, it serializes the value twice: the first
 pass only collects the references, and its output is discarded. The serialization callbacks still run once per object,
-but converters run in both passes: a converter with side effects can check `YamlWriter.IsCollectingReferences`, which is
+but converters run in both passes: a converter with side effects can check [YamlWriter.IsCollectingReferences](cref:Meziantou.Framework.Yaml.Serialization.YamlWriter.IsCollectingReferences), which is
 `true` during the first pass.
 
 ## Read aliases
 
-Reading an alias requires `ReferenceHandling` to be `Preserve` or `PreserveMinimal`. The alias then gives the same
+Reading an alias requires [ReferenceHandling](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.ReferenceHandling) to be [Preserve](cref:Meziantou.Framework.Yaml.YamlReferenceHandling.Preserve) or [PreserveMinimal](cref:Meziantou.Framework.Yaml.YamlReferenceHandling.PreserveMinimal). The alias then gives the same
 instance as its anchor:
 
 <!-- ref:../../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlReferenceHandlingTests.cs;region=YamlReferenceHandling_Aliases;format=md-fenced-code-block;dedent=true -->
@@ -78,8 +78,8 @@ Assert.Same(config!.First, config.Second);
 ```
 <!-- endref -->
 
-With the default `None`, a document that contains an alias throws a `YamlException` that says that aliases need
-`ReferenceHandling` to be `Preserve`. An anchor without alias is always accepted. To reject documents that use anchors
+With the default [None](cref:Meziantou.Framework.Yaml.YamlReferenceHandling.None), a document that contains an alias throws a [YamlException](cref:Meziantou.Framework.Yaml.YamlException) that says that aliases need
+[ReferenceHandling](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.ReferenceHandling) to be [Preserve](cref:Meziantou.Framework.Yaml.YamlReferenceHandling.Preserve). An anchor without alias is always accepted. To reject documents that use anchors
 or aliases at all, see [Reading untrusted YAML](../09-UntrustedInput.md).
 
 ## Merge keys
@@ -122,8 +122,8 @@ Assert.Equal(2, config["prod"]["retries"]);
 ```
 <!-- endref -->
 
-- As for any alias, a merged alias requires `ReferenceHandling` to be `Preserve` or `PreserveMinimal`.
+- As for any alias, a merged alias requires [ReferenceHandling](cref:Meziantou.Framework.Yaml.YamlSerializerOptions.ReferenceHandling) to be [Preserve](cref:Meziantou.Framework.Yaml.YamlReferenceHandling.Preserve) or [PreserveMinimal](cref:Meziantou.Framework.Yaml.YamlReferenceHandling.PreserveMinimal).
 - An alias merges the entries of the anchored mapping as written in the document, whatever type that mapping was read
   into.
-- Merge keys belong to the `Core` and `Extended` [schemas](11-Schemas.md); with the `Json` and `Failsafe` schemas, `<<`
+- Merge keys belong to the [Core](cref:Meziantou.Framework.Yaml.YamlSchemaKind.Core) and [Extended](cref:Meziantou.Framework.Yaml.YamlSchemaKind.Extended) [schemas](11-Schemas.md); with the [Json](cref:Meziantou.Framework.Yaml.YamlSchemaKind.Json) and [Failsafe](cref:Meziantou.Framework.Yaml.YamlSchemaKind.Failsafe) schemas, `<<`
   is an ordinary key.

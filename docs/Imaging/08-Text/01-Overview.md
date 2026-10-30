@@ -12,14 +12,14 @@ The text types are in the [Meziantou.Framework.Imaging.Typography](cref:Mezianto
 
 | Type | What it is |
 | --- | --- |
-| `Font` | One face of a font file, immutable and thread-safe |
-| `FontStack` | A font and the fonts used for the characters it does not have |
-| `TextStyle` | How a text is set: its fonts, its size, its paint, its features and decorations |
-| `RichText` | A text whose parts have their own style, built with `RichTextBuilder` |
-| `TextLayoutOptions` | How lines are wrapped, aligned, cut and directed |
-| `TextLayout` | A text laid out: what is measured is what `FillText` and `StrokeText` draw |
+| [Font](cref:Meziantou.Framework.Imaging.Typography.Font) | One face of a font file, immutable and thread-safe |
+| [FontStack](cref:Meziantou.Framework.Imaging.Typography.FontStack) | A font and the fonts used for the characters it does not have |
+| [TextStyle](cref:Meziantou.Framework.Imaging.Typography.TextStyle) | How a text is set: its fonts, its size, its paint, its features and decorations |
+| [RichText](cref:Meziantou.Framework.Imaging.Typography.RichText) | A text whose parts have their own style, built with [RichTextBuilder](cref:Meziantou.Framework.Imaging.Typography.RichTextBuilder) |
+| [TextLayoutOptions](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions) | How lines are wrapped, aligned, cut and directed |
+| [TextLayout](cref:Meziantou.Framework.Imaging.Typography.TextLayout) | A text laid out: what is measured is what [FillText](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.FillText) and [StrokeText](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.StrokeText) draw |
 
-The usual flow is: load a font once, create a `TextLayout`, measure it if you need to place it, then draw it with
+The usual flow is: load a font once, create a [TextLayout](cref:Meziantou.Framework.Imaging.Typography.TextLayout), measure it if you need to place it, then draw it with
 `canvas.FillText` inside `image.Draw`.
 
 ## Pages of this section

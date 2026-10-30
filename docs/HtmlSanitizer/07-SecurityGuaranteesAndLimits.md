@@ -14,7 +14,7 @@ With the default policy, the output:
 - **contains no element that runs script or loads a page**: `script`, `iframe`, `object`, `embed`, `base`, `meta`,
   `link`, forms and SVG are removed or unwrapped;
 - **contains no event handler** or other attribute that is not in the allowed sets;
-- **contains no unsafe URL** in the attributes of `UriAttributes` and `SrcsetAttributes`: `javascript:`, `vbscript:`,
+- **contains no unsafe URL** in the attributes of [UriAttributes](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.UriAttributes) and [SrcsetAttributes](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.SrcsetAttributes): `javascript:`, `vbscript:`,
   `data:text/html` and the other schemes that are not allowed are emptied, even when an entity masks them;
 - **is read back by a browser as the same elements.** The fragment is parsed with a parser that follows the HTML
   standard, and an element is unwrapped when keeping it would put it where a browser never puts it. Markup that a
@@ -38,8 +38,8 @@ never close its quotes. Deeply nested fragments, such as thousands of nested ele
 
 ## What the guarantees depend on
 
-- **Your configuration.** Each element or attribute that you allow is kept as it is. An attribute in `ValidAttributes`
-  but not in `UriAttributes` is not validated, `style` keeps any CSS, and `data-` lets through the attributes that some
+- **Your configuration.** Each element or attribute that you allow is kept as it is. An attribute in [ValidAttributes](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.ValidAttributes)
+  but not in [UriAttributes](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.UriAttributes) is not validated, `style` keeps any CSS, and `data-` lets through the attributes that some
   frameworks run. See [Allowed elements](04-AllowedElements.md), [Allowed attributes and styles](05-AllowedAttributesAndStyles.md)
   and [URLs](06-Urls.md#validate-your-own-url-attributes).
 - **Where you insert the output.** It is HTML for the content of an element of a page that starts with
@@ -56,7 +56,7 @@ never close its quotes. Deeply nested fragments, such as thousands of nested ele
   content in a part of the page that such a framework compiles (see the example below).
 - **Requests made by images.** An allowed `img` loads its URL as soon as the page is shown: a remote image tells its
   site who reads the page and when, and a relative URL such as `/account/logout` sends a request to your own site with
-  the cookies of the reader. Do not change state on a `GET` request, and remove `img` from `ValidElements` when the
+  the cookies of the reader. Do not change state on a `GET` request, and remove `img` from [ValidElements](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.ValidElements) when the
   content must not load anything.
 - **Misleading links.** Links are kept as written, to any site, with the text the author chose. The sanitizer never
   adds attributes, such as `rel="nofollow ugc"` on the links of user content. `file:`, `ftp:` and `tel:` URLs are

@@ -16,7 +16,7 @@ their results with assertions such as `Assert.Equal`, which show what each call 
 
 ## Remove the escape sequences
 
-`RemoveAnsiSequences` returns the text without its escape sequences, and `ContainsAnsiSequences` tells whether there
+[RemoveAnsiSequences](cref:Meziantou.Framework.AnsiTextProcessor.RemoveAnsiSequences) returns the text without its escape sequences, and [ContainsAnsiSequences](cref:Meziantou.Framework.AnsiTextProcessor.ContainsAnsiSequences) tells whether there
 is any:
 
 <!-- ref:../../tests/Meziantou.Framework.AnsiFormatting.Tests/AnsiTextProcessorTests.cs;region=AnsiTextProcessor_RemoveAnsiSequences;format=md-fenced-code-block;dedent=true -->
@@ -50,7 +50,7 @@ Assert.Equal("✔ Build succeeded\nSee the report", output);
 
 - Both methods accept a `string` or a `ReadOnlySpan<char>`.
 - `RemoveAnsiSequences(string)` returns the same string instance when there is nothing to remove, so calling it on text
-  without sequences does not allocate. The `ContainsAnsiSequences` check in the example is only useful when you need to
+  without sequences does not allocate. The [ContainsAnsiSequences](cref:Meziantou.Framework.AnsiTextProcessor.ContainsAnsiSequences) check in the example is only useful when you need to
   know whether the text was styled.
 
 ## Text that is kept
@@ -71,7 +71,7 @@ Assert.Equal("a\u001bb", AnsiTextProcessor.RemoveAnsiSequences("a\u001bb"));
 - A sequence that never reaches its terminator, such as text cut in the middle of a sequence, is kept with the rest of
   the text, so nothing is silently lost.
 - An escape character that is not followed by `[` or `]` is kept.
-- `ContainsAnsiSequences` returns `true` exactly for the texts that `RemoveAnsiSequences` changes.
+- [ContainsAnsiSequences](cref:Meziantou.Framework.AnsiTextProcessor.ContainsAnsiSequences) returns `true` exactly for the texts that [RemoveAnsiSequences](cref:Meziantou.Framework.AnsiTextProcessor.RemoveAnsiSequences) changes.
 
 When you read the output of a process piece by piece, a sequence can be split between two pieces. Join the pieces, or
 at least the lines, before you remove the sequences.

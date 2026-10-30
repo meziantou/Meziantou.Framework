@@ -59,11 +59,11 @@ it has run, the next call schedules it again. Use it to refresh a progress displ
 
 ## Common behavior
 
-- `Debounce` and `Throttle` are extension methods on `Action` and `Action<T0, ...>` with up to 9 parameters for
-  `Debounce` and 10 for `Throttle`. The action receives the arguments of the last call.
+- [Debounce](cref:Meziantou.Framework.DebounceExtensions.Debounce) and [Throttle](cref:Meziantou.Framework.ThrottleExtensions.Throttle) are extension methods on `Action` and `Action<T0, ...>` with up to 9 parameters for
+  [Debounce](cref:Meziantou.Framework.DebounceExtensions.Debounce) and 10 for [Throttle](cref:Meziantou.Framework.ThrottleExtensions.Throttle). The action receives the arguments of the last call.
 - With `TimeProvider.System`, the action runs on a thread-pool thread, not on the thread that called the delegate. In a
   UI application, dispatch to the UI thread inside the action.
 - The overloads that take a `TimeProvider` let tests control time, with `FakeTimeProvider` from the
   `Microsoft.Extensions.TimeProvider.Testing` package, as in the examples. The others use `TimeProvider.System`.
-- Keep a reference to the returned delegate and call it each time: calling `Debounce` or `Throttle` again creates an
+- Keep a reference to the returned delegate and call it each time: calling [Debounce](cref:Meziantou.Framework.DebounceExtensions.Debounce) or [Throttle](cref:Meziantou.Framework.ThrottleExtensions.Throttle) again creates an
   independent delegate.

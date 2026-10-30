@@ -3,7 +3,7 @@ title: Introduction
 description: Allow a single running instance of an application, and forward the arguments of the next launches to it.
 ---
 
-`Meziantou.Framework.SingleInstance` provides the `SingleInstance` class: it tells an application whether it is the
+`Meziantou.Framework.SingleInstance` provides the [SingleInstance](cref:Meziantou.Framework.SingleInstance) class: it tells an application whether it is the
 first running instance, and lets the next instances send their command-line arguments to the first one before they
 exit.
 
@@ -13,9 +13,9 @@ The running editor opens the file in a new tab.
 
 ## What you can do with it
 
-- **Detect the first instance** with `StartApplication`, which returns `true` in the first process and `false` in the
+- **Detect the first instance** with [StartApplication](cref:Meziantou.Framework.SingleInstance.StartApplication), which returns `true` in the first process and `false` in the
   others. See [Getting started](02-GettingStarted.md).
-- **Send the arguments to the first instance** with `NotifyFirstInstance`, and handle them in the `NewInstance` event.
+- **Send the arguments to the first instance** with [NotifyFirstInstance](cref:Meziantou.Framework.SingleInstance.NotifyFirstInstance), and handle them in the [NewInstance](cref:Meziantou.Framework.SingleInstance.NewInstance) event.
   See [Receiving notifications](03-ReceivingNotifications.md).
 - **Only detect a running instance**, without listening for notifications. See
   [Getting started](02-GettingStarted.md#detect-a-running-instance-only).
@@ -26,7 +26,7 @@ The running editor opens the file in a new tab.
   [How it works](04-HowItWorks.md) for the exact scope on each operating system.
 - **Cross-platform.** It works on Windows, Linux and macOS. The notification uses a named pipe, which is backed by a
   Unix domain socket on Linux and macOS.
-- **Identified by a GUID.** Every process of the application creates its `SingleInstance` with the same application
+- **Identified by a GUID.** Every process of the application creates its [SingleInstance](cref:Meziantou.Framework.SingleInstance) with the same application
   id. Generate a new GUID once for your application and keep it in the code.
 
 ## Namespace
@@ -35,8 +35,8 @@ The types are in the [Meziantou.Framework](cref:Meziantou.Framework.SingleInstan
 
 | Type | Contains |
 | --- | --- |
-| `SingleInstance` | Detects the first instance, starts the notification server and sends notifications |
-| `SingleInstanceEventArgs` | The process id and the arguments of the instance that sent a notification |
+| [SingleInstance](cref:Meziantou.Framework.SingleInstance) | Detects the first instance, starts the notification server and sends notifications |
+| [SingleInstanceEventArgs](cref:Meziantou.Framework.SingleInstanceEventArgs) | The process id and the arguments of the instance that sent a notification |
 
 ## Next steps
 

@@ -25,16 +25,16 @@ packages answer both from inside the application, without installing anything on
 
 | Package | Main types | Pages |
 | --- | --- | --- |
-| `Meziantou.Framework.Diagnostics.ContextSnapshot` | `ContextSnapshotBuilder` | [Context snapshot](03-ContextSnapshot/01-Overview.md) |
-| `Meziantou.Framework.Diagnostics.MemoryDump` | `MemoryDump`, `MemoryDumpType` | [Memory dumps](04-MemoryDump/01-Overview.md) |
+| `Meziantou.Framework.Diagnostics.ContextSnapshot` | [ContextSnapshotBuilder](cref:Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder) | [Context snapshot](03-ContextSnapshot/01-Overview.md) |
+| `Meziantou.Framework.Diagnostics.MemoryDump` | [MemoryDump](cref:Meziantou.Framework.Diagnostics.MemoryDump), [MemoryDumpType](cref:Meziantou.Framework.Diagnostics.MemoryDumpType) | [Memory dumps](04-MemoryDump/01-Overview.md) |
 
 The packages are independent: install only the one you need.
 
 ## Namespaces
 
-- `ContextSnapshotBuilder` and the snapshot types are in the [Meziantou.Framework.Diagnostics.ContextSnapshot](cref:Meziantou.Framework.Diagnostics.ContextSnapshot)
+- [ContextSnapshotBuilder](cref:Meziantou.Framework.Diagnostics.ContextSnapshot.ContextSnapshotBuilder) and the snapshot types are in the [Meziantou.Framework.Diagnostics.ContextSnapshot](cref:Meziantou.Framework.Diagnostics.ContextSnapshot)
   namespace.
-- `MemoryDump` and `MemoryDumpType` are in the [Meziantou.Framework.Diagnostics](cref:Meziantou.Framework.Diagnostics.MemoryDump!N:Meziantou.Framework.Diagnostics) namespace.
+- [MemoryDump](cref:Meziantou.Framework.Diagnostics.MemoryDump) and [MemoryDumpType](cref:Meziantou.Framework.Diagnostics.MemoryDumpType) are in the [Meziantou.Framework.Diagnostics](cref:Meziantou.Framework.Diagnostics.MemoryDump!N:Meziantou.Framework.Diagnostics) namespace.
 
 ## Next steps
 

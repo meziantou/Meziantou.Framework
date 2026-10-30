@@ -9,14 +9,14 @@ made of letters, digits and separators that fits in a URL or a file name. `Crèm
 
 ## Rules
 
-By default, `Slug.Create`:
+By default, [Slug.Create](cref:Meziantou.Framework.Slug.Create):
 
 - removes the diacritics, so `é` becomes `e`;
 - keeps the letters `a`-`z` and `A`-`Z` and the digits `0`-`9`, and keeps their case;
 - replaces any other run of characters by a single `-`, and never starts or ends the slug with it;
 - cuts the slug to 80 characters.
 
-Every rule can be changed with `SlugOptions`. See [Options](03-Options.md).
+Every rule can be changed with [SlugOptions](cref:Meziantou.Framework.SlugOptions). See [Options](03-Options.md).
 
 ## Slugs are not unique
 
@@ -26,4 +26,4 @@ is not already used, for instance by adding a number. A slug is never a security
 
 ## Namespaces
 
-`Slug`, `SlugOptions` and `CasingTransformation` are in the [Meziantou.Framework](cref:Meziantou.Framework.Slug!N:Meziantou.Framework) namespace.
+[Slug](cref:Meziantou.Framework.Slug), [SlugOptions](cref:Meziantou.Framework.SlugOptions) and [CasingTransformation](cref:Meziantou.Framework.CasingTransformation) are in the [Meziantou.Framework](cref:Meziantou.Framework.Slug!N:Meziantou.Framework) namespace.

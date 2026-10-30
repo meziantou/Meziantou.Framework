@@ -15,7 +15,7 @@ The examples of this documentation omit the `using` directives: they need `using
 
 ## Store and reveal a secret
 
-`SensitiveData.Create` copies a value into a new `SensitiveData<T>`. The contents stay protected until a `Reveal`
+[SensitiveData.Create](cref:Meziantou.Framework.SensitiveData.Create) copies a value into a new [SensitiveData\<T\>](cref:Meziantou.Framework.SensitiveData{T}). The contents stay protected until a `Reveal`
 method is called:
 
 <!-- ref:../../tests/Meziantou.Framework.SensitiveData.Tests/SensitiveDataTests.cs;region=SensitiveData_Usage;format=md-fenced-code-block;dedent=true -->
@@ -44,16 +44,16 @@ Assert.Equal(new byte[] { 1, 2, 3, 4, 5 }, revealedKey);
 ```
 <!-- endref -->
 
-- `SensitiveData.Create("secret")` creates a `SensitiveData<char>`. `Create` also accepts an array or a
+- `SensitiveData.Create("secret")` creates a [SensitiveData\<char\>](cref:Meziantou.Framework.SensitiveData{T}). [Create](cref:Meziantou.Framework.SensitiveData.Create) also accepts an array or a
   `ReadOnlySpan<T>` of any unmanaged type, such as the bytes of a key.
-- `RevealToString`, `RevealToArray` and `RevealInto` copy the contents out. `RevealAndUse` gives the contents to a
+- [RevealToString](cref:Meziantou.Framework.SensitiveData.RevealToString), [RevealToArray](cref:Meziantou.Framework.SensitiveData{T}.RevealToArray) and [RevealInto](cref:Meziantou.Framework.SensitiveData{T}.RevealInto) copy the contents out. [RevealAndUse](cref:Meziantou.Framework.SensitiveData{T}.RevealAndUse) gives the contents to a
   callback without making a copy. See [Revealing the contents](03-RevealingTheContents.md).
-- `SensitiveData<T>` is `IDisposable`: declare it with `using`, so the memory that holds the secret is cleared and
+- [SensitiveData\<T\>](cref:Meziantou.Framework.SensitiveData{T}) is `IDisposable`: declare it with `using`, so the memory that holds the secret is cleared and
   released as soon as you are done with it.
 
 ## Keep secrets out of logs
 
-Once the secret is in a `SensitiveData<T>`, the usual ways a value escapes do not show it:
+Once the secret is in a [SensitiveData\<T\>](cref:Meziantou.Framework.SensitiveData{T}), the usual ways a value escapes do not show it:
 
 <!-- ref:../../tests/Meziantou.Framework.SensitiveData.Tests/SensitiveDataTests.cs;region=SensitiveData_NoAccidentalDisclosure;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -69,13 +69,13 @@ Assert.Equal("{}", json);
 ```
 <!-- endref -->
 
-The same goes for a logger that formats the value, or an object that holds a `SensitiveData<T>` property and is
+The same goes for a logger that formats the value, or an object that holds a [SensitiveData\<T\>](cref:Meziantou.Framework.SensitiveData{T}) property and is
 serialized as a whole. To show or send the secret, reveal it explicitly.
 
 ## The value you pass stays in memory
 
-`Create` copies the value: the string or the array you pass is not changed and stays in memory until the garbage
-collector reclaims it. Create the `SensitiveData<T>` as close as possible to where the secret enters the application,
+[Create](cref:Meziantou.Framework.SensitiveData.Create) copies the value: the string or the array you pass is not changed and stays in memory until the garbage
+collector reclaims it. Create the [SensitiveData\<T\>](cref:Meziantou.Framework.SensitiveData{T}) as close as possible to where the secret enters the application,
 and clear the arrays you own once the copy is made, for instance with `CryptographicOperations.ZeroMemory`. A string
 cannot be cleared.
 

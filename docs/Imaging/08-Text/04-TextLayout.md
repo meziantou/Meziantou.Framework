@@ -9,7 +9,7 @@ change how that is done. For the basics, see [Drawing text](03-DrawingText.md).
 
 ## Fallback fonts
 
-A `TextStyle` takes a `FontStack`: a primary font, then the fonts used for the characters the ones before it lack.
+A [TextStyle](cref:Meziantou.Framework.Imaging.Typography.TextStyle) takes a [FontStack](cref:Meziantou.Framework.Imaging.Typography.FontStack): a primary font, then the fonts used for the characters the ones before it lack.
 Each character is drawn with the first font of the stack that has it:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/TextExamples.cs;region=Imaging_FontStackFallback;format=md-fenced-code-block;dedent=true -->
@@ -39,7 +39,7 @@ public static void DrawFontStack(string latinFontPath, string japaneseFontPath, 
 
 ### Installed fonts as fallback
 
-A stack only has the fonts it is given, so a text is drawn the same way on every machine. `WithInstalledFallback()`
+A stack only has the fonts it is given, so a text is drawn the same way on every machine. [WithInstalledFallback()](cref:Meziantou.Framework.Imaging.Typography.FontStack.WithInstalledFallback)
 also looks for a character that none of them has among the fonts installed on the machine:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_InstalledFallback;format=md-fenced-code-block;dedent=true -->
@@ -58,14 +58,14 @@ public static void DrawWithInstalledFallback(string fontPath, string outputPath)
 ```
 <!-- endref -->
 
-The installed fonts are searched in this order: the families of `InstalledFontFallbackOptions.PreferredFamilies`;
+The installed fonts are searched in this order: the families of [InstalledFontFallbackOptions.PreferredFamilies](cref:Meziantou.Framework.Imaging.Typography.InstalledFontFallbackOptions.PreferredFamilies);
 for an emoji, the color emoji font of the platform (Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji); the families
 the platforms usually use for the script of the character; then every family that has it. In a family, the face is
 the one closest to the style of the primary font. The font found for a character is loaded once and kept by the
 stack. With fallback, the result depends on the fonts of the machine.
 
-Fallback does not use `TextStyle.Language`: Han ideographs use the simplified-Chinese family list regardless of the
-language. Put the desired Japanese, Korean or traditional-Chinese fonts in the stack or in `PreferredFamilies` when
+Fallback does not use [TextStyle.Language](cref:Meziantou.Framework.Imaging.Typography.TextStyle.Language): Han ideographs use the simplified-Chinese family list regardless of the
+language. Put the desired Japanese, Korean or traditional-Chinese fonts in the stack or in [PreferredFamilies](cref:Meziantou.Framework.Imaging.Typography.InstalledFontFallbackOptions.PreferredFamilies) when
 their regional forms matter.
 
 ## Right-to-left and mixed directions
@@ -96,18 +96,18 @@ public static void DrawMixedDirections(string latinFontPath, string hebrewFontPa
 
 ![A left-aligned line, The word shalom means peace, with shalom in Hebrew letters, and below it a right-aligned right-to-left line that reads, from the right, shalom, (peace) and 2026](images/DrawMixedDirections.png)
 
-- By default (`TextDirection.Auto`), the direction of a paragraph is the one of its first strong character.
-  `TextLayoutOptions.Direction` imposes it on every paragraph.
-- `Alignment` follows the direction: `Start` is the left of a left-to-right paragraph and the right of a right-to-left
-  one, and `End` the other side.
-- `TextLine.IsRightToLeft` gives the direction of the paragraph of a line.
+- By default ([TextDirection.Auto](cref:Meziantou.Framework.Imaging.Typography.TextDirection.Auto)), the direction of a paragraph is the one of its first strong character.
+  [TextLayoutOptions.Direction](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.Direction) imposes it on every paragraph.
+- [Alignment](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.Alignment) follows the direction: [Start](cref:Meziantou.Framework.Imaging.Typography.TextAlignment.Start) is the left of a left-to-right paragraph and the right of a right-to-left
+  one, and [End](cref:Meziantou.Framework.Imaging.Typography.TextAlignment.End) the other side.
+- [TextLine.IsRightToLeft](cref:Meziantou.Framework.Imaging.Typography.TextLine.IsRightToLeft) gives the direction of the paragraph of a line.
 - Arabic, Hebrew, Syriac and the other right-to-left scripts are shaped as their fonts are made for: the letters of
   Arabic and Syriac join, and marks are placed on their letters.
 
 ## Vertical text
 
-`TextLayoutOptions.WritingMode` sets the text in vertical lines, as Chinese, Japanese and Korean often are:
-`VerticalRightToLeft` lines follow each other to the left, `VerticalLeftToRight` to the right, as Mongolian is:
+[TextLayoutOptions.WritingMode](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.WritingMode) sets the text in vertical lines, as Chinese, Japanese and Korean often are:
+[VerticalRightToLeft](cref:Meziantou.Framework.Imaging.Typography.TextWritingMode.VerticalRightToLeft) lines follow each other to the left, [VerticalLeftToRight](cref:Meziantou.Framework.Imaging.Typography.TextWritingMode.VerticalLeftToRight) to the right, as Mongolian is:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DrawVerticalText;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -133,14 +133,14 @@ public static void DrawVerticalText(string fontPath, string outputPath)
 
 ![Japanese text in three columns read from right to left: upright ideographs and kana, brackets and punctuation in their vertical forms, and the Latin letters ABC on their side](images/DrawVerticalText.png)
 
-- What is said of the width of a horizontal line is said of the height of a vertical one: `MaxHeight` is where lines
-  are wrapped and what they are aligned in, `LineHeight` is the width of a line, and `FirstLineIndent` moves the first
-  line down. `Width` and `Height` stay the size of the layout on the image.
-- `Orientation` says which characters are upright. By default (`Mixed`), each one is set as the Unicode Standard says:
+- What is said of the width of a horizontal line is said of the height of a vertical one: [MaxHeight](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.MaxHeight) is where lines
+  are wrapped and what they are aligned in, [LineHeight](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.LineHeight) is the width of a line, and [FirstLineIndent](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.FirstLineIndent) moves the first
+  line down. [Width](cref:Meziantou.Framework.Imaging.Typography.TextLayout.Width) and [Height](cref:Meziantou.Framework.Imaging.Typography.TextLayout.Height) stay the size of the layout on the image.
+- [Orientation](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.Orientation) says which characters are upright. By default ([Mixed](cref:Meziantou.Framework.Imaging.Typography.TextOrientation.Mixed)), each one is set as the Unicode Standard says:
   ideographs, kana, Hangul and emoji are upright, the letters of horizontal scripts are on their side, turned a
-  quarter of a turn clockwise. `Upright` sets every character upright, and `Sideways` every character on its side.
+  quarter of a turn clockwise. [Upright](cref:Meziantou.Framework.Imaging.Typography.TextOrientation.Upright) sets every character upright, and [Sideways](cref:Meziantou.Framework.Imaging.Typography.TextOrientation.Sideways) every character on its side.
 - A few characters can be set across the line in the room of one (tate-chu-yoko): the text of a style whose
-  `IsCombinedUpright` is set, and the runs of ASCII digits that are not longer than `CombineUprightDigits` (2, 3 or
+  [IsCombinedUpright](cref:Meziantou.Framework.Imaging.Typography.TextStyle.IsCombinedUpright) is set, and the runs of ASCII digits that are not longer than [CombineUprightDigits](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.CombineUprightDigits) (2, 3 or
   4), such as a date or a number.
 - The vertical metrics and forms of the font are used (`vhea`, `vmtx`, `VORG`, `vert`). A font without vertical
   metrics, which is every font not made for vertical text, centers each glyph in an advance of its ascent and descent.
@@ -149,16 +149,16 @@ public static void DrawVerticalText(string fontPath, string outputPath)
 ## Hyphenation and scripts without spaces
 
 A word is broken at a soft hyphen (U+00AD) of the text, and the line then ends with a hyphen. That is the default
-(`Hyphenation = Manual`); `None` never breaks a word, not even at a soft hyphen.
+(`Hyphenation = Manual`); [None](cref:Meziantou.Framework.Imaging.Typography.TextHyphenation.None) never breaks a word, not even at a soft hyphen.
 
 With `Hyphenation = Automatic`, a word is also broken where the patterns of its style allow it:
-`TextStyle.Hyphenator` is a `Hyphenator` of `Meziantou.Framework.Unicode`, loaded from TeX hyphenation patterns for
-the language of the text. No patterns are provided with the library. `HyphenCharacter` replaces the hyphen drawn at
+[TextStyle.Hyphenator](cref:Meziantou.Framework.Imaging.Typography.TextStyle.Hyphenator) is a [Hyphenator](cref:Meziantou.Framework.Hyphenator) of `Meziantou.Framework.Unicode`, loaded from TeX hyphenation patterns for
+the language of the text. No patterns are provided with the library. [HyphenCharacter](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.HyphenCharacter) replaces the hyphen drawn at
 the end of the line.
 
 Thai, Lao, Khmer and Burmese are written without spaces between words, and the Unicode algorithm leaves their line
 breaks to a dictionary. Without one, such a text is only broken at a space, or anywhere with
-`OverflowWrap = Anywhere`. Set `TextLayoutOptions.LineBreakDictionary` to a `LineBreakDictionary` of
+`OverflowWrap = Anywhere`. Set [TextLayoutOptions.LineBreakDictionary](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.LineBreakDictionary) to a [LineBreakDictionary](cref:Meziantou.Framework.LineBreakDictionary) of
 `Meziantou.Framework.Unicode`, loaded from a list of words, to break lines between words. No word list is provided
 with the library.
 
@@ -166,7 +166,7 @@ Lines are broken one after the other, each as full as possible, not by optimizin
 
 ## Synthetic bold and oblique
 
-When you only have the regular font of a family, `TextStyle.Synthesis` imitates its bold and its italic from the
+When you only have the regular font of a family, [TextStyle.Synthesis](cref:Meziantou.Framework.Imaging.Typography.TextStyle.Synthesis) imitates its bold and its italic from the
 outlines:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/TextExamples.cs;region=Imaging_SyntheticStyles;format=md-fenced-code-block;dedent=true -->
@@ -193,17 +193,17 @@ public static void DrawSyntheticStyles(string fontPath, string outputPath)
 
 ![Four lines of one font: Regular, a thicker Synthetic bold, a slanted Synthetic oblique, and Bold and oblique, thick and slanted](images/DrawSyntheticStyles.png)
 
-- `Oblique` slants every outline to the right around the baseline, by about 14 degrees. The advances do not change,
+- [Oblique](cref:Meziantou.Framework.Imaging.Typography.FontSynthesis.Oblique) slants every outline to the right around the baseline, by about 14 degrees. The advances do not change,
   marks follow their letter, and decorations stay straight.
-- `Bold` thickens each glyph by a stroke of its outline 1/24 of the size wide, and each glyph takes 1/24 of the size
-  more room. It is a way to fill: `StrokeText` and `TextLayout.ToPath` use the outlines of the font, slanted but not
+- [Bold](cref:Meziantou.Framework.Imaging.Typography.FontSynthesis.Bold) thickens each glyph by a stroke of its outline 1/24 of the size wide, and each glyph takes 1/24 of the size
+  more room. It is a way to fill: [StrokeText](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.StrokeText) and [TextLayout.ToPath](cref:Meziantou.Framework.Imaging.Typography.TextLayout.ToPath) use the outlines of the font, slanted but not
   thickened.
 - Glyphs a font draws with its own colors, such as emoji, are drawn as they are.
 - A real bold or italic font, or an [instance of a variable font](02-Fonts.md#variable-fonts), always looks better.
 
 ## Language
 
-`TextStyle.Language` is the language of the text, as a BCP 47 tag (`"sr"`, `"tr"`, `"zh-Hant"`). A font can draw the
+[TextStyle.Language](cref:Meziantou.Framework.Imaging.Typography.TextStyle.Language) is the language of the text, as a BCP 47 tag (`"sr"`, `"tr"`, `"zh-Hant"`). A font can draw the
 same characters differently for different languages: the Cyrillic letters of Serbian and Bulgarian, the ideographs of
 Chinese, Japanese and Korean, the ligatures around the dotless i of Turkish. The language selects the forms the font
 has for it, or the default ones when the font has none.
@@ -227,7 +227,7 @@ substitutes glyphs (ligatures, contextual forms, the forms of joining scripts) a
 | Tibetan, Javanese, Balinese, Sinhala and the other scripts of the universal model | The Universal Shaping Engine model |
 
 - The default features are those a client applies to horizontal text: `ccmp`, `locl`, `rlig`, `calt`, `clig`, `liga`,
-  `kern`, `mark`, `mkmk` and the others the scripts need. `TextStyle.Features` turns other features on (`smcp`,
+  `kern`, `mark`, `mkmk` and the others the scripts need. [TextStyle.Features](cref:Meziantou.Framework.Imaging.Typography.TextStyle.Features) turns other features on (`smcp`,
   `tnum`, `ss01`) or turns default ones off (`new FontFeature("liga", 0)`).
 - A character typed as one code point or as a letter and a combining mark gives the same result: the text is put in
   the form the font has glyphs for.

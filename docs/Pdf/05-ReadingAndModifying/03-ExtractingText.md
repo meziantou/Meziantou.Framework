@@ -3,7 +3,7 @@ title: Extracting text
 description: Get the text of the pages of a document, search a document for a word, and know what the extraction can and cannot do.
 ---
 
-`PdfPage.ExtractText` returns the text of a page, with a line break between the lines:
+[PdfPage.ExtractText](cref:Meziantou.Framework.Pdf.PdfPage.ExtractText) returns the text of a page, with a line break between the lines:
 
 <!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfDocumentTests.cs;region=Pdf_ReadDocument;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -49,4 +49,4 @@ for (var i = 0; i < document.Pages.Count; i++)
 - A text drawn as paths or as an image (a scanned page) has no characters to extract.
 - A font without encoding information, such as some embedded fonts of old documents, can give wrong characters.
 - A page whose content runs too many operators, such as forms that paint forms many times, throws
-  `PdfResourceLimitException` instead of running for a long time.
+  [PdfResourceLimitException](cref:Meziantou.Framework.Pdf.PdfResourceLimitException) instead of running for a long time.

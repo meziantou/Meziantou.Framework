@@ -21,7 +21,7 @@ dotnet add package Meziantou.Framework.Language.Regex
 
 ## Parse a pattern
 
-`RegexSyntaxTree.ParseText` takes the pattern and its dialect. Invalid patterns give diagnostics, not exceptions:
+[RegexSyntaxTree.ParseText](cref:Meziantou.Framework.Language.Regex.RegexSyntaxTree.ParseText) takes the pattern and its dialect. Invalid patterns give diagnostics, not exceptions:
 
 <!-- ref:../../../tests/Meziantou.Framework.Language.Regex.Tests/RegexSyntaxTreeTests.cs;region=RegexSyntaxTree_Parsing;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -46,7 +46,7 @@ Assert.Equal("REGEX0002 at (0,0)-(0,2): Unterminated group: expected ')'.", $"{d
 ```
 <!-- endref -->
 
-To read a JavaScript regular expression literal, with its slashes and its flags, use `ParseJavaScriptLiteral`. The flags
+To read a JavaScript regular expression literal, with its slashes and its flags, use [ParseJavaScriptLiteral](cref:Meziantou.Framework.Language.Regex.RegexSyntaxTree.ParseJavaScriptLiteral). The flags
 become the options of the pattern:
 
 <!-- ref:../../../tests/Meziantou.Framework.Language.Regex.Tests/RegexSyntaxTreeTests.cs;region=RegexSyntaxTree_JavaScriptLiteral;format=md-fenced-code-block;dedent=true -->
@@ -61,7 +61,7 @@ Assert.Equal("/a+b/giu", tree.GetRoot().ToFullString());
 
 ## Find the parts of a pattern
 
-A pattern has one root, a `RegexPatternSyntax`. Reach its groups, classes and atoms through the tree:
+A pattern has one root, a [RegexPatternSyntax](cref:Meziantou.Framework.Language.Regex.RegexPatternSyntax). Reach its groups, classes and atoms through the tree:
 
 <!-- ref:../../../tests/Meziantou.Framework.Language.Regex.Tests/RegexSyntaxTreeTests.cs;region=RegexSyntaxTree_DescendantNodes;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -91,12 +91,12 @@ Assert.Equal("|", branches.GetSeparator(0).ToString());
 ```
 <!-- endref -->
 
-Every dialect parses its own syntax into its own node types: a group is a `RegexGroupSyntax`, a named group a
-`RegexNamedGroupSyntax`, a lookaround a `RegexLookaroundSyntax`, a quantified atom a `RegexQuantifiedSyntax`, and so on.
+Every dialect parses its own syntax into its own node types: a group is a [RegexGroupSyntax](cref:Meziantou.Framework.Language.Regex.RegexGroupSyntax), a named group a
+[RegexNamedGroupSyntax](cref:Meziantou.Framework.Language.Regex.RegexNamedGroupSyntax), a lookaround a [RegexLookaroundSyntax](cref:Meziantou.Framework.Language.Regex.RegexLookaroundSyntax), a quantified atom a [RegexQuantifiedSyntax](cref:Meziantou.Framework.Language.Regex.RegexQuantifiedSyntax), and so on.
 
 A literal is one atom per UTF-16 code unit, and a quantifier applies to the atom in front of it, as the engine reads it:
 in `😀*`, the quantifier applies to the low surrogate alone. With the JavaScript `u` or `v` flag, a pattern is a sequence
-of code points instead: the pair is one atom, and `RegexLiteralSyntax.CodePoint` gives it.
+of code points instead: the pair is one atom, and [RegexLiteralSyntax.CodePoint](cref:Meziantou.Framework.Language.Regex.RegexLiteralSyntax.CodePoint) gives it.
 
 ## Diagnostics
 
@@ -110,13 +110,13 @@ The identifiers are grouped by what they are about:
 | `REGEX0070` to `REGEX0075` | JavaScript: class set operations, class strings and modifiers |
 | `REGEX0090` to `REGEX0093` | PCRE: backtracking verbs, callouts, lookbehinds and conditions |
 | `REGEX0110`, `REGEX0111` | POSIX: bracket expressions and intervals |
-| `REGEX0200` and up | The parser itself: nesting deeper than `MaxRecursionDepth`, and the flags and delimiters of a JavaScript literal |
+| `REGEX0200` and up | The parser itself: nesting deeper than [MaxRecursionDepth](cref:Meziantou.Framework.Language.Regex.RegexParseOptions.MaxRecursionDepth), and the flags and delimiters of a JavaScript literal |
 
-The message says what was found; test the `Id` in code. See [Diagnostics](../03-Concepts/05-Diagnostics.md).
+The message says what was found; test the [Id](cref:Meziantou.Framework.Language.Diagnostic.Id) in code. See [Diagnostics](../03-Concepts/05-Diagnostics.md).
 
 ## Walk a pattern
 
-`RegexSyntaxWalker`, `RegexSyntaxVisitor`, `RegexSyntaxVisitor<TResult>` and `RegexSyntaxRewriter` cover the node types
+[RegexSyntaxWalker](cref:Meziantou.Framework.Language.Regex.RegexSyntaxWalker), [RegexSyntaxVisitor](cref:Meziantou.Framework.Language.Regex.RegexSyntaxVisitor), [RegexSyntaxVisitor\<TResult\>](cref:Meziantou.Framework.Language.Regex.RegexSyntaxVisitor{TResult}) and [RegexSyntaxRewriter](cref:Meziantou.Framework.Language.Regex.RegexSyntaxRewriter) cover the node types
 of every dialect, so one walker handles any pattern:
 
 <!-- ref:../../../tests/Meziantou.Framework.Language.Regex.Tests/RegexSyntaxVisitorTests.cs;region=RegexSyntaxWalker_LiteralCounter;format=md-fenced-code-block;dedent=true -->

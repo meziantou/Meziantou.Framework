@@ -44,15 +44,15 @@ public static void CreateCard(string outputPath)
 ![A page with a blue band at the top holding the white word Welcome, the text "Your first PDF document" below it, and a blue line](03-CreatingDocuments/images/CreateCard.png)
 
 - Sizes and coordinates are in points, 1/72 inch. The origin is the lower-left corner of the page, and y grows upward.
-- `CreateContentBuilder` returns a builder whose methods can be chained. A path is built first (`Rectangle`, `MoveTo`,
-  `LineTo`), then painted (`Fill`, `Stroke`) with the current colors.
-- `DrawText` shows one line of text, starting at a point of its baseline. `Helvetica` is one of the 14 standard fonts,
+- `CreateContentBuilder` returns a builder whose methods can be chained. A path is built first ([Rectangle](cref:Meziantou.Framework.Pdf.PdfContentBuilder.Rectangle), [MoveTo](cref:Meziantou.Framework.Pdf.PdfContentBuilder.MoveTo),
+  [LineTo](cref:Meziantou.Framework.Pdf.PdfContentBuilder.LineTo)), then painted ([Fill](cref:Meziantou.Framework.Pdf.PdfContentBuilder.Fill), [Stroke](cref:Meziantou.Framework.Pdf.PdfContentBuilder.Stroke)) with the current colors.
+- [DrawText](cref:Meziantou.Framework.Pdf.PdfContentBuilder.DrawText) shows one line of text, starting at a point of its baseline. [Helvetica](cref:Meziantou.Framework.Pdf.PdfStandardFont.Helvetica) is one of the 14 standard fonts,
   which every PDF reader has: the document does not need to embed them.
-- `Save` writes the file. The output depends only on the document and the options: no date or random value is added.
+- [Save](cref:Meziantou.Framework.Pdf.PdfDocument.Save) writes the file. The output depends only on the document and the options: no date or random value is added.
 
 ## Read a document
 
-`PdfDocument.Open` reads a file, a stream or an array of bytes. The pages give their text back:
+[PdfDocument.Open](cref:Meziantou.Framework.Pdf.PdfDocument.Open) reads a file, a stream or an array of bytes. The pages give their text back:
 
 <!-- ref:../../tests/Meziantou.Framework.Pdf.Tests/PdfDocumentTests.cs;region=Pdf_ReadDocument;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -63,11 +63,11 @@ var text = document.Pages[0].ExtractText();
 <!-- endref -->
 
 See [Opening documents](05-ReadingAndModifying/02-OpeningDocuments.md) for passwords and damaged files, and
-[Extracting text](05-ReadingAndModifying/03-ExtractingText.md) for what `ExtractText` returns.
+[Extracting text](05-ReadingAndModifying/03-ExtractingText.md) for what [ExtractText](cref:Meziantou.Framework.Pdf.PdfPage.ExtractText) returns.
 
 ## Render a page
 
-`PdfRenderer` draws a page to an image of `Meziantou.Framework.Imaging`, which can be saved to PNG, JPEG, WebP and other
+[PdfRenderer](cref:Meziantou.Framework.Pdf.Rendering.PdfRenderer) draws a page to an image of `Meziantou.Framework.Imaging`, which can be saved to PNG, JPEG, WebP and other
 formats:
 
 <!-- ref:../../tests/Meziantou.Framework.Pdf.Tests/PdfRendererTests.cs;region=PdfRendering_RenderPage;format=md-fenced-code-block;dedent=true -->

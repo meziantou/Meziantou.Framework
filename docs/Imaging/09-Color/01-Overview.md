@@ -10,9 +10,9 @@ it loads an image and writes it back when it saves one, and it never changes you
 - **Metadata is preserved.** Decoders keep EXIF, XMP, ICC profiles and text entries byte for byte, and encoders write
   them. When the output format cannot store something, saving throws unless you choose to drop it.
 - **Orientation is reported, not applied.** A photo taken with a turned camera is loaded as it is stored, with its
-  EXIF orientation. `AutoOrient` turns the pixels when you ask for it.
+  EXIF orientation. [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient) turns the pixels when you ask for it.
 - **Color profiles are labels.** A profile says what the samples mean; it is never applied implicitly. Colors are only
-  converted when you call `ConvertColorProfile`, use an `IccColorTransform`, or load a CMYK image with a conversion.
+  converted when you call [ConvertColorProfile](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ConvertColorProfile), use an [IccColorTransform](cref:Meziantou.Framework.Imaging.IccColorTransform), or load a CMYK image with a conversion.
   Pixels without a profile are sRGB.
 
 ## Pages of this section

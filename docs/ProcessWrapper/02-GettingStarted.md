@@ -26,16 +26,16 @@ Assert.True(result.ExitCode.IsSuccess);
 ```
 <!-- endref -->
 
-- `ProcessWrapper.Create` takes the executable: a name that is looked up in `PATH`, or a path.
-- `WithArguments` sets the arguments. Each argument is passed to the process as is: there is nothing to quote or escape.
-- `ExecuteAsync` starts the process and returns a `ProcessInstance` at once. Awaiting it waits for the process to exit
-  and returns a `ProcessResult` with the exit code, the process id, and the start and exit dates.
-- By default, a non-zero exit code throws a `ProcessExecutionException`. See
+- [ProcessWrapper.Create](cref:Meziantou.Framework.ProcessWrapper.Create) takes the executable: a name that is looked up in `PATH`, or a path.
+- [WithArguments](cref:Meziantou.Framework.ProcessWrapper.WithArguments) sets the arguments. Each argument is passed to the process as is: there is nothing to quote or escape.
+- [ExecuteAsync](cref:Meziantou.Framework.ProcessWrapper.ExecuteAsync) starts the process and returns a [ProcessInstance](cref:Meziantou.Framework.ProcessInstance) at once. Awaiting it waits for the process to exit
+  and returns a [ProcessResult](cref:Meziantou.Framework.ProcessResult) with the exit code, the process id, and the start and exit dates.
+- By default, a non-zero exit code throws a [ProcessExecutionException](cref:Meziantou.Framework.ProcessExecutionException). See
   [Exit codes and errors](06-ExitCodesAndErrors.md).
 
 ## Capture the output
 
-`ExecuteBufferedAsync` also collects the lines the process writes to standard output and standard error:
+[ExecuteBufferedAsync](cref:Meziantou.Framework.ProcessWrapper.ExecuteBufferedAsync) also collects the lines the process writes to standard output and standard error:
 
 <!-- ref:../../tests/Meziantou.Framework.ProcessWrapper.Tests/ProcessWrapperTests.cs;region=ProcessWrapper_BufferedExecution;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -52,17 +52,17 @@ Assert.Contains(result.Output.StandardOutput, line => line.Text.StartsWith(".NET
 ```
 <!-- endref -->
 
-`result.Output` is a `ProcessOutputCollection`: every line, in the order it was received, with the stream it comes from
-and the time it was received. `StandardOutput` and `StandardError` filter it by stream. To process the lines while the
+`result.Output` is a [ProcessOutputCollection](cref:Meziantou.Framework.ProcessOutputCollection): every line, in the order it was received, with the stream it comes from
+and the time it was received. [StandardOutput](cref:Meziantou.Framework.ProcessOutputCollection.StandardOutput) and [StandardError](cref:Meziantou.Framework.ProcessOutputCollection.StandardError) filter it by stream. To process the lines while the
 process runs instead, see [Reading the output](04-ReadingTheOutput.md).
 
 ## The builder changes in place
 
-The `With*` and `Add*` methods change the `ProcessWrapper` they are called on, and return it so you can chain the
-calls. They do not create a copy: two variables that reference the same `ProcessWrapper` see the same configuration.
-Create one `ProcessWrapper` per command, or configure it completely before sharing it.
+The `With*` and `Add*` methods change the [ProcessWrapper](cref:Meziantou.Framework.ProcessWrapper) they are called on, and return it so you can chain the
+calls. They do not create a copy: two variables that reference the same [ProcessWrapper](cref:Meziantou.Framework.ProcessWrapper) see the same configuration.
+Create one [ProcessWrapper](cref:Meziantou.Framework.ProcessWrapper) per command, or configure it completely before sharing it.
 
-You can execute the same `ProcessWrapper` several times: each `ExecuteAsync` call starts a new process.
+You can execute the same [ProcessWrapper](cref:Meziantou.Framework.ProcessWrapper) several times: each [ExecuteAsync](cref:Meziantou.Framework.ProcessWrapper.ExecuteAsync) call starts a new process.
 
 ## Next steps
 

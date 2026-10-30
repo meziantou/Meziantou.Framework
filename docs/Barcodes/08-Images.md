@@ -16,7 +16,7 @@ The types are in the [Meziantou.Framework.Imaging.Barcodes](cref:Meziantou.Frame
 
 ## Render a code as an image
 
-`ToImage` renders a QR code or a barcode on a new `Image<Rgba32>` of its size, quiet zone included:
+`ToImage` renders a QR code or a barcode on a new [Image\<Rgba32\>](cref:Meziantou.Framework.Imaging.Image{TPixel}) of its size, quiet zone included:
 
 <!-- ref:../../tests/Meziantou.Framework.Imaging.Barcodes.Tests/ImageRendererTests.cs;region=ImagingBarcodes_QRCodeToImage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -86,8 +86,8 @@ need. See [Brushes and pens](../Imaging/07-Drawing/03-BrushesAndPens.md) for the
 
 ## Draw on an existing image
 
-`DrawQRCode` and `DrawBarcode` draw on the canvas of `Image.Draw`, as vector shapes: the transform, the clip and the
-layers of the canvas apply. `MeasureQRCode` and `MeasureBarcode` give the size of the drawing first, to place it:
+[DrawQRCode](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeImageRenderer.DrawQRCode) and [DrawBarcode](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeImageRenderer.DrawBarcode) draw on the canvas of [Image.Draw](cref:Meziantou.Framework.Imaging.Image.Draw), as vector shapes: the transform, the clip and the
+layers of the canvas apply. [MeasureQRCode](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeImageRenderer.MeasureQRCode) and [MeasureBarcode](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeImageRenderer.MeasureBarcode) give the size of the drawing first, to place it:
 
 <!-- ref:../../tests/Meziantou.Framework.Imaging.Barcodes.Tests/ImageRendererTests.cs;region=ImagingBarcodes_DrawQRCode;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -111,14 +111,14 @@ ticket.Save(png, new PngEncoder());
 
 ![A white ticket with a QR code in its top-right corner](images/DrawQRCode.png)
 
-With `SnapToPixels` (the default), the module sizes and the position are rounded to whole pixels, so that every module
+With [SnapToPixels](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeDrawingOptions.SnapToPixels) (the default), the module sizes and the position are rounded to whole pixels, so that every module
 has the same size and sharp edges. Turn it off to draw a code at an exact fractional size, for instance under a scale
 transform.
 
 ## Print the text under a barcode
 
-`DrawBarcode` prints the human-readable text of the barcode (`Barcode.Text`, with its check digit) under the bars when
-`BarcodeDrawingOptions.Font` is set:
+[DrawBarcode](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeImageRenderer.DrawBarcode) prints the human-readable text of the barcode ([Barcode.Text](cref:Meziantou.Framework.Barcodes.Barcode.Text), with its check digit) under the bars when
+[BarcodeDrawingOptions.Font](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeDrawingOptions.Font) is set:
 
 <!-- ref:../../tests/Meziantou.Framework.Imaging.Barcodes.Tests/ImageRendererTests.cs;region=ImagingBarcodes_DrawBarcode;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -144,8 +144,8 @@ Assert.Equal(new Rgba32(0x00, 0x33, 0x66), label.Frames[0][20 + 18, 50]); // the
 
 ![A dark blue EAN-13 barcode with its digits printed under the bars](images/DrawBarcode.png)
 
-`BarcodeFonts` has the two fonts of optical character recognition usually printed under barcodes: `OcrB` under EAN and
-UPC barcodes, and `OcrA`. They are `Font`s of `Meziantou.Framework.Imaging`, so you can also draw any text with them:
+[BarcodeFonts](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeFonts) has the two fonts of optical character recognition usually printed under barcodes: [OcrB](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeFonts.OcrB) under EAN and
+UPC barcodes, and [OcrA](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeFonts.OcrA). They are [Font](cref:Meziantou.Framework.Imaging.Typography.Font)s of `Meziantou.Framework.Imaging`, so you can also draw any text with them:
 
 <!-- ref:../../tests/Meziantou.Framework.Imaging.Barcodes.Tests/ImageRendererTests.cs;region=ImagingBarcodes_OcrFonts;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -173,23 +173,23 @@ image.Draw(canvas =>
 `ToImage` and the canvas drawing take the same options. The sizes are in units of the canvas: pixels, unless a
 transform applies.
 
-| `QRCodeDrawingOptions` | Default | Description |
+| [QRCodeDrawingOptions](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeDrawingOptions) | Default | Description |
 | --- | --- | --- |
-| `ModuleSize` | 10 | The size of a module |
-| `QuietZoneModules` | 4 | The width of the margin around the code, in modules |
-| `DarkBrush` | Black | The brush of the dark modules |
-| `LightBrush` | White | The brush of the light modules and of the margin; `null` keeps the background (transparent for `ToImage`) |
-| `SnapToPixels` | `true` | Round the module size and the position to whole units |
+| [ModuleSize](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeDrawingOptions.ModuleSize) | 10 | The size of a module |
+| [QuietZoneModules](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeDrawingOptions.QuietZoneModules) | 4 | The width of the margin around the code, in modules |
+| [DarkBrush](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeDrawingOptions.DarkBrush) | Black | The brush of the dark modules |
+| [LightBrush](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeDrawingOptions.LightBrush) | White | The brush of the light modules and of the margin; `null` keeps the background (transparent for `ToImage`) |
+| [SnapToPixels](cref:Meziantou.Framework.Imaging.Barcodes.QRCodeDrawingOptions.SnapToPixels) | `true` | Round the module size and the position to whole units |
 
-| `BarcodeDrawingOptions` | Default | Description |
+| [BarcodeDrawingOptions](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeDrawingOptions) | Default | Description |
 | --- | --- | --- |
-| `ModuleWidth` | 2 | The width of a module |
-| `ModuleHeight` | 80 | The height of the bars |
-| `QuietZoneModules` | 10 | The width of the margins on the left and on the right, in modules |
-| `DarkBrush` | Black | The brush of the bars |
-| `LightBrush` | White | The brush of the spaces, of the margins and of the background of the text; `null` keeps the background |
-| `SnapToPixels` | `true` | Round the module sizes and the position to whole units |
-| `Font` | `null` | The font of the text under the bars; `null` draws no text |
-| `FontSize` | 14 | The size of the text |
-| `TextBrush` | `null` | The brush of the text; `null` uses `DarkBrush` |
-| `TextSpacing` | 2 | The space between the bars and the text |
+| [ModuleWidth](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeDrawingOptions.ModuleWidth) | 2 | The width of a module |
+| [ModuleHeight](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeDrawingOptions.ModuleHeight) | 80 | The height of the bars |
+| [QuietZoneModules](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeDrawingOptions.QuietZoneModules) | 10 | The width of the margins on the left and on the right, in modules |
+| [DarkBrush](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeDrawingOptions.DarkBrush) | Black | The brush of the bars |
+| [LightBrush](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeDrawingOptions.LightBrush) | White | The brush of the spaces, of the margins and of the background of the text; `null` keeps the background |
+| [SnapToPixels](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeDrawingOptions.SnapToPixels) | `true` | Round the module sizes and the position to whole units |
+| [Font](cref:Meziantou.Framework.Imaging.Typography.Font) | `null` | The font of the text under the bars; `null` draws no text |
+| [FontSize](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeDrawingOptions.FontSize) | 14 | The size of the text |
+| [TextBrush](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeDrawingOptions.TextBrush) | `null` | The brush of the text; `null` uses [DarkBrush](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeDrawingOptions.DarkBrush) |
+| [TextSpacing](cref:Meziantou.Framework.Imaging.Barcodes.BarcodeDrawingOptions.TextSpacing) | 2 | The space between the bars and the text |

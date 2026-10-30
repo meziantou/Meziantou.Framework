@@ -46,7 +46,7 @@ Assert.Equal("", Slug.Create("Привет, мир"));
 
 ## Lower-case slugs
 
-URLs are often in lower case. Set `CasingTransformation`:
+URLs are often in lower case. Set [CasingTransformation](cref:Meziantou.Framework.CasingTransformation):
 
 <!-- ref:../../tests/Meziantou.Framework.Slug.Tests/SlugTests.cs;region=Slug_Example;format=md-fenced-code-block;dedent=true -->
 ```csharp

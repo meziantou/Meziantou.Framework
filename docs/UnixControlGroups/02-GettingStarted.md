@@ -41,13 +41,13 @@ parent.Delete();
 ```
 <!-- endref -->
 
-- `CreateOrGetChild` creates a control group, a folder of `/sys/fs/cgroup`, or returns the existing one.
-- `SetControllers` enables the controllers on `parent`, so its children get the files that set the limits. The
+- [CreateOrGetChild](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.CreateOrGetChild) creates a control group, a folder of `/sys/fs/cgroup`, or returns the existing one.
+- [SetControllers](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.SetControllers) enables the controllers on `parent`, so its children get the files that set the limits. The
   controllers must be enabled on the parent of `parent` too: the root enables the common controllers on most
   distributions.
 - `parent` holds no process, and `worker` holds no child: a control group cannot do both, except the root.
 - The limits apply to all the processes of `worker`, together, including the processes they start.
-- `Kill` stops every process of the control group. `Delete` removes an empty control group.
+- [Kill](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.Kill) stops every process of the control group. [Delete](cref:Meziantou.Framework.Unix.ControlGroups.CGroup2.Delete) removes an empty control group.
 
 Moving the current process into a control group limits the application itself: call
 `AssociateProcess(Environment.ProcessId)`.

@@ -3,11 +3,11 @@ title: Helper methods
 description: Write your own assertion methods that update the inline snapshot of their caller.
 ---
 
-A helper method can call `InlineSnapshot.Validate` to share settings or preparation between tests. The snapshot to update
-is then an argument of the call to the helper, not of the call to `Validate`. Tell the library where it is:
+A helper method can call [InlineSnapshot.Validate](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshot.Validate) to share settings or preparation between tests. The snapshot to update
+is then an argument of the call to the helper, not of the call to [Validate](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshot.Validate). Tell the library where it is:
 
-1. Decorate the helper with `[InlineSnapshotAssertion]`, and give it the name of the parameter that holds the snapshot.
-2. Add `[CallerFilePath]` and `[CallerLineNumber]` parameters to the helper, and forward them to `Validate`.
+1. Decorate the helper with [\[InlineSnapshotAssertion\]](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotAssertionAttribute), and give it the name of the parameter that holds the snapshot.
+2. Add `[CallerFilePath]` and `[CallerLineNumber]` parameters to the helper, and forward them to [Validate](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshot.Validate).
 
 <!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_HelperMethod;format=md-fenced-code-block;dedent=true -->
 ```csharp

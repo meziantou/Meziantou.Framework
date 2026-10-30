@@ -17,7 +17,7 @@ A few rules hold for all of them:
 
 ## Pages of this group
 
-- [Loading images](02-LoadingImages.md): `Image.Load` from a path, a stream or bytes, synchronously or not, in the pixel
+- [Loading images](02-LoadingImages.md): [Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) from a path, a stream or bytes, synchronously or not, in the pixel
   format you want.
 - [Identifying images](03-IdentifyingImages.md): read the format, the size and the frame count of a file without
   decoding its pixels.

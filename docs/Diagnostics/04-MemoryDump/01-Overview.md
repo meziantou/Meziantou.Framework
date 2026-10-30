@@ -37,12 +37,12 @@ limit how many the application can write, for instance one per problem and per h
 ## Write a dump
 
 - `MemoryDump.Write(filePath, dumpType)` and `MemoryDump.WriteAsync(filePath, dumpType, cancellationToken)` write the
-  dump to `filePath`. The default type is `MemoryDumpType.Full`.
+  dump to `filePath`. The default type is [MemoryDumpType.Full](cref:Meziantou.Framework.Diagnostics.MemoryDumpType.Full).
 - A relative path is resolved against the current directory. The file is overwritten if it exists. The path is used as
   is: `%` characters are not expanded as file name templates.
 - Calls are serialized: when several threads request a dump at the same time, the dumps are written one after the
   other.
-- On Linux and macOS, `WriteAsync` waits for the dump asynchronously, and cancelling the token stops the dump and
+- On Linux and macOS, [WriteAsync](cref:Meziantou.Framework.Diagnostics.MemoryDump.WriteAsync) waits for the dump asynchronously, and cancelling the token stops the dump and
   deletes the incomplete file. On Windows, the dump is written synchronously: the token only cancels the wait for
   another dump to finish.
 
@@ -72,13 +72,13 @@ catch (Exception ex) when (ex is not OperationCanceledException)
 ```
 <!-- endref -->
 
-- `Write` and `WriteAsync` are marked as supported on Windows 8.1 and later, Linux and macOS. The platform compatibility
+- [Write](cref:Meziantou.Framework.Diagnostics.MemoryDump.Write) and [WriteAsync](cref:Meziantou.Framework.Diagnostics.MemoryDump.WriteAsync) are marked as supported on Windows 8.1 and later, Linux and macOS. The platform compatibility
   analyzer (CA1416) reports the calls that are not guarded by a check such as the one of the example. On other
   platforms, they throw `PlatformNotSupportedException`.
 - On Linux and macOS, a failure of the dump throws an `InvalidOperationException` whose message contains the output of
   `createdump`, and a missing `createdump` throws a `FileNotFoundException`. On Windows, a failure of the dump throws a
   `Win32Exception`, and a file that cannot be created throws the usual I/O exceptions.
-- An invalid `MemoryDumpType` value throws an `ArgumentOutOfRangeException`.
+- An invalid [MemoryDumpType](cref:Meziantou.Framework.Diagnostics.MemoryDumpType) value throws an `ArgumentOutOfRangeException`.
 
 The most common reason for a refused dump is a restriction of the operating system: see
 [Platform requirements](03-PlatformRequirements.md).

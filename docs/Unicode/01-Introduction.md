@@ -40,7 +40,7 @@ The types are in the [Meziantou.Framework](cref:Meziantou.Framework.Unicode!N:Me
 
 ## Principles
 
-- **One version of Unicode.** Every result follows Unicode 18.0.0 (`UnicodeProperties.UnicodeVersion`), whatever the
+- **One version of Unicode.** Every result follows Unicode 18.0.0 ([UnicodeProperties.UnicodeVersion](cref:Meziantou.Framework.UnicodeProperties.UnicodeVersion)), whatever the
   version the runtime implements.
 - **No allocation on hot paths.** The properties are read from tables indexed by the code point, and the enumerators of
   segments and line breaks are `ref struct`s over a `ReadOnlySpan<char>`.

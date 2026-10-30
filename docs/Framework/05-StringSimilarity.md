@@ -19,11 +19,11 @@ Assert.Equal([1, 4, 5], StringSearchUtilities.LevenshteinBatch("buid", commands)
 ```
 <!-- endref -->
 
-- `Levenshtein` returns the number of single-character insertions, deletions and substitutions needed to turn one
+- [Levenshtein](cref:Meziantou.Framework.StringSearchUtilities.Levenshtein) returns the number of single-character insertions, deletions and substitutions needed to turn one
   string into the other. Use it to suggest the closest command or option when the user makes a typo.
 - With `maxDistance`, the computation stops as soon as the distance is known to be greater, and returns
   `maxDistance + 1`. Pass it when you only care about close matches.
-- `LevenshteinBatch` compares a word with many candidates, in parallel, and returns one distance per candidate.
+- [LevenshteinBatch](cref:Meziantou.Framework.StringSearchUtilities.LevenshteinBatch) compares a word with many candidates, in parallel, and returns one distance per candidate.
   `maxDegreeOfParallelism` limits the number of threads (`-1`, the default, lets the runtime decide).
 
 ## Hamming distance
@@ -38,7 +38,7 @@ Assert.Equal(2u, StringSearchUtilities.Hamming(0b1010u, 0b0110u));
 ```
 <!-- endref -->
 
-`Hamming` counts the positions where two sequences of the same length differ: strings, any sequences, or the bits of two
+[Hamming](cref:Meziantou.Framework.StringSearchUtilities.Hamming) counts the positions where two sequences of the same length differ: strings, any sequences, or the bits of two
 `uint` values. Sequences of different lengths throw an `ArgumentException`.
 
 ## Phonetic codes
@@ -56,17 +56,17 @@ Phonetic algorithms give the same code to words that sound alike, to find names 
 
 | Method | Algorithm |
 | --- | --- |
-| `SoundexEnglish` | The English Soundex |
-| `SoundexFrench` | A Soundex adapted to French |
-| `Soundex2` | An improved French Soundex |
-| `Metaphone` | Metaphone, for English |
-| `Soundex` | A Soundex with your own table of letter codes and replacements |
+| [SoundexEnglish](cref:Meziantou.Framework.StringSearchUtilities.SoundexEnglish) | The English Soundex |
+| [SoundexFrench](cref:Meziantou.Framework.StringSearchUtilities.SoundexFrench) | A Soundex adapted to French |
+| [Soundex2](cref:Meziantou.Framework.StringSearchUtilities.Soundex2) | An improved French Soundex |
+| [Metaphone](cref:Meziantou.Framework.StringSearchUtilities.Metaphone) | Metaphone, for English |
+| [Soundex](cref:Meziantou.Framework.StringSearchUtilities.Soundex) | A Soundex with your own table of letter codes and replacements |
 
 Store the code next to the name, and search by code.
 
 ## Short names
 
-`ShortName.Create` computes short names that are unique within a collection, for instance to name columns or files with
+[ShortName.Create](cref:Meziantou.Framework.ShortName.Create) computes short names that are unique within a collection, for instance to name columns or files with
 a length limit:
 
 <!-- ref:../../tests/Meziantou.Framework.Tests/ShortNameUtilitiesTests.cs;region=ShortName_Create;format=md-fenced-code-block;dedent=true -->

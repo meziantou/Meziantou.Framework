@@ -8,8 +8,8 @@ want to store, such as the requests of a noisy service or empty requests.
 
 ## Write a sampler
 
-A sampler derives from `OpenTelemetrySampler`, and overrides `ShouldSampleLogsAsync`, `ShouldSampleTracesAsync` or
-`ShouldSampleMetricsAsync`. The methods you do not override keep every request.
+A sampler derives from [OpenTelemetrySampler](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetrySampler), and overrides [ShouldSampleLogsAsync](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetrySampler.ShouldSampleLogsAsync), [ShouldSampleTracesAsync](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetrySampler.ShouldSampleTracesAsync) or
+[ShouldSampleMetricsAsync](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetrySampler.ShouldSampleMetricsAsync). The methods you do not override keep every request.
 
 <!-- ref:../../tests/Meziantou.Framework.OpenTelemetry.Tests/OpenTelemetryReceiverTests.cs;region=OpenTelemetryCollector_KeepOnlyNonEmptyRequestsSampler;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -33,8 +33,8 @@ handler does: see [Custom handlers](04-CustomHandlers.md#report-rejected-records
 
 ## Register a sampler
 
-Add the sampler to `Samplers`, in the `configure` argument of `AddOpenTelemetryReceiver` or
-`AddInMemoryOpenTelemetryReceiver`:
+Add the sampler to [Samplers](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryReceiverOptions.Samplers), in the `configure` argument of [AddOpenTelemetryReceiver](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryServiceCollectionExtensions.AddOpenTelemetryReceiver) or
+[AddInMemoryOpenTelemetryReceiver](cref:Meziantou.Framework.OpenTelemetryCollector.InMemory.OpenTelemetryCollectorInMemoryServiceCollectionExtensions.AddInMemoryOpenTelemetryReceiver):
 
 <!-- ref:../../tests/Meziantou.Framework.OpenTelemetry.Tests/OpenTelemetryReceiverTests.cs;region=OpenTelemetryCollector_AddSampler;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -54,5 +54,5 @@ builder.Services.AddInMemoryOpenTelemetryReceiver(options =>
 ## Sample whole traces
 
 A request sampler only sees the spans of one request. The spans of a trace often arrive in several requests, from
-several services, so a request sampler cannot decide on a trace as a whole. `OpenTelemetryTailSampler` buffers the
+several services, so a request sampler cannot decide on a trace as a whole. [OpenTelemetryTailSampler](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryTailSampler) buffers the
 spans of each trace until the trace is complete, then decides. See [Tail sampling](07-TailSampling.md).

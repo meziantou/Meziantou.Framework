@@ -4,7 +4,7 @@ description: Turn URLs into links, highlight quoted text, and write a highlighte
 ---
 
 A highlighter finds ranges of a string message to mark up: a highlighted span, or a link. Pass the highlighters to
-`LogHighlighters`:
+[LogHighlighters](cref:Meziantou.AspNetCore.Components.LogViewer.LogHighlighters):
 
 <!-- ref:../../../../samples/BlazorAppSample/ReadmeExamples/LogViewerAdvancedExample.razor;format=md-fenced-code-block -->
 ```razor
@@ -47,15 +47,15 @@ A highlighter finds ranges of a string message to mark up: a highlighted span, o
 
 | Highlighter | Finds |
 | --- | --- |
-| `UrlLogHighlighter` | `http` and `https` URLs, rendered as links that open in a new tab. Trailing punctuation such as `.` or `)` is not part of the link |
-| `QuoteLogHighlighter` | Text between single or double quotes, highlighted without the quotes |
+| [UrlLogHighlighter](cref:Meziantou.AspNetCore.Components.UrlLogHighlighter) | `http` and `https` URLs, rendered as links that open in a new tab. Trailing punctuation such as `.` or `)` is not part of the link |
+| [QuoteLogHighlighter](cref:Meziantou.AspNetCore.Components.QuoteLogHighlighter) | Text between single or double quotes, highlighted without the quotes |
 
-By default, `LogHighlighters` contains a `UrlLogHighlighter`. Passing a collection replaces the default: include a
-`UrlLogHighlighter` in it to keep the links, or pass an empty collection to turn highlighting off.
+By default, [LogHighlighters](cref:Meziantou.AspNetCore.Components.LogViewer.LogHighlighters) contains a [UrlLogHighlighter](cref:Meziantou.AspNetCore.Components.UrlLogHighlighter). Passing a collection replaces the default: include a
+[UrlLogHighlighter](cref:Meziantou.AspNetCore.Components.UrlLogHighlighter) in it to keep the links, or pass an empty collection to turn highlighting off.
 
 ## Write a highlighter
 
-Implement `ILogHighlighter`. `Process` receives the text of the message and returns a `LogHighlighterResult` for each
+Implement [ILogHighlighter](cref:Meziantou.AspNetCore.Components.ILogHighlighter). [Process](cref:Meziantou.AspNetCore.Components.ILogHighlighter.Process) receives the text of the message and returns a [LogHighlighterResult](cref:Meziantou.AspNetCore.Components.LogHighlighterResult) for each
 range to mark up:
 
 <!-- ref:../../../../tests/Meziantou.AspNetCore.Components.LogViewer.Tests/LogHighlighterTests.cs;region=LogHighlighter_Custom;format=md-fenced-code-block;dedent=true -->
@@ -93,11 +93,11 @@ public sealed class IssueLogHighlighter : ILogHighlighter
 
 | Member | Description |
 | --- | --- |
-| `Index`, `Length` | The range in the text. Ranges outside the text, or empty, are ignored |
-| `Priority` | Decides between overlapping ranges |
-| `Link` | Makes the range a link |
-| `Title` | The tooltip of the range |
-| `ReplacementText` | Text displayed instead of the range |
+| [Index](cref:Meziantou.AspNetCore.Components.LogHighlighterResult.Index), [Length](cref:Meziantou.AspNetCore.Components.LogHighlighterResult.Length) | The range in the text. Ranges outside the text, or empty, are ignored |
+| [Priority](cref:Meziantou.AspNetCore.Components.LogHighlighterResult.Priority) | Decides between overlapping ranges |
+| [Link](cref:Meziantou.AspNetCore.Components.LogHighlighterResult.Link) | Makes the range a link |
+| [Title](cref:Meziantou.AspNetCore.Components.LogHighlighterResult.Title) | The tooltip of the range |
+| [ReplacementText](cref:Meziantou.AspNetCore.Components.LogHighlighterResult.ReplacementText) | Text displayed instead of the range |
 
 Use it with the built-in highlighters, for instance
 `LogHighlighters="@(new ILogHighlighter[] { new IssueLogHighlighter(), new UrlLogHighlighter() })"`: with the message
@@ -105,12 +105,12 @@ Use it with the built-in highlighters, for instance
 
 ## Overlapping ranges
 
-When two ranges overlap, only one is rendered: the one with the higher `Priority`, even when the other starts earlier.
+When two ranges overlap, only one is rendered: the one with the higher [Priority](cref:Meziantou.AspNetCore.Components.LogHighlighterResult.Priority), even when the other starts earlier.
 Between equal priorities, the one that starts first wins, then the longest one. The built-in highlighters use priority
 `0`; the example above uses `1`, so an issue number wins over a quote or a URL that contains it.
 
 ## Links are restricted
 
-Only `http` and `https` links are rendered as links. A `Link` with any other scheme, such as `javascript:`, falls back to
+Only `http` and `https` links are rendered as links. A [Link](cref:Meziantou.AspNetCore.Components.LogHighlighterResult.Link) with any other scheme, such as `javascript:`, falls back to
 a plain highlight, so a highlighter cannot inject a script into the page from untrusted log text. The text and the
-`Title` are HTML-encoded.
+[Title](cref:Meziantou.AspNetCore.Components.LogHighlighterResult.Title) are HTML-encoded.

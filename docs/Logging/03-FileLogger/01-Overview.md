@@ -3,7 +3,7 @@ title: Overview
 description: An ILogger provider that writes to files from a background thread, with rolling, retention and compression.
 ---
 
-`Meziantou.Extensions.Logging.FileLogger` provides `FileLoggerProvider`, an `ILoggerProvider` that writes the log
+`Meziantou.Extensions.Logging.FileLogger` provides [FileLoggerProvider](cref:Meziantou.Extensions.Logging.FileLoggerProvider), an `ILoggerProvider` that writes the log
 entries to files. The entries are formatted on the thread that logs them, queued, and written by a background thread, so
 logging does not wait for the disk.
 
@@ -27,10 +27,10 @@ Assert.StartsWith(logsDirectory, logFilePath);
 <!-- endref -->
 
 - `new FileLoggerProvider(directory)` creates the provider directly. In an application with a host, register it with
-  `AddFile` instead: see [Configuration](02-Configuration.md).
-- `FlushAsync` waits for the background thread to write the pending messages. Disposing the provider writes them too,
+  [AddFile](cref:Meziantou.Extensions.Logging.FileLoggerBuilderExtensions.AddFile) instead: see [Configuration](02-Configuration.md).
+- [FlushAsync](cref:Meziantou.Extensions.Logging.FileLoggerProvider.FlushAsync) waits for the background thread to write the pending messages. Disposing the provider writes them too,
   then closes the file.
-- `LogFilePath` is the path of the file the messages are written to. It changes when the file is rolled.
+- [LogFilePath](cref:Meziantou.Extensions.Logging.FileLoggerProvider.LogFilePath) is the path of the file the messages are written to. It changes when the file is rolled.
 
 ## Pages
 

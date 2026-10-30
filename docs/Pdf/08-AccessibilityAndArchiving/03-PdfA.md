@@ -67,6 +67,6 @@ var pdf = document.ToByteArray();
 ```
 <!-- endref -->
 
-`Alternative` says that the file is another representation of the content; `Data` (the data the content was made
-from), `Source` and `Supplement` are the other relationships. A standard of electronic invoices names the file and the
+[Alternative](cref:Meziantou.Framework.Pdf.PdfAssociatedFileRelationship.Alternative) says that the file is another representation of the content; [Data](cref:Meziantou.Framework.Pdf.PdfAssociatedFileRelationship.Data) (the data the content was made
+from), [Source](cref:Meziantou.Framework.Pdf.PdfAssociatedFileRelationship.Source) and [Supplement](cref:Meziantou.Framework.Pdf.PdfAssociatedFileRelationship.Supplement) are the other relationships. A standard of electronic invoices names the file and the
 relationship it requires.

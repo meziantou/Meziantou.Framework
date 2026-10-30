@@ -5,11 +5,11 @@ description: Scan a folder, a list of files or in-memory content, receive the de
 
 ## Choose what to scan
 
-`DependencyScanner` has three static methods:
+[DependencyScanner](cref:Meziantou.Framework.DependencyScanning.DependencyScanner) has three static methods:
 
 | Method | Scans |
 | --- | --- |
-| `ScanDirectoryAsync(path, options)` | Every file of a folder, and of its subfolders unless `RecurseSubdirectories` is `false` |
+| `ScanDirectoryAsync(path, options)` | Every file of a folder, and of its subfolders unless [RecurseSubdirectories](cref:Meziantou.Framework.DependencyScanning.ScannerOptions.RecurseSubdirectories) is `false` |
 | `ScanFilesAsync(rootDirectory, filePaths, options)` | The given files |
 | `ScanFileAsync(rootDirectory, filePath, options)` | One file |
 | `ScanFileAsync(rootDirectory, filePath, content)` | Content held in memory, as if it were the given file |
@@ -88,7 +88,7 @@ Assert.False(sdk.VersionLocation?.IsUpdatable);
 
 ## Receive the dependencies as they are found
 
-The overloads of `ScanDirectoryAsync` and `ScanFilesAsync` that take an `onDependencyFound` callback return nothing:
+The overloads of [ScanDirectoryAsync](cref:Meziantou.Framework.DependencyScanning.DependencyScanner.ScanDirectoryAsync) and [ScanFilesAsync](cref:Meziantou.Framework.DependencyScanning.DependencyScanner.ScanFilesAsync) that take an `onDependencyFound` callback return nothing:
 they call the callback for each dependency, as soon as it is found. Files are scanned in parallel, so the callback can be
 called concurrently from several threads and must be thread-safe. Use a concurrent collection, a lock, or
 `DegreeOfParallelism = 1`:
@@ -114,15 +114,15 @@ An exception thrown by the callback stops the scan, and the scan method throws i
 
 | Member | Contains |
 | --- | --- |
-| `Type` | The kind of dependency, such as `DependencyType.NuGet` or `DependencyType.DockerImage` |
-| `Name` | The name, as written in the file. `null` when the file declares no name, such as the SDK version of `global.json` |
-| `Version` | The version, as written in the file. `null` when the file declares no version |
-| `NameLocation`, `VersionLocation` | Where the name and the version are written, or `null` |
-| `Metadata` | More values found by the scanner, such as the tag of an image pinned by digest. Each scanner documents its keys: see [Supported files](05-SupportedFiles/01-Overview.md) |
-| `Tags` | The full name of the type of the scanner that found the dependency, and the tags the scanner added |
+| [Type](cref:Meziantou.Framework.DependencyScanning.Dependency.Type) | The kind of dependency, such as [DependencyType.NuGet](cref:Meziantou.Framework.DependencyScanning.DependencyType.NuGet) or [DependencyType.DockerImage](cref:Meziantou.Framework.DependencyScanning.DependencyType.DockerImage) |
+| [Name](cref:Meziantou.Framework.DependencyScanning.Dependency.Name) | The name, as written in the file. `null` when the file declares no name, such as the SDK version of `global.json` |
+| [Version](cref:Meziantou.Framework.DependencyScanning.Dependency.Version) | The version, as written in the file. `null` when the file declares no version |
+| [NameLocation](cref:Meziantou.Framework.DependencyScanning.Dependency.NameLocation), [VersionLocation](cref:Meziantou.Framework.DependencyScanning.Dependency.VersionLocation) | Where the name and the version are written, or `null` |
+| [Metadata](cref:Meziantou.Framework.DependencyScanning.Dependency.Metadata) | More values found by the scanner, such as the tag of an image pinned by digest. Each scanner documents its keys: see [Supported files](05-SupportedFiles/01-Overview.md) |
+| [Tags](cref:Meziantou.Framework.DependencyScanning.Dependency.Tags) | The full name of the type of the scanner that found the dependency, and the tags the scanner added |
 
-A `Location` has the `FilePath` of the file, and `IsUpdatable` says whether `UpdateAsync` can change the value. The
-locations in text and XML files also implement `ILocationLineInfo`, which gives the `LineNumber` and the `LinePosition`
+A [Location](cref:Meziantou.Framework.DependencyScanning.Location) has the [FilePath](cref:Meziantou.Framework.DependencyScanning.Location.FilePath) of the file, and [IsUpdatable](cref:Meziantou.Framework.DependencyScanning.Location.IsUpdatable) says whether [UpdateAsync](cref:Meziantou.Framework.DependencyScanning.Location.UpdateAsync) can change the value. The
+locations in text and XML files also implement [ILocationLineInfo](cref:Meziantou.Framework.DependencyScanning.ILocationLineInfo), which gives the [LineNumber](cref:Meziantou.Framework.DependencyScanning.ILocationLineInfo.LineNumber) and the [LinePosition](cref:Meziantou.Framework.DependencyScanning.ILocationLineInfo.LinePosition)
 of the value; the locations in JSON files do not.
 
 The version is the text of the file, not a normalized version: `^1.2.0` for an npm range, `from: "1.0.0"` for a Swift
@@ -130,5 +130,5 @@ requirement, `20-alpine` for an image tag. Compare versions with the rules of ea
 
 ## Sort the dependencies
 
-`OrderByVersionLocation` and `OrderByVersionLocationDescending` sort dependencies by file, line and position of their
+[OrderByVersionLocation](cref:Meziantou.Framework.DependencyScanning.LocationExtensions.OrderByVersionLocation) and [OrderByVersionLocationDescending](cref:Meziantou.Framework.DependencyScanning.LocationExtensions.OrderByVersionLocationDescending) sort dependencies by file, line and position of their
 version, or of their name when they have no version. Use them to report the dependencies in the order of the files.

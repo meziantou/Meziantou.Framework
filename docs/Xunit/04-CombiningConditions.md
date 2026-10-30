@@ -66,8 +66,8 @@ public sealed class DesktopTests
 
 ## Write your own attribute
 
-`RunIf` and `SkipIf` derive from `ConditionalTestAttributeBase`. Derive from it to give a name to a condition you use in
-many places: set the conditions in the constructor, and override `InvertCondition`. `false` runs the test when the
+`RunIf` and `SkipIf` derive from [ConditionalTestAttributeBase](cref:Meziantou.Xunit.ConditionalTestAttributeBase). Derive from it to give a name to a condition you use in
+many places: set the conditions in the constructor, and override [InvertCondition](cref:Meziantou.Xunit.ConditionalTestAttributeBase.InvertCondition). `false` runs the test when the
 conditions match, like `RunIf`; `true` skips it when they match, like `SkipIf`.
 
 <!-- ref:../../samples/Meziantou.Xunit.Samples/ConditionSamples.cs;region=ConditionalTestAttributeBase_CustomAttribute;format=md-fenced-code-block;dedent=true -->

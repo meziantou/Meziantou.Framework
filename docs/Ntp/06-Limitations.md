@@ -25,4 +25,4 @@ description: What the NTP client and server do not do, so you can plan around it
 - **One address per server**: start several servers to listen on several addresses, such as IPv4 and IPv6.
 - **No leap second announcements**: the leap indicator is always "no warning".
 - **No access control.** Every client that reaches the server is answered, within the rate limit.
-- **The `RATE` reply has no timestamps**, so `NtpClient` ignores it, even with `ValidateResponse` off.
+- **The `RATE` reply has no timestamps**, so [NtpClient](cref:Meziantou.Framework.Ntp.NtpClient) ignores it, even with [ValidateResponse](cref:Meziantou.Framework.Ntp.NtpClientOptions.ValidateResponse) off.

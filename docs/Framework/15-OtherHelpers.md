@@ -5,7 +5,7 @@ description: Deterministic GUIDs, optional values, placeholder text, safe handle
 
 ## Deterministic GUIDs
 
-`DeterministicGuid.Create` computes a name-based GUID (RFC 4122 version 3 or 5): the same namespace and name always give
+[DeterministicGuid.Create](cref:Meziantou.Framework.DeterministicGuid.Create) computes a name-based GUID (RFC 4122 version 3 or 5): the same namespace and name always give
 the same GUID, on every machine. Use it to derive a stable identifier from a natural key, such as a URL or a file path:
 
 <!-- ref:../../tests/Meziantou.Framework.Tests/DeterministicGuidTests.cs;region=DeterministicGuid_Create;format=md-fenced-code-block;dedent=true -->
@@ -20,15 +20,15 @@ Assert.Equal(guid, guid2);
 ```
 <!-- endref -->
 
-- `DnsNamespace`, `UrlNamespace`, `OidNamespace` and `X500Namespace` are the standard namespaces. Any `Guid` can be a
+- [DnsNamespace](cref:Meziantou.Framework.DeterministicGuid.DnsNamespace), [UrlNamespace](cref:Meziantou.Framework.DeterministicGuid.UrlNamespace), [OidNamespace](cref:Meziantou.Framework.DeterministicGuid.OidNamespace) and [X500Namespace](cref:Meziantou.Framework.DeterministicGuid.X500Namespace) are the standard namespaces. Any `Guid` can be a
   namespace: create one for your application to keep its identifiers apart.
-- `DeterministicGuidVersion.Version5` hashes with SHA-1, `Version3` with MD5. Prefer version 5, unless you must match
+- [DeterministicGuidVersion.Version5](cref:Meziantou.Framework.DeterministicGuidVersion.Version5) hashes with SHA-1, [Version3](cref:Meziantou.Framework.DeterministicGuidVersion.Version3) with MD5. Prefer version 5, unless you must match
   identifiers created with version 3.
 - The name is a string, encoded in UTF-8, or bytes.
 
 ## Optional values
 
-`Optional<T>` tells a missing value from a value that is `null`, for instance for the fields of a partial update:
+[Optional\<T\>](cref:Meziantou.Framework.Optional{T}) tells a missing value from a value that is `null`, for instance for the fields of a partial update:
 
 <!-- ref:../../tests/Meziantou.Framework.Tests/TupleExtensionsTests.cs;region=Optional_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -52,7 +52,7 @@ is no value.
 
 ## Placeholder text
 
-`LoremIpsumGenerator` generates random "lorem ipsum" text, for mock-ups and test data:
+[LoremIpsumGenerator](cref:Meziantou.Framework.LoremIpsumGenerator) generates random "lorem ipsum" text, for mock-ups and test data:
 
 <!-- ref:../../tests/Meziantou.Framework.Tests/LoremIpsumGeneratorTests.cs;region=LoremIpsumGenerator_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -70,11 +70,11 @@ Assert.HasCount(2, paragraphs);
 <!-- endref -->
 
 A sentence starts with an upper-case letter and ends with a period. A paragraph is sentences separated by spaces, and
-`Paragraphs` returns a lazy sequence of paragraphs. The words are random, so the text changes on every call.
+[Paragraphs](cref:Meziantou.Framework.LoremIpsumGenerator.Paragraphs) returns a lazy sequence of paragraphs. The words are random, so the text changes on every call.
 
 ## Safe handles in native calls
 
-`CreateHandleScope` gives the raw handle of a `SafeHandle` and keeps the `SafeHandle` from being released until the scope
+[CreateHandleScope](cref:Meziantou.Framework.SafeHandleExtensions.CreateHandleScope) gives the raw handle of a `SafeHandle` and keeps the `SafeHandle` from being released until the scope
 is disposed, so the handle stays valid while native code uses it:
 
 <!-- ref:../../tests/Meziantou.Framework.Tests/SafeHandleExtensionsTests.cs;region=SafeHandle_CreateHandleScope;format=md-fenced-code-block;dedent=true -->
@@ -88,12 +88,12 @@ Assert.NotEqual(0, handle); // Use handle safely, for instance in a P/Invoke cal
 ```
 <!-- endref -->
 
-`SafeHandleValue` converts implicitly to `nint`. `HasValue` is `true` until the scope is disposed; `Value` throws an
+[SafeHandleValue](cref:Meziantou.Framework.SafeHandleValue) converts implicitly to `nint`. [HasValue](cref:Meziantou.Framework.SafeHandleValue.HasValue) is `true` until the scope is disposed; [Value](cref:Meziantou.Framework.SafeHandleValue.Value) throws an
 `ObjectDisposedException` afterwards. Creating a scope for an invalid handle throws an `ArgumentException`.
 
 ## Tuples
 
-`ToArray` copies the elements of a tuple to an `object?[]`:
+[ToArray](cref:Meziantou.Framework.TupleExtensions.ToArray) copies the elements of a tuple to an `object?[]`:
 
 <!-- ref:../../tests/Meziantou.Framework.Tests/TupleExtensionsTests.cs;region=TupleExtensions_ToArray;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -115,7 +115,7 @@ Assert.False(new Uri("images/logo.png", UriKind.Relative).IsHttpOrHttps());
 ```
 <!-- endref -->
 
-`IsHttpOrHttps` returns `true` for an absolute URI whose scheme is `http` or `https`, in any case.
+[IsHttpOrHttps](cref:Meziantou.Framework.UriExtensions.IsHttpOrHttps) returns `true` for an absolute URI whose scheme is `http` or `https`, in any case.
 
 ## Certificate dates
 
@@ -177,7 +177,7 @@ each inner exception, one per line, so the stack trace of each one is written in
 
 ## Hash codes of collections
 
-`AddValues` adds every element of an array, a span or an enumerable to a `HashCode`, in order, optionally with an
+[AddValues](cref:Meziantou.Framework.HashCodeExtensions.AddValues) adds every element of an array, a span or an enumerable to a `HashCode`, in order, optionally with an
 equality comparer. Use it in the `GetHashCode` of a type that holds a collection:
 
 <!-- ref:../../tests/Meziantou.Framework.Tests/HashCodeExtensionsTests.cs;region=HashCodeExtensions_AddValues;format=md-fenced-code-block;dedent=true -->
@@ -199,7 +199,7 @@ A `null` array adds 0, so it does not hash like an empty array.
 
 ## Asynchronous regex replacement
 
-`ReplaceAsync` replaces the matches of a regular expression with the result of an asynchronous function, for
+[ReplaceAsync](cref:Meziantou.Framework.RegexExtensions.ReplaceAsync) replaces the matches of a regular expression with the result of an asynchronous function, for
 replacements that need I/O:
 
 <!-- ref:../../tests/Meziantou.Framework.Tests/RegexExtensionsTests.cs;region=RegexExtensions_ReplaceAsync;format=md-fenced-code-block;dedent=true -->
@@ -225,7 +225,7 @@ The function is called for each match, one after the other: the next match waits
 
 ## Runes of UTF-8 bytes
 
-`EnumerateRunesFromUtf8`, in the [Meziantou.Framework.Text](cref:Meziantou.Framework.Text) namespace, decodes UTF-8 bytes into `Rune` values without
+[EnumerateRunesFromUtf8](cref:Meziantou.Framework.Text.Utf8Extensions.EnumerateRunesFromUtf8), in the [Meziantou.Framework.Text](cref:Meziantou.Framework.Text) namespace, decodes UTF-8 bytes into `Rune` values without
 converting them to a string first:
 
 <!-- ref:../../tests/Meziantou.Framework.Tests/Text/Utf8ExtensionsTests.cs;region=Utf8Extensions_EnumerateRunesFromUtf8;format=md-fenced-code-block;dedent=true -->

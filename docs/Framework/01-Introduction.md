@@ -33,7 +33,7 @@ Most helpers are in the [Meziantou.Framework](cref:Meziantou.Framework!N:Meziant
 | --- | --- |
 | [Meziantou.Framework.Collections](cref:Meziantou.Framework.Collections) | The collections |
 | [Meziantou.Framework.DataAnnotations](cref:Meziantou.Framework.DataAnnotations) | The validation attributes |
-| [Meziantou.Framework.Diagnostics](cref:Meziantou.Framework!N:Meziantou.Framework.Diagnostics) | `ScopedActivityListener` |
+| [Meziantou.Framework.Diagnostics](cref:Meziantou.Framework!N:Meziantou.Framework.Diagnostics) | [ScopedActivityListener](cref:Meziantou.Framework.Diagnostics.ScopedActivityListener) |
 | [Meziantou.Framework.Text](cref:Meziantou.Framework.Text) | UTF-8 helpers |
 
 Most helpers are extension methods: once the namespace is imported, they appear on the types they extend, such as

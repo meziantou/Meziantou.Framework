@@ -15,7 +15,7 @@ The examples of this documentation need `using Meziantou.Framework;`.
 
 ## Convert a fragment
 
-`HtmlToMarkdown.Convert` converts an HTML fragment and returns the Markdown:
+[HtmlToMarkdown.Convert](cref:Meziantou.Framework.HtmlToMarkdown.Convert) converts an HTML fragment and returns the Markdown:
 
 <!-- ref:../../tests/Meziantou.Framework.HtmlToMarkdown.Tests/HtmlToMarkdownConverterTests.cs;region=HtmlToMarkdown_Convert;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -34,7 +34,7 @@ one that holds only whitespace, gives an empty string.
 
 ## Set the options
 
-Pass an `HtmlToMarkdownOptions` to choose the Markdown syntax of each element:
+Pass an [HtmlToMarkdownOptions](cref:Meziantou.Framework.HtmlToMarkdownOptions) to choose the Markdown syntax of each element:
 
 <!-- ref:../../tests/Meziantou.Framework.HtmlToMarkdown.Tests/HtmlToMarkdownConverterTests.cs;region=HtmlToMarkdown_Options;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -68,7 +68,7 @@ list items and `---` horizontal rules. [Formatting options](04-FormattingOptions
 
 ## Convert a complete document
 
-`Convert` takes a fragment: the content of a `body` element. Given a complete page, it writes the elements of the
+[Convert](cref:Meziantou.Framework.HtmlToMarkdown.Convert) takes a fragment: the content of a `body` element. Given a complete page, it writes the elements of the
 `head`, such as `title` and `meta`, as raw HTML. To convert a complete page, parse it with
 [Meziantou.Framework.WebPlatform](../WebPlatform/03-HtmlAndDom/02-ParsingDocuments.md) (a dependency of the package)
 and convert the content of its body, so that the `head` of the page is ignored:
@@ -94,7 +94,7 @@ Assert.Equal("""
 ```
 <!-- endref -->
 
-`HtmlDocumentParser` is in the [Meziantou.Framework.WebPlatform](cref:Meziantou.Framework.WebPlatform) namespace. The
+[HtmlDocumentParser](cref:Meziantou.Framework.WebPlatform.HtmlDocumentParser) is in the [Meziantou.Framework.WebPlatform](cref:Meziantou.Framework.WebPlatform) namespace. The
 [command-line tool](07-CommandLineTool.md) does this for you.
 
 ## Next steps

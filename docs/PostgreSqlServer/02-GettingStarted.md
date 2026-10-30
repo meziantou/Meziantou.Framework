@@ -70,13 +70,13 @@ Assert.Equal("You sent: SELECT 1", message);
 ```
 <!-- endref -->
 
-- `AddTcpListener` adds an endpoint. Port `0` lets the system choose a free port, and `Ports` gives the port the server
+- [AddTcpListener](cref:Meziantou.Framework.PostgreSql.PostgreSqlServerOptions.AddTcpListener) adds an endpoint. Port `0` lets the system choose a free port, and [Ports](cref:Meziantou.Framework.PostgreSql.PostgreSqlServer.Ports) gives the port the server
   bound, which is what tests need. `bindAddress` defaults to the loopback address, so the server only accepts local
   connections.
 - The authentication handler accepts or rejects each login. With SCRAM-SHA-256, the default method, it must call
-  `ValidatePassword`. See [Authentication](04-Authentication.md).
+  [ValidatePassword](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlAuthenticationContext.ValidatePassword). See [Authentication](04-Authentication.md).
 - The query handler answers every request. Npgsql sends every command through the extended query protocol, which first
-  asks for the columns of the result (`Describe`), then runs it. See [Handling queries](05-HandlingQueries.md).
+  asks for the columns of the result ([Describe](cref:Meziantou.Framework.PostgreSql.Handler.PostgreSqlQueryRequestType.Describe)), then runs it. See [Handling queries](05-HandlingQueries.md).
 - `Server Compatibility Mode=NoTypeLoading` stops Npgsql from querying the PostgreSQL system catalog when it connects,
   which this server cannot answer. See [Connecting clients](08-ConnectingClients.md).
 - Disposing the server stops listening and closes the connections.

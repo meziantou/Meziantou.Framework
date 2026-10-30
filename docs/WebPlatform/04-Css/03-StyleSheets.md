@@ -3,8 +3,8 @@ title: Style sheets
 description: Read, edit and create style sheets and rules with the CSSOM, and inspect their parsed selectors.
 ---
 
-`Document.StyleSheets` lists the style sheets of a document: the `style` elements and the `link` elements whose style
-sheet is loaded. Each `CssStyleSheet` has its rules (`CssRules`), as in a browser:
+[Document.StyleSheets](cref:Meziantou.Framework.WebPlatform.Dom.Document.StyleSheets) lists the style sheets of a document: the `style` elements and the `link` elements whose style
+sheet is loaded. Each [CssStyleSheet](cref:Meziantou.Framework.WebPlatform.Css.Om.CssStyleSheet) has its rules ([CssRules](cref:Meziantou.Framework.WebPlatform.Css.Om.CssStyleSheet.CssRules)), as in a browser:
 
 <!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Css/CssomTests.cs;region=WebPlatform_StyleSheets;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -34,21 +34,21 @@ Assert.Equal(2, standalone.CssRules.Count);
 ```
 <!-- endref -->
 
-- The rules are typed: `CssStyleRule` (a selector and declarations), `CssMediaRule`, `CssImportRule`, `CssFontFaceRule`,
-  `CssKeyframesRule`, `CssLayerBlockRule`, `CssContainerRule`, `CssSupportsRule`... in the [Meziantou.Framework.WebPlatform.Css.Om](cref:Meziantou.Framework.WebPlatform.Css.Om)
+- The rules are typed: [CssStyleRule](cref:Meziantou.Framework.WebPlatform.Css.Om.CssStyleRule) (a selector and declarations), [CssMediaRule](cref:Meziantou.Framework.WebPlatform.Css.Om.CssMediaRule), [CssImportRule](cref:Meziantou.Framework.WebPlatform.Css.Om.CssImportRule), [CssFontFaceRule](cref:Meziantou.Framework.WebPlatform.Css.Om.CssFontFaceRule),
+  [CssKeyframesRule](cref:Meziantou.Framework.WebPlatform.Css.Om.CssKeyframesRule), [CssLayerBlockRule](cref:Meziantou.Framework.WebPlatform.Css.Om.CssLayerBlockRule), [CssContainerRule](cref:Meziantou.Framework.WebPlatform.Css.Om.CssContainerRule), [CssSupportsRule](cref:Meziantou.Framework.WebPlatform.Css.Om.CssSupportsRule)... in the [Meziantou.Framework.WebPlatform.Css.Om](cref:Meziantou.Framework.WebPlatform.Css.Om)
   namespace.
 - The object model is what a browser keeps: the comments, the invalid rules and the declarations of unsupported
   properties are dropped, and the values are serialized (`#2563eb` reads as `rgb(37, 99, 235)`).
-- `InsertRule` and `DeleteRule` change the rules; `Style.SetProperty` and `Style.RemoveProperty` change the declarations.
+- [InsertRule](cref:Meziantou.Framework.WebPlatform.Css.Om.CssStyleSheet.InsertRule) and [DeleteRule](cref:Meziantou.Framework.WebPlatform.Css.Om.CssStyleSheet.DeleteRule) change the rules; `Style.SetProperty` and `Style.RemoveProperty` change the declarations.
   In a browsing context, the computed styles follow.
-- `new CssStyleSheet()` with `ReplaceSync` parses CSS without a document. Assign it to `Document.AdoptedStyleSheets` to
+- `new CssStyleSheet()` with [ReplaceSync](cref:Meziantou.Framework.WebPlatform.Css.Om.CssStyleSheet.ReplaceSync) parses CSS without a document. Assign it to [Document.AdoptedStyleSheets](cref:Meziantou.Framework.WebPlatform.Dom.Document.AdoptedStyleSheets) to
   apply it to a document.
 
 ## Inspect the selectors
 
-The selectors of the rules are parsed: `CssStyleRule.Selectors` is a `SelectorList` of the
+The selectors of the rules are parsed: [CssStyleRule.Selectors](cref:Meziantou.Framework.WebPlatform.Css.Om.CssStyleRule.Selectors) is a [SelectorList](cref:Meziantou.Framework.WebPlatform.Css.Selectors.SelectorList) of the
 [Meziantou.Framework.WebPlatform.Css.Selectors](cref:Meziantou.Framework.WebPlatform.Css.Selectors) namespace. Walk it to list the classes, the IDs or the elements a style
-sheet uses, or parse a selector once with `SelectorList.Parse` to match it many times:
+sheet uses, or parse a selector once with [SelectorList.Parse](cref:Meziantou.Framework.WebPlatform.Css.Selectors.SelectorList.Parse) to match it many times:
 
 <!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Css/SelectorObjectModelTests.cs;region=WebPlatform_SelectorObjectModel;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -83,12 +83,12 @@ Assert.False(selector.Matches(document.DocumentElement!));
 
 | Type | Is |
 | --- | --- |
-| `SelectorList` | A list of `ComplexSelector` separated by commas |
-| `ComplexSelector` | The `CompoundSelector` items (`Compounds`) and the `Combinators` between them |
-| `CompoundSelector` | The `SimpleSelector` items: `TypeSelector`, `IdSelector`, `ClassSelector`, `AttributeSelector`, `PseudoClassSelector`, `PseudoElementSelector`... |
+| [SelectorList](cref:Meziantou.Framework.WebPlatform.Css.Selectors.SelectorList) | A list of [ComplexSelector](cref:Meziantou.Framework.WebPlatform.Css.Selectors.ComplexSelector) separated by commas |
+| [ComplexSelector](cref:Meziantou.Framework.WebPlatform.Css.Selectors.ComplexSelector) | The [CompoundSelector](cref:Meziantou.Framework.WebPlatform.Css.Selectors.CompoundSelector) items ([Compounds](cref:Meziantou.Framework.WebPlatform.Css.Selectors.ComplexSelector.Compounds)) and the [Combinators](cref:Meziantou.Framework.WebPlatform.Css.Selectors.ComplexSelector.Combinators) between them |
+| [CompoundSelector](cref:Meziantou.Framework.WebPlatform.Css.Selectors.CompoundSelector) | The [SimpleSelector](cref:Meziantou.Framework.WebPlatform.Css.Selectors.SimpleSelector) items: [TypeSelector](cref:Meziantou.Framework.WebPlatform.Css.Selectors.TypeSelector), [IdSelector](cref:Meziantou.Framework.WebPlatform.Css.Selectors.IdSelector), [ClassSelector](cref:Meziantou.Framework.WebPlatform.Css.Selectors.ClassSelector), [AttributeSelector](cref:Meziantou.Framework.WebPlatform.Css.Selectors.AttributeSelector), [PseudoClassSelector](cref:Meziantou.Framework.WebPlatform.Css.Selectors.PseudoClassSelector), [PseudoElementSelector](cref:Meziantou.Framework.WebPlatform.Css.Selectors.PseudoElementSelector)... |
 
-- Each level has its `Specificity` (`A`, `B`, `C`) and serializes with `ToString()`, as `SelectorText` does.
-- The arguments of `:is()`, `:where()`, `:not()` and `:has()` are selector lists too (`PseudoClassSelector.Argument`):
+- Each level has its [Specificity](cref:Meziantou.Framework.WebPlatform.Css.Selectors.Specificity) ([A](cref:Meziantou.Framework.WebPlatform.Css.Selectors.Specificity.A), [B](cref:Meziantou.Framework.WebPlatform.Css.Selectors.Specificity.B), [C](cref:Meziantou.Framework.WebPlatform.Css.Selectors.Specificity.C)) and serializes with `ToString()`, as [SelectorText](cref:Meziantou.Framework.WebPlatform.Css.Om.CssStyleRule.SelectorText) does.
+- The arguments of `:is()`, `:where()`, `:not()` and `:has()` are selector lists too ([PseudoClassSelector.Argument](cref:Meziantou.Framework.WebPlatform.Css.Selectors.PseudoClassSelector.Argument)):
   recurse into them to find every class.
-- `SelectorList.Parse` throws a `DomException` (`SyntaxError`) for an invalid selector, and `TryParse` returns false. The
+- [SelectorList.Parse](cref:Meziantou.Framework.WebPlatform.Css.Selectors.SelectorList.Parse) throws a [DomException](cref:Meziantou.Framework.WebPlatform.Dom.DomException) (`SyntaxError`) for an invalid selector, and [TryParse](cref:Meziantou.Framework.WebPlatform.Css.Selectors.SelectorList.TryParse) returns false. The
   parsed selectors are immutable: share them between threads.

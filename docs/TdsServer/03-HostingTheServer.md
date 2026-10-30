@@ -5,15 +5,15 @@ description: Run the server in an ASP.NET Core application or on its own, choose
 
 The server runs in one of two ways:
 
-- **In an ASP.NET Core application** (`AddTdsServer`): Kestrel accepts the connections, and the server starts, stops
+- **In an ASP.NET Core application** ([AddTdsServer](cref:Meziantou.Framework.Tds.Hosting.TdsServerBuilderExtensions.AddTdsServer)): Kestrel accepts the connections, and the server starts, stops
   and logs with the application. Use it for a service.
-- **On its own** (`TdsServer`): you start and dispose it yourself. Use it in tests and small tools.
+- **On its own** ([TdsServer](cref:Meziantou.Framework.Tds.TdsServer)): you start and dispose it yourself. Use it in tests and small tools.
 
-Both take the same `TdsServerOptions` and the same two callbacks.
+Both take the same [TdsServerOptions](cref:Meziantou.Framework.Tds.TdsServerOptions) and the same two callbacks.
 
 ## Host the server in ASP.NET Core
 
-Call `AddTdsServer` on the application builder to add the endpoints, then register the callbacks on the built
+Call [AddTdsServer](cref:Meziantou.Framework.Tds.Hosting.TdsServerBuilderExtensions.AddTdsServer) on the application builder to add the endpoints, then register the callbacks on the built
 application:
 
 <!-- ref:../../samples/Meziantou.Framework.TdsServer.Samples/ReadmeExamples.cs;region=TdsServer_Usage;format=md-fenced-code-block;dedent=true -->
@@ -75,7 +75,7 @@ They are shared by all the connections and can run concurrently: anything they c
 
 ### Serve HTTP from the same application
 
-`AddTdsServer` declares its endpoints to Kestrel in code. Kestrel then ignores the URLs configured with
+[AddTdsServer](cref:Meziantou.Framework.Tds.Hosting.TdsServerBuilderExtensions.AddTdsServer) declares its endpoints to Kestrel in code. Kestrel then ignores the URLs configured with
 `ASPNETCORE_URLS`, `--urls` or `UseUrls`, and logs "Overriding address(es)". If the application also serves HTTP,
 declare the HTTP endpoints in code too:
 
@@ -101,7 +101,7 @@ its endpoints, the protocol on that port is TDS.
 
 ## Run the server on its own
 
-Create a `TdsServer` with the options and the two callbacks, call `StartAsync`, and dispose it to stop:
+Create a [TdsServer](cref:Meziantou.Framework.Tds.TdsServer) with the options and the two callbacks, call [StartAsync](cref:Meziantou.Framework.Tds.TdsServer.StartAsync), and dispose it to stop:
 
 <!-- ref:../../samples/Meziantou.Framework.TdsServer.Samples/Examples.cs;region=TdsServer_StandaloneWithLogging;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -122,10 +122,10 @@ Console.ReadLine();
 ```
 <!-- endref -->
 
-- `StartAsync` binds every endpoint, then returns: connections are accepted in the background. If one endpoint cannot
+- [StartAsync](cref:Meziantou.Framework.Tds.TdsServer.StartAsync) binds every endpoint, then returns: connections are accepted in the background. If one endpoint cannot
   be bound, the others are released and the exception is thrown.
-- `Ports` lists the bound ports. Use port `0` to get a free port, for instance in tests run in parallel.
-- `Dispose` stops listening and cancels the token of the requests in progress. The server cannot be started again.
+- [Ports](cref:Meziantou.Framework.Tds.TdsServer.Ports) lists the bound ports. Use port `0` to get a free port, for instance in tests run in parallel.
+- [Dispose](cref:Meziantou.Framework.Tds.TdsServer.Dispose) stops listening and cancels the token of the requests in progress. The server cannot be started again.
 - The logger is optional. Without it, connections that fail to negotiate, to log in or to answer a query fail silently.
   With it, exceptions thrown by the query handler are logged as errors, and failed negotiations and connections closed
   by an exception at the `Debug` level.
@@ -157,15 +157,15 @@ builder.AddTdsServer(options =>
 
 | Option | Default | Description |
 | --- | --- | --- |
-| `PacketSize` | 4096 | The size of the packets the server writes, from `MinimumPacketSize` (512) to `MaximumPacketSize` (65535). |
-| `MaxMessageSize` | 16 MB (`DefaultMaxMessageSize`) | The largest request a client can send, at least `MaximumPacketSize`. |
-| `RequireEncryption` | `false` | Rejects the clients that do not encrypt. See [Encryption](09-Encryption.md). |
-| `TlsPfxPath`, `TlsPfxPassword` | none | The TLS certificate, as a PFX file. |
-| `TlsPemCertificatePath`, `TlsPemPrivateKeyPath` | none | The TLS certificate, as PEM files. |
+| [PacketSize](cref:Meziantou.Framework.Tds.TdsServerOptions.PacketSize) | 4096 | The size of the packets the server writes, from [MinimumPacketSize](cref:Meziantou.Framework.Tds.TdsServerOptions.MinimumPacketSize) (512) to [MaximumPacketSize](cref:Meziantou.Framework.Tds.TdsServerOptions.MaximumPacketSize) (65535). |
+| [MaxMessageSize](cref:Meziantou.Framework.Tds.TdsServerOptions.MaxMessageSize) | 16 MB ([DefaultMaxMessageSize](cref:Meziantou.Framework.Tds.TdsServerOptions.DefaultMaxMessageSize)) | The largest request a client can send, at least [MaximumPacketSize](cref:Meziantou.Framework.Tds.TdsServerOptions.MaximumPacketSize). |
+| [RequireEncryption](cref:Meziantou.Framework.Tds.TdsServerOptions.RequireEncryption) | `false` | Rejects the clients that do not encrypt. See [Encryption](09-Encryption.md). |
+| [TlsPfxPath](cref:Meziantou.Framework.Tds.TdsServerOptions.TlsPfxPath), [TlsPfxPassword](cref:Meziantou.Framework.Tds.TdsServerOptions.TlsPfxPassword) | none | The TLS certificate, as a PFX file. |
+| [TlsPemCertificatePath](cref:Meziantou.Framework.Tds.TdsServerOptions.TlsPemCertificatePath), [TlsPemPrivateKeyPath](cref:Meziantou.Framework.Tds.TdsServerOptions.TlsPemPrivateKeyPath) | none | The TLS certificate, as PEM files. |
 
-The server buffers a whole request before it parses it, so `MaxMessageSize` bounds the memory a client can make the
+The server buffers a whole request before it parses it, so [MaxMessageSize](cref:Meziantou.Framework.Tds.TdsServerOptions.MaxMessageSize) bounds the memory a client can make the
 server allocate, including before it logs in. A larger request closes the connection. Raise the limit when clients
 send large SQL batches or parameters.
 
-The TLS certificate is loaded when the server starts (`AddTdsServer` or `StartAsync`): a missing file or an invalid
+The TLS certificate is loaded when the server starts ([AddTdsServer](cref:Meziantou.Framework.Tds.Hosting.TdsServerBuilderExtensions.AddTdsServer) or [StartAsync](cref:Meziantou.Framework.Tds.TdsServer.StartAsync)): a missing file or an invalid
 combination of options throws there, not on the first connection.

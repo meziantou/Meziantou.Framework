@@ -16,7 +16,7 @@ shows them as garbage. `Meziantou.Framework.AnsiFormatting` removes these sequen
 
 ## Supported sequences
 
-`AnsiTextProcessor` recognizes two families of escape sequences:
+[AnsiTextProcessor](cref:Meziantou.Framework.AnsiTextProcessor) recognizes two families of escape sequences:
 
 - **CSI** sequences start with `ESC [` and end with a character between `@` and `~` (`0x40`-`0x7E`). They include the
   SGR sequences that set the style, such as `ESC[1;31m`, and the sequences that move the cursor or erase the line.
@@ -28,5 +28,5 @@ style.
 
 ## Namespaces
 
-`AnsiTextProcessor` is in the [Meziantou.Framework](cref:Meziantou.Framework.AnsiFormatting!N:Meziantou.Framework) namespace. The types of the parsed text (`AnsiText`, `AnsiTextRun`,
-`AnsiStyle`, `AnsiColor` and `AnsiColorKind`) are nested in `AnsiTextProcessor`.
+[AnsiTextProcessor](cref:Meziantou.Framework.AnsiTextProcessor) is in the [Meziantou.Framework](cref:Meziantou.Framework.AnsiFormatting!N:Meziantou.Framework) namespace. The types of the parsed text ([AnsiText](cref:Meziantou.Framework.AnsiTextProcessor.AnsiText), [AnsiTextRun](cref:Meziantou.Framework.AnsiTextProcessor.AnsiTextRun),
+[AnsiStyle](cref:Meziantou.Framework.AnsiTextProcessor.AnsiStyle), [AnsiColor](cref:Meziantou.Framework.AnsiTextProcessor.AnsiColor) and [AnsiColorKind](cref:Meziantou.Framework.AnsiTextProcessor.AnsiColorKind)) are nested in [AnsiTextProcessor](cref:Meziantou.Framework.AnsiTextProcessor).

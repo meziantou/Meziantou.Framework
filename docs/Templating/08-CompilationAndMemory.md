@@ -5,8 +5,8 @@ description: Compile a template once, run it from several threads, and unload th
 
 ## When a template is compiled
 
-`Build` compiles the template: it generates a C# class from the blocks, compiles it with the C# compiler and loads the
-resulting assembly. `Run` calls `Build` the first time, so you only call `Build` to compile in advance, for instance
+[Build](cref:Meziantou.Framework.Templating.Template.Build) compiles the template: it generates a C# class from the blocks, compiles it with the C# compiler and loads the
+resulting assembly. [Run](cref:Meziantou.Framework.Templating.Template.Run) calls [Build](cref:Meziantou.Framework.Templating.Template.Build) the first time, so you only call [Build](cref:Meziantou.Framework.Templating.Template.Build) to compile in advance, for instance
 when your application starts, or to report the errors of a template before using it:
 
 <!-- ref:../../tests/Meziantou.Framework.Templating.Tests/TemplateTest.cs;region=Template_Build;format=md-fenced-code-block;dedent=true -->
@@ -26,15 +26,15 @@ Assert.Equal("Hello Bob", result2);
 ```
 <!-- endref -->
 
-Compiling takes much longer than running: keep the `Template` instance and run it as many times as you need, instead of
+Compiling takes much longer than running: keep the [Template](cref:Meziantou.Framework.Templating.Template) instance and run it as many times as you need, instead of
 loading the same text again.
 
 Once the template is built:
 
-- `Load` throws an `InvalidOperationException`, and so does any change to `Arguments`, `Usings`,
-  `AssemblyReferences`, `IncludedSourceFiles`, `ImplementedInterfaces` and `Blocks`. To change a template, create a
-  new `Template`.
-- When the build fails, the template is not built: correct the text, call `Load` again, and build again.
+- [Load](cref:Meziantou.Framework.Templating.Template.Load) throws an `InvalidOperationException`, and so does any change to [Arguments](cref:Meziantou.Framework.Templating.Template.Arguments), [Usings](cref:Meziantou.Framework.Templating.Template.Usings),
+  [AssemblyReferences](cref:Meziantou.Framework.Templating.Template.AssemblyReferences), [IncludedSourceFiles](cref:Meziantou.Framework.Templating.Template.IncludedSourceFiles), [ImplementedInterfaces](cref:Meziantou.Framework.Templating.Template.ImplementedInterfaces) and [Blocks](cref:Meziantou.Framework.Templating.Template.Blocks). To change a template, create a
+  new [Template](cref:Meziantou.Framework.Templating.Template).
+- When the build fails, the template is not built: correct the text, call [Load](cref:Meziantou.Framework.Templating.Template.Load) again, and build again.
 
 ## Run from several threads
 
@@ -67,11 +67,11 @@ A template that uses `dynamic` is **never** unloaded, even when disposed: runnin
 that contains it in a process-wide cache of the C# runtime binder, which keeps the generated assembly alive until the
 process exits. A template uses `dynamic` when:
 
-- `OutputType` is `null`, which is the default;
+- [OutputType](cref:Meziantou.Framework.Templating.Template.OutputType) is `null`, which is the default;
 - an argument is declared without a type;
 - its code blocks use `dynamic` themselves.
 
-Set `OutputType` and give every argument a type to get a template that can be unloaded:
+Set [OutputType](cref:Meziantou.Framework.Templating.Template.OutputType) and give every argument a type to get a template that can be unloaded:
 
 <!-- ref:../../tests/Meziantou.Framework.Templating.Tests/TemplateTest.cs;region=Template_Unloadable;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -81,7 +81,7 @@ template.Arguments.Add(new TemplateArgument("Name", typeof(string)));
 ```
 <!-- endref -->
 
-`OutputType` is the type of the output that the template writes to. Use `Output` with `Template`, and
-`HtmlEmailOutput` with `HtmlEmailTemplate` (see [HTML emails](06-HtmlEmails/01-Overview.md#use-it-in-a-server)).
+[OutputType](cref:Meziantou.Framework.Templating.Template.OutputType) is the type of the output that the template writes to. Use [Output](cref:Meziantou.Framework.Templating.Output) with [Template](cref:Meziantou.Framework.Templating.Template), and
+[HtmlEmailOutput](cref:Meziantou.Framework.Templating.HtmlEmailOutput) with [HtmlEmailTemplate](cref:Meziantou.Framework.Templating.HtmlEmailTemplate) (see [HTML emails](06-HtmlEmails/01-Overview.md#use-it-in-a-server)).
 Declaring the types is worth it on its own: the template binds its calls when it is compiled, so it runs faster and
 reports errors when it is built instead of when it runs.

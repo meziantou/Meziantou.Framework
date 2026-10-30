@@ -76,8 +76,8 @@ A grapheme cluster is what a reader perceives as one character: a letter and its
 emoji sequence, a flag. Count, cut and reverse text by grapheme clusters, never by `char`: a `char` can be half of an
 emoji, or an accent without its letter.
 
-- `Unicode.EnumerateGraphemeClusters` enumerates the clusters of a text.
-- `Unicode.GetGraphemeClusterLength` gives the length of the first cluster of a text, in UTF-16 code units.
+- [Unicode.EnumerateGraphemeClusters](cref:Meziantou.Framework.Unicode.EnumerateGraphemeClusters) enumerates the clusters of a text.
+- [Unicode.GetGraphemeClusterLength](cref:Meziantou.Framework.Unicode.GetGraphemeClusterLength) gives the length of the first cluster of a text, in UTF-16 code units.
 
 For instance, to shorten a text to a maximum length without cutting a character:
 
@@ -106,11 +106,11 @@ Assert.Equal("Go ", Truncate("Go \U0001F1EB\U0001F1F7", 5)); // not half of the 
 
 ## Words
 
-`Unicode.EnumerateWordBoundaries` gives the segments between word boundaries: words, numbers, runs of spaces and
-punctuation marks. `CurrentKind` tells whether a segment is a word:
+[Unicode.EnumerateWordBoundaries](cref:Meziantou.Framework.Unicode.EnumerateWordBoundaries) gives the segments between word boundaries: words, numbers, runs of spaces and
+punctuation marks. [CurrentKind](cref:Meziantou.Framework.UnicodeWordEnumerator.CurrentKind) tells whether a segment is a word:
 
-- `None` for spaces, punctuation, symbols and emoji;
-- else `Number`, `Letter`, `Kana` or `Ideographic`, from the last character of the segment that is not a combining mark
+- [None](cref:Meziantou.Framework.UnicodeWordKind.None) for spaces, punctuation, symbols and emoji;
+- else [Number](cref:Meziantou.Framework.UnicodeWordKind.Number), [Letter](cref:Meziantou.Framework.UnicodeWordKind.Letter), [Kana](cref:Meziantou.Framework.UnicodeWordKind.Kana) or [Ideographic](cref:Meziantou.Framework.UnicodeWordKind.Ideographic), from the last character of the segment that is not a combining mark
   or a format character. A low line takes the kind of the character before it: `a_` is a letter word, `1_` a number.
 
 Chinese, Japanese, Thai, Lao, Khmer and Burmese are written without spaces between words: the default rules do not
@@ -119,6 +119,6 @@ find their words. The `Meziantou.Framework.Unicode.Dictionaries` package finds t
 
 ## Sentences
 
-`Unicode.EnumerateSentenceBoundaries` applies the default rules: the spaces after the terminal punctuation belong to
+[Unicode.EnumerateSentenceBoundaries](cref:Meziantou.Framework.Unicode.EnumerateSentenceBoundaries) applies the default rules: the spaces after the terminal punctuation belong to
 the sentence. There is no list of abbreviations: `Mr. Smith` is two sentences, while `e.g. the` (a full stop before a
 lowercase word), `U.S.A.` and `3.14` are not broken.

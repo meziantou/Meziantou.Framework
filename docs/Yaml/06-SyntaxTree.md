@@ -3,15 +3,15 @@ title: Syntax tree
 description: Parse YAML into tokens that keep the comments and the whitespace, with the position of each one, to build linters, formatters and editors.
 ---
 
-`YamlSyntaxTree` is the lossless representation of a YAML text: it keeps every character, including the comments, the
+[YamlSyntaxTree](cref:Meziantou.Framework.Yaml.Syntax.YamlSyntaxTree) is the lossless representation of a YAML text: it keeps every character, including the comments, the
 whitespace and the line breaks, and gives the position of every token. Use it for tools that must not disturb a file,
 such as a linter, a formatter, or a program that changes one value of a configuration file. Its types are in the
 [Meziantou.Framework.Yaml.Syntax](cref:Meziantou.Framework.Yaml.Syntax) namespace.
 
 ## Parse a text
 
-`YamlSyntaxTree.Parse` returns the tree. `Tokens` lists the tokens in order, each with its `Kind`, its `Text` and its
-`Span`; `ToFullString` returns the original text:
+[YamlSyntaxTree.Parse](cref:Meziantou.Framework.Yaml.Syntax.YamlSyntaxTree.Parse) returns the tree. [Tokens](cref:Meziantou.Framework.Yaml.Syntax.YamlSyntaxTree.Tokens) lists the tokens in order, each with its [Kind](cref:Meziantou.Framework.Yaml.Syntax.YamlSyntaxToken.Kind), its [Text](cref:Meziantou.Framework.Yaml.Syntax.YamlSyntaxToken.Text) and its
+`Span`; [ToFullString](cref:Meziantou.Framework.Yaml.Syntax.YamlSyntaxTree.ToFullString) returns the original text:
 
 <!-- ref:../../tests/Meziantou.Framework.Yaml.Tests/Syntax/YamlSyntaxTreeTests.cs;region=YamlSyntaxTree_Parse;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -48,14 +48,14 @@ Assert.Equal(yaml, tree.ToFullString());
 ```
 <!-- endref -->
 
-- A `Span` goes from a `Start` to an `End` position. A position (`Mark`) has an `Index` in the text, and a `Line` and
-  a `Column`, which start at `0`.
-- The comments, the whitespace and the line breaks are trivia tokens: `CommentTrivia`, `WhitespaceTrivia` and
-  `NewLineTrivia`. `IncludeTrivia` is `true` by default; set it to `false` to get the significant tokens only.
-- Some tokens mark a structure and have no text, such as `BlockMappingStart` or `Key`.
-- `Root` is the root node of the tree. Its `Span` covers the document, and its `FullSpan` also covers the trivia
+- A `Span` goes from a [Start](cref:Meziantou.Framework.Yaml.Syntax.YamlSourceSpan.Start) to an [End](cref:Meziantou.Framework.Yaml.Syntax.YamlSourceSpan.End) position. A position ([Mark](cref:Meziantou.Framework.Yaml.Mark)) has an [Index](cref:Meziantou.Framework.Yaml.Mark.Index) in the text, and a [Line](cref:Meziantou.Framework.Yaml.Mark.Line) and
+  a [Column](cref:Meziantou.Framework.Yaml.Mark.Column), which start at `0`.
+- The comments, the whitespace and the line breaks are trivia tokens: [CommentTrivia](cref:Meziantou.Framework.Yaml.Syntax.YamlSyntaxKind.CommentTrivia), [WhitespaceTrivia](cref:Meziantou.Framework.Yaml.Syntax.YamlSyntaxKind.WhitespaceTrivia) and
+  [NewLineTrivia](cref:Meziantou.Framework.Yaml.Syntax.YamlSyntaxKind.NewLineTrivia). [IncludeTrivia](cref:Meziantou.Framework.Yaml.Syntax.YamlSyntaxOptions.IncludeTrivia) is `true` by default; set it to `false` to get the significant tokens only.
+- Some tokens mark a structure and have no text, such as [BlockMappingStart](cref:Meziantou.Framework.Yaml.Syntax.YamlSyntaxKind.BlockMappingStart) or [Key](cref:Meziantou.Framework.Yaml.Syntax.YamlSyntaxKind.Key).
+- [Root](cref:Meziantou.Framework.Yaml.Syntax.YamlSyntaxTree.Root) is the root node of the tree. Its `Span` covers the document, and its [FullSpan](cref:Meziantou.Framework.Yaml.Syntax.YamlSyntaxNode.FullSpan) also covers the trivia
   around it.
-- `WriteTo` writes the original text to a `TextWriter`.
+- [WriteTo](cref:Meziantou.Framework.Yaml.Syntax.YamlSyntaxTree.WriteTo) writes the original text to a `TextWriter`.
 
 ## Edit a file without changing its layout
 

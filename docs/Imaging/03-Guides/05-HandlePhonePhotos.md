@@ -32,8 +32,8 @@ public static string ConvertHeic(string heicPath, string jpegPath)
 <!-- endref -->
 
 - The photo of a phone is a grid of tiles in the file; it loads as one image.
-- 8-bit photos load as `Rgb24`, 10-bit and 12-bit ones as `Rgb48`, so that no precision is lost.
-- The rotation of the camera is reported as `Metadata.Orientation`, never applied by the decoder. `AutoOrient` applies
+- 8-bit photos load as [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24), 10-bit and 12-bit ones as [Rgb48](cref:Meziantou.Framework.Imaging.Rgb48), so that no precision is lost.
+- The rotation of the camera is reported as `Metadata.Orientation`, never applied by the decoder. [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient) applies
   it.
 - Only the main image is read: the thumbnails, the depth maps, the gain maps and the other photos of a burst stored in
   the same file are ignored.
@@ -76,8 +76,8 @@ The same code handles HEIC, AVIF, JPEG and the other formats, since the format i
 
 A camera writes the pixels as its sensor reads them, and stores the rotation to apply as metadata: the EXIF orientation
 of a JPEG file, or the rotation and mirror properties of a HEIC or AVIF file. Viewers that read it show the photo
-upright; the others show it sideways. `AutoOrient` turns the pixels for the eight possible orientations and resets
-`Metadata.Orientation` to `TopLeft`, so the result looks the same everywhere, with or without metadata.
+upright; the others show it sideways. [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient) turns the pixels for the eight possible orientations and resets
+`Metadata.Orientation` to [TopLeft](cref:Meziantou.Framework.Imaging.Metadata.ExifOrientation.TopLeft), so the result looks the same everywhere, with or without metadata.
 
 Apply it before any operation that depends on the layout of the image: resizing to a box, cropping, drawing a
 watermark in a corner. See [Metadata and orientation](../09-Color/02-MetadataAndOrientation.md).
@@ -86,14 +86,14 @@ watermark in a corner. See [Metadata and orientation](../09-Color/02-MetadataAnd
 
 Recent phones capture colors that sRGB cannot show, and label their photos with an ICC profile such as Display P3, or,
 in AVIF and HEIC files, with a color description (`Metadata.Cicp`). The library keeps these labels and never converts
-the colors on its own. `ConvertColorProfile` converts the pixels and replaces the label:
+the colors on its own. [ConvertColorProfile](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ConvertColorProfile) converts the pixels and replaces the label:
 
 - Browsers show an image without profile as sRGB. Converting to sRGB lets you remove the profile and still get the right
   colors.
 - The tone mapping only matters for high dynamic range photos (PQ or HLG samples, from some AVIF files): converting them
-  requires `IccColorTransformOptions.ToneMapping`, which says how the highlights are compressed. For the other photos,
+  requires [IccColorTransformOptions.ToneMapping](cref:Meziantou.Framework.Imaging.IccColorTransformOptions.ToneMapping), which says how the highlights are compressed. For the other photos,
   it is ignored.
-- A grayscale image needs a grayscale profile: `IccProfile.SrgbGray`.
+- A grayscale image needs a grayscale profile: [IccProfile.SrgbGray](cref:Meziantou.Framework.Imaging.Metadata.IccProfile.SrgbGray).
 
 The example only converts the colors and removes the profile:
 
@@ -121,7 +121,7 @@ AVIF and HEIC files store it. See [Color management](../09-Color/03-ColorManagem
 ### Remove the metadata
 
 The EXIF data of a photo holds the GPS position, the date and the camera. Once the photo is upright and sRGB, nothing in
-the metadata is needed to display it: `MetadataHandling.Strip` writes none. To keep some of it, such as the copyright,
+the metadata is needed to display it: [MetadataHandling.Strip](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strip) writes none. To keep some of it, such as the copyright,
 see [Strip or edit metadata](08-StripOrEditMetadata.md).
 
 ### Choose the output
@@ -132,14 +132,14 @@ see [Strip or edit metadata](08-StripOrEditMetadata.md).
 | WebP | `Compression = WebPCompression.Lossy`, `Quality`; `AllowBitDepthReduction` |
 | HEIC or AVIF | `Compression` set to lossy, `Quality`; `AllowBitDepthReduction` writes 16-bit images with 12 bits, `BitDepth` chooses 8, 10 or 12 |
 
-Saving a HEIC photo as JPEG keeps its ICC profile and its EXIF block by default (`MetadataHandling.Strict`); converting
-it to a format that cannot store them throws until you choose `DiscardUnsupported` or `Strip`. See
+Saving a HEIC photo as JPEG keeps its ICC profile and its EXIF block by default ([MetadataHandling.Strict](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strict)); converting
+it to a format that cannot store them throws until you choose [DiscardUnsupported](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.DiscardUnsupported) or [Strip](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strip). See
 [HEIC](../10-Formats/14-Heic.md), [AVIF](../10-Formats/13-Avif.md) and [JPEG](../10-Formats/04-Jpeg.md).
 
 ## Large photos
 
-The photo of a recent phone has tens of millions of pixels, and an `Rgb48` image takes 6 bytes per pixel. The default
+The photo of a recent phone has tens of millions of pixels, and an [Rgb48](cref:Meziantou.Framework.Imaging.Rgb48) image takes 6 bytes per pixel. The default
 [resource limits](../05-LoadingAndSaving/07-ResourceLimits.md) allow 100 million pixels per frame and 512 MiB of live
-memory for an image and the operation working on it; raise them in an `ImageConfiguration` if your photos need more.
-With `ImageConfiguration.MaxDegreeOfParallelism` above 1, the tiles of a large HEIC photo are decoded by several
+memory for an image and the operation working on it; raise them in an [ImageConfiguration](cref:Meziantou.Framework.Imaging.ImageConfiguration) if your photos need more.
+With [ImageConfiguration.MaxDegreeOfParallelism](cref:Meziantou.Framework.Imaging.ImageConfiguration.MaxDegreeOfParallelism) above 1, the tiles of a large HEIC photo are decoded by several
 threads, and resizes use several threads too: see [Performance](../11-Performance.md).

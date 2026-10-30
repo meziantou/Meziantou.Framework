@@ -5,7 +5,7 @@ description: Read the pattern and the owners of each entry, find the entry that 
 
 ## Read the owners of an entry
 
-Each owner is a `CodeOwner`: its `Type` says how it is written, and its `Name` is the identifier without the leading
+Each owner is a [CodeOwner](cref:Meziantou.Framework.CodeOwners.CodeOwner): its [Type](cref:Meziantou.Framework.CodeOwners.CodeOwner.Type) says how it is written, and its [Name](cref:Meziantou.Framework.CodeOwners.CodeOwner.Name) is the identifier without the leading
 `@`:
 
 <!-- ref:../../tests/Meziantou.Framework.CodeOwners.Tests/CodeOwnersParserTests.cs;region=CodeOwners_Parse;format=md-fenced-code-block;dedent=true -->
@@ -19,11 +19,11 @@ Assert.Equal("docs@example.com", file.Entries[0].Owners[1].Name);
 ```
 <!-- endref -->
 
-| `CodeOwnerType` | Written as | `Name` |
+| [CodeOwnerType](cref:Meziantou.Framework.CodeOwners.CodeOwnerType) | Written as | [Name](cref:Meziantou.Framework.CodeOwners.CodeOwner.Name) |
 | --- | --- | --- |
-| `Username` | `@user` or `@org/team` | `user`, `org/team` |
-| `EmailAddress` | `user@example.com` | `user@example.com` |
-| `Role` | `@@developer`, `@@maintainer`, `@@owner` (GitLab only) | `developer`, `maintainer`, `owner` |
+| [Username](cref:Meziantou.Framework.CodeOwners.CodeOwnerType.Username) | `@user` or `@org/team` | `user`, `org/team` |
+| [EmailAddress](cref:Meziantou.Framework.CodeOwners.CodeOwnerType.EmailAddress) | `user@example.com` | `user@example.com` |
+| [Role](cref:Meziantou.Framework.CodeOwners.CodeOwnerType.Role) | `@@developer`, `@@maintainer`, `@@owner` (GitLab only) | `developer`, `maintainer`, `owner` |
 
 The parser does not check that a user, a team or an address exists: it only checks the syntax. A token that is neither
 a username nor an email address makes the file invalid. See [Handling errors](05-HandlingErrors.md).
@@ -64,7 +64,7 @@ The matcher of this example only handles the patterns it uses. A real one must f
 
 ## Patterns without owners
 
-An entry without owners has an empty `Owners` list: the entry explicitly leaves its pattern unowned. As resolution is
+An entry without owners has an empty [Owners](cref:Meziantou.Framework.CodeOwners.CodeOwnersEntry.Owners) list: the entry explicitly leaves its pattern unowned. As resolution is
 last-match-wins, the paths it matches have no owners, even when a previous entry matches them too:
 
 <!-- ref:../../tests/Meziantou.Framework.CodeOwners.Tests/CodeOwnersParserTests.cs;region=CodeOwners_UnownedPattern;format=md-fenced-code-block;dedent=true -->
@@ -87,7 +87,7 @@ Assert.Empty(generated.Owners);
 ## Escaped patterns
 
 A backslash escapes the next character of a pattern, so that a pattern can contain a space or start with `#`. The
-`Pattern` property holds the pattern without the backslashes:
+[Pattern](cref:Meziantou.Framework.CodeOwners.CodeOwnersEntry.Pattern) property holds the pattern without the backslashes:
 
 <!-- ref:../../tests/Meziantou.Framework.CodeOwners.Tests/CodeOwnersParserTests.cs;region=CodeOwners_EscapedPattern;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -126,12 +126,12 @@ Assert.Equal("[Docs][2] @docs-team", entry.Section?.ToString());
 ```
 <!-- endref -->
 
-- `CodeOwnersEntry.ToString` returns the pattern and the owners. The section header is not part of the entry: write
-  `CodeOwnersSection.ToString` on the line before.
-- `CodeOwner.ToString` returns `@user`, `@@role` or the email address.
+- [CodeOwnersEntry.ToString](cref:Meziantou.Framework.CodeOwners.CodeOwnersEntry.ToString) returns the pattern and the owners. The section header is not part of the entry: write
+  [CodeOwnersSection.ToString](cref:Meziantou.Framework.CodeOwners.CodeOwnersSection.ToString) on the line before.
+- [CodeOwner.ToString](cref:Meziantou.Framework.CodeOwners.CodeOwner.ToString) returns `@user`, `@@role` or the email address.
 - Comments are not kept, and an entry that got the default owners of its section writes them on its own line.
 
 ## Compare entries
 
-`CodeOwnersEntry`, `CodeOwner` and `CodeOwnersSection` have value equality: two entries are equal when they have the
+[CodeOwnersEntry](cref:Meziantou.Framework.CodeOwners.CodeOwnersEntry), [CodeOwner](cref:Meziantou.Framework.CodeOwners.CodeOwner) and [CodeOwnersSection](cref:Meziantou.Framework.CodeOwners.CodeOwnersSection) have value equality: two entries are equal when they have the
 same pattern, the same owners in the same order, and equal sections. The `==` and `!=` operators compare the same way.

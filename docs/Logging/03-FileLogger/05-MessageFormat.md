@@ -5,7 +5,7 @@ description: Choose what an entry contains, write JSON instead of text, or write
 
 ## The text format
 
-By default, `SimpleFileFormatter` writes one human-readable line per entry. The options choose the segments of the
+By default, [SimpleFileFormatter](cref:Meziantou.Extensions.Logging.SimpleFileFormatter) writes one human-readable line per entry. The options choose the segments of the
 line:
 
 <!-- ref:../../../tests/Meziantou.Extensions.Logging.FileLogger.Tests/FileLoggerProviderTests.cs;region=FileLogger_SimpleFormat;format=md-fenced-code-block;dedent=true -->
@@ -41,26 +41,26 @@ Assert.Equal(["[2024-01-02 03:04:05.000] [WARN] [Program] [EventId:7:Retry] => R
 
 | Option | Default | Segment |
 | --- | --- | --- |
-| `TimestampFormat` | `yyyy-MM-dd HH:mm:ss.fff` | `[2024-01-02 03:04:05.000]`; `null` omits the timestamp |
-| `UseUtcTimestamp` | `true` | The timestamp is in UTC; `false` uses the local time |
-| `IncludeLogLevel` | `true` | `[TRCE]`, `[DBUG]`, `[INFO]`, `[WARN]`, `[FAIL]` or `[CRIT]` |
-| `IncludeCategory` | `true` | `[Sample.Program]` |
-| `UseShortCategoryName` | `false` | Only the last segment of the category: `[Program]` |
-| `IncludeEventId` | `false` | `[EventId:7:Retry]`, the name being omitted when the event has none |
-| `IncludeThreadId` | `false` | `[ThreadId:12]`, the managed identifier of the thread that logged the message |
-| `IncludeActivityTracking` | `false` | `[TraceId:… SpanId:…]` of `Activity.Current`, when there is one |
-| `IncludeScopes` | `false` | `=> Request 42`, one segment per active scope |
+| [TimestampFormat](cref:Meziantou.Extensions.Logging.FileLoggerOptions.TimestampFormat) | `yyyy-MM-dd HH:mm:ss.fff` | `[2024-01-02 03:04:05.000]`; `null` omits the timestamp |
+| [UseUtcTimestamp](cref:Meziantou.Extensions.Logging.FileLoggerOptions.UseUtcTimestamp) | `true` | The timestamp is in UTC; `false` uses the local time |
+| [IncludeLogLevel](cref:Meziantou.Extensions.Logging.FileLoggerOptions.IncludeLogLevel) | `true` | `[TRCE]`, `[DBUG]`, `[INFO]`, `[WARN]`, `[FAIL]` or `[CRIT]` |
+| [IncludeCategory](cref:Meziantou.Extensions.Logging.FileLoggerOptions.IncludeCategory) | `true` | `[Sample.Program]` |
+| [UseShortCategoryName](cref:Meziantou.Extensions.Logging.FileLoggerOptions.UseShortCategoryName) | `false` | Only the last segment of the category: `[Program]` |
+| [IncludeEventId](cref:Meziantou.Extensions.Logging.FileLoggerOptions.IncludeEventId) | `false` | `[EventId:7:Retry]`, the name being omitted when the event has none |
+| [IncludeThreadId](cref:Meziantou.Extensions.Logging.FileLoggerOptions.IncludeThreadId) | `false` | `[ThreadId:12]`, the managed identifier of the thread that logged the message |
+| [IncludeActivityTracking](cref:Meziantou.Extensions.Logging.FileLoggerOptions.IncludeActivityTracking) | `false` | `[TraceId:… SpanId:…]` of `Activity.Current`, when there is one |
+| [IncludeScopes](cref:Meziantou.Extensions.Logging.FileLoggerOptions.IncludeScopes) | `false` | `=> Request 42`, one segment per active scope |
 
 The message follows the segments. The exception, when there is one, starts on the next line. To keep every entry on a
-single line, set `EscapeControlCharacters`: see [Security](07-Security.md#untrusted-data-in-the-messages).
+single line, set [EscapeControlCharacters](cref:Meziantou.Extensions.Logging.FileLoggerOptions.EscapeControlCharacters): see [Security](07-Security.md#untrusted-data-in-the-messages).
 
-`MinLevel` (default `Trace`) drops the messages below a level before they are formatted. The filters of the logging
+[MinLevel](cref:Meziantou.Extensions.Logging.FileLoggerOptions.MinLevel) (default `Trace`) drops the messages below a level before they are formatted. The filters of the logging
 configuration, such as `Logging:File:LogLevel`, apply too. An entry whose message is empty and that has no exception is
 not written.
 
 ## The JSON format
 
-`JsonFileFormatter` writes one JSON object per line. Select it with `FormatterName = FileFormatterNames.Json`, or with
+[JsonFileFormatter](cref:Meziantou.Extensions.Logging.JsonFileFormatter) writes one JSON object per line. Select it with `FormatterName = FileFormatterNames.Json`, or with
 `"FormatterName": "json"` in the configuration:
 
 <!-- ref:../../../tests/Meziantou.Extensions.Logging.FileLogger.Tests/FileLoggerProviderTests.cs;region=FileLogger_JsonFormat;format=md-fenced-code-block;dedent=true -->
@@ -103,7 +103,7 @@ The JSON writer escapes the control characters, so an entry always spans a singl
 
 ## Write your own formatter
 
-Derive from `FileFormatter` and write the entry to the `TextWriter` it receives. The provider adds the line terminator:
+Derive from [FileFormatter](cref:Meziantou.Extensions.Logging.FileFormatter) and write the entry to the `TextWriter` it receives. The provider adds the line terminator:
 
 <!-- ref:../../../tests/Meziantou.Extensions.Logging.FileLogger.Tests/FileLoggerProviderTests.cs;region=FileFormatter_Example;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -119,7 +119,7 @@ internal sealed class CsvFileFormatter() : FileFormatter("csv")
 ```
 <!-- endref -->
 
-Set an instance in `FileLoggerOptions.Formatter`; it takes precedence over `FormatterName`:
+Set an instance in [FileLoggerOptions.Formatter](cref:Meziantou.Extensions.Logging.FileLoggerOptions.Formatter); it takes precedence over [FormatterName](cref:Meziantou.Extensions.Logging.FileLoggerOptions.FormatterName):
 
 <!-- ref:../../../tests/Meziantou.Extensions.Logging.FileLogger.Tests/FileLoggerProviderTests.cs;region=FileLogger_CustomFormatter;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -127,8 +127,8 @@ options.Formatter = new CsvFileFormatter();
 ```
 <!-- endref -->
 
-- `Write` runs on the thread that logs the message, so it can read the ambient state, such as `Activity.Current`.
-- `timestamp` is already in the time zone selected by `UseUtcTimestamp`. `scopeProvider` is `null` when
-  `IncludeScopes` is `false`.
+- [Write](cref:Meziantou.Extensions.Logging.FileFormatter.Write) runs on the thread that logs the message, so it can read the ambient state, such as `Activity.Current`.
+- `timestamp` is already in the time zone selected by [UseUtcTimestamp](cref:Meziantou.Extensions.Logging.FileLoggerOptions.UseUtcTimestamp). `scopeProvider` is `null` when
+  [IncludeScopes](cref:Meziantou.Extensions.Logging.FileLoggerOptions.IncludeScopes) is `false`.
 - Writing nothing skips the entry.
-- `GetLogLevelString` returns the four-letter names of the levels used by the built-in formatters.
+- [GetLogLevelString](cref:Meziantou.Extensions.Logging.FileFormatter.GetLogLevelString) returns the four-letter names of the levels used by the built-in formatters.

@@ -5,7 +5,7 @@ description: Read the properties of a code point (category, classes, case mappin
 
 ## Read a property
 
-`UnicodeProperties` gives the properties that text processing needs. Every method takes a code point as an `int` and
+[UnicodeProperties](cref:Meziantou.Framework.UnicodeProperties) gives the properties that text processing needs. Every method takes a code point as an `int` and
 never allocates: the value is read from a table.
 
 <!-- ref:../../tests/Meziantou.Framework.Unicode.Tests/UnicodeTests.cs;region=Unicode_Properties;format=md-fenced-code-block;dedent=true -->
@@ -35,25 +35,25 @@ Assert.Equal([new UnicodeRange('0', '9'), new UnicodeRange('A', 'F'), new Unicod
 
 | Area | Methods |
 | --- | --- |
-| General | `GetGeneralCategory`, `GetCanonicalCombiningClass`, `IsDefaultIgnorable` |
-| Segmentation | `GetGraphemeClusterBreak`, `GetWordBreak`, `GetSentenceBreak`, `GetLineBreakClass`, `GetIndicConjunctBreak` |
-| Bidirectional text | `GetBidiClass`, `IsBidiMirrored`, `TryGetBidiMirroringGlyph`, `GetBidiPairedBracketType`, `TryGetBidiPairedBracket` |
-| Layout and shaping | `GetEastAsianWidth`, `GetVerticalOrientation`, `GetJoiningType`, `GetJoiningGroup`, `GetIndicSyllabicCategory`, `GetIndicPositionalCategory` |
-| Identifiers | `IsIdStart`, `IsIdContinue` (UAX #31) |
-| Case | `ToSimpleLowercase`, `ToSimpleUppercase`, `ToSimpleTitlecase`, `ToSimpleCaseFold`, `GetLowercaseMapping`, `GetUppercaseMapping`, `GetTitlecaseMapping`, `IsCased`, `IsCaseIgnorable`, `IsSoftDotted` |
-| Binary properties | `HasBinaryProperty`, `GetBinaryPropertyRanges` |
+| General | [GetGeneralCategory](cref:Meziantou.Framework.UnicodeProperties.GetGeneralCategory), [GetCanonicalCombiningClass](cref:Meziantou.Framework.UnicodeProperties.GetCanonicalCombiningClass), [IsDefaultIgnorable](cref:Meziantou.Framework.UnicodeProperties.IsDefaultIgnorable) |
+| Segmentation | [GetGraphemeClusterBreak](cref:Meziantou.Framework.UnicodeProperties.GetGraphemeClusterBreak), [GetWordBreak](cref:Meziantou.Framework.UnicodeProperties.GetWordBreak), [GetSentenceBreak](cref:Meziantou.Framework.UnicodeProperties.GetSentenceBreak), [GetLineBreakClass](cref:Meziantou.Framework.UnicodeProperties.GetLineBreakClass), [GetIndicConjunctBreak](cref:Meziantou.Framework.UnicodeProperties.GetIndicConjunctBreak) |
+| Bidirectional text | [GetBidiClass](cref:Meziantou.Framework.UnicodeProperties.GetBidiClass), [IsBidiMirrored](cref:Meziantou.Framework.UnicodeProperties.IsBidiMirrored), [TryGetBidiMirroringGlyph](cref:Meziantou.Framework.UnicodeProperties.TryGetBidiMirroringGlyph), [GetBidiPairedBracketType](cref:Meziantou.Framework.UnicodeProperties.GetBidiPairedBracketType), [TryGetBidiPairedBracket](cref:Meziantou.Framework.UnicodeProperties.TryGetBidiPairedBracket) |
+| Layout and shaping | [GetEastAsianWidth](cref:Meziantou.Framework.UnicodeProperties.GetEastAsianWidth), [GetVerticalOrientation](cref:Meziantou.Framework.UnicodeProperties.GetVerticalOrientation), [GetJoiningType](cref:Meziantou.Framework.UnicodeProperties.GetJoiningType), [GetJoiningGroup](cref:Meziantou.Framework.UnicodeProperties.GetJoiningGroup), [GetIndicSyllabicCategory](cref:Meziantou.Framework.UnicodeProperties.GetIndicSyllabicCategory), [GetIndicPositionalCategory](cref:Meziantou.Framework.UnicodeProperties.GetIndicPositionalCategory) |
+| Identifiers | [IsIdStart](cref:Meziantou.Framework.UnicodeProperties.IsIdStart), [IsIdContinue](cref:Meziantou.Framework.UnicodeProperties.IsIdContinue) (UAX #31) |
+| Case | [ToSimpleLowercase](cref:Meziantou.Framework.UnicodeProperties.ToSimpleLowercase), [ToSimpleUppercase](cref:Meziantou.Framework.UnicodeProperties.ToSimpleUppercase), [ToSimpleTitlecase](cref:Meziantou.Framework.UnicodeProperties.ToSimpleTitlecase), [ToSimpleCaseFold](cref:Meziantou.Framework.UnicodeProperties.ToSimpleCaseFold), [GetLowercaseMapping](cref:Meziantou.Framework.UnicodeProperties.GetLowercaseMapping), [GetUppercaseMapping](cref:Meziantou.Framework.UnicodeProperties.GetUppercaseMapping), [GetTitlecaseMapping](cref:Meziantou.Framework.UnicodeProperties.GetTitlecaseMapping), [IsCased](cref:Meziantou.Framework.UnicodeProperties.IsCased), [IsCaseIgnorable](cref:Meziantou.Framework.UnicodeProperties.IsCaseIgnorable), [IsSoftDotted](cref:Meziantou.Framework.UnicodeProperties.IsSoftDotted) |
+| Binary properties | [HasBinaryProperty](cref:Meziantou.Framework.UnicodeProperties.HasBinaryProperty), [GetBinaryPropertyRanges](cref:Meziantou.Framework.UnicodeProperties.GetBinaryPropertyRanges) |
 
-- `HasBinaryProperty` and `GetBinaryPropertyRanges` cover the binary properties of the Unicode Character Database
-  (`Alphabetic`, `White_Space`, `Changes_When_Casefolded`, the emoji properties...), except the contributory `Other_*`
+- [HasBinaryProperty](cref:Meziantou.Framework.UnicodeProperties.HasBinaryProperty) and [GetBinaryPropertyRanges](cref:Meziantou.Framework.UnicodeProperties.GetBinaryPropertyRanges) cover the binary properties of the Unicode Character Database
+  ([Alphabetic](cref:Meziantou.Framework.UnicodeBinaryProperty.Alphabetic), `White_Space`, `Changes_When_Casefolded`, the emoji properties...), except the contributory `Other_*`
   properties.
-- An unassigned code point has the default value the standard gives to its range, for instance `RightToLeft` in the
+- An unassigned code point has the default value the standard gives to its range, for instance [RightToLeft](cref:Meziantou.Framework.UnicodeBidirectionalCategory.RightToLeft) in the
   Hebrew block. An integer that is not a code point has the default value of the property.
-- The numeric values of the enumerations (`UnicodeScript`, `UnicodeLineBreakClass`, ...) never change: a later version
+- The numeric values of the enumerations ([UnicodeScript](cref:Meziantou.Framework.UnicodeScript), [UnicodeLineBreakClass](cref:Meziantou.Framework.UnicodeLineBreakClass), ...) never change: a later version
   of the standard only adds values. You can store them.
 
 ## Map the case of a code point
 
-The simple mappings (`ToSimpleUppercase`...) map a code point to one code point. The full mappings can give several:
+The simple mappings ([ToSimpleUppercase](cref:Meziantou.Framework.UnicodeProperties.ToSimpleUppercase)...) map a code point to one code point. The full mappings can give several:
 the German sharp s is `SS` in uppercase.
 
 <!-- ref:../../tests/Meziantou.Framework.Unicode.Tests/UnicodeTests.cs;region=Unicode_CaseMappings;format=md-fenced-code-block;dedent=true -->
@@ -73,13 +73,13 @@ Assert.Equal<int>(['i', 0x0307], mapping[..length]);
 
 The full mappings of a code point are the mappings of `SpecialCasing.txt` that apply everywhere, else the simple
 mappings. The mappings that depend on the language (Turkish, Lithuanian) or on the context (the final sigma of Greek)
-need the text around the code point: convert a whole text with `UnicodeCaseMapping`, described in
-[Case conversion](05-CaseConversion.md). `ToSimpleCaseFold` is the simple case folding of `CaseFolding.txt`, to compare
+need the text around the code point: convert a whole text with [UnicodeCaseMapping](cref:Meziantou.Framework.UnicodeCaseMapping), described in
+[Case conversion](05-CaseConversion.md). [ToSimpleCaseFold](cref:Meziantou.Framework.UnicodeProperties.ToSimpleCaseFold) is the simple case folding of `CaseFolding.txt`, to compare
 texts without case.
 
 ## Blocks and emoji
 
-`UnicodeBlocks` has a property per block of the standard, and `UnicodeEmoji` the emoji properties of
+[UnicodeBlocks](cref:Meziantou.Framework.UnicodeBlocks) has a property per block of the standard, and [UnicodeEmoji](cref:Meziantou.Framework.UnicodeEmoji) the emoji properties of
 [UTS #51](https://www.unicode.org/reports/tr51/):
 
 <!-- ref:../../tests/Meziantou.Framework.Unicode.Tests/UnicodeTests.cs;region=Unicode_BlocksAndEmoji;format=md-fenced-code-block;dedent=true -->
@@ -99,16 +99,16 @@ Assert.Contains("\U0001F1EB\U0001F1F7", flags);
 
 - A block is a range of code points with a name. It says where a character was allocated, not what it is: to know the
   writing system of a character, use its script (see [Scripts](04-Scripts.md)).
-- `UnicodeEmoji.GetSequences` lists the emoji that are sequences of code points (flags, keycaps, people with a skin
+- [UnicodeEmoji.GetSequences](cref:Meziantou.Framework.UnicodeEmoji.GetSequences) lists the emoji that are sequences of code points (flags, keycaps, people with a skin
   tone, sequences joined with U+200D), from the properties of strings of UTS #51.
 - An emoji is often more than one code point: to count or cut emoji, use grapheme clusters (see
   [Text segmentation](07-TextSegmentation.md)).
 
 ## Get the full record of a character
 
-`Unicode.GetCharacterInfo` gives everything the Unicode Character Database says about a character, including its name.
+[Unicode.GetCharacterInfo](cref:Meziantou.Framework.Unicode.GetCharacterInfo) gives everything the Unicode Character Database says about a character, including its name.
 It is meant for inspection tools, such as a character map; to read one property of many code points, prefer
-`UnicodeProperties`.
+[UnicodeProperties](cref:Meziantou.Framework.UnicodeProperties).
 
 <!-- ref:../../tests/Meziantou.Framework.Unicode.Tests/UnicodeTests.cs;region=Unicode_GetCharacterInfo;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -122,5 +122,5 @@ Assert.Equal("Basic Latin", info.Value.Block.Name);
 ```
 <!-- endref -->
 
-`GetCharacterInfo` returns `null` for a code point the Unicode data does not list, and `TryGetCharacterInfo` returns
-`false`. `Unicode.AllCharacters` lists the records of the Unicode data.
+[GetCharacterInfo](cref:Meziantou.Framework.Unicode.GetCharacterInfo) returns `null` for a code point the Unicode data does not list, and [TryGetCharacterInfo](cref:Meziantou.Framework.Unicode.TryGetCharacterInfo) returns
+`false`. [Unicode.AllCharacters](cref:Meziantou.Framework.Unicode.AllCharacters) lists the records of the Unicode data.

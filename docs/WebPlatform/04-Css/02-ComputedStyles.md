@@ -46,22 +46,22 @@ Assert.Equal("none", context.Window.GetComputedStyle(nav).Display);
 - `GetComputedStyle(element, "::before")` reads the styles of a pseudo-element.
 
 The computed styles only exist for the elements of a document loaded in a browsing context. For an element that is not
-connected, or a document parsed by `HtmlDocumentParser`, the declarations are empty.
+connected, or a document parsed by [HtmlDocumentParser](cref:Meziantou.Framework.WebPlatform.HtmlDocumentParser), the declarations are empty.
 
 ## The viewport and the preferences of the user
 
-The media queries and the viewport units (`vw`, `vh`...) use the `ViewportOptions` of the browsing context: its size
+The media queries and the viewport units (`vw`, `vh`...) use the [ViewportOptions](cref:Meziantou.Framework.WebPlatform.Dom.ViewportOptions) of the browsing context: its size
 (800x600 CSS pixels by default), its device pixel ratio, the media type (`screen` or `print`), and the preferences of the
-user, such as `PreferredColorScheme`, `PreferredContrast`, `PrefersReducedMotion` and the forced colors mode. Set
-`BrowsingContext.Viewport` to change them: the styles and the layout follow. See
+user, such as [PreferredColorScheme](cref:Meziantou.Framework.WebPlatform.Dom.PreferredColorScheme), [PreferredContrast](cref:Meziantou.Framework.WebPlatform.Dom.PreferredContrast), [PrefersReducedMotion](cref:Meziantou.Framework.WebPlatform.Dom.ViewportOptions.PrefersReducedMotion) and the forced colors mode. Set
+[BrowsingContext.Viewport](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContext.Viewport) to change them: the styles and the layout follow. See
 [Viewport and devices](../05-LoadingPages/04-ViewportAndDevices.md).
 
 `Window.MatchMedia(query)` evaluates a media query, as `matchMedia()` does in a browser.
 
 ## Typed values
 
-`Element.ComputedStyleMap()` returns the same values as objects (a length is a number and a unit, a keyword is a
-`CssKeywordValue`): see [Typed values](04-TypedValues.md).
+[Element.ComputedStyleMap()](cref:Meziantou.Framework.WebPlatform.Dom.Element.ComputedStyleMap) returns the same values as objects (a length is a number and a unit, a keyword is a
+[CssKeywordValue](cref:Meziantou.Framework.WebPlatform.Css.TypedOm.CssKeywordValue)): see [Typed values](04-TypedValues.md).
 
 ## Animations and transitions
 

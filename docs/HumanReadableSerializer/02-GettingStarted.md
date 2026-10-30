@@ -16,7 +16,7 @@ They check their results with assertions such as `Assert.Equal`, which show the 
 
 ## Serialize an object
 
-`HumanReadableSerializer.Serialize` returns the text of any value:
+[HumanReadableSerializer.Serialize](cref:Meziantou.Framework.HumanReadable.HumanReadableSerializer.Serialize) returns the text of any value:
 
 <!-- ref:../../tests/Meziantou.Framework.HumanReadableSerializer.Tests/HumanReadableSerializerOptionsTests.cs;region=HumanReadableSerializer_GettingStarted;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -60,7 +60,7 @@ Assert.Equal("""
 
 ## Pass options
 
-`HumanReadableSerializerOptions` changes what is written, for instance to skip the `null` values:
+[HumanReadableSerializerOptions](cref:Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions) changes what is written, for instance to skip the `null` values:
 
 <!-- ref:../../tests/Meziantou.Framework.HumanReadableSerializer.Tests/SerializerTests.cs;region=HumanReadableSerializerOptions_Serialize;format=md-fenced-code-block;dedent=true -->
 ```csharp

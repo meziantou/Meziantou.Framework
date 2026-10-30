@@ -10,7 +10,7 @@ way. The types are in the [Meziantou.Framework.DnsFilter](cref:Meziantou.Framewo
 
 ## Evaluate a domain
 
-Add lists to a `DnsFilterRuleSet`, build a `DnsFilterEngine` from it, and call `Evaluate`:
+Add lists to a [DnsFilterRuleSet](cref:Meziantou.Framework.DnsFilter.DnsFilterRuleSet), build a [DnsFilterEngine](cref:Meziantou.Framework.DnsFilter.DnsFilterEngine) from it, and call [Evaluate](cref:Meziantou.Framework.DnsFilter.DnsFilterEngine.Evaluate):
 
 <!-- ref:../../../tests/Meziantou.Framework.DnsFilter.Tests/DnsFilterEngineTests.cs;region=DnsFilter_AdGuard;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -33,28 +33,28 @@ Assert.Equal(DnsFilterAction.Allow, engine.Evaluate("safe.example.com").Action);
 ```
 <!-- endref -->
 
-`Evaluate` takes the queried name, the query type (`DnsFilterQueryType.A` by default) and information about the client
-(see [Client rules](04-ClientRules.md)), and returns a `DnsFilterResult`:
+[Evaluate](cref:Meziantou.Framework.DnsFilter.DnsFilterEngine.Evaluate) takes the queried name, the query type ([DnsFilterQueryType.A](cref:Meziantou.Framework.DnsFilter.DnsFilterQueryType.A) by default) and information about the client
+(see [Client rules](04-ClientRules.md)), and returns a [DnsFilterResult](cref:Meziantou.Framework.DnsFilter.DnsFilterResult):
 
 | Member | Contains |
 | --- | --- |
-| `Action` | `None` (no rule matched), `Block`, `Allow` (an exception rule matched) or `Rewrite` (see [Rewrites](05-Rewrites.md)) |
-| `IsMatched` | `true` when a rule matched, whatever its action |
-| `MatchingRule` | The rule that decided, with its `OriginalText` |
-| `Rewrite` | The rewrite directive, when `Action` is `Rewrite` |
+| [Action](cref:Meziantou.Framework.DnsFilter.DnsFilterResult.Action) | [None](cref:Meziantou.Framework.DnsFilter.DnsFilterAction.None) (no rule matched), `Block`, [Allow](cref:Meziantou.Framework.DnsFilter.DnsFilterAction.Allow) (an exception rule matched) or [Rewrite](cref:Meziantou.Framework.DnsFilter.DnsFilterResult.Rewrite) (see [Rewrites](05-Rewrites.md)) |
+| [IsMatched](cref:Meziantou.Framework.DnsFilter.DnsFilterResult.IsMatched) | `true` when a rule matched, whatever its action |
+| [MatchingRule](cref:Meziantou.Framework.DnsFilter.DnsFilterResult.MatchingRule) | The rule that decided, with its [OriginalText](cref:Meziantou.Framework.DnsFilter.DnsFilterRule.OriginalText) |
+| [Rewrite](cref:Meziantou.Framework.DnsFilter.DnsFilterResult.Rewrite) | The rewrite directive, when [Action](cref:Meziantou.Framework.DnsFilter.DnsFilterResult.Action) is [Rewrite](cref:Meziantou.Framework.DnsFilter.DnsFilterResult.Rewrite) |
 
-`None` is the default value of `DnsFilterAction`: an unmatched query never reads as blocked. Treat `None` and `Allow`
+[None](cref:Meziantou.Framework.DnsFilter.DnsFilterAction.None) is the default value of [DnsFilterAction](cref:Meziantou.Framework.DnsFilter.DnsFilterAction): an unmatched query never reads as blocked. Treat [None](cref:Meziantou.Framework.DnsFilter.DnsFilterAction.None) and [Allow](cref:Meziantou.Framework.DnsFilter.DnsFilterAction.Allow)
 the same way, by resolving the query, unless you need to know that an exception rule matched.
 
 Matching ignores case and a trailing dot, and converts internationalized names to their punycode form, both in the
-rules and in the queried name. `Evaluate` does not throw for malformed or hostile names.
+rules and in the queried name. [Evaluate](cref:Meziantou.Framework.DnsFilter.DnsFilterEngine.Evaluate) does not throw for malformed or hostile names.
 
 ## Thread safety
 
-- `Evaluate` can be called concurrently.
-- `Reload` replaces the rules atomically, while other threads evaluate. See
+- [Evaluate](cref:Meziantou.Framework.DnsFilter.DnsFilterEngine.Evaluate) can be called concurrently.
+- [Reload](cref:Meziantou.Framework.DnsFilter.DnsFilterEngine.Reload) replaces the rules atomically, while other threads evaluate. See
   [Reload the rules](02-FilterLists.md#reload-the-rules).
-- `DnsFilterRuleSet` is not thread-safe, but the engine takes a snapshot of it when it is built: changing the rule set
+- [DnsFilterRuleSet](cref:Meziantou.Framework.DnsFilter.DnsFilterRuleSet) is not thread-safe, but the engine takes a snapshot of it when it is built: changing the rule set
   afterwards does not change an engine built from it.
 
 ## Pages

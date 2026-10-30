@@ -5,7 +5,7 @@ description: Convert Markdown to plain text for search indexes and previews, nor
 
 ## Plain text
 
-`MarkdownConverter.ToPlainText` renders the text of the document without any markup, for instance for a search index,
+[MarkdownConverter.ToPlainText](cref:Meziantou.Framework.Markdown.MarkdownConverter.ToPlainText) renders the text of the document without any markup, for instance for a search index,
 the summary of a page or a notification:
 
 <!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/TestPlainText.cs;region=MarkdownConverter_ToPlainText;format=md-fenced-code-block;dedent=true -->
@@ -22,8 +22,8 @@ Assert.Equal("Title\nSome bold text and a link.\nFirst\nSecond\n", text);
 
 ## Normalized Markdown
 
-`MarkdownConverter.Normalize` parses the Markdown and writes it back in a consistent style: `#` headings instead of
-underlined ones, one blank line between blocks. `NormalizeOptions` (namespace
+[MarkdownConverter.Normalize](cref:Meziantou.Framework.Markdown.MarkdownConverter.Normalize) parses the Markdown and writes it back in a consistent style: `#` headings instead of
+underlined ones, one blank line between blocks. [NormalizeOptions](cref:Meziantou.Framework.Markdown.Renderers.Normalize.NormalizeOptions) (namespace
 [Meziantou.Framework.Markdown.Renderers.Normalize](cref:Meziantou.Framework.Markdown.Renderers.Normalize)) changes the style:
 
 <!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/TestNormalize.cs;region=NormalizeOptions_Usage;format=md-fenced-code-block;dedent=true -->
@@ -43,12 +43,12 @@ Assert.Equal("# Title\n- First\n- Second", MarkdownConverter.Normalize(markdown,
 
 | Option | Default | Effect |
 | --- | --- | --- |
-| `ListItemCharacter` | `null` | The bullet of the list items (`-`, `*` or `+`); `null` keeps the bullet of the source |
-| `EmptyLineAfterHeading` | `true` | Adds a blank line after a heading |
-| `EmptyLineAfterCodeBlock` | `true` | Adds a blank line after a code block |
-| `EmptyLineAfterThematicBreak` | `true` | Adds a blank line after a thematic break |
-| `SpaceAfterQuoteBlock` | `true` | Adds a space after the `>` of a quote |
-| `ExpandAutoLinks` | `true` | Expands automatic links to the normal inline representation |
+| [ListItemCharacter](cref:Meziantou.Framework.Markdown.Renderers.Normalize.NormalizeOptions.ListItemCharacter) | `null` | The bullet of the list items (`-`, `*` or `+`); `null` keeps the bullet of the source |
+| [EmptyLineAfterHeading](cref:Meziantou.Framework.Markdown.Renderers.Normalize.NormalizeOptions.EmptyLineAfterHeading) | `true` | Adds a blank line after a heading |
+| [EmptyLineAfterCodeBlock](cref:Meziantou.Framework.Markdown.Renderers.Normalize.NormalizeOptions.EmptyLineAfterCodeBlock) | `true` | Adds a blank line after a code block |
+| [EmptyLineAfterThematicBreak](cref:Meziantou.Framework.Markdown.Renderers.Normalize.NormalizeOptions.EmptyLineAfterThematicBreak) | `true` | Adds a blank line after a thematic break |
+| [SpaceAfterQuoteBlock](cref:Meziantou.Framework.Markdown.Renderers.Normalize.NormalizeOptions.SpaceAfterQuoteBlock) | `true` | Adds a space after the `>` of a quote |
+| [ExpandAutoLinks](cref:Meziantou.Framework.Markdown.Renderers.Normalize.NormalizeOptions.ExpandAutoLinks) | `true` | Expands automatic links to the normal inline representation |
 
 To normalize a document after changing its tree, see
 [Normalize the document](07-EditingDocuments.md#normalize-the-document). To write it back without changing its
@@ -59,10 +59,10 @@ formatting, see [Keep the formatting](07-EditingDocuments.md#keep-the-formatting
 A renderer converts the tree to an output format. To write another format, such as a terminal output or another markup
 language:
 
-1. Derive a class from `TextRendererBase<T>` (namespace [Meziantou.Framework.Markdown.Renderers](cref:Meziantou.Framework.Markdown.Renderers)) for a text format, or
-   implement `IMarkdownRenderer`.
-2. Add one object renderer per element type to `ObjectRenderers`: a class derived from
-   `MarkdownObjectRenderer<TRenderer, TObject>` whose `Write` method writes the element, and calls
+1. Derive a class from [TextRendererBase\<T\>](cref:Meziantou.Framework.Markdown.Renderers.TextRendererBase{T}) (namespace [Meziantou.Framework.Markdown.Renderers](cref:Meziantou.Framework.Markdown.Renderers)) for a text format, or
+   implement [IMarkdownRenderer](cref:Meziantou.Framework.Markdown.Renderers.IMarkdownRenderer).
+2. Add one object renderer per element type to [ObjectRenderers](cref:Meziantou.Framework.Markdown.Renderers.IMarkdownRenderer.ObjectRenderers): a class derived from
+   [MarkdownObjectRenderer\<TRenderer, TObject\>](cref:Meziantou.Framework.Markdown.Renderers.MarkdownObjectRenderer{TRenderer,TObject}) whose [Write](cref:Meziantou.Framework.Markdown.Renderers.MarkdownObjectRenderer{TRenderer,TObject}.Write) method writes the element, and calls
    `renderer.WriteChildren` or `renderer.WriteLeafInline` for its content.
 3. Render a document with `renderer.Render(document)` after `pipeline.Setup(renderer)`, or call
    `MarkdownConverter.Convert(markdown, renderer, pipeline)`.

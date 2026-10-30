@@ -40,14 +40,14 @@ public static Image? TryLoad(string path, ImageConfiguration configuration)
 ```
 <!-- endref -->
 
-These exceptions derive from `ImageException`, which you can catch to handle them all at once:
+These exceptions derive from [ImageException](cref:Meziantou.Framework.Imaging.ImageException), which you can catch to handle them all at once:
 
 | Exception | Meaning |
 | --- | --- |
-| `UnknownImageFormatException` | The content is not recognized as an image format. |
-| `InvalidImageContentException` | The format is recognized, but the data is malformed, inconsistent or truncated. Also thrown when you save a malformed EXIF, ICC or XMP payload. `Format` tells the format. |
-| `UnsupportedImageFeatureException` | The data uses a valid feature that the library does not support (a hierarchical JPEG, for example), or an operation would lose information without an explicit setting: an animation, transparency, precision, metadata, a cursor hotspot, a poster frame, a color profile, a duration or a play count the output cannot store. `Format` and `Feature` tell what. |
-| `ImageResourceLimitException` | A [resource limit](07-ResourceLimits.md) was exceeded. `Kind`, `Limit` and `Requested` tell which one and by how much. |
+| [UnknownImageFormatException](cref:Meziantou.Framework.Imaging.UnknownImageFormatException) | The content is not recognized as an image format. |
+| [InvalidImageContentException](cref:Meziantou.Framework.Imaging.InvalidImageContentException) | The format is recognized, but the data is malformed, inconsistent or truncated. Also thrown when you save a malformed EXIF, ICC or XMP payload. [Format](cref:Meziantou.Framework.Imaging.InvalidImageContentException.Format) tells the format. |
+| [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException) | The data uses a valid feature that the library does not support (a hierarchical JPEG, for example), or an operation would lose information without an explicit setting: an animation, transparency, precision, metadata, a cursor hotspot, a poster frame, a color profile, a duration or a play count the output cannot store. [Format](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException.Format) and [Feature](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException.Feature) tell what. |
+| [ImageResourceLimitException](cref:Meziantou.Framework.Imaging.ImageResourceLimitException) | A [resource limit](07-ResourceLimits.md) was exceeded. [Kind](cref:Meziantou.Framework.Imaging.ImageResourceLimitException.Kind), [Limit](cref:Meziantou.Framework.Imaging.ImageResourceLimitException.Limit) and [Requested](cref:Meziantou.Framework.Imaging.ImageResourceLimitException.Requested) tell which one and by how much. |
 
 A malformed or truncated input always throws: it is never reported as the clean end of an animation, and never
 returns a partial image.
@@ -58,7 +58,7 @@ The other failures use the standard .NET exceptions:
 
 | Exception | Meaning |
 | --- | --- |
-| `ArgumentException` and derived types | An invalid argument: a file extension `Save` does not know, frames of different sizes, a stream that cannot be read or written, … |
+| `ArgumentException` and derived types | An invalid argument: a file extension [Save](cref:Meziantou.Framework.Imaging.Image.Save) does not know, frames of different sizes, a stream that cannot be read or written, … |
 | `NotSupportedException` | A pixel type that is not one of the [pixel formats](../04-Concepts/05-PixelFormats.md), thrown before any I/O |
 | `InvalidOperationException` | An invalid state: a conflicting [lease](../04-Concepts/04-OwnershipAndLifetimes.md#leases), overlapping calls to a reader or a writer, a call to a reader or a writer that failed before |
 | `ObjectDisposedException` | A disposed image, or a frame that was removed or whose image was disposed |
@@ -69,13 +69,13 @@ These usually point at a bug in the calling code or at the environment, not at t
 
 ## What to catch where
 
-- **Loading user uploads**: catch `UnknownImageFormatException`, `InvalidImageContentException` and
-  `UnsupportedImageFeatureException` as invalid input, and `ImageResourceLimitException` as input that is too large.
+- **Loading user uploads**: catch [UnknownImageFormatException](cref:Meziantou.Framework.Imaging.UnknownImageFormatException), [InvalidImageContentException](cref:Meziantou.Framework.Imaging.InvalidImageContentException) and
+  [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException) as invalid input, and [ImageResourceLimitException](cref:Meziantou.Framework.Imaging.ImageResourceLimitException) as input that is too large.
   See [Process untrusted uploads](../03-Guides/07-ProcessUntrustedUploads.md).
-- **Saving**: an `UnsupportedImageFeatureException` means the format cannot store the image as it is. Choose the
+- **Saving**: an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException) means the format cannot store the image as it is. Choose the
   conversion on the encoder rather than catching it: see [Saving images](04-SavingImages.md). The file is not written,
   and an existing file is left untouched.
-- **Processing**: an `ImageResourceLimitException` from a geometry change leaves the image unchanged. See
+- **Processing**: an [ImageResourceLimitException](cref:Meziantou.Framework.Imaging.ImageResourceLimitException) from a geometry change leaves the image unchanged. See
   [Thread safety and atomicity](../04-Concepts/06-ThreadSafetyAndAtomicity.md).
 
 The messages of the exceptions are meant for people and may change between versions: test the type and the

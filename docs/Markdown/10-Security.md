@@ -9,7 +9,7 @@ apply all the measures below.
 
 ## Disable raw HTML
 
-CommonMark copies raw HTML to the output unchanged. `DisableHtml` writes it as escaped text instead:
+CommonMark copies raw HTML to the output unchanged. [DisableHtml](cref:Meziantou.Framework.Markdown.MarkdownExtensions.DisableHtml) writes it as escaped text instead:
 
 <!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/TestCoreApi.cs;region=MarkdownExtensions_DisableHtml;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -24,7 +24,7 @@ Assert.Equal("<p>&lt;script&gt;alert(1)&lt;/script&gt;</p>\n<p>Some &lt;b&gt;bol
 
 ## Sanitize the HTML
 
-Links are not filtered: `[link](javascript:alert(1))` produces a `javascript:` URL, and `DisableHtml` does not change
+Links are not filtered: `[link](javascript:alert(1))` produces a `javascript:` URL, and [DisableHtml](cref:Meziantou.Framework.Markdown.MarkdownExtensions.DisableHtml) does not change
 that. Pass the generated HTML through an HTML sanitizer, such as `Meziantou.Framework.HtmlSanitizer`, to remove the
 unsafe URLs and attributes.
 
@@ -45,7 +45,7 @@ The default filter allows the general attributes that `Meziantou.Framework.HtmlS
 ## Limit the nesting depth
 
 A document nested too deeply, such as hundreds of `>` quote markers, could overflow the stack. The parser limits the
-depth of the tree to `MaximumNestingDepth` (128 by default), and throws an `ArgumentException` beyond. Catch it when you
+depth of the tree to [MaximumNestingDepth](cref:Meziantou.Framework.Markdown.MarkdownPipelineBuilder.MaximumNestingDepth) (128 by default), and throws an `ArgumentException` beyond. Catch it when you
 process untrusted input:
 
 <!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/TestCoreApi.cs;region=MarkdownPipelineBuilder_MaximumNestingDepth;format=md-fenced-code-block;dedent=true -->

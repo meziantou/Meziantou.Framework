@@ -172,7 +172,7 @@ public sealed partial class DocumentationSnippetTests
             foreach (Match match in LinkRegex().Matches(lines[i]))
             {
                 var target = match.Groups["target"].Value;
-                // eng/update-all.cs checks that the cref links target a namespace of the public API
+                // eng/update-all.cs checks that the cref links target a namespace, a type or a member of the public API
                 if (target.StartsWith('#', StringComparison.Ordinal) || target.Contains("://", StringComparison.Ordinal) || target.StartsWith("mailto:", StringComparison.Ordinal) || target.StartsWith("cref:", StringComparison.Ordinal))
                     continue;
 

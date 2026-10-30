@@ -7,7 +7,7 @@ The [Public Suffix List](https://publicsuffix.org/list/) lists the domain names 
 name: `com`, `co.uk`, and services such as `github.io`. It tells which part of a host name a registrant controls: use
 it to scope cookies, or to decide whether two hosts are the same site.
 
-`PublicSuffixList` looks host names up in a snapshot of the list compiled into the assembly: it never accesses the
+[PublicSuffixList](cref:Meziantou.Framework.PublicSuffixList) looks host names up in a snapshot of the list compiled into the assembly: it never accesses the
 network.
 
 ## Decompose a host name
@@ -40,16 +40,16 @@ Assert.True(PublicSuffixList.TryGetDomainInfo(new System.Uri("https://www.exampl
 
 | Member | `www.a.example.co.uk` |
 | --- | --- |
-| `GetPublicSuffix`, `DomainInfo.PublicSuffix` | `co.uk`: the public suffix, or effective top-level domain (eTLD). |
-| `GetRegistrableDomain`, `DomainInfo.RegistrableDomain` | `example.co.uk`: the public suffix and one more label (eTLD+1). |
-| `DomainInfo.Subdomain` | `www.a`: the labels before the registrable domain. |
-| `DomainInfo.Domain` | `www.a.example.co.uk`: the normalized host name. |
+| [GetPublicSuffix](cref:Meziantou.Framework.PublicSuffixList.GetPublicSuffix), [DomainInfo.PublicSuffix](cref:Meziantou.Framework.DomainInfo.PublicSuffix) | `co.uk`: the public suffix, or effective top-level domain (eTLD). |
+| [GetRegistrableDomain](cref:Meziantou.Framework.PublicSuffixList.GetRegistrableDomain), [DomainInfo.RegistrableDomain](cref:Meziantou.Framework.DomainInfo.RegistrableDomain) | `example.co.uk`: the public suffix and one more label (eTLD+1). |
+| [DomainInfo.Subdomain](cref:Meziantou.Framework.DomainInfo.Subdomain) | `www.a`: the labels before the registrable domain. |
+| [DomainInfo.Domain](cref:Meziantou.Framework.DomainInfo.Domain) | `www.a.example.co.uk`: the normalized host name. |
 
-- `GetRegistrableDomain` returns `null` when the host name is itself a public suffix, such as `co.uk`, and
-  `DomainInfo.Subdomain` is `null` when there is no label before the registrable domain.
-- `TryGetDomainInfo` returns everything in one lookup. It accepts a string, a `ReadOnlySpan<char>` or a `Uri`, whose
+- [GetRegistrableDomain](cref:Meziantou.Framework.PublicSuffixList.GetRegistrableDomain) returns `null` when the host name is itself a public suffix, such as `co.uk`, and
+  [DomainInfo.Subdomain](cref:Meziantou.Framework.DomainInfo.Subdomain) is `null` when there is no label before the registrable domain.
+- [TryGetDomainInfo](cref:Meziantou.Framework.PublicSuffixList.TryGetDomainInfo) returns everything in one lookup. It accepts a string, a `ReadOnlySpan<char>` or a `Uri`, whose
   host must be a domain name.
-- `IsPublicSuffix` tells whether the host name is a suffix of the list.
+- [IsPublicSuffix](cref:Meziantou.Framework.PublicSuffixList.IsPublicSuffix) tells whether the host name is a suffix of the list.
 
 ## Tell whether two hosts are the same site
 
@@ -104,17 +104,17 @@ Assert.False(PublicSuffixList.TryGetDomainInfo(new System.Uri("https://192.168.1
 ```
 <!-- endref -->
 
-- `DomainInfo.IsKnownPublicSuffix` is `false` when no rule of the list matched and the implicit rule applied, and
-  `IsPublicSuffix` returns `false` for such a top-level domain.
+- [DomainInfo.IsKnownPublicSuffix](cref:Meziantou.Framework.DomainInfo.IsKnownPublicSuffix) is `false` when no rule of the list matched and the implicit rule applied, and
+  [IsPublicSuffix](cref:Meziantou.Framework.PublicSuffixList.IsPublicSuffix) returns `false` for such a top-level domain.
 - A value that is not a domain name (an empty label, a forbidden character, more than 253 characters) makes
-  `TryGetDomainInfo` return `false`, and the other methods return `null` or `false`. They do not throw.
+  [TryGetDomainInfo](cref:Meziantou.Framework.PublicSuffixList.TryGetDomainInfo) return `false`, and the other methods return `null` or `false`. They do not throw.
 - An internationalized host name keeps the form it was given in: the lookup uses its ASCII form, and the results are
   parts of the normalized input.
 
 ## Choose the sections of the list
 
 The list has two sections: the suffixes delegated by ICANN, and the private suffixes that domain holders submitted,
-such as `blogspot.com` or `github.io`. Both are used by default. Pass a `PublicSuffixRuleSources` value to use one of
+such as `blogspot.com` or `github.io`. Both are used by default. Pass a [PublicSuffixRuleSources](cref:Meziantou.Framework.PublicSuffixRuleSources) value to use one of
 them only:
 
 <!-- ref:../../tests/Meziantou.Framework.Uri.Tests/PublicSuffixListTests.cs;region=PublicSuffixList_RuleSources;format=md-fenced-code-block;dedent=true -->
@@ -125,14 +125,14 @@ Assert.Equal("blogspot.com", PublicSuffixList.GetRegistrableDomain("foo.blogspot
 ```
 <!-- endref -->
 
-`DomainInfo.Source` tells which section the matching rule comes from, and is `PublicSuffixRuleSources.None` when no rule
-matched. Keep both sections to decide what a registrant controls; use `Icann` alone to group host names by the domain
+[DomainInfo.Source](cref:Meziantou.Framework.DomainInfo.Source) tells which section the matching rule comes from, and is [PublicSuffixRuleSources.None](cref:Meziantou.Framework.PublicSuffixRuleSources.None) when no rule
+matched. Keep both sections to decide what a registrant controls; use [Icann](cref:Meziantou.Framework.PublicSuffixRuleSources.Icann) alone to group host names by the domain
 that was bought from a registrar.
 
 ## Version of the list
 
 The list changes over time, and the snapshot is updated when a new version of the package is released.
-`PublicSuffixList.LastUpdated` returns the date of the snapshot and `PublicSuffixList.RuleCount` its number of rules.
+[PublicSuffixList.LastUpdated](cref:Meziantou.Framework.PublicSuffixList.LastUpdated) returns the date of the snapshot and [PublicSuffixList.RuleCount](cref:Meziantou.Framework.PublicSuffixList.RuleCount) its number of rules.
 Update the package to get the recent suffixes.
 
 ## Next steps

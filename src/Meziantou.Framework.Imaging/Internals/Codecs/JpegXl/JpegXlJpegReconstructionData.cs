@@ -128,7 +128,8 @@ internal sealed class JpegXlJpegReconstructionData
             }
         }
 
-        if (identifiers.Length == 4 || result.IsGray != (identifiers.Length == 1))
+        // A frame holds one component (gray) or three (color): libjxl refuses the other counts the list of identifiers can give
+        if (identifiers.Length is not (1 or 3) || result.IsGray != (identifiers.Length == 1))
             throw Invalid("the components are not those of a JPEG file that a JPEG XL frame holds.");
 
         foreach (var identifier in identifiers)

@@ -669,7 +669,7 @@ jobs:
     strategy:
       matrix:
         # https://docs.microsoft.com/en-us/dotnet/core/rid-catalog
-        runtime: [ "win-x64", "linux-x64", "osx-x64" ]
+        runtime: [ "win-x64", "linux-x64", "osx-arm64" ]
       fail-fast: false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7

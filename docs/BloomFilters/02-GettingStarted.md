@@ -5,7 +5,7 @@ description: Install the package, create a Bloom filter for an expected number o
 
 ## Install the package
 
-Add the `Meziantou.Framework.BloomFilters` package to a project that targets .NET 10 or later:
+Add the `Meziantou.Framework.BloomFilters` package to a project:
 
 ```bash
 dotnet add package Meziantou.Framework.BloomFilters

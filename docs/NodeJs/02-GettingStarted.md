@@ -5,7 +5,7 @@ description: Install the package and Node.js, run JavaScript code, and call a fu
 
 ## Install the package and Node.js
 
-Add the `Meziantou.Framework.NodeJs` package to a project that targets .NET 10 or later:
+Add the `Meziantou.Framework.NodeJs` package to a project:
 
 ```bash
 dotnet add package Meziantou.Framework.NodeJs

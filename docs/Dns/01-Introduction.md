@@ -33,11 +33,10 @@ record type, from A and MX to SVCB, HTTPS and the DNSSEC records.
 
 ## Requirements
 
-- .NET 10 or later.
 - `Meziantou.Framework.DnsServer` depends on the ASP.NET Core shared framework (`Microsoft.AspNetCore.App`), which the
   .NET SDK provides, also in console and test projects.
 - `Meziantou.Framework.DnsClient` and `Meziantou.Framework.DnsFilter` are compatible with trimming.
-- `Meziantou.DnsProxy` needs the ASP.NET Core runtime, version 10 or later.
+- `Meziantou.DnsProxy` needs the ASP.NET Core runtime.
 
 ## Next steps
 

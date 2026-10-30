@@ -4,7 +4,7 @@ description: Validate packages from a terminal or a script, choose the rules, ig
 ---
 
 `Meziantou.Framework.NuGetPackageValidation.Tool` runs the [rules](03-Rules.md) of the library on the packages you give
-it. It needs .NET 10 or later.
+it.
 
 ## Install the tool
 

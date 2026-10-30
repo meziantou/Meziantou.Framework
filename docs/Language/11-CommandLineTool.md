@@ -5,7 +5,7 @@ description: Dump the syntax tree of a CSS, INI, JSON, TOML, XML, regular expres
 
 `Meziantou.Framework.Language.Tool` parses a file with the language packages and writes its syntax tree and its
 diagnostics as JSON. Use it to see how a document is parsed before you write code against its tree, to check a file in a
-script, or to compare two parses. It needs .NET 10 or later.
+script, or to compare two parses.
 
 ## Install the tool
 

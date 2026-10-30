@@ -5,7 +5,7 @@ description: Install the package, create a temporary folder, work in it, and let
 
 ## Install the package
 
-Add the `Meziantou.Framework.TemporaryDirectory` package to a project that targets .NET 10 or later:
+Add the `Meziantou.Framework.TemporaryDirectory` package to a project:
 
 ```bash
 dotnet add package Meziantou.Framework.TemporaryDirectory

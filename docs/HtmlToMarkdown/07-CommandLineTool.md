@@ -4,7 +4,7 @@ description: Convert an HTML file or the standard input to Markdown from the com
 ---
 
 `Meziantou.Framework.HtmlToMarkdown.Tool` converts HTML to Markdown without writing code: use it in scripts, or to
-convert pages saved from a browser. It needs .NET 10 or later.
+convert pages saved from a browser.
 
 ## Install the tool
 

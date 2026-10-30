@@ -9,7 +9,6 @@ lists the main gaps. Each [format page](10-Formats/01-Overview.md) gives the det
 
 ## General
 
-- **.NET 10 and later only.** No .NET Framework, .NET Standard or older .NET.
 - **No extension points.** There is no public allocator, custom pixel type, codec plug-in or custom image processor.
 - **No CMYK pixel format.** CMYK JPEG and TIFF files are converted to RGB when they are loaded, with an explicit
   `CmykConversion` option; CMYK cannot be written. See [Color management](09-Color/03-ColorManagement.md).

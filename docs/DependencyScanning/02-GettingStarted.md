@@ -5,7 +5,7 @@ description: Install the package, scan a folder and read the dependencies it dec
 
 ## Install the package
 
-Add the `Meziantou.Framework.DependencyScanning` package to a project that targets .NET 10 or later:
+Add the `Meziantou.Framework.DependencyScanning` package to a project:
 
 ```bash
 dotnet add package Meziantou.Framework.DependencyScanning

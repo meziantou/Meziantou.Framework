@@ -16,4 +16,3 @@ description: What the library does not do, so you can plan around it.
 - **Characters are UTF-16 code units.** `TextChunker.Characters` splits surrogate pairs and combining sequences into
   several chunks. See [Characters](04-Chunking.md#characters).
 - **Texts are strings.** Both texts are read into memory as `string`; there is no streaming or file API.
-- **.NET 10 and later only.**

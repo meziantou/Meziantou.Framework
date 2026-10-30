@@ -28,7 +28,7 @@ with Playwright.
 
 ## Packages
 
-The library is split into packages, so that an application only references what it uses. They target .NET 10 or later.
+The library is split into packages, so that an application only references what it uses.
 
 | Package | Adds |
 | --- | --- |

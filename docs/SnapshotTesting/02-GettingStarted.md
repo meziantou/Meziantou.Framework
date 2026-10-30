@@ -5,7 +5,7 @@ description: Install the package, write your first snapshot test, approve the sn
 
 ## Install the package
 
-Add the `Meziantou.Framework.SnapshotTesting` package to a test project that targets .NET 10 or later:
+Add the `Meziantou.Framework.SnapshotTesting` package to a test project:
 
 ```bash
 dotnet add package Meziantou.Framework.SnapshotTesting

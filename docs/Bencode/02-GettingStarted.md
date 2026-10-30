@@ -5,7 +5,7 @@ description: Install the package, read a torrent file and its info-hash, and dec
 
 ## Install the package
 
-Add the `Meziantou.Framework.Bencode` package to a project that targets .NET 10 or later:
+Add the `Meziantou.Framework.Bencode` package to a project:
 
 ```bash
 dotnet add package Meziantou.Framework.Bencode

@@ -5,7 +5,7 @@ description: Install the package, parse a query and evaluate it on a JSON docume
 
 ## Install the package
 
-Add the `Meziantou.Framework.JsonPath` package to a project that targets .NET 10 or later:
+Add the `Meziantou.Framework.JsonPath` package to a project:
 
 ```bash
 dotnet add package Meziantou.Framework.JsonPath

@@ -5,7 +5,7 @@ description: Install the package and use a few of its most common helpers.
 
 ## Install the package
 
-Add the `Meziantou.Framework` package to a project that targets .NET 10 or later:
+Add the `Meziantou.Framework` package to a project:
 
 ```bash
 dotnet add package Meziantou.Framework

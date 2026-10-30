@@ -7,7 +7,7 @@ The library implements the protocol of SQL Server, not a database. This page lis
 
 ## General
 
-- **.NET 10 and later only**, with the ASP.NET Core shared framework.
+- **Needs the ASP.NET Core shared framework.**
 - **Not trimmable**: the package is not marked as compatible with trimming or Native AOT.
 - **No database**: the server stores nothing and runs no SQL by itself. Your query handler, or the
   [query engine](07-QueryEngine.md), answers every request.

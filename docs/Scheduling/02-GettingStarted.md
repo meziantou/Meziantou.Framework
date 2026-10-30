@@ -11,8 +11,7 @@ Add the `Meziantou.Framework.Scheduling` package to your project:
 dotnet add package Meziantou.Framework.Scheduling
 ```
 
-The package targets .NET 10 and later, and .NET Standard 2.0 for older frameworks such as .NET Framework. The examples of
-this documentation omit the `using` directives: they need `using Meziantou.Framework.Scheduling;`.
+The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework.Scheduling;`.
 
 ## The occurrences of a recurrence rule
 

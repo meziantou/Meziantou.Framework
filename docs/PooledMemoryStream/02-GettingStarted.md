@@ -5,7 +5,7 @@ description: Install the package, write and read a pooled stream, copy its conte
 
 ## Install the package
 
-Add the `Meziantou.Framework.PooledMemoryStream` package to a project that targets .NET 10 or later:
+Add the `Meziantou.Framework.PooledMemoryStream` package to a project:
 
 ```bash
 dotnet add package Meziantou.Framework.PooledMemoryStream

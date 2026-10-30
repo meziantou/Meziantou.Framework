@@ -5,7 +5,7 @@ description: Install the packages, query a DNS server, and answer DNS queries fr
 
 ## Install the packages
 
-Add the package you need to a project that targets .NET 10 or later:
+Add the package you need to a project:
 
 ```bash
 dotnet add package Meziantou.Framework.DnsClient

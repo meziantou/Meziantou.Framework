@@ -5,7 +5,7 @@ description: Install the package, store a secret, reveal it when you need it and
 
 ## Install the package
 
-Add the `Meziantou.Framework.SensitiveData` package to a project that targets .NET 10 or later:
+Add the `Meziantou.Framework.SensitiveData` package to a project:
 
 ```bash
 dotnet add package Meziantou.Framework.SensitiveData

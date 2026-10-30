@@ -6,7 +6,7 @@ description: Write code that works with any ID through IStronglyTypedId and IStr
 ## Install the package
 
 The `Meziantou.Framework.StronglyTypedId.Interfaces` package contains two interfaces that the generated IDs implement.
-It targets .NET 10 or later:
+Add it to your project:
 
 ```bash
 dotnet add package Meziantou.Framework.StronglyTypedId.Interfaces

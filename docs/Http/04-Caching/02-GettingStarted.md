@@ -5,7 +5,7 @@ description: Install the caching packages and add HttpCachingDelegateHandler to 
 
 ## Install the packages
 
-Add the cache and a store to a project that targets .NET 10 or later. The examples of this group use the in-memory
+Add the cache and a store to a project. The examples of this group use the in-memory
 store:
 
 ```bash

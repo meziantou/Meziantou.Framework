@@ -7,7 +7,7 @@ The library implements the wire protocol of PostgreSQL, not a database. This pag
 
 ## General
 
-- **.NET 10 and later only**, with the ASP.NET Core shared framework.
+- **Needs the ASP.NET Core shared framework.**
 - **Not trimmable**: the package is not marked as compatible with trimming or Native AOT.
 - **No database**: the server stores nothing and runs no SQL. Your query handler answers every request, including the
   queries tools send to the system catalog (`pg_catalog`, `information_schema`).

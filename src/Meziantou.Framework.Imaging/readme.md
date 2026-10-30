@@ -3831,7 +3831,7 @@ allocation limit.
 For forward-only parsing, `MaxEncodedBytes` bounds the prefix examined; the input length is enough for that limit.
 When parsing stops early (`Identify` in header mode or `FrameLimit`), the remaining bytes need not fit the limit.
 A stream only reports its end by returning no byte, so when the format needs the end of the input (the
-TGA trailer, the last sample of a plain Netpbm raster, a TIFF, an icon or an animated cursor buffered whole, an input shorter than the detection
+TGA trailer, the last sample of a plain Netpbm raster, a GIF without trailer in lenient decoding, a TIFF, an icon or an animated cursor buffered whole, an input shorter than the detection
 prefix) and every byte the limit allows was read, one more byte is read and discarded to tell an input that ends there from
 a longer one. It is the only byte ever read past the limit, and it is never decoded.
 
@@ -4014,7 +4014,7 @@ Content errors derive from `ImageException`:
 | --- | --- |
 | `UnknownImageFormatException` | The signature is not recognized. |
 | `InvalidImageContentException` (`Format`) | Malformed, inconsistent or truncated data; also a malformed caller-supplied EXIF/ICC/XMP payload at save time. |
-| `UnsupportedImageFeatureException` (`Format`, `Feature`) | A valid but unsupported feature (hierarchical JPEG, a CMYK JPEG loaded without `CmykConversion`, GIF plain text...), or an operation that would lose animation, alpha, precision, metadata, a cursor hotspot, a poster or a profile without an explicit setting, or a duration/play count the output cannot represent. |
+| `UnsupportedImageFeatureException` (`Format`, `Feature`) | A valid but unsupported feature (hierarchical JPEG, a CMYK JPEG loaded without `CmykConversion`, GIF plain text unless the decoding is lenient...), or an operation that would lose animation, alpha, precision, metadata, a cursor hotspot, a poster or a profile without an explicit setting, or a duration/play count the output cannot represent. |
 | `ImageResourceLimitException` (`Kind`, `Limit`, `Requested`) | A configured limit was exceeded. |
 
 Other failures use the standard exceptions: `ArgumentException` (invalid arguments, mismatched frames),
@@ -4076,6 +4076,10 @@ public static Image LoadLeniently(string path)
 
 | Format | Deviation | Lenient behavior |
 | --- | --- | --- |
+| GIF | No trailer (`0x3B`): the input ends after a complete block | The file ends there, as at the trailer, like FFmpeg, ImageMagick, Pillow and Apple ImageIO. An input that ends inside a block or an image is still truncated |
+| GIF | `0x00` bytes where a block is expected, followed only by the trailer or the end of the input | Skipped. Followed by another block, they are still rejected: Apple ImageIO and FFmpeg stop there, while ImageMagick and Pillow decode the next images |
+| GIF | Plain-text extension | Skipped, without rendering its text and without a frame; a Graphic Control Extension before it applies to the next image (delay, transparent index and disposal), as in FFmpeg, ImageMagick, Pillow and Apple ImageIO |
+| Netpbm | A `#` comment right after the digits of a header token (`4#comment` for the width) | The comment ends the token, and the line feed or carriage return that ends the comment delimits it (a binary raster starts after it), as Netpbm, ImageMagick and FFmpeg read it and as the Netpbm specification describes comments. Pillow and Apple ImageIO reject these headers or join the digits around the comment |
 
 ## Format reference
 
@@ -4212,7 +4216,8 @@ public static void SaveSmallestPng(string inputPath, string outputPath)
 | Dithering | — | `Quantization.Dithering`: every `DitheringMode` (error diffusion and ordered), deterministic integer arithmetic, quantized frames only. `GifEncoder.Dithering` and `GifDithering` are obsolete aliases |
 | Loop extension (NETSCAPE2.0, ANIMEXTS1.0) | `L` repetitions → `TotalPlays = L + 1`, `0` → infinite, none → one play; the last extension wins; exact hundredth-second delays | NETSCAPE2.0 with `TotalPlays - 1` repetitions (none for one play, at most 65,536 plays); delays to the nearest hundredth (ties up) or exact (`RequireExact`), beyond 655.35 s rejected, never clamped |
 | Comment extension | `Comment` text entries, Latin-1 (readers see those before the first image) | `Comment` entries only, Latin-1, any length; ICC, EXIF, XMP and resolution follow `MetadataHandling` |
-| Plain-text extension | Not supported (`UnsupportedImageFeatureException`) | — |
+| Plain-text extension | Not supported (`UnsupportedImageFeatureException`); skipped without its text in [lenient decoding](#lenient-decoding) | — |
+| Trailer and block introducers | A missing trailer and a byte that does not start a block are `InvalidImageContentException`; [lenient decoding](#lenient-decoding) accepts a missing trailer and `0x00` bytes before the end | Always written |
 | Other application extensions (XMP, ICC...) | Skipped | — |
 
 ### JPEG
@@ -4457,7 +4462,7 @@ animation.
 | Feature | Decoding | Encoding |
 | --- | --- | --- |
 | Magic numbers | `P1` to `P6` (plain and binary PBM, PGM, PPM) and `P7` (PAM) | `P5`/`P6` (binary) or `P2`/`P3` (plain, `PnmEncoding.Plain`), and `P7` for pixel formats with alpha: the variant follows the pixel format. `P4`, or `P1` when plain, only with `PnmPixelLayout.Bitmap`. An encoder never looks at the extension; `Save(path)` without an encoder maps `.pbm` to `PnmPixelLayout.Bitmap` |
-| Header | White space and `#` comments between tokens, exactly one white-space byte before a binary raster, `ENDHDR` for PAM; bounded at 65,536 bytes; illegal values are `InvalidImageContentException` | — |
+| Header | White space and `#` comments between tokens, exactly one white-space byte before a binary raster, `ENDHDR` for PAM; bounded at 65,536 bytes; illegal values and a comment right after the digits of a token are `InvalidImageContentException` (the comment ends the token in [lenient decoding](#lenient-decoding)) | — |
 | Tuple types | `BLACKANDWHITE`, `GRAYSCALE`, `RGB` and their `_ALPHA` forms, inferred from `DEPTH` when `TUPLTYPE` is absent; others are not supported | `RGB_ALPHA` for pixel formats with alpha |
 | Samples | 8 or 16 bits (big-endian); a sample above `MAXVAL` is `InvalidImageContentException`; a set PBM bit is black, while a PAM `BLACKANDWHITE` sample is an intensity | `MAXVAL` 255 or 65,535, so the output is always lossless (no bit-depth setting). A portable bitmap is lossless too: one bit per pixel, a set bit is black, and a pixel that is not exactly black or white (once composited over `BackgroundColor`) is `UnsupportedImageFeatureException` (binarize the image first with `Threshold`, see [Binarization](#binarization)); it is read back as `Gray8` with one bit per component |
 | Plain rasters | Decimal samples with comments allowed; a prefix of a plain raster can be a complete raster with a smaller last sample, so truncation is not detectable there | Lines within 70 characters; PAM has no plain form, so alpha then needs `BackgroundColor`, as it does for a portable bitmap. A plain portable bitmap has one digit per pixel, without separators |
@@ -4983,7 +4988,7 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | --- | --- |
 | JPEG decoding | Lossless with arithmetic coding (SOF11), hierarchical (SOF5–7, SOF13–15, DHP, EXP), JPEG-LS, sample precisions other than 8 and 12 bits in a frame that is not lossless, heights defined by DNL, other component counts than 1, 3 or 4, non-integral sampling ratios: `UnsupportedImageFeatureException` (also from `Identify`). CMYK/YCCK (four components): identified, but loaded only with `CmykConversion` (an ICC conversion to RGB; `UnsupportedImageFeatureException` otherwise, and for a file without CMYK profile when no profile is assumed). Scaled and region decoding: not available |
 | JPEG encoding | Baseline or progressive 8-bit Huffman only: no arithmetic, lossless, 12-bit, RGB, CMYK or restart markers; the progression of the progressive process is fixed, and the baseline process has no optimized Huffman tables. One frame: animated images and posters are rejected (save one with `Frames[i].Save`); alpha requires `BackgroundColor`; `Rgba64`/`Gray16` require `AllowBitDepthReduction` |
-| GIF decoding | Plain-text extensions (they require text rendering) are `UnsupportedImageFeatureException`; other unknown extensions (XMP and ICC application extensions included) are skipped; the background color index is never painted (cleared areas are transparent black) |
+| GIF decoding | Plain-text extensions (they require text rendering) are `UnsupportedImageFeatureException` (skipped without their text in [lenient decoding](#lenient-decoding)); other unknown extensions (XMP and ICC application extensions included) are skipped; the background color index is never painted (cleared areas are transparent black) |
 | GIF encoding | Lossy by design: at most 256 colors per frame (deterministic quantization, optional dithering), one transparent index (alpha thresholded or flattened, never partial); a local color table per frame, also with a shared palette (no global color table); full-canvas frames (no delta rectangles); comments only (no ICC, EXIF, XMP or resolution); at most 65,535 pixels per side, 655.35 s per frame and 65,536 plays |
 | WebP decoding | VP8 interframes and frames that are not shown (never produced by WebP encoders): `UnsupportedImageFeatureException`; the `ANIM` background color is a hint and is never painted (disposed areas are transparent black); metadata of simple-layout files and text/resolution do not exist in WebP |
 | WebP encoding | 8-bit RGB(A) only (gray written as RGB, 16-bit after explicit reduction); lossy output is 4:2:0 and not pixel-exact; animations are full-canvas frames (no delta rectangles or blending) and need a seekable destination (no spooling to non-seekable streams); at most 16,383 (lossy) or 16,384 (lossless) pixels per side, 16,777,215 ms per frame, 65,535 plays and 4 GiB per file |

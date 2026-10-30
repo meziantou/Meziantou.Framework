@@ -155,6 +155,31 @@ public sealed class GifIdentifyTests
     }
 
     [Fact]
+    public void LenientIdentificationAcceptsWhatLenientLoadsAccept()
+    {
+        var configuration = new ImageConfiguration { DecodingStrictness = DecodingStrictness.Lenient };
+        var header = new ImageIdentifyOptions { Configuration = configuration };
+        var full = new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan, Configuration = configuration };
+        byte[][] files =
+        [
+            new SyntheticImages.GifBuilder().Header(2, 2).Extension(0x01, new byte[12]).Image(0, 0, 2, 2).Trailer().ToArray(),
+            new SyntheticImages.GifBuilder().Header(2, 2).Image(0, 0, 2, 2).Extension(0x01, new byte[12]).Image(0, 0, 2, 2).ToArray(),
+            new SyntheticImages.GifBuilder().Header(2, 2).Image(0, 0, 2, 2).Raw([0x00]).Trailer().ToArray(),
+            new SyntheticImages.GifBuilder().Header(2, 2).Image(0, 0, 2, 2).Raw([0x00, 0x00]).ToArray(),
+        ];
+
+        foreach (var data in files)
+        {
+            Assert.ThrowsAny<ImageException>(() => Image.Identify(data, FullScan));
+            Assert.Null(Image.Identify(data, header).FrameCount);
+            var info = Image.Identify(data, full);
+            Assert.Equal(new Size(2, 2), info.Size);
+            using var image = Image.Load(data, new ImageDecodeOptions { Configuration = configuration });
+            Assert.Equal(info.FrameCount, image.Frames.Count);
+        }
+    }
+
+    [Fact]
     public void FullScanChargesEveryImage()
     {
         var data = SyntheticImages.Gif(2, 2, images: 4);

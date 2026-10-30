@@ -127,6 +127,15 @@ An APNG streams to any destination, including non-seekable streams, but a writer
 needs `ImageWriterOptions.ExpectedFrameCount`, because the frame count precedes the frames. See
 [Streaming readers and writers](../05-LoadingAndSaving/05-StreamingReadersAndWriters.md).
 
+## Malformed files
+
+A malformed file is rejected with an `InvalidImageContentException`. With
+[lenient decoding](../05-LoadingAndSaving/08-ErrorHandling.md), two deviations that browsers tolerate are accepted:
+
+- A grayscale or RGB transparency key (`tRNS`) that is too short is ignored: the pixels are opaque.
+- An APNG with fewer frames than it declares (one at least) is the frames it has. Identifying its header still reports
+  the declared count; a full scan reports the frames present.
+
 ## Pitfalls
 
 - PNG has no lossy mode: for photos, use a lossy format ([JPEG](04-Jpeg.md), [WebP](05-WebP.md), [AVIF](13-Avif.md) or

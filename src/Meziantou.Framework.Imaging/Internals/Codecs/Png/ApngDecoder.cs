@@ -19,7 +19,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// The first frame is drawn with SOURCE whatever its <c>blend_op</c> (<see cref="GetBlend"/>). A first frame disposed to
 /// PREVIOUS is cleared like BACKGROUND (APNG specification); BACKGROUND clears to transparent black.
 /// The disposal of the last frame (declared count or frame limit) is not applied: it has no visible effect, so no
-/// restore-previous state is kept for it.
+/// restore-previous state is kept for it. A lenient decode of an animation shorter than its declared count only learns
+/// that its last frame was the last one at <c>IEND</c>: that disposal is applied, without visible effect either.
 /// </description></item>
 /// <item><description>
 /// Durations are the exact <c>delay_num / delay_den</c> fractions (<c>delay_den = 0</c> means 1/100 s); zero is kept; total plays

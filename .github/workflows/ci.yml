@@ -664,12 +664,18 @@ jobs:
 
   test_trimming:
     if: github.event_name != 'schedule'
-    runs-on: ubuntu-26.04
+    runs-on: ${{ matrix.runner }}
     timeout-minutes: 60
     strategy:
       matrix:
         # https://docs.microsoft.com/en-us/dotnet/core/rid-catalog
-        runtime: [ "win-x64", "linux-x64", "osx-x64" ]
+        include:
+          - runtime: "win-x64"
+            runner: ubuntu-26.04
+          - runtime: "linux-x64"
+            runner: ubuntu-26.04
+          - runtime: "osx-arm64"
+            runner: ubuntu-26.04-arm
       fail-fast: false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7

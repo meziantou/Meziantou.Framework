@@ -3068,13 +3068,15 @@ of their characters and were not compared with a font.
 - **Direction.** Each paragraph is ordered by the Unicode Bidirectional Algorithm (UAX #9): left-to-right and
   right-to-left text can be mixed, mirrored characters are mirrored, and each line is put in display order.
   `Direction` imposes the base direction of the paragraphs; by default it is the one of their first strong character.
+  A vertical tab, a form feed and U+2028 end a line, not the direction: the text after them keeps the direction of
+  the text before them, which only a line feed, a carriage return, U+0085 or U+2029 resets.
   `Alignment` is relative to it: `Start` is the left of a left-to-right paragraph and the right of a right-to-left one.
 - **Vertical text.** With `WritingMode = VerticalRightToLeft`, lines go from the top to the bottom and follow each
   other to the left, as Chinese, Japanese and Korean are set; with `VerticalLeftToRight` they follow each other to the
   right, as Mongolian is. Everything that is said of the width of a horizontal line is then said of the height of a
   vertical one: `MaxHeight` is where lines are wrapped and what they are aligned in, `MaxWidth` is the room the lines
   must fit, `LineHeight` is the width of a line, `Alignment` places a line from its top, and `FirstLineIndent` moves
-  the first line of a paragraph down. `Width` and `Height` stay the size of the layout on the image.
+  the indented lines of a paragraph down. `Width` and `Height` stay the size of the layout on the image.
   - `Orientation` says which characters are upright. By default (`Mixed`), each character is set as the Unicode
     Standard says (the Vertical_Orientation property, UAX #50): ideographs, kana, Hangul syllables, emoji and most
     symbols are upright, one under the other; the letters of the scripts that are written in horizontal lines
@@ -3120,7 +3122,8 @@ of their characters and were not compared with a font.
 - **Alignment.** Lines are aligned in `MaxWidth`, or in the width of the widest line without it. `Justify` stretches
   each line to that width by widening U+0020 spaces and U+00A0 no-break spaces, except the last line of a paragraph.
   A line without these spaces stays start-aligned: there is no inter-character justification for CJK text.
-  `FirstLineIndent` indents the first line of each paragraph, and `TabSize` sets the tabulation stops.
+  `FirstLineIndent` indents the first line of each paragraph; a negative value is a hanging indent, which leaves the
+  first line at the edge and indents the lines after it. `TabSize` sets the tabulation stops.
 - **Fitting.** `MaxLines` and `MaxHeight` cut the text (the first line is always kept); `Trimming` ends the last line
   with an ellipsis after the last character or the last word that leaves room for it, and also trims a line that is
   wider than `MaxWidth` when lines are not wrapped. `IsTruncated` says that a part of the text is not in the layout.
@@ -3700,7 +3703,12 @@ public static Image LoadCmykJpeg(string path)
   ISO 18619): the black of the source is the color of its device black (for a CMYK output profile, of the inks its
   perceptual table gives for black); the black of a table-based destination is read from the round trip of a
   lightness ramp through the profile. It changes nothing when both blacks are black, as between two display
-  profiles, and never applies to the absolute colorimetric intent.
+  profiles, and never applies to the absolute colorimetric intent. The perceptual and saturation tables of a version 4
+  profile give black the lightness of the perceptual reference medium (L* = 3.1373), where version 2 tables and
+  matrix-based profiles usually give it 0: the compensation maps one to the other, and without it nothing does (black
+  becomes a dark gray from a version 4 table to a version 2 or matrix-based profile, and the darkest grays become black
+  the other way). The ICC recommends against connecting version 2 and version 4 perceptual tables. LittleCMS
+  compensates a version 4 destination for these intents even when asked not to; the library does what the option says.
 
 A malformed profile is an `InvalidImageContentException`; a valid profile of another kind (version 5, device link,
 abstract, named color, other data color spaces), or one that cannot be a destination (no table from the connection

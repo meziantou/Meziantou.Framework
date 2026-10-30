@@ -134,8 +134,8 @@ public static void DrawVerticalText(string fontPath, string outputPath)
 ![Japanese text in three columns read from right to left: upright ideographs and kana, brackets and punctuation in their vertical forms, and the Latin letters ABC on their side](images/DrawVerticalText.png)
 
 - What is said of the width of a horizontal line is said of the height of a vertical one: [MaxHeight](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.MaxHeight) is where lines
-  are wrapped and what they are aligned in, [LineHeight](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.LineHeight) is the width of a line, and [FirstLineIndent](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.FirstLineIndent) moves the first
-  line down. [Width](cref:Meziantou.Framework.Imaging.Typography.TextLayout.Width) and [Height](cref:Meziantou.Framework.Imaging.Typography.TextLayout.Height) stay the size of the layout on the image.
+  are wrapped and what they are aligned in, [LineHeight](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.LineHeight) is the width of a line, and [FirstLineIndent](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.FirstLineIndent) moves the
+  indented lines down. [Width](cref:Meziantou.Framework.Imaging.Typography.TextLayout.Width) and [Height](cref:Meziantou.Framework.Imaging.Typography.TextLayout.Height) stay the size of the layout on the image.
 - [Orientation](cref:Meziantou.Framework.Imaging.Typography.TextLayoutOptions.Orientation) says which characters are upright. By default ([Mixed](cref:Meziantou.Framework.Imaging.Typography.TextOrientation.Mixed)), each one is set as the Unicode Standard says:
   ideographs, kana, Hangul and emoji are upright, the letters of horizontal scripts are on their side, turned a
   quarter of a turn clockwise. [Upright](cref:Meziantou.Framework.Imaging.Typography.TextOrientation.Upright) sets every character upright, and [Sideways](cref:Meziantou.Framework.Imaging.Typography.TextOrientation.Sideways) every character on its side.

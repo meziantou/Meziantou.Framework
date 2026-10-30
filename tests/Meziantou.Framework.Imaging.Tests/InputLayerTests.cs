@@ -64,6 +64,48 @@ public sealed class InputLayerTests
     }
 
     [Fact]
+    public async Task OwnedFilesAreDisposedWhenTheInputCannotTakeThemOver()
+    {
+        var directory = TestFiles.CreateDirectory();
+        try
+        {
+            var path = directory / "image.bin";
+            await File.WriteAllBytesAsync(path, new byte[64], XunitCancellationToken);
+            var context = new ImageCodecContext(ImageConfiguration.Default, "test", CancellationToken.None);
+
+            // Sizing the first buffer of an owned file reads its length before any input owns the file
+            using (var stream = new UnreadableLengthFileStream(path))
+            {
+                Assert.Throws<IOException>(() => ImageInputBuffer.CreateForDecode(stream, ownsStream: true, disposeStream: true, context));
+                Assert.True(stream.IsDisposed);
+            }
+
+            using (var stream = new UnreadableLengthFileStream(path))
+            {
+                Assert.Throws<IOException>(() => ImageReaderCore.Open(stream, ownsStream: true, options: null, PixelFormat.Rgba32));
+                Assert.True(stream.IsDisposed);
+            }
+
+            using (var stream = new UnreadableLengthFileStream(path))
+            {
+                await Assert.ThrowsAsync<IOException>(() => ImageReaderCore.OpenAsync(stream, ownsStream: true, options: null, PixelFormat.Rgba32, XunitCancellationToken));
+                Assert.True(stream.IsDisposed);
+            }
+
+            // The length of a caller stream is never read, and the stream is left open
+            using (var stream = new UnreadableLengthFileStream(path))
+            {
+                ImageInputBuffer.CreateForDecode(stream, ownsStream: false, disposeStream: false, context).Dispose();
+                Assert.False(stream.IsDisposed);
+            }
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void ParsersMayYieldButMustMakeProgress()
     {
         var context = new ImageCodecContext(ImageConfiguration.Default, "test", CancellationToken.None);
@@ -559,6 +601,19 @@ public sealed class InputLayerTests
     private sealed class GrowingStream(byte[] data, long reportedLength) : MemoryStream(data, writable: false)
     {
         public override long Length => reportedLength;
+    }
+
+    private sealed class UnreadableLengthFileStream(string path) : FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read)
+    {
+        public bool IsDisposed { get; private set; }
+
+        public override long Length => throw new IOException("Injected length failure.");
+
+        protected override void Dispose(bool disposing)
+        {
+            IsDisposed = true;
+            base.Dispose(disposing);
+        }
     }
 
     private sealed class FeedStream : Stream

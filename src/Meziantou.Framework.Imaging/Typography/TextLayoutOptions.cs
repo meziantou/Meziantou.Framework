@@ -168,7 +168,7 @@ public sealed class TextLayoutOptions
     /// In a vertical layout, what is said of the width of a line is said of its height, and the other way around:
     /// <see cref="MaxHeight"/> is the length lines are wrapped at and aligned in, <see cref="MaxWidth"/> is the room
     /// the lines must fit, <see cref="LineHeight"/> is the width of a line, <see cref="Alignment"/> places a line
-    /// from its top, and <see cref="FirstLineIndent"/> moves the first line of a paragraph down.
+    /// from its top, and <see cref="FirstLineIndent"/> moves the indented lines of a paragraph down.
     /// <see cref="Orientation"/> says which characters are upright.
     /// </para>
     /// <para>
@@ -304,6 +304,20 @@ public sealed class TextLayoutOptions
     }
 
     /// <summary>Gets the space before the first line of each paragraph, in pixels; negative for a hanging indent. 0 by default.</summary>
+    /// <remarks>
+    /// <para>
+    /// A positive value indents the first line of each paragraph from the side the paragraph starts from, and leaves
+    /// the other lines at the edge. A negative value is a hanging indent, as <c>text-indent: hanging</c> in CSS:
+    /// the first line starts at the edge, and the lines after it are indented by the magnitude of the value. In both
+    /// cases, every line stays in the box of the layout: the indent counts in the width that is left for the line it
+    /// applies to, and in the width of the layout when lines are not wrapped at <see cref="MaxWidth"/>.
+    /// </para>
+    /// <para>
+    /// The indent is on the left of a left-to-right paragraph, on the right of a right-to-left one, and at the top of
+    /// a vertical line. <see cref="TextAlignment.Center"/> and <see cref="TextAlignment.End"/> align an indented line
+    /// in the room the indent leaves.
+    /// </para>
+    /// </remarks>
     /// <exception cref="ArgumentOutOfRangeException">The value is not finite, or its magnitude exceeds 1048576.</exception>
     public double FirstLineIndent
     {

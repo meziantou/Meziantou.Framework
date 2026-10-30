@@ -41,6 +41,13 @@ public sealed class IccColorTransformOptions
     /// standardized as ISO 18619. The black point of a profile is estimated from its conversion tables or tone curves;
     /// when both are black, as between two display profiles, nothing changes. A table-based destination that cannot be
     /// converted back to the profile connection space has no measurable black point and is not compensated.
+    /// <para>
+    /// The perceptual and saturation tables of a version 4 profile give black the lightness of the perceptual reference
+    /// medium (L* = 3.1373), where version 2 tables and matrix-based profiles usually give it 0. The compensation maps
+    /// one to the other; without it, nothing does: converting from a version 4 table to a version 2 or matrix-based
+    /// profile turns black into a dark gray, and the reverse makes the darkest grays black. Some color management
+    /// systems, such as LittleCMS, compensate a version 4 destination even when asked not to.
+    /// </para>
     /// </remarks>
     public bool BlackPointCompensation { get; init; } = true;
 

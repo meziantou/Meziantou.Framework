@@ -26,6 +26,15 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// cannot be measured and no compensation is applied. When the fit is degenerate (fewer than three points, or a curve
 /// that neither rises nor has a minimum), the black point is the initial estimate.
 /// </para>
+/// <para>
+/// The perceptual and saturation tables of a version 4 profile give device black the black of the perceptual reference
+/// medium (L* = 3.1373), where version 2 tables and matrix-based profiles usually give it L* = 0. Both black points are
+/// estimated from the tables like any other, so the compensation maps one to the other. Without compensation nothing
+/// adjusts them, whatever the versions: the specification defines no other adjustment (ICC White Paper 26 recommends
+/// against connecting version 2 and version 4 perceptual tables, and leaves the reference medium black unchanged without
+/// compensation), and the description of the compensation lets the versions of the two profiles differ. LittleCMS
+/// instead forces the compensation when the destination is a version 4 profile, for these two intents.
+/// </para>
 /// </remarks>
 internal static class IccBlackPoint
 {

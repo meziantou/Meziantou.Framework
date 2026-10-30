@@ -762,6 +762,20 @@ public sealed class ImageWriterTests
         }
     }
 
+    [Fact]
+    public void StreamWritersReleaseTheSessionWhenTheStartPositionCannotBeRead()
+    {
+        // TIFF reads the position of the output when the writer is created: it patches the offsets of the structure at completion
+        var tiff = new TestStreamEncoder(ImageFormat.Tiff);
+        using var codecs = TestCodecs.Use(decoder: null, tiff);
+        using var stream = new UnreadablePositionStream();
+        Assert.Throws<IOException>(() => Image.CreateWriter<Rgba32>(stream, new ImageWriterOptions(Width, Height) { Encoder = new TiffEncoder(), LeaveOpen = false }));
+        Assert.True(tiff.LastSession.IsDisposed);
+
+        // The writer was not created, so it did not take the stream over
+        Assert.False(stream.IsDisposed);
+    }
+
     private static async Task Write(ImageWriter<Rgba32> writer, Image<Rgba32> frame, bool asynchronous)
     {
         if (asynchronous)
@@ -783,6 +797,23 @@ public sealed class ImageWriterTests
         else
         {
             writer.Complete();
+        }
+    }
+
+    private sealed class UnreadablePositionStream : MemoryStream
+    {
+        public bool IsDisposed { get; private set; }
+
+        public override long Position
+        {
+            get => throw new IOException("Injected position failure.");
+            set => throw new IOException("Injected position failure.");
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            IsDisposed = true;
+            base.Dispose(disposing);
         }
     }
 }

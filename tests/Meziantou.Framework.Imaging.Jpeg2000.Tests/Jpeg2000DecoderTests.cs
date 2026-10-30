@@ -1,9 +1,13 @@
 using System.Buffers.Binary;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
+using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.TestHarness.Jpeg2000;
+using Meziantou.Framework.Imaging.TestHarness.Streams;
 
 namespace Meziantou.Framework.Imaging.Tests;
 
@@ -621,6 +625,227 @@ public sealed class Jpeg2000DecoderTests
         // One more tile than the 16-bit index of a tile-part can name
         BinaryPrimitives.WriteUInt32BigEndian(data.AsSpan(8), 65536);
         Assert.Throws<InvalidImageContentException>(() => Image.Identify(data, Limits(limits)));
+    }
+
+    /// <summary>
+    /// The code-blocks of a tile of at least 65,536 pixels are decoded by several workers, and its planes transformed by
+    /// rows and strips of columns: the samples are those of one worker, for both wavelets, one to four components, both
+    /// depths and sizes that leave partial code-blocks and strips.
+    /// </summary>
+    [Theory]
+    [InlineData(PixelFormat.Rgb24, Jpeg2000Compression.Lossless, 331, 223)]
+    [InlineData(PixelFormat.Rgb24, Jpeg2000Compression.Lossy, 331, 223)]
+    [InlineData(PixelFormat.Gray8, Jpeg2000Compression.Lossless, 401, 170)]
+    [InlineData(PixelFormat.Gray8, Jpeg2000Compression.Lossy, 170, 401)]
+    [InlineData(PixelFormat.Rgba32, Jpeg2000Compression.Lossy, 257, 256)]
+    [InlineData(PixelFormat.Rgba64, Jpeg2000Compression.Lossless, 300, 230)]
+    public void CodeBlocksDecodedByWorkersGiveTheSamplesOfOneWorker(PixelFormat format, Jpeg2000Compression compression, int width, int height)
+    {
+        var data = EncodeLargeImage(format, compression, width, height, seed: width + (int)format);
+        using var expected = Image.Load(data, WithWorkers(1));
+        var expectedBytes = GetBytes(expected);
+        foreach (var workers in (int[])[2, 3, 16])
+        {
+            using var decoded = Image.Load(data, WithWorkers(workers));
+            Assert.True(expectedBytes.AsSpan().SequenceEqual(GetBytes(decoded)), $"{format} {compression} {width}x{height}: {workers} workers decode other samples.");
+        }
+    }
+
+    /// <summary>
+    /// The bytes of a code-block are not checked: a corrupted code-block decodes to other coefficients, and the result, a
+    /// failure included, is the one of one worker.
+    /// </summary>
+    [Theory]
+    [InlineData(Jpeg2000Compression.Lossless)]
+    [InlineData(Jpeg2000Compression.Lossy)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void CorruptedCodeBlocksDecodeAsWithOneWorker(Jpeg2000Compression compression)
+    {
+        var data = EncodeLargeImage(PixelFormat.Rgb24, compression, 320, 240, seed: 3);
+        var body = data.AsSpan().IndexOf([(byte)0xFF, (byte)0x93]) + 2;
+        var random = new Random(11);
+        foreach (var position in (double[])[0.1, 0.4, 0.75])
+        {
+            var corrupted = (byte[])data.Clone();
+            var start = body + (int)((data.Length - body) * position);
+            for (var i = start; i < start + 48; i += 3)
+            {
+                // A value below FF keeps the bytes free of markers
+                corrupted[i] = (byte)random.Next(0x90);
+            }
+
+            var expected = Decode(corrupted, workers: 1);
+            Assert.NotEqual(Decode(data, workers: 1), expected);
+            foreach (var workers in (int[])[2, 16])
+            {
+                Assert.Equal(expected, Decode(corrupted, workers));
+            }
+        }
+
+        static string Decode(byte[] data, int workers)
+        {
+            try
+            {
+                using var image = Image.Load(data, WithWorkers(workers));
+                return Convert.ToHexString(SHA256.HashData(GetBytes(image)));
+            }
+            catch (ImageException exception)
+            {
+                return $"{exception.GetType().Name}: {exception.Message}";
+            }
+        }
+    }
+
+    /// <summary>
+    /// The segmentation symbols that the code-block style announces are missing from every code-block of a codestream of
+    /// the encoder: several workers fail with the error of one worker.
+    /// </summary>
+    [Fact]
+    public void ACodeBlockThatFailsFailsTheDecodingWhateverTheWorkers()
+    {
+        var data = EncodeLargeImage(PixelFormat.Rgb24, Jpeg2000Compression.Lossless, 300, 240, seed: 5);
+
+        // COD: the marker, Lcod, Scod, the progression order, the number of layers, the component transformation, the
+        // number of decomposition levels and the two sizes of the code-blocks, then their style
+        var cod = data.AsSpan().IndexOf([(byte)0xFF, (byte)0x52]);
+        data[cod + 12] |= 0x20;
+        var expected = Assert.Throws<InvalidImageContentException>(() => Image.Load(data, WithWorkers(1)).Dispose()).Message;
+        foreach (var workers in (int[])[2, 3, 16])
+        {
+            Assert.Equal(expected, Assert.Throws<InvalidImageContentException>(() => Image.Load(data, WithWorkers(workers)).Dispose()).Message);
+        }
+    }
+
+    [Fact]
+    public void ATileGetsSeveralWorkersFromItsSizeAndItsCodeBlocks()
+    {
+        Assert.Equal(1, Jpeg2000Workers.GetWorkerCount(16, RowBands.MinPixelsForParallelism - 1, 100));
+        Assert.Equal(16, Jpeg2000Workers.GetWorkerCount(16, RowBands.MinPixelsForParallelism, 100));
+        Assert.Equal(1, Jpeg2000Workers.GetWorkerCount(1, 1L << 30, 100));
+        Assert.Equal(1, Jpeg2000Workers.GetWorkerCount(16, 1L << 30, 1));
+        Assert.Equal(5, Jpeg2000Workers.GetWorkerCount(16, 1L << 30, 5));
+
+        // A pass of the transformations is split into bands of at least the given number of rows
+        Assert.Equal(1, Jpeg2000Workers.GetBandCount(8, RowBands.MinPixelsForParallelism - 1, 1000, 32));
+        Assert.Equal(3, Jpeg2000Workers.GetBandCount(8, RowBands.MinPixelsForParallelism, 100, 32));
+        Assert.Equal(8, Jpeg2000Workers.GetBandCount(8, RowBands.MinPixelsForParallelism, 1000, 32));
+    }
+
+    /// <summary>
+    /// The error of the code-blocks decoded by several workers is the one of the first code-block that fails, a
+    /// cancellation first; the code-blocks after a failure are skipped and the ones before it all run.
+    /// </summary>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(3)]
+    [InlineData(8)]
+    public void WorkersFailWithTheErrorOfTheFirstFailingUnit(int workers)
+    {
+        foreach (var interleaved in (bool[])[false, true])
+        {
+            var ran = new int[40];
+            var exception = Assert.Throws<InvalidImageContentException>(() => Run(interleaved, workers, 40, (_, unit) =>
+            {
+                Interlocked.Increment(ref ran[unit]);
+                if (unit is 7 or 23 or 31)
+                    throw new InvalidImageContentException($"unit {unit}");
+            }));
+            Assert.Equal("unit 7", exception.Message);
+            Assert.All(ran.AsSpan(0, 8).ToArray(), count => Assert.Equal(1, count));
+            Assert.All(ran, count => Assert.InRange(count, 0, 1));
+
+            // A unit that fails after a cancellation does not hide it
+            using var cancellation = new CancellationTokenSource();
+            Assert.Throws<OperationCanceledException>(() => Run(interleaved, workers, 40, (_, unit) =>
+            {
+                if (unit is 2)
+                {
+                    cancellation.Cancel();
+                }
+
+                if (unit is 10)
+                    throw new InvalidImageContentException("unit 10");
+
+                cancellation.Token.ThrowIfCancellationRequested();
+            }));
+        }
+
+        static void Run(bool interleaved, int workers, int count, Action<int, int> body)
+        {
+            if (interleaved)
+            {
+                Jpeg2000Workers.RunInterleaved(workers, count, body);
+            }
+            else
+            {
+                Jpeg2000Workers.Run(workers, count, body);
+            }
+        }
+    }
+
+    /// <summary>
+    /// The decoding is canceled once the input is read, before the tile is decoded: its few packets do not check the
+    /// token, the code-blocks do, by one worker and by several.
+    /// </summary>
+    [Fact]
+    public async Task ADecodingCanceledBeforeTheCodeBlocksThrowsWhateverTheWorkers()
+    {
+        var data = EncodeLargeImage(PixelFormat.Rgb24, Jpeg2000Compression.Lossless, 300, 240, seed: 7);
+        foreach (var workers in (int[])[1, 16])
+        {
+            using var cancellation = new CancellationTokenSource();
+            await using var stream = new TestInputStream(data) { CancellationSource = cancellation, CancelAtPosition = data.Length };
+            await Assert.ThrowsAny<OperationCanceledException>(async () => (await Image.LoadAsync(stream, WithWorkers(workers), cancellation.Token)).Dispose());
+        }
+    }
+
+    /// <summary>The planes of a tile are charged to the live-allocation limit before any worker starts: a limit too small for them fails the same way.</summary>
+    [Fact]
+    public void ALiveAllocationLimitFailsTheSameWayWhateverTheWorkers()
+    {
+        var data = EncodeLargeImage(PixelFormat.Rgb24, Jpeg2000Compression.Lossless, 300, 240, seed: 9);
+        foreach (var workers in (int[])[1, 16])
+        {
+            var options = new ImageDecodeOptions { Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers, Limits = new ImageResourceLimits { MaxLiveAllocationBytes = 512 * 1024 } } };
+            Assert.Equal(ImageResourceLimitKind.LiveAllocationBytes, Assert.Throws<ImageResourceLimitException>(() => Image.Load(data, options).Dispose()).Kind);
+        }
+    }
+
+    private static ImageDecodeOptions WithWorkers(int workers) => new() { Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers } };
+
+    /// <summary>Codes an image of flat areas, gradients and noise with the encoder of the library: one tile of 64x64 code-blocks.</summary>
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    private static byte[] EncodeLargeImage(PixelFormat format, Jpeg2000Compression compression, int width, int height, int seed)
+    {
+        Assert.InRange((long)width * height, RowBands.MinPixelsForParallelism, long.MaxValue);
+        var random = new Random(seed);
+        var pixels = new Rgba64[width * height];
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                pixels[(y * width) + x] = (((x / 37) + (y / 29)) % 3) switch
+                {
+                    0 => new Rgba64((ushort)(x * 190), (ushort)(y * 270), (ushort)((x + y) * 120), 65535),
+                    1 => new Rgba64((ushort)random.Next(65536), (ushort)random.Next(65536), (ushort)random.Next(65536), (ushort)random.Next(65536)),
+                    _ => new Rgba64(9000, 30000, 52000, (ushort)(x * 211)),
+                };
+            }
+        }
+
+        using var source = Image.ImportPixelData<Rgba64>(pixels, width, height);
+        var flatten = new PixelConversionOptions { BackgroundColor = new Rgba64(65535, 65535, 65535, 65535) };
+        using Image image = format switch
+        {
+            PixelFormat.Gray8 => source.CloneAs<Gray8>(flatten),
+            PixelFormat.Rgb24 => source.CloneAs<Rgb24>(flatten),
+            PixelFormat.Rgba32 => source.CloneAs<Rgba32>(),
+            PixelFormat.Rgba64 => source.Clone(),
+            _ => throw new ArgumentOutOfRangeException(nameof(format)),
+        };
+        using var stream = new MemoryStream();
+        image.Save(stream, new Jpeg2000Encoder { Compression = compression, Container = Jpeg2000Container.Codestream });
+        return stream.ToArray();
     }
 
     private static ImageIdentifyOptions FullScan => new() { Mode = ImageIdentifyMode.FullScan };

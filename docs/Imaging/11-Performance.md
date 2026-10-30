@@ -72,6 +72,22 @@ public static void ResizeWithAllCores(string inputPath, string outputPath)
 - Resizing, transformations, convolutions, blurs, sharpening and edge detection split large frames into bands.
 - The HEIC and AVIF decoders decode the tiles of large grid images (the photos of phones) concurrently, and the HEIC and
   AVIF encoders encode the tiles concurrently when `GridTileSize` is set.
+- The codecs split the independent parts of images of at least 65,536 pixels between threads:
+
+  | Format | Decoded and encoded concurrently |
+  |---|---|
+  | OpenEXR | Chunks |
+  | JPEG 2000 | Code-blocks and wavelet transforms |
+  | JPEG XL | Groups of 256x256 pixels |
+  | TIFF | LZW and Deflate strips and tiles (and CCITT ones when decoding) |
+  | HEIC | Grid tiles; tiles and wavefront rows of a picture (decoding only) |
+  | AVIF | Grid tiles; tiles of a frame that has several |
+  | JPEG | Transforms and color conversion of MCU rows |
+
+  The gain depends on the share of the work that stays on one thread. OpenEXR, JPEG 2000 and TIFF scale well. JPEG
+  gains the least: its entropy decoding, a third to half of the time, stays on one thread. The files of the AVIF and
+  HEIC encoders have a single tile and no wavefront, unless they are grids or AVIF frames wider than 4,096 pixels, so
+  they decode with less parallelism than files with several tiles.
 - The other decoders and encoders, drawing and the other operations run on one thread.
 - The result does not depend on the number of threads: the pixels and the encoded bytes are the same.
 - Each worker needs its own working memory, which counts against the memory limit of the image.

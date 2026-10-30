@@ -25,6 +25,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// is an error.
 /// </para>
 /// <para>
+/// When workers decode the chunks (<see cref="ExrDecoder.BatchChunkCount"/>), the decoder collects them in a batch: the parser
+/// has the batch decoded before it asks for more input and before it reports an error, so that the errors are those of
+/// one worker, and its requests read ahead the chunks of the next batch (<see cref="NeedChunkBytes"/>).
+/// </para>
+/// <para>
 /// A writer that stops before it patches the offset table leaves entries that point before the end of the table (zeros,
 /// usually). Leniently, such a table is rebuilt the way OpenEXR does: the chunks follow the table without a gap, scan
 /// lines in the order of the <c>lineOrder</c> attribute (increasing for random order) and tiles in any order, each
@@ -93,6 +98,35 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
 
     public override ParseStatus Parse(ReadOnlySpan<byte> buffer, bool isEndOfInput, out int consumed)
     {
+        try
+        {
+            return ParseCore(buffer, isEndOfInput, out consumed);
+        }
+        catch (Exception) when (_decoder is { HasPendingChunks: true })
+        {
+            // The chunks before the error are decoded first: an error of theirs comes first, as with one worker
+            _decoder.DecodeBatch();
+            throw;
+        }
+    }
+
+    public override ImageInfo GetResult() => _result ?? throw new InvalidOperationException("The OpenEXR data was not parsed.");
+
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _offsets?.Dispose();
+            _offsets = null;
+            _order?.Dispose();
+            _order = null;
+        }
+
+        base.Dispose(disposing);
+    }
+
+    private ParseStatus ParseCore(ReadOnlySpan<byte> buffer, bool isEndOfInput, out int consumed)
+    {
         consumed = 0;
         while (true)
         {
@@ -138,7 +172,7 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
                     Advance(ref consumed, count);
                     _skip -= count;
                     if (_skip > 0)
-                        return ParseStatus.NeedMoreData(1);
+                        return _state == State.SkipAttribute ? ParseStatus.NeedMoreData(1) : NeedChunkBytes(1, isEndOfInput);
 
                     _state = _state == State.SkipAttribute ? State.Attributes : State.Chunks;
                     break;
@@ -168,7 +202,7 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
                         return ParseStatus.Complete;
                     }
 
-                    var status = ReadChunk(remaining, ref consumed);
+                    var status = ReadChunk(remaining, isEndOfInput, ref consumed);
                     if (!status.IsComplete)
                         return status;
 
@@ -179,21 +213,6 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
                     return ParseStatus.Complete;
             }
         }
-    }
-
-    public override ImageInfo GetResult() => _result ?? throw new InvalidOperationException("The OpenEXR data was not parsed.");
-
-    protected override void Dispose(bool disposing)
-    {
-        if (disposing)
-        {
-            _offsets?.Dispose();
-            _offsets = null;
-            _order?.Dispose();
-            _order = null;
-        }
-
-        base.Dispose(disposing);
     }
 
     private void Advance(ref int consumed, int count)
@@ -372,10 +391,10 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
         }
     }
 
-    private ParseStatus ReadChunk(ReadOnlySpan<byte> remaining, ref int consumed)
+    private ParseStatus ReadChunk(ReadOnlySpan<byte> remaining, bool isEndOfInput, ref int consumed)
     {
         if (_isRebuildingTable)
-            return ReadRebuiltChunk(remaining, ref consumed);
+            return ReadRebuiltChunk(remaining, isEndOfInput, ref consumed);
 
         var target = Offsets[(int)_cursor];
         var index = Order[(int)_cursor];
@@ -384,7 +403,7 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
             // Bytes between two chunks
             var gap = (int)Math.Min(target - _position, remaining.Length);
             Advance(ref consumed, gap);
-            return _position < target ? ParseStatus.NeedMoreData(1) : ParseStatus.Complete;
+            return _position < target ? NeedChunkBytes(1, isEndOfInput) : ParseStatus.Complete;
         }
 
         if (_position > target)
@@ -393,25 +412,25 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
         var header = Header;
         var headerLength = header.IsTiled ? ExrFormat.TileChunkHeaderLength : ExrFormat.ScanLineChunkHeaderLength;
         if (remaining.Length < headerLength)
-            return ParseStatus.NeedMoreData(headerLength);
+            return NeedChunkBytes(headerLength, isEndOfInput);
 
         var expected = header.IsTiled ? GetTileIndex(remaining, index) : GetScanLineIndex(remaining, index);
         if (expected != index)
             throw ExrFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"the chunk at the offset {target} is the chunk {expected}, but the offset table gives it to the chunk {index}."));
 
-        return ReadChunkData(remaining, ref consumed, headerLength, index);
+        return ReadChunkData(remaining, isEndOfInput, ref consumed, headerLength, index);
     }
 
     /// <summary>
     /// Reads the next chunk of a file whose offset table is rebuilt: it starts where the one before it ends, and its
     /// coordinates say which chunk it is.
     /// </summary>
-    private ParseStatus ReadRebuiltChunk(ReadOnlySpan<byte> remaining, ref int consumed)
+    private ParseStatus ReadRebuiltChunk(ReadOnlySpan<byte> remaining, bool isEndOfInput, ref int consumed)
     {
         var header = Header;
         var headerLength = header.IsTiled ? ExrFormat.TileChunkHeaderLength : ExrFormat.ScanLineChunkHeaderLength;
         if (remaining.Length < headerLength)
-            return ParseStatus.NeedMoreData(headerLength);
+            return NeedChunkBytes(headerLength, isEndOfInput);
 
         var position = (int)_cursor;
         var index = (int)(header.IsTiled ? GetTileIndex(remaining, position) : GetScanLineIndex(remaining, position));
@@ -431,12 +450,18 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
         if (declared >= _tableEnd && declared != _position)
             throw ExrFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"the offset table is incomplete and gives the offset {declared} to the chunk {index}, which is at the offset {_position}."));
 
-        Order[index] = 1;
-        return ReadChunkData(remaining, ref consumed, headerLength, index);
+        // The chunk is seen once it is read: a chunk that needs more input is read again from its coordinates
+        var status = ReadChunkData(remaining, isEndOfInput, ref consumed, headerLength, index);
+        if (status.IsComplete)
+        {
+            Order[index] = 1;
+        }
+
+        return status;
     }
 
     /// <summary>Reads the size and the data of the chunk whose coordinates start <paramref name="remaining"/>.</summary>
-    private ParseStatus ReadChunkData(ReadOnlySpan<byte> remaining, ref int consumed, int headerLength, int index)
+    private ParseStatus ReadChunkData(ReadOnlySpan<byte> remaining, bool isEndOfInput, ref int consumed, int headerLength, int index)
     {
         var header = Header;
         var size = BinaryPrimitives.ReadInt32LittleEndian(remaining[(headerLength - 4)..]);
@@ -446,7 +471,7 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
         if (_walk == StructureWalk.Decode && index < header.FirstLevelChunkCount)
         {
             if (remaining.Length < headerLength + size)
-                return ParseStatus.NeedMoreData(headerLength + size);
+                return NeedChunkBytes(headerLength + size, isEndOfInput);
 
             _decoder!.OnChunk(index, remaining.Slice(headerLength, size));
             Advance(ref consumed, headerLength + size);
@@ -460,6 +485,37 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
         _cursor++;
         _context.CancellationToken.ThrowIfCancellationRequested();
         return ParseStatus.Complete;
+    }
+
+    /// <summary>
+    /// Requests input while the chunks are read: <paramref name="required"/> bytes, the request of one worker. When workers
+    /// decode the chunks, the batch is decoded first (the input may end or fail: the errors of the chunks before come first),
+    /// and the request reads ahead the chunks of the next batch, so that a stream gives them at once: up to the start of the
+    /// chunk after them (for the last chunk, its largest uncompressed size is a guess), within the bytes of a batch and the
+    /// encoded-byte limit. An input that ends before is read again, and the parser asks for what it needs.
+    /// </summary>
+    private ParseStatus NeedChunkBytes(int required, bool isEndOfInput)
+    {
+        if (_decoder is not { BatchChunkCount: > 1 } decoder)
+            return ParseStatus.NeedMoreData(required);
+
+        decoder.DecodeBatch();
+        if (isEndOfInput)
+            return ParseStatus.NeedMoreData(required);
+
+        var header = Header;
+        var next = _cursor + decoder.BatchChunkCount;
+        var headerLength = header.IsTiled ? ExrFormat.TileChunkHeaderLength : ExrFormat.ScanLineChunkHeaderLength;
+        var window = decoder.BatchByteCount + ((long)decoder.BatchChunkCount * headerLength);
+        if (!_isRebuildingTable)
+        {
+            // A rebuilt table has no offsets to read ahead to: the window of a batch is the guess
+            var end = next < header.ChunkCount ? Offsets[(int)next] : Offsets[^1] + headerLength + header.MaxChunkDataLength;
+            window = Math.Min(end - _position, window);
+        }
+
+        window = Math.Min(Math.Min(window, _context.Limits.MaxEncodedBytes - _position), CheckedSizes.MaxBufferLength);
+        return ParseStatus.NeedMoreData((int)Math.Max(required, window));
     }
 
     private long GetScanLineIndex(ReadOnlySpan<byte> chunk, int index)

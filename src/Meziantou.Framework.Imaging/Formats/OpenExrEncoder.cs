@@ -36,6 +36,12 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// <para>
 /// Compressed output needs a seekable destination: the table of the offsets of the chunks precedes them.
 /// </para>
+/// <para>
+/// With <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> above 1, the samples of an image of at least 65,536 pixels
+/// are checked, and its chunks converted and compressed, by up to that many workers; the file, and the error of a sample
+/// out of range, are those of a single worker. Each worker needs its own chunk buffers, charged to
+/// <see cref="ImageResourceLimits.MaxLiveAllocationBytes"/>.
+/// </para>
 /// </remarks>
 public sealed class OpenExrEncoder : ImageEncoder
 {

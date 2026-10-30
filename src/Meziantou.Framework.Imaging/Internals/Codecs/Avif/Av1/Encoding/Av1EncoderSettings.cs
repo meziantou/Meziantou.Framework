@@ -22,6 +22,14 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// The number of frames from a key frame to the next one: 1 when every frame is a key frame, 0 when the first frame is the
 /// only one. The other frames are predicted from the frame that precedes them.
 /// </param>
+/// <param name="MaxDegreeOfParallelism">
+/// The largest number of workers that encode the tiles of a frame at once: the bytes are the same whatever the value.
+/// </param>
+/// <param name="MinTileColsLog2">
+/// The smallest base 2 logarithm of the number of tile columns: the frame has the fewest tiles that the limits of the
+/// specification allow otherwise. A measurement knob (the tile layout never depends on the number of workers).
+/// </param>
+/// <param name="MinTileRowsLog2">The smallest base 2 logarithm of the number of tile rows, like <paramref name="MinTileColsLog2"/>.</param>
 [StructLayout(LayoutKind.Auto)]
 internal readonly record struct Av1EncoderSettings(
     int Width,
@@ -39,4 +47,7 @@ internal readonly record struct Av1EncoderSettings(
     bool Lossless,
     int Quality,
     int Effort,
-    int KeyFrameInterval = 0);
+    int KeyFrameInterval = 0,
+    int MaxDegreeOfParallelism = 1,
+    int MinTileColsLog2 = 0,
+    int MinTileRowsLog2 = 0);

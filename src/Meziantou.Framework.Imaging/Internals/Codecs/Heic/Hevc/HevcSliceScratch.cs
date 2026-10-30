@@ -47,6 +47,16 @@ internal sealed class HevcSliceScratch : IDisposable
     /// <summary>Gets the copy of the reference samples of a prediction block that reaches beyond the reference picture.</summary>
     public Span<ushort> Window => (_window ??= Av1PooledArray<ushort>.Rent(_scope, WindowLength, clear: false)).Span;
 
+    /// <summary>
+    /// Rents the buffers of the inter prediction, which are otherwise rented when they are first used: a worker of
+    /// <see cref="HevcSubstreamWorkers"/> rents nothing once it decodes.
+    /// </summary>
+    public void RentInterBuffers()
+    {
+        RentPrediction();
+        _window ??= Av1PooledArray<ushort>.Rent(_scope, WindowLength, clear: false);
+    }
+
     private Av1PooledArray<short> RentPrediction() => _prediction ??= Av1PooledArray<short>.Rent(_scope, (2 * PredictionLength) + (71 * 64), clear: false);
 
     public void Dispose()

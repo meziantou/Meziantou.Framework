@@ -7,7 +7,20 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </summary>
 internal sealed class HeicPictureEncoder : HeifPictureEncoder
 {
+    private static readonly AsyncLocal<bool> TestWavefrontValue = new();
+
     private readonly HevcEncoder _encoder;
+
+    /// <summary>
+    /// Gets or sets a value indicating whether the pictures encoded on the current asynchronous flow are coded with rows of
+    /// the wavefront (<see cref="HevcEncoderSettings.Wavefront"/>), which the files of the encoder do not use: the tests
+    /// and the benchmarks of the decoder write large files whose rows several workers decode.
+    /// </summary>
+    internal static bool TestWavefront
+    {
+        get => TestWavefrontValue.Value;
+        set => TestWavefrontValue.Value = value;
+    }
 
     public HeicPictureEncoder(AllocationScope scope, in HeifPictureSettings settings)
     {
@@ -27,7 +40,8 @@ internal sealed class HeicPictureEncoder : HeifPictureEncoder
             settings.Lossless,
             settings.Quality,
             settings.Effort,
-            settings.KeyFrameInterval));
+            settings.KeyFrameInterval,
+            TestWavefront));
         try
         {
             Description = new HeicStreamDescription(scope, _encoder.Parameters, _encoder.VideoParameterSet.Span, _encoder.SequenceParameterSet.Span, _encoder.PictureParameterSet.Span);

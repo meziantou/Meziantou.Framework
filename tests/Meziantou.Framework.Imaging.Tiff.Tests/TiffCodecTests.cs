@@ -2520,6 +2520,273 @@ public sealed class TiffCodecTests
         Assert.True(decoded > 100, string.Create(CultureInfo.InvariantCulture, $"Only {decoded} mutated pages decoded."));
     }
 
+    /// <summary>The pages of <see cref="CreateWorkerPage"/>: every compression, strips and tiles, and the sample layouts the blocks are transformed for.</summary>
+    public static TheoryData<string> WorkerPages =>
+    [
+        "lzw-predictor", "lzw-tiles", "lzw-lsb-first", "lzw-float-predictor", "lzw-bilevel", "lzw-planar",
+        "deflate-16bit-big-endian", "deflate-tiles-alpha", "deflate-signed", "deflate-ycbcr", "old-deflate-4bit",
+        "ccitt-group3", "ccitt-group4", "packbits", "uncompressed-predictor",
+    ];
+
+    [Theory]
+    [MemberData(nameof(WorkerPages))]
+    public void BlocksDecodedByWorkersHaveThePixelsOfOneWorker(string name)
+    {
+        var data = CreateWorkerPage(name);
+        var (expected, format, peak) = DecodeWithWorkers(data, workers: 1, fromStream: false);
+        foreach (var workers in new[] { 2, 3, 16 })
+        {
+            foreach (var fromStream in new[] { false, true })
+            {
+                var (pixels, pixelFormat, workerPeak) = DecodeWithWorkers(data, workers, fromStream);
+                Assert.Equal(format, pixelFormat);
+                Assert.Equal(expected, pixels);
+                if (fromStream)
+                    continue;
+
+                // Each worker rents the memory of a block: the LZW, Deflate and CCITT blocks are decoded by workers, the others,
+                // which cost about what copying them costs, by one
+                if (name is "packbits" or "uncompressed-predictor")
+                {
+                    Assert.Equal(peak, workerPeak);
+                }
+                else
+                {
+                    Assert.InRange(workerPeak, peak + 1, long.MaxValue);
+                }
+            }
+        }
+
+        // The pages of a document are decoded the same way
+        using var document = ImageCollection.Load(data, new ImageConfiguration { MaxDegreeOfParallelism = 16 });
+        using var page = document[0].Decode();
+        Assert.Equal(expected, GetBytes(page));
+    }
+
+    [Theory]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(16)]
+    public void BlocksDecodedByWorkersFailWithTheErrorOfTheFirstFailingBlock(int workers)
+    {
+        // Strip 18 (the first of a batch of 2, 3 or 16 workers) and strips after it fail differently: the error of the first one
+        // is the error of one worker, whether a block fails while it is read (an empty block) or while it is decompressed (a
+        // truncated one), in the same batch or not
+        var spec = CreateWorkerPageSpec("lzw-predictor");
+        var blocks = spec.BuildBlocks();
+        byte[][] Mutate(params (int Index, bool Empty)[] failures)
+        {
+            var mutated = blocks.ToArray();
+            foreach (var (index, empty) in failures)
+            {
+                mutated[index] = empty ? [] : mutated[index][..(mutated[index].Length / 3)];
+            }
+
+            return mutated;
+        }
+
+        (byte[][] Blocks, byte[][] Reference)[] cases =
+        [
+            (Mutate((18, false), (19, false)), Mutate((18, false))),
+            (Mutate((18, false), (20, true)), Mutate((18, false))),
+            (Mutate((18, true), (19, false)), Mutate((18, true))),
+            (Mutate((18, false), (31, false)), Mutate((18, false))),
+            (Mutate((0, false), (32, true)), Mutate((0, false))),
+        ];
+
+        using var audit = new PoolAudit();
+        foreach (var (failing, reference) in cases)
+        {
+            var expected = Assert.Throws<InvalidImageContentException>(() => Image.Load(Build(reference), WithWorkers(1)));
+            var actual = Assert.Throws<InvalidImageContentException>(() => Image.Load(Build(failing), WithWorkers(workers)));
+            Assert.Equal(expected.Message, actual.Message);
+            using var stream = new MemoryStream(Build(failing));
+            Assert.Equal(expected.Message, Assert.Throws<InvalidImageContentException>(() => Image.Load(stream, WithWorkers(workers))).Message);
+        }
+
+        // A later block alone fails with an error of its own
+        var later = Assert.Throws<InvalidImageContentException>(() => Image.Load(Build(Mutate((19, false))), WithWorkers(workers)));
+        Assert.NotEqual(Assert.Throws<InvalidImageContentException>(() => Image.Load(Build(Mutate((18, false))), WithWorkers(workers))).Message, later.Message);
+        audit.AssertClean("pages whose blocks fail");
+
+        byte[] Build(byte[][] encoded) => new TiffFileBuilder().AddPage(new TiffPageSpec
+        {
+            Width = spec.Width,
+            Height = spec.Height,
+            SamplesPerPixel = spec.SamplesPerPixel,
+            Photometric = spec.Photometric,
+            Compression = spec.Compression,
+            Predictor = spec.Predictor,
+            RowsPerStrip = spec.RowsPerStrip,
+            EncodedBlocks = encoded,
+            Samples = [],
+        }).Build();
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(16)]
+    public void ACancellationWhileWorkersDecodeTheBlocksIsReported(int workers)
+    {
+        // The input cancels the decoding once half of it is read: the workers of the batch that was read meanwhile stop, and
+        // nothing stays rented
+        var data = CreateWorkerPage("lzw-predictor");
+        using var cancellation = new CancellationTokenSource();
+        var context = new Internals.ImageCodecContext(new ImageConfiguration { MaxDegreeOfParallelism = workers }, "test", cancellation.Token);
+        using var input = new CancellingInput(data, data.Length / 2, cancellation);
+        var source = new Internals.RandomAccessSource(input, context, ImageFormat.Tiff);
+        var request = Internals.ImageDecodeRequest.Create(ImageDecodeOptions.Default, pixelFormat: null);
+        Assert.Throws<OperationCanceledException>(() => Internals.TiffCodec.Instance.DecodeRandomAccess(source, request, context));
+        Assert.Equal(0, context.Scope.LiveBytes);
+    }
+
+    [Theory]
+    [InlineData("lzw-predictor")]
+    [InlineData("deflate-tiles-alpha")]
+    [InlineData("ccitt-group4")]
+    public void WorkersDecodeWithinTheAllocationLimitOfOneWorker(string name)
+    {
+        // At the smallest limit one worker decodes the page with, the workers decode it too, with the same pixels; below it,
+        // they fail as one worker does
+        var data = CreateWorkerPage(name);
+        var low = 0L;
+        var high = 64L << 20;
+        while (high - low > 1)
+        {
+            var middle = (low + high) / 2;
+            try
+            {
+                Image.Load(data, WithWorkers(1, middle)).Dispose();
+                high = middle;
+            }
+            catch (ImageResourceLimitException)
+            {
+                low = middle;
+            }
+        }
+
+        using var expected = Image.Load(data, WithWorkers(1, high));
+        var failure = Assert.Throws<ImageResourceLimitException>(() => Image.Load(data, WithWorkers(1, low)));
+        foreach (var workers in new[] { 2, 16 })
+        {
+            using var image = Image.Load(data, WithWorkers(workers, high));
+            Assert.Equal(GetBytes(expected), GetBytes(image));
+            Assert.Equal(failure.Message, Assert.Throws<ImageResourceLimitException>(() => Image.Load(data, WithWorkers(workers, low))).Message);
+
+            // A limit that leaves room for some workers only decodes the page too
+            using var some = Image.Load(data, WithWorkers(workers, high + (256 << 10)));
+            Assert.Equal(GetBytes(expected), GetBytes(some));
+        }
+    }
+
+    private static ImageDecodeOptions WithWorkers(int workers, long maxLiveAllocationBytes = long.MaxValue) => new()
+    {
+        Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers, Limits = new ImageResourceLimits { MaxLiveAllocationBytes = maxLiveAllocationBytes } },
+    };
+
+    /// <summary>Decodes a page, measures the most live bytes of the decoding, and checks that no buffer was used after its return or leaked.</summary>
+    private static (byte[] Pixels, PixelFormat Format, long PeakLiveBytes) DecodeWithWorkers(byte[] data, int workers, bool fromStream)
+    {
+        using var audit = new PoolAudit();
+        byte[] pixels;
+        PixelFormat format;
+        using (var stream = fromStream ? new MemoryStream(data, writable: false) : null)
+        using (var image = stream is null ? Image.Load(data, WithWorkers(workers)) : Image.Load(stream, WithWorkers(workers)))
+        {
+            pixels = GetBytes(image);
+            format = image.PixelFormat;
+        }
+
+        var peak = audit.Scopes.Max(static scope => scope.GetDiagnostics().PeakLiveBytes);
+        audit.AssertClean(string.Create(CultureInfo.InvariantCulture, $"a decoding by {workers} workers"));
+        return (pixels, format, peak);
+    }
+
+    /// <summary>
+    /// A page of 300x230 pixels (more than the 65,536 pixels from which blocks are decoded by several workers), in strips of
+    /// 7 rows or in tiles of 64x48 pixels, so that the last strip and the tiles of the right and bottom edges are partial.
+    /// </summary>
+    private static byte[] CreateWorkerPage(string name)
+    {
+        if (name.StartsWith("ccitt-", StringComparison.Ordinal))
+        {
+            // Bilevel strips written by the encoder of the library
+            var pixels = new Gray8[300 * 230];
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                var (x, y) = (i % 300, i / 300);
+                pixels[i] = new Gray8((((x / (1 + (y % 13))) + (y / 5)) % 3) == 0 ? (byte)0 : (byte)255);
+            }
+
+            using var bilevel = Image.ImportPixelData<Gray8>(pixels, 300, 230);
+            using var stream = new MemoryStream();
+            bilevel.Save(stream, new TiffEncoder { PixelLayout = TiffPixelLayout.Bilevel, Compression = name == "ccitt-group3" ? TiffCompression.CcittGroup3 : TiffCompression.CcittGroup4, RowsPerStrip = 7 });
+            return stream.ToArray();
+        }
+
+        var spec = CreateWorkerPageSpec(name);
+        if (name == "lzw-lsb-first")
+        {
+            spec = new TiffPageSpec { Width = spec.Width, Height = spec.Height, BitsPerSample = spec.BitsPerSample, Photometric = spec.Photometric, Compression = 5, RowsPerStrip = spec.RowsPerStrip, FillOrder = 2, EncodedBlocks = [.. spec.BuildBlocks().Select(static block => TiffReferenceCodecs.ReverseBits(block))], Samples = [] };
+        }
+
+        return new TiffFileBuilder { BigEndian = name == "deflate-16bit-big-endian" }.AddPage(spec).Build();
+    }
+
+    private static TiffPageSpec CreateWorkerPageSpec(string name)
+    {
+        const int Width = 300;
+        const int Height = 230;
+        byte[] Samples(int bitsPerPixel, int seed)
+        {
+            // Rows of noise between rows that repeat, so that every compression finds something to compress
+            var rowLength = ((Width * bitsPerPixel) + 7) / 8;
+            var samples = new byte[rowLength * Height];
+            Noise(samples, seed);
+            for (var y = 1; y < Height; y += 2)
+            {
+                samples.AsSpan((y - 1) * rowLength, rowLength).CopyTo(samples.AsSpan(y * rowLength));
+            }
+
+            return samples;
+        }
+
+        var spec = name switch
+        {
+            "lzw-predictor" => new TiffPageSpec { Width = Width, Height = Height, SamplesPerPixel = 3, Photometric = 2, Compression = 5, Predictor = 2, RowsPerStrip = 7, Samples = Samples(24, 1) },
+            "lzw-tiles" => new TiffPageSpec { Width = Width, Height = Height, SamplesPerPixel = 3, Photometric = 2, Compression = 5, Predictor = 2, TileWidth = 64, TileLength = 48, Samples = Samples(24, 2) },
+            "lzw-float-predictor" => new TiffPageSpec { Width = Width, Height = Height, SamplesPerPixel = 3, BitsPerSample = 32, SampleFormat = 3, Photometric = 2, Compression = 5, Predictor = 3, RowsPerStrip = 7, Samples = Samples(96, 3) },
+            "lzw-bilevel" or "lzw-lsb-first" => new TiffPageSpec { Width = Width, Height = Height, BitsPerSample = 1, Photometric = 0, Compression = 5, RowsPerStrip = 7, Samples = Samples(1, 4) },
+            "lzw-planar" => new TiffPageSpec { Width = Width, Height = Height, PlanarConfiguration = 2, Compression = 5, RowsPerStrip = 7, Samples = Samples(8, 5) },
+            "deflate-16bit-big-endian" => new TiffPageSpec { Width = Width, Height = Height, BitsPerSample = 16, Compression = 8, Predictor = 2, RowsPerStrip = 7, Samples = Samples(16, 6) },
+            "deflate-tiles-alpha" => new TiffPageSpec { Width = Width, Height = Height, SamplesPerPixel = 4, Photometric = 2, ExtraSamples = [2], Compression = 8, TileWidth = 64, TileLength = 48, Samples = Samples(32, 7) },
+            "deflate-signed" => new TiffPageSpec { Width = Width, Height = Height, BitsPerSample = 16, SampleFormat = 2, Compression = 8, Predictor = 2, RowsPerStrip = 7, Samples = Samples(16, 8) },
+            "old-deflate-4bit" => new TiffPageSpec { Width = Width, Height = Height, BitsPerSample = 4, Compression = 32946, RowsPerStrip = 7, Samples = Samples(4, 9) },
+            "packbits" => new TiffPageSpec { Width = Width, Height = Height, SamplesPerPixel = 3, Photometric = 2, Compression = 32773, RowsPerStrip = 7, Samples = Samples(24, 10) },
+            "uncompressed-predictor" => new TiffPageSpec { Width = Width, Height = Height, SamplesPerPixel = 3, Photometric = 2, Predictor = 2, TileWidth = 64, TileLength = 48, Samples = Samples(24, 11) },
+            "deflate-ycbcr" => CreateYCbCrWorkerPage(Width, Height),
+            _ => throw new ArgumentOutOfRangeException(nameof(name), name, message: null),
+        };
+
+        return spec;
+    }
+
+    /// <summary>A YCbCr page of 2x2 data units compressed with Deflate, in strips of 8 rows.</summary>
+    private static TiffPageSpec CreateYCbCrWorkerPage(int width, int height)
+    {
+        var blocks = new List<byte[]>();
+        for (var top = 0; top < height; top += 8)
+        {
+            var units = new byte[(width / 2) * ((Math.Min(8, height - top) + 1) / 2) * 6];
+            Noise(units, seed: top);
+            blocks.Add(TiffFileBuilder.Deflate(units));
+        }
+
+        var page = new TiffPageSpec { Width = width, Height = height, SamplesPerPixel = 3, Photometric = 6, Compression = 8, RowsPerStrip = 8, EncodedBlocks = [.. blocks], Samples = [] };
+        page.ExtraFields.Add(TiffFieldSpec.Shorts(530, [2, 2]));
+        return page;
+    }
+
     private static readonly ImageDecodeOptions InkOptions = new() { CmykConversion = CmykConversionOptions.Default };
 
     // The independent decimal reference of the default conversion of inks: the built-in CMYK profile to sRGB, relative
@@ -2744,6 +3011,24 @@ public sealed class TiffCodecTests
         var pixels = new TPixel[image.Width * image.Height];
         image.Frames[0].CopyPixelDataTo(pixels);
         return pixels;
+    }
+
+    /// <summary>An input that is not held in memory, which cancels a token once more than a number of its bytes are read.</summary>
+    private sealed class CancellingInput(byte[] data, long cancelAfter, CancellationTokenSource cancellation) : Internals.RandomAccessInput
+    {
+        private long _read;
+
+        public override long Length => data.Length;
+
+        public override void Read(long offset, Span<byte> destination)
+        {
+            data.AsSpan((int)offset, destination.Length).CopyTo(destination);
+            _read += destination.Length;
+            if (_read > cancelAfter)
+            {
+                cancellation.Cancel();
+            }
+        }
     }
 
     /// <summary>A seekable stream that counts the bytes actually read, to show that one page is read without the others.</summary>

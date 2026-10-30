@@ -69,7 +69,7 @@ internal sealed class Jpeg2000Decoder : Jpeg2000DecodeObserver
         var siz = structure.Siz;
         var coding = Jpeg2000TileCoding.Resolve(siz, structure.MainHeader, tile.Headers, structure.Capabilities);
         using var geometry = Jpeg2000TileGeometry.Create(_context.Scope, siz, coding, tile.Index);
-        _tileDecoder ??= new Jpeg2000TileDecoder(_context);
+        _tileDecoder ??= new Jpeg2000TileDecoder(_context, _context.Configuration.MaxDegreeOfParallelism);
         structure.AddTools(_tileDecoder.Decode(siz, coding, geometry, tile));
         _rowWriter ??= new Jpeg2000RowWriter(_context, siz, structure.Layout, sink, _inkConversion);
         _rowWriter.WriteTile(geometry);

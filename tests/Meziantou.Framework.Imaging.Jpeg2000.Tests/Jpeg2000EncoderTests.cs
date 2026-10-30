@@ -543,6 +543,73 @@ public sealed class Jpeg2000EncoderTests
         return boxes;
     }
 
+    /// <summary>
+    /// An image of at least 65,536 pixels is coded by several workers (the rows, the wavelet transformation and the
+    /// code-blocks): the file is the one of one worker, for both wavelets, one to four components and both depths.
+    /// </summary>
+    [Theory]
+    [InlineData(PixelFormat.Rgb24, Jpeg2000Compression.Lossless, 331, 223)]
+    [InlineData(PixelFormat.Rgb24, Jpeg2000Compression.Lossy, 331, 223)]
+    [InlineData(PixelFormat.Gray8, Jpeg2000Compression.Lossless, 170, 401)]
+    [InlineData(PixelFormat.Gray16, Jpeg2000Compression.Lossy, 401, 170)]
+    [InlineData(PixelFormat.Rgba32, Jpeg2000Compression.Lossy, 257, 256)]
+    [InlineData(PixelFormat.Bgra32, Jpeg2000Compression.Lossless, 300, 230)]
+    [InlineData(PixelFormat.Rgba64, Jpeg2000Compression.Lossless, 300, 230)]
+    public void FilesWrittenByWorkersAreTheFilesOfOneWorker(PixelFormat format, Jpeg2000Compression compression, int width, int height)
+    {
+        var encoder = new Jpeg2000Encoder { Compression = compression };
+        using var source = CreateImage(width, height, seed: width + (int)format);
+        using var image = ConvertTo(source, format);
+        var expected = Save(image, encoder);
+        var bytes = GetBytes(image, format);
+        foreach (var workers in (int[])[2, 3, 16])
+        {
+            using var copy = Import(bytes, width, height, format, new ImageConfiguration { MaxDegreeOfParallelism = workers });
+            Assert.True(expected.AsSpan().SequenceEqual(Save(copy, encoder)), $"{format} {compression} {width}x{height}: {workers} workers write other bytes.");
+        }
+    }
+
+    [Fact]
+    public async Task AnEncodingCanceledBeforeItStartsThrowsWhateverTheWorkers()
+    {
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        foreach (var workers in (int[])[1, 16])
+        {
+            using var source = CreateImage(300, 230, seed: 4);
+            using var image = Import(GetBytes(source, PixelFormat.Rgba32), 300, 230, PixelFormat.Rgba32, new ImageConfiguration { MaxDegreeOfParallelism = workers });
+            using var stream = new MemoryStream();
+            await Assert.ThrowsAny<OperationCanceledException>(() => image.SaveAsync(stream, new Jpeg2000Encoder(), cancellation.Token));
+        }
+    }
+
+    /// <summary>
+    /// The working memory of every worker is charged before any code-block is coded: a limit that the pixels of the image fit
+    /// in, and the plane of the encoder does not, fails the same way.
+    /// </summary>
+    [Fact]
+    public void ALiveAllocationLimitFailsTheSameWayWhateverTheWorkers()
+    {
+        using var source = CreateImage(300, 230, seed: 6);
+        var bytes = GetBytes(source, PixelFormat.Rgba32);
+        foreach (var workers in (int[])[1, 16])
+        {
+            using var image = Import(bytes, 300, 230, PixelFormat.Rgba32, new ImageConfiguration { MaxDegreeOfParallelism = workers, Limits = new ImageResourceLimits { MaxLiveAllocationBytes = 340_000 } });
+            Assert.Equal(ImageResourceLimitKind.LiveAllocationBytes, Assert.Throws<ImageResourceLimitException>(() => Save(image, new Jpeg2000Encoder())).Kind);
+        }
+    }
+
+    private static Image Import(byte[] bytes, int width, int height, PixelFormat format, ImageConfiguration configuration) => format switch
+    {
+        PixelFormat.Rgba32 => Image.ImportPixelBytes<Rgba32>(bytes, width, height, configuration: configuration),
+        PixelFormat.Bgra32 => Image.ImportPixelBytes<Bgra32>(bytes, width, height, configuration: configuration),
+        PixelFormat.Rgba64 => Image.ImportPixelBytes<Rgba64>(bytes, width, height, configuration: configuration),
+        PixelFormat.Rgb24 => Image.ImportPixelBytes<Rgb24>(bytes, width, height, configuration: configuration),
+        PixelFormat.Gray8 => Image.ImportPixelBytes<Gray8>(bytes, width, height, configuration: configuration),
+        PixelFormat.Gray16 => Image.ImportPixelBytes<Gray16>(bytes, width, height, configuration: configuration),
+        _ => throw new ArgumentOutOfRangeException(nameof(format)),
+    };
+
     /// <summary>Converts the test image (flattened on white when the format has no alpha).</summary>
     private static Image ConvertTo(Image<Rgba32> source, PixelFormat format)
     {

@@ -24,6 +24,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// The number of pictures from a key frame to the next one: 1 when every picture is a key frame, 0 when the first picture is
 /// the only one.
 /// </param>
+/// <param name="MaxDegreeOfParallelism">
+/// The largest number of workers that the codec may use for a picture (the independent tiles of an AV1 frame): 1 when
+/// the pictures are coded at the same time as others. The output does not depend on it.
+/// </param>
 [StructLayout(LayoutKind.Auto)]
 internal readonly record struct HeifPictureSettings(
     int Width,
@@ -40,4 +44,5 @@ internal readonly record struct HeifPictureSettings(
     bool Lossless,
     int Quality,
     int Effort,
-    int KeyFrameInterval);
+    int KeyFrameInterval,
+    int MaxDegreeOfParallelism = 1);

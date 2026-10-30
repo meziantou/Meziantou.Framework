@@ -244,6 +244,49 @@ internal sealed class HevcPictureState : IDisposable
         LastQpY = 0;
     }
 
+    /// <summary>
+    /// Gives the coding tree blocks whose addresses in tile scan are in [<paramref name="first"/>,
+    /// <paramref name="end"/>) the state that <see cref="BeginPicture"/> gives them: the workers of
+    /// <see cref="HevcSubstreamWorkers"/> decoded them for a slice segment that ends before them.
+    /// </summary>
+    public void ClearCodingTreeBlocks(HevcPictureLayout layout, int first, int end)
+    {
+        var sps = layout.Sps;
+        var minCbs = 1 << (sps.CtbLog2SizeY - MinCbLog2SizeY);
+        var blocks = 1 << (sps.CtbLog2SizeY - 2);
+        var ctbAddrTsToRs = layout.CtbAddrTsToRs;
+        var cuFlags = _cuFlags.Span;
+        var qpY = _qpY.Span;
+        var intraPredModeY = _intraPredModeY.Span;
+        var edgeFlags = _edgeFlags.Span;
+        var motion = Motion;
+        for (var ctbAddrInTs = first; ctbAddrInTs < end; ctbAddrInTs++)
+        {
+            var ctbAddrInRs = ctbAddrTsToRs[ctbAddrInTs];
+            var rx = ctbAddrInRs % sps.PicWidthInCtbsY;
+            var ry = ctbAddrInRs / sps.PicWidthInCtbsY;
+            _sliceIndex.Span[ctbAddrInRs] = 0;
+            _sao.Span.Slice(ctbAddrInRs * SaoValuesPerCtb, SaoValuesPerCtb).Clear();
+            for (var y = 0; y < minCbs; y++)
+            {
+                var index = (((ry * minCbs) + y) * WidthInMinCbs) + (rx * minCbs);
+                cuFlags.Slice(index, minCbs).Clear();
+                qpY.Slice(index, minCbs).Clear();
+            }
+
+            for (var y = 0; y < blocks; y++)
+            {
+                var index = (((ry * blocks) + y) * WidthIn4x4) + (rx * blocks);
+                intraPredModeY.Slice(index, blocks).Clear();
+                edgeFlags.Slice(index, blocks).Clear();
+                if (!motion.IsEmpty)
+                {
+                    motion.Slice(index, blocks).Clear();
+                }
+            }
+        }
+    }
+
     public void Dispose()
     {
         _cuFlags.Dispose();

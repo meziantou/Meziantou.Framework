@@ -92,11 +92,11 @@ internal ref partial struct Av1TileCoder
 
         if (_header.SegmentationTemporalUpdate)
         {
-            var ctx = _scratch.LeftSegPredContext[_miRow & 31] + _state.AboveSegPredContext[_miCol];
+            var ctx = _scratch.LeftSegPredContext[_miRow & 31] + _scratch.AboveSegPredContext[_miCol];
             var segIdPredicted = ReadSymbol(Av1CdfLayout.SegmentIdPredicted + (ctx * Av1CdfLayout.SegmentIdPredictedSize), Av1CdfLayout.SegmentIdPredictedSize);
             if (segIdPredicted is not 0)
             {
-                _state.Tools |= Av1Tools.PredictedSegmentId;
+                _scratch.Tools |= Av1Tools.PredictedSegmentId;
                 _segmentId = predictedSegmentId;
             }
             else
@@ -114,7 +114,7 @@ internal ref partial struct Av1TileCoder
 
     private readonly void SetSegPredContext(byte value)
     {
-        _state.AboveSegPredContext.Slice(_miCol, Av1Tables.Num4x4BlocksWide[_miSize]).Fill(value);
+        _scratch.AboveSegPredContext.Slice(_miCol, Av1Tables.Num4x4BlocksWide[_miSize]).Fill(value);
         var left = _scratch.LeftSegPredContext;
         for (var i = 0; i < Av1Tables.Num4x4BlocksHigh[_miSize]; i++)
         {
@@ -1017,7 +1017,7 @@ internal ref partial struct Av1TileCoder
         var h4 = Av1Tables.TxHeight[txSz] / Av1Constants.MiSize;
         if (txfmSplit)
         {
-            _state.Tools |= Av1Tools.VariableTransformSize;
+            _scratch.Tools |= Av1Tools.VariableTransformSize;
             var subTxSz = Av1Tables.SplitTxSize[txSz];
             var stepW = Av1Tables.TxWidth[subTxSz] / Av1Constants.MiSize;
             var stepH = Av1Tables.TxHeight[subTxSz] / Av1Constants.MiSize;

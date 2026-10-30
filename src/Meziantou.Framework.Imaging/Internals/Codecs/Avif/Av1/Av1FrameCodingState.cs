@@ -92,6 +92,7 @@ internal sealed class Av1FrameCodingState : IDisposable
         if (!header.FrameIsIntra || header.AllowIntrabc)
             InterScratch ??= new Av1InterScratch(_scope);
 
+        Scratch.PrepareAboveContext(_scope, header.MiCols);
         State.Prepare(_scope, sequence, header, segmentationSource);
         if (header.UseRefFrameMvs)
             Av1MotionField.Estimate(sequence, header, References, State.MotionFieldMvs);
@@ -129,16 +130,31 @@ internal sealed class Av1FrameCodingState : IDisposable
     public Span<ushort> BeginTile()
     {
         var tileContext = TileContext;
-        FrameContext.CopyTo(tileContext);
-        Av1Tables.DefaultIntraFrameYModeCdf.CopyTo(tileContext[Av1CdfLayout.IntraFrameYMode..]);
+        BeginTile(tileContext);
         return tileContext;
     }
 
+    /// <summary>
+    /// Starts a tile with a context of its own, <paramref name="tileContext"/> (<see cref="Av1CdfLayout.TotalLength"/>
+    /// values): a worker that codes tiles at the same time as others. The frame context is only read.
+    /// </summary>
+    public void BeginTile(Span<ushort> tileContext)
+    {
+        FrameContext.CopyTo(tileContext);
+        Av1Tables.DefaultIntraFrameYModeCdf.CopyTo(tileContext[Av1CdfLayout.IntraFrameYMode..]);
+    }
+
     /// <summary>Ends the tile <paramref name="tileNum"/> (<c>exit_symbol</c>, section 8.2.4): saves its context when it is the one that updates the frame context.</summary>
-    public void EndTile(Av1FrameHeader header, int tileNum)
+    public void EndTile(Av1FrameHeader header, int tileNum) => EndTile(header, tileNum, TileContext);
+
+    /// <summary>
+    /// Ends the tile <paramref name="tileNum"/> that was coded with <paramref name="tileContext"/>: saves the context when the
+    /// tile is the one that updates the frame context, which only one tile of a frame is.
+    /// </summary>
+    public void EndTile(Av1FrameHeader header, int tileNum, ReadOnlySpan<ushort> tileContext)
     {
         if (!header.DisableFrameEndUpdateCdf && tileNum == header.ContextUpdateTileId)
-            TileContext.CopyTo(SavedContext);
+            tileContext.CopyTo(SavedContext);
     }
 
     /// <summary>Ends the last tile of the frame: the saved context becomes the frame context (section 7.4).</summary>

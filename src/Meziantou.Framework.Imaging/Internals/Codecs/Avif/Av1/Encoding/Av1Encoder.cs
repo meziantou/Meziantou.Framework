@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -38,6 +40,13 @@ internal sealed class Av1Encoder : IDisposable
     private Av1FrameBuffer? _reconstruction;
     private int[] _tileSizes = [];
     private int[] _tapeEnds = [];
+    private int[] _tapeStarts = [];
+    private int[] _tapeOwners = [];
+    private int[] _dataOwners = [];
+    private int[] _dataOffsets = [];
+    private TileWorker?[] _tileWorkers = [];
+    private PooledPayloadWriter? _firstWorkerData;
+    private int _workers = 1;
     private bool _defersSymbols;
     private Phase _phase = Phase.Idle;
     private int _tile;
@@ -209,8 +218,15 @@ internal sealed class Av1Encoder : IDisposable
                 _phase = Phase.Tiles;
                 return false;
             case Phase.Tiles:
-                if (EncodeSuperblockRow(cancellationToken))
+                if (_workers > 1)
+                {
+                    EncodeTiles(cancellationToken);
                     _phase = Phase.Finish;
+                }
+                else if (EncodeSuperblockRow(cancellationToken))
+                {
+                    _phase = Phase.Finish;
+                }
 
                 return false;
             case Phase.Finish:
@@ -227,6 +243,14 @@ internal sealed class Av1Encoder : IDisposable
         _reconstruction?.Release();
         _reconstruction = null;
         _coding.Dispose();
+        foreach (var worker in _tileWorkers)
+        {
+            worker?.Dispose();
+        }
+
+        _tileWorkers = [];
+        _firstWorkerData?.Dispose();
+        _firstWorkerData = null;
         _workspace?.Dispose();
         _tileData.Dispose();
         _frameData.Dispose();
@@ -344,7 +368,10 @@ internal sealed class Av1Encoder : IDisposable
 
     private void StartFrame()
     {
+        // The fewest tiles that the limits allow, unless the settings ask for more
         var limits = Av1FrameHeaderParser.ComputeTileLimits(_sequence.Use128x128Superblock, 2 * ((_settings.Width + 7) >> 3), 2 * ((_settings.Height + 7) >> 3));
+        var tileColsLog2 = Math.Clamp(_settings.MinTileColsLog2, limits.MinLog2TileCols, limits.MaxLog2TileCols);
+
         // A frame that is not a key frame is predicted from the frame that precedes it, which every reference slot holds:
         // the distributions it starts with are the ones that the previous frame ended with
         var isKeyFrame = _frameIndex is 0 || (_settings.KeyFrameInterval > 0 && _frameIndex % _settings.KeyFrameInterval is 0);
@@ -365,8 +392,8 @@ internal sealed class Av1Encoder : IDisposable
             AllowScreenContentTools = hasFewColors,
             AllowIntrabc = allowsBlockCopy,
             OrderHint = _sequence.EnableOrderHint ? _frameIndex & ((1 << _sequence.OrderHintBits) - 1) : 0,
-            TileColsLog2 = limits.MinLog2TileCols,
-            TileRowsLog2 = Math.Max(limits.MinLog2Tiles - limits.MinLog2TileCols, 0),
+            TileColsLog2 = tileColsLog2,
+            TileRowsLog2 = Math.Clamp(_settings.MinTileRowsLog2, Math.Max(limits.MinLog2Tiles - tileColsLog2, 0), limits.MaxLog2TileRows),
             TileSizeBytes = 4,
             BaseQIdx = _quantizerIndex,
             TxMode = !_settings.Lossless && _decisions.TransformSizeDepth > 0 ? Av1Constants.TxModeSelect : Av1Constants.TxModeLargest,
@@ -402,7 +429,162 @@ internal sealed class Av1Encoder : IDisposable
         _workspace.ResetTape();
         _tileData.Reset();
         _tile = 0;
-        BeginTile(header);
+
+        // A frame of intra block copy codes its tiles on one worker: the table of the blocks that a block may copy has an
+        // entry per sample of the frame
+        _workers = header.AllowIntrabc ? 1 : Av1TileWorkers.GetWorkerCount(_settings.MaxDegreeOfParallelism, header.TileCount, (long)_settings.Width * _settings.Height);
+        if (_workers > 1)
+        {
+            PrepareTileWorkers(header);
+        }
+        else
+        {
+            BeginTile(header);
+        }
+    }
+
+    // Rents what the workers of the tiles need, on the calling thread and before any tile starts: the first worker is the
+    // encoder, with a tile output of its own, and the other ones keep their state from one frame to the next
+    private void PrepareTileWorkers(Av1FrameHeader header)
+    {
+        if (_tapeStarts.Length < header.TileCount)
+        {
+            _tapeStarts = new int[header.TileCount];
+            _tapeOwners = new int[header.TileCount];
+            _dataOwners = new int[header.TileCount];
+            _dataOffsets = new int[header.TileCount];
+        }
+
+        _firstWorkerData ??= new PooledPayloadWriter(_scope);
+        // A worker that cannot be rented leaves the ones before it to Dispose
+        if (_tileWorkers.Length < _workers - 1)
+        {
+            var created = _tileWorkers.Length;
+            Array.Resize(ref _tileWorkers, _workers - 1);
+            for (var i = created; i < _tileWorkers.Length; i++)
+            {
+                _tileWorkers[i] = new TileWorker(_scope, _workspace, header.MiCols);
+            }
+        }
+
+        var predicts = !header.FrameIsIntra || header.AllowIntrabc;
+        for (var i = 0; i < _workers - 1; i++)
+        {
+            var worker = _tileWorkers[i]!;
+            if (predicts)
+                worker.InterScratch ??= new Av1InterScratch(_scope);
+
+            worker.Workspace.ResetTape();
+        }
+    }
+
+    // Encodes the tiles of the frame by several workers, each taking the next tile that is left, in its own workspace,
+    // with its own distributions and its own output: the tiles are the same whichever worker codes them, and are appended
+    // to the tile data in the order of the tiles
+    private void EncodeTiles(CancellationToken cancellationToken)
+    {
+        var frame = _coding.CurrentFrame!;
+        var header = frame.Header;
+        var sbSize4 = _sequence.Use128x128Superblock ? 32 : 16;
+        ResetTileOutputs();
+        Av1TileWorkers.Run(_workers, header.TileCount, (worker, tile) =>
+        {
+            var state = GetTileWorker(worker);
+            var context = state.Context;
+            var tileRow = tile / header.TileCols;
+            var tileCol = tile % header.TileCols;
+            _coding.BeginTile(context);
+            if (_defersSymbols)
+            {
+                _tapeOwners[tile] = worker;
+                _tapeStarts[tile] = state.Workspace.TapeLength;
+            }
+            else
+            {
+                _dataOwners[tile] = worker;
+                _dataOffsets[tile] = state.Output.Length;
+                state.Symbols.Initialize(state.Output, header.DisableCdfUpdate);
+            }
+
+            for (var row = header.MiRowStarts[tileRow]; row < header.MiRowStarts[tileRow + 1]; row += sbSize4)
+            {
+                var coder = new Av1TileCoder(frame, _coding.State, state.Workspace, state.Symbols, state.Scratch, _coding.References, state.InterScratch, context, cancellationToken);
+                coder.SetDecisions(_decisions);
+                coder.SetDeferred(_defersSymbols);
+                coder.EncodeSuperblockRow(tileRow, tileCol, row);
+            }
+
+            if (_defersSymbols)
+            {
+                _tapeEnds[tile] = state.Workspace.TapeLength;
+            }
+            else
+            {
+                _tileSizes[tile] = state.Symbols.Finish();
+                _coding.EndTile(header, tile, context);
+            }
+        });
+
+        if (!_defersSymbols)
+        {
+            AppendTileOutputs(header.TileCount);
+            _coding.EndTiles(header);
+        }
+    }
+
+    // Writes the tiles of a frame whose syntax elements were kept by the workers of its tiles, like WriteDeferredTiles
+    private void WriteDeferredTilesInParallel(CancellationToken cancellationToken)
+    {
+        var frame = _coding.CurrentFrame!;
+        var header = frame.Header;
+        ResetTileOutputs();
+        Av1TileWorkers.Run(_workers, header.TileCount, (worker, tile) =>
+        {
+            var state = GetTileWorker(worker);
+            var context = state.Context;
+            _coding.BeginTile(context);
+            _dataOwners[tile] = worker;
+            _dataOffsets[tile] = state.Output.Length;
+            state.Symbols.Initialize(state.Output, header.DisableCdfUpdate);
+            var tape = GetTileWorker(_tapeOwners[tile]).Workspace.Tape[_tapeStarts[tile].._tapeEnds[tile]];
+            var coder = new Av1TileCoder(frame, _coding.State, state.Workspace, state.Symbols, state.Scratch, _coding.References, state.InterScratch, context, cancellationToken);
+            coder.ReplayTape(tile / header.TileCols, tile % header.TileCols, tape);
+            _tileSizes[tile] = state.Symbols.Finish();
+            _coding.EndTile(header, tile, context);
+        });
+
+        AppendTileOutputs(header.TileCount);
+        _coding.EndTiles(header);
+    }
+
+    private void ResetTileOutputs()
+    {
+        _firstWorkerData!.Reset();
+        for (var i = 0; i < _workers - 1; i++)
+        {
+            _tileWorkers[i]!.Output.Reset();
+        }
+    }
+
+    // The tiles in the order of the tiles, in the tile data of the frame
+    private void AppendTileOutputs(int tileCount)
+    {
+        _tileData.Reset();
+        for (var tile = 0; tile < tileCount; tile++)
+        {
+            var output = _dataOwners[tile] is 0 ? _firstWorkerData! : _tileWorkers[_dataOwners[tile] - 1]!.Output;
+            _tileData.Write(output.WrittenSpan.Slice(_dataOffsets[tile], _tileSizes[tile]));
+        }
+    }
+
+    // The state of a worker of the tiles: the one of the encoder for the first one
+    private TileWorkerState GetTileWorker(int worker)
+    {
+        if (worker is 0)
+            return new TileWorkerState(_workspace, _symbols, _firstWorkerData!, _coding.Scratch!, _coding.InterScratch, _coding.TileContext);
+
+        var state = _tileWorkers[worker - 1]!;
+        return new TileWorkerState(state.Workspace, state.Symbols, state.Output, state.Scratch, state.InterScratch, state.Context.Span);
     }
 
     // Writes the header and reads it back: the derived variables of the frame are the ones of a decoder
@@ -519,7 +701,16 @@ internal sealed class Av1Encoder : IDisposable
         }
 
         if (_defersSymbols)
-            WriteDeferredTiles(cancellationToken);
+        {
+            if (_workers > 1)
+            {
+                WriteDeferredTilesInParallel(cancellationToken);
+            }
+            else
+            {
+                WriteDeferredTiles(cancellationToken);
+            }
+        }
 
         _reconstruction = _coding.StoreFrame();
 
@@ -564,5 +755,66 @@ internal sealed class Av1Encoder : IDisposable
             Av1ObuWriter.Write(_payload, Av1Constants.ObuSequenceHeader, _sequenceHeader);
 
         Av1ObuWriter.Write(_payload, Av1Constants.ObuFrame, _frameData.WrittenSpan);
+    }
+
+    // The state of a worker of the tiles, the encoder or a TileWorker
+    [StructLayout(LayoutKind.Auto)]
+    private readonly ref struct TileWorkerState(Av1EncoderWorkspace workspace, Av1SymbolEncoder symbols, PooledPayloadWriter output, Av1TileScratch scratch, Av1InterScratch? interScratch, Span<ushort> context)
+    {
+        public Av1EncoderWorkspace Workspace { get; } = workspace;
+
+        public Av1SymbolEncoder Symbols { get; } = symbols;
+
+        public PooledPayloadWriter Output { get; } = output;
+
+        public Av1TileScratch Scratch { get; } = scratch;
+
+        public Av1InterScratch? InterScratch { get; } = interScratch;
+
+        public Span<ushort> Context { get; } = context;
+    }
+
+    // What a worker that encodes tiles at the same time as the encoder has of its own: the search state, the symbol
+    // encoder and the output of its tiles, the distributions of its tile and the working buffers of the blocks (above
+    // context included) and of the inter prediction. The source planes are the ones of the encoder
+    private sealed class TileWorker : IDisposable
+    {
+        public TileWorker(AllocationScope scope, Av1EncoderWorkspace shared, int miCols)
+        {
+            try
+            {
+                Workspace = new Av1EncoderWorkspace(scope, shared);
+                Output = new PooledPayloadWriter(scope);
+                Scratch = new Av1TileScratch(scope);
+                Scratch.PrepareAboveContext(scope, miCols);
+                Context = Av1PooledArray<ushort>.Rent(scope, Av1CdfLayout.TotalLength, clear: false);
+            }
+            catch
+            {
+                Dispose();
+                throw;
+            }
+        }
+
+        public Av1EncoderWorkspace Workspace { get; }
+
+        public Av1SymbolEncoder Symbols { get; } = new();
+
+        public PooledPayloadWriter Output { get; }
+
+        public Av1TileScratch Scratch { get; }
+
+        public Av1InterScratch? InterScratch { get; set; }
+
+        public Av1PooledArray<ushort> Context { get; }
+
+        public void Dispose()
+        {
+            Workspace?.Dispose();
+            Output?.Dispose();
+            Scratch?.Dispose();
+            InterScratch?.Dispose();
+            Context?.Dispose();
+        }
     }
 }

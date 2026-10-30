@@ -393,6 +393,15 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
     /// <see cref="JpegProgressiveScanEncoder.GetScript"/> is then coded twice from the coefficients: once to count its
     /// symbols, one row of blocks per call, then, after the DHT segment of the tables built from the counts and the scan
     /// header, to write it in bounded steps.
+    /// <para>
+    /// With <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> above 1 (the configuration of the saved image), the MCU
+    /// rows of a frame of at least <see cref="RowBands.MinPixelsForParallelism"/> pixels are converted, transformed and
+    /// quantized by several workers, a batch of <see cref="RowsPerWorker"/> rows per worker at a time: an MCU row reads only
+    /// its own rows of the image (the last one repeated below it), and each worker has its own sample rows and DCT scratch
+    /// (<see cref="TransformWorker"/>, rented with the session). The quantized coefficients of a baseline batch are kept
+    /// until they are coded; the coefficients of a progressive frame are those of the whole image anyway. The entropy coding
+    /// stays on the calling thread, in the order of one worker, so the bytes never depend on the number of workers.
+    /// </para>
     /// </remarks>
     private sealed class Session : ImageEncoderSession
     {
@@ -422,17 +431,23 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         private readonly JpegHuffmanEncoder _luminanceAc;
         private readonly JpegHuffmanEncoder? _chrominanceDc;
         private readonly JpegHuffmanEncoder? _chrominanceAc;
+        // The number of MCU rows that each worker transforms in a batch
+        private const int RowsPerWorker = 4;
+
         private readonly JpegMetadataWriter _metadata;
-        private readonly double[] _scratch = new double[64];
-        private readonly float[] _block = new float[64];
-        private readonly int[] _coefficients = new int[64];
         private readonly int[] _predictions = new int[3];
         private readonly JpegProgressiveScanEncoder? _scanEncoder;
+        private readonly int _blocksPerMcu;
+        private readonly int _batchRows;
         private JpegCoefficientPlane?[] _coefficientPlanes = [];
-        private PooledBuffer? _row;
-        private PooledBuffer? _planeY;
-        private PooledBuffer? _planeCb;
-        private PooledBuffer? _planeCr;
+
+        // The buffers of the workers that transform MCU rows: one for one worker, which codes each block as it is transformed
+        private TransformWorker[] _transformWorkers = [];
+
+        // With several workers, the quantized coefficients (zig-zag order) of the MCU rows of a baseline batch
+        private PooledBuffer? _batch;
+        private int _batchStart;
+        private int _batchEnd;
         private ImageFrame? _frame;
         private Step _step;
         private int _metadataIndex;
@@ -460,6 +475,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             _mcusX = (_width + (8 * _h) - 1) / (8 * _h);
             _mcusY = (_height + (8 * _v) - 1) / (8 * _v);
             _planeWidth = _mcusX * 8 * _h;
+            _blocksPerMcu = _grayscale ? 1 : (_h * _v) + 2;
 
             JpegEncodingTables.ScaleQuantizationTable(JpegEncodingTables.LuminanceQuantization, _encoder.Quality, _luminanceQuantization);
             JpegEncodingTables.ScaleQuantizationTable(JpegEncodingTables.ChrominanceQuantization, _encoder.Quality, _chrominanceQuantization);
@@ -480,18 +496,24 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                 throw CheckedSizes.CreateOverflowException(options.Scope.Limits);
 
             var scope = options.Scope;
+            var workerCount = Math.Min(RowBands.GetWorkerCount(options.CanvasSize, options.Configuration.MaxDegreeOfParallelism), _mcusY);
+            _batchRows = Math.Min(_mcusY, workerCount * RowsPerWorker);
             try
             {
-                if (_sourceFormat != _workFormat)
+                // Every buffer of every worker is rented now, on the calling thread
+                _transformWorkers = new TransformWorker[workerCount];
+                for (var i = 0; i < workerCount; i++)
                 {
-                    _row = scope.Rent((int)rowBytes, AllocationKind.Temporary, clear: false);
+                    _transformWorkers[i] = new TransformWorker(scope, _sourceFormat != _workFormat ? (int)rowBytes : 0, (int)planeBytes, _grayscale);
                 }
 
-                _planeY = scope.Rent((int)planeBytes, AllocationKind.Temporary, clear: false);
-                if (!_grayscale)
+                if (workerCount > 1 && _encoder.Process != JpegEncodingProcess.Progressive)
                 {
-                    _planeCb = scope.Rent((int)planeBytes, AllocationKind.Temporary, clear: false);
-                    _planeCr = scope.Rent((int)planeBytes, AllocationKind.Temporary, clear: false);
+                    var batchBytes = (long)_batchRows * _mcusX * _blocksPerMcu * 64 * sizeof(short);
+                    if (batchBytes > CheckedSizes.MaxBufferLength)
+                        throw CheckedSizes.CreateOverflowException(scope.Limits);
+
+                    _batch = scope.Rent((int)batchBytes, AllocationKind.Temporary, clear: false);
                 }
 
                 if (_encoder.Process == JpegEncodingProcess.Progressive)
@@ -688,14 +710,14 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
 
         private void ReleaseSampleBuffers()
         {
-            _row?.Dispose();
-            _row = null;
-            _planeY?.Dispose();
-            _planeY = null;
-            _planeCb?.Dispose();
-            _planeCb = null;
-            _planeCr?.Dispose();
-            _planeCr = null;
+            foreach (var worker in _transformWorkers)
+            {
+                worker?.Dispose();
+            }
+
+            _transformWorkers = [];
+            _batch?.Dispose();
+            _batch = null;
         }
 
         private void WriteQuantizationTables(ImageOutputBuffer output)
@@ -779,46 +801,105 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             JpegMetadataWriter.WriteSegment(output, MarkerSos, payload[..(tail + 3)]);
         }
 
-        /// <summary>Transforms the blocks of the next MCU row into the coefficients of the image.</summary>
+        /// <summary>Transforms the blocks of the next MCU row, or of the next batch of rows with several workers, into the coefficients of the image.</summary>
         private void TransformMcuRow()
         {
             var frame = _frame ?? throw new InvalidOperationException("No JPEG frame is being written.");
-            using (var lease = frame.GetStorage().AcquireLease())
+            if (_transformWorkers.Length > 1)
             {
-                LoadMcuRow(in lease, _mcuRow);
+                using var lease = frame.GetStorage().AcquireLease();
+                var end = Math.Min(_mcusY, _mcuRow + _batchRows);
+                TransformRows(lease.Storage, _mcuRow, end, (worker, row, mcuX, block) => GetProgressiveBlock(row, mcuX, block));
+
+                // The last row of the batch is counted by the caller
+                _mcuRow = end - 1;
+                return;
             }
 
-            var planeY = unsafe(MemoryMarshal.Cast<byte, float>(_planeY!.Span));
-            var luminance = _coefficientPlanes[0]!;
+            var single = _transformWorkers[0];
+            using (var lease = frame.GetStorage().AcquireLease())
+            {
+                LoadMcuRow(single, lease.Storage, _mcuRow);
+            }
+
             for (var mcuX = 0; mcuX < _mcusX; mcuX++)
             {
-                var x0 = mcuX * 8 * _h;
-                for (var by = 0; by < _v; by++)
+                for (var block = 0; block < _blocksPerMcu; block++)
                 {
-                    for (var bx = 0; bx < _h; bx++)
-                    {
-                        ExtractBlock(planeY, x0 + (bx * 8), by * 8, factorX: 1, factorY: 1);
-                        StoreBlock(_luminanceQuantization, luminance.GetBlock((_mcuRow * _v) + by, (mcuX * _h) + bx));
-                    }
-                }
-
-                if (!_grayscale)
-                {
-                    ExtractBlock(unsafe(MemoryMarshal.Cast<byte, float>(_planeCb!.Span)), x0, 0, _h, _v);
-                    StoreBlock(_chrominanceQuantization, _coefficientPlanes[1]!.GetBlock(_mcuRow, mcuX));
-                    ExtractBlock(unsafe(MemoryMarshal.Cast<byte, float>(_planeCr!.Span)), x0, 0, _h, _v);
-                    StoreBlock(_chrominanceQuantization, _coefficientPlanes[2]!.GetBlock(_mcuRow, mcuX));
+                    TransformBlock(single, mcuX, block, GetProgressiveBlock(_mcuRow, mcuX, block));
                 }
             }
         }
 
-        private void StoreBlock(ReadOnlySpan<ushort> quantization, Span<short> destination)
+        /// <summary>Gets the coefficients of a block of an MCU of a progressive frame: the luma blocks in raster order, then Cb and Cr.</summary>
+        private Span<short> GetProgressiveBlock(int row, int mcuX, int block)
         {
-            var coefficients = _coefficients.AsSpan();
-            JpegForwardDct.TransformAndQuantize(_block, quantization, _scratch, coefficients);
+            var lumaBlocks = _h * _v;
+            return block < lumaBlocks
+                ? _coefficientPlanes[0]!.GetBlock((row * _v) + (block / _h), (mcuX * _h) + (block % _h))
+                : _coefficientPlanes[block - lumaBlocks + 1]!.GetBlock(row, mcuX);
+        }
+
+        /// <summary>Gets the coefficients of a block of an MCU of the baseline batch.</summary>
+        private Span<short> GetBatchBlock(int row, int mcuX, int block)
+        {
+            var index = ((((row - _batchStart) * _mcusX) + mcuX) * _blocksPerMcu) + block;
+            return unsafe(MemoryMarshal.Cast<byte, short>(_batch!.RawBuffer.AsSpan(index * 64 * sizeof(short), 64 * sizeof(short))));
+        }
+
+        /// <summary>
+        /// Converts, transforms and quantizes the MCU rows from <paramref name="first"/> to <paramref name="end"/> (excluded)
+        /// with the workers, each one a contiguous range of rows: the error is the one of the first row that fails (a
+        /// cancellation first).
+        /// </summary>
+        private void TransformRows(PixelStorage storage, int first, int end, BlockDestination destination)
+        {
+            var count = end - first;
+            var workers = Math.Min(_transformWorkers.Length, count);
+            var cancellationToken = CancellationToken;
+            RowBands.RunParallelInBandOrder(workers, index =>
+            {
+                var worker = _transformWorkers[index];
+                var last = first + RowBands.GetBandStart(count, index + 1, workers);
+                for (var row = first + RowBands.GetBandStart(count, index, workers); row < last; row++)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    LoadMcuRow(worker, storage, row);
+                    for (var mcuX = 0; mcuX < _mcusX; mcuX++)
+                    {
+                        for (var block = 0; block < _blocksPerMcu; block++)
+                        {
+                            TransformBlock(worker, mcuX, block, destination(worker, row, mcuX, block));
+                        }
+                    }
+                }
+            });
+        }
+
+        /// <summary>Transforms and quantizes a block of an MCU of the loaded row of a worker, and stores its coefficients (zig-zag order).</summary>
+        private void TransformBlock(TransformWorker worker, int mcuX, int block, Span<short> destination)
+        {
+            var coefficients = worker.Coefficients.AsSpan();
+            LoadBlock(worker, mcuX, block);
+            JpegForwardDct.TransformAndQuantize(worker.Block, block < _h * _v ? _luminanceQuantization : _chrominanceQuantization, worker.Scratch, coefficients);
             for (var k = 0; k < 64; k++)
             {
                 destination[k] = (short)coefficients[k];
+            }
+        }
+
+        /// <summary>Copies the samples of a block of an MCU of the loaded row of a worker: the luma blocks in raster order, then the box-filtered Cb and Cr blocks.</summary>
+        private void LoadBlock(TransformWorker worker, int mcuX, int block)
+        {
+            var x0 = mcuX * 8 * _h;
+            var lumaBlocks = _h * _v;
+            if (block < lumaBlocks)
+            {
+                ExtractBlock(worker.PlaneY, _planeWidth, x0 + (block % _h * 8), block / _h * 8, factorX: 1, factorY: 1, worker.Block);
+            }
+            else
+            {
+                ExtractBlock(block == lumaBlocks ? worker.PlaneCb : worker.PlaneCr, _planeWidth, x0, 0, _h, _v, worker.Block);
             }
         }
 
@@ -945,7 +1026,8 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         private bool EncodeScan(ImageOutputBuffer output)
         {
             var frame = _frame ?? throw new InvalidOperationException("No JPEG frame is being written.");
-            var blocksPerMcu = _grayscale ? 1 : (_h * _v) + 2;
+            var blocksPerMcu = _blocksPerMcu;
+            var batched = _batch is not null;
             using (var lease = frame.GetStorage().AcquireLease())
             {
                 var coded = 0;
@@ -953,7 +1035,18 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                 {
                     if (!_rowLoaded)
                     {
-                        LoadMcuRow(in lease, _mcuRow);
+                        if (!batched)
+                        {
+                            LoadMcuRow(_transformWorkers[0], lease.Storage, _mcuRow);
+                        }
+                        else if (_mcuRow >= _batchEnd)
+                        {
+                            // The workers transform the next batch of rows; the blocks are coded from their coefficients
+                            _batchStart = _mcuRow;
+                            _batchEnd = Math.Min(_mcusY, _mcuRow + _batchRows);
+                            TransformRows(lease.Storage, _batchStart, _batchEnd, (worker, row, mcuX, block) => GetBatchBlock(row, mcuX, block));
+                        }
+
                         _rowLoaded = true;
                     }
 
@@ -964,7 +1057,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                             return false;
 
                         var span = output.GetSpan(blocksPerMcu * MaxBlockBytes);
-                        var length = EncodeMcu(_mcuX, span);
+                        var length = batched ? EncodeStoredMcu(_mcuRow, _mcuX, span) : EncodeMcu(_mcuX, span);
                         output.Advance(length);
                         _mcuX++;
                         coded++;
@@ -990,19 +1083,19 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         /// or gray (alpha flattened onto the background and 16-bit samples reduced, by the shared converter), then to
         /// level-shifted Y, Cb, Cr samples, the last column replicated to the padded width.
         /// </summary>
-        private void LoadMcuRow(scoped in PixelLease lease, int mcuRow)
+        private void LoadMcuRow(TransformWorker worker, PixelStorage storage, int mcuRow)
         {
             var rows = 8 * _v;
-            var planeY = unsafe(MemoryMarshal.Cast<byte, float>(_planeY!.Span));
-            var planeCb = _grayscale ? default : unsafe(MemoryMarshal.Cast<byte, float>(_planeCb!.Span));
-            var planeCr = _grayscale ? default : unsafe(MemoryMarshal.Cast<byte, float>(_planeCr!.Span));
+            var planeY = worker.PlaneY;
+            var planeCb = worker.PlaneCb;
+            var planeCr = worker.PlaneCr;
             for (var r = 0; r < rows; r++)
             {
                 var y = Math.Min((mcuRow * rows) + r, _height - 1);
-                ReadOnlySpan<byte> source = lease.GetRowBytes(y);
-                if (_row is not null)
+                ReadOnlySpan<byte> source = storage.GetRowSpanCore(y);
+                if (worker.Row is { } row)
                 {
-                    var converted = _row.Span;
+                    var converted = row.Span;
                     PixelConverter.ConvertRow(_sourceFormat, source, _workFormat, converted, _background, ImageFormat.Jpeg);
                     source = converted;
                 }
@@ -1043,43 +1136,63 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             red[_width..].Fill(red[_width - 1]);
         }
 
+        /// <summary>Transforms and codes an MCU of the loaded row of the only worker.</summary>
         private int EncodeMcu(int mcuX, Span<byte> destination)
         {
             var position = 0;
-            var planeY = unsafe(MemoryMarshal.Cast<byte, float>(_planeY!.Span));
+            var worker = _transformWorkers[0];
+            var planeY = worker.PlaneY;
             var x0 = mcuX * 8 * _h;
             for (var by = 0; by < _v; by++)
             {
                 for (var bx = 0; bx < _h; bx++)
                 {
-                    ExtractBlock(planeY, x0 + (bx * 8), by * 8, factorX: 1, factorY: 1);
-                    EncodeBlock(destination, ref position, component: 0, _luminanceQuantization, _luminanceDc, _luminanceAc);
+                    ExtractBlock(planeY, _planeWidth, x0 + (bx * 8), by * 8, factorX: 1, factorY: 1, worker.Block);
+                    TransformAndEncodeBlock(worker, destination, ref position, component: 0, _luminanceQuantization, _luminanceDc, _luminanceAc);
                 }
             }
 
             if (!_grayscale)
             {
-                ExtractBlock(unsafe(MemoryMarshal.Cast<byte, float>(_planeCb!.Span)), x0, 0, _h, _v);
-                EncodeBlock(destination, ref position, component: 1, _chrominanceQuantization, _chrominanceDc!, _chrominanceAc!);
-                ExtractBlock(unsafe(MemoryMarshal.Cast<byte, float>(_planeCr!.Span)), x0, 0, _h, _v);
-                EncodeBlock(destination, ref position, component: 2, _chrominanceQuantization, _chrominanceDc!, _chrominanceAc!);
+                ExtractBlock(worker.PlaneCb, _planeWidth, x0, 0, _h, _v, worker.Block);
+                TransformAndEncodeBlock(worker, destination, ref position, component: 1, _chrominanceQuantization, _chrominanceDc!, _chrominanceAc!);
+                ExtractBlock(worker.PlaneCr, _planeWidth, x0, 0, _h, _v, worker.Block);
+                TransformAndEncodeBlock(worker, destination, ref position, component: 2, _chrominanceQuantization, _chrominanceDc!, _chrominanceAc!);
             }
 
             return position;
         }
 
-        /// <summary>
-        /// Copies an 8x8 block of samples starting at (<paramref name="x0"/>, <paramref name="y0"/>) of the MCU-row plane. With
-        /// subsampling factors above 1, each block sample is the mean of the <c>factorX x factorY</c> full-resolution samples
-        /// it covers (box filter: the subsampled sample sits at the center of those samples, the JFIF chroma siting).
-        /// </summary>
-        private void ExtractBlock(ReadOnlySpan<float> plane, int x0, int y0, int factorX, int factorY) => JpegEncoderCodec.ExtractBlock(plane, _planeWidth, x0, y0, factorX, factorY, _block);
-
-        private void EncodeBlock(Span<byte> destination, ref int position, int component, ReadOnlySpan<ushort> quantization, JpegHuffmanEncoder dc, JpegHuffmanEncoder ac)
+        private void TransformAndEncodeBlock(TransformWorker worker, Span<byte> destination, ref int position, int component, ReadOnlySpan<ushort> quantization, JpegHuffmanEncoder dc, JpegHuffmanEncoder ac)
         {
-            var coefficients = _coefficients.AsSpan();
-            JpegForwardDct.TransformAndQuantize(_block, quantization, _scratch, coefficients);
+            var coefficients = worker.Coefficients.AsSpan();
+            JpegForwardDct.TransformAndQuantize(worker.Block, quantization, worker.Scratch, coefficients);
+            EncodeBlock(destination, ref position, coefficients, component, dc, ac);
+        }
 
+        /// <summary>Codes an MCU of the baseline batch from its stored coefficients.</summary>
+        private int EncodeStoredMcu(int row, int mcuX, Span<byte> destination)
+        {
+            var position = 0;
+            var coefficients = _transformWorkers[0].Coefficients.AsSpan();
+            for (var block = 0; block < _blocksPerMcu; block++)
+            {
+                var stored = GetBatchBlock(row, mcuX, block);
+                for (var k = 0; k < 64; k++)
+                {
+                    coefficients[k] = stored[k];
+                }
+
+                var component = block < _h * _v ? 0 : block - (_h * _v) + 1;
+                EncodeBlock(destination, ref position, coefficients, component, component == 0 ? _luminanceDc : _chrominanceDc!, component == 0 ? _luminanceAc : _chrominanceAc!);
+            }
+
+            return position;
+        }
+
+        /// <summary>Codes the quantized coefficients (zig-zag order) of a block of a component.</summary>
+        private void EncodeBlock(Span<byte> destination, ref int position, Span<int> coefficients, int component, JpegHuffmanEncoder dc, JpegHuffmanEncoder ac)
+        {
             // DC: difference with the previous block of the component, size category then the additional bits (T.81 F.1.2.1)
             var difference = coefficients[0] - _predictions[component];
             _predictions[component] = coefficients[0];
@@ -1120,5 +1233,74 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         }
 
         private void WriteSymbol(Span<byte> destination, ref int position, JpegHuffmanEncoder table, int symbol) => _bits.WriteSymbolAndBits(destination, ref position, table, symbol, 0, 0);
+
+        /// <summary>
+        /// The buffers of a worker that transforms MCU rows: the source row converted to the working format, one MCU row of
+        /// level-shifted samples per component, and the block, scratch and coefficients of the forward DCT.
+        /// </summary>
+        private sealed class TransformWorker : IDisposable
+        {
+            private PooledBuffer? _row;
+            private PooledBuffer? _planeY;
+            private PooledBuffer? _planeCb;
+            private PooledBuffer? _planeCr;
+
+            /// <param name="scope">The scope the buffers are rented from.</param>
+            /// <param name="rowBytes">The size of the converted source row, or 0 when the source rows are used as they are.</param>
+            /// <param name="planeBytes">The size of an MCU row of samples of a component.</param>
+            /// <param name="grayscale">Whether there is only the luma plane.</param>
+            public TransformWorker(AllocationScope scope, int rowBytes, int planeBytes, bool grayscale)
+            {
+                try
+                {
+                    if (rowBytes > 0)
+                    {
+                        _row = scope.Rent(rowBytes, AllocationKind.Temporary, clear: false);
+                    }
+
+                    _planeY = scope.Rent(planeBytes, AllocationKind.Temporary, clear: false);
+                    if (!grayscale)
+                    {
+                        _planeCb = scope.Rent(planeBytes, AllocationKind.Temporary, clear: false);
+                        _planeCr = scope.Rent(planeBytes, AllocationKind.Temporary, clear: false);
+                    }
+                }
+                catch
+                {
+                    Dispose();
+                    throw;
+                }
+            }
+
+            /// <summary>Gets the source row converted to the working format, or <see langword="null"/> when the source rows are used as they are.</summary>
+            public PooledBuffer? Row => _row;
+
+            public Span<float> PlaneY => unsafe(MemoryMarshal.Cast<byte, float>(_planeY!.Span));
+
+            public Span<float> PlaneCb => _planeCb is null ? default : unsafe(MemoryMarshal.Cast<byte, float>(_planeCb.Span));
+
+            public Span<float> PlaneCr => _planeCr is null ? default : unsafe(MemoryMarshal.Cast<byte, float>(_planeCr.Span));
+
+            public float[] Block { get; } = new float[64];
+
+            public double[] Scratch { get; } = new double[64];
+
+            public int[] Coefficients { get; } = new int[64];
+
+            public void Dispose()
+            {
+                _row?.Dispose();
+                _row = null;
+                _planeY?.Dispose();
+                _planeY = null;
+                _planeCb?.Dispose();
+                _planeCb = null;
+                _planeCr?.Dispose();
+                _planeCr = null;
+            }
+        }
+
+        /// <summary>Gets where the coefficients of a block of an MCU go.</summary>
+        private delegate Span<short> BlockDestination(TransformWorker worker, int row, int mcuX, int block);
     }
 }

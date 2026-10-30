@@ -250,13 +250,13 @@ internal ref partial struct Av1TileCoder
         {
             var subX = plane > 0 ? _subX : 0;
             var start = _miColStart >> subX;
-            var length = ((_miColEnd - _miColStart) >> subX) + Av1FrameState.AboveContextMargin;
-            length = Math.Min(length, _state.GetAboveLevelContext(plane).Length - start);
-            _state.GetAboveLevelContext(plane).Slice(start, length).Clear();
-            _state.GetAboveDcContext(plane).Slice(start, length).Clear();
+            var length = ((_miColEnd - _miColStart) >> subX) + Av1TileScratch.AboveContextMargin;
+            length = Math.Min(length, _scratch.GetAboveLevelContext(plane).Length - start);
+            _scratch.GetAboveLevelContext(plane).Slice(start, length).Clear();
+            _scratch.GetAboveDcContext(plane).Slice(start, length).Clear();
         }
 
-        _state.AboveSegPredContext[_miColStart..].Clear();
+        _scratch.AboveSegPredContext[_miColStart..].Clear();
     }
 
     private readonly void ClearLeftContext()
@@ -503,7 +503,7 @@ internal ref partial struct Av1TileCoder
             ResetBlockContext(bw4, bh4);
 
         StoreBlock(bw4, bh4);
-        _state.Tools |= GetBlockTools();
+        _scratch.Tools |= GetBlockTools();
         ComputePrediction();
         Residual();
     }
@@ -632,8 +632,8 @@ internal ref partial struct Av1TileCoder
             var subY = plane > 0 ? _subY : 0;
             var start = _miCol >> subX;
             var length = ((_miCol + bw4) >> subX) - start;
-            _state.GetAboveLevelContext(plane).Slice(start, length).Clear();
-            _state.GetAboveDcContext(plane).Slice(start, length).Clear();
+            _scratch.GetAboveLevelContext(plane).Slice(start, length).Clear();
+            _scratch.GetAboveDcContext(plane).Slice(start, length).Clear();
             for (var i = _miRow >> subY; i < ((_miRow + bh4) >> subY); i++)
             {
                 _scratch.GetLeftLevelContext(plane)[i & 31] = 0;
@@ -706,7 +706,7 @@ internal ref partial struct Av1TileCoder
                 continue;
 
             var colors = _scratch.GetPaletteColors(plane)[..size];
-            var above = _state.AbovePaletteColors[(plane * Av1Constants.PaletteColors * (_miCols + Av1FrameState.AboveContextMargin))..];
+            var above = _scratch.AbovePaletteColors[(plane * Av1Constants.PaletteColors * (_miCols + Av1TileScratch.AboveContextMargin))..];
             for (var x = 0; x < width; x++)
             {
                 colors.CopyTo(above[((_miCol + x) * Av1Constants.PaletteColors)..]);

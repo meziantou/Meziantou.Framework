@@ -43,8 +43,12 @@ when several threads share an image, synchronize them yourself.
 
 By default, an operation runs on the calling thread only ([ImageConfiguration.MaxDegreeOfParallelism](cref:Meziantou.Framework.Imaging.ImageConfiguration.MaxDegreeOfParallelism) is 1). With a
 higher value, large resizes, transformations, convolutions, blurs, medians and unsharp masks split their rows into
-bands processed concurrently, and the tiles of large HEIC and AVIF grids are decoded and encoded concurrently. The
-result is identical to the sequential one: the same pixels and the same encoded bytes.
+bands processed concurrently, and the decoders and encoders of JPEG, TIFF, OpenEXR, JPEG 2000, JPEG XL, AVIF and HEIC
+split the independent parts of large images (rows, strips, chunks, code-blocks, groups, tiles) between threads. The
+result is identical to the sequential one: the same pixels, the same encoded bytes and the same error. Each thread
+needs memory of its own, counted by
+[ImageResourceLimits.MaxLiveAllocationBytes](cref:Meziantou.Framework.Imaging.ImageResourceLimits.MaxLiveAllocationBytes),
+so a limit that fits one thread may not fit several.
 
 Keep the default in a service that already processes several images at once: the bound applies to each operation, so
 `n` concurrent operations can use up to `n` times that many threads. See [Performance](../11-Performance.md).

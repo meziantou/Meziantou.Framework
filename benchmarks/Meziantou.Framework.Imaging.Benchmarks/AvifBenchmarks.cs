@@ -3,6 +3,7 @@ using Meziantou.Framework.Imaging.Benchmarks.Infrastructure;
 using Meziantou.Framework.Imaging.Benchmarks.Workloads;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.FuzzTests;
+using Meziantou.Framework.Imaging.Internals;
 
 namespace Meziantou.Framework.Imaging.Benchmarks;
 
@@ -168,5 +169,125 @@ public class AvifBenchmarks : IDisposable
         using var image = Image.Load(encoded);
         if (image.Width != width || image.Height != height || image.Frames.Count != frames)
             throw new InvalidOperationException($"Unexpected AVIF input: {image.Width}x{image.Height}, {image.Frames.Count} frame(s).");
+    }
+
+    /// <summary>
+    /// The AV1 tiles of a frame decoded and encoded by <see cref="Workers"/> workers
+    /// (<see cref="ImageConfiguration.MaxDegreeOfParallelism"/>). The decoded input is a 3840x2160 lossy 4:2:0 frame of the
+    /// encoder of the library in 4x2 tiles, the layout that libavif's <c>--autotiling</c> chooses for that size, and the same
+    /// frame in one tile (of which workers only share the post-processing filters). The encoded input is a
+    /// 1920x1080 frame in 4x2 tiles: the encoder chooses the fewest tiles by itself, which is one tile up to 4096 samples of
+    /// width, so the layout is set through the internal settings of the AV1 encoder.
+    /// </summary>
+    [Config(typeof(WorkloadConfig))]
+    public class Tiles
+    {
+        private const int DecodedWidth = 3840;
+        private const int DecodedHeight = 2160;
+        private const int EncodedWidth = 1920;
+        private const int EncodedHeight = 1080;
+        private byte[] _tiled = null!;
+        private byte[] _untiled = null!;
+        private ImageDecodeOptions _options = null!;
+        private Av1Encoder _encoder = null!;
+
+        /// <summary>Gets or sets <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> (1 is the default configuration).</summary>
+        [Params(1, 8)]
+        public int Workers { get; set; } = 1;
+
+        [GlobalSetup]
+        public void Setup()
+        {
+            _options = new ImageDecodeOptions { Configuration = new ImageConfiguration { MaxDegreeOfParallelism = Workers } };
+            var pixels = BenchmarkPixels.Rgb24(DecodedWidth, DecodedHeight, seed: 23);
+            _tiled = Encode(pixels, DecodedWidth, DecodedHeight, tileColsLog2: 2, tileRowsLog2: 1);
+            _untiled = Encode(pixels, DecodedWidth, DecodedHeight, tileColsLog2: 0, tileRowsLog2: 0);
+            Require(_tiled);
+            Require(_untiled);
+
+            _encoder = CreateEncoder(EncodedWidth, EncodedHeight, Workers, tileColsLog2: 2, tileRowsLog2: 1);
+            Fill(_encoder, BenchmarkPixels.Rgb24(EncodedWidth, EncodedHeight, seed: 24), EncodedWidth, EncodedHeight);
+        }
+
+        [GlobalCleanup]
+        public void Cleanup() => _encoder?.Dispose();
+
+        [Benchmark]
+        [Workload("3840x2160 lossy AVIF 4:2:0 in 4x2 AV1 tiles -> Rgb24")]
+        public int DecodeTiled()
+        {
+            using var image = Image.Load<Rgb24>(_tiled, _options);
+            return image.Width;
+        }
+
+        [Benchmark]
+        [Workload("3840x2160 lossy AVIF 4:2:0 in one AV1 tile -> Rgb24")]
+        public int DecodeUntiled()
+        {
+            using var image = Image.Load<Rgb24>(_untiled, _options);
+            return image.Width;
+        }
+
+        [Benchmark]
+        [Workload("1920x1080 4:2:0 -> lossy AV1 frame in 4x2 tiles q75, effort 0", ReturnsOutputBytes = true)]
+        public long EncodeTiled()
+        {
+            _encoder.Reset();
+            _encoder.BeginFrame();
+            while (!_encoder.Encode(CancellationToken.None))
+            {
+            }
+
+            return _encoder.Payload.Length;
+        }
+
+        // A lossy frame of the encoder of the library in the given layout of tiles, in a minimal AVIF container
+        private static byte[] Encode(byte[] pixels, int width, int height, int tileColsLog2, int tileRowsLog2)
+        {
+            using var encoder = CreateEncoder(width, height, workers: 8, tileColsLog2, tileRowsLog2);
+            Fill(encoder, pixels, width, height);
+            encoder.BeginFrame();
+            while (!encoder.Encode(CancellationToken.None))
+            {
+            }
+
+            return FuzzAvifContainer.Wrap(encoder.Payload.Span, width, height, bitDepth: 8, "4:2:0");
+        }
+
+        private static Av1Encoder CreateEncoder(int width, int height, int workers, int tileColsLog2, int tileRowsLog2)
+        {
+            var settings = new Av1EncoderSettings(width, height, BitDepth: 8, Monochrome: false, SubsamplingX: 1, SubsamplingY: 1, ColorPrimaries: 1, TransferCharacteristics: 13, MatrixCoefficients: 6, FullRange: true, ChromaSamplePosition: 0, StillPicture: true, Lossless: false, Quality: 75, Effort: 0, KeyFrameInterval: 0, workers, tileColsLog2, tileRowsLog2);
+            return new Av1Encoder(new AllocationScope(new ImageResourceLimits()), settings);
+        }
+
+        // The planes of the encoder: BT.601 full-range luma, and the chroma of the top left pixel of each 2x2 block
+        private static void Fill(Av1Encoder encoder, byte[] pixels, int width, int height)
+        {
+            var y = encoder.GetSourcePlane(0);
+            var u = encoder.GetSourcePlane(1);
+            var v = encoder.GetSourcePlane(2);
+            for (var row = 0; row < height; row++)
+            {
+                var luma = y.GetRow(row);
+                for (var column = 0; column < width; column++)
+                {
+                    var offset = ((row * width) + column) * 3;
+                    var (r, g, b) = (pixels[offset], pixels[offset + 1], pixels[offset + 2]);
+                    luma[column] = (ushort)Math.Clamp(((77 * r) + (150 * g) + (29 * b) + 128) >> 8, 0, 255);
+                    if ((row & 1) is 0 && (column & 1) is 0)
+                    {
+                        u.GetRow(row >> 1)[column >> 1] = (ushort)Math.Clamp((((-43 * r) - (85 * g) + (128 * b) + 128) >> 8) + 128, 0, 255);
+                        v.GetRow(row >> 1)[column >> 1] = (ushort)Math.Clamp((((128 * r) - (107 * g) - (21 * b) + 128) >> 8) + 128, 0, 255);
+                    }
+                }
+            }
+        }
+
+        private static void Require(byte[] encoded)
+        {
+            using var image = Image.Load(encoded);
+            if (image.Width != DecodedWidth || image.Height != DecodedHeight)
+                throw new InvalidOperationException($"Unexpected AVIF input: {image.Width}x{image.Height}.");
+        }
     }
 }

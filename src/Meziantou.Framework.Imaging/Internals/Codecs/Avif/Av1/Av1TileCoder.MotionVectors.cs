@@ -231,7 +231,7 @@ internal ref partial struct Av1TileCoder
 
         var x8 = mvCol >> 1;
         var y8 = mvRow >> 1;
-        _state.Tools |= Av1Tools.TemporalMotionVector;
+        _scratch.Tools |= Av1Tools.TemporalMotionVector;
         var isOrigin = deltaRow is 0 && deltaCol is 0;
         if (isOrigin)
             _zeroMvContext = 1;

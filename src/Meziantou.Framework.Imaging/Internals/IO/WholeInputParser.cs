@@ -15,9 +15,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <para>
 /// The parser never consumes partial input: it asks for one more contiguous byte, or the end of the input
 /// (<see cref="ParseStatus.NeedMoreDataOrEnd"/>), until the driver reports the end, so the bytes it finally sees are exactly
-/// the input. The driver reads as much as its buffer holds and doubles it when it is full, and it enforces the
-/// encoded-byte limit: an input as long as the limit is buffered whole, a longer one fails with the limit, from a span and
-/// from a stream alike.
+/// the input. The driver reads as much as its buffer holds and doubles it when it is full, never beyond the encoded-byte
+/// limit or the known length of the stream. It enforces the encoded-byte limit: an input as long as the limit is buffered
+/// whole, a longer one fails with the limit, from a span and from a stream alike.
 /// </para>
 /// </remarks>
 /// <typeparam name="TResult">The result type (<see cref="ImageInfo"/> or <see cref="Image"/>).</typeparam>

@@ -4,6 +4,9 @@
 #:project ../src/Meziantou.Framework.LLMContext/Meziantou.Framework.LLMContext.csproj
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
@@ -104,6 +107,7 @@ if (ShouldRunStep(StepDocs))
     Console.WriteLine("[update-all] Running docs");
     tasks.Add(Task.Run(() => RunValidateDocumentationPackageIdsStep(rootPath)));
     tasks.Add(Task.Run(() => RunValidateDocumentationCrefLinksStep(rootPath)));
+    tasks.Add(Task.Run(() => RunUpdateDocumentationConfigurationStep(rootPath)));
 }
 
 await Task.WhenAll(tasks);
@@ -1123,6 +1127,48 @@ void RunValidateDocumentationPackageIdsStep(FullPath rootPath)
         Console.Error.WriteLine($"ERROR: {relativePath}: {message}");
         updatedFiles.Enqueue(relativePath);
     }
+}
+
+// The documentation site (docgen.json, built by Meziantou.DocumentationGenerator) documents the API of every package of
+// src/, at the version of its project file. The packages are downloaded from NuGet.org.
+void RunUpdateDocumentationConfigurationStep(FullPath rootPath)
+{
+    var configurationPath = rootPath / "docgen.json";
+    var configuration = JsonNode.Parse(File.ReadAllText(configurationPath), documentOptions: new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true })!.AsObject();
+
+    var packages = new JsonArray();
+    foreach (var csprojPath in Directory.EnumerateFiles(rootPath / "src", "*.csproj", SearchOption.AllDirectories).Where(IsPackableProject).Order(StringComparer.Ordinal))
+    {
+        var id = Path.GetFileNameWithoutExtension(csprojPath);
+        var version = XDocument.Load(csprojPath).Root?.Descendants("Version").FirstOrDefault()?.Value.Trim();
+        if (string.IsNullOrEmpty(version))
+        {
+            Console.Error.WriteLine($"ERROR: {FullPath.FromPath(csprojPath).MakePathRelativeTo(rootPath)}: the package has no <Version>");
+            updatedFiles.Enqueue(FullPath.FromPath(csprojPath).MakePathRelativeTo(rootPath));
+            continue;
+        }
+
+        JsonNode package = new JsonObject
+        {
+            ["id"] = id,
+            ["version"] = version,
+        };
+        packages.Add(package);
+    }
+
+    configuration["packages"] = packages;
+
+    // The packages share namespaces (Meziantou.Framework, Meziantou.Framework.Http, ...): a namespace defined in several
+    // products has no single page, so the pages could not link to it. All packages belong to the only product.
+    if (configuration["products"] is not JsonArray { Count: 1 } products || products[0] is not JsonObject product)
+    {
+        Console.Error.WriteLine("ERROR: docgen.json: 'products' must contain exactly one product");
+        updatedFiles.Enqueue("docgen.json");
+        return;
+    }
+
+    product["packages"] = new JsonArray([.. packages.Select(package => JsonValue.Create(package!["id"]!.GetValue<string>()))]);
+    WriteFileIfChanged(configurationPath, configuration.ToJsonString(new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping, RespectNullableAnnotations = true, RespectRequiredConstructorParameters = true }));
 }
 
 // The pages link to namespaces with [Name](cref:Name). The target must be a namespace of the public API of a package,

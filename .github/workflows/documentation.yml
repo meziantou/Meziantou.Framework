@@ -37,16 +37,18 @@ defaults:
 jobs:
   build_documentation:
     runs-on: ubuntu-26.04
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Setup .NET
         uses: $/.github/actions/setup-dotnet
       - name: Restore tools
         run: dotnet tool restore
-      # The site is generated in artifacts/docs (see docgen.json)
+      # Downloads the packages listed in docgen.json (kept up to date by eng/update-all.cs) and generates the site
+      # in artifacts/docs. Broken links and invalid pages are errors; the warnings are about the XML documentation of
+      # the packages and of their references, so they do not fail the build.
       - name: Build documentation
-        run: dotnet Meziantou.DocumentationGenerator build --warnaserror
+        run: dotnet Meziantou.DocumentationGenerator build
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: documentation

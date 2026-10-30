@@ -173,23 +173,14 @@ public readonly struct ProjectiveTransform : IEquatable<ProjectiveTransform>
     /// <param name="next">The transformation applied after this one.</param>
     /// <returns>The combined transformation.</returns>
     /// <exception cref="ArgumentException">A coefficient of the result is not a finite number.</exception>
-    public ProjectiveTransform Then(ProjectiveTransform next) => new(
-        ((M11 * next.M11) + (M12 * next.M21)) + (M13 * next.M31),
-        ((M11 * next.M12) + (M12 * next.M22)) + (M13 * next.M32),
-        ((M11 * next.M13) + (M12 * next.M23)) + (M13 * next.M33),
-        ((M21 * next.M11) + (M22 * next.M21)) + (M23 * next.M31),
-        ((M21 * next.M12) + (M22 * next.M22)) + (M23 * next.M32),
-        ((M21 * next.M13) + (M22 * next.M23)) + (M23 * next.M33),
-        ((M31 * next.M11) + (M32 * next.M21)) + (M33 * next.M31),
-        ((M31 * next.M12) + (M32 * next.M22)) + (M33 * next.M32),
-        ((M31 * next.M13) + (M32 * next.M23)) + (M33 * next.M33));
+    public ProjectiveTransform Then(ProjectiveTransform next) => Compose(this, next, nameof(next));
 
     /// <summary>Gets the transformation that applies a first one, then a second one.</summary>
     /// <param name="first">The transformation applied first.</param>
     /// <param name="second">The transformation applied to the result of the first one.</param>
     /// <returns>The combined transformation.</returns>
     /// <exception cref="ArgumentException">A coefficient of the result is not a finite number.</exception>
-    public static ProjectiveTransform Multiply(ProjectiveTransform first, ProjectiveTransform second) => first.Then(second);
+    public static ProjectiveTransform Multiply(ProjectiveTransform first, ProjectiveTransform second) => Compose(first, second, nameof(second));
 
     /// <summary>Gets the transformation that undoes this one.</summary>
     /// <param name="inverse">The inverse transformation, or the identity when there is none.</param>
@@ -284,7 +275,7 @@ public readonly struct ProjectiveTransform : IEquatable<ProjectiveTransform>
     /// <param name="right">The transformation applied to the result of the first one.</param>
     /// <returns>The combined transformation.</returns>
     /// <exception cref="ArgumentException">A coefficient of the result is not a finite number.</exception>
-    public static ProjectiveTransform operator *(ProjectiveTransform left, ProjectiveTransform right) => left.Then(right);
+    public static ProjectiveTransform operator *(ProjectiveTransform left, ProjectiveTransform right) => Compose(left, right, nameof(right));
 
     /// <summary>Gets <c>X</c> at a point. The sums are evaluated in this order wherever a point is transformed.</summary>
     internal double TransformX(double x, double y) => ((M11 * x) + (M21 * y)) + M31;
@@ -337,6 +328,27 @@ public readonly struct ProjectiveTransform : IEquatable<ProjectiveTransform>
             return this;
 
         return new ProjectiveTransform(M11 / w, M12 / w, 0, M21 / w, M22 / w, 0, M31 / w, M32 / w, 1);
+    }
+
+    private static ProjectiveTransform Compose(ProjectiveTransform first, ProjectiveTransform second, string paramName)
+    {
+        var m11 = ((first.M11 * second.M11) + (first.M12 * second.M21)) + (first.M13 * second.M31);
+        var m12 = ((first.M11 * second.M12) + (first.M12 * second.M22)) + (first.M13 * second.M32);
+        var m13 = ((first.M11 * second.M13) + (first.M12 * second.M23)) + (first.M13 * second.M33);
+        var m21 = ((first.M21 * second.M11) + (first.M22 * second.M21)) + (first.M23 * second.M31);
+        var m22 = ((first.M21 * second.M12) + (first.M22 * second.M22)) + (first.M23 * second.M32);
+        var m23 = ((first.M21 * second.M13) + (first.M22 * second.M23)) + (first.M23 * second.M33);
+        var m31 = ((first.M31 * second.M11) + (first.M32 * second.M21)) + (first.M33 * second.M31);
+        var m32 = ((first.M31 * second.M12) + (first.M32 * second.M22)) + (first.M33 * second.M32);
+        var m33 = ((first.M31 * second.M13) + (first.M32 * second.M23)) + (first.M33 * second.M33);
+        if (!double.IsFinite(m11) || !double.IsFinite(m12) || !double.IsFinite(m13) ||
+            !double.IsFinite(m21) || !double.IsFinite(m22) || !double.IsFinite(m23) ||
+            !double.IsFinite(m31) || !double.IsFinite(m32) || !double.IsFinite(m33))
+        {
+            throw new ArgumentException("A coefficient of the combined transformation is not a finite number.", paramName);
+        }
+
+        return new ProjectiveTransform(m11, m12, m13, m21, m22, m23, m31, m32, m33);
     }
 
     private static void EnsureFinite(double value, string paramName)

@@ -47,7 +47,10 @@ internal sealed class JpegXlMaTree : IDisposable
     /// <summary>Reads a tree and the entropy code of its samples.</summary>
     /// <param name="reader">The reader.</param>
     /// <param name="scope">The scope the nodes and the tables are rented from.</param>
-    /// <param name="maxNodeCount">The largest number of nodes the tree may have.</param>
+    /// <param name="maxNodeCount">
+    /// The node limit of the tree. A node is read only while the nodes already read are not more than the limit, so the
+    /// tree may have one node more than the limit, as in libjxl and jxl-oxide.
+    /// </param>
     /// <returns>The tree; it must be disposed.</returns>
     public static JpegXlMaTree Read(JpegXlBitReader reader, AllocationScope scope, long maxNodeCount)
     {
@@ -90,6 +93,7 @@ internal sealed class JpegXlMaTree : IDisposable
                 if (reader.IsOverrun)
                     throw JpegXlFormat.Invalid("a Modular tree is truncated.");
 
+                // count is the number of nodes already read; libjxl and jxl-oxide compare it the same way
                 if (count > maxNodeCount)
                     throw JpegXlFormat.Invalid("a Modular tree has more nodes than its image allows.");
 

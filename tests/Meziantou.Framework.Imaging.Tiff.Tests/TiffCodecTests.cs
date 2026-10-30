@@ -1789,6 +1789,10 @@ public sealed class TiffCodecTests
         Assert.Equal(ImageFormat.Tiff, truncated.Format);
         Assert.Throws<InvalidImageContentException>(() => Image.Load(Page(16, 8, 3, 6, [1, 2, 3, 4])));
 
+        // The lenient decoding of JPEG files does not apply to the datastream of a strip: it still needs its EOI marker
+        var lenient = new ImageDecodeOptions { Configuration = new ImageConfiguration { DecodingStrictness = DecodingStrictness.Lenient } };
+        Assert.Equal(ImageFormat.Tiff, Assert.Throws<InvalidImageContentException>(() => Image.Load(Page(16, 8, 3, 6, strip[..^2]), lenient)).Format);
+
         // What a JPEG file cannot be either is reported for the page: here a hierarchical frame (SOF5)
         var hierarchical = (byte[])strip.Clone();
         hierarchical[hierarchical.AsSpan().IndexOf((ReadOnlySpan<byte>)[0xFF, 0xC0]) + 1] = 0xC5;

@@ -101,3 +101,8 @@ public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string
   file can be rebuilt byte for byte. See [JPEG XL](15-JpegXl.md).
 - A progressive file can be shown while it is read, with `ReadFrameRefinementInto`. See
   [Show an image while it downloads](../05-LoadingAndSaving/06-ShowImagesWhileTheyDownload.md).
+- A file without its end-of-image marker, or whose restart marker has a garbled number, is rejected by default. With
+  [lenient decoding](../05-LoadingAndSaving/08-ErrorHandling.md#accept-the-files-browsers-accept), it loads with the
+  pixels the reference decoders give: the end-of-image marker may be missing once every scan of the picture is
+  complete, and a restart marker numbered 3 to 5 after the expected one is read as the expected one in a sequential or
+  lossless file. A file cut inside the picture is still rejected, since its missing pixels would have to be guessed.

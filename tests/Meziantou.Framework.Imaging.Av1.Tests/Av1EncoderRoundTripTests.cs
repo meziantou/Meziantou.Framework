@@ -470,13 +470,20 @@ public sealed class Av1EncoderRoundTripTests
 
             Assert.Equal(0, scope.LiveBytes);
 
-            // A cancellation while the workers code the tiles of a frame that takes hundreds of milliseconds
+            // A cancellation while the workers code the tiles: the second tile cancels the token as it starts
             var canceled = AllocationScope.Create(ImageConfiguration.Default, nameof(TileWorkersOfTheEncoderAreChargedToTheScopeAndObserveTheCancellation));
-            using (var encoder = new Av1Encoder(canceled, settings with { Width = 512, Height = 256, Effort = 5 }))
+            using (var encoder = new Av1Encoder(canceled, settings))
             {
                 using var cancellation = new CancellationTokenSource();
                 encoder.BeginFrame();
-                cancellation.CancelAfter(TimeSpan.FromMilliseconds(10));
+                Av1TileWorkers.TestTileStarting = tile =>
+                {
+                    if (tile is 1)
+                    {
+                        cancellation.Cancel();
+                    }
+                };
+
                 Assert.Throws<OperationCanceledException>(() => EncodeFrame(encoder, cancellation.Token));
             }
 
@@ -485,6 +492,7 @@ public sealed class Av1EncoderRoundTripTests
         finally
         {
             Av1PostFilter.TestIgnoreMinimumSize = false;
+            Av1TileWorkers.TestTileStarting = null;
         }
 
         static long MeasurePeak(Av1EncoderSettings settings, ImageResourceLimits limits)

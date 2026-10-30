@@ -12,6 +12,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal static class Av1TileWorkers
 {
     private static readonly AsyncLocal<bool> TestReverseOrderValue = new();
+    private static readonly AsyncLocal<Action<int>?> TestTileStartingValue = new();
 
     /// <summary>
     /// Gets or sets a value indicating whether the tiles coded on the current asynchronous flow run one after the other on
@@ -23,6 +24,16 @@ internal static class Av1TileWorkers
     {
         get => TestReverseOrderValue.Value;
         set => TestReverseOrderValue.Value = value;
+    }
+
+    /// <summary>
+    /// Gets or sets an action that runs, on the worker, before each tile coded on the current asynchronous flow (the workers
+    /// run in the caller's execution context): the tests use it to cancel while the workers code the tiles.
+    /// </summary>
+    internal static Action<int>? TestTileStarting
+    {
+        get => TestTileStartingValue.Value;
+        set => TestTileStartingValue.Value = value;
     }
 
     /// <summary>
@@ -49,6 +60,16 @@ internal static class Av1TileWorkers
     /// </summary>
     public static void Run(int workers, int tileCount, Action<int, int> body)
     {
+        if (TestTileStarting is { } tileStarting)
+        {
+            var testedBody = body;
+            body = (worker, tile) =>
+            {
+                tileStarting(tile);
+                testedBody(worker, tile);
+            };
+        }
+
         var failures = new Exception?[tileCount];
         var firstFailure = tileCount;
         var next = -1;

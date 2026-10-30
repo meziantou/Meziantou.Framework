@@ -464,15 +464,23 @@ types (configuration, limits, options, encoders, `MetadataBlob`, profiles, brush
 processed concurrently.
 An `Image` and its frames must not be used concurrently while any thread mutates them or holds a lease. Readers and
 writers support one operation at a time: overlapping calls throw `InvalidOperationException`. Internal parallelism is off
-by default (`ImageConfiguration.MaxDegreeOfParallelism = 1`); with more workers, only large resizes, transformations,
-convolutions, blurs, medians, unsharp masks, the `Pixelate`, `OilPaint` and `Flatten` effects and the `ImageSimilarity`
-comparisons (SSIM, PSNR, SSIMULACRA 2, Butteraugli) are split into row bands, the tiles of large HEIC and AVIF grids, the
-tiles and the rows of the wavefront of large HEIC pictures that start at entry points, and
-the post-processing filters of large AVIF images (by row bands) are decoded concurrently, the tiles of large HEIC and
-AVIF grids (`HeicEncoder.GridTileSize`, `AvifEncoder.GridTileSize`) are encoded concurrently, the groups of large
-JPEG XL frames and the code-blocks of large JPEG 2000 tiles are encoded and decoded concurrently, with results identical to the sequential ones (the same pixels, the
-same encoded bytes). A worker writes only its own rows, and the floating-point sums of the comparisons are made by bands
-of 64 rows whatever the number of workers, added in order.
+by default (`ImageConfiguration.MaxDegreeOfParallelism = 1`). With more workers, only these operations use them, on
+images of at least 65,536 pixels:
+
+- split into row bands: resizes, transformations, convolutions, blurs, medians, unsharp masks, the `Pixelate`, `OilPaint`
+  and `Flatten` effects, and the `ImageSimilarity` comparisons (SSIM, PSNR, SSIMULACRA 2, Butteraugli);
+- decoded and encoded: the MCU rows of JPEG frames (the inverse and forward DCT, the conversions; the entropy coding
+  stays sequential), the LZW, Deflate and CCITT strips and tiles of TIFF pages (LZW and Deflate only when encoding), the
+  chunks of OpenEXR images, the code-blocks and wavelet transforms of JPEG 2000 tiles, the groups of JPEG XL frames, the
+  tiles of AV1 frames (AVIF) that have several, and the tiles of HEIC and AVIF grids (`HeicEncoder.GridTileSize`,
+  `AvifEncoder.GridTileSize`);
+- decoded only: the tiles and the rows of the wavefront of HEIC pictures that start at entry points, and the
+  post-processing filters of AVIF images (by row bands).
+
+The results are identical to the sequential ones: the same pixels, the same encoded bytes, and the same error (the one
+of the first unit that fails, a cancellation first). A worker writes only its own rows, and the floating-point sums of
+the comparisons are made by bands of 64 rows whatever the number of workers, added in order. Each worker rents its own
+scratch, charged to `MaxLiveAllocationBytes`, so a limit that fits one worker may not fit several.
 
 ### Failure atomicity
 

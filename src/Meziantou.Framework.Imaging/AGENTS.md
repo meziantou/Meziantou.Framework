@@ -1074,8 +1074,8 @@ thin public types over its `FontFace`.
   16-bit conversion is still evaluated: its inputs are the doubles that come out of a matrix, not 65,536 values.
 - Default parallelism is one worker (`ImageConfiguration.MaxDegreeOfParallelism`). Only `Resize`, the transformations,
   `Convolve`, the blurs (`GaussianBlur`, `BoxBlur`, `MedianBlur`), `Sharpen`, `DetectEdges`, the `Pixelate`, `OilPaint` and
-  `Flatten` effects (`EffectScratch`) and the `ImageSimilarity` metrics (SSIM, PSNR, SSIMULACRA 2, Butteraugli) are
-  parallel, and their result must not depend on the worker count (`ParallelConvolutionTests`,
+  `Flatten` effects (`EffectScratch`), the `ImageSimilarity` metrics (SSIM, PSNR, SSIMULACRA 2, Butteraugli) and the
+  codec work listed below are parallel, and their result must not depend on the worker count (`ParallelConvolutionTests`,
   `ImageSimilarityTests.Metrics_DoNotDependOnTheWorkerCount`: a frame needs 65,536 pixels to get several workers). Split
   rows with `RowBands`: a worker writes only its own rows, and reads the rows of its neighbors from copies taken before any
   row is rewritten (halos). A floating-point sum is never split by worker: sum bands of `RowBands.SumBandRows` rows, a
@@ -1115,7 +1115,72 @@ thin public types over its `FontFace`.
   (`JpegXlRestorationFilters`), each with its own pipeline: they filter in place, so the rows a band reads around it (the
   sum of the reaches of the filters, 7 rows at most) are copied before any band starts, and each filter of a band also
   produces the rows around it that the next filters read (`RestorationFiltersMatchTheFiltersAppliedToTheWholeFrame`
-  splits frames down to bands of one row). Other decoding, encoding and drawing stay sequential.
+  splits frames down to bands of one row). The codecs below (issue #3752) follow the same contract: the input parser
+  and the `InputResourceTracker` stay on the calling thread, every worker's state is rented on the calling thread before
+  the work starts, and the bytes, the pixels and the error (the first failing unit in order, a cancellation first) are
+  those of one worker. A codec called by an already-parallel caller (a JPEG or JPEG 2000 block of a TIFF, a tile of a
+  HEIC or AVIF grid decoded alongside others) uses one worker, so the threads never multiply.
+  - JPEG (`JpegReconstruction`, `JpegEncoderCodec.TransformRows`): batches of 4 MCU rows per worker. The entropy-coded
+    data is decoded and coded on the calling thread, in order. The decoder keeps the quantized coefficients of a batch
+    (a ring that `JpegSequentialScanDecoder` fills with `deferTransforms` for a streamed Huffman frame, or the whole
+    coefficients of a progressive frame at EOI), runs the inverse DCT by row ranges, then writes the bands that have
+    their lower context row, each worker with its own `JpegBandWriter`, into planes that hold the batch and the two rows
+    before it. A truncated frame first reconstructs its decoded rows, so it shows the rows of one worker. The encoder
+    converts, downsamples and transforms a batch, stores the coefficients and codes them in order. Arithmetic-coded
+    sequential frames, lossless frames and datastreams handed to a `JpegSampleReceiver` (TIFF) use one worker. Restart
+    intervals are not decoded in parallel: entropy decoding is 35-50% of the decoding time, and keeping the error of one
+    worker would need a pause hook in the push parser. The gain is small (about 1.3-1.5x with 8 workers on 2048x1536
+    baseline) and sensitive to machine load, since the batches are short (`FramesDecodedByWorkersHaveThePixelsOfTheContract`,
+    `FramesReconstructedByWorkersHaveThePixelsOfTheContract`, `FilesWrittenByWorkersAreTheFilesOfOneWorker`).
+  - TIFF (`TiffBlockWorkers`): LZW, Deflate and CCITT strips and tiles, by batches of one block per worker. The calling
+    thread reads and charges the input (`TiffBlockReader.Fetch`) and writes the rows in order; each worker decompresses,
+    undoes the predictors and converts YCbCr units in a `TiffBlockReader.Workspace` rented whole after everything else of
+    the decode, so the worker count is capped by the live bytes left (`GetWorkerBytes`) and a limit fails as it does for
+    one worker. Uncompressed and PackBits blocks (a copy) and JPEG and JPEG 2000 blocks stay on the calling thread. The
+    encoder compresses LZW and Deflate strips into outputs pre-grown to a proven bound (`TiffLzwEncoder.GetMaxEncodedLength`,
+    9/8 for Deflate) and appends them one per `EncodeStrip` call, so the bytes and the flushes are those of one worker
+    (`BlocksDecodedByWorkersHaveThePixelsOfOneWorker`, `StripsCompressedByWorkersAreTheFileOfOneWorker`).
+  - OpenEXR (`ExrDecoder`, `ExrEncoderCodec`): a chunk is compressed on its own and covers pixels no other chunk covers
+    (one offset per index, and a chunk carries its coordinates). The chunks are copied to a batch (at least 2 chunks and
+    1 MiB per worker) that the workers decode, each with its own `ExrChunkDecompressor`. The structure parser has the
+    batch decoded before it asks for more input or throws (`ExrStructureParser.NeedChunkBytes`, the catch in `Parse`), so a
+    pending chunk never outlives a `Parse` call; its requests read the next batch ahead, so a stream gives it whole. The
+    encoder checks the samples by row bands (`RunParallelInBandOrder`) and compresses batches of chunks into slots as
+    large as the one-worker buffer, written in order (`ChunksDecodedByWorkersHaveThePixelsOfOneWorker`,
+    `WorkersReportTheErrorOfTheFirstChunkOfTheFileThatFails`, `FilesWrittenByWorkersAreTheFilesOfOneWorker`).
+  - JPEG 2000 (`Jpeg2000Workers`): the packets are read in order on the calling thread; then each worker takes the next
+    code-block of a tile with block decoders of its own (Tier-1, HT and its SigProp flags, the buffer that joins
+    segments), sized to the largest code-block of the tile. A code-block reads only its own segments and writes only its
+    own area. The wavelet transformations are split by bands of rows and of 64-column strips, one pass after the other
+    (`Jpeg2000Dwt` overloads with a scratch per worker), and the component transformation and level shift by ranges of
+    samples. The encoder codes the code-blocks by batches (worker w of n codes blocks w, w+n, ...) into buffers of its
+    own, appended in order before `Assemble`. Tiles are still decoded one after the other, and `Jpeg2000SampleDecoder`
+    (TIFF) uses one worker. `Jpeg2000Workers.TestIgnoreMinimumSize` makes `Jpeg2000DecoderConformanceTests` decode every
+    fixture with 2, 3 and 16 workers.
+  - AV1 (`Av1TileWorkers`): the tiles of a tile group. A tile starts from the frame context, clears the above context of
+    its columns (per worker: `Av1TileScratch.PrepareAboveContext`, since the clear reaches 32 entries past the tile and
+    the tiles of a column share it), treats blocks outside it as unavailable, and writes the frame only where its blocks
+    are; the worker of `context_update_tile_id` saves its own distributions, and the coding diagnostics (`Av1Tools`) are
+    merged after each run. The tile sizes are read on the calling thread first. The encoder codes the tiles of a frame
+    that has several (the layout is the minimum, so frames wider than 4096 pixels; never a function of the worker count)
+    with an `Av1EncoderWorkspace` per worker that shares the source planes, and appends them in order; intrabc frames use
+    one worker. A size-based layout (4x2 tiles for 3840x2160, like libavif's autotiling) would cost +0.3% (effort 5) to
+    +0.6% (effort 0) at equal PSNR, so it is not the default. `Av1TileWorkers.TestReverseOrder` runs the tiles from the
+    last one so that the tests check independence whatever the scheduling (`DecodedPlanesDoNotDependOnTheNumberOfWorkers`,
+    `TilesDecodedByWorkersFailWithTheErrorOfTheFirstFailingTile`, `TilesEncodedByWorkersAreTheTilesOfOneWorker`).
+  - HEVC (`HevcSliceCoder.Substreams.cs`, `HevcSubstreamWorkers`): the substreams of a slice segment that start at an
+    entry point (its tiles, and its rows of the wavefront). A substream starts with initialized or synchronized contexts
+    and SliceQpY, and reads no block of another tile; a row of the wavefront waits until the row above has decoded the
+    next column (or its tile's last), and starts from the contexts that row stored after its second coding tree block.
+    The entry points and the errors are then checked in substream order, as the sequential decoding does. When a slice
+    segment ends before its last entry point (kvazaar), the blocks decoded past its end are reset to their
+    `BeginPicture` state (`HevcPictureState.ClearCodingTreeBlocks`). Slices or slice segments that each hold one tile or
+    row, and the in-loop filters, stay sequential. The encoder writes no tiles and no wavefront by default; the internal
+    `HevcEncoderSettings.Wavefront` switch (`HeicPictureEncoder.TestWavefront`) writes one at about 0% size cost, for
+    tests and benchmarks. `HevcDecoder.TestIgnoreMinimumSize` makes `HevcDecoderConformanceTests` decode the tile and
+    wavefront vectors by 2, 3 and 16 workers.
+
+  Other decoding, encoding and drawing stay sequential.
 - Static row callbacks allocate nothing per row (`PerformanceContractTests`).
 - This repository builds with the updated memory-safety rules: wrap `MemoryMarshal`, `Unsafe` and `Vector*.LoadUnsafe` /
   `StoreUnsafe` calls in `unsafe(...)`, or in an `unsafe { }` block for a statement.

@@ -57,7 +57,7 @@ internal ref partial struct Av1TileCoder
         var h4 = Av1Tables.TxHeight[txSz] >> 2;
         var maxX4 = plane > 0 ? _miCols >> _subX : _miCols;
         var maxY4 = plane > 0 ? _miRows >> _subY : _miRows;
-        var dcSignContext = GetDcSignContext(_state.GetAboveDcContext(plane), _scratch.GetLeftDcContext(plane), x4, y4, w4, h4, maxX4, maxY4);
+        var dcSignContext = GetDcSignContext(_scratch.GetAboveDcContext(plane), _scratch.GetLeftDcContext(plane), x4, y4, w4, h4, maxX4, maxY4);
 
         const int MaxCodedLevel = Av1Constants.NumBaseLevels + Av1Constants.CoeffBaseRange + 1;
         var model = new LevelModel

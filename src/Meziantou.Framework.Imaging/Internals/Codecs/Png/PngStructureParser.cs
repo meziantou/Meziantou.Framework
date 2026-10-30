@@ -38,6 +38,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// key are <see cref="UnsupportedImageFeatureException"/>: no tool writes them and their layout is not known. The
 /// compressed metadata of a CgBI file (<c>iCCP</c>, <c>zTXt</c>, compressed <c>iTXt</c>) is a zlib datastream or, as
 /// Xcode's <c>pngcrush -iphone</c> writes <c>iCCP</c> and <c>zTXt</c>, a raw deflate datastream.
+/// Lenient decoding (<see cref="ImageCodecContext.IsLenient"/>) ignores a grayscale or RGB <c>tRNS</c> chunk shorter than
+/// its color key, and accepts an APNG with fewer frames than <c>acTL</c> declares (one at least): the animation is the
+/// frames present, while a header walk still reports the declared count.
 /// </remarks>
 internal sealed class PngStructureParser : ImageParser<ImageInfo>
 {
@@ -483,6 +486,12 @@ internal sealed class PngStructureParser : ImageParser<ImageInfo>
                     throw Invalid("The tRNS chunk must follow the PLTE chunk.");
 
                 var expected = ColorType switch { 0 => 2, 2 => 6, _ => -1 };
+
+                // Lenient: a color key shorter than its color type needs is ignored, as libpng, FFmpeg, Apple ImageIO
+                // and the browsers do (a longer one, or a palette tRNS longer than the palette, is not: they disagree)
+                if (_context.IsLenient && expected > 0 && length < expected)
+                    return ChunkAction.Stream;
+
                 if ((expected >= 0 && length != expected) || (ColorType == 3 && length > Palette.Length / 3))
                     throw Invalid("The tRNS chunk length is invalid for the color type.");
 
@@ -822,7 +831,9 @@ internal sealed class PngStructureParser : ImageParser<ImageInfo>
 
     private void OnEnd()
     {
-        if (IsAnimated && _displayedFrames != AnimationFrameCount)
+        // Lenient: an animation with fewer frames than acTL declares (one at least) is the frames it has, as the browsers,
+        // Apple ImageIO and FFmpeg play it (more frames than declared fail in StartFrame: FFmpeg plays them, the others do not)
+        if (IsAnimated && _displayedFrames != AnimationFrameCount && !(_context.IsLenient && _displayedFrames > 0))
             throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The APNG file has {_displayedFrames} frames but acTL declares {AnimationFrameCount}."));
 
         _state = State.Done;

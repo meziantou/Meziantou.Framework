@@ -25,6 +25,8 @@ public sealed class WebPEncoderTests
         Assert.Equal(WebPCompression.Lossless, encoder.Compression);
         Assert.Equal(75, encoder.Quality);
         Assert.Equal(5, encoder.Effort);
+        Assert.Equal(100, encoder.AlphaQuality);
+        Assert.Equal(100, encoder.NearLossless);
         Assert.False(encoder.ClearTransparentColors);
         Assert.False(encoder.AllowBitDepthReduction);
         Assert.Equal(FrameDurationRounding.RoundToNearest, encoder.DurationRounding);
@@ -34,8 +36,12 @@ public sealed class WebPEncoderTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new WebPEncoder { Quality = 101 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new WebPEncoder { Effort = -1 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new WebPEncoder { Effort = 10 });
-        _ = new WebPEncoder { Quality = 0, Effort = 0 };
-        _ = new WebPEncoder { Quality = 100, Effort = 9 };
+        Assert.Throws<ArgumentOutOfRangeException>(() => new WebPEncoder { AlphaQuality = -1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new WebPEncoder { AlphaQuality = 101 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new WebPEncoder { NearLossless = -1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new WebPEncoder { NearLossless = 101 });
+        _ = new WebPEncoder { Quality = 0, Effort = 0, AlphaQuality = 0, NearLossless = 0 };
+        _ = new WebPEncoder { Quality = 100, Effort = 9, AlphaQuality = 100, NearLossless = 100 };
     }
 
     [Fact]
@@ -109,6 +115,143 @@ public sealed class WebPEncoderTests
         Assert.False(frame.IsLossless);
         Assert.NotNull(frame.Alpha);
         Assert.Equal(source.Where((_, index) => index % 4 == 3).ToArray(), reader.DecodeAlpha(0));
+    }
+
+    [Theory]
+    [InlineData(3)]
+    [InlineData(5)]
+    [InlineData(9)]
+    public void LossyAlphaOfSoftMasksIsExactAtEveryEffort(int effort)
+    {
+        // Every alpha filter is tried from effort 3: each must decode to the source values
+        using var image = CreateSoftMask(96, 64);
+        var source = GetBytes(image);
+        var reader = ReferenceWebP.Parse(Encode(image, new WebPEncoder { Compression = WebPCompression.Lossy, Effort = effort }));
+        Assert.Equal(source.Where((_, index) => index % 4 == 3).ToArray(), reader.DecodeAlpha(0));
+    }
+
+    [Theory]
+    [InlineData(0, 2)]
+    [InlineData(50, 12)]
+    public void AlphaQualityReducesTheAlphaLevels(int alphaQuality, int maxLevels)
+    {
+        using var image = CreateSoftMask(96, 64);
+        var source = GetBytes(image).Where((_, index) => index % 4 == 3).ToArray();
+        var exact = Encode(image, new WebPEncoder { Compression = WebPCompression.Lossy });
+        var reduced = Encode(image, new WebPEncoder { Compression = WebPCompression.Lossy, AlphaQuality = alphaQuality });
+        var alpha = ReferenceWebP.Parse(reduced).DecodeAlpha(0);
+        Assert.HasCountLessThanOrEqual(maxLevels, alpha.Distinct());
+        Assert.HasCountGreaterThan(maxLevels, source.Distinct());
+        Assert.HasCountLessThan(exact.Length, reduced);
+        for (var i = 0; i < source.Length; i++)
+        {
+            // Fully transparent and fully opaque pixels stay exact
+            if (source[i] is 0 or 255)
+            {
+                Assert.Equal(source[i], alpha[i]);
+            }
+        }
+    }
+
+    [Fact]
+    public void ReducedAlphaIsKeptOnlyWhenSmaller()
+    {
+        // 176 levels break the ramps of this mask more than they save: the exact alpha is kept
+        using var image = CreateSoftMask(96, 64);
+        var source = GetBytes(image).Where((_, index) => index % 4 == 3).ToArray();
+        var exact = Encode(image, new WebPEncoder { Compression = WebPCompression.Lossy });
+        var data = Encode(image, new WebPEncoder { Compression = WebPCompression.Lossy, AlphaQuality = 90 });
+        Assert.Equal(exact, data);
+        Assert.Equal(source, ReferenceWebP.Parse(data).DecodeAlpha(0));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(30)]
+    [InlineData(60)]
+    [InlineData(99)]
+    public void NearLosslessBoundsTheColorError(int level)
+    {
+        using var image = CreateImage(64, 48, seed: 6, transparent: true);
+        var source = GetBytes(image);
+        var exact = Encode(image, new WebPEncoder());
+        var data = Encode(image, new WebPEncoder { NearLossless = level });
+        Assert.HasCountLessThan(exact.Length, data);
+        var decoded = ReferenceWebP.Parse(data).DecodeFrame(0).Span.ToArray();
+        var maxError = WebPNearLossless.GetMaxError(level);
+        Assert.Equal(1 << (WebPNearLossless.GetBits(level) - 1), maxError);
+        var largest = 0;
+        for (var i = 0; i < source.Length; i++)
+        {
+            var error = Math.Abs(source[i] - decoded[i]);
+            var pixel = i / 4;
+            var border = pixel % 64 is 0 or 63 || pixel / 64 is 0 or 47;
+            if (i % 4 == 3 || border)
+            {
+                Assert.Equal(0, error);
+            }
+
+            largest = Math.Max(largest, error);
+        }
+
+        Assert.True(largest <= maxError && largest > 0, $"largest error {largest}, bound {maxError}");
+    }
+
+    [Fact]
+    public void NearLosslessKeepsSmoothAreas()
+    {
+        // Neighbors differ by at most 1: smooth even for the finest step
+        var pixels = new Rgba32[200 * 40];
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            pixels[i] = new Rgba32((byte)(i % 200), (byte)(i / 200 * 2 / 3), (byte)((i % 200 / 2) + (i / 200)), 255);
+        }
+
+        using var image = Image.ImportPixelData<Rgba32>(pixels, 200, 40);
+        Assert.Equal(GetBytes(image), ReferenceWebP.Parse(Encode(image, new WebPEncoder { NearLossless = 0 })).DecodeFrame(0).Span.ToArray());
+    }
+
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(1, 0)]
+    [InlineData(15, 0)]
+    [InlineData(17, 32)]
+    [InlineData(31, 32)]
+    [InlineData(48, 64)]
+    [InlineData(16, 0)]
+    [InlineData(250, 255)]
+    [InlineData(255, 255)]
+    public void NearLosslessRoundsToTheNearestEvenMultiple(int value, int expected)
+    {
+        Assert.Equal(expected, WebPNearLossless.Round((byte)value, bits: 5));
+    }
+
+    [Fact]
+    public void HiddenAreasCostAlmostNothingInLossyOutput()
+    {
+        // The same visible pixels, with stripes or a flat color under the transparent right half
+        const int Width = 128;
+        const int Height = 96;
+        var striped = new Rgba32[Width * Height];
+        var flat = new Rgba32[Width * Height];
+        for (var y = 0; y < Height; y++)
+        {
+            for (var x = 0; x < Width; x++)
+            {
+                var visible = new Rgba32((byte)(x * 2), (byte)(y * 2), 90, 255);
+                var hidden = x >= Width / 2;
+                striped[(y * Width) + x] = hidden ? new Rgba32((byte)((x + y) % 7 * 36), (byte)(x * 3 % 256), (byte)(y * 5 % 256), 0) : visible;
+                flat[(y * Width) + x] = hidden ? new Rgba32(128, 128, 128, 0) : visible;
+            }
+        }
+
+        using var stripedImage = Image.ImportPixelData<Rgba32>(striped, Width, Height);
+        using var flatImage = Image.ImportPixelData<Rgba32>(flat, Width, Height);
+        var encoder = new WebPEncoder { Compression = WebPCompression.Lossy };
+        var stripedSize = Encode(stripedImage, encoder).Length;
+        var flatSize = Encode(flatImage, encoder).Length;
+        // Hidden stripes used to cost 5 times the flat color, and 1.3 times with one value per run of a block row
+        Assert.True(stripedSize <= flatSize * 1.15, $"{stripedSize} bytes with hidden stripes, {flatSize} with a hidden flat color");
     }
 
     [Fact]
@@ -380,6 +523,57 @@ public sealed class WebPEncoderTests
     }
 
     [Fact]
+    public void ModeBudgetFitsEveryLossySize()
+    {
+        Assert.True(Vp8Encoder.TryGetModeBitBudget(Macroblocks(4096, 4096), Vp8Encoder.MaxFirstPartitionSize, out var budget, out var skipFlag));
+        Assert.True(skipFlag);
+        Assert.True(budget > Macroblocks(4096, 4096) * 30, $"budget: {budget} bits");
+
+        // The largest frames leave the skip flag out to afford the cheapest modes
+        Assert.True(Vp8Encoder.TryGetModeBitBudget(Macroblocks(16_383, 16_383), Vp8Encoder.MaxFirstPartitionSize, out _, out skipFlag));
+        Assert.False(skipFlag);
+    }
+
+    [Fact]
+    public void FirstPartitionOverflowDegradesGradually()
+    {
+        // 1,024 macroblocks whose free modes need a first partition of about 4.5 KB; the limits are scaled down from 512 KiB
+        const int Width = 512;
+        const int Height = 512;
+        var rgba = CreateTexture(Width, Height);
+        var free = EncodeVp8(rgba, Width, Height, Vp8Encoder.MaxFirstPartitionSize);
+        var freePsnr = LumaPsnr(rgba, DecodeVp8(free, Width, Height));
+
+        // The smallest limit: the cheapest modes everywhere, without the skip flag
+        var smallest = GetSmallestFirstPartitionLimit(Macroblocks(Width, Height));
+        Assert.True(Vp8Encoder.TryGetModeBitBudget(Macroblocks(Width, Height), smallest, out _, out var skipFlag));
+        Assert.False(skipFlag);
+        Assert.True(GetFirstPartitionSize(free) > smallest);
+        var cheapest = EncodeVp8(rgba, Width, Height, smallest);
+        Assert.True(GetFirstPartitionSize(cheapest) <= smallest);
+        var cheapestPsnr = LumaPsnr(rgba, DecodeVp8(cheapest, Width, Height));
+
+        // In between, 4x4 prediction is kept where it saves most: the frame is smaller than with the cheapest modes, at the
+        // same quality
+        var limit = (smallest + GetFirstPartitionSize(free)) / 2;
+        Assert.True(Vp8Encoder.TryGetModeBitBudget(Macroblocks(Width, Height), limit, out _, out skipFlag));
+        Assert.True(skipFlag);
+        var constrained = EncodeVp8(rgba, Width, Height, limit);
+        Assert.True(GetFirstPartitionSize(constrained) <= limit);
+        Assert.True(GetFirstPartitionSize(constrained) > GetFirstPartitionSize(cheapest));
+        var constrainedPsnr = LumaPsnr(rgba, DecodeVp8(constrained, Width, Height));
+        var summary = $"{free.Length} bytes at {freePsnr:0.00} dB without limit, {constrained.Length} bytes at {constrainedPsnr:0.00} dB with a {limit}-byte limit, {cheapest.Length} bytes at {cheapestPsnr:0.00} dB with the cheapest modes";
+        Assert.True(free.Length < constrained.Length && constrained.Length < cheapest.Length, summary);
+        Assert.True(Math.Abs(constrainedPsnr - freePsnr) < 0.25 && Math.Abs(cheapestPsnr - freePsnr) < 0.25, summary);
+
+        // Below the smallest limit, the error names the first partition
+        var scope = new AllocationScope(ImageResourceLimits.Default);
+        var error = Assert.Throws<UnsupportedImageFeatureException>(() => Vp8Encoder.Encode(scope, rgba, Width, Height, quality: 75, effort: 3, smallest - 1, CancellationToken.None));
+        Assert.Contains("first partition", error.Message, StringComparison.Ordinal);
+        Console.WriteLine(summary);
+    }
+
+    [Fact]
     public void LosslessTokenReserveFitsTheLargestImage()
     {
         // At most 2 bytes per pixel: the parse of a 16,384 x 16,384 image fits in one buffer
@@ -450,6 +644,79 @@ public sealed class WebPEncoderTests
         return argb;
     }
 
+    private static int Macroblocks(int width, int height) => ((width + 15) / 16) * ((height + 15) / 16);
+
+    /// <summary>The smallest first partition in which the cheapest modes of every macroblock fit.</summary>
+    private static int GetSmallestFirstPartitionLimit(int macroblocks)
+    {
+        var limit = 1;
+        while (!Vp8Encoder.TryGetModeBitBudget(macroblocks, limit, out _, out _))
+        {
+            limit++;
+        }
+
+        return limit;
+    }
+
+    private static byte[] EncodeVp8(byte[] rgba, int width, int height, int maxFirstPartitionSize)
+    {
+        var scope = new AllocationScope(ImageResourceLimits.Default);
+        using var payload = Vp8Encoder.Encode(scope, rgba, width, height, quality: 75, effort: 3, maxFirstPartitionSize, CancellationToken.None);
+        return payload.WrittenMemory.ToArray();
+    }
+
+    /// <summary>The first-partition size of the frame tag (RFC 6386 section 9.1).</summary>
+    private static int GetFirstPartitionSize(byte[] vp8) => (vp8[0] | (vp8[1] << 8) | (vp8[2] << 16)) >> 5;
+
+    private static byte[] DecodeVp8(byte[] vp8, int width, int height)
+    {
+        var padded = vp8.Length + (vp8.Length & 1);
+        var file = new byte[20 + padded];
+        "RIFF"u8.CopyTo(file);
+        BinaryPrimitives.WriteUInt32LittleEndian(file.AsSpan(4), (uint)(file.Length - 8));
+        "WEBPVP8 "u8.CopyTo(file.AsSpan(8));
+        BinaryPrimitives.WriteUInt32LittleEndian(file.AsSpan(16), (uint)vp8.Length);
+        vp8.CopyTo(file, 20);
+        using var image = Image.Load<Rgba32>(file);
+        Assert.Equal(width, image.Width);
+        Assert.Equal(height, image.Height);
+        return GetBytes(image);
+    }
+
+    private static double LumaPsnr(byte[] expected, byte[] actual)
+    {
+        double squares = 0;
+        for (var i = 0; i < expected.Length; i += 4)
+        {
+            var difference = (0.299 * (expected[i] - actual[i])) + (0.587 * (expected[i + 1] - actual[i + 1])) + (0.114 * (expected[i + 2] - actual[i + 2]));
+            squares += difference * difference;
+        }
+
+        return 10 * Math.Log10(255.0 * 255.0 * (expected.Length / 4) / squares);
+    }
+
+    /// <summary>Oriented stripes of varying angle and period, with soft circles: detail that 4x4 prediction codes well.</summary>
+    private static byte[] CreateTexture(int width, int height)
+    {
+        var rgba = new byte[width * height * 4];
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                var angle = (x / 64 * 0.7) + (y / 64 * 1.3);
+                var stripes = Math.Sin(((x * Math.Cos(angle)) + (y * Math.Sin(angle))) * (0.3 + ((x + y) % 5 * 0.1)));
+                var circles = Math.Cos(Math.Sqrt(((x - 200) * (x - 200)) + ((y - 150) * (y - 150))) * 0.15);
+                var i = ((y * width) + x) * 4;
+                rgba[i] = (byte)(128 + (90 * stripes));
+                rgba[i + 1] = (byte)(128 + (60 * circles) + (30 * stripes));
+                rgba[i + 2] = (byte)(128 - (70 * stripes * circles));
+                rgba[i + 3] = 255;
+            }
+        }
+
+        return rgba;
+    }
+
     private static byte[] Encode(Image image, WebPEncoder encoder)
     {
         using var stream = new MemoryStream();
@@ -487,6 +754,23 @@ public sealed class WebPEncoderTests
             for (var x = 0; x < width; x++)
             {
                 pixels[(y * width) + x] = new Rgba32((byte)(x * 255 / (width - 1)), (byte)(255 - (y * 255 / (height - 1))), (byte)((x + y) * 3), 255);
+            }
+        }
+
+        return Image.ImportPixelData<Rgba32>(pixels, width, height);
+    }
+
+    /// <summary>An opaque disc fading to transparency (alpha ramps) over a gradient.</summary>
+    private static Image<Rgba32> CreateSoftMask(int width, int height)
+    {
+        var pixels = new Rgba32[width * height];
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                var distance = Math.Sqrt(Math.Pow(x - (width / 2.0), 2) + Math.Pow(y - (height / 2.0), 2));
+                var alpha = (byte)Math.Clamp((28 - distance) * 13, 0, 255);
+                pixels[(y * width) + x] = new Rgba32((byte)(x * 2), (byte)(y * 3), 128, alpha);
             }
         }
 

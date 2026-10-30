@@ -25,7 +25,7 @@ Assert.NotEqual("Goodbye", greeting);
 - Strings are compared ordinally. `ignoreCase: true` ignores the case, and `ignoreLineEndingDifferences: true` treats
   `\r\n`, `\r` and `\n` as the same line ending, so a text read from a file checked out on Windows matches a literal
   written with `\n`.
-- `NotEqual` accepts the same arguments and options as `Equal`, and fails exactly when `Equal` would pass.
+- [NotEqual](cref:Meziantou.Framework.Assertions.Assert.NotEqual) accepts the same arguments and options as [Equal](cref:Meziantou.Framework.Assertions.Assert.Equal), and fails exactly when [Equal](cref:Meziantou.Framework.Assertions.Assert.Equal) would pass.
 
 To choose how two values are compared, pass an `IEqualityComparer<T>`:
 `Assert.Equal("abc", code, StringComparer.OrdinalIgnoreCase)`.
@@ -54,13 +54,13 @@ Assert.EqualUnordered(new[] { 3, 2, 1 }, numbers);
 - Collections are compared item by item, in order, whatever their types: an array equals a `List<T>` with the same
   items. Collections nested in items, key/value pairs and tuples are compared by content too.
 - Two `null` collections are equal. Multidimensional arrays must also have the same dimensions.
-- A comparer passed to `Equal` compares the items.
+- A comparer passed to [Equal](cref:Meziantou.Framework.Assertions.Assert.Equal) compares the items.
 - The failure message gives the index of the first difference. See
   [Failure messages](10-FailureMessages.md#collections).
 
-`EqualUnordered` compares two sequences regardless of the order of their items. Without a comparer, items are compared
-like `Equal` compares two values, so nested collections are compared by content and `1` equals `1L`. Two `null`
-sequences are equal. `NotEqualUnordered` is its exact complement: it fails when both sequences are `null`.
+[EqualUnordered](cref:Meziantou.Framework.Assertions.Assert.EqualUnordered) compares two sequences regardless of the order of their items. Without a comparer, items are compared
+like [Equal](cref:Meziantou.Framework.Assertions.Assert.Equal) compares two values, so nested collections are compared by content and `1` equals `1L`. Two `null`
+sequences are equal. [NotEqualUnordered](cref:Meziantou.Framework.Assertions.Assert.NotEqualUnordered) is its exact complement: it fails when both sequences are `null`.
 
 Spans and memory (`ReadOnlySpan<T>`, `ReadOnlyMemory<T>`) are compared the same way, and so is an
 `IAsyncEnumerable<T>`, whose assertions return a task to await. See
@@ -92,11 +92,11 @@ Assert.Equal(expected, actual, TimeSpan.FromSeconds(1));
 | `Equal(expected, actual, TimeSpan precision)` | The two `DateTime` or `DateTimeOffset` values are at most `precision` apart |
 
 Without a `MidpointRounding`, values are rounded like `Math.Round`: to the nearest even digit, so `2.5` rounds to `2`.
-`NotEqual` has the same overloads.
+[NotEqual](cref:Meziantou.Framework.Assertions.Assert.NotEqual) has the same overloads.
 
 ## Compare references
 
-`Same` passes when both arguments are the same instance, and `NotSame` when they are not. Use them to check that a
+[Same](cref:Meziantou.Framework.Assertions.Assert.Same) passes when both arguments are the same instance, and [NotSame](cref:Meziantou.Framework.Assertions.Assert.NotSame) when they are not. Use them to check that a
 method returns the instance it was given, or that a copy is a new object:
 
 <!-- ref:../../tests/Meziantou.Framework.Assertions.Tests/AssertSameTests.cs;region=Assert_Same;format=md-fenced-code-block;dedent=true -->
@@ -111,11 +111,11 @@ Assert.Equal(original, copy);               // ...with the same content
 ```
 <!-- endref -->
 
-Value types are boxed on each call, so `Same` and `NotSame` are meaningless for them: the analyzer reports it as an
+Value types are boxed on each call, so [Same](cref:Meziantou.Framework.Assertions.Assert.Same) and [NotSame](cref:Meziantou.Framework.Assertions.Assert.NotSame) are meaningless for them: the analyzer reports it as an
 error (`MFAS0010`, `MFAS0011`).
 
 ## Compare objects member by member
 
-`Equal` uses the equality of the type: two instances of a class that does not override `Equals` are equal only when
-they are the same instance. To compare their public properties and fields instead, use `Equivalent`. See
+[Equal](cref:Meziantou.Framework.Assertions.Assert.Equal) uses the equality of the type: two instances of a class that does not override `Equals` are equal only when
+they are the same instance. To compare their public properties and fields instead, use [Equivalent](cref:Meziantou.Framework.Assertions.Assert.Equivalent). See
 [Equivalence](04-Equivalence.md).

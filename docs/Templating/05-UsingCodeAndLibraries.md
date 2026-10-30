@@ -4,7 +4,7 @@ description: Import namespaces, reference assemblies, include C# files and share
 ---
 
 A template is compiled on its own, with a small set of references and namespaces. This page shows how to give it access
-to more code. Each setting exists as a property of `Template`, for the code that loads the template, and as a directive,
+to more code. Each setting exists as a property of [Template](cref:Meziantou.Framework.Templating.Template), for the code that loads the template, and as a directive,
 for the author of the template.
 
 ## Import namespaces
@@ -21,7 +21,7 @@ Assert.Equal("15", result);
 ```
 <!-- endref -->
 
-Add a namespace to `Usings` to use its types without their full name. Importing a namespace that is already imported has
+Add a namespace to [Usings](cref:Meziantou.Framework.Templating.Template.Usings) to use its types without their full name. Importing a namespace that is already imported has
 no effect:
 
 <!-- ref:../../tests/Meziantou.Framework.Templating.Tests/TemplateTest.cs;region=Template_Usings;format=md-fenced-code-block;dedent=true -->
@@ -64,8 +64,8 @@ Assert.Equal("report", result);
 ## Reference assemblies
 
 By default, a template references the core library, LINQ, the collections, the console, the
-`Meziantou.Framework.Templating` assembly and the assembly of its `OutputType`. To use the types of another assembly,
-add it to `AssemblyReferences`, from a type, an assembly, a module or a path. An alias declares an `extern alias`:
+`Meziantou.Framework.Templating` assembly and the assembly of its [OutputType](cref:Meziantou.Framework.Templating.Template.OutputType). To use the types of another assembly,
+add it to [AssemblyReferences](cref:Meziantou.Framework.Templating.Template.AssemblyReferences), from a type, an assembly, a module or a path. An alias declares an `extern alias`:
 
 <!-- ref:../../tests/Meziantou.Framework.Templating.Tests/TemplateTest.cs;region=Template_AssemblyReferences;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -78,7 +78,7 @@ template.IncludedSourceFiles.Add(@"c:\templates\shared-helpers.cs");
 ```
 <!-- endref -->
 
-`IncludedSourceFiles` adds C# files to the compilation of the template. In the template, the `reference` and `include`
+[IncludedSourceFiles](cref:Meziantou.Framework.Templating.Template.IncludedSourceFiles) adds C# files to the compilation of the template. In the template, the `reference` and `include`
 directives do the same; the value of `reference` can start with `alias=Name`:
 
 <!-- ref:../../tests/Meziantou.Framework.Templating.Tests/TemplateTest.cs;region=Template_Directives;format=md-fenced-code-block;dedent=true -->
@@ -135,11 +135,11 @@ Assert.Equal("- Apples", result);
 - The base class must be public, not nested and not generic, for the same reason as the
   [types of arguments](04-PassingArguments.md#pass-values-of-your-own-types).
 - In the template, the `inherits` directive sets the base class, and `implements` adds interfaces to the generated
-  class (`ImplementedInterfaces`).
+  class ([ImplementedInterfaces](cref:Meziantou.Framework.Templating.Template.ImplementedInterfaces)).
 
 ## Read your own directives
 
-A directive that is not built in has no effect, but it is kept in `Blocks` with its name and its value. Use it to store
+A directive that is not built in has no effect, but it is kept in [Blocks](cref:Meziantou.Framework.Templating.Template.Blocks) with its name and its value. Use it to store
 settings in the template itself, such as the extension of the file to generate:
 
 <!-- ref:../../tests/Meziantou.Framework.Templating.Tests/TemplateTest.cs;region=Template_CustomDirective;format=md-fenced-code-block;dedent=true -->
@@ -158,5 +158,5 @@ Assert.Equal("public class Generated { }", template.Run());
 <!-- endref -->
 
 The built-in directives are applied when the template is compiled. To give a directive of your own an effect at that
-time, derive from `Template`, override `CreateDirectiveBlock`, and return a `DirectiveBlock` that overrides
-`ApplyDirective`.
+time, derive from [Template](cref:Meziantou.Framework.Templating.Template), override [CreateDirectiveBlock](cref:Meziantou.Framework.Templating.Template.CreateDirectiveBlock), and return a [DirectiveBlock](cref:Meziantou.Framework.Templating.DirectiveBlock) that overrides
+[ApplyDirective](cref:Meziantou.Framework.Templating.DirectiveBlock.ApplyDirective).

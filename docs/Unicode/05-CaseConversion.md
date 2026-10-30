@@ -5,7 +5,7 @@ description: Convert a text to uppercase or lowercase with the rules of Turkish,
 
 ## Convert a text
 
-`UnicodeCaseMapping.ToUpper` and `ToLower` convert a whole text with the full case mappings of the standard, a
+[UnicodeCaseMapping.ToUpper](cref:Meziantou.Framework.UnicodeCaseMapping.ToUpper) and [ToLower](cref:Meziantou.Framework.UnicodeCaseMapping.ToLower) convert a whole text with the full case mappings of the standard, a
 character being able to become several ones:
 
 <!-- ref:../../tests/Meziantou.Framework.Unicode.Tests/UnicodeTests.cs;region=Unicode_CaseMappingOfText;format=md-fenced-code-block;dedent=true -->
@@ -35,7 +35,7 @@ Assert.Equal("i\u0307\u0300", UnicodeCaseMapping.ToLower("\u00CC", "lt"));
 ## Why not `string.ToUpper`
 
 `string.ToUpper(CultureInfo)` depends on the globalization library of the operating system and on its version.
-`UnicodeCaseMapping` does not: it gives the same result on every platform and every version of .NET, including in
+[UnicodeCaseMapping](cref:Meziantou.Framework.UnicodeCaseMapping) does not: it gives the same result on every platform and every version of .NET, including in
 globalization-invariant mode, for the version of Unicode of the package. An unpaired surrogate is copied as it is.
 
 The rules of the Common Locale Data Repository that the standard does not include, such as removing the accents of
@@ -44,5 +44,5 @@ Greek when uppercasing, are not applied.
 ## Compare without case
 
 To compare two texts without case, do not convert both to lowercase: case folding is made for comparison. Fold each
-code point with `UnicodeProperties.ToSimpleCaseFold`, after [normalizing](06-Normalization.md) the texts. See
+code point with [UnicodeProperties.ToSimpleCaseFold](cref:Meziantou.Framework.UnicodeProperties.ToSimpleCaseFold), after [normalizing](06-Normalization.md) the texts. See
 [Character properties](03-CharacterProperties.md#map-the-case-of-a-code-point).

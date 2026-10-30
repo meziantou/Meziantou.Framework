@@ -21,7 +21,7 @@ dotnet add package Meziantou.Framework.Language.Shell
 
 ## Parse a script
 
-`ShellSyntaxTree.ParseText` takes the script and its dialect. Invalid scripts give diagnostics, not exceptions:
+[ShellSyntaxTree.ParseText](cref:Meziantou.Framework.Language.Shell.ShellSyntaxTree.ParseText) takes the script and its dialect. Invalid scripts give diagnostics, not exceptions:
 
 <!-- ref:../../../tests/Meziantou.Framework.Language.Shell.Tests/ShellSyntaxTreeTests.cs;region=ShellSyntaxTree_Parsing;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -49,7 +49,7 @@ Assert.Equal("SHELL0003 at (0,5)-(0,6): Unterminated single-quoted string.", $"{
 ```
 <!-- endref -->
 
-To read a single command, such as the value of a `run:` field, use `ParseCommand`. It returns the statement rather than
+To read a single command, such as the value of a `run:` field, use [ParseCommand](cref:Meziantou.Framework.Language.Shell.ShellSyntaxTree.ParseCommand). It returns the statement rather than
 a tree, and reports content after the first statement:
 
 <!-- ref:../../../tests/Meziantou.Framework.Language.Shell.Tests/ShellSyntaxTreeTests.cs;region=ShellSyntaxTree_ParseCommand;format=md-fenced-code-block;dedent=true -->
@@ -63,7 +63,7 @@ Assert.Equal("wip", command.Arguments[2].Value);
 
 ## Limit the nesting
 
-`ShellParseOptions.MaxRecursionDepth`, 128 by default, bounds how deeply the parser goes into nested constructs, so
+[ShellParseOptions.MaxRecursionDepth](cref:Meziantou.Framework.Language.Shell.ShellParseOptions.MaxRecursionDepth), 128 by default, bounds how deeply the parser goes into nested constructs, so
 deeply nested input cannot overflow the stack. What nests deeper is reported as `SHELL0100` and kept as skipped text:
 
 <!-- ref:../../../tests/Meziantou.Framework.Language.Shell.Tests/ShellSyntaxTreeTests.cs;region=ShellSyntaxTree_ParseOptions;format=md-fenced-code-block;dedent=true -->
@@ -99,4 +99,4 @@ what was found.
 | `SHELL0015` | An invalid `[[ ]]` expression |
 | `SHELL0020` to `SHELL0027` | PowerShell: block comments, member names, here-strings, missing expressions, `using` placement, reserved keywords, missing parameter arguments, invalid assignment targets |
 | `SHELL0040`, `SHELL0041` | cmd: an incomplete `if` condition, a missing comparison operator |
-| `SHELL0100`, `SHELL0101` | Nesting deeper than `MaxRecursionDepth`; content after the statement `ParseCommand` read |
+| `SHELL0100`, `SHELL0101` | Nesting deeper than [MaxRecursionDepth](cref:Meziantou.Framework.Language.Shell.ShellParseOptions.MaxRecursionDepth); content after the statement [ParseCommand](cref:Meziantou.Framework.Language.Shell.ShellSyntaxTree.ParseCommand) read |

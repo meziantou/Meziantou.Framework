@@ -5,7 +5,7 @@ description: Register the xUnit.net logger in a host or in an ASP.NET Core appli
 
 ## Register the logger in a host
 
-`AddXunit` adds the provider to a logging builder:
+[AddXunit](cref:Meziantou.Extensions.Logging.Xunit.v3.XUnitLoggerBuilderExtensions.AddXunit) adds the provider to a logging builder:
 
 <!-- ref:../../../tests/Meziantou.Extensions.Logging.Xunit.v3.Tests/XunitLoggerTests.cs;region=XUnitLogger_AddXunit;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -20,18 +20,18 @@ using var host = new HostBuilder()
 
 | Overload | Writes to |
 | --- | --- |
-| `AddXunit()` | The test that is running |
+| [AddXunit()](cref:Meziantou.Extensions.Logging.Xunit.v3.XUnitLoggerBuilderExtensions.AddXunit) | The test that is running |
 | `AddXunit(options)` | The test that is running, with [output options](02-Options.md) |
 | `AddXunit(testOutputHelper)` | That test |
 | `AddXunit(testOutputHelper, options)` | That test, with output options |
 
 Use the parameterless overload to write to whichever test is running, and pass an `ITestOutputHelper` only when you need
-to target a specific test. Calling `AddXunit()` several times registers a single provider, while each call that takes
+to target a specific test. Calling [AddXunit()](cref:Meziantou.Extensions.Logging.Xunit.v3.XUnitLoggerBuilderExtensions.AddXunit) several times registers a single provider, while each call that takes
 an argument registers one more.
 
-`ITestOutputHelper` and `XUnitLoggerOptions` are both optional reference types, so `AddXunit(null)` is ambiguous and
-does not compile. Call `AddXunit()`, or name the argument (`AddXunit(testOutputHelper: null)`) when you pass a variable
-that may be `null`. The same applies to the constructors of `XUnitLoggerProvider`, which you can also register yourself
+`ITestOutputHelper` and [XUnitLoggerOptions](cref:Meziantou.Extensions.Logging.Xunit.v3.XUnitLoggerOptions) are both optional reference types, so `AddXunit(null)` is ambiguous and
+does not compile. Call [AddXunit()](cref:Meziantou.Extensions.Logging.Xunit.v3.XUnitLoggerBuilderExtensions.AddXunit), or name the argument (`AddXunit(testOutputHelper: null)`) when you pass a variable
+that may be `null`. The same applies to the constructors of [XUnitLoggerProvider](cref:Meziantou.Extensions.Logging.Xunit.v3.XUnitLoggerProvider), which you can also register yourself
 as a singleton `ILoggerProvider`.
 
 ## Filter the entries

@@ -43,12 +43,12 @@ There are two kinds of arguments:
   of the cart in [Calling modules](04-CallingModules.md#call-an-export), which become
   `{ price: 3, quantity: 2 }`.
 
-A call receives the arguments in order: as the parameters of the function for `InvokeAsync`, and in the `args` array for
-`EvaluateAsync`.
+A call receives the arguments in order: as the parameters of the function for [InvokeAsync](cref:Meziantou.Framework.NodeJs.NodeJsHost.InvokeAsync), and in the `args` array for
+[EvaluateAsync](cref:Meziantou.Framework.NodeJs.NodeJsHost.EvaluateAsync).
 
 ## Pass values that JSON cannot represent
 
-Use `JSValue` for a value that JSON cannot represent. It converts implicitly to `JsonNode`, so it can be an argument, or
+Use [JSValue](cref:Meziantou.Framework.NodeJs.JSValue) for a value that JSON cannot represent. It converts implicitly to `JsonNode`, so it can be an argument, or
 be nested in a `JsonObject` or a `JsonArray` argument:
 
 <!-- ref:../../tests/Meziantou.Framework.NodeJs.Tests/NodeJsHostTests.cs;region=JSValue_Example;format=md-fenced-code-block;dedent=true -->
@@ -67,8 +67,8 @@ Assert.True(types[2].GetBoolean());
 
 | .NET | JavaScript |
 | --- | --- |
-| `JSValue.Undefined` | `undefined` |
-| `JSValue.Null` | `null` |
+| [JSValue.Undefined](cref:Meziantou.Framework.NodeJs.JSValue.Undefined) | `undefined` |
+| [JSValue.Null](cref:Meziantou.Framework.NodeJs.JSValue.Null) | `null` |
 | `JSValue.String(string)` | string |
 | `JSValue.Boolean(bool)` | boolean |
 | `JSValue.BigInt(BigInteger)` | `BigInt`. `long`, `ulong`, `Int128` and `UInt128` convert implicitly to `BigInteger`. |
@@ -76,7 +76,7 @@ Assert.True(types[2].GetBoolean());
 | `JSValue.Date(DateTimeOffset)`, `JSValue.Date(DateTime)` | `Date`, truncated to the millisecond. A local or unspecified `DateTime` is a local time. |
 | `JSValue.Uint8Array(ReadOnlyMemory<byte>)` | `Uint8Array` |
 
-A `JSValue` can only be used in the arguments of a call. It cannot be a member of an object serialized using
+A [JSValue](cref:Meziantou.Framework.NodeJs.JSValue) can only be used in the arguments of a call. It cannot be a member of an object serialized using
 reflection, and a `JsonNode` created from it cannot be serialized or cloned.
 
 ## Read the values that JSON cannot represent
@@ -124,13 +124,13 @@ Assert.True(double.IsNaN(ratio));
   `0`.
 - A function or a `Symbol` returned by the call, or a value whose `toJSON` method returns `undefined`, cannot be
   serialized, so the call fails. Keep it in the process with a reference (see
-  [Keeping values in Node.js](06-References.md)), or ignore it with a void call such as `InvokeVoidAsync`. Functions and
+  [Keeping values in Node.js](06-References.md)), or ignore it with a void call such as [InvokeVoidAsync](cref:Meziantou.Framework.NodeJs.NodeJsHost.InvokeVoidAsync). Functions and
   `Symbol`s nested in the result are omitted, as `JSON.stringify` does.
 - The depth of a result is only limited by the stack of the Node.js process, as `JSON.stringify` is recursive.
 
 ## Ignore the result
 
-`InvokeVoidAsync` and `EvaluateVoidAsync` wait for the call to complete, but do not serialize its result, so the result
+[InvokeVoidAsync](cref:Meziantou.Framework.NodeJs.NodeJsHost.InvokeVoidAsync) and [EvaluateVoidAsync](cref:Meziantou.Framework.NodeJs.NodeJsHost.EvaluateVoidAsync) wait for the call to complete, but do not serialize its result, so the result
 does not need to be serializable. Use them when you do not need the result: they also skip the cost of serializing it.
 
 ## Size of the messages

@@ -14,9 +14,9 @@ both declarations and their tags, so a build log is enough to act on.
 | [MFTV0002](03-MFTV0002.md) | A value flows to a declaration that expects another tag | Warning | Change the tag of the target |
 | [MFTV0003](04-MFTV0003.md) | Values with different tags are combined into one value | Warning | — |
 | [MFTV0004](05-MFTV0004.md) | An override or an implementation has other tags than its base member | Warning | Change the tag of the override |
-| [MFTV0005](06-MFTV0005.md) | A `[ValueTag]` attribute or a `ValueTag` comment is invalid | Warning | Remove the annotation |
+| [MFTV0005](06-MFTV0005.md) | A [\[ValueTag\]](cref:Meziantou.Framework.TaggedValues.ValueTagAttribute) attribute or a `ValueTag` comment is invalid | Warning | Remove the annotation |
 | [MFTV0006](07-MFTV0006.md) | Two `Id` members get the same tag from the naming convention | Warning | — |
-| [MFTV0007](08-MFTV0007.md) | A `[ValueTag]` attribute repeats the tag of the naming convention | Info | Remove the attribute |
+| [MFTV0007](08-MFTV0007.md) | A [\[ValueTag\]](cref:Meziantou.Framework.TaggedValues.ValueTagAttribute) attribute repeats the tag of the naming convention | Info | Remove the attribute |
 | [MFTV0008](09-MFTV0008.md) | A method returns tagged values, but its return value is not tagged | Info | Add the tag |
 | [MFTV0009](10-MFTV0009.md) | In strict mode, a tagged value is mixed with an untagged value | Warning | Add the tag |
 

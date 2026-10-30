@@ -21,5 +21,5 @@ compiled.
 
 ## Timeouts
 
-Each `MatchTimeout` value compiles the grammars again: keep the same value for the whole application. See
+Each [MatchTimeout](cref:Meziantou.Framework.SyntaxHighlighting.HighlightOptions.MatchTimeout) value compiles the grammars again: keep the same value for the whole application. See
 [Bound the matching time](06-UntrustedInput.md#bound-the-matching-time).

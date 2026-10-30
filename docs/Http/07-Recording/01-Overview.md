@@ -3,7 +3,7 @@ title: Overview
 description: Record the requests an HttpClient sends and the responses it receives, and replay them in later test runs.
 ---
 
-`Meziantou.Framework.Http.Recording` provides `HttpRecordingHandler`, a `DelegatingHandler` that records the requests
+`Meziantou.Framework.Http.Recording` provides [HttpRecordingHandler](cref:Meziantou.Framework.Http.Recording.HttpRecordingHandler), a `DelegatingHandler` that records the requests
 an `HttpClient` sends and the responses it receives, and replays them later. A test that calls a remote service runs
 against the real service once, saves what it saw to a file, and replays the file on the next runs: no network access,
 no flaky dependency, and the same responses every time.
@@ -12,8 +12,8 @@ no flaky dependency, and the same responses every time.
 
 - **Record and replay** with one handler: the first run records, later runs replay. See
   [Getting started](02-GettingStarted.md).
-- **Choose when to call the real service**: always (`Record`), never (`Replay`), or only for what is not recorded yet
-  (`Auto`). See [Recording modes](03-RecordingModes.md).
+- **Choose when to call the real service**: always ([Record](cref:Meziantou.Framework.Http.Recording.HttpRecordingMode.Record)), never ([Replay](cref:Meziantou.Framework.Http.Recording.HttpRecordingMode.Replay)), or only for what is not recorded yet
+  ([Auto](cref:Meziantou.Framework.Http.Recording.HttpRecordingMode.Auto)). See [Recording modes](03-RecordingModes.md).
 - **Control how a request finds its recording**: by method, URL and body by default, or with your own rule. See
   [Matching requests](04-MatchingRequests.md).
 - **Decide what happens when nothing matches**: throw, return an error response, or call the real service. See

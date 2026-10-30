@@ -3,7 +3,7 @@ title: Boolean converter
 description: Convert a boolean to a Visibility, a text or any other value in a WPF binding with BooleanToValueConverter.
 ---
 
-`BooleanToValueConverter` converts a boolean to the value of your choice: declare it as a resource with the values for
+[BooleanToValueConverter](cref:Meziantou.Framework.WPF.BooleanToValueConverter) converts a boolean to the value of your choice: declare it as a resource with the values for
 `true` and `false`, then use it in bindings.
 
 ## Show or hide a control
@@ -26,7 +26,7 @@ number…
 
 ## Handle null values
 
-`NullValue` is returned when the value is `null`, for instance a `bool?` property that is not set yet:
+[NullValue](cref:Meziantou.Framework.WPF.BooleanToValueConverter.NullValue) is returned when the value is `null`, for instance a `bool?` property that is not set yet:
 
 <!-- ref:../../samples/Meziantou.Framework.WPF.EnumComboBox/Examples/BooleanToValueConverterNullValueExample.xaml;format=md-fenced-code-block;language=xml -->
 ```xml
@@ -46,10 +46,10 @@ number…
 
 | Value | Result |
 | --- | --- |
-| `true` | `TrueValue` |
-| `false` | `FalseValue` |
-| `null` | `NullValue`, or `FalseValue` when `NullValue` is not set |
-| Another value that converts to a boolean: a number (`0` is `false`, any other number is `true`), or the text `"true"` or `"false"` | `TrueValue` or `FalseValue` |
-| A value that does not convert to a boolean, such as `"abc"` or a date | `NullValue`, or `FalseValue` when `NullValue` is not set |
+| `true` | [TrueValue](cref:Meziantou.Framework.WPF.BooleanToValueConverter.TrueValue) |
+| `false` | [FalseValue](cref:Meziantou.Framework.WPF.BooleanToValueConverter.FalseValue) |
+| `null` | [NullValue](cref:Meziantou.Framework.WPF.BooleanToValueConverter.NullValue), or [FalseValue](cref:Meziantou.Framework.WPF.BooleanToValueConverter.FalseValue) when [NullValue](cref:Meziantou.Framework.WPF.BooleanToValueConverter.NullValue) is not set |
+| Another value that converts to a boolean: a number (`0` is `false`, any other number is `true`), or the text `"true"` or `"false"` | [TrueValue](cref:Meziantou.Framework.WPF.BooleanToValueConverter.TrueValue) or [FalseValue](cref:Meziantou.Framework.WPF.BooleanToValueConverter.FalseValue) |
+| A value that does not convert to a boolean, such as `"abc"` or a date | [NullValue](cref:Meziantou.Framework.WPF.BooleanToValueConverter.NullValue), or [FalseValue](cref:Meziantou.Framework.WPF.BooleanToValueConverter.FalseValue) when [NullValue](cref:Meziantou.Framework.WPF.BooleanToValueConverter.NullValue) is not set |
 
-The converter is one-way: `ConvertBack` throws a `NotSupportedException`. Do not use it in a `TwoWay` binding.
+The converter is one-way: [ConvertBack](cref:Meziantou.Framework.WPF.BooleanToValueConverter.ConvertBack) throws a `NotSupportedException`. Do not use it in a `TwoWay` binding.

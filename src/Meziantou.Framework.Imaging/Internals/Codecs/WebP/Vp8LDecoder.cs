@@ -546,7 +546,11 @@ internal sealed class Vp8LDecoder : IDisposable
 
             unsafe
             {
-                Unsafe.Add(ref output, position++) = Unsafe.Add(ref cacheEntries, key);
+                // Every pixel goes into the cache, this one included (as libwebp does): this only changes the cache when the
+                // key reads an entry that was never written, whose zero value belongs to slot 0
+                var argb = Unsafe.Add(ref cacheEntries, key);
+                Unsafe.Add(ref output, position++) = argb;
+                Unsafe.Add(ref cacheEntries, (int)ColorCacheHash(argb, cacheBits)) = argb;
             }
 
             if (++x == width)

@@ -8,7 +8,7 @@ supported type is written.
 
 ## Write a converter
 
-Derive from `TomlConverter<T>` and implement `Read` and `Write`:
+Derive from [TomlConverter\<T\>](cref:Meziantou.Framework.Toml.Serialization.TomlConverter{T}) and implement [Read](cref:Meziantou.Framework.Toml.Serialization.TomlConverter{T}.Read) and [Write](cref:Meziantou.Framework.Toml.Serialization.TomlConverter{T}.Write):
 
 <!-- ref:../../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlConverter_Create;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -21,7 +21,7 @@ public sealed class UpperCaseStringConverter : TomlConverter<string>
 ```
 <!-- endref -->
 
-For open generic types, or types chosen at runtime, derive from `TomlConverterFactory`, which creates the converter of
+For open generic types, or types chosen at runtime, derive from [TomlConverterFactory](cref:Meziantou.Framework.Toml.Serialization.TomlConverterFactory), which creates the converter of
 each type. The converter types are in the [Meziantou.Framework.Toml.Serialization](cref:Meziantou.Framework.Toml.Serialization) namespace.
 
 ## Register a converter
@@ -51,22 +51,22 @@ internal sealed partial class ConverterContext : TomlSerializerContext;
 - The converters of the options win over the built-in converters.
 - A converter for `T` on a member also converts a `T?` member, like in `System.Text.Json`.
 - The converters listed on a context are chosen when building, so a converter factory listed there is not used
-  (warning `MFTOML012`). Apply `[TomlConverter]` to the type or the member instead.
+  (warning `MFTOML012`). Apply [\[TomlConverter\]](cref:Meziantou.Framework.Toml.Serialization.TomlConverterAttribute) to the type or the member instead.
 - With the source generator, the converter type must be accessible from the context: public, or internal to the same
   assembly.
 
 ## Read and write values
 
-`TomlReader` exposes `Read`, `Skip`, `GetString`, `GetInt64`, `GetDouble`, `GetDecimal`, `GetBoolean`,
-`GetTomlDateTime`, `GetRawText` and `PropertyNameEquals`. `TomlWriter` exposes `WritePropertyName`, the `Write...Value`
+[TomlReader](cref:Meziantou.Framework.Toml.Serialization.TomlReader) exposes [Read](cref:Meziantou.Framework.Toml.Serialization.TomlReader.Read), [Skip](cref:Meziantou.Framework.Toml.Serialization.TomlReader.Skip), [GetString](cref:Meziantou.Framework.Toml.Serialization.TomlReader.GetString), [GetInt64](cref:Meziantou.Framework.Toml.Serialization.TomlReader.GetInt64), [GetDouble](cref:Meziantou.Framework.Toml.Serialization.TomlReader.GetDouble), [GetDecimal](cref:Meziantou.Framework.Toml.Serialization.TomlReader.GetDecimal), [GetBoolean](cref:Meziantou.Framework.Toml.Serialization.TomlReader.GetBoolean),
+[GetTomlDateTime](cref:Meziantou.Framework.Toml.Serialization.TomlReader.GetTomlDateTime), [GetRawText](cref:Meziantou.Framework.Toml.Serialization.TomlReader.GetRawText) and [PropertyNameEquals](cref:Meziantou.Framework.Toml.Serialization.TomlReader.PropertyNameEquals). [TomlWriter](cref:Meziantou.Framework.Toml.Serialization.TomlWriter) exposes [WritePropertyName](cref:Meziantou.Framework.Toml.Serialization.TomlWriter.WritePropertyName), the `Write...Value`
 methods, and the start and end methods of tables, inline tables, arrays and arrays of tables.
 
-A converter either reads its whole value and then calls `Read` once more to move to the token that follows it, or does
+A converter either reads its whole value and then calls [Read](cref:Meziantou.Framework.Toml.Serialization.TomlReader.Read) once more to move to the token that follows it, or does
 not move the reader at all, as in the example above, and the value is skipped for it. A converter that stops inside its
-value, or reads past it, is a configuration error, which `TryDeserialize` throws too.
+value, or reads past it, is a configuration error, which [TryDeserialize](cref:Meziantou.Framework.Toml.TomlSerializer.TryDeserialize) throws too.
 
 TOML lets a document define a table in several places: an array of tables can continue after another table, and dotted
-keys can extend a table later in the file. `TomlReader` parses the whole document on the first `Read`, so it reports
+keys can extend a table later in the file. [TomlReader](cref:Meziantou.Framework.Toml.Serialization.TomlReader) parses the whole document on the first [Read](cref:Meziantou.Framework.Toml.Serialization.TomlReader.Read), so it reports
 syntax errors before any value is created, and returns each table and array of tables as one block: a converter reads
 each key of a table once.
 
@@ -75,8 +75,8 @@ To read a nested value with the serializer, a converter can use the metadata of 
 
 ## Enums as strings
 
-Enums are written as numbers. `TomlStringEnumConverter` writes their names instead, and reads names, ignoring case, or
-numbers. Apply it to an enum or a member with `[TomlConverter]`:
+Enums are written as numbers. [TomlStringEnumConverter](cref:Meziantou.Framework.Toml.Serialization.TomlStringEnumConverter) writes their names instead, and reads names, ignoring case, or
+numbers. Apply it to an enum or a member with [\[TomlConverter\]](cref:Meziantou.Framework.Toml.Serialization.TomlConverterAttribute):
 
 <!-- ref:../../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlStringEnumConverter_Enum;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -98,6 +98,6 @@ var options = new TomlSerializerOptions { Converters = [new TomlStringEnumConver
 ```
 <!-- endref -->
 
-- `[TomlStringEnumMemberName]` sets the name of a value. That name is the one written, and the one read first: an exact
+- [\[TomlStringEnumMemberName\]](cref:Meziantou.Framework.Toml.Serialization.TomlStringEnumMemberNameAttribute) sets the name of a value. That name is the one written, and the one read first: an exact
   match wins over a match in another case. The C# name is read too.
 - A flags value is written as a comma-separated list of names. Only a flags enum reads such a list.

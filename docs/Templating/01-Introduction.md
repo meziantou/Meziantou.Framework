@@ -41,7 +41,7 @@ assembly, then runs it with the arguments you pass.
 
 ## Namespace
 
-Every public type is in the [Meziantou.Framework.Templating](cref:Meziantou.Framework.Templating) namespace, including the HTML email types of
+Every public type is in the [Meziantou.Framework.Templating](cref:Meziantou.Framework.Templating!N:Meziantou.Framework.Templating) namespace, including the HTML email types of
 `Meziantou.Framework.Templating.Html`.
 
 ## Next steps

@@ -25,9 +25,9 @@ description: Match URLs with the URL Pattern syntax of the web platform, edit qu
 
 ## Namespace
 
-Every type is in the [Meziantou.Framework](cref:Meziantou.Framework) namespace: `UrlPattern`, `UrlPatternInit`, `UrlPatternOptions`,
-`UrlPatternResult`, `UrlPatternCollection`, `QueryStringUtilities`, `QueryStringParameterCollection`,
-`PublicSuffixList` and `DomainInfo`.
+Every type is in the [Meziantou.Framework](cref:Meziantou.Framework.Uri!N:Meziantou.Framework) namespace: [UrlPattern](cref:Meziantou.Framework.UrlPattern), [UrlPatternInit](cref:Meziantou.Framework.UrlPatternInit), [UrlPatternOptions](cref:Meziantou.Framework.UrlPatternOptions),
+[UrlPatternResult](cref:Meziantou.Framework.UrlPatternResult), [UrlPatternCollection](cref:Meziantou.Framework.UrlPatternCollection), [QueryStringUtilities](cref:Meziantou.Framework.QueryStringUtilities), [QueryStringParameterCollection](cref:Meziantou.Framework.QueryStringParameterCollection),
+[PublicSuffixList](cref:Meziantou.Framework.PublicSuffixList) and [DomainInfo](cref:Meziantou.Framework.DomainInfo).
 
 ## Next steps
 

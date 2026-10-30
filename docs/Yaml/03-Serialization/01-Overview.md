@@ -3,8 +3,8 @@ title: Serialization
 description: Convert .NET objects to YAML and back, and control the names, the output format, polymorphism and references.
 ---
 
-`YamlSerializer` converts .NET objects to YAML and YAML to .NET objects. It writes the public properties of a class as a
-mapping, collections as sequences, and the common .NET types as scalars. `YamlSerializerOptions` and attributes on your
+[YamlSerializer](cref:Meziantou.Framework.Yaml.YamlSerializer) converts .NET objects to YAML and YAML to .NET objects. It writes the public properties of a class as a
+mapping, collections as sequences, and the common .NET types as scalars. [YamlSerializerOptions](cref:Meziantou.Framework.Yaml.YamlSerializerOptions) and attributes on your
 types control the result.
 
 - [Serialize and deserialize](02-SerializeAndDeserialize.md): strings, files and streams, reusable options, reading

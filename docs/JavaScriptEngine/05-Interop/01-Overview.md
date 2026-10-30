@@ -9,10 +9,10 @@ objects and functions you create for it.
 
 A few rules hold for all of them:
 
-- Every JavaScript value is a `JsValue`: `undefined`, `null`, a boolean, a number, a string, a symbol, a BigInt or an
+- Every JavaScript value is a [JsValue](cref:Meziantou.Framework.JavaScriptEngine.JsValue): `undefined`, `null`, a boolean, a number, a string, a symbol, a BigInt or an
   object. The numbers, the strings and the booleans of .NET convert to it implicitly.
-- The objects are `JsObject` instances, created by the factories of the realm (`CreateObject`, `CreateArray`,
-  `CreateFunction`...) or by the scripts.
+- The objects are [JsObject](cref:Meziantou.Framework.JavaScriptEngine.JsObject) instances, created by the factories of the realm ([CreateObject](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.CreateObject), [CreateArray](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.CreateArray),
+  [CreateFunction](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.CreateFunction)...) or by the scripts.
 - Reading and writing properties happens inside `engine.Enter()`, or inside a .NET function called by a script. See
   [The scope of an engine](../03-EnginesAndRealms.md#the-scope-of-an-engine).
 - An object belongs to its realm, and its realm to its engine.

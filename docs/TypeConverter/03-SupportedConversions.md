@@ -3,7 +3,7 @@ title: Supported conversions
 description: What DefaultConverter accepts for numbers, booleans, enums, nullable types, dates, GUIDs, cultures, byte arrays and other types.
 ---
 
-`ConvertUtilities` uses `ConvertUtilities.DefaultConverter`, an instance of `DefaultConverter`:
+[ConvertUtilities](cref:Meziantou.Framework.ConvertUtilities) uses [ConvertUtilities.DefaultConverter](cref:Meziantou.Framework.ConvertUtilities.DefaultConverter), an instance of [DefaultConverter](cref:Meziantou.Framework.DefaultConverter):
 
 <!-- ref:../../tests/Meziantou.Framework.TypeConverter.Tests/ConvertUtilitiesTests.cs;region=TypeConverter_SupportedConversions;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -43,7 +43,7 @@ Assert.Equal("3.5", ConvertUtilities.ChangeType<string?>(3.5, defaultValue: null
 
 ## Conversion rules
 
-`DefaultConverter` tries these conversions in order, and stops at the first that succeeds:
+[DefaultConverter](cref:Meziantou.Framework.DefaultConverter) tries these conversions in order, and stops at the first that succeeds:
 
 1. A value that is already of the target type, or of a derived type, is returned as is. Any value converts to `object`.
 2. `null` and `DBNull.Value` give `null` for reference and nullable types. For a nullable type, an empty or white-space
@@ -68,12 +68,12 @@ Assert.Equal("3.5", ConvertUtilities.ChangeType<string?>(3.5, defaultValue: null
 | `string` | Any value, formatted with the format provider. A `CultureInfo` gives its name, and a byte array is encoded as Base64 by default |
 | `byte[]` | A Base64 or hexadecimal (`0x…`) string, or the binary representation of a number, `bool`, `char`, `DateTime`, `decimal`, `Guid`, `TimeSpan` or `DateTimeOffset` |
 
-An empty or white-space string never converts to a number. When every rule fails, `TryChangeType` returns `false`.
+An empty or white-space string never converts to a number. When every rule fails, [TryChangeType](cref:Meziantou.Framework.DefaultConverter.TryChangeType) returns `false`.
 
 ## Byte arrays
 
-`DefaultConverter.ByteArrayToStringFormat` sets how a byte array is written as a string: `Base64` (the default),
-`Base16` (hexadecimal), or `Base16Prefixed` (hexadecimal with a `0x` prefix). Strings are read back from both formats:
+[DefaultConverter.ByteArrayToStringFormat](cref:Meziantou.Framework.DefaultConverter.ByteArrayToStringFormat) sets how a byte array is written as a string: [Base64](cref:Meziantou.Framework.ByteArrayToStringFormat.Base64) (the default),
+[Base16](cref:Meziantou.Framework.ByteArrayToStringFormat.Base16) (hexadecimal), or [Base16Prefixed](cref:Meziantou.Framework.ByteArrayToStringFormat.Base16Prefixed) (hexadecimal with a `0x` prefix). Strings are read back from both formats:
 a string with a `0x` prefix is hexadecimal, other strings are read as Base64 first, then as hexadecimal.
 
 <!-- ref:../../tests/Meziantou.Framework.TypeConverter.Tests/DefaultConverterTests_ByteArrayTo.cs;region=TypeConverter_ByteArrayConversions;format=md-fenced-code-block;dedent=true -->
@@ -113,7 +113,7 @@ Assert.Equal([1, 2, 3, 4], result2);
 
 ## Implicit conversion operators
 
-When no other rule applies, `DefaultConverter` looks for an implicit operator declared by the type of the value:
+When no other rule applies, [DefaultConverter](cref:Meziantou.Framework.DefaultConverter) looks for an implicit operator declared by the type of the value:
 
 <!-- ref:../../tests/Meziantou.Framework.TypeConverter.Tests/ConvertUtilitiesTests.cs;region=TypeConverter_ImplicitOperatorType;format=md-fenced-code-block;dedent=true -->
 ```csharp

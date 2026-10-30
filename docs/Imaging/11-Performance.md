@@ -9,8 +9,8 @@ an application: what to decode, how much memory to hold, how many threads to use
 ## Decode only what you need
 
 - **Read the header instead of the pixels.** To get the size, the format, the frame count or the metadata of a file,
-  use `Image.Identify`: it does not decode the pixels. See [Identifying images](05-LoadingAndSaving/03-IdentifyingImages.md).
-- **Stop after the first frames.** `ImageDecodeOptions.FrameLimit` stops decoding after that many frames; the rest of
+  use [Image.Identify](cref:Meziantou.Framework.Imaging.Image.Identify): it does not decode the pixels. See [Identifying images](05-LoadingAndSaving/03-IdentifyingImages.md).
+- **Stop after the first frames.** [ImageDecodeOptions.FrameLimit](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.FrameLimit) stops decoding after that many frames; the rest of
   the file is not read. A preview of an animation only needs its first frame:
 
 <!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/PerformanceExamples.cs;region=Imaging_FirstFramePreview;format=md-fenced-code-block;dedent=true -->
@@ -28,25 +28,25 @@ public static void SavePreview(string animationPath, string previewPath)
 ```
 <!-- endref -->
 
-- **Load in the pixel format you work with.** `Image.Load` returns the smallest pixel format that keeps the source
-  exactly (`Rgb24` or `Gray8` for most JPEG files, `Rgba32` for GIF, 16-bit formats for 16-bit PNG files...).
-  `Image.Load<TPixel>` converts while loading: ask for the format your code processes, so that you do not convert the
+- **Load in the pixel format you work with.** [Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) returns the smallest pixel format that keeps the source
+  exactly ([Rgb24](cref:Meziantou.Framework.Imaging.Rgb24) or [Gray8](cref:Meziantou.Framework.Imaging.Gray8) for most JPEG files, [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32) for GIF, 16-bit formats for 16-bit PNG files...).
+  [Image.Load\<TPixel\>](cref:Meziantou.Framework.Imaging.Image.Load) converts while loading: ask for the format your code processes, so that you do not convert the
   image a second time. See [Pixel formats](04-Concepts/05-PixelFormats.md).
 
 ## Bound the memory
 
-- **Stream long animations.** `Image.Load` holds every frame in memory. The readers and writers of
-  `Image.OpenReader` and `Image.CreateWriter` hold one frame at a time, plus the frames you keep. See
+- **Stream long animations.** [Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) holds every frame in memory. The readers and writers of
+  [Image.OpenReader](cref:Meziantou.Framework.Imaging.Image.OpenReader) and [Image.CreateWriter](cref:Meziantou.Framework.Imaging.Image.CreateWriter) hold one frame at a time, plus the frames you keep. See
   [Streaming readers and writers](05-LoadingAndSaving/05-StreamingReadersAndWriters.md).
 - **Dispose images as soon as possible.** An image holds its pixels until it is disposed. Use `using` declarations, and
   dispose intermediate images (clones, extracted frames) when you are done with them.
-- **Set resource limits.** The limits of `ImageResourceLimits` bound the size of the canvas, the number of frames and
+- **Set resource limits.** The limits of [ImageResourceLimits](cref:Meziantou.Framework.Imaging.ImageResourceLimits) bound the size of the canvas, the number of frames and
   the memory an image may allocate. They protect a service from files that would exhaust its memory. See
   [Resource limits](05-LoadingAndSaving/07-ResourceLimits.md).
 
 ## Use several threads where it pays
 
-Operations run on the calling thread by default (`ImageConfiguration.MaxDegreeOfParallelism` is 1), and every image is
+Operations run on the calling thread by default ([ImageConfiguration.MaxDegreeOfParallelism](cref:Meziantou.Framework.Imaging.ImageConfiguration.MaxDegreeOfParallelism) is 1), and every image is
 independent: a service that processes several images at the same time already uses several threads, one per image.
 Keep the default in that case. The limit applies per operation, so `n` concurrent operations with a limit of `m` may use
 up to `n × m` threads.
@@ -80,7 +80,7 @@ public static void ResizeWithAllCores(string inputPath, string outputPath)
 
 - **Lossless output is large.** AVIF, HEIC, JPEG XL, WebP and JPEG 2000 are lossless by default when saved by extension.
   For photographs, select the lossy compression and a quality; see the pages of the [formats](10-Formats/01-Overview.md).
-- **Effort trades time for size.** `Effort` (AVIF, HEIC, JPEG XL, WebP) and `PngEncoder.Optimization` search more
+- **Effort trades time for size.** `Effort` (AVIF, HEIC, JPEG XL, WebP) and [PngEncoder.Optimization](cref:Meziantou.Framework.Imaging.Formats.PngEncoder.Optimization) search more
   options to make the file smaller, and take longer to encode. Lower the effort when encoding time matters more than
   size; raise it for assets that are encoded once and downloaded many times.
 - **Large AVIF and HEIC images can be cut in tiles.** `GridTileSize` encodes a large image as a grid of tiles, which
@@ -90,5 +90,5 @@ public static void ResizeWithAllCores(string inputPath, string outputPath)
 
 - **Pass a path or a seekable stream for TIFF, ICO, CUR and ANI.** These formats point to their data: on a seekable
   source, only the bytes they need are read. A non-seekable stream is buffered first.
-- **Use the asynchronous methods for network streams.** `Image.LoadAsync`, `Image.IdentifyAsync` and the asynchronous
+- **Use the asynchronous methods for network streams.** [Image.LoadAsync](cref:Meziantou.Framework.Imaging.Image.LoadAsync), [Image.IdentifyAsync](cref:Meziantou.Framework.Imaging.Image.IdentifyAsync) and the asynchronous
   readers and writers read and write with asynchronous I/O and accept a `CancellationToken`.

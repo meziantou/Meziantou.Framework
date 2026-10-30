@@ -28,13 +28,13 @@ Assert.Equal("Hello Meziantou!", result);
 ```
 <!-- endref -->
 
-- `Load` reads the template. `<%= Name %>` writes the value of the C# expression `Name`; the rest is text, written as
+- [Load](cref:Meziantou.Framework.Templating.Template.Load) reads the template. `<%= Name %>` writes the value of the C# expression `Name`; the rest is text, written as
   is.
-- `Arguments` declares the values the template receives. Each argument becomes a C# parameter, with its name and its
+- [Arguments](cref:Meziantou.Framework.Templating.Template.Arguments) declares the values the template receives. Each argument becomes a C# parameter, with its name and its
   type.
-- `Run` compiles the template the first time it is called, runs it, and returns the text. The values are passed in the
+- [Run](cref:Meziantou.Framework.Templating.Template.Run) compiles the template the first time it is called, runs it, and returns the text. The values are passed in the
   order of the arguments.
-- `Template` is disposable: disposing it unloads the compiled code. See
+- [Template](cref:Meziantou.Framework.Templating.Template) is disposable: disposing it unloads the compiled code. See
   [Compilation and memory](08-CompilationAndMemory.md).
 
 ## Loop and test conditions
@@ -54,8 +54,8 @@ The other blocks, and how a template handles line breaks, are described in [Temp
 
 ## Reuse a compiled template
 
-Compiling a template takes much longer than running it. Keep the `Template` instance and run it as many times as you
-need; `Build` compiles it in advance, for instance when your application starts:
+Compiling a template takes much longer than running it. Keep the [Template](cref:Meziantou.Framework.Templating.Template) instance and run it as many times as you
+need; [Build](cref:Meziantou.Framework.Templating.Template.Build) compiles it in advance, for instance when your application starts:
 
 <!-- ref:../../tests/Meziantou.Framework.Templating.Tests/TemplateTest.cs;region=Template_Build;format=md-fenced-code-block;dedent=true -->
 ```csharp

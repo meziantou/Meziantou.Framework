@@ -16,7 +16,7 @@ The examples of this documentation omit the `using` directives: they need
 
 ## Read a HAR file
 
-`HarDocument.ParseAsync` reads an archive from a stream, such as a file exported from a browser:
+[HarDocument.ParseAsync](cref:Meziantou.Framework.HttpArchive.HarDocument.ParseAsync) reads an archive from a stream, such as a file exported from a browser:
 
 <!-- ref:../../samples/Meziantou.Framework.Http.Samples/HttpArchiveExamples.cs;region=HarDocument_ParseFile;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -36,7 +36,7 @@ because the model is nullable: an archive can hold `null` for any field. See
 
 ## Read the entries
 
-`HarDocument.Parse` reads an archive from a string. Each entry has the `Request`, the `Response`, and the time it
+[HarDocument.Parse](cref:Meziantou.Framework.HttpArchive.HarDocument.Parse) reads an archive from a string. Each entry has the [Request](cref:Meziantou.Framework.HttpArchive.HarEntry.Request), the [Response](cref:Meziantou.Framework.HttpArchive.HarEntry.Response), and the time it
 took in milliseconds:
 
 <!-- ref:../../tests/Meziantou.Framework.HttpArchive.Tests/HarDocumentTests.cs;region=HarDocument_Parse;format=md-fenced-code-block;dedent=true -->

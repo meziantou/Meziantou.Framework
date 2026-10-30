@@ -27,15 +27,15 @@ configuration:
   `string`.
 - Otherwise, the cases that can still read the value are used: a `string` case reads a plain `42` or `true`, a `char`
   or enum case reads a number, and a case whose type has a [custom converter](07-CustomConverters.md) reads any value.
-- `YamlSequence`, `YamlMapping` and `YamlValue` cases match sequences, mappings and scalars; `object`, `YamlNode` and
-  `YamlElement` cases match any value. A nested union case matches the shapes of its own cases.
+- [YamlSequence](cref:Meziantou.Framework.Yaml.Model.YamlSequence), [YamlMapping](cref:Meziantou.Framework.Yaml.Model.YamlMapping) and [YamlValue](cref:Meziantou.Framework.Yaml.Model.YamlValue) cases match sequences, mappings and scalars; `object`, [YamlNode](cref:Meziantou.Framework.Yaml.Model.YamlNode) and
+  [YamlElement](cref:Meziantou.Framework.Yaml.Model.YamlElement) cases match any value. A nested union case matches the shapes of its own cases.
 
 A union with a nullable case reads `null` as that case. Otherwise, `null` gives the default value of the union.
 
 ## Tell mapping cases apart
 
 When several cases match, for instance two classes that are both written as a mapping, reading throws a
-`YamlException`, unless a type classifier selects one of them. `YamlUnionTypeStructuralClassifier` selects the case
+[YamlException](cref:Meziantou.Framework.Yaml.YamlException), unless a type classifier selects one of them. [YamlUnionTypeStructuralClassifier](cref:Meziantou.Framework.Yaml.Serialization.YamlUnionTypeStructuralClassifier) selects the case
 from the keys of the mapping:
 
 <!-- ref:../../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlCSharpUnionTests.cs;region=YamlUnionTypeStructuralClassifier_Shape;format=md-fenced-code-block;dedent=true -->
@@ -67,9 +67,9 @@ For other rules, write your own classifier: see [Choose the type from the conten
 
 ## Numbers in strings
 
-`[YamlNumberHandling]` on a union applies to its numeric cases. A quoted scalar normally selects a string case; with
-`AllowReadingFromString`, a quoted number such as `"42"` also matches the numeric cases, and with
-`AllowNamedFloatingPointLiterals`, a quoted `"NaN"`, `"Infinity"` or `"-Infinity"` matches the floating-point cases. A
+[\[YamlNumberHandling\]](cref:Meziantou.Framework.Yaml.Serialization.YamlNumberHandlingAttribute) on a union applies to its numeric cases. A quoted scalar normally selects a string case; with
+[AllowReadingFromString](cref:Meziantou.Framework.Yaml.YamlNumberHandling.AllowReadingFromString), a quoted number such as `"42"` also matches the numeric cases, and with
+[AllowNamedFloatingPointLiterals](cref:Meziantou.Framework.Yaml.YamlNumberHandling.AllowNamedFloatingPointLiterals), a quoted `"NaN"`, `"Infinity"` or `"-Infinity"` matches the floating-point cases. A
 value that matches several cases is ambiguous:
 
 <!-- ref:../../../tests/Meziantou.Framework.Yaml.Tests/Serialization/YamlCSharpUnionTests.cs;region=YamlUnion_NumberHandling;format=md-fenced-code-block;dedent=true -->

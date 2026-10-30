@@ -30,7 +30,7 @@ if (result)
 ```
 <!-- endref -->
 
-`Prompt.YesNo` writes the question followed by the two answers in brackets, then reads a line from the console:
+[Prompt.YesNo](cref:Meziantou.Framework.Prompt.YesNo) writes the question followed by the two answers in brackets, then reads a line from the console:
 
 - The answers are compared without case: `y`, `Y`, `yes` with the `Yes` label, and so on.
 - An empty line returns the default value. Without a default value (`null`), the question is asked again.
@@ -43,5 +43,5 @@ labels are shown as you write them: write the default answer in upper case to sh
 ## Closed input
 
 When the standard input is closed, for instance when it is redirected from an empty file or the application runs
-without a console, `YesNo` returns the default value. Without a default value it throws an `EndOfStreamException` rather
+without a console, [YesNo](cref:Meziantou.Framework.Prompt.YesNo) returns the default value. Without a default value it throws an `EndOfStreamException` rather
 than waiting forever: pass a default value when the application can run unattended.

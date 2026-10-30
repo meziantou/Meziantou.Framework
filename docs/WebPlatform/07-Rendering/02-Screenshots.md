@@ -3,7 +3,7 @@ title: Screenshots
 description: Take a screenshot of the viewport, the full page, an element or an area, as an image, a PNG or a JPEG file.
 ---
 
-The `TakeScreenshot` extension methods of the [Meziantou.Framework.WebPlatform.Imaging](cref:Meziantou.Framework.WebPlatform.Imaging) namespace draw the current state of
+The [TakeScreenshot](cref:Meziantou.Framework.WebPlatform.Imaging.ImagingScreenshotExtensions.TakeScreenshot) extension methods of the [Meziantou.Framework.WebPlatform.Imaging](cref:Meziantou.Framework.WebPlatform.Imaging) namespace draw the current state of
 a page. Load the page and its resources first:
 
 <!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Imaging.Tests/DocumentationImageTests.cs;region=WebPlatformImaging_PageScreenshot;format=md-fenced-code-block;dedent=true -->
@@ -40,14 +40,14 @@ var png = context.TakeScreenshotAsPng();          // the same pixels, encoded as
 
 | Method | Result |
 | --- | --- |
-| `BrowsingContext.TakeScreenshot(options)` | The viewport of the page, as an `Image<Rgba32>` that you own and dispose |
+| `BrowsingContext.TakeScreenshot(options)` | The viewport of the page, as an [Image\<Rgba32\>](cref:Meziantou.Framework.Imaging.Image{TPixel}) that you own and dispose |
 | `Document.TakeScreenshot(options)` | The viewport of a document (the area of its `iframe` for a frame) |
 | `Element.TakeScreenshot(options)` | The border box of an element, with what is painted over it |
 | `TakeScreenshotAsPng(options)`, `TakeScreenshotAsJpeg(options)` | The same screenshots, encoded |
 
 ## Take a screenshot of an element
 
-The screenshot of an element covers its border box (the rectangle of `GetBoundingClientRect()`, transforms included),
+The screenshot of an element covers its border box (the rectangle of [GetBoundingClientRect()](cref:Meziantou.Framework.WebPlatform.Dom.Element.GetBoundingClientRect), transforms included),
 rounded outwards to device pixels. Here at twice the resolution of the page:
 
 <!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Imaging.Tests/DocumentationImageTests.cs;region=WebPlatformImaging_ElementScreenshot;format=md-fenced-code-block;dedent=true -->
@@ -85,15 +85,15 @@ empty box) throws an `InvalidOperationException`.
 
 ## Options
 
-`ScreenshotOptions` has the options of the screenshots of Playwright:
+[ScreenshotOptions](cref:Meziantou.Framework.WebPlatform.Imaging.ScreenshotOptions) has the options of the screenshots of Playwright:
 
 | Option | Effect |
 | --- | --- |
-| `DevicePixelRatio` | The number of pixels per CSS pixel; the device pixel ratio of the viewport by default. It scales the painting without changing the layout |
-| `FullPage` | The whole scrollable area of the page instead of the viewport |
-| `Clip` | An area, in CSS pixels, relative to the viewport (to the page with `FullPage`) |
-| `OmitBackground` | A transparent background instead of the white canvas (the backgrounds of the page are still painted) |
-| `Quality` | The quality of the JPEG screenshots, from 0 to 100 (80 by default) |
+| [DevicePixelRatio](cref:Meziantou.Framework.WebPlatform.Imaging.ScreenshotOptions.DevicePixelRatio) | The number of pixels per CSS pixel; the device pixel ratio of the viewport by default. It scales the painting without changing the layout |
+| [FullPage](cref:Meziantou.Framework.WebPlatform.Imaging.ScreenshotOptions.FullPage) | The whole scrollable area of the page instead of the viewport |
+| [Clip](cref:Meziantou.Framework.WebPlatform.Imaging.ScreenshotOptions.Clip) | An area, in CSS pixels, relative to the viewport (to the page with [FullPage](cref:Meziantou.Framework.WebPlatform.Imaging.ScreenshotOptions.FullPage)) |
+| [OmitBackground](cref:Meziantou.Framework.WebPlatform.Imaging.ScreenshotOptions.OmitBackground) | A transparent background instead of the white canvas (the backgrounds of the page are still painted) |
+| [Quality](cref:Meziantou.Framework.WebPlatform.Imaging.ScreenshotOptions.Quality) | The quality of the JPEG screenshots, from 0 to 100 (80 by default) |
 
 The size of a screenshot is the size of its area in CSS pixels multiplied by the device pixel ratio. The pixels are sRGB,
 8 bits per component, not premultiplied. The JPEG screenshots are drawn over white.
@@ -102,11 +102,11 @@ The size of a screenshot is the size of its area in CSS pixels multiplied by the
 
 A screenshot paints the current state of the page: the layout is computed when it is out of date, and the CSS
 animations are painted at the time of the clock of the event loop. Take it from the thread of the event loop, after the
-resources are loaded (`RunUntilIdleAsync()`): an image that is not loaded yet is not drawn.
+resources are loaded ([RunUntilIdleAsync()](cref:Meziantou.Framework.WebPlatform.Dom.DomEventLoop.RunUntilIdleAsync)): an image that is not loaded yet is not drawn.
 
 The painting follows the order of CSS: backgrounds, borders, shadows, text, images, SVG, transforms, filters, masks,
 clipping, blend modes, the scrollbars and the caret. The positions of the boxes and of the text are snapped to the device
 pixels as in Chromium. See [Limitations](../09-Limitations.md) for what is not painted.
 
-A document that is not the active document of a browsing context, such as a document parsed by `HtmlDocumentParser`,
-cannot be painted: load it with `BrowsingContext.Navigate`.
+A document that is not the active document of a browsing context, such as a document parsed by [HtmlDocumentParser](cref:Meziantou.Framework.WebPlatform.HtmlDocumentParser),
+cannot be painted: load it with [BrowsingContext.Navigate](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContext.Navigate).

@@ -43,7 +43,7 @@ public static void DrawClock(string outputPath)
 
 ![A clock face with a gray rim, twelve gray ticks (longer at 12, 3, 6 and 9) and two red hands showing ten past ten](images/DrawClock.png)
 
-An `AffineTransform` combines translations, scalings, rotations and skews:
+An [AffineTransform](cref:Meziantou.Framework.Imaging.AffineTransform) combines translations, scalings, rotations and skews:
 
 | Method | Creates |
 | --- | --- |
@@ -56,7 +56,7 @@ An `AffineTransform` combines translations, scalings, rotations and skews:
 - `first.Then(second)` (or `first * second`) applies `first`, then `second`.
 - Angles are in degrees, and a positive angle turns clockwise on the image (Y grows downward). A rotation by a multiple
   of 90 degrees is exact.
-- `Transform(point)` and `TransformVector(vector)` transform a point and a direction, `TryInvert` gives the inverse,
+- `Transform(point)` and `TransformVector(vector)` transform a point and a direction, [TryInvert](cref:Meziantou.Framework.Imaging.AffineTransform.TryInvert) gives the inverse,
   and `TransformBounds(rectangle)` gives the box a transformed rectangle lands in: the size of an image that holds a
   turned label or picture.
 
@@ -65,7 +65,7 @@ patterns of the brushes, images, texts, clips, and the offset and the blur of a 
 the transformation gives them, so they stay smooth however they are enlarged. Transformations nest, the inner one
 applying first, with clips and layers in any order.
 
-To transform a path rather than a drawing, use `VectorPath.Transform`: the result is exact, curves stay curves and an
+To transform a path rather than a drawing, use [VectorPath.Transform](cref:Meziantou.Framework.Imaging.Drawing.VectorPath.Transform): the result is exact, curves stay curves and an
 ellipse stays an ellipse. See [Shapes and paths](02-ShapesAndPaths.md).
 
 ## Keep the width of a pen at every scale
@@ -121,14 +121,14 @@ a scaling that is not the same along both axes also makes the pen wider in one d
 
 ## Replay a drawing
 
-A drawing that is needed in several places, at several sizes, can be kept as a `DrawingAction` (the delegate that the
+A drawing that is needed in several places, at several sizes, can be kept as a [DrawingAction](cref:Meziantou.Framework.Imaging.Drawing.DrawingAction) (the delegate that the
 callbacks are) and called inside `canvas.Transform` wherever it is needed. Since it is drawn again each time, it stays
 as sharp as its shapes at any size.
 
 ## Draw in perspective and in 3D
 
-A `ProjectiveTransform` keeps straight lines straight, but not parallel lines parallel: it draws a plane seen in
-perspective. A `Transform3D` is a 4x4 matrix, as the 3D transforms of CSS; the drawing is its plane `z = 0`.
+A [ProjectiveTransform](cref:Meziantou.Framework.Imaging.ProjectiveTransform) keeps straight lines straight, but not parallel lines parallel: it draws a plane seen in
+perspective. A [Transform3D](cref:Meziantou.Framework.Imaging.Transform3D) is a 4x4 matrix, as the 3D transforms of CSS; the drawing is its plane `z = 0`.
 `canvas.Transform` takes both:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_Draw3d;format=md-fenced-code-block;dedent=true -->
@@ -163,12 +163,12 @@ public static void DrawTiltedCard(string outputPath)
 | Method | Creates |
 | --- | --- |
 | `ProjectiveTransform.CreateFromQuadrilateral(rectangle, topLeft, topRight, bottomRight, bottomLeft)` | The transformation that maps a rectangle to four points |
-| `Transform3D.CreateTranslation`, `CreateScale` | A move and a scaling in space |
-| `Transform3D.CreateRotationX`, `CreateRotationY`, `CreateRotationZ`, `CreateRotation(axisX, axisY, axisZ, degrees)` | A rotation around an axis |
+| [Transform3D.CreateTranslation](cref:Meziantou.Framework.Imaging.Transform3D.CreateTranslation), [CreateScale](cref:Meziantou.Framework.Imaging.Transform3D.CreateScale) | A move and a scaling in space |
+| [Transform3D.CreateRotationX](cref:Meziantou.Framework.Imaging.Transform3D.CreateRotationX), [CreateRotationY](cref:Meziantou.Framework.Imaging.Transform3D.CreateRotationY), [CreateRotationZ](cref:Meziantou.Framework.Imaging.Transform3D.CreateRotationZ), `CreateRotation(axisX, axisY, axisZ, degrees)` | A rotation around an axis |
 | `Transform3D.CreatePerspective(distance)` | A perspective, from the distance between the viewer and the plane |
 
-- `Then` combines transformations, the first one applying first. `Transform3D.ToProjectiveTransform` gives what a 3D
-  transformation does to the drawing, and an `AffineTransform` converts to a `ProjectiveTransform`.
+- [Then](cref:Meziantou.Framework.Imaging.Transform3D.Then) combines transformations, the first one applying first. [Transform3D.ToProjectiveTransform](cref:Meziantou.Framework.Imaging.Transform3D.ToProjectiveTransform) gives what a 3D
+  transformation does to the drawing, and an [AffineTransform](cref:Meziantou.Framework.Imaging.AffineTransform) converts to a [ProjectiveTransform](cref:Meziantou.Framework.Imaging.ProjectiveTransform).
 - Everything the callback draws is drawn in perspective, the paints of the brushes included. Shadows and blurs are
   drawn on an image of the plane, then that image is drawn in perspective.
 - What is on the other side of the horizon (behind the viewer) has no image: a drawing that crosses the horizon is cut
@@ -176,7 +176,7 @@ public static void DrawTiltedCard(string outputPath)
 - Transformations started inside each other are combined in three dimensions: a rotation inside a perspective shows the
   side that comes closer larger, as the transforms of nested elements of CSS do.
 
-To draw one image on four points, `DrawImage` takes the four corners directly: see
+To draw one image on four points, [DrawImage](cref:Meziantou.Framework.Imaging.Drawing.DrawingCanvas.DrawImage) takes the four corners directly: see
 [Brushes and pens](03-BrushesAndPens.md). To straighten a photo of a document instead, see
 [Rotate, flip and transform](../06-Processing/04-RotateFlipAndTransform.md).
 

@@ -58,7 +58,7 @@ Disposing twice is safe, so `using` combined with a final `ToString` is fine.
 
 ## Read the content without disposing
 
-`AsSpan` returns the content written so far as a `ReadOnlySpan<char>`, and the builder stays usable:
+[AsSpan](cref:Meziantou.Framework.ValueStringBuilder.AsSpan) returns the content written so far as a `ReadOnlySpan<char>`, and the builder stays usable:
 
 <!-- ref:../../tests/Meziantou.Framework.ValueStringBuilder.Tests/ValueStringBuilderTests.cs;region=ValueStringBuilder_AsSpan;format=md-fenced-code-block;dedent=true -->
 ```csharp

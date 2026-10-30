@@ -4,7 +4,7 @@ description: When to generate the serialization code at build time with a TomlSe
 ---
 
 By default, the serializer discovers your types with reflection the first time it sees them. The source generator does
-this work when you build instead: it writes the code that reads and writes your types into a `TomlSerializerContext`.
+this work when you build instead: it writes the code that reads and writes your types into a [TomlSerializerContext](cref:Meziantou.Framework.Toml.Serialization.TomlSerializerContext).
 The generator ships in the `Meziantou.Framework.Toml` package: there is nothing else to install.
 
 ## When to use it
@@ -24,7 +24,7 @@ for types that are only known at runtime.
 
 ## Declare a context
 
-Declare a `partial` class that derives from `TomlSerializerContext`, with a `[TomlSerializable]` attribute for each
+Declare a `partial` class that derives from [TomlSerializerContext](cref:Meziantou.Framework.Toml.Serialization.TomlSerializerContext), with a [\[TomlSerializable\]](cref:Meziantou.Framework.Toml.Serialization.TomlSerializableAttribute) attribute for each
 type you pass to the serializer. The types reachable from these roots, such as the types of their properties, are
 discovered automatically:
 
@@ -42,11 +42,11 @@ public sealed class ServerConfig
 ```
 <!-- endref -->
 
-`TomlSerializerContext` and the attributes are in the [Meziantou.Framework.Toml.Serialization](cref:Meziantou.Framework.Toml.Serialization) namespace.
+[TomlSerializerContext](cref:Meziantou.Framework.Toml.Serialization.TomlSerializerContext) and the attributes are in the [Meziantou.Framework.Toml.Serialization](cref:Meziantou.Framework.Toml.Serialization) namespace.
 
 ## Use the context
 
-The generator adds a static `Default` instance to the context, and a `TomlTypeInfo<T>` property for each root type.
+The generator adds a static `Default` instance to the context, and a [TomlTypeInfo\<T\>](cref:Meziantou.Framework.Toml.TomlTypeInfo{T}) property for each root type.
 Pass the property, or the context, to the serializer:
 
 <!-- ref:../../tests/Meziantou.Framework.Toml.Tests/BasicTests.cs;region=TomlSerializerContext_Use;format=md-fenced-code-block;dedent=true -->
@@ -64,21 +64,21 @@ Assert.IsType<ServerConfig>(value);
 ```
 <!-- endref -->
 
-- `Serialize`, `Deserialize`, `TryDeserialize` and their asynchronous, stream and reader variants all accept a
-  `TomlTypeInfo<T>` or a context.
+- [Serialize](cref:Meziantou.Framework.Toml.TomlSerializer.Serialize), [Deserialize](cref:Meziantou.Framework.Toml.TomlSerializer.Deserialize), [TryDeserialize](cref:Meziantou.Framework.Toml.TomlSerializer.TryDeserialize) and their asynchronous, stream and reader variants all accept a
+  [TomlTypeInfo\<T\>](cref:Meziantou.Framework.Toml.TomlTypeInfo{T}) or a context.
 - The property is named after the type. `[TomlSerializable(typeof(T), TypeInfoPropertyName = "...")]` renames it.
   When two types have the same name, or a type is named like a member of the context, the property uses the
   namespace-qualified name of the type (for example `B_Item`).
 
 ## Set the options
 
-The options of a context are set with `[TomlSourceGenerationOptions]`, as `ServerContext` does above. It sets most of
-the [options](04-Serialization/03-Options.md) of `TomlSerializerOptions`: the naming policies are values of
-`TomlKnownNamingPolicy`, and the converters are types.
+The options of a context are set with [\[TomlSourceGenerationOptions\]](cref:Meziantou.Framework.Toml.Serialization.TomlSourceGenerationOptionsAttribute), as `ServerContext` does above. It sets most of
+the [options](04-Serialization/03-Options.md) of [TomlSerializerOptions](cref:Meziantou.Framework.Toml.TomlSerializerOptions): the naming policies are values of
+[TomlKnownNamingPolicy](cref:Meziantou.Framework.Toml.TomlKnownNamingPolicy), and the converters are types.
 
 The generated code applies these options when it is built: the member names, the members to serialize
-(`IncludeFields`, `IgnoreReadOnlyFields`, `IgnoreReadOnlyProperties`) and the validation (`UnmappedMemberHandling`,
-`RespectRequiredConstructorParameters`, `RespectNullableAnnotations`) cannot be changed at runtime. `context.Options`
+([IncludeFields](cref:Meziantou.Framework.Toml.TomlSerializerOptions.IncludeFields), [IgnoreReadOnlyFields](cref:Meziantou.Framework.Toml.TomlSerializerOptions.IgnoreReadOnlyFields), [IgnoreReadOnlyProperties](cref:Meziantou.Framework.Toml.TomlSerializerOptions.IgnoreReadOnlyProperties)) and the validation ([UnmappedMemberHandling](cref:Meziantou.Framework.Toml.TomlSerializerOptions.UnmappedMemberHandling),
+[RespectRequiredConstructorParameters](cref:Meziantou.Framework.Toml.TomlSerializerOptions.RespectRequiredConstructorParameters), [RespectNullableAnnotations](cref:Meziantou.Framework.Toml.TomlSerializerOptions.RespectNullableAnnotations)) cannot be changed at runtime. `context.Options`
 returns the options of the context.
 
 ## What the generated code supports
@@ -89,13 +89,13 @@ The generated code honors the same attributes as reflection. Some points are spe
   keep their initial values and can be populated. A struct, a generic type, or a type created with
   a constructor that has parameters is created with an object initializer instead: its `required` members are replaced,
   and set to `default` when the document does not contain them.
-- `[TomlConverter]` on a type or a member is supported, including converter factories. The converter type must be
+- [\[TomlConverter\]](cref:Meziantou.Framework.Toml.Serialization.TomlConverterAttribute) on a type or a member is supported, including converter factories. The converter type must be
   accessible from the context: public, or internal to the same assembly. A member with a converter is always replaced,
   never populated.
 - The converters listed in `[TomlSourceGenerationOptions(Converters = [...])]` are chosen when building, so a converter
-  factory listed there is not used (`MFTOML012`). Apply `[TomlConverter]` to the type or the member instead. See
+  factory listed there is not used (`MFTOML012`). Apply [\[TomlConverter\]](cref:Meziantou.Framework.Toml.Serialization.TomlConverterAttribute) to the type or the member instead. See
   [Custom converters](04-Serialization/05-Converters.md#register-a-converter).
-- Derived types that the base type cannot reference are registered with `[TomlDerivedTypeMapping]` on the context. See
+- Derived types that the base type cannot reference are registered with [\[TomlDerivedTypeMapping\]](cref:Meziantou.Framework.Toml.Serialization.TomlDerivedTypeMappingAttribute) on the context. See
   [Polymorphism](04-Serialization/06-Polymorphism.md#register-derived-types-from-another-project).
 
 ## Diagnostics
@@ -108,14 +108,14 @@ The generator reports the problems it finds as compiler diagnostics:
 | `MFTOML002` | Error | A converter type is invalid. |
 | `MFTOML003` | Error | A member uses a type the generator cannot serialize. Write a converter for it. |
 | `MFTOML004` | Error | A dictionary member has keys that are not strings. |
-| `MFTOML005` | Error | A `[TomlSourceGenerationOptions]` value is invalid, or a `TypeInfoPropertyName` is not a valid identifier, is used for two types, or clashes with a member of the context. |
+| `MFTOML005` | Error | A [\[TomlSourceGenerationOptions\]](cref:Meziantou.Framework.Toml.Serialization.TomlSourceGenerationOptionsAttribute) value is invalid, or a [TypeInfoPropertyName](cref:Meziantou.Framework.Toml.Serialization.TomlSerializableAttribute.TypeInfoPropertyName) is not a valid identifier, is used for two types, or clashes with a member of the context. |
 | `MFTOML006` | Error | An extension data member is invalid. |
 | `MFTOML007` | Error | A polymorphism configuration is invalid. |
-| `MFTOML009` | Error | A `[TomlDerivedTypeMapping]` is invalid. |
-| `MFTOML010` | Warning | The base type of a `[TomlDerivedTypeMapping]` has no polymorphism configuration; the defaults of the serializer are used. |
+| `MFTOML009` | Error | A [\[TomlDerivedTypeMapping\]](cref:Meziantou.Framework.Toml.Serialization.TomlDerivedTypeMappingAttribute) is invalid. |
+| `MFTOML010` | Warning | The base type of a [\[TomlDerivedTypeMapping\]](cref:Meziantou.Framework.Toml.Serialization.TomlDerivedTypeMappingAttribute) has no polymorphism configuration; the defaults of the serializer are used. |
 | `MFTOML011` | Error | A TOML attribute is used on a member it does not apply to. |
 | `MFTOML012` | Warning | A converter factory listed in `[TomlSourceGenerationOptions(Converters)]` is not used by the generated code. |
-| `MFTOML013` | Error | A constructor marked with `[TomlConstructor]` is private or protected. |
+| `MFTOML013` | Error | A constructor marked with [\[TomlConstructor\]](cref:Meziantou.Framework.Toml.Serialization.TomlConstructorAttribute) is private or protected. |
 | `MFTOML014` | Error | The context is generic. It can be nested in a generic type. |
 | `MFTOML015` | Error | A type the generated code uses is not accessible from the context, is less accessible than the context, or is file-local. |
 | `MFTOML016` | Error | A member is a `ref struct`, a delegate or a pointer. |

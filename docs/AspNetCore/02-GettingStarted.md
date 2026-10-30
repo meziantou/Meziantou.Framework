@@ -21,7 +21,7 @@ The other packages are installed the same way: `Meziantou.AspNetCore`, `Mezianto
 
 ## Set up a web application
 
-Call `UseMeziantouConventions` on the builder, then `MapMeziantouDefaultEndpoints` on the application (both are in
+Call [UseMeziantouConventions](cref:Meziantou.AspNetCore.ServiceDefaults.MeziantouServiceDefaults.UseMeziantouConventions) on the builder, then [MapMeziantouDefaultEndpoints](cref:Meziantou.AspNetCore.ServiceDefaults.MeziantouServiceDefaults.MapMeziantouDefaultEndpoints) on the application (both are in
 the [Meziantou.AspNetCore.ServiceDefaults](cref:Meziantou.AspNetCore.ServiceDefaults) namespace):
 
 <!-- ref:../../samples/Meziantou.AspNetCore.Samples/ServiceDefaultsExamples.cs;region=ServiceDefaults_BasicSetup;format=md-fenced-code-block;dedent=true -->
@@ -42,9 +42,9 @@ app.Run();
 ```
 <!-- endref -->
 
-- `UseMeziantouConventions` registers OpenTelemetry, health checks, OpenAPI, service discovery, HTTP client
+- [UseMeziantouConventions](cref:Meziantou.AspNetCore.ServiceDefaults.MeziantouServiceDefaults.UseMeziantouConventions) registers OpenTelemetry, health checks, OpenAPI, service discovery, HTTP client
   resilience, problem details and the JSON conventions.
-- `MapMeziantouDefaultEndpoints` adds the middleware (forwarded headers, HTTPS redirection, error handling, HSTS,
+- [MapMeziantouDefaultEndpoints](cref:Meziantou.AspNetCore.ServiceDefaults.MeziantouServiceDefaults.MapMeziantouDefaultEndpoints) adds the middleware (forwarded headers, HTTPS redirection, error handling, HSTS,
   antiforgery) and maps `/health`, `/alive` and the OpenAPI document. The application refuses to start when you forget
   it.
 
@@ -71,7 +71,7 @@ builder.Services.AddTimeZoneServices();
 ```
 <!-- endref -->
 
-Then use a component in a page. `Repeater` renders a template for each item, a separator between them, and other
+Then use a component in a page. [Repeater](cref:Meziantou.AspNetCore.Components.Repeater{T}) renders a template for each item, a separator between them, and other
 templates while the items load or when there are none:
 
 <!-- ref:../../samples/BlazorAppSample/ReadmeExamples/RepeaterExample.razor;format=md-fenced-code-block -->

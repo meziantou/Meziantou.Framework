@@ -15,7 +15,7 @@ The examples of this documentation omit `using Meziantou.Framework.Sanitizers;`.
 
 ## Sanitize a fragment
 
-Create an `HtmlSanitizer` and pass the untrusted HTML to `SanitizeHtmlFragment`:
+Create an [HtmlSanitizer](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer) and pass the untrusted HTML to [SanitizeHtmlFragment](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.SanitizeHtmlFragment):
 
 <!-- ref:../../tests/Meziantou.Framework.HtmlSanitizer.Tests/HtmlSanitizerTests.cs;region=HtmlSanitizer_SanitizeComment;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -35,7 +35,7 @@ Assert.Equal("""<p>Nice <b>post</b>! <a href="">Click</a> <img src="cat.png"></p
 - The result is written in a normalized form: attribute values are between double quotes, and void elements such as
   `img` have no end tag.
 
-`SanitizeHtmlFragment` returns `null` when the input is `null`.
+[SanitizeHtmlFragment](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.SanitizeHtmlFragment) returns `null` when the input is `null`.
 
 ## Insert the result in a page
 
@@ -49,7 +49,7 @@ entities or concatenating it with other untrusted text: the result would no long
 
 ## Reuse the sanitizer
 
-`SanitizeHtmlFragment` reads the configuration of the sanitizer and does not change it. Configure a sanitizer once, for
+[SanitizeHtmlFragment](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.SanitizeHtmlFragment) reads the configuration of the sanitizer and does not change it. Configure a sanitizer once, for
 instance at startup, and reuse it for every fragment. Change its sets only while no other thread is sanitizing.
 
 ## Next steps

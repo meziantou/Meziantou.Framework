@@ -3,24 +3,24 @@ title: Event types
 description: Durations, complete events, instants, counters, asynchronous operations, flows, objects and metadata, and the phase of each one.
 ---
 
-Each event type is a class that derives from `ChromiumTracingEvent`. Its `Type` property returns the phase of the event
+Each event type is a class that derives from [ChromiumTracingEvent](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent). Its [Type](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingEvent.Type) property returns the phase of the event
 in the format, the `ph` field of the JSON, which tells the viewer how to show it.
 
 | Class | Phase | Shows |
 | --- | --- | --- |
-| `ChromiumTracingDurationBeginEvent`, `ChromiumTracingDurationEndEvent` | `B`, `E` | The start and the end of an operation, as a box |
-| `ChromiumTracingCompleteEvent` | `X` | An operation with a start and a duration, as a box |
-| `ChromiumTracingInstantEvent` | `i` | A point in time |
-| `ChromiumTracingCounterEvent` | `C` | Values over time, as a chart |
-| `ChromiumTracingAsyncBeginEvent`, `ChromiumTracingAsyncInstantEvent`, `ChromiumTracingAsyncEndEvent` | `b`, `n`, `e` | An asynchronous operation, which can overlap others |
-| `ChromiumTracingFlowBeginEvent`, `ChromiumTracingFlowStepEvent`, `ChromiumTracingFlowEndEvent` | `s`, `t`, `f` | An arrow between events |
-| `ChromiumTracingObjectCreatedEvent`, `ChromiumTracingObjectSnapshotEvent`, `ChromiumTracingObjectDestroyedEvent` | `N`, `O`, `D` | The lifetime and the state of an object |
-| `ChromiumTracingMetadataEvent` | `M` | The names and the order of the processes and threads |
-| `ChromiumTracingMemoryDumpGlobalEvent`, `ChromiumTracingMemoryDumpProcessEvent` | `V`, `v` | A memory dump, of the system or of a process |
-| `ChromiumTracingMarkEvent` | `R` | A mark |
-| `ChromiumTracingClockSyncEvent` | `c` | A clock synchronization point; its name is always `clock_sync` |
-| `ChromiumTracingContextBeginEvent`, `ChromiumTracingContextEndEvent` | `(`, `)` | The start and the end of a context |
-| `ChromiumTracingLinkIdEvent` | `=` | A link between two ids |
+| [ChromiumTracingDurationBeginEvent](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingDurationBeginEvent), [ChromiumTracingDurationEndEvent](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingDurationEndEvent) | `B`, `E` | The start and the end of an operation, as a box |
+| [ChromiumTracingCompleteEvent](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingCompleteEvent) | `X` | An operation with a start and a duration, as a box |
+| [ChromiumTracingInstantEvent](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingInstantEvent) | `i` | A point in time |
+| [ChromiumTracingCounterEvent](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingCounterEvent) | `C` | Values over time, as a chart |
+| [ChromiumTracingAsyncBeginEvent](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingAsyncBeginEvent), [ChromiumTracingAsyncInstantEvent](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingAsyncInstantEvent), [ChromiumTracingAsyncEndEvent](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingAsyncEndEvent) | `b`, `n`, `e` | An asynchronous operation, which can overlap others |
+| [ChromiumTracingFlowBeginEvent](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingFlowBeginEvent), [ChromiumTracingFlowStepEvent](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingFlowStepEvent), [ChromiumTracingFlowEndEvent](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingFlowEndEvent) | `s`, `t`, `f` | An arrow between events |
+| [ChromiumTracingObjectCreatedEvent](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingObjectCreatedEvent), [ChromiumTracingObjectSnapshotEvent](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingObjectSnapshotEvent), [ChromiumTracingObjectDestroyedEvent](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingObjectDestroyedEvent) | `N`, `O`, `D` | The lifetime and the state of an object |
+| [ChromiumTracingMetadataEvent](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingMetadataEvent) | `M` | The names and the order of the processes and threads |
+| [ChromiumTracingMemoryDumpGlobalEvent](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingMemoryDumpGlobalEvent), [ChromiumTracingMemoryDumpProcessEvent](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingMemoryDumpProcessEvent) | `V`, `v` | A memory dump, of the system or of a process |
+| [ChromiumTracingMarkEvent](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingMarkEvent) | `R` | A mark |
+| [ChromiumTracingClockSyncEvent](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingClockSyncEvent) | `c` | A clock synchronization point; its name is always `clock_sync` |
+| [ChromiumTracingContextBeginEvent](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingContextBeginEvent), [ChromiumTracingContextEndEvent](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingContextEndEvent) | `(`, `)` | The start and the end of a context |
+| [ChromiumTracingLinkIdEvent](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingLinkIdEvent) | `=` | A link between two ids |
 
 The specification of the format describes each phase in detail. The examples below show the most common ones.
 
@@ -53,8 +53,8 @@ The durations of a thread nest: the viewer draws `Restore` under `Build`. An end
 of its process and thread, so the example does not give it a name. Complete events nest the same way when one lies
 within another.
 
-A complete event has a `Duration`, and optionally a `ThreadDuration` (the time the thread actually ran) and an
-`EndStackTrace`.
+A complete event has a [Duration](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingCompleteEvent.Duration), and optionally a [ThreadDuration](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingCompleteEvent.ThreadDuration) (the time the thread actually ran) and an
+[EndStackTrace](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingCompleteEvent.EndStackTrace).
 
 ## Instants and counters
 
@@ -96,7 +96,7 @@ Assert.Equal(["i", "C", "C"], trace.RootElement.EnumerateArray().Select(item => 
 ```
 <!-- endref -->
 
-- The `Scope` of an instant event is `Thread`, `Process` or `Global`: the mark is drawn on the row of the thread, of the
+- The [Scope](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingInstantEvent.Scope) of an instant event is [Thread](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingInstantEventScope.Thread), [Process](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingInstantEventScope.Process) or [Global](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingInstantEventScope.Global): the mark is drawn on the row of the thread, of the
   process, or across the whole timeline.
 - A counter event gives the values of a counter at its timestamp. Each argument is a series of the chart; the values
   are numbers. The `Id` property of a counter event, when set, makes the counter distinct from the counters with the same
@@ -127,22 +127,22 @@ Assert.Equal(["b", "b", "n", "e", "e"], trace.RootElement.EnumerateArray().Selec
 ```
 <!-- endref -->
 
-`ChromiumTracingAsyncInstantEvent` marks a point in time within the operation.
+[ChromiumTracingAsyncInstantEvent](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingAsyncInstantEvent) marks a point in time within the operation.
 
 ## Flows
 
 Flow events draw arrows from one event to another, for instance from the code that queues a work item to the thread
-that runs it. `ChromiumTracingFlowBeginEvent` starts the flow, `ChromiumTracingFlowStepEvent` adds a step, and
-`ChromiumTracingFlowEndEvent` ends it. The begin and step events are attached to the duration that encloses them on
-their thread. The `BindingPoint` of the end event chooses the duration the arrow points to: `NextSlice`, the default, is
-the next duration that starts on its thread, and `EnclosingSlice` the one that encloses it.
+that runs it. [ChromiumTracingFlowBeginEvent](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingFlowBeginEvent) starts the flow, [ChromiumTracingFlowStepEvent](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingFlowStepEvent) adds a step, and
+[ChromiumTracingFlowEndEvent](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingFlowEndEvent) ends it. The begin and step events are attached to the duration that encloses them on
+their thread. The [BindingPoint](cref:Meziantou.Framework.ChromiumTracing.BindingPoint) of the end event chooses the duration the arrow points to: [NextSlice](cref:Meziantou.Framework.ChromiumTracing.BindingPoint.NextSlice), the default, is
+the next duration that starts on its thread, and [EnclosingSlice](cref:Meziantou.Framework.ChromiumTracing.BindingPoint.EnclosingSlice) the one that encloses it.
 
 The flow event types do not have the `id` field that the format uses to tell the flows apart, so they cannot describe
 several flows that overlap.
 
 ## Objects
 
-Object events show the lifetime of an object, identified by its `Id`, and snapshots of its state in their arguments:
+Object events show the lifetime of an object, identified by its [Id](cref:Meziantou.Framework.ChromiumTracing.ChromiumTracingObjectEvent.Id), and snapshots of its state in their arguments:
 
 <!-- ref:../../tests/Meziantou.Framework.ChromiumTracing.Tests/WriterTests.cs;region=ChromiumTracing_ObjectLifecycle;format=md-fenced-code-block;dedent=true -->
 ```csharp

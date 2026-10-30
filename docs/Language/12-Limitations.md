@@ -11,7 +11,7 @@ The packages read the syntax of a document. They do not apply what it means:
   and does not resolve entities other than the predefined ones and character references.
 - **CSS**: there is no grammar for the value of each property and no cascade. SCSS and Less are not supported.
 - **Regular expressions**: nothing matches text; use `System.Text.RegularExpressions`. Java, Python and Go patterns are
-  not supported, and the `Net` dialect follows the current .NET release. See [Dialects](09-Regex/02-Dialects.md).
+  not supported, and the [Net](cref:Meziantou.Framework.Language.Regex.RegexDialect.Net) dialect follows the current .NET release. See [Dialects](09-Regex/02-Dialects.md).
 - **Shell scripts**: nothing runs, and nothing is expanded: the value of a word that depends on a variable or a command
   substitution is `null`.
 - **INI**: there is no escape sequence, no line continuation with `\`, and git subsections are plain section names. See

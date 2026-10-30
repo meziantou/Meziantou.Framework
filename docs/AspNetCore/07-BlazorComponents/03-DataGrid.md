@@ -3,7 +3,7 @@ title: Data grid
 description: Render a table from columns declared in markup, with formats, custom cells, row classes and row keys.
 ---
 
-`DataGrid<TRowData>` renders a `<table>` from the `DataGridColumn<TRowData>` components it contains:
+[DataGrid\<TRowData\>](cref:Meziantou.AspNetCore.Components.DataGrid{TRowData}) renders a `<table>` from the [DataGridColumn\<TRowData\>](cref:Meziantou.AspNetCore.Components.DataGridColumn{TRowData}) components it contains:
 
 <!-- ref:../../../samples/BlazorAppSample/Pages/DataGridDemo.razor;format=md-fenced-code-block -->
 ```razor
@@ -30,20 +30,20 @@ description: Render a table from columns declared in markup, with formats, custo
 ```
 <!-- endref -->
 
-A column displays the value of its `Expression`, or its content when it has one; the content receives the row as
-`context`. Columns must be inside a `DataGrid`: a column outside one throws an `InvalidOperationException`.
+A column displays the value of its [Expression](cref:Meziantou.AspNetCore.Components.DataGridColumn{TRowData}.Expression), or its content when it has one; the content receives the row as
+`context`. Columns must be inside a [DataGrid](cref:Meziantou.AspNetCore.Components.DataGrid{TRowData}): a column outside one throws an `InvalidOperationException`.
 
 ## Columns
 
 | Parameter | Description |
 | --- | --- |
-| `Expression` | The value of the cell, such as `item => item.Summary` |
-| `Title` | The header. When it is not set, the name of the property of `Expression` is used |
-| `Format` | A .NET format string applied to the value, such as `D` for a date or `0.00` for a number |
-| `ChildContent` | Custom cell content. It replaces `Expression` for the cell; set `Title` for the header |
+| [Expression](cref:Meziantou.AspNetCore.Components.DataGridColumn{TRowData}.Expression) | The value of the cell, such as `item => item.Summary` |
+| [Title](cref:Meziantou.AspNetCore.Components.DataGridColumn{TRowData}.Title) | The header. When it is not set, the name of the property of [Expression](cref:Meziantou.AspNetCore.Components.DataGridColumn{TRowData}.Expression) is used |
+| [Format](cref:Meziantou.AspNetCore.Components.DataGridColumn{TRowData}.Format) | A .NET format string applied to the value, such as `D` for a date or `0.00` for a number |
+| [ChildContent](cref:Meziantou.AspNetCore.Components.DataGridColumn{TRowData}.ChildContent) | Custom cell content. It replaces [Expression](cref:Meziantou.AspNetCore.Components.DataGridColumn{TRowData}.Expression) for the cell; set [Title](cref:Meziantou.AspNetCore.Components.DataGridColumn{TRowData}.Title) for the header |
 
 The title can only be inferred from a member access, such as `item => item.Date`. For any other expression, set
-`Title`, or rendering throws a `NotSupportedException`.
+[Title](cref:Meziantou.AspNetCore.Components.DataGridColumn{TRowData}.Title), or rendering throws a `NotSupportedException`.
 
 `TRowData` must be set on each column, because a column cannot infer it from the grid.
 
@@ -80,8 +80,8 @@ The title can only be inferred from a member access, such as `item => item.Date`
 ```
 <!-- endref -->
 
-- **`RowClass`** returns the CSS class of a row from the item and its index.
-- **`RowKey`** returns a stable, unique key for each row, used as the `@key` of the `<tr>`. With a key, Blazor keeps the
+- **[RowClass](cref:Meziantou.AspNetCore.Components.DataGrid{TRowData}.RowClass)** returns the CSS class of a row from the item and its index.
+- **[RowKey](cref:Meziantou.AspNetCore.Components.DataGrid{TRowData}.RowKey)** returns a stable, unique key for each row, used as the `@key` of the `<tr>`. With a key, Blazor keeps the
   right row elements when items are inserted, removed or reordered. Without it, the row index is used. Keys must be
   unique: a duplicate key makes the renderer throw.
 - Any other attribute, such as `class`, is applied to the `<table>` element.

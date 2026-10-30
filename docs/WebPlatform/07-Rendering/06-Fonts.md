@@ -22,13 +22,13 @@ font: its text has the same size as with the original font. `cursive`, `fantasy`
 
 ## Web fonts
 
-The `@font-face` rules of the pages load their fonts through the `DocumentLoader` (TrueType, OpenType, WOFF and WOFF2),
+The `@font-face` rules of the pages load their fonts through the [DocumentLoader](cref:Meziantou.Framework.WebPlatform.Dom.DocumentLoader) (TrueType, OpenType, WOFF and WOFF2),
 and `document.fonts` (the CSS Font Loading API) loads them from scripts. A font face can also come from data
 (`new FontFace(name, bytes)`).
 
 ## Fonts of the machine
 
-`BrowsingContextOptions.UseSystemFonts` lets `font-family` and `local()` name the fonts installed on the machine:
+[BrowsingContextOptions.UseSystemFonts](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContextOptions.UseSystemFonts) lets `font-family` and `local()` name the fonts installed on the machine:
 
 <!-- ref:../../../samples/Meziantou.Framework.WebPlatform.Samples/ReadmeExamples.cs;region=WebPlatform_SystemFonts;format=md-fenced-code-block;dedent=true -->
 ```csharp

@@ -4,7 +4,7 @@ description: Fixed-capacity string value types that store their characters inlin
 ---
 
 `Meziantou.Framework.FixedStringBuilder` provides value types that hold a string of up to a fixed number of
-characters: `FixedStringBuilder8`, `FixedStringBuilder16`, `FixedStringBuilder32` and `FixedStringBuilder64`. The
+characters: [FixedStringBuilder8](cref:Meziantou.Framework.FixedStringBuilder.FixedStringBuilder8), [FixedStringBuilder16](cref:Meziantou.Framework.FixedStringBuilder.FixedStringBuilder16), [FixedStringBuilder32](cref:Meziantou.Framework.FixedStringBuilder.FixedStringBuilder32) and [FixedStringBuilder64](cref:Meziantou.Framework.FixedStringBuilder.FixedStringBuilder64). The
 characters are stored in the struct itself, so building, comparing and formatting the text allocates nothing on the
 heap until you call `ToString()`:
 
@@ -25,7 +25,7 @@ not fit throws an `ArgumentException`: the types never truncate.
 
 | Package | Contains |
 | --- | --- |
-| `Meziantou.Framework.FixedStringBuilder` | The built-in types and the `IFixedString` interfaces, in the [Meziantou.Framework.FixedStringBuilder](cref:Meziantou.Framework.FixedStringBuilder) namespace. |
+| `Meziantou.Framework.FixedStringBuilder` | The built-in types and the [IFixedString](cref:Meziantou.Framework.FixedStringBuilder.IFixedString) interfaces, in the [Meziantou.Framework.FixedStringBuilder](cref:Meziantou.Framework.FixedStringBuilder) namespace. |
 | `Meziantou.Framework.FixedStringBuilder.Generator` | A source generator that creates a type of any capacity from a `partial struct`, and its analyzer. |
 
 ## Next steps

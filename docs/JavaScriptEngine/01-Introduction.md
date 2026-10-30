@@ -37,8 +37,8 @@ about 60 npm packages compared with Chromium.
 
 - **Only the language.** A realm has the built-ins of ECMAScript and nothing else: no `console`, no timers, no file or
   network access. The scripts reach your application only through what you give them.
-- **Your application drives the execution.** A script runs on the thread that calls `Execute`, and the promise jobs
-  run when you call `RunJobs`: nothing runs in the background.
+- **Your application drives the execution.** A script runs on the thread that calls [Execute](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.Execute), and the promise jobs
+  run when you call [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs): nothing runs in the background.
 - **Limits stop a script for good.** An exceeded limit or a cancellation throws an exception that the script cannot
   catch.
 - **Same results everywhere.** The Unicode, time zone and locale data are part of the library: the results do not

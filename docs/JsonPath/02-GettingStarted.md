@@ -16,7 +16,7 @@ The examples of this documentation omit the `using` directives. They need `using
 
 ## Run your first query
 
-Parse the query once with `JsonPath.Parse`, then evaluate it on a document:
+Parse the query once with [JsonPath.Parse](cref:Meziantou.Framework.Json.JsonPath.Parse), then evaluate it on a document:
 
 <!-- ref:../../tests/Meziantou.Framework.JsonPath.Tests/JsonPathEvaluateTests.cs;region=JsonPath_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -39,13 +39,13 @@ Assert.Equal(["$['store']['book'][0]['title']: A", "$['store']['book'][1]['title
 
 - A query starts with `$`, the root of the document. `.store` selects the `store` member, `.book` its `book` member,
   `[*]` every element of the array and `.title` the `title` member of each element.
-- `Evaluate` returns every match, in document order. Each match has its `Value` and its `Path`, the normalized path
+- [Evaluate](cref:Meziantou.Framework.Json.JsonPath.Evaluate) returns every match, in document order. Each match has its [Value](cref:Meziantou.Framework.Json.JsonPathMatch.Value) and its [Path](cref:Meziantou.Framework.Json.JsonPathMatch.Path), the normalized path
   that leads to it.
-- `JsonPath` is immutable and thread-safe: store it in a field and reuse it.
+- [JsonPath](cref:Meziantou.Framework.Json.JsonPath) is immutable and thread-safe: store it in a field and reuse it.
 
 ## Get a single value
 
-When you expect one value, `EvaluateValue` returns the first match, or `null` when nothing matches:
+When you expect one value, [EvaluateValue](cref:Meziantou.Framework.Json.JsonPath.EvaluateValue) returns the first match, or `null` when nothing matches:
 
 <!-- ref:../../tests/Meziantou.Framework.JsonPath.Tests/JsonPathEvaluateTests.cs;region=JsonPath_EvaluateValue;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -81,7 +81,7 @@ Assert.Equal("A", title?.GetString());
 <!-- endref -->
 
 This example also shows that `JsonDocument` and `JsonElement` work like `JsonNode`. The extension methods
-(`document.Evaluate(path)`, `element.EvaluateValue(path)`) do the same as the methods of `JsonPath`.
+(`document.Evaluate(path)`, `element.EvaluateValue(path)`) do the same as the methods of [JsonPath](cref:Meziantou.Framework.Json.JsonPath).
 
 ## Next steps
 

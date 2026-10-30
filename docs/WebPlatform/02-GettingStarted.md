@@ -12,7 +12,7 @@ dotnet add package Meziantou.Framework.WebPlatform
 ```
 
 The examples of this documentation omit the `using` directives. The parser is in the [Meziantou.Framework.WebPlatform](cref:Meziantou.Framework.WebPlatform)
-namespace, and the DOM types (`Document`, `HtmlAnchorElement`, `BrowsingContext`...) are in
+namespace, and the DOM types ([Document](cref:Meziantou.Framework.WebPlatform.Dom.Document), [HtmlAnchorElement](cref:Meziantou.Framework.WebPlatform.Dom.HtmlAnchorElement), [BrowsingContext](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContext)...) are in
 [Meziantou.Framework.WebPlatform.Dom](cref:Meziantou.Framework.WebPlatform.Dom); see [Namespaces](01-Introduction.md#namespaces) for the others.
 
 ## Parse and query a page
@@ -47,15 +47,15 @@ Assert.Equal("blue", color);
 ```
 <!-- endref -->
 
-- `HtmlDocumentParser.ParseDocument` never fails: as in a browser, invalid markup is fixed (here, the missing `</li>` and
+- [HtmlDocumentParser.ParseDocument](cref:Meziantou.Framework.WebPlatform.HtmlDocumentParser.ParseDocument) never fails: as in a browser, invalid markup is fixed (here, the missing `</li>` and
   the missing `<html>`, `<head>` and `<body>` elements).
-- `QuerySelectorAll<T>` returns the matching elements of type `T`, and every DOM collection works with LINQ.
-- `Style` is the declaration block of the `style` attribute. The styles of the style sheets are applied by a browsing
+- [QuerySelectorAll\<T\>](cref:Meziantou.Framework.WebPlatform.Dom.Element.QuerySelectorAll) returns the matching elements of type `T`, and every DOM collection works with LINQ.
+- [Style](cref:Meziantou.Framework.WebPlatform.Dom.HtmlElement.Style) is the declaration block of the `style` attribute. The styles of the style sheets are applied by a browsing
   context, below.
 
 ## Read the computed styles
 
-The cascade, the inheritance and the media queries need a window and a viewport: a `BrowsingContext`. Navigate it to the
+The cascade, the inheritance and the media queries need a window and a viewport: a [BrowsingContext](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContext). Navigate it to the
 HTML of the page:
 
 <!-- ref:../../tests/Meziantou.Framework.WebPlatform.Tests/Dom/BrowsingContextTests.cs;region=WebPlatform_ComputedStyle;format=md-fenced-code-block;dedent=true -->
@@ -77,7 +77,7 @@ Assert.Equal("700", style.GetPropertyValue("font-weight"));
 ```
 <!-- endref -->
 
-The callback of `Navigate` returns the content of the page for its URL: nothing is downloaded. To load pages from the
+The callback of [Navigate](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContext.Navigate) returns the content of the page for its URL: nothing is downloaded. To load pages from the
 network, see [Network requests](05-LoadingPages/02-NetworkRequests.md).
 
 ## Take a screenshot
@@ -123,7 +123,7 @@ var png = context.TakeScreenshotAsPng();          // the same pixels, encoded as
 ![A white card titled Weekly report, with a sentence and a blue button, centered on a gray background](07-Rendering/images/PageScreenshot.png)
 
 The text is drawn with the fonts bundled with the library (`sans-serif` is Arimo, metric-compatible with Arial), so the
-screenshot is the same on every machine. `TakeScreenshot` returns an `Image<Rgba32>` of
+screenshot is the same on every machine. [TakeScreenshot](cref:Meziantou.Framework.WebPlatform.Imaging.ImagingScreenshotExtensions.TakeScreenshot) returns an [Image\<Rgba32\>](cref:Meziantou.Framework.Imaging.Image{TPixel}) of
 [Meziantou.Framework.Imaging](../Imaging/01-Introduction.md), which you can resize or save in any format.
 
 ## Next steps

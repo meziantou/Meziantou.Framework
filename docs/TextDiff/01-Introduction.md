@@ -28,18 +28,18 @@ A diff is a list of entries. Each entry is one chunk of the texts with an operat
 
 | Operation | Meaning |
 | --- | --- |
-| `Equal` | The chunk is present in both texts. |
-| `Delete` | The chunk is only present in the old text. |
-| `Insert` | The chunk is only present in the new text. |
+| [Equal](cref:Meziantou.Framework.TextDiffOperation.Equal) | The chunk is present in both texts. |
+| [Delete](cref:Meziantou.Framework.TextDiffOperation.Delete) | The chunk is only present in the old text. |
+| [Insert](cref:Meziantou.Framework.TextDiffOperation.Insert) | The chunk is only present in the new text. |
 
-Read the entries in order: the `Equal` and `Delete` entries give the old text, the `Equal` and `Insert` entries give
-the new text. A change is a `Delete` followed by an `Insert`, so a moved block of text appears as a deletion at its old
+Read the entries in order: the [Equal](cref:Meziantou.Framework.TextDiffOperation.Equal) and [Delete](cref:Meziantou.Framework.TextDiffOperation.Delete) entries give the old text, the [Equal](cref:Meziantou.Framework.TextDiffOperation.Equal) and [Insert](cref:Meziantou.Framework.TextDiffOperation.Insert) entries give
+the new text. A change is a [Delete](cref:Meziantou.Framework.TextDiffOperation.Delete) followed by an [Insert](cref:Meziantou.Framework.TextDiffOperation.Insert), so a moved block of text appears as a deletion at its old
 place and an insertion at its new place.
 
 ## Namespace
 
-Every type is in the [Meziantou.Framework](cref:Meziantou.Framework) namespace: `TextDiff`, `TextDiffOptions`, `TextChunker`, `TextDiffResult`,
-`TextDiffEntry` and the hierarchy types.
+Every type is in the [Meziantou.Framework](cref:Meziantou.Framework.TextDiff!N:Meziantou.Framework) namespace: [TextDiff](cref:Meziantou.Framework.TextDiff), [TextDiffOptions](cref:Meziantou.Framework.TextDiffOptions), [TextChunker](cref:Meziantou.Framework.TextChunker), [TextDiffResult](cref:Meziantou.Framework.TextDiffResult),
+[TextDiffEntry](cref:Meziantou.Framework.TextDiffEntry) and the hierarchy types.
 
 ## Next steps
 

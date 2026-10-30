@@ -8,7 +8,7 @@ application from hostile input, and the precision of number comparisons.
 
 ## Other JSONPath dialects
 
-Before RFC 9535, JSONPath was an informal syntax with many variants. Their extensions are not supported, and `Parse`
+Before RFC 9535, JSONPath was an informal syntax with many variants. Their extensions are not supported, and [Parse](cref:Meziantou.Framework.Json.JsonPath.Parse)
 rejects most of them:
 
 - **No script expressions**: `$.book[(@.length-1)]` is invalid. Write `$.book[-1]`.
@@ -46,14 +46,14 @@ Filters written as `[?(@.price < 10)]`, with parentheses, are valid RFC 9535 and
 ## Limits
 
 - **Queries**: filter expressions, nested filter selectors and function arguments nest up to 64 levels deep. Beyond
-  that, `Parse` throws a `FormatException` and `TryParse` returns `false`, so a hostile or generated query cannot
+  that, [Parse](cref:Meziantou.Framework.Json.JsonPath.Parse) throws a `FormatException` and [TryParse](cref:Meziantou.Framework.Json.JsonPath.TryParse) returns `false`, so a hostile or generated query cannot
   exhaust the stack.
 - **Documents**: descendant segments (`..`) and comparisons of arrays and objects visit at most 256 levels of nesting.
-  Beyond that, evaluation throws a `JsonPathEvaluationException`, in both evaluation modes. Documents parsed by
+  Beyond that, evaluation throws a [JsonPathEvaluationException](cref:Meziantou.Framework.Json.JsonPathEvaluationException), in both evaluation modes. Documents parsed by
   `System.Text.Json` with its default `MaxDepth` of 64 never reach this limit; it only affects values built in code,
   parsed with a higher `MaxDepth`, or exposed by a [custom navigator](08-CustomObjectModels.md).
 - **Indexes and slices**: the numbers of index and slice selectors must be between -(2^53)+1 and 2^53-1, the
-  [I-JSON](https://www.rfc-editor.org/rfc/rfc7493#section-2.2) range; `Parse` rejects larger ones.
+  [I-JSON](https://www.rfc-editor.org/rfc/rfc7493#section-2.2) range; [Parse](cref:Meziantou.Framework.Json.JsonPath.Parse) rejects larger ones.
 
 ## Number precision
 

@@ -51,20 +51,20 @@ Assert.Equal("""
 
 | Attribute | Effect |
 | --- | --- |
-| `[HumanReadableIgnore]` | Skips the member. Set `Condition` to skip it only in some cases |
-| `[HumanReadableInclude]` | Writes a member that is not written by default, such as a non-public property or field |
+| [\[HumanReadableIgnore\]](cref:Meziantou.Framework.HumanReadable.HumanReadableIgnoreAttribute) | Skips the member. Set [Condition](cref:Meziantou.Framework.HumanReadable.HumanReadableIgnoreAttribute.Condition) to skip it only in some cases |
+| [\[HumanReadableInclude\]](cref:Meziantou.Framework.HumanReadable.HumanReadableIncludeAttribute) | Writes a member that is not written by default, such as a non-public property or field |
 | `[HumanReadablePropertyName("name")]` | Writes the member under another name |
 | `[HumanReadablePropertyOrder(n)]` | Writes the members with this attribute first, from the lowest value to the highest |
-| `[HumanReadableDefaultValue(value)]` | Sets the default value used by the `WhenWritingDefault` conditions |
+| `[HumanReadableDefaultValue(value)]` | Sets the default value used by the [WhenWritingDefault](cref:Meziantou.Framework.HumanReadable.HumanReadableIgnoreCondition.WhenWritingDefault) conditions |
 | `[HumanReadableConverter(typeof(MyConverter))]` | Writes the member, or every value of the type, with a converter. See [Converters](05-Converters.md) |
 
 By default, the serializer writes the public properties that have a public getter. It skips fields unless
-`IncludeFields` is `true` (public fields only), and members marked `[Obsolete]` unless `IncludeObsoleteMembers` is
+[IncludeFields](cref:Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions.IncludeFields) is `true` (public fields only), and members marked `[Obsolete]` unless [IncludeObsoleteMembers](cref:Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions.IncludeObsoleteMembers) is
 `true`.
 
 ## Skip default and empty values
 
-`DefaultIgnoreCondition` applies a condition to every member, and `[HumanReadableIgnore(Condition = ...)]` to one member:
+[DefaultIgnoreCondition](cref:Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions.DefaultIgnoreCondition) applies a condition to every member, and `[HumanReadableIgnore(Condition = ...)]` to one member:
 
 <!-- ref:../../tests/Meziantou.Framework.HumanReadableSerializer.Tests/HumanReadableSerializerOptionsTests.cs;region=HumanReadableSerializer_DefaultIgnoreCondition;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -81,16 +81,16 @@ Assert.Equal("Name: Ada", HumanReadableSerializer.Serialize(user, options));
 
 | Condition | The member is skipped when |
 | --- | --- |
-| `Never` (the default) | Never |
-| `Always` | Always |
-| `WhenWritingNull` | The value is `null` (reference types and `Nullable<T>`) |
-| `WhenWritingDefault` | The value is the default of its type, or the value of `[HumanReadableDefaultValue]` |
-| `WhenWritingEmptyCollection` | The value is an empty collection |
-| `WhenWritingDefaultOrEmptyCollection` | The value is the default or an empty collection |
-| `Custom` | `CustomCondition` returns `true` |
+| [Never](cref:Meziantou.Framework.HumanReadable.HumanReadableIgnoreCondition.Never) (the default) | Never |
+| [Always](cref:Meziantou.Framework.HumanReadable.HumanReadableIgnoreCondition.Always) | Always |
+| [WhenWritingNull](cref:Meziantou.Framework.HumanReadable.HumanReadableIgnoreCondition.WhenWritingNull) | The value is `null` (reference types and `Nullable<T>`) |
+| [WhenWritingDefault](cref:Meziantou.Framework.HumanReadable.HumanReadableIgnoreCondition.WhenWritingDefault) | The value is the default of its type, or the value of [\[HumanReadableDefaultValue\]](cref:Meziantou.Framework.HumanReadable.HumanReadableDefaultValueAttribute) |
+| [WhenWritingEmptyCollection](cref:Meziantou.Framework.HumanReadable.HumanReadableIgnoreCondition.WhenWritingEmptyCollection) | The value is an empty collection |
+| [WhenWritingDefaultOrEmptyCollection](cref:Meziantou.Framework.HumanReadable.HumanReadableIgnoreCondition.WhenWritingDefaultOrEmptyCollection) | The value is the default or an empty collection |
+| [Custom](cref:Meziantou.Framework.HumanReadable.HumanReadableIgnoreCondition.Custom) | [CustomCondition](cref:Meziantou.Framework.HumanReadable.HumanReadableIgnoreAttribute.CustomCondition) returns `true` |
 
-With `Custom`, `CustomCondition` is a `Func<HumanReadableIgnoreData, bool>` that receives the `Value` of the member,
-and the `Exception` thrown by its getter, if any. Use it with `AddAttribute` (below), as an attribute argument cannot
+With [Custom](cref:Meziantou.Framework.HumanReadable.HumanReadableIgnoreCondition.Custom), [CustomCondition](cref:Meziantou.Framework.HumanReadable.HumanReadableIgnoreAttribute.CustomCondition) is a `Func<HumanReadableIgnoreData, bool>` that receives the [Value](cref:Meziantou.Framework.HumanReadable.HumanReadableIgnoreData.Value) of the member,
+and the [Exception](cref:Meziantou.Framework.HumanReadable.HumanReadableIgnoreData.Exception) thrown by its getter, if any. Use it with [AddAttribute](cref:Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions.AddAttribute) (below), as an attribute argument cannot
 be a lambda.
 
 ## Configure types you do not own
@@ -117,17 +117,17 @@ Assert.Equal("""
 - `AddAttribute(type, memberName, attribute)` adds any attribute to a member, and `AddAttribute<T>(x => x.Member,
   attribute)` does the same with an expression. `AddAttribute(type, attribute)` adds an attribute, such as a converter,
   to a type.
-- `AddPropertyAttribute`, `AddFieldAttribute` and `AddTypeAttribute` add an attribute to every property, field or type
+- [AddPropertyAttribute](cref:Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions.AddPropertyAttribute), [AddFieldAttribute](cref:Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions.AddFieldAttribute) and [AddTypeAttribute](cref:Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions.AddTypeAttribute) add an attribute to every property, field or type
   that matches a condition.
-- `IgnoreMembersWithType<T>()` skips every member of type `T`, for instance a `CancellationToken` or a service
+- [IgnoreMembersWithType\<T\>()](cref:Meziantou.Framework.HumanReadable.HumanReadableSerializerOptionsExtensions.IgnoreMembersWithType) skips every member of type `T`, for instance a `CancellationToken` or a service
   reference.
 
 The attributes added by the options take precedence over the attributes declared in the code.
 
 ## Members that throw
 
-By default, an exception thrown by a getter stops the serialization. `IgnoreMembersThatThrow()` skips the members whose
-getter throws, and `IgnoreMembersThatThrow<TException>()` only those that throw a given exception type, such as
+By default, an exception thrown by a getter stops the serialization. [IgnoreMembersThatThrow()](cref:Meziantou.Framework.HumanReadable.HumanReadableSerializerOptionsExtensions.IgnoreMembersThatThrow) skips the members whose
+getter throws, and [IgnoreMembersThatThrow\<TException\>()](cref:Meziantou.Framework.HumanReadable.HumanReadableSerializerOptionsExtensions.IgnoreMembersThatThrow) only those that throw a given exception type, such as
 `NotSupportedException`.
 
 ## Order members and dictionary keys
@@ -157,10 +157,10 @@ Assert.Equal("""
 ```
 <!-- endref -->
 
-- `PropertyOrder` sorts the members by name. Without it, the members are written in the order that reflection returns
-  them, which is the declaration order on recent versions of .NET. Members with `[HumanReadablePropertyOrder]` still come
+- [PropertyOrder](cref:Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions.PropertyOrder) sorts the members by name. Without it, the members are written in the order that reflection returns
+  them, which is the declaration order on recent versions of .NET. Members with [\[HumanReadablePropertyOrder\]](cref:Meziantou.Framework.HumanReadable.HumanReadablePropertyOrderAttribute) still come
   first.
-- `DictionaryKeyOrder` sorts the keys of dictionaries. Without it, the keys are written in enumeration order, except
+- [DictionaryKeyOrder](cref:Meziantou.Framework.HumanReadable.HumanReadableSerializerOptions.DictionaryKeyOrder) sorts the keys of dictionaries. Without it, the keys are written in enumeration order, except
   for the unordered collections listed in [Output format](03-OutputFormat.md#dictionaries-and-sets).
 
 Sort both with `StringComparer.Ordinal` when the text must be the same on every runtime, as in snapshot tests.

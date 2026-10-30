@@ -46,9 +46,9 @@ Some rules send HTTP requests:
 
 | Rule | Requests |
 | --- | --- |
-| `ProjectUrlMustBeSet` | `GET` the project URL, and the repository URL when there is one |
-| `Symbols` | `GET` the source files that Source Link maps to a URL, and query the symbol servers when the symbols are not in the package or its `.snupkg` file |
-| `PackageIdAvailableOnNuGetOrg` | Query nuget.org |
+| [ProjectUrlMustBeSet](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRules.ProjectUrlMustBeSet) | `GET` the project URL, and the repository URL when there is one |
+| [Symbols](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRules.Symbols) | `GET` the source files that Source Link maps to a URL, and query the symbol servers when the symbols are not in the package or its `.snupkg` file |
+| [PackageIdAvailableOnNuGetOrg](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationRules.PackageIdAvailableOnNuGetOrg) | Query nuget.org |
 
 The other rules only read the package. On a build agent without internet access, or to avoid failures caused by a
 remote server:
@@ -56,7 +56,7 @@ remote server:
 - Exclude `52` to stop requiring the project and repository URLs to answer.
 - Exclude `119` or `120` to skip the download of the source files.
 - Embed the symbols, or publish a `.snupkg` file next to the package, so that the symbol servers are not queried. In
-  code, you can also clear `SymbolServers`. See [Symbol servers](05-ConfiguringValidation.md#symbol-servers).
+  code, you can also clear [SymbolServers](cref:Meziantou.Framework.NuGetPackageValidation.NuGetPackageValidationOptions.SymbolServers). See [Symbol servers](05-ConfiguringValidation.md#symbol-servers).
 
 An error on a remote server is reported as an error of the package (`52`, `91`, `111` or `119`), not as a failure of
 the tool, so a temporary outage fails the validation. Rerun the step, or exclude the codes of the checks your build

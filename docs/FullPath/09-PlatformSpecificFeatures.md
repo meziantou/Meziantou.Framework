@@ -19,13 +19,13 @@ Assert.Equal(@"C:\logs\NUL.txt", file.RawValue);
 ```
 <!-- endref -->
 
-`RawValue` returns the path without the prefix. Use it to show the path to a user, or for an API that handles the
-device names itself. On the other operating systems, `Value` and `RawValue` are the same.
+[RawValue](cref:Meziantou.Framework.FullPath.RawValue) returns the path without the prefix. Use it to show the path to a user, or for an API that handles the
+device names itself. On the other operating systems, `Value` and [RawValue](cref:Meziantou.Framework.FullPath.RawValue) are the same.
 
 ## Extended-length paths on Windows
 
-`ToWindowsExtendedPath` returns the path with the `\\?\` prefix, which lets the Windows file APIs accept paths longer
-than 260 characters. A UNC path becomes `\\?\UNC\server\share\…`. Conversely, `FromPath` removes the prefix:
+[ToWindowsExtendedPath](cref:Meziantou.Framework.FullPath.ToWindowsExtendedPath) returns the path with the `\\?\` prefix, which lets the Windows file APIs accept paths longer
+than 260 characters. A UNC path becomes `\\?\UNC\server\share\…`. Conversely, [FromPath](cref:Meziantou.Framework.FullPath.FromPath) removes the prefix:
 
 <!-- ref:../../tests/Meziantou.Framework.FullPath.Tests/FullPathTests.cs;region=FullPath_WindowsExtendedPath;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -38,12 +38,12 @@ Assert.Equal(@"\\server\share\file.txt", FullPath.FromPath(@"\\?\UNC\server\shar
 ```
 <!-- endref -->
 
-- `ToWindowsExtendedPath` throws a `PlatformNotSupportedException` on the other operating systems.
-- On Linux and macOS, `\` is a valid file name character: `FromPath` does not treat `\\?\` as a prefix there.
+- [ToWindowsExtendedPath](cref:Meziantou.Framework.FullPath.ToWindowsExtendedPath) throws a `PlatformNotSupportedException` on the other operating systems.
+- On Linux and macOS, `\` is a valid file name character: [FromPath](cref:Meziantou.Framework.FullPath.FromPath) does not treat `\\?\` as a prefix there.
 
 ## Known folders
 
-On Windows, `FullPath.GetKnownFolderPath` returns the path of a known folder, such as the Downloads folder, which
+On Windows, [FullPath.GetKnownFolderPath](cref:Meziantou.Framework.FullPath.GetKnownFolderPath) returns the path of a known folder, such as the Downloads folder, which
 `Environment.SpecialFolder` does not cover:
 
 <!-- ref:../../tests/Meziantou.Framework.FullPath.Tests/FullPathTests.cs;region=KnownFolder_Example;format=md-fenced-code-block;dedent=true -->
@@ -58,13 +58,13 @@ Assert.False(documentsPath.IsEmpty);
 ```
 <!-- endref -->
 
-- The `KnownFolder` class lists the folders as static properties. Each one has a `Name`, a `FolderId`, a `FolderType`
-  and a `DefaultPath`.
+- The [KnownFolder](cref:Meziantou.Framework.KnownFolder) class lists the folders as static properties. Each one has a [Name](cref:Meziantou.Framework.KnownFolder.Name), a [FolderId](cref:Meziantou.Framework.KnownFolder.FolderId), a [FolderType](cref:Meziantou.Framework.KnownFolder.FolderType)
+  and a [DefaultPath](cref:Meziantou.Framework.KnownFolder.DefaultPath).
 - The environment variables of the folder path are expanded.
 - The method throws a `Win32Exception` when Windows cannot return the folder.
 
 ## Show a file in the file manager
 
-`OpenInExplorer` opens the file manager and selects the file or the folder: File Explorer on Windows, Finder on macOS.
+[OpenInExplorer](cref:Meziantou.Framework.FullPath.OpenInExplorer) opens the file manager and selects the file or the folder: File Explorer on Windows, Finder on macOS.
 It throws a `PlatformNotSupportedException` on the other operating systems, and an `InvalidOperationException` on the
 empty path.

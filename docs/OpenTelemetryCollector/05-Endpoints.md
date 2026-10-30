@@ -3,18 +3,18 @@ title: Endpoints
 description: Choose the paths of the OTLP/HTTP endpoints, disable gRPC, send Protobuf or JSON, accept compressed requests, and secure the endpoints.
 ---
 
-`MapOpenTelemetryReceiverEndpoints` maps the endpoints configured in `OpenTelemetryReceiverOptions`:
+[MapOpenTelemetryReceiverEndpoints](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryEndpointRouteBuilderExtensions.MapOpenTelemetryReceiverEndpoints) maps the endpoints configured in [OpenTelemetryReceiverOptions](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryReceiverOptions):
 
 | Option | Default | Endpoint |
 | --- | --- | --- |
-| `HttpLogsEndpoint` | `/v1/logs` | `POST` endpoint for logs |
-| `HttpTracesEndpoint` | `/v1/traces` | `POST` endpoint for traces |
-| `HttpMetricsEndpoint` | `/v1/metrics` | `POST` endpoint for metrics |
-| `EnableGrpcEndpoints` | `true` | The gRPC services `LogsService`, `TraceService` and `MetricsService` |
+| [HttpLogsEndpoint](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryReceiverOptions.HttpLogsEndpoint) | `/v1/logs` | `POST` endpoint for logs |
+| [HttpTracesEndpoint](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryReceiverOptions.HttpTracesEndpoint) | `/v1/traces` | `POST` endpoint for traces |
+| [HttpMetricsEndpoint](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryReceiverOptions.HttpMetricsEndpoint) | `/v1/metrics` | `POST` endpoint for metrics |
+| [EnableGrpcEndpoints](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryReceiverOptions.EnableGrpcEndpoints) | `true` | The gRPC services [LogsService](cref:OpenTelemetry.Proto.Collector.Logs.V1.LogsService), [TraceService](cref:OpenTelemetry.Proto.Collector.Trace.V1.TraceService) and [MetricsService](cref:OpenTelemetry.Proto.Collector.Metrics.V1.MetricsService) |
 
 ## Choose the endpoints
 
-Set the options in the `configure` argument of `AddOpenTelemetryReceiver` or `AddInMemoryOpenTelemetryReceiver`. A
+Set the options in the `configure` argument of [AddOpenTelemetryReceiver](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryServiceCollectionExtensions.AddOpenTelemetryReceiver) or [AddInMemoryOpenTelemetryReceiver](cref:Meziantou.Framework.OpenTelemetryCollector.InMemory.OpenTelemetryCollectorInMemoryServiceCollectionExtensions.AddInMemoryOpenTelemetryReceiver). A
 `null` path does not map the endpoint:
 
 <!-- ref:../../tests/Meziantou.Framework.OpenTelemetry.Tests/OpenTelemetryReceiverTests.cs;region=OpenTelemetryCollector_ConfigureEndpoints;format=md-fenced-code-block;dedent=true -->
@@ -93,8 +93,8 @@ Assert.Equal("5b8efff798038103d269b633813fc60c", Convert.ToHexStringLower(span.T
 
 ## gRPC
 
-The gRPC services implement the `Export` methods of OTLP/gRPC. `AddOpenTelemetryReceiver` registers the gRPC services of
-ASP.NET Core. The client classes generated from the OTLP definitions, such as `TraceService.TraceServiceClient`, are
+The gRPC services implement the `Export` methods of OTLP/gRPC. [AddOpenTelemetryReceiver](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryServiceCollectionExtensions.AddOpenTelemetryReceiver) registers the gRPC services of
+ASP.NET Core. The client classes generated from the OTLP definitions, such as [TraceService.TraceServiceClient](cref:OpenTelemetry.Proto.Collector.Trace.V1.TraceService.TraceServiceClient), are
 public, so a test can call the services:
 
 <!-- ref:../../tests/Meziantou.Framework.OpenTelemetry.Tests/OpenTelemetryReceiverTests.cs;region=OpenTelemetryCollector_GrpcExport;format=md-fenced-code-block;dedent=true -->
@@ -140,7 +140,7 @@ the server, such as the maximum request body size of Kestrel.
 
 ## Secure the endpoints
 
-`MapOpenTelemetryReceiverEndpoints` returns an `IEndpointConventionBuilder` that applies the conventions to every mapped
+[MapOpenTelemetryReceiverEndpoints](cref:Meziantou.Framework.OpenTelemetryCollector.OpenTelemetryEndpointRouteBuilderExtensions.MapOpenTelemetryReceiverEndpoints) returns an `IEndpointConventionBuilder` that applies the conventions to every mapped
 endpoint, HTTP and gRPC alike. An OTLP receiver accepts writes from anyone who can reach it: restrict it, unless it is
 only reachable from a trusted network.
 

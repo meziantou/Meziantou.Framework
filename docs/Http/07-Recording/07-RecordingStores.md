@@ -7,8 +7,8 @@ A store loads and saves the recordings. The package provides two, both backed by
 
 | Store | Format |
 | --- | --- |
-| `JsonHttpRecordingStore` | A JSON array of `HttpRecordingEntry`. The bodies are base64. |
-| `HarHttpRecordingStore` | An HTTP Archive (HAR 1.2) file. |
+| [JsonHttpRecordingStore](cref:Meziantou.Framework.Http.Recording.JsonHttpRecordingStore) | A JSON array of [HttpRecordingEntry](cref:Meziantou.Framework.Http.Recording.HttpRecordingEntry). The bodies are base64. |
+| [HarHttpRecordingStore](cref:Meziantou.Framework.Http.Recording.HarHttpRecordingStore) | An HTTP Archive (HAR 1.2) file. |
 
 <!-- ref:../../../tests/Meziantou.Framework.Http.Recording.Tests/HttpRecordingHandlerTests.cs;region=HttpRecording_HarStore;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -39,10 +39,10 @@ Both stores behave the same way:
 
 ## Write your own store
 
-Implement `IHttpRecordingStore` to keep the recordings elsewhere, for instance in embedded resources or in a database:
+Implement [IHttpRecordingStore](cref:Meziantou.Framework.Http.Recording.IHttpRecordingStore) to keep the recordings elsewhere, for instance in embedded resources or in a database:
 
-- `LoadAsync` returns every recording, or an empty list when there is none yet.
-- `SaveAsync` receives every recording to keep and replaces what the store held.
+- [LoadAsync](cref:Meziantou.Framework.Http.Recording.IHttpRecordingStore.LoadAsync) returns every recording, or an empty list when there is none yet.
+- [SaveAsync](cref:Meziantou.Framework.Http.Recording.IHttpRecordingStore.SaveAsync) receives every recording to keep and replaces what the store held.
 
-The handler calls `LoadAsync` on the first request or from `InitializeAsync`, except in `Record` mode, and the store's
-`SaveAsync` from its own `SaveAsync` or when it is disposed with `AutoSave`.
+The handler calls [LoadAsync](cref:Meziantou.Framework.Http.Recording.IHttpRecordingStore.LoadAsync) on the first request or from [InitializeAsync](cref:Meziantou.Framework.Http.Recording.HttpRecordingHandler.InitializeAsync), except in [Record](cref:Meziantou.Framework.Http.Recording.HttpRecordingMode.Record) mode, and the store's
+[SaveAsync](cref:Meziantou.Framework.Http.Recording.IHttpRecordingStore.SaveAsync) from its own [SaveAsync](cref:Meziantou.Framework.Http.Recording.IHttpRecordingStore.SaveAsync) or when it is disposed with [AutoSave](cref:Meziantou.Framework.Http.Recording.HttpRecordingOptions.AutoSave).

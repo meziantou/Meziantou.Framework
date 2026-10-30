@@ -4,7 +4,7 @@ description: Read and write AVIF images and image sequences, lossless or lossy, 
 ---
 
 AVIF stores AV1-coded images in the HEIF container: still images, image sequences (animations), alpha, 10 and 12-bit
-samples and HDR color descriptions. The library has its own AV1 decoder and encoder. `AvifEncoder` is **lossless by
+samples and HDR color descriptions. The library has its own AV1 decoder and encoder. [AvifEncoder](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder) is **lossless by
 default**, which makes large files from photos: choose lossy compression for them.
 
 ## What is read and written
@@ -17,12 +17,12 @@ default**, which makes large files from photos: choose lossy compression for the
 | Geometry | Clean aperture applied; orientation reported | Clean aperture and orientation |
 | Metadata | ICC profile, EXIF, XMP, CICP color description, content light level, mastering display, pixel aspect ratio | The same |
 
-8-bit files load as `Rgb24`, `Rgba32` with alpha, or `Gray8`; 10 and 12-bit files load as `Rgb48`, `Rgba64` or
-`Gray16`, their samples scaled to 16 bits exactly. Premultiplied colors are converted to straight alpha.
+8-bit files load as [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24), [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32) with alpha, or [Gray8](cref:Meziantou.Framework.Imaging.Gray8); 10 and 12-bit files load as [Rgb48](cref:Meziantou.Framework.Imaging.Rgb48), [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64) or
+[Gray16](cref:Meziantou.Framework.Imaging.Gray16), their samples scaled to 16 bits exactly. Premultiplied colors are converted to straight alpha.
 
 ## Load an AVIF file
 
-The orientation of the file (`irot` and `imir`) is reported in `Metadata.Orientation`, never applied: call `AutoOrient`
+The orientation of the file (`irot` and `imir`) is reported in `Metadata.Orientation`, never applied: call [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient)
 to rotate the pixels. The color description is a label, like an ICC profile:
 
 <!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_LoadAvif;format=md-fenced-code-block;dedent=true -->
@@ -82,32 +82,32 @@ public static void SaveAvif(string photoPath, string avifPath, string losslessPa
 
 | Option | What it does | Default |
 | --- | --- | --- |
-| `Compression` | `Lossless` or `Lossy` | `Lossless` |
-| `Quality` | 0 (smallest) to 100 (best) for lossy output | 75 |
-| `Effort` | 0 (fastest, largest) to 9 (slowest, smallest): trades encoding time for size, never changes lossless pixels | 5 |
-| `ChromaSubsampling` | `Auto` (4:2:0), `Ratio420`, `Ratio422` or `Ratio444`, for lossy output | `Auto` |
-| `BitDepth` | 8, 10 or 12; `null` keeps the depth of the pixel format. A value for a 16-bit pixel format allows rounding to it | `null` |
-| `AllowBitDepthReduction` | Lets 16-bit pixel formats be rounded to 12 bits when `BitDepth` is not set | `false` |
-| `ClearTransparentColors` | Replaces the color of fully transparent pixels with black, which makes the file smaller | `false` |
-| `PremultiplyAlpha` | Stores colors multiplied by their alpha; the colors of nearly transparent pixels are rounded | `false` |
-| `GridTileSize` | Cuts a still image larger than a tile into tiles coded separately (64 to 65,536 pixels per side) | `null` |
-| `CleanAperture` | The rectangle readers show; every pixel is still stored | `null` |
-| `KeyFrameInterval` | The number of images from a key frame to the next in a sequence; 0 makes the first image the only key frame | 0 |
-| `DurationRounding` | `RequireExact` stores durations exactly or throws; `RoundToNearest` rounds them to microseconds when they need it | `RequireExact` |
-| `MetadataHandling` | What to do with metadata AVIF cannot store (text, resolution) | `Strict` |
+| [Compression](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder.Compression) | [Lossless](cref:Meziantou.Framework.Imaging.Formats.AvifCompression.Lossless) or [Lossy](cref:Meziantou.Framework.Imaging.Formats.AvifCompression.Lossy) | [Lossless](cref:Meziantou.Framework.Imaging.Formats.AvifCompression.Lossless) |
+| [Quality](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder.Quality) | 0 (smallest) to 100 (best) for lossy output | 75 |
+| [Effort](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder.Effort) | 0 (fastest, largest) to 9 (slowest, smallest): trades encoding time for size, never changes lossless pixels | 5 |
+| [ChromaSubsampling](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder.ChromaSubsampling) | [Auto](cref:Meziantou.Framework.Imaging.Formats.AvifChromaSubsampling.Auto) (4:2:0), [Ratio420](cref:Meziantou.Framework.Imaging.Formats.AvifChromaSubsampling.Ratio420), [Ratio422](cref:Meziantou.Framework.Imaging.Formats.AvifChromaSubsampling.Ratio422) or [Ratio444](cref:Meziantou.Framework.Imaging.Formats.AvifChromaSubsampling.Ratio444), for lossy output | [Auto](cref:Meziantou.Framework.Imaging.Formats.AvifChromaSubsampling.Auto) |
+| [BitDepth](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder.BitDepth) | 8, 10 or 12; `null` keeps the depth of the pixel format. A value for a 16-bit pixel format allows rounding to it | `null` |
+| [AllowBitDepthReduction](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder.AllowBitDepthReduction) | Lets 16-bit pixel formats be rounded to 12 bits when [BitDepth](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder.BitDepth) is not set | `false` |
+| [ClearTransparentColors](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder.ClearTransparentColors) | Replaces the color of fully transparent pixels with black, which makes the file smaller | `false` |
+| [PremultiplyAlpha](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder.PremultiplyAlpha) | Stores colors multiplied by their alpha; the colors of nearly transparent pixels are rounded | `false` |
+| [GridTileSize](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder.GridTileSize) | Cuts a still image larger than a tile into tiles coded separately (64 to 65,536 pixels per side) | `null` |
+| [CleanAperture](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder.CleanAperture) | The rectangle readers show; every pixel is still stored | `null` |
+| [KeyFrameInterval](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder.KeyFrameInterval) | The number of images from a key frame to the next in a sequence; 0 makes the first image the only key frame | 0 |
+| [DurationRounding](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder.DurationRounding) | [RequireExact](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RequireExact) stores durations exactly or throws; [RoundToNearest](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RoundToNearest) rounds them to microseconds when they need it | [RequireExact](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RequireExact) |
+| [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling) | What to do with metadata AVIF cannot store (text, resolution) | [Strict](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strict) |
 
 ## Encoding time
 
-Encoding a large image takes time: a lower `Effort` encodes faster, with larger files. A large still image with
-`GridTileSize` (512 x 512 is a common tile size) is coded tile by tile, with bounded memory; with
-`ImageConfiguration.MaxDegreeOfParallelism` above 1, the tiles are coded concurrently and the file is identical. Lossy
+Encoding a large image takes time: a lower [Effort](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder.Effort) encodes faster, with larger files. A large still image with
+[GridTileSize](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder.GridTileSize) (512 x 512 is a common tile size) is coded tile by tile, with bounded memory; with
+[ImageConfiguration.MaxDegreeOfParallelism](cref:Meziantou.Framework.Imaging.ImageConfiguration.MaxDegreeOfParallelism) above 1, the tiles are coded concurrently and the file is identical. Lossy
 output can show the edges of the tiles.
 
 ## Pitfalls
 
-- `Save("photo.avif")` is lossless: pass an `AvifEncoder` with `Compression = AvifCompression.Lossy` for photos.
-- AVIF stores at most 12 bits: `Rgba64` and `Gray16` images throw unless `BitDepth` or `AllowBitDepthReduction` is set.
-- An image sequence needs a seekable destination and a known frame count (`ImageWriterOptions.ExpectedFrameCount` for
+- `Save("photo.avif")` is lossless: pass an [AvifEncoder](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder) with `Compression = AvifCompression.Lossy` for photos.
+- AVIF stores at most 12 bits: [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64) and [Gray16](cref:Meziantou.Framework.Imaging.Gray16) images throw unless [BitDepth](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder.BitDepth) or [AllowBitDepthReduction](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder.AllowBitDepthReduction) is set.
+- An image sequence needs a seekable destination and a known frame count ([ImageWriterOptions.ExpectedFrameCount](cref:Meziantou.Framework.Imaging.ImageWriterOptions.ExpectedFrameCount) for
   a writer), because the index of the images is written last. A still image goes to any stream.
 - An image sequence of one image cannot store animation settings: it is read back as a still image.
 - A side is at most 65,536 pixels (65,535 for an image sequence), and a still image at most 4 GiB.

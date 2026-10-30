@@ -72,7 +72,7 @@ Assert.Equal("tmp/file.txt", parser.GetArgument(1));
 - `--name` is the named argument `-name`, not `name`. `--help` is the only argument with two dashes that the parser
   recognizes.
 - A Unix absolute path, such as `/tmp/file.txt`, is read as a named argument, and its position holds it without the
-  leading `/`. An application that takes such paths cannot read them with `CommandLineParser`: read them from the
+  leading `/`. An application that takes such paths cannot read them with [CommandLineParser](cref:Meziantou.Framework.CommandLineParser): read them from the
   `args` array of the entry point.
 
 ## Help switches
@@ -89,10 +89,10 @@ Assert.Null(parser.GetArgument(0));
 ```
 <!-- endref -->
 
-`-?`, `/?`, `-help`, `/help` and `--help`, in any case, set `HelpRequested`. They are neither named nor positional
+`-?`, `/?`, `-help`, `/help` and `--help`, in any case, set [HelpRequested](cref:Meziantou.Framework.CommandLineParser.HelpRequested). They are neither named nor positional
 arguments: `HasArgument("help")` is `false` and their position is empty.
 
 ## The arguments of the current process
 
-`CommandLineParser.Current` parses `Environment.GetCommandLineArgs()` without its first element, the path of the
+[CommandLineParser.Current](cref:Meziantou.Framework.CommandLineParser.Current) parses `Environment.GetCommandLineArgs()` without its first element, the path of the
 executable, once. Its positions match the `args` array of the entry point.

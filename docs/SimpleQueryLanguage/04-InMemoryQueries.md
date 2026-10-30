@@ -3,8 +3,8 @@ title: In-memory queries
 description: Register handlers for keys, values and ranges, search free text, decide what unknown keys do, and accept queries from users.
 ---
 
-`QueryBuilder<T>` turns a query into a predicate on objects in memory. Register a handler for each key, then `Build`
-the query and call `Evaluate` on each object:
+[QueryBuilder\<T\>](cref:Meziantou.Framework.SimpleQueryLanguage.QueryBuilder{T}) turns a query into a predicate on objects in memory. Register a handler for each key, then [Build](cref:Meziantou.Framework.SimpleQueryLanguage.QueryBuilder{T}.Build)
+the query and call [Evaluate](cref:Meziantou.Framework.SimpleQueryLanguage.Query{T}.Evaluate) on each object:
 
 <!-- ref:../../tests/Meziantou.Framework.SimpleQueryLanguage.Tests/QueryBuilderTests.cs;region=QueryBuilder_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -36,8 +36,8 @@ Choose the handler from what the key does:
 | `AddHandler(key, (obj, value) => …)` | The value as a string. | `:`, `=`, `<>` | `author:alice` |
 | `AddHandler<TValue>(key, (obj, value) => …)` | The value parsed as `TValue`. | `:`, `=`, `<>` | `id:42` |
 | `AddHandler(key, value, obj => …)` | Nothing: the handler is for one value of the key. | `:`, `=`, `<>` | `is:open` |
-| `AddRangeHandler<TValue>(key, (obj, range) => …)` | A `RangeSyntax<TValue>`. | All, and ranges | `comments>=2`, `comments:1..5` |
-| The overloads that take a `KeyValueOperator` | The operator, and the value. | All | `size>10` |
+| `AddRangeHandler<TValue>(key, (obj, range) => …)` | A [RangeSyntax\<TValue\>](cref:Meziantou.Framework.SimpleQueryLanguage.Ranges.RangeSyntax{T}). | All, and ranges | `comments>=2`, `comments:1..5` |
+| The overloads that take a [KeyValueOperator](cref:Meziantou.Framework.SimpleQueryLanguage.KeyValueOperator) | The operator, and the value. | All | `size>10` |
 
 - `<>` negates the handler, so a handler only says whether the object matches.
 - With an operator a handler does not accept, such as `author>alice`, the term matches nothing.
@@ -47,12 +47,12 @@ Choose the handler from what the key does:
   case-insensitively.
 - Keys are case-insensitive. Registering the same key, or the same key and value, twice throws an `ArgumentException`.
 
-A range handler receives a `RangeSyntax<TValue>`, whose `IsInRange` tells whether a value is inside the range, for
+A range handler receives a [RangeSyntax\<TValue\>](cref:Meziantou.Framework.SimpleQueryLanguage.Ranges.RangeSyntax{T}), whose [IsInRange](cref:Meziantou.Framework.SimpleQueryLanguage.Ranges.RangeSyntax{T}.IsInRange) tells whether a value is inside the range, for
 `comments:1..5` as for `comments>=2`. It accepts an `IComparer<TValue>` to compare values another way.
 
 ## Free text
 
-The terms without a key go to the handler set with `SetTextFilterHandler`. Without it, free text matches nothing, and
+The terms without a key go to the handler set with [SetTextFilterHandler](cref:Meziantou.Framework.SimpleQueryLanguage.QueryBuilder{T}.SetTextFilterHandler). Without it, free text matches nothing, and
 `NOT crash` matches everything. Quoted text is passed without its quotes, spaces included: decide in the handler
 whether `when saving` must appear as a whole.
 
@@ -80,16 +80,16 @@ Assert.False(queryBuilder.Build("label:bug").Evaluate(item));
 
 ## Building and reusing queries
 
-- `Build` parses the query and its values once. Keep the `Query<T>` to evaluate it on many objects; `Text` returns the
+- [Build](cref:Meziantou.Framework.SimpleQueryLanguage.QueryBuilder{T}.Build) parses the query and its values once. Keep the [Query\<T\>](cref:Meziantou.Framework.SimpleQueryLanguage.Query{T}) to evaluate it on many objects; [Text](cref:Meziantou.Framework.SimpleQueryLanguage.Query{T}.Text) returns the
   query it was built from.
-- Handlers registered or changed after `Build` do not change a query already built.
-- Date keywords such as `today` are computed by `Build` too: rebuild a query that is kept from one day to the next. See
+- Handlers registered or changed after [Build](cref:Meziantou.Framework.SimpleQueryLanguage.QueryBuilder{T}.Build) do not change a query already built.
+- Date keywords such as `today` are computed by [Build](cref:Meziantou.Framework.SimpleQueryLanguage.QueryBuilder{T}.Build) too: rebuild a query that is kept from one day to the next. See
   [Relative dates](06-ValuesAndDates.md#relative-dates).
 
 ## Queries from users
 
 A malformed query is never an error, but a query can be too complex to evaluate: thousands of nested parentheses, or
-many `OR` groups combined with `AND`. `Build` then throws a `QueryTooComplexException`. Catch it when the query comes
+many `OR` groups combined with `AND`. [Build](cref:Meziantou.Framework.SimpleQueryLanguage.QueryBuilder{T}.Build) then throws a [QueryTooComplexException](cref:Meziantou.Framework.SimpleQueryLanguage.QueryTooComplexException). Catch it when the query comes
 from a user:
 
 <!-- ref:../../tests/Meziantou.Framework.SimpleQueryLanguage.Tests/QueryBuilderTests.cs;region=QueryBuilder_UntrustedInput;format=md-fenced-code-block;dedent=true -->
@@ -113,6 +113,6 @@ Assert.Null(query);
 ```
 <!-- endref -->
 
-`Build` evaluates `(a OR b) AND (c OR d)` as `(a AND c) OR (a AND d) OR (b AND c) OR (b AND d)`, so each group
+[Build](cref:Meziantou.Framework.SimpleQueryLanguage.QueryBuilder{T}.Build) evaluates `(a OR b) AND (c OR d)` as `(a AND c) OR (a AND d) OR (b AND c) OR (b AND d)`, so each group
 multiplies the size of the query. It refuses a query that expands to more than 8,192 alternatives or 262,144 terms.
-`ExpressionQueryBuilder<T>.Build` has the same limits.
+[ExpressionQueryBuilder\<T\>.Build](cref:Meziantou.Framework.SimpleQueryLanguage.ExpressionQueryBuilder{T}.Build) has the same limits.

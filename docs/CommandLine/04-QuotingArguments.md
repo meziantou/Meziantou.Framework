@@ -28,9 +28,9 @@ Assert.Equal(@"echo ^""Hello ^& Goodbye^""", cmdArgs);
 ```
 <!-- endref -->
 
-- `WindowsQuotedArgument` quotes one argument for a program that splits its command line with the standard Windows
-  rules, and `WindowsQuotedArguments` quotes several and joins them with spaces.
-- `WindowsCmdArgument` and `WindowsCmdArguments` also escape the characters that `cmd.exe` interprets: `(`, `)`, `%`,
+- [WindowsQuotedArgument](cref:Meziantou.Framework.CommandLineBuilder.WindowsQuotedArgument) quotes one argument for a program that splits its command line with the standard Windows
+  rules, and [WindowsQuotedArguments](cref:Meziantou.Framework.CommandLineBuilder.WindowsQuotedArguments) quotes several and joins them with spaces.
+- [WindowsCmdArgument](cref:Meziantou.Framework.CommandLineBuilder.WindowsCmdArgument) and [WindowsCmdArguments](cref:Meziantou.Framework.CommandLineBuilder.WindowsCmdArguments) also escape the characters that `cmd.exe` interprets: `(`, `)`, `%`,
   `!`, `^`, `"`, `<`, `>`, `&` and `|`. Use them when the command line goes through `cmd.exe`, such as a batch file or
   `cmd.exe /c`.
 

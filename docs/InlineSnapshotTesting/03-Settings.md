@@ -3,13 +3,13 @@ title: Settings
 description: Configure every inline snapshot test in one place, or change the settings of a single assertion.
 ---
 
-`InlineSnapshotSettings` holds everything that controls an assertion: the serializer, the comparer, the scrubbers, how
-the snapshot is written in the source file, and the update strategy. `InlineSnapshot.Validate` uses
-`InlineSnapshotSettings.Default` unless you pass settings.
+[InlineSnapshotSettings](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings) holds everything that controls an assertion: the serializer, the comparer, the scrubbers, how
+the snapshot is written in the source file, and the update strategy. [InlineSnapshot.Validate](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshot.Validate) uses
+[InlineSnapshotSettings.Default](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings.Default) unless you pass settings.
 
 ## Configure every test
 
-Replace `InlineSnapshotSettings.Default` before any test runs. A module initializer runs when the test assembly is loaded
+Replace [InlineSnapshotSettings.Default](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings.Default) before any test runs. A module initializer runs when the test assembly is loaded
 (`ModuleInitializer` is in the `System.Runtime.CompilerServices` namespace):
 
 <!-- ref:../../samples/Meziantou.Framework.InlineSnapshotTesting.Samples/AssemblyInitializer.cs;region=InlineSnapshot_ModuleInitializer;format=md-fenced-code-block;dedent=true -->
@@ -29,11 +29,11 @@ internal static class AssemblyInitializer
 ```
 <!-- endref -->
 
-`InlineSnapshotSettings` is a record: `with` creates a copy, with its own list of scrubbers. `Clone()` does the same.
+[InlineSnapshotSettings](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings) is a record: `with` creates a copy, with its own list of scrubbers. [Clone()](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettingsCloneExtensions.Clone) does the same.
 
 ## Change the settings of one assertion
 
-Pass settings to `Validate`:
+Pass settings to [Validate](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshot.Validate):
 
 <!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_SettingsPerAssert;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -78,34 +78,34 @@ InlineSnapshot
 ```
 <!-- endref -->
 
-`InlineSnapshot.WithSettings` and `InlineSnapshot.WithSerializer` return an `InlineSnapshotBuilder`; chain
-`WithSettings` and `WithSerializer` calls, then call `Validate`.
+[InlineSnapshot.WithSettings](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshot.WithSettings) and [InlineSnapshot.WithSerializer](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshot.WithSerializer) return an [InlineSnapshotBuilder](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotBuilder); chain
+[WithSettings](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotBuilder.WithSettings) and [WithSerializer](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotBuilder.WithSerializer) calls, then call [Validate](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotBuilder.Validate).
 
 ## Properties
 
 | Property | Default | Description |
 | --- | --- | --- |
-| `SnapshotUpdateStrategy` | `Disallow`, or the `INLINESNAPSHOTTESTING_STRATEGY` environment variable | What happens when a snapshot does not match. See [Updating snapshots](08-UpdatingSnapshots.md) |
-| `ForceUpdateSnapshots` | `false` | Rewrites snapshots even when they match, for instance to reformat them |
-| `AutoDetectContinuousEnvironment` | `true`, unless `INLINESNAPSHOTTESTING_AUTODETECT_CONTINUOUS_ENVIRONMENT` is `false` | Never updates snapshots on a build server, in a continuous testing runner or in an LLM agent. See [Continuous integration](10-ContinuousIntegration.md) |
-| `MergeTools` | The configured and detected tools | The tools started by the merge tool strategies. See [Merge tools](09-MergeTools.md) |
-| `SnapshotSerializer` | The human-readable serializer | Converts the value to text. See [Serializers](04-Serializers.md) |
-| `Scrubbers` | Empty | Rewrite the text after serialization. See [Deterministic snapshots](05-DeterministicSnapshots.md) |
-| `SnapshotComparer` | `SnapshotComparer.Default` | Decides whether the actual and expected values match. See [Comparing snapshots](#comparing-snapshots) |
-| `ErrorMessageFormatter` | An inline diff | Formats the difference shown in the failure message |
-| `AllowedStringFormats` | `CSharpStringFormats.Default` | The C# string literals the library may write. See [String formats and source files](06-StringFormatsAndSourceFiles.md) |
-| `Indentation`, `EndOfLine`, `FileEncoding` | `null`: detected from the source file | How the source file is written |
-| `ValidateSourceFilePathUsingPdbInfoWhenAvailable` | `true` | Checks the file to edit against the PDB |
-| `ValidateLineNumberUsingPdbInfoWhenAvailable` | `false` | Checks the line to edit against the PDB |
+| [SnapshotUpdateStrategy](cref:Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategy) | [Disallow](cref:Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategy.Disallow), or the `INLINESNAPSHOTTESTING_STRATEGY` environment variable | What happens when a snapshot does not match. See [Updating snapshots](08-UpdatingSnapshots.md) |
+| [ForceUpdateSnapshots](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings.ForceUpdateSnapshots) | `false` | Rewrites snapshots even when they match, for instance to reformat them |
+| [AutoDetectContinuousEnvironment](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings.AutoDetectContinuousEnvironment) | `true`, unless `INLINESNAPSHOTTESTING_AUTODETECT_CONTINUOUS_ENVIRONMENT` is `false` | Never updates snapshots on a build server, in a continuous testing runner or in an LLM agent. See [Continuous integration](10-ContinuousIntegration.md) |
+| [MergeTools](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings.MergeTools) | The configured and detected tools | The tools started by the merge tool strategies. See [Merge tools](09-MergeTools.md) |
+| [SnapshotSerializer](cref:Meziantou.Framework.InlineSnapshotTesting.Serialization.SnapshotSerializer) | The human-readable serializer | Converts the value to text. See [Serializers](04-Serializers.md) |
+| [Scrubbers](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings.Scrubbers) | Empty | Rewrite the text after serialization. See [Deterministic snapshots](05-DeterministicSnapshots.md) |
+| [SnapshotComparer](cref:Meziantou.Framework.InlineSnapshotTesting.SnapshotComparer) | [SnapshotComparer.Default](cref:Meziantou.Framework.InlineSnapshotTesting.SnapshotComparer.Default) | Decides whether the actual and expected values match. See [Comparing snapshots](#comparing-snapshots) |
+| [ErrorMessageFormatter](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings.ErrorMessageFormatter) | An inline diff | Formats the difference shown in the failure message |
+| [AllowedStringFormats](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings.AllowedStringFormats) | [CSharpStringFormats.Default](cref:Meziantou.Framework.InlineSnapshotTesting.CSharpStringFormats.Default) | The C# string literals the library may write. See [String formats and source files](06-StringFormatsAndSourceFiles.md) |
+| [Indentation](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings.Indentation), [EndOfLine](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings.EndOfLine), [FileEncoding](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings.FileEncoding) | `null`: detected from the source file | How the source file is written |
+| [ValidateSourceFilePathUsingPdbInfoWhenAvailable](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings.ValidateSourceFilePathUsingPdbInfoWhenAvailable) | `true` | Checks the file to edit against the PDB |
+| [ValidateLineNumberUsingPdbInfoWhenAvailable](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings.ValidateLineNumberUsingPdbInfoWhenAvailable) | `false` | Checks the line to edit against the PDB |
 
 ## Comparing snapshots
 
-`SnapshotComparer.Default` normalizes both values before comparing them: line endings become `\n`, tabs become four
+[SnapshotComparer.Default](cref:Meziantou.Framework.InlineSnapshotTesting.SnapshotComparer.Default) normalizes both values before comparing them: line endings become `\n`, tabs become four
 spaces, and lines that contain only whitespace become empty. A snapshot whose line endings or indentation were changed
 by an editor still matches.
 
-To compare differently, derive from `SnapshotComparer`: `NormalizeValue` prepares each value (it returns the value
-unchanged by default), and `AreEqual` compares the normalized values. The normalized values are also the ones shown in
+To compare differently, derive from [SnapshotComparer](cref:Meziantou.Framework.InlineSnapshotTesting.SnapshotComparer): [NormalizeValue](cref:Meziantou.Framework.InlineSnapshotTesting.SnapshotComparer.NormalizeValue) prepares each value (it returns the value
+unchanged by default), and [AreEqual](cref:Meziantou.Framework.InlineSnapshotTesting.SnapshotComparer.AreEqual) compares the normalized values. The normalized values are also the ones shown in
 the failure message.
 
 ## Deterministic source paths
@@ -124,7 +124,7 @@ InlineSnapshot.RegisterSourceRootMapping("/_/", @"C:/agent/_work/1/s/");
 
 | Variable | Effect |
 | --- | --- |
-| `INLINESNAPSHOTTESTING_STRATEGY` | The default update strategy: the case-insensitive name of a `SnapshotUpdateStrategy` property, such as `Overwrite` or `mergetool` |
+| `INLINESNAPSHOTTESTING_STRATEGY` | The default update strategy: the case-insensitive name of a [SnapshotUpdateStrategy](cref:Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategy) property, such as [Overwrite](cref:Meziantou.Framework.InlineSnapshotTesting.SnapshotUpdateStrategy.Overwrite) or `mergetool` |
 | `INLINESNAPSHOTTESTING_AUTODETECT_CONTINUOUS_ENVIRONMENT` | `false`, `0`, `no` or `off` allows updates on a build server, in a continuous testing runner and in an LLM agent |
-| `DiffEngine_Tool` | The merge tool to try first, as the case-insensitive name of a `MergeTool` property |
+| `DiffEngine_Tool` | The merge tool to try first, as the case-insensitive name of a [MergeTool](cref:Meziantou.Framework.InlineSnapshotTesting.MergeTool) property |
 | `DiffEngine_Disabled` | `true` or `1` disables every merge tool |

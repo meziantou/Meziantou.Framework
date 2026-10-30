@@ -5,7 +5,7 @@ description: Parse a text with ANSI escape sequences into plain text and runs of
 
 ## Parse the text
 
-`ParseTextWithAnsiStyles` returns an `AnsiText`: the text without its escape sequences, and the runs of text that share
+[ParseTextWithAnsiStyles](cref:Meziantou.Framework.AnsiTextProcessor.ParseTextWithAnsiStyles) returns an [AnsiText](cref:Meziantou.Framework.AnsiTextProcessor.AnsiText): the text without its escape sequences, and the runs of text that share
 the same style:
 
 <!-- ref:../../tests/Meziantou.Framework.AnsiFormatting.Tests/AnsiTextProcessorTests.cs;region=AnsiTextProcessor_ParseTextWithAnsiStyles;format=md-fenced-code-block;dedent=true -->
@@ -26,16 +26,16 @@ Assert.Equal(
 ```
 <!-- endref -->
 
-- `Text` is the text without the escape sequences.
-- `Runs` is a list of `AnsiTextRun`. Each run has a `Start` (inclusive) and an `End` (exclusive) index in `Text`, and an
-  `AnsiStyle`. The runs follow each other, without gap or overlap, and cover the whole text. A run starts each time the
+- [Text](cref:Meziantou.Framework.AnsiTextProcessor.AnsiText.Text) is the text without the escape sequences.
+- [Runs](cref:Meziantou.Framework.AnsiTextProcessor.AnsiText.Runs) is a list of [AnsiTextRun](cref:Meziantou.Framework.AnsiTextProcessor.AnsiTextRun). Each run has a [Start](cref:Meziantou.Framework.AnsiTextProcessor.AnsiTextRun.Start) (inclusive) and an [End](cref:Meziantou.Framework.AnsiTextProcessor.AnsiTextRun.End) (exclusive) index in [Text](cref:Meziantou.Framework.AnsiTextProcessor.AnsiText.Text), and an
+  [AnsiStyle](cref:Meziantou.Framework.AnsiTextProcessor.AnsiStyle). The runs follow each other, without gap or overlap, and cover the whole text. A run starts each time the
   style changes; an empty text has no run.
-- The text that has no style is a run whose style is `AnsiStyle.None`.
-- `ParseTextWithAnsiStyles` throws an `ArgumentNullException` for `null`.
+- The text that has no style is a run whose style is [AnsiStyle.None](cref:Meziantou.Framework.AnsiTextProcessor.AnsiStyle.None).
+- [ParseTextWithAnsiStyles](cref:Meziantou.Framework.AnsiTextProcessor.ParseTextWithAnsiStyles) throws an `ArgumentNullException` for `null`.
 
 ## Styles
 
-`AnsiStyle` is a record with `Bold`, `Italic`, `Underline` and `Inverse`, and a `Foreground` and a `Background` color,
+[AnsiStyle](cref:Meziantou.Framework.AnsiTextProcessor.AnsiStyle) is a record with [Bold](cref:Meziantou.Framework.AnsiTextProcessor.AnsiStyle.Bold), [Italic](cref:Meziantou.Framework.AnsiTextProcessor.AnsiStyle.Italic), [Underline](cref:Meziantou.Framework.AnsiTextProcessor.AnsiStyle.Underline) and [Inverse](cref:Meziantou.Framework.AnsiTextProcessor.AnsiStyle.Inverse), and a [Foreground](cref:Meziantou.Framework.AnsiTextProcessor.AnsiStyle.Foreground) and a [Background](cref:Meziantou.Framework.AnsiTextProcessor.AnsiStyle.Background) color,
 `null` for the default color of the terminal. Two styles are equal when all their values are equal.
 
 The SGR codes it reads are:
@@ -58,12 +58,12 @@ the table, such as blinking or faint text, are ignored, and a parameter that can
 
 ## Colors
 
-`AnsiColor` is a record. Its `Kind` tells how to read it:
+[AnsiColor](cref:Meziantou.Framework.AnsiTextProcessor.AnsiColor) is a record. Its [Kind](cref:Meziantou.Framework.AnsiTextProcessor.AnsiColor.Kind) tells how to read it:
 
-- `AnsiColorKind.Indexed`: `IndexedValue` is an index in the 256-color palette. Indexes 0-15 are the standard colors
+- [AnsiColorKind.Indexed](cref:Meziantou.Framework.AnsiTextProcessor.AnsiColorKind.Indexed): [IndexedValue](cref:Meziantou.Framework.AnsiTextProcessor.AnsiColor.IndexedValue) is an index in the 256-color palette. Indexes 0-15 are the standard colors
   (black, red, green, yellow, blue, magenta, cyan, white, then their bright variants), whose exact RGB values depend on
   the terminal theme.
-- `AnsiColorKind.Rgb`: `Red`, `Green` and `Blue` are the components of a 24-bit color.
+- [AnsiColorKind.Rgb](cref:Meziantou.Framework.AnsiTextProcessor.AnsiColorKind.Rgb): [Red](cref:Meziantou.Framework.AnsiTextProcessor.AnsiColor.Red), [Green](cref:Meziantou.Framework.AnsiTextProcessor.AnsiColor.Green) and [Blue](cref:Meziantou.Framework.AnsiTextProcessor.AnsiColor.Blue) are the components of a 24-bit color.
 
 `AnsiColor.FromIndexed(index)` and `AnsiColor.FromRgb(red, green, blue)` create colors to compare with:
 

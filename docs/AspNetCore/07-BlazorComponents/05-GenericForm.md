@@ -3,7 +3,7 @@ title: Generated forms
 description: Generate the editors of a form from the properties of a model, control labels, order and editors with attributes, and customize the layout.
 ---
 
-`GenericForm<TModel>` generates a label, an editor and a validation message for each property of a model. Put it in
+[GenericForm\<TModel\>](cref:Meziantou.AspNetCore.Components.GenericForm{TModel}) generates a label, an editor and a validation message for each property of a model. Put it in
 an `EditForm`:
 
 <!-- ref:../../../samples/BlazorAppSample/Documentation/GenericFormExample.razor;format=md-fenced-code-block -->
@@ -61,10 +61,10 @@ an `EditForm`:
 ```
 <!-- endref -->
 
-- `@bind-Model` (or `Model` and `ModelChanged`) gives the instance to edit. `ModelChanged` is raised each time a field
+- `@bind-Model` (or [Model](cref:Meziantou.AspNetCore.Components.GenericForm{TModel}.Model) and [ModelChanged](cref:Meziantou.AspNetCore.Components.GenericForm{TModel}.ModelChanged)) gives the instance to edit. [ModelChanged](cref:Meziantou.AspNetCore.Components.GenericForm{TModel}.ModelChanged) is raised each time a field
   changes.
-- `EditorClass` is the CSS class of every editor, such as `form-control`.
-- `EnableFieldValidation` (`true` by default) renders a `ValidationMessage` after each editor. The validation messages
+- [EditorClass](cref:Meziantou.AspNetCore.Components.GenericForm{TModel}.EditorClass) is the CSS class of every editor, such as `form-control`.
+- [EnableFieldValidation](cref:Meziantou.AspNetCore.Components.GenericForm{TModel}.EnableFieldValidation) (`true` by default) renders a `ValidationMessage` after each editor. The validation messages
   need the `EditContext` of an `EditForm`.
 
 The form edits the instance in place: a property of `contact` is updated as soon as the user changes its editor.
@@ -106,8 +106,8 @@ It receives `Value`, `ValueChanged`, `ValueExpression`, `id`, `class` and `place
 
 ## Customize the layout
 
-By default, each field renders a `<div>` with the `<label>`, the editor and the validation message. `FieldTemplate`
-renders each field yourself; its context is a `GenericFormField<TModel>`:
+By default, each field renders a `<div>` with the `<label>`, the editor and the validation message. [FieldTemplate](cref:Meziantou.AspNetCore.Components.GenericForm{TModel}.FieldTemplate)
+renders each field yourself; its context is a [GenericFormField\<TModel\>](cref:Meziantou.AspNetCore.Components.GenericFormField{TModel}):
 
 <!-- ref:../../../samples/BlazorAppSample/Documentation/GenericFormFieldTemplateExample.razor;format=md-fenced-code-block -->
 ```razor
@@ -148,11 +148,11 @@ renders each field yourself; its context is a `GenericFormField<TModel>`:
 
 | Member | Content |
 | --- | --- |
-| `DisplayName`, `Description`, `Prompt`, `DisplayOrder` | The metadata of the attributes above |
-| `EditorId` | The `id` of the editor, for the `for` attribute of a label |
-| `EditorTemplate` | The editor |
-| `FieldValidationTemplate` | The validation message, or `null` when `EnableFieldValidation` is `false` |
-| `Property`, `PropertyType`, `Value`, `Owner` | The property, its type, its current value and the model |
+| [DisplayName](cref:Meziantou.AspNetCore.Components.GenericFormField{TModel}.DisplayName), [Description](cref:Meziantou.AspNetCore.Components.GenericFormField{TModel}.Description), [Prompt](cref:Meziantou.AspNetCore.Components.GenericFormField{TModel}.Prompt), [DisplayOrder](cref:Meziantou.AspNetCore.Components.GenericFormField{TModel}.DisplayOrder) | The metadata of the attributes above |
+| [EditorId](cref:Meziantou.AspNetCore.Components.GenericFormField{TModel}.EditorId) | The `id` of the editor, for the `for` attribute of a label |
+| [EditorTemplate](cref:Meziantou.AspNetCore.Components.GenericFormField{TModel}.EditorTemplate) | The editor |
+| [FieldValidationTemplate](cref:Meziantou.AspNetCore.Components.GenericFormField{TModel}.FieldValidationTemplate) | The validation message, or `null` when [EnableFieldValidation](cref:Meziantou.AspNetCore.Components.GenericForm{TModel}.EnableFieldValidation) is `false` |
+| [Property](cref:Meziantou.AspNetCore.Components.GenericFormField{TModel}.Property), [PropertyType](cref:Meziantou.AspNetCore.Components.GenericFormField{TModel}.PropertyType), `Value`, [Owner](cref:Meziantou.AspNetCore.Components.GenericFormField{TModel}.Owner) | The property, its type, its current value and the model |
 
 The fields are discovered with reflection over `TModel`, and they are rebuilt only when another model instance is
 assigned.

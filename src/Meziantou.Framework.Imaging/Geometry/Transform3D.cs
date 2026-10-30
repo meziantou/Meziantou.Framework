@@ -258,31 +258,14 @@ public readonly struct Transform3D : IEquatable<Transform3D>
     /// <param name="next">The transformation applied after this one.</param>
     /// <returns>The combined transformation.</returns>
     /// <exception cref="ArgumentException">A coefficient of the result is not a finite number.</exception>
-    public Transform3D Then(Transform3D next)
-    {
-        var result = new double[Count];
-        for (var row = 0; row < 4; row++)
-        {
-            for (var column = 0; column < 4; column++)
-            {
-                // The sum is evaluated in this order
-                var value = (((Get(row * 4) * next.Get(column)) + (Get((row * 4) + 1) * next.Get(4 + column))) + (Get((row * 4) + 2) * next.Get(8 + column))) + (Get((row * 4) + 3) * next.Get(12 + column));
-                if (!double.IsFinite(value))
-                    throw new ArgumentException("A coefficient of the combined transformation is not a finite number.", nameof(next));
-
-                result[(row * 4) + column] = value;
-            }
-        }
-
-        return new Transform3D(result);
-    }
+    public Transform3D Then(Transform3D next) => Compose(this, next, nameof(next));
 
     /// <summary>Gets the transformation that applies a first one, then a second one.</summary>
     /// <param name="first">The transformation applied first.</param>
     /// <param name="second">The transformation applied to the result of the first one.</param>
     /// <returns>The combined transformation.</returns>
     /// <exception cref="ArgumentException">A coefficient of the result is not a finite number.</exception>
-    public static Transform3D Multiply(Transform3D first, Transform3D second) => first.Then(second);
+    public static Transform3D Multiply(Transform3D first, Transform3D second) => Compose(first, second, nameof(second));
 
     /// <summary>
     /// Gets what the transformation does to the plane <c>z = 0</c>, seen from the viewer: the point <c>(x, y)</c> becomes
@@ -340,7 +323,26 @@ public readonly struct Transform3D : IEquatable<Transform3D>
     /// <param name="right">The transformation applied to the result of the first one.</param>
     /// <returns>The combined transformation.</returns>
     /// <exception cref="ArgumentException">A coefficient of the result is not a finite number.</exception>
-    public static Transform3D operator *(Transform3D left, Transform3D right) => left.Then(right);
+    public static Transform3D operator *(Transform3D left, Transform3D right) => Compose(left, right, nameof(right));
+
+    private static Transform3D Compose(Transform3D first, Transform3D second, string paramName)
+    {
+        var result = new double[Count];
+        for (var row = 0; row < 4; row++)
+        {
+            for (var column = 0; column < 4; column++)
+            {
+                // The sum is evaluated in this order
+                var value = (((first.Get(row * 4) * second.Get(column)) + (first.Get((row * 4) + 1) * second.Get(4 + column))) + (first.Get((row * 4) + 2) * second.Get(8 + column))) + (first.Get((row * 4) + 3) * second.Get(12 + column));
+                if (!double.IsFinite(value))
+                    throw new ArgumentException("A coefficient of the combined transformation is not a finite number.", paramName);
+
+                result[(row * 4) + column] = value;
+            }
+        }
+
+        return new Transform3D(result);
+    }
 
     private double Get(int index) => _values is null ? ((index % 5) == 0 ? 1 : 0) : _values[index];
 

@@ -4,7 +4,7 @@ description: Scroll to the element named by the fragment of the URL in a Blazor 
 ---
 
 In a Blazor application, a link such as `page#usage` does not scroll to the element with the `usage` id: the router
-handles the navigation and the browser does not. Add `AnchorNavigation` to the page, or to the layout for every page:
+handles the navigation and the browser does not. Add [AnchorNavigation](cref:Meziantou.AspNetCore.Components.AnchorNavigation) to the page, or to the layout for every page:
 
 <!-- ref:../../../samples/BlazorAppSample/Documentation/AnchorNavigationExample.razor;format=md-fenced-code-block -->
 ```razor

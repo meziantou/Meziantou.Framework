@@ -470,6 +470,56 @@ public sealed class TextLayoutTests
         AssertRectangles(layout, new PointD(0, 0), A(0, 0), C(16, 0));
     }
 
+    [Theory]
+    [InlineData("\u2028", true)]
+    [InlineData("\u000B", true)]
+    [InlineData("\u000C", true)]
+    [InlineData("\n", false)]
+    [InlineData("\r", false)]
+    [InlineData("\r\n", false)]
+    [InlineData("\u0085", false)]
+    [InlineData("\u2029", false)]
+    public void OnlyAParagraphSeparatorResetsTheDirection(string lineBreak, bool keepsDirection)
+    {
+        var style = new TextStyle(Extended, 16);
+
+        // Alef (C, 12 pixels), then B (8 pixels) on the next line. A line separator, a vertical tab and a form feed end
+        // a line, not the right-to-left paragraph: B starts from the right. After a paragraph separator, B starts a
+        // left-to-right paragraph.
+        var layout = TextLayout.Create("\u05D0" + lineBreak + "B", style, new TextLayoutOptions { MaxWidth = 40 });
+        Assert.Equal(2, layout.LineCount);
+        Assert.True(layout.Lines[0].IsRightToLeft);
+        Assert.Equal(keepsDirection, layout.Lines[1].IsRightToLeft);
+        Assert.Equal(keepsDirection ? 32 : 0, layout.Lines[1].X);
+        AssertRectangles(layout, new PointD(0, 0), C(28, 0), B(keepsDirection ? 32 : 0, 16));
+
+        // The same with a left-to-right paragraph and a Hebrew letter on the next line
+        layout = TextLayout.Create("B" + lineBreak + "\u05D0", style, new TextLayoutOptions { MaxWidth = 40 });
+        Assert.False(layout.Lines[0].IsRightToLeft);
+        Assert.Equal(!keepsDirection, layout.Lines[1].IsRightToLeft);
+        AssertRectangles(layout, new PointD(0, 0), B(0, 0), C(keepsDirection ? 0 : 28, 16));
+    }
+
+    [Fact]
+    public void TheLinesOfAParagraphThatALineSeparatorEndsKeepItsDirection()
+    {
+        var style = new TextStyle(Extended, 16);
+
+        // The direction found at the first line holds until a line feed, and the empty line after a line separator at
+        // the end of the text is right-to-left too.
+        var layout = TextLayout.Create("\u05D0\u2028B\u000BB\nB\u2028", style, new TextLayoutOptions { MaxWidth = 40 });
+        Assert.Equal([true, true, true, false, false], layout.Lines.Select(line => line.IsRightToLeft));
+        layout = TextLayout.Create("\u05D0\u2028", style, new TextLayoutOptions { MaxWidth = 40 });
+        Assert.Equal([true, true], layout.Lines.Select(line => line.IsRightToLeft));
+        Assert.Equal(new RectangleD(40, 16, 0, 16), layout.GetCaretRectangle(2));
+
+        // The space that ends the second line follows the direction of the paragraph (rule L1), not the direction of
+        // the B around it: it is on the left of the B, at the end of the line. The line is 16 pixels wide.
+        layout = TextLayout.Create("\u05D0\u2028B \u2028B", style, new TextLayoutOptions { MaxWidth = 40 });
+        Assert.Equal(new TextLine(2, 3, 24, 16, 16, 16, 13, true), layout.Lines[1]);
+        AssertRectangles(layout, new PointD(0, 0), C(28, 0), B(32, 16), B(32, 32));
+    }
+
     [Fact]
     public void MirroredCharactersAreMirroredInRightToLeftText()
     {
@@ -995,6 +1045,50 @@ public sealed class TextLayoutTests
         layout = TextLayout.Create("A\nA", Style, new TextLayoutOptions { LineHeight = 12 });
         Assert.Equal(24, layout.Height);
         Assert.Equal(11, layout.Baseline);
+    }
+
+    [Fact]
+    public void ANegativeFirstLineIndentIsAHangingIndent()
+    {
+        // The first line of each paragraph starts at the edge, and the lines after it are indented: the indent counts
+        // in the width that is left for them, and every line is in the box of the layout.
+        var layout = TextLayout.Create("A A A\nA", Style, new TextLayoutOptions { MaxWidth = 45, FirstLineIndent = -10 });
+        Assert.Equal(3, layout.LineCount);
+        Assert.Equal((0, 10, 0), (layout.Lines[0].X, layout.Lines[1].X, layout.Lines[2].X));
+        Assert.Equal(40, layout.Width);
+        AssertRectangles(layout, new PointD(0, 0), A(0, 0), A(24, 0), A(10, 16), A(0, 32));
+        Assert.Equal(RectangleD.FromLTRB(2, 1, 40 - 2, 32 + 13), layout.InkBounds);
+        Assert.Equal(new RectangleD(10, 16, 0, 16), layout.GetCaretRectangle(4));
+        Assert.Equal(new TextHit(1, 4, 1, isTrailing: false, isInside: true), layout.HitTest(new PointD(11, 20)));
+        Assert.Equal(new TextHit(1, 4, 1, isTrailing: false, isInside: false), layout.HitTest(new PointD(5, 20)));
+
+        // Without a width to wrap at, a paragraph is one line, which the hanging indent leaves at the edge.
+        layout = TextLayout.Create("A A\nA", Style, new TextLayoutOptions { FirstLineIndent = -10 });
+        Assert.Equal((0, 0), (layout.Lines[0].X, layout.Lines[1].X));
+        Assert.Equal(40, layout.Width);
+        Assert.Equal(2, layout.InkBounds.Left);
+
+        // The indent is on the side the paragraph starts from, and alignment places a line in the room it leaves.
+        foreach (var (alignment, direction, expected) in ((TextAlignment, TextDirection, double[])[])
+            [
+                (TextAlignment.Start, TextDirection.LeftToRight, [0, 10, 0]),
+                (TextAlignment.Center, TextDirection.LeftToRight, [2.5, 19.5, 14.5]),
+                (TextAlignment.End, TextDirection.LeftToRight, [5, 29, 29]),
+                (TextAlignment.Start, TextDirection.RightToLeft, [5, 19, 29]),
+                (TextAlignment.Center, TextDirection.RightToLeft, [2.5, 9.5, 14.5]),
+                (TextAlignment.End, TextDirection.RightToLeft, [0, 0, 0]),
+            ])
+        {
+            layout = TextLayout.Create("A A A\nA", Style, new TextLayoutOptions { MaxWidth = 45, FirstLineIndent = -10, Alignment = alignment, Direction = direction });
+            Assert.Equal(expected, layout.Lines.Select(line => line.X));
+            Assert.All(layout.Lines, line => Assert.True(line.X >= 0 && line.X + line.Width <= 45));
+        }
+
+        // In a vertical layout, the lines after the first one are moved down.
+        layout = TextLayout.Create("A A A\nA", Style, new TextLayoutOptions { WritingMode = TextWritingMode.VerticalRightToLeft, Orientation = TextOrientation.Sideways, MaxHeight = 45, FirstLineIndent = -10 });
+        Assert.Equal((0, 10, 0), (layout.Lines[0].Y, layout.Lines[1].Y, layout.Lines[2].Y));
+        Assert.Equal(40, layout.Height);
+        Assert.True(layout.InkBounds.Top >= 0);
     }
 
     [Fact]

@@ -16,7 +16,7 @@ The examples of this documentation omit the `using` directives: they need
 
 ## Convert a document
 
-`AdfToMarkdown.Convert` takes the JSON of a document and returns Markdown:
+[AdfToMarkdown.Convert](cref:Meziantou.Framework.AtlassianDataFormat.AdfToMarkdown.Convert) takes the JSON of a document and returns Markdown:
 
 <!-- ref:../../tests/Meziantou.Framework.AtlassianDataFormat.Tests/AdfToMarkdownTests.cs;region=AdfToMarkdown_Convert;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -67,7 +67,7 @@ Assert.Equal("Steps to reproduce", markdown);
 ```
 <!-- endref -->
 
-`Convert` throws an `AdfException` when the value is not an ADF document. See
+[Convert](cref:Meziantou.Framework.AtlassianDataFormat.AdfToMarkdown.Convert) throws an [AdfException](cref:Meziantou.Framework.AtlassianDataFormat.AdfException) when the value is not an ADF document. See
 [Invalid documents](04-ObjectModel.md#invalid-documents).
 
 ## Next steps

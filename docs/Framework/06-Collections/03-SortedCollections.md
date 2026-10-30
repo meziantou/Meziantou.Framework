@@ -5,7 +5,7 @@ description: Keep items sorted, with or without duplicates, and read them in ord
 
 ## Sorted list
 
-`SortedList<T>` keeps its items sorted as you add them, accepts duplicates, and gives access by index:
+[SortedList\<T\>](cref:Meziantou.Framework.Collections.SortedList{T}) keeps its items sorted as you add them, accepts duplicates, and gives access by index:
 
 <!-- ref:../../../tests/Meziantou.Framework.Tests/Collections/SortedListTests.cs;region=SortedList_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -23,15 +23,15 @@ Assert.Equal(3, scores.LastIndexOf(42));
 ```
 <!-- endref -->
 
-- `Add` inserts the item at its sorted position. Pass an `IComparer<T>` to the constructor to change the order.
-- `BinarySearch`, `IndexOf`, `FirstIndexOf` and `LastIndexOf` find an item without scanning the list.
-- `UnsafeAsReadOnlySpan` returns the items as a span, without copying them. The span is valid until the list changes.
+- [Add](cref:Meziantou.Framework.Collections.SortedList{T}.Add) inserts the item at its sorted position. Pass an `IComparer<T>` to the constructor to change the order.
+- [BinarySearch](cref:Meziantou.Framework.Collections.SortedList{T}.BinarySearch), [IndexOf](cref:Meziantou.Framework.Collections.SortedList{T}.IndexOf), [FirstIndexOf](cref:Meziantou.Framework.Collections.SortedList{T}.FirstIndexOf) and [LastIndexOf](cref:Meziantou.Framework.Collections.SortedList{T}.LastIndexOf) find an item without scanning the list.
+- [UnsafeAsReadOnlySpan](cref:Meziantou.Framework.Collections.SortedList{T}.UnsafeAsReadOnlySpan) returns the items as a span, without copying them. The span is valid until the list changes.
 
 Not to be confused with `System.Collections.Generic.SortedList<TKey, TValue>`, which is a dictionary.
 
 ## Skip list
 
-`SkipList<T>` keeps unique items sorted:
+[SkipList\<T\>](cref:Meziantou.Framework.Collections.SkipList{T}) keeps unique items sorted:
 
 <!-- ref:../../../tests/Meziantou.Framework.Tests/Collections/SkipListTests.cs;region=SkipList_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -49,13 +49,13 @@ Assert.Equal("beta", stored);
 ```
 <!-- endref -->
 
-- `Add` returns `false` when an equal item is already present, for the comparer of the list.
-- `TryGetValue` returns the stored item that is equal to the one you pass, for instance to get its original case.
-- `Remove` removes an item; the constructors can take an initial collection.
+- [Add](cref:Meziantou.Framework.Collections.SkipList{T}.Add) returns `false` when an equal item is already present, for the comparer of the list.
+- [TryGetValue](cref:Meziantou.Framework.Collections.SkipList{T}.TryGetValue) returns the stored item that is equal to the one you pass, for instance to get its original case.
+- [Remove](cref:Meziantou.Framework.Collections.SkipList{T}.Remove) removes an item; the constructors can take an initial collection.
 
 ## B-tree
 
-`BTree<T>` also keeps unique items sorted, in a B-tree:
+[BTree\<T\>](cref:Meziantou.Framework.Collections.BTree{T}) also keeps unique items sorted, in a B-tree:
 
 <!-- ref:../../../tests/Meziantou.Framework.Tests/Collections/BTreeTests.cs;region=BTree_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -70,4 +70,4 @@ Assert.Equal([10, 20, 30], tree);
 ```
 <!-- endref -->
 
-`Add` returns `false` when the item is already present. Enumerating the tree returns the items in order.
+[Add](cref:Meziantou.Framework.Collections.BTree{T}.Add) returns `false` when the item is already present. Enumerating the tree returns the items in order.

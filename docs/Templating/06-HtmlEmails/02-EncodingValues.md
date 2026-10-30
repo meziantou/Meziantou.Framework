@@ -4,7 +4,7 @@ description: Encode each value for the place it is written to in the HTML, and w
 ---
 
 A value written into HTML must be encoded for the place it is written to: otherwise, a name such as `<b>` or `A & B`
-breaks the layout of the email, and a value that comes from a user can inject HTML. `HtmlEmailTemplate` has one block
+breaks the layout of the email, and a value that comes from a user can inject HTML. [HtmlEmailTemplate](cref:Meziantou.Framework.Templating.HtmlEmailTemplate) has one block
 per place:
 
 | Place in the HTML | Block |

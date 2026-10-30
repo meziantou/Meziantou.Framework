@@ -58,7 +58,7 @@ Assert.True(first == "Hello"); // The string is converted to a FixedStringBuilde
 
 ## Read the characters
 
-`AsSpan()` returns the characters of the value as a `ReadOnlySpan<char>`, without copying them:
+[AsSpan()](cref:Meziantou.Framework.FixedStringBuilder.FixedStringBuilder16.AsSpan) returns the characters of the value as a `ReadOnlySpan<char>`, without copying them:
 
 <!-- ref:../../tests/Meziantou.Framework.FixedStringBuilder.Tests/FixedStringBuilderTests.cs;region=FixedStringBuilder_AsSpan;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -76,7 +76,7 @@ interpolated string is copied without creating a `string`.
 
 ## Clear
 
-`Clear()` resets the length to 0. The characters stay in the struct, where `IFixedString.GetUnsafeFullSpan()` can still
+[Clear()](cref:Meziantou.Framework.FixedStringBuilder.IFixedString.Clear) resets the length to 0. The characters stay in the struct, where [IFixedString.GetUnsafeFullSpan()](cref:Meziantou.Framework.FixedStringBuilder.IFixedString.GetUnsafeFullSpan) can still
 read them. For sensitive data, use `Clear(zeroBuffer: true)`, which also overwrites every character with `'\0'`:
 
 <!-- ref:../../tests/Meziantou.Framework.FixedStringBuilder.Tests/FixedStringBuilderTests.cs;region=FixedStringBuilder_ClearZeroBuffer;format=md-fenced-code-block;dedent=true -->
@@ -89,8 +89,8 @@ Assert.Equal(0, sb.Length);
 
 ## Write generic code
 
-All the types implement `IFixedString`, which exposes `MaxLength` (a static member), `Length`, `Clear` and
-`GetUnsafeFullSpan`, and `IFixedString<T>`, which adds `IEquatable<T>` and the conversion from `string`. Use them as
+All the types implement [IFixedString](cref:Meziantou.Framework.FixedStringBuilder.IFixedString), which exposes [MaxLength](cref:Meziantou.Framework.FixedStringBuilder.IFixedString.MaxLength) (a static member), [Length](cref:Meziantou.Framework.FixedStringBuilder.IFixedString.Length), [Clear](cref:Meziantou.Framework.FixedStringBuilder.IFixedString.Clear) and
+[GetUnsafeFullSpan](cref:Meziantou.Framework.FixedStringBuilder.IFixedString.GetUnsafeFullSpan), and [IFixedString\<T\>](cref:Meziantou.Framework.FixedStringBuilder.IFixedString{T}), which adds `IEquatable<T>` and the conversion from `string`. Use them as
 generic constraints to write code that works with any capacity:
 
 <!-- ref:../../tests/Meziantou.Framework.FixedStringBuilder.Tests/FixedStringBuilderTests.cs;region=FixedStringBuilder_GenericCode;format=md-fenced-code-block;dedent=true -->
@@ -106,13 +106,13 @@ static T Create<T>(string value) where T : IFixedString<T> => value;
 ```
 <!-- endref -->
 
-`GetUnsafeFullSpan()` returns all the characters up to `MaxLength`, including those after `Length`. It is only available
+[GetUnsafeFullSpan()](cref:Meziantou.Framework.FixedStringBuilder.IFixedString.GetUnsafeFullSpan) returns all the characters up to [MaxLength](cref:Meziantou.Framework.FixedStringBuilder.IFixedString.MaxLength), including those after [Length](cref:Meziantou.Framework.FixedStringBuilder.IFixedString.Length). It is only available
 through the interface, and requires an `unsafe` context when the code is compiled with the updated memory safety rules:
-the span is not tied to the struct, so the caller must not use it after the struct goes out of scope. Prefer `AsSpan()`.
+the span is not tied to the struct, so the caller must not use it after the struct goes out of scope. Prefer [AsSpan()](cref:Meziantou.Framework.FixedStringBuilder.FixedStringBuilder16.AsSpan).
 
 ## Pass fixed strings around
 
 A fixed string is a struct that contains all its characters: assigning it or passing it by value copies them all. Pass
-large types by `in` or `ref` in hot paths. The members that do not change the value (`Length`, `AsSpan`, `Equals`,
+large types by `in` or `ref` in hot paths. The members that do not change the value ([Length](cref:Meziantou.Framework.FixedStringBuilder.IFixedString.Length), `AsSpan`, `Equals`,
 `ToString`, `TryFormat`...) are `readonly`, so calling them on an `in` parameter or a `readonly` field does not create a
 defensive copy.

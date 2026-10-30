@@ -45,13 +45,13 @@ framework that has them.
 
 ## How values are formatted and parsed
 
-`ValueAsString`, `ToString()` and the converters that write strings format the value with the invariant culture:
+[ValueAsString](cref:Meziantou.Framework.IStronglyTypedId.ValueAsString), `ToString()` and the converters that write strings format the value with the invariant culture:
 
 - Numbers use the invariant culture, without a format: `42`, `1.5`.
 - `Guid` uses its default format: `0f8fad5b-d9cb-469f-a165-70867728950e`.
 - `bool` is `True` or `False`.
 - `DateTime` uses the round-trip format (`"o"`). `DateTimeOffset` is converted to UTC first, so the offset is not in
-  `ValueAsString`.
+  [ValueAsString](cref:Meziantou.Framework.IStronglyTypedId.ValueAsString).
 
 `Parse` and `TryParse` read the same representations with the invariant culture:
 

@@ -58,7 +58,7 @@ The `language-` class has no prefix. Use it to style an embedded language differ
 
 ## Change the prefix
 
-`HighlightOptions.ClassPrefix` replaces `hljs-`, for instance to avoid a conflict with another stylesheet of the page:
+[HighlightOptions.ClassPrefix](cref:Meziantou.Framework.SyntaxHighlighting.HighlightOptions.ClassPrefix) replaces `hljs-`, for instance to avoid a conflict with another stylesheet of the page:
 
 <!-- ref:../../tests/Meziantou.Framework.SyntaxHighlighting.Tests/HighlighterTests.cs;region=SyntaxHighlighter_ClassPrefix;format=md-fenced-code-block;dedent=true -->
 ```csharp

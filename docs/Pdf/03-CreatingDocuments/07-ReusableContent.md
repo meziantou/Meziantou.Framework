@@ -39,11 +39,11 @@ public static void DrawReusableContent(string outputPath)
 
 ![Five yellow stars with an orange outline, growing in size from the lower left to the upper right](images/DrawReusableContent.png)
 
-- `CreateForm` creates a form with its bounding box, in the coordinates of the form: what is drawn outside of it is
-  clipped. Its content is written with its own content builder (`CreateContentBuilder`), with the same methods as a
+- [CreateForm](cref:Meziantou.Framework.Pdf.PdfDocument.CreateForm) creates a form with its bounding box, in the coordinates of the form: what is drawn outside of it is
+  clipped. Its content is written with its own content builder ([CreateContentBuilder](cref:Meziantou.Framework.Pdf.PdfForm.CreateContentBuilder)), with the same methods as a
   page.
-- `DrawForm` paints the form with the current graphics state: its transformation places and sizes it, its colors are
-  those the form does not set. The optional matrix of `CreateForm` is applied to the form every time it is painted.
+- [DrawForm](cref:Meziantou.Framework.Pdf.PdfContentBuilder.DrawForm) paints the form with the current graphics state: its transformation places and sizes it, its colors are
+  those the form does not set. The optional matrix of [CreateForm](cref:Meziantou.Framework.Pdf.PdfDocument.CreateForm) is applied to the form every time it is painted.
 - A form belongs to the document that created it: painting it in another document throws `ArgumentException`.
-- A form can also be a transparency group (`group` of `CreateForm`), composited as one object, or the source of a soft
+- A form can also be a transparency group (`group` of [CreateForm](cref:Meziantou.Framework.Pdf.PdfDocument.CreateForm)), composited as one object, or the source of a soft
   mask: see [Transparency](08-Transparency.md).

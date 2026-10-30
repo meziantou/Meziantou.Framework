@@ -18,30 +18,30 @@ options.FlushInterval = TimeSpan.FromSeconds(5);
 
 | Option | Default | Description |
 | --- | --- | --- |
-| `MaxQueueLength` | `1024` | The number of messages the queue holds |
-| `QueueFullMode` | `Wait` | What to do with a new message when the queue is full |
-| `FlushInterval` | 1 second | The longest time between two flushes while messages keep coming |
+| [MaxQueueLength](cref:Meziantou.Extensions.Logging.FileLoggerOptions.MaxQueueLength) | `1024` | The number of messages the queue holds |
+| [QueueFullMode](cref:Meziantou.Extensions.Logging.FileLoggerOptions.QueueFullMode) | [Wait](cref:Meziantou.Extensions.Logging.FileLoggerQueueFullMode.Wait) | What to do with a new message when the queue is full |
+| [FlushInterval](cref:Meziantou.Extensions.Logging.FileLoggerOptions.FlushInterval) | 1 second | The longest time between two flushes while messages keep coming |
 
-| `QueueFullMode` | When the queue is full |
+| [QueueFullMode](cref:Meziantou.Extensions.Logging.FileLoggerOptions.QueueFullMode) | When the queue is full |
 | --- | --- |
-| `Wait` | The thread that logs waits until the queue has room. No message is lost. |
-| `DropWrite` | The new message is dropped. |
-| `DropOldest` | The oldest queued message is dropped to make room for the new one. |
+| [Wait](cref:Meziantou.Extensions.Logging.FileLoggerQueueFullMode.Wait) | The thread that logs waits until the queue has room. No message is lost. |
+| [DropWrite](cref:Meziantou.Extensions.Logging.FileLoggerQueueFullMode.DropWrite) | The new message is dropped. |
+| [DropOldest](cref:Meziantou.Extensions.Logging.FileLoggerQueueFullMode.DropOldest) | The oldest queued message is dropped to make room for the new one. |
 
-`Wait` slows the application down to the speed of the disk when it logs faster than the disk writes. Choose a drop mode
+[Wait](cref:Meziantou.Extensions.Logging.FileLoggerQueueFullMode.Wait) slows the application down to the speed of the disk when it logs faster than the disk writes. Choose a drop mode
 when the application must never wait for its logs, and accept that some messages are lost under load.
 
 ## When the messages reach the disk
 
 - The pending messages are flushed as soon as the queue is empty, so in normal operation they reach the file right
   after they are logged.
-- When messages keep coming and the queue is never empty, they are flushed at least every `FlushInterval`.
-- `FlushAsync` waits until the messages logged before the call are written. Use it before reading the file, as in
+- When messages keep coming and the queue is never empty, they are flushed at least every [FlushInterval](cref:Meziantou.Extensions.Logging.FileLoggerOptions.FlushInterval).
+- [FlushAsync](cref:Meziantou.Extensions.Logging.FileLoggerProvider.FlushAsync) waits until the messages logged before the call are written. Use it before reading the file, as in
   tests.
-- `Dispose` and `DisposeAsync` write all the queued messages, then close the file. Dispose the provider when the
+- [Dispose](cref:Meziantou.Extensions.Logging.FileLoggerProvider.Dispose) and [DisposeAsync](cref:Meziantou.Extensions.Logging.FileLoggerProvider.DisposeAsync) write all the queued messages, then close the file. Dispose the provider when the
   application stops; a host does it for the providers it creates.
 
-Prefer waiting with `FlushAsync`, or disposing the provider, over waiting a fixed time: the background thread can be
+Prefer waiting with [FlushAsync](cref:Meziantou.Extensions.Logging.FileLoggerProvider.FlushAsync), or disposing the provider, over waiting a fixed time: the background thread can be
 delayed for a long time on a busy machine.
 
 ## Errors
@@ -49,7 +49,7 @@ delayed for a long time on a busy machine.
 Logging never throws because of the file:
 
 - When the first log file cannot be created, for instance because the directory is not writable, a warning is written
-  to the standard error stream when the provider is created, `LogFilePath` is `null`, and the provider drops every
+  to the standard error stream when the provider is created, [LogFilePath](cref:Meziantou.Extensions.Logging.FileLoggerProvider.LogFilePath) is `null`, and the provider drops every
   message for the rest of its lifetime.
 - When a message cannot be written later, the message is lost, and a warning is written to the standard error stream.
   The warning is written once, and not again until a write succeeds, so a disk that stays unavailable does not flood

@@ -4,16 +4,16 @@ description: What the analyzer reports, how to apply its code fixes, and how to 
 ---
 
 The `Meziantou.Framework.FullPath` package includes Roslyn analyzers and code fixes for C#. They find the code that
-handles a `FullPath` as a string, and replace it with the `FullPath` members, operators and types. Nothing needs to
+handles a [FullPath](cref:Meziantou.Framework.FullPath) as a string, and replace it with the [FullPath](cref:Meziantou.Framework.FullPath) members, operators and types. Nothing needs to
 be installed or configured: the rules are active in every C# project that references the package.
 
 The rules fall into three groups:
 
 - **[Using FullPath members](02-UsingFullPathMembers.md)**: a `Path`, `Directory` or `Environment` method that has a
-  `FullPath` equivalent, such as `Path.Combine(fullPath, "file.txt")` instead of `fullPath / "file.txt"`. Most of
+  [FullPath](cref:Meziantou.Framework.FullPath) equivalent, such as `Path.Combine(fullPath, "file.txt")` instead of `fullPath / "file.txt"`. Most of
   these rules have a code fix.
 - **[Declaring FullPath instead of string](03-DeclaringFullPath.md)**: a method, a property, a variable or a parameter
-  declared as `string` that only ever holds a `FullPath`.
+  declared as `string` that only ever holds a [FullPath](cref:Meziantou.Framework.FullPath).
 - **[Comparisons and checks](04-ComparisonsAndChecks.md)**: comparisons that compare the strings of the paths instead
   of the paths, and checks for the empty path. Two of these rules are warnings, because the code is likely wrong.
 
@@ -49,8 +49,8 @@ All the rules are enabled by default. There is no `MFFP0017`.
 
 ## How a FullPath is recognized
 
-The rules recognize a `FullPath` in all the forms that turn it into a string: the implicit conversion, a cast to
-`string`, `Value`, `RawValue` and `ToString()`. `Path.GetFileName(fullPath)`, `Path.GetFileName(fullPath.Value)` and
+The rules recognize a [FullPath](cref:Meziantou.Framework.FullPath) in all the forms that turn it into a string: the implicit conversion, a cast to
+`string`, `Value`, [RawValue](cref:Meziantou.Framework.FullPath.RawValue) and `ToString()`. `Path.GetFileName(fullPath)`, `Path.GetFileName(fullPath.Value)` and
 `Path.GetFileName(fullPath.ToString())` are all reported, and all fixed to `fullPath.Name`.
 
 The rules do nothing in a project that does not reference `Meziantou.Framework.FullPath`, and they skip generated code.
@@ -61,7 +61,7 @@ The code fixes are offered by the light bulb of the IDE, like the fixes of the .
 **Fix all**, in a document, a project or a solution. Some fixes are not offered when they could change the behavior of
 the code; each rule lists these cases.
 
-A fix often changes the type of an expression from `string` to `FullPath`. As `FullPath` converts implicitly to
+A fix often changes the type of an expression from `string` to [FullPath](cref:Meziantou.Framework.FullPath). As [FullPath](cref:Meziantou.Framework.FullPath) converts implicitly to
 `string`, the code still compiles in most cases; once it does, the rules of
 [Declaring FullPath instead of string](03-DeclaringFullPath.md) find the declarations to change next.
 

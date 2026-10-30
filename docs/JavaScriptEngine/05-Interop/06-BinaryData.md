@@ -43,14 +43,14 @@ Assert.Equal([1, 2, 3], bytes.ToArray());
   (`buffer.transfer()` throws). `JsBinaryData.DetachArrayBuffer(buffer, key)` detaches it with the key: do it before
   the memory is returned to a pool or reused, so that the scripts can no longer reach it.
 - `realm.CreateArrayBuffer(ReadOnlySpan<byte>)` creates a buffer with a copy of the bytes.
-- `CreateBufferView` takes a `JsBufferKind`: `Uint8Array`, `Int32Array`, `Float64Array`, `DataView`... The length is a
+- [CreateBufferView](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.CreateBufferView) takes a [JsBufferKind](cref:Meziantou.Framework.JavaScriptEngine.JsBufferKind): [Uint8Array](cref:Meziantou.Framework.JavaScriptEngine.JsBufferKind.Uint8Array), [Int32Array](cref:Meziantou.Framework.JavaScriptEngine.JsBufferKind.Int32Array), [Float64Array](cref:Meziantou.Framework.JavaScriptEngine.JsBufferKind.Float64Array), `DataView`... The length is a
   number of elements (of bytes for a `DataView`). The offset of a typed array must be a multiple of the size of its
   elements, and the view must fit in the buffer: otherwise it throws an `ArgumentException` or an
   `ArgumentOutOfRangeException`.
 
 ## Read the bytes of a script
 
-`JsBinaryData.TryGetBufferSource` gives the bytes of an `ArrayBuffer`, a `SharedArrayBuffer`, a typed array or a
+[JsBinaryData.TryGetBufferSource](cref:Meziantou.Framework.JavaScriptEngine.JsBinaryData.TryGetBufferSource) gives the bytes of an `ArrayBuffer`, a `SharedArrayBuffer`, a typed array or a
 `DataView`, with its kind and whether the memory is shared. It runs no code of the script and copies nothing: the
 `Memory<byte>` is a view of the buffer, and your writes are visible to the scripts. It is empty when the buffer is
 detached, and the method returns false for any other value. The bytes of a typed array are its elements, in the byte
@@ -59,7 +59,7 @@ order of the machine.
 ## Share memory between engines
 
 A `SharedArrayBuffer` is the memory that several engines, each on its own thread, can use at the same time, with
-`Atomics` to synchronize them. `JsBinaryData.GetSharedDataBlock` returns the memory of a `SharedArrayBuffer` as a
-`JsSharedDataBlock`, and `realm.CreateSharedArrayBuffer(block)` creates a `SharedArrayBuffer` on the same memory in
-another engine. `JsSharedDataBlock.TryCreate` creates a block from .NET, and `GetSpan` and `GetMemory` read and write
+`Atomics` to synchronize them. [JsBinaryData.GetSharedDataBlock](cref:Meziantou.Framework.JavaScriptEngine.JsBinaryData.GetSharedDataBlock) returns the memory of a `SharedArrayBuffer` as a
+[JsSharedDataBlock](cref:Meziantou.Framework.JavaScriptEngine.JsSharedDataBlock), and `realm.CreateSharedArrayBuffer(block)` creates a `SharedArrayBuffer` on the same memory in
+another engine. [JsSharedDataBlock.TryCreate](cref:Meziantou.Framework.JavaScriptEngine.JsSharedDataBlock.TryCreate) creates a block from .NET, and [GetSpan](cref:Meziantou.Framework.JavaScriptEngine.JsSharedDataBlock.GetSpan) and [GetMemory](cref:Meziantou.Framework.JavaScriptEngine.JsSharedDataBlock.GetMemory) read and write
 it from .NET.

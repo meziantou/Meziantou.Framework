@@ -3,16 +3,16 @@ title: URLs
 description: Which URLs are kept in links and images, how srcset is checked, how to validate your own URL attributes, and how to check a URL yourself.
 ---
 
-The values of the attributes of `UriAttributes` and `SrcsetAttributes` are validated. An unsafe value is replaced with
+The values of the attributes of [UriAttributes](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.UriAttributes) and [SrcsetAttributes](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.SrcsetAttributes) are validated. An unsafe value is replaced with
 an empty value; the attribute and its element are kept.
 
 | Set | Default | The value is |
 | --- | --- | --- |
-| `UriAttributes` | `background`, `cite`, `href`, `longdesc`, `src`, `xlink:href` | One URL |
-| `SrcsetAttributes` | `srcset` | A list of image candidates, each one a URL with optional descriptors |
+| [UriAttributes](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.UriAttributes) | `background`, `cite`, `href`, `longdesc`, `src`, `xlink:href` | One URL |
+| [SrcsetAttributes](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.SrcsetAttributes) | `srcset` | A list of image candidates, each one a URL with optional descriptors |
 
-These sets only decide how a value is checked: an attribute is kept only when it is also allowed by `ValidAttributes`
-or `ValidAttributePrefixes`.
+These sets only decide how a value is checked: an attribute is kept only when it is also allowed by [ValidAttributes](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.ValidAttributes)
+or [ValidAttributePrefixes](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.ValidAttributePrefixes).
 
 ## Allowed URLs
 
@@ -81,8 +81,8 @@ An attribute can be in both sets. Its value must then pass both validations.
 
 ## Validate your own URL attributes
 
-`ValidAttributes` and `UriAttributes` are separate sets, and only `UriAttributes` triggers URL validation. Adding an
-attribute to `ValidAttributes` alone lets any value through unchecked:
+[ValidAttributes](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.ValidAttributes) and [UriAttributes](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.UriAttributes) are separate sets, and only [UriAttributes](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.UriAttributes) triggers URL validation. Adding an
+attribute to [ValidAttributes](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.ValidAttributes) alone lets any value through unchecked:
 
 <!-- ref:../../tests/Meziantou.Framework.HtmlSanitizer.Tests/HtmlSanitizerTests.cs;region=HtmlSanitizer_UriAttributes;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -98,13 +98,13 @@ Assert.Equal("<p data-url=\"\">test</p>", sanitizer.SanitizeHtmlFragment("<p dat
 <!-- endref -->
 
 Add any attribute that a browser resolves as a URL to both sets, such as `action`, `formaction`, `poster`, `data`,
-`dynsrc` and `lowsrc`. The same applies in reverse: removing an attribute from `UriAttributes` while leaving it in
-`ValidAttributes` stops its value from being checked. Removing it from `ValidAttributes` alone is safe: the attribute
+`dynsrc` and `lowsrc`. The same applies in reverse: removing an attribute from [UriAttributes](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.UriAttributes) while leaving it in
+[ValidAttributes](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.ValidAttributes) stops its value from being checked. Removing it from [ValidAttributes](cref:Meziantou.Framework.Sanitizers.HtmlSanitizer.ValidAttributes) alone is safe: the attribute
 is then dropped.
 
 ## Check a URL yourself
 
-`UrlSanitizer` applies the same rules to a single value. Use it for the URLs that you write in your own markup, such
+[UrlSanitizer](cref:Meziantou.Framework.Sanitizers.UrlSanitizer) applies the same rules to a single value. Use it for the URLs that you write in your own markup, such
 as the website of a user profile:
 
 <!-- ref:../../tests/Meziantou.Framework.HtmlSanitizer.Tests/UrlSanitizerTests.cs;region=UrlSanitizer_IsSafeUrlAndSrcset;format=md-fenced-code-block;dedent=true -->
@@ -118,7 +118,7 @@ Assert.True(UrlSanitizer.IsSafeSrcset("https://example.com/img1.jpg 300w, https:
 ```
 <!-- endref -->
 
-`UrlSanitizer` does not decode its input, so it rejects a URL that contains a `&` before the first `/`, `?` or `#`.
+[UrlSanitizer](cref:Meziantou.Framework.Sanitizers.UrlSanitizer) does not decode its input, so it rejects a URL that contains a `&` before the first `/`, `?` or `#`.
 This stops an entity from hiding the scheme when the URL is read from markup, as in `javascript&#58;alert(1)`. It also
 rejects the rare relative URL whose first segment contains a `&`, such as `q&a.html`: encode it as `q%26a.html`.
 
@@ -138,4 +138,4 @@ Assert.True(UrlSanitizer.IsSafeUrl(url: null));
 ```
 <!-- endref -->
 
-`IsSafeUrl` and `IsSafeSrcset` only check the value. Encode it when you write it in an attribute, as Razor does.
+[IsSafeUrl](cref:Meziantou.Framework.Sanitizers.UrlSanitizer.IsSafeUrl) and [IsSafeSrcset](cref:Meziantou.Framework.Sanitizers.UrlSanitizer.IsSafeSrcset) only check the value. Encode it when you write it in an attribute, as Razor does.

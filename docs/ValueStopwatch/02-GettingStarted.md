@@ -27,11 +27,11 @@ TimeSpan elapsedTime = stopwatch.GetElapsedTime();
 ```
 <!-- endref -->
 
-`StartNew` records the current timestamp. `GetElapsedTime` returns the time elapsed since then, as a `TimeSpan`.
+[StartNew](cref:Meziantou.Framework.ValueStopwatch.StartNew) records the current timestamp. [GetElapsedTime](cref:Meziantou.Framework.ValueStopwatch.GetElapsedTime) returns the time elapsed since then, as a `TimeSpan`.
 
 ## Read the elapsed time several times
 
-The stopwatch never stops. Each call to `GetElapsedTime` measures the time since `StartNew`, so you can read
+The stopwatch never stops. Each call to [GetElapsedTime](cref:Meziantou.Framework.ValueStopwatch.GetElapsedTime) measures the time since [StartNew](cref:Meziantou.Framework.ValueStopwatch.StartNew), so you can read
 intermediate durations, for instance the time to the first byte and the total time of a request:
 
 <!-- ref:../../tests/Meziantou.Framework.ValueStopwatch.Tests/ValueStopwatchTest.cs;region=ValueStopwatch_ElapsedTimeKeepsGrowing;format=md-fenced-code-block;dedent=true -->
@@ -50,8 +50,8 @@ To measure a new interval, assign a new stopwatch: `stopwatch = ValueStopwatch.S
 
 ## A stopwatch that was never started
 
-`default(ValueStopwatch)`, which is also the value of a field that was never assigned, was never started. `IsActive`
-tells whether a stopwatch was created by `StartNew`, and `GetElapsedTime` throws an `InvalidOperationException` on a
+`default(ValueStopwatch)`, which is also the value of a field that was never assigned, was never started. [IsActive](cref:Meziantou.Framework.ValueStopwatch.IsActive)
+tells whether a stopwatch was created by [StartNew](cref:Meziantou.Framework.ValueStopwatch.StartNew), and [GetElapsedTime](cref:Meziantou.Framework.ValueStopwatch.GetElapsedTime) throws an `InvalidOperationException` on a
 stopwatch that was not:
 
 <!-- ref:../../tests/Meziantou.Framework.ValueStopwatch.Tests/ValueStopwatchTest.cs;region=ValueStopwatch_DefaultValue;format=md-fenced-code-block;dedent=true -->
@@ -67,7 +67,7 @@ Assert.True(stopwatch.GetElapsedTime() >= TimeSpan.Zero);
 ```
 <!-- endref -->
 
-Check `IsActive` before reading a stopwatch that may not have been started, for instance a field set when an
+Check [IsActive](cref:Meziantou.Framework.ValueStopwatch.IsActive) before reading a stopwatch that may not have been started, for instance a field set when an
 operation begins and read when it ends.
 
 ## Next steps

@@ -9,7 +9,7 @@ MSTest). A test declared in a base class is named after the class it ran in.
 
 ## Several assertions in one test
 
-Each call to `Snapshot.Validate` in a test gets its own file. The first call keeps the name of the test, the next ones get
+Each call to [Snapshot.Validate](cref:Meziantou.Framework.SnapshotTesting.Snapshot.Validate) in a test gets its own file. The first call keeps the name of the test, the next ones get
 an ordinal suffix (`~2`, `~3`, ...):
 
 <!-- ref:../../../tests/Meziantou.Framework.SnapshotTesting.Tests/SnapshotTests.cs;region=Snapshot_SeveralAssertions;format=md-fenced-code-block;dedent=true -->
@@ -45,14 +45,14 @@ The name of a parameterized test is the method name followed by its arguments: `
 - Arrays and lists are written element by element: `SampleTests_Render_1_2_<hash>` for `new[] { 1, 2 }`.
 - `DateTime`, `DateTimeOffset` and `TimeOnly` use the round-trip format (`O`), so values that only differ by a fraction
   of a second or by their kind get distinct names.
-- A custom display name (`DisplayName`, `TestName`) is used as it is, including its `.` characters.
+- A custom display name (`DisplayName`, [TestName](cref:Meziantou.Framework.SnapshotTesting.SnapshotTestContext.TestName)) is used as it is, including its `.` characters.
 - The arguments of a parameterized NUnit fixture (`[TestFixture("en-US")]`) or of a TUnit test class (`[Arguments]` on
   the class) are appended to the name, so each instance of the class gets its own snapshot: `FormatTests_Format_en-US`.
   NUnit 3 does not expose them: its instances are reported as a name collision.
 
 ## Name a snapshot yourself
 
-Set `Snapshot.TestContext` to give a call a name of your choice. It is an `AsyncLocal<SnapshotTestContext?>`: the value
+Set [Snapshot.TestContext](cref:Meziantou.Framework.SnapshotTesting.Snapshot.TestContext) to give a call a name of your choice. It is an `AsyncLocal<SnapshotTestContext?>`: the value
 flows to the calls made by the current test, and must be reset when you are done:
 
 <!-- ref:../../../tests/Meziantou.Framework.SnapshotTesting.Tests/SnapshotTests.cs;region=Snapshot_TestContext;format=md-fenced-code-block;dedent=true -->
@@ -79,19 +79,19 @@ finally
 ```
 <!-- endref -->
 
-`SnapshotTestContext` takes a `TestName` and optional `Metadata`. The test name replaces the name of the test method;
-the class name is still added by the default naming strategy. `Metadata` is not part of the file name: it is available to
-custom naming and path strategies. `ClassName` and `MethodName` can also be set with an object initializer.
+[SnapshotTestContext](cref:Meziantou.Framework.SnapshotTesting.SnapshotTestContext) takes a [TestName](cref:Meziantou.Framework.SnapshotTesting.SnapshotTestContext.TestName) and optional [Metadata](cref:Meziantou.Framework.SnapshotTesting.SnapshotTestContext.Metadata). The test name replaces the name of the test method;
+the class name is still added by the default naming strategy. [Metadata](cref:Meziantou.Framework.SnapshotTesting.SnapshotTestContext.Metadata) is not part of the file name: it is available to
+custom naming and path strategies. [ClassName](cref:Meziantou.Framework.SnapshotTesting.SnapshotTestContext.ClassName) and [MethodName](cref:Meziantou.Framework.SnapshotTesting.SnapshotTestContext.MethodName) can also be set with an object initializer.
 
 ## Naming strategies
 
-`SnapshotSettings.SnapshotNamingStrategy` builds the name from the test:
+[SnapshotSettings.SnapshotNamingStrategy](cref:Meziantou.Framework.SnapshotTesting.SnapshotSettings.SnapshotNamingStrategy) builds the name from the test:
 
 | Strategy | Name |
 | --- | --- |
-| `SnapshotNamingStrategies.ClassName_TestName` (default) | `SampleTests_ValidateUser` |
-| `SnapshotNamingStrategies.FullName` | `SampleTests.ValidateUser` |
-| `SnapshotNamingStrategies.TestName` | `ValidateUser` |
+| [SnapshotNamingStrategies.ClassName\_TestName](cref:Meziantou.Framework.SnapshotTesting.SnapshotNamingStrategies.ClassName_TestName) (default) | `SampleTests_ValidateUser` |
+| [SnapshotNamingStrategies.FullName](cref:Meziantou.Framework.SnapshotTesting.SnapshotNamingStrategies.FullName) | `SampleTests.ValidateUser` |
+| [SnapshotNamingStrategies.TestName](cref:Meziantou.Framework.SnapshotTesting.SnapshotNamingStrategies.TestName) | `ValidateUser` |
 
 <!-- ref:../../../tests/Meziantou.Framework.SnapshotTesting.Tests/SnapshotTests.cs;region=Snapshot_NamingStrategy;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -104,28 +104,28 @@ Snapshot.Validate("Hello", settings); // __snapshots__/SnapshotTests.Documentati
 ```
 <!-- endref -->
 
-`TestName` drops the class name: two classes of the same folder with a test of the same name then get the same
+[TestName](cref:Meziantou.Framework.SnapshotTesting.SnapshotNamingStrategies.TestName) drops the class name: two classes of the same folder with a test of the same name then get the same
 snapshot name, a [name collision](#name-collisions).
 
-A custom strategy is a `SnapshotNamingStrategy` delegate that receives a `SnapshotPathContext` and returns the name. Its
-`ClassName` and `MethodName` come from the test framework when it exposes them, and from the call stack otherwise; the
+A custom strategy is a [SnapshotNamingStrategy](cref:Meziantou.Framework.SnapshotTesting.SnapshotNamingStrategy) delegate that receives a [SnapshotPathContext](cref:Meziantou.Framework.SnapshotTesting.SnapshotPathContext) and returns the name. Its
+[ClassName](cref:Meziantou.Framework.SnapshotTesting.SnapshotPathContext.ClassName) and [MethodName](cref:Meziantou.Framework.SnapshotTesting.SnapshotPathContext.MethodName) come from the test framework when it exposes them, and from the call stack otherwise; the
 stack walk is the most expensive part of an assertion, and only runs when the strategy reads a name the framework did not
-provide. Use `MemberName`, the name of the method that called `Snapshot.Validate` as captured by the compiler, when it is
+provide. Use [MemberName](cref:Meziantou.Framework.SnapshotTesting.SnapshotPathContext.MemberName), the name of the method that called [Snapshot.Validate](cref:Meziantou.Framework.SnapshotTesting.Snapshot.Validate) as captured by the compiler, when it is
 enough.
 
 ## Name collisions
 
 Two tests that get the same snapshot name would overwrite each other's snapshot. When they run in the same process, the
-second one fails with a `SnapshotException` that names both tests. This happens, for instance, with:
+second one fails with a [SnapshotException](cref:Meziantou.Framework.SnapshotTesting.SnapshotException) that names both tests. This happens, for instance, with:
 
 - two tests that have the same display name;
 - test cases whose arguments do not override `ToString`, or only differ by type (`1`, `1L` and `"1"` passed to an
   `object` parameter);
-- test contexts that only differ by `Metadata`;
+- test contexts that only differ by [Metadata](cref:Meziantou.Framework.SnapshotTesting.SnapshotTestContext.Metadata);
 - names that only differ by case (`Case_A` and `Case_a` are the same file on Windows and macOS).
 
-Give one of the tests a distinct name, for example with `Snapshot.TestContext`. Tests that explicitly set the same
-`SnapshotTestContext.TestName` may share a snapshot. Collisions are only detected with the default path strategy and a
+Give one of the tests a distinct name, for example with [Snapshot.TestContext](cref:Meziantou.Framework.SnapshotTesting.Snapshot.TestContext). Tests that explicitly set the same
+[SnapshotTestContext.TestName](cref:Meziantou.Framework.SnapshotTesting.SnapshotTestContext.TestName) may share a snapshot. Collisions are only detected with the default path strategy and a
 built-in naming strategy.
 
 An assertion that produces several files (`Name_0`, `Name_1`) cannot tell whether a `Name_2` file is one it produced in

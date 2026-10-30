@@ -36,8 +36,7 @@ internal static class RenderFontFactory
 
     private static RenderFont? CreateComposite(PdfDictionary font, CompositeFontDecoder decoder, RenderCache cache)
     {
-        var descendant = font.Get<PdfArray>(PdfNames.DescendantFonts)?.GetResolved(0) as PdfDictionary;
-        if (descendant is null)
+        if (font.Get<PdfArray>(PdfNames.DescendantFonts) is not { } descendants || !descendants.TryGetResolved<PdfDictionary>(0, out var descendant))
             return null;
 
         var descriptor = descendant.Get<PdfDictionary>(PdfNames.FontDescriptor);

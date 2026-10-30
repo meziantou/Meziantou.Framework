@@ -4240,15 +4240,20 @@ Lossy output first tries 4x4 luma prediction from effort 2. If the modes exceed 
 file size; `Quality` is not a target distortion guarantee. If that partition still does not fit, encoding throws
 `UnsupportedImageFeatureException`: use lossless output or reduce the image dimensions.
 
-The managed encoder makes its own prediction and entropy-coding decisions: lossless output uses one prefix-code group
-(no spatial entropy image), and lossy output uses one quantizer for the frame and one token partition. It is not libwebp. No general file-size,
+The managed encoder makes its own prediction and entropy-coding decisions. From effort 3, lossless output compares
+transform choices (color table, prediction of the color indexes, predictor tile sizes, no predictor) by encoding each one
+quickly without storing it, and codes regions with different statistics with their own prefix codes (a spatial entropy
+image); from effort 5 it also chooses its backward references by their estimated cost. Lossy output uses one quantizer
+for the frame and one token partition. It is not libwebp. No general file-size,
 speed or perceptual-quality comparison with libwebp is guaranteed, and quality/effort numbers are not interchangeable
 between encoders. Compare representative images at matched decoded quality for a lossy size comparison.
 
 Lossless encoding works on one frame at a time. Its working memory counts against `MaxLiveAllocationBytes`: a copy of
 the frame (4 bytes per pixel), the hash chains of the LZ77 parse (4 bytes per pixel, released before the output is
-written), the recorded parse (at most 2 bytes per pixel) and the compressed stream, whose buffer doubles as it grows.
-That is about 10 bytes per pixel, more for images that hardly compress. Effort 9 adds a second copy of the frame and
+written), the recorded parse (at most 2 bytes per pixel), from effort 5 a second parse (4 bytes per pixel, released with
+the hash chains), and the compressed stream, whose buffer doubles as it grows. Comparing the transform choices (effort 3
+and above) works on a copy of the frame, or of a sample of about a quarter of it for frames larger than 262,144 pixels.
+That is about 14 bytes per pixel, more for images that hardly compress. Effort 9 adds a second copy of the frame and
 keeps two streams to pick the smaller one. A 16,384 x 16,384 image needs more than the default 512 MiB: raise the limit
 to encode images of that size.
 

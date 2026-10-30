@@ -447,7 +447,7 @@ internal sealed class WebPEncoderCodec : ImageEncoderCodec
             var result = new EncodedFrame();
             try
             {
-                result._lossless = effort < 9 ? EncodeStream(scope, argb, width, height, effort, entropyPredictors: null, cancellationToken) : EncodeSmallestStream(scope, argb, width, height, cancellationToken);
+                result._lossless = effort < 9 ? EncodeStream(scope, argb, width, height, effort, configuration: null, cancellationToken) : EncodeSmallestStream(scope, argb, width, height, cancellationToken);
                 return result;
             }
             catch
@@ -457,40 +457,47 @@ internal sealed class WebPEncoderCodec : ImageEncoderCodec
             }
         }
 
-        /// <summary>Effort 9: neither predictor selection criterion is always smaller, so both are tried and the smaller stream is kept.</summary>
+        /// <summary>
+        /// Effort 9: the size estimates of the configurations are not exact, so the two estimated smallest are both encoded
+        /// and the smaller stream is kept.
+        /// </summary>
         private static LsbBitWriter EncodeSmallestStream(AllocationScope scope, Span<uint> argb, int width, int height, CancellationToken cancellationToken)
         {
+            var ranked = Vp8LEncoder.RankConfigurations(scope, argb, width, height, effort: 9, cancellationToken);
+            if (ranked.Length == 1)
+                return EncodeStream(scope, argb, width, height, effort: 9, ranked[0], cancellationToken);
+
             using var copy = scope.Rent(argb.Length * sizeof(uint), AllocationKind.Temporary, clear: false);
             var second = unsafe(MemoryMarshal.Cast<byte, uint>(copy.RawBuffer.AsSpan(0, argb.Length * sizeof(uint))));
             argb.CopyTo(second);
-            var entropy = EncodeStream(scope, argb, width, height, effort: 9, entropyPredictors: true, cancellationToken);
-            LsbBitWriter absolute;
+            var best = EncodeStream(scope, argb, width, height, effort: 9, ranked[0], cancellationToken);
+            LsbBitWriter other;
             try
             {
-                absolute = EncodeStream(scope, second, width, height, effort: 9, entropyPredictors: false, cancellationToken);
+                other = EncodeStream(scope, second, width, height, effort: 9, ranked[1], cancellationToken);
             }
             catch
             {
-                entropy.Dispose();
+                best.Dispose();
                 throw;
             }
 
-            if (absolute.Length < entropy.Length)
+            if (other.Length < best.Length)
             {
-                entropy.Dispose();
-                return absolute;
+                best.Dispose();
+                return other;
             }
 
-            absolute.Dispose();
-            return entropy;
+            other.Dispose();
+            return best;
         }
 
-        private static LsbBitWriter EncodeStream(AllocationScope scope, Span<uint> argb, int width, int height, int effort, bool? entropyPredictors, CancellationToken cancellationToken)
+        private static LsbBitWriter EncodeStream(AllocationScope scope, Span<uint> argb, int width, int height, int effort, Vp8LConfiguration? configuration, CancellationToken cancellationToken)
         {
             var writer = new LsbBitWriter(scope);
             try
             {
-                Vp8LEncoder.Encode(scope, writer, argb, width, height, effort, cancellationToken, entropyPredictors);
+                Vp8LEncoder.Encode(scope, writer, argb, width, height, effort, cancellationToken, configuration);
                 writer.Finish();
                 return writer;
             }

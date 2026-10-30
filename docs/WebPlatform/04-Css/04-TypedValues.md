@@ -1,6 +1,6 @@
 ---
 title: Typed values
-description: Read and write CSS values as objects with the CSS Typed OM: numbers with units, math expressions, keywords and transforms.
+description: "Read and write CSS values as objects with the CSS Typed OM: numbers with units, math expressions, keywords and transforms."
 ---
 
 The [CSS Typed OM](https://drafts.css-houdini.org/css-typed-om-1/) exposes the values of the properties as objects

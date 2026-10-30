@@ -18,6 +18,22 @@
         "using the <c>(?<depName>[^<]+):(?<currentValue>[^<@]+)</c> image"
       ],
       "datasourceTemplate": "docker"
+    },
+    {
+      // Only the 'references' of docgen.json: eng/update-all.cs writes the 'packages' from the versions of the
+      // projects of src/, so Renovate must not update them.
+      "customType": "regex",
+      "description": "NuGet packages referenced by the documentation site (docgen.json)",
+      "managerFilePatterns": [
+        "/^docgen\\.json$/"
+      ],
+      "matchStringsStrategy": "recursive",
+      "matchStrings": [
+        "\"references\"\\s*:\\s*\\[[^\\]]*\\]",
+        "\\{[^}]*\\}",
+        "\"id\"\\s*:\\s*\"(?<depName>[^\"]+)\"\\s*,\\s*\"version\"\\s*:\\s*\"(?<currentValue>[^\"]+)\""
+      ],
+      "datasourceTemplate": "nuget"
     }
   ],
   "packageRules": [

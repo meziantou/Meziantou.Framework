@@ -18,7 +18,7 @@ Import the namespace in `_Imports.razor`:
 <!-- endref -->
 
 The components need no registration. The services do; register the ones you use (the extension methods are in the
-[Meziantou.AspNetCore.Components](cref:Meziantou.AspNetCore.Components) namespace):
+[Meziantou.AspNetCore.Components](cref:Meziantou.AspNetCore.Components!N:Meziantou.AspNetCore.Components) namespace):
 
 <!-- ref:../../../samples/BlazorAppSample/ReadmeExamples/ComponentsReadmeExamples.cs;region=Components_RegisterServices;format=md-fenced-code-block;dedent=true -->
 ```csharp

@@ -22,4 +22,4 @@ arguments. `"42"` becomes an `int`, `"yes"` a `bool`, `"friday"` a `DayOfWeek`, 
 ## Namespaces
 
 `ConvertUtilities`, `DefaultConverter`, `IConverter`, `ByteArrayToStringFormat` and `DictionaryExtensions` are in the
-[Meziantou.Framework](cref:Meziantou.Framework) namespace.
+[Meziantou.Framework](cref:Meziantou.Framework.TypeConverter!N:Meziantou.Framework) namespace.

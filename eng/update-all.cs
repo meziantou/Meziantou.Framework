@@ -4,7 +4,9 @@
 #:project ../src/Meziantou.Framework.LLMContext/Meziantou.Framework.LLMContext.csproj
 using System.Collections.Concurrent;
 using System.Diagnostics;
+using System.Text.Encodings.Web;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
@@ -128,6 +130,7 @@ if (ShouldRunStep(StepDocs))
     Console.WriteLine("[update-all] Running docs");
     tasks.Add(Task.Run(() => RunValidateDocumentationPackageIdsStep(rootPath)));
     tasks.Add(Task.Run(() => RunValidateDocumentationCrefLinksStep(rootPath)));
+    tasks.Add(Task.Run(() => RunUpdateDocumentationConfigurationStep(rootPath)));
 }
 
 if (ShouldRunStep(StepPublicSuffix))
@@ -1142,16 +1145,56 @@ void RunValidateDocumentationPackageIdsStep(FullPath rootPath)
     }
 }
 
+// The documentation site (docgen.json, built by Meziantou.DocumentationGenerator) documents the API of every package of
+// src/, at the version of its project file. The packages are downloaded from NuGet.org.
+void RunUpdateDocumentationConfigurationStep(FullPath rootPath)
+{
+    var configurationPath = rootPath / "docgen.json";
+    var configuration = JsonNode.Parse(File.ReadAllText(configurationPath), documentOptions: new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true })!.AsObject();
+
+    var packages = new JsonArray();
+    foreach (var csprojPath in Directory.EnumerateFiles(rootPath / "src", "*.csproj", SearchOption.AllDirectories).Where(IsPackableProject).Order(StringComparer.Ordinal))
+    {
+        var id = Path.GetFileNameWithoutExtension(csprojPath);
+        var version = XDocument.Load(csprojPath).Root?.Descendants("Version").FirstOrDefault()?.Value.Trim();
+        if (string.IsNullOrEmpty(version))
+        {
+            Console.Error.WriteLine($"ERROR: {FullPath.FromPath(csprojPath).MakePathRelativeTo(rootPath)}: the package has no <Version>");
+            updatedFiles.Enqueue(FullPath.FromPath(csprojPath).MakePathRelativeTo(rootPath));
+            continue;
+        }
+
+        JsonNode package = new JsonObject
+        {
+            ["id"] = id,
+            ["version"] = version,
+        };
+        packages.Add(package);
+    }
+
+    configuration["packages"] = packages;
+
+    WriteFileIfChanged(configurationPath, configuration.ToJsonString(new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping, RespectNullableAnnotations = true, RespectRequiredConstructorParameters = true }));
+}
+
 // The pages link to namespaces with [Name](cref:Name). The target must be a namespace of the public API of a package,
-// as listed in the ref/ folder.
+// as listed in the ref/ folder. A namespace defined by several packages is qualified with the package that the page is
+// about, [Name](cref:Package!N:Name): the documentation generator reports an unqualified one as ambiguous.
 void RunValidateDocumentationCrefLinksStep(FullPath rootPath)
 {
     var namespacePattern = new Regex(@"^namespace\s+(?<name>[A-Za-z0-9_.]+)", RegexOptions.Multiline | RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, Timeout.InfiniteTimeSpan);
-    var crefPattern = new Regex(@"\]\(cref:(?<target>[^)\s]*)\)", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, Timeout.InfiniteTimeSpan);
+    var crefPattern = new Regex(@"\]\(cref:(?:(?<package>[^)\s!]+)!(?:N:)?)?(?<namespace>[^)\s]*)\)", RegexOptions.CultureInvariant | RegexOptions.ExplicitCapture, Timeout.InfiniteTimeSpan);
 
-    var namespaces = Directory.EnumerateFiles(rootPath / "ref", "*.cs", SearchOption.AllDirectories)
-        .SelectMany(path => namespacePattern.Matches(File.ReadAllText(path)).Select(match => match.Groups["name"].Value))
-        .ToHashSet(StringComparer.Ordinal);
+    // The files of ref/ are named after the assemblies, which have the name of their package
+    var namespacesByPackage = Directory.EnumerateFiles(rootPath / "ref", "*.cs", SearchOption.AllDirectories)
+        .ToDictionary(
+            path => Path.GetFileNameWithoutExtension(path),
+            path => namespacePattern.Matches(File.ReadAllText(path)).Select(match => match.Groups["name"].Value).ToHashSet(StringComparer.Ordinal),
+            StringComparer.Ordinal);
+    var packagesByNamespace = namespacesByPackage
+        .SelectMany(item => item.Value.Select(ns => (Namespace: ns, Package: item.Key)))
+        .GroupBy(item => item.Namespace, StringComparer.Ordinal)
+        .ToDictionary(group => group.Key, group => group.Select(item => item.Package).Order(StringComparer.Ordinal).ToArray(), StringComparer.Ordinal);
 
     var docsRootPath = rootPath / "docs";
     foreach (var path in Directory.EnumerateFiles(docsRootPath, "*.md", SearchOption.AllDirectories).Order(StringComparer.Ordinal))
@@ -1172,10 +1215,20 @@ void RunValidateDocumentationCrefLinksStep(FullPath rootPath)
 
             foreach (Match match in crefPattern.Matches(lines[i]))
             {
-                var target = match.Groups["target"].Value;
-                if (!namespaces.Contains(target))
+                var package = match.Groups["package"].Value;
+                var ns = match.Groups["namespace"].Value;
+                var error = package switch
                 {
-                    Console.Error.WriteLine($"ERROR: {relativePath}:{i + 1}: 'cref:{target}' is not a namespace of the public API (ref/*.cs)");
+                    "" when !packagesByNamespace.TryGetValue(ns, out var packages) => $"'{ns}' is not a namespace of the public API (ref/*.cs)",
+                    "" when packagesByNamespace[ns] is { Length: > 1 } packages => $"'{ns}' is defined by several packages ({string.Join(", ", packages)}); qualify it with the package of the page: 'cref:<Package>!N:{ns}'",
+                    "" => null,
+                    _ when !namespacesByPackage.TryGetValue(package, out var namespaces) || !namespaces.Contains(ns) => $"'{ns}' is not a namespace of the public API of the package '{package}' (ref/{package}.cs)",
+                    _ => null,
+                };
+
+                if (error is not null)
+                {
+                    Console.Error.WriteLine($"ERROR: {relativePath}:{i + 1}: {error}");
                     updatedFiles.Enqueue(relativePath);
                 }
             }

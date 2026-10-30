@@ -27,7 +27,7 @@ debugger or a memory dump taken while the contents are revealed.
 
 ## Namespace
 
-The types are in the [Meziantou.Framework](cref:Meziantou.Framework) namespace:
+The types are in the [Meziantou.Framework](cref:Meziantou.Framework.SensitiveData!N:Meziantou.Framework) namespace:
 
 | Type | Contains |
 | --- | --- |

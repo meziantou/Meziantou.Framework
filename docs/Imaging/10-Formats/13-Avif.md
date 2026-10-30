@@ -91,7 +91,7 @@ public static void SaveAvif(string photoPath, string avifPath, string losslessPa
 | [ClearTransparentColors](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder.ClearTransparentColors) | Replaces the color of fully transparent pixels with black, which makes the file smaller | `false` |
 | [PremultiplyAlpha](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder.PremultiplyAlpha) | Stores colors multiplied by their alpha; the colors of nearly transparent pixels are rounded | `false` |
 | [GridTileSize](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder.GridTileSize) | Cuts a still image larger than a tile into tiles coded separately (64 to 65,536 pixels per side) | `null` |
-| [AutoTiling](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder.AutoTiling) | Splits each frame into AV1 tiles from its size (4x2 for 3840x2160), which workers encode and decode at once; files are slightly larger | `false` |
+| `AutoTiling` | Splits each frame into AV1 tiles from its size (4x2 for 3840x2160), which workers encode and decode at once; files are slightly larger | `false` |
 | [CleanAperture](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder.CleanAperture) | The rectangle readers show; every pixel is still stored | `null` |
 | [KeyFrameInterval](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder.KeyFrameInterval) | The number of images from a key frame to the next in a sequence; 0 makes the first image the only key frame | 0 |
 | [DurationRounding](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder.DurationRounding) | [RequireExact](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RequireExact) stores durations exactly or throws; [RoundToNearest](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RoundToNearest) rounds them to microseconds when they need it | [RequireExact](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RequireExact) |
@@ -104,7 +104,7 @@ Encoding a large image takes time: a lower [Effort](cref:Meziantou.Framework.Ima
 [ImageConfiguration.MaxDegreeOfParallelism](cref:Meziantou.Framework.Imaging.ImageConfiguration.MaxDegreeOfParallelism) above 1, the tiles are coded concurrently and the file is identical. Lossy
 output can show the edges of the tiles.
 
-[AutoTiling](cref:Meziantou.Framework.Imaging.Formats.AvifEncoder.AutoTiling) splits each frame into up to 8 AV1 tiles of at least 512 x 512 pixels (4x2 tiles for 3840 x 2160), which
+`AutoTiling` splits each frame into up to 8 AV1 tiles of at least 512 x 512 pixels (4x2 tiles for 3840 x 2160), which
 the workers of [ImageConfiguration.MaxDegreeOfParallelism](cref:Meziantou.Framework.Imaging.ImageConfiguration.MaxDegreeOfParallelism) encode at once, and which the decoder decodes at once. The
 layout depends on the size of the image only, so the file is the same whatever the number of workers. The tiles cost
 size even with one worker: on a 3840 x 2160 photo, the file is 0.3% larger at the default effort (0.6% at effort 0,

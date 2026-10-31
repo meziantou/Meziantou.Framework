@@ -15,9 +15,17 @@ internal static class FuzzSeeds
         if (group is "hevc-intra" or "hevc-inter")
             return GetHevcVectors(group);
 
-        // The corpus has no fixture of the multi-entry formats and of the animated cursors: their seeds are generated
+        // The corpus has no fixture of the multi-entry formats and of the animated cursors: their seeds are generated. The
+        // corpus fixtures of a generated group's format are added too (the OpenEXR files written by OpenEXR: PXR24, B44,
+        // B44A, compressed tiles, mipmaps and ripmaps, which the encoder of the library never writes)
         if (FuzzGeneratedSeeds.Groups.Contains(group, StringComparer.Ordinal))
-            return FuzzGeneratedSeeds.Get(group);
+        {
+            var generated = FuzzGeneratedSeeds.Get(group);
+            generated.AddRange(GoldenCorpus.Default.Fixtures
+                .Where(fixture => fixture.Entry.Format == group)
+                .Select(fixture => new FuzzSeed(fixture.Id, fixture.ReadInput())));
+            return generated;
+        }
 
         var seeds = group is "av1-intra" or "av1-inter"
             ? GoldenCorpus.Default.Av1Vectors

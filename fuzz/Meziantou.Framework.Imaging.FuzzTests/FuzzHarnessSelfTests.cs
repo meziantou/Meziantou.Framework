@@ -1,4 +1,5 @@
 using Meziantou.Framework.Imaging.Internals;
+using Meziantou.Framework.Imaging.TestHarness.Golden;
 
 namespace Meziantou.Framework.Imaging.FuzzTests;
 
@@ -50,5 +51,32 @@ public sealed class FuzzHarnessSelfTests
         Assert.Throws<InvalidImageContentException>(() => Image.Identify(data));
         FuzzMutator.FixPngCrcs(data);
         Assert.Equal(2, Image.Identify(data).Width);
+    }
+
+    [Fact]
+    public void TheOpenExrSeedsReachEveryCompressionAndLevelMode()
+    {
+        // The encoder of the library writes scan lines without PXR24 or B44: the corpus files written by OpenEXR and the
+        // files of the builder are the seeds of the rest, and they must decode, so that their mutations reach the decoder
+        var seeds = FuzzSeeds.Get("exr");
+        var ids = seeds.Select(seed => seed.Id).ToHashSet(StringComparer.Ordinal);
+        foreach (var feature in new[] { "exr.compression=pxr24", "exr.compression=b44", "exr.compression=b44a", "exr.levels=mipmap", "exr.levels=ripmap" })
+        {
+            var fixtures = GoldenCorpus.Default.Fixtures.Where(fixture => fixture.IsValid && fixture.Entry.HasFeature(feature)).ToList();
+            Assert.NotEmpty(fixtures);
+            Assert.True(fixtures.TrueForAll(fixture => ids.Contains(fixture.Id)), $"The fixtures with the feature '{feature}' are not all fuzz seeds.");
+        }
+
+        foreach (var seed in seeds.Where(seed => seed.Id.StartsWith("exr/builder-", StringComparison.Ordinal)))
+        {
+            try
+            {
+                using var image = Image.Load(seed.Data);
+            }
+            catch (ImageException exception)
+            {
+                Assert.Fail($"The seed '{seed.Id}' does not decode: {exception.Message}");
+            }
+        }
     }
 }

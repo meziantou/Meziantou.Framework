@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
-/// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#the-select-element</summary>
+// https://html.spec.whatwg.org/multipage/form-elements.html#the-select-element
 public partial class HtmlSelectElement
 {
     /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#concept-select-size</summary>
@@ -429,7 +429,7 @@ public partial class HtmlSelectElement
     }
 }
 
-/// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#the-optgroup-element</summary>
+// https://html.spec.whatwg.org/multipage/form-elements.html#the-optgroup-element
 public partial class HtmlOptGroupElement
 {
     internal override void AttributeChangeSteps(string localName, string? oldValue, string? value, string? @namespace)
@@ -444,7 +444,7 @@ public partial class HtmlOptGroupElement
     }
 }
 
-/// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#the-option-element</summary>
+// https://html.spec.whatwg.org/multipage/form-elements.html#the-option-element
 public partial class HtmlOptionElement
 {
     private bool _selectedness;
@@ -668,7 +668,7 @@ public partial class HtmlOptionElement
     }
 }
 
-/// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#the-selectedcontent-element</summary>
+// https://html.spec.whatwg.org/multipage/form-elements.html#the-selectedcontent-element
 public partial class HtmlSelectedContentElement
 {
     /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#selectedcontent-disabled</summary>

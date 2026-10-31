@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.Imaging.Drawing;
 
-/// <summary>Identifies what <see cref="VectorPath.Combine"/> keeps of the areas two paths fill.</summary>
+/// <summary>Identifies what <see cref="VectorPath.Combine(VectorPath, PathCombineMode, FillRule, CancellationToken)"/> keeps of the areas two paths fill.</summary>
 public enum PathCombineMode
 {
     /// <summary>What at least one of the two paths fills.</summary>

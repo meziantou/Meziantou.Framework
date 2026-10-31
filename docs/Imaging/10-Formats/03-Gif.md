@@ -104,14 +104,43 @@ The palette leaves room for the transparent entry: a palette of 256 colors with 
 alpha throws an `ArgumentException`. The palette and the dithering modes are described in
 [Color reduction](../06-Processing/08-ColorReduction.md).
 
+## Store only what changes
+
+With [OptimizeFrames](cref:Meziantou.Framework.Imaging.Formats.GifEncoder.OptimizeFrames), each frame after the first one stores the rectangle of the pixels that differ from
+the canvas it is drawn on, and its unchanged pixels take the transparent entry. The disposal of the previous frame ("do
+not dispose", "restore to background" or "restore to previous") is the one that gives the smallest rectangle; a GIF frame
+cannot make a pixel transparent, so the rectangle of the previous frame grows to cover the pixels that become
+transparent, and its disposal clears them. A frame equal to the previous one is a 1x1 image. The animation looks the
+same, with the same number of frames, durations and play count:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_SaveOptimizedAnimation;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void SaveOptimizedAnimation(string inputPath, string gifPath, string apngPath, string webpPath)
+{
+    using var animation = Image.Load(inputPath);
+
+    // Each frame after the first one stores the region that differs from the canvas it is drawn on, with the
+    // blending and the disposal of the previous frame that reproduce it: the displayed frames, their durations and
+    // the play count are the same as with full-canvas frames
+    animation.Save(gifPath, new GifEncoder { OptimizeFrames = true });
+    animation.Save(apngPath, new PngEncoder { AnimationMode = PngAnimationMode.Animated, OptimizeFrames = true });
+    animation.Save(webpPath, new WebPEncoder { OptimizeFrames = true });
+}
+```
+<!-- endref -->
+
+The colors are compared before they are reduced: when every frame fits its palette, the displayed frames are exactly
+those of full frames. A frame with more colors is reduced from the colors of its rectangle only, and a pixel that does
+not change keeps the color the frame that drew it was reduced to. The encoder keeps two copies of the canvas (4 bytes per
+pixel each) and writes each frame when the next one is given, or when the output completes.
+
 ## Pitfalls
 
 - Durations are hundredths of a second: 1/30 s is rounded to 0.03 s by default. A duration above 655.35 s is rejected,
   never clamped, and so is a play count above 65,536.
 - A frame is at most 65,535 pixels per side.
-- Every frame is written as a full frame, without delta rectangles, so an animation that changes a small area stays
-  large. An APNG saved with [PngOptimization.MinimumSize](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.MinimumSize) stores only the rectangles that changed (see
-  [PNG and APNG](02-Png.md)).
+- Every frame is written as a full frame by default, so an animation that changes a small area stays large. Set
+  [OptimizeFrames](cref:Meziantou.Framework.Imaging.Formats.GifEncoder.OptimizeFrames) to store only the rectangle that changes in each frame (see below).
 - The plain-text extension (text rendered by the viewer) is rejected with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). Other
   unknown extensions, such as XMP or ICC application extensions, are skipped.
 - A GIF without its trailer, or with `0x00` bytes before its end, is rejected. The

@@ -447,6 +447,41 @@ public sealed class AvifDecoderTests
     }
 
     [Theory]
+    [InlineData((ulong)long.MaxValue, 0UL, 0UL, null, null)]
+    [InlineData((ulong)long.MaxValue + 1, 0UL, 0UL, null, "location of an item is out of range")]
+    [InlineData(1UL, (ulong)long.MaxValue - 1, 0UL, null, null)]
+    [InlineData(1UL, (ulong)long.MaxValue, 0UL, null, "location of an item is out of range")]
+    [InlineData(0UL, 0UL, (ulong)long.MaxValue, null, null)]
+    [InlineData(0UL, 0UL, (ulong)long.MaxValue + 1, null, "location of an item is out of range")]
+    [InlineData(0UL, 0UL, (ulong)long.MaxValue - 1, 1UL, null)]
+    [InlineData(0UL, 0UL, (ulong)long.MaxValue, 1UL, "length of the data of an item is out of range")]
+    public void ItemLocationsThatOverflowAreInvalid(ulong baseOffset, ulong extentOffset, ulong extentLength, ulong? secondExtentLength, string? error)
+    {
+        // 64-bit base offset, extent offsets and extent lengths: the location of the item, and the length of its data
+        // summed over its extents, fit in a signed 64-bit integer
+        var extents = new List<byte[]> { HeifFileBuilder.U64(extentOffset), HeifFileBuilder.U64(extentLength) };
+        if (secondExtentLength is { } length)
+        {
+            extents.Add(HeifFileBuilder.U64(0));
+            extents.Add(HeifFileBuilder.U64(length));
+        }
+
+        var builder = Still();
+        builder.OmittedBoxes.Add("iloc");
+        builder.ExtraMetaBoxes.Add(HeifFileBuilder.FullBox("iloc", 0, 0, [0x88, 0x80], HeifFileBuilder.U16(1), HeifFileBuilder.U16(1), HeifFileBuilder.U16(0), HeifFileBuilder.U64(baseOffset), HeifFileBuilder.U16((ushort)(extents.Count / 2)), HeifFileBuilder.Concat([.. extents])));
+        var data = builder.Build();
+        if (error is null)
+        {
+            Assert.Equal((8, 6), (Image.Identify(data).Width, Image.Identify(data).Height));
+        }
+        else
+        {
+            Assert.Contains(error, Assert.Throws<InvalidImageContentException>(() => Image.Identify(data)).Message, StringComparison.Ordinal);
+            Assert.Contains(error, Assert.Throws<InvalidImageContentException>(() => Image.Load(data).Dispose()).Message, StringComparison.Ordinal);
+        }
+    }
+
+    [Theory]
     [InlineData(0u, 1u)]
     [InlineData(1u, 0u)]
     [InlineData(0u, 0u)]
@@ -715,6 +750,48 @@ public sealed class AvifDecoderTests
         var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(data));
         Assert.Contains("16384", exception.Message, StringComparison.Ordinal);
         Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data).Dispose());
+    }
+
+    [Theory]
+    [InlineData("iovl", 1024, false)]
+    [InlineData("iovl", 1025, true)]
+    [InlineData("grid", 1024, false)]
+    [InlineData("grid", 1025, true)]
+    public void DerivationsOfMoreThan1024InputImagesAreNotSupported(string type, int inputCount, bool rejected)
+    {
+        // An overlay of one coded image used many times, or a grid of 32 x 32 (or 25 x 41) uses of an identity derivation
+        // of it: the inputs are counted before any of them is built
+        var builder = new HeifFileBuilder { PrimaryItemId = 1 };
+        var size = builder.AddProperty(HeifFileBuilder.ImageSize(8, 6));
+        var configuration = builder.AddProperty(HeifFileBuilder.Av1Configuration(1, 0, 8, monochrome: false, 0, 0));
+        var (rows, columns) = inputCount is 1024 ? (32, 32) : (25, 41);
+        if (type is "iovl")
+        {
+            builder.AddItem(1, "iovl", OverlayDescriptor(8, 6, inputCount), size);
+            builder.References.Add(("dimg", 1, [.. Enumerable.Repeat(3u, inputCount)]));
+        }
+        else
+        {
+            builder.AddItem(1, "grid", HeifFileBuilder.GridDescriptor(rows, columns, (uint)(columns * 8), (uint)(rows * 6)), builder.AddProperty(HeifFileBuilder.ImageSize((uint)(columns * 8), (uint)(rows * 6))));
+            builder.References.Add(("dimg", 1, [.. Enumerable.Repeat(2u, inputCount)]));
+        }
+
+        builder.AddItem(2, "iden", [], size).IsHidden = true;
+        builder.References.Add(("dimg", 2, [3]));
+        builder.AddItem(3, "av01", Payload, size, -configuration).IsHidden = true;
+        var data = builder.Build();
+        if (rejected)
+        {
+            var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(data));
+            Assert.Contains("more than 1024 input images", exception.Message, StringComparison.Ordinal);
+            Assert.Equal("derived image input count", exception.Feature);
+            Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data).Dispose());
+        }
+        else
+        {
+            var info = Image.Identify(data);
+            Assert.Equal(type is "iovl" ? (8, 6) : (columns * 8, rows * 6), (info.Width, info.Height));
+        }
     }
 
     [Fact]
@@ -1466,5 +1543,136 @@ public sealed class AvifDecoderTests
         var copy = ReferenceHeif.Parse(HeifFileBuilder.From(builder.Build()).Build());
         Assert.Equal(file.Items.Select(item => (item.Id, item.Type, item.ConstructionMethod)), copy.Items.Select(item => (item.Id, item.Type, item.ConstructionMethod)));
         Assert.Equal("<x:xmpmeta/>", Encoding.ASCII.GetString(copy.ReadItemData(copy.FindItem(3)!)));
+    }
+
+    private const string GainMapDirectory = "tests/Meziantou.Framework.Imaging.Avif.Tests/GainMaps/";
+
+    [Fact]
+    public void ToneMapItemGivesTheGainMapAndItsMetadata()
+    {
+        // avifgainmaputil combine (libavif 1.3.0): the tone map item 2 derives from the primary item 1 and the gain map 3
+        // (hidden); its data is a version byte and the ISO 21496-1 metadata, whose fractions are written here as they are
+        // stored (avifgainmaputil printmetadata prints the red values for the three channels)
+        var data = GainMapTestFiles.Read(GainMapDirectory + "gainmap-lossless.avif");
+        var images = AuxiliaryImageCollection.Load(data);
+        Assert.Equal(ImageFormat.Avif, images.Format);
+        var gainMap = Assert.Single(images);
+        Assert.Same(gainMap, images.GainMapImage);
+        Assert.Equal(AuxiliaryImageKind.GainMap, gainMap.Kind);
+        Assert.Null(gainMap.AuxiliaryType);
+        Assert.Equal(new Size(64, 48), gainMap.Size);
+        var expected = new GainMapMetadata(0, 14476939 / 4194304.0,
+        [
+            new GainMapChannel(-11607503 / 16777216.0, 1778033 / 524288.0, 1, 1 / 64.0, 1 / 64.0),
+            new GainMapChannel(-7942849 / 16777216.0, 11544697 / 4194304.0, 1, 1 / 64.0, 1 / 64.0),
+            new GainMapChannel(-6664849 / 8388608.0, 295503 / 131072.0, 1, 1 / 64.0, 1 / 64.0),
+        ]);
+        Assert.Equal(expected, gainMap.GainMapMetadata);
+
+        using var map = gainMap.Decode();
+        Assert.Equal(new Size(64, 48), map.Size);
+        Assert.Equal(PixelFormat.Rgb24, map.PixelFormat);
+
+        var downscaled = Assert.Single(AuxiliaryImageCollection.Load(GainMapTestFiles.Read(GainMapDirectory + "gainmap-downscaled.avif")));
+        Assert.Equal(new Size(32, 24), downscaled.Size);
+        Assert.Equal(new GainMapMetadata(0, 12345981 / 4194304.0, [new GainMapChannel(-6738683 / 16777216.0, 3024221 / 1048576.0, 1, 1 / 64.0, 1 / 64.0)]), downscaled.GainMapMetadata);
+        using var monochrome = downscaled.Decode();
+        Assert.Equal(PixelFormat.Gray8, monochrome.PixelFormat);
+    }
+
+    [Fact]
+    public void TheGainMapDoesNotChangeTheDecodingOfThePrimaryItem()
+    {
+        // The same file without the tone map item and the gain map decodes to the same image
+        var data = GainMapTestFiles.Read(GainMapDirectory + "gainmap-lossless.avif");
+        var builder = HeifFileBuilder.From(data);
+        foreach (var item in builder.Items.Where(item => item.Id is not 1).ToList())
+        {
+            builder.Items.Remove(item);
+        }
+
+        builder.References.Clear();
+        var plain = builder.Build();
+        Assert.Empty(AuxiliaryImageCollection.Load(plain));
+
+        using var image = Image.Load(data);
+        using var expected = Image.Load(plain);
+        Assert.Equal(expected.PixelFormat, image.PixelFormat);
+        Assert.Equal(expected.Metadata.Cicp, image.Metadata.Cicp);
+        Assert.Equal(ImageSnapshots.CaptureFrame(expected.Frames[0]).ToArray(), ImageSnapshots.CaptureFrame(image.Frames[0]).ToArray());
+    }
+
+    [Theory]
+    [InlineData("gainmap-lossless", null)]
+    [InlineData("gainmap-downscaled", null)]
+    [InlineData("gainmap-bt2020-alternate", (byte)9)]
+    public void GainMapRenditionMatchesTheReference(string name, byte? alternatePrimaries)
+    {
+        // The reference is the formula of ISO 21496-1 evaluated with numpy on the planes that libavif decodes, the base
+        // image converted to the BT.2020 primaries of the alternate rendition when the gain map does not use the color
+        // space of the base image. The tolerance covers the decoding of the base image by libavif with 12 bits
+        var images = AuxiliaryImageCollection.Load(GainMapTestFiles.Read(GainMapDirectory + name + ".avif"));
+        Assert.Equal(alternatePrimaries is null, images.GainMapImage!.GainMapMetadata!.UseBaseColorSpace);
+        using var rendition = images.DecodeHdr(hdrHeadroom: 5);
+        if (alternatePrimaries is { } primaries)
+        {
+            Assert.Equal(new CicpColorDescription(primaries, 8, 0, fullRange: true), rendition.Metadata.Cicp);
+        }
+        else
+        {
+            Assert.Null(rendition.Metadata.Cicp);
+            Assert.Equal(ColorTransferFunction.Linear, rendition.Metadata.TransferFunction);
+        }
+
+        GainMapTestFiles.AssertClose(rendition, GainMapTestFiles.ReadHalfFloats(GainMapDirectory + name + ".reference.f16"), channels: 3, tolerance: 0.05, medianTolerance: 0.002, context: name);
+    }
+
+    [Fact]
+    public void AGainMapInTheColorSpaceOfTheAlternateRenditionNeedsThatColorSpace()
+    {
+        // The primaries of the alternate rendition are those of the 'colr' property of the tone map item, which the
+        // metadata alone does not have
+        var images = AuxiliaryImageCollection.Load(GainMapTestFiles.Read(GainMapDirectory + "gainmap-bt2020-alternate.avif"));
+        var gainMap = images.GainMapImage!;
+        using var baseImage = Image.Load(GainMapTestFiles.Read(GainMapDirectory + "gainmap-bt2020-alternate.avif"));
+        using var map = gainMap.Decode();
+        Assert.Throws<UnsupportedImageFeatureException>(() => gainMap.GainMapMetadata!.Apply(baseImage, map, 5));
+    }
+
+    [Fact]
+    public void AMalformedToneMapItemLeavesThePrimaryItemDecodable()
+    {
+        var data = GainMapTestFiles.Read(GainMapDirectory + "gainmap-downscaled.avif");
+        using var expected = Image.Load(data);
+        var expectedPixels = ImageSnapshots.CaptureFrame(expected.Frames[0]).ToArray();
+
+        // Truncated metadata: the gain map is listed without parameters, and the rendition reports the error
+        var builder = HeifFileBuilder.From(data);
+        var toneMap = builder.Items.Single(item => item.Type is "tmap");
+        toneMap.Data = toneMap.Data[..20];
+        var truncated = builder.Build();
+        var images = AuxiliaryImageCollection.Load(truncated);
+        Assert.Equal(AuxiliaryImageKind.GainMap, Assert.Single(images).Kind);
+        Assert.Null(images[0].GainMapMetadata);
+        Assert.Throws<InvalidImageContentException>(() => images.DecodeHdr(1));
+        using (var image = Image.Load(truncated))
+            Assert.Equal(expectedPixels, ImageSnapshots.CaptureFrame(image.Frames[0]).ToArray());
+
+        // A version of the tone map item that this reader does not know: the parameters are not known
+        toneMap.Data = [1, .. toneMap.Data[1..]];
+        images = AuxiliaryImageCollection.Load(builder.Build());
+        Assert.Null(Assert.Single(images).GainMapMetadata);
+        Assert.Throws<UnsupportedImageFeatureException>(() => images.DecodeHdr(1));
+
+        // A gain map item without size is not listed
+        builder = HeifFileBuilder.From(data);
+        var gainMapItem = builder.GetItem(3);
+        var sizes = gainMapItem.Associations.Where(association => builder.Properties[association.PropertyIndex - 1].AsSpan(4, 4).SequenceEqual("ispe"u8)).ToList();
+        foreach (var association in sizes)
+        {
+            gainMapItem.Associations.Remove(association);
+        }
+
+        Assert.Empty(AuxiliaryImageCollection.Load(builder.Build()));
     }
 }

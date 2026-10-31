@@ -476,14 +476,14 @@ internal sealed class DnssecValidator
         return ValidationOutcome.Bogus(new DnssecValidationIssue(DnssecValidationIssueCode.SignatureVerificationFailed, "No RRSIG signature could be verified with the matching DNSKEY.", record.Name, record.RecordType));
     }
 
+    /// <summary>Serial-number comparison (RFC 1982): true when <paramref name="left"/> precedes <paramref name="right"/>.</summary>
+    private static bool IsBefore(uint left, uint right) => unchecked((int)(left - right)) < 0;
+
     /// <summary>
     /// Issues an auxiliary query for the chain of trust. Failures are reported as a <see langword="null"/> result so
     /// the caller can produce an Indeterminate verdict: a transient network error while fetching a DS or DNSKEY must
     /// not throw away the answer the caller actually asked for.
     /// </summary>
-    /// <summary>Serial-number comparison (RFC 1982): true when <paramref name="left"/> precedes <paramref name="right"/>.</summary>
-    private static bool IsBefore(uint left, uint right) => unchecked((int)(left - right)) < 0;
-
     private async Task<DnsResponseMessage?> TryQueryAsync(string name, DnsQueryType type, CancellationToken cancellationToken)
     {
         if (_queryBudget <= 0)

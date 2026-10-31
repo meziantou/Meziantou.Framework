@@ -62,6 +62,7 @@ public sealed class DefaultsTests
         Assert.Equal(CompressionLevel.Optimal, png.CompressionLevel);
         Assert.Equal(PngFilter.Adaptive, png.Filter);
         Assert.False(png.Interlaced);
+        Assert.False(png.OptimizeFrames);
         Assert.Equal(FrameDurationRounding.RequireExact, png.DurationRounding);
         Assert.Equal(MetadataHandling.Strict, png.MetadataHandling);
 
@@ -71,6 +72,7 @@ public sealed class DefaultsTests
         Assert.Null(gif.BackgroundColor);
         Assert.Equal(DitheringMode.None, gif.Quantization.Dithering);
         Assert.Equal(256, gif.Quantization.MaxColors);
+        Assert.False(gif.OptimizeFrames);
         Assert.Equal(FrameDurationRounding.RoundToNearest, gif.DurationRounding);
         Assert.Equal(MetadataHandling.Strict, gif.MetadataHandling);
 
@@ -142,7 +144,7 @@ public sealed class DefaultsTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new GifEncoder { Quantization = new QuantizeOptions { MaxColors = 257 } });
         Assert.Throws<ArgumentOutOfRangeException>(() => new PngEncoder { Filter = (PngFilter)42 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new PngEncoder { PixelLayout = (PngPixelLayout)2 });
-        Assert.Throws<ArgumentOutOfRangeException>(() => new PngEncoder { Optimization = (PngOptimization)2 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PngEncoder { Optimization = (PngOptimization)3 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new PngEncoder { MetadataHandling = (MetadataHandling)42 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { Quality = 101 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { Effort = 10 });
@@ -232,6 +234,64 @@ public sealed class DefaultsTests
         Assert.Equal(AvifCompression.Lossless, Assert.IsType<AvifEncoder>(ImageEncoder.FromPath("a.avif")).Compression);
         Assert.IsType<AvifEncoder>(ImageEncoder.FromPath("dir/a.AVIFS"));
         Assert.Throws<ArgumentException>(() => ImageEncoder.FromPath("noextension"));
+    }
+
+    [Fact]
+    public void PublicEncoderSelectionMatchesTheSelectionOfSave()
+    {
+        string[] readOnly = [".jpx", ".jpf"];
+        foreach (var info in ImageFormatInfo.All)
+        {
+            foreach (var extension in info.FileExtensions)
+            {
+                if (readOnly.Contains(extension, StringComparer.Ordinal))
+                {
+                    Assert.Contains("can be read but not written", Assert.Throws<ArgumentException>("extension", () => ImageEncoder.FromFileExtension(extension)).Message, StringComparison.Ordinal);
+                    continue;
+                }
+
+                // With or without the period, in any ASCII case: the encoder Save(path) selects, settings included
+                var expected = ImageEncoder.FromPath("a" + extension);
+                foreach (var spelling in new[] { extension, extension[1..], extension.ToUpperInvariant() })
+                {
+                    var encoder = ImageEncoder.FromFileExtension(spelling);
+                    Assert.Equal(expected.GetType(), encoder.GetType());
+                    Assert.Equal(info.Format, encoder.Format);
+                }
+            }
+        }
+
+        Assert.Equal(PngAnimationMode.Animated, Assert.IsType<PngEncoder>(ImageEncoder.FromFileExtension(".apng")).AnimationMode);
+        Assert.Equal(PnmPixelLayout.Bitmap, Assert.IsType<PnmEncoder>(ImageEncoder.FromFileExtension("pbm")).PixelLayout);
+        Assert.Equal(Jpeg2000Container.Codestream, Assert.IsType<Jpeg2000Encoder>(ImageEncoder.FromFileExtension(".J2K")).Container);
+        var jhc = Assert.IsType<Jpeg2000Encoder>(ImageEncoder.FromFileExtension("jhc"));
+        Assert.Equal((Jpeg2000BlockCoder.HighThroughput, Jpeg2000Container.Codestream), (jhc.BlockCoder, jhc.Container));
+        Assert.Equal(IconKind.Cursor, Assert.IsType<IcoEncoder>(ImageEncoder.FromFileExtension("cur")).Kind);
+        Assert.Throws<ArgumentNullException>("extension", () => ImageEncoder.FromFileExtension(null!));
+        foreach (var invalid in new[] { "", ".", "xyz", ".xyz", "a.png", "..png", " .png" })
+        {
+            Assert.Throws<ArgumentException>("extension", () => ImageEncoder.FromFileExtension(invalid));
+        }
+    }
+
+    [Fact]
+    public void EveryFormatHasADefaultEncoder()
+    {
+        foreach (var format in Enum.GetValues<ImageFormat>().Where(format => format != ImageFormat.Unknown))
+        {
+            var encoder = ImageEncoder.Create(format);
+            Assert.Equal(format, encoder.Format);
+            Assert.NotSame(encoder, ImageEncoder.Create(format));
+        }
+
+        // The defaults are those of the encoder types: the variants of an extension are not applied
+        Assert.Equal(PngAnimationMode.Auto, Assert.IsType<PngEncoder>(ImageEncoder.Create(ImageFormat.Png)).AnimationMode);
+        Assert.Equal(PnmPixelLayout.Auto, Assert.IsType<PnmEncoder>(ImageEncoder.Create(ImageFormat.Pnm)).PixelLayout);
+        Assert.Equal(Jpeg2000Container.Jp2, Assert.IsType<Jpeg2000Encoder>(ImageEncoder.Create(ImageFormat.Jpeg2000)).Container);
+        Assert.Equal(IconKind.Icon, Assert.IsType<IcoEncoder>(ImageEncoder.Create(ImageFormat.Ico)).Kind);
+        Assert.Equal(IconKind.Cursor, Assert.IsType<IcoEncoder>(ImageEncoder.Create(ImageFormat.Cur)).Kind);
+        Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create(ImageFormat.Unknown));
+        Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageEncoder.Create((ImageFormat)1000));
     }
 
     [Fact]

@@ -97,7 +97,9 @@ rendering also changes the images of the pages (`DocumentationImageTests`).
   widen the others losslessly (`ImageWriterCore`, `ImageCollectionWriterCore`).
 - Processing: `Rgb48` has kernels of its own. The filtering kernels and the `Pixelate`/`OilPaint`/`Flatten` effects run
   `La16`, `La32` and `A8` through `ProcessingBridge` (an `Rgba32`/`Rgba64` copy of the frame, `Image.KernelPixelFormat`
-  for the plans and scratch sizes; `Flatten` rejects `A8`, which cannot hold the flattened colors), and drawing
+  for the plans and scratch sizes; `Flatten` rejects `A8`, which cannot hold the flattened colors), and so do the
+  morphological filters (`MorphologyFilter`; `TopHat` and `BlackHat` reject `A8`, whose alpha they keep). The tone
+  curves and lookup tables (`ColorLookup`) read every integer format natively through `ToneSamples`, and drawing
   composites them through `DrawingKernels.CompositeBridged`, their paints holding the gray level in the three colors. A
   new per-frame operation must handle them natively, go through the bridge, or reject them before any allocation.
 
@@ -198,7 +200,11 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   (`PngImageDataEncoder.StartSource` with `count: true`), in bands, and the winner is compressed again for real; nothing
   is buffered. Every still image keeps the layout of the pixel format among the candidates and the level of the default
   encoder among the trials, so it is never larger than the default output (the conformance suite asserts it for the
-  corpus, animations included). Keep these findings:
+  corpus, animations included). `PngOptimization.Layout` goes through the same session for still images only (an
+  animation keeps the default session): it skips every trial, takes the candidate with the smallest unfiltered data
+  (`GetSmallestUnfiltered`), and compresses once with the filter strategy and the level of the encoder. Its analysis does
+  not record the opaque colors (no color key, no 2 MiB set), which lets `PngLayoutAnalysis` stop reading rows once nothing
+  can change. Keep these findings:
   - A lower zlib level is sometimes smaller than `SmallestSize` (zlib-ng uses other match strategies): the last stage
     tries `Fastest`, `Optimal` and `SmallestSize`.
   - FFmpeg 9 misplaces the packed samples (1, 2 and 4 bits) of an APNG frame region that does not start at column 0, even
@@ -209,6 +215,29 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   - The harness reader decodes every color type and bit depth to 16-bit RGBA and composites APNG frames
     (`ReferencePng.Canonical.cs`), rejecting any OVER pixel whose result depends on the rounding of a decoder; verify
     `MinimumSize` output with `OptimizedPngOutputVerifier`, never with `ApngOutputVerifier` (full-canvas frames only).
+- **Animation frame regions** (`OptimizeFrames` of `GifEncoder`, `PngEncoder` and `WebPEncoder`; `AnimationFrameDelta`,
+  the encoder side of `AnimationCompositor`). One helper keeps the displayed frame (and the canvas it was drawn on, for
+  `RestorePrevious` and for GIF), compares each frame with the canvases each disposal of the previous frame leaves, and
+  chooses the smallest region; each format declares what it can write (`AnimationDeltaRules`). Opt-in: the default
+  output of the three encoders keeps its full-canvas frames and its bytes. `PngOptimization.MinimumSize` has its own
+  comparison (it compresses the candidates) and ignores the setting. Keep these findings:
+  - The displayed frames, their number and their durations never change: an unchanged frame is a 1x1 region, never merged
+    into the previous one. The first frame (and the APNG poster) covers the canvas.
+  - OVER is only used where it is exact. WebP blending rounds translucent pixels in libwebp (`anim_dump`): only opaque
+    changed pixels are blended, the others replace the canvas ("do not blend"). APNG also blends a translucent pixel on a
+    fully transparent canvas pixel (`TranslucentOverTransparent`), as `MinimumSize` does.
+  - A GIF image cannot make a pixel transparent: the previous frame is written only once the next one is planned (from
+    the canvases, which hold alpha-reduced pixels before color reduction), so that its region can grow to cover the
+    pixels that become transparent (`EnlargePreviousRegion`). APNG keeps the compressed chunks of a frame in a private
+    buffer and writes its `fcTL` when the next frame chose its disposal; WebP patches the disposal bit of the previous
+    `ANMF` (animations need a seekable destination anyway).
+  - Apple ImageIO restores a GIF frame to background with the opaque background color, not transparent pixels, when the
+    image drawn next has no transparent entry: a frame that has transparent pixels always gets the transparent entry
+    (`GifOutputVerifier` checks it), even when its region has none.
+  - The regions of indexed APNG output have 8-bit indexes (FFmpeg misplaces packed pixels of a region, see above).
+  - The independent checks: `GifOutputVerifier` (regions and disposals with `OptimizeFrames`), `OptimizedPngOutputVerifier`,
+    `ReferenceWebP.ComposeDisplayedFrames` (lossless, rejects translucent blended pixels), and FFmpeg, libwebp and Apple
+    ImageIO in the interop tests (`DeltaFrameAnimations` holds the shared scenarios).
 - **Apple CgBI PNG** (`PngStructureParser.IsAppleCgbi`, `PngSampleFormat.ExpandCgbiBgra`). No specification describes
   it: Xcode's `pngcrush -iphone` writes it and Apple ImageIO (`sips`) is the reference. Its raw deflate datastream goes
   through the zlib inflater of the other files, behind a synthetic header and followed by the checksum of what it
@@ -580,6 +609,18 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   9.0.2 misreads the category 16.
   Apple ImageIO does not read lossless files reliably. The process with arithmetic coding (SOF11) is not decoded: no
   tool at hand writes or reads it.
+- **Scaled JPEG decoding** (`ImageDecodeRequest.ScaleDenominator`/`TargetSize`, `JpegFrameComponent.SetGeometry`,
+  `JpegIdct.TransformReduced`). A codec opts in with `ImageCodec.SupportsScaledDecoding`; the drivers reject an exact scale
+  for the others before decoding (`ImageDecodeRequest.For`), and a decoder picks its denominator with
+  `GetScaleDenominator`. A JPEG block gives the means of the samples of its full inverse DCT (a box filter from all 64
+  coefficients, not the transform of the lowest frequencies, which rings and was 10 dB further from djpeg); a subsampled
+  component is reduced by `s / gcd(s, ratio)` only, per direction, and upsampled by what remains. The full-scale path
+  must not move: a component that is not reduced goes through the unchanged 8x8 code, and the full decodes of the
+  fixtures and of photos were hashed against `main` (identical). The test contract is `JpegTestImage.GetExpectedPixels(s)`
+  (the mean of the exact samples, two-sided ambiguity check: reduced samples are often exact halves); djpeg
+  `-scale 1/n` agrees within 3 units except on 4:2:2, where djpeg upsamples its chrominance and the library is closer to
+  the box filter of the full decode. The entropy decoding bounds the gain in time (about half of a full decode of a
+  4:2:0 photo at 1/8).
 - **JPEG 2000** (`Internals/Codecs/Jpeg2000`). Written from Rec. ITU-T T.800 (Part 1) and T.814 (Part 15, the
   high-throughput block coder, `Jpeg2000/Ht`); OpenJPEG, OpenJPH and FFmpeg are test oracles only. The structure parser
   reads the boxes of a file and gives the codestream to `Jpeg2000CodestreamWalker`, which asks for whole marker
@@ -683,11 +724,23 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   significant first whatever the byte order of the file; on a little-endian computer, `tiffcp -B` of libtiff 4.7.0
   writes big-endian pages that libtiff and GDAL read back with the bytes of each sample swapped, so a big-endian oracle
   file comes from GDAL, which reads and writes them consistently.
+  A page of separate planes (`TiffPage.IsPlanar`) has blocks of one sample per pixel (`BlockSamplesPerPixel`), each
+  predicted on its own; the decoder reads the blocks of the planes of one place together (`TiffPage.GetBlockIndex`, also
+  the order of `TiffBlockWorkers`) and interleaves them into chunky rows (`TiffPageDecoder.Interleave`), so the expander
+  never sees planes. Planar YCbCr data is rejected (its planes may have their own sizes). The writer serializes blocks
+  (`TiffDocumentWriter.FillBlock`): the rows of a strip, or a tile cut from a band of the rows of its row of tiles and
+  padded with zero samples; the predictors (`ApplyPredictor`) then work on each row of the block. Default settings must
+  keep writing the same bytes.
 - **OpenEXR** (`Internals/Codecs/Exr`). The structure parser reads the header (validated whole by `ExrHeader.Complete`,
   so that `Identify` reports every rejection), the offset table, then the chunks in the order of their offsets: the input
   is read forward only, and a chunk must start at its offset, carry its own coordinates and end before the next one.
   `ExrDecoder` decompresses each chunk of the full-resolution image (`ExrChunkDecompressor`) and writes its samples in
-  place in the rows of the frame (a tile covers part of a row); when the frame is not in the source layout, it decodes
+  place in the rows of the frame (a tile covers part of a row), only the lines and columns inside the image window
+  (`ExrHeader.ImageWindow`: the display window, or the data window with `OpenExrWindowMode.DataWindow`). With a layer
+  (`OpenExrDecodingOptions.Layer`), `ExrHeader.ResolveRoles` gives the other channels the role `Ignored`: they are
+  decompressed with the chunk and skipped, line by line, since a scan-line channel that is ignored may be sub-sampled.
+  The options live on `ImageConfiguration` so that `Identify`, loads, readers and collections report the same image; a
+  layer never falls back to another one. When the frame is not in the source layout, it decodes
   into a staging image and converts it at the end (`Image.PrepareConversion`: a tone mapping needs the peak of the whole
   image). The compressions cite the sections of `ExrCompression.md`; they are bit-exact with OpenEXR, PXR24 and B44
   included (their loss happens when the file is written). The B44 table of pLinear channels is computed from
@@ -745,6 +798,43 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   there, then a conversion to `IccCorpus.cs`. The fixtures README lists what LittleCMS cannot judge (CMYK
   interpolation between grid points, three black point compensation cases).
 - Pixels and their profile change together: `ConvertColorProfile` is transactional. No other operation converts colors.
+- Device link and abstract profiles only exist in a sequence (`IccColorTransform.Create(IReadOnlyList<IccProfile>)`,
+  `IccPipeline.Create(IReadOnlyList<IccProfile>, ...)`); `IccProfileModel.Create` refuses them elsewhere. The sequence
+  follows the convention of other color management systems: a device profile entered with device values goes to the
+  connection space, one entered from the connection space goes to its device values, so a proof lists the printer
+  twice. A sequence of two device profiles must stay `IccPipeline.Create(IccProfile, IccProfile, ...)` exactly. The
+  LittleCMS literals of `IccColorTransformTests` come from `cmsCreateMultiprofileTransform` (no optimization) on the
+  synthetic profiles of `IccProfileBuilder`; LittleCMS computes black point compensation and absolute colorimetry per
+  pair of profiles, so compare it only on sequences whose device profiles have a black black.
+- `GamutMapping.ReduceChroma` is the gamut mapping of CSS Color 4 (section 13.2), as an `IccGamutMapStage` inserted
+  right before the conversion of a destination from the connection space (`IccProfileModel.CreateGamutMapping`):
+  exact gamut for matrix-based and CICP destinations, round trip through the colorimetric tables for table-based ones.
+  `Clip` adds no stage, so the default conversions are unchanged bit for bit. The HDR clipping policy is separate
+  (`HdrToneMapStage`).
+- `IccColorTransformOptions.ClipFloatingPointSamples = false` evaluates `IccStage.ApplyUnbounded` instead of `Apply` for
+  the floating-point samples of `IccColorTransform`: tone curves extended beyond [0, 1] (`IccCurve.EvaluateUnbounded`,
+  `IccInverseCurve.EvaluateUnbounded`), matrices as they are, clipping stages skipped. A stage that has a range (a lookup
+  table, a gamut mapping) keeps `SupportsUnbounded = false`, which makes `Create` refuse the option; a new stage without
+  range overrides both members.
+
+## Auxiliary images and gain maps
+
+`AuxiliaryImageCollection` lists the images a file stores next to its primary image (`Internals/GainMaps`): HEIF
+thumbnails, auxiliary images and `tmap` gain maps (`HeifAuxiliaryScanner`), the images of a JPEG Multi-Picture Format
+index (`JpegAuxiliaryScanner`). A HEIF item is decoded by the decoder of the file with `ImageDecodeRequest.HeifItemId`,
+which makes `HeifStructureParser` present that item instead of the primary item or the sequence. Ordinary decoding never
+reads these images.
+
+- The gain map formula and the `hdrgm` XMP properties come from the public Adobe "Gain map" and Android Ultra HDR
+  specifications; the binary layout of ISO 21496-1 (the standard itself is not public) was checked field by field
+  against the files of libultrahdr and libavif, never read from their source. A newer minimum version or unknown flags
+  make the metadata unknown; malformed metadata is kept as the error of `DecodeHdr`, and the primary image always decodes.
+- Oracles (`tools/Meziantou.Framework.Imaging.GainMapFixtures`, a Docker image): libultrahdr 1.4.0 `ultrahdr_app -m 1`
+  decodes Ultra HDR files to linear half floats in the gamut of the HDR intent (from the ICC profile of the gain map
+  image, not the base image); libavif 1.3.0 `avifgainmaputil printmetadata` prints the red values for all three channels
+  (read the `tmap` item instead), and `avifgainmaputil tonemap` is not an oracle (its output differs from the formula by
+  several percent): the AVIF references are the formula evaluated with numpy on the planes libavif decodes. Both tools
+  upsample a smaller gain map with their own filter, which Ultra HDR leaves to the reader: compare with a tolerance.
 
 ## Drawing
 
@@ -783,6 +873,10 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
     `GradientColorSpace` other than `Encoded`, the stops stay 16-bit sRGB colors, are mixed in linear light or in
     Oklab (`SrgbTransfer`, `Math.Cbrt`: the one place of the drawing code that uses functions of the platform), and
     the 16-bit result is converted like a brush color; the color of a stop is always written as it is.
+  - `GradientBrush.Dither` (off by default) replaces the rounding offset by the threshold of the 8x8 Bayer matrix at
+    the pixel of the frame, only on frames of 8 bits per component (`GetPaintMax` is 255); in the other color spaces
+    the 16-bit colors are moved by less than half an 8-bit step before their conversion. A dithered gradient never
+    takes the row-color shortcuts of `GradientEvaluator`.
 - `PaintProfile` is the one way a color profile reaches a drawing: the colors the caller gives go through
   `PaintColorConverter` (the pipeline of `Image.CreatePaintPipeline`, whose destination is the profile of the image,
   or its CICP color space through `IccPipeline.Create(IccProfile, CicpColorSpace, ...)`) before `ConvertDrawingColor`.
@@ -810,6 +904,12 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   into a sink, as drawing does, so that they answer for what is drawn; `GetTightBounds` (`PathBounds`) is computed from
   the curves, and contains their chords. `Widen` runs the `Stroker` into a path builder: the same pieces in the same
   order as a draw call, so filling the result is stroking, bit for bit (`FillingAWidenedPathIsStrokingThePath`).
+  `StrokeContains` runs the same `Stroker` into a `WindingSink` (no path is built): its `NearChordFilter` passes on
+  only the runs of chords within the reach of the pen from the point, each with one chord of context on both sides (a
+  join that can contain the point is at a vertex whose two chords are near), and the arcs of joins and caps whose
+  triangle misses the point become chords. Change the stroker with `AStrokeOfARandomPathContainsWhatItsWidenedPathContains`
+  green. `VectorPathMeasure` keeps the chords `DistanceSink` and `ClosestPointSink` walk, and gives their answers bit
+  for bit (same operations, same order; groups of chords are skipped by a bound with a margin, never by a tie).
 - `EnumerateSegments` is the only public view of the elements of a path: it gives what the builder takes, never the
   internal form (an `ArcPiece` becomes the arc of SVG, through `ArcGeometry.GetAxes`; an ellipse becomes two arcs).
   `Reverse` (`PathReverser`) works on the elements, exactly; `Trim` (`TrimSink`) works on the chords, like the other
@@ -1023,8 +1123,10 @@ thin public types over its `FontFace`.
   outside the stack: with `FontStack.WithInstalledFallback`, a cluster no font of the stack has is looked for by
   `InstalledFontFallback` (preferred families, color emoji families, the per-script families of
   `InstalledFontFallbackFamilies` with the current platform first, then every covering family, same style first, in
-  the order of the collection), before the fonts that only have its first character. The fallback caches the font of
-  each cluster and of each face, so a layout loads each font once and adjacent clusters share a font (one item).
+  the order of the collection), before the fonts that only have its first character. The families of a Han ideograph
+  depend on the language of the style (`TextStyle.HanForms`, from its OpenType language tags): anything the fallback
+  keeps that depends on that choice is keyed by it. The fallback caches the font of each cluster (per `HanForms`) and
+  of each face, so a layout loads each font once and adjacent clusters share a font (one item).
   Tests use `SystemFontCollection.Create` on a temporary directory (`TemporaryFontDirectory`) and fonts whose advance
   says which one was chosen; only the smoke test in `FontTests` uses `Default`.
 - **The steps of a paragraph**: levels, items (one level, script, font and shaping style each), shaping, lines, display
@@ -1034,6 +1136,18 @@ thin public types over its `FontFace`.
   after a line, only the start is shaped again (`ShapeStart`: two line widths, cut after a space), and the rest is a
   pending item that keeps its advances: shaping the whole rest after each line made a layout quadratic. A line is
   still shaped as a whole: `BuildLine` merges the parts of a run that such a cut separated.
+- **Measuring a line** goes through `LinePen`: the width so far, and the aligned tabulation stop
+  (`TextLayoutOptions.TabStops`) whose advance depends on the text after it, up to the next tabulation or the white
+  space that hangs. `FindBreak`, `FindOptimalBreaks`, `Trim` and `BuildLine` all measure with it, so a wrapped line
+  is as wide as it is drawn. Without stops, its arithmetic is the one of the uniform stops, operation for operation.
+- **Optimal line breaking** (`TextLineBreakStrategy.Optimal`, `FindOptimalBreaks`) is a dynamic program over the
+  break opportunities of the rest of a paragraph, from the advances it has before its lines are shaped again; each
+  line it plans is checked with the current advances before it is built, and a line that no longer fits plans the
+  rest again (a bounded number of times, then greedy). Greedy breaking stays the default and is not changed by it.
+- **Justification between characters** (`TextLayoutOptions.Justification`) classifies each glyph in `BuildLine`
+  (`JustificationClass`, only when it is used) and marks the opportunities in `Finish`
+  (`MarkJustificationOpportunities`), in display order: the room goes after the last glyph of a cluster and its marks,
+  so it never moves the glyphs of the cluster. `InterWord` keeps the marking of the spaces of `BuildLine` unchanged.
 - **Lines follow each other in the text and cover it** (`TextLine.Start` and `Length`), whatever cut them: a width, a
   line break, a trimming. `IsTruncated` is the only way text is left out. `TextLayoutFuzzTests` checks it on random
   texts and options.
@@ -1170,7 +1284,10 @@ thin public types over its `FontFace`.
   `ILanes`: with AVX2, blocks at least 8 wide run the column pass 8 columns at a time in `Vector256`.
 - `Vector256` (AVX2) and `Vector512` (AVX-512) paths never run on Arm64. Test them on an x64 machine three ways: by
   default, with `DOTNET_EnableAVX512=0` (`DOTNET_EnableAVX512F=0` leaves `Vector512` accelerated on .NET 11) and with
-  `DOTNET_EnableAVX=0`, and check with a deliberately broken path that each setting runs the path it is meant to.
+  `DOTNET_EnableAVX2=0` (it turns off AVX2, FMA and `Vector256` together; `DOTNET_EnableAVX=0` changes nothing), and check
+  with a deliberately broken path that each setting runs the path it is meant to. `VectorizedKernelFallbackTests` runs
+  `VectorizedKernelTests` again in a child process with each of these settings and `DOTNET_EnableHWIntrinsic=0` on x64
+  (the CI legs included), so a kernel tested there has its narrower paths and its scalar fallback tested too.
 - A function that encodes a value with `Math.Pow` and rounds it to an 8-bit sample is replaced by its thresholds
   (`QuantizationThresholds`, built lazily from the scalar function and compared with it around every threshold): the
   linear-light `Store` of `WorkingSamples` and the linear-light compositing of drawing use it, and so do the 8-bit ICC
@@ -1186,7 +1303,8 @@ thin public types over its `FontFace`.
   rented from the scope of the conversion (a scope of the default limits for `IccColorTransform`). The last stage of a
   16-bit conversion is still evaluated: its inputs are the doubles that come out of a matrix, not 65,536 values.
 - Default parallelism is one worker (`ImageConfiguration.MaxDegreeOfParallelism`). Only `Resize`, the transformations,
-  `Convolve`, the blurs (`GaussianBlur`, `BoxBlur`, `MedianBlur`), `Sharpen`, `DetectEdges`, the `Pixelate`, `OilPaint` and
+  `Convolve`, the blurs (`GaussianBlur`, `BoxBlur`, `MedianBlur`, and `PercentileFilter`, which shares the median's
+  plan), `Sharpen`, `DetectEdges`, the `Pixelate`, `OilPaint` and
   `Flatten` effects (`EffectScratch`), the `ImageSimilarity` metrics (SSIM, PSNR, SSIMULACRA 2, Butteraugli) and the
   codec work listed below are parallel, and their result must not depend on the worker count (`ParallelConvolutionTests`,
   `ImageSimilarityTests.Metrics_DoNotDependOnTheWorkerCount`: a frame needs 65,536 pixels to get several workers). Split
@@ -1389,7 +1507,10 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   FFmpeg or Apple ImageIO (the JPEG pages, which FFmpeg does not read), and the pages FFmpeg writes with the library.
   FFmpeg 9.0.2 reads only the floating-point RGB and RGBA pages of little-endian classic files (no gray, no big-endian
   floats, no BigTIFF): every floating-point layout, byte order and offset size of the encoder was checked with GDAL and
-  libtiff in the same Docker image when it was written; check them again there after changing the writer.
+  libtiff in the same Docker image when it was written; check them again there after changing the writer. `tiffcp -p
+  separate` of libtiff 4.7.2 only separates 8-bit samples (and leaves a broken file otherwise): the 16-bit and
+  floating-point planar fixtures come from GDAL (`gdal_translate -co INTERLEAVE=BAND`). Apple ImageIO fails on some
+  PackBits tiles, libtiff's own included (a tile as wide as the page): it is no oracle for them.
 - **CMYK JPEG fixtures.** A four-component JPEG file is an `unsupported` fixture (identified, rejected by a load
   without conversion) that declares one conversion and its pixels (`inkConversion`). The reference has two independent
   stages: the samples decoded by `djpeg` from files the generator regroups scan by scan, then the decimal reference of

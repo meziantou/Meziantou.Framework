@@ -99,8 +99,9 @@ The page body does not repeat the title as a `#` heading: the site shows the `ti
     reports the unqualified target as ambiguous.
 
   Escape `<`, `>`, `[`, `]`, `*` and `_` in the link text with a backslash, and `|` in a table. The target must be part
-  of the public API (the `ref/` files); build the site with `dotnet Meziantou.DocumentationGenerator build` to check
-  that the generator resolves it. The members of a C# 14 extension block (extension properties) cannot be linked: they
+  of the public API (the `ref/` files); build the site to check that the generator resolves it. The generator reads
+  the packages from `artifacts/package/release`, so pack them first: `dotnet pack eng/packages.proj --configuration
+  Release`, then `dotnet Meziantou.DocumentationGenerator build`. The members of a C# 14 extension block (extension properties) cannot be linked: they
   stay inline code. A package
   name stays inline code (`` `Meziantou.Framework.Csv` ``), even when a namespace or a type has the same name. So do the
   symbols that are not part of a public API (.NET symbols such as `System.Text.Json` or `HttpClient`, source-only

@@ -4,10 +4,8 @@ using Meziantou.Framework.WebPlatform.Urls;
 
 namespace Meziantou.Framework.WebPlatform.Dom;
 
-/// <summary>
-/// The rendering of the img elements (https://html.spec.whatwg.org/multipage/rendering.html#images-3): the natural size of
-/// the replaced box, the alternative text of a broken image, and the geometry exposed to scripts.
-/// </summary>
+// The rendering of the img elements (https://html.spec.whatwg.org/multipage/rendering.html#images-3): the natural size of
+// the replaced box, the alternative text of a broken image, and the geometry exposed to scripts.
 public partial class HtmlImageElement
 {
     /// <summary>

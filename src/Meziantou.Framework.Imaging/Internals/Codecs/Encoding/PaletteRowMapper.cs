@@ -107,7 +107,10 @@ internal sealed class PaletteRowMapper : IDisposable
     /// index, colors to their palette entry, or the nearest entry of the dithered color when the palette is not exact.
     /// </summary>
     /// <param name="quantizer">The quantizer holding the palette of the frame.</param>
-    /// <param name="keys">The color keys of the row (<see cref="PaletteQuantizer.TransparentKey"/> for transparent pixels).</param>
+    /// <param name="keys">
+    /// The color keys of the row (<see cref="PaletteQuantizer.TransparentKey"/> for transparent pixels): at most the width of
+    /// the mapper, the same number for every row of an image (a region of the canvas has fewer).
+    /// </param>
     /// <param name="indices">Receives one palette index per pixel.</param>
     /// <param name="transparentIndex">
     /// The index written for transparent pixels (unused when the row has none), or -1 to map them with
@@ -117,6 +120,7 @@ internal sealed class PaletteRowMapper : IDisposable
     public void MapRow(PaletteQuantizer quantizer, ReadOnlySpan<int> keys, Span<byte> indices, int transparentIndex, int y)
     {
         ArgumentNullException.ThrowIfNull(quantizer);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(keys.Length, _width, nameof(keys));
         if (_strength == 0 || quantizer.IsExact || (_kernel is null && _matrix is null))
         {
             MapNearest(quantizer, keys, indices, transparentIndex);
@@ -184,13 +188,13 @@ internal sealed class PaletteRowMapper : IDisposable
     private static int MapTransparent(PaletteQuantizer quantizer, int transparentIndex)
         => transparentIndex >= 0 ? transparentIndex : quantizer.MapAny(PaletteQuantizer.TransparentKey);
 
-    private void MapNearest(PaletteQuantizer quantizer, ReadOnlySpan<int> keys, Span<byte> indices, int transparentIndex)
+    private static void MapNearest(PaletteQuantizer quantizer, ReadOnlySpan<int> keys, Span<byte> indices, int transparentIndex)
     {
         // A key equal to the previous one maps to the same entry: the mapping is a function of the key, and the entry it
         // remembers to bound the next search is the one it returned
         var lastKey = PaletteQuantizer.TransparentKey;
         var lastIndex = 0;
-        for (var x = 0; x < _width; x++)
+        for (var x = 0; x < keys.Length; x++)
         {
             var key = keys[x];
             if (key == PaletteQuantizer.TransparentKey)
@@ -231,7 +235,7 @@ internal sealed class PaletteRowMapper : IDisposable
 
         var lastKey = PaletteQuantizer.TransparentKey;
         var lastIndex = 0;
-        for (var x = 0; x < _width; x++)
+        for (var x = 0; x < keys.Length; x++)
         {
             var key = keys[x];
             if (key == PaletteQuantizer.TransparentKey)
@@ -267,7 +271,7 @@ internal sealed class PaletteRowMapper : IDisposable
         var taps = kernel.Taps;
         var lastKey = PaletteQuantizer.TransparentKey;
         var lastIndex = 0;
-        for (var x = 0; x < _width; x++)
+        for (var x = 0; x < keys.Length; x++)
         {
             var key = keys[x];
             if (key == PaletteQuantizer.TransparentKey)

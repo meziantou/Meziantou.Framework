@@ -13,6 +13,12 @@ internal sealed record ImageDecodeRequest(PixelFormat? PixelFormat, int? FrameLi
     /// </summary>
     public bool IsEmbeddedPayload { get; init; }
 
+    /// <summary>
+    /// Gets the item of a file of the HEIF family (HEIC, AVIF) that is decoded instead of the primary item or the image
+    /// sequence (an auxiliary image, a thumbnail), or <see langword="null"/> for the image that the file presents.
+    /// </summary>
+    public uint? HeifItemId { get; init; }
+
     /// <summary>Gets the color conversion that makes CMYK samples loadable, or <see langword="null"/> to reject them.</summary>
     public CmykConversionOptions? CmykConversion { get; init; }
 

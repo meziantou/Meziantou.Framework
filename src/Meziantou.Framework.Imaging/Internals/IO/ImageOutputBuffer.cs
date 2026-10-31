@@ -116,6 +116,12 @@ internal sealed class ImageOutputBuffer : IBufferWriter<byte>, IDisposable
         _length = 0;
     }
 
+    /// <summary>
+    /// Discards the buffered bytes and keeps the buffer, for a buffer that a session uses as a private store of output it
+    /// writes later (<see cref="TotalBytes"/> keeps counting).
+    /// </summary>
+    public void Clear() => _length = 0;
+
     /// <summary>Releases the buffer (buffered bytes are discarded).</summary>
     public void Dispose()
     {

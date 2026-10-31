@@ -5,6 +5,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// lossless working representation of the page (<see cref="TiffRowExpander"/>) and written row by row, so the memory of
 /// a decode depends on the block geometry and never on the size of the page or of the document. LZW, Deflate and CCITT
 /// blocks are decompressed by batches of one block per worker (<see cref="TiffBlockWorkers"/>) and written in order.
+/// The blocks of the planes of a planar page are read one place at a time, each plane interleaved into rows of whole
+/// pixels as soon as it is decoded, so the expander only ever sees chunky rows.
 /// </summary>
 /// <remarks>
 /// A CMYK page is only decoded when the request carries a <see cref="CmykConversionOptions"/>: its rows are converted to
@@ -52,7 +54,7 @@ internal static class TiffPageDecoder
         {
             DecodeTiles(source, page, sink, reader, expander, expanded.Span);
         }
-        else if (page.IsJpeg)
+        else if (page.IsJpeg && !page.IsPlanar)
         {
             DecodeJpegStrips(source, page, sink, reader, expander, expanded);
         }
@@ -67,6 +69,9 @@ internal static class TiffPageDecoder
 
     private static void DecodeStrips(RandomAccessSource source, TiffPage page, DecodedFrameSink sink, TiffBlockReader reader, TiffRowExpander expander, Span<byte> expanded)
     {
+        // The rows of whole pixels the planes of a strip are interleaved into
+        using var pixels = page.IsPlanar ? RentInterleavedRows(source, page, page.RowLength) : null;
+
         // The workers are given the live bytes that are left once everything else of the decoding is rented
         using var workers = TiffBlockWorkers.Create(source, page, reader);
         using var lease = sink.LeaseCurrentFrame();
@@ -75,10 +80,89 @@ internal static class TiffPageDecoder
             source.Context.CancellationToken.ThrowIfCancellationRequested();
             var firstRow = block * page.BlockHeight;
             var rowCount = Math.Min(page.BlockHeight, page.Size.Height - firstRow);
-            var stored = workers is null ? reader.ReadBlock(block, rowCount) : workers.Next(block);
+            ReadOnlySpan<byte> stored;
+            int storedRowLength;
+            if (pixels is null)
+            {
+                stored = workers is null ? reader.ReadBlock(block, rowCount) : workers.Next(block);
+                storedRowLength = page.BlockRowLength;
+            }
+            else
+            {
+                storedRowLength = (int)page.RowLength;
+                for (var plane = 0; plane < page.PlaneCount; plane++)
+                {
+                    var position = (block * page.PlaneCount) + plane;
+                    var samples = workers is null ? reader.ReadBlock(page.GetBlockIndex(position), rowCount) : workers.Next(position);
+                    Interleave(page, samples, plane, page.Size.Width, rowCount, pixels.Span, storedRowLength);
+                }
+
+                stored = pixels.Span;
+            }
+
             for (var row = 0; row < rowCount; row++)
             {
-                WriteRow(sink, lease, firstRow + row, expander, stored.Slice(row * page.BlockRowLength, page.BlockRowLength), expanded);
+                WriteRow(sink, lease, firstRow + row, expander, stored.Slice(row * storedRowLength, storedRowLength), expanded);
+            }
+        }
+    }
+
+    /// <summary>Rents the rows of whole pixels the planes of a block row are interleaved into.</summary>
+    private static PooledBuffer RentInterleavedRows(RandomAccessSource source, TiffPage page, long rowLength)
+    {
+        if (!CheckedSizes.TryMultiply(rowLength, page.BlockHeight, out var length) || length > CheckedSizes.MaxBufferLength)
+            throw CheckedSizes.CreateOverflowException(source.Limits);
+
+        return source.Scope.Rent((int)length, AllocationKind.DecoderState, clear: false);
+    }
+
+    /// <summary>
+    /// Copies the samples of one plane of a block (one sample per pixel, rows of <see cref="TiffPage.BlockRowLength"/>
+    /// bytes) to their place in rows of whole pixels: the sample <paramref name="plane"/> of each pixel. The samples of a
+    /// planar page have at least 8 bits, so each is a whole number of bytes.
+    /// </summary>
+    /// <param name="page">The page.</param>
+    /// <param name="samples">The decoded rows of the plane.</param>
+    /// <param name="plane">The plane, which is the index of the sample in a pixel.</param>
+    /// <param name="columns">The number of pixels of a row to copy.</param>
+    /// <param name="rows">The number of rows to copy.</param>
+    /// <param name="destination">The first pixel of the first row of the destination.</param>
+    /// <param name="destinationRowLength">The distance between two rows of the destination, in bytes.</param>
+    internal static void Interleave(TiffPage page, ReadOnlySpan<byte> samples, int plane, int columns, int rows, Span<byte> destination, int destinationRowLength)
+    {
+        var bytesPerSample = page.DecodedBitsPerSample / 8;
+        var pixelLength = page.SamplesPerPixel * bytesPerSample;
+        var sampleOffset = plane * bytesPerSample;
+        for (var row = 0; row < rows; row++)
+        {
+            var source = samples.Slice(row * page.BlockRowLength, columns * bytesPerSample);
+            var target = destination[((row * destinationRowLength) + sampleOffset)..];
+            switch (bytesPerSample)
+            {
+                case 1:
+                    for (var x = 0; x < columns; x++)
+                    {
+                        target[x * pixelLength] = source[x];
+                    }
+
+                    break;
+
+                case 2:
+                    for (var x = 0; x < columns; x++)
+                    {
+                        target[x * pixelLength] = source[x * 2];
+                        target[(x * pixelLength) + 1] = source[(x * 2) + 1];
+                    }
+
+                    break;
+
+                default:
+                    for (var x = 0; x < columns; x++)
+                    {
+                        source.Slice(x * bytesPerSample, bytesPerSample).CopyTo(target[(x * pixelLength)..]);
+                    }
+
+                    break;
             }
         }
     }
@@ -117,11 +201,24 @@ internal static class TiffPageDecoder
             for (var blockColumn = 0; blockColumn < page.BlocksAcross; blockColumn++)
             {
                 var index = (blockRow * page.BlocksAcross) + blockColumn;
-                var tile = workers is null ? reader.ReadBlock(index, rowCount) : workers.Next(index);
                 var firstColumn = blockColumn * page.BlockWidth;
                 var columnCount = Math.Min(page.BlockWidth, page.Size.Width - firstColumn);
-                var copyLength = (int)((((long)columnCount * bitsPerPixel) + 7) / 8);
                 var bandOffset = (int)((long)firstColumn * bitsPerPixel / 8);
+                if (page.IsPlanar)
+                {
+                    // The tiles of the planes at this place are decoded one after the other and interleaved into the band
+                    for (var plane = 0; plane < page.PlaneCount; plane++)
+                    {
+                        var position = (index * page.PlaneCount) + plane;
+                        var samples = workers is null ? reader.ReadBlock(page.GetBlockIndex(position), rowCount) : workers.Next(position);
+                        Interleave(page, samples, plane, columnCount, rowCount, band.Span[bandOffset..], bandRowLength);
+                    }
+
+                    continue;
+                }
+
+                var tile = workers is null ? reader.ReadBlock(index, rowCount) : workers.Next(index);
+                var copyLength = (int)((((long)columnCount * bitsPerPixel) + 7) / 8);
                 for (var row = 0; row < rowCount; row++)
                 {
                     tile.Slice(row * page.BlockRowLength, copyLength)

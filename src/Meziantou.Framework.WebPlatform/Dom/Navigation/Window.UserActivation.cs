@@ -1,10 +1,8 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
-/// <summary>
-/// The user activation of the window (https://html.spec.whatwg.org/multipage/interaction.html#tracking-user-activation):
-/// the timestamps of the last activation-triggering input event (e.g. a trusted <c>mousedown</c> or <c>keydown</c>), which
-/// gate the APIs that need a user gesture.
-/// </summary>
+// The user activation of the window (https://html.spec.whatwg.org/multipage/interaction.html#tracking-user-activation):
+// the timestamps of the last activation-triggering input event (e.g. a trusted mousedown or keydown), which
+// gate the APIs that need a user gesture.
 public partial class Window
 {
     /// <summary>https://html.spec.whatwg.org/multipage/interaction.html#transient-activation-duration</summary>

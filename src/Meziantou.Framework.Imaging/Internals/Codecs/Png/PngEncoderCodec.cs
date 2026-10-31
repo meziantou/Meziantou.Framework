@@ -21,7 +21,13 @@ internal sealed class PngEncoderCodec : ImageEncoderCodec
     public override ImageEncoderSession CreateSession(ImageEncoderSessionOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
-        return options.Encoder is PngEncoder { Optimization: PngOptimization.MinimumSize } ? new PngOptimizedEncoderSession(options) : new Session(options);
+        // The layout analysis only applies to still images: the default session writes animations, as with None
+        return options.Encoder switch
+        {
+            PngEncoder { Optimization: PngOptimization.MinimumSize } => new PngOptimizedEncoderSession(options),
+            PngEncoder { Optimization: PngOptimization.Layout } when !options.Capabilities.IsAnimated => new PngOptimizedEncoderSession(options),
+            _ => new Session(options),
+        };
     }
 
     /// <summary>Throws when an APNG sequence number exceeds the PNG integer limit.</summary>
@@ -146,9 +152,20 @@ internal sealed class PngEncoderCodec : ImageEncoderCodec
     /// datastream encoder's (a few scanlines, one chunk buffer, the deflater) and the palette of indexed output (256 colors
     /// and one row of color keys), whatever the number of frames.
     /// </para>
+    /// <para>
+    /// With <see cref="PngEncoder.OptimizeFrames"/>, an animation keeps the displayed frame (and the canvas it was drawn on)
+    /// as wide pixels (<see cref="AnimationFrameDelta"/>): each frame after the first one is compared with the canvases the
+    /// disposal of the previous frame can leave, which chooses that disposal, the region and the blending, and its region is
+    /// written from the frame (<see cref="PngFrameRegionScanlines"/>). Every image goes through a scanline source then, and
+    /// palette indexes have 8 bits. The data chunks of a frame that is not the last one are kept in a private buffer until
+    /// the next frame chose its disposal, then written after its <c>fcTL</c>, whose sequence number was reserved.
+    /// </para>
     /// </remarks>
     private sealed class Session : ImageEncoderSession
     {
+        /// <summary>The bytes of a deferred frame copied to the output per <see cref="Encode"/> call.</summary>
+        private const int CopyPieceLength = 64 * 1024;
+
         private readonly PngEncoder _encoder;
         private readonly bool _animated;
         private readonly int _expectedFrameCount;
@@ -156,15 +173,26 @@ internal sealed class PngEncoderCodec : ImageEncoderCodec
         private PngEncodedLayout _layout;
         private PngIndexedRows? _indexedRows;
         private PngImageDataEncoder? _imageData;
+        private AnimationFrameDelta? _delta;
+        private PngFrameRows? _wideRows;
+        private PngFrameRegionScanlines? _scanlines;
+        private ImageOutputBuffer? _deferred;
         private ImageFrame? _frame;
         private Step _step;
         private int _metadataIndex;
         private bool _headerWritten;
         private bool _posterWritten;
+        private bool _isPoster;
         private bool _frameData;
         private bool _lastImage;
         private (ushort Numerator, ushort Denominator)? _delay;
         private uint _sequenceNumber;
+        private int _row;
+        private Rectangle _region;
+        private AnimationBlend _blend;
+        private AnimationFramePlan _plan;
+        private DeferredFrame? _deferredFrame;
+        private int _copied;
 
         public Session(ImageEncoderSessionOptions options)
             : base(options)
@@ -180,18 +208,45 @@ internal sealed class PngEncoderCodec : ImageEncoderCodec
             // The indexed layout is replaced once the palette is final: its bit depth follows the number of colors
             _layout = PngEncodedLayout.Get(options.PixelFormat);
             _metadata = new PngMetadataWriter(options.Metadata, _encoder.CompressionLevel, options.Scope);
+            var size = options.CanvasSize;
             try
             {
                 if (_encoder.PixelLayout == PngPixelLayout.Indexed)
                 {
-                    _indexedRows = new PngIndexedRows(options.Scope, options.PixelFormat, options.CanvasSize.Width);
+                    _indexedRows = new PngIndexedRows(options.Scope, options.PixelFormat, size.Width);
                 }
 
-                _imageData = new PngImageDataEncoder(options.Scope, options.PixelFormat, options.CanvasSize.Width, options.CanvasSize.Height, _encoder.Interlaced, _encoder.Filter, _encoder.CompressionLevel, _indexedRows);
+                if (_animated && _encoder.OptimizeFrames && _expectedFrameCount > 1)
+                {
+                    // The canvases hold wide pixels, where a cleared canvas is transparent black whatever the layout; every
+                    // image of the file is written from a scanline source (OVER for a palette is decided with the palette)
+                    var isWide16 = PixelFormats.GetBitsPerComponent(options.PixelFormat) == 16;
+                    var wideFormat = isWide16 ? PixelFormat.Rgba64 : PixelFormat.Rgba32;
+                    _delta = new AnimationFrameDelta(options.Scope, size.Width, size.Height, new AnimationDeltaRules
+                    {
+                        BytesPerPixel = PixelFormats.GetBytesPerPixel(wideFormat),
+                        SourceBlend = true,
+                        OverBlend = _indexedRows is null && PixelFormats.HasAlpha(options.PixelFormat),
+                        TranslucentOverTransparent = true,
+                        RestorePrevious = true,
+                    });
+                    _wideRows = new PngFrameRows(options.Scope, wideFormat, size.Width);
+                    _scanlines = new PngFrameRegionScanlines(options.Scope, options.PixelFormat, size.Width, _indexedRows);
+                    _deferred = new ImageOutputBuffer(options.Scope, flushThreshold: int.MaxValue);
+                    var maxScanlineLength = (long)size.Width * PixelFormats.GetBytesPerPixel(options.PixelFormat);
+                    if (maxScanlineLength + 1 > CheckedSizes.MaxBufferLength)
+                        throw CheckedSizes.CreateOverflowException(options.Scope.Limits);
+
+                    _imageData = new PngImageDataEncoder(options.Scope, (int)maxScanlineLength, _encoder.Interlaced);
+                }
+                else
+                {
+                    _imageData = new PngImageDataEncoder(options.Scope, options.PixelFormat, size.Width, size.Height, _encoder.Interlaced, _encoder.Filter, _encoder.CompressionLevel, _indexedRows);
+                }
             }
             catch
             {
-                _indexedRows?.Dispose();
+                DisposeState();
                 throw;
             }
         }
@@ -201,8 +256,11 @@ internal sealed class PngEncoderCodec : ImageEncoderCodec
             None,
             Header,
             Metadata,
+            Compare,
+            WriteDeferred,
             FrameControl,
             ImageData,
+            Commit,
             Trailer,
         }
 
@@ -233,7 +291,7 @@ internal sealed class PngEncoderCodec : ImageEncoderCodec
 
             // The separate poster is the IDAT image without a preceding fcTL: shown by non-APNG decoders, not part of the animation
             _posterWritten = true;
-            Begin(frame, delay: null, frameData: false, lastImage: false);
+            Begin(frame, delay: null, frameData: false, lastImage: false, isPoster: true);
         }
 
         public override void BeginFrame(ImageFrame frame, int index)
@@ -245,13 +303,13 @@ internal sealed class PngEncoderCodec : ImageEncoderCodec
             var lastImage = index == _expectedFrameCount - 1;
             if (!_animated)
             {
-                Begin(frame, delay: null, frameData: false, lastImage);
+                Begin(frame, delay: null, frameData: false, lastImage, isPoster: false);
                 return;
             }
 
             // Without a separate poster, frame zero is the IDAT image (its fcTL precedes IDAT); later frames use fdAT
             var delay = AnimationTiming.ToApngDelay(frame.Metadata.Duration, _encoder.DurationRounding);
-            Begin(frame, delay, frameData: index > 0 || _posterWritten, lastImage);
+            Begin(frame, delay, frameData: index > 0 || _posterWritten, lastImage, isPoster: false);
         }
 
         public override void BeginComplete(int frameCount)
@@ -270,10 +328,19 @@ internal sealed class PngEncoderCodec : ImageEncoderCodec
                 case Step.Header:
                     if (_indexedRows is { } indexedRows)
                     {
-                        // Every color known at this point is in the palette; later frames must use them
+                        // Every color known at this point is in the palette; later frames must use them. The regions of
+                        // OptimizeFrames have 8-bit indexes (some decoders misplace the packed pixels of a frame region),
+                        // and use OVER when the palette has a transparent entry (the first entries are the transparent ones)
                         indexedRows.Freeze();
-                        _layout = PngEncodedLayout.GetIndexed(Options.PixelFormat, PngIndexedRows.GetBitDepth(indexedRows.Count));
-                        _imageData!.SetIndexedLayout(_layout);
+                        _layout = PngEncodedLayout.GetIndexed(Options.PixelFormat, _delta is null ? PngIndexedRows.GetBitDepth(indexedRows.Count) : (byte)8);
+                        if (_delta is null)
+                        {
+                            _imageData!.SetIndexedLayout(_layout);
+                        }
+                        else
+                        {
+                            _delta.OverBlend = indexedRows.Count > 0 && (indexedRows.Colors[0] >> 24) == 0;
+                        }
                     }
 
                     PngChunkWriter.WriteSignature(output);
@@ -300,46 +367,60 @@ internal sealed class PngEncoderCodec : ImageEncoderCodec
                         PngEncoderCodec.WritePalette(output, _indexedRows.Colors);
                     }
 
+                    _step = StartImage();
+                    if (_step == Step.FrameControl)
+                        goto case Step.FrameControl;
+
+                    return false;
+
+                case Step.Compare:
+                    if (!CompareRows())
+                        return false;
+
+                    // A region can always replace the canvas: the frame is planned
+                    _ = _delta!.TryChoose(out _plan);
+                    (_region, _blend) = (_plan.Region, _plan.Blend);
+                    _copied = 0;
+                    _step = Step.WriteDeferred;
+                    return false;
+
+                case Step.WriteDeferred:
+                    if (!WriteDeferred(output))
+                        return false;
+
                     _step = Step.FrameControl;
                     goto case Step.FrameControl;
 
                 case Step.FrameControl:
-                    if (_delay is { } delay)
-                    {
-                        WriteFrameControl(output, delay);
-                    }
-
-                    if (_frameData)
-                    {
-                        EnsureSequenceNumber(_sequenceNumber);
-                        _imageData!.StartFrameData(_sequenceNumber);
-                    }
-                    else
-                    {
-                        _imageData!.Start();
-                    }
-
+                    StartImageData(output);
                     _step = Step.ImageData;
                     goto case Step.ImageData;
 
                 case Step.ImageData:
-                    if (!_imageData!.Encode(_frame!.GetStorage(), output))
+                    if (!EncodeImageData(output))
                         return false;
 
                     if (_frameData)
                     {
-                        _sequenceNumber = _imageData.NextSequenceNumber;
+                        _sequenceNumber = _imageData!.NextSequenceNumber;
                     }
 
-                    // The frame is no longer referenced once its operation completes; the buffers go with the last image
-                    _frame = null;
-                    _step = Step.None;
-                    if (_lastImage)
+                    if (_delta is not null && !_isPoster && !_lastImage)
                     {
-                        _imageData.Dispose();
-                        _imageData = null;
+                        // The frame becomes the displayed frame that the next one is compared with
+                        _row = 0;
+                        _step = Step.Commit;
+                        return false;
                     }
 
+                    EndOperation();
+                    return true;
+
+                case Step.Commit:
+                    if (!CommitRows())
+                        return false;
+
+                    EndOperation();
                     return true;
 
                 case Step.Trailer:
@@ -355,14 +436,11 @@ internal sealed class PngEncoderCodec : ImageEncoderCodec
         protected override void Dispose(bool disposing)
         {
             _frame = null;
-            _imageData?.Dispose();
-            _imageData = null;
-            _indexedRows?.Dispose();
-            _indexedRows = null;
+            DisposeState();
             base.Dispose(disposing);
         }
 
-        private void Begin(ImageFrame frame, (ushort Numerator, ushort Denominator)? delay, bool frameData, bool lastImage)
+        private void Begin(ImageFrame frame, (ushort Numerator, ushort Denominator)? delay, bool frameData, bool lastImage, bool isPoster)
         {
             if (_imageData is null)
                 throw new InvalidOperationException("Every image of the PNG output was already written.");
@@ -371,7 +449,192 @@ internal sealed class PngEncoderCodec : ImageEncoderCodec
             _delay = delay;
             _frameData = frameData;
             _lastImage = lastImage;
-            _step = _headerWritten ? Step.FrameControl : Step.Header;
+            _isPoster = isPoster;
+            _step = _headerWritten ? StartImage() : Step.Header;
+        }
+
+        /// <summary>
+        /// Gets the first step of the image of the operation once the header is written: its <c>fcTL</c> and data, or with
+        /// <see cref="PngEncoder.OptimizeFrames"/> its comparison with the canvases (the poster and the first frame cover the
+        /// canvas).
+        /// </summary>
+        private Step StartImage()
+        {
+            _region = new Rectangle(0, 0, Options.CanvasSize.Width, Options.CanvasSize.Height);
+            _blend = AnimationBlend.Source;
+            if (_delta is null || _isPoster || _delta.CommittedFrames == 0)
+                return Step.FrameControl;
+
+            _wideRows!.SetFrame(_frame);
+            _delta.BeginCompare();
+            _row = 0;
+            return Step.Compare;
+        }
+
+        private void EndOperation()
+        {
+            // The frame is no longer referenced once its operation completes; the buffers go with the last image
+            _frame = null;
+            _wideRows?.SetFrame(null);
+            _step = Step.None;
+            if (_lastImage)
+            {
+                DisposeImageState();
+            }
+        }
+
+        private void DisposeState()
+        {
+            DisposeImageState();
+            _indexedRows?.Dispose();
+            _indexedRows = null;
+        }
+
+        /// <summary>Releases what only the images use (the palette is kept to check the frames given after the last one).</summary>
+        private void DisposeImageState()
+        {
+            _imageData?.Dispose();
+            _imageData = null;
+            _delta?.Dispose();
+            _delta = null;
+            _wideRows?.Dispose();
+            _wideRows = null;
+            _scanlines?.Dispose();
+            _scanlines = null;
+            _deferred?.Dispose();
+            _deferred = null;
+        }
+
+        /// <summary>Compares a band of rows of the frame with the canvases.</summary>
+        /// <returns><see langword="true"/> once every row is compared.</returns>
+        private bool CompareRows()
+        {
+            var rows = _wideRows!;
+            long processed = 0;
+            while (_row < rows.Height)
+            {
+                if (processed >= PngImageDataEncoder.BandBytes)
+                    return false;
+
+                var row = rows.GetRow(_row);
+                _delta!.CompareRow(_row++, row);
+                processed += row.Length;
+            }
+
+            return true;
+        }
+
+        /// <summary>Copies a band of rows of the frame into the canvases, once the disposal of the previous frame is applied.</summary>
+        /// <returns><see langword="true"/> once every row is copied.</returns>
+        private bool CommitRows()
+        {
+            var delta = _delta!;
+            var rows = _wideRows!;
+            if (_row == 0)
+            {
+                rows.SetFrame(_frame);
+                delta.BeginCommit(_region);
+            }
+
+            long processed = 0;
+            while (_row < rows.Height)
+            {
+                if (processed >= PngImageDataEncoder.BandBytes)
+                    return false;
+
+                var row = rows.GetRow(_row);
+                delta.CommitRow(_row++, row);
+                processed += row.Length;
+            }
+
+            delta.EndCommit();
+            return true;
+        }
+
+        /// <summary>
+        /// Writes the deferred frame, whose disposal the frame of the operation chose: its <c>fcTL</c>, then its data chunks,
+        /// a piece per call.
+        /// </summary>
+        /// <returns><see langword="true"/> once the deferred frame is written.</returns>
+        private bool WriteDeferred(ImageOutputBuffer output)
+        {
+            var frame = _deferredFrame ?? throw new InvalidOperationException("No APNG frame is deferred.");
+            var data = _deferred!.WrittenMemory.Span;
+            if (_copied == 0)
+            {
+                PngEncoderCodec.WriteFrameControl(output, frame.SequenceNumber, frame.Region, frame.Delay, (byte)_plan.PreviousDisposal, (byte)frame.Blend);
+            }
+
+            var count = Math.Min(CopyPieceLength, data.Length - _copied);
+            output.Write(data.Slice(_copied, count));
+            _copied += count;
+            if (_copied < data.Length)
+                return false;
+
+            _deferred.Clear();
+            _deferredFrame = null;
+            return true;
+        }
+
+        /// <summary>Writes the <c>fcTL</c> of a frame (or reserves it, for a deferred frame) and starts its datastream.</summary>
+        private void StartImageData(ImageOutputBuffer output)
+        {
+            var data = _imageData!;
+            if (_delay is { } delay)
+            {
+                if (_delta is null)
+                {
+                    WriteFrameControl(output, delay);
+                }
+                else if (_lastImage)
+                {
+                    // The last frame: its disposal does not matter
+                    PngEncoderCodec.WriteFrameControl(output, _sequenceNumber++, _region, delay, PngFrameControl.DisposeNone, (byte)_blend);
+                }
+                else
+                {
+                    EnsureSequenceNumber(_sequenceNumber);
+                    _deferredFrame = new DeferredFrame(_sequenceNumber++, _region, delay, _blend);
+                }
+            }
+
+            if (_delta is not null)
+            {
+                // Indexed output filters with None, as the specification recommends for palette images
+                var filter = _layout.IsIndexed && _encoder.Filter == PngFilter.Adaptive ? PngFilter.None : _encoder.Filter;
+                _scanlines!.Set(_layout, _frame!.GetStorage(), _region, _wideRows, _blend == AnimationBlend.Over ? _delta : null);
+                if (_frameData)
+                {
+                    EnsureSequenceNumber(_sequenceNumber);
+                }
+
+                if (_blend == AnimationBlend.Over)
+                {
+                    _wideRows!.SetFrame(_frame);
+                }
+
+                data.StartSource(_scanlines, filter, _encoder.CompressionLevel, _frameData, _sequenceNumber, count: false);
+                return;
+            }
+
+            if (_frameData)
+            {
+                EnsureSequenceNumber(_sequenceNumber);
+                data.StartFrameData(_sequenceNumber);
+            }
+            else
+            {
+                data.Start();
+            }
+        }
+
+        /// <summary>Encodes a band of the datastream: to the output, or to the private buffer of a deferred frame.</summary>
+        private bool EncodeImageData(ImageOutputBuffer output)
+        {
+            if (_delta is null)
+                return _imageData!.Encode(_frame!.GetStorage(), output);
+
+            return _imageData!.EncodeSource(_deferredFrame is not null ? _deferred : output);
         }
 
         private void WriteHeader(ImageOutputBuffer output)
@@ -420,5 +683,8 @@ internal sealed class PngEncoderCodec : ImageEncoderCodec
             var region = new Rectangle(0, 0, Options.CanvasSize.Width, Options.CanvasSize.Height);
             PngEncoderCodec.WriteFrameControl(output, _sequenceNumber++, region, delay, PngFrameControl.DisposeNone, PngFrameControl.BlendSource);
         }
+
+        /// <summary>A frame of <see cref="PngEncoder.OptimizeFrames"/> whose data is kept until the next frame chooses its disposal.</summary>
+        private sealed record DeferredFrame(uint SequenceNumber, Rectangle Region, (ushort Numerator, ushort Denominator) Delay, AnimationBlend Blend);
     }
 }

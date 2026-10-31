@@ -148,6 +148,36 @@ public sealed class TextLayoutOptions
         }
     }
 
+    /// <summary>
+    /// Gets where a justified line (<see cref="TextAlignment.Justify"/>) takes the room it is stretched by: the spaces
+    /// between words (<see cref="TextJustification.InterWord"/>, the default), or also between the characters of
+    /// Chinese, Japanese, Korean and Thai text, or between every two characters. It is not used with another alignment.
+    /// </summary>
+    public TextJustification Justification
+    {
+        get;
+        init
+        {
+            ValidateEnum((int)value, (int)TextJustification.InterCharacter, nameof(value));
+            field = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets how the places where wrapped lines end are chosen: as each line is filled (<see cref="TextLineBreakStrategy.Greedy"/>,
+    /// the default), or for the whole paragraph at once (<see cref="TextLineBreakStrategy.Optimal"/>). It is not used
+    /// when lines are not wrapped.
+    /// </summary>
+    public TextLineBreakStrategy LineBreakStrategy
+    {
+        get;
+        init
+        {
+            ValidateEnum((int)value, (int)TextLineBreakStrategy.Optimal, nameof(value));
+            field = value;
+        }
+    }
+
     /// <summary>Gets the base direction of the paragraphs. <see cref="TextDirection.Auto"/> by default.</summary>
     public TextDirection Direction
     {
@@ -275,6 +305,51 @@ public sealed class TextLayoutOptions
         }
     } = 8;
 
+    /// <summary>
+    /// Gets the tabulation stops of the lines, by increasing position, or an empty list (the default) for stops every
+    /// <see cref="TabSize"/> spaces only.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A tabulation goes to the first stop after the text before it on its line, and places the text after it at that
+    /// stop as the stop says (<see cref="TextTabAlignment"/>): its start, its end, its middle or its decimal separator.
+    /// When that text is too wide for its alignment, it starts where the tabulation is: a tabulation never moves back.
+    /// After the last stop, the tabulations go to the stops every <see cref="TabSize"/> spaces, as without stops.
+    /// </para>
+    /// <para>
+    /// The positions are measured from where the text of the line starts, after its indent, in pixels; in a text fitted
+    /// to a box (<see cref="TextLayout.CreateToFit(string, TextStyle, double, double, TextLayoutOptions?, double)"/>), they are scaled with
+    /// the text. A line is measured with its stops when it is wrapped: an aligned text counts in the width of the line
+    /// where its stop puts it.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentNullException">The value is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">The positions do not increase, a stop is the default value, or there are more than 256 stops.</exception>
+    public IReadOnlyList<TextTabStop> TabStops
+    {
+        get;
+        init
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            if (value.Count > MaxTabStops)
+                throw new ArgumentException("There are at most 256 tabulation stops.", nameof(value));
+
+            var stops = new TextTabStop[value.Count];
+            for (var i = 0; i < stops.Length; i++)
+            {
+                stops[i] = value[i];
+                if (!(stops[i].Position > (i == 0 ? 0 : stops[i - 1].Position)))
+                    throw new ArgumentException("The positions of the tabulation stops are positive and increasing.", nameof(value));
+            }
+
+            field = new System.Collections.ObjectModel.ReadOnlyCollection<TextTabStop>(stops);
+            TabStopArray = stops;
+        }
+    } = System.Collections.ObjectModel.ReadOnlyCollection<TextTabStop>.Empty;
+
+    /// <summary>Gets the stops of <see cref="TabStops"/>.</summary>
+    internal TextTabStop[] TabStopArray { get; private init; } = [];
+
     /// <summary>Gets what replaces the text that does not fit the layout. <see cref="TextTrimming.None"/> by default.</summary>
     public TextTrimming Trimming
     {
@@ -362,6 +437,9 @@ public sealed class TextLayoutOptions
 
     /// <summary>The longest hyphen or ellipsis.</summary>
     internal const int MaxInsertedTextLength = 16;
+
+    /// <summary>The most tabulation stops.</summary>
+    internal const int MaxTabStops = 256;
 
     private static void ValidateExtent(double value)
     {

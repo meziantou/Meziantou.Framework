@@ -154,12 +154,10 @@ internal sealed class NestedHistory(BrowsingContext navigable)
     public List<SessionHistoryEntry> Entries { get; } = [];
 }
 
-/// <summary>
-/// The joint session history (https://html.spec.whatwg.org/multipage/browsing-the-web.html#session-history-infrastructure):
-/// the top-level traversable holds its session history entries, whose document states hold the session histories of the
-/// child navigables, and the current session history step. The modifications are applied synchronously by the tasks of the
-/// event loop (the session history traversal queue is not a separate queue).
-/// </summary>
+// The joint session history (https://html.spec.whatwg.org/multipage/browsing-the-web.html#session-history-infrastructure):
+// the top-level traversable holds its session history entries, whose document states hold the session histories of the
+// child navigables, and the current session history step. The modifications are applied synchronously by the tasks of the
+// event loop (the session history traversal queue is not a separate queue).
 public sealed partial class BrowsingContext
 {
     /// <summary>The session history entries of the traversable (https://html.spec.whatwg.org/multipage/document-sequences.html#tn-session-history-entries).</summary>

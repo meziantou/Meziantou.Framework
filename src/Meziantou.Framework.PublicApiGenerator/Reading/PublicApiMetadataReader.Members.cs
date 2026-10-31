@@ -280,7 +280,7 @@ internal sealed partial class PublicApiMetadataReader
         var getMethod = includeGetter ? ReadMethod(declaringTypeHandle, getAccessorHandle, PublicApiMethodKind.PropertyGet, explicitImplementations) : null;
         var setMethod = includeSetter ? ReadMethod(declaringTypeHandle, setAccessorHandle, PublicApiMethodKind.PropertySet, explicitImplementations) : null;
         var modifiers = GetMethodModifiers(representativeAccessor, isExplicitInterfaceImplementation, IsRequiresUnsafeMember(propertyAttributes));
-        if (CanHideInheritedMember(modifiers))
+        if (!_isReadingExtensionBlock && CanHideInheritedMember(modifiers))
         {
             var inheritedMembers = _inheritedMemberResolver.GetInheritedMembers(declaringTypeHandle);
             modifiers = modifiers with { IsNew = inheritedMembers.ContainsName(name) && inheritedMembers.IsHiddenBy(InheritedMemberKind.Property, name, arity: 0, InheritedMemberResolver.GetParameterList(_metadataReader, property)) };
@@ -386,7 +386,7 @@ internal sealed partial class PublicApiMetadataReader
 
         var name = _metadataReader.GetString(eventDefinition.Name);
         var modifiers = GetMethodModifiers(addMethodDefinition, isExplicitInterfaceImplementation, IsRequiresUnsafeMember(eventAttributes));
-        if (CanHideInheritedMember(modifiers))
+        if (!_isReadingExtensionBlock && CanHideInheritedMember(modifiers))
         {
             modifiers = modifiers with { IsNew = _inheritedMemberResolver.GetInheritedMembers(declaringTypeHandle).IsHiddenBy(InheritedMemberKind.Event, name) };
         }
@@ -465,7 +465,7 @@ internal sealed partial class PublicApiMetadataReader
 
         // Accessors, constructors, destructors and operators do not hide inherited members
         var modifiers = GetMethodModifiers(method, isExplicitInterfaceImplementation, IsRequiresUnsafeMember(customAttributes));
-        if (kind == PublicApiMethodKind.Ordinary && CanHideInheritedMember(modifiers))
+        if (kind == PublicApiMethodKind.Ordinary && !_isReadingExtensionBlock && CanHideInheritedMember(modifiers))
         {
             var inheritedMembers = _inheritedMemberResolver.GetInheritedMembers(declaringTypeHandle);
             modifiers = modifiers with { IsNew = inheritedMembers.ContainsName(name) && inheritedMembers.IsHiddenBy(InheritedMemberKind.Method, name, genericParameters.Length, InheritedMemberResolver.GetParameterList(_metadataReader, method)) };

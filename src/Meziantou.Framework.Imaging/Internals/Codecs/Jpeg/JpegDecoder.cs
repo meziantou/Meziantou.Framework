@@ -121,6 +121,12 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
 
     // The number of samples of a side of a data unit: 8, or 1 for a lossless frame
     private int _dataUnitSize = 8;
+
+    // Scaled decoding: the factor by which the image is reduced, the image rows of a data unit of the largest sampling
+    // factor (8, 4, 2 or 1; 1 for a lossless frame), and the size of the image
+    private int _scaleDenominator = 1;
+    private int _blockSize = 8;
+    private Size _outputSize;
     private int _scanCount;
 
     // Progressive frames: the scans that were completed, whether the current one codes AC coefficients, and whether one did
@@ -207,6 +213,16 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         _precision = structure.Precision;
         _colorModel = structure.ColorModel;
 
+        // Scaled decoding (before any allocation): the blocks of a DCT-based frame give 4, 2 or 1 samples a side instead of 8
+        // (fewer reductions for the subsampled components, which then need less upsampling)
+        if (_request is { IsScaled: true } scaledRequest)
+        {
+            _scaleDenominator = scaledRequest.GetScaleDenominator(structure.Size, _lossless ? 1 : 8, ImageFormat.Jpeg, _lossless ? "a lossless JPEG frame has no DCT blocks to scale" : "a JPEG frame is reduced to 1/8 of its size at most");
+        }
+
+        _blockSize = _dataUnitSize / _scaleDenominator;
+        _outputSize = new Size(ImageDecodeRequest.GetScaledLength(structure.Width, _scaleDenominator), ImageDecodeRequest.GetScaledLength(structure.Height, _scaleDenominator));
+
         var frameComponents = structure.Components;
         var components = new JpegFrameComponent[frameComponents.Count];
         for (var i = 0; i < components.Length; i++)
@@ -224,7 +240,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         foreach (var component in components)
         {
             // The walker rejects sampling factors that do not divide the maximum factors
-            component.SetGeometry(structure.Width, structure.Height, maxHorizontal, maxVertical);
+            component.SetGeometry(structure.Width, structure.Height, maxHorizontal, maxVertical, _scaleDenominator);
         }
 
         _components = components;
@@ -233,7 +249,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         _mcusY = (structure.Height + (_dataUnitSize * maxVertical) - 1) / (_dataUnitSize * maxVertical);
 
         // The container of an embedded datastream receives the rows on the calling thread, one at a time
-        _workers = _receiver is null && !_lossless ? JpegReconstruction.GetWorkerCount(structure.Size, _mcusY, _context.Configuration.MaxDegreeOfParallelism) : 1;
+        _workers = _receiver is null && !_lossless ? JpegReconstruction.GetWorkerCount(_outputSize, _mcusY, _context.Configuration.MaxDegreeOfParallelism) : 1;
         if (_receiver is not null)
         {
             _colorModel = _embeddedColorModel;
@@ -255,7 +271,13 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
             profile = conversion.DestinationProfile;
         }
 
-        _sink = DecodedFrameSink.Create(_context, request, ImageFormat.Jpeg, structure.Size, structure.DefaultPixelFormat, source, profile);
+        if (_scaleDenominator > 1)
+        {
+            // A reader describes the frames it gives
+            _context.Sequential?.ScaleHeader(_outputSize);
+        }
+
+        _sink = DecodedFrameSink.Create(_context, request, ImageFormat.Jpeg, _outputSize, structure.DefaultPixelFormat, source, profile);
         _sink.BeginFrame(FrameDuration.Zero);
         _sink.SetPartialFrameRenderer(this);
     }
@@ -294,8 +316,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
             if (_sink is { WantsRefinement: true } sink && _components.All(component => component.IsDecoded))
             {
                 // A rendering counts like the pixels of a frame that is not shown
-                var structure = _structure!;
-                _context.Tracker.ChargeHiddenPixels((long)structure.Width * structure.Height);
+                _context.Tracker.ChargeHiddenPixels(_outputSize.Area);
                 RenderCoefficients(sink);
             }
 
@@ -776,18 +797,18 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
             return true;
         }
 
-        var structure = _structure!;
+        var height = _outputSize.Height;
         int writtenRows;
         if (_writer is { } writer && _streaming)
         {
             // The rows that one worker would have written: every band but the last one decoded
             _reconstruction?.Reconstruct(_decodedRows);
-            writtenRows = Math.Min(structure.Height, writer.BandsWritten * _dataUnitSize * _maxVertical);
+            writtenRows = Math.Min(height, writer.BandsWritten * _blockSize * _maxVertical);
         }
         else if (_writer is null && _components.All(component => component.IsDecoded))
         {
             // Every scan was decoded and every row written
-            writtenRows = structure.Height;
+            writtenRows = height;
         }
         else
         {
@@ -797,7 +818,7 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
 
         using (var lease = sink.LeaseCurrentFrame())
         {
-            for (var y = writtenRows; y < structure.Height; y++)
+            for (var y = writtenRows; y < height; y++)
             {
                 lease.GetRowBytes(y).Clear();
             }
@@ -813,8 +834,8 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
         sink.BeginRefinement(FrameDuration.Zero);
         WriteCoefficients();
 
-        // Only the DC coefficients: one value per block of 8x8 samples
-        sink.EndRefinement(_hasAcCoefficients ? 1 : 8, _completedScans);
+        // Only the DC coefficients: one value per block of 8x8 samples (fewer when the frame is scaled)
+        sink.EndRefinement(_hasAcCoefficients ? 1 : _blockSize, _completedScans);
     }
 
     /// <summary>
@@ -937,18 +958,18 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
 
     private JpegBandWriter CreateRowWriter(AllocationScope scope)
     {
-        var structure = _structure!;
-        var bandRows = _dataUnitSize * _maxVertical;
+        var (width, height) = _outputSize;
+        var bandRows = _blockSize * _maxVertical;
         if (_precision != 8)
         {
             return _receiver is not null
-                ? new JpegDeepRowWriter(_components, _receiver, _colorModel, structure.Width, structure.Height, bandRows, _precision, scope)
-                : new JpegDeepRowWriter(_components, _sink!, _colorModel, _inkConversion, structure.Width, structure.Height, bandRows, _precision, scope);
+                ? new JpegDeepRowWriter(_components, _receiver, _colorModel, width, height, bandRows, _precision, scope)
+                : new JpegDeepRowWriter(_components, _sink!, _colorModel, _inkConversion, width, height, bandRows, _precision, scope);
         }
 
         return _receiver is not null
-            ? new JpegRowWriter(_components, _receiver, _colorModel, structure.Width, structure.Height, bandRows, scope)
-            : new JpegRowWriter(_components, _sink!, _colorModel, _inkConversion, structure.Width, structure.Height, bandRows, scope);
+            ? new JpegRowWriter(_components, _receiver, _colorModel, width, height, bandRows, scope)
+            : new JpegRowWriter(_components, _sink!, _colorModel, _inkConversion, width, height, bandRows, scope);
     }
 
     /// <summary>Streaming: once MCU row <paramref name="row"/> is decoded, the previous one has its lower context row and is written.</summary>

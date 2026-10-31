@@ -6,7 +6,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
 /// The WebP encoder registration (lossless and lossy): still images in the simple or extended layout and animations of
-/// full-canvas frames, written by one session.
+/// full-canvas frames (or of the regions that change, with <see cref="WebPEncoder.OptimizeFrames"/>), written by one session.
 /// </summary>
 internal sealed class WebPEncoderCodec : ImageEncoderCodec
 {
@@ -32,6 +32,12 @@ internal sealed class WebPEncoderCodec : ImageEncoderCodec
     /// metadata chunks at completion, then asks the writer to patch the RIFF size and the <c>VP8X</c> alpha flag
     /// (<see cref="ImageOutputBuffer.AddPatch"/>; the destination is seekable, see <see cref="ImageOutputCapabilities.RequiresSeekableOutput"/>).
     /// </summary>
+    /// <remarks>
+    /// With <see cref="WebPEncoder.OptimizeFrames"/>, the session keeps the displayed frame (<see cref="AnimationFrameDelta"/>):
+    /// each frame after the first one is compared with it, which chooses the disposal of the previous frame (patched into its
+    /// <c>ANMF</c> flags), the region (at even coordinates) and the blending; the region is copied out, its unchanged
+    /// pixels transparent when it is blended, and compressed instead of the frame.
+    /// </remarks>
     private sealed class Session : ImageEncoderSession
     {
         private const int EmitPieceLength = 64 * 1024;
@@ -48,6 +54,9 @@ internal sealed class WebPEncoderCodec : ImageEncoderCodec
         private readonly byte[]? _xmp;
         private readonly List<ReadOnlyMemory<byte>> _pieces = [];
         private PooledBuffer? _pixels;
+        private AnimationFrameDelta? _delta;
+        private long _previousFlagsOffset;
+        private byte _previousFlags;
         private EncodedFrame? _encoded;
         private ImageFrame? _frame;
         private Step _step;
@@ -80,6 +89,21 @@ internal sealed class WebPEncoderCodec : ImageEncoderCodec
                 throw CheckedSizes.CreateOverflowException(options.Scope.Limits);
 
             _pixels = options.Scope.Rent((int)bytes, AllocationKind.Temporary, clear: false);
+            if (_isAnimated && _encoder.OptimizeFrames)
+            {
+                try
+                {
+                    // A region replaces the canvas ("do not blend") or is blended over it, at even coordinates; the
+                    // blending of the format rounds translucent pixels, so only opaque pixels are blended
+                    _delta = new AnimationFrameDelta(options.Scope, _width, _height, new AnimationDeltaRules { BytesPerPixel = 4, SourceBlend = true, OverBlend = true, EvenOffsets = true });
+                }
+                catch
+                {
+                    _pixels.Dispose();
+                    _pixels = null;
+                    throw;
+                }
+            }
         }
 
         private enum Step
@@ -186,6 +210,8 @@ internal sealed class WebPEncoderCodec : ImageEncoderCodec
                 _encoded = null;
                 _pixels?.Dispose();
                 _pixels = null;
+                _delta?.Dispose();
+                _delta = null;
                 _pieces.Clear();
                 _frame = null;
             }
@@ -209,12 +235,21 @@ internal sealed class WebPEncoderCodec : ImageEncoderCodec
             _frame = null;
 
             _encoded?.Dispose();
-            _encoded = _lossless
-                ? EncodedFrame.EncodeLossless(Options.Scope, rgba, _width, _height, _encoder.Effort, _encoder.NearLossless, CancellationToken)
-                : EncodedFrame.EncodeLossy(Options.Scope, rgba, _width, _height, hasAlpha, _encoder.Quality, _encoder.AlphaQuality, _encoder.Effort, CancellationToken);
+            _encoded = null;
+            var region = new Rectangle(0, 0, _width, _height);
+            var blend = false;
+            if (_delta is not null)
+            {
+                (region, blend, hasAlpha) = CompressRegion(output, rgba);
+            }
+            else
+            {
+                _encoded = Compress(rgba, _width, _height, hasAlpha);
+            }
+
             _anyAlpha |= hasAlpha;
             _pieces.Clear();
-            var imageChunks = _encoded.GetChunks();
+            var imageChunks = _encoded!.GetChunks();
             long imageLength = 0;
             foreach (var chunk in imageChunks)
             {
@@ -229,17 +264,27 @@ internal sealed class WebPEncoderCodec : ImageEncoderCodec
                     AddChunkPrefix(riffSize: 0, hasAlpha: true);
                 }
 
-                // ANMF: full canvas at (0, 0), duration, "do not blend" and "do not dispose": each frame replaces the canvas
+                // ANMF: the region (by default the full canvas at (0, 0), which replaces the canvas), its duration, "do not
+                // blend" or alpha blending, and "do not dispose" (patched by the next frame of OptimizeFrames)
                 var header = new byte[WebPStructureParser.ChunkHeaderLength + WebPStructureParser.FrameHeaderLength];
                 WriteChunkHeader(header, "ANMF"u8, WebPStructureParser.FrameHeaderLength + imageLength);
                 var data = header.AsSpan(WebPStructureParser.ChunkHeaderLength);
-                WriteUInt24(data[6..], _width - 1);
-                WriteUInt24(data[9..], _height - 1);
+                WriteUInt24(data, region.X / 2);
+                WriteUInt24(data[3..], region.Y / 2);
+                WriteUInt24(data[6..], region.Width - 1);
+                WriteUInt24(data[9..], region.Height - 1);
                 WriteUInt24(data[12..], duration);
-                data[15] = 0x02;
-                if (output.TotalBytes + header.Length + imageLength + MetadataLength(trailing: true) - 8 > MaxRiffSize)
-                    throw TooLarge(output.TotalBytes + header.Length + imageLength);
+                data[15] = blend ? (byte)0 : (byte)0x02;
+                var offset = output.TotalBytes;
+                foreach (var piece in _pieces)
+                {
+                    offset += piece.Length;
+                }
 
+                if (offset + header.Length + imageLength + MetadataLength(trailing: true) - 8 > MaxRiffSize)
+                    throw TooLarge(offset + header.Length + imageLength);
+
+                (_previousFlagsOffset, _previousFlags) = (offset + WebPStructureParser.ChunkHeaderLength + 15, data[15]);
                 _pieces.Add(header);
                 _pieces.AddRange(imageChunks);
                 return;
@@ -267,6 +312,97 @@ internal sealed class WebPEncoderCodec : ImageEncoderCodec
             {
                 AddMetadataChunks(trailing: true);
             }
+        }
+
+        private EncodedFrame Compress(Span<byte> rgba, int width, int height, bool hasAlpha) => _lossless
+            ? EncodedFrame.EncodeLossless(Options.Scope, rgba, width, height, _encoder.Effort, _encoder.NearLossless, CancellationToken)
+            : EncodedFrame.EncodeLossy(Options.Scope, rgba, width, height, hasAlpha, _encoder.Quality, _encoder.AlphaQuality, _encoder.Effort, CancellationToken);
+
+        /// <summary>
+        /// Plans a frame of <see cref="WebPEncoder.OptimizeFrames"/> (the first one covers the canvas), patches the disposal of
+        /// the previous frame, copies the region out of the frame (its unchanged pixels transparent when it is blended),
+        /// commits the frame as the displayed frame, and compresses the region.
+        /// </summary>
+        /// <returns>The region, whether it is blended, and whether it has pixels that are not opaque.</returns>
+        private (Rectangle Region, bool Blend, bool HasAlpha) CompressRegion(ImageOutputBuffer output, ReadOnlySpan<byte> rgba)
+        {
+            var delta = _delta!;
+            var rowLength = _width * 4;
+            var region = new Rectangle(0, 0, _width, _height);
+            var blend = false;
+            if (delta.CommittedFrames > 0)
+            {
+                delta.BeginCompare();
+                for (var y = 0; y < _height; y++)
+                {
+                    if ((y & 63) == 0)
+                    {
+                        CancellationToken.ThrowIfCancellationRequested();
+                    }
+
+                    delta.CompareRow(y, rgba.Slice(y * rowLength, rowLength));
+                }
+
+                // Always planned: a region can replace the canvas
+                _ = delta.TryChoose(out var plan);
+                region = plan.Region;
+                blend = plan.Blend == AnimationBlend.Over;
+                if (plan.PreviousDisposal == AnimationDisposal.ClearToTransparent)
+                {
+                    output.AddPatch(_previousFlagsOffset, [(byte)(_previousFlags | 0x01)]);
+                }
+            }
+
+            var bytes = (long)region.Width * region.Height * 4;
+            if (bytes > CheckedSizes.MaxBufferLength)
+                throw CheckedSizes.CreateOverflowException(Options.Scope.Limits);
+
+            using var pixels = Options.Scope.Rent((int)bytes, AllocationKind.Temporary, clear: false);
+            var regionPixels = pixels.RawBuffer.AsSpan(0, (int)bytes);
+            var hasAlpha = false;
+            for (var y = 0; y < region.Height; y++)
+            {
+                var source = rgba.Slice(((region.Y + y) * rowLength) + (region.X * 4), region.Width * 4);
+                var destination = regionPixels.Slice(y * region.Width * 4, region.Width * 4);
+                source.CopyTo(destination);
+                if (blend)
+                {
+                    // Blending leaves the canvas under a fully transparent pixel: the unchanged pixels become transparent
+                    // (lossy output keeps their color, so that the compression of their neighbors does not see an edge)
+                    var row = rgba.Slice((region.Y + y) * rowLength, rowLength);
+                    var canvas = delta.GetPlannedCanvasRow(region.Y + y, out var clearedStart, out var clearedEnd);
+                    for (var x = 0; x < region.Width; x++)
+                    {
+                        if (delta.IsUnchanged(row, region.X + x, canvas, clearedStart, clearedEnd))
+                        {
+                            var pixel = destination.Slice(x * 4, 4);
+                            if (_lossless)
+                            {
+                                pixel.Clear();
+                            }
+                            else
+                            {
+                                pixel[3] = 0;
+                            }
+                        }
+                    }
+                }
+
+                for (var x = 3; x < destination.Length && !hasAlpha; x += 4)
+                {
+                    hasAlpha = destination[x] != byte.MaxValue;
+                }
+            }
+
+            delta.BeginCommit(region);
+            for (var y = 0; y < _height; y++)
+            {
+                delta.CommitRow(y, rgba.Slice(y * rowLength, rowLength));
+            }
+
+            delta.EndCommit();
+            _encoded = Compress(regionPixels, region.Width, region.Height, hasAlpha);
+            return (region, blend, hasAlpha);
         }
 
         /// <summary>Converts the frame to 8-bit RGBA (gray replicated, 16-bit reduced to the nearest 8-bit value), optionally clearing the color of transparent pixels.</summary>

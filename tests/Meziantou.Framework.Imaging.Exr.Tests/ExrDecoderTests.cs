@@ -147,6 +147,300 @@ public sealed class ExrDecoderTests
     }
 
     [Fact]
+    public void TheWindowsAreInTheMetadata()
+    {
+        var data = ExrFileBuilder.ScanLines(2, 1, None, HalfChannel("R"))
+            .Set("dataWindow", "box2i", ExrFileBuilder.Box(-3, 4, -2, 4))
+            .Set("displayWindow", "box2i", ExrFileBuilder.Box(-5, 0, 8, 6))
+            .AddScanLineChunk(4, ExrFileBuilder.Halves(5f, 6f))
+            .Build();
+        var expected = new OpenExrWindows(new Point(-3, 4), new Point(-2, 4), new Point(-5, 0), new Point(8, 6));
+        using var image = Image.Load<RgbaHalf>(data);
+        Assert.Equal(expected, image.Metadata.OpenExrWindows);
+        Assert.Equal(expected, image.Metadata.Clone().OpenExrWindows);
+        Assert.Equal(expected, Image.Identify(data).Metadata.OpenExrWindows);
+        Assert.Equal((Half)6f, image.Frames[0][3, 4].R);
+
+        // Informational: the encoder writes both windows from (0, 0)
+        using var stream = new MemoryStream();
+        image.Save(stream, new Formats.OpenExrEncoder());
+        Assert.Equal(new OpenExrWindows(Point.Empty, new Point(13, 6), Point.Empty, new Point(13, 6)), Image.Identify(stream.ToArray()).Metadata.OpenExrWindows);
+
+        Assert.Throws<ArgumentException>(() => new OpenExrWindows(new Point(1, 0), Point.Empty, Point.Empty, Point.Empty));
+        Assert.Throws<ArgumentException>(() => new OpenExrWindows(Point.Empty, Point.Empty, Point.Empty, new Point(0, -1)));
+    }
+
+    [Fact]
+    public void ALayerIsDecodedAndTheOtherChannelsAreIgnored()
+    {
+        // B, G, R, Z, diffuse.G, diffuse.R (in name order): a FLOAT depth, and the colors of a second layer
+        var line = Concat(ExrFileBuilder.Halves(0.25f, 0.5f), ExrFileBuilder.Halves(1f, 2f), ExrFileBuilder.Halves(3f, 4f), ExrFileBuilder.Floats(100f, 200f), ExrFileBuilder.Halves(5f, 6f), ExrFileBuilder.Halves(7f, 8f));
+        var data = ExrFileBuilder.ScanLines(2, 1, None, HalfChannel("R"), HalfChannel("G"), HalfChannel("B"), ExrChannelDescription.FloatingPoint("Z"), HalfChannel("diffuse.R"), HalfChannel("diffuse.G"))
+            .AddScanLineChunk(0, line)
+            .Build();
+
+        // Every channel is decoded by default: the depth and the layer would be lost
+        Assert.Equal("Extra channels", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(data)).Feature);
+        Assert.Equal("Extra channels", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data)).Feature);
+
+        // The default layer: HALF colors, the FLOAT depth is ignored
+        var defaultLayer = LayerOptions(string.Empty);
+        var info = Image.Identify(data, new ImageIdentifyOptions { Configuration = defaultLayer.Configuration });
+        Assert.Equal(PixelFormat.RgbaHalf, info.PixelFormat);
+        Assert.Equal(ImageColorModel.Rgb, info.ColorModel);
+        Assert.Equal(16, info.BitsPerComponent);
+        using (var image = Image.Load(data, defaultLayer))
+        {
+            var half = Assert.IsType<Image<RgbaHalf>>(image);
+            Assert.Equal(new RgbaHalf((Half)3f, (Half)1f, (Half)0.25f, (Half)1f), half.Frames[0][0, 0]);
+            Assert.Equal(new RgbaHalf((Half)4f, (Half)2f, (Half)0.5f, (Half)1f), half.Frames[0][1, 0]);
+        }
+
+        // A named layer: its missing blue is 0
+        using (var image = Image.Load<RgbaHalf>(data, LayerOptions("diffuse")))
+        {
+            Assert.Equal(new RgbaHalf((Half)7f, (Half)5f, (Half)0f, (Half)1f), image.Frames[0][0, 0]);
+            Assert.Equal(new RgbaHalf((Half)8f, (Half)6f, (Half)0f, (Half)1f), image.Frames[0][1, 0]);
+        }
+
+        // A layer that is not in the file is never replaced by another one
+        var missing = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data, LayerOptions("specular")));
+        Assert.Equal("Missing layer", missing.Feature);
+        Assert.Contains("the layer 'specular'", missing.Message, StringComparison.Ordinal);
+        Assert.Contains("the default layer, the layer 'diffuse'", missing.Message, StringComparison.Ordinal);
+        Assert.Equal("Missing layer", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(data, new ImageIdentifyOptions { Configuration = LayerOptions("diff").Configuration })).Feature);
+
+        using var reader = Image.OpenReader<RgbaHalf>(new MemoryStream(data), new ImageReaderOptions { Configuration = LayerOptions("diffuse").Configuration });
+        using var frame = reader.ReadFrame();
+        Assert.NotNull(frame);
+        Assert.Equal((Half)8f, frame.Frames[0][1, 0].R);
+    }
+
+    [Fact]
+    public void TheChannelsOfALayerMustDescribeItsColorsUnambiguously()
+    {
+        // Luminance and RGB in the same layer: one of them would be lost
+        var mixed = ScanLineFile(1, 1, None, [HalfChannel("light.B"), HalfChannel("light.Y"), HalfChannel("R")], [1f, 2f, 3f]);
+        Assert.Equal("Extra channels", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(mixed, LayerOptions("light"))).Feature);
+        using (var image = Image.Load<RgbaHalf>(mixed, LayerOptions(string.Empty)))
+        {
+            // R comes first in name order
+            Assert.Equal(new RgbaHalf((Half)1f, (Half)0f, (Half)0f, (Half)1f), image.Frames[0][0, 0]);
+        }
+
+        // The components of a vector, or CIE XYZ colors: Y is not a luminance there
+        var normals = ScanLineFile(1, 1, None, [HalfChannel("R"), HalfChannel("N.X"), HalfChannel("N.Y"), HalfChannel("N.Z"), HalfChannel("Y"), HalfChannel("Z")], [1f, 2f, 3f, 4f, 5f, 6f]);
+        Assert.Equal("Ambiguous layer", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(normals, LayerOptions("N"))).Feature);
+        Assert.Equal("Extra channels", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(normals, LayerOptions(string.Empty))).Feature);
+        var luminanceAndDepth = ScanLineFile(1, 1, None, [HalfChannel("Y"), HalfChannel("Z")], [5f, 6f]);
+        using (var image = Image.Load<RgbaHalf>(luminanceAndDepth, LayerOptions(string.Empty)))
+        {
+            Assert.Equal(new RgbaHalf((Half)5f, (Half)5f, (Half)5f, (Half)1f), image.Frames[0][0, 0]);
+        }
+
+        // Alpha alone, in a layer whose other channels are not colors
+        var alpha = ScanLineFile(1, 1, None, [HalfChannel("R"), HalfChannel("mask.A"), HalfChannel("mask.Z")], [0.5f, 1f, 2f]);
+        Assert.Equal("Alpha-only image", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(alpha, LayerOptions("mask"))).Feature);
+
+        // Chroma channels, sub-sampled: their colors cannot be decoded, and ignoring them would lose the colors
+        var chroma = ExrFileBuilder.ScanLines(2, 2, None, HalfChannel("Y"), new ExrChannelDescription("RY", 1, XSampling: 2, YSampling: 2), new ExrChannelDescription("BY", 1, XSampling: 2, YSampling: 2))
+            .AddScanLineChunk(0, Concat(ExrFileBuilder.Halves(0.1f), ExrFileBuilder.Halves(0.2f), ExrFileBuilder.Halves(1f, 2f)))
+            .AddScanLineChunk(1, ExrFileBuilder.Halves(3f, 4f))
+            .Build();
+        Assert.Equal("Extra channels", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(chroma)).Feature);
+        Assert.Equal("Luminance-chroma channels", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(chroma, new ImageIdentifyOptions { Configuration = LayerOptions(string.Empty).Configuration })).Feature);
+
+        // A channel of the layer that is sub-sampled
+        var subsampled = ExrFileBuilder.ScanLines(2, 1, None, new ExrChannelDescription("R", 1, XSampling: 2))
+            .AddScanLineChunk(0, ExrFileBuilder.Halves(1f))
+            .Build();
+        Assert.Equal("Sub-sampled channels", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(subsampled, LayerOptions(string.Empty))).Feature);
+
+        // Names are compared exactly: the samples of R come before those of r
+        var lowercase = ScanLineFile(1, 1, None, [HalfChannel("r"), HalfChannel("R")], [1f, 2f]);
+        using (var image = Image.Load<RgbaHalf>(lowercase, LayerOptions(string.Empty)))
+        {
+            Assert.Equal(new RgbaHalf((Half)1f, (Half)0f, (Half)0f, (Half)1f), image.Frames[0][0, 0]);
+        }
+    }
+
+    [Fact]
+    public void IgnoredChannelsMaySkipLinesOfAChunk()
+    {
+        // ZIP chunks of 16 lines, stored uncompressed: C is sampled on the even lines and columns only, so the odd lines
+        // of the chunk hold only the samples of R
+        var data = ExrFileBuilder.ScanLines(4, 4, Zip, new ExrChannelDescription("C", 1, XSampling: 2, YSampling: 2), HalfChannel("R"))
+            .AddScanLineChunk(0, Concat(
+                ExrFileBuilder.Halves(-1f, -2f), ExrFileBuilder.Halves(0f, 1f, 2f, 3f),
+                ExrFileBuilder.Halves(10f, 11f, 12f, 13f),
+                ExrFileBuilder.Halves(-3f, -4f), ExrFileBuilder.Halves(20f, 21f, 22f, 23f),
+                ExrFileBuilder.Halves(30f, 31f, 32f, 33f)))
+            .Build();
+        Assert.Equal("Extra channels", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data)).Feature);
+        using var image = Image.Load<RgbaHalf>(data, LayerOptions(string.Empty));
+        for (var y = 0; y < 4; y++)
+        {
+            for (var x = 0; x < 4; x++)
+            {
+                Assert.Equal((Half)((10 * y) + x), image.Frames[0][x, y].R);
+            }
+        }
+    }
+
+    [Fact]
+    public void ADataWindowLargerThanTheDisplayWindowIsCroppedOrDecodedWhole()
+    {
+        // Data window (0, 0) - (3, 1), display window (1, 0) - (2, 1): an overscan of one column on each side
+        var data = ExrFileBuilder.ScanLines(4, 2, None, HalfChannel("R"))
+            .Set("displayWindow", "box2i", ExrFileBuilder.Box(1, 0, 2, 1))
+            .AddScanLineChunk(0, ExrFileBuilder.Halves(0f, 1f, 2f, 3f))
+            .AddScanLineChunk(1, ExrFileBuilder.Halves(10f, 11f, 12f, 13f))
+            .Build();
+        Assert.Equal("Pixels outside the display window", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data)).Feature);
+
+        var crop = WindowOptions(OpenExrWindowMode.CropToDisplayWindow);
+        var info = Image.Identify(data, new ImageIdentifyOptions { Configuration = crop.Configuration });
+        Assert.Equal(new Size(2, 2), info.Size);
+        Assert.Equal(false, info.MayHaveTransparency);
+        using (var image = Image.Load<RgbaHalf>(data, crop))
+        {
+            Assert.Equal(new Size(2, 2), image.Size);
+            Assert.Equal(new RgbaHalf((Half)1f, (Half)0f, (Half)0f, (Half)1f), image.Frames[0][0, 0]);
+            Assert.Equal((Half)2f, image.Frames[0][1, 0].R);
+            Assert.Equal((Half)11f, image.Frames[0][0, 1].R);
+            Assert.Equal((Half)12f, image.Frames[0][1, 1].R);
+            Assert.Equal(new OpenExrWindows(Point.Empty, new Point(3, 1), new Point(1, 0), new Point(2, 1)), image.Metadata.OpenExrWindows);
+        }
+
+        var whole = WindowOptions(OpenExrWindowMode.DataWindow);
+        Assert.Equal(new Size(4, 2), Image.Identify(data, new ImageIdentifyOptions { Configuration = whole.Configuration }).Size);
+        using (var image = Image.Load<RgbaHalf>(data, whole))
+        {
+            Assert.Equal(new Size(4, 2), image.Size);
+            for (var x = 0; x < 4; x++)
+            {
+                Assert.Equal((Half)x, image.Frames[0][x, 0].R);
+                Assert.Equal((Half)(10 + x), image.Frames[0][x, 1].R);
+            }
+        }
+
+        // The data window misses the display window entirely: the cropped image is transparent
+        var apart = ExrFileBuilder.ScanLines(2, 1, None, HalfChannel("R"))
+            .Set("displayWindow", "box2i", ExrFileBuilder.Box(5, 5, 7, 6))
+            .AddScanLineChunk(0, ExrFileBuilder.Halves(1f, 2f))
+            .Build();
+        Assert.Equal(true, Image.Identify(apart, new ImageIdentifyOptions { Configuration = crop.Configuration }).MayHaveTransparency);
+        using (var image = Image.Load<RgbaHalf>(apart, crop))
+        {
+            Assert.Equal(new Size(3, 2), image.Size);
+            Assert.All(Enumerable.Range(0, 6), i => Assert.Equal(default, image.Frames[0][i % 3, i / 3]));
+        }
+
+        // The data window inside the display window, decoded alone
+        var inside = ExrFileBuilder.ScanLines(2, 1, None, HalfChannel("R"))
+            .Set("displayWindow", "box2i", ExrFileBuilder.Box(-1, -1, 2, 1))
+            .AddScanLineChunk(0, ExrFileBuilder.Halves(5f, 6f))
+            .Build();
+        Assert.Equal(false, Image.Identify(inside, new ImageIdentifyOptions { Configuration = whole.Configuration }).MayHaveTransparency);
+        using (var image = Image.Load<RgbaHalf>(inside, whole))
+        {
+            Assert.Equal(new Size(2, 1), image.Size);
+            Assert.Equal((Half)6f, image.Frames[0][1, 0].R);
+        }
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrDecodingOptions { WindowMode = (OpenExrWindowMode)3 });
+        Assert.Throws<ArgumentNullException>(() => new ImageConfiguration { OpenExrDecoding = null! });
+        Assert.Same(OpenExrDecodingOptions.Default, ImageConfiguration.Default.OpenExrDecoding);
+        Assert.Null(OpenExrDecodingOptions.Default.Layer);
+        Assert.Equal(OpenExrWindowMode.DisplayWindow, OpenExrDecodingOptions.Default.WindowMode);
+    }
+
+    [Fact]
+    public void TilesAreCroppedToTheDisplayWindow()
+    {
+        // 4x4 pixels of 2x2 tiles; the display window (1, 1) - (2, 2) takes one pixel of each tile
+        var data = Tiles(builder => builder.Set("displayWindow", "box2i", ExrFileBuilder.Box(1, 1, 2, 2)));
+        Assert.Equal("Pixels outside the display window", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(data)).Feature);
+        using (var image = Image.Load<RgbaHalf>(data, WindowOptions(OpenExrWindowMode.CropToDisplayWindow)))
+        {
+            Assert.Equal(new Size(2, 2), image.Size);
+            Assert.Equal((Half)5f, image.Frames[0][0, 0].R);
+            Assert.Equal((Half)6f, image.Frames[0][1, 0].R);
+            Assert.Equal((Half)9f, image.Frames[0][0, 1].R);
+            Assert.Equal((Half)10f, image.Frames[0][1, 1].R);
+        }
+
+        using (var image = Image.Load<RgbaHalf>(data, WindowOptions(OpenExrWindowMode.DataWindow)))
+        {
+            Assert.Equal(new Size(4, 4), image.Size);
+            Assert.Equal((Half)15f, image.Frames[0][3, 3].R);
+        }
+    }
+
+    [Theory]
+    [InlineData(Zip, false)]
+    [InlineData(Piz, false)]
+    [InlineData(Pxr24, true)]
+    [InlineData(B44, true)]
+    public void LayersAndCropsDecodedByWorkersHaveThePixelsOfOneWorker(int compression, bool tiled)
+    {
+        // Colors next to a FLOAT depth, with a display window inside the data window and across chunks and tiles
+        var builder = WorkerFile(compression, tiled, [HalfChannel("B"), HalfChannel("G"), HalfChannel("R"), ExrChannelDescription.FloatingPoint("Z")]);
+        var data = builder.Set("displayWindow", "box2i", ExrFileBuilder.Box(37, 21, 280, 230)).Build();
+        var options = new OpenExrDecodingOptions { Layer = string.Empty, WindowMode = OpenExrWindowMode.CropToDisplayWindow };
+        var expected = Decode(data, options, workers: 1);
+        Assert.Equal(new Size(244, 210), expected.Size);
+        Assert.Equal(expected.Pixels, Decode(data, options, workers: 16).Pixels);
+
+        // The cropped pixels are those of the data window
+        var whole = Decode(data, new OpenExrDecodingOptions { Layer = string.Empty, WindowMode = OpenExrWindowMode.DataWindow }, workers: 16);
+        Assert.Equal(new Size(300, 251), whole.Size);
+        for (var y = 0; y < expected.Size.Height; y++)
+        {
+            Assert.Equal(whole.Pixels.AsSpan((((y + 21) * 300) + 37) * 8, 244 * 8), expected.Pixels.AsSpan(y * 244 * 8, 244 * 8));
+        }
+
+        static (Size Size, byte[] Pixels) Decode(byte[] data, OpenExrDecodingOptions exr, int workers)
+        {
+            using var image = Image.Load<RgbaHalf>(new MemoryStream(data), new ImageDecodeOptions { Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers, OpenExrDecoding = exr } });
+            var bytes = new byte[image.Width * image.Height * 8];
+            image.Frames[0].CopyPixelBytesTo(bytes);
+            return (image.Size, bytes);
+        }
+    }
+
+    [Fact]
+    public void IgnoredChannelsCannotMakeAChunkLargerThanABuffer()
+    {
+        // ZIP chunks of 16 lines of 10,000 pixels: 3,500 FLOAT channels make 2.24 GB per chunk
+        ExrChannelDescription[] channels = [HalfChannel("R"), .. Enumerable.Range(0, 3500).Select(i => ExrChannelDescription.FloatingPoint(string.Create(CultureInfo.InvariantCulture, $"aov.c{i:D4}")))];
+        var data = ExrFileBuilder.ScanLines(10_000, 16, Zip, channels).Build();
+        Assert.Throws<ImageResourceLimitException>(() => Image.Identify(data, new ImageIdentifyOptions { Configuration = LayerOptions(string.Empty).Configuration }));
+    }
+
+    [Fact]
+    public void TheDataWindowCountsAgainstTheLimitsWhenItIsNotInsideTheImage()
+    {
+        // A 4x2 data window, a 2x2 display window
+        var data = ExrFileBuilder.ScanLines(4, 2, None, HalfChannel("R"))
+            .Set("displayWindow", "box2i", ExrFileBuilder.Box(1, 0, 2, 1))
+            .AddScanLineChunk(0, ExrFileBuilder.Halves(0f, 1f, 2f, 3f))
+            .AddScanLineChunk(1, ExrFileBuilder.Halves(10f, 11f, 12f, 13f))
+            .Build();
+        foreach (var mode in (OpenExrWindowMode[])[OpenExrWindowMode.CropToDisplayWindow, OpenExrWindowMode.DataWindow])
+        {
+            var atLimit = new ImageConfiguration { OpenExrDecoding = new OpenExrDecodingOptions { WindowMode = mode }, Limits = new ImageResourceLimits { MaxFramePixels = 8 } };
+            using (Image.Load(data, new ImageDecodeOptions { Configuration = atLimit }))
+            {
+            }
+
+            var overLimit = new ImageConfiguration { OpenExrDecoding = new OpenExrDecodingOptions { WindowMode = mode }, Limits = new ImageResourceLimits { MaxFramePixels = 7 } };
+            Assert.Equal(ImageResourceLimitKind.FramePixels, Assert.Throws<ImageResourceLimitException>(() => Image.Identify(data, new ImageIdentifyOptions { Configuration = overLimit })).Kind);
+            Assert.Equal(ImageResourceLimitKind.FramePixels, Assert.Throws<ImageResourceLimitException>(() => Image.Load(data, new ImageDecodeOptions { Configuration = overLimit })).Kind);
+        }
+    }
+
+    [Fact]
     public void ChunksAreReadInFileOrderWhateverTheirOrderInTheTable()
     {
         // ZIP: 16 lines per chunk; a chunk whose data have the size of its samples is stored as it is
@@ -721,6 +1015,10 @@ public sealed class ExrDecoderTests
     }
 
     private static ExrChannelDescription HalfChannel(string name) => ExrChannelDescription.Half(name);
+
+    private static ImageDecodeOptions LayerOptions(string layer) => new() { Configuration = new ImageConfiguration { OpenExrDecoding = new OpenExrDecodingOptions { Layer = layer } } };
+
+    private static ImageDecodeOptions WindowOptions(OpenExrWindowMode mode) => new() { Configuration = new ImageConfiguration { OpenExrDecoding = new OpenExrDecodingOptions { WindowMode = mode } } };
 
     private static ImageConfiguration Workers(int workers) => new() { MaxDegreeOfParallelism = workers };
 

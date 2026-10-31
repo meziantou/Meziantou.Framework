@@ -64,9 +64,19 @@ the platforms usually use for the script of the character; then every family tha
 the one closest to the style of the primary font. The font found for a character is loaded once and kept by the
 stack. With fallback, the result depends on the fonts of the machine.
 
-Fallback does not use [TextStyle.Language](cref:Meziantou.Framework.Imaging.Typography.TextStyle.Language): Han ideographs use the simplified-Chinese family list regardless of the
-language. Put the desired Japanese, Korean or traditional-Chinese fonts in the stack or in [PreferredFamilies](cref:Meziantou.Framework.Imaging.Typography.InstalledFontFallbackOptions.PreferredFamilies) when
-their regional forms matter.
+The Han ideographs have different forms in Chinese, Japanese and Korean, so their installed fonts are chosen by
+[TextStyle.Language](cref:Meziantou.Framework.Imaging.Typography.TextStyle.Language):
+
+| Language | Families, then those of Simplified Chinese |
+| --- | --- |
+| `ja` | Yu Gothic, Hiragino Sans, Noto Sans CJK JP |
+| `ko` | Malgun Gothic, Apple SD Gothic Neo, Noto Sans CJK KR |
+| `zh-Hant`, `zh-TW`, `zh-MO` | Microsoft JhengHei, PingFang TC, Noto Sans CJK TC |
+| `zh-HK`, `yue` | PingFang HK, Noto Sans CJK HK, then those of Traditional Chinese |
+| `zh`, `zh-Hans`, no language, any other language | Microsoft YaHei, PingFang SC, Noto Sans CJK SC |
+
+The fonts of the stack itself are used in their order whatever the language, and [PreferredFamilies](cref:Meziantou.Framework.Imaging.Typography.InstalledFontFallbackOptions.PreferredFamilies) still
+come first.
 
 ## Right-to-left and mixed directions
 
@@ -210,7 +220,8 @@ has for it, or the default ones when the font has none.
 
 - The script, the region and the variants of the tag count where a language has several written forms: `zh-Hans`
   and `zh-Hant`, `zh-HK`, `el-polyton`.
-- The language only selects these forms: it does not choose fonts, and it does not change where lines break.
+- The language selects these forms, and the installed fonts of the Han ideographs of a stack with
+  [installed fallback](#installed-fonts-as-fallback). It does not change where lines break.
 - A language the font has no forms for changes nothing.
 
 ## Shaping
@@ -237,5 +248,5 @@ substitutes glyphs (ligatures, contextual forms, the forms of joining scripts) a
   has a model.
 
 What layout does not do yet: letter spacing is added between the letters of every script, including those that join;
-justification only widens U+0020 spaces and U+00A0 no-break spaces. It does not add gaps between CJK characters or
-lengthen Arabic words (kashida). A line without expandable spaces stays start-aligned.
+justification does not lengthen Arabic words (kashida), and shares its room equally between its places instead of by
+priority. A line without a place to stretch stays start-aligned.

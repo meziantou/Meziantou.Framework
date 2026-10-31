@@ -147,6 +147,44 @@ public sealed class JpegEncoderInteropTests
     }
 
     [Theory]
+    [InlineData("444", JpegEncodingProcess.Baseline)]
+    [InlineData("422", JpegEncodingProcess.Baseline)]
+    [InlineData("420", JpegEncodingProcess.Baseline)]
+    [InlineData("gray", JpegEncodingProcess.Baseline)]
+    [InlineData("420", JpegEncodingProcess.Progressive)]
+    [InlineData("gray", JpegEncodingProcess.Progressive)]
+    public async Task OptimizedTablesAndRestartMarkersDecodeToThePixelsOfTheDefaultOutput(string sampling, JpegEncodingProcess process)
+    {
+        // The options change the entropy coding only: FFmpeg and the ISO reference decoder (each its own Huffman decoder and
+        // restart handling) return exactly the pixels of the default output. Intervals of one MCU, that do not divide the
+        // number of MCUs, of one MCU row (37 pixels: 5 MCUs of 8 pixels, 3 of 16) and longer than the scan
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        var isoJpeg = await RequiredTools.IsoJpegAsync();
+        var gray = sampling == "gray";
+        var source = JpegTestPatterns.PhotoLike(37, 23, seed: 7);
+        if (gray)
+        {
+            source = JpegTestPatterns.ToGray(source);
+        }
+
+        var format = gray ? PixelFormat.Gray8 : PixelFormat.Rgb24;
+        var mcusPerRow = sampling is "444" or "gray" ? 5 : 3;
+        var name = string.Create(CultureInfo.InvariantCulture, $"options-{sampling}-{process}");
+        var defaultPath = await EncodeToFileAsync(source, format, new JpegEncoder { Quality = 85, ChromaSubsampling = GetSubsampling(sampling), Process = process }, name + "-default");
+        var expectedError = (await AssertDecodesWithFFmpegAsync(ffmpeg, defaultPath, source, sampling)).Describe();
+        var expected = JpegDecoderDifferentialTests.GetSamples(await isoJpeg.DecodeAsync(defaultPath, XunitCancellationToken), 255);
+        foreach (var (optimize, restartInterval) in new[] { (true, 0), (false, 1), (true, 2), (false, mcusPerRow), (true, 1000) })
+        {
+            var encoder = new JpegEncoder { Quality = 85, ChromaSubsampling = GetSubsampling(sampling), Process = process, OptimizeHuffmanTables = optimize, RestartInterval = restartInterval };
+            var variant = string.Create(CultureInfo.InvariantCulture, $"{name}-optimized{optimize}-restart{restartInterval}");
+            var path = await EncodeToFileAsync(source, format, encoder, variant);
+            Assert.Equal(expectedError, (await AssertDecodesWithFFmpegAsync(ffmpeg, path, source, sampling)).Describe());
+            Assert.Equal(expected, JpegDecoderDifferentialTests.GetSamples(await isoJpeg.DecodeAsync(path, XunitCancellationToken), 255));
+            TestContext.Current.TestOutputHelper?.WriteLine(string.Create(CultureInfo.InvariantCulture, $"{variant}: {new FileInfo(path).Length} bytes, {new FileInfo(defaultPath).Length} by default"));
+        }
+    }
+
+    [Theory]
     [InlineData("444")]
     [InlineData("422")]
     [InlineData("420")]

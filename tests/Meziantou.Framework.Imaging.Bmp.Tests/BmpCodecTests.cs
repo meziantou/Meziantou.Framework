@@ -23,6 +23,7 @@ public sealed class BmpCodecTests
     private const uint BiBitFields = 3;
     private const uint BiJpeg = 4;
     private const uint BiPng = 5;
+    private const uint BiAlphaBitFields = 6;
     private const uint BcaHuffman1D = 3;
     private const uint BcaRle24 = 4;
 
@@ -135,6 +136,60 @@ public sealed class BmpCodecTests
         // A one-bit alpha mask expands to 0 or 255
         var oneBit = Bmp(2, 1, 16, [[0x00, 0x80, 0x00, 0x00]], compression: BiBitFields, masks: [0x7C00, 0x03E0, 0x001F, 0x8000], headerLength: 56);
         Assert.Equal([new(0, 0, 0, 255), new(0, 0, 0, 0)], Decode(oneBit));
+    }
+
+    [Fact]
+    public void RareHeaderLengthsAndMaskLayoutsAreDecoded()
+    {
+        byte[][] rows = [[0x10, 0x20, 0x30, 0x40, 0x11, 0x22, 0x33, 0x00]];
+
+        // BI_ALPHABITFIELDS after a 40-byte header: four trailing masks, here in R, G, B, A byte order (not the BGRA layout
+        // of the fast path)
+        var alphaBitFields = Bmp(2, 1, 32, rows, compression: BiAlphaBitFields, masks: [0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000]);
+        Assert.Equal(PixelFormat.Rgba32, Image.Identify(alphaBitFields).PixelFormat);
+        Assert.Equal([new(0x10, 0x20, 0x30, 0x40), new(0x11, 0x22, 0x33, 0x00)], Decode(alphaBitFields));
+
+        // BITMAPV2INFOHEADER (52 bytes): color masks in the header and no alpha mask
+        var v2 = Bmp(2, 1, 32, rows, compression: BiBitFields, masks: [0xFF000000, 0x00FF0000, 0x0000FF00], headerLength: 52);
+        Assert.Equal(PixelFormat.Rgb24, Image.Identify(v2).PixelFormat);
+        Assert.Equal([new(0x40, 0x30, 0x20), new(0x00, 0x33, 0x22)], Decode(v2));
+
+        // BITMAPV5HEADER (124 bytes) decodes like BITMAPV4HEADER
+        var v5 = Bmp(2, 1, 32, rows, compression: BiBitFields, masks: [0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000], headerLength: 124);
+        Assert.Equal([new(0x30, 0x20, 0x10, 0x40), new(0x33, 0x22, 0x11, 0x00)], Decode(v5));
+
+        // The masks of a V4 or V5 header only describe BI_BITFIELDS pixels: with BI_RGB they are ignored, even overlapping ones
+        var ignoredMasks = Bmp(2, 1, 32, rows, masks: [0xFFFF0000, 0xFFFF0000, 0x000000FF, 0xFF000000], headerLength: 124);
+        Assert.Equal(PixelFormat.Rgb24, Image.Identify(ignoredMasks).PixelFormat);
+        Assert.Equal([new(0x30, 0x20, 0x10), new(0x33, 0x22, 0x11)], Decode(ignoredMasks));
+
+        // A mask that does not fit in the pixel
+        var outside = Assert.Throws<InvalidImageContentException>(() => Image.Load(Bmp(1, 1, 16, [[0, 0, 0, 0]], compression: BiBitFields, masks: [0x10000, 0x07E0, 0x001F])));
+        Assert.Contains("does not fit in a 16-bit pixel", outside.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ThePaletteLengthIsBoundedByTheBitCount()
+    {
+        // A palette after a 24-bit header is the optional color importance table: it is skipped
+        Assert.Equal([new(3, 2, 1)], Decode(Bmp(1, 1, 24, [[1, 2, 3, 0]], Palette4[..2])));
+
+        var tooManyColors = Assert.Throws<InvalidImageContentException>(() => Image.Load(Edit(Bmp(1, 1, 8, [[0, 0, 0, 0]], Palette4), 46, [1, 1, 0, 0])));
+        Assert.Contains("257 palette entries", tooManyColors.Message, StringComparison.Ordinal);
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(Edit(Bmp(1, 1, 4, [[0, 0, 0, 0]], Palette4), 46, [17, 0, 0, 0])));
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(Edit(Bmp(1, 1, 24, [[1, 2, 3, 0]]), 46, [1, 1, 0, 0])));
+    }
+
+    [Fact]
+    public void Os2V2DimensionsAreValidated()
+    {
+        var data = Os2Bmp(64, 2, 1, 24, [1, 2, 3, 4, 5, 6, 0, 0]);
+        Assert.Contains("width is 0", Assert.Throws<InvalidImageContentException>(() => Image.Load(Edit(data, 18, [0, 0, 0, 0]))).Message, StringComparison.Ordinal);
+        Assert.Contains("width is -1", Assert.Throws<InvalidImageContentException>(() => Image.Load(Edit(data, 18, [0xFF, 0xFF, 0xFF, 0xFF]))).Message, StringComparison.Ordinal);
+        Assert.Contains("height is 0", Assert.Throws<InvalidImageContentException>(() => Image.Load(Edit(data, 22, [0, 0, 0, 0]))).Message, StringComparison.Ordinal);
+
+        // Run-length encoding with 4 bits per pixel, as in a Windows header
+        Assert.Equal([Color1, Color1, Color0], Decode(Os2Bmp(64, 3, 1, 4, [2, 0x11, 1, 0x00, 0, 1], Palette4[..2], compression: BiRle4)));
     }
 
     [Fact]
@@ -1094,7 +1149,12 @@ public sealed class BmpCodecTests
         (int X, int Y)? pixelsPerMeter = null)
     {
         palette ??= [];
-        var maskBytes = headerLength == 40 && compression == BiBitFields ? 12 : 0;
+        var maskBytes = (headerLength, compression) switch
+        {
+            (40, BiBitFields) => 12,
+            (40, BiAlphaBitFields) => 16,
+            _ => 0,
+        };
         var paletteBytes = palette.Length * 4;
         var body = rows.SelectMany(row => row).ToArray();
         var offset = 14 + headerLength + maskBytes + paletteBytes + gap;

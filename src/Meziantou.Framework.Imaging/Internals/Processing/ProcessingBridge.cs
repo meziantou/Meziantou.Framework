@@ -50,8 +50,11 @@ internal static class ProcessingBridge
     /// <summary>Copies a leased frame to a working copy, runs <paramref name="kernel"/> on it, and copies the result back.</summary>
     public static void RunInPlace<TPixel>(StorageOwner owner, scoped in PixelLease lease, InPlaceKernel kernel)
         where TPixel : unmanaged
+        => RunInPlace(owner, PixelFormats.GetPixelFormat<TPixel>(), lease, kernel);
+
+    /// <summary>Copies a leased frame of <paramref name="format"/> to a working copy, runs <paramref name="kernel"/> on it, and copies the result back.</summary>
+    public static void RunInPlace(StorageOwner owner, PixelFormat format, scoped in PixelLease lease, InPlaceKernel kernel)
     {
-        var format = PixelFormats.GetPixelFormat<TPixel>();
         var working = GetKernelFormat(format);
         var storage = owner.Allocate(lease.Width, lease.Height, PixelFormats.GetBytesPerPixel(working), options: null, AllocationKind.Temporary);
         try

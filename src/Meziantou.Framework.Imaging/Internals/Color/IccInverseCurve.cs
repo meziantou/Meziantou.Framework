@@ -116,6 +116,58 @@ internal sealed class IccInverseCurve
         };
     }
 
+    /// <summary>
+    /// Evaluates the inverse without clipping, mirroring <see cref="IccCurve.EvaluateUnbounded"/>: in the range of the
+    /// curve as <see cref="Evaluate"/>, beyond it the inverse of the function of a parametric curve, or the slope of the
+    /// last interval of a table, and below the value of the curve at 0 the mirror image.
+    /// </summary>
+    /// <param name="y">The output of the curve.</param>
+    /// <returns>Its input.</returns>
+    public double EvaluateUnbounded(double y)
+    {
+        if (double.IsNaN(y))
+            y = 0;
+
+        if (_function == FunctionIdentity)
+            return y;
+
+        var origin = ValueAtZero();
+        if (_decreasing ? y > origin : y < origin)
+            return -EvaluateUnbounded((2 * origin) - y);
+
+        if (_function == FunctionSampled)
+        {
+            var envelope = _envelope!;
+            var last = envelope[^1];
+            if (_decreasing ? y >= last : y <= last)
+                return EvaluateSampled(y);
+
+            // Beyond the last entry: the slope of the last interval that rises
+            var index = envelope.Length - 2;
+            while (index > 0 && envelope[index] == last)
+            {
+                index--;
+            }
+
+            var step = (last - envelope[index]) / (envelope.Length - 1 - index);
+            return 1 + ((y - last) / step / (envelope.Length - 1));
+        }
+
+        if (y <= 1)
+            return Evaluate(y);
+
+        return _function is 0 ? Math.Pow(y, 1 / _g) : InvertPower(y);
+    }
+
+    // The value of the curve for an input of 0
+    private double ValueAtZero() => _function switch
+    {
+        FunctionSampled => _envelope![0],
+        0 => 0,
+        1 or 2 => _b > 0 ? Math.Pow(_b, _g) + _e : _e,
+        _ => _d > 0 ? _f : Math.Pow(_b, _g) + _e,
+    };
+
     private double InvertPower(double y) => (Math.Pow(y - _e, 1 / _g) - _b) / _a;
 
     /// <summary>Inverts a type 3 or 4 curve: a linear segment below d, a power segment from d.</summary>

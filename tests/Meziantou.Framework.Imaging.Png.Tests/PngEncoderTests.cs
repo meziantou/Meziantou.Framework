@@ -49,6 +49,43 @@ public sealed class PngEncoderTests
         ("colors-12", PixelFormat.Rgba64, 3, 4, false),
     ];
 
+    private static readonly (string Content, PixelFormat Format, int ColorType, int BitDepth)[] LayoutOptimizationLayouts =
+    [
+        // Content, pixel format, expected color type, expected bit depth
+        ("random", PixelFormat.Rgba32, 6, 8),
+        ("random", PixelFormat.Bgra32, 6, 8),
+        ("random", PixelFormat.Rgb24, 2, 8),
+        ("random", PixelFormat.Rgba64, 6, 16),
+        ("opaque", PixelFormat.Rgba32, 2, 8),
+        ("opaque", PixelFormat.Bgra32, 2, 8),
+        ("opaque", PixelFormat.Rgba64, 2, 16),
+        ("eight-bit", PixelFormat.Rgba64, 6, 8),
+        ("gray", PixelFormat.Rgba64, 0, 16),
+        ("gray", PixelFormat.Rgba32, 0, 8),
+        ("gray", PixelFormat.Gray16, 0, 16),
+        ("gray-alpha", PixelFormat.Rgba32, 4, 8),
+        ("gray-alpha", PixelFormat.Rgba64, 4, 16),
+        ("key", PixelFormat.Rgba32, 6, 8),
+        ("key", PixelFormat.Rgba64, 6, 16),
+        ("gray-key", PixelFormat.Rgba32, 3, 8),
+        ("transparent-colors", PixelFormat.Rgba32, 6, 8),
+        ("levels-1", PixelFormat.Gray8, 0, 1),
+        ("levels-2", PixelFormat.Gray8, 0, 2),
+        ("levels-4", PixelFormat.Gray8, 0, 4),
+        ("levels-1", PixelFormat.Gray16, 0, 1),
+        ("levels-4", PixelFormat.Gray16, 0, 4),
+        ("levels-4", PixelFormat.Rgb24, 0, 4),
+        ("levels-4", PixelFormat.Rgba64, 0, 4),
+        ("colors-2", PixelFormat.Rgb24, 3, 1),
+        ("colors-12", PixelFormat.Rgba32, 3, 4),
+        ("colors-12", PixelFormat.Bgra32, 3, 4),
+        ("colors-12", PixelFormat.Rgba64, 3, 4),
+        ("colors-200", PixelFormat.Rgb24, 3, 8),
+        ("colors-256", PixelFormat.Rgba32, 3, 8),
+        ("colors-257", PixelFormat.Rgba32, 6, 8),
+        ("colors-200", PixelFormat.Gray8, 0, 8),
+    ];
+
     public static TheoryData<PixelFormat, PngFilter, bool> FilterCases()
     {
         var data = new TheoryData<PixelFormat, PngFilter, bool>();
@@ -1348,6 +1385,282 @@ public sealed class PngEncoderTests
         // The analysis (palette and the 2 MiB set of opaque colors) and a few rows, far below the 6.6 MB of pixels
         Assert.InRange(peak, 1, 4 * 1024 * 1024);
         OptimizedPngOutputVerifier.VerifyStill(stream.ToArray(), image);
+    }
+
+    public static TheoryData<string, PixelFormat, int, int, bool> LayoutOptimizationCases()
+    {
+        var data = new TheoryData<string, PixelFormat, int, int, bool>();
+        foreach (var (content, format, colorType, bitDepth) in LayoutOptimizationLayouts)
+        {
+            data.Add(content, format, colorType, bitDepth, false);
+            data.Add(content, format, colorType, bitDepth, true);
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(LayoutOptimizationCases))]
+    public void LayoutOptimizationStoresThePixelsExactlyInTheNarrowestLayout(string content, PixelFormat format, int colorType, int bitDepth, bool interlaced)
+    {
+        using var image = CreateMinimumSizeContent(content, format, 37, 23, seed: content.Length + (int)format);
+        var png = Encode(image, new PngEncoder { Optimization = PngOptimization.Layout, Interlaced = interlaced });
+        var context = $"{content} {format} interlaced={interlaced}";
+        var reference = OptimizedPngOutputVerifier.VerifyStill(png, image, context);
+        Assert.Equal((byte)colorType, reference.ColorType);
+        Assert.Equal((byte)bitDepth, reference.BitDepth);
+        Assert.Equal(interlaced ? (byte)1 : (byte)0, reference.InterlaceMethod);
+
+        // A palette has tRNS exactly when one of its entries is not opaque; the other layouts never write a color key
+        Assert.Equal(colorType == 3 && HasTranslucentPixel(image), reference.ChunkTypes.Contains("tRNS"));
+        if (colorType == 3)
+        {
+            Assert.True(reference.ArePaddingBitsZero());
+        }
+
+        // The layout analysis never writes a larger layout than the one of the pixel format, and MinimumSize, which
+        // also compresses the candidates, is never larger than it
+        var unoptimized = Encode(image, new PngEncoder { Interlaced = interlaced });
+        var minimumSize = Encode(image, new PngEncoder { Optimization = PngOptimization.MinimumSize, Interlaced = interlaced });
+        Assert.HasCountLessThanOrEqual(png.Length, minimumSize, context);
+        if (reference.ColorType == ReferencePng.Parse(unoptimized).ColorType && reference.BitDepth == ReferencePng.Parse(unoptimized).BitDepth)
+        {
+            Assert.Equal(unoptimized, png);
+        }
+
+        // Supplementary: the library decodes the same pixels
+        using var decoded = Image.Load<Rgba64>(png);
+        using var expected = image.CloneAs<Rgba64>();
+        var result = PixelBufferComparer.Compare(ImageSnapshots.CaptureFrame(expected.Frames[0]), ImageSnapshots.CaptureFrame(decoded.Frames[0]), ComparisonPolicy.Exact, "library decoder round trip");
+        Assert.True(result.IsMatch, result.Describe());
+    }
+
+    [Fact]
+    public void LayoutOptimizationKeepsNearGrayColors()
+    {
+        // One pixel whose green sample is one level above its red and blue ones makes the image a color image
+        using var image = (Image<Rgb24>)CreateMinimumSizeContent("levels-4", PixelFormat.Rgb24, 29, 13, seed: 2);
+        image.Frames[0].ProcessPixelRows(pixels =>
+        {
+            ref var pixel = ref pixels.GetRowSpan(12)[28];
+            pixel = new Rgb24(pixel.R, (byte)(pixel.G + 1), pixel.B);
+        });
+
+        var png = Encode(image, new PngEncoder { Optimization = PngOptimization.Layout });
+        var reference = OptimizedPngOutputVerifier.VerifyStill(png, image);
+        Assert.Equal((byte)3, reference.ColorType);
+        Assert.Equal((byte)8, reference.BitDepth);
+
+        // Without the change, the 16 gray levels are a 4-bit grayscale image
+        using var gray = CreateMinimumSizeContent("levels-4", PixelFormat.Rgb24, 29, 13, seed: 2);
+        Assert.Equal((byte)0, OptimizedPngOutputVerifier.VerifyStill(Encode(gray, new PngEncoder { Optimization = PngOptimization.Layout }), gray).ColorType);
+    }
+
+    [Theory]
+    [InlineData("photo", PixelFormat.Rgba32)]
+    [InlineData("photo", PixelFormat.Rgba64)]
+    [InlineData("photo", PixelFormat.Gray8)]
+    [InlineData("opaque", PixelFormat.Rgba32)]
+    [InlineData("gray", PixelFormat.Rgba32)]
+    [InlineData("levels-2", PixelFormat.Gray16)]
+    [InlineData("colors-12", PixelFormat.Rgba32)]
+    [InlineData("colors-200", PixelFormat.Rgb24)]
+    [InlineData("gray-key", PixelFormat.Rgba32)]
+    public void LayoutOptimizationIsSmallerThanTheLayoutOfThePixelFormat(string content, PixelFormat format)
+    {
+        using var image = CreateMinimumSizeContent(content, format, 61, 47, seed: 5);
+        var optimized = Encode(image, new PngEncoder { Optimization = PngOptimization.Layout });
+        OptimizedPngOutputVerifier.VerifyStill(optimized, image, $"{content} {format}");
+        var unoptimized = Encode(image, new PngEncoder());
+        if (ReferencePng.Parse(optimized).ColorType == ReferencePng.Parse(unoptimized).ColorType && ReferencePng.Parse(optimized).BitDepth == ReferencePng.Parse(unoptimized).BitDepth)
+        {
+            // The photos of the pixel formats without a narrower layout
+            Assert.Equal(unoptimized, optimized);
+            return;
+        }
+
+        Assert.HasCountLessThan(unoptimized.Length, optimized, $"Layout wrote {optimized.Length} bytes, None {unoptimized.Length}.");
+    }
+
+    [Fact]
+    public void LayoutOptimizationFollowsTheFilterAndTheLevelOfTheEncoder()
+    {
+        using var image = CreateMinimumSizeContent("opaque", PixelFormat.Rgba32, 31, 17, seed: 3);
+        foreach (var filter in new[] { PngFilter.None, PngFilter.Sub, PngFilter.Up, PngFilter.Average, PngFilter.Paeth })
+        {
+            var png = Encode(image, new PngEncoder { Optimization = PngOptimization.Layout, Filter = filter });
+            var reference = OptimizedPngOutputVerifier.VerifyStill(png, image, filter.ToString());
+            Assert.Equal((byte)2, reference.ColorType);
+            Assert.All(reference.GetFilterTypes(), type => Assert.Equal((byte)(filter - PngFilter.None), type));
+        }
+
+        // The same pixels in the RGB pixel format are written by the default session with the same settings
+        using var rgb = image.CloneAs<Rgb24>();
+        foreach (var level in Enum.GetValues<CompressionLevel>())
+        {
+            Assert.Equal(Encode(rgb, new PngEncoder { CompressionLevel = level }), Encode(image, new PngEncoder { Optimization = PngOptimization.Layout, CompressionLevel = level }));
+        }
+
+        // A palette is not filtered, as with PngPixelLayout.Indexed
+        using var colors = CreateMinimumSizeContent("colors-12", PixelFormat.Rgba32, 31, 17, seed: 3);
+        var indexed = OptimizedPngOutputVerifier.VerifyStill(Encode(colors, new PngEncoder { Optimization = PngOptimization.Layout }), colors);
+        Assert.Equal((byte)3, indexed.ColorType);
+        Assert.All(indexed.GetFilterTypes(), type => Assert.Equal((byte)0, type));
+    }
+
+    [Fact]
+    public void LayoutOptimizationWithTheIndexedLayoutWritesTheIndexedOutput()
+    {
+        using var image = CreateMinimumSizeContent("colors-12", PixelFormat.Rgba64, 23, 9, seed: 1);
+        var png = Encode(image, new PngEncoder { Optimization = PngOptimization.Layout, PixelLayout = PngPixelLayout.Indexed });
+        Assert.Equal(Encode(image, new PngEncoder { PixelLayout = PngPixelLayout.Indexed }), png);
+
+        // A gray image too, where the analysis alone would choose grayscale
+        using var gray = CreateMinimumSizeContent("levels-2", PixelFormat.Gray8, 23, 9, seed: 1);
+        var reference = OptimizedPngOutputVerifier.VerifyStill(Encode(gray, new PngEncoder { Optimization = PngOptimization.Layout, PixelLayout = PngPixelLayout.Indexed }), gray);
+        Assert.Equal((byte)3, reference.ColorType);
+        Assert.Equal((byte)2, reference.BitDepth);
+
+        using var many = CreateMinimumSizeContent("random", PixelFormat.Rgb24, 23, 19, seed: 1);
+        using var stream = new TestOutputStream();
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => many.Save(stream, new PngEncoder { Optimization = PngOptimization.Layout, PixelLayout = PngPixelLayout.Indexed }));
+        Assert.Equal("Color reduction", exception.Feature);
+        Assert.Equal(0, stream.BytesWritten);
+    }
+
+    [Fact]
+    public void LayoutOptimizationKeepsTheColorSpaceOfTheProfile()
+    {
+        // A gray image labeled with an RGB profile stays RGB (or a palette): an iCCP profile describes the color type
+        using var image = CreateMinimumSizeContent("levels-4", PixelFormat.Rgb24, 19, 11, seed: 4);
+        var rgb = new IccProfile(new MetadataBlob(IccTestBlobs.Create("RGB ")));
+        image.Metadata.IccProfile = rgb;
+        var png = Encode(image, new PngEncoder { Optimization = PngOptimization.Layout });
+        var reference = OptimizedPngOutputVerifier.VerifyStill(png, image);
+        Assert.True(reference.ColorType is 2 or 3, $"color type {reference.ColorType}");
+        Assert.Equal(rgb.Data.ToArray(), EncodedFieldInspector.Inspect("png", png).Icc!.Value.ToArray());
+
+        // A gray profile keeps a few gray levels out of a palette
+        using var gray = CreateMinimumSizeContent("levels-4", PixelFormat.Gray8, 19, 11, seed: 4);
+        gray.Metadata.IccProfile = new IccProfile(new MetadataBlob(IccTestBlobs.Create("GRAY")));
+        reference = OptimizedPngOutputVerifier.VerifyStill(Encode(gray, new PngEncoder { Optimization = PngOptimization.Layout }), gray);
+        Assert.Equal((byte)0, reference.ColorType);
+        Assert.Equal((byte)4, reference.BitDepth);
+    }
+
+    [Fact]
+    public void LayoutOptimizationWritesThroughASequentialWriter()
+    {
+        using var image = (Image<Rgba32>)CreateMinimumSizeContent("gray-key", PixelFormat.Rgba32, 40, 30, seed: 8);
+        using var stream = new TestOutputStream();
+        using (var writer = Image.CreateWriter<Rgba32>(stream, new ImageWriterOptions(40, 30) { Encoder = new PngEncoder { Optimization = PngOptimization.Layout }, ExpectedFrameCount = 1 }))
+        {
+            writer.WriteFrame(image.Frames[0]);
+            writer.Complete();
+            Assert.Equal(0, writer.Core.Scope.LiveBytes);
+        }
+
+        var reference = OptimizedPngOutputVerifier.VerifyStill(stream.ToArray(), image);
+        Assert.Equal((byte)3, reference.ColorType);
+        Assert.Equal(Encode(image, new PngEncoder { Optimization = PngOptimization.Layout }), stream.ToArray());
+    }
+
+    [Fact]
+    public void LayoutOptimizationStreamsLargeImagesWithBoundedMemory()
+    {
+        // No set of opaque colors (no color key) and no copy of the image: the palette and a few rows
+        const int SourceWidth = 1500;
+        const int SourceHeight = 1100;
+        using var image = CreateWithColors<Rgba32>(SourceWidth, SourceHeight, colors: 200, seed: 6);
+        using var stream = new TestOutputStream();
+        var options = new ImageWriterOptions(SourceWidth, SourceHeight) { Encoder = new PngEncoder { Optimization = PngOptimization.Layout }, ExpectedFrameCount = 1 };
+        long peak;
+        using (var writer = Image.CreateWriter<Rgba32>(stream, options))
+        {
+            writer.WriteFrame(image.Frames[0]);
+            peak = writer.Core.Scope.GetDiagnostics().PeakLiveBytes;
+            writer.Complete();
+        }
+
+        Assert.InRange(peak, 1, 512 * 1024);
+        Assert.Equal((byte)3, OptimizedPngOutputVerifier.VerifyStill(stream.ToArray(), image).ColorType);
+    }
+
+    [Fact]
+    public void LayoutOptimizationWritesAnimationsAsWithoutOptimization()
+    {
+        // The layout of a sequential APNG writer would have to hold the frames after the header
+        using var still = CreateMinimumSizeContent("levels-2", PixelFormat.Rgba32, 23, 9, seed: 1);
+        var animated = Encode(still, new PngEncoder { AnimationMode = PngAnimationMode.Animated, Optimization = PngOptimization.Layout });
+        Assert.Equal(Encode(still, new PngEncoder { AnimationMode = PngAnimationMode.Animated }), animated);
+        Assert.Equal((byte)6, ReferencePng.Parse(animated).ColorType);
+    }
+
+    [Theory]
+    [InlineData(PixelFormat.Rgb24, 1)]
+    [InlineData(PixelFormat.Rgba32, 23)]
+    [InlineData(PixelFormat.Rgba64, 23)]
+    public void LayoutAnalysisStopsOnceNothingCanChange(PixelFormat format, int expectedRows)
+    {
+        // More than 256 colors in the first row: an opaque pixel format is settled after it; a pixel format with alpha is read
+        // to its last row to know that every pixel is opaque
+        using var image = CreateMinimumSizeContent("opaque", format, 300, 23, seed: 1);
+        var isWide16 = PixelFormats.GetBitsPerComponent(format) == 16;
+        var scope = new AllocationScope(ImageResourceLimits.Default);
+        using var analysis = new PngLayoutAnalysis(scope, isWide16, image.Width, trackOpaqueColors: false, PixelFormats.HasAlpha(format));
+        using var frameRows = new PngFrameRows(scope, isWide16 ? PixelFormat.Rgba64 : PixelFormat.Rgba32, image.Width);
+        frameRows.SetFrame(image.Frames[0]);
+        var rows = new CountingRows(frameRows);
+        Assert.Equal(PngIndexedRowStatus.Ok, analysis.Add(rows, paletteRequired: false, out _, out _));
+        Assert.Equal(expectedRows, rows.Count);
+        frameRows.SetFrame(null);
+
+        // A translucent pixel settles the analysis of a pixel format with alpha
+        using var translucent = CreateMinimumSizeContent("random", PixelFormat.Rgba32, 300, 23, seed: 1);
+        using var translucentAnalysis = new PngLayoutAnalysis(scope, isWide16: false, translucent.Width, trackOpaqueColors: false, hasAlpha: true);
+        using var translucentRows = new PngFrameRows(scope, PixelFormat.Rgba32, translucent.Width);
+        translucentRows.SetFrame(translucent.Frames[0]);
+        rows = new CountingRows(translucentRows);
+        Assert.Equal(PngIndexedRowStatus.Ok, translucentAnalysis.Add(rows, paletteRequired: false, out _, out _));
+        Assert.Equal(1, rows.Count);
+        translucentRows.SetFrame(null);
+    }
+
+    private static bool HasTranslucentPixel(Image image)
+    {
+        using var rgba = image.CloneAs<Rgba64>();
+        var translucent = false;
+        rgba.Frames[0].ProcessPixelRows(pixels =>
+        {
+            for (var y = 0; y < pixels.Height && !translucent; y++)
+            {
+                foreach (var pixel in pixels.GetRowSpan(y))
+                {
+                    if (pixel.A != ushort.MaxValue)
+                    {
+                        translucent = true;
+                        break;
+                    }
+                }
+            }
+        });
+
+        return translucent;
+    }
+
+    private sealed class CountingRows(PngWideRows rows) : PngWideRows
+    {
+        public int Count { get; private set; }
+
+        public override int Width => rows.Width;
+
+        public override int Height => rows.Height;
+
+        public override ReadOnlySpan<byte> GetRow(int y)
+        {
+            Count++;
+            return rows.GetRow(y);
+        }
     }
 
     [Fact]

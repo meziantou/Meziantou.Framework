@@ -1040,6 +1040,122 @@ public sealed class ConvolutionTests
         Assert.Equal(127, wide.Frames[0][0, 0].Value);
     }
 
+    [Theory]
+    [InlineData(ConvolutionEdgeMode.Clamp, 1)]
+    [InlineData(ConvolutionEdgeMode.Clamp, 10000)]
+    [InlineData(ConvolutionEdgeMode.Mirror, 1)]
+    [InlineData(ConvolutionEdgeMode.Mirror, 10000)]
+    [InlineData(ConvolutionEdgeMode.Wrap, 1)]
+    [InlineData(ConvolutionEdgeMode.Wrap, 10000)]
+    [InlineData(ConvolutionEdgeMode.Zero, 1)]
+    [InlineData(ConvolutionEdgeMode.Zero, 7)]
+    [InlineData(ConvolutionEdgeMode.Zero, 10000)]
+    public void ABoxBlurOfOnePixelReadsOnlyThatPixelOrZeros(ConvolutionEdgeMode mode, int radius)
+    {
+        // Clamp, Mirror and Wrap fill the whole square with the pixel; Zero reads it once among (2 radius + 1)^2 pixels
+        using var image = new Image<Rgba32>(1, 1, new Rgba32(10, 20, 30, 180));
+        using var deep = new Image<Gray16>(1, 1, new Gray16(65535));
+        image.BoxBlur(radius, mode, cancellationToken: Ct);
+        deep.BoxBlur(radius, mode, cancellationToken: Ct);
+        if (mode is ConvolutionEdgeMode.Zero)
+        {
+            // 65535 / 9 = 7281.7, 65535 / 225 = 291.3, 65535 / 20001^2 rounds to 0
+            var expected = radius switch { 1 => 7282, 7 => 291, _ => 0 };
+            Assert.Equal(expected, deep.Frames[0][0, 0].Value);
+
+            // The colors are filtered premultiplied by alpha: the only opaque contribution keeps them; 180 / 9 = 20
+            if (radius is 1)
+            {
+                Assert.Equal(new Rgba32(10, 20, 30, 20), image.Frames[0][0, 0]);
+            }
+        }
+        else
+        {
+            Assert.Equal(new Rgba32(10, 20, 30, 180), image.Frames[0][0, 0]);
+            Assert.Equal(65535, deep.Frames[0][0, 0].Value);
+        }
+    }
+
+    [Theory]
+    [InlineData(ConvolutionEdgeMode.Clamp, 7, new[] { 108, 125, 142 })]
+    [InlineData(ConvolutionEdgeMode.Mirror, 7, new[] { 98, 115, 132 })]
+    [InlineData(ConvolutionEdgeMode.Wrap, 7, new[] { 115, 115, 115 })]
+    [InlineData(ConvolutionEdgeMode.Zero, 7, new[] { 2, 2, 2 })]
+    [InlineData(ConvolutionEdgeMode.Clamp, 10000, new[] { 127, 127, 128 })]
+    [InlineData(ConvolutionEdgeMode.Mirror, 10000, new[] { 115, 115, 115 })]
+    [InlineData(ConvolutionEdgeMode.Wrap, 10000, new[] { 115, 115, 115 })]
+    [InlineData(ConvolutionEdgeMode.Zero, 10000, new[] { 0, 0, 0 })]
+    public void ABoxBlurWiderThanTheImageRepeatsTheEdgeModeAcrossTheSquare(ConvolutionEdgeMode mode, int radius, int[] expected)
+    {
+        // 0 90 255 with a radius of 7: the 15 pixels of a square span the row five times. Clamp reads 0 seven times on the
+        // left: (8 * 0 + 90 + 6 * 255) / 15 = 108. Mirror reflects again at each copy (... 90 0 | 0 90 255 | 255 90 0 0 ...):
+        // the first square holds 0, 90 and 255 six, five and four times, (450 + 1020) / 15 = 98. Wrap reads five whole
+        // periods: 345 / 15 = 115.
+        // Zero reads the row once and the other rows and columns are zero: 345 / 225 = 1.5
+        // With a radius of 10000, a square holds 20001 pixels. Clamp: (90 + 9999 * 255) / 20001 = 127.49 for the first one,
+        // (90 + 10001 * 255) / 20001 = 127.51 for the last one. Mirror: 3333 periods of 0 90 255 255 90 0 (690) and three
+        // more pixels, (2299770 + 600) / 20001 = 115.01 for the first one. Wrap: 6667 periods, 345 / 3 = 115. Zero: 0
+        using var row = BuildGray8([[0, 90, 255]]);
+        row.BoxBlur(radius, mode, cancellationToken: Ct);
+        AssertGray8(row.Frames[0], [expected]);
+
+        using var column = BuildGray8([[0], [90], [255]]);
+        column.BoxBlur(radius, mode, cancellationToken: Ct);
+        AssertGray8(column.Frames[0], [[expected[0]], [expected[1]], [expected[2]]]);
+    }
+
+    [Theory]
+    [InlineData(1, 1, 40, 1)]
+    [InlineData(7, 5, 9, 1)]
+    [InlineData(40, 3, 2, 1)]
+    [InlineData(5, 40, 3, 1)]
+    [InlineData(300, 250, 3, 4)]
+    [InlineData(260, 256, 40, 4)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void ABoxBlurFromTheRowCacheGivesTheSamplesOfTheWindowBitForBit(int width, int height, int radius, int workers)
+    {
+        // A frame not taller than the radius sums each of its rows once into a cache rather than for every row of the
+        // window that reads it. Forced on taller frames (several blocks of rows, bands that start inside a block), the cache
+        // adds the same samples in the same order: fractional samples (floating-point, linear light) would show any change
+        var random = new Random((width * 1000) + height);
+        var floats = new RgbaFloat[width * height];
+        var deep = new Rgba64[width * height];
+        var opaque = new Rgba32[width * height];
+        for (var i = 0; i < floats.Length; i++)
+        {
+            floats[i] = new RgbaFloat((float)((random.NextDouble() * 2.5) - 0.5), (float)random.NextDouble(), (float)(random.NextDouble() * 3), (float)random.NextDouble());
+            deep[i] = new Rgba64((ushort)random.Next(65536), (ushort)random.Next(65536), (ushort)random.Next(65536), (ushort)random.Next(65536));
+            opaque[i] = new Rgba32((byte)random.Next(256), (byte)random.Next(256), (byte)random.Next(256));
+        }
+
+        var configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers };
+        foreach (var mode in new[] { ConvolutionEdgeMode.Clamp, ConvolutionEdgeMode.Mirror, ConvolutionEdgeMode.Wrap })
+        {
+            Assert.Equal(Blur(floats, mode, ConvolutionWorkingSpace.Encoded, rowCache: false), Blur(floats, mode, ConvolutionWorkingSpace.Encoded, rowCache: true));
+            Assert.Equal(Blur(deep, mode, ConvolutionWorkingSpace.LinearSrgb, rowCache: false), Blur(deep, mode, ConvolutionWorkingSpace.LinearSrgb, rowCache: true));
+            Assert.Equal(Blur(opaque, mode, ConvolutionWorkingSpace.LinearSrgb, rowCache: false), Blur(opaque, mode, ConvolutionWorkingSpace.LinearSrgb, rowCache: true));
+        }
+
+        byte[] Blur<TPixel>(TPixel[] pixels, ConvolutionEdgeMode mode, ConvolutionWorkingSpace workingSpace, bool rowCache)
+            where TPixel : unmanaged
+        {
+            using var image = Image.ImportPixelData<TPixel>(pixels, width, height, configuration: configuration);
+            BoxBlurPlan.TestRowCache = rowCache;
+            try
+            {
+                image.BoxBlur(radius, mode, workingSpace, Ct);
+            }
+            finally
+            {
+                BoxBlurPlan.TestRowCache = null;
+            }
+
+            var bytes = new byte[width * height * PixelFormats.GetBytesPerPixel(image.PixelFormat)];
+            image.Frames[0].CopyPixelBytesTo(bytes);
+            return bytes;
+        }
+    }
+
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void ABoxBlurIsTheConvolutionByEqualWeights()
@@ -2303,5 +2419,77 @@ public sealed class ConvolutionTests
         var pixels = new TPixel[frame.Width * frame.Height];
         frame.CopyPixelDataTo(pixels);
         return pixels;
+    }
+
+    [Fact]
+    public void MotionBlurKernel_WeighsTheLengthOfTheSegmentInEachPixel()
+    {
+        var horizontal = ConvolutionKernel.CreateMotionBlur(5, 0);
+        Assert.Equal(5, horizontal.Width);
+        Assert.Equal(1, horizontal.Height);
+        for (var x = 0; x < 5; x++)
+        {
+            Assert.Equal(0.2, horizontal[x, 0], 1e-15);
+        }
+
+        // A segment of 4 pixels covers half of the pixels at its ends
+        double[] four = [0.125, 0.25, 0.25, 0.25, 0.125];
+        var even = ConvolutionKernel.CreateMotionBlur(4, 180);
+        Assert.Equal(5, even.Width);
+        for (var x = 0; x < 5; x++)
+        {
+            Assert.Equal(four[x], even[x, 0], 1e-15);
+        }
+
+        var vertical = ConvolutionKernel.CreateMotionBlur(3, -90);
+        Assert.Equal(1, vertical.Width);
+        Assert.Equal(3, vertical.Height);
+        Assert.Equal(1 / 3.0, vertical[0, 2], 1e-15);
+
+        // 45 degrees clockwise: down to the right, through the corners of the pixels
+        var diagonal = ConvolutionKernel.CreateMotionBlur(3, 45);
+        Assert.Equal(3, diagonal.Width);
+        Assert.Equal(3, diagonal.Height);
+        Assert.Equal(Math.Sqrt(2) / 3, diagonal[1, 1], 1e-12);
+        Assert.Equal((3 - Math.Sqrt(2)) / 6, diagonal[0, 0], 1e-12);
+        Assert.Equal((3 - Math.Sqrt(2)) / 6, diagonal[2, 2], 1e-12);
+        Assert.Equal(0, diagonal[2, 0], 1e-12);
+        Assert.Equal(0, diagonal[1, 0], 1e-12);
+
+        var single = ConvolutionKernel.CreateMotionBlur(1, 30);
+        Assert.Equal(1, single.Width);
+        Assert.Equal(1, single.Height);
+        Assert.Equal(1, single[0, 0], 1e-15);
+
+        // Any angle: the weights add up to 1 and are symmetric about the center
+        var oblique = ConvolutionKernel.CreateMotionBlur(9.5, 23);
+        var sum = 0.0;
+        for (var y = 0; y < oblique.Height; y++)
+        {
+            for (var x = 0; x < oblique.Width; x++)
+            {
+                sum += oblique[x, y];
+                Assert.Equal(oblique[x, y], oblique[oblique.Width - 1 - x, oblique.Height - 1 - y], 1e-12);
+            }
+        }
+
+        Assert.Equal(1, sum, 1e-12);
+
+        Assert.Throws<ArgumentOutOfRangeException>("length", () => ConvolutionKernel.CreateMotionBlur(0.5, 0));
+        Assert.Throws<ArgumentOutOfRangeException>("length", () => ConvolutionKernel.CreateMotionBlur(double.NaN, 0));
+        Assert.Throws<ArgumentException>("degrees", () => ConvolutionKernel.CreateMotionBlur(3, double.PositiveInfinity));
+    }
+
+    [Fact]
+    public void MotionBlurKernel_DrawsATrail()
+    {
+        using var image = new Image<Gray8>(9, 3);
+        image.Frames[0][4, 1] = new Gray8(250);
+        image.Convolve(new ConvolutionOptions(ConvolutionKernel.CreateMotionBlur(5, 0)), Ct);
+        for (var x = 0; x < 9; x++)
+        {
+            Assert.Equal(x is >= 2 and <= 6 ? 50 : 0, image.Frames[0][x, 1].Value);
+            Assert.Equal(0, image.Frames[0][x, 0].Value);
+        }
     }
 }

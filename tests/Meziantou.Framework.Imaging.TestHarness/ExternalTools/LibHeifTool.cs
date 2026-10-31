@@ -187,6 +187,33 @@ public sealed partial class LibHeifTool
     }
 
     /// <summary>
+    /// Decodes the auxiliary images of the primary image of a file (depth images, mattes, gain maps; not the alpha plane)
+    /// with <c>heif-dec --with-aux</c>, which writes each of them to a PNG file named after its auxiliary type.
+    /// </summary>
+    /// <param name="inputPath">The HEIF file.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>The images, by the name heif-dec gives their file (the primary image is not included).</returns>
+    /// <exception cref="InvalidOperationException">heif-dec rejected the file.</exception>
+    public async Task<IReadOnlyDictionary<string, HeifDecImage>> DecodeAuxiliaryImagesAsync(FullPath inputPath, CancellationToken cancellationToken)
+    {
+        var directory = FullPath.FromPath(inputPath + ".heif-dec-aux");
+        if (Directory.Exists(directory))
+            Directory.Delete(directory, recursive: true);
+
+        Directory.CreateDirectory(directory);
+        await RunCheckedAsync(HeifDecPath, ["--quiet", "--with-aux", "--no-colons", inputPath, directory / "image.png"], cancellationToken).ConfigureAwait(false);
+        var result = new Dictionary<string, HeifDecImage>(StringComparer.Ordinal);
+        foreach (var file in Directory.EnumerateFiles(directory, "*.png").Order(StringComparer.Ordinal))
+        {
+            var name = Path.GetFileName(file);
+            if (name is not "image.png")
+                result.Add(name, HeifDecImage.ReadPng(await File.ReadAllBytesAsync(file, cancellationToken).ConfigureAwait(false)));
+        }
+
+        return result;
+    }
+
+    /// <summary>
     /// Decodes the primary image of a file with <c>heif-dec</c> to a YUV4MPEG2 file, which holds planes instead of pixels.
     /// heif-dec always writes 8-bit 4:2:0 planes: they are the decoded planes of an 8-bit 4:2:0 image, after its
     /// transformations, and a conversion of the image otherwise.

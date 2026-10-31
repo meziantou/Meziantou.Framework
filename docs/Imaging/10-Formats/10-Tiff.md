@@ -11,7 +11,7 @@ destination.**
 
 | | Reading | Writing |
 | --- | --- | --- |
-| Container | Classic TIFF and BigTIFF, both byte orders, strips and tiles, multi-page documents | Classic TIFF (default) or BigTIFF, both byte orders, strips, multi-page documents |
+| Container | Classic TIFF and BigTIFF, both byte orders, strips and tiles, chunky samples and separate planes, multi-page documents | Classic TIFF (default) or BigTIFF, both byte orders, strips or tiles, chunky samples, multi-page documents |
 | Samples | Bilevel, 2, 4, 8 and 16-bit gray, gray and alpha, RGB, RGBA, palette, YCbCr; signed 8 and 16-bit samples; 16, 24 and 32-bit floating-point samples; CMYK with a color conversion | Gray, gray and alpha, RGB and RGBA at 8 or 16 bits, bilevel, palette, 32-bit floating-point |
 | Compression | None, Deflate, LZW, PackBits, CCITT (modified Huffman, Group 3, Group 4), JPEG, JPEG 2000 | None, Deflate (default), LZW, PackBits, CCITT for bilevel pages, JPEG |
 | Metadata | Resolution, orientation, ICC profile, XMP | The same |
@@ -90,6 +90,8 @@ See [Binarization](../06-Processing/09-Binarization.md). A bilevel page loads ba
 | [BigTiff](cref:Meziantou.Framework.Imaging.Formats.TiffEncoder.BigTiff) | Writes a BigTIFF (64-bit offsets), which fewer readers accept | `false` |
 | [BigEndian](cref:Meziantou.Framework.Imaging.Formats.TiffEncoder.BigEndian) | Writes big-endian instead of little-endian files; the pixels are the same | `false` |
 | [RowsPerStrip](cref:Meziantou.Framework.Imaging.Formats.TiffEncoder.RowsPerStrip) | The rows of a strip; 0 chooses strips of about 64 KiB of samples | 0 |
+| [TileWidth](cref:Meziantou.Framework.Imaging.Formats.TiffEncoder.TileWidth) and [TileHeight](cref:Meziantou.Framework.Imaging.Formats.TiffEncoder.TileHeight) | Write tiles of this size (multiples of 16) instead of strips, so that readers can decode a region of a large page; the tiles of the right and bottom edges are padded | 0 (strips) |
+| [Predictor](cref:Meziantou.Framework.Imaging.Formats.TiffEncoder.Predictor) | [HorizontalDifferencing](cref:Meziantou.Framework.Imaging.Formats.TiffPredictor.HorizontalDifferencing) stores the difference of each 8- or 16-bit sample from its left neighbor, which usually makes photographs, gradients and screenshots smaller with Deflate and LZW (the only compressions it is accepted with) | [None](cref:Meziantou.Framework.Imaging.Formats.TiffPredictor.None) |
 | [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling) | What to do with metadata TIFF cannot store | [Strict](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strict) |
 
 ## Exact or rejected
@@ -100,13 +102,14 @@ store a page exactly or reject it with an [UnsupportedImageFeatureException](cre
 - [Bilevel](cref:Meziantou.Framework.Imaging.Formats.TiffPixelLayout.Bilevel) rejects a pixel that is not opaque and exactly black or white; [Indexed](cref:Meziantou.Framework.Imaging.Formats.TiffPixelLayout.Indexed) rejects a page with more than 256
   colors or a pixel that is not opaque.
 - The CCITT compressions require `PixelLayout = Bilevel`, and [Jpeg](cref:Meziantou.Framework.Imaging.Formats.TiffCompression.Jpeg) requires [Auto](cref:Meziantou.Framework.Imaging.Formats.JpegChromaSubsampling.Auto): another combination throws an
-  `ArgumentException`.
+  `ArgumentException`. So does horizontal differencing with another compression than Deflate or LZW or another
+  layout than `Auto`, a tile size without the other one, and tiles with [Jpeg](cref:Meziantou.Framework.Imaging.Formats.TiffCompression.Jpeg).
 - [Jpeg](cref:Meziantou.Framework.Imaging.Formats.TiffCompression.Jpeg) is the only lossy compression. It stores 8-bit samples without alpha: a 16-bit pixel format or a pixel that is
   not opaque is rejected.
 
 ## Pitfalls
 
-- The destination must be seekable: a directory stores the offsets of the strips it describes, which are only known once
+- The destination must be seekable: a directory stores the offsets of the strips or tiles it describes, which are only known once
   they are written. A non-seekable stream is rejected before anything is written; paths are always seekable.
 - EXIF blocks and text entries are not written: they follow [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling), which rejects them by default.
 - Floating-point pages are written as 32-bit floats with `PixelLayout = Auto` and any compression but [Jpeg](cref:Meziantou.Framework.Imaging.Formats.TiffCompression.Jpeg). A
@@ -116,7 +119,7 @@ store a page exactly or reject it with an [UnsupportedImageFeatureException](cre
 - CMYK pages load only with [ImageDecodeOptions.CmykConversion](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.CmykConversion), which converts them to RGB (see
   [Color management](../09-Color/03-ColorManagement.md)). CMYK is never written.
 - The orientation of a page is reported, never applied: call [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient).
-- Old-style JPEG compression, L\*a\*b\* data, planar storage of several samples and 64-bit floating-point samples are
+- Old-style JPEG compression, L\*a\*b\* data, YCbCr data in separate planes and 64-bit floating-point samples are
   rejected with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException). Compressed data is never repaired: a damaged strip is an
   [InvalidImageContentException](cref:Meziantou.Framework.Imaging.InvalidImageContentException), never a page completed with white.
 - Some writers store one `BitsPerSample` value for all the samples, extra values, or no byte counts for a page of one

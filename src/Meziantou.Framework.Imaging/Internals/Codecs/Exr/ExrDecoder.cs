@@ -262,22 +262,51 @@ internal sealed class ExrDecoder : IImageDecodeObserver
         return new ExrChunkLayout(header.Channels, (int)data.Width, y0, lines);
     }
 
-    /// <summary>Writes the uncompressed data of a chunk to the pixels it covers.</summary>
+    /// <summary>
+    /// Writes the uncompressed data of a chunk to the pixels of the image it covers: the lines and the columns of the chunk
+    /// outside the image window are not written.
+    /// </summary>
     private static void WriteChunk(ExrHeader header, PixelStorage target, in ExrChunkLayout layout, int x0, int y0, ReadOnlySpan<byte> uncompressed)
     {
-        var display = header.DisplayWindow;
+        var image = header.ImageWindow;
+        var first = Math.Max(x0, image.MinX);
+        var last = Math.Min((long)x0 + layout.Width - 1, image.MaxX);
+        if (first > last)
+            return;
+
         var bytesPerPixel = header.UsesHalfPixels ? 8 : 16;
-        var column = (x0 - display.MinX) * bytesPerPixel;
-        var lineLength = uncompressed.Length / layout.Lines;
+        var column = (int)(first - (long)image.MinX) * bytesPerPixel;
+        var count = (int)(last - first + 1);
+        var channels = header.Channels;
+        var position = 0;
         for (var line = 0; line < layout.Lines; line++)
         {
-            var row = target.GetRowSpanCore(y0 + line - display.MinY);
-            WriteLine(header, uncompressed.Slice(line * lineLength, lineLength), row.Slice(column, layout.Width * bytesPerPixel), layout.Width);
+            // The samples of the line start where those of the line before end: a channel that is ignored may be sub-sampled
+            var start = position;
+            for (var c = 0; c < channels.Count; c++)
+            {
+                if (layout.HasLine(c, line))
+                {
+                    position += channels[c].BytesPerSample * layout.GetSampleCount(c);
+                }
+            }
+
+            var y = (long)y0 + line;
+            if (y < image.MinY || y > image.MaxY)
+                continue;
+
+            var row = target.GetRowSpanCore((int)(y - image.MinY));
+            WriteLine(header, layout, line, uncompressed[start..position], first - x0, row.Slice(column, count * bytesPerPixel), count);
         }
     }
 
-    /// <summary>Writes the samples of one line of a chunk (every channel, in name order) to pixels of the source layout.</summary>
-    private static void WriteLine(ExrHeader header, ReadOnlySpan<byte> line, Span<byte> pixels, int width)
+    /// <summary>
+    /// Writes the samples of the line <paramref name="lineIndex"/> of a chunk to pixels of the source layout: those of its
+    /// columns <paramref name="firstColumn"/> to <paramref name="firstColumn"/> + <paramref name="count"/> - 1. The line
+    /// holds the samples of every channel that has a sample line there, in name order: the channels of the image are not
+    /// sub-sampled, an ignored channel may be.
+    /// </summary>
+    private static void WriteLine(ExrHeader header, in ExrChunkLayout layout, int lineIndex, ReadOnlySpan<byte> line, int firstColumn, Span<byte> pixels, int count)
     {
         var half = header.UsesHalfPixels;
         var componentSize = half ? 2 : 4;
@@ -285,7 +314,7 @@ internal sealed class ExrDecoder : IImageDecodeObserver
         // Colors 0, alpha 1, before the channels the image has are written
         if (!header.HasAlpha)
         {
-            for (var x = 0; x < width; x++)
+            for (var x = 0; x < count; x++)
             {
                 var alpha = pixels[(((x * 4) + 3) * componentSize)..];
                 if (half)
@@ -305,11 +334,21 @@ internal sealed class ExrDecoder : IImageDecodeObserver
         {
             var channel = channels[c];
             var role = header.Roles[c];
+            if (role == ExrChannelRole.Ignored)
+            {
+                if (layout.HasLine(c, lineIndex))
+                {
+                    offset += channel.BytesPerSample * layout.GetSampleCount(c);
+                }
+
+                continue;
+            }
+
             var first = role == ExrChannelRole.Luminance ? 0 : (int)role;
             var last = role == ExrChannelRole.Luminance ? 2 : first;
-            var samples = line.Slice(offset, width * channel.BytesPerSample);
-            offset += samples.Length;
-            for (var x = 0; x < width; x++)
+            var samples = line.Slice(offset + (firstColumn * channel.BytesPerSample), count * channel.BytesPerSample);
+            offset += layout.Width * channel.BytesPerSample;
+            for (var x = 0; x < count; x++)
             {
                 for (var component = first; component <= last; component++)
                 {
@@ -346,7 +385,7 @@ internal sealed class ExrDecoder : IImageDecodeObserver
 
         if (header.HasAlpha)
         {
-            Unpremultiply(pixels, width);
+            Unpremultiply(pixels, count);
         }
     }
 

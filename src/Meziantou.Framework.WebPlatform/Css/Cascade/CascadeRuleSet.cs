@@ -459,9 +459,6 @@ internal sealed class CascadeRuleSet
         return null;
     }
 
-    /// <summary>Returns whether a candidate rule may apply to a pseudo-element (see <see cref="CascadeRule.PseudoElement"/>), or to an element when the name is null.</summary>
-    /// <summary>Returns whether a property is an animation or a transition longhand.</summary>
-    /// <summary>Whether a property is <c>content-visibility</c> or one of the <c>contain-intrinsic-*</c> properties (whose <c>auto</c> keyword records the last remembered size).</summary>
     /// <summary>The features of the selectors of the rules, collected on first use (see <see cref="StyleInvalidationFeatures"/>).</summary>
     public StyleInvalidationFeatures InvalidationFeatures
     {
@@ -535,6 +532,7 @@ internal sealed class CascadeRuleSet
             || (name == "animation-timeline" && !declaration.Value.Value.Equals("auto", StringComparison.OrdinalIgnoreCase));
     }
 
+    /// <summary>Whether a property is <c>content-visibility</c> or one of the <c>contain-intrinsic-*</c> properties (whose <c>auto</c> keyword records the last remembered size).</summary>
     internal static bool IsContentVisibilityProperty(string name) => name == "content-visibility" || name.StartsWith("contain-intrinsic-", StringComparison.Ordinal) || name == "all";
 
     private static bool HasScrollStateQuery(CascadeContainerQuery query)
@@ -551,8 +549,10 @@ internal sealed class CascadeRuleSet
         return false;
     }
 
+    /// <summary>Returns whether a property is an animation or a transition longhand.</summary>
     internal static bool IsAnimationProperty(string name) => name.StartsWith("animation-", StringComparison.Ordinal) || name.StartsWith("transition-", StringComparison.Ordinal);
 
+    /// <summary>Returns whether a rule of the set may apply to a pseudo-element (see <see cref="CascadeRule.PseudoElement"/>), or to an element when the name is null.</summary>
     public bool MayHaveRulesFor(string? pseudoElement) => pseudoElement is null || _pseudoElements.Contains(pseudoElement);
 
     /// <summary>Returns whether a candidate rule of the element (see <see cref="GetCandidates"/>) has the pseudo-element (its selector is not matched).</summary>

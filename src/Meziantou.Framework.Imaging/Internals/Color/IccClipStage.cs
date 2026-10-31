@@ -3,6 +3,13 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <summary>Clips the first components to [0, 1]; a component that is not a number becomes 0.</summary>
 internal sealed class IccClipStage(int channelCount) : IccStage
 {
+    // Keeping the values outside [0, 1] is what an unbounded conversion is for
+    public override bool SupportsUnbounded => true;
+
+    public override void ApplyUnbounded(Span<double> values)
+    {
+    }
+
     public override void Apply(Span<double> values)
     {
         for (var i = 0; i < channelCount; i++)

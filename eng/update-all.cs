@@ -129,7 +129,6 @@ if (ShouldRunStep(StepDocs))
 {
     Console.WriteLine("[update-all] Running docs");
     tasks.Add(Task.Run(() => RunValidateDocumentationPackageIdsStep(rootPath)));
-    tasks.Add(Task.Run(() => RunUpdateDocumentationConfigurationStep(rootPath)));
 }
 
 if (ShouldRunStep(StepPublicSuffix))
@@ -1142,38 +1141,6 @@ void RunValidateDocumentationPackageIdsStep(FullPath rootPath)
         Console.Error.WriteLine($"ERROR: {relativePath}: {message}");
         updatedFiles.Enqueue(relativePath);
     }
-}
-
-// The documentation site (docgen.json, built by Meziantou.DocumentationGenerator) documents the API of every package of
-// src/, at the version of its project file. The packages are downloaded from NuGet.org.
-void RunUpdateDocumentationConfigurationStep(FullPath rootPath)
-{
-    var configurationPath = rootPath / "docgen.json";
-    var configuration = JsonNode.Parse(File.ReadAllText(configurationPath), documentOptions: new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip, AllowTrailingCommas = true })!.AsObject();
-
-    var packages = new JsonArray();
-    foreach (var csprojPath in Directory.EnumerateFiles(rootPath / "src", "*.csproj", SearchOption.AllDirectories).Where(IsPackableProject).Order(StringComparer.Ordinal))
-    {
-        var id = Path.GetFileNameWithoutExtension(csprojPath);
-        var version = XDocument.Load(csprojPath).Root?.Descendants("Version").FirstOrDefault()?.Value.Trim();
-        if (string.IsNullOrEmpty(version))
-        {
-            Console.Error.WriteLine($"ERROR: {FullPath.FromPath(csprojPath).MakePathRelativeTo(rootPath)}: the package has no <Version>");
-            updatedFiles.Enqueue(FullPath.FromPath(csprojPath).MakePathRelativeTo(rootPath));
-            continue;
-        }
-
-        JsonNode package = new JsonObject
-        {
-            ["id"] = id,
-            ["version"] = version,
-        };
-        packages.Add(package);
-    }
-
-    configuration["packages"] = packages;
-
-    WriteFileIfChanged(configurationPath, configuration.ToJsonString(new JsonSerializerOptions { WriteIndented = true, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping, RespectNullableAnnotations = true, RespectRequiredConstructorParameters = true }));
 }
 
 async Task RunUpdateReadmeStep(FullPath rootPath)

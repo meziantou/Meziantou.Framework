@@ -26,25 +26,39 @@ internal static class PublicApiSymbolLinker
 
         foreach (var member in type.Members)
         {
-            LinkSymbol(assembly, member, type, symbols);
-            switch (member)
-            {
-                case PublicApiProperty property:
-                    LinkAccessor(assembly, property.GetMethod, type, symbols);
-                    LinkAccessor(assembly, property.SetMethod, type, symbols);
-                    break;
+            LinkMember(assembly, member, type, symbols);
+        }
 
-                case PublicApiEvent @event:
-                    LinkAccessor(assembly, @event.AddMethod, type, symbols);
-                    LinkAccessor(assembly, @event.RemoveMethod, type, symbols);
-                    LinkAccessor(assembly, @event.RaiseMethod, type, symbols);
-                    break;
+        foreach (var block in type.ExtensionBlocks)
+        {
+            block.DeclaringType = type;
+            foreach (var member in block.Members)
+            {
+                LinkMember(assembly, member, type, symbols);
             }
         }
 
         foreach (var nestedType in type.NestedTypes)
         {
             LinkType(assembly, nestedType, type, symbols);
+        }
+    }
+
+    private static void LinkMember(PublicApiAssembly assembly, PublicApiMember member, PublicApiType type, ImmutableArray<PublicApiSymbol>.Builder symbols)
+    {
+        LinkSymbol(assembly, member, type, symbols);
+        switch (member)
+        {
+            case PublicApiProperty property:
+                LinkAccessor(assembly, property.GetMethod, type, symbols);
+                LinkAccessor(assembly, property.SetMethod, type, symbols);
+                break;
+
+            case PublicApiEvent @event:
+                LinkAccessor(assembly, @event.AddMethod, type, symbols);
+                LinkAccessor(assembly, @event.RemoveMethod, type, symbols);
+                LinkAccessor(assembly, @event.RaiseMethod, type, symbols);
+                break;
         }
     }
 

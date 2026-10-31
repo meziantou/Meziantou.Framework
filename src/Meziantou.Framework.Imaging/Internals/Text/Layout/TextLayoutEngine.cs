@@ -23,8 +23,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <item><description><b>Shaping.</b> Each item is shaped (<see cref="TextShaper"/>); spacing is added.</description></item>
 /// <item><description>
 /// <b>Lines.</b> A line takes as many of the break opportunities of the Unicode line breaking algorithm (UAX #14) as
-/// fit the width, then a hyphenation point, then, when the options allow it, any character. An item that a line
-/// break cuts is shaped again on each side: a ligature or a kerning pair never spans two lines.
+/// fit the width, then a hyphenation point, then, when the options allow it, any character; with
+/// <see cref="TextLineBreakStrategy.Optimal"/>, the breaks of the paragraph are chosen together first
+/// (<see cref="FindOptimalBreaks"/>). An item that a line break cuts is shaped again on each side: a ligature or a
+/// kerning pair never spans two lines.
 /// </description></item>
 /// <item><description>
 /// <b>Order.</b> The items of a line are put in display order (UAX #9, rules L1 and L2); the white space that ends a
@@ -32,8 +34,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </description></item>
 /// </list>
 /// <para>
-/// Then the lines are stacked, aligned in the width of the layout and justified, the text that does not fit is cut and
-/// marked with an ellipsis, and the decorations are computed from the positions of the glyphs.
+/// Then the lines are stacked, aligned in the width of the layout and justified (at the spaces, or between the
+/// characters with <see cref="TextLayoutOptions.Justification"/>), the text that does not fit is cut and marked with an
+/// ellipsis, and the decorations are computed from the positions of the glyphs.
 /// </para>
 /// </remarks>
 [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "CA1001:Types that own disposable fields should be disposable", Justification = "An engine only lives in Create, which disposes what it rents")]
@@ -61,6 +64,9 @@ internal sealed class TextLayoutEngine
         (ShapingFeature.ToTag("chws"), ShapingFeature.ToTag("vchw")),
         (ShapingFeature.ToTag("hkna"), ShapingFeature.ToTag("vkna")),
     ];
+
+    /// <summary>The most times the optimal breaks of a paragraph are chosen again after a line that does not fit anymore.</summary>
+    private const int MaxReplans = 8;
 
     /// <summary>The fewest characters of the text after a line that are shaped again for the next line.</summary>
     private const int MinShapingLength = 64;
@@ -299,12 +305,32 @@ internal sealed class TextLayoutEngine
         var firstLineIndent = _options.FirstLineIndent * _scale;
         var from = paragraph.Start;
         var isFirst = true;
+        var isOptimal = _wraps && _options.LineBreakStrategy == TextLineBreakStrategy.Optimal && from < paragraph.End;
+        var plan = isOptimal ? FindOptimalBreaks(paragraph, from, isFirst: true) : null;
+        var planIndex = 0;
+        var replanCount = 0;
         do
         {
             var indent = Math.Max(isFirst ? firstLineIndent : -firstLineIndent, 0);
             var to = paragraph.End;
             var isHyphenated = false;
-            if (_wraps && from < paragraph.End)
+            if (plan is not null && from < paragraph.End)
+            {
+                // The breaks were chosen from the advances of the paragraph shaped as a whole. Shaping the lines before
+                // may have changed them: a line that does not fit anymore chooses the breaks of the rest again.
+                // Each new choice reads the rest of the paragraph: after a few, the rest is broken greedily.
+                if (planIndex >= plan.Count || !FitsAsPlanned(paragraph, from, plan[planIndex], _maxWidth - indent))
+                {
+                    plan = ++replanCount <= MaxReplans ? FindOptimalBreaks(paragraph, from, isFirst) : null;
+                    planIndex = 0;
+                }
+            }
+
+            if (plan is not null && from < paragraph.End)
+            {
+                (to, isHyphenated, _) = plan[planIndex++];
+            }
+            else if (_wraps && from < paragraph.End)
             {
                 to = FindBreak(paragraph, from, _maxWidth - indent, out isHyphenated);
             }
@@ -349,7 +375,7 @@ internal sealed class TextLayoutEngine
             {
                 var end = combined[i] - paragraph.Start;
                 var combinedStyle = _spans[FindSpan(paragraph.Start + i)].Style;
-                fonts.AsSpan(i, end - i).Fill(SelectFont(combinedStyle.Fonts, content[i..end]));
+                fonts.AsSpan(i, end - i).Fill(SelectFont(combinedStyle, content[i..end]));
                 var script = scripts[i];
                 foreach (var candidate in scripts.AsSpan(i, end - i))
                 {
@@ -372,7 +398,7 @@ internal sealed class TextLayoutEngine
             var length = Math.Max(Unicode.GetGraphemeClusterLength(content[i..]), 1);
             var span = _spans[FindSpan(paragraph.Start + i)];
             length = Math.Min(length, span.Start + span.Length - (paragraph.Start + i));
-            fonts.AsSpan(i, length).Fill(SelectFont(span.Style.Fonts, content.Slice(i, length)));
+            fonts.AsSpan(i, length).Fill(SelectFont(span.Style, content.Slice(i, length)));
             if (_isVertical && !span.IsPlaceholder && IsUpright(fonts[i], content.Slice(i, length), UsesRotatedForms(span.Style)))
             {
                 // Upright text goes down the line whatever is around it: among right-to-left text, which goes
@@ -630,11 +656,13 @@ internal sealed class TextLayoutEngine
     /// </para>
     /// <para>
     /// A stack with installed fallback looks for a cluster no font of the stack has among the installed fonts
-    /// (<see cref="InstalledFontFallback"/>), before the fonts that only have its first character.
+    /// (<see cref="InstalledFontFallback"/>), before the fonts that only have its first character. The installed fonts
+    /// of a Han ideograph are chosen by the language of the style (<see cref="TextStyle.HanForms"/>).
     /// </para>
     /// </remarks>
-    private static Font SelectFont(FontStack stack, ReadOnlySpan<char> cluster)
+    private static Font SelectFont(TextStyle style, ReadOnlySpan<char> cluster)
     {
+        var stack = style.Fonts;
         var fonts = stack.FontSpan;
         var fallback = stack.InstalledFallback;
         if (fonts.Length == 1 && fallback is null)
@@ -664,7 +692,7 @@ internal sealed class TextLayoutEngine
 
         if (fallback is not null)
         {
-            if (fallback.Find(cluster, presentation == EmojiPresentation.Emoji, out var installedWithFirst) is { } installed)
+            if (fallback.Find(cluster, presentation == EmojiPresentation.Emoji, style.HanForms, out var installedWithFirst) is { } installed)
                 return installed;
 
             if (withFirst < 0 && installedWithFirst is not null)
@@ -1098,7 +1126,7 @@ internal sealed class TextLayoutEngine
     {
         isHyphenated = false;
         var withHyphens = _options.Hyphenation != TextHyphenation.None;
-        var width = 0.0;
+        var pen = default(LinePen);
         var contentWidth = 0.0;
         var previous = from;
         var lastFit = -1;
@@ -1111,7 +1139,7 @@ internal sealed class TextLayoutEngine
             if (isSoftHyphen && !withHyphens)
                 continue;
 
-            width = Measure(paragraph, previous, candidate, width, ref contentWidth);
+            Measure(paragraph, previous, candidate, ref pen, ref contentWidth);
             previous = candidate;
             var lineWidth = contentWidth + (isSoftHyphen ? MeasureHyphen(paragraph, candidate) : 0);
             if (lineWidth <= available)
@@ -1151,34 +1179,305 @@ internal sealed class TextLayoutEngine
         return lastFit > from ? lastFit : paragraph.End;
     }
 
-    /// <summary>Adds the advances of the characters of a range to a width; a tabulation goes to the next stop.</summary>
-    private double Measure(Paragraph paragraph, int from, int to, double width)
+    /// <summary>
+    /// Chooses the ends of the lines of the rest of a paragraph together (<see cref="TextLineBreakStrategy.Optimal"/>):
+    /// the breaks that minimize the sum of the costs of the lines (<see cref="GetLineCost"/>), found by dynamic
+    /// programming over the break opportunities, each line measured as <see cref="FindBreak"/> measures it.
+    /// </summary>
+    /// <param name="paragraph">The paragraph.</param>
+    /// <param name="start">Where the first line starts.</param>
+    /// <param name="isFirst">Whether the first line is the first line of the paragraph, which has the indent of the first line.</param>
+    /// <returns>The end of each line, whether it ends with a hyphen, and whether it is wider than its width because nothing shorter could end it.</returns>
+    private List<(int End, bool IsHyphenated, bool IsForced)> FindOptimalBreaks(Paragraph paragraph, int start, bool isFirst)
     {
-        for (var i = from; i < to; i++)
+        var withHyphens = _options.Hyphenation != TextHyphenation.None;
+        var firstLineIndent = _options.FirstLineIndent * _scale;
+        var firstAvailable = _maxWidth - Math.Max(isFirst ? firstLineIndent : -firstLineIndent, 0);
+        var otherAvailable = _maxWidth - Math.Max(-firstLineIndent, 0);
+
+        // The places a line can end: the break opportunities, the soft hyphens when words are hyphenated, and the
+        // hyphenation points of the words.
+        var candidates = new List<int>();
+        var breaks = System.Runtime.InteropServices.CollectionsMarshal.AsSpan(paragraph.Breaks);
+        foreach (var candidate in breaks[FindFirstBreakAfter(breaks, start)..])
         {
-            width += _text[i] == '\t' ? GetTabulationAdvance(_spans[FindSpan(i)].Style, width) : paragraph.Advances[i - paragraph.Start];
+            if (!withHyphens && candidate < paragraph.End && _text[candidate - 1] == SoftHyphen)
+                continue;
+
+            candidates.Add(candidate);
         }
 
-        return width;
-    }
-
-    /// <summary>
-    /// Adds the advances of the characters of a range to a width, and keeps the width at the end of its last character
-    /// that is not white space: the white space that ends a wrapped line hangs. A tabulation has no stored advance, so
-    /// its width is only known from where it is.
-    /// </summary>
-    private double Measure(Paragraph paragraph, int from, int to, double width, ref double contentWidth)
-    {
-        for (var i = from; i < to; i++)
+        var length = paragraph.End - start;
+        var isHyphenation = new bool[length + 1];
+        if (_options.Hyphenation == TextHyphenation.Automatic)
         {
-            width = Measure(paragraph, i, i + 1, width);
-            if (!IsBreakingSpace(_text[i]) || IsInsideCombined(paragraph, i))
+            AddHyphenationPoints(paragraph, start, candidates, isHyphenation);
+        }
+
+        // The cost of the best lines up to each position, the line before it and how that line ends
+        var costs = new double[length + 1];
+        costs.AsSpan().Fill(double.PositiveInfinity);
+        costs[0] = 0;
+        var previous = new int[length + 1];
+        var hyphenated = new bool[length + 1];
+        var forced = new bool[length + 1];
+        var em = GetSize(_spans[FindSpan(start)].Style);
+        var opportunities = _options.Alignment == TextAlignment.Justify ? CountJustificationOpportunities(start, paragraph.End) : null;
+        for (var from = start; from < paragraph.End; from++)
+        {
+            var fromCost = costs[from - start];
+            if (double.IsPositiveInfinity(fromCost))
+                continue;
+
+            var available = from == start ? firstAvailable : otherAvailable;
+            var pen = default(LinePen);
+            var contentWidth = 0.0;
+            var position = from;
+            var hasLine = false;
+            var first = candidates.BinarySearch(from + 1);
+            for (var index = first < 0 ? ~first : first; index < candidates.Count; index++)
             {
-                contentWidth = width;
+                var to = candidates[index];
+                Measure(paragraph, position, to, ref pen, ref contentWidth);
+                position = to;
+                if (contentWidth > available)
+                    break;
+
+                var isSoftHyphen = to < paragraph.End && _text[to - 1] == SoftHyphen;
+                var isHyphenated = isSoftHyphen || isHyphenation[to - start];
+                var lineWidth = contentWidth + (isHyphenated ? MeasureHyphen(paragraph, to) : 0);
+                if (lineWidth > available)
+                    continue;
+
+                hasLine = true;
+                Relax(from, to, GetLineCost(paragraph, opportunities, start, from, to, available - lineWidth, em) + (isHyphenated ? 1 + (hyphenated[from - start] ? 3 : 0) : 0), isHyphenated, isForced: false);
+            }
+
+            // Nothing fits: the line ends where greedy breaking ends it, cut inside a word or overflowing.
+            if (!hasLine)
+            {
+                var to = FindBreak(paragraph, from, available, out var isHyphenated);
+                var width = Measure(paragraph, from, to) + (isHyphenated ? MeasureHyphen(paragraph, to) : 0);
+                var overflow = Math.Max(width - available, 0) / em;
+                Relax(from, to, 1e6 + (overflow * overflow) + (to < paragraph.End ? GetLineCost(paragraph, opportunities, start, from, to, Math.Max(available - width, 0), em) : 0), isHyphenated, isForced: true);
             }
         }
 
-        return width;
+        var plan = new List<(int End, bool IsHyphenated, bool IsForced)>();
+        for (var end = paragraph.End; end > start; end = previous[end - start])
+        {
+            plan.Add((end, hyphenated[end - start], forced[end - start]));
+        }
+
+        plan.Reverse();
+        return plan;
+
+        void Relax(int from, int to, double cost, bool isHyphenated, bool isForced)
+        {
+            var total = costs[from - start] + cost;
+            if (total < costs[to - start])
+            {
+                costs[to - start] = total;
+                previous[to - start] = from;
+                hyphenated[to - start] = isHyphenated;
+                forced[to - start] = isForced;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Gets the cost of a line that ends before the end of its paragraph (the last line costs nothing): the square of
+    /// the room left at its end in ems, or, for a justified line, of the room per justification opportunity in thirds
+    /// of an em.
+    /// </summary>
+    /// <param name="paragraph">The paragraph.</param>
+    /// <param name="opportunities">For a justified text, the number of places it can be stretched at before each character from where the breaks are chosen (<see cref="CountJustificationOpportunities"/>).</param>
+    /// <param name="start">Where the breaks are chosen from.</param>
+    /// <param name="from">The start of the line.</param>
+    /// <param name="to">The end of the line.</param>
+    /// <param name="slack">The room left at the end of the line.</param>
+    /// <param name="em">The size of the text at the start of the paragraph.</param>
+    private double GetLineCost(Paragraph paragraph, int[]? opportunities, int start, int from, int to, double slack, double em)
+    {
+        if (to >= paragraph.End)
+            return 0;
+
+        var ratio = slack / em;
+        if (opportunities is not null)
+        {
+            // The white space that ends the line hangs, and the last character of the line has nothing after it.
+            while (to > from && IsBreakingSpace(_text[to - 1]) && !IsInsideCombined(paragraph, to - 1))
+            {
+                to--;
+            }
+
+            var count = opportunities[Math.Max(to - 1, from) - start] - opportunities[from - start];
+            ratio = 3 * slack / (em * Math.Max(count, 1));
+        }
+
+        return ratio * ratio;
+    }
+
+    /// <summary>
+    /// Counts, roughly, the places a justified text can be stretched at before each character of a range: after its
+    /// spaces, and after its characters when they are stretched too.
+    /// </summary>
+    /// <returns>For each position from the start of the range, the number of places before it.</returns>
+    private int[] CountJustificationOpportunities(int start, int end)
+    {
+        var counts = new int[end - start + 1];
+        for (var i = start; i < end; i++)
+        {
+            var character = _text[i];
+            var isOpportunity = _options.Justification switch
+            {
+                TextJustification.InterCharacter => !char.IsLowSurrogate(character) && UnicodeProperties.GetGeneralCategory(character) is not (UnicodeCategory.NonSpacingMark or UnicodeCategory.EnclosingMark),
+                TextJustification.Auto => character is ' ' or '\u00A0' or '\u3000' || (!char.IsLowSurrogate(character) && ClassifyForJustification(i) is JustificationClass.Block or JustificationClass.Clustered),
+                _ => character is ' ' or '\u00A0',
+            };
+            counts[i - start + 1] = counts[i - start] + (isOpportunity ? 1 : 0);
+        }
+
+        return counts;
+    }
+
+    /// <summary>Adds the hyphenation points of the words of the rest of a paragraph to the places a line can end.</summary>
+    private void AddHyphenationPoints(Paragraph paragraph, int start, List<int> candidates, bool[] isHyphenation)
+    {
+        var segment = _text.AsSpan(start, paragraph.End - start);
+        Span<int> positions = stackalloc int[64];
+        var added = false;
+        foreach (var range in Unicode.EnumerateWordBoundaries(segment))
+        {
+            var word = segment[range];
+            if (word.Length < 2 || word.Length > positions.Length || !char.IsLetter(word[0]))
+                continue;
+
+            var wordStart = start + range.Start.GetOffset(segment.Length);
+            if (_spans[FindSpan(wordStart)].Style.Hyphenator is not { } hyphenator)
+                continue;
+
+            var count = hyphenator.Hyphenate(word, positions);
+            for (var i = 0; i < count; i++)
+            {
+                var position = wordStart + positions[i];
+                if (position > start && position < paragraph.End && !IsInsideCombined(paragraph, position))
+                {
+                    isHyphenation[position - start] = true;
+                    added = true;
+                }
+            }
+        }
+
+        if (!added)
+            return;
+
+        // A break opportunity that is also a hyphenation point is not hyphenated.
+        var opportunities = candidates.Count;
+        for (var i = 1; i < isHyphenation.Length; i++)
+        {
+            if (isHyphenation[i] && candidates.BinarySearch(0, opportunities, start + i, comparer: null) >= 0)
+            {
+                isHyphenation[i] = false;
+            }
+            else if (isHyphenation[i])
+            {
+                candidates.Add(start + i);
+            }
+        }
+
+        candidates.Sort();
+    }
+
+    /// <summary>Determines whether the line a plan made from the advances of the paragraph shaped as a whole still fits with the current advances.</summary>
+    private bool FitsAsPlanned(Paragraph paragraph, int from, (int End, bool IsHyphenated, bool IsForced) planned, double available)
+    {
+        if (planned.IsForced)
+            return true;
+
+        var pen = default(LinePen);
+        var contentWidth = 0.0;
+        Measure(paragraph, from, planned.End, ref pen, ref contentWidth);
+        return contentWidth + (planned.IsHyphenated ? MeasureHyphen(paragraph, planned.End) : 0) <= available;
+    }
+
+    /// <summary>Measures the characters of a range from the start of a line, and gives the width of the line at its end.</summary>
+    private double Measure(Paragraph paragraph, int from, int to)
+    {
+        var pen = default(LinePen);
+        Measure(paragraph, from, to, ref pen);
+        return pen.Width;
+    }
+
+    /// <summary>Adds the advances of the characters of a range to the width of a line; a tabulation goes to the next stop.</summary>
+    private void Measure(Paragraph paragraph, int from, int to, ref LinePen pen)
+    {
+        for (var i = from; i < to; i++)
+        {
+            if (_text[i] == '\t')
+            {
+                BeginTabulation(ref pen, _spans[FindSpan(i)].Style);
+            }
+            else
+            {
+                pen.Add(paragraph.Advances[i - paragraph.Start], _text[i]);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Adds the advances of the characters of a range to the width of a line, and keeps the width at the end of its last
+    /// character that is not white space: the white space that ends a wrapped line hangs. A tabulation has no stored
+    /// advance, so its width is only known from where it is.
+    /// </summary>
+    private void Measure(Paragraph paragraph, int from, int to, ref LinePen pen, ref double contentWidth)
+    {
+        for (var i = from; i < to; i++)
+        {
+            Measure(paragraph, i, i + 1, ref pen);
+            if (!IsBreakingSpace(_text[i]) || IsInsideCombined(paragraph, i))
+            {
+                contentWidth = pen.Width;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Moves the pen of a line to the next tabulation stop: the first stop of <see cref="TextLayoutOptions.TabStops"/>
+    /// after it, else the next stop every <see cref="TextLayoutOptions.TabSize"/> spaces.
+    /// </summary>
+    /// <returns>The advance of the tabulation; for an aligned stop, the advance it has while no text follows it.</returns>
+    private double BeginTabulation(ref LinePen pen, TextStyle style)
+    {
+        pen.IsAligned = false;
+        var position = pen.Width;
+        foreach (var stop in _options.TabStopArray)
+        {
+            var stopPosition = stop.Position * _scale;
+            if (stopPosition <= position)
+                continue;
+
+            if (stop.Alignment == TextTabAlignment.Start)
+            {
+                var advance = stopPosition - position;
+                pen.Width += advance;
+                return advance;
+            }
+
+            pen.IsAligned = true;
+            pen.TabStart = position;
+            pen.Stop = stopPosition;
+            pen.Alignment = stop.Alignment;
+            pen.Separator = stop.DecimalSeparator;
+            pen.Segment = 0;
+            pen.BeforeSeparator = -1;
+            pen.Width = position + pen.TabAdvance;
+            return pen.TabAdvance;
+        }
+
+        var uniform = GetTabulationAdvance(style, position);
+        pen.Width += uniform;
+        return uniform;
     }
 
     private double GetTabulationAdvance(TextStyle style, double position)
@@ -1243,7 +1542,7 @@ internal sealed class TextLayoutEngine
             for (var i = 0; i < count; i++)
             {
                 var position = wordStart + positions[i];
-                if (position > best && !IsInsideCombined(paragraph, position) && Measure(paragraph, from, position, 0) + MeasureHyphen(paragraph, position) <= available)
+                if (position > best && !IsInsideCombined(paragraph, position) && Measure(paragraph, from, position) + MeasureHyphen(paragraph, position) <= available)
                 {
                     best = position;
                 }
@@ -1257,19 +1556,19 @@ internal sealed class TextLayoutEngine
     private int FindClusterBreak(Paragraph paragraph, int from, int end, double available)
     {
         var best = -1;
-        var width = 0.0;
+        var pen = default(LinePen);
         var position = from;
         var text = _text.AsSpan(0, end);
         while (position < end)
         {
             var next = GetUnitEnd(paragraph, text, position);
-            width = Measure(paragraph, position, next, width);
-            if (width > available && best > from)
+            Measure(paragraph, position, next, ref pen);
+            if (pen.Width > available && best > from)
                 break;
 
             best = next;
             position = next;
-            if (width > available)
+            if (pen.Width > available)
                 break;
         }
 
@@ -1328,7 +1627,7 @@ internal sealed class TextLayoutEngine
         else
         {
             var position = from;
-            var width = 0.0;
+            var pen = default(LinePen);
             var contentWidth = 0.0;
             var text = _text.AsSpan(0, to);
             while (position < to)
@@ -1336,7 +1635,7 @@ internal sealed class TextLayoutEngine
                 var next = _options.Trimming == TextTrimming.Word
                     ? NextBreak(paragraph, position, to)
                     : GetUnitEnd(paragraph, text, position);
-                width = Measure(paragraph, position, next, width, ref contentWidth);
+                Measure(paragraph, position, next, ref pen, ref contentWidth);
                 var item = FindItem(paragraph, next - 1) ?? FindItem(paragraph, from);
                 var ellipsis = item is null ? 0 : MeasureText(item, GetEllipsis(item));
                 if (contentWidth + ellipsis > available)
@@ -1473,8 +1772,10 @@ internal sealed class TextLayoutEngine
             IsLastOfParagraph = to >= paragraph.End,
         };
 
-        // The advance of each tabulation, in the order of the text.
-        var position = 0.0;
+        // The advance of each tabulation, in the order of the text. The text an aligned stop places ends at the next
+        // tabulation, or where the white space that hangs starts.
+        var tabPen = default(LinePen);
+        var aligned = -1;
         Span<double> tabulations = items.Count <= 64 ? stackalloc double[items.Count] : new double[items.Count];
         Span<byte> levels = items.Count <= 64 ? stackalloc byte[items.Count] : new byte[items.Count];
         Span<int> order = items.Count <= 64 ? stackalloc int[items.Count] : new int[items.Count];
@@ -1482,15 +1783,27 @@ internal sealed class TextLayoutEngine
         {
             var item = items[i];
             levels[i] = item.Start >= contentEnd ? paragraph.Level : item.Level;
+            if (aligned >= 0 && (item.IsTabulation || item.Start >= contentEnd))
+            {
+                tabulations[aligned] = tabPen.TabAdvance;
+                tabPen.IsAligned = false;
+                aligned = -1;
+            }
+
             if (item.IsTabulation)
             {
-                tabulations[i] = GetTabulationAdvance(item.Style, position);
-                position += tabulations[i];
+                tabulations[i] = BeginTabulation(ref tabPen, item.Style);
+                aligned = tabPen.IsAligned ? i : -1;
             }
             else
             {
-                position = Measure(paragraph, item.Start, item.End, position);
+                Measure(paragraph, item.Start, item.End, ref tabPen);
             }
+        }
+
+        if (aligned >= 0)
+        {
+            tabulations[aligned] = tabPen.TabAdvance;
         }
 
         UnicodeBidi.GetVisualOrder(levels, order);
@@ -1506,6 +1819,7 @@ internal sealed class TextLayoutEngine
         }
 
         line.Glyphs.Capacity = glyphCount;
+        var classifies = _options.Alignment == TextAlignment.Justify && _options.Justification != TextJustification.InterWord;
         for (var i = 0; i < items.Count; i++)
         {
             var item = items[order[i]];
@@ -1515,7 +1829,7 @@ internal sealed class TextLayoutEngine
             var baselineShift = item.IsUpright ? 0 : central;
             if (item.IsTabulation)
             {
-                line.Glyphs.Add(new PlacedGlyph { Glyph = -1, Cluster = item.Start, PenX = pen, Advance = tabulations[order[i]], Font = font, Size = GetSize(item.Style), Span = FindSpan(item.Start), IsInvisible = true, IsHanging = isHanging, IsRightToLeft = (levels[order[i]] & 1) != 0, Central = central });
+                line.Glyphs.Add(new PlacedGlyph { Glyph = -1, Cluster = item.Start, PenX = pen, Advance = tabulations[order[i]], Font = font, Size = GetSize(item.Style), Span = FindSpan(item.Start), IsInvisible = true, IsHanging = isHanging, IsRightToLeft = (levels[order[i]] & 1) != 0, Central = central, Justification = classifies ? JustificationClass.Barrier : JustificationClass.None });
                 pen += tabulations[order[i]];
                 hanging += isHanging ? tabulations[order[i]] : 0;
                 continue;
@@ -1538,7 +1852,7 @@ internal sealed class TextLayoutEngine
                     line.Descent = Math.Max(line.Descent, (placeholder.PlaceholderHeight - placeholder.PlaceholderBaseline) * _scale);
                 }
 
-                line.Glyphs.Add(new PlacedGlyph { Glyph = -1, Cluster = item.Start, PenX = pen, Advance = advance, Font = font, Size = GetSize(item.Style), Span = item.Placeholder, IsInvisible = true, IsPlaceholder = true, IsRightToLeft = (levels[order[i]] & 1) != 0 });
+                line.Glyphs.Add(new PlacedGlyph { Glyph = -1, Cluster = item.Start, PenX = pen, Advance = advance, Font = font, Size = GetSize(item.Style), Span = item.Placeholder, IsInvisible = true, IsPlaceholder = true, IsRightToLeft = (levels[order[i]] & 1) != 0, Justification = classifies ? JustificationClass.Barrier : JustificationClass.None });
                 pen += advance;
                 continue;
             }
@@ -1566,6 +1880,7 @@ internal sealed class TextLayoutEngine
                     BaselineShift = baselineShift,
                     Central = central,
                     WidthScale = glyph.WidthScale,
+                    Justification = !classifies ? JustificationClass.None : isHanging || item.IsCombined ? JustificationClass.Barrier : ClassifyForJustification(glyph.Cluster),
                 });
                 pen += glyph.Advance;
                 hanging += isHanging ? glyph.Advance : 0;
@@ -1934,6 +2249,11 @@ internal sealed class TextLayoutEngine
             var free = box - line.Indent - line.Width;
             if (_options.Alignment == TextAlignment.Justify && !line.IsLastOfParagraph && free > 0)
             {
+                if (_options.Justification != TextJustification.InterWord)
+                {
+                    MarkJustificationOpportunities(placed);
+                }
+
                 var count = 0;
                 foreach (ref readonly var glyph in placed)
                 {
@@ -2144,6 +2464,107 @@ internal sealed class TextLayoutEngine
     /// Turns the rectangles of a vertical line that were added in the coordinates of the line: they are kept as they
     /// are for what follows the line, and replaced by what they are on the image.
     /// </summary>
+    /// <summary>Classifies the cluster that starts at a character for justification between characters.</summary>
+    private JustificationClass ClassifyForJustification(int cluster)
+    {
+        // An ellipsis on an empty line at the end of the text has the cluster of a character that is not there.
+        if (cluster >= _text.Length || Rune.DecodeFromUtf16(_text.AsSpan(cluster), out var rune, out _) != System.Buffers.OperationStatus.Done)
+            return JustificationClass.Other;
+
+        var codePoint = rune.Value;
+        if (codePoint is ' ' or '\u00A0' or '\u3000')
+            return JustificationClass.Space;
+
+        if (UnicodeProperties.GetGraphemeClusterBreak(codePoint) is UnicodeGraphemeClusterBreak.Extend or UnicodeGraphemeClusterBreak.SpacingMark or UnicodeGraphemeClusterBreak.ZWJ)
+            return JustificationClass.Mark;
+
+        if (!NeedsGlyph(codePoint))
+            return JustificationClass.Ignored;
+
+        if (codePoint <= char.MaxValue && IsBreakingSpace((char)codePoint))
+            return JustificationClass.WhiteSpace;
+
+        return UnicodeScripts.GetScript(rune) switch
+        {
+            UnicodeScript.Han or UnicodeScript.Hiragana or UnicodeScript.Katakana or UnicodeScript.Bopomofo or UnicodeScript.Hangul or UnicodeScript.Yi => JustificationClass.Block,
+            UnicodeScript.Thai or UnicodeScript.Lao or UnicodeScript.Khmer or UnicodeScript.Myanmar or UnicodeScript.TaiLe or UnicodeScript.NewTaiLue or UnicodeScript.TaiTham or UnicodeScript.TaiViet => JustificationClass.Clustered,
+            UnicodeScript.Arabic or UnicodeScript.Syriac or UnicodeScript.Mongolian or UnicodeScript.Nko or UnicodeScript.PhagsPa or UnicodeScript.Mandaic or UnicodeScript.HanifiRohingya => JustificationClass.Cursive,
+            _ when UnicodeProperties.GetEastAsianWidth(codePoint) is UnicodeEastAsianWidth.Wide or UnicodeEastAsianWidth.Fullwidth && !UnicodeEmoji.IsExtendedPictographic(codePoint) => JustificationClass.Block,
+            _ => JustificationClass.Other,
+        };
+    }
+
+    /// <summary>
+    /// Marks the glyphs of a line that justification widens, for <see cref="TextJustification.Auto"/> and
+    /// <see cref="TextJustification.InterCharacter"/>: the spaces between words, and the last glyph of each cluster
+    /// (in display order) that is followed by a cluster it can be separated from.
+    /// </summary>
+    /// <remarks>
+    /// A unit is the glyphs of a cluster with the marks that go with it, whether the shaper gave them the cluster of
+    /// their base or their own: after their base in left-to-right text, before it in right-to-left text, where glyphs
+    /// are in display order. Room added after the last glyph of a unit does not move the glyphs of the unit.
+    /// </remarks>
+    private void MarkJustificationOpportunities(Span<PlacedGlyph> placed)
+    {
+        var isInterCharacter = _options.Justification == TextJustification.InterCharacter;
+        var previousEnd = -1;
+        var previousClass = JustificationClass.None;
+        for (var start = 0; start < placed.Length;)
+        {
+            var end = start + 1;
+            while (end < placed.Length
+                && (placed[end].Cluster == placed[start].Cluster
+                    || (placed[end].Justification == JustificationClass.Mark && !placed[end].IsRightToLeft)
+                    || (placed[end - 1].Justification == JustificationClass.Mark && placed[end - 1].IsRightToLeft)))
+            {
+                end++;
+            }
+
+            var current = JustificationClass.Other;
+            foreach (ref readonly var glyph in placed[start..end])
+            {
+                if (glyph.Justification != JustificationClass.Mark)
+                {
+                    current = glyph.Justification;
+                    break;
+                }
+            }
+
+            if (current == JustificationClass.Ignored)
+            {
+                start = end;
+                continue;
+            }
+
+            if (current == JustificationClass.Space)
+            {
+                placed[end - 1].IsExpandable = true;
+            }
+
+            if (previousEnd >= 0 && previousClass != JustificationClass.Space && IsOpportunity(previousClass, current, isInterCharacter))
+            {
+                placed[previousEnd - 1].IsExpandable = true;
+            }
+
+            previousEnd = end;
+            previousClass = current;
+            start = end;
+        }
+
+        static bool IsOpportunity(JustificationClass before, JustificationClass after, bool isInterCharacter)
+        {
+            if (before == JustificationClass.Barrier || after == JustificationClass.Barrier)
+                return false;
+
+            if (isInterCharacter)
+                return before != JustificationClass.Cursive || after != JustificationClass.Cursive;
+
+            return before is not (JustificationClass.Space or JustificationClass.WhiteSpace)
+                && after is not (JustificationClass.Space or JustificationClass.WhiteSpace)
+                && (before is JustificationClass.Block or JustificationClass.Clustered || after is JustificationClass.Block or JustificationClass.Clustered);
+        }
+    }
+
     private static void Turn(List<DecorationRectangle> rectangles, int first, List<DecorationRectangle> lineRectangles, double lineRight, double lineTop)
     {
         for (var i = first; i < rectangles.Count; i++)
@@ -2353,6 +2774,62 @@ internal sealed class TextLayoutEngine
         public double YOffset;
         public bool IsInvisible;
         public double WidthScale;
+    }
+
+    /// <summary>
+    /// Where the text of a line measured so far ends, and the aligned tabulation stop the text after the last tabulation
+    /// is placed at: its advance depends on the text that follows it.
+    /// </summary>
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
+    private struct LinePen
+    {
+        /// <summary>The width of the line up to the end of the text measured so far.</summary>
+        public double Width;
+
+        /// <summary>The last tabulation goes to a stop that is not aligned at its start: the fields below describe it.</summary>
+        public bool IsAligned;
+        public double TabStart;
+        public double Stop;
+        public TextTabAlignment Alignment;
+        public char Separator;
+
+        /// <summary>The width of the text after the tabulation.</summary>
+        public double Segment;
+
+        /// <summary>The width of the text after the tabulation before its first decimal separator, or -1 before one is found.</summary>
+        public double BeforeSeparator;
+
+        /// <summary>Gets the advance of the aligned tabulation, for the text measured after it so far.</summary>
+        public readonly double TabAdvance
+        {
+            get
+            {
+                var aligned = Alignment switch
+                {
+                    TextTabAlignment.End => Segment,
+                    TextTabAlignment.Center => Segment / 2,
+                    _ => BeforeSeparator >= 0 ? BeforeSeparator : Segment,
+                };
+                return Math.Max(0, Stop - TabStart - aligned);
+            }
+        }
+
+        public void Add(double advance, char character)
+        {
+            if (!IsAligned)
+            {
+                Width += advance;
+                return;
+            }
+
+            if (Alignment == TextTabAlignment.DecimalSeparator && BeforeSeparator < 0 && character == Separator)
+            {
+                BeforeSeparator = Segment;
+            }
+
+            Segment += advance;
+            Width = TabStart + TabAdvance + Segment;
+        }
     }
 
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]

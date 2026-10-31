@@ -18,11 +18,6 @@ internal sealed partial class LayoutEngine
     private bool _hasSnapStates;
 
     /// <summary>
-    /// Returns the position a scroll operation of a scrolling box ends at (https://drafts.csswg.org/css-scroll-snap-1/#choosing):
-    /// the selected snap position when the box is a scroll snap container, else the intended position, clamped to the scrolling
-    /// area. The snap targets of the box are updated (and a <c>scrollsnapchanging</c> event is queued when they change).
-    /// </summary>
-    /// <summary>
     /// Returns the snap position of a scroll operation intended to scroll to an element whose nearest scroll container is the
     /// scroll container (https://drafts.csswg.org/css-scroll-snap-1/#choosing: "the user agent must snap to one of that element's
     /// snap positions"): the closest snap position of the element; the axes in which the element has no snap position snap as usual.
@@ -48,6 +43,11 @@ internal sealed partial class LayoutEngine
         return state.Clamp(position);
     }
 
+    /// <summary>
+    /// Returns the position a scroll operation of a scrolling box ends at (https://drafts.csswg.org/css-scroll-snap-1/#choosing):
+    /// the selected snap position when the box is a scroll snap container, else the intended position, clamped to the scrolling
+    /// area. The snap targets of the box are updated (and a <c>scrollsnapchanging</c> event is queued when they change).
+    /// </summary>
     public PhysicalOffset GetSnapPosition(ScrollState state, SnapSelectionStrategy strategy)
     {
         var position = strategy.IntendedPosition;

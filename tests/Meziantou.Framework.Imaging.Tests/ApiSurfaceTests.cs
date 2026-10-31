@@ -29,6 +29,7 @@ public sealed class ApiSurfaceTests
         typeof(AutoCropOptions),
         typeof(IccColorTransformOptions),
         typeof(CmykConversionOptions),
+        typeof(OpenExrDecodingOptions),
         typeof(PngEncoder),
         typeof(GifEncoder),
         typeof(JpegEncoder),
@@ -86,6 +87,10 @@ public sealed class ApiSurfaceTests
     [InlineData(typeof(ContentLightLevel))]
     [InlineData(typeof(MasteringDisplayColorVolume))]
     [InlineData(typeof(PixelAspectRatio))]
+    [InlineData(typeof(GainMapMetadata))]
+    [InlineData(typeof(GainMapChannel))]
+    [InlineData(typeof(AuxiliaryImageCollection))]
+    [InlineData(typeof(AuxiliaryImage))]
     [InlineData(typeof(VectorPathBuilder))]
     [InlineData(typeof(Font))]
     [InlineData(typeof(FontCollection))]
@@ -141,6 +146,7 @@ public sealed class ApiSurfaceTests
     [InlineData(typeof(ContentLightLevel), nameof(ImageMetadata.ContentLightLevel))]
     [InlineData(typeof(MasteringDisplayColorVolume), nameof(ImageMetadata.MasteringDisplay))]
     [InlineData(typeof(PixelAspectRatio), nameof(ImageMetadata.PixelAspectRatio))]
+    [InlineData(typeof(OpenExrWindows), nameof(ImageMetadata.OpenExrWindows))]
     public void HighDynamicRangeAndPixelShapeLabelsHaveTheirPublicShape(Type type, string propertyName)
     {
         // Immutable values with value equality...

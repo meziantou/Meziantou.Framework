@@ -16,8 +16,14 @@ need an explicit setting before they can be saved.
 | Colors | Gray, YCbCr and RGB; CMYK and YCCK with a color conversion | Gray (for gray pixel formats) or YCbCr |
 | Chroma subsampling | Any integral sampling | 4:4:4, 4:2:2 or 4:2:0 |
 | Metadata | EXIF, XMP, ICC profile, resolution, comments | The same |
+| Reduced size | 1/2, 1/4 or 1/8 of the size, except lossless files | - |
 
 8-bit files load as [Gray8](cref:Meziantou.Framework.Imaging.Gray8) or [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24); 12-bit and lossless files of more than 8 bits load as [Gray16](cref:Meziantou.Framework.Imaging.Gray16) or [Rgb48](cref:Meziantou.Framework.Imaging.Rgb48).
+
+[ImageDecodeOptions.TargetSize](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.TargetSize) and [ImageDecodeOptions.ScaleDenominator](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.ScaleDenominator) decode a file at a reduced size, from the
+coefficients of its blocks: the pixels are the means of the pixels of the full image they replace, and a subsampled
+chrominance is reduced less, so that it needs less upsampling. See
+[Decode a smaller image](../05-LoadingAndSaving/02-LoadingImages.md#decode-a-smaller-image).
 
 ## Save a JPEG
 
@@ -43,6 +49,40 @@ The Huffman tables of a progressive file are computed from its own data, which u
 file. It keeps the coefficients of the whole image in memory until the last scan, where the baseline process only keeps
 a few rows.
 
+## Make a baseline file smaller
+
+A baseline file uses the typical Huffman tables of the JPEG specification by default.
+[OptimizeHuffmanTables](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.OptimizeHuffmanTables) computes them from the image instead: the file holds the same coefficients, so it
+decodes to the same pixels, in fewer bytes. [RestartInterval](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.RestartInterval) writes a restart marker every given number of
+MCUs, from which a decoder can resume after damaged data; here, one before each row of MCUs:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_SaveOptimizedJpeg;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void SaveOptimizedJpeg(string sourcePath, string jpegPath)
+{
+    using var image = Image.Load<Rgb24>(sourcePath);
+    image.Save(jpegPath, new JpegEncoder
+    {
+        Quality = 85,
+        ChromaSubsampling = JpegChromaSubsampling.Ratio420,
+        OptimizeHuffmanTables = true,
+
+        // An MCU of 4:2:0 output covers 16x16 pixels
+        RestartInterval = (image.Width + 15) / 16,
+    });
+}
+```
+<!-- endref -->
+
+- Optimized tables cost a second pass over the image, and the coefficients of the whole image stay in memory until the
+  scan is written, as for a progressive file. The default tables keep encoding streamed by rows.
+- An MCU is the block of pixels coded together: 8x8 pixels for a grayscale image or 4:4:4 output, 16x8 for 4:2:2 and
+  16x16 for 4:2:0. The MCUs are counted from the start of each scan; a progressive scan of one component counts its
+  8x8 blocks.
+- Restart markers make the file slightly larger and do not change its pixels.
+- A file written with either option can still be recompressed to JPEG XL with
+  [JpegXlTranscoder](cref:Meziantou.Framework.Imaging.JpegXlTranscoder) and rebuilt byte for byte.
+
 ## Options
 
 | Option | What it does | Default |
@@ -51,6 +91,8 @@ a few rows.
 | [Process](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.Process) | [Baseline](cref:Meziantou.Framework.Imaging.Formats.JpegEncodingProcess.Baseline) or [Progressive](cref:Meziantou.Framework.Imaging.Formats.JpegEncodingProcess.Progressive) | [Baseline](cref:Meziantou.Framework.Imaging.Formats.JpegEncodingProcess.Baseline) |
 | [ChromaSubsampling](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.ChromaSubsampling) | [Auto](cref:Meziantou.Framework.Imaging.Formats.JpegChromaSubsampling.Auto) (4:2:0 for color images), [Ratio444](cref:Meziantou.Framework.Imaging.Formats.JpegChromaSubsampling.Ratio444), [Ratio422](cref:Meziantou.Framework.Imaging.Formats.JpegChromaSubsampling.Ratio422) or [Ratio420](cref:Meziantou.Framework.Imaging.Formats.JpegChromaSubsampling.Ratio420); ignored for gray pixel formats | [Auto](cref:Meziantou.Framework.Imaging.Formats.JpegChromaSubsampling.Auto) |
 | [BackgroundColor](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.BackgroundColor) | The opaque color that pixels that are not opaque are composited over; `null` rejects them | `null` |
+| [OptimizeHuffmanTables](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.OptimizeHuffmanTables) | Computes the Huffman tables of a baseline file from the image: smaller, same pixels, slower; no effect on progressive files, whose tables are always computed | `false` |
+| [RestartInterval](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.RestartInterval) | The number of MCUs between two restart markers, 0 to 65,535; 0 writes none | 0 |
 | [AllowBitDepthReduction](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.AllowBitDepthReduction) | Lets 16-bit pixel formats be rounded to 8 bits | `false` |
 | [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling) | What to do with metadata JPEG cannot store | [Strict](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strict) |
 
@@ -96,7 +138,7 @@ public static void ExportFrameAsJpeg(string animatedPath, int frameIndex, string
 - The EXIF orientation is reported in `Metadata.Orientation`, never applied: call [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient) to rotate the pixels. See
   [Metadata and orientation](../09-Color/02-MetadataAndOrientation.md).
 - An EXIF block is limited to 65,527 bytes and an XMP packet to 65,504 bytes; extended XMP is not supported.
-- The encoder writes no restart markers and no arithmetic-coded, lossless, 12-bit, RGB or CMYK files.
+- The encoder writes no arithmetic-coded, lossless, 12-bit, RGB or CMYK files.
 - To store a JPEG file in a smaller file without any loss, recompress it to JPEG XL with [JpegXlTranscoder](cref:Meziantou.Framework.Imaging.JpegXlTranscoder): the original
   file can be rebuilt byte for byte. See [JPEG XL](15-JpegXl.md).
 - A progressive file can be shown while it is read, with [ReadFrameRefinementInto](cref:Meziantou.Framework.Imaging.ImageReader{TPixel}.ReadFrameRefinementInto). See

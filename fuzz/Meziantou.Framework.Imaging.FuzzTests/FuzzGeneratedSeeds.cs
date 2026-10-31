@@ -1,11 +1,14 @@
+using System.IO.Compression;
 using Meziantou.Framework.Imaging.Formats;
+using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.TestHarness.Exr;
 using Meziantou.Framework.Imaging.Tests;
 
 namespace Meziantou.Framework.Imaging.FuzzTests;
 
 /// <summary>
-/// The seeds of the formats the golden corpus has no fixture of (TIFF, ICO and CUR, ANI, OpenEXR): files written by the encoders of
+/// The seeds of the formats the golden corpus has no fixture of (TIFF, ICO and CUR, ANI), and of OpenEXR, whose corpus fixtures
+/// <see cref="FuzzSeeds"/> adds to these: files written by the encoders of
 /// the library (every compression, pixel layout and container option they have), and files assembled byte by byte by the
 /// builders of the unit tests for what the encoders never write (tiles, the horizontal predictor, packed samples, signed,
 /// half-precision and 24-bit floating-point samples, palette and masked DIB payloads, the sequence and rate tables of an
@@ -245,14 +248,58 @@ internal static class FuzzGeneratedSeeds
             .Set("displayWindow", "box2i", ExrFileBuilder.Box(-2, -1, 3, 4))
             .Set("lineOrder", "lineOrder", [1])
             .Set("chromaticities", "chromaticities", ExrFileBuilder.Floats(0.708f, 0.292f, 0.170f, 0.797f, 0.131f, 0.046f, 0.3127f, 0.3290f));
-        for (var y = 2; y >= 0; y--)
+        // The offset table lists the chunks by increasing y; with DECREASING_Y, the file stores them the other way round
+        for (var y = 0; y < 3; y++)
         {
             windows.AddScanLineChunk(y, [.. Halves(2, y), .. ExrFileBuilder.Floats(y, -y), .. ExrFileBuilder.UInts((uint)y, 7), .. Halves(2, y + 3)]);
         }
 
         windows.FileOrder = [2, 1, 0];
         seeds.Add(new FuzzSeed("exr/builder-windows-mixed-types", windows.Build()));
+
+        // ZIP-compressed tiles at every level of a ripmap (the corpus has only an RLE ripmap): the large tiles shrink and are
+        // compressed, the tiles of a few samples do not and are stored as they are
+        var ripmap = new ExrFileBuilder { VersionField = 2 | 0x200 };
+        foreach (var attribute in ExrFileBuilder.ScanLines(32, 16, 3, ExrChannelDescription.Half("G"), ExrChannelDescription.Half("R")).Attributes)
+        {
+            ripmap.Attributes.Add(attribute);
+        }
+
+        ripmap.Set("tiles", "tiledesc", ExrFileBuilder.TileDescription(16, 16, levelMode: 2, roundingMode: 0));
+        for (var levelY = 0; levelY < 5; levelY++)
+        {
+            for (var levelX = 0; levelX < 6; levelX++)
+            {
+                var levelWidth = 32 >> levelX;
+                var levelHeight = 16 >> levelY;
+                for (var tileY = 0; tileY * 16 < levelHeight; tileY++)
+                {
+                    for (var tileX = 0; tileX * 16 < levelWidth; tileX++)
+                    {
+                        var width = Math.Min(16, levelWidth - (tileX * 16));
+                        var height = Math.Min(16, levelHeight - (tileY * 16));
+                        ripmap.AddTile(tileX, tileY, levelX, levelY, CompressZip(Halves(width * height * 2, (levelX * 3) + levelY)));
+                    }
+                }
+            }
+        }
+
+        seeds.Add(new FuzzSeed("exr/builder-ripmap-zip-tiles", ripmap.Build()));
         return seeds;
+
+        // ZIP_COMPRESSION: byte differences of the interleaved halves, then zlib; data that do not shrink are stored as they are
+        static byte[] CompressZip(byte[] data)
+        {
+            var predicted = new byte[data.Length];
+            ExrPredictor.Encode(data, predicted);
+            using var stream = new MemoryStream();
+            using (var zlib = new ZLibStream(stream, CompressionLevel.Optimal, leaveOpen: true))
+            {
+                zlib.Write(predicted);
+            }
+
+            return stream.Length < data.Length ? stream.ToArray() : data;
+        }
     }
 
     private static Image<Rgba32> CreateAnimation(int width, int height, int[] jiffies, Point?[] hotspots, bool repeatFirst = false)

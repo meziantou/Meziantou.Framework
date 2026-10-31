@@ -204,6 +204,238 @@ public sealed class IccColorTransformTests
     }
 
     [Fact]
+    public void FloatingPointSamplesOutsideTheUnitRangeAreKeptOnRequest()
+    {
+        // Two matrix-based profiles with the parametric sRGB curve. The red of Display P3 is outside the gamut of sRGB:
+        // its linear sRGB components, from the colorants (columns of the matrices to the connection space), are encoded
+        // with the sRGB function extended to the whole real line (mirrored below 0), as CSS Color 4 does
+        var srgb = IccTestProfiles.Rgb(IccTestProfiles.SrgbColorants, IccTestProfiles.SrgbCurve());
+        var options = new IccColorTransformOptions { ClipFloatingPointSamples = false };
+        Assert.True(IccColorTransformOptions.Default.ClipFloatingPointSamples);
+        var toSrgb = IccColorTransform.Create(DisplayP3, srgb, options);
+        var toDisplayP3 = IccColorTransform.Create(srgb, DisplayP3, options);
+
+        var p3Red = IccTestProfiles.DisplayP3Colorants[0];
+        var linear = Solve(IccTestProfiles.SrgbColorants, p3Red);
+        var destination = new float[3];
+        toSrgb.Convert([1f, 0f, 0f], destination);
+        for (var c = 0; c < 3; c++)
+        {
+            Assert.Equal(EncodeExtendedSrgb(linear[c]), destination[c], 1e-3);
+        }
+
+        Assert.True(destination[0] > 1 && destination[1] < 0 && destination[2] < 0, "the red of Display P3 has components outside [0, 1] in sRGB");
+
+        // The default clips them
+        var clipped = new float[3];
+        IccColorTransform.Create(DisplayP3, srgb).Convert([1f, 0f, 0f], clipped);
+        Assert.Equal([1f, 0f, 0f], clipped);
+
+        // Light above the white stays above it, and a round trip gives the samples back
+        float[] samples = [2f, 2f, 2f, -0.25f, 0.5f, 1.75f, 0.3f, 1.2f, -0.1f];
+        var converted = new float[samples.Length];
+        var back = new float[samples.Length];
+        toDisplayP3.Convert(samples, converted);
+        toSrgb.Convert(converted, back);
+        Assert.Equal(2f, converted[0], 1e-3f);
+        Assert.Equal(2f, converted[1], 1e-3f);
+        Assert.Equal(2f, converted[2], 1e-3f);
+        for (var i = 0; i < samples.Length; i++)
+        {
+            Assert.Equal(samples[i], back[i], 1e-4f);
+        }
+
+        // A value that is not a number is read as 0; the same profile keeps every sample
+        toSrgb.Convert([float.NaN, 0f, 0f], destination);
+        Assert.Equal([0f, 0f, 0f], destination);
+        IccColorTransform.Create(srgb, srgb, options).Convert([1.5f, -0.5f, 3f], destination);
+        Assert.Equal([1.5f, -0.5f, 3f], destination);
+
+        // A sampled tone curve continues with the slope of its last interval, and its inverse with the inverse slope
+        var sampled = IccTestProfiles.Rgb(IccTestProfiles.SrgbColorants, IccTestProfiles.Curve(0, 16384, 65535));
+        var throughTable = IccColorTransform.Create(sampled, srgb, options);
+        var backThroughTable = IccColorTransform.Create(srgb, sampled, options);
+        throughTable.Convert([1.5f, 1.5f, 1.5f], destination);
+        backThroughTable.Convert(destination, back.AsSpan(0, 3));
+        Assert.True(destination[0] > 1);
+        for (var c = 0; c < 3; c++)
+        {
+            Assert.Equal(1.5f, back[c], 1e-4f);
+        }
+
+        // Grayscale profiles too
+        var gray = IccColorTransform.Create(GrayGamma, IccProfile.SrgbGray, options);
+        var grayResult = new float[1];
+        gray.Convert([1.5f], grayResult);
+        Assert.True(grayResult[0] > 1);
+
+        static double EncodeExtendedSrgb(double value)
+        {
+            var magnitude = Math.Abs(value);
+            var encoded = magnitude <= 0.0031308 ? 12.92 * magnitude : (1.055 * Math.Pow(magnitude, 1 / 2.4)) - 0.055;
+            return Math.CopySign(encoded, value);
+        }
+
+        // Solves colorants (columns) x result = target, by Cramer's rule
+        static double[] Solve(double[][] columns, double[] target)
+        {
+            static double Determinant(double[] a, double[] b, double[] c) => (a[0] * ((b[1] * c[2]) - (b[2] * c[1]))) - (b[0] * ((a[1] * c[2]) - (a[2] * c[1]))) + (c[0] * ((a[1] * b[2]) - (a[2] * b[1])));
+            var determinant = Determinant(columns[0], columns[1], columns[2]);
+            return [Determinant(target, columns[1], columns[2]) / determinant, Determinant(columns[0], target, columns[2]) / determinant, Determinant(columns[0], columns[1], target) / determinant];
+        }
+    }
+
+    [Fact]
+    public void FloatingPointSamplesOutsideTheUnitRangeNeedMatrixBasedProfiles()
+    {
+        // A lookup table has no values outside its grid: such a conversion cannot keep the samples, and says so
+        var options = new IccColorTransformOptions { ClipFloatingPointSamples = false };
+        foreach (var (source, destination) in new[] { (IccTestProfiles.RgbLabLut8(), IccProfile.Srgb), (IccProfile.Srgb, IccTestProfiles.CmykLabLut16()) })
+        {
+            IccColorTransform.Create(source, destination);
+            var exception = Assert.Throws<UnsupportedImageFeatureException>(() => IccColorTransform.Create(source, destination, options));
+            Assert.Equal("Unbounded conversion through a lookup table", exception.Feature);
+        }
+
+        // Nor can a gamut mapping, which brings the colors into the range of the destination, even between matrix-based profiles
+        var mapped = new IccColorTransformOptions { ClipFloatingPointSamples = false, GamutMapping = GamutMapping.ReduceChroma };
+        IccColorTransform.Create(DisplayP3, IccProfile.Srgb, options);
+        IccColorTransform.Create([DisplayP3, IccProfile.Srgb], options);
+        Assert.Throws<UnsupportedImageFeatureException>(() => IccColorTransform.Create(DisplayP3, IccProfile.Srgb, mapped));
+        Assert.Throws<UnsupportedImageFeatureException>(() => IccColorTransform.Create([DisplayP3, IccProfile.Srgb], mapped));
+    }
+
+    [Fact]
+    public void GainMapMetadataValidatesItsValuesAndComputesTheWeight()
+    {
+        GainMapChannel[] channel = [new GainMapChannel(-1, 2, 1, 0, 0)];
+        Assert.Throws<ArgumentException>("channels", () => new GainMapMetadata(0, 1, []));
+        Assert.Throws<ArgumentException>("channels", () => new GainMapMetadata(0, 1, [channel[0], channel[0]]));
+        Assert.Throws<ArgumentNullException>("channels", () => new GainMapMetadata(0, 1, null!));
+        Assert.Throws<ArgumentOutOfRangeException>("baseHdrHeadroom", () => new GainMapMetadata(-1, 1, channel));
+        Assert.Throws<ArgumentOutOfRangeException>("alternateHdrHeadroom", () => new GainMapMetadata(0, double.PositiveInfinity, channel));
+        Assert.Throws<ArgumentOutOfRangeException>("gamma", () => new GainMapChannel(0, 1, 0, 0, 0));
+        Assert.Throws<ArgumentOutOfRangeException>("gainMapMax", () => new GainMapChannel(1, 0, 1, 0, 0));
+        Assert.Throws<ArgumentOutOfRangeException>("baseOffset", () => new GainMapChannel(0, 1, 1, double.NaN, 0));
+
+        var metadata = new GainMapMetadata(1, 3, channel);
+        Assert.Equal(new GainMapMetadata(1, 3, [new GainMapChannel(-1, 2, 1, 0, 0)]), metadata);
+        Assert.Equal(new GainMapMetadata(1, 3, [new GainMapChannel(-1, 2, 1, 0, 0)]).GetHashCode(), metadata.GetHashCode());
+        Assert.NotEqual(new GainMapMetadata(1, 3, channel, useBaseColorSpace: false), metadata);
+        Assert.Equal(0, metadata.GetWeight(0));
+        Assert.Equal(0, metadata.GetWeight(1));
+        Assert.Equal(0.5, metadata.GetWeight(2));
+        Assert.Equal(1, metadata.GetWeight(10));
+        Assert.Throws<ArgumentOutOfRangeException>("hdrHeadroom", () => metadata.GetWeight(-0.5));
+
+        // A high dynamic range base rendition: the weight decreases with the headroom of the display
+        var hdrBase = new GainMapMetadata(3, 1, channel);
+        Assert.Equal(1, hdrBase.GetWeight(0));
+        Assert.Equal(0.5, hdrBase.GetWeight(2));
+        Assert.Equal(0, hdrBase.GetWeight(4));
+
+        // Equal headrooms: the alternate rendition from that headroom on
+        var equal = new GainMapMetadata(2, 2, channel);
+        Assert.Equal(0, equal.GetWeight(1.9));
+        Assert.Equal(1, equal.GetWeight(2));
+    }
+
+    [Fact]
+    public void GainMapApplicationFollowsIso21496()
+    {
+        // Three channels of their own, a gamma and offsets; a gain map of 2x1 samples over a base image of 4x1 pixels,
+        // sampled at the centers of the pixels (bilinear, clamped at the edges)
+        var metadata = new GainMapMetadata(0, 2,
+        [
+            new GainMapChannel(-1, 3, 2, 0.015625, 0.03125),
+            new GainMapChannel(0, 2, 1, 0, 0),
+            new GainMapChannel(-0.5, 1.5, 0.5, 0.25, 0),
+        ]);
+        using var baseImage = new Image<Rgba32>(4, 1, default);
+        Rgba32[] colors = [new(255, 128, 0, 255), new(10, 200, 90, 128), new(64, 64, 64, 0), new(0, 0, 255, 255)];
+        for (var x = 0; x < 4; x++)
+        {
+            baseImage.Frames[0][x, 0] = colors[x];
+        }
+
+        using var gainMap = new Image<Rgb24>(2, 1, default);
+        gainMap.Frames[0][0, 0] = new Rgb24(0, 51, 255);
+        gainMap.Frames[0][1, 0] = new Rgb24(255, 204, 102);
+        double[] positions = [0, 0.25, 0.75, 1]; // where each pixel center falls between the two samples
+
+        foreach (var headroom in new[] { 0.0, 0.5, 1, 2, 5 })
+        {
+            using var result = metadata.Apply(baseImage, gainMap, headroom);
+            Assert.Equal(new Size(4, 1), result.Size);
+            Assert.Equal(ColorTransferFunction.Linear, result.Metadata.TransferFunction);
+            Assert.Null(result.Metadata.Cicp);
+            var weight = Math.Min(headroom / 2, 1);
+            for (var x = 0; x < 4; x++)
+            {
+                var pixel = result.Frames[0][x, 0];
+                ReadOnlySpan<byte> baseSamples = [colors[x].R, colors[x].G, colors[x].B];
+                ReadOnlySpan<byte> first = [0, 51, 255];
+                ReadOnlySpan<byte> second = [255, 204, 102];
+                ReadOnlySpan<float> actual = [pixel.R, pixel.G, pixel.B];
+                for (var c = 0; c < 3; c++)
+                {
+                    var channel = metadata.Channels[c];
+                    var g = ((first[c] * (1 - positions[x])) + (second[c] * positions[x])) / 255;
+                    var gain = channel.GainMapMin + ((channel.GainMapMax - channel.GainMapMin) * Math.Pow(g, 1 / channel.Gamma));
+                    var linear = baseSamples[c] / 255.0 is var v && v <= 0.04045 ? v / 12.92 : Math.Pow((v + 0.055) / 1.055, 2.4);
+                    var expected = ((linear + channel.BaseOffset) * Math.Pow(2, gain * weight)) - channel.AlternateOffset;
+                    Assert.Equal(expected, actual[c], 1e-5 * Math.Max(1, Math.Abs(expected)));
+                }
+
+                Assert.Equal(colors[x].A / 255f, pixel.A, 1e-6f);
+            }
+        }
+    }
+
+    [Fact]
+    public void GainMapApplicationNeedsAKnownLinearColorSpace()
+    {
+        var metadata = new GainMapMetadata(0, 2, [new GainMapChannel(0, 2, 1, 0, 0)]);
+        using var gainMap = new Image<Gray8>(2, 2, new Gray8(128));
+        using var baseImage = new Image<Rgb24>(2, 2, new Rgb24(100, 150, 200));
+
+        // The primaries of the description label the result: Display P3, as a CICP description or as an ICC profile
+        baseImage.Metadata.Cicp = new CicpColorDescription(12, 13, 0, fullRange: true);
+        using (var result = metadata.Apply(baseImage, gainMap, 2))
+            Assert.Equal(new CicpColorDescription(12, 8, 0, fullRange: true), result.Metadata.Cicp);
+
+        baseImage.Metadata.Cicp = null;
+        baseImage.Metadata.IccProfile = DisplayP3;
+        using (var result = metadata.Apply(baseImage, gainMap, 2))
+        {
+            Assert.Equal(new CicpColorDescription(12, 8, 0, fullRange: true), result.Metadata.Cicp);
+            Assert.Null(result.Metadata.IccProfile);
+            var expected = Math.Pow((150 / 255.0 + 0.055) / 1.055, 2.4) * Math.Pow(2, 2 * 128 / 255.0);
+            Assert.Equal(expected, result.Frames[0][1, 1].G, 2e-3);
+        }
+
+        // High dynamic range samples, primaries that are not those of a CICP description, a gain map in the color space of
+        // the alternate rendition
+        baseImage.Metadata.IccProfile = null;
+        baseImage.Metadata.Cicp = new CicpColorDescription(9, 16, 0, fullRange: true);
+        Assert.Throws<UnsupportedImageFeatureException>(() => metadata.Apply(baseImage, gainMap, 2));
+        baseImage.Metadata.Cicp = null;
+        baseImage.Metadata.IccProfile = IccTestProfiles.Rgb([[0.6, 0.3, 0.01], [0.25, 0.65, 0.1], [0.11, 0.05, 0.71]], IccTestProfiles.SrgbCurve());
+        Assert.Throws<UnsupportedImageFeatureException>(() => metadata.Apply(baseImage, gainMap, 2));
+        baseImage.Metadata.IccProfile = null;
+        Assert.Throws<UnsupportedImageFeatureException>(() => new GainMapMetadata(0, 2, metadata.Channels, useBaseColorSpace: false).Apply(baseImage, gainMap, 2));
+        Assert.Throws<ArgumentOutOfRangeException>("hdrHeadroom", () => metadata.Apply(baseImage, gainMap, double.NaN));
+        Assert.Throws<ArgumentNullException>("gainMap", () => metadata.Apply(baseImage, null!, 1));
+
+        // A grayscale base image gives gray colors
+        using var grayBase = new Image<Gray8>(2, 2, new Gray8(200));
+        using var gray = metadata.Apply(grayBase, gainMap, 2);
+        var pixel = gray.Frames[0][0, 0];
+        Assert.Equal(pixel.R, pixel.G);
+        Assert.Equal(pixel.R, pixel.B);
+    }
+
+    [Fact]
     public void ConvertsMonochromeProfiles()
     {
         // curveType with one entry: y = x^(563/256), then the sRGB encoding
@@ -912,6 +1144,470 @@ public sealed class IccColorTransformTests
             {
                 Assert.True(Math.Abs(expected[i] - actual[i]) <= 24, $"Sample {i}: expected {expected[i]}, got {actual[i]} ([{string.Join(", ", actual)}]).");
             }
+        }
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Sequences of profiles: device link and abstract profiles. Expected samples: LittleCMS 2.19
+    // (cmsCreateMultiprofileTransform, 16-bit or double samples, no optimization), which reads the same synthetic
+    // profiles. Its black point compensation and absolute colorimetry are computed per pair of profiles, so the
+    // sequences compared with it have matrix-based ends, whose black is black.
+    // -----------------------------------------------------------------------------------------------------------------
+
+    private static IccProfile SrgbMatrix => IccTestProfiles.Rgb(IccTestProfiles.SrgbColorants, IccTestProfiles.SrgbCurve());
+
+    private static readonly ushort[] SequenceSamples =
+    [
+        0, 0, 0, 65535, 65535, 65535, 65535, 0, 0, 0, 65535, 0, 0, 0, 65535,
+        13107, 39321, 52428, 52428, 26214, 6553, 32768, 32768, 32768, 60000, 45000, 30000, 5000, 10000, 20000,
+    ];
+
+    [Fact]
+    public void AbstractProfilesConvertTheConnectionSpaceAsLittleCmsDoes()
+    {
+        // A CIELAB lutAToBType that warms and desaturates (every color changes, black and white included)
+        AssertWithin(
+            [
+                8585, 5351, 1273, 65535, 63106, 59116, 58714, 23034, 12167, 40860, 61318, 24977, 28492, 12531, 44957,
+                33323, 38871, 43006, 50400, 30288, 15459, 38073, 33673, 30122, 59146, 45641, 32882, 15624, 12731, 16030,
+            ],
+            Convert([SrgbMatrix, IccTestProfiles.LabAbstractLutAToB(), SrgbMatrix], IccColorTransformOptions.Default),
+            tolerance: 4);
+
+        // A CIEXYZ lut16Type whose matrix mixes the components, toward another destination. LittleCMS evaluates the tables
+        // of a lut16Type with 16-bit values, even for double samples: the dark red sample (5782) is 12 units away
+        AssertWithin(
+            [
+                0, 0, 0, 63283, 65535, 62710, 57479, 17371, 11816, 30831, 63295, 23088, 0, 15573, 58588,
+                20553, 39629, 48264, 47025, 28424, 14050, 31586, 33175, 31283, 55536, 46035, 31999, 5782, 10633, 17959,
+            ],
+            Convert([SrgbMatrix, IccTestProfiles.XyzAbstractLut16(), DisplayP3], IccColorTransformOptions.Default),
+            tolerance: 16);
+
+        // Both in a row, with the perceptual intent (the same conversion for matrix-based profiles)
+        AssertWithin(
+            [
+                8108, 5431, 1428, 65133, 63941, 56536, 56015, 24996, 13795, 39825, 60586, 26510, 26400, 16926, 41879,
+                31656, 39495, 40643, 48144, 31036, 16389, 36328, 34136, 28839, 56567, 46233, 32277, 14726, 13211, 15022,
+            ],
+            Convert([SrgbMatrix, IccTestProfiles.LabAbstractLutAToB(), IccTestProfiles.XyzAbstractLut16(), SrgbMatrix], new IccColorTransformOptions { Intent = IccRenderingIntent.Perceptual }),
+            tolerance: 16);
+
+        static ushort[] Convert(IccProfile[] profiles, IccColorTransformOptions options)
+        {
+            var transform = IccColorTransform.Create(profiles, options);
+            Assert.Equal(3, transform.SourceChannelCount);
+            Assert.Equal(3, transform.DestinationChannelCount);
+            var result = new ushort[SequenceSamples.Length];
+            transform.Convert(SequenceSamples, result);
+            return result;
+        }
+    }
+
+    [Fact]
+    public void DeviceLinkProfilesConvertDeviceValuesAsLittleCmsDoes()
+    {
+        // RGB to CMYK, a lut16Type with input tables (interpolated with 16-bit values by LittleCMS): the link alone
+        var rgbToCmyk = IccColorTransform.Create([IccTestProfiles.RgbToCmykDeviceLinkLut16()]);
+        Assert.Equal(3, rgbToCmyk.SourceChannelCount);
+        Assert.Equal(4, rgbToCmyk.DestinationChannelCount);
+        var cmyk = new ushort[SequenceSamples.Length / 3 * 4];
+        rgbToCmyk.Convert(SequenceSamples, cmyk);
+        AssertWithin(
+            [
+                0, 0, 0, 65535, 0, 0, 0, 0, 0, 65535, 65535, 0, 65535, 0, 65535, 0, 65535, 65535, 0, 0,
+                61603, 28572, 0, 23593, 0, 49281, 64662, 23593, 0, 0, 0, 49150, 0, 28741, 49381, 10602, 45776, 36624, 0, 59431,
+            ],
+            cmyk,
+            tolerance: 4);
+
+        // CMYK to RGB, a lutAToBType with B curves, at the grid points of its table (the interpolation of four inputs
+        // differs between LittleCMS and the library, as for CMYK profiles); the rendering intent does not matter
+        float[] grid = [0, 0, 0, 0, 0.25f, 0.5f, 0.75f, 0, 1, 0, 0, 0, 0, 1, 0, 0.25f, 0.5f, 0.5f, 0.5f, 0.5f, 0.75f, 0.25f, 0, 1, 0, 0, 1, 0.75f];
+        float[] expected =
+        [
+            1, 1, 1, 0.8774226307868958f, 0.7297458052635193f, 0.5325252413749695f, 0, 1, 1, 0.8774226307868958f, 0, 0.8774226307868958f,
+            0.5325252413749695f, 0.5325252413749695f, 0.5325252413749695f, 0, 0, 0, 0.5325252413749695f, 0.5325252413749695f, 0,
+        ];
+        foreach (var intent in Enum.GetValues<IccRenderingIntent>())
+        {
+            var rgb = new float[grid.Length / 4 * 3];
+            IccColorTransform.Create([IccTestProfiles.CmykToRgbDeviceLinkLutAToB()], new IccColorTransformOptions { Intent = intent }).Convert(grid, rgb);
+            for (var i = 0; i < rgb.Length; i++)
+            {
+                Assert.True(Math.Abs(expected[i] - rgb[i]) <= 1e-4, $"{intent}, sample {i}: expected {expected[i]}, got {rgb[i]}.");
+            }
+        }
+    }
+
+    [Fact]
+    public void SequencesThroughDeviceProfilesAreTheCompositionOfTheirConversions()
+    {
+        // A soft proof (sRGB, a CMYK printer twice, sRGB) and a device link followed by its printer: the colors go through
+        // the device values in the middle, clipped, as if converted twice. Floating-point samples keep the intermediate
+        // values to the precision of a float.
+        var printer = IccTestProfiles.CmykLabLutAToB();
+        float[] samples = [0, 0, 0, 1, 1, 1, 1, 0, 0, 0.2f, 0.6f, 0.8f, 0.8f, 0.4f, 0.1f, 0.5f, 0.5f, 0.5f, 0.05f, 0.95f, 0.3f];
+        foreach (var options in new[] { IccColorTransformOptions.Default, new IccColorTransformOptions { Intent = IccRenderingIntent.Perceptual, BlackPointCompensation = false }, new IccColorTransformOptions { GamutMapping = GamutMapping.ReduceChroma } })
+        {
+            AssertComposition([SrgbMatrix, printer, printer, SrgbMatrix], [SrgbMatrix, printer], [printer, SrgbMatrix], options);
+            AssertComposition([IccTestProfiles.RgbToCmykDeviceLinkLut16(), printer, DisplayP3], [IccTestProfiles.RgbToCmykDeviceLinkLut16()], [printer, DisplayP3], options);
+            AssertComposition([SrgbMatrix, DisplayP3, IccTestProfiles.RgbToCmykDeviceLinkLut16()], [SrgbMatrix, DisplayP3], [IccTestProfiles.RgbToCmykDeviceLinkLut16()], options);
+        }
+
+        // Two device profiles are exactly the conversion between them, identical profiles included
+        var direct = new float[samples.Length];
+        var sequence = new float[samples.Length];
+        IccColorTransform.Create(SrgbMatrix, DisplayP3).Convert(samples, direct);
+        IccColorTransform.Create([SrgbMatrix, DisplayP3]).Convert(samples, sequence);
+        Assert.Equal(direct, sequence);
+        Assert.True(IccColorTransform.Create([SrgbMatrix, SrgbMatrix]).Pipeline.IsIdentity);
+
+        void AssertComposition(IccProfile[] profiles, IccProfile[] first, IccProfile[] second, IccColorTransformOptions options)
+        {
+            var whole = IccColorTransform.Create(profiles, options);
+            var firstTransform = IccColorTransform.Create(first, options);
+            var secondTransform = IccColorTransform.Create(second, options);
+            var count = samples.Length / 3;
+            var middle = new float[count * firstTransform.DestinationChannelCount];
+            var expected = new float[count * secondTransform.DestinationChannelCount];
+            var actual = new float[expected.Length];
+            firstTransform.Convert(samples, middle);
+            secondTransform.Convert(middle, expected);
+            whole.Convert(samples, actual);
+            for (var i = 0; i < actual.Length; i++)
+            {
+                Assert.True(Math.Abs(expected[i] - actual[i]) <= 2e-5, $"Sample {i}: expected {expected[i]}, got {actual[i]}.");
+            }
+        }
+    }
+
+    [Fact]
+    public void SequencesThatDoNotConnectAreUnsupported()
+    {
+        var link = IccTestProfiles.RgbToCmykDeviceLinkLut16();
+        var lab = IccTestProfiles.LabAbstractLutAToB();
+        Assert.Throws<ArgumentNullException>(() => IccColorTransform.Create((IReadOnlyList<IccProfile>)null!));
+        Assert.Throws<ArgumentNullException>(() => IccColorTransform.Create([SrgbMatrix, null!]));
+        Assert.Throws<ArgumentException>(() => IccColorTransform.Create(Array.Empty<IccProfile>()));
+
+        // A device profile alone, or followed by abstract profiles only, ends in the connection space
+        AssertUnconnected("ends in the profile connection space", SrgbMatrix);
+        AssertUnconnected("ends in the profile connection space", SrgbMatrix, lab);
+
+        // An abstract profile needs colors of the connection space, a device link profile device values of its input
+        AssertUnconnected("an abstract profile converts colors of the profile connection space", lab, SrgbMatrix);
+        AssertUnconnected("an abstract profile converts colors of the profile connection space", link, lab, SrgbMatrix);
+        AssertUnconnected("a device link profile converts device values", SrgbMatrix, link);
+        AssertUnconnected("is not the color space of the colors there, 'CMYK'", link, SrgbMatrix);
+        AssertUnconnected("is not the color space of the colors there, 'CMYK'", link, link);
+
+        // A profile in the middle is entered once: to go back to the connection space, it appears a second time
+        var printer = IccTestProfiles.CmykLabLutAToB();
+        AssertUnconnected("is not the color space of the colors there, 'CMYK'", SrgbMatrix, printer, SrgbMatrix);
+        _ = IccColorTransform.Create([SrgbMatrix, printer, printer, SrgbMatrix]);
+
+        // Outside a sequence, device link and abstract profiles do not describe colors
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => IccColorTransform.Create(link, SrgbMatrix));
+        Assert.Contains("use it in a sequence of profiles", exception.Message, StringComparison.Ordinal);
+        Assert.Throws<UnsupportedImageFeatureException>(() => IccColorTransform.Create(SrgbMatrix, lab));
+
+        static void AssertUnconnected(string message, params IccProfile[] profiles)
+        {
+            var exception = Assert.Throws<UnsupportedImageFeatureException>(() => IccColorTransform.Create(profiles));
+            Assert.Contains(message, exception.Message, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public void MalformedDeviceLinkAndAbstractProfilesAreReported()
+    {
+        var curve = IccTestProfiles.Curve();
+
+        // A device link profile without table, or with a table of other channel counts
+        AssertInvalid("has no 'A2B0' tag", Link("RGB ", "CMYK", ("rTRC", curve)));
+        AssertInvalid("3 and 4 are expected", Link("RGB ", "CMYK", ("A2B0", IccTestProfiles.Lut16(3, 3, 2, rgb => rgb))));
+        AssertInvalid("a lutBToAType cannot convert to the profile connection space", Link("RGB ", "RGB ", ("A2B0", IccTestProfiles.LutAToB("mBA ", 3, 3, curvesB: [curve, curve, curve]))));
+
+        // A device link profile whose color spaces are not device color spaces of the library
+        AssertUnsupported("output color space is 'Lab '", Link("RGB ", "Lab ", ("A2B0", IccTestProfiles.Lut16(3, 3, 2, rgb => rgb))));
+        AssertUnsupported("input color space is 'YCbr'", Link("YCbr", "RGB ", ("A2B0", IccTestProfiles.Lut16(3, 3, 2, rgb => rgb))));
+
+        // An abstract profile between device color spaces, without table, with a table of the wrong type or encoding
+        var identity = IccTestProfiles.Lut16(3, 3, 2, lab => lab);
+        AssertInvalid("an abstract profile converts between connection spaces", Abstract("RGB ", "Lab ", ("A2B0", identity)));
+        AssertInvalid("has no 'A2B0' tag", Abstract("Lab ", "Lab ", ("B2A0", identity)));
+        AssertInvalid("a lutBToAType cannot be the 'A2B0' tag of an abstract profile", Abstract("Lab ", "Lab ", ("A2B0", IccTestProfiles.LutAToB("mBA ", 3, 3, curvesB: [curve, curve, curve]))));
+        AssertInvalid("cannot be used with the 'XYZ ' profile connection space", Abstract("XYZ ", "XYZ ", ("A2B0", IccTestProfiles.Lut8(3, 3, 2, xyz => xyz))));
+        AssertInvalid("the tables of the lookup table exceed the tag", Abstract("Lab ", "Lab ", ("A2B0", identity[..60])));
+
+        static IccProfile Link(string input, string output, params (string Signature, byte[] Data)[] tags)
+            => new(new MetadataBlob(IccTestProfiles.BuildBytes(input, output, tags, data => "link"u8.CopyTo(data.AsSpan(12)))));
+
+        static IccProfile Abstract(string input, string output, params (string Signature, byte[] Data)[] tags)
+            => new(new MetadataBlob(IccTestProfiles.BuildBytes(input, output, tags, data => "abst"u8.CopyTo(data.AsSpan(12)))));
+
+        static void AssertInvalid(string message, IccProfile profile)
+        {
+            var exception = Assert.Throws<InvalidImageContentException>(() => Create(profile));
+            Assert.Contains(message, exception.Message, StringComparison.Ordinal);
+        }
+
+        static void AssertUnsupported(string message, IccProfile profile)
+        {
+            var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Create(profile));
+            Assert.Contains(message, exception.Message, StringComparison.Ordinal);
+        }
+
+        // A device link profile alone, an abstract profile between two device profiles
+        static IccColorTransform Create(IccProfile profile)
+            => profile.ProfileClass == IccProfileClass.DeviceLink ? IccColorTransform.Create([profile]) : IccColorTransform.Create([SrgbMatrix, profile, SrgbMatrix]);
+    }
+
+    // -----------------------------------------------------------------------------------------------------------------
+    // Gamut mapping (GamutMapping.ReduceChroma). The expected samples of Display P3 to sRGB: LittleCMS 2.19 converts the
+    // samples to CIEXYZ and back, and between them a Python transcription of the algorithm of CSS Color 4 section 13.2
+    // (with the matrices of its section 18 and the colorants of the profile) maps the color.
+    // -----------------------------------------------------------------------------------------------------------------
+
+    [Fact]
+    public void ReduceChromaFollowsTheGamutMappingOfCssColor4()
+    {
+        ushort[] samples =
+        [
+            65535, 0, 0, 0, 65535, 0, 0, 0, 65535, 65535, 65535, 0, 0, 65535, 65535, 65535, 0, 65535,
+            60000, 10000, 5000, 20000, 50000, 30000, 10000, 20000, 60000, 60000, 60000, 20000, 30000, 30000, 30000,
+            32768, 20000, 15000, 65535, 65535, 65535, 0, 0, 0,
+        ];
+        ushort[] clipped =
+        [
+            65535, 0, 0, 0, 65535, 0, 214, 0, 65535, 65529, 65535, 0, 0, 65535, 65535, 65535, 0, 65535,
+            65477, 0, 0, 0, 50800, 27774, 5592, 20299, 62329, 59995, 60001, 2337, 30001, 30000, 29994,
+            34881, 19229, 13868, 65535, 65535, 65523, 0, 0, 0,
+        ];
+
+        // The primaries and secondaries of Display P3 lose chroma; the other colors are in the gamut or within a just
+        // noticeable difference of their clipped value, which they keep
+        ushort[] mapped =
+        [
+            65535, 2793, 2870, 0, 64596, 10538, 214, 0, 65535, 65283, 65471, 0, 0, 65306, 64529, 65535, 10968, 64387,
+            65477, 0, 0, 0, 50800, 27774, 5592, 20299, 62329, 59995, 60001, 2337, 30001, 30000, 29994,
+            34881, 19229, 13868, 65535, 65535, 65523, 0, 0, 0,
+        ];
+
+        AssertWithin(clipped, Convert(GamutMapping.Clip), tolerance: 4);
+        AssertWithin(mapped, Convert(GamutMapping.ReduceChroma), tolerance: 4);
+
+        ushort[] Convert(GamutMapping mapping)
+        {
+            var result = new ushort[samples.Length];
+            IccColorTransform.Create(DisplayP3, SrgbMatrix, new IccColorTransformOptions { GamutMapping = mapping }).Convert(samples, result);
+            return result;
+        }
+    }
+
+    [Fact]
+    public void ReduceChromaKeepsLightnessAndHueAndLeavesInGamutColorsUnchanged()
+    {
+        // Every combination of 9 levels: Display P3 colors, most of them outside the gamut of sRGB
+        var levels = new ushort[] { 0, 8192, 16384, 24576, 32768, 40960, 49152, 57344, 65535 };
+        var samples = new List<ushort>();
+        foreach (var r in levels)
+        {
+            foreach (var g in levels)
+            {
+                foreach (var b in levels)
+                {
+                    samples.AddRange([r, g, b]);
+                }
+            }
+        }
+
+        var source = samples.ToArray();
+        var clipped = new ushort[source.Length];
+        var mapped = new ushort[source.Length];
+        IccColorTransform.Create(DisplayP3, SrgbMatrix).Convert(source, clipped);
+        IccColorTransform.Create(DisplayP3, SrgbMatrix, new IccColorTransformOptions { GamutMapping = GamutMapping.ReduceChroma }).Convert(source, mapped);
+
+        var p3 = RgbColorSpace.FromIccProfile(DisplayP3);
+        var srgb = RgbColorSpace.FromIccProfile(SrgbMatrix);
+        double clippedHueError = 0;
+        double mappedHueError = 0;
+        for (var i = 0; i < source.Length; i += 3)
+        {
+            var origin = Oklab.FromRgb(new Rgba64(source[i], source[i + 1], source[i + 2], 65535), p3);
+            var withClip = Oklab.FromRgb(new Rgba64(clipped[i], clipped[i + 1], clipped[i + 2], 65535), srgb);
+            var withMapping = Oklab.FromRgb(new Rgba64(mapped[i], mapped[i + 1], mapped[i + 2], 65535), srgb);
+            if (clipped.AsSpan(i, 3).SequenceEqual(mapped.AsSpan(i, 3)))
+                continue;
+
+            // A mapped color is at most a just noticeable difference (0.02) from the color of the same lightness and hue
+            // with less chroma, which it never exceeds
+            var chroma = Math.Sqrt((origin.A * origin.A) + (origin.B * origin.B));
+            var mappedChroma = Math.Sqrt((withMapping.A * withMapping.A) + (withMapping.B * withMapping.B));
+            var scale = Math.Min(1, mappedChroma / chroma);
+            var target = (L: origin.L, A: origin.A * scale, B: origin.B * scale);
+            var distance = Math.Sqrt(Square(withMapping.L - target.L) + Square(withMapping.A - target.A) + Square(withMapping.B - target.B));
+            Assert.True(distance <= 0.0205, $"Color {i / 3}: {distance} from the reduced color.");
+            Assert.True(mappedChroma <= chroma + 0.001, $"Color {i / 3}: chroma {mappedChroma} > {chroma}.");
+            clippedHueError += HueError(origin, withClip);
+            mappedHueError += HueError(origin, withMapping);
+        }
+
+        Assert.True(mappedHueError < clippedHueError * 0.75, $"Hue errors: {mappedHueError} mapped, {clippedHueError} clipped.");
+
+        // sRGB is inside Display P3: no color is mapped, every sample is the one of the clipping conversion
+        var reverseClipped = new ushort[source.Length];
+        var reverseMapped = new ushort[source.Length];
+        IccColorTransform.Create(SrgbMatrix, DisplayP3).Convert(source, reverseClipped);
+        IccColorTransform.Create(SrgbMatrix, DisplayP3, new IccColorTransformOptions { GamutMapping = GamutMapping.ReduceChroma }).Convert(source, reverseMapped);
+        Assert.Equal(reverseClipped, reverseMapped);
+
+        // 8-bit, 16-bit and floating-point samples are mapped alike
+        var bytes = Array.ConvertAll(source, value => (byte)(value >> 8));
+        var mappedBytes = new byte[bytes.Length];
+        var floats = Array.ConvertAll(bytes, value => value / 255f);
+        var mappedFloats = new float[floats.Length];
+        var transform = IccColorTransform.Create(DisplayP3, SrgbMatrix, new IccColorTransformOptions { GamutMapping = GamutMapping.ReduceChroma });
+        transform.Convert(bytes, mappedBytes);
+        transform.Convert(floats, mappedFloats);
+        for (var i = 0; i < bytes.Length; i++)
+        {
+            Assert.True(Math.Abs((mappedFloats[i] * 255) - mappedBytes[i]) <= 0.5001, $"Sample {i}: {mappedFloats[i] * 255} and {mappedBytes[i]}.");
+        }
+
+        static double Square(double value) => value * value;
+
+        // The distance between the hues, weighted by the chroma: the chord between the two directions
+        static double HueError(Oklab origin, Oklab color)
+        {
+            var originHue = Math.Atan2(origin.B, origin.A);
+            var hue = Math.Atan2(color.B, color.A);
+            return Math.Abs(Math.Sin((hue - originHue) / 2)) * Math.Sqrt((origin.A * origin.A) + (origin.B * origin.B));
+        }
+    }
+
+    [Fact]
+    public void ReduceChromaOfATableBasedDestinationUsesItsColorimetricRoundTrip()
+    {
+        // Saturated sRGB colors to a CMYK printer: the colorimetric tables of the destination clip them, the mapping
+        // reduces their chroma until their round trip through the printer is within a just noticeable difference
+        var printer = IccTestProfiles.CmykLabLutAToB();
+        byte[] samples = [255, 0, 0, 0, 255, 0, 0, 0, 255, 255, 255, 0, 0, 255, 255, 255, 0, 255, 128, 128, 128, 200, 150, 120];
+        var clipped = Convert(GamutMapping.Clip, IccRenderingIntent.RelativeColorimetric);
+        var mapped = Convert(GamutMapping.ReduceChroma, IccRenderingIntent.RelativeColorimetric);
+        Assert.NotEqual(clipped, mapped);
+
+        var toConnectionSpace = IccPipeline.CreateToConnectionSpace(printer, IccRenderingIntent.RelativeColorimetric);
+        var fromSrgb = IccPipeline.CreateToConnectionSpace(SrgbMatrix, IccRenderingIntent.RelativeColorimetric);
+        Span<double> values = stackalloc double[4];
+        for (var color = 0; color < samples.Length / 3; color++)
+        {
+            var origin = ToOklab(fromSrgb, samples.AsSpan(color * 3, 3), values);
+            var printed = ToOklab(toConnectionSpace, mapped.AsSpan(color * 4, 4), values);
+            var distance = Math.Sqrt(Square(origin.L - printed.L) + Square(origin.A - printed.A) + Square(origin.B - printed.B));
+            var chroma = Math.Sqrt(Square(origin.A) + Square(origin.B));
+            var printedChroma = Math.Sqrt(Square(printed.A) + Square(printed.B));
+            if (clipped.AsSpan(color * 4, 4).SequenceEqual(mapped.AsSpan(color * 4, 4)))
+            {
+                // In the gamut: unchanged
+                Assert.True(distance < 0.03, $"Color {color}: {distance}.");
+                continue;
+            }
+
+            // The lightness and the hue of the origin, less chroma
+            Assert.True(Math.Abs(origin.L - printed.L) < 0.03, $"Color {color}: lightness {printed.L} instead of {origin.L}.");
+            Assert.True(printedChroma < chroma, $"Color {color}: chroma {printedChroma} >= {chroma}.");
+            var scale = printedChroma / chroma;
+            var hueDistance = Math.Sqrt(Square(printed.A - (origin.A * scale)) + Square(printed.B - (origin.B * scale)));
+            Assert.True(hueDistance < 0.03, $"Color {color}: {hueDistance} from the hue of the origin ({origin} printed as {printed}, clipped {System.Convert.ToHexString(clipped.AsSpan(color * 4, 4))}, mapped {System.Convert.ToHexString(mapped.AsSpan(color * 4, 4))}).");
+        }
+
+        // The perceptual tables map the gamut themselves: nothing changes
+        Assert.Equal(Convert(GamutMapping.Clip, IccRenderingIntent.Perceptual), Convert(GamutMapping.ReduceChroma, IccRenderingIntent.Perceptual));
+
+        // A table-based destination without table to the connection space has no known gamut
+        var destinationOnly = IccTestProfiles.Lut("RGB ", "Lab ", ("B2A0", GetTag(IccTestProfiles.RgbLabLut8(), "B2A0").ToArray()));
+        var exception = Assert.Throws<UnsupportedImageFeatureException>(() => IccColorTransform.Create(SrgbMatrix, destinationOnly, new IccColorTransformOptions { GamutMapping = GamutMapping.ReduceChroma }));
+        Assert.Contains("its gamut is unknown", exception.Message, StringComparison.Ordinal);
+        _ = IccColorTransform.Create(SrgbMatrix, destinationOnly);
+        _ = IccColorTransform.Create(SrgbMatrix, destinationOnly, new IccColorTransformOptions { GamutMapping = GamutMapping.ReduceChroma, Intent = IccRenderingIntent.Perceptual });
+
+        // A grayscale destination has no chroma
+        var gray = new byte[samples.Length / 3];
+        var grayMapped = new byte[gray.Length];
+        IccColorTransform.Create(SrgbMatrix, IccProfile.SrgbGray).Convert(samples, gray);
+        IccColorTransform.Create(SrgbMatrix, IccProfile.SrgbGray, new IccColorTransformOptions { GamutMapping = GamutMapping.ReduceChroma }).Convert(samples, grayMapped);
+        Assert.Equal(gray, grayMapped);
+
+        byte[] Convert(GamutMapping mapping, IccRenderingIntent intent)
+        {
+            var result = new byte[samples.Length / 3 * 4];
+            IccColorTransform.Create(SrgbMatrix, printer, new IccColorTransformOptions { GamutMapping = mapping, Intent = intent }).Convert(samples, result);
+            return result;
+        }
+
+        static Oklab ToOklab(IccPipeline pipeline, ReadOnlySpan<byte> device, Span<double> values)
+        {
+            values.Clear();
+            for (var i = 0; i < device.Length; i++)
+            {
+                values[i] = device[i] / 255.0;
+            }
+
+            pipeline.Apply(values);
+            return Oklab.FromXyz(new CieXyz(values[0], values[1], values[2]));
+        }
+
+        static double Square(double value) => value * value;
+    }
+
+    [Fact]
+    public void ConvertColorProfileMapsTheGamutAndKeepsAlpha()
+    {
+        var options = new IccColorTransformOptions { GamutMapping = GamutMapping.ReduceChroma };
+        using var image = new Image<Rgba64>(3, 1, new Rgba64(65535, 0, 0, 1234));
+        image.Frames[0][1, 0] = new Rgba64(0, 65535, 0, 0);
+        image.Frames[0][2, 0] = new Rgba64(30000, 30000, 30000, 65535);
+        image.Metadata.IccProfile = DisplayP3;
+        image.ConvertColorProfile(SrgbMatrix, options, TestContext.Current.CancellationToken);
+
+        ushort[] expected = [65535, 0, 0, 0, 65535, 0, 30000, 30000, 30000];
+        IccColorTransform.Create(DisplayP3, SrgbMatrix, options).Convert(expected, expected);
+        Assert.Equal(new Rgba64(expected[0], expected[1], expected[2], 1234), image.Frames[0][0, 0]);
+        Assert.Equal(new Rgba64(expected[3], expected[4], expected[5], 0), image.Frames[0][1, 0]);
+        Assert.Equal(new Rgba64(expected[6], expected[7], expected[8], 65535), image.Frames[0][2, 0]);
+
+        // The primaries of Display P3 are outside sRGB: the mapping changed them
+        ushort[] clipped = [65535, 0, 0, 0, 65535, 0];
+        IccColorTransform.Create(DisplayP3, SrgbMatrix).Convert(clipped, clipped);
+        Assert.NotEqual(clipped, expected[..6]);
+    }
+
+    [Fact]
+    public void SoftProofIsTheConversionToTheInksThenBack()
+    {
+        var printer = IccTestProfiles.CmykLabLutAToB();
+        ushort[] rgb = [65535, 0, 0, 30000, 40000, 50000];
+        var options = new IccColorTransformOptions { GamutMapping = GamutMapping.ReduceChroma };
+        var preview = new ushort[rgb.Length];
+        IccColorTransform.Create([SrgbMatrix, printer, printer, SrgbMatrix], options).Convert(rgb, preview);
+
+        // The same as converting to the inks, then back to the display, up to the 16-bit rounding of the inks
+        var inks = new ushort[rgb.Length / 3 * 4];
+        var expected = new ushort[rgb.Length];
+        IccColorTransform.Create(SrgbMatrix, printer, options).Convert(rgb, inks);
+        IccColorTransform.Create(printer, SrgbMatrix, options).Convert(inks, expected);
+        AssertWithin(expected, preview, tolerance: 2);
+        Assert.NotEqual(rgb, preview);
+    }
+
+    private static void AssertWithin(ushort[] expected, ushort[] actual, int tolerance)
+    {
+        Assert.HasCount(expected.Length, actual);
+        for (var i = 0; i < expected.Length; i++)
+        {
+            Assert.True(Math.Abs(expected[i] - actual[i]) <= tolerance, $"Sample {i}: expected {expected[i]}, got {actual[i]} ([{string.Join(", ", actual)}]).");
         }
     }
 

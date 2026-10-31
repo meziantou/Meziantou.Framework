@@ -82,7 +82,8 @@ files from photos: pass an encoder with lossy compression for them.
   the format of the photos of phones: read it, and convert it to share it (see
   [Handling phone photos](../03-Guides/05-HandlePhonePhotos.md)).
 - **Graphics, screenshots, logos and transparency**: PNG, or lossless WebP. An image with few colors gets smaller as
-  an indexed PNG; [PngOptimization.MinimumSize](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.MinimumSize) searches the smallest lossless PNG.
+  an indexed PNG; [PngOptimization.Layout](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.Layout) picks the narrowest exact layout from one pass over
+  the pixels, and [PngOptimization.MinimumSize](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.MinimumSize) searches the smallest lossless PNG.
 - **Animations**: GIF is read everywhere but has 256 colors per frame and no partial transparency. APNG and lossless
   WebP keep every color and alpha value; lossy WebP and AVIF image sequences are smaller. See
   [Processing animated images](../03-Guides/04-ProcessAnimatedImages.md).
@@ -101,7 +102,7 @@ To convert files from one format to another, see [Converting between formats](..
 
 - [PNG and APNG](02-Png.md): lossless still images and animations, palettes, the smallest file.
 - [GIF](03-Gif.md): animations for every viewer, and how colors and transparency are reduced.
-- [JPEG](04-Jpeg.md): photos; quality, progressive files, and what JPEG cannot store.
+- [JPEG](04-Jpeg.md): photos; quality, progressive files, smaller baseline files, and what JPEG cannot store.
 - [WebP](05-WebP.md): lossless and lossy images and animations for the web.
 - [QOI](06-Qoi.md): a simple lossless format for 8-bit RGB and RGBA images.
 - [BMP](07-Bmp.md): Windows bitmaps, indexed and run-length layouts.

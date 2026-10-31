@@ -87,7 +87,8 @@ included, and no minimum delay is imposed the way some players do.
 | --- | --- |
 | Create a duration | `FrameDuration.FromMilliseconds(100)`, `new FrameDuration(1, 30)` (exactly 1/30 s), [FrameDuration.FromTimeSpan](cref:Meziantou.Framework.Imaging.FrameDuration.FromTimeSpan) |
 | Read it exactly | [Numerator](cref:Meziantou.Framework.Imaging.FrameDuration.Numerator) and [Denominator](cref:Meziantou.Framework.Imaging.FrameDuration.Denominator) |
-| Convert it | [ToTimeSpan()](cref:Meziantou.Framework.Imaging.FrameDuration.ToTimeSpan) (rounded to the nearest 100 ns tick) |
+| Add or subtract durations | `first + second`, `total - first` ([Add](cref:Meziantou.Framework.Imaging.FrameDuration.Add), [Subtract](cref:Meziantou.Framework.Imaging.FrameDuration.Subtract)): exact, so 300 frames of 1/30 s are exactly 10 s. A negative result, or one too large to be stored exactly, throws an `OverflowException` |
+| Convert it | [ToTimeSpan()](cref:Meziantou.Framework.Imaging.FrameDuration.ToTimeSpan) (rounded to the nearest 100 ns tick, ties up; an `OverflowException` above `TimeSpan.MaxValue`) |
 | Display it | [TotalMilliseconds](cref:Meziantou.Framework.Imaging.FrameDuration.TotalMilliseconds), [TotalSeconds](cref:Meziantou.Framework.Imaging.FrameDuration.TotalSeconds) (floating-point approximations) |
 
 When the output format cannot store a duration exactly, the `DurationRounding` setting of the encoder decides:

@@ -70,68 +70,81 @@ public abstract class ImageEncoder
     /// <returns><see langword="true"/> if the encoder receives the frames in <paramref name="format"/>.</returns>
     internal virtual bool StoresPixelFormat(PixelFormat format) => !PixelFormatWidening.IsWidened(format);
 
-    /// <summary>Selects the default encoder for a file name, from its extension.</summary>
+    /// <summary>Creates the encoder of a format with its default settings.</summary>
+    /// <param name="format">The format to write.</param>
+    /// <returns>
+    /// A new encoder whose <see cref="Format"/> is <paramref name="format"/>, such as a <see cref="PngEncoder"/> for
+    /// <see cref="ImageFormat.Png"/>. <see cref="ImageFormat.Ico"/> and <see cref="ImageFormat.Cur"/> both give an
+    /// <see cref="IcoEncoder"/>, of the matching <see cref="IcoEncoder.Kind"/>.
+    /// </returns>
+    /// <remarks>This method is thread-safe. To change a setting, create the encoder type directly with an object initializer.</remarks>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="format"/> is <see cref="ImageFormat.Unknown"/> or not a defined value.</exception>
+    public static ImageEncoder Create(ImageFormat format) => format switch
+    {
+        ImageFormat.Png => new PngEncoder(),
+        ImageFormat.Gif => new GifEncoder(),
+        ImageFormat.Jpeg => new JpegEncoder(),
+        ImageFormat.WebP => new WebPEncoder(),
+        ImageFormat.Qoi => new QoiEncoder(),
+        ImageFormat.Bmp => new BmpEncoder(),
+        ImageFormat.Tga => new TgaEncoder(),
+        ImageFormat.Pnm => new PnmEncoder(),
+        ImageFormat.Tiff => new TiffEncoder(),
+        ImageFormat.Ico => new IcoEncoder(),
+        ImageFormat.Cur => new IcoEncoder { Kind = IconKind.Cursor },
+        ImageFormat.Ani => new AniEncoder(),
+        ImageFormat.Avif => new AvifEncoder(),
+        ImageFormat.JpegXl => new JpegXlEncoder(),
+        ImageFormat.Heic => new HeicEncoder(),
+        ImageFormat.Jpeg2000 => new Jpeg2000Encoder(),
+        ImageFormat.OpenExr => new OpenExrEncoder(),
+        _ => throw new ArgumentOutOfRangeException(nameof(format), format, "The format is unknown or not a defined value."),
+    };
+
+    /// <summary>
+    /// Creates the encoder a file extension selects: the one <c>Save(path)</c> uses when no encoder is given.
+    /// </summary>
+    /// <param name="extension">
+    /// The extension, with or without its leading period (<c>.png</c> or <c>png</c>), compared without regard to ASCII case.
+    /// A path is not an extension: use <see cref="Path.GetExtension(string)"/> first.
+    /// </param>
+    /// <returns>
+    /// The default encoder of the format of the extension (<see cref="Create(ImageFormat)"/>), with the settings of the
+    /// variant some extensions name: <c>.apng</c> gives an animated <see cref="PngEncoder"/>
+    /// (<see cref="PngAnimationMode.Animated"/>), <c>.pbm</c> a <see cref="PnmEncoder"/> of
+    /// <see cref="PnmPixelLayout.Bitmap"/> pixels, <c>.j2k</c>, <c>.j2c</c> and <c>.jpc</c> a <see cref="Jpeg2000Encoder"/>
+    /// of a bare codestream (<see cref="Jpeg2000Container.Codestream"/>), and <c>.jph</c> and <c>.jhc</c> a
+    /// <see cref="Jpeg2000Encoder"/> of the high-throughput block coder (<see cref="Jpeg2000BlockCoder.HighThroughput"/>),
+    /// which writes a JPH file or a bare codestream.
+    /// </returns>
+    /// <remarks>
+    /// The extensions are those of <see cref="ImageFormatInfo.FileExtensions"/>. This method is thread-safe.
+    /// </remarks>
+    /// <exception cref="ArgumentNullException"><paramref name="extension"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">
+    /// The extension is not recognized, or names files the library reads but does not write (<c>.jpx</c>, <c>.jpf</c>).
+    /// </exception>
+    public static ImageEncoder FromFileExtension(string extension)
+    {
+        ArgumentNullException.ThrowIfNull(extension);
+        var normalized = extension.StartsWith('.', StringComparison.Ordinal) ? extension : "." + extension;
+        return FromExtension(normalized, nameof(extension));
+    }
+
+    /// <summary>Selects the default encoder for a file name, from its extension (see <see cref="FromFileExtension(string)"/>).</summary>
     /// <param name="path">The file path.</param>
     /// <returns>The encoder.</returns>
     /// <exception cref="ArgumentException">The extension is not recognized.</exception>
-    internal static ImageEncoder FromPath(string path)
-    {
-        var extension = Path.GetExtension(path);
-        if (extension.Equals(".png", StringComparison.OrdinalIgnoreCase))
-            return new PngEncoder();
+    internal static ImageEncoder FromPath(string path) => FromExtension(Path.GetExtension(path), nameof(path));
 
+    private static ImageEncoder FromExtension(string extension, string parameterName)
+    {
+        // The variants an extension names; every other extension selects the default encoder of its format
         if (extension.Equals(".apng", StringComparison.OrdinalIgnoreCase))
             return new PngEncoder { AnimationMode = PngAnimationMode.Animated };
 
-        if (extension.Equals(".gif", StringComparison.OrdinalIgnoreCase))
-            return new GifEncoder();
-
-        if (extension.Equals(".jpg", StringComparison.OrdinalIgnoreCase) || extension.Equals(".jpeg", StringComparison.OrdinalIgnoreCase))
-            return new JpegEncoder();
-
-        if (extension.Equals(".webp", StringComparison.OrdinalIgnoreCase))
-            return new WebPEncoder();
-
-        if (extension.Equals(".qoi", StringComparison.OrdinalIgnoreCase))
-            return new QoiEncoder();
-
-        if (extension.Equals(".bmp", StringComparison.OrdinalIgnoreCase) || extension.Equals(".dib", StringComparison.OrdinalIgnoreCase))
-            return new BmpEncoder();
-
-        if (extension.Equals(".tga", StringComparison.OrdinalIgnoreCase) || extension.Equals(".icb", StringComparison.OrdinalIgnoreCase) || extension.Equals(".vda", StringComparison.OrdinalIgnoreCase) || extension.Equals(".vst", StringComparison.OrdinalIgnoreCase))
-            return new TgaEncoder();
-
-        if (extension.Equals(".pnm", StringComparison.OrdinalIgnoreCase) || extension.Equals(".pam", StringComparison.OrdinalIgnoreCase)
-            || extension.Equals(".ppm", StringComparison.OrdinalIgnoreCase) || extension.Equals(".pgm", StringComparison.OrdinalIgnoreCase))
-            return new PnmEncoder();
-
         if (extension.Equals(".pbm", StringComparison.OrdinalIgnoreCase))
             return new PnmEncoder { PixelLayout = PnmPixelLayout.Bitmap };
-
-        if (extension.Equals(".tif", StringComparison.OrdinalIgnoreCase) || extension.Equals(".tiff", StringComparison.OrdinalIgnoreCase))
-            return new TiffEncoder();
-
-        if (extension.Equals(".ico", StringComparison.OrdinalIgnoreCase))
-            return new IcoEncoder();
-
-        if (extension.Equals(".cur", StringComparison.OrdinalIgnoreCase))
-            return new IcoEncoder { Kind = IconKind.Cursor };
-
-        if (extension.Equals(".ani", StringComparison.OrdinalIgnoreCase))
-            return new AniEncoder();
-
-        if (extension.Equals(".jxl", StringComparison.OrdinalIgnoreCase))
-            return new JpegXlEncoder();
-
-        if (extension.Equals(".avif", StringComparison.OrdinalIgnoreCase) || extension.Equals(".avifs", StringComparison.OrdinalIgnoreCase))
-            return new AvifEncoder();
-
-        if (extension.Equals(".heic", StringComparison.OrdinalIgnoreCase) || extension.Equals(".heif", StringComparison.OrdinalIgnoreCase)
-            || extension.Equals(".heics", StringComparison.OrdinalIgnoreCase) || extension.Equals(".heifs", StringComparison.OrdinalIgnoreCase))
-            return new HeicEncoder();
-
-        if (extension.Equals(".jp2", StringComparison.OrdinalIgnoreCase))
-            return new Jpeg2000Encoder();
 
         if (extension.Equals(".j2k", StringComparison.OrdinalIgnoreCase) || extension.Equals(".j2c", StringComparison.OrdinalIgnoreCase) || extension.Equals(".jpc", StringComparison.OrdinalIgnoreCase))
             return new Jpeg2000Encoder { Container = Jpeg2000Container.Codestream };
@@ -142,13 +155,13 @@ public abstract class ImageEncoder
         if (extension.Equals(".jhc", StringComparison.OrdinalIgnoreCase))
             return new Jpeg2000Encoder { BlockCoder = Jpeg2000BlockCoder.HighThroughput, Container = Jpeg2000Container.Codestream };
 
-        if (extension.Equals(".exr", StringComparison.OrdinalIgnoreCase))
-            return new OpenExrEncoder();
-
         // The files of these extensions are read, never written: the extended file format
         if (extension.Equals(".jpx", StringComparison.OrdinalIgnoreCase) || extension.Equals(".jpf", StringComparison.OrdinalIgnoreCase))
-            throw new ArgumentException($"JPEG 2000 files of the extended format ('{extension}') can be read but not written. Use the extension '.jp2', or specify an encoder explicitly.", nameof(path));
+            throw new ArgumentException($"JPEG 2000 files of the extended format ('{extension}') can be read but not written. Use the extension '.jp2', or specify an encoder explicitly.", parameterName);
 
-        throw new ArgumentException($"Cannot select an encoder for the file extension '{extension}'. Specify an encoder explicitly.", nameof(path));
+        if (extension.Length > 1 && ImageFormatInfo.TryGetByFileExtension(extension, out var info))
+            return Create(info.Format);
+
+        throw new ArgumentException($"Cannot select an encoder for the file extension '{extension}'. Specify an encoder explicitly.", parameterName);
     }
 }

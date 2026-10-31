@@ -62,7 +62,9 @@ public static async Task<Image> LoadUploadAsync(Stream upload, CancellationToken
 <!-- endref -->
 
 The asynchronous overloads read with asynchronous I/O and accept a `CancellationToken`. A canceled load throws an
-`OperationCanceledException` and returns no image. Invalid arguments, such as a stream that cannot be read, throw
+`OperationCanceledException` and returns no image. The loads of data already in memory (`Image.Load(bytes, options,
+cancellationToken)`) run synchronously and accept a token too: the decoder checks it between rows, strips, tiles and
+frames. Invalid arguments, such as a stream that cannot be read, throw
 before the task is returned. To protect a service from hostile uploads, combine the load with
 [resource limits](07-ResourceLimits.md) and see [Process untrusted uploads](../03-Guides/07-ProcessUntrustedUploads.md).
 
@@ -101,6 +103,8 @@ supported throws a `NotSupportedException` before anything is read.
 | [FrameLimit](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.FrameLimit) | `null` (every frame) | Decode only the first frames of an animation |
 | [Conversion](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.Conversion) | [PixelConversionOptions.Default](cref:Meziantou.Framework.Imaging.PixelConversionOptions.Default) | How a typed load converts the pixels: background color for the alpha, floating-point samples out of range, color profile |
 | [CmykConversion](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.CmykConversion) | `null` (rejected) | Convert a CMYK image (a JPEG, a TIFF page or a JPEG 2000 file) to RGB: see [Color management](../09-Color/03-ColorManagement.md) |
+| [TargetSize](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.TargetSize) | `null` (full size) | Decode a JPEG or JPEG 2000 file at a reduced size that is still at least this size: see [Decode a smaller image](#decode-a-smaller-image) |
+| [ScaleDenominator](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.ScaleDenominator) | 1 (full size) | Decode a JPEG file at exactly 1/2, 1/4 or 1/8 of its size, or a JPEG 2000 file at 1/2, 1/4, ... down to its lowest resolution level |
 
 The options are immutable: create them once and share them.
 
@@ -127,6 +131,31 @@ public static void SavePreview(string animationPath, string previewPath)
 [FrameLimit](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.FrameLimit) is a choice you make, unlike [ImageResourceLimits.MaxFrames](cref:Meziantou.Framework.Imaging.ImageResourceLimits.MaxFrames), which is a safety bound: decoding more frames
 than [MaxFrames](cref:Meziantou.Framework.Imaging.ImageResourceLimits.MaxFrames) throws, while reaching [FrameLimit](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.FrameLimit) ends the load normally. An APNG poster frame is always kept and is
 not counted by [FrameLimit](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.FrameLimit).
+
+## Decode a smaller image
+
+A JPEG file can be decoded at 1/2, 1/4 or 1/8 of its width and height: each block of 8x8 pixels gives 4x4, 2x2 or one
+pixel, computed from its coefficients, without decoding the full image first. The pixels are nearly those of a resize
+of the full image (the mean of the pixels each one replaces), for much less memory and time. A JPEG 2000 file is
+decoded at a lower resolution level of its wavelet transformation, each halving discarding one level, down to the
+number of levels of the file: see [JPEG 2000](../10-Formats/16-Jpeg2000.md#thumbnails-and-viewports). This is what a
+thumbnail or a preview of a large photo needs:
+
+- [TargetSize](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.TargetSize) asks for an image at least that large in both directions: a JPEG or JPEG 2000 file is decoded at
+  the smallest of these scales that keeps that size, and any other file at full size. Resize the result to the exact size you want, as
+  [Create thumbnails](../03-Guides/02-CreateThumbnails.md) does.
+- [ScaleDenominator](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.ScaleDenominator) asks for exactly one scale: the image has `ceil(width / n)` by `ceil(height / n)` pixels. A file
+  that cannot be decoded at that scale (another format, a lossless JPEG file, a scale beyond 1/8, or beyond the resolution levels of a JPEG 2000
+  file) throws an
+  [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException).
+
+The sizes are those of the stored pixels, before the orientation is applied. The metadata is the one of the file, as
+after a resize: the EXIF orientation still applies, and saving the image writes its new dimensions.
+[Image.Identify](cref:Meziantou.Framework.Imaging.Image.Identify) always reports the size of the file. A reader created with the same options of
+[ImageReaderOptions](cref:Meziantou.Framework.Imaging.ImageReaderOptions) gives frames of the reduced size, and its `Info` reports that size.
+
+The whole file is still read: a progressive JPEG file keeps the coefficients of its full image until its end, so its memory
+drops less than the one of a baseline file.
 
 ## What a load does not do
 

@@ -159,4 +159,86 @@ public sealed class FrameDurationTests
         Assert.Throws<ArgumentException>(() => third.CompareTo("1/3"));
         Assert.Equal([FrameDuration.Zero, third, half], new[] { half, FrameDuration.Zero, third }.Order());
     }
+
+    [Fact]
+    public void AdditionIsExactAndNormalized()
+    {
+        // GIF hundredths plus an APNG fraction: 7/100 + 1/3 = 121/300, exactly
+        Assert.Equal(new FrameDuration(121, 300), new FrameDuration(7, 100) + new FrameDuration(1, 3));
+        Assert.Equal(new FrameDuration(121, 300), new FrameDuration(7, 100).Add(new FrameDuration(1, 3)));
+
+        // The sum is normalized: 1/6 + 1/3 = 1/2
+        var sum = new FrameDuration(1, 6) + new FrameDuration(1, 3);
+        Assert.Equal(1, sum.Numerator);
+        Assert.Equal(2, sum.Denominator);
+
+        // Zero is the identity, and the same denominator adds the numerators
+        Assert.Equal(new FrameDuration(2, 7), FrameDuration.Zero + new FrameDuration(2, 7));
+        Assert.Equal(new FrameDuration(2, 7), new FrameDuration(2, 7) + default(FrameDuration));
+        Assert.Equal(FrameDuration.FromMilliseconds(250), FrameDuration.FromMilliseconds(100) + FrameDuration.FromMilliseconds(150));
+        Assert.Equal(FrameDuration.FromTimeSpan(TimeSpan.FromTicks(3)), FrameDuration.FromTimeSpan(TimeSpan.FromTicks(1)) + FrameDuration.FromTimeSpan(TimeSpan.FromTicks(2)));
+    }
+
+    [Fact]
+    public void ManyFrameDurationsSumWithoutDrift()
+    {
+        // 300 frames of 1/30 s are exactly 10 s, where a sum of rounded milliseconds or of doubles would drift
+        var total = FrameDuration.Zero;
+        for (var i = 0; i < 300; i++)
+        {
+            total += new FrameDuration(1, 30);
+        }
+
+        Assert.Equal(new FrameDuration(10, 1), total);
+        Assert.Equal(TimeSpan.FromSeconds(10), total.ToTimeSpan());
+    }
+
+    [Fact]
+    public void SubtractionIsExactAndNeverNegative()
+    {
+        Assert.Equal(new FrameDuration(1, 6), new FrameDuration(1, 2) - new FrameDuration(1, 3));
+        Assert.Equal(new FrameDuration(1, 6), new FrameDuration(1, 2).Subtract(new FrameDuration(1, 3)));
+        Assert.Equal(FrameDuration.Zero, new FrameDuration(2, 6) - new FrameDuration(1, 3));
+        Assert.Equal(1, (new FrameDuration(2, 6) - new FrameDuration(1, 3)).Denominator);
+        Assert.Equal(new FrameDuration(5, 7), new FrameDuration(5, 7) - FrameDuration.Zero);
+        Assert.Equal(new FrameDuration(long.MaxValue, 1), new FrameDuration(long.MaxValue, 1) - default(FrameDuration));
+
+        // A frame duration is never negative: the difference throws instead of being clamped to zero
+        Assert.Throws<OverflowException>(() => new FrameDuration(1, 3) - new FrameDuration(1, 2));
+        Assert.Throws<OverflowException>(() => FrameDuration.Zero - new FrameDuration(1, long.MaxValue));
+    }
+
+    [Fact]
+    public void ArithmeticOverflowIsReportedNotRounded()
+    {
+        // The numerator of the sum exceeds 64 bits
+        Assert.Throws<OverflowException>(() => new FrameDuration(long.MaxValue, 1) + new FrameDuration(1, 1));
+        Assert.Throws<OverflowException>(() => new FrameDuration(long.MaxValue, 1).Add(new FrameDuration(1, 2)));
+
+        // Large coprime denominators: the exact denominator of the result needs more than 64 bits, even after normalization
+        var left = new FrameDuration(1, long.MaxValue);
+        var right = new FrameDuration(1, long.MaxValue - 1);
+        Assert.Throws<OverflowException>(() => left + right);
+        Assert.Throws<OverflowException>(() => left - right);
+
+        // The 128-bit intermediate result is normalized before the range check: these fit once reduced
+        Assert.Equal(new FrameDuration(2, long.MaxValue), left + left);
+        Assert.Equal(new FrameDuration(long.MaxValue, 1), new FrameDuration(long.MaxValue - 1, 2) + new FrameDuration(long.MaxValue - 1, 2) + new FrameDuration(1, 1));
+        Assert.Equal(new FrameDuration(long.MaxValue, 1), new FrameDuration(long.MaxValue, 1) - new FrameDuration(long.MaxValue - 1, long.MaxValue - 1) + new FrameDuration(1, 1));
+    }
+
+    [Fact]
+    public void SumOfDurationsConvertsToTheSumOfTimeSpansWhenBothAreWholeTicks()
+    {
+        var first = TimeSpan.FromMilliseconds(40);
+        var second = TimeSpan.FromTicks(123_457);
+        Assert.Equal(first + second, (FrameDuration.FromTimeSpan(first) + FrameDuration.FromTimeSpan(second)).ToTimeSpan());
+        Assert.Equal(first - second, (FrameDuration.FromTimeSpan(first) - FrameDuration.FromTimeSpan(second)).ToTimeSpan());
+
+        // A sum of non-tick durations is rounded once, at the conversion: 1/3 + 1/3 + 1/3 is exactly 1 s, while the
+        // sum of the three rounded conversions is one tick short
+        var third = new FrameDuration(1, 3);
+        Assert.Equal(TimeSpan.FromSeconds(1), (third + third + third).ToTimeSpan());
+        Assert.Equal(TimeSpan.FromTicks(9_999_999), third.ToTimeSpan() + third.ToTimeSpan() + third.ToTimeSpan());
+    }
 }

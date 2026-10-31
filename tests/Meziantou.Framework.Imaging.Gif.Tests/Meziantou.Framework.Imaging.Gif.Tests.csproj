@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Imaging.Tests</RootNamespace>
     <ImagingTestFixtureFormats>gif</ImagingTestFixtureFormats>
-    <ImagingTestEncoders>gif</ImagingTestEncoders>
+    <ImagingTestEncoders>gif;gif-frames</ImagingTestEncoders>
   </PropertyGroup>
 
   <ItemGroup>

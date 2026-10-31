@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
@@ -19,7 +20,7 @@ namespace Meziantou.Framework.Imaging.Tests;
 /// </summary>
 /// <remarks>
 /// Four-component images (CMYK, YCCK) are inks, only loaded with a color conversion. Their expected pixels are the ink
-/// amounts computed by <see cref="JpegTestImage.GetExpectedInks"/>, converted by the independent decimal reference of the
+/// amounts computed by <see cref="JpegTestImage.GetExpectedInks()"/>, converted by the independent decimal reference of the
 /// test harness (<see cref="ReferenceIccTransform"/>): every sample must be the correctly rounded exact value.
 /// </remarks>
 public sealed class JpegDecoderTests
@@ -746,6 +747,65 @@ public sealed class JpegDecoderTests
         Assert.All(samples, sample => Assert.Equal(129, sample));
         JpegIdct.TransformDcOnly(-2000, samples, 8);
         Assert.All(samples, sample => Assert.Equal(0, sample));
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void ReducedInverseDctIsTheMeanOfTheDirectTransform()
+    {
+        // Scaled decoding: each sample is the mean of the samples of the direct inverse DCT (T.81 A.3.3) that it replaces
+        var random = new Random(4);
+        var quantization = new ushort[64];
+        var compared = 0;
+        int[] sizes = [1, 2, 4];
+        for (var iteration = 0; iteration < 5_000; iteration++)
+        {
+            for (var i = 0; i < 64; i++)
+            {
+                quantization[i] = (ushort)random.Next(1, iteration % 4 == 0 ? 300 : 30);
+            }
+
+            var coefficients = new int[64];
+            var count = random.Next(1, 64);
+            for (var i = 0; i < count; i++)
+            {
+                coefficients[random.Next(64)] = random.Next(-200, 201);
+            }
+
+            foreach (var width in sizes)
+            {
+                foreach (var height in sizes)
+                {
+                    if (!JpegTestImage.TryTransform(coefficients, quantization, precision: 8, width, height, out var expected))
+                        continue; // within 1e-6 of a rounding boundary: both neighbors are acceptable
+
+                    var block = new double[64];
+                    for (var i = 0; i < 64; i++)
+                    {
+                        block[i] = coefficients[i] * (double)quantization[i];
+                    }
+
+                    var actual = new byte[8 * 8];
+                    if (width * height == 1 || coefficients.AsSpan(1).IndexOfAnyExcept(0) < 0)
+                    {
+                        JpegIdct.TransformDcOnly((long)coefficients[0] * quantization[0], actual, 8, width, height);
+                    }
+                    else
+                    {
+                        JpegIdct.TransformReduced(block, actual, 8, width, height);
+                    }
+
+                    for (var y = 0; y < height; y++)
+                    {
+                        Assert.Equal(expected.AsSpan(y * width, width).ToArray(), actual.AsSpan(y * 8, width).ToArray());
+                    }
+
+                    compared++;
+                }
+            }
+        }
+
+        Assert.True(compared > 40_000, $"Only {compared} blocks were compared.");
     }
 
     [Fact]
@@ -1638,6 +1698,319 @@ public sealed class JpegDecoderTests
         return result;
     }
 
+    public static TheoryData<string, int> ScaledLayoutCases
+    {
+        get
+        {
+            var data = new TheoryData<string, int>();
+            foreach (var layout in Layouts.Keys)
+            {
+                foreach (var scale in (int[])[2, 4, 8])
+                {
+                    data.Add(layout, scale);
+                }
+            }
+
+            return data;
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(ScaledLayoutCases))]
+    public void ScaledDecodingFollowsTheReducedTransformContract(string layout, int scale)
+    {
+        // Each block gives the reduced inverse DCT of its lowest frequencies (8 / scale samples a side), and the planes
+        // of ceil(size / scale) samples are upsampled and converted like those of a full decode: sequential and progressive,
+        // Huffman and arithmetic coding, restart intervals, one scan per component
+        var sampling = Layouts[layout];
+        var all = Enumerable.Range(0, sampling.Length).ToArray();
+        var progression = JpegTestProgressiveScan.ParseScript(GetProgressionScript(sampling.Length));
+        foreach (var (width, height) in Sizes)
+        {
+            var image = JpegTestImage.CreateRandom(width, height, sampling, seed: (width * 41) + height + layout.Length + scale, scaled: true);
+            var expected = image.GetExpectedPixels(scale);
+            var encodings = new (string Name, JpegTestEncodeOptions Options)[]
+            {
+                ("interleaved", new JpegTestEncodeOptions()),
+                ("interleaved, long codes, restart 1", new JpegTestEncodeOptions { Huffman = JpegTestHuffmanStyle.Skewed, RestartInterval = 1 }),
+                ("one scan per component (reversed), restart 2", new JpegTestEncodeOptions { Scans = [.. all.Reverse().Select(index => new[] { index })], RestartInterval = 2 }),
+                ("arithmetic, restart 3", new JpegTestEncodeOptions { Arithmetic = true, RestartInterval = 3 }),
+                ("progressive, restart 2", new JpegTestEncodeOptions { Progression = progression, RestartInterval = 2 }),
+                ("arithmetic progressive", new JpegTestEncodeOptions { Progression = progression, Arithmetic = true }),
+            };
+
+            foreach (var (name, options) in encodings)
+            {
+                var data = image.Encode(options);
+                using var decoded = Image.Load(data, new ImageDecodeOptions { ScaleDenominator = scale });
+                Assert.Equal(new Size((width + scale - 1) / scale, (height + scale - 1) / scale), decoded.Size);
+                Assert.Equal(image.PixelFormat, decoded.PixelFormat);
+                AssertPixels(expected, decoded, $"{layout} {width}x{height} at 1/{scale}, {name}");
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData("gray", 2)]
+    [InlineData("4:2:2", 4)]
+    [InlineData("4:2:0", 8)]
+    public void ScaledTwelveBitSamplesFollowTheReducedTransformContract(string layout, int scale)
+    {
+        var sampling = Layouts[layout];
+        foreach (var (width, height) in new[] { (9, 7), (37, 21) })
+        {
+            var image = JpegTestImage.CreateRandom(width, height, sampling, seed: width + height + scale, precision: 12, scaled: true);
+            var expected = image.GetExpectedPixels(scale);
+            foreach (var options in new[] { new JpegTestEncodeOptions { RestartInterval = 2 }, new JpegTestEncodeOptions { Progression = JpegTestProgressiveScan.ParseScript(GetProgressionScript(sampling.Length)) } })
+            {
+                using var decoded = Image.Load(image.Encode(options), new ImageDecodeOptions { ScaleDenominator = scale });
+                AssertPixels(expected, decoded, $"12-bit {layout} {width}x{height} at 1/{scale}");
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData("chroma-2x2", "Ycck", 2)]
+    [InlineData("mixed", "Cmyk", 4)]
+    [InlineData("full", "CmykWithoutAdobe", 8)]
+    public void ScaledInksAreConvertedFromTheirExactAmounts(string layout, string coding, int scale)
+    {
+        var inkCoding = Enum.Parse<JpegTestInkCoding>(coding);
+        var reference = ReferenceIccTransform.Create(IccProfile.Cgats001CompatibleCmyk.Data.Span, IccProfile.Srgb.Data.Span, intent: 1, blackPointCompensation: true);
+        var image = JpegTestImage.CreateRandom(23, 18, InkLayouts[layout], seed: 71 + scale, inks: inkCoding, scaled: true);
+        using var decoded = Image.Load(image.Encode(new JpegTestEncodeOptions { RestartInterval = 2 }), new ImageDecodeOptions { CmykConversion = CmykConversionOptions.Default, ScaleDenominator = scale });
+        Assert.Equal(new Size((23 + scale - 1) / scale, (18 + scale - 1) / scale), decoded.Size);
+        Assert.Equal(PixelFormat.Rgb24, decoded.PixelFormat);
+        Assert.Empty(reference.Compare(image.GetExpectedInks(scale), GetBytes(decoded)));
+    }
+
+    [Theory]
+    [InlineData("4:2:0", "baseline", 2)]
+    [InlineData("4:2:2", "restart-7", 4)]
+    [InlineData("gray", "baseline", 8)]
+    [InlineData("4:2:0", "separate-scans", 2)]
+    [InlineData("4:4:4", "progressive", 4)]
+    [InlineData("4:2:0", "progressive", 8)]
+    public void ScaledFramesDecodedByWorkersHaveThePixelsOfTheContract(string layout, string coding, int scale)
+    {
+        // 517x601 pixels: more than 65,536 pixels at 1/2 and 1/4 (several workers), with partial MCUs on both edges
+        var sampling = Layouts[layout];
+        var image = JpegTestImage.CreateRandom(517, 601, sampling, seed: layout.Length + coding.Length + scale, acDensity: 0.3, scaled: true);
+        var expected = image.GetExpectedPixels(scale);
+        var data = image.Encode(coding switch
+        {
+            "restart-7" => new JpegTestEncodeOptions { RestartInterval = 7, Huffman = JpegTestHuffmanStyle.Skewed },
+            "separate-scans" => new JpegTestEncodeOptions { Scans = [[2], [0], [1]] },
+            "progressive" => new JpegTestEncodeOptions { Progression = JpegTestProgressiveScan.ParseScript(GetProgressionScript(sampling.Length)) },
+            _ => new JpegTestEncodeOptions(),
+        });
+        foreach (var workers in (int[])[1, 2, 3, 16])
+        {
+            using var decoded = Image.Load(data, new ImageDecodeOptions { ScaleDenominator = scale, Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers } });
+            AssertPixels(expected, decoded, $"{layout} {coding} at 1/{scale}, {workers} workers");
+        }
+    }
+
+    [Fact]
+    public void ScaledDecodingKeepsTheDecoderStateProportionalToTheScale()
+    {
+        // The planes, the rows and the pixels have the scaled size; the entropy buffer and the coefficients of a
+        // progressive frame do not depend on the scale
+        var image = JpegTestImage.CreateRandom(2048, 512, Layouts["4:2:0"], seed: 3, dcOnlyProbability: 1);
+        var data = image.Encode();
+        long? previous = null;
+        foreach (var scale in (int[])[1, 2, 4, 8])
+        {
+            using var decoded = Image.Load<Rgb24>(data, new ImageDecodeOptions { ScaleDenominator = scale });
+            var scope = decoded.Owner.Scope;
+            var pixels = scope.GetLiveBytes(AllocationKind.ImagePixels);
+            Assert.Equal(0, scope.GetLiveBytes(AllocationKind.DecoderState));
+            Assert.True(pixels >= 2048 / scale * (512 / scale) * 3, $"1/{scale}: {pixels} bytes of pixels.");
+            var peak = scope.GetDiagnostics().PeakLiveBytes;
+            if (previous is { } larger)
+            {
+                Assert.True(peak < larger, $"Peak {peak} bytes at 1/{scale}, {larger} bytes at twice the scale.");
+            }
+
+            previous = peak;
+        }
+
+        var separate = image.Encode(new JpegTestEncodeOptions { Scans = [[0], [1], [2]] });
+        using (var full = Image.Load<Rgb24>(separate))
+        using (var eighth = Image.Load<Rgb24>(separate, new ImageDecodeOptions { ScaleDenominator = 8 }))
+        {
+            // The full planes of a frame coded in several scans have the reduced size too: 1/64 of the luminance and 1/16 of
+            // the chrominance, which is reduced by 4 only (its 2x2 blocks cover the pixels of the image), and the entropy buffer
+            var fullState = full.Owner.Scope.GetDiagnostics().PeakLiveBytes - full.Owner.Scope.GetLiveBytes(AllocationKind.ImagePixels);
+            var eighthState = eighth.Owner.Scope.GetDiagnostics().PeakLiveBytes - eighth.Owner.Scope.GetLiveBytes(AllocationKind.ImagePixels);
+            Assert.True(eighthState * 10 < fullState, $"Peak decoder state {eighthState} bytes at 1/8, {fullState} bytes at full scale.");
+        }
+    }
+
+    [Fact]
+    public void TargetSizeSelectsTheLargestScaleThatKeepsTheSize()
+    {
+        var image = JpegTestImage.CreateRandom(100, 60, Layouts["4:2:0"], seed: 5, scaled: true);
+        var data = image.Encode();
+        foreach (var (target, scale) in new[]
+        {
+            (new Size(13, 8), 8),
+            (new Size(1, 1), 8),
+            (new Size(14, 8), 4),
+            (new Size(13, 9), 4),
+            (new Size(25, 15), 4),
+            (new Size(26, 15), 2),
+            (new Size(50, 30), 2),
+            (new Size(51, 30), 1),
+            (new Size(100, 60), 1),
+            (new Size(4000, 3000), 1),
+        })
+        {
+            using var decoded = Image.Load(data, new ImageDecodeOptions { TargetSize = target });
+            Assert.Equal(new Size((100 + scale - 1) / scale, (60 + scale - 1) / scale), decoded.Size);
+            AssertPixels(image.GetExpectedPixels(scale), decoded, $"target {target}");
+        }
+
+        // Identification describes the file
+        Assert.Equal(new Size(100, 60), Image.Identify(data).Size);
+    }
+
+    [Fact]
+    public void ScaledDecodingOfAnUnscalableImageIsRejectedBeforeDecoding()
+    {
+        // A lossless frame has no blocks and JPEG blocks give at least one sample: an exact scale is an unsupported
+        // feature, and a target size gives the full image. Another format only decodes at full resolution
+        var lossless = JpegLosslessTestImage.CreateRandom(9, 7, Layouts["4:2:0"], precision: 8, seed: 3).Encode();
+        Assert.Equal("Scaled decoding", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(lossless, new ImageDecodeOptions { ScaleDenominator = 2 })).Feature);
+        using (var full = Image.Load(lossless, new ImageDecodeOptions { TargetSize = new Size(1, 1) }))
+        {
+            Assert.Equal(new Size(9, 7), full.Size);
+        }
+
+        var dct = JpegTestImage.CreateRandom(64, 64, Layouts["4:4:4"], seed: 3).Encode();
+        var tooSmall = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(dct, new ImageDecodeOptions { ScaleDenominator = 16 }));
+        Assert.Equal(ImageFormat.Jpeg, tooSmall.Format);
+        Assert.Equal("Scaled decoding", tooSmall.Feature);
+
+        using var source = new Image<Rgb24>(20, 10, new Rgb24(10, 20, 30));
+        using var png = new MemoryStream();
+        source.Save(png, new PngEncoder());
+        var other = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(png.ToArray(), new ImageDecodeOptions { ScaleDenominator = 2 }));
+        Assert.Equal(ImageFormat.Png, other.Format);
+        Assert.Equal(ImageFormat.Png, Assert.Throws<UnsupportedImageFeatureException>(() => Image.OpenReader<Rgb24>(new MemoryStream(png.ToArray()), new ImageReaderOptions { ScaleDenominator = 2 })).Format);
+
+        using var unscaled = Image.Load(png.ToArray(), new ImageDecodeOptions { TargetSize = new Size(5, 5) });
+        Assert.Equal(new Size(20, 10), unscaled.Size);
+    }
+
+    [Fact]
+    public void ScaleOptionsAreValidated()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ImageDecodeOptions { ScaleDenominator = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ImageDecodeOptions { ScaleDenominator = 3 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ImageDecodeOptions { ScaleDenominator = -2 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ImageDecodeOptions { TargetSize = new Size(0, 10) });
+        Assert.Throws<ArgumentException>(() => new ImageDecodeOptions { ScaleDenominator = 2, TargetSize = new Size(1, 1) });
+        Assert.Throws<ArgumentException>(() => new ImageDecodeOptions { TargetSize = new Size(1, 1), ScaleDenominator = 2 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ImageReaderOptions { ScaleDenominator = 6 });
+        Assert.Throws<ArgumentException>(() => new ImageReaderOptions { TargetSize = new Size(1, 1), ScaleDenominator = 4 });
+        Assert.Equal(1, new ImageDecodeOptions { ScaleDenominator = 1, TargetSize = new Size(3, 3) }.ScaleDenominator);
+        Assert.Equal(1, ImageDecodeOptions.Default.ScaleDenominator);
+        Assert.Null(ImageReaderOptions.Default.TargetSize);
+    }
+
+    [Fact]
+    public void ScaledDecodingKeepsTheMetadataOfTheFile()
+    {
+        // Like a resize: the orientation, the resolution and the profile are those of the file, and a save writes the
+        // dimensions of the scaled image
+        using var source = new Image<Rgb24>(64, 40, new Rgb24(200, 100, 50));
+        source.Metadata.Orientation = ExifOrientation.RightTop;
+        source.Metadata.Resolution = new ImageResolution(300, 300);
+        using var stream = new MemoryStream();
+        source.Save(stream, new JpegEncoder());
+        var data = stream.ToArray();
+
+        using var decoded = Image.Load(data, new ImageDecodeOptions { ScaleDenominator = 4 });
+        Assert.Equal(new Size(16, 10), decoded.Size);
+        Assert.Equal(ExifOrientation.RightTop, decoded.Metadata.Orientation);
+        Assert.Equal(new ImageResolution(300, 300), decoded.Metadata.Resolution);
+
+        using var saved = new MemoryStream();
+        decoded.Save(saved, new JpegEncoder());
+        var info = Image.Identify(saved.ToArray());
+        Assert.Equal(new Size(16, 10), info.Size);
+        Assert.Equal(ExifOrientation.RightTop, info.Metadata.Orientation);
+    }
+
+    [Fact]
+    public void ScaledReadersGiveFramesAndRenderingsOfTheScaledSize()
+    {
+        var image = JpegTestImage.CreateRandom(30, 20, Layouts["4:2:0"], seed: 14, scaled: true);
+        var sequential = image.Encode(new JpegTestEncodeOptions { RestartInterval = 2 });
+        var options = new ImageReaderOptions { ScaleDenominator = 2 };
+        using (var reader = Image.OpenReader<Rgb24>(new MemoryStream(sequential), options))
+        {
+            Assert.Equal(new Size(15, 10), reader.Info.Size);
+            using var frame = reader.ReadFrame();
+            Assert.NotNull(frame);
+            AssertPixels(image.GetExpectedPixels(2), frame, "ReadFrame");
+        }
+
+        using (var reader = Image.OpenReader<Rgb24>(new MemoryStream(sequential), new ImageReaderOptions { TargetSize = new Size(4, 3) }))
+        {
+            Assert.Equal(new Size(4, 3), reader.Info.Size);
+            using var destination = new Image<Rgb24>(4, 3);
+            Assert.True(reader.ReadFrameInto(destination));
+            AssertPixels(image.GetExpectedPixels(8), destination, "ReadFrameInto");
+        }
+
+        // Progressive renderings: the DC-only rendering is one value per block of 8 / scale samples
+        var scans = JpegTestProgressiveScan.ParseScript(GetProgressionScript(3));
+        var progressive = image.Encode(new JpegTestEncodeOptions { Progression = scans });
+        using (var reader = Image.OpenReader<Rgb24>(new MemoryStream(progressive), options))
+        {
+            using var destination = new Image<Rgb24>(15, 10);
+            var first = reader.ReadFrameRefinementInto(destination);
+            Assert.NotNull(first);
+            Assert.Equal(4, first.Downsampling);
+            FrameRefinement? last;
+            do
+            {
+                last = reader.ReadFrameRefinementInto(destination);
+                Assert.NotNull(last);
+            }
+            while (!last.IsFinal);
+
+            AssertPixels(image.GetExpectedPixels(2), destination, "progressive frame");
+        }
+    }
+
+    [Fact]
+    public void ScaledDecodingDoesNotChangeTheFullScaleOutput()
+    {
+        // ScaleDenominator 1, and a target size larger than the image, decode the image like the default options
+        var image = JpegTestImage.CreateRandom(37, 21, Layouts["4:2:0"], seed: 9);
+        foreach (var options in new[] { new JpegTestEncodeOptions(), new JpegTestEncodeOptions { Progression = JpegTestProgressiveScan.ParseScript(GetProgressionScript(3)) } })
+        {
+            var data = image.Encode(options);
+            using var reference = Image.Load(data);
+            using var one = Image.Load(data, new ImageDecodeOptions { ScaleDenominator = 1 });
+            using var large = Image.Load(data, new ImageDecodeOptions { TargetSize = new Size(37, 21) });
+            AssertPixels(GetBytes(reference), one, "ScaleDenominator 1");
+            AssertPixels(GetBytes(reference), large, "TargetSize of the image");
+        }
+    }
+
+    /// <summary>A valid progression of every component: DC without its lowest bit, each AC band, then the missing bits.</summary>
+    private static string GetProgressionScript(int componentCount)
+    {
+        var all = string.Join(',', Enumerable.Range(0, componentCount));
+        var acFirst = string.Concat(Enumerable.Range(0, componentCount).Select(c => string.Create(CultureInfo.InvariantCulture, $"; {c}: 1 5 0 1; {c}: 6 63 0 1")));
+        var acRefinement = string.Concat(Enumerable.Range(0, componentCount).Select(c => string.Create(CultureInfo.InvariantCulture, $"; {c}: 1 63 1 0")));
+        return $"{all}: 0 0 0 1{acFirst}; {all}: 0 0 1 0{acRefinement}";
+    }
+
     /// <summary>The markers of the segments before the first scan.</summary>
     private static List<byte> GetSegmentMarkers(byte[] data)
     {
@@ -1692,5 +2065,265 @@ public sealed class JpegDecoderTests
         var channels = PixelFormats.GetBytesPerPixel(image.PixelFormat == PixelFormat.Rgb48 ? PixelFormat.Rgba64 : image.PixelFormat);
         var pixel = index / channels;
         Assert.Fail($"{context}: first difference at ({pixel % image.Width}, {pixel / image.Width}) channel {index % channels}: expected {expected[index]}, actual {actual[index]}.");
+    }
+
+    private const string GainMapDirectory = "tests/Meziantou.Framework.Imaging.Jpeg.Tests/GainMaps/";
+
+    // libultrahdr 1.4.0 writes the same ISO 21496-1 metadata for both fixtures: an SDR base image, a headroom of
+    // 5895489/1048576 stops for the alternate rendition, gains from 0 to that headroom, no offset
+    private static readonly GainMapMetadata UltraHdrMetadata = new(0, 5895489 / 1048576.0, [new GainMapChannel(0, 5895489 / 1048576.0, gamma: 1, baseOffset: 0, alternateOffset: 0)]);
+
+    [Theory]
+    [InlineData("ultrahdr-multichannel.jpg", 64, 48, PixelFormat.Rgb24)]
+    [InlineData("ultrahdr-downscaled.jpg", 32, 24, PixelFormat.Gray8)]
+    public void UltraHdrGainMapIsListedWithItsIsoMetadata(string name, int width, int height, PixelFormat gainMapFormat)
+    {
+        var data = GainMapTestFiles.Read(GainMapDirectory + name);
+        var images = AuxiliaryImageCollection.Load(data);
+        Assert.Equal(ImageFormat.Jpeg, images.Format);
+        var gainMap = Assert.Single(images);
+        Assert.Same(gainMap, images.GainMapImage);
+        Assert.Equal(AuxiliaryImageKind.GainMap, gainMap.Kind);
+        Assert.Null(gainMap.AuxiliaryType);
+        Assert.Equal(new Size(width, height), gainMap.Size);
+        Assert.Equal(UltraHdrMetadata, gainMap.GainMapMetadata);
+
+        using var decoded = gainMap.Decode();
+        Assert.Equal(new Size(width, height), decoded.Size);
+        Assert.Equal(gainMapFormat, decoded.PixelFormat);
+
+        // The images that follow the primary image change nothing in its decoding: it is the image of the first entry
+        // of the index alone
+        var primaryLength = GetMultiPictureEntries(data)[0].Length;
+        using var image = Image.Load(data);
+        using var primary = Image.Load(data.AsSpan(0, primaryLength));
+        Assert.Equal(new Size(64, 48), image.Size);
+        Assert.Equal(GetBytes(primary), GetBytes(image));
+    }
+
+    [Theory]
+    [InlineData("ultrahdr-multichannel", 0.1, 0.01)]
+    [InlineData("ultrahdr-downscaled", 0.25, 0.03)]
+    public void UltraHdrRenditionMatchesLibUltraHdr(string name, double tolerance, double medianTolerance)
+    {
+        // ultrahdr_app -m 1 -o 0 -O 4 decodes to linear half floats, 1 being the white of SDR, in the gamut of the HDR
+        // intent (Display P3, as the base image). It upsamples a smaller gain map with another filter than ours, which the
+        // looser tolerance of the downscaled map covers (the filter is implementation-defined by Ultra HDR)
+        var images = AuxiliaryImageCollection.Load(GainMapTestFiles.Read(GainMapDirectory + name + ".jpg"));
+        using var rendition = images.DecodeHdr(hdrHeadroom: 8);
+        Assert.Equal(new Size(64, 48), rendition.Size);
+        Assert.Equal(new CicpColorDescription(12, 8, 0, fullRange: true), rendition.Metadata.Cicp);
+        Assert.Null(rendition.Metadata.IccProfile);
+        GainMapTestFiles.AssertClose(rendition, GainMapTestFiles.ReadHalfFloats(GainMapDirectory + name + ".linear.f16"), channels: 4, tolerance, medianTolerance, context: name);
+    }
+
+    [Fact]
+    public void UltraHdrRenditionInterpolatesTheGainInStops()
+    {
+        // Without offsets, a rendition is the linear base color times 2^(gain * weight): the rendition at half the weight
+        // is the geometric mean of the base image and of the full rendition, and the base image is the linear base color
+        // (the Display P3 profile of the base image has the sRGB tone curves; its colorants, rounded to s15Fixed16 numbers,
+        // are those of the Display P3 primaries within the tolerance)
+        var images = AuxiliaryImageCollection.Load(GainMapTestFiles.Read(GainMapDirectory + "ultrahdr-multichannel.jpg"));
+        var headroom = UltraHdrMetadata.AlternateHdrHeadroom;
+        Assert.Equal(0.5, UltraHdrMetadata.GetWeight(headroom / 2));
+        using var sdr = images.DecodeHdr(0);
+        using var half = images.DecodeHdr(headroom / 2);
+        using var full = images.DecodeHdr(headroom);
+        using var beyond = images.DecodeHdr(headroom + 3);
+        using var linear = Image.Load<Rgb24>(GainMapTestFiles.Read(GainMapDirectory + "ultrahdr-multichannel.jpg"));
+        for (var y = 0; y < 48; y += 5)
+        {
+            for (var x = 0; x < 64; x += 3)
+            {
+                var source = linear.Frames[0][x, y];
+                var (b, h, f) = (sdr.Frames[0][x, y], half.Frames[0][x, y], full.Frames[0][x, y]);
+                Assert.Equal(SrgbToLinear(source.R), b.R, 2e-3f);
+                Assert.Equal(SrgbToLinear(source.G), b.G, 2e-3f);
+                Assert.Equal(SrgbToLinear(source.B), b.B, 2e-3f);
+                Assert.Equal(1f, b.A);
+                Assert.Equal(Math.Sqrt(b.R * f.R), h.R, 1e-4 * Math.Max(h.R, 1));
+                Assert.Equal(Math.Sqrt(b.G * f.G), h.G, 1e-4 * Math.Max(h.G, 1));
+                Assert.Equal(Math.Sqrt(b.B * f.B), h.B, 1e-4 * Math.Max(h.B, 1));
+                Assert.Equal(f, beyond.Frames[0][x, y]);
+            }
+        }
+
+        static float SrgbToLinear(byte value)
+        {
+            var v = value / 255.0;
+            return (float)(v <= 0.04045 ? v / 12.92 : Math.Pow((v + 0.055) / 1.055, 2.4));
+        }
+    }
+
+    [Fact]
+    public void UltraHdrXmpMetadataIsReadWithoutIsoMetadata()
+    {
+        // An Ultra HDR 1.0 file: the gain map image carries the hdrgm XMP properties instead of the ISO 21496-1 segment.
+        // The same values give the same metadata and the same rendition
+        var data = GainMapTestFiles.Read(GainMapDirectory + "ultrahdr-downscaled.jpg");
+        var xmp = """
+            <x:xmpmeta xmlns:x="adobe:ns:meta/">
+              <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+                <rdf:Description xmlns:hdrgm="http://ns.adobe.com/hdr-gain-map/1.0/" hdrgm:Version="1.0" hdrgm:GainMapMin="0" hdrgm:GainMapMax="5.62237644195556640625" hdrgm:Gamma="1" hdrgm:OffsetSDR="0" hdrgm:OffsetHDR="0" hdrgm:HDRCapacityMin="0" hdrgm:HDRCapacityMax="5.62237644195556640625"/>
+              </rdf:RDF>
+            </x:xmpmeta>
+            """;
+        var rewritten = ReplaceGainMapImage(data, image => Insert(RemoveIsoSegment(image), 2, XmpSegment(xmp)));
+        var images = AuxiliaryImageCollection.Load(rewritten);
+        var gainMap = Assert.Single(images);
+        Assert.Equal(AuxiliaryImageKind.GainMap, gainMap.Kind);
+        Assert.Equal(UltraHdrMetadata, gainMap.GainMapMetadata);
+
+        using var fromIso = AuxiliaryImageCollection.Load(data).DecodeHdr(4);
+        using var fromXmp = images.DecodeHdr(4);
+        Assert.Equal(GetBytes(fromIso), GetBytes(fromXmp));
+        using var image = Image.Load(rewritten);
+        Assert.Equal(new Size(64, 48), image.Size);
+    }
+
+    [Fact]
+    public void UltraHdrXmpMetadataReadsSequencesElementsDefaultsAndHdrBaseRenditions()
+    {
+        // Elements and rdf:Seq values (one per channel); the omitted properties take their defaults (GainMapMin 0, Gamma 1,
+        // offsets 1/64, HDRCapacityMin 0). With BaseRenditionIsHDR the headrooms and the offsets of the two renditions
+        // are those of the HDR base rendition and of the SDR alternate one
+        var data = GainMapTestFiles.Read(GainMapDirectory + "ultrahdr-multichannel.jpg");
+        var xmp = """
+            <x:xmpmeta xmlns:x="adobe:ns:meta/">
+              <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+                <rdf:Description xmlns:hdrgm="http://ns.adobe.com/hdr-gain-map/1.0/" hdrgm:Version="1.0" hdrgm:BaseRenditionIsHDR="True" hdrgm:OffsetHDR="0.25">
+                  <hdrgm:GainMapMax><rdf:Seq><rdf:li>3</rdf:li><rdf:li>2.5</rdf:li><rdf:li>2</rdf:li></rdf:Seq></hdrgm:GainMapMax>
+                  <hdrgm:HDRCapacityMax>3</hdrgm:HDRCapacityMax>
+                </rdf:Description>
+              </rdf:RDF>
+            </x:xmpmeta>
+            """;
+        var images = AuxiliaryImageCollection.Load(ReplaceGainMapImage(data, image => Insert(RemoveIsoSegment(image), 2, XmpSegment(xmp))));
+        var expected = new GainMapMetadata(3, 0, [new GainMapChannel(0, 3, 1, 0.25, 1.0 / 64), new GainMapChannel(0, 2.5, 1, 0.25, 1.0 / 64), new GainMapChannel(0, 2, 1, 0.25, 1.0 / 64)]);
+        Assert.Equal(expected, Assert.Single(images).GainMapMetadata);
+        Assert.Equal(1, expected.GetWeight(0));
+        Assert.Equal(0, expected.GetWeight(3));
+    }
+
+    [Fact]
+    public void MalformedGainMapMetadataLeavesThePrimaryImageDecodable()
+    {
+        var data = GainMapTestFiles.Read(GainMapDirectory + "ultrahdr-downscaled.jpg");
+        using var expected = Image.Load(data);
+
+        // A denominator of 0: the gain map is listed without parameters, and the rendition reports the error
+        var zeroDenominator = ReplaceGainMapImage(data, image =>
+        {
+            var copy = image.ToArray();
+            var iso = copy.AsSpan().IndexOf("urn:iso:std:iso:ts:21496:-1\0"u8) + 28;
+            copy.AsSpan(iso + 9, 4).Clear();
+            return copy;
+        });
+        var images = AuxiliaryImageCollection.Load(zeroDenominator);
+        var gainMap = Assert.Single(images);
+        Assert.Equal(AuxiliaryImageKind.GainMap, gainMap.Kind);
+        Assert.Null(gainMap.GainMapMetadata);
+        Assert.Throws<InvalidImageContentException>(() => images.DecodeHdr(1));
+        using (var image = Image.Load(zeroDenominator))
+            Assert.Equal(GetBytes(expected), GetBytes(image));
+
+        // A minimum version that this reader does not know: the parameters are ignored, as ISO 21496-1 requires
+        var newerVersion = ReplaceGainMapImage(data, image =>
+        {
+            var copy = image.ToArray();
+            copy[copy.AsSpan().IndexOf("urn:iso:std:iso:ts:21496:-1\0"u8) + 29] = 1;
+            return copy;
+        });
+        images = AuxiliaryImageCollection.Load(newerVersion);
+        Assert.Equal(AuxiliaryImageKind.Other, Assert.Single(images).Kind);
+        Assert.Null(images.GainMapImage);
+        Assert.Throws<InvalidOperationException>(() => images.DecodeHdr(1));
+
+        // XMP that is not well-formed
+        var badXmp = ReplaceGainMapImage(data, image => Insert(RemoveIsoSegment(image), 2, XmpSegment("<x:xmpmeta><rdf:RDF")));
+        images = AuxiliaryImageCollection.Load(badXmp);
+        Assert.Null(Assert.Single(images).GainMapMetadata);
+        Assert.Throws<InvalidImageContentException>(() => images.DecodeHdr(1));
+
+        // An index whose entry points outside the file lists nothing; the primary image is unchanged
+        var truncated = data.AsSpan(0, data.Length - 100).ToArray();
+        Assert.Empty(AuxiliaryImageCollection.Load(truncated));
+        using (var image = Image.Load(truncated))
+            Assert.Equal(GetBytes(expected), GetBytes(image));
+    }
+
+    [Fact]
+    public void AJpegFileWithoutMultiPictureIndexHasNoAuxiliaryImage()
+    {
+        var data = GainMapTestFiles.Read(GainMapDirectory + "ultrahdr-downscaled.jpg");
+        var primary = data.AsSpan(0, GetMultiPictureEntries(data)[0].Length).ToArray();
+        var mpf = primary.AsSpan().IndexOf("MPF\0"u8) - 4;
+        var plain = Remove(primary, mpf, 2 + ((primary[mpf + 2] << 8) | primary[mpf + 3]));
+        var images = AuxiliaryImageCollection.Load(plain);
+        Assert.Equal(ImageFormat.Jpeg, images.Format);
+        Assert.Empty(images);
+        Assert.Null(images.GainMapImage);
+        Assert.Throws<InvalidOperationException>(() => images.DecodeHdr(1));
+        Assert.Throws<ArgumentOutOfRangeException>("hdrHeadroom", () => images.DecodeHdr(-1));
+        Assert.Throws<ArgumentOutOfRangeException>("hdrHeadroom", () => images.DecodeHdr(double.NaN));
+        Assert.Throws<UnknownImageFormatException>(() => AuxiliaryImageCollection.Load([1, 2, 3, 4, 5, 6, 7, 8]));
+    }
+
+    // The entries of the Multi-Picture Format index of a file: offsets from the start of the file
+    private static (int Offset, int Length)[] GetMultiPictureEntries(byte[] data)
+    {
+        var header = data.AsSpan().IndexOf("MPF\0"u8) + 4;
+        Assert.Equal("MM"u8.ToArray(), data.AsSpan(header, 2).ToArray());
+        var directory = header + ReadUInt32(data, header + 4);
+        var count = (data[directory] << 8) | data[directory + 1];
+        for (var i = 0; i < count; i++)
+        {
+            var field = directory + 2 + (i * 12);
+            if (((data[field] << 8) | data[field + 1]) is not 0xB002)
+                continue;
+
+            var entries = header + ReadUInt32(data, field + 8);
+            var result = new (int Offset, int Length)[ReadUInt32(data, field + 4) / 16];
+            for (var e = 0; e < result.Length; e++)
+            {
+                var offset = ReadUInt32(data, entries + (16 * e) + 8);
+                result[e] = (offset is 0 ? 0 : header + offset, ReadUInt32(data, entries + (16 * e) + 4));
+            }
+
+            return result;
+        }
+
+        throw new InvalidOperationException("The file has no index of its images.");
+
+        static int ReadUInt32(byte[] data, int offset) => (data[offset] << 24) | (data[offset + 1] << 16) | (data[offset + 2] << 8) | data[offset + 3];
+    }
+
+    // Replaces the second image of a file, and its length in the index (the primary image keeps its size, so the offset
+    // of the second image does not change)
+    private static byte[] ReplaceGainMapImage(byte[] data, Func<byte[], byte[]> replace)
+    {
+        var entries = GetMultiPictureEntries(data);
+        var (offset, length) = entries[1];
+        var image = replace(data.AsSpan(offset, length).ToArray());
+        var result = (byte[])[.. data.AsSpan(0, offset), .. image, .. data.AsSpan(offset + length)];
+        var header = data.AsSpan().IndexOf("MPF\0"u8) + 4;
+        var position = result.AsSpan(header).IndexOf(ToBigEndian(length)) + header;
+        ToBigEndian(image.Length).CopyTo(result, position);
+        return result;
+
+        static byte[] ToBigEndian(int value) => [(byte)(value >> 24), (byte)(value >> 16), (byte)(value >> 8), (byte)value];
+    }
+
+    private static byte[] RemoveIsoSegment(byte[] image)
+    {
+        var start = image.AsSpan().IndexOf("urn:iso:std:iso:ts:21496:-1\0"u8) - 4;
+        return Remove(image, start, 2 + ((image[start + 2] << 8) | image[start + 3]));
+    }
+
+    private static byte[] XmpSegment(string xmp)
+    {
+        byte[] payload = [.. "http://ns.adobe.com/xap/1.0/\0"u8, .. System.Text.Encoding.UTF8.GetBytes(xmp)];
+        return [0xFF, 0xE1, (byte)((payload.Length + 2) >> 8), (byte)(payload.Length + 2), .. payload];
     }
 }

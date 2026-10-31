@@ -27,7 +27,7 @@ pixel values to reduce them: an opaque [Rgba32](cref:Meziantou.Framework.Imaging
 | [PixelLayout](cref:Meziantou.Framework.Imaging.Formats.PngEncoder.PixelLayout) | [Indexed](cref:Meziantou.Framework.Imaging.Formats.PngPixelLayout.Indexed) writes a palette of the colors of the image, each with its own alpha | [Auto](cref:Meziantou.Framework.Imaging.Formats.PngAnimationMode.Auto) |
 | [AllowColorReduction](cref:Meziantou.Framework.Imaging.Formats.PngEncoder.AllowColorReduction) | Lets [Indexed](cref:Meziantou.Framework.Imaging.Formats.PngPixelLayout.Indexed) reduce the colors of an image that does not fit in 256 colors | `false` |
 | [Quantization](cref:Meziantou.Framework.Imaging.Formats.PngEncoder.Quantization) | How [Indexed](cref:Meziantou.Framework.Imaging.Formats.PngPixelLayout.Indexed) reduces colors: number of colors, dithering, fixed palette (see [Color reduction](../06-Processing/08-ColorReduction.md)) | 256 colors, no dithering |
-| [Optimization](cref:Meziantou.Framework.Imaging.Formats.PngEncoder.Optimization) | [MinimumSize](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.MinimumSize) searches the lossless options and writes the smallest file it finds | [None](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.None) |
+| [Optimization](cref:Meziantou.Framework.Imaging.Formats.PngEncoder.Optimization) | [MinimumSize](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.MinimumSize) searches the lossless options and writes the smallest file it finds; [Layout](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.Layout) only chooses the layout of a still image from its pixels | [None](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.None) |
 | [CompressionLevel](cref:Meziantou.Framework.Imaging.Formats.PngEncoder.CompressionLevel) | The zlib level; ignored by [MinimumSize](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.MinimumSize) | `Optimal` |
 | [Filter](cref:Meziantou.Framework.Imaging.Formats.PngEncoder.Filter) | The row filter strategy, or one fixed filter for every row | [Adaptive](cref:Meziantou.Framework.Imaging.Formats.PngFilter.Adaptive) |
 | [Interlaced](cref:Meziantou.Framework.Imaging.Formats.PngEncoder.Interlaced) | Adam7 interlacing: a viewer can show the image while it downloads (see [Show an image while it downloads](../05-LoadingAndSaving/06-ShowImagesWhileTheyDownload.md)) | `false` |
@@ -116,10 +116,23 @@ The file may load with another pixel format than the one it was written from ([R
 [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32) for a palette or a color key), with the same pixel values. A sequential writer chooses the layout from the first
 image and rejects a later frame that the layout cannot store.
 
+`Optimization = PngOptimization.Layout` is the inexpensive part of that search: it reads the pixels of a still image once
+and writes the narrowest exact layout they allow (grayscale of 1 to 16 bits, no alpha for an opaque image, 8 instead of 16
+bits, or a palette with `tRNS` for at most 256 colors), with the filters and the zlib level of the settings. The palette
+is chosen when its indexes and its `PLTE` and `tRNS` chunks are smaller than the samples. It costs about one more pass
+over the pixels, and the file loads with the pixel format of its layout too. An animation is written as without
+optimization.
+
 ## Animations
 
 Every frame of an image is written as a full frame with new control data, so the delta rectangles and disposal methods
-of the source file never survive an edit. Delays are stored exactly by default: a duration that is not a fraction with
+of the source file never survive an edit. [OptimizeFrames](cref:Meziantou.Framework.Imaging.Formats.PngEncoder.OptimizeFrames) writes each frame after the first one as the
+rectangle that differs from the canvas it is drawn on instead, with the disposal of the previous frame (`NONE`,
+`BACKGROUND` or `PREVIOUS`) that gives the smallest rectangle, and `OVER` blending (its unchanged pixels transparent) when
+the layout has a transparent value and it gives the frame exactly; the layout, the filters and the compression level are
+those of the other settings, and palette indexes have 8 bits. The frames, their durations and the play count are the
+same; the frame data is kept until the next frame is given. [PngOptimization.MinimumSize](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.MinimumSize) always writes such rectangles,
+chosen by compressing the candidates. Delays are stored exactly by default: a duration that is not a fraction with
 16-bit numerator and denominator throws, unless [DurationRounding](cref:Meziantou.Framework.Imaging.Formats.PngEncoder.DurationRounding) is [RoundToNearest](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RoundToNearest). A poster frame
 ([PosterFrame](cref:Meziantou.Framework.Imaging.Image.PosterFrame)) is written as the default image, which viewers that do not play APNG show.
 

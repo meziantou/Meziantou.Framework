@@ -34,7 +34,8 @@ public sealed class PublicApiType : PublicApiSymbol
         ImmutableArray<PublicApiType> nestedTypes,
         PublicApiMethod? delegateInvokeMethod,
         PublicApiNamedTypeReference? enumUnderlyingType,
-        ImmutableArray<PublicApiTypeReference> unionCaseTypes)
+        ImmutableArray<PublicApiTypeReference> unionCaseTypes,
+        ImmutableArray<PublicApiExtensionBlock> extensionBlocks)
         : base(MetadataNameHelper.RemoveGenericArity(metadataName), accessibility, attributes, origin)
     {
         Namespace = @namespace;
@@ -56,6 +57,7 @@ public sealed class PublicApiType : PublicApiSymbol
         DelegateInvokeMethod = delegateInvokeMethod;
         EnumUnderlyingType = enumUnderlyingType;
         UnionCaseTypes = unionCaseTypes;
+        ExtensionBlocks = extensionBlocks;
     }
 
     public override PublicApiSymbolKind Kind => PublicApiSymbolKind.Type;
@@ -129,6 +131,9 @@ public sealed class PublicApiType : PublicApiSymbol
 
     /// <summary>Gets the case types of a C# <c>union</c> declaration.</summary>
     public ImmutableArray<PublicApiTypeReference> UnionCaseTypes { get; }
+
+    /// <summary>Gets the C# 14 extension blocks declared by a static class. Their members are not part of <see cref="Members"/>, which contains their implementation methods.</summary>
+    public ImmutableArray<PublicApiExtensionBlock> ExtensionBlocks { get; }
 
     /// <summary>Enumerates the type and all its nested types, recursively.</summary>
     public IEnumerable<PublicApiType> GetTypeAndNestedTypes()

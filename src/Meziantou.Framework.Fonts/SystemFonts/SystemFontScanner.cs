@@ -220,8 +220,12 @@ internal static class SystemFontScanner
             throw FontErrors.Invalid($"the font collection has the unknown version {majorVersion}.");
 
         count = FontBinary.Offset32(header, 8);
-        if (count is 0 or > FontLoader.MaxCollectionFaceCount)
-            throw FontErrors.Invalid($"the font collection has {count} fonts.");
+        if (count == 0)
+            throw FontErrors.Invalid("the font collection has no font.");
+
+        var maxFaces = FontResourceLimits.Default.MaxCollectionFaces;
+        if (count > maxFaces)
+            throw new FontResourceLimitException(FontResourceLimitKind.CollectionFaces, maxFaces, count);
 
         return source.Read(HeaderLength, count * 4);
     }

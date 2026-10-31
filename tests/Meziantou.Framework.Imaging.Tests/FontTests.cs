@@ -1348,17 +1348,34 @@ public sealed class FontTests
     public void TheFacesOfAFontCollectionAreLimited()
     {
         var boxes = FontSamples.Boxes().BuildTables();
+        static FontLoadOptions Options(int maxFaces) => new() { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxFontCollectionFaces = maxFaces } } };
 
-        // 1,024 faces load; one more is rejected before any face is read.
+        // 1,024 faces by default; one more is rejected before any face is read.
         Assert.HasCount(1024, FontCollection.Load(FontBuilder.WriteCollection(Enumerable.Repeat(boxes, 1024).ToArray())));
-        var exception = Assert.Throws<InvalidImageContentException>(() => FontCollection.Load(FontBuilder.WriteCollection(Enumerable.Repeat(boxes, 1025).ToArray())));
-        Assert.Contains("1025 fonts", exception.Message, StringComparison.Ordinal);
+        var exception = Assert.Throws<ImageResourceLimitException>(() => FontCollection.Load(FontBuilder.WriteCollection(Enumerable.Repeat(boxes, 1025).ToArray())));
+        Assert.Equal(ImageResourceLimitKind.FontCollectionFaces, exception.Kind);
+        Assert.Equal(1024, exception.Limit);
+        Assert.Equal(1025, exception.Requested);
+
+        // The limit is configurable.
+        var data = FontBuilder.WriteCollection([boxes, FontSamples.Curves().BuildTables()]);
+        Assert.HasCount(2, FontCollection.Load(data, Options(2)));
+        exception = Assert.Throws<ImageResourceLimitException>(() => FontCollection.Load(data, Options(1)));
+        Assert.Equal(ImageResourceLimitKind.FontCollectionFaces, exception.Kind);
+        Assert.Equal(1, exception.Limit);
 
         // A count larger than the file is rejected without allocating the faces.
-        var data = FontBuilder.WriteCollection([boxes, FontSamples.Curves().BuildTables()]);
         BinaryPrimitives.WriteInt32BigEndian(data.AsSpan(8), int.MaxValue);
-        exception = Assert.Throws<InvalidImageContentException>(() => FontCollection.Load(data));
-        Assert.Contains("at most 1024", exception.Message, StringComparison.Ordinal);
+        exception = Assert.Throws<ImageResourceLimitException>(() => FontCollection.Load(data));
+        Assert.Equal(ImageResourceLimitKind.FontCollectionFaces, exception.Kind);
+        Assert.Equal(int.MaxValue, exception.Requested);
+
+        // The font code reports the limit with its own kind.
+        var limits = new Fonts.FontResourceLimits { MaxCollectionFaces = 1 };
+        var fontException = Assert.Throws<Fonts.FontResourceLimitException>(() => Fonts.FontLoader.Load(FontBuilder.WriteCollection([boxes, boxes]), new Fonts.PooledFontEnvironment(limits, 64 * 1024 * 1024)));
+        Assert.Equal(Fonts.FontResourceLimitKind.CollectionFaces, fontException.Kind);
+        Assert.Equal(1, fontException.Limit);
+        Assert.Equal(2, fontException.Requested);
     }
 
     [Fact]

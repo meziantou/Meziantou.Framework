@@ -18,6 +18,9 @@ public sealed class FontResourceLimits
     /// <summary>The default maximum number of glyphs of a shaped text (1,000,000).</summary>
     public const long DefaultMaxTextGlyphs = 1_000_000;
 
+    /// <summary>The default maximum number of faces of a font collection (1,024).</summary>
+    public const int DefaultMaxCollectionFaces = 1024;
+
     /// <summary>Gets the default limits.</summary>
     public static FontResourceLimits Default { get; } = new();
 
@@ -32,4 +35,7 @@ public sealed class FontResourceLimits
 
     /// <summary>Gets the maximum number of glyphs of a shaped text.</summary>
     public long MaxTextGlyphs { get; init; } = DefaultMaxTextGlyphs;
+
+    /// <summary>Gets the maximum number of faces of a font collection. Each face is read when the collection is loaded.</summary>
+    public int MaxCollectionFaces { get; init; } = DefaultMaxCollectionFaces;
 }

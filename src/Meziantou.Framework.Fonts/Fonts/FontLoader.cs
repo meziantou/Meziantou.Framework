@@ -6,13 +6,11 @@ namespace Meziantou.Framework.Fonts;
 /// <remarks>
 /// The whole file is read: the tables of a font are a graph of offsets, and the font keeps its bytes to read them in
 /// place. The bytes read are bounded by <see cref="FontResourceLimits.MaxEncodedBytes"/>, and the bytes the font keeps
-/// by <see cref="FontResourceLimits.MaxFontBytes"/>.
+/// by <see cref="FontResourceLimits.MaxFontBytes"/>, and the faces of a collection by
+/// <see cref="FontResourceLimits.MaxCollectionFaces"/>.
 /// </remarks>
 public static class FontLoader
 {
-    /// <summary>The largest number of faces of a collection. Real collections have at most a few hundred faces.</summary>
-    internal const int MaxCollectionFaceCount = 1024;
-
     /// <param name="data">The bytes of the font file.</param>
     /// <param name="environment">The limits and the storage of the font code.</param>
     /// <param name="useEmbeddedBitmaps">Whether the bitmaps without colors of the font replace its outlines at the sizes they are made for.</param>
@@ -114,8 +112,9 @@ public static class FontLoader
         if (count == 0)
             throw FontErrors.Invalid("the font collection has no font.");
 
-        if (count > MaxCollectionFaceCount)
-            throw FontErrors.Invalid($"the font collection has {count} fonts; at most {MaxCollectionFaceCount} are supported.");
+        var maxFaces = data.Environment.Limits.MaxCollectionFaces;
+        if (count > maxFaces)
+            throw new FontResourceLimitException(FontResourceLimitKind.CollectionFaces, maxFaces, count);
 
         var offsets = FontBinary.Slice(file, 12, (long)count * 4);
         var faces = new FontFace[count];

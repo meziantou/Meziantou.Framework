@@ -18,6 +18,7 @@ internal sealed class ImageFontEnvironment : FontEnvironment
             MaxFontBytes = limits.MaxFontBytes,
             MaxGlyphComplexity = limits.MaxGlyphComplexity,
             MaxTextGlyphs = limits.MaxTextGlyphs,
+            MaxCollectionFaces = limits.MaxFontCollectionFaces,
         };
     }
 

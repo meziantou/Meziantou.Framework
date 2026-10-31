@@ -1287,6 +1287,7 @@ namespace Meziantou.Framework.Imaging
         TextLength = 11,
         TextGlyphs = 12,
         TextLines = 13,
+        FontCollectionFaces = 14,
     }
 
     public sealed class ImageResourceLimits
@@ -1294,6 +1295,7 @@ namespace Meziantou.Framework.Imaging
         public const int DefaultMaxDimension = 32768;
         public const long DefaultMaxEncodedBytes = 268435456L;
         public const long DefaultMaxFontBytes = 268435456L;
+        public const int DefaultMaxFontCollectionFaces = 1024;
         public const long DefaultMaxFramePixels = 100000000L;
         public const int DefaultMaxFrames = 1000;
         public const long DefaultMaxGlyphComplexity = 1000000L;
@@ -1306,6 +1308,7 @@ namespace Meziantou.Framework.Imaging
         public static Meziantou.Framework.Imaging.ImageResourceLimits Default { get => throw null; }
         public long MaxEncodedBytes { get => throw null; init { } }
         public long MaxFontBytes { get => throw null; init { } }
+        public int MaxFontCollectionFaces { get => throw null; init { } }
         public long MaxFramePixels { get => throw null; init { } }
         public int MaxFrames { get => throw null; init { } }
         public long MaxGlyphComplexity { get => throw null; init { } }

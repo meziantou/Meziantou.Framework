@@ -41,6 +41,9 @@ public sealed class ImageResourceLimits
     /// <summary>The default maximum number of bytes a font keeps in memory (256 MiB).</summary>
     public const long DefaultMaxFontBytes = 256L * 1024 * 1024;
 
+    /// <summary>The default maximum number of fonts of a font collection (1,024).</summary>
+    public const int DefaultMaxFontCollectionFaces = 1024;
+
     /// <summary>The default maximum number of elementary operations to produce one glyph (1,000,000).</summary>
     public const long DefaultMaxGlyphComplexity = 1_000_000;
 
@@ -171,6 +174,21 @@ public sealed class ImageResourceLimits
             field = value;
         }
     } = DefaultMaxFontBytes;
+
+    /// <summary>
+    /// Gets the maximum number of fonts of a font collection (a TTC file). Defaults to <see cref="DefaultMaxFontCollectionFaces"/>.
+    /// </summary>
+    /// <remarks>Every font of a collection is read when the collection is loaded, and the fonts can share their tables: this limit bounds that work.</remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not positive.</exception>
+    public int MaxFontCollectionFaces
+    {
+        get;
+        init
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+            field = value;
+        }
+    } = DefaultMaxFontCollectionFaces;
 
     /// <summary>
     /// Gets the maximum number of elementary operations spent to produce one glyph: the points of its outline, the

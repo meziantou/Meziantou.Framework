@@ -182,22 +182,30 @@ internal sealed class AvifBinding : HeifCodecBinding
         };
     }
 
-    /// <summary>Reads the sequence header of the data of a coded item or of a sample, for an operating point.</summary>
+    /// <summary>
+    /// Reads the sequence header of the data of a coded item or of a sample, for an operating point: the one the first frame
+    /// is decoded with, which is the last of the sequence headers before the first frame header, as for the decoder.
+    /// </summary>
     /// <exception cref="InvalidImageContentException">The data have no sequence header, or it does not have the operating point.</exception>
     public static Av1SequenceHeader ReadSequenceHeader(ReadOnlySpan<byte> data, int operatingPoint = 0)
     {
+        Av1SequenceHeader? sequence = null;
         while (!data.IsEmpty)
         {
             var obu = Av1ObuHeader.Read(data);
             if (obu.Type is Av1Constants.ObuSequenceHeader)
             {
-                return Av1SequenceHeader.Parse(data.Slice(obu.HeaderLength, obu.PayloadLength), operatingPoint);
+                sequence = Av1SequenceHeader.Parse(data.Slice(obu.HeaderLength, obu.PayloadLength), operatingPoint);
+            }
+            else if (sequence is not null && obu.Type is Av1Constants.ObuFrameHeader or Av1Constants.ObuFrame)
+            {
+                break;
             }
 
             data = data[obu.TotalLength..];
         }
 
-        throw Instance.Invalid("an AV1 image has no sequence header.");
+        return sequence ?? throw Instance.Invalid("an AV1 image has no sequence header.");
     }
 
     /// <summary>Gets the sample format and the color description of a sequence header.</summary>

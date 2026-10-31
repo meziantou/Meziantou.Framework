@@ -957,19 +957,208 @@ public sealed class Av1EncoderRoundTripTests
         }
 
         Assert.Null(streamDecoder.DecodeNextOutputFrame(TestContext.Current.CancellationToken));
+    }
 
-        // A tile group of one tile of a frame of two tiles: tile_start_and_end_present_flag, tg_start and tg_end on one bit each
-        static byte[] CreateTileGroup(AllocationScope scope, int tile, byte[] data)
+    [Theory]
+    [InlineData("TD SH FH TG0 FH TG1", typeof(InvalidImageContentException), "a frame header starts before the tiles of the previous frame are complete")]
+    [InlineData("TD SH FH TG0 KEY", typeof(InvalidImageContentException), "a frame header starts before the tiles of the previous frame are complete")]
+    [InlineData("TD SH RFH FH TG", typeof(InvalidImageContentException), "a redundant frame header has no frame header to repeat")]
+    [InlineData("TD SH KEY RFH", typeof(InvalidImageContentException), "a redundant frame header has no frame header to repeat")]
+    [InlineData("TD SH TG", typeof(InvalidImageContentException), "a tile group has no frame header")]
+    [InlineData("TD SH KEY TG1", typeof(InvalidImageContentException), "a tile group has no frame header")]
+    [InlineData("TD SH TILE_LIST", typeof(UnsupportedImageFeatureException), "large scale tile decoding")]
+    [InlineData("TD FH TG", typeof(InvalidImageContentException), "a frame header has no sequence header")]
+    [InlineData("TD KEY", typeof(InvalidImageContentException), "a frame header has no sequence header")]
+    [InlineData("TD SH KEY TD INTER TD SHOW_EXISTING_FRAME", typeof(InvalidImageContentException), "a frame OBU shows an existing frame")]
+    [InlineData("TD SH FH TG1 TG0", typeof(InvalidImageContentException), "the tiles of a frame are not in order")]
+    [InlineData("TD SH FH TG0 TG0", typeof(InvalidImageContentException), "the tiles of a frame are not in order")]
+    [InlineData("TD SH FH TG0 TG", typeof(InvalidImageContentException), "the tiles of a frame are not in order")]
+    public void UnitsOfFramesInAnInvalidOrder(string units, Type exceptionType, string message)
+    {
+        // Section 7.5 "Ordering of OBUs": a frame starts with a frame header (or a frame OBU) after a sequence header, and its
+        // tile groups follow in the order of the tiles. A tile list is for large scale tile decoding only.
+        var input = CreateStreamOfUnits(units);
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(UnitsOfFramesInAnInvalidOrder));
+        using var decoder = new Av1Decoder(scope);
+        decoder.SetInput(input, 0, input.Length);
+        var exception = Assert.Throws(exceptionType, () =>
         {
-            using var output = new PooledPayloadWriter(scope);
-            var writer = new Av1BitWriter(output);
-            writer.WriteFlag(true);
-            writer.WriteBits((uint)tile, 1);
-            writer.WriteBits((uint)tile, 1);
-            writer.ByteAlign();
-            output.Write(data);
-            return output.WrittenSpan.ToArray();
+            while (decoder.DecodeNextOutputFrame(TestContext.Current.CancellationToken) is { } frame)
+            {
+                frame.Release();
+            }
+        });
+        Assert.Contains(message, exception.Message, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("TD SH FH RFH TG", 1)]
+    [InlineData("TD SH FH TG0 RFH TG1", 1)]
+    [InlineData("TD SH FH RFH TG0 RFH TG1 TD SH KEY", 2)]
+    [InlineData("TD SH KEY TD INTER TD SHOW_EXISTING_FRAME_HEADER", 3)]
+    public void UnitsOfFramesInAValidOrder(string units, int frameCount)
+    {
+        // Redundant frame headers can follow the frame header and come between the tile groups of the frame: they are
+        // skipped. A frame header OBU, unlike a frame OBU, can show an existing frame, which is the same frame again.
+        var input = CreateStreamOfUnits(units);
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(UnitsOfFramesInAValidOrder));
+        using var decoder = new Av1Decoder(scope);
+        decoder.SetInput(input, 0, input.Length);
+        var frames = new List<Av1FrameBuffer>();
+        try
+        {
+            while (decoder.DecodeNextOutputFrame(TestContext.Current.CancellationToken) is { } frame)
+            {
+                frames.Add(frame);
+            }
+
+            Assert.HasCount(frameCount, frames);
+            Assert.Equal((4100, 8), (frames[0].Header.UpscaledWidth, frames[0].Header.FrameHeight));
+            if (units.EndsWith("SHOW_EXISTING_FRAME_HEADER", StringComparison.Ordinal))
+            {
+                Assert.Same(frames[1], frames[2]);
+            }
         }
+        finally
+        {
+            foreach (var frame in frames)
+            {
+                frame.Release();
+            }
+        }
+    }
+
+    // A raw stream of the units named by "units": TD (temporal delimiter), SH (sequence header), KEY (the frame OBU of a key
+    // frame of two tiles), FH and RFH (its frame header in a frame header and a redundant frame header OBU), TG (a tile group
+    // OBU of its two tiles), TG0 and TG1 (a tile group OBU of one of its tiles), INTER (the frame OBU of an inter frame that
+    // follows it, and refreshes every reference slot), SHOW_EXISTING_FRAME_HEADER and SHOW_EXISTING_FRAME (a frame header
+    // that shows the frame of slot 1, in a frame header OBU and in a frame OBU), and TILE_LIST (a tile list OBU)
+    private static byte[] CreateStreamOfUnits(string units)
+    {
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(CreateStreamOfUnits));
+        var settings = new Av1EncoderSettings(4100, 8, 8, Monochrome: true, 1, 1, 1, 13, 6, FullRange: true, ChromaSamplePosition: 0, StillPicture: false, Lossless: true, Quality: 100, Effort: 0, KeyFrameInterval: 0);
+        using var encoder = new Av1Encoder(scope, settings);
+        var payloads = new byte[2][];
+        for (var index = 0; index < payloads.Length; index++)
+        {
+            var buffer = encoder.GetSourcePlane(0);
+            var samples = CreateFrame("pan", index, buffer.Width, buffer.Height, 0, 0, 8, seed: 13);
+            for (var y = 0; y < buffer.Height; y++)
+            {
+                samples.AsSpan(y * buffer.Width, buffer.Width).CopyTo(buffer.GetRow(y));
+            }
+
+            encoder.BeginFrame();
+            while (!encoder.Encode(TestContext.Current.CancellationToken))
+            {
+            }
+
+            Assert.Equal(index is 0, encoder.IsKeyFrame);
+            payloads[index] = encoder.Payload.ToArray();
+        }
+
+        var sequenceHeaderObu = Av1ObuHeader.Read(payloads[0]);
+        Assert.Equal(Av1Constants.ObuSequenceHeader, sequenceHeaderObu.Type);
+        var sequenceHeader = payloads[0].AsSpan(sequenceHeaderObu.HeaderLength, sequenceHeaderObu.PayloadLength).ToArray();
+        var frameObu = Av1ObuHeader.Read(payloads[0].AsSpan(sequenceHeaderObu.TotalLength));
+        Assert.Equal((Av1Constants.ObuFrame, payloads[0].Length), (frameObu.Type, sequenceHeaderObu.TotalLength + frameObu.TotalLength));
+        var framePayload = payloads[0].AsSpan(sequenceHeaderObu.TotalLength + frameObu.HeaderLength, frameObu.PayloadLength).ToArray();
+        var interFrameObu = Av1ObuHeader.Read(payloads[1]);
+        Assert.Equal((Av1Constants.ObuFrame, payloads[1].Length), (interFrameObu.Type, interFrameObu.TotalLength));
+
+        // The frame header of the key frame is written again from the header that the decoder reads: ended with a byte
+        // alignment in the frame OBU, and with trailing bits in a frame header OBU
+        byte[] frameHeader;
+        int frameHeaderLength;
+        int tileSizeBytes;
+        using (var decoder = new Av1Decoder(scope))
+        {
+            decoder.SetInput(payloads[0], 0, payloads[0].Length);
+            var frame = decoder.DecodeNextOutputFrame(TestContext.Current.CancellationToken);
+            Assert.NotNull(frame);
+            try
+            {
+                Assert.Equal((2, 1), (frame.Header.TileCount, frame.Header.TileColsLog2 + frame.Header.TileRowsLog2));
+                tileSizeBytes = frame.Header.TileSizeBytes;
+                using var output = new PooledPayloadWriter(scope);
+                var writer = new Av1BitWriter(output);
+                Av1HeaderWriter.WriteFrameHeader(ref writer, frame.Sequence, frame.Header);
+                writer.ByteAlign();
+                frameHeaderLength = output.Length;
+                Assert.True(framePayload.AsSpan(0, frameHeaderLength).SequenceEqual(output.WrittenSpan), "the frame header is not the one of the frame OBU");
+
+                output.Reset();
+                writer = new Av1BitWriter(output);
+                Av1HeaderWriter.WriteFrameHeader(ref writer, frame.Sequence, frame.Header);
+                writer.WriteTrailingBits();
+                frameHeader = output.WrittenSpan.ToArray();
+            }
+            finally
+            {
+                frame.Release();
+            }
+        }
+
+        // The tile group of the frame OBU: tile_start_and_end_present_flag equal to 0, then the size of the first tile
+        var tileGroup = framePayload.AsSpan(frameHeaderLength).ToArray();
+        Assert.Equal(0, tileGroup[0]);
+        Span<byte> tileSize = stackalloc byte[4];
+        tileGroup.AsSpan(1, tileSizeBytes).CopyTo(tileSize);
+        var firstTileSize = (int)BinaryPrimitives.ReadUInt32LittleEndian(tileSize) + 1;
+        var firstTile = tileGroup.AsSpan(1 + tileSizeBytes, firstTileSize).ToArray();
+        var secondTile = tileGroup.AsSpan(1 + tileSizeBytes + firstTileSize).ToArray();
+
+        // show_existing_frame (1), frame_to_show_map_idx (001), then the trailing bits: the sequence has no decoder model
+        // and no frame identifiers
+        byte[] showExistingFrame = [0b1001_1000];
+
+        using var stream = new PooledPayloadWriter(scope);
+        foreach (var unit in units.Split(' '))
+        {
+            switch (unit)
+            {
+                case "TD":
+                    Av1ObuWriter.WriteTemporalDelimiter(stream);
+                    break;
+                case "SH":
+                    Av1ObuWriter.Write(stream, Av1Constants.ObuSequenceHeader, sequenceHeader);
+                    break;
+                case "KEY":
+                    Av1ObuWriter.Write(stream, Av1Constants.ObuFrame, framePayload);
+                    break;
+                case "FH":
+                    Av1ObuWriter.Write(stream, Av1Constants.ObuFrameHeader, frameHeader);
+                    break;
+                case "RFH":
+                    Av1ObuWriter.Write(stream, Av1Constants.ObuRedundantFrameHeader, frameHeader);
+                    break;
+                case "TG":
+                    Av1ObuWriter.Write(stream, Av1Constants.ObuTileGroup, tileGroup);
+                    break;
+                case "TG0":
+                    Av1ObuWriter.Write(stream, Av1Constants.ObuTileGroup, CreateTileGroup(scope, tile: 0, firstTile));
+                    break;
+                case "TG1":
+                    Av1ObuWriter.Write(stream, Av1Constants.ObuTileGroup, CreateTileGroup(scope, tile: 1, secondTile));
+                    break;
+                case "INTER":
+                    stream.Write(payloads[1]);
+                    break;
+                case "SHOW_EXISTING_FRAME_HEADER":
+                    Av1ObuWriter.Write(stream, Av1Constants.ObuFrameHeader, showExistingFrame);
+                    break;
+                case "SHOW_EXISTING_FRAME":
+                    Av1ObuWriter.Write(stream, Av1Constants.ObuFrame, showExistingFrame);
+                    break;
+                case "TILE_LIST":
+                    Av1ObuWriter.Write(stream, Av1Constants.ObuTileList, [0, 0, 0, 0]);
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(units), unit, message: null);
+            }
+        }
+
+        return stream.WrittenSpan.ToArray();
     }
 
     [Fact]
@@ -1565,6 +1754,19 @@ public sealed class Av1EncoderRoundTripTests
         {
             frame.Release();
         }
+    }
+
+    // A tile group of one tile of a frame of two tiles: tile_start_and_end_present_flag, tg_start and tg_end on one bit each
+    private static byte[] CreateTileGroup(AllocationScope scope, int tile, byte[] data)
+    {
+        using var output = new PooledPayloadWriter(scope);
+        var writer = new Av1BitWriter(output);
+        writer.WriteFlag(true);
+        writer.WriteBits((uint)tile, 1);
+        writer.WriteBits((uint)tile, 1);
+        writer.ByteAlign();
+        output.Write(data);
+        return output.WrittenSpan.ToArray();
     }
 
     private static byte[] EncodeLossless(int width, int height, int bitDepth, int effort, int seed)

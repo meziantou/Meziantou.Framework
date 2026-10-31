@@ -1330,6 +1330,114 @@ public sealed class JpegXlDecoderTests
     }
 
     /// <summary>
+    /// A value of the patch dictionary may take no bit, so the number of sources (1024 plus a quarter of the area of the
+    /// frame: 1028 for a 4x4 frame) and the number of patches (four times that: 4112) are bounded before they are read.
+    /// </summary>
+    [Theory]
+    [InlineData(1028, 1, false)]
+    [InlineData(1029, 1, true)]
+    [InlineData(1, 4112, false)]
+    [InlineData(1, 4113, true)]
+    [InlineData(1028, 4, false)]
+    [InlineData(1028, 5, true)]
+    public void PatchDictionariesWithTooManyPatchesAreRejected(int sourceCount, int patchesPerSource, bool rejected)
+    {
+        const int Size = 4;
+        var symbols = new List<(int Context, uint Value)> { (0, (uint)sourceCount) };
+        for (var i = 0; i < sourceCount; i++)
+        {
+            // A 1x1 source at the origin of reference frame 0, then its patches, all at the origin and without blending
+            symbols.AddRange([(1, 0), (3, 0), (3, 0), (2, 0), (2, 0), (7, (uint)patchesPerSource - 1)]);
+            for (var j = 0; j < patchesPerSource; j++)
+            {
+                symbols.AddRange([(j == 0 ? 4 : 6, 0), (j == 0 ? 4 : 6, 0), (5, JpegXlChannelBlending.ModeNone)]);
+            }
+        }
+
+        AssertPatchDictionary(Size, Size, symbols, rejected ? "too many patches" : null);
+    }
+
+    /// <summary>
+    /// A 4x4 patch is inside its 16x8 frame: its position, the first one of its source or the previous one plus a signed
+    /// offset, is not negative, and the patch ends at most at the edge of the frame.
+    /// </summary>
+    [Theory]
+    [InlineData(12, 4, 0, 0, false)]
+    [InlineData(13, 4, 0, 0, true)]
+    [InlineData(12, 5, 0, 0, true)]
+    [InlineData(0, 0, 12, 4, false)]
+    [InlineData(0, 0, 13, 0, true)]
+    [InlineData(0, 0, 0, 5, true)]
+    [InlineData(0, 0, -1, 0, true)]
+    [InlineData(0, 0, 0, -1, true)]
+    public void PatchesOutsideTheirFrameAreRejected(int x, int y, int offsetX, int offsetY, bool rejected)
+    {
+        static uint PackSigned(int value) => value >= 0 ? (uint)value * 2 : ((uint)-value * 2) - 1;
+
+        List<(int Context, uint Value)> symbols =
+        [
+            (0, 1), (1, 0), (3, 0), (3, 0), (2, 3), (2, 3), (7, 1),
+            (4, (uint)x), (4, (uint)y), (5, JpegXlChannelBlending.ModeNone),
+            (6, PackSigned(offsetX)), (6, PackSigned(offsetY)), (5, JpegXlChannelBlending.ModeNone),
+        ];
+
+        AssertPatchDictionary(16, 8, symbols, rejected ? "outside its frame" : null);
+    }
+
+    /// <summary>
+    /// The position of a source in its reference frame and its size are below 2^30, so that the sums of the positions and
+    /// sizes do not overflow.
+    /// </summary>
+    [Theory]
+    [InlineData((1u << 30) - 1, 0u, 0u, 0u, null)]
+    [InlineData(1u << 30, 0u, 0u, 0u, "position or a size that is too large")]
+    [InlineData(0u, (1u << 30) - 1, 0u, 0u, null)]
+    [InlineData(0u, 1u << 30, 0u, 0u, "position or a size that is too large")]
+    [InlineData(0u, 0u, (1u << 30) - 1, 0u, "outside its frame")]
+    [InlineData(0u, 0u, 1u << 30, 0u, "position or a size that is too large")]
+    [InlineData(0u, 0u, 0u, (1u << 30) - 1, "outside its frame")]
+    [InlineData(0u, 0u, 0u, 1u << 30, "position or a size that is too large")]
+    public void PatchSourcesOfTooLargeAPositionOrSizeAreRejected(uint sourceX, uint sourceY, uint codedWidth, uint codedHeight, string? error)
+    {
+        List<(int Context, uint Value)> symbols =
+        [
+            (0, 1), (1, 0), (3, sourceX), (3, sourceY), (2, codedWidth), (2, codedHeight), (7, 0),
+            (4, 0), (4, 0), (5, JpegXlChannelBlending.ModeNone),
+        ];
+
+        AssertPatchDictionary(64, 64, symbols, error);
+    }
+
+    private static void AssertPatchDictionary(int width, int height, List<(int Context, uint Value)> symbols, string? error)
+    {
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(AssertPatchDictionary));
+        using var writer = new LsbBitWriter(scope);
+        using (var encoder = new JpegXlEntropyEncoder(10, new JpegXlHybridUintConfig(4, 0, 0), scope, JpegXlEntropyCoding.Ans))
+        {
+            foreach (var (context, value) in symbols)
+            {
+                encoder.Add(context, value);
+            }
+
+            encoder.Write(writer);
+        }
+
+        writer.Finish();
+        var data = writer.WrittenSpan.ToArray();
+        var reader = new JpegXlBitReader(data, 0, data.Length);
+        if (error is not null)
+        {
+            var exception = Assert.Throws<InvalidImageContentException>(() => JpegXlPatchDictionary.Read(reader, width, height, extraChannelCount: 0, scope));
+            Assert.Contains(error, exception.Message, StringComparison.Ordinal);
+        }
+        else
+        {
+            using var patches = JpegXlPatchDictionary.Read(reader, width, height, extraChannelCount: 0, scope);
+            reader.EnsureNotOverrun();
+        }
+    }
+
+    /// <summary>
     /// A palette of one color is a 1x1 meta-channel, whose shifts do not grow: each in-place squeeze keeps it and inserts an
     /// empty residual right after it, moving the channels that follow. The squeezes are read up to the limit of moved
     /// channels (2^22: 2895 squeezes) and rejected beyond it, before the samples are decoded.

@@ -447,6 +447,41 @@ public sealed class AvifDecoderTests
     }
 
     [Theory]
+    [InlineData((ulong)long.MaxValue, 0UL, 0UL, null, null)]
+    [InlineData((ulong)long.MaxValue + 1, 0UL, 0UL, null, "location of an item is out of range")]
+    [InlineData(1UL, (ulong)long.MaxValue - 1, 0UL, null, null)]
+    [InlineData(1UL, (ulong)long.MaxValue, 0UL, null, "location of an item is out of range")]
+    [InlineData(0UL, 0UL, (ulong)long.MaxValue, null, null)]
+    [InlineData(0UL, 0UL, (ulong)long.MaxValue + 1, null, "location of an item is out of range")]
+    [InlineData(0UL, 0UL, (ulong)long.MaxValue - 1, 1UL, null)]
+    [InlineData(0UL, 0UL, (ulong)long.MaxValue, 1UL, "length of the data of an item is out of range")]
+    public void ItemLocationsThatOverflowAreInvalid(ulong baseOffset, ulong extentOffset, ulong extentLength, ulong? secondExtentLength, string? error)
+    {
+        // 64-bit base offset, extent offsets and extent lengths: the location of the item, and the length of its data
+        // summed over its extents, fit in a signed 64-bit integer
+        var extents = new List<byte[]> { HeifFileBuilder.U64(extentOffset), HeifFileBuilder.U64(extentLength) };
+        if (secondExtentLength is { } length)
+        {
+            extents.Add(HeifFileBuilder.U64(0));
+            extents.Add(HeifFileBuilder.U64(length));
+        }
+
+        var builder = Still();
+        builder.OmittedBoxes.Add("iloc");
+        builder.ExtraMetaBoxes.Add(HeifFileBuilder.FullBox("iloc", 0, 0, [0x88, 0x80], HeifFileBuilder.U16(1), HeifFileBuilder.U16(1), HeifFileBuilder.U16(0), HeifFileBuilder.U64(baseOffset), HeifFileBuilder.U16((ushort)(extents.Count / 2)), HeifFileBuilder.Concat([.. extents])));
+        var data = builder.Build();
+        if (error is null)
+        {
+            Assert.Equal((8, 6), (Image.Identify(data).Width, Image.Identify(data).Height));
+        }
+        else
+        {
+            Assert.Contains(error, Assert.Throws<InvalidImageContentException>(() => Image.Identify(data)).Message, StringComparison.Ordinal);
+            Assert.Contains(error, Assert.Throws<InvalidImageContentException>(() => Image.Load(data).Dispose()).Message, StringComparison.Ordinal);
+        }
+    }
+
+    [Theory]
     [InlineData(0u, 1u)]
     [InlineData(1u, 0u)]
     [InlineData(0u, 0u)]
@@ -715,6 +750,48 @@ public sealed class AvifDecoderTests
         var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(data));
         Assert.Contains("16384", exception.Message, StringComparison.Ordinal);
         Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data).Dispose());
+    }
+
+    [Theory]
+    [InlineData("iovl", 1024, false)]
+    [InlineData("iovl", 1025, true)]
+    [InlineData("grid", 1024, false)]
+    [InlineData("grid", 1025, true)]
+    public void DerivationsOfMoreThan1024InputImagesAreNotSupported(string type, int inputCount, bool rejected)
+    {
+        // An overlay of one coded image used many times, or a grid of 32 x 32 (or 25 x 41) uses of an identity derivation
+        // of it: the inputs are counted before any of them is built
+        var builder = new HeifFileBuilder { PrimaryItemId = 1 };
+        var size = builder.AddProperty(HeifFileBuilder.ImageSize(8, 6));
+        var configuration = builder.AddProperty(HeifFileBuilder.Av1Configuration(1, 0, 8, monochrome: false, 0, 0));
+        var (rows, columns) = inputCount is 1024 ? (32, 32) : (25, 41);
+        if (type is "iovl")
+        {
+            builder.AddItem(1, "iovl", OverlayDescriptor(8, 6, inputCount), size);
+            builder.References.Add(("dimg", 1, [.. Enumerable.Repeat(3u, inputCount)]));
+        }
+        else
+        {
+            builder.AddItem(1, "grid", HeifFileBuilder.GridDescriptor(rows, columns, (uint)(columns * 8), (uint)(rows * 6)), builder.AddProperty(HeifFileBuilder.ImageSize((uint)(columns * 8), (uint)(rows * 6))));
+            builder.References.Add(("dimg", 1, [.. Enumerable.Repeat(2u, inputCount)]));
+        }
+
+        builder.AddItem(2, "iden", [], size).IsHidden = true;
+        builder.References.Add(("dimg", 2, [3]));
+        builder.AddItem(3, "av01", Payload, size, -configuration).IsHidden = true;
+        var data = builder.Build();
+        if (rejected)
+        {
+            var exception = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(data));
+            Assert.Contains("more than 1024 input images", exception.Message, StringComparison.Ordinal);
+            Assert.Equal("derived image input count", exception.Feature);
+            Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data).Dispose());
+        }
+        else
+        {
+            var info = Image.Identify(data);
+            Assert.Equal(type is "iovl" ? (8, 6) : (columns * 8, rows * 6), (info.Width, info.Height));
+        }
     }
 
     [Fact]

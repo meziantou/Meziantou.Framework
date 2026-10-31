@@ -21,6 +21,10 @@ internal static class FuzzMutator
     /// <summary>Mutates a seed of a group: the mutations that know its format first, the others otherwise.</summary>
     public static byte[] Mutate(FuzzRandom random, FuzzSeed seed, IReadOnlyList<FuzzSeed> seeds, IReadOnlyList<byte[]> spliceSources)
     {
+        // AV1 streams of the corpus: the order, the types and the content of their units, with consistent sizes
+        if (FuzzAv1Mutator.TryMutate(random, seed, seeds) is { } av1Mutation)
+            return av1Mutation;
+
         // HEVC in the HEIF family: the NAL units, the decoder configuration record, the tables of the container and the
         // structure of the stream
         if (FuzzHevcMutator.TryMutate(random, seed, seeds) is { } hevcMutation)

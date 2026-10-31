@@ -258,17 +258,38 @@ public sealed class PngIdentifyTests
         Assert.Equal(["Title", "Comment", "Author", "After"], full.TextEntries.Select(entry => entry.Keyword));
     }
 
-    [Fact]
-    public void DecompressedMetadataIsChargedBeforeItIsRetained()
+    [Theory]
+    [InlineData("zTXt", 100_007)]
+    [InlineData("iTXt", 100_007)]
+    [InlineData("iTXt XMP", 100_000)]
+    [InlineData("iCCP", 100_000)]
+    public void DecompressedMetadataIsChargedBeforeItIsRetained(string kind, int chargedBytes)
     {
-        // zTXt: 7-byte keyword + 100,000 decompressed bytes from a few hundred compressed bytes
-        var data = new SyntheticImages.PngBuilder().Header(2, 2).CompressedText("Comment", new byte[100_000]).ImageData(2, 2).End().ToArray();
-        Assert.Single(Image.Identify(data, CreateOptions(new ImageResourceLimits { MaxMetadataBytes = 100_007 }, ImageIdentifyMode.Header)).Metadata.TextEntries);
-        var exception = Assert.Throws<ImageResourceLimitException>(() => Image.Identify(data, CreateOptions(new ImageResourceLimits { MaxMetadataBytes = 100_006 }, ImageIdentifyMode.Header)));
+        // 100,000 decompressed bytes from a few hundred compressed bytes, plus the 7-byte keyword of a text entry (the
+        // keyword of an XMP packet and the name of a profile are not retained)
+        var data = CreateCompressedMetadataImage(kind, new byte[100_000]);
+        var metadata = Image.Identify(data, CreateOptions(new ImageResourceLimits { MaxMetadataBytes = chargedBytes }, ImageIdentifyMode.Header)).Metadata;
+        Assert.HasCount(kind is "zTXt" or "iTXt" ? 1 : 0, metadata.TextEntries);
+        var exception = Assert.Throws<ImageResourceLimitException>(() => Image.Identify(data, CreateOptions(new ImageResourceLimits { MaxMetadataBytes = chargedBytes - 1 }, ImageIdentifyMode.Header)));
         Assert.Equal(ImageResourceLimitKind.MetadataBytes, exception.Kind);
 
-        var bomb = new SyntheticImages.PngBuilder().Header(2, 2).CompressedText("Comment", new byte[10_000_000]).ImageData(2, 2).End().ToArray();
+        var bomb = CreateCompressedMetadataImage(kind, new byte[10_000_000]);
         Assert.Equal(ImageResourceLimitKind.MetadataBytes, Assert.Throws<ImageResourceLimitException>(() => Image.Identify(bomb, CreateOptions(new ImageResourceLimits { MaxMetadataBytes = 65_536 }, ImageIdentifyMode.Header))).Kind);
+    }
+
+    private static byte[] CreateCompressedMetadataImage(string kind, byte[] decompressed)
+    {
+        var builder = new SyntheticImages.PngBuilder().Header(2, 2);
+        builder = kind switch
+        {
+            "zTXt" => builder.CompressedText("Comment", decompressed),
+            "iTXt" => builder.Chunk("iTXt", [.. "Comment"u8, 0, 1, 0, 0, 0, .. SyntheticImages.Zlib(decompressed)]),
+            "iTXt XMP" => builder.Chunk("iTXt", [.. "XML:com.adobe.xmp"u8, 0, 1, 0, 0, 0, .. SyntheticImages.Zlib(decompressed)]),
+            "iCCP" => builder.Chunk("iCCP", [.. "icc"u8, 0, 0, .. SyntheticImages.Zlib(decompressed)]),
+            _ => throw new ArgumentOutOfRangeException(nameof(kind), kind, message: null),
+        };
+
+        return builder.ImageData(2, 2).End().ToArray();
     }
 
     public static TheoryData<string> MetadataChunkTypes => ["tEXt", "zTXt", "iTXt", "iCCP", "eXIf"];

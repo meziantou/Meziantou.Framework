@@ -101,8 +101,8 @@ public sealed class AutoCropOptions
     /// <summary>
     /// Gets a value indicating whether the analysis also computes <see cref="AutoCropAnalysis.WeightX"/> and
     /// <see cref="AutoCropAnalysis.WeightY"/>, which shift the padded rectangle toward the visually heavier side of the
-    /// image by <c>padding * weight</c> pixels (truncated). Defaults to <see langword="false"/>. It needs one more pass
-    /// over the pixels.
+    /// image by <c>padding * weight</c> pixels (truncated, with the weight clamped to [-1, 1], so the content always stays
+    /// inside the padded rectangle). Defaults to <see langword="false"/>. It needs one more pass over the pixels.
     /// </summary>
     public bool AnalyzeWeights { get; init; }
 }

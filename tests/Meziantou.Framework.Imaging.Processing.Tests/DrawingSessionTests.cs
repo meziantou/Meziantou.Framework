@@ -1666,6 +1666,87 @@ public sealed class DrawingSessionTests
         Assert.Equal(new Gray8(200), image.Frames[0][0, 15]);
     }
 
+    [Fact]
+    public void AShadowOfTheLargestBlurSpreadsASmallDrawingTooThinToShow()
+    {
+        // The 16 pixels of the square spread over a bell of deviation 10000: at most 16 / (2 pi 10000^2) = 2.5e-8, below
+        // half a coverage step of 1 / 65536. The layer keeps a margin of the size of the canvas, not of the blur.
+        var black = new Rgba32(0, 0, 0);
+        var gray = new Rgba32(200, 200, 200);
+        var square = new Rectangle(4, 4, 4, 4);
+        using var plain = new Image<Rgba32>(16, 16, gray);
+        plain.Draw(canvas => canvas.FillRectangle(White, square), Ct);
+        using var image = new Image<Rgba32>(16, 16, gray);
+        var before = image.Owner.Scope.LiveBytes;
+        image.Draw(canvas => canvas.Shadow(black, new PointD(1, 1), 10000, layer => layer.FillRectangle(White, square)), Ct);
+        Assert.Equal(before, image.Owner.Scope.LiveBytes);
+        Assert.Equal(DrawingTestSupport.ReadSamples(plain.Frames[0]), DrawingTestSupport.ReadSamples(image.Frames[0]));
+
+        // What is around the square is everything else, beyond the canvas too: its inner shadow covers the whole square
+        using var inner = new Image<Rgba32>(16, 16, gray);
+        inner.Draw(canvas => canvas.InnerShadow(black, new PointD(1, 1), 10000, layer => layer.FillRectangle(White, square)), Ct);
+        for (var y = 0; y < 16; y++)
+        {
+            for (var x = 0; x < 16; x++)
+            {
+                Assert.Equal(x is >= 4 and < 8 && y is >= 4 and < 8 ? black : gray, inner.Frames[0][x, y]);
+            }
+        }
+    }
+
+    [Fact]
+    public void AShadowBlurBeyondTheLargestUnderATransformationIsTheLargest()
+    {
+        // A bar across the top of the canvas: its shadow below it is close to half its opacity, and still depends on the
+        // deviation in 16 bits (1 - Phi(d / 10000) is 0.5 - 4e-5 d). Twice as large, the deviation of 5000 of the drawing is
+        // 10000 on the canvas, the largest: 10000 is clamped to it, 4000 is not.
+        var black = new Rgba32(0, 0, 0);
+        using var reference = new Image<Rgba64>(16, 16);
+        reference.Draw(canvas => canvas.Shadow(black, default, 10000, layer => layer.FillRectangle(White, new Rectangle(0, 0, 16, 4))), Ct);
+        var expected = DrawingTestSupport.ReadSamples(reference.Frames[0]);
+        Assert.InRange(reference.Frames[0][5, 15].A, 32000, 32767);
+        Assert.Equal(expected, DrawScaled(5000));
+        Assert.Equal(expected, DrawScaled(10000));
+        Assert.NotEqual(expected, DrawScaled(4000));
+
+        int[] DrawScaled(double blur)
+        {
+            using var image = new Image<Rgba64>(16, 16);
+            image.Draw(
+                canvas => canvas.Transform(AffineTransform.CreateScale(2, 2), inner => inner.Shadow(black, default, blur, layer => layer.FillRectangle(White, new Rectangle(0, 0, 8, 2)))),
+                Ct);
+            return DrawingTestSupport.ReadSamples(image.Frames[0]);
+        }
+    }
+
+    [Fact]
+    public void ADropShadowFilterOfTheLargestBlurSpreadsASmallDrawingTooThinToShow()
+    {
+        // The filter reads transparent pixels beyond its layer: the shadow of the square, spread by three boxes of 18,799
+        // pixels on each axis, rounds to nothing. Under a transformation that doubles the drawing, a deviation of 10000 is
+        // clamped to the largest on the canvas, as 5000 is.
+        var black = new Rgba64(0, 0, 0, 65535);
+        var gray = new Rgba64(40000, 40000, 40000, 65535);
+        using var plain = new Image<Rgba64>(16, 16, gray);
+        plain.Draw(canvas => canvas.FillRectangle(White, new Rectangle(4, 4, 8, 8)), Ct);
+        var expected = DrawingTestSupport.ReadSamples(plain.Frames[0]);
+        Assert.Equal(expected, Draw(scale: 1, sigma: 10000));
+        Assert.Equal(expected, Draw(scale: 2, sigma: 5000));
+        Assert.Equal(expected, Draw(scale: 2, sigma: 10000));
+
+        int[] Draw(double scale, double sigma)
+        {
+            using var image = new Image<Rgba64>(16, 16, gray);
+            var before = image.Owner.Scope.LiveBytes;
+            var square = new RectangleD(4 / scale, 4 / scale, 8 / scale, 8 / scale);
+            image.Draw(
+                canvas => canvas.Transform(AffineTransform.CreateScale(scale, scale), inner => inner.Filter(new DropShadowFilter(black, new PointD(1, 1), sigma), layer => layer.FillRectangle(White, square))),
+                Ct);
+            Assert.Equal(before, image.Owner.Scope.LiveBytes);
+            return DrawingTestSupport.ReadSamples(image.Frames[0]);
+        }
+    }
+
     // -----------------------------------------------------------------------------------------------------------------
     // The transformation of the canvas
     // -----------------------------------------------------------------------------------------------------------------

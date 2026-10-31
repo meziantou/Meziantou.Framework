@@ -38,6 +38,9 @@ public sealed class TiffCodecTests
         Assert.False(encoder.BigEndian);
         Assert.Equal(0, encoder.RowsPerStrip);
         Assert.Equal(TiffPixelLayout.Auto, encoder.PixelLayout);
+        Assert.Equal(TiffPredictor.None, encoder.Predictor);
+        Assert.Equal(0, encoder.TileWidth);
+        Assert.Equal(0, encoder.TileHeight);
         Assert.Equal(90, encoder.JpegQuality);
         Assert.Equal(JpegChromaSubsampling.Auto, encoder.JpegChromaSubsampling);
         Assert.Equal(MetadataHandling.Strict, encoder.MetadataHandling);
@@ -47,6 +50,10 @@ public sealed class TiffCodecTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new TiffEncoder { JpegQuality = 101 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new TiffEncoder { JpegChromaSubsampling = (JpegChromaSubsampling)42 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new TiffEncoder { RowsPerStrip = -1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TiffEncoder { Predictor = (TiffPredictor)2 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TiffEncoder { TileWidth = -16 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TiffEncoder { TileWidth = 8 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TiffEncoder { TileHeight = 17 });
     }
 
     [Fact]
@@ -454,27 +461,8 @@ public sealed class TiffCodecTests
     }
 
     [Fact]
-    public void PlanarStorageSignedAndFloatingPointSamplesAndUnusualDepthsAreRejected()
+    public void FloatingPointSamplesOfEightBitsAndUnusualDepthsAreRejected()
     {
-        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(new TiffFileBuilder().AddPage(new TiffPageSpec
-        {
-            Width = 2,
-            Height = 1,
-            SamplesPerPixel = 3,
-            Photometric = 2,
-            PlanarConfiguration = 2,
-            Samples = [1, 2, 3, 4, 5, 6],
-        }).Build()));
-
-        // With one sample per pixel there is one plane, however it is called
-        Assert.Equal(Grays(1, 2), Decode<Gray8>(new TiffFileBuilder().AddPage(new TiffPageSpec
-        {
-            Width = 2,
-            Height = 1,
-            PlanarConfiguration = 2,
-            Samples = [1, 2],
-        }).Build()));
-
         Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(new TiffFileBuilder().AddPage(new TiffPageSpec
         {
             Width = 2,
@@ -509,6 +497,258 @@ public sealed class TiffCodecTests
             Samples = [1, 2, 3, 4],
         }).Build()));
         Assert.Equal("ExtraSamples: alpha with this sample layout", alpha.Feature);
+    }
+
+    /// <summary>
+    /// The pages of separate planes of <see cref="CreatePlanarPageSpec"/>: every sample layout with several samples,
+    /// strips and tiles (with partial tiles on the right and bottom edges), every lossless compression, both predictors
+    /// and both byte orders.
+    /// </summary>
+    public static TheoryData<string> PlanarPages =>
+    [
+        "gray-alpha-8-uncompressed-strips", "gray-alpha-16-deflate-predictor-tiles-big-endian", "rgb-8-lzw-predictor-strips",
+        "rgb-8-packbits-tiles", "rgb-16-uncompressed-tiles-big-endian", "rgba-8-deflate-tiles", "rgba-16-lzw-predictor-strips",
+        "rgb-signed-16-deflate-predictor-strips", "rgba-float-32-deflate-float-predictor-tiles", "gray-alpha-half-16-lzw-float-predictor-strips",
+        "rgb-float-24-uncompressed-strips", "cmyk-8-lzw-predictor-tiles", "cmyk-alpha-16-deflate-strips",
+    ];
+
+    [Theory]
+    [MemberData(nameof(PlanarPages))]
+    public void SeparatePlanesDecodeToThePixelsOfChunkySamples(string name)
+    {
+        // The planes hold the samples of the chunky page, each compressed and predicted on its own by the reference codecs
+        var bigEndian = name.EndsWith("-big-endian", StringComparison.Ordinal);
+        var options = name.StartsWith("cmyk-", StringComparison.Ordinal) ? InkOptions : ImageDecodeOptions.Default;
+        var chunky = new TiffFileBuilder { BigEndian = bigEndian }.AddPage(CreatePlanarPageSpec(name, planar: false)).Build();
+        var planar = new TiffFileBuilder { BigEndian = bigEndian }.AddPage(CreatePlanarPageSpec(name, planar: true)).Build();
+        using var expected = Image.Load(chunky, options);
+        using var actual = Image.Load(planar, options);
+        Assert.Equal(expected.PixelFormat, actual.PixelFormat);
+        Assert.Equal(GetBytes(expected), GetBytes(actual));
+
+        // Identification describes the page as it does the chunky one
+        var info = Image.Identify(planar);
+        Assert.Equal(Image.Identify(chunky).ColorModel, info.ColorModel);
+        Assert.Equal(actual.Size, info.Size);
+
+        // The planes of a page of a document, and of a page read from a stream, are decoded the same way
+        using var document = ImageCollection.Load(planar);
+        using var page = document[0].Decode(options);
+        Assert.Equal(GetBytes(expected), GetBytes(page));
+        using var stream = new MemoryStream(planar, writable: false);
+        using var streamed = Image.Load(stream, options);
+        Assert.Equal(GetBytes(expected), GetBytes(streamed));
+    }
+
+    [Fact]
+    public void OneSampleIsOnePlaneHoweverItIsCalled()
+    {
+        Assert.Equal(Grays(1, 2), Decode<Gray8>(new TiffFileBuilder().AddPage(new TiffPageSpec
+        {
+            Width = 2,
+            Height = 1,
+            PlanarConfiguration = 2,
+            Samples = [1, 2],
+        }).Build()));
+    }
+
+    /// <summary>
+    /// Pages of separate planes written by libtiff 4.7.2 (<c>tiffcp -p separate</c>) and GDAL 3.13.0
+    /// (<c>gdal_translate -co INTERLEAVE=BAND</c>, the <c>ghcr.io/osgeo/gdal:ubuntu-small-3.13.0</c> image) from chunky
+    /// 20x18 pages of the pixels of <see cref="CreatePlanarReferencePixels"/>. libtiff only separates 8-bit samples, so the
+    /// 16-bit and floating-point pages come from GDAL.
+    /// </summary>
+    private static readonly (string Name, PixelFormat Format, string File)[] PlanarReferenceFileCases =
+    [
+        ("libtiff, RGBA, LZW, predictor, 16x16 tiles", PixelFormat.Rgba32, "49492A0086040000800001B03824160C07834260A0E854342B0D85072210911C4E0C2A8B4146319820E239031FC7C1A469113644549116E4462911A6450180002050382416040384426150B0001A1D0F8844400098A4562D1700032351B8E474000F9048645230004A4D27944A40015964B65D2F0006265339A4D4001B9C4E6753B0007A7D3FA05040021A25168D4700092954BA65340027A8546A553000AAAD57AC564002DAE576BD5F8080803FDEB03824160D0283426090885426190D82C3E21038944E2B108BC36330A8DC3A27078FC46430B91C524AF58EC1A020800002303824160C1D834260A3A85434AF0D851D2210948C4E0CAE8B4159719823A2390302C7C2222910FE445C911E64496912CE4501803401B03268460D0784045AF030698E130F6F430F30F84B96188F8A421D90C52C660EF3862EE3D067D431A3230880618E79402218FD9403E18139405A182994076183F940921855940AE186B940CA1881940E6189794404800020400220460D07840446003860A2130F3001A240C87C2520098C3C22B08600323CD48DC1DE00F922E243061004A549C93844A015982025A800C4D4C92D5806E744896B803D3F164B42021A20425A4012525E92D3809E9CD896A8055535E4B5A02DAC2825B0108013DEB030B0460D0784046050319C261D0B7A9421D09881B627088822A2F078829E3706883123F0A81BD5C323883FA51250DCAE0638973D4AB31394C51F31564C5932380880040230300C0E0D07818B60D0584420950B86C20CF1088C1909148A84543188AAFA39116DC7E1AF8914202B25838CA510627CAE066C970451331534C587318080801C01B03824160C77834260A4A08C34030D884461A678843E2512424562F1250C6A37105F47A3E116DC8A3EF89346C2B298B8CA591227CBE226C99441133586A9A701161CEE02800006103824160C0019C26150B86128230F00C3E25138799E25118A45109178CC51431C8EC497D2090845B72490BE2511D0ACAE3232974509F31899B2691244CDE1EA69D045873D8080803FDEB03824160D0283426084A08C34030D884461A678843E2512424562F1250C6A37105F47A3E116DC8A3EF89346C2B298B8CA591227CBE226C99441133586A9A701161CEE02803402303824160CED834260A4A82006150533C361F044244A261150C5A26BE8D43DB71D853E241090AC8E0C32934149F29821B2590344CBC22A69930E6501801001B03568460D07840448F0306B0E130F2541C030F8499E2514842122F1883286371C5F47E30DB91451F125878565109194AE104F9741CD931832266811534DE1D0689C702301800006103420460D07840446033861A2130F2541C030F8499E2514844160D138C41943178E8457D208EB6E49187C49E28159543C652D8493E6108364CE0E899B4194D3908B0E79018013DEB03730460D0784046050301C261C4A838061D0933C4627084245A2F0650C6A36BE8F45DB72189BE2490E0AC9E1232954209F2D839B2610644CCC22A69B30E6D01080380230300C0E0D0781BF60D0584420950B86C20CF1088C1909148A84543188AAFA39116DC7E1AF8914202B25838CA510627CAE066C970451331534C587318080000F000001030001000000140000000101030001000000120000000201030004000000400500000301030001000000050000000601030001000000020000001201030001000000010000001501030001000000040000001C01030001000000020000003D01030001000000020000004201030001000000100000004301030001000000100000004401040010000000680500004501030010000000480500005201030001000000020000005301030004000000A805000000000000080008000800080036005800470048006E0068004A0048003100450047004400360041003F004100080000001301000059020000700300003E0000006B010000A0020000B8030000AC000000D3010000EA02000000040000DD0000001802000031030000440400000100010001000100"),
+        ("libtiff, gray and alpha, Deflate, predictor, strips of 5 rows", PixelFormat.La16, "49492A00BC000000789C63E0C504EC58C4F8B08889621193C1220600FC8A051A789C53E6C5045A58C40CB188596011B3C7220600259D05C9789C73E3C504BE58C442B0884563114BC22206004EA10678789CCBE4C5040558C4CAB18801008A7A0436789C6310C404B258C4ACB0888563112BC122060069310772789C9B288809D661113B8D45EC051631562C6200FF1D0947789C5312C404F658C462B0885562119B86450C009109081C789CDB2C88092E60117B8B450C00CEC2063A0E0000010300010000001400000001010300010000001200000002010300020000000800080003010300010000000800000006010300010000000100000011010400080000007A01000012010300010000000100000015010300010000000200000016010300010000000500000017010300080000006A0100001C01030001000000020000003D0103000100000002000000520103000100000002000000530103000200000001000100000000001800180018001200180018001800120008000000200000003800000050000000620000007A00000092000000AA000000"),
+        ("GDAL, 16-bit RGB, big-endian, Deflate, predictor, strips of 5 rows", PixelFormat.Rgb48, "4D4D002A00000008000C01000003000000010014000001010003000000010012000001020003000000030000009E010300030000000100080000010600030000000100020000011100040000000C000000BC011500030000000100030000011600030000000100050000011700030000000C000000A4011C00030000000100020000013D000300000001000200000153000300000003000000EC00000000001000100010001F001F00200017002000250025001A001F001F001E0015000000F20000011100000130000002160000015000000170000001950000022D000001BA000001D9000001F800000247000100010001789C6360E0DE490C64BE489C3AF645C4A9E32E264E1DBF0B71EA002D2A4B0B789C1316E5DE490C147B469C3AA9EDC4A993EB204E9D522471EA008A814BD3789C53D3E2DE490CD4FC4D9C3ADD33C4A9339C4B9C3AD33CE2D40100E7D84C9B789C63201A30B61203191898B988810C0C2CFDC44006063611622000709217C1789C6360609F490C6460E09423063230702D26063230F0681003191878D7120301C69B2D47789C6360E03722063230086C2706323008D910031918840F1203191844DD888100CAA72FE0789CFBFF9F8128F0B9863875CF7E12A7EE561971EACE7E264E1D00007F085D789C3B58C04014D8F29638752BB2885337FB3971EAFA53885307000FD3065A789C6B7AC84014288B234E5DE66DE2D4C54610A72EE02A71EA0095AF0556789CB3B4E7DE490CB415204E9DC343E2D401008E952D8B789C6360103B4D0C6460900820063230485E2506020092832A16789C730962200A989F274E9DB60F71EA00A9D30214"),
+        ("GDAL, 32-bit floating-point RGB, Deflate, floating-point predictor, strips of 6 rows", PixelFormat.RgbaFloat, "49492A00080000000C0000010300010000001400000001010300010000001200000002010300030000009E0000000301030001000000080000000601030001000000020000001101040009000000B60000001501030001000000030000001601030001000000060000001701030009000000A40000001C01030001000000020000003D01030001000000030000005301030003000000DA0000000000000020002000200055005A005A005F0086008D00220022002200E0000000350100008F010000E901000048020000CE0200005B0300007D0300009F030000030003000300789C63B063640001080901071A1A1C1C148040000A38383832188803FB9C300D7468C034B08048F3F6FFC73410E83E0C032B88358F8138031B88360FD340870398064E20DE3C0C03131E601AB88048F30050E92801789C8DCC311180301044D1C5011250C26450162948C0414E4224AC8473109249B9CDFEE297AF61369EFBC06ABF92117556CA353B571FBC1A147CA960985E0C05830A76D783823D15A4ED29C854307D4FC04C0561F603BBA94E01789C3BC00004FF19C0A4931D2398C1F801081E00C181030D40E0E0A000040CC481030C98060A7EC034D08124F3500D54FC8069600269E6A11868F801D3C00612CD4336D0F103A6810748350FC940CF1F98063210090007846801789C63A036B063606044E282D807181A1C1C148040000A3838385E106D1E23DC1C1838D080695E0649E631A2081D38D0106060A0200104223C502043AC79F698FEDD4F897F91CD8332F62B00DDA7A121230202425C60708848E300C5751401789C63B0676064800018CDB0DFA121C0C0404102084478A0600E0391006E1EDC3886FD090D1E163A324020C007059CD5449BC788661AD0BC8606070705201080020E0E8E0C4ACC9B00749F8A8A8A881018707302412869E6211BC7B07F0130FC343464444040880B0C9C48320FC53886FD1B1A42747434C44040881B02F489340E00FB391801789C63B067646060006104D87FA021C0C0404102084478A04086814800320FD53886FD171A7C4C8CA4804082170638C9378F71DF83060F0B1D192010E08302CEDF649BC7C8B0EF43838B8D9A9C9C9C383F1470B07FC2D4D9D080CD3C0754E340EC7D0C0D0E0E0A402000051C1C1C2F88751F36F33880EE535252921284004E0E4E8EFB98AEC3EA3E00C23E1D01789CB3674003FF19189A7E40C1072878F0E041020371C07ED4BC41651E00CBF17801789CB3674003FF19189A7E40C1072878F0E041020371C07ED4BC41651E00CBF17801789CB3674003FF19189A7E40C1072878F0E041020371C07ED4BC41651E00CBF17801"),
+    ];
+
+    public static TheoryData<string> PlanarReferenceFiles => [.. PlanarReferenceFileCases.Select(item => item.Name)];
+
+    [Theory]
+    [MemberData(nameof(PlanarReferenceFiles))]
+    public void PlanarPagesOfReferenceWritersDecodeToTheirSourcePixels(string name)
+    {
+        var (_, format, file) = PlanarReferenceFileCases.Single(item => item.Name == name);
+        using var image = Image.Load(Convert.FromHexString(file));
+        Assert.Equal(format, image.PixelFormat);
+        using var expected = CreatePlanarReferencePixels(format);
+        Assert.Equal(GetBytes(expected), GetBytes(image));
+    }
+
+    [Fact]
+    public void JpegCompressedPlanesDecodeLikeLibTiff()
+    {
+        // tiffcp -p separate -c jpeg:r:90 -t -w 16 -l 16 of libtiff 4.7.2: each 16x16 tile of each plane is a grayscale JPEG
+        // datastream with the tables of JPEGTables, from the first 16x16 pixels of the RGB colors of
+        // CreatePlanarReferencePixels. The reference is what tiff2rgba of libtiff decodes; the two JPEG decoders round
+        // their inverse transforms differently by one level at most
+        using var image = Image.Load(Convert.FromHexString("49492A006A010000FFD8FFC0000B080010001001001100FFDA0008010000003F00F993E047C3FF00F8F7FDDFA76AFD16F811F0FF00FE3DFF0077E9DABE7FF811F0FF00FE3DFF0077E9DABDABF6ADF8B1FF000CE3FB385E7F655D7D93C69E28CE8DA2F932EC9E0DEBFE9176BB644917CA889DB226ED93496F9186AFFFD9FFD8FFC0000B080010001001011100FFDA0008010100003F00F833E0FF00C1FF00F84FBC8FDC799BF1DB35F5AE97FB0D783FC33E153E24F1BDEE9FE1DD15723ED3A8304F35C2349E544BF7A594AC6E56340CEDB4ED5268FD86B4BD0FC33F0E2F7C6FE243B345D1AC8DEDC6D645925DA3E58A3DECAAD2C8C563452C373BAAE726BB5D2348FED4DBF167E2CAFF00C241E2BD63FD1741F0CD9FEEFCED9CA5ADB21DDE4DB45BC1790EEDBBCB37992CA049FFD9FFD8FFC0000B080010001001021100FFDA0008010200003F00FBB3E327FCB7FC6BE14F8C9FF2DFF1AFBAFE327FCB7FC6BE14F8C9FF002DFF001AFFD90E000001030001000000100000000101030001000000100000000201030003000000180200000301030001000000070000000601030001000000020000001201030001000000010000001501030001000000030000001C010300010000000200000042010300010000001000000043010300010000001000000044010400030000002402000045010300030000001E0200005301030003000000300200005B0107002101000036020000000000000800080008007500B1003C00080000007D0000002E010000010001000100FFD8FFDB0043000302020302020303030304030304050805050404050A070706080C0A0C0C0B0A0B0B0D0E12100D0E110E0B0B1016101113141515150C0F171816141812141514FFC4001F0000010501010101010100000000000000000102030405060708090A0BFFC400B5100002010303020403050504040000017D01020300041105122131410613516107227114328191A1082342B1C11552D1F02433627282090A161718191A25262728292A3435363738393A434445464748494A535455565758595A636465666768696A737475767778797A838485868788898A92939495969798999AA2A3A4A5A6A7A8A9AAB2B3B4B5B6B7B8B9BAC2C3C4C5C6C7C8C9CAD2D3D4D5D6D7D8D9DAE1E2E3E4E5E6E7E8E9EAF1F2F3F4F5F6F7F8F9FAFFD9"));
+        Assert.Equal(PixelFormat.Rgb24, image.PixelFormat);
+        var expected = Convert.FromHexString("0000FF0D01F41A00E92600DF3401D24100C84E00BD5B01B26801A775009C8201918F00869D017AA90770B60065C3055A0700FF1403F42105E92D08DF3B0DD2480FC85511BD6216B26F16A77C1E9C891C91962A86A41E7AB02470BD2F65CA275A0E00FF1A07F4280CE93412DF4219D24F1FC85C24BD692BB27634A783329C903C919C3D86AA467AB75A70C45065D15C5A1401FF210AF42E13E93B1BDF4925D2552CC86335BD6F3FB27D4AA7894F9C975891A36786B16E7ABE6C70CB7A65D88A5A1C00FF290BF43618E94324DF5131D25D3CC86B49BD7756B2855CA791729C9F7891AB8386B9907AC6A170D3AB65E0B45A2300FF300EF43D1EE94A2DDF583CD2644AC8715ABD7E69B28B78A798879CA59591B2A686C0B57ACCC470DACF65E6E05A2A01FF3712F44425E95037DF5E48D26B5AC8786DBD857EB2928FA79F9E9CACB891B9C586C7D37AD3ED70E0FF65ED0E5A3101FF3E14F44B2AE9573FDF6554D27269C87F7FBD8C93B299A8A7A6BE9CB3D291C0E786CEFF7ADA0F70E72265F43B5A3806FF4514F4522CE95F47DF6D66D27975C88694BD93A8B2A0BDA7ADDC9CB8EF91C70486D3237AE23870EE5065FB675A3F00FF4C24F45939E9664DDF746DD28085C88D9DBD9ABBB2A7D5A7B1F39CC30C91D52E86D9407AE06070FC776502985A4603FF5319F4603FE96C57DF7A79D28799C894B3BDA1D5B2ACF0A7C1119CC52B91D04986E6657AF18870F6A76509C15A4D00FF5924F46741E9735FDF8187D28EA8C89BC4BDA8E9B2B309A7C1249CD54F91D96B86E8937AFAAA7004CB6510EE5A5505FF6121F46F49E97B6BDF898FD296AFC8A3D5BDB0FFB2BF20A7C5459CD26891E38A86F1AB7AFFD47003FB65171C5A5B00FF6825F47555E98274DF909DD29CC5C8AAEFBDB610B2C036A7D15B9CDE8691EDB386F6D47A03F57010266521485A6200FF6F33F47C49E98982DF97A8D2A3D0C8B0FBBDBD23B2C952A7D87C9CE4A691F0C886FEF97A0729701C476521755A6902FF7628F4835FE99086DF9EB1D2AAE4C8B70FBDC43AB2CF6AA7E3919CE7C291F8F386051A7A1746701A78652EA45A");
+        var actual = GetBytes(image);
+        Assert.HasCount(expected.Length, actual);
+        Assert.InRange(expected.Zip(actual, (left, right) => Math.Abs(left - right)).Max(), 0, 1);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(16)]
+    public void TruncatedOrMissingPlanesAreInvalid(int workers)
+    {
+        // An RGB page of 300x230 pixels in strips of 7 rows (33 per plane), so that several workers decode its blocks
+        var spec = CreateWorkerPageSpec("deflate-planar-rgb-predictor");
+        var blocks = spec.BuildBlocks();
+        Assert.HasCount(3 * 33, blocks);
+
+        // A plane that stops early, a plane cut in the middle of a block, and a page that stores the first plane only
+        var truncated = Build([.. blocks[..^1], blocks[^1][..(blocks[^1].Length / 2)]]);
+        var expectedTruncation = Assert.Throws<InvalidImageContentException>(() => Image.Load(truncated, WithWorkers(1)));
+        Assert.Contains("block 98", expectedTruncation.Message, StringComparison.Ordinal);
+        Assert.Equal(expectedTruncation.Message, Assert.Throws<InvalidImageContentException>(() => Image.Load(truncated, WithWorkers(workers))).Message);
+
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(Build(blocks[..33]), WithWorkers(workers)));
+        Assert.Throws<InvalidImageContentException>(() => Image.Identify(Build(blocks[..33])));
+
+        // The blocks are decoded one place at a time: the error is the one of the third plane of the first strip, decoded
+        // before the first plane of the second strip
+        var empty = Build([.. blocks.Select((block, i) => i is 1 or 66 ? [] : block)]);
+        var first = Assert.Throws<InvalidImageContentException>(() => Image.Load(empty, WithWorkers(workers)));
+        Assert.Contains("block 66", first.Message, StringComparison.Ordinal);
+
+        // An uncompressed plane shorter than its rows
+        var uncompressed = new TiffPageSpec { Width = 4, Height = 2, SamplesPerPixel = 3, Photometric = 2, PlanarConfiguration = 2, RowsPerStrip = 1, Samples = new byte[24] };
+        var uncompressedBlocks = uncompressed.BuildBlocks();
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(new TiffFileBuilder().AddPage(new TiffPageSpec
+        {
+            Width = 4,
+            Height = 2,
+            SamplesPerPixel = 3,
+            Photometric = 2,
+            PlanarConfiguration = 2,
+            RowsPerStrip = 1,
+            EncodedBlocks = [.. uncompressedBlocks[..^1], uncompressedBlocks[^1][..3]],
+            Samples = [],
+        }).Build()));
+
+        byte[] Build(byte[][] encoded) => new TiffFileBuilder().AddPage(new TiffPageSpec
+        {
+            Width = spec.Width,
+            Height = spec.Height,
+            SamplesPerPixel = spec.SamplesPerPixel,
+            Photometric = spec.Photometric,
+            Compression = spec.Compression,
+            Predictor = spec.Predictor,
+            RowsPerStrip = spec.RowsPerStrip,
+            PlanarConfiguration = 2,
+            EncodedBlocks = encoded,
+            Samples = [],
+        }).Build();
+    }
+
+    [Fact]
+    public void YCbCrPlanesAndUnknownPlanarConfigurationsAreRejected()
+    {
+        // The planes of YCbCr data may each have their own size: they are not read, by Identify either
+        var ycbcr = new TiffFileBuilder().AddPage(new TiffPageSpec
+        {
+            Width = 2,
+            Height = 2,
+            SamplesPerPixel = 3,
+            Photometric = 6,
+            PlanarConfiguration = 2,
+            ExtraFields = { TiffFieldSpec.Shorts(530, [1, 1]) },
+            Samples = new byte[12],
+        }).Build();
+        Assert.Equal("PlanarConfiguration: 2 with YCbCr data", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(ycbcr)).Feature);
+        Assert.Equal("PlanarConfiguration: 2 with YCbCr data", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(ycbcr)).Feature);
+
+        var unknown = new TiffFileBuilder().AddPage(new TiffPageSpec
+        {
+            Width = 2,
+            Height = 1,
+            SamplesPerPixel = 3,
+            Photometric = 2,
+            PlanarConfiguration = 3,
+            Samples = [1, 2, 3, 4, 5, 6],
+        }).Build();
+        Assert.Equal("PlanarConfiguration: 3", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(unknown)).Feature);
+    }
+
+    /// <summary>The pages of <see cref="PlanarPages"/>, with chunky samples or separate planes.</summary>
+    private static TiffPageSpec CreatePlanarPageSpec(string name, bool planar)
+    {
+        // 37x23 pixels: strips of 5 rows end with a strip of 3, and 16x16 tiles leave partial tiles on both edges
+        const int Width = 37;
+        const int Height = 23;
+        var (samplesPerPixel, photometric, extraSamples) = name.Split('-')[0] switch
+        {
+            "gray" => (2, 1, true),
+            "rgb" => (3, 2, false),
+            "rgba" => (4, 2, true),
+            _ => name.StartsWith("cmyk-alpha-", StringComparison.Ordinal) ? (5, 5, true) : (4, 5, false),
+        };
+
+        var bitsPerSample = name.Contains("-32-", StringComparison.Ordinal) ? 32 : name.Contains("-24-", StringComparison.Ordinal) ? 24 : name.Contains("-16-", StringComparison.Ordinal) ? 16 : 8;
+        int? sampleFormat = name.Contains("-float-", StringComparison.Ordinal) || name.Contains("-half-", StringComparison.Ordinal) ? 3 : name.Contains("-signed-", StringComparison.Ordinal) ? 2 : null;
+        int? predictor = name.Contains("-float-predictor", StringComparison.Ordinal) ? 3 : name.Contains("-predictor", StringComparison.Ordinal) ? 2 : null;
+        var compression = name.Contains("-lzw-", StringComparison.Ordinal) ? 5 : name.Contains("-deflate-", StringComparison.Ordinal) ? 8 : name.Contains("-packbits-", StringComparison.Ordinal) ? 32773 : 1;
+        var tiled = name.Contains("-tiles", StringComparison.Ordinal);
+        var samples = new byte[Width * Height * samplesPerPixel * bitsPerSample / 8];
+        Noise(samples, name.Length);
+        return new TiffPageSpec
+        {
+            Width = Width,
+            Height = Height,
+            SamplesPerPixel = samplesPerPixel,
+            BitsPerSample = bitsPerSample,
+            Photometric = photometric,
+            SampleFormat = sampleFormat,
+            ExtraSamples = extraSamples ? [2] : null,
+            Compression = compression,
+            Predictor = predictor,
+            RowsPerStrip = tiled ? int.MaxValue : 5,
+            TileWidth = tiled ? 16 : null,
+            TileLength = tiled ? 16 : null,
+            PlanarConfiguration = planar ? 2 : null,
+            Samples = samples,
+        };
+    }
+
+    /// <summary>
+    /// The 20x18 pixels the planar reference files were written from: RGBA and gray with alpha of 8 bits, RGB of 16 bits,
+    /// and floating-point RGB whose values have few significant bits.
+    /// </summary>
+    private static Image CreatePlanarReferencePixels(PixelFormat format)
+    {
+        const int Width = 20;
+        const int Height = 18;
+        var rgba = new Rgba32[Width * Height];
+        var gray = new La16[Width * Height];
+        var deep = new Rgb48[Width * Height];
+        var floats = new RgbaFloat[Width * Height];
+        for (var y = 0; y < Height; y++)
+        {
+            for (var x = 0; x < Width; x++)
+            {
+                var i = (y * Width) + x;
+                rgba[i] = new Rgba32((byte)((x * 13) + (y * 7)), (byte)(x * y * 3), (byte)(255 - (x * 11)), (byte)((x * 17) + (y * 29)));
+                gray[i] = new La16((byte)((x * 13) + (y * 7)), (byte)((x * 17) + (y * 29)));
+                deep[i] = new Rgb48((ushort)((x * 3001) + (y * 977)), (ushort)(x * y * 389), (ushort)(65535 - (y * 3203)));
+                floats[i] = new RgbaFloat((x - y) * 0.25f, x * y * 0.125f, 1.5f - (x * 0.0625f), 1);
+            }
+        }
+
+        return format switch
+        {
+            PixelFormat.Rgba32 => Image.ImportPixelData<Rgba32>(rgba, Width, Height),
+            PixelFormat.La16 => Image.ImportPixelData<La16>(gray, Width, Height),
+            PixelFormat.Rgb48 => Image.ImportPixelData<Rgb48>(deep, Width, Height),
+            _ => Image.ImportPixelData<RgbaFloat>(floats, Width, Height),
+        };
     }
 
     /// <summary>
@@ -2524,6 +2764,7 @@ public sealed class TiffCodecTests
     public static TheoryData<string> WorkerPages =>
     [
         "lzw-predictor", "lzw-tiles", "lzw-lsb-first", "lzw-float-predictor", "lzw-bilevel", "lzw-planar",
+        "deflate-planar-rgb-predictor", "lzw-planar-tiles-alpha-16bit",
         "deflate-16bit-big-endian", "deflate-tiles-alpha", "deflate-signed", "deflate-ycbcr", "old-deflate-4bit",
         "ccitt-group3", "ccitt-group4", "packbits", "uncompressed-predictor",
     ];
@@ -2644,6 +2885,8 @@ public sealed class TiffCodecTests
     [InlineData("lzw-predictor")]
     [InlineData("deflate-tiles-alpha")]
     [InlineData("ccitt-group4")]
+    [InlineData("deflate-planar-rgb-predictor")]
+    [InlineData("lzw-planar-tiles-alpha-16bit")]
     public void WorkersDecodeWithinTheAllocationLimitOfOneWorker(string name)
     {
         // At the smallest limit one worker decodes the page with, the workers decode it too, with the same pixels; below it,
@@ -2758,6 +3001,8 @@ public sealed class TiffCodecTests
             "lzw-float-predictor" => new TiffPageSpec { Width = Width, Height = Height, SamplesPerPixel = 3, BitsPerSample = 32, SampleFormat = 3, Photometric = 2, Compression = 5, Predictor = 3, RowsPerStrip = 7, Samples = Samples(96, 3) },
             "lzw-bilevel" or "lzw-lsb-first" => new TiffPageSpec { Width = Width, Height = Height, BitsPerSample = 1, Photometric = 0, Compression = 5, RowsPerStrip = 7, Samples = Samples(1, 4) },
             "lzw-planar" => new TiffPageSpec { Width = Width, Height = Height, PlanarConfiguration = 2, Compression = 5, RowsPerStrip = 7, Samples = Samples(8, 5) },
+            "deflate-planar-rgb-predictor" => new TiffPageSpec { Width = Width, Height = Height, SamplesPerPixel = 3, Photometric = 2, PlanarConfiguration = 2, Compression = 8, Predictor = 2, RowsPerStrip = 7, Samples = Samples(24, 12) },
+            "lzw-planar-tiles-alpha-16bit" => new TiffPageSpec { Width = Width, Height = Height, SamplesPerPixel = 4, BitsPerSample = 16, Photometric = 2, ExtraSamples = [2], PlanarConfiguration = 2, Compression = 5, Predictor = 2, TileWidth = 64, TileLength = 48, Samples = Samples(64, 13) },
             "deflate-16bit-big-endian" => new TiffPageSpec { Width = Width, Height = Height, BitsPerSample = 16, Compression = 8, Predictor = 2, RowsPerStrip = 7, Samples = Samples(16, 6) },
             "deflate-tiles-alpha" => new TiffPageSpec { Width = Width, Height = Height, SamplesPerPixel = 4, Photometric = 2, ExtraSamples = [2], Compression = 8, TileWidth = 64, TileLength = 48, Samples = Samples(32, 7) },
             "deflate-signed" => new TiffPageSpec { Width = Width, Height = Height, BitsPerSample = 16, SampleFormat = 2, Compression = 8, Predictor = 2, RowsPerStrip = 7, Samples = Samples(16, 8) },

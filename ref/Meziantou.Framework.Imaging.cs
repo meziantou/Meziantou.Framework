@@ -3119,7 +3119,10 @@ namespace Meziantou.Framework.Imaging.Formats
         public Meziantou.Framework.Imaging.Formats.JpegChromaSubsampling JpegChromaSubsampling { get => throw null; init { } }
         public int JpegQuality { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.TiffPixelLayout PixelLayout { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.TiffPredictor Predictor { get => throw null; init { } }
         public int RowsPerStrip { get => throw null; init { } }
+        public int TileHeight { get => throw null; init { } }
+        public int TileWidth { get => throw null; init { } }
     }
 
     public enum TiffPixelLayout
@@ -3127,6 +3130,12 @@ namespace Meziantou.Framework.Imaging.Formats
         Auto = 0,
         Bilevel = 1,
         Indexed = 2,
+    }
+
+    public enum TiffPredictor
+    {
+        None = 0,
+        HorizontalDifferencing = 1,
     }
 
     public enum WebPCompression

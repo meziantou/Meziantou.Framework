@@ -13,17 +13,24 @@ internal static class DocumentationIdBuilder
         return symbol switch
         {
             PublicApiType type => "T:" + GetTypeDefinitionName(type),
-            PublicApiField field => "F:" + GetTypeDefinitionName(field.DeclaringType!) + "." + EscapeMemberName(field.Name),
-            PublicApiEvent @event => "E:" + GetTypeDefinitionName(@event.DeclaringType!) + "." + EscapeMemberName(@event.Name),
-            PublicApiProperty property => "P:" + GetTypeDefinitionName(property.DeclaringType!) + "." + EscapeMemberName(property.Name) + GetParameterList(property.Parameters),
+            PublicApiField field => "F:" + GetContainerName(field) + "." + EscapeMemberName(field.Name),
+            PublicApiEvent @event => "E:" + GetContainerName(@event) + "." + EscapeMemberName(@event.Name),
+            PublicApiProperty property => "P:" + GetContainerName(property) + "." + EscapeMemberName(property.Name) + GetParameterList(property.Parameters),
             PublicApiMethod method => GetMethodDocumentationId(
-                GetTypeDefinitionName(method.DeclaringType!),
+                GetContainerName(method),
                 method.Name,
                 method.GenericParameters.Length,
                 [.. method.Parameters.Select(GetParameterTypeName)],
                 method.MethodKind == PublicApiMethodKind.Conversion ? GetTypeName(method.ReturnType) : null),
             _ => throw new ArgumentOutOfRangeException(nameof(symbol)),
         };
+    }
+
+    // The members of a C# 14 extension block are declared by the compiler-generated grouping type nested in the static class
+    private static string GetContainerName(PublicApiMember member)
+    {
+        var name = GetTypeDefinitionName(member.DeclaringType!);
+        return member.ExtensionBlock is { } block ? name + "." + block.GroupingTypeMetadataName : name;
     }
 
     public static string GetMethodDocumentationId(string declaringTypeName, string name, int genericParameterCount, ImmutableArray<string> parameterTypes, string? conversionReturnType)

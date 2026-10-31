@@ -193,6 +193,42 @@ public class ConvolutionBenchmarks
     [Workload("1920x1080 Rgba32 motion blur of 15 pixels at 30 degrees")]
     public int MotionBlur15() => Filter(_rgba32, image => image.Convolve(new ConvolutionOptions(ConvolutionKernel.CreateMotionBlur(15, 30))));
 
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 bilateral filter, radius 2")]
+    public int Bilateral2() => Filter(_rgba32, image => image.BilateralFilter(2, 1.5, 0.1));
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 bilateral filter, radius 5")]
+    public int Bilateral5() => Filter(_rgba32, image => image.BilateralFilter(5, 3, 0.1));
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba64 bilateral filter, radius 5")]
+    public int Bilateral5Rgba64() => Filter(_rgba64, image => image.BilateralFilter(5, 3, 0.1));
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 guided filter, radius 4")]
+    public int Guided4() => Filter(_rgba32, image => image.GuidedFilter(4, 0.01));
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 guided filter, radius 32")]
+    public int Guided32() => Filter(_rgba32, image => image.GuidedFilter(32, 0.01));
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 zoom blur of 20% from the center")]
+    public int ZoomBlur() => Filter(_rgba32, image => image.RadialBlur(new RadialBlurOptions(RadialBlurKind.Zoom, new PointD(960, 540), 0.2)));
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 spin blur of 5 degrees around the center")]
+    public int SpinBlur() => Filter(_rgba32, image => image.RadialBlur(new RadialBlurOptions(RadialBlurKind.Spin, new PointD(960, 540), 5)));
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 crop suggestion, 1:1, edges")]
+    public int SuggestCropEdges() => _rgba32.SuggestCrop(1, 1).X;
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 crop suggestion, 1:1, saliency")]
+    public int SuggestCropSaliency() => _rgba32.SuggestCrop(1, 1, new CropSuggestionOptions { Energy = CropEnergy.Saliency }).X;
+
     private static int Filter(Image source, Action<Image> filter)
     {
         using var result = ImageWorkloads.FilterCopy(source, filter);

@@ -6,6 +6,16 @@ internal sealed class IccCurvesStage(IccCurve[] curves) : IccStage
     /// <summary>Gets the curves, one per component.</summary>
     public IccCurve[] Curves => curves;
 
+    public override bool SupportsUnbounded => true;
+
+    public override void ApplyUnbounded(Span<double> values)
+    {
+        for (var i = 0; i < curves.Length; i++)
+        {
+            values[i] = curves[i].EvaluateUnbounded(values[i]);
+        }
+    }
+
     public override void Apply(Span<double> values)
     {
         for (var i = 0; i < curves.Length; i++)

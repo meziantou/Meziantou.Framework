@@ -1,3 +1,4 @@
+using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Heif;
 
@@ -416,5 +417,146 @@ public sealed class HeicDecoderTests
 
         var version = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(Build([0, 0, 0], version: 2), fullScan));
         Assert.Equal((ImageFormat.Heic, "ctts box version"), (version.Format, version.Feature));
+    }
+
+    [Fact]
+    public void ThumbnailsDepthMapsAndMattesAreListedAndDecodedOnDemand()
+    {
+        // A photo with an alpha plane, a thumbnail (thmb), a depth map (auxl with the depth type of HEVC), a portrait
+        // matte of Apple and an auxiliary image of an unknown type, all coded losslessly by the library
+        using var photo = CreatePattern<Rgba32>(64, 48, (x, y) => new Rgba32((byte)(x * 4), (byte)(y * 5), (byte)(x + y), (byte)((x + y) % 7 is 0 ? 0 : 255)));
+        using var thumbnail = CreatePattern<Rgb24>(16, 12, (x, y) => new Rgb24((byte)(x * 16), (byte)(y * 20), 90));
+        using var depth = CreatePattern<Gray8>(32, 24, (x, y) => new Gray8((byte)((x * 8) ^ (y * 10))));
+        using var matte = CreatePattern<Gray8>(32, 24, (x, y) => new Gray8((byte)(x * y)));
+        using var other = CreatePattern<Gray8>(8, 6, (x, y) => new Gray8((byte)(x + (8 * y))));
+        var photoFile = EncodeHeic(photo);
+        var builder = HeifFileBuilder.From(photoFile);
+        var primary = builder.PrimaryItemId!.Value;
+        AddCodedItem(builder, EncodeHeic(thumbnail), 100, auxiliaryType: null);
+        builder.References.Add(("thmb", 100, [primary]));
+        AddCodedItem(builder, EncodeHeic(depth), 101, "urn:mpeg:hevc:2015:auxid:2");
+        builder.References.Add(("auxl", 101, [primary]));
+        AddCodedItem(builder, EncodeHeic(matte), 102, "urn:com:apple:photo:2018:aux:portraiteffectsmatte");
+        builder.References.Add(("auxl", 102, [primary]));
+        AddCodedItem(builder, EncodeHeic(other), 103, "urn:example:auxiliary");
+        builder.References.Add(("auxl", 103, [primary]));
+        var data = builder.Build();
+
+        var images = AuxiliaryImageCollection.Load(data);
+        Assert.Equal(ImageFormat.Heic, images.Format);
+        Assert.Equal(
+            [(AuxiliaryImageKind.Thumbnail, null, new Size(16, 12)), (AuxiliaryImageKind.Depth, "urn:mpeg:hevc:2015:auxid:2", new Size(32, 24)), (AuxiliaryImageKind.Matte, "urn:com:apple:photo:2018:aux:portraiteffectsmatte", new Size(32, 24)), (AuxiliaryImageKind.Other, "urn:example:auxiliary", new Size(8, 6))],
+            images.Select(image => (image.Kind, image.AuxiliaryType, image.Size)));
+        Assert.Null(images.GainMapImage);
+        Assert.Throws<InvalidOperationException>(() => images.DecodeHdr(1));
+
+        using (var decoded = images[0].Decode<Rgb24>())
+            Assert.Equal(GetPixels(thumbnail), GetPixels(decoded));
+
+        using (var decoded = images[1].Decode())
+        {
+            Assert.Equal(PixelFormat.Gray8, decoded.PixelFormat);
+            Assert.Equal(GetPixels(depth), GetPixels(decoded));
+        }
+
+        using (var decoded = images[2].Decode<Gray8>())
+            Assert.Equal(GetPixels(matte), GetPixels(decoded));
+
+        using (var decoded = images[3].Decode<Gray8>())
+            Assert.Equal(GetPixels(other), GetPixels(decoded));
+
+        // The photo decodes as without its other images, with its alpha plane, which is not listed
+        using var expected = Image.Load(photoFile);
+        using var image = Image.Load(data);
+        Assert.Equal(PixelFormat.Rgba32, image.PixelFormat);
+        Assert.Equal(GetPixels(expected), GetPixels(image));
+        Assert.Throws<NotSupportedException>(() => images[1].Decode<DateTime>());
+    }
+
+    [Fact]
+    public void AppleGainMapsAndToneMapItemsGiveTheGainMap()
+    {
+        // The base image and the gain map of an AVIF fixture of the AVIF tests, coded losslessly as HEVC images
+        var avif = File.ReadAllBytes(TestHarness.RepositoryPaths.Root / "tests" / "Meziantou.Framework.Imaging.Avif.Tests" / "GainMaps" / "gainmap-lossless.avif");
+        var avifImages = AuxiliaryImageCollection.Load(avif);
+        using var baseImage = Image.Load(avif);
+        using var gainMap = avifImages.GainMapImage!.Decode();
+        var builder = HeifFileBuilder.From(EncodeHeic(baseImage));
+        var primary = builder.PrimaryItemId!.Value;
+        AddCodedItem(builder, EncodeHeic(gainMap), 50, AuxiliaryImage.AppleGainMapType, hidden: true);
+        builder.References.Add(("auxl", 50, [primary]));
+
+        // An auxiliary image of Apple's gain map type: its parameters are in the maker notes of Apple, which are not read
+        var images = AuxiliaryImageCollection.Load(builder.Build());
+        var listed = Assert.Single(images);
+        Assert.Equal((AuxiliaryImageKind.GainMap, AuxiliaryImage.AppleGainMapType, new Size(64, 48)), (listed.Kind, listed.AuxiliaryType, listed.Size));
+        Assert.Null(listed.GainMapMetadata);
+        Assert.Same(listed, images.GainMapImage);
+        Assert.Throws<UnsupportedImageFeatureException>(() => images.DecodeHdr(1));
+
+        // The same image as the second input of a tone map item (the files of recent Apple devices have both): one image,
+        // with the ISO 21496-1 metadata of the item, whose rendition is the one of the AVIF file
+        var toneMapData = HeifFileBuilder.From(avif).Items.Single(item => item.Type is "tmap").Data;
+        builder.AddItem(51, "tmap", toneMapData, builder.AddProperty(HeifFileBuilder.ImageSize(64, 48)), builder.AddProperty(HeifFileBuilder.ColorNclx(1, 16, 9, fullRange: true)));
+        builder.References.Add(("dimg", 51, [primary, 50]));
+        images = AuxiliaryImageCollection.Load(builder.Build());
+        listed = Assert.Single(images);
+        Assert.Equal(AuxiliaryImageKind.GainMap, listed.Kind);
+        Assert.Equal(AuxiliaryImage.AppleGainMapType, listed.AuxiliaryType);
+        Assert.Equal(avifImages.GainMapImage.GainMapMetadata, listed.GainMapMetadata);
+        using var expected = avifImages.DecodeHdr(2);
+        using var actual = images.DecodeHdr(2);
+        Assert.Equal(expected.Metadata.TransferFunction, actual.Metadata.TransferFunction);
+        Assert.Equal(GetPixels(expected), GetPixels(actual));
+
+        // A tone map item whose first input is not the primary item gives nothing
+        builder.References[^1] = ("dimg", 51, [50, primary]);
+        Assert.Null(Assert.Single(AuxiliaryImageCollection.Load(builder.Build())).GainMapMetadata);
+    }
+
+    private static Image<TPixel> CreatePattern<TPixel>(int width, int height, Func<int, int, TPixel> pixel)
+        where TPixel : unmanaged
+    {
+        var image = new Image<TPixel>(width, height, default);
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                image.Frames[0][x, y] = pixel(x, y);
+            }
+        }
+
+        return image;
+    }
+
+    private static byte[] EncodeHeic(Image image)
+    {
+        using var stream = new MemoryStream();
+        image.Save(stream, new HeicEncoder());
+        return stream.ToArray();
+    }
+
+    private static byte[] GetPixels(Image image)
+    {
+        var bytes = new byte[image.Width * image.Height * PixelFormats.GetBytesPerPixel(image.PixelFormat)];
+        image.Frames[0].CopyPixelBytesTo(bytes);
+        return bytes;
+    }
+
+    // Copies the primary item of a file, with its properties, as an item of another file
+    private static void AddCodedItem(HeifFileBuilder builder, byte[] file, uint id, string? auxiliaryType, bool hidden = false)
+    {
+        var source = HeifFileBuilder.From(file);
+        var item = source.GetItem(source.PrimaryItemId!.Value);
+        var copy = new HeifFileBuilder.Item(id, item.Type, item.Data) { IsHidden = hidden, Storage = item.Storage };
+        foreach (var (index, isEssential) in item.Associations)
+        {
+            copy.Associations.Add((builder.AddProperty(source.Properties[index - 1]), isEssential));
+        }
+
+        if (auxiliaryType is not null)
+            copy.Associations.Add((builder.AddProperty(HeifFileBuilder.FullBox("auxC", 0, 0, System.Text.Encoding.ASCII.GetBytes(auxiliaryType), [0])), false));
+
+        builder.Items.Add(copy);
     }
 }

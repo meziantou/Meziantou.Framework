@@ -6,9 +6,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </summary>
 /// <remarks>
 /// The scratch is rented from the scope of the image before any pixel changes: the keys of the rows a pass keeps (for a
-/// rectangle, three blocks of <c>2 RadiusY + 1</c> filtered rows; for an ellipse, a ring of as many padded rows), of the
-/// rows read above and below the frame (the halos), and of the running extrema of a row; and, for the top-hat
-/// transforms, a copy of the frame.
+/// rectangle, three blocks of <c>2 RadiusY + 1</c> filtered rows; for an ellipse, a ring of as many rows, each filtered by
+/// every distinct half-width of the ellipse), of the rows read above and below the frame (the halos), and of the running
+/// extrema of a row; and, for the top-hat transforms, a copy of the frame.
 /// </remarks>
 internal sealed class MorphologyPlan : IDisposable
 {
@@ -73,8 +73,10 @@ internal sealed class MorphologyPlan : IDisposable
             long halos = 2L * Element.RadiusY;
 
             // A rectangle: the halos and three blocks of filtered rows, a padded row and its running extrema.
-            // An ellipse: a ring of padded rows, the padded halos, the running extrema and the output row.
-            return Element.IsRectangle ? ((halos + (3 * k)) * row) + (3 * padded) : ((k + halos + 2) * padded) + row;
+            // An ellipse: the ring and the halos, each row filtered by every distinct half-width, a padded row and its
+            // running extrema, and the output row.
+            long widths = Element.DistinctHalfWidths.Length;
+            return Element.IsRectangle ? ((halos + (3 * k)) * row) + (3 * padded) : ((k + halos) * widths * row) + (3 * padded) + row;
         }
     }
 

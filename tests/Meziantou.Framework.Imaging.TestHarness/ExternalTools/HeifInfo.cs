@@ -42,6 +42,9 @@ public sealed partial class HeifInfo
     /// <summary>Gets the size of the thumbnail of the primary image, or <see langword="null"/> when it has none.</summary>
     public (int Width, int Height)? Thumbnail { get; private init; }
 
+    /// <summary>Gets a value indicating whether the primary image has a depth image (an auxiliary image of a depth type).</summary>
+    public bool HasDepth { get; private init; }
+
     /// <summary>Gets the kinds of the color profiles of the primary image, as printed: <c>nclx</c>, <c>prof</c>, <c>rICC</c>.</summary>
     public IReadOnlyList<string> ColorProfiles { get; private init; } = [];
 
@@ -138,6 +141,7 @@ public sealed partial class HeifInfo
             MatrixCoefficients = ReadNumber(block, "matrix coefficients"),
             FullRange = ReadNumber(block, "full range flag") is { } fullRange ? fullRange != 0 : null,
             HasAlpha = alpha.Success && alpha.Groups["value"].Value == "yes",
+            HasDepth = ReadText(block, "depth channel") is "yes",
             IsPremultiplied = alpha.Success && alpha.Groups["premultiplied"].Success,
             ExifLength = ReadNumber(text, "Exif"),
             XmpLength = ReadNumber(text, "XMP"),

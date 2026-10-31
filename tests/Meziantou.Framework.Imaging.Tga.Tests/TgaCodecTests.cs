@@ -111,6 +111,70 @@ public sealed class TgaCodecTests
     }
 
     [Fact]
+    public void FifteenAndSixteenBitColorMapEntriesExpandLikeTrueColorSamples()
+    {
+        // X1 R5 G5 B5 entries, little-endian: white, pure red, then pure blue with the top bit clear
+        byte[] map = [0xFF, 0xFF, 0x00, 0x7C, 0x1F, 0x00];
+        var opaque = Tga(3, 1, 8, 1, [0, 1, 2], colorMap: (0, 3, 15), colorMapData: map);
+        Assert.Equal(PixelFormat.Rgb24, Image.Identify(opaque).PixelFormat);
+        Assert.Equal([new(255, 255, 255), new(255, 0, 0), new(0, 0, 255)], Decode(opaque));
+
+        // With 16-bit entries and one declared alpha bit, the top bit of an entry is its alpha
+        var alpha = Tga(3, 1, 8, 1, [0, 1, 2], colorMap: (0, 3, 16), colorMapData: map, descriptor: 0x01);
+        Assert.Equal([new(255, 255, 255, 255), new(255, 0, 0, 0), new(0, 0, 255, 0)], Decode(alpha));
+    }
+
+    [Fact]
+    public void RunLengthPacketsWorkWithEveryPixelLayout()
+    {
+        // Type 9 with 8-bit indexes: a run of three, then a raw packet of one
+        byte[] map = [30, 20, 10, 60, 50, 40];
+        Assert.Equal([new(40, 50, 60), new(40, 50, 60), new(40, 50, 60), new(10, 20, 30)], Decode(Tga(4, 1, 8, 9, [0x82, 1, 0x00, 0], colorMap: (0, 2, 24), colorMapData: map)));
+
+        // Type 10 with 16-bit samples and no alpha bit: the top bit is ignored
+        Assert.Equal([new(255, 0, 0), new(255, 0, 0), new(0, 0, 255)], Decode(Tga(3, 1, 16, 10, [0x81, 0x00, 0xFC, 0x00, 0x1F, 0x00])));
+
+        // Right to left: the packets fill each row from its right end
+        Assert.Equal([new(7, 8, 9), new(1, 2, 3), new(1, 2, 3)], Decode(Tga(3, 1, 24, 10, [0x81, 3, 2, 1, 0x00, 9, 8, 7], descriptor: 0x10)));
+        Assert.Equal([new(10, 20, 30), new(40, 50, 60)], Decode(Tga(2, 1, 8, 1, [1, 0], colorMap: (0, 2, 24), colorMapData: map, descriptor: 0x10)));
+    }
+
+    [Theory]
+    [InlineData(1, 2)] // color-map type 2
+    [InlineData(17, 0xC0)] // reserved descriptor bits
+    [InlineData(5, 0)] // a color map of 0 entries
+    [InlineData(7, 8)] // 8-bit color-map entries
+    [InlineData(3, 0xFF)] // first entry 255 + 65535 entries
+    public void HeadersWithIllegalColorMapFieldsAreNotTga(int offset, byte value)
+    {
+        byte[] map = [30, 20, 10];
+        var data = Tga(1, 1, 8, 1, [0], colorMap: (0, 1, 24), colorMapData: map);
+        Assert.Equal([new(10, 20, 30)], Decode(data));
+        data[offset] = value;
+        if (offset is 3)
+        {
+            data[4] = 0;
+            data[5] = 0xFF;
+            data[6] = 0xFF;
+        }
+
+        Assert.Throws<UnknownImageFormatException>(() => Image.Load(data));
+    }
+
+    // Offset 6 is the high byte of the color-map length: a non-zero low byte makes these bytes start like a cursor directory
+    [Theory]
+    [InlineData(3)]
+    [InlineData(6)]
+    [InlineData(7)]
+    public void TrueColorHeadersWithColorMapFieldsAreNotTga(int offset)
+    {
+        var data = Tga(1, 1, 24, 2, [1, 2, 3]);
+        Assert.Equal([new(3, 2, 1)], Decode(data));
+        data[offset] = 1;
+        Assert.Throws<UnknownImageFormatException>(() => Image.Load(data));
+    }
+
+    [Fact]
     public void RunLengthPacketsMayCrossScanLines()
     {
         // A run of five pixels over a 2x3 image, then a raw packet of one

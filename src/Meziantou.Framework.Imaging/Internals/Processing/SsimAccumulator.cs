@@ -4,7 +4,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
 /// Computes the mean Structural Similarity Index (SSIM) of two images of the same size, fed one row at a time
-/// (<see cref="ImageSimilarity.ComputeSsim"/>).
+/// (<see cref="ImageSimilarity.ComputeSsim(ImageFrame, ImageFrame, CancellationToken)"/>).
 /// </summary>
 /// <remarks>
 /// <para>

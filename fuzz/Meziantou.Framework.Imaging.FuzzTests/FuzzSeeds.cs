@@ -15,14 +15,23 @@ internal static class FuzzSeeds
         if (group is "hevc-intra" or "hevc-inter")
             return GetHevcVectors(group);
 
-        // The corpus has no fixture of the multi-entry formats and of the animated cursors: their seeds are generated
+        // The corpus has no fixture of the multi-entry formats and of the animated cursors: their seeds are generated. The
+        // corpus fixtures of a generated group's format are added too (the OpenEXR files written by OpenEXR: PXR24, B44,
+        // B44A, compressed tiles, mipmaps and ripmaps, which the encoder of the library never writes)
         if (FuzzGeneratedSeeds.Groups.Contains(group, StringComparer.Ordinal))
-            return FuzzGeneratedSeeds.Get(group);
+        {
+            var generated = FuzzGeneratedSeeds.Get(group);
+            generated.AddRange(GoldenCorpus.Default.Fixtures
+                .Where(fixture => fixture.Entry.Format == group)
+                .Select(fixture => new FuzzSeed(fixture.Id, fixture.ReadInput())));
+            return generated;
+        }
 
         var seeds = group is "av1-intra" or "av1-inter"
             ? GoldenCorpus.Default.Av1Vectors
                 .Where(vector => (vector.HasFeature("av1.frame_types=inter") ? "av1-inter" : "av1-intra") == group)
-                .Select(vector => new FuzzSeed(vector.Id, FuzzAvifContainer.Wrap(File.ReadAllBytes(GoldenCorpus.Default.RootDirectory / vector.Input.Path), vector.Frames[0].Width, vector.Frames[0].Height, vector.BitDepth, vector.Subsampling)))
+                .Select(vector => (vector.Id, Stream: new FuzzAv1Stream(File.ReadAllBytes(GoldenCorpus.Default.RootDirectory / vector.Input.Path), vector.Frames[0].Width, vector.Frames[0].Height, vector.BitDepth, vector.Subsampling)))
+                .Select(item => new FuzzSeed(item.Id, FuzzAvifContainer.Wrap(item.Stream.Data, item.Stream.Width, item.Stream.Height, item.Stream.BitDepth, item.Stream.Subsampling), Av1Stream: item.Stream))
                 .ToList()
             : GoldenCorpus.Default.Fixtures
                 .Select(fixture => (Fixture: fixture, Data: fixture.ReadInput()))

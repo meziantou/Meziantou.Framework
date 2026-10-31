@@ -131,6 +131,12 @@ internal sealed class JpegReconstruction
             scales[i] = quantization[i];
         }
 
+        if (component.IsReduced)
+        {
+            TransformScaledMcuRow(component, mcuRow, quantization, block, scales);
+            return;
+        }
+
         var stride = component.Stride;
         var precision = component.Precision;
         for (var blockRow = mcuRow * component.VerticalSampling; blockRow < (mcuRow + 1) * component.VerticalSampling; blockRow++)
@@ -166,6 +172,32 @@ internal sealed class JpegReconstruction
                 {
                     JpegIdct.Transform(block, component.Samples.AsSpan(offset), stride, JpegIdct.IsSparse(coefficients));
                 }
+            }
+        }
+    }
+
+    /// <summary>
+    /// <see cref="TransformMcuRow"/> for a frame decoded at a reduced scale: the same dequantization and the same DC-only
+    /// rule as the blocks transformed while they are decoded (<see cref="JpegScanDecoder.TransformScaledBlock"/>).
+    /// </summary>
+    private static void TransformScaledMcuRow(JpegFrameComponent component, int mcuRow, ushort[] quantization, double[] block, double[] scales)
+    {
+        // A block of one sample is its DC coefficient: the AC coefficients are not read
+        var reduced = component.BlockWidth * component.BlockHeight > 1;
+        for (var blockRow = mcuRow * component.VerticalSampling; blockRow < (mcuRow + 1) * component.VerticalSampling; blockRow++)
+        {
+            var coefficientRow = blockRow % component.CoefficientBlockRows;
+            for (var blockColumn = 0; blockColumn < component.CoefficientBlocksPerLine; blockColumn++)
+            {
+                var coefficients = component.GetCoefficients(coefficientRow, blockColumn);
+                var offset = component.GetBlockOffset(blockRow, blockColumn);
+                var hasAc = reduced && coefficients[1..].IndexOfAnyExcept((short)0) >= 0;
+                if (hasAc)
+                {
+                    JpegIdct.Dequantize(coefficients, scales, block);
+                }
+
+                JpegScanDecoder.TransformScaledBlock(component, offset, block, (long)coefficients[0] * quantization[0], hasAc, hasAc && JpegIdct.IsSparse(coefficients));
             }
         }
     }

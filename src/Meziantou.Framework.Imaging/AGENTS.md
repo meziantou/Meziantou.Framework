@@ -98,7 +98,9 @@ rendering also changes the images of the pages (`DocumentationImageTests`).
 - Processing: `Rgb48` has kernels of its own. The filtering kernels and the `Pixelate`/`OilPaint`/`Flatten` effects run
   `La16`, `La32` and `A8` through `ProcessingBridge` (an `Rgba32`/`Rgba64` copy of the frame, `Image.KernelPixelFormat`
   for the plans and scratch sizes; `Flatten` rejects `A8`, which cannot hold the flattened colors), and so do the
-  morphological filters (`MorphologyFilter`; `TopHat` and `BlackHat` reject `A8`, whose alpha they keep). The tone
+  morphological filters (`MorphologyFilter`; `TopHat` and `BlackHat` reject `A8`, whose alpha they keep), and the
+  kernels of `WorkingFrameCopy` (bilateral, guided, radial blur; the guided filter of a gray format guides by the gray
+  level, `GuidedFilterer`'s `grayGuide`, so that `La16` gives the result of `Gray8`). The tone
   curves and lookup tables (`ColorLookup`) read every integer format natively through `ToneSamples`, and drawing
   composites them through `DrawingKernels.CompositeBridged`, their paints holding the gray level in the three colors. A
   new per-frame operation must handle them natively, go through the bridge, or reject them before any allocation.
@@ -609,6 +611,18 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   9.0.2 misreads the category 16.
   Apple ImageIO does not read lossless files reliably. The process with arithmetic coding (SOF11) is not decoded: no
   tool at hand writes or reads it.
+- **Scaled JPEG decoding** (`ImageDecodeRequest.ScaleDenominator`/`TargetSize`, `JpegFrameComponent.SetGeometry`,
+  `JpegIdct.TransformReduced`). A codec opts in with `ImageCodec.SupportsScaledDecoding`; the drivers reject an exact scale
+  for the others before decoding (`ImageDecodeRequest.For`), and a decoder picks its denominator with
+  `GetScaleDenominator`. A JPEG block gives the means of the samples of its full inverse DCT (a box filter from all 64
+  coefficients, not the transform of the lowest frequencies, which rings and was 10 dB further from djpeg); a subsampled
+  component is reduced by `s / gcd(s, ratio)` only, per direction, and upsampled by what remains. The full-scale path
+  must not move: a component that is not reduced goes through the unchanged 8x8 code, and the full decodes of the
+  fixtures and of photos were hashed against `main` (identical). The test contract is `JpegTestImage.GetExpectedPixels(s)`
+  (the mean of the exact samples, two-sided ambiguity check: reduced samples are often exact halves); djpeg
+  `-scale 1/n` agrees within 3 units except on 4:2:2, where djpeg upsamples its chrominance and the library is closer to
+  the box filter of the full decode. The entropy decoding bounds the gain in time (about half of a full decode of a
+  4:2:0 photo at 1/8).
 - **JPEG 2000** (`Internals/Codecs/Jpeg2000`). Written from Rec. ITU-T T.800 (Part 1) and T.814 (Part 15, the
   high-throughput block coder, `Jpeg2000/Ht`); OpenJPEG, OpenJPH and FFmpeg are test oracles only. The structure parser
   reads the boxes of a file and gives the codestream to `Jpeg2000CodestreamWalker`, which asks for whole marker
@@ -782,6 +796,30 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   exact gamut for matrix-based and CICP destinations, round trip through the colorimetric tables for table-based ones.
   `Clip` adds no stage, so the default conversions are unchanged bit for bit. The HDR clipping policy is separate
   (`HdrToneMapStage`).
+- `IccColorTransformOptions.ClipFloatingPointSamples = false` evaluates `IccStage.ApplyUnbounded` instead of `Apply` for
+  the floating-point samples of `IccColorTransform`: tone curves extended beyond [0, 1] (`IccCurve.EvaluateUnbounded`,
+  `IccInverseCurve.EvaluateUnbounded`), matrices as they are, clipping stages skipped. A stage that has a range (a lookup
+  table, a gamut mapping) keeps `SupportsUnbounded = false`, which makes `Create` refuse the option; a new stage without
+  range overrides both members.
+
+## Auxiliary images and gain maps
+
+`AuxiliaryImageCollection` lists the images a file stores next to its primary image (`Internals/GainMaps`): HEIF
+thumbnails, auxiliary images and `tmap` gain maps (`HeifAuxiliaryScanner`), the images of a JPEG Multi-Picture Format
+index (`JpegAuxiliaryScanner`). A HEIF item is decoded by the decoder of the file with `ImageDecodeRequest.HeifItemId`,
+which makes `HeifStructureParser` present that item instead of the primary item or the sequence. Ordinary decoding never
+reads these images.
+
+- The gain map formula and the `hdrgm` XMP properties come from the public Adobe "Gain map" and Android Ultra HDR
+  specifications; the binary layout of ISO 21496-1 (the standard itself is not public) was checked field by field
+  against the files of libultrahdr and libavif, never read from their source. A newer minimum version or unknown flags
+  make the metadata unknown; malformed metadata is kept as the error of `DecodeHdr`, and the primary image always decodes.
+- Oracles (`tools/Meziantou.Framework.Imaging.GainMapFixtures`, a Docker image): libultrahdr 1.4.0 `ultrahdr_app -m 1`
+  decodes Ultra HDR files to linear half floats in the gamut of the HDR intent (from the ICC profile of the gain map
+  image, not the base image); libavif 1.3.0 `avifgainmaputil printmetadata` prints the red values for all three channels
+  (read the `tmap` item instead), and `avifgainmaputil tonemap` is not an oracle (its output differs from the formula by
+  several percent): the AVIF references are the formula evaluated with numpy on the planes libavif decodes. Both tools
+  upsample a smaller gain map with their own filter, which Ultra HDR leaves to the reader: compare with a tolerance.
 
 ## Drawing
 
@@ -1231,7 +1269,10 @@ thin public types over its `FontFace`.
   `ILanes`: with AVX2, blocks at least 8 wide run the column pass 8 columns at a time in `Vector256`.
 - `Vector256` (AVX2) and `Vector512` (AVX-512) paths never run on Arm64. Test them on an x64 machine three ways: by
   default, with `DOTNET_EnableAVX512=0` (`DOTNET_EnableAVX512F=0` leaves `Vector512` accelerated on .NET 11) and with
-  `DOTNET_EnableAVX=0`, and check with a deliberately broken path that each setting runs the path it is meant to.
+  `DOTNET_EnableAVX2=0` (it turns off AVX2, FMA and `Vector256` together; `DOTNET_EnableAVX=0` changes nothing), and check
+  with a deliberately broken path that each setting runs the path it is meant to. `VectorizedKernelFallbackTests` runs
+  `VectorizedKernelTests` again in a child process with each of these settings and `DOTNET_EnableHWIntrinsic=0` on x64
+  (the CI legs included), so a kernel tested there has its narrower paths and its scalar fallback tested too.
 - A function that encodes a value with `Math.Pow` and rounds it to an 8-bit sample is replaced by its thresholds
   (`QuantizationThresholds`, built lazily from the scalar function and compared with it around every threshold): the
   linear-light `Store` of `WorkingSamples` and the linear-light compositing of drawing use it, and so do the 8-bit ICC
@@ -1248,8 +1289,10 @@ thin public types over its `FontFace`.
   16-bit conversion is still evaluated: its inputs are the doubles that come out of a matrix, not 65,536 values.
 - Default parallelism is one worker (`ImageConfiguration.MaxDegreeOfParallelism`). Only `Resize`, the transformations,
   `Convolve`, the blurs (`GaussianBlur`, `BoxBlur`, `MedianBlur`, and `PercentileFilter`, which shares the median's
-  plan), `Sharpen`, `DetectEdges`, the `Pixelate`, `OilPaint` and
-  `Flatten` effects (`EffectScratch`), the `ImageSimilarity` metrics (SSIM, PSNR, SSIMULACRA 2, Butteraugli) and the
+  plan), `Sharpen`, `DetectEdges`, `BilateralFilter` and `RadialBlur` (every pixel computed alone from a
+  `WorkingFrameCopy`), the `Pixelate`, `OilPaint` and
+  `Flatten` effects (`EffectScratch`), the `ImageSimilarity` metrics (SSIM, PSNR, SSIMULACRA 2, Butteraugli, at every
+  `SimilarityPrecision`) and the
   codec work listed below are parallel, and their result must not depend on the worker count (`ParallelConvolutionTests`,
   `ImageSimilarityTests.Metrics_DoNotDependOnTheWorkerCount`: a frame needs 65,536 pixels to get several workers). Split
   rows with `RowBands`: a worker writes only its own rows, and reads the rows of its neighbors from copies taken before any

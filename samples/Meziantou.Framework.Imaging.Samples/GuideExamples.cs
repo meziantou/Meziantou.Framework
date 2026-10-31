@@ -11,7 +11,10 @@ internal static class GuideExamples
     #region Imaging_CreateThumbnail
     public static void CreateThumbnail(string inputPath, string outputPath)
     {
-        using var image = Image.Load(inputPath);
+        // A large JPEG photo is decoded at 1/2, 1/4 or 1/8 of its size, as long as it stays at least as large as the box:
+        // much faster than decoding every pixel to throw most of them away. The box is square, so the orientation of the
+        // photo does not matter. Other formats are decoded at full size
+        using var image = Image.Load(inputPath, new ImageDecodeOptions { TargetSize = new Size(200, 200) });
 
         // A camera stores the rotation of the photo as metadata: turn the pixels upright before resizing
         image.AutoOrient();

@@ -193,10 +193,17 @@ public sealed class HistogramTests
         Assert.Equal(new Rgba32(244, 254, 255, 255), image.Frames[0][1, 0]);
     }
 
-    [Fact]
-    public void LuminanceEqualizationOfGrayColorsIsTheEqualizationOfTheGrayImage()
+    [Theory]
+    [InlineData(HistogramEqualizationMode.Global, HistogramColorMode.Luminance)]
+    [InlineData(HistogramEqualizationMode.Global, HistogramColorMode.PerChannel)]
+    [InlineData(HistogramEqualizationMode.Adaptive, HistogramColorMode.Luminance)]
+    [InlineData(HistogramEqualizationMode.Adaptive, HistogramColorMode.PerChannel)]
+    public void LuminanceEqualizationOfGrayColorsIsTheEqualizationOfTheGrayImage(HistogramEqualizationMode mode, HistogramColorMode colorMode)
     {
+        // The luma of a gray color is its level, so its change is the change of the gray level in both color modes, at 8
+        // and 16 bits
         using var gray = CreatePattern8();
+        using var gray16 = CreatePattern16();
         using var colors = new Image<Bgra32>(PatternWidth, PatternHeight);
         using var wide = new Image<Rgba64>(PatternWidth, PatternHeight);
         for (var y = 0; y < PatternHeight; y++)
@@ -205,11 +212,15 @@ public sealed class HistogramTests
             {
                 var value = PatternValue(x, y);
                 colors.Frames[0][x, y] = new Bgra32(value, value, value, 255);
+                var value16 = gray16.Frames[0][x, y].Value;
+                wide.Frames[0][x, y] = new Rgba64(value16, value16, value16, 65535);
             }
         }
 
-        gray.Equalize(new HistogramEqualizationOptions { Mode = HistogramEqualizationMode.Adaptive, ClipLimit = 3, TileCountX = 4, TileCountY = 3 }, Ct);
-        colors.Equalize(new HistogramEqualizationOptions { Mode = HistogramEqualizationMode.Adaptive, ClipLimit = 3, TileCountX = 4, TileCountY = 3, ColorMode = HistogramColorMode.PerChannel }, Ct);
+        gray.Equalize(new HistogramEqualizationOptions { Mode = mode, ClipLimit = 3, TileCountX = 4, TileCountY = 3 }, Ct);
+        gray16.Equalize(new HistogramEqualizationOptions { Mode = mode, ClipLimit = 3, TileCountX = 4, TileCountY = 3 }, Ct);
+        colors.Equalize(new HistogramEqualizationOptions { Mode = mode, ClipLimit = 3, TileCountX = 4, TileCountY = 3, ColorMode = colorMode }, Ct);
+        wide.Equalize(new HistogramEqualizationOptions { Mode = mode, ClipLimit = 3, TileCountX = 4, TileCountY = 3, ColorMode = colorMode }, Ct);
         var expected = ReadGray8(gray.Frames[0]);
         for (var y = 0; y < PatternHeight; y++)
         {
@@ -217,6 +228,8 @@ public sealed class HistogramTests
             {
                 var value = expected[(y * PatternWidth) + x];
                 Assert.Equal(new Bgra32(value, value, value, 255), colors.Frames[0][x, y]);
+                var value16 = gray16.Frames[0][x, y].Value;
+                Assert.Equal(new Rgba64(value16, value16, value16, 65535), wide.Frames[0][x, y]);
             }
         }
     }

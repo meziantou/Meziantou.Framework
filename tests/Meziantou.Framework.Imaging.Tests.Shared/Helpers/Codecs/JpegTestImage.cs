@@ -94,8 +94,9 @@ internal sealed class JpegTestImage
     /// <param name="largeQuantization">Quantization values up to 1000 (16-bit tables).</param>
     /// <param name="inks">How the samples code inks (4 components).</param>
     /// <param name="precision">The number of bits of a sample: 8 or 12.</param>
+    /// <param name="scaled">Whether the blocks are also drawn again when a reduced transform (scaled decoding) has a sample near a rounding boundary.</param>
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
-    public static JpegTestImage CreateRandom(int width, int height, (int H, int V)[] sampling, int seed, bool rgb = false, double acDensity = 0.35, double dcOnlyProbability = 0.2, bool largeQuantization = false, JpegTestInkCoding inks = JpegTestInkCoding.None, int precision = 8)
+    public static JpegTestImage CreateRandom(int width, int height, (int H, int V)[] sampling, int seed, bool rgb = false, double acDensity = 0.35, double dcOnlyProbability = 0.2, bool largeQuantization = false, JpegTestInkCoding inks = JpegTestInkCoding.None, int precision = 8, bool scaled = false)
     {
         var random = new Random(seed);
         var tables = new ushort[2][];
@@ -119,7 +120,7 @@ internal sealed class JpegTestImage
                 {
                     block = CreateBlock(random, quantization, acDensity, dcOnlyProbability, precision);
                 }
-                while (!TryTransform(block, quantization, precision, out _));
+                while (!TryTransform(block, quantization, precision, out _) || (scaled && !IsUnambiguousWhenReduced(block, quantization, precision)));
 
                 component.Blocks[b] = block;
             }
@@ -178,6 +179,107 @@ internal sealed class JpegTestImage
             return true;
         }
 
+        var exact = GetExactSamples(coefficients, quantization);
+        for (var i = 0; i < 64; i++)
+        {
+            var shifted = exact[i] + center;
+            var rounded = Math.Floor(shifted + 0.5);
+            if (Math.Abs(shifted + 0.5 - rounded) < 1e-6 && rounded > 0 && rounded <= max)
+                return false;
+
+            samples[i] = (int)Math.Clamp(rounded, 0, max);
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Gets the samples of a block decoded at a reduced scale (the contract of scaled decoding): each of the
+    /// <paramref name="width"/> by <paramref name="height"/> samples is the mean of the <c>8 / width</c> by <c>8 / height</c>
+    /// samples of the exact inverse DCT that it replaces (T.81 A.3.3, before the level shift and the rounding), level
+    /// shifted, rounded (ties upward) and clamped. A block without AC coefficients, and a block of one sample, is
+    /// <c>DC * Q / 8</c> exactly.
+    /// </summary>
+    /// <param name="coefficients">The quantized coefficients, natural order.</param>
+    /// <param name="quantization">The quantization table, natural order.</param>
+    /// <param name="precision">The number of bits of a sample.</param>
+    /// <param name="width">The number of samples of a row of the block: 1, 2, 4 or 8.</param>
+    /// <param name="height">The number of rows of the block: 1, 2, 4 or 8.</param>
+    /// <param name="samples">The <c>width * height</c> samples, row by row.</param>
+    /// <returns><see langword="false"/> if a sample is within 1e-6 of a rounding boundary, on either side.</returns>
+    public static bool TryTransform(int[] coefficients, ushort[] quantization, int precision, int width, int height, out int[] samples)
+    {
+        if (width == 8 && height == 8)
+            return TryTransform(coefficients, quantization, precision, out samples);
+
+        var center = 1 << (precision - 1);
+        var max = (1 << precision) - 1;
+        samples = new int[width * height];
+        if (width * height == 1 || coefficients.AsSpan(1).IndexOfAnyExcept(0) < 0)
+        {
+            var value = Math.Clamp((int)Math.Floor((coefficients[0] * (double)quantization[0] / 8) + 0.5) + center, 0, max);
+            samples.AsSpan().Fill(value);
+            return true;
+        }
+
+        return TryReduce(GetExactSamples(coefficients, quantization), center, max, width, height, samples);
+    }
+
+    /// <summary>Gets a value indicating whether every reduced transform of a block (<see cref="TryTransform(int[], ushort[], int, int, int, out int[])"/>) is far from a rounding boundary.</summary>
+    private static bool IsUnambiguousWhenReduced(int[] coefficients, ushort[] quantization, int precision)
+    {
+        if (coefficients.AsSpan(1).IndexOfAnyExcept(0) < 0)
+            return true;
+
+        var exact = GetExactSamples(coefficients, quantization);
+        var center = 1 << (precision - 1);
+        var max = (1 << precision) - 1;
+        var samples = new int[64];
+        foreach (var width in (int[])[1, 2, 4, 8])
+        {
+            foreach (var height in (int[])[1, 2, 4, 8])
+            {
+                if (width * height is not (1 or 64) && !TryReduce(exact, center, max, width, height, samples))
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    private static bool TryReduce(double[] exact, int center, int max, int width, int height, int[] samples)
+    {
+        var groupWidth = 8 / width;
+        var groupHeight = 8 / height;
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                var sum = 0.0;
+                for (var sy = 0; sy < groupHeight; sy++)
+                {
+                    for (var sx = 0; sx < groupWidth; sx++)
+                    {
+                        sum += exact[(((y * groupHeight) + sy) * 8) + (x * groupWidth) + sx];
+                    }
+                }
+
+                var shifted = (sum / (groupWidth * groupHeight)) + center;
+                var rounded = Math.Floor(shifted + 0.5);
+                if ((Math.Abs(shifted + 0.5 - rounded) < 1e-6 && rounded > 0 && rounded <= max) || (Math.Abs(shifted + 0.5 - rounded - 1) < 1e-6 && rounded >= 0 && rounded < max))
+                    return false;
+
+                samples[(y * width) + x] = (int)Math.Clamp(rounded, 0, max);
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>The 64 samples of the direct two-dimensional inverse DCT (T.81 A.3.3), before the level shift.</summary>
+    private static double[] GetExactSamples(int[] coefficients, ushort[] quantization)
+    {
+        var samples = new double[64];
         for (var y = 0; y < 8; y++)
         {
             for (var x = 0; x < 8; x++)
@@ -195,16 +297,11 @@ internal sealed class JpegTestImage
                     }
                 }
 
-                var shifted = (sum / 4) + center;
-                var rounded = Math.Floor(shifted + 0.5);
-                if (Math.Abs(shifted + 0.5 - rounded) < 1e-6 && rounded > 0 && rounded <= max)
-                    return false;
-
-                samples[(y * 8) + x] = (int)Math.Clamp(rounded, 0, max);
+                samples[(y * 8) + x] = sum / 4;
             }
         }
 
-        return true;
+        return samples;
 
         static double Scale(int k) => k == 0 ? 1 / Math.Sqrt(2) : 1;
     }
@@ -244,23 +341,34 @@ internal sealed class JpegTestImage
     }
 
     /// <summary>Gets the expected samples of a component (its real width and height), at the precision of the image.</summary>
-    public int[] GetComponentValues(int index)
+    public int[] GetComponentValues(int index) => GetScaledComponentValues(index, scaleDenominator: 1);
+
+    /// <summary>
+    /// Gets the expected samples of a component decoded at a reduced scale: each block gives fewer samples in the
+    /// directions in which the component is reduced (<see cref="GetScaledGeometry"/>).
+    /// </summary>
+    /// <param name="index">The index of the component.</param>
+    /// <param name="scaleDenominator">The scale denominator: 1, 2, 4 or 8.</param>
+    public int[] GetScaledComponentValues(int index, int scaleDenominator)
     {
         var component = Components[index];
         var quantization = QuantizationTables[component.QuantizationTable];
-        var plane = new int[component.Width * component.Height];
-        for (var by = 0; by * 8 < component.Height; by++)
+        var geometry = GetScaledGeometry(component, scaleDenominator);
+        var (blockWidth, blockHeight) = (8 / geometry.ReductionX, 8 / geometry.ReductionY);
+        var (width, height) = (geometry.Width, geometry.Height);
+        var plane = new int[width * height];
+        for (var by = 0; by * blockHeight < height; by++)
         {
-            for (var bx = 0; bx * 8 < component.Width; bx++)
+            for (var bx = 0; bx * blockWidth < width; bx++)
             {
-                if (!TryTransform(component.Blocks[(by * component.BlocksX) + bx], quantization, Precision, out var samples))
+                if (!TryTransform(component.Blocks[(by * component.BlocksX) + bx], quantization, Precision, blockWidth, blockHeight, out var samples))
                     throw new InvalidOperationException("Ambiguous block.");
 
-                for (var y = 0; y < 8 && (by * 8) + y < component.Height; y++)
+                for (var y = 0; y < blockHeight && (by * blockHeight) + y < height; y++)
                 {
-                    for (var x = 0; x < 8 && (bx * 8) + x < component.Width; x++)
+                    for (var x = 0; x < blockWidth && (bx * blockWidth) + x < width; x++)
                     {
-                        plane[(((by * 8) + y) * component.Width) + (bx * 8) + x] = samples[(y * 8) + x];
+                        plane[(((by * blockHeight) + y) * width) + (bx * blockWidth) + x] = samples[(y * blockWidth) + x];
                     }
                 }
             }
@@ -270,17 +378,37 @@ internal sealed class JpegTestImage
     }
 
     /// <summary>
+    /// Gets the geometry of a component decoded at a reduced scale <c>s</c>: a component upsampled by <c>r</c> is reduced
+    /// by <c>s / gcd(s, r)</c> and then upsampled by <c>r / gcd(s, r)</c>, in each direction, so that its samples cover the
+    /// pixels of the scaled image.
+    /// </summary>
+    private (int ReductionX, int ReductionY, int Width, int Height, int RatioX, int RatioY) GetScaledGeometry(Component component, int scaleDenominator)
+    {
+        var ratioX = MaxHorizontal / component.H;
+        var ratioY = MaxVertical / component.V;
+        var sharedX = (int)System.Numerics.BigInteger.GreatestCommonDivisor(scaleDenominator, ratioX);
+        var sharedY = (int)System.Numerics.BigInteger.GreatestCommonDivisor(scaleDenominator, ratioY);
+        var reductionX = scaleDenominator / sharedX;
+        var reductionY = scaleDenominator / sharedY;
+        return (reductionX, reductionY, (component.Width + reductionX - 1) / reductionX, (component.Height + reductionY - 1) / reductionY, ratioX / sharedX, ratioY / sharedY);
+    }
+
+    /// <summary>
     /// Gets the expected ink amounts of a four-component image of 8-bit samples: interleaved cyan, magenta, yellow and
     /// black, where 0 is no ink. The stored samples are complements (255 is no ink). YCCK (Adobe Technical Note #5116)
     /// complements the first three stored samples again before coding them like RGB, so its color conversion gives their
     /// ink amounts directly.
     /// </summary>
-    public byte[] GetExpectedInks()
+    public byte[] GetExpectedInks() => GetExpectedInks(scaleDenominator: 1);
+
+    /// <summary>Gets the expected ink amounts of a four-component image of 8-bit samples decoded at a reduced scale (<see cref="GetExpectedInks()"/>).</summary>
+    /// <param name="scaleDenominator">The scale denominator: 1, 2, 4 or 8.</param>
+    public byte[] GetExpectedInks(int scaleDenominator)
     {
         if (Precision != 8)
             throw new InvalidOperationException("The amounts are not bytes: use GetExpectedDeepInks.");
 
-        return [.. GetInkAmounts().Select(value => (byte)value)];
+        return [.. GetInkAmounts(scaleDenominator).Select(value => (byte)value)];
     }
 
     /// <summary>Gets the expected ink amounts of a four-component image of 12-bit samples, scaled to 16 bits like the samples of the decoded pixels.</summary>
@@ -289,7 +417,7 @@ internal sealed class JpegTestImage
         if (Precision == 8)
             throw new InvalidOperationException("The amounts are bytes: use GetExpectedInks.");
 
-        return [.. GetInkAmounts().Select(ScaleToSixteenBits)];
+        return [.. GetInkAmounts(scaleDenominator: 1).Select(ScaleToSixteenBits)];
     }
 
     /// <summary>
@@ -298,28 +426,39 @@ internal sealed class JpegTestImage
     /// <see cref="PixelFormat.Rgb48"/> pixels of <see cref="PixelFormat"/> with an opaque alpha) for 12-bit samples, each
     /// scaled to 16 bits.
     /// </summary>
-    public byte[] GetExpectedPixels()
+    public byte[] GetExpectedPixels() => GetExpectedPixels(scaleDenominator: 1);
+
+    /// <summary>
+    /// Gets the expected decoded pixels of a decode at a reduced scale (<see cref="ImageDecodeOptions.ScaleDenominator"/>):
+    /// <c>ceil(Width / s)</c> by <c>ceil(Height / s)</c> pixels, from the reduced inverse DCT of each block
+    /// (<see cref="TryTransform(int[], ushort[], int, int, int, out int[])"/>, a subsampled component being reduced less)
+    /// and the upsampling and color conversion contract of <see cref="GetExpectedPixels()"/> on the reduced planes.
+    /// </summary>
+    /// <param name="scaleDenominator">The scale denominator: 1, 2, 4 or 8.</param>
+    public byte[] GetExpectedPixels(int scaleDenominator)
     {
         if (Inks != JpegTestInkCoding.None)
             throw new InvalidOperationException("The pixels of inks depend on a color conversion: use GetExpectedInks.");
 
-        var planes = Enumerable.Range(0, Components.Length).Select(GetComponentValues).ToArray();
+        var planes = Enumerable.Range(0, Components.Length).Select(index => GetScaledComponentValues(index, scaleDenominator)).ToArray();
         var channels = Components.Length;
-        var values = new int[Width * Height * channels];
-        for (var y = 0; y < Height; y++)
+        var width = (Width + scaleDenominator - 1) / scaleDenominator;
+        var height = (Height + scaleDenominator - 1) / scaleDenominator;
+        var values = new int[width * height * channels];
+        for (var y = 0; y < height; y++)
         {
-            for (var x = 0; x < Width; x++)
+            for (var x = 0; x < width; x++)
             {
-                var offset = ((y * Width) + x) * channels;
+                var offset = ((y * width) + x) * channels;
                 if (channels == 1)
                 {
-                    values[offset] = planes[0][(y * Width) + x];
+                    values[offset] = planes[0][(y * width) + x];
                     continue;
                 }
 
-                var c0 = Upsample(Components[0], planes[0], x, y);
-                var c1 = Upsample(Components[1], planes[1], x, y);
-                var c2 = Upsample(Components[2], planes[2], x, y);
+                var c0 = Upsample(Components[0], planes[0], x, y, scaleDenominator);
+                var c1 = Upsample(Components[1], planes[1], x, y, scaleDenominator);
+                var c2 = Upsample(Components[2], planes[2], x, y, scaleDenominator);
                 (values[offset], values[offset + 1], values[offset + 2]) = Rgb ? (c0, c1, c2) : ConvertYCbCr(c0, c1, c2);
             }
         }
@@ -328,8 +467,8 @@ internal sealed class JpegTestImage
             return [.. values.Select(value => (byte)value)];
 
         // Gray16, or Rgba64 with an opaque alpha sample
-        var samples = new ushort[Width * Height * (channels == 1 ? 1 : 4)];
-        for (var pixel = 0; pixel < Width * Height; pixel++)
+        var samples = new ushort[width * height * (channels == 1 ? 1 : 4)];
+        for (var pixel = 0; pixel < width * height; pixel++)
         {
             if (channels == 1)
             {
@@ -349,23 +488,25 @@ internal sealed class JpegTestImage
     /// <summary>The nearest 16-bit value of the same fraction of the range.</summary>
     private ushort ScaleToSixteenBits(int sample) => (ushort)Math.Floor((sample * 65535.0 / MaxSample) + 0.5);
 
-    private int[] GetInkAmounts()
+    private int[] GetInkAmounts(int scaleDenominator)
     {
         if (Inks == JpegTestInkCoding.None)
             throw new InvalidOperationException("The image has no ink.");
 
         var max = MaxSample;
-        var planes = Enumerable.Range(0, Components.Length).Select(GetComponentValues).ToArray();
-        var inks = new int[Width * Height * 4];
-        for (var y = 0; y < Height; y++)
+        var planes = Enumerable.Range(0, Components.Length).Select(index => GetScaledComponentValues(index, scaleDenominator)).ToArray();
+        var width = (Width + scaleDenominator - 1) / scaleDenominator;
+        var height = (Height + scaleDenominator - 1) / scaleDenominator;
+        var inks = new int[width * height * 4];
+        for (var y = 0; y < height; y++)
         {
-            for (var x = 0; x < Width; x++)
+            for (var x = 0; x < width; x++)
             {
-                var offset = ((y * Width) + x) * 4;
-                var c0 = Upsample(Components[0], planes[0], x, y);
-                var c1 = Upsample(Components[1], planes[1], x, y);
-                var c2 = Upsample(Components[2], planes[2], x, y);
-                var c3 = Upsample(Components[3], planes[3], x, y);
+                var offset = ((y * width) + x) * 4;
+                var c0 = Upsample(Components[0], planes[0], x, y, scaleDenominator);
+                var c1 = Upsample(Components[1], planes[1], x, y, scaleDenominator);
+                var c2 = Upsample(Components[2], planes[2], x, y, scaleDenominator);
+                var c3 = Upsample(Components[3], planes[3], x, y, scaleDenominator);
                 (inks[offset], inks[offset + 1], inks[offset + 2]) = Inks == JpegTestInkCoding.Ycck ? ConvertYCbCr(c0, c1, c2) : (max - c0, max - c1, max - c2);
                 inks[offset + 3] = max - c3;
             }
@@ -670,8 +811,11 @@ internal sealed class JpegTestImage
     }
 
     /// <summary>The upsampling contract of the library, one output sample at a time.</summary>
-    private int Upsample(Component component, int[] plane, int x, int y)
-        => Upsample(plane, component.Width, component.Height, MaxHorizontal / component.H, MaxVertical / component.V, x, y);
+    private int Upsample(Component component, int[] plane, int x, int y, int scaleDenominator)
+    {
+        var geometry = GetScaledGeometry(component, scaleDenominator);
+        return Upsample(plane, geometry.Width, geometry.Height, geometry.RatioX, geometry.RatioY, x, y);
+    }
 
     /// <summary>The upsampling contract of the library, one output sample at a time.</summary>
     /// <param name="plane">The samples of the component.</param>

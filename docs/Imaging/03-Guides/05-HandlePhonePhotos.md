@@ -35,8 +35,9 @@ public static string ConvertHeic(string heicPath, string jpegPath)
 - 8-bit photos load as [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24), 10-bit and 12-bit ones as [Rgb48](cref:Meziantou.Framework.Imaging.Rgb48), so that no precision is lost.
 - The rotation of the camera is reported as `Metadata.Orientation`, never applied by the decoder. [AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient) applies
   it.
-- Only the main image is read: the thumbnails, the depth maps, the gain maps and the other photos of a burst stored in
-  the same file are ignored.
+- Only the main image is read. The thumbnails, depth maps and gain maps stored in the same file are listed by
+  [AuxiliaryImageCollection](cref:Meziantou.Framework.Imaging.AuxiliaryImageCollection), which also renders the HDR version of a photo with a gain map (see
+  [Color management](../09-Color/03-ColorManagement.md)); the other photos of a burst are ignored.
 
 ## Prepare a photo for the web
 

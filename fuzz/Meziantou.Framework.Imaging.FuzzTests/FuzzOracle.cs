@@ -351,10 +351,12 @@ internal static class FuzzOracle
         image.Flip(FlipMode.Horizontal);
         image.Crop(new Rectangle(0, 0, Math.Max(1, image.Width - 1), image.Height));
 
-        // Whatever the pixels, the detected box is a non-empty part of the canvas and a clamped auto-crop never enlarges it
+        // Whatever the pixels, the detected box is a non-empty part of the canvas and a clamped auto-crop never enlarges it.
+        // The weights are within [-1, 1], except for floating-point samples, which are not clipped (outside [0, 1] in OpenEXR)
         var size = image.Size;
         var analysis = image.AnalyzeAutoCrop(new AutoCropOptions { BucketThreshold = 0.9, AnalyzeWeights = true });
-        if (analysis.CanvasSize != size || analysis.Bounds.IsEmpty || !new Rectangle(0, 0, size.Width, size.Height).Contains(analysis.Bounds) || !(Math.Abs(analysis.WeightX) <= 1) || !(Math.Abs(analysis.WeightY) <= 1))
+        var weightsAreBounded = PixelFormats.IsFloatingPoint(image.PixelFormat) || (Math.Abs(analysis.WeightX) <= 1 && Math.Abs(analysis.WeightY) <= 1);
+        if (analysis.CanvasSize != size || analysis.Bounds.IsEmpty || !new Rectangle(0, 0, size.Width, size.Height).Contains(analysis.Bounds) || !weightsAreBounded)
             return $"auto-crop-analysis: the {size} canvas has the content box {analysis.Bounds} and the weights ({analysis.WeightX}, {analysis.WeightY})";
 
         var cropped = image.AutoCrop(analysis, new AutoCropOptions { PaddingX = 1, PaddingY = 2, PaddingMode = AutoCropPaddingMode.Contain });

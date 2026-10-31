@@ -14,6 +14,55 @@ internal sealed class CSharpDeclarationFormatter
 
     public void WriteSymbol(DeclarationWriter writer, PublicApiSymbol symbol)
     {
+        // A member of a C# 14 extension block is written in its block: extension(Receiver receiver) { member }
+        if (symbol is PublicApiMember { ExtensionBlock: { } block })
+        {
+            WriteExtensionBlockHeader(writer, block);
+            writer.WriteLine();
+            writer.Punctuation("{");
+            writer.WriteLine();
+            writer.Indentation++;
+            WriteSymbolCore(writer, symbol);
+            writer.Indentation--;
+            writer.WriteLine();
+            writer.Punctuation("}");
+            return;
+        }
+
+        WriteSymbolCore(writer, symbol);
+    }
+
+    private void WriteExtensionBlockHeader(DeclarationWriter writer, PublicApiExtensionBlock block)
+    {
+        writer.Keyword("extension");
+        WriteGenericParameterList(writer, block.GenericParameters);
+        writer.Punctuation("(");
+        var receiver = block.Receiver;
+        foreach (var attribute in GetAttributes(receiver.Attributes))
+        {
+            WriteAttribute(writer, attribute, target: null);
+            writer.Space();
+        }
+
+        if (receiver.IsScoped && receiver.RefKind != PublicApiRefKind.Out)
+        {
+            WriteKeyword(writer, "scoped");
+        }
+
+        WriteRefKind(writer, receiver.RefKind, isReturn: false);
+        WriteTypeReference(writer, receiver.Type);
+        if (!string.IsNullOrEmpty(receiver.Name))
+        {
+            writer.Space();
+            writer.Write(PublicApiDeclarationSegmentKind.ParameterName, CSharpIdentifierHelper.EscapeIdentifier(receiver.Name));
+        }
+
+        writer.Punctuation(")");
+        WriteConstraints(writer, block.GenericParameters);
+    }
+
+    private void WriteSymbolCore(DeclarationWriter writer, PublicApiSymbol symbol)
+    {
         switch (symbol)
         {
             case PublicApiType type:
@@ -356,7 +405,8 @@ internal sealed class CSharpDeclarationFormatter
 
     private static string? GetOperatorToken(PublicApiMethod method)
     {
-        if (method.MethodKind is not (PublicApiMethodKind.Operator or PublicApiMethodKind.Conversion) || method.DeclaringType!.IsStatic)
+        // Static classes cannot declare operators, except in extension blocks
+        if (method.MethodKind is not (PublicApiMethodKind.Operator or PublicApiMethodKind.Conversion) || (method.DeclaringType!.IsStatic && method.ExtensionBlock is null))
             return null;
 
         var name = method.Name.StartsWith("op_Checked", StringComparison.Ordinal) ? "op_" + method.Name["op_Checked".Length..] : method.Name;

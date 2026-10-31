@@ -210,7 +210,7 @@ internal abstract class JpegScanDecoder
     /// <param name="hasAc">Whether an AC coefficient is not zero.</param>
     /// <param name="sparse">Whether every coefficient outside the top-left 4x4 corner is zero (<see cref="JpegIdct.IsSparse(int)"/>).</param>
     protected static void TransformBlock(ScanComponent scanComponent, int blockRow, int blockColumn, double[] block, int dc, bool hasAc, bool sparse)
-        => TransformBlock(scanComponent, scanComponent.Component.GetRowOffset(blockRow * 8) + (blockColumn * 8), block, dc, hasAc, sparse);
+        => TransformBlock(scanComponent, scanComponent.Component.GetBlockOffset(blockRow, blockColumn), block, dc, hasAc, sparse);
 
     /// <summary>Writes the samples of a block of a sequential scan at an offset of the sample plane.</summary>
     /// <param name="scanComponent">The component of the block.</param>
@@ -223,6 +223,22 @@ internal abstract class JpegScanDecoder
     {
         var component = scanComponent.Component;
         var quantization = scanComponent.Quantization;
+        if (component.IsReduced)
+        {
+            if (hasAc)
+            {
+                block[0] = dc * (double)quantization[0];
+                TransformScaledBlock(component, offset, block, (long)dc * quantization[0], hasAc: true, sparse);
+                Array.Clear(block);
+            }
+            else
+            {
+                TransformScaledBlock(component, offset, block, (long)dc * quantization[0], hasAc: false, sparse);
+            }
+
+            return;
+        }
+
         if (hasAc)
         {
             block[0] = dc * (double)quantization[0];
@@ -244,6 +260,42 @@ internal abstract class JpegScanDecoder
         else
         {
             JpegIdct.TransformDcOnly((long)dc * quantization[0], component.Samples.AsSpan(offset), component.Stride);
+        }
+    }
+
+    /// <summary>
+    /// Writes the samples of a block of a frame decoded at a reduced scale (<see cref="JpegFrameComponent.IsReduced"/>): the
+    /// means of the samples of its inverse DCT (<see cref="JpegIdct.TransformReduced(Span{double}, Span{byte}, int, int, int, bool)"/>),
+    /// or the value of its DC coefficient for a block without AC coefficients and for a block of one sample.
+    /// </summary>
+    /// <param name="component">The component of the block.</param>
+    /// <param name="offset">The offset of the first sample of the block in the plane of the component.</param>
+    /// <param name="block">The dequantized coefficients (natural order), DC included, when <paramref name="hasAc"/>; overwritten.</param>
+    /// <param name="dequantizedDc">The DC coefficient multiplied by its quantization value.</param>
+    /// <param name="hasAc">Whether an AC coefficient is not zero.</param>
+    /// <param name="sparse">Whether every coefficient outside the top-left 4x4 corner is zero (<see cref="JpegIdct.IsSparse(int)"/>).</param>
+    internal static void TransformScaledBlock(JpegFrameComponent component, int offset, Span<double> block, long dequantizedDc, bool hasAc, bool sparse)
+    {
+        var width = component.BlockWidth;
+        var height = component.BlockHeight;
+        if (hasAc && width * height > 1)
+        {
+            if (component.Precision > 8)
+            {
+                JpegIdct.TransformDeepReduced(block, component.DeepSamples[offset..], component.Stride, component.Precision, width, height, sparse);
+            }
+            else
+            {
+                JpegIdct.TransformReduced(block, component.Samples.AsSpan(offset), component.Stride, width, height, sparse);
+            }
+        }
+        else if (component.Precision > 8)
+        {
+            JpegIdct.TransformDeepDcOnly(dequantizedDc, component.DeepSamples[offset..], component.Stride, component.Precision, width, height);
+        }
+        else
+        {
+            JpegIdct.TransformDcOnly(dequantizedDc, component.Samples.AsSpan(offset), component.Stride, width, height);
         }
     }
 

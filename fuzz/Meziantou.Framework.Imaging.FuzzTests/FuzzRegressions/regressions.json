@@ -242,6 +242,17 @@
       "defect": "A defect of the oracle, not of a decoder: the 40x40 corner of the first image has a 16-bit alpha of 56 everywhere, so the lossless round trip of FuzzOracle wrote it as an icon with a 32-bit DIB payload, which it keeps for corners that are not fully transparent. In the 8 bits of the DIB that alpha is 0 everywhere, and IcoEntryDecoder reads such an icon through its AND mask, as documented: the pixels came back opaque. Fixed in FuzzOracle.CheckLosslessRoundTrip, which tests the transparency in 8 bits (reader variants 21 and 153 replay it).",
       "expectedIdentify": "success",
       "expectedLoad": "success"
+    },
+    {
+      "id": "avif/sequence-header-replaced-before-frame",
+      "file": "avif-sequence-header-replaced-before-frame.min.avif",
+      "sha256": "9bee86d3762007602cae32fb3bb2fe53defd424420968fae8b74d56c2e4c6099",
+      "origin": "fuzz-minimized",
+      "license": "CC0-1.0",
+      "foundBy": "FuzzTests group av1-intra, base seed 5576998306593010799 (default), 1500 iterations, mutation 1061 of av1/lr-sgrproj-luma-420-10bit-192x128 (reader variant 59), with the OBU mutations of FuzzAv1Mutator",
+      "defect": "The item data have two different sequence headers before the frame (the first one from another stream): the full identification checked the first one against the av1C record and rejected the file, while Load decodes the frame with the second one, which matches it. Fixed in AvifBinding.ReadSequenceHeader: it reads the sequence header the first frame is decoded with, the last one before the first frame header.",
+      "expectedIdentify": "success",
+      "expectedLoad": "success"
     }
   ]
 }

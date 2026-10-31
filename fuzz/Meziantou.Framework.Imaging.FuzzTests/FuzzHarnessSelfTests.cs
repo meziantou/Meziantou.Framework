@@ -1,4 +1,5 @@
 using Meziantou.Framework.Imaging.Internals;
+using Meziantou.Framework.Imaging.TestHarness.Golden;
 
 namespace Meziantou.Framework.Imaging.FuzzTests;
 
@@ -50,5 +51,76 @@ public sealed class FuzzHarnessSelfTests
         Assert.Throws<InvalidImageContentException>(() => Image.Identify(data));
         FuzzMutator.FixPngCrcs(data);
         Assert.Equal(2, Image.Identify(data).Width);
+    }
+
+    [Fact]
+    public void TheOpenExrSeedsReachEveryCompressionAndLevelMode()
+    {
+        // The encoder of the library writes scan lines without PXR24 or B44: the corpus files written by OpenEXR and the
+        // files of the builder are the seeds of the rest, and they must decode, so that their mutations reach the decoder
+        var seeds = FuzzSeeds.Get("exr");
+        var ids = seeds.Select(seed => seed.Id).ToHashSet(StringComparer.Ordinal);
+        foreach (var feature in new[] { "exr.compression=pxr24", "exr.compression=b44", "exr.compression=b44a", "exr.levels=mipmap", "exr.levels=ripmap" })
+        {
+            var fixtures = GoldenCorpus.Default.Fixtures.Where(fixture => fixture.IsValid && fixture.Entry.HasFeature(feature)).ToList();
+            Assert.NotEmpty(fixtures);
+            Assert.True(fixtures.TrueForAll(fixture => ids.Contains(fixture.Id)), $"The fixtures with the feature '{feature}' are not all fuzz seeds.");
+        }
+
+        foreach (var seed in seeds.Where(seed => seed.Id.StartsWith("exr/builder-", StringComparison.Ordinal)))
+        {
+            try
+            {
+                using var image = Image.Load(seed.Data, cancellationToken: TestContext.Current.CancellationToken);
+            }
+            catch (ImageException exception)
+            {
+                Assert.Fail($"The seed '{seed.Id}' does not decode: {exception.Message}");
+            }
+        }
+    }
+
+    [Fact]
+    public void Av1MutationsKeepTheSizeFieldsOfTheUnitsAndTheContainer()
+    {
+        // The mutations change whole units: the media data of the file they give is still a sequence of units whose size
+        // fields add up, so that the decoder reads each unit and judges its place in the stream
+        var seeds = FuzzSeeds.Get("av1-inter");
+        var random = new FuzzRandom(42);
+        var mutated = 0;
+        for (var i = 0; i < 400; i++)
+        {
+            var seed = seeds[i % seeds.Count];
+            if (FuzzAv1Mutator.TryMutate(random, seed, seeds) is not { } data)
+                continue;
+
+            mutated++;
+            Assert.True(FuzzAvifContainer.IsIsoBaseMedia(data));
+            var mediaData = FuzzAvifContainer.FindMediaData(data);
+            Assert.HasCount(1, mediaData);
+            var (offset, length) = mediaData[0];
+            var end = offset + length;
+            while (offset < end)
+            {
+                var header = data[offset++];
+                Assert.Equal(0, header & 0x81);
+                Assert.NotEqual(0, header & 2);
+                offset += (header >> 2) & 1;
+                var size = 0;
+                for (var shift = 0; ; shift += 7)
+                {
+                    var value = data[offset++];
+                    size |= (value & 0x7F) << shift;
+                    if ((value & 0x80) is 0)
+                        break;
+                }
+
+                offset += size;
+            }
+
+            Assert.Equal(end, offset);
+        }
+
+        Assert.True(mutated > 50, $"Only {mutated} of 400 seeds were mutated.");
     }
 }

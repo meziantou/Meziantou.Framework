@@ -27,6 +27,10 @@ public sealed class ApiSurfaceTests
         typeof(ConvolutionOptions),
         typeof(ConvolutionKernel),
         typeof(AutoCropOptions),
+        typeof(CropSuggestionOptions),
+        typeof(RadialBlurOptions),
+        typeof(ImageSimilarityOptions),
+        typeof(DifferenceMapOptions),
         typeof(IccColorTransformOptions),
         typeof(CmykConversionOptions),
         typeof(OpenExrDecodingOptions),
@@ -87,6 +91,10 @@ public sealed class ApiSurfaceTests
     [InlineData(typeof(ContentLightLevel))]
     [InlineData(typeof(MasteringDisplayColorVolume))]
     [InlineData(typeof(PixelAspectRatio))]
+    [InlineData(typeof(GainMapMetadata))]
+    [InlineData(typeof(GainMapChannel))]
+    [InlineData(typeof(AuxiliaryImageCollection))]
+    [InlineData(typeof(AuxiliaryImage))]
     [InlineData(typeof(VectorPathBuilder))]
     [InlineData(typeof(Font))]
     [InlineData(typeof(FontCollection))]

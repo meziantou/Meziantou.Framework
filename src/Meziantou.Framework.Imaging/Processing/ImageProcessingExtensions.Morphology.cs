@@ -26,9 +26,11 @@ public static partial class ImageProcessingExtensions
     /// </para>
     /// <para>
     /// A rectangle takes a constant time per pixel, whatever its size (the algorithm of van Herk and of Gil and Werman, in
-    /// two passes); an ellipse takes a time per pixel that grows with its height. The scratch storage (about three blocks
-    /// of <c>2 RadiusY + 1</c> rows of keys of 1, 2 or 4 bytes per sample) is charged to the image and rented before any
-    /// pixel changes. The frames are filtered on the calling thread. An element of radius 0 changes nothing.
+    /// two passes); an ellipse takes a time per pixel that grows with its height (each row filtered once per distinct row
+    /// width of the ellipse, then one comparison per row of the ellipse). The scratch storage (about three blocks of
+    /// <c>2 RadiusY + 1</c> rows of keys of 1, 2 or 4 bytes per sample for a rectangle; for an ellipse, as many rows
+    /// filtered by each distinct width, 4 widths for a disk of radius 5 and 31 for radius 50) is charged to the image and
+    /// rented before any pixel changes. The frames are filtered on the calling thread. An element of radius 0 changes nothing.
     /// </para>
     /// </remarks>
     /// <example>

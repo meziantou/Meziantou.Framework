@@ -37,6 +37,19 @@ namespace Meziantou.Framework.Imaging.Drawing;
 /// with the pixels in linear light instead of on the stored sample values.
 /// </para>
 /// <para>
+/// <b>Floating-point canvases.</b> On an <see cref="RgbaFloat"/> or <see cref="RgbaHalf"/> canvas, the paints have
+/// 16-bit colors and are composited over the stored values without clipping them, and color matrices are applied in
+/// place: additive composites and color matrices can leave samples outside [0, 1]. Layers, filters, blurs, shadows and
+/// masks draw on images of 16-bit samples, but what reads the pixels of the canvas back as 16-bit colors
+/// (<see cref="BackdropLayer(Filter?, RectangleD, double, DrawingAction, CompositeMode, BlendMode)"/>,
+/// <see cref="BlurBackdrop(double)"/>, a <see cref="Group(GroupOptions, DrawingAction, DrawingAction?)"/> that is not isolated, a
+/// <see cref="KnockoutElement(double, DrawingAction, DrawingAction?, MaskMode)"/> outside a knockout group) rejects such a sample with an
+/// <see cref="UnsupportedImageFeatureException"/> instead of clipping it, and so does drawing a floating-point image
+/// (<see cref="DrawImage(ImageFrame, PointD, double)"/>, <see cref="ImageBrush"/>) on any canvas. To use those effects
+/// on highlights, draw on an <see cref="Rgba64"/> copy (<see cref="Image.CloneAs{TPixel}(PixelConversionOptions?)"/>
+/// with options that clip or tone map the samples).
+/// </para>
+/// <para>
 /// <b>Failures.</b> Drawing is a pixel-only edit: when a call fails or is canceled, the calls that completed stay, and
 /// some rows of the failing call may be painted. A call rents all its working storage before it changes a pixel, so a
 /// call that exceeds <see cref="ImageResourceLimits.MaxLiveAllocationBytes"/> changes nothing.
@@ -118,6 +131,7 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="ObjectDisposedException"><paramref name="source"/> no longer belongs to a live image.</exception>
     /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><paramref name="source"/> has a floating-point sample outside [0, 1] or that is not a number where it is read, which has no 16-bit color.</exception>
     public void DrawImage(ImageFrame source, PointD position, double opacity = 1) => GetSession().DrawImage(source, position, opacity);
 
     /// <summary>Draws the pixels of a frame of another image, stretched to a rectangle.</summary>
@@ -136,6 +150,7 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="ObjectDisposedException"><paramref name="source"/> no longer belongs to a live image.</exception>
     /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><paramref name="source"/> has a floating-point sample outside [0, 1] or that is not a number where it is read, which has no 16-bit color.</exception>
     public void DrawImage(ImageFrame source, RectangleD destination, double opacity = 1) => GetSession().DrawImage(source, sourceRegion: null, destination, ImageSampling.Bilinear, opacity);
 
     /// <summary>Draws some of the pixels of a frame of another image, stretched to a rectangle.</summary>
@@ -151,6 +166,7 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="ObjectDisposedException"><paramref name="source"/> no longer belongs to a live image.</exception>
     /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><paramref name="source"/> has a floating-point sample outside [0, 1] or that is not a number where it is read, which has no 16-bit color.</exception>
     public void DrawImage(ImageFrame source, Rectangle sourceRegion, RectangleD destination, double opacity = 1) => GetSession().DrawImage(source, sourceRegion, destination, ImageSampling.Bilinear, opacity);
 
     /// <summary>Draws the pixels of a frame of another image, placed on the canvas by a transformation: turned, scaled, skewed or mirrored.</summary>
@@ -176,6 +192,7 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="ObjectDisposedException"><paramref name="source"/> no longer belongs to a live image.</exception>
     /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><paramref name="source"/> has a floating-point sample outside [0, 1] or that is not a number where it is read, which has no 16-bit color.</exception>
     public void DrawImage(ImageFrame source, AffineTransform transform, double opacity = 1) => GetSession().DrawImage(source, transform, ImageSampling.Bilinear, opacity);
 
     /// <summary>Draws the pixels of a frame of another image, stretched to a rectangle, read in a given way.</summary>
@@ -195,6 +212,7 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="ObjectDisposedException"><paramref name="source"/> no longer belongs to a live image.</exception>
     /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><paramref name="source"/> has a floating-point sample outside [0, 1] or that is not a number where it is read, which has no 16-bit color.</exception>
     public void DrawImage(ImageFrame source, RectangleD destination, ImageSampling sampling, double opacity = 1) => GetSession().DrawImage(source, sourceRegion: null, destination, sampling, opacity);
 
     /// <summary>Draws a region of the pixels of a frame of another image, stretched to a rectangle, read in a given way.</summary>
@@ -211,6 +229,7 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="ObjectDisposedException"><paramref name="source"/> no longer belongs to a live image.</exception>
     /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><paramref name="source"/> has a floating-point sample outside [0, 1] or that is not a number where it is read, which has no 16-bit color.</exception>
     public void DrawImage(ImageFrame source, Rectangle sourceRegion, RectangleD destination, ImageSampling sampling, double opacity = 1) => GetSession().DrawImage(source, sourceRegion, destination, sampling, opacity);
 
     /// <summary>Draws a rectangle of a frame of another image that need not be made of whole pixels, stretched to a rectangle: <c>drawImage</c> of the HTML canvas with a source rectangle.</summary>
@@ -235,6 +254,7 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="ObjectDisposedException"><paramref name="source"/> no longer belongs to a live image.</exception>
     /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><paramref name="source"/> has a floating-point sample outside [0, 1] or that is not a number where it is read, which has no 16-bit color.</exception>
     public void DrawImage(ImageFrame source, RectangleD sourceRegion, RectangleD destination, ImageSampling sampling, double opacity = 1) => GetSession().DrawImageRectangle(source, sourceRegion, destination, sampling, opacity);
 
     /// <summary>Draws the pixels of a frame of another image, placed on the canvas by a transformation, read in a given way.</summary>
@@ -249,6 +269,7 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="ObjectDisposedException"><paramref name="source"/> no longer belongs to a live image.</exception>
     /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><paramref name="source"/> has a floating-point sample outside [0, 1] or that is not a number where it is read, which has no 16-bit color.</exception>
     public void DrawImage(ImageFrame source, AffineTransform transform, ImageSampling sampling, double opacity = 1) => GetSession().DrawImage(source, transform, sampling, opacity);
 
     /// <summary>Draws the pixels of a frame of another image, placed on the canvas by a projective transformation: the image seen in perspective.</summary>
@@ -275,6 +296,7 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="ObjectDisposedException"><paramref name="source"/> no longer belongs to a live image.</exception>
     /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><paramref name="source"/> has a floating-point sample outside [0, 1] or that is not a number where it is read, which has no 16-bit color.</exception>
     public void DrawImage(ImageFrame source, ProjectiveTransform transform, ImageSampling sampling, double opacity = 1) => GetSession().DrawImage(source, transform, sampling, opacity);
 
     /// <summary>Draws a frame of another image on a quadrilateral, as it is seen in perspective: on a screen, a page or a wall of a photograph.</summary>
@@ -310,6 +332,7 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="ObjectDisposedException"><paramref name="source"/> no longer belongs to a live image.</exception>
     /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    /// <exception cref="UnsupportedImageFeatureException"><paramref name="source"/> has a floating-point sample outside [0, 1] or that is not a number where it is read, which has no 16-bit color.</exception>
     public void DrawImage(ImageFrame source, PointD topLeft, PointD topRight, PointD bottomRight, PointD bottomLeft, ImageSampling sampling = ImageSampling.Bilinear, double opacity = 1)
         => GetSession().DrawImage(source, topLeft, topRight, bottomRight, bottomLeft, sampling, opacity);
 
@@ -1627,6 +1650,7 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
     /// <exception cref="ImageResourceLimitException">The working storage would exceed the allocation limit. No pixel is changed by this call.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">A floating-point sample of the canvas that it reads is outside [0, 1] or is not a number, and has no 16-bit color (see the remarks of <see cref="DrawingCanvas"/>).</exception>
     public void BlurBackdrop(double blur) => GetSession().BlurBackdrop(blur);
 
     /// <summary>Runs a callback whose drawings go through a filter, as a whole, before they are drawn on the canvas: the <c>filter</c> property of CSS.</summary>
@@ -1754,6 +1778,7 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
     /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">A floating-point sample of the canvas that it reads is outside [0, 1] or is not a number, and has no 16-bit color (see the remarks of <see cref="DrawingCanvas"/>).</exception>
     public void BackdropLayer(Filter? filter, RectangleD bounds, double opacity, DrawingAction action, CompositeMode compositeMode = CompositeMode.SourceOver, BlendMode blendMode = BlendMode.Normal)
         => BackdropLayer(filter, bounds, opacity, action, compositeMode, blendMode, LayerOpacity.Coverage);
 
@@ -1772,6 +1797,7 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
     /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">A floating-point sample of the canvas that it reads is outside [0, 1] or is not a number, and has no 16-bit color (see the remarks of <see cref="DrawingCanvas"/>).</exception>
     public void BackdropLayer(Filter? filter, RectangleD bounds, double opacity, DrawingAction action, CompositeMode compositeMode, BlendMode blendMode, LayerOpacity opacityMode)
     {
         ArgumentNullException.ThrowIfNull(action);
@@ -1805,6 +1831,7 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
     /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">A floating-point sample of the canvas that it reads is outside [0, 1] or is not a number, and has no 16-bit color (see the remarks of <see cref="DrawingCanvas"/>).</exception>
     public void BackdropLayer<TState>(Filter? filter, RectangleD bounds, double opacity, TState state, DrawingAction<TState> action, CompositeMode compositeMode = CompositeMode.SourceOver, BlendMode blendMode = BlendMode.Normal)
         where TState : allows ref struct
         => BackdropLayer(filter, bounds, opacity, state, action, compositeMode, blendMode, LayerOpacity.Coverage);
@@ -1826,6 +1853,7 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
     /// <exception cref="ImageResourceLimitException">The layer or the working storage would exceed the allocation limit.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">A floating-point sample of the canvas that it reads is outside [0, 1] or is not a number, and has no 16-bit color (see the remarks of <see cref="DrawingCanvas"/>).</exception>
     public void BackdropLayer<TState>(Filter? filter, RectangleD bounds, double opacity, TState state, DrawingAction<TState> action, CompositeMode compositeMode, BlendMode blendMode, LayerOpacity opacityMode)
         where TState : allows ref struct
     {
@@ -1870,6 +1898,7 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
     /// <exception cref="ImageResourceLimitException">The group or the working storage would exceed the allocation limit.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The group is not isolated and a floating-point sample of the canvas that it reads is outside [0, 1] or is not a number, and has no 16-bit color (see the remarks of <see cref="DrawingCanvas"/>).</exception>
     public void Group(GroupOptions options, DrawingAction content, DrawingAction? mask = null)
     {
         ArgumentNullException.ThrowIfNull(options);
@@ -1912,6 +1941,7 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
     /// <exception cref="ImageResourceLimitException">The group or the working storage would exceed the allocation limit.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The group is not isolated and a floating-point sample of the canvas that it reads is outside [0, 1] or is not a number, and has no 16-bit color (see the remarks of <see cref="DrawingCanvas"/>).</exception>
     public void Group<TState>(GroupOptions options, TState state, DrawingAction<TState> content, DrawingAction<TState>? mask = null)
         where TState : allows ref struct
     {
@@ -1964,6 +1994,7 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
     /// <exception cref="ImageResourceLimitException">The element or the working storage would exceed the allocation limit.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">Outside a knockout group, a floating-point sample of the canvas that it reads is outside [0, 1] or is not a number, and has no 16-bit color (see the remarks of <see cref="DrawingCanvas"/>).</exception>
     public void KnockoutElement(double opacity, DrawingAction content, DrawingAction? mask = null, MaskMode maskMode = MaskMode.Alpha)
     {
         ArgumentNullException.ThrowIfNull(content);
@@ -2005,6 +2036,7 @@ public readonly ref struct DrawingCanvas
     /// <exception cref="InvalidOperationException">The callback that received the canvas has returned.</exception>
     /// <exception cref="ImageResourceLimitException">The element or the working storage would exceed the allocation limit.</exception>
     /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">Outside a knockout group, a floating-point sample of the canvas that it reads is outside [0, 1] or is not a number, and has no 16-bit color (see the remarks of <see cref="DrawingCanvas"/>).</exception>
     public void KnockoutElement<TState>(double opacity, TState state, DrawingAction<TState> content, DrawingAction<TState>? mask = null, MaskMode maskMode = MaskMode.Alpha)
         where TState : allows ref struct
     {

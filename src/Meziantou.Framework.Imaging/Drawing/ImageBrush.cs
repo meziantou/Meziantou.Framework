@@ -17,7 +17,9 @@ namespace Meziantou.Framework.Imaging.Drawing;
 /// on alpha-premultiplied values, and the result is rounded to nearest; where the centers of the pixels of the image are
 /// on the centers of the pixels of the canvas (no transformation, or a translation by whole pixels), the colors are
 /// those of the image, exactly. The colors are then converted to the pixel format of the canvas like any brush color:
-/// they are sample values, and no color profile is applied.
+/// they are sample values, and no color profile is applied. The samples of a floating-point image are read as 16-bit
+/// colors too: a sample outside [0, 1] or that is not a number has none, and the drawing that reads it throws an
+/// <see cref="UnsupportedImageFeatureException"/> instead of clipping it.
 /// </para>
 /// <para>
 /// An image drawn smaller than it is skips pixels: each pixel of the canvas reads four pixels of the image at most.

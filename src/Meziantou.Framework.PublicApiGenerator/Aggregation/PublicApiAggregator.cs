@@ -116,6 +116,7 @@ internal static class PublicApiAggregator
 
         var members = ImmutableArray<PublicApiAggregatedSymbol>.Empty;
         var nestedTypes = ImmutableArray<PublicApiAggregatedSymbol>.Empty;
+        var extensionMembers = ImmutableArray<PublicApiAggregatedSymbol>.Empty;
         if (symbols[0] is PublicApiType)
         {
             // The members of each assembly are sorted, but the members that are not in the first assembly are after the other ones
@@ -124,6 +125,8 @@ internal static class PublicApiAggregator
                 .OrderBy(static member => (PublicApiMember)member.Symbols[0], isEnum ? EnumMemberComparer : MemberComparer)];
             nestedTypes = [.. AggregateSymbols(inputs, symbolsByAssembly.Select(static symbol => symbol is PublicApiType type ? type.NestedTypes.Cast<PublicApiSymbol>() : []).ToArray())
                 .OrderBy(static type => type.Symbols[0].MetadataName, StringComparer.Ordinal)];
+            extensionMembers = [.. AggregateSymbols(inputs, symbolsByAssembly.Select(static symbol => symbol is PublicApiType type ? type.ExtensionBlocks.SelectMany(static block => block.Members).Cast<PublicApiSymbol>() : []).ToArray())
+                .OrderBy(static member => (PublicApiMember)member.Symbols[0], MemberComparer)];
         }
 
         return new PublicApiAggregatedSymbol(
@@ -135,6 +138,7 @@ internal static class PublicApiAggregator
             [.. variants.Select(static variant => new PublicApiSymbolVariant([.. variant.TargetFrameworks], [.. variant.Symbols]))],
             differences,
             members,
-            nestedTypes);
+            nestedTypes,
+            extensionMembers);
     }
 }

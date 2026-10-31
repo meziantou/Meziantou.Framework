@@ -60,6 +60,7 @@ internal sealed partial class PublicApiMetadataReader
         }
 
         var unionCaseTypes = flags.IsUnion ? ReadUnionCaseTypes(typeDefinitionHandle, typeDefinition) : [];
+        var extensionBlocks = flags.IsStatic ? ReadExtensionBlocks(typeDefinition, members) : [];
 
         return new PublicApiType(
             namespaceName,
@@ -77,7 +78,8 @@ internal sealed partial class PublicApiMetadataReader
             nestedTypes.ToImmutable(),
             delegateInvokeMethod,
             enumUnderlyingType,
-            unionCaseTypes);
+            unionCaseTypes,
+            extensionBlocks);
     }
 
     private PublicApiTypeKind GetTypeKind(TypeDefinition typeDefinition)
@@ -368,7 +370,9 @@ internal sealed partial class PublicApiMetadataReader
     {
         var typeParameterNames = declaringTypeHandle.IsNil
             ? []
-            : GetGenericParameterNames(_metadataReader.GetTypeDefinition(declaringTypeHandle).GetGenericParameters());
+            : declaringTypeHandle == _typeParameterNamesOverride.TypeHandle
+                ? _typeParameterNamesOverride.Names
+                : GetGenericParameterNames(_metadataReader.GetTypeDefinition(declaringTypeHandle).GetGenericParameters());
         var methodParameterNames = methodHandle.IsNil
             ? []
             : GetGenericParameterNames(_metadataReader.GetMethodDefinition(methodHandle).GetGenericParameters());

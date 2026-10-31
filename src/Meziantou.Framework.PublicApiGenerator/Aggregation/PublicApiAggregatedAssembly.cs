@@ -59,6 +59,11 @@ public sealed class PublicApiAggregatedAssembly
             Link(member, symbol);
         }
 
+        foreach (var member in symbol.ExtensionMembers)
+        {
+            Link(member, symbol);
+        }
+
         foreach (var nestedType in symbol.NestedTypes)
         {
             Link(nestedType, symbol);

@@ -97,7 +97,10 @@ public sealed class PublicApiAssembly
     /// <summary>Enumerates all the types, including nested types. A nested type is enumerated after its containing type.</summary>
     public IEnumerable<PublicApiType> GetAllTypes() => Types.SelectMany(static type => type.GetTypeAndNestedTypes());
 
-    /// <summary>Gets all the symbols: types, members, accessors and delegate <c>Invoke</c> methods. A symbol is listed after its declaring type.</summary>
+    /// <summary>
+    /// Gets all the symbols: types, members, accessors, delegate <c>Invoke</c> methods and the members of C# 14 extension blocks
+    /// (see <see cref="PublicApiType.ExtensionBlocks"/>). A symbol is listed after its declaring type.
+    /// </summary>
     public ImmutableArray<PublicApiSymbol> GetAllSymbols() => _symbols;
 
     /// <summary>Finds a type, a member or an accessor using its XML documentation ID (e.g. <c>M:MyNamespace.MyType.MyMethod(System.Int32)</c>).</summary>

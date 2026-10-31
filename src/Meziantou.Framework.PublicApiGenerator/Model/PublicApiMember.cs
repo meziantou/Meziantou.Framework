@@ -50,6 +50,12 @@ public abstract class PublicApiMember : PublicApiSymbol
     /// <summary>Gets the interface members implemented explicitly by this member, as recorded in the <c>MethodImpl</c> metadata table.</summary>
     public ImmutableArray<PublicApiMemberReference> ExplicitInterfaceImplementations { get; }
 
+    /// <summary>
+    /// Gets the C# 14 extension block that declares the member, or <see langword="null"/> when the member is not declared in an extension block.
+    /// It is set on the members of <see cref="PublicApiExtensionBlock.Members"/> and on their accessors, not on the implementation methods of the static class.
+    /// </summary>
+    public PublicApiExtensionBlock? ExtensionBlock { get; internal set; }
+
     // The position of the member among the members of its declaring type
     internal MemberSortKey SortKey => field ??= PublicApiOrdering.GetMemberSortKey(this);
 }

@@ -29,6 +29,7 @@ public sealed class WebPEncoderTests
         Assert.Equal(100, encoder.NearLossless);
         Assert.False(encoder.ClearTransparentColors);
         Assert.False(encoder.AllowBitDepthReduction);
+        Assert.False(encoder.OptimizeFrames);
         Assert.Equal(FrameDurationRounding.RoundToNearest, encoder.DurationRounding);
         Assert.Equal(MetadataHandling.Strict, encoder.MetadataHandling);
 
@@ -786,6 +787,170 @@ public sealed class WebPEncoderTests
         counter.Finish();
         Assert.Equal(writer.Length, counter.Length);
         Assert.True(counter.WrittenSpan.IsEmpty);
+    }
+
+    public static TheoryData<string, int> OptimizedFrameCases()
+    {
+        var data = new TheoryData<string, int>();
+        foreach (var name in DeltaFrameAnimations.Names)
+        {
+            data.Add(name, 0);
+            data.Add(name, 5);
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(OptimizedFrameCases))]
+    public void OptimizedFramesReproduceEveryDisplayedFrame(string name, int effort)
+    {
+        using var image = DeltaFrameAnimations.Create(name);
+        var data = Encode(image, new WebPEncoder { OptimizeFrames = true, Effort = effort });
+        var reader = ReferenceWebP.Parse(data);
+        Assert.Equal(3, reader.Animation!.LoopCount);
+        Assert.Equal(image.Frames.Count, reader.Frames.Count);
+        Assert.Equal((0, 0, image.Width, image.Height, false), (reader.Frames[0].X, reader.Frames[0].Y, reader.Frames[0].Width, reader.Frames[0].Height, reader.Frames[0].AlphaBlend));
+        var displayed = reader.ComposeDisplayedFrames();
+        using var decoded = Image.Load<Rgba32>(data);
+        for (var i = 0; i < image.Frames.Count; i++)
+        {
+            Assert.Equal(50 * (i + 1), reader.Frames[i].DurationMilliseconds);
+            var expected = DeltaFrameAnimations.GetPixels(image.Frames[i]);
+            Assert.Equal(expected, displayed[i].Span.ToArray());
+            Assert.Equal(expected, DeltaFrameAnimations.GetPixels(decoded.Frames[i]));
+        }
+    }
+
+    [Fact]
+    public void OptimizedFramesBlendTheRegionThatChanges()
+    {
+        // A sprite moves over a background that does not change: the old and the new place of the sprite, blended over the
+        // canvas (the background inside the region is transparent), at even coordinates
+        using var image = DeltaFrameAnimations.Create("sprite-opaque");
+        var reader = ReferenceWebP.Parse(Encode(image, new WebPEncoder { OptimizeFrames = true }));
+        for (var i = 1; i < reader.Frames.Count; i++)
+        {
+            var frame = reader.Frames[i];
+            var left = (3 * i) & ~1;
+            var top = (4 + i) & ~1;
+            Assert.Equal((left, top, (3 * i) + 9 - left, 10 + i - top, true, false), (frame.X, frame.Y, frame.Width, frame.Height, frame.AlphaBlend, reader.Frames[i - 1].DisposeToBackground));
+        }
+    }
+
+    [Fact]
+    public void OptimizedFramesDisposeASpriteOnATransparentCanvas()
+    {
+        using var image = DeltaFrameAnimations.Create("sprite-transparent");
+        var reader = ReferenceWebP.Parse(Encode(image, new WebPEncoder { OptimizeFrames = true }));
+        for (var i = 1; i < reader.Frames.Count; i++)
+        {
+            // "Dispose to the background color" clears the previous sprite: the region is the new sprite, at even coordinates
+            var frame = reader.Frames[i];
+            Assert.True(reader.Frames[i - 1].DisposeToBackground);
+            Assert.Equal(((3 + (3 * i)) & ~1, (5 + i) & ~1), (frame.X, frame.Y));
+            Assert.Equal((3 + (3 * i) + 6, 5 + i + 5), (frame.X + frame.Width, frame.Y + frame.Height));
+        }
+
+        Assert.False(reader.Frames[^1].DisposeToBackground);
+    }
+
+    [Fact]
+    public void OptimizedFramesReplaceTheCanvasWhereBlendingIsNotExact()
+    {
+        // Translucent pixels: the blending of decoders rounds, so the regions replace the canvas
+        using var image = DeltaFrameAnimations.Create("translucent");
+        var reader = ReferenceWebP.Parse(Encode(image, new WebPEncoder { OptimizeFrames = true }));
+        Assert.All(reader.Frames, frame => Assert.False(frame.AlphaBlend));
+        Assert.All(reader.Frames.Skip(1), frame => Assert.True(frame.Width < image.Width));
+    }
+
+    [Fact]
+    public void OptimizedFramesWriteUnchangedFramesAsOneTransparentPixel()
+    {
+        using var image = DeltaFrameAnimations.Create("unchanged");
+        var reader = ReferenceWebP.Parse(Encode(image, new WebPEncoder { OptimizeFrames = true }));
+        foreach (var i in new[] { 2, 4 })
+        {
+            var frame = reader.Frames[i];
+            Assert.Equal((0, 0, 1, 1, true), (frame.X, frame.Y, frame.Width, frame.Height, frame.AlphaBlend));
+            Assert.Equal([0, 0, 0, 0], reader.DecodeFrame(i).Span.ToArray());
+            Assert.Equal(50 * (i + 1), frame.DurationMilliseconds);
+        }
+    }
+
+    [Theory]
+    [InlineData("sprite-opaque")]
+    [InlineData("blink")]
+    [InlineData("transitions")]
+    public void LossyOptimizedFramesKeepTheAlphaExactAndTheColorsClose(string name)
+    {
+        using var image = DeltaFrameAnimations.Create(name);
+        var encoder = new WebPEncoder { Compression = WebPCompression.Lossy, Quality = 90, OptimizeFrames = true };
+        var data = Encode(image, encoder);
+        var reader = ReferenceWebP.Parse(data);
+        Assert.All(reader.Frames, frame => Assert.False(frame.IsLossless));
+        using var decoded = Image.Load<Rgba32>(data);
+        using var full = Image.Load<Rgba32>(Encode(image, new WebPEncoder { Compression = WebPCompression.Lossy, Quality = 90 }));
+        for (var i = 0; i < image.Frames.Count; i++)
+        {
+            var expected = DeltaFrameAnimations.GetPixels(image.Frames[i]);
+            var actual = DeltaFrameAnimations.GetPixels(decoded.Frames[i]);
+            for (var p = 3; p < expected.Length; p += 4)
+            {
+                Assert.Equal(expected[p], actual[p]);
+            }
+
+            // A pixel that does not change keeps the decoded color of an earlier frame: the quality stays close to the one of
+            // full frames
+            var psnr = VisibleLumaPsnr(expected, actual);
+            var fullPsnr = VisibleLumaPsnr(expected, DeltaFrameAnimations.GetPixels(full.Frames[i]));
+            Assert.True(psnr >= Math.Min(fullPsnr, 40) - 2, $"{name} frame {i}: luma PSNR {psnr:F2} dB, {fullPsnr:F2} dB with full frames");
+        }
+    }
+
+    [Fact]
+    public async Task OptimizedFramesStreamFromAWriter()
+    {
+        using var image = DeltaFrameAnimations.Create("transitions");
+        var encoder = new WebPEncoder { OptimizeFrames = true };
+        var stream = new TestOutputStream { Seekable = true, AllowPatching = true };
+        await using (var writer = Image.CreateWriter<Rgba32>(stream, new ImageWriterOptions(image.Width, image.Height) { Encoder = encoder, Animation = image.Animation }))
+        {
+            foreach (var frame in image.Frames)
+            {
+                await writer.WriteFrameAsync(frame, XunitCancellationToken);
+            }
+
+            await writer.CompleteAsync(XunitCancellationToken);
+        }
+
+        Assert.Equal(Encode(image, encoder), stream.ToArray());
+    }
+
+    [Fact]
+    public void OptimizeFramesDoesNotChangeStillImages()
+    {
+        using var image = CreateImage(9, 7, seed: 3, transparent: true);
+        Assert.Equal(Encode(image, new WebPEncoder()), Encode(image, new WebPEncoder { OptimizeFrames = true }));
+    }
+
+    /// <summary>The PSNR of the BT.601 luma of the pixels that are not fully transparent.</summary>
+    private static double VisibleLumaPsnr(byte[] expected, byte[] actual)
+    {
+        double squares = 0;
+        var count = 0;
+        for (var i = 0; i < expected.Length; i += 4)
+        {
+            if (expected[i + 3] == 0)
+                continue;
+
+            var difference = (0.299 * (expected[i] - actual[i])) + (0.587 * (expected[i + 1] - actual[i + 1])) + (0.114 * (expected[i + 2] - actual[i + 2]));
+            squares += difference * difference;
+            count++;
+        }
+
+        return squares == 0 ? double.PositiveInfinity : 10 * Math.Log10(255.0 * 255.0 * count / squares);
     }
 
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]

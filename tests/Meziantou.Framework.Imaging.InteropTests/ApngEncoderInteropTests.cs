@@ -6,6 +6,7 @@ using Meziantou.Framework.Imaging.TestHarness.Golden;
 using Meziantou.Framework.Imaging.TestHarness.Pixels;
 using Meziantou.Framework.Imaging.TestHarness.Png;
 using Meziantou.Framework.Imaging.TestHarness.Streams;
+using Meziantou.Framework.Imaging.Tests;
 
 namespace Meziantou.Framework.Imaging.InteropTests;
 
@@ -224,6 +225,93 @@ public sealed class ApngEncoderInteropTests
         var name = $"imageio-indexed-{(poster ? "poster" : "frame0")}{(singleFrame ? "-single" : "")}";
         var path = await SaveAsync(image, new PngEncoder { PixelLayout = PngPixelLayout.Indexed }, name);
         Assert.Equal((byte)3, ReferencePng.Parse(await File.ReadAllBytesAsync(path, XunitCancellationToken)).ColorType);
+        await AssertAppleImageIODecodesAsync(swift, script, path, image, name);
+    }
+
+    [Theory]
+    [MemberData(nameof(Cases))]
+    public async Task OptimizedFramesDecodeExactlyWithFFmpeg(PixelFormat format, bool poster, bool interlaced)
+    {
+        // Frame regions, OVER blending and every disposal in the layout of the pixel format
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        using var image = CreateAnimation(format, poster, seed: ((int)format * 13) + (poster ? 1 : 0));
+        var name = $"optimized-frames-{format}-{(poster ? "poster" : "frame0")}-{(interlaced ? "adam7" : "progressive")}";
+        var path = await SaveAsync(image, new PngEncoder { OptimizeFrames = true, Interlaced = interlaced }, name);
+        OptimizedPngOutputVerifier.VerifyAnimation(await File.ReadAllBytesAsync(path, XunitCancellationToken), image, name);
+        await AssertFFmpegDecodesRgba16Async(ffmpeg, path, image, name);
+    }
+
+    public static TheoryData<string, bool> OptimizedFrameAnimations()
+    {
+        var data = new TheoryData<string, bool>();
+        foreach (var name in DeltaFrameAnimations.Names)
+        {
+            data.Add(name, false);
+            data.Add(name, true);
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(OptimizedFrameAnimations))]
+    public async Task OptimizedFrameAnimationsDecodeExactlyWithFFmpeg(string animation, bool indexed)
+    {
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        using var image = DeltaFrameAnimations.Create(animation);
+        var encoder = new PngEncoder { OptimizeFrames = true, PixelLayout = indexed ? PngPixelLayout.Indexed : PngPixelLayout.Auto };
+        var name = $"optimized-{animation}-{(indexed ? "indexed" : "rgba")}";
+        FullPath path;
+        try
+        {
+            path = await SaveAsync(image, encoder, name);
+        }
+        catch (UnsupportedImageFeatureException) when (indexed)
+        {
+            return; // more than 256 colors: a palette cannot hold them, with or without the setting
+        }
+
+        OptimizedPngOutputVerifier.VerifyAnimation(await File.ReadAllBytesAsync(path, XunitCancellationToken), image, name);
+        await AssertFFmpegDecodesRgba16Async(ffmpeg, path, image, name);
+    }
+
+    [Theory]
+    [MemberData(nameof(OptimizedFrameAnimations))]
+    public async Task OptimizedFrameAnimationsDecodeExactlyWithAppleImageIO(string animation, bool indexed)
+    {
+        _ = RequiredTools.AppleImageIO();
+        using var image = DeltaFrameAnimations.Create(animation);
+        var name = $"imageio-optimized-{animation}-{(indexed ? "indexed" : "rgba")}";
+        FullPath path;
+        try
+        {
+            path = await SaveAsync(image, new PngEncoder { OptimizeFrames = true, PixelLayout = indexed ? PngPixelLayout.Indexed : PngPixelLayout.Auto }, name);
+        }
+        catch (UnsupportedImageFeatureException) when (indexed)
+        {
+            return; // more than 256 colors: a palette cannot hold them, with or without the setting
+        }
+
+        var decoded = await RequiredTools.DecodeWithAppleImageIOAsync(path, image.Width, image.Height, binaryAlpha: false);
+        Assert.Equal(image.Frames.Count, decoded.Count);
+        for (var i = 0; i < decoded.Count; i++)
+        {
+            var comparison = PixelBufferComparer.Compare(ImageSnapshots.CaptureFrame(image.Frames[i]).WithTransparentColorsCleared(), decoded[i], ComparisonPolicy.Exact, $"{name} frame {i} decoded by Apple ImageIO");
+            Assert.True(comparison.IsMatch, comparison.Describe());
+        }
+    }
+
+    [Theory]
+    [InlineData(PixelFormat.Rgba32, false)]
+    [InlineData(PixelFormat.Rgba32, true)]
+    [InlineData(PixelFormat.Rgba64, false)]
+    public async Task OptimizedFramesDecodeExactlyWithAppleImageIO(PixelFormat format, bool poster)
+    {
+        var (swift, script) = RequiredTools.AppleImageIO();
+        using var image = CreateAnimation(format, poster, seed: 60 + (int)format);
+        var name = $"imageio-optimized-{format}-{(poster ? "poster" : "frame0")}";
+        var path = await SaveAsync(image, new PngEncoder { OptimizeFrames = true }, name);
+        OptimizedPngOutputVerifier.VerifyAnimation(await File.ReadAllBytesAsync(path, XunitCancellationToken), image, name);
         await AssertAppleImageIODecodesAsync(swift, script, path, image, name);
     }
 

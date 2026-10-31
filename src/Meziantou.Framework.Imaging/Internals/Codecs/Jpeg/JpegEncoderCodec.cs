@@ -380,7 +380,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
     /// <summary>
     /// The encoding state of one JPEG. The frame operation writes SOI and the JFIF APP0
     /// segment, then one metadata segment per <see cref="Encode"/> call (<see cref="JpegMetadataWriter"/>), the tables (DQT,
-    /// SOF0, DHT) and the scan header, then the entropy-coded MCUs in bounded steps: each call loads the source rows of an
+    /// SOF0, DRI, DHT) and the scan header, then the entropy-coded MCUs in bounded steps: each call loads the source rows of an
     /// MCU row (converted and level-shifted into single-precision Y, Cb and Cr rows, the canvas padded to whole MCUs by edge
     /// replication) and codes MCUs until the output buffer should be flushed. Completion writes EOI. Settings, the
     /// bit-depth policy, metadata sizes and the working buffers fail on creation, before any output; non-opaque pixels
@@ -393,6 +393,18 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
     /// <see cref="JpegProgressiveScanEncoder.GetScript"/> is then coded twice from the coefficients: once to count its
     /// symbols, one row of blocks per call, then, after the DHT segment of the tables built from the counts and the scan
     /// header, to write it in bounded steps.
+    /// <para>
+    /// A baseline JPEG with optimized tables (<see cref="JpegEncoder.OptimizeHuffmanTables"/>) is transformed into the same
+    /// coefficients of the whole image after DQT and SOF0; its single scan is then coded twice like a progressive scan: the
+    /// symbols of each table are counted one MCU row per call, the tables are built by the procedure of T.81 section K.2
+    /// (<see cref="JpegHuffmanCodeBuilder.BuildAnnexK"/>), and the DHT segment, the scan header and the MCUs follow.
+    /// </para>
+    /// <para>
+    /// With a restart interval (<see cref="JpegEncoder.RestartInterval"/>), a DRI segment follows the frame header, and the
+    /// MCU that starts an interval (counted from the start of each scan, in raster order) is preceded by the padding of the
+    /// previous byte and an RSTn marker; the DC predictions start again, and a progressive scan writes its pending
+    /// end-of-band run first. The counting passes reset their predictions at the same MCUs.
+    /// </para>
     /// <para>
     /// With <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> above 1 (the configuration of the saved image), the MCU
     /// rows of a frame of at least <see cref="RowBands.MinPixelsForParallelism"/> pixels are converted, transformed and
@@ -412,6 +424,11 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         private const byte MarkerDht = 0xC4;
         private const byte MarkerDqt = 0xDB;
         private const byte MarkerSos = 0xDA;
+        private const byte MarkerDri = 0xDD;
+        private const byte MarkerRst0 = 0xD0;
+
+        // The pad byte (and its stuffed zero) and the RSTn marker that may precede an MCU
+        private const int MaxRestartBytes = 4;
 
         private readonly JpegEncoder _encoder;
         private readonly PixelFormat _sourceFormat;
@@ -427,10 +444,15 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         private readonly int _planeWidth;
         private readonly ushort[] _luminanceQuantization = new ushort[64];
         private readonly ushort[] _chrominanceQuantization = new ushort[64];
-        private readonly JpegHuffmanEncoder _luminanceDc;
-        private readonly JpegHuffmanEncoder _luminanceAc;
-        private readonly JpegHuffmanEncoder? _chrominanceDc;
-        private readonly JpegHuffmanEncoder? _chrominanceAc;
+        private readonly int _restartInterval;
+
+        // With optimized tables, the symbol counts of the luminance DC and AC tables, then of the chrominance ones
+        private readonly uint[][] _histograms = [];
+        private readonly int[] _blockCoefficients = new int[64];
+        private JpegHuffmanEncoder _luminanceDc;
+        private JpegHuffmanEncoder _luminanceAc;
+        private JpegHuffmanEncoder? _chrominanceDc;
+        private JpegHuffmanEncoder? _chrominanceAc;
         // The number of MCU rows that each worker transforms in a batch
         private const int RowsPerWorker = 4;
 
@@ -476,6 +498,16 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             _mcusY = (_height + (8 * _v) - 1) / (8 * _v);
             _planeWidth = _mcusX * 8 * _h;
             _blocksPerMcu = _grayscale ? 1 : (_h * _v) + 2;
+            _restartInterval = _encoder.RestartInterval;
+
+            // Optimized tables need the symbols of the whole scan before its DHT segment: the coefficients of the whole
+            // image are kept, as for the progressive process
+            var progressive = _encoder.Process == JpegEncodingProcess.Progressive;
+            var keepCoefficients = progressive || _encoder.OptimizeHuffmanTables;
+            if (!progressive && _encoder.OptimizeHuffmanTables)
+            {
+                _histograms = [new uint[256], new uint[256], new uint[256], new uint[256]];
+            }
 
             JpegEncodingTables.ScaleQuantizationTable(JpegEncodingTables.LuminanceQuantization, _encoder.Quality, _luminanceQuantization);
             JpegEncodingTables.ScaleQuantizationTable(JpegEncodingTables.ChrominanceQuantization, _encoder.Quality, _chrominanceQuantization);
@@ -507,7 +539,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                     _transformWorkers[i] = new TransformWorker(scope, _sourceFormat != _workFormat ? (int)rowBytes : 0, (int)planeBytes, _grayscale);
                 }
 
-                if (workerCount > 1 && _encoder.Process != JpegEncodingProcess.Progressive)
+                if (workerCount > 1 && !keepCoefficients)
                 {
                     var batchBytes = (long)_batchRows * _mcusX * _blocksPerMcu * 64 * sizeof(short);
                     if (batchBytes > CheckedSizes.MaxBufferLength)
@@ -516,10 +548,10 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                     _batch = scope.Rent((int)batchBytes, AllocationKind.Temporary, clear: false);
                 }
 
-                if (_encoder.Process == JpegEncodingProcess.Progressive)
+                if (keepCoefficients)
                 {
                     // The grid of a scan of one component alone only has the blocks that hold samples of the image
-                    _scanEncoder = new JpegProgressiveScanEncoder();
+                    _scanEncoder = progressive ? new JpegProgressiveScanEncoder() : null;
                     _coefficientPlanes = new JpegCoefficientPlane?[_grayscale ? 1 : 3];
                     _coefficientPlanes[0] = new JpegCoefficientPlane(scope, _mcusX * _h, _mcusY * _v, (_width + 7) / 8, (_height + 7) / 8);
                     for (var c = 1; c < _coefficientPlanes.Length; c++)
@@ -544,10 +576,11 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             Scan,
             Transform,
             ProgressiveScans,
+            OptimizedScan,
             Trailer,
         }
 
-        /// <summary>The passes over the blocks of a progressive scan.</summary>
+        /// <summary>The passes over the blocks of a progressive scan, or of the baseline scan with optimized tables.</summary>
         private enum ScanPass
         {
             /// <summary>The scan is not started.</summary>
@@ -625,14 +658,15 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
 
                 case Step.Tables:
                     WriteQuantizationTables(output);
-                    if (_scanEncoder is not null)
+                    WriteFrameHeader(output, _scanEncoder is not null ? MarkerSof2 : MarkerSof0);
+                    WriteRestartInterval(output);
+                    if (_coefficientPlanes.Length > 0)
                     {
-                        WriteFrameHeader(output, MarkerSof2);
+                        // The tables of the scans are computed from the coefficients of the whole image
                         _step = Step.Transform;
                         return false;
                     }
 
-                    WriteFrameHeader(output, MarkerSof0);
                     WriteHuffmanTables(output);
                     WriteScanHeader(output, firstComponent: 0, _grayscale ? 1 : 3, dcTables: true, acTables: true, spectralStart: 0, spectralEnd: 63, approximation: 0);
                     _step = Step.Scan;
@@ -648,11 +682,19 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                     _frame = null;
                     ReleaseSampleBuffers();
                     _mcuRow = 0;
-                    _step = Step.ProgressiveScans;
+                    _step = _scanEncoder is not null ? Step.ProgressiveScans : Step.OptimizedScan;
                     return false;
 
                 case Step.ProgressiveScans:
                     if (!EncodeProgressiveScans(output))
+                        return false;
+
+                    _step = Step.None;
+                    ReleaseBuffers();
+                    return true;
+
+                case Step.OptimizedScan:
+                    if (!EncodeOptimizedScan(output))
                         return false;
 
                     _step = Step.None;
@@ -758,6 +800,38 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             JpegMetadataWriter.WriteSegment(output, marker, payload[..(6 + (3 * count))]);
         }
 
+        /// <summary>Writes the DRI segment of a nonzero restart interval (T.81 B.2.4.4).</summary>
+        private void WriteRestartInterval(ImageOutputBuffer output)
+        {
+            if (_restartInterval == 0)
+                return;
+
+            Span<byte> payload = stackalloc byte[2];
+            BinaryPrimitives.WriteUInt16BigEndian(payload, (ushort)_restartInterval);
+            JpegMetadataWriter.WriteSegment(output, MarkerDri, payload);
+        }
+
+        /// <summary>Gets a value indicating whether a restart interval starts at an MCU of a scan, the MCUs counted from 0 in raster order.</summary>
+        private bool IsRestartDue(int mcuIndex) => _restartInterval > 0 && mcuIndex > 0 && mcuIndex % _restartInterval == 0;
+
+        /// <summary>Gets the number of the RSTn marker before an MCU that starts a restart interval: 0 to 7, cyclically.</summary>
+        private int GetRestartNumber(int mcuIndex) => ((mcuIndex / _restartInterval) - 1) & 7;
+
+        /// <summary>
+        /// Ends the restart interval before an MCU of the baseline scan when one starts there: the last byte is completed
+        /// with 1-bits, the RSTn marker follows, and the DC predictions start again from 0 (T.81 F.1.2.3, F.1.1.5.1).
+        /// </summary>
+        private void WriteRestartIfDue(int mcuIndex, Span<byte> destination, ref int position)
+        {
+            if (!IsRestartDue(mcuIndex))
+                return;
+
+            _bits.Pad(destination, ref position);
+            destination[position++] = 0xFF;
+            destination[position++] = (byte)(MarkerRst0 + GetRestartNumber(mcuIndex));
+            _predictions.AsSpan().Clear();
+        }
+
         private void WriteHuffmanTables(ImageOutputBuffer output)
         {
             Span<byte> payload = stackalloc byte[4 * (17 + 256)];
@@ -809,7 +883,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             {
                 using var lease = frame.GetStorage().AcquireLease();
                 var end = Math.Min(_mcusY, _mcuRow + _batchRows);
-                TransformRows(lease.Storage, _mcuRow, end, (worker, row, mcuX, block) => GetProgressiveBlock(row, mcuX, block));
+                TransformRows(lease.Storage, _mcuRow, end, (worker, row, mcuX, block) => GetPlaneBlock(row, mcuX, block));
 
                 // The last row of the batch is counted by the caller
                 _mcuRow = end - 1;
@@ -826,13 +900,13 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             {
                 for (var block = 0; block < _blocksPerMcu; block++)
                 {
-                    TransformBlock(single, mcuX, block, GetProgressiveBlock(_mcuRow, mcuX, block));
+                    TransformBlock(single, mcuX, block, GetPlaneBlock(_mcuRow, mcuX, block));
                 }
             }
         }
 
-        /// <summary>Gets the coefficients of a block of an MCU of a progressive frame: the luma blocks in raster order, then Cb and Cr.</summary>
-        private Span<short> GetProgressiveBlock(int row, int mcuX, int block)
+        /// <summary>Gets the coefficients of a block of an MCU of the whole image (progressive frame or optimized tables): the luma blocks in raster order, then Cb and Cr.</summary>
+        private Span<short> GetPlaneBlock(int row, int mcuX, int block)
         {
             var lumaBlocks = _h * _v;
             return block < lumaBlocks
@@ -926,6 +1000,12 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                 case ScanPass.Count:
                     for (var x = 0; x < columns; x++)
                     {
+                        var index = (_mcuRow * columns) + x;
+                        if (IsRestartDue(index))
+                        {
+                            scanEncoder.Restart(GetRestartNumber(index), default, ref position);
+                        }
+
                         CodeProgressiveMcu(scan, _mcuRow, x, default, ref position);
                     }
 
@@ -959,8 +1039,16 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                     if (coded > 0 && output.ShouldFlush)
                         return false;
 
-                    var span = output.GetSpan(blocksPerMcu * JpegProgressiveScanEncoder.MaxBlockBytes);
+                    // A restart first writes the pending run of blocks, which is bounded like the one a block can write
+                    var index = (_mcuRow * columns) + _mcuX;
+                    var restart = IsRestartDue(index);
+                    var span = output.GetSpan((blocksPerMcu + (restart ? 1 : 0)) * JpegProgressiveScanEncoder.MaxBlockBytes);
                     position = 0;
+                    if (restart)
+                    {
+                        scanEncoder.Restart(GetRestartNumber(index), span, ref position);
+                    }
+
                     CodeProgressiveMcu(scan, _mcuRow, _mcuX, span, ref position);
                     output.Advance(position);
                     _mcuX++;
@@ -1056,8 +1144,10 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                         if (coded > 0 && output.ShouldFlush)
                             return false;
 
-                        var span = output.GetSpan(blocksPerMcu * MaxBlockBytes);
-                        var length = batched ? EncodeStoredMcu(_mcuRow, _mcuX, span) : EncodeMcu(_mcuX, span);
+                        var span = output.GetSpan((blocksPerMcu * MaxBlockBytes) + (_restartInterval > 0 ? MaxRestartBytes : 0));
+                        var length = 0;
+                        WriteRestartIfDue((_mcuRow * _mcusX) + _mcuX, span, ref length);
+                        length += batched ? EncodeStoredMcu(_mcuRow, _mcuX, span[length..]) : EncodeMcu(_mcuX, span[length..]);
                         output.Advance(length);
                         _mcuX++;
                         coded++;
@@ -1170,24 +1260,156 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             EncodeBlock(destination, ref position, coefficients, component, dc, ac);
         }
 
-        /// <summary>Codes an MCU of the baseline batch from its stored coefficients.</summary>
+        /// <summary>Codes an MCU from its stored coefficients: those of the baseline batch, or of the whole image with optimized tables.</summary>
         private int EncodeStoredMcu(int row, int mcuX, Span<byte> destination)
         {
             var position = 0;
-            var coefficients = _transformWorkers[0].Coefficients.AsSpan();
+            var coefficients = _blockCoefficients.AsSpan();
             for (var block = 0; block < _blocksPerMcu; block++)
             {
-                var stored = GetBatchBlock(row, mcuX, block);
-                for (var k = 0; k < 64; k++)
-                {
-                    coefficients[k] = stored[k];
-                }
+                LoadStoredBlock(row, mcuX, block, coefficients);
 
                 var component = block < _h * _v ? 0 : block - (_h * _v) + 1;
                 EncodeBlock(destination, ref position, coefficients, component, component == 0 ? _luminanceDc : _chrominanceDc!, component == 0 ? _luminanceAc : _chrominanceAc!);
             }
 
             return position;
+        }
+
+        /// <summary>Copies the stored coefficients of a block of an MCU: those of the baseline batch, or of the whole image with optimized tables.</summary>
+        private void LoadStoredBlock(int row, int mcuX, int block, Span<int> coefficients)
+        {
+            var stored = _batch is not null ? GetBatchBlock(row, mcuX, block) : GetPlaneBlock(row, mcuX, block);
+            for (var k = 0; k < 64; k++)
+            {
+                coefficients[k] = stored[k];
+            }
+        }
+
+        /// <summary>
+        /// Codes the baseline scan with tables computed from the image (<see cref="JpegEncoder.OptimizeHuffmanTables"/>):
+        /// the symbols of the stored coefficients are counted one MCU row per call, then the DHT segment of the tables
+        /// built from the counts and the scan header are written, then the MCUs in bounded steps, with the same code path as
+        /// the batches of several workers.
+        /// </summary>
+        /// <returns><see langword="true"/> when the last MCU was coded and the entropy-coded segment padded.</returns>
+        private bool EncodeOptimizedScan(ImageOutputBuffer output)
+        {
+            switch (_scanPass)
+            {
+                case ScanPass.None:
+                    _predictions.AsSpan().Clear();
+                    _scanPass = ScanPass.Count;
+                    goto case ScanPass.Count;
+
+                case ScanPass.Count:
+                    var coefficients = _blockCoefficients.AsSpan();
+                    for (var mcuX = 0; mcuX < _mcusX; mcuX++)
+                    {
+                        if (IsRestartDue((_mcuRow * _mcusX) + mcuX))
+                        {
+                            _predictions.AsSpan().Clear();
+                        }
+
+                        for (var block = 0; block < _blocksPerMcu; block++)
+                        {
+                            LoadStoredBlock(_mcuRow, mcuX, block, coefficients);
+                            CountBlock(coefficients, block < _h * _v ? 0 : block - (_h * _v) + 1);
+                        }
+                    }
+
+                    CancellationToken.ThrowIfCancellationRequested();
+                    if (++_mcuRow < _mcusY)
+                        return false;
+
+                    // Every table of the scan codes at least one symbol per block: a DC category and an EOB or a last coefficient
+                    _luminanceDc = JpegHuffmanCodeBuilder.BuildAnnexK(_histograms[0]);
+                    _luminanceAc = JpegHuffmanCodeBuilder.BuildAnnexK(_histograms[1]);
+                    if (!_grayscale)
+                    {
+                        _chrominanceDc = JpegHuffmanCodeBuilder.BuildAnnexK(_histograms[2]);
+                        _chrominanceAc = JpegHuffmanCodeBuilder.BuildAnnexK(_histograms[3]);
+                    }
+
+                    _mcuRow = 0;
+                    _scanPass = ScanPass.Header;
+                    return false;
+
+                case ScanPass.Header:
+                    WriteHuffmanTables(output);
+                    WriteScanHeader(output, firstComponent: 0, _grayscale ? 1 : 3, dcTables: true, acTables: true, spectralStart: 0, spectralEnd: 63, approximation: 0);
+                    _predictions.AsSpan().Clear();
+                    _scanPass = ScanPass.Write;
+                    return false;
+            }
+
+            var coded = 0;
+            while (_mcuRow < _mcusY)
+            {
+                while (_mcuX < _mcusX)
+                {
+                    // Bounded output per call: stop once the buffer should be flushed (at least one MCU per call)
+                    if (coded > 0 && output.ShouldFlush)
+                        return false;
+
+                    var span = output.GetSpan((_blocksPerMcu * MaxBlockBytes) + MaxRestartBytes);
+                    var length = 0;
+                    WriteRestartIfDue((_mcuRow * _mcusX) + _mcuX, span, ref length);
+                    length += EncodeStoredMcu(_mcuRow, _mcuX, span[length..]);
+                    output.Advance(length);
+                    _mcuX++;
+                    coded++;
+                }
+
+                _mcuX = 0;
+                _mcuRow++;
+                CancellationToken.ThrowIfCancellationRequested();
+            }
+
+            var end = output.GetSpan(2);
+            var endPosition = 0;
+            _bits.Pad(end, ref endPosition);
+            output.Advance(endPosition);
+            _scanPass = ScanPass.None;
+            return true;
+        }
+
+        /// <summary>Counts the symbols that <see cref="EncodeBlock"/> codes for a block of a component, in the tables of the component.</summary>
+        private void CountBlock(ReadOnlySpan<int> coefficients, int component)
+        {
+            var dc = _histograms[component == 0 ? 0 : 2];
+            var ac = _histograms[component == 0 ? 1 : 3];
+            var difference = coefficients[0] - _predictions[component];
+            _predictions[component] = coefficients[0];
+            dc[GetSizeCategory(difference)]++;
+            var mask = GetNonZeroMask(coefficients) & ~1UL;
+            var previous = 0;
+            while (mask != 0)
+            {
+                var k = BitOperations.TrailingZeroCount(mask);
+                mask &= mask - 1;
+                var run = k - previous - 1;
+                while (run > 15)
+                {
+                    ac[0xF0]++;
+                    run -= 16;
+                }
+
+                ac[(run << 4) | GetSizeCategory(coefficients[k])]++;
+                previous = k;
+            }
+
+            if (previous < 63)
+            {
+                ac[0x00]++;
+            }
+        }
+
+        /// <summary>Gets the size category SSSS of a value: the number of bits of its magnitude (T.81 F.1.2.1.1).</summary>
+        private static int GetSizeCategory(int value)
+        {
+            var magnitude = (uint)Math.Abs(value);
+            return magnitude == 0 ? 0 : 32 - BitOperations.LeadingZeroCount(magnitude);
         }
 
         /// <summary>Codes the quantized coefficients (zig-zag order) of a block of a component.</summary>

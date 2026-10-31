@@ -138,6 +138,50 @@ public class ToneEffectBenchmarks
     [Workload("1920x1080 Rgba32 glow")]
     public int Glow32() => Apply(_rgba32, static image => image.Glow(new Rgba64(ushort.MaxValue, ushort.MaxValue, 0, ushort.MaxValue), 800, 450));
 
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 tone curve (levels then a curve through 4 points)")]
+    public int ToneCurve32() => Apply(_rgba32, static image => image.ApplyToneCurve(LevelsAndCurve));
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba64 tone curve (levels then a curve through 4 points)")]
+    public int ToneCurve64() => Apply(_rgba64, static image => image.ApplyToneCurve(LevelsAndCurve));
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 3D LUT of 33 points, tetrahedral")]
+    public int Lut3DTetrahedral32() => Apply(_rgba32, static image => image.ApplyLut(Grade33));
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 3D LUT of 33 points, trilinear")]
+    public int Lut3DTrilinear32() => Apply(_rgba32, static image => image.ApplyLut(Grade33, LutInterpolation.Trilinear));
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba64 3D LUT of 33 points, tetrahedral")]
+    public int Lut3DTetrahedral64() => Apply(_rgba64, static image => image.ApplyLut(Grade33));
+
+    private static readonly ToneCurve LevelsAndCurve = ToneCurve.CreateLevels(0.05, 0.95, 1.1).Then(ToneCurve.CreateFromPoints(new PointD(0, 0), new PointD(0.25, 0.2), new PointD(0.75, 0.8), new PointD(1, 1)));
+
+    private static readonly CubeLut Grade33 = CreateGrade(33);
+
+    /// <summary>A nonlinear grade of <paramref name="size"/>^3 points, as a .cube file holds it.</summary>
+    private static CubeLut CreateGrade(int size)
+    {
+        var text = new System.Text.StringBuilder();
+        text.Append(CultureInfo.InvariantCulture, $"LUT_3D_SIZE {size}\n");
+        for (var b = 0; b < size; b++)
+        {
+            for (var g = 0; g < size; g++)
+            {
+                for (var r = 0; r < size; r++)
+                {
+                    double red = r / (size - 1.0), green = g / (size - 1.0), blue = b / (size - 1.0);
+                    text.Append(CultureInfo.InvariantCulture, $"{0.5 + (0.45 * Math.Sin((3 * red) + green - blue)):F6} {((red * green) + (blue * blue)) / 2:F6} {0.9 * Math.Sqrt(blue) * (1 - (0.3 * red)):F6}\n");
+                }
+            }
+        }
+
+        return CubeLut.Parse(text.ToString());
+    }
+
     private static int Apply<TPixel>(Image<TPixel> source, Action<Image<TPixel>> operation)
         where TPixel : unmanaged
     {

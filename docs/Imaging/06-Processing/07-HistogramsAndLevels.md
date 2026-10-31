@@ -1,6 +1,6 @@
 ---
-title: Histograms and levels
-description: Count the pixels of every level, equalize a histogram globally or locally (CLAHE), and stretch the levels of a dull photo.
+title: Histograms, levels and curves
+description: Count the pixels of every level, equalize a histogram (CLAHE), stretch the levels, and apply gamma, levels, curves and color lookup tables.
 ---
 
 A histogram counts the pixels of every level of a channel. [Equalize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Equalize) and [AutoLevels](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoLevels) remap the levels from such
@@ -94,3 +94,54 @@ pixels, but they remap them. Floating-point formats ([RgbaFloat](cref:Meziantou.
 [ComputeHistogram](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ComputeHistogram), [Equalize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Equalize) and [AutoLevels](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoLevels) throw an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException) on them, so convert them to
 [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64) first with [CloneAs\<Rgba64\>()](cref:Meziantou.Framework.Imaging.Image.CloneAs). The mapping tables are charged to the
 allocation limit of the image, and are allocated before any pixel changes.
+
+## Adjust the levels and the curves
+
+[ApplyToneCurve](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ApplyToneCurve) gives a new value to the red, green and blue samples with a [ToneCurve](cref:Meziantou.Framework.Imaging.ToneCurve), the adjustments of photo
+editors, and [ApplyToneCurves](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ApplyToneCurves) with one curve per channel, which corrects or creates a color cast:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_ToneCurves;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void GradePhoto(string inputPath, string cubePath, string outputPath)
+{
+    using var image = Image.Load(inputPath);
+
+    // Levels clip the darkest and the brightest 4% of the levels and brighten the midtones; a gentle S curve through
+    // control points then adds contrast, in the same pass
+    var levels = ToneCurve.CreateLevels(inputBlack: 0.04, inputWhite: 0.96, gamma: 1.2);
+    var contrast = ToneCurve.CreateFromPoints(new PointD(0, 0), new PointD(0.25, 0.2), new PointD(0.75, 0.82), new PointD(1, 1));
+    image.ApplyToneCurve(levels.Then(contrast));
+
+    // A curve per channel warms the colors: more red, less blue
+    image.ApplyToneCurves(red: ToneCurve.CreateGamma(1.1), green: ToneCurve.Identity, blue: ToneCurve.CreateGamma(0.9));
+
+    // A look exported by a grading tool as a .cube file, interpolated between the points of its lattice
+    var look = CubeLut.Load(cubePath);
+    image.ApplyLut(look, LutInterpolation.Tetrahedral);
+    image.Save(outputPath);
+}
+```
+<!-- endref -->
+
+| [ToneCurve](cref:Meziantou.Framework.Imaging.ToneCurve) | What it does |
+| --- | --- |
+| [CreateGamma](cref:Meziantou.Framework.Imaging.ToneCurve.CreateGamma) | A gamma above 1 brightens the midtones and keeps black and white, as ImageMagick's `-gamma` |
+| [CreateLevels](cref:Meziantou.Framework.Imaging.ToneCurve.CreateLevels) | The levels of Photoshop and GIMP: the input range becomes the output range, with a gamma for the midtones; what is outside the input range is clipped |
+| [CreateFromPoints](cref:Meziantou.Framework.Imaging.ToneCurve.CreateFromPoints) | A smooth curve through control points (a monotone cubic, which never overshoots its points nor inverts the tones between two of them), flat before the first point and after the last one |
+| [CreateFromTable](cref:Meziantou.Framework.Imaging.ToneCurve.CreateFromTable) | A one-dimensional lookup table: values at evenly spaced inputs from 0 to 1, interpolated linearly |
+| [Then](cref:Meziantou.Framework.Imaging.ToneCurve.Then) | Two curves one after the other, applied in one pass |
+
+The values are fractions of the largest sample value, so a curve works the same on 8-bit, 16-bit and floating-point
+images. The stored samples are mapped, as photo editors do, without a color profile; alpha is kept, and a gray image
+stores the luma of its mapped color. Floating-point samples are never clamped: a gamma keeps the highlights above 1,
+while the levels and the curves through points clip them.
+
+## Apply a color lookup table
+
+[ApplyLut](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ApplyLut) gives every pixel the color of a [CubeLut](cref:Meziantou.Framework.Imaging.CubeLut), the `.cube` files that grading tools export for a film
+look or a camera conversion: [CubeLut.Load](cref:Meziantou.Framework.Imaging.CubeLut.Load) reads a file or a stream, and [CubeLut.Parse](cref:Meziantou.Framework.Imaging.CubeLut.Parse) a text. A
+three-dimensional table gives each color a new one, interpolated between the points of its lattice with
+[LutInterpolation.Tetrahedral](cref:Meziantou.Framework.Imaging.LutInterpolation.Tetrahedral) (the default, which keeps grays on the gray axis) or [LutInterpolation.Trilinear](cref:Meziantou.Framework.Imaging.LutInterpolation.Trilinear); a one-dimensional table
+maps each channel on its own. The colors are clamped to the domain of the table on input. A malformed file throws a
+`FormatException` that gives the line.
+

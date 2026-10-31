@@ -188,6 +188,111 @@ public sealed class ConvolutionKernel
         return new ConvolutionKernel(rowWeights.ToArray(), columnWeights.ToArray());
     }
 
+    /// <summary>
+    /// Creates the matrix of a motion blur: a straight segment of <paramref name="length"/> pixels through the center, at
+    /// <paramref name="degrees"/> from the horizontal, as the trail of a camera or a subject that moved while the shutter
+    /// was open. Apply it with <see cref="ImageProcessingExtensions.Convolve(Image, ConvolutionOptions, CancellationToken)"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The weight of a pixel is the length of the part of the segment inside its square, divided by the length of the
+    /// segment, so the weights add up to 1 and the brightness is kept: a horizontal segment of 5 pixels is the row
+    /// <c>[1, 1, 1, 1, 1] / 5</c>, and a segment of 3 pixels at 45 degrees gives <c>sqrt(2) / 3</c> to the center and
+    /// <c>(3 - sqrt(2)) / 6</c> to each of the two diagonal neighbors. The segment is centered, so the blur does not move
+    /// the image. The matrix is as small as the segment allows: its width and height are odd.
+    /// </para>
+    /// <para>
+    /// As for <see cref="ImageProcessingExtensions.Rotate(Image, double, TransformOptions?, CancellationToken)"/>, a positive
+    /// angle turns clockwise on the screen (the vertical axis points down); a segment and its opposite are the same, so
+    /// 0 and 180 give the same matrix.
+    /// </para>
+    /// </remarks>
+    /// <param name="length">The length of the segment, in pixels: at least 1 and at most 2000. A length of 1 keeps the image as it is.</param>
+    /// <param name="degrees">The angle of the segment, in degrees.</param>
+    /// <returns>The matrix.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="length"/> is not between 1 and 2000.</exception>
+    /// <exception cref="ArgumentException"><paramref name="degrees"/> is not a finite number.</exception>
+    public static ConvolutionKernel CreateMotionBlur(double length, double degrees)
+    {
+        if (!(length is >= 1 and <= 2000))
+            throw new ArgumentOutOfRangeException(nameof(length), length, "The length must be between 1 and 2000.");
+
+        if (!double.IsFinite(degrees))
+            throw new ArgumentException("The angle must be a finite number.", nameof(degrees));
+
+        // The direction, with the components that are 0 or 1 to 1e-12 made exact (multiples of 90 degrees)
+        var radians = Math.IEEERemainder(degrees, 360) * Math.PI / 180;
+        var dx = Snap(Math.Cos(radians));
+        var dy = Snap(Math.Sin(radians));
+        var half = length / 2;
+        var radiusX = Math.Max(0, (int)Math.Ceiling(Snap(half * Math.Abs(dx)) - 0.5));
+        var radiusY = Math.Max(0, (int)Math.Ceiling(Snap(half * Math.Abs(dy)) - 0.5));
+        var width = (2 * radiusX) + 1;
+        var height = (2 * radiusY) + 1;
+        var values = new double[width * height];
+        var sum = 0.0;
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                var inside = GetLengthInside(-half * dx, -half * dy, half * dx, half * dy, x - radiusX - 0.5, y - radiusY - 0.5);
+                values[(y * width) + x] = inside;
+                sum += inside;
+            }
+        }
+
+        for (var i = 0; i < values.Length; i++)
+        {
+            values[i] /= sum;
+        }
+
+        return new ConvolutionKernel(width, height, values);
+
+        static double Snap(double value)
+        {
+            var rounded = Math.Round(value, MidpointRounding.ToEven);
+            return Math.Abs(value - rounded) < 1e-12 ? rounded : value;
+        }
+    }
+
+    /// <summary>Gets the length of the part of the segment from (x0, y0) to (x1, y1) inside the unit square whose top-left corner is (left, top), clipping it to the square (Liang and Barsky).</summary>
+    private static double GetLengthInside(double x0, double y0, double x1, double y1, double left, double top)
+    {
+        var dx = x1 - x0;
+        var dy = y1 - y0;
+        var start = 0.0;
+        var end = 1.0;
+        if (!Clip(-dx, x0 - left, ref start, ref end) || !Clip(dx, left + 1 - x0, ref start, ref end) || !Clip(-dy, y0 - top, ref start, ref end) || !Clip(dy, top + 1 - y0, ref start, ref end))
+            return 0;
+
+        return (end - start) * Math.Sqrt((dx * dx) + (dy * dy));
+
+        // Keeps the part of the segment where p t <= q
+        static bool Clip(double p, double q, ref double start, ref double end)
+        {
+            if (p == 0)
+                return q >= 0;
+
+            var t = q / p;
+            if (p < 0)
+            {
+                if (t > end)
+                    return false;
+
+                start = Math.Max(start, t);
+            }
+            else
+            {
+                if (t < start)
+                    return false;
+
+                end = Math.Min(end, t);
+            }
+
+            return true;
+        }
+    }
+
     /// <summary>Gets the weights, row by row (computed from the factors of a matrix created by <see cref="CreateSeparable"/>).</summary>
     internal double[] GetValues()
     {

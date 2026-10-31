@@ -33,6 +33,13 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// computation: the result does not depend on the number of bands.
 /// </para>
 /// <para>
+/// A frame not taller than the radius (<see cref="BoxBlurPlan.UsesRowCache"/>) would load each of its rows many times
+/// into the window, each time summing its padded row again. Its rows are instead summed horizontally once, into a row
+/// cache, before any row is rewritten; the vertical sums then read the rows of each block from the cache, with the same
+/// additions in the same order: the suffix sums of the rows of a block from its last row, kept for the output rows of the
+/// band, and the prefix sums of the next block, one row at a time. The results are those of the window, bit for bit.
+/// </para>
+/// <para>
 /// The weights add up to 1: a frame with alpha whose pixels all have the maximum alpha, and whose edge mode reads no
 /// transparent pixel, is filtered as its three colors and keeps the maximum alpha. Cancellation is observed between rows.
 /// </para>
@@ -133,6 +140,11 @@ internal static class BoxBlurrer
         where TSample : unmanaged
     {
         cancellationToken.ThrowIfCancellationRequested();
+        if (plan.UsesRowCache)
+        {
+            BlurFromRowCache<TSample>(storage, plan, alpha, cancellationToken);
+            return;
+        }
 
         // Every band reads its halos from the original pixels: load them all before the first row is rewritten
         var workers = plan.Workers;
@@ -149,6 +161,127 @@ internal static class BoxBlurrer
 
         RowBands.RunParallel(workers, band => BlurBand<TSample>(storage, plan, alpha, band, cancellationToken));
     }
+
+    /// <summary>Sums every row of the frame horizontally into the row cache, then blurs every band from it.</summary>
+    private static void BlurFromRowCache<TSample>(PixelStorage storage, BoxBlurPlan plan, WorkingAlpha alpha, CancellationToken cancellationToken)
+        where TSample : unmanaged
+    {
+        var workers = plan.Workers;
+        if (workers == 1)
+        {
+            CacheRows<TSample>(storage, plan, alpha, 0, cancellationToken);
+            BlurCachedBand<TSample>(storage, plan, alpha, 0, cancellationToken);
+            return;
+        }
+
+        RowBands.RunParallel(workers, band => CacheRows<TSample>(storage, plan, alpha, band, cancellationToken));
+        RowBands.RunParallel(workers, band => BlurCachedBand<TSample>(storage, plan, alpha, band, cancellationToken));
+    }
+
+    /// <summary>Sets the rows of the row cache of a band to the horizontal window sums of the image rows.</summary>
+    private static void CacheRows<TSample>(PixelStorage storage, BoxBlurPlan plan, WorkingAlpha alpha, int band, CancellationToken cancellationToken)
+        where TSample : unmanaged
+    {
+        var scratch = plan.GetScratch(band);
+        var length = plan.Size.Width * GetChannels(plan, alpha);
+        for (var y = plan.GetBandStart(band); y < plan.GetBandStart(band + 1); y++)
+        {
+            if (y % ProcessingKernels.RowsPerCancellationCheck == 0)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+
+            SumRow<TSample>(storage, y, plan, alpha, scratch, plan.GetCachedRow(y, length));
+        }
+    }
+
+    /// <summary>
+    /// Blurs the rows of a band from the row cache, block by block (blocks of <c>n</c> rows counted from the row <c>r</c>
+    /// rows above the image, as in the window): the suffix sums of the rows of the block, from its last row down to the first
+    /// output row of the band in the block (those below the last output row of the band in a running sum), then each output
+    /// row adds the prefix sum of the next block.
+    /// </summary>
+    private static void BlurCachedBand<TSample>(PixelStorage storage, BoxBlurPlan plan, WorkingAlpha alpha, int band, CancellationToken cancellationToken)
+        where TSample : unmanaged
+    {
+        var scratch = plan.GetScratch(band);
+        var start = plan.GetBandStart(band);
+        var end = plan.GetBandStart(band + 1);
+        var radius = plan.Radius;
+        var diameter = plan.Diameter;
+        var length = plan.Size.Width * GetChannels(plan, alpha);
+        var prefix = scratch.Slice(plan.SuffixRows * plan.RowLength, length);
+        var output = scratch.Slice((plan.SuffixRows + 1) * plan.RowLength, length);
+        var count = (double)diameter * diameter;
+        for (var block = start / diameter; block * diameter < end; block++)
+        {
+            // The rows of block k are k n - r to k n + r; its output rows are k n to k n + n - 1
+            var first = block * diameter;
+            var firstOffset = Math.Max(start - first, 0);
+            var endOffset = Math.Min(end - first, diameter);
+            var running = GetSlot(plan, alpha, scratch, endOffset - firstOffset);
+            var next = running;
+            for (var offset = diameter - 1; offset >= firstOffset; offset--)
+            {
+                if (offset % ProcessingKernels.RowsPerCancellationCheck == 0)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
+
+                var row = GetCachedRow(plan, first - radius + offset, length);
+                var sums = offset >= endOffset ? running : GetSlot(plan, alpha, scratch, offset - firstOffset);
+                if (offset == diameter - 1)
+                {
+                    row.CopyTo(sums);
+                }
+                else
+                {
+                    Add(row, next, sums);
+                }
+
+                next = sums;
+            }
+
+            // The rows of the next block start at k n + r + 1
+            var nextBlock = first + diameter - radius;
+            for (var offset = firstOffset; offset < endOffset; offset++)
+            {
+                var y = first + offset;
+                if (y % ProcessingKernels.RowsPerCancellationCheck == 0)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                }
+
+                var sums = GetSlot(plan, alpha, scratch, offset - firstOffset);
+                if (offset == 0)
+                {
+                    Divide(sums, count, output);
+                }
+                else
+                {
+                    if (offset == 1 || offset == firstOffset)
+                    {
+                        GetCachedRow(plan, nextBlock, length).CopyTo(prefix);
+                        for (var i = 1; i < offset; i++)
+                        {
+                            Add(prefix, GetCachedRow(plan, nextBlock + i, length), prefix);
+                        }
+                    }
+                    else
+                    {
+                        Add(prefix, GetCachedRow(plan, nextBlock + offset - 1, length), prefix);
+                    }
+
+                    AddAndDivide(sums, prefix, count, output);
+                }
+
+                WorkingSamples.Store(output, GetSamples<TSample>(storage, y), alpha, plan.Transfer, plan.MaxValue);
+            }
+        }
+    }
+
+    /// <summary>Gets the horizontal sums of row <paramref name="v"/> (mapped by the edge mode, which is not <see cref="ConvolutionEdgeMode.Zero"/>) from the row cache.</summary>
+    private static Span<double> GetCachedRow(BoxBlurPlan plan, int v, int length) => plan.GetCachedRow(plan.MapRow(v), length);
 
     /// <summary>Loads the summed rows a band reads above its first row (into its window) and below its last row (into its bottom halo).</summary>
     private static void LoadHalos<TSample>(PixelStorage storage, BoxBlurPlan plan, WorkingAlpha alpha, int band)
@@ -272,10 +405,17 @@ internal static class BoxBlurrer
             return;
         }
 
+        SumRow<TSample>(storage, source, plan, alpha, scratch, destination);
+    }
+
+    /// <summary>Loads image row <paramref name="source"/> padded by the radius on each side, and sets <paramref name="destination"/> to its horizontal window sums.</summary>
+    private static void SumRow<TSample>(PixelStorage storage, int source, BoxBlurPlan plan, WorkingAlpha alpha, Span<double> scratch, Span<double> destination)
+        where TSample : unmanaged
+    {
         var channels = GetChannels(plan, alpha);
         var width = plan.Size.Width;
         var radius = plan.Radius;
-        var paddedOffset = (plan.Diameter + radius + 2) * plan.RowLength;
+        var paddedOffset = plan.WorkingRows * plan.RowLength;
         var padded = scratch.Slice(paddedOffset, (width + (2 * radius)) * channels);
         var suffix = scratch.Slice(paddedOffset + plan.PaddedLength, padded.Length);
         WorkingSamples.Load<TSample>(GetSamples<TSample>(storage, source), padded.Slice(radius * channels, width * channels), alpha, plan.Transfer);
@@ -327,6 +467,24 @@ internal static class BoxBlurrer
         for (; i < destination.Length; i++)
         {
             destination[i] += source[i];
+        }
+    }
+
+    /// <summary>Sets <paramref name="destination"/>, which may be <paramref name="right"/>, to <paramref name="left"/> plus <paramref name="right"/>, element by element (the additions of <see cref="Add(Span{double}, ReadOnlySpan{double})"/>).</summary>
+    private static void Add(ReadOnlySpan<double> left, ReadOnlySpan<double> right, Span<double> destination)
+    {
+        var i = 0;
+        if (Vector.IsHardwareAccelerated)
+        {
+            for (; i <= destination.Length - Vector<double>.Count; i += Vector<double>.Count)
+            {
+                (new Vector<double>(left[i..]) + new Vector<double>(right[i..])).CopyTo(destination[i..]);
+            }
+        }
+
+        for (; i < destination.Length; i++)
+        {
+            destination[i] = left[i] + right[i];
         }
     }
 

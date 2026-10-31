@@ -249,6 +249,7 @@ public static partial class FixtureManifestValidator
             ValidateFile(name, entry.Input, root, referencedFiles, errors);
             ValidateDecodeOptions(name, entry.DecodeOptions, errors);
             ValidateInkConversion(name, entry, manifest, root, referencedFiles, errors);
+            ValidateExrDecodings(name, entry, root, referencedFiles, errors);
 
             if (!AllowedKinds.Contains(entry.Kind))
             {
@@ -530,6 +531,94 @@ public static partial class FixtureManifestValidator
         catch (InvalidDataException ex)
         {
             errors.Add($"{name}: {ex.Message}");
+        }
+    }
+
+    private static void ValidateExrDecodings(string name, FixtureEntry entry, FullPath root, HashSet<string> referencedFiles, List<string> errors)
+    {
+        if (entry.ExrDecodings is not { } decodings)
+            return;
+
+        if (entry.Format != "exr" || entry.Kind != FixtureKinds.Unsupported)
+        {
+            errors.Add($"{name} exrDecodings: only unsupported OpenEXR fixtures (rejected with the default options) declare decodings.");
+        }
+
+        if (decodings.Count == 0)
+        {
+            errors.Add($"{name} exrDecodings: the list is empty.");
+        }
+
+        for (var i = 0; i < decodings.Count; i++)
+        {
+            var decoding = decodings[i];
+            var decodingName = string.Create(CultureInfo.InvariantCulture, $"{name} exrDecodings[{i}]");
+            if (!ExrDecodingDefinition.WindowModes.Contains(decoding.WindowMode, StringComparer.Ordinal))
+            {
+                errors.Add($"{decodingName}: invalid windowMode '{decoding.WindowMode}' (allowed: {string.Join(", ", ExrDecodingDefinition.WindowModes)}).");
+            }
+
+            if (decoding.Layer is null && decoding.WindowMode == "DisplayWindow")
+            {
+                errors.Add($"{decodingName}: the default options are the decoding of the fixture itself (its expectedError).");
+            }
+
+            if (decoding.ExpectedError is { } error)
+            {
+                if (decoding.Buffer is not null || decoding.Reference is not null || decoding.Comparison is not null || decoding.Width is not null || decoding.Height is not null || decoding.PixelFormat is not null || decoding.ColorModel is not null || decoding.BitsPerComponent is not null)
+                {
+                    errors.Add($"{decodingName}: a decoding that fails declares its error only.");
+                }
+
+                if (error.Exception != "UnsupportedImageFeatureException" || string.IsNullOrEmpty(error.Feature))
+                {
+                    errors.Add($"{decodingName}: a decoding fails with an UnsupportedImageFeatureException and its feature.");
+                }
+
+                continue;
+            }
+
+            if (decoding.Buffer is not { } buffer || decoding.Reference is not { } reference || decoding.Comparison is not { } comparison
+                || decoding.Width is not > 0 || decoding.Height is not > 0 || decoding.PixelFormat is not ("RgbaHalf" or "RgbaFloat")
+                || decoding.ColorModel is not ("Grayscale" or "GrayscaleAlpha" or "Rgb" or "Rgba") || decoding.BitsPerComponent is not (16 or 32))
+            {
+                errors.Add($"{decodingName}: a decoding declares its pixels (rgbaf32le), their reference, an exact comparison, the size, the pixel format, the color model and the bits per component, or an expectedError.");
+                continue;
+            }
+
+            referencedFiles.Add(buffer.Path);
+            ValidateReference(decodingName, reference, errors);
+            var policyErrors = ComparisonPolicy.Validate(comparison);
+            errors.AddRange(policyErrors.Select(item => $"{decodingName}: {item}"));
+            if (policyErrors.Count == 0 && !ComparisonPolicy.FromDefinition(comparison).IsExact)
+            {
+                errors.Add($"{decodingName}: the decoded samples are those OpenEXR decodes, bit for bit: the comparison is exact.");
+            }
+
+            if (buffer.Layout != RawPixelLayout.RgbaF32Le.Name || buffer.Width != decoding.Width || buffer.Height != decoding.Height)
+            {
+                errors.Add($"{decodingName}: the pixels are '{RawPixelLayout.RgbaF32Le.Name}' of the size of the image.");
+            }
+
+            var descriptorErrors = RawBufferReader.ValidateDescriptor(buffer);
+            errors.AddRange(descriptorErrors.Select(item => $"{decodingName}: {item}"));
+            if (descriptorErrors.Count > 0)
+                continue;
+
+            if (!Sha256Regex().IsMatch(buffer.Sha256))
+            {
+                errors.Add($"{decodingName}: '{buffer.Path}' has an invalid sha256 (64 lowercase hexadecimal characters expected).");
+                continue;
+            }
+
+            try
+            {
+                RawBufferReader.Read(root, buffer);
+            }
+            catch (InvalidDataException ex)
+            {
+                errors.Add($"{decodingName}: {ex.Message}");
+            }
         }
     }
 

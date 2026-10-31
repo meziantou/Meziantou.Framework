@@ -100,6 +100,18 @@ internal static class IccTestProfiles
     /// <inheritdoc cref="IccProfileBuilder.CmykLabLutAToB"/>
     public static IccProfile CmykLabLutAToB() => Wrap(IccProfileBuilder.CmykLabLutAToB());
 
+    /// <inheritdoc cref="IccProfileBuilder.RgbToCmykDeviceLinkLut16"/>
+    public static IccProfile RgbToCmykDeviceLinkLut16() => Wrap(IccProfileBuilder.RgbToCmykDeviceLinkLut16());
+
+    /// <inheritdoc cref="IccProfileBuilder.CmykToRgbDeviceLinkLutAToB"/>
+    public static IccProfile CmykToRgbDeviceLinkLutAToB() => Wrap(IccProfileBuilder.CmykToRgbDeviceLinkLutAToB());
+
+    /// <inheritdoc cref="IccProfileBuilder.LabAbstractLutAToB"/>
+    public static IccProfile LabAbstractLutAToB() => Wrap(IccProfileBuilder.LabAbstractLutAToB());
+
+    /// <inheritdoc cref="IccProfileBuilder.XyzAbstractLut16"/>
+    public static IccProfile XyzAbstractLut16() => Wrap(IccProfileBuilder.XyzAbstractLut16());
+
     /// <summary>
     /// Adds a tag to a profile: its entry ends the tag table (the data of the other tags move by the size of an entry), its
     /// data ends the profile.

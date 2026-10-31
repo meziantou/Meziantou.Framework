@@ -17,16 +17,17 @@ lists the main gaps. Each [format page](10-Formats/01-Overview.md) gives the det
 - **No scaled or region decoding.** An image is decoded at its full size; resize it afterward.
 - **Color profiles are never applied implicitly.** Colors change only when you convert them
   ([ConvertColorProfile](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ConvertColorProfile)). See [Color management](09-Color/03-ColorManagement.md).
-- **Color management covers ICC versions 2 and 4** grayscale, RGB and CMYK profiles; no iccMAX, device-link, abstract
-  or named-color profiles.
+- **Color management covers ICC versions 2 and 4** grayscale, RGB and CMYK profiles, and device-link and abstract
+  profiles in sequences of profiles; no iccMAX or named-color profiles. CMYK samples are not a pixel format and no
+  encoder writes them. Gamut mapping is per-channel clipping or a chroma reduction, opt-in.
 
 ## Formats
 
 | Format | Main limitations |
 | --- | --- |
-| JPEG | Hierarchical JPEG, JPEG-LS and lossless JPEG with arithmetic coding are not read. Writing is 8-bit baseline or progressive only (no 12-bit, lossless, arithmetic, CMYK or restart markers), one frame. |
+| JPEG | Hierarchical JPEG, JPEG-LS and lossless JPEG with arithmetic coding are not read. Writing is 8-bit baseline or progressive only (no 12-bit, lossless, arithmetic or CMYK), one frame. |
 | GIF | At most 256 colors per frame and one fully transparent color; plain-text extensions are rejected. |
-| PNG / APNG | Sub-byte grayscale requires [PngOptimization.MinimumSize](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.MinimumSize) or [PngOptimization.Layout](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.Layout) (still images), and APNG delta rectangles [MinimumSize](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.MinimumSize); palettes are selected by [MinimumSize](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.MinimumSize), [Layout](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.Layout) or [PngPixelLayout.Indexed](cref:Meziantou.Framework.Imaging.Formats.PngPixelLayout.Indexed). Sequential writers fix their layout and palette from the first image. Unknown ancillary chunks are not kept. |
+| PNG / APNG | Sub-byte grayscale requires [PngOptimization.MinimumSize](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.MinimumSize) or [PngOptimization.Layout](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.Layout) (still images), and APNG delta rectangles [OptimizeFrames](cref:Meziantou.Framework.Imaging.Formats.PngEncoder.OptimizeFrames) or MinimumSize; palettes are selected by [MinimumSize](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.MinimumSize), [Layout](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.Layout) or [PngPixelLayout.Indexed](cref:Meziantou.Framework.Imaging.Formats.PngPixelLayout.Indexed). Sequential writers fix their layout and palette from the first image. Unknown ancillary chunks are not kept. |
 | WebP | 8-bit RGB(A) only; lossy output is 4:2:0; animations need a seekable destination. |
 | QOI | 8-bit RGB(A) only, one still image, no metadata. |
 | BMP | No embedded JPEG/PNG payloads, no embedded ICC profile; one still image is written. |
@@ -39,7 +40,7 @@ lists the main gaps. Each [format page](10-Formats/01-Overview.md) gives the det
 | HEIC | Bit depths above 12, multilayer and 3D extensions are not read; bursts, depth maps and live-photo videos are ignored. Sequences need a seekable destination. |
 | JPEG XL | Floating-point samples, more than 16 bits, premultiplied alpha and CMYK are not read; lossy decoding is close to, not identical with, the reference decoder. Writing has no layers or blending. |
 | JPEG 2000 | Signed samples, more than 16 bits and Part 2 extensions are not read; no lower-resolution decoding. Writing has one tile and one layer, no HTJ2K, no rate control. |
-| OpenEXR | Multi-part files, deep data, DWA/HTJ2K/ZSTD compressions and channels other than R, G, B, A and Y are not read. Writing uses lossless scan-line compression, but alpha premultiplication and sample conversion can change source pixels. |
+| OpenEXR | Multi-part files, deep data, DWA/HTJ2K/ZSTD compressions and chroma (RY, BY) channels are not read; other channels than R, G, B, A and Y, and an overscan, need a layer or a window mode ([OpenExrDecodingOptions](cref:Meziantou.Framework.Imaging.OpenExrDecodingOptions)). Writing uses lossless scan-line compression, but alpha premultiplication and sample conversion can change source pixels. |
 
 ## Processing
 

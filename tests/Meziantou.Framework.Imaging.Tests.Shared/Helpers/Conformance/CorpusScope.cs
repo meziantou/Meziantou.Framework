@@ -27,7 +27,7 @@ internal static class CorpusScope
     private static readonly Lazy<HashSet<string>> ScopedFormats = new(LoadFormats, LazyThreadSafetyMode.ExecutionAndPublication);
 
     /// <summary>Gets the name of every encoder configuration of the save cases, in the order of the cases.</summary>
-    public static IReadOnlyList<string> AllEncoderNames { get; } = ["png", "png-indexed", "png-minimum-size", "png-layout", "gif", "jpeg", "jpeg-progressive", "webp", "qoi", "bmp", "bmp-indexed", "tga", "pnm", "avif", "heic", "jxl", "jxl-lossy", "jxl-progressive", "jp2", "exr"];
+    public static IReadOnlyList<string> AllEncoderNames { get; } = ["png", "png-indexed", "png-minimum-size", "png-frames", "png-layout", "gif", "gif-frames", "jpeg", "jpeg-progressive", "webp", "webp-frames", "qoi", "bmp", "bmp-indexed", "tga", "pnm", "avif", "heic", "jxl", "jxl-lossy", "jxl-progressive", "jp2", "exr"];
 
     /// <summary>Gets the encoder configurations of this test project, in the order of <see cref="AllEncoderNames"/>.</summary>
     public static IReadOnlyList<string> EncoderNames { get; } = LoadEncoderNames();

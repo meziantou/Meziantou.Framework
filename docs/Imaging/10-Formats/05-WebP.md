@@ -102,6 +102,16 @@ any destination.
 A writer created with [Image.CreateWriter](cref:Meziantou.Framework.Imaging.Image.CreateWriter) writes an animation unless [ImageWriterOptions.ExpectedFrameCount](cref:Meziantou.Framework.Imaging.ImageWriterOptions.ExpectedFrameCount) is 1: set
 it to write a still image to a non-seekable stream.
 
+## Store only what changes
+
+With [OptimizeFrames](cref:Meziantou.Framework.Imaging.Formats.WebPEncoder.OptimizeFrames), each frame after the first one stores the rectangle of the pixels that differ from
+the canvas it is drawn on, grown to even coordinates (a WebP frame starts at an even offset), with the disposal of the
+previous frame that gives the smallest rectangle. The rectangle is blended over the canvas, its unchanged pixels fully
+transparent, when every pixel that changes is opaque; otherwise it replaces the canvas, which reproduces the transparent
+pixels and their colors too. A frame equal to the previous one is a 1x1 frame. Lossless output shows the same frames as
+full frames; lossy output compresses only the rectangle, and a pixel that does not change keeps the decoded color of the
+frame that drew it. Every frame uses the same [Compression](cref:Meziantou.Framework.Imaging.Formats.WebPEncoder.Compression).
+
 ## Pitfalls
 
 - `Save("image.webp")` is lossless: pass a [WebPEncoder](cref:Meziantou.Framework.Imaging.Formats.WebPEncoder) with `Compression = WebPCompression.Lossy` for photos.
@@ -110,5 +120,6 @@ it to write a still image to a non-seekable stream.
 - A side is at most 16,383 pixels for lossy output and 16,384 for lossless output; a frame lasts at most 16,777,215 ms;
   a play count is at most 65,535; a file is at most 4 GiB.
 - WebP has no text or resolution field: they follow [MetadataHandling](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling), which rejects them by default.
-- Animations are written as full frames, without delta rectangles or blending.
+- Animations are written as full frames by default. Set [OptimizeFrames](cref:Meziantou.Framework.Imaging.Formats.WebPEncoder.OptimizeFrames) to store only the rectangle that
+  changes in each frame (see below).
 - The background color of an animation is never painted: areas a frame clears are transparent black.

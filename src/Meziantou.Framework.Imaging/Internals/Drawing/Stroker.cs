@@ -41,7 +41,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </para>
 /// <para>
 /// The pieces go to the edges of a draw call, or to a path as closed contours (<see cref="VectorPath.Widen"/>): the same
-/// points in the same order, so that filling that path is stroking.
+/// points in the same order, so that filling that path is stroking. They can also go to a sink as closed contours
+/// (<see cref="VectorPath.StrokeContains"/>): a <see cref="WindingSink"/> counts how they wind around a point without
+/// keeping them. Only the chords near that point are stroked (<see cref="NearChordFilter"/>), and an arc of a join or a
+/// cap whose triangle has a box that does not hold that point is replaced by its chord, which winds around it as the arc
+/// does.
 /// </para>
 /// <para>
 /// Under a transformation of the canvas, the path is stroked as it is given and the vertices of the pieces are
@@ -63,6 +67,12 @@ internal sealed class Stroker : PathSink
 {
     private readonly EdgeBuilder? _edges;
     private readonly VectorPathBuilder? _outline;
+    private readonly PathSink? _pieces;
+
+    // The point whose position the pieces are tested against, when they go to a sink, and what passes on the chords near it
+    private readonly double _testX;
+    private readonly double _testY;
+    private readonly NearChordFilter? _nearChords;
     private double _halfWidth;
     private LineJoin _join;
     private LineCap _cap;
@@ -135,6 +145,21 @@ internal sealed class Stroker : PathSink
         _outline = outline;
     }
 
+    /// <summary>
+    /// Creates a stroker that gives the pieces of the stroke to a sink, each one as a closed contour, to find whether
+    /// they contain a point: the arcs of joins and caps are only cut finely around that point.
+    /// </summary>
+    /// <param name="pieces">The sink.</param>
+    /// <param name="x">The horizontal coordinate of the point.</param>
+    /// <param name="y">The vertical coordinate of the point.</param>
+    public Stroker(PathSink pieces, double x, double y)
+    {
+        _pieces = pieces;
+        _testX = x;
+        _testY = y;
+        _nearChords = new NearChordFilter(new ContourSink(this), x, y);
+    }
+
     /// <summary>Gets a value indicating whether the stroke covers the whole frame; the edges are then meaningless.</summary>
     public bool CoversFrame { get; private set; }
 
@@ -195,6 +220,10 @@ internal sealed class Stroker : PathSink
         _miterLimitSquared = pen.MiterLimit * pen.MiterLimit;
         _sweepsCurves = true;
         _hasStart = false;
+
+        // The pieces are within half the width of their chord, the miters (up to the limit) and the corners of the
+        // square caps of its ends excepted
+        _nearChords?.Configure(_halfWidth * Math.Max(_join == LineJoin.Miter ? pen.MiterLimit : 1, _cap == LineCap.Square ? Math.Sqrt(2) : 1));
     }
 
     /// <summary>
@@ -220,6 +249,50 @@ internal sealed class Stroker : PathSink
 
     public override void MoveTo(double x, double y)
     {
+        if (_nearChords is not null)
+        {
+            _nearChords.MoveTo(x, y);
+            return;
+        }
+
+        MoveToCore(x, y);
+    }
+
+    public override void LineTo(double x, double y, bool smooth)
+    {
+        if (_nearChords is not null)
+        {
+            _nearChords.LineTo(x, y, smooth);
+            return;
+        }
+
+        LineToCore(x, y, smooth);
+    }
+
+    public override void Close(bool smooth)
+    {
+        if (_nearChords is not null)
+        {
+            _nearChords.Close(smooth);
+            return;
+        }
+
+        CloseCore(smooth);
+    }
+
+    public override void End()
+    {
+        if (_nearChords is not null)
+        {
+            _nearChords.End();
+            return;
+        }
+
+        EndCore();
+    }
+
+    private void MoveToCore(double x, double y)
+    {
         FinishOpenContour();
         _startX = x;
         _startY = y;
@@ -230,11 +303,11 @@ internal sealed class Stroker : PathSink
         _implicitStart = false;
     }
 
-    public override void LineTo(double x, double y, bool smooth)
+    private void LineToCore(double x, double y, bool smooth)
     {
         if (!_hasStart)
         {
-            MoveTo(x, y);
+            MoveToCore(x, y);
             return;
         }
 
@@ -291,14 +364,14 @@ internal sealed class Stroker : PathSink
         _implicitStart = false;
     }
 
-    public override void Close(bool smooth)
+    private void CloseCore(bool smooth)
     {
         if (!_hasStart)
             return;
 
         if (_x != _startX || _y != _startY)
         {
-            LineTo(_startX, _startY, smooth);
+            LineToCore(_startX, _startY, smooth);
         }
 
         if (_hasSegment)
@@ -341,7 +414,7 @@ internal sealed class Stroker : PathSink
         _implicitStart = true;
     }
 
-    public override void End()
+    private void EndCore()
     {
         FinishOpenContour();
         _hasStart = false;
@@ -810,7 +883,7 @@ internal sealed class Stroker : PathSink
     /// </summary>
     private bool IsArcOutsideFrame(double centerX, double centerY, double ux, double uy, double vx, double vy, double mx, double my, double length)
     {
-        if (_edges is null || _isProjectiveOutput)
+        if ((_edges is null && _pieces is null) || _isProjectiveOutput)
             return false;
 
         var toTangents = 2 * _halfWidth / (length * length);
@@ -836,6 +909,12 @@ internal sealed class Stroker : PathSink
             minY = Math.Min(minY, y);
             maxX = Math.Max(maxX, x);
             maxY = Math.Max(maxY, y);
+        }
+
+        if (_edges is null)
+        {
+            // The point is outside the triangle: the arc and its chord wind around it the same way
+            return !(_testX >= minX && _testX <= maxX && _testY >= minY && _testY <= maxY);
         }
 
         return maxX < 0 || maxY < 0 || minX > _edges.Width || minY > _edges.Height;
@@ -900,7 +979,15 @@ internal sealed class Stroker : PathSink
         _pieceMaxX = x;
         if (_edges is null)
         {
-            _outline!.AppendMoveTo(x, y);
+            if (_outline is not null)
+            {
+                _outline.AppendMoveTo(x, y);
+            }
+            else
+            {
+                _pieces!.MoveTo(x, y);
+            }
+
             return;
         }
 
@@ -976,7 +1063,15 @@ internal sealed class Stroker : PathSink
     {
         if (_edges is null)
         {
-            _outline!.Close();
+            if (_outline is not null)
+            {
+                _outline.Close();
+            }
+            else
+            {
+                _pieces!.Close(smooth: false);
+            }
+
             return;
         }
 
@@ -1001,7 +1096,15 @@ internal sealed class Stroker : PathSink
     {
         if (_edges is null)
         {
-            _outline!.AppendLineTo(x, y);
+            if (_outline is not null)
+            {
+                _outline.AppendLineTo(x, y);
+            }
+            else
+            {
+                _pieces!.LineTo(x, y, smooth: false);
+            }
+
             return;
         }
 
@@ -1049,6 +1152,18 @@ internal sealed class Stroker : PathSink
         public bool HasJoin;
         public double JoinX;
         public double JoinY;
+    }
+
+    /// <summary>Receives the contours the stroke is made of, when they do not come to the stroker directly: the chords near the point of a test.</summary>
+    private sealed class ContourSink(Stroker stroker) : PathSink
+    {
+        public override void MoveTo(double x, double y) => stroker.MoveToCore(x, y);
+
+        public override void LineTo(double x, double y, bool smooth) => stroker.LineToCore(x, y, smooth);
+
+        public override void Close(bool smooth) => stroker.CloseCore(smooth);
+
+        public override void End() => stroker.EndCore();
     }
 
     /// <summary>Receives the pieces of the stroke once they are cut and transformed by a projective transformation.</summary>

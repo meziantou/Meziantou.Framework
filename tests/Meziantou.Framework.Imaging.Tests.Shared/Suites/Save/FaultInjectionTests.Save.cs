@@ -137,6 +137,16 @@ public sealed partial class FaultInjectionTests
         }
     }
 
+    /// <summary>Keeps an animation, the only input that the frame regions of an encoder change.</summary>
+    private static Image? KeepAnimation(Image image)
+    {
+        if (image.Frames.Count > 1)
+            return image;
+
+        image.Dispose();
+        return null;
+    }
+
     private static Image? LoadForEncoder(byte[] data, string encoderName, out ImageEncoder encoder)
     {
         // The integer encoders reject floating-point pixels: an OpenEXR source is reduced to 16-bit integers first, its
@@ -163,6 +173,10 @@ public sealed partial class FaultInjectionTests
             case "png":
                 encoder = new PngEncoder { MetadataHandling = MetadataHandling.Strip };
                 return image;
+            case "png-frames":
+                // The canvases of the regions, the region scanlines, and the deferred data of each frame
+                encoder = new PngEncoder { MetadataHandling = MetadataHandling.Strip, OptimizeFrames = true };
+                return KeepAnimation(image);
             case "png-minimum-size":
                 // The analysis, the candidate encodings compressed to a counter, and the canvas copies of the animations
                 encoder = new PngEncoder { MetadataHandling = MetadataHandling.Strip, Optimization = PngOptimization.MinimumSize };
@@ -183,6 +197,11 @@ public sealed partial class FaultInjectionTests
                 encoder = new GifEncoder { MetadataHandling = MetadataHandling.Strip, AlphaMode = GifAlphaMode.Threshold };
                 image.RemovePosterFrame();
                 return image;
+            case "gif-frames":
+                // The canvases of the regions, and each frame written from them once the next one is compared
+                encoder = new GifEncoder { MetadataHandling = MetadataHandling.Strip, AlphaMode = GifAlphaMode.Threshold, OptimizeFrames = true };
+                image.RemovePosterFrame();
+                return KeepAnimation(image);
             case "webp":
                 encoder = new WebPEncoder { MetadataHandling = MetadataHandling.Strip, AllowBitDepthReduction = true };
                 image.RemovePosterFrame();
@@ -192,6 +211,16 @@ public sealed partial class FaultInjectionTests
                 }
 
                 return image;
+            case "webp-frames":
+                // The displayed frame, and the region copied out of each frame
+                encoder = new WebPEncoder { MetadataHandling = MetadataHandling.Strip, AllowBitDepthReduction = true, OptimizeFrames = true };
+                image.RemovePosterFrame();
+                if (image.Animation is { TotalPlays: > ushort.MaxValue } frameAnimation)
+                {
+                    frameAnimation.TotalPlays = null; // the WebP loop count is 16-bit
+                }
+
+                return KeepAnimation(image);
             case "avif":
             case "heic":
                 // The fastest search: the test encodes each input once per rental of the encoder

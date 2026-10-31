@@ -163,7 +163,8 @@ public sealed class VectorPath
     /// <summary>Gets the length of the path: the sum of the lengths of its contours.</summary>
     /// <remarks>
     /// The path is measured as it is drawn: by the chords of its curves, within 1/16 of a pixel of the curve. A closed
-    /// contour includes its closing segment; the gap between two contours is not counted. Each call walks the whole path.
+    /// contour includes its closing segment; the gap between two contours is not counted. Each call walks the whole path:
+    /// <see cref="VectorPathMeasure"/> walks it once for many questions.
     /// </remarks>
     /// <returns>The length, in pixels.</returns>
     public double GetLength()
@@ -181,7 +182,7 @@ public sealed class VectorPath
     /// The distance is measured as <see cref="GetLength"/> measures the path: the contours follow each other, without
     /// the gap between them. A distance before the start gives the first point, a distance beyond the end the last
     /// one. At a corner, the direction is the one of the segment that starts there. Each call walks the path from its
-    /// start.
+    /// start: <see cref="VectorPathMeasure"/> walks it once for many distances.
     /// </remarks>
     /// <param name="distance">The distance from the start of the path, in pixels.</param>
     /// <param name="point">The point of the path at that distance.</param>
@@ -272,7 +273,7 @@ public sealed class VectorPath
     /// <para>
     /// The markers of the pen are contours of the result, like the pieces of the stroke. With an
     /// <see cref="Pen.Alignment"/> that is not <see cref="PenAlignment.Center"/>, the result is the outline of the side
-    /// of the stroke that is kept (what <see cref="Combine"/> gives of the stroke of a pen twice as wide and of this
+    /// of the stroke that is kept (what <see cref="Combine(VectorPath, PathCombineMode, FillRule, CancellationToken)"/> gives of the stroke of a pen twice as wide and of this
     /// path): closed contours of straight segments that do not overlap.
     /// </para>
     /// </remarks>
@@ -284,27 +285,10 @@ public sealed class VectorPath
     {
         ArgumentNullException.ThrowIfNull(pen);
         var builder = new VectorPathBuilder();
-        var stroker = new Stroker(builder);
 
         // A stroke on one side of the path is the stroke of a pen twice as wide, of which that side is kept
         var isCentered = pen.Alignment == PenAlignment.Center;
-        stroker.Configure(pen, isCentered ? 1 : 2);
-        PathSink sink = stroker;
-        using var dasher = pen.IsDashed ? new Dasher(scope: null) : null;
-        if (dasher is not null)
-        {
-            dasher.Configure(pen, stroker);
-            sink = dasher;
-        }
-
-        using var markers = pen.HasMarkers ? new MarkerSink(scope: null) : null;
-        if (markers is not null)
-        {
-            markers.Configure(pen, stroker, sink);
-            sink = markers;
-        }
-
-        PathFlattener.Flatten(this, sink);
+        Stroke(new Stroker(builder), pen, isCentered ? 1 : 2);
         var result = builder.Build();
         foreach (var value in result._points)
         {
@@ -317,6 +301,52 @@ public sealed class VectorPath
             return result.Combine(this, pen.Alignment == PenAlignment.Inside ? PathCombineMode.Intersect : PathCombineMode.Exclude);
 
         return result;
+    }
+
+    /// <summary>Gets a value indicating whether a point is inside the stroke of the path: whether a pen that strokes the path paints it.</summary>
+    /// <remarks>
+    /// <para>
+    /// The stroke is the one <see cref="Widen"/> gives, caps, joins, miter limit, dashes, markers and
+    /// <see cref="Pen.Alignment"/> included, and the answer is the one of <see cref="Contains"/> on it, without creating it:
+    /// only the parts of the path that are within the reach of the pen from the point are stroked, and their pieces are
+    /// tested against the point as they are computed. A point on the outline of the stroke may be reported either way;
+    /// with an <see cref="Pen.Alignment"/> that is not <see cref="PenAlignment.Center"/>, the side of the path is decided
+    /// without the grid of 1/1024 of a pixel that <see cref="Widen"/> moves the outline to.
+    /// </para>
+    /// <para>
+    /// The point is a point of the path, not of a canvas: as with <see cref="Widen"/>, the transformation of a canvas and
+    /// <see cref="Pen.ScalesWithTransform"/> do not apply, and a hairline (a width of 0) is one unit wide. Each call
+    /// flattens the whole path and measures the distance of each of its chords to the point, and the dashes are cut
+    /// along the whole path; a point outside <see cref="GetBounds(Pen)"/> is rejected without walking it.
+    /// </para>
+    /// </remarks>
+    /// <param name="point">The point.</param>
+    /// <param name="pen">The stroke. Its brush is not used.</param>
+    /// <returns><see langword="true"/> if the stroke contains the point; <see langword="false"/> for a point that is not a finite position.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="pen"/> is <see langword="null"/>.</exception>
+    public bool StrokeContains(PointD point, Pen pen)
+    {
+        ArgumentNullException.ThrowIfNull(pen);
+        if (IsEmpty || !double.IsFinite(point.X) || !double.IsFinite(point.Y))
+            return false;
+
+        if (!pen.HasMarkers)
+        {
+            // Everything the pen paints is within these bounds
+            var bounds = pen.GetStrokeBounds(GetTightBounds());
+            if (!(point.X >= bounds.Left && point.X <= bounds.Right && point.Y >= bounds.Top && point.Y <= bounds.Bottom))
+                return false;
+        }
+
+        // A stroke on one side of the path is the stroke of a pen twice as wide, of which that side is kept. The pieces
+        // all turn the same way: the point is in one of them when they wind around it.
+        var isCentered = pen.Alignment == PenAlignment.Center;
+        var winding = new WindingSink(point.X, point.Y);
+        Stroke(new Stroker(winding, point.X, point.Y), pen, isCentered ? 1 : 2);
+        if (winding.Winding == 0)
+            return false;
+
+        return isCentered || Contains(point) == (pen.Alignment == PenAlignment.Inside);
     }
 
     /// <summary>Creates a path from the path data of SVG: the <c>d</c> attribute of a <c>path</c> element.</summary>
@@ -491,6 +521,38 @@ public sealed class VectorPath
         return PathCombiner.Combine(this, other, mode, fillRule, cancellationToken);
     }
 
+    /// <summary>Creates the outline of what this path and another one fill, combined, each path filling what its own fill rule says.</summary>
+    /// <remarks>
+    /// The result is the one of <see cref="Combine(VectorPath, PathCombineMode, FillRule, CancellationToken)"/>, with the
+    /// area of each path decided by its own rule: a star drawn as one contour that crosses itself can be filled with
+    /// its center (<see cref="FillRule.NonZero"/>) or without it (<see cref="FillRule.EvenOdd"/>) whatever the rule of
+    /// the shape it is combined with.
+    /// </remarks>
+    /// <param name="other">The other path.</param>
+    /// <param name="mode">What is kept of the areas the two paths fill.</param>
+    /// <param name="fillRule">The rule deciding what this path fills.</param>
+    /// <param name="otherFillRule">The rule deciding what <paramref name="other"/> fills.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <returns>The outline; an empty path when nothing is kept.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="other"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="mode"/> is not a defined <see cref="PathCombineMode"/>, or <paramref name="fillRule"/> or <paramref name="otherFillRule"/> is not a defined <see cref="FillRule"/>.</exception>
+    /// <exception cref="InvalidOperationException">The segments of the paths could not be cut so that they only meet at their ends: no outline is returned rather than a wrong one.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public VectorPath Combine(VectorPath other, PathCombineMode mode, FillRule fillRule, FillRule otherFillRule, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+        if (mode is not (PathCombineMode.Union or PathCombineMode.Intersect or PathCombineMode.Exclude or PathCombineMode.Xor))
+            throw new ArgumentOutOfRangeException(nameof(mode), mode, "The combine mode is not valid.");
+
+        if (fillRule is not (FillRule.NonZero or FillRule.EvenOdd))
+            throw new ArgumentOutOfRangeException(nameof(fillRule), fillRule, "The fill rule is not valid.");
+
+        if (otherFillRule is not (FillRule.NonZero or FillRule.EvenOdd))
+            throw new ArgumentOutOfRangeException(nameof(otherFillRule), otherFillRule, "The fill rule is not valid.");
+
+        return PathCombiner.Combine(this, other, mode, fillRule, otherFillRule, cancellationToken);
+    }
+
     /// <summary>Creates the outline of what this path fills: contours that do not cross each other or themselves.</summary>
     /// <remarks>
     /// <para>
@@ -498,7 +560,7 @@ public sealed class VectorPath
     /// whose contours overlap, becomes the boundary of its area. This turns the pieces <see cref="Widen"/> gives into
     /// the outline of a stroke, which can be stroked in turn.
     /// </para>
-    /// <para>The result is made as <see cref="Combine"/> makes it, with the same precision and the same cost.</para>
+    /// <para>The result is made as <see cref="Combine(VectorPath, PathCombineMode, FillRule, CancellationToken)"/> makes it, with the same precision and the same cost.</para>
     /// </remarks>
     /// <param name="fillRule">The rule deciding what this path fills.</param>
     /// <param name="cancellationToken">A token to cancel the operation.</param>
@@ -519,7 +581,8 @@ public sealed class VectorPath
     /// The path is the one that is drawn: its curves are their chords, within 1/16 of a pixel of the curve, a closed
     /// contour includes its closing segment, and the gap between two contours is no part of it. The distance along
     /// the path is the one <see cref="TryGetPointAtDistance"/> and <see cref="Trim"/> take. When several points are as
-    /// near, the first one along the path is given. Each call walks the whole path.
+    /// near, the first one along the path is given. Each call walks the whole path: <see cref="VectorPathMeasure"/> walks
+    /// it once for many positions.
     /// </remarks>
     /// <param name="point">The position.</param>
     /// <param name="closest">The nearest point of the path.</param>
@@ -593,7 +656,7 @@ public sealed class VectorPath
     /// line) has no outline to move: <see cref="Widen"/> gives the outline of its stroke.
     /// </para>
     /// <para>
-    /// The result is made as <see cref="Combine"/> makes it: closed contours of straight segments that do not cross,
+    /// The result is made as <see cref="Combine(VectorPath, PathCombineMode, FillRule, CancellationToken)"/> makes it: closed contours of straight segments that do not cross,
     /// on a grid of 1/1024 of a pixel, for the size the path has. Transform a path before moving its outline, not
     /// after. Pass a <paramref name="cancellationToken"/> when the path comes from untrusted input.
     /// </para>
@@ -630,6 +693,31 @@ public sealed class VectorPath
             throw new ArgumentOutOfRangeException(nameof(fillRule), fillRule, "The fill rule is not valid.");
 
         return PathOffsetter.Offset(this, distance, join, miterLimit, fillRule, cancellationToken);
+    }
+
+    /// <summary>Strokes the path without a canvas: every dash is cut, and the markers are pieces of the stroke.</summary>
+    /// <param name="stroker">The stroker, with the output of the pieces.</param>
+    /// <param name="pen">The pen.</param>
+    /// <param name="widthFactor">What the width of the pen is multiplied by: 2 for a stroke of which one side is kept.</param>
+    private void Stroke(Stroker stroker, Pen pen, double widthFactor)
+    {
+        stroker.Configure(pen, widthFactor);
+        PathSink sink = stroker;
+        using var dasher = pen.IsDashed ? new Dasher(scope: null) : null;
+        if (dasher is not null)
+        {
+            dasher.Configure(pen, stroker);
+            sink = dasher;
+        }
+
+        using var markers = pen.HasMarkers ? new MarkerSink(scope: null) : null;
+        if (markers is not null)
+        {
+            markers.Configure(pen, stroker, sink);
+            sink = markers;
+        }
+
+        PathFlattener.Flatten(this, sink);
     }
 
     /// <summary>Gets the smallest rectangle containing every point and control point of a list of elements.</summary>

@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Imaging.Tests</RootNamespace>
     <ImagingTestFixtureFormats>png</ImagingTestFixtureFormats>
-    <ImagingTestEncoders>png;png-indexed;png-minimum-size;png-layout</ImagingTestEncoders>
+    <ImagingTestEncoders>png;png-indexed;png-minimum-size;png-frames;png-layout</ImagingTestEncoders>
   </PropertyGroup>
 
   <ItemGroup>

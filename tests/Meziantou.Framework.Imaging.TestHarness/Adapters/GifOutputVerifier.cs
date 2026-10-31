@@ -25,6 +25,13 @@ namespace Meziantou.Framework.Imaging.TestHarness.Adapters;
 /// whose intent has at most the available number of distinct colors must be reproduced exactly; other frames are quantized
 /// and their opaque pixels are reported as a <see cref="ReconstructionError"/> for the caller's quality criteria.
 /// </para>
+/// <para>
+/// With <see cref="GifEncoder.OptimizeFrames"/>, the images after the first one are regions of the canvas disposed with
+/// 1, 2 or 3, and their transparent flag also follows their unchanged pixels: those checks are replaced by the first image
+/// covering the canvas, the regions being inside it, the disposals being one of those, and the transparent flag of every
+/// frame that has transparent pixels. A frame is expected exact when
+/// it and every frame before it fit their palettes (an unchanged pixel keeps the color an earlier frame gave it).
+/// </para>
 /// </remarks>
 public static class GifOutputVerifier
 {
@@ -167,6 +174,8 @@ public static class GifOutputVerifier
         var displayed = reference.DecodeDisplayedFrames();
         var intents = new List<RawPixelBuffer>(displayed.Count);
         var errors = new List<ReconstructionError?>(displayed.Count);
+        var optimized = isAnimated && encoder.OptimizeFrames;
+        var exactSoFar = true;
         for (var i = 0; i < reference.Images.Count; i++)
         {
             var image = reference.Images[i];
@@ -174,7 +183,15 @@ public static class GifOutputVerifier
             var intent = ToIntent(expected.Frames[i], encoder);
             intents.Add(intent);
             var (colors, hasTransparency) = CountColors(intent);
-            Check(image.CoversCanvas(reference.Width, reference.Height), name, $"image {image.Width}x{image.Height}+{image.Left}+{image.Top}: a full-canvas image expected");
+            if (optimized && i > 0)
+            {
+                Check(image.Width > 0 && image.Height > 0 && image.Left + image.Width <= reference.Width && image.Top + image.Height <= reference.Height, name, $"image {image.Width}x{image.Height}+{image.Left}+{image.Top}: a region of the canvas expected");
+            }
+            else
+            {
+                Check(image.CoversCanvas(reference.Width, reference.Height), name, $"image {image.Width}x{image.Height}+{image.Left}+{image.Top}: a full-canvas image expected");
+            }
+
             Check(image.LocalColorTable is not null, name, "no local color table");
             Check(image.Interlaced == encoder.Interlaced, name, $"interlaced {image.Interlaced}, {encoder.Interlaced} expected");
             var duration = expected.Frames[i].Metadata.Duration;
@@ -182,7 +199,14 @@ public static class GifOutputVerifier
             if (isAnimated)
             {
                 Check(image.Control is not null, name, "an animation frame has no Graphic Control Extension");
-                Check(image.Control!.DisposalMethod == 2, name, $"disposal {image.Control.DisposalMethod}, 2 (restore to background) expected");
+                if (optimized)
+                {
+                    Check(image.Control!.DisposalMethod is 1 or 2 or 3, name, $"disposal {image.Control.DisposalMethod}, 1, 2 or 3 expected");
+                }
+                else
+                {
+                    Check(image.Control!.DisposalMethod == 2, name, $"disposal {image.Control.DisposalMethod}, 2 (restore to background) expected");
+                }
             }
             else if (image.Control is not null)
             {
@@ -190,7 +214,15 @@ public static class GifOutputVerifier
             }
 
             Check((image.Control?.DelayHundredths ?? 0) == delay, name, $"delay {image.Control?.DelayHundredths ?? 0}, {delay} hundredths expected for {duration}");
-            Check((image.Control?.HasTransparency ?? false) == hasTransparency, name, $"transparent flag {image.Control?.HasTransparency ?? false}, {hasTransparency} expected");
+            if (!optimized)
+            {
+                Check((image.Control?.HasTransparency ?? false) == hasTransparency, name, $"transparent flag {image.Control?.HasTransparency ?? false}, {hasTransparency} expected");
+            }
+            else if (hasTransparency)
+            {
+                // Apple ImageIO restores to background with the opaque background color when the next image has no transparent entry
+                Check(image.Control?.HasTransparency ?? false, name, "no transparent flag on a frame that has transparent pixels");
+            }
 
             // Palette entries actually used, the transparent one included
             var used = image.Indices.ToArray().Distinct().Count();
@@ -209,7 +241,8 @@ public static class GifOutputVerifier
             }
 
             var available = encoder.Quantization.MaxColors - (hasTransparency ? 1 : 0);
-            if (colors <= available)
+            exactSoFar &= colors <= available;
+            if (colors <= available && (!optimized || exactSoFar))
             {
                 var result = PixelBufferComparer.Compare(intent, actual, ComparisonPolicy.Exact, name + " decoded by the reference reader (exact palette)");
                 if (!result.IsMatch)

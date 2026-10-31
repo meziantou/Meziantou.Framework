@@ -97,7 +97,9 @@ rendering also changes the images of the pages (`DocumentationImageTests`).
   widen the others losslessly (`ImageWriterCore`, `ImageCollectionWriterCore`).
 - Processing: `Rgb48` has kernels of its own. The filtering kernels and the `Pixelate`/`OilPaint`/`Flatten` effects run
   `La16`, `La32` and `A8` through `ProcessingBridge` (an `Rgba32`/`Rgba64` copy of the frame, `Image.KernelPixelFormat`
-  for the plans and scratch sizes; `Flatten` rejects `A8`, which cannot hold the flattened colors), and drawing
+  for the plans and scratch sizes; `Flatten` rejects `A8`, which cannot hold the flattened colors), and so do the
+  morphological filters (`MorphologyFilter`; `TopHat` and `BlackHat` reject `A8`, whose alpha they keep). The tone
+  curves and lookup tables (`ColorLookup`) read every integer format natively through `ToneSamples`, and drawing
   composites them through `DrawingKernels.CompositeBridged`, their paints holding the gray level in the three colors. A
   new per-frame operation must handle them natively, go through the bridge, or reject them before any allocation.
 
@@ -213,6 +215,29 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   - The harness reader decodes every color type and bit depth to 16-bit RGBA and composites APNG frames
     (`ReferencePng.Canonical.cs`), rejecting any OVER pixel whose result depends on the rounding of a decoder; verify
     `MinimumSize` output with `OptimizedPngOutputVerifier`, never with `ApngOutputVerifier` (full-canvas frames only).
+- **Animation frame regions** (`OptimizeFrames` of `GifEncoder`, `PngEncoder` and `WebPEncoder`; `AnimationFrameDelta`,
+  the encoder side of `AnimationCompositor`). One helper keeps the displayed frame (and the canvas it was drawn on, for
+  `RestorePrevious` and for GIF), compares each frame with the canvases each disposal of the previous frame leaves, and
+  chooses the smallest region; each format declares what it can write (`AnimationDeltaRules`). Opt-in: the default
+  output of the three encoders keeps its full-canvas frames and its bytes. `PngOptimization.MinimumSize` has its own
+  comparison (it compresses the candidates) and ignores the setting. Keep these findings:
+  - The displayed frames, their number and their durations never change: an unchanged frame is a 1x1 region, never merged
+    into the previous one. The first frame (and the APNG poster) covers the canvas.
+  - OVER is only used where it is exact. WebP blending rounds translucent pixels in libwebp (`anim_dump`): only opaque
+    changed pixels are blended, the others replace the canvas ("do not blend"). APNG also blends a translucent pixel on a
+    fully transparent canvas pixel (`TranslucentOverTransparent`), as `MinimumSize` does.
+  - A GIF image cannot make a pixel transparent: the previous frame is written only once the next one is planned (from
+    the canvases, which hold alpha-reduced pixels before color reduction), so that its region can grow to cover the
+    pixels that become transparent (`EnlargePreviousRegion`). APNG keeps the compressed chunks of a frame in a private
+    buffer and writes its `fcTL` when the next frame chose its disposal; WebP patches the disposal bit of the previous
+    `ANMF` (animations need a seekable destination anyway).
+  - Apple ImageIO restores a GIF frame to background with the opaque background color, not transparent pixels, when the
+    image drawn next has no transparent entry: a frame that has transparent pixels always gets the transparent entry
+    (`GifOutputVerifier` checks it), even when its region has none.
+  - The regions of indexed APNG output have 8-bit indexes (FFmpeg misplaces packed pixels of a region, see above).
+  - The independent checks: `GifOutputVerifier` (regions and disposals with `OptimizeFrames`), `OptimizedPngOutputVerifier`,
+    `ReferenceWebP.ComposeDisplayedFrames` (lossless, rejects translucent blended pixels), and FFmpeg, libwebp and Apple
+    ImageIO in the interop tests (`DeltaFrameAnimations` holds the shared scenarios).
 - **Apple CgBI PNG** (`PngStructureParser.IsAppleCgbi`, `PngSampleFormat.ExpandCgbiBgra`). No specification describes
   it: Xcode's `pngcrush -iphone` writes it and Apple ImageIO (`sips`) is the reference. Its raw deflate datastream goes
   through the zlib inflater of the other files, behind a synthetic header and followed by the checksum of what it
@@ -673,7 +698,12 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   so that `Identify` reports every rejection), the offset table, then the chunks in the order of their offsets: the input
   is read forward only, and a chunk must start at its offset, carry its own coordinates and end before the next one.
   `ExrDecoder` decompresses each chunk of the full-resolution image (`ExrChunkDecompressor`) and writes its samples in
-  place in the rows of the frame (a tile covers part of a row); when the frame is not in the source layout, it decodes
+  place in the rows of the frame (a tile covers part of a row), only the lines and columns inside the image window
+  (`ExrHeader.ImageWindow`: the display window, or the data window with `OpenExrWindowMode.DataWindow`). With a layer
+  (`OpenExrDecodingOptions.Layer`), `ExrHeader.ResolveRoles` gives the other channels the role `Ignored`: they are
+  decompressed with the chunk and skipped, line by line, since a scan-line channel that is ignored may be sub-sampled.
+  The options live on `ImageConfiguration` so that `Identify`, loads, readers and collections report the same image; a
+  layer never falls back to another one. When the frame is not in the source layout, it decodes
   into a staging image and converts it at the end (`Image.PrepareConversion`: a tone mapping needs the peak of the whole
   image). The compressions cite the sections of `ExrCompression.md`; they are bit-exact with OpenEXR, PXR24 and B44
   included (their loss happens when the file is written). The B44 table of pLinear channels is computed from
@@ -731,6 +761,19 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   there, then a conversion to `IccCorpus.cs`. The fixtures README lists what LittleCMS cannot judge (CMYK
   interpolation between grid points, three black point compensation cases).
 - Pixels and their profile change together: `ConvertColorProfile` is transactional. No other operation converts colors.
+- Device link and abstract profiles only exist in a sequence (`IccColorTransform.Create(IReadOnlyList<IccProfile>)`,
+  `IccPipeline.Create(IReadOnlyList<IccProfile>, ...)`); `IccProfileModel.Create` refuses them elsewhere. The sequence
+  follows the convention of other color management systems: a device profile entered with device values goes to the
+  connection space, one entered from the connection space goes to its device values, so a proof lists the printer
+  twice. A sequence of two device profiles must stay `IccPipeline.Create(IccProfile, IccProfile, ...)` exactly. The
+  LittleCMS literals of `IccColorTransformTests` come from `cmsCreateMultiprofileTransform` (no optimization) on the
+  synthetic profiles of `IccProfileBuilder`; LittleCMS computes black point compensation and absolute colorimetry per
+  pair of profiles, so compare it only on sequences whose device profiles have a black black.
+- `GamutMapping.ReduceChroma` is the gamut mapping of CSS Color 4 (section 13.2), as an `IccGamutMapStage` inserted
+  right before the conversion of a destination from the connection space (`IccProfileModel.CreateGamutMapping`):
+  exact gamut for matrix-based and CICP destinations, round trip through the colorimetric tables for table-based ones.
+  `Clip` adds no stage, so the default conversions are unchanged bit for bit. The HDR clipping policy is separate
+  (`HdrToneMapStage`).
 
 ## Drawing
 
@@ -769,6 +812,10 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
     `GradientColorSpace` other than `Encoded`, the stops stay 16-bit sRGB colors, are mixed in linear light or in
     Oklab (`SrgbTransfer`, `Math.Cbrt`: the one place of the drawing code that uses functions of the platform), and
     the 16-bit result is converted like a brush color; the color of a stop is always written as it is.
+  - `GradientBrush.Dither` (off by default) replaces the rounding offset by the threshold of the 8x8 Bayer matrix at
+    the pixel of the frame, only on frames of 8 bits per component (`GetPaintMax` is 255); in the other color spaces
+    the 16-bit colors are moved by less than half an 8-bit step before their conversion. A dithered gradient never
+    takes the row-color shortcuts of `GradientEvaluator`.
 - `PaintProfile` is the one way a color profile reaches a drawing: the colors the caller gives go through
   `PaintColorConverter` (the pipeline of `Image.CreatePaintPipeline`, whose destination is the profile of the image,
   or its CICP color space through `IccPipeline.Create(IccProfile, CicpColorSpace, ...)`) before `ConvertDrawingColor`.
@@ -796,6 +843,12 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   into a sink, as drawing does, so that they answer for what is drawn; `GetTightBounds` (`PathBounds`) is computed from
   the curves, and contains their chords. `Widen` runs the `Stroker` into a path builder: the same pieces in the same
   order as a draw call, so filling the result is stroking, bit for bit (`FillingAWidenedPathIsStrokingThePath`).
+  `StrokeContains` runs the same `Stroker` into a `WindingSink` (no path is built): its `NearChordFilter` passes on
+  only the runs of chords within the reach of the pen from the point, each with one chord of context on both sides (a
+  join that can contain the point is at a vertex whose two chords are near), and the arcs of joins and caps whose
+  triangle misses the point become chords. Change the stroker with `AStrokeOfARandomPathContainsWhatItsWidenedPathContains`
+  green. `VectorPathMeasure` keeps the chords `DistanceSink` and `ClosestPointSink` walk, and gives their answers bit
+  for bit (same operations, same order; groups of chords are skipped by a bound with a margin, never by a tie).
 - `EnumerateSegments` is the only public view of the elements of a path: it gives what the builder takes, never the
   internal form (an `ArcPiece` becomes the arc of SVG, through `ArcGeometry.GetAxes`; an ellipse becomes two arcs).
   `Reverse` (`PathReverser`) works on the elements, exactly; `Trim` (`TrimSink`) works on the chords, like the other
@@ -1172,7 +1225,8 @@ thin public types over its `FontFace`.
   rented from the scope of the conversion (a scope of the default limits for `IccColorTransform`). The last stage of a
   16-bit conversion is still evaluated: its inputs are the doubles that come out of a matrix, not 65,536 values.
 - Default parallelism is one worker (`ImageConfiguration.MaxDegreeOfParallelism`). Only `Resize`, the transformations,
-  `Convolve`, the blurs (`GaussianBlur`, `BoxBlur`, `MedianBlur`), `Sharpen`, `DetectEdges`, the `Pixelate`, `OilPaint` and
+  `Convolve`, the blurs (`GaussianBlur`, `BoxBlur`, `MedianBlur`, and `PercentileFilter`, which shares the median's
+  plan), `Sharpen`, `DetectEdges`, the `Pixelate`, `OilPaint` and
   `Flatten` effects (`EffectScratch`), the `ImageSimilarity` metrics (SSIM, PSNR, SSIMULACRA 2, Butteraugli) and the
   codec work listed below are parallel, and their result must not depend on the worker count (`ParallelConvolutionTests`,
   `ImageSimilarityTests.Metrics_DoNotDependOnTheWorkerCount`: a frame needs 65,536 pixels to get several workers). Split

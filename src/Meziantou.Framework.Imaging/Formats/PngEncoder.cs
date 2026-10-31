@@ -16,7 +16,8 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// </para>
 /// <para>
 /// Animated output is written with freshly computed control data: full-canvas frames by default, or the rectangles that
-/// changed with <see cref="PngOptimization.MinimumSize"/>; delta information from a decoded source is never reused. PNG
+/// changed with <see cref="OptimizeFrames"/> or <see cref="PngOptimization.MinimumSize"/>; delta information from a
+/// decoded source is never reused. PNG
 /// and APNG writers require <see cref="ImageWriterOptions.ExpectedFrameCount"/>.
 /// </para>
 /// <para>
@@ -147,6 +148,32 @@ public sealed class PngEncoder : ImageEncoder
 
     /// <summary>Gets a value indicating whether Adam7 interlacing is used. Defaults to <see langword="false"/>.</summary>
     public bool Interlaced { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether the frames of an animation after the first one are written as the region of the
+    /// canvas that changes, with the layout, the filters and the compression level of the other settings. Defaults to
+    /// <see langword="false"/>: every frame covers the canvas. <see cref="PngOptimization.MinimumSize"/> always writes such
+    /// regions (choosing them by compressing the candidates) and ignores the setting.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Each frame stores the bounding box of the pixels that differ from the canvas it is drawn on, with the disposal of the
+    /// previous frame (<c>APNG_DISPOSE_OP_NONE</c>, <c>BACKGROUND</c> or <c>PREVIOUS</c>) that gives the smallest box. The box
+    /// is blended with <c>APNG_BLEND_OP_OVER</c>, its unchanged pixels fully transparent, when the layout has a transparent
+    /// value (an alpha channel, or a fully transparent palette entry), some pixels do not change, and every pixel that
+    /// changes is opaque, or not fully transparent where the canvas is (both give the pixel exactly); otherwise with
+    /// <c>APNG_BLEND_OP_SOURCE</c>, which reproduces every pixel. A frame equal to the previous one is a 1x1 region. The first
+    /// frame and the poster cover the canvas, and the displayed frames, their durations, the play count and the number of
+    /// frames are exactly the same as without the setting. The palette indexes of <see cref="PngPixelLayout.Indexed"/> have
+    /// 8 bits, because some decoders misplace the packed pixels of a frame region.
+    /// </para>
+    /// <para>
+    /// The encoder keeps two copies of the canvas (4 bytes per pixel, 8 for the 16-bit pixel formats), and the compressed
+    /// data of each frame until the next one is given: the <c>fcTL</c> chunk of a frame holds the disposal chosen for the
+    /// next one.
+    /// </para>
+    /// </remarks>
+    public bool OptimizeFrames { get; init; }
 
     /// <summary>
     /// Gets how frame durations are converted to APNG <c>delay_num / delay_den</c> (16-bit unsigned values). Defaults to

@@ -44,6 +44,22 @@ public sealed class ImageConfiguration
         }
     }
 
+    /// <summary>
+    /// Gets the options of the OpenEXR decoder: the layer it decodes and the window the image covers. Defaults to
+    /// <see cref="OpenExrDecodingOptions.Default"/>, which rejects the files with channels or pixels outside the image.
+    /// </summary>
+    /// <remarks>Identification, eager loads, sequential readers and collections read them alike. The other formats ignore them.</remarks>
+    /// <exception cref="ArgumentNullException">The value is <see langword="null"/>.</exception>
+    public OpenExrDecodingOptions OpenExrDecoding
+    {
+        get;
+        init
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            field = value;
+        }
+    } = OpenExrDecodingOptions.Default;
+
     /// <summary>Gets the environment of the fonts loaded with this configuration.</summary>
     internal Internals.ImageFontEnvironment FontEnvironment => field ??= new Internals.ImageFontEnvironment(this);
 

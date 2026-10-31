@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Meziantou.Framework.Imaging.Metadata;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -16,20 +17,45 @@ internal sealed class IccProfileModel
     private readonly ReadOnlyMemory<byte> _data;
     private readonly string _role;
 
-    private IccProfileModel(ReadOnlyMemory<byte> data, IccHeader header, string role, int channelCount)
+    private IccProfileModel(ReadOnlyMemory<byte> data, IccHeader header, string role, int channelCount, int outputChannelCount)
     {
         _data = data;
         _role = role;
         Header = header;
         ChannelCount = channelCount;
+        OutputChannelCount = outputChannelCount;
         IsLabConnectionSpace = header.ConnectionSpace == IccReader.SignatureLab;
     }
 
     /// <summary>Gets the header of the profile.</summary>
     public IccHeader Header { get; }
 
-    /// <summary>Gets the number of device channels: 1 (gray), 3 (RGB) or 4 (CMYK).</summary>
+    /// <summary>
+    /// Gets the number of channels of the data color space: 1 (gray), 3 (RGB) or 4 (CMYK) for a device or device link
+    /// profile, 3 for an abstract profile (CIEXYZ or CIELAB).
+    /// </summary>
     public int ChannelCount { get; }
+
+    /// <summary>
+    /// Gets the number of channels of the output of a device link profile (its output color space, stored in the field of
+    /// the connection space); the number of channels of the connection space (3) for the other profiles.
+    /// </summary>
+    public int OutputChannelCount { get; }
+
+    /// <summary>Gets a value indicating whether the profile is a device link profile (ICC.1:2022 section 8.6).</summary>
+    public bool IsDeviceLink => Header.ProfileClass == IccReader.ClassDeviceLink;
+
+    /// <summary>Gets a value indicating whether the profile is an abstract profile (ICC.1:2022 section 8.7).</summary>
+    public bool IsAbstract => Header.ProfileClass == IccReader.ClassAbstract;
+
+    /// <summary>
+    /// Gets the color space of the device values a profile reads: the data color space of a device or device link
+    /// profile. The connection space for an abstract profile.
+    /// </summary>
+    public uint InputColorSpace => Header.DataColorSpace;
+
+    /// <summary>Gets the color space of the device values of a device link profile output: its field of the connection space.</summary>
+    public uint OutputColorSpace => Header.ConnectionSpace;
 
     /// <summary>Gets a value indicating whether the connection space of the profile is CIELAB instead of CIEXYZ.</summary>
     public bool IsLabConnectionSpace { get; }
@@ -37,9 +63,13 @@ internal sealed class IccProfileModel
     /// <summary>Validates a profile and creates its model.</summary>
     /// <param name="profile">The profile.</param>
     /// <param name="role">The role of the profile in the conversion ("source" or "destination"), for exception messages.</param>
+    /// <param name="allowLinkAndAbstract">
+    /// Whether device link and abstract profiles are accepted: they only have a meaning in a sequence of profiles
+    /// (<see cref="IccPipeline.Create(IReadOnlyList{IccProfile}, IccRenderingIntent, bool, GamutMapping)"/>).
+    /// </param>
     /// <exception cref="InvalidImageContentException">The profile is malformed.</exception>
     /// <exception cref="UnsupportedImageFeatureException">The profile is valid but of a kind that is not supported.</exception>
-    public static IccProfileModel Create(IccProfile profile, string role)
+    public static IccProfileModel Create(IccProfile profile, string role, bool allowLinkAndAbstract = false)
     {
         var data = profile.Data.Memory;
         if (!MetadataValidation.TryValidateIccProfile(data.Span, out var error))
@@ -49,22 +79,52 @@ internal sealed class IccProfileModel
         if (header.Version.Major > 4)
             throw CreateUnsupported(role, string.Create(CultureInfo.InvariantCulture, $"has version {header.Version.Major}.{header.Version.Minor} (iccMAX); only versions 2 and 4 are supported."), "ICC profile version 5");
 
-        if (header.ProfileClass is not (IccReader.ClassInput or IccReader.ClassDisplay or IccReader.ClassOutput or IccReader.ClassColorSpace))
-            throw CreateUnsupported(role, $"has the class {IccReader.FormatSignature(header.ProfileClass)}; only input, display, output and color space profiles are supported.", "ICC profile class");
-
-        var channelCount = header.DataColorSpace switch
+        switch (header.ProfileClass)
         {
-            IccReader.SignatureGray => 1,
-            IccReader.SignatureRgb => 3,
-            IccReader.SignatureCmyk => 4,
-            _ => throw CreateUnsupported(role, $"has the data color space {IccReader.FormatSignature(header.DataColorSpace)}; only gray, RGB and CMYK are supported.", "ICC profile data color space"),
-        };
+            case IccReader.ClassInput or IccReader.ClassDisplay or IccReader.ClassOutput or IccReader.ClassColorSpace:
+                break;
 
+            case IccReader.ClassDeviceLink or IccReader.ClassAbstract when allowLinkAndAbstract:
+                return CreateLinkOrAbstract(data, header, role);
+
+            case IccReader.ClassDeviceLink or IccReader.ClassAbstract:
+                throw CreateUnsupported(role, $"has the class {IccReader.FormatSignature(header.ProfileClass)}, which does not describe the colors of a device on its own; use it in a sequence of profiles (IccColorTransform.Create with a list of profiles).", "ICC profile class");
+
+            default:
+                throw CreateUnsupported(role, $"has the class {IccReader.FormatSignature(header.ProfileClass)}; only input, display, output and color space profiles are supported{(allowLinkAndAbstract ? ", and device link and abstract profiles in a sequence of profiles" : "")}.", "ICC profile class");
+        }
+
+        var channelCount = GetDeviceChannelCount(header.DataColorSpace) ?? throw CreateUnsupported(role, $"has the data color space {IccReader.FormatSignature(header.DataColorSpace)}; only gray, RGB and CMYK are supported.", "ICC profile data color space");
         if (header.ConnectionSpace is not (IccReader.SignatureXyz or IccReader.SignatureLab))
             throw new InvalidImageContentException($"The {role} ICC profile is invalid: the profile connection space {IccReader.FormatSignature(header.ConnectionSpace)} is neither 'XYZ ' nor 'Lab '.", ImageFormat.Unknown);
 
-        return new IccProfileModel(data, header, role, channelCount);
+        return new IccProfileModel(data, header, role, channelCount, outputChannelCount: 3);
     }
+
+    // ICC.1:2022 section 8.6: the data color space of a device link profile is its input, the field of the connection space
+    // its output, both device color spaces. Section 8.7: both color spaces of an abstract profile are connection spaces.
+    private static IccProfileModel CreateLinkOrAbstract(ReadOnlyMemory<byte> data, IccHeader header, string role)
+    {
+        if (header.ProfileClass == IccReader.ClassAbstract)
+        {
+            if (header.DataColorSpace is not (IccReader.SignatureXyz or IccReader.SignatureLab) || header.ConnectionSpace is not (IccReader.SignatureXyz or IccReader.SignatureLab))
+                throw new InvalidImageContentException($"The {role} ICC profile is invalid: an abstract profile converts between connection spaces, but its color spaces are {IccReader.FormatSignature(header.DataColorSpace)} and {IccReader.FormatSignature(header.ConnectionSpace)} instead of 'XYZ ' or 'Lab '.", ImageFormat.Unknown);
+
+            return new IccProfileModel(data, header, role, channelCount: 3, outputChannelCount: 3);
+        }
+
+        var inputs = GetDeviceChannelCount(header.DataColorSpace) ?? throw CreateUnsupported(role, $"is a device link profile whose input color space is {IccReader.FormatSignature(header.DataColorSpace)}; only gray, RGB and CMYK are supported.", "ICC profile data color space");
+        var outputs = GetDeviceChannelCount(header.ConnectionSpace) ?? throw CreateUnsupported(role, $"is a device link profile whose output color space is {IccReader.FormatSignature(header.ConnectionSpace)}; only gray, RGB and CMYK are supported.", "ICC profile data color space");
+        return new IccProfileModel(data, header, role, inputs, outputs);
+    }
+
+    private static int? GetDeviceChannelCount(uint colorSpace) => colorSpace switch
+    {
+        IccReader.SignatureGray => 1,
+        IccReader.SignatureRgb => 3,
+        IccReader.SignatureCmyk => 4,
+        _ => null,
+    };
 
     /// <summary>Gets a value indicating whether the profile is a CMYK output (printer) profile.</summary>
     public bool IsCmykOutputProfile => ChannelCount == 4 && Header.ProfileClass == IccReader.ClassOutput;
@@ -174,6 +234,94 @@ internal sealed class IccProfileModel
         }
 
         throw Invalid("the profile has no lookup table ('A2B0') to convert its device values to the profile connection space.");
+    }
+
+    /// <summary>
+    /// Creates the stage that maps the colors of the connection space into the gamut of the profile as a destination,
+    /// before <see cref="AppendFromConnectionSpace"/>; <see langword="null"/> when nothing is mapped (see
+    /// <see cref="GamutMapping.ReduceChroma"/>).
+    /// </summary>
+    /// <exception cref="InvalidImageContentException">The profile is malformed.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The profile has lookup tables from the connection space but none to it, so its gamut is unknown.</exception>
+    public IccStage? CreateGamutMapping(IccRenderingIntent intent, GamutMapping mapping)
+    {
+        if (mapping == GamutMapping.Clip || ChannelCount == 1)
+            return null;
+
+        if (UsesLookupTable(deviceToConnection: false, intent))
+        {
+            // The perceptual and saturation tables map the gamut themselves
+            if (intent is not (IccRenderingIntent.RelativeColorimetric or IccRenderingIntent.AbsoluteColorimetric))
+                return null;
+
+            if (!UsesLookupTable(deviceToConnection: true, IccRenderingIntent.RelativeColorimetric))
+                throw Unsupported("has no lookup table to the profile connection space ('A2B1' or 'A2B0'), so its gamut is unknown and colors cannot be mapped into it.", "Gamut mapping to an ICC profile without a conversion to the profile connection space");
+
+            var toDevice = new IccStageList();
+            AppendFromConnectionSpace(toDevice, IccRenderingIntent.RelativeColorimetric);
+            var toConnectionSpace = new IccStageList();
+            AppendToConnectionSpace(toConnectionSpace, IccRenderingIntent.RelativeColorimetric);
+            return new IccRoundTripGamutMapStage(toDevice.ToArray(), toConnectionSpace.ToArray(), ChannelCount);
+        }
+
+        // A CMYK profile without tables cannot be a destination: AppendFromConnectionSpace reports it
+        if (ChannelCount != 3)
+            return null;
+
+        Span<double> matrix = stackalloc double[9];
+        ReadColorantMatrix(matrix);
+        var curves = ReadRgbCurves();
+        Span<double> low = stackalloc double[3];
+        Span<double> high = stackalloc double[3];
+        for (var i = 0; i < 3; i++)
+        {
+            var first = curves[i].Evaluate(0);
+            var last = curves[i].Evaluate(1);
+            low[i] = Math.Min(first, last);
+            high[i] = Math.Max(first, last);
+        }
+
+        return IccMatrixGamutMapStage.Create(matrix, low, high);
+    }
+
+    /// <summary>
+    /// Appends the stages of a device link profile: its <c>AToB0</c> tag converts the normalized device values of its input
+    /// color space to those of its output color space (ICC.1:2022 section 8.6), whatever the rendering intent, which was
+    /// chosen when the link was made.
+    /// </summary>
+    public void AppendDeviceLink(IccStageList stages)
+    {
+        Debug.Assert(IsDeviceLink);
+        if (!IccReader.TryFindTag(_data.Span, IccReader.TagAToB0, out var offset, out var length))
+            throw Invalid("the device link profile has no 'A2B0' tag.");
+
+        // The device values on both sides are not encoded: the tag is read as the table of a device profile
+        if (IccLutParser.Append(_data.Slice(offset, length), ChannelCount, OutputChannelCount, deviceToConnection: true, connectionIsXyz: false, stages) is { } error)
+            throw Invalid($"in the 'A2B0' tag, {error}");
+    }
+
+    /// <summary>
+    /// Appends the stages of an abstract profile: CIEXYZ of the connection space encoded as the input of its <c>AToB0</c>
+    /// tag (its data color space), the tag, then its output decoded from the connection space of the profile to CIEXYZ
+    /// (ICC.1:2022 section 8.7).
+    /// </summary>
+    public void AppendAbstract(IccStageList stages)
+    {
+        Debug.Assert(IsAbstract);
+        if (!IccReader.TryFindTag(_data.Span, IccReader.TagAToB0, out var offset, out var length))
+            throw Invalid("the abstract profile has no 'A2B0' tag.");
+
+        if (length < 4)
+            throw Invalid("the 'A2B0' tag is too short to have a type.");
+
+        var tag = _data.Slice(offset, length);
+        var type = IccReader.ReadUInt32(tag.Span);
+        var inputIsLab = Header.DataColorSpace == IccReader.SignatureLab;
+        AppendEncoding(stages, type, IccReader.TagAToB0, inputIsLab);
+        if (IccLutParser.AppendConnectionSpaceTable(tag, inputIsXyz: !inputIsLab, stages) is { } error)
+            throw Invalid($"in the 'A2B0' tag, {error}");
+
+        AppendDecoding(stages, type, IccReader.TagAToB0);
     }
 
     /// <summary>
@@ -301,9 +449,12 @@ internal sealed class IccProfileModel
     }
 
     /// <summary>Appends the conversion of CIEXYZ to the normalized input of a lookup table (see <see cref="AppendDecoding"/>).</summary>
-    private void AppendEncoding(IccStageList stages, uint type, uint signature)
+    private void AppendEncoding(IccStageList stages, uint type, uint signature) => AppendEncoding(stages, type, signature, IsLabConnectionSpace);
+
+    /// <summary>Appends the conversion of CIEXYZ to the normalized input of a lookup table whose input is CIELAB or CIEXYZ.</summary>
+    private void AppendEncoding(IccStageList stages, uint type, uint signature, bool isLab)
     {
-        if (!IsLabConnectionSpace)
+        if (!isLab)
         {
             EnsureXyzEncoding(type, signature);
             stages.Add(IccMatrixStage.CreateScale(1 / XyzEncodingScale, 1 / XyzEncodingScale, 1 / XyzEncodingScale));

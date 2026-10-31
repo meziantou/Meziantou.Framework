@@ -4,7 +4,7 @@
     <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
     <RootNamespace>Meziantou.Framework.Imaging.Tests</RootNamespace>
     <ImagingTestFixtureFormats>webp</ImagingTestFixtureFormats>
-    <ImagingTestEncoders>webp</ImagingTestEncoders>
+    <ImagingTestEncoders>webp;webp-frames</ImagingTestEncoders>
   </PropertyGroup>
 
   <ItemGroup>

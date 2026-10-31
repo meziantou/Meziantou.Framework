@@ -5,6 +5,7 @@ using Meziantou.Framework.Imaging.TestHarness.ExternalTools;
 using Meziantou.Framework.Imaging.TestHarness.Gif;
 using Meziantou.Framework.Imaging.TestHarness.Pixels;
 using Meziantou.Framework.Imaging.TestHarness.Streams;
+using Meziantou.Framework.Imaging.Tests;
 
 namespace Meziantou.Framework.Imaging.InteropTests;
 
@@ -129,6 +130,79 @@ public sealed class GifEncoderInteropTests
         var frameLength = Width * Height * 4;
         var frames = Enumerable.Range(0, image.Frames.Count).Select(i => result.StandardOutput.Slice(i * frameLength, frameLength).ToArray()).ToList();
         AssertFrames(verification.Intents, frames, name + " decoded by Apple ImageIO");
+    }
+
+    public static TheoryData<string> OptimizedFrameCases => DeltaFrameAnimations.Cases;
+
+    [Theory]
+    [MemberData(nameof(OptimizedFrameCases))]
+    public async Task OptimizedFramesDecodeExactlyWithFFmpeg(string name)
+    {
+        // Regions, the transparent entry of their unchanged pixels and the disposals 1, 2 and 3
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        using var image = DeltaFrameAnimations.Create(name);
+        var encoder = new GifEncoder { OptimizeFrames = true };
+        var path = await SaveAsync(image, encoder, "optimized-" + name);
+        var verification = GifOutputVerifier.Verify(await File.ReadAllBytesAsync(path, XunitCancellationToken), image, encoder, context: name);
+        Assert.All(verification.Errors, error => Assert.Null(error));
+        var decoded = await ffmpeg.DecodeToRawFramesAsync(path, "rgba", image.Width, image.Height, ignoreLoop: true, XunitCancellationToken);
+        AssertFrames(verification.Intents, decoded, $"{name} decoded by FFmpeg {ffmpeg.Version}");
+    }
+
+    [Theory]
+    [MemberData(nameof(OptimizedFrameCases))]
+    public async Task OptimizedFramesDecodeExactlyWithAppleImageIO(string name)
+    {
+        // Apple ImageIO exists only on macOS: skipped elsewhere locally; required (never skipped) in the CI interop job (macOS)
+        _ = RequiredTools.AppleImageIO();
+        using var image = DeltaFrameAnimations.Create(name);
+        var encoder = new GifEncoder { OptimizeFrames = true };
+        var path = await SaveAsync(image, encoder, "imageio-optimized-" + name);
+        var verification = GifOutputVerifier.Verify(await File.ReadAllBytesAsync(path, XunitCancellationToken), image, encoder, context: name);
+        var decoded = await RequiredTools.DecodeWithAppleImageIOAsync(path, image.Width, image.Height, binaryAlpha: true);
+        AssertFrames(verification.Intents, [.. decoded.Select(frame => frame.Span.ToArray())], $"{name} decoded by Apple ImageIO");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task OptimizedTransitionsDecodeExactlyWithFFmpeg(bool interlaced)
+    {
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        var (image, _, name, path, verification) = await SaveOptimizedTransitionsAsync(interlaced);
+        using (image)
+        {
+            AssertFrames(verification.Intents, await ffmpeg.DecodeToRawFramesAsync(path, "rgba", Width, Height, ignoreLoop: true, XunitCancellationToken), $"{name} decoded by FFmpeg {ffmpeg.Version}");
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task OptimizedTransitionsDecodeExactlyWithAppleImageIO(bool interlaced)
+    {
+        // Apple ImageIO exists only on macOS: skipped elsewhere locally; required (never skipped) in the CI interop job (macOS)
+        var (swift, script) = RequiredTools.AppleImageIO();
+        var (image, _, name, path, verification) = await SaveOptimizedTransitionsAsync(interlaced);
+        using var disposable = image;
+        var result = await ProcessRunner.RunAsync(swift, [script, "--binary-alpha", path], XunitCancellationToken);
+        if (result.ExitCode != 0)
+            Assert.Fail($"ImageIO failed (exit code {result.ExitCode}): {result.StandardError}");
+
+        var frameLength = Width * Height * 4;
+        var frames = Enumerable.Range(0, image.Frames.Count).Select(i => result.StandardOutput.Slice(i * frameLength, frameLength).ToArray()).ToList();
+        AssertFrames(verification.Intents, frames, name + " decoded by Apple ImageIO");
+    }
+
+    private static async Task<(Image<Rgba32> Image, GifEncoder Encoder, string Name, FullPath Path, GifVerification Verification)> SaveOptimizedTransitionsAsync(bool interlaced)
+    {
+        var image = CreateTransitions(Width, Height, seed: interlaced ? 31 : 32);
+        var encoder = new GifEncoder { OptimizeFrames = true, Interlaced = interlaced };
+        var name = $"optimized-transitions-{(interlaced ? "interlaced" : "progressive")}";
+        var path = await SaveAsync(image, encoder, name);
+        var verification = GifOutputVerifier.Verify(await File.ReadAllBytesAsync(path, XunitCancellationToken), image, encoder, context: name);
+        Assert.All(verification.Errors, error => Assert.Null(error));
+        return (image, encoder, name, path, verification);
     }
 
     private static void AssertFrames(IReadOnlyList<RawPixelBuffer> expected, IReadOnlyList<byte[]> decoded, string context)

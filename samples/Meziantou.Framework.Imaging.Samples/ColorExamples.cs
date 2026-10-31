@@ -23,4 +23,24 @@ internal static class ColorExamples
         return orientation;
     }
     #endregion
+
+    /// <summary>A soft proof: the colors of a print, shown on a display, through a sequence of ICC profiles.</summary>
+    #region Imaging_SoftProof
+    public static ushort[] SoftProof(IccProfile display, IccProfile printer, ReadOnlySpan<ushort> rgb)
+    {
+        // The printer profile appears twice: the colors enter it from the profile connection space to become inks, then
+        // leave it as the colors of these inks. The colors the printer cannot reproduce lose chroma at constant
+        // lightness and hue, instead of being clipped channel by channel.
+        var proof = IccColorTransform.Create([display, printer, printer, display], new IccColorTransformOptions
+        {
+            Intent = IccRenderingIntent.RelativeColorimetric,
+            GamutMapping = GamutMapping.ReduceChroma,
+        });
+
+        // A transform is immutable and thread-safe: create it once and reuse it
+        var preview = new ushort[rgb.Length];
+        proof.Convert(rgb, preview);
+        return preview;
+    }
+    #endregion
 }

@@ -94,7 +94,14 @@ public sealed class TextStyle
     /// they select a written form: <c>zh-Hans</c>, <c>zh-Hant</c>, <c>zh-HK</c>, <c>el-polyton</c>, <c>und-fonipa</c>.
     /// A language the registry of OpenType has no tag for changes nothing.
     /// </para>
-    /// <para>The language changes nothing else: neither the fonts that are chosen nor where lines break.</para>
+    /// <para>
+    /// With a stack that falls back to the installed fonts (<see cref="FontStack.WithInstalledFallback(SystemFontCollection?, InstalledFontFallbackOptions?)"/>),
+    /// the language also chooses the families its Han ideographs are looked for in: those of Japanese (<c>ja</c>),
+    /// Korean (<c>ko</c>), Traditional Chinese (<c>zh-Hant</c>, <c>zh-TW</c>), the Chinese of Hong Kong (<c>zh-HK</c>,
+    /// <c>yue</c>) or Simplified Chinese (<c>zh</c>, <c>zh-Hans</c>, and a text without a language or in another
+    /// language). The fonts of the stack itself are used in their order, whatever the language. The language changes
+    /// nothing else: not where lines break.
+    /// </para>
     /// </remarks>
     /// <exception cref="ArgumentException">The value does not have the form of a BCP 47 language tag.</exception>
     public string? Language
@@ -107,11 +114,15 @@ public sealed class TextStyle
 
             field = value;
             LanguageTags = value is null ? [] : OpenTypeLanguage.GetTags(value);
+            HanForms = InstalledFontFallbackFamilies.GetHanForms(LanguageTags);
         }
     }
 
     /// <summary>Gets the tags of the language systems of <see cref="Language"/>, by order of preference.</summary>
     internal uint[] LanguageTags { get; private init; } = [];
+
+    /// <summary>Gets the forms of the Han ideographs of <see cref="Language"/>, which choose the installed fonts they are looked for in.</summary>
+    internal HanForms HanForms { get; private init; }
 
     /// <summary>
     /// Gets what is made from the glyphs of the fonts to imitate a bold or an italic font that the caller does not have.

@@ -3256,7 +3256,12 @@ of their characters and were not compared with a font.
   `MaxWidth`, the lines of a paragraph are wrapped where the Unicode line breaking algorithm (UAX #14) allows it;
   `WordBreak` and `LineBreak` select its variants, and `OverflowWrap` lets a word that is wider than the layout be cut
   between two characters. The white space that ends a wrapped line hangs: it does not count in the width of the line.
-  A line is as tall as its fonts ask (the largest ascent and descent, each with half of the line gap), or as
+  Each line takes as much of the text as fits (greedy breaking) unless `LineBreakStrategy` is `Optimal`: the breaks of
+  the whole paragraph are then chosen together (total fit, after Knuth and Plass), to minimize the sum of the squares
+  of the room left at the end of the lines but the last one (per justification opportunity for justified text), with a
+  cost for each hyphenated line. The break opportunities, hyphenation and the handling of a word wider than the line
+  are those of greedy breaking; `MaxLines` and `MaxHeight` cut the lines afterwards, and a long paragraph takes about
+  twice as long to lay out. A line is as tall as its fonts ask (the largest ascent and descent, each with half of the line gap), or as
   `LineHeight` says.
 - **Scripts without spaces.** Thai, Lao, Khmer and Burmese are written without spaces between words, and the Unicode
   algorithm leaves their lines to a dictionary: without one, such text is only broken at a space, or anywhere with
@@ -3324,10 +3329,21 @@ of their characters and were not compared with a font.
     right; the strikethrough of upright text is in the middle of the line. A placeholder takes its height down the
     line and is centered on it.
 - **Alignment.** Lines are aligned in `MaxWidth`, or in the width of the widest line without it. `Justify` stretches
-  each line to that width by widening U+0020 spaces and U+00A0 no-break spaces, except the last line of a paragraph.
-  A line without these spaces stays start-aligned: there is no inter-character justification for CJK text.
+  each line to that width, except the last line of a paragraph, and `Justification` says where the room goes:
+  `InterWord` (the default) widens U+0020 spaces and U+00A0 no-break spaces; `Auto` also widens U+3000 ideographic
+  spaces and adds room between two characters when one of them is of a block script (Han, kana, Bopomofo, Hangul, Yi,
+  wide and fullwidth characters) or of a clustered script (Thai, Lao, Khmer, Myanmar, Tai Le, New Tai Lue, Tai Tham,
+  Tai Viet) and neither is white space; `InterCharacter` adds room between every two clusters, except between two
+  letters of a cursive script (Arabic, Syriac, Mongolian, N'Ko, Phags-pa, Mandaic, Hanifi Rohingya). A mark stays with
+  its base. The room is shared equally, not by priority, and a line that has no place to stretch stays start-aligned.
   `FirstLineIndent` indents the first line of each paragraph; a negative value is a hanging indent, which leaves the
-  first line at the edge and indents the lines after it. `TabSize` sets the tabulation stops.
+  first line at the edge and indents the lines after it.
+- **Tabulations.** A tabulation goes to the next stop of `TabStops` (positions in pixels from the start of the text of
+  the line, after its indent), which aligns the text after it, up to the next tabulation or the end of the line, at its
+  start, its end, its middle or its decimal separator (`TextTabAlignment`); a text too wide for its alignment starts
+  where the tabulation is. After the last stop, and without stops, the stops are every `TabSize` spaces. A line is
+  measured with its stops when it is wrapped. In a right-to-left paragraph the stops are measured from the right, and
+  in a vertical line from the top.
 - **Fitting.** `MaxLines` and `MaxHeight` cut the text (the first line is always kept); `Trimming` ends the last line
   with an ellipsis after the last character or the last word that leaves room for it, and also trims a line that is
   wider than `MaxWidth` when lines are not wrapped. `IsTruncated` says that a part of the text is not in the layout.
@@ -3380,9 +3396,13 @@ of their characters and were not compared with a font.
   first needs them (`SystemFontDescriptor.Covers`), within a bounded amount of memory, and a file that cannot be read
   or loaded is skipped. The font found for a character is kept by the stack, which its layouts share: each font is
   loaded once. A stack without fallback never uses an installed font; with fallback, the text depends on the fonts of
-  the machine. Fallback does not use `TextStyle.Language`: Han ideographs use the simplified-Chinese family list
-  regardless of the language. Put the desired Japanese, Korean or traditional-Chinese fonts in the stack or in
-  `PreferredFamilies` when their regional forms matter.
+  the machine. The families of the Han ideographs (and Bopomofo) depend on `TextStyle.Language`, since their forms
+  differ: Japanese (`ja`: Yu Gothic, Hiragino Sans, Noto Sans CJK JP), Korean (`ko`: Malgun Gothic, Apple SD Gothic
+  Neo, Noto Sans CJK KR), Traditional Chinese (`zh-Hant`, `zh-TW`, `zh-MO`: Microsoft JhengHei, PingFang TC, Noto Sans
+  CJK TC), Hong Kong (`zh-HK`, `yue`: PingFang HK, Noto Sans CJK HK, then Traditional Chinese), and Simplified Chinese
+  for `zh`, `zh-Hans`, a text without a language and every other language; the families of Simplified Chinese follow
+  those of the language. The font found for a cluster is kept per language. The fonts of the stack itself are used in
+  their order whatever the language, and `PreferredFamilies` come first.
 - **Synthetic bold and oblique.** `TextStyle.Synthesis` makes a replacement for a bold or an italic font the caller
   does not have, by geometry alone. `Oblique` slants every outline to the right around the baseline, by a quarter
   of the height (about 14 degrees); marks follow their letter, advances do not change and decorations stay straight.
@@ -3630,8 +3650,10 @@ the outlines of a run as one shape, as `StrokeText` does. A variable font draws 
 
 What text layout does not do yet: letter spacing is added between the letters of
 every script, including those that join. Justification does not lengthen Arabic words (kashida). The advances of a
-bitmap strike are not used. Lines are broken one after the other, each as full as
-possible, not by optimizing the whole paragraph. In vertical lines, there is no ruby, the punctuation is not compressed
+bitmap strike are not used. Justification shares its room equally between its opportunities, without the priorities
+of some typographic traditions (spaces before characters, punctuation compression of Japanese). Optimal line breaking
+has no fitness classes (it does not avoid a loose line next to a tight one) and does not choose the breaks to fit
+`MaxLines`. In vertical lines, there is no ruby, the punctuation is not compressed
 nor hung, the side of an underline is not a choice, a line cannot be read from the bottom, and the marks of a font
 that has no positioning table are not placed on upright letters. Along a path, the glyphs are placed and turned,
 not bent to the curve, and the rectangles of the placeholders are those of a text drawn at a point. A placeholder is
@@ -5427,6 +5449,6 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | JPEG recompression | `JpegXlTranscoder.RecompressJpeg` rejects with `UnsupportedImageFeatureException` what a JPEG XL frame cannot hold: four components (CMYK, YCCK), a sampling factor other than 1 or 2 (4:1:1), subsampled RGB components, arithmetic, lossless, hierarchical and 12-bit files, restart intervals of several lengths (the description of the file has one), a quantization table that no component uses unless it repeats the table defined before it, a Huffman table that uses the code of all ones, more than 65,535 bytes between two markers or 4,260,096 bytes after the end of image, and entropy-coded data that would not be rebuilt byte for byte (the output is always checked). The whole file is held in memory, with two bytes per coefficient. The reconstruction data (`jbrd`) are read wherever the container has them: every encoder writes them before the codestream; when they follow it, the frame is held as it is coded until they are read, and `HasJpegReconstructionData` reads the file to its end |
 | JPEG 2000 | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify` when the headers tell): signed samples and samples of more than 16 bits, components of different depths, a sub-sampled first component and sub-sampled components that are not the chrominances of an image of three components, more than four components without color specification, a premultiplied opacity, several opacity channels, an opacity of one color, channels that are not defined, the extensions of ISO/IEC 15444-2 (other wavelet filters, other component transformations, other regions of interest), files of the `jpm ` and `mjp2` brands, files of several codestreams or of a fragmented codestream, more than 30 bit-planes in a sub-band; for the high-throughput block coder: tile-components that mix both block coders, a code-block with several HT sets, and placeholder passes in another packet than the HT cleanup pass. CMYK is loaded only with `CmykConversion`. Not read: the intellectual property and XML boxes, the comments of the codestream. Not available: decoding a lower resolution, a region or fewer layers. Encoding: no rate control (a quality, not a size), one tile and one layer (the whole image is transformed at once, in memory), no HTJ2K, no palette, no sub-sampling, no CMYK, no animation; a codestream stores no metadata |
 | OpenEXR | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify`): multi-part files, deep data, the DWAA, DWAB, HTJ2K and ZSTD compressions, channels other than R, G, B, A and Y (layers, depth, `RY`/`BY` chroma, extra channels: they would be lost) unless `OpenExrDecodingOptions.Layer` selects a layer, the chroma channels `RY` and `BY` also in a layer, sub-sampled color channels (a sub-sampled channel that a layer ignores is fine), a data window that leaves the display window (its pixels would be lost) unless `OpenExrDecodingOptions.WindowMode` crops it or decodes the data window, UINT samples that a float cannot hold exactly, and versions other than 2. Not decoded: the lower levels of mipmaps and ripmaps, the preview image and the attributes other than the windows and the chromaticities. Encoding: one still image, scan lines only (no tiles), half or float samples (no UINT), no lossy compression (PXR24, B44, DWA), no attributes other than the required ones and the chromaticities, linear light only
-| Text | In vertical lines, no ruby and no compression of punctuation; a synthetic bold is not in the path of a layout nor in a stroked text; the pen of a style (`TextStyle.Outline`) strokes glyphs, not decorations, and has a width in pixels that a text fitted to a box does not scale; a text is fitted to a box by trying sizes, each with a whole layout; no word list is provided for the scripts that need a dictionary to break their lines; greedy line breaking; no AAT (`morx`, `kerx`) shaping, no device adjustment of positions; hinting is opt-in (`TextLayoutOptions.Hinting`), only for horizontal text, without the variations of the control values (`cvar`) and without the hints of CFF outlines; no subpixel (LCD) rendering; an installed font is never used by itself: it is loaded with `Font.LoadInstalled`, or used for the characters the fonts of a stack lack with `FontStack.WithInstalledFallback`, whose choice depends on the fonts of the machine; along a path, glyphs are turned but not warped; see [Text](#text) |
+| Text | In vertical lines, no ruby and no compression of punctuation; a synthetic bold is not in the path of a layout nor in a stroked text; the pen of a style (`TextStyle.Outline`) strokes glyphs, not decorations, and has a width in pixels that a text fitted to a box does not scale; a text is fitted to a box by trying sizes, each with a whole layout; no word list is provided for the scripts that need a dictionary to break their lines; greedy line breaking by default, optimal (total-fit) breaking without fitness classes; justification without kashida and without priorities; no AAT (`morx`, `kerx`) shaping, no device adjustment of positions; hinting is opt-in (`TextLayoutOptions.Hinting`), only for horizontal text, without the variations of the control values (`cvar`) and without the hints of CFF outlines; no subpixel (LCD) rendering; an installed font is never used by itself: it is loaded with `Font.LoadInstalled`, or used for the characters the fonts of a stack lack with `FontStack.WithInstalledFallback`, whose choice depends on the fonts of the machine; along a path, glyphs are turned but not warped; see [Text](#text) |
 | Fonts | No font of the system unless one is asked for (`Font.LoadInstalled`, `FontStack.WithInstalledFallback`, `SystemFontCollection`), no SVG glyph, no font without outlines, no bitmap glyph of several bits per pixel without colors, no Type 1 font, no hints of CFF outlines; see [Fonts](#fonts) |
 | API | No public allocator, custom pixel type, codec plug-in or image-processor interface; implementation types are internal |

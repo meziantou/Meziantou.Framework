@@ -434,6 +434,342 @@ public sealed class TextLayoutTests
     }
 
     [Fact]
+    public void JustifiedChineseAndJapaneseTextIsStretchedBetweenItsCharacters()
+    {
+        // The ideographs one, three and two are drawn as A, C and B (16, 12 and 8 pixels). The first line is the three
+        // first ideographs, 36 pixels: it has no space, so by default it is not stretched.
+        var style = new TextStyle(Ideographs, 16);
+        var layout = TextLayout.Create("\u4E00\u4E09\u4E8C\u4E09", style, new TextLayoutOptions { MaxWidth = 40, Alignment = TextAlignment.Justify });
+        Assert.Equal(36, layout.Lines[0].Width);
+        Assert.Equal(TextJustification.InterWord, TextLayoutOptions.Default.Justification);
+
+        // Between the characters, the 4 pixels that are left are shared by the two places between the characters. The
+        // last line of the paragraph is not stretched.
+        var options = new TextLayoutOptions { MaxWidth = 40, Alignment = TextAlignment.Justify, Justification = TextJustification.Auto };
+        layout = TextLayout.Create("\u4E00\u4E09\u4E8C\u4E09", style, options);
+        Assert.Equal(new TextLine(0, 3, 0, 0, 40, 16, 13, false), layout.Lines[0]);
+        Assert.Equal(new TextLine(3, 1, 0, 16, 12, 16, 13, false), layout.Lines[1]);
+        AssertRectangles(layout, new PointD(0, 0), A(0, 0), C(18, 0), B(32, 0), C(0, 16));
+
+        // The positions of the text follow the glyphs: the room after a character belongs to it.
+        Assert.Equal(new RectangleD(18, 0, 0, 16), layout.GetCaretRectangle(1));
+        Assert.Equal(new RectangleD(32, 0, 0, 16), layout.GetCaretRectangle(2));
+        Assert.Equal(0, layout.HitTest(new PointD(17, 8)).TextIndex);
+        Assert.Equal(1, layout.HitTest(new PointD(19, 8)).TextIndex);
+        Assert.Equal([new RectangleD(18, 0, 14, 16)], layout.GetSelectionRectangles(1, 1));
+
+        // In a vertical line, the room is added down the line: upright ideographs advance by 16 pixels.
+        layout = TextLayout.Create("\u4E00\u4E09\u4E8C\u4E09", style, new TextLayoutOptions { WritingMode = TextWritingMode.VerticalRightToLeft, MaxHeight = 40, Alignment = TextAlignment.Justify, Justification = TextJustification.Auto });
+        Assert.Equal(40, layout.Lines[0].Height);
+        Assert.Equal(24, layout.GetCaretRectangle(1).Y);
+        Assert.Equal(2, layout.Lines[1].Start);
+    }
+
+    [Fact]
+    public void AnIdeographicSpaceIsStretchedWhenTheCharactersAre()
+    {
+        var style = new TextStyle(CreateIdeographs(builder => builder.CharacterMap[0x3000] = FontSamples.SpaceGlyph), 16);
+
+        // The ideographic space is 8 pixels; the first line is 40 pixels in 44. By default it is not widened.
+        var layout = TextLayout.Create("\u4E00\u3000\u4E00\u4E09", style, new TextLayoutOptions { MaxWidth = 44, Alignment = TextAlignment.Justify });
+        Assert.Equal(40, layout.Lines[0].Width);
+
+        // It is the only place the line can be stretched at: there is no room between a character and a space.
+        layout = TextLayout.Create("\u4E00\u3000\u4E00\u4E09", style, new TextLayoutOptions { MaxWidth = 44, Alignment = TextAlignment.Justify, Justification = TextJustification.Auto });
+        Assert.Equal(new TextLine(0, 3, 0, 0, 44, 16, 13, false), layout.Lines[0]);
+        AssertRectangles(layout, new PointD(0, 0), A(0, 0), A(28, 0), C(0, 16));
+
+        // At the end of a wrapped line, it hangs, and is not widened.
+        layout = TextLayout.Create("\u4E00\u4E00\u3000\u4E09", style, new TextLayoutOptions { MaxWidth = 40, Alignment = TextAlignment.Justify, Justification = TextJustification.Auto });
+        Assert.Equal(new TextLine(0, 3, 0, 0, 40, 16, 13, false), layout.Lines[0]);
+        AssertRectangles(layout, new PointD(0, 0), A(0, 0), A(24, 0), C(0, 16));
+    }
+
+    [Fact]
+    public void JustifiedThaiTextIsStretchedBetweenItsClusters()
+    {
+        // The consonants ko kai, kho khai and kho khwai are drawn as A, C and B; the vowel sara i is the mark of the
+        // boxes font, drawn above and before where the pen is (4 pixels from 10 to 6 pixels before it).
+        var style = new TextStyle(CreateIdeographs(builder =>
+        {
+            builder.CharacterMap[0x0E01] = FontSamples.BoxA;
+            builder.CharacterMap[0x0E02] = FontSamples.BoxC;
+            builder.CharacterMap[0x0E04] = FontSamples.BoxB;
+            builder.CharacterMap[0x0E34] = FontSamples.AcuteMark;
+        }), 16);
+        const string Text = "\u0E01\u0E34\u0E02\u0E04 \u0E01\u0E02";
+
+        // The first word is 36 pixels, and the space after it hangs: by default the line is not stretched.
+        var layout = TextLayout.Create(Text, style, new TextLayoutOptions { MaxWidth = 50, Alignment = TextAlignment.Justify });
+        Assert.Equal(36, layout.Lines[0].Width);
+
+        // The 14 pixels that are left go between the clusters, 7 each: the mark stays above its consonant.
+        layout = TextLayout.Create(Text, style, new TextLayoutOptions { MaxWidth = 50, Alignment = TextAlignment.Justify, Justification = TextJustification.Auto });
+        Assert.Equal(new TextLine(0, 5, 0, 0, 50, 16, 13, false), layout.Lines[0]);
+        AssertRectangles(layout, new PointD(0, 4), A(0, 0), (new RectangleD(6, -2, 4, 2), null), C(23, 0), B(42, 0), A(0, 16), C(16, 16));
+        Assert.Equal(23, layout.GetCaretRectangle(2).X);
+    }
+
+    [Fact]
+    public void InterCharacterJustificationStretchesEveryScriptButTheCursiveOnes()
+    {
+        // "ACA" is 44 pixels in 50; its two places between characters get 3 pixels each. Latin text is not stretched
+        // between its characters otherwise.
+        var options = new TextLayoutOptions { MaxWidth = 50, Alignment = TextAlignment.Justify, Justification = TextJustification.InterCharacter };
+        var layout = TextLayout.Create("ACA A", Style, options);
+        Assert.Equal(50, layout.Lines[0].Width);
+        AssertRectangles(layout, new PointD(0, 0), A(0, 0), C(19, 0), A(34, 0), A(0, 16));
+        Assert.Equal(44, TextLayout.Create("ACA A", Style, new TextLayoutOptions { MaxWidth = 50, Alignment = TextAlignment.Justify, Justification = TextJustification.Auto }).Lines[0].Width);
+
+        // In a line between words, a space gets the room before it and its own: "A A" is 40 pixels in 46, and its
+        // two places are before and after the space.
+        layout = TextLayout.Create("A A AA", Style, new TextLayoutOptions { MaxWidth = 46, Alignment = TextAlignment.Justify, Justification = TextJustification.InterCharacter });
+        AssertRectangles(layout, new PointD(0, 0), A(0, 0), A(30, 0), A(0, 16), A(16, 16));
+
+        // Right-to-left text: the Hebrew letters alef and bet are drawn as C and A. The first line is "alef bet alef",
+        // 40 pixels in 50, with the space that hangs on its left; the last line is on the right.
+        layout = TextLayout.Create("\u05D0\u05D1\u05D0 \u05D0", new TextStyle(Extended, 16), options);
+        Assert.True(layout.Lines[0].IsRightToLeft);
+        Assert.Equal(50, layout.Lines[0].Width);
+        AssertRectangles(layout, new PointD(0, 0), C(0, 0), A(17, 0), C(38, 0), C(38, 16));
+
+        // The letters of a cursive script join: Arabic is not stretched between its letters.
+        var arabic = new TextStyle(CreateIdeographs(builder => builder.CharacterMap[0x0628] = FontSamples.BoxA), 16);
+        Assert.Equal(48, TextLayout.Create("\u0628\u0628\u0628 \u0628", arabic, options).Lines[0].Width);
+    }
+
+    [Fact]
+    public void TabulationStopsAlignTheTextAfterTheTabulation()
+    {
+        // A is 16 pixels, B 8, C 12. The text after the tabulation starts, ends, is centered at the stop, or has its
+        // decimal separator there.
+        static TextLayoutOptions Stops(params TextTabStop[] stops) => new() { TabStops = stops };
+        var layout = TextLayout.Create("A\tB", Style, Stops(new TextTabStop(40)));
+        Assert.Equal(48, layout.Width);
+        AssertRectangles(layout, new PointD(0, 0), A(0, 0), B(40, 0));
+        layout = TextLayout.Create("A\tBB", Style, Stops(new TextTabStop(40, TextTabAlignment.End)));
+        Assert.Equal(40, layout.Width);
+        AssertRectangles(layout, new PointD(0, 0), A(0, 0), B(24, 0), B(32, 0));
+        AssertRectangles(TextLayout.Create("A\tBB", Style, Stops(new TextTabStop(40, TextTabAlignment.Center))), new PointD(0, 0), A(0, 0), B(32, 0), B(40, 0));
+        AssertRectangles(TextLayout.Create("A\tBCB", Style, Stops(new TextTabStop(40, TextTabAlignment.DecimalSeparator, 'C'))), new PointD(0, 0), A(0, 0), B(32, 0), C(40, 0), B(52, 0));
+        AssertRectangles(TextLayout.Create("A\tB.BB", new TextStyle(Extended, 16), Stops(new TextTabStop(40, TextTabAlignment.DecimalSeparator))), new PointD(0, 0), A(0, 0), B(32, 0), Hyphen(40, 0), B(48, 0), B(56, 0));
+
+        // Without a separator, the text ends at a decimal stop.
+        AssertRectangles(TextLayout.Create("A\tBB", Style, Stops(new TextTabStop(40, TextTabAlignment.DecimalSeparator))), new PointD(0, 0), A(0, 0), B(24, 0), B(32, 0));
+
+        // Each tabulation goes to the first stop after the text before it; the text an aligned stop places ends at the
+        // next tabulation.
+        AssertRectangles(TextLayout.Create("A\tB\tBB", Style, Stops(new TextTabStop(24), new TextTabStop(64, TextTabAlignment.End))), new PointD(0, 0), A(0, 0), B(24, 0), B(48, 0), B(56, 0));
+        AssertRectangles(TextLayout.Create("A\tBB\tB", Style, Stops(new TextTabStop(40, TextTabAlignment.End), new TextTabStop(48))), new PointD(0, 0), A(0, 0), B(24, 0), B(32, 0), B(48, 0));
+
+        // After the last stop, the stops are every TabSize spaces: 16 pixels.
+        AssertRectangles(TextLayout.Create("AA\tB", Style, new TextLayoutOptions { TabStops = [new TextTabStop(20)], TabSize = 2 }), new PointD(0, 0), A(0, 0), A(16, 0), B(48, 0));
+
+        // A text too wide for its alignment starts where the tabulation is.
+        AssertRectangles(TextLayout.Create("A\tCC", Style, Stops(new TextTabStop(30, TextTabAlignment.End))), new PointD(0, 0), A(0, 0), C(16, 0), C(28, 0));
+
+        // The positions of the text follow the glyphs.
+        layout = TextLayout.Create("A\tBB", Style, Stops(new TextTabStop(40, TextTabAlignment.End)));
+        Assert.Equal(new RectangleD(24, 0, 0, 16), layout.GetCaretRectangle(2));
+        Assert.Equal(2, layout.HitTest(new PointD(26, 8)).TextIndex);
+        Assert.Equal(1, layout.HitTest(new PointD(20, 8)).TextIndex);
+
+        // A fitted text has its stops scaled with it.
+        var fitted = TextLayout.CreateToFit("A\tBB", Style, 20, 16, Stops(new TextTabStop(40, TextTabAlignment.End)));
+        Assert.True(fitted.Width is > 19 and <= 20, $"{fitted.Width}");
+    }
+
+    [Fact]
+    public void ALineIsMeasuredWithItsTabulationStops()
+    {
+        // "A\tBB" ends at the stop, 40 pixels; " BB" would make the text after the tabulation 32 pixels wide, so 48 in
+        // all: the line ends after the space.
+        var options = new TextLayoutOptions { MaxWidth = 45, TabStops = [new TextTabStop(40, TextTabAlignment.End)] };
+        var layout = TextLayout.Create("A\tBB BB", Style, options);
+        Assert.Equal(
+            new[] { new TextLine(0, 5, 0, 0, 40, 16, 13, false), new TextLine(5, 2, 0, 16, 16, 16, 13, false) },
+            layout.Lines);
+        AssertRectangles(layout, new PointD(0, 0), A(0, 0), B(24, 0), B(32, 0), B(0, 16), B(8, 16));
+
+        // In a right-to-left paragraph, the stops are measured from the right. The Hebrew letters alef, bet and gimel
+        // are drawn as C, A and B: alef is on the right, and the text after the tabulation on its left.
+        var hebrew = new TextStyle(Extended, 16);
+        AssertRectangles(TextLayout.Create("\u05D0\t\u05D1", hebrew, new TextLayoutOptions { TabStops = [new TextTabStop(40)] }), new PointD(0, 0), A(0, 0), C(44, 0));
+        AssertRectangles(TextLayout.Create("\u05D0\t\u05D2\u05D2", hebrew, new TextLayoutOptions { TabStops = [new TextTabStop(40, TextTabAlignment.End)] }), new PointD(0, 0), B(0, 0), B(8, 0), C(28, 0));
+
+        // A vertical line on its side is the horizontal line turned.
+        var horizontal = TextLayout.Create("A\tBB", Style, new TextLayoutOptions { TabStops = [new TextTabStop(40, TextTabAlignment.Center)] });
+        var vertical = TextLayout.Create("A\tBB", Style, new TextLayoutOptions { WritingMode = TextWritingMode.VerticalRightToLeft, Orientation = TextOrientation.Sideways, TabStops = [new TextTabStop(40, TextTabAlignment.Center)] });
+        Assert.Equal(horizontal.Width, vertical.Height);
+        for (var index = 0; index <= 4; index++)
+        {
+            var caret = horizontal.GetCaretRectangle(index);
+            Assert.Equal(new RectangleD(horizontal.Height - caret.Bottom, caret.X, caret.Height, 0), vertical.GetCaretRectangle(index));
+        }
+    }
+
+    [Fact]
+    public void TabulationStopsAreValidated()
+    {
+        Assert.Empty(TextLayoutOptions.Default.TabStops);
+        Assert.Throws<ArgumentNullException>("value", () => new TextLayoutOptions { TabStops = null! });
+        Assert.Throws<ArgumentException>("value", () => new TextLayoutOptions { TabStops = [new TextTabStop(20), new TextTabStop(20)] });
+        Assert.Throws<ArgumentException>("value", () => new TextLayoutOptions { TabStops = [new TextTabStop(20), new TextTabStop(10)] });
+        Assert.Throws<ArgumentException>("value", () => new TextLayoutOptions { TabStops = [default] });
+        Assert.Throws<ArgumentException>("value", () => new TextLayoutOptions { TabStops = [.. Enumerable.Range(1, 257).Select(position => new TextTabStop(position))] });
+        Assert.HasCount(256, new TextLayoutOptions { TabStops = [.. Enumerable.Range(1, 256).Select(position => new TextTabStop(position))] }.TabStops);
+        Assert.Throws<ArgumentOutOfRangeException>("position", () => new TextTabStop(0));
+        Assert.Throws<ArgumentOutOfRangeException>("position", () => new TextTabStop(double.NaN));
+        Assert.Throws<ArgumentOutOfRangeException>("position", () => new TextTabStop(1048577));
+        Assert.Throws<ArgumentOutOfRangeException>("alignment", () => new TextTabStop(10, (TextTabAlignment)4));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TextLayoutOptions { Justification = (TextJustification)3 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TextLayoutOptions { LineBreakStrategy = (TextLineBreakStrategy)2 });
+
+        // The stops given are copied.
+        var stops = new[] { new TextTabStop(10) };
+        var options = new TextLayoutOptions { TabStops = stops };
+        stops[0] = new TextTabStop(20);
+        Assert.Equal(10, options.TabStops[0].Position);
+
+        var stop = new TextTabStop(12.5, TextTabAlignment.DecimalSeparator, ',');
+        Assert.Equal((12.5, TextTabAlignment.DecimalSeparator, ','), (stop.Position, stop.Alignment, stop.DecimalSeparator));
+        Assert.Equal(new TextTabStop(12.5, TextTabAlignment.DecimalSeparator, ','), stop);
+        Assert.NotEqual(new TextTabStop(12.5, TextTabAlignment.DecimalSeparator), stop);
+        Assert.True(stop == new TextTabStop(12.5, TextTabAlignment.DecimalSeparator, ','));
+        Assert.True(stop != new TextTabStop(12.5));
+        Assert.Equal(new TextTabStop(12.5, TextTabAlignment.DecimalSeparator, ',').GetHashCode(), stop.GetHashCode());
+        Assert.Equal("12.5 DecimalSeparator", stop.ToString());
+        Assert.Equal((0, TextTabAlignment.Start, '\0'), (default(TextTabStop).Position, default(TextTabStop).Alignment, default(TextTabStop).DecimalSeparator));
+    }
+
+    [Fact]
+    public void OptimalLineBreakingFillsTheLinesOfAParagraphEvenly()
+    {
+        // B is 8 pixels, and so is a space. Greedy breaking fills the first line ("BBB BB", 48 pixels) and leaves a
+        // short second line ("BB", 16 pixels, 32 left); optimal breaking leaves 24 and 8 pixels: 24 * 24 + 8 * 8 < 32 * 32.
+        const string Text = "BBB BB BB BBBBB";
+        Assert.Equal(TextLineBreakStrategy.Greedy, TextLayoutOptions.Default.LineBreakStrategy);
+        var greedy = TextLayout.Create(Text, Style, new TextLayoutOptions { MaxWidth = 48 });
+        Assert.Equal([(0, 7, 48.0), (7, 3, 16.0), (10, 5, 40.0)], greedy.Lines.Select(line => (line.Start, line.Length, line.Width)));
+        var optimal = TextLayout.Create(Text, Style, new TextLayoutOptions { MaxWidth = 48, LineBreakStrategy = TextLineBreakStrategy.Optimal });
+        Assert.Equal([(0, 4, 24.0), (4, 6, 40.0), (10, 5, 40.0)], optimal.Lines.Select(line => (line.Start, line.Length, line.Width)));
+
+        // The same for justified lines: each line but the last one is stretched by its spaces.
+        var justified = TextLayout.Create(Text, Style, new TextLayoutOptions { MaxWidth = 48, LineBreakStrategy = TextLineBreakStrategy.Optimal, Alignment = TextAlignment.Justify });
+        Assert.Equal([(0, 4, 24.0), (4, 6, 48.0), (10, 5, 40.0)], justified.Lines.Select(line => (line.Start, line.Length, line.Width)));
+
+        // Each paragraph is broken on its own; the first line has its indent.
+        var paragraphs = TextLayout.Create(Text + "\n" + Text, Style, new TextLayoutOptions { MaxWidth = 48, LineBreakStrategy = TextLineBreakStrategy.Optimal });
+        Assert.Equal([0, 4, 10, 16, 20, 26], paragraphs.Lines.Select(line => line.Start));
+        var indented = TextLayout.Create(Text, Style, new TextLayoutOptions { MaxWidth = 56, FirstLineIndent = 8, LineBreakStrategy = TextLineBreakStrategy.Optimal });
+        Assert.Equal([0, 4, 10], indented.Lines.Select(line => line.Start));
+        Assert.Equal(8, indented.Lines[0].X);
+
+        // In a vertical line, and in a right-to-left paragraph, the breaks are the same.
+        var vertical = TextLayout.Create(Text, Style, new TextLayoutOptions { WritingMode = TextWritingMode.VerticalRightToLeft, Orientation = TextOrientation.Sideways, MaxHeight = 48, LineBreakStrategy = TextLineBreakStrategy.Optimal });
+        Assert.Equal([0, 4, 10], vertical.Lines.Select(line => line.Start));
+        var rightToLeft = TextLayout.Create(Text, Style, new TextLayoutOptions { Direction = TextDirection.RightToLeft, MaxWidth = 48, LineBreakStrategy = TextLineBreakStrategy.Optimal });
+        Assert.Equal([0, 4, 10], rightToLeft.Lines.Select(line => line.Start));
+
+        // Lines are not wrapped without a width, nor with NoWrap.
+        Assert.Equal(1, TextLayout.Create(Text, Style, new TextLayoutOptions { LineBreakStrategy = TextLineBreakStrategy.Optimal }).LineCount);
+        Assert.Equal(1, TextLayout.Create(Text, Style, new TextLayoutOptions { MaxWidth = 48, Wrapping = TextWrapping.NoWrap, LineBreakStrategy = TextLineBreakStrategy.Optimal }).LineCount);
+    }
+
+    [Fact]
+    public void OptimalLineBreakingHyphenatesAndCutsWordsAsGreedyBreakingDoes()
+    {
+        // A word wider than the line overflows, or is cut where the options allow it.
+        foreach (var create in (Func<TextLineBreakStrategy, TextLayoutOptions>[])
+            [
+                strategy => new() { MaxWidth = 40, LineBreakStrategy = strategy },
+                strategy => new() { MaxWidth = 40, OverflowWrap = TextOverflowWrap.Anywhere, LineBreakStrategy = strategy },
+                strategy => new() { MaxWidth = 40, Trimming = TextTrimming.Character, MaxLines = 2, LineBreakStrategy = strategy },
+            ])
+        {
+            var greedy = TextLayout.Create("AAAAA B AAAAA", Style, create(TextLineBreakStrategy.Greedy));
+            var optimal = TextLayout.Create("AAAAA B AAAAA", Style, create(TextLineBreakStrategy.Optimal));
+            Assert.Equal(greedy.Lines, optimal.Lines);
+            Assert.Equal(greedy.IsTruncated, optimal.IsTruncated);
+        }
+
+        // A soft hyphen is a place to break, where the line ends with a hyphen.
+        var layout = TextLayout.Create("BB BB\u00ADBB BB", Style, new TextLayoutOptions { MaxWidth = 48, LineBreakStrategy = TextLineBreakStrategy.Optimal });
+        Assert.Equal([(0, 6, 48.0), (6, 5, 40.0)], layout.Lines.Select(line => (line.Start, line.Length, line.Width)));
+        Assert.Equal(1, TextLayout.Create("BB BB\u00ADBB BB", Style, new TextLayoutOptions { MaxWidth = 48, Hyphenation = TextHyphenation.None, LineBreakStrategy = TextLineBreakStrategy.Optimal }).Lines[0].Length - 2);
+
+        // And so is each hyphenation point of the patterns of the style, when words are hyphenated.
+        var style = new TextStyle(Boxes, 16) { Hyphenator = Hyphenator.Parse("a1a", options: new HyphenatorOptions { LeftHyphenMin = 1, RightHyphenMin = 1 }) };
+        layout = TextLayout.Create("B AAAA", style, new TextLayoutOptions { MaxWidth = 60, Hyphenation = TextHyphenation.Automatic, LineBreakStrategy = TextLineBreakStrategy.Optimal });
+        Assert.Equal(new TextLine(0, 4, 0, 0, 56, 16, 13, false), layout.Lines[0]);
+        Assert.Equal(new TextLine(4, 2, 0, 16, 32, 16, 13, false), layout.Lines[1]);
+        AssertRectangles(layout, new PointD(0, 0), B(0, 0), A(16, 0), A(32, 0), Hyphen(48, 0), A(0, 16), A(16, 16));
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void OptimalLineBreakingNeverLeavesMoreRoomThanGreedyBreaking()
+    {
+        // Random paragraphs of words of one to three letters (A, B and C are 16, 8 and 12 pixels, at most 48 pixels a
+        // word) in widths of 50 to 150 pixels: every line fits, the lines cover the text, and the sum of the squares of
+        // the room left at the end of the lines but the last one is never more than with greedy breaking.
+        var random = new Random(3771);
+        for (var iteration = 0; iteration < 300; iteration++)
+        {
+            var builder = new StringBuilder();
+            var wordCount = random.Next(1, 40);
+            for (var word = 0; word < wordCount; word++)
+            {
+                if (word > 0)
+                {
+                    builder.Append(random.Next(10) == 0 ? "  " : " ");
+                }
+
+                var letters = random.Next(1, 4);
+                for (var letter = 0; letter < letters; letter++)
+                {
+                    builder.Append("ABC"[random.Next(3)]);
+                }
+            }
+
+            var text = builder.ToString();
+            var width = random.Next(50, 151);
+            var alignment = random.Next(2) == 0 ? TextAlignment.Start : TextAlignment.Justify;
+            var greedy = TextLayout.Create(text, Style, new TextLayoutOptions { MaxWidth = width, Alignment = alignment });
+            var optimal = TextLayout.Create(text, Style, new TextLayoutOptions { MaxWidth = width, Alignment = alignment, LineBreakStrategy = TextLineBreakStrategy.Optimal });
+            var position = 0;
+            foreach (var line in optimal.Lines)
+            {
+                Assert.Equal(position, line.Start);
+                Assert.True(line.Width <= width, $"{text} in {width}: a line is {line.Width} pixels");
+                position += line.Length;
+            }
+
+            Assert.Equal(text.Length, position);
+            if (alignment == TextAlignment.Start)
+            {
+                Assert.True(GetRoom(optimal) <= GetRoom(greedy) + 1e-9, $"{text} in {width}");
+            }
+
+            for (var index = 0; index <= text.Length; index++)
+            {
+                Assert.True(double.IsFinite(optimal.GetCaretRectangle(index).X));
+            }
+
+            double GetRoom(TextLayout layout)
+            {
+                var room = 0.0;
+                for (var i = 0; i < layout.LineCount - 1; i++)
+                {
+                    room += (width - layout.Lines[i].Width) * (width - layout.Lines[i].Width);
+                }
+
+                return room;
+            }
+        }
+    }
+
+    [Fact]
     public void RightToLeftTextIsOrderedForDisplay()
     {
         var style = new TextStyle(Extended, 16);
@@ -1006,20 +1342,62 @@ public sealed class TextLayoutTests
         Assert.Equal(16, layout.Width);
         Assert.Throws<ArgumentNullException>("value", () => new InstalledFontFallbackOptions { LoadOptions = null! });
         Assert.Throws<ArgumentNullException>("value", () => new InstalledFontFallbackOptions { PreferredFamilies = null! });
+    }
 
-        static byte[] CreateCoveringFont(string family, int advance, int[] characters, int weight = 400)
-        {
-            var builder = new FontBuilder { CmapFormats = FontCmapFormats.Format12, UnitsPerEm = 1024, Ascender = 832, Descender = -192, FamilyName = family, PostScriptName = null, WeightClass = weight, IsBold = weight >= 700 };
-            builder.SubfamilyName = weight >= 700 ? "Bold" : "Regular";
-            builder.AddGlyph(FontGlyph.Rectangle(256, 0, 0, 128, 128));
-            builder.AddGlyph(FontGlyph.Rectangle(advance, 0, 0, advance, 512));
-            foreach (var character in characters)
-            {
-                builder.CharacterMap[character] = 1;
-            }
+    [Fact]
+    public void TheInstalledFontsOfAHanIdeographAreChosenByTheLanguageOfTheText()
+    {
+        // The installed CJK fonts all have the ideograph one; the advance of its glyph says which one was chosen.
+        const int Han = 0x4E00;
+        using var directory = new TemporaryFontDirectory();
+        directory.Write("sc.ttf", CreateCoveringFont("Noto Sans CJK SC", advance: 768, characters: [Han]));
+        directory.Write("tc.ttf", CreateCoveringFont("Noto Sans CJK TC", advance: 640, characters: [Han]));
+        directory.Write("hk.ttf", CreateCoveringFont("Noto Sans CJK HK", advance: 896, characters: [Han]));
+        directory.Write("jp.ttf", CreateCoveringFont("Noto Sans CJK JP", advance: 512, characters: [Han, 0x3042]));
+        directory.Write("kr.ttf", CreateCoveringFont("Noto Sans CJK KR", advance: 1024, characters: [Han]));
+        var fonts = SystemFontCollection.Create([directory.Path]);
 
-            return builder.Build();
-        }
+        // One stack, so one fallback and one cache, for every language: the font of a cluster is kept per language.
+        var stack = new FontStack(Boxes).WithInstalledFallback(fonts);
+        double Width(string text, string? language) => TextLayout.Create(text, new TextStyle(stack, 16) { Language = language }).Width;
+        Assert.Equal(8, Width("\u4E00", "ja"));
+        Assert.Equal(12, Width("\u4E00", null));
+        Assert.Equal(8, Width("\u4E00", "ja-JP"));
+        Assert.Equal(12, Width("\u4E00", "zh"));
+        Assert.Equal(12, Width("\u4E00", "zh-Hans"));
+        Assert.Equal(12, Width("\u4E00", "en"));
+        Assert.Equal(10, Width("\u4E00", "zh-Hant"));
+        Assert.Equal(10, Width("\u4E00", "zh-TW"));
+        Assert.Equal(14, Width("\u4E00", "zh-HK"));
+        Assert.Equal(14, Width("\u4E00", "yue"));
+        Assert.Equal(16, Width("\u4E00", "ko"));
+        Assert.Equal(16, Width("\u4E00", "ko-KR"));
+
+        // The kana are Japanese whatever the language.
+        Assert.Equal(8, Width("\u3042", "zh"));
+
+        // The spans of a text have their own language.
+        var text = new RichTextBuilder()
+            .Append("\u4E00", new TextStyle(stack, 16) { Language = "ja" })
+            .Append("\u4E00", new TextStyle(stack, 16) { Language = "zh-TW" })
+            .Append("\u4E00", new TextStyle(stack, 16))
+            .Build();
+        Assert.Equal(8 + 10 + 12, TextLayout.Create(text).Width);
+
+        // The preferred families still come first, whatever the language.
+        var preferred = new FontStack(Boxes).WithInstalledFallback(fonts, new InstalledFontFallbackOptions { PreferredFamilies = ["Noto Sans CJK KR"] });
+        Assert.Equal(16, TextLayout.Create("\u4E00", new TextStyle(preferred, 16) { Language = "ja" }).Width);
+
+        // The fonts of the stack are used in their order, whatever the language.
+        var stackFont = Font.Load(CreateCoveringFont("Stack CJK", advance: 320, characters: [Han]));
+        Assert.Equal(5, TextLayout.Create("\u4E00", new TextStyle(new FontStack(Boxes, stackFont).WithInstalledFallback(fonts), 16) { Language = "ja" }).Width);
+
+        // Without a font of the language, the ideograph is looked for in the fonts of Simplified Chinese.
+        using var simplifiedOnly = new TemporaryFontDirectory();
+        simplifiedOnly.Write("sc.ttf", CreateCoveringFont("Noto Sans CJK SC", advance: 768, characters: [Han]));
+        var simplified = new FontStack(Boxes).WithInstalledFallback(SystemFontCollection.Create([simplifiedOnly.Path]));
+        Assert.Equal(12, TextLayout.Create("\u4E00", new TextStyle(simplified, 16) { Language = "ja" }).Width);
+        Assert.Equal(12, TextLayout.Create("\u4E00", new TextStyle(simplified, 16) { Language = "zh-HK" }).Width);
     }
 
     [Fact]
@@ -1536,17 +1914,19 @@ public sealed class TextLayoutTests
         var plain = new TextStyle(Ideographs, 16);
         var large = new TextStyle(Ideographs, 32) { Outline = new Pen(Blue, 2) };
         var text = new RichTextBuilder().Append("AB BA ", plain).Append("AC", decorated).Append(" \u05D0\u05D1 B\nA", plain).Append("B", large).AppendPlaceholder(10, 6, 4, plain).Append(" \u4E00\u4E8C", plain).Build();
-        foreach (var (length, alignment, indent, lineHeight, direction) in ((double, TextAlignment, double, double?, TextDirection)[])
+        foreach (var (length, alignment, indent, lineHeight, direction, justification, strategy) in ((double, TextAlignment, double, double?, TextDirection, TextJustification, TextLineBreakStrategy)[])
             [
-                (double.PositiveInfinity, TextAlignment.Start, 0, null, TextDirection.Auto),
-                (60, TextAlignment.Start, 0, null, TextDirection.Auto),
-                (80, TextAlignment.End, 0, null, TextDirection.Auto),
-                (80, TextAlignment.Center, 8, null, TextDirection.Auto),
-                (80, TextAlignment.Justify, 0, 40, TextDirection.Auto),
-                (60, TextAlignment.Start, 0, null, TextDirection.RightToLeft),
+                (double.PositiveInfinity, TextAlignment.Start, 0, null, TextDirection.Auto, TextJustification.InterWord, TextLineBreakStrategy.Greedy),
+                (60, TextAlignment.Start, 0, null, TextDirection.Auto, TextJustification.InterWord, TextLineBreakStrategy.Greedy),
+                (80, TextAlignment.End, 0, null, TextDirection.Auto, TextJustification.InterWord, TextLineBreakStrategy.Greedy),
+                (80, TextAlignment.Center, 8, null, TextDirection.Auto, TextJustification.InterWord, TextLineBreakStrategy.Greedy),
+                (80, TextAlignment.Justify, 0, 40, TextDirection.Auto, TextJustification.InterWord, TextLineBreakStrategy.Greedy),
+                (60, TextAlignment.Start, 0, null, TextDirection.RightToLeft, TextJustification.InterWord, TextLineBreakStrategy.Greedy),
+                (80, TextAlignment.Justify, 0, null, TextDirection.Auto, TextJustification.InterCharacter, TextLineBreakStrategy.Optimal),
+                (70, TextAlignment.Justify, 0, null, TextDirection.RightToLeft, TextJustification.Auto, TextLineBreakStrategy.Optimal),
             ])
         {
-            var horizontal = TextLayout.Create(text, new TextLayoutOptions { MaxWidth = length, Alignment = alignment, FirstLineIndent = indent, LineHeight = lineHeight, Direction = direction });
+            var horizontal = TextLayout.Create(text, new TextLayoutOptions { MaxWidth = length, Alignment = alignment, FirstLineIndent = indent, LineHeight = lineHeight, Direction = direction, Justification = justification, LineBreakStrategy = strategy });
             var vertical = TextLayout.Create(text, new TextLayoutOptions
             {
                 WritingMode = TextWritingMode.VerticalRightToLeft,
@@ -1556,6 +1936,8 @@ public sealed class TextLayoutTests
                 FirstLineIndent = indent,
                 LineHeight = lineHeight,
                 Direction = direction,
+                Justification = justification,
+                LineBreakStrategy = strategy,
             });
             Assert.Equal(horizontal.Height, vertical.Width);
             Assert.Equal(horizontal.Width, vertical.Height);
@@ -1942,6 +2324,20 @@ public sealed class TextLayoutTests
         {
             table.Add((byte)character);
         }
+    }
+
+    private static byte[] CreateCoveringFont(string family, int advance, int[] characters, int weight = 400)
+    {
+        var builder = new FontBuilder { CmapFormats = FontCmapFormats.Format12, UnitsPerEm = 1024, Ascender = 832, Descender = -192, FamilyName = family, PostScriptName = null, WeightClass = weight, IsBold = weight >= 700 };
+        builder.SubfamilyName = weight >= 700 ? "Bold" : "Regular";
+        builder.AddGlyph(FontGlyph.Rectangle(256, 0, 0, 128, 128));
+        builder.AddGlyph(FontGlyph.Rectangle(advance, 0, 0, advance, 512));
+        foreach (var character in characters)
+        {
+            builder.CharacterMap[character] = 1;
+        }
+
+        return builder.Build();
     }
 
     private static (RectangleD Rectangle, Brush? Brush) A(double x, double y) => (new RectangleD(x + 2, y + 1, 12, 12), null);

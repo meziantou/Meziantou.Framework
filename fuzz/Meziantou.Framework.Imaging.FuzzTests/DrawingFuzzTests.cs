@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using Meziantou.Framework.Imaging.Drawing;
+using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Tests;
 
 namespace Meziantou.Framework.Imaging.FuzzTests;
@@ -18,6 +19,12 @@ namespace Meziantou.Framework.Imaging.FuzzTests;
 /// <para>
 /// Two failures are documented for valid arguments, and expected here: an arc or a transformed path that goes beyond
 /// the largest coordinate is rejected when it is built. The generator catches that exception there, and nowhere else.
+/// </para>
+/// <para>
+/// A third one depends on what was drawn before: a floating-point canvas keeps the samples that color matrices and
+/// additive composites put outside [0, 1], and what reads its pixels back as 16-bit colors (filters, blurs, backdrops,
+/// masks, groups) rejects them. That rejection is expected on those formats only; the working storage and the leases
+/// must still be released, but the pixels are not compared, since the failing call may have painted some rows.
 /// </para>
 /// <para>
 /// The time to draw a shape follows the number of points where its edges cross each other, which the area of their
@@ -139,6 +146,7 @@ public sealed class DrawingFuzzTests
         using var separate = whole.Clone();
         var before = Enumerable.Range(0, frameCount).Select(i => DrawingTestSupport.ReadSamples(whole.Frames[i])).ToArray();
         var live = whole.Owner.Scope.LiveBytes;
+        var rejectsOutOfRangeSamples = false;
         try
         {
             whole.Draw(canvas => paint(new DrawingCanvasProxy(canvas), 0));
@@ -147,6 +155,10 @@ public sealed class DrawingFuzzTests
                 var index = i;
                 separate.Frames[i].Draw(canvas => paint(new DrawingCanvasProxy(canvas), index));
             }
+        }
+        catch (UnsupportedImageFeatureException exception) when (PixelFormats.IsFloatingPoint(format) && exception.Feature == DrawingKernels.OutOfRangeColorFeature)
+        {
+            rejectsOutOfRangeSamples = true;
         }
         catch (Exception exception)
         {
@@ -158,6 +170,9 @@ public sealed class DrawingFuzzTests
 
         if (whole.Owner.ActiveLeaseCount != 0 || separate.Owner.ActiveLeaseCount != 0)
             return "a lease is still active";
+
+        if (rejectsOutOfRangeSamples)
+            return null;
 
         var hasAlpha = PixelFormats.HasAlpha(format);
         for (var i = 0; i < frameCount; i++)

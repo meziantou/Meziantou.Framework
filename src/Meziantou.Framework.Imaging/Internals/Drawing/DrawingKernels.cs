@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -349,7 +350,30 @@ internal static class DrawingKernels
     /// <param name="y">The row.</param>
     /// <param name="x">The first column.</param>
     /// <param name="destination">The colors; as many pixels are read as it holds.</param>
+    /// <exception cref="UnsupportedImageFeatureException">A floating-point sample is outside [0, 1] or is not a number.</exception>
     public static void ReadColors<TPixel>(PixelStorage storage, int y, int x, Span<Rgba64> destination)
+        where TPixel : unmanaged
+    {
+        if (Unsafe.SizeOf<TPixel>() != storage.BytesPerPixel)
+            throw new InvalidOperationException($"The pixel type '{typeof(TPixel).Name}' does not match the storage pixel size.");
+
+        var row = unsafe(MemoryMarshal.Cast<byte, TPixel>(storage.GetRowSpanCore(y))).Slice(x, destination.Length);
+        if (PixelConverter.IsFloat<TPixel>())
+        {
+            ReadFloatColors(row, destination);
+            return;
+        }
+
+        PixelConverter.ConvertRow<TPixel, Rgba64>(row, destination);
+    }
+
+    /// <summary>Reads pixels of a row as 16-bit colors outside of a drawing, with the rules and the failures of pixel conversion.</summary>
+    /// <param name="storage">The storage of the frame, leased by the caller.</param>
+    /// <param name="y">The row.</param>
+    /// <param name="x">The first column.</param>
+    /// <param name="destination">The colors; as many pixels are read as it holds.</param>
+    /// <exception cref="UnsupportedImageFeatureException">A floating-point sample is outside [0, 1] or is not a number.</exception>
+    public static void ReadConvertedColors<TPixel>(PixelStorage storage, int y, int x, Span<Rgba64> destination)
         where TPixel : unmanaged
     {
         if (Unsafe.SizeOf<TPixel>() != storage.BytesPerPixel)
@@ -358,6 +382,35 @@ internal static class DrawingKernels
         var row = unsafe(MemoryMarshal.Cast<byte, TPixel>(storage.GetRowSpanCore(y))).Slice(x, destination.Length);
         PixelConverter.ConvertRow<TPixel, Rgba64>(row, destination);
     }
+
+    /// <summary>
+    /// Reads floating-point pixels as 16-bit colors for a drawing, which reads the canvas (its backdrop) and the images it
+    /// draws that way; its layers have 16-bit samples. A sample outside [0, 1] or that is not a number has no 16-bit color: it is rejected, never clipped,
+    /// with a message that says what to do in a drawing (pixel conversion options cannot be passed to it).
+    /// </summary>
+    /// <exception cref="UnsupportedImageFeatureException">A sample is outside [0, 1] or is not a number.</exception>
+    private static void ReadFloatColors<TPixel>(Span<TPixel> pixels, Span<Rgba64> destination)
+        where TPixel : unmanaged
+    {
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            PixelConverter.ReadFloat(ref pixels[i], out var r, out var g, out var b, out var a);
+            if (!IsInUnitRange(r) || !IsInUnitRange(g) || !IsInUnitRange(b) || !IsInUnitRange(a))
+                throw CreateOutOfRangeColorException(typeof(TPixel) == typeof(RgbaFloat) ? PixelFormat.RgbaFloat : PixelFormat.RgbaHalf, r, g, b, a);
+        }
+
+        PixelConverter.ConvertRow<TPixel, Rgba64>(pixels, destination);
+
+        // Not a number fails both comparisons
+        static bool IsInUnitRange(double value) => value is >= 0 and <= 1;
+    }
+
+    /// <summary>The failure of a drawing that reads a floating-point pixel without a 16-bit color.</summary>
+    internal static UnsupportedImageFeatureException CreateOutOfRangeColorException(PixelFormat format, double r, double g, double b, double a)
+        => new(string.Create(CultureInfo.InvariantCulture, $"Drawing reads the {format} pixels of the canvas (for a backdrop layer, a backdrop blur or a group that is not isolated) or of a drawn image as 16-bit colors, and a pixel is ({r}, {g}, {b}, {a}): a sample outside [0, 1] or that is not a number has none, and is never clipped. Keep those samples in [0, 1], or draw on an Rgba64 copy (Image.CloneAs<Rgba64> with PixelConversionOptions that clip or tone map them)."), ImageFormat.Unknown, OutOfRangeColorFeature);
+
+    /// <summary>The <see cref="UnsupportedImageFeatureException.Feature"/> of <see cref="CreateOutOfRangeColorException"/>.</summary>
+    internal const string OutOfRangeColorFeature = "Floating-point samples outside [0, 1] read as 16-bit colors";
 
     /// <summary>
     /// Reads pixels of a row as the paint colors of a frame of the same pixel type: four samples per pixel, laid out as
@@ -490,7 +543,7 @@ internal static class DrawingKernels
         {
             // The 16-bit colors of the pixels: a sample outside [0, 1] has none, and is rejected
             var pixels = unsafe(MemoryMarshal.Cast<byte, TPixel>(row)).Slice(x, count);
-            PixelConverter.ConvertRow(pixels, unsafe(MemoryMarshal.Cast<ushort, Rgba64>(destination)));
+            ReadFloatColors(pixels, unsafe(MemoryMarshal.Cast<ushort, Rgba64>(destination)));
         }
         else
         {

@@ -89,7 +89,7 @@ internal static class GainMapRenderer
                 GetNeighbors((y + 0.5) * rowScale - 0.5, gainHeight, out var top, out var bottom, out var rowWeight);
                 var topRow = GetGainRow(gainFrame, gainStorage, gainRows, gainRowIndexes, top);
                 var bottomRow = GetGainRow(gainFrame, gainStorage, gainRows, gainRowIndexes, bottom);
-                baseFrame.ReadRgba64(baseStorage, y, 0, baseRow);
+                baseFrame.ReadConvertedRgba64(baseStorage, y, 0, baseRow);
                 var output = resultLease.GetRow<RgbaFloat>(y);
                 for (var x = 0; x < width; x++)
                 {
@@ -162,7 +162,7 @@ internal static class GainMapRenderer
 
         // Rows are read top to bottom: the older of the two cached rows is replaced
         var slot = indexes[0] < indexes[1] ? 0 : 1;
-        frame.ReadRgba64(storage, y, 0, rows[slot]);
+        frame.ReadConvertedRgba64(storage, y, 0, rows[slot]);
         indexes[slot] = y;
         return rows[slot];
     }

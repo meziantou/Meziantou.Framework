@@ -1,4 +1,5 @@
 using Meziantou.Framework.Imaging.Drawing;
+using Meziantou.Framework.Imaging.Internals;
 
 namespace Meziantou.Framework.Imaging.Tests;
 
@@ -1083,6 +1084,58 @@ public sealed class DrawingCompositeTests
         Assert.Throws<UnsupportedImageFeatureException>(() => canvas.Draw(c => c.DrawImage(source.Frames[0], new Point(0, 0)), Ct));
         using var floats = new Image<RgbaFloat>(1, 1);
         Assert.Throws<UnsupportedImageFeatureException>(() => floats.Draw(c => c.DrawImage(source.Frames[0], new Point(0, 0)), Ct));
+    }
+
+    [Fact]
+    public void AFloatingPointCanvasRejectsTheHighlightsItReadsBackAsSixteenBitColors()
+    {
+        RejectsHighlights<RgbaFloat>();
+        RejectsHighlights<RgbaHalf>();
+
+        static void RejectsHighlights<TPixel>()
+            where TPixel : unmanaged
+        {
+            // In [0, 1], a backdrop is read as 16-bit colors
+            using var image = new Image<TPixel>(2, 1);
+            var bounds = new RectangleD(0, 0, 2, 1);
+            image.Draw(canvas =>
+            {
+                canvas.Clear(new Rgba64(65535, 32768, 0));
+                canvas.BackdropLayer(new BlurFilter(1), bounds, 1, static _ => { });
+                canvas.Filter(new BlurFilter(1), inner => inner.FillRectangle(new SolidBrush(new Rgba64(0, 0, 65535)), bounds));
+            }, Ct);
+
+            // An additive composite keeps a highlight above 1, which has no 16-bit color: it is rejected, never clipped,
+            // with a remedy that a drawing can apply
+            var plus = new SolidBrush(new Rgba64(65535, 0, 0)) { CompositeMode = CompositeMode.Plus };
+            image.Draw(canvas =>
+            {
+                canvas.Clear(new Rgba64(65535, 0, 0));
+                canvas.FillRectangle(plus, bounds);
+            }, Ct);
+            Assert.Equal(2, ReadRed(image));
+            var backdrop = Assert.Throws<UnsupportedImageFeatureException>(() => image.Draw(canvas => canvas.BackdropLayer(new BlurFilter(1), bounds, 1, static _ => { }), Ct));
+            Assert.Equal(DrawingKernels.OutOfRangeColorFeature, backdrop.Feature);
+            Assert.Contains($"Drawing reads the {typeof(TPixel).Name} pixels", backdrop.Message, StringComparison.Ordinal);
+            Assert.Contains("Image.CloneAs<Rgba64>", backdrop.Message, StringComparison.Ordinal);
+            var blur = Assert.Throws<UnsupportedImageFeatureException>(() => image.Draw(canvas => canvas.BlurBackdrop(1), Ct));
+            Assert.Equal(DrawingKernels.OutOfRangeColorFeature, blur.Feature);
+
+            // A filter reads only its layer, whose samples are 16-bit: it runs over the highlight
+            image.Draw(canvas => canvas.Filter(new BlurFilter(1), inner => inner.FillRectangle(new SolidBrush(new Rgba64(0, 0, 65535, 0)), bounds)), Ct);
+
+            // A color matrix applies to the stored values, in place: the highlight stays
+            image.Draw(canvas => canvas.FilterBackdrop(ColorMatrix.Identity), Ct);
+            Assert.Equal(2, ReadRed(image));
+        }
+
+        static double ReadRed<TPixel>(Image<TPixel> image)
+            where TPixel : unmanaged
+        {
+            var pixel = image.Frames[0][0, 0];
+            PixelConverter.ReadFloat(ref pixel, out var r, out _, out _, out _);
+            return r;
+        }
     }
 
     private sealed class FloatPixelComparer(float tolerance) : IEqualityComparer<RgbaFloat>

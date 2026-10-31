@@ -26,11 +26,16 @@ internal sealed class MedianPlan : IDisposable
     /// <param name="format">The pixel format.</param>
     /// <param name="size">The size of the frames.</param>
     /// <param name="maxDegreeOfParallelism">The largest number of workers.</param>
-    public MedianPlan(int radius, ConvolutionEdgeMode edgeMode, PixelFormat format, Size size, int maxDegreeOfParallelism = 1)
+    /// <param name="rank">The rank of the selected key among the keys of a window, from 0 (the smallest) to <c>Diameter^2 - 1</c> (the largest), or <see langword="null"/> for the median.</param>
+    public MedianPlan(int radius, ConvolutionEdgeMode edgeMode, PixelFormat format, Size size, int maxDegreeOfParallelism = 1, int? rank = null)
     {
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(radius);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maxDegreeOfParallelism);
         Radius = radius;
+        var count = ((2 * radius) + 1) * ((2 * radius) + 1);
+        Rank = rank ?? ((count - 1) / 2);
+        ArgumentOutOfRangeException.ThrowIfNegative(Rank, nameof(rank));
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(Rank, count, nameof(rank));
         EdgeMode = edgeMode;
         Size = size;
         Channels = PixelFormats.GetComponentCount(format);
@@ -40,6 +45,9 @@ internal sealed class MedianPlan : IDisposable
 
     /// <summary>Gets the number of pixels on each side of a pixel.</summary>
     public int Radius { get; }
+
+    /// <summary>Gets the rank of the selected key among the sorted keys of a window, from 0: <c>(Diameter^2 - 1) / 2</c> for the median.</summary>
+    public int Rank { get; }
 
     /// <summary>Gets the number of pixels of a side of the window, <c>2 Radius + 1</c>.</summary>
     public int Diameter => (2 * Radius) + 1;

@@ -1575,7 +1575,7 @@ public static partial class ImageProcessingExtensions
             return;
         }
 
-        image.MedianAllFrames(radius, edgeMode, cancellationToken);
+        image.MedianAllFrames(radius, edgeMode, rank: null, cancellationToken);
     }
 
     /// <summary>
@@ -1599,7 +1599,7 @@ public static partial class ImageProcessingExtensions
         if (radius == 0)
             return;
 
-        frame.OwnerImage.MedianFrame(frame, storage, radius, edgeMode, cancellationToken);
+        frame.OwnerImage.MedianFrame(frame, storage, radius, edgeMode, rank: null, cancellationToken);
     }
 
     /// <summary>

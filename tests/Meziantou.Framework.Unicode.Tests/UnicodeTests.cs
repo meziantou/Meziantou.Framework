@@ -3886,8 +3886,8 @@ public sealed class UnicodeTests
         {
             Assert.True(UnicodeIdna.TryEncodePunycode(new string('a', length) + "\u00FC\u4E00", out var encoded));
             var label = "xn--" + encoded;
-            Assert.Equal(label.Length <= 63, UnicodeIdna.TryToAscii(label + ".example", out var result));
-            Assert.True(UnicodeIdna.TryToAscii(label + ".example", noLengthCheck, out result));
+            Assert.Equal(label.Length <= 63, UnicodeIdna.TryToAscii(label + ".example", out _));
+            Assert.True(UnicodeIdna.TryToAscii(label + ".example", noLengthCheck, out var result));
             Assert.Equal(label + ".example", result);
         }
     }

@@ -55,6 +55,7 @@ namespace Meziantou.Framework.PublicApiGenerator
         public Meziantou.Framework.PublicApiGenerator.PublicApiAggregatedSymbol? DeclaringType { get => throw null; }
         public Meziantou.Framework.PublicApiGenerator.PublicApiSymbolDifferences Differences { get => throw null; }
         public string DocumentationId { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.PublicApiGenerator.PublicApiAggregatedSymbol> ExtensionMembers { get => throw null; }
         public bool IsAvailableInAllTargetFrameworks { get => throw null; }
         public Meziantou.Framework.PublicApiGenerator.PublicApiSymbolKind Kind { get => throw null; }
         public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.PublicApiGenerator.PublicApiAggregatedSymbol> Members { get => throw null; }
@@ -189,6 +190,17 @@ namespace Meziantou.Framework.PublicApiGenerator
         public Meziantou.Framework.PublicApiGenerator.PublicApiTypeReference Type { get => throw null; }
     }
 
+    public sealed class PublicApiExtensionBlock
+    {
+        public Meziantou.Framework.PublicApiGenerator.PublicApiType DeclaringType { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.PublicApiGenerator.PublicApiGenericParameter> GenericParameters { get => throw null; }
+        public string GroupingTypeMetadataName { get => throw null; }
+        public string MarkerTypeMetadataName { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.PublicApiGenerator.PublicApiMember> Members { get => throw null; }
+        public Meziantou.Framework.PublicApiGenerator.PublicApiParameter Receiver { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
     public sealed class PublicApiField : Meziantou.Framework.PublicApiGenerator.PublicApiMember
     {
         public object? ConstantValue { get => throw null; }
@@ -281,6 +293,7 @@ namespace Meziantou.Framework.PublicApiGenerator
     public abstract class PublicApiMember : Meziantou.Framework.PublicApiGenerator.PublicApiSymbol
     {
         public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.PublicApiGenerator.PublicApiMemberReference> ExplicitInterfaceImplementations { get => throw null; }
+        public Meziantou.Framework.PublicApiGenerator.PublicApiExtensionBlock? ExtensionBlock { get => throw null; }
         public bool IsAbstract { get => throw null; }
         public bool IsExplicitInterfaceImplementation { get => throw null; }
         public bool IsNew { get => throw null; }
@@ -318,7 +331,9 @@ namespace Meziantou.Framework.PublicApiGenerator
     public sealed class PublicApiMethod : Meziantou.Framework.PublicApiGenerator.PublicApiMember
     {
         public Meziantou.Framework.PublicApiGenerator.PublicApiMember? AssociatedSymbol { get => throw null; }
+        public Meziantou.Framework.PublicApiGenerator.PublicApiMethod? ExtensionImplementation { get => throw null; }
         public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.PublicApiGenerator.PublicApiGenericParameter> GenericParameters { get => throw null; }
+        public Meziantou.Framework.PublicApiGenerator.PublicApiMember? ImplementedExtensionMember { get => throw null; }
         public bool IsExtensionMethod { get => throw null; }
         public bool IsGenericMethod { get => throw null; }
         public bool IsInitOnly { get => throw null; }
@@ -525,6 +540,7 @@ namespace Meziantou.Framework.PublicApiGenerator
         public Meziantou.Framework.PublicApiGenerator.PublicApiTypeReference? BaseType { get => throw null; }
         public Meziantou.Framework.PublicApiGenerator.PublicApiMethod? DelegateInvokeMethod { get => throw null; }
         public Meziantou.Framework.PublicApiGenerator.PublicApiNamedTypeReference? EnumUnderlyingType { get => throw null; }
+        public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.PublicApiGenerator.PublicApiExtensionBlock> ExtensionBlocks { get => throw null; }
         public string FullName { get => throw null; }
         public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.PublicApiGenerator.PublicApiGenericParameter> GenericParameters { get => throw null; }
         public System.Collections.Immutable.ImmutableArray<Meziantou.Framework.PublicApiGenerator.PublicApiTypeReference> Interfaces { get => throw null; }

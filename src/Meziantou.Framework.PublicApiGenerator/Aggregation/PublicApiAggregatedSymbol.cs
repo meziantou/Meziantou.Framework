@@ -14,7 +14,8 @@ public sealed class PublicApiAggregatedSymbol
         ImmutableArray<PublicApiSymbolVariant> variants,
         PublicApiSymbolDifferences differences,
         ImmutableArray<PublicApiAggregatedSymbol> members,
-        ImmutableArray<PublicApiAggregatedSymbol> nestedTypes)
+        ImmutableArray<PublicApiAggregatedSymbol> nestedTypes,
+        ImmutableArray<PublicApiAggregatedSymbol> extensionMembers)
     {
         Kind = kind;
         DocumentationId = documentationId;
@@ -25,6 +26,7 @@ public sealed class PublicApiAggregatedSymbol
         Differences = differences;
         Members = members;
         NestedTypes = nestedTypes;
+        ExtensionMembers = extensionMembers;
     }
 
     public PublicApiSymbolKind Kind { get; }
@@ -57,6 +59,12 @@ public sealed class PublicApiAggregatedSymbol
 
     /// <summary>Gets the nested types of a type, from all the target frameworks.</summary>
     public ImmutableArray<PublicApiAggregatedSymbol> NestedTypes { get; }
+
+    /// <summary>
+    /// Gets the members of the C# 14 extension blocks of a static class, from all the target frameworks (see <see cref="PublicApiType.ExtensionBlocks"/>).
+    /// They are matched by documentation ID and sorted as <see cref="Members"/>.
+    /// </summary>
+    public ImmutableArray<PublicApiAggregatedSymbol> ExtensionMembers { get; }
 
     /// <summary>Gets the symbol declared for a target framework, or <see langword="null"/> when the target framework does not declare it.</summary>
     public PublicApiSymbol? GetSymbol(string targetFramework)

@@ -63,5 +63,17 @@ public sealed class PublicApiMethod : PublicApiMember
     /// <summary>Gets the property or the event that declares this accessor. It is <see langword="null"/> for other methods.</summary>
     public PublicApiMember? AssociatedSymbol { get; internal set; }
 
+    /// <summary>
+    /// Gets the implementation method, declared by the static class, of a method or an accessor of a C# 14 extension block
+    /// (see <see cref="PublicApiMember.ExtensionBlock"/>). It is <see langword="null"/> for other methods.
+    /// </summary>
+    public PublicApiMethod? ExtensionImplementation { get; internal set; }
+
+    /// <summary>
+    /// Gets the member of a C# 14 extension block implemented by this method of the static class: a method, or the property or the event of an accessor.
+    /// It is <see langword="null"/> for other methods.
+    /// </summary>
+    public PublicApiMember? ImplementedExtensionMember { get; internal set; }
+
     public bool ReturnsVoid => ReturnRefKind == PublicApiRefKind.None && ReturnType is PublicApiNamedTypeReference returnType && returnType.IsSystemType("Void");
 }

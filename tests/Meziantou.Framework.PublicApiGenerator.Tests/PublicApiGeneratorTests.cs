@@ -8087,6 +8087,230 @@ public sealed class PublicApiGeneratorTests
             value.Variants.Select(variant => $"{string.Join(", ", variant.TargetFrameworks)}: {PublicApiFormatter.Format(variant.Symbol).Text}"));
     }
 
+    private const string ExtensionBlocksSource = """
+        using System.Collections.Generic;
+        using System.Text;
+
+        namespace Demo;
+
+        /// <summary/>
+        public static class Extensions
+        {
+            /// <summary/>
+            extension(Encoding)
+            {
+                /// <summary/>
+                public static Encoding UTF8WithoutPreamble => new UTF8Encoding(false);
+
+                /// <summary/>
+                public static Encoding Create(int codePage) => Encoding.GetEncoding(codePage);
+            }
+
+            /// <summary/>
+            /// <typeparam name="TItem"/>
+            /// <param name="list"/>
+            extension<TItem>(List<TItem> list) where TItem : class
+            {
+                /// <summary/>
+                public TItem? First { get => list[0]; set => list[0] = value!; }
+
+                /// <summary/>
+                public TResult Map<TResult>(System.Func<TItem, TResult> selector) => selector(list[0]);
+
+                /// <summary/>
+                public static List<TItem> Empty() => [];
+            }
+
+            /// <summary/>
+            /// <param name="value"/>
+            extension(ref int value)
+            {
+                /// <summary/>
+                public void Increment() => value++;
+            }
+
+            /// <summary/>
+            /// <param name="value"/>
+            extension(string value)
+            {
+                /// <summary/>
+                public bool IsEmpty => value.Length == 0;
+
+                /// <summary/>
+                public static string operator +(string left, int right) => left + right.ToString();
+            }
+
+            /// <summary>Not an extension property: the name looks like an accessor</summary>
+            public static bool get_IsEmpty(string value, int other) => false;
+        }
+        """;
+
+    [Fact]
+    public async Task ExtensionBlocks_Model()
+    {
+        var assembly = await ReadAssembly(ExtensionBlocksSource);
+        var type = assembly.FindType("Demo.Extensions")!;
+
+        Assert.Equal(
+            [
+                "extension(System.Text.Encoding): UTF8WithoutPreamble, Create",
+                "extension(ref int value): Increment",
+                "extension(string value): IsEmpty, op_Addition",
+                "extension<TItem>(System.Collections.Generic.List<TItem> list) where TItem : class: First, Empty, Map",
+            ],
+            type.ExtensionBlocks.Select(block => FormatBlock(block) + ": " + string.Join(", ", block.Members.Select(member => member.Name))).Order(StringComparer.Ordinal));
+
+        Assert.All(type.ExtensionBlocks, block => Assert.Same(type, block.DeclaringType));
+        Assert.All(type.ExtensionBlocks.SelectMany(block => block.Members), member => Assert.Same(type, member.DeclaringType));
+        Assert.All(type.Members, member => Assert.Null(member.ExtensionBlock));
+
+        // Each method and accessor of an extension block is linked to its implementation, and the other way around
+        Assert.Equal(
+            [
+                "Create -> M:Demo.Extensions.Create(System.Int32)",
+                "Empty -> M:Demo.Extensions.Empty``1",
+                "First.get_First -> M:Demo.Extensions.get_First``1(System.Collections.Generic.List{``0})",
+                "First.set_First -> M:Demo.Extensions.set_First``1(System.Collections.Generic.List{``0},``0)",
+                "Increment -> M:Demo.Extensions.Increment(System.Int32@)",
+                "IsEmpty.get_IsEmpty -> M:Demo.Extensions.get_IsEmpty(System.String)",
+                "Map -> M:Demo.Extensions.Map``2(System.Collections.Generic.List{``0},System.Func{``0,``1})",
+                "UTF8WithoutPreamble.get_UTF8WithoutPreamble -> M:Demo.Extensions.get_UTF8WithoutPreamble",
+                "op_Addition -> M:Demo.Extensions.op_Addition(System.String,System.Int32)",
+            ],
+            type.ExtensionBlocks
+                .SelectMany(block => block.Members)
+                .SelectMany(member => member switch
+                {
+                    PublicApiProperty property => new[] { property.GetMethod, property.SetMethod }.OfType<PublicApiMethod>().Select(accessor => (Name: property.Name + "." + accessor.Name, Method: accessor)),
+                    PublicApiMethod method => [(method.Name, method)],
+                    _ => [],
+                })
+                .Select(item =>
+                {
+                    var implementation = item.Method.ExtensionImplementation!;
+                    Assert.Same(item.Method.AssociatedSymbol ?? item.Method, implementation.ImplementedExtensionMember);
+                    Assert.Same(item.Method.ExtensionBlock, ((PublicApiMember)(item.Method.AssociatedSymbol ?? item.Method)).ExtensionBlock);
+                    return item.Name + " -> " + implementation.DocumentationId;
+                })
+                .Order(StringComparer.Ordinal));
+
+        // A hand-written method that looks like an accessor is not an implementation
+        var handWritten = type.Members.OfType<PublicApiMethod>().Single(method => method.Name == "get_IsEmpty" && method.Parameters.Length == 2);
+        Assert.Null(handWritten.ImplementedExtensionMember);
+        Assert.Equal(2, type.Members.OfType<PublicApiMethod>().Count(method => method.Name == "get_IsEmpty"));
+
+        // The members of the extension blocks are listed and can be found by their documentation ID
+        var first = Assert.IsType<PublicApiProperty>(assembly.FindSymbolByDocumentationId(type.ExtensionBlocks.Single(block => !block.GenericParameters.IsEmpty).Members.OfType<PublicApiProperty>().Single().DocumentationId));
+        Assert.StartsWith("P:Demo.Extensions.<G>$", first.DocumentationId, StringComparison.Ordinal);
+        Assert.False(first.IsStatic);
+        Assert.Contains(first, assembly.GetAllSymbols());
+        Assert.Contains(first.GetMethod!, assembly.GetAllSymbols());
+
+        static string FormatBlock(PublicApiExtensionBlock block)
+        {
+            var declaration = PublicApiFormatter.Format(block.Members[0], new PublicApiFormattingOptions { NewLine = "\n" }).Text;
+            return declaration[..declaration.IndexOf('\n', StringComparison.Ordinal)];
+        }
+    }
+
+    [Fact]
+    public async Task ExtensionBlocks_DocumentationIdsMatchTheCompiler()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        var assemblyPath = await CompileSource(temporaryDirectory, "source", "net10.0", ExtensionBlocksSource, generateDocumentationFile: true);
+        var assembly = PublicApi.ReadAssembly(assemblyPath);
+        var documentedIds = XDocument.Load(assemblyPath.ChangeExtension(".xml")).Descendants("member")
+            .Select(member => (string)member.Attribute("name")!)
+            .Where(id => !id.StartsWith("T:", StringComparison.Ordinal) && id.Contains(".<G>$", StringComparison.Ordinal))
+            .ToList();
+
+        Assert.HasCount(8, documentedIds);
+        Assert.All(documentedIds, id => Assert.Equal(id, assembly.FindSymbolByDocumentationId(id)?.DocumentationId));
+        Assert.Equal(
+            documentedIds.Order(StringComparer.Ordinal),
+            assembly.FindType("Demo.Extensions")!.ExtensionBlocks.SelectMany(block => block.Members).Select(member => member.DocumentationId).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public async Task ExtensionBlocks_Format()
+    {
+        var assembly = await ReadAssembly(ExtensionBlocksSource);
+        var options = new PublicApiFormattingOptions { NewLine = "\n", QualifyTypeNames = false };
+        var members = assembly.FindType("Demo.Extensions")!.ExtensionBlocks.SelectMany(block => block.Members).ToDictionary(member => member.Name, StringComparer.Ordinal);
+
+        Assert.Equal("""
+            extension(Encoding)
+            {
+                public static Encoding UTF8WithoutPreamble { get; }
+            }
+            """, PublicApiFormatter.Format(members["UTF8WithoutPreamble"], options).Text);
+        Assert.Equal("""
+            extension<TItem>(List<TItem> list) where TItem : class
+            {
+                public TResult Map<TResult>(Func<TItem, TResult> selector)
+            }
+            """, PublicApiFormatter.Format(members["Map"], options).Text);
+        Assert.Equal("""
+            extension<TItem>(List<TItem> list) where TItem : class
+            {
+                public TItem? First { get; set; }
+            }
+            """, PublicApiFormatter.Format(members["First"], options).Text);
+        Assert.Equal("""
+            extension<TItem>(List<TItem> list) where TItem : class
+            {
+                public TItem? First { set; }
+            }
+            """, PublicApiFormatter.Format(((PublicApiProperty)members["First"]).SetMethod!, options).Text);
+        Assert.Equal("""
+            extension(ref int value)
+            {
+                public void Increment()
+            }
+            """, PublicApiFormatter.Format(members["Increment"], options).Text);
+        Assert.Equal("""
+            extension(string value)
+            {
+                public static string operator +(string left, int right)
+            }
+            """, PublicApiFormatter.Format(members["op_Addition"], options).Text);
+
+        // The implementation methods are formatted as they are declared in metadata
+        Assert.Equal("public static Encoding get_UTF8WithoutPreamble()", PublicApiFormatter.Format(((PublicApiProperty)members["UTF8WithoutPreamble"]).GetMethod!.ExtensionImplementation!, options).Text);
+    }
+
+    [Fact]
+    public async Task ExtensionBlocks_Aggregate()
+    {
+        await using var temporaryDirectory = TemporaryDirectory.Create();
+        const string Source = """
+            namespace Demo;
+
+            public static class Extensions
+            {
+                extension(string value)
+                {
+                    public bool IsEmpty => value.Length == 0;
+            #if NET10_0_OR_GREATER
+                    public static string Empty => "";
+            #endif
+                }
+            }
+            """;
+
+        var net8 = PublicApi.ReadAssembly(await CompileSource(temporaryDirectory, "net8_0", "net8.0", Source), new PublicApiReadOptions { TargetFramework = "net8.0" });
+        var net10 = PublicApi.ReadAssembly(await CompileSource(temporaryDirectory, "net10_0", "net10.0", Source), new PublicApiReadOptions { TargetFramework = "net10.0" });
+        var aggregate = PublicApi.Aggregate([net8, net10]);
+        var type = aggregate.FindSymbolByDocumentationId("T:Demo.Extensions")!;
+
+        Assert.Equal(
+            ["Empty [net10.0]", "IsEmpty [net8.0, net10.0]"],
+            type.ExtensionMembers.Select(member => member.Name + " [" + string.Join(", ", member.TargetFrameworks) + "]").Order(StringComparer.Ordinal));
+        Assert.All(type.ExtensionMembers, member => Assert.Same(type, member.DeclaringType));
+        Assert.All(type.ExtensionMembers, member => Assert.Same(member, aggregate.FindSymbolByDocumentationId(member.DocumentationId)));
+        Assert.Equal(["get_Empty", "get_IsEmpty"], type.Members.Select(member => member.Name).Order(StringComparer.Ordinal));
+    }
+
     private static async Task<PublicApiAssembly> ReadAssembly(string source, PublicApiReadOptions? options = null)
     {
         await using var temporaryDirectory = TemporaryDirectory.Create();

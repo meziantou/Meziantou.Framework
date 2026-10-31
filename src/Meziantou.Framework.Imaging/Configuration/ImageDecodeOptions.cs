@@ -130,9 +130,9 @@ public sealed class ImageDecodeOptions
     /// </summary>
     /// <remarks>
     /// <para>
-    /// A JPEG 2000 file only decodes the tiles that the area meets, and in them the code-blocks whose coefficients reach
-    /// it: the samples of the area are those of a full decode, for less time (the wavelet transformation of a tile that the
-    /// area meets is still whole). With <see cref="ScaleDenominator"/> or <see cref="TargetSize"/>, the area is divided like
+    /// A JPEG 2000 file only decodes the tiles that the area meets, in them the code-blocks whose coefficients reach it,
+    /// and the wavelet transformation only rebuilds the samples the area needs: the samples of the area are those of a full
+    /// decode, for less time and memory, even in an image of one tile. With <see cref="ScaleDenominator"/> or <see cref="TargetSize"/>, the area is divided like
     /// the image: its edges are rounded up, as the reference grid of the format does, and an area narrower than a pixel of
     /// the reduced image keeps the pixel that covers it.
     /// </para>

@@ -531,7 +531,6 @@ public sealed partial class Selection
         _document.LayoutEngineOrNull?.OnContentRelevancyChanged();
     }
 
-    /// <summary>https://w3c.github.io/selection-api/#scheduling-selectionhange-event</summary>
     /// <summary>
     /// Selects a range without a direction (https://w3c.github.io/selection-api/#dfn-direction: "if the user creates a
     /// selection by double clicking on a word, the selection is directionless"); its anchor is its start.
@@ -545,6 +544,7 @@ public sealed partial class Selection
     /// </summary>
     internal static bool FireSelectStart(Node target) => target.FireEvent(new Event("selectstart", new EventInit { Bubbles = true, Cancelable = true, Composed = true }));
 
+    /// <summary>https://w3c.github.io/selection-api/#scheduling-selectionhange-event</summary>
     internal static void ScheduleSelectionChangeEvent(Node target)
     {
         // The "has scheduled selectionchange event" flags are stored by the document, so the nodes do not need a field

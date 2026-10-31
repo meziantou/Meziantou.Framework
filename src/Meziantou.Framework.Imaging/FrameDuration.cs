@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Imaging;
@@ -112,6 +113,50 @@ public readonly struct FrameDuration : IEquatable<FrameDuration>, IComparable<Fr
         return TimeSpan.FromTicks((long)result);
     }
 
+    /// <summary>Returns the exact sum of this duration and another one, like <c>this + other</c>.</summary>
+    /// <param name="other">The duration to add.</param>
+    /// <returns>The normalized sum.</returns>
+    /// <remarks>
+    /// The sum is computed exactly with 128-bit integers and then normalized. It is never rounded: a sum whose normalized
+    /// numerator or denominator does not fit in a <see cref="long"/> throws instead (for example two durations whose
+    /// denominators are large coprime numbers).
+    /// </remarks>
+    /// <exception cref="OverflowException">The normalized numerator or denominator of the sum is greater than <see cref="long.MaxValue"/>.</exception>
+    public FrameDuration Add(FrameDuration other)
+    {
+        if (other.IsZero)
+            return this;
+
+        if (IsZero)
+            return other;
+
+        if (Denominator == other.Denominator)
+            return FromInt128((Int128)_numerator + other._numerator, Denominator);
+
+        var numerator = ((Int128)_numerator * other.Denominator) + ((Int128)other._numerator * Denominator);
+        return FromInt128(numerator, (Int128)Denominator * other.Denominator);
+    }
+
+    /// <summary>Returns the exact difference of this duration and another one, like <c>this - other</c>.</summary>
+    /// <param name="other">The duration to subtract. It must not be longer than this duration.</param>
+    /// <returns>The normalized difference.</returns>
+    /// <remarks>
+    /// The difference is computed exactly, like <see cref="Add(FrameDuration)"/>. A duration is never negative, so a
+    /// difference below zero throws instead of being clamped to <see cref="Zero"/>.
+    /// </remarks>
+    /// <exception cref="OverflowException"><paramref name="other"/> is longer than this duration, or the normalized denominator of the difference is greater than <see cref="long.MaxValue"/>.</exception>
+    public FrameDuration Subtract(FrameDuration other)
+    {
+        if (other.IsZero)
+            return this;
+
+        var numerator = ((Int128)_numerator * other.Denominator) - ((Int128)other._numerator * Denominator);
+        if (numerator < 0)
+            throw new OverflowException("The difference is negative: a frame duration cannot be negative.");
+
+        return FromInt128(numerator, (Int128)Denominator * other.Denominator);
+    }
+
     /// <inheritdoc />
     public bool Equals(FrameDuration other) => _numerator == other._numerator && _denominatorMinusOne == other._denominatorMinusOne;
 
@@ -180,6 +225,45 @@ public readonly struct FrameDuration : IEquatable<FrameDuration>, IComparable<Fr
     /// <param name="right">The second duration.</param>
     /// <returns><see langword="true"/> if <paramref name="left"/> is longer than or equal to <paramref name="right"/>.</returns>
     public static bool operator >=(FrameDuration left, FrameDuration right) => left.CompareTo(right) >= 0;
+
+    /// <summary>Adds two durations exactly (see <see cref="Add(FrameDuration)"/>).</summary>
+    /// <param name="left">The first duration.</param>
+    /// <param name="right">The second duration.</param>
+    /// <returns>The normalized sum.</returns>
+    /// <exception cref="OverflowException">The normalized numerator or denominator of the sum is greater than <see cref="long.MaxValue"/>.</exception>
+    public static FrameDuration operator +(FrameDuration left, FrameDuration right) => left.Add(right);
+
+    /// <summary>Subtracts a duration from another exactly (see <see cref="Subtract(FrameDuration)"/>).</summary>
+    /// <param name="left">The duration to subtract from.</param>
+    /// <param name="right">The duration to subtract. It must not be longer than <paramref name="left"/>.</param>
+    /// <returns>The normalized difference.</returns>
+    /// <exception cref="OverflowException"><paramref name="right"/> is longer than <paramref name="left"/>, or the normalized denominator of the difference is greater than <see cref="long.MaxValue"/>.</exception>
+    public static FrameDuration operator -(FrameDuration left, FrameDuration right) => left.Subtract(right);
+
+    private static FrameDuration FromInt128(Int128 numerator, Int128 denominator)
+    {
+        Debug.Assert(numerator >= 0 && denominator > 0);
+        if (numerator == 0)
+            return Zero;
+
+        var gcd = GreatestCommonDivisor(numerator, denominator);
+        numerator /= gcd;
+        denominator /= gcd;
+        if (numerator > long.MaxValue || denominator > long.MaxValue)
+            throw new OverflowException("The result cannot be represented exactly as a frame duration: its normalized numerator or denominator exceeds 64 bits.");
+
+        return new FrameDuration((long)numerator, (long)denominator);
+    }
+
+    private static Int128 GreatestCommonDivisor(Int128 a, Int128 b)
+    {
+        while (b != 0)
+        {
+            (a, b) = (b, a % b);
+        }
+
+        return a;
+    }
 
     private static long GreatestCommonDivisor(long a, long b)
     {

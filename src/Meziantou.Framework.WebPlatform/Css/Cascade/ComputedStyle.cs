@@ -470,11 +470,6 @@ internal sealed partial class ComputedStyle
     }
 
     /// <summary>
-    /// Returns whether a declaration or an animation may apply to a property whose name starts with one of the prefixes. When
-    /// none does, the properties that are not inherited have their initial value: the layout skips computing them (e.g. the
-    /// margins, borders and paddings of the inline boxes, which most of them do not set).
-    /// </summary>
-    /// <summary>
     /// Whether the element may have a transform (https://drafts.csswg.org/css-transforms-2/#transform-property): a cascaded
     /// <c>transform</c>, <c>translate</c>, <c>rotate</c>, <c>scale</c>, <c>offset-path</c> or <c>all</c>, or animated values. These properties are not
     /// inherited, so the element has no transform otherwise (a cheap test before the computed values).
@@ -482,6 +477,11 @@ internal sealed partial class ComputedStyle
     internal bool MayHaveTransform => _effects is not null || _cascaded.ContainsKey("transform") || _cascaded.ContainsKey("translate")
         || _cascaded.ContainsKey("rotate") || _cascaded.ContainsKey("scale") || _cascaded.ContainsKey("offset-path") || _cascaded.ContainsKey("all");
 
+    /// <summary>
+    /// Returns whether a declaration or an animation may apply to a property whose name starts with one of the prefixes. When
+    /// none does, the properties that are not inherited have their initial value: the layout skips computing them (e.g. the
+    /// margins, borders and paddings of the inline boxes, which most of them do not set).
+    /// </summary>
     internal bool MayHaveCascadedValueStartingWith(string prefix1, string prefix2, string? prefix3 = null)
     {
         if (_effects is not null)

@@ -2,7 +2,7 @@ using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.JavaScriptEngine;
 
-/// <summary>The access to the storage of the named properties for the inline caches of the interpreter.</summary>
+// The access to the storage of the named properties for the inline caches of the interpreter.
 public partial class JsObject
 {
     /// <summary>Gets the storage of the named properties: a shape, a property table, or null (no property yet).</summary>

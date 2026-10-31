@@ -5,8 +5,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <summary>
 /// The strips or tiles of a page decoded by several workers (<see cref="ImageConfiguration.MaxDegreeOfParallelism"/>):
 /// each block is compressed on its own and its predictor works within its rows, so the blocks do not depend on each
-/// other. The blocks are decoded by batches of one block per worker and handed over in their order, on the calling
-/// thread, so the pixels and the errors are those of one worker.
+/// other. The blocks are decoded by batches of one block per worker and handed over in their decoding order
+/// (<see cref="TiffPage.GetBlockIndex"/>: the order of the blocks, or the planes of one place of a planar page together),
+/// on the calling thread, so the pixels and the errors are those of one worker.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -89,22 +90,22 @@ internal sealed class TiffBlockWorkers : IDisposable
     }
 
     /// <summary>Gets the rows of the next block, decoding the batch that starts at it when it is not decoded yet.</summary>
-    /// <param name="index">The index of the block: the blocks are read in their order.</param>
+    /// <param name="position">The position of the block in the decoding order (<see cref="TiffPage.GetBlockIndex"/>): the blocks are read in that order.</param>
     /// <returns>The rows of the block that belong to the page, valid until the next call.</returns>
     /// <exception cref="InvalidImageContentException">The block, or the input, is malformed.</exception>
-    public ReadOnlySpan<byte> Next(int index)
+    public ReadOnlySpan<byte> Next(int position)
     {
-        if (index < _start || index > _start + _count)
-            throw new ArgumentOutOfRangeException(nameof(index), index, "The blocks are read in their order.");
+        if (position < _start || position > _start + _count)
+            throw new ArgumentOutOfRangeException(nameof(position), position, "The blocks are read in their order.");
 
-        if (index == _start + _count)
+        if (position == _start + _count)
         {
-            DecodeBatch(index);
+            DecodeBatch(position);
         }
 
-        var slot = index - _start;
+        var slot = position - _start;
         _errors[slot]?.Throw();
-        return _workspaces[slot].GetBlock(_page).Span[..(GetRowCount(index) * _page.BlockRowLength)];
+        return _workspaces[slot].GetBlock(_page).Span[..(GetRowCount(_page.GetBlockIndex(position)) * _page.BlockRowLength)];
     }
 
     public void Dispose()
@@ -126,8 +127,7 @@ internal sealed class TiffBlockWorkers : IDisposable
     private int GetRowCount(int index)
     {
         var page = _page;
-        var blockRow = page.IsTiled ? index / page.BlocksAcross : index;
-        return Math.Min(page.BlockHeight, page.Size.Height - (blockRow * page.BlockHeight));
+        return Math.Min(page.BlockHeight, page.Size.Height - (page.GetBlockRow(index) * page.BlockHeight));
     }
 
     private void DecodeBatch(int start)
@@ -142,7 +142,8 @@ internal sealed class TiffBlockWorkers : IDisposable
             var slot = count++;
             try
             {
-                _blocks[slot] = _reader.Fetch(start + slot, GetRowCount(start + slot), _workspaces[slot]);
+                var index = _page.GetBlockIndex(start + slot);
+                _blocks[slot] = _reader.Fetch(index, GetRowCount(index), _workspaces[slot]);
             }
             catch (Exception exception)
             {

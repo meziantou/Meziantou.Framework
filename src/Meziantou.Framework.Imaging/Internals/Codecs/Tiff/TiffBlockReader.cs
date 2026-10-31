@@ -570,7 +570,7 @@ internal sealed class TiffBlockReader : IDisposable
     private void UndoHorizontalDifferencing(Span<byte> block, int rowCount)
     {
         var rowLength = _page.BlockRowLength;
-        var samplesPerPixel = _page.SamplesPerPixel;
+        var samplesPerPixel = _page.BlockSamplesPerPixel;
         var is8Bit = _page.BitsPerSample == 8;
         var bigEndian = _page.IsBigEndian;
         for (var row = 0; row < rowCount; row++)
@@ -672,7 +672,7 @@ internal sealed class TiffBlockReader : IDisposable
         var scratch = workspace.GetPredictorRow(rowLength).Span[..rowLength];
         for (var row = 0; row < rowCount; row++)
         {
-            UndoFloatingPointDifferencing(block.Slice(row * rowLength, rowLength), scratch, page.SamplesPerPixel, page.BitsPerSample / 8, page.IsBigEndian);
+            UndoFloatingPointDifferencing(block.Slice(row * rowLength, rowLength), scratch, page.BlockSamplesPerPixel, page.BitsPerSample / 8, page.IsBigEndian);
         }
     }
 
@@ -1008,8 +1008,8 @@ internal sealed class TiffBlockReader : IDisposable
         public override void OnImage(int width, int height, ReadOnlySpan<Jpeg2000ComponentSize> components)
         {
             var page = _page;
-            if (components.Length != page.SamplesPerPixel)
-                throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG 2000 data of the TIFF block {_index} of page {page.Index} has {components.Length} component(s); the page declares {page.SamplesPerPixel} sample(s) per pixel."));
+            if (components.Length != page.BlockSamplesPerPixel)
+                throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG 2000 data of the TIFF block {_index} of page {page.Index} has {components.Length} component(s); a block of the page holds {page.BlockSamplesPerPixel} sample(s) per pixel."));
 
             foreach (var component in components)
             {
@@ -1062,7 +1062,7 @@ internal sealed class TiffBlockReader : IDisposable
         public JpegBlockReceiver(TiffPage page)
         {
             _page = page;
-            _componentCount = page.SamplesPerPixel;
+            _componentCount = page.BlockSamplesPerPixel;
         }
 
         public int RowsReceived { get; private set; }
@@ -1092,7 +1092,7 @@ internal sealed class TiffBlockReader : IDisposable
         public override void OnFrame(int width, int height, int componentCount, int precision)
         {
             if (componentCount != _componentCount)
-                throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG data of the TIFF block {_index} of page {_page.Index} has {componentCount} component(s); the page declares {_componentCount} sample(s) per pixel."));
+                throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG data of the TIFF block {_index} of page {_page.Index} has {componentCount} component(s); a block of the page holds {_componentCount} sample(s) per pixel."));
 
             if (precision != _page.BitsPerSample)
                 throw TiffFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG data of the TIFF block {_index} of page {_page.Index} has samples of {precision} bits; the page declares {_page.BitsPerSample}."));

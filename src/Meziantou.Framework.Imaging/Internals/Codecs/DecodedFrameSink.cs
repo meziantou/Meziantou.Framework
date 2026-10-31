@@ -131,9 +131,6 @@ internal abstract class DecodedFrameSink : IDisposable
         FrameCount++;
     }
 
-    /// <summary>Starts the separate poster frame.</summary>
-    /// <exception cref="ImageResourceLimitException">A frame or allocation limit is exceeded.</exception>
-    /// <exception cref="InvalidOperationException">A poster was already started.</exception>
     /// <summary>
     /// Gets a value indicating whether the caller asked for the next rendering of the frame, which may be an intermediate
     /// one: only a sequential reader does.
@@ -156,6 +153,9 @@ internal abstract class DecodedFrameSink : IDisposable
     /// <param name="passCount">The number of passes the rendering holds.</param>
     public virtual void EndRefinement(int downsampling, int passCount) => throw new NotSupportedException("Only a sequential reader shows a frame before it is complete.");
 
+    /// <summary>Starts the separate poster frame.</summary>
+    /// <exception cref="ImageResourceLimitException">A frame or allocation limit is exceeded.</exception>
+    /// <exception cref="InvalidOperationException">A poster was already started.</exception>
     public void BeginPoster()
     {
         if (HasPoster)

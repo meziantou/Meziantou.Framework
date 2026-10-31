@@ -8,7 +8,7 @@ port, and ask the container which one it got:
 
 <!-- ref:../../../samples/Meziantou.Framework.TemporaryContainers.Samples/DocumentationExamples.cs;region=TemporaryContainers_Ports;format=md-fenced-code-block;dedent=true -->
 ```csharp
-var definition = new ContainerDefinition(ImageSource.FromRegistry("nginx:1.29"));
+var definition = new ContainerDefinition(ImageSource.FromRegistry("nginx"));
 definition.Ports.Add(80); // published on a random free host port
 definition.Ports.Add(8443, 443); // host port 8443 to container port 443
 definition.Ports.Add(new ContainerPort(9000) with { HostIp = "0.0.0.0" }); // every interface, not only the loopback address

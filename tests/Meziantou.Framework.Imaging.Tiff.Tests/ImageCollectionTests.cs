@@ -1,5 +1,6 @@
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
+using Meziantou.Framework.Imaging.TestHarness.Streams;
 
 namespace Meziantou.Framework.Imaging.Tests;
 
@@ -427,6 +428,218 @@ public sealed class ImageCollectionTests
         }
     }
 
+    [Fact]
+    public void ACanceledDecodeReturnsNothingAndLeavesTheEntryDecodable()
+    {
+        using var collection = ImageCollection.Load(StripedPage());
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
+        Assert.ThrowsAny<OperationCanceledException>(() => collection[0].Decode(options: null, canceled.Token));
+        Assert.ThrowsAny<OperationCanceledException>(() => collection[0].Decode<Gray8>(cancellationToken: canceled.Token));
+
+        // An entry that owns an image observes the token too, before it is copied
+        using var source = TestImages.CreateRgba(2, 2);
+        using var pages = ImageCollection.Create(ImageCollectionKind.Pages);
+        pages.Add(source);
+        Assert.ThrowsAny<OperationCanceledException>(() => pages[0].Decode(options: null, canceled.Token));
+        Assert.ThrowsAny<OperationCanceledException>(() => pages[0].Decode<Rgba32>(options: null, canceled.Token));
+
+        // The pixel type is validated before the token, and the entries stay usable
+        Assert.Throws<NotSupportedException>(() => collection[0].Decode<Guid>(options: null, canceled.Token));
+        Assert.Equal(StripedPagePixels(), DecodePixels(collection[0]));
+        using var copy = pages[0].Decode(options: null, XunitCancellationToken);
+        Assert.Equal(new Size(2, 2), copy.Size);
+    }
+
+    [Fact]
+    public void ADecodeObservesACancellationRequestedWhileItReads()
+    {
+        using var cancellation = new CancellationTokenSource();
+        using var stream = new ReadHookStream(StripedPage());
+        using var collection = ImageCollection.Load(stream);
+
+        // The token is canceled by the first read of the decode, after the decode checked it on entry
+        var start = stream.ReadCount;
+        stream.OnRead = count =>
+        {
+            if (count == start + 1)
+            {
+                cancellation.Cancel();
+            }
+        };
+
+        Assert.ThrowsAny<OperationCanceledException>(() => collection[0].Decode(options: null, cancellation.Token));
+        Assert.Equal(start + 1, stream.ReadCount); // stopped at the next boundary of the decoder (a strip), without reading again
+
+        stream.OnRead = null;
+        Assert.Equal(StripedPagePixels(), DecodePixels(collection[0]));
+    }
+
+    [Fact]
+    public async Task SaveAsyncWritesTheBytesOfSave()
+    {
+        using var loaded = ImageCollection.Load(ThreePages());
+        using var source = TestImages.CreateRgba(3, 2);
+        loaded.Add(source);
+        using var icons = ImageCollection.Create(ImageCollectionKind.Representations);
+        icons.Add(source);
+        using var larger = TestImages.CreateRgba(5, 5);
+        icons.Add(larger);
+
+        foreach (var (collection, encoder, extension) in new[] { (loaded, (ImageEncoder)new TiffEncoder(), ".tif"), (icons, new IcoEncoder(), ".ico"), (icons, new IcoEncoder { Kind = IconKind.Cursor }, ".cur") })
+        {
+            using var expected = new MemoryStream();
+            collection.Save(expected, encoder);
+
+            using var output = new TestOutputStream { Seekable = true, AllowPatching = true, ForbidSynchronousWrites = true };
+            await collection.SaveAsync(output, encoder, XunitCancellationToken);
+            Assert.Equal(expected.ToArray(), output.ToArray());
+            Assert.False(output.IsDisposed);
+            Assert.True(output.AsynchronousWriteCount > 0);
+            Assert.True(output.FlushCount > 0);
+
+            var directory = TestFiles.CreateDirectory();
+            try
+            {
+                var path = directory / ("collection" + extension);
+                await collection.SaveAsync(path, cancellationToken: XunitCancellationToken);
+                Assert.Equal(expected.ToArray(), await File.ReadAllBytesAsync(path, XunitCancellationToken));
+                Assert.Equal([path], Directory.GetFiles(directory));
+            }
+            finally
+            {
+                Directory.Delete(directory, recursive: true);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task SaveAsyncValidatesItsArgumentsBeforeReturning()
+    {
+        using var empty = ImageCollection.Create(ImageCollectionKind.Pages);
+        using var source = TestImages.CreateRgba(2, 2);
+        using var pages = ImageCollection.Create(ImageCollectionKind.Pages);
+        pages.Add(source);
+        var directory = TestFiles.CreateDirectory();
+        try
+        {
+            // Thrown by the call, not by the returned task, like the synchronous Save
+            Assert.Throws<InvalidOperationException>(() => { _ = empty.SaveAsync(new MemoryStream(), new TiffEncoder(), XunitCancellationToken); });
+            Assert.Throws<InvalidOperationException>(() => { _ = empty.SaveAsync(directory / "a.tif", cancellationToken: XunitCancellationToken); });
+            Assert.Throws<ArgumentException>("path", () => { _ = pages.SaveAsync("", cancellationToken: XunitCancellationToken); });
+            Assert.Throws<ArgumentException>("path", () => { _ = pages.SaveAsync(directory / "a.xyz", cancellationToken: XunitCancellationToken); });
+            Assert.Throws<ArgumentException>("encoder", () => { _ = pages.SaveAsync(directory / "a.png", cancellationToken: XunitCancellationToken); });
+            Assert.Throws<ArgumentException>("encoder", () => { _ = pages.SaveAsync(directory / "a.ico", cancellationToken: XunitCancellationToken); });
+            Assert.Throws<ArgumentException>("encoder", () => { _ = pages.SaveAsync(new TestOutputStream(), new TiffEncoder(), XunitCancellationToken); });
+            Assert.Throws<ArgumentException>("stream", () => { _ = pages.SaveAsync(new MemoryStream([], writable: false), new TiffEncoder(), XunitCancellationToken); });
+            Assert.Throws<ArgumentNullException>("stream", () => { _ = pages.SaveAsync((Stream)null!, new TiffEncoder(), XunitCancellationToken); });
+            Assert.Throws<ArgumentNullException>("encoder", () => { _ = pages.SaveAsync(new MemoryStream(), null!, XunitCancellationToken); });
+            Assert.Empty(Directory.GetFileSystemEntries(directory));
+
+            pages.Dispose();
+            Assert.Throws<ObjectDisposedException>(() => { _ = pages.SaveAsync(directory / "a.tif", cancellationToken: XunitCancellationToken); });
+            Assert.Throws<ObjectDisposedException>(() => { _ = pages.SaveAsync(new MemoryStream(), new TiffEncoder(), XunitCancellationToken); });
+
+            // A pre-canceled token creates no output
+            using var canceled = new CancellationTokenSource();
+            await canceled.CancelAsync();
+            using var other = ImageCollection.Create(ImageCollectionKind.Pages);
+            other.Add(source);
+            Task? task = null;
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => task = other.SaveAsync(directory / "a.tif", cancellationToken: canceled.Token));
+            Assert.True(task!.IsCanceled);
+            using var output = new TestOutputStream { Seekable = true, AllowPatching = true };
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(() => other.SaveAsync(output, new TiffEncoder(), canceled.Token));
+            Assert.Equal(0, output.BytesWritten);
+            Assert.Empty(Directory.GetFileSystemEntries(directory));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task AFailedOrCanceledSaveAsyncLeavesNoPartialFile(bool cancel)
+    {
+        var directory = TestFiles.CreateDirectory();
+        try
+        {
+            var path = directory / "document.tif";
+            await File.WriteAllTextAsync(path, "previous content", XunitCancellationToken);
+            using var cancellation = new CancellationTokenSource();
+            using var stream = new ReadHookStream(ThreePages());
+            using var collection = ImageCollection.Load(stream);
+
+            // The input fails or the token is canceled while the second page is read: the first one is already written
+            var start = stream.ReadCount;
+            var reads = 0;
+            stream.OnRead = _ =>
+            {
+                if (++reads == 2)
+                {
+                    if (cancel)
+                    {
+                        cancellation.Cancel();
+                    }
+                    else
+                    {
+                        throw new IOException("Injected read failure.");
+                    }
+                }
+            };
+
+            if (cancel)
+            {
+                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => collection.SaveAsync(path, cancellationToken: cancellation.Token));
+            }
+            else
+            {
+                await Assert.ThrowsAsync<IOException>(() => collection.SaveAsync(path, cancellationToken: XunitCancellationToken));
+            }
+
+            Assert.True(stream.ReadCount > start);
+            Assert.Equal("previous content", await File.ReadAllTextAsync(path, XunitCancellationToken));
+            Assert.Equal([path], Directory.GetFiles(directory));
+
+            // The collection is unchanged and can be saved again
+            stream.OnRead = null;
+            await collection.SaveAsync(path, cancellationToken: XunitCancellationToken);
+            using var saved = ImageCollection.Load(path);
+            Assert.Equal(3, saved.Count);
+            Assert.Equal([new Gray8(2)], DecodePixels(saved[1]));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task ACanceledStreamSaveAsyncStopsWriting()
+    {
+        using var cancellation = new CancellationTokenSource();
+        using var image = new Image<Gray8>(256, 256, new Gray8(7));
+        using var pages = ImageCollection.Create(ImageCollectionKind.Pages);
+        for (var i = 0; i < 4; i++)
+        {
+            pages.Add(image);
+        }
+
+        var encoder = new TiffEncoder { Compression = TiffCompression.None, RowsPerStrip = 1 };
+        using var expected = new MemoryStream();
+        pages.Save(expected, encoder);
+
+        // Each page stores 64 KB of uncompressed samples, so the output is flushed during every page: the token is canceled
+        // by the first write, and the save stops before the remaining pages
+        using var output = new TestOutputStream { Seekable = true, AllowPatching = true, CancellationSource = cancellation, CancelAtPosition = 1 };
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => pages.SaveAsync(output, encoder, cancellation.Token));
+        Assert.InRange(output.BytesWritten, 1, expected.Length / 2);
+        Assert.False(output.IsDisposed);
+    }
+
     private static Gray8[] DecodePixels(ImageCollectionEntry entry)
     {
         using var image = entry.Decode<Gray8>();
@@ -441,6 +654,16 @@ public sealed class ImageCollectionTests
     private static byte[] TwoPixelPage() => new TiffFileBuilder()
         .AddPage(new TiffPageSpec { Width = 2, Height = 1, Samples = [1, 2] })
         .Build();
+
+    private const int StripedPageWidth = 4096;
+
+    private const int StripedPageHeight = 16;
+
+    private static byte[] StripedPage() => new TiffFileBuilder()
+        .AddPage(new TiffPageSpec { Width = StripedPageWidth, Height = StripedPageHeight, RowsPerStrip = 1, Samples = StripedPagePixels().Select(static pixel => pixel.Value).ToArray() })
+        .Build();
+
+    private static Gray8[] StripedPagePixels() => Enumerable.Range(0, StripedPageWidth * StripedPageHeight).Select(static i => new Gray8((byte)(i * 7))).ToArray();
 
     private static byte[] ThreePages()
     {
@@ -550,5 +773,56 @@ public sealed class ImageCollectionTests
                 _release.Set();
             }
         }
+    }
+
+    /// <summary>A seekable in-memory input that counts its reads and calls a hook before each one.</summary>
+    private sealed class ReadHookStream(byte[] data) : Stream
+    {
+        private long _position;
+        private int _readCount;
+
+        public Action<int>? OnRead { get; set; }
+
+        public int ReadCount => Volatile.Read(ref _readCount);
+
+        public override bool CanRead => true;
+
+        public override bool CanSeek => true;
+
+        public override bool CanWrite => false;
+
+        public override long Length => data.Length;
+
+        public override long Position
+        {
+            get => _position;
+            set => _position = value;
+        }
+
+        public override int Read(byte[] buffer, int offset, int count) => Read(buffer.AsSpan(offset, count));
+
+        public override int Read(Span<byte> buffer)
+        {
+            OnRead?.Invoke(Interlocked.Increment(ref _readCount));
+            var count = (int)Math.Min(buffer.Length, Math.Max(0, data.Length - _position));
+            data.AsSpan((int)_position, count).CopyTo(buffer);
+            _position += count;
+            return count;
+        }
+
+        public override long Seek(long offset, SeekOrigin origin) => _position = origin switch
+        {
+            SeekOrigin.Begin => offset,
+            SeekOrigin.Current => _position + offset,
+            _ => data.Length + offset,
+        };
+
+        public override void Flush()
+        {
+        }
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
     }
 }

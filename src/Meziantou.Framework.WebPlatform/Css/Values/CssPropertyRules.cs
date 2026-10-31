@@ -395,7 +395,6 @@ internal static partial class CssPropertyRules
 
     private static bool IsIdent(CssComponentValue value, string keyword) => value is CssPreservedToken { Type: CssTokenType.Ident } ident && ident.Token.IsIdent(keyword);
 
-    /// <summary>All the longhands are set to the canonical value of the shorthand (e.g. overflow-clip-margin sets the 4 sides).</summary>
     /// <summary>https://svgwg.org/svg2-draft/painting.html#MarkerShorthand: none or a url() for the three marker properties.</summary>
     private static Dictionary<string, string>? ExpandMarker(CssPropertyDefinition shorthand, List<CssComponentValue> significant)
     {
@@ -403,6 +402,7 @@ internal static partial class CssPropertyRules
         return CssPropertyRegistry.GetLonghandsRecursive(shorthand).ToDictionary(longhand => longhand, _ => value, StringComparer.Ordinal);
     }
 
+    /// <summary>All the longhands are set to the canonical value of the shorthand (e.g. overflow-clip-margin sets the 4 sides).</summary>
     private static Dictionary<string, string>? ExpandSameValue(CssPropertyDefinition shorthand, List<CssComponentValue> significant)
     {
         var longhands = CssPropertyRegistry.GetLonghandsRecursive(shorthand);

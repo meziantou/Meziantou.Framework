@@ -198,7 +198,11 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   (`PngImageDataEncoder.StartSource` with `count: true`), in bands, and the winner is compressed again for real; nothing
   is buffered. Every still image keeps the layout of the pixel format among the candidates and the level of the default
   encoder among the trials, so it is never larger than the default output (the conformance suite asserts it for the
-  corpus, animations included). Keep these findings:
+  corpus, animations included). `PngOptimization.Layout` goes through the same session for still images only (an
+  animation keeps the default session): it skips every trial, takes the candidate with the smallest unfiltered data
+  (`GetSmallestUnfiltered`), and compresses once with the filter strategy and the level of the encoder. Its analysis does
+  not record the opaque colors (no color key, no 2 MiB set), which lets `PngLayoutAnalysis` stop reading rows once nothing
+  can change. Keep these findings:
   - A lower zlib level is sometimes smaller than `SmallestSize` (zlib-ng uses other match strategies): the last stage
     tries `Fastest`, `Optimal` and `SmallestSize`.
   - FFmpeg 9 misplaces the packed samples (1, 2 and 4 bits) of an APNG frame region that does not start at column 0, even
@@ -666,6 +670,13 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   significant first whatever the byte order of the file; on a little-endian computer, `tiffcp -B` of libtiff 4.7.0
   writes big-endian pages that libtiff and GDAL read back with the bytes of each sample swapped, so a big-endian oracle
   file comes from GDAL, which reads and writes them consistently.
+  A page of separate planes (`TiffPage.IsPlanar`) has blocks of one sample per pixel (`BlockSamplesPerPixel`), each
+  predicted on its own; the decoder reads the blocks of the planes of one place together (`TiffPage.GetBlockIndex`, also
+  the order of `TiffBlockWorkers`) and interleaves them into chunky rows (`TiffPageDecoder.Interleave`), so the expander
+  never sees planes. Planar YCbCr data is rejected (its planes may have their own sizes). The writer serializes blocks
+  (`TiffDocumentWriter.FillBlock`): the rows of a strip, or a tile cut from a band of the rows of its row of tiles and
+  padded with zero samples; the predictors (`ApplyPredictor`) then work on each row of the block. Default settings must
+  keep writing the same bytes.
 - **OpenEXR** (`Internals/Codecs/Exr`). The structure parser reads the header (validated whole by `ExrHeader.Complete`,
   so that `Identify` reports every rejection), the offset table, then the chunks in the order of their offsets: the input
   is read forward only, and a chunk must start at its offset, carry its own coordinates and end before the next one.
@@ -1372,7 +1383,10 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   FFmpeg or Apple ImageIO (the JPEG pages, which FFmpeg does not read), and the pages FFmpeg writes with the library.
   FFmpeg 9.0.2 reads only the floating-point RGB and RGBA pages of little-endian classic files (no gray, no big-endian
   floats, no BigTIFF): every floating-point layout, byte order and offset size of the encoder was checked with GDAL and
-  libtiff in the same Docker image when it was written; check them again there after changing the writer.
+  libtiff in the same Docker image when it was written; check them again there after changing the writer. `tiffcp -p
+  separate` of libtiff 4.7.2 only separates 8-bit samples (and leaves a broken file otherwise): the 16-bit and
+  floating-point planar fixtures come from GDAL (`gdal_translate -co INTERLEAVE=BAND`). Apple ImageIO fails on some
+  PackBits tiles, libtiff's own included (a tile as wide as the page): it is no oracle for them.
 - **CMYK JPEG fixtures.** A four-component JPEG file is an `unsupported` fixture (identified, rejected by a load
   without conversion) that declares one conversion and its pixels (`inkConversion`). The reference has two independent
   stages: the samples decoded by `djpeg` from files the generator regroups scan by scan, then the decimal reference of

@@ -311,7 +311,6 @@ internal sealed class CffTable
     /// <exception cref="InvalidFontException">The charstring of the glyph is malformed.</exception>
     /// <exception cref="UnsupportedFontFeatureException">The charstring uses a feature that is not supported.</exception>
     /// <exception cref="FontResourceLimitException">The glyph exceeds the complexity limit.</exception>
-    /// <summary>Decodes the outline of a glyph into a sink.</summary>
     /// <param name="table">The table.</param>
     /// <param name="glyphId">The glyph.</param>
     /// <param name="sink">The sink.</param>
@@ -408,7 +407,6 @@ internal sealed class CffTable
         return result;
     }
 
-    /// <summary>Reads the private DICT of a font and gives its local subroutines, which the DICT places relative to itself.</summary>
     /// <summary>Format 4 of the selector: the ranges of format 3 with 32-bit glyph numbers and 16-bit font DICT numbers.</summary>
     private int GetFontDictOfLongRanges(ReadOnlySpan<byte> table, int glyphId)
     {
@@ -433,6 +431,7 @@ internal sealed class CffTable
         return result;
     }
 
+    /// <summary>Reads the private DICT of a font and gives its local subroutines, which the DICT places relative to itself.</summary>
     private static CffIndex ReadLocalSubroutines(ReadOnlySpan<byte> table, long privateOffset, long privateLength)
     {
         if (privateOffset < 0 || privateLength == 0)

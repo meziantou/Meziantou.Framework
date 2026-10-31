@@ -5,7 +5,9 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// <para>
 /// The container is the part of TIFF 6.0 that any reader accepts: little-endian by default, chunky samples, top-down
 /// strips, no predictor for integer samples. <see cref="Compression"/> selects no compression, Deflate (the default), LZW, PackBits, the
-/// CCITT facsimile compressions or JPEG. Tiles and planar storage are never written.
+/// CCITT facsimile compressions or JPEG. <see cref="Predictor"/> selects horizontal differencing for the integer samples
+/// of Deflate and LZW pages, and <see cref="TileWidth"/> and <see cref="TileHeight"/> write tiles instead of strips.
+/// Planar storage is never written.
 /// </para>
 /// <para>
 /// By default (<see cref="TiffPixelLayout.Auto"/>) the sample layout follows the pixel format of the image, losslessly:
@@ -136,11 +138,12 @@ public sealed class TiffEncoder : ImageEncoder
     /// <summary>
     /// Gets the number of rows of one strip, or 0 (the default) to choose a number of rows whose uncompressed size is
     /// close to <see cref="DefaultStripBytes"/>, so that encoding one page needs a bounded amount of memory whatever the
-    /// size of the page. Ignored by <see cref="TiffCompression.Jpeg"/>, which writes each page as one strip.
+    /// size of the page. Ignored by <see cref="TiffCompression.Jpeg"/>, which writes each page as one strip, and by tiled
+    /// pages (<see cref="TileWidth"/>).
     /// </summary>
     /// <remarks>
     /// With <see cref="ImageConfiguration.MaxDegreeOfParallelism"/> above 1 (the configuration of the saved image), the
-    /// LZW and Deflate strips of a page of at least 65,536 pixels are compressed by up to that many workers, one strip each
+    /// LZW and Deflate strips (or tiles) of a page of at least 65,536 pixels are compressed by up to that many workers, one strip each
     /// at a time: the file is byte-identical to the one of one worker, and each worker holds a strip and its compressed
     /// bytes, charged to <see cref="ImageResourceLimits.MaxLiveAllocationBytes"/>. A page stored as one strip is
     /// compressed by one worker.
@@ -157,6 +160,67 @@ public sealed class TiffEncoder : ImageEncoder
     }
 
     /// <summary>
+    /// Gets the predictor of the integer samples. Defaults to <see cref="TiffPredictor.None"/>, which writes the same file
+    /// as before the setting existed.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="TiffPredictor.HorizontalDifferencing"/> requires <see cref="TiffCompression.Deflate"/> or
+    /// <see cref="TiffCompression.Lzw"/> (the compressions readers apply a predictor with) and
+    /// <see cref="TiffPixelLayout.Auto"/> (bilevel samples and palette indexes are not predictable); saving fails with an
+    /// <see cref="ArgumentException"/> otherwise. It applies to the 8- and 16-bit samples of every pixel format; the
+    /// floating-point samples keep the floating-point predictor.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="TiffPredictor"/>.</exception>
+    public TiffPredictor Predictor
+    {
+        get;
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The predictor is not valid.");
+
+            field = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets the width of the tiles, in pixels: a positive multiple of 16, or 0 (the default) to write strips. Set together
+    /// with <see cref="TileHeight"/>.
+    /// </summary>
+    /// <remarks>
+    /// A tiled page (<c>TileWidth</c>, <c>TileLength</c>, <c>TileOffsets</c> and <c>TileByteCounts</c>) is cut into tiles
+    /// of the same size, left to right and top to bottom; the tiles on the right and bottom edges extend past the page and
+    /// are padded with zero samples, as TIFF requires. Readers can then decode a region of a large page without reading
+    /// the rest. <see cref="RowsPerStrip"/> is ignored. Saving fails with an <see cref="ArgumentException"/> when only one
+    /// of the two sizes is set, or with <see cref="TiffCompression.Jpeg"/>, which writes each page as one strip.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is negative or not a multiple of 16.</exception>
+    public int TileWidth
+    {
+        get;
+        init
+        {
+            ValidateTileSize(value);
+            field = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets the height of the tiles (<c>TileLength</c>), in pixels: a positive multiple of 16, or 0 (the default) to write
+    /// strips. Set together with <see cref="TileWidth"/>.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is negative or not a multiple of 16.</exception>
+    public int TileHeight
+    {
+        get;
+        init
+        {
+            ValidateTileSize(value);
+            field = value;
+        }
+    }
+
+    /// <summary>
     /// Gets a value indicating whether the floating-point pixels are written as 32-bit floating-point samples: with
     /// <see cref="TiffPixelLayout.Auto"/> and any compression but <see cref="TiffCompression.Jpeg"/>.
     /// </summary>
@@ -164,4 +228,11 @@ public sealed class TiffEncoder : ImageEncoder
 
     /// <inheritdoc />
     internal override bool StoresPixelFormat(PixelFormat format) => format is PixelFormat.La16 or PixelFormat.La32 or PixelFormat.Rgb48;
+
+    private static void ValidateTileSize(int value)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(value);
+        if (value % 16 != 0)
+            throw new ArgumentOutOfRangeException(nameof(value), value, "TIFF tile sizes are multiples of 16.");
+    }
 }

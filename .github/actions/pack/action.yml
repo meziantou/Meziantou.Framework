@@ -1,0 +1,52 @@
+name: Pack
+description: |
+  Build and pack the NuGet packages of a traversal project, as they are published. Used by publish.yml, which packs the
+  packages changed since the base commit, and by documentation.yml, which packs all of them to document the API of the
+  checked-out commit. Writes restore.binlog, build.publicapi.binlog, build.binlog and pack.binlog in the workspace.
+
+inputs:
+  project:
+    description: Traversal project listing the package projects, such as eng/packages.proj or its delta project
+    required: true
+  output:
+    description: Folder where the packages are written
+    required: true
+  build-version-suffix:
+    description: |
+      Whether the SDK appends -build-<commit> to the versions outside the main branch (EnableGitHubBuildVersionSuffix).
+      The documentation sets it to false, so the pages of a pull request show the versions of the project files.
+    required: false
+    default: "true"
+
+runs:
+  using: composite
+  steps:
+    - name: Restore
+      shell: pwsh
+      env:
+        PROJECT: ${{ inputs.project }}
+        BUILD_VERSION_SUFFIX: ${{ inputs.build-version-suffix }}
+      run: dotnet restore $env:PROJECT -p:Configuration=Release /p:IsOfficialBuild=true /p:EnableGitHubBuildVersionSuffix=$env:BUILD_VERSION_SUFFIX /bl:restore.binlog
+
+    # Building a package project generates its public API with this tool, and the traversal project does not
+    # necessarily contain it
+    - name: Build the public API generator
+      shell: pwsh
+      env:
+        BUILD_VERSION_SUFFIX: ${{ inputs.build-version-suffix }}
+      run: dotnet build src/Meziantou.Framework.PublicApiGenerator.Tool/Meziantou.Framework.PublicApiGenerator.Tool.csproj --configuration Release /p:IsOfficialBuild=true /p:EnableGitHubBuildVersionSuffix=$env:BUILD_VERSION_SUFFIX /bl:build.publicapi.binlog
+
+    - name: Build
+      shell: pwsh
+      env:
+        PROJECT: ${{ inputs.project }}
+        BUILD_VERSION_SUFFIX: ${{ inputs.build-version-suffix }}
+      run: dotnet build $env:PROJECT --configuration Release --no-restore /p:IsOfficialBuild=true /p:PublicApiGeneratorVerifyNoChangeOnBuild=true /p:EnableGitHubBuildVersionSuffix=$env:BUILD_VERSION_SUFFIX /bl:build.binlog
+
+    - name: Pack
+      shell: pwsh
+      env:
+        PROJECT: ${{ inputs.project }}
+        OUTPUT: ${{ inputs.output }}
+        BUILD_VERSION_SUFFIX: ${{ inputs.build-version-suffix }}
+      run: dotnet pack $env:PROJECT --configuration Release --no-build /p:IsOfficialBuild=true /p:EnableGitHubBuildVersionSuffix=$env:BUILD_VERSION_SUFFIX --output $env:OUTPUT /p:RepositoryBranch="$env:GITHUB_REF" "/p:PromptFolder=$env:RUNNER_TEMP/prompt" /bl:pack.binlog

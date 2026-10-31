@@ -2,7 +2,7 @@ using Meziantou.Framework.WebPlatform.Html;
 
 namespace Meziantou.Framework.WebPlatform.Dom;
 
-/// <summary>https://w3c.github.io/mathml-core/#dom-mathmlelement</summary>
+// https://w3c.github.io/mathml-core/#dom-mathmlelement
 public partial class MathMLElement : Element
 {
     internal MathMLElement(Document document, string localName, string? prefix)

@@ -345,10 +345,6 @@ public partial class Document
     private UrlRecord? _originUrl;
 
     /// <summary>
-    /// The top-level origin of the environment of the document (https://html.spec.whatwg.org/multipage/webappapis.html#concept-environment-top-level-origin):
-    /// the origin of the active document of the top-level browsing context, or the origin of the document when it has no browsing context.
-    /// </summary>
-    /// <summary>
     /// The value of the <c>Document-Isolation-Policy</c> header (https://wicg.github.io/document-isolation-policy/), whose
     /// "isolate-and-require-corp" and "isolate-and-credentialless" values apply the rules of the corresponding embedder
     /// policies to the subresources of the document, or <see cref="EmbedderPolicyValue.UnsafeNone"/>.
@@ -406,6 +402,10 @@ public partial class Document
     [IdlMember("permissionsPolicy", "https://w3c.github.io/webappsec-permissions-policy/#dom-document-permissionspolicy")]
     public PermissionsPolicy PermissionsPolicy => field ??= new PermissionsPolicy(this);
 
+    /// <summary>
+    /// The top-level origin of the environment of the document (https://html.spec.whatwg.org/multipage/webappapis.html#concept-environment-top-level-origin):
+    /// the origin of the active document of the top-level browsing context, or the origin of the document when it has no browsing context.
+    /// </summary>
     internal OriginRecord TopLevelOrigin => BrowsingContext?.Top.Document.Origin ?? Origin;
 
     /// <summary>https://html.spec.whatwg.org/multipage/browsers.html#ascii-serialisation-of-an-origin</summary>
@@ -467,18 +467,18 @@ public partial class Document
     }
 
     /// <summary>
+    /// The document of the environment of the fetches and tasks of the document: the document itself when it has a browsing
+    /// context, otherwise the document of the window that created it (e.g. by <c>createHTMLDocument()</c>), or null.
+    /// </summary>
+    internal Document? EnvironmentDocument => BrowsingContext is not null ? this : OriginDocument?.RelevantWindow?.Document is { BrowsingContext: not null } globalDocument ? globalDocument : null;
+
+    /// <summary>
     /// Queues an element task of an element of this document (https://html.spec.whatwg.org/multipage/webappapis.html#queue-an-element-task).
     /// The task runs only while the document of the relevant global object is fully active. The relevant global object of
     /// a document created by a script without a browsing context (<c>DOMParser</c>, the fragment parsing algorithm...) is
     /// the window that created it, so its tasks run in the event loop of that window. The tasks of the other documents
     /// without a browsing context (e.g. parsed documents) are not queued.
     /// </summary>
-    /// <summary>
-    /// The document of the environment of the fetches and tasks of the document: the document itself when it has a browsing
-    /// context, otherwise the document of the window that created it (e.g. by <c>createHTMLDocument()</c>), or null.
-    /// </summary>
-    internal Document? EnvironmentDocument => BrowsingContext is not null ? this : OriginDocument?.RelevantWindow?.Document is { BrowsingContext: not null } globalDocument ? globalDocument : null;
-
     internal void QueueElementTask(Action task)
     {
         if (BrowsingContext is null && OriginDocument?.RelevantWindow?.Document is { } globalDocument && !ReferenceEquals(globalDocument, this))

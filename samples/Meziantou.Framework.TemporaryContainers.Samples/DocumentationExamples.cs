@@ -98,7 +98,7 @@ public static class DocumentationExamples
     public static ContainerDefinition CommandAndEnvironment()
     {
         #region TemporaryContainers_CommandAndEnvironment
-        var definition = new ContainerDefinition(ImageSource.FromRegistry("alpine:3.24"));
+        var definition = new ContainerDefinition(ImageSource.FromRegistry("alpine"));
         definition.Entrypoint.Add("/bin/sh"); // replaces the entrypoint of the image
         definition.Command.AddRange(["-c", "echo started && sleep 3600"]);
         definition.Environment.Add("APP_MODE", "test"); // adds or replaces a variable
@@ -131,7 +131,7 @@ public static class DocumentationExamples
     public static async Task Ports()
     {
         #region TemporaryContainers_Ports
-        var definition = new ContainerDefinition(ImageSource.FromRegistry("nginx:1.29"));
+        var definition = new ContainerDefinition(ImageSource.FromRegistry("nginx"));
         definition.Ports.Add(80); // published on a random free host port
         definition.Ports.Add(8443, 443); // host port 8443 to container port 443
         definition.Ports.Add(new ContainerPort(9000) with { HostIp = "0.0.0.0" }); // every interface, not only the loopback address

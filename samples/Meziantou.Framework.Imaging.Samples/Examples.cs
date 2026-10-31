@@ -1481,6 +1481,31 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>JPEG 2000 with the high-throughput block coder (HTJ2K): a JPH file, and a codestream with a target size.</summary>
+    #region Imaging_SaveHighThroughputJpeg2000
+    public static void SaveHighThroughputJpeg2000(string inputPath, string jphPath, string codestreamPath)
+    {
+        using var image = Image.Load(inputPath);
+
+        // The .jph extension writes a JPH file whose code-blocks use the high-throughput block coder: lossless by
+        // default, several times faster to encode and decode than the standard block coder, for a few percent more bytes.
+        // Its readers must support Part 15 of the standard, as OpenJPEG 2.5, FFmpeg and OpenJPH do.
+        image.Save(jphPath);
+
+        // A codestream (.jhc) of at most 100 KB: the rate control chooses the lowest bit-plane of each code-block, and the
+        // output has a single quality layer.
+        image.Save(codestreamPath, new Jpeg2000Encoder
+        {
+            BlockCoder = Jpeg2000BlockCoder.HighThroughput,
+            Compression = Jpeg2000Compression.Lossy,
+            Quality = 100,
+            Container = Jpeg2000Container.Codestream,
+            QualityLayers = [Jpeg2000QualityLayer.FromSize(100_000)],
+            MetadataHandling = MetadataHandling.DiscardUnsupported,
+        });
+    }
+    #endregion
+
     /// <summary>JPEG 2000 thumbnails and viewports: a lower resolution, a target size and an area.</summary>
     #region Imaging_Jpeg2000ScaledAndRegionDecoding
     public static (Image Thumbnail, Image Preview, Image Viewport) LoadJpeg2000Parts(string path)

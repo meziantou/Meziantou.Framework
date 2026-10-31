@@ -12,7 +12,8 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// <see cref="Jpeg2000ProgressionOrder.Lrcp"/> order and up to five decomposition levels; <see cref="TileWidth"/>,
 /// <see cref="TileHeight"/>, <see cref="QualityLayers"/>, <see cref="ProgressionOrder"/> and
 /// <see cref="DecompositionLevels"/> change them. The code-blocks have 64 by 64 coefficients and are coded with the block
-/// coder of ISO/IEC 15444-1: the high-throughput block coder (HTJ2K) is read but never written.
+/// coder of ISO/IEC 15444-1, or with the high-throughput block coder of ISO/IEC 15444-15 (HTJ2K) with
+/// <see cref="BlockCoder"/>.
 /// </para>
 /// <para>
 /// A JP2 file stores the ICC profile, the resolution, the EXIF data (which carries the orientation) and the XMP packet.
@@ -196,7 +197,40 @@ public sealed class Jpeg2000Encoder : ImageEncoder
         }
     } = 5;
 
+    /// <summary>
+    /// Gets the coder of the code-blocks. Defaults to <see cref="Jpeg2000BlockCoder.Standard"/>, the block coder of
+    /// ISO/IEC 15444-1.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// <see cref="Jpeg2000BlockCoder.HighThroughput"/> codes each code-block with one HT cleanup pass of ISO/IEC 15444-15
+    /// (no HT refinement pass), and declares it in the codestream (the CAP marker segment, the code-block style); a
+    /// <see cref="Jpeg2000Container.Jp2"/> output is then a JPH file, of the brand <c>jph </c>. The pass codes the same
+    /// quantized coefficients as the standard coder: a lossless output is the image, and a lossy output decodes to the
+    /// samples of the standard coder at the same <see cref="Quality"/>.
+    /// </para>
+    /// <para>
+    /// The pass has no fractional bit-planes and cannot be split between layers: the output has one quality layer, and
+    /// <see cref="QualityLayers"/> may only hold one layer. Its target is reached by choosing, for each code-block, the
+    /// lowest bit-plane its pass codes (each candidate is coded, at the same rate-distortion slopes as the coding passes
+    /// of the standard coder), so that a target is reached in steps of whole bit-planes of the code-blocks.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="Jpeg2000BlockCoder"/>.</exception>
+    public Jpeg2000BlockCoder BlockCoder
+    {
+        get;
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The block coder is not valid.");
+
+            field = value;
+        }
+    }
+
     /// <summary>Gets whether the output is a JP2 file or a codestream alone. Defaults to <see cref="Jpeg2000Container.Jp2"/>.</summary>
+    /// <remarks>With the <see cref="Jpeg2000BlockCoder.HighThroughput"/> block coder, the file is a JPH file.</remarks>
     /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="Jpeg2000Container"/>.</exception>
     public Jpeg2000Container Container
     {

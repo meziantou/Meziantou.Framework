@@ -165,6 +165,8 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
         private const int SourceFirstComponent = 2;
         private const int MaxPasses = Jpeg2000Tier1Encoder.MaxPasses;
         private const int TileHeaderLength = Jpeg2000Format.SotSegmentLength + 2;
+        private const int CapabilityHighThroughput = 0x4000;
+        private const uint CapabilityPart15 = 1u << (32 - 15);
 
         private readonly AllocationScope _scope;
         private readonly Jpeg2000Encoder _encoder;
@@ -176,6 +178,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
         private readonly int _colorCount;
         private readonly int _levels;
         private readonly bool _isLossy;
+        private readonly bool _isHighThroughput;
         private readonly int _tileWidth;
         private readonly int _tileHeight;
         private readonly int _tileCount;
@@ -186,6 +189,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
         private readonly Jpeg2000Siz _siz;
         private readonly Jpeg2000TileCoding _coding;
         private readonly Jpeg2000Tier1Encoder _blockEncoder;
+        private readonly Jpeg2000HtBlockEncoder? _highThroughputEncoder;
         private readonly PooledPayloadWriter[] _blockData;
         private readonly PooledPayloadWriter _head;
         private readonly PooledPayloadWriter _packetHeaders;
@@ -241,6 +245,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             _colorCount = PixelFormats.IsGrayscale(_pixelFormat) ? 1 : 3;
             _componentCount = _colorCount + (PixelFormats.HasAlpha(_pixelFormat) ? 1 : 0);
             _isLossy = _encoder.Compression == Jpeg2000Compression.Lossy;
+            _isHighThroughput = _encoder.BlockCoder == Jpeg2000BlockCoder.HighThroughput;
             _progression = (int)_encoder.ProgressionOrder;
 
             // The tiles: the last column and the last row may be smaller
@@ -264,6 +269,11 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             // The layers: a target in bytes for each one (none for the complete layer)
             var layers = _encoder.QualityLayers;
             _layerCount = Math.Max(1, layers.Count);
+
+            // An HT cleanup pass is the only coding pass of its code-block: it cannot be split between layers
+            if (_isHighThroughput && _layerCount > 1)
+                throw new ArgumentException("A JPEG 2000 output of the high-throughput block coder has one quality layer: set at most one QualityLayers item.", nameof(options));
+
             _layerTargets = new long[_layerCount];
             for (var l = 0; l < _layerCount; l++)
             {
@@ -274,7 +284,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
 
             var components = new Jpeg2000ComponentSize[_componentCount];
             components.AsSpan().Fill(new Jpeg2000ComponentSize(_precision, IsSigned: false, 1, 1));
-            _siz = new Jpeg2000Siz(capabilities: 0, _width, _height, 0, 0, _tileWidth, _tileHeight, 0, 0, components);
+            _siz = new Jpeg2000Siz(_isHighThroughput ? CapabilityHighThroughput : 0, _width, _height, 0, 0, _tileWidth, _tileHeight, 0, 0, components);
 
             // The partition of the tile does not depend on the quantization: provisional values stand for it
             var bandCount = (3 * _levels) + 1;
@@ -288,6 +298,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             ComputeWeights(bandCount);
             _geometry = Jpeg2000TileGeometry.Create(_scope, _siz, _coding, tileIndex: 0);
             Jpeg2000Tier1Encoder? blockEncoder = null;
+            Jpeg2000HtBlockEncoder? highThroughputEncoder = null;
             PooledPayloadWriter? head = null;
             PooledPayloadWriter? packetHeaders = null;
             Av1PooledArray<EncodedBlock>? blocks = null;
@@ -302,6 +313,11 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             try
             {
                 blockEncoder = new Jpeg2000Tier1Encoder(_scope);
+                if (_isHighThroughput)
+                {
+                    highThroughputEncoder = new Jpeg2000HtBlockEncoder(_scope);
+                }
+
                 head = new PooledPayloadWriter(_scope);
                 packetHeaders = new PooledPayloadWriter(_scope);
                 for (var c = 0; c < _componentCount; c++)
@@ -323,10 +339,10 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                     // Everything the workers use is rented here: the first worker has the coder and the scratch of the
                     // session, and each worker has a buffer for the codeword segments of its code-blocks
                     coders = new BlockCoder[workers];
-                    coders[0] = new BlockCoder(_scope, blockEncoder, blockSamples, scratch);
+                    coders[0] = new BlockCoder(_scope, blockEncoder, highThroughputEncoder, blockSamples, scratch);
                     for (var w = 1; w < workers; w++)
                     {
-                        coders[w] = BlockCoder.Create(_scope, scratch.Length);
+                        coders[w] = BlockCoder.Create(_scope, scratch.Length, _isHighThroughput);
                     }
 
                     batch = Av1PooledArray<int>.Rent(_scope, 2L * BlocksPerCall * workers, clear: false, AllocationKind.Temporary);
@@ -336,6 +352,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             {
                 _geometry.Dispose();
                 blockEncoder?.Dispose();
+                highThroughputEncoder?.Dispose();
                 head?.Dispose();
                 packetHeaders?.Dispose();
                 blocks?.Dispose();
@@ -362,6 +379,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             _batch = batch;
 
             _blockEncoder = blockEncoder;
+            _highThroughputEncoder = highThroughputEncoder;
             _head = head;
             _packetHeaders = packetHeaders;
             _blockData = blockData;
@@ -383,6 +401,9 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
         }
 
         private bool HasAlpha => _componentCount > _colorCount;
+
+        /// <summary>Gets the code-block style of every tile-component: the high-throughput block coder (T.814, Table A.3) or none.</summary>
+        private int BlockStyle => _isHighThroughput ? Jpeg2000CodingStyle.StyleHighThroughput : 0;
 
         public override void BeginPosterFrame(ImageFrame frame) => throw new InvalidOperationException("JPEG 2000 output has no poster frame.");
 
@@ -462,6 +483,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             {
                 _geometry.Dispose();
                 _blockEncoder.Dispose();
+                _highThroughputEncoder?.Dispose();
                 _head.Dispose();
                 _packetHeaders.Dispose();
                 _blocks.Dispose();
@@ -520,17 +542,18 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             }
 
             var headers = new Jpeg2000HeaderSet(_componentCount);
-            var colorStyle = new Jpeg2000CodingStyle(_levels, BlockExponent, BlockExponent, codeBlockStyle: 0, isReversible: !_isLossy, precinctSizes: null);
+            var colorStyle = new Jpeg2000CodingStyle(_levels, BlockExponent, BlockExponent, BlockStyle, isReversible: !_isLossy, precinctSizes: null);
             headers.CodingDefaults = new Jpeg2000CodingDefaults(mayUseSop: false, usesEph: false, _progression, _layerCount, usesComponentTransform: _colorCount == 3, colorStyle);
             var none = new Jpeg2000Quantization(Jpeg2000Quantization.StyleNone, LosslessGuardBits, new byte[bandCount], new ushort[bandCount]);
             headers.Quantization = _isLossy ? new Jpeg2000Quantization(Jpeg2000Quantization.StyleExpounded, 1, new byte[bandCount], new ushort[bandCount]) : none;
             if (_isLossy && HasAlpha)
             {
-                headers.TrySetComponentStyle(_colorCount, new Jpeg2000CodingStyle(_levels, BlockExponent, BlockExponent, codeBlockStyle: 0, isReversible: true, precinctSizes: null));
+                headers.TrySetComponentStyle(_colorCount, new Jpeg2000CodingStyle(_levels, BlockExponent, BlockExponent, BlockStyle, isReversible: true, precinctSizes: null));
                 headers.TrySetComponentQuantization(_colorCount, none);
             }
 
-            return Jpeg2000TileCoding.Resolve(_siz, headers, tile: null, capabilities: null);
+            var capabilities = _isHighThroughput ? Jpeg2000Capabilities.Read([0x00, 0x02, 0x00, 0x00, 0x00, 0x00]) : null;
+            return Jpeg2000TileCoding.Resolve(_siz, headers, tile: null, capabilities);
         }
 
         /// <summary>Gets the decomposition level of a sub-band (its index in a tile-component) and whether it is high-pass in each direction.</summary>
@@ -801,7 +824,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                 var index = band.FirstBlock + _block++;
                 ref var record = ref records[firstBlock + index];
                 record.Offset = output.Length;
-                record.BitPlanes = (byte)EncodeBlock(_blockEncoder, _blockSamples.Span, output, _band, index, passes, out record.Length);
+                record.BitPlanes = (byte)EncodeBlock(_blockEncoder, _highThroughputEncoder, _blockSamples.Span, output, _band, index, passes, out record.Length);
                 AddPasses(ref record, passes, component, _band - firstBand);
                 ref var maximum = ref _bandBitPlanes[(component * bandCount) + (_band - firstBand)];
                 maximum = Math.Max(maximum, record.BitPlanes);
@@ -855,7 +878,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                 var passes = _blockPasses is null ? default : _blockPasses.Span.Slice(k * MaxPasses, MaxPasses);
                 ref var record = ref _blocks.Span[firstBlock + index];
                 record.Offset = coder.Output.Length;
-                record.BitPlanes = (byte)EncodeBlock(coder.Encoder, coder.Samples.Span, coder.Output, items[2 * k], index, passes, out record.Length);
+                record.BitPlanes = (byte)EncodeBlock(coder.Encoder, coder.HighThroughputEncoder, coder.Samples.Span, coder.Output, items[2 * k], index, passes, out record.Length);
             });
 
             var records = _blocks.Span;
@@ -894,7 +917,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
 
         /// <summary>Quantizes a code-block of the current component and codes it.</summary>
         /// <returns>The number of coded bit-planes: 0 when every coefficient is zero, and nothing is written.</returns>
-        private int EncodeBlock(Jpeg2000Tier1Encoder encoder, Span<int> samples, PooledPayloadWriter output, int bandIndex, int index, Span<Jpeg2000CodingPass> passes, out int length)
+        private int EncodeBlock(Jpeg2000Tier1Encoder encoder, Jpeg2000HtBlockEncoder? highThroughputEncoder, Span<int> samples, PooledPayloadWriter output, int bandIndex, int index, Span<Jpeg2000CodingPass> passes, out int length)
         {
             var component = _component;
             var geometry = _geometry;
@@ -925,8 +948,18 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                 }
             }
 
+            if (highThroughputEncoder is not null)
+                return highThroughputEncoder.Encode(samples, width, height, output, out length, passes, isIrreversible: !isReversible);
+
             return encoder.Encode(samples, width, height, band.Orientation, output, out length, passes, isIrreversible: !isReversible);
         }
+
+        /// <summary>
+        /// Gets the number of coding passes the rate control chooses from for a code-block: the passes of the standard
+        /// coder, or one HT cleanup segment for each lowest bit-plane of the high-throughput block coder, from the highest one.
+        /// </summary>
+        private int GetPassTotal(in EncodedBlock record)
+            => record.BitPlanes == 0 ? 0 : _isHighThroughput ? record.BitPlanes : (3 * record.BitPlanes) - 2;
 
         /// <summary>Appends the coding passes of a code-block to those of the image, weighted so that they measure the error of the image.</summary>
         private void AddPasses(ref EncodedBlock record, ReadOnlySpan<Jpeg2000CodingPass> passes, int component, int band)
@@ -934,7 +967,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             if (passes.IsEmpty || record.BitPlanes == 0)
                 return;
 
-            var count = (3 * record.BitPlanes) - 2;
+            var count = GetPassTotal(in record);
             if (_passes is null || _passes.Length < (long)_passCount + count)
             {
                 var larger = Av1PooledArray<Jpeg2000CodingPass>.Rent(_scope, Math.Max(checked((long)_passCount + count), _passes is null ? 4096 : 2L * _passes.Length), clear: false, AllocationKind.Temporary);
@@ -969,7 +1002,9 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                 var needed = 0;
                 for (var c = 0; c < _componentCount; c++)
                 {
-                    var bitPlanes = _bandBitPlanes[(c * bandCount) + band];
+                    // The high-throughput block coder keeps a bit-plane above the largest magnitude: FFmpeg refuses an HT
+                    // cleanup pass whose exponent bound uses every bit-plane, which T.814 allows
+                    var bitPlanes = _bandBitPlanes[(c * bandCount) + band] + (_isHighThroughput ? 1 : 0);
                     if (IsReversible(c))
                     {
                         needed = Math.Max(needed, bitPlanes);
@@ -1014,8 +1049,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             if (_layerPasses is not null)
                 return _layerPasses.Span[(block * _layerCount) + layer];
 
-            var bitPlanes = _blocks.Span[block].BitPlanes;
-            return bitPlanes == 0 ? 0 : (3 * bitPlanes) - 2;
+            return GetPassTotal(in _blocks.Span[block]);
         }
 
         /// <summary>Gets the length of the codeword segment of a code-block that decodes its first coding passes.</summary>
@@ -1026,6 +1060,61 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
 
             ref readonly var record = ref _blocks.Span[block];
             return _passes is null || passes == (3 * record.BitPlanes) - 2 ? record.Length : _passes.Span[record.FirstPass + passes - 1].Length;
+        }
+
+        /// <summary>
+        /// Gets where the HT cleanup segment of a code-block that the rate control chose is, in the coded bytes of its
+        /// component: without rate control, the only segment, which codes every bit-plane; otherwise the segment of the
+        /// chosen candidate, after those of the previous candidates.
+        /// </summary>
+        /// <param name="block">The code-block.</param>
+        /// <param name="passes">The number of candidates the rate control kept: the chosen one is the last of them.</param>
+        /// <param name="offset">Receives the offset of the segment from the first segment of the code-block.</param>
+        /// <param name="length">Receives the length of the segment.</param>
+        private void GetHighThroughputSegment(int block, int passes, out int offset, out int length)
+        {
+            ref readonly var record = ref _blocks.Span[block];
+            offset = 0;
+            if (_passes is null)
+            {
+                length = record.Length;
+                return;
+            }
+
+            var candidates = _passes.Span.Slice(record.FirstPass, passes);
+            for (var i = 0; i < candidates.Length - 1; i++)
+            {
+                offset += candidates[i].Length;
+            }
+
+            length = candidates[^1].Length;
+        }
+
+        /// <summary>
+        /// Gets the number of bit-planes a code-block of the high-throughput block coder declares as empty (its P_blk): the
+        /// bit-plane its HT cleanup pass ends at is <c>Mb - 1 - P_blk</c> (T.814, 7.6), the chosen candidate.
+        /// </summary>
+        private int GetHighThroughputZeroBitPlanes(int block, int passes, int bandBitPlanes)
+        {
+            var bitPlanes = _blocks.Span[block].BitPlanes;
+            return bandBitPlanes - 1 - (bitPlanes - passes);
+        }
+
+        /// <summary>
+        /// Gets the Ccap field of Part 15 (T.814, Table A.4): only code-blocks of the high-throughput block coder, one HT set
+        /// each, no region of interest, whether a component is irreversible, and the largest number of magnitude bit-planes
+        /// of a sub-band (MAGB) in the five low bits.
+        /// </summary>
+        private int GetHighThroughputCapabilities()
+        {
+            var largest = 0;
+            foreach (var bitPlanes in _bandMagnitudeBitPlanes)
+            {
+                largest = Math.Max(largest, bitPlanes);
+            }
+
+            var bound = largest <= 8 ? 0 : largest <= 27 ? largest - 8 : Math.Min(31, 19 + ((largest - 27 + 3) / 4));
+            return (_isLossy ? 0x20 : 0) | bound;
         }
 
         /// <summary>
@@ -1149,7 +1238,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                 if (record.BitPlanes == 0)
                     continue;
 
-                var count = (3 * record.BitPlanes) - 2;
+                var count = GetPassTotal(in record);
                 var block = passes.Slice(record.FirstPass, count);
                 var points = 1;
                 hull[0] = 0;
@@ -1162,6 +1251,13 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                     double rate = block[i].Length;
                     if (distortion <= distortions[points - 1])
                         continue;
+
+                    // The segments of the high-throughput block coder are not truncations of each other: a point that is
+                    // not shorter than the new one is not on the hull
+                    while (_isHighThroughput && points > 1 && rate <= rates[points - 1])
+                    {
+                        points--;
+                    }
 
                     // A point that the new one leaves below the line from the previous point is not on the hull
                     while (points > 1 && GetSlope(rates[points - 1], distortions[points - 1], rate, distortion) >= GetSlope(rates[points - 2], distortions[points - 2], rates[points - 1], distortions[points - 1]))
@@ -1206,7 +1302,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                 var selected = previous;
                 if (record.BitPlanes != 0)
                 {
-                    var count = (3 * record.BitPlanes) - 2;
+                    var count = GetPassTotal(in record);
                     if (double.IsNegativeInfinity(threshold))
                     {
                         selected = count;
@@ -1492,6 +1588,26 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                 }
 
                 Jpeg2000TagTreeEncoder.ComputeMinima(inclusionValues, wide, high);
+                if (_isHighThroughput)
+                {
+                    // The empty bit-planes of a code-block of the high-throughput block coder give the lowest bit-plane of
+                    // its HT cleanup pass, which the rate control chooses: the only layer is the first one of every code-block
+                    var firstBand = geometry.Resolutions[geometry.Components[component].FirstResolution].FirstBand;
+                    var bandBitPlanes = _bandMagnitudeBitPlanes[(component * ((3 * _levels) + 1)) + (resolution.FirstBand + b - firstBand)];
+                    var zeroValues = values.Slice(zero, nodes);
+                    for (var by = 0; by < high; by++)
+                    {
+                        for (var bx = 0; bx < wide; bx++)
+                        {
+                            var global = tile.FirstBlock + band.FirstBlock + ((precinctBand.BlockY + by) * band.BlocksWide) + precinctBand.BlockX + bx;
+                            var passes = GetPasses(global, layer);
+                            zeroValues[(by * wide) + bx] = passes != 0 ? GetHighThroughputZeroBitPlanes(global, passes, bandBitPlanes) : int.MaxValue;
+                        }
+                    }
+
+                    Jpeg2000TagTreeEncoder.ComputeMinima(zeroValues, wide, high);
+                }
+
                 for (var by = 0; by < high; by++)
                 {
                     for (var bx = 0; bx < wide; bx++)
@@ -1521,13 +1637,27 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                         if (passes == previous)
                             continue;
 
-                        var added = passes - previous;
+                        // A code-block of the high-throughput block coder has one coding pass, its HT cleanup pass, in the
+                        // only layer (T.814, B.3)
+                        int added;
+                        int start;
+                        int length;
+                        if (_isHighThroughput)
+                        {
+                            added = 1;
+                            GetHighThroughputSegment(global, passes, out start, out length);
+                        }
+                        else
+                        {
+                            added = passes - previous;
+                            start = GetSegmentLength(global, previous);
+                            length = GetSegmentLength(global, passes) - start;
+                        }
+
                         WritePassCount(ref writer, added);
 
                         // B.10.7.1: the length is written in Lblock bits plus those the number of passes adds; Lblock starts at 3
                         // and grows by the number of 1 bits written before a 0 bit
-                        var start = GetSegmentLength(global, previous);
-                        var length = GetSegmentLength(global, passes) - start;
                         var available = block.LengthBits + BitOperations.Log2((uint)added);
                         var needed = 32 - BitOperations.LeadingZeroCount((uint)length);
                         var growth = Math.Max(0, needed - available);
@@ -1622,7 +1752,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             // A.5.1: the image and the tiles, at the origin of the reference grid
             boxes.WriteUInt16(Jpeg2000Format.MarkerSiz);
             boxes.WriteUInt16(38 + (3 * _componentCount));
-            boxes.WriteUInt16(0);
+            boxes.WriteUInt16(_isHighThroughput ? CapabilityHighThroughput : 0);
             boxes.WriteUInt32((uint)_width);
             boxes.WriteUInt32((uint)_height);
             boxes.WriteUInt32(0);
@@ -1637,6 +1767,15 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                 boxes.WriteByte((byte)(_precision - 1));
                 boxes.WriteByte(1);
                 boxes.WriteByte(1);
+            }
+
+            if (_isHighThroughput)
+            {
+                // A.5.2 and T.814, A.2: the capabilities of Part 15
+                boxes.WriteUInt16(Jpeg2000Format.MarkerCap);
+                boxes.WriteUInt16(8);
+                boxes.WriteUInt32(CapabilityPart15);
+                boxes.WriteUInt16(GetHighThroughputCapabilities());
             }
 
             // A.6.1: no precinct, no SOP or EPH marker, the progression order and the layers, code-blocks of 64 by 64 without style
@@ -1714,7 +1853,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             boxes.WriteByte((byte)_levels);
             boxes.WriteByte(BlockExponent - 2);
             boxes.WriteByte(BlockExponent - 2);
-            boxes.WriteByte(0);
+            boxes.WriteByte((byte)BlockStyle);
             boxes.WriteByte((byte)(isReversible ? 1 : 0));
         }
 
@@ -1743,11 +1882,13 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
             var metadata = Options.Metadata;
             boxes.WriteBytes(Jpeg2000Format.FileSignature);
 
-            // I.5.2: the brand, the minor version, and the brand again as the only compatible one
+            // I.5.2: the brand, the minor version, and the brand again as the only compatible one; a codestream of the
+            // high-throughput block coder is in a JPH file (T.814, Annex D)
+            var brand = _isHighThroughput ? Jpeg2000Format.BrandJph : Jpeg2000Format.BrandJp2;
             var box = boxes.BeginBox(Jpeg2000Format.FileTypeBox);
-            boxes.WriteUInt32(Jpeg2000Format.BrandJp2);
+            boxes.WriteUInt32(brand);
             boxes.WriteUInt32(0);
-            boxes.WriteUInt32(Jpeg2000Format.BrandJp2);
+            boxes.WriteUInt32(brand);
             boxes.EndBox(box);
 
             var header = boxes.BeginBox(Jpeg2000Format.HeaderBox);
@@ -1892,15 +2033,16 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
         {
             private readonly bool _ownsCoder;
 
-            /// <summary>Initializes a worker that uses the coder, the coefficients and the scratch of the session.</summary>
-            public BlockCoder(AllocationScope scope, Jpeg2000Tier1Encoder encoder, Av1PooledArray<int> samples, Av1PooledArray<int> scratch)
-                : this(encoder, samples, scratch, new PooledPayloadWriter(scope), ownsCoder: false)
+            /// <summary>Initializes a worker that uses the coders, the coefficients and the scratch of the session.</summary>
+            public BlockCoder(AllocationScope scope, Jpeg2000Tier1Encoder encoder, Jpeg2000HtBlockEncoder? highThroughputEncoder, Av1PooledArray<int> samples, Av1PooledArray<int> scratch)
+                : this(encoder, highThroughputEncoder, samples, scratch, new PooledPayloadWriter(scope), ownsCoder: false)
             {
             }
 
-            private BlockCoder(Jpeg2000Tier1Encoder encoder, Av1PooledArray<int> samples, Av1PooledArray<int> scratch, PooledPayloadWriter output, bool ownsCoder)
+            private BlockCoder(Jpeg2000Tier1Encoder encoder, Jpeg2000HtBlockEncoder? highThroughputEncoder, Av1PooledArray<int> samples, Av1PooledArray<int> scratch, PooledPayloadWriter output, bool ownsCoder)
             {
                 Encoder = encoder;
+                HighThroughputEncoder = highThroughputEncoder;
                 Samples = samples;
                 Scratch = scratch;
                 Output = output;
@@ -1909,28 +2051,38 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
 
             public Jpeg2000Tier1Encoder Encoder { get; }
 
+            /// <summary>Gets the coder of the high-throughput block coder; <see langword="null"/> when the output does not use it.</summary>
+            public Jpeg2000HtBlockEncoder? HighThroughputEncoder { get; }
+
             public Av1PooledArray<int> Samples { get; }
 
             public Av1PooledArray<int> Scratch { get; }
 
             public PooledPayloadWriter Output { get; }
 
-            /// <summary>Creates a worker with a coder, coefficients and a scratch of its own.</summary>
-            public static BlockCoder Create(AllocationScope scope, long scratchLength)
+            /// <summary>Creates a worker with coders, coefficients and a scratch of its own.</summary>
+            public static BlockCoder Create(AllocationScope scope, long scratchLength, bool isHighThroughput)
             {
                 Jpeg2000Tier1Encoder? encoder = null;
+                Jpeg2000HtBlockEncoder? highThroughputEncoder = null;
                 Av1PooledArray<int>? samples = null;
                 Av1PooledArray<int>? scratch = null;
                 try
                 {
                     encoder = new Jpeg2000Tier1Encoder(scope);
+                    if (isHighThroughput)
+                    {
+                        highThroughputEncoder = new Jpeg2000HtBlockEncoder(scope);
+                    }
+
                     samples = Av1PooledArray<int>.Rent(scope, Jpeg2000Tier1Tables.MaxSamples, clear: false, AllocationKind.Temporary);
                     scratch = Av1PooledArray<int>.Rent(scope, scratchLength, clear: false, AllocationKind.Temporary);
-                    return new BlockCoder(encoder, samples, scratch, new PooledPayloadWriter(scope), ownsCoder: true);
+                    return new BlockCoder(encoder, highThroughputEncoder, samples, scratch, new PooledPayloadWriter(scope), ownsCoder: true);
                 }
                 catch
                 {
                     encoder?.Dispose();
+                    highThroughputEncoder?.Dispose();
                     samples?.Dispose();
                     scratch?.Dispose();
                     throw;
@@ -1943,6 +2095,7 @@ internal sealed class Jpeg2000EncoderCodec : ImageEncoderCodec
                 if (_ownsCoder)
                 {
                     Encoder.Dispose();
+                    HighThroughputEncoder?.Dispose();
                     Samples.Dispose();
                     Scratch.Dispose();
                 }

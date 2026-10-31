@@ -302,6 +302,78 @@ public sealed class Jpeg2000InteropTests
         TestContext.Current.SendDiagnosticMessage(string.Create(CultureInfo.InvariantCulture, $"{bitsPerPixel} bpp: library {length} bytes at {psnr:0.00} dB, OpenJPEG {openJpeg.Version} {referenceLength} bytes at {referencePsnr:0.00} dB."));
     }
 
+    /// <summary>
+    /// The output of the high-throughput block coder, in a JPH file or a codestream, with tiles, progression orders and a
+    /// target: OpenJPEG, FFmpeg and OpenJPH (one or three components) decode the samples of the library, which are the
+    /// source itself for a lossless output (exactly) and within one level of 8 bits for a lossy one.
+    /// </summary>
+    [Theory]
+    [InlineData(PixelFormat.Gray8, false)]
+    [InlineData(PixelFormat.Gray16, false)]
+    [InlineData(PixelFormat.Rgb24, false)]
+    [InlineData(PixelFormat.Rgba32, false)]
+    [InlineData(PixelFormat.Rgba64, false)]
+    [InlineData(PixelFormat.Gray8, true)]
+    [InlineData(PixelFormat.Gray16, true)]
+    [InlineData(PixelFormat.Rgb24, true)]
+    [InlineData(PixelFormat.Rgba32, true)]
+    public async Task HighThroughputOutputIsReadAlikeByOpenJpegOpenJphAndFFmpeg(PixelFormat format, bool isLossy)
+    {
+        var openJpeg = await RequiredTools.OpenJpegAsync();
+        var openJph = await RequiredTools.OpenJphAsync();
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        var layout = ImageSnapshots.GetLayout(format);
+        var source = CreatePattern(150, 97, layout, seed: (int)format);
+        using var image = EncoderSources.CreateImage(source, format);
+        var directory = InteropSettings.GetArtifactsDirectory(nameof(HighThroughputOutputIsReadAlikeByOpenJpegOpenJphAndFFmpeg));
+        var configurations = new (string Name, Jpeg2000Encoder Encoder)[]
+        {
+            ("file", new Jpeg2000Encoder { BlockCoder = Jpeg2000BlockCoder.HighThroughput, Compression = isLossy ? Jpeg2000Compression.Lossy : Jpeg2000Compression.Lossless, MetadataHandling = MetadataHandling.Strip }),
+            ("tiles", new Jpeg2000Encoder { BlockCoder = Jpeg2000BlockCoder.HighThroughput, Compression = isLossy ? Jpeg2000Compression.Lossy : Jpeg2000Compression.Lossless, Container = Jpeg2000Container.Codestream, TileWidth = 64, TileHeight = 40, ProgressionOrder = Jpeg2000ProgressionOrder.Rpcl, DecompositionLevels = 8 }),
+            ("target", new Jpeg2000Encoder { BlockCoder = Jpeg2000BlockCoder.HighThroughput, Compression = isLossy ? Jpeg2000Compression.Lossy : Jpeg2000Compression.Lossless, Quality = 100, Container = Jpeg2000Container.Codestream, QualityLayers = [Jpeg2000QualityLayer.FromBitsPerPixel(2)] }),
+        };
+        foreach (var (name, encoder) in configurations)
+        {
+            var isFile = encoder.Container == Jpeg2000Container.Jp2;
+            var path = directory / $"{format}-{(isLossy ? "lossy" : "lossless")}-{name}{(isFile ? ".jph" : ".jhc")}";
+            await image.SaveAsync(path, encoder, XunitCancellationToken);
+            var context = $"{format} {(isLossy ? "lossy" : "lossless")} {name}";
+            var structure = ReferenceJpeg2000.Parse(await File.ReadAllBytesAsync(path, XunitCancellationToken));
+            Assert.NotNull(structure.HighThroughputCapabilities);
+
+            using var decoded = await Image.LoadAsync(path, cancellationToken: XunitCancellationToken);
+            var library = ImageSnapshots.Capture(decoded).Frames[0].Pixels;
+            var isExact = !isLossy && name != "target";
+            if (isExact)
+            {
+                Assert.Equal(0, GetMaxDifference(source, library, layout.ChannelCount));
+            }
+
+            var tolerance = isExact ? 0 : layout.ScaleFrom8Bit;
+            AssertChannels(library, await openJpeg.DecodeComponentsAsync(path, XunitCancellationToken), isExact || !isLossy ? 0 : tolerance, $"{context}: OpenJPEG {openJpeg.Version} and the library decode different samples.");
+            var frame = Assert.Single(await ffmpeg.DecodeToRawFramesAsync(path, GetFFmpegFormat(format), source.Width, source.Height, XunitCancellationToken));
+            Assert.True(GetMaxDifference(library, RawPixelBuffer.Create(source.Width, source.Height, layout, frame), layout.ChannelCount) <= (isLossy ? tolerance : 0), $"{context}: FFmpeg {ffmpeg.Version} and the library decode different samples.");
+            if (!isFile && layout.ChannelCount is 1 or 3)
+            {
+                var reference = await openJph.DecodeAsync(path, layout.ChannelCount, XunitCancellationToken);
+                var samples = reference.Rgba.Span;
+                var maximum = 0;
+                for (var y = 0; y < source.Height; y++)
+                {
+                    for (var x = 0; x < source.Width; x++)
+                    {
+                        for (var channel = 0; channel < layout.ChannelCount; channel++)
+                        {
+                            maximum = Math.Max(maximum, Math.Abs(library.GetSample(x, y, channel) - samples[(4 * ((y * source.Width) + x)) + channel]));
+                        }
+                    }
+                }
+
+                Assert.True(maximum <= (isLossy ? tolerance : 0), $"{context}: OpenJPH {OpenJphTool.Version} and the library decode samples {maximum} apart.");
+            }
+        }
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

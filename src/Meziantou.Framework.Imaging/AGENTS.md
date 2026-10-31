@@ -667,6 +667,23 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     state the previous layers left (`TilePackets` saves and restores it), so sizes are exact. Without a target the
     passes are not recorded and the output is byte-identical to the single-layer encoder; a target every pass fits in
     keeps every pass. At equal size the PSNR is the one of `opj_compress -r` within 0.05 dB on photographs.
+  - The HTJ2K encoder (`Jpeg2000HtBlockEncoder`, `BlockCoder = HighThroughput`) is the reverse of the HT block decoder:
+    one HT cleanup pass per code-block (no refinement pass), written stream by stream with the bit-stuffing each reading
+    procedure of T.814 clause 7 expects, and the codeword of each quad chosen among the rows of Annex C that its
+    exponent bound allows (the shortest codeword plus MagSgn bits). It codes the quantization indices of the standard
+    coder, so a lossy HT output decodes to the samples of the standard output. P_blk is `Mb - 1 - p` for a pass that
+    ends at the bit-plane p (T.814, 7.6), and `Assemble` keeps one bit-plane above the largest magnitude, because FFmpeg
+    refuses an exponent bound that uses every bit-plane. The output has one layer; a target is reached by coding one HT
+    cleanup segment per candidate lowest bit-plane and giving them to the same hull and bisection as the coding passes
+    (`GetPassTotal`, `GetHighThroughputSegment`; the zero bit-plane tag tree is rebuilt in `WritePacket` for the chosen
+    planes). `EachHtCleanupSegmentOfTheEncoderDecodesToItsBitPlanes` checks every candidate against the decoder, and
+    `HighThroughputOutputIsReadAlikeByOpenJpegOpenJphAndFFmpeg` against the three reference decoders. FFmpeg's probe
+    takes a JPH file for an ISO base media file: the harness names its `j2k_pipe` demuxer for `.jph` and `.jhc`.
+    HT SigProp and HT MagRef candidates for the rate control (three per bit-plane, as the standard passes) were tried on
+    2026-10-31 and left out: at 0.25 to 4 bits per pixel they gained 0.0 to 0.25 dB of PSNR (HT still 0.3 to 0.65 dB below
+    the standard coder, its byte overhead), but coding with a target became 1.6 to 1.9 times slower (0.65 times the
+    speed of the standard coder) and decoding those files 1.7 times slower: the standard coder then beats it on speed
+    and quality, while the cleanup-only candidates keep HT 1.1 to 1.3 times faster to code and 1.5 to 4.9 times to decode.
   - The lossy quality is calibrated on `JpegEncoder` (`Jpeg2000QuantizationDesign`): the base step of the luminance is
     `0.47 * s^(3/4)` levels, `s` being the scale of the JPEG quality, and the two chrominances have twice that step (a
     QCC marker segment each). The constants were fitted on photographs of several sizes, so that a quality has the SSIM

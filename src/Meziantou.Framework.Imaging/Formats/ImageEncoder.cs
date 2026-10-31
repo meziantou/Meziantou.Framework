@@ -112,16 +112,17 @@ public abstract class ImageEncoder
     /// The default encoder of the format of the extension (<see cref="Create(ImageFormat)"/>), with the settings of the
     /// variant some extensions name: <c>.apng</c> gives an animated <see cref="PngEncoder"/>
     /// (<see cref="PngAnimationMode.Animated"/>), <c>.pbm</c> a <see cref="PnmEncoder"/> of
-    /// <see cref="PnmPixelLayout.Bitmap"/> pixels, and <c>.j2k</c>, <c>.j2c</c> and <c>.jpc</c> a <see cref="Jpeg2000Encoder"/>
-    /// of a bare codestream (<see cref="Jpeg2000Container.Codestream"/>).
+    /// <see cref="PnmPixelLayout.Bitmap"/> pixels, <c>.j2k</c>, <c>.j2c</c> and <c>.jpc</c> a <see cref="Jpeg2000Encoder"/>
+    /// of a bare codestream (<see cref="Jpeg2000Container.Codestream"/>), and <c>.jph</c> and <c>.jhc</c> a
+    /// <see cref="Jpeg2000Encoder"/> of the high-throughput block coder (<see cref="Jpeg2000BlockCoder.HighThroughput"/>),
+    /// which writes a JPH file or a bare codestream.
     /// </returns>
     /// <remarks>
     /// The extensions are those of <see cref="ImageFormatInfo.FileExtensions"/>. This method is thread-safe.
     /// </remarks>
     /// <exception cref="ArgumentNullException"><paramref name="extension"/> is <see langword="null"/>.</exception>
     /// <exception cref="ArgumentException">
-    /// The extension is not recognized, or names files the library reads but does not write (<c>.jpx</c>, <c>.jpf</c>,
-    /// <c>.jph</c>, <c>.jhc</c>).
+    /// The extension is not recognized, or names files the library reads but does not write (<c>.jpx</c>, <c>.jpf</c>).
     /// </exception>
     public static ImageEncoder FromFileExtension(string extension)
     {
@@ -148,12 +149,15 @@ public abstract class ImageEncoder
         if (extension.Equals(".j2k", StringComparison.OrdinalIgnoreCase) || extension.Equals(".j2c", StringComparison.OrdinalIgnoreCase) || extension.Equals(".jpc", StringComparison.OrdinalIgnoreCase))
             return new Jpeg2000Encoder { Container = Jpeg2000Container.Codestream };
 
-        // The files of these extensions are read, never written: the extended file format, and the high-throughput block coder
+        if (extension.Equals(".jph", StringComparison.OrdinalIgnoreCase))
+            return new Jpeg2000Encoder { BlockCoder = Jpeg2000BlockCoder.HighThroughput };
+
+        if (extension.Equals(".jhc", StringComparison.OrdinalIgnoreCase))
+            return new Jpeg2000Encoder { BlockCoder = Jpeg2000BlockCoder.HighThroughput, Container = Jpeg2000Container.Codestream };
+
+        // The files of these extensions are read, never written: the extended file format
         if (extension.Equals(".jpx", StringComparison.OrdinalIgnoreCase) || extension.Equals(".jpf", StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException($"JPEG 2000 files of the extended format ('{extension}') can be read but not written. Use the extension '.jp2', or specify an encoder explicitly.", parameterName);
-
-        if (extension.Equals(".jph", StringComparison.OrdinalIgnoreCase) || extension.Equals(".jhc", StringComparison.OrdinalIgnoreCase))
-            throw new ArgumentException($"High-throughput JPEG 2000 files ('{extension}') can be read but not written. Use the extension '.jp2' or '.j2k', or specify an encoder explicitly.", parameterName);
 
         if (extension.Length > 1 && ImageFormatInfo.TryGetByFileExtension(extension, out var info))
             return Create(info.Format);

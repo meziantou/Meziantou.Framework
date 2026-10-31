@@ -3159,6 +3159,12 @@ namespace Meziantou.Framework.Imaging.Formats
         public static Meziantou.Framework.Imaging.Formats.ImageEncoder FromFileExtension(string extension) => throw null;
     }
 
+    public enum Jpeg2000BlockCoder
+    {
+        Standard = 0,
+        HighThroughput = 1,
+    }
+
     public enum Jpeg2000Compression
     {
         Lossless = 0,
@@ -3173,6 +3179,7 @@ namespace Meziantou.Framework.Imaging.Formats
 
     public sealed class Jpeg2000Encoder : Meziantou.Framework.Imaging.Formats.ImageEncoder
     {
+        public Meziantou.Framework.Imaging.Formats.Jpeg2000BlockCoder BlockCoder { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.Jpeg2000Compression Compression { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.Jpeg2000Container Container { get => throw null; init { } }
         public int DecompositionLevels { get => throw null; init { } }

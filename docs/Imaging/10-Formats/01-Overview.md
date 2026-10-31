@@ -67,10 +67,12 @@ recognized from its whole header, and checked last. Data that no format recogniz
 | `.jxl` | [JpegXlEncoder](cref:Meziantou.Framework.Imaging.Formats.JpegXlEncoder) | Lossless JPEG XL |
 | `.jp2` | [Jpeg2000Encoder](cref:Meziantou.Framework.Imaging.Formats.Jpeg2000Encoder) | Lossless JP2 file |
 | `.j2k`, `.j2c`, `.jpc` | `Jpeg2000Encoder { Container = Jpeg2000Container.Codestream }` | Lossless JPEG 2000 codestream |
+| `.jph` | `Jpeg2000Encoder { BlockCoder = Jpeg2000BlockCoder.HighThroughput }` | Lossless JPH (HTJ2K) file |
+| `.jhc` | `Jpeg2000Encoder { BlockCoder = Jpeg2000BlockCoder.HighThroughput, Container = Jpeg2000Container.Codestream }` | Lossless HTJ2K codestream |
 | `.exr` | [OpenExrEncoder](cref:Meziantou.Framework.Imaging.Formats.OpenExrEncoder) | ZIP-compressed OpenEXR |
 
-Any other extension throws an `ArgumentException`, including `.jpx`, `.jpf`, `.jph` and `.jhc`: those JPEG 2000 files
-are read, not written. Note that WebP, AVIF, HEIC, JPEG XL and JPEG 2000 are lossless by default, which makes large
+Any other extension throws an `ArgumentException`, including `.jpx` and `.jpf`: those JPEG 2000 files are read, not
+written. Note that WebP, AVIF, HEIC, JPEG XL and JPEG 2000 are lossless by default, which makes large
 files from photos: pass an encoder with lossy compression for them.
 
 ## Choosing a format

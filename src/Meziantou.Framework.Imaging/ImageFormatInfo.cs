@@ -91,8 +91,7 @@ public sealed class ImageFormatInfo
     /// </summary>
     /// <remarks>
     /// Every extension selects an encoder in <see cref="ImageEncoder.FromFileExtension(string)"/>, except the JPEG 2000
-    /// extensions of files the library reads but does not write: <c>.jpx</c> and <c>.jpf</c> (the extended file format),
-    /// <c>.jph</c> and <c>.jhc</c> (the high-throughput block coder).
+    /// extensions of files the library reads but does not write: <c>.jpx</c> and <c>.jpf</c> (the extended file format).
     /// </remarks>
     public IReadOnlyList<string> FileExtensions { get; }
 

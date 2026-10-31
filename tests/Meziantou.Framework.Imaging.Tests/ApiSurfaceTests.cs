@@ -276,19 +276,22 @@ public sealed class ApiSurfaceTests
         Assert.True(type.IsPublic && type.IsSealed && type.IsSubclassOf(typeof(ImageEncoder)));
         Assert.NotNull(type.GetConstructor(Type.EmptyTypes));
         Assert.Equal(
-            [nameof(Jpeg2000Encoder.Compression), nameof(Jpeg2000Encoder.Container), nameof(Jpeg2000Encoder.DecompositionLevels), nameof(Jpeg2000Encoder.Format), nameof(Jpeg2000Encoder.ProgressionOrder), nameof(Jpeg2000Encoder.Quality), nameof(Jpeg2000Encoder.QualityLayers), nameof(Jpeg2000Encoder.TileHeight), nameof(Jpeg2000Encoder.TileWidth)],
+            [nameof(Jpeg2000Encoder.BlockCoder), nameof(Jpeg2000Encoder.Compression), nameof(Jpeg2000Encoder.Container), nameof(Jpeg2000Encoder.DecompositionLevels), nameof(Jpeg2000Encoder.Format), nameof(Jpeg2000Encoder.ProgressionOrder), nameof(Jpeg2000Encoder.Quality), nameof(Jpeg2000Encoder.QualityLayers), nameof(Jpeg2000Encoder.TileHeight), nameof(Jpeg2000Encoder.TileWidth)],
             type.GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Order(StringComparer.Ordinal));
         Assert.Equal(typeof(Jpeg2000Compression), GetDeclaredProperty(type, nameof(Jpeg2000Encoder.Compression)).PropertyType);
         Assert.Equal(typeof(Jpeg2000Container), GetDeclaredProperty(type, nameof(Jpeg2000Encoder.Container)).PropertyType);
         Assert.Equal(typeof(int), GetDeclaredProperty(type, nameof(Jpeg2000Encoder.Quality)).PropertyType);
         Assert.Equal(typeof(IReadOnlyList<Jpeg2000QualityLayer>), GetDeclaredProperty(type, nameof(Jpeg2000Encoder.QualityLayers)).PropertyType);
         Assert.Equal(typeof(Jpeg2000ProgressionOrder), GetDeclaredProperty(type, nameof(Jpeg2000Encoder.ProgressionOrder)).PropertyType);
+        Assert.Equal(typeof(Jpeg2000BlockCoder), GetDeclaredProperty(type, nameof(Jpeg2000Encoder.BlockCoder)).PropertyType);
 
         // The defaults are the zero values
         Assert.Equal([nameof(Jpeg2000Compression.Lossless), nameof(Jpeg2000Compression.Lossy)], Enum.GetNames<Jpeg2000Compression>());
         Assert.Equal([nameof(Jpeg2000Container.Jp2), nameof(Jpeg2000Container.Codestream)], Enum.GetNames<Jpeg2000Container>());
         Assert.Equal(0, (int)Jpeg2000Compression.Lossless);
         Assert.Equal(0, (int)Jpeg2000Container.Jp2);
+        Assert.Equal([nameof(Jpeg2000BlockCoder.Standard), nameof(Jpeg2000BlockCoder.HighThroughput)], Enum.GetNames<Jpeg2000BlockCoder>());
+        Assert.Equal(0, (int)Jpeg2000BlockCoder.Standard);
 
         // The progression orders have the values of the COD marker segment (T.800, Table A.16)
         Assert.Equal([0, 1, 2, 3, 4], Enum.GetValues<Jpeg2000ProgressionOrder>().Select(order => (int)order));

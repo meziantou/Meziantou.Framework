@@ -7,6 +7,7 @@
     <Project Path="benchmarks/Meziantou.Framework.Globbing.Benchmarks/Meziantou.Framework.Globbing.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.Imaging.Benchmarks/Meziantou.Framework.Imaging.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.JavaScriptEngine.Benchmarks/Meziantou.Framework.JavaScriptEngine.Benchmarks.csproj" />
+    <Project Path="benchmarks/Meziantou.Framework.JsonPath.Benchmarks/Meziantou.Framework.JsonPath.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.SnapshotTesting.Benchmarks/Meziantou.Framework.SnapshotTesting.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.Threading.Benchmarks/Meziantou.Framework.Threading.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.WebPlatform.Benchmarks/Meziantou.Framework.WebPlatform.Benchmarks.csproj" />

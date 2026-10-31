@@ -45,6 +45,10 @@ Filters written as `[?(@.price < 10)]`, with parentheses, are valid RFC 9535 and
 
 ## Limits
 
+For application-selected cancellation, work, final-match and intermediate-result limits, see
+[Cancel or bound evaluation](06-EvaluatingQueries.md#cancel-or-bound-evaluation). These limits throw instead of
+silently truncating results and do not replace the structural limits below.
+
 - **Queries**: filter expressions, nested filter selectors and function arguments nest up to 64 levels deep. Beyond
   that, [Parse](cref:Meziantou.Framework.Json.JsonPath.Parse) throws a `FormatException` and [TryParse](cref:Meziantou.Framework.Json.JsonPath.TryParse) returns `false`, so a hostile or generated query cannot
   exhaust the stack.

@@ -5,6 +5,33 @@ namespace Meziantou.Framework.Language.Json.Tests;
 public sealed class JsonSyntaxTreeTests
 {
     [Fact]
+    public void EvaluateJsonPath_EvaluationOptionsAndFirstValue()
+    {
+        var tree = JsonSyntaxTree.ParseText("""[{},{"wanted":42},{}]""");
+        var root = tree.GetRoot();
+        var path = JsonPath.Parse("$[*].wanted");
+        Assert.Equal("42", path.EvaluateValue(tree)!.ToFullString());
+        Assert.Equal("42", path.EvaluateValue(root)!.ToFullString());
+        Assert.Throws<JsonPathEvaluationException>(() => path.EvaluateValue(tree, JsonPathEvaluationMode.Strict));
+        Assert.Throws<JsonPathEvaluationException>(() => path.EvaluateValue(root, JsonPathEvaluationMode.Strict));
+        var options = new JsonPathEvaluationOptions { MaximumIntermediateResults = 2 };
+        Assert.Throws<JsonPathEvaluationException>(() => path.Evaluate(tree, options));
+        Assert.Throws<JsonPathEvaluationException>(() => root.Evaluate(path, options));
+        Assert.Throws<JsonPathEvaluationException>(() => tree.EvaluateValue(path, options));
+        Assert.Throws<JsonPathEvaluationException>(() => path.EvaluateValue(root, options));
+        options = new JsonPathEvaluationOptions { CancellationToken = new CancellationToken(canceled: true) };
+        Assert.Throws<OperationCanceledException>(() => tree.Evaluate(path, options));
+        Assert.Throws<OperationCanceledException>(() => path.Evaluate(root, options));
+        Assert.Throws<OperationCanceledException>(() => path.EvaluateValue(tree, options));
+        Assert.Throws<OperationCanceledException>(() => root.EvaluateValue(path, options));
+        options = new JsonPathEvaluationOptions();
+        Assert.Single(tree.Evaluate(path, options));
+        Assert.Single(root.Evaluate(path, options));
+        Assert.Equal("42", tree.EvaluateValue(path, options)!.ToFullString());
+        Assert.Equal("42", root.EvaluateValue(path, options)!.ToFullString());
+    }
+
+    [Fact]
     public void ReadmeExample_Overview()
     {
         #region JsonSyntaxTree_Overview

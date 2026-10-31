@@ -4,6 +4,8 @@ namespace Meziantou.Framework.Json.Internals;
 
 internal sealed class JsonElementNavigator : JsonPathNavigator<JsonElement>
 {
+    public override bool IsPure => true;
+
     public static JsonElementNavigator Instance { get; } = new();
 
     private JsonElementNavigator()

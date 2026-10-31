@@ -603,6 +603,63 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegReducedInverseDctMatchesTheScalarReferenceBitForBit()
+    {
+        // Every reduced block size of a scaled decoding (1, 2, 4 or 8 samples in each direction), on dense, sparse and
+        // extreme coefficients; every other block only has coefficients in its top-left 4x4 corner (the sparse transform)
+        var random = new Random(22);
+        int[] sizes = [1, 2, 4, 8];
+        for (var round = 0; round < 4_000; round++)
+        {
+            var block = new double[64];
+            var density = random.NextDouble();
+            var magnitude = round % 8 == 4 ? short.MaxValue * ushort.MaxValue : round % 4 == 0 ? 2047 * 255 : 1023;
+            var sparse = round % 2 == 1;
+            for (var i = 0; i < 64; i++)
+            {
+                if ((i == 0 || random.NextDouble() < density) && (!sparse || ((i & 0b100_100) == 0)))
+                {
+                    block[i] = random.Next(-magnitude, magnitude + 1);
+                }
+            }
+
+            foreach (var width in sizes)
+            {
+                foreach (var height in sizes)
+                {
+                    var expected = block.ToArray();
+                    JpegIdct.TransformReducedScalar(expected, width, height);
+                    var actual = block.ToArray();
+                    JpegIdct.TransformReduced(actual, width, height, sparse);
+                    AssertRows(expected, actual, width, height);
+                    actual = block.ToArray();
+                    JpegIdct.TransformReducedScalar(actual, width, height, sparse);
+                    AssertRows(expected, actual, width, height);
+                    if (System.Runtime.Intrinsics.Vector128.IsHardwareAccelerated)
+                    {
+                        actual = block.ToArray();
+                        JpegIdct.TransformReducedVector128(actual, width, height);
+                        AssertRows(expected, actual, width, height);
+                        actual = block.ToArray();
+                        JpegIdct.TransformReducedVector128(actual, width, height, sparse);
+                        AssertRows(expected, actual, width, height);
+                    }
+                }
+            }
+        }
+
+        // The samples are the first width values of the first height rows
+        static void AssertRows(double[] expected, double[] actual, int width, int height)
+        {
+            for (var y = 0; y < height; y++)
+            {
+                Assert.Equal(expected.AsSpan(y * 8, width).ToArray(), actual.AsSpan(y * 8, width).ToArray());
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void JpegDequantizationMatchesTheScalarReference()
     {
         var random = new Random(21);

@@ -2433,6 +2433,29 @@ public sealed class DocumentationExampleTests : IDisposable
             Assert.InRange(pixel.B, 27, 35);
         }
 
+        // A large photo is decoded at 1/4 of its size (400x300, still larger than the box), then fitted like the small one
+        var large = GetPath("large.jpg");
+        using (var image = new Image<Rgb24>(1600, 1200, new Rgb24(200, 100, 50)))
+        {
+            image.Metadata.Orientation = ExifOrientation.RightTop;
+            image.Save(large);
+        }
+
+        using (var decoded = Image.Load(large, new ImageDecodeOptions { TargetSize = new Size(200, 200) }))
+        {
+            Assert.Equal(new Size(400, 300), decoded.Size);
+        }
+
+        GuideExamples.CreateThumbnail(large, thumbnail);
+        using (var result = Image.Load<Rgb24>(thumbnail))
+        {
+            Assert.Equal(new Size(150, 200), result.Size);
+            var pixel = result.Frames[0][75, 100];
+            Assert.InRange(pixel.R, 196, 204);
+            Assert.InRange(pixel.G, 96, 104);
+            Assert.InRange(pixel.B, 46, 54);
+        }
+
         // A smaller image keeps its size, and its transparent pixels become white
         var icon = GetPath("icon.png");
         using (var image = new Image<Rgba32>(64, 48))

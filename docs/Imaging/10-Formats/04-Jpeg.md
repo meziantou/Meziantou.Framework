@@ -16,8 +16,14 @@ need an explicit setting before they can be saved.
 | Colors | Gray, YCbCr and RGB; CMYK and YCCK with a color conversion | Gray (for gray pixel formats) or YCbCr |
 | Chroma subsampling | Any integral sampling | 4:4:4, 4:2:2 or 4:2:0 |
 | Metadata | EXIF, XMP, ICC profile, resolution, comments | The same |
+| Reduced size | 1/2, 1/4 or 1/8 of the size, except lossless files | - |
 
 8-bit files load as [Gray8](cref:Meziantou.Framework.Imaging.Gray8) or [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24); 12-bit and lossless files of more than 8 bits load as [Gray16](cref:Meziantou.Framework.Imaging.Gray16) or [Rgb48](cref:Meziantou.Framework.Imaging.Rgb48).
+
+[ImageDecodeOptions.TargetSize](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.TargetSize) and [ImageDecodeOptions.ScaleDenominator](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.ScaleDenominator) decode a file at a reduced size, from the
+coefficients of its blocks: the pixels are the means of the pixels of the full image they replace, and a subsampled
+chrominance is reduced less, so that it needs less upsampling. See
+[Decode a smaller image](../05-LoadingAndSaving/02-LoadingImages.md#decode-a-smaller-image).
 
 ## Save a JPEG
 

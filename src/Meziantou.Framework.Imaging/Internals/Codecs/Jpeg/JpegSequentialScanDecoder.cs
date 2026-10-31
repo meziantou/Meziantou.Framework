@@ -42,7 +42,7 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
         }
 
         // The destination is computed first: one value instead of two to keep alive through the loop
-        var offset = scanComponent.Component.GetRowOffset(blockRow * 8) + (blockColumn * 8);
+        var offset = scanComponent.Component.GetBlockOffset(blockRow, blockColumn);
         var reader = Reader.GetCursor();
 
         // DC: difference from the prediction (T.81 F.2.2.1)

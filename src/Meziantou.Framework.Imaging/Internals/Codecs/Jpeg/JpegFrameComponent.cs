@@ -9,7 +9,10 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <remarks>
 /// The plane holds whole bands of <c>8 * V</c> sample rows (one MCU row of an interleaved scan, or one block row of a
 /// single-component frame) of <c>McusX * H * 8</c> samples. The data unit of a lossless frame is one sample instead of a
-/// block of 8 by 8 (T.81 H.1.1): its bands have <c>V</c> rows of <c>McusX * H</c> samples. A streaming plane keeps a ring of at most three bands (the band
+/// block of 8 by 8 (T.81 H.1.1): its bands have <c>V</c> rows of <c>McusX * H</c> samples. A frame decoded at a reduced
+/// scale transforms each block into <see cref="BlockWidth"/> by <see cref="BlockHeight"/> samples (8, 4, 2 or 1): its bands
+/// have <c>BlockHeight * V</c> rows of <c>McusX * H * BlockWidth</c> samples, and <see cref="Width"/> and
+/// <see cref="Height"/> are the reduced dimensions of the component. A streaming plane keeps a ring of at most three bands (the band
 /// being written, the band waiting for its lower context row, and the band providing the upper context row); a full plane
 /// keeps every band (frames coded in several sequential scans). A sample is a byte, or 16 bits in native byte order when
 /// the precision of the frame is not 8 bits.
@@ -41,6 +44,8 @@ internal sealed class JpegFrameComponent : IDisposable
     /// <param name="dataUnitSize">The number of samples of a side of a data unit: 8 (a block), or 1 for a lossless frame (a sample).</param>
     public JpegFrameComponent(int index, byte id, int horizontalSampling, int verticalSampling, int quantizationTable, int precision, int dataUnitSize = 8)
     {
+        BlockWidth = dataUnitSize;
+        BlockHeight = dataUnitSize;
         Index = index;
         Id = id;
         Precision = precision;
@@ -71,29 +76,44 @@ internal sealed class JpegFrameComponent : IDisposable
     /// <summary>Gets the number of samples of a side of a data unit: 8 (a block), or 1 for a lossless frame (a sample).</summary>
     public int DataUnitSize { get; }
 
-    /// <summary>Gets the number of samples per row: <c>ceil(X * H / Hmax)</c>.</summary>
+    /// <summary>Gets the number of samples of a row of a decoded data unit in the plane: <see cref="DataUnitSize"/>, or fewer when the frame is scaled.</summary>
+    public int BlockWidth { get; private set; }
+
+    /// <summary>Gets the number of rows of a decoded data unit in the plane: <see cref="DataUnitSize"/>, or fewer when the frame is scaled.</summary>
+    public int BlockHeight { get; private set; }
+
+    /// <summary>Gets a value indicating whether the blocks are transformed into fewer samples than they code (scaled decoding).</summary>
+    public bool IsReduced => BlockWidth != DataUnitSize || BlockHeight != DataUnitSize;
+
+    /// <summary>Gets the number of samples per row of the plane: <c>ceil(X * H / Hmax)</c>, divided by the horizontal reduction when the frame is scaled.</summary>
     public int Width { get; private set; }
 
-    /// <summary>Gets the number of sample rows: <c>ceil(Y * V / Vmax)</c>.</summary>
+    /// <summary>Gets the number of sample rows of the plane: <c>ceil(Y * V / Vmax)</c>, divided by the vertical reduction when the frame is scaled.</summary>
     public int Height { get; private set; }
 
-    /// <summary>Gets <c>Hmax / H</c>: the horizontal upsampling factor.</summary>
+    /// <summary>Gets the number of coded samples per row: <c>ceil(X * H / Hmax)</c> (T.81 A.1.1).</summary>
+    public int CodedWidth { get; private set; }
+
+    /// <summary>Gets the number of coded sample rows: <c>ceil(Y * V / Vmax)</c>.</summary>
+    public int CodedHeight { get; private set; }
+
+    /// <summary>Gets the horizontal upsampling factor from the plane to the image: <c>Hmax / H</c>, divided by what the scale of the frame takes of it.</summary>
     public int HorizontalRatio { get; private set; }
 
-    /// <summary>Gets <c>Vmax / V</c>: the vertical upsampling factor.</summary>
+    /// <summary>Gets the vertical upsampling factor from the plane to the image: <c>Vmax / V</c>, divided by what the scale of the frame takes of it.</summary>
     public int VerticalRatio { get; private set; }
 
     /// <summary>Gets the number of data units per row of a non-interleaved scan: <c>ceil(Width / 8)</c> blocks, or <c>Width</c> samples for a lossless frame.</summary>
-    public int BlocksPerLine => (Width + DataUnitSize - 1) / DataUnitSize;
+    public int BlocksPerLine => (CodedWidth + DataUnitSize - 1) / DataUnitSize;
 
     /// <summary>Gets the number of rows of data units of a non-interleaved scan: <c>ceil(Height / 8)</c> block rows, or <c>Height</c> lines for a lossless frame.</summary>
-    public int BlocksPerColumn => (Height + DataUnitSize - 1) / DataUnitSize;
+    public int BlocksPerColumn => (CodedHeight + DataUnitSize - 1) / DataUnitSize;
 
     /// <summary>Gets the distance between two sample rows of the plane, in samples.</summary>
     public int Stride { get; private set; }
 
-    /// <summary>Gets the number of sample rows of one band: <c>8 * V</c>, or <c>V</c> for a lossless frame.</summary>
-    public int BandRows => DataUnitSize * VerticalSampling;
+    /// <summary>Gets the number of sample rows of one band: <c>BlockHeight * V</c> (<c>8 * V</c> at full scale), or <c>V</c> for a lossless frame.</summary>
+    public int BandRows => BlockHeight * VerticalSampling;
 
     /// <summary>
     /// Gets a value indicating whether every sample of the component was decoded (its sequential scan ended), or, for a
@@ -113,12 +133,37 @@ internal sealed class JpegFrameComponent : IDisposable
     /// <summary>Gets the samples of the plane (bands in ring order), for a precision other than 8 bits.</summary>
     public Span<ushort> DeepSamples => unsafe(MemoryMarshal.Cast<byte, ushort>((_plane ?? throw new InvalidOperationException("The JPEG component plane is not allocated.")).RawBuffer.AsSpan()));
 
-    public void SetGeometry(int frameWidth, int frameHeight, int maxHorizontal, int maxVertical)
+    /// <summary>Sets the sampling geometry of the component.</summary>
+    /// <param name="frameWidth">The width of the frame.</param>
+    /// <param name="frameHeight">The height of the frame.</param>
+    /// <param name="maxHorizontal">The largest horizontal sampling factor of the frame.</param>
+    /// <param name="maxVertical">The largest vertical sampling factor of the frame.</param>
+    /// <param name="scaleDenominator">
+    /// The factor by which the image is reduced (scaled decoding): 1, or 2, 4 or 8 for a frame of blocks. A subsampled
+    /// component is reduced less, by <c>s / gcd(s, Hmax / H)</c>, so that its upsampling factor becomes
+    /// <c>(Hmax / H) / gcd(s, Hmax / H)</c>: the chrominance of a 4:2:0 frame decoded at 1/2 keeps its 8x8 blocks and needs no
+    /// upsampling.
+    /// </param>
+    public void SetGeometry(int frameWidth, int frameHeight, int maxHorizontal, int maxVertical, int scaleDenominator = 1)
     {
-        Width = (int)(((long)frameWidth * HorizontalSampling + maxHorizontal - 1) / maxHorizontal);
-        Height = (int)(((long)frameHeight * VerticalSampling + maxVertical - 1) / maxVertical);
-        HorizontalRatio = maxHorizontal / HorizontalSampling;
-        VerticalRatio = maxVertical / VerticalSampling;
+        CodedWidth = (int)(((long)frameWidth * HorizontalSampling + maxHorizontal - 1) / maxHorizontal);
+        CodedHeight = (int)(((long)frameHeight * VerticalSampling + maxVertical - 1) / maxVertical);
+        var horizontalRatio = maxHorizontal / HorizontalSampling;
+        var verticalRatio = maxVertical / VerticalSampling;
+        // The scale is a power of two: its greatest common divisor with a ratio is the lowest bit of the ratio, at most the scale
+        var horizontalShared = Math.Min(scaleDenominator, horizontalRatio & -horizontalRatio);
+        var verticalShared = Math.Min(scaleDenominator, verticalRatio & -verticalRatio);
+        var horizontalReduction = scaleDenominator / horizontalShared;
+        var verticalReduction = scaleDenominator / verticalShared;
+        BlockWidth = DataUnitSize / horizontalReduction;
+        BlockHeight = DataUnitSize / verticalReduction;
+
+        // The plane of the reduced blocks: ceil(ceil(X * H / Hmax) / d) samples, which the remaining factor upsamples to at
+        // least ceil(X / s) samples
+        Width = (CodedWidth + horizontalReduction - 1) / horizontalReduction;
+        Height = (CodedHeight + verticalReduction - 1) / verticalReduction;
+        HorizontalRatio = horizontalRatio / horizontalShared;
+        VerticalRatio = verticalRatio / verticalShared;
     }
 
     /// <summary>Allocates the plane.</summary>
@@ -128,7 +173,7 @@ internal sealed class JpegFrameComponent : IDisposable
     /// <param name="limits">The limits (for the overflow report).</param>
     public void AllocatePlane(AllocationScope scope, int mcusX, int bandCount, ImageResourceLimits limits)
     {
-        var stride = (long)mcusX * HorizontalSampling * DataUnitSize;
+        var stride = (long)mcusX * HorizontalSampling * BlockWidth;
         var length = stride * BandRows * bandCount * (HasDeepSamples ? sizeof(ushort) : 1);
         if (stride > int.MaxValue || length > CheckedSizes.MaxBufferLength)
             throw CheckedSizes.CreateOverflowException(limits);
@@ -200,6 +245,11 @@ internal sealed class JpegFrameComponent : IDisposable
         _coefficients?.Dispose();
         _coefficients = null;
     }
+
+    /// <summary>Gets the offset of the first sample of a block in <see cref="Samples"/> or <see cref="DeepSamples"/>.</summary>
+    /// <param name="blockRow">The block row in the component's block grid.</param>
+    /// <param name="blockColumn">The block column in the component's block grid.</param>
+    public int GetBlockOffset(int blockRow, int blockColumn) => GetRowOffset(blockRow * BlockHeight) + (blockColumn * BlockWidth);
 
     /// <summary>Gets the offset of a sample row in <see cref="Samples"/> or <see cref="DeepSamples"/>.</summary>
     /// <param name="row">The row, in component sample coordinates (rows of one band are contiguous).</param>

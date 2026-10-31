@@ -12,7 +12,10 @@ the right colors), be small on disk, and leak nothing that the original holds, s
 ```csharp
 public static void CreateThumbnail(string inputPath, string outputPath)
 {
-    using var image = Image.Load(inputPath);
+    // A large JPEG photo is decoded at 1/2, 1/4 or 1/8 of its size, as long as it stays at least as large as the box:
+    // much faster than decoding every pixel to throw most of them away. The box is square, so the orientation of the
+    // photo does not matter. Other formats are decoded at full size
+    using var image = Image.Load(inputPath, new ImageDecodeOptions { TargetSize = new Size(200, 200) });
 
     // A camera stores the rotation of the photo as metadata: turn the pixels upright before resizing
     image.AutoOrient();
@@ -37,16 +40,20 @@ public static void CreateThumbnail(string inputPath, string outputPath)
 
 Each step matters:
 
-1. **[AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient)** applies the orientation that the camera wrote in the metadata. Decoders report it
+1. **[TargetSize](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.TargetSize)** lets the decoder of a JPEG file produce a smaller image, at 1/2, 1/4 or 1/8 of its size, as
+   long as it stays at least as large as the box: a 4000x3000 photo is decoded as a 500x375 image, which costs a fraction
+   of the memory and the time of the full photo. Other formats are decoded at full size. See
+   [Decode a smaller image](../05-LoadingAndSaving/02-LoadingImages.md#decode-a-smaller-image).
+2. **[AutoOrient](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AutoOrient)** applies the orientation that the camera wrote in the metadata. Decoders report it
    (`Metadata.Orientation`) and never move a pixel: without this step, a portrait photo becomes a sideways thumbnail
    once the metadata is removed. Turning the image first also makes the box apply to the upright image.
-2. **[Resize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Resize)** with [ResizeMode.Contain](cref:Meziantou.Framework.Imaging.ResizeMode.Contain) fits the image inside 200x200 and keeps its aspect ratio: a 4000x3000 photo
+3. **[Resize](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Resize)** with [ResizeMode.Contain](cref:Meziantou.Framework.Imaging.ResizeMode.Contain) fits the image inside 200x200 and keeps its aspect ratio: a 4000x3000 photo
    becomes 200x150. With `AllowUpscaling = false`, an image that is already smaller than the box keeps its size instead
    of being enlarged and blurred.
-3. **[ConvertColorProfile](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ConvertColorProfile)** converts the colors to sRGB. A photo labeled with a wider color space, such as the Display
+4. **[ConvertColorProfile](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ConvertColorProfile)** converts the colors to sRGB. A photo labeled with a wider color space, such as the Display
    P3 profile of a phone, would look dull once its profile is removed. An image without profile is already sRGB, and
    nothing is converted.
-4. **[Save](cref:Meziantou.Framework.Imaging.Image.Save)** with [MetadataHandling.Strip](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strip) writes no EXIF, XMP, text or ICC profile: the file is smaller, and the camera
+5. **[Save](cref:Meziantou.Framework.Imaging.Image.Save)** with [MetadataHandling.Strip](cref:Meziantou.Framework.Imaging.Formats.MetadataHandling.Strip) writes no EXIF, XMP, text or ICC profile: the file is smaller, and the camera
    model, the date and the GPS position stay in the original.
 
 The example writes a JPEG file, which has no transparency and only 8-bit samples: [BackgroundColor](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder.BackgroundColor) and

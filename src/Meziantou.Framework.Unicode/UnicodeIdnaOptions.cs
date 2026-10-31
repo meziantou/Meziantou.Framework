@@ -27,6 +27,14 @@ public sealed class UnicodeIdnaOptions
     /// <summary>Gets a value indicating whether <see cref="UnicodeIdna.TryToAscii(string, UnicodeIdnaOptions?, out string?)"/> rejects a domain name or a label that is empty or too long for the DNS (VerifyDnsLength). The default is <see langword="true"/>.</summary>
     public bool VerifyDnsLength { get; init; } = true;
 
-    /// <summary>Gets a value indicating whether a label that starts with <c>xn--</c> but is not valid Punycode is kept as it is instead of being an error (IgnoreInvalidPunycode). The default is <see langword="false"/>.</summary>
+    /// <summary>Gets a value indicating whether a label that starts with <c>xn--</c> but is not valid Punycode is kept as it is and checked like a decoded label, instead of being an error right away (IgnoreInvalidPunycode). The default is <see langword="false"/>.</summary>
+    /// <remarks>
+    /// As UTS #46 specifies, the kept label is still an error: it contains only ASCII characters, which is an error for a
+    /// label that starts with <c>xn--</c>, and it does not satisfy the validity criteria either (its hyphens, or its
+    /// <c>xn--</c> prefix when <see cref="CheckHyphens"/> is <see langword="false"/>). So the option does not make such a
+    /// domain name valid: <see cref="UnicodeIdna.TryToAscii(string, UnicodeIdnaOptions?, out string?)"/> rejects it, and
+    /// <see cref="UnicodeIdna.ToUnicode(string, UnicodeIdnaOptions?, out bool)"/> keeps the label and reports an error,
+    /// with or without the option.
+    /// </remarks>
     public bool IgnoreInvalidPunycode { get; init; }
 }

@@ -63,6 +63,69 @@ public sealed class ImageReaderOptions
     public CmykConversionOptions? CmykConversion { get; init; }
 
     /// <summary>
+    /// Gets the factor by which the decoder divides the width and the height of the image, a power of two. Defaults to 1:
+    /// the image is decoded at full resolution.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The decoded image has <c>ceil(width / ScaleDenominator)</c> by <c>ceil(height / ScaleDenominator)</c> pixels,
+    /// computed from fewer samples than a full decode, for less time and memory, by the formats that support it (see the
+    /// format reference of the readme). The pixels are close to a resize of the full image, not equal to it. The metadata
+    /// is the one of the file, like after a resize.
+    /// </para>
+    /// <para>
+    /// A file that cannot be decoded at this scale (a format that only decodes at full resolution, or a scale that the file
+    /// does not allow) is an <see cref="UnsupportedImageFeatureException"/>. Set <see cref="TargetSize"/> instead to get
+    /// the smallest image the file allows without failing. The two properties cannot be set together.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a positive power of two.</exception>
+    /// <exception cref="ArgumentException">The value is not 1 and <see cref="TargetSize"/> is set.</exception>
+    public int ScaleDenominator
+    {
+        get;
+        init
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
+            if (!int.IsPow2(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The scale denominator must be a power of two.");
+
+            if (value != 1 && TargetSize is not null)
+                throw new ArgumentException("The ScaleDenominator and TargetSize options cannot both be set.", nameof(value));
+
+            field = value;
+        }
+    } = 1;
+
+    /// <summary>
+    /// Gets the smallest size the decoder needs to produce, or <see langword="null"/> (the default) to decode at full
+    /// resolution. A file that can be decoded at a reduced resolution is decoded at the largest
+    /// <see cref="ScaleDenominator"/> it allows whose size is still at least this size in both dimensions; any other file
+    /// is decoded at full resolution.
+    /// </summary>
+    /// <remarks>
+    /// The size is compared with the stored dimensions of the image, before its orientation is applied. The decoded image
+    /// is usually larger than the target: resize it afterwards to get an exact size. For a thumbnail, this is much faster
+    /// than resizing a full decode, with nearly the same result.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The width or the height of the value is zero.</exception>
+    /// <exception cref="ArgumentException">The value is not <see langword="null"/> and <see cref="ScaleDenominator"/> is not 1.</exception>
+    public Size? TargetSize
+    {
+        get;
+        init
+        {
+            if (value is { IsEmpty: true })
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The target size must not be empty.");
+
+            if (value is not null && ScaleDenominator != 1)
+                throw new ArgumentException("The ScaleDenominator and TargetSize options cannot both be set.", nameof(value));
+
+            field = value;
+        }
+    }
+
+    /// <summary>
     /// Gets a value indicating whether a caller-provided stream is left open when the reader is disposed. Defaults to
     /// <see langword="true"/>. Streams opened by the path overloads are always owned and closed by the reader.
     /// </summary>

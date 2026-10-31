@@ -639,9 +639,20 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     marker segment in the first tile-part), an HT cleanup magnitude may use every bit-plane (FFmpeg refuses it), a
     codestream of three components whose last two are sub-sampled alike is sYCC (both decoders read it so). The
     fixtures record each disagreement with its reason.
-  - The encoder (`Jpeg2000EncoderCodec`) is one tile, one layer, LRCP, without rate control; a lossy output codes the
-    opacity reversibly through COC and QCC marker segments. Its quantization steps come from the gains of the synthesis
-    kernel of the library, measured, not from published tables.
+  - The encoder (`Jpeg2000EncoderCodec`) codes tiles one at a time (one tile-part each, no precincts) and writes the
+    packets in any of the five progression orders (`Jpeg2000PacketPosition` orders the position progressions for the
+    decoder and the encoder alike); a lossy output codes the opacity reversibly through COC and QCC marker segments. Its
+    quantization steps come from the gains of the synthesis kernel of the library, measured, not from published tables
+    (the 9-7 and 5-3 norms are measured up to 10 levels and extrapolated above).
+  - Quality layers and targets (J.14, `AllocateLayers`): the block coder records, for each pass, the exact length of
+    the truncated segment that decodes it (`Jpeg2000MqEncoder.GetTruncationLength`, from the state of the MQ coder at
+    the end of the pass; `EachCodingPassIsDecodedFromItsTruncatedSegment` checks it against the block decoder) and the
+    reduction of the squared error, weighted by the squared synthesis norms of the sub-band and of the inverse component
+    transformation (and the squared step of a lossy sub-band). A layer is the hull points whose slope is at least a
+    threshold, found by bisection on the sorted slopes, each trial writing the packet headers of the layer from the
+    state the previous layers left (`TilePackets` saves and restores it), so sizes are exact. Without a target the
+    passes are not recorded and the output is byte-identical to the single-layer encoder; a target every pass fits in
+    keeps every pass. At equal size the PSNR is the one of `opj_compress -r` within 0.05 dB on photographs.
   - The lossy quality is calibrated on `JpegEncoder` (`Jpeg2000QuantizationDesign`): the base step of the luminance is
     `0.47 * s^(3/4)` levels, `s` being the scale of the JPEG quality, and the two chrominances have twice that step (a
     QCC marker segment each). The constants were fitted on photographs of several sizes, so that a quality has the SSIM
@@ -654,6 +665,15 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     photographs: `TheQualityFollowsTheScaleOfTheJpegEncoder` only keeps the two scales together on a synthetic image.
   - A TIFF strip or tile compressed with JPEG 2000 is decoded by the same code through `Jpeg2000SampleDecoder` and a
     `Jpeg2000SampleReceiver`: the page says what the components are.
+  - Scaled and region decoding (`Jpeg2000Decoder`): `Jpeg2000TileGeometry.Create(..., reduction)` keeps the full partition
+    (the packets and the position progressions need it) but gives each tile-component the bounds and the levels
+    (`DecodedLevels`) of the highest resolution level that is decoded, so the plane, the strides and the inverse
+    transformation are those of that level; the code-blocks of the discarded levels are not decoded. A region is an area of
+    the reference grid at full resolution, rebuilt from the output window (so a sample kept for a narrow region is decoded):
+    the tiles it does not meet are skipped (`OnTile`), and `Jpeg2000TileDecoder.GetBandWindows` keeps the code-blocks that
+    reach it with `RegionMargin` coefficients more for the filters (others are zeros). `Jpeg2000RowWriter` writes the
+    window. `ScaledDecodesAndRegionsAreTheOnesOfOpenJpeg` compares with `opj_decompress -r` and `-d` (OpenJPEG rejects a
+    region that has no sample at the reduced resolution); `ARegionHasTheSamplesOfAFullDecode` checks the margin.
 - **TIFF** (`Internals/Codecs/Tiff`). `TiffPage` resolves and validates a directory without reading a pixel, so every
   rejection also comes from `Identify`, except the ones of the compressed data. `TiffBlockReader` turns a strip or a
   tile into rows of samples (fill order, compression, predictor, YCbCr data units) and `TiffRowExpander` turns the rows

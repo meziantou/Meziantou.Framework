@@ -1,61 +1,36 @@
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// Writes the tag trees of a packet header (T.800, B.10.2), the reverse of <see cref="Jpeg2000TagTree"/>: the values of
-/// the leaves are given, each node gets the minimum of its children, and a leaf is coded up to a threshold.
+/// Writes the tag trees of packet headers (T.800, B.10.2), the reverse of <see cref="Jpeg2000TagTree"/>: the values of the
+/// leaves are given, each node gets the minimum of its children, and a leaf is coded up to a threshold.
 /// </summary>
-internal sealed class Jpeg2000TagTreeEncoder : IDisposable
+/// <remarks>
+/// A tree is three arrays of its nodes, level by level from the leaves, that the caller keeps from one packet to the next:
+/// the values, the lower bound written so far, and whether the value is written (0 or 1). The bits written for a threshold
+/// only depend on the values through their minimum with the threshold, so the leaves whose value is not known yet can hold
+/// any value at least as large.
+/// </remarks>
+internal static class Jpeg2000TagTreeEncoder
 {
-    private const int FieldsPerNode = 3;
-
-    private readonly AllocationScope _scope;
-    private Av1PooledArray<int>? _nodes;
-    private int _width;
-    private int _height;
-
-    public Jpeg2000TagTreeEncoder(AllocationScope scope)
-    {
-        _scope = scope;
-    }
-
-    /// <summary>Starts a tree and returns its leaves, row by row, for the caller to fill.</summary>
-    public Span<int> Begin(int width, int height)
-    {
-        _width = width;
-        _height = height;
-        var count = Jpeg2000TagTree.GetNodeCount(width, height);
-        if (_nodes is null || _nodes.Length < count * FieldsPerNode)
-        {
-            _nodes?.Dispose();
-            _nodes = null;
-            _nodes = Av1PooledArray<int>.Rent(_scope, count * FieldsPerNode, clear: false, AllocationKind.Temporary);
-        }
-
-        // The values of the nodes, level by level from the leaves; then, for each node, the lower bound that was written
-        // and whether its value was written
-        _nodes.Span.Slice((int)count, (int)count * 2).Clear();
-        return _nodes.Span[..(width * height)];
-    }
-
     /// <summary>Computes the nodes above the leaves: each one is the minimum of its children.</summary>
-    public void Complete()
+    /// <param name="values">The values of the nodes; the leaves come first, row by row.</param>
+    /// <param name="width">The number of leaves in a row.</param>
+    /// <param name="height">The number of rows of leaves.</param>
+    public static void ComputeMinima(Span<int> values, int width, int height)
     {
-        var nodes = _nodes!.Span;
-        var width = _width;
-        var height = _height;
         var offset = 0;
         while (width != 1 || height != 1)
         {
             var parentWidth = (width + 1) >> 1;
             var parentHeight = (height + 1) >> 1;
             var parentOffset = offset + (width * height);
-            nodes.Slice(parentOffset, parentWidth * parentHeight).Fill(int.MaxValue);
+            values.Slice(parentOffset, parentWidth * parentHeight).Fill(int.MaxValue);
             for (var y = 0; y < height; y++)
             {
                 for (var x = 0; x < width; x++)
                 {
-                    ref var parent = ref nodes[parentOffset + ((y >> 1) * parentWidth) + (x >> 1)];
-                    parent = Math.Min(parent, nodes[offset + (y * width) + x]);
+                    ref var parent = ref values[parentOffset + ((y >> 1) * parentWidth) + (x >> 1)];
+                    parent = Math.Min(parent, values[offset + (y * width) + x]);
                 }
             }
 
@@ -66,14 +41,19 @@ internal sealed class Jpeg2000TagTreeEncoder : IDisposable
     }
 
     /// <summary>Writes what tells a decoder whether the value of a leaf is less than a threshold, and the value itself when it is.</summary>
-    public void Encode(ref Jpeg2000PacketBitWriter writer, int x, int y, int threshold)
+    /// <param name="writer">The writer of the packet header.</param>
+    /// <param name="values">The values of the nodes.</param>
+    /// <param name="lows">The lower bound of each node written so far.</param>
+    /// <param name="known">Whether the value of each node is written.</param>
+    /// <param name="width">The number of leaves in a row.</param>
+    /// <param name="height">The number of rows of leaves.</param>
+    /// <param name="x">The column of the leaf.</param>
+    /// <param name="y">The row of the leaf.</param>
+    /// <param name="threshold">The threshold.</param>
+    public static void Encode(ref Jpeg2000PacketBitWriter writer, ReadOnlySpan<int> values, Span<int> lows, Span<int> known, int width, int height, int x, int y, int threshold)
     {
-        var nodes = _nodes!.Span;
-        var count = (int)Jpeg2000TagTree.GetNodeCount(_width, _height);
         Span<int> path = stackalloc int[Jpeg2000TagTree.MaxLevels];
         var levels = 0;
-        var width = _width;
-        var height = _height;
         var offset = 0;
         while (true)
         {
@@ -92,22 +72,20 @@ internal sealed class Jpeg2000TagTreeEncoder : IDisposable
         for (var level = levels - 1; level >= 0; level--)
         {
             var node = path[level];
-            ref var written = ref nodes[count + node];
-            ref var isKnown = ref nodes[(2 * count) + node];
-            if (written > low)
+            if (lows[node] > low)
             {
-                low = written;
+                low = lows[node];
             }
 
-            var value = nodes[node];
+            var value = values[node];
             while (low < threshold)
             {
                 if (low >= value)
                 {
-                    if (isKnown == 0)
+                    if (known[node] == 0)
                     {
                         writer.WriteBit(1);
-                        isKnown = 1;
+                        known[node] = 1;
                     }
 
                     break;
@@ -117,13 +95,7 @@ internal sealed class Jpeg2000TagTreeEncoder : IDisposable
                 low++;
             }
 
-            written = low;
+            lows[node] = low;
         }
-    }
-
-    public void Dispose()
-    {
-        _nodes?.Dispose();
-        _nodes = null;
     }
 }

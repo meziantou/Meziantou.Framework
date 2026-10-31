@@ -115,6 +115,61 @@ internal struct Jpeg2000MqEncoder
         _a = a;
     }
 
+    /// <summary>Gets the state of the encoder between two decisions, for <see cref="GetTruncationLength"/>.</summary>
+    public readonly Jpeg2000MqState GetState()
+    {
+        var count = _output.Length - _start;
+        return new Jpeg2000MqState(count, count == 0 ? (byte)0 : _output.WrittenSpan[^1], _c, _a, _ct);
+    }
+
+    /// <summary>
+    /// Gets the smallest number of bytes of a terminated codeword segment from which a decoder decodes every decision coded
+    /// before a state: the decoder supplies 1 bits past the end of the bytes it has (C.3.4).
+    /// </summary>
+    /// <param name="segment">The bytes of the codeword segment, once <see cref="Flush"/> ended it.</param>
+    /// <param name="state">The state of the encoder, from <see cref="GetState"/>.</param>
+    /// <returns>The length: it is never followed by an FF byte of the segment, and it does not end with one.</returns>
+    /// <remarks>
+    /// <para>
+    /// The decisions coded before the state are decoded as long as the value of the bytes kept, followed by 1 bits, is
+    /// below the upper end of the interval of the state (the lower end is never passed: 1 bits only raise the value). The
+    /// values are computed in units of a bit of the code register: the register is shifted CT more times before its next
+    /// byte is written, so its bit <c>27 - CT</c> has the weight of the least significant bit of the last byte written,
+    /// which a carry may still increment. A byte that follows an FF byte holds seven bits, its most significant one being
+    /// the carry of the FF byte.
+    /// </para>
+    /// <para>
+    /// An FF byte at the end can be removed: followed by 1 bits, it has the value of 1 bits.
+    /// </para>
+    /// </remarks>
+    public static int GetTruncationLength(ReadOnlySpan<byte> segment, in Jpeg2000MqState state)
+    {
+        // The upper end of the interval, relative to the bytes before the last byte written
+        var upper = ((UInt128)state.Last << (27 - state.Count)) + state.C + state.A;
+        var exponent = 27 - state.Count;
+        var length = state.Written;
+
+        // The value of the bytes kept from the last byte written (0 for the byte before the first one), in units of the
+        // least significant bit of the last byte kept
+        UInt128 value = length == 0 ? 0u : segment[length - 1];
+        var previous = length == 0 ? 0 : segment[length - 1];
+        while (true)
+        {
+            var fits = exponent >= 0 ? (value + 1) << exponent <= upper : value + 1 <= upper << -exponent;
+            if (fits || length >= segment.Length || exponent < -64)
+                break;
+
+            var bits = previous == 0xFF ? 7 : 8;
+            previous = segment[length];
+            value = (value << bits) + (uint)previous;
+            exponent -= bits;
+            length++;
+        }
+
+        length = Math.Min(length, segment.Length);
+        return length > 0 && segment[length - 1] == 0xFF ? length - 1 : length;
+    }
+
     /// <summary>Terminates the codeword segment (FLUSH).</summary>
     /// <returns>The number of bytes of the segment.</returns>
     public int Flush()

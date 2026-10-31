@@ -2,7 +2,9 @@ using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Meziantou.Framework.Imaging.Formats;
+using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
+using Meziantou.Framework.Imaging.TestHarness.Jpeg2000;
 using Meziantou.Framework.Imaging.TestHarness.Streams;
 
 namespace Meziantou.Framework.Imaging.Tests;
@@ -29,6 +31,10 @@ public sealed class Jpeg2000EncoderTests
         Assert.Equal(90, encoder.Quality);
         Assert.Equal(Jpeg2000Container.Jp2, encoder.Container);
         Assert.Equal(MetadataHandling.Strict, encoder.MetadataHandling);
+        Assert.Empty(encoder.QualityLayers);
+        Assert.Equal(Jpeg2000ProgressionOrder.Lrcp, encoder.ProgressionOrder);
+        Assert.Equal((0, 0), (encoder.TileWidth, encoder.TileHeight));
+        Assert.Equal(5, encoder.DecompositionLevels);
     }
 
     [Fact]
@@ -40,6 +46,29 @@ public sealed class Jpeg2000EncoderTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new Jpeg2000Encoder { Container = (Jpeg2000Container)2 });
         Assert.Equal(1, new Jpeg2000Encoder { Quality = 1 }.Quality);
         Assert.Equal(100, new Jpeg2000Encoder { Quality = 100 }.Quality);
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Jpeg2000Encoder { ProgressionOrder = (Jpeg2000ProgressionOrder)5 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Jpeg2000Encoder { TileWidth = -1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Jpeg2000Encoder { TileHeight = -1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Jpeg2000Encoder { DecompositionLevels = -1 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Jpeg2000Encoder { DecompositionLevels = 33 });
+        Assert.Equal(32, new Jpeg2000Encoder { DecompositionLevels = 32 }.DecompositionLevels);
+        Assert.Throws<ArgumentNullException>(() => new Jpeg2000Encoder { QualityLayers = null! });
+        Assert.Throws<ArgumentNullException>(() => new Jpeg2000Encoder { QualityLayers = [null!] });
+        Assert.Throws<ArgumentException>(() => new Jpeg2000Encoder { QualityLayers = [Jpeg2000QualityLayer.Complete, Jpeg2000QualityLayer.FromSize(100)] });
+        Assert.Throws<ArgumentException>(() => new Jpeg2000Encoder { QualityLayers = Enumerable.Repeat(Jpeg2000QualityLayer.FromSize(100), 65536).ToArray() });
+        Assert.Throws<ArgumentOutOfRangeException>(() => Jpeg2000QualityLayer.FromSize(0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Jpeg2000QualityLayer.FromBitsPerPixel(0));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Jpeg2000QualityLayer.FromBitsPerPixel(double.NaN));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Jpeg2000QualityLayer.FromBitsPerPixel(double.PositiveInfinity));
+
+        // The list is copied
+        var layers = new List<Jpeg2000QualityLayer> { Jpeg2000QualityLayer.FromSize(100) };
+        var encoder = new Jpeg2000Encoder { QualityLayers = layers };
+        layers.Add(Jpeg2000QualityLayer.Complete);
+        Assert.HasCount(1, encoder.QualityLayers);
+        Assert.Equal((100L, null, false), (encoder.QualityLayers[0].Size, encoder.QualityLayers[0].BitsPerPixel, encoder.QualityLayers[0].IsComplete));
+        Assert.Equal((null, 0.5, false), (Jpeg2000QualityLayer.FromBitsPerPixel(0.5).Size, Jpeg2000QualityLayer.FromBitsPerPixel(0.5).BitsPerPixel, Jpeg2000QualityLayer.FromBitsPerPixel(0.5).IsComplete));
+        Assert.True(Jpeg2000QualityLayer.Complete.IsComplete);
     }
 
     /// <summary>
@@ -584,6 +613,193 @@ public sealed class Jpeg2000EncoderTests
     }
 
     /// <summary>
+    /// Tiles that divide the image or whose last column and row are cut (down to one sample, where every resolution level
+    /// above the lowest is empty), three layers whose last one holds every coding pass, in every progression order: the
+    /// headers say so, each tile is one tile-part, and the samples are those of the image.
+    /// </summary>
+    [Theory]
+    [InlineData(Jpeg2000ProgressionOrder.Lrcp)]
+    [InlineData(Jpeg2000ProgressionOrder.Rlcp)]
+    [InlineData(Jpeg2000ProgressionOrder.Rpcl)]
+    [InlineData(Jpeg2000ProgressionOrder.Pcrl)]
+    [InlineData(Jpeg2000ProgressionOrder.Cprl)]
+    public void TilesLayersAndProgressionOrdersRoundTripExactly(Jpeg2000ProgressionOrder order)
+    {
+        foreach (var (width, height, tileWidth, tileHeight) in new[] { (300, 230, 0, 0), (300, 230, 100, 115), (300, 230, 64, 40), (130, 129, 129, 128), (70, 1, 16, 0), (1, 1, 1, 1) })
+        {
+            using var source = CreateImage(width, height, seed: width + tileWidth + (int)order);
+            var encoder = new Jpeg2000Encoder
+            {
+                ProgressionOrder = order,
+                TileWidth = tileWidth,
+                TileHeight = tileHeight,
+                QualityLayers = [Jpeg2000QualityLayer.FromBitsPerPixel(0.5), Jpeg2000QualityLayer.FromBitsPerPixel(2), Jpeg2000QualityLayer.Complete],
+            };
+            var data = Save(source, encoder);
+            var context = $"{order} {width}x{height} in tiles of {tileWidth}x{tileHeight}";
+
+            var reference = ReferenceJpeg2000.Parse(data);
+            var expectedTileWidth = tileWidth == 0 ? width : tileWidth;
+            var expectedTileHeight = tileHeight == 0 ? height : tileHeight;
+            var tileCount = ((width + expectedTileWidth - 1) / expectedTileWidth) * ((height + expectedTileHeight - 1) / expectedTileHeight);
+            Assert.Equal(((int)order, 3), (reference.ProgressionOrder, reference.LayerCount));
+            Assert.Equal((expectedTileWidth, expectedTileHeight, tileCount), (reference.TileWidth, reference.TileHeight, reference.TileCount));
+            Assert.Equal(Enumerable.Range(0, tileCount), reference.TileParts.Select(part => part.Tile));
+            Assert.All(reference.TileParts, part => Assert.Equal((0, 1), (part.Part, part.PartCount)));
+
+            using var decoded = Image.Load<Rgba32>(data);
+            Assert.True(GetPixels(source.Frames[0]).AsSpan().SequenceEqual(GetPixels(decoded.Frames[0])), $"{context}: the decoded samples differ.");
+        }
+    }
+
+    [Fact]
+    public void ADefaultEncoderAndACompleteLayerWriteTheSameBytes()
+    {
+        using var source = CreateLandscape();
+        Assert.Equal(Save(source, new Jpeg2000Encoder()), Save(source, new Jpeg2000Encoder { QualityLayers = [Jpeg2000QualityLayer.Complete] }));
+
+        // A target that every coding pass fits in keeps them all
+        var lossy = new Jpeg2000Encoder { Compression = Jpeg2000Compression.Lossy };
+        Assert.Equal(Save(source, lossy), Save(source, new Jpeg2000Encoder { Compression = Jpeg2000Compression.Lossy, QualityLayers = [Jpeg2000QualityLayer.FromSize(10_000_000)] }));
+    }
+
+    /// <summary>
+    /// A size or a number of bits per pixel is an upper bound of the output that the rate control nearly reaches: the
+    /// truncation points of the code-blocks are a few bytes apart. A larger target leaves a smaller error. A target that
+    /// the headers and the empty packets exceed gives them alone.
+    /// </summary>
+    [Theory]
+    [InlineData(Jpeg2000Compression.Lossy, Jpeg2000Container.Jp2)]
+    [InlineData(Jpeg2000Compression.Lossy, Jpeg2000Container.Codestream)]
+    [InlineData(Jpeg2000Compression.Lossless, Jpeg2000Container.Jp2)]
+    public void OutputsFitTheirTargets(Jpeg2000Compression compression, Jpeg2000Container container)
+    {
+        using var source = CreateLandscape();
+        var expected = GetBytes(source, PixelFormat.Rgb24);
+        var previousError = double.MaxValue;
+        foreach (var target in new[] { 1_500, 4_000, 9_000, 20_000 })
+        {
+            foreach (var layer in new[] { Jpeg2000QualityLayer.FromSize(target), Jpeg2000QualityLayer.FromBitsPerPixel(target * 8.0 / (source.Width * source.Height)) })
+            {
+                var data = Save(source, new Jpeg2000Encoder { Compression = compression, Quality = 100, Container = container, QualityLayers = [layer] });
+                Assert.InRange(data.Length, target * 97 / 100, target);
+                using var decoded = Image.Load(data);
+                var error = GetRootMeanSquareError(expected, GetBytes(decoded, PixelFormat.Rgb24));
+                if (layer.Size is not null)
+                {
+                    Assert.True(error < previousError, $"{compression}, {target} bytes: error {error} after {previousError}.");
+                    previousError = error;
+                }
+            }
+        }
+
+        var tiny = Save(source, new Jpeg2000Encoder { Compression = compression, Container = container, QualityLayers = [Jpeg2000QualityLayer.FromSize(10)] });
+        Assert.InRange(tiny.Length, 11, 400);
+        using var empty = Image.Load(tiny);
+        Assert.Equal((source.Width, source.Height), (empty.Width, empty.Height));
+    }
+
+    /// <summary>
+    /// The layers of an LRCP output follow each other: the packets of the first layers are the start of the codestream,
+    /// whose cumulative length up to each layer fits its target, and each layer adds coding passes.
+    /// </summary>
+    [Fact]
+    public void EachLayerFitsItsTarget()
+    {
+        using var source = CreateLandscape();
+        int[] targets = [1_000, 3_000, 8_000, 20_000];
+        var data = Save(source, new Jpeg2000Encoder { Compression = Jpeg2000Compression.Lossy, Quality = 100, Container = Jpeg2000Container.Codestream, QualityLayers = [.. targets.Select(target => Jpeg2000QualityLayer.FromSize(target))] });
+        var reference = ReferenceJpeg2000.Parse(data);
+        Assert.Equal(4, reference.LayerCount);
+
+        // The packets of one tile in the LRCP order: with five levels and three components, 18 packets a layer. Each layer
+        // ends where its packets end; the header of a packet gives the length of its body
+        var lengths = GetPacketLengths(data, reference.TileParts[0], packetCount: 4 * 18, componentCount: 3, levels: 5);
+        var end = reference.TileParts[0].Offset + Jpeg2000HeaderLength;
+        for (var layer = 0; layer < targets.Length; layer++)
+        {
+            end += lengths.Skip(layer * 18).Take(18).Sum();
+            Assert.InRange(end + 2, targets[layer] * 9 / 10, targets[layer]);
+        }
+
+        Assert.Equal(data.Length, end + 2);
+    }
+
+    [Theory]
+    [InlineData(0, 0, 0)]
+    [InlineData(1, 0, 1)]
+    [InlineData(5, 0, 5)]
+    [InlineData(7, 0, 7)]
+    [InlineData(8, 0, 7)]
+    [InlineData(32, 0, 7)]
+    [InlineData(32, 64, 6)]
+    public void DecompositionLevelsAreLimitedByTheSmallerSideOfATile(int levels, int tileSize, int expected)
+    {
+        // The smaller side, 230 pixels, has 7 levels of at least one pixel
+        using var source = CreateImage(300, 230, seed: levels + tileSize);
+        foreach (var compression in new[] { Jpeg2000Compression.Lossless, Jpeg2000Compression.Lossy })
+        {
+            var data = Save(source, new Jpeg2000Encoder { Compression = compression, DecompositionLevels = levels, TileWidth = tileSize, TileHeight = tileSize });
+            Assert.All(ReferenceJpeg2000.Parse(data).CodingStyles, style => Assert.Equal(expected, style.DecompositionLevels));
+            using var decoded = Image.Load<Rgba32>(data);
+            var error = GetRootMeanSquareError(GetBytes(source, PixelFormat.Rgba32), GetBytes(decoded, PixelFormat.Rgba32));
+            Assert.True(compression == Jpeg2000Compression.Lossless ? error == 0 : error < 6, $"{compression}, {levels} levels: error {error}.");
+        }
+    }
+
+    /// <summary>
+    /// The encoder holds the coefficients of one tile at a time: with tiles of 128 by 128, the peak of its live allocations
+    /// is the pixels of the image and the coded bytes plus a small plane, instead of a plane of the whole image. Layers add
+    /// a record of each coding pass of each code-block (about 2 MB here, for 3,000 code-blocks), less than a plane.
+    /// </summary>
+    [Fact]
+    public void TilesBoundTheWorkingMemory()
+    {
+        using var created = CreateImage(1024, 768, seed: 3);
+        using var source = Import(GetBytes(created, PixelFormat.Rgba32), 1024, 768, PixelFormat.Rgba32, new ImageConfiguration { MaxDegreeOfParallelism = 1 });
+        var whole = MeasurePeak(new Jpeg2000Encoder());
+        var tiled = MeasurePeak(new Jpeg2000Encoder { TileWidth = 128, TileHeight = 128 });
+        var layered = MeasurePeak(new Jpeg2000Encoder { TileWidth = 128, TileHeight = 128, QualityLayers = [Jpeg2000QualityLayer.FromBitsPerPixel(1), Jpeg2000QualityLayer.Complete] });
+
+        // The plane of the whole image alone is 1024 * 768 * 4 bytes
+        Assert.True(whole - tiled > 2_500_000, $"Whole image: {whole} bytes; tiles: {tiled} bytes.");
+        Assert.True(layered - tiled < 1024 * 768 * 4, $"Tiles: {tiled} bytes; with layers: {layered} bytes.");
+
+        long MeasurePeak(Jpeg2000Encoder encoder)
+        {
+            using var tracking = new Internals.AllocationTracking();
+            using var stream = new MemoryStream();
+            source.Save(stream, encoder);
+            return tracking.Scopes.Max(static scope => scope.GetDiagnostics().PeakLiveBytes);
+        }
+    }
+
+    [Fact]
+    public void AnImageHasAtMost65535Tiles()
+    {
+        using var image = new Image<Gray8>(256, 257);
+        Assert.Throws<ArgumentException>(() => Save(image, new Jpeg2000Encoder { TileWidth = 1, TileHeight = 1 }));
+        Assert.NotEmpty(Save(image, new Jpeg2000Encoder { TileWidth = 1, TileHeight = 256 }));
+    }
+
+    [Theory]
+    [InlineData(Jpeg2000Compression.Lossless, Jpeg2000ProgressionOrder.Rpcl)]
+    [InlineData(Jpeg2000Compression.Lossy, Jpeg2000ProgressionOrder.Lrcp)]
+    public void TiledAndLayeredFilesWrittenByWorkersAreTheFilesOfOneWorker(Jpeg2000Compression compression, Jpeg2000ProgressionOrder order)
+    {
+        var encoder = new Jpeg2000Encoder { Compression = compression, ProgressionOrder = order, TileWidth = 200, TileHeight = 150, QualityLayers = [Jpeg2000QualityLayer.FromBitsPerPixel(0.5), Jpeg2000QualityLayer.FromBitsPerPixel(3)] };
+        using var source = CreateImage(450, 300, seed: 11);
+        var bytes = GetBytes(source, PixelFormat.Rgba32);
+        using var single = Import(bytes, 450, 300, PixelFormat.Rgba32, new ImageConfiguration { MaxDegreeOfParallelism = 1 });
+        var expected = Save(single, encoder);
+        foreach (var workers in (int[])[2, 16])
+        {
+            using var copy = Import(bytes, 450, 300, PixelFormat.Rgba32, new ImageConfiguration { MaxDegreeOfParallelism = workers });
+            Assert.True(expected.AsSpan().SequenceEqual(Save(copy, encoder)), $"{compression} {order}: {workers} workers write other bytes.");
+        }
+    }
+
+    /// <summary>
     /// The working memory of every worker is charged before any code-block is coded: a limit that the pixels of the image fit
     /// in, and the plane of the encoder does not, fails the same way.
     /// </summary>
@@ -597,6 +813,101 @@ public sealed class Jpeg2000EncoderTests
             using var image = Import(bytes, 300, 230, PixelFormat.Rgba32, new ImageConfiguration { MaxDegreeOfParallelism = workers, Limits = new ImageResourceLimits { MaxLiveAllocationBytes = 340_000 } });
             Assert.Equal(ImageResourceLimitKind.LiveAllocationBytes, Assert.Throws<ImageResourceLimitException>(() => Save(image, new Jpeg2000Encoder())).Kind);
         }
+    }
+
+    private const int Jpeg2000HeaderLength = 14;
+
+    private static double GetRootMeanSquareError(byte[] expected, byte[] actual)
+    {
+        var sum = 0.0;
+        for (var i = 0; i < expected.Length; i++)
+        {
+            sum += (expected[i] - actual[i]) * (expected[i] - actual[i]);
+        }
+
+        return Math.Sqrt(sum / expected.Length);
+    }
+
+    /// <summary>
+    /// Reads the packet headers of a tile-part written without precincts or code-block styles and returns the length of each
+    /// packet, header and body: the packet headers are read with the tag trees of B.10.2 and the length rules of B.10.7.
+    /// </summary>
+    private static List<int> GetPacketLengths(byte[] data, ReferenceJpeg2000TilePart tilePart, int packetCount, int componentCount, int levels)
+    {
+        var scope = new AllocationScope(new ImageResourceLimits());
+        var siz = new Jpeg2000Siz(0, 256, 192, 0, 0, 256, 192, 0, 0, Enumerable.Repeat(new Jpeg2000ComponentSize(8, IsSigned: false, 1, 1), componentCount).ToArray());
+        var headers = new Jpeg2000HeaderSet(componentCount)
+        {
+            CodingDefaults = new Jpeg2000CodingDefaults(mayUseSop: false, usesEph: false, Jpeg2000CodingDefaults.ProgressionLrcp, layers: packetCount / ((levels + 1) * componentCount), usesComponentTransform: true, new Jpeg2000CodingStyle(levels, 6, 6, codeBlockStyle: 0, isReversible: false, precinctSizes: null)),
+            Quantization = new Jpeg2000Quantization(Jpeg2000Quantization.StyleExpounded, 2, new byte[(3 * levels) + 1], new ushort[(3 * levels) + 1]),
+        };
+        var coding = Jpeg2000TileCoding.Resolve(siz, headers, tile: null, capabilities: null);
+        using var geometry = Jpeg2000TileGeometry.Create(scope, siz, coding, tileIndex: 0);
+        var body = data.AsSpan(tilePart.Offset + Jpeg2000HeaderLength, tilePart.Length - Jpeg2000HeaderLength).ToArray();
+        var lengths = new List<int>();
+        var position = 0;
+        var nodes = geometry.TagNodes;
+        for (var packet = 0; packet < packetCount; packet++)
+        {
+            var layer = packet / ((levels + 1) * componentCount);
+            var resolution = packet / componentCount % (levels + 1);
+            var component = packet % componentCount;
+            ref readonly var level = ref geometry.Resolutions[geometry.Components[component].FirstResolution + resolution];
+            var start = position;
+            var reader = new Jpeg2000PacketBitReader(body, position);
+            var bodyLength = 0;
+            if (reader.ReadBit() != 0)
+            {
+                for (var b = 0; b < level.BandCount; b++)
+                {
+                    ref readonly var precinctBand = ref geometry.PrecinctBands[level.FirstPrecinctBand + b];
+                    ref readonly var band = ref geometry.Bands[level.FirstBand + b];
+                    var inclusion = nodes.Slice(precinctBand.InclusionTree, precinctBand.TreeLength);
+                    var zero = nodes.Slice(precinctBand.ZeroBitPlaneTree, precinctBand.TreeLength);
+                    for (var by = 0; by < precinctBand.BlocksHigh; by++)
+                    {
+                        for (var bx = 0; bx < precinctBand.BlocksWide; bx++)
+                        {
+                            ref var block = ref geometry.Blocks[band.FirstBlock + ((precinctBand.BlockY + by) * band.BlocksWide) + precinctBand.BlockX + bx];
+                            if (block.Included != 0)
+                            {
+                                if (reader.ReadBit() == 0)
+                                    continue;
+                            }
+                            else
+                            {
+                                if (!Jpeg2000TagTree.IsLessThan(inclusion, precinctBand.BlocksWide, precinctBand.BlocksHigh, bx, by, layer + 1, ref reader))
+                                    continue;
+
+                                var threshold = 1;
+                                while (!Jpeg2000TagTree.IsLessThan(zero, precinctBand.BlocksWide, precinctBand.BlocksHigh, bx, by, threshold, ref reader))
+                                {
+                                    threshold++;
+                                }
+
+                                block.Included = 1;
+                                block.LengthBits = 3;
+                            }
+
+                            // Table B.4, then B.10.7.1
+                            var passes = reader.ReadBit() == 0 ? 1 : reader.ReadBit() == 0 ? 2 : reader.ReadBits(2) is var two && two < 3 ? 3 + two : reader.ReadBits(5) is var five && five < 31 ? 6 + five : 37 + reader.ReadBits(7);
+                            while (reader.ReadBit() != 0)
+                            {
+                                block.LengthBits++;
+                            }
+
+                            bodyLength += reader.ReadBits(block.LengthBits + System.Numerics.BitOperations.Log2((uint)passes));
+                        }
+                    }
+                }
+            }
+
+            position = reader.Align() + bodyLength;
+            lengths.Add(position - start);
+        }
+
+        Assert.Equal(body.Length, position);
+        return lengths;
     }
 
     private static Image Import(byte[] bytes, int width, int height, PixelFormat format, ImageConfiguration configuration) => format switch

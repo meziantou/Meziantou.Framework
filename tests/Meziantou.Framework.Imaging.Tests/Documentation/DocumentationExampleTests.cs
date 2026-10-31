@@ -95,6 +95,52 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void SaveOptimizedAnimationKeepsTheDisplayedFrames()
+    {
+        // A square moves over a background: the frames after the first one only store the region that changes
+        var input = GetPath("scene.apng");
+        using (var scene = new Image<Rgba32>(64, 48, new Rgba32(20, 140, 60)))
+        {
+            for (var i = 0; i < 6; i++)
+            {
+                var frame = i == 0 ? scene.Frames[0] : scene.AppendFrame(scene.Frames[0]);
+                frame.Metadata.Duration = new FrameDuration(i + 1, 20);
+                frame.ProcessPixelRows(pixels =>
+                {
+                    for (var y = 10; y < 18; y++)
+                    {
+                        pixels.GetRowSpan(y).Slice(i * 8, 8).Fill(Blue);
+                    }
+                });
+            }
+
+            scene.Animation!.TotalPlays = 2;
+            scene.Save(input);
+        }
+
+        var (gifPath, apngPath, webpPath) = (GetPath("optimized.gif"), GetPath("optimized.apng"), GetPath("optimized.webp"));
+        Examples.SaveOptimizedAnimation(input, gifPath, apngPath, webpPath);
+
+        using var source = Image.Load<Rgba32>(input);
+        foreach (var (path, full) in new (FullPath, ImageEncoder)[] { (gifPath, new GifEncoder()), (apngPath, new PngEncoder()), (webpPath, new WebPEncoder()) })
+        {
+            using var optimized = Image.Load<Rgba32>(path);
+            Assert.Equal(source.Frames.Count, optimized.Frames.Count);
+            Assert.Equal(2, optimized.Animation!.TotalPlays);
+            for (var i = 0; i < source.Frames.Count; i++)
+            {
+                Assert.Equal(source.Frames[i].Metadata.Duration, optimized.Frames[i].Metadata.Duration);
+                Assert.Equal(source.Frames[i][i * 8, 10], optimized.Frames[i][i * 8, 10]);
+                Assert.Equal(source.Frames[i][63, 47], optimized.Frames[i][63, 47]);
+            }
+
+            var fullPath = GetPath("full" + path.Extension);
+            source.Save(fullPath, full);
+            Assert.True(new FileInfo(path).Length < new FileInfo(fullPath).Length, $"{path.Name}: {new FileInfo(path).Length} bytes, {new FileInfo(fullPath).Length} with full-canvas frames");
+        }
+    }
+
+    [Fact]
     public void ResizeAnimationResizesEveryFrameAndKeepsTiming()
     {
         var (_, gifPath) = BuildAnimation();
@@ -1142,6 +1188,54 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void SaveOptimizedJpegWritesTheSamePixelsInFewerBytes()
+    {
+        var source = GetPath("optimized-source.png");
+        using (var image = new Image<Rgb24>(40, 24))
+        {
+            image.Frames[0].ProcessPixelRows(pixels =>
+            {
+                for (var y = 0; y < pixels.Height; y++)
+                {
+                    var row = pixels.GetRowSpan(y);
+                    for (var x = 0; x < row.Length; x++)
+                    {
+                        row[x] = new Rgb24 { R = (byte)(x * 6), G = (byte)(y * 10), B = (byte)((x + y) * 4) };
+                    }
+                }
+            });
+            image.Save(source);
+        }
+
+        var output = GetPath("optimized.jpg");
+        Examples.SaveOptimizedJpeg(source, output);
+        var defaultPath = GetPath("default-tables.jpg");
+        using (var image = Image.Load<Rgb24>(source))
+        {
+            image.Save(defaultPath, new JpegEncoder { Quality = 85, ChromaSubsampling = JpegChromaSubsampling.Ratio420 });
+        }
+
+        // A restart interval of 3 MCUs (one row of 16x16 MCUs), so one RST0 marker between the two rows
+        var data = File.ReadAllBytes(output);
+        var defaultData = File.ReadAllBytes(defaultPath);
+        Assert.True(data.AsSpan().IndexOf([(byte)0xFF, (byte)0xDD, (byte)0x00, (byte)0x04, (byte)0x00, (byte)0x03]) > 0);
+        Assert.True(data.AsSpan().IndexOf([(byte)0xFF, (byte)0xD0]) > 0);
+        Assert.Equal(-1, defaultData.AsSpan().IndexOf([(byte)0xFF, (byte)0xDD]));
+        Assert.HasCountLessThan(defaultData.Length, data);
+
+        using var optimized = Image.Load<Rgb24>(output);
+        using var typical = Image.Load<Rgb24>(defaultPath);
+        Assert.Equal(new Size(40, 24), optimized.Size);
+        for (var y = 0; y < 24; y++)
+        {
+            for (var x = 0; x < 40; x++)
+            {
+                Assert.Equal(typical.Frames[0][x, y], optimized.Frames[0][x, y]);
+            }
+        }
+    }
+
+    [Fact]
     public void SaveWebPWritesALossyPhotoAndALosslessAnimation()
     {
         var (apngPath, _) = BuildAnimation();
@@ -1594,6 +1688,87 @@ public sealed class DocumentationExampleTests : IDisposable
 
         using var image = Image.Load<Rgb24>(output);
         Assert.Equal(new Size(64, 64), image.Size);
+    }
+
+    [Fact]
+    public void GradePhotoAppliesTheCurvesAndTheLookupTable()
+    {
+        var input = GetPath("photo.png");
+        using (var photo = new Image<Rgb24>(32, 32))
+        {
+            for (var y = 0; y < 32; y++)
+            {
+                for (var x = 0; x < 32; x++)
+                {
+                    photo.Frames[0][x, y] = new Rgb24((byte)(x * 8), (byte)(y * 8), 128);
+                }
+            }
+
+            photo.Save(input);
+        }
+
+        // A look that swaps red and blue: a lattice of 2 points per axis
+        var cube = GetPath("swap.cube");
+        File.WriteAllText(cube, "TITLE \"Swap\"\nLUT_3D_SIZE 2\n0 0 0\n0 0 1\n0 1 0\n0 1 1\n1 0 0\n1 0 1\n1 1 0\n1 1 1\n");
+
+        var output = GetPath("graded.png");
+        Examples.GradePhoto(input, cube, output);
+        using var image = Image.Load<Rgb24>(output);
+
+        // The look swaps red and blue: the mid blue of the photo becomes red, and its brightest red becomes blue
+        var corner = image.Frames[0][0, 0];
+        Assert.InRange(corner.R, 100, 200);
+        Assert.Equal(0, corner.G);
+        Assert.Equal(0, corner.B);
+        Assert.InRange(image.Frames[0][31, 0].B, 200, 255);
+        Assert.Equal(0, image.Frames[0][31, 0].G);
+    }
+
+    [Fact]
+    public void ExtractTextMakesTheTextWhiteOnBlack()
+    {
+        // A page lit from the right: the paper goes from 110 to 240, and lines of text are 90 levels darker
+        var input = GetPath("page.png");
+        using (var page = new Image<Rgb24>(160, 64))
+        {
+            for (var y = 0; y < 64; y++)
+            {
+                for (var x = 0; x < 160; x++)
+                {
+                    var paper = 110 + (x * 130 / 159);
+                    var text = y % 16 is >= 6 and < 10 && x % 6 < 3;
+                    var level = (byte)(text ? paper - 90 : paper);
+                    page.Frames[0][x, y] = new Rgb24(level, level, level);
+                }
+            }
+
+            page.Save(input);
+        }
+
+        var output = GetPath("text.png");
+        Examples.ExtractText(input, output);
+        using var image = Image.Load<Rgb24>(output);
+        Assert.Equal(new Rgb24(255, 255, 255), image.Frames[0][1, 7]);
+        Assert.Equal(new Rgb24(255, 255, 255), image.Frames[0][151, 8]);
+        Assert.Equal(new Rgb24(0, 0, 0), image.Frames[0][4, 1]);
+        Assert.Equal(new Rgb24(0, 0, 0), image.Frames[0][150, 2]);
+    }
+
+    [Fact]
+    public void StraightenDocumentGivesTheSizeOfThePage()
+    {
+        var input = GetPath("angle.png");
+        using (var photo = new Image<Rgb24>(64, 48, new Rgb24(60, 60, 60)))
+        {
+            photo.Save(input);
+        }
+
+        var output = GetPath("straight.png");
+        var size = Examples.StraightenDocument(input, output, new PointD(8, 6), new PointD(56, 10), new PointD(52, 42), new PointD(12, 40));
+        Assert.Equal(new Size(48, 34), size);
+        using var image = Image.Load<Rgb24>(output);
+        Assert.Equal(size, image.Size);
+        Assert.Equal(new Rgb24(60, 60, 60), image.Frames[0][24, 17]);
     }
 
     [Fact]

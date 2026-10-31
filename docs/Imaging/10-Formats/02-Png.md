@@ -126,7 +126,13 @@ optimization.
 ## Animations
 
 Every frame of an image is written as a full frame with new control data, so the delta rectangles and disposal methods
-of the source file never survive an edit. Delays are stored exactly by default: a duration that is not a fraction with
+of the source file never survive an edit. [OptimizeFrames](cref:Meziantou.Framework.Imaging.Formats.PngEncoder.OptimizeFrames) writes each frame after the first one as the
+rectangle that differs from the canvas it is drawn on instead, with the disposal of the previous frame (`NONE`,
+`BACKGROUND` or `PREVIOUS`) that gives the smallest rectangle, and `OVER` blending (its unchanged pixels transparent) when
+the layout has a transparent value and it gives the frame exactly; the layout, the filters and the compression level are
+those of the other settings, and palette indexes have 8 bits. The frames, their durations and the play count are the
+same; the frame data is kept until the next frame is given. [PngOptimization.MinimumSize](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.MinimumSize) always writes such rectangles,
+chosen by compressing the candidates. Delays are stored exactly by default: a duration that is not a fraction with
 16-bit numerator and denominator throws, unless [DurationRounding](cref:Meziantou.Framework.Imaging.Formats.PngEncoder.DurationRounding) is [RoundToNearest](cref:Meziantou.Framework.Imaging.Formats.FrameDurationRounding.RoundToNearest). A poster frame
 ([PosterFrame](cref:Meziantou.Framework.Imaging.Image.PosterFrame)) is written as the default image, which viewers that do not play APNG show.
 

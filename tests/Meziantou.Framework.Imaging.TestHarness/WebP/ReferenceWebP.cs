@@ -16,8 +16,11 @@ namespace Meziantou.Framework.Imaging.TestHarness.WebP;
 /// size. Lossless images and alpha planes are decoded with <see cref="ReferenceVp8L"/>; lossy (VP8) color is not decoded.
 /// </summary>
 /// <remarks>
-/// The reader has no compositor: <see cref="DecodeFrame"/> decodes a frame rectangle, which is the displayed frame only for
-/// full-canvas frames drawn without blending (the frames written by the library encoder).
+/// <see cref="DecodeFrame"/> decodes a frame rectangle, which is the displayed frame only for full-canvas frames drawn
+/// without blending (the frames written by the library encoder by default). <see cref="ComposeDisplayedFrames"/> composites
+/// the lossless frames of an animation (RFC 9649, section 2.7: a transparent black canvas, the frame rectangles, alpha
+/// blending, disposal to the background color, which it takes as transparent black like libwebp), and rejects a blended pixel
+/// that is neither fully opaque nor fully transparent, whose result depends on the rounding of a decoder.
 /// </remarks>
 public sealed class ReferenceWebP
 {
@@ -183,6 +186,49 @@ public sealed class ReferenceWebP
         }
 
         return RawPixelBuffer.Create(width, height, RawPixelLayout.Rgba8, rgba);
+    }
+
+    /// <summary>Composites the lossless frames of an animation into the displayed frames.</summary>
+    /// <returns>The displayed frames, straight RGBA.</returns>
+    /// <exception cref="NotSupportedException">A frame is lossy.</exception>
+    /// <exception cref="InvalidDataException">A blended pixel is translucent.</exception>
+    public IReadOnlyList<RawPixelBuffer> ComposeDisplayedFrames()
+    {
+        var canvas = new byte[Width * Height * 4];
+        var result = new List<RawPixelBuffer>(Frames.Count);
+        for (var i = 0; i < Frames.Count; i++)
+        {
+            var frame = Frames[i];
+            var pixels = DecodeFrame(i).Span;
+            for (var y = 0; y < frame.Height; y++)
+            {
+                for (var x = 0; x < frame.Width; x++)
+                {
+                    var source = pixels.Slice(((y * frame.Width) + x) * 4, 4);
+                    var destination = canvas.AsSpan((((frame.Y + y) * Width) + frame.X + x) * 4, 4);
+                    if (frame.AlphaBlend && source[3] != 255)
+                    {
+                        if (source[3] != 0)
+                            throw new InvalidDataException($"Frame {i} blends the translucent pixel ({frame.X + x}, {frame.Y + y}), whose result depends on the rounding of a decoder.");
+
+                        continue;
+                    }
+
+                    source.CopyTo(destination);
+                }
+            }
+
+            result.Add(RawPixelBuffer.Create(Width, Height, RawPixelLayout.Rgba8, canvas.ToArray()));
+            if (frame.DisposeToBackground)
+            {
+                for (var y = 0; y < frame.Height; y++)
+                {
+                    canvas.AsSpan((((frame.Y + y) * Width) + frame.X) * 4, frame.Width * 4).Clear();
+                }
+            }
+        }
+
+        return result;
     }
 
     /// <summary>Gets the VP8L alpha hint of a lossless frame.</summary>

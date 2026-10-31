@@ -599,4 +599,91 @@ public sealed class GeometryTests
         Assert.Equal(new RectangleD(13, 24, 0, 0), AffineTransform.CreateTranslation(10, 20).TransformBounds(new RectangleD(3, 4, 0, 0)));
         Assert.Equal(RectangleD.FromLTRB(-4, 1, -4, 5), AffineTransform.CreateRotation(90).TransformBounds(new RectangleD(1, 4, 4, 0)));
     }
+
+    #region CorrectPerspective_Document
+    [Fact]
+    public void CorrectPerspective_Document()
+    {
+        // A 32x24 page with a checkerboard of 4-pixel squares
+        using var page = new Image<Rgb24>(32, 24);
+        for (var y = 0; y < 24; y++)
+        {
+            for (var x = 0; x < 32; x++)
+            {
+                page.Frames[0][x, y] = (x / 4) % 2 == (y / 4) % 2 ? new Rgb24(250, 250, 240) : new Rgb24(20, 30, 90);
+            }
+        }
+
+        // Photographed at an angle on a gray desk: the corners of the page land on a quadrilateral of a 64x48 photo
+        var topLeft = new PointD(8, 6);
+        var topRight = new PointD(56, 10);
+        var bottomRight = new PointD(52, 42);
+        var bottomLeft = new PointD(12, 40);
+        using var photo = page.Clone();
+        photo.Transform(
+            ProjectiveTransform.CreateFromQuadrilateral(new RectangleD(0, 0, 32, 24), topLeft, topRight, bottomRight, bottomLeft),
+            new TransformOptions { CanvasMode = TransformCanvasMode.Explicit, CanvasSize = new Size(64, 48), BackgroundColor = new Rgba64(30000, 30000, 30000, 65535) });
+
+        // Seen from the front again: the quadrilateral becomes the whole image
+        photo.CorrectPerspective(topLeft, topRight, bottomRight, bottomLeft, new Size(32, 24), new TransformOptions { BackgroundColor = new Rgba64(30000, 30000, 30000, 65535) });
+
+        Assert.Equal(new Size(32, 24), photo.Size);
+
+        // The middle of every square has its color back, within the blur of the two resamplings
+        var largest = 0;
+        for (var y = 0; y < 24; y++)
+        {
+            for (var x = 0; x < 32; x++)
+            {
+                if (x % 4 is 1 or 2 && y % 4 is 1 or 2)
+                {
+                    largest = Math.Max(largest, Math.Abs(page.Frames[0][x, y].B - photo.Frames[0][x, y].B));
+                }
+            }
+        }
+
+        Assert.InRange(largest, 0, 16);
+    }
+    #endregion
+
+    [Theory]
+    [InlineData(ResamplingFilter.NearestNeighbor)]
+    [InlineData(ResamplingFilter.Bicubic)]
+    public void CorrectPerspective_OfAnUprightRectangle_IsACrop(ResamplingFilter filter)
+    {
+        using var image = new Image<Rgba32>(12, 10);
+        for (var y = 0; y < 10; y++)
+        {
+            for (var x = 0; x < 12; x++)
+            {
+                image.Frames[0][x, y] = new Rgba32((byte)(x * 20), (byte)(y * 25), (byte)((x * y) % 256), (byte)(255 - x));
+            }
+        }
+
+        using var expected = image.Clone();
+        expected.Crop(new Rectangle(2, 3, 8, 5));
+
+        // The default size is the size of the quadrilateral
+        image.CorrectPerspective(new PointD(2, 3), new PointD(10, 3), new PointD(10, 8), new PointD(2, 8), options: new TransformOptions { Filter = filter }, cancellationToken: TestContext.Current.CancellationToken);
+        TestImages.AssertSamePixels(expected, image);
+    }
+
+    [Fact]
+    public void CorrectPerspective_DefaultSize_AndInvalidArguments()
+    {
+        // The longer of the top and bottom edges (10 and 12) by the longer of the left and right edges (5 and 6)
+        using var image = new Image<Rgba32>(20, 20);
+        image.CorrectPerspective(new PointD(2, 2), new PointD(12, 2), new PointD(14, 8), new PointD(2, 7));
+        Assert.Equal(new Size(12, 6), image.Size);
+
+        Assert.Throws<ArgumentNullException>("image", () => ((Image)null!).CorrectPerspective(default, default, default, default));
+        Assert.Throws<ArgumentException>("size", () => image.CorrectPerspective(new PointD(0, 0), new PointD(5, 0), new PointD(5, 5), new PointD(0, 5), new Size(0, 3)));
+        Assert.Throws<ArgumentException>("topLeft", () => image.CorrectPerspective(new PointD(0, 0), new PointD(5, 5), new PointD(5, 0), new PointD(0, 5)));
+        Assert.Throws<ArgumentException>("topLeft", () => image.CorrectPerspective(new PointD(double.NaN, 0), new PointD(5, 0), new PointD(5, 5), new PointD(0, 5)));
+        Assert.Equal(new Size(12, 6), image.Size);
+
+        // A background color without alpha needs to be opaque
+        using var opaque = new Image<Rgb24>(10, 10);
+        Assert.Throws<UnsupportedImageFeatureException>(() => opaque.CorrectPerspective(new PointD(-2, 0), new PointD(5, 0), new PointD(5, 5), new PointD(0, 5)));
+    }
 }

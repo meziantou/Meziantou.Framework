@@ -6,10 +6,10 @@ namespace Meziantou.Framework.Imaging.TestHarness.Jpeg;
 /// <summary>
 /// A small reference reader for baseline and progressive JPEG files, written from ITU-T T.81 and JFIF 1.02 for encoder
 /// tests. It never uses the library under test. <see cref="Parse"/> checks the marker structure strictly: SOI first; marker
-/// segments with exact lengths and no fill bytes; only APPn, COM, DQT, DHT and one SOF0 or SOF2 before the first SOS; 8-bit
-/// DQT tables with nonzero values; Huffman tables with consistent code counts; an 8-bit frame with 1 or 3 components whose
-/// sampling factors are 1 to 4 and at most 10 blocks per MCU; entropy-coded data without restart markers; EOI last with
-/// nothing after it. A baseline file has at most two DC and two AC Huffman tables and one scan coding every component with
+/// segments with exact lengths and no fill bytes; only APPn, COM, DQT, DHT, at most one DRI and one SOF0 or SOF2 before the
+/// first SOS; 8-bit DQT tables with nonzero values; Huffman tables with consistent code counts; an 8-bit frame with 1 or 3
+/// components whose sampling factors are 1 to 4 and at most 10 blocks per MCU; entropy-coded data with restart markers only
+/// after a DRI segment of a nonzero interval; EOI last with nothing after it. A baseline file has at most two DC and two AC Huffman tables and one scan coding every component with
 /// Ss = 0, Se = 63, Ah = Al = 0 and defined tables.
 /// </summary>
 /// <remarks>
@@ -24,7 +24,10 @@ namespace Meziantou.Framework.Imaging.TestHarness.Jpeg;
 /// <para>
 /// <see cref="DecodeCoefficients"/> decodes the entropy-coded segment (its own canonical Huffman decoding, DC prediction,
 /// run-length AC decoding) to the quantized coefficients and requires the data to end exactly after the last MCU, padded
-/// with 1-bits to the byte boundary (T.81 F.1.2.3). <see cref="DecodePlanes"/> applies the direct (non-separable) 2-D
+/// with 1-bits to the byte boundary (T.81 F.1.2.3). With a restart interval, every interval of a scan but the last (the MCUs
+/// counted from the start of the scan) must end the same way and be followed by the next marker of RST0 to RST7, and
+/// nothing else: no marker inside an interval, the DC predictions start again from 0, and no end-of-band run crosses a
+/// marker (T.81 F.1.2.3, G.1.2.2). <see cref="DecodePlanes"/> applies the direct (non-separable) 2-D
 /// inverse DCT of T.81 A.3.3 in double precision with <see cref="Math.Cos"/>, the level shift and rounding to nearest.
 /// <see cref="DecodePixels"/> upsamples chroma by replication (nearest sample, the simplest reconstruction) and applies
 /// the JFIF YCbCr to RGB equations in double precision. These choices are deliberately the plainest reading of the
@@ -41,6 +44,7 @@ public sealed class ReferenceJpeg
     private const byte MarkerSof0 = 0xC0;
     private const byte MarkerSof2 = 0xC2;
     private const byte MarkerCom = 0xFE;
+    private const byte MarkerDri = 0xDD;
 
     private static readonly int[] ZigZag =
     [
@@ -55,11 +59,12 @@ public sealed class ReferenceJpeg
     private readonly HuffmanTable?[] _acTables;
     private readonly IReadOnlyList<ScanData> _scans;
 
-    private ReferenceJpeg(int width, int height, bool progressive, IReadOnlyList<ReferenceJpegComponent> components, IReadOnlyList<ReferenceJpegSegment> segments, int[]?[] quantization, HuffmanTable?[] dcTables, HuffmanTable?[] acTables, IReadOnlyList<ScanData> scans)
+    private ReferenceJpeg(int width, int height, bool progressive, int restartInterval, IReadOnlyList<ReferenceJpegComponent> components, IReadOnlyList<ReferenceJpegSegment> segments, int[]?[] quantization, HuffmanTable?[] dcTables, HuffmanTable?[] acTables, IReadOnlyList<ScanData> scans)
     {
         Width = width;
         Height = height;
         IsProgressive = progressive;
+        RestartInterval = restartInterval;
         Components = components;
         Segments = segments;
         _quantization = quantization;
@@ -79,6 +84,9 @@ public sealed class ReferenceJpeg
 
     /// <summary>Gets a value indicating whether the frame is progressive (SOF2) rather than baseline (SOF0).</summary>
     public bool IsProgressive { get; }
+
+    /// <summary>Gets the restart interval of the DRI segment, in MCUs, or 0 without restart markers.</summary>
+    public int RestartInterval { get; }
 
     /// <summary>
     /// Gets the frame components in frame order, with the Huffman tables selected by the scan (for a progressive file, by
@@ -135,6 +143,7 @@ public sealed class ReferenceJpeg
         var acTables = new HuffmanTable?[4];
         (int Id, int H, int V, int Tq)[]? frame = null;
         var progressive = false;
+        int? restartInterval = null;
         var scans = new List<ScanData>();
 
         // Progressive: the Al of the last scan of each coefficient of each component, or -1 before its first scan
@@ -164,7 +173,7 @@ public sealed class ReferenceJpeg
                     }
                 }
 
-                return new ReferenceJpeg(width, height, progressive, GetComponents(frame!, scans), segments, quantization, dcTables, acTables, scans);
+                return new ReferenceJpeg(width, height, progressive, restartInterval ?? 0, GetComponents(frame!, scans), segments, quantization, dcTables, acTables, scans);
             }
 
             if (marker is MarkerEoi or MarkerSoi or (>= 0xD0 and <= 0xD7))
@@ -195,6 +204,13 @@ public sealed class ReferenceJpeg
                     ParseHuffman(payload.Span, dcTables, acTables);
                     break;
 
+                case MarkerDri:
+                    if (restartInterval is not null || payload.Length != 2)
+                        throw new InvalidDataException("A file written by the encoder has at most one DRI segment, of 4 bytes.");
+
+                    restartInterval = BinaryPrimitives.ReadUInt16BigEndian(payload.Span);
+                    break;
+
                 case MarkerSof0 or MarkerSof2:
                     if (frame is not null)
                         throw new InvalidDataException("Several frame headers.");
@@ -222,7 +238,8 @@ public sealed class ReferenceJpeg
                         ? ParseScan(payload.Span, frame, quantization, dcTables, acTables)
                         : ParseProgressiveScan(payload.Span, frame, quantization, dcTables, acTables, approximation);
 
-                    // Entropy-coded data: every 0xFF is followed by a stuffed 0x00, up to the next marker
+                    // Entropy-coded data: every 0xFF is followed by a stuffed 0x00 or, with a restart interval, is a restart
+                    // marker (checked when the scan is decoded), up to the next marker
                     var start = offset;
                     while (true)
                     {
@@ -234,7 +251,7 @@ public sealed class ReferenceJpeg
                         }
 
                         Require(span, offset, 2, "entropy-coded data");
-                        if (span[offset + 1] == 0x00)
+                        if (span[offset + 1] == 0x00 || (restartInterval > 0 && span[offset + 1] is >= 0xD0 and <= 0xD7))
                         {
                             offset += 2;
                             continue;
@@ -619,6 +636,7 @@ public sealed class ReferenceJpeg
         var reader = new BitReader(scan.Entropy.Span);
         var predictions = new int[Components.Count];
         var endOfBandRun = 0;
+        var mcu = 0;
         if (header.Components.Count == 1)
         {
             var selection = header.Components[0];
@@ -629,6 +647,7 @@ public sealed class ReferenceJpeg
             {
                 for (var bx = 0; bx < blocksX; bx++)
                 {
+                    Restart(ref reader, mcu++, predictions, ref endOfBandRun);
                     DecodeBlock(ref reader, scan, selection, predictions, ref endOfBandRun, data[c].AsSpan(((by * sizes[c].BlocksX) + bx) * 64, 64));
                 }
             }
@@ -639,6 +658,7 @@ public sealed class ReferenceJpeg
             {
                 for (var mx = 0; mx < McusX; mx++)
                 {
+                    Restart(ref reader, mcu++, predictions, ref endOfBandRun);
                     foreach (var selection in header.Components)
                     {
                         var c = selection.Index;
@@ -660,6 +680,19 @@ public sealed class ReferenceJpeg
             throw new InvalidDataException("An end-of-band run passes the last block of its scan.");
 
         reader.EnsureEndPadding();
+    }
+
+    /// <summary>Reads the restart marker before an MCU that starts a restart interval, and starts the decoding again.</summary>
+    private void Restart(ref BitReader reader, int mcu, int[] predictions, ref int endOfBandRun)
+    {
+        if (RestartInterval == 0 || mcu == 0 || mcu % RestartInterval != 0)
+            return;
+
+        if (endOfBandRun != 0)
+            throw new InvalidDataException(string.Create(CultureInfo.InvariantCulture, $"An end-of-band run passes the restart marker before the MCU {mcu}."));
+
+        reader.ReadRestartMarker(((mcu / RestartInterval) - 1) & 7);
+        Array.Clear(predictions);
     }
 
     private void DecodeBlock(ref BitReader reader, ScanData scan, ReferenceJpegScanComponent selection, int[] predictions, ref int endOfBandRun, Span<int> natural)
@@ -920,7 +953,11 @@ public sealed class ReferenceJpeg
                     _byte = _data[_offset++];
                     if (_byte == 0xFF)
                     {
-                        _offset++; // the stuffed 0x00 (validated by the parser)
+                        // The stuffed 0x00; the parser also let restart markers through
+                        if (_data[_offset] != 0x00)
+                            throw new InvalidDataException(string.Create(CultureInfo.InvariantCulture, $"A marker 0xFF{_data[_offset]:X2} is inside a restart interval or follows its end too early."));
+
+                        _offset++;
                     }
 
                     _bitsLeft = 8;
@@ -931,6 +968,20 @@ public sealed class ReferenceJpeg
             }
 
             return value;
+        }
+
+        /// <summary>Requires the end of an interval: the current byte padded with 1-bits, then the restart marker <c>RSTn</c>.</summary>
+        public void ReadRestartMarker(int number)
+        {
+            var mask = (1 << _bitsLeft) - 1;
+            if ((_byte & mask) != mask)
+                throw new InvalidDataException("The last entropy-coded byte of a restart interval is not padded with 1-bits.");
+
+            if (_offset + 2 > _data.Length || _data[_offset] != 0xFF || _data[_offset + 1] != 0xD0 + number)
+                throw new InvalidDataException(string.Create(CultureInfo.InvariantCulture, $"Expected the restart marker RST{number} at the end of an interval."));
+
+            _offset += 2;
+            _bitsLeft = 0;
         }
 
         public readonly void EnsureEndPadding()

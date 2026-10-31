@@ -100,6 +100,30 @@ combines two transformations: the first one is applied, then the next one. Combi
 
 ## Correct a perspective
 
+[CorrectPerspective](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.CorrectPerspective) straightens a document, a whiteboard or a painting photographed at an angle: give the four
+corners of the quadrilateral in the photo, in order around it, and they become the corners of the image. Without a size,
+the result is as wide as the longer of the top and bottom edges and as tall as the longer of the left and right edges:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_CorrectPerspective;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static Size StraightenDocument(string inputPath, string outputPath, PointD topLeft, PointD topRight, PointD bottomRight, PointD bottomLeft)
+{
+    using var photo = Image.Load(inputPath);
+
+    // The corners of the page in the photo, in order around it, become the corners of the image: the result is as
+    // wide as the longer of the top and bottom edges, and as tall as the longer of the left and right edges. A JPEG
+    // photo has no alpha: a corner outside the photo shows an opaque background
+    photo.CorrectPerspective(topLeft, topRight, bottomRight, bottomLeft, options: new TransformOptions { BackgroundColor = new Rgba64(65535, 65535, 65535, 65535) });
+    photo.Save(outputPath);
+    return photo.Size;
+}
+```
+<!-- endref -->
+
+The corners are in pixel coordinates, where the image covers `[0, width] x [0, height]`: the top-left corner of the
+top-left pixel is `(0, 0)` and its center `(0.5, 0.5)`. The filter, the background color (for corners outside the photo)
+and the working space come from [TransformOptions](cref:Meziantou.Framework.Imaging.TransformOptions); its canvas settings are not used.
+
 [Transform](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Transform) also applies a [ProjectiveTransform](cref:Meziantou.Framework.Imaging.ProjectiveTransform), the image seen in perspective.
 [ProjectiveTransform.CreateFromQuadrilateral](cref:Meziantou.Framework.Imaging.ProjectiveTransform.CreateFromQuadrilateral) maps a rectangle to four points, such as the corners of a page in a
 photo; its inverse maps the page back to a rectangle:

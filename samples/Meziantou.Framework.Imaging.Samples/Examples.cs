@@ -777,6 +777,21 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>Saves an animation whose frames store only the region that changes, as GIF, APNG and WebP.</summary>
+    #region Imaging_SaveOptimizedAnimation
+    public static void SaveOptimizedAnimation(string inputPath, string gifPath, string apngPath, string webpPath)
+    {
+        using var animation = Image.Load(inputPath);
+
+        // Each frame after the first one stores the region that differs from the canvas it is drawn on, with the
+        // blending and the disposal of the previous frame that reproduce it: the displayed frames, their durations and
+        // the play count are the same as with full-canvas frames
+        animation.Save(gifPath, new GifEncoder { OptimizeFrames = true });
+        animation.Save(apngPath, new PngEncoder { AnimationMode = PngAnimationMode.Animated, OptimizeFrames = true });
+        animation.Save(webpPath, new WebPEncoder { OptimizeFrames = true });
+    }
+    #endregion
+
     /// <summary>An animated cursor: an animation whose frames are cursor images with a hotspot, played forever.</summary>
     #region Imaging_AnimatedCursor
     public static Point WriteAndReadAnimatedCursor(string animationPath, string cursorPath)
@@ -826,6 +841,23 @@ internal static class Examples
             Quality = 85,
             Process = JpegEncodingProcess.Progressive,
             MetadataHandling = MetadataHandling.DiscardUnsupported,
+        });
+    }
+    #endregion
+
+    /// <summary>A baseline JPEG with Huffman tables computed from the image, and a restart marker before each MCU row.</summary>
+    #region Imaging_SaveOptimizedJpeg
+    public static void SaveOptimizedJpeg(string sourcePath, string jpegPath)
+    {
+        using var image = Image.Load<Rgb24>(sourcePath);
+        image.Save(jpegPath, new JpegEncoder
+        {
+            Quality = 85,
+            ChromaSubsampling = JpegChromaSubsampling.Ratio420,
+            OptimizeHuffmanTables = true,
+
+            // An MCU of 4:2:0 output covers 16x16 pixels
+            RestartInterval = (image.Width + 15) / 16,
         });
     }
     #endregion
@@ -946,6 +978,62 @@ internal static class Examples
 
         // The number of pixels at each luminance level, over every frame
         return image.ComputeHistogram(HistogramChannel.Luminance);
+    }
+    #endregion
+
+    /// <summary>A photo graded with tone curves, then with the color lookup table of a film look.</summary>
+    #region Imaging_ToneCurves
+    public static void GradePhoto(string inputPath, string cubePath, string outputPath)
+    {
+        using var image = Image.Load(inputPath);
+
+        // Levels clip the darkest and the brightest 4% of the levels and brighten the midtones; a gentle S curve through
+        // control points then adds contrast, in the same pass
+        var levels = ToneCurve.CreateLevels(inputBlack: 0.04, inputWhite: 0.96, gamma: 1.2);
+        var contrast = ToneCurve.CreateFromPoints(new PointD(0, 0), new PointD(0.25, 0.2), new PointD(0.75, 0.82), new PointD(1, 1));
+        image.ApplyToneCurve(levels.Then(contrast));
+
+        // A curve per channel warms the colors: more red, less blue
+        image.ApplyToneCurves(red: ToneCurve.CreateGamma(1.1), green: ToneCurve.Identity, blue: ToneCurve.CreateGamma(0.9));
+
+        // A look exported by a grading tool as a .cube file, interpolated between the points of its lattice
+        var look = CubeLut.Load(cubePath);
+        image.ApplyLut(look, LutInterpolation.Tetrahedral);
+        image.Save(outputPath);
+    }
+    #endregion
+
+    /// <summary>The dark text of a page lit unevenly, extracted with a black top-hat transform.</summary>
+    #region Imaging_Morphology
+    public static void ExtractText(string inputPath, string outputPath)
+    {
+        using var page = Image.Load(inputPath);
+        page.Grayscale();
+
+        // The closing by a disk wider than the strokes is the paper without its text; the black top-hat transform is
+        // their difference, so the text becomes bright on black whatever the lighting of the page
+        page.BlackHat(StructuringElement.CreateEllipse(5, 5));
+
+        // The 95th percentile of each 3x3 square, nearly its brightest sample, closes the small gaps of the strokes, and
+        // Otsu's threshold makes them white
+        page.PercentileFilter(1, 95);
+        page.Threshold();
+        page.Save(outputPath);
+    }
+    #endregion
+
+    /// <summary>A page photographed at an angle, seen from the front.</summary>
+    #region Imaging_CorrectPerspective
+    public static Size StraightenDocument(string inputPath, string outputPath, PointD topLeft, PointD topRight, PointD bottomRight, PointD bottomLeft)
+    {
+        using var photo = Image.Load(inputPath);
+
+        // The corners of the page in the photo, in order around it, become the corners of the image: the result is as
+        // wide as the longer of the top and bottom edges, and as tall as the longer of the left and right edges. A JPEG
+        // photo has no alpha: a corner outside the photo shows an opaque background
+        photo.CorrectPerspective(topLeft, topRight, bottomRight, bottomLeft, options: new TransformOptions { BackgroundColor = new Rgba64(65535, 65535, 65535, 65535) });
+        photo.Save(outputPath);
+        return photo.Size;
     }
     #endregion
 

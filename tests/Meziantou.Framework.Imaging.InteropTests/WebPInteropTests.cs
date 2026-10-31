@@ -8,6 +8,7 @@ using Meziantou.Framework.Imaging.TestHarness.ExternalTools;
 using Meziantou.Framework.Imaging.TestHarness.Fixtures;
 using Meziantou.Framework.Imaging.TestHarness.Golden;
 using Meziantou.Framework.Imaging.TestHarness.Pixels;
+using Meziantou.Framework.Imaging.Tests;
 
 namespace Meziantou.Framework.Imaging.InteropTests;
 
@@ -295,6 +296,74 @@ public sealed class WebPInteropTests
             }
         }
     }
+
+    public static TheoryData<string, bool> OptimizedFrameAnimations()
+    {
+        var data = new TheoryData<string, bool>();
+        foreach (var name in DeltaFrameAnimations.Names)
+        {
+            data.Add(name, false);
+            data.Add(name, true);
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(OptimizedFrameAnimations))]
+    public async Task OptimizedFramesAreComposedByLibWebP(string animation, bool lossy)
+    {
+        // Regions at even offsets, alpha blending of opaque pixels over the canvas, and disposal to the background color
+        var libwebp = await RequiredTools.LibWebPAsync();
+        using var image = DeltaFrameAnimations.Create(animation);
+        var encoder = new WebPEncoder { OptimizeFrames = true, Compression = lossy ? WebPCompression.Lossy : WebPCompression.Lossless };
+        var path = await SaveAsync(image, encoder, $"optimized-{animation}-{(lossy ? "lossy" : "lossless")}");
+        var info = await libwebp.GetInfoAsync(path, XunitCancellationToken);
+        Assert.Equal(image.Frames.Count, info.Frames.Count);
+        Assert.Equal(3, info.LoopCount);
+        Assert.Equal((image.Width, image.Height, 0, 0), (info.Frames[0].Width, info.Frames[0].Height, info.Frames[0].X, info.Frames[0].Y));
+        Assert.All(info.Frames, frame => Assert.True(frame.X % 2 == 0 && frame.Y % 2 == 0, $"frame at ({frame.X}, {frame.Y})"));
+        Assert.Equal(Enumerable.Range(1, image.Frames.Count).Select(i => 50 * i), info.Frames.Select(frame => frame.DurationMilliseconds));
+
+        using var decoded = Image.Load<Rgba32>(path);
+        var dumped = await libwebp.DumpAnimationAsync(path, XunitCancellationToken);
+        Assert.Equal(image.Frames.Count, dumped.Count);
+        for (var i = 0; i < image.Frames.Count; i++)
+        {
+            var source = DeltaFrameAnimations.GetPixels(image.Frames[i]);
+            if (lossy)
+            {
+                AssertVisibleWithin(ImageSnapshots.CaptureFrame(decoded.Frames[i]).Span, dumped[i].Rgba, maxError: 1, $"{animation} frame {i}: library vs anim_dump");
+                for (var p = 3; p < source.Length; p += 4)
+                {
+                    Assert.Equal(source[p], dumped[i].Rgba[p]);
+                }
+            }
+            else
+            {
+                Assert.Equal(source, dumped[i].Rgba);
+            }
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(DeltaFrameCases))]
+    public async Task OptimizedFramesAreComposedByAppleImageIO(string animation)
+    {
+        // Apple ImageIO exists only on macOS: skipped elsewhere locally; required (never skipped) in the CI interop job (macOS)
+        _ = RequiredTools.AppleImageIO();
+        using var image = DeltaFrameAnimations.Create(animation);
+        var path = await SaveAsync(image, new WebPEncoder { OptimizeFrames = true }, $"imageio-optimized-{animation}");
+        var decoded = await RequiredTools.DecodeWithAppleImageIOAsync(path, image.Width, image.Height, binaryAlpha: false);
+        Assert.Equal(image.Frames.Count, decoded.Count);
+        for (var i = 0; i < decoded.Count; i++)
+        {
+            var comparison = PixelBufferComparer.Compare(ImageSnapshots.CaptureFrame(image.Frames[i]).WithTransparentColorsCleared(), decoded[i], ComparisonPolicy.Exact, $"{animation} frame {i} decoded by Apple ImageIO");
+            Assert.True(comparison.IsMatch, comparison.Describe());
+        }
+    }
+
+    public static TheoryData<string> DeltaFrameCases => DeltaFrameAnimations.Cases;
 
     [Theory]
     [InlineData(false)]

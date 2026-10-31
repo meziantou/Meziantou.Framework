@@ -146,6 +146,26 @@ internal sealed class JpegProgressiveScanEncoder
         }
     }
 
+    /// <summary>
+    /// Ends a restart interval before the next MCU (T.81 G.1.2.2, F.1.2.3): writes the pending run of blocks, so that no
+    /// end-of-band run crosses the marker, then, when writing, completes the last byte with 1-bits and writes the RSTn
+    /// marker; the DC predictions start again from 0.
+    /// </summary>
+    /// <param name="number">The number of the marker, 0 to 7.</param>
+    /// <param name="destination">The destination, with <see cref="MaxBlockBytes"/> bytes available; unused when counting.</param>
+    /// <param name="position">The write position in <paramref name="destination"/>, advanced.</param>
+    public void Restart(int number, Span<byte> destination, ref int position)
+    {
+        FlushEndOfBandRun(GetTableIndex(_scan.FirstComponent), destination, ref position);
+        _predictions.AsSpan().Clear();
+        if (_counting)
+            return;
+
+        _bits.Pad(destination, ref position);
+        destination[position++] = 0xFF;
+        destination[position++] = (byte)(0xD0 + number);
+    }
+
     /// <summary>Gets a table built by the counting pass of the scan.</summary>
     public JpegHuffmanEncoder GetTable(int index) => _tables[index] ?? throw new InvalidOperationException("The Huffman table of the scan is not built.");
 

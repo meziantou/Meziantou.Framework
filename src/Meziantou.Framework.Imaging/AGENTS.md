@@ -97,7 +97,9 @@ rendering also changes the images of the pages (`DocumentationImageTests`).
   widen the others losslessly (`ImageWriterCore`, `ImageCollectionWriterCore`).
 - Processing: `Rgb48` has kernels of its own. The filtering kernels and the `Pixelate`/`OilPaint`/`Flatten` effects run
   `La16`, `La32` and `A8` through `ProcessingBridge` (an `Rgba32`/`Rgba64` copy of the frame, `Image.KernelPixelFormat`
-  for the plans and scratch sizes; `Flatten` rejects `A8`, which cannot hold the flattened colors), and drawing
+  for the plans and scratch sizes; `Flatten` rejects `A8`, which cannot hold the flattened colors), and so do the
+  morphological filters (`MorphologyFilter`; `TopHat` and `BlackHat` reject `A8`, whose alpha they keep). The tone
+  curves and lookup tables (`ColorLookup`) read every integer format natively through `ToneSamples`, and drawing
   composites them through `DrawingKernels.CompositeBridged`, their paints holding the gray level in the three colors. A
   new per-frame operation must handle them natively, go through the bridge, or reject them before any allocation.
 
@@ -213,6 +215,29 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   - The harness reader decodes every color type and bit depth to 16-bit RGBA and composites APNG frames
     (`ReferencePng.Canonical.cs`), rejecting any OVER pixel whose result depends on the rounding of a decoder; verify
     `MinimumSize` output with `OptimizedPngOutputVerifier`, never with `ApngOutputVerifier` (full-canvas frames only).
+- **Animation frame regions** (`OptimizeFrames` of `GifEncoder`, `PngEncoder` and `WebPEncoder`; `AnimationFrameDelta`,
+  the encoder side of `AnimationCompositor`). One helper keeps the displayed frame (and the canvas it was drawn on, for
+  `RestorePrevious` and for GIF), compares each frame with the canvases each disposal of the previous frame leaves, and
+  chooses the smallest region; each format declares what it can write (`AnimationDeltaRules`). Opt-in: the default
+  output of the three encoders keeps its full-canvas frames and its bytes. `PngOptimization.MinimumSize` has its own
+  comparison (it compresses the candidates) and ignores the setting. Keep these findings:
+  - The displayed frames, their number and their durations never change: an unchanged frame is a 1x1 region, never merged
+    into the previous one. The first frame (and the APNG poster) covers the canvas.
+  - OVER is only used where it is exact. WebP blending rounds translucent pixels in libwebp (`anim_dump`): only opaque
+    changed pixels are blended, the others replace the canvas ("do not blend"). APNG also blends a translucent pixel on a
+    fully transparent canvas pixel (`TranslucentOverTransparent`), as `MinimumSize` does.
+  - A GIF image cannot make a pixel transparent: the previous frame is written only once the next one is planned (from
+    the canvases, which hold alpha-reduced pixels before color reduction), so that its region can grow to cover the
+    pixels that become transparent (`EnlargePreviousRegion`). APNG keeps the compressed chunks of a frame in a private
+    buffer and writes its `fcTL` when the next frame chose its disposal; WebP patches the disposal bit of the previous
+    `ANMF` (animations need a seekable destination anyway).
+  - Apple ImageIO restores a GIF frame to background with the opaque background color, not transparent pixels, when the
+    image drawn next has no transparent entry: a frame that has transparent pixels always gets the transparent entry
+    (`GifOutputVerifier` checks it), even when its region has none.
+  - The regions of indexed APNG output have 8-bit indexes (FFmpeg misplaces packed pixels of a region, see above).
+  - The independent checks: `GifOutputVerifier` (regions and disposals with `OptimizeFrames`), `OptimizedPngOutputVerifier`,
+    `ReferenceWebP.ComposeDisplayedFrames` (lossless, rejects translucent blended pixels), and FFmpeg, libwebp and Apple
+    ImageIO in the interop tests (`DeltaFrameAnimations` holds the shared scenarios).
 - **Apple CgBI PNG** (`PngStructureParser.IsAppleCgbi`, `PngSampleFormat.ExpandCgbiBgra`). No specification describes
   it: Xcode's `pngcrush -iphone` writes it and Apple ImageIO (`sips`) is the reference. Its raw deflate datastream goes
   through the zlib inflater of the other files, behind a synthetic header and followed by the checksum of what it
@@ -1212,7 +1237,8 @@ thin public types over its `FontFace`.
   rented from the scope of the conversion (a scope of the default limits for `IccColorTransform`). The last stage of a
   16-bit conversion is still evaluated: its inputs are the doubles that come out of a matrix, not 65,536 values.
 - Default parallelism is one worker (`ImageConfiguration.MaxDegreeOfParallelism`). Only `Resize`, the transformations,
-  `Convolve`, the blurs (`GaussianBlur`, `BoxBlur`, `MedianBlur`), `Sharpen`, `DetectEdges`, the `Pixelate`, `OilPaint` and
+  `Convolve`, the blurs (`GaussianBlur`, `BoxBlur`, `MedianBlur`, and `PercentileFilter`, which shares the median's
+  plan), `Sharpen`, `DetectEdges`, the `Pixelate`, `OilPaint` and
   `Flatten` effects (`EffectScratch`), the `ImageSimilarity` metrics (SSIM, PSNR, SSIMULACRA 2, Butteraugli) and the
   codec work listed below are parallel, and their result must not depend on the worker count (`ParallelConvolutionTests`,
   `ImageSimilarityTests.Metrics_DoNotDependOnTheWorkerCount`: a frame needs 65,536 pixels to get several workers). Split

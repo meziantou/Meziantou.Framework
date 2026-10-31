@@ -1345,6 +1345,37 @@ public sealed class FontTests
     }
 
     [Fact]
+    public void TheFacesOfAFontCollectionAreLimited()
+    {
+        var boxes = FontSamples.Boxes().BuildTables();
+
+        // 1,024 faces load; one more is rejected before any face is read.
+        Assert.HasCount(1024, FontCollection.Load(FontBuilder.WriteCollection(Enumerable.Repeat(boxes, 1024).ToArray())));
+        var exception = Assert.Throws<InvalidImageContentException>(() => FontCollection.Load(FontBuilder.WriteCollection(Enumerable.Repeat(boxes, 1025).ToArray())));
+        Assert.Contains("1025 fonts", exception.Message, StringComparison.Ordinal);
+
+        // A count larger than the file is rejected without allocating the faces.
+        var data = FontBuilder.WriteCollection([boxes, FontSamples.Curves().BuildTables()]);
+        BinaryPrimitives.WriteInt32BigEndian(data.AsSpan(8), int.MaxValue);
+        exception = Assert.Throws<InvalidImageContentException>(() => FontCollection.Load(data));
+        Assert.Contains("at most 1024", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TheFacesOfAFontCollectionAtTheSameOffsetAreReadOnce()
+    {
+        var data = FontBuilder.WriteCollection([FontSamples.Boxes().BuildTables(), FontSamples.Curves().BuildTables(), FontSamples.Boxes().BuildTables()]);
+        data.AsSpan(12, 4).CopyTo(data.AsSpan(20));
+
+        var faces = Fonts.FontLoader.Load(data, new Fonts.PooledFontEnvironment(Fonts.FontResourceLimits.Default, 64 * 1024 * 1024));
+
+        Assert.HasCount(3, faces);
+        Assert.Same(faces[0], faces[2]);
+        Assert.NotSame(faces[0], faces[1]);
+        Assert.Equal("Meziantou Curves", FontCollection.Load(data)[1].FamilyName);
+    }
+
+    [Fact]
     public void DataThatIsNotAFontIsNotRecognized()
     {
         Assert.Throws<UnknownImageFormatException>(() => Font.Load([]));

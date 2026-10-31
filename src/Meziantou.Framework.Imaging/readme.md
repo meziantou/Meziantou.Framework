@@ -1062,9 +1062,12 @@ public static void DetectEdges(string inputPath, string edgesPath)
 <!-- endref -->
 
 `BoxBlur(radius)` replaces every sample by the mean of the same sample of the `(2 radius + 1)^2` pixels of the square
-around it, in a time per pixel that does not depend on the radius: the sums of the rows, then of the columns, are
-computed by blocks of `2 radius + 1` values at fixed positions, three additions per sample and no subtraction (a sample
-that is not a number or an infinity only reaches the squares that contain it), and divided once. It takes the edge mode
+around it, in a time per pixel that does not depend on the radius while the square fits in the frame: the sums of the
+rows, then of the columns, are computed by blocks of `2 radius + 1` values at fixed positions, three additions per sample
+and no subtraction (a sample that is not a number or an infinity only reaches the squares that contain it), and divided
+once. A larger square also adds the pixels that the edge mode repeats beyond the frame, one by one: each row and each
+column costs a time proportional to the radius, not to its square (each row of a frame no taller than the radius is
+summed once). It takes the edge mode
 and the working space of a convolution and follows its rules, like `GaussianBlur`; the scratch holds about three times
 the radius rows of double-precision samples per worker.
 

@@ -11,7 +11,7 @@ metadata of the image, apply to every frame and to the poster frame, and also ex
 | Method | What it does |
 | --- | --- |
 | `GaussianBlur(sigma)` | A blur with a bell curve of standard deviation `sigma` (the radius CSS gives to a blur is twice the deviation) |
-| `BoxBlur(radius)` | Every sample becomes the mean of the square of `2 radius + 1` pixels around it; the cost does not depend on the radius |
+| `BoxBlur(radius)` | Every sample becomes the mean of the square of `2 radius + 1` pixels around it; the cost per pixel does not depend on the radius while the square fits in the image |
 | `MedianBlur(radius)` | Every sample becomes the median of the square of `2 radius + 1` pixels around it: isolated specks disappear and edges stay sharp |
 | `PercentileFilter(radius, percentile)` | Every sample becomes a percentile of the same square: 50 is the median, 0 the darkest sample (an erosion) and 100 the brightest (a dilation); 10 or 90 darken or brighten while ignoring a few outliers |
 | `Sharpen(sigma, amount, threshold)` | An unsharp mask: adds `amount` times the difference from a Gaussian blur of deviation `sigma`, except where the difference is less than `threshold` times the range of a sample |
@@ -134,6 +134,6 @@ memory is charged to the allocation limit of the image. [Convolve](cref:Mezianto
 changes, so an exceeded [limit](../05-LoadingAndSaving/07-ResourceLimits.md) leaves the image unchanged. The EXIF
 thumbnail, now stale, is removed.
 
-The cost of [GaussianBlur](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.GaussianBlur) grows with its deviation, the cost of [BoxBlur](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.BoxBlur) does not depend on its radius, and the cost
+The cost of [GaussianBlur](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.GaussianBlur) grows with its deviation, the cost of [BoxBlur](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.BoxBlur) does not depend on its radius while its square fits in the image (beyond, each row and column costs a time proportional to the radius), and the cost
 of a matrix grows with its number of non-zero weights, unless it is separable. Large frames can be split between
 several threads: see [Performance](../11-Performance.md).

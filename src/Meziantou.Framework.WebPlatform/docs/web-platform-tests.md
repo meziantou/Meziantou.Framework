@@ -354,8 +354,8 @@
 
 ## Test groups
 
-See [wpt-coverage.md](wpt-coverage.md) for the coverage of the test suite per section, and the page of each section
-(`docs/wpt-coverage/`) for the result of each test and the reason why it does not pass. The tentative tests (`.tentative.`
+See [the WPT coverage](../../../docs/WebPlatform/10-WptCoverage/01-Overview.md) for the coverage of the test suite per section, and the page of each section
+(`docs/WebPlatform/10-WptCoverage/`) for the result of each test and the reason why it does not pass. The tentative tests (`.tentative.`
 in the file name or a `tentative` directory: experimental features that no specification requires yet) are reported
 separately from the stable tests. The pages are generated from the
 [WPT manifest](https://github.com/web-platform-tests/wpt/releases) of the pinned revision, the expectations and the
@@ -381,7 +381,7 @@ The `css/*/parsing` directories are fetched for every CSS specification (the `Cs
 most specifications is fetched too (`tests/Meziantou.Framework.WebPlatform.SpecData/sources.json`): its testharness.js tests are run by its own group (e.g.
 `CssImages` runs `css/css-images` without its `parsing` directory) and its reftests by `WptReftests`. The tests that
 need what the library does not have stay in the expectations as failures, with their reasons. The following tests are not
-run (see the disabled tests of [wpt-coverage.md](wpt-coverage.md) and their reasons):
+run (see the disabled tests of [the WPT coverage](../../../docs/WebPlatform/10-WptCoverage/01-Overview.md) and their reasons):
 
 - The specifications that are not implemented: `css-layout-api`, `css-paint-api`,
   `css-navigation`, `css-image-animation`, `css-exclusions`, `css-device-adapt`.
@@ -538,7 +538,7 @@ dump tell what it waits for (`dotnet-dump analyze <dump> -c "clrstack -all"` for
 
 ## Reasons
 
-Every test that does not pass has a reason in the [coverage pages](wpt-coverage.md):
+Every test that does not pass has a reason in the [coverage pages](../../../docs/WebPlatform/10-WptCoverage/01-Overview.md):
 
 - The tests that are not run: the reason of `wpt-skip.json`, or else the `notRun` reason of `wpt-reasons.json` (e.g. a
   directory that is not fetched).
@@ -562,7 +562,7 @@ lists them, e.g. `layout`, `rendering`, `workers`, `user-input`, `hardware`, `me
 runner or of the emulated WPT server), `OUT OF SCOPE` (e.g. the `ecmascript/*` and `js/*` tests of the JavaScript engine,
 which test262 covers in `tests/Meziantou.Framework.JavaScriptEngine.Test262`), `FLAKY` and `PERFORMANCE`
 (too slow to be run by every build). The coverage pages show them in the **Kind** and **Description** columns, and
-[wpt-coverage.md](wpt-coverage.md) defines every kind and feature (`Kinds` and `Features` in `tools/Meziantou.Framework.WebPlatform.SpecUpdate/WptCoverage.cs`).
+[The WPT coverage](../../../docs/WebPlatform/10-WptCoverage/01-Overview.md) defines every kind and feature (`Kinds` and `Features` in `tools/Meziantou.Framework.WebPlatform.SpecUpdate/WptCoverage.cs`).
 `wpt-coverage` lists the tests without reason and the invalid reasons (unknown kind or feature, missing description), so
 `--check` fails, and warns about the keys that match no test that does not pass.
 `WPT_REPORT` gives the failure messages needed to write a reason.

@@ -30,7 +30,8 @@ internal static class FuzzSeeds
         var seeds = group is "av1-intra" or "av1-inter"
             ? GoldenCorpus.Default.Av1Vectors
                 .Where(vector => (vector.HasFeature("av1.frame_types=inter") ? "av1-inter" : "av1-intra") == group)
-                .Select(vector => new FuzzSeed(vector.Id, FuzzAvifContainer.Wrap(File.ReadAllBytes(GoldenCorpus.Default.RootDirectory / vector.Input.Path), vector.Frames[0].Width, vector.Frames[0].Height, vector.BitDepth, vector.Subsampling)))
+                .Select(vector => (vector.Id, Stream: new FuzzAv1Stream(File.ReadAllBytes(GoldenCorpus.Default.RootDirectory / vector.Input.Path), vector.Frames[0].Width, vector.Frames[0].Height, vector.BitDepth, vector.Subsampling)))
+                .Select(item => new FuzzSeed(item.Id, FuzzAvifContainer.Wrap(item.Stream.Data, item.Stream.Width, item.Stream.Height, item.Stream.BitDepth, item.Stream.Subsampling), Av1Stream: item.Stream))
                 .ToList()
             : GoldenCorpus.Default.Fixtures
                 .Select(fixture => (Fixture: fixture, Data: fixture.ReadInput()))

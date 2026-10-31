@@ -79,4 +79,48 @@ public sealed class FuzzHarnessSelfTests
             }
         }
     }
+
+    [Fact]
+    public void Av1MutationsKeepTheSizeFieldsOfTheUnitsAndTheContainer()
+    {
+        // The mutations change whole units: the media data of the file they give is still a sequence of units whose size
+        // fields add up, so that the decoder reads each unit and judges its place in the stream
+        var seeds = FuzzSeeds.Get("av1-inter");
+        var random = new FuzzRandom(42);
+        var mutated = 0;
+        for (var i = 0; i < 400; i++)
+        {
+            var seed = seeds[i % seeds.Count];
+            if (FuzzAv1Mutator.TryMutate(random, seed, seeds) is not { } data)
+                continue;
+
+            mutated++;
+            Assert.True(FuzzAvifContainer.IsIsoBaseMedia(data));
+            var mediaData = FuzzAvifContainer.FindMediaData(data);
+            Assert.HasCount(1, mediaData);
+            var (offset, length) = mediaData[0];
+            var end = offset + length;
+            while (offset < end)
+            {
+                var header = data[offset++];
+                Assert.Equal(0, header & 0x81);
+                Assert.NotEqual(0, header & 2);
+                offset += (header >> 2) & 1;
+                var size = 0;
+                for (var shift = 0; ; shift += 7)
+                {
+                    var value = data[offset++];
+                    size |= (value & 0x7F) << shift;
+                    if ((value & 0x80) is 0)
+                        break;
+                }
+
+                offset += size;
+            }
+
+            Assert.Equal(end, offset);
+        }
+
+        Assert.True(mutated > 50, $"Only {mutated} of 400 seeds were mutated.");
+    }
 }

@@ -24,6 +24,7 @@ skeleton algorithm rather than comparing the output of `ReplaceConfusablesCharac
 ```csharp
 Assert.True(Unicode.AreConfusable("paypal", "\u0440\u0430\u0443\u0440\u0430l")); // Cyrillic look-alikes
 Assert.True(Unicode.AreConfusable("caf\u00E9", "cafe\u0301")); // composed vs decomposed
+Assert.True(Unicode.AreConfusable("paypal", "pay\u200Bpal")); // invisible characters are ignored
 Assert.False(Unicode.AreConfusable("paypal", "example"));
 ```
 <!-- endref -->
@@ -39,6 +40,11 @@ var skeleton = Unicode.GetConfusableSkeleton(userName);
 Assert.Equal(Unicode.GetConfusableSkeleton("paypal"), skeleton);
 ```
 <!-- endref -->
+
+The skeleton is the one of the text as displayed in a left-to-right paragraph: right-to-left text is put in display
+order and mirrored first, and default-ignorable characters, such as U+200B ZERO WIDTH SPACE, are removed. The overloads
+that take a `UnicodeBidiDirection` compare the text as displayed in a right-to-left paragraph, or in the direction of its
+first strong character.
 
 > The skeleton is a comparison key, not displayable text. Do not show it to users or store it
 > in place of the original string.
@@ -413,7 +419,7 @@ var paragraphLevel = UnicodeBidi.ResolveLevels(paragraph, UnicodeBidiDirection.A
 // For each line, once the paragraph is broken into lines:
 UnicodeBidi.ResetLineLevels(paragraph, paragraphLevel, levels);
 Span<int> visualToLogical = stackalloc int[paragraph.Length];
-UnicodeBidi.GetVisualOrder(levels, visualToLogical);
+UnicodeBidi.GetVisualOrder(paragraph, levels, visualToLogical);
 
 Assert.Equal<int>([0, 1, 2, 3, 6, 5, 4, 7], visualToLogical);
 ```
@@ -424,6 +430,8 @@ Assert.Equal<int>([0, 1, 2, 3, 6, 5, 4, 7], visualToLogical);
   the order of the text.
 - `ResolveLevels` has an overload that takes its workspace from the caller (`GetWorkspaceLength`) and does not
   allocate.
+- `GetVisualOrder(line, levels, visualToLogical)` keeps the two code units of a surrogate pair in order. The overload
+  that takes only the levels reorders elements of any kind, such as runs of text.
 - Mirroring (rule L4) is `UnicodeProperties.TryGetBidiMirroringGlyph`.
 
 ## Internationalized domain names

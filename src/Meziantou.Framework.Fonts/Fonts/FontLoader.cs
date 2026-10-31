@@ -10,6 +10,9 @@ namespace Meziantou.Framework.Fonts;
 /// </remarks>
 public static class FontLoader
 {
+    /// <summary>The largest number of faces of a collection. Real collections have at most a few hundred faces.</summary>
+    internal const int MaxCollectionFaceCount = 1024;
+
     /// <param name="data">The bytes of the font file.</param>
     /// <param name="environment">The limits and the storage of the font code.</param>
     /// <param name="useEmbeddedBitmaps">Whether the bitmaps without colors of the font replace its outlines at the sizes they are made for.</param>
@@ -111,11 +114,24 @@ public static class FontLoader
         if (count == 0)
             throw FontErrors.Invalid("the font collection has no font.");
 
+        if (count > MaxCollectionFaceCount)
+            throw FontErrors.Invalid($"the font collection has {count} fonts; at most {MaxCollectionFaceCount} are supported.");
+
         var offsets = FontBinary.Slice(file, 12, (long)count * 4);
         var faces = new FontFace[count];
+
+        // Faces at the same offset are the same font: it is read once.
+        var facesByOffset = new Dictionary<uint, FontFace>(count);
         for (var i = 0; i < count; i++)
         {
-            faces[i] = new FontFace(data, FontBinary.UInt32(offsets, i * 4));
+            var offset = FontBinary.UInt32(offsets, i * 4);
+            if (!facesByOffset.TryGetValue(offset, out var face))
+            {
+                face = new FontFace(data, offset);
+                facesByOffset.Add(offset, face);
+            }
+
+            faces[i] = face;
         }
 
         return faces;

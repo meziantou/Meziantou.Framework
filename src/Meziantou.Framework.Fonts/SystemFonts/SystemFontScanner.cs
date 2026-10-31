@@ -28,9 +28,6 @@ internal static class SystemFontScanner
     // OS/2 is at most 100 bytes in its version 5; the fields that are read are in the first 78 bytes.
     private const int MaxOs2Length = 128;
 
-    // The largest number of faces of a collection, as for the fonts of WebPlatform.
-    private const int MaxFaceCount = 1024;
-
     private const int MaxRecursionDepth = 16;
 
     private static readonly PooledFontEnvironment CompressedFontEnvironment = new(FontResourceLimits.Default, maxLiveAllocationBytes: 256L * 1024 * 1024);
@@ -223,7 +220,7 @@ internal static class SystemFontScanner
             throw FontErrors.Invalid($"the font collection has the unknown version {majorVersion}.");
 
         count = FontBinary.Offset32(header, 8);
-        if (count is 0 or > MaxFaceCount)
+        if (count is 0 or > FontLoader.MaxCollectionFaceCount)
             throw FontErrors.Invalid($"the font collection has {count} fonts.");
 
         return source.Read(HeaderLength, count * 4);

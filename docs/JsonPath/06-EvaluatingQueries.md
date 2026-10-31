@@ -102,6 +102,58 @@ Assert.Null(emptyDocument.EvaluateValue(path));
 ```
 <!-- endref -->
 
+[EvaluateValue](cref:Meziantou.Framework.Json.JsonPath.EvaluateValue) does not retain all final matches or build their normalized paths.
+In Lax mode it stops when the first final match is found. Child-only intermediate segments propagate that demand:
+`$[*].wanted` still searches later items when earlier ones have no `wanted` member. Long paths and paths with
+intermediate descendant segments may retain intermediate nodes before searching the last segment.
+Strict mode still validates later branches, so a later path error can throw after an earlier branch matched.
+
+## Cancel or bound evaluation
+
+Pass [JsonPathEvaluationOptions](cref:Meziantou.Framework.Json.JsonPathEvaluationOptions) to the instance or extension
+overloads of [Evaluate](cref:Meziantou.Framework.Json.JsonPath.Evaluate) or [EvaluateValue](cref:Meziantou.Framework.Json.JsonPath.EvaluateValue).
+The same options work with `JsonNode`, `JsonDocument`, `JsonElement` and custom navigators.
+
+<!-- ref:../../tests/Meziantou.Framework.JsonPath.Tests/JsonPathEvaluateTests.cs;region=JsonPath_EvaluationOptions;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var cancellation = new CancellationTokenSource();
+var options = new JsonPathEvaluationOptions
+{
+    CancellationToken = cancellation.Token,
+    MaximumWork = 10_000,
+    MaximumResults = 2,
+    MaximumIntermediateResults = 100,
+};
+var path = JsonPath.Parse("$[*]");
+using var document = JsonDocument.Parse("[1,2]");
+Assert.HasCount(2, document.Evaluate(path, options));
+using var larger = JsonDocument.Parse("[1,2,3]");
+Assert.Throws<JsonPathEvaluationException>(() => larger.Evaluate(path, options));
+cancellation.Cancel();
+Assert.Throws<OperationCanceledException>(() => document.Evaluate(path, options));
+```
+<!-- endref -->
+
+The default options leave evaluation unlimited. Set any combination of:
+
+| Option | Behavior |
+| --- | --- |
+| [CancellationToken](cref:Meziantou.Framework.Json.JsonPathEvaluationOptions.CancellationToken) | Checked during traversal, nested queries, comparisons and function evaluation; cancellation throws `OperationCanceledException`. |
+| [MaximumWork](cref:Meziantou.Framework.Json.JsonPathEvaluationOptions.MaximumWork) | Limits evaluator checkpoints and navigator operations, including nested filter work. String scans and bulk array copies charge for their input length. |
+| [MaximumResults](cref:Meziantou.Framework.Json.JsonPathEvaluationOptions.MaximumResults) | Limits final matches, including duplicates. |
+| [MaximumIntermediateResults](cref:Meziantou.Framework.Json.JsonPathEvaluationOptions.MaximumIntermediateResults) | Limits nodes produced by each intermediate or filter-query segment, including count-only queries. |
+
+Limits are nonnegative; `null` means no limit. A limit exceeded throws
+[JsonPathEvaluationException](cref:Meziantou.Framework.Json.JsonPathEvaluationException), never a partial result.
+When a final match limit is set, even Lax first-value evaluation scans all final matches to enforce it; it still
+retains only the first. Intermediate limits can require materializing intermediate segments rather than
+short-circuiting them.
+
+Work counts are implementation-dependent, not elapsed-time or byte limits. Cancellation is cooperative: the evaluator
+cannot interrupt a custom navigator operation or a running regex match. Regex matches retain their per-call timeout.
+Use a work budget as well as result limits to bound broad scans that select few results. Do not mutate the document
+or options while evaluation is running; options are snapshotted once per call.
+
 ## Know where each value comes from
 
 [Path](cref:Meziantou.Framework.Json.JsonPathMatch.Path) is the *normalized path* of the match, as defined by RFC 9535: the root, then one bracketed name or index per

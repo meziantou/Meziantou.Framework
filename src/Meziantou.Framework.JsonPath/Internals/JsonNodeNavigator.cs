@@ -7,6 +7,8 @@ namespace Meziantou.Framework.Json.Internals;
 
 internal sealed class JsonNodeNavigator : JsonPathNavigator<JsonNode>
 {
+    public override bool IsPure => true;
+
     /// <summary>
     /// The objects and arrays parsed out of a <see cref="JsonValue"/> that wraps a CLR object serialized as one.
     /// Parsing on every access would make walking such a value quadratic. System.Text.Json already caches the kind

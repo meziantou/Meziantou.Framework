@@ -7,6 +7,282 @@ namespace Meziantou.Framework.JsonPathTests;
 
 public sealed class JsonPathEvaluateTests
 {
+    [Theory]
+    [InlineData("$[*]", "[null,1]", null)]
+    [InlineData("$[2,0,2]", "[0,1,2]", "2")]
+    [InlineData("$[*].wanted", "[{}, {\"wanted\":42}, {\"wanted\":43}]", "42")]
+    [InlineData("$..wanted", "{\"a\":{\"wanted\":1},\"b\":{\"wanted\":2}}", "1")]
+    [InlineData("$[1::-1]", "[0,1,2]", "1")]
+    [InlineData("$.missing", "{}", null)]
+    public void EvaluateValue_PreservesFirstMatch(string query, string json, string? expected)
+    {
+        var path = JsonPath.Parse(query);
+        var node = JsonNode.Parse(json);
+        Assert.Equal(expected, path.EvaluateValue(node)?.ToJsonString());
+        Assert.Equal(expected, path.EvaluateValue(node, JsonNodeNavigator.Instance)?.ToJsonString());
+        using var document = JsonDocument.Parse(json);
+        var first = path.Evaluate(document);
+        Assert.Equal(first.Count > 0 ? first[0].Value : (JsonElement?)null, path.EvaluateValue(document));
+        Assert.Equal(first.Count > 0 ? first[0].Value : (JsonElement?)null, path.EvaluateValue(document.RootElement));
+    }
+
+    [Theory]
+    [InlineData("$[*].wanted", "[{\"wanted\":1},{}]")]
+    [InlineData("$[0,99]", "[1]")]
+    [InlineData("$[*].wanted.more", "[{\"wanted\":{\"more\":1}},{}]")]
+    public void EvaluateValue_StrictValidatesLaterBranches(string query, string json)
+    {
+        var path = JsonPath.Parse(query);
+        var node = JsonNode.Parse(json);
+        Assert.NotNull(path.EvaluateValue(node));
+        Assert.Throws<JsonPathEvaluationException>(() => path.EvaluateValue(node, JsonPathEvaluationMode.Strict));
+        Assert.Throws<JsonPathEvaluationException>(() => path.EvaluateValue(node, JsonNodeNavigator.Instance, JsonPathEvaluationMode.Strict));
+        using var document = JsonDocument.Parse(json);
+        Assert.Throws<JsonPathEvaluationException>(() => path.EvaluateValue(document, JsonPathEvaluationMode.Strict));
+        Assert.Throws<JsonPathEvaluationException>(() => path.EvaluateValue(document.RootElement, JsonPathEvaluationMode.Strict));
+    }
+
+    [Fact]
+    public void EvaluateValue_PropagatesDemandThroughChildren()
+    {
+        var navigator = new EvaluationProbeNavigator();
+        var node = JsonNode.Parse("[{}, {\"wanted\":42}, {\"wanted\":43}]");
+        Assert.Equal(42, JsonPath.Parse("$[*].wanted").EvaluateValue(node, navigator)!.GetValue<int>());
+        Assert.Equal(2, navigator.ElementsRead);
+    }
+
+    [Fact]
+    public void EvaluateValue_AllocationDoesNotScaleWithFinalMatches()
+    {
+        var root = new JsonArray();
+        for (var i = 0; i < 10_000; i++)
+            root.Add(i);
+
+        var path = JsonPath.Parse("$[*]");
+        for (var i = 0; i < 10; i++)
+            _ = path.EvaluateValue(root);
+
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var first = path.EvaluateValue(root);
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        Assert.Equal(0, first!.GetValue<int>());
+        Assert.InRange(allocated, 0, 4_096);
+        using var document = JsonDocument.Parse(root.ToJsonString());
+        _ = path.EvaluateValue(document);
+        before = GC.GetAllocatedBytesForCurrentThread();
+        var element = path.EvaluateValue(document);
+        allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        Assert.Equal(0, element!.Value.GetInt32());
+        Assert.InRange(allocated, 0, 4_096);
+    }
+
+    [Fact]
+    public void Count_RootInvariantAllocationIsLinear()
+    {
+        var root = new JsonArray();
+        for (var i = 0; i < 1_000; i++)
+            root.Add(i);
+
+        var path = JsonPath.Parse("$[?count($[*]) > 0]");
+        _ = path.Evaluate(root);
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var matches = path.Evaluate(root);
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        Assert.HasCount(1_000, matches);
+        Assert.InRange(allocated, 0, 1_000_000);
+    }
+
+    [Fact]
+    public void EvaluationOptions_Documentation()
+    {
+        #region JsonPath_EvaluationOptions
+        using var cancellation = new CancellationTokenSource();
+        var options = new JsonPathEvaluationOptions
+        {
+            CancellationToken = cancellation.Token,
+            MaximumWork = 10_000,
+            MaximumResults = 2,
+            MaximumIntermediateResults = 100,
+        };
+        var path = JsonPath.Parse("$[*]");
+        using var document = JsonDocument.Parse("[1,2]");
+        Assert.HasCount(2, document.Evaluate(path, options));
+        using var larger = JsonDocument.Parse("[1,2,3]");
+        Assert.Throws<JsonPathEvaluationException>(() => larger.Evaluate(path, options));
+        cancellation.Cancel();
+        Assert.Throws<OperationCanceledException>(() => document.Evaluate(path, options));
+        #endregion
+    }
+
+    [Fact]
+    public void EvaluationOptions_PreCanceledAllSurfaces()
+    {
+        var options = new JsonPathEvaluationOptions { CancellationToken = new CancellationToken(canceled: true) };
+        var path = JsonPath.Parse("$");
+        var node = JsonNode.Parse("null");
+        using var document = JsonDocument.Parse("null");
+        Assert.Throws<OperationCanceledException>(() => path.Evaluate(node, options));
+        Assert.Throws<OperationCanceledException>(() => path.Evaluate(document, options));
+        Assert.Throws<OperationCanceledException>(() => path.Evaluate(document.RootElement, options));
+        Assert.Throws<OperationCanceledException>(() => path.Evaluate(node, JsonNodeNavigator.Instance, options));
+        Assert.Throws<OperationCanceledException>(() => node.EvaluateValue(path, options));
+        Assert.Throws<OperationCanceledException>(() => document.EvaluateValue(path, options));
+        Assert.Throws<OperationCanceledException>(() => document.RootElement.EvaluateValue(path, options));
+        Assert.Throws<OperationCanceledException>(() => path.EvaluateValue(node, JsonNodeNavigator.Instance, options));
+    }
+
+    [Fact]
+    public void EvaluationOptions_CancellationDuringTraversal()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var navigator = new EvaluationProbeNavigator { OnElement = cancellation.Cancel };
+        var node = JsonNode.Parse("[1,2,3]");
+        var exception = Assert.Throws<OperationCanceledException>(() => JsonPath.Parse("$[*]").Evaluate(node, navigator,
+            new JsonPathEvaluationOptions { CancellationToken = cancellation.Token }));
+        Assert.Equal(cancellation.Token, exception.CancellationToken);
+        Assert.Equal(1, navigator.ElementsRead);
+    }
+
+    [Fact]
+    public void EvaluationOptions_CancellationReturnsRentedBuffer()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var navigator = new EvaluationProbeNavigator { Copy = true, OnCopy = cancellation.Cancel };
+        var root = JsonNode.Parse("[1,2,3]");
+        Assert.Throws<OperationCanceledException>(() => JsonPath.Parse("$[*]").Evaluate(root, navigator,
+            new JsonPathEvaluationOptions { CancellationToken = cancellation.Token }));
+        Assert.NotNull(navigator.CopiedBuffer);
+        Assert.Null(navigator.CopiedBuffer[0]);
+        Assert.HasCount(3, JsonPath.Parse("$[*]").Evaluate(root, navigator));
+    }
+
+    [Fact]
+    public void EvaluateValue_LongPathsUseBoundedStack()
+    {
+        var root = JsonNode.Parse("1");
+        for (var i = 0; i < 100; i++)
+            root = new JsonObject { ["a"] = root };
+
+        var path = JsonPath.Parse("$" + string.Concat(Enumerable.Repeat(".a", 100)));
+        Assert.Equal(1, path.EvaluateValue(root)!.GetValue<int>());
+    }
+
+    [Theory]
+    [InlineData("$[*]", 2, true)]
+    [InlineData("$[0,0,0]", 2, false)]
+    [InlineData("$", 0, false)]
+    public void EvaluationOptions_FinalCount(string query, int maximum, bool succeeds)
+    {
+        var path = JsonPath.Parse(query);
+        var root = JsonNode.Parse("[1,2]");
+        var options = new JsonPathEvaluationOptions { MaximumResults = maximum };
+        if (succeeds)
+        {
+            Assert.HasCount(maximum, path.Evaluate(root, options));
+            Assert.Equal(1, path.EvaluateValue(root, options)!.GetValue<int>());
+        }
+        else
+        {
+            Assert.Throws<JsonPathEvaluationException>(() => path.Evaluate(root, options));
+            Assert.Throws<JsonPathEvaluationException>(() => path.EvaluateValue(root, options));
+        }
+    }
+
+    [Theory]
+    [InlineData("$[*].wanted")]
+    [InlineData("$[?count($[*]) > 0]")]
+    [InlineData("$[?count($) > 0]")]
+    public void EvaluationOptions_IntermediateLimits(string query)
+    {
+        var path = JsonPath.Parse(query);
+        var root = JsonNode.Parse("[{\"wanted\":1},{\"wanted\":2}]");
+        var options = new JsonPathEvaluationOptions { MaximumIntermediateResults = 0 };
+        Assert.Throws<JsonPathEvaluationException>(() => path.Evaluate(root, options));
+        Assert.Throws<JsonPathEvaluationException>(() => path.EvaluateValue(root, options));
+    }
+
+    [Theory]
+    [InlineData("$..*")]
+    [InlineData("$[?count($[*]) > 0]")]
+    [InlineData("$[?@.a == @.b]")]
+    public void EvaluationOptions_WorkBudgetIncludesNestedWalks(string query)
+    {
+        var root = JsonNode.Parse("[{\"a\":[1,2,3],\"b\":[1,2,3]},{\"a\":1,\"b\":1}]");
+        var path = JsonPath.Parse(query);
+        Assert.Throws<JsonPathEvaluationException>(() => path.Evaluate(root, new JsonPathEvaluationOptions { MaximumWork = 5 }));
+        Assert.NotEmpty(path.Evaluate(root));
+    }
+
+    [Fact]
+    public void EvaluationOptions_RejectNegativeLimits()
+    {
+        var path = JsonPath.Parse("$");
+        Assert.Throws<ArgumentOutOfRangeException>(() => path.Evaluate((JsonNode?)null, new JsonPathEvaluationOptions { MaximumWork = -1 }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => path.Evaluate((JsonNode?)null, new JsonPathEvaluationOptions { MaximumResults = -1 }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => path.Evaluate((JsonNode?)null, new JsonPathEvaluationOptions { MaximumIntermediateResults = -1 }));
+    }
+
+    [Theory]
+    [InlineData(true, 8)]
+    [InlineData(false, 20)]
+    public void Count_RootInvariantRequiresPureNavigator(bool pure, int expectedReads)
+    {
+        var navigator = new EvaluationProbeNavigator { Pure = pure };
+        var root = JsonNode.Parse("[0,1,2,3]");
+        Assert.HasCount(4, JsonPath.Parse("$[?count($[*]) > 0]").Evaluate(root, navigator));
+        Assert.Equal(expectedReads, navigator.ElementsRead);
+    }
+
+    [Fact]
+    public void Count_CacheIsEvaluationScopedAndNestedFiltersKeepTheirOwnCandidate()
+    {
+        var root = JsonNode.Parse("""{"items":[{"ok":true},{"ok":false}]}""")!;
+        var path = JsonPath.Parse("$.items[?count($.items[?@.ok == true]) == 1]");
+        Assert.HasCount(2, path.Evaluate(root));
+        root["items"]![1]!["ok"] = true;
+        Assert.Empty(path.Evaluate(root));
+    }
+
+    [Theory]
+    [InlineData("$[?count(@.a[*]) == 2]", "[{\"a\":[1,2]},{\"a\":[1]}]", 1)]
+    [InlineData("$[?count(@.a[0,0]) == 2]", "[{\"a\":[1]},{\"a\":[]}]", 1)]
+    [InlineData("$[?count(@.a[*].x) == 2]", "[{\"a\":[{\"x\":1},{\"x\":2}]},{\"a\":[{}]}]", 1)]
+    public void Count_RelativeQueriesAndDuplicates(string query, string json, int count)
+    {
+        Assert.HasCount(count, JsonPath.Parse(query).Evaluate(JsonNode.Parse(json)));
+    }
+
+    private sealed class EvaluationProbeNavigator : JsonPathNavigator<JsonNode>
+    {
+        public int ElementsRead { get; private set; }
+        public bool Pure { get; init; }
+        public Action? OnElement { get; init; }
+        public Action? OnCopy { get; init; }
+        public bool Copy { get; init; }
+        public JsonNode?[]? CopiedBuffer { get; private set; }
+        public override bool IsPure => Pure;
+        internal override bool HasConstantTimeElementAccess => !Copy;
+        internal override void CopyElements(JsonNode? value, JsonNode?[] destination)
+        {
+            CopiedBuffer = destination;
+            JsonNodeNavigator.Instance.CopyElements(value, destination);
+            OnCopy?.Invoke();
+        }
+        public override JsonPathNodeKind GetKind(JsonNode? value) => JsonNodeNavigator.Instance.GetKind(value);
+        public override bool TryGetPropertyValue(JsonNode? value, string name, out JsonNode? result) => JsonNodeNavigator.Instance.TryGetPropertyValue(value, name, out result);
+        public override IEnumerable<JsonPathProperty<JsonNode>> GetProperties(JsonNode? value) => JsonNodeNavigator.Instance.GetProperties(value);
+        public override int GetArrayLength(JsonNode? value) => JsonNodeNavigator.Instance.GetArrayLength(value);
+        public override bool TryGetElement(JsonNode? value, int index, out JsonNode? result)
+        {
+            ElementsRead++;
+            OnElement?.Invoke();
+            return JsonNodeNavigator.Instance.TryGetElement(value, index, out result);
+        }
+        public override bool TryGetString(JsonNode? value, out string? result) => JsonNodeNavigator.Instance.TryGetString(value, out result);
+        public override bool TryGetNumber(JsonNode? value, out double result) => JsonNodeNavigator.Instance.TryGetNumber(value, out result);
+        public override bool TryGetBoolean(JsonNode? value, out bool result) => JsonNodeNavigator.Instance.TryGetBoolean(value, out result);
+    }
+
     [Fact]
     public void ReadmeExample_Usage()
     {

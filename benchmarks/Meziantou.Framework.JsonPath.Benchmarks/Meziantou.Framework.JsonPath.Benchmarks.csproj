@@ -1,0 +1,10 @@
+<Project Sdk="Meziantou.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
+    <ProjectReference Include="../../src/Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
+  </ItemGroup>
+</Project>

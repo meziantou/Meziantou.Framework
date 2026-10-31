@@ -220,6 +220,17 @@
       "defect": "The IHDR chunk of the PNG payload of a cursor representation declares the color type 255: the description of the representation passed it to DefaultPixelFormats.ForPng, whose ArgumentOutOfRangeException escaped Identify, Load and ImageCollection.Load instead of InvalidImageContentException. Fixed in IcoRepresentationBuilder.ResolvePng: an illegal color type and bit depth combination is rejected as the PNG decoder rejects it.",
       "expectedIdentify": "InvalidImageContentException",
       "expectedLoad": "InvalidImageContentException"
+    },
+    {
+      "id": "avif/sequence-header-replaced-before-frame",
+      "file": "avif-sequence-header-replaced-before-frame.min.avif",
+      "sha256": "9bee86d3762007602cae32fb3bb2fe53defd424420968fae8b74d56c2e4c6099",
+      "origin": "fuzz-minimized",
+      "license": "CC0-1.0",
+      "foundBy": "FuzzTests group av1-intra, base seed 5576998306593010799 (default), 1500 iterations, mutation 1061 of av1/lr-sgrproj-luma-420-10bit-192x128 (reader variant 59), with the OBU mutations of FuzzAv1Mutator",
+      "defect": "The item data have two different sequence headers before the frame (the first one from another stream): the full identification checked the first one against the av1C record and rejected the file, while Load decodes the frame with the second one, which matches it. Fixed in AvifBinding.ReadSequenceHeader: it reads the sequence header the first frame is decoded with, the last one before the first frame header.",
+      "expectedIdentify": "success",
+      "expectedLoad": "success"
     }
   ]
 }

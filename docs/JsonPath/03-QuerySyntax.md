@@ -43,7 +43,7 @@ Assert.Equal("[]", Select("$.phone"));
   letters are allowed too).
 - The bracket notation, `['name']` or `["name"]`, accepts any name. Escape the quote and the backslash with a
   backslash: `['it\'s']`.
-- Names are case-sensitive.
+- Names are case-sensitive, regardless of the lookup options of a `JsonObject`.
 
 ## Select every child
 

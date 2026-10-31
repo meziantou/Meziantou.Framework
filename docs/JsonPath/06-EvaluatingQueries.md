@@ -40,6 +40,8 @@ extension methods of the JSON value:
 - Use `JsonDocument` or `JsonElement` to read a document: they are read-only views of the parsed JSON. Dispose the
   `JsonDocument` once you are done with the results, because the `JsonElement` values they hold belong to it.
 - Use `JsonNode` when you also want to change the document.
+- When a `JsonValue` wraps a CLR object or array, its matches are detached copies of the serialized value; changes to
+  the wrapped object are reflected by the next evaluation, but changing a match does not change the wrapped object.
 - For other object models, see [Custom object models](08-CustomObjectModels.md).
 
 ## Read the matches

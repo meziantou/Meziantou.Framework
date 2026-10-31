@@ -56,4 +56,42 @@ public enum PngOptimization
     /// </para>
     /// </summary>
     MinimumSize = 1,
+
+    /// <summary>
+    /// Reads the pixels of a still image once and writes them in the narrowest exact layout they allow, instead of the
+    /// layout of the pixel format; the filters follow <see cref="PngEncoder.Filter"/> and the zlib level
+    /// <see cref="PngEncoder.CompressionLevel"/>, as with <see cref="None"/>. Nothing is compressed twice, so encoding
+    /// costs about one more pass over the pixels.
+    /// <list type="bullet">
+    /// <item><description>
+    /// The candidates are the ones of <see cref="MinimumSize"/> without the <c>tRNS</c> color key: grayscale when every
+    /// pixel is gray (1, 2, 4, 8 or 16 bits), without alpha when every pixel is opaque, 8-bit samples when the 16-bit ones
+    /// are 8-bit values, and a palette of 1, 2, 4 or 8 bits (with <c>tRNS</c> for its translucent entries) when the image
+    /// has at most 256 colors and they are 8-bit colors. The one with the smallest unfiltered data (its <c>PLTE</c> and
+    /// <c>tRNS</c> chunks included) is written; on a tie, the layout without a palette. With
+    /// <see cref="PngPixelLayout.Indexed"/>, only palettes are candidates.
+    /// </description></item>
+    /// <item><description>
+    /// The analysis stops as soon as nothing more can change the choice: once there are more than 256 colors, a pixel is
+    /// not gray, a pixel is translucent (or the pixel format has no alpha) and a 16-bit sample is not an 8-bit value (or
+    /// the samples are 8-bit). An opaque image of a pixel format with alpha is read to its last pixel.
+    /// </description></item>
+    /// <item><description>
+    /// An ICC profile keeps its color space: a grayscale layout is a candidate only when the profile describes gray, and
+    /// the RGB and palette layouts only when it describes RGB.
+    /// </description></item>
+    /// <item><description>
+    /// An animated PNG is written as with <see cref="None"/>: the layout of a sequential writer would have to hold the
+    /// frames that come after the header.
+    /// </description></item>
+    /// </list>
+    /// <para>
+    /// The pixel values are stored exactly, but the file may be read back with another pixel format than the one it was
+    /// written from, as with <see cref="MinimumSize"/>: for example <see cref="PixelFormat.Rgb24"/> for an opaque
+    /// <see cref="PixelFormat.Rgba32"/> image, <see cref="PixelFormat.Gray8"/> for a gray one, or
+    /// <see cref="PixelFormat.Rgba32"/> for a palette. The smallest unfiltered data is usually, not always, the smallest
+    /// file: <see cref="MinimumSize"/> compresses the candidates to find it.
+    /// </para>
+    /// </summary>
+    Layout = 2,
 }

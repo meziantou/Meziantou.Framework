@@ -24,6 +24,10 @@ namespace Meziantou.Framework.Imaging;
 /// they are written, without clamping: values outside [0, 1] reach floating-point images, and integer images clamp them
 /// to their sample range.
 /// </para>
+/// <para>
+/// The table is held in single precision, outside the allocation limits of the images: a three-dimensional table of
+/// <c>n</c> points per axis takes <c>12 n^3</c> bytes (3.1 MiB for the common 65, 192 MiB for the largest, 256).
+/// </para>
 /// </remarks>
 public sealed class CubeLut
 {

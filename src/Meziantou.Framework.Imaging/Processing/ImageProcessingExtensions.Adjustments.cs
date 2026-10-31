@@ -25,12 +25,29 @@ public static partial class ImageProcessingExtensions
     /// curves through points clip them, see <see cref="ToneCurve"/>), and a sample that is not a number stays one.
     /// </para>
     /// <para>
-    /// The working memory (a row and the table, at most 128 KiB) is charged to the image and rented before a pixel changes.
+    /// The working memory (a row, and the tables of the levels, at most 384 KiB) is charged to the image and rented before
+    /// a pixel changes.
     /// <see cref="ToneCurve.Identity"/> changes nothing. On cancellation, some frames or rows may already be changed.
     /// </para>
     /// </remarks>
     /// <example>
     /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Imaging.Processing.Tests/ToneAdjustmentTests.cs" ref:region="ToneCurve_Levels" ref:dedent="true">
+    /// [Fact]
+    /// public void ToneCurve_Levels()
+    /// {
+    ///     using var image = new Image&lt;Rgb24&gt;(2, 1);
+    ///     image.Frames[0][0, 0] = new Rgb24(64, 128, 192);
+    ///     image.Frames[0][1, 0] = new Rgb24(10, 240, 255);
+    ///
+    ///     // Clip the darkest and the brightest 10% of the levels and brighten the midtones, then add contrast with an
+    ///     // S curve through control points
+    ///     var levels = ToneCurve.CreateLevels(inputBlack: 0.1, inputWhite: 0.9, gamma: 1.2);
+    ///     var contrast = ToneCurve.CreateFromPoints(new PointD(0, 0), new PointD(0.25, 0.2), new PointD(0.75, 0.8), new PointD(1, 1));
+    ///     image.ApplyToneCurve(levels.Then(contrast));
+    ///
+    ///     Assert.Equal(new Rgb24(51, 149, 225), image.Frames[0][0, 0]);
+    ///     Assert.Equal(new Rgb24(0, 255, 255), image.Frames[0][1, 0]);
+    /// }
     /// </code>
     /// </example>
     /// <param name="image">The image to modify.</param>
@@ -158,6 +175,29 @@ public static partial class ImageProcessingExtensions
     /// </remarks>
     /// <example>
     /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Imaging.Processing.Tests/ToneAdjustmentTests.cs" ref:region="CubeLut_Apply" ref:dedent="true">
+    /// [Fact]
+    /// public void CubeLut_Apply()
+    /// {
+    ///     // A three-dimensional table of 2 x 2 x 2 points that inverts the colors, as a .cube file holds it
+    ///     var lut = CubeLut.Parse("""
+    ///         TITLE "Negative"
+    ///         LUT_3D_SIZE 2
+    ///         1 1 1
+    ///         0 1 1
+    ///         1 0 1
+    ///         0 0 1
+    ///         1 1 0
+    ///         0 1 0
+    ///         1 0 0
+    ///         0 0 0
+    ///         """);
+    ///
+    ///     using var image = new Image&lt;Rgba32&gt;(1, 1, new Rgba32(255, 64, 0, 128));
+    ///     image.ApplyLut(lut);
+    ///
+    ///     Assert.Equal("Negative", lut.Title);
+    ///     Assert.Equal(new Rgba32(0, 191, 255, 128), image.Frames[0][0, 0]);
+    /// }
     /// </code>
     /// </example>
     /// <param name="image">The image to modify.</param>

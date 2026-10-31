@@ -28,6 +28,49 @@ public static partial class ImageProcessingExtensions
     /// </remarks>
     /// <example>
     /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Imaging.Processing.Tests/GeometryTests.cs" ref:region="CorrectPerspective_Document" ref:dedent="true">
+    /// [Fact]
+    /// public void CorrectPerspective_Document()
+    /// {
+    ///     // A 32x24 page with a checkerboard of 4-pixel squares
+    ///     using var page = new Image&lt;Rgb24&gt;(32, 24);
+    ///     for (var y = 0; y &lt; 24; y++)
+    ///     {
+    ///         for (var x = 0; x &lt; 32; x++)
+    ///         {
+    ///             page.Frames[0][x, y] = (x / 4) % 2 == (y / 4) % 2 ? new Rgb24(250, 250, 240) : new Rgb24(20, 30, 90);
+    ///         }
+    ///     }
+    ///
+    ///     // Photographed at an angle on a gray desk: the corners of the page land on a quadrilateral of a 64x48 photo
+    ///     var topLeft = new PointD(8, 6);
+    ///     var topRight = new PointD(56, 10);
+    ///     var bottomRight = new PointD(52, 42);
+    ///     var bottomLeft = new PointD(12, 40);
+    ///     using var photo = page.Clone();
+    ///     photo.Transform(
+    ///         ProjectiveTransform.CreateFromQuadrilateral(new RectangleD(0, 0, 32, 24), topLeft, topRight, bottomRight, bottomLeft),
+    ///         new TransformOptions { CanvasMode = TransformCanvasMode.Explicit, CanvasSize = new Size(64, 48), BackgroundColor = new Rgba64(30000, 30000, 30000, 65535) });
+    ///
+    ///     // Seen from the front again: the quadrilateral becomes the whole image
+    ///     photo.CorrectPerspective(topLeft, topRight, bottomRight, bottomLeft, new Size(32, 24), new TransformOptions { BackgroundColor = new Rgba64(30000, 30000, 30000, 65535) });
+    ///
+    ///     Assert.Equal(new Size(32, 24), photo.Size);
+    ///
+    ///     // The middle of every square has its color back, within the blur of the two resamplings
+    ///     var largest = 0;
+    ///     for (var y = 0; y &lt; 24; y++)
+    ///     {
+    ///         for (var x = 0; x &lt; 32; x++)
+    ///         {
+    ///             if (x % 4 is 1 or 2 &amp;&amp; y % 4 is 1 or 2)
+    ///             {
+    ///                 largest = Math.Max(largest, Math.Abs(page.Frames[0][x, y].B - photo.Frames[0][x, y].B));
+    ///             }
+    ///         }
+    ///     }
+    ///
+    ///     Assert.InRange(largest, 0, 16);
+    /// }
     /// </code>
     /// </example>
     /// <param name="image">The image to modify.</param>

@@ -33,6 +33,28 @@ public static partial class ImageProcessingExtensions
     /// </remarks>
     /// <example>
     /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Imaging.Processing.Tests/MorphologyTests.cs" ref:region="Morphology_RemoveSpecks" ref:dedent="true">
+    /// [Fact]
+    /// public void Morphology_RemoveSpecks()
+    /// {
+    ///     // A dark page with a bright one-pixel speck and a bright 5x5 square
+    ///     using var image = new Image&lt;Gray8&gt;(16, 16, new Gray8(20));
+    ///     image.Frames[0][2, 2] = new Gray8(250);
+    ///     for (var y = 8; y &lt; 13; y++)
+    ///     {
+    ///         for (var x = 8; x &lt; 13; x++)
+    ///         {
+    ///             image.Frames[0][x, y] = new Gray8(200);
+    ///         }
+    ///     }
+    ///
+    ///     // An opening by a 3x3 square removes what is smaller than the square, and keeps the larger square intact
+    ///     image.MorphologicalOpen(StructuringElement.CreateRectangle(1, 1));
+    ///
+    ///     Assert.Equal(20, image.Frames[0][2, 2].Value);
+    ///     Assert.Equal(200, image.Frames[0][8, 8].Value);
+    ///     Assert.Equal(200, image.Frames[0][12, 12].Value);
+    ///     Assert.Equal(20, image.Frames[0][13, 13].Value);
+    /// }
     /// </code>
     /// </example>
     /// <param name="image">The image to modify.</param>

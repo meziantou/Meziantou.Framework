@@ -43,10 +43,6 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
     // The smallest number of samples of a range of the level shift that a worker takes
     private const int MinSamplesPerRange = 16 * 1024;
 
-    // How many coefficients around the area of a region a sub-band keeps: the synthesis of a level reads up to 3 of
-    // them on each side (4 lifting steps of the 9-7 filter), and the levels below add less than as many again
-    private const int RegionMargin = 8;
-
     private readonly ImageCodecContext _context;
     private readonly int _maxDegreeOfParallelism;
 
@@ -68,13 +64,14 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
     /// <param name="coding">The coding parameters of the tile.</param>
     /// <param name="geometry">The partition of the tile, which says the resolution levels to decode.</param>
     /// <param name="tile">The data of the tile.</param>
-    /// <param name="region">
-    /// The area of the reference grid that is needed, or <see langword="null"/> for the whole tile: the code-blocks whose
-    /// coefficients do not reach it are not decoded (they are zeros), so that only the samples of the area are exact.
+    /// <param name="window">
+    /// The area of the reference grid, at the decoded resolution, that is needed (it meets the tile), or
+    /// <see langword="null"/> for the whole tile: only the samples the area needs are rebuilt
+    /// (<see cref="Jpeg2000TileComponent.SampleArea"/>), from the code-blocks that reach them (<see cref="Jpeg2000RegionPlan"/>).
     /// </param>
     /// <returns>The features the tile used.</returns>
     /// <exception cref="InvalidImageContentException">The data of the tile is malformed.</exception>
-    public Jpeg2000Tools Decode(Jpeg2000Siz siz, Jpeg2000TileCoding coding, Jpeg2000TileGeometry geometry, Jpeg2000Tile tile, Jpeg2000Area? region = null)
+    public Jpeg2000Tools Decode(Jpeg2000Siz siz, Jpeg2000TileCoding coding, Jpeg2000TileGeometry geometry, Jpeg2000Tile tile, Jpeg2000Area? window = null)
     {
         var scope = _context.Scope;
         var tools = coding.Tools;
@@ -82,11 +79,20 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
         packets.ReadPackets();
         tools |= packets.Tools;
 
+        var plan = window is { } area ? Jpeg2000RegionPlan.Create(siz, geometry, area) : null;
         var scratchLength = 0L;
         foreach (var component in geometry.Components)
         {
-            component.AllocatePlane(scope);
-            scratchLength = Math.Max(scratchLength, Jpeg2000Dwt.GetScratchLength(component.Width, component.Height));
+            if (plan is null)
+            {
+                component.AllocatePlane(scope);
+                scratchLength = Math.Max(scratchLength, Jpeg2000Dwt.GetScratchLength(component.Width, component.Height));
+            }
+            else
+            {
+                scratchLength = Math.Max(scratchLength, plan.AllocatePlane(scope, component));
+            }
+
             for (var r = 0; r <= component.Style.DecompositionLevels; r++)
             {
                 if (geometry.Resolutions[component.FirstResolution + r].PrecinctCount > 1)
@@ -98,10 +104,9 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
 
         var main = _workers[0];
         main.EnsureScratch(scratchLength);
-        var bandWindows = GetBandWindows(siz, geometry, region);
         var workers = Jpeg2000Workers.GetWorkerCount(_maxDegreeOfParallelism, (geometry.OutputX1 - geometry.OutputX0) * (geometry.OutputY1 - geometry.OutputY0), geometry.Blocks.Length);
         if (workers > 1)
-            return tools | DecodeByWorkers(coding, geometry, packets, tile.Body.Data, scratchLength, workers, bandWindows);
+            return tools | DecodeByWorkers(coding, geometry, packets, tile.Body.Data, scratchLength, workers, plan);
 
         var contributions = packets.Contributions;
         var body = tile.Body.Data;
@@ -116,15 +121,22 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
             {
                 for (var b = 0; b < resolution.BandCount; b++)
                 {
-                    ref readonly var band = ref geometry.Bands[resolution.FirstBand + b];
-                    var window = bandWindows?[resolution.FirstBand + b];
+                    var bandIndex = resolution.FirstBand + b;
+                    ref readonly var band = ref geometry.Bands[bandIndex];
                     var blocks = geometry.Blocks.Slice(band.FirstBlock, band.BlocksWide * band.BlocksHigh);
                     foreach (ref readonly var block in blocks)
                     {
-                        if (block.PassCount == 0 || (window is { } area && !IsInWindow(in block, area)))
+                        // A code-block that does not reach the coefficients a region needs is not decoded: its area is
+                        // not used, or it is zeros in a whole plane
+                        var isNeeded = plan is null || IsInWindow(in block, plan.Bands[bandIndex]);
+                        if (block.PassCount == 0 || !isNeeded)
                         {
                             // The plane is not cleared: a code-block without coding pass gives zeros
-                            ClearBlock(component, in band, in block);
+                            if (isNeeded || !plan!.IsWindowed(component))
+                            {
+                                ClearBlock(GetTarget(component, in band, in block, plan, bandIndex));
+                            }
+
                             continue;
                         }
 
@@ -133,13 +145,19 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
                             _context.CancellationToken.ThrowIfCancellationRequested();
                         }
 
-                        tools |= DecodeBlock(main, component, in band, in block, contributions, body);
+                        tools |= DecodeBlock(main, component, in band, in block, contributions, body, plan, bandIndex);
                     }
                 }
             }
 
             if (component.Width == 0 || component.Height == 0)
                 continue;
+
+            if (plan is not null && plan.IsWindowed(component))
+            {
+                plan.Reconstruct(component, [scratch], workers: 1);
+                continue;
+            }
 
             if (component.Style.IsReversible)
             {
@@ -149,6 +167,8 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
             {
                 Jpeg2000Dwt.InverseIrreversible(component.Coefficients, component.Width, resolutions, unsafe(MemoryMarshal.Cast<int, float>(scratch.Span)));
             }
+
+            plan?.Reconstruct(component, [scratch], workers: 1);
         }
 
         _context.CancellationToken.ThrowIfCancellationRequested();
@@ -170,7 +190,7 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
     /// Decodes the code-blocks of a tile by several workers, then transforms its planes by several workers: what
     /// <see cref="Decode"/> does with one worker.
     /// </summary>
-    private Jpeg2000Tools DecodeByWorkers(Jpeg2000TileCoding coding, Jpeg2000TileGeometry geometry, Jpeg2000PacketReader packets, byte[] body, long scratchLength, int workers, Jpeg2000Area[]? bandWindows)
+    private Jpeg2000Tools DecodeByWorkers(Jpeg2000TileCoding coding, Jpeg2000TileGeometry geometry, Jpeg2000PacketReader packets, byte[] body, long scratchLength, int workers, Jpeg2000RegionPlan? plan)
     {
         var scope = _context.Scope;
         var cancellationToken = _context.CancellationToken;
@@ -227,14 +247,19 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
             ref readonly var band = ref geometry.Bands[bandIndex];
             ref readonly var block = ref geometry.Blocks[index];
             var component = geometry.Components[bandComponents[bandIndex]];
-            if (block.PassCount == 0 || (bandWindows is not null && !IsInWindow(in block, bandWindows[bandIndex])))
+            var isNeeded = plan is null || IsInWindow(in block, plan.Bands[bandIndex]);
+            if (block.PassCount == 0 || !isNeeded)
             {
-                ClearBlock(component, in band, in block);
+                if (isNeeded || !plan!.IsWindowed(component))
+                {
+                    ClearBlock(GetTarget(component, in band, in block, plan, bandIndex));
+                }
+
                 return;
             }
 
             var worker = _workers[w];
-            worker.Tools |= DecodeBlock(worker, component, in band, in block, packets.Contributions, body);
+            worker.Tools |= DecodeBlock(worker, component, in band, in block, packets.Contributions, body, plan, bandIndex);
         });
 
         var tools = Jpeg2000Tools.None;
@@ -249,6 +274,12 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
             if (component.Width == 0 || component.Height == 0)
                 continue;
 
+            if (plan is not null && plan.IsWindowed(component))
+            {
+                plan.Reconstruct(component, scratch, workers);
+                continue;
+            }
+
             var resolutions = new ArraySegment<Jpeg2000ResolutionGeometry>(geometry.Resolutions, component.FirstResolution, component.DecodedLevels + 1);
             if (component.Style.IsReversible)
             {
@@ -258,48 +289,13 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
             {
                 Jpeg2000Dwt.InverseIrreversible(component.Plane!, component.Width, resolutions, scratch, workers);
             }
+
+            plan?.Reconstruct(component, scratch, workers);
         }
 
         cancellationToken.ThrowIfCancellationRequested();
         FinishSamples(coding, geometry, workers);
         return tools;
-    }
-
-    /// <summary>
-    /// Gets, for each sub-band of the tile, the coefficients that reach a region of the reference grid, relative to the
-    /// sub-band: those of the area of the region in the sub-band (equation B-15), and <see cref="RegionMargin"/> more on each
-    /// side for the filters. <see langword="null"/> without region.
-    /// </summary>
-    private static Jpeg2000Area[]? GetBandWindows(Jpeg2000Siz siz, Jpeg2000TileGeometry geometry, Jpeg2000Area? region)
-    {
-        if (region is not { } area)
-            return null;
-
-        var windows = new Jpeg2000Area[geometry.Bands.Length];
-        foreach (var component in geometry.Components)
-        {
-            var size = siz.Components[component.Index];
-            var componentArea = new Jpeg2000Area(Jpeg2000Siz.CeilingDivide(area.X0, size.XSubsampling), Jpeg2000Siz.CeilingDivide(area.Y0, size.YSubsampling), Jpeg2000Siz.CeilingDivide(area.X1, size.XSubsampling), Jpeg2000Siz.CeilingDivide(area.Y1, size.YSubsampling));
-            var levels = component.Style.DecompositionLevels;
-            for (var r = 0; r <= levels; r++)
-            {
-                ref readonly var resolution = ref geometry.Resolutions[component.FirstResolution + r];
-                for (var b = 0; b < resolution.BandCount; b++)
-                {
-                    ref readonly var band = ref geometry.Bands[resolution.FirstBand + b];
-                    var level = r == 0 ? levels : levels - r + 1;
-                    var offsetX = r != 0 && b != 1 ? 1L << (level - 1) : 0;
-                    var offsetY = r != 0 && b != 0 ? 1L << (level - 1) : 0;
-                    windows[resolution.FirstBand + b] = new Jpeg2000Area(
-                        Jpeg2000TileGeometry.CeilingShift(componentArea.X0 - offsetX, level) - RegionMargin - band.X0,
-                        Jpeg2000TileGeometry.CeilingShift(componentArea.Y0 - offsetY, level) - RegionMargin - band.Y0,
-                        Jpeg2000TileGeometry.CeilingShift(componentArea.X1 - offsetX, level) + RegionMargin - band.X0,
-                        Jpeg2000TileGeometry.CeilingShift(componentArea.Y1 - offsetY, level) + RegionMargin - band.Y0);
-                }
-            }
-        }
-
-        return windows;
     }
 
     /// <summary>Determines whether a code-block has coefficients in a window of its sub-band.</summary>
@@ -438,7 +434,7 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
         }
     }
 
-    private Jpeg2000Tools DecodeBlock(BlockWorker worker, Jpeg2000TileComponent component, in Jpeg2000BandGeometry band, in Jpeg2000CodeBlock block, ReadOnlySpan<Jpeg2000Contribution> contributions, byte[] body)
+    private Jpeg2000Tools DecodeBlock(BlockWorker worker, Jpeg2000TileComponent component, in Jpeg2000BandGeometry band, in Jpeg2000CodeBlock block, ReadOnlySpan<Jpeg2000Contribution> contributions, byte[] body, Jpeg2000RegionPlan? plan, int bandIndex)
     {
         var tools = Jpeg2000Tools.None;
         var style = component.Style.CodeBlockStyle;
@@ -448,7 +444,7 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
         if ((style & Jpeg2000CodingStyle.StyleHighThroughput) != 0)
         {
             tools = DecodeHighThroughputBlock(worker, samples, in band, in block, contributions, body, (style & Jpeg2000CodingStyle.StyleVerticallyCausal) != 0);
-            StoreBlock(component, in band, in block, samples);
+            StoreBlock(component, in band, GetTarget(component, in band, in block, plan, bandIndex), samples);
             return tools;
         }
 
@@ -511,7 +507,7 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
         }
 
         worker.Tier1.Decode(samples, width, height, band.Orientation, style, bitPlanes, data, segments[..segmentCount]);
-        StoreBlock(component, in band, in block, samples);
+        StoreBlock(component, in band, GetTarget(component, in band, in block, plan, bandIndex), samples);
         return tools;
     }
 
@@ -568,43 +564,65 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
         static int GetPassCount(int refinementPasses, int refinementLength) => refinementLength == 0 ? 1 : 1 + refinementPasses;
     }
 
-    /// <summary>Clears the area of a code-block in the plane of its tile-component.</summary>
-    private static void ClearBlock(Jpeg2000TileComponent component, in Jpeg2000BandGeometry band, in Jpeg2000CodeBlock block)
+    /// <summary>
+    /// Gets where the coefficients of a code-block go: its area in the plane of its tile-component, or, when a region
+    /// rebuilds the tile-component on its areas, the part of the code-block in the coefficients the region needs of the
+    /// sub-band (<see cref="Jpeg2000TileComponent.BandCoefficients"/>).
+    /// </summary>
+    private static BlockTarget GetTarget(Jpeg2000TileComponent component, in Jpeg2000BandGeometry band, in Jpeg2000CodeBlock block, Jpeg2000RegionPlan? plan, int bandIndex)
     {
-        var stride = component.Width;
-        var origin = ((band.PlaneY + block.Y) * stride) + band.PlaneX + block.X;
-        var plane = component.Samples;
-        for (var y = 0; y < block.Height; y++)
+        if (plan is null || !plan.IsWindowed(component))
         {
-            plane.Slice(origin + (y * stride), block.Width).Clear();
+            var stride = component.Width;
+            return new BlockTarget(component.Samples, ((band.PlaneY + block.Y) * stride) + band.PlaneX + block.X, stride, 0, block.Width, block.Width, block.Height);
+        }
+
+        var window = plan.Bands[bandIndex];
+        var x0 = (int)Math.Max(block.X, window.X0);
+        var y0 = (int)Math.Max(block.Y, window.Y0);
+        var x1 = (int)Math.Min(block.X + block.Width, window.X1);
+        var y1 = (int)Math.Min(block.Y + block.Height, window.Y1);
+        var windowWidth = (int)(window.X1 - window.X0);
+        var origin = plan.GetBandOffset(bandIndex) + ((y0 - (int)window.Y0) * windowWidth) + x0 - (int)window.X0;
+        return new BlockTarget(component.BandCoefficients, origin, windowWidth, ((y0 - block.Y) * block.Width) + x0 - block.X, block.Width, x1 - x0, y1 - y0);
+    }
+
+    /// <summary>Clears the area of a code-block where its coefficients go.</summary>
+    private static void ClearBlock(BlockTarget target)
+    {
+        for (var y = 0; y < target.Height; y++)
+        {
+            target.Destination.Slice(target.Origin + (y * target.Stride), target.Width).Clear();
         }
     }
 
-    /// <summary>Dequantizes the coefficients of a code-block into the plane of its tile-component.</summary>
-    private static void StoreBlock(Jpeg2000TileComponent component, in Jpeg2000BandGeometry band, in Jpeg2000CodeBlock block, ReadOnlySpan<int> samples)
+    /// <summary>Dequantizes the coefficients of a code-block where they go.</summary>
+    /// <param name="component">The tile-component of the code-block.</param>
+    /// <param name="band">The sub-band of the code-block.</param>
+    /// <param name="target">Where the coefficients go.</param>
+    /// <param name="samples">The coefficients of the block decoder, in rows of the width of the code-block.</param>
+    private static void StoreBlock(Jpeg2000TileComponent component, in Jpeg2000BandGeometry band, BlockTarget target, ReadOnlySpan<int> samples)
     {
-        int width = block.Width;
-        int height = block.Height;
-
-        // The area of the code-block in the plane
-        var stride = component.Width;
-        var origin = ((band.PlaneY + block.Y) * stride) + band.PlaneX + block.X;
+        var width = target.Width;
+        var height = target.Height;
+        var stride = target.Stride;
+        var origin = target.Origin;
         var regionShift = component.RegionShift;
         if (component.Style.IsReversible)
         {
-            var plane = component.Samples;
+            var plane = target.Destination;
             for (var y = 0; y < height; y++)
             {
-                StoreReversible(samples.Slice(y * width, width), plane.Slice(origin + (y * stride), width), regionShift);
+                StoreReversible(samples.Slice(target.Source + (y * target.SourceStride), width), plane.Slice(origin + (y * stride), width), regionShift);
             }
         }
         else
         {
-            var plane = component.Coefficients;
+            var plane = unsafe(MemoryMarshal.Cast<int, float>(target.Destination));
             var halfStep = band.HalfStepSize;
             for (var y = 0; y < height; y++)
             {
-                StoreIrreversible(samples.Slice(y * width, width), plane.Slice(origin + (y * stride), width), regionShift, halfStep);
+                StoreIrreversible(samples.Slice(target.Source + (y * target.SourceStride), width), plane.Slice(origin + (y * stride), width), regionShift, halfStep);
             }
         }
     }
@@ -718,6 +736,42 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
             var coefficient = magnitude * halfStep;
             destination[x] = value < 0 ? -coefficient : coefficient;
         }
+    }
+
+    /// <summary>Where the coefficients of a code-block go: an area of a plane, and the coefficients of the code-block it receives.</summary>
+    private readonly ref struct BlockTarget
+    {
+        public BlockTarget(Span<int> destination, int origin, int stride, int source, int sourceStride, int width, int height)
+        {
+            Destination = destination;
+            Origin = origin;
+            Stride = stride;
+            Source = source;
+            Width = width;
+            Height = height;
+            SourceStride = sourceStride;
+        }
+
+        /// <summary>Gets the plane.</summary>
+        public Span<int> Destination { get; }
+
+        /// <summary>Gets the position of the first coefficient of the area in <see cref="Destination"/>.</summary>
+        public int Origin { get; }
+
+        /// <summary>Gets the distance between two rows of the area.</summary>
+        public int Stride { get; }
+
+        /// <summary>Gets the position, in the coefficients of the code-block, of the first one the area receives.</summary>
+        public int Source { get; }
+
+        /// <summary>Gets the distance between two rows of the coefficients of the code-block: its width.</summary>
+        public int SourceStride { get; }
+
+        /// <summary>Gets the number of columns of the area.</summary>
+        public int Width { get; }
+
+        /// <summary>Gets the number of rows of the area.</summary>
+        public int Height { get; }
     }
 
     /// <summary>The state of a worker: its block decoders, the coefficients of its code-block, its buffers.</summary>

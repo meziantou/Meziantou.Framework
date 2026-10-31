@@ -911,26 +911,31 @@ public sealed class Jpeg2000DecoderTests
     }
 
     /// <summary>
-    /// A region is decoded from the tiles it meets and the code-blocks that reach it: its samples are those of a full
-    /// decode, at every scale, with one worker or several, on the edges of the image and of the tiles.
+    /// A region is decoded from the tiles it meets and the code-blocks that reach it, and only the samples it needs are
+    /// rebuilt: its samples are those of a full decode, at every scale, with one worker or several, on the edges of the
+    /// image and of the tiles, whatever the number of decomposition levels.
     /// </summary>
     [Theory]
     [InlineData(Jpeg2000Compression.Lossless, 0, 0)]
     [InlineData(Jpeg2000Compression.Lossless, 100, 64)]
+    [InlineData(Jpeg2000Compression.Lossless, 0, 0, 8)]
     [InlineData(Jpeg2000Compression.Lossy, 0, 0)]
     [InlineData(Jpeg2000Compression.Lossy, 128, 128)]
-    public void ARegionHasTheSamplesOfAFullDecode(Jpeg2000Compression compression, int tileWidth, int tileHeight)
+    [InlineData(Jpeg2000Compression.Lossy, 0, 0, 0)]
+    [InlineData(Jpeg2000Compression.Lossy, 0, 0, 1)]
+    [InlineData(Jpeg2000Compression.Lossy, 0, 0, 8)]
+    public void ARegionHasTheSamplesOfAFullDecode(Jpeg2000Compression compression, int tileWidth, int tileHeight, int levels = 5)
     {
-        var data = EncodeImage(300, 230, new Jpeg2000Encoder { Compression = compression, TileWidth = tileWidth, TileHeight = tileHeight }, seed: 3);
-        Rectangle[] regions = [new(0, 0, 300, 230), new(0, 0, 1, 1), new(299, 229, 1, 1), new(101, 63, 77, 41), new(250, 10, 400, 30), new(63, 0, 2, 230), new(128, 128, 64, 64)];
-        foreach (var denominator in (int[])[1, 2, 8])
+        var data = EncodeImage(300, 230, new Jpeg2000Encoder { Compression = compression, TileWidth = tileWidth, TileHeight = tileHeight, DecompositionLevels = levels }, seed: 3);
+        Rectangle[] regions = [new(0, 0, 300, 230), new(0, 0, 1, 1), new(299, 229, 1, 1), new(101, 63, 77, 41), new(250, 10, 400, 30), new(63, 0, 2, 230), new(128, 128, 64, 64), new(1, 1, 298, 228), new(150, 0, 1, 1)];
+        foreach (var denominator in ((int[])[1, 2, 8]).Where(denominator => denominator <= 1 << levels))
         {
             foreach (var workers in (int[])[1, 16])
             {
                 using var full = Image.Load<Rgba32>(data, new ImageDecodeOptions { ScaleDenominator = denominator });
                 foreach (var region in regions)
                 {
-                    var context = $"{compression}, tiles {tileWidth}x{tileHeight}, 1/{denominator}, {workers} workers, region {region}";
+                    var context = $"{compression}, tiles {tileWidth}x{tileHeight}, {levels} levels, 1/{denominator}, {workers} workers, region {region}";
                     using var decoded = Image.Load<Rgba32>(data, new ImageDecodeOptions { ScaleDenominator = denominator, Region = region, Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers } });
 
                     // The region is cut to the image, then divided like the image; at least one pixel is kept
@@ -990,25 +995,43 @@ public sealed class Jpeg2000DecoderTests
 
     /// <summary>
     /// The memory of a decode follows what it produces: a decode at a quarter of the size allocates a sixteenth of the
-    /// planes, and a region inside one tile decodes that tile only.
+    /// planes, a region inside one tile decodes that tile only, and a region of an image of one tile rebuilds the samples
+    /// it needs only.
     /// </summary>
-    [Fact]
-    public void ScaledDecodesAndRegionsAllocateWhatTheyProduce()
+    [Theory]
+    [InlineData(Jpeg2000Compression.Lossless, 1)]
+    [InlineData(Jpeg2000Compression.Lossy, 1)]
+    [InlineData(Jpeg2000Compression.Lossy, 16)]
+    public void ScaledDecodesAndRegionsAllocateWhatTheyProduce(Jpeg2000Compression compression, int workers)
     {
-        var data = EncodeImage(1024, 768, new Jpeg2000Encoder { TileWidth = 256, TileHeight = 256 }, seed: 8);
-        var full = MeasurePeak(scaleDenominator: 1, region: null);
-        var quarter = MeasurePeak(scaleDenominator: 4, region: null);
-        var region = MeasurePeak(scaleDenominator: 1, new Rectangle(300, 300, 100, 100));
+        var data = EncodeImage(1024, 768, new Jpeg2000Encoder { Compression = compression, TileWidth = 256, TileHeight = 256 }, seed: 8);
+        var full = MeasurePeak(data, scaleDenominator: 1, region: null);
+        var quarter = MeasurePeak(data, scaleDenominator: 4, region: null);
+        var region = MeasurePeak(data, scaleDenominator: 1, new Rectangle(300, 300, 100, 100));
 
         // The full decode holds the image (4 bytes a pixel) and the planes of a tile (4 bytes a sample); a region holds the
-        // planes of the one tile it meets, which is transformed whole
+        // part of the one tile it meets that it needs
         Assert.True(quarter < full / 4, $"Full: {full} bytes; a quarter: {quarter} bytes.");
         Assert.True(region < full / 2, $"Full: {full} bytes; a region: {region} bytes.");
 
-        long MeasurePeak(int scaleDenominator, Rectangle? region)
+        // One tile: the planes of the tile are 4 times the image, and the areas a region needs are a few more samples than
+        // the region (rebuilding the whole tile kept 85 % of the memory of a full decode); the compressed tile is read whole,
+        // and the workers have their own buffers
+        var oneTile = EncodeImage(1024, 768, new Jpeg2000Encoder { Compression = compression }, seed: 8);
+        var oneTileFull = MeasurePeak(oneTile, scaleDenominator: 1, region: null);
+        var oneTileRegion = MeasurePeak(oneTile, scaleDenominator: 1, new Rectangle(300, 300, 100, 100));
+        Assert.True(oneTileRegion - oneTile.Length < (oneTileFull - oneTile.Length) / 5, $"Full: {oneTileFull} bytes; a region: {oneTileRegion} bytes; the file: {oneTile.Length} bytes.");
+
+        // A region whose planes would exceed the limit of a full decode
+        var limit = new ImageResourceLimits { MaxLiveAllocationBytes = oneTileRegion + (512 * 1024) };
+        Assert.True(limit.MaxLiveAllocationBytes < oneTileFull);
+        using var viewport = Image.Load(oneTile, new ImageDecodeOptions { Region = new Rectangle(300, 300, 100, 100), Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers, Limits = limit } });
+        Assert.Equal(new Size(100, 100), viewport.Size);
+
+        long MeasurePeak(byte[] data, int scaleDenominator, Rectangle? region)
         {
             using var tracking = new AllocationTracking();
-            using var image = Image.Load(data, new ImageDecodeOptions { ScaleDenominator = scaleDenominator, Region = region, Configuration = new ImageConfiguration { MaxDegreeOfParallelism = 1 } });
+            using var image = Image.Load(data, new ImageDecodeOptions { ScaleDenominator = scaleDenominator, Region = region, Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers } });
             return tracking.Scopes.Max(static scope => scope.GetDiagnostics().PeakLiveBytes);
         }
     }

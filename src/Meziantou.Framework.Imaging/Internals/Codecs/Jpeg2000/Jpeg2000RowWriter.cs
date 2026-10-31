@@ -263,23 +263,25 @@ internal sealed class Jpeg2000RowWriter : IDisposable
     {
         var size = _siz.Components[channel.Component];
         var component = geometry.Components[channel.Component];
-        var componentWidth = component.Width;
-        if (componentWidth == 0 || component.Height == 0)
+        if (component.Width == 0 || component.Height == 0)
         {
             // A tile narrower than the sub-sampling may hold no sample of a component
             values.Clear();
             return;
         }
 
-        var rowIndex = (int)(Math.Clamp(y / size.YSubsampling, component.Y0, component.Y1 - 1) - component.Y0);
-        var samples = component.Samples.Slice(rowIndex * componentWidth, componentWidth);
+        // The plane holds the samples of its sample area, which has every sample the window of the frame reads
+        var area = component.SampleArea;
+        var sampleWidth = (int)(area.X1 - area.X0);
+        var rowIndex = (int)(Math.Clamp(y / size.YSubsampling, area.Y0, area.Y1 - 1) - area.Y0);
+        var samples = component.Samples.Slice(rowIndex * sampleWidth, sampleWidth);
         if (size.XSubsampling == 1)
         {
-            samples.Slice((int)(x - component.X0), values.Length).CopyTo(values);
+            samples.Slice((int)(x - area.X0), values.Length).CopyTo(values);
         }
         else
         {
-            ReplicateColumns(samples, values, x, size.XSubsampling, component.X0);
+            ReplicateColumns(samples, values, x, size.XSubsampling, area.X0);
         }
 
         if (channel.PaletteColumn >= 0)

@@ -699,12 +699,20 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   - Scaled and region decoding (`Jpeg2000Decoder`): `Jpeg2000TileGeometry.Create(..., reduction)` keeps the full partition
     (the packets and the position progressions need it) but gives each tile-component the bounds and the levels
     (`DecodedLevels`) of the highest resolution level that is decoded, so the plane, the strides and the inverse
-    transformation are those of that level; the code-blocks of the discarded levels are not decoded. A region is an area of
-    the reference grid at full resolution, rebuilt from the output window (so a sample kept for a narrow region is decoded):
-    the tiles it does not meet are skipped (`OnTile`), and `Jpeg2000TileDecoder.GetBandWindows` keeps the code-blocks that
-    reach it with `RegionMargin` coefficients more for the filters (others are zeros). `Jpeg2000RowWriter` writes the
-    window. `ScaledDecodesAndRegionsAreTheOnesOfOpenJpeg` compares with `opj_decompress -r` and `-d` (OpenJPEG rejects a
-    region that has no sample at the reduced resolution); `ARegionHasTheSamplesOfAFullDecode` checks the margin.
+    transformation are those of that level; the code-blocks of the discarded levels are not decoded. A region is the output
+    window, an area of the reference grid at the decoded resolution: the tiles that have no pixel of it are skipped
+    (`OnTile`), and `Jpeg2000RegionPlan` computes, from the top level down, the samples `Jpeg2000RowWriter` reads, the area
+    each level is rebuilt on (what the level above needs, widened by the number of lifting steps of the filter, 2 or 4,
+    so that the error of the symmetric extension at an inner edge never reaches what is kept) and the coefficients of each
+    sub-band those areas need. The code-blocks that do not reach them are not decoded. A tile-component whose areas and
+    coefficients hold fewer samples than its plane is rebuilt on them (`BandCoefficients`, then one level at a time
+    through the kernels of `Jpeg2000Dwt`, given the bounds of the area); the others are transformed whole. Both are cut to
+    `SampleArea`, the samples the row writer reads, and are bit-exact with a full decode: the kernels compute every sample
+    the same way whatever the length of the signal. `ARegionHasTheSamplesOfAFullDecode` checks them,
+    `ScaledDecodesAndRegionsAllocateWhatTheyProduce` the memory, and `ScaledDecodesAndRegionsAreTheOnesOfOpenJpeg` compares
+    with `opj_decompress -r` and `-d` (OpenJPEG rejects a region that has no sample at the reduced resolution). On
+    2026-10-31, all the decodes of 127 files (the corpus and files of the library with 0 to 10 levels), at every scale,
+    with 21 regions each and 1 or 16 workers, were the ones of the previous implementation, which transformed whole tiles.
 - **TIFF** (`Internals/Codecs/Tiff`). `TiffPage` resolves and validates a directory without reading a pixel, so every
   rejection also comes from `Identify`, except the ones of the compressed data. `TiffBlockReader` turns a strip or a
   tile into rows of samples (fill order, compression, predictor, YCbCr data units) and `TiffRowExpander` turns the rows

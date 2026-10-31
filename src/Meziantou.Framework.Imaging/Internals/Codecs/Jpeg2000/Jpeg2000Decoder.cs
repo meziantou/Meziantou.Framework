@@ -21,7 +21,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </description></item>
 /// <item><description>
 /// A region (<see cref="ImageDecodeRequest.Region"/>) is an area of the reference grid at full resolution: the tiles it
-/// does not meet are not decoded, and in the others only the code-blocks whose coefficients reach it.
+/// does not meet are not decoded, and in the others only the code-blocks whose coefficients reach it, and only the
+/// samples it needs are rebuilt (<see cref="Jpeg2000RegionPlan"/>).
 /// </description></item>
 /// </list>
 /// </remarks>
@@ -36,10 +37,10 @@ internal sealed class Jpeg2000Decoder : Jpeg2000DecodeObserver
     private IccPipeline? _inkConversion;
     private bool _framePending;
 
-    // The resolution levels that are discarded, the area of the reference grid at full resolution that is decoded (null
-    // for the whole image), and that area at the decoded resolution: the frame
+    // The resolution levels that are discarded, whether a region is decoded, and the area of the reference grid at the
+    // decoded resolution that the frame holds
     private int _reduction;
-    private Jpeg2000Area? _region;
+    private bool _isRegion;
     private Jpeg2000Area _window;
 
     public Jpeg2000Decoder(ImageDecodeRequest request, ImageCodecContext context)
@@ -90,11 +91,7 @@ internal sealed class Jpeg2000Decoder : Jpeg2000DecodeObserver
         var windowX0 = window.X1 > window.X0 ? window.X0 : Math.Min(window.X0, image.X1 - 1);
         var windowY0 = window.Y1 > window.Y0 ? window.Y0 : Math.Min(window.Y0, image.Y1 - 1);
         _window = new Jpeg2000Area(windowX0, windowY0, Math.Max(window.X1, windowX0 + 1), Math.Max(window.Y1, windowY0 + 1));
-        if (_request.Region is not null)
-        {
-            // The samples of the window cover this area of the full resolution: the tiles and the code-blocks to decode
-            _region = new Jpeg2000Area(_window.X0 << _reduction, _window.Y0 << _reduction, _window.X1 << _reduction, _window.Y1 << _reduction).Intersect(new Jpeg2000Area(siz.XOffset, siz.YOffset, siz.XSize, siz.YSize));
-        }
+        _isRegion = _request.Region is not null;
         var size = new Size((int)(_window.X1 - _window.X0), (int)(_window.Y1 - _window.Y0));
         if (size != structure.Size)
         {
@@ -119,15 +116,15 @@ internal sealed class Jpeg2000Decoder : Jpeg2000DecodeObserver
 
         var siz = structure.Siz;
 
-        // A tile that the region does not meet is not decoded
+        // A tile that has no pixel of the region is not decoded
         siz.GetTileBounds(tile.Index, out var x0, out var y0, out var x1, out var y1);
-        if (_region is { } region && new Jpeg2000Area(x0, y0, x1, y1).Intersect(region).IsEmpty)
+        if (_isRegion && new Jpeg2000Area(x0, y0, x1, y1).Reduce(_reduction).Intersect(_window).IsEmpty)
             return;
 
         var coding = Jpeg2000TileCoding.Resolve(siz, structure.MainHeader, tile.Headers, structure.Capabilities);
         using var geometry = Jpeg2000TileGeometry.Create(_context.Scope, siz, coding, tile.Index, _reduction);
         _tileDecoder ??= new Jpeg2000TileDecoder(_context, _context.Configuration.MaxDegreeOfParallelism);
-        structure.AddTools(_tileDecoder.Decode(siz, coding, geometry, tile, _region));
+        structure.AddTools(_tileDecoder.Decode(siz, coding, geometry, tile, _isRegion ? _window : null));
         _rowWriter ??= new Jpeg2000RowWriter(_context, siz, structure.Layout, sink, _inkConversion, _window);
         _rowWriter.WriteTile(geometry);
     }

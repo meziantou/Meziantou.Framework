@@ -1,5 +1,4 @@
 using System.Numerics;
-using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -46,7 +45,7 @@ internal sealed class Jpeg2000PacketReader : IDisposable
     private bool _isExhausted;
     private Av1PooledArray<Jpeg2000Contribution>? _contributions;
     private int _contributionCount;
-    private Av1PooledArray<Position>? _positions;
+    private Av1PooledArray<Jpeg2000PacketPosition>? _positions;
     private int _positionOrder = -1;
 
     public Jpeg2000PacketReader(AllocationScope scope, Jpeg2000Siz siz, Jpeg2000TileCoding coding, Jpeg2000TileGeometry geometry, Jpeg2000Tile tile, CancellationToken cancellationToken)
@@ -186,79 +185,21 @@ internal sealed class Jpeg2000PacketReader : IDisposable
     }
 
     /// <summary>Gets the precincts of the tile in the order one of the position progressions visits them.</summary>
-    private ReadOnlySpan<Position> GetPositions(int progression)
+    private ReadOnlySpan<Jpeg2000PacketPosition> GetPositions(int progression)
     {
         if (_positions is null)
         {
-            _positions = Av1PooledArray<Position>.Rent(_scope, _geometry.PrecinctCount, clear: false);
-            var positions = _positions.Span;
-            var index = 0;
-            foreach (var component in _geometry.Components)
-            {
-                var size = _siz.Components[component.Index];
-                var levels = component.Style.DecompositionLevels;
-                for (var r = 0; r <= levels; r++)
-                {
-                    ref readonly var resolution = ref _geometry.Resolutions[component.FirstResolution + r];
-                    var firstColumn = resolution.X0 >> resolution.PrecinctWidthExponent;
-                    var firstRow = resolution.Y0 >> resolution.PrecinctHeightExponent;
-
-                    // The size of a sample of the resolution level on the reference grid
-                    var scaleX = (long)size.XSubsampling << (levels - r);
-                    var scaleY = (long)size.YSubsampling << (levels - r);
-                    for (var py = 0; py < resolution.PrecinctsHigh; py++)
-                    {
-                        // A precinct that starts before the tile is visited at the edge of the tile
-                        var top = (firstRow + py) << resolution.PrecinctHeightExponent;
-                        var y = top < resolution.Y0 ? _geometry.Y0 : top * scaleY;
-                        for (var px = 0; px < resolution.PrecinctsWide; px++)
-                        {
-                            var left = (firstColumn + px) << resolution.PrecinctWidthExponent;
-                            var x = left < resolution.X0 ? _geometry.X0 : left * scaleX;
-                            positions[index++] = new Position { Y = y, X = x, Component = component.Index, Resolution = r, Precinct = (py * resolution.PrecinctsWide) + px };
-                        }
-                    }
-                }
-            }
+            _positions = Av1PooledArray<Jpeg2000PacketPosition>.Rent(_scope, _geometry.PrecinctCount, clear: false);
+            Jpeg2000PacketPosition.Fill(_siz, _geometry, _positions.Span);
         }
 
         if (_positionOrder != progression)
         {
             _positionOrder = progression;
-            var positions = _positions.Span;
-            switch (progression)
-            {
-                case Jpeg2000CodingDefaults.ProgressionRpcl:
-                    positions.Sort((a, b) => Compare(a.Resolution, b.Resolution, a.Y, b.Y, a.X, b.X, a.Component, b.Component));
-                    break;
-
-                case Jpeg2000CodingDefaults.ProgressionPcrl:
-                    positions.Sort((a, b) => Compare(a.Y, b.Y, a.X, b.X, a.Component, b.Component, a.Resolution, b.Resolution));
-                    break;
-
-                default:
-                    positions.Sort((a, b) => Compare(a.Component, b.Component, a.Y, b.Y, a.X, b.X, a.Resolution, b.Resolution));
-                    break;
-            }
+            Jpeg2000PacketPosition.Sort(_positions.Span, progression);
         }
 
         return _positions.Span;
-
-        static int Compare(long a1, long b1, long a2, long b2, long a3, long b3, long a4, long b4)
-        {
-            var result = a1.CompareTo(b1);
-            if (result == 0)
-            {
-                result = a2.CompareTo(b2);
-            }
-
-            if (result == 0)
-            {
-                result = a3.CompareTo(b3);
-            }
-
-            return result == 0 ? a4.CompareTo(b4) : result;
-        }
     }
 
     private void ReadPacket(int component, int resolutionIndex, int precinct, int layer)
@@ -541,16 +482,5 @@ internal sealed class Jpeg2000PacketReader : IDisposable
         }
 
         block.LastContribution = index;
-    }
-
-    /// <summary>A precinct, and the point of the reference grid where the position progressions visit it.</summary>
-    [StructLayout(LayoutKind.Sequential)]
-    private struct Position
-    {
-        public long Y;
-        public long X;
-        public int Component;
-        public int Resolution;
-        public int Precinct;
     }
 }

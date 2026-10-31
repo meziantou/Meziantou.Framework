@@ -15,6 +15,12 @@ internal sealed class Jpeg2000Codec : ImageCodec
 
     public override ImageFormat Format => ImageFormat.Jpeg2000;
 
+    /// <summary>Gets a value indicating that the decoder discards resolution levels (<see cref="ImageDecodeRequest.ScaleDenominator"/>).</summary>
+    public override bool SupportsScaledDecoding => true;
+
+    /// <summary>Gets a value indicating that the decoder only decodes the tiles and the code-blocks of an area (<see cref="ImageDecodeRequest.Region"/>).</summary>
+    public override bool SupportsRegionDecoding => true;
+
     /// <summary>Determines whether the data starts with the SOC and SIZ markers of a codestream (<c>FF 4F FF 51</c>) or with the signature box of a file (12 bytes).</summary>
     public static bool MatchesSignature(ReadOnlySpan<byte> prefix)
         => prefix.StartsWith(Jpeg2000Format.CodestreamSignature) || prefix.StartsWith(Jpeg2000Format.FileSignature);

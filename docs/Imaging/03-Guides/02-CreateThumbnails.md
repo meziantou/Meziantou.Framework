@@ -40,7 +40,7 @@ public static void CreateThumbnail(string inputPath, string outputPath)
 
 Each step matters:
 
-1. **[TargetSize](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.TargetSize)** lets the decoder of a JPEG file produce a smaller image, at 1/2, 1/4 or 1/8 of its size, as
+1. **[TargetSize](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.TargetSize)** lets the decoder of a JPEG or JPEG 2000 file produce a smaller image, at 1/2, 1/4 or 1/8 of its size, as
    long as it stays at least as large as the box: a 4000x3000 photo is decoded as a 500x375 image, which costs a fraction
    of the memory and the time of the full photo. Other formats are decoded at full size. See
    [Decode a smaller image](../05-LoadingAndSaving/02-LoadingImages.md#decode-a-smaller-image).

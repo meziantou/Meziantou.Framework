@@ -8,9 +8,11 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// <para>
 /// Gray pixel formats are written as one component, the other formats as red, green and blue components with the
 /// multiple component transformation, and an opacity component when the pixel format has an alpha channel. The layout
-/// follows the pixel format, never the pixels. The image is one tile with one quality layer, at most five decomposition
-/// levels and code-blocks of 64 by 64 coefficients, coded with the block coder of ISO/IEC 15444-1: the high-throughput
-/// block coder (HTJ2K) is read but never written.
+/// follows the pixel format, never the pixels. By default the image is one tile with one quality layer in the
+/// <see cref="Jpeg2000ProgressionOrder.Lrcp"/> order and up to five decomposition levels; <see cref="TileWidth"/>,
+/// <see cref="TileHeight"/>, <see cref="QualityLayers"/>, <see cref="ProgressionOrder"/> and
+/// <see cref="DecompositionLevels"/> change them. The code-blocks have 64 by 64 coefficients and are coded with the block
+/// coder of ISO/IEC 15444-1: the high-throughput block coder (HTJ2K) is read but never written.
 /// </para>
 /// <para>
 /// A JP2 file stores the ICC profile, the resolution, the EXIF data (which carries the orientation) and the XMP packet.
@@ -71,6 +73,128 @@ public sealed class Jpeg2000Encoder : ImageEncoder
             field = value;
         }
     } = 90;
+
+    /// <summary>
+    /// Gets the quality layers of the output, in order. Defaults to an empty list: one layer with every coding pass, which
+    /// is <c>[Jpeg2000QualityLayer.Complete]</c>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Each layer adds coding passes to the previous ones, so that a reader that stops after a layer gets the best image
+    /// of that size: with the <see cref="Jpeg2000ProgressionOrder.Lrcp"/> order, the bytes of the first layers are the
+    /// start of the output. A target of a size or of a number of bits per pixel is reached by truncating the coding
+    /// passes of the code-blocks at the points that reduce the squared error of the image most for their bytes (the
+    /// post-compression rate-distortion optimization of T.800, J.14); a layer whose target is not above the size of the
+    /// previous ones adds nothing. A target only removes coding passes: <see cref="Quality"/> still sets the finest
+    /// quantization of a lossy output, and a lossless output whose last layer has a target is not lossless when the
+    /// target cuts coding passes.
+    /// </para>
+    /// <para>
+    /// The coded bytes of every code-block are kept until the layers are chosen, as with one layer; choosing the layers
+    /// writes the packet headers a few dozen times. <see cref="Jpeg2000QualityLayer.Complete"/> is only allowed last.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentNullException">The value is <see langword="null"/>, or holds <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">The value has more than 65,535 layers, or <see cref="Jpeg2000QualityLayer.Complete"/> before its last layer.</exception>
+    public IReadOnlyList<Jpeg2000QualityLayer> QualityLayers
+    {
+        get;
+        init
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            Jpeg2000QualityLayer[] layers = [.. value];
+            if (layers.Length > ushort.MaxValue)
+                throw new ArgumentException("A JPEG 2000 output has at most 65535 quality layers.", nameof(value));
+
+            for (var i = 0; i < layers.Length; i++)
+            {
+                if (layers[i] is null)
+                    throw new ArgumentNullException(nameof(value), "A quality layer is null.");
+
+                if (layers[i].IsComplete && i != layers.Length - 1)
+                    throw new ArgumentException("Only the last quality layer can be Jpeg2000QualityLayer.Complete.", nameof(value));
+            }
+
+            field = layers;
+        }
+    } = [];
+
+    /// <summary>Gets the order of the packets of each tile. Defaults to <see cref="Jpeg2000ProgressionOrder.Lrcp"/>.</summary>
+    /// <remarks>
+    /// Without precincts, a resolution level of a tile-component is one position: <see cref="Jpeg2000ProgressionOrder.Pcrl"/>
+    /// and <see cref="Jpeg2000ProgressionOrder.Cprl"/> then give the same packets, component by component, and
+    /// <see cref="Jpeg2000ProgressionOrder.Rpcl"/> the packets of <see cref="Jpeg2000ProgressionOrder.Rlcp"/> with the layers of
+    /// a component together.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="Jpeg2000ProgressionOrder"/>.</exception>
+    public Jpeg2000ProgressionOrder ProgressionOrder
+    {
+        get;
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The progression order is not valid.");
+
+            field = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets the width of a tile, in pixels, or 0 (the default) for tiles as wide as the image. The tiles of the last column
+    /// are narrower when the width of the image is not a multiple of it.
+    /// </summary>
+    /// <remarks>
+    /// Each tile is transformed and coded on its own, so that the encoder holds the coefficients of one tile at a time
+    /// instead of those of the whole image: a large image is coded with tiles of 512 to 2048 pixels without holding its
+    /// transformation. A reader can also decode one tile alone. Small tiles cost bytes and quality at their edges. An
+    /// image has at most 65,535 tiles.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is negative.</exception>
+    public int TileWidth
+    {
+        get;
+        init
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+            field = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets the height of a tile, in pixels, or 0 (the default) for tiles as high as the image. The tiles of the last row
+    /// are lower when the height of the image is not a multiple of it. See <see cref="TileWidth"/>.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is negative.</exception>
+    public int TileHeight
+    {
+        get;
+        init
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+            field = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets the largest number of decomposition levels of the wavelet transformation, from 0 to 32. Defaults to 5. A tile
+    /// gets fewer levels when its smaller side is shorter than <c>2^levels</c> pixels, so that its lowest resolution level
+    /// is not empty; the tiles of the last row or column do not reduce it.
+    /// </summary>
+    /// <remarks>
+    /// Each level halves the size of the lowest resolution: more levels compress large smooth images slightly better and
+    /// let a reader decode smaller thumbnails (a decode at <c>1/2^n</c> of the size discards <c>n</c> levels).
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not between 0 and 32.</exception>
+    public int DecompositionLevels
+    {
+        get;
+        init
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 32);
+            field = value;
+        }
+    } = 5;
 
     /// <summary>Gets whether the output is a JP2 file or a codestream alone. Defaults to <see cref="Jpeg2000Container.Jp2"/>.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="Jpeg2000Container"/>.</exception>

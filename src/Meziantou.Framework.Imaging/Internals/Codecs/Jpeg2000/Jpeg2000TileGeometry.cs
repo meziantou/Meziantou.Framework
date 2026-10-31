@@ -16,12 +16,13 @@ internal sealed class Jpeg2000TileGeometry : IDisposable
     private Av1PooledArray<ushort>? _nextLayers;
     private Av1PooledArray<int>? _tagNodes;
 
-    private Jpeg2000TileGeometry(long x0, long y0, long x1, long y1, Jpeg2000TileComponent[] components, Jpeg2000ResolutionGeometry[] resolutions, Jpeg2000BandGeometry[] bands)
+    private Jpeg2000TileGeometry(long x0, long y0, long x1, long y1, int reduction, Jpeg2000TileComponent[] components, Jpeg2000ResolutionGeometry[] resolutions, Jpeg2000BandGeometry[] bands)
     {
         X0 = x0;
         Y0 = y0;
         X1 = x1;
         Y1 = y1;
+        Reduction = reduction;
         Components = components;
         Resolutions = resolutions;
         Bands = bands;
@@ -38,6 +39,21 @@ internal sealed class Jpeg2000TileGeometry : IDisposable
 
     /// <summary>Gets the bottom edge of the tile on the reference grid (ty1).</summary>
     public long Y1 { get; }
+
+    /// <summary>Gets the number of resolution levels the decoder discards: the tile is decoded at 1/2^reduction of its size.</summary>
+    public int Reduction { get; }
+
+    /// <summary>Gets the left edge of the decoded tile, on the reference grid divided by 2^<see cref="Reduction"/>.</summary>
+    public long OutputX0 => CeilingShift(X0, Reduction);
+
+    /// <summary>Gets the top edge of the decoded tile, on the reference grid divided by 2^<see cref="Reduction"/>.</summary>
+    public long OutputY0 => CeilingShift(Y0, Reduction);
+
+    /// <summary>Gets the right edge of the decoded tile, on the reference grid divided by 2^<see cref="Reduction"/>.</summary>
+    public long OutputX1 => CeilingShift(X1, Reduction);
+
+    /// <summary>Gets the bottom edge of the decoded tile, on the reference grid divided by 2^<see cref="Reduction"/>.</summary>
+    public long OutputY1 => CeilingShift(Y1, Reduction);
 
     public Jpeg2000TileComponent[] Components { get; }
 
@@ -63,8 +79,14 @@ internal sealed class Jpeg2000TileGeometry : IDisposable
     public Span<int> TagNodes => _tagNodes!.Span;
 
     /// <summary>Computes the partition of a tile.</summary>
+    /// <param name="scope">The allocation scope.</param>
+    /// <param name="siz">The image and tile size.</param>
+    /// <param name="coding">The coding parameters of the tile.</param>
+    /// <param name="tileIndex">The index of the tile.</param>
+    /// <param name="reduction">The number of resolution levels the decoder discards (the highest ones).</param>
     /// <exception cref="ImageResourceLimitException">The partition exceeds the live-allocation limit.</exception>
-    public static Jpeg2000TileGeometry Create(AllocationScope scope, Jpeg2000Siz siz, Jpeg2000TileCoding coding, int tileIndex)
+    /// <exception cref="UnsupportedImageFeatureException">A component of the tile has fewer decomposition levels than <paramref name="reduction"/>.</exception>
+    public static Jpeg2000TileGeometry Create(AllocationScope scope, Jpeg2000Siz siz, Jpeg2000TileCoding coding, int tileIndex, int reduction = 0)
     {
         siz.GetTileBounds(tileIndex, out var tx0, out var ty0, out var tx1, out var ty1);
         var componentCount = siz.Components.Length;
@@ -88,13 +110,15 @@ internal sealed class Jpeg2000TileGeometry : IDisposable
             var style = coding.Styles[c];
             var quantization = coding.Quantizations[c];
             var levels = style.DecompositionLevels;
+            if (reduction > levels)
+                throw Jpeg2000Format.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The JPEG 2000 image cannot be decoded at 1/{1L << reduction} of its size: a component of the tile {tileIndex} has {levels} decomposition levels."), "Scaled decoding");
 
             // Equation B-12
             var tcx0 = Jpeg2000Siz.CeilingDivide(tx0, size.XSubsampling);
             var tcy0 = Jpeg2000Siz.CeilingDivide(ty0, size.YSubsampling);
             var tcx1 = Jpeg2000Siz.CeilingDivide(tx1, size.XSubsampling);
             var tcy1 = Jpeg2000Siz.CeilingDivide(ty1, size.YSubsampling);
-            components[c] = new Jpeg2000TileComponent(c, tcx0, tcy0, tcx1, tcy1, style, quantization.GuardBits, coding.RegionShifts[c], size.Precision, resolutionIndex);
+            components[c] = new Jpeg2000TileComponent(c, CeilingShift(tcx0, reduction), CeilingShift(tcy0, reduction), CeilingShift(tcx1, reduction), CeilingShift(tcy1, reduction), style, quantization.GuardBits, coding.RegionShifts[c], size.Precision, resolutionIndex, levels - reduction);
             for (var r = 0; r <= levels; r++)
             {
                 // Equation B-14
@@ -179,7 +203,7 @@ internal sealed class Jpeg2000TileGeometry : IDisposable
             }
         }
 
-        var geometry = new Jpeg2000TileGeometry(tx0, ty0, tx1, ty1, components, resolutions, bands);
+        var geometry = new Jpeg2000TileGeometry(tx0, ty0, tx1, ty1, reduction, components, resolutions, bands);
         try
         {
             geometry.Allocate(scope, precinctCount, precinctBandCount, blockCount);

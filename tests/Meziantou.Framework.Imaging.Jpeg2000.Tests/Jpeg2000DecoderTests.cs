@@ -811,6 +811,171 @@ public sealed class Jpeg2000DecoderTests
         }
     }
 
+    /// <summary>
+    /// A scaled decode discards the highest resolution levels: the image has the size of a lower resolution level of the
+    /// reference grid (B-14), up to the decomposition levels of the main header. OpenJPEG decodes the same samples with
+    /// <c>-r</c> in the interop job.
+    /// </summary>
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(128, 96)]
+    [InlineData(77, 33)]
+    public void AScaledDecodeHasTheSizeOfALowerResolutionLevel(int tileWidth, int tileHeight)
+    {
+        var data = EncodeImage(301, 213, new Jpeg2000Encoder { Compression = Jpeg2000Compression.Lossy, TileWidth = tileWidth, TileHeight = tileHeight }, seed: tileWidth);
+        var levels = ReferenceJpeg2000.Parse(data).CodingStyles[0].DecompositionLevels;
+        using var full = Image.Load(data);
+        for (var reduction = 1; reduction <= levels; reduction++)
+        {
+            var denominator = 1 << reduction;
+            using var scaled = Image.Load(data, new ImageDecodeOptions { ScaleDenominator = denominator });
+            Assert.Equal(((301 + denominator - 1) / denominator, (213 + denominator - 1) / denominator), (scaled.Width, scaled.Height));
+            Assert.Equal(full.PixelFormat, scaled.PixelFormat);
+
+            // The low-pass sub-band has the colors of the image: the mean of a scaled image is close to the full one
+            Assert.InRange(Math.Abs(GetMean(scaled) - GetMean(full)), 0, 8);
+        }
+
+        var tooSmall = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data, new ImageDecodeOptions { ScaleDenominator = 2 << levels }).Dispose());
+        Assert.Contains("decomposition levels", tooSmall.Message, StringComparison.Ordinal);
+
+        // A target size takes the largest denominator whose size is still large enough: 38x27 is not
+        using var thumbnail = Image.Load(data, new ImageDecodeOptions { TargetSize = new Size(40, 20) });
+        Assert.Equal((76, 54), (thumbnail.Width, thumbnail.Height));
+        using var smallest = Image.Load(data, new ImageDecodeOptions { TargetSize = new Size(1, 1) });
+        Assert.Equal(((301 + (1 << levels) - 1) >> levels, (213 + (1 << levels) - 1) >> levels), (smallest.Width, smallest.Height));
+
+        static double GetMean(Image image) => GetBytes(image).Average(value => (double)value);
+    }
+
+    /// <summary>
+    /// A region is decoded from the tiles it meets and the code-blocks that reach it: its samples are those of a full
+    /// decode, at every scale, with one worker or several, on the edges of the image and of the tiles.
+    /// </summary>
+    [Theory]
+    [InlineData(Jpeg2000Compression.Lossless, 0, 0)]
+    [InlineData(Jpeg2000Compression.Lossless, 100, 64)]
+    [InlineData(Jpeg2000Compression.Lossy, 0, 0)]
+    [InlineData(Jpeg2000Compression.Lossy, 128, 128)]
+    public void ARegionHasTheSamplesOfAFullDecode(Jpeg2000Compression compression, int tileWidth, int tileHeight)
+    {
+        var data = EncodeImage(300, 230, new Jpeg2000Encoder { Compression = compression, TileWidth = tileWidth, TileHeight = tileHeight }, seed: 3);
+        Rectangle[] regions = [new(0, 0, 300, 230), new(0, 0, 1, 1), new(299, 229, 1, 1), new(101, 63, 77, 41), new(250, 10, 400, 30), new(63, 0, 2, 230), new(128, 128, 64, 64)];
+        foreach (var denominator in (int[])[1, 2, 8])
+        {
+            foreach (var workers in (int[])[1, 16])
+            {
+                using var full = Image.Load<Rgba32>(data, new ImageDecodeOptions { ScaleDenominator = denominator });
+                foreach (var region in regions)
+                {
+                    var context = $"{compression}, tiles {tileWidth}x{tileHeight}, 1/{denominator}, {workers} workers, region {region}";
+                    using var decoded = Image.Load<Rgba32>(data, new ImageDecodeOptions { ScaleDenominator = denominator, Region = region, Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers } });
+
+                    // The region is cut to the image, then divided like the image; at least one pixel is kept
+                    var x0 = (region.X + denominator - 1) / denominator;
+                    var y0 = (region.Y + denominator - 1) / denominator;
+                    var x1 = (Math.Min(region.Right, 300) + denominator - 1) / denominator;
+                    var y1 = (Math.Min(region.Bottom, 230) + denominator - 1) / denominator;
+                    x0 = x1 > x0 ? x0 : Math.Min(x0, full.Width - 1);
+                    y0 = y1 > y0 ? y0 : Math.Min(y0, full.Height - 1);
+                    x1 = Math.Max(x1, x0 + 1);
+                    y1 = Math.Max(y1, y0 + 1);
+                    Assert.Equal((x1 - x0, y1 - y0), (decoded.Width, decoded.Height));
+                    for (var y = 0; y < decoded.Height; y++)
+                    {
+                        for (var x = 0; x < decoded.Width; x++)
+                        {
+                            if (decoded.Frames[0][x, y] != full.Frames[0][x0 + x, y0 + y])
+                            {
+                                Assert.Fail($"{context}: the pixel ({x}, {y}) is {decoded.Frames[0][x, y]}, not {full.Frames[0][x0 + x, y0 + y]}.");
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void RegionsAreValidated()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ImageDecodeOptions { Region = new Rectangle(0, 0, 0, 10) });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ImageDecodeOptions { Region = new Rectangle(-1, 0, 10, 10) });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ImageDecodeOptions { Region = new Rectangle(0, 0, 10, -2) });
+        Assert.Null(new ImageDecodeOptions().Region);
+
+        // An area out of the image, and a format that only decodes whole images
+        var data = EncodeImage(30, 20, new Jpeg2000Encoder(), seed: 1);
+        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(data, new ImageDecodeOptions { Region = new Rectangle(30, 0, 5, 5) }).Dispose());
+        using var image = Image.Load(data);
+        using var png = new MemoryStream();
+        image.Save(png, new PngEncoder());
+        Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(png.ToArray(), new ImageDecodeOptions { Region = new Rectangle(0, 0, 5, 5) }).Dispose());
+    }
+
+    [Fact]
+    public void ASequentialReaderReadsTheScaledImage()
+    {
+        var data = EncodeImage(301, 213, new Jpeg2000Encoder(), seed: 5);
+        using var expected = Image.Load<Rgba32>(data, new ImageDecodeOptions { ScaleDenominator = 4 });
+        using var reader = Image.OpenReader<Rgba32>(new MemoryStream(data), new ImageReaderOptions { ScaleDenominator = 4 });
+        Assert.Equal(new Size(76, 54), reader.Info.Size);
+        using var frame = reader.ReadFrame();
+        Assert.NotNull(frame);
+        Assert.Equal(GetBytes(expected), GetBytes(frame));
+        Assert.Null(reader.ReadFrame());
+    }
+
+    /// <summary>
+    /// The memory of a decode follows what it produces: a decode at a quarter of the size allocates a sixteenth of the
+    /// planes, and a region inside one tile decodes that tile only.
+    /// </summary>
+    [Fact]
+    public void ScaledDecodesAndRegionsAllocateWhatTheyProduce()
+    {
+        var data = EncodeImage(1024, 768, new Jpeg2000Encoder { TileWidth = 256, TileHeight = 256 }, seed: 8);
+        var full = MeasurePeak(scaleDenominator: 1, region: null);
+        var quarter = MeasurePeak(scaleDenominator: 4, region: null);
+        var region = MeasurePeak(scaleDenominator: 1, new Rectangle(300, 300, 100, 100));
+
+        // The full decode holds the image (4 bytes a pixel) and the planes of a tile (4 bytes a sample); a region holds the
+        // planes of the one tile it meets, which is transformed whole
+        Assert.True(quarter < full / 4, $"Full: {full} bytes; a quarter: {quarter} bytes.");
+        Assert.True(region < full / 2, $"Full: {full} bytes; a region: {region} bytes.");
+
+        long MeasurePeak(int scaleDenominator, Rectangle? region)
+        {
+            using var tracking = new AllocationTracking();
+            using var image = Image.Load(data, new ImageDecodeOptions { ScaleDenominator = scaleDenominator, Region = region, Configuration = new ImageConfiguration { MaxDegreeOfParallelism = 1 } });
+            return tracking.Scopes.Max(static scope => scope.GetDiagnostics().PeakLiveBytes);
+        }
+    }
+
+    /// <summary>Codes an image of flat areas, gradients, noise and translucent pixels with the encoder of the library.</summary>
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    private static byte[] EncodeImage(int width, int height, Jpeg2000Encoder encoder, int seed)
+    {
+        var random = new Random(seed);
+        var pixels = new Rgba32[width * height];
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                pixels[(y * width) + x] = (((x / 23) + (y / 17)) % 3) switch
+                {
+                    0 => new Rgba32((byte)(x * 3), (byte)(y * 5), (byte)(x + y), 255),
+                    1 => new Rgba32((byte)random.Next(256), (byte)random.Next(256), (byte)random.Next(256), (byte)random.Next(256)),
+                    _ => new Rgba32(40, 120, 200, (byte)x),
+                };
+            }
+        }
+
+        using var image = Image.ImportPixelData<Rgba32>(pixels, width, height);
+        using var stream = new MemoryStream();
+        image.Save(stream, encoder);
+        return stream.ToArray();
+    }
+
     private static ImageDecodeOptions WithWorkers(int workers) => new() { Configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers } };
 
     /// <summary>Codes an image of flat areas, gradients and noise with the encoder of the library: one tile of 64x64 code-blocks.</summary>

@@ -29,7 +29,7 @@ public static void SavePreview(string animationPath, string previewPath)
 <!-- endref -->
 
 - **Decode a large photo at the size you need.** [ImageDecodeOptions.TargetSize](cref:Meziantou.Framework.Imaging.ImageDecodeOptions.TargetSize) decodes a JPEG file at 1/2, 1/4 or 1/8
-  of its size when the result is still at least that large: the decoder computes fewer pixels and allocates the memory
+  of its size, and a JPEG 2000 file at a lower resolution level, when the result is still at least that large: the decoder computes fewer pixels and allocates the memory
   of the smaller image. See [Decode a smaller image](05-LoadingAndSaving/02-LoadingImages.md#decode-a-smaller-image).
 - **Load in the pixel format you work with.** [Image.Load](cref:Meziantou.Framework.Imaging.Image.Load) returns the smallest pixel format that keeps the source
   exactly ([Rgb24](cref:Meziantou.Framework.Imaging.Rgb24) or [Gray8](cref:Meziantou.Framework.Imaging.Gray8) for most JPEG files, [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32) for GIF, 16-bit formats for 16-bit PNG files...).

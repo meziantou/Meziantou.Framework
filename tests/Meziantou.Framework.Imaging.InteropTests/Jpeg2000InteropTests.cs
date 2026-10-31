@@ -18,6 +18,7 @@ namespace Meziantou.Framework.Imaging.InteropTests;
 /// <item><description>the lossless output of the encoder, for every corpus reference in every pixel format that holds it, decodes to exactly the source samples in OpenJPEG and in FFmpeg, hidden colors included;</description></item>
 /// <item><description>the lossy output is read alike by OpenJPEG, FFmpeg and the library, keeps the opacity exactly, and its error follows the quality;</description></item>
 /// <item><description>the metadata of a JP2 file is where the independent reader of the harness and FFmpeg find it;</description></item>
+/// <item><description>tiles, quality layers and every progression order are read alike by OpenJPEG and the library, each layer of OpenJPEG improves the image, and the rate control reaches the sizes and the quality of OpenJPEG's own;</description></item>
 /// <item><description>the decoder gives the samples OpenJPEG gives for codestreams written by OpenJPEG and by OpenJPH with options drawn at random from a seed.</description></item>
 /// </list>
 /// </summary>
@@ -129,6 +130,176 @@ public sealed class Jpeg2000InteropTests
 
         // The best quality is close to the source, or is the source
         Assert.True(previousError < 1.5, string.Create(CultureInfo.InvariantCulture, $"{format}: mean error {previousError:0.###} at quality 100."));
+    }
+
+    /// <summary>
+    /// Tiles whose last column and row are cut, quality layers and every progression order: OpenJPEG decodes the samples
+    /// the library decodes (the source itself for a lossless output), and each layer decoded by <c>opj_decompress -l</c>
+    /// leaves a smaller error, down to none with the last lossless one.
+    /// </summary>
+    [Theory]
+    [InlineData(Jpeg2000ProgressionOrder.Lrcp, false)]
+    [InlineData(Jpeg2000ProgressionOrder.Rlcp, false)]
+    [InlineData(Jpeg2000ProgressionOrder.Rpcl, false)]
+    [InlineData(Jpeg2000ProgressionOrder.Pcrl, false)]
+    [InlineData(Jpeg2000ProgressionOrder.Cprl, false)]
+    [InlineData(Jpeg2000ProgressionOrder.Lrcp, true)]
+    [InlineData(Jpeg2000ProgressionOrder.Rlcp, true)]
+    [InlineData(Jpeg2000ProgressionOrder.Rpcl, true)]
+    [InlineData(Jpeg2000ProgressionOrder.Pcrl, true)]
+    [InlineData(Jpeg2000ProgressionOrder.Cprl, true)]
+    public async Task TilesLayersAndProgressionOrdersAreReadAlikeByOpenJpeg(Jpeg2000ProgressionOrder order, bool isLossy)
+    {
+        var openJpeg = await RequiredTools.OpenJpegAsync();
+        var format = isLossy ? PixelFormat.Rgb24 : PixelFormat.Rgba32;
+        var layout = ImageSnapshots.GetLayout(format);
+        var source = CreatePattern(150, 97, layout, seed: (int)order);
+        using var image = EncoderSources.CreateImage(source, format);
+        var directory = InteropSettings.GetArtifactsDirectory(nameof(TilesLayersAndProgressionOrdersAreReadAlikeByOpenJpeg));
+        var path = directory / $"{order}-{(isLossy ? "lossy" : "lossless")}.j2k";
+        Jpeg2000QualityLayer[] layers = [Jpeg2000QualityLayer.FromBitsPerPixel(0.5), Jpeg2000QualityLayer.FromBitsPerPixel(2), isLossy ? Jpeg2000QualityLayer.FromBitsPerPixel(6) : Jpeg2000QualityLayer.Complete];
+        var encoder = new Jpeg2000Encoder
+        {
+            Compression = isLossy ? Jpeg2000Compression.Lossy : Jpeg2000Compression.Lossless,
+            Quality = 100,
+            Container = Jpeg2000Container.Codestream,
+            ProgressionOrder = order,
+            TileWidth = 64,
+            TileHeight = 40,
+            DecompositionLevels = 8,
+            QualityLayers = layers,
+        };
+        await image.SaveAsync(path, encoder, XunitCancellationToken);
+        var context = $"{order} {(isLossy ? "lossy" : "lossless")}";
+        var structure = ReferenceJpeg2000.Parse(await File.ReadAllBytesAsync(path, XunitCancellationToken));
+        Assert.Equal(((int)order, 3, 9), (structure.ProgressionOrder, structure.LayerCount, structure.TileCount));
+        Assert.Equal(5, structure.CodingStyles[0].DecompositionLevels);
+
+        using var decoded = await Image.LoadAsync(path, cancellationToken: XunitCancellationToken);
+        var library = ImageSnapshots.Capture(decoded).Frames[0].Pixels;
+        var channels = await openJpeg.DecodeComponentsAsync(path, XunitCancellationToken);
+        AssertChannels(isLossy ? library : source, channels, tolerance: isLossy ? 1 : 0, $"{context}: OpenJPEG {openJpeg.Version} decodes other samples.");
+        if (!isLossy)
+        {
+            Assert.Equal(0, GetMaxDifference(source, library, layout.ChannelCount));
+        }
+
+        // A third of the pattern is noise, which 6 bits per pixel cannot hold: the lossy layers only have to improve
+        var errors = new List<double>();
+        for (var layer = 1; layer <= layers.Length; layer++)
+        {
+            var prefix = await openJpeg.DecodeComponentsAsync(path, ["-l", layer.ToString(CultureInfo.InvariantCulture)], XunitCancellationToken);
+            errors.Add(GetMeanDifference(source, ToPixels(prefix, layout), layout.ChannelCount));
+        }
+
+        var description = string.Join(", ", errors.Select(error => error.ToString("0.###", CultureInfo.InvariantCulture)));
+        Assert.True(errors[1] < errors[0] && errors[2] < errors[1], $"{context}: the mean errors of the layers are {description}.");
+        Assert.True(isLossy || errors[2] == 0, $"{context}: the mean errors of the layers are {description}.");
+    }
+
+    /// <summary>
+    /// Scaled decodes and regions against <c>opj_decompress -r</c> and <c>-d</c>, on codestreams of the library (one tile,
+    /// tiles whose last column and row are cut) and of OpenJPEG (precincts in the PCRL order, tiles with layers, small
+    /// code-blocks in the RPCL order): the same size at every reduction, and the same samples, exactly for the reversible
+    /// path and within one level of 8 bits for the irreversible one, as for full decodes.
+    /// </summary>
+    [Theory]
+    [InlineData("library-lossless", false)]
+    [InlineData("library-lossy-tiles", true)]
+    [InlineData("library-lossless-odd-tiles", false)]
+    [InlineData("opj-precincts-pcrl", false)]
+    [InlineData("opj-tiles-layers", true)]
+    [InlineData("opj-small-blocks-rpcl", true)]
+    public async Task ScaledDecodesAndRegionsAreTheOnesOfOpenJpeg(string kind, bool isLossy)
+    {
+        var openJpeg = await RequiredTools.OpenJpegAsync();
+        var source = CreateLandscape(384, 256);
+        var directory = InteropSettings.GetArtifactsDirectory(nameof(ScaledDecodesAndRegionsAreTheOnesOfOpenJpeg));
+        var path = directory / $"{kind}.j2k";
+        if (kind.StartsWith("library", StringComparison.Ordinal))
+        {
+            using var image = EncoderSources.CreateImage(source, PixelFormat.Rgb24);
+            var encoder = kind switch
+            {
+                "library-lossless" => new Jpeg2000Encoder { Container = Jpeg2000Container.Codestream },
+                "library-lossy-tiles" => new Jpeg2000Encoder { Container = Jpeg2000Container.Codestream, Compression = Jpeg2000Compression.Lossy, TileWidth = 128, TileHeight = 128 },
+                _ => new Jpeg2000Encoder { Container = Jpeg2000Container.Codestream, TileWidth = 150, TileHeight = 77, DecompositionLevels = 6 },
+            };
+            await image.SaveAsync(path, encoder, XunitCancellationToken);
+        }
+        else
+        {
+            var input = directory / $"{kind}.ppm";
+            await File.WriteAllBytesAsync(input, WriteNetpbm(source), XunitCancellationToken);
+            string[] arguments = kind switch
+            {
+                "opj-precincts-pcrl" => ["-n", "6", "-c", "[64,64],[32,32],[16,16]", "-p", "PCRL"],
+                "opj-tiles-layers" => ["-t", "128,96", "-n", "4", "-I", "-r", "20,5"],
+                _ => ["-b", "32,16", "-p", "RPCL", "-I"],
+            };
+            await openJpeg.EncodeAsync(input, path, arguments, XunitCancellationToken);
+        }
+
+        var data = await File.ReadAllBytesAsync(path, XunitCancellationToken);
+        var levels = ReferenceJpeg2000.Parse(data).CodingStyles.Min(style => style.DecompositionLevels);
+        Rectangle?[] regions = [null, new Rectangle(37, 21, 150, 101), new Rectangle(300, 200, 84, 56), new Rectangle(0, 128, 384, 1), new Rectangle(129, 0, 3, 256)];
+        for (var reduction = 0; reduction <= Math.Min(levels, 5); reduction++)
+        {
+            foreach (var region in regions)
+            {
+                List<string> arguments = ["-r", reduction.ToString(CultureInfo.InvariantCulture)];
+                if (region is { } area)
+                {
+                    // OpenJPEG rejects a region that has no sample at the reduced resolution; the library keeps the sample
+                    // that covers it (Jpeg2000DecoderTests)
+                    var denominator = 1 << reduction;
+                    if ((area.X + denominator - 1) / denominator == (area.Right + denominator - 1) / denominator || (area.Y + denominator - 1) / denominator == (area.Bottom + denominator - 1) / denominator)
+                        continue;
+
+                    arguments.AddRange(["-d", string.Create(CultureInfo.InvariantCulture, $"{area.X},{area.Y},{area.Right},{area.Bottom}")]);
+                }
+
+                var context = $"{kind} at 1/{1 << reduction}, region {region?.ToString() ?? "none"}";
+                var channels = await openJpeg.DecodeComponentsAsync(path, arguments, XunitCancellationToken);
+                using var decoded = Image.Load(data, new ImageDecodeOptions { ScaleDenominator = 1 << reduction, Region = region });
+                var library = ImageSnapshots.Capture(decoded).Frames[0].Pixels;
+                AssertChannels(library, channels, tolerance: isLossy ? 1 : 0, $"{context}: OpenJPEG {openJpeg.Version} decodes other samples.");
+            }
+        }
+    }
+
+    /// <summary>
+    /// The rate control against the one of <c>opj_compress -r</c> (both are the post-compression rate-distortion
+    /// optimization of T.800, J.14), on an image with smooth areas, edges and texture: at the same number of bits per
+    /// pixel, the output fits the target as closely and its PSNR is not lower, within 0.3 dB.
+    /// </summary>
+    [Theory]
+    [InlineData(0.25)]
+    [InlineData(1)]
+    [InlineData(3)]
+    public async Task TheRateControlReachesTheSizeAndTheQualityOfOpenJpeg(double bitsPerPixel)
+    {
+        var openJpeg = await RequiredTools.OpenJpegAsync();
+        var layout = ImageSnapshots.GetLayout(PixelFormat.Rgb24);
+        var source = CreateLandscape(384, 256);
+        using var image = EncoderSources.CreateImage(source, PixelFormat.Rgb24);
+        var directory = InteropSettings.GetArtifactsDirectory(nameof(TheRateControlReachesTheSizeAndTheQualityOfOpenJpeg));
+        var name = bitsPerPixel.ToString(CultureInfo.InvariantCulture);
+        var input = directory / $"landscape-{name}.ppm";
+        await File.WriteAllBytesAsync(input, WriteNetpbm(source), XunitCancellationToken);
+        var reference = directory / $"opj-{name}.j2k";
+        await openJpeg.EncodeAsync(input, reference, ["-I", "-r", (24 / bitsPerPixel).ToString(CultureInfo.InvariantCulture)], XunitCancellationToken);
+        var path = directory / $"library-{name}.j2k";
+        await image.SaveAsync(path, new Jpeg2000Encoder { Compression = Jpeg2000Compression.Lossy, Quality = 100, Container = Jpeg2000Container.Codestream, QualityLayers = [Jpeg2000QualityLayer.FromBitsPerPixel(bitsPerPixel)] }, XunitCancellationToken);
+
+        var target = (long)(bitsPerPixel * source.Width * source.Height / 8);
+        var length = new FileInfo(path).Length;
+        var referenceLength = new FileInfo(reference).Length;
+        Assert.InRange(length, target * 98 / 100, target);
+        var psnr = GetPsnr(source, ToPixels(await openJpeg.DecodeComponentsAsync(path, XunitCancellationToken), layout));
+        var referencePsnr = GetPsnr(source, ToPixels(await openJpeg.DecodeComponentsAsync(reference, XunitCancellationToken), layout));
+        Assert.True(psnr >= referencePsnr - 0.3, string.Create(CultureInfo.InvariantCulture, $"{bitsPerPixel} bpp: {length} bytes at {psnr:0.00} dB, OpenJPEG {referenceLength} bytes at {referencePsnr:0.00} dB."));
+        TestContext.Current.SendDiagnosticMessage(string.Create(CultureInfo.InvariantCulture, $"{bitsPerPixel} bpp: library {length} bytes at {psnr:0.00} dB, OpenJPEG {openJpeg.Version} {referenceLength} bytes at {referencePsnr:0.00} dB."));
     }
 
     [Theory]
@@ -452,6 +623,112 @@ public sealed class Jpeg2000InteropTests
                     }
                 }
             }
+        }
+    }
+
+    /// <summary>Makes pixels of 8 or 16 bits from the channels a reference decoder returns at the depth of the file.</summary>
+    private static RawPixelBuffer ToPixels(IReadOnlyList<PgxImage> channels, RawPixelLayout layout)
+    {
+        var width = channels[0].Width;
+        var height = channels[0].Height;
+        var data = new byte[layout.GetByteLength(width, height)];
+        var offset = 0;
+        for (var i = 0; i < width * height; i++)
+        {
+            for (var channel = 0; channel < layout.ChannelCount; channel++)
+            {
+                var value = channels[channel].Samples.Span[i];
+                if (layout.BytesPerSample == 1)
+                {
+                    data[offset++] = (byte)value;
+                }
+                else
+                {
+                    BinaryPrimitives.WriteUInt16LittleEndian(data.AsSpan(offset), (ushort)value);
+                    offset += 2;
+                }
+            }
+        }
+
+        return RawPixelBuffer.Create(width, height, layout, data);
+    }
+
+    private static double GetPsnr(RawPixelBuffer expected, RawPixelBuffer actual)
+    {
+        var sum = 0.0;
+        var count = 0L;
+        for (var y = 0; y < expected.Height; y++)
+        {
+            for (var x = 0; x < expected.Width; x++)
+            {
+                for (var channel = 0; channel < expected.Layout.ChannelCount; channel++)
+                {
+                    var difference = expected.GetSample(x, y, channel) - actual.GetSample(x, y, channel);
+                    sum += difference * difference;
+                    count++;
+                }
+            }
+        }
+
+        var max = (double)expected.Layout.MaxSampleValue;
+        return sum == 0 ? double.PositiveInfinity : 10 * Math.Log10(max * max / (sum / count));
+    }
+
+    /// <summary>
+    /// An RGB image with the content of a photograph, from integers only: a sky that changes slowly, hills, a textured
+    /// ground, a bright disc with a sharp edge, and a little noise.
+    /// </summary>
+    private static RawPixelBuffer CreateLandscape(int width, int height)
+    {
+        var data = new byte[width * height * 3];
+        var state = 12345u;
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                state = (state * 1664525) + 1013904223;
+                var noise = (int)(state >> 30) - 1;
+                var hill = (height / 2) + (Triangle(x, 160) / 6) + (Triangle(x + 40, 67) / 12);
+                int red;
+                int green;
+                int blue;
+                if (y < hill)
+                {
+                    red = 90 + (y / 3) + (Triangle(x + (2 * y), 190) / 10);
+                    green = 140 + (y / 4) + (Triangle(x - y, 230) / 12);
+                    blue = 220 - (y / 5);
+                }
+                else
+                {
+                    var texture = (Triangle((3 * x) + y, 13) + Triangle(x - (2 * y), 9) + Triangle(x + (5 * y), 31)) / 9;
+                    red = 60 + texture + ((y - hill) / 3);
+                    green = 90 + texture + (Triangle(x, 120) / 8);
+                    blue = 40 + (texture / 2);
+                }
+
+                var dx = x - (3 * width / 4);
+                var dy = y - (height / 4);
+                if ((dx * dx) + (dy * dy) < 30 * 30)
+                {
+                    red = 250 - (dx / 3);
+                    green = 225 + (dy / 4);
+                    blue = 120;
+                }
+
+                var offset = ((y * width) + x) * 3;
+                data[offset] = (byte)Math.Clamp(red + noise, 0, 255);
+                data[offset + 1] = (byte)Math.Clamp(green + noise, 0, 255);
+                data[offset + 2] = (byte)Math.Clamp(blue + (noise / 2), 0, 255);
+            }
+        }
+
+        return RawPixelBuffer.Create(width, height, ImageSnapshots.GetLayout(PixelFormat.Rgb24), data);
+
+        // A wave between 0 and 255
+        static int Triangle(int value, int period)
+        {
+            var phase = ((value % period) + period) % period;
+            return Math.Abs((2 * phase) - period) * 255 / period;
         }
     }
 

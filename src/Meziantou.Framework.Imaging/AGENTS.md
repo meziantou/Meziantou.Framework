@@ -651,9 +651,20 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     marker segment in the first tile-part), an HT cleanup magnitude may use every bit-plane (FFmpeg refuses it), a
     codestream of three components whose last two are sub-sampled alike is sYCC (both decoders read it so). The
     fixtures record each disagreement with its reason.
-  - The encoder (`Jpeg2000EncoderCodec`) is one tile, one layer, LRCP, without rate control; a lossy output codes the
-    opacity reversibly through COC and QCC marker segments. Its quantization steps come from the gains of the synthesis
-    kernel of the library, measured, not from published tables.
+  - The encoder (`Jpeg2000EncoderCodec`) codes tiles one at a time (one tile-part each, no precincts) and writes the
+    packets in any of the five progression orders (`Jpeg2000PacketPosition` orders the position progressions for the
+    decoder and the encoder alike); a lossy output codes the opacity reversibly through COC and QCC marker segments. Its
+    quantization steps come from the gains of the synthesis kernel of the library, measured, not from published tables
+    (the 9-7 and 5-3 norms are measured up to 10 levels and extrapolated above).
+  - Quality layers and targets (J.14, `AllocateLayers`): the block coder records, for each pass, the exact length of
+    the truncated segment that decodes it (`Jpeg2000MqEncoder.GetTruncationLength`, from the state of the MQ coder at
+    the end of the pass; `EachCodingPassIsDecodedFromItsTruncatedSegment` checks it against the block decoder) and the
+    reduction of the squared error, weighted by the squared synthesis norms of the sub-band and of the inverse component
+    transformation (and the squared step of a lossy sub-band). A layer is the hull points whose slope is at least a
+    threshold, found by bisection on the sorted slopes, each trial writing the packet headers of the layer from the
+    state the previous layers left (`TilePackets` saves and restores it), so sizes are exact. Without a target the
+    passes are not recorded and the output is byte-identical to the single-layer encoder; a target every pass fits in
+    keeps every pass. At equal size the PSNR is the one of `opj_compress -r` within 0.05 dB on photographs.
   - The lossy quality is calibrated on `JpegEncoder` (`Jpeg2000QuantizationDesign`): the base step of the luminance is
     `0.47 * s^(3/4)` levels, `s` being the scale of the JPEG quality, and the two chrominances have twice that step (a
     QCC marker segment each). The constants were fitted on photographs of several sizes, so that a quality has the SSIM
@@ -666,6 +677,15 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     photographs: `TheQualityFollowsTheScaleOfTheJpegEncoder` only keeps the two scales together on a synthetic image.
   - A TIFF strip or tile compressed with JPEG 2000 is decoded by the same code through `Jpeg2000SampleDecoder` and a
     `Jpeg2000SampleReceiver`: the page says what the components are.
+  - Scaled and region decoding (`Jpeg2000Decoder`): `Jpeg2000TileGeometry.Create(..., reduction)` keeps the full partition
+    (the packets and the position progressions need it) but gives each tile-component the bounds and the levels
+    (`DecodedLevels`) of the highest resolution level that is decoded, so the plane, the strides and the inverse
+    transformation are those of that level; the code-blocks of the discarded levels are not decoded. A region is an area of
+    the reference grid at full resolution, rebuilt from the output window (so a sample kept for a narrow region is decoded):
+    the tiles it does not meet are skipped (`OnTile`), and `Jpeg2000TileDecoder.GetBandWindows` keeps the code-blocks that
+    reach it with `RegionMargin` coefficients more for the filters (others are zeros). `Jpeg2000RowWriter` writes the
+    window. `ScaledDecodesAndRegionsAreTheOnesOfOpenJpeg` compares with `opj_decompress -r` and `-d` (OpenJPEG rejects a
+    region that has no sample at the reduced resolution); `ARegionHasTheSamplesOfAFullDecode` checks the margin.
 - **TIFF** (`Internals/Codecs/Tiff`). `TiffPage` resolves and validates a directory without reading a pixel, so every
   rejection also comes from `Identify`, except the ones of the compressed data. `TiffBlockReader` turns a strip or a
   tile into rows of samples (fill order, compression, predictor, YCbCr data units) and `TiffRowExpander` turns the rows
@@ -1062,8 +1082,10 @@ thin public types over its `FontFace`.
   outside the stack: with `FontStack.WithInstalledFallback`, a cluster no font of the stack has is looked for by
   `InstalledFontFallback` (preferred families, color emoji families, the per-script families of
   `InstalledFontFallbackFamilies` with the current platform first, then every covering family, same style first, in
-  the order of the collection), before the fonts that only have its first character. The fallback caches the font of
-  each cluster and of each face, so a layout loads each font once and adjacent clusters share a font (one item).
+  the order of the collection), before the fonts that only have its first character. The families of a Han ideograph
+  depend on the language of the style (`TextStyle.HanForms`, from its OpenType language tags): anything the fallback
+  keeps that depends on that choice is keyed by it. The fallback caches the font of each cluster (per `HanForms`) and
+  of each face, so a layout loads each font once and adjacent clusters share a font (one item).
   Tests use `SystemFontCollection.Create` on a temporary directory (`TemporaryFontDirectory`) and fonts whose advance
   says which one was chosen; only the smoke test in `FontTests` uses `Default`.
 - **The steps of a paragraph**: levels, items (one level, script, font and shaping style each), shaping, lines, display
@@ -1073,6 +1095,18 @@ thin public types over its `FontFace`.
   after a line, only the start is shaped again (`ShapeStart`: two line widths, cut after a space), and the rest is a
   pending item that keeps its advances: shaping the whole rest after each line made a layout quadratic. A line is
   still shaped as a whole: `BuildLine` merges the parts of a run that such a cut separated.
+- **Measuring a line** goes through `LinePen`: the width so far, and the aligned tabulation stop
+  (`TextLayoutOptions.TabStops`) whose advance depends on the text after it, up to the next tabulation or the white
+  space that hangs. `FindBreak`, `FindOptimalBreaks`, `Trim` and `BuildLine` all measure with it, so a wrapped line
+  is as wide as it is drawn. Without stops, its arithmetic is the one of the uniform stops, operation for operation.
+- **Optimal line breaking** (`TextLineBreakStrategy.Optimal`, `FindOptimalBreaks`) is a dynamic program over the
+  break opportunities of the rest of a paragraph, from the advances it has before its lines are shaped again; each
+  line it plans is checked with the current advances before it is built, and a line that no longer fits plans the
+  rest again (a bounded number of times, then greedy). Greedy breaking stays the default and is not changed by it.
+- **Justification between characters** (`TextLayoutOptions.Justification`) classifies each glyph in `BuildLine`
+  (`JustificationClass`, only when it is used) and marks the opportunities in `Finish`
+  (`MarkJustificationOpportunities`), in display order: the room goes after the last glyph of a cluster and its marks,
+  so it never moves the glyphs of the cluster. `InterWord` keeps the marking of the spaces of `BuildLine` unchanged.
 - **Lines follow each other in the text and cover it** (`TextLine.Start` and `Length`), whatever cut them: a width, a
   line break, a trimming. `IsTruncated` is the only way text is left out. `TextLayoutFuzzTests` checks it on random
   texts and options.

@@ -5,10 +5,17 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// emoji fonts, and the fonts of each script on Windows, macOS and Linux.
 /// </summary>
 /// <remarks>
+/// <para>
 /// The families of the platform the code runs on come first, then those of the other platforms: a machine usually has
 /// the fonts of its own platform, and the order stays the same on every machine that has the same fonts. A family a
 /// machine does not have is skipped. The scripts without an entry use the Noto family named after them
 /// (<c>Noto Sans Old Italic</c>), then the fonts of the symbols.
+/// </para>
+/// <para>
+/// The Han ideographs (and Bopomofo) have different forms in Simplified Chinese, Traditional Chinese, Hong Kong,
+/// Japanese and Korean: their families are those of the language of the text (<see cref="GetHanForms"/>), then those
+/// of Simplified Chinese, which have the most ideographs.
+/// </para>
 /// </remarks>
 internal static class InstalledFontFallbackFamilies
 {
@@ -33,6 +40,16 @@ internal static class InstalledFontFallbackFamilies
         ["Hiragino Sans", "Hiragino Kaku Gothic ProN"],
         ["Noto Sans CJK JP", "Noto Sans JP", "Source Han Sans JP", "Droid Sans Fallback"]);
 
+    private static readonly FamilyList ChineseTraditional = new(
+        ["Microsoft JhengHei", "PMingLiU", "MingLiU"],
+        ["PingFang TC", "Heiti TC", "Hiragino Sans CNS"],
+        ["Noto Sans CJK TC", "Noto Sans TC", "Source Han Sans TC", "AR PL UMing TW"]);
+
+    private static readonly FamilyList ChineseHongKong = new(
+        ["MingLiU_HKSCS", "Microsoft JhengHei"],
+        ["PingFang HK", "PingFang TC"],
+        ["Noto Sans CJK HK", "Noto Sans HK", "Source Han Sans HC", "Noto Sans CJK TC", "Noto Sans TC"]);
+
     private static readonly FamilyList Korean = new(["Malgun Gothic"], ["Apple SD Gothic Neo"], ["Noto Sans CJK KR", "Noto Sans KR", "Source Han Sans KR", "UnDotum"]);
 
     private static readonly FamilyList Arabic = new(["Segoe UI", "Arial", "Tahoma"], ["Geeza Pro", "SF Arabic"], ["Noto Sans Arabic", "Noto Naskh Arabic", "DejaVu Sans"]);
@@ -43,6 +60,15 @@ internal static class InstalledFontFallbackFamilies
 
     private static readonly FamilyList Indic = new(["Nirmala UI"], [], []);
 
+    private static readonly uint JapaneseTag = ShapingFeature.ToTag("JAN ");
+    private static readonly uint KoreanTag = ShapingFeature.ToTag("KOR ");
+    private static readonly uint OldKoreanTag = ShapingFeature.ToTag("KOH ");
+    private static readonly uint SimplifiedTag = ShapingFeature.ToTag("ZHS ");
+    private static readonly uint PhoneticTag = ShapingFeature.ToTag("ZHP ");
+    private static readonly uint TraditionalTag = ShapingFeature.ToTag("ZHT ");
+    private static readonly uint MacaoTag = ShapingFeature.ToTag("ZHTM");
+    private static readonly uint HongKongTag = ShapingFeature.ToTag("ZHH ");
+
     private enum Platform
     {
         Windows,
@@ -50,10 +76,39 @@ internal static class InstalledFontFallbackFamilies
         Other,
     }
 
+    /// <summary>
+    /// Gets the forms of the Han ideographs of a language: the first of the language systems of OpenType of the language
+    /// (<see cref="Typography.TextStyle.Language"/>) that is Japanese, Korean or a form of Chinese, or Simplified Chinese.
+    /// </summary>
+    /// <param name="languageTags">The tags of the language systems of the language, by order of preference.</param>
+    public static HanForms GetHanForms(ReadOnlySpan<uint> languageTags)
+    {
+        foreach (var tag in languageTags)
+        {
+            if (tag == JapaneseTag)
+                return HanForms.Japanese;
+
+            if (tag == KoreanTag || tag == OldKoreanTag)
+                return HanForms.Korean;
+
+            if (tag == TraditionalTag || tag == MacaoTag)
+                return HanForms.Traditional;
+
+            if (tag == HongKongTag)
+                return HanForms.HongKong;
+
+            if (tag == SimplifiedTag || tag == PhoneticTag)
+                return HanForms.Simplified;
+        }
+
+        return HanForms.Simplified;
+    }
+
     /// <summary>Gets the families to look in for a character, in order.</summary>
     /// <param name="character">The character.</param>
     /// <param name="isEmoji">Whether the character starts a cluster presented as an emoji.</param>
-    public static IEnumerable<string> Get(Rune character, bool isEmoji)
+    /// <param name="hanForms">The forms of the Han ideographs of the language of the text.</param>
+    public static IEnumerable<string> Get(Rune character, bool isEmoji, HanForms hanForms)
     {
         if (isEmoji)
         {
@@ -75,6 +130,26 @@ internal static class InstalledFontFallbackFamilies
                 or UnicodeScript.Malayalam or UnicodeScript.Oriya or UnicodeScript.Tamil or UnicodeScript.Telugu or UnicodeScript.Sinhala => Indic,
             _ => null,
         };
+
+        if (script is UnicodeScript.Han or UnicodeScript.Bopomofo && hanForms != HanForms.Simplified)
+        {
+            // The families of the language, then those of Simplified Chinese for the ideographs they do not have
+            var forms = hanForms switch
+            {
+                HanForms.Japanese => Japanese,
+                HanForms.Korean => Korean,
+                HanForms.HongKong => ChineseHongKong,
+                _ => ChineseTraditional,
+            };
+            foreach (var family in forms.Ordered())
+                yield return family;
+
+            if (hanForms == HanForms.HongKong)
+            {
+                foreach (var family in ChineseTraditional.Ordered())
+                    yield return family;
+            }
+        }
 
         if (list is not null)
         {

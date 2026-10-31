@@ -121,6 +121,9 @@ public sealed class DefaultsTests
         Assert.Equal(90, jpeg2000.Quality);
         Assert.Equal(Jpeg2000Container.Jp2, jpeg2000.Container);
         Assert.Equal(MetadataHandling.Strict, jpeg2000.MetadataHandling);
+        Assert.Empty(jpeg2000.QualityLayers);
+        Assert.Equal(Jpeg2000ProgressionOrder.Lrcp, jpeg2000.ProgressionOrder);
+        Assert.Equal((0, 0, 5), (jpeg2000.TileWidth, jpeg2000.TileHeight, jpeg2000.DecompositionLevels));
 
         var exr = new OpenExrEncoder();
         Assert.Equal(ImageFormat.OpenExr, exr.Format);
@@ -498,6 +501,7 @@ public sealed class DefaultsTests
         // Images are decoded at full resolution unless a scale or a target size is set
         Assert.Equal(1, ImageDecodeOptions.Default.ScaleDenominator);
         Assert.Null(ImageDecodeOptions.Default.TargetSize);
+        Assert.Null(ImageDecodeOptions.Default.Region);
         Assert.Equal(1, ImageReaderOptions.Default.ScaleDenominator);
         Assert.Null(ImageReaderOptions.Default.TargetSize);
 

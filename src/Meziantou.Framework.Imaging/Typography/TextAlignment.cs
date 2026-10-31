@@ -13,9 +13,11 @@ public enum TextAlignment
     End = 2,
 
     /// <summary>
-    /// Each line is stretched to the width of the layout by widening U+0020 spaces and U+00A0 no-break spaces, except the
-    /// last line of a paragraph and a line without expandable spaces, which are aligned as with <see cref="Start"/>.
-    /// Does not add space between CJK characters or lengthen Arabic words (kashida).
+    /// Each line is stretched to the width of the layout, except the last line of a paragraph and a line that cannot be
+    /// stretched, which are aligned as with <see cref="Start"/>. By default, the room is shared by the U+0020 spaces and
+    /// the U+00A0 no-break spaces of the line; <see cref="TextLayoutOptions.Justification"/> also adds it between the
+    /// characters of Chinese, Japanese, Korean and Thai text, or between every two characters. Arabic words are not
+    /// lengthened (kashida).
     /// </summary>
     Justify = 3,
 }

@@ -29,6 +29,8 @@ public class TextBenchmarks : IDisposable
 
     private static readonly TextLayoutOptions Paragraph = new() { MaxWidth = 480, Alignment = TextAlignment.Justify };
 
+    private static readonly TextLayoutOptions OptimalParagraph = new() { MaxWidth = 480, Alignment = TextAlignment.Justify, LineBreakStrategy = TextLineBreakStrategy.Optimal };
+
     private static readonly string LongLatinText = string.Join(' ', Enumerable.Repeat(LatinText, 30));
 
     private byte[] _tibetanData = null!;
@@ -37,6 +39,7 @@ public class TextBenchmarks : IDisposable
     private TextStyle _arabic = null!;
     private TextStyle _devanagari = null!;
     private TextStyle _tibetan = null!;
+    private RichText _longRichText = null!;
     private TextLayout _latinLayout = null!;
     private TextLayout _arabicLayout = null!;
     private TextLayout _lineLayout = null!;
@@ -53,6 +56,7 @@ public class TextBenchmarks : IDisposable
         _arabic = new TextStyle(Font.Load(ReadResource("fonts/NotoNaskhArabic-Regular.subset.ttf")), 16);
         _devanagari = new TextStyle(Font.Load(ReadResource("fonts/NotoSansDevanagari-Regular.ttf")), 16);
         _tibetan = new TextStyle(Font.Load(_tibetanData), 16);
+        _longRichText = CreateRichText(LongLatinText, _latin, new TextStyle(_latinFont, 20), new TextStyle(_latinFont, 16) { Synthesis = FontSynthesis.Oblique, LetterSpacing = 1 });
         _latinLayout = TextLayout.Create(LatinText, _latin, Paragraph);
         _arabicLayout = TextLayout.Create(ArabicText, _arabic, Paragraph);
         _lineLayout = TextLayout.Create(LatinText[..60], _latin);
@@ -94,6 +98,14 @@ public class TextBenchmarks : IDisposable
     [Benchmark]
     [Workload("Latin paragraph, 28,000 characters: layout")]
     public int LayoutLongLatin() => TextLayout.Create(LongLatinText, _latin, Paragraph).Lines.Count;
+
+    [Benchmark]
+    [Workload("Rich text paragraph, 28,000 characters in three styles: layout, greedy line breaking")]
+    public int LayoutLongRichText() => TextLayout.Create(_longRichText, Paragraph).Lines.Count;
+
+    [Benchmark]
+    [Workload("Rich text paragraph, 28,000 characters in three styles: layout, optimal line breaking")]
+    public int LayoutLongRichTextOptimal() => TextLayout.Create(_longRichText, OptimalParagraph).Lines.Count;
 
     [Benchmark]
     [Workload("Arabic paragraph, 500 characters: layout")]
@@ -145,5 +157,18 @@ public class TextBenchmarks : IDisposable
         using var buffer = new MemoryStream();
         resource.CopyTo(buffer);
         return buffer.ToArray();
+    }
+
+    /// <summary>Gives the words of a text the styles of a list in turn: every fifth word has the second style, every seventh the third.</summary>
+    private static RichText CreateRichText(string text, TextStyle style, TextStyle large, TextStyle oblique)
+    {
+        var builder = new RichTextBuilder();
+        var words = text.Split(' ');
+        for (var i = 0; i < words.Length; i++)
+        {
+            builder.Append(i == 0 ? words[i] : " " + words[i], i % 7 == 6 ? oblique : i % 5 == 4 ? large : style);
+        }
+
+        return builder.Build();
     }
 }

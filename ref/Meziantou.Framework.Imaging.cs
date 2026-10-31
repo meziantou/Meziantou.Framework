@@ -915,6 +915,7 @@ namespace Meziantou.Framework.Imaging
         public Meziantou.Framework.Imaging.PixelConversionOptions Conversion { get => throw null; init { } }
         public static Meziantou.Framework.Imaging.ImageDecodeOptions Default { get => throw null; }
         public int? FrameLimit { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Rectangle? Region { get => throw null; init { } }
         public int ScaleDenominator { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Size? TargetSize { get => throw null; init { } }
     }
@@ -3068,8 +3069,33 @@ namespace Meziantou.Framework.Imaging.Formats
     {
         public Meziantou.Framework.Imaging.Formats.Jpeg2000Compression Compression { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.Jpeg2000Container Container { get => throw null; init { } }
+        public int DecompositionLevels { get => throw null; init { } }
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+        public Meziantou.Framework.Imaging.Formats.Jpeg2000ProgressionOrder ProgressionOrder { get => throw null; init { } }
         public int Quality { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Formats.Jpeg2000QualityLayer> QualityLayers { get => throw null; init { } }
+        public int TileHeight { get => throw null; init { } }
+        public int TileWidth { get => throw null; init { } }
+    }
+
+    public enum Jpeg2000ProgressionOrder
+    {
+        Lrcp = 0,
+        Rlcp = 1,
+        Rpcl = 2,
+        Pcrl = 3,
+        Cprl = 4,
+    }
+
+    public sealed class Jpeg2000QualityLayer
+    {
+        public double? BitsPerPixel { get => throw null; }
+        public static Meziantou.Framework.Imaging.Formats.Jpeg2000QualityLayer Complete { get => throw null; }
+        public bool IsComplete { get => throw null; }
+        public long? Size { get => throw null; }
+        public static Meziantou.Framework.Imaging.Formats.Jpeg2000QualityLayer FromBitsPerPixel(double bitsPerPixel) => throw null;
+        public static Meziantou.Framework.Imaging.Formats.Jpeg2000QualityLayer FromSize(long bytes) => throw null;
+        public override string ToString() => throw null;
     }
 
     public enum JpegChromaSubsampling
@@ -3764,6 +3790,13 @@ namespace Meziantou.Framework.Imaging.Typography
         Automatic = 2,
     }
 
+    public enum TextJustification
+    {
+        InterWord = 0,
+        Auto = 1,
+        InterCharacter = 2,
+    }
+
     public sealed class TextLayout
     {
         public double Baseline { get => throw null; }
@@ -3801,8 +3834,10 @@ namespace Meziantou.Framework.Imaging.Typography
         public Meziantou.Framework.Imaging.Typography.TextHinting Hinting { get => throw null; init { } }
         public string? HyphenCharacter { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Typography.TextHyphenation Hyphenation { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Typography.TextJustification Justification { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Typography.TextLineBreak LineBreak { get => throw null; init { } }
         public Meziantou.Framework.LineBreakDictionary? LineBreakDictionary { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Typography.TextLineBreakStrategy LineBreakStrategy { get => throw null; init { } }
         public double? LineHeight { get => throw null; init { } }
         public double MaxHeight { get => throw null; init { } }
         public int MaxLines { get => throw null; init { } }
@@ -3810,6 +3845,7 @@ namespace Meziantou.Framework.Imaging.Typography
         public Meziantou.Framework.Imaging.Typography.TextOrientation Orientation { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Typography.TextOverflowWrap OverflowWrap { get => throw null; init { } }
         public int TabSize { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Typography.TextTabStop> TabStops { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Typography.TextTrimming Trimming { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Typography.TextWordBreak WordBreak { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Typography.TextWrapping Wrapping { get => throw null; init { } }
@@ -3838,6 +3874,12 @@ namespace Meziantou.Framework.Imaging.Typography
         Normal = 0,
         Strict = 1,
         Anywhere = 2,
+    }
+
+    public enum TextLineBreakStrategy
+    {
+        Greedy = 0,
+        Optimal = 1,
     }
 
     public enum TextOrientation
@@ -3884,6 +3926,28 @@ namespace Meziantou.Framework.Imaging.Typography
         public Meziantou.Framework.Imaging.Typography.FontSynthesis Synthesis { get => throw null; init { } }
         public double WordSpacing { get => throw null; init { } }
         public TextStyle(Meziantou.Framework.Imaging.Typography.FontStack fonts, double size) { }
+    }
+
+    public enum TextTabAlignment
+    {
+        Start = 0,
+        End = 1,
+        Center = 2,
+        DecimalSeparator = 3,
+    }
+
+    public readonly struct TextTabStop : System.IEquatable<Meziantou.Framework.Imaging.Typography.TextTabStop>
+    {
+        public Meziantou.Framework.Imaging.Typography.TextTabAlignment Alignment { get => throw null; }
+        public char DecimalSeparator { get => throw null; }
+        public double Position { get => throw null; }
+        public TextTabStop(double position, Meziantou.Framework.Imaging.Typography.TextTabAlignment alignment = Meziantou.Framework.Imaging.Typography.TextTabAlignment.Start, char decimalSeparator = '.') { }
+        public bool Equals(Meziantou.Framework.Imaging.Typography.TextTabStop other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+        public static bool operator ==(Meziantou.Framework.Imaging.Typography.TextTabStop left, Meziantou.Framework.Imaging.Typography.TextTabStop right) => throw null;
+        public static bool operator !=(Meziantou.Framework.Imaging.Typography.TextTabStop left, Meziantou.Framework.Imaging.Typography.TextTabStop right) => throw null;
     }
 
     public enum TextTrimming

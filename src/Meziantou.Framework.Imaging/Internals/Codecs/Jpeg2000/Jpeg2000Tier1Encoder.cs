@@ -23,10 +23,17 @@ internal sealed class Jpeg2000Tier1Encoder : IDisposable
 
     private readonly Av1PooledArray<uint> _flagBuffer;
     private readonly byte[] _contexts = new byte[Jpeg2000Tier1Tables.ContextCount];
+    private readonly Jpeg2000MqState[] _states = new Jpeg2000MqState[MaxPasses];
     private Jpeg2000MqEncoder _mq;
+    private bool _tracksDistortion;
+    private double _offset;
+    private double _distortion;
     private int _width;
     private int _height;
     private int _stripeStride;
+
+    /// <summary>The largest number of coding passes of a code-block: three for each of 31 bit-planes, but the first.</summary>
+    public const int MaxPasses = (3 * 31) - 2;
 
     public Jpeg2000Tier1Encoder(AllocationScope scope)
     {
@@ -42,6 +49,30 @@ internal sealed class Jpeg2000Tier1Encoder : IDisposable
     /// <param name="length">Receives the number of bytes of the codeword segment.</param>
     /// <returns>The number of bit-planes that are coded: 0 when every coefficient is zero, and nothing is written.</returns>
     public int Encode(ReadOnlySpan<int> samples, int width, int height, int orientation, PooledPayloadWriter output, out int length)
+        => Encode(samples, width, height, orientation, output, out length, passes: default, isIrreversible: false);
+
+    /// <summary>Encodes the coefficients of a code-block and records what each coding pass contributes.</summary>
+    /// <param name="samples">The coefficients, row by row: the magnitude in the 31 low bits and the sign in the high one.</param>
+    /// <param name="width">The width of the code-block.</param>
+    /// <param name="height">The height of the code-block.</param>
+    /// <param name="orientation">The orientation of the sub-band: one of the <c>Orientation</c> constants of <see cref="Jpeg2000Tier1Tables"/>.</param>
+    /// <param name="output">The writer the codeword segment is appended to.</param>
+    /// <param name="length">Receives the number of bytes of the codeword segment.</param>
+    /// <param name="passes">
+    /// Receives the coding passes, in order (<c>3 * bitPlanes - 2</c> of them): the length of the segment that decodes
+    /// each one, and the reduction of the squared error. Empty to record nothing.
+    /// </param>
+    /// <param name="isIrreversible">
+    /// Whether the coefficients are quantization indices of the irreversible path, which a decoder reconstructs in the
+    /// middle of their interval: the squared errors are measured from that point. Otherwise a coefficient is an exact value.
+    /// </param>
+    /// <returns>The number of bit-planes that are coded: 0 when every coefficient is zero, and nothing is written.</returns>
+    /// <remarks>
+    /// A decoder reconstructs a coefficient whose bit-planes are known down to <c>p</c> in the middle of what is left:
+    /// <c>floor(m / 2^p) * 2^p + 2^(p - 1)</c>, or the coefficient itself (plus a half for a quantization index) once every
+    /// bit-plane is known.
+    /// </remarks>
+    public int Encode(ReadOnlySpan<int> samples, int width, int height, int orientation, PooledPayloadWriter output, out int length, Span<Jpeg2000CodingPass> passes, bool isIrreversible)
     {
         length = 0;
         samples = samples[..(width * height)];
@@ -62,7 +93,13 @@ internal sealed class Jpeg2000Tier1Encoder : IDisposable
         flags.Clear();
         Jpeg2000Tier1Tables.ResetContexts(_contexts);
         var zeroCoding = Jpeg2000Tier1Tables.GetZeroCodingContexts(orientation);
+        var start = output.Length;
         _mq.Initialize(output);
+        _tracksDistortion = !passes.IsEmpty;
+        _offset = isIrreversible ? 0.5 : 0;
+        _distortion = 0;
+        var states = _states.AsSpan();
+        var pass = 0;
 
         // The first bit-plane has a cleanup pass only (D.3)
         for (var plane = bitPlanes - 1; plane >= 0; plane--)
@@ -70,17 +107,68 @@ internal sealed class Jpeg2000Tier1Encoder : IDisposable
             if (plane != bitPlanes - 1)
             {
                 EncodeSignificancePropagation(samples, flags, zeroCoding, plane);
+                EndPass(passes, states, ref pass);
                 EncodeMagnitudeRefinement(samples, flags, plane);
+                EndPass(passes, states, ref pass);
             }
 
             EncodeCleanup(samples, flags, zeroCoding, plane);
+            EndPass(passes, states, ref pass);
         }
 
         length = _mq.Flush();
+        if (_tracksDistortion)
+        {
+            // The segment of a pass is at least as long as the one of the previous pass, and the last one is the whole segment
+            var segment = output.WrittenSpan.Slice(start, length);
+            var previous = 0;
+            for (var i = 0; i < pass; i++)
+            {
+                var truncated = i == pass - 1 ? length : Math.Min(length, Jpeg2000MqEncoder.GetTruncationLength(segment, in states[i]));
+                previous = Math.Max(previous, truncated);
+                passes[i].Length = previous;
+            }
+        }
+
         return bitPlanes;
     }
 
     public void Dispose() => _flagBuffer.Dispose();
+
+    private void EndPass(Span<Jpeg2000CodingPass> passes, Span<Jpeg2000MqState> states, ref int pass)
+    {
+        if (_tracksDistortion)
+        {
+            states[pass] = _mq.GetState();
+            passes[pass].Distortion = _distortion;
+            _distortion = 0;
+        }
+
+        pass++;
+    }
+
+    /// <summary>Gets the reconstruction of a magnitude whose bit-planes are known down to <paramref name="plane"/>.</summary>
+    private double Reconstruct(int magnitude, int plane)
+        => plane == 0 ? magnitude + _offset : ((magnitude >> plane) << plane) + (double)(1 << (plane - 1));
+
+    /// <summary>Gets how much the squared error of a coefficient decreases when it becomes significant in a bit-plane.</summary>
+    private double GetSignificanceGain(int sample, int plane)
+    {
+        var magnitude = sample & int.MaxValue;
+        var value = magnitude + _offset;
+        var reconstruction = Reconstruct(magnitude, plane);
+        return reconstruction * ((2 * value) - reconstruction);
+    }
+
+    /// <summary>Gets how much the squared error of a significant coefficient decreases when a bit-plane refines it.</summary>
+    private double GetRefinementGain(int sample, int plane)
+    {
+        var magnitude = sample & int.MaxValue;
+        var value = magnitude + _offset;
+        var before = value - Reconstruct(magnitude, plane + 1);
+        var after = value - Reconstruct(magnitude, plane);
+        return (before * before) - (after * after);
+    }
 
     // The passes work on a copy of the arithmetic encoder, so that its registers stay in processor registers; the copy is
     // stored back at the end of the pass. The flags, the coefficients and the contexts are addressed through references:
@@ -95,6 +183,7 @@ internal sealed class Jpeg2000Tier1Encoder : IDisposable
         ref var contexts = ref unsafe(MemoryMarshal.GetArrayDataReference(_contexts));
         ref var zeroCodingContexts = ref unsafe(MemoryMarshal.GetReference(zeroCoding));
         var mq = _mq;
+        var tracksDistortion = _tracksDistortion;
         for (int stripe = 0, first = stripeStride + 4; stripe < height; stripe += 4, first += stripeStride)
         {
             var rows = Math.Min(4, height - stripe);
@@ -120,6 +209,10 @@ internal sealed class Jpeg2000Tier1Encoder : IDisposable
                     {
                         EncodeSign(ref mq, ref contexts, value, sample < 0);
                         Jpeg2000Tier1Tables.SetSignificant(ref flag, row, stripeStride, sample < 0, updateNorth: true);
+                        if (tracksDistortion)
+                        {
+                            _distortion += GetSignificanceGain(sample, plane);
+                        }
                     }
 
                     flag |= Visited;
@@ -139,6 +232,7 @@ internal sealed class Jpeg2000Tier1Encoder : IDisposable
         ref var sampleStart = ref unsafe(MemoryMarshal.GetReference(samples));
         ref var contexts = ref unsafe(MemoryMarshal.GetArrayDataReference(_contexts));
         var mq = _mq;
+        var tracksDistortion = _tracksDistortion;
         for (int stripe = 0, first = stripeStride + 4; stripe < height; stripe += 4, first += stripeStride)
         {
             var rows = Math.Min(4, height - stripe);
@@ -159,6 +253,10 @@ internal sealed class Jpeg2000Tier1Encoder : IDisposable
                     var sample = unsafe(Unsafe.Add(ref sampleStart, ((stripe + row) * width) + x));
                     mq.Encode((sample >> plane) & 1, ref unsafe(Unsafe.Add(ref contexts, context)));
                     flag = value | Refined;
+                    if (tracksDistortion)
+                    {
+                        _distortion += GetRefinementGain(sample, plane);
+                    }
                 }
             }
         }
@@ -176,6 +274,7 @@ internal sealed class Jpeg2000Tier1Encoder : IDisposable
         ref var contexts = ref unsafe(MemoryMarshal.GetArrayDataReference(_contexts));
         ref var zeroCodingContexts = ref unsafe(MemoryMarshal.GetReference(zeroCoding));
         var mq = _mq;
+        var tracksDistortion = _tracksDistortion;
         for (int stripe = 0, first = stripeStride + 4; stripe < height; stripe += 4, first += stripeStride)
         {
             var rows = Math.Min(4, height - stripe);
@@ -203,9 +302,15 @@ internal sealed class Jpeg2000Tier1Encoder : IDisposable
                     mq.Encode(row >> 1, ref uniform);
                     mq.Encode(row & 1, ref uniform);
                     ref var flag = ref unsafe(Unsafe.Add(ref column, row));
-                    var negative = unsafe(Unsafe.Add(ref columnSample, row * width)) < 0;
+                    var runSample = unsafe(Unsafe.Add(ref columnSample, row * width));
+                    var negative = runSample < 0;
                     EncodeSign(ref mq, ref contexts, flag, negative);
                     Jpeg2000Tier1Tables.SetSignificant(ref flag, row, stripeStride, negative, updateNorth: true);
+                    if (tracksDistortion)
+                    {
+                        _distortion += GetSignificanceGain(runSample, plane);
+                    }
+
                     row++;
                 }
                 else if (!Jpeg2000Tier1Tables.HasCleanupCandidate(ref column))
@@ -228,6 +333,10 @@ internal sealed class Jpeg2000Tier1Encoder : IDisposable
                         {
                             EncodeSign(ref mq, ref contexts, value, sample < 0);
                             Jpeg2000Tier1Tables.SetSignificant(ref flag, row, stripeStride, sample < 0, updateNorth: true);
+                            if (tracksDistortion)
+                            {
+                                _distortion += GetSignificanceGain(sample, plane);
+                            }
                         }
                     }
 

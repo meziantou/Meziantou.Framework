@@ -85,9 +85,17 @@ public sealed partial class OpenJpegTool
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <returns>The components, in order.</returns>
     /// <exception cref="InvalidOperationException">opj_decompress rejected the input.</exception>
-    public async Task<IReadOnlyList<PgxImage>> DecodeComponentsAsync(FullPath inputPath, CancellationToken cancellationToken)
+    public Task<IReadOnlyList<PgxImage>> DecodeComponentsAsync(FullPath inputPath, CancellationToken cancellationToken) => DecodeComponentsAsync(inputPath, [], cancellationToken);
+
+    /// <summary>Decodes a codestream or a file with <c>opj_decompress</c> and options to PGX files, one per component.</summary>
+    /// <param name="inputPath">The JPEG 2000 codestream or file.</param>
+    /// <param name="arguments">The options, for example <c>-r 2</c> (discard two resolution levels), <c>-d 0,0,64,64</c> (decode an area) or <c>-l 1</c> (decode the first layer).</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>The components, in order.</returns>
+    /// <exception cref="InvalidOperationException">opj_decompress rejected the input.</exception>
+    public async Task<IReadOnlyList<PgxImage>> DecodeComponentsAsync(FullPath inputPath, IEnumerable<string> arguments, CancellationToken cancellationToken)
     {
-        var components = await TryDecodeComponentsAsync(inputPath, cancellationToken).ConfigureAwait(false);
+        var components = await TryDecodeComponentsAsync(inputPath, arguments, cancellationToken).ConfigureAwait(false);
         return components.Components ?? throw new InvalidOperationException($"opj_decompress failed on '{inputPath}' (exit code {components.Result.ExitCode.ToString(CultureInfo.InvariantCulture)}): {components.Result.StandardError}{components.Result.StandardOutputText}");
     }
 
@@ -95,7 +103,14 @@ public sealed partial class OpenJpegTool
     /// <param name="inputPath">The JPEG 2000 codestream or file.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <returns>The components, or <see langword="null"/> when opj_decompress rejected the input, with the result of the process.</returns>
-    public async Task<(IReadOnlyList<PgxImage>? Components, ProcessResult Result)> TryDecodeComponentsAsync(FullPath inputPath, CancellationToken cancellationToken)
+    public Task<(IReadOnlyList<PgxImage>? Components, ProcessResult Result)> TryDecodeComponentsAsync(FullPath inputPath, CancellationToken cancellationToken) => TryDecodeComponentsAsync(inputPath, [], cancellationToken);
+
+    /// <summary>Decodes a codestream or a file with <c>opj_decompress</c> and options to PGX files, when it accepts the input.</summary>
+    /// <param name="inputPath">The JPEG 2000 codestream or file.</param>
+    /// <param name="arguments">The options of <c>opj_decompress</c>.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>The components, or <see langword="null"/> when opj_decompress rejected the input, with the result of the process.</returns>
+    public async Task<(IReadOnlyList<PgxImage>? Components, ProcessResult Result)> TryDecodeComponentsAsync(FullPath inputPath, IEnumerable<string> arguments, CancellationToken cancellationToken)
     {
         // opj_decompress writes <name>_<component>.pgx. OpenJPEG 2.5.4 overflows the buffer of that name when the output
         // path has exactly 254 characters, and aborts after writing the files: such a path is made one character longer
@@ -110,7 +125,7 @@ public sealed partial class OpenJpegTool
             File.Delete(GetComponentPath(outputPrefix, i));
         }
 
-        var result = await ProcessRunner.RunAsync(DecompressPath, ["-i", inputPath, "-o", outputPrefix + ".pgx"], cancellationToken).ConfigureAwait(false);
+        var result = await ProcessRunner.RunAsync(DecompressPath, ["-i", inputPath, "-o", outputPrefix + ".pgx", .. arguments], cancellationToken).ConfigureAwait(false);
         if (result.ExitCode != 0 || !File.Exists(GetComponentPath(outputPrefix, 0)))
             return (null, result);
 

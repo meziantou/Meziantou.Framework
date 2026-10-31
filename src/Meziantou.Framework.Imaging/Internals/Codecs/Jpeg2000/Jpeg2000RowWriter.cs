@@ -44,6 +44,7 @@ internal sealed class Jpeg2000RowWriter : IDisposable
     private readonly DecodedFrameSink _sink;
     private readonly Jpeg2000Channel[] _channels;
     private readonly IccPipeline? _inkConversion;
+    private readonly Jpeg2000Area _window;
 
     // The scaled value of every sample, by depth: null for a depth that is not scaled or not worth a table
     private readonly Av1PooledArray<ushort>?[] _scaleTables = new Av1PooledArray<ushort>?[MaxPrecision + 1];
@@ -52,8 +53,22 @@ internal sealed class Jpeg2000RowWriter : IDisposable
     private PooledBuffer? _row;
     private PooledBuffer? _inks;
 
+    /// <summary>Initializes a writer of the pixels of the whole image.</summary>
     public Jpeg2000RowWriter(ImageCodecContext context, Jpeg2000Siz siz, Jpeg2000ChannelLayout layout, DecodedFrameSink sink, IccPipeline? inkConversion)
+        : this(context, siz, layout, sink, inkConversion, new Jpeg2000Area(siz.XOffset, siz.YOffset, siz.XSize, siz.YSize))
     {
+    }
+
+    /// <summary>Initializes a writer of the pixels of an area of the image.</summary>
+    /// <param name="context">The decoding context.</param>
+    /// <param name="siz">The image and tile size.</param>
+    /// <param name="layout">The channels of the image.</param>
+    /// <param name="sink">The frame the pixels are written to: as large as <paramref name="window"/>.</param>
+    /// <param name="inkConversion">The conversion of CMYK inks, or <see langword="null"/>.</param>
+    /// <param name="window">The area of the reference grid, at the decoded resolution (<see cref="Jpeg2000TileGeometry.OutputX0"/>), that the frame holds.</param>
+    public Jpeg2000RowWriter(ImageCodecContext context, Jpeg2000Siz siz, Jpeg2000ChannelLayout layout, DecodedFrameSink sink, IccPipeline? inkConversion, Jpeg2000Area window)
+    {
+        _window = window;
         _context = context;
         _siz = siz;
         _layout = layout;
@@ -62,14 +77,18 @@ internal sealed class Jpeg2000RowWriter : IDisposable
         _channels = layout.Alpha is { } alpha ? [.. layout.Colors, alpha] : layout.Colors;
     }
 
-    /// <summary>Writes the pixels of a tile whose tile-components hold their samples.</summary>
+    /// <summary>Writes the pixels of a tile whose tile-components hold their samples, in the window of the frame.</summary>
     /// <exception cref="InvalidImageContentException">A sample is not an index of the palette.</exception>
     public void WriteTile(Jpeg2000TileGeometry geometry)
     {
-        var width = (int)(geometry.X1 - geometry.X0);
-        var height = (int)(geometry.Y1 - geometry.Y0);
-        var left = (int)(geometry.X0 - _siz.XOffset);
-        var top = (int)(geometry.Y0 - _siz.YOffset);
+        var area = new Jpeg2000Area(geometry.OutputX0, geometry.OutputY0, geometry.OutputX1, geometry.OutputY1).Intersect(_window);
+        if (area.IsEmpty)
+            return;
+
+        var width = (int)(area.X1 - area.X0);
+        var height = (int)(area.Y1 - area.Y0);
+        var left = (int)(area.X0 - _window.X0);
+        var top = (int)(area.Y0 - _window.Y0);
         var channelCount = _channels.Length;
         var sourceFormat = _sink.SourcePixelFormat;
         var sourceBytesPerPixel = PixelFormats.GetBytesPerPixel(sourceFormat);
@@ -103,7 +122,7 @@ internal sealed class Jpeg2000RowWriter : IDisposable
 
             for (var k = 0; k < channelCount; k++)
             {
-                ReadChannel(geometry, _channels[k], geometry.Y0 + y, values.Slice(k * width, width));
+                ReadChannel(geometry, _channels[k], area.X0, area.Y0 + y, values.Slice(k * width, width));
             }
 
             if (_layout.Kind == Jpeg2000ColorKind.Sycc)
@@ -240,7 +259,7 @@ internal sealed class Jpeg2000RowWriter : IDisposable
         }
     }
 
-    private void ReadChannel(Jpeg2000TileGeometry geometry, Jpeg2000Channel channel, long y, Span<int> values)
+    private void ReadChannel(Jpeg2000TileGeometry geometry, Jpeg2000Channel channel, long x, long y, Span<int> values)
     {
         var size = _siz.Components[channel.Component];
         var component = geometry.Components[channel.Component];
@@ -256,11 +275,11 @@ internal sealed class Jpeg2000RowWriter : IDisposable
         var samples = component.Samples.Slice(rowIndex * componentWidth, componentWidth);
         if (size.XSubsampling == 1)
         {
-            samples.CopyTo(values);
+            samples.Slice((int)(x - component.X0), values.Length).CopyTo(values);
         }
         else
         {
-            ReplicateColumns(samples, values, geometry.X0, size.XSubsampling, component.X0);
+            ReplicateColumns(samples, values, x, size.XSubsampling, component.X0);
         }
 
         if (channel.PaletteColumn >= 0)

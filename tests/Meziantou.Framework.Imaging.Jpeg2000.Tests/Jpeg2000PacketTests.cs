@@ -126,20 +126,23 @@ public sealed class Jpeg2000PacketTests
 
         var scope = new AllocationScope(new ImageResourceLimits());
         using var output = new PooledPayloadWriter(scope);
-        using var encoder = new Jpeg2000TagTreeEncoder(scope);
-        values.CopyTo(encoder.Begin(width, height));
-        encoder.Complete();
+        var count = (int)Jpeg2000TagTree.GetNodeCount(width, height);
+        var tree = new int[count];
+        var lows = new int[count];
+        var known = new int[count];
+        values.CopyTo(tree);
+        Jpeg2000TagTreeEncoder.ComputeMinima(tree, width, height);
         var writer = new Jpeg2000PacketBitWriter(output);
 
         // A first threshold for every leaf, as the inclusion in a layer; then the value of every leaf
         for (var i = 0; i < values.Length; i++)
         {
-            encoder.Encode(ref writer, i % width, i / width, threshold: 3);
+            Jpeg2000TagTreeEncoder.Encode(ref writer, tree, lows, known, width, height, i % width, i / width, threshold: 3);
         }
 
         for (var i = 0; i < values.Length; i++)
         {
-            encoder.Encode(ref writer, i % width, i / width, values[i] + 1);
+            Jpeg2000TagTreeEncoder.Encode(ref writer, tree, lows, known, width, height, i % width, i / width, values[i] + 1);
         }
 
         writer.Flush();

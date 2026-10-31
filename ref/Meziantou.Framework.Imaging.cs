@@ -2288,6 +2288,7 @@ namespace Meziantou.Framework.Imaging.Drawing
     public abstract class GradientBrush : Meziantou.Framework.Imaging.Drawing.Brush
     {
         public Meziantou.Framework.Imaging.Drawing.GradientColorSpace ColorSpace { get => throw null; init { } }
+        public bool Dither { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Drawing.GradientSpreadMode SpreadMode { get => throw null; init { } }
         public System.ReadOnlyMemory<Meziantou.Framework.Imaging.Drawing.GradientStop> Stops { get => throw null; }
         public Meziantou.Framework.Imaging.AffineTransform Transform { get => throw null; init { } }
@@ -2689,6 +2690,7 @@ namespace Meziantou.Framework.Imaging.Drawing
         public Meziantou.Framework.Imaging.RectangleD Bounds { get => throw null; }
         public bool IsEmpty { get => throw null; }
         public Meziantou.Framework.Imaging.Drawing.VectorPath Combine(Meziantou.Framework.Imaging.Drawing.VectorPath other, Meziantou.Framework.Imaging.Drawing.PathCombineMode mode, Meziantou.Framework.Imaging.Drawing.FillRule fillRule = Meziantou.Framework.Imaging.Drawing.FillRule.NonZero, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public Meziantou.Framework.Imaging.Drawing.VectorPath Combine(Meziantou.Framework.Imaging.Drawing.VectorPath other, Meziantou.Framework.Imaging.Drawing.PathCombineMode mode, Meziantou.Framework.Imaging.Drawing.FillRule fillRule, Meziantou.Framework.Imaging.Drawing.FillRule otherFillRule, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public bool Contains(Meziantou.Framework.Imaging.PointD point, Meziantou.Framework.Imaging.Drawing.FillRule fillRule = Meziantou.Framework.Imaging.Drawing.FillRule.NonZero) => throw null;
         public Meziantou.Framework.Imaging.Drawing.PathSegmentEnumerator EnumerateSegments() => throw null;
         public Meziantou.Framework.Imaging.RectangleD GetBounds(Meziantou.Framework.Imaging.Drawing.Pen pen) => throw null;
@@ -2700,6 +2702,7 @@ namespace Meziantou.Framework.Imaging.Drawing
         public Meziantou.Framework.Imaging.Drawing.VectorPath Reverse() => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPath RoundCorners(double radius) => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPath Simplify(Meziantou.Framework.Imaging.Drawing.FillRule fillRule = Meziantou.Framework.Imaging.Drawing.FillRule.NonZero, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public bool StrokeContains(Meziantou.Framework.Imaging.PointD point, Meziantou.Framework.Imaging.Drawing.Pen pen) => throw null;
         public string ToSvgPathData() => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPath Transform(Meziantou.Framework.Imaging.AffineTransform transform) => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPath Trim(double start, double end) => throw null;
@@ -2739,6 +2742,15 @@ namespace Meziantou.Framework.Imaging.Drawing
         public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder MoveTo(double x, double y) => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder QuadraticBezierTo(Meziantou.Framework.Imaging.PointD control, Meziantou.Framework.Imaging.PointD point) => throw null;
         public Meziantou.Framework.Imaging.Drawing.VectorPathBuilder QuadraticBezierTo(double controlX, double controlY, double x, double y) => throw null;
+    }
+
+    public sealed class VectorPathMeasure
+    {
+        public double Length { get => throw null; }
+        public Meziantou.Framework.Imaging.Drawing.VectorPath Path { get => throw null; }
+        public VectorPathMeasure(Meziantou.Framework.Imaging.Drawing.VectorPath path) { }
+        public bool TryGetClosestPoint(Meziantou.Framework.Imaging.PointD point, out Meziantou.Framework.Imaging.PointD closest, out double distanceAlongPath) => throw null;
+        public bool TryGetPointAtDistance(double distance, out Meziantou.Framework.Imaging.PointD point, out Meziantou.Framework.Imaging.PointD tangent) => throw null;
     }
 }
 namespace Meziantou.Framework.Imaging.Formats

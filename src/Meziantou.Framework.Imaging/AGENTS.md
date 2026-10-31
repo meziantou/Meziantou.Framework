@@ -746,6 +746,10 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
     `GradientColorSpace` other than `Encoded`, the stops stay 16-bit sRGB colors, are mixed in linear light or in
     Oklab (`SrgbTransfer`, `Math.Cbrt`: the one place of the drawing code that uses functions of the platform), and
     the 16-bit result is converted like a brush color; the color of a stop is always written as it is.
+  - `GradientBrush.Dither` (off by default) replaces the rounding offset by the threshold of the 8x8 Bayer matrix at
+    the pixel of the frame, only on frames of 8 bits per component (`GetPaintMax` is 255); in the other color spaces
+    the 16-bit colors are moved by less than half an 8-bit step before their conversion. A dithered gradient never
+    takes the row-color shortcuts of `GradientEvaluator`.
 - `PaintProfile` is the one way a color profile reaches a drawing: the colors the caller gives go through
   `PaintColorConverter` (the pipeline of `Image.CreatePaintPipeline`, whose destination is the profile of the image,
   or its CICP color space through `IccPipeline.Create(IccProfile, CicpColorSpace, ...)`) before `ConvertDrawingColor`.
@@ -773,6 +777,12 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   into a sink, as drawing does, so that they answer for what is drawn; `GetTightBounds` (`PathBounds`) is computed from
   the curves, and contains their chords. `Widen` runs the `Stroker` into a path builder: the same pieces in the same
   order as a draw call, so filling the result is stroking, bit for bit (`FillingAWidenedPathIsStrokingThePath`).
+  `StrokeContains` runs the same `Stroker` into a `WindingSink` (no path is built): its `NearChordFilter` passes on
+  only the runs of chords within the reach of the pen from the point, each with one chord of context on both sides (a
+  join that can contain the point is at a vertex whose two chords are near), and the arcs of joins and caps whose
+  triangle misses the point become chords. Change the stroker with `AStrokeOfARandomPathContainsWhatItsWidenedPathContains`
+  green. `VectorPathMeasure` keeps the chords `DistanceSink` and `ClosestPointSink` walk, and gives their answers bit
+  for bit (same operations, same order; groups of chords are skipped by a bound with a margin, never by a tie).
 - `EnumerateSegments` is the only public view of the elements of a path: it gives what the builder takes, never the
   internal form (an `ArcPiece` becomes the arc of SVG, through `ArcGeometry.GetAxes`; an ellipse becomes two arcs).
   `Reverse` (`PathReverser`) works on the elements, exactly; `Trim` (`TrimSink`) works on the chords, like the other

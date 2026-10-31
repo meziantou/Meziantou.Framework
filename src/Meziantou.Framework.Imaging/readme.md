@@ -1711,11 +1711,16 @@ point is inside (what a fill paints, with either fill rule), `GetLength` gives i
 the point at a distance along it with the direction of the path there (to place a marker, an arrow head or a label),
 `TryGetClosestPoint` gives the point of the path that is the nearest to a position, with its distance along the path
 (what a pointer snaps to, or where a click falls on a line), `Bounds` is the box of its points and control points, and
-`GetTightBounds` the box it really reaches. `GetBounds(pen)` is a box that contains what a pen paints, without
+`GetTightBounds` the box it really reaches. Each of these calls walks the whole path: a `VectorPathMeasure` walks it
+once and keeps its chords, then gives the same length, points at a distance and closest points for as many questions
+as needed (a marker that moves along the path, a pointer that moves over it), finding a distance by a binary search and
+skipping the parts of the path that are far from a position. `StrokeContains(point, pen)` tells whether a pen that
+strokes the path paints a point (a click on a line), caps, joins, miter limit, dashes, markers and alignment included,
+without creating the path of the stroke: only the parts of the path near the point are stroked. `GetBounds(pen)` is a box that contains what a pen paints, without
 computing the stroke: the tight bounds spread by half the width of the pen, its miters and its square caps (on the
 side of the path its `Alignment` puts it), so it is larger than the stroke at a corner that is not mitered. `Widen` returns
 the path a pen draws when it strokes the path, so that all of these also answer for a stroke: the exact bounds of a stroke
-are the tight bounds of the widened path, and a click is on a line when the widened path contains it. A widened path
+are the tight bounds of the widened path, and what `StrokeContains` answers is what the widened path contains. A widened path
 is the pieces the library fills (one per segment, join and cap, overlapping): fill it with the non-zero rule; it is
 not a single outline (see `Simplify` below). Lengths and containment are those of the path as it is drawn, with its curves replaced by their
 chords.
@@ -1731,7 +1736,9 @@ before cutting it, not after.
 
 **Combining paths**. `Combine` returns the outline of what two paths fill, combined by a `PathCombineMode`: `Union`
 (what one of them fills), `Intersect` (what both fill), `Exclude` (what the first one fills and the second one does
-not) or `Xor` (what only one fills). `Simplify` returns the outline of what one path fills: a path that crosses itself,
+not) or `Xor` (what only one fills). Each path fills what the fill rule says, or what its own rule says with the
+overload that takes two rules (a star drawn as one contour that crosses itself, with or without its center, combined
+with a shape of the other rule). `Simplify` returns the outline of what one path fills: a path that crosses itself,
 or whose contours overlap, becomes the boundary of its area, and the pieces of `Widen` become the outline of the
 stroke, which can be stroked or combined in turn. The result is closed contours that do not cross each other or
 themselves: the outer ones turn clockwise on the image and the holes the other way, so both fill rules paint the same
@@ -1888,6 +1895,11 @@ change evenly: (208, 168, 0), with no dull band between two saturated colors. `O
 and the hue of the same space, the hue along the shorter arc as CSS does for `in oklch`: an orange half way, and from
 blue to yellow a teal where `Oklab` goes through a gray; the hue of a gray stop is the hue of the other stop. The stops
 are taken as sRGB colors; at a stop, the color is the color of the stop in every space.
+
+`Dither` (off by default) removes the bands a slow gradient shows on an image of 8 bits per component: each pixel is
+rounded up or down by the 8x8 Bayer matrix instead of to the nearest sample, so that a few pixels average to the
+color between two steps. The pattern is fixed (the same drawing gives the same pixels), a color that 8 bits hold
+exactly is kept, and images of 16 bits or of floating-point components, whose steps do not show, are not dithered.
 
 A radial gradient can spread from a `FocalPoint` that is not its center (a highlight on a sphere). With a
 `FocalRadius`, it starts on a circle around that point instead of at the point: the gradient between two circles of

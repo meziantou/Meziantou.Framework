@@ -28,6 +28,10 @@ internal sealed class HeicBinding : HeifCodecBinding
 
     public override ReadOnlySpan<byte> AlphaAuxiliaryTypeToWrite => HeifFormat.HevcAlphaAuxiliaryType;
 
+    // The pixel aspect ratio, the content light level and the mastering display are boxes of the container: HEIC and AVIF
+    // read and write them alike
+    public override HeifContainerFeatures ContainerFeatures => HeifContainerFeatures.DisplayMetadata;
+
     // ITU-T H.265, annex A.4.2: a decoded picture buffer holds at most 16 pictures, so at most 15 pictures precede in
     // decoding order a picture that they follow in output order
     public override int MaxReorderedSamples => 16;

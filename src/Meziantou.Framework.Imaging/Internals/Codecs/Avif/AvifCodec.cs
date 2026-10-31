@@ -76,7 +76,7 @@ internal sealed class AvifCodec : ImageCodec
         var observer = new HeifDecoder(request, context);
         try
         {
-            return new StructureDecodeParser(new HeifStructureParser(context, AvifBinding.Instance, StructureWalk.Decode, observer), observer);
+            return new StructureDecodeParser(new HeifStructureParser(context, AvifBinding.Instance, StructureWalk.Decode, observer, request.HeifItemId), observer);
         }
         catch
         {

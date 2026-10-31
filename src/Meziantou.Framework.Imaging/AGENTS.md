@@ -782,6 +782,30 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   exact gamut for matrix-based and CICP destinations, round trip through the colorimetric tables for table-based ones.
   `Clip` adds no stage, so the default conversions are unchanged bit for bit. The HDR clipping policy is separate
   (`HdrToneMapStage`).
+- `IccColorTransformOptions.ClipFloatingPointSamples = false` evaluates `IccStage.ApplyUnbounded` instead of `Apply` for
+  the floating-point samples of `IccColorTransform`: tone curves extended beyond [0, 1] (`IccCurve.EvaluateUnbounded`,
+  `IccInverseCurve.EvaluateUnbounded`), matrices as they are, clipping stages skipped. A stage that has a range (a lookup
+  table, a gamut mapping) keeps `SupportsUnbounded = false`, which makes `Create` refuse the option; a new stage without
+  range overrides both members.
+
+## Auxiliary images and gain maps
+
+`AuxiliaryImageCollection` lists the images a file stores next to its primary image (`Internals/GainMaps`): HEIF
+thumbnails, auxiliary images and `tmap` gain maps (`HeifAuxiliaryScanner`), the images of a JPEG Multi-Picture Format
+index (`JpegAuxiliaryScanner`). A HEIF item is decoded by the decoder of the file with `ImageDecodeRequest.HeifItemId`,
+which makes `HeifStructureParser` present that item instead of the primary item or the sequence. Ordinary decoding never
+reads these images.
+
+- The gain map formula and the `hdrgm` XMP properties come from the public Adobe "Gain map" and Android Ultra HDR
+  specifications; the binary layout of ISO 21496-1 (the standard itself is not public) was checked field by field
+  against the files of libultrahdr and libavif, never read from their source. A newer minimum version or unknown flags
+  make the metadata unknown; malformed metadata is kept as the error of `DecodeHdr`, and the primary image always decodes.
+- Oracles (`tools/Meziantou.Framework.Imaging.GainMapFixtures`, a Docker image): libultrahdr 1.4.0 `ultrahdr_app -m 1`
+  decodes Ultra HDR files to linear half floats in the gamut of the HDR intent (from the ICC profile of the gain map
+  image, not the base image); libavif 1.3.0 `avifgainmaputil printmetadata` prints the red values for all three channels
+  (read the `tmap` item instead), and `avifgainmaputil tonemap` is not an oracle (its output differs from the formula by
+  several percent): the AVIF references are the formula evaluated with numpy on the planes libavif decodes. Both tools
+  upsample a smaller gain map with their own filter, which Ultra HDR leaves to the reader: compare with a tolerance.
 
 ## Drawing
 

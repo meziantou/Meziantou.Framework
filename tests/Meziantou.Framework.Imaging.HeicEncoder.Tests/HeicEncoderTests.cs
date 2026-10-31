@@ -484,6 +484,75 @@ public sealed class HeicEncoderTests
         Assert.Equal(GetBytes(image), GetBytes(decoded));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void LightLevelsMasteringDisplayAndPixelShapeAreStoredInTheirBoxes(bool isSequence)
+    {
+        using var image = CreateImage(6, 4, seed: 12, transparent: true);
+        if (isSequence)
+        {
+            using var second = CreateImage(6, 4, seed: 13, transparent: true);
+            image.AppendFrame(second.Frames[0]);
+            image.Frames[0].Metadata.Duration = new FrameDuration(1, 10);
+            image.Frames[1].Metadata.Duration = new FrameDuration(1, 10);
+        }
+
+        var lightLevel = new ContentLightLevel(maxContentLightLevel: 1000, maxPictureAverageLightLevel: 400);
+        var display = new MasteringDisplayColorVolume(redX: 35400, redY: 14600, greenX: 8500, greenY: 39850, blueX: 6550, blueY: 2300, whitePointX: 15635, whitePointY: 16450, maxLuminance: 10_000_000, minLuminance: 50);
+        var shape = new PixelAspectRatio(4, 3);
+        image.Metadata.ContentLightLevel = lightLevel;
+        image.Metadata.MasteringDisplay = display;
+        image.Metadata.PixelAspectRatio = shape;
+        var data = Encode(image, new HeicEncoder());
+
+        // ISO/IEC 14496-12, sections 12.1.6, 12.1.7 and 12.1.4, as for AVIF: the primaries of the display are stored in
+        // the order green, blue, red, the luminances in units of 0.0001 cd/m2
+        byte[] expectedLightLevel = [0x03, 0xE8, 0x01, 0x90];
+        byte[] expectedDisplay = [0x21, 0x34, 0x9B, 0xAA, 0x19, 0x96, 0x08, 0xFC, 0x8A, 0x48, 0x39, 0x08, 0x3D, 0x13, 0x40, 0x42, 0x00, 0x98, 0x96, 0x80, 0x00, 0x00, 0x00, 0x32];
+        byte[] expectedShape = [0x00, 0x00, 0x00, 0x04, 0x00, 0x00, 0x00, 0x03];
+        var reader = ReferenceHeif.Parse(data);
+        var item = reader.PrimaryItem;
+        Assert.NotNull(item);
+        Assert.Equal(expectedLightLevel, item.Find("clli")!.Payload.ToArray());
+        Assert.Equal(expectedDisplay, item.Find("mdcv")!.Payload.ToArray());
+        Assert.Equal(expectedShape, item.Find("pasp")!.Payload.ToArray());
+        Assert.All(item.Associations.Where(association => association.Property.Type is "clli" or "mdcv" or "pasp"), association => Assert.False(association.IsEssential));
+
+        // The light levels and the display describe colors: the alpha plane only has the shape of its pixels
+        var alpha = reader.AlphaItem;
+        Assert.NotNull(alpha);
+        Assert.Equal(expectedShape, alpha.Find("pasp")!.Payload.ToArray());
+        Assert.Null(alpha.Find("clli"));
+        Assert.Null(alpha.Find("mdcv"));
+        if (isSequence)
+        {
+            var track = reader.ColorTrack;
+            Assert.NotNull(track);
+            Assert.Equal(expectedLightLevel, track.FindSampleEntryBox("clli")!.Payload.ToArray());
+            Assert.Equal(expectedDisplay, track.FindSampleEntryBox("mdcv")!.Payload.ToArray());
+            Assert.Equal(expectedShape, track.FindSampleEntryBox("pasp")!.Payload.ToArray());
+        }
+
+        using var decoded = Image.Load<Rgba32>(data);
+        Assert.Equal(isSequence ? 2 : 1, decoded.Frames.Count);
+        Assert.Equal(lightLevel, decoded.Metadata.ContentLightLevel);
+        Assert.Equal(display, decoded.Metadata.MasteringDisplay);
+        Assert.Equal(shape, decoded.Metadata.PixelAspectRatio);
+        Assert.Equal(GetBytes(image), GetBytes(decoded));
+
+        var info = Image.Identify(data);
+        Assert.Equal(lightLevel, info.Metadata.ContentLightLevel);
+        Assert.Equal(display, info.Metadata.MasteringDisplay);
+        Assert.Equal(shape, info.Metadata.PixelAspectRatio);
+
+        // Re-encoding the decoded image keeps them
+        using var reencoded = Image.Load(Encode(decoded, new HeicEncoder()));
+        Assert.Equal(lightLevel, reencoded.Metadata.ContentLightLevel);
+        Assert.Equal(display, reencoded.Metadata.MasteringDisplay);
+        Assert.Equal(shape, reencoded.Metadata.PixelAspectRatio);
+    }
+
     [Fact]
     public void TheTransformationsFollowTheCleanApertureOfAnImageOfAnOddSize()
     {

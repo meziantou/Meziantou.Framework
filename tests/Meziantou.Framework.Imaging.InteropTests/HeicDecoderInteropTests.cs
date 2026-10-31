@@ -1,4 +1,5 @@
 using System.Globalization;
+using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
 using Meziantou.Framework.Imaging.TestHarness.ExternalTools;
@@ -158,6 +159,12 @@ public sealed partial class HeicDecoderInteropTests
     {
         /// <summary>The color description passed to heif-enc, which the library must report.</summary>
         public CicpColorDescription? Cicp { get; init; }
+
+        /// <summary>The content light level passed to heif-enc, which the library must report.</summary>
+        public ContentLightLevel? ContentLightLevel { get; init; }
+
+        /// <summary>The pixel aspect ratio passed to heif-enc, which the library must report.</summary>
+        public PixelAspectRatio? PixelAspectRatio { get; init; }
 
         /// <summary>Whether the source is stored without loss and without conversion: the library must return its samples.</summary>
         public bool SourceIsPreserved { get; init; }
@@ -377,8 +384,8 @@ public sealed partial class HeicDecoderInteropTests
         yield return new("lossy-422-10-grid-64", SourceKind.Rgb16, 150, 100, ["-q", "60", "-b", "10", "--no-alpha", "-p", "chroma=422", "--cut-tiles", "64"], HeifDecComparison.SitingDiffers);
         yield return new("lossy-400-12-grid-64", SourceKind.Gray16, 150, 100, ["-q", "60", "-b", "12", "--cut-tiles", "64"], HeifDecComparison.Exact);
 
-        // Properties that describe the display and are not read, and another compatible brand
-        yield return new("lossy-444-8-pasp-clli", SourceKind.Rgb8, 80, 64, ["-q", "50", "-p", "chroma=444", "--pasp", "2,1", "--clli", "1000,400"], HeifDecComparison.Matrix);
+        // Properties that describe the display, and another compatible brand
+        yield return new("lossy-444-8-pasp-clli", SourceKind.Rgb8, 80, 64, ["-q", "50", "-p", "chroma=444", "--pasp", "2,1", "--clli", "1000,400"], HeifDecComparison.Matrix) { ContentLightLevel = new(1000, 400), PixelAspectRatio = new(2, 1) };
         yield return new("lossy-444-8-compatible-brand", SourceKind.Rgb8, 80, 64, ["-q", "50", "-p", "chroma=444", "--add-compatible-brand", "MiHE"], HeifDecComparison.Matrix);
     }
 
@@ -429,6 +436,82 @@ public sealed partial class HeicDecoderInteropTests
         if (item.Cicp is not null)
         {
             Assert.Equal(item.Cicp, still.Cicp, message: $"{name}: the library does not report the color description passed to heif-enc.");
+        }
+
+        // Without the options, the file has no clli or pasp box
+        var metadata = Image.Identify(path).Metadata;
+        Assert.Equal(item.ContentLightLevel, metadata.ContentLightLevel);
+        Assert.Equal(item.PixelAspectRatio, metadata.PixelAspectRatio);
+    }
+
+    [Fact]
+    public async Task ThumbnailsAndDepthMapsAreTheImagesLibheifReads()
+    {
+        var heif = await RequiredTools.LibHeifAsync();
+
+        // heif-enc codes a thumbnail of 32x24 as a picture of 64x64 with a clean aperture: the size of the image is the
+        // one heif-info prints
+        var source = CreateSource(SourceKind.Rgb8, 80, 64, seed: StableSeed("aux-thumbnail"));
+        var sourcePath = await SaveSourceAsync("aux-thumbnail", source);
+        var path = ArtifactPath("aux-thumbnail.heic");
+        await heif.EncodeAsync(["-L", "-t", "32", sourcePath], path, XunitCancellationToken);
+        var info = await heif.GetInfoAsync(path, XunitCancellationToken);
+        Assert.Equal<(int, int)?>((32, 24), info.Thumbnail);
+        Assert.False(info.HasDepth);
+        var thumbnail = Assert.Single(AuxiliaryImageCollection.Load(path));
+        Assert.Equal(AuxiliaryImageKind.Thumbnail, thumbnail.Kind);
+        Assert.Equal(new Size(32, 24), thumbnail.Size);
+        using (var decoded = thumbnail.Decode())
+            Assert.Equal(new Size(32, 24), decoded.Size);
+
+        using (var image = Image.Load(path))
+            Assert.Equal(new Size(80, 64), image.Size);
+
+        // A depth map coded by the library: libheif reads it as the depth image of the primary image, with our samples
+        using var color = new Image<Rgb24>(64, 48, new Rgb24(40, 90, 160));
+        using var depth = new Image<Gray8>(32, 24, default);
+        for (var y = 0; y < depth.Height; y++)
+        {
+            for (var x = 0; x < depth.Width; x++)
+            {
+                depth.Frames[0][x, y] = new Gray8((byte)((x * 7) + (y * 3)));
+            }
+        }
+
+        var builder = HeifFileBuilder.From(Encode(color));
+        var depthFile = HeifFileBuilder.From(Encode(depth));
+        var depthItem = depthFile.GetItem(depthFile.PrimaryItemId!.Value);
+        var copy = new HeifFileBuilder.Item(100, depthItem.Type, depthItem.Data) { Storage = depthItem.Storage };
+        foreach (var (index, isEssential) in depthItem.Associations)
+        {
+            copy.Associations.Add((builder.AddProperty(depthFile.Properties[index - 1]), isEssential));
+        }
+
+        copy.Associations.Add((builder.AddProperty(HeifFileBuilder.FullBox("auxC", 0, 0, "urn:mpeg:hevc:2015:auxid:2\0"u8.ToArray())), false));
+        builder.Items.Add(copy);
+        builder.References.Add(("auxl", 100, [builder.PrimaryItemId!.Value]));
+        var depthPath = ArtifactPath("aux-depth.heic");
+        await File.WriteAllBytesAsync(depthPath, builder.Build(), XunitCancellationToken);
+        Assert.True((await heif.GetInfoAsync(depthPath, XunitCancellationToken)).HasDepth);
+        var reference = Assert.Single((await heif.DecodeAuxiliaryImagesAsync(depthPath, XunitCancellationToken)).Values);
+        var listed = Assert.Single(AuxiliaryImageCollection.Load(depthPath));
+        Assert.Equal(AuxiliaryImageKind.Depth, listed.Kind);
+        using var decodedDepth = listed.Decode<Gray8>();
+        Assert.Equal((reference.Width, reference.Height), (decodedDepth.Width, decodedDepth.Height));
+        for (var y = 0; y < decodedDepth.Height; y++)
+        {
+            for (var x = 0; x < decodedDepth.Width; x++)
+            {
+                Assert.Equal(reference.GetFileSample(x, y, 0), decodedDepth.Frames[0][x, y].Value);
+                Assert.Equal(depth.Frames[0][x, y], decodedDepth.Frames[0][x, y]);
+            }
+        }
+
+        static byte[] Encode(Image image)
+        {
+            using var stream = new MemoryStream();
+            image.Save(stream, new HeicEncoder());
+            return stream.ToArray();
         }
     }
 

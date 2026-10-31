@@ -204,6 +204,238 @@ public sealed class IccColorTransformTests
     }
 
     [Fact]
+    public void FloatingPointSamplesOutsideTheUnitRangeAreKeptOnRequest()
+    {
+        // Two matrix-based profiles with the parametric sRGB curve. The red of Display P3 is outside the gamut of sRGB:
+        // its linear sRGB components, from the colorants (columns of the matrices to the connection space), are encoded
+        // with the sRGB function extended to the whole real line (mirrored below 0), as CSS Color 4 does
+        var srgb = IccTestProfiles.Rgb(IccTestProfiles.SrgbColorants, IccTestProfiles.SrgbCurve());
+        var options = new IccColorTransformOptions { ClipFloatingPointSamples = false };
+        Assert.True(IccColorTransformOptions.Default.ClipFloatingPointSamples);
+        var toSrgb = IccColorTransform.Create(DisplayP3, srgb, options);
+        var toDisplayP3 = IccColorTransform.Create(srgb, DisplayP3, options);
+
+        var p3Red = IccTestProfiles.DisplayP3Colorants[0];
+        var linear = Solve(IccTestProfiles.SrgbColorants, p3Red);
+        var destination = new float[3];
+        toSrgb.Convert([1f, 0f, 0f], destination);
+        for (var c = 0; c < 3; c++)
+        {
+            Assert.Equal(EncodeExtendedSrgb(linear[c]), destination[c], 1e-3);
+        }
+
+        Assert.True(destination[0] > 1 && destination[1] < 0 && destination[2] < 0, "the red of Display P3 has components outside [0, 1] in sRGB");
+
+        // The default clips them
+        var clipped = new float[3];
+        IccColorTransform.Create(DisplayP3, srgb).Convert([1f, 0f, 0f], clipped);
+        Assert.Equal([1f, 0f, 0f], clipped);
+
+        // Light above the white stays above it, and a round trip gives the samples back
+        float[] samples = [2f, 2f, 2f, -0.25f, 0.5f, 1.75f, 0.3f, 1.2f, -0.1f];
+        var converted = new float[samples.Length];
+        var back = new float[samples.Length];
+        toDisplayP3.Convert(samples, converted);
+        toSrgb.Convert(converted, back);
+        Assert.Equal(2f, converted[0], 1e-3f);
+        Assert.Equal(2f, converted[1], 1e-3f);
+        Assert.Equal(2f, converted[2], 1e-3f);
+        for (var i = 0; i < samples.Length; i++)
+        {
+            Assert.Equal(samples[i], back[i], 1e-4f);
+        }
+
+        // A value that is not a number is read as 0; the same profile keeps every sample
+        toSrgb.Convert([float.NaN, 0f, 0f], destination);
+        Assert.Equal([0f, 0f, 0f], destination);
+        IccColorTransform.Create(srgb, srgb, options).Convert([1.5f, -0.5f, 3f], destination);
+        Assert.Equal([1.5f, -0.5f, 3f], destination);
+
+        // A sampled tone curve continues with the slope of its last interval, and its inverse with the inverse slope
+        var sampled = IccTestProfiles.Rgb(IccTestProfiles.SrgbColorants, IccTestProfiles.Curve(0, 16384, 65535));
+        var throughTable = IccColorTransform.Create(sampled, srgb, options);
+        var backThroughTable = IccColorTransform.Create(srgb, sampled, options);
+        throughTable.Convert([1.5f, 1.5f, 1.5f], destination);
+        backThroughTable.Convert(destination, back.AsSpan(0, 3));
+        Assert.True(destination[0] > 1);
+        for (var c = 0; c < 3; c++)
+        {
+            Assert.Equal(1.5f, back[c], 1e-4f);
+        }
+
+        // Grayscale profiles too
+        var gray = IccColorTransform.Create(GrayGamma, IccProfile.SrgbGray, options);
+        var grayResult = new float[1];
+        gray.Convert([1.5f], grayResult);
+        Assert.True(grayResult[0] > 1);
+
+        static double EncodeExtendedSrgb(double value)
+        {
+            var magnitude = Math.Abs(value);
+            var encoded = magnitude <= 0.0031308 ? 12.92 * magnitude : (1.055 * Math.Pow(magnitude, 1 / 2.4)) - 0.055;
+            return Math.CopySign(encoded, value);
+        }
+
+        // Solves colorants (columns) x result = target, by Cramer's rule
+        static double[] Solve(double[][] columns, double[] target)
+        {
+            static double Determinant(double[] a, double[] b, double[] c) => (a[0] * ((b[1] * c[2]) - (b[2] * c[1]))) - (b[0] * ((a[1] * c[2]) - (a[2] * c[1]))) + (c[0] * ((a[1] * b[2]) - (a[2] * b[1])));
+            var determinant = Determinant(columns[0], columns[1], columns[2]);
+            return [Determinant(target, columns[1], columns[2]) / determinant, Determinant(columns[0], target, columns[2]) / determinant, Determinant(columns[0], columns[1], target) / determinant];
+        }
+    }
+
+    [Fact]
+    public void FloatingPointSamplesOutsideTheUnitRangeNeedMatrixBasedProfiles()
+    {
+        // A lookup table has no values outside its grid: such a conversion cannot keep the samples, and says so
+        var options = new IccColorTransformOptions { ClipFloatingPointSamples = false };
+        foreach (var (source, destination) in new[] { (IccTestProfiles.RgbLabLut8(), IccProfile.Srgb), (IccProfile.Srgb, IccTestProfiles.CmykLabLut16()) })
+        {
+            IccColorTransform.Create(source, destination);
+            var exception = Assert.Throws<UnsupportedImageFeatureException>(() => IccColorTransform.Create(source, destination, options));
+            Assert.Equal("Unbounded conversion through a lookup table", exception.Feature);
+        }
+
+        // Nor can a gamut mapping, which brings the colors into the range of the destination, even between matrix-based profiles
+        var mapped = new IccColorTransformOptions { ClipFloatingPointSamples = false, GamutMapping = GamutMapping.ReduceChroma };
+        IccColorTransform.Create(DisplayP3, IccProfile.Srgb, options);
+        IccColorTransform.Create([DisplayP3, IccProfile.Srgb], options);
+        Assert.Throws<UnsupportedImageFeatureException>(() => IccColorTransform.Create(DisplayP3, IccProfile.Srgb, mapped));
+        Assert.Throws<UnsupportedImageFeatureException>(() => IccColorTransform.Create([DisplayP3, IccProfile.Srgb], mapped));
+    }
+
+    [Fact]
+    public void GainMapMetadataValidatesItsValuesAndComputesTheWeight()
+    {
+        GainMapChannel[] channel = [new GainMapChannel(-1, 2, 1, 0, 0)];
+        Assert.Throws<ArgumentException>("channels", () => new GainMapMetadata(0, 1, []));
+        Assert.Throws<ArgumentException>("channels", () => new GainMapMetadata(0, 1, [channel[0], channel[0]]));
+        Assert.Throws<ArgumentNullException>("channels", () => new GainMapMetadata(0, 1, null!));
+        Assert.Throws<ArgumentOutOfRangeException>("baseHdrHeadroom", () => new GainMapMetadata(-1, 1, channel));
+        Assert.Throws<ArgumentOutOfRangeException>("alternateHdrHeadroom", () => new GainMapMetadata(0, double.PositiveInfinity, channel));
+        Assert.Throws<ArgumentOutOfRangeException>("gamma", () => new GainMapChannel(0, 1, 0, 0, 0));
+        Assert.Throws<ArgumentOutOfRangeException>("gainMapMax", () => new GainMapChannel(1, 0, 1, 0, 0));
+        Assert.Throws<ArgumentOutOfRangeException>("baseOffset", () => new GainMapChannel(0, 1, 1, double.NaN, 0));
+
+        var metadata = new GainMapMetadata(1, 3, channel);
+        Assert.Equal(new GainMapMetadata(1, 3, [new GainMapChannel(-1, 2, 1, 0, 0)]), metadata);
+        Assert.Equal(new GainMapMetadata(1, 3, [new GainMapChannel(-1, 2, 1, 0, 0)]).GetHashCode(), metadata.GetHashCode());
+        Assert.NotEqual(new GainMapMetadata(1, 3, channel, useBaseColorSpace: false), metadata);
+        Assert.Equal(0, metadata.GetWeight(0));
+        Assert.Equal(0, metadata.GetWeight(1));
+        Assert.Equal(0.5, metadata.GetWeight(2));
+        Assert.Equal(1, metadata.GetWeight(10));
+        Assert.Throws<ArgumentOutOfRangeException>("hdrHeadroom", () => metadata.GetWeight(-0.5));
+
+        // A high dynamic range base rendition: the weight decreases with the headroom of the display
+        var hdrBase = new GainMapMetadata(3, 1, channel);
+        Assert.Equal(1, hdrBase.GetWeight(0));
+        Assert.Equal(0.5, hdrBase.GetWeight(2));
+        Assert.Equal(0, hdrBase.GetWeight(4));
+
+        // Equal headrooms: the alternate rendition from that headroom on
+        var equal = new GainMapMetadata(2, 2, channel);
+        Assert.Equal(0, equal.GetWeight(1.9));
+        Assert.Equal(1, equal.GetWeight(2));
+    }
+
+    [Fact]
+    public void GainMapApplicationFollowsIso21496()
+    {
+        // Three channels of their own, a gamma and offsets; a gain map of 2x1 samples over a base image of 4x1 pixels,
+        // sampled at the centers of the pixels (bilinear, clamped at the edges)
+        var metadata = new GainMapMetadata(0, 2,
+        [
+            new GainMapChannel(-1, 3, 2, 0.015625, 0.03125),
+            new GainMapChannel(0, 2, 1, 0, 0),
+            new GainMapChannel(-0.5, 1.5, 0.5, 0.25, 0),
+        ]);
+        using var baseImage = new Image<Rgba32>(4, 1, default);
+        Rgba32[] colors = [new(255, 128, 0, 255), new(10, 200, 90, 128), new(64, 64, 64, 0), new(0, 0, 255, 255)];
+        for (var x = 0; x < 4; x++)
+        {
+            baseImage.Frames[0][x, 0] = colors[x];
+        }
+
+        using var gainMap = new Image<Rgb24>(2, 1, default);
+        gainMap.Frames[0][0, 0] = new Rgb24(0, 51, 255);
+        gainMap.Frames[0][1, 0] = new Rgb24(255, 204, 102);
+        double[] positions = [0, 0.25, 0.75, 1]; // where each pixel center falls between the two samples
+
+        foreach (var headroom in new[] { 0.0, 0.5, 1, 2, 5 })
+        {
+            using var result = metadata.Apply(baseImage, gainMap, headroom);
+            Assert.Equal(new Size(4, 1), result.Size);
+            Assert.Equal(ColorTransferFunction.Linear, result.Metadata.TransferFunction);
+            Assert.Null(result.Metadata.Cicp);
+            var weight = Math.Min(headroom / 2, 1);
+            for (var x = 0; x < 4; x++)
+            {
+                var pixel = result.Frames[0][x, 0];
+                ReadOnlySpan<byte> baseSamples = [colors[x].R, colors[x].G, colors[x].B];
+                ReadOnlySpan<byte> first = [0, 51, 255];
+                ReadOnlySpan<byte> second = [255, 204, 102];
+                ReadOnlySpan<float> actual = [pixel.R, pixel.G, pixel.B];
+                for (var c = 0; c < 3; c++)
+                {
+                    var channel = metadata.Channels[c];
+                    var g = ((first[c] * (1 - positions[x])) + (second[c] * positions[x])) / 255;
+                    var gain = channel.GainMapMin + ((channel.GainMapMax - channel.GainMapMin) * Math.Pow(g, 1 / channel.Gamma));
+                    var linear = baseSamples[c] / 255.0 is var v && v <= 0.04045 ? v / 12.92 : Math.Pow((v + 0.055) / 1.055, 2.4);
+                    var expected = ((linear + channel.BaseOffset) * Math.Pow(2, gain * weight)) - channel.AlternateOffset;
+                    Assert.Equal(expected, actual[c], 1e-5 * Math.Max(1, Math.Abs(expected)));
+                }
+
+                Assert.Equal(colors[x].A / 255f, pixel.A, 1e-6f);
+            }
+        }
+    }
+
+    [Fact]
+    public void GainMapApplicationNeedsAKnownLinearColorSpace()
+    {
+        var metadata = new GainMapMetadata(0, 2, [new GainMapChannel(0, 2, 1, 0, 0)]);
+        using var gainMap = new Image<Gray8>(2, 2, new Gray8(128));
+        using var baseImage = new Image<Rgb24>(2, 2, new Rgb24(100, 150, 200));
+
+        // The primaries of the description label the result: Display P3, as a CICP description or as an ICC profile
+        baseImage.Metadata.Cicp = new CicpColorDescription(12, 13, 0, fullRange: true);
+        using (var result = metadata.Apply(baseImage, gainMap, 2))
+            Assert.Equal(new CicpColorDescription(12, 8, 0, fullRange: true), result.Metadata.Cicp);
+
+        baseImage.Metadata.Cicp = null;
+        baseImage.Metadata.IccProfile = DisplayP3;
+        using (var result = metadata.Apply(baseImage, gainMap, 2))
+        {
+            Assert.Equal(new CicpColorDescription(12, 8, 0, fullRange: true), result.Metadata.Cicp);
+            Assert.Null(result.Metadata.IccProfile);
+            var expected = Math.Pow((150 / 255.0 + 0.055) / 1.055, 2.4) * Math.Pow(2, 2 * 128 / 255.0);
+            Assert.Equal(expected, result.Frames[0][1, 1].G, 2e-3);
+        }
+
+        // High dynamic range samples, primaries that are not those of a CICP description, a gain map in the color space of
+        // the alternate rendition
+        baseImage.Metadata.IccProfile = null;
+        baseImage.Metadata.Cicp = new CicpColorDescription(9, 16, 0, fullRange: true);
+        Assert.Throws<UnsupportedImageFeatureException>(() => metadata.Apply(baseImage, gainMap, 2));
+        baseImage.Metadata.Cicp = null;
+        baseImage.Metadata.IccProfile = IccTestProfiles.Rgb([[0.6, 0.3, 0.01], [0.25, 0.65, 0.1], [0.11, 0.05, 0.71]], IccTestProfiles.SrgbCurve());
+        Assert.Throws<UnsupportedImageFeatureException>(() => metadata.Apply(baseImage, gainMap, 2));
+        baseImage.Metadata.IccProfile = null;
+        Assert.Throws<UnsupportedImageFeatureException>(() => new GainMapMetadata(0, 2, metadata.Channels, useBaseColorSpace: false).Apply(baseImage, gainMap, 2));
+        Assert.Throws<ArgumentOutOfRangeException>("hdrHeadroom", () => metadata.Apply(baseImage, gainMap, double.NaN));
+        Assert.Throws<ArgumentNullException>("gainMap", () => metadata.Apply(baseImage, null!, 1));
+
+        // A grayscale base image gives gray colors
+        using var grayBase = new Image<Gray8>(2, 2, new Gray8(200));
+        using var gray = metadata.Apply(grayBase, gainMap, 2);
+        var pixel = gray.Frames[0][0, 0];
+        Assert.Equal(pixel.R, pixel.G);
+        Assert.Equal(pixel.R, pixel.B);
+    }
+
+    [Fact]
     public void ConvertsMonochromeProfiles()
     {
         // curveType with one entry: y = x^(563/256), then the sRGB encoding

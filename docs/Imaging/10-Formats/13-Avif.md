@@ -119,7 +119,8 @@ faster.
   a writer), because the index of the images is written last. A still image goes to any stream.
 - An image sequence of one image cannot store animation settings: it is read back as a still image.
 - A side is at most 65,536 pixels (65,535 for an image sequence), and a still image at most 4 GiB.
-- Thumbnails, gain maps and depth maps are not read; the decoder presents the primary image, or the sequence of a file
-  with the `avis` brand.
+- The decoder presents the primary image, or the sequence of a file with the `avis` brand. The thumbnails, depth maps
+  and gain maps are listed by [AuxiliaryImageCollection](cref:Meziantou.Framework.Imaging.AuxiliaryImageCollection), which decodes them on request and renders the HDR version of a
+  photo with a gain map (see [Color management](../09-Color/03-ColorManagement.md)).
 - What the decoder rejects (such as images built from images of several color descriptions) is listed in
   [Limitations](../12-Limitations.md).

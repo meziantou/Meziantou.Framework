@@ -89,15 +89,16 @@ internal sealed class HeifImagePlan
     /// <param name="payload">The payload of the box.</param>
     /// <param name="limits">The resource limits of the operation.</param>
     /// <param name="cancellationToken">The cancellation token of the operation.</param>
+    /// <param name="itemId">The item that is presented instead of the primary item (an auxiliary image, a thumbnail), or <see langword="null"/>.</param>
     /// <exception cref="InvalidImageContentException">The description of the image is inconsistent.</exception>
     /// <exception cref="UnsupportedImageFeatureException">The image uses a feature that is not supported.</exception>
     /// <exception cref="ImageResourceLimitException">The image exceeds a resource limit.</exception>
     /// <exception cref="OperationCanceledException"><paramref name="cancellationToken"/> is canceled.</exception>
-    public static HeifImagePlan Create(HeifCodecBinding binding, HeifMetaBox meta, ReadOnlySpan<byte> payload, ImageResourceLimits limits, CancellationToken cancellationToken)
+    public static HeifImagePlan Create(HeifCodecBinding binding, HeifMetaBox meta, ReadOnlySpan<byte> payload, ImageResourceLimits limits, CancellationToken cancellationToken, uint? itemId = null)
     {
-        var primaryId = meta.PrimaryItemId ?? throw binding.Invalid("the file has no primary item.");
+        var primaryId = itemId ?? meta.PrimaryItemId ?? throw binding.Invalid("the file has no primary item.");
         if (!meta.Items.TryGetValue(primaryId, out var primary) || primary.Type is 0)
-            throw binding.Invalid("the primary item does not exist.");
+            throw itemId is null ? binding.Invalid("the primary item does not exist.") : binding.Invalid("the requested item does not exist.");
 
         var plan = new HeifImagePlan(binding);
         if (binding.Supports(HeifContainerFeatures.DerivedImages) && !HeifImageNode.IsDirect(binding, meta, primary))
@@ -296,12 +297,12 @@ internal sealed class HeifImagePlan
     }
 
     /// <summary>
-    /// Returns whether the primary item of a <c>meta</c> box is an image of the codec of a format: a coded item, or an
-    /// image that is built from other images and whose first input image is one.
+    /// Returns whether the primary item of a <c>meta</c> box (or the item <paramref name="itemId"/>) is an image of the
+    /// codec of a format: a coded item, or an image that is built from other images and whose first input image is one.
     /// </summary>
-    public static bool IsCodedWith(HeifCodecBinding binding, HeifMetaBox meta)
+    public static bool IsCodedWith(HeifCodecBinding binding, HeifMetaBox meta, uint? itemId = null)
     {
-        if (meta.PrimaryItemId is not { } primaryId || !meta.Items.TryGetValue(primaryId, out var item))
+        if ((itemId ?? meta.PrimaryItemId) is not { } primaryId || !meta.Items.TryGetValue(primaryId, out var item))
             return false;
 
         for (var depth = 0; depth <= HeifImageNode.MaxDepth && item.Type is HeifFormat.Grid or HeifFormat.Iden or HeifFormat.Iovl; depth++)

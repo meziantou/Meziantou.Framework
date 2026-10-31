@@ -33,7 +33,8 @@ internal sealed class HeicEncoderCodec : ImageEncoderCodec
             encoder.KeyFrameInterval,
             encoder.DurationRounding,
             encoder.MetadataHandling,
-            GridTileSize: encoder.GridTileSize);
+            GridTileSize: encoder.GridTileSize,
+            OptimizeQuantization: encoder.OptimizeQuantization);
 
         return new HeifEncoderSession(options, HeicBinding.Instance, settings);
     }

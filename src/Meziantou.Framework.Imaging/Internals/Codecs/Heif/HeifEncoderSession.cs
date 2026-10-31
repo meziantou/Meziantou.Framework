@@ -178,7 +178,7 @@ internal sealed class HeifEncoderSession : ImageEncoderSession
             // do not multiply
             var gridWorkers = IsGrid ? HeifGridTiles.GetWorkerCount(options.Configuration.MaxDegreeOfParallelism, new Size(_tileWidth, _tileHeight), _gridColumns * _gridRows) : 1;
             var pictureWorkers = gridWorkers > 1 ? 1 : options.Configuration.MaxDegreeOfParallelism;
-            var colorSettings = new HeifPictureSettings(codedWidth, codedHeight, bitDepth, monochrome, subsamplingX, subsamplingY, primaries, transfer, matrix, fullRange, StillPicture: !_isSequence, lossless, settings.Quality, settings.Effort, settings.KeyFrameInterval, pictureWorkers, settings.AutoTiling, GridTile: IsGrid);
+            var colorSettings = new HeifPictureSettings(codedWidth, codedHeight, bitDepth, monochrome, subsamplingX, subsamplingY, primaries, transfer, matrix, fullRange, StillPicture: !_isSequence, lossless, settings.Quality, settings.Effort, settings.KeyFrameInterval, pictureWorkers, settings.AutoTiling, GridTile: IsGrid, settings.OptimizeQuantization);
             _color = binding.CreatePictureEncoder(scope, colorSettings);
 
             // The pictures of the stream may be larger than the image, which is then their clean aperture: the alpha plane

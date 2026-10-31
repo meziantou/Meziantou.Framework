@@ -54,6 +54,7 @@ internal readonly struct HevcEncoderDecisions
 
         // The residual
         CodedBlockDecision = !lossless && effort >= 2;
+        OptimizeQuantization = !lossless && settings.OptimizeQuantization;
         SignDataHiding = !lossless && effort >= 4;
         TransformSkip = !lossless && effort >= 6;
         SampleAdaptiveOffset = !lossless && effort >= 3;
@@ -123,6 +124,8 @@ internal readonly struct HevcEncoderDecisions
 
     /// <summary>Gets a value indicating whether a block whose levels cost more than they repair is coded without residual.</summary>
     public bool CodedBlockDecision { get; }
+
+    public bool OptimizeQuantization { get; }
 
     public bool SignDataHiding { get; }
 

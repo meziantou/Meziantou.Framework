@@ -33,6 +33,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// so that workers can code and decode them at once; the fewest parts otherwise.
 /// </param>
 /// <param name="GridTile">Whether the pictures are the tiles of a grid, which decoders decode concurrently.</param>
+/// <param name="OptimizeQuantization">Whether the HEVC encoder searches quantization rounding offsets for lossy blocks.</param>
 [StructLayout(LayoutKind.Auto)]
 internal readonly record struct HeifPictureSettings(
     int Width,
@@ -52,4 +53,5 @@ internal readonly record struct HeifPictureSettings(
     int KeyFrameInterval,
     int MaxDegreeOfParallelism = 1,
     bool AutoTiling = false,
-    bool GridTile = false);
+    bool GridTile = false,
+    bool OptimizeQuantization = false);

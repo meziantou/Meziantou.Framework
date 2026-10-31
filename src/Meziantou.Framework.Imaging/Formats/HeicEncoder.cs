@@ -75,6 +75,16 @@ public sealed class HeicEncoder : ImageEncoder
     } = 75;
 
     /// <summary>
+    /// Gets a value indicating whether lossy transform blocks search several quantization rounding offsets and select
+    /// the best balance of reconstructed error and estimated coded size. Defaults to <see langword="false"/>.
+    /// </summary>
+    /// <remarks>
+    /// This increases encoding time and can change the decoded pixels at the same <see cref="Quality"/>. It does not
+    /// impose a target file size or bit rate. Ignored by lossless output, including alpha planes.
+    /// </remarks>
+    public bool OptimizeQuantization { get; init; }
+
+    /// <summary>
     /// Gets the compression effort, from 0 (fastest, largest output) to 9 (slowest, smallest output). Defaults to 5. The effort
     /// never changes the decoded pixels of lossless output.
     /// </summary>

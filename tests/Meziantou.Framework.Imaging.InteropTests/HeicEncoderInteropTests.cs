@@ -137,6 +137,7 @@ public sealed class HeicEncoderInteropTests
         yield return new("default-lossless", SourceKind.Rgba8, 96, 64, new HeicEncoder());
         yield return new("default-lossy", SourceKind.Rgb8, 96, 64, new HeicEncoder { Compression = HeicCompression.Lossy });
         yield return new("default-lossy-alpha-odd", SourceKind.Rgba8, 97, 65, new HeicEncoder { Compression = HeicCompression.Lossy });
+        yield return new("optimized-lossy-alpha", SourceKind.Rgba8, 97, 65, new HeicEncoder { Compression = HeicCompression.Lossy, OptimizeQuantization = true });
 
         // 8-bit pixels in samples of more bits, and 16-bit pixels reduced to 12 bits without a bit depth
         yield return new("lossless-444-8-as-10", SourceKind.Rgba8, 33, 21, new HeicEncoder { BitDepth = 10 });
@@ -216,6 +217,7 @@ public sealed class HeicEncoderInteropTests
         yield return new("sequence-default-lossless", SourceKind.Rgba8, 96, 64, new HeicEncoder(), FrameCount: 4, TotalPlays: null);
         yield return new("sequence-default-lossy", SourceKind.Rgb8, 96, 64, new HeicEncoder { Compression = HeicCompression.Lossy }, FrameCount: 6, TotalPlays: 2);
         yield return new("sequence-default-lossy-alpha-odd", SourceKind.Rgba8, 97, 65, new HeicEncoder { Compression = HeicCompression.Lossy }, FrameCount: 5, TotalPlays: null);
+        yield return new("sequence-optimized-lossy-alpha", SourceKind.Rgba8, 65, 33, new HeicEncoder { Compression = HeicCompression.Lossy, Quality = 40, Effort = 2, OptimizeQuantization = true }, FrameCount: 3, TotalPlays: 1);
         yield return new("sequence-lossy-420-8-alpha-1x1", SourceKind.Rgba8, 1, 1, new HeicEncoder { Compression = HeicCompression.Lossy }, FrameCount: 3, TotalPlays: 1);
 
         // Sequences of several rows of coding tree units, whose pictures are predicted from each other

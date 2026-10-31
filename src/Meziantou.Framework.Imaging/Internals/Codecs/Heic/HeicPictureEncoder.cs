@@ -46,7 +46,8 @@ internal sealed class HeicPictureEncoder : HeifPictureEncoder
             settings.Lossless,
             settings.Quality,
             settings.Effort,
-            settings.KeyFrameInterval);
+            settings.KeyFrameInterval,
+            OptimizeQuantization: settings.OptimizeQuantization);
         _encoder = new HevcEncoder(scope, hevcSettings with { Wavefront = TestWavefront || UsesWavefront(hevcSettings, settings.GridTile) });
         try
         {

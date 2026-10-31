@@ -885,68 +885,65 @@ internal ref partial struct HevcSliceCoder
         var levels = workspace.GetScratch(2)[..length];
         var block = workspace.GetScratch(3)[..length];
         var trySkip = _pps.TransformSkipEnabledFlag && log2TrafoSize <= _pps.Log2MaxTransformSkipSize;
-        if (trySkip || _decisions.CodedBlockDecision)
+        var optimize = _decisions.OptimizeQuantization;
+        var saveContexts = trySkip || _decisions.CodedBlockDecision || optimize;
+        if (saveContexts)
         {
             SaveContexts(HevcEncoderWorkspace.ContextBlock);
         }
 
-        // Clause 8.6.4.1: the transform type of the 4x4 luma blocks of an intra coding unit is the discrete sine transform
-        HevcForwardTransform.Forward(residual, coefficients, log2TrafoSize, nTbS is 4 && cIdx is 0 && _isIntra ? 1 : 0, _bitDepth);
-        if (Quantize(coefficients, levels, log2TrafoSize, scanIdx, qP, rounding))
+        var candidateLevels = workspace.GetScratch(5)[..length];
+        var candidateBlock = workspace.GetScratch(6)[..length];
+        for (var transform = 0; transform < (trySkip ? 2 : 1); transform++)
         {
-            rate = _sink.Rate;
-            WriteResidualCoding(levels, log2TrafoSize, cIdx, predModeIntra, transformSkipFlag: false);
-            rate = _sink.Rate - rate;
-            levels.CopyTo(block);
-            ScaleAndTransform(block, log2TrafoSize, cIdx, transformSkipFlag: false);
-            var cost = _decisions.GetCost(GetDistortion(plane, source, xTb, yTb, nTbS, block), rate);
-            if (cost < bestCost || !_decisions.CodedBlockDecision)
+            var skip = transform is 1;
+            if (skip)
             {
-                coded = true;
-                bestCost = cost;
+                HevcForwardTransform.ForwardTransformSkip(residual, coefficients, log2TrafoSize, _bitDepth, rotate: false);
             }
-        }
-
-        if (trySkip)
-        {
-            // The residual without transform, from the context variables that precede the block
-            var skipLevels = workspace.GetScratch(5)[..length];
-            var skipBlock = workspace.GetScratch(6)[..length];
-            if (coded)
+            else
             {
-                SaveContexts(HevcEncoderWorkspace.ContextBlockBest);
+                // Clause 8.6.4.1: 4x4 intra luma blocks use the discrete sine transform
+                HevcForwardTransform.Forward(residual, coefficients, log2TrafoSize, nTbS is 4 && cIdx is 0 && _isIntra ? 1 : 0, _bitDepth);
             }
 
-            RestoreContexts(HevcEncoderWorkspace.ContextBlock);
-            HevcForwardTransform.ForwardTransformSkip(residual, coefficients, log2TrafoSize, _bitDepth, rotate: false);
-            var skipCoded = false;
-            if (Quantize(coefficients, skipLevels, log2TrafoSize, scanIdx, qP, rounding))
+            // The original dead zone is the first candidate, so equal costs keep the original levels.
+            ReadOnlySpan<int> offsets = [rounding, 0, 128, 192];
+            foreach (var offset in offsets[..(optimize ? offsets.Length : 1)])
             {
-                rate = _sink.Rate;
-                WriteResidualCoding(skipLevels, log2TrafoSize, cIdx, predModeIntra, transformSkipFlag: true);
-                rate = _sink.Rate - rate;
-                skipLevels.CopyTo(skipBlock);
-                ScaleAndTransform(skipBlock, log2TrafoSize, cIdx, transformSkipFlag: true);
-                var cost = _decisions.GetCost(GetDistortion(plane, source, xTb, yTb, nTbS, skipBlock), rate);
-                if (cost < bestCost)
+                if (saveContexts)
                 {
-                    skipCoded = true;
+                    RestoreContexts(HevcEncoderWorkspace.ContextBlock);
+                }
+
+                if (!Quantize(coefficients, candidateLevels, log2TrafoSize, scanIdx, qP, offset))
+                    continue;
+
+                // Measure every candidate with the same CABAC state and the actual clipped reconstruction.
+                rate = _sink.Rate;
+                WriteResidualCoding(candidateLevels, log2TrafoSize, cIdx, predModeIntra, transformSkipFlag: skip);
+                rate = _sink.Rate - rate;
+                candidateLevels.CopyTo(candidateBlock);
+                ScaleAndTransform(candidateBlock, log2TrafoSize, cIdx, transformSkipFlag: skip);
+                var cost = _decisions.GetCost(GetDistortion(plane, source, xTb, yTb, nTbS, candidateBlock), rate);
+                if (cost < bestCost || (!skip && !_decisions.CodedBlockDecision && !optimize))
+                {
                     coded = true;
-                    transformSkipFlag = true;
+                    transformSkipFlag = skip;
                     bestCost = cost;
-                    skipLevels.CopyTo(levels);
-                    skipBlock.CopyTo(block);
+                    candidateLevels.CopyTo(levels);
+                    candidateBlock.CopyTo(block);
+                    if (saveContexts)
+                    {
+                        SaveContexts(HevcEncoderWorkspace.ContextBlockBest);
+                    }
                 }
             }
-
-            if (!skipCoded)
-            {
-                RestoreContexts(coded ? HevcEncoderWorkspace.ContextBlockBest : HevcEncoderWorkspace.ContextBlock);
-            }
         }
-        else if (!coded && _decisions.CodedBlockDecision)
+
+        if (saveContexts)
         {
-            RestoreContexts(HevcEncoderWorkspace.ContextBlock);
+            RestoreContexts(coded ? HevcEncoderWorkspace.ContextBlockBest : HevcEncoderWorkspace.ContextBlock);
         }
 
         if (!coded)

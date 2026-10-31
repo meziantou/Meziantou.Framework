@@ -38,7 +38,7 @@ color conversion, and bounded-memory streaming.
   exchange buffers with GPU and display APIs) with 16-bit precision preserved, and two floating-point ones (`RgbaFloat`,
   `RgbaHalf`) for scene-referred and high dynamic range data
 - Crop, auto-crop (background detection), resize (alpha-aware, Contain/Cover/Stretch/Pad/BoxPad), padding and canvas
-  extension, rotate (quarter turns or any angle), skew, affine and perspective transformations, auto-orient, flip, grayscale, Gaussian, box and median blurs, unsharp masking, convolution matrices (ready-made sharpen, emboss and edge matrices, a bias for signed results, separable matrices in two passes) and edge detection (Sobel, Scharr, Prewitt, Kirsch, Robinson, Laplacians) applied to all frames
+  extension, rotate (quarter turns or any angle), skew, affine and perspective transformations, four-point perspective correction, auto-orient, flip, grayscale, Gaussian, box, median and motion blurs, percentile filters, morphology (erosion, dilation, opening, closing, top-hat transforms), unsharp masking, convolution matrices (ready-made sharpen, emboss and edge matrices, a bias for signed results, separable matrices in two passes), edge detection (Sobel, Scharr, Prewitt, Kirsch, Robinson, Laplacians), and tone curves (gamma, levels, curves through points, per-channel lookup tables) and `.cube` color lookup tables, applied to all frames
 - Antialiased vector drawing on a frame or on every frame: filled and stroked shapes and paths with Bézier curves,
   arcs and curves through points, dashed strokes, strokes on one side of their path and arrow heads, solid colors,
   linear, radial and sweep gradients, images (also in perspective), patterns, clips, masks, layers, shadows, blurs,
@@ -475,7 +475,7 @@ writers support one operation at a time: overlapping calls throw `InvalidOperati
 by default (`ImageConfiguration.MaxDegreeOfParallelism = 1`). With more workers, only these operations use them, on
 images of at least 65,536 pixels:
 
-- split into row bands: resizes, transformations, convolutions, blurs, medians, unsharp masks, the `Pixelate`, `OilPaint`
+- split into row bands: resizes, transformations, convolutions, blurs, medians and percentile filters, unsharp masks, the `Pixelate`, `OilPaint`
   and `Flatten` effects, and the `ImageSimilarity` comparisons (SSIM, PSNR, SSIMULACRA 2, Butteraugli);
 - decoded and encoded: the MCU rows of JPEG frames (the inverse and forward DCT, the conversions; the entropy coding
   stays sequential), the LZW, Deflate and CCITT strips and tiles of TIFF pages (LZW and Deflate only when encoding), the
@@ -501,7 +501,8 @@ scratch, charged to `MaxLiveAllocationBytes`, so a limit that fits one worker ma
 - **Pixel mutations may be partial.** `Flip`, `Grayscale`, `Convolve` (and the blurs and the sharpening), `Equalize`,
   `AutoLevels`, `Draw`, row callbacks and `ReadFrameInto` write in place: a failure or a cancellation can leave some rows
   or frames updated, but the image stays structurally valid and disposable. `Convolve`, `GaussianBlur`, `BoxBlur`,
-  `MedianBlur`, `Sharpen`, `Equalize` and `AutoLevels` rent their working memory first: exceeding the allocation limit
+  `MedianBlur`, `PercentileFilter`, the morphological filters, `Sharpen`, `Equalize`, `AutoLevels`, `ApplyToneCurve` and
+  `ApplyLut` rent their working memory first: exceeding the allocation limit
   leaves the image unchanged. `Flip`
   moves the hotspot of a frame once that frame is completely mirrored. In a `Draw` callback, the shapes already drawn
   stay; each shape rents its working storage before it changes a pixel, and a canceled shape leaves the same rows
@@ -533,9 +534,10 @@ and back, and alpha masks to any format with alpha and back are exact.
 > `Image<Rgba64>` should load with `Load<Rgba32>`/`Load<Rgba64>` instead. A gray ICC profile of such a file is now kept,
 > where it could not label the RGBA pixels of before. Animations keep `Rgba32`/`Rgba64`.
 
-Every processing operation and the drawing canvas accept the compact formats, except `Flatten` on an `A8` mask, which
-has no color to hold the result (`NotSupportedException`). `Rgb48` has kernels of its own; the filtering operations
-(resize, transform, convolution, blurs, median) and the `Pixelate`, `OilPaint` and `Flatten` effects process `La16`,
+Every processing operation and the drawing canvas accept the compact formats, except `Flatten`, `TopHat` and `BlackHat`
+on an `A8` mask, which has no color to hold the result (`NotSupportedException`); the tone curves and lookup tables leave
+an `A8` mask unchanged. `Rgb48` has kernels of its own; the filtering operations
+(resize, transform, convolution, blurs, median, percentile, morphology) and the `Pixelate`, `OilPaint` and `Flatten` effects process `La16`,
 `La32` and `A8` through a temporary `Rgba32`/`Rgba64` copy of each frame, charged to the image, which gives back the
 same gray levels and alpha (a flattened gray with alpha gets the luma of its flattened colors, as its conversion to
 `Gray8`/`Gray16` does); drawing composites them the same way, a run of pixels at a time. `PngEncoder` and `TiffEncoder` store `La16`, `La32` and
@@ -710,11 +712,15 @@ alpha, and rejects incompatible ICC profiles; use `CloneAs<Gray8>` to change the
 color for each pixel from its own one: brightness, contrast, saturation, a tint, photo presets, a color blindness
 preview), `ReplaceColor` (a new color for the pixels of one color), `Vignette`, `Glow`, `Pixelate`, `OilPaint` and
 `Flatten` (see [Effects](#effects)), `Convolve` (a convolution
-matrix), `GaussianBlur`, `BoxBlur`, `MedianBlur`, `Sharpen` (an unsharp mask), `DetectEdges`, `Equalize` and `AutoLevels` (histogram
+matrix), `GaussianBlur`, `BoxBlur`, `MedianBlur`, `PercentileFilter`, `Sharpen` (an unsharp mask), `DetectEdges`, `Erode`, `Dilate`,
+`MorphologicalOpen`, `MorphologicalClose`, `TopHat` and `BlackHat` (see [Morphology](#morphology)), `CorrectPerspective` (a
+quadrilateral straightened into the whole image), `ApplyToneCurve`, `ApplyToneCurves` and `ApplyLut` (gamma, levels,
+curves, lookup tables, see [Tone curves and color lookup tables](#tone-curves-and-color-lookup-tables)), `Equalize` and `AutoLevels` (histogram
 equalization, CLAHE and contrast stretch, see [Histograms, equalization and auto-levels](#histograms-equalization-and-auto-levels)),
 `Quantize` (a reduction to a palette, see [Color reduction](#color-reduction)) and `Threshold` (black and white, with a
 global or an adaptive threshold, see [Binarization](#binarization)). `Flip`, `Grayscale`, `ApplyColorMatrix`,
-`ReplaceColor`, the effects, `Convolve`, the blurs, `Sharpen`, `DetectEdges`, `Equalize`, `AutoLevels`, `Quantize` and `Threshold` also exist for one frame. Geometry changes preserve 16-bit precision and alpha, and reconcile the EXIF dimensions,
+`ReplaceColor`, the effects, `Convolve`, the blurs, `PercentileFilter`, `Sharpen`, `DetectEdges`, the morphological
+filters, the tone curves, `ApplyLut`, `Equalize`, `AutoLevels`, `Quantize` and `Threshold` also exist for one frame. Geometry changes preserve 16-bit precision and alpha, and reconcile the EXIF dimensions,
 orientation and thumbnail. `ConvertColorProfile` converts the colors to another ICC profile
 (see [Color management](#color-management)).
 
@@ -919,6 +925,29 @@ public static void Straighten(string inputPath, string outputPath, double degree
 ```
 <!-- endref -->
 
+**Perspective correction**. `CorrectPerspective(topLeft, topRight, bottomRight, bottomLeft, size)` does the same in one
+call: the four corners of a quadrilateral of the image (a document, a whiteboard or a painting photographed at an angle,
+in stored-pixel coordinates, in order around it) become the corners of an upright canvas of `size`, through the inverse
+of `ProjectiveTransform.CreateFromQuadrilateral`, sampled as `Transform` samples. Without a size, the canvas is the
+longer of the top and bottom edges by the longer of the left and right edges, rounded, as a scanner app gives it. The
+filter, background color and working space come from the `TransformOptions` (their canvas settings are not used).
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_CorrectPerspective;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static Size StraightenDocument(string inputPath, string outputPath, PointD topLeft, PointD topRight, PointD bottomRight, PointD bottomLeft)
+{
+    using var photo = Image.Load(inputPath);
+
+    // The corners of the page in the photo, in order around it, become the corners of the image: the result is as
+    // wide as the longer of the top and bottom edges, and as tall as the longer of the left and right edges. A JPEG
+    // photo has no alpha: a corner outside the photo shows an opaque background
+    photo.CorrectPerspective(topLeft, topRight, bottomRight, bottomLeft, options: new TransformOptions { BackgroundColor = new Rgba64(65535, 65535, 65535, 65535) });
+    photo.Save(outputPath);
+    return photo.Size;
+}
+```
+<!-- endref -->
+
 <!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_FlattenPage;format=md-fenced-code-block;dedent=true -->
 ```csharp
 public static void FlattenPage(string inputPath, string outputPath, PointD topLeft, PointD topRight, PointD bottomRight, PointD bottomLeft, Size pageSize)
@@ -1046,6 +1075,11 @@ their noise stay as they are. The samples are those of the blur (premultiplied c
 rounded once and clamped (ringing beyond black and white is clipped, except for the colors of floating-point samples);
 an opaque frame keeps its alpha.
 
+**Motion blur**. `ConvolutionKernel.CreateMotionBlur(length, degrees)` is the matrix of a straight segment of `length`
+pixels through the center, at `degrees` from the horizontal (clockwise, as `Rotate`), for `Convolve`: each pixel weighs
+the length of the segment inside its square, divided by the length, so a horizontal segment of 5 pixels is the row
+`[1, 1, 1, 1, 1] / 5` and the brightness is kept. It is centered, so the blurred image does not move.
+
 `MedianBlur(radius)` replaces every sample by the median of the same sample of the square of side `2 radius + 1` around
 it: isolated specks disappear and edges stay sharp. Every sample, alpha included, is filtered on its own as stored;
 nothing is computed or rounded, and there is no working space (a transfer function keeps the order of the samples).
@@ -1054,7 +1088,9 @@ infinities (it comes back with a positive sign). The samples are counted in hist
 with the radius. For `RgbaFloat` samples, a second histogram counts the samples whose 16 high bits are those of the
 median: it is rebuilt from the whole window, a cost that grows with the square of the radius, each time the median
 moves to other high bits (for samples between 0.5 and 1, these groups span 1/256). With a radius of 1, the 9
-`RgbaFloat` samples of each window are sorted.
+`RgbaFloat` samples of each window are sorted. `PercentileFilter(radius, percentile)` keeps another rank of the same
+histograms: the sample of rank `floor(n * percentile / 100)` (from 0, and `n - 1` for 100) of the `n` samples of the
+square, the rank of SciPy's `ndimage.percentile_filter`, so 0 is the minimum, 50 the median and 100 the maximum.
 
 The box blur and the median give the samples of `cv2.blur` and `cv2.medianBlur` of OpenCV for the same edges, and the
 unsharp mask those of the same formula over `cv2.GaussianBlur` (the tests keep some of them). ImageMagick 7.1 agrees
@@ -1220,6 +1256,113 @@ public static void ApplyPhotoEffects(string photoPath, string outputDirectory)
     // Transparent pixels composited onto white: every pixel is opaque, and the image keeps its pixel format
     photo.Flatten(Colors.White);
     photo.Save(Path.Combine(outputDirectory, "flattened.png"));
+}
+```
+<!-- endref -->
+
+#### Morphology
+
+The morphological filters read the pixels of a `StructuringElement` around each pixel: a rectangle
+(`StructuringElement.CreateRectangle(radiusX, radiusY)`, `2 radiusX + 1` by `2 radiusY + 1` pixels) or an ellipse
+(`CreateEllipse(radiusX, radiusY)`: the offsets with `(dx / radiusX)^2 + (dy / radiusY)^2 <= 1`, computed exactly in
+integers, the disk of scikit-image's `morphology.disk` for equal radii). The element is flat, so every result is one of
+the samples:
+
+- `Erode` keeps the minimum of the element (dark areas grow, bright details smaller than the element disappear) and
+  `Dilate` the maximum;
+- `MorphologicalOpen` erodes then dilates, which removes the bright details smaller than the element and keeps larger
+  shapes; `MorphologicalClose` dilates then erodes, which fills the dark ones;
+- `TopHat` (white top-hat) replaces the colors by `sample - opening`: the bright details smaller than the element, on
+  black, whatever the background; `BlackHat` by `closing - sample`: the dark details (text on a page lit unevenly), as
+  bright ones on black. Integer differences are clamped to 0, and alpha is kept (the transform of an opaque alpha would be
+  transparent), so an `A8` mask is rejected.
+
+Every sample of a pixel is filtered on its own, alpha included (an erosion also shrinks the opaque area of a mask), with
+the edge modes of the convolutions (`Clamp`, the default, gives the result of ignoring the pixels outside the image);
+floating-point samples are ordered as `MedianBlur` orders them. The results are those of SciPy's `ndimage.grey_erosion`
+and `grey_dilation` with a footprint (modes `nearest`, `reflect`, `wrap`, `constant`), and of OpenCV's `cv2.erode`,
+`cv2.dilate` and `cv2.morphologyEx` (`MORPH_OPEN`, `MORPH_CLOSE`, `MORPH_TOPHAT`, `MORPH_BLACKHAT`) with
+`BORDER_REPLICATE`. A rectangle is filtered in two passes with the running extrema of van Herk and Gil and Werman, three
+comparisons per sample whatever its size (an erosion of a 1920x1080 RGBA frame takes about the same time with a 3x3 and
+a 51x51 rectangle); an ellipse is one row segment per row, so its time per sample grows with its height. The scratch
+(blocks of `2 radiusY + 1` rows of 1-, 2- or 4-byte keys, and a copy of the frame for the top-hat transforms) is charged
+to the image before any pixel changes; the frames are filtered on the calling thread.
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_Morphology;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void ExtractText(string inputPath, string outputPath)
+{
+    using var page = Image.Load(inputPath);
+    page.Grayscale();
+
+    // The closing by a disk wider than the strokes is the paper without its text; the black top-hat transform is
+    // their difference, so the text becomes bright on black whatever the lighting of the page
+    page.BlackHat(StructuringElement.CreateEllipse(5, 5));
+
+    // The 95th percentile of each 3x3 square, nearly its brightest sample, closes the small gaps of the strokes, and
+    // Otsu's threshold makes them white
+    page.PercentileFilter(1, 95);
+    page.Threshold();
+    page.Save(outputPath);
+}
+```
+<!-- endref -->
+
+#### Tone curves and color lookup tables
+
+`ApplyToneCurve(curve)` gives a new value to the red, green and blue samples of every pixel with a `ToneCurve`, and
+`ApplyToneCurves(red, green, blue)` with one curve per channel (a curve per channel corrects or creates a color cast). A
+curve maps a value `v`, a fraction of the largest sample value, to a new one:
+
+| `ToneCurve` | Value of `v` | Matches |
+| --- | --- | --- |
+| `CreateGamma(gamma)` | `v^(1 / gamma)`, odd for negative values | ImageMagick's `-gamma` |
+| `CreateLevels(inputBlack, inputWhite, gamma, outputBlack, outputWhite)` | `outputBlack + (outputWhite - outputBlack) t^(1 / gamma)`, `t = clamp((v - inputBlack) / (inputWhite - inputBlack), 0, 1)` | The levels of Photoshop and GIMP; ImageMagick's `-level` |
+| `CreateFromPoints(points)` | The monotone cubic (PCHIP) through the points, flat beyond the first and the last one | SciPy's `PchipInterpolator`, MATLAB's `pchip` |
+| `CreateFromTable(values)` | The values at `i / (n - 1)`, interpolated linearly, flat beyond 0 and 1 | A one-dimensional lookup table |
+| `curve.Then(next)` | `next(curve(v))` | |
+
+The monotone cubic never overshoots its points and never inverts the tones between two of them, unlike a natural
+spline. The stored (encoded) samples are mapped, as photo editors do, without any color profile. Integer samples go
+through a table of their levels (256 or 65,536), rounded to the nearest level (ties upward); a gray pixel stores the
+Rec. 709 luma of its mapped color, and an `A8` mask is left unchanged. Floating-point samples are mapped as stored and
+never clamped: a gamma keeps the highlights above 1, the levels and the curves through points clip them, and a sample
+that is not a number stays one. Alpha is kept.
+
+`ApplyLut(lut, interpolation)` gives every pixel a new color from a `CubeLut`, read with `CubeLut.Parse`, `CubeLut.Load`
+(a path or a stream) from the `.cube` files of the Adobe Cube LUT Specification 1.0 that grading tools export:
+`LUT_3D_SIZE` (2 to 256 points per axis, red changing fastest) or `LUT_1D_SIZE` (2 to 65,536), `DOMAIN_MIN` and
+`DOMAIN_MAX` (and DaVinci Resolve's `LUT_1D_INPUT_RANGE` and `LUT_3D_INPUT_RANGE`), `TITLE` and comments; anything else
+throws a `FormatException` that names the line. Inputs are clamped to the domain; a three-dimensional table is
+interpolated with `LutInterpolation.Tetrahedral` (the default, exact on the gray diagonal) or `Trilinear`, a
+one-dimensional one linearly per channel. The results are within one 16-bit level of FFmpeg's `lut3d` and `lut1d`
+filters (which read the table in single precision), and the output of the table is stored without clamping in
+floating-point images.
+
+| 1920x1080 RGBA, one worker (Apple M5 Pro, net10.0) | Time |
+| --- | --- |
+| `ApplyToneCurve`, 8-bit / 16-bit samples | 6 ms / 9 ms |
+| `ApplyLut`, 33x33x33 points, tetrahedral / trilinear | 52 ms / 32 ms |
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_ToneCurves;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void GradePhoto(string inputPath, string cubePath, string outputPath)
+{
+    using var image = Image.Load(inputPath);
+
+    // Levels clip the darkest and the brightest 4% of the levels and brighten the midtones; a gentle S curve through
+    // control points then adds contrast, in the same pass
+    var levels = ToneCurve.CreateLevels(inputBlack: 0.04, inputWhite: 0.96, gamma: 1.2);
+    var contrast = ToneCurve.CreateFromPoints(new PointD(0, 0), new PointD(0.25, 0.2), new PointD(0.75, 0.82), new PointD(1, 1));
+    image.ApplyToneCurve(levels.Then(contrast));
+
+    // A curve per channel warms the colors: more red, less blue
+    image.ApplyToneCurves(red: ToneCurve.CreateGamma(1.1), green: ToneCurve.Identity, blue: ToneCurve.CreateGamma(0.9));
+
+    // A look exported by a grading tool as a .cube file, interpolated between the points of its lattice
+    var look = CubeLut.Load(cubePath);
+    image.ApplyLut(look, LutInterpolation.Tetrahedral);
+    image.Save(outputPath);
 }
 ```
 <!-- endref -->

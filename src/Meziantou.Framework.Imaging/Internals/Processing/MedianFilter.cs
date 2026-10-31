@@ -4,9 +4,11 @@ using System.Runtime.InteropServices;
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// The in-place median filter of <see cref="ImageProcessingExtensions.MedianBlur(Image, int, ConvolutionEdgeMode, CancellationToken)"/>:
-/// every sample becomes the median of the same sample of the <c>n^2</c> pixels of the square of side <c>n = 2 r + 1</c>
-/// around it (the value of rank <c>(n^2 - 1) / 2</c>, one of them, so nothing is computed or rounded).
+/// The in-place median filter of <see cref="ImageProcessingExtensions.MedianBlur(Image, int, ConvolutionEdgeMode, CancellationToken)"/>
+/// and the percentile filter of <see cref="ImageProcessingExtensions.PercentileFilter(Image, int, double, ConvolutionEdgeMode, CancellationToken)"/>:
+/// every sample becomes the value of rank <see cref="MedianPlan.Rank"/> of the same sample of the <c>n^2</c> pixels of the
+/// square of side <c>n = 2 r + 1</c> around it (<c>(n^2 - 1) / 2</c> for the median: one of them, so nothing is computed or
+/// rounded).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -192,7 +194,7 @@ internal static class MedianFilter
         var width = plan.Size.Width;
         var channels = plan.Channels;
         var output = keys.Slice((diameter + (2 * radius)) * plan.PaddedLength, width * channels);
-        var rank = ((diameter * diameter) - 1) / 2;
+        var rank = plan.Rank;
         Span<int> rows = diameter <= 1024 ? stackalloc int[diameter] : new int[diameter];
 
         // The group of keys each low-bits tree counts (32-bit keys), none yet

@@ -33,7 +33,7 @@ internal static class Test262Discovery
     private static DiscoveredDirectory DiscoverCore(string directory, string[] excludedDirectories)
     {
         var all = new List<Test262Test>();
-        var root = Path.Combine(Test262Paths.Tests, directory);
+        var root = Test262Paths.Tests / directory;
         if (Directory.Exists(root))
         {
             var files = Directory.EnumerateFiles(root, "*.js", SearchOption.AllDirectories)

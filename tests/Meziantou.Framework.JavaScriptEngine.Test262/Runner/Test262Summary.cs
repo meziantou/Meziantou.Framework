@@ -16,7 +16,7 @@ internal static class Test262Summary
         var rows = new List<Row>();
         foreach (var topLevel in TopLevelDirectories)
         {
-            var directory = Path.Combine(Test262Paths.Tests, topLevel);
+            var directory = Test262Paths.Tests / topLevel;
             if (!Directory.Exists(directory))
                 continue;
 

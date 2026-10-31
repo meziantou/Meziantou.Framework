@@ -42,12 +42,12 @@ public sealed class Test262ParserTests
     [MemberData(nameof(PassTests), DisableDiscoveryEnumeration = true)]
     public void Pass(string file)
     {
-        var path = Path.Combine(Test262Paths.ParserTests, "pass", file);
+        var path = Test262Paths.ParserTests / "pass" / file;
         string? error = null;
         try
         {
             var tree = AstPrinter.Print(Parse(File.ReadAllText(path), IsModule(file), strict: false));
-            var explicitPath = Path.Combine(Test262Paths.ParserTests, "pass-explicit", file);
+            var explicitPath = Test262Paths.ParserTests / "pass-explicit" / file;
             if (File.Exists(explicitPath))
             {
                 var explicitTree = AstPrinter.Print(Parse(File.ReadAllText(explicitPath), IsModule(file), strict: false));
@@ -83,7 +83,7 @@ public sealed class Test262ParserTests
 
     private static void CheckRejected(string directory, string file)
     {
-        var path = Path.Combine(Test262Paths.ParserTests, directory, file);
+        var path = Test262Paths.ParserTests / directory / file;
         string? error = null;
         try
         {
@@ -130,7 +130,7 @@ public sealed class Test262ParserTests
 
     private static void CheckParserTest(string id, string? error)
     {
-        var test = new Test262Test("parser-tests/" + id, Path.Combine(Test262Paths.ParserTests, id), Test262Metadata.Parse(""));
+        var test = new Test262Test("parser-tests/" + id, Test262Paths.ParserTests / id, Test262Metadata.Parse(""));
         Test262Expectations.Check(test, [new Test262Result(Test262Mode.Sloppy, error is null, error)]);
     }
 
@@ -145,7 +145,7 @@ public sealed class Test262ParserTests
     private static TheoryData<string> GetParserTests(string directory)
     {
         var data = new TheoryData<string>();
-        var path = Path.Combine(Test262Paths.ParserTests, directory);
+        var path = Test262Paths.ParserTests / directory;
         if (!Directory.Exists(path))
             return data;
 

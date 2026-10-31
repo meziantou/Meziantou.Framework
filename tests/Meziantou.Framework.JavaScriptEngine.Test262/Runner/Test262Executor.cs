@@ -157,7 +157,7 @@ internal static class Test262Executor
         }
     }
 
-    private static string GetHarnessFile(string name) => HarnessFiles.GetOrAdd(name, static n => File.ReadAllText(Path.Combine(Test262Paths.Harness, n)));
+    private static string GetHarnessFile(string name) => HarnessFiles.GetOrAdd(name, static n => File.ReadAllText(Test262Paths.Harness / n));
 
     /// <summary>The name of the constructor of an error, read without running code.</summary>
     private static string GetErrorName(JsValue value)

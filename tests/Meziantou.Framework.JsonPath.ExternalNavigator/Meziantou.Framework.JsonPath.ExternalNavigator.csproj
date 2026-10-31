@@ -1,0 +1,13 @@
+<Project Sdk="Meziantou.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFrameworks>$(LatestTargetFrameworks)</TargetFrameworks>
+    <RootNamespace>Meziantou.Framework.JsonPath.ExternalNavigator</RootNamespace>
+    <IncludeDefaultTestReferences>false</IncludeDefaultTestReferences>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../../src/Meziantou.Framework.JsonPath/Meziantou.Framework.JsonPath.csproj" />
+  </ItemGroup>
+
+</Project>

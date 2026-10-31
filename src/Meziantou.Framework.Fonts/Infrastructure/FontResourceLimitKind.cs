@@ -17,4 +17,7 @@ public enum FontResourceLimitKind
 
     /// <summary>The bytes of the working storage rented from a <see cref="FontAllocator"/>.</summary>
     LiveAllocationBytes,
+
+    /// <summary>The faces of a font collection (<see cref="FontResourceLimits.MaxCollectionFaces"/>).</summary>
+    CollectionFaces,
 }

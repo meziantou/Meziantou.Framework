@@ -21,6 +21,7 @@ public sealed class DefaultsTests
         Assert.Equal(16L * 1024 * 1024, limits.MaxMetadataBytes);
         Assert.Equal(512L * 1024 * 1024, limits.MaxLiveAllocationBytes);
         Assert.Equal(256L * 1024 * 1024, limits.MaxFontBytes);
+        Assert.Equal(1024, limits.MaxFontCollectionFaces);
         Assert.Equal(1_000_000, limits.MaxGlyphComplexity);
         Assert.Equal(1_000_000, limits.MaxTextLength);
         Assert.Equal(1_000_000, limits.MaxTextGlyphs);
@@ -42,6 +43,7 @@ public sealed class DefaultsTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new ImageResourceLimits { MaxMetadataBytes = 0 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new ImageResourceLimits { MaxLiveAllocationBytes = 0 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new ImageResourceLimits { MaxFontBytes = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ImageResourceLimits { MaxFontCollectionFaces = 0 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new ImageResourceLimits { MaxGlyphComplexity = 0 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new ImageResourceLimits { MaxTextLength = 0 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new ImageResourceLimits { MaxTextGlyphs = -1 });

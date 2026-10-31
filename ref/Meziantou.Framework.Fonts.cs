@@ -597,15 +597,18 @@ namespace Meziantou.Framework.Fonts
         GlyphComplexity = 2,
         TextGlyphs = 3,
         LiveAllocationBytes = 4,
+        CollectionFaces = 5,
     }
 
     public sealed class FontResourceLimits
     {
+        public const int DefaultMaxCollectionFaces = 1024;
         public const long DefaultMaxEncodedBytes = 268435456L;
         public const long DefaultMaxFontBytes = 268435456L;
         public const long DefaultMaxGlyphComplexity = 1000000L;
         public const long DefaultMaxTextGlyphs = 1000000L;
         public static Meziantou.Framework.Fonts.FontResourceLimits Default { get => throw null; }
+        public int MaxCollectionFaces { get => throw null; init { } }
         public long MaxEncodedBytes { get => throw null; init { } }
         public long MaxFontBytes { get => throw null; init { } }
         public long MaxGlyphComplexity { get => throw null; init { } }

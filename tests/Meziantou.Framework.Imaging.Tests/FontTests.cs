@@ -1345,6 +1345,54 @@ public sealed class FontTests
     }
 
     [Fact]
+    public void TheFacesOfAFontCollectionAreLimited()
+    {
+        var boxes = FontSamples.Boxes().BuildTables();
+        static FontLoadOptions Options(int maxFaces) => new() { Configuration = new ImageConfiguration { Limits = new ImageResourceLimits { MaxFontCollectionFaces = maxFaces } } };
+
+        // 1,024 faces by default; one more is rejected before any face is read.
+        Assert.HasCount(1024, FontCollection.Load(FontBuilder.WriteCollection(Enumerable.Repeat(boxes, 1024).ToArray())));
+        var exception = Assert.Throws<ImageResourceLimitException>(() => FontCollection.Load(FontBuilder.WriteCollection(Enumerable.Repeat(boxes, 1025).ToArray())));
+        Assert.Equal(ImageResourceLimitKind.FontCollectionFaces, exception.Kind);
+        Assert.Equal(1024, exception.Limit);
+        Assert.Equal(1025, exception.Requested);
+
+        // The limit is configurable.
+        var data = FontBuilder.WriteCollection([boxes, FontSamples.Curves().BuildTables()]);
+        Assert.HasCount(2, FontCollection.Load(data, Options(2)));
+        exception = Assert.Throws<ImageResourceLimitException>(() => FontCollection.Load(data, Options(1)));
+        Assert.Equal(ImageResourceLimitKind.FontCollectionFaces, exception.Kind);
+        Assert.Equal(1, exception.Limit);
+
+        // A count larger than the file is rejected without allocating the faces.
+        BinaryPrimitives.WriteInt32BigEndian(data.AsSpan(8), int.MaxValue);
+        exception = Assert.Throws<ImageResourceLimitException>(() => FontCollection.Load(data));
+        Assert.Equal(ImageResourceLimitKind.FontCollectionFaces, exception.Kind);
+        Assert.Equal(int.MaxValue, exception.Requested);
+
+        // The font code reports the limit with its own kind.
+        var limits = new Fonts.FontResourceLimits { MaxCollectionFaces = 1 };
+        var fontException = Assert.Throws<Fonts.FontResourceLimitException>(() => Fonts.FontLoader.Load(FontBuilder.WriteCollection([boxes, boxes]), new Fonts.PooledFontEnvironment(limits, 64 * 1024 * 1024)));
+        Assert.Equal(Fonts.FontResourceLimitKind.CollectionFaces, fontException.Kind);
+        Assert.Equal(1, fontException.Limit);
+        Assert.Equal(2, fontException.Requested);
+    }
+
+    [Fact]
+    public void TheFacesOfAFontCollectionAtTheSameOffsetAreReadOnce()
+    {
+        var data = FontBuilder.WriteCollection([FontSamples.Boxes().BuildTables(), FontSamples.Curves().BuildTables(), FontSamples.Boxes().BuildTables()]);
+        data.AsSpan(12, 4).CopyTo(data.AsSpan(20));
+
+        var faces = Fonts.FontLoader.Load(data, new Fonts.PooledFontEnvironment(Fonts.FontResourceLimits.Default, 64 * 1024 * 1024));
+
+        Assert.HasCount(3, faces);
+        Assert.Same(faces[0], faces[2]);
+        Assert.NotSame(faces[0], faces[1]);
+        Assert.Equal("Meziantou Curves", FontCollection.Load(data)[1].FamilyName);
+    }
+
+    [Fact]
     public void DataThatIsNotAFontIsNotRecognized()
     {
         Assert.Throws<UnknownImageFormatException>(() => Font.Load([]));

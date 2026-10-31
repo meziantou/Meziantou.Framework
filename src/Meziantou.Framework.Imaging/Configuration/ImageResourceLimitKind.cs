@@ -44,4 +44,7 @@ public enum ImageResourceLimitKind
 
     /// <summary><see cref="ImageResourceLimits.MaxTextLines"/>.</summary>
     TextLines = 13,
+
+    /// <summary><see cref="ImageResourceLimits.MaxFontCollectionFaces"/>.</summary>
+    FontCollectionFaces = 14,
 }

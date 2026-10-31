@@ -22,6 +22,7 @@ internal static class FontExceptionTranslation
         FontResourceLimitKind.GlyphComplexity => ImageResourceLimitKind.GlyphComplexity,
         FontResourceLimitKind.TextGlyphs => ImageResourceLimitKind.TextGlyphs,
         FontResourceLimitKind.LiveAllocationBytes => ImageResourceLimitKind.LiveAllocationBytes,
+        FontResourceLimitKind.CollectionFaces => ImageResourceLimitKind.FontCollectionFaces,
         _ => ImageResourceLimitKind.Unknown,
     };
 }

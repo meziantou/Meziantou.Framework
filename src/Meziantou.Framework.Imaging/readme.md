@@ -3125,7 +3125,8 @@ public static void DrawWeights(string variableFontPath, string outputPath)
   `hmtx`, `cmap`, and `loca` with `glyf`), the structure of the character map and of the CFF table. The data of a glyph
   is validated when the glyph is used.
 - **A font is untrusted input.** The bytes read are bounded by `MaxEncodedBytes`, the bytes a font keeps by
-  `MaxFontBytes` (256 MiB by default; checked before a WOFF or WOFF2 file is expanded), and the work to produce one
+  `MaxFontBytes` (256 MiB by default; checked before a WOFF or WOFF2 file is expanded), the fonts of a collection by
+  `MaxFontCollectionFaces` (1,024 by default), and the work to produce one
   glyph by `MaxGlyphComplexity` (1,000,000 points, components and charstring operators by default): glyphs made of
   glyphs, or subroutines that call subroutines, can describe an outline that is exponentially larger than the file.
   The limits are those of `FontLoadOptions.Configuration`.

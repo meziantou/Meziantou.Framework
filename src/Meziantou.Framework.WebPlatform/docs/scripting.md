@@ -471,7 +471,7 @@ GC types, the exceptions, the tail calls, memory64, the multiple memories, the S
 the wide arithmetic. Not implemented: the threads (a shared `WebAssembly.Memory` is only a growable `SharedArrayBuffer`
 that cannot be imported by a module), the JS String Builtins (`builtins`, `importedStringConstants`), the ESM
 integration (`import` of a module), JavaScript Promise Integration, the type reflection (`type()`), the resizable buffers
-of the memories (`toResizableBuffer()`): see the [WPT coverage of wasm](wpt-coverage/wasm.md).
+of the memories (`toResizableBuffer()`): see the [WPT coverage of wasm](../../../docs/WebPlatform/10-WptCoverage/wasm.md).
 
 The runtime does not use the signal handlers of Wasmtime (the traps are explicit checks) and does not register native
 unwind information for the compiled code (`native_unwind_info` is disabled): on macOS, `__register_frame` and

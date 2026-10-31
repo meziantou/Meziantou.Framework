@@ -43,7 +43,8 @@ The library is split into packages, so that an application only references what 
 ## Principles
 
 - **Behaves as a browser.** The parsers, the DOM, the cascade and the layout follow the WHATWG and W3C specifications: a
-  page gives the same tree, the same styles and the same events as in a browser.
+  page gives the same tree, the same styles and the same events as in a browser. The library is tested against the
+  web-platform-tests, the conformance test suite of the browsers (see the [pass rate per section](10-WptCoverage/01-Overview.md)).
 - **Everything is opt-in.** A parsed document is only a tree. Nothing is fetched without a document loader, no script
   runs without a script engine, and no pixel is drawn without a rendering backend. You decide what a page can do.
 - **Same pixels everywhere.** The rendering is fully managed and the default fonts are part of the library: the same page
@@ -73,3 +74,4 @@ The library is split into packages, so that an application only references what 
 - [Getting started](02-GettingStarted.md): install the package, parse a page, read its styles and take a screenshot.
 - [Loading pages](05-LoadingPages/01-Overview.md): the browsing context, which turns a document into a page.
 - [Limitations](09-Limitations.md): what the engine does not do.
+- [WPT coverage](10-WptCoverage/01-Overview.md): the web-platform-tests that pass, and why the others do not.

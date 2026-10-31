@@ -28,6 +28,9 @@ docs/
 - A group folder opens with `01-Overview.md`, which introduces the group and links to its pages.
 - Renumbering or renaming a page or a folder changes its links: update every link to it in the same change.
 - `AGENTS.md` files are instructions, not pages.
+- `WebPlatform/10-WptCoverage/` is generated, `_folder.yml` files included: never edit it, run the `wpt-coverage`
+  command of `tools/Meziantou.Framework.WebPlatform.SpecUpdate`. Its section pages keep the names of the WPT
+  directories (`css/css-align.md`), so they are not numbered.
 
 ## Folder names
 

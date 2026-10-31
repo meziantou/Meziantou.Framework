@@ -822,6 +822,7 @@ jobs:
           if ($LASTEXITCODE -ne 0) { throw "git diff failed with exit code $LASTEXITCODE" }
           $patterns = @(
             '^src/Meziantou\.Framework\.WebPlatform/'
+            '^docs/WebPlatform/10-WptCoverage/'
             '^tests/Meziantou\.Framework\.WebPlatform\.(SpecData|Wpt)/'
             '^tools/Meziantou\.Framework\.WebPlatform\.'
             '^eng/webplatform/'

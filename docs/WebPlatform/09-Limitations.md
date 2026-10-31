@@ -3,7 +3,9 @@ title: Limitations
 description: What the engine does not do, and where it differs from a browser.
 ---
 
-The library implements most of the web platform, but it is not a complete browser. The main differences:
+The library implements most of the web platform, but it is not a complete browser. The main differences are listed
+below; the [WPT coverage](10-WptCoverage/01-Overview.md) gives the reason why each web-platform-test that does not pass
+fails.
 
 ## Display and input
 

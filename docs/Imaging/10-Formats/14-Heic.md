@@ -15,7 +15,7 @@ are large and opened by fewer readers: choose lossy 4:2:0 output for files that 
 | Samples | 8 to 12 bits; 4:4:4, 4:2:2, 4:2:0 and monochrome | 8, 10 or 12 bits; 4:4:4, 4:2:2, 4:2:0 and monochrome |
 | Alpha | Straight alpha | Lossless alpha |
 | Geometry | Clean aperture applied; orientation reported | Orientation of still images |
-| Metadata | ICC profile, EXIF, XMP, CICP color description | The same |
+| Metadata | ICC profile, EXIF, XMP, CICP color description, content light level, mastering display, pixel aspect ratio | The same |
 
 8-bit files load as [Rgb24](cref:Meziantou.Framework.Imaging.Rgb24), [Rgba32](cref:Meziantou.Framework.Imaging.Rgba32) with alpha, or [Gray8](cref:Meziantou.Framework.Imaging.Gray8); deeper files load as [Rgb48](cref:Meziantou.Framework.Imaging.Rgb48), [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64) or [Gray16](cref:Meziantou.Framework.Imaging.Gray16), their
 samples scaled to 16 bits exactly.

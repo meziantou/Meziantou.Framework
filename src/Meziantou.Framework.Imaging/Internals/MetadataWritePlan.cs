@@ -421,9 +421,8 @@ internal sealed class MetadataWritePlan
         // light levels, the mastering display and the shape of the pixels in clli, mdcv and pasp boxes
         private static readonly FormatCapabilities Avif = new(icc: true, exif: true, xmp: true, resolution: false, TextSupport.None, nativeOrientation: true, cicp: true, contentLightLevel: true, masteringDisplay: true, pixelAspectRatio: true);
 
-        // HEIC has the container of AVIF; its codec does not write the clli, mdcv and pasp boxes yet
-        // (HeifContainerFeatures.DisplayMetadata)
-        private static readonly FormatCapabilities Heic = new(icc: true, exif: true, xmp: true, resolution: false, TextSupport.None, nativeOrientation: true, cicp: true);
+        // HEIC has the container of AVIF, with the same clli, mdcv and pasp boxes (HeifContainerFeatures.DisplayMetadata)
+        private static readonly FormatCapabilities Heic = new(icc: true, exif: true, xmp: true, resolution: false, TextSupport.None, nativeOrientation: true, cicp: true, contentLightLevel: true, masteringDisplay: true, pixelAspectRatio: true);
 
         // JPEG XL stores the orientation, the linear transfer function and an enumerable CICP description in its image header
         private static readonly FormatCapabilities JpegXl = new(icc: true, exif: true, xmp: true, resolution: false, TextSupport.None, linearTransfer: true, nativeOrientation: true, enumeratedCicp: true);
@@ -506,13 +505,13 @@ internal sealed class MetadataWritePlan
         /// </summary>
         public bool CicpWithoutIcc { get; }
 
-        /// <summary>Gets a value indicating whether the format stores a content light level (the AVIF <c>clli</c> box).</summary>
+        /// <summary>Gets a value indicating whether the format stores a content light level (the <c>clli</c> box of AVIF and HEIC).</summary>
         public bool ContentLightLevel { get; }
 
-        /// <summary>Gets a value indicating whether the format stores a mastering display color volume (the AVIF <c>mdcv</c> box).</summary>
+        /// <summary>Gets a value indicating whether the format stores a mastering display color volume (the <c>mdcv</c> box of AVIF and HEIC).</summary>
         public bool MasteringDisplay { get; }
 
-        /// <summary>Gets a value indicating whether the format stores the aspect ratio of the pixels (the AVIF <c>pasp</c> box).</summary>
+        /// <summary>Gets a value indicating whether the format stores the aspect ratio of the pixels (the <c>pasp</c> box of AVIF and HEIC).</summary>
         public bool PixelAspectRatio { get; }
 
         /// <summary>

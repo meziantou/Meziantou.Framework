@@ -159,6 +159,12 @@ public sealed partial class HeicDecoderInteropTests
         /// <summary>The color description passed to heif-enc, which the library must report.</summary>
         public CicpColorDescription? Cicp { get; init; }
 
+        /// <summary>The content light level passed to heif-enc, which the library must report.</summary>
+        public ContentLightLevel? ContentLightLevel { get; init; }
+
+        /// <summary>The pixel aspect ratio passed to heif-enc, which the library must report.</summary>
+        public PixelAspectRatio? PixelAspectRatio { get; init; }
+
         /// <summary>Whether the source is stored without loss and without conversion: the library must return its samples.</summary>
         public bool SourceIsPreserved { get; init; }
     }
@@ -377,8 +383,8 @@ public sealed partial class HeicDecoderInteropTests
         yield return new("lossy-422-10-grid-64", SourceKind.Rgb16, 150, 100, ["-q", "60", "-b", "10", "--no-alpha", "-p", "chroma=422", "--cut-tiles", "64"], HeifDecComparison.SitingDiffers);
         yield return new("lossy-400-12-grid-64", SourceKind.Gray16, 150, 100, ["-q", "60", "-b", "12", "--cut-tiles", "64"], HeifDecComparison.Exact);
 
-        // Properties that describe the display and are not read, and another compatible brand
-        yield return new("lossy-444-8-pasp-clli", SourceKind.Rgb8, 80, 64, ["-q", "50", "-p", "chroma=444", "--pasp", "2,1", "--clli", "1000,400"], HeifDecComparison.Matrix);
+        // Properties that describe the display, and another compatible brand
+        yield return new("lossy-444-8-pasp-clli", SourceKind.Rgb8, 80, 64, ["-q", "50", "-p", "chroma=444", "--pasp", "2,1", "--clli", "1000,400"], HeifDecComparison.Matrix) { ContentLightLevel = new(1000, 400), PixelAspectRatio = new(2, 1) };
         yield return new("lossy-444-8-compatible-brand", SourceKind.Rgb8, 80, 64, ["-q", "50", "-p", "chroma=444", "--add-compatible-brand", "MiHE"], HeifDecComparison.Matrix);
     }
 
@@ -430,6 +436,11 @@ public sealed partial class HeicDecoderInteropTests
         {
             Assert.Equal(item.Cicp, still.Cicp, message: $"{name}: the library does not report the color description passed to heif-enc.");
         }
+
+        // Without the options, the file has no clli or pasp box
+        var metadata = Image.Identify(path).Metadata;
+        Assert.Equal(item.ContentLightLevel, metadata.ContentLightLevel);
+        Assert.Equal(item.PixelAspectRatio, metadata.PixelAspectRatio);
     }
 
     /// <summary>What <see cref="AssertStillAsync"/> verified: the size of the image as loaded, its color description and its pixels.</summary>

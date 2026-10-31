@@ -41,7 +41,7 @@ internal static class ImageIO
         options ??= ImageDecodeOptions.Default;
         var context = new ImageCodecContext(options.Configuration, "Image", CancellationToken.None);
         var codec = ImageInputPump.Detect(ImageCodecRegistry.Current, data, context);
-        using var parser = codec.CreateDecodeParser(ImageDecodeRequest.Create(options, pixelFormat), context);
+        using var parser = codec.CreateDecodeParser(ImageDecodeRequest.Create(options, pixelFormat).For(codec), context);
         return ImageInputPump.Run(data, parser, context);
     }
 
@@ -142,9 +142,9 @@ internal static class ImageIO
         var origin = stream.CanSeek ? stream.Position : 0;
         var codec = ImageInputPump.Detect(ImageCodecRegistry.Current, input, context);
         if (TryCreateRandomAccessSource(codec, stream, origin, context) is { } source)
-            return codec.DecodeRandomAccess(source, ImageDecodeRequest.Create(options, pixelFormat), context);
+            return codec.DecodeRandomAccess(source, ImageDecodeRequest.Create(options, pixelFormat).For(codec), context);
 
-        using var parser = codec.CreateDecodeParser(ImageDecodeRequest.Create(options, pixelFormat), context);
+        using var parser = codec.CreateDecodeParser(ImageDecodeRequest.Create(options, pixelFormat).For(codec), context);
         return ImageInputPump.Run(input, parser, context);
     }
 
@@ -163,7 +163,7 @@ internal static class ImageIO
         {
             cancellationToken.ThrowIfCancellationRequested();
             var codec = await ImageInputPump.DetectAsync(registry, input, context).ConfigureAwait(false);
-            using var parser = codec.CreateDecodeParser(ImageDecodeRequest.Create(options, pixelFormat), context);
+            using var parser = codec.CreateDecodeParser(ImageDecodeRequest.Create(options, pixelFormat).For(codec), context);
             return await ImageInputPump.RunAsync(input, parser, context).ConfigureAwait(false);
         }
     }

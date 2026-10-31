@@ -440,6 +440,12 @@ public sealed class DefaultsTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new ImageDecodeOptions { FrameLimit = 0 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new ImageReaderOptions { FrameLimit = -1 });
 
+        // Images are decoded at full resolution unless a scale or a target size is set
+        Assert.Equal(1, ImageDecodeOptions.Default.ScaleDenominator);
+        Assert.Null(ImageDecodeOptions.Default.TargetSize);
+        Assert.Equal(1, ImageReaderOptions.Default.ScaleDenominator);
+        Assert.Null(ImageReaderOptions.Default.TargetSize);
+
         var writer = new ImageWriterOptions(new Size(4, 3));
         Assert.True(writer.LeaveOpen);
         Assert.Null(writer.Encoder);

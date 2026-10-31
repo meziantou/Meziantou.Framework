@@ -52,7 +52,7 @@ internal abstract class ImageCollectionReader : IDisposable
         ArgumentNullException.ThrowIfNull(options);
         ObjectDisposedException.ThrowIf(_disposed, this);
         var context = new ImageCodecContext(options.Configuration, "Image", CancellationToken.None);
-        return DecodeCore(index, new RandomAccessSource(_input, context, Format), ImageDecodeRequest.Create(options, pixelFormat), context);
+        return DecodeCore(index, new RandomAccessSource(_input, context, Format), ImageDecodeRequest.Create(options, pixelFormat).ForFullResolution(Format), context);
     }
 
     public void Dispose()

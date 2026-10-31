@@ -80,6 +80,12 @@ public sealed class ImageInfo
         CollectionEntryCount = collectionEntryCount;
     }
 
+    /// <summary>Gets a copy of this snapshot with another canvas size: the size of the frames a scaled decode produces.</summary>
+    /// <param name="size">The canvas size.</param>
+    /// <returns>The copy.</returns>
+    internal ImageInfo WithSize(Size size)
+        => new(Format, size, PixelFormat, ColorModel, BitsPerComponent, FrameCount, IsAnimated, HasPosterFrame, MayHaveTransparency, Animation, Metadata, IdentifyMode, CollectionEntryCount);
+
     /// <summary>Gets the detected encoded format.</summary>
     public ImageFormat Format { get; }
 

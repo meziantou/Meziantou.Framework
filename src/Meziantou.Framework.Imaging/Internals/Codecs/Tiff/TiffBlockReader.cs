@@ -506,6 +506,12 @@ internal sealed class TiffBlockReader : IDisposable
         {
             throw new InvalidImageContentException(string.Create(CultureInfo.InvariantCulture, $"The Deflate data of the TIFF block {index} of page {_page.Index} is malformed."), ImageFormat.Tiff, exception);
         }
+        catch (IOException exception)
+        {
+            // The source is in memory: an IOException is the BCL's (internal) ZLibException for zlib error codes that are
+            // not data errors, for example a preset dictionary (FDICT), which TIFF does not define (fuzz regression)
+            throw new InvalidImageContentException(string.Create(CultureInfo.InvariantCulture, $"The Deflate data of the TIFF block {index} of page {_page.Index} is malformed."), ImageFormat.Tiff, exception);
+        }
     }
 
 #if NET11_0_OR_GREATER

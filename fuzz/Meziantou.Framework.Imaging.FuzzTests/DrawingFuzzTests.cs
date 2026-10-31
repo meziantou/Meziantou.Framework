@@ -23,7 +23,7 @@ namespace Meziantou.Framework.Imaging.FuzzTests;
 /// The time to draw a shape follows the number of points where its edges cross each other, which the area of their
 /// union depends on. One family of shapes has millions of them: a pen far wider than the bends of a long curve it
 /// follows, whose stroke is thousands of wedges that all cross near the center of the bends. The generator keeps the
-/// widest pens for lines and rectangles, so that a case stays a matter of milliseconds.
+/// widest pens for lines and rectangles, dashed ones included, so that a case stays a matter of milliseconds.
 /// </para>
 /// </remarks>
 public sealed class DrawingFuzzTests
@@ -404,8 +404,14 @@ public sealed class DrawingFuzzTests
 
                     break;
                 default:
-                    canvas.Stroke(CreateDashedPen(random, canvas, context), CreatePath(random, canvas));
-                    break;
+                    {
+                        // A pen of the largest width follows lines only (see the remarks): along an ellipse of 2^24 by 14
+                        // pixels, no piece of its stroke covers a canvas near the center alone, and the area of their
+                        // union took over a minute (fuzz regression)
+                        var pen = CreateDashedPen(random, canvas, context);
+                        canvas.Stroke(pen, pen.Width >= MaxCoordinate ? CreatePolyline(random, canvas) : CreatePath(random, canvas));
+                        break;
+                    }
             }
         }
     }
@@ -850,6 +856,24 @@ public sealed class DrawingFuzzTests
             LineCap = (LineCap)random.Next(3),
             MiterLimit = random.Chance(20) ? 1 + (NextDouble(random) * 1000) : 1 + (NextDouble(random) * 9),
         };
+    }
+
+    /// <summary>A path of lines: an open or closed polyline, of a few points around the canvas.</summary>
+    private static VectorPath CreatePolyline(FuzzRandom random, DrawingCanvas canvas)
+    {
+        var points = CreatePoints(random, canvas);
+        var builder = new VectorPathBuilder().MoveTo(points[0]);
+        foreach (var point in points.AsSpan(1))
+        {
+            builder.LineTo(point);
+        }
+
+        if (random.Chance(50))
+        {
+            builder.Close();
+        }
+
+        return builder.Build();
     }
 
     private static VectorPath CreatePath(FuzzRandom random, DrawingCanvas canvas)

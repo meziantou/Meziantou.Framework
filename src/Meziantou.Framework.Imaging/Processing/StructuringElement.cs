@@ -10,7 +10,8 @@ namespace Meziantou.Framework.Imaging;
 /// The neighborhood is centered on the pixel and symmetric: it holds the offset <c>(dx, dy)</c> when it holds
 /// <c>(-dx, -dy)</c>. A rectangle (<see cref="CreateRectangle"/>) is filtered in two passes, a row then a column, in a time
 /// per pixel that does not depend on its size; an ellipse (<see cref="CreateEllipse"/>), which rounds the corners, takes a
-/// time per pixel that grows with its height.
+/// time per pixel that grows with its height: every row is filtered once per distinct width of the rows of the ellipse,
+/// then each output sample compares one filtered sample per row of the ellipse.
 /// </remarks>
 public sealed class StructuringElement
 {
@@ -25,6 +26,7 @@ public sealed class StructuringElement
         RadiusY = radiusY;
         IsRectangle = isRectangle;
         _halfWidths = halfWidths;
+        DistinctHalfWidths = [.. halfWidths.Distinct().Order()];
     }
 
     /// <summary>Gets the number of pixels on each side of the center, horizontally.</summary>
@@ -105,6 +107,12 @@ public sealed class StructuringElement
 
     /// <summary>Gets the number of pixels on each side of the center of the row at offset <paramref name="dy"/>, from <c>-RadiusY</c> to <c>RadiusY</c>.</summary>
     internal int GetHalfWidth(int dy) => _halfWidths[dy + RadiusY];
+
+    /// <summary>Gets the different half-widths of the rows, in increasing order: the ellipse is the union of one rectangle per half-width.</summary>
+    internal int[] DistinctHalfWidths { get; }
+
+    /// <summary>Gets the index in <see cref="DistinctHalfWidths"/> of the half-width of row <paramref name="dy"/>.</summary>
+    internal int GetHalfWidthIndex(int dy) => Array.BinarySearch(DistinctHalfWidths, _halfWidths[dy + RadiusY]);
 
     private static void ValidateRadius(int radius, string paramName)
     {

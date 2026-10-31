@@ -21,8 +21,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// backward, and every window, which spans at most two blocks, is the extremum of a backward value and a forward value:
 /// three comparisons per sample, whatever the size of the window. The rows are filtered first, then the columns, by
 /// blocks of filtered rows. An ellipse is the union of one row segment per row of its height: every output row is the
-/// extremum of the rows around it, each filtered with the half-width of its segment in the same way, so the time per
-/// sample grows with the height of the ellipse, not with its area.
+/// extremum of the rows around it, each filtered with the half-width of its segment in the same way. Every row is
+/// filtered once by each distinct half-width, so the time per sample grows with the number of distinct half-widths and
+/// with the height of the ellipse (one comparison per row), not with its area.
 /// </para>
 /// <para>
 /// The frame is rewritten in place: the rows a pass reads after rewriting others are copied first (the blocks, the ring
@@ -299,8 +300,10 @@ internal static class MorphologyFilter
 
     /// <summary>
     /// Filters by an ellipse: every output row is the extremum, over the rows of the ellipse, of the row at that offset
-    /// filtered by the half-width of its segment. The padded original rows are kept in a ring as tall as the ellipse, and
-    /// the rows above and below the frame in the halos, loaded before any row is rewritten.
+    /// filtered by the half-width of its segment. Each row of the frame is filtered once by every distinct half-width when
+    /// it is loaded (the rows of the ellipse share few widths: 4 for a disk of radius 5, 31 for radius 50), into a ring as
+    /// tall as the ellipse; the rows above and below the frame go to the halos, loaded before any row is rewritten. An
+    /// output sample then costs one comparison per row of the ellipse.
     /// </summary>
     private static void FilterEllipse<TSample, TKey, TOperator>(PixelStorage storage, MorphologyPlan plan, CancellationToken cancellationToken)
         where TSample : unmanaged
@@ -313,23 +316,29 @@ internal static class MorphologyFilter
         var k = element.Height;
         var row = plan.RowLength;
         var padded = plan.PaddedLength;
+        var widths = element.DistinctHalfWidths;
+        var filtered = widths.Length * row;
         var keys = plan.GetKeys<TKey>();
-        var ring = keys[..(k * padded)];
-        var halos = keys.Slice(ring.Length, 2 * radiusY * padded);
-        var forward = keys.Slice(ring.Length + halos.Length, padded);
-        var backward = keys.Slice(ring.Length + halos.Length + padded, padded);
-        var output = keys.Slice(ring.Length + halos.Length + (2 * padded), row);
+        var ring = keys[..(k * filtered)];
+        var halos = keys.Slice(ring.Length, 2 * radiusY * filtered);
+        var scratch = keys.Slice(ring.Length + halos.Length, 3 * padded);
+        var output = keys.Slice(ring.Length + halos.Length + (3 * padded), row);
+        var indexes = new int[k];
+        for (var dy = -radiusY; dy <= radiusY; dy++)
+        {
+            indexes[dy + radiusY] = element.GetHalfWidthIndex(dy);
+        }
 
         for (var i = 0; i < radiusY; i++)
         {
-            LoadPaddedRow<TSample, TKey>(storage, plan, i - radiusY, halos.Slice(i * padded, padded));
-            LoadPaddedRow<TSample, TKey>(storage, plan, height + i, halos.Slice((radiusY + i) * padded, padded));
+            LoadFilteredRows<TSample, TKey, TOperator>(storage, plan, i - radiusY, scratch, halos.Slice(i * filtered, filtered));
+            LoadFilteredRows<TSample, TKey, TOperator>(storage, plan, height + i, scratch, halos.Slice((radiusY + i) * filtered, filtered));
         }
 
         // The rows of the frame the first output row reads below it
         for (var source = 0; source < Math.Min(radiusY, height); source++)
         {
-            LoadPaddedRow<TSample, TKey>(storage, plan, source, ring.Slice((source % k) * padded, padded));
+            LoadFilteredRows<TSample, TKey, TOperator>(storage, plan, source, scratch, ring.Slice((source % k) * filtered, filtered));
         }
 
         for (var y = 0; y < height; y++)
@@ -341,19 +350,64 @@ internal static class MorphologyFilter
 
             if (y + radiusY < height)
             {
-                LoadPaddedRow<TSample, TKey>(storage, plan, y + radiusY, ring.Slice(((y + radiusY) % k) * padded, padded));
+                LoadFilteredRows<TSample, TKey, TOperator>(storage, plan, y + radiusY, scratch, ring.Slice(((y + radiusY) % k) * filtered, filtered));
             }
 
             for (var dy = -radiusY; dy <= radiusY; dy++)
             {
                 var source = y + dy;
-                var keysOfRow = source < 0 ? halos.Slice((source + radiusY) * padded, padded)
-                    : source >= height ? halos.Slice((radiusY + source - height) * padded, padded)
-                    : ring.Slice((source % k) * padded, padded);
-                FilterRow<TKey, TOperator>(keysOfRow, element.RadiusX, element.GetHalfWidth(dy), plan.Channels, forward, backward, output, combine: dy != -radiusY);
+                var rows = source < 0 ? halos.Slice((source + radiusY) * filtered, filtered)
+                    : source >= height ? halos.Slice((radiusY + source - height) * filtered, filtered)
+                    : ring.Slice((source % k) * filtered, filtered);
+                var keysOfRow = rows.Slice(indexes[dy + radiusY] * row, row);
+                if (dy == -radiusY)
+                {
+                    keysOfRow.CopyTo(output);
+                }
+                else
+                {
+                    CombineRows<TKey, TOperator>(output, keysOfRow);
+                }
             }
 
             StoreRow<TSample, TKey>(storage, y, output);
+        }
+    }
+
+    /// <summary>Loads row <paramref name="y"/> (mapped by the edge rule), padded, and filters it by every distinct half-width of the ellipse into <paramref name="destination"/>, one row after the other.</summary>
+    private static void LoadFilteredRows<TSample, TKey, TOperator>(PixelStorage storage, MorphologyPlan plan, int y, Span<TKey> scratch, Span<TKey> destination)
+        where TSample : unmanaged
+        where TKey : unmanaged, IBinaryInteger<TKey>
+        where TOperator : struct, IExtremum<TKey>
+    {
+        var padded = plan.PaddedLength;
+        var row = plan.RowLength;
+        var source = scratch[..padded];
+        LoadPaddedRow<TSample, TKey>(storage, plan, y, source);
+        var widths = plan.Element.DistinctHalfWidths;
+        for (var i = 0; i < widths.Length; i++)
+        {
+            FilterRow<TKey, TOperator>(source, plan.Element.RadiusX, widths[i], plan.Channels, scratch.Slice(padded, padded), scratch.Slice(2 * padded, padded), destination.Slice(i * row, row), combine: false);
+        }
+    }
+
+    /// <summary>Replaces every key of <paramref name="output"/> by its extremum with the key of <paramref name="other"/>, a vector at a time.</summary>
+    private static void CombineRows<TKey, TOperator>(Span<TKey> output, ReadOnlySpan<TKey> other)
+        where TKey : unmanaged, IBinaryInteger<TKey>
+        where TOperator : struct, IExtremum<TKey>
+    {
+        var i = 0;
+        if (Vector.IsHardwareAccelerated && Vector<TKey>.IsSupported)
+        {
+            for (; i <= output.Length - Vector<TKey>.Count; i += Vector<TKey>.Count)
+            {
+                TOperator.Combine(new Vector<TKey>(output[i..]), new Vector<TKey>(other[i..])).CopyTo(output[i..]);
+            }
+        }
+
+        for (; i < output.Length; i++)
+        {
+            output[i] = TOperator.Combine(output[i], other[i]);
         }
     }
 
@@ -517,19 +571,27 @@ internal static class MorphologyFilter
     internal interface IExtremum<TKey>
     {
         static abstract TKey Combine(TKey a, TKey b);
+
+        static abstract Vector<TKey> Combine(Vector<TKey> a, Vector<TKey> b);
     }
 
     private readonly struct Minimum<TKey> : IExtremum<TKey>
-        where TKey : IBinaryInteger<TKey>
+        where TKey : unmanaged, IBinaryInteger<TKey>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TKey Combine(TKey a, TKey b) => TKey.Min(a, b);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<TKey> Combine(Vector<TKey> a, Vector<TKey> b) => Vector.Min(a, b);
     }
 
     private readonly struct Maximum<TKey> : IExtremum<TKey>
-        where TKey : IBinaryInteger<TKey>
+        where TKey : unmanaged, IBinaryInteger<TKey>
     {
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static TKey Combine(TKey a, TKey b) => TKey.Max(a, b);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector<TKey> Combine(Vector<TKey> a, Vector<TKey> b) => Vector.Max(a, b);
     }
 }

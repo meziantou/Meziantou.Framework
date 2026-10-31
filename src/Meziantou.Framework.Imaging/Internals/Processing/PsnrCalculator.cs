@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.Imaging.Internals;
 
-/// <summary>Computes the peak signal-to-noise ratio of two frames of the same size (<see cref="ImageSimilarity.ComputePsnr"/>).</summary>
+/// <summary>Computes the peak signal-to-noise ratio of two frames of the same size (<see cref="ImageSimilarity.ComputePsnr(ImageFrame, ImageFrame, CancellationToken)"/>).</summary>
 /// <remarks>
 /// <para>
 /// The squared errors are summed as integers, so the mean squared error is exact. The R, G and B channels are

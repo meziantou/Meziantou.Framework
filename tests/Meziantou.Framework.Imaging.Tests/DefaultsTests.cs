@@ -381,6 +381,31 @@ public sealed class DefaultsTests
     }
 
     [Fact]
+    public void SmoothingCropAndComparisonOptionDefaults()
+    {
+        var radial = new RadialBlurOptions(RadialBlurKind.Zoom, new PointD(1, 2), 0.5);
+        Assert.Equal(64, radial.MaxSampleCount);
+        Assert.Equal(ConvolutionEdgeMode.Clamp, radial.EdgeMode);
+        Assert.Equal(ConvolutionWorkingSpace.Encoded, radial.WorkingSpace);
+        Assert.Equal(1024, RadialBlurOptions.MaxSampleCountLimit);
+
+        var crop = new CropSuggestionOptions();
+        Assert.Equal(CropEnergy.Edges, crop.Energy);
+        Assert.Equal(1, crop.Scale);
+
+        var similarity = new ImageSimilarityOptions();
+        Assert.Equal(SimilarityPrecision.EightBit, similarity.Precision);
+        Assert.Equal(1, similarity.DataRange);
+
+        var map = new DifferenceMapOptions();
+        Assert.Equal(DifferenceMapKind.Highlight, map.Kind);
+        Assert.Equal(0, map.Threshold);
+        Assert.Equal(new Rgba32(0xF1, 0x00, 0x1E, 0xCC), map.HighlightColor);
+        Assert.Equal(new Rgba32(0xFF, 0xFF, 0xFF, 0xCC), map.LowlightColor);
+        Assert.Equal(1, map.Gain);
+    }
+
+    [Fact]
     public void AutoCropDefaults()
     {
         var options = new AutoCropOptions();

@@ -6,11 +6,12 @@ namespace Meziantou.Framework.Imaging;
 /// <summary>
 /// Measures how similar two frames look: the Structural Similarity Index (SSIM), the peak signal-to-noise ratio (PSNR), the
 /// SSIMULACRA 2 score and the Butteraugli distance, and the distance between two 64-bit perceptual hashes, the difference
-/// hash (dHash) and the perceptual hash (pHash).
+/// hash (dHash) and the perceptual hash (pHash); and draws where two frames differ.
 /// </summary>
 /// <remarks>
 /// <para>
-/// Every member reads the pixels as 8-bit RGBA, whatever the pixel format, with the conversion of
+/// Every member reads the pixels as 8-bit RGBA, whatever the pixel format (except the overloads of SSIM and PSNR that take
+/// <see cref="ImageSimilarityOptions"/>, and <see cref="CreateDifferenceMap"/>), with the conversion of
 /// <see cref="Image.CloneAs{TPixel}"/>: 16-bit samples are rounded to 8 bits, gray samples are copied to the three color
 /// channels, and formats without alpha are opaque. Floating-point samples (<see cref="RgbaFloat"/>,
 /// <see cref="RgbaHalf"/>) are rounded to 8 bits as they are stored, whatever their transfer function label, like the
@@ -116,6 +117,131 @@ public static class ImageSimilarity
         var (expectedStorage, actualStorage) = GetStorages(expected, actual, cancellationToken);
         using var leases = PixelLeasePair.Acquire(expectedStorage, actualStorage);
         return PsnrCalculator.Compute(expectedStorage.Owner.Scope, expectedStorage, expected.PixelFormat, actualStorage, actual.PixelFormat, GetMaxDegreeOfParallelism(expected), cancellationToken);
+    }
+
+    /// <summary>Computes the mean Structural Similarity Index (SSIM) of two frames of the same size, at the precision of <paramref name="options"/>.</summary>
+    /// <remarks>
+    /// <para>
+    /// The score of <see cref="ComputeSsim(ImageFrame, ImageFrame, CancellationToken)"/> on other samples: with
+    /// <see cref="SimilarityPrecision.SixteenBit"/>, 16-bit samples and <c>L = 65,535</c>, which is scikit-image's
+    /// <c>structural_similarity(expected, actual, data_range=65535, channel_axis=-1)</c> on <c>uint16</c> arrays of opaque
+    /// frames; with <see cref="SimilarityPrecision.FloatingPoint"/>, fractions in double precision and
+    /// <c>L = <see cref="ImageSimilarityOptions.DataRange"/></c> for the colors (1 for alpha), which is
+    /// <c>structural_similarity(expected, actual, data_range=L, channel_axis=-1)</c> on <c>float64</c> arrays. The colors are
+    /// premultiplied by alpha (16-bit samples rounded to the nearest), the alpha channel is scored on its own, and the
+    /// result is the lower of the two scores.
+    /// </para>
+    /// <para>
+    /// The window statistics are sums of the values of the window, without running sums: with 16-bit samples they are exact
+    /// integers, so the score depends only on the pixels, as with 8-bit samples. The workers and the buffers are those of
+    /// the 8-bit score, with 8 bytes per sample of the row buffers.
+    /// </para>
+    /// </remarks>
+    /// <param name="expected">The reference frame.</param>
+    /// <param name="actual">The frame compared with the reference.</param>
+    /// <param name="options">The precision of the samples.</param>
+    /// <param name="cancellationToken">The token checked between rows.</param>
+    /// <returns>A score from <c>-1</c> to <c>1</c>: <c>1</c> for identical samples, around <c>0</c> for unrelated frames.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="expected"/>, <paramref name="actual"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">The frames do not have the same size.</exception>
+    /// <exception cref="InvalidOperationException">A lease is active on one of the frames.</exception>
+    /// <exception cref="ObjectDisposedException">A frame is no longer attached to a live image.</exception>
+    /// <exception cref="ImageResourceLimitException">The row buffers exceed the allocation limit.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">A floating-point sample cannot be read at the precision: outside [0, 1] or not a number for 8 and 16 bits, not finite for fractions.</exception>
+    public static double ComputeSsim(ImageFrame expected, ImageFrame actual, ImageSimilarityOptions options, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        if (options.Precision == SimilarityPrecision.EightBit)
+            return ComputeSsim(expected, actual, cancellationToken);
+
+        var (expectedStorage, actualStorage) = GetStorages(expected, actual, cancellationToken);
+        using var leases = PixelLeasePair.Acquire(expectedStorage, actualStorage);
+        return WideSimilarityCalculator.ComputeSsim(expectedStorage.Owner.Scope, expectedStorage, expected.PixelFormat, actualStorage, actual.PixelFormat, options, GetMaxDegreeOfParallelism(expected), cancellationToken);
+    }
+
+    /// <summary>Computes the peak signal-to-noise ratio (PSNR) of two frames of the same size, at the precision of <paramref name="options"/>.</summary>
+    /// <remarks>
+    /// The ratio of <see cref="ComputePsnr(ImageFrame, ImageFrame, CancellationToken)"/> on other samples: with
+    /// <see cref="SimilarityPrecision.SixteenBit"/>, 16-bit samples and the peak 65,535, which is scikit-image's
+    /// <c>peak_signal_noise_ratio(expected, actual, data_range=65535)</c> on opaque frames (the squared errors are added as
+    /// integers, so the mean squared error is exact); with <see cref="SimilarityPrecision.FloatingPoint"/>, fractions in
+    /// double precision and the peak <see cref="ImageSimilarityOptions.DataRange"/> for the colors (1 for alpha). The colors
+    /// are premultiplied by alpha, alpha gives its own ratio, and the result is the lower of the two.
+    /// </remarks>
+    /// <param name="expected">The reference frame.</param>
+    /// <param name="actual">The frame compared with the reference.</param>
+    /// <param name="options">The precision of the samples.</param>
+    /// <param name="cancellationToken">The token checked between rows.</param>
+    /// <returns>The ratio in decibels: <see cref="double.PositiveInfinity"/> for identical samples, higher values meaning smaller differences.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="expected"/>, <paramref name="actual"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">The frames do not have the same size.</exception>
+    /// <exception cref="InvalidOperationException">A lease is active on one of the frames.</exception>
+    /// <exception cref="ObjectDisposedException">A frame is no longer attached to a live image.</exception>
+    /// <exception cref="ImageResourceLimitException">The row buffers exceed the allocation limit.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">A floating-point sample cannot be read at the precision: outside [0, 1] or not a number for 8 and 16 bits, not finite for fractions.</exception>
+    public static double ComputePsnr(ImageFrame expected, ImageFrame actual, ImageSimilarityOptions options, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(options);
+        if (options.Precision == SimilarityPrecision.EightBit)
+            return ComputePsnr(expected, actual, cancellationToken);
+
+        var (expectedStorage, actualStorage) = GetStorages(expected, actual, cancellationToken);
+        using var leases = PixelLeasePair.Acquire(expectedStorage, actualStorage);
+        return WideSimilarityCalculator.ComputePsnr(expectedStorage.Owner.Scope, expectedStorage, expected.PixelFormat, actualStorage, actual.PixelFormat, options, GetMaxDegreeOfParallelism(expected), cancellationToken);
+    }
+
+    /// <summary>
+    /// Draws where two frames of the same size differ: a new opaque image of their size (see <see cref="DifferenceMapKind"/>),
+    /// to look at or to save next to the frames.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// The frames are read as fractions of their sample range, in double precision (16-bit samples keep their precision,
+    /// floating-point samples must be finite), with the colors premultiplied by alpha, so a fully transparent pixel does not
+    /// differ from another one whatever color it hides. <see cref="DifferenceMapKind.Highlight"/> composites
+    /// <see cref="DifferenceMapOptions.HighlightColor"/> over the expected pixels whose largest sample difference exceeds
+    /// <see cref="DifferenceMapOptions.Threshold"/>, and <see cref="DifferenceMapOptions.LowlightColor"/> over the others,
+    /// which is what ImageMagick's <c>compare expected actual map</c> draws; the map has the alpha of the composite.
+    /// <see cref="DifferenceMapKind.Absolute"/> draws the largest difference of every pixel, and
+    /// <see cref="DifferenceMapKind.Ssim"/> the dissimilarity <c>1 - SSIM</c> of the window centered on every pixel (the
+    /// lower of the mean color score and the alpha score, as <see cref="ComputeSsim(ImageFrame, ImageFrame, CancellationToken)"/>),
+    /// with the rows and columns beyond the edges mirrored: the map of scikit-image's
+    /// <c>structural_similarity(full=True)</c>. Both are gray levels multiplied by <see cref="DifferenceMapOptions.Gain"/>
+    /// and clamped to white.
+    /// </para>
+    /// <para>
+    /// The map has the configuration of the image of the expected frame, and the caller disposes it. The frames are read on
+    /// the calling thread.
+    /// </para>
+    /// </remarks>
+    /// <param name="expected">The reference frame.</param>
+    /// <param name="actual">The frame compared with the reference.</param>
+    /// <param name="options">What the map shows, or <see langword="null"/> for the highlighted differences.</param>
+    /// <param name="cancellationToken">The token checked between rows.</param>
+    /// <returns>The map, an image of the size of the frames.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="expected"/> or <paramref name="actual"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException">The frames do not have the same size.</exception>
+    /// <exception cref="InvalidOperationException">A lease is active on one of the frames.</exception>
+    /// <exception cref="ObjectDisposedException">A frame is no longer attached to a live image.</exception>
+    /// <exception cref="ImageResourceLimitException">The map or the row buffers exceed a limit.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">A floating-point sample is not finite.</exception>
+    public static Image<Rgba32> CreateDifferenceMap(ImageFrame expected, ImageFrame actual, DifferenceMapOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        options ??= new DifferenceMapOptions();
+        var (expectedStorage, actualStorage) = GetStorages(expected, actual, cancellationToken);
+        var map = new Image<Rgba32>(expectedStorage.Width, expectedStorage.Height, expected.OwnerImage.Configuration);
+        try
+        {
+            using var leases = PixelLeasePair.Acquire(expectedStorage, actualStorage);
+            using var mapLease = map.Frames[0].GetStorage().AcquireLease();
+            DifferenceMapper.Draw(expectedStorage.Owner.Scope, expectedStorage, expected.PixelFormat, actualStorage, actual.PixelFormat, mapLease.Storage, options, cancellationToken);
+            return map;
+        }
+        catch
+        {
+            map.Dispose();
+            throw;
+        }
     }
 
     /// <summary>Computes the SSIMULACRA 2 score of two frames of the same size, at least 8×8.</summary>

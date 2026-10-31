@@ -1,6 +1,6 @@
 ---
 title: Crop and auto-crop
-description: Keep a rectangle of an image, trim its uniform background, add a border or place it on a larger canvas.
+description: Keep a rectangle of an image, trim its uniform background, find the crop of an aspect ratio that keeps its subject, add a border or place it on a larger canvas.
 ---
 
 These operations change the canvas without resampling: the pixels they keep are copied unchanged, 16-bit samples, alpha
@@ -116,6 +116,39 @@ one. When the image has no uniform border or no content, [AnalyzeAutoCrop](cref:
 
 On an [Image\<TPixel\>](cref:Meziantou.Framework.Imaging.Image{TPixel}), [AnalyzeAutoCrop](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.AnalyzeAutoCrop) returns an [AutoCropAnalysis\<TPixel\>](cref:Meziantou.Framework.Imaging.AutoCropAnalysis{TPixel}), whose [BackgroundColor](cref:Meziantou.Framework.Imaging.AutoCropAnalysis.BackgroundColor) is a pixel of
 the image as stored; on an [Image](cref:Meziantou.Framework.Imaging.Image), it is the same color as an [Rgba64](cref:Meziantou.Framework.Imaging.Rgba64).
+
+## Crop to an aspect ratio around the subject
+
+[SuggestCrop](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.SuggestCrop) finds where to cut an image to an aspect ratio, such as a square thumbnail or a 16:9
+banner, without cutting its subject. It changes nothing: it returns the rectangle, to pass to
+[Crop](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Crop).
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_SuggestCrop;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static Rectangle CropToSquare(string inputPath, string outputPath)
+{
+    using var photo = Image.Load(inputPath);
+
+    // The largest square that keeps the most detail; CropEnergy.Saliency keeps the colors that stand out instead
+    var crop = photo.SuggestCrop(1, 1);
+    photo.Crop(crop);
+    photo.Save(outputPath);
+    return crop;
+}
+```
+<!-- endref -->
+
+The rectangle is the largest of the ratio that fits in the image (a 4000x3000 photo gets 3000x3000 for 1:1 and 4000x2250
+for 16:9), or [Scale](cref:Meziantou.Framework.Imaging.CropSuggestionOptions.Scale) times that to zoom on the subject. Among all its positions, it keeps
+the one with the most content in every frame and the poster:
+
+| [Energy](cref:Meziantou.Framework.Imaging.CropSuggestionOptions.Energy) | What counts as content |
+| --- | --- |
+| [CropEnergy.Edges](cref:Meziantou.Framework.Imaging.CropEnergy.Edges) (default) | The details: the differences of brightness and of alpha between neighboring pixels. Flat backgrounds, such as a sky or a studio wall, are cut first |
+| [CropEnergy.Saliency](cref:Meziantou.Framework.Imaging.CropEnergy.Saliency) | The colors that stand out from the mean color of the image, even on a smooth subject |
+
+The result is deterministic. When several positions keep the same content, the one nearest to the center wins, so an
+image without any detail gets a centered crop. Transparent pixels have no content, whatever color they hide.
 
 ## Cursors
 

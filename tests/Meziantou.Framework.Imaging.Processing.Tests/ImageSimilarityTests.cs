@@ -841,6 +841,308 @@ public sealed class ImageSimilarityTests
         }
     }
 
+    // The expected scores come from scikit-image 0.26.0 on the frames of CreateWidePair: with 16-bit samples, the colors
+    // premultiplied as (value × alpha + 32767) // 65535 and structural_similarity(..., data_range=65535, channel_axis=-1) and
+    // peak_signal_noise_ratio(..., data_range=65535) on uint16 arrays, the lower of the color and alpha scores; with
+    // fractions, the colors scaled to 3.5 as float32 and data_range=4 on float64 arrays.
+    [Theory]
+    [InlineData(SimilarityPrecision.SixteenBit, false, 0.9933877322348765, 40.8766701753226)]
+    [InlineData(SimilarityPrecision.SixteenBit, true, 0.8921295597019451, 28.813715882256005)]
+    [InlineData(SimilarityPrecision.FloatingPoint, false, 0.9935735810766341, 42.036509012362664)]
+    public void WideMetrics_MatchScikitImage(SimilarityPrecision precision, bool translucent, double expectedSsim, double expectedPsnr)
+    {
+        var (expected, actual) = CreateWidePair(translucent);
+        using (expected)
+        using (actual)
+        {
+            Image expectedImage = expected;
+            Image actualImage = actual;
+            using var expectedFloats = precision == SimilarityPrecision.FloatingPoint ? ScaleToHighDynamicRange(expected) : null;
+            using var actualFloats = precision == SimilarityPrecision.FloatingPoint ? ScaleToHighDynamicRange(actual) : null;
+            var options = new ImageSimilarityOptions { Precision = precision, DataRange = precision == SimilarityPrecision.FloatingPoint ? 4 : 1 };
+            var e = (expectedFloats ?? expectedImage).Frames[0];
+            var a = (actualFloats ?? actualImage).Frames[0];
+            Assert.Equal(expectedSsim, ImageSimilarity.ComputeSsim(e, a, options, Ct), 1e-12);
+            Assert.Equal(expectedPsnr, ImageSimilarity.ComputePsnr(e, a, options, Ct), 1e-10);
+        }
+    }
+
+    [Fact]
+    public void WideMetrics_EightBitPrecisionIsTheDefault()
+    {
+        using var expected = CreatePatternImage(31, 23, inverted: false);
+        using var actual = CreateGradientImage(31, 23);
+        Assert.Equal(ImageSimilarity.ComputeSsim(expected.Frames[0], actual.Frames[0], Ct), ImageSimilarity.ComputeSsim(expected.Frames[0], actual.Frames[0], new ImageSimilarityOptions(), Ct));
+        Assert.Equal(ImageSimilarity.ComputePsnr(expected.Frames[0], actual.Frames[0], Ct), ImageSimilarity.ComputePsnr(expected.Frames[0], actual.Frames[0], new ImageSimilarityOptions(), Ct));
+        Assert.Equal(SimilarityPrecision.EightBit, new ImageSimilarityOptions().Precision);
+        Assert.Equal(1, new ImageSimilarityOptions().DataRange);
+    }
+
+    [Theory]
+    [InlineData(SimilarityPrecision.SixteenBit)]
+    [InlineData(SimilarityPrecision.FloatingPoint)]
+    public void WideMetrics_OfOpaque8BitFramesAreThe8BitMetrics(SimilarityPrecision precision)
+    {
+        // SSIM and PSNR do not depend on the scale of the samples when the range scales with them
+        using var expected = CreatePatternImage(31, 23, inverted: false);
+        using var actual = CreateGradientImage(31, 23);
+        var options = new ImageSimilarityOptions { Precision = precision };
+        Assert.Equal(ImageSimilarity.ComputeSsim(expected.Frames[0], actual.Frames[0], Ct), ImageSimilarity.ComputeSsim(expected.Frames[0], actual.Frames[0], options, Ct), 1e-12);
+        Assert.Equal(ImageSimilarity.ComputePsnr(expected.Frames[0], actual.Frames[0], Ct), ImageSimilarity.ComputePsnr(expected.Frames[0], actual.Frames[0], options, Ct), 1e-10);
+    }
+
+    [Fact]
+    public void WideMetrics_SeeDifferencesBelowOneEightBitLevel()
+    {
+        // The frames differ by 100 units of 65,535, which round to the same 8-bit samples
+        using var expected = new Image<Rgba64>(16, 16, new Rgba64(30000, 30000, 30000, 65535));
+        using var actual = new Image<Rgba64>(16, 16, new Rgba64(30100, 30000, 30000, 65535));
+        Assert.Equal(double.PositiveInfinity, ImageSimilarity.ComputePsnr(expected.Frames[0], actual.Frames[0], Ct));
+        var psnr = ImageSimilarity.ComputePsnr(expected.Frames[0], actual.Frames[0], new ImageSimilarityOptions { Precision = SimilarityPrecision.SixteenBit }, Ct);
+        Assert.Equal(10 * Math.Log10(65535d * 65535 / (100d * 100 / 3)), psnr, 1e-10);
+    }
+
+    [Fact]
+    public void WideMetrics_ReadHighDynamicRangeSamplesAsFractionsOnly()
+    {
+        using var expected = new Image<RgbaFloat>(8, 8, new RgbaFloat(3f, 0.5f, 0.25f));
+        using var actual = new Image<RgbaFloat>(8, 8, new RgbaFloat(3f, 0.5f, 0.25f));
+        actual.Frames[0][2, 3] = new RgbaFloat(2.5f, 0.5f, 0.25f);
+        var fractions = new ImageSimilarityOptions { Precision = SimilarityPrecision.FloatingPoint, DataRange = 4 };
+
+        // One sample of 192 differs by 0.5: MSE = 0.25 / 192, PSNR = 10 log10(16 / MSE)
+        Assert.Equal(10 * Math.Log10(16 / (0.25 / 192)), ImageSimilarity.ComputePsnr(expected.Frames[0], actual.Frames[0], fractions, Ct), 1e-10);
+        Assert.InRange(ImageSimilarity.ComputeSsim(expected.Frames[0], actual.Frames[0], fractions, Ct), 0.5, 1);
+        Assert.Throws<UnsupportedImageFeatureException>(() => ImageSimilarity.ComputeSsim(expected.Frames[0], actual.Frames[0], new ImageSimilarityOptions { Precision = SimilarityPrecision.SixteenBit }, Ct));
+        Assert.Throws<UnsupportedImageFeatureException>(() => ImageSimilarity.ComputePsnr(expected.Frames[0], actual.Frames[0], new ImageSimilarityOptions { Precision = SimilarityPrecision.SixteenBit }, Ct));
+
+        actual.Frames[0][4, 4] = new RgbaFloat(float.PositiveInfinity, 0, 0);
+        Assert.Throws<UnsupportedImageFeatureException>(() => ImageSimilarity.ComputePsnr(expected.Frames[0], actual.Frames[0], fractions, Ct));
+        actual.Frames[0][4, 4] = new RgbaFloat(float.NaN, 0, 0);
+        Assert.Throws<UnsupportedImageFeatureException>(() => ImageSimilarity.ComputeSsim(expected.Frames[0], actual.Frames[0], fractions, Ct));
+        Assert.Throws<UnsupportedImageFeatureException>(() => ImageSimilarity.CreateDifferenceMap(expected.Frames[0], actual.Frames[0], cancellationToken: Ct));
+    }
+
+    [Theory]
+    [InlineData(SimilarityPrecision.SixteenBit)]
+    [InlineData(SimilarityPrecision.FloatingPoint)]
+    public void WideMetrics_DoNotDependOnTheWorkerCount(SimilarityPrecision precision)
+    {
+        // 300x260 = 78,000 pixels: enough for several workers, with a partial last band
+        var scores = new List<(double Ssim, double Psnr)>();
+        foreach (var workers in new[] { 1, 2, 3, 7 })
+        {
+            var configuration = new ImageConfiguration { MaxDegreeOfParallelism = workers };
+            using var expected = CreatePatternImage(300, 260, inverted: false, configuration);
+            using var actual = CreateGradientImage(300, 260);
+            using var wideExpected = expected.CloneAs<Rgba64>();
+            using var wideActual = actual.CloneAs<Rgba64>();
+            wideActual.Frames[0][17, 200] = new Rgba64(1, 2, 3, 40000);
+            var options = new ImageSimilarityOptions { Precision = precision };
+            scores.Add((ImageSimilarity.ComputeSsim(wideExpected.Frames[0], wideActual.Frames[0], options, Ct), ImageSimilarity.ComputePsnr(wideExpected.Frames[0], wideActual.Frames[0], options, Ct)));
+        }
+
+        Assert.All(scores, score => Assert.Equal(scores[0], score));
+    }
+
+    [Fact]
+    public void WideMetrics_AndDifferenceMap_ValidateTheirArguments()
+    {
+        using var image = new Image<Rgba64>(8, 8);
+        using var other = new Image<Rgba64>(9, 8);
+        Assert.Throws<ArgumentNullException>("options", () => ImageSimilarity.ComputeSsim(image.Frames[0], image.Frames[0], null!, Ct));
+        Assert.Throws<ArgumentNullException>("options", () => ImageSimilarity.ComputePsnr(image.Frames[0], image.Frames[0], null!, Ct));
+        Assert.Throws<ArgumentNullException>("expected", () => ImageSimilarity.ComputeSsim(null!, image.Frames[0], new ImageSimilarityOptions { Precision = SimilarityPrecision.SixteenBit }, Ct));
+        Assert.Throws<ArgumentException>("actual", () => ImageSimilarity.ComputePsnr(image.Frames[0], other.Frames[0], new ImageSimilarityOptions { Precision = SimilarityPrecision.FloatingPoint }, Ct));
+        Assert.Throws<ArgumentException>("actual", () => ImageSimilarity.CreateDifferenceMap(image.Frames[0], other.Frames[0], cancellationToken: Ct));
+        Assert.Throws<ArgumentNullException>("actual", () => ImageSimilarity.CreateDifferenceMap(image.Frames[0], null!, cancellationToken: Ct));
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new ImageSimilarityOptions { Precision = (SimilarityPrecision)3 });
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new ImageSimilarityOptions { DataRange = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new ImageSimilarityOptions { DataRange = double.PositiveInfinity });
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new DifferenceMapOptions { Kind = (DifferenceMapKind)3 });
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new DifferenceMapOptions { Threshold = -0.1 });
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new DifferenceMapOptions { Gain = 0 });
+        using var source = new CancellationTokenSource();
+        source.Cancel();
+        Assert.Throws<OperationCanceledException>(() => ImageSimilarity.ComputeSsim(image.Frames[0], image.Frames[0], new ImageSimilarityOptions { Precision = SimilarityPrecision.SixteenBit }, source.Token));
+        Assert.Throws<OperationCanceledException>(() => ImageSimilarity.CreateDifferenceMap(image.Frames[0], image.Frames[0], cancellationToken: source.Token));
+    }
+
+    // The map of scikit-image 0.26.0's structural_similarity(expected, actual, data_range=255, channel_axis=-1, full=True)
+    // on the 8-bit samples (the 16-bit samples >> 8) of the opaque frames of CreateWidePair: round(clip((1 - S.mean(-1)) × 4, 0, 1) × 255)
+    private const string SkimageSsimMap = "Eg0HBgcHBgcHBwsKCQgJDAgJBgcFBgcLCgoLCgsKCAcICAcGBAgLDBALBwYHCAcICQgLCgkICQkICQYHBgYHDAsKCgkICAgHCAgHBAQICgsNBwYGBgcHBwgHCgoJCAcIBwgGBgUGBwsKCgoJBwgIBgcHBAMECAoLDwgGBgYHBwcIBwoKCQgGBwcIBgcGBgcKCgoKBwcIBwYHBwMDBAcJCQwIBgYGBgYHCAcJCgkHBggICQcHBwcICwoKCgcHCAgHCAUDBAYGBwgKCAYGBgYGBwkJCgoKBwYICAgHCAgICgoKCQcGBwcHBwcEBAQGBwgJCgkHBwcGBwgLCQkKCAcGCAcHBgcICQsLCgcHBgcHBgcEBAQGBgYHCAoJBwYGBgcICwoKCAgGBggHBwYICQwMDAsHBgYGBgYEBAQFBQYGBwgPDAkHBwYGCQkICQcHBgYHBgYGCAoLCwoIBwYGBgYGBAMEBQUGBgYICwoIBwcGBwkICAcHBwYGBwYGBggJCQkJBgYGBgYGBAQEBgUGBgcHCQsJCAcHBwgJCQkGBwcGBQYGBgcKCgsKBwYGBgUGBgQEBAYFBgYHBwwMCggHBwkJCQkHBgYHBgYGBQYICwoKCAYGBgUFBQQEBAYFBQUFBgcKCggHBgcICQkHBwYGBgYFBQUHCQoJCgcGBgYFBQQEBAYGBgUFBgcJCgoIBwcJCQkJBgYGBgYGBgYGCQkLCQcHBgYGBgUEBAQHBwcHBgcJCQoLCQgICgoKCAcGBgYGBgYGBwkKCwkGBgUFBgYEBAQGBwcHBwcHCQkKDAoJCQkKCQcGBgYGBwcGBwkKCgwIBgYFBQUGBAMEBgcIBwcGCQoLDA0KCQgICQcGBgYGBgYGBgcKCwsLCAcGBgUFBAMEBgYHCAgHBgkKCwwNCwkJCAcHBwYGBgYGBwgKCQsKCggGBgYFBAQEBwYGBwcHBwcICQsNDAoJCAgHBwcGBwYGBgcKCgoLCQkHBgcHBgQEBAYFBgcHCAkHCAkLCw0LCQgHBwcHBgYHBwcICQoKCggIBwYHBwQEBAYGBgYHBwgJBwgICgoNCwkJBwcHBwcHBwcHCQkKCwkICAcGBwcFBAUGBgYGBwcKCQgICQsLDgwJBwYHBwYGBwcHBwgJCQgHCAcGBgcFBQUGBgcGBwcHCQgIBgYHCA0LBwYGBwcGBwcHCAkICQoICAgIBwcFBAQHBgYGBgcICQkICAYGCAkNDAcHBgcHBgYHBwkJCQkICAcHBwYGBQUFCAcGBgYHCgkJCAYGBggKDwkHBwYHBwcGBwcICQkKBgcHCAcGBAUFBgcHBwcICQsKCgkHBwcJChELCQgHBwcHBwcJCQkJBwYHBwcHBgQEBAYHBwcHBwkKCQoGBgcHCQoLCggHBgcGBwYHCAgIBwcGBwcHBwUEBAcHCAcHCAgKCgkHBgYGBwkKCwoJBwYGBgYGCAgICQgHBgYHBwYFBAYHBwkHCAkMCwoJBgYFBwcJCgwKCQgHBgYGBwgJCgoJBwYGBwgGBQUHBwcJCAkKCwoKCQYGBgcICgsNCwoJBwYGBwcICQsLCQcFBgcIBgUHBwgICQgLDA0MCwkHBgUGBggI";
+
+    // ImageMagick 7.1.1-43 `compare -metric AE expected.png actual.png map.png` (RGBA bytes), on the 8-bit expected frame and a
+    // copy with 15 pixels changed in red (rows 3 to 5, columns 4 to 8) and one in green (20, 30)
+    private const string ImageMagickHighlightMap = "zNzu/87g8f/T4/L/0+X1/9bk8P/U4vL/1+f1/9nn0P/X6NP/2urT/9vs0P/Z6dT/3/DU/+Hr2P/h8df/3/DW/+Hz3f/i8tj/4fPe/+jy3f/n0t//6s7i/+nU3v/r0uT/6dDl/+rT5v/v0+j/7Nrk/+/Z5f/01+r/8t3o//Hd6v/12+7/9d3w/9Lf7f/R4+7/1ODu/9Pl8P/V5vP/2OXz/87f8v/T3u//0t/w/9Li8P/V5PX/0ujz/9Xn9//Y5c7/2+rT/9zq0v/a69H/3ezU/97u1f/d7dX/4fHb/+Hz2f/i8Nz/5vLY/+Ly2//k9+D/59Df/+jS4//o0+L/7NHk/+zV5f/t1OL/7tfn/+7W6P/v2Ob/8t3p//Ld7P/x2ev/8t3s/8/c8P/S4O3/1ODw/9Pg8v/V5fT/0uf2/9fo8//S3vD/zuPu/8/g8P/R4vX/0+bz/9bo+P/Y5tL/2eXR/9ro1f/d7db/3erR/9/s1P/h7tb/4e3U/+Hy2//k8tf/5vPc/+Pz3P/n89v/5Mzd/+jO3v/p0d7/7dPg/+rR4f/v0+f/7Nnn//LZ5v/z1+j/89zm//Ta5//x2+3/89/r//Tb7P/T3vH/0N/w/9Li8f/U5PH/1+fx/9bn8//Y6M3/0d/w/8/g8f/R4vH/1uf0/8oaQ//LHBj/yhkd/84bHP/RIB7/2O3R/97s1f/f6tX/3+/X/+Hw1v/h7tv/5fTZ/+X13//k9Nz/5fPb/+bS3//n097/6dDg/+zR4f/t1eP/6tTm//DU5//u2+j/8tzn//LY6P/x2+v/8t/u//Lh7f/Q3O7/0d/x/9Ph8//Q4fL/0+bw/9Xi+P/T6PT/2uTR/8/h9P/S4fP/0uH1/9Pk9f/JG0P/zh4c/88bHf/OGyH/0B4e/97s1f/f7dP/3O7U/+Ly2v/i89j/4u/Z/+T03P/j9t7/5Pje/+jN4P/l0uD/6NHg/+vS4v/s1uP/7Nfi/+7Z5//u1ej/8Nnl//Pa6P/x2ez/8tzu//Pe7v/M4ez/0+Du/9Le8f/Q4e//1OHw/9Xk8v/Z6PX/2ebQ/9flzv/Q5PX/0+Pz/9Pn9f/V5/X/zRgY/8wbHP/PHRz/ziAg/84iIv/d6tf/4PDX/93x2v/i7tn/3/Pc/+Xy2v/h8tv/5fXc/+bQ3P/m0uD/69Hj/+rU5f/r1uP/7tfl/+/X5v/s1Of/8NXo//PX6P/02O3/897s//Lc7v/43PD/zt/x/9Pf7f/R3+//1eL0/9fn9P/X5ff/2OPO/9Xk0//Z69T/0uH0/9Xj8f/V4/b/1OX2/9vo0v/Z6tH/1+zS/93p0f/c6tP/3/DU/9zx2P/g79b/5PDb/+Dw2P/l8tv/4vXg/+j43//lzuD/5dDh/+bS3v/p1eH/69Lj/+7X5P/t1+T/79jm//HY6P/x3On/9djs//Hf6v/03uv/0uHt/9De7f/P3vH/0+Xy/9Xm9P/S4vT/2ejz/9rk0P/b5tP/2+vR/9Pk8//U5/H/0+Tz/9fkzv/Z58//2unT/97n1f/Z7dT/2urW/+Dv2f/i7dr/3u/Y/+Ty3P/j89v/4/Ha/+Xz4P/k0Nz/5dDf/+fQ4P/p1eH/69Xi/+7S5//r0+X/7Njm/+7X5v/u2+f/89nr//Xa7f/03e3/9eHs/9Ld7//T3u7/0OXv/9Hj8//S4/H/1+bz/9blzv/X6c7/2ubP/9zt1f/W5vP/2eT0/9Xm0v/W5s3/1uvS/9zp1f/d6tH/3+zT/9/v0//h7Nn/3fLa/9/x3P/h8t3/5PTc/+X02//l8t//6dLg/+jS4//mz+H/69Ti/+7X4v/w0+P/7tnk/+za5//z1+b/8dzr//Lc7P/04O7/9d3w/9Di7v/Q3/P/z9/x/9Xk9f/R4vb/0+Py/9Tn+P/a6s//1unT/9fo0P/a6dD/0+b0/9nn8//U5tH/1+bP/9jp1f/d59H/3OnV/9vt2P/h8Nj/4fLa/97w1//f8tj/5fDd/+T33P/o9dz/5s3e/+nQ3//r1OD/6tbi/+zS4v/u1+P/7tTn//Da5//z2OX/8Njo//TZ7P/13er/993q/8/f7f/P3u3/z+Pw/9Dj8f/V4/D/0+b2/9Po8v/Z5s7/1+jS/9vo0v/b59X/3enS/9Xk9//Y5dL/2ebN/9rqz//b7NP/2enR/9vu1P/g69f/3+7a/+Dx2v/k8Nz/4PDa/+Lx3//n89//5dDh/+jS4P/oz+H/6dLj/+3T4f/s1OX/8Njl//DX6P/u1+X/89ro/+/Z6P/13er/8tzv//ff6//Q4ez/zuLy/8/g8//V5fL/1OH1/9To8v/Z59H/2+XQ/9zm0P/b69H/2u3V/9zt1f/U5fj/1+XS/9fp0v/X59L/3ezS/97r1//c79j/4e3V/+Lv2f/i9Nr/4/TY/+H12v/o9t3/4/Pg/+TQ4f/qz+L/6dXh/+vR4v/q0eL/69fm/+zV4//s1eX/89ro//Pb7P/12uv/9t7s//Xe7f/O4ez/zt3t/9Dj8v/S5PH/0uX2/9bj8v/X5Pb/2erS/9jqzv/b6dH/2enV/9zp1f/e8Nf/2eTQ/9vp0v/c68//3OvS/93r1f/c69T/3+7Y/+Lv2P/j8Nf/5PLY/+Tz3v/n9Nn/6Pfd/+bO3f/l0OH/59Hf/+zV4P/o1ub/79jj/+3T4//s2eX/8tjp/+/Z5//w2+3/8tnt//Pb7//03e//zd7w/9Pg8v/Q4fL/0eXv/9Pl8//U4vT/2OfN/9rmzf/W6tL/2OvV/93t0f/a69j/3OvT/9brzv/X6dL/3ejR/9nq0v/f7NX/3e7U/+Dv2f/f79n/3/Pa/+Dv2//m9t7/5fXb/+fz3P/n0OL/6tPf/+jU4f/t1OT/6dbm//DX5//t2On/7dfk//HY6P/v3Oj/8tro//Hc6f/13+7/zt3x/8/d7f/R4e//0eTx/9Tm8v/W5fL/1uX2/9rm0f/Y69P/2+zQ/9jq0v/f7tL/3e/W/9vu1P/W5tP/3OnR/9rq0//c69X/4OrU/9zx2P/e8tj/4fHY/+Hw1//g8Nz/5fLd/+f42//o0OD/6M/j/+jU3v/p0eT/6tPj/+/Y4//t2Oj/79nq/+/V6f/y2Ob/89nt//Lc7P/23uz/0eDu/9Pg7P/S3/P/0uHy/9bm9v/W5Pf/1eb1/9bk0v/Y5s//2ujP/9rq0v/e7NT/3+/X/9/w2f/i7Nr/3OrT/9ro1f/b7NX/3u/X/97w0//c7Nf/4+/Z/+Pv2f/g89z/4fPf/+L23v/n0dv/6s7e/+bP3v/q0eP/7tbk/+/W4//q2Oj/79bn/+3Y5//u2ej/8djr//Ha6f/03+//89zw/9Lc7v/P4/D/0N7w/9Tl9f/V4/L/1+b1/9bk0f/W5NH/1uvT/9nn0P/Y7dP/3OvX/9vw2P/h7Nn/4u3W/9no1P/Y6db/2+rT/97s1f/d69n/4PDY/+Hv2//k79j/4fXd/+X13//k89//6c/g/+rT4v/pz+D/59Lg/+rS4//s1+b/8dTn/+/b5f/z2+n/7tzo//Ha6f/22uz/89/t/9Dd8f/T3+//0eHv/9Tj9P/U4PL/1uby/9Pj+P/Y5dL/1ubS/9zn1f/Y6dD/3OjR/9vt1f/b7tb/3fHb/+Py1//Z7NP/2+rU/9rv0//b7df/4u3a/93u2//g89v/4/Pe/+H12//o9dv/5s/f/+fN3f/m0OP/59Pi/+zT5P/v0uX/69Xm/+zX5//w1ur/89fm//Xd6v/13Ov/9t3t//Pd7//O4O//0N/u/9Lk8//R4PX/1+Xy/9bn9v/Y5c//2+vS/9jp0f/Z6tX/3uzS/93q1P/b8Nb/3e3V/+Lv2//i7tn/2enV/93v1f/g7tn/4u/a/+Pw1//k8Nf/4fLd/+f12v/k9N3/5vXe/+jQ4f/n0eP/6tPf/+rS4//t0ef/69fl//HX5P/x2ej/8dbo//Ta6P/y2+n/8t3r//jd6//O4fH/0N/y/9Ph8//V4vP/1OX2/9Xl9v/Y5Pb/2ObT/9fp1P/b7M//2OzS/9/q0//c7Nn/3+3a/+Hw1v/j79j/3/DZ/93r1//b6tL/4ezU/97x2f/g8tj/4vXa/+b12f/n8dv/6Pfe/+jO3P/l0eP/6dDi/+vV4P/t1uP/6tXo/+/V5v/u2uj/79fo//TY6v/12On/8dzr//fa7v/R3+//0N7w/9Pe7v/R4+//1OP0/9Xk8//Y6Pf/1+bR/9brzv/Z59T/3ejT/9rq0v/b7tL/3/DU/97s1f/e8dj/4vTd/+Hy2f/d69j/3+vY/97x2P/j79j/4fPX/+Hz3f/i8dn/5PPe/+bP4P/l0eH/5s7j/+vR4f/o1OX/7Nfm/+zT4//u2uX/79nl/+/b5v/z2O3/9dnu//ba7f/13+//z97s/9Pi7f/P5fH/0+Hv/9Xj8//U5/T/1+XP/9fmzv/OGx3/2e3V/9vq0P/b6dX/2+3T/97w1v/d8Nf/5PLa/9/z2f/h9dv/3PDT/93w1//e8tr/4/DY/+Dz3P/l9d7/4/bb/+P34P/m0eL/5c7f/+nQ3//t1eX/69bk/+vU6P/t1uT/7trp/+/a6v/01+r/8Njp//Pc7P/44O7/zOHx/9Lj8f/O4fP/1uTv/9Xi8//U5vX/1+b2/9bqz//Z59P/2+zU/97o1P/a6tb/3u3T/9/w0//f7tv/4O3Y/+Hy3P/i9dn/4/Xc/+Dr1//g8Nj/4+3Y/+Tu1//l8dv/4vPd/+P03f/k0Nv/587f/+rR4v/s1OL/7tHi/+3V4v/s1eb/7tro/+/X6v/02uv/9Nzr//Lb6P/23uv/9eHv/87f7//P3fD/z+Tw/9Hj9f/U4fP/2ef3/9bjzv/a6ND/2ujS/93o1P/a7NH/3u7S/+Dt2f/i7dj/4fDY/+Tw2v/g9dz/5vHZ/+j33//f79f/4vDY/+Hw2P/l8t3/4/Lb/+j32v/l893/5s3h/+fT4P/r0eT/7dTi/+7S4f/q1uP/8drn//Da5//v1+n/9Nvp//La6f/03u//9t7u/9Dd7P/Q3e7/1OP0/9Xk9P/R5/L/2OT1/9bj9//X5s7/2+bS/9fs0P/b69X/2e7R/97w1//c7tn/3u3X/9/y1//i8Nj/4vLb/+X13v/o+N//3e/a/+Hu1//l8dz/5fXZ/+T33f/m8uH/6M/f/+jO3//q097/69Hk/+jV5f/s0uX/7tnm//DZ6f/t2uv/9Nzq//Xb6v/23er/9dzv/8zf7P/P3/L/zuDu/9Tk9P/R4vX/1eLz/9ji+P/U6cz/2urP/9vp0f/Y7NT/2urW/9vv1v/e7tT/3O3Z/+Hy1v/j9Nr/4/XZ/+Pz3v/n9+D/49Df/+Dx1v/f9Nz/5PPd/+Ty2//m99z/5s7d/+jS4f/qz9//6NLh/+vR4f/r0uf/7tPl/+/X5f/s1+f/9Nvm//La6P/z2uv/9dzu//Le6//S4e3/z+Lv/9Hf9P/R4vP/0ub1/9To9P/V5s//2ujP/9joz//a6tT/2erR/93v1P/f79b/3O7X/+Lv2f/g8tn/4PHd/+bw3v/n8d7/5vTb/+bP3P/k89j/5fPY/+Tz3v/i9+D/5vPg/+TR3P/l0eD/7M/k/+rS5P/u0+H/6tTm/+3W6P/y1er/7tnl//Lb6P/02Oz/9N7r//Tg7P/R4e//zd7t/87j8f/V5PP/0+bx/9Xl9v/Y5PT/2ubN/9fp0P/X6ND/2+nV/93s0f/e79T/3vDZ/93w2v/e8Nj/4vDc/+Pw3f/i9Nv/4/bb/+nN3P/oz9//4fDZ/+Lv2P/i8d7/5PLc/+nQ2//o0t3/58/h/+zR5P/p1uH/6tbk/+zY6P/v1uX/7tnn//Lb6//12+j/897t//Tf7P/03ez/zeHy/9De7//R4vH/0eHx/9Pm8f/U5Pb/2ejO/9Xo0f/W6tP/3OvV/9zr1v/a6db/3u3Y/97t1f/e7dj/3vDb/+L12f/k89z/6PTe/+bz4f/lzd//6tHj/+Hy3P/l89z/4/La/+P34P/mzt3/6dTe/+jP4f/r1eD/6dPm/+/X6P/s2en/7dnl/+/X6v/12+n/8dns//Xg7P/43e7/0eHs/87h8f/U4u//1ODy/9Lm8//T5ff/1ef2/9Tp0f/c6M7/2+vQ/9rs0//b6tf/4OvX/97s1P/e8tv/5PHY/+Dz3P/m8Nn/5PTd/+j13P/m0eL/6M/i/+vQ3v/j9Nz/5vfb/+P43f/lzOH/59Lg/+jP4P/p0+X/7dXj/+3U5//s1ef/8dvo//Pa6v/x2ej/8djs//Tc6v/z3u3/0d7u/87f7P/O4vH/0uTw/9bh9f/X5PP/0+b1/9bmzP/V69H/2OzQ/9jq0f/d7NT/3OvT/93x1P/f7tf/3u7Y/9/u2//l9dr/4/Hb/+f02//o0OH/5tDe/+vQ4//q0uD/";
+
+    [Fact]
+    public void CreateDifferenceMap_SsimMatchesScikitImage()
+    {
+        var (expected, actual) = CreateWidePair(translucent: false);
+        using (expected)
+        using (actual)
+        {
+            using var expected8 = Reduce(expected);
+            using var actual8 = Reduce(actual);
+            using var map = ImageSimilarity.CreateDifferenceMap(expected8.Frames[0], actual8.Frames[0], new DifferenceMapOptions { Kind = DifferenceMapKind.Ssim, Gain = 4 }, Ct);
+            var reference = Convert.FromBase64String(SkimageSsimMap);
+            for (var y = 0; y < map.Height; y++)
+            {
+                for (var x = 0; x < map.Width; x++)
+                {
+                    var pixel = map.Frames[0][x, y];
+                    Assert.Equal(new Rgba32(reference[(y * map.Width) + x], reference[(y * map.Width) + x], reference[(y * map.Width) + x], 255), pixel);
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void CreateDifferenceMap_HighlightMatchesImageMagick()
+    {
+        var (expected, actual) = CreateWidePair(translucent: false);
+        using (expected)
+        using (actual)
+        {
+            using var expected8 = Reduce(expected);
+            using var actual8 = expected8.Clone();
+            for (var y = 3; y < 6; y++)
+            {
+                for (var x = 4; x < 9; x++)
+                {
+                    var pixel = actual8.Frames[0][x, y];
+                    actual8.Frames[0][x, y] = new Rgba32((byte)(pixel.R ^ 0x20), pixel.G, pixel.B, pixel.A);
+                }
+            }
+
+            var changed = actual8.Frames[0][30, 20];
+            actual8.Frames[0][30, 20] = new Rgba32(changed.R, (byte)(changed.G ^ 1), changed.B, changed.A);
+            using var map = ImageSimilarity.CreateDifferenceMap(expected8.Frames[0], actual8.Frames[0], cancellationToken: Ct);
+
+            // ImageMagick composites in 16 bits: within one unit
+            var reference = Convert.FromBase64String(ImageMagickHighlightMap);
+            var bytes = new byte[reference.Length];
+            map.Frames[0].CopyPixelBytesTo(bytes);
+            for (var i = 0; i < bytes.Length; i++)
+            {
+                Assert.InRange(Math.Abs(bytes[i] - reference[i]), 0, 1);
+            }
+
+            Assert.Equal(new Rgba32(0xF1, 0x00, 0x1E, 0xCC), new DifferenceMapOptions().HighlightColor);
+            Assert.InRange(map.Frames[0][30, 20].R, 190, 255);
+            Assert.InRange(map.Frames[0][0, 0].G, 200, 255);
+        }
+    }
+
+    [Fact]
+    public void CreateDifferenceMap_AbsoluteShowsTheLargestDifference()
+    {
+        using var expected = new Image<Rgba32>(4, 2, new Rgba32(100, 100, 100, 255));
+        using var actual = expected.Clone();
+        actual.Frames[0][1, 0] = new Rgba32(110, 95, 100, 255);
+        actual.Frames[0][2, 1] = new Rgba32(100, 100, 100, 0);
+        expected.Frames[0][3, 1] = new Rgba32(1, 2, 3, 0);
+        actual.Frames[0][3, 1] = new Rgba32(250, 0, 9, 0);
+        using var map = ImageSimilarity.CreateDifferenceMap(expected.Frames[0], actual.Frames[0], new DifferenceMapOptions { Kind = DifferenceMapKind.Absolute, Gain = 2 }, Ct);
+
+        // 10 levels doubled; a pixel made transparent differs by its alpha (clamped to white); two transparent pixels hiding
+        // different colors do not differ
+        Assert.Equal(new Rgba32(20, 20, 20, 255), map.Frames[0][1, 0]);
+        Assert.Equal(new Rgba32(255, 255, 255, 255), map.Frames[0][2, 1]);
+        Assert.Equal(new Rgba32(0, 0, 0, 255), map.Frames[0][3, 1]);
+        Assert.Equal(new Rgba32(0, 0, 0, 255), map.Frames[0][0, 0]);
+        Assert.Equal(expected.Configuration, map.Configuration);
+    }
+
+    [Fact]
+    public void CreateDifferenceMap_HighlightThresholdIgnoresSmallDifferences()
+    {
+        using var expected = new Image<Rgba64>(3, 1, new Rgba64(0, 0, 0, 65535));
+        using var actual = expected.Clone();
+        actual.Frames[0][0, 0] = new Rgba64(600, 0, 0, 65535);
+        actual.Frames[0][1, 0] = new Rgba64(7000, 0, 0, 65535);
+        using var map = ImageSimilarity.CreateDifferenceMap(expected.Frames[0], actual.Frames[0], new DifferenceMapOptions { Threshold = 0.05 }, Ct);
+
+        // White at 80% over black is 204; the highlight red at 80% over black is 0.8 × 241
+        Assert.Equal(new Rgba32(204, 204, 204, 255), map.Frames[0][0, 0]);
+        Assert.Equal(new Rgba32(193, 0, 24, 255), map.Frames[0][1, 0]);
+        Assert.Equal(new Rgba32(204, 204, 204, 255), map.Frames[0][2, 0]);
+    }
+
+    /// <summary>
+    /// Creates two 40x30 <see cref="Rgba64"/> frames from a linear congruential generator: ramps of 16-bit colors with noise,
+    /// the actual frame within about 1,024 units of the expected one; translucent frames have an alpha ramp, lowered by up to
+    /// 4,095 units in the actual frame.
+    /// </summary>
+    private static (Image<Rgba64> Expected, Image<Rgba64> Actual) CreateWidePair(bool translucent)
+    {
+        const int Width = 40;
+        const int Height = 30;
+        var expected = new Image<Rgba64>(Width, Height);
+        var actual = new Image<Rgba64>(Width, Height);
+        long state = 777;
+        Span<ushort> e = stackalloc ushort[4];
+        Span<ushort> a = stackalloc ushort[4];
+        for (var y = 0; y < Height; y++)
+        {
+            for (var x = 0; x < Width; x++)
+            {
+                for (var c = 0; c < 3; c++)
+                {
+                    var value = (((x * 1500) + (y * 900) + (c * 20000)) % 50000) + (int)(Next() & 0x1FFF);
+                    e[c] = (ushort)value;
+                    a[c] = (ushort)Math.Clamp(value + (int)(Next() & 0x7FF) - 1024, 0, 65535);
+                }
+
+                e[3] = (ushort)(translucent ? 65535 - (x * 1000) : 65535);
+                a[3] = translucent ? (ushort)(e[3] - (int)(Next() & 0xFFF)) : (ushort)65535;
+                expected.Frames[0][x, y] = new Rgba64(e[0], e[1], e[2], e[3]);
+                actual.Frames[0][x, y] = new Rgba64(a[0], a[1], a[2], a[3]);
+            }
+        }
+
+        return (expected, actual);
+
+        long Next()
+        {
+            state = ((1103515245 * state) + 12345) % (1L << 31);
+            return state >> 8;
+        }
+    }
+
+    /// <summary>Keeps the high byte of every 16-bit sample.</summary>
+    private static Image<Rgba32> Reduce(Image<Rgba64> image)
+    {
+        var result = new Image<Rgba32>(image.Width, image.Height);
+        for (var y = 0; y < image.Height; y++)
+        {
+            for (var x = 0; x < image.Width; x++)
+            {
+                var pixel = image.Frames[0][x, y];
+                result.Frames[0][x, y] = new Rgba32((byte)(pixel.R >> 8), (byte)(pixel.G >> 8), (byte)(pixel.B >> 8), (byte)(pixel.A >> 8));
+            }
+        }
+
+        return result;
+    }
+
+    /// <summary>Scales the colors of a 16-bit frame to [0, 3.5] as single-precision values.</summary>
+    private static Image<RgbaFloat> ScaleToHighDynamicRange(Image<Rgba64> image)
+    {
+        var result = new Image<RgbaFloat>(image.Width, image.Height);
+        for (var y = 0; y < image.Height; y++)
+        {
+            for (var x = 0; x < image.Width; x++)
+            {
+                var pixel = image.Frames[0][x, y];
+                result.Frames[0][x, y] = new RgbaFloat((float)(pixel.R / 65535d * 3.5), (float)(pixel.G / 65535d * 3.5), (float)(pixel.B / 65535d * 3.5));
+            }
+        }
+
+        return result;
+    }
+
     private static double ComputeSsim(Rgba32[] expected, Rgba32[] actual, int width, int height)
     {
         using var expectedImage = Image.ImportPixelData<Rgba32>(expected, width, height);

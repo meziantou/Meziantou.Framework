@@ -46,8 +46,7 @@ jobs:
         uses: $/.github/actions/setup-dotnet
       # Packs every package, as publish.yml does, in the folder docgen.json reads them from. The packages on nuget.org
       # can be behind main until the next version bump, and a page using a new member would fail. The versions keep
-      # no -build-<commit> suffix on pull requests, so the pages show the versions of the project files. The generator
-      # also accepts prerelease versions from a folder, for the SDKs that do not support EnableGitHubBuildVersionSuffix.
+      # no -build-<commit> suffix on pull requests, so the pages show the versions of the project files.
       - name: Build and pack
         uses: $/.github/actions/pack
         with:

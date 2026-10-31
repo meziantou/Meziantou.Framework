@@ -80,7 +80,8 @@ files from photos: pass an encoder with lossy compression for them.
   the format of the photos of phones: read it, and convert it to share it (see
   [Handling phone photos](../03-Guides/05-HandlePhonePhotos.md)).
 - **Graphics, screenshots, logos and transparency**: PNG, or lossless WebP. An image with few colors gets smaller as
-  an indexed PNG; [PngOptimization.MinimumSize](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.MinimumSize) searches the smallest lossless PNG.
+  an indexed PNG; [PngOptimization.Layout](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.Layout) picks the narrowest exact layout from one pass over
+  the pixels, and [PngOptimization.MinimumSize](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.MinimumSize) searches the smallest lossless PNG.
 - **Animations**: GIF is read everywhere but has 256 colors per frame and no partial transparency. APNG and lossless
   WebP keep every color and alpha value; lossy WebP and AVIF image sequences are smaller. See
   [Processing animated images](../03-Guides/04-ProcessAnimatedImages.md).

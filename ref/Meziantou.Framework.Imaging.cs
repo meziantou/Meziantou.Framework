@@ -3049,6 +3049,7 @@ namespace Meziantou.Framework.Imaging.Formats
     {
         None = 0,
         MinimumSize = 1,
+        Layout = 2,
     }
 
     public enum PngPixelLayout

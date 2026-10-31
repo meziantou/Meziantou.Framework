@@ -198,7 +198,11 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   (`PngImageDataEncoder.StartSource` with `count: true`), in bands, and the winner is compressed again for real; nothing
   is buffered. Every still image keeps the layout of the pixel format among the candidates and the level of the default
   encoder among the trials, so it is never larger than the default output (the conformance suite asserts it for the
-  corpus, animations included). Keep these findings:
+  corpus, animations included). `PngOptimization.Layout` goes through the same session for still images only (an
+  animation keeps the default session): it skips every trial, takes the candidate with the smallest unfiltered data
+  (`GetSmallestUnfiltered`), and compresses once with the filter strategy and the level of the encoder. Its analysis does
+  not record the opaque colors (no color key, no 2 MiB set), which lets `PngLayoutAnalysis` stop reading rows once nothing
+  can change. Keep these findings:
   - A lower zlib level is sometimes smaller than `SmallestSize` (zlib-ng uses other match strategies): the last stage
     tries `Fastest`, `Optimal` and `SmallestSize`.
   - FFmpeg 9 misplaces the packed samples (1, 2 and 4 bits) of an APNG frame region that does not start at column 0, even

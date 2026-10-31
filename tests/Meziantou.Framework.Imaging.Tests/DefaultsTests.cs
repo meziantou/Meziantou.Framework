@@ -138,7 +138,7 @@ public sealed class DefaultsTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new GifEncoder { Quantization = new QuantizeOptions { MaxColors = 257 } });
         Assert.Throws<ArgumentOutOfRangeException>(() => new PngEncoder { Filter = (PngFilter)42 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new PngEncoder { PixelLayout = (PngPixelLayout)2 });
-        Assert.Throws<ArgumentOutOfRangeException>(() => new PngEncoder { Optimization = (PngOptimization)2 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PngEncoder { Optimization = (PngOptimization)3 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new PngEncoder { MetadataHandling = (MetadataHandling)42 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { Quality = 101 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new AvifEncoder { Effort = 10 });

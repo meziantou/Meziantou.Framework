@@ -171,6 +171,16 @@ public sealed class PngEncoderInteropTests
     }
 
     [Theory]
+    [MemberData(nameof(MinimumSizeCases))]
+    public async Task LayoutOptimizationOutputDecodesExactlyWithFFmpeg(PixelFormat format, int colors, bool interlaced)
+    {
+        // The layout of the analysis alone: palettes with tRNS, grayscale of 1 to 16 bits, RGB without alpha
+        var ffmpeg = await RequiredTools.FFmpegAsync();
+        using var image = CreateWithColors(format, 23, 17, colors, seed: (int)format + colors);
+        await AssertOptimizedDecodesExactlyAsync(ffmpeg, image, new PngEncoder { Optimization = PngOptimization.Layout, Interlaced = interlaced }, $"layout-{format}-{colors}-{(interlaced ? "adam7" : "progressive")}");
+    }
+
+    [Theory]
     [InlineData(1)]
     [InlineData(2)]
     [InlineData(4)]
@@ -295,9 +305,12 @@ public sealed class PngEncoderInteropTests
         Assert.True(result.IsMatch, result.Describe());
     }
 
-    private static async Task AssertMinimumSizeDecodesExactlyAsync(FFmpegTool ffmpeg, Image image, string name, bool interlaced)
+    private static Task AssertMinimumSizeDecodesExactlyAsync(FFmpegTool ffmpeg, Image image, string name, bool interlaced)
+        => AssertOptimizedDecodesExactlyAsync(ffmpeg, image, new PngEncoder { Optimization = PngOptimization.MinimumSize, Interlaced = interlaced }, name);
+
+    private static async Task AssertOptimizedDecodesExactlyAsync(FFmpegTool ffmpeg, Image image, PngEncoder encoder, string name)
     {
-        var path = await EncodeToFileAsync(image, new PngEncoder { Optimization = PngOptimization.MinimumSize, Interlaced = interlaced }, name);
+        var path = await EncodeToFileAsync(image, encoder, name);
         var reference = OptimizedPngOutputVerifier.VerifyStill(await File.ReadAllBytesAsync(path, XunitCancellationToken), image, name);
         var (rawFormat, layout) = GetNativeRawFormat(reference);
         var decoded = Assert.Single(await ffmpeg.DecodeToRawFramesAsync(path, rawFormat, image.Width, image.Height, XunitCancellationToken));

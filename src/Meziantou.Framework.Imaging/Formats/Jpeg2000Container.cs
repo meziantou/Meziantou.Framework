@@ -4,8 +4,9 @@ namespace Meziantou.Framework.Imaging.Formats;
 public enum Jpeg2000Container
 {
     /// <summary>
-    /// A JP2 file (<c>.jp2</c>): the codestream with the boxes that say what its components are (a color space or an ICC
-    /// profile, the opacity channel) and that hold the resolution, the EXIF data and the XMP packet.
+    /// A JP2 file (<c>.jp2</c>), or a JPH file (<c>.jph</c>) with the high-throughput block coder: the codestream with the
+    /// boxes that say what its components are (a color space or an ICC profile, the opacity channel) and that hold the
+    /// resolution, the EXIF data and the XMP packet.
     /// </summary>
     Jp2 = 0,
 

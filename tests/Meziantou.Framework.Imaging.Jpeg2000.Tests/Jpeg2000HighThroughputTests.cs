@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Meziantou.Framework.Imaging.Internals;
 
 namespace Meziantou.Framework.Imaging.Tests;
@@ -290,6 +291,117 @@ public sealed class Jpeg2000HighThroughputTests
         Assert.Equal(0xD9, data[^1]);
         data[^3] = 0xFF;
         Assert.Throws<InvalidImageContentException>(() => Image.Load(data));
+    }
+
+    [Theory]
+    [InlineData(1, 1, 1)]
+    [InlineData(1, 1, 9)]
+    [InlineData(2, 2, 3)]
+    [InlineData(3, 5, 8)]
+    [InlineData(7, 1, 12)]
+    [InlineData(1, 9, 5)]
+    [InlineData(17, 13, 16)]
+    [InlineData(32, 32, 20)]
+    [InlineData(64, 64, 8)]
+    [InlineData(64, 64, 30)]
+    [InlineData(1024, 4, 10)]
+    [InlineData(4, 1024, 10)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void EachHtCleanupSegmentOfTheEncoderDecodesToItsBitPlanes(int width, int height, int bitPlanes)
+    {
+        var scope = new AllocationScope(new ImageResourceLimits());
+        using var encoder = new Jpeg2000HtBlockEncoder(scope);
+        using var decoder = new Jpeg2000HtBlockDecoder(scope);
+        using var output = new PooledPayloadWriter(scope);
+        var samples = new int[width * height];
+        var decoded = new int[width * height];
+        var candidates = new Jpeg2000CodingPass[Jpeg2000Tier1Encoder.MaxPasses];
+        for (var seed = 0; seed < 16; seed++)
+        {
+            var random = new Random((seed * 1000) + width + (height * 3) + bitPlanes);
+            var isIrreversible = seed % 2 == 1;
+
+            // Dense noise, sparse coefficients (long MEL runs), regions of large magnitudes (residuals above 2 in the first
+            // row of quads), and magnitudes that are all the largest one
+            for (var i = 0; i < samples.Length; i++)
+            {
+                var magnitude = (seed % 4) switch
+                {
+                    0 => random.Next(1 << Math.Min(bitPlanes, 30)),
+                    1 => random.Next(40) == 0 ? random.Next(1 << Math.Min(bitPlanes, 30)) : 0,
+                    2 => (i % width) < width / 2 ? random.Next(1 << Math.Min(bitPlanes, 30)) : random.Next(1 << (bitPlanes / 3)),
+                    _ => (1 << (bitPlanes - 1)) | (i % 3),
+                };
+                samples[i] = random.Next(2) == 0 || magnitude == 0 ? magnitude : magnitude | int.MinValue;
+            }
+
+            samples[random.Next(samples.Length)] = (1 << (bitPlanes - 1)) | (random.Next(2) == 0 ? int.MinValue : 0);
+            output.Reset();
+            Assert.Equal(bitPlanes, encoder.Encode(samples, width, height, output, out var length, candidates, isIrreversible));
+            var data = output.WrittenSpan.ToArray();
+            Assert.HasCount(length, data);
+
+            // One segment for each lowest bit-plane, from the highest one; each one decodes to the coefficients down to
+            // its bit-plane, reconstructed in the middle of the others (7.6). The sub-band has one bit-plane more than the
+            // coefficients, as the encoder declares it
+            var offset = 0;
+            var reduction = 0.0;
+            for (var i = 0; i < bitPlanes; i++)
+            {
+                var plane = bitPlanes - 1 - i;
+                var segment = data.AsSpan(offset, candidates[i].Length).ToArray();
+                offset += segment.Length;
+                AssertNoMarker(segment, $"{width}x{height}, seed {seed}, plane {plane}");
+                decoder.Decode(decoded, width, height, isVerticallyCausal: false, bitPlanes + 1, skippedBitPlanes: bitPlanes - plane, passCount: 1, segment, 0, segment.Length, 0, 0);
+                var error = 0.0;
+                var reference = 0.0;
+                for (var n = 0; n < samples.Length; n++)
+                {
+                    var magnitude = samples[n] & int.MaxValue;
+                    var expected = magnitude >> plane == 0 ? 0 : (int)((uint)(((2 * (magnitude >> plane)) + 1) << plane) | ((uint)samples[n] & 0x80000000));
+                    if (decoded[n] != expected)
+                        Assert.Fail($"{width}x{height}, seed {seed}, plane {plane}: the sample {n} is {decoded[n]:X8} instead of {expected:X8}.");
+
+                    var value = magnitude == 0 ? 0 : magnitude + (isIrreversible ? 0.5 : 0);
+                    var twice = decoded[n] & int.MaxValue;
+                    var reconstruction = isIrreversible || plane > 0 ? twice / 2.0 : twice / 2;
+                    error += Math.Pow(value - reconstruction, 2);
+                    reference += value * value;
+                }
+
+                reduction += candidates[i].Distortion;
+                Assert.Equal(reference - error, reduction, Math.Max(1e-6, reference * 1e-12));
+            }
+
+            Assert.Equal(length, offset);
+
+            // Without candidates, the segment of the bit-plane 0 alone
+            output.Reset();
+            Assert.Equal(bitPlanes, encoder.Encode(samples, width, height, output, out var single));
+            Assert.Equal(data.AsSpan(length - candidates[bitPlanes - 1].Length).ToArray(), output.WrittenSpan.ToArray());
+            Assert.Equal(candidates[bitPlanes - 1].Length, single);
+        }
+
+        static void AssertNoMarker(byte[] segment, string context)
+        {
+            // The segment never holds an FF byte followed by a byte above 8F, and does not end with an FF byte
+            Assert.NotEqual(0xFF, segment[^1]);
+            for (var i = 0; i + 1 < segment.Length; i++)
+            {
+                if (segment[i] == 0xFF && segment[i + 1] > 0x8F)
+                    Assert.Fail($"{context}: the bytes {i} and {i + 1} are FF {segment[i + 1]:X2}.");
+            }
+        }
+    }
+
+    [Fact]
+    public void ACodeBlockOfZerosIsNotCodedByTheHtEncoder()
+    {
+        var scope = new AllocationScope(new ImageResourceLimits());
+        using var encoder = new Jpeg2000HtBlockEncoder(scope);
+        using var output = new PooledPayloadWriter(scope);
+        Assert.Equal(0, encoder.Encode(new int[16], 4, 4, output, out var length));
+        Assert.Equal((0, 0), (length, output.Length));
     }
 
     private static int[] Decode(int width, int height, int bitPlanes, int skippedBitPlanes, int passCount, ReadOnlySpan<byte> cleanup, ReadOnlySpan<byte> refinement, bool isVerticallyCausal = false)

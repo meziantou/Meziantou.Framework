@@ -136,15 +136,18 @@ public abstract class ImageEncoder
         if (extension.Equals(".j2k", StringComparison.OrdinalIgnoreCase) || extension.Equals(".j2c", StringComparison.OrdinalIgnoreCase) || extension.Equals(".jpc", StringComparison.OrdinalIgnoreCase))
             return new Jpeg2000Encoder { Container = Jpeg2000Container.Codestream };
 
+        if (extension.Equals(".jph", StringComparison.OrdinalIgnoreCase))
+            return new Jpeg2000Encoder { BlockCoder = Jpeg2000BlockCoder.HighThroughput };
+
+        if (extension.Equals(".jhc", StringComparison.OrdinalIgnoreCase))
+            return new Jpeg2000Encoder { BlockCoder = Jpeg2000BlockCoder.HighThroughput, Container = Jpeg2000Container.Codestream };
+
         if (extension.Equals(".exr", StringComparison.OrdinalIgnoreCase))
             return new OpenExrEncoder();
 
-        // The files of these extensions are read, never written: the extended file format, and the high-throughput block coder
+        // The files of these extensions are read, never written: the extended file format
         if (extension.Equals(".jpx", StringComparison.OrdinalIgnoreCase) || extension.Equals(".jpf", StringComparison.OrdinalIgnoreCase))
             throw new ArgumentException($"JPEG 2000 files of the extended format ('{extension}') can be read but not written. Use the extension '.jp2', or specify an encoder explicitly.", nameof(path));
-
-        if (extension.Equals(".jph", StringComparison.OrdinalIgnoreCase) || extension.Equals(".jhc", StringComparison.OrdinalIgnoreCase))
-            throw new ArgumentException($"High-throughput JPEG 2000 files ('{extension}') can be read but not written. Use the extension '.jp2' or '.j2k', or specify an encoder explicitly.", nameof(path));
 
         throw new ArgumentException($"Cannot select an encoder for the file extension '{extension}'. Specify an encoder explicitly.", nameof(path));
     }

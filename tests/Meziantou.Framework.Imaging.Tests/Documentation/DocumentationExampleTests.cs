@@ -1271,6 +1271,40 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void SaveHighThroughputJpeg2000WritesALosslessJphFileAndACodestreamOfTheTargetSize()
+    {
+        var input = GetPath("pattern-ht.png");
+        var pixels = new Rgb24[640 * 480];
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            var (x, y) = (i % 640, i / 640);
+            pixels[i] = new Rgb24((byte)(x / 3), (byte)((x * y) >> 9), (byte)((x ^ y) & 0xFF));
+        }
+
+        using (var source = Image.ImportPixelData<Rgb24>(pixels, 640, 480))
+        {
+            source.Save(input);
+        }
+
+        var jph = GetPath("pattern.jph");
+        var codestream = GetPath("pattern.jhc");
+        Examples.SaveHighThroughputJpeg2000(input, jph, codestream);
+
+        // A JPH file, whose brand follows the signature box, decodes to the pixels
+        Assert.Equal("ftypjph "u8.ToArray(), File.ReadAllBytes(jph).AsSpan(16, 8).ToArray());
+        using (var decoded = Image.Load<Rgb24>(jph))
+        {
+            var decodedPixels = new Rgb24[pixels.Length];
+            decoded.Frames[0].CopyPixelDataTo(decodedPixels);
+            Assert.Equal(pixels, decodedPixels);
+        }
+
+        Assert.InRange(new FileInfo(codestream).Length, 90_000, 100_000);
+        using var lossy = Image.Load(codestream);
+        Assert.Equal((640, 480), (lossy.Width, lossy.Height));
+    }
+
+    [Fact]
     public void SaveJpeg2000LayersFitsTheTargetAndKeepsTheLastLayerLossless()
     {
         var input = GetPath("pattern.png");

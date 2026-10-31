@@ -125,7 +125,7 @@ public sealed class LimitBoundaryTests
         Assert.Equal(new Size(3, 5), tall.Size);
     }
 
-    public static TheoryData<string> Encoders => ["png", "apng", "gif", "jpeg", "jpeg-progressive", "webp", "webp-lossy", "webp-animated", "qoi", "avif", "avif-lossy", "avif-animated", "heic", "heic-lossy", "heic-animated", "jxl", "jxl-fast", "jxl-animated", "jxl-lossy", "jxl-lossy-progressive", "jxl-progressive", "jp2", "jp2-lossy", "j2k", "exr", "exr-piz"];
+    public static TheoryData<string> Encoders => ["png", "apng", "gif", "jpeg", "jpeg-progressive", "webp", "webp-lossy", "webp-animated", "qoi", "avif", "avif-lossy", "avif-animated", "heic", "heic-lossy", "heic-animated", "jxl", "jxl-fast", "jxl-animated", "jxl-lossy", "jxl-lossy-progressive", "jxl-progressive", "jp2", "jp2-lossy", "j2k", "jph", "jph-target", "exr", "exr-piz"];
 
     [Theory]
     [MemberData(nameof(Encoders))]
@@ -197,6 +197,8 @@ public sealed class LimitBoundaryTests
                 "jp2" => new Jpeg2000Encoder(),
                 "jp2-lossy" => new Jpeg2000Encoder { Compression = Jpeg2000Compression.Lossy },
                 "j2k" => new Jpeg2000Encoder { Container = Jpeg2000Container.Codestream },
+                "jph" => new Jpeg2000Encoder { BlockCoder = Jpeg2000BlockCoder.HighThroughput },
+                "jph-target" => new Jpeg2000Encoder { BlockCoder = Jpeg2000BlockCoder.HighThroughput, Compression = Jpeg2000Compression.Lossy, QualityLayers = [Jpeg2000QualityLayer.FromBitsPerPixel(1)] },
                 "exr" => new OpenExrEncoder { MetadataHandling = MetadataHandling.DiscardUnsupported },
                 "exr-piz" => new OpenExrEncoder { Compression = OpenExrCompression.Piz, MetadataHandling = MetadataHandling.DiscardUnsupported },
                 _ => new JpegEncoder(),

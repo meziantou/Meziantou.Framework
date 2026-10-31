@@ -35,6 +35,7 @@ public sealed class Jpeg2000EncoderTests
         Assert.Equal(Jpeg2000ProgressionOrder.Lrcp, encoder.ProgressionOrder);
         Assert.Equal((0, 0), (encoder.TileWidth, encoder.TileHeight));
         Assert.Equal(5, encoder.DecompositionLevels);
+        Assert.Equal(Jpeg2000BlockCoder.Standard, encoder.BlockCoder);
     }
 
     [Fact]
@@ -44,6 +45,7 @@ public sealed class Jpeg2000EncoderTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new Jpeg2000Encoder { Quality = 101 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new Jpeg2000Encoder { Compression = (Jpeg2000Compression)2 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new Jpeg2000Encoder { Container = (Jpeg2000Container)2 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Jpeg2000Encoder { BlockCoder = (Jpeg2000BlockCoder)2 });
         Assert.Equal(1, new Jpeg2000Encoder { Quality = 1 }.Quality);
         Assert.Equal(100, new Jpeg2000Encoder { Quality = 100 }.Quality);
         Assert.Throws<ArgumentOutOfRangeException>(() => new Jpeg2000Encoder { ProgressionOrder = (Jpeg2000ProgressionOrder)5 });
@@ -513,18 +515,20 @@ public sealed class Jpeg2000EncoderTests
         try
         {
             using var image = CreateImage(5, 3, seed: 1);
-            foreach (var (extension, isFile) in new[] { (".JP2", true), (".j2k", false), (".j2c", false), (".jpc", false) })
+            foreach (var (extension, isFile, isHighThroughput) in new[] { (".JP2", true, false), (".j2k", false, false), (".j2c", false, false), (".jpc", false, false), (".jph", true, true), (".JHC", false, true) })
             {
                 var path = directory / ("image" + extension);
                 image.Save(path);
                 Assert.Equal(ImageFormat.Jpeg2000, Image.Identify(path).Format);
-                Assert.Equal(isFile, File.ReadAllBytes(path).AsSpan().StartsWith(FileSignature));
+                var data = File.ReadAllBytes(path);
+                Assert.Equal(isFile, data.AsSpan().StartsWith(FileSignature));
+                Assert.Equal(isHighThroughput, ReadMainHeader(isFile ? ReadBoxes(data).Single(box => box.Type == "jp2c").Payload : data).Any(segment => segment.Marker == 0xFF50));
                 using var decoded = Image.Load<Rgba32>(path);
                 Assert.Equal(GetPixels(image.Frames[0]), GetPixels(decoded.Frames[0]));
             }
 
             // The files of these extensions are read, never written
-            foreach (var extension in new[] { ".jph", ".jhc", ".jpx", ".jpf" })
+            foreach (var extension in new[] { ".jpx", ".jpf" })
             {
                 var path = directory / ("image" + extension);
                 var exception = Assert.Throws<ArgumentException>(() => image.Save(path));
@@ -649,6 +653,150 @@ public sealed class Jpeg2000EncoderTests
 
             using var decoded = Image.Load<Rgba32>(data);
             Assert.True(GetPixels(source.Frames[0]).AsSpan().SequenceEqual(GetPixels(decoded.Frames[0])), $"{context}: the decoded samples differ.");
+        }
+    }
+
+    /// <summary>
+    /// The high-throughput block coder, in every pixel format, both containers, tiles and progression orders: the samples
+    /// are those of the image.
+    /// </summary>
+    [Theory]
+    [InlineData(PixelFormat.Gray8)]
+    [InlineData(PixelFormat.Gray16)]
+    [InlineData(PixelFormat.Rgb24)]
+    [InlineData(PixelFormat.Rgba32)]
+    [InlineData(PixelFormat.Bgra32)]
+    [InlineData(PixelFormat.Rgba64)]
+    public void HighThroughputOutputsRoundTripExactly(PixelFormat format)
+    {
+        var storedFormat = format == PixelFormat.Bgra32 ? PixelFormat.Rgba32 : format;
+        foreach (var (width, height, tileWidth, order) in new[] { (23, 11, 0, Jpeg2000ProgressionOrder.Lrcp), (1, 1, 0, Jpeg2000ProgressionOrder.Lrcp), (1, 70, 0, Jpeg2000ProgressionOrder.Rlcp), (70, 1, 16, Jpeg2000ProgressionOrder.Rpcl), (300, 270, 0, Jpeg2000ProgressionOrder.Lrcp), (130, 129, 64, Jpeg2000ProgressionOrder.Pcrl), (65, 2, 0, Jpeg2000ProgressionOrder.Cprl) })
+        {
+            foreach (var container in new[] { Jpeg2000Container.Jp2, Jpeg2000Container.Codestream })
+            {
+                using var source = CreateImage(width, height, seed: (int)format + width);
+                using var image = ConvertTo(source, format);
+                var data = Save(image, new Jpeg2000Encoder { BlockCoder = Jpeg2000BlockCoder.HighThroughput, Container = container, TileWidth = tileWidth, TileHeight = tileWidth, ProgressionOrder = order });
+                var info = Image.Identify(data, new ImageIdentifyOptions { Mode = ImageIdentifyMode.FullScan });
+                Assert.Equal((ImageFormat.Jpeg2000, width, height, storedFormat), (info.Format, info.Width, info.Height, info.PixelFormat));
+                using var decoded = Image.Load(data);
+                Assert.True(GetBytes(image, storedFormat).AsSpan().SequenceEqual(GetBytes(decoded, storedFormat)), $"{format} {width}x{height} {container} in tiles of {tileWidth} ({order}): the decoded samples differ.");
+            }
+        }
+    }
+
+    /// <summary>
+    /// A lossy output of the high-throughput block coder codes the quantization indices of the standard coder: it decodes
+    /// to the same samples, the opacity included, in a file of a few percent more.
+    /// </summary>
+    [Theory]
+    [InlineData(PixelFormat.Gray8)]
+    [InlineData(PixelFormat.Rgb24)]
+    [InlineData(PixelFormat.Rgba32)]
+    [InlineData(PixelFormat.Rgba64)]
+    public void HighThroughputLossyOutputsDecodeToTheSamplesOfTheStandardCoder(PixelFormat format)
+    {
+        using var source = CreateImage(150, 97, seed: (int)format);
+        using var image = ConvertTo(source, format);
+        foreach (var quality in new[] { 20, 90, 100 })
+        {
+            var standard = Save(image, new Jpeg2000Encoder { Compression = Jpeg2000Compression.Lossy, Quality = quality });
+            var highThroughput = Save(image, new Jpeg2000Encoder { Compression = Jpeg2000Compression.Lossy, Quality = quality, BlockCoder = Jpeg2000BlockCoder.HighThroughput });
+            using var expected = Image.Load(standard);
+            using var decoded = Image.Load(highThroughput);
+            Assert.True(GetBytes(expected, format).AsSpan().SequenceEqual(GetBytes(decoded, format)), $"{format} at quality {quality}: the samples differ.");
+            Assert.InRange(highThroughput.Length, standard.Length, standard.Length * 13 / 10);
+        }
+    }
+
+    /// <summary>
+    /// The high-throughput block coder is declared (T.814, Annex A): the bit 14 of Rsiz in SIZ, a CAP marker segment with
+    /// the field of Part 15 (no other block coder, one HT set, no region of interest, the irreversible bit, and the
+    /// magnitude bound of the sub-bands), and the bit 6 of the code-block style of COD and COC; a file has the brand
+    /// <c>jph </c>.
+    /// </summary>
+    [Fact]
+    public void HighThroughputIsDeclaredInTheCodestreamAndTheFile()
+    {
+        using var source = CreateImage(40, 30, seed: 3);
+        using var gray = ConvertTo(source, PixelFormat.Gray8);
+        var lossless = Save(gray, new Jpeg2000Encoder { BlockCoder = Jpeg2000BlockCoder.HighThroughput, Container = Jpeg2000Container.Codestream });
+        var segments = ReadMainHeader(lossless);
+        Assert.Equal([0xFF51, 0xFF50, 0xFF52, 0xFF5C], segments.Select(segment => segment.Marker));
+        Assert.Equal(0x4000, BinaryPrimitives.ReadUInt16BigEndian(segments[0].Payload));
+        var capabilities = segments[1].Payload;
+        Assert.Equal([0x00, 0x02, 0x00, 0x00], capabilities[..4]);
+
+        // MAGB: the largest number of magnitude bit-planes, from the exponents of QCD and its two guard bits, less 8
+        var quantization = segments[3].Payload;
+        var largest = quantization[1..].Max(exponent => (exponent >> 3) + (quantization[0] >> 5) - 1);
+        Assert.Equal(largest - 8, BinaryPrimitives.ReadUInt16BigEndian(capabilities.AsSpan(4)));
+        Assert.Equal(0x40, segments[2].Payload[8]);
+
+        // A lossy output sets the irreversible bit; its opacity is reversible, in a COC marker segment of the same style
+        var lossy = Save(source, new Jpeg2000Encoder { BlockCoder = Jpeg2000BlockCoder.HighThroughput, Compression = Jpeg2000Compression.Lossy });
+        var boxes = ReadBoxes(lossy);
+        Assert.Equal("ftyp", boxes[0].Type);
+        Assert.Equal("jph \0\0\0\0jph "u8.ToArray(), boxes[0].Payload);
+        segments = ReadMainHeader(boxes.Single(box => box.Type == "jp2c").Payload);
+        Assert.Equal(0x20, BinaryPrimitives.ReadUInt16BigEndian(segments.Single(segment => segment.Marker == 0xFF50).Payload.AsSpan(4)) & 0xFFE0);
+        Assert.Equal(0x40, segments.Single(segment => segment.Marker == 0xFF52).Payload[8]);
+        Assert.Equal(0x40, segments.Single(segment => segment.Marker == 0xFF53).Payload[5]);
+
+        // The standard coder declares none of it
+        segments = ReadMainHeader(Save(gray, new Jpeg2000Encoder { Container = Jpeg2000Container.Codestream }));
+        Assert.DoesNotContain(segments, segment => segment.Marker == 0xFF50);
+        Assert.Equal(0, BinaryPrimitives.ReadUInt16BigEndian(segments[0].Payload));
+    }
+
+    /// <summary>
+    /// A target of the high-throughput block coder is reached by choosing the lowest bit-plane of each code-block: the
+    /// output fits it, nearly reaches it (in steps of whole bit-planes), and a larger target leaves a smaller error. More
+    /// than one layer is refused.
+    /// </summary>
+    [Theory]
+    [InlineData(Jpeg2000Compression.Lossy)]
+    [InlineData(Jpeg2000Compression.Lossless)]
+    public void HighThroughputOutputsFitTheirTargets(Jpeg2000Compression compression)
+    {
+        using var source = CreateLandscape();
+        var expected = GetBytes(source, PixelFormat.Rgb24);
+        var previousError = double.MaxValue;
+        foreach (var target in new[] { 1_500, 4_000, 9_000, 20_000 })
+        {
+            var data = Save(source, new Jpeg2000Encoder { BlockCoder = Jpeg2000BlockCoder.HighThroughput, Compression = compression, Quality = 100, QualityLayers = [Jpeg2000QualityLayer.FromSize(target)] });
+            // A whole bit-plane of a code-block is the step of the rate control: a few percent of the smallest target
+            Assert.InRange(data.Length, target * (target < 4_000 ? 85 : 95) / 100, target);
+            using var decoded = Image.Load(data);
+            var error = GetRootMeanSquareError(expected, GetBytes(decoded, PixelFormat.Rgb24));
+            Assert.True(error < previousError, $"{compression}, {target} bytes: error {error} after {previousError}.");
+            previousError = error;
+        }
+
+        // A target every bit-plane fits in keeps them all
+        var complete = Save(source, new Jpeg2000Encoder { BlockCoder = Jpeg2000BlockCoder.HighThroughput, Compression = compression });
+        Assert.Equal(complete, Save(source, new Jpeg2000Encoder { BlockCoder = Jpeg2000BlockCoder.HighThroughput, Compression = compression, QualityLayers = [Jpeg2000QualityLayer.FromSize(10_000_000)] }));
+
+        var layers = new Jpeg2000Encoder { BlockCoder = Jpeg2000BlockCoder.HighThroughput, QualityLayers = [Jpeg2000QualityLayer.FromSize(2_000), Jpeg2000QualityLayer.Complete] };
+        Assert.Throws<ArgumentException>(() => Save(source, layers));
+    }
+
+    [Theory]
+    [InlineData(PixelFormat.Rgb24, Jpeg2000Compression.Lossless, false)]
+    [InlineData(PixelFormat.Rgba32, Jpeg2000Compression.Lossy, false)]
+    [InlineData(PixelFormat.Gray16, Jpeg2000Compression.Lossy, true)]
+    [InlineData(PixelFormat.Rgba64, Jpeg2000Compression.Lossless, true)]
+    public void HighThroughputFilesWrittenByWorkersAreTheFilesOfOneWorker(PixelFormat format, Jpeg2000Compression compression, bool hasTarget)
+    {
+        var encoder = new Jpeg2000Encoder { BlockCoder = Jpeg2000BlockCoder.HighThroughput, Compression = compression, QualityLayers = hasTarget ? [Jpeg2000QualityLayer.FromBitsPerPixel(1.5)] : [] };
+        using var source = CreateImage(331, 223, seed: (int)format);
+        using var image = ConvertTo(source, format);
+        var expected = Save(image, encoder);
+        var bytes = GetBytes(image, format);
+        foreach (var workers in (int[])[2, 16])
+        {
+            using var copy = Import(bytes, 331, 223, format, new ImageConfiguration { MaxDegreeOfParallelism = workers });
+            Assert.True(expected.AsSpan().SequenceEqual(Save(copy, encoder)), $"{format} {compression}: {workers} workers write other bytes.");
         }
     }
 

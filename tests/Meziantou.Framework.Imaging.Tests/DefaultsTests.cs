@@ -122,6 +122,7 @@ public sealed class DefaultsTests
         Assert.Empty(jpeg2000.QualityLayers);
         Assert.Equal(Jpeg2000ProgressionOrder.Lrcp, jpeg2000.ProgressionOrder);
         Assert.Equal((0, 0, 5), (jpeg2000.TileWidth, jpeg2000.TileHeight, jpeg2000.DecompositionLevels));
+        Assert.Equal(Jpeg2000BlockCoder.Standard, jpeg2000.BlockCoder);
 
         var exr = new OpenExrEncoder();
         Assert.Equal(ImageFormat.OpenExr, exr.Format);
@@ -168,6 +169,7 @@ public sealed class DefaultsTests
         Assert.Throws<ArgumentOutOfRangeException>(() => new Jpeg2000Encoder { Quality = 101 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new Jpeg2000Encoder { Compression = (Jpeg2000Compression)2 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new Jpeg2000Encoder { Container = (Jpeg2000Container)2 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new Jpeg2000Encoder { BlockCoder = (Jpeg2000BlockCoder)2 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrEncoder { Compression = (OpenExrCompression)5 });
         Assert.Throws<ArgumentOutOfRangeException>(() => new OpenExrEncoder { PixelType = (OpenExrPixelType)2 });
     }
@@ -206,10 +208,17 @@ public sealed class DefaultsTests
         foreach (var extension in new[] { ".j2k", ".j2c", ".jpc", ".J2K" })
         {
             Assert.Equal(Jpeg2000Container.Codestream, Assert.IsType<Jpeg2000Encoder>(ImageEncoder.FromPath("a" + extension)).Container);
+            Assert.Equal(Jpeg2000BlockCoder.Standard, Assert.IsType<Jpeg2000Encoder>(ImageEncoder.FromPath("a" + extension)).BlockCoder);
         }
 
+        // The high-throughput block coder: a JPH file and a codestream
+        var jph = Assert.IsType<Jpeg2000Encoder>(ImageEncoder.FromPath("a.JPH"));
+        Assert.Equal((Jpeg2000BlockCoder.HighThroughput, Jpeg2000Container.Jp2), (jph.BlockCoder, jph.Container));
+        var jhc = Assert.IsType<Jpeg2000Encoder>(ImageEncoder.FromPath("dir/a.jhc"));
+        Assert.Equal((Jpeg2000BlockCoder.HighThroughput, Jpeg2000Container.Codestream), (jhc.BlockCoder, jhc.Container));
+
         // The other members of the family are read, never written
-        foreach (var extension in new[] { ".jpx", ".jpf", ".jph", ".jhc" })
+        foreach (var extension in new[] { ".jpx", ".jpf" })
         {
             Assert.Contains("can be read but not written", Assert.Throws<ArgumentException>(() => ImageEncoder.FromPath("a" + extension)).Message, StringComparison.Ordinal);
         }

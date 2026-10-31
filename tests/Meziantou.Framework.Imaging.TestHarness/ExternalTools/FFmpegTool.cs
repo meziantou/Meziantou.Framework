@@ -241,8 +241,15 @@ public sealed partial class FFmpegTool
 
         // A Netpbm file is a short text header followed by raw samples, and so is an uncompressed TIFF file, which the format
         // probe of ffmpeg can take for another container (a pattern with 0x47 every 188 bytes scores as MPEG-TS): the image
-        // demuxer is named, and it picks the decoder from the extension
-        string[] demuxer = inputPath.Extension is ".pam" or ".pgm" or ".ppm" or ".pbm" or ".pnm" or ".tif" or ".tiff" ? ["-f", "image2"] : [];
+        // demuxer is named, and it picks the decoder from the extension. The probe takes a JPH file (the brand 'jph ') for an
+        // ISO base media file, and does not know the extensions of the high-throughput block coder: the JPEG 2000 demuxer
+        // is named, which reads codestreams and files of the JP2 family
+        string[] demuxer = inputPath.Extension switch
+        {
+            ".pam" or ".pgm" or ".ppm" or ".pbm" or ".pnm" or ".tif" or ".tiff" => ["-f", "image2"],
+            ".jph" or ".jhc" => ["-f", "j2k_pipe"],
+            _ => [],
+        };
         var result = await RunAsync(
             [.. (ignoreLoop ? (string[])["-ignore_loop", "1"] : []), "-noautorotate", .. demuxer, "-i", inputPath, "-fps_mode", "passthrough", "-f", "rawvideo", "-pix_fmt", pixelFormat, "-"],
             cancellationToken).ConfigureAwait(false);

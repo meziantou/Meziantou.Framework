@@ -10,8 +10,9 @@ namespace Meziantou.Framework.Fonts;
 /// does not read gigabytes. A WOFF or WOFF2 file, whose tables are compressed, is loaded and expanded.
 /// </para>
 /// <para>
-/// A file the font code would not load is left out, whole: a face that is malformed, has no outlines nor color glyphs
-/// (the rule of the browsers), or a file that cannot be read.
+/// A file the font code would not load is left out, whole: a face that is malformed, has no outlines nor color bitmaps
+/// (<c>CBDT</c> or <c>sbix</c>; a face whose only glyphs are in an <c>SVG </c> table cannot be drawn), or a file that
+/// cannot be read.
 /// </para>
 /// </remarks>
 internal static class SystemFontScanner
@@ -307,14 +308,15 @@ internal static class SystemFontScanner
         var directoryLength = SfntDirectory.GetLength(source.Read(offset, HeaderLength));
         var directory = SfntDirectory.ReadDirectory(source.Read(offset, directoryLength), source.Length);
 
-        // The tables every face has, and outlines or color glyphs (the rule of WebPlatform's FontFile).
+        // The tables every face has, and outlines or color bitmaps (the rule of WebPlatform's FontFile). Unlike FontFile,
+        // an SVG table does not count: the library does not draw SVG glyphs, so a face that only has them is left out.
         if (!Has(directory, FontTags.Head) || !Has(directory, FontTags.Maxp) || !Has(directory, FontTags.Hhea) || !Has(directory, FontTags.Hmtx) || !Has(directory, FontTags.Cmap))
             throw FontErrors.Invalid("a face does not have the required tables.");
 
         if (!(Has(directory, FontTags.Glyf) && Has(directory, FontTags.Loca)) && !Has(directory, FontTags.Cff) && !Has(directory, FontTags.Cff2)
-            && !Has(directory, FontTags.Cbdt) && !Has(directory, FontTags.Sbix) && !Has(directory, FontTags.Svg))
+            && !Has(directory, FontTags.Cbdt) && !Has(directory, FontTags.Sbix))
         {
-            throw FontErrors.Invalid("a face has no outlines nor color glyphs.");
+            throw FontErrors.Invalid("a face has no outlines nor color bitmaps.");
         }
 
         // head: OpenType specification, "head - Font Header Table".

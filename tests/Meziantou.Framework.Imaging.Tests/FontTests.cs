@@ -2230,6 +2230,42 @@ public sealed class FontTests
     }
 
     [Fact]
+    public void SystemFontsWhoseOnlyGlyphsAreSvgAreLeftOut()
+    {
+        using var directory = new TemporaryFontDirectory();
+        directory.Write("glyf.ttf", FontSamples.Boxes().Build());
+        directory.Write("cff.otf", FontSamples.Charstrings().Build());
+        directory.Write("colr.ttf", FontSamples.ColorBoxes().Build());
+
+        var sbix = FontSamples.BitmapBoxes();
+        sbix.OmittedTables.Add("glyf");
+        sbix.OmittedTables.Add("loca");
+        directory.Write("sbix.ttf", sbix.Build());
+
+        var cbdt = FontSamples.BitmapBoxes(useColorBitmapTables: true);
+        cbdt.OmittedTables.Add("glyf");
+        cbdt.OmittedTables.Add("loca");
+        directory.Write("cbdt.ttf", cbdt.Build());
+
+        // The library does not draw the glyphs of an SVG table: a face that has no other glyphs cannot be used.
+        var svg = FontSamples.Boxes();
+        svg.OmittedTables.Add("glyf");
+        svg.OmittedTables.Add("loca");
+        svg.RawTables["SVG "] = [0, 0, 0, 0, 0, 10, 0, 0, 0, 0, 0, 0];
+        directory.Write("svg.ttf", svg.Build());
+
+        var withOutlines = FontSamples.Boxes();
+        withOutlines.RawTables["SVG "] = [0, 0, 0, 0, 0, 10, 0, 0, 0, 0, 0, 0];
+        directory.Write("svg-and-glyf.ttf", withOutlines.Build());
+
+        var fonts = SystemFontCollection.Create([directory.Path]);
+
+        Assert.Equal(
+            new[] { "cbdt.ttf", "cff.otf", "colr.ttf", "glyf.ttf", "sbix.ttf", "svg-and-glyf.ttf" },
+            fonts.Fonts.Select(font => Path.GetFileName(font.FilePath)).Order(StringComparer.Ordinal).ToArray());
+    }
+
+    [Fact]
     public void SystemFontsAreFoundByAnyFamilyNameAndByTheirFullOrPostScriptName()
     {
         using var directory = new TemporaryFontDirectory();

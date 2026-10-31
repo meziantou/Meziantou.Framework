@@ -75,6 +75,9 @@ is used.
 
 - The `.ttf`, `.otf`, `.ttc`, `.otc`, `.woff` and `.woff2` files are indexed; the other files are ignored, and so is a
   path that does not exist.
+- A file is left out when one of its faces cannot be loaded: a face that is malformed, or that has neither outlines
+  (`glyf`, `CFF ` or `CFF2`) nor color bitmaps (`CBDT` or `sbix`). A face whose only glyphs are in an `SVG ` table is
+  left out, since SVG glyphs are not supported (see [Limitations](10-Limitations.md)).
 - A collection is immutable and can be used by several threads at the same time.
 
 The fonts of a machine are not those of another one: a text drawn with an installed font can look different elsewhere.

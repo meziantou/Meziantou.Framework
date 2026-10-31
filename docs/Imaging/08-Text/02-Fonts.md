@@ -154,6 +154,7 @@ that describe an outline far larger than the file. Loading and using a font is b
 | --- | --- | --- |
 | [MaxEncodedBytes](cref:Meziantou.Framework.Imaging.ImageResourceLimits.MaxEncodedBytes) | 256 MiB | The bytes read from the file or the stream |
 | [MaxFontBytes](cref:Meziantou.Framework.Imaging.ImageResourceLimits.MaxFontBytes) | 256 MiB | The bytes a font keeps, checked before a WOFF or WOFF2 file is expanded |
+| [MaxFontCollectionFaces](cref:Meziantou.Framework.Imaging.ImageResourceLimits.MaxFontCollectionFaces) | 1,024 | The fonts of a collection (`.ttc`, `.otc`), checked before they are read: every font of a collection is read when it is loaded |
 | [MaxGlyphComplexity](cref:Meziantou.Framework.Imaging.ImageResourceLimits.MaxGlyphComplexity) | 1,000,000 | The points, components and charstring operators needed to produce one glyph, and the instructions run to hint it |
 
 The limits of text layouts ([MaxTextLength](cref:Meziantou.Framework.Imaging.ImageResourceLimits.MaxTextLength), [MaxTextGlyphs](cref:Meziantou.Framework.Imaging.ImageResourceLimits.MaxTextGlyphs), [MaxTextLines](cref:Meziantou.Framework.Imaging.ImageResourceLimits.MaxTextLines)) come from the configuration of the

@@ -61,13 +61,13 @@ public partial class Document : Node
         UrlRecord = AboutBlank;
     }
 
+    /// <summary>The window of the current global object's associated document, if any (without creating the blank document).</summary>
+    internal static Window? CurrentGlobalWindow => s_currentGlobalDocument?.RelevantWindow;
+
     /// <summary>
     /// The document used by constructors such as <c>new Text()</c>, which use the "current global object's associated Document".
     /// There is no JavaScript realm, so a blank HTML document is created per thread.
     /// </summary>
-    /// <summary>The window of the current global object's associated document, if any (without creating the blank document).</summary>
-    internal static Window? CurrentGlobalWindow => s_currentGlobalDocument?.RelevantWindow;
-
     internal static Document CurrentGlobalDocument
     {
         get => s_currentGlobalDocument ??= CreateHtmlDocument();

@@ -17,6 +17,7 @@ namespace Meziantou.Framework.Imaging.InteropTests;
 /// <item><description>the 32-bit floating-point RGB and RGBA pages of the TIFF encoder, with the floating-point predictor, decode exactly in FFmpeg;</description></item>
 /// <item><description>TIFFs written by FFmpeg decode exactly in the library: every compression it writes, palette, bilevel and deep pages, and YCbCr pages with every chroma subsampling (from the samples FFmpeg reads back);</description></item>
 /// <item><description>Apple ImageIO decodes the bilevel pages exactly and the JPEG pages like the library does;</description></item>
+/// <item><description>Apple ImageIO decodes the pages of the TIFF encoder with horizontal differencing and in uncompressed, Deflate and LZW tiles (partial edge tiles included) exactly;</description></item>
 /// <item><description>Apple ImageIO sees the pages of a multi-page document, and the representations of an icon, as separate images with their own pixels;</description></item>
 /// <item><description>a cursor written by the library keeps the hotspot Apple ImageIO reports.</description></item>
 /// </list>
@@ -96,6 +97,37 @@ public sealed class TiffIcoInteropTests
         var name = $"imageio-{compression}-{(bigEndian ? "be" : "le")}-{(bigTiff ? "big" : "classic")}.tif";
         var path = await SaveAsync(image, encoder, name);
         var frames = await DecodeWithImageIOAsync(swift, script, path, expectedCount: 1, Width, Height);
+        AssertSame(ImageSnapshots.CaptureFrame(image.Frames[0]), frames[0], $"{name} decoded by Apple ImageIO");
+    }
+
+    [Theory]
+    [InlineData("Deflate", true, 0, false)]
+    [InlineData("Lzw", true, 0, true)]
+    [InlineData("Deflate", false, 16, false)]
+    [InlineData("Lzw", true, 16, true)]
+    [InlineData("None", false, 32, true)]
+    public async Task AppleImageIOReadsPredictedAndTiledPages(string compression, bool predictor, int tileSize, bool bigEndian)
+    {
+        // 37x23 pixels: 16x16 and 32x32 tiles leave partial tiles on the right and bottom edges. PackBits tiles are not
+        // part of the cases: Apple ImageIO fails on some of the ones libtiff 4.7.2 writes itself (tiffcp -c packbits -t,
+        // whenever a tile is as wide as the page), and libtiff reads the ones of the encoder
+        const int TiledWidth = 37;
+        const int TiledHeight = 23;
+        var (swift, script) = RequiredTools.AppleImageIO();
+        using var image = CreateRgba(TiledWidth, TiledHeight);
+        var encoder = new TiffEncoder
+        {
+            Compression = Enum.Parse<TiffCompression>(compression),
+            Predictor = predictor ? TiffPredictor.HorizontalDifferencing : TiffPredictor.None,
+            TileWidth = tileSize,
+            TileHeight = tileSize,
+            RowsPerStrip = 5,
+            BigEndian = bigEndian,
+        };
+
+        var name = $"imageio-{compression}-{(predictor ? "predictor" : "none")}-{(tileSize > 0 ? "tiles" + tileSize.ToString(CultureInfo.InvariantCulture) : "strips")}-{(bigEndian ? "be" : "le")}.tif";
+        var path = await SaveAsync(image, encoder, name);
+        var frames = await DecodeWithImageIOAsync(swift, script, path, expectedCount: 1, TiledWidth, TiledHeight);
         AssertSame(ImageSnapshots.CaptureFrame(image.Frames[0]), frames[0], $"{name} decoded by Apple ImageIO");
     }
 

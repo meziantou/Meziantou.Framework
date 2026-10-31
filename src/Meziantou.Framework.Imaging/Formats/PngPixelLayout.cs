@@ -10,7 +10,8 @@ public enum PngPixelLayout
     /// <see cref="PixelFormat.Rgb24"/>/<see cref="PixelFormat.Rgb48"/> and RGBA for the other pixel formats with alpha, with
     /// 16-bit samples for the 16-bit pixel formats. This is the default: the
     /// mapping never depends on the pixels, and a palette is never written. With <see cref="PngOptimization.MinimumSize"/>,
-    /// the layout is the smallest exact one instead, a palette included.
+    /// the layout is the smallest exact one instead, a palette included, and with <see cref="PngOptimization.Layout"/> the
+    /// exact one with the smallest unfiltered data, for a still image.
     /// </summary>
     Auto = 0,
 

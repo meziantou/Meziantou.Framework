@@ -862,6 +862,131 @@ public sealed class DrawingGradientTests
         }
     }
 
+    [Fact]
+    public void ADitheredGradientAveragesToItsColorsWithoutBands()
+    {
+        // From 100 to 104 between x = 64 and x = 192: the color grows by 1/32 per column, so rounding to the nearest
+        // makes bands of 32 columns of one value
+        GradientStop[] stops = [new(0, new Rgba32(100, 100, 100)), new(1, new Rgba32(104, 104, 104))];
+        var plain = new LinearGradientBrush(new PointD(64, 0), new PointD(192, 0), stops);
+        var dithered = new LinearGradientBrush(new PointD(64, 0), new PointD(192, 0), stops) { Dither = true };
+        Assert.False(plain.Dither);
+        using var banded = Fill(256, 16, plain);
+        using var image = Fill(256, 16, dithered);
+        using var again = Fill(256, 16, dithered);
+        var bandedSamples = DrawingTestSupport.ReadSamples(banded.Frames[0]);
+        var samples = DrawingTestSupport.ReadSamples(image.Frames[0]);
+        Assert.Equal(samples, DrawingTestSupport.ReadSamples(again.Frames[0]));
+
+        for (var y = 0; y < 16; y++)
+        {
+            for (var x = 0; x < 256; x++)
+            {
+                // Each sample is one of the two nearest to the color of the gradient; the stops are kept where the
+                // gradient pads them
+                var exact = 100 + (4 * Math.Clamp((x + 0.5 - 64) / 128, 0, 1));
+                var sample = samples[(y * 256) + x];
+                Assert.InRange(sample, Math.Floor(exact), Math.Ceiling(exact));
+                if (x < 64 || x >= 192)
+                {
+                    Assert.Equal(bandedSamples[(y * 256) + x], sample);
+                }
+            }
+        }
+
+        // Over each block of 8x8 pixels, the dithered samples average to the color of the gradient; the bands are
+        // half a step away from it at their ends, and give few averages
+        var ditheredError = 0d;
+        var bandedError = 0d;
+        var ditheredAverages = new HashSet<double>();
+        var bandedAverages = new HashSet<double>();
+        for (var blockY = 0; blockY < 16; blockY += 8)
+        {
+            for (var blockX = 64; blockX < 192; blockX += 8)
+            {
+                var exact = 0d;
+                var dither = 0d;
+                var band = 0d;
+                for (var y = blockY; y < blockY + 8; y++)
+                {
+                    for (var x = blockX; x < blockX + 8; x++)
+                    {
+                        exact += 100 + (4 * ((x + 0.5 - 64) / 128));
+                        dither += samples[(y * 256) + x];
+                        band += bandedSamples[(y * 256) + x];
+                    }
+                }
+
+                ditheredError = Math.Max(ditheredError, Math.Abs(dither - exact) / 64);
+                bandedError = Math.Max(bandedError, Math.Abs(band - exact) / 64);
+                ditheredAverages.Add(dither / 64);
+                bandedAverages.Add(band / 64);
+            }
+        }
+
+        Assert.InRange(ditheredError, 0, 0.05);
+        Assert.InRange(bandedError, 0.3, 0.5);
+        Assert.HasCount(16, ditheredAverages);
+        Assert.HasCount(5, bandedAverages);
+
+        // A vertical gradient is dithered along its rows too
+        var vertical = new LinearGradientBrush(new PointD(0, 64), new PointD(0, 192), stops) { Dither = true };
+        using var verticalImage = Fill(16, 256, vertical);
+        var verticalSamples = DrawingTestSupport.ReadSamples(verticalImage.Frames[0]);
+        Assert.Contains(Enumerable.Range(64, 128), y => verticalSamples.Skip(y * 16).Take(16).Distinct().Count() == 2);
+    }
+
+    [Fact]
+    public void DitheringChangesNothingOnAFrameOfMoreThanEightBits()
+    {
+        GradientStop[] stops = [new(0, new Rgba32(100, 100, 100)), new(1, new Rgba32(104, 104, 104))];
+        var plain = new LinearGradientBrush(new PointD(4, 0), new PointD(60, 3), stops);
+        var dithered = new LinearGradientBrush(new PointD(4, 0), new PointD(60, 3), stops) { Dither = true };
+        foreach (var format in new[] { PixelFormat.Rgba64, PixelFormat.Gray16, PixelFormat.RgbaFloat })
+        {
+            Assert.Equal(Draw(format, plain), Draw(format, dithered));
+        }
+
+        static int[] Draw(PixelFormat format, Brush brush)
+        {
+            using var image = DrawingTestSupport.CreateRandom(format, 64, 8, new Random(1).Next);
+            image.Frames[0].Draw(canvas => canvas.Fill(brush), Ct);
+            return DrawingTestSupport.ReadSamples(image.Frames[0]);
+        }
+    }
+
+    [Theory]
+    [InlineData(GradientColorSpace.LinearSrgb)]
+    [InlineData(GradientColorSpace.Oklab)]
+    public void ADitheredGradientMixedInAnotherSpaceIsWithinAStepOfItsColors(GradientColorSpace colorSpace)
+    {
+        // The 16-bit colors of the gradient are moved by less than half a step of 8 bits before they are rounded: each
+        // sample is the nearest one or its neighbor, and a color of 8 bits is kept
+        GradientStop[] stops = [new(0, new Rgba32(20, 60, 100)), new(1, new Rgba32(40, 64, 90, 200))];
+        var plain = new LinearGradientBrush(new PointD(8, 0), new PointD(120, 0), stops) { ColorSpace = colorSpace, CompositeMode = CompositeMode.Source };
+        var dithered = new LinearGradientBrush(new PointD(8, 0), new PointD(120, 0), stops) { ColorSpace = colorSpace, CompositeMode = CompositeMode.Source, Dither = true };
+        using var expected = new Image<Rgba32>(128, 8, default);
+        using var actual = new Image<Rgba32>(128, 8, default);
+        expected.Draw(canvas => canvas.Fill(plain), Ct);
+        actual.Draw(canvas => canvas.Fill(dithered), Ct);
+        var expectedSamples = DrawingTestSupport.ReadSamples(expected.Frames[0]);
+        var actualSamples = DrawingTestSupport.ReadSamples(actual.Frames[0]);
+        var changed = 0;
+        for (var i = 0; i < expectedSamples.Length; i++)
+        {
+            Assert.InRange(actualSamples[i], expectedSamples[i] - 1, expectedSamples[i] + 1);
+            var x = i / 4 % 128;
+            if (x < 8 || x >= 120)
+            {
+                Assert.Equal(expectedSamples[i], actualSamples[i]);
+            }
+
+            changed += actualSamples[i] != expectedSamples[i] ? 1 : 0;
+        }
+
+        Assert.InRange(changed, 100, expectedSamples.Length);
+    }
+
     private static Image<Gray8> Fill(int width, int height, Brush brush)
     {
         var image = new Image<Gray8>(width, height, new Gray8(0));

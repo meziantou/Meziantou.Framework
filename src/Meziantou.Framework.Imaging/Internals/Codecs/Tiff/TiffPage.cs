@@ -12,7 +12,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// The supported subset is checked here, once: unsigned integer samples; grayscale (<c>WhiteIsZero</c> and
 /// <c>BlackIsZero</c>, 1, 2, 4, 8 or 16 bits), RGB (8 or 16 bits), palette color (1, 2, 4 or 8 bits), CMYK (8 or 16 bits)
 /// and YCbCr (8 bits) data; signed integer grayscale and RGB samples of 8 or 16 bits; floating-point <c>BlackIsZero</c>
-/// grayscale and RGB samples of 16 (half precision), 24 or 32 bits; chunky planar configuration; strips or tiles; no
+/// grayscale and RGB samples of 16 (half precision), 24 or 32 bits; chunky and separate planar configurations (separate
+/// planes except for YCbCr data); strips or tiles; no
 /// compression, Deflate, LZW, PackBits, the CCITT facsimile compressions, JPEG and JPEG 2000; the horizontal differencing
 /// predictor, and the floating-point predictor of TIFF Technical Note 3. Everything else is recognized and rejected with
 /// <see cref="UnsupportedImageFeatureException"/>, never guessed.
@@ -163,6 +164,22 @@ internal sealed class TiffPage
     /// <summary>Gets the predictor (1 or 2).</summary>
     public int Predictor { get; private set; }
 
+    /// <summary>
+    /// Gets a value indicating whether each sample of a pixel is stored in a plane of its own (<c>PlanarConfiguration</c>
+    /// 2 with several samples per pixel): the blocks of the first sample, then the ones of the second sample, and so on.
+    /// Each block holds one sample per pixel; the decoder interleaves the planes back into rows of whole pixels.
+    /// </summary>
+    public bool IsPlanar { get; private set; }
+
+    /// <summary>Gets the number of planes: <see cref="SamplesPerPixel"/> for a planar page, 1 otherwise.</summary>
+    public int PlaneCount => IsPlanar ? SamplesPerPixel : 1;
+
+    /// <summary>Gets the number of samples of a pixel in one block: 1 for a planar page, <see cref="SamplesPerPixel"/> otherwise.</summary>
+    public int BlockSamplesPerPixel => IsPlanar ? 1 : SamplesPerPixel;
+
+    /// <summary>Gets the number of blocks of one plane: <see cref="BlocksAcross"/> times <see cref="BlocksDown"/>.</summary>
+    public int BlocksPerPlane => BlocksAcross * BlocksDown;
+
     /// <summary>Gets a value indicating whether the page is stored as tiles rather than strips.</summary>
     public bool IsTiled { get; private set; }
 
@@ -178,7 +195,7 @@ internal sealed class TiffPage
     /// <summary>Gets the number of rows of blocks.</summary>
     public int BlocksDown { get; private set; }
 
-    /// <summary>Gets the file offset of each strip or tile, in reading order.</summary>
+    /// <summary>Gets the file offset of each strip or tile, in reading order (every block of a plane before the next plane).</summary>
     public ulong[] BlockOffsets { get; private set; } = [];
 
     /// <summary>Gets the stored length of each strip or tile, in reading order.</summary>
@@ -186,7 +203,7 @@ internal sealed class TiffPage
 
     /// <summary>
     /// Gets the number of bytes of one full row of a decoded block, padded to a whole number of bytes. The rows of a
-    /// YCbCr page are the RGB samples its data units convert to.
+    /// YCbCr page are the RGB samples its data units convert to; the rows of a block of a planar page hold one sample per pixel.
     /// </summary>
     public int BlockRowLength { get; private set; }
 
@@ -244,6 +261,20 @@ internal sealed class TiffPage
 
     /// <summary>Gets the number of bytes of one full row of the decoded page, padded to a whole number of bytes.</summary>
     public long RowLength => (((long)Size.Width * BitsPerPixel) + 7) / 8;
+
+    /// <summary>
+    /// Gets the index of the block decoded at a position of the decoding order. The decoder reads the blocks of one place
+    /// of the page together, one plane after the other, so that it can interleave their samples: the strip or tile
+    /// <c>position / PlaneCount</c> of the plane <c>position % PlaneCount</c>. Without planes, the order is the one of the blocks.
+    /// </summary>
+    /// <param name="position">The position, from 0 to the number of blocks.</param>
+    /// <returns>The index of the block in <see cref="BlockOffsets"/>.</returns>
+    public int GetBlockIndex(int position) => IsPlanar ? ((position % PlaneCount) * BlocksPerPlane) + (position / PlaneCount) : position;
+
+    /// <summary>Gets the row of blocks (the strip, or the row of tiles) a block belongs to, whatever its plane.</summary>
+    /// <param name="index">The index of the block in <see cref="BlockOffsets"/>.</param>
+    /// <returns>The row of blocks, from 0 to <see cref="BlocksDown"/>.</returns>
+    public int GetBlockRow(int index) => (index % BlocksPerPlane) / BlocksAcross;
 
     private void ResolveGeometry(ImageCodecContext context)
     {
@@ -496,8 +527,14 @@ internal sealed class TiffPage
 
         // With one sample per pixel there is one plane, however it is called
         var planar = Directory.TryGetUnsigned(TiffFormat.PlanarConfigurationTag, out var planarValue) ? planarValue : TiffFormat.PlanarChunky;
-        if (planar != TiffFormat.PlanarChunky && !(planar == TiffFormat.PlanarSeparate && SamplesPerPixel == 1))
-            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses the planar configuration {planar}; only chunky (1), where the samples of a pixel are contiguous, is supported."), string.Create(CultureInfo.InvariantCulture, $"PlanarConfiguration: {planar}"));
+        if (planar is not (TiffFormat.PlanarChunky or TiffFormat.PlanarSeparate))
+            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} uses the planar configuration {planar}; chunky (1) and separate (2) planes are supported."), string.Create(CultureInfo.InvariantCulture, $"PlanarConfiguration: {planar}"));
+
+        IsPlanar = planar == TiffFormat.PlanarSeparate && SamplesPerPixel > 1;
+
+        // The planes of YCbCr data may be subsampled, each to its own size: they are not read
+        if (IsPlanar && IsYCbCr)
+            throw TiffFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The TIFF page {Index} stores YCbCr data in separate planes; separate planes are supported for grayscale, RGB and CMYK data, and YCbCr data is supported with chunky samples."), "PlanarConfiguration: 2 with YCbCr data");
 
         // TIFF 6.0 only allows the reversed order for bilevel data (uncompressed or CCITT), where it is the order of fax devices
         var fillOrder = Directory.TryGetUnsigned(TiffFormat.FillOrderTag, out var fillOrderValue) ? fillOrderValue : TiffFormat.FillOrderMostSignificantBitFirst;
@@ -639,8 +676,8 @@ internal sealed class TiffPage
         }
 
         // A row is held as stored samples, as pixels of the working representation, and for 16-bit inks as five native
-        // samples per pixel on the way to their conversion
-        var blockRowLength = (((long)BlockWidth * BitsPerPixel) + 7) / 8;
+        // samples per pixel on the way to their conversion. A block of a planar page holds one sample per pixel
+        var blockRowLength = (((long)BlockWidth * BlockSamplesPerPixel * DecodedBitsPerSample) + 7) / 8;
         var expandedRowLength = (long)Size.Width * Math.Max(PixelFormats.GetBytesPerPixel(SourcePixelFormat), IsCmyk ? 5 * sizeof(ushort) : 0);
         if (blockRowLength > CheckedSizes.MaxBufferLength || RowLength > CheckedSizes.MaxBufferLength || expandedRowLength > CheckedSizes.MaxBufferLength)
             throw CheckedSizes.CreateOverflowException(context.Limits);
@@ -649,7 +686,8 @@ internal sealed class TiffPage
         if (!CheckedSizes.TryMultiply(blockRowLength, BlockHeight, out var blockLength) || blockLength > CheckedSizes.MaxBufferLength)
             throw CheckedSizes.CreateOverflowException(context.Limits);
 
-        var blockCount = (long)BlocksAcross * BlocksDown;
+        // The blocks of the planes follow each other
+        var blockCount = (long)BlocksAcross * BlocksDown * PlaneCount;
         var offsetsField = Directory.Find(offsetsTag)!.Value;
         BlockOffsets = Directory.ReadUnsignedArray(offsetsField, blockCount);
 

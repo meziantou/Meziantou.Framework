@@ -150,7 +150,6 @@ public abstract partial class CssRule
         }
     }
 
-    /// <summary>Returns whether the rule is a style rule or is nested in a style rule (the nested flag of the CSSOM algorithms).</summary>
     /// <summary>Returns the environment the media queries of the rule are evaluated against: the one of the document of its style sheet.</summary>
     internal MediaEnvironment GetMediaEnvironment()
     {
@@ -158,6 +157,7 @@ public abstract partial class CssRule
         return document is null ? MediaEnvironment.Default : Cascade.StyleEngine.CreateEnvironment(document);
     }
 
+    /// <summary>Returns whether the rule is a style rule or is nested in a style rule (the nested flag of the CSSOM algorithms).</summary>
     internal bool IsNestedInStyleRule()
     {
         for (var rule = this; rule is not null; rule = rule.ParentRule)

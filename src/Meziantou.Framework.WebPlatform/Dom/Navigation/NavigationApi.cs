@@ -209,10 +209,10 @@ public sealed class Navigation : EventTarget
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#navigation-current-entry</summary>
     internal NavigationHistoryEntry? CurrentEntryInternal => HasEntriesAndEventsDisabled || _currentEntryIndex < 0 || _currentEntryIndex >= _entryList.Count ? null : _entryList[_currentEntryIndex];
 
-    /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#getting-the-navigation-api-entry-index</summary>
     /// <summary>Returns the entry of the entry list whose session history entry is the entry, or null.</summary>
     internal NavigationHistoryEntry? FindEntry(SessionHistoryEntry sessionHistoryEntry) => GetEntryIndex(sessionHistoryEntry) is >= 0 and var index ? _entryList[index] : null;
 
+    /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#getting-the-navigation-api-entry-index</summary>
     internal int GetEntryIndex(SessionHistoryEntry sessionHistoryEntry) => _entryList.FindIndex(entry => ReferenceEquals(entry.SessionHistoryEntry, sessionHistoryEntry));
 
     /// <summary>https://html.spec.whatwg.org/multipage/nav-history-apis.html#dom-navigation-entries</summary>

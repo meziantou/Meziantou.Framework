@@ -1,6 +1,6 @@
 namespace Meziantou.Framework.Imaging.Formats;
 
-/// <summary>How <see cref="TiffEncoder"/> compresses the strips of a page.</summary>
+/// <summary>How <see cref="TiffEncoder"/> compresses the strips or tiles of a page.</summary>
 /// <remarks>
 /// Every compression but <see cref="Jpeg"/> is lossless: the decoded pixels are identical whichever one is chosen. The
 /// CCITT compressions code bilevel data and require <see cref="TiffPixelLayout.Bilevel"/>; <see cref="Jpeg"/> requires
@@ -14,7 +14,10 @@ public enum TiffCompression
     /// <summary>Deflate, as Adobe's <c>Compression</c> 8 (a zlib datastream per strip). The default.</summary>
     Deflate = 1,
 
-    /// <summary>LZW (<c>Compression</c> 5), as TIFF 6.0 defines it. No predictor is written.</summary>
+    /// <summary>
+    /// LZW (<c>Compression</c> 5), as TIFF 6.0 defines it. No predictor is written for integer samples unless
+    /// <see cref="TiffEncoder.Predictor"/> selects one.
+    /// </summary>
     Lzw = 2,
 
     /// <summary>PackBits run lengths (<c>Compression</c> 32773): each row is packed separately.</summary>

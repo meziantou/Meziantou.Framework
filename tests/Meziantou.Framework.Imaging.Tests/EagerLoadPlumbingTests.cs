@@ -1,3 +1,4 @@
+using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Internals;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Imaging.TestHarness.Adapters;
@@ -165,6 +166,67 @@ public sealed class EagerLoadPlumbingTests
         using var stream = new TestInputStream(data);
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() => Image.LoadAsync(stream, cancellationToken: cancellation.Token));
         Assert.Equal(0, codec.LastContext!.Scope.LiveBytes);
+    }
+
+    [Fact]
+    public void SpanLoadsObserveAPreCanceledTokenBeforeAnyWork()
+    {
+        var codec = new TestRawCodec();
+        var data = TestRawImage.Encode(Width, Height, PixelFormat.Rgba32, PixelFormat.Rgba32, CreateFrames(PixelFormat.Rgba32, 1));
+        using var registry = ImageCodecRegistry.Override(TestRawImage.CreateRegistry(codec));
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        Assert.ThrowsAny<OperationCanceledException>(() => Image.Load(data, options: null, cancellation.Token));
+        Assert.ThrowsAny<OperationCanceledException>(() => Image.Load<Rgba32>(data, cancellationToken: cancellation.Token));
+        Assert.Null(codec.LastContext);
+
+        // The pixel type is validated first, and a token that is not canceled changes nothing
+        Assert.Throws<NotSupportedException>(() => Image.Load<Guid>(data, options: null, cancellation.Token));
+        using var image = Image.Load<Rgba32>(data, options: null, XunitCancellationToken);
+        Assert.Equal(new Size(Width, Height), image.Size);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SpanLoadsObserveCancellationBetweenRowsAndReleaseEverything(bool typed)
+    {
+        var codec = new TestRawCodec();
+        var data = TestRawImage.Encode(Width, Height, PixelFormat.Rgba32, PixelFormat.Rgba32, CreateFrames(PixelFormat.Rgba32, 3));
+        using var registry = ImageCodecRegistry.Override(TestRawImage.CreateRegistry(codec));
+        using var cancellation = new CancellationTokenSource();
+        var rows = 0;
+        codec.BeforeRow = row =>
+        {
+            rows++;
+            if (row == 4)
+            {
+                cancellation.Cancel();
+            }
+        };
+
+        Assert.ThrowsAny<OperationCanceledException>(() =>
+        {
+            using var image = typed ? Image.Load<Rgba32>(data, options: null, cancellation.Token) : Image.Load(data, options: null, cancellation.Token);
+        });
+
+        // The decoder stops at the next row boundary, in the second of the three frames, and frees what it allocated
+        Assert.Equal(5, rows);
+        Assert.Equal(0, codec.LastContext!.Scope.LiveBytes);
+    }
+
+    [Fact]
+    public void SpanLoadsOfBuiltInCodecsObserveCancellation()
+    {
+        using var source = new Image<Rgba32>(64, 64, new Rgba32(1, 2, 3));
+        using var stream = new MemoryStream();
+        source.Save(stream, new PngEncoder());
+        var data = stream.ToArray();
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        Assert.ThrowsAny<OperationCanceledException>(() => Image.Load(data, options: null, cancellation.Token));
+        using var image = Image.Load(data, cancellationToken: XunitCancellationToken);
+        Assert.Equal(new Size(64, 64), image.Size);
     }
 
     [Theory]

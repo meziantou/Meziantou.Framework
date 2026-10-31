@@ -36,6 +36,19 @@ anything is written, and how to tell the library what to do with what the format
 Any other extension throws an `ArgumentException`. The JPEG 2000 extensions `.jpx`, `.jpf`, `.jph` and `.jhc` are read,
 not written.
 
+To choose the format from a name or a request rather than from the path of the file:
+
+- [ImageEncoder.FromFileExtension](cref:Meziantou.Framework.Imaging.Formats.ImageEncoder.FromFileExtension) returns the
+  encoder of this table for an extension, with or without its period (`.png` or `png`).
+- [ImageEncoder.Create](cref:Meziantou.Framework.Imaging.Formats.ImageEncoder.Create) returns the default encoder of an
+  [ImageFormat](cref:Meziantou.Framework.Imaging.ImageFormat).
+- [ImageFormatInfo](cref:Meziantou.Framework.Imaging.ImageFormatInfo) gives the name of a format, its media type (to set a
+  `Content-Type`), its other media types and its extensions, the preferred one first.
+  [TryGetByFileExtension](cref:Meziantou.Framework.Imaging.ImageFormatInfo.TryGetByFileExtension) and
+  [TryGetByMimeType](cref:Meziantou.Framework.Imaging.ImageFormatInfo.TryGetByMimeType) find the format of an extension or
+  of a media type, such as the value of an `Accept` or `Content-Type` header item. Each extension and each media type
+  belongs to one format only.
+
 ## Choose the format and its settings
 
 Pass an encoder to choose the format and its options. The encoder decides the format, whatever the extension:

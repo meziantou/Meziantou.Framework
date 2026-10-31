@@ -111,15 +111,13 @@ internal sealed class ImageRequest(string currentUrl, double currentPixelDensity
 [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
 internal readonly record struct AvailableImageKey(string Url, int CorsState, string? Origin);
 
-/// <summary>
-/// The images of the img elements (https://html.spec.whatwg.org/multipage/images.html#images-processing-model): the source
-/// is selected from the src, srcset and sizes attributes and the source elements of a parent picture element, and fetched
-/// by the <see cref="DocumentLoader"/> of the browsing context (<see cref="RequestDestination.Image"/>), the data: and the
-/// blob: URLs. An image is available when its response is an image (its signature or its type), and its natural dimensions
-/// are read from its header (PNG, GIF, JPEG, BMP, WebP, ICO, AVIF, JPEG XL, SVG). With a rendering backend, a raster image is
-/// also opened by the decoder of the backend (an image it cannot read is broken), and its pixels are decoded when they are
-/// painted or by <c>decode()</c>.
-/// </summary>
+// The images of the img elements (https://html.spec.whatwg.org/multipage/images.html#images-processing-model): the source
+// is selected from the src, srcset and sizes attributes and the source elements of a parent picture element, and fetched
+// by the DocumentLoader of the browsing context (RequestDestination.Image), the data: and the
+// blob: URLs. An image is available when its response is an image (its signature or its type), and its natural dimensions
+// are read from its header (PNG, GIF, JPEG, BMP, WebP, ICO, AVIF, JPEG XL, SVG). With a rendering backend, a raster image is
+// also opened by the decoder of the backend (an image it cannot read is broken), and its pixels are decoded when they are
+// painted or by decode().
 public partial class HtmlImageElement
 {
     private ImageRequest _currentRequest = new("", 1);
@@ -185,11 +183,6 @@ public partial class HtmlImageElement
     /// <summary>Converts a length in CSS pixels to the value of an unsigned long IDL attribute.</summary>
     internal static uint ToCssPixels(double value) => value <= 0 || double.IsNaN(value) ? 0 : value >= uint.MaxValue ? uint.MaxValue : (uint)Math.Round(value, MidpointRounding.AwayFromZero);
 
-    /// <summary>
-    /// The density-corrected natural width and height of the image (https://html.spec.whatwg.org/multipage/images.html#density-corrected-intrinsic-width-and-height),
-    /// or null when the image is not available: its natural dimensions divided by the current pixel density, completed by
-    /// the default sizing algorithm with a default object size of 300x150.
-    /// </summary>
     /// <summary>The image of the current request when it is available (see <see cref="ImageRequest.Image"/>), for the painting, or null.</summary>
     internal Rendering.PaintImage? GetPaintImage() => _currentRequest is { State: ImageRequestState.CompletelyAvailable or ImageRequestState.PartiallyAvailable } request ? request.Image : null;
 
@@ -213,6 +206,11 @@ public partial class HtmlImageElement
         return (request.Image, request.NaturalSize, request.Image?.IsCorsSameOrigin ?? IsCorsSameOrigin(request));
     }
 
+    /// <summary>
+    /// The density-corrected natural width and height of the image (https://html.spec.whatwg.org/multipage/images.html#density-corrected-intrinsic-width-and-height),
+    /// or null when the image is not available: its natural dimensions divided by the current pixel density, completed by
+    /// the default sizing algorithm with a default object size of 300x150.
+    /// </summary>
     internal (double Width, double Height)? GetDensityCorrectedNaturalSize()
     {
         if (_currentRequest is not { State: ImageRequestState.CompletelyAvailable or ImageRequestState.PartiallyAvailable } request)

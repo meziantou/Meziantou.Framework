@@ -7,6 +7,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <summary>
 /// The encoding state of a static PNG or an APNG written with <see cref="PngOptimization.MinimumSize"/>: the candidate
 /// encodings are compressed to a byte counter (<see cref="PngImageDataEncoder.StartSource"/>) and the smallest is written.
+/// It also writes the still images of <see cref="PngOptimization.Layout"/>, which only chooses the layout, from the analysis
+/// alone: the candidate with the smallest unfiltered data, compressed once with the filter strategy and the level of the
+/// encoder.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -49,6 +52,7 @@ internal sealed class PngOptimizedEncoderSession : ImageEncoderSession
     private static readonly CompressionLevel[] Levels = [CompressionLevel.SmallestSize, CompressionLevel.Optimal, CompressionLevel.Fastest];
 
     private readonly PngEncoder _encoder;
+    private readonly bool _layoutOnly;
     private readonly bool _animated;
     private readonly int _expectedFrameCount;
     private readonly bool _isWide16;
@@ -95,6 +99,10 @@ internal sealed class PngOptimizedEncoderSession : ImageEncoderSession
     {
         _encoder = (PngEncoder)options.Encoder;
         _animated = options.Capabilities.IsAnimated;
+        _layoutOnly = _encoder.Optimization == PngOptimization.Layout;
+        if (_layoutOnly && _animated)
+            throw new ArgumentException("PngOptimization.Layout only optimizes still images.", nameof(options));
+
         _expectedFrameCount = options.ExpectedFrameCount ?? throw new ArgumentException("PNG output requires an expected frame count.", nameof(options));
         if (!_animated && _expectedFrameCount != 1)
             throw new ArgumentException("A static PNG has a single frame.", nameof(options));
@@ -103,12 +111,13 @@ internal sealed class PngOptimizedEncoderSession : ImageEncoderSession
         _wideFormat = _isWide16 ? PixelFormat.Rgba64 : PixelFormat.Rgba32;
         _canvasRegion = new Rectangle(0, 0, options.CanvasSize.Width, options.CanvasSize.Height);
         _filters = _encoder.Filter == PngFilter.Adaptive ? AllFilters : [_encoder.Filter];
-        _metadata = new PngMetadataWriter(options.Metadata, CompressionLevel.SmallestSize, options.Scope);
+        _metadata = new PngMetadataWriter(options.Metadata, _layoutOnly ? _encoder.CompressionLevel : CompressionLevel.SmallestSize, options.Scope);
         var width = options.CanvasSize.Width;
         try
         {
-            var trackOpaqueColors = PixelFormats.HasAlpha(options.PixelFormat) || (_animated && _expectedFrameCount > 1);
-            _analysis = new PngLayoutAnalysis(options.Scope, _isWide16, width, trackOpaqueColors);
+            // The colors of the opaque pixels serve the tRNS color key, which the layout analysis alone does not weigh
+            var trackOpaqueColors = !_layoutOnly && (PixelFormats.HasAlpha(options.PixelFormat) || (_animated && _expectedFrameCount > 1));
+            _analysis = new PngLayoutAnalysis(options.Scope, _isWide16, width, trackOpaqueColors, PixelFormats.HasAlpha(options.PixelFormat));
             _rows = new PngFrameRows(options.Scope, _wideFormat, width);
             if (_animated && _expectedFrameCount > 1)
             {
@@ -400,11 +409,15 @@ internal sealed class PngOptimizedEncoderSession : ImageEncoderSession
             // The frames of an animation are regions of the canvas, whose packed samples some decoders (FFmpeg, for one)
             // misplace: an animation uses 8-bit samples at least
             _candidates = _analysis!.CreateCandidates(paletteOnly, addTransparency, allImagesKnown: _plannedFrames is not null, allowGray, allowColor, allowPackedSamples: !addTransparency);
+            if (_layoutOnly)
+            {
+                _candidates = [GetSmallestUnfiltered(_candidates)];
+            }
 
             // The layout of the pixel format, which the encoder writes without optimization: with the filter strategy and
             // the level of the default encoder among the trials, a still image is never larger than that output
             var unoptimized = PngOptimizedLayout.ForPixelFormat(Options.PixelFormat);
-            if (!paletteOnly && !_candidates.Exists(candidate => candidate.IsSameAs(unoptimized)))
+            if (!paletteOnly && !_layoutOnly && !_candidates.Exists(candidate => candidate.IsSameAs(unoptimized)))
             {
                 _candidates.Add(unoptimized);
             }
@@ -469,6 +482,28 @@ internal sealed class PngOptimizedEncoderSession : ImageEncoderSession
         return true;
     }
 
+    /// <summary>
+    /// Gets the candidate of <see cref="PngOptimization.Layout"/>: the smallest unfiltered data (a filter type byte and
+    /// the samples of each row) with the <c>PLTE</c> and <c>tRNS</c> chunks it adds; the first one on a tie, which puts
+    /// the layouts without a palette and the smaller bit depths first.
+    /// </summary>
+    private PngOptimizedLayout GetSmallestUnfiltered(List<PngOptimizedLayout> candidates)
+    {
+        var size = Options.CanvasSize;
+        var best = candidates[0];
+        var bestBytes = long.MaxValue;
+        foreach (var candidate in candidates)
+        {
+            var bytes = ((long)size.Height * (1 + candidate.GetScanlineLength(size.Width))) + candidate.GetAncillaryBytes();
+            if (bytes < bestBytes)
+            {
+                (best, bestBytes) = (candidate, bytes);
+            }
+        }
+
+        return best;
+    }
+
     /// <summary>Adds the trials of a candidate layout: one group per known image, whose smallest trial counts.</summary>
     private void AddLayoutTrials(int candidate)
     {
@@ -514,6 +549,14 @@ internal sealed class PngOptimizedEncoderSession : ImageEncoderSession
         if (coversCanvas)
         {
             _plan = new FramePlan(_canvasRegion, Over: null, GetNaturalFilter(_layout!, _filters), PngFrameControl.DisposeNone, Rectangle.Empty, HasSize: false, Size: 0);
+            if (_layoutOnly)
+            {
+                // Compressed once, with the settings of the encoder
+                _plan = _plan with { Level = _encoder.CompressionLevel };
+                EndPlan();
+                return;
+            }
+
             StartFilterTrials();
             return;
         }

@@ -106,10 +106,6 @@ internal static partial class CssPropertyRules
     private static string CanonicalizeEasing(List<CssComponentValue> significant) => SerializeEasing(significant, computed: false);
 
     /// <summary>
-    /// The computed value of animation-timing-function and transition-timing-function: like the specified value, and the
-    /// number of steps is an integer of at least 1 (2 with jump-none). The value is the generic computed value.
-    /// </summary>
-    /// <summary>
     /// Serializes a single &lt;easing-function&gt; (e.g. the easing of a Web Animations effect,
     /// https://drafts.csswg.org/web-animations-1/#dom-effecttiming-easing) like a specified value; returns null when it is not a
     /// single component.
@@ -120,6 +116,10 @@ internal static partial class CssPropertyRules
         return significant.Count == 1 ? SerializeEasing(significant, computed: false) : null;
     }
 
+    /// <summary>
+    /// The computed value of animation-timing-function and transition-timing-function: like the specified value, and the
+    /// number of steps is an integer of at least 1 (2 with jump-none). The value is the generic computed value.
+    /// </summary>
     public static string ComputeEasing(string value) => SerializeEasing(ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(value)), computed: true);
 
     private static string SerializeEasing(List<CssComponentValue> significant, bool computed)

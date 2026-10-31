@@ -60,12 +60,6 @@ internal sealed record FetchCookieContext(CookieJar? CookieJar, string? SiteForC
 internal sealed record FetchEventNavigationContext(FetchCookieContext? CookieContext, RequestDestination Destination);
 
 /// <summary>
-/// A request of the fetch algorithm (https://fetch.spec.whatwg.org/#concept-request), created by <c>fetch()</c>,
-/// <see cref="XmlHttpRequest"/>, the subresources of the documents (see <see cref="SubresourceFetching"/>) and the
-/// navigations. The body is a byte sequence (the bodies whose source is a stream are read before the request is fetched,
-/// and have no source).
-/// </summary>
-/// <summary>
 /// The times of a fetch (https://fetch.spec.whatwg.org/#fetch-timing-info), as timestamps of the time provider of the event
 /// loop of the request (see <see cref="DomEventLoop.TimeProvider"/>), or 0 when the step did not happen. The loader does not
 /// expose the timing of the connection nor the time of the first byte: the request is sent when the loader is called, and
@@ -110,6 +104,12 @@ internal sealed class FetchTimestamps
     public string ServiceWorkerFinalRouterSource { get; set; } = "";
 }
 
+/// <summary>
+/// A request of the fetch algorithm (https://fetch.spec.whatwg.org/#concept-request), created by <c>fetch()</c>,
+/// <see cref="XmlHttpRequest"/>, the subresources of the documents (see <see cref="SubresourceFetching"/>) and the
+/// navigations. The body is a byte sequence (the bodies whose source is a stream are read before the request is fetched,
+/// and have no source).
+/// </summary>
 internal sealed partial class FetchRequest
 {
     public FetchRequest(UrlRecord url)

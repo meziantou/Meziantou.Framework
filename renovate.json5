@@ -20,8 +20,8 @@
       "datasourceTemplate": "docker"
     },
     {
-      // Only the 'references' of docgen.json: eng/update-all.cs writes the 'packages' from the versions of the
-      // projects of src/, so Renovate must not update them.
+      // Only the 'references' of docgen.json: the 'packages' are the packages of src/, packed locally before
+      // building the site.
       "customType": "regex",
       "description": "NuGet packages referenced by the documentation site (docgen.json)",
       "managerFilePatterns": [

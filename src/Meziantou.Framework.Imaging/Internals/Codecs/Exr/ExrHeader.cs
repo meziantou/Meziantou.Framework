@@ -51,6 +51,16 @@ internal sealed class ExrHeader
 
     public ExrBox DisplayWindow => _displayWindow ?? default;
 
+    /// <summary>
+    /// Gets the window the decoded image covers: the display window, or the data window with
+    /// <see cref="OpenExrWindowMode.DataWindow"/>. Its corner (<see cref="ExrBox.MinX"/>, <see cref="ExrBox.MinY"/>) is the
+    /// pixel (0, 0) of the image.
+    /// </summary>
+    public ExrBox ImageWindow { get; private set; }
+
+    /// <summary>Gets a value indicating whether the data window covers the whole image (no pixel is left transparent black).</summary>
+    public bool DataWindowCoversImage => DataWindow.Contains(ImageWindow);
+
     public ExrLineOrder LineOrder => _lineOrder ?? ExrLineOrder.IncreasingY;
 
     /// <summary>Gets the width of a tile.</summary>
@@ -180,7 +190,8 @@ internal sealed class ExrHeader
 
     /// <summary>Checks the header once every attribute is read and computes the geometry of the chunks.</summary>
     /// <param name="limits">The resource limits of the operation.</param>
-    public void Complete(ImageResourceLimits limits)
+    /// <param name="options">The channels and the window the image is decoded from.</param>
+    public void Complete(ImageResourceLimits limits, OpenExrDecodingOptions options)
     {
         if (_type is not null)
         {
@@ -239,18 +250,24 @@ internal sealed class ExrHeader
         if (!ExrFormat.IsDecodable(Compression))
             throw ExrFormat.Unsupported($"The OpenEXR image is compressed with {ExrFormat.GetName(Compression)}, which is not supported.", "Compression: " + ExrFormat.GetName(Compression));
 
-        ResolveRoles();
-        if (!display.Contains(data))
-            throw ExrFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The OpenEXR image has pixels outside its display window: the data window ({data.MinX}, {data.MinY}) - ({data.MaxX}, {data.MaxY}) is not inside the display window ({display.MinX}, {display.MinY}) - ({display.MaxX}, {display.MaxY}), and they would be lost."), "Pixels outside the display window");
+        ResolveRoles(options.Layer);
+        if (options.WindowMode == OpenExrWindowMode.DisplayWindow && !display.Contains(data))
+            throw ExrFormat.Unsupported(string.Create(CultureInfo.InvariantCulture, $"The OpenEXR image has pixels outside its display window: the data window ({data.MinX}, {data.MinY}) - ({data.MaxX}, {data.MaxY}) is not inside the display window ({display.MinX}, {display.MinY}) - ({display.MaxX}, {display.MaxY}), and they would be lost. Set the WindowMode of ImageConfiguration.OpenExrDecoding to crop them or to decode the data window."), "Pixels outside the display window");
 
-        if (display.Width > int.MaxValue)
-            throw new ImageResourceLimitException(ImageResourceLimitKind.Width, limits.MaxWidth, display.Width);
+        ImageWindow = options.WindowMode == OpenExrWindowMode.DataWindow ? data : display;
+        EnsureWithinLimits(limits, ImageWindow);
+        if (options.WindowMode != OpenExrWindowMode.DisplayWindow)
+        {
+            // Every chunk of the data window is decoded, also those the image does not show
+            EnsureWithinLimits(limits, data);
+        }
 
-        if (display.Height > int.MaxValue)
-            throw new ImageResourceLimitException(ImageResourceLimitKind.Height, limits.MaxHeight, display.Height);
-
-        limits.EnsureCanvasWithinLimits(display.Width, display.Height);
         ComputeChunks();
+
+        // The channels a layer ignores are decompressed with the chunk: many of them make a chunk larger than a buffer
+        if (MaxChunkDataLength > CheckedSizes.MaxBufferLength)
+            throw CheckedSizes.CreateOverflowException(limits);
+
         if (_chunkCount is { } declared && declared != ChunkCount)
             throw ExrFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"the chunkCount attribute is {declared}, but the image has {ChunkCount} chunks."));
     }
@@ -330,36 +347,116 @@ internal sealed class ExrHeader
         return result < 0 ? result + modulus : result;
     }
 
-    private void ResolveRoles()
+    private static void EnsureWithinLimits(ImageResourceLimits limits, ExrBox window)
+    {
+        if (window.Width > int.MaxValue)
+            throw new ImageResourceLimitException(ImageResourceLimitKind.Width, limits.MaxWidth, window.Width);
+
+        if (window.Height > int.MaxValue)
+            throw new ImageResourceLimitException(ImageResourceLimitKind.Height, limits.MaxHeight, window.Height);
+
+        limits.EnsureCanvasWithinLimits(window.Width, window.Height);
+    }
+
+    /// <summary>Splits a channel name into its layer (up to its last dot, empty for the default layer) and its base name.</summary>
+    private static (string Layer, string BaseName) SplitName(string name)
+    {
+        var dot = name.LastIndexOf('.', StringComparison.Ordinal);
+        return dot < 0 ? (string.Empty, name) : (name[..dot], name[(dot + 1)..]);
+    }
+
+    private static ExrChannelRole? GetColorRole(string baseName) => baseName switch
+    {
+        "R" => ExrChannelRole.Red,
+        "G" => ExrChannelRole.Green,
+        "B" => ExrChannelRole.Blue,
+        "A" => ExrChannelRole.Alpha,
+        "Y" => ExrChannelRole.Luminance,
+        _ => null,
+    };
+
+    private static string DescribeLayer(string layer) => layer.Length == 0 ? "the default layer" : $"the layer '{layer}'";
+
+    /// <summary>Describes the layers of the file that have a color channel, for the message of a layer that has none.</summary>
+    private string DescribeColorLayers()
+    {
+        var layers = new List<string>();
+        foreach (var channel in _channels!)
+        {
+            var (layer, baseName) = SplitName(channel.Name);
+            if (baseName is "R" or "G" or "B" or "Y" && !layers.Contains(layer, StringComparer.Ordinal))
+            {
+                layers.Add(layer);
+            }
+        }
+
+        return layers.Count == 0
+            ? "no layer of the file has one"
+            : "the layers with color channels are " + string.Join(", ", layers.Select(DescribeLayer));
+    }
+
+    /// <summary>
+    /// Gives each channel its role: with no layer, every channel must be a color or alpha; with a layer, its colors and
+    /// alpha are decoded and the other channels are ignored.
+    /// </summary>
+    private void ResolveRoles(string? layer)
     {
         var roles = new ExrChannelRole[_channels!.Length];
         var seen = 0;
         var isHalfOnly = true;
+        var hasChroma = false;
+        var hasX = false;
         for (var i = 0; i < roles.Length; i++)
         {
             var channel = _channels[i];
-            var role = channel.Name switch
+            ExrChannelRole role;
+            if (layer is null)
             {
-                "R" => ExrChannelRole.Red,
-                "G" => ExrChannelRole.Green,
-                "B" => ExrChannelRole.Blue,
-                "A" => ExrChannelRole.Alpha,
-                "Y" => ExrChannelRole.Luminance,
-                _ => throw ExrFormat.Unsupported($"The OpenEXR image has the channel '{channel.Name}', which is not one of R, G, B, A and Y: it would be lost.", "Extra channels"),
-            };
+                role = GetColorRole(channel.Name) ?? throw ExrFormat.Unsupported($"The OpenEXR image has the channel '{channel.Name}', which is not one of R, G, B, A and Y: it would be lost. Set the Layer of ImageConfiguration.OpenExrDecoding to decode one layer and ignore the other channels.", "Extra channels");
+            }
+            else
+            {
+                var (channelLayer, baseName) = SplitName(channel.Name);
+                if (!string.Equals(channelLayer, layer, StringComparison.Ordinal))
+                {
+                    role = ExrChannelRole.Ignored;
+                }
+                else
+                {
+                    hasChroma |= baseName is "RY" or "BY";
+                    hasX |= baseName == "X";
+                    role = GetColorRole(baseName) ?? ExrChannelRole.Ignored;
+                }
+            }
+
+            roles[i] = role;
+            if (role == ExrChannelRole.Ignored)
+                continue;
 
             if (channel.XSampling != 1 || channel.YSampling != 1)
                 throw ExrFormat.Unsupported($"The OpenEXR channel '{channel.Name}' is sub-sampled, which is not supported.", "Sub-sampled channels");
 
-            roles[i] = role;
             seen |= 1 << (int)role;
             isHalfOnly &= channel.PixelType == ExrPixelType.Half;
         }
 
         const int Rgb = (1 << (int)ExrChannelRole.Red) | (1 << (int)ExrChannelRole.Green) | (1 << (int)ExrChannelRole.Blue);
         const int Luminance = 1 << (int)ExrChannelRole.Luminance;
+        if (layer is not null && hasChroma)
+            throw ExrFormat.Unsupported($"The OpenEXR file has chroma channels (RY, BY) in {DescribeLayer(layer)}, which are not supported: its colors would be lost.", "Luminance-chroma channels");
+
+        if (layer is not null && hasX && (seen & Luminance) != 0)
+            throw ExrFormat.Unsupported($"The OpenEXR file has X and Y channels in {DescribeLayer(layer)}: they are the components of a vector (a normal, a position) or CIE XYZ colors, not a luminance.", "Ambiguous layer");
+
         if ((seen & Luminance) != 0 && (seen & Rgb) != 0)
-            throw ExrFormat.Unsupported("The OpenEXR image has both RGB channels and a luminance channel (Y): one of them would be lost.", "Extra channels");
+        {
+            throw layer is null
+                ? ExrFormat.Unsupported("The OpenEXR image has both RGB channels and a luminance channel (Y): one of them would be lost.", "Extra channels")
+                : ExrFormat.Unsupported($"The OpenEXR file has both RGB channels and a luminance channel (Y) in {DescribeLayer(layer)}: one of them would be lost.", "Extra channels");
+        }
+
+        if (layer is not null && seen == 0)
+            throw ExrFormat.Unsupported($"The OpenEXR file has no color channel (R, G, B or Y) in {DescribeLayer(layer)}: {DescribeColorLayers()}.", "Missing layer");
 
         if ((seen & (Rgb | Luminance)) == 0)
             throw ExrFormat.Unsupported("The OpenEXR image has no color channel (R, G, B or Y).", "Alpha-only image");

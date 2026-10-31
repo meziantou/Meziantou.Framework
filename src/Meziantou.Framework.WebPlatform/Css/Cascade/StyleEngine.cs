@@ -1372,11 +1372,6 @@ internal sealed partial class StyleEngine
         };
     }
 
-    /// <summary>
-    /// Returns the element the element inherits from: its parent in the flat tree
-    /// (https://drafts.csswg.org/css-scoping/#flat-tree), that is the assigned slot of a slotted element or the shadow host
-    /// of the children of a shadow root; the parent element otherwise.
-    /// </summary>
     /// <summary>The names of the <c>::before::marker</c> and <c>::after::marker</c> pseudo-elements (https://drafts.csswg.org/css-pseudo-4/#marker-pseudo).</summary>
     internal const string BeforeMarker = "before" + MarkerSuffix;
 
@@ -1417,6 +1412,11 @@ internal sealed partial class StyleEngine
         return false;
     }
 
+    /// <summary>
+    /// Returns the element the element inherits from: its parent in the flat tree
+    /// (https://drafts.csswg.org/css-scoping/#flat-tree), that is the assigned slot of a slotted element or the shadow host
+    /// of the children of a shadow root; the parent element otherwise.
+    /// </summary>
     internal static Element? GetInheritanceParent(Element element)
     {
         if (element.Slottable?.AssignedSlot is { } slot)

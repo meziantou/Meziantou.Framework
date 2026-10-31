@@ -195,13 +195,6 @@ internal sealed partial class LayoutEngine
     }
 
     /// <summary>
-    /// Returns the color the canvas of the document is drawn over: the canvas color of its color scheme for a top-level document
-    /// (white, the default background of the browsers, or a dark color for a dark color scheme); a nested document is transparent,
-    /// unless its color scheme is not the used color scheme of the element that embeds it
-    /// (https://drafts.csswg.org/css-color-adjust-1/#color-scheme-effect: "the embedded document's canvas [...] must be opaque", so
-    /// a dark document is readable in a light page; as in the browsers, the initial about:blank document stays transparent).
-    /// </summary>
-    /// <summary>
     /// Returns the display list of the viewport of a document of a browsing context that has no document element: the viewport
     /// only shows the canvas, which has no background (https://drafts.csswg.org/css-backgrounds-3/#special-backgrounds), or null
     /// when the document is not rendered.
@@ -223,6 +216,13 @@ internal sealed partial class LayoutEngine
         return builder.ToDisplayList(new PhysicalSize(environment.Width, environment.Height));
     }
 
+    /// <summary>
+    /// Returns the color the canvas of the document is drawn over: the canvas color of its color scheme for a top-level document
+    /// (white, the default background of the browsers, or a dark color for a dark color scheme); a nested document is transparent,
+    /// unless its color scheme is not the used color scheme of the element that embeds it
+    /// (https://drafts.csswg.org/css-color-adjust-1/#color-scheme-effect: "the embedded document's canvas [...] must be opaque", so
+    /// a dark document is readable in a light page; as in the browsers, the initial about:blank document stays transparent).
+    /// </summary>
     internal DisplayColor GetCanvasBaseColor()
     {
         if (_document.BrowsingContext is { Parent: null })

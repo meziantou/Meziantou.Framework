@@ -50,6 +50,12 @@ internal abstract class ImageCodec
     /// </summary>
     public virtual bool SupportsScaledDecoding => false;
 
+    /// <summary>
+    /// Gets a value indicating whether the decoder reads <see cref="ImageDecodeRequest.Region"/> (JPEG 2000). The driver
+    /// rejects a request for a region before the decoders of the other codecs start.
+    /// </summary>
+    public virtual bool SupportsRegionDecoding => false;
+
     /// <summary>Describes the input without decoding pixels, reading it by offset.</summary>
     /// <param name="source">The random-access view of the input.</param>
     /// <param name="mode">The identify mode.</param>

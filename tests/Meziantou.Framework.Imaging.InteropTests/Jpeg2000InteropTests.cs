@@ -198,6 +198,77 @@ public sealed class Jpeg2000InteropTests
     }
 
     /// <summary>
+    /// Scaled decodes and regions against <c>opj_decompress -r</c> and <c>-d</c>, on codestreams of the library (one tile,
+    /// tiles whose last column and row are cut) and of OpenJPEG (precincts in the PCRL order, tiles with layers, small
+    /// code-blocks in the RPCL order): the same size at every reduction, and the same samples, exactly for the reversible
+    /// path and within one level of 8 bits for the irreversible one, as for full decodes.
+    /// </summary>
+    [Theory]
+    [InlineData("library-lossless", false)]
+    [InlineData("library-lossy-tiles", true)]
+    [InlineData("library-lossless-odd-tiles", false)]
+    [InlineData("opj-precincts-pcrl", false)]
+    [InlineData("opj-tiles-layers", true)]
+    [InlineData("opj-small-blocks-rpcl", true)]
+    public async Task ScaledDecodesAndRegionsAreTheOnesOfOpenJpeg(string kind, bool isLossy)
+    {
+        var openJpeg = await RequiredTools.OpenJpegAsync();
+        var source = CreateLandscape(384, 256);
+        var directory = InteropSettings.GetArtifactsDirectory(nameof(ScaledDecodesAndRegionsAreTheOnesOfOpenJpeg));
+        var path = directory / $"{kind}.j2k";
+        if (kind.StartsWith("library", StringComparison.Ordinal))
+        {
+            using var image = EncoderSources.CreateImage(source, PixelFormat.Rgb24);
+            var encoder = kind switch
+            {
+                "library-lossless" => new Jpeg2000Encoder { Container = Jpeg2000Container.Codestream },
+                "library-lossy-tiles" => new Jpeg2000Encoder { Container = Jpeg2000Container.Codestream, Compression = Jpeg2000Compression.Lossy, TileWidth = 128, TileHeight = 128 },
+                _ => new Jpeg2000Encoder { Container = Jpeg2000Container.Codestream, TileWidth = 150, TileHeight = 77, DecompositionLevels = 6 },
+            };
+            await image.SaveAsync(path, encoder, XunitCancellationToken);
+        }
+        else
+        {
+            var input = directory / $"{kind}.ppm";
+            await File.WriteAllBytesAsync(input, WriteNetpbm(source), XunitCancellationToken);
+            string[] arguments = kind switch
+            {
+                "opj-precincts-pcrl" => ["-n", "6", "-c", "[64,64],[32,32],[16,16]", "-p", "PCRL"],
+                "opj-tiles-layers" => ["-t", "128,96", "-n", "4", "-I", "-r", "20,5"],
+                _ => ["-b", "32,16", "-p", "RPCL", "-I"],
+            };
+            await openJpeg.EncodeAsync(input, path, arguments, XunitCancellationToken);
+        }
+
+        var data = await File.ReadAllBytesAsync(path, XunitCancellationToken);
+        var levels = ReferenceJpeg2000.Parse(data).CodingStyles.Min(style => style.DecompositionLevels);
+        Rectangle?[] regions = [null, new Rectangle(37, 21, 150, 101), new Rectangle(300, 200, 84, 56), new Rectangle(0, 128, 384, 1), new Rectangle(129, 0, 3, 256)];
+        for (var reduction = 0; reduction <= Math.Min(levels, 5); reduction++)
+        {
+            foreach (var region in regions)
+            {
+                List<string> arguments = ["-r", reduction.ToString(CultureInfo.InvariantCulture)];
+                if (region is { } area)
+                {
+                    // OpenJPEG rejects a region that has no sample at the reduced resolution; the library keeps the sample
+                    // that covers it (Jpeg2000DecoderTests)
+                    var denominator = 1 << reduction;
+                    if ((area.X + denominator - 1) / denominator == (area.Right + denominator - 1) / denominator || (area.Y + denominator - 1) / denominator == (area.Bottom + denominator - 1) / denominator)
+                        continue;
+
+                    arguments.AddRange(["-d", string.Create(CultureInfo.InvariantCulture, $"{area.X},{area.Y},{area.Right},{area.Bottom}")]);
+                }
+
+                var context = $"{kind} at 1/{1 << reduction}, region {region?.ToString() ?? "none"}";
+                var channels = await openJpeg.DecodeComponentsAsync(path, arguments, XunitCancellationToken);
+                using var decoded = Image.Load(data, new ImageDecodeOptions { ScaleDenominator = 1 << reduction, Region = region });
+                var library = ImageSnapshots.Capture(decoded).Frames[0].Pixels;
+                AssertChannels(library, channels, tolerance: isLossy ? 1 : 0, $"{context}: OpenJPEG {openJpeg.Version} decodes other samples.");
+            }
+        }
+    }
+
+    /// <summary>
     /// The rate control against the one of <c>opj_compress -r</c> (both are the post-compression rate-distortion
     /// optimization of T.800, J.14), on an image with smooth areas, edges and texture: at the same number of bits per
     /// pixel, the output fits the target as closely and its PSNR is not lower, within 0.3 dB.

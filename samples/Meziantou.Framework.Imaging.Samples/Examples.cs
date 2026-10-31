@@ -1329,6 +1329,24 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>JPEG 2000 thumbnails and viewports: a lower resolution, a target size and an area.</summary>
+    #region Imaging_Jpeg2000ScaledAndRegionDecoding
+    public static (Image Thumbnail, Image Preview, Image Viewport) LoadJpeg2000Parts(string path)
+    {
+        // A thumbnail at a quarter of the size: the decoder discards the two highest resolution levels of the wavelet
+        // transformation, for about a sixteenth of the work and of the memory
+        var thumbnail = Image.Load(path, new ImageDecodeOptions { ScaleDenominator = 4 });
+
+        // The smallest image of at least 200x100 pixels the file allows (at most 1/32 with 5 decomposition levels)
+        var preview = Image.Load(path, new ImageDecodeOptions { TargetSize = new Size(200, 100) });
+
+        // A viewport: only the tiles and the code-blocks that reach the area are decoded, to the pixels of a full decode.
+        // With ScaleDenominator, the area is divided like the image
+        var viewport = Image.Load(path, new ImageDecodeOptions { Region = new Rectangle(300, 200, 400, 300) });
+        return (thumbnail, preview, viewport);
+    }
+    #endregion
+
     /// <summary>OpenEXR: floating-point pixels in and out, and the integer version of a high dynamic range image.</summary>
     #region Imaging_OpenExr
     public static Image<Rgba32> ConvertOpenExr(string exrPath, string pizPath)

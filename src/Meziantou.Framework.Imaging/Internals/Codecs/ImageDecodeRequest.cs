@@ -25,12 +25,16 @@ internal sealed record ImageDecodeRequest(PixelFormat? PixelFormat, int? FrameLi
     /// <summary>Gets a value indicating whether the request asks for a reduced resolution, exact or not.</summary>
     public bool IsScaled => ScaleDenominator > 1 || TargetSize is not null;
 
+    /// <summary>Gets the area of the image to decode (<see cref="ImageDecodeOptions.Region"/>), or <see langword="null"/> for the whole image.</summary>
+    public Rectangle? Region { get; init; }
+
     public static ImageDecodeRequest Create(ImageDecodeOptions options, PixelFormat? pixelFormat)
         => new(pixelFormat, options.FrameLimit, options.Conversion)
         {
             CmykConversion = options.CmykConversion,
             ScaleDenominator = options.ScaleDenominator,
             TargetSize = options.TargetSize,
+            Region = options.Region,
         };
 
     public static ImageDecodeRequest Create(ImageReaderOptions options, PixelFormat? pixelFormat)
@@ -72,8 +76,14 @@ internal sealed record ImageDecodeRequest(PixelFormat? PixelFormat, int? FrameLi
     /// <summary>Gets the request given to the decoder of a codec, which may not decode at a reduced resolution.</summary>
     /// <param name="codec">The codec of the input.</param>
     /// <returns>This request.</returns>
-    /// <exception cref="UnsupportedImageFeatureException">The request asks for an exact scale and the codec only decodes at full resolution.</exception>
-    public ImageDecodeRequest For(ImageCodec codec) => codec.SupportsScaledDecoding ? this : ForFullResolution(codec.Format);
+    /// <exception cref="UnsupportedImageFeatureException">The request asks for an exact scale and the codec only decodes at full resolution, or for a region and the codec only decodes whole images.</exception>
+    public ImageDecodeRequest For(ImageCodec codec)
+    {
+        if (Region is not null && !codec.SupportsRegionDecoding)
+            throw CreateUnsupportedRegionException(codec.Format);
+
+        return codec.SupportsScaledDecoding ? this : ForFullResolution(codec.Format);
+    }
 
     /// <summary>
     /// Gets the request given to a decoder that only decodes at full resolution: a request for an exact scale is
@@ -81,9 +91,12 @@ internal sealed record ImageDecodeRequest(PixelFormat? PixelFormat, int? FrameLi
     /// </summary>
     /// <param name="format">The format of the decoder.</param>
     /// <returns>This request.</returns>
-    /// <exception cref="UnsupportedImageFeatureException">The request asks for an exact scale.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The request asks for an exact scale or for a region.</exception>
     public ImageDecodeRequest ForFullResolution(ImageFormat format)
     {
+        if (Region is not null)
+            throw CreateUnsupportedRegionException(format);
+
         if (ScaleDenominator > 1)
             throw CreateUnsupportedScaleException(format, string.Create(CultureInfo.InvariantCulture, $"{ImageFormatNames.Get(format)} images are only decoded at full resolution"));
 
@@ -95,6 +108,9 @@ internal sealed record ImageDecodeRequest(PixelFormat? PixelFormat, int? FrameLi
     /// <param name="denominator">The scale denominator.</param>
     /// <returns>The scaled length.</returns>
     public static int GetScaledLength(int length, int denominator) => (int)(((long)length + denominator - 1) / denominator);
+
+    private static UnsupportedImageFeatureException CreateUnsupportedRegionException(ImageFormat format)
+        => new(string.Create(CultureInfo.InvariantCulture, $"{ImageFormatNames.Get(format)} images cannot be decoded by area: decode the whole image and crop it."), format, "Region decoding");
 
     private UnsupportedImageFeatureException CreateUnsupportedScaleException(ImageFormat format, string reason)
         => new(string.Create(CultureInfo.InvariantCulture, $"The image cannot be decoded at 1/{ScaleDenominator} of its size: {reason}. Set TargetSize instead of ScaleDenominator to decode at the smallest size the image allows."), format, "Scaled decoding");

@@ -1299,6 +1299,40 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void LoadJpeg2000PartsDecodesAThumbnailAPreviewAndAViewport()
+    {
+        var path = GetPath("tiled.jp2");
+        var pixels = new Rgb24[1024 * 768];
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            var (x, y) = (i % 1024, i / 1024);
+            pixels[i] = new Rgb24((byte)(x / 4), (byte)(y / 3), (byte)((x ^ y) & 0xFF));
+        }
+
+        using (var source = Image.ImportPixelData<Rgb24>(pixels, 1024, 768))
+        {
+            source.Save(path, new Jpeg2000Encoder { TileWidth = 256, TileHeight = 256 });
+        }
+
+        var (thumbnail, preview, viewport) = Examples.LoadJpeg2000Parts(path);
+        using (thumbnail)
+        using (preview)
+        using (viewport)
+        {
+            Assert.Equal((256, 192), (thumbnail.Width, thumbnail.Height));
+
+            // 1/8 would give 128x96, smaller than the target
+            Assert.Equal((256, 192), (preview.Width, preview.Height));
+
+            // The pixels of the area, exactly (the file is lossless)
+            Assert.Equal((400, 300), (viewport.Width, viewport.Height));
+            using var area = viewport.CloneAs<Rgb24>();
+            Assert.Equal(pixels[(200 * 1024) + 300], area.Frames[0][0, 0]);
+            Assert.Equal(pixels[(499 * 1024) + 699], area.Frames[0][399, 299]);
+        }
+    }
+
+    [Fact]
     public void SaveHeicWritesALossyPhotoALosslessImageAndAnImageSequence()
     {
         var (apngPath, _) = BuildAnimation();

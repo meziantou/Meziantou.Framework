@@ -885,6 +885,7 @@ namespace Meziantou.Framework.Imaging
         public Meziantou.Framework.Imaging.PixelConversionOptions Conversion { get => throw null; init { } }
         public static Meziantou.Framework.Imaging.ImageDecodeOptions Default { get => throw null; }
         public int? FrameLimit { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Rectangle? Region { get => throw null; init { } }
         public int ScaleDenominator { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Size? TargetSize { get => throw null; init { } }
     }

@@ -636,6 +636,15 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
     photographs: `TheQualityFollowsTheScaleOfTheJpegEncoder` only keeps the two scales together on a synthetic image.
   - A TIFF strip or tile compressed with JPEG 2000 is decoded by the same code through `Jpeg2000SampleDecoder` and a
     `Jpeg2000SampleReceiver`: the page says what the components are.
+  - Scaled and region decoding (`Jpeg2000Decoder`): `Jpeg2000TileGeometry.Create(..., reduction)` keeps the full partition
+    (the packets and the position progressions need it) but gives each tile-component the bounds and the levels
+    (`DecodedLevels`) of the highest resolution level that is decoded, so the plane, the strides and the inverse
+    transformation are those of that level; the code-blocks of the discarded levels are not decoded. A region is an area of
+    the reference grid at full resolution, rebuilt from the output window (so a sample kept for a narrow region is decoded):
+    the tiles it does not meet are skipped (`OnTile`), and `Jpeg2000TileDecoder.GetBandWindows` keeps the code-blocks that
+    reach it with `RegionMargin` coefficients more for the filters (others are zeros). `Jpeg2000RowWriter` writes the
+    window. `ScaledDecodesAndRegionsAreTheOnesOfOpenJpeg` compares with `opj_decompress -r` and `-d` (OpenJPEG rejects a
+    region that has no sample at the reduced resolution); `ARegionHasTheSamplesOfAFullDecode` checks the margin.
 - **TIFF** (`Internals/Codecs/Tiff`). `TiffPage` resolves and validates a directory without reading a pixel, so every
   rejection also comes from `Identify`, except the ones of the compressed data. `TiffBlockReader` turns a strip or a
   tile into rows of samples (fill order, compression, predictor, YCbCr data units) and `TiffRowExpander` turns the rows

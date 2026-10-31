@@ -122,4 +122,35 @@ public sealed class ImageDecodeOptions
             field = value;
         }
     }
+
+    /// <summary>
+    /// Gets the area of the image to decode, in pixels of the stored image at full resolution (before its orientation is
+    /// applied), or <see langword="null"/> (the default) to decode the whole image. The decoded image holds the part of
+    /// the area that is in the image.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A JPEG 2000 file only decodes the tiles that the area meets, and in them the code-blocks whose coefficients reach
+    /// it: the samples of the area are those of a full decode, for less time (the wavelet transformation of a tile that the
+    /// area meets is still whole). With <see cref="ScaleDenominator"/> or <see cref="TargetSize"/>, the area is divided like
+    /// the image: its edges are rounded up, as the reference grid of the format does, and an area narrower than a pixel of
+    /// the reduced image keeps the pixel that covers it.
+    /// </para>
+    /// <para>
+    /// The other formats cannot decode an area: a load with a region is an <see cref="UnsupportedImageFeatureException"/>, and
+    /// so is an area that does not meet the image.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The area is empty or starts at a negative coordinate.</exception>
+    public Rectangle? Region
+    {
+        get;
+        init
+        {
+            if (value is { } region && (region.IsEmpty || region.X < 0 || region.Y < 0 || region.Width < 0 || region.Height < 0))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The region must not be empty nor start at a negative coordinate.");
+
+            field = value;
+        }
+    }
 }

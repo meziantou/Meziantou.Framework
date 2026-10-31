@@ -5,14 +5,17 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <summary>
 /// A tile-component (T.800, B.3): the samples of one component in one tile, with the plane its coefficients are decoded
 /// into. The sub-bands are laid out in the plane as the transformation leaves them: the lower resolution level at the top
-/// left, the HL sub-band at its right, the LH sub-band below it and the HH sub-band in the corner.
+/// left, the HL sub-band at its right, the LH sub-band below it and the HH sub-band in the corner. When the decoder discards
+/// resolution levels, the bounds and the plane are those of the highest resolution level it decodes: the lower ones are at
+/// the top left of that plane as they would be in the whole one.
 /// </summary>
 internal sealed class Jpeg2000TileComponent : IDisposable
 {
     private Av1PooledArray<int>? _plane;
 
-    public Jpeg2000TileComponent(int index, long x0, long y0, long x1, long y1, Jpeg2000CodingStyle style, int guardBits, int regionShift, int precision, int firstResolution)
+    public Jpeg2000TileComponent(int index, long x0, long y0, long x1, long y1, Jpeg2000CodingStyle style, int guardBits, int regionShift, int precision, int firstResolution, int decodedLevels)
     {
+        DecodedLevels = decodedLevels;
         Index = index;
         X0 = x0;
         Y0 = y0;
@@ -27,7 +30,13 @@ internal sealed class Jpeg2000TileComponent : IDisposable
 
     public int Index { get; }
 
-    /// <summary>Gets the left edge of the tile-component (tcx0).</summary>
+    /// <summary>
+    /// Gets the number of decomposition levels the decoder reverses: <see cref="Jpeg2000CodingStyle.DecompositionLevels"/>, less
+    /// the resolution levels it discards. The resolution levels above it are read from the packets but not decoded.
+    /// </summary>
+    public int DecodedLevels { get; }
+
+    /// <summary>Gets the left edge of the tile-component (tcx0), at the highest resolution level that is decoded.</summary>
     public long X0 { get; }
 
     /// <summary>Gets the top edge of the tile-component (tcy0).</summary>

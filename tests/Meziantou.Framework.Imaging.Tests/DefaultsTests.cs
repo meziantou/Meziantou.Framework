@@ -443,6 +443,7 @@ public sealed class DefaultsTests
         // Images are decoded at full resolution unless a scale or a target size is set
         Assert.Equal(1, ImageDecodeOptions.Default.ScaleDenominator);
         Assert.Null(ImageDecodeOptions.Default.TargetSize);
+        Assert.Null(ImageDecodeOptions.Default.Region);
         Assert.Equal(1, ImageReaderOptions.Default.ScaleDenominator);
         Assert.Null(ImageReaderOptions.Default.TargetSize);
 

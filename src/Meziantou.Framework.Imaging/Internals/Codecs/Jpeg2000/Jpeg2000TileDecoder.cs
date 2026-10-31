@@ -43,6 +43,10 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
     // The smallest number of samples of a range of the level shift that a worker takes
     private const int MinSamplesPerRange = 16 * 1024;
 
+    // How many coefficients around the area of a region a sub-band keeps: the synthesis of a level reads up to 3 of
+    // them on each side (4 lifting steps of the 9-7 filter), and the levels below add less than as many again
+    private const int RegionMargin = 8;
+
     private readonly ImageCodecContext _context;
     private readonly int _maxDegreeOfParallelism;
 
@@ -60,9 +64,17 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
     }
 
     /// <summary>Decodes a tile: on return, the plane of each tile-component of <paramref name="geometry"/> holds its samples.</summary>
+    /// <param name="siz">The image and tile size.</param>
+    /// <param name="coding">The coding parameters of the tile.</param>
+    /// <param name="geometry">The partition of the tile, which says the resolution levels to decode.</param>
+    /// <param name="tile">The data of the tile.</param>
+    /// <param name="region">
+    /// The area of the reference grid that is needed, or <see langword="null"/> for the whole tile: the code-blocks whose
+    /// coefficients do not reach it are not decoded (they are zeros), so that only the samples of the area are exact.
+    /// </param>
     /// <returns>The features the tile used.</returns>
     /// <exception cref="InvalidImageContentException">The data of the tile is malformed.</exception>
-    public Jpeg2000Tools Decode(Jpeg2000Siz siz, Jpeg2000TileCoding coding, Jpeg2000TileGeometry geometry, Jpeg2000Tile tile)
+    public Jpeg2000Tools Decode(Jpeg2000Siz siz, Jpeg2000TileCoding coding, Jpeg2000TileGeometry geometry, Jpeg2000Tile tile, Jpeg2000Area? region = null)
     {
         var scope = _context.Scope;
         var tools = coding.Tools;
@@ -86,9 +98,10 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
 
         var main = _workers[0];
         main.EnsureScratch(scratchLength);
-        var workers = Jpeg2000Workers.GetWorkerCount(_maxDegreeOfParallelism, (geometry.X1 - geometry.X0) * (geometry.Y1 - geometry.Y0), geometry.Blocks.Length);
+        var bandWindows = GetBandWindows(siz, geometry, region);
+        var workers = Jpeg2000Workers.GetWorkerCount(_maxDegreeOfParallelism, (geometry.OutputX1 - geometry.OutputX0) * (geometry.OutputY1 - geometry.OutputY0), geometry.Blocks.Length);
         if (workers > 1)
-            return tools | DecodeByWorkers(coding, geometry, packets, tile.Body.Data, scratchLength, workers);
+            return tools | DecodeByWorkers(coding, geometry, packets, tile.Body.Data, scratchLength, workers, bandWindows);
 
         var contributions = packets.Contributions;
         var body = tile.Body.Data;
@@ -96,17 +109,19 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
         var scratch = main.Scratch!;
         foreach (var component in geometry.Components)
         {
-            var levels = component.Style.DecompositionLevels;
+            // The resolution levels above the decoded ones are not in the plane
+            var levels = component.DecodedLevels;
             var resolutions = geometry.Resolutions.AsSpan(component.FirstResolution, levels + 1);
             foreach (ref readonly var resolution in resolutions)
             {
                 for (var b = 0; b < resolution.BandCount; b++)
                 {
                     ref readonly var band = ref geometry.Bands[resolution.FirstBand + b];
+                    var window = bandWindows?[resolution.FirstBand + b];
                     var blocks = geometry.Blocks.Slice(band.FirstBlock, band.BlocksWide * band.BlocksHigh);
                     foreach (ref readonly var block in blocks)
                     {
-                        if (block.PassCount == 0)
+                        if (block.PassCount == 0 || (window is { } area && !IsInWindow(in block, area)))
                         {
                             // The plane is not cleared: a code-block without coding pass gives zeros
                             ClearBlock(component, in band, in block);
@@ -155,20 +170,22 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
     /// Decodes the code-blocks of a tile by several workers, then transforms its planes by several workers: what
     /// <see cref="Decode"/> does with one worker.
     /// </summary>
-    private Jpeg2000Tools DecodeByWorkers(Jpeg2000TileCoding coding, Jpeg2000TileGeometry geometry, Jpeg2000PacketReader packets, byte[] body, long scratchLength, int workers)
+    private Jpeg2000Tools DecodeByWorkers(Jpeg2000TileCoding coding, Jpeg2000TileGeometry geometry, Jpeg2000PacketReader packets, byte[] body, long scratchLength, int workers, Jpeg2000Area[]? bandWindows)
     {
         var scope = _context.Scope;
         var cancellationToken = _context.CancellationToken;
         var components = geometry.Components;
         var bands = geometry.Bands;
 
-        // The component of each sub-band, and what the workers need: everything is rented here, on the calling thread
+        // The component of each sub-band (-1 for a sub-band of a resolution level that is not decoded), and what the
+        // workers need: everything is rented here, on the calling thread
         var bandComponents = new int[bands.Length];
+        bandComponents.AsSpan().Fill(-1);
         var usesHighThroughput = false;
         foreach (var component in components)
         {
             usesHighThroughput |= (component.Style.CodeBlockStyle & Jpeg2000CodingStyle.StyleHighThroughput) != 0;
-            var resolutions = geometry.Resolutions.AsSpan(component.FirstResolution, component.Style.DecompositionLevels + 1);
+            var resolutions = geometry.Resolutions.AsSpan(component.FirstResolution, component.DecodedLevels + 1);
             foreach (ref readonly var resolution in resolutions)
             {
                 bandComponents.AsSpan(resolution.FirstBand, resolution.BandCount).Fill(component.Index);
@@ -204,10 +221,13 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
         {
             cancellationToken.ThrowIfCancellationRequested();
             var bandIndex = FindBand(geometry.Bands, index);
+            if (bandComponents[bandIndex] < 0)
+                return;
+
             ref readonly var band = ref geometry.Bands[bandIndex];
             ref readonly var block = ref geometry.Blocks[index];
             var component = geometry.Components[bandComponents[bandIndex]];
-            if (block.PassCount == 0)
+            if (block.PassCount == 0 || (bandWindows is not null && !IsInWindow(in block, bandWindows[bandIndex])))
             {
                 ClearBlock(component, in band, in block);
                 return;
@@ -229,7 +249,7 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
             if (component.Width == 0 || component.Height == 0)
                 continue;
 
-            var resolutions = new ArraySegment<Jpeg2000ResolutionGeometry>(geometry.Resolutions, component.FirstResolution, component.Style.DecompositionLevels + 1);
+            var resolutions = new ArraySegment<Jpeg2000ResolutionGeometry>(geometry.Resolutions, component.FirstResolution, component.DecodedLevels + 1);
             if (component.Style.IsReversible)
             {
                 Jpeg2000Dwt.InverseReversible(component.Plane!, component.Width, resolutions, scratch, workers);
@@ -244,6 +264,47 @@ internal sealed class Jpeg2000TileDecoder : IDisposable
         FinishSamples(coding, geometry, workers);
         return tools;
     }
+
+    /// <summary>
+    /// Gets, for each sub-band of the tile, the coefficients that reach a region of the reference grid, relative to the
+    /// sub-band: those of the area of the region in the sub-band (equation B-15), and <see cref="RegionMargin"/> more on each
+    /// side for the filters. <see langword="null"/> without region.
+    /// </summary>
+    private static Jpeg2000Area[]? GetBandWindows(Jpeg2000Siz siz, Jpeg2000TileGeometry geometry, Jpeg2000Area? region)
+    {
+        if (region is not { } area)
+            return null;
+
+        var windows = new Jpeg2000Area[geometry.Bands.Length];
+        foreach (var component in geometry.Components)
+        {
+            var size = siz.Components[component.Index];
+            var componentArea = new Jpeg2000Area(Jpeg2000Siz.CeilingDivide(area.X0, size.XSubsampling), Jpeg2000Siz.CeilingDivide(area.Y0, size.YSubsampling), Jpeg2000Siz.CeilingDivide(area.X1, size.XSubsampling), Jpeg2000Siz.CeilingDivide(area.Y1, size.YSubsampling));
+            var levels = component.Style.DecompositionLevels;
+            for (var r = 0; r <= levels; r++)
+            {
+                ref readonly var resolution = ref geometry.Resolutions[component.FirstResolution + r];
+                for (var b = 0; b < resolution.BandCount; b++)
+                {
+                    ref readonly var band = ref geometry.Bands[resolution.FirstBand + b];
+                    var level = r == 0 ? levels : levels - r + 1;
+                    var offsetX = r != 0 && b != 1 ? 1L << (level - 1) : 0;
+                    var offsetY = r != 0 && b != 0 ? 1L << (level - 1) : 0;
+                    windows[resolution.FirstBand + b] = new Jpeg2000Area(
+                        Jpeg2000TileGeometry.CeilingShift(componentArea.X0 - offsetX, level) - RegionMargin - band.X0,
+                        Jpeg2000TileGeometry.CeilingShift(componentArea.Y0 - offsetY, level) - RegionMargin - band.Y0,
+                        Jpeg2000TileGeometry.CeilingShift(componentArea.X1 - offsetX, level) + RegionMargin - band.X0,
+                        Jpeg2000TileGeometry.CeilingShift(componentArea.Y1 - offsetY, level) + RegionMargin - band.Y0);
+                }
+            }
+        }
+
+        return windows;
+    }
+
+    /// <summary>Determines whether a code-block has coefficients in a window of its sub-band.</summary>
+    private static bool IsInWindow(in Jpeg2000CodeBlock block, Jpeg2000Area window)
+        => block.X < window.X1 && block.X + block.Width > window.X0 && block.Y < window.Y1 && block.Y + block.Height > window.Y0;
 
     /// <summary>Gets the length of the largest code-block whose segments several contributions hold: the buffer that makes them contiguous.</summary>
     private static long GetLargestJoinedLength(ReadOnlySpan<Jpeg2000CodeBlock> blocks, ReadOnlySpan<Jpeg2000Contribution> contributions)

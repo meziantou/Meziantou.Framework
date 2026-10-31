@@ -24,7 +24,8 @@ internal static class Test262Paths
 
     public static string FeaturesFile { get; } = Path.Combine(Project, "test262-features.txt");
 
-    public static string SummaryFile { get; } = Path.Combine(Project, "summary.md");
+    /// <summary>The page of the documentation that shows the pass rate per area.</summary>
+    public static string SummaryFile { get; } = Path.Combine(Root, "docs", "JavaScriptEngine", "10-Conformance.md");
 
     public static bool IsAvailable => Directory.Exists(Tests) && Directory.Exists(Harness);
 }

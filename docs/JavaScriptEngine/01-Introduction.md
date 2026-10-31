@@ -29,9 +29,9 @@ The engine implements ECMAScript 2025 (including the proper tail calls of strict
 `import defer`, source phase imports, immutable `ArrayBuffer`, `Promise.allKeyed` and `Promise.allSettledKeyed`, and
 the `ShadowRealm`, Import Text and Import Bytes proposals.
 
-It is validated by [test262](https://github.com/tc39/test262), the conformance suite of ECMAScript, by the build tools
-of the Web Tooling Benchmark (babel, TypeScript, prettier, terser... give the same results as in Node.js), and by
-about 60 npm packages compared with Chromium.
+It is validated by [test262](https://github.com/tc39/test262), the conformance suite of ECMAScript (see the
+[pass rate per area](10-Conformance.md)), by the build tools of the Web Tooling Benchmark (babel, TypeScript,
+prettier, terser... give the same results as in Node.js), and by about 60 npm packages compared with Chromium.
 
 ## Principles
 

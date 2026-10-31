@@ -2,7 +2,7 @@
 
 An ECMAScript engine written in .NET: a hand-written parser, a bytecode compiler and an interpreter. It is validated by
 [test262](https://github.com/tc39/test262), the conformance suite of ECMAScript: see
-[the test262 results](../../tests/Meziantou.Framework.JavaScriptEngine.Test262/summary.md), and by the
+[the test262 results](../../docs/JavaScriptEngine/10-Conformance.md), and by the
 [Web Tooling Benchmark](../../tests/Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark/readme.md) (babel,
 TypeScript, prettier, terser... give the same results as in Node.js) and
 [about 60 npm packages](../../tests/Meziantou.Framework.JavaScriptEngine.NpmPackages/readme.md) (lightningcss, sass,

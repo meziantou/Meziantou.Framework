@@ -22,7 +22,7 @@ public sealed class Test262SummaryTests
                 return;
             }
 
-            Assert.Fail("summary.md is out of date: run the tests with TEST262_UPDATE_EXPECTATIONS=1, or run this test alone with it.");
+            Assert.Fail("docs/JavaScriptEngine/10-Conformance.md is out of date: run the tests with TEST262_UPDATE_EXPECTATIONS=1, or run this test alone with it.");
         }
     }
 }

@@ -57997,7 +57997,105 @@
         "format": "OpenExr",
         "feature": "Pixels outside the display window"
       },
-      "notes": "The data window is larger than the display window: its pixels outside would be lost."
+      "exrDecodings": [
+        {
+          "layer": null,
+          "windowMode": "CropToDisplayWindow",
+          "width": 6,
+          "height": 6,
+          "pixelFormat": "RgbaHalf",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/data-window-outside.decoding-0.rgbaf32le.raw",
+            "sha256": "576609ae91b420446ff35659b30641cfee0dcd04730bc1b933a69ca33f192df8",
+            "layout": "rgbaf32le",
+            "width": 6,
+            "height": 6,
+            "rowBytes": 96,
+            "byteLength": 576,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: every channel, the display window is the image (the pixels of the data window outside it are cropped), the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+                "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input with the display window (0, 0) - (dataWindow.max)} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf16le -",
+                "result": "exact",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0,
+                "notes": "The 108 stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit."
+              },
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": null,
+          "windowMode": "DataWindow",
+          "width": 10,
+          "height": 10,
+          "pixelFormat": "RgbaHalf",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/data-window-outside.decoding-1.rgbaf32le.raw",
+            "sha256": "fe0c0f9233fe8ecb8b1cbae2d2f0be500cae9617f6c680dd41a747760a4b5b5e",
+            "layout": "rgbaf32le",
+            "width": 10,
+            "height": 10,
+            "rowBytes": 160,
+            "byteLength": 1600,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: every channel, the data window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+                "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input with the display window (0, 0) - (dataWindow.max)} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf16le -",
+                "result": "exact",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0,
+                "notes": "The 300 stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit."
+              },
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        }
+      ],
+      "notes": "The data window is larger than the display window: its pixels outside would be lost. They are cropped, or the data window is the image."
     },
     {
       "id": "invalid/exr/deep-scanline",
@@ -58055,7 +58153,57 @@
         "format": "OpenExr",
         "feature": "Extra channels"
       },
-      "notes": "A Z channel next to the colors: it would be lost."
+      "exrDecodings": [
+        {
+          "layer": "",
+          "windowMode": "DisplayWindow",
+          "width": 4,
+          "height": 4,
+          "pixelFormat": "RgbaHalf",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/extra-channel.decoding-0.rgbaf32le.raw",
+            "sha256": "1c761b4ce52d5715e8701b20e100d187996578da58bf7bb7de19a6b73ab5dd66",
+            "layout": "rgbaf32le",
+            "width": 4,
+            "height": 4,
+            "rowBytes": 64,
+            "byteLength": 256,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the default layer, the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+                "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input with the display window (0, 0) - (dataWindow.max)} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf16le -",
+                "result": "exact",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0,
+                "notes": "The 48 stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit."
+              },
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R, Z, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        }
+      ],
+      "notes": "A Z channel next to the colors: it would be lost. The default layer is decoded without it."
     },
     {
       "id": "invalid/exr/layer-channels",
@@ -58084,7 +58232,75 @@
         "format": "OpenExr",
         "feature": "Extra channels"
       },
-      "notes": "The channels of a layer."
+      "exrDecodings": [
+        {
+          "layer": "diffuse",
+          "windowMode": "DisplayWindow",
+          "width": 4,
+          "height": 4,
+          "pixelFormat": "RgbaHalf",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/layer-channels.decoding-0.rgbaf32le.raw",
+            "sha256": "22ae6386cf8677af61c8d48c69f7234b6e52461e35bdc7e6f0d4e47adfc38f4a",
+            "layout": "rgbaf32le",
+            "width": 4,
+            "height": 4,
+            "rowBytes": 64,
+            "byteLength": 256,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the layer 'diffuse', the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+                "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -layer diffuse -noautorotate -i {input with the display window (0, 0) - (dataWindow.max)} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf16le -",
+                "result": "exact",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0,
+                "notes": "The 48 stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit."
+              },
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of diffuse.B, diffuse.G, diffuse.R, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": "",
+          "windowMode": "DisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Missing layer"
+          }
+        },
+        {
+          "layer": "diffuse.R",
+          "windowMode": "DisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Missing layer"
+          }
+        }
+      ],
+      "notes": "The channels of a layer. The layer is decoded when it is selected; the default layer has no channel."
     },
     {
       "id": "invalid/exr/luminance-chroma",
@@ -58113,7 +58329,18 @@
         "format": "OpenExr",
         "feature": "Extra channels"
       },
-      "notes": "A luminance and two sub-sampled chroma channels."
+      "exrDecodings": [
+        {
+          "layer": "",
+          "windowMode": "DisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Luminance-chroma channels"
+          }
+        }
+      ],
+      "notes": "A luminance and two sub-sampled chroma channels: the chroma channels are not decoded, also in a layer."
     },
     {
       "id": "invalid/exr/missing-channels",
@@ -58196,6 +58423,90 @@
         "format": "OpenExr",
         "feature": "Pixels outside the display window"
       },
+      "exrDecodings": [
+        {
+          "layer": null,
+          "windowMode": "CropToDisplayWindow",
+          "width": 400,
+          "height": 300,
+          "pixelFormat": "RgbaHalf",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/openexr-images-t02.decoding-0.rgbaf32le.raw",
+            "sha256": "25a5fcc53d2292d8340743b7a530f0a04909d55a7ff50efc3f0ee16284da00d6",
+            "layout": "rgbaf32le",
+            "width": 400,
+            "height": 300,
+            "rowBytes": 6400,
+            "byteLength": 1920000,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: every channel, the display window is the image (the pixels of the data window outside it are cropped), the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+                "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input with the display window (0, 0) - (dataWindow.max)} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf16le -",
+                "result": "exact",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0,
+                "notes": "The 357903 stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit."
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": null,
+          "windowMode": "DataWindow",
+          "width": 400,
+          "height": 300,
+          "pixelFormat": "RgbaHalf",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/openexr-images-t02.decoding-1.rgbaf32le.raw",
+            "sha256": "de1e3f9988cd11438a309811c97adb1534f6f22fe3eed7c498accd677fb79d6a",
+            "layout": "rgbaf32le",
+            "width": 400,
+            "height": 300,
+            "rowBytes": 6400,
+            "byteLength": 1920000,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: every channel, the data window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+                "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input with the display window (0, 0) - (dataWindow.max)} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf16le -",
+                "result": "exact",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0,
+                "notes": "The 360000 stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit."
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        }
+      ],
       "notes": "The display window and the data window overlap, but are not the same. A sample image of the OpenEXR project."
     },
     {
@@ -58223,6 +58534,90 @@
         "format": "OpenExr",
         "feature": "Pixels outside the display window"
       },
+      "exrDecodings": [
+        {
+          "layer": null,
+          "windowMode": "CropToDisplayWindow",
+          "width": 200,
+          "height": 300,
+          "pixelFormat": "RgbaHalf",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/openexr-images-t09.decoding-0.rgbaf32le.raw",
+            "sha256": "b9163d03c43083a18e6101539b555cb5e363eed61fa4b3a3b54f50ae60eb5b52",
+            "layout": "rgbaf32le",
+            "width": 200,
+            "height": 300,
+            "rowBytes": 3200,
+            "byteLength": 960000,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: every channel, the display window is the image (the pixels of the data window outside it are cropped), the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+                "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input with the display window (0, 0) - (dataWindow.max)} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf16le -",
+                "result": "exact",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0,
+                "notes": "The 0 stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit."
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": null,
+          "windowMode": "DataWindow",
+          "width": 400,
+          "height": 300,
+          "pixelFormat": "RgbaHalf",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/openexr-images-t09.decoding-1.rgbaf32le.raw",
+            "sha256": "de1e3f9988cd11438a309811c97adb1534f6f22fe3eed7c498accd677fb79d6a",
+            "layout": "rgbaf32le",
+            "width": 400,
+            "height": 300,
+            "rowBytes": 6400,
+            "byteLength": 1920000,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: every channel, the data window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+                "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input with the display window (0, 0) - (dataWindow.max)} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf16le -",
+                "result": "exact",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0,
+                "notes": "The 360000 stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit."
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        }
+      ],
       "notes": "The display window and the data window do not overlap. A sample image of the OpenEXR project."
     },
     {
@@ -58250,7 +58645,1259 @@
         "format": "OpenExr",
         "feature": "Pixels outside the display window"
       },
+      "exrDecodings": [
+        {
+          "layer": null,
+          "windowMode": "CropToDisplayWindow",
+          "width": 101,
+          "height": 101,
+          "pixelFormat": "RgbaHalf",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/openexr-images-t13.decoding-0.rgbaf32le.raw",
+            "sha256": "3718dbd9d4c2de85f65da327aceb52eca6c14e1e1aa9cc55eda8d95ea13b9318",
+            "layout": "rgbaf32le",
+            "width": 101,
+            "height": 101,
+            "rowBytes": 1616,
+            "byteLength": 163216,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: every channel, the display window is the image (the pixels of the data window outside it are cropped), the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+                "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input with the display window (0, 0) - (dataWindow.max)} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf16le -",
+                "result": "exact",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0,
+                "notes": "The 3 stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit."
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": null,
+          "windowMode": "DataWindow",
+          "width": 400,
+          "height": 300,
+          "pixelFormat": "RgbaHalf",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/openexr-images-t13.decoding-1.rgbaf32le.raw",
+            "sha256": "de1e3f9988cd11438a309811c97adb1534f6f22fe3eed7c498accd677fb79d6a",
+            "layout": "rgbaf32le",
+            "width": 400,
+            "height": 300,
+            "rowBytes": 6400,
+            "byteLength": 1920000,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: every channel, the data window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+                "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input with the display window (0, 0) - (dataWindow.max)} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf16le -",
+                "result": "exact",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0,
+                "notes": "The 360000 stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit."
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        }
+      ],
       "notes": "The display window and the data window have only one pixel in common. A sample image of the OpenEXR project."
+    },
+    {
+      "id": "invalid/exr/overscan-layers-b44",
+      "kind": "unsupported",
+      "format": "exr",
+      "input": {
+        "path": "invalid/exr/overscan-layers-b44.exr",
+        "sha256": "1b0bd8007001e8b030f2d1041d0aaf267c015dc779084de279d391b4bbf4bd61",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "OpenExr",
+        "feature": "Extra channels"
+      },
+      "exrDecodings": [
+        {
+          "layer": "",
+          "windowMode": "CropToDisplayWindow",
+          "width": 9,
+          "height": 6,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgba",
+          "bitsPerComponent": 32,
+          "buffer": {
+            "path": "invalid/exr/overscan-layers-b44.decoding-0.rgbaf32le.raw",
+            "sha256": "2e664b3672d6e26574f4869d322825338d6d63daab8a0742bddf2e1422d8fd4a",
+            "layout": "rgbaf32le",
+            "width": 9,
+            "height": 6,
+            "rowBytes": 144,
+            "byteLength": 864,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the default layer, the display window is the image (the pixels of the data window outside it are cropped), the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+                "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf32le -",
+                "result": "exact",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0,
+                "notes": "The 216 stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit."
+              },
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of A, B, G, R, Z, N.X, N.Y, N.Z, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": "",
+          "windowMode": "DataWindow",
+          "width": 13,
+          "height": 11,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgba",
+          "bitsPerComponent": 32,
+          "buffer": {
+            "path": "invalid/exr/overscan-layers-b44.decoding-1.rgbaf32le.raw",
+            "sha256": "8084b92f959dc3f97356ac8205cd89bcedcdd703118b285f01ce7611352462a8",
+            "layout": "rgbaf32le",
+            "width": 13,
+            "height": 11,
+            "rowBytes": 208,
+            "byteLength": 2288,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the default layer, the data window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of A, B, G, R, Z, N.X, N.Y, N.Z, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": "N",
+          "windowMode": "CropToDisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Ambiguous layer"
+          }
+        },
+        {
+          "layer": "",
+          "windowMode": "DisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Pixels outside the display window"
+          }
+        },
+        {
+          "layer": "P",
+          "windowMode": "CropToDisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Missing layer"
+          }
+        }
+      ],
+      "notes": "RGBA, a depth and the normals of a renderer (N.X, N.Y, N.Z), B44, with an overscan of 2 to 4 pixels around the display window. The layer N is a vector: its N.Y is not a luminance."
+    },
+    {
+      "id": "invalid/exr/overscan-layers-b44a",
+      "kind": "unsupported",
+      "format": "exr",
+      "input": {
+        "path": "invalid/exr/overscan-layers-b44a.exr",
+        "sha256": "6d881bedb9a694a2c62baef1875696094a6603f492c8e9d828e90c17b6aa2fd2",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "OpenExr",
+        "feature": "Extra channels"
+      },
+      "exrDecodings": [
+        {
+          "layer": "",
+          "windowMode": "CropToDisplayWindow",
+          "width": 9,
+          "height": 6,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgba",
+          "bitsPerComponent": 32,
+          "buffer": {
+            "path": "invalid/exr/overscan-layers-b44a.decoding-0.rgbaf32le.raw",
+            "sha256": "2e664b3672d6e26574f4869d322825338d6d63daab8a0742bddf2e1422d8fd4a",
+            "layout": "rgbaf32le",
+            "width": 9,
+            "height": 6,
+            "rowBytes": 144,
+            "byteLength": 864,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the default layer, the display window is the image (the pixels of the data window outside it are cropped), the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+                "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf32le -",
+                "result": "exact",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0,
+                "notes": "The 216 stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit."
+              },
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of A, B, G, R, Z, N.X, N.Y, N.Z, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": "",
+          "windowMode": "DataWindow",
+          "width": 13,
+          "height": 11,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgba",
+          "bitsPerComponent": 32,
+          "buffer": {
+            "path": "invalid/exr/overscan-layers-b44a.decoding-1.rgbaf32le.raw",
+            "sha256": "8084b92f959dc3f97356ac8205cd89bcedcdd703118b285f01ce7611352462a8",
+            "layout": "rgbaf32le",
+            "width": 13,
+            "height": 11,
+            "rowBytes": 208,
+            "byteLength": 2288,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the default layer, the data window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of A, B, G, R, Z, N.X, N.Y, N.Z, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": "N",
+          "windowMode": "CropToDisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Ambiguous layer"
+          }
+        },
+        {
+          "layer": "",
+          "windowMode": "DisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Pixels outside the display window"
+          }
+        },
+        {
+          "layer": "P",
+          "windowMode": "CropToDisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Missing layer"
+          }
+        }
+      ],
+      "notes": "RGBA, a depth and the normals of a renderer (N.X, N.Y, N.Z), B44A, with an overscan of 2 to 4 pixels around the display window. The layer N is a vector: its N.Y is not a luminance."
+    },
+    {
+      "id": "invalid/exr/overscan-layers-none",
+      "kind": "unsupported",
+      "format": "exr",
+      "input": {
+        "path": "invalid/exr/overscan-layers-none.exr",
+        "sha256": "86a0653cd60cf56b0844b52b41ca579e1d297c9f1f07d896b8c8fac5c00ed408",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "OpenExr",
+        "feature": "Extra channels"
+      },
+      "exrDecodings": [
+        {
+          "layer": "",
+          "windowMode": "CropToDisplayWindow",
+          "width": 9,
+          "height": 6,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgba",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/overscan-layers-none.decoding-0.rgbaf32le.raw",
+            "sha256": "4759908c90c67b1f71080e0d78b147f68d223f74cce7c59777f6fc6633dbcf89",
+            "layout": "rgbaf32le",
+            "width": 9,
+            "height": 6,
+            "rowBytes": 144,
+            "byteLength": 864,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the default layer, the display window is the image (the pixels of the data window outside it are cropped), the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+                "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -",
+                "result": "exact",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0,
+                "notes": "The 216 stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit."
+              },
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of A, B, G, R, Z, N.X, N.Y, N.Z, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": "",
+          "windowMode": "DataWindow",
+          "width": 13,
+          "height": 11,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgba",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/overscan-layers-none.decoding-1.rgbaf32le.raw",
+            "sha256": "3e5e91085b9d4ce0e495701e89ac0a0a08393ed5a52fe37adbee6896e11922be",
+            "layout": "rgbaf32le",
+            "width": 13,
+            "height": 11,
+            "rowBytes": 208,
+            "byteLength": 2288,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the default layer, the data window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of A, B, G, R, Z, N.X, N.Y, N.Z, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": "N",
+          "windowMode": "CropToDisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Ambiguous layer"
+          }
+        },
+        {
+          "layer": "",
+          "windowMode": "DisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Pixels outside the display window"
+          }
+        },
+        {
+          "layer": "P",
+          "windowMode": "CropToDisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Missing layer"
+          }
+        }
+      ],
+      "notes": "RGBA, a depth and the normals of a renderer (N.X, N.Y, N.Z), NONE, with an overscan of 2 to 4 pixels around the display window. The layer N is a vector: its N.Y is not a luminance."
+    },
+    {
+      "id": "invalid/exr/overscan-layers-piz",
+      "kind": "unsupported",
+      "format": "exr",
+      "input": {
+        "path": "invalid/exr/overscan-layers-piz.exr",
+        "sha256": "8742dd979e23f492143cd673d179ddbce372d153b2682fed3ce2d948d2ba8548",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "OpenExr",
+        "feature": "Extra channels"
+      },
+      "exrDecodings": [
+        {
+          "layer": "",
+          "windowMode": "CropToDisplayWindow",
+          "width": 9,
+          "height": 6,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgba",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/overscan-layers-piz.decoding-0.rgbaf32le.raw",
+            "sha256": "4759908c90c67b1f71080e0d78b147f68d223f74cce7c59777f6fc6633dbcf89",
+            "layout": "rgbaf32le",
+            "width": 9,
+            "height": 6,
+            "rowBytes": 144,
+            "byteLength": 864,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the default layer, the display window is the image (the pixels of the data window outside it are cropped), the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+                "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -",
+                "result": "exact",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0,
+                "notes": "The 216 stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit."
+              },
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of A, B, G, R, Z, N.X, N.Y, N.Z, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": "",
+          "windowMode": "DataWindow",
+          "width": 13,
+          "height": 11,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgba",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/overscan-layers-piz.decoding-1.rgbaf32le.raw",
+            "sha256": "3e5e91085b9d4ce0e495701e89ac0a0a08393ed5a52fe37adbee6896e11922be",
+            "layout": "rgbaf32le",
+            "width": 13,
+            "height": 11,
+            "rowBytes": 208,
+            "byteLength": 2288,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the default layer, the data window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of A, B, G, R, Z, N.X, N.Y, N.Z, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": "N",
+          "windowMode": "CropToDisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Ambiguous layer"
+          }
+        },
+        {
+          "layer": "",
+          "windowMode": "DisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Pixels outside the display window"
+          }
+        },
+        {
+          "layer": "P",
+          "windowMode": "CropToDisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Missing layer"
+          }
+        }
+      ],
+      "notes": "RGBA, a depth and the normals of a renderer (N.X, N.Y, N.Z), PIZ, with an overscan of 2 to 4 pixels around the display window. The layer N is a vector: its N.Y is not a luminance."
+    },
+    {
+      "id": "invalid/exr/overscan-layers-pxr24",
+      "kind": "unsupported",
+      "format": "exr",
+      "input": {
+        "path": "invalid/exr/overscan-layers-pxr24.exr",
+        "sha256": "00107f46009b0c31e0004bb2e930f343ae153e0c987b400e78a395beeef01330",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "OpenExr",
+        "feature": "Extra channels"
+      },
+      "exrDecodings": [
+        {
+          "layer": "",
+          "windowMode": "CropToDisplayWindow",
+          "width": 9,
+          "height": 6,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgba",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/overscan-layers-pxr24.decoding-0.rgbaf32le.raw",
+            "sha256": "4759908c90c67b1f71080e0d78b147f68d223f74cce7c59777f6fc6633dbcf89",
+            "layout": "rgbaf32le",
+            "width": 9,
+            "height": 6,
+            "rowBytes": 144,
+            "byteLength": 864,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the default layer, the display window is the image (the pixels of the data window outside it are cropped), the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+                "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -",
+                "result": "exact",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0,
+                "notes": "The 216 stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit."
+              },
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of A, B, G, R, N.X, N.Y, N.Z, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": "",
+          "windowMode": "DataWindow",
+          "width": 13,
+          "height": 11,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgba",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/overscan-layers-pxr24.decoding-1.rgbaf32le.raw",
+            "sha256": "3e5e91085b9d4ce0e495701e89ac0a0a08393ed5a52fe37adbee6896e11922be",
+            "layout": "rgbaf32le",
+            "width": 13,
+            "height": 11,
+            "rowBytes": 208,
+            "byteLength": 2288,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the default layer, the data window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of A, B, G, R, N.X, N.Y, N.Z, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": "N",
+          "windowMode": "CropToDisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Ambiguous layer"
+          }
+        },
+        {
+          "layer": "",
+          "windowMode": "DisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Pixels outside the display window"
+          }
+        },
+        {
+          "layer": "P",
+          "windowMode": "CropToDisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Missing layer"
+          }
+        }
+      ],
+      "notes": "RGBA, a depth and the normals of a renderer (N.X, N.Y, N.Z), PXR24, with an overscan of 2 to 4 pixels around the display window. The layer N is a vector: its N.Y is not a luminance."
+    },
+    {
+      "id": "invalid/exr/overscan-layers-rle",
+      "kind": "unsupported",
+      "format": "exr",
+      "input": {
+        "path": "invalid/exr/overscan-layers-rle.exr",
+        "sha256": "001e074af92f2331c91f4bf7bf8ccfbb41fb76e18b3878ca90f1abe018b6fac6",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "OpenExr",
+        "feature": "Extra channels"
+      },
+      "exrDecodings": [
+        {
+          "layer": "",
+          "windowMode": "CropToDisplayWindow",
+          "width": 9,
+          "height": 6,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgba",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/overscan-layers-rle.decoding-0.rgbaf32le.raw",
+            "sha256": "4759908c90c67b1f71080e0d78b147f68d223f74cce7c59777f6fc6633dbcf89",
+            "layout": "rgbaf32le",
+            "width": 9,
+            "height": 6,
+            "rowBytes": 144,
+            "byteLength": 864,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the default layer, the display window is the image (the pixels of the data window outside it are cropped), the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+                "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -",
+                "result": "exact",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0,
+                "notes": "The 216 stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit."
+              },
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of A, B, G, R, Z, N.X, N.Y, N.Z, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": "",
+          "windowMode": "DataWindow",
+          "width": 13,
+          "height": 11,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgba",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/overscan-layers-rle.decoding-1.rgbaf32le.raw",
+            "sha256": "3e5e91085b9d4ce0e495701e89ac0a0a08393ed5a52fe37adbee6896e11922be",
+            "layout": "rgbaf32le",
+            "width": 13,
+            "height": 11,
+            "rowBytes": 208,
+            "byteLength": 2288,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the default layer, the data window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of A, B, G, R, Z, N.X, N.Y, N.Z, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": "N",
+          "windowMode": "CropToDisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Ambiguous layer"
+          }
+        },
+        {
+          "layer": "",
+          "windowMode": "DisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Pixels outside the display window"
+          }
+        },
+        {
+          "layer": "P",
+          "windowMode": "CropToDisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Missing layer"
+          }
+        }
+      ],
+      "notes": "RGBA, a depth and the normals of a renderer (N.X, N.Y, N.Z), RLE, with an overscan of 2 to 4 pixels around the display window. The layer N is a vector: its N.Y is not a luminance."
+    },
+    {
+      "id": "invalid/exr/overscan-layers-zip",
+      "kind": "unsupported",
+      "format": "exr",
+      "input": {
+        "path": "invalid/exr/overscan-layers-zip.exr",
+        "sha256": "0089221abe4c50ff6a973088a90a5635dc4e50c43d5fd293464cbb0400ab1a1e",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "OpenExr",
+        "feature": "Extra channels"
+      },
+      "exrDecodings": [
+        {
+          "layer": "",
+          "windowMode": "CropToDisplayWindow",
+          "width": 9,
+          "height": 6,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgba",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/overscan-layers-zip.decoding-0.rgbaf32le.raw",
+            "sha256": "4759908c90c67b1f71080e0d78b147f68d223f74cce7c59777f6fc6633dbcf89",
+            "layout": "rgbaf32le",
+            "width": 9,
+            "height": 6,
+            "rowBytes": 144,
+            "byteLength": 864,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the default layer, the display window is the image (the pixels of the data window outside it are cropped), the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+                "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -",
+                "result": "exact",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0,
+                "notes": "The 216 stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit."
+              },
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of A, B, G, R, Z, N.X, N.Y, N.Z, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": "",
+          "windowMode": "DataWindow",
+          "width": 13,
+          "height": 11,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgba",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/overscan-layers-zip.decoding-1.rgbaf32le.raw",
+            "sha256": "3e5e91085b9d4ce0e495701e89ac0a0a08393ed5a52fe37adbee6896e11922be",
+            "layout": "rgbaf32le",
+            "width": 13,
+            "height": 11,
+            "rowBytes": 208,
+            "byteLength": 2288,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the default layer, the data window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of A, B, G, R, Z, N.X, N.Y, N.Z, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": "N",
+          "windowMode": "CropToDisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Ambiguous layer"
+          }
+        },
+        {
+          "layer": "",
+          "windowMode": "DisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Pixels outside the display window"
+          }
+        },
+        {
+          "layer": "P",
+          "windowMode": "CropToDisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Missing layer"
+          }
+        }
+      ],
+      "notes": "RGBA, a depth and the normals of a renderer (N.X, N.Y, N.Z), ZIP, with an overscan of 2 to 4 pixels around the display window. The layer N is a vector: its N.Y is not a luminance."
+    },
+    {
+      "id": "invalid/exr/overscan-layers-zips",
+      "kind": "unsupported",
+      "format": "exr",
+      "input": {
+        "path": "invalid/exr/overscan-layers-zips.exr",
+        "sha256": "848b67fa597732ef6f91a1a25e4e28b2c6673ff8b4a24c4f6dc2212c948d27c2",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "OpenExr",
+        "feature": "Extra channels"
+      },
+      "exrDecodings": [
+        {
+          "layer": "",
+          "windowMode": "CropToDisplayWindow",
+          "width": 9,
+          "height": 6,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgba",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/overscan-layers-zips.decoding-0.rgbaf32le.raw",
+            "sha256": "4759908c90c67b1f71080e0d78b147f68d223f74cce7c59777f6fc6633dbcf89",
+            "layout": "rgbaf32le",
+            "width": 9,
+            "height": 6,
+            "rowBytes": 144,
+            "byteLength": 864,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the default layer, the display window is the image (the pixels of the data window outside it are cropped), the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+                "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrapf16le -",
+                "result": "exact",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0,
+                "notes": "The 216 stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit."
+              },
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of A, B, G, R, Z, N.X, N.Y, N.Z, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": "",
+          "windowMode": "DataWindow",
+          "width": 13,
+          "height": 11,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgba",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/overscan-layers-zips.decoding-1.rgbaf32le.raw",
+            "sha256": "3e5e91085b9d4ce0e495701e89ac0a0a08393ed5a52fe37adbee6896e11922be",
+            "layout": "rgbaf32le",
+            "width": 13,
+            "height": 11,
+            "rowBytes": 208,
+            "byteLength": 2288,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the default layer, the data window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of A, B, G, R, Z, N.X, N.Y, N.Z, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": "N",
+          "windowMode": "CropToDisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Ambiguous layer"
+          }
+        },
+        {
+          "layer": "",
+          "windowMode": "DisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Pixels outside the display window"
+          }
+        },
+        {
+          "layer": "P",
+          "windowMode": "CropToDisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Missing layer"
+          }
+        }
+      ],
+      "notes": "RGBA, a depth and the normals of a renderer (N.X, N.Y, N.Z), ZIPS, with an overscan of 2 to 4 pixels around the display window. The layer N is a vector: its N.Y is not a luminance."
     },
     {
       "id": "invalid/exr/piz-huffman-bit-count",
@@ -58307,6 +59954,373 @@
         "format": "OpenExr"
       },
       "notes": "The first run of the RLE data repeats a byte 128 times, more than the chunk holds."
+    },
+    {
+      "id": "invalid/exr/subsampled-extra-channel",
+      "kind": "unsupported",
+      "format": "exr",
+      "input": {
+        "path": "invalid/exr/subsampled-extra-channel.exr",
+        "sha256": "17ec35b59a03f9f49cc94c08458c4b40ba2b308f39127d72e166ae546dbe84f0",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "OpenExr",
+        "feature": "Extra channels"
+      },
+      "exrDecodings": [
+        {
+          "layer": "",
+          "windowMode": "DisplayWindow",
+          "width": 12,
+          "height": 8,
+          "pixelFormat": "RgbaHalf",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/subsampled-extra-channel.decoding-0.rgbaf32le.raw",
+            "sha256": "16269cfc1b7ae7591929023ccc84875d907e5ce787a01203b5e59f3b530e2e8a",
+            "layout": "rgbaf32le",
+            "width": 12,
+            "height": 8,
+            "rowBytes": 192,
+            "byteLength": 1536,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the default layer, the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        }
+      ],
+      "notes": "A channel sub-sampled by 2 along x and y next to the colors: the lines of the chunks do not all have its samples."
+    },
+    {
+      "id": "invalid/exr/tiles-layers-overscan",
+      "kind": "unsupported",
+      "format": "exr",
+      "input": {
+        "path": "invalid/exr/tiles-layers-overscan.exr",
+        "sha256": "d3d19ba1ced33f6694c349b5d3270e32c956f19a29554c8ff89f67b56a5feb04",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "OpenExr",
+        "feature": "Extra channels"
+      },
+      "exrDecodings": [
+        {
+          "layer": "",
+          "windowMode": "CropToDisplayWindow",
+          "width": 26,
+          "height": 15,
+          "pixelFormat": "RgbaHalf",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/tiles-layers-overscan.decoding-0.rgbaf32le.raw",
+            "sha256": "d689fdae9aa2648b56c90d4d8aad0d24c1c396cacc2cb848c1885c81d6e15f54",
+            "layout": "rgbaf32le",
+            "width": 26,
+            "height": 15,
+            "rowBytes": 416,
+            "byteLength": 6240,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the default layer, the display window is the image (the pixels of the data window outside it are cropped), the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+                "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -noautorotate -i {input} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf16le -",
+                "result": "exact",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0,
+                "notes": "The 1170 stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit."
+              },
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R, Z, diffuse.A, diffuse.B, diffuse.G, diffuse.R, shadow.Y, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": "diffuse",
+          "windowMode": "CropToDisplayWindow",
+          "width": 26,
+          "height": 15,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgba",
+          "bitsPerComponent": 32,
+          "buffer": {
+            "path": "invalid/exr/tiles-layers-overscan.decoding-1.rgbaf32le.raw",
+            "sha256": "43845aabaae3f4c5910a81cbdf32324ffe55019674df1851701463df5e872bfb",
+            "layout": "rgbaf32le",
+            "width": 26,
+            "height": 15,
+            "rowBytes": 416,
+            "byteLength": 6240,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the layer 'diffuse', the display window is the image (the pixels of the data window outside it are cropped), the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R, Z, diffuse.A, diffuse.B, diffuse.G, diffuse.R, shadow.Y, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": "shadow",
+          "windowMode": "DataWindow",
+          "width": 37,
+          "height": 21,
+          "pixelFormat": "RgbaHalf",
+          "colorModel": "Grayscale",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/tiles-layers-overscan.decoding-2.rgbaf32le.raw",
+            "sha256": "41f265f8fb50cfa1e00a489a97beebe542909db889c6b3dbb2db7a93fa288400",
+            "layout": "rgbaf32le",
+            "width": 37,
+            "height": 21,
+            "rowBytes": 592,
+            "byteLength": 12432,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the layer 'shadow', the data window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R, Z, diffuse.A, diffuse.B, diffuse.G, diffuse.R, shadow.Y, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": "diffuse",
+          "windowMode": "DataWindow",
+          "width": 37,
+          "height": 21,
+          "pixelFormat": "RgbaFloat",
+          "colorModel": "Rgba",
+          "bitsPerComponent": 32,
+          "buffer": {
+            "path": "invalid/exr/tiles-layers-overscan.decoding-3.rgbaf32le.raw",
+            "sha256": "407ef563773e2bd7977f8831b768e05b3e9332a5f0d445063e331b85b5cfce16",
+            "layout": "rgbaf32le",
+            "width": 37,
+            "height": 21,
+            "rowBytes": 592,
+            "byteLength": 12432,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the layer 'diffuse', the data window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of B, G, R, Z, diffuse.A, diffuse.B, diffuse.G, diffuse.R, shadow.Y, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        }
+      ],
+      "notes": "Tiles of 8x8 pixels, PIZ: the default layer (HALF RGB), a depth, a diffuse layer (FLOAT RGB and HALF alpha) and a shadow layer (HALF luminance), with an overscan."
+    },
+    {
+      "id": "invalid/exr/tiles-mipmap-layers",
+      "kind": "unsupported",
+      "format": "exr",
+      "input": {
+        "path": "invalid/exr/tiles-mipmap-layers.exr",
+        "sha256": "ec49f35eba23fd8fec3c5a04f6132b7929a24ba7c460885cc73247adea7f8c28",
+        "role": "encoded"
+      },
+      "provenance": {
+        "origin": "generated",
+        "license": "CC0-1.0",
+        "author": "Meziantou.Framework.Imaging contributors",
+        "generator": "tools/Meziantou.Framework.Imaging.CorpusGenerator/ExrCorpus.cs (BuildUnsupported)",
+        "tools": [
+          "OpenEXR 3.5.2 (exr-from-raw, exr-to-raw)",
+          ".NET 10.0"
+        ],
+        "commands": [
+          "exr-from-raw {description}.json {output}.exr"
+        ]
+      },
+      "expectedError": {
+        "exception": "UnsupportedImageFeatureException",
+        "format": "OpenExr",
+        "feature": "Extra channels"
+      },
+      "exrDecodings": [
+        {
+          "layer": "beauty",
+          "windowMode": "DisplayWindow",
+          "width": 19,
+          "height": 13,
+          "pixelFormat": "RgbaHalf",
+          "colorModel": "Rgb",
+          "bitsPerComponent": 16,
+          "buffer": {
+            "path": "invalid/exr/tiles-mipmap-layers.decoding-0.rgbaf32le.raw",
+            "sha256": "b74e722806449f3b68295bec70732f8dbe26015ad2422707d7d19b865546edec",
+            "layout": "rgbaf32le",
+            "width": 19,
+            "height": 13,
+            "rowBytes": 304,
+            "byteLength": 3952,
+            "alpha": "straight",
+            "rowOrder": "top-down",
+            "compression": "none"
+          },
+          "reference": {
+            "method": "decoded",
+            "description": "The samples OpenEXR decodes, presented by the rules of the library: the layer 'beauty', the display window is the image, the other channels are ignored, the colors are divided by alpha.",
+            "decoder": "OpenEXR 3.5.2 (exr-to-raw)",
+            "backend": "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+            "command": "exr-to-raw {input} {output}",
+            "crossChecks": [
+              {
+                "decoder": "ffmpeg 9.0.2 (libavcodec exr decoder)",
+                "command": "ffmpeg -hide_banner -nostdin -loglevel error -y -layer beauty -noautorotate -i {input with the display window (0, 0) - (dataWindow.max)} -fps_mode passthrough -sws_flags bilinear+accurate_rnd+full_chroma_int+bitexact -f rawvideo -pix_fmt gbrpf16le -",
+                "result": "exact",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0,
+                "notes": "The 741 stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit."
+              },
+              {
+                "decoder": "the pattern given to exr-from-raw",
+                "result": "exact",
+                "notes": "The samples of beauty.B, beauty.G, beauty.R, depth.Z, bit for bit: the compression keeps them.",
+                "maxAbsoluteError": 0,
+                "meanAbsoluteError": 0.0
+              }
+            ]
+          },
+          "comparison": {
+            "mode": "exact"
+          }
+        },
+        {
+          "layer": "",
+          "windowMode": "DisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Missing layer"
+          }
+        },
+        {
+          "layer": "depth",
+          "windowMode": "DisplayWindow",
+          "expectedError": {
+            "exception": "UnsupportedImageFeatureException",
+            "format": "OpenExr",
+            "feature": "Missing layer"
+          }
+        }
+      ],
+      "notes": "Mipmap levels of ZIP tiles holding a beauty layer and a depth layer, and no default layer: the full-resolution level of the layer is decoded."
     },
     {
       "id": "invalid/exr/truncated",

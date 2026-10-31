@@ -876,6 +876,7 @@ namespace Meziantou.Framework.Imaging
         public static Meziantou.Framework.Imaging.ImageConfiguration Default { get => throw null; }
         public Meziantou.Framework.Imaging.ImageResourceLimits Limits { get => throw null; init { } }
         public int MaxDegreeOfParallelism { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.OpenExrDecodingOptions OpenExrDecoding { get => throw null; init { } }
     }
 
     public sealed class ImageDecodeOptions
@@ -1343,6 +1344,20 @@ namespace Meziantou.Framework.Imaging
         public static bool TryParse(System.ReadOnlySpan<char> value, out Meziantou.Framework.Imaging.Oklch result, out double alpha) => throw null;
         public static bool operator ==(Meziantou.Framework.Imaging.Oklch left, Meziantou.Framework.Imaging.Oklch right) => throw null;
         public static bool operator !=(Meziantou.Framework.Imaging.Oklch left, Meziantou.Framework.Imaging.Oklch right) => throw null;
+    }
+
+    public sealed class OpenExrDecodingOptions
+    {
+        public static Meziantou.Framework.Imaging.OpenExrDecodingOptions Default { get => throw null; }
+        public string? Layer { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.OpenExrWindowMode WindowMode { get => throw null; init { } }
+    }
+
+    public enum OpenExrWindowMode
+    {
+        DisplayWindow = 0,
+        CropToDisplayWindow = 1,
+        DataWindow = 2,
     }
 
     public enum OutOfRangeSampleHandling
@@ -3261,6 +3276,7 @@ namespace Meziantou.Framework.Imaging.Metadata
         public Meziantou.Framework.Imaging.Metadata.ExifProfile? ExifProfile { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.IccProfile? IccProfile { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.MasteringDisplayColorVolume? MasteringDisplay { get => throw null; set { } }
+        public Meziantou.Framework.Imaging.Metadata.OpenExrWindows? OpenExrWindows { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.ExifOrientation Orientation { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.PixelAspectRatio? PixelAspectRatio { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.ImageResolution? Resolution { get => throw null; set { } }
@@ -3327,6 +3343,19 @@ namespace Meziantou.Framework.Imaging.Metadata
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
         public byte[] ToArray() => throw null;
+    }
+
+    public sealed class OpenExrWindows : System.IEquatable<Meziantou.Framework.Imaging.Metadata.OpenExrWindows>
+    {
+        public Meziantou.Framework.Imaging.Point DataWindowMax { get => throw null; }
+        public Meziantou.Framework.Imaging.Point DataWindowMin { get => throw null; }
+        public Meziantou.Framework.Imaging.Point DisplayWindowMax { get => throw null; }
+        public Meziantou.Framework.Imaging.Point DisplayWindowMin { get => throw null; }
+        public OpenExrWindows(Meziantou.Framework.Imaging.Point dataWindowMin, Meziantou.Framework.Imaging.Point dataWindowMax, Meziantou.Framework.Imaging.Point displayWindowMin, Meziantou.Framework.Imaging.Point displayWindowMax) { }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Imaging.Metadata.OpenExrWindows? other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
     }
 
     public sealed class PixelAspectRatio : System.IEquatable<Meziantou.Framework.Imaging.Metadata.PixelAspectRatio>

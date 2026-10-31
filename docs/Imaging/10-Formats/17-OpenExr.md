@@ -14,9 +14,10 @@ OpenEXR's premultiplied colors can round them; this is not a general bit-exact s
 | --- | --- | --- |
 | Files | Single-part scan-line and tiled files (the full-resolution level of mipmaps and ripmaps) | Single-part scan-line files |
 | Samples | HALF, FLOAT and UINT | HALF or FLOAT |
-| Channels | `R`, `G`, `B`, `A`, or `Y` (luminance) with or without `A` | `R`, `G`, `B` (and `A` for pixel formats with alpha), or `Y` for gray pixel formats |
+| Channels | `R`, `G`, `B`, `A`, or `Y` (luminance) with or without `A`; or one layer of a file with other channels | `R`, `G`, `B` (and `A` for pixel formats with alpha), or `Y` for gray pixel formats |
+| Windows | The display window; an overscan cropped to it, or the data window | Both windows are the image |
 | Compression | NONE, RLE, ZIPS, ZIP, PIZ, PXR24, B44, B44A | NONE, RLE, ZIPS, ZIP (default) or PIZ, all lossless |
-| Metadata | Chromaticities | Chromaticities |
+| Metadata | Chromaticities, the windows | Chromaticities |
 
 A file of half samples without an alpha channel loads as [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf), any other as [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat), in linear light.
 The extra precision is used when dividing colors by alpha. Infinities and samples that are not numbers are kept,
@@ -48,6 +49,51 @@ conversion clips them or compresses the highlights with a tone mapping, as in th
 floating-point images to other formats, with [ImageEncoder.FloatingPointConversion](cref:Meziantou.Framework.Imaging.Formats.ImageEncoder.FloatingPointConversion). See
 [Pixel formats](../04-Concepts/05-PixelFormats.md).
 
+## Read a layer of a renderer output
+
+Renderers write depth (`Z`), other outputs in layers (`diffuse.R`, `diffuse.G`...) and often an overscan: a data window
+larger than the display window. The default options reject such a file, since those channels and pixels would be lost.
+[ImageConfiguration.OpenExrDecoding](cref:Meziantou.Framework.Imaging.ImageConfiguration.OpenExrDecoding) selects what is read:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_OpenExrLayers;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static (Image Image, Point Origin) LoadRenderLayer(string exrPath, string layer)
+{
+    // Renderers store RGBA next to depth (Z) and other layers (diffuse.R, diffuse.G, ...), often with an overscan
+    // around the display window: the default options reject such a file, since those channels and pixels would be lost
+    var configuration = new ImageConfiguration
+    {
+        OpenExrDecoding = new OpenExrDecodingOptions
+        {
+            // "" is the default layer (R, G, B, A or Y); "diffuse" selects diffuse.R, diffuse.G, diffuse.B, diffuse.A
+            Layer = layer,
+
+            // DataWindow keeps every stored pixel instead
+            WindowMode = OpenExrWindowMode.CropToDisplayWindow,
+        },
+    };
+
+    // Identify, readers and collections take the same configuration, and report the same image
+    var image = Image.Load(exrPath, new ImageDecodeOptions { Configuration = configuration });
+
+    // The windows of the file, in its pixel coordinates: the cropped image starts at the display window
+    var windows = image.Metadata.OpenExrWindows!;
+    return (image, windows.DisplayWindowMin);
+}
+```
+<!-- endref -->
+
+| Option | What it does | Default |
+| --- | --- | --- |
+| [Layer](cref:Meziantou.Framework.Imaging.OpenExrDecodingOptions.Layer) | The layer to decode: `""` for the default layer, `"diffuse"` for `diffuse.R`, `diffuse.G`, `diffuse.B` and `diffuse.A`; the other channels are ignored | `null`: every channel must be `R`, `G`, `B`, `A` or `Y` |
+| [WindowMode](cref:Meziantou.Framework.Imaging.OpenExrDecodingOptions.WindowMode) | [DisplayWindow](cref:Meziantou.Framework.Imaging.OpenExrWindowMode.DisplayWindow), [CropToDisplayWindow](cref:Meziantou.Framework.Imaging.OpenExrWindowMode.CropToDisplayWindow) (the pixels outside the display window are discarded) or [DataWindow](cref:Meziantou.Framework.Imaging.OpenExrWindowMode.DataWindow) (every stored pixel is the image) | [DisplayWindow](cref:Meziantou.Framework.Imaging.OpenExrWindowMode.DisplayWindow): an overscan is rejected |
+
+The options apply to identification, eager loads, readers and collections alike.
+[ImageMetadata.OpenExrWindows](cref:Meziantou.Framework.Imaging.Metadata.ImageMetadata.OpenExrWindows) gives the two windows of the file; it is informational, and the encoder
+writes both windows from (0, 0). The decoder never falls back to another layer: a layer without color channel, a layer
+with RGB and luminance channels, a `Y` channel next to an `X` channel (a vector such as `N.X`, `N.Y`, `N.Z`, or CIE XYZ
+colors) and the chroma channels `RY` and `BY` are rejected with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException).
+
 ## Options
 
 | Option | What it does | Default |
@@ -75,8 +121,9 @@ rounding and alpha conversion.
 - Half samples are limited to ±65,504: a larger finite value is rejected when it is written as half.
 - EXIF, XMP, an orientation, a resolution and text entries cannot be stored, and the attributes of a file other than its
   windows and chromaticities are not read.
-- Multi-part files, deep data, the DWAA, DWAB, HTJ2K and ZSTD compressions, and channels other than `R`, `G`, `B`, `A`
-  and `Y` (layers, depth) are rejected with an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException).
+- Multi-part files, deep data, the DWAA, DWAB, HTJ2K and ZSTD compressions, the chroma channels `RY` and `BY`, and,
+  unless a layer is selected, channels other than `R`, `G`, `B`, `A` and `Y` (layers, depth) are rejected with an
+  [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException).
 - The decoder reads the full-resolution level of mipmaps and ripmaps; the lower levels and the preview image are not
   read.
 - A file whose writer stopped before patching its offset table (zeros in the table) is rejected by default; the

@@ -39,7 +39,7 @@ lists the main gaps. Each [format page](10-Formats/01-Overview.md) gives the det
 | HEIC | Bit depths above 12, multilayer and 3D extensions are not read; bursts, depth maps and live-photo videos are ignored. Sequences need a seekable destination. |
 | JPEG XL | Floating-point samples, more than 16 bits, premultiplied alpha and CMYK are not read; lossy decoding is close to, not identical with, the reference decoder. Writing has no layers or blending. |
 | JPEG 2000 | Signed samples, more than 16 bits and Part 2 extensions are not read; no lower-resolution decoding. Writing has one tile and one layer, no HTJ2K, no rate control. |
-| OpenEXR | Multi-part files, deep data, DWA/HTJ2K/ZSTD compressions and channels other than R, G, B, A and Y are not read. Writing uses lossless scan-line compression, but alpha premultiplication and sample conversion can change source pixels. |
+| OpenEXR | Multi-part files, deep data, DWA/HTJ2K/ZSTD compressions and chroma (RY, BY) channels are not read; other channels than R, G, B, A and Y, and an overscan, need a layer or a window mode ([OpenExrDecodingOptions](cref:Meziantou.Framework.Imaging.OpenExrDecodingOptions)). Writing uses lossless scan-line compression, but alpha premultiplication and sample conversion can change source pixels. |
 
 ## Processing
 

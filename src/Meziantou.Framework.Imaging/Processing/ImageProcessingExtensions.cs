@@ -1397,15 +1397,18 @@ public static partial class ImageProcessingExtensions
     /// <paramref name="edgeMode"/>.
     /// </para>
     /// <para>
-    /// The time per pixel does not depend on the radius: the sums of the rows of the square, then of its columns, are
-    /// computed by blocks of <c>2 radius + 1</c> values, three additions per sample whatever their number, without
-    /// subtractions (a sample that is not a number or an infinity only reaches the pixels whose square contains it), and
-    /// the sum of the square is divided once and rounded once at the storage precision. It follows the rules of a
+    /// The time per pixel does not depend on the radius while the square fits in the frame: the sums of the rows of the
+    /// square, then of its columns, are computed by blocks of <c>2 radius + 1</c> values, three additions per sample
+    /// whatever their number, without subtractions (a sample that is not a number or an infinity only reaches the pixels
+    /// whose square contains it), and the sum of the square is divided once and rounded once at the storage precision. A
+    /// larger square also adds the pixels that the edge mode repeats beyond the frame, one by one, which costs each row and
+    /// each column a time proportional to the radius (not to its square: each row of a frame no taller than the radius is
+    /// summed once, however many times the edge mode repeats it). It follows the rules of a
     /// convolution (colors filtered premultiplied by alpha, the same result whatever the number of workers); an opaque
     /// frame is blurred as its colors alone and keeps the maximum alpha, except with
     /// <see cref="ConvolutionEdgeMode.Zero"/>, which reads transparent pixels beyond the frame. The scratch storage
     /// (about three times the radius rows of double-precision samples per worker) is charged to the image allocation
-    /// scope. With a radius of 0, nothing changes.
+    /// scope; a frame no taller than the radius needs less. With a radius of 0, nothing changes.
     /// </para>
     /// </remarks>
     /// <param name="image">The image to modify.</param>

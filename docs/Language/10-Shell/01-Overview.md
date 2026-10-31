@@ -9,9 +9,7 @@ CI step before running it, or rename a command without touching the rest.
 
 It is a parser: it does not run anything, and does not expand variables.
 
-```bash
-dotnet add package Meziantou.Framework.Language.Shell
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Language.Shell" />
 
 | Page | Covers |
 | --- | --- |

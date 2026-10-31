@@ -7,9 +7,7 @@ description: Install the package, hash a password, compute a SHA-3 digest and a 
 
 Add the `Meziantou.Framework.Hashing` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.Hashing
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Hashing" />
 
 The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework.Hashing;`, and
 `using System.Security.Cryptography;` for `RandomNumberGenerator` and `CryptographicOperations`.

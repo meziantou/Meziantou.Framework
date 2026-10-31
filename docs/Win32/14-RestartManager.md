@@ -7,9 +7,7 @@ When a file cannot be deleted or overwritten because another process has it open
 which processes use it, and can close them and start them again. Installers use it to update files that running
 applications hold. [RestartManager](cref:Meziantou.Framework.Win32.RestartManager) from the `Meziantou.Framework.Win32.RestartManager` package wraps it.
 
-```bash
-dotnet add package Meziantou.Framework.Win32.RestartManager
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Win32.RestartManager" />
 
 ## Check whether a file is locked
 

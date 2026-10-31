@@ -7,9 +7,7 @@ description: Install the package, detect whether the process runs in an LLM cont
 
 Add the `Meziantou.Framework.LLMContext` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.LLMContext
-```
+<InstallNuGetPackage Id="Meziantou.Framework.LLMContext" />
 
 The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework.LLMContext;`.
 

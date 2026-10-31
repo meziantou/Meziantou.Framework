@@ -7,9 +7,7 @@ description: Parse XML into a lossless tree, find nodes with XPath, edit attribu
 can change a version in a `.csproj` or a `.nuspec` and keep the rest of the file as it is. It finds nodes with XPath, and
 formats a document on request.
 
-```bash
-dotnet add package Meziantou.Framework.Language.Xml
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Language.Xml" />
 
 ## Parse, find and edit
 

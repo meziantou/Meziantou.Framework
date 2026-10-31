@@ -7,9 +7,7 @@ description: Install the package, then detect and remove the ANSI escape sequenc
 
 Add the `Meziantou.Framework.AnsiFormatting` package to your project:
 
-```bash
-dotnet add package Meziantou.Framework.AnsiFormatting
-```
+<InstallNuGetPackage Id="Meziantou.Framework.AnsiFormatting" />
 
 The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework;`. They check
 their results with assertions such as `Assert.Equal`, which show what each call returns.

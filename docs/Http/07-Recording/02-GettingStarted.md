@@ -5,9 +5,7 @@ description: Install the package, record the responses of a service on the first
 
 ## Install the package
 
-```bash
-dotnet add package Meziantou.Framework.Http.Recording
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Http.Recording" />
 
 The examples omit the `using` directives: they need `using Meziantou.Framework.Http.Recording;`.
 

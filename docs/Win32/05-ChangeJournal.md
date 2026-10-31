@@ -8,9 +8,7 @@ Each record gives the name of the file, its identifier, its parent directory and
 increasing update sequence number (USN). Reading the journal finds the files that changed since a given point without
 scanning the volume. The `Meziantou.Framework.Win32.ChangeJournal` package reads and configures it.
 
-```bash
-dotnet add package Meziantou.Framework.Win32.ChangeJournal
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Win32.ChangeJournal" />
 
 ## Get the last record of a file
 

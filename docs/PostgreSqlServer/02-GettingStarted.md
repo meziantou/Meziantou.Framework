@@ -7,18 +7,14 @@ description: Install the package, start a server, and query it with Npgsql.
 
 Add the `Meziantou.Framework.PostgreSqlServer` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.PostgreSqlServer
-```
+<InstallNuGetPackage Id="Meziantou.Framework.PostgreSqlServer" />
 
 The package depends on the ASP.NET Core shared framework (`Microsoft.AspNetCore.App`), which the .NET SDK provides,
 also in console and test projects.
 
 The examples connect with Npgsql, the PostgreSQL driver for .NET:
 
-```bash
-dotnet add package Npgsql
-```
+<InstallNuGetPackage Id="Npgsql" />
 
 The examples of this documentation omit the `using` directives. They use the namespaces listed in
 [Namespaces](01-Introduction.md#namespaces), plus `System.Net` and `Npgsql`.

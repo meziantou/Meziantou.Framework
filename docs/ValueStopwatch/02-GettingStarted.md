@@ -7,9 +7,7 @@ description: Install the package, start a stopwatch, read the elapsed time, and 
 
 Add the `Meziantou.Framework.ValueStopwatch` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.ValueStopwatch
-```
+<InstallNuGetPackage Id="Meziantou.Framework.ValueStopwatch" />
 
 The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework;`.
 

@@ -7,9 +7,7 @@ description: Install the package, tag your first ids, and fix the warnings the a
 
 Add the `Meziantou.Framework.TaggedValues` package to your project:
 
-```bash
-dotnet add package Meziantou.Framework.TaggedValues
-```
+<InstallNuGetPackage Id="Meziantou.Framework.TaggedValues" />
 
 The package contains the [\[ValueTag\]](cref:Meziantou.Framework.TaggedValues.ValueTagAttribute) attribute, and a Roslyn analyzer with its code fixes for C#. The analyzer runs
 during the build and in the IDE: there is nothing to register.

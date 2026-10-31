@@ -13,9 +13,7 @@ description: Install the package, start a PostgreSQL container for a test, then 
 
 Add the `Meziantou.Framework.TemporaryContainers` package to your test project:
 
-```bash
-dotnet add package Meziantou.Framework.TemporaryContainers
-```
+<InstallNuGetPackage Id="Meziantou.Framework.TemporaryContainers" />
 
 The examples of this documentation omit `using Meziantou.Framework.TemporaryContainers;`.
 

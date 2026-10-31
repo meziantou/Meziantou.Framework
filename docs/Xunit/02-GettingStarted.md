@@ -7,9 +7,7 @@ description: Install the package, run a test on some operating systems only, and
 
 Add the `Meziantou.Xunit` package to a test project that uses xUnit.v3:
 
-```bash
-dotnet add package Meziantou.Xunit
-```
+<InstallNuGetPackage Id="Meziantou.Xunit" />
 
 The examples of this documentation omit the `using` directives: they need `using Meziantou.Xunit;` and
 `using Xunit;`.

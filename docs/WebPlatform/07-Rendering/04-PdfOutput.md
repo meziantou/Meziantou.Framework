@@ -4,12 +4,10 @@ description: Print a document to a PDF with selectable text, embedded fonts and 
 ---
 
 The `Meziantou.Framework.WebPlatform.PdfRendering` package prints a document to PDF with
-[Meziantou.Framework.Pdf](https://www.nuget.org/packages/Meziantou.Framework.Pdf). The document is laid out for printing,
+<NuGetReference Id="Meziantou.Framework.Pdf" />. The document is laid out for printing,
 as for [Printing pages](03-PrintingPages.md), and each page becomes a PDF page of vector graphics and text:
 
-```bash
-dotnet add package Meziantou.Framework.WebPlatform.PdfRendering
-```
+<InstallNuGetPackage Id="Meziantou.Framework.WebPlatform.PdfRendering" />
 
 <!-- ref:../../../tests/Meziantou.Framework.WebPlatform.PdfRendering.Tests/PdfPrintTests.cs;region=PdfPrintExtensions_PrintToPdf;format=md-fenced-code-block;dedent=true -->
 ```csharp

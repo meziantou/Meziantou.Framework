@@ -7,9 +7,7 @@ description: Install the package, write your first snapshot test, approve the sn
 
 Add the `Meziantou.Framework.SnapshotTesting` package to a test project:
 
-```bash
-dotnet add package Meziantou.Framework.SnapshotTesting
-```
+<InstallNuGetPackage Id="Meziantou.Framework.SnapshotTesting" />
 
 It works with xUnit v2 and v3, NUnit, MSTest and TUnit. The examples of this documentation omit the `using`
 directives: they need `using Meziantou.Framework.SnapshotTesting;`.
@@ -44,9 +42,7 @@ Age: 42
 When the content is what you expect, approve it: the actual file becomes the verified file. The quickest way is the
 approval tool, which approves every actual file under the current folder:
 
-```bash
-dotnet tool install --global Meziantou.Framework.SnapshotTesting.Tool
-```
+<InstallDotnetTool Id="Meziantou.Framework.SnapshotTesting.Tool" />
 
 ```bash
 Meziantou.Framework.SnapshotTesting.Tool approve

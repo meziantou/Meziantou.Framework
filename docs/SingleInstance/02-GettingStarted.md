@@ -7,9 +7,7 @@ description: Install the package, detect the first instance of the application a
 
 Add the `Meziantou.Framework.SingleInstance` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.SingleInstance
-```
+<InstallNuGetPackage Id="Meziantou.Framework.SingleInstance" />
 
 The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework;`.
 

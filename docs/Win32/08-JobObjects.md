@@ -7,9 +7,7 @@ A job object groups processes so Windows manages them as a unit: it applies limi
 together, and accounts for their resources. The processes that a process of the job starts belong to the job too.
 [JobObject](cref:Meziantou.Framework.Win32.JobObject) from the `Meziantou.Framework.Win32.Jobs` package creates and configures job objects.
 
-```bash
-dotnet add package Meziantou.Framework.Win32.Jobs
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Win32.Jobs" />
 
 ## Terminate the child processes when the application exits
 

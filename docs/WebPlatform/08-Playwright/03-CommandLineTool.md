@@ -6,9 +6,7 @@ description: Run the Playwright server from the command line, and connect the Pl
 The `Meziantou.Framework.WebPlatform.Playwright.Tool` .NET tool runs a Playwright server whose browser is this engine,
 without writing code. Install it:
 
-```bash
-dotnet tool install --global Meziantou.Framework.WebPlatform.Playwright.Tool
-```
+<InstallDotnetTool Id="Meziantou.Framework.WebPlatform.Playwright.Tool" />
 
 Start a server on port 3000 whose pages can load any URL:
 

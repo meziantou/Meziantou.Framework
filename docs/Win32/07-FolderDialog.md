@@ -7,9 +7,7 @@ description: Let the user pick a folder with the modern Windows folder dialog, f
 dialog as File Explorer uses to open files, configured to select a folder. It needs no UI framework: it works from a
 console application as well as from WPF or Windows Forms.
 
-```bash
-dotnet add package Meziantou.Framework.Win32.Dialogs
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Win32.Dialogs" />
 
 The examples of this page show a dialog: they are compiled, not run, by the build of the repository.
 

@@ -7,9 +7,7 @@ description: Install the package, write events to a trace file, and open the fil
 
 Add the `Meziantou.Framework.ChromiumTracing` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.ChromiumTracing
-```
+<InstallNuGetPackage Id="Meziantou.Framework.ChromiumTracing" />
 
 The examples of this documentation need `using Meziantou.Framework.ChromiumTracing;`.
 

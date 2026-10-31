@@ -8,9 +8,7 @@ description: Write code that works with any ID through IStronglyTypedId and IStr
 The `Meziantou.Framework.StronglyTypedId.Interfaces` package contains two interfaces that the generated IDs implement.
 Add it to your project:
 
-```bash
-dotnet add package Meziantou.Framework.StronglyTypedId.Interfaces
-```
+<InstallNuGetPackage Id="Meziantou.Framework.StronglyTypedId.Interfaces" />
 
 When the project references it, every ID implements:
 

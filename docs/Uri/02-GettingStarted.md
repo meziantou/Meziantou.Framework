@@ -7,9 +7,7 @@ description: Install the package, match a URL against a pattern, edit a query st
 
 Add the `Meziantou.Framework.Uri` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.Uri
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Uri" />
 
 The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework;`, and
 `using Microsoft.Extensions.Primitives;` for the examples that use `StringValues`.

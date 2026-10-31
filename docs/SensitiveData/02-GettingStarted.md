@@ -7,9 +7,7 @@ description: Install the package, store a secret, reveal it when you need it and
 
 Add the `Meziantou.Framework.SensitiveData` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.SensitiveData
-```
+<InstallNuGetPackage Id="Meziantou.Framework.SensitiveData" />
 
 The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework;`.
 

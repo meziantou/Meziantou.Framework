@@ -10,13 +10,7 @@ convert pages saved from a browser.
 
 Install it as a global tool:
 
-```bash
-dotnet tool install --global Meziantou.Framework.HtmlToMarkdown.Tool
-```
-
-The command has the name of the package. To pin the version of a repository, install it as a local tool instead
-(`dotnet new tool-manifest`, then `dotnet tool install Meziantou.Framework.HtmlToMarkdown.Tool`) and run it with
-`dotnet tool run Meziantou.Framework.HtmlToMarkdown.Tool`.
+<InstallDotnetTool Id="Meziantou.Framework.HtmlToMarkdown.Tool" />
 
 ## Convert a file
 

@@ -7,9 +7,7 @@ description: Install the package, create a Bloom filter for an expected number o
 
 Add the `Meziantou.Framework.BloomFilters` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.BloomFilters
-```
+<InstallNuGetPackage Id="Meziantou.Framework.BloomFilters" />
 
 The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework.BloomFilters;`.
 

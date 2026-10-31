@@ -7,9 +7,7 @@ description: Install the package, then compute the occurrences of a recurrence r
 
 Add the `Meziantou.Framework.Scheduling` package to your project:
 
-```bash
-dotnet add package Meziantou.Framework.Scheduling
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Scheduling" />
 
 The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework.Scheduling;`.
 

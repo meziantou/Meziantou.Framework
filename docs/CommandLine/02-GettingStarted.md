@@ -7,9 +7,7 @@ description: Install the package, read named and positional arguments, and detec
 
 Add the `Meziantou.Framework.CommandLine` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.CommandLine
-```
+<InstallNuGetPackage Id="Meziantou.Framework.CommandLine" />
 
 The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework;`.
 

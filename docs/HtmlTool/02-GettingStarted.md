@@ -7,13 +7,9 @@ description: Install the tool, run a command on a file, and read its output.
 
 Install it as a global tool:
 
-```bash
-dotnet tool install --global Meziantou.Framework.Html.Tool
-```
+<InstallDotnetTool Id="Meziantou.Framework.Html.Tool" />
 
-The tool needs the ASP.NET Core runtime: the .NET SDK includes it. To pin
-the version of a repository, install it as a local tool instead (`dotnet new tool-manifest`, then
-`dotnet tool install Meziantou.Framework.Html.Tool`) and run it with `dotnet tool run meziantou.html`.
+The tool needs the ASP.NET Core runtime: the .NET SDK includes it.
 
 ## Run a command
 

@@ -5,10 +5,7 @@ description: Install the packages, start an NTP server on the local machine, and
 
 ## Install the packages
 
-```bash
-dotnet add package Meziantou.Framework.NtpClient
-dotnet add package Meziantou.Framework.NtpServer
-```
+<InstallNuGetPackage Id="Meziantou.Framework.NtpClient,Meziantou.Framework.NtpServer" />
 
 ## Query a server
 

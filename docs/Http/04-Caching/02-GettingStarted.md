@@ -8,10 +8,7 @@ description: Install the caching packages and add HttpCachingDelegateHandler to 
 Add the cache and a store to a project. The examples of this group use the in-memory
 store:
 
-```bash
-dotnet add package Meziantou.Framework.Http.Caching
-dotnet add package Meziantou.Framework.Http.Caching.InMemory
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Http.Caching,Meziantou.Framework.Http.Caching.InMemory" />
 
 [HttpCachingDelegateHandler](cref:Meziantou.Framework.Http.Caching.HttpCachingDelegateHandler), [HttpCachingOptions](cref:Meziantou.Framework.Http.Caching.HttpCachingOptions) and [IHttpCacheStore](cref:Meziantou.Framework.Http.Caching.IHttpCacheStore) are in the [Meziantou.Framework.Http.Caching](cref:Meziantou.Framework.Http.Caching)
 namespace, and [InMemoryHttpCacheStore](cref:Meziantou.Framework.Http.Caching.InMemory.InMemoryHttpCacheStore) in [Meziantou.Framework.Http.Caching.InMemory](cref:Meziantou.Framework.Http.Caching.InMemory).

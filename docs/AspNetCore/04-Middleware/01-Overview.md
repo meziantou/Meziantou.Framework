@@ -10,9 +10,7 @@ description: The middleware and diagnostics of the Meziantou.AspNetCore package.
 - [Middleware pipeline debugging](03-PipelineDebugging.md): see the middleware of the application, in order, with their
   branches, and the list of endpoints, from code or from a debug endpoint.
 
-```bash
-dotnet add package Meziantou.AspNetCore
-```
+<InstallNuGetPackage Id="Meziantou.AspNetCore" />
 
 [UseNoCache](cref:Meziantou.AspNetCore.NoCacheApplicationBuilderExtensions.UseNoCache) is in the [Meziantou.AspNetCore](cref:Meziantou.AspNetCore) namespace; the debugging types are in [Meziantou.AspNetCore.Diagnostics](cref:Meziantou.AspNetCore.Diagnostics).
 

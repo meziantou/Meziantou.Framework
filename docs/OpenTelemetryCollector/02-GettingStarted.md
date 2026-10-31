@@ -8,9 +8,7 @@ description: Install the packages, add the OTLP endpoints to an ASP.NET Core app
 Add the packages to an ASP.NET Core project, or a test project. The in-memory receiver
 brings the main package with it:
 
-```bash
-dotnet add package Meziantou.Framework.OpenTelemetryCollector.InMemory
-```
+<InstallNuGetPackage Id="Meziantou.Framework.OpenTelemetryCollector.InMemory" />
 
 To write your own handlers only, add `Meziantou.Framework.OpenTelemetryCollector` instead.
 

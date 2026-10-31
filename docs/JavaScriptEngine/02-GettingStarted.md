@@ -7,9 +7,7 @@ description: Install the package, run a script, expose a .NET function and handl
 
 Add the `Meziantou.Framework.JavaScriptEngine` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.JavaScriptEngine
-```
+<InstallNuGetPackage Id="Meziantou.Framework.JavaScriptEngine" />
 
 The examples of this documentation omit the `using` directives: add
 `using Meziantou.Framework.JavaScriptEngine;`.

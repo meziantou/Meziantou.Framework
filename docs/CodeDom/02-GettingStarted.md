@@ -5,9 +5,7 @@ description: Install the package, build a compilation unit, and write it as C# c
 
 ## Install the package
 
-```bash
-dotnet add package Meziantou.Framework.CodeDom
-```
+<InstallNuGetPackage Id="Meziantou.Framework.CodeDom" />
 
 The types are in the [Meziantou.Framework.CodeDom](cref:Meziantou.Framework.CodeDom) namespace. The examples of this documentation omit the `using`
 directives, and check their results with assertions such as `Assert.Equal`.

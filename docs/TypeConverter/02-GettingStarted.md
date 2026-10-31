@@ -7,9 +7,7 @@ description: Install the package, convert values with ConvertUtilities, and read
 
 Add the `Meziantou.Framework.TypeConverter` package to your project:
 
-```bash
-dotnet add package Meziantou.Framework.TypeConverter
-```
+<InstallNuGetPackage Id="Meziantou.Framework.TypeConverter" />
 
 The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework;` and
 `using System.Globalization;`. They check their results with assertions such as `Assert.Equal`, which show what each

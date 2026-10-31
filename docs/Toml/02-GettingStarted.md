@@ -7,9 +7,7 @@ description: Install the package, write an object as TOML, read it back, and rea
 
 Add the `Meziantou.Framework.Toml` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.Toml
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Toml" />
 
 The package contains the source generator too: there is no other package to add. The examples of this documentation
 omit the `using` directives; see [Namespaces](01-Introduction.md#namespaces) for where each type lives.

@@ -5,12 +5,9 @@ description: Install a package, capture a snapshot of the execution context as J
 
 ## Install the packages
 
-Add the package you need to a project:
+Add the packages to a project:
 
-```bash
-dotnet add package Meziantou.Framework.Diagnostics.ContextSnapshot
-dotnet add package Meziantou.Framework.Diagnostics.MemoryDump
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Diagnostics.ContextSnapshot,Meziantou.Framework.Diagnostics.MemoryDump" />
 
 ## Capture the execution context
 

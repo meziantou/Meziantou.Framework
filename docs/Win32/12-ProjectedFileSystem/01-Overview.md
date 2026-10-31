@@ -12,9 +12,7 @@ The `Meziantou.Framework.Win32.ProjectedFileSystem` package implements the provi
 [ProjectedFileSystemBase](cref:Meziantou.Framework.Win32.ProjectedFileSystem.ProjectedFileSystemBase), return the entries of the folders and the content of the files, and the base class handles
 the ProjFS callbacks.
 
-```bash
-dotnet add package Meziantou.Framework.Win32.ProjectedFileSystem
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Win32.ProjectedFileSystem" />
 
 The types are in the [Meziantou.Framework.Win32.ProjectedFileSystem](cref:Meziantou.Framework.Win32.ProjectedFileSystem) namespace.
 

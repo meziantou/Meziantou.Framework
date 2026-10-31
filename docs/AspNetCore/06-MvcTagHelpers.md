@@ -5,9 +5,7 @@ description: Render elements conditionally, inline CSS, scripts and images from 
 
 `Meziantou.AspNetCore.Mvc` adds tag helpers to MVC views and Razor Pages.
 
-```bash
-dotnet add package Meziantou.AspNetCore.Mvc
-```
+<InstallNuGetPackage Id="Meziantou.AspNetCore.Mvc" />
 
 Register them in `_ViewImports.cshtml`:
 

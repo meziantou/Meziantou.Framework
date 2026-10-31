@@ -10,13 +10,7 @@ scripts, for instance to export the description of a Jira issue.
 
 Install it as a global tool:
 
-```bash
-dotnet tool install --global Meziantou.Framework.AtlassianDataFormat.Tool
-```
-
-The command has the name of the package. To pin the version of a repository, install it as a local tool instead
-(`dotnet new tool-manifest`, then `dotnet tool install Meziantou.Framework.AtlassianDataFormat.Tool`) and run it with
-`dotnet tool run Meziantou.Framework.AtlassianDataFormat.Tool`.
+<InstallDotnetTool Id="Meziantou.Framework.AtlassianDataFormat.Tool" />
 
 ## Convert a file
 

@@ -7,9 +7,7 @@ description: Install the package, parse the CODEOWNERS file of a repository and 
 
 Add the `Meziantou.Framework.CodeOwners` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.CodeOwners
-```
+<InstallNuGetPackage Id="Meziantou.Framework.CodeOwners" />
 
 The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework.CodeOwners;`.
 

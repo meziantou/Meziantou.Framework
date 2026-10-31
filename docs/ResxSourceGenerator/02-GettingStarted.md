@@ -7,9 +7,7 @@ description: Install the package, enable the generator for the .resx files of th
 
 Add the `Meziantou.Framework.ResxSourceGenerator` package to the project that contains the `.resx` files:
 
-```bash
-dotnet add package Meziantou.Framework.ResxSourceGenerator
-```
+<InstallNuGetPackage Id="Meziantou.Framework.ResxSourceGenerator" />
 
 ## Enable the generator
 

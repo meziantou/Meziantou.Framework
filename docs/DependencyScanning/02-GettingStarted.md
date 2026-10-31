@@ -7,9 +7,7 @@ description: Install the package, scan a folder and read the dependencies it dec
 
 Add the `Meziantou.Framework.DependencyScanning` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.DependencyScanning
-```
+<InstallNuGetPackage Id="Meziantou.Framework.DependencyScanning" />
 
 The examples of this documentation omit the `using` directives: they need
 `using Meziantou.Framework.DependencyScanning;`.

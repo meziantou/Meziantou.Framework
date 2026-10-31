@@ -7,9 +7,7 @@ description: Install a Win32 package, find its namespace, and call it safely fro
 
 Add the package you need to a project, for instance:
 
-```bash
-dotnet add package Meziantou.Framework.Win32.MarkOfTheWeb
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Win32.MarkOfTheWeb" />
 
 The other packages are listed in the [introduction](01-Introduction.md#packages).
 

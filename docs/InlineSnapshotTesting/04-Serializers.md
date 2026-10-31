@@ -5,7 +5,7 @@ description: Configure how values are written in inline snapshots, use JSON, or 
 
 The serializer converts the value under test to the text of the snapshot. By default, [InlineSnapshot](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshot) uses the
 human-readable serializer
-([`Meziantou.Framework.HumanReadableSerializer`](https://www.nuget.org/packages/Meziantou.Framework.HumanReadableSerializer)),
+(<NuGetReference Id="Meziantou.Framework.HumanReadableSerializer" />),
 which writes objects as readable, YAML-like text and suits most cases.
 
 By default, properties with a default value (`null`, `0`, `false`) are omitted and obsolete members are skipped. JSON
@@ -126,7 +126,7 @@ InlineSnapshot
 <!-- endref -->
 
 HTML values are not formatted by default. `AddHtmlFormatter`, from the
-[`Meziantou.Framework.HumanReadableSerializer.Html`](https://www.nuget.org/packages/Meziantou.Framework.HumanReadableSerializer.Html)
+<NuGetReference Id="Meziantou.Framework.HumanReadableSerializer.Html" />
 package, parses the HTML and serializes it back as defined by the HTML specification:
 
 <!-- ref:../../samples/Meziantou.Framework.InlineSnapshotTesting.Samples/ReadmeSnippets.cs;region=InlineSnapshot_HtmlFormatter;format=md-fenced-code-block;dedent=true -->

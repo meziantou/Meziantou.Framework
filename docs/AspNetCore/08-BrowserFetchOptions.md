@@ -8,9 +8,7 @@ fetch options: whether the browser cache is used, whether cookies are sent, and 
 [DefaultBrowserOptionsMessageHandler](cref:Meziantou.AspNetCore.Components.WebAssembly.DefaultBrowserOptionsMessageHandler), from `Meziantou.AspNetCore.Components.WebAssembly`, sets these options on every
 request of a client.
 
-```bash
-dotnet add package Meziantou.AspNetCore.Components.WebAssembly
-```
+<InstallNuGetPackage Id="Meziantou.AspNetCore.Components.WebAssembly" />
 
 Add the handler to the client in `Program.cs`. [DefaultBrowserOptionsMessageHandler](cref:Meziantou.AspNetCore.Components.WebAssembly.DefaultBrowserOptionsMessageHandler) is in the
 [Meziantou.AspNetCore.Components.WebAssembly](cref:Meziantou.AspNetCore.Components.WebAssembly) namespace, and `BrowserRequestCache` in

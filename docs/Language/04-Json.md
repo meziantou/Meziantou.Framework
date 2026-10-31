@@ -6,9 +6,7 @@ description: Parse JSON with comments and trailing commas into a lossless tree, 
 `Meziantou.Framework.Language.Json` parses JSON into a tree that keeps every character, so you can change a value of a
 `package.json` or an `appsettings.json` and keep its comments, its indentation and its key order.
 
-```bash
-dotnet add package Meziantou.Framework.Language.Json
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Language.Json" />
 
 ## Parse a document
 

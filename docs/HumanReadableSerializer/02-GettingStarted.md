@@ -7,9 +7,7 @@ description: Install the package, serialize an object, and pass options.
 
 Add the `Meziantou.Framework.HumanReadableSerializer` package to your project:
 
-```bash
-dotnet add package Meziantou.Framework.HumanReadableSerializer
-```
+<InstallNuGetPackage Id="Meziantou.Framework.HumanReadableSerializer" />
 
 The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework.HumanReadable;`.
 They check their results with assertions such as `Assert.Equal`, which show the text the serializer writes.

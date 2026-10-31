@@ -8,9 +8,7 @@ honor it; `HttpClient` does not: a request to `http://github.com` is sent in pla
 `Meziantou.Framework.Http.Hsts` package, closes that gap. Before a request is sent, it rewrites `http://` to
 `https://` when the host has an HSTS policy.
 
-```bash
-dotnet add package Meziantou.Framework.Http.Hsts
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Http.Hsts" />
 
 The policies come from two places:
 

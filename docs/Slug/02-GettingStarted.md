@@ -7,9 +7,7 @@ description: Install the package and create a slug from a text.
 
 Add the `Meziantou.Framework.Slug` package to your project:
 
-```bash
-dotnet add package Meziantou.Framework.Slug
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Slug" />
 
 The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework;`. They check
 their results with assertions such as `Assert.Equal`, which show what each call returns.

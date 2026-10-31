@@ -7,9 +7,7 @@ When an application opens a document, it can tell Windows, which adds the docume
 to the Jump List of the application on the taskbar. [RecentDocuments](cref:Meziantou.Framework.Win32.RecentDocuments) from the
 `Meziantou.Framework.Win32.RecentDocuments` package does it.
 
-```bash
-dotnet add package Meziantou.Framework.Win32.RecentDocuments
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Win32.RecentDocuments" />
 
 The example of this page changes the recent documents of the user: it is compiled, not run, by the build of the
 repository.

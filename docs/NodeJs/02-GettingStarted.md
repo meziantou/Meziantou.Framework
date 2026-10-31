@@ -7,9 +7,7 @@ description: Install the package and Node.js, run JavaScript code, and call a fu
 
 Add the `Meziantou.Framework.NodeJs` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.NodeJs
-```
+<InstallNuGetPackage Id="Meziantou.Framework.NodeJs" />
 
 The package does not include Node.js. Install Node.js 16.9 or later on the machines that run your application, and
 check that the `node` executable is in the `PATH`:

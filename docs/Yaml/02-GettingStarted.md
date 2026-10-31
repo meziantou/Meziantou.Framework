@@ -7,9 +7,7 @@ description: Install the package, serialize a class to YAML, read it back, and r
 
 Add the `Meziantou.Framework.Yaml` package to your project:
 
-```bash
-dotnet add package Meziantou.Framework.Yaml
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Yaml" />
 
 The package also contains the source generator: no other package is needed for
 [source generation](04-SourceGeneration.md).

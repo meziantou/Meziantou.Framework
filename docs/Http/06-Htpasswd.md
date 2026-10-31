@@ -7,9 +7,7 @@ An htpasswd file stores user names and password hashes, one `<user>:<hash>` entr
 HTTP basic authentication. [HtpasswdFile](cref:Meziantou.Framework.Http.HtpasswdFile), in the `Meziantou.Framework.Http.Htpasswd` package, reads it and verifies
 credentials.
 
-```bash
-dotnet add package Meziantou.Framework.Http.Htpasswd
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Http.Htpasswd" />
 
 ## Verify credentials
 

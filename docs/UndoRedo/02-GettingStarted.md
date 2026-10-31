@@ -7,9 +7,7 @@ description: Install the package, record actions, then undo and redo them.
 
 Add the `Meziantou.Framework.UndoRedo` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.UndoRedo
-```
+<InstallNuGetPackage Id="Meziantou.Framework.UndoRedo" />
 
 The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework.UndoRedo;`.
 

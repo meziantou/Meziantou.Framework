@@ -7,9 +7,7 @@ description: Install the package, parse and query a page, read its computed styl
 
 Add the `Meziantou.Framework.WebPlatform` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.WebPlatform
-```
+<InstallNuGetPackage Id="Meziantou.Framework.WebPlatform" />
 
 The examples of this documentation omit the `using` directives. The parser is in the [Meziantou.Framework.WebPlatform](cref:Meziantou.Framework.WebPlatform)
 namespace, and the DOM types ([Document](cref:Meziantou.Framework.WebPlatform.Dom.Document), [HtmlAnchorElement](cref:Meziantou.Framework.WebPlatform.Dom.HtmlAnchorElement), [BrowsingContext](cref:Meziantou.Framework.WebPlatform.Dom.BrowsingContext)...) are in
@@ -84,9 +82,7 @@ network, see [Network requests](05-LoadingPages/02-NetworkRequests.md).
 
 Screenshots need a rendering backend. Add the `Meziantou.Framework.WebPlatform.Imaging` package:
 
-```bash
-dotnet add package Meziantou.Framework.WebPlatform.Imaging
-```
+<InstallNuGetPackage Id="Meziantou.Framework.WebPlatform.Imaging" />
 
 Then give the backend to the browsing context, and take a screenshot of the viewport:
 

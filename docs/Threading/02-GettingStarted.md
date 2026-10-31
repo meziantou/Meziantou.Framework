@@ -7,9 +7,7 @@ description: Install the package, protect a resource with an asynchronous lock, 
 
 Add the `Meziantou.Framework.Threading` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.Threading
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Threading" />
 
 The types are in three namespaces: [Meziantou.Framework.Threading](cref:Meziantou.Framework.Threading), [Meziantou.Framework.Threading.Tasks](cref:Meziantou.Framework.Threading.Tasks) and
 [Meziantou.Framework.Collections.Concurrent](cref:Meziantou.Framework.Collections.Concurrent). See [Introduction](01-Introduction.md#namespaces) for what each contains.

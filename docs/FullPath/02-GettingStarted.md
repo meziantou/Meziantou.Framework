@@ -7,9 +7,7 @@ description: Install the package, create paths, combine them and use them with t
 
 Add the `Meziantou.Framework.FullPath` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.FullPath
-```
+<InstallNuGetPackage Id="Meziantou.Framework.FullPath" />
 
 The package also adds the [analyzer](10-Analyzer/01-Overview.md) to C# projects. The examples of this documentation
 omit the `using` directives: they need `using Meziantou.Framework;`.

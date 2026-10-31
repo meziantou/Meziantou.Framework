@@ -7,9 +7,7 @@ description: Install the package, read the tags of an audio file, and change a t
 
 Add the `Meziantou.Framework.MediaTags` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.MediaTags
-```
+<InstallNuGetPackage Id="Meziantou.Framework.MediaTags" />
 
 The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework.MediaTags;`.
 

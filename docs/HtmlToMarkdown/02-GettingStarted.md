@@ -7,9 +7,7 @@ description: Install the package, convert an HTML fragment, set the options and 
 
 Add the `Meziantou.Framework.HtmlToMarkdown` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.HtmlToMarkdown
-```
+<InstallNuGetPackage Id="Meziantou.Framework.HtmlToMarkdown" />
 
 The examples of this documentation need `using Meziantou.Framework;`.
 

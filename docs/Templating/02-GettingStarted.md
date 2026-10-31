@@ -7,9 +7,7 @@ description: Install the package, render a template with an argument, loop in a 
 
 Add the `Meziantou.Framework.Templating` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.Templating
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Templating" />
 
 The examples of this documentation omit the `using` directives: add `using Meziantou.Framework.Templating;`. They are
 tests: an `Assert.Equal` shows the text the template produces.

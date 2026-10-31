@@ -6,9 +6,7 @@ description: Open the access token of a process, check its elevation and groups,
 An access token describes the security context of a process: the user, the groups, the privileges and the integrity
 level. [AccessToken](cref:Meziantou.Framework.Win32.AccessToken) from the `Meziantou.Framework.Win32.AccessToken` package opens and reads it.
 
-```bash
-dotnet add package Meziantou.Framework.Win32.AccessToken
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Win32.AccessToken" />
 
 ## Open a token
 

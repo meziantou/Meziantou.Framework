@@ -6,9 +6,7 @@ description: Install the LogViewer Blazor component, display log entries, and se
 `Meziantou.AspNetCore.Components.LogViewer` is a Blazor component that displays log entries: the output of a build,
 of a job, or of a request, with highlighting and expandable details.
 
-```bash
-dotnet add package Meziantou.AspNetCore.Components.LogViewer
-```
+<InstallNuGetPackage Id="Meziantou.AspNetCore.Components.LogViewer" />
 
 The types are in the [Meziantou.AspNetCore.Components](cref:Meziantou.AspNetCore.Components.LogViewer!N:Meziantou.AspNetCore.Components) namespace, like the other
 [Blazor components](../01-Overview.md).

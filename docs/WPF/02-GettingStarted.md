@@ -7,9 +7,7 @@ description: Install Meziantou.Framework.WPF in a WPF application and reference 
 
 Add the `Meziantou.Framework.WPF` package to a WPF application:
 
-```bash
-dotnet add package Meziantou.Framework.WPF
-```
+<InstallNuGetPackage Id="Meziantou.Framework.WPF" />
 
 The package targets Windows, so the project must target Windows and enable WPF:
 

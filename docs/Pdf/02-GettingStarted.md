@@ -7,9 +7,7 @@ description: Install the package, create a document, read its text back and rend
 
 Add the `Meziantou.Framework.Pdf` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.Pdf
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Pdf" />
 
 The examples of this documentation omit the `using` directives. Most only need `using Meziantou.Framework.Pdf;`; see
 [Namespaces](01-Introduction.md#namespaces) for the others.

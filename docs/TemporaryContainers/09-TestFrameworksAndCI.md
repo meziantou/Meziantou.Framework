@@ -104,9 +104,7 @@ When a test fails, what the container printed often explains why. Forward the lo
 `XUnitLogger` of the `Meziantou.Extensions.Logging.Xunit.v3` package, as in the
 [container per test](#a-container-per-test) example above:
 
-```bash
-dotnet add package Meziantou.Extensions.Logging.Xunit.v3
-```
+<InstallNuGetPackage Id="Meziantou.Extensions.Logging.Xunit.v3" />
 
 `XUnitLogger.CreateLogger()` writes to the output of the current test. A fixture runs outside of any test, so there is
 no test output to write to and the lines are dropped: give a fixture a logger of your own. Once the test is over, its

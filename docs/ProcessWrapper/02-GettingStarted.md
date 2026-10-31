@@ -7,9 +7,7 @@ description: Install the package, run a command, wait for it, and capture its ou
 
 Add the `Meziantou.Framework.ProcessWrapper` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.ProcessWrapper
-```
+<InstallNuGetPackage Id="Meziantou.Framework.ProcessWrapper" />
 
 The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework;`.
 

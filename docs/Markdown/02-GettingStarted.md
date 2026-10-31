@@ -7,9 +7,7 @@ description: Install the package, convert Markdown to HTML, enable extensions an
 
 Add the `Meziantou.Framework.Markdown` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.Markdown
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Markdown" />
 
 The examples of this documentation omit the `using` directives. The first ones only need
 `using Meziantou.Framework.Markdown;`; see [Namespaces](01-Introduction.md#namespaces) for the others.

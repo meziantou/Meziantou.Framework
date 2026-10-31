@@ -11,7 +11,7 @@ the *comparers* decide whether each file matches its verified file. Both are con
 [SnapshotSettings.Serializers](cref:Meziantou.Framework.SnapshotTesting.SnapshotSettings.Serializers) starts with three serializers:
 
 - **Objects** are written as readable, YAML-like text by the human-readable serializer
-  ([`Meziantou.Framework.HumanReadableSerializer`](https://www.nuget.org/packages/Meziantou.Framework.HumanReadableSerializer)).
+  (<NuGetReference Id="Meziantou.Framework.HumanReadableSerializer" />).
   Properties with a default value (`null`, `0`, `false`) are omitted and obsolete members are skipped. JSON and XML
   values are indented, the attributes of XML elements are ordered, and the converters for HTTP messages and their
   headers are registered.

@@ -8,9 +8,7 @@ in a browser: the `script` elements, the modules, the event handlers, the timers
 The `Meziantou.Framework.WebPlatform.JavaScript` package provides the engine, based on Meziantou.Framework.JavaScriptEngine,
 an ECMAScript engine written in .NET.
 
-```bash
-dotnet add package Meziantou.Framework.WebPlatform.JavaScript
-```
+<InstallNuGetPackage Id="Meziantou.Framework.WebPlatform.JavaScript" />
 
 <!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/JavaScriptScriptEngineTests.cs;region=WebPlatformJavaScript_ExecuteScripts;format=md-fenced-code-block;dedent=true -->
 ```csharp

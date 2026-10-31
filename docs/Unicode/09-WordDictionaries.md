@@ -8,9 +8,7 @@ list of words: the segmentation and line breaking rules of Unicode leave it to a
 `Meziantou.Framework.Unicode.Dictionaries` provides the word lists of these languages and the engines that segment text
 with them.
 
-```bash
-dotnet add package Meziantou.Framework.Unicode.Dictionaries
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Unicode.Dictionaries" />
 
 The package depends on `Meziantou.Framework.Unicode`, and its types are in the [Meziantou.Framework](cref:Meziantou.Framework.Unicode.Dictionaries!N:Meziantou.Framework) namespace too.
 

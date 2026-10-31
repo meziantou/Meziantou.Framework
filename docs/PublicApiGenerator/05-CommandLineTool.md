@@ -9,9 +9,7 @@ third-party assembly, or in a build script.
 
 ## Install the tool
 
-```bash
-dotnet tool install --global Meziantou.Framework.PublicApiGenerator.Tool
-```
+<InstallDotnetTool Id="Meziantou.Framework.PublicApiGenerator.Tool" />
 
 ## Generate the API files
 

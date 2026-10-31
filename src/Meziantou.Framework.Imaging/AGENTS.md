@@ -646,6 +646,13 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   significant first whatever the byte order of the file; on a little-endian computer, `tiffcp -B` of libtiff 4.7.0
   writes big-endian pages that libtiff and GDAL read back with the bytes of each sample swapped, so a big-endian oracle
   file comes from GDAL, which reads and writes them consistently.
+  A page of separate planes (`TiffPage.IsPlanar`) has blocks of one sample per pixel (`BlockSamplesPerPixel`), each
+  predicted on its own; the decoder reads the blocks of the planes of one place together (`TiffPage.GetBlockIndex`, also
+  the order of `TiffBlockWorkers`) and interleaves them into chunky rows (`TiffPageDecoder.Interleave`), so the expander
+  never sees planes. Planar YCbCr data is rejected (its planes may have their own sizes). The writer serializes blocks
+  (`TiffDocumentWriter.FillBlock`): the rows of a strip, or a tile cut from a band of the rows of its row of tiles and
+  padded with zero samples; the predictors (`ApplyPredictor`) then work on each row of the block. Default settings must
+  keep writing the same bytes.
 - **OpenEXR** (`Internals/Codecs/Exr`). The structure parser reads the header (validated whole by `ExrHeader.Complete`,
   so that `Identify` reports every rejection), the offset table, then the chunks in the order of their offsets: the input
   is read forward only, and a chunk must start at its offset, carry its own coordinates and end before the next one.
@@ -1352,7 +1359,10 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   FFmpeg or Apple ImageIO (the JPEG pages, which FFmpeg does not read), and the pages FFmpeg writes with the library.
   FFmpeg 9.0.2 reads only the floating-point RGB and RGBA pages of little-endian classic files (no gray, no big-endian
   floats, no BigTIFF): every floating-point layout, byte order and offset size of the encoder was checked with GDAL and
-  libtiff in the same Docker image when it was written; check them again there after changing the writer.
+  libtiff in the same Docker image when it was written; check them again there after changing the writer. `tiffcp -p
+  separate` of libtiff 4.7.2 only separates 8-bit samples (and leaves a broken file otherwise): the 16-bit and
+  floating-point planar fixtures come from GDAL (`gdal_translate -co INTERLEAVE=BAND`). Apple ImageIO fails on some
+  PackBits tiles, libtiff's own included (a tile as wide as the page): it is no oracle for them.
 - **CMYK JPEG fixtures.** A four-component JPEG file is an `unsupported` fixture (identified, rejected by a load
   without conversion) that declares one conversion and its pixels (`inkConversion`). The reference has two independent
   stages: the samples decoded by `djpeg` from files the generator regroups scan by scan, then the decimal reference of

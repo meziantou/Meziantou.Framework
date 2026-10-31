@@ -792,14 +792,14 @@ public sealed class UnicodeTests
         // The fields are read from the tables on demand; a default instance must not read the entry for U+0000.
         var info = default(UnicodeCharacterInfo);
 
-        Assert.Null(info.Name);
+        Assert.Empty(info.Name);
         Assert.Equal(UnicodeCategory.UppercaseLetter, info.Category);
         Assert.Equal(UnicodeBidirectionalCategory.LeftToRight, info.BidiCategory);
-        Assert.Null(info.Block);
+        Assert.Same(UnicodeBlocks.Unknown, info.Block);
         Assert.Equal(0, info.CanonicalCombiningClass);
         Assert.Null(info.DecompositionMapping);
-        Assert.Equal(0, info.DecimalDigitValue);
-        Assert.Equal(0, info.DigitValue);
+        Assert.Null(info.DecimalDigitValue);
+        Assert.Null(info.DigitValue);
         Assert.Null(info.NumericValue);
         Assert.False(info.IsMirrored);
         Assert.Null(info.Unicode1Name);
@@ -809,6 +809,22 @@ public sealed class UnicodeTests
         Assert.Null(info.SimpleTitlecaseMapping);
         Assert.False(info.IsEmoji);
         Assert.False(info.IsExtendedPictographic);
+    }
+
+    [Fact]
+    public void UnicodeCharacterInfo_DefaultInArrayAndFailedLookupHaveNoProperties()
+    {
+        var infos = new UnicodeCharacterInfo[1];
+        Assert.False(Unicode.TryGetCharacterInfo(new Rune(0x0378), out var unassigned));
+
+        foreach (var info in new[] { infos[0], unassigned })
+        {
+            Assert.Empty(info.Name);
+            Assert.Same(UnicodeBlocks.Unknown, info.Block);
+            Assert.Null(info.DecimalDigitValue);
+            Assert.Null(info.DigitValue);
+            Assert.Null(info.NumericValue);
+        }
     }
 
     [Fact]
@@ -1108,6 +1124,32 @@ public sealed class UnicodeTests
         Assert.Same(UnicodeBlocks.Unknown, UnicodeBlocks.GetBlock(-1));
         Assert.Same(UnicodeBlocks.Unknown, UnicodeBlocks.GetBlock(0x110000));
         Assert.Same(UnicodeBlocks.Unknown, UnicodeBlocks.GetBlock(int.MinValue));
+    }
+
+    [Fact]
+    public void UnicodeBlocks_UnknownContainsOnlyCodePointsOutsideDefinedBlocks()
+    {
+        var unknown = UnicodeBlocks.Unknown;
+
+        Assert.Equal("Unknown", unknown.Name);
+        Assert.Equal(new UnicodeRange(0, 0x10FFFF), unknown.Range);
+        Assert.False(unknown.Contains(0));
+        Assert.False(unknown.Contains(new Rune(0)));
+        Assert.False(unknown.Contains(0x41));
+        Assert.False(unknown.Contains(0x10FFFF));
+        Assert.Same(UnicodeBlocks.Unknown, UnicodeBlocks.GetBlock(0x2FE0));
+        Assert.True(unknown.Contains(0x2FE0));
+        Assert.True(unknown.Contains(new Rune(0x2FE0)));
+        Assert.False(unknown.Contains(-1));
+        Assert.False(unknown.Contains(0x110000));
+        Assert.Equal("Unknown (U+0000..U+10FFFF)", unknown.ToString());
+
+        for (var codePoint = 0; codePoint <= 0x10FFFF; codePoint++)
+        {
+            var block = UnicodeBlocks.GetBlock(codePoint);
+            Assert.True(block.Contains(codePoint));
+            Assert.Equal(ReferenceEquals(block, unknown), unknown.Contains(codePoint));
+        }
     }
 
     [Fact]
@@ -3956,6 +3998,39 @@ public sealed class UnicodeTests
         Assert.Contains("\U0001F468‍❤️‍\U0001F468", UnicodeEmoji.GetSequences(UnicodeEmojiSequenceProperty.RgiEmojiZwjSequence));
         Assert.Same(UnicodeEmoji.GetSequences(UnicodeEmojiSequenceProperty.BasicEmoji), UnicodeEmoji.GetSequences(UnicodeEmojiSequenceProperty.BasicEmoji));
         Assert.Throws<ArgumentOutOfRangeException>("property", () => UnicodeEmoji.GetSequences((UnicodeEmojiSequenceProperty)6));
+    }
+
+    [Fact]
+    public void GetSequences_CannotBeModified()
+    {
+        foreach (var property in Enum.GetValues<UnicodeEmojiSequenceProperty>())
+        {
+            var sequences = UnicodeEmoji.GetSequences(property);
+
+            Assert.IsNotType<string[]>(sequences);
+            var list = (IList<string>)sequences;
+            Assert.True(list.IsReadOnly);
+            Assert.Throws<NotSupportedException>(() => list[0] = "tampered");
+            Assert.NotEqual("tampered", UnicodeEmoji.GetSequences(property)[0]);
+        }
+    }
+
+    [Fact]
+    public async Task GetSequences_ConcurrentCallersGetTheSameList()
+    {
+        // Each property is cached on its first call: the property may already be cached by another test, which is fine.
+        foreach (var property in Enum.GetValues<UnicodeEmojiSequenceProperty>())
+        {
+            using var barrier = new Barrier(8);
+            var tasks = Enumerable.Range(0, 8).Select(_ => Task.Factory.StartNew(() =>
+            {
+                barrier.SignalAndWait(TestContext.Current.CancellationToken);
+                return UnicodeEmoji.GetSequences(property);
+            }, TestContext.Current.CancellationToken, TaskCreationOptions.LongRunning, TaskScheduler.Default)).ToArray();
+            var results = await Task.WhenAll(tasks);
+
+            Assert.All(results, result => Assert.Same(results[0], result));
+        }
     }
 
     [Fact]

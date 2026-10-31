@@ -1,7 +1,7 @@
 name: Documentation
 
-# The API pages are generated from the packages of the checked-out commit, so the workflow also runs when a package
-# changes: a pull request that renames or removes a member used by a page fails here instead of breaking main.
+# The API pages are generated from the packages of the checked-out commit, so the site is also rebuilt on main when a
+# package changes. Pull requests only build it when the documentation or its build changes.
 on:
   workflow_dispatch:
   push:
@@ -27,13 +27,6 @@ on:
       - 'docs/**'
       - 'docgen.json'
       - 'dotnet-tools.json'
-      - 'src/**'
-      - 'common/**'
-      - 'eng/packages.proj'
-      - 'Directory.Build.props'
-      - 'Directory.Build.targets'
-      - 'global.json'
-      - 'NuGet.Config'
       - '.github/actions/pack/**'
       - '.github/workflows/documentation.yml'
 

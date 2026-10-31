@@ -44,6 +44,41 @@ Assert.Throws<JsonPathEvaluationException>(() => path.EvaluateValue(doc, JsonPat
 ```
 <!-- endref -->
 
+## Custom filter functions
+
+Derive from `JsonPathFunction` with an RFC 9535 signature and a callback that works with any navigator:
+
+<!-- ref:../../tests/Meziantou.Framework.JsonPath.Tests/JsonPathEvaluateTests.cs;region=JsonPath_IsValidFunction;format=md-fenced-code-block;dedent=true -->
+```csharp
+internal sealed class IsValidFunction() : JsonPathFunction("isvalid", JsonPathFunctionType.Logical, JsonPathFunctionType.Value)
+{
+    public override JsonPathFunctionArgument<TValue> Invoke<TValue>(
+        IReadOnlyList<JsonPathFunctionArgument<TValue>> arguments, JsonPathNavigator<TValue> navigator)
+    {
+        var valid = arguments[0].TryGetString(navigator, out var code) && code is "valid";
+        return JsonPathFunctionArgument<TValue>.FromLogical(valid);
+    }
+}
+```
+<!-- endref -->
+
+Opt in at parse time with an immutable registry. The default five built-ins are unchanged and cannot be overridden:
+
+<!-- ref:../../tests/Meziantou.Framework.JsonPath.Tests/JsonPathEvaluateTests.cs;region=JsonPath_CustomFunctions;format=md-fenced-code-block;dedent=true -->
+```csharp
+var functions = JsonPathFunctionRegistry.Default.WithFunction(new IsValidFunction());
+var path = JsonPath.Parse("$[?isvalid(@.code)].code", functions);
+var document = JsonNode.Parse("""[{"code":"valid"},{"code":"invalid"},{},{"code":null}]""");
+Assert.Equal("""["valid"]""", path.Evaluate(document).ToJsonArray().ToJsonString());
+```
+<!-- endref -->
+
+Arguments and results distinguish ValueType (including JSON null and Nothing), LogicalType and NodesType.
+Native nodes retain their object model and lifetime. Function implementations must be thread-safe, should be pure,
+and must not mutate input nodes. Custom results are not cached; short-circuiting may skip calls.
+Callback exceptions propagate unchanged. See [custom functions](../../docs/JsonPath/05-Functions.md#register-custom-functions)
+for the conversions and callback safety rules.
+
 ## Custom object models
 
 Use `JsonPathNavigator<TValue>` to evaluate JSONPath expressions against a custom tree without converting it to `JsonNode`.

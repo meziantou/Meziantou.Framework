@@ -26,11 +26,12 @@ internal sealed class FunctionCallExpression : LogicalExpression
     /// </remarks>
     private RegexCacheSlot[] _regexCache = [];
 
-    public FunctionCallExpression(string name, FunctionArgument[] arguments, FunctionExpressionType resultType)
+    public FunctionCallExpression(string name, FunctionArgument[] arguments, FunctionExpressionType resultType, JsonPathFunction? customFunction = null)
     {
         Name = name;
         Arguments = arguments;
         ResultType = resultType;
+        CustomFunction = customFunction;
     }
 
     public override LogicalExpressionKind Kind => LogicalExpressionKind.FunctionCall;
@@ -40,6 +41,8 @@ internal sealed class FunctionCallExpression : LogicalExpression
     public FunctionArgument[] Arguments { get; }
 
     public FunctionExpressionType ResultType { get; }
+
+    public JsonPathFunction? CustomFunction { get; }
 
     /// <summary>Gets the compiled regex for <paramref name="pattern"/>, building it with <paramref name="factory"/> unless it is the cached one.</summary>
     /// <param name="pattern">The I-Regexp pattern, which is the cache key.</param>

@@ -13,8 +13,8 @@ Filters can call the five functions of RFC 9535:
 | `search(value, pattern)` | A string and a regular expression | True when a part of the string matches |
 | `value(query)` | A query | The value of the only node the query selects |
 
-Functions are only available in filters. There is no other function and no way to add one: [Parse](cref:Meziantou.Framework.Json.JsonPath.Parse) rejects an unknown
-function.
+Functions are only available in filters. By default, [Parse](cref:Meziantou.Framework.Json.JsonPath.Parse) rejects any other
+function. To opt in to domain-specific functions, supply an [immutable registry](#register-custom-functions).
 
 ## Measure strings, arrays and objects
 
@@ -123,3 +123,77 @@ RFC 9535 gives each function argument and result a type, and [Parse](cref:Mezian
 - `match()` and `search()` return a test: use them on their own or with `&&`, `||` and `!`; they cannot be compared.
 
 See [Invalid queries](07-ErrorsAndEvaluationModes.md#invalid-queries) for examples.
+
+## Register custom functions
+
+Derive from [JsonPathFunction](cref:Meziantou.Framework.Json.JsonPathFunction) to declare the parameter types and
+result type, then implement the generic callback. This example accepts a ValueType and returns a LogicalType:
+
+<!-- ref:../../tests/Meziantou.Framework.JsonPath.Tests/JsonPathEvaluateTests.cs;region=JsonPath_IsValidFunction;format=md-fenced-code-block;dedent=true -->
+```csharp
+internal sealed class IsValidFunction() : JsonPathFunction("isvalid", JsonPathFunctionType.Logical, JsonPathFunctionType.Value)
+{
+    public override JsonPathFunctionArgument<TValue> Invoke<TValue>(
+        IReadOnlyList<JsonPathFunctionArgument<TValue>> arguments, JsonPathNavigator<TValue> navigator)
+    {
+        var valid = arguments[0].TryGetString(navigator, out var code) && code is "valid";
+        return JsonPathFunctionArgument<TValue>.FromLogical(valid);
+    }
+}
+```
+<!-- endref -->
+
+Register the implementation with [WithFunction](cref:Meziantou.Framework.Json.JsonPathFunctionRegistry.WithFunction)
+and pass the new registry to [Parse](cref:Meziantou.Framework.Json.JsonPath.Parse) or
+[TryParse](cref:Meziantou.Framework.Json.JsonPath.TryParse):
+
+<!-- ref:../../tests/Meziantou.Framework.JsonPath.Tests/JsonPathEvaluateTests.cs;region=JsonPath_CustomFunctions;format=md-fenced-code-block;dedent=true -->
+```csharp
+var functions = JsonPathFunctionRegistry.Default.WithFunction(new IsValidFunction());
+var path = JsonPath.Parse("$[?isvalid(@.code)].code", functions);
+var document = JsonNode.Parse("""[{"code":"valid"},{"code":"invalid"},{},{"code":null}]""");
+Assert.Equal("""["valid"]""", path.Evaluate(document).ToJsonArray().ToJsonString());
+```
+<!-- endref -->
+
+[Default](cref:Meziantou.Framework.Json.JsonPathFunctionRegistry.Default) retains the five built-ins. Registration
+returns a new registry and does not change existing registries or parsed queries. Duplicate names and overrides of
+built-ins are rejected. Names must match `[a-z][a-z0-9_]*`. Parsing checks arity and the RFC type rules, including nested
+functions. A callback returning a type other than its declared result throws
+[JsonPathEvaluationException](cref:Meziantou.Framework.Json.JsonPathEvaluationException).
+
+### Work with values and nodes
+
+[JsonPathFunctionArgument\<TValue\>](cref:Meziantou.Framework.Json.JsonPathFunctionArgument{TValue}) represents any of the
+three RFC types:
+
+- **Value**: a native node, a literal string, number, Boolean or JSON null, or Nothing. A singular query that selects
+  no node passes Nothing; a query selecting JSON null passes a value of kind Null. Check
+  [IsNothing](cref:Meziantou.Framework.Json.JsonPathFunctionArgument{TValue}.IsNothing) or
+  [GetValueKind](cref:Meziantou.Framework.Json.JsonPathFunctionArgument{TValue}.GetValueKind), not whether the native
+  node is null. The scalar readers work with both literals and native values. The default argument represents JSON
+  null; [Nothing](cref:Meziantou.Framework.Json.JsonPathFunctionArgument{TValue}.Nothing) is distinct.
+- **Logical**: a logical true or false, not a JSON Boolean. Return it with
+  [FromLogical](cref:Meziantou.Framework.Json.JsonPathFunctionArgument{TValue}.FromLogical). Queries and NodesType
+  functions passed to LogicalType parameters convert to true when they select any nodes. ValueType does not convert
+  to LogicalType.
+- **Nodes**: an ordered list of native nodes. [FromNodes](cref:Meziantou.Framework.Json.JsonPathFunctionArgument{TValue}.FromNodes)
+  snapshots membership, preserving duplicates and JSON null nodes. NodesType functions can be passed to `count()`,
+  `value()` or other NodesType functions, or used as existence tests. NodesType does not implicitly convert to
+  ValueType; use `value()` explicitly.
+
+The callback receives the navigator used by the current evaluation. It can inspect objects and arrays and return
+native values with [FromNode](cref:Meziantou.Framework.Json.JsonPathFunctionArgument{TValue}.FromNode), without creating
+a `JsonNode` or changing the object model. Nodes retain their original lifetime: for `JsonElement`, keep its
+`JsonDocument` alive. Numbers use the same double-precision representation as built-ins.
+
+### Keep callbacks safe for reuse
+
+Registries and parsed queries are immutable and reusable across documents and threads. The function instance is
+shared, so its implementation must be thread-safe. Functions should be pure: do not mutate input nodes, and do not
+depend on callback order or invocation counts. Custom callback results are not cached, but short-circuiting may omit
+calls. Exceptions from callbacks propagate unchanged in both lax and strict mode.
+
+The library cannot interrupt a callback, bound its own allocations, or account for work that bypasses the navigator.
+Keep callbacks bounded. Calling another query's evaluation from a callback starts an independent evaluation; it does
+not share the outer evaluation's controls.

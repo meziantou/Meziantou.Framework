@@ -13,6 +13,8 @@ queries such as `$.store.book[?@.price < 10].title`. It implements the JSONPath 
   comparisons, logical operators and functions. See [Query syntax](03-QuerySyntax.md) and [Filters](04-Filters.md).
 - **Use the standard functions**: `length()`, `count()`, `match()`, `search()` and `value()`, with
   [I-Regexp (RFC 9485)](https://www.rfc-editor.org/rfc/rfc9485) regular expressions. See [Functions](05-Functions.md).
+- **Opt in to domain-specific functions** using an immutable typed registry. See
+  [Register custom functions](05-Functions.md#register-custom-functions).
 - **Evaluate on the type you already have**: `JsonNode`, `JsonDocument` or `JsonElement`. Every match comes with its
   normalized path, such as `$['store']['book'][0]`. See [Evaluating queries](06-EvaluatingQueries.md).
 - **Choose how missing data is reported**: by default a member or an element that does not exist selects nothing; in

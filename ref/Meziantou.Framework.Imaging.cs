@@ -2958,8 +2958,10 @@ namespace Meziantou.Framework.Imaging.Formats
         public Meziantou.Framework.Imaging.Rgba64? BackgroundColor { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.JpegChromaSubsampling ChromaSubsampling { get => throw null; init { } }
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+        public bool OptimizeHuffmanTables { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.JpegEncodingProcess Process { get => throw null; init { } }
         public int Quality { get => throw null; init { } }
+        public int RestartInterval { get => throw null; init { } }
     }
 
     public enum JpegEncodingProcess

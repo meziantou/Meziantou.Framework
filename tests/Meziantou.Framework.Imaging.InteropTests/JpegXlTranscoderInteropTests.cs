@@ -106,7 +106,7 @@ public sealed class JpegXlTranscoderInteropTests
     }
 
     /// <summary>
-    /// Files of the JPEG encoder of the library, baseline and progressive, through both chains: recompressed by the library and rebuilt by djxl,
+    /// Files of the JPEG encoder of the library, baseline and progressive, with computed Huffman tables and restart markers, through both chains: recompressed by the library and rebuilt by djxl,
     /// recompressed by cjxl and rebuilt by the library. The recompressed file of the library also decodes to the pixels
     /// the reference decoders show.
     /// </summary>
@@ -125,18 +125,24 @@ public sealed class JpegXlTranscoderInteropTests
     [InlineData("photo-rgb8", JpegChromaSubsampling.Ratio420, 60, JpegEncodingProcess.Progressive)]
     [InlineData("photo-gray8", JpegChromaSubsampling.Auto, 90, JpegEncodingProcess.Progressive)]
     [InlineData("text-rgb8", JpegChromaSubsampling.Ratio422, 75, JpegEncodingProcess.Progressive)]
-    public async Task FilesOfTheJpegEncoderGoThroughBothChains(string patternName, JpegChromaSubsampling subsampling, int quality, JpegEncodingProcess process)
+    [InlineData("photo-rgb8", JpegChromaSubsampling.Ratio420, 85, JpegEncodingProcess.Baseline, true)]
+    [InlineData("photo-gray8", JpegChromaSubsampling.Auto, 85, JpegEncodingProcess.Baseline, true, 1)]
+    [InlineData("photo-rgb8", JpegChromaSubsampling.Ratio422, 85, JpegEncodingProcess.Baseline, false, 5)]
+    [InlineData("large-rgb8", JpegChromaSubsampling.Ratio420, 75, JpegEncodingProcess.Baseline, true, 7)]
+    [InlineData("photo-rgb8", JpegChromaSubsampling.Ratio420, 60, JpegEncodingProcess.Progressive, false, 3)]
+    [InlineData("photo-gray8", JpegChromaSubsampling.Auto, 90, JpegEncodingProcess.Progressive, false, 1)]
+    public async Task FilesOfTheJpegEncoderGoThroughBothChains(string patternName, JpegChromaSubsampling subsampling, int quality, JpegEncodingProcess process, bool optimize = false, int restartInterval = 0)
     {
         var jxl = await RequiredTools.LibJxlAsync();
         var pattern = JpegXlPattern.Get(patternName);
         var directory = InteropSettings.GetArtifactsDirectory(nameof(FilesOfTheJpegEncoderGoThroughBothChains));
-        var name = $"{patternName}-{subsampling}-q{quality}-{process}";
+        var name = $"{patternName}-{subsampling}-q{quality}-{process}" + (optimize ? "-optimized" : "") + (restartInterval > 0 ? $"-restart{restartInterval}" : "");
         var jpegPath = directory / (name + ".jpg");
         var libraryPath = directory / (name + ".library.jxl");
         var referencePath = directory / (name + ".cjxl.jxl");
         using (var image = CreateImage(pattern))
         {
-            await image.SaveAsync(jpegPath, new JpegEncoder { Quality = quality, ChromaSubsampling = subsampling, Process = process, AllowBitDepthReduction = true }, XunitCancellationToken);
+            await image.SaveAsync(jpegPath, new JpegEncoder { Quality = quality, ChromaSubsampling = subsampling, Process = process, AllowBitDepthReduction = true, OptimizeHuffmanTables = optimize, RestartInterval = restartInterval }, XunitCancellationToken);
         }
 
         var jpeg = await File.ReadAllBytesAsync(jpegPath, XunitCancellationToken);

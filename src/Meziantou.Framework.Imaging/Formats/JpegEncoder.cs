@@ -5,7 +5,8 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// <para>
 /// The output is a Huffman-coded JPEG (JFIF) whose quantization tables are those of ITU-T T.81 Annex K scaled by
 /// <see cref="Quality"/>: by default a baseline sequential one (one interleaved scan, the typical Huffman tables of
-/// Annex K), or a progressive one (<see cref="Process"/>). Gray pixel formats produce a single
+/// Annex K, or tables computed from the image with <see cref="OptimizeHuffmanTables"/>), or a progressive one
+/// (<see cref="Process"/>), with restart markers every <see cref="RestartInterval"/> MCUs if set. Gray pixel formats produce a single
 /// grayscale component; color pixel formats produce full-range YCbCr subsampled according to <see cref="ChromaSubsampling"/>.
 /// The component layout follows the pixel format, never the pixel values.
 /// </para>
@@ -87,6 +88,50 @@ public sealed class JpegEncoder : ImageEncoder
             if (!Enum.IsDefined(value))
                 throw new ArgumentOutOfRangeException(nameof(value), value, "The coding process is not valid.");
 
+            field = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether a baseline JPEG uses Huffman tables computed from the image instead of the typical
+    /// tables of Annex K. Defaults to <see langword="false"/>.
+    /// </summary>
+    /// <remarks>
+    /// The image is coded twice from its quantized coefficients: once to count the symbols of each table, from which
+    /// length-limited codes are built (ITU-T T.81 section K.2: at most 16 bits, no code made of 1-bits only), then to write
+    /// the scan with them. The quantized coefficients, and so the decoded pixels, are those of the default output; only the
+    /// DHT segment and the size of the entropy-coded data change, usually a few percent smaller. As with the progressive
+    /// process, the coefficients of the whole image are kept in memory until the scan is written (two bytes per
+    /// coefficient), where the default baseline output only keeps a few rows. It has no effect on
+    /// <see cref="JpegEncodingProcess.Progressive"/>, whose scans always use tables computed from their own symbols.
+    /// </remarks>
+    public bool OptimizeHuffmanTables { get; init; }
+
+    /// <summary>Gets the number of minimum coded units (MCUs) between two restart markers, or 0 (the default) for no restart marker.</summary>
+    /// <remarks>
+    /// <para>
+    /// With a nonzero interval, a DRI segment precedes the first scan and each scan is split into intervals of that many
+    /// MCUs, in raster order (ITU-T T.81 sections B.2.4.4 and F.1.2.3): every interval but the last ends with the 1-bits that
+    /// complete its last byte and a marker from RST0 to RST7 (cyclically), and the next interval starts again with DC
+    /// predictions of 0 (and, in a progressive scan, without a pending end-of-band run). A decoder can then resynchronize
+    /// after corrupted data, or decode the intervals independently. The decoded pixels do not change: only a few bytes are
+    /// added per marker, and the end-of-band runs of a progressive scan are shorter.
+    /// </para>
+    /// <para>
+    /// An MCU of the interleaved scans covers 8x8 pixels for a grayscale image or 4:4:4 chroma, 16x8 for 4:2:2 and 16x16
+    /// for 4:2:0; in the single-component scans of the progressive process, it is one 8x8 block of the component. An
+    /// interval equal to the number of MCUs of a row of the baseline scan, <c>ceil(width / MCU width)</c>, puts a marker
+    /// before every MCU row but the first.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not between 0 and 65,535.</exception>
+    public int RestartInterval
+    {
+        get;
+        init
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, ushort.MaxValue);
             field = value;
         }
     }

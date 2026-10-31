@@ -255,6 +255,39 @@ public sealed class JpegXlTranscoderTests
         }
     }
 
+    /// <summary>
+    /// The files of the JPEG encoder of the library, with the options that change their structure: the computed Huffman
+    /// tables of a baseline file and restart intervals of one MCU, of a few MCUs and longer than the scan, in baseline and
+    /// progressive files, gray or with subsampled chroma, of sizes with partial MCUs.
+    /// </summary>
+    [Theory]
+    [InlineData(JpegEncodingProcess.Baseline)]
+    [InlineData(JpegEncodingProcess.Progressive)]
+    public void FilesOfTheJpegEncoderAreRebuilt(JpegEncodingProcess process)
+    {
+        foreach (var (width, height) in new[] { (1, 1), (37, 23), (130, 70) })
+        {
+            var pixels = new Rgb24[width * height];
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                var noise = (byte)(((uint)i * 2654435761u) >> 24);
+                pixels[i] = new Rgb24((byte)(i % width * 255 / width), (byte)((i / width * 3) + (noise >> 3)), noise);
+            }
+
+            using var color = Image.ImportPixelData<Rgb24>(pixels, width, height);
+            using var gray = color.CloneAs<Gray8>();
+            foreach (var (image, subsampling) in new (Image Image, JpegChromaSubsampling Subsampling)[] { (color, JpegChromaSubsampling.Ratio420), (color, JpegChromaSubsampling.Ratio422), (color, JpegChromaSubsampling.Ratio444), (gray, JpegChromaSubsampling.Auto) })
+            {
+                foreach (var (optimize, restartInterval) in new[] { (false, 0), (true, 0), (false, 1), (true, 3), (false, 1000) })
+                {
+                    using var jpeg = new MemoryStream();
+                    image.Save(jpeg, new JpegEncoder { Process = process, ChromaSubsampling = subsampling, OptimizeHuffmanTables = optimize, RestartInterval = restartInterval });
+                    AssertRoundTrips(jpeg.ToArray(), string.Create(CultureInfo.InvariantCulture, $"{process} {width}x{height} {image.PixelFormat} {subsampling} optimized {optimize} interval {restartInterval}"));
+                }
+            }
+        }
+    }
+
     [Fact]
     public void TheEffortDoesNotChangeTheRebuiltFile()
     {

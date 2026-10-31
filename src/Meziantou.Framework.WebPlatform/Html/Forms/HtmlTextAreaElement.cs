@@ -4,7 +4,7 @@ using Meziantou.Framework.WebPlatform.Infra;
 
 namespace Meziantou.Framework.WebPlatform.Dom;
 
-/// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#the-textarea-element</summary>
+// https://html.spec.whatwg.org/multipage/form-elements.html#the-textarea-element
 public partial class HtmlTextAreaElement : IEditableTextControl
 {
     // The raw value; null when the dirty value flag is false (the raw value is then the child text content)

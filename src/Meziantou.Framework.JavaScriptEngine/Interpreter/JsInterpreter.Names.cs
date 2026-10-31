@@ -356,7 +356,6 @@ internal static partial class JsInterpreter
         return JsValue.True;
     }
 
-    /// <summary>Initializes a binding found by name: the function declarations of sloppy eval code, the this binding initialized by super() in eval code.</summary>
     /// <summary>
     /// BindThisValue of the this environment of eval code (super() in a direct eval): the binding named "this" of the
     /// enclosing derived constructor. It is read without the TDZ check.
@@ -380,6 +379,7 @@ internal static partial class JsInterpreter
         throw new InvalidOperationException("super() in eval code without the this binding of a derived constructor");
     }
 
+    /// <summary>Initializes a binding found by name: the function declarations of sloppy eval code, the this binding initialized by super() in eval code.</summary>
     private static void InitializeName(Frame frame, in PropertyKey key, JsValue value)
     {
         var name = key.AsString();

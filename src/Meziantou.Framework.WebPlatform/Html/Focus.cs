@@ -104,13 +104,13 @@ public partial class Document
     /// </summary>
     internal Document? LastPointerFocusDocument { get; set; }
 
+    /// <summary>The slider (<c>input type=range</c>) the user is dragging, and the pointer that drags it (see <see cref="HtmlInputElement.RunSliderDefaultAction"/>).</summary>
+    internal (HtmlInputElement Slider, int PointerId)? DraggedSlider { get; set; }
+
     /// <summary>
     /// The element whose space keydown event was not canceled: it is activated when the key is released. Until then, it is
     /// in a formal activation state (it matches <c>:active</c>).
     /// </summary>
-    /// <summary>The slider (<c>input type=range</c>) the user is dragging, and the pointer that drags it (see <see cref="HtmlInputElement.RunSliderDefaultAction"/>).</summary>
-    internal (HtmlInputElement Slider, int PointerId)? DraggedSlider { get; set; }
-
     internal Element? SpaceKeyActivationTarget
     {
         get;

@@ -301,15 +301,15 @@ public sealed partial class BrowsingContext : IDisposable
         return shed;
     }
 
+    /// <summary>Whether the documents of the navigable get an opaque origin (the sandboxed origin browsing context flag, e.g. an iframe sandboxed without allow-same-origin).</summary>
+    internal bool HasSandboxedOriginFlag => (GetIframeSandboxingFlags() & SandboxingFlags.Origin) != SandboxingFlags.None;
+
     /// <summary>
     /// The sandboxing flags of the documents of the navigable (https://html.spec.whatwg.org/multipage/browsers.html#determining-the-creation-sandboxing-flags):
     /// the iframe sandboxing flag set of an iframe container (its sandbox attribute) and the flags of the active document of
     /// the parent, or the popup sandboxing flag set of a top-level browsing context (the flags of the document that opened it,
     /// when they propagate to the auxiliary browsing contexts).
     /// </summary>
-    /// <summary>Whether the documents of the navigable get an opaque origin (the sandboxed origin browsing context flag, e.g. an iframe sandboxed without allow-same-origin).</summary>
-    internal bool HasSandboxedOriginFlag => (GetIframeSandboxingFlags() & SandboxingFlags.Origin) != SandboxingFlags.None;
-
     private SandboxingFlags GetIframeSandboxingFlags()
     {
         var flags = Container is HtmlIFrameElement iframe && iframe.GetAttributeValue("sandbox") is { } sandbox ? Sandboxing.ParseSandboxingDirective(sandbox) : SandboxingFlags.None;

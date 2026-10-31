@@ -1,7 +1,17 @@
 namespace Meziantou.Framework.SnapshotTesting;
 
+/// <summary>
+/// Decides whether the snapshot produced by a test matches the verified snapshot. A comparer is registered for a
+/// <see cref="SnapshotType"/> in <see cref="SnapshotComparerCollection"/>.
+/// </summary>
 public interface ISnapshotComparer
 {
+    /// <summary>
+    /// Compares two snapshots.
+    /// </summary>
+    /// <param name="expected">The verified snapshot.</param>
+    /// <param name="actual">The snapshot produced by the test.</param>
+    /// <returns><see langword="true"/> when the snapshots match.</returns>
     bool Equals(SnapshotData expected, SnapshotData actual);
 
     /// <summary>

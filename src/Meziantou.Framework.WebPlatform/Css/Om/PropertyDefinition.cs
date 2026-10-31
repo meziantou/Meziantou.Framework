@@ -29,7 +29,7 @@ public sealed class PropertyDefinition
     public string? InitialValue { get; init; }
 }
 
-/// <summary>https://drafts.css-houdini.org/css-properties-values-api/#the-registerproperty-function</summary>
+// https://drafts.css-houdini.org/css-properties-values-api/#the-registerproperty-function
 public static partial class Css
 {
     /// <summary>

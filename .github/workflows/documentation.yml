@@ -45,12 +45,15 @@ jobs:
       - name: Setup .NET
         uses: $/.github/actions/setup-dotnet
       # Packs every package, as publish.yml does, in the folder docgen.json reads them from. The packages on nuget.org
-      # can be behind main until the next version bump, and a page using a new member would fail.
+      # can be behind main until the next version bump, and a page using a new member would fail. The versions keep
+      # no -build-<commit> suffix on pull requests, so the pages show the versions of the project files; docgen.json
+      # still accepts prerelease versions (*-*) for the SDKs that do not support EnableGitHubBuildVersionSuffix.
       - name: Build and pack
         uses: $/.github/actions/pack
         with:
           project: eng/packages.proj
           output: artifacts/package/release
+          build-version-suffix: "false"
       - name: Restore tools
         run: dotnet tool restore
       # Generates the site in artifacts/docs. Broken links and invalid pages are errors; the warnings are about the XML

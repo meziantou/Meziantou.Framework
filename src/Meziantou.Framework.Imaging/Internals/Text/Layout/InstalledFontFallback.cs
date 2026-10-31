@@ -11,7 +11,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <list type="number">
 /// <item><description>the families of <see cref="InstalledFontFallbackOptions.PreferredFamilies"/>;</description></item>
 /// <item><description>for a cluster presented as an emoji (UTS #51), the color emoji fonts of the platforms;</description></item>
-/// <item><description>the families the platforms usually use for the script of the character (<see cref="InstalledFontFallbackFamilies"/>);</description></item>
+/// <item><description>the families the platforms usually use for the script of the character, and for the Han ideographs the forms of the language of the text (<see cref="InstalledFontFallbackFamilies"/>);</description></item>
 /// <item><description>every family that has the character: the ones whose closest face has the style of the primary font first, then by family name and by file.</description></item>
 /// </list>
 /// <para>
@@ -21,8 +21,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </para>
 /// <para>
 /// The fallback is shared by the layouts of the stack and can be used by several threads at the same time. The font of
-/// a cluster is kept, so that a layout loads each font once and the same cluster always gets the same font; the fonts
-/// it loaded live as long as the stack.
+/// a cluster is kept for each forms of the Han ideographs (the font of an ideograph depends on the language of the
+/// text), so that a layout loads each font once and the same cluster in the same language always gets the same font;
+/// the fonts it loaded live as long as the stack.
 /// </para>
 /// </remarks>
 internal sealed class InstalledFontFallback
@@ -35,7 +36,8 @@ internal sealed class InstalledFontFallback
     private readonly int _weight;
     private readonly bool _isItalic;
     private readonly Lock _lock = new();
-    private readonly Dictionary<string, Result> _clusters = new(StringComparer.Ordinal);
+    // The font of each cluster, for each forms of the Han ideographs: the families that are looked in depend on them
+    private readonly Dictionary<string, Result>[] _clusters = CreateClusterCaches();
     private readonly Dictionary<SystemFontDescriptor, Font?> _loaded = new(ReferenceEqualityComparer.Instance);
     private volatile bool _hasReadAllCoverages;
 
@@ -52,35 +54,48 @@ internal sealed class InstalledFontFallback
     /// <summary>Finds the font of a cluster.</summary>
     /// <param name="cluster">The grapheme cluster.</param>
     /// <param name="isEmoji">Whether the cluster is presented as an emoji.</param>
+    /// <param name="hanForms">The forms of the Han ideographs of the language of the cluster.</param>
     /// <param name="withFirst">A font that has the first character of the cluster that needs a glyph, when no font has the whole cluster.</param>
     /// <returns>A font that has every character of the cluster, or <see langword="null"/>.</returns>
-    public Font? Find(ReadOnlySpan<char> cluster, bool isEmoji, out Font? withFirst)
+    public Font? Find(ReadOnlySpan<char> cluster, bool isEmoji, HanForms hanForms, out Font? withFirst)
     {
+        var clusters = _clusters[(int)hanForms];
         lock (_lock)
         {
-            if (_clusters.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(cluster, out var cached))
+            if (clusters.GetAlternateLookup<ReadOnlySpan<char>>().TryGetValue(cluster, out var cached))
             {
                 withFirst = cached.WithFirst;
                 return cached.Font;
             }
         }
 
-        var result = Search(cluster, isEmoji);
+        var result = Search(cluster, isEmoji, hanForms);
         lock (_lock)
         {
-            if (_clusters.Count >= MaxCachedClusters)
+            if (clusters.Count >= MaxCachedClusters)
             {
-                _clusters.Clear();
+                clusters.Clear();
             }
 
-            _clusters.TryAdd(cluster.ToString(), result);
+            clusters.TryAdd(cluster.ToString(), result);
         }
 
         withFirst = result.WithFirst;
         return result.Font;
     }
 
-    private Result Search(ReadOnlySpan<char> cluster, bool isEmoji)
+    private static Dictionary<string, Result>[] CreateClusterCaches()
+    {
+        var caches = new Dictionary<string, Result>[(int)HanForms.Korean + 1];
+        for (var i = 0; i < caches.Length; i++)
+        {
+            caches[i] = new Dictionary<string, Result>(StringComparer.Ordinal);
+        }
+
+        return caches;
+    }
+
+    private Result Search(ReadOnlySpan<char> cluster, bool isEmoji, HanForms hanForms)
     {
         if (!TryGetFirstCharacter(cluster, out var first))
             return default;
@@ -93,7 +108,7 @@ internal sealed class InstalledFontFallback
                 return new Result(font, null);
         }
 
-        foreach (var family in InstalledFontFallbackFamilies.Get(first, isEmoji))
+        foreach (var family in InstalledFontFallbackFamilies.Get(first, isEmoji, hanForms))
         {
             if (TryFamily(family, cluster, first, tried, ref withFirst) is { } font)
                 return new Result(font, null);

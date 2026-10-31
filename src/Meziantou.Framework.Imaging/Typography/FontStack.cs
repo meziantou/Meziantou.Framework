@@ -92,17 +92,21 @@ public sealed class FontStack
     /// follow it, that none of them has is looked for among the installed fonts, in this order: the families of
     /// <see cref="InstalledFontFallbackOptions.PreferredFamilies"/>; for an emoji presented with colors (Unicode
     /// Technical Standard #51), the color emoji fonts (Segoe UI Emoji, Apple Color Emoji, Noto Color Emoji); the
-    /// families the platforms usually use for the script of the character, such as Microsoft YaHei, PingFang SC or Noto
-    /// Sans CJK SC for the Han ideographs, and the fonts of symbols; then every family that has the character, those
+    /// families the platforms usually use for the script of the character (and, for the Han ideographs, the language of
+    /// the text), and the fonts of symbols; then every family that has the character, those
     /// whose closest face has the weight and the italic of the primary font first, by family name and by file. In a
     /// family, the face is the one closest to the style of the primary font, at the instance of that style when it is
     /// a variable font (<see cref="Font.LoadInstalled"/>). A character no font has is drawn with the missing glyph of the
     /// primary font.
     /// </para>
     /// <para>
-    /// Fallback does not use <see cref="TextStyle.Language"/>: Han ideographs use the simplified-Chinese family list
-    /// regardless of the language. Put the desired regional fonts in the stack or in
-    /// <see cref="InstalledFontFallbackOptions.PreferredFamilies"/> when their forms matter.
+    /// The Han ideographs have different forms in Chinese, Japanese and Korean: their families are chosen by the
+    /// language of the text (<see cref="TextStyle.Language"/>): Microsoft YaHei, PingFang SC or Noto Sans CJK SC for
+    /// Simplified Chinese and a text without a language, Microsoft JhengHei, PingFang TC or Noto Sans CJK TC for
+    /// Traditional Chinese, PingFang HK or Noto Sans CJK HK for Hong Kong, Yu Gothic, Hiragino Sans or Noto Sans CJK JP
+    /// for Japanese, Malgun Gothic, Apple SD Gothic Neo or Noto Sans CJK KR for Korean, then those of Simplified Chinese.
+    /// The fonts found are kept for each language. <see cref="InstalledFontFallbackOptions.PreferredFamilies"/> still
+    /// come first, whatever the language.
     /// </para>
     /// <para>
     /// The installed fonts differ from one machine to another, and so does a text drawn with this stack: use it when

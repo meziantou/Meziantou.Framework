@@ -61,4 +61,10 @@ internal struct PlacedGlyph
 
     /// <summary>The text the glyph belongs to goes from right to left: its first character is on its right.</summary>
     public bool IsRightToLeft;
+
+    /// <summary>
+    /// What the cluster of the glyph is for justification between characters (<see cref="Typography.TextJustification"/>);
+    /// <see cref="JustificationClass.None"/> when a line is only justified at its spaces.
+    /// </summary>
+    public JustificationClass Justification;
 }

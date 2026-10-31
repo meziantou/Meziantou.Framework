@@ -42,7 +42,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// heights contains <c>Y + 1/2</c> (the top excluded, the bottom included) are crossed at that height, and between two
 /// crossings where the region starts at <c>xa</c> and ends at <c>xb</c>, the pixels from <c>floor(xa + 1/2)</c> to
 /// <c>floor(xb + 1/2)</c> excluded are covered: a center on the left side of a shape is outside, one on its right side
-/// inside, as with the rounding of positions half up.
+/// inside, as with the rounding of positions half up. Crossings are insertion-sorted with at most one shift per active
+/// edge in total, then heap-sorted if needed: ordered rows take linear time, and sorting never exceeds O(n log n) for
+/// n active edges, without additional working storage.
 /// </para>
 /// </remarks>
 internal sealed class CoverageRasterizer : IDisposable
@@ -411,25 +413,44 @@ internal sealed class CoverageRasterizer : IDisposable
         var positions = SinceY;
         var directions = SlotSign;
         var count = 0;
+        var shiftsRemaining = _lineCount;
+        var needsSort = false;
         for (var i = 0; i < _lineCount; i++)
         {
             ref readonly var edge = ref edges[active[i]];
             if (edge.Y0 < center && center <= edge.Y1)
             {
-                // Sorted as they come: by position, then by insertion. The crossing is one rounded division: when it is
-                // exactly the center of a pixel, which decides whether that pixel is inside, it is found exactly.
+                // The crossing is one rounded division: when it is exactly the center of a pixel, which decides
+                // whether that pixel is inside, it is found exactly.
                 var x = edge.X0 + (((center - edge.Y0) * (edge.X1 - edge.X0)) / (edge.Y1 - edge.Y0));
                 var position = count++;
-                while (position > 0 && positions[position - 1] > x)
+                if (!needsSort)
                 {
-                    positions[position] = positions[position - 1];
-                    directions[position] = directions[position - 1];
-                    position--;
+                    while (position > 0 && positions[position - 1] > x)
+                    {
+                        if (shiftsRemaining == 0)
+                        {
+                            needsSort = true;
+                            break;
+                        }
+
+                        positions[position] = positions[position - 1];
+                        directions[position] = directions[position - 1];
+                        position--;
+                        shiftsRemaining--;
+                    }
                 }
 
                 positions[position] = x;
                 directions[position] = edge.Direction;
             }
+        }
+
+        // Keep insertion sort linear for already ordered crossings, but bound its total shifts per row.
+        // Equal crossings may be ordered by direction: any spans between them have zero width.
+        if (needsSort)
+        {
+            SortEvents(positions[..count], directions[..count]);
         }
 
         // The spans between the crossings where the region starts and ends

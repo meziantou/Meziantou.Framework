@@ -1339,7 +1339,7 @@ internal static class JsonPathEvaluator
         int limit)
     {
         var nodes = EvaluateCustomFunction(func, currentNode, root, navigator).Nodes;
-        var result = new List<(TValue? Node, PathNode? Path)>(Math.Min(nodes.Count, limit));
+        var result = new NodeSink<TValue>((EvaluationNavigator<TValue>)navigator);
         foreach (var node in nodes)
         {
             if (result.Count >= limit)
@@ -1375,7 +1375,10 @@ internal static class JsonPathEvaluator
             };
         }
 
+        var evaluation = (EvaluationNavigator<TValue>)navigator;
+        evaluation.Check();
         var result = function.Invoke(Array.AsReadOnly(arguments), navigator);
+        evaluation.Check();
         if (result.Type != function.ResultType)
         {
             throw new JsonPathEvaluationException($"Function '{function.Name}' returned {result.Type}, but declared {function.ResultType}.");
@@ -1466,7 +1469,7 @@ internal static class JsonPathEvaluator
         {
             FilterQuery query => query.Segments.All(segment => segment.Selectors.All(selector =>
                 selector is not FilterSelector filter || ContainsOnlyBuiltInFunctions(filter.Expression))),
-            FunctionCallExpression function => function.Name is "count" or "length" or "value" or "match" or "search"
+            FunctionCallExpression function => function.CustomFunction is null && function.Name is "count" or "length" or "value" or "match" or "search"
                 && function.Arguments.All(argument => ContainsOnlyBuiltInFunctions(argument.Value)),
             OrExpression or => or.Operands.All(ContainsOnlyBuiltInFunctions),
             AndExpression and => and.Operands.All(ContainsOnlyBuiltInFunctions),

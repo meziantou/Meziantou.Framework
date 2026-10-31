@@ -262,8 +262,8 @@ public sealed class JsonPathEvaluateTests
         public bool Copy { get; init; }
         public JsonNode?[]? CopiedBuffer { get; private set; }
         public override bool IsPure => Pure;
-        internal override bool HasConstantTimeElementAccess => !Copy;
-        internal override void CopyElements(JsonNode? value, JsonNode?[] destination)
+        public override bool HasConstantTimeElementAccess => !Copy;
+        public override void CopyElements(JsonNode? value, JsonNode?[] destination)
         {
             CopiedBuffer = destination;
             JsonNodeNavigator.Instance.CopyElements(value, destination);
@@ -449,6 +449,49 @@ public sealed class JsonPathEvaluateTests
         Assert.Equal(3, counter.Count);
         Assert.Empty(JsonPath.Parse("$[?@ == 0 && counter()]", functions).Evaluate(document));
         Assert.Equal(3, counter.Count);
+    }
+
+    [Fact]
+    public void CustomFunctions_RootCountDoesNotCacheImpurePredicates()
+    {
+        var counter = new CounterFunction();
+        var functions = JsonPathFunctionRegistry.Default.WithFunction(counter);
+        var document = JsonNode.Parse("[1,2,3]");
+        var path = JsonPath.Parse("$[?count($[?counter()]) == 3]", functions);
+        Assert.Equal(3, path.Evaluate(document).Count);
+        Assert.Equal(9, counter.Count);
+    }
+
+    [Fact]
+    public void CustomFunctions_ShareEvaluationLimits()
+    {
+        var path = JsonPath.Parse("$[?count(nodes(@.*)) == 3]", CreateTestFunctions());
+        var document = JsonNode.Parse("[[1,2,3]]");
+        Assert.Throws<JsonPathEvaluationException>(() => path.Evaluate(document,
+            new JsonPathEvaluationOptions { MaximumIntermediateResults = 2 }));
+        Assert.Throws<JsonPathEvaluationException>(() => path.Evaluate(document,
+            new JsonPathEvaluationOptions { MaximumWork = 5 }));
+        Assert.Single(path.Evaluate(document));
+    }
+
+    [Fact]
+    public void CustomFunctions_CancellationAfterCallback()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var functions = JsonPathFunctionRegistry.Default.WithFunction(new CancelFunction(cancellation));
+        var path = JsonPath.Parse("$[?cancel()]", functions);
+        Assert.Throws<OperationCanceledException>(() => path.Evaluate(JsonNode.Parse("[1]"),
+            new JsonPathEvaluationOptions { CancellationToken = cancellation.Token }));
+    }
+
+    private sealed class CancelFunction(CancellationTokenSource cancellation) : JsonPathFunction("cancel", JsonPathFunctionType.Logical)
+    {
+        public override JsonPathFunctionArgument<TValue> Invoke<TValue>(
+            IReadOnlyList<JsonPathFunctionArgument<TValue>> arguments, JsonPathNavigator<TValue> navigator)
+        {
+            cancellation.Cancel();
+            return JsonPathFunctionArgument<TValue>.FromLogical(true);
+        }
     }
 
     [Fact]

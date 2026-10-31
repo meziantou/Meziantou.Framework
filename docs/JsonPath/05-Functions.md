@@ -194,6 +194,10 @@ shared, so its implementation must be thread-safe. Functions should be pure: do 
 depend on callback order or invocation counts. Custom callback results are not cached, but short-circuiting may omit
 calls. Exceptions from callbacks propagate unchanged in both lax and strict mode.
 
+Cancellation is checked before and after each callback. Navigation through the supplied navigator and consumption
+of returned node lists share the evaluation's work and intermediate-result limits. A root-only `count()` query
+containing a custom predicate is not cached, even when the underlying navigator is pure.
+
 The library cannot interrupt a callback, bound its own allocations, or account for work that bypasses the navigator.
 Keep callbacks bounded. Calling another query's evaluation from a callback starts an independent evaluation; it does
 not share the outer evaluation's controls.

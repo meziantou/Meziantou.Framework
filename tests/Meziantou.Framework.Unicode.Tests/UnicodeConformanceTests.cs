@@ -327,6 +327,7 @@ public sealed class UnicodeConformanceTests
             }
 
             error ??= Compare(levels, expectedLevels, expectedOrder);
+            error ??= CompareCodeUnitOrder(paragraph, unitLevels, starts, expectedLevels, expectedOrder);
             if (error is not null)
             {
                 failures.Add(failures.Count < 20 ? $"{line}: {error}" : "");
@@ -466,6 +467,38 @@ public sealed class UnicodeConformanceTests
         return actualOrder.SequenceEqual(expectedOrder)
             ? null
             : $"order {string.Join(' ', actualOrder)}, expected {string.Join(' ', expectedOrder)}";
+    }
+
+    /// <summary>Checks the order of the code units of a line: each surrogate pair stays in order, and the characters are in the expected order.</summary>
+    private static string? CompareCodeUnitOrder(string line, byte[] unitLevels, List<int> starts, int[] expectedLevels, int[] expectedOrder)
+    {
+        var order = new int[line.Length];
+        UnicodeBidi.GetVisualOrder(line, unitLevels, order);
+
+        var actualOrder = new List<int>();
+        for (var i = 0; i < order.Length; i++)
+        {
+            var character = starts.BinarySearch(order[i]);
+            if (character < 0)
+                return $"code unit {order[i]} is displayed before the first code unit of its pair";
+
+            if (char.IsHighSurrogate(line[order[i]]))
+            {
+                if (i + 1 >= order.Length || order[i + 1] != order[i] + 1)
+                    return $"the code units of the character {character} are not displayed in order";
+
+                i++;
+            }
+
+            if (expectedLevels[character] >= 0)
+            {
+                actualOrder.Add(character);
+            }
+        }
+
+        return actualOrder.SequenceEqual(expectedOrder)
+            ? null
+            : $"code unit order {string.Join(' ', actualOrder)}, expected {string.Join(' ', expectedOrder)}";
     }
 
     /// <summary>Runs a file of <c>÷ 0061 × 0308 ÷ 0062 ÷</c> lines: ÷ is a boundary, × is not.</summary>

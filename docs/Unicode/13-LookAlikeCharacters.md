@@ -15,6 +15,7 @@ such names, and [Unicode](cref:Meziantou.Framework.Unicode) implements it.
 ```csharp
 Assert.True(Unicode.AreConfusable("paypal", "\u0440\u0430\u0443\u0440\u0430l")); // Cyrillic look-alikes
 Assert.True(Unicode.AreConfusable("caf\u00E9", "cafe\u0301")); // composed vs decomposed
+Assert.True(Unicode.AreConfusable("paypal", "pay\u200Bpal")); // invisible characters are ignored
 Assert.False(Unicode.AreConfusable("paypal", "example"));
 ```
 <!-- endref -->

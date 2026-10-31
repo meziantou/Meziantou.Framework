@@ -325,10 +325,7 @@ public struct StringLineGroup : IEnumerable
     }
 
     /// <summary>
-    /// Gets or sets the enumerator.
-    /// </summary>
-    /// <summary>
-    /// Represents the Enumerator type.
+    /// Enumerates the lines of a <see cref="StringLineGroup"/>.
     /// </summary>
     public struct Enumerator(StringLineGroup parent) : IEnumerator
     {
@@ -671,10 +668,7 @@ public struct StringLineGroup : IEnumerable
     }
 
     /// <summary>
-    /// Gets or sets the line offset.
-    /// </summary>
-    /// <summary>
-    /// Represents the LineOffset type.
+    /// The position of a line in the slice that <see cref="ToSlice(List{LineOffset})"/> returns.
     /// </summary>
     [StructLayout(LayoutKind.Auto)]
     public readonly struct LineOffset(

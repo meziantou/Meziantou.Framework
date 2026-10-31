@@ -3,7 +3,7 @@ using Meziantou.Framework.WebPlatform.Html;
 
 namespace Meziantou.Framework.WebPlatform.Dom;
 
-/// <summary>https://html.spec.whatwg.org/#htmlelement</summary>
+// https://html.spec.whatwg.org/#htmlelement
 public partial class HtmlElement : Element
 {
     internal HtmlElement(Document document, string localName, string? prefix)

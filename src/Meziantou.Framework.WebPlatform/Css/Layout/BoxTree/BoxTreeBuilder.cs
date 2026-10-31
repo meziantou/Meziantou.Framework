@@ -1026,11 +1026,6 @@ internal sealed partial class BoxTreeBuilder
     }
 
     /// <summary>
-    /// Creates the principal box of an element or a pseudo-element, appended to the parent, and returns the box its contents
-    /// go to: the box itself, or the table grid box of a table, whose principal box is a table wrapper box
-    /// (https://drafts.csswg.org/css-tables-3/#table-wrapper-box).
-    /// </summary>
-    /// <summary>
     /// Applies <c>content-visibility</c> to the principal box of an element (https://drafts.csswg.org/css-contain-2/#content-visibility),
     /// when size containment can apply to it: <c>hidden</c> skips its contents; <c>auto</c> skips them when the element is not
     /// relevant to the user (updated before each layout pass, see <see cref="ContentRelevancy"/>). Records the boxes whose
@@ -1106,6 +1101,11 @@ internal sealed partial class BoxTreeBuilder
         return display.Inside == DisplayInside.Table ? display with { Inside = DisplayInside.FlowRoot } : display;
     }
 
+    /// <summary>
+    /// Creates the principal box of an element or a pseudo-element, appended to the parent, and returns the box its contents
+    /// go to: the box itself, or the table grid box of a table, whose principal box is a table wrapper box
+    /// (https://drafts.csswg.org/css-tables-3/#table-wrapper-box).
+    /// </summary>
     private ContainerBox CreatePrincipalBox(ComputedStyle style, Display display, Element element, string? pseudoElement, ContainerBox parent, out ContainerBox contents)
     {
         _usesRunIns |= display.Outside == DisplayOutside.RunIn;

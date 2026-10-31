@@ -693,11 +693,6 @@ public static class TextShaper
         info.ShaperData = 0;
     }
 
-    /// <summary>
-    /// Mirrors the characters of a right-to-left run that have a mirrored form: an opening parenthesis is drawn as a
-    /// closing one. The mirrored character is used when the font has it; otherwise the font is asked to mirror the
-    /// glyph with its <c>rtlm</c> feature.
-    /// </summary>
     /// <summary>Replaces the punctuation of a vertical run by its vertical presentation forms, those the font has.</summary>
     private static void UseVerticalPresentationForms(GlyphBuffer buffer, FontFace face)
     {
@@ -713,6 +708,11 @@ public static class TextShaper
         }
     }
 
+    /// <summary>
+    /// Mirrors the characters of a right-to-left run that have a mirrored form: an opening parenthesis is drawn as a
+    /// closing one. The mirrored character is used when the font has it; otherwise the font is asked to mirror the
+    /// glyph with its <c>rtlm</c> feature.
+    /// </summary>
     private static void Mirror(GlyphBuffer buffer, FontFace face, bool areCharactersMirrored)
     {
         foreach (ref var info in buffer.Info)

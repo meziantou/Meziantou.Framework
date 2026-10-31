@@ -265,7 +265,6 @@ internal static class LayoutResolvedValues
         return document.BrowsingContext is not null && element.IsConnected ? document.GetLayoutEngine() : null;
     }
 
-    /// <summary>Returns the first fragment of the box of the element or pseudo-element of a style (a forced layout), or the box before its fragmentation.</summary>
     /// <summary>
     /// Returns the style an anchor-positioned box was laid out with (https://drafts.csswg.org/css-anchor-position-1/: its position
     /// option and its anchor functions resolved to lengths, see <see cref="AnchorPositioning"/>), or null when the box was laid out
@@ -280,6 +279,7 @@ internal static class LayoutResolvedValues
         return fragment!.Box.Style.PositionBaseStyle is not null ? fragment.Box.Style : null;
     }
 
+    /// <summary>Returns the first fragment of the box of the element or pseudo-element of a style (a forced layout), or the box before its fragmentation.</summary>
     private static LayoutResolution GetFirstFragment(ComputedStyle style, out BoxFragment? fragment)
     {
         fragment = null;

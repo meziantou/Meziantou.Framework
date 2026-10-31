@@ -13,7 +13,7 @@ public sealed class AssignedNodesOptions
     public bool Flatten { get; init; }
 }
 
-/// <summary>https://html.spec.whatwg.org/multipage/scripting.html#the-slot-element</summary>
+// https://html.spec.whatwg.org/multipage/scripting.html#the-slot-element
 public partial class HtmlSlotElement
 {
     partial void OnCreated()

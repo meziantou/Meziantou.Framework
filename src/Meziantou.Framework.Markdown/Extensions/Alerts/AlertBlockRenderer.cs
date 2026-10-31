@@ -28,7 +28,11 @@ public class AlertBlockRenderer : HtmlObjectRenderer<AlertBlock>
     public Action<HtmlRenderer, StringSlice> RenderKind { get; set; }
 
 
-    /// <inheritdoc />
+    /// <summary>
+    /// Writes the alert block to the specified renderer.
+    /// </summary>
+    /// <param name="renderer">The renderer.</param>
+    /// <param name="obj">The alert block.</param>
     protected override void Write(HtmlRenderer renderer, AlertBlock obj)
     {
         renderer.EnsureLine();

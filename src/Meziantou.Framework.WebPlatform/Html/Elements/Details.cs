@@ -2,7 +2,7 @@ using Meziantou.Framework.WebPlatform.Html;
 
 namespace Meziantou.Framework.WebPlatform.Dom;
 
-/// <summary>The behavior of the details element (https://html.spec.whatwg.org/multipage/interactive-elements.html#the-details-element).</summary>
+// The behavior of the details element (https://html.spec.whatwg.org/multipage/interactive-elements.html#the-details-element).
 public sealed partial class HtmlDetailsElement
 {
     /// <summary>https://html.spec.whatwg.org/multipage/interactive-elements.html#details-toggle-task-tracker</summary>

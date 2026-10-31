@@ -474,11 +474,6 @@ public partial class Document
     }
 
     /// <summary>
-    /// https://drafts.csswg.org/css-view-transitions-2/#page-visibility-change-steps: a document that becomes hidden skips its
-    /// active view transition, and forgets its inbound view transition params (a document hidden before it is revealed, e.g.
-    /// while it is render-blocked, has no inbound view transition).
-    /// </summary>
-    /// <summary>
     /// The document enters the back/forward cache: its view transitions are skipped at once (the task of the page visibility
     /// change steps would only run once the document is restored, when it is visible again).
     /// </summary>
@@ -507,6 +502,11 @@ public partial class Document
         InboundViewTransitionParams = null;
     }
 
+    /// <summary>
+    /// https://drafts.csswg.org/css-view-transitions-2/#page-visibility-change-steps: a document that becomes hidden skips its
+    /// active view transition, and forgets its inbound view transition params (a document hidden before it is revealed, e.g.
+    /// while it is render-blocked, has no inbound view transition).
+    /// </summary>
     private void RunViewTransitionPageVisibilityChangeSteps()
     {
         if (_activeViewTransition is null && _scopedViewTransitions is not { Count: > 0 } && InboundViewTransitionParams is null)

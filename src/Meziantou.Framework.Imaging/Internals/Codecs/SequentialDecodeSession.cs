@@ -71,6 +71,18 @@ internal sealed class SequentialDecodeSession
         _yieldRequested = true;
     }
 
+    /// <summary>
+    /// Replaces the canvas size of the header snapshot with the size of the frames of a scaled decode
+    /// (<see cref="ImageReaderOptions.ScaleDenominator"/>), from the decoder's header callback, before the reader reads it.
+    /// </summary>
+    /// <param name="size">The size of the decoded frames.</param>
+    /// <exception cref="InvalidOperationException">The header was not reported.</exception>
+    public void ScaleHeader(Size size)
+    {
+        var info = HeaderInfo ?? throw new InvalidOperationException("The header was not reported.");
+        HeaderInfo = info.WithSize(size);
+    }
+
     /// <summary>Consumes the yield request, if any.</summary>
     /// <returns><see langword="true"/> if the walker must return to the reader.</returns>
     public bool TryConsumeYield()

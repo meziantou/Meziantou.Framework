@@ -885,6 +885,8 @@ namespace Meziantou.Framework.Imaging
         public Meziantou.Framework.Imaging.PixelConversionOptions Conversion { get => throw null; init { } }
         public static Meziantou.Framework.Imaging.ImageDecodeOptions Default { get => throw null; }
         public int? FrameLimit { get => throw null; init { } }
+        public int ScaleDenominator { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Size? TargetSize { get => throw null; init { } }
     }
 
     public class ImageException : System.Exception
@@ -1100,6 +1102,8 @@ namespace Meziantou.Framework.Imaging
         public static Meziantou.Framework.Imaging.ImageReaderOptions Default { get => throw null; }
         public int? FrameLimit { get => throw null; init { } }
         public bool LeaveOpen { get => throw null; init { } }
+        public int ScaleDenominator { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Size? TargetSize { get => throw null; init { } }
     }
 
     public sealed class ImageReader<TPixel> : System.IAsyncDisposable, System.IDisposable where TPixel : unmanaged

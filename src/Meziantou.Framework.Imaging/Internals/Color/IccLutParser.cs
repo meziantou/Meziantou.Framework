@@ -45,6 +45,32 @@ internal static class IccLutParser
         };
     }
 
+    /// <summary>
+    /// Appends the stages of the <c>AToB0</c> tag of an abstract profile, whose input and output are both connection
+    /// spaces (ICC.1:2022 section 8.7): its input selects the matrix use of a <c>lut8Type</c> or <c>lut16Type</c> and the
+    /// interpolation, as for a <c>BToA</c> tag.
+    /// </summary>
+    /// <param name="tag">The tag data, starting at the type signature.</param>
+    /// <param name="inputIsXyz">Whether the input of the tag is CIEXYZ (otherwise CIELAB).</param>
+    /// <param name="stages">The stages of the conversion.</param>
+    /// <returns><see langword="null"/> on success, else the reason the tag is invalid.</returns>
+    public static string? AppendConnectionSpaceTable(ReadOnlyMemory<byte> tag, bool inputIsXyz, IccStageList stages)
+    {
+        var data = tag.Span;
+        if (data.Length < 12)
+            return "the tag is shorter than a lookup table header.";
+
+        var inputSpace = inputIsXyz ? InputSpace.Xyz : InputSpace.Lab;
+        return IccReader.ReadUInt32(data) switch
+        {
+            IccReader.TypeLut8 => AppendLut(tag, 3, 3, inputSpace, stages, bytesPerEntry: 1),
+            IccReader.TypeLut16 => AppendLut(tag, 3, 3, inputSpace, stages, bytesPerEntry: 2),
+            IccReader.TypeLutAToB => AppendLutAToB(tag, 3, 3, deviceToConnection: true, inputSpace, stages),
+            IccReader.TypeLutBToA => "a lutBToAType cannot be the 'A2B0' tag of an abstract profile.",
+            var type => $"the tag type {IccReader.FormatSignature(type)} is not a lookup table type.",
+        };
+    }
+
     /// <summary>The color space of the input of a lookup table: it selects the matrix use and the interpolation.</summary>
     private enum InputSpace
     {

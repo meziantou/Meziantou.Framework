@@ -3837,6 +3837,30 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void SoftProofShowsTheColorsOfThePrinter()
+    {
+        // Saturated red, which the CMYK printer cannot reproduce, and a light blue it can
+        var display = IccTestProfiles.Rgb(IccTestProfiles.SrgbColorants, IccTestProfiles.SrgbCurve());
+        var printer = IccTestProfiles.CmykLabLutAToB();
+        ushort[] rgb = [65535, 0, 0, 30000, 40000, 50000];
+        var preview = ColorExamples.SoftProof(display, printer, rgb);
+
+        // The preview is the conversion to the inks, then back to the display (up to the 16-bit rounding of the inks)
+        var options = new IccColorTransformOptions { GamutMapping = GamutMapping.ReduceChroma };
+        var inks = new ushort[8];
+        var expected = new ushort[6];
+        IccColorTransform.Create(display, printer, options).Convert(rgb, inks);
+        IccColorTransform.Create(printer, display, options).Convert(inks, expected);
+        for (var i = 0; i < expected.Length; i++)
+        {
+            Assert.InRange(preview[i], expected[i] - 2, expected[i] + 2);
+        }
+
+        // The red of the print is not the red of the display
+        Assert.NotEqual(rgb[..3], preview[..3]);
+    }
+
+    [Fact]
     public void SaveGifThresholdsOrFlattensAlphaAndReducesColors()
     {
         // 1,024 colors whose alpha grows from 0 (left) to 248 (right), in steps of 8

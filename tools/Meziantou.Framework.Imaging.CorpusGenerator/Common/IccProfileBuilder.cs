@@ -202,6 +202,79 @@ internal static class IccProfileBuilder
         => BuildBytes(colorSpace, connectionSpace, tags);
 
     // -----------------------------------------------------------------------------------------------------------------
+    // Device link and abstract profiles (ICC.1:2022 sections 8.6 and 8.7): the header holds the input color space in the
+    // field of the data color space and the output color space in the field of the connection space.
+    // -----------------------------------------------------------------------------------------------------------------
+
+    /// <summary>
+    /// A version 2 device link profile from RGB to CMYK with a <c>lut16Type</c>: the device values squared (input tables
+    /// of 256 entries), then the naive separation of <see cref="RgbToCmyk"/> on 9 grid points.
+    /// </summary>
+    public static byte[] RgbToCmykDeviceLinkLut16()
+        => BuildBytes(
+            "RGB ",
+            "CMYK",
+            [("A2B0", Lut16(3, 4, 9, static rgb => RgbToCmyk(rgb), inputEntries: 256, inputTable: static (_, x) => x * x))],
+            static data =>
+            {
+                data[8] = 2;
+                data[9] = 0x40;
+                "link"u8.CopyTo(data.AsSpan(12));
+            });
+
+    /// <summary>
+    /// A version 4 device link profile from CMYK to RGB with a <c>lutAToBType</c>: no A curves, so that the grid points of
+    /// the color lookup table (5 per channel) are multiples of one quarter, the colors of <see cref="CmykToRgb"/>, then
+    /// B curves of gamma 1 / 2.2.
+    /// </summary>
+    public static byte[] CmykToRgbDeviceLinkLutAToB()
+    {
+        var gamma = Parametric(0, 1 / 2.2);
+        return BuildBytes(
+            "CMYK",
+            "RGB ",
+            [("A2B0", LutAToB("mAB ", 4, 3, clut: ([5, 5, 5, 5], 2, static cmyk => CmykToRgb(cmyk)), curvesB: [gamma, gamma, gamma]))],
+            static data => "link"u8.CopyTo(data.AsSpan(12)));
+    }
+
+    /// <summary>
+    /// A version 4 abstract profile in CIELAB with a <c>lutAToBType</c> that warms and desaturates: L* becomes
+    /// 0.9 L* + 8, a* becomes 0.6 a* + 5 and b* becomes 0.6 b* + 10. The function is affine in the encoded values, so
+    /// the trilinear interpolation of the 9 grid points is exact everywhere.
+    /// </summary>
+    public static byte[] LabAbstractLutAToB()
+    {
+        var identity = Parametric(0, 1);
+        return BuildBytes(
+            "Lab ",
+            "Lab ",
+            [("A2B0", LutAToB("mAB ", 3, 3, curvesA: [identity, identity, identity], clut: ([9, 9, 9], 2, static lab => EncodeLab(WarmLab(DecodeLab(lab)))), curvesB: [identity, identity, identity]))],
+            static data => "abst"u8.CopyTo(data.AsSpan(12)));
+    }
+
+    /// <summary>The function of <see cref="LabAbstractLutAToB"/> on CIELAB.</summary>
+    public static double[] WarmLab(double[] lab) => [(0.9 * lab[0]) + 8, (0.6 * lab[1]) + 5, (0.6 * lab[2]) + 10];
+
+    /// <summary>
+    /// A version 2 abstract profile in CIEXYZ with a <c>lut16Type</c> whose matrix (which only applies to a CIEXYZ input)
+    /// mixes the components; the tables are identities.
+    /// </summary>
+    public static byte[] XyzAbstractLut16()
+        => BuildBytes(
+            "XYZ ",
+            "XYZ ",
+            [("A2B0", Lut16(3, 3, 2, static xyz => xyz, matrix: XyzAbstractMatrix))],
+            static data =>
+            {
+                data[8] = 2;
+                data[9] = 0x40;
+                "abst"u8.CopyTo(data.AsSpan(12));
+            });
+
+    /// <summary>The matrix of <see cref="XyzAbstractLut16"/>, row by row.</summary>
+    public static readonly double[] XyzAbstractMatrix = [0.9, 0.05, 0, 0.02, 0.95, 0.03, 0, 0.05, 0.85];
+
+    // -----------------------------------------------------------------------------------------------------------------
     // Synthetic lookup-table profiles. Their tables sample simple device models; the tests never rely on the models
     // being realistic, only on the bytes of the profiles.
     // -----------------------------------------------------------------------------------------------------------------

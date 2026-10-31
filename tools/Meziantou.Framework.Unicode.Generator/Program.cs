@@ -1379,8 +1379,14 @@ async Task WriteUnicodeBlocksFile(List<(int Start, int End, string Name)> blockR
     /// </remarks>
     public static class UnicodeBlocks
     {
-        /// <summary>Unknown or unassigned block.</summary>
-        public static UnicodeBlock Unknown { get; } = UnicodeBlock.CreateInternal("Unknown", new UnicodeRange(0, 0));
+        /// <summary>The code points that are in no defined block.</summary>
+        /// <remarks>
+        /// <see cref="GetBlock(int)"/> returns this block for a code point between the defined blocks and for a value outside
+        /// the code space. The code points of this block are not contiguous, so its <see cref="UnicodeBlock.Range"/> is the
+        /// whole code space (U+0000..U+10FFFF) and <see cref="UnicodeBlock.Contains(int)"/> returns <see langword="true"/>
+        /// only for the code points of the code space that are in no defined block.
+        /// </remarks>
+        public static UnicodeBlock Unknown { get; } = UnicodeBlock.CreateUnknown();
 
     {{sb.ToString().TrimEnd('\n')}}
     }

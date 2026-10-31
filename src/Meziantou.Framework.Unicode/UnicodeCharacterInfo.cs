@@ -1,6 +1,11 @@
 namespace Meziantou.Framework;
 
 /// <summary>Represents Unicode character information.</summary>
+/// <remarks>
+/// A <see langword="default"/> instance, such as the value returned by a failed <c>TryGetCharacterInfo</c> call, describes
+/// no character: its <see cref="Name"/> is empty, its <see cref="Block"/> is <see cref="UnicodeBlocks.Unknown"/>, the
+/// nullable properties are <see langword="null"/>, and it is not equal to the entry for U+0000.
+/// </remarks>
 public readonly struct UnicodeCharacterInfo : IEquatable<UnicodeCharacterInfo>
 {
     // The index of the property record, 0 for a default instance. Every field but the rune is read from the tables
@@ -21,7 +26,8 @@ public readonly struct UnicodeCharacterInfo : IEquatable<UnicodeCharacterInfo>
     public Rune Rune { get; }
 
     /// <summary>Gets the character name.</summary>
-    public string Name => _name ?? (IsDefault ? null! : UnicodeCharacterInfos.GetName(Rune.Value));
+    /// <value>The character name, or an empty string for a <see langword="default"/> instance.</value>
+    public string Name => _name ?? (IsDefault ? string.Empty : UnicodeCharacterInfos.GetName(Rune.Value));
 
     /// <summary>Gets the Unicode general category.</summary>
     public UnicodeCategory Category => (UnicodeCategory)GetField(UnicodeDataFormat.CategoryField);
@@ -30,7 +36,8 @@ public readonly struct UnicodeCharacterInfo : IEquatable<UnicodeCharacterInfo>
     public UnicodeBidirectionalCategory BidiCategory => (UnicodeBidirectionalCategory)GetField(UnicodeDataFormat.BidiCategoryField);
 
     /// <summary>Gets the Unicode block.</summary>
-    public UnicodeBlock Block => IsDefault ? null! : UnicodeBlocks.GetBlock(Rune.Value);
+    /// <value>The Unicode block, or <see cref="UnicodeBlocks.Unknown"/> for a <see langword="default"/> instance.</value>
+    public UnicodeBlock Block => IsDefault ? UnicodeBlocks.Unknown : UnicodeBlocks.GetBlock(Rune.Value);
 
     /// <summary>Gets the canonical combining class.</summary>
     public byte CanonicalCombiningClass => GetField(UnicodeDataFormat.CanonicalCombiningClassField);
@@ -110,6 +117,10 @@ public readonly struct UnicodeCharacterInfo : IEquatable<UnicodeCharacterInfo>
 
     private int? GetDigit(int field)
     {
+        // Record 0 stores 0 in the digit fields, which would read as the digit zero.
+        if (IsDefault)
+            return null;
+
         var value = (sbyte)GetField(field);
         return value >= 0 ? value : null;
     }

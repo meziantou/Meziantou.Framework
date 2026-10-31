@@ -22,25 +22,27 @@ internal ref struct JsonPathParser
     private JsonPathLexer _lexer;
     private JsonPathToken _current;
     private int _depth;
+    private readonly JsonPathFunctionRegistry _functions;
 
-    private JsonPathParser(ReadOnlySpan<char> input)
+    private JsonPathParser(ReadOnlySpan<char> input, JsonPathFunctionRegistry functions)
     {
         _lexer = new JsonPathLexer(input);
         _current = _lexer.NextToken();
         _depth = 0;
+        _functions = functions;
     }
 
-    public static JsonPathExpression Parse(ReadOnlySpan<char> input)
+    public static JsonPathExpression Parse(ReadOnlySpan<char> input, JsonPathFunctionRegistry? functions = null)
     {
-        var parser = new JsonPathParser(input);
+        var parser = new JsonPathParser(input, functions ?? JsonPathFunctionRegistry.Default);
         return parser.ParseQuery();
     }
 
-    public static bool TryParse(ReadOnlySpan<char> input, [NotNullWhen(true)] out JsonPathExpression? result)
+    public static bool TryParse(ReadOnlySpan<char> input, [NotNullWhen(true)] out JsonPathExpression? result, JsonPathFunctionRegistry? functions = null)
     {
         try
         {
-            result = Parse(input);
+            result = Parse(input, functions);
             return true;
         }
         catch (FormatException)
@@ -705,7 +707,7 @@ internal ref struct JsonPathParser
             throw new FormatException($"Function '{name}' expects {funcDef.ParameterTypes.Length} argument(s) but got {args.Count} at position {pos}.");
         }
 
-        return new FunctionCallExpression(name, [.. args], funcDef.ResultType);
+        return new FunctionCallExpression(name, [.. args], funcDef.ResultType, _functions.GetFunction(name));
     }
 
     // function-argument = literal / filter-query / logical-expr / function-expr
@@ -801,6 +803,17 @@ internal ref struct JsonPathParser
 
     private FunctionArgument ParseNodesTypeArgument()
     {
+        if (_current.Kind is JsonPathTokenKind.Identifier && IsLowercaseAlpha(_current.StringValue!) && _lexer.PeekChar() == '(')
+        {
+            var function = ParseFunctionCallExpression();
+            if (function.ResultType is not FunctionExpressionType.NodesType)
+            {
+                throw new FormatException($"Function '{function.Name}' does not return NodesType at position {_current.Position}.");
+            }
+
+            return FunctionArgument.FromFunctionCall(function);
+        }
+
         // NodesType argument: filter-query (which includes singular-query)
         var query = ParseFilterQuery();
         return FunctionArgument.FromFilterQuery(query);
@@ -900,8 +913,13 @@ internal ref struct JsonPathParser
 
     // ---- Function Registry ----
 
-    private static FunctionDefinition GetFunctionDefinition(string name, int position)
+    private FunctionDefinition GetFunctionDefinition(string name, int position)
     {
+        if (_functions.GetFunction(name) is { } function)
+        {
+            return new FunctionDefinition(function.ParameterTypes.Select(ConvertFunctionType).ToArray(), ConvertFunctionType(function.ResultType));
+        }
+
         return name switch
         {
             "length" => new FunctionDefinition([FunctionExpressionType.ValueType], FunctionExpressionType.ValueType),
@@ -912,6 +930,14 @@ internal ref struct JsonPathParser
             _ => throw new FormatException($"Unknown function '{name}' at position {position}."),
         };
     }
+
+    private static FunctionExpressionType ConvertFunctionType(JsonPathFunctionType type) => type switch
+    {
+        JsonPathFunctionType.Value => FunctionExpressionType.ValueType,
+        JsonPathFunctionType.Logical => FunctionExpressionType.LogicalType,
+        JsonPathFunctionType.Nodes => FunctionExpressionType.NodesType,
+        _ => throw new InvalidOperationException("Invalid function signature."),
+    };
 
     private readonly struct FunctionDefinition
     {

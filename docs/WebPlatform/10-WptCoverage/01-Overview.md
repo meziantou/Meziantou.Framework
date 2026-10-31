@@ -49,10 +49,10 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 25,394 | 29,435 | 2,547 | 94% |
+| [Stable](#stable-tests) | 25,396 | 29,435 | 2,545 | 94% |
 | [Tentative](#tentative-tests) | 1,168 | 3,044 | 837 | 53% |
 | [Reftests](#reftests) | 27,504 | 28,889 | 180 | 96% |
-| **All** | **54,066** | **61,368** | **3,564** | **94%** |
+| **All** | **54,068** | **61,368** | **3,562** | **94%** |
 
 ## Stable tests
 
@@ -203,7 +203,7 @@ The features of `REQUIRES`:
 | [`eyedropper`](eyedropper.md) | 0 | 1 | 1 | – |
 | [`fedcm`](fedcm.md) | 0 | 68 | 68 | – |
 | [`fenced-frame`](fenced-frame.md) | 0 | 9 | 9 | – |
-| [`fetch`](fetch.md) | 326 | 407 | 3 | 81% |
+| [`fetch`](fetch.md) | 328 | 407 | 1 | 81% |
 | [`file-system-access`](file-system-access.md) | 0 | 5 | 5 | – |
 | [`FileAPI`](FileAPI.md) | 67 | 73 | 0 | 92% |
 | [`focus`](focus.md) | 31 | 39 | 0 | 79% |
@@ -401,7 +401,7 @@ The features of `REQUIRES`:
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 317 | 330 | 0 | 96% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **25,394** | **29,435** | **2,547** | **94%** |
+| **Total (343 sections)** | **25,396** | **29,435** | **2,545** | **94%** |
 
 ## Tentative tests
 

@@ -1721,6 +1721,15 @@
       "Consuming the body of a resource with bad br content with text() should reject": "FAIL"
     }
   },
+  "fetch/content-encoding/br/big-br-body.https.any.js": {
+    "total": 2
+  },
+  "fetch/content-encoding/br/big-br-body.https.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "fetch/content-encoding/br/big-br-body.https.any.js#sharedworker": {
+    "total": 2
+  },
   "fetch/content-encoding/br/br-body.https.any.js": {
     "total": 2
   },
@@ -1768,6 +1777,15 @@
       "Consuming the body of a resource with bad gzip content with text() should reject": "FAIL",
       "Fetching a resource with bad gzip content should still resolve": "FAIL"
     }
+  },
+  "fetch/content-encoding/gzip/big-gzip-body.https.any.js": {
+    "total": 2
+  },
+  "fetch/content-encoding/gzip/big-gzip-body.https.any.js#dedicatedworker": {
+    "total": 2
+  },
+  "fetch/content-encoding/gzip/big-gzip-body.https.any.js#sharedworker": {
+    "total": 2
   },
   "fetch/content-encoding/gzip/gzip-body.any.js": {
     "total": 2

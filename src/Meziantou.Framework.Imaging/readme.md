@@ -186,7 +186,7 @@ decoded or encoded approximately; see [Format reference](#format-reference) and 
 | HEIC | Still images and image sequences (animations); the HEVC version 1 and range extensions profiles: 8 to 12 bits; 4:4:4, 4:2:2, 4:2:0 and monochrome; intra and inter pictures (P and B, reordered); alpha; grids; ICC/EXIF/XMP and CICP color descriptions | Lossless and lossy still images and image sequences (seekable destination); 8, 10 and 12 bits; 4:4:4, 4:2:2, 4:2:0 and monochrome; lossless alpha; grids; ICC/EXIF/XMP, CICP color descriptions and orientation | `.heic`, `.heif`, `.heics`, `.heifs` (lossless by default) |
 | JPEG XL | Bare codestreams and containers; lossy (VarDCT) and lossless (Modular) frames; up to 16 bits; alpha; animations and layers; patches, splines, noise; recompressed JPEG files; ICC/EXIF/XMP and enumerated color encodings; progressive renderings | Lossless (default) or lossy, every pixel format at its own depth, lossless alpha, animations with any frame count, progressive output, ICC/EXIF/XMP, orientation; JPEG files recompressed without loss (`JpegXlTranscoder`) | `.jxl` |
 | JPEG 2000 | JP2 files (also JPX and JPH files of one codestream) and bare codestreams; reversible and irreversible wavelet transformations; tiles, layers, every progression order and code-block style, regions of interest; the high-throughput block coder (HTJ2K); 1 to 16 bits; opacity, palettes, sYCC, CMYK with a color conversion; ICC/EXIF/XMP and resolution | Lossless and lossy, every pixel format at its own depth, lossless opacity, a JP2 file or a codestream, ICC/EXIF/XMP and resolution | `.jp2` (lossless), `.j2k`, `.j2c`, `.jpc` (a codestream) |
-| OpenEXR | Single-part scan-line and tiled files (the full-resolution level of mipmaps and ripmaps); HALF, FLOAT and UINT samples; R, G, B, A and Y (luminance) channels; NONE, RLE, ZIPS, ZIP, PIZ, PXR24, B44 and B44A; data and display windows; chromaticities | Single-part scan-line files of half or float samples, lossless: NONE, RLE, ZIPS, ZIP (default) or PIZ (seekable destination when compressed); chromaticities | `.exr` |
+| OpenEXR | Single-part scan-line and tiled files (the full-resolution level of mipmaps and ripmaps); HALF, FLOAT and UINT samples; R, G, B, A and Y (luminance) channels, or one layer of a file with other channels (`OpenExrDecodingOptions.Layer`); NONE, RLE, ZIPS, ZIP, PIZ, PXR24, B44 and B44A; data and display windows, an overscan cropped or decoded whole (`OpenExrDecodingOptions.WindowMode`); chromaticities | Single-part scan-line files of half or float samples, lossless: NONE, RLE, ZIPS, ZIP (default) or PIZ (seekable destination when compressed); chromaticities | `.exr` |
 | ANI | Animated cursors: icon and cursor frames (PNG and DIB), rate and sequence tables, hotspots, title and author | One cursor image per frame (PNG or 32-bit DIB), hotspots, identical frames stored once, title and author (seekable destination) | `.ani` |
 
 ## Usage guide
@@ -1717,11 +1717,16 @@ point is inside (what a fill paints, with either fill rule), `GetLength` gives i
 the point at a distance along it with the direction of the path there (to place a marker, an arrow head or a label),
 `TryGetClosestPoint` gives the point of the path that is the nearest to a position, with its distance along the path
 (what a pointer snaps to, or where a click falls on a line), `Bounds` is the box of its points and control points, and
-`GetTightBounds` the box it really reaches. `GetBounds(pen)` is a box that contains what a pen paints, without
+`GetTightBounds` the box it really reaches. Each of these calls walks the whole path: a `VectorPathMeasure` walks it
+once and keeps its chords, then gives the same length, points at a distance and closest points for as many questions
+as needed (a marker that moves along the path, a pointer that moves over it), finding a distance by a binary search and
+skipping the parts of the path that are far from a position. `StrokeContains(point, pen)` tells whether a pen that
+strokes the path paints a point (a click on a line), caps, joins, miter limit, dashes, markers and alignment included,
+without creating the path of the stroke: only the parts of the path near the point are stroked. `GetBounds(pen)` is a box that contains what a pen paints, without
 computing the stroke: the tight bounds spread by half the width of the pen, its miters and its square caps (on the
 side of the path its `Alignment` puts it), so it is larger than the stroke at a corner that is not mitered. `Widen` returns
 the path a pen draws when it strokes the path, so that all of these also answer for a stroke: the exact bounds of a stroke
-are the tight bounds of the widened path, and a click is on a line when the widened path contains it. A widened path
+are the tight bounds of the widened path, and what `StrokeContains` answers is what the widened path contains. A widened path
 is the pieces the library fills (one per segment, join and cap, overlapping): fill it with the non-zero rule; it is
 not a single outline (see `Simplify` below). Lengths and containment are those of the path as it is drawn, with its curves replaced by their
 chords.
@@ -1737,7 +1742,9 @@ before cutting it, not after.
 
 **Combining paths**. `Combine` returns the outline of what two paths fill, combined by a `PathCombineMode`: `Union`
 (what one of them fills), `Intersect` (what both fill), `Exclude` (what the first one fills and the second one does
-not) or `Xor` (what only one fills). `Simplify` returns the outline of what one path fills: a path that crosses itself,
+not) or `Xor` (what only one fills). Each path fills what the fill rule says, or what its own rule says with the
+overload that takes two rules (a star drawn as one contour that crosses itself, with or without its center, combined
+with a shape of the other rule). `Simplify` returns the outline of what one path fills: a path that crosses itself,
 or whose contours overlap, becomes the boundary of its area, and the pieces of `Widen` become the outline of the
 stroke, which can be stroked or combined in turn. The result is closed contours that do not cross each other or
 themselves: the outer ones turn clockwise on the image and the holes the other way, so both fill rules paint the same
@@ -1894,6 +1901,11 @@ change evenly: (208, 168, 0), with no dull band between two saturated colors. `O
 and the hue of the same space, the hue along the shorter arc as CSS does for `in oklch`: an orange half way, and from
 blue to yellow a teal where `Oklab` goes through a gray; the hue of a gray stop is the hue of the other stop. The stops
 are taken as sRGB colors; at a stop, the color is the color of the stop in every space.
+
+`Dither` (off by default) removes the bands a slow gradient shows on an image of 8 bits per component: each pixel is
+rounded up or down by the 8x8 Bayer matrix instead of to the nearest sample, so that a few pixels average to the
+color between two steps. The pattern is fixed (the same drawing gives the same pixels), a color that 8 bits hold
+exactly is kept, and images of 16 bits or of floating-point components, whose steps do not show, are not dithered.
 
 A radial gradient can spread from a `FocalPoint` that is not its center (a highlight on a sphere). With a
 `FocalRadius`, it starts on a circle around that point instead of at the point: the gradient between two circles of
@@ -3458,7 +3470,7 @@ the Unicode Consortium.
 
 ### Metadata, color profiles and orientation
 
-`Image.Metadata` holds the source format (informational only), the EXIF orientation, the
+`Image.Metadata` holds the source format and the windows of an OpenEXR file (informational only), the EXIF orientation, the
 resolution, the pixel aspect ratio, ICC/EXIF/XMP profiles (byte-for-byte payloads), the CICP color description, the
 content light level, the mastering display color volume and text entries.
 
@@ -5111,12 +5123,48 @@ public static Image<Rgba32> ConvertOpenExr(string exrPath, string pizPath)
 | Files | Single-part files (version 2) of scan lines or tiles; the chunks may be in any order in the file (decreasing lines, random tiles) and are read forward only. A tiled file with mipmap or ripmap levels gives its full-resolution level; the other levels are walked and skipped | A single-part file of scan lines in increasing order, with the attributes the specification requires |
 | Compression | NONE, RLE, ZIPS, ZIP, PIZ, PXR24, B44 and B44A; a chunk stored uncompressed whatever the compression of the file | NONE, RLE, ZIPS, ZIP (the default) or PIZ, all lossless; a chunk that does not shrink is stored uncompressed |
 | Samples | HALF, FLOAT and UINT channels: an image of HALF channels without an alpha channel loads as `RgbaHalf`, any other as `RgbaFloat` (the extra precision is used when dividing colors by alpha; a UINT sample must have an exact float value: up to 2^24, or a larger value with at most 24 significant bits). `ImageInfo.BitsPerComponent` is 16 or 32. Infinities and samples that are not numbers are kept, subject to the alpha conversion | By default, `RgbaHalf` and 8-bit pixels as HALF samples, `RgbaFloat` and 16-bit pixels as FLOAT samples; colors are premultiplied by the stored alpha when it is not 0 and rounded to the sample type, so lossless compression does not guarantee exact source pixels; a finite color whose product is beyond the range of the sample type is rejected. `PixelType` chooses the type, and half samples of wider pixels need `AllowBitDepthReduction` (round to nearest, ties to even; beyond ±65,504 rejected) |
-| Channels | `R`, `G`, `B` and `A`, any of them (a missing color is 0, a missing alpha is 1), or `Y` (luminance, with or without `A`), which gives the three colors; the channels are not sub-sampled | `R`, `G`, `B`, and `A` for the pixel formats with alpha; `Y` for gray pixel formats |
-| Windows | The display window is the image; the data window is placed in it, and the pixels it does not cover are transparent black | Both windows are the image, from (0, 0) |
+| Channels | `R`, `G`, `B` and `A`, any of them (a missing color is 0, a missing alpha is 1), or `Y` (luminance, with or without `A`), which gives the three colors; the channels are not sub-sampled. By default every channel must be one of them; with `OpenExrDecodingOptions.Layer`, the channels of one layer are decoded (`""` for the default layer, `"diffuse"` for `diffuse.R`, `diffuse.G`...) and the others are ignored (`Z`, other layers, other channels of the layer, sub-sampled or not) | `R`, `G`, `B`, and `A` for the pixel formats with alpha; `Y` for gray pixel formats |
+| Windows | The display window is the image; the data window is placed in it, and the pixels it does not cover are transparent black. A data window with pixels outside the display window (an overscan) is rejected by default; `OpenExrDecodingOptions.WindowMode` crops it to the display window (`CropToDisplayWindow`) or makes the data window the image (`DataWindow`), and then the data window counts against the size limits too. `Metadata.OpenExrWindows` gives both windows (informational: the encoder ignores it) | Both windows are the image, from (0, 0) |
 | Color | Linear light: the `chromaticities` attribute (BT.709 and D65 without it) gives `ColorTransferFunction.Linear` for BT.709, a CICP description with the linear transfer characteristics (8) for BT.2020, DCI-P3 and Display P3, and an ICC profile with linear curves for the others. Never applied | A `chromaticities` attribute for a linear CICP description of BT.2020, DCI-P3 or Display P3. The samples must be linear light: an image labeled sRGB (the default of integer pixels), with an ICC profile or another CICP description follows `MetadataHandling` |
-| Metadata | The other attributes are skipped, but counted against `MaxMetadataBytes` | None other than the chromaticities |
+| Metadata | The windows (`Metadata.OpenExrWindows`); the other attributes are skipped, but counted against `MaxMetadataBytes` | None other than the chromaticities |
 | Limits | The header is validated before the offset table: its attributes count as metadata, the display window against the size limits; the offset table and the largest chunk are charged to the memory budget | A seekable destination when the chunks are compressed (the offset table precedes them) |
 | Parallelism | With `ImageConfiguration.MaxDegreeOfParallelism` above 1, the chunks of an image whose data window has at least 65,536 pixels are decompressed and converted by up to that many workers, by batches of chunks read ahead from the input (a stream is read a batch at a time); the pixels and the errors are those of one worker (the error of the first chunk of the file that fails). Each worker needs its own chunk buffers, and the batch its stored chunks, charged to `MaxLiveAllocationBytes`. With 8 workers instead of one, a 3840x2160 RGBA half file decodes about 5 times faster (ZIP, PIZ, RLE), on an Apple M5 Pro | The samples of an image of at least 65,536 pixels are checked, and its chunks converted and compressed, by up to that many workers; the bytes are those of one worker. With 8 workers instead of one, a 3840x2160 RGBA half image encodes about 6 to 7 times faster (ZIP, ZIPS, PIZ), on an Apple M5 Pro |
+
+Renderer outputs hold more than an image: depth, the layers of other outputs, an overscan. The decoding options select
+what is read, the same way for `Identify`, eager loads, readers and collections:
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_OpenExrLayers;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static (Image Image, Point Origin) LoadRenderLayer(string exrPath, string layer)
+{
+    // Renderers store RGBA next to depth (Z) and other layers (diffuse.R, diffuse.G, ...), often with an overscan
+    // around the display window: the default options reject such a file, since those channels and pixels would be lost
+    var configuration = new ImageConfiguration
+    {
+        OpenExrDecoding = new OpenExrDecodingOptions
+        {
+            // "" is the default layer (R, G, B, A or Y); "diffuse" selects diffuse.R, diffuse.G, diffuse.B, diffuse.A
+            Layer = layer,
+
+            // DataWindow keeps every stored pixel instead
+            WindowMode = OpenExrWindowMode.CropToDisplayWindow,
+        },
+    };
+
+    // Identify, readers and collections take the same configuration, and report the same image
+    var image = Image.Load(exrPath, new ImageDecodeOptions { Configuration = configuration });
+
+    // The windows of the file, in its pixel coordinates: the cropped image starts at the display window
+    var windows = image.Metadata.OpenExrWindows!;
+    return (image, windows.DisplayWindowMin);
+}
+```
+<!-- endref -->
+
+A layer never falls back to another one: a layer without color channel is rejected (`Missing layer`, with the layers
+of the file that have colors in the message), and so is a layer whose channels are ambiguous: RGB and luminance
+together, a `Y` channel next to an `X` channel (a vector such as `N.X`, `N.Y`, `N.Z`, or CIE XYZ colors: `Ambiguous
+layer`), or chroma channels (`RY`, `BY`, which are not decoded: `Luminance-chroma channels`).
 
 `Image.Identify` reads the header: its `Header` mode stops before the offset table, and `FullScan` walks every chunk (its
 coordinates and size) without decompressing it. Every chunk is read, so a file that is cut is
@@ -5160,7 +5208,7 @@ Everything below is rejected explicitly (never decoded or encoded approximately)
 | JPEG XL | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify` when the image header tells): floating-point samples and samples of more than 16 bits, premultiplied alpha, CMYK (a black channel) and spot colors, an XYB image whose ICC profile is not sRGB (it needs a color conversion to that profile), the PQ or HLG transfer function with primaries or a white point that CICP cannot express, a Modular frame stored as YCbCr with subsampled channels, restoration filters on a grayscale Modular frame, an upsampled frame with patches or splines whose extra channels have another resolution. Ignored: the preview frame, frame names, the intrinsic size, the JPEG reconstruction data (`jbrd`: `Image.Load` decodes a recompressed JPEG file to pixels, `JpegXlTranscoder` rebuilds the JPEG file), `jumb` and unknown boxes; depth, selection mask, thermal and the other extra channels than alpha are decoded and dropped. Samples of 1 to 16 bits other than 8 and 16 are scaled exactly to 8 or 16 bits. A lossy frame is decoded in floating point: the result is within a few sixteen-bit units of the reference decoders, not bit-exact. Progressive reading: whole stages only (the data of a section that is not complete are not shown), none for a frame of one section, for a Modular frame that is not squeezed, or for the frames that are not shown; an alpha channel that is not squeezed is opaque until it is decoded; the pixels of an intermediate rendering are not part of the contract. Encoding: full frames that replace the image (no layers, blending, patches or cropped frames), frame durations in whole milliseconds, no frame of an animation without duration; an EXIF orientation is written to the image header. Lossy encoding: DCTs of 8x8 to 64x64 samples only (no smaller transform, no identity or AFV transform), a quantization factor per block that is computed from the image once (the encoder does not decode its output to refine it), no patches, splines or noise; an ICC profile that is not sRGB, and the PQ and HLG transfer functions, are rejected (use lossless output, or convert the image) |
 | JPEG recompression | `JpegXlTranscoder.RecompressJpeg` rejects with `UnsupportedImageFeatureException` what a JPEG XL frame cannot hold: four components (CMYK, YCCK), a sampling factor other than 1 or 2 (4:1:1), subsampled RGB components, arithmetic, lossless, hierarchical and 12-bit files, restart intervals of several lengths (the description of the file has one), a quantization table that no component uses unless it repeats the table defined before it, a Huffman table that uses the code of all ones, more than 65,535 bytes between two markers or 4,260,096 bytes after the end of image, and entropy-coded data that would not be rebuilt byte for byte (the output is always checked). The whole file is held in memory, with two bytes per coefficient. The reconstruction data (`jbrd`) are read wherever the container has them: every encoder writes them before the codestream; when they follow it, the frame is held as it is coded until they are read, and `HasJpegReconstructionData` reads the file to its end |
 | JPEG 2000 | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify` when the headers tell): signed samples and samples of more than 16 bits, components of different depths, a sub-sampled first component and sub-sampled components that are not the chrominances of an image of three components, more than four components without color specification, a premultiplied opacity, several opacity channels, an opacity of one color, channels that are not defined, the extensions of ISO/IEC 15444-2 (other wavelet filters, other component transformations, other regions of interest), files of the `jpm ` and `mjp2` brands, files of several codestreams or of a fragmented codestream, more than 30 bit-planes in a sub-band; for the high-throughput block coder: tile-components that mix both block coders, a code-block with several HT sets, and placeholder passes in another packet than the HT cleanup pass. CMYK is loaded only with `CmykConversion`. Not read: the intellectual property and XML boxes, the comments of the codestream. Not available: decoding fewer layers; a region decode transforms the tiles it meets whole. Encoding: no precincts and one tile-part per tile, no HTJ2K, no palette, no sub-sampling, no CMYK, no animation; a codestream stores no metadata |
-| OpenEXR | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify`): multi-part files, deep data, the DWAA, DWAB, HTJ2K and ZSTD compressions, channels other than R, G, B, A and Y (layers, depth, `RY`/`BY` chroma, extra channels: they would be lost), sub-sampled channels, a data window that leaves the display window (its pixels would be lost), UINT samples that a float cannot hold exactly, and versions other than 2. Not decoded: the lower levels of mipmaps and ripmaps, the preview image and the attributes other than the windows and the chromaticities. Encoding: one still image, scan lines only (no tiles), half or float samples (no UINT), no lossy compression (PXR24, B44, DWA), no attributes other than the required ones and the chromaticities, linear light only
+| OpenEXR | Decoding, rejected with `UnsupportedImageFeatureException` (also from `Identify`): multi-part files, deep data, the DWAA, DWAB, HTJ2K and ZSTD compressions, channels other than R, G, B, A and Y (layers, depth, `RY`/`BY` chroma, extra channels: they would be lost) unless `OpenExrDecodingOptions.Layer` selects a layer, the chroma channels `RY` and `BY` also in a layer, sub-sampled color channels (a sub-sampled channel that a layer ignores is fine), a data window that leaves the display window (its pixels would be lost) unless `OpenExrDecodingOptions.WindowMode` crops it or decodes the data window, UINT samples that a float cannot hold exactly, and versions other than 2. Not decoded: the lower levels of mipmaps and ripmaps, the preview image and the attributes other than the windows and the chromaticities. Encoding: one still image, scan lines only (no tiles), half or float samples (no UINT), no lossy compression (PXR24, B44, DWA), no attributes other than the required ones and the chromaticities, linear light only
 | Text | In vertical lines, no ruby and no compression of punctuation; a synthetic bold is not in the path of a layout nor in a stroked text; the pen of a style (`TextStyle.Outline`) strokes glyphs, not decorations, and has a width in pixels that a text fitted to a box does not scale; a text is fitted to a box by trying sizes, each with a whole layout; no word list is provided for the scripts that need a dictionary to break their lines; greedy line breaking; no AAT (`morx`, `kerx`) shaping, no device adjustment of positions; hinting is opt-in (`TextLayoutOptions.Hinting`), only for horizontal text, without the variations of the control values (`cvar`) and without the hints of CFF outlines; no subpixel (LCD) rendering; an installed font is never used by itself: it is loaded with `Font.LoadInstalled`, or used for the characters the fonts of a stack lack with `FontStack.WithInstalledFallback`, whose choice depends on the fonts of the machine; along a path, glyphs are turned but not warped; see [Text](#text) |
 | Fonts | No font of the system unless one is asked for (`Font.LoadInstalled`, `FontStack.WithInstalledFallback`, `SystemFontCollection`), no SVG glyph, no font without outlines, no bitmap glyph of several bits per pixel without colors, no Type 1 font, no hints of CFF outlines; see [Fonts](#fonts) |
 | API | No public allocator, custom pixel type, codec plug-in or image-processor interface; implementation types are internal |

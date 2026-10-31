@@ -74,6 +74,20 @@ internal static class PathCombiner
     /// <param name="cancellationToken">A token to cancel the operation.</param>
     /// <exception cref="InvalidOperationException">The segments still meet elsewhere than at their ends once they are snapped.</exception>
     public static VectorPath Combine(VectorPath first, VectorPath? second, PathCombineMode mode, FillRule fillRule, int maxPasses, CancellationToken cancellationToken)
+        => Combine(first, second, mode, fillRule, fillRule, maxPasses, cancellationToken);
+
+    /// <summary>Computes the outline of what two paths fill, combined, each path filling what its own fill rule says.</summary>
+    /// <param name="first">The first path.</param>
+    /// <param name="second">The second path, or <see langword="null"/> for the outline of the first one alone.</param>
+    /// <param name="mode">What is kept of the two areas.</param>
+    /// <param name="firstFillRule">The fill rule of the first path.</param>
+    /// <param name="secondFillRule">The fill rule of the second path.</param>
+    /// <param name="cancellationToken">A token to cancel the operation.</param>
+    /// <exception cref="InvalidOperationException">The segments still meet elsewhere than at their ends once they are snapped.</exception>
+    public static VectorPath Combine(VectorPath first, VectorPath? second, PathCombineMode mode, FillRule firstFillRule, FillRule secondFillRule, CancellationToken cancellationToken)
+        => Combine(first, second, mode, firstFillRule, secondFillRule, DefaultMaxPasses, cancellationToken);
+
+    private static VectorPath Combine(VectorPath first, VectorPath? second, PathCombineMode mode, FillRule firstFillRule, FillRule secondFillRule, int maxPasses, CancellationToken cancellationToken)
     {
         var segments = new List<Segment>();
         PathFlattener.Flatten(first, new Collector(segments, source: 0));
@@ -88,7 +102,7 @@ internal static class PathCombiner
             segments = Planarize(segments, maxPasses, cancellationToken);
             var edges = BuildEdges(segments);
             ComputeWindings(edges, cancellationToken);
-            Trace(edges, mode, fillRule, builder, cancellationToken);
+            Trace(edges, mode, firstFillRule, secondFillRule, builder, cancellationToken);
         }
 
         return builder.Build();
@@ -674,14 +688,14 @@ internal static class PathCombiner
     }
 
     /// <summary>Follows the edges of the boundary of the area that is kept, and adds each contour to a path.</summary>
-    private static void Trace(Edge[] edges, PathCombineMode mode, FillRule fillRule, VectorPathBuilder builder, CancellationToken cancellationToken)
+    private static void Trace(Edge[] edges, PathCombineMode mode, FillRule firstFillRule, FillRule secondFillRule, VectorPathBuilder builder, CancellationToken cancellationToken)
     {
         // The edges of the boundary, directed so that the area is on their right as the image shows them
         var boundary = new List<Directed>();
         foreach (ref readonly var edge in edges.AsSpan())
         {
-            var before = IsKept(edge.WindingFirst, edge.WindingSecond, mode, fillRule);
-            var after = IsKept(edge.WindingFirst + edge.First, edge.WindingSecond + edge.Second, mode, fillRule);
+            var before = IsKept(edge.WindingFirst, edge.WindingSecond, mode, firstFillRule, secondFillRule);
+            var after = IsKept(edge.WindingFirst + edge.First, edge.WindingSecond + edge.Second, mode, firstFillRule, secondFillRule);
             if (before == after)
                 continue;
 
@@ -776,10 +790,10 @@ internal static class PathCombiner
         }
     }
 
-    private static bool IsKept(int first, int second, PathCombineMode mode, FillRule fillRule)
+    private static bool IsKept(int first, int second, PathCombineMode mode, FillRule firstFillRule, FillRule secondFillRule)
     {
-        var inFirst = fillRule == FillRule.EvenOdd ? (first & 1) != 0 : first != 0;
-        var inSecond = fillRule == FillRule.EvenOdd ? (second & 1) != 0 : second != 0;
+        var inFirst = firstFillRule == FillRule.EvenOdd ? (first & 1) != 0 : first != 0;
+        var inSecond = secondFillRule == FillRule.EvenOdd ? (second & 1) != 0 : second != 0;
         return mode switch
         {
             PathCombineMode.Intersect => inFirst && inSecond,

@@ -167,6 +167,10 @@ public sealed partial class FaultInjectionTests
                 // The analysis, the candidate encodings compressed to a counter, and the canvas copies of the animations
                 encoder = new PngEncoder { MetadataHandling = MetadataHandling.Strip, Optimization = PngOptimization.MinimumSize };
                 return image;
+            case "png-layout":
+                // The analysis of the still images, then the rows converted to the chosen layout
+                encoder = new PngEncoder { MetadataHandling = MetadataHandling.Strip, Optimization = PngOptimization.Layout };
+                return image;
             case "png-indexed":
                 // The palette pass of every image before the header, then the mapping and the packing of the rows
                 encoder = new PngEncoder { MetadataHandling = MetadataHandling.Strip, PixelLayout = PngPixelLayout.Indexed, Interlaced = true };

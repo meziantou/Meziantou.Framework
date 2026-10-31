@@ -169,7 +169,7 @@ public sealed class GifEncoderInteropTests
     public async Task OptimizedTransitionsDecodeExactlyWithFFmpeg(bool interlaced)
     {
         var ffmpeg = await RequiredTools.FFmpegAsync();
-        var (image, encoder, name, path, verification) = await SaveOptimizedTransitionsAsync(interlaced);
+        var (image, _, name, path, verification) = await SaveOptimizedTransitionsAsync(interlaced);
         using (image)
         {
             AssertFrames(verification.Intents, await ffmpeg.DecodeToRawFramesAsync(path, "rgba", Width, Height, ignoreLoop: true, XunitCancellationToken), $"{name} decoded by FFmpeg {ffmpeg.Version}");

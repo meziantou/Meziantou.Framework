@@ -92,7 +92,32 @@ public sealed class ImageCollectionEntry
     /// <exception cref="UnsupportedImageFeatureException">The entry uses a recognized but unsupported feature.</exception>
     /// <exception cref="ImageResourceLimitException">A configured limit is exceeded.</exception>
     /// <exception cref="IOException">An I/O error occurred.</exception>
-    public Image Decode(ImageDecodeOptions? options = null) => DecodeCore(options, pixelFormat: null);
+    public Image Decode(ImageDecodeOptions? options) => DecodeCore(options, pixelFormat: null, CancellationToken.None);
+
+    /// <summary>Decodes the entry into a new image, in its default pixel format, and can be canceled.</summary>
+    /// <param name="options">The options, or <see langword="null"/> to decode with the configuration of the collection.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>A new image owned by the caller. It is a still image: a page or a representation is never an animation.</returns>
+    /// <remarks>
+    /// <para>
+    /// The decode runs synchronously on the calling thread. The token is checked before anything is read and then between
+    /// bounded units of work of the decoder (rows, strips, tiles or blocks), never in the middle of one. A canceled decode
+    /// returns no image, releases every buffer it allocated and leaves the collection usable: the entry can be decoded
+    /// again. An entry that owns an image (added with <see cref="ImageCollection.Add(Image, Point?)"/>) is copied, which the
+    /// token cannot interrupt.
+    /// </para>
+    /// <para>
+    /// Like the overload without a token, this method may be called from several threads at once on the entries of a
+    /// loaded collection (see <see cref="ImageCollection"/>); each call observes its own token.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ObjectDisposedException">The collection is disposed.</exception>
+    /// <exception cref="InvalidImageContentException">The data of the entry is malformed or truncated.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The entry uses a recognized but unsupported feature.</exception>
+    /// <exception cref="ImageResourceLimitException">A configured limit is exceeded.</exception>
+    /// <exception cref="IOException">An I/O error occurred.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public Image Decode(ImageDecodeOptions? options = null, CancellationToken cancellationToken = default) => DecodeCore(options, pixelFormat: null, cancellationToken);
 
     /// <summary>Decodes the entry into a new image of the requested pixel type.</summary>
     /// <typeparam name="TPixel">The pixel type of the result.</typeparam>
@@ -101,9 +126,23 @@ public sealed class ImageCollectionEntry
     /// <exception cref="NotSupportedException"><typeparamref name="TPixel"/> is not a built-in pixel struct.</exception>
     /// <exception cref="ObjectDisposedException">The collection is disposed.</exception>
     /// <exception cref="UnsupportedImageFeatureException">The conversion would drop information without an explicit policy.</exception>
-    public Image<TPixel> Decode<TPixel>(ImageDecodeOptions? options = null)
+    public Image<TPixel> Decode<TPixel>(ImageDecodeOptions? options)
         where TPixel : unmanaged
-        => (Image<TPixel>)DecodeCore(options, PixelFormats.GetPixelFormat<TPixel>());
+        => (Image<TPixel>)DecodeCore(options, PixelFormats.GetPixelFormat<TPixel>(), CancellationToken.None);
+
+    /// <summary>Decodes the entry into a new image of the requested pixel type, and can be canceled.</summary>
+    /// <typeparam name="TPixel">The pixel type of the result.</typeparam>
+    /// <param name="options">The options, or <see langword="null"/> to decode with the configuration of the collection.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>A new image owned by the caller.</returns>
+    /// <remarks>The cancellation guarantees and the thread safety are those of <see cref="Decode(ImageDecodeOptions?, CancellationToken)"/>.</remarks>
+    /// <exception cref="NotSupportedException"><typeparamref name="TPixel"/> is not a built-in pixel struct. Thrown before the token is checked.</exception>
+    /// <exception cref="ObjectDisposedException">The collection is disposed.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The conversion would drop information without an explicit policy.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public Image<TPixel> Decode<TPixel>(ImageDecodeOptions? options = null, CancellationToken cancellationToken = default)
+        where TPixel : unmanaged
+        => (Image<TPixel>)DecodeCore(options, PixelFormats.GetPixelFormat<TPixel>(), cancellationToken);
 
     /// <summary>Releases the image an owned entry holds (called when the entry is removed or the collection is disposed).</summary>
     internal void DisposeOwned()
@@ -112,9 +151,10 @@ public sealed class ImageCollectionEntry
         _owned = null;
     }
 
-    private Image DecodeCore(ImageDecodeOptions? options, PixelFormat? pixelFormat)
+    private Image DecodeCore(ImageDecodeOptions? options, PixelFormat? pixelFormat, CancellationToken cancellationToken)
     {
         _collection.ThrowIfDisposed();
+        cancellationToken.ThrowIfCancellationRequested();
 
         // Without explicit options, an entry is decoded with the configuration the collection was loaded with, so the
         // limits a caller set on Load also apply to every entry it extracts
@@ -123,7 +163,7 @@ public sealed class ImageCollectionEntry
             : new ImageDecodeOptions { Configuration = _collection.Configuration };
 
         if (_sourceIndex >= 0)
-            return _collection.DecodeSourceEntry(_sourceIndex, options, pixelFormat);
+            return _collection.DecodeSourceEntry(_sourceIndex, options, pixelFormat, cancellationToken);
 
         var image = OwnedImage;
         if (pixelFormat is null || pixelFormat == image.PixelFormat)

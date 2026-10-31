@@ -229,7 +229,10 @@ decodes to `null` and `AniEncoder` rejects any other value. On export, `FrameDur
 duration is not representable: `RequireExact` throws, `RoundToNearest` picks the nearest representable value (APNG
 default: `RequireExact`; GIF default: `RoundToNearest`, to the nearest hundredth with ties up; ANI default:
 `RoundToNearest`, to the nearest sixtieth with ties up). Values beyond the format's
-range are always rejected, never clamped. `ToTimeSpan` rounds to the nearest 100 ns tick (ties up); `TotalSeconds` and
+range are always rejected, never clamped. `+` and `-` (`Add`, `Subtract`) are exact: the sum of 300 frames of `1/30` s
+is exactly 10 s, and a result that is negative or whose normalized numerator or denominator exceeds 64 bits throws
+`OverflowException` instead of being rounded or clamped. `ToTimeSpan` rounds to the nearest 100 ns tick (ties up) and
+throws `OverflowException` above `TimeSpan.MaxValue`; `FromTimeSpan` is exact; `TotalSeconds` and
 `TotalMilliseconds` are floating-point approximations for display.
 
 <!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_BuildAnimation;format=md-fenced-code-block;dedent=true -->
@@ -314,8 +317,11 @@ or icon sizes by accident.
   icon, and report the number of entries in `ImageInfo.CollectionEntryCount`. `ImageCollection.SelectBySize` chooses a
   representation explicitly: the smallest one at least as large as the request, else the largest (ties by bit depth, then
   container order). Nothing is resized.
-- `ImageCollection.Save` writes pages with `TiffEncoder` and representations with `IcoEncoder`; entries are materialized
-  one at a time, and path destinations are published atomically.
+- `ImageCollection.Save` and `SaveAsync` write pages with `TiffEncoder` and representations with `IcoEncoder`; entries
+  are materialized one at a time, and path destinations are published atomically (a failure or a cancellation leaves no
+  partial file). `SaveAsync` writes with asynchronous I/O and decodes the entries synchronously between the writes.
+- `ImageCollectionEntry.Decode` accepts a `CancellationToken`, checked between the strips, tiles or rows of the entry.
+  Loaded entries can be decoded from several threads at once; editing and saving must not overlap any other call.
 - An icon or cursor representation stores at most 256 pixels per side. A cursor hotspot
   (`ImageCollectionEntry.Hotspot`) is metadata validated against its own representation, never a pixel offset.
   `Image.Load` of a cursor exposes the hotspot of the representation it decodes as `Frames[0].Metadata.Hotspot`, and
@@ -3870,7 +3876,8 @@ Non-seekable streams are supported for input (bounded prefix replay) and output 
 animations, animated cursors and TIFF files described below). Caller streams are left open: eager APIs never close them, and
 readers/writers close them only with `LeaveOpen = false` (for a reader, ownership then transfers even when opening fails).
 Path overloads own and close their files. Asynchronous methods use asynchronous I/O and accept a `CancellationToken`;
-argument errors are thrown synchronously.
+argument errors are thrown synchronously. The synchronous loads of in-memory data (`Image.Load(data, options,
+cancellationToken)`) accept one too: it is checked between the rows, strips, tiles or frames of the decoder.
 
 **Readers** (`Image.OpenReader<TPixel>`):
 
@@ -4000,6 +4007,13 @@ lossless by default), `.j2k`/`.j2c`/`.jpc` (a JPEG 2000 codestream, lossless by 
 anything else throws
 `ArgumentException`, the `.jpx`, `.jpf`, `.jph` and `.jhc` extensions included (these files are read, not written). An eager save validates the whole image against the output (animation, poster,
 durations, alpha, precision, metadata) before writing anything.
+
+`ImageEncoder.FromFileExtension` returns the encoder `Save(path)` selects for an extension (`.png` or `png`), and
+`ImageEncoder.Create` the default encoder of an `ImageFormat`. `ImageFormatInfo` describes each format: its name, its
+preferred media type (`image/png`; the IANA type when there is one, otherwise the one of the freedesktop.org shared MIME
+database, such as `image/x-tga`) with the aliases it recognizes, and its file extensions, the preferred one first.
+`ImageFormatInfo.TryGetByFileExtension` and `TryGetByMimeType` (which accepts a `Content-Type` value with parameters) map
+them back to one format, never several. Loading never uses this table: formats are detected from content.
 
 `ImageFrame.Save` and `SaveAsync` (to a path or a stream) save one frame, a displayed frame or the poster frame, as a
 still image without copying its pixels: the output is the one of `CloneFrame(i).Save` (or `ClonePosterFrame().Save`),

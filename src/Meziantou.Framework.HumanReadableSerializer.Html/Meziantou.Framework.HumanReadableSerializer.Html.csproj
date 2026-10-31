@@ -4,7 +4,7 @@
     <RootNamespace>Meziantou.Framework.HumanReadable</RootNamespace>
     <Description>Formats the HTML values (text/html) serialized by Meziantou.Framework.HumanReadableSerializer, using the spec-compliant HTML parser of Meziantou.Framework.WebPlatform</Description>
     <PackageTags>serializer, human-readable, snapshot-testing, html</PackageTags>
-    <Version>1.0.6</Version>
+    <Version>1.0.7</Version>
   </PropertyGroup>
 
   <ItemGroup>

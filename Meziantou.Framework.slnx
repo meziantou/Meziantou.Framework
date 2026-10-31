@@ -7,6 +7,7 @@
     <Project Path="benchmarks/Meziantou.Framework.Globbing.Benchmarks/Meziantou.Framework.Globbing.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.Imaging.Benchmarks/Meziantou.Framework.Imaging.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.JavaScriptEngine.Benchmarks/Meziantou.Framework.JavaScriptEngine.Benchmarks.csproj" />
+    <Project Path="benchmarks/Meziantou.Framework.JsonPath.Benchmarks/Meziantou.Framework.JsonPath.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.SnapshotTesting.Benchmarks/Meziantou.Framework.SnapshotTesting.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.Threading.Benchmarks/Meziantou.Framework.Threading.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.WebPlatform.Benchmarks/Meziantou.Framework.WebPlatform.Benchmarks.csproj" />
@@ -326,6 +327,7 @@
     <Project Path="tests/Meziantou.Framework.JavaScriptEngine.Test262/Meziantou.Framework.JavaScriptEngine.Test262.csproj" />
     <Project Path="tests/Meziantou.Framework.JavaScriptEngine.Tests/Meziantou.Framework.JavaScriptEngine.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark/Meziantou.Framework.JavaScriptEngine.WebToolingBenchmark.csproj" />
+    <Project Path="tests/Meziantou.Framework.JsonPath.ExternalNavigator/Meziantou.Framework.JsonPath.ExternalNavigator.csproj" />
     <Project Path="tests/Meziantou.Framework.JsonPath.Tests/Meziantou.Framework.JsonPath.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Language.Css.Tests/Meziantou.Framework.Language.Css.Tests.csproj" />
     <Project Path="tests/Meziantou.Framework.Language.Ini.Tests/Meziantou.Framework.Language.Ini.Tests.csproj" />

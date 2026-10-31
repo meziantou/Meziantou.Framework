@@ -393,8 +393,9 @@ internal static class FuzzOracle
         var alternative = (variant & 16) != 0;
 
         // An icon DIB whose alpha channel is entirely zero is read through its AND mask, which the encoder leaves clear
-        // (IcoEntryDecoder: an all-transparent icon is never what the file means): such a corner is written as a PNG payload
-        var dibPayload = alternative && !IsFullyTransparent(still);
+        // (IcoEntryDecoder: an all-transparent icon is never what the file means): such a corner is written as a PNG payload.
+        // The DIB stores 8-bit alpha: a 16-bit alpha of 128 or less is 0 there (fuzz regression)
+        var dibPayload = alternative && !IsFullyTransparentIn8Bits(still);
         var (encoder, pixelFormat) = (variant % 12) switch
         {
             0 => ((ImageEncoder)new QoiEncoder { MetadataHandling = MetadataHandling.Strip }, eightBit),
@@ -433,13 +434,13 @@ internal static class FuzzOracle
         return string.Empty;
     }
 
-    private static bool IsFullyTransparent(Image image)
+    private static bool IsFullyTransparentIn8Bits(Image image)
     {
         if (!PixelFormats.HasAlpha(image.PixelFormat))
             return false;
 
-        using var pixels = image.CloneAs<Rgba64>(Conversion);
-        var values = new Rgba64[pixels.Width * pixels.Height];
+        using var pixels = image.CloneAs<Rgba32>(Conversion);
+        var values = new Rgba32[pixels.Width * pixels.Height];
         pixels.Frames[0].CopyPixelDataTo(values);
         return Array.TrueForAll(values, pixel => pixel.A == 0);
     }

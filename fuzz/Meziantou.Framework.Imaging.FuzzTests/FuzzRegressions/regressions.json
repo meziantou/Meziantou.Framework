@@ -220,6 +220,28 @@
       "defect": "The IHDR chunk of the PNG payload of a cursor representation declares the color type 255: the description of the representation passed it to DefaultPixelFormats.ForPng, whose ArgumentOutOfRangeException escaped Identify, Load and ImageCollection.Load instead of InvalidImageContentException. Fixed in IcoRepresentationBuilder.ResolvePng: an illegal color type and bit depth combination is rejected as the PNG decoder rejects it.",
       "expectedIdentify": "InvalidImageContentException",
       "expectedLoad": "InvalidImageContentException"
+    },
+    {
+      "id": "tiff/tile-zlib-preset-dictionary",
+      "file": "tiff-tile-zlib-preset-dictionary.tif",
+      "sha256": "60872584a3de04d6cd4521b029e53f80224aaa0e2f5ba816436ff3e88e071b37",
+      "origin": "fuzz-minimized",
+      "license": "CC0-1.0",
+      "foundBy": "FuzzTests group tiff, weekly campaign (run 41179233907), base seed 41179233907, 420 s, mutation 21280 of tiff/builder-rgb24-tiles-deflate-predictor (reader variant 104); not reduced by FuzzMinimizer (394 bytes)",
+      "defect": "The zlib header of the second Deflate tile of the page is 0x78 0x3F, which sets FDICT: the BCL inflater reports Z_NEED_DICT with its internal ZLibException (an IOException), which escaped Load and ImageCollection.Load instead of InvalidImageContentException, as png/idat-zlib-preset-dictionary-min did for PNG. Fixed in TiffBlockReader.InflateStream.",
+      "expectedIdentify": "success",
+      "expectedLoad": "InvalidImageContentException"
+    },
+    {
+      "id": "heic/sequence-alpha-zero-in-8-bits",
+      "file": "heic-sequence-alpha-zero-in-8-bits.heics",
+      "sha256": "59e1da44b7d72d82d35d05fb2ec1d397c859060a598460a1ea7b4115d5345ece",
+      "origin": "fuzz-minimized",
+      "license": "CC0-1.0",
+      "foundBy": "FuzzTests group hevc-inter, weekly campaign (run 41179233907), base seed 41179233907, 420 s, mutation 14056 of hevc/x265-weighted-p-444-12bit-64x64 (the stream wrapped by FuzzHeicContainer, reader variant 177); not reduced by FuzzMinimizer (4379 bytes)",
+      "defect": "A defect of the oracle, not of a decoder: the 40x40 corner of the first image has a 16-bit alpha of 56 everywhere, so the lossless round trip of FuzzOracle wrote it as an icon with a 32-bit DIB payload, which it keeps for corners that are not fully transparent. In the 8 bits of the DIB that alpha is 0 everywhere, and IcoEntryDecoder reads such an icon through its AND mask, as documented: the pixels came back opaque. Fixed in FuzzOracle.CheckLosslessRoundTrip, which tests the transparency in 8 bits (reader variants 21 and 153 replay it).",
+      "expectedIdentify": "success",
+      "expectedLoad": "success"
     }
   ]
 }

@@ -25,7 +25,7 @@ lists the main gaps. Each [format page](10-Formats/01-Overview.md) gives the det
 
 | Format | Main limitations |
 | --- | --- |
-| JPEG | Hierarchical JPEG, JPEG-LS and lossless JPEG with arithmetic coding are not read. Writing is 8-bit baseline or progressive only (no 12-bit, lossless, arithmetic, CMYK or restart markers), one frame. |
+| JPEG | Hierarchical JPEG, JPEG-LS and lossless JPEG with arithmetic coding are not read. Writing is 8-bit baseline or progressive only (no 12-bit, lossless, arithmetic or CMYK), one frame. |
 | GIF | At most 256 colors per frame and one fully transparent color; plain-text extensions are rejected. |
 | PNG / APNG | Sub-byte grayscale requires [PngOptimization.MinimumSize](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.MinimumSize) or [PngOptimization.Layout](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.Layout) (still images), and APNG delta rectangles [OptimizeFrames](cref:Meziantou.Framework.Imaging.Formats.PngEncoder.OptimizeFrames) or MinimumSize; palettes are selected by [MinimumSize](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.MinimumSize), [Layout](cref:Meziantou.Framework.Imaging.Formats.PngOptimization.Layout) or [PngPixelLayout.Indexed](cref:Meziantou.Framework.Imaging.Formats.PngPixelLayout.Indexed). Sequential writers fix their layout and palette from the first image. Unknown ancillary chunks are not kept. |
 | WebP | 8-bit RGB(A) only; lossy output is 4:2:0; animations need a seekable destination. |

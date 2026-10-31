@@ -845,6 +845,23 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>A baseline JPEG with Huffman tables computed from the image, and a restart marker before each MCU row.</summary>
+    #region Imaging_SaveOptimizedJpeg
+    public static void SaveOptimizedJpeg(string sourcePath, string jpegPath)
+    {
+        using var image = Image.Load<Rgb24>(sourcePath);
+        image.Save(jpegPath, new JpegEncoder
+        {
+            Quality = 85,
+            ChromaSubsampling = JpegChromaSubsampling.Ratio420,
+            OptimizeHuffmanTables = true,
+
+            // An MCU of 4:2:0 output covers 16x16 pixels
+            RestartInterval = (image.Width + 15) / 16,
+        });
+    }
+    #endregion
+
     /// <summary>WebP output: a lossy photo with its alpha kept losslessly, and a lossless animation published atomically.</summary>
     #region Imaging_SaveWebp
     public static void SaveWebP(string photoPath, string webpPath, string animatedPath, string animatedWebPPath)

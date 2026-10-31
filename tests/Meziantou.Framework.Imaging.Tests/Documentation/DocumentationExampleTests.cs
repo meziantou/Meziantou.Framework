@@ -1188,6 +1188,54 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void SaveOptimizedJpegWritesTheSamePixelsInFewerBytes()
+    {
+        var source = GetPath("optimized-source.png");
+        using (var image = new Image<Rgb24>(40, 24))
+        {
+            image.Frames[0].ProcessPixelRows(pixels =>
+            {
+                for (var y = 0; y < pixels.Height; y++)
+                {
+                    var row = pixels.GetRowSpan(y);
+                    for (var x = 0; x < row.Length; x++)
+                    {
+                        row[x] = new Rgb24 { R = (byte)(x * 6), G = (byte)(y * 10), B = (byte)((x + y) * 4) };
+                    }
+                }
+            });
+            image.Save(source);
+        }
+
+        var output = GetPath("optimized.jpg");
+        Examples.SaveOptimizedJpeg(source, output);
+        var defaultPath = GetPath("default-tables.jpg");
+        using (var image = Image.Load<Rgb24>(source))
+        {
+            image.Save(defaultPath, new JpegEncoder { Quality = 85, ChromaSubsampling = JpegChromaSubsampling.Ratio420 });
+        }
+
+        // A restart interval of 3 MCUs (one row of 16x16 MCUs), so one RST0 marker between the two rows
+        var data = File.ReadAllBytes(output);
+        var defaultData = File.ReadAllBytes(defaultPath);
+        Assert.True(data.AsSpan().IndexOf([(byte)0xFF, (byte)0xDD, (byte)0x00, (byte)0x04, (byte)0x00, (byte)0x03]) > 0);
+        Assert.True(data.AsSpan().IndexOf([(byte)0xFF, (byte)0xD0]) > 0);
+        Assert.Equal(-1, defaultData.AsSpan().IndexOf([(byte)0xFF, (byte)0xDD]));
+        Assert.HasCountLessThan(defaultData.Length, data);
+
+        using var optimized = Image.Load<Rgb24>(output);
+        using var typical = Image.Load<Rgb24>(defaultPath);
+        Assert.Equal(new Size(40, 24), optimized.Size);
+        for (var y = 0; y < 24; y++)
+        {
+            for (var x = 0; x < 40; x++)
+            {
+                Assert.Equal(typical.Frames[0][x, y], optimized.Frames[0][x, y]);
+            }
+        }
+    }
+
+    [Fact]
     public void SaveWebPWritesALossyPhotoAndALosslessAnimation()
     {
         var (apngPath, _) = BuildAnimation();

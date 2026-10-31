@@ -46,12 +46,13 @@ internal abstract class ImageCollectionReader : IDisposable
     /// <param name="index">The index of the entry.</param>
     /// <param name="options">The decode options.</param>
     /// <param name="pixelFormat">The requested pixel format, or <see langword="null"/> for the default working representation of the entry.</param>
+    /// <param name="cancellationToken">The token the decoder checks between bounded units of work.</param>
     /// <returns>A new image owned by the caller.</returns>
-    public Image Decode(int index, ImageDecodeOptions options, PixelFormat? pixelFormat)
+    public Image Decode(int index, ImageDecodeOptions options, PixelFormat? pixelFormat, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(options);
         ObjectDisposedException.ThrowIf(_disposed, this);
-        var context = new ImageCodecContext(options.Configuration, "Image", CancellationToken.None);
+        var context = new ImageCodecContext(options.Configuration, "Image", cancellationToken);
         return DecodeCore(index, new RandomAccessSource(_input, context, Format), ImageDecodeRequest.Create(options, pixelFormat), context);
     }
 

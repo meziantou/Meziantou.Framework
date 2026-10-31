@@ -1,9 +1,10 @@
+using System.Diagnostics;
 using Meziantou.Framework.Imaging.Formats;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// The implementation of <see cref="ImageCollection.Save(string, ImageEncoder?)"/>: it
+/// The implementation of <see cref="ImageCollection.Save(string, ImageEncoder?)"/> and its stream and asynchronous variants: it
 /// validates the encoder and the destination, decodes or copies one entry at a time, and drives the multi-entry writer of
 /// the output format.
 /// </summary>
@@ -20,7 +21,13 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// borrowed, not copied.
 /// </description></item>
 /// <item><description>
-/// A path destination is published atomically, like every other save: a failure leaves no partial file behind.
+/// A path destination is published atomically, like every other save: a failure or a cancellation leaves no partial
+/// file behind.
+/// </description></item>
+/// <item><description>
+/// The synchronous and asynchronous saves share one core: with <c>asynchronous: false</c> every write is synchronous and
+/// the core completes before it returns. The asynchronous saves write the output asynchronously; the entries backed by
+/// encoded data are decoded synchronously between writes, because the collection reads its input synchronously.
 /// </description></item>
 /// </list>
 /// </remarks>
@@ -28,32 +35,99 @@ internal static class ImageCollectionWriterCore
 {
     public static void Save(ImageCollection collection, string path, ImageEncoder encoder)
     {
+        ValidatePath(collection, path, encoder);
+        Complete(SaveCoreAsync(collection, path, encoder, asynchronous: false, CancellationToken.None));
+    }
+
+    public static void Save(ImageCollection collection, Stream stream, ImageEncoder encoder)
+    {
+        ValidateStream(collection, stream, encoder);
+        Complete(SaveCoreAsync(collection, stream, encoder, asynchronous: false, CancellationToken.None));
+    }
+
+    /// <summary>Validates the arguments synchronously, then saves asynchronously.</summary>
+    public static Task SaveAsync(ImageCollection collection, string path, ImageEncoder encoder, CancellationToken cancellationToken)
+    {
+        ValidatePath(collection, path, encoder);
+        return SaveCoreAsync(collection, path, encoder, asynchronous: true, cancellationToken).AsTask();
+    }
+
+    /// <summary>Validates the arguments synchronously, then saves asynchronously.</summary>
+    public static Task SaveAsync(ImageCollection collection, Stream stream, ImageEncoder encoder, CancellationToken cancellationToken)
+    {
+        ValidateStream(collection, stream, encoder);
+        return SaveCoreAsync(collection, stream, encoder, asynchronous: true, cancellationToken).AsTask();
+    }
+
+    private static void ValidatePath(ImageCollection collection, string path, ImageEncoder encoder)
+    {
         ArgumentNullException.ThrowIfNull(collection);
         ArgumentNullException.ThrowIfNull(path);
         ArgumentNullException.ThrowIfNull(encoder);
         Validate(collection, encoder, seekable: true);
-        var file = AtomicFileOutput.Create(path, asynchronous: false);
-        try
-        {
-            Write(collection, encoder, file.Stream);
-            file.Stream.Flush();
-            file.Publish();
-        }
-        finally
-        {
-            // A failure leaves no partial file behind: the temporary file is removed and nothing is published
-            file.Abort();
-        }
     }
 
-    public static void Save(ImageCollection collection, Stream stream, ImageEncoder encoder)
+    private static void ValidateStream(ImageCollection collection, Stream stream, ImageEncoder encoder)
     {
         ArgumentNullException.ThrowIfNull(collection);
         ArgumentNullException.ThrowIfNull(stream);
         ArgumentNullException.ThrowIfNull(encoder);
         Validate(collection, encoder, stream.CanSeek);
-        Write(collection, encoder, stream);
-        stream.Flush();
+    }
+
+    /// <summary>
+    /// Ends a synchronous save. With <c>asynchronous: false</c> the core never awaits anything that is not already
+    /// complete (every write is synchronous), so the task is complete when the core returns.
+    /// </summary>
+    private static void Complete(ValueTask task)
+    {
+        Debug.Assert(task.IsCompleted, "A synchronous save must complete synchronously.");
+        task.GetAwaiter().GetResult();
+    }
+
+    private static async ValueTask SaveCoreAsync(ImageCollection collection, string path, ImageEncoder encoder, bool asynchronous, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var file = AtomicFileOutput.Create(path, asynchronous);
+        try
+        {
+            await WriteAsync(collection, encoder, file.Stream, asynchronous, cancellationToken).ConfigureAwait(false);
+            if (asynchronous)
+            {
+                await file.PublishAsync(cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                file.Publish();
+            }
+        }
+        finally
+        {
+            // A failure or a cancellation leaves no partial file behind: the temporary file is removed and nothing is
+            // published (no effect once published)
+            if (asynchronous)
+            {
+                await file.AbortAsync().ConfigureAwait(false);
+            }
+            else
+            {
+                file.Abort();
+            }
+        }
+    }
+
+    private static async ValueTask SaveCoreAsync(ImageCollection collection, Stream stream, ImageEncoder encoder, bool asynchronous, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        await WriteAsync(collection, encoder, stream, asynchronous, cancellationToken).ConfigureAwait(false);
+        if (asynchronous)
+        {
+            await stream.FlushAsync(cancellationToken).ConfigureAwait(false);
+        }
+        else
+        {
+            stream.Flush();
+        }
     }
 
     private static void Validate(ImageCollection collection, ImageEncoder encoder, bool seekable)
@@ -90,7 +164,7 @@ internal static class ImageCollectionWriterCore
         }
     }
 
-    private static void Write(ImageCollection collection, ImageEncoder encoder, Stream stream)
+    private static async ValueTask WriteAsync(ImageCollection collection, ImageEncoder encoder, Stream stream, bool asynchronous, CancellationToken cancellationToken)
     {
         var configuration = collection.Configuration;
         var scope = AllocationScope.Create(configuration, "ImageCollectionWriter");
@@ -98,50 +172,53 @@ internal static class ImageCollectionWriterCore
         var startPosition = stream.CanSeek ? stream.Position : 0;
         if (encoder is TiffEncoder tiff)
         {
-            WriteTiff(collection, tiff, output, scope, stream);
+            await WriteTiffAsync(collection, tiff, output, scope, stream, asynchronous, cancellationToken).ConfigureAwait(false);
         }
         else
         {
-            WriteIcon(collection, (IcoEncoder)encoder, output, scope, configuration);
+            WriteIcon(collection, (IcoEncoder)encoder, output, scope, configuration, cancellationToken);
         }
 
-        output.FlushTo(stream);
-        ApplyPatches(output, stream, startPosition);
+        await FlushAsync(output, stream, asynchronous, cancellationToken).ConfigureAwait(false);
+        await ApplyPatchesAsync(output, stream, startPosition, asynchronous, cancellationToken).ConfigureAwait(false);
     }
 
-    private static void WriteTiff(ImageCollection collection, TiffEncoder encoder, ImageOutputBuffer output, AllocationScope scope, Stream stream)
+    private static async ValueTask WriteTiffAsync(ImageCollection collection, TiffEncoder encoder, ImageOutputBuffer output, AllocationScope scope, Stream stream, bool asynchronous, CancellationToken cancellationToken)
     {
         using var writer = new TiffDocumentWriter(encoder, scope, collection.Configuration);
         writer.WriteHeader(output);
         for (var i = 0; i < collection.Count; i++)
         {
-            using var page = Materialize(collection[i], collection.Configuration, encoder);
+            cancellationToken.ThrowIfCancellationRequested();
+            using var page = Materialize(collection[i], collection.Configuration, encoder, cancellationToken);
             var image = page.Image;
             var frame = image.Frames[0];
             var metadata = MetadataWritePlan.Create(image.Metadata, ImageFormat.Tiff, encoder.MetadataHandling, image.Size, TiffSampleLayout.GetLabeledPixelFormat(encoder.PixelLayout, image.PixelFormat));
             MetadataWritePlan.ValidateFrameMetadata(frame.MetadataCore, ImageFormat.Tiff, encoder.MetadataHandling);
             writer.BeginPage(frame, image.Size, image.PixelFormat, metadata);
-            while (!writer.EncodeStrip(output, CancellationToken.None))
+            while (!writer.EncodeStrip(output, cancellationToken))
             {
-                FlushIfNeeded(output, stream);
+                await FlushIfNeededAsync(output, stream, asynchronous, cancellationToken).ConfigureAwait(false);
             }
 
             writer.CompletePage(output);
-            FlushIfNeeded(output, stream);
+            await FlushIfNeededAsync(output, stream, asynchronous, cancellationToken).ConfigureAwait(false);
         }
     }
 
-    private static void WriteIcon(ImageCollection collection, IcoEncoder encoder, ImageOutputBuffer output, AllocationScope scope, ImageConfiguration configuration)
+    private static void WriteIcon(ImageCollection collection, IcoEncoder encoder, ImageOutputBuffer output, AllocationScope scope, ImageConfiguration configuration, CancellationToken cancellationToken)
     {
         // Each payload is encoded as its image is materialized, so only one representation is alive at a time; the
-        // encoded payloads are then small and bounded (a representation is at most 256x256 pixels)
+        // encoded payloads are then small and bounded (a representation is at most 256x256 pixels), and the whole
+        // directory is written at the end
         var encoded = new List<IcoDocumentWriter.EncodedEntry>(collection.Count);
         try
         {
             for (var i = 0; i < collection.Count; i++)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var entry = collection[i];
-                using var item = Materialize(entry, configuration, encoder);
+                using var item = Materialize(entry, configuration, encoder, cancellationToken);
                 var image = item.Image;
                 IcoDocumentWriter.ValidateSize(encoder.Format, image.Size);
 
@@ -155,6 +232,7 @@ internal static class ImageCollectionWriterCore
                 encoded.Add(IcoDocumentWriter.EncodeEntry(encoder, new IcoDocumentWriter.Entry(frame, image.PixelFormat, hotspot), scope, configuration));
             }
 
+            cancellationToken.ThrowIfCancellationRequested();
             IcoDocumentWriter.WriteEncoded(encoder, encoded, output);
         }
         finally
@@ -166,15 +244,19 @@ internal static class ImageCollectionWriterCore
         }
     }
 
-    private static void FlushIfNeeded(ImageOutputBuffer output, Stream stream)
+    private static ValueTask FlushIfNeededAsync(ImageOutputBuffer output, Stream stream, bool asynchronous, CancellationToken cancellationToken)
+        => output.ShouldFlush ? FlushAsync(output, stream, asynchronous, cancellationToken) : ValueTask.CompletedTask;
+
+    private static ValueTask FlushAsync(ImageOutputBuffer output, Stream stream, bool asynchronous, CancellationToken cancellationToken)
     {
-        if (output.ShouldFlush)
-        {
-            output.FlushTo(stream);
-        }
+        if (asynchronous)
+            return output.FlushToAsync(stream, cancellationToken);
+
+        output.FlushTo(stream);
+        return ValueTask.CompletedTask;
     }
 
-    private static void ApplyPatches(ImageOutputBuffer output, Stream stream, long startPosition)
+    private static async ValueTask ApplyPatchesAsync(ImageOutputBuffer output, Stream stream, long startPosition, bool asynchronous, CancellationToken cancellationToken)
     {
         if (output.Patches is not { Count: > 0 } patches)
             return;
@@ -183,7 +265,14 @@ internal static class ImageCollectionWriterCore
         foreach (var (offset, data) in patches)
         {
             stream.Position = startPosition + offset;
-            stream.Write(data);
+            if (asynchronous)
+            {
+                await stream.WriteAsync(data, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                stream.Write(data);
+            }
         }
 
         stream.Position = end;
@@ -195,7 +284,7 @@ internal static class ImageCollectionWriterCore
     /// or the lossless widening of a pixel format the encoder does not store (owned, <see cref="PixelFormatWidening"/>).
     /// </summary>
     [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The reduced image is owned by the returned entry, which the caller disposes.")]
-    private static MaterializedEntry Materialize(ImageCollectionEntry entry, ImageConfiguration configuration, ImageEncoder encoder)
+    private static MaterializedEntry Materialize(ImageCollectionEntry entry, ImageConfiguration configuration, ImageEncoder encoder, CancellationToken cancellationToken)
     {
         if (entry.OwnedOrNull is { } owned)
         {
@@ -209,7 +298,7 @@ internal static class ImageCollectionWriterCore
             return new MaterializedEntry(owned, ownsImage: false);
         }
 
-        var image = entry.Decode(new ImageDecodeOptions { Configuration = configuration });
+        var image = entry.Decode(new ImageDecodeOptions { Configuration = configuration }, cancellationToken);
         var encodedFormat = PixelFormatWidening.GetEncodedFormat(encoder, image.PixelFormat);
         if (encodedFormat != image.PixelFormat)
         {

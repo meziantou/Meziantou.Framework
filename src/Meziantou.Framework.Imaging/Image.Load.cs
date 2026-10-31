@@ -167,8 +167,26 @@ public abstract partial class Image
     /// <exception cref="InvalidImageContentException">The data is malformed or truncated.</exception>
     /// <exception cref="UnsupportedImageFeatureException">The data uses a recognized but unsupported feature.</exception>
     /// <exception cref="ImageResourceLimitException">A configured limit is exceeded.</exception>
-    public static Image Load(ReadOnlySpan<byte> data, ImageDecodeOptions? options = null)
-        => ImageIO.Load(data, options, pixelFormat: null);
+    public static Image Load(ReadOnlySpan<byte> data, ImageDecodeOptions? options)
+        => ImageIO.Load(data, options, pixelFormat: null, CancellationToken.None);
+
+    /// <summary>Decodes in-memory encoded image data into its default pixel format, and can be canceled. The data is not retained.</summary>
+    /// <param name="data">The encoded data.</param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="ImageDecodeOptions.Default"/>.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>A new image owned by the caller.</returns>
+    /// <remarks>
+    /// The decode runs synchronously on the calling thread. The token is checked before any work and then between bounded
+    /// units of work of the decoder (rows, strips, tiles or blocks, and frames), never in the middle of one: a cancellation
+    /// is observed within one such unit. A canceled decode returns no image and releases every buffer it allocated.
+    /// </remarks>
+    /// <exception cref="UnknownImageFormatException">The format is not recognized.</exception>
+    /// <exception cref="InvalidImageContentException">The data is malformed or truncated.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The data uses a recognized but unsupported feature.</exception>
+    /// <exception cref="ImageResourceLimitException">A configured limit is exceeded.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public static Image Load(ReadOnlySpan<byte> data, ImageDecodeOptions? options = null, CancellationToken cancellationToken = default)
+        => ImageIO.Load(data, options, pixelFormat: null, cancellationToken);
 
     /// <summary>Decodes an image file into the requested pixel type.</summary>
     /// <typeparam name="TPixel">The pixel type of the result.</typeparam>
@@ -227,11 +245,32 @@ public abstract partial class Image
     /// <exception cref="InvalidImageContentException">The data is malformed or truncated.</exception>
     /// <exception cref="UnsupportedImageFeatureException">The data uses an unsupported feature, or the conversion would drop information without an explicit policy.</exception>
     /// <exception cref="ImageResourceLimitException">A configured limit is exceeded.</exception>
-    public static Image<TPixel> Load<TPixel>(ReadOnlySpan<byte> data, ImageDecodeOptions? options = null)
+    public static Image<TPixel> Load<TPixel>(ReadOnlySpan<byte> data, ImageDecodeOptions? options)
+        where TPixel : unmanaged
+        => Load<TPixel>(data, options, CancellationToken.None);
+
+    /// <summary>Decodes in-memory encoded image data into the requested pixel type, and can be canceled.</summary>
+    /// <typeparam name="TPixel">The pixel type of the result.</typeparam>
+    /// <param name="data">The encoded data.</param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="ImageDecodeOptions.Default"/>.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>A new image owned by the caller.</returns>
+    /// <remarks>
+    /// The decode runs synchronously on the calling thread. The token is checked before any work and then between bounded
+    /// units of work of the decoder (rows, strips, tiles or blocks, and frames), never in the middle of one: a cancellation
+    /// is observed within one such unit. A canceled decode returns no image and releases every buffer it allocated.
+    /// </remarks>
+    /// <exception cref="NotSupportedException"><typeparamref name="TPixel"/> is not a built-in pixel struct. Thrown before the token is checked.</exception>
+    /// <exception cref="UnknownImageFormatException">The format is not recognized.</exception>
+    /// <exception cref="InvalidImageContentException">The data is malformed or truncated.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">The data uses an unsupported feature, or the conversion would drop information without an explicit policy.</exception>
+    /// <exception cref="ImageResourceLimitException">A configured limit is exceeded.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public static Image<TPixel> Load<TPixel>(ReadOnlySpan<byte> data, ImageDecodeOptions? options = null, CancellationToken cancellationToken = default)
         where TPixel : unmanaged
     {
         var pixelFormat = PixelFormats.GetPixelFormat<TPixel>();
-        return (Image<TPixel>)ImageIO.Load(data, options, pixelFormat);
+        return (Image<TPixel>)ImageIO.Load(data, options, pixelFormat, cancellationToken);
     }
 
     /// <summary>Asynchronously decodes an image file into its default pixel format, using asynchronous file I/O.</summary>

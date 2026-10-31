@@ -19,6 +19,7 @@ public class FileIOBenchmarks : IDisposable
     private FullPath _input;
     private FullPath _pnmInput;
     private FullPath _target;
+    private FullPath _bmpTarget;
     private Image<Rgb24> _image = null!;
 
     [GlobalSetup]
@@ -27,6 +28,7 @@ public class FileIOBenchmarks : IDisposable
         _directory = FullPath.FromFileSystemInfo(Directory.CreateTempSubdirectory("mfi-bench-"));
         _input = _directory / "input.png";
         _target = _directory / "output.png";
+        _bmpTarget = _directory / "output.bmp";
         File.WriteAllBytes(_input, BenchmarkInputs.LargePng8);
         _pnmInput = _directory / "input.ppm";
         File.WriteAllBytes(_pnmInput, BenchmarkInputs.PnmRgb);
@@ -74,6 +76,36 @@ public class FileIOBenchmarks : IDisposable
     [Benchmark]
     [Workload("2048x1536 Rgb24 -> PNG file path, atomic publish (fastest zlib)")]
     public void SaveToFile() => _image.Save(_target, new PngEncoder { CompressionLevel = System.IO.Compression.CompressionLevel.Fastest });
+
+    // The file mode of a sequential writer used synchronously: Image.CreateWriter(path) opens its temporary file with
+    // FileOptions.Asynchronous, since the writer has both synchronous and asynchronous methods. An uncompressed BMP makes
+    // the writes (64 KB flushes) the main cost; the two stream cases isolate the file mode from the atomic publication.
+    [Benchmark]
+    [Workload("2048x1536 Rgb24 -> BMP, sequential writer to a file path (asynchronous handle, atomic publish)")]
+    public void WriterToFilePath()
+    {
+        using var writer = Image.CreateWriter<Rgb24>(_bmpTarget, CreateBmpWriterOptions());
+        writer.WriteFrame(_image.Frames[0]);
+        writer.Complete();
+    }
+
+    [Benchmark]
+    [Workload("2048x1536 Rgb24 -> BMP, sequential writer to a synchronous FileStream")]
+    public void WriterToSynchronousFileStream() => WriteBmpToFileStream(FileOptions.None);
+
+    [Benchmark]
+    [Workload("2048x1536 Rgb24 -> BMP, sequential writer to an asynchronous FileStream")]
+    public void WriterToAsynchronousFileStream() => WriteBmpToFileStream(FileOptions.Asynchronous);
+
+    private ImageWriterOptions CreateBmpWriterOptions() => new(_image.Size) { Encoder = new BmpEncoder(), ExpectedFrameCount = 1 };
+
+    private void WriteBmpToFileStream(FileOptions options)
+    {
+        using var stream = new FileStream(_bmpTarget, new FileStreamOptions { Mode = FileMode.Create, Access = FileAccess.Write, Share = FileShare.None, BufferSize = 0, Options = options });
+        using var writer = Image.CreateWriter<Rgb24>(stream, CreateBmpWriterOptions());
+        writer.WriteFrame(_image.Frames[0]);
+        writer.Complete();
+    }
 
     public void Dispose()
     {

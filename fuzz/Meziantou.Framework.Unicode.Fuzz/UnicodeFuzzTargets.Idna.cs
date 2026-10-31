@@ -22,7 +22,11 @@ public static partial class UnicodeFuzzTargets
     /// reports no error and that encoding also has DNS lengths.
     /// </description></item>
     /// </list>
-    /// <para>Punycode decodes what it encodes, for a text without unpaired surrogates.</para>
+    /// <para>
+    /// Punycode decodes what it encodes, and does not encode a text with unpaired surrogates. It also encodes what it
+    /// decodes, for a text without uppercase letters: the decoding is unique, which lets ToASCII reject a long ACE label
+    /// without decoding it.
+    /// </para>
     /// </summary>
     private static void Idna(ReadOnlySpan<byte> data)
     {
@@ -45,14 +49,23 @@ public static partial class UnicodeFuzzTargets
             CheckIdna(text, UnicodeIdnaOptions.Default);
         }
 
-        if (GetLoneSurrogates(text).Length == 0 && UnicodeIdna.TryEncodePunycode(text, out var encoded))
+        if (UnicodeIdna.TryEncodePunycode(text, out var encoded))
         {
+            FuzzAssert.True(GetLoneSurrogates(text).Length == 0, $"TryEncodePunycode accepts unpaired surrogates: {FuzzAssert.Format(text)}");
             FuzzAssert.True(Ascii.IsValid(encoded), $"TryEncodePunycode returns a non-ASCII result: {FuzzAssert.Format(encoded)}");
             FuzzAssert.True(UnicodeIdna.TryDecodePunycode(encoded, out var decoded), $"TryDecodePunycode rejects {FuzzAssert.Format(encoded)}");
             FuzzAssert.Equal(text, decoded, "Punycode does not round-trip");
         }
+        else
+        {
+            FuzzAssert.False(GetLoneSurrogates(text).Length == 0 && text.Length < 1000, $"TryEncodePunycode rejects {FuzzAssert.Format(text)}");
+        }
 
-        UnicodeIdna.TryDecodePunycode(text, out _);
+        if (UnicodeIdna.TryDecodePunycode(text, out var decodedText) && !text.AsSpan().ContainsAnyInRange('A', 'Z'))
+        {
+            FuzzAssert.True(UnicodeIdna.TryEncodePunycode(decodedText, out var reencoded), $"TryEncodePunycode rejects the decoding of {FuzzAssert.Format(text)}");
+            FuzzAssert.Equal(text, reencoded, "Punycode does not encode what it decodes");
+        }
     }
 
     private static void CheckIdna(string text, UnicodeIdnaOptions options)

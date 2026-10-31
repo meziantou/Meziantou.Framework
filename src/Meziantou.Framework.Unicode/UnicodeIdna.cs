@@ -1,4 +1,6 @@
+using System.Buffers;
 using System.Diagnostics.CodeAnalysis;
+using System.Numerics;
 
 namespace Meziantou.Framework;
 
@@ -48,7 +50,9 @@ public static class UnicodeIdna
             return true;
         }
 
-        var labels = Process(domainName, options, out var hasErrors);
+        // An ACE label is the Punycode encoding of its decoded form, which is unique: when it is too long for the DNS,
+        // so is the label of the result, and it does not need to be decoded.
+        var labels = Process(domainName, options, maxAceLabelLength: options.VerifyDnsLength ? 63 : int.MaxValue, out var hasErrors);
         if (hasErrors)
             return false;
 
@@ -116,7 +120,7 @@ public static class UnicodeIdna
             return asciiResult;
         }
 
-        var labels = Process(domainName, options, out hasErrors);
+        var labels = Process(domainName, options, maxAceLabelLength: int.MaxValue, out hasErrors);
 
         // X4_2: an empty label is an error, except the root label after a trailing dot
         for (var i = 0; i < labels.Length; i++)
@@ -133,7 +137,7 @@ public static class UnicodeIdna
     /// <summary>Encodes a label with Punycode (RFC 3492), without the <c>xn--</c> prefix.</summary>
     /// <param name="value">The label, such as <c>bücher</c>. The case of the letters is kept.</param>
     /// <param name="result">The encoded label, such as <c>bcher-kva</c>, when the method returns <see langword="true"/>.</param>
-    /// <returns><see langword="true"/> when the label is encoded; <see langword="false"/> when the encoding overflows.</returns>
+    /// <returns><see langword="true"/> when the label is encoded; <see langword="false"/> when the encoding overflows, or when the label has an unpaired surrogate, which has no code point to encode.</returns>
     /// <seealso href="https://www.rfc-editor.org/rfc/rfc3492" />
     public static bool TryEncodePunycode(ReadOnlySpan<char> value, [NotNullWhen(true)] out string? result)
     {
@@ -225,7 +229,11 @@ public static class UnicodeIdna
     }
 
     /// <summary>https://www.unicode.org/reports/tr46/#Processing</summary>
-    private static string[] Process(string domainName, UnicodeIdnaOptions options, out bool hasErrors)
+    /// <param name="domainName">The domain name.</param>
+    /// <param name="options">The options.</param>
+    /// <param name="maxAceLabelLength">The length above which an ACE label is an error without being decoded.</param>
+    /// <param name="hasErrors">Whether an error was recorded.</param>
+    private static string[] Process(string domainName, UnicodeIdnaOptions options, int maxAceLabelLength, out bool hasErrors)
     {
         hasErrors = false;
 
@@ -281,6 +289,12 @@ public static class UnicodeIdna
                     continue;
                 }
 
+                if (label.Length > maxAceLabelLength)
+                {
+                    hasErrors = true;
+                    continue;
+                }
+
                 var decoded = Punycode.Decode(label.AsSpan(AcePrefix.Length));
                 if (decoded is null)
                 {
@@ -293,10 +307,12 @@ public static class UnicodeIdna
                 else
                 {
                     labels[i] = decoded;
-                    if (decoded.Length == 0 || Ascii.IsValid(decoded))
-                    {
-                        hasErrors = true;
-                    }
+                }
+
+                // A label kept with IgnoreInvalidPunycode is ASCII, so it is an error too
+                if (labels[i].Length == 0 || Ascii.IsValid(labels[i]))
+                {
+                    hasErrors = true;
                 }
 
                 validatedAsNontransitional[i] = true;
@@ -342,67 +358,87 @@ public static class UnicodeIdna
         if (label.Contains('.', StringComparison.Ordinal))
             return false;
 
-        var codePoints = new List<int>(label.Length);
-        foreach (var rune in label.EnumerateRunes())
-        {
-            codePoints.Add(rune.Value);
-        }
-
-        if (UnicodeProperties.GetGeneralCategory(codePoints[0]) is UnicodeCategory.NonSpacingMark or UnicodeCategory.SpacingCombiningMark or UnicodeCategory.EnclosingMark)
+        if (UnicodeProperties.GetGeneralCategory(GetCodePointAt(label, 0)) is UnicodeCategory.NonSpacingMark or UnicodeCategory.SpacingCombiningMark or UnicodeCategory.EnclosingMark)
             return false;
 
-        foreach (var codePoint in codePoints)
+        var hasJoiner = false;
+        foreach (var rune in label.EnumerateRunes())
         {
+            var codePoint = rune.Value;
             var status = GetStatus(codePoint);
             if (status != IdnaStatus.Valid && (transitional || status != IdnaStatus.Deviation))
                 return false;
 
             if (options.UseStd3AsciiRules && codePoint < 0x80 && !(char.IsAsciiLetterLower((char)codePoint) || char.IsAsciiDigit((char)codePoint) || codePoint == '-'))
                 return false;
+
+            hasJoiner |= codePoint is 0x200C or 0x200D;
         }
 
-        if (options.CheckJoiners && !SatisfiesContextJ(codePoints))
+        if (hasJoiner && options.CheckJoiners && !SatisfiesContextJ(label))
             return false;
 
-        if (isBidiDomainName && !SatisfiesBidiRule(codePoints))
+        if (isBidiDomainName && !SatisfiesBidiRule(label))
             return false;
 
         return true;
     }
 
+    /// <summary>Returns the code point that starts at <paramref name="index"/>.</summary>
+    private static int GetCodePointAt(ReadOnlySpan<char> value, int index)
+    {
+        Rune.DecodeFromUtf16(value[index..], out var rune, out _);
+        return rune.Value;
+    }
+
     /// <summary>ContextJ rules: RFC 5892 Appendix A.1 and A.2.</summary>
-    private static bool SatisfiesContextJ(List<int> codePoints)
+    private static bool SatisfiesContextJ(ReadOnlySpan<char> label)
     {
         const int Virama = 9;
-        for (var i = 0; i < codePoints.Count; i++)
+        for (var i = 0; i < label.Length; i++)
         {
-            var codePoint = codePoints[i];
-            if (codePoint is not (0x200C or 0x200D))
+            // The joiners are in the BMP: they are one UTF-16 code unit, which no surrogate pair contains
+            var codePoint = label[i];
+            if (codePoint is not ('\u200C' or '\u200D'))
                 continue;
 
-            if (i > 0 && UnicodeProperties.GetCanonicalCombiningClass(codePoints[i - 1]) == Virama)
-                continue;
+            if (i > 0)
+            {
+                Rune.DecodeLastFromUtf16(label[..i], out var previous, out _);
+                if (UnicodeProperties.GetCanonicalCombiningClass(previous.Value) == Virama)
+                    continue;
+            }
 
-            if (codePoint == 0x200D)
+            if (codePoint == '\u200D')
                 return false;
 
             // (Joining_Type:{L,D})(Joining_Type:T)*U+200C(Joining_Type:T)*(Joining_Type:{R,D})
-            var before = i - 1;
-            while (before >= 0 && UnicodeProperties.GetJoiningType(codePoints[before]) == UnicodeJoiningType.Transparent)
+            var before = UnicodeJoiningType.NonJoining;
+            for (var end = i; end > 0;)
             {
-                before--;
+                Rune.DecodeLastFromUtf16(label[..end], out var rune, out var length);
+                before = UnicodeProperties.GetJoiningType(rune.Value);
+                if (before != UnicodeJoiningType.Transparent)
+                    break;
+
+                end -= length;
             }
 
-            if (before < 0 || UnicodeProperties.GetJoiningType(codePoints[before]) is not (UnicodeJoiningType.LeftJoining or UnicodeJoiningType.DualJoining))
+            if (before is not (UnicodeJoiningType.LeftJoining or UnicodeJoiningType.DualJoining))
                 return false;
 
-            var after = i + 1;
-            while (after < codePoints.Count && UnicodeProperties.GetJoiningType(codePoints[after]) == UnicodeJoiningType.Transparent)
+            var after = UnicodeJoiningType.NonJoining;
+            for (var start = i + 1; start < label.Length;)
             {
-                after++;
+                Rune.DecodeFromUtf16(label[start..], out var rune, out var length);
+                after = UnicodeProperties.GetJoiningType(rune.Value);
+                if (after != UnicodeJoiningType.Transparent)
+                    break;
+
+                start += length;
             }
 
-            if (after >= codePoints.Count || UnicodeProperties.GetJoiningType(codePoints[after]) is not (UnicodeJoiningType.RightJoining or UnicodeJoiningType.DualJoining))
+            if (after is not (UnicodeJoiningType.RightJoining or UnicodeJoiningType.DualJoining))
                 return false;
         }
 
@@ -425,29 +461,23 @@ public static class UnicodeIdna
     }
 
     /// <summary>The Bidi Rule: RFC 5893 section 2.</summary>
-    private static bool SatisfiesBidiRule(List<int> codePoints)
+    private static bool SatisfiesBidiRule(string label)
     {
-        var first = UnicodeProperties.GetBidiClass(codePoints[0]);
+        var first = UnicodeProperties.GetBidiClass(GetCodePointAt(label, 0));
 
         // 1. The first character must be a character with Bidi property L, R, or AL
         if (first is not (UnicodeBidirectionalCategory.LeftToRight or UnicodeBidirectionalCategory.RightToLeft or UnicodeBidirectionalCategory.RightToLeftArabic))
             return false;
 
-        // Last character that is not NSM
-        var last = codePoints.Count - 1;
-        while (last > 0 && UnicodeProperties.GetBidiClass(codePoints[last]) == UnicodeBidirectionalCategory.NonspacingMark)
-        {
-            last--;
-        }
-
-        var lastClass = UnicodeProperties.GetBidiClass(codePoints[last]);
+        // The first character is not an NSM: it is the last one when every other one is an NSM
+        var lastClass = first;
         if (first is UnicodeBidirectionalCategory.RightToLeft or UnicodeBidirectionalCategory.RightToLeftArabic)
         {
             var hasEuropeanNumber = false;
             var hasArabicNumber = false;
-            foreach (var codePoint in codePoints)
+            foreach (var rune in label.EnumerateRunes())
             {
-                var bidiClass = UnicodeProperties.GetBidiClass(codePoint);
+                var bidiClass = UnicodeProperties.GetBidiClass(rune.Value);
 
                 // 2. In an RTL label, only characters with the Bidi properties R, AL, AN, EN, ES, CS, ET, ON, BN, or NSM are allowed
                 if (bidiClass is not (UnicodeBidirectionalCategory.RightToLeft or UnicodeBidirectionalCategory.RightToLeftArabic or UnicodeBidirectionalCategory.ArabicNumber
@@ -456,6 +486,11 @@ public static class UnicodeIdna
                     or UnicodeBidirectionalCategory.NonspacingMark))
                 {
                     return false;
+                }
+
+                if (bidiClass != UnicodeBidirectionalCategory.NonspacingMark)
+                {
+                    lastClass = bidiClass;
                 }
 
                 hasEuropeanNumber |= bidiClass == UnicodeBidirectionalCategory.EuropeanNumber;
@@ -470,14 +505,21 @@ public static class UnicodeIdna
             return !(hasEuropeanNumber && hasArabicNumber);
         }
 
-        foreach (var codePoint in codePoints)
+        foreach (var rune in label.EnumerateRunes())
         {
+            var bidiClass = UnicodeProperties.GetBidiClass(rune.Value);
+
             // 5. In an LTR label, only characters with the Bidi properties L, EN, ES, CS, ET, ON, BN, or NSM are allowed
-            if (UnicodeProperties.GetBidiClass(codePoint) is not (UnicodeBidirectionalCategory.LeftToRight or UnicodeBidirectionalCategory.EuropeanNumber
+            if (bidiClass is not (UnicodeBidirectionalCategory.LeftToRight or UnicodeBidirectionalCategory.EuropeanNumber
                 or UnicodeBidirectionalCategory.EuropeanSeparator or UnicodeBidirectionalCategory.CommonSeparator or UnicodeBidirectionalCategory.EuropeanTerminator
                 or UnicodeBidirectionalCategory.OtherNeutral or UnicodeBidirectionalCategory.BoundaryNeutral or UnicodeBidirectionalCategory.NonspacingMark))
             {
                 return false;
+            }
+
+            if (bidiClass != UnicodeBidirectionalCategory.NonspacingMark)
+            {
+                lastClass = bidiClass;
             }
         }
 
@@ -528,21 +570,27 @@ public static class UnicodeIdna
         private const char Delimiter = '-';
 
         /// <summary>Decodes a Punycode string (without the "xn--" prefix). Returns null on failure.</summary>
+        /// <remarks>
+        /// RFC 3492 inserts each decoded code point into the output, which is quadratic with a list. The insertions are
+        /// recorded instead, then their final positions are computed in reverse order with a Fenwick tree of the free
+        /// slots: the last insertion at position <c>i</c> takes the <c>i</c>-th slot, and so on.
+        /// </remarks>
         public static string? Decode(ReadOnlySpan<char> input)
         {
-            var output = new List<int>(input.Length);
-            var basicLength = input.LastIndexOf(Delimiter);
-            if (basicLength < 0)
-            {
-                basicLength = 0;
-            }
+            var basicLength = Math.Max(input.LastIndexOf(Delimiter), 0);
 
+            // Every code point of the extended part takes at least one character
+            var values = new int[input.Length];
+            var positions = new int[input.Length];
+            var count = 0;
             for (var j = 0; j < basicLength; j++)
             {
                 if (input[j] >= 0x80)
                     return null;
 
-                output.Add(input[j]);
+                values[count] = input[j];
+                positions[count] = count;
+                count++;
             }
 
             var n = InitialN;
@@ -575,45 +623,76 @@ public static class UnicodeIdna
                     w *= Base - t;
                 }
 
-                bias = Adapt(i - oldI, output.Count + 1, oldI == 0);
-                if (i / (output.Count + 1) > int.MaxValue - n)
+                bias = Adapt(i - oldI, count + 1, oldI == 0);
+                if (i / (count + 1) > int.MaxValue - n)
                     return null;
 
-                n += i / (output.Count + 1);
-                i %= output.Count + 1;
+                n += i / (count + 1);
+                i %= count + 1;
                 if (n > 0x10FFFF || n is >= 0xD800 and <= 0xDFFF)
                     return null;
 
-                output.Insert(i, n);
+                values[count] = n;
+                positions[count] = i;
+                count++;
                 i++;
             }
 
-            var builder = new StringBuilder(output.Count);
-            Span<char> encodedRune = stackalloc char[2];
-            foreach (var codePoint in output)
+            var freeSlots = new FenwickTree(count, initialValue: 1);
+            var output = new int[count];
+            var length = 0;
+            for (var k = count - 1; k >= 0; k--)
             {
-                // There is no StringBuilder.Append(Rune) before .NET 11: appending the Rune would box it.
-                builder.Append(encodedRune[..new Rune(codePoint).EncodeToUtf16(encodedRune)]);
+                var slot = freeSlots.FindNth(positions[k] + 1);
+                freeSlots.Add(slot, -1);
+                output[slot] = values[k];
+                length += values[k] >= 0x10000 ? 2 : 1;
             }
 
-            return builder.ToString();
+            return string.Create(length, output, static (destination, codePoints) =>
+            {
+                var offset = 0;
+                foreach (var codePoint in codePoints)
+                {
+                    offset += new Rune(codePoint).EncodeToUtf16(destination[offset..]);
+                }
+            });
         }
 
-        /// <summary>Encodes a string to Punycode (without the "xn--" prefix). Returns null on overflow.</summary>
+        /// <summary>Encodes a string to Punycode (without the "xn--" prefix). Returns null on overflow or on an unpaired surrogate.</summary>
+        /// <remarks>
+        /// RFC 3492 scans the whole input for each distinct code point, which is quadratic. The code points are sorted
+        /// instead, and a Fenwick tree counts the code points already handled (the ones smaller than <c>n</c>) between two
+        /// positions, which is what the scan adds to <c>delta</c>.
+        /// </remarks>
         public static string? Encode(ReadOnlySpan<char> input)
         {
-            var codePoints = new List<int>(input.Length);
-            foreach (var rune in input.EnumerateRunes())
+            var codePoints = new int[input.Length];
+            var count = 0;
+            for (var index = 0; index < input.Length;)
             {
-                codePoints.Add(rune.Value);
+                // An unpaired surrogate has no code point: encoding U+FFFD instead would make distinct inputs collide
+                if (Rune.DecodeFromUtf16(input[index..], out var rune, out var consumed) != OperationStatus.Done)
+                    return null;
+
+                codePoints[count++] = rune.Value;
+                index += consumed;
             }
 
             var output = new StringBuilder(input.Length + 8);
-            foreach (var codePoint in codePoints)
+            var handledPositions = new FenwickTree(count, initialValue: 0);
+            var nonBasicCount = 0;
+            for (var position = 0; position < count; position++)
             {
+                var codePoint = codePoints[position];
                 if (codePoint < 0x80)
                 {
                     output.Append((char)codePoint);
+                    handledPositions.Add(position, 1);
+                }
+                else
+                {
+                    nonBasicCount++;
                 }
             }
 
@@ -624,51 +703,64 @@ public static class UnicodeIdna
                 output.Append(Delimiter);
             }
 
+            // The code points to encode, in the order of the encoding: by value, then by position
+            var pending = new long[nonBasicCount];
+            nonBasicCount = 0;
+            for (var position = 0; position < count; position++)
+            {
+                if (codePoints[position] >= 0x80)
+                {
+                    pending[nonBasicCount++] = ((long)codePoints[position] << 32) | (uint)position;
+                }
+            }
+
+            Array.Sort(pending);
+
             var n = InitialN;
             var delta = 0;
             var bias = InitialBias;
-            while (handled < codePoints.Count)
+            var next = 0;
+            while (next < pending.Length)
             {
-                var m = int.MaxValue;
-                foreach (var codePoint in codePoints)
-                {
-                    if (codePoint >= n && codePoint < m)
-                    {
-                        m = codePoint;
-                    }
-                }
-
+                var m = (int)(pending[next] >> 32);
                 if (m - n > (int.MaxValue - delta) / (handled + 1))
                     return null;
 
                 delta += (m - n) * (handled + 1);
                 n = m;
-                foreach (var codePoint in codePoints)
+
+                var roundStart = next;
+                var cursor = 0;
+                for (; next < pending.Length && (int)(pending[next] >> 32) == n; next++)
                 {
-                    if (codePoint < n)
+                    var position = (int)pending[next];
+                    if (!TryAddDelta(ref delta, handledPositions.Sum(position) - handledPositions.Sum(cursor)))
+                        return null;
+
+                    var q = delta;
+                    for (var k = Base; ; k += Base)
                     {
-                        if (++delta == int.MaxValue)
-                            return null;
+                        var t = k <= bias ? TMin : k >= bias + TMax ? TMax : k - bias;
+                        if (q < t)
+                            break;
+
+                        output.Append(EncodeDigit(t + ((q - t) % (Base - t))));
+                        q = (q - t) / (Base - t);
                     }
 
-                    if (codePoint == n)
-                    {
-                        var q = delta;
-                        for (var k = Base; ; k += Base)
-                        {
-                            var t = k <= bias ? TMin : k >= bias + TMax ? TMax : k - bias;
-                            if (q < t)
-                                break;
+                    output.Append(EncodeDigit(q));
+                    bias = Adapt(delta, handled + 1, handled == basicLength);
+                    delta = 0;
+                    handled++;
+                    cursor = position + 1;
+                }
 
-                            output.Append(EncodeDigit(t + ((q - t) % (Base - t))));
-                            q = (q - t) / (Base - t);
-                        }
+                if (!TryAddDelta(ref delta, handledPositions.Sum(count) - handledPositions.Sum(cursor)))
+                    return null;
 
-                        output.Append(EncodeDigit(q));
-                        bias = Adapt(delta, handled + 1, handled == basicLength);
-                        delta = 0;
-                        handled++;
-                    }
+                for (var r = roundStart; r < next; r++)
+                {
+                    handledPositions.Add((int)pending[r], 1);
                 }
 
                 delta++;
@@ -676,6 +768,16 @@ public static class UnicodeIdna
             }
 
             return output.ToString();
+        }
+
+        /// <summary>Adds the code points smaller than <c>n</c> that the scan of RFC 3492 counts one by one, and fails when <c>delta</c> reaches <see cref="int.MaxValue"/>.</summary>
+        private static bool TryAddDelta(ref int delta, int count)
+        {
+            if (count > 0 && count >= int.MaxValue - delta)
+                return false;
+
+            delta += count;
+            return true;
         }
 
         private static int Adapt(int delta, int numPoints, bool firstTime)
@@ -701,5 +803,65 @@ public static class UnicodeIdna
         };
 
         private static char EncodeDigit(int digit) => (char)(digit < 26 ? 'a' + digit : '0' + digit - 26);
+
+        /// <summary>A Fenwick tree (binary indexed tree) of counts, indexed from 0.</summary>
+        private readonly struct FenwickTree
+        {
+            private readonly int[] _tree;
+
+            public FenwickTree(int length, int initialValue)
+            {
+                _tree = new int[length + 1];
+                if (initialValue != 0)
+                {
+                    for (var i = 1; i <= length; i++)
+                    {
+                        _tree[i] += initialValue;
+                        var parent = i + (i & -i);
+                        if (parent <= length)
+                        {
+                            _tree[parent] += _tree[i];
+                        }
+                    }
+                }
+            }
+
+            public void Add(int index, int value)
+            {
+                for (var i = index + 1; i < _tree.Length; i += i & -i)
+                {
+                    _tree[i] += value;
+                }
+            }
+
+            /// <summary>Returns the sum of the counts of the indexes smaller than <paramref name="end"/>.</summary>
+            public int Sum(int end)
+            {
+                var sum = 0;
+                for (var i = end; i > 0; i -= i & -i)
+                {
+                    sum += _tree[i];
+                }
+
+                return sum;
+            }
+
+            /// <summary>Returns the smallest index whose prefix sum, itself included, is <paramref name="n"/>, for counts of 0 or 1.</summary>
+            public int FindNth(int n)
+            {
+                var index = 0;
+                for (var step = (int)BitOperations.RoundUpToPowerOf2((uint)_tree.Length) >> 1; step > 0; step >>= 1)
+                {
+                    var next = index + step;
+                    if (next < _tree.Length && _tree[next] < n)
+                    {
+                        index = next;
+                        n -= _tree[next];
+                    }
+                }
+
+                return index;
+            }
+        }
     }
 }

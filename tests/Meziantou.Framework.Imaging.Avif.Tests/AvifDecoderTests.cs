@@ -1467,4 +1467,135 @@ public sealed class AvifDecoderTests
         Assert.Equal(file.Items.Select(item => (item.Id, item.Type, item.ConstructionMethod)), copy.Items.Select(item => (item.Id, item.Type, item.ConstructionMethod)));
         Assert.Equal("<x:xmpmeta/>", Encoding.ASCII.GetString(copy.ReadItemData(copy.FindItem(3)!)));
     }
+
+    private const string GainMapDirectory = "tests/Meziantou.Framework.Imaging.Avif.Tests/GainMaps/";
+
+    [Fact]
+    public void ToneMapItemGivesTheGainMapAndItsMetadata()
+    {
+        // avifgainmaputil combine (libavif 1.3.0): the tone map item 2 derives from the primary item 1 and the gain map 3
+        // (hidden); its data is a version byte and the ISO 21496-1 metadata, whose fractions are written here as they are
+        // stored (avifgainmaputil printmetadata prints the red values for the three channels)
+        var data = GainMapTestFiles.Read(GainMapDirectory + "gainmap-lossless.avif");
+        var images = AuxiliaryImageCollection.Load(data);
+        Assert.Equal(ImageFormat.Avif, images.Format);
+        var gainMap = Assert.Single(images);
+        Assert.Same(gainMap, images.GainMapImage);
+        Assert.Equal(AuxiliaryImageKind.GainMap, gainMap.Kind);
+        Assert.Null(gainMap.AuxiliaryType);
+        Assert.Equal(new Size(64, 48), gainMap.Size);
+        var expected = new GainMapMetadata(0, 14476939 / 4194304.0,
+        [
+            new GainMapChannel(-11607503 / 16777216.0, 1778033 / 524288.0, 1, 1 / 64.0, 1 / 64.0),
+            new GainMapChannel(-7942849 / 16777216.0, 11544697 / 4194304.0, 1, 1 / 64.0, 1 / 64.0),
+            new GainMapChannel(-6664849 / 8388608.0, 295503 / 131072.0, 1, 1 / 64.0, 1 / 64.0),
+        ]);
+        Assert.Equal(expected, gainMap.GainMapMetadata);
+
+        using var map = gainMap.Decode();
+        Assert.Equal(new Size(64, 48), map.Size);
+        Assert.Equal(PixelFormat.Rgb24, map.PixelFormat);
+
+        var downscaled = Assert.Single(AuxiliaryImageCollection.Load(GainMapTestFiles.Read(GainMapDirectory + "gainmap-downscaled.avif")));
+        Assert.Equal(new Size(32, 24), downscaled.Size);
+        Assert.Equal(new GainMapMetadata(0, 12345981 / 4194304.0, [new GainMapChannel(-6738683 / 16777216.0, 3024221 / 1048576.0, 1, 1 / 64.0, 1 / 64.0)]), downscaled.GainMapMetadata);
+        using var monochrome = downscaled.Decode();
+        Assert.Equal(PixelFormat.Gray8, monochrome.PixelFormat);
+    }
+
+    [Fact]
+    public void TheGainMapDoesNotChangeTheDecodingOfThePrimaryItem()
+    {
+        // The same file without the tone map item and the gain map decodes to the same image
+        var data = GainMapTestFiles.Read(GainMapDirectory + "gainmap-lossless.avif");
+        var builder = HeifFileBuilder.From(data);
+        foreach (var item in builder.Items.Where(item => item.Id is not 1).ToList())
+        {
+            builder.Items.Remove(item);
+        }
+
+        builder.References.Clear();
+        var plain = builder.Build();
+        Assert.Empty(AuxiliaryImageCollection.Load(plain));
+
+        using var image = Image.Load(data);
+        using var expected = Image.Load(plain);
+        Assert.Equal(expected.PixelFormat, image.PixelFormat);
+        Assert.Equal(expected.Metadata.Cicp, image.Metadata.Cicp);
+        Assert.Equal(ImageSnapshots.CaptureFrame(expected.Frames[0]).ToArray(), ImageSnapshots.CaptureFrame(image.Frames[0]).ToArray());
+    }
+
+    [Theory]
+    [InlineData("gainmap-lossless", null)]
+    [InlineData("gainmap-downscaled", null)]
+    [InlineData("gainmap-bt2020-alternate", (byte)9)]
+    public void GainMapRenditionMatchesTheReference(string name, byte? alternatePrimaries)
+    {
+        // The reference is the formula of ISO 21496-1 evaluated with numpy on the planes that libavif decodes, the base
+        // image converted to the BT.2020 primaries of the alternate rendition when the gain map does not use the color
+        // space of the base image. The tolerance covers the decoding of the base image by libavif with 12 bits
+        var images = AuxiliaryImageCollection.Load(GainMapTestFiles.Read(GainMapDirectory + name + ".avif"));
+        Assert.Equal(alternatePrimaries is null, images.GainMapImage!.GainMapMetadata!.UseBaseColorSpace);
+        using var rendition = images.DecodeHdr(hdrHeadroom: 5);
+        if (alternatePrimaries is { } primaries)
+        {
+            Assert.Equal(new CicpColorDescription(primaries, 8, 0, fullRange: true), rendition.Metadata.Cicp);
+        }
+        else
+        {
+            Assert.Null(rendition.Metadata.Cicp);
+            Assert.Equal(ColorTransferFunction.Linear, rendition.Metadata.TransferFunction);
+        }
+
+        GainMapTestFiles.AssertClose(rendition, GainMapTestFiles.ReadHalfFloats(GainMapDirectory + name + ".reference.f16"), channels: 3, tolerance: 0.05, medianTolerance: 0.002, context: name);
+    }
+
+    [Fact]
+    public void AGainMapInTheColorSpaceOfTheAlternateRenditionNeedsThatColorSpace()
+    {
+        // The primaries of the alternate rendition are those of the 'colr' property of the tone map item, which the
+        // metadata alone does not have
+        var images = AuxiliaryImageCollection.Load(GainMapTestFiles.Read(GainMapDirectory + "gainmap-bt2020-alternate.avif"));
+        var gainMap = images.GainMapImage!;
+        using var baseImage = Image.Load(GainMapTestFiles.Read(GainMapDirectory + "gainmap-bt2020-alternate.avif"));
+        using var map = gainMap.Decode();
+        Assert.Throws<UnsupportedImageFeatureException>(() => gainMap.GainMapMetadata!.Apply(baseImage, map, 5));
+    }
+
+    [Fact]
+    public void AMalformedToneMapItemLeavesThePrimaryItemDecodable()
+    {
+        var data = GainMapTestFiles.Read(GainMapDirectory + "gainmap-downscaled.avif");
+        using var expected = Image.Load(data);
+        var expectedPixels = ImageSnapshots.CaptureFrame(expected.Frames[0]).ToArray();
+
+        // Truncated metadata: the gain map is listed without parameters, and the rendition reports the error
+        var builder = HeifFileBuilder.From(data);
+        var toneMap = builder.Items.Single(item => item.Type is "tmap");
+        toneMap.Data = toneMap.Data[..20];
+        var truncated = builder.Build();
+        var images = AuxiliaryImageCollection.Load(truncated);
+        Assert.Equal(AuxiliaryImageKind.GainMap, Assert.Single(images).Kind);
+        Assert.Null(images[0].GainMapMetadata);
+        Assert.Throws<InvalidImageContentException>(() => images.DecodeHdr(1));
+        using (var image = Image.Load(truncated))
+            Assert.Equal(expectedPixels, ImageSnapshots.CaptureFrame(image.Frames[0]).ToArray());
+
+        // A version of the tone map item that this reader does not know: the parameters are not known
+        toneMap.Data = [1, .. toneMap.Data[1..]];
+        images = AuxiliaryImageCollection.Load(builder.Build());
+        Assert.Null(Assert.Single(images).GainMapMetadata);
+        Assert.Throws<UnsupportedImageFeatureException>(() => images.DecodeHdr(1));
+
+        // A gain map item without size is not listed
+        builder = HeifFileBuilder.From(data);
+        var gainMapItem = builder.GetItem(3);
+        var sizes = gainMapItem.Associations.Where(association => builder.Properties[association.PropertyIndex - 1].AsSpan(4, 4).SequenceEqual("ispe"u8)).ToList();
+        foreach (var association in sizes)
+        {
+            gainMapItem.Associations.Remove(association);
+        }
+
+        Assert.Empty(AuxiliaryImageCollection.Load(builder.Build()));
+    }
 }

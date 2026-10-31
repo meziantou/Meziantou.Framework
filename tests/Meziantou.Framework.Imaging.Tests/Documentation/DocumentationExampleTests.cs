@@ -3837,6 +3837,34 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void SaveHdrRenditionAppliesTheGainMapOfAnUltraHdrPhoto()
+    {
+        // An Ultra HDR JPEG file written by libultrahdr (a fixture of the JPEG tests): an SDR photo in Display P3 and its gain map
+        var input = TestHarness.RepositoryPaths.Root / "tests" / "Meziantou.Framework.Imaging.Jpeg.Tests" / "GainMaps" / "ultrahdr-multichannel.jpg";
+        var output = GetPath("hdr.exr");
+        Assert.Equal([AuxiliaryImageKind.GainMap], ColorExamples.SaveHdrRendition(input, output));
+
+        // Linear light above the white of SDR, labeled with the Display P3 primaries
+        using var expected = AuxiliaryImageCollection.Load(input).DecodeHdr(16);
+        using var hdr = Image.Load<RgbaFloat>(output);
+        Assert.Equal(ImageFormat.OpenExr, hdr.Metadata.SourceFormat);
+        Assert.Equal(new CicpColorDescription(12, 8, 0, fullRange: true), hdr.Metadata.Cicp);
+        Assert.Equal(expected.Size, hdr.Size);
+        var peak = 0f;
+        for (var y = 0; y < hdr.Height; y++)
+        {
+            for (var x = 0; x < hdr.Width; x++)
+            {
+                var (actual, reference) = (hdr.Frames[0][x, y], expected.Frames[0][x, y]);
+                Assert.Equal(reference.R, actual.R, Math.Max(Math.Abs(reference.R), 1) * 1e-3f);
+                peak = Math.Max(peak, actual.R);
+            }
+        }
+
+        Assert.True(peak > 4, $"the brightest red is {peak} times the white of SDR");
+    }
+
+    [Fact]
     public void SaveGifThresholdsOrFlattensAlphaAndReducesColors()
     {
         // 1,024 colors whose alpha grows from 0 (left) to 248 (right), in steps of 8

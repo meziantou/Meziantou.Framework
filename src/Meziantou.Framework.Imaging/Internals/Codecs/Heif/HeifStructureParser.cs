@@ -37,6 +37,9 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
     private readonly StructureWalk _walk;
     private readonly HeifDecodeObserver? _observer;
 
+    // The item that is presented instead of the primary item or the image sequence, or null
+    private readonly uint? _itemId;
+
     // The format of the file: the one of the codec that detected it until the file type box is read, then the first format
     // that its brands declare. A file whose brands declare a second format has the format of the codec of its images
     private HeifCodecBinding _binding;
@@ -82,7 +85,7 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
     private ImageInfo? _result;
     private bool _returnNow;
 
-    public HeifStructureParser(ImageCodecContext context, HeifCodecBinding binding, StructureWalk walk, HeifDecodeObserver? observer = null)
+    public HeifStructureParser(ImageCodecContext context, HeifCodecBinding binding, StructureWalk walk, HeifDecodeObserver? observer = null, uint? itemId = null)
         : base(binding.Format)
     {
         ArgumentNullException.ThrowIfNull(context);
@@ -90,6 +93,7 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
         _binding = binding;
         _walk = walk;
         _observer = observer;
+        _itemId = itemId;
         _metadata = new DecodedMetadataBuilder(context.Tracker, binding.Format);
     }
 
@@ -493,8 +497,9 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
         SetBinding(first);
         _alternateBinding = second;
 
-        // A file with the brand of the image sequences presents its sequence, not its primary item
-        _isSequence = isSequence;
+        // A file with the brand of the image sequences presents its sequence, not its primary item, unless another item of
+        // its 'meta' box is requested
+        _isSequence = isSequence && _itemId is null;
     }
 
     // Nothing is collected before the format of the file is known
@@ -513,10 +518,10 @@ internal sealed class HeifStructureParser : ImageParser<ImageInfo>
     {
         var payload = _meta!.Span;
         var meta = HeifMetaBox.Parse(payload, _binding, _context.CancellationToken);
-        if (_alternateBinding is { } alternate && HeifImagePlan.IsCodedWith(alternate, meta))
+        if (_alternateBinding is { } alternate && HeifImagePlan.IsCodedWith(alternate, meta, _itemId))
             SetBinding(alternate);
 
-        var plan = HeifImagePlan.Create(_binding, meta, payload, _context.Limits, _context.CancellationToken);
+        var plan = HeifImagePlan.Create(_binding, meta, payload, _context.Limits, _context.CancellationToken, _itemId);
         _plan = plan;
 
         var metadata = _metadata.Metadata;

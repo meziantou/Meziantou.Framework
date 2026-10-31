@@ -1693,4 +1693,264 @@ public sealed class JpegDecoderTests
         var pixel = index / channels;
         Assert.Fail($"{context}: first difference at ({pixel % image.Width}, {pixel / image.Width}) channel {index % channels}: expected {expected[index]}, actual {actual[index]}.");
     }
+
+    private const string GainMapDirectory = "tests/Meziantou.Framework.Imaging.Jpeg.Tests/GainMaps/";
+
+    // libultrahdr 1.4.0 writes the same ISO 21496-1 metadata for both fixtures: an SDR base image, a headroom of
+    // 5895489/1048576 stops for the alternate rendition, gains from 0 to that headroom, no offset
+    private static readonly GainMapMetadata UltraHdrMetadata = new(0, 5895489 / 1048576.0, [new GainMapChannel(0, 5895489 / 1048576.0, gamma: 1, baseOffset: 0, alternateOffset: 0)]);
+
+    [Theory]
+    [InlineData("ultrahdr-multichannel.jpg", 64, 48, PixelFormat.Rgb24)]
+    [InlineData("ultrahdr-downscaled.jpg", 32, 24, PixelFormat.Gray8)]
+    public void UltraHdrGainMapIsListedWithItsIsoMetadata(string name, int width, int height, PixelFormat gainMapFormat)
+    {
+        var data = GainMapTestFiles.Read(GainMapDirectory + name);
+        var images = AuxiliaryImageCollection.Load(data);
+        Assert.Equal(ImageFormat.Jpeg, images.Format);
+        var gainMap = Assert.Single(images);
+        Assert.Same(gainMap, images.GainMapImage);
+        Assert.Equal(AuxiliaryImageKind.GainMap, gainMap.Kind);
+        Assert.Null(gainMap.AuxiliaryType);
+        Assert.Equal(new Size(width, height), gainMap.Size);
+        Assert.Equal(UltraHdrMetadata, gainMap.GainMapMetadata);
+
+        using var decoded = gainMap.Decode();
+        Assert.Equal(new Size(width, height), decoded.Size);
+        Assert.Equal(gainMapFormat, decoded.PixelFormat);
+
+        // The images that follow the primary image change nothing in its decoding: it is the image of the first entry
+        // of the index alone
+        var primaryLength = GetMultiPictureEntries(data)[0].Length;
+        using var image = Image.Load(data);
+        using var primary = Image.Load(data.AsSpan(0, primaryLength));
+        Assert.Equal(new Size(64, 48), image.Size);
+        Assert.Equal(GetBytes(primary), GetBytes(image));
+    }
+
+    [Theory]
+    [InlineData("ultrahdr-multichannel", 0.1, 0.01)]
+    [InlineData("ultrahdr-downscaled", 0.25, 0.03)]
+    public void UltraHdrRenditionMatchesLibUltraHdr(string name, double tolerance, double medianTolerance)
+    {
+        // ultrahdr_app -m 1 -o 0 -O 4 decodes to linear half floats, 1 being the white of SDR, in the gamut of the HDR
+        // intent (Display P3, as the base image). It upsamples a smaller gain map with another filter than ours, which the
+        // looser tolerance of the downscaled map covers (the filter is implementation-defined by Ultra HDR)
+        var images = AuxiliaryImageCollection.Load(GainMapTestFiles.Read(GainMapDirectory + name + ".jpg"));
+        using var rendition = images.DecodeHdr(hdrHeadroom: 8);
+        Assert.Equal(new Size(64, 48), rendition.Size);
+        Assert.Equal(new CicpColorDescription(12, 8, 0, fullRange: true), rendition.Metadata.Cicp);
+        Assert.Null(rendition.Metadata.IccProfile);
+        GainMapTestFiles.AssertClose(rendition, GainMapTestFiles.ReadHalfFloats(GainMapDirectory + name + ".linear.f16"), channels: 4, tolerance, medianTolerance, context: name);
+    }
+
+    [Fact]
+    public void UltraHdrRenditionInterpolatesTheGainInStops()
+    {
+        // Without offsets, a rendition is the linear base color times 2^(gain * weight): the rendition at half the weight
+        // is the geometric mean of the base image and of the full rendition, and the base image is the linear base color
+        // (the Display P3 profile of the base image has the sRGB tone curves; its colorants, rounded to s15Fixed16 numbers,
+        // are those of the Display P3 primaries within the tolerance)
+        var images = AuxiliaryImageCollection.Load(GainMapTestFiles.Read(GainMapDirectory + "ultrahdr-multichannel.jpg"));
+        var headroom = UltraHdrMetadata.AlternateHdrHeadroom;
+        Assert.Equal(0.5, UltraHdrMetadata.GetWeight(headroom / 2));
+        using var sdr = images.DecodeHdr(0);
+        using var half = images.DecodeHdr(headroom / 2);
+        using var full = images.DecodeHdr(headroom);
+        using var beyond = images.DecodeHdr(headroom + 3);
+        using var linear = Image.Load<Rgb24>(GainMapTestFiles.Read(GainMapDirectory + "ultrahdr-multichannel.jpg"));
+        for (var y = 0; y < 48; y += 5)
+        {
+            for (var x = 0; x < 64; x += 3)
+            {
+                var source = linear.Frames[0][x, y];
+                var (b, h, f) = (sdr.Frames[0][x, y], half.Frames[0][x, y], full.Frames[0][x, y]);
+                Assert.Equal(SrgbToLinear(source.R), b.R, 2e-3f);
+                Assert.Equal(SrgbToLinear(source.G), b.G, 2e-3f);
+                Assert.Equal(SrgbToLinear(source.B), b.B, 2e-3f);
+                Assert.Equal(1f, b.A);
+                Assert.Equal(Math.Sqrt(b.R * f.R), h.R, 1e-4 * Math.Max(h.R, 1));
+                Assert.Equal(Math.Sqrt(b.G * f.G), h.G, 1e-4 * Math.Max(h.G, 1));
+                Assert.Equal(Math.Sqrt(b.B * f.B), h.B, 1e-4 * Math.Max(h.B, 1));
+                Assert.Equal(f, beyond.Frames[0][x, y]);
+            }
+        }
+
+        static float SrgbToLinear(byte value)
+        {
+            var v = value / 255.0;
+            return (float)(v <= 0.04045 ? v / 12.92 : Math.Pow((v + 0.055) / 1.055, 2.4));
+        }
+    }
+
+    [Fact]
+    public void UltraHdrXmpMetadataIsReadWithoutIsoMetadata()
+    {
+        // An Ultra HDR 1.0 file: the gain map image carries the hdrgm XMP properties instead of the ISO 21496-1 segment.
+        // The same values give the same metadata and the same rendition
+        var data = GainMapTestFiles.Read(GainMapDirectory + "ultrahdr-downscaled.jpg");
+        var xmp = """
+            <x:xmpmeta xmlns:x="adobe:ns:meta/">
+              <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+                <rdf:Description xmlns:hdrgm="http://ns.adobe.com/hdr-gain-map/1.0/" hdrgm:Version="1.0" hdrgm:GainMapMin="0" hdrgm:GainMapMax="5.62237644195556640625" hdrgm:Gamma="1" hdrgm:OffsetSDR="0" hdrgm:OffsetHDR="0" hdrgm:HDRCapacityMin="0" hdrgm:HDRCapacityMax="5.62237644195556640625"/>
+              </rdf:RDF>
+            </x:xmpmeta>
+            """;
+        var rewritten = ReplaceGainMapImage(data, image => Insert(RemoveIsoSegment(image), 2, XmpSegment(xmp)));
+        var images = AuxiliaryImageCollection.Load(rewritten);
+        var gainMap = Assert.Single(images);
+        Assert.Equal(AuxiliaryImageKind.GainMap, gainMap.Kind);
+        Assert.Equal(UltraHdrMetadata, gainMap.GainMapMetadata);
+
+        using var fromIso = AuxiliaryImageCollection.Load(data).DecodeHdr(4);
+        using var fromXmp = images.DecodeHdr(4);
+        Assert.Equal(GetBytes(fromIso), GetBytes(fromXmp));
+        using var image = Image.Load(rewritten);
+        Assert.Equal(new Size(64, 48), image.Size);
+    }
+
+    [Fact]
+    public void UltraHdrXmpMetadataReadsSequencesElementsDefaultsAndHdrBaseRenditions()
+    {
+        // Elements and rdf:Seq values (one per channel); the omitted properties take their defaults (GainMapMin 0, Gamma 1,
+        // offsets 1/64, HDRCapacityMin 0). With BaseRenditionIsHDR the headrooms and the offsets of the two renditions
+        // are those of the HDR base rendition and of the SDR alternate one
+        var data = GainMapTestFiles.Read(GainMapDirectory + "ultrahdr-multichannel.jpg");
+        var xmp = """
+            <x:xmpmeta xmlns:x="adobe:ns:meta/">
+              <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+                <rdf:Description xmlns:hdrgm="http://ns.adobe.com/hdr-gain-map/1.0/" hdrgm:Version="1.0" hdrgm:BaseRenditionIsHDR="True" hdrgm:OffsetHDR="0.25">
+                  <hdrgm:GainMapMax><rdf:Seq><rdf:li>3</rdf:li><rdf:li>2.5</rdf:li><rdf:li>2</rdf:li></rdf:Seq></hdrgm:GainMapMax>
+                  <hdrgm:HDRCapacityMax>3</hdrgm:HDRCapacityMax>
+                </rdf:Description>
+              </rdf:RDF>
+            </x:xmpmeta>
+            """;
+        var images = AuxiliaryImageCollection.Load(ReplaceGainMapImage(data, image => Insert(RemoveIsoSegment(image), 2, XmpSegment(xmp))));
+        var expected = new GainMapMetadata(3, 0, [new GainMapChannel(0, 3, 1, 0.25, 1.0 / 64), new GainMapChannel(0, 2.5, 1, 0.25, 1.0 / 64), new GainMapChannel(0, 2, 1, 0.25, 1.0 / 64)]);
+        Assert.Equal(expected, Assert.Single(images).GainMapMetadata);
+        Assert.Equal(1, expected.GetWeight(0));
+        Assert.Equal(0, expected.GetWeight(3));
+    }
+
+    [Fact]
+    public void MalformedGainMapMetadataLeavesThePrimaryImageDecodable()
+    {
+        var data = GainMapTestFiles.Read(GainMapDirectory + "ultrahdr-downscaled.jpg");
+        using var expected = Image.Load(data);
+
+        // A denominator of 0: the gain map is listed without parameters, and the rendition reports the error
+        var zeroDenominator = ReplaceGainMapImage(data, image =>
+        {
+            var copy = image.ToArray();
+            var iso = copy.AsSpan().IndexOf("urn:iso:std:iso:ts:21496:-1\0"u8) + 28;
+            copy.AsSpan(iso + 9, 4).Clear();
+            return copy;
+        });
+        var images = AuxiliaryImageCollection.Load(zeroDenominator);
+        var gainMap = Assert.Single(images);
+        Assert.Equal(AuxiliaryImageKind.GainMap, gainMap.Kind);
+        Assert.Null(gainMap.GainMapMetadata);
+        Assert.Throws<InvalidImageContentException>(() => images.DecodeHdr(1));
+        using (var image = Image.Load(zeroDenominator))
+            Assert.Equal(GetBytes(expected), GetBytes(image));
+
+        // A minimum version that this reader does not know: the parameters are ignored, as ISO 21496-1 requires
+        var newerVersion = ReplaceGainMapImage(data, image =>
+        {
+            var copy = image.ToArray();
+            copy[copy.AsSpan().IndexOf("urn:iso:std:iso:ts:21496:-1\0"u8) + 29] = 1;
+            return copy;
+        });
+        images = AuxiliaryImageCollection.Load(newerVersion);
+        Assert.Equal(AuxiliaryImageKind.Other, Assert.Single(images).Kind);
+        Assert.Null(images.GainMapImage);
+        Assert.Throws<InvalidOperationException>(() => images.DecodeHdr(1));
+
+        // XMP that is not well-formed
+        var badXmp = ReplaceGainMapImage(data, image => Insert(RemoveIsoSegment(image), 2, XmpSegment("<x:xmpmeta><rdf:RDF")));
+        images = AuxiliaryImageCollection.Load(badXmp);
+        Assert.Null(Assert.Single(images).GainMapMetadata);
+        Assert.Throws<InvalidImageContentException>(() => images.DecodeHdr(1));
+
+        // An index whose entry points outside the file lists nothing; the primary image is unchanged
+        var truncated = data.AsSpan(0, data.Length - 100).ToArray();
+        Assert.Empty(AuxiliaryImageCollection.Load(truncated));
+        using (var image = Image.Load(truncated))
+            Assert.Equal(GetBytes(expected), GetBytes(image));
+    }
+
+    [Fact]
+    public void AJpegFileWithoutMultiPictureIndexHasNoAuxiliaryImage()
+    {
+        var data = GainMapTestFiles.Read(GainMapDirectory + "ultrahdr-downscaled.jpg");
+        var primary = data.AsSpan(0, GetMultiPictureEntries(data)[0].Length).ToArray();
+        var mpf = primary.AsSpan().IndexOf("MPF\0"u8) - 4;
+        var plain = Remove(primary, mpf, 2 + ((primary[mpf + 2] << 8) | primary[mpf + 3]));
+        var images = AuxiliaryImageCollection.Load(plain);
+        Assert.Equal(ImageFormat.Jpeg, images.Format);
+        Assert.Empty(images);
+        Assert.Null(images.GainMapImage);
+        Assert.Throws<InvalidOperationException>(() => images.DecodeHdr(1));
+        Assert.Throws<ArgumentOutOfRangeException>("hdrHeadroom", () => images.DecodeHdr(-1));
+        Assert.Throws<ArgumentOutOfRangeException>("hdrHeadroom", () => images.DecodeHdr(double.NaN));
+        Assert.Throws<UnknownImageFormatException>(() => AuxiliaryImageCollection.Load([1, 2, 3, 4, 5, 6, 7, 8]));
+    }
+
+    // The entries of the Multi-Picture Format index of a file: offsets from the start of the file
+    private static (int Offset, int Length)[] GetMultiPictureEntries(byte[] data)
+    {
+        var header = data.AsSpan().IndexOf("MPF\0"u8) + 4;
+        Assert.Equal("MM"u8.ToArray(), data.AsSpan(header, 2).ToArray());
+        var directory = header + ReadUInt32(data, header + 4);
+        var count = (data[directory] << 8) | data[directory + 1];
+        for (var i = 0; i < count; i++)
+        {
+            var field = directory + 2 + (i * 12);
+            if (((data[field] << 8) | data[field + 1]) is not 0xB002)
+                continue;
+
+            var entries = header + ReadUInt32(data, field + 8);
+            var result = new (int Offset, int Length)[ReadUInt32(data, field + 4) / 16];
+            for (var e = 0; e < result.Length; e++)
+            {
+                var offset = ReadUInt32(data, entries + (16 * e) + 8);
+                result[e] = (offset is 0 ? 0 : header + offset, ReadUInt32(data, entries + (16 * e) + 4));
+            }
+
+            return result;
+        }
+
+        throw new InvalidOperationException("The file has no index of its images.");
+
+        static int ReadUInt32(byte[] data, int offset) => (data[offset] << 24) | (data[offset + 1] << 16) | (data[offset + 2] << 8) | data[offset + 3];
+    }
+
+    // Replaces the second image of a file, and its length in the index (the primary image keeps its size, so the offset
+    // of the second image does not change)
+    private static byte[] ReplaceGainMapImage(byte[] data, Func<byte[], byte[]> replace)
+    {
+        var entries = GetMultiPictureEntries(data);
+        var (offset, length) = entries[1];
+        var image = replace(data.AsSpan(offset, length).ToArray());
+        var result = (byte[])[.. data.AsSpan(0, offset), .. image, .. data.AsSpan(offset + length)];
+        var header = data.AsSpan().IndexOf("MPF\0"u8) + 4;
+        var position = result.AsSpan(header).IndexOf(ToBigEndian(length)) + header;
+        ToBigEndian(image.Length).CopyTo(result, position);
+        return result;
+
+        static byte[] ToBigEndian(int value) => [(byte)(value >> 24), (byte)(value >> 16), (byte)(value >> 8), (byte)value];
+    }
+
+    private static byte[] RemoveIsoSegment(byte[] image)
+    {
+        var start = image.AsSpan().IndexOf("urn:iso:std:iso:ts:21496:-1\0"u8) - 4;
+        return Remove(image, start, 2 + ((image[start + 2] << 8) | image[start + 3]));
+    }
+
+    private static byte[] XmpSegment(string xmp)
+    {
+        byte[] payload = [.. "http://ns.adobe.com/xap/1.0/\0"u8, .. System.Text.Encoding.UTF8.GetBytes(xmp)];
+        return [0xFF, 0xE1, (byte)((payload.Length + 2) >> 8), (byte)(payload.Length + 2), .. payload];
+    }
 }

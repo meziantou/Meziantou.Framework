@@ -291,6 +291,26 @@ internal sealed class IccPipeline
         }
     }
 
+    /// <summary>Gets a value indicating whether every stage converts values outside [0, 1] without clipping them (<see cref="ApplyUnbounded"/>).</summary>
+    public bool SupportsUnbounded => Array.TrueForAll(_stages, stage => stage.SupportsUnbounded);
+
+    /// <summary>Converts one color in place without clipping it (<see cref="IccStage.ApplyUnbounded"/>); a value that is not a number is read as 0.</summary>
+    /// <param name="values">At least <see cref="MaxChannels"/> elements.</param>
+    /// <exception cref="NotSupportedException">A stage cannot (<see cref="SupportsUnbounded"/>).</exception>
+    public void ApplyUnbounded(Span<double> values)
+    {
+        for (var i = 0; i < SourceChannelCount; i++)
+        {
+            if (double.IsNaN(values[i]))
+                values[i] = 0;
+        }
+
+        foreach (var stage in _stages)
+        {
+            stage.ApplyUnbounded(values);
+        }
+    }
+
     /// <summary>
     /// Gets, when the last stage is one inverse tone curve per destination channel, the tables that give the 8-bit
     /// destination sample of each channel from the value before that stage (<see cref="ApplyBetweenCurves"/>): the same

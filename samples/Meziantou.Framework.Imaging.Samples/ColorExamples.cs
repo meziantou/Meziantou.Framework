@@ -1,3 +1,4 @@
+using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Metadata;
 
 namespace Meziantou.Framework.Imaging.Samples;
@@ -21,6 +22,31 @@ internal static class ColorExamples
         // The orientation tag of the EXIF block is rewritten to match; the other metadata are kept
         image.Save(outputPath);
         return orientation;
+    }
+    #endregion
+
+    /// <summary>The thumbnails, depth maps and gain maps a photo stores next to its main image, decoded on request.</summary>
+    #region Imaging_HdrGainMap
+    public static IReadOnlyList<AuxiliaryImageKind> SaveHdrRendition(string photoPath, string exrPath)
+    {
+        // Image.Load reads the main image only. The other images of the file are listed here, from its structure, and
+        // each one is decoded on request: the gain map of an Ultra HDR JPEG, the thumbnails, depth maps, mattes and
+        // gain maps of a HEIC or AVIF photo
+        var images = AuxiliaryImageCollection.Load(photoPath);
+        var kinds = images.Select(image => image.Kind).ToList();
+
+        // The gain map turns the standard dynamic range photo into its high dynamic range version. The headroom of the
+        // display, in stops (log2 of its peak light over the white of SDR), selects how much of the gain applies: the
+        // headroom of the alternate rendition gives all of it. The result is linear light, 1 being the white of SDR
+        if (images.GainMapImage?.GainMapMetadata is { } metadata)
+        {
+            using var hdr = images.DecodeHdr(metadata.AlternateHdrHeadroom);
+
+            // OpenEXR stores the floating-point samples, and the primaries as its chromaticities
+            hdr.Save(exrPath, new OpenExrEncoder());
+        }
+
+        return kinds;
     }
     #endregion
 }

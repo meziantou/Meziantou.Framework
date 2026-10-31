@@ -48,7 +48,7 @@ internal sealed class HeicCodec : ImageCodec
         var observer = new HeifDecoder(request, context);
         try
         {
-            return new StructureDecodeParser(new HeifStructureParser(context, HeicBinding.Instance, StructureWalk.Decode, observer), observer);
+            return new StructureDecodeParser(new HeifStructureParser(context, HeicBinding.Instance, StructureWalk.Decode, observer, request.HeifItemId), observer);
         }
         catch
         {

@@ -167,7 +167,51 @@ public static byte[] ConvertSamplesToSrgb(IccProfile sourceProfile, ReadOnlySpan
   allocates nothing.
 - Integer samples cover the whole range of their type, floating-point samples are in [0, 1], and colors outside the
   destination gamut are clipped per channel. CMYK samples are ink amounts: 0 is no ink.
+- With [ClipFloatingPointSamples](cref:Meziantou.Framework.Imaging.IccColorTransformOptions.ClipFloatingPointSamples) set to `false`, floating-point samples keep their values outside [0, 1]: the light
+  above the white of HDR colors, and the negative components of wide-gamut colors. The tone curves are extended beyond
+  [0, 1] (mirrored below 0, as in CSS Color 4). Only matrix-based profiles can do this: a conversion through a lookup
+  table is refused.
 - The source and the destination can be the same buffer when both profiles have the same number of channels.
+
+## Render the HDR version of a phone photo
+
+Ultra HDR JPEG files, and the HEIC and AVIF photos of recent phones, store a standard dynamic range image and a gain
+map: a second image that gives, pixel by pixel, how much brighter the high dynamic range version is. Loading the photo
+gives the standard image, as before. [AuxiliaryImageCollection](cref:Meziantou.Framework.Imaging.AuxiliaryImageCollection) lists the gain map, and the thumbnails, depth maps and mattes
+of the file, and decodes them on request:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/ColorExamples.cs;region=Imaging_HdrGainMap;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static IReadOnlyList<AuxiliaryImageKind> SaveHdrRendition(string photoPath, string exrPath)
+{
+    // Image.Load reads the main image only. The other images of the file are listed here, from its structure, and
+    // each one is decoded on request: the gain map of an Ultra HDR JPEG, the thumbnails, depth maps, mattes and
+    // gain maps of a HEIC or AVIF photo
+    var images = AuxiliaryImageCollection.Load(photoPath);
+    var kinds = images.Select(image => image.Kind).ToList();
+
+    // The gain map turns the standard dynamic range photo into its high dynamic range version. The headroom of the
+    // display, in stops (log2 of its peak light over the white of SDR), selects how much of the gain applies: the
+    // headroom of the alternate rendition gives all of it. The result is linear light, 1 being the white of SDR
+    if (images.GainMapImage?.GainMapMetadata is { } metadata)
+    {
+        using var hdr = images.DecodeHdr(metadata.AlternateHdrHeadroom);
+
+        // OpenEXR stores the floating-point samples, and the primaries as its chromaticities
+        hdr.Save(exrPath, new OpenExrEncoder());
+    }
+
+    return kinds;
+}
+```
+<!-- endref -->
+
+- The headroom of a display is in stops: the log2 of its peak light over the white of SDR. 0 gives the standard
+  image in linear light; the headroom of the alternate rendition (the [GainMapMetadata](cref:Meziantou.Framework.Imaging.Metadata.GainMapMetadata)) gives the whole HDR
+  version.
+- The result is linear light where 1 is the white of SDR, in the primaries of the photo, with nothing clipped. The
+  parameters come from the ISO 21496-1 metadata (JPEG, HEIC, AVIF) or from the `hdrgm` XMP properties of Ultra HDR;
+  the gain maps of Apple that have no ISO 21496-1 metadata are listed without parameters.
 
 ## Choose a rendering intent
 

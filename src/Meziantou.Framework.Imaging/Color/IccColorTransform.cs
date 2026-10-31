@@ -26,8 +26,13 @@ namespace Meziantou.Framework.Imaging;
 public sealed class IccColorTransform
 {
     private readonly IccPipeline _pipeline;
+    private readonly bool _isUnbounded;
 
-    private IccColorTransform(IccPipeline pipeline) => _pipeline = pipeline;
+    private IccColorTransform(IccPipeline pipeline, bool isUnbounded = false)
+    {
+        _pipeline = pipeline;
+        _isUnbounded = isUnbounded;
+    }
 
     /// <summary>Gets the number of samples per source color: 1 (grayscale), 3 (RGB) or 4 (CMYK).</summary>
     public int SourceChannelCount => _pipeline.SourceChannelCount;
@@ -45,13 +50,17 @@ public sealed class IccColorTransform
     /// <returns>The transform.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="source"/> or <paramref name="destination"/> is <see langword="null"/>.</exception>
     /// <exception cref="InvalidImageContentException">A profile is malformed.</exception>
-    /// <exception cref="UnsupportedImageFeatureException">A profile is valid but not supported, or cannot be used as a destination.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">
+    /// A profile is valid but not supported, or cannot be used as a destination; or
+    /// <see cref="IccColorTransformOptions.ClipFloatingPointSamples"/> is <see langword="false"/> and the conversion goes
+    /// through a lookup table.
+    /// </exception>
     public static IccColorTransform Create(IccProfile source, IccProfile destination, IccColorTransformOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(source);
         ArgumentNullException.ThrowIfNull(destination);
         options ??= IccColorTransformOptions.Default;
-        return new IccColorTransform(IccPipeline.Create(source, destination, options.Intent, options.BlackPointCompensation));
+        return Create(IccPipeline.Create(source, destination, options.Intent, options.BlackPointCompensation), options);
     }
 
     /// <summary>Converts 8-bit samples.</summary>
@@ -96,14 +105,16 @@ public sealed class IccColorTransform
         ColorConversionKernels.Convert<ushort, IccUInt16Sample>(_pipeline, source, destination, SourceChannelCount, DestinationChannelCount, uint16Tables: tables);
     }
 
-    /// <summary>Converts floating-point samples in [0, 1].</summary>
+    /// <summary>Converts floating-point samples in [0, 1], or of any value when the transform does not clip them.</summary>
     /// <param name="source">
     /// The source samples: a whole number of colors of <see cref="SourceChannelCount"/> samples. Values outside [0, 1] are
-    /// clipped and values that are not a number are read as 0.
+    /// clipped, unless <see cref="IccColorTransformOptions.ClipFloatingPointSamples"/> was <see langword="false"/>, and
+    /// values that are not a number are read as 0.
     /// </param>
     /// <param name="destination">
-    /// The converted samples in [0, 1]: exactly <see cref="DestinationChannelCount"/> samples per source color. It may be
-    /// the same memory as <paramref name="source"/> when both profiles have the same number of channels.
+    /// The converted samples, in [0, 1] unless <see cref="IccColorTransformOptions.ClipFloatingPointSamples"/> was
+    /// <see langword="false"/>: exactly <see cref="DestinationChannelCount"/> samples per source color. It may be the same
+    /// memory as <paramref name="source"/> when both profiles have the same number of channels.
     /// </param>
     /// <exception cref="ArgumentException">
     /// The length of <paramref name="source"/> is not a multiple of <see cref="SourceChannelCount"/>, the length of
@@ -112,7 +123,44 @@ public sealed class IccColorTransform
     public void Convert(ReadOnlySpan<float> source, Span<float> destination)
     {
         Validate(source, destination);
+        if (_isUnbounded)
+        {
+            ConvertUnbounded(source, destination);
+            return;
+        }
+
         ColorConversionKernels.Convert<float, IccSingleSample>(_pipeline, source, destination, SourceChannelCount, DestinationChannelCount);
+    }
+
+    private static IccColorTransform Create(IccPipeline pipeline, IccColorTransformOptions options)
+    {
+        if (!options.ClipFloatingPointSamples && !pipeline.SupportsUnbounded)
+            throw new UnsupportedImageFeatureException("The conversion goes through a lookup table, which cannot convert floating-point samples outside [0, 1]: only matrix-based profiles can keep them.", ImageFormat.Unknown, "Unbounded conversion through a lookup table");
+
+        return new IccColorTransform(pipeline, isUnbounded: !options.ClipFloatingPointSamples);
+    }
+
+    // Color by color: the source samples are read before the destination ones are written, so the two may be the same memory
+    private void ConvertUnbounded(ReadOnlySpan<float> source, Span<float> destination)
+    {
+        var sourceCount = SourceChannelCount;
+        var destinationCount = DestinationChannelCount;
+        Span<double> values = stackalloc double[IccPipeline.MaxChannels];
+        for (int input = 0, output = 0; input < source.Length; input += sourceCount, output += destinationCount)
+        {
+            values.Clear();
+            for (var channel = 0; channel < sourceCount; channel++)
+            {
+                values[channel] = source[input + channel];
+            }
+
+            _pipeline.ApplyUnbounded(values);
+
+            for (var channel = 0; channel < destinationCount; channel++)
+            {
+                destination[output + channel] = (float)values[channel];
+            }
+        }
     }
 
     private void Validate<T>(ReadOnlySpan<T> source, Span<T> destination)

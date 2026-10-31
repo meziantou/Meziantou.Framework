@@ -52,6 +52,28 @@ public sealed class IccColorTransformOptions
     public bool BlackPointCompensation { get; init; } = true;
 
     /// <summary>
+    /// Gets a value indicating whether <see cref="IccColorTransform.Convert(ReadOnlySpan{float}, Span{float})"/> clips the
+    /// samples to [0, 1]. Defaults to <see langword="true"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// With <see langword="false"/>, the floating-point samples keep the values outside [0, 1] that high dynamic range
+    /// colors (light above the white) and wide-gamut colors (a color that the destination primaries reach with a negative
+    /// component) have, at the source and at the destination. The tone curves are extended: in [0, 1] they are evaluated
+    /// as usual, above 1 the function of a parametric curve continues and a sampled curve goes on with the slope of its
+    /// last interval, and below 0 the curve is mirrored through its value at 0 (<c>-f(-x)</c> for a curve through 0, the
+    /// extended transfer functions of CSS Color 4). The matrices have no range. A value that is not a number is read as 0.
+    /// </para>
+    /// <para>
+    /// Only conversions made of tone curves and matrices can do so (matrix-based profiles, the RGB and grayscale profiles
+    /// of displays and color spaces): a conversion through a lookup table (an <c>AToB</c> or <c>BToA</c> table, a profile
+    /// connection space in CIELAB) is refused by <see cref="IccColorTransform.Create(IccProfile, IccProfile, IccColorTransformOptions?)"/>.
+    /// The 8-bit and 16-bit conversions always cover the whole range of their type, which the option does not change.
+    /// </para>
+    /// </remarks>
+    public bool ClipFloatingPointSamples { get; init; } = true;
+
+    /// <summary>
     /// Gets how high dynamic range samples are brought to the standard dynamic range of the destination profile, or
     /// <see langword="null"/> (the default) to refuse to convert them.
     /// </summary>

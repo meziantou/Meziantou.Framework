@@ -150,6 +150,37 @@ internal sealed class IccCurve
         return Clip(EvaluateParametric(_function, _g, _a, _b, _c, _d, _e, _f, x));
     }
 
+    /// <summary>
+    /// Evaluates the curve without clipping: in [0, 1] as <see cref="Evaluate"/> (a function of the parametric types is not
+    /// clipped), above 1 the function of a parametric curve continues and a table goes on with the slope of its last
+    /// interval, and below 0 the curve is mirrored through its value at 0 (<c>2 f(0) - f(-x)</c>), as the extended sRGB
+    /// function of CSS Color 4 is.
+    /// </summary>
+    /// <param name="x">The input.</param>
+    /// <returns>The output.</returns>
+    public double EvaluateUnbounded(double x)
+    {
+        if (double.IsNaN(x))
+            x = 0;
+
+        if (_function == FunctionIdentity)
+            return x;
+
+        if (x < 0)
+            return (2 * EvaluateUnbounded(0)) - EvaluateUnbounded(-x);
+
+        if (_table is { } table)
+        {
+            if (x <= 1)
+                return Interpolate(table, x);
+
+            var slope = (table[^1] - table[^2]) * (table.Length - 1);
+            return table[^1] + (slope * (x - 1));
+        }
+
+        return EvaluateParametric(_function, _g, _a, _b, _c, _d, _e, _f, x);
+    }
+
     /// <summary>Creates the generalized inverse of the curve.</summary>
     /// <param name="inverse">The inverse curve.</param>
     /// <returns><see langword="false"/> if the curve is constant over [0, 1] and therefore cannot be inverted.</returns>

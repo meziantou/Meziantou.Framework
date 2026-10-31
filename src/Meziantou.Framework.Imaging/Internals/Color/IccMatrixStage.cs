@@ -56,6 +56,11 @@ internal sealed class IccMatrixStage : IccStage
         return new IccMatrixStage(matrix, offset);
     }
 
+    // A linear function: it has no range
+    public override bool SupportsUnbounded => true;
+
+    public override void ApplyUnbounded(Span<double> values) => Apply(values);
+
     public override void Apply(Span<double> values)
     {
         var (x, y, z) = (values[0], values[1], values[2]);

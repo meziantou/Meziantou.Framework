@@ -120,6 +120,41 @@ namespace Meziantou.Framework.Imaging
         public bool ShareHistogramAcrossFrames { get => throw null; init { } }
     }
 
+    public sealed class AuxiliaryImage
+    {
+        public string? AuxiliaryType { get => throw null; }
+        public Meziantou.Framework.Imaging.Metadata.GainMapMetadata? GainMapMetadata { get => throw null; }
+        public Meziantou.Framework.Imaging.AuxiliaryImageKind Kind { get => throw null; }
+        public Meziantou.Framework.Imaging.Size Size { get => throw null; }
+        public Meziantou.Framework.Imaging.Image Decode(Meziantou.Framework.Imaging.ImageDecodeOptions? options = null) => throw null;
+        public Meziantou.Framework.Imaging.Image<TPixel> Decode<TPixel>(Meziantou.Framework.Imaging.ImageDecodeOptions? options = null) where TPixel : unmanaged => throw null;
+        public override string ToString() => throw null;
+    }
+
+    public sealed class AuxiliaryImageCollection : System.Collections.Generic.IEnumerable<Meziantou.Framework.Imaging.AuxiliaryImage>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.Imaging.AuxiliaryImage>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.AuxiliaryImage>, System.Collections.IEnumerable
+    {
+        public Meziantou.Framework.Imaging.ImageConfiguration Configuration { get => throw null; }
+        public int Count { get => throw null; }
+        public Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+        public Meziantou.Framework.Imaging.AuxiliaryImage? GainMapImage { get => throw null; }
+        public Meziantou.Framework.Imaging.AuxiliaryImage this[int index] { get => throw null; }
+        public Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.RgbaFloat> DecodeHdr(double hdrHeadroom, Meziantou.Framework.Imaging.ImageDecodeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Collections.Generic.IEnumerator<Meziantou.Framework.Imaging.AuxiliaryImage> GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        public static Meziantou.Framework.Imaging.AuxiliaryImageCollection Load(System.IO.Stream stream, Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) => throw null;
+        public static Meziantou.Framework.Imaging.AuxiliaryImageCollection Load(System.ReadOnlySpan<byte> data, Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) => throw null;
+        public static Meziantou.Framework.Imaging.AuxiliaryImageCollection Load(string path, Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) => throw null;
+    }
+
+    public enum AuxiliaryImageKind
+    {
+        Other = 0,
+        Thumbnail = 1,
+        Depth = 2,
+        GainMap = 3,
+        Matte = 4,
+    }
+
     public struct Bgr565 : System.IEquatable<Meziantou.Framework.Imaging.Bgr565>
     {
         public ushort PackedValue;
@@ -752,6 +787,7 @@ namespace Meziantou.Framework.Imaging
     public sealed class IccColorTransformOptions
     {
         public bool BlackPointCompensation { get => throw null; init { } }
+        public bool ClipFloatingPointSamples { get => throw null; init { } }
         public static Meziantou.Framework.Imaging.IccColorTransformOptions Default { get => throw null; }
         public Meziantou.Framework.Imaging.Metadata.IccRenderingIntent Intent { get => throw null; init { } }
         public Meziantou.Framework.Imaging.HdrToneMappingOptions? ToneMapping { get => throw null; init { } }
@@ -3208,6 +3244,35 @@ namespace Meziantou.Framework.Imaging.Metadata
         public Meziantou.Framework.Imaging.FrameDuration Duration { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Point? Hotspot { get => throw null; set { } }
         public Meziantou.Framework.Imaging.Metadata.FrameMetadata Clone() => throw null;
+    }
+
+    public sealed class GainMapChannel : System.IEquatable<Meziantou.Framework.Imaging.Metadata.GainMapChannel>
+    {
+        public double AlternateOffset { get => throw null; }
+        public double BaseOffset { get => throw null; }
+        public double GainMapMax { get => throw null; }
+        public double GainMapMin { get => throw null; }
+        public double Gamma { get => throw null; }
+        public GainMapChannel(double gainMapMin, double gainMapMax, double gamma, double baseOffset, double alternateOffset) { }
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Imaging.Metadata.GainMapChannel? other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public override string ToString() => throw null;
+    }
+
+    public sealed class GainMapMetadata : System.IEquatable<Meziantou.Framework.Imaging.Metadata.GainMapMetadata>
+    {
+        public double AlternateHdrHeadroom { get => throw null; }
+        public double BaseHdrHeadroom { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Metadata.GainMapChannel> Channels { get => throw null; }
+        public bool UseBaseColorSpace { get => throw null; }
+        public GainMapMetadata(double baseHdrHeadroom, double alternateHdrHeadroom, System.Collections.Generic.IEnumerable<Meziantou.Framework.Imaging.Metadata.GainMapChannel> channels, bool useBaseColorSpace = true) { }
+        public Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.RgbaFloat> Apply(Meziantou.Framework.Imaging.Image baseImage, Meziantou.Framework.Imaging.Image gainMap, double hdrHeadroom, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] Meziantou.Framework.Imaging.Metadata.GainMapMetadata? other) => throw null;
+        public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
+        public override int GetHashCode() => throw null;
+        public double GetWeight(double hdrHeadroom) => throw null;
+        public override string ToString() => throw null;
     }
 
     public sealed class IccProfile

@@ -45,8 +45,8 @@ public static string ConvertHeic(string heicPath, string jpegPath)
 ```
 <!-- endref -->
 
-See [Handling phone photos](../03-Guides/05-HandlePhonePhotos.md). Thumbnails, gain maps, depth maps and the other photos
-of a burst are not read.
+See [Handling phone photos](../03-Guides/05-HandlePhonePhotos.md). The thumbnails, depth maps, mattes and gain maps of the photo
+are listed by [AuxiliaryImageCollection](cref:Meziantou.Framework.Imaging.AuxiliaryImageCollection), which decodes them on request; the other photos of a burst are not read.
 
 ## Save a HEIC file
 

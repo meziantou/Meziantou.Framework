@@ -11,6 +11,20 @@ internal abstract class IccStage
     public abstract void Apply(Span<double> values);
 
     /// <summary>
+    /// Gets a value indicating whether the stage can convert values outside [0, 1] without clipping them
+    /// (<see cref="ApplyUnbounded"/>): the tone curves and the matrices. A lookup table cannot.
+    /// </summary>
+    public virtual bool SupportsUnbounded => false;
+
+    /// <summary>
+    /// Converts one color in place without clipping it: the tone curves are extended beyond [0, 1] and the clipping
+    /// stages keep the values (<see cref="IccColorTransformOptions.ClipFloatingPointSamples"/>).
+    /// </summary>
+    /// <param name="values">The values, at least <see cref="IccPipeline.MaxChannels"/> elements.</param>
+    /// <exception cref="NotSupportedException">The stage does not support it (<see cref="SupportsUnbounded"/>).</exception>
+    public virtual void ApplyUnbounded(Span<double> values) => throw new NotSupportedException("The stage cannot convert values outside [0, 1].");
+
+    /// <summary>
     /// Applies the stage to colors stored by component, with the same arithmetic as <see cref="Apply"/> for each color:
     /// the stages that matrix-based conversions use override it with loops over each component, the others apply
     /// <see cref="Apply"/> to each color.

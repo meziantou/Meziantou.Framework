@@ -609,6 +609,18 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   9.0.2 misreads the category 16.
   Apple ImageIO does not read lossless files reliably. The process with arithmetic coding (SOF11) is not decoded: no
   tool at hand writes or reads it.
+- **Scaled JPEG decoding** (`ImageDecodeRequest.ScaleDenominator`/`TargetSize`, `JpegFrameComponent.SetGeometry`,
+  `JpegIdct.TransformReduced`). A codec opts in with `ImageCodec.SupportsScaledDecoding`; the drivers reject an exact scale
+  for the others before decoding (`ImageDecodeRequest.For`), and a decoder picks its denominator with
+  `GetScaleDenominator`. A JPEG block gives the means of the samples of its full inverse DCT (a box filter from all 64
+  coefficients, not the transform of the lowest frequencies, which rings and was 10 dB further from djpeg); a subsampled
+  component is reduced by `s / gcd(s, ratio)` only, per direction, and upsampled by what remains. The full-scale path
+  must not move: a component that is not reduced goes through the unchanged 8x8 code, and the full decodes of the
+  fixtures and of photos were hashed against `main` (identical). The test contract is `JpegTestImage.GetExpectedPixels(s)`
+  (the mean of the exact samples, two-sided ambiguity check: reduced samples are often exact halves); djpeg
+  `-scale 1/n` agrees within 3 units except on 4:2:2, where djpeg upsamples its chrominance and the library is closer to
+  the box filter of the full decode. The entropy decoding bounds the gain in time (about half of a full decode of a
+  4:2:0 photo at 1/8).
 - **JPEG 2000** (`Internals/Codecs/Jpeg2000`). Written from Rec. ITU-T T.800 (Part 1) and T.814 (Part 15, the
   high-throughput block coder, `Jpeg2000/Ht`); OpenJPEG, OpenJPH and FFmpeg are test oracles only. The structure parser
   reads the boxes of a file and gives the codestream to `Jpeg2000CodestreamWalker`, which asks for whole marker

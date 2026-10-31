@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -82,6 +83,386 @@ internal static class JpegIdct
         {
             destination.Slice(y * stride, 8).Fill(value);
         }
+    }
+
+    /// <summary>Writes the <paramref name="width"/> by <paramref name="height"/> samples of a block whose AC coefficients are all zero (scaled decoding).</summary>
+    /// <param name="dequantizedDc">The DC coefficient multiplied by its quantization value.</param>
+    /// <param name="destination">The first sample of the block.</param>
+    /// <param name="stride">The distance between two sample rows.</param>
+    /// <param name="width">The number of samples of a row of the block: 1, 2, 4 or 8.</param>
+    /// <param name="height">The number of rows of the block: 1, 2, 4 or 8.</param>
+    public static void TransformDcOnly(long dequantizedDc, Span<byte> destination, int stride, int width, int height)
+    {
+        var value = (byte)Math.Clamp(((dequantizedDc + 4) >> 3) + 128, 0, 255);
+        for (var y = 0; y < height; y++)
+        {
+            destination.Slice(y * stride, width).Fill(value);
+        }
+    }
+
+    /// <summary>Writes the <paramref name="width"/> by <paramref name="height"/> samples of more than 8 bits of a block whose AC coefficients are all zero (scaled decoding).</summary>
+    /// <param name="dequantizedDc">The DC coefficient multiplied by its quantization value.</param>
+    /// <param name="destination">The first sample of the block.</param>
+    /// <param name="stride">The distance between two sample rows.</param>
+    /// <param name="precision">The number of bits of a sample.</param>
+    /// <param name="width">The number of samples of a row of the block: 1, 2, 4 or 8.</param>
+    /// <param name="height">The number of rows of the block: 1, 2, 4 or 8.</param>
+    public static void TransformDeepDcOnly(long dequantizedDc, Span<ushort> destination, int stride, int precision, int width, int height)
+    {
+        var value = (ushort)Math.Clamp(((dequantizedDc + 4) >> 3) + (1 << (precision - 1)), 0, (1 << precision) - 1);
+        for (var y = 0; y < height; y++)
+        {
+            destination.Slice(y * stride, width).Fill(value);
+        }
+    }
+
+    /// <summary>
+    /// Transforms dequantized coefficients (natural order) into <paramref name="width"/> by <paramref name="height"/> samples
+    /// (scaled decoding): each sample is the mean of the <c>8 / width</c> by <c>8 / height</c> samples of the 8x8 inverse
+    /// DCT that it replaces, before their level shift and rounding.
+    /// </summary>
+    /// <remarks>
+    /// The mean of consecutive samples of a cosine is a cosine of the reduced grid: the mean of the samples <c>2m</c> and
+    /// <c>2m + 1</c> of the 8-point transform is <c>sum over k of C(k)/2 * cos(k * pi / 16) * x[k] * cos((2m + 1) * k * pi / 8)</c>,
+    /// and the mean of the samples <c>4m</c> to <c>4m + 3</c> is
+    /// <c>sum over k of C(k)/2 * sin(k * pi / 4) / (4 * sin(k * pi / 16)) * x[k] * cos((2m + 1) * k * pi / 4)</c>, whose
+    /// even terms vanish but the DC one. Every coefficient takes part, so the result is the box filter of the full decode
+    /// (not the transform of the lowest frequencies alone, which rings). The two passes are separable, columns first, in
+    /// IEEE double precision with the constants written below as literals, and the samples are rounded like
+    /// <see cref="Transform(Span{double}, Span{byte}, int, bool)"/>; a size of 8 is the 8-point transform, a size of 1 the
+    /// DC term.
+    /// </remarks>
+    /// <param name="coefficients">64 dequantized coefficients, natural order; overwritten (used as the intermediate buffer).</param>
+    /// <param name="destination">The first sample of the block.</param>
+    /// <param name="stride">The distance between two sample rows.</param>
+    /// <param name="width">The number of samples of a row of the block: 1, 2, 4 or 8.</param>
+    /// <param name="height">The number of rows of the block: 1, 2, 4 or 8.</param>
+    /// <param name="sparse">Whether every coefficient outside the top-left 4x4 corner is zero (see <see cref="IsSparse(int)"/>): the columns 4 to 7, whose transform is zero, are skipped.</param>
+    public static void TransformReduced(Span<double> coefficients, Span<byte> destination, int stride, int width, int height, bool sparse = false)
+    {
+        var block = coefficients[..64];
+        TransformReduced(block, width, height, sparse);
+        if (width >= 2 && Vector128.IsHardwareAccelerated)
+        {
+            // Two samples at a time, rounded and clamped like ToSample
+            ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, ((height - 1) * stride) + width);
+            ref var samples = ref unsafe(MemoryMarshal.GetReference(block));
+            ref var output = ref unsafe(MemoryMarshal.GetReference(destination));
+            for (var y = 0; y < height; y++)
+            {
+                for (var x = 0; x < width; x += 2)
+                {
+                    var value = unsafe(Vector128.LoadUnsafe(ref samples, (nuint)((y * 8) + x)));
+                    var rounded = Vector128.ConvertToInt64(Vector128.Min(Vector128.Max(Vector128.Floor(value + Vector128.Create(128.5)), Vector128<double>.Zero), Vector128.Create(255.0)));
+                    ref var target = ref unsafe(Unsafe.Add(ref output, (y * stride) + x));
+                    ref var next = ref unsafe(Unsafe.Add(ref target, 1));
+                    target = (byte)rounded.ToScalar();
+                    next = (byte)rounded.GetElement(1);
+                }
+            }
+
+            return;
+        }
+
+        for (var y = 0; y < height; y++)
+        {
+            var samples = block.Slice(y * 8, width);
+            var output = destination.Slice(y * stride, samples.Length);
+            for (var x = 0; x < samples.Length; x++)
+            {
+                output[x] = ToSample(samples[x]);
+            }
+        }
+    }
+
+    /// <summary>Transforms dequantized coefficients (natural order) into <paramref name="width"/> by <paramref name="height"/> samples of more than 8 bits (scaled decoding), like <see cref="TransformReduced(Span{double}, Span{byte}, int, int, int, bool)"/>.</summary>
+    /// <param name="coefficients">64 dequantized coefficients, natural order; overwritten (used as the intermediate buffer).</param>
+    /// <param name="destination">The first sample of the block.</param>
+    /// <param name="stride">The distance between two sample rows.</param>
+    /// <param name="precision">The number of bits of a sample.</param>
+    /// <param name="width">The number of samples of a row of the block: 1, 2, 4 or 8.</param>
+    /// <param name="height">The number of rows of the block: 1, 2, 4 or 8.</param>
+    /// <param name="sparse">Whether every coefficient outside the top-left 4x4 corner is zero.</param>
+    public static void TransformDeepReduced(Span<double> coefficients, Span<ushort> destination, int stride, int precision, int width, int height, bool sparse = false)
+    {
+        var block = coefficients[..64];
+        TransformReduced(block, width, height, sparse);
+        var shift = (1 << (precision - 1)) + 0.5;
+        double max = (1 << precision) - 1;
+        for (var y = 0; y < height; y++)
+        {
+            var samples = block.Slice(y * 8, width);
+            var output = destination.Slice(y * stride, samples.Length);
+            for (var x = 0; x < samples.Length; x++)
+            {
+                var rounded = Math.Floor(samples[x] + shift);
+                output[x] = rounded <= 0 ? (ushort)0 : rounded >= max ? (ushort)max : (ushort)rounded;
+            }
+        }
+    }
+
+    /// <summary>
+    /// The separable reduced transform, in place: the columns <c>block[v * 8 + u]</c> become <c>block[y * 8 + u]</c> for the
+    /// first <paramref name="height"/> rows, then each of these rows becomes its first <paramref name="width"/> samples,
+    /// before the level shift. With hardware vector support, two columns (then two rows) at a time, with exactly the
+    /// operations of the scalar reference in the same order. A sparse block skips the columns 4 to 7: their inputs are
+    /// zero, and so stay their outputs (like the sparse 8x8 transform, the only difference can be the sign of a zero).
+    /// </summary>
+    internal static void TransformReduced(Span<double> block, int width, int height, bool sparse = false)
+    {
+        if (Vector128.IsHardwareAccelerated)
+        {
+            TransformReducedVector128(block, width, height, sparse);
+        }
+        else
+        {
+            TransformReducedScalar(block, width, height, sparse);
+        }
+    }
+
+    /// <summary>The scalar reference of <see cref="TransformReduced(Span{double}, int, int, bool)"/>.</summary>
+    internal static void TransformReducedScalar(Span<double> block, int width, int height, bool sparse = false)
+    {
+        for (var u = 0; u < (sparse ? 4 : 8); u++)
+        {
+            var x0 = block[u];
+            var x1 = block[8 + u];
+            var x2 = block[16 + u];
+            var x3 = block[24 + u];
+            var x4 = block[32 + u];
+            var x5 = block[40 + u];
+            var x6 = block[48 + u];
+            var x7 = block[56 + u];
+            switch (height)
+            {
+                case 8:
+                    Transform1D(x0, x1, x2, x3, x4, x5, x6, x7, out block[u], out block[8 + u], out block[16 + u], out block[24 + u], out block[32 + u], out block[40 + u], out block[48 + u], out block[56 + u]);
+                    break;
+
+                case 4:
+                    Reduce4(x0, x1, x2, x3, x5, x6, x7, out block[u], out block[8 + u], out block[16 + u], out block[24 + u]);
+                    break;
+
+                case 2:
+                    Reduce2(x0, x1, x3, x5, x7, out block[u], out block[8 + u]);
+                    break;
+
+                default:
+                    Debug.Assert(height == 1);
+                    block[u] = C0 * x0;
+                    break;
+            }
+        }
+
+        for (var y = 0; y < height * 8; y += 8)
+        {
+            TransformReducedScalarRow(block.Slice(y, 8), width);
+        }
+    }
+
+    /// <summary>The <see cref="Vector128{T}"/> form of <see cref="TransformReducedScalar"/>: two columns, then two rows at once.</summary>
+    internal static void TransformReducedVector128(Span<double> coefficients, int width, int height, bool sparse = false)
+    {
+        // Bounds are checked once here; the loops below use unchecked references
+        ArgumentOutOfRangeException.ThrowIfLessThan(coefficients.Length, 64);
+        ref var block = ref unsafe(MemoryMarshal.GetReference(coefficients));
+
+        // Columns, two at a time: block[v * 8 + u] -> block[y * 8 + u]
+        for (var u = 0; u < (sparse ? 4 : 8); u += 2)
+        {
+            var x0 = Load128(ref block, u);
+            var x1 = Load128(ref block, 8 + u);
+            var x2 = Load128(ref block, 16 + u);
+            var x3 = Load128(ref block, 24 + u);
+            var x4 = Load128(ref block, 32 + u);
+            var x5 = Load128(ref block, 40 + u);
+            var x6 = Load128(ref block, 48 + u);
+            var x7 = Load128(ref block, 56 + u);
+            switch (height)
+            {
+                case 8:
+                    Transform1D(x0, x1, x2, x3, x4, x5, x6, x7, out var c0, out var c1, out var c2, out var c3, out var c4, out var c5, out var c6, out var c7);
+                    Store128(c0, c1, c2, c3, c4, c5, c6, c7, ref block, u);
+                    break;
+
+                case 4:
+                    Reduce4(x0, x1, x2, x3, x5, x6, x7, out var d0, out var d1, out var d2, out var d3);
+                    Store(d0, ref block, u);
+                    Store(d1, ref block, 8 + u);
+                    Store(d2, ref block, 16 + u);
+                    Store(d3, ref block, 24 + u);
+                    break;
+
+                case 2:
+                    Reduce2(x0, x1, x3, x5, x7, out var e0, out var e1);
+                    Store(e0, ref block, u);
+                    Store(e1, ref block, 8 + u);
+                    break;
+
+                default:
+                    Debug.Assert(height == 1);
+                    Store(Vector128.Create(C0) * x0, ref block, u);
+                    break;
+            }
+        }
+
+        // Rows, two at a time: lane 0 is row y, lane 1 row y + 1; a block of one row is transformed by the scalar reference
+        if (height == 1)
+        {
+            TransformReducedScalarRow(coefficients[..8], width);
+            return;
+        }
+
+        for (var y = 0; y < height * 8; y += 16)
+        {
+            var a0 = Load128(ref block, y);
+            var a2 = Load128(ref block, y + 2);
+            var a4 = Load128(ref block, y + 4);
+            var a6 = Load128(ref block, y + 6);
+            var b0 = Load128(ref block, y + 8);
+            var b2 = Load128(ref block, y + 10);
+            var b4 = Load128(ref block, y + 12);
+            var b6 = Load128(ref block, y + 14);
+            var x0 = InterleaveLower(a0, b0);
+            var x1 = InterleaveUpper(a0, b0);
+            var x2 = InterleaveLower(a2, b2);
+            var x3 = InterleaveUpper(a2, b2);
+            var x4 = InterleaveLower(a4, b4);
+            var x5 = InterleaveUpper(a4, b4);
+            var x6 = InterleaveLower(a6, b6);
+            var x7 = InterleaveUpper(a6, b6);
+            switch (width)
+            {
+                case 8:
+                    Transform1D(x0, x1, x2, x3, x4, x5, x6, x7, out var c0, out var c1, out var c2, out var c3, out var c4, out var c5, out var c6, out var c7);
+                    StoreRows(c0, c1, ref block, y);
+                    StoreRows(c2, c3, ref block, y + 2);
+                    StoreRows(c4, c5, ref block, y + 4);
+                    StoreRows(c6, c7, ref block, y + 6);
+                    break;
+
+                case 4:
+                    Reduce4(x0, x1, x2, x3, x5, x6, x7, out var d0, out var d1, out var d2, out var d3);
+                    StoreRows(d0, d1, ref block, y);
+                    StoreRows(d2, d3, ref block, y + 2);
+                    break;
+
+                case 2:
+                    Reduce2(x0, x1, x3, x5, x7, out var e0, out var e1);
+                    StoreRows(e0, e1, ref block, y);
+                    break;
+
+                default:
+                    Debug.Assert(width == 1);
+                    var dc = Vector128.Create(C0) * x0;
+                    ref var first = ref unsafe(Unsafe.Add(ref block, y));
+                    ref var second = ref unsafe(Unsafe.Add(ref block, y + 8));
+                    first = dc.ToScalar();
+                    second = dc.GetElement(1);
+                    break;
+            }
+        }
+
+        static Vector128<double> Load128(ref double block, int index) => unsafe(Vector128.LoadUnsafe(ref block, (nuint)index));
+
+        static void Store(Vector128<double> value, ref double block, int index)
+        {
+            unsafe { value.StoreUnsafe(ref block, (nuint)index); }
+        }
+
+        // The outputs m and m + 1 of the rows y (lanes 0) and y + 1 (lanes 1), at block[y * 8 + m] and block[(y + 1) * 8 + m]
+        static void StoreRows(Vector128<double> first, Vector128<double> second, ref double block, int index)
+        {
+            Store(InterleaveLower(first, second), ref block, index);
+            Store(InterleaveUpper(first, second), ref block, index + 8);
+        }
+    }
+
+    /// <summary>The row pass of the scalar reduced transform on one row.</summary>
+    private static void TransformReducedScalarRow(Span<double> row, int width)
+    {
+        var x0 = row[0];
+        var x1 = row[1];
+        var x2 = row[2];
+        var x3 = row[3];
+        var x4 = row[4];
+        var x5 = row[5];
+        var x6 = row[6];
+        var x7 = row[7];
+        switch (width)
+        {
+            case 8:
+                Transform1D(x0, x1, x2, x3, x4, x5, x6, x7, out row[0], out row[1], out row[2], out row[3], out row[4], out row[5], out row[6], out row[7]);
+                break;
+
+            case 4:
+                Reduce4(x0, x1, x2, x3, x5, x6, x7, out row[0], out row[1], out row[2], out row[3]);
+                break;
+
+            case 2:
+                Reduce2(x0, x1, x3, x5, x7, out row[0], out row[1]);
+                break;
+
+            default:
+                Debug.Assert(width == 1);
+                row[0] = C0 * x0;
+                break;
+        }
+    }
+
+    /// <summary>The <see cref="Vector128{T}"/> form of the scalar <c>Reduce4</c>: the same expressions, lane by lane.</summary>
+    private static void Reduce4(Vector128<double> x0, Vector128<double> x1, Vector128<double> x2, Vector128<double> x3, Vector128<double> x5, Vector128<double> x6, Vector128<double> x7,
+        out Vector128<double> o0, out Vector128<double> o1, out Vector128<double> o2, out Vector128<double> o3)
+    {
+        var dc = Vector128.Create(C0) * x0;
+        var t = (Vector128.Create(0.32664074121909414) * x2) - (Vector128.Create(0.13529902503654928) * x6);
+        var e0 = dc + t;
+        var e1 = dc - t;
+        var d0 = (Vector128.Create(0.4530637231764439) * x1) + (Vector128.Create(0.15909482257160426) * x3) - (Vector128.Create(0.10630376184590705) * x5) - (Vector128.Create(0.09011997775086851) * x7);
+        var d1 = (Vector128.Create(0.18766513875893265) * x1) - (Vector128.Create(0.3840888783557082) * x3) + (Vector128.Create(0.25663998357966833) * x5) - (Vector128.Create(0.037328917025171326) * x7);
+        o0 = e0 + d0;
+        o1 = e1 + d1;
+        o2 = e1 - d1;
+        o3 = e0 - d0;
+    }
+
+    /// <summary>The <see cref="Vector128{T}"/> form of the scalar <c>Reduce2</c>: the same expressions, lane by lane.</summary>
+    private static void Reduce2(Vector128<double> x0, Vector128<double> x1, Vector128<double> x3, Vector128<double> x5, Vector128<double> x7, out Vector128<double> o0, out Vector128<double> o1)
+    {
+        var dc = Vector128.Create(C0) * x0;
+        var odd = (Vector128.Create(0.3203644309676883) * x1) - (Vector128.Create(0.11249702789205196) * x3) + (Vector128.Create(0.07516811086688067) * x5) - (Vector128.Create(0.0637244473880199) * x7);
+        o0 = dc + odd;
+        o1 = dc - odd;
+    }
+
+    /// <summary>
+    /// The means of the pairs of samples of <c>Transform1D</c>: <c>sum over k of C(k)/2 * cos(k * pi / 16) * x[k] * cos((2m + 1) * k * pi / 8)</c>.
+    /// The term of <c>x4</c> vanishes (<c>cos((2m + 1) * pi / 2)</c> is zero); the even and the odd terms are symmetric.
+    /// </summary>
+    private static void Reduce4(double x0, double x1, double x2, double x3, double x5, double x6, double x7, out double o0, out double o1, out double o2, out double o3)
+    {
+        var dc = C0 * x0;
+        var t = (0.32664074121909414 * x2) - (0.13529902503654928 * x6);
+        var e0 = dc + t;
+        var e1 = dc - t;
+        var d0 = (0.4530637231764439 * x1) + (0.15909482257160426 * x3) - (0.10630376184590705 * x5) - (0.09011997775086851 * x7);
+        var d1 = (0.18766513875893265 * x1) - (0.3840888783557082 * x3) + (0.25663998357966833 * x5) - (0.037328917025171326 * x7);
+        o0 = e0 + d0;
+        o1 = e1 + d1;
+        o2 = e1 - d1;
+        o3 = e0 - d0;
+    }
+
+    /// <summary>
+    /// The means of the halves of the samples of <c>Transform1D</c>: <c>sum over k of C(k)/2 * sin(k * pi / 4) / (4 * sin(k * pi / 16)) * x[k] * cos((2m + 1) * k * pi / 4)</c>.
+    /// Only the DC term is even (the others vanish).
+    /// </summary>
+    private static void Reduce2(double x0, double x1, double x3, double x5, double x7, out double o0, out double o1)
+    {
+        var dc = C0 * x0;
+        var odd = (0.3203644309676883 * x1) - (0.11249702789205196 * x3) + (0.07516811086688067 * x5) - (0.0637244473880199 * x7);
+        o0 = dc + odd;
+        o1 = dc - odd;
     }
 
     /// <summary>Transforms dequantized coefficients (natural order) into 8x8 samples of more than 8 bits.</summary>

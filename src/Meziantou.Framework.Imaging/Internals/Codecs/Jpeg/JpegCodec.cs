@@ -11,6 +11,8 @@ internal class JpegCodec : ImageCodec
 
     public override ImageFormat Format => ImageFormat.Jpeg;
 
+    public override bool SupportsScaledDecoding => true;
+
     public static bool MatchesSignature(ReadOnlySpan<byte> prefix) => prefix.StartsWith((ReadOnlySpan<byte>)[0xFF, 0xD8, 0xFF]);
 
     public override bool IsMatch(ReadOnlySpan<byte> prefix) => MatchesSignature(prefix);

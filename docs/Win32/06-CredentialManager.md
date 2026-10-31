@@ -7,9 +7,7 @@ The Windows Credential Manager stores the credentials of the current user, prote
 remember a password or an API token without writing it to a file. [CredentialManager](cref:Meziantou.Framework.Win32.CredentialManager) from the
 `Meziantou.Framework.Win32.CredentialManager` package reads and writes it.
 
-```bash
-dotnet add package Meziantou.Framework.Win32.CredentialManager
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Win32.CredentialManager" />
 
 The examples of this page read or change the credentials of the current user, or show a prompt: they are compiled,
 not run, by the build of the repository.

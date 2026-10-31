@@ -7,9 +7,7 @@ The Local Security Authority (LSA) of Windows can store private data: secrets en
 creator and the administrators can read. Services use it to keep a secret for the whole machine. [LsaPrivateData](cref:Meziantou.Framework.Win32.LsaPrivateData) from
 the `Meziantou.Framework.Win32.Lsa` package reads and writes it.
 
-```bash
-dotnet add package Meziantou.Framework.Win32.Lsa
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Win32.Lsa" />
 
 Before using it, consider the data protection API (DPAPI), exposed by `System.Security.Cryptography.ProtectedData`:
 Microsoft recommends it over the LSA private data, unless you specifically need to manipulate LSA secrets. To store the

@@ -7,9 +7,7 @@ description: Install the package, check whether a path matches a pattern, and en
 
 Add the `Meziantou.Framework.Globbing` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.Globbing
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Globbing" />
 
 The examples of this documentation omit the `using` directives. They need `using Meziantou.Framework.Globbing;`. They
 check their results with assertions such as `Assert.True`, which show what each call returns.
@@ -70,7 +68,7 @@ Assert.Equal([Path.Combine(rootDirectory.FullPath, "src", "a", "abc.txt")], file
 <!-- endref -->
 
 The example creates the files in a temporary directory with the
-[`Meziantou.Framework.TemporaryDirectory`](https://www.nuget.org/packages/Meziantou.Framework.TemporaryDirectory/)
+<NuGetReference Id="Meziantou.Framework.TemporaryDirectory" />
 package. Only the directories that can hold a match are visited: here, the enumeration does not look inside `docs`.
 
 ## Next steps

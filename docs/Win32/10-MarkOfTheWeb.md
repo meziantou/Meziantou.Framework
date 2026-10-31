@@ -8,9 +8,7 @@ security zone, and the URLs the file was downloaded from. This is the Mark of th
 before opening the file, and to block macros and scripts from the Internet. [MarkOfTheWeb](cref:Meziantou.Framework.Win32.MarkOfTheWeb) from the
 `Meziantou.Framework.Win32.MarkOfTheWeb` package reads and writes it.
 
-```bash
-dotnet add package Meziantou.Framework.Win32.MarkOfTheWeb
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Win32.MarkOfTheWeb" />
 
 ## Read and write the Mark of the Web
 

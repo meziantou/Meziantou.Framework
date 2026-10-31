@@ -7,9 +7,7 @@ The `WebAssembly` API of the scripts is available when the browsing context has 
 `Meziantou.Framework.WebPlatform.Wasmtime` package provides one, based on [Wasmtime](https://wasmtime.dev/), which
 compiles the modules to native code:
 
-```bash
-dotnet add package Meziantou.Framework.WebPlatform.Wasmtime
-```
+<InstallNuGetPackage Id="Meziantou.Framework.WebPlatform.Wasmtime" />
 
 <!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/JavaScript/WebAssemblyTests.cs;region=WebPlatformWasmtime_RunModules;format=md-fenced-code-block;dedent=true -->
 ```csharp

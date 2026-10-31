@@ -9,9 +9,7 @@ This page uses JSON. Every language works the same way: replace `Json` by the na
 
 Add the package of the language you parse to a project:
 
-```bash
-dotnet add package Meziantou.Framework.Language.Json
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Language.Json" />
 
 It brings `Meziantou.Framework.Language`, the package every language shares.
 

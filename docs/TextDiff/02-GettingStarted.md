@@ -7,9 +7,7 @@ description: Install the package, compute a line diff between two texts and read
 
 Add the `Meziantou.Framework.TextDiff` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.TextDiff
-```
+<InstallNuGetPackage Id="Meziantou.Framework.TextDiff" />
 
 The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework;`.
 

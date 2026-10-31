@@ -7,9 +7,7 @@ description: Install the package, list an enum in FastEnumAttribute, and call th
 
 Add the `Meziantou.Framework.FastEnumGenerator` package to the project that declares the attribute:
 
-```bash
-dotnet add package Meziantou.Framework.FastEnumGenerator
-```
+<InstallNuGetPackage Id="Meziantou.Framework.FastEnumGenerator" />
 
 The package contains the source generator, the analyzer and its code fixes. The generator also adds
 `FastEnumAttribute` to the project, in the `Meziantou.Framework.Annotations` namespace. When the project enables implicit

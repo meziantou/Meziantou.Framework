@@ -7,9 +7,7 @@ description: Install the package, list the files to embed, build, and use the ge
 
 Add the `Meziantou.Framework.EmbeddedConstantsGenerator` package to the project that uses the files:
 
-```bash
-dotnet add package Meziantou.Framework.EmbeddedConstantsGenerator
-```
+<InstallNuGetPackage Id="Meziantou.Framework.EmbeddedConstantsGenerator" />
 
 The package contains an MSBuild task and the targets that run it. It is a development dependency: it adds nothing to
 the compiled assembly except the generated class, and the projects that reference yours do not get it.

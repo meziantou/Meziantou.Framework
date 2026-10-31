@@ -7,9 +7,7 @@ description: Install the package, create sizes, and compare and add them.
 
 Add the `Meziantou.Framework.ByteSize` package to your project:
 
-```bash
-dotnet add package Meziantou.Framework.ByteSize
-```
+<InstallNuGetPackage Id="Meziantou.Framework.ByteSize" />
 
 The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework;` and
 `using System.Globalization;`. They check their results with assertions such as `Assert.Equal`, which show what each

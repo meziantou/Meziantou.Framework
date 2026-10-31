@@ -8,9 +8,7 @@ type for any capacity, from 1 to 32,767 characters, with the same members as the
 
 ## Install the generator
 
-```bash
-dotnet add package Meziantou.Framework.FixedStringBuilder.Generator
-```
+<InstallNuGetPackage Id="Meziantou.Framework.FixedStringBuilder.Generator" />
 
 Also reference the `Meziantou.Framework.FixedStringBuilder` package if you want the generated types to implement the
 [`IFixedString` interfaces](03-WorkingWithFixedStrings.md#write-generic-code): they are added only when the project

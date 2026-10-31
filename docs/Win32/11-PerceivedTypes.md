@@ -7,9 +7,7 @@ Windows classifies file extensions into broad kinds, the perceived types: text, 
 Explorer uses them, for instance, to choose the columns of a folder of pictures. [Perceived](cref:Meziantou.Framework.Win32.Perceived) from the
 `Meziantou.Framework.Win32.PerceivedType` package returns the perceived type of a file name or an extension.
 
-```bash
-dotnet add package Meziantou.Framework.Win32.PerceivedType
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Win32.PerceivedType" />
 
 ## Get the perceived type of a file
 

@@ -8,9 +8,7 @@ metadata, instead of comparing its bytes. A change shows which page differs, eve
 a document generated again with a new timestamp or a new internal layout still matches when it looks the same. It is
 based on `Meziantou.Framework.Pdf`, a fully managed PDF library with no native dependency.
 
-```bash
-dotnet add package Meziantou.Framework.SnapshotTesting.Pdf
-```
+<InstallNuGetPackage Id="Meziantou.Framework.SnapshotTesting.Pdf" />
 
 ## Set up
 

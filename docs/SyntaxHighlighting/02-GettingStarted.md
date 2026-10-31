@@ -7,9 +7,7 @@ description: Install the package, highlight a snippet, put it in a page, and add
 
 Add the `Meziantou.Framework.SyntaxHighlighting` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.SyntaxHighlighting
-```
+<InstallNuGetPackage Id="Meziantou.Framework.SyntaxHighlighting" />
 
 ## Highlight a snippet
 

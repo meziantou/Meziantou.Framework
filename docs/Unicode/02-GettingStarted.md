@@ -7,9 +7,7 @@ description: Install the package, count the characters a reader sees, and normal
 
 Add the `Meziantou.Framework.Unicode` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.Unicode
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Unicode" />
 
 The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework;`, and
 `using System.Text;` or `using System.Globalization;` for a few types of .NET (`Rune`, `NormalizationForm`,

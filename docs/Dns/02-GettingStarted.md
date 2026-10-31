@@ -5,13 +5,9 @@ description: Install the packages, query a DNS server, and answer DNS queries fr
 
 ## Install the packages
 
-Add the package you need to a project:
+Add the packages to a project:
 
-```bash
-dotnet add package Meziantou.Framework.DnsClient
-dotnet add package Meziantou.Framework.DnsServer
-dotnet add package Meziantou.Framework.DnsFilter
-```
+<InstallNuGetPackage Id="Meziantou.Framework.DnsClient,Meziantou.Framework.DnsServer,Meziantou.Framework.DnsFilter" />
 
 To run the DNS proxy instead, install the tool. See [Running the proxy](06-DnsProxy/02-RunningTheProxy.md).
 

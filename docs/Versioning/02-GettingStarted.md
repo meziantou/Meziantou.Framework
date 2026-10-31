@@ -7,9 +7,7 @@ description: Install the package, parse a version, read its parts, and create ve
 
 Add the `Meziantou.Framework.Versioning` package to your project:
 
-```bash
-dotnet add package Meziantou.Framework.Versioning
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Versioning" />
 
 The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework.Versioning;`.
 They check their results with assertions such as `Assert.Equal`, which show what each call returns.

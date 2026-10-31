@@ -7,9 +7,7 @@ description: Install the package, parse a query and evaluate it on a JSON docume
 
 Add the `Meziantou.Framework.JsonPath` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.JsonPath
-```
+<InstallNuGetPackage Id="Meziantou.Framework.JsonPath" />
 
 The examples of this documentation omit the `using` directives. They need `using Meziantou.Framework.Json;`,
 `using System.Text.Json;` and `using System.Text.Json.Nodes;`.

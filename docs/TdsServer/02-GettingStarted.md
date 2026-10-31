@@ -7,18 +7,14 @@ description: Install the package, start a server, and query it with Microsoft.Da
 
 Add the `Meziantou.Framework.TdsServer` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.TdsServer
-```
+<InstallNuGetPackage Id="Meziantou.Framework.TdsServer" />
 
 The package depends on the ASP.NET Core shared framework (`Microsoft.AspNetCore.App`), which the .NET SDK provides,
 also in console and test projects.
 
 The examples connect with `Microsoft.Data.SqlClient`, the SQL Server client for .NET:
 
-```bash
-dotnet add package Microsoft.Data.SqlClient
-```
+<InstallNuGetPackage Id="Microsoft.Data.SqlClient" />
 
 The examples of this documentation omit the `using` directives. They use the namespaces listed in
 [Namespaces](01-Introduction.md#namespaces), plus `System.Net`, `System.Security.Claims` and `Microsoft.Data.SqlClient`.

@@ -7,10 +7,7 @@ description: Use the AutoRegister source generator to apply the service defaults
 `Meziantou.AspNetCore.ServiceDefaults`, and every `WebApplicationBuilder.Build()` call of the project also applies the
 service defaults:
 
-```bash
-dotnet add package Meziantou.AspNetCore.ServiceDefaults
-dotnet add package Meziantou.AspNetCore.ServiceDefaults.AutoRegister
-```
+<InstallNuGetPackage Id="Meziantou.AspNetCore.ServiceDefaults,Meziantou.AspNetCore.ServiceDefaults.AutoRegister" />
 
 <!-- ref:../../../tests/Meziantou.AspNetCore.ServiceDefaults.AutoRegister.GeneratorTests/Tests.cs;region=ServiceDefaultsAutoRegister_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp

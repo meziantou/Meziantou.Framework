@@ -7,9 +7,7 @@ description: Install the package, make Assert refer to this library, and write y
 
 Add the `Meziantou.Framework.Assertions` package to your test project:
 
-```bash
-dotnet add package Meziantou.Framework.Assertions
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Assertions" />
 
 The package contains the [Assert](cref:Meziantou.Framework.Assertions.Assert) class and the [analyzers](11-AnalyzerRules.md): they are enabled as soon as the
 package is referenced.

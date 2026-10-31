@@ -7,9 +7,7 @@ description: Install the package, map an endpoint, create an HttpClient that cal
 
 Add the `Meziantou.Framework.HttpClientMock` package to a test project:
 
-```bash
-dotnet add package Meziantou.Framework.HttpClientMock
-```
+<InstallNuGetPackage Id="Meziantou.Framework.HttpClientMock" />
 
 The package references the ASP.NET Core shared framework and the test server, so the project does not need to be a web
 project. The examples of this documentation need `using Meziantou.Framework;` and `using Microsoft.AspNetCore.Http;`.

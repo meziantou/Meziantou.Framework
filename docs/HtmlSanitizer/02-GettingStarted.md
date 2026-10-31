@@ -7,9 +7,7 @@ description: Install the package, sanitize a fragment of user HTML, and insert t
 
 Add the `Meziantou.Framework.HtmlSanitizer` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.HtmlSanitizer
-```
+<InstallNuGetPackage Id="Meziantou.Framework.HtmlSanitizer" />
 
 The examples of this documentation omit `using Meziantou.Framework.Sanitizers;`.
 

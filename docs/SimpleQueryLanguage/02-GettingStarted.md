@@ -7,9 +7,7 @@ description: Install the package, register handlers for the keys of your search,
 
 Add the `Meziantou.Framework.SimpleQueryLanguage` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.SimpleQueryLanguage
-```
+<InstallNuGetPackage Id="Meziantou.Framework.SimpleQueryLanguage" />
 
 The examples of this documentation omit the `using` directives: they need
 `using Meziantou.Framework.SimpleQueryLanguage;`.

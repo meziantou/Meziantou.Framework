@@ -6,9 +6,7 @@ description: Parse RFC 8288 Link header values, find a link by relation type, re
 A `Link` header (RFC 8288) lists links related to a response: the next page of a collection, a resource to preload,
 the canonical URL of a document. [LinkHeaderValue](cref:Meziantou.Framework.Http.LinkHeaderValue), in the `Meziantou.Framework.Http` package, parses it.
 
-```bash
-dotnet add package Meziantou.Framework.Http
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Http" />
 
 ## Read the links of a response
 

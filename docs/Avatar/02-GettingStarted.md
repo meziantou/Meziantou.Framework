@@ -7,9 +7,7 @@ description: Install the package, generate an avatar from a name and use it in a
 
 Add the `Meziantou.Framework.Avatar` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.Avatar
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Avatar" />
 
 The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework;`.
 

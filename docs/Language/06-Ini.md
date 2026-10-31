@@ -7,9 +7,7 @@ description: Parse INI files in the dialect you choose, read values by section a
 that keeps every character. It reads values by section and key, and sets them by writing new lines like the ones around
 them.
 
-```bash
-dotnet add package Meziantou.Framework.Language.Ini
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Language.Ini" />
 
 ## Parse a file
 

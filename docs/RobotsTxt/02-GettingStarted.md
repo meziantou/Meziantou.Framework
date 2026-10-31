@@ -7,9 +7,7 @@ description: Install the package, parse a robots.txt file and check whether a cr
 
 Add the `Meziantou.Framework.RobotsTxt` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.RobotsTxt
-```
+<InstallNuGetPackage Id="Meziantou.Framework.RobotsTxt" />
 
 The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework.RobotsTxt;`.
 

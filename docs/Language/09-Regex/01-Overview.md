@@ -9,9 +9,7 @@ report its mistakes, or rename one of its groups.
 
 It is a parser, not an engine: nothing in it matches text. Use `System.Text.RegularExpressions` for that.
 
-```bash
-dotnet add package Meziantou.Framework.Language.Regex
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Language.Regex" />
 
 | Page | Covers |
 | --- | --- |

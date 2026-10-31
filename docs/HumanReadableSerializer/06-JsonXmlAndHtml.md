@@ -67,9 +67,7 @@ Assert.Equal("""
 
 The `Meziantou.Framework.HumanReadableSerializer.Html` package adds a formatter for `text/html` values:
 
-```bash
-dotnet add package Meziantou.Framework.HumanReadableSerializer.Html
-```
+<InstallNuGetPackage Id="Meziantou.Framework.HumanReadableSerializer.Html" />
 
 <!-- ref:../../tests/Meziantou.Framework.HumanReadableSerializer.Html.Tests/HttpHtmlSerializerTests.cs;region=HtmlFormatter_Normalize;format=md-fenced-code-block;dedent=true -->
 ```csharp

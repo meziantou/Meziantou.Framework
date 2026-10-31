@@ -6,9 +6,7 @@ description: Parse modern CSS, with nesting, selectors, media and container quer
 `Meziantou.Framework.Language.Css` parses CSS as browsers read it today into a tree that keeps every character, comments
 included. Use it to analyze a style sheet, rename a class, or check the `style` attribute of an HTML element.
 
-```bash
-dotnet add package Meziantou.Framework.Language.Css
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Language.Css" />
 
 ## Parse a style sheet
 

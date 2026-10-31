@@ -25,7 +25,7 @@ default:
 4. The IDE that runs the tests: Visual Studio, Visual Studio Code or Rider, found among the ancestor processes of the test
    process on Windows, Linux and macOS.
 5. The first GUI diff tool installed on the machine, detected by
-   [`Meziantou.Framework.DiffEngine`](https://www.nuget.org/packages/Meziantou.Framework.DiffEngine). Terminal tools such
+   <NuGetReference Id="Meziantou.Framework.DiffEngine" />. Terminal tools such
    as Vim and Neovim are skipped, as they cannot run without a terminal.
 
 To use specific tools, set [MergeTools](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings.MergeTools), as in the

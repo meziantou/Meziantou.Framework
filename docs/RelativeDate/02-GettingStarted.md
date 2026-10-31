@@ -7,9 +7,7 @@ description: Install the package, format a date in a culture, and use a time pro
 
 Add the `Meziantou.Framework.RelativeDate` package to your project:
 
-```bash
-dotnet add package Meziantou.Framework.RelativeDate
-```
+<InstallNuGetPackage Id="Meziantou.Framework.RelativeDate" />
 
 The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework;` and
 `using System.Globalization;`. They check their results with assertions such as `Assert.Equal`, which show what each

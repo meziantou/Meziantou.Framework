@@ -5,9 +5,7 @@ description: Install the package, find a diff tool, get its arguments and start 
 
 ## Install the package
 
-```bash
-dotnet add package Meziantou.Framework.DiffEngine
-```
+<InstallNuGetPackage Id="Meziantou.Framework.DiffEngine" />
 
 The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework.DiffEngine;`, and
 `using System.Diagnostics;` to start a process.

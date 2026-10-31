@@ -7,9 +7,7 @@ description: Parse TOML 1.0 and 1.1 into a lossless tree, read values by key, ed
 in a `Cargo.toml` or a `pyproject.toml` and keep the comments, the quoting and the layout of the file. It reads TOML 1.1,
 and TOML 1.0 on request.
 
-```bash
-dotnet add package Meziantou.Framework.Language.Toml
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Language.Toml" />
 
 ## Two TOML packages
 

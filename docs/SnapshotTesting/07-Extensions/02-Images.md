@@ -8,9 +8,7 @@ encoded differently, by another version of a library or of the runtime, still ma
 is based on [Meziantou.Framework.Imaging](../../Imaging/01-Introduction.md), a fully managed image library with no
 native dependency.
 
-```bash
-dotnet add package Meziantou.Framework.SnapshotTesting.Imaging
-```
+<InstallNuGetPackage Id="Meziantou.Framework.SnapshotTesting.Imaging" />
 
 ## Set up
 

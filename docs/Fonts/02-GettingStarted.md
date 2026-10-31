@@ -7,9 +7,7 @@ description: Install the package, load a font file, and read its names, metrics 
 
 Add the `Meziantou.Framework.Fonts` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.Fonts
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Fonts" />
 
 The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework.Fonts;`, and
 `using Meziantou.Framework;` for the Unicode types ([UnicodeScript](cref:Meziantou.Framework.UnicodeScript)).

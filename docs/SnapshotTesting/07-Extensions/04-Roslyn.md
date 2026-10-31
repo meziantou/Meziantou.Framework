@@ -6,9 +6,7 @@ description: Test source generators, syntax rewriters and analyzers with a singl
 `Meziantou.Framework.SnapshotTesting.Roslyn` serializes Roslyn objects, so testing a source generator, a syntax rewriter or
 an analyzer is a single [Snapshot.Validate](cref:Meziantou.Framework.SnapshotTesting.Snapshot.Validate) call. Generated code is stored as `.cs` files that you can read and diff.
 
-```bash
-dotnet add package Meziantou.Framework.SnapshotTesting.Roslyn
-```
+<InstallNuGetPackage Id="Meziantou.Framework.SnapshotTesting.Roslyn" />
 
 ## Set up
 

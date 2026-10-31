@@ -7,9 +7,7 @@ description: Install the package, read the rows of a CSV file by column name, an
 
 Add the `Meziantou.Framework.Csv` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.Csv
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Csv" />
 
 The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework.Csv;`.
 

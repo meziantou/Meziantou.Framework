@@ -7,9 +7,7 @@ description: Install the package and use a few of its most common helpers.
 
 Add the `Meziantou.Framework` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework
-```
+<InstallNuGetPackage Id="Meziantou.Framework" />
 
 The examples of this documentation omit the `using` directives. Most of them need `using Meziantou.Framework;`, and
 the collections need `using Meziantou.Framework.Collections;`.

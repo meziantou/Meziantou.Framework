@@ -8,15 +8,9 @@ versions and writes them in the files.
 
 ## Install the tool
 
-Install or update it as a global tool:
+Install it as a global tool:
 
-```bash
-dotnet tool update Meziantou.Framework.DependencyScanning.Tool --global
-```
-
-The command has the name of the package. To pin the version in a repository, install it as a local tool instead
-(`dotnet new tool-manifest`, then `dotnet tool install Meziantou.Framework.DependencyScanning.Tool`) and run it with
-`dotnet tool run Meziantou.Framework.DependencyScanning.Tool`.
+<InstallDotnetTool Id="Meziantou.Framework.DependencyScanning.Tool" />
 
 ## List the dependencies
 

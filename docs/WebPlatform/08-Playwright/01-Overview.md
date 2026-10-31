@@ -9,9 +9,7 @@ its pages with the API of Playwright: navigation, locators, actions, assertions,
 interception, cookies, emulation, dialogs, popups and frames. No browser is installed or started: the pages run in the
 process of the server.
 
-```bash
-dotnet add package Meziantou.Framework.WebPlatform.Playwright
-```
+<InstallNuGetPackage Id="Meziantou.Framework.WebPlatform.Playwright" />
 
 <!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Playwright.Tests/PlaywrightServerTests.cs;region=PlaywrightServer_Connect;format=md-fenced-code-block;dedent=true -->
 ```csharp

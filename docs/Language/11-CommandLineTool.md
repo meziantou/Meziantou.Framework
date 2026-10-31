@@ -11,13 +11,7 @@ script, or to compare two parses.
 
 Install it as a global tool:
 
-```bash
-dotnet tool install --global Meziantou.Framework.Language.Tool
-```
-
-The command has the name of the package. To pin the version of a repository, install it as a local tool instead
-(`dotnet new tool-manifest`, then `dotnet tool install Meziantou.Framework.Language.Tool`) and run it with
-`dotnet tool run Meziantou.Framework.Language.Tool`.
+<InstallDotnetTool Id="Meziantou.Framework.Language.Tool" />
 
 ## Dump a file
 

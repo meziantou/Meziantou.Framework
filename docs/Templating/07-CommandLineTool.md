@@ -10,14 +10,7 @@ generate source code or configuration files.
 
 Install it as a global tool:
 
-```bash
-dotnet tool install --global Meziantou.Framework.Templating.Tool
-```
-
-The command has the name of the package. To pin the version of a repository, install it as a local tool instead
-(`dotnet new tool-manifest`, then `dotnet tool install Meziantou.Framework.Templating.Tool`) and run it with
-`dotnet tool run Meziantou.Framework.Templating.Tool`. With the .NET 10 SDK, `dnx Meziantou.Framework.Templating.Tool`
-runs it without installing it.
+<InstallDotnetTool Id="Meziantou.Framework.Templating.Tool" />
 
 ## Render a template
 

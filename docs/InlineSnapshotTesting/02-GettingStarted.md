@@ -7,9 +7,7 @@ description: Install the package, write a test without an expected value, and le
 
 Add the `Meziantou.Framework.InlineSnapshotTesting` package to a test project:
 
-```bash
-dotnet add package Meziantou.Framework.InlineSnapshotTesting
-```
+<InstallNuGetPackage Id="Meziantou.Framework.InlineSnapshotTesting" />
 
 The examples of this documentation omit the `using` directives: they need
 `using Meziantou.Framework.InlineSnapshotTesting;`.

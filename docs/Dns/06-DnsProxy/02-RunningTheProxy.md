@@ -7,9 +7,7 @@ description: Install the DNS proxy as a .NET tool, start it, change its settings
 
 The proxy is a .NET tool. It needs the ASP.NET Core runtime:
 
-```bash
-dotnet tool install --global Meziantou.DnsProxy
-```
+<InstallDotnetTool Id="Meziantou.DnsProxy" />
 
 The command has the name of the package. Update it with `dotnet tool update --global Meziantou.DnsProxy`.
 

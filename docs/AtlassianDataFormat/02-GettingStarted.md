@@ -7,9 +7,7 @@ description: Install the package, convert an ADF document to Markdown, and conve
 
 Add the `Meziantou.Framework.AtlassianDataFormat` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.AtlassianDataFormat
-```
+<InstallNuGetPackage Id="Meziantou.Framework.AtlassianDataFormat" />
 
 The examples of this documentation omit the `using` directives: they need
 `using Meziantou.Framework.AtlassianDataFormat;`.

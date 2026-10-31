@@ -8,9 +8,7 @@ directly to generate the API files from your own code, or to inspect a public AP
 types and members of an assembly, find a symbol by its documentation ID, compare the builds of several target
 frameworks, or format declarations for a documentation site.
 
-```bash
-dotnet add package Meziantou.Framework.PublicApiGenerator
-```
+<InstallNuGetPackage Id="Meziantou.Framework.PublicApiGenerator" />
 
 All the types are in the [Meziantou.Framework.PublicApiGenerator](cref:Meziantou.Framework.PublicApiGenerator) namespace; the examples of these
 pages omit the `using` directive.

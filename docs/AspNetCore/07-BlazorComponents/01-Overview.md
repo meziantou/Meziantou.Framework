@@ -5,9 +5,7 @@ description: Install Meziantou.AspNetCore.Components, import its namespace, regi
 
 `Meziantou.AspNetCore.Components` is a Razor class library of Blazor components and browser services.
 
-```bash
-dotnet add package Meziantou.AspNetCore.Components
-```
+<InstallNuGetPackage Id="Meziantou.AspNetCore.Components" />
 
 Import the namespace in `_Imports.razor`:
 

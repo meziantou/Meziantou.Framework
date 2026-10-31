@@ -9,9 +9,7 @@ and list its embedded images.
 
 ## Install the package
 
-```bash
-dotnet add package Meziantou.Framework.Templating.Html
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Templating.Html" />
 
 The package depends on `Meziantou.Framework.Templating`, and its types are in the same namespace.
 

@@ -7,9 +7,7 @@ description: Add HTTP Basic authentication to an ASP.NET Core application and ch
 username and a password in the `Authorization` header of every request, and the handler turns them into a
 `ClaimsPrincipal`.
 
-```bash
-dotnet add package Meziantou.AspNetCore.Authentication.HttpBasic
-```
+<InstallNuGetPackage Id="Meziantou.AspNetCore.Authentication.HttpBasic" />
 
 The types are in the [Meziantou.AspNetCore.Authentication.HttpBasic](cref:Meziantou.AspNetCore.Authentication.HttpBasic) namespace.
 

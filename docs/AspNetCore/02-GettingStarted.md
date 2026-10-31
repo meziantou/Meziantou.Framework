@@ -11,9 +11,7 @@ description: Install the ASP.NET Core packages, set up the service defaults of a
 
 Add the package you need to your project, for instance the service defaults:
 
-```bash
-dotnet add package Meziantou.AspNetCore.ServiceDefaults
-```
+<InstallNuGetPackage Id="Meziantou.AspNetCore.ServiceDefaults" />
 
 The other packages are installed the same way: `Meziantou.AspNetCore`, `Meziantou.AspNetCore.Authentication.HttpBasic`,
 `Meziantou.AspNetCore.Mvc`, `Meziantou.AspNetCore.Components`, `Meziantou.AspNetCore.Components.LogViewer`,

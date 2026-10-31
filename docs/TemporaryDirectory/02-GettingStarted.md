@@ -7,9 +7,7 @@ description: Install the package, create a temporary folder, work in it, and let
 
 Add the `Meziantou.Framework.TemporaryDirectory` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.TemporaryDirectory
-```
+<InstallNuGetPackage Id="Meziantou.Framework.TemporaryDirectory" />
 
 The package depends on [`Meziantou.Framework.FullPath`](../FullPath/01-Introduction.md), which provides the path type
 the examples use. The examples of this documentation omit the `using` directives: they need

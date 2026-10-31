@@ -10,9 +10,7 @@ The examples of this documentation omit the `using` directives: see
 
 Add the package:
 
-```bash
-dotnet add package Meziantou.Extensions.Logging.FileLogger
-```
+<InstallNuGetPackage Id="Meziantou.Extensions.Logging.FileLogger" />
 
 Register the provider on the logging builder of the host. `Host` is in the `Microsoft.Extensions.Hosting` namespace:
 
@@ -35,9 +33,7 @@ The messages are written to the `logs` directory, in a new file every day, and o
 
 Add the package to the test project:
 
-```bash
-dotnet add package Meziantou.Extensions.Logging.InMemory
-```
+<InstallNuGetPackage Id="Meziantou.Extensions.Logging.InMemory" />
 
 Create a logger, pass it to the code under test, and assert on the entries it collected:
 
@@ -59,9 +55,7 @@ See [In-memory logger](04-InMemory/01-Overview.md).
 
 Add the package to a test project that uses xUnit.net v3:
 
-```bash
-dotnet add package Meziantou.Extensions.Logging.Xunit.v3
-```
+<InstallNuGetPackage Id="Meziantou.Extensions.Logging.Xunit.v3" />
 
 Create a logger that writes to the output of the test:
 

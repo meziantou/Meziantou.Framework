@@ -7,9 +7,7 @@ description: Install the package, read a HAR file and walk its entries.
 
 Add the `Meziantou.Framework.HttpArchive` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.HttpArchive
-```
+<InstallNuGetPackage Id="Meziantou.Framework.HttpArchive" />
 
 The examples of this documentation omit the `using` directives: they need
 `using Meziantou.Framework.HttpArchive;`.

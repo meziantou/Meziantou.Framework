@@ -7,9 +7,7 @@ description: Install the package, declare an ID, then create, compare, parse and
 
 Add the `Meziantou.Framework.StronglyTypedId` package to your project:
 
-```bash
-dotnet add package Meziantou.Framework.StronglyTypedId
-```
+<InstallNuGetPackage Id="Meziantou.Framework.StronglyTypedId" />
 
 The package contains the source generator and the attributes. When the project enables implicit usings
 (`<ImplicitUsings>enable</ImplicitUsings>`), the package also adds `global using Meziantou.Framework.Annotations;`;

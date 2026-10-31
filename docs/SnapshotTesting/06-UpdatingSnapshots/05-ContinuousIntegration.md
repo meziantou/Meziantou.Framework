@@ -13,7 +13,7 @@ strategy set with `SNAPSHOTTESTING_STRATEGY`:
   are treated the same way, as no diff tool is expected to show up there.
 - **A continuous testing runner**: NCrunch, ReSharper or Visual Studio Live Unit Testing.
 - **An LLM agent**, such as Claude Code, Codex, GitHub Copilot or Cursor, detected by
-  [`Meziantou.Framework.LLMContext`](https://www.nuget.org/packages/Meziantou.Framework.LLMContext). An agent that runs
+  <NuGetReference Id="Meziantou.Framework.LLMContext" />. An agent that runs
   the tests sees the failure and the actual files, and a person decides whether to approve them.
 
 The test fails as with [Disallow](cref:Meziantou.Framework.SnapshotTesting.SnapshotUpdateStrategy.Disallow), the actual files are written, and the failure message says which environment was

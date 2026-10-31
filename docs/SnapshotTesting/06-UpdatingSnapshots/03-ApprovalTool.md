@@ -10,9 +10,7 @@ matching `*.verified.*` file, replacing the old snapshot.
 
 Install it as a global .NET tool:
 
-```bash
-dotnet tool install --global Meziantou.Framework.SnapshotTesting.Tool
-```
+<InstallDotnetTool Id="Meziantou.Framework.SnapshotTesting.Tool" />
 
 ## Approve every snapshot
 

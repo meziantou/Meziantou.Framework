@@ -7,9 +7,7 @@ description: Install the package, create a control group, limit its resources an
 
 Add the `Meziantou.Framework.Unix.ControlGroups` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.Unix.ControlGroups
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Unix.ControlGroups" />
 
 The examples of this documentation omit the `using` directives: they need
 `using Meziantou.Framework.Unix.ControlGroups;`, and `using System.Diagnostics;` for `Process`. They change the

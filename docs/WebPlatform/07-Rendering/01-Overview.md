@@ -8,9 +8,7 @@ dependency. A rendering backend draws the pages. The `Meziantou.Framework.WebPla
 [Meziantou.Framework.Imaging](../../Imaging/01-Introduction.md): fully managed, with no native dependency, so the same
 page gives the same pixels on every platform.
 
-```bash
-dotnet add package Meziantou.Framework.WebPlatform.Imaging
-```
+<InstallNuGetPackage Id="Meziantou.Framework.WebPlatform.Imaging" />
 
 <!-- ref:../../../samples/Meziantou.Framework.WebPlatform.Samples/ReadmeExamples.cs;region=WebPlatform_TakeScreenshots;format=md-fenced-code-block;dedent=true -->
 ```csharp

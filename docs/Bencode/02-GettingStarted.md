@@ -7,9 +7,7 @@ description: Install the package, read a torrent file and its info-hash, and dec
 
 Add the `Meziantou.Framework.Bencode` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.Bencode
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Bencode" />
 
 The examples of this documentation omit the `using` directives: they need `using Meziantou.Framework.Bencode;`, and
 `using Meziantou.Framework.Bencode.Torrent;` for torrent files.

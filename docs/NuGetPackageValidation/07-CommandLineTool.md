@@ -14,10 +14,6 @@ Install or update it as a global tool:
 dotnet tool update Meziantou.Framework.NuGetPackageValidation.Tool --global
 ```
 
-The command is `meziantou.validate-nuget-package`. To pin the version in a repository, install it as a local tool
-(`dotnet new tool-manifest`, then `dotnet tool install Meziantou.Framework.NuGetPackageValidation.Tool`) and run it with
-`dotnet tool run meziantou.validate-nuget-package`.
-
 ## Validate packages
 
 Pass one or more package paths:

@@ -7,11 +7,7 @@ description: Install the package you need, add its handler to an HttpClient, or 
 
 Each feature is its own package. Add the ones you need to a project:
 
-```bash
-dotnet add package Meziantou.Framework.Http.Caching
-dotnet add package Meziantou.Framework.Http.Hsts
-dotnet add package Meziantou.Framework.Http.ServerSideRequestForgery
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Http.Caching,Meziantou.Framework.Http.Hsts,Meziantou.Framework.Http.ServerSideRequestForgery" />
 
 The [introduction](01-Introduction.md#packages) lists every package. The types are in these namespaces:
 

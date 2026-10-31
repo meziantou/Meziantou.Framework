@@ -7,9 +7,7 @@ description: Install the package, load an image, resize it and save it, then dra
 
 Add the `Meziantou.Framework.Imaging` package to a project:
 
-```bash
-dotnet add package Meziantou.Framework.Imaging
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Imaging" />
 
 The examples of this documentation omit the `using` directives. The first ones only need
 `using Meziantou.Framework.Imaging;`; see [Namespaces](01-Introduction.md#namespaces) for the others.

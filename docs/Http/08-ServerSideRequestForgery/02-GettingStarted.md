@@ -5,9 +5,7 @@ description: Install the package, protect an HttpClient with ServerSideRequestFo
 
 ## Install the package
 
-```bash
-dotnet add package Meziantou.Framework.Http.ServerSideRequestForgery
-```
+<InstallNuGetPackage Id="Meziantou.Framework.Http.ServerSideRequestForgery" />
 
 The examples omit the `using` directives: they need `using Meziantou.Framework.Http.ServerSideRequestForgery;`.
 

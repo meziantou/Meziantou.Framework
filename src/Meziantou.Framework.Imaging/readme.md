@@ -38,7 +38,7 @@ color conversion, and bounded-memory streaming.
   exchange buffers with GPU and display APIs) with 16-bit precision preserved, and two floating-point ones (`RgbaFloat`,
   `RgbaHalf`) for scene-referred and high dynamic range data
 - Crop, auto-crop (background detection), resize (alpha-aware, Contain/Cover/Stretch/Pad/BoxPad), padding and canvas
-  extension, rotate (quarter turns or any angle), skew, affine and perspective transformations, four-point perspective correction, auto-orient, flip, grayscale, Gaussian, box, median and motion blurs, percentile filters, morphology (erosion, dilation, opening, closing, top-hat transforms), unsharp masking, convolution matrices (ready-made sharpen, emboss and edge matrices, a bias for signed results, separable matrices in two passes), edge detection (Sobel, Scharr, Prewitt, Kirsch, Robinson, Laplacians), and tone curves (gamma, levels, curves through points, per-channel lookup tables) and `.cube` color lookup tables, applied to all frames
+  extension, rotate (quarter turns or any angle), skew, affine and perspective transformations, four-point perspective correction, auto-orient, flip, grayscale, Gaussian, box, median, motion, zoom and spin blurs, percentile filters, edge-preserving smoothing (bilateral and guided filters), content-aware crop suggestions, morphology (erosion, dilation, opening, closing, top-hat transforms), unsharp masking, convolution matrices (ready-made sharpen, emboss and edge matrices, a bias for signed results, separable matrices in two passes), edge detection (Sobel, Scharr, Prewitt, Kirsch, Robinson, Laplacians), and tone curves (gamma, levels, curves through points, per-channel lookup tables) and `.cube` color lookup tables, applied to all frames
 - Antialiased vector drawing on a frame or on every frame: filled and stroked shapes and paths with Bézier curves,
   arcs and curves through points, dashed strokes, strokes on one side of their path and arrow heads, solid colors,
   linear, radial and sweep gradients, images (also in perspective), patterns, clips, masks, layers, shadows, blurs,
@@ -468,8 +468,9 @@ writers support one operation at a time: overlapping calls throw `InvalidOperati
 by default (`ImageConfiguration.MaxDegreeOfParallelism = 1`). With more workers, only these operations use them, on
 images of at least 65,536 pixels:
 
-- split into row bands: resizes, transformations, convolutions, blurs, medians and percentile filters, unsharp masks, the `Pixelate`, `OilPaint`
-  and `Flatten` effects, and the `ImageSimilarity` comparisons (SSIM, PSNR, SSIMULACRA 2, Butteraugli);
+- split into row bands: resizes, transformations, convolutions, blurs, medians and percentile filters, unsharp masks, the
+  bilateral filter and the radial blurs, the `Pixelate`, `OilPaint` and `Flatten` effects, and the `ImageSimilarity`
+  comparisons (SSIM, PSNR, SSIMULACRA 2, Butteraugli, at every precision);
 - decoded and encoded: the MCU rows of JPEG frames (the inverse and forward DCT, the conversions; the entropy coding
   stays sequential), the LZW, Deflate and CCITT strips and tiles of TIFF pages (LZW and Deflate only when encoding), the
   chunks of OpenEXR images, the code-blocks and wavelet transforms of JPEG 2000 tiles, the groups of JPEG XL frames, the
@@ -494,8 +495,8 @@ scratch, charged to `MaxLiveAllocationBytes`, so a limit that fits one worker ma
 - **Pixel mutations may be partial.** `Flip`, `Grayscale`, `Convolve` (and the blurs and the sharpening), `Equalize`,
   `AutoLevels`, `Draw`, row callbacks and `ReadFrameInto` write in place: a failure or a cancellation can leave some rows
   or frames updated, but the image stays structurally valid and disposable. `Convolve`, `GaussianBlur`, `BoxBlur`,
-  `MedianBlur`, `PercentileFilter`, the morphological filters, `Sharpen`, `Equalize`, `AutoLevels`, `ApplyToneCurve` and
-  `ApplyLut` rent their working memory first: exceeding the allocation limit
+  `MedianBlur`, `PercentileFilter`, `BilateralFilter`, `GuidedFilter`, `RadialBlur`, the morphological filters, `Sharpen`,
+  `Equalize`, `AutoLevels`, `ApplyToneCurve` and `ApplyLut` rent their working memory first: exceeding the allocation limit
   leaves the image unchanged. `Flip`
   moves the hotspot of a frame once that frame is completely mirrored. In a `Draw` callback, the shapes already drawn
   stay; each shape rents its working storage before it changes a pixel, and a canceled shape leaves the same rows
@@ -530,7 +531,7 @@ and back, and alpha masks to any format with alpha and back are exact.
 Every processing operation and the drawing canvas accept the compact formats, except `Flatten`, `TopHat` and `BlackHat`
 on an `A8` mask, which has no color to hold the result (`NotSupportedException`); the tone curves and lookup tables leave
 an `A8` mask unchanged. `Rgb48` has kernels of its own; the filtering operations
-(resize, transform, convolution, blurs, median, percentile, morphology) and the `Pixelate`, `OilPaint` and `Flatten` effects process `La16`,
+(resize, transform, convolution, blurs, median, percentile, bilateral, guided, radial blurs, morphology) and the `Pixelate`, `OilPaint` and `Flatten` effects process `La16`,
 `La32` and `A8` through a temporary `Rgba32`/`Rgba64` copy of each frame, charged to the image, which gives back the
 same gray levels and alpha (a flattened gray with alpha gets the luma of its flattened colors, as its conversion to
 `Gray8`/`Gray16` does); drawing composites them the same way, a run of pixels at a time. `PngEncoder` and `TiffEncoder` store `La16`, `La32` and
@@ -705,15 +706,16 @@ alpha, and rejects incompatible ICC profiles; use `CloneAs<Gray8>` to change the
 color for each pixel from its own one: brightness, contrast, saturation, a tint, photo presets, a color blindness
 preview), `ReplaceColor` (a new color for the pixels of one color), `Vignette`, `Glow`, `Pixelate`, `OilPaint` and
 `Flatten` (see [Effects](#effects)), `Convolve` (a convolution
-matrix), `GaussianBlur`, `BoxBlur`, `MedianBlur`, `PercentileFilter`, `Sharpen` (an unsharp mask), `DetectEdges`, `Erode`, `Dilate`,
+matrix), `GaussianBlur`, `BoxBlur`, `MedianBlur`, `PercentileFilter`, `Sharpen` (an unsharp mask), `DetectEdges`,
+`BilateralFilter`, `GuidedFilter` and `RadialBlur` (see [Edge-preserving smoothing and radial blurs](#edge-preserving-smoothing-and-radial-blurs)), `Erode`, `Dilate`,
 `MorphologicalOpen`, `MorphologicalClose`, `TopHat` and `BlackHat` (see [Morphology](#morphology)), `CorrectPerspective` (a
 quadrilateral straightened into the whole image), `ApplyToneCurve`, `ApplyToneCurves` and `ApplyLut` (gamma, levels,
 curves, lookup tables, see [Tone curves and color lookup tables](#tone-curves-and-color-lookup-tables)), `Equalize` and `AutoLevels` (histogram
 equalization, CLAHE and contrast stretch, see [Histograms, equalization and auto-levels](#histograms-equalization-and-auto-levels)),
 `Quantize` (a reduction to a palette, see [Color reduction](#color-reduction)) and `Threshold` (black and white, with a
 global or an adaptive threshold, see [Binarization](#binarization)). `Flip`, `Grayscale`, `ApplyColorMatrix`,
-`ReplaceColor`, the effects, `Convolve`, the blurs, `PercentileFilter`, `Sharpen`, `DetectEdges`, the morphological
-filters, the tone curves, `ApplyLut`, `Equalize`, `AutoLevels`, `Quantize` and `Threshold` also exist for one frame. Geometry changes preserve 16-bit precision and alpha, and reconcile the EXIF dimensions,
+`ReplaceColor`, the effects, `Convolve`, the blurs, `PercentileFilter`, `Sharpen`, `DetectEdges`, the edge-preserving
+filters, `RadialBlur`, the morphological filters, the tone curves, `ApplyLut`, `Equalize`, `AutoLevels`, `Quantize` and `Threshold` also exist for one frame. Geometry changes preserve 16-bit precision and alpha, and reconcile the EXIF dimensions,
 orientation and thumbnail. `ConvertColorProfile` converts the colors to another ICC profile
 (see [Color management](#color-management)).
 
@@ -730,7 +732,8 @@ domain of its transfer function, or the operation fails before anything changes,
 the stored values, unclamped. `ConvertColorProfile` converts the samples without reducing them to 16 bits, and rejects
 colors outside [0, 1] or not numbers, since a profile describes only that range. The auto-crop analysis compares the
 values as stored and rejects non-finite samples; the typed `BackgroundColor` of its result is exact, the `Rgba64` one is
-clipped. Image comparisons round samples in [0, 1] to 8 bits and reject any other value instead of clipping it.
+clipped. Image comparisons round samples in [0, 1] to 8 or 16 bits and reject any other value instead of clipping it,
+unless they compare fractions (`SimilarityPrecision.FloatingPoint`), which accept every finite value.
 
 **Cursor hotspots**. A hotspot (`Frames[i].Metadata.Hotspot`) follows the pixel it designates:
 `Crop`, `AutoCrop`, `Pad` and `ExtendCanvas` translate it, `Rotate`, `Flip` and `AutoOrient` permute it exactly, and `Resize` moves it to
@@ -740,6 +743,32 @@ scales a cursor: a hotspot in the top-left corner stays there. A rotation by any
 to the pixel that contains the image of the center of its pixel. When that pixel is not part of the result (a crop, an
 auto-crop, a `Cover` resize or a transformation that removes it), the operation throws `UnsupportedImageFeatureException` and leaves the image unchanged;
 set the hotspot to `null` or to a pixel that is kept first. Pixel-only operations keep it.
+
+**Content-aware crop**. `SuggestCrop(aspectWidth, aspectHeight, options)` changes nothing: it returns the rectangle of an
+aspect ratio, as large as the image allows (or `CropSuggestionOptions.Scale` times that), that keeps the most content of
+every frame and the poster, to pass to `Crop`. Every pixel gets an integer energy, `CropEnergy.Edges` (the default: the
+differences of luma and alpha with its right and lower neighbors, which keep the details and cut flat backgrounds) or
+`CropEnergy.Saliency` (the frequency-tuned saliency of Achanta et al. in Oklab: how much the slightly blurred color
+stands out from the mean color, which keeps a smooth subject), and a summed-area table finds the rectangle with the
+largest total. The totals are exact, so the result is deterministic: equal totals go to the rectangle nearest to the
+center, then the topmost, then the leftmost, and an image without detail gets the centered crop. Colors are read
+premultiplied by alpha (a transparent background has no content); floating-point samples are clamped to [0, 1] and must
+be finite. The table takes 8 bytes per pixel, charged to the image.
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_SuggestCrop;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static Rectangle CropToSquare(string inputPath, string outputPath)
+{
+    using var photo = Image.Load(inputPath);
+
+    // The largest square that keeps the most detail; CropEnergy.Saliency keeps the colors that stand out instead
+    var crop = photo.SuggestCrop(1, 1);
+    photo.Crop(crop);
+    photo.Save(outputPath);
+    return crop;
+}
+```
+<!-- endref -->
 
 **Auto-cropping**. `AutoCrop` removes the uniform background around the content of an image, such as the margin of a
 product picture or of a scan, and returns whether the image changed. `AnalyzeAutoCrop` does the detection alone: it
@@ -1253,6 +1282,73 @@ public static void ApplyPhotoEffects(string photoPath, string outputDirectory)
 ```
 <!-- endref -->
 
+#### Edge-preserving smoothing and radial blurs
+
+`BilateralFilter(radius, spatialSigma, rangeSigma)` and `GuidedFilter(radius, epsilon)` smooth noise and fine texture
+and keep the edges, where a blur would soften them:
+
+- the bilateral filter (Tomasi and Manduchi) replaces every pixel by a mean of the disk of `radius` around it
+  (`dx² + dy² ≤ radius²`), each neighbor weighted by `exp(-d² / (2 spatialSigma²))` for its distance and
+  `exp(-δ² / (2 rangeSigma²))` for its difference `δ`, the root mean square of the differences of the color samples as
+  fractions of their range (with the alpha difference added in quadrature). `rangeSigma = 0.1` smooths differences of
+  about 25 levels of 255. On gray images this is OpenCV's `cv2.bilateralFilter(src, 2 radius + 1, rangeSigma × 255,
+  spatialSigma)`, sample for sample; for colors, OpenCV adds the absolute differences of the three samples instead of
+  their root mean square. The time per pixel grows with the area of the disk (`radius` at most 100);
+- the guided filter (He, Sun and Tang, 2010) uses the image as its own guide: in every window of `(2 radius + 1)²` pixels
+  each sample is approached by a linear function of the colors (their 3x3 covariance for color images, the gray level
+  otherwise), regularized by `epsilon`, a squared fraction of the range (0.01 flattens variations of about 0.1, 25
+  levels of 255), and every pixel takes the mean of the functions of its windows. It takes a constant time per pixel
+  whatever the radius, and gives OpenCV's `cv2.ximgproc.guidedFilter(image, image, radius, epsilon × 255²)` on 8-bit
+  samples with the `Mirror` edge mode (OpenCV reflects). The result can overshoot a little at edges: integer samples are
+  clamped, floating-point colors are not.
+
+`RadialBlur(options)` blurs along lines through a center (`RadialBlurKind.Zoom`: the streaks of a zoom during the
+exposure) or circles around it (`RadialBlurKind.Spin`: a rotation): every pixel becomes the mean of bilinear samples,
+evenly spaced at most one pixel apart (up to `MaxSampleCount`, 64 by default), along a segment or an arc centered on the
+pixel, whose length is `Amount` times its distance to the center (zoom) or `Amount` degrees (spin). The center, in
+stored-pixel coordinates, may be outside the image, and the center pixel keeps its value.
+
+The three filters work like the convolutions: colors premultiplied by alpha, alpha filtered too (the hidden color of a
+transparent pixel never spreads), the edge modes of the convolutions, 16-bit precision kept, floating-point samples not
+clipped, and `RadialBlurOptions.WorkingSpace` can average linear light. Each frame is copied as single-precision working
+samples (4 bytes per sample; the guided filter also keeps up to 64 bytes of coefficients per pixel and `2 radius + 3`
+rows of window sums), charged to the image before any pixel changes. The bilateral filter and the radial blur split
+frames of at least 65,536 pixels between up to `MaxDegreeOfParallelism` workers, with the same result; the guided filter
+runs on the calling thread.
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_EdgePreservingSmoothing;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void DenoisePhoto(string inputPath, string outputPath)
+{
+    using var photo = Image.Load(inputPath);
+
+    // The bilateral filter averages the pixels of a disk of radius 4 whose colors differ by less than about 8% of the
+    // range (20 levels of 255): noise is smoothed, edges are not
+    photo.BilateralFilter(radius: 4, spatialSigma: 2, rangeSigma: 0.08);
+
+    // The guided filter flattens what varies less than √epsilon (here 5%) in windows of 17x17 pixels, in a constant
+    // time per pixel whatever the radius
+    photo.GuidedFilter(radius: 8, epsilon: 0.0025);
+    photo.Save(outputPath);
+}
+```
+<!-- endref -->
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_RadialBlur;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void ZoomBurst(string inputPath, string outputPath)
+{
+    using var photo = Image.Load(inputPath);
+
+    // Every pixel is blurred toward the center over 20% of its distance to the center; a spin blur
+    // (RadialBlurKind.Spin) turns around the center by an angle instead
+    var center = new PointD(photo.Width / 2.0, photo.Height / 2.0);
+    photo.RadialBlur(new RadialBlurOptions(RadialBlurKind.Zoom, center, amount: 0.2));
+    photo.Save(outputPath);
+}
+```
+<!-- endref -->
+
 #### Morphology
 
 The morphological filters read the pixels of a `StructuringElement` around each pixel: a rectangle
@@ -1277,8 +1373,11 @@ and `grey_dilation` with a footprint (modes `nearest`, `reflect`, `wrap`, `const
 `cv2.dilate` and `cv2.morphologyEx` (`MORPH_OPEN`, `MORPH_CLOSE`, `MORPH_TOPHAT`, `MORPH_BLACKHAT`) with
 `BORDER_REPLICATE`. A rectangle is filtered in two passes with the running extrema of van Herk and Gil and Werman, three
 comparisons per sample whatever its size (an erosion of a 1920x1080 RGBA frame takes about the same time with a 3x3 and
-a 51x51 rectangle); an ellipse is one row segment per row, so its time per sample grows with its height. The scratch
-(blocks of `2 radiusY + 1` rows of 1-, 2- or 4-byte keys, and a copy of the frame for the top-hat transforms) is charged
+a 51x51 rectangle); an ellipse is one row segment per row: every row is filtered once per distinct segment width (4 for
+a disk of radius 5, 31 for radius 50), and every output sample compares one filtered sample per row, so its time grows
+with its height (a disk of radius 5 takes about twice the time of an 11x11 square). The scratch (blocks of
+`2 radiusY + 1` rows of 1-, 2- or 4-byte keys, times the number of distinct widths for an ellipse, and a copy of the
+frame for the top-hat transforms) is charged
 to the image before any pixel changes; the frames are filtered on the calling thread.
 
 <!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_Morphology;format=md-fenced-code-block;dedent=true -->
@@ -1602,7 +1701,21 @@ It never changes the frames.
   fully opaque are compared over a black and over a white background, and the larger distance is kept.
 
 Every pixel format is read as 8-bit RGBA, with the conversion of `CloneAs<Rgba32>` (16-bit samples are rounded), so
-frames of different pixel formats can be compared. The results depend only on the pixels, not on the hardware; the last
+frames of different pixel formats can be compared. `ComputeSsim` and `ComputePsnr` also take an `ImageSimilarityOptions`
+whose `Precision` compares other samples: `SimilarityPrecision.SixteenBit` reads every format as `CloneAs<Rgba64>` does
+(16-bit samples kept, peak 65,535, scikit-image's `data_range=65535` on `uint16` arrays; the sums are exact integers, so
+the results depend only on the pixels), and `SimilarityPrecision.FloatingPoint` compares fractions in double precision
+(`v / 255`, `v / 65535`, the stored floating-point values, which may exceed 1 but must be finite) with the peak
+`DataRange` (1 by default) for the colors and 1 for alpha.
+
+`CreateDifferenceMap(expected, actual, options)` draws where two frames differ, as a new opaque `Image<Rgba32>`, from their
+samples as fractions (colors premultiplied by alpha): `DifferenceMapKind.Highlight` (the default) composites
+`HighlightColor` (ImageMagick's `#f1001ecc`, red at 80%) over the expected pixels whose largest difference exceeds
+`Threshold` (0 by default) and `LowlightColor` (white at 80%) over the others, which is what ImageMagick's `compare`
+draws (within one unit of its 16-bit compositing); `DifferenceMapKind.Absolute` draws the largest difference of every
+pixel as a gray level, and `DifferenceMapKind.Ssim` the dissimilarity `1 - SSIM` of the 7x7 window centered on every
+pixel, mirrored at the edges, which is the map of scikit-image's `structural_similarity(full=True)`; both are multiplied
+by `Gain` and clamped to white. The map runs on the calling thread. The results depend only on the pixels, not on the hardware; the last
 digits of PSNR, SSIMULACRA 2 and Butteraugli can differ between platforms, as they use the logarithm and power functions
 of the platform. The members compare frames: compare an animation frame by frame.
 
@@ -1641,6 +1754,26 @@ public static bool LookTheSame(string expectedPath, string actualPath)
     }
 
     return true;
+}
+```
+<!-- endref -->
+
+<!-- ref:../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DifferenceMap;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static double CompareRenderings(string expectedPath, string actualPath, string differencesPath)
+{
+    using var expected = Image.Load(expectedPath);
+    using var actual = Image.Load(actualPath);
+
+    // 16-bit samples are compared as they are, not rounded to 8 bits; SimilarityPrecision.FloatingPoint compares high
+    // dynamic range samples with ImageSimilarityOptions.DataRange
+    var options = new ImageSimilarityOptions { Precision = SimilarityPrecision.SixteenBit };
+    var ssim = ImageSimilarity.ComputeSsim(expected.Frames[0], actual.Frames[0], options);
+
+    // The pixels that differ in red over the expected image faded toward white, as ImageMagick's compare draws them
+    using var differences = ImageSimilarity.CreateDifferenceMap(expected.Frames[0], actual.Frames[0]);
+    differences.Save(differencesPath);
+    return ssim;
 }
 ```
 <!-- endref -->

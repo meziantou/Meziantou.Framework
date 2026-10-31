@@ -1661,6 +1661,105 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void DenoisePhotoSmoothsNoiseAndKeepsTheEdge()
+    {
+        // A dark and a bright half, with noise of a few levels
+        var input = GetPath("noisy.png");
+        using (var photo = new Image<Rgb24>(64, 32))
+        {
+            for (var y = 0; y < 32; y++)
+            {
+                for (var x = 0; x < 64; x++)
+                {
+                    var level = (byte)((x < 32 ? 50 : 200) + (((x * 7) + (y * 13)) % 7) - 3);
+                    photo.Frames[0][x, y] = new Rgb24(level, level, level);
+                }
+            }
+
+            photo.Save(input);
+        }
+
+        var output = GetPath("denoised.png");
+        Examples.DenoisePhoto(input, output);
+        using var image = Image.Load<Rgb24>(output);
+        Assert.InRange(image.Frames[0][10, 16].R, 48, 52);
+        Assert.InRange(image.Frames[0][29, 16].R, 46, 56);
+        Assert.InRange(image.Frames[0][34, 16].R, 194, 204);
+        Assert.InRange(image.Frames[0][54, 16].R, 198, 202);
+    }
+
+    [Fact]
+    public void ZoomBurstKeepsTheCenterSharp()
+    {
+        var input = GetPath("stripes.png");
+        using (var photo = new Image<Rgb24>(64, 64))
+        {
+            for (var y = 0; y < 64; y++)
+            {
+                for (var x = 0; x < 64; x++)
+                {
+                    photo.Frames[0][x, y] = x / 2 % 2 == 0 ? new Rgb24(0, 0, 0) : new Rgb24(255, 255, 255);
+                }
+            }
+
+            photo.Save(input);
+        }
+
+        var output = GetPath("zoom.png");
+        Examples.ZoomBurst(input, output);
+        using var image = Image.Load<Rgb24>(output);
+        Assert.InRange(image.Frames[0][32, 32].R, 0, 40);
+        Assert.InRange(image.Frames[0][4, 32].R, 60, 200);
+    }
+
+    [Fact]
+    public void CropToSquareKeepsTheSubject()
+    {
+        var input = GetPath("wide.png");
+        using (var photo = new Image<Rgb24>(120, 60, new Rgb24(120, 170, 230)))
+        {
+            for (var y = 20; y < 40; y++)
+            {
+                for (var x = 10; x < 30; x++)
+                {
+                    photo.Frames[0][x, y] = (x + y) % 2 == 0 ? new Rgb24(30, 30, 30) : new Rgb24(220, 200, 90);
+                }
+            }
+
+            photo.Save(input);
+        }
+
+        var output = GetPath("square.png");
+        var crop = Examples.CropToSquare(input, output);
+        Assert.Equal(new Size(60, 60), crop.Size);
+        Assert.True(crop.X <= 9, $"The crop {crop} cuts the subject");
+        using var image = Image.Load<Rgb24>(output);
+        Assert.Equal(new Size(60, 60), image.Size);
+    }
+
+    [Fact]
+    public void CompareRenderingsSeesSixteenBitDifferences()
+    {
+        var expectedPath = GetPath("expected16.png");
+        var actualPath = GetPath("actual16.png");
+        using (var expected = new Image<Rgba64>(32, 32, new Rgba64(30000, 30000, 30000, 65535)))
+        {
+            expected.Save(expectedPath);
+            expected.Frames[0][5, 5] = new Rgba64(30100, 30000, 30000, 65535);
+            expected.Save(actualPath);
+        }
+
+        var differencesPath = GetPath("differences.png");
+        var ssim = Examples.CompareRenderings(expectedPath, actualPath, differencesPath);
+        // The difference rounds away in 8 bits, but not in 16 bits
+        Assert.True(ssim is > 0.99 and < 1, $"SSIM {ssim}");
+        using var differences = Image.Load<Rgba32>(differencesPath);
+        // 80% of the highlight red (or of white) over 20% of the gray of the expected pixel
+        Assert.Equal(new Rgba32(216, 23, 47, 255), differences.Frames[0][5, 5]);
+        Assert.Equal(new Rgba32(227, 227, 227, 255), differences.Frames[0][0, 0]);
+    }
+
+    [Fact]
     public void StraightenDocumentGivesTheSizeOfThePage()
     {
         var input = GetPath("angle.png");

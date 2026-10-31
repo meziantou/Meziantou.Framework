@@ -98,7 +98,9 @@ rendering also changes the images of the pages (`DocumentationImageTests`).
 - Processing: `Rgb48` has kernels of its own. The filtering kernels and the `Pixelate`/`OilPaint`/`Flatten` effects run
   `La16`, `La32` and `A8` through `ProcessingBridge` (an `Rgba32`/`Rgba64` copy of the frame, `Image.KernelPixelFormat`
   for the plans and scratch sizes; `Flatten` rejects `A8`, which cannot hold the flattened colors), and so do the
-  morphological filters (`MorphologyFilter`; `TopHat` and `BlackHat` reject `A8`, whose alpha they keep). The tone
+  morphological filters (`MorphologyFilter`; `TopHat` and `BlackHat` reject `A8`, whose alpha they keep), and the
+  kernels of `WorkingFrameCopy` (bilateral, guided, radial blur; the guided filter of a gray format guides by the gray
+  level, `GuidedFilterer`'s `grayGuide`, so that `La16` gives the result of `Gray8`). The tone
   curves and lookup tables (`ColorLookup`) read every integer format natively through `ToneSamples`, and drawing
   composites them through `DrawingKernels.CompositeBridged`, their paints holding the gray level in the three colors. A
   new per-frame operation must handle them natively, go through the bridge, or reject them before any allocation.
@@ -1152,8 +1154,10 @@ thin public types over its `FontFace`.
   16-bit conversion is still evaluated: its inputs are the doubles that come out of a matrix, not 65,536 values.
 - Default parallelism is one worker (`ImageConfiguration.MaxDegreeOfParallelism`). Only `Resize`, the transformations,
   `Convolve`, the blurs (`GaussianBlur`, `BoxBlur`, `MedianBlur`, and `PercentileFilter`, which shares the median's
-  plan), `Sharpen`, `DetectEdges`, the `Pixelate`, `OilPaint` and
-  `Flatten` effects (`EffectScratch`), the `ImageSimilarity` metrics (SSIM, PSNR, SSIMULACRA 2, Butteraugli) and the
+  plan), `Sharpen`, `DetectEdges`, `BilateralFilter` and `RadialBlur` (every pixel computed alone from a
+  `WorkingFrameCopy`), the `Pixelate`, `OilPaint` and
+  `Flatten` effects (`EffectScratch`), the `ImageSimilarity` metrics (SSIM, PSNR, SSIMULACRA 2, Butteraugli, at every
+  `SimilarityPrecision`) and the
   codec work listed below are parallel, and their result must not depend on the worker count (`ParallelConvolutionTests`,
   `ImageSimilarityTests.Metrics_DoNotDependOnTheWorkerCount`: a frame needs 65,536 pixels to get several workers). Split
   rows with `RowBands`: a worker writes only its own rows, and reads the rows of its neighbors from copies taken before any

@@ -1,6 +1,6 @@
 ---
 title: Comparing images
-description: Measure how similar two images look with SSIM, PSNR, SSIMULACRA 2 and Butteraugli, and find similar images with perceptual hashes.
+description: Measure how similar two images look with SSIM, PSNR, SSIMULACRA 2 and Butteraugli, draw where they differ, and find similar images with perceptual hashes.
 ---
 
 [ImageSimilarity](cref:Meziantou.Framework.Imaging.ImageSimilarity) measures how similar two frames look: for visual regression tests, deduplication or quality checks.
@@ -57,6 +57,55 @@ SSIMULACRA 2 (tuned on subjective scores) and Butteraugli (a psychovisual model)
 quality: use them to check that a compressed or processed image keeps the look of its original. SSIM and PSNR measure
 the differences of the pixels, with the definitions of scikit-image.
 
+## Compare 16-bit and high dynamic range images
+
+By default, every pixel format is read as 8-bit samples. To compare 16-bit renderings without rounding them, or high
+dynamic range images whose samples go beyond 1, pass an [ImageSimilarityOptions](cref:Meziantou.Framework.Imaging.ImageSimilarityOptions) to
+[ComputeSsim](cref:Meziantou.Framework.Imaging.ImageSimilarity.ComputeSsim) or [ComputePsnr](cref:Meziantou.Framework.Imaging.ImageSimilarity.ComputePsnr):
+
+| [Precision](cref:Meziantou.Framework.Imaging.ImageSimilarityOptions.Precision) | Samples compared | Peak |
+| --- | --- | --- |
+| [EightBit](cref:Meziantou.Framework.Imaging.SimilarityPrecision.EightBit) (default) | 8-bit samples, 16-bit samples rounded | 255 |
+| [SixteenBit](cref:Meziantou.Framework.Imaging.SimilarityPrecision.SixteenBit) | 16-bit samples, 8-bit samples expanded exactly | 65,535 |
+| [FloatingPoint](cref:Meziantou.Framework.Imaging.SimilarityPrecision.FloatingPoint) | Fractions of the range, floating-point samples as stored (any finite value) | [DataRange](cref:Meziantou.Framework.Imaging.ImageSimilarityOptions.DataRange), 1 by default |
+
+Set [DataRange](cref:Meziantou.Framework.Imaging.ImageSimilarityOptions.DataRange) to the brightest value of high dynamic range images, such as 4 for highlights
+up to four times the reference white. The scores keep the definitions of scikit-image, with that range.
+
+## Draw the differences
+
+[CreateDifferenceMap](cref:Meziantou.Framework.Imaging.ImageSimilarity.CreateDifferenceMap) returns a new image of the size of the frames that shows where they differ,
+to look at it or to save it next to a failed test:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_DifferenceMap;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static double CompareRenderings(string expectedPath, string actualPath, string differencesPath)
+{
+    using var expected = Image.Load(expectedPath);
+    using var actual = Image.Load(actualPath);
+
+    // 16-bit samples are compared as they are, not rounded to 8 bits; SimilarityPrecision.FloatingPoint compares high
+    // dynamic range samples with ImageSimilarityOptions.DataRange
+    var options = new ImageSimilarityOptions { Precision = SimilarityPrecision.SixteenBit };
+    var ssim = ImageSimilarity.ComputeSsim(expected.Frames[0], actual.Frames[0], options);
+
+    // The pixels that differ in red over the expected image faded toward white, as ImageMagick's compare draws them
+    using var differences = ImageSimilarity.CreateDifferenceMap(expected.Frames[0], actual.Frames[0]);
+    differences.Save(differencesPath);
+    return ssim;
+}
+```
+<!-- endref -->
+
+| [Kind](cref:Meziantou.Framework.Imaging.DifferenceMapOptions.Kind) | The map shows |
+| --- | --- |
+| [Highlight](cref:Meziantou.Framework.Imaging.DifferenceMapKind.Highlight) (default) | The pixels that differ in red, over the expected frame faded toward white, as ImageMagick's `compare` draws them. [Threshold](cref:Meziantou.Framework.Imaging.DifferenceMapOptions.Threshold) ignores small differences, and [HighlightColor](cref:Meziantou.Framework.Imaging.DifferenceMapOptions.HighlightColor) and [LowlightColor](cref:Meziantou.Framework.Imaging.DifferenceMapOptions.LowlightColor) change the colors |
+| [Absolute](cref:Meziantou.Framework.Imaging.DifferenceMapKind.Absolute) | How much every pixel differs, as a gray level: black where the pixels are equal |
+| [Ssim](cref:Meziantou.Framework.Imaging.DifferenceMapKind.Ssim) | How much the structure around every pixel differs (1 minus the local SSIM), as a gray level |
+
+[Gain](cref:Meziantou.Framework.Imaging.DifferenceMapOptions.Gain) multiplies the gray levels of the last two kinds, to make small differences visible. The map reads
+16-bit samples without rounding them.
+
 ## Find similar images with hashes
 
 [ComputeDifferenceHash](cref:Meziantou.Framework.Imaging.ImageSimilarity.ComputeDifferenceHash) (dHash) and [ComputePerceptualHash](cref:Meziantou.Framework.Imaging.ImageSimilarity.ComputePerceptualHash) (pHash) return a 64-bit hash of the structure of a frame.
@@ -103,8 +152,8 @@ luminances of the frames, so that the brightness counts too.
 
 ## Transparency and pixel formats
 
-Every pixel format is read as 8-bit RGBA (16-bit samples are rounded), so frames of different pixel formats can be
-compared. Transparency is taken into account:
+Every pixel format is read as 8-bit RGBA (16-bit samples are rounded, unless another
+[Precision](cref:Meziantou.Framework.Imaging.ImageSimilarityOptions.Precision) is requested), so frames of different pixel formats can be compared. Transparency is taken into account:
 
 - SSIM and PSNR compare the colors premultiplied by alpha (a fully transparent pixel scores the same whatever color it
   hides), score alpha on its own, and keep the lower score.

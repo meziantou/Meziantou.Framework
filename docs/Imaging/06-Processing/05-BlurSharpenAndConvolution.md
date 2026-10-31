@@ -1,6 +1,6 @@
 ---
 title: Blur, sharpen and convolution
-description: Blur, remove specks, sharpen with an unsharp mask, add a motion blur, apply your own convolution matrix and detect edges.
+description: Blur, remove specks, smooth noise and keep edges, sharpen with an unsharp mask, add a motion, zoom or spin blur, apply your own convolution matrix and detect edges.
 ---
 
 These operations compute each pixel from its neighbors. They keep the size, the pixel format, the frames and the
@@ -49,6 +49,64 @@ public static void CleanUpScan(string inputPath, string cleanedPath, string back
 horizontal, as [Rotate](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Rotate) turns), for [Convolve](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Convolve): the blur of a camera or a subject that moved while the shutter was
 open. Every pixel weighs the length of the trail inside it, so the brightness is kept, and the trail is centered on
 each pixel, so the image does not move. The cost grows with the number of pixels the trail crosses.
+
+## Smooth noise and keep the edges
+
+A blur softens the edges as much as the noise. [BilateralFilter](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.BilateralFilter) and [GuidedFilter](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.GuidedFilter) smooth what
+varies a little (sensor noise, compression artifacts, skin texture) and keep what varies a lot (the edges):
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_EdgePreservingSmoothing;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void DenoisePhoto(string inputPath, string outputPath)
+{
+    using var photo = Image.Load(inputPath);
+
+    // The bilateral filter averages the pixels of a disk of radius 4 whose colors differ by less than about 8% of the
+    // range (20 levels of 255): noise is smoothed, edges are not
+    photo.BilateralFilter(radius: 4, spatialSigma: 2, rangeSigma: 0.08);
+
+    // The guided filter flattens what varies less than √epsilon (here 5%) in windows of 17x17 pixels, in a constant
+    // time per pixel whatever the radius
+    photo.GuidedFilter(radius: 8, epsilon: 0.0025);
+    photo.Save(outputPath);
+}
+```
+<!-- endref -->
+
+| Method | How it decides what to keep |
+| --- | --- |
+| [BilateralFilter](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.BilateralFilter)`(radius, spatialSigma, rangeSigma)` | Every pixel becomes a mean of the disk of `radius` around it, where each neighbor weighs less the farther it is (`spatialSigma`, in pixels) and the more its color differs (`rangeSigma`, a fraction of the range: 0.1 is about 25 levels of 255). The cost grows with the area of the disk |
+| [GuidedFilter](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.GuidedFilter)`(radius, epsilon)` | In every window of `2 radius + 1` pixels, the colors that vary less than `√epsilon` (0.01 for about 25 levels of 255) are flattened to their mean, the others are kept. The cost does not depend on the radius |
+
+On gray images, the bilateral filter gives the result of OpenCV's `cv2.bilateralFilter`, and the guided filter the
+result of `cv2.ximgproc.guidedFilter` with the edge mode [Mirror](cref:Meziantou.Framework.Imaging.ConvolutionEdgeMode.Mirror). Colors are filtered
+premultiplied by alpha, so the hidden color of a transparent pixel does not spread.
+
+## Add a zoom or a spin blur
+
+[RadialBlur](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.RadialBlur) blurs along lines through a center ([RadialBlurKind.Zoom](cref:Meziantou.Framework.Imaging.RadialBlurKind.Zoom), the streaks of a zoom during
+the exposure) or along circles around it ([RadialBlurKind.Spin](cref:Meziantou.Framework.Imaging.RadialBlurKind.Spin), a rotation). The center stays sharp, and
+the streaks grow with the distance to it:
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/Examples.cs;region=Imaging_RadialBlur;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static void ZoomBurst(string inputPath, string outputPath)
+{
+    using var photo = Image.Load(inputPath);
+
+    // Every pixel is blurred toward the center over 20% of its distance to the center; a spin blur
+    // (RadialBlurKind.Spin) turns around the center by an angle instead
+    var center = new PointD(photo.Width / 2.0, photo.Height / 2.0);
+    photo.RadialBlur(new RadialBlurOptions(RadialBlurKind.Zoom, center, amount: 0.2));
+    photo.Save(outputPath);
+}
+```
+<!-- endref -->
+
+The [Amount](cref:Meziantou.Framework.Imaging.RadialBlurOptions.Amount) is a fraction of the distance to the center for a zoom, and an angle in
+degrees for a spin. The center is in pixel coordinates, where the center of a 100x80 image is `(50, 40)`, and can be
+outside the image. Long streaks are sampled at most one pixel apart, up to [MaxSampleCount](cref:Meziantou.Framework.Imaging.RadialBlurOptions.MaxSampleCount) samples
+per pixel (64 by default): raise it for very long streaks, at the cost of time.
 
 ## Apply a convolution matrix
 
@@ -131,7 +189,9 @@ the border of the image, and [Zero](cref:Meziantou.Framework.Imaging.Convolution
 
 16-bit images are filtered with 16-bit precision, and the colors of floating-point images are not clamped. The working
 memory is charged to the allocation limit of the image. [Convolve](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Convolve), the blurs and [Sharpen](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.Sharpen) rent it before any pixel
-changes, so an exceeded [limit](../05-LoadingAndSaving/07-ResourceLimits.md) leaves the image unchanged. The EXIF
+changes, so an exceeded [limit](../05-LoadingAndSaving/07-ResourceLimits.md) leaves the image unchanged. So do the
+edge-preserving filters and [RadialBlur](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.RadialBlur), which also copy each frame as
+single-precision samples. The EXIF
 thumbnail, now stale, is removed.
 
 The cost of [GaussianBlur](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.GaussianBlur) grows with its deviation, the cost of [BoxBlur](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.BoxBlur) does not depend on its radius, and the cost

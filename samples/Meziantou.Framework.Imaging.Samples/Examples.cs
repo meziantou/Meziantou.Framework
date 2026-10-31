@@ -990,6 +990,70 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>A noisy photo smoothed while its edges stay sharp.</summary>
+    #region Imaging_EdgePreservingSmoothing
+    public static void DenoisePhoto(string inputPath, string outputPath)
+    {
+        using var photo = Image.Load(inputPath);
+
+        // The bilateral filter averages the pixels of a disk of radius 4 whose colors differ by less than about 8% of the
+        // range (20 levels of 255): noise is smoothed, edges are not
+        photo.BilateralFilter(radius: 4, spatialSigma: 2, rangeSigma: 0.08);
+
+        // The guided filter flattens what varies less than √epsilon (here 5%) in windows of 17x17 pixels, in a constant
+        // time per pixel whatever the radius
+        photo.GuidedFilter(radius: 8, epsilon: 0.0025);
+        photo.Save(outputPath);
+    }
+    #endregion
+
+    /// <summary>The streaks of a zoom during the exposure, sharp at the center.</summary>
+    #region Imaging_RadialBlur
+    public static void ZoomBurst(string inputPath, string outputPath)
+    {
+        using var photo = Image.Load(inputPath);
+
+        // Every pixel is blurred toward the center over 20% of its distance to the center; a spin blur
+        // (RadialBlurKind.Spin) turns around the center by an angle instead
+        var center = new PointD(photo.Width / 2.0, photo.Height / 2.0);
+        photo.RadialBlur(new RadialBlurOptions(RadialBlurKind.Zoom, center, amount: 0.2));
+        photo.Save(outputPath);
+    }
+    #endregion
+
+    /// <summary>A photo cropped to a square around its subject.</summary>
+    #region Imaging_SuggestCrop
+    public static Rectangle CropToSquare(string inputPath, string outputPath)
+    {
+        using var photo = Image.Load(inputPath);
+
+        // The largest square that keeps the most detail; CropEnergy.Saliency keeps the colors that stand out instead
+        var crop = photo.SuggestCrop(1, 1);
+        photo.Crop(crop);
+        photo.Save(outputPath);
+        return crop;
+    }
+    #endregion
+
+    /// <summary>Two renderings compared with their 16-bit samples, with a picture of their differences.</summary>
+    #region Imaging_DifferenceMap
+    public static double CompareRenderings(string expectedPath, string actualPath, string differencesPath)
+    {
+        using var expected = Image.Load(expectedPath);
+        using var actual = Image.Load(actualPath);
+
+        // 16-bit samples are compared as they are, not rounded to 8 bits; SimilarityPrecision.FloatingPoint compares high
+        // dynamic range samples with ImageSimilarityOptions.DataRange
+        var options = new ImageSimilarityOptions { Precision = SimilarityPrecision.SixteenBit };
+        var ssim = ImageSimilarity.ComputeSsim(expected.Frames[0], actual.Frames[0], options);
+
+        // The pixels that differ in red over the expected image faded toward white, as ImageMagick's compare draws them
+        using var differences = ImageSimilarity.CreateDifferenceMap(expected.Frames[0], actual.Frames[0]);
+        differences.Save(differencesPath);
+        return ssim;
+    }
+    #endregion
+
     /// <summary>A page photographed at an angle, seen from the front.</summary>
     #region Imaging_CorrectPerspective
     public static Size StraightenDocument(string inputPath, string outputPath, PointD topLeft, PointD topRight, PointD bottomRight, PointD bottomLeft)

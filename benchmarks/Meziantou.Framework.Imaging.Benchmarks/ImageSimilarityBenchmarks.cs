@@ -52,6 +52,30 @@ public class ImageSimilarityBenchmarks
     public double Ssim64() => ImageSimilarity.ComputeSsim(_expected64.Frames[0], _actual64.Frames[0]);
 
     [Benchmark]
+    [Workload("1920x1080 Rgba64 SSIM (16-bit samples)")]
+    public double Ssim64SixteenBit() => ImageSimilarity.ComputeSsim(_expected64.Frames[0], _actual64.Frames[0], new ImageSimilarityOptions { Precision = SimilarityPrecision.SixteenBit });
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba64 PSNR (16-bit samples)")]
+    public double Psnr64SixteenBit() => ImageSimilarity.ComputePsnr(_expected64.Frames[0], _actual64.Frames[0], new ImageSimilarityOptions { Precision = SimilarityPrecision.SixteenBit });
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 SSIM difference map")]
+    public int SsimMap()
+    {
+        using var map = ImageSimilarity.CreateDifferenceMap(_expected.Frames[0], _actual.Frames[0], new DifferenceMapOptions { Kind = DifferenceMapKind.Ssim });
+        return map.Width;
+    }
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 highlight difference map")]
+    public int HighlightMap()
+    {
+        using var map = ImageSimilarity.CreateDifferenceMap(_expected.Frames[0], _actual.Frames[0]);
+        return map.Width;
+    }
+
+    [Benchmark]
     [Workload("1920x1080 Rgba32 dHash distance (black and white backgrounds)")]
     public int DifferenceHashDistance() => ImageSimilarity.ComputeDifferenceHashDistance(_expected.Frames[0], _actual.Frames[0]);
 

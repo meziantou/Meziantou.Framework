@@ -45,6 +45,7 @@ other, to describe an outline far larger than the file, and its lookups can mult
 | [MaxFontBytes](cref:Meziantou.Framework.Fonts.FontResourceLimits.MaxFontBytes) | 256 MiB | The bytes a font keeps in memory, checked before a WOFF or WOFF2 file is expanded |
 | [MaxGlyphComplexity](cref:Meziantou.Framework.Fonts.FontResourceLimits.MaxGlyphComplexity) | 1,000,000 | The elementary operations (outline points, components, charstring operators, instructions) to produce one glyph |
 | [MaxTextGlyphs](cref:Meziantou.Framework.Fonts.FontResourceLimits.MaxTextGlyphs) | 1,000,000 | The glyphs of a shaped text |
+| [MaxCollectionFaces](cref:Meziantou.Framework.Fonts.FontResourceLimits.MaxCollectionFaces) | 1,024 | The faces of a font collection (`.ttc`, `.otc`), checked before they are read: each face is read when the collection is loaded |
 
 The limit of the temporary buffers is the `maxLiveAllocationBytes` of the environment. Lower the limits when you accept
 fonts from users.

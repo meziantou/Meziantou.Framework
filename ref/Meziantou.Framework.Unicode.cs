@@ -55,6 +55,7 @@ namespace Meziantou.Framework
     {
         public static System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.UnicodeCharacterInfo> AllCharacters { get => throw null; }
         public static bool AreConfusable(string a, string b) => throw null;
+        public static bool AreConfusable(string a, string b, Meziantou.Framework.UnicodeBidiDirection direction) => throw null;
         public static Meziantou.Framework.UnicodeGraphemeClusterEnumerator EnumerateGraphemeClusters(System.ReadOnlySpan<char> text) => throw null;
         public static Meziantou.Framework.UnicodeLineBreakEnumerator EnumerateLineBreaks(System.ReadOnlySpan<char> text, Meziantou.Framework.UnicodeLineBreakStrictness strictness = Meziantou.Framework.UnicodeLineBreakStrictness.Strict, Meziantou.Framework.UnicodeWordBreakBehavior wordBreak = Meziantou.Framework.UnicodeWordBreakBehavior.Normal) => throw null;
         public static Meziantou.Framework.UnicodeLineBreakEnumerator EnumerateLineBreaks(System.ReadOnlySpan<char> text, Meziantou.Framework.LineBreakDictionary? dictionary, Meziantou.Framework.UnicodeLineBreakStrictness strictness = Meziantou.Framework.UnicodeLineBreakStrictness.Strict, Meziantou.Framework.UnicodeWordBreakBehavior wordBreak = Meziantou.Framework.UnicodeWordBreakBehavior.Normal) => throw null;
@@ -64,6 +65,7 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.UnicodeCharacterInfo? GetCharacterInfo(System.Text.Rune rune) => throw null;
         public static Meziantou.Framework.UnicodeCharacterInfo? GetCharacterInfo(char value) => throw null;
         public static string GetConfusableSkeleton(string value) => throw null;
+        public static string GetConfusableSkeleton(string value, Meziantou.Framework.UnicodeBidiDirection direction) => throw null;
         public static int GetGraphemeClusterLength(System.ReadOnlySpan<char> text) => throw null;
         public static bool IsConfusableCharacter(System.Text.Rune rune) => throw null;
         public static bool IsMixedScript(string value) => throw null;
@@ -80,6 +82,7 @@ namespace Meziantou.Framework
         public const int MaxExplicitDepth = 125;
         public static int GetParagraphLevel(System.ReadOnlySpan<char> paragraph, Meziantou.Framework.UnicodeBidiDirection direction = Meziantou.Framework.UnicodeBidiDirection.Auto) => throw null;
         public static void GetVisualOrder(System.ReadOnlySpan<byte> levels, System.Span<int> visualToLogical) { }
+        public static void GetVisualOrder(System.ReadOnlySpan<char> line, System.ReadOnlySpan<byte> levels, System.Span<int> visualToLogical) { }
         public static int GetWorkspaceLength(int textLength) => throw null;
         public static bool MayRequireBidi(System.ReadOnlySpan<char> text) => throw null;
         public static void ResetLineLevels(System.ReadOnlySpan<char> line, int paragraphLevel, System.Span<byte> levels) { }

@@ -19,7 +19,7 @@ var paragraphLevel = UnicodeBidi.ResolveLevels(paragraph, UnicodeBidiDirection.A
 // For each line, once the paragraph is broken into lines:
 UnicodeBidi.ResetLineLevels(paragraph, paragraphLevel, levels);
 Span<int> visualToLogical = stackalloc int[paragraph.Length];
-UnicodeBidi.GetVisualOrder(levels, visualToLogical);
+UnicodeBidi.GetVisualOrder(paragraph, levels, visualToLogical);
 
 Assert.Equal<int>([0, 1, 2, 3, 6, 5, 4, 7], visualToLogical);
 ```

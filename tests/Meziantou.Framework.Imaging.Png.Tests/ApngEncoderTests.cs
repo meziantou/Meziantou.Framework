@@ -967,6 +967,229 @@ public sealed class ApngEncoderTests
         Assert.Equal(0, reference.Transparency.Length);
     }
 
+    [Theory]
+    [MemberData(nameof(LayoutCases))]
+    public void OptimizedFramesComposeEveryFrameExactly(PixelFormat format, bool poster, bool interlaced)
+    {
+        using var image = CreateAnimation(format, 13, 9, frameCount: 4, poster, seed: (int)format * 7);
+        image.Animation = new AnimationMetadata { TotalPlays = 2 };
+        var png = Encode(image, new PngEncoder { OptimizeFrames = true, Interlaced = interlaced });
+        var reference = OptimizedPngOutputVerifier.VerifyAnimation(png, image);
+
+        // The layout of the pixel format, as without the setting
+        var full = ReferencePng.Parse(Encode(image, new PngEncoder { Interlaced = interlaced }));
+        Assert.Equal((full.ColorType, full.BitDepth, full.InterlaceMethod), (reference.ColorType, reference.BitDepth, reference.InterlaceMethod));
+        Assert.True(reference.Animation!.Frames[0].IsFullCanvasSource(13, 9));
+        Assert.Equal(["1/10", "1/3", "0/1", "1/10"], EncodedFieldInspector.Inspect("png", png).FrameDelays.Select(delay => $"{delay!.Numerator}/{delay.Denominator}"));
+        AssertRoundTripsThroughLibraryDecoder(png, image);
+    }
+
+    public static TheoryData<string, bool> OptimizedFrameCases()
+    {
+        var data = new TheoryData<string, bool>();
+        foreach (var name in DeltaFrameAnimations.Names)
+        {
+            data.Add(name, false);
+            data.Add(name, true);
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(OptimizedFrameCases))]
+    public void OptimizedFramesReproduceEveryDisplayedFrame(string name, bool indexed)
+    {
+        using var image = DeltaFrameAnimations.Create(name);
+        var layout = indexed ? PngPixelLayout.Indexed : PngPixelLayout.Auto;
+        if (indexed && !TrySave(image, new PngEncoder { PixelLayout = layout }))
+            return; // more than 256 colors in the animation: a palette cannot hold them, with or without the setting
+
+        var png = Encode(image, new PngEncoder { OptimizeFrames = true, PixelLayout = layout });
+        var reference = OptimizedPngOutputVerifier.VerifyAnimation(png, image, name);
+        Assert.Equal(3u, reference.Animation!.NumPlays);
+        Assert.Equal((byte)8, reference.BitDepth);
+        AssertRoundTripsThroughLibraryDecoder(png, image);
+        Assert.InRange(png.Length, 1, Encode(image, new PngEncoder { PixelLayout = layout }).Length);
+    }
+
+    [Theory]
+    [InlineData(PixelFormat.Rgba32)]
+    [InlineData(PixelFormat.Rgb24)]
+    [InlineData(PixelFormat.Rgba64)]
+    [InlineData(PixelFormat.Gray8)]
+    public void OptimizedFramesWriteTheRegionsThatChange(PixelFormat format)
+    {
+        // A static scene with a small square that moves: the later frames store the part of the canvas that changed
+        using var image = CreateScene(format, 48, 32, frameCount: 5, transparentBackground: false, seed: 3);
+        var png = Encode(image, new PngEncoder { OptimizeFrames = true });
+        var reference = OptimizedPngOutputVerifier.VerifyAnimation(png, image);
+        var frames = reference.Animation!.Frames;
+        Assert.True(frames[0].IsFullCanvasSource(48, 32));
+        Assert.All(frames.Skip(1), frame => Assert.True(frame.Width * frame.Height < 48 * 32 / 2, $"region {frame.Width}x{frame.Height}"));
+
+        // Opaque pixel formats have no transparent value: every region replaces the canvas
+        Assert.All(frames, frame => Assert.True(frame.BlendOp == 0 || PixelFormats.HasAlpha(format)));
+        Assert.HasCountLessThan(Encode(image, new PngEncoder()).Length / 2, png);
+        AssertRoundTripsThroughLibraryDecoder(png, image);
+    }
+
+    [Fact]
+    public void OptimizedFramesChooseTheDisposalOfThePreviousFrame()
+    {
+        using var transparent = DeltaFrameAnimations.Create("sprite-transparent");
+        var frames = OptimizedPngOutputVerifier.VerifyAnimation(Encode(transparent, new PngEncoder { OptimizeFrames = true }), transparent).Animation!.Frames;
+        for (var i = 1; i < frames.Count; i++)
+        {
+            // BACKGROUND erases the previous sprite: the frame is only its own sprite
+            Assert.Equal(PngFrameControl.DisposeBackground, frames[i - 1].DisposeOp);
+            Assert.Equal((3 + (3 * i), 5 + i, 6, 5), (frames[i].XOffset, frames[i].YOffset, frames[i].Width, frames[i].Height));
+        }
+
+        using var blink = DeltaFrameAnimations.Create("blink");
+        frames = OptimizedPngOutputVerifier.VerifyAnimation(Encode(blink, new PngEncoder { OptimizeFrames = true }), blink).Animation!.Frames;
+        for (var i = 1; i < frames.Count; i++)
+        {
+            if (i % 2 == 1)
+            {
+                // The square appears, then PREVIOUS removes it: the next frame is unchanged
+                Assert.Equal((10, 5, 4, 4), (frames[i].XOffset, frames[i].YOffset, frames[i].Width, frames[i].Height));
+                if (i < frames.Count - 1)
+                {
+                    Assert.Equal(PngFrameControl.DisposePrevious, frames[i].DisposeOp);
+                }
+            }
+            else
+            {
+                Assert.Equal((0, 0, 1, 1), (frames[i].XOffset, frames[i].YOffset, frames[i].Width, frames[i].Height));
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(PixelFormat.Rgba32, PngFrameControl.BlendOver)]
+    [InlineData(PixelFormat.Rgb24, PngFrameControl.BlendSource)]
+    public void OptimizedFramesWriteUnchangedFramesAsOnePixel(PixelFormat format, byte blendOp)
+    {
+        using var source = DeltaFrameAnimations.Create("unchanged");
+        using Image image = format == PixelFormat.Rgb24 ? source.CloneAs<Rgb24>() : source.CloneAs<Rgba32>();
+        var reference = OptimizedPngOutputVerifier.VerifyAnimation(Encode(image, new PngEncoder { OptimizeFrames = true }), image);
+        var frames = reference.Animation!.Frames;
+        Assert.Equal(5, frames.Count);
+        foreach (var i in new[] { 2, 4 })
+        {
+            // An OVER pixel is transparent; without a transparent value, the pixel is written again
+            Assert.Equal((0, 0, 1, 1, blendOp), (frames[i].XOffset, frames[i].YOffset, frames[i].Width, frames[i].Height, frames[i].BlendOp));
+            Assert.Equal(new FrameDuration(i + 1, 20), new FrameDuration(frames[i].DelayNumerator, frames[i].DelayDenominator));
+        }
+    }
+
+    [Fact]
+    public void OptimizedFramesBlendTranslucentPixelsOverTransparentOnes()
+    {
+        // Each frame adds a translucent diagonal on a transparent canvas: OVER gives a translucent pixel exactly on a fully
+        // transparent canvas pixel (the reference reader rejects any other translucent OVER pixel, whose result depends on
+        // the rounding of a decoder), and the other pixels of the region are left unchanged
+        using var image = new Image<Rgba32>(24, 24);
+        image.Frames[0].Metadata.Duration = new FrameDuration(1, 10);
+        for (var i = 1; i < 4; i++)
+        {
+            var frame = image.AppendFrame(image.Frames[i - 1]);
+            frame.ProcessPixelRows(rows =>
+            {
+                for (var k = 0; k < 5; k++)
+                {
+                    rows.GetRowSpan((5 * i) + k)[(5 * i) + k] = new Rgba32(10, 200, (byte)(i * 60), (byte)(40 * i));
+                }
+            });
+        }
+
+        image.Animation = new AnimationMetadata();
+        var frames = OptimizedPngOutputVerifier.VerifyAnimation(Encode(image, new PngEncoder { OptimizeFrames = true }), image).Animation!.Frames;
+        for (var i = 1; i < frames.Count; i++)
+        {
+            Assert.Equal((5 * i, 5 * i, 5, 5, PngFrameControl.BlendOver), (frames[i].XOffset, frames[i].YOffset, frames[i].Width, frames[i].Height, frames[i].BlendOp));
+        }
+    }
+
+    [Fact]
+    public void OptimizedIndexedFramesHaveEightBitIndexesAndUseTheTransparentEntry()
+    {
+        // Some decoders misplace the packed pixels of a frame region: the 4 colors of this animation get 8-bit indexes
+        using var image = DeltaFrameAnimations.Create("sprite-transparent");
+        var png = Encode(image, new PngEncoder { OptimizeFrames = true, PixelLayout = PngPixelLayout.Indexed });
+        var reference = OptimizedPngOutputVerifier.VerifyAnimation(png, image);
+        Assert.Equal(((byte)3, (byte)8), (reference.ColorType, reference.BitDepth));
+        Assert.Equal(ReferencePng.Parse(Encode(image, new PngEncoder { PixelLayout = PngPixelLayout.Indexed })).Palette.ToArray(), reference.Palette.ToArray());
+
+        using var opaque = DeltaFrameAnimations.Create("sprite-opaque");
+        var frames = OptimizedPngOutputVerifier.VerifyAnimation(Encode(opaque, new PngEncoder { OptimizeFrames = true, PixelLayout = PngPixelLayout.Indexed }), opaque).Animation!.Frames;
+        Assert.All(frames, frame => Assert.Equal(PngFrameControl.BlendSource, frame.BlendOp));
+        AssertRoundTripsThroughLibraryDecoder(png, image);
+    }
+
+    [Fact]
+    public void OptimizedFramesAreWrittenWhenTheNextFrameIsGiven()
+    {
+        // The fcTL of a frame holds the disposal chosen by the next frame: a sequential writer writes each frame one frame late
+        using var image = DeltaFrameAnimations.Create("sprite-transparent");
+        var encoder = new PngEncoder { OptimizeFrames = true, AnimationMode = PngAnimationMode.Animated };
+        using var stream = new TestOutputStream();
+        using (var writer = Image.CreateWriter<Rgba32>(stream, new ImageWriterOptions(image.Width, image.Height) { Encoder = encoder, ExpectedFrameCount = image.Frames.Count, Animation = image.Animation }))
+        {
+            writer.WriteFrame(image.Frames[0]);
+            Assert.Equal(-1, stream.ToArray().AsSpan().IndexOf("fcTL"u8));
+            for (var i = 1; i < image.Frames.Count; i++)
+            {
+                writer.WriteFrame(image.Frames[i]);
+                Assert.Equal(i == image.Frames.Count - 1 ? i + 1 : i, CountFrameControls(stream.ToArray()));
+            }
+
+            writer.Complete();
+            Assert.Equal(0, writer.Core.Scope.LiveBytes);
+        }
+
+        Assert.Equal(Encode(image, encoder), stream.ToArray());
+        OptimizedPngOutputVerifier.VerifyAnimation(stream.ToArray(), image);
+
+        static int CountFrameControls(byte[] png)
+        {
+            var count = 0;
+            for (var index = png.AsSpan().IndexOf("fcTL"u8); index >= 0; index = png.AsSpan(index + 4).IndexOf("fcTL"u8) is var next and >= 0 ? index + 4 + next : -1)
+            {
+                count++;
+            }
+
+            return count;
+        }
+    }
+
+    [Fact]
+    public void OptimizeFramesChangesNeitherStillImagesNorMinimumSizeOutput()
+    {
+        using var image = CreateScene(PixelFormat.Rgba32, 24, 16, frameCount: 3, transparentBackground: true, seed: 5);
+        Assert.Equal(Encode(image, new PngEncoder { Optimization = PngOptimization.MinimumSize }), Encode(image, new PngEncoder { Optimization = PngOptimization.MinimumSize, OptimizeFrames = true }));
+        while (image.Frames.Count > 1)
+        {
+            image.RemoveFrame(1);
+        }
+
+        Assert.Equal(Encode(image, new PngEncoder()), Encode(image, new PngEncoder { OptimizeFrames = true }));
+    }
+
+    private static bool TrySave(Image image, PngEncoder encoder)
+    {
+        try
+        {
+            _ = Encode(image, encoder);
+            return true;
+        }
+        catch (UnsupportedImageFeatureException)
+        {
+            return false;
+        }
+    }
+
     /// <summary>
     /// Creates an animation of a seeded background (transparent, or random opaque colors) with small squares that move
     /// between frames (durations of 1/10).

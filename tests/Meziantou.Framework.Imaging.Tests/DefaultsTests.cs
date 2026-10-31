@@ -62,6 +62,7 @@ public sealed class DefaultsTests
         Assert.Equal(CompressionLevel.Optimal, png.CompressionLevel);
         Assert.Equal(PngFilter.Adaptive, png.Filter);
         Assert.False(png.Interlaced);
+        Assert.False(png.OptimizeFrames);
         Assert.Equal(FrameDurationRounding.RequireExact, png.DurationRounding);
         Assert.Equal(MetadataHandling.Strict, png.MetadataHandling);
 
@@ -71,6 +72,7 @@ public sealed class DefaultsTests
         Assert.Null(gif.BackgroundColor);
         Assert.Equal(DitheringMode.None, gif.Quantization.Dithering);
         Assert.Equal(256, gif.Quantization.MaxColors);
+        Assert.False(gif.OptimizeFrames);
         Assert.Equal(FrameDurationRounding.RoundToNearest, gif.DurationRounding);
         Assert.Equal(MetadataHandling.Strict, gif.MetadataHandling);
 

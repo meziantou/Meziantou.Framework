@@ -95,6 +95,52 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void SaveOptimizedAnimationKeepsTheDisplayedFrames()
+    {
+        // A square moves over a background: the frames after the first one only store the region that changes
+        var input = GetPath("scene.apng");
+        using (var scene = new Image<Rgba32>(64, 48, new Rgba32(20, 140, 60)))
+        {
+            for (var i = 0; i < 6; i++)
+            {
+                var frame = i == 0 ? scene.Frames[0] : scene.AppendFrame(scene.Frames[0]);
+                frame.Metadata.Duration = new FrameDuration(i + 1, 20);
+                frame.ProcessPixelRows(pixels =>
+                {
+                    for (var y = 10; y < 18; y++)
+                    {
+                        pixels.GetRowSpan(y).Slice(i * 8, 8).Fill(Blue);
+                    }
+                });
+            }
+
+            scene.Animation!.TotalPlays = 2;
+            scene.Save(input);
+        }
+
+        var (gifPath, apngPath, webpPath) = (GetPath("optimized.gif"), GetPath("optimized.apng"), GetPath("optimized.webp"));
+        Examples.SaveOptimizedAnimation(input, gifPath, apngPath, webpPath);
+
+        using var source = Image.Load<Rgba32>(input);
+        foreach (var (path, full) in new (FullPath, ImageEncoder)[] { (gifPath, new GifEncoder()), (apngPath, new PngEncoder()), (webpPath, new WebPEncoder()) })
+        {
+            using var optimized = Image.Load<Rgba32>(path);
+            Assert.Equal(source.Frames.Count, optimized.Frames.Count);
+            Assert.Equal(2, optimized.Animation!.TotalPlays);
+            for (var i = 0; i < source.Frames.Count; i++)
+            {
+                Assert.Equal(source.Frames[i].Metadata.Duration, optimized.Frames[i].Metadata.Duration);
+                Assert.Equal(source.Frames[i][i * 8, 10], optimized.Frames[i][i * 8, 10]);
+                Assert.Equal(source.Frames[i][63, 47], optimized.Frames[i][63, 47]);
+            }
+
+            var fullPath = GetPath("full" + path.Extension);
+            source.Save(fullPath, full);
+            Assert.True(new FileInfo(path).Length < new FileInfo(fullPath).Length, $"{path.Name}: {new FileInfo(path).Length} bytes, {new FileInfo(fullPath).Length} with full-canvas frames");
+        }
+    }
+
+    [Fact]
     public void ResizeAnimationResizesEveryFrameAndKeepsTiming()
     {
         var (_, gifPath) = BuildAnimation();

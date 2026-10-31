@@ -777,6 +777,21 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>Saves an animation whose frames store only the region that changes, as GIF, APNG and WebP.</summary>
+    #region Imaging_SaveOptimizedAnimation
+    public static void SaveOptimizedAnimation(string inputPath, string gifPath, string apngPath, string webpPath)
+    {
+        using var animation = Image.Load(inputPath);
+
+        // Each frame after the first one stores the region that differs from the canvas it is drawn on, with the
+        // blending and the disposal of the previous frame that reproduce it: the displayed frames, their durations and
+        // the play count are the same as with full-canvas frames
+        animation.Save(gifPath, new GifEncoder { OptimizeFrames = true });
+        animation.Save(apngPath, new PngEncoder { AnimationMode = PngAnimationMode.Animated, OptimizeFrames = true });
+        animation.Save(webpPath, new WebPEncoder { OptimizeFrames = true });
+    }
+    #endregion
+
     /// <summary>An animated cursor: an animation whose frames are cursor images with a hotspot, played forever.</summary>
     #region Imaging_AnimatedCursor
     public static Point WriteAndReadAnimatedCursor(string animationPath, string cursorPath)

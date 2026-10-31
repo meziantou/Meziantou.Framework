@@ -1,3 +1,7 @@
+using System.Diagnostics;
+using System.Globalization;
+using System.Text.RegularExpressions;
+using Meziantou.Framework;
 using Meziantou.Framework.WebPlatform.Css.Layout;
 using Meziantou.Framework.WebPlatform.Dom;
 
@@ -21,6 +25,77 @@ public sealed class BoxTreeTests : IDisposable
     }
 
     private void AssertBody(string html, string expected, bool scripting = false) => Assert.Equal(expected.ReplaceLineEndings("\n").TrimEnd('\n') + "\n", DumpBody(html, scripting));
+
+    [Fact]
+    public async Task DeepNestedElements_DoNotOverflowTheStack()
+    {
+        const string ChildProcessEnvironmentVariable = "MEZIANTOU_WEBPLATFORM_DEEP_RENDERING_CHILD";
+        if (Environment.GetEnvironmentVariable(ChildProcessEnvironmentVariable) is "1")
+        {
+            const int Depth = 2_000;
+            var html = string.Concat(Enumerable.Repeat("<div>", Depth)) + "x" + string.Concat(Enumerable.Repeat("</div>", Depth));
+            var document = Parse(html);
+
+            Assert.NotNull(BoxTree.Build(document).Viewport);
+            Assert.NotNull(document.GetLayoutEngine().GetDisplayList());
+            return;
+        }
+
+        var assemblyPath = FullPath.FromPath(typeof(BoxTreeTests).Assembly.Location);
+        var processPath = FullPath.FromPath(Environment.ProcessPath ?? throw new InvalidOperationException("The path of the test process is unknown."));
+        var startInfo = new ProcessStartInfo(processPath.Value)
+        {
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+        };
+        if (processPath.NameWithoutExtension.Equals("dotnet", StringComparison.OrdinalIgnoreCase))
+        {
+            startInfo.ArgumentList.Add("exec");
+            startInfo.ArgumentList.Add(assemblyPath.Value);
+        }
+
+        var resultsDirectory = Directory.CreateTempSubdirectory("meziantou-webplatform-deep-rendering-");
+        foreach (var argument in (string[])["--filter-method", $"{typeof(BoxTreeTests).FullName}.{nameof(DeepNestedElements_DoNotOverflowTheStack)}", "--results-directory", FullPath.FromPath(resultsDirectory.FullName).Value, "--no-progress", "--no-ansi"])
+        {
+            startInfo.ArgumentList.Add(argument);
+        }
+
+        foreach (var name in startInfo.Environment.Keys.Where(name => name.StartsWith("TESTINGPLATFORM_", StringComparison.OrdinalIgnoreCase)).ToList())
+        {
+            startInfo.Environment.Remove(name);
+        }
+
+        startInfo.Environment[ChildProcessEnvironmentVariable] = "1";
+
+        using var process = Process.Start(startInfo) ?? throw new InvalidOperationException("Could not start the test subprocess.");
+        var cancellationToken = TestContext.Current.CancellationToken;
+        var outputTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
+        var errorTask = process.StandardError.ReadToEndAsync(cancellationToken);
+        using var timeout = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+        timeout.CancelAfter(TimeSpan.FromMinutes(2));
+        try
+        {
+            await process.WaitForExitAsync(timeout.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            process.Kill(entireProcessTree: true);
+            throw;
+        }
+        finally
+        {
+            resultsDirectory.Delete(recursive: true);
+        }
+
+        var output = await outputTask + await errorTask;
+        Assert.True(process.ExitCode is 0, $"The deep rendering subprocess failed (exit code {process.ExitCode}):{Environment.NewLine}{output}");
+
+        var total = Regex.Match(output, @"^\s*total:\s*(?<count>[0-9]+)", RegexOptions.Multiline, TimeSpan.FromSeconds(1));
+        Assert.True(total.Success, $"The subprocess printed no test count:{Environment.NewLine}{output}");
+        Assert.Equal(1, int.Parse(total.Groups["count"].Value, CultureInfo.InvariantCulture));
+    }
 
     [Fact]
     public void Viewport_RootElement()

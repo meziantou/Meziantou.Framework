@@ -130,10 +130,8 @@ select does not run the selectedness algorithm for each option, and the pretty f
 CSS parser limits the nesting of blocks to 256 levels, so deeply nested style sheets and selectors cannot exhaust the
 stack. See [fuzzing.md](fuzzing.md).
 
-The layout recurses on the stack of the thread of the caller: each level of nested boxes uses ~20 KB (in Release; more in
-Debug), while a thread pool thread has a 1.5 MB stack on macOS and 1 MB on Windows (a browser lays out on a main thread with
-8 MB). When the stack is nearly exhausted (`RuntimeHelpers.TryEnsureSufficientExecutionStack()`), the layout of the box
-(`LayoutContext.LayoutBox`) and the computation of the overflow of a fragment continue on a new thread with a 16 MB stack
-while the caller waits (`StackGuard`), so a deep document does not overflow the stack (which kills the process). The other
-recursions of the rendering (e.g. the box tree builder) are not guarded: they use less stack per level, and overflow a
-1.5 MB stack beyond ~800 nested elements in Debug (~1,600 in Release).
+The box-tree generation, layout, fragment-overflow computation, paint-order traversal and SVG element painting recurse on
+the stack. When the stack is nearly exhausted (`RuntimeHelpers.TryEnsureSufficientExecutionStack()`), these paths
+continue on a new thread with a 16 MB stack while the caller waits (`StackGuard`), so deeply nested documents do not
+exhaust the caller's stack. The guards do not impose a fixed nesting-depth limit. Very deep documents still require memory
+and processing time proportional to their size, and remain subject to other resource limits.

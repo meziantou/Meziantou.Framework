@@ -1040,6 +1040,63 @@ public sealed class ConvolutionTests
         Assert.Equal(127, wide.Frames[0][0, 0].Value);
     }
 
+    [Theory]
+    [InlineData(ConvolutionEdgeMode.Clamp, 1)]
+    [InlineData(ConvolutionEdgeMode.Clamp, 500)]
+    [InlineData(ConvolutionEdgeMode.Mirror, 1)]
+    [InlineData(ConvolutionEdgeMode.Mirror, 500)]
+    [InlineData(ConvolutionEdgeMode.Wrap, 1)]
+    [InlineData(ConvolutionEdgeMode.Wrap, 500)]
+    [InlineData(ConvolutionEdgeMode.Zero, 1)]
+    [InlineData(ConvolutionEdgeMode.Zero, 7)]
+    [InlineData(ConvolutionEdgeMode.Zero, 10000)]
+    public void ABoxBlurOfOnePixelReadsOnlyThatPixelOrZeros(ConvolutionEdgeMode mode, int radius)
+    {
+        // Clamp, Mirror and Wrap fill the whole square with the pixel; Zero reads it once among (2 radius + 1)^2 pixels
+        using var image = new Image<Rgba32>(1, 1, new Rgba32(10, 20, 30, 180));
+        using var deep = new Image<Gray16>(1, 1, new Gray16(65535));
+        image.BoxBlur(radius, mode, cancellationToken: Ct);
+        deep.BoxBlur(radius, mode, cancellationToken: Ct);
+        if (mode is ConvolutionEdgeMode.Zero)
+        {
+            // 65535 / 9 = 7281.7, 65535 / 225 = 291.3, 65535 / 20001^2 rounds to 0
+            var expected = radius switch { 1 => 7282, 7 => 291, _ => 0 };
+            Assert.Equal(expected, deep.Frames[0][0, 0].Value);
+
+            // The colors are filtered premultiplied by alpha: the only opaque contribution keeps them; 180 / 9 = 20
+            if (radius is 1)
+            {
+                Assert.Equal(new Rgba32(10, 20, 30, 20), image.Frames[0][0, 0]);
+            }
+        }
+        else
+        {
+            Assert.Equal(new Rgba32(10, 20, 30, 180), image.Frames[0][0, 0]);
+            Assert.Equal(65535, deep.Frames[0][0, 0].Value);
+        }
+    }
+
+    [Theory]
+    [InlineData(ConvolutionEdgeMode.Clamp, new[] { 108, 125, 142 })]
+    [InlineData(ConvolutionEdgeMode.Mirror, new[] { 98, 115, 132 })]
+    [InlineData(ConvolutionEdgeMode.Wrap, new[] { 115, 115, 115 })]
+    [InlineData(ConvolutionEdgeMode.Zero, new[] { 2, 2, 2 })]
+    public void ABoxBlurWiderThanTheImageRepeatsTheEdgeModeAcrossTheSquare(ConvolutionEdgeMode mode, int[] expected)
+    {
+        // 0 90 255 with a radius of 7: the 15 pixels of a square span the row five times. Clamp reads 0 seven times on the
+        // left: (8 * 0 + 90 + 6 * 255) / 15 = 108. Mirror reflects again at each copy (... 90 0 | 0 90 255 | 255 90 0 0 ...):
+        // the first square holds 0, 90 and 255 six, five and four times, (450 + 1020) / 15 = 98. Wrap reads five whole
+        // periods: 345 / 15 = 115.
+        // Zero reads the row once and the other rows and columns are zero: 345 / 225 = 1.5
+        using var row = BuildGray8([[0, 90, 255]]);
+        row.BoxBlur(7, mode, cancellationToken: Ct);
+        AssertGray8(row.Frames[0], [expected]);
+
+        using var column = BuildGray8([[0], [90], [255]]);
+        column.BoxBlur(7, mode, cancellationToken: Ct);
+        AssertGray8(column.Frames[0], [[expected[0]], [expected[1]], [expected[2]]]);
+    }
+
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void ABoxBlurIsTheConvolutionByEqualWeights()

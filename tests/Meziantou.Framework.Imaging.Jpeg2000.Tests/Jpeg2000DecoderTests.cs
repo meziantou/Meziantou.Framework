@@ -627,6 +627,68 @@ public sealed class Jpeg2000DecoderTests
         Assert.Throws<InvalidImageContentException>(() => Image.Identify(data, Limits(limits)));
     }
 
+    [Fact]
+    public void RegionOfInterestMarkerSegmentsAreValidated()
+    {
+        // A RGN marker segment (A.6.3) of this codestream of one component: Crgn on one byte, Srgn (0 for the Maxshift
+        // method) and SPrgn, the shift. With a shift of 0, every coefficient is in the region already: nothing changes.
+        var data = Jpeg2000TestFiles.Gray;
+        using var expected = Image.Load(data);
+        foreach (var valid in (byte[][])[InsertRgnInMainHeader(data, [0, 0, 0]), InsertRgnInTilePartHeader(data, [0, 0, 0])])
+        {
+            using var image = Image.Load(valid);
+            Assert.Equal(GetBytes(expected), GetBytes(image));
+        }
+
+        // A segment one byte too short or too long
+        var exception = Assert.Throws<InvalidImageContentException>(() => Image.Identify(InsertRgnInMainHeader(data, [0, 0])));
+        Assert.Contains("the length of the RGN marker segment is not the one of its fields", exception.Message);
+        exception = Assert.Throws<InvalidImageContentException>(() => Image.Load(InsertRgnInTilePartHeader(data, [0, 0, 3, 0])));
+        Assert.Contains("the length of the RGN marker segment is not the one of its fields", exception.Message);
+
+        // A component the image does not have
+        exception = Assert.Throws<InvalidImageContentException>(() => Image.Identify(InsertRgnInMainHeader(data, [1, 0, 3])));
+        Assert.Contains("a RGN marker segment names the component 1; the image has 1", exception.Message);
+
+        // A style other than Maxshift (the only one T.800 defines; the others are of Part 2)
+        Assert.Equal("region of interest style", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Identify(InsertRgnInMainHeader(data, [0, 1, 3]))).Feature);
+        Assert.Equal("region of interest style", Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(InsertRgnInTilePartHeader(data, [0, 1, 3]))).Feature);
+
+        // Two segments for the same component in one header; one in each header is allowed (the tile-part overrides)
+        exception = Assert.Throws<InvalidImageContentException>(() => Image.Identify(InsertRgnInMainHeader(InsertRgnInMainHeader(data, [0, 0, 0]), [0, 0, 0])));
+        Assert.Contains("the main header has two RGN marker segments for the component 0", exception.Message);
+        exception = Assert.Throws<InvalidImageContentException>(() => Image.Load(InsertRgnInTilePartHeader(InsertRgnInTilePartHeader(data, [0, 0, 0]), [0, 0, 0])));
+        Assert.Contains("a tile-part header has two RGN marker segments for the component 0", exception.Message);
+        using var both = Image.Load(InsertRgnInTilePartHeader(InsertRgnInMainHeader(data, [0, 0, 0]), [0, 0, 0]));
+        Assert.Equal(GetBytes(expected), GetBytes(both));
+
+        static byte[] InsertRgnInMainHeader(byte[] codestream, byte[] content)
+        {
+            // After the SIZ marker segment, which follows the SOC marker
+            var end = 4 + BinaryPrimitives.ReadUInt16BigEndian(codestream.AsSpan(4));
+            return InsertRgn(codestream, end, content);
+        }
+
+        static byte[] InsertRgnInTilePartHeader(byte[] codestream, byte[] content)
+        {
+            // After the SOT marker segment of the only tile-part, whose length (Psot) grows with it
+            var sot = codestream.AsSpan().IndexOf([(byte)0xFF, (byte)0x90]);
+            var result = InsertRgn(codestream, sot + 12, content);
+            BinaryPrimitives.WriteUInt32BigEndian(result.AsSpan(sot + 6), BinaryPrimitives.ReadUInt32BigEndian(result.AsSpan(sot + 6)) + 4 + (uint)content.Length);
+            return result;
+        }
+
+        static byte[] InsertRgn(byte[] codestream, int position, byte[] content)
+        {
+            var segment = new byte[4 + content.Length];
+            segment[0] = 0xFF;
+            segment[1] = 0x5E;
+            BinaryPrimitives.WriteUInt16BigEndian(segment.AsSpan(2), (ushort)(2 + content.Length));
+            content.CopyTo(segment, 4);
+            return [.. codestream.AsSpan(0, position), .. segment, .. codestream.AsSpan(position)];
+        }
+    }
+
     /// <summary>
     /// The code-blocks of a tile of at least 65,536 pixels are decoded by several workers, and its planes transformed by
     /// rows and strips of columns: the samples are those of one worker, for both wavelets, one to four components, both

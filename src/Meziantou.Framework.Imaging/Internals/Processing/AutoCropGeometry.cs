@@ -16,14 +16,14 @@ internal readonly record struct AutoCropGeometry(long X, long Y, long Width, lon
 {
     /// <summary>Computes the rectangle kept when applying <paramref name="analysis"/> to a <paramref name="canvas"/> of the same size.</summary>
     /// <remarks>
-    /// The shift is <c>padding * weight</c> truncated toward zero. As a weight is between -1 and 1, the rectangle always
-    /// contains the content box.
+    /// The shift is <c>padding * weight</c> truncated toward zero, with the weight clamped to [-1, 1] (the weights of
+    /// floating-point pixels outside [0, 1] can exceed it), so the rectangle always contains the content box.
     /// </remarks>
     public static AutoCropGeometry Compute(Size canvas, AutoCropAnalysis analysis, AutoCropOptions options)
     {
         var bounds = analysis.Bounds;
-        var x = bounds.X - (long)options.PaddingX + (long)(options.PaddingX * analysis.WeightX);
-        var y = bounds.Y - (long)options.PaddingY + (long)(options.PaddingY * analysis.WeightY);
+        var x = bounds.X - (long)options.PaddingX + (long)(options.PaddingX * Math.Clamp(analysis.WeightX, -1, 1));
+        var y = bounds.Y - (long)options.PaddingY + (long)(options.PaddingY * Math.Clamp(analysis.WeightY, -1, 1));
         var right = x + bounds.Width + (2L * options.PaddingX);
         var bottom = y + bounds.Height + (2L * options.PaddingY);
         if (options.PaddingMode == AutoCropPaddingMode.Contain)

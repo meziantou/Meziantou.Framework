@@ -790,6 +790,34 @@ public sealed class AutoCropTests
     }
 
     [Fact]
+    public void WeightsAboveOneOfFloatingPointPixelsShiftThePaddingAsAWeightOfOne()
+    {
+        // 8 x 8, black with content of 1000 at x = 4..6, y = 2..4: the weights of WeightsShiftThePaddedRectangle times 1000,
+        // 27000 / 512 and -9000 / 512. The shift is that of a weight of 1 or -1, so the kept rectangle still contains the
+        // content box: (4 - 2 + 2, 2 - 2 - 2, 3 + 4, 3 + 4) for a padding of 2, clamped to the canvas by Contain
+        var content = new RgbaFloat(1000, 1000, 1000);
+        var background = new RgbaFloat(0, 0, 0);
+        using var image = new Image<RgbaFloat>(8, 8, background);
+        Fill(image.Frames[0], new Rectangle(4, 2, 3, 3), content);
+        var analysis = image.AnalyzeAutoCrop(new AutoCropOptions { AnalyzeWeights = true }, Ct);
+        Assert.Equal(new Rectangle(4, 2, 3, 3), analysis.Bounds);
+        Assert.Equal(52.734375, analysis.WeightX);
+        Assert.Equal(-17.578125, analysis.WeightY);
+
+        using var contained = image.Clone();
+        Assert.True(contained.AutoCrop(analysis, new AutoCropOptions { PaddingX = 2, PaddingY = 2, PaddingMode = AutoCropPaddingMode.Contain }, Ct));
+        Assert.Equal(new Size(4, 5), contained.Size);
+        Assert.Equal(content, contained.Frames[0][0, 2]);
+        Assert.Equal(background, contained.Frames[0][3, 2]);
+
+        Assert.True(image.AutoCrop(analysis, new AutoCropOptions { PaddingX = 2, PaddingY = 2, PaddingMode = AutoCropPaddingMode.Expand }, Ct));
+        Assert.Equal(new Size(7, 7), image.Size);
+        Assert.Equal(content, image.Frames[0][0, 4]);
+        Assert.Equal(content, image.Frames[0][2, 6]);
+        Assert.Equal(background, image.Frames[0][3, 4]);
+    }
+
+    [Fact]
     public void FloatingPointAnalysisWorksOnTheStoredValues()
     {
         // 8 x 8, a background of 2 (twice white) with content of 1 at x = 4..6, y = 2..4: the difference of the content is

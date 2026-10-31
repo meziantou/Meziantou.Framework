@@ -47,6 +47,16 @@ internal static partial class CorpusDriver
             // The converted pixels of a CMYK JPEG, which is only loaded with a color conversion
             if (fixture.TryGetValue("inkConversion", out var conversion) && conversion is Obj inkConversion)
                 paths.Add((string)((Obj)inkConversion["buffer"]!)["path"]!);
+
+            // The pixels of an OpenEXR file decoded with options other than the default ones (a layer, a window mode)
+            if (fixture.TryGetValue("exrDecodings", out var decodings) && decodings is List<object?> exrDecodings)
+            {
+                foreach (var decoding in exrDecodings.Cast<Obj>())
+                {
+                    if (decoding.TryGetValue("buffer", out var buffer) && buffer is Obj bufferEntry)
+                        paths.Add((string)bufferEntry["path"]!);
+                }
+            }
         }
 
         return paths;

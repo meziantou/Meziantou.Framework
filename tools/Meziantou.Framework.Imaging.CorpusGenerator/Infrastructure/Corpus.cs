@@ -117,7 +117,7 @@ internal sealed class Corpus<TTools> : IDisposable
     }
 
     public void AddError(string fixtureId, string kind, string? inputName, byte[]? data, string imageFormat, Obj provenance, Obj expectedError,
-        IList<string>? features = null, Obj? decodeOptions = null, string? notes = null, Obj? existingInput = null, Obj? inkConversion = null)
+        IList<string>? features = null, Obj? decodeOptions = null, string? notes = null, Obj? existingInput = null, Obj? inkConversion = null, List<object?>? exrDecodings = null)
     {
         var inputEntry = existingInput is { Count: > 0 } ? new Obj(existingInput) : Write(inputName!, data!);
         inputEntry["role"] = "encoded";
@@ -136,6 +136,8 @@ internal sealed class Corpus<TTools> : IDisposable
             fixture["decodeOptions"] = decodeOptions;
         if (inkConversion is { Count: > 0 })
             fixture["inkConversion"] = inkConversion;
+        if (exrDecodings is { Count: > 0 })
+            fixture["exrDecodings"] = exrDecodings;
         if (!string.IsNullOrEmpty(notes))
             fixture["notes"] = notes;
         Fixtures.Add(fixture);

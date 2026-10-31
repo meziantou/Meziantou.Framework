@@ -661,7 +661,12 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   so that `Identify` reports every rejection), the offset table, then the chunks in the order of their offsets: the input
   is read forward only, and a chunk must start at its offset, carry its own coordinates and end before the next one.
   `ExrDecoder` decompresses each chunk of the full-resolution image (`ExrChunkDecompressor`) and writes its samples in
-  place in the rows of the frame (a tile covers part of a row); when the frame is not in the source layout, it decodes
+  place in the rows of the frame (a tile covers part of a row), only the lines and columns inside the image window
+  (`ExrHeader.ImageWindow`: the display window, or the data window with `OpenExrWindowMode.DataWindow`). With a layer
+  (`OpenExrDecodingOptions.Layer`), `ExrHeader.ResolveRoles` gives the other channels the role `Ignored`: they are
+  decompressed with the chunk and skipped, line by line, since a scan-line channel that is ignored may be sub-sampled.
+  The options live on `ImageConfiguration` so that `Identify`, loads, readers and collections report the same image; a
+  layer never falls back to another one. When the frame is not in the source layout, it decodes
   into a staging image and converts it at the end (`Image.PrepareConversion`: a tone mapping needs the peak of the whole
   image). The compressions cite the sections of `ExrCompression.md`; they are bit-exact with OpenEXR, PXR24 and B44
   included (their loss happens when the file is written). The B44 table of pLinear channels is computed from

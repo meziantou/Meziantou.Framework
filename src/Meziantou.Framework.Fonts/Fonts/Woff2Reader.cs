@@ -71,7 +71,6 @@ internal static class Woff2Reader
         }
     }
 
-    /// <summary>Reads the table directory: section 4.1.</summary>
     /// <summary>
     /// Section 5, "Extraneous data": a file that has data between its blocks or after its last one is rejected. The
     /// metadata block and the private data block, when the file has them, each start at the first 4-byte boundary after
@@ -97,6 +96,7 @@ internal static class Woff2Reader
         static long Pad4(long length) => (length + 3) & ~3L;
     }
 
+    /// <summary>Reads the table directory: section 4.1.</summary>
     private static Table[] ReadTableDirectory(ReadOnlySpan<byte> data, ref int cursor, int tableCount, FontResourceLimits limits, out long sourceLength)
     {
         var tables = new Table[tableCount];

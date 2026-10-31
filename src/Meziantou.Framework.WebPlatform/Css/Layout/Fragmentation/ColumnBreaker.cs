@@ -1374,15 +1374,15 @@ internal static partial class ColumnBreaker
         }
 
         /// <summary>
-        /// Ends the current fragmentainer with a break at a position: the parallel flows that start after the break have not
-        /// started, the tracks whose items are placed are closed, and the shifts of the content before the break are recorded.
-        /// </summary>
-        /// <summary>
         /// The order of the break after the content of a flow whose parallel flows continue (see <see cref="BreakCandidate.Sequence"/>):
         /// the boxes without block size at its position are before it, with the start of the contents that overflow them.
         /// </summary>
         private const int AfterContentSequence = int.MaxValue;
 
+        /// <summary>
+        /// Ends the current fragmentainer with a break at a position: the parallel flows that start after the break have not
+        /// started, the tracks whose items are placed are closed, and the shifts of the content before the break are recorded.
+        /// </summary>
         private void Commit(double position, bool isPushed = false, bool isAfterContent = false)
         {
             _lastPieces.Clear();

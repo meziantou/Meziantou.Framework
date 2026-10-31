@@ -1323,15 +1323,6 @@ internal static partial class CssValueComputer
     // ----------------------------------------------------------------------------------------------------------------
 
     /// <summary>
-    /// https://drafts.csswg.org/css-display/#the-display-properties: the display of the root element, of the floats and of
-    /// the absolutely positioned elements is blockified (https://drafts.csswg.org/css-display/#transformations), as the
-    /// display of the flex and grid items. A vertical -webkit-box whose lines are clamped is a flow-root
-    /// (https://drafts.csswg.org/css-overflow-4/#webkit-line-clamp). The math display of an element that is not a MathML
-    /// element (including the pseudo-elements) is flow (https://w3c.github.io/mathml-core/#new-display-math-value), and
-    /// display: contents computes to none on a MathML element and on the replaced elements and form controls of HTML. The
-    /// parent box of a flex or grid item is the nearest ancestor that is not display: contents.
-    /// </summary>
-    /// <summary>
     /// Returns whether the element of a style is rendered in the top layer (https://drafts.csswg.org/css-position-4/#top-layer):
     /// the style of the element or of its <c>::backdrop</c> pseudo-element (https://drafts.csswg.org/css-position-4/#top-styling:
     /// "every element rendered in the top layer, as well as its corresponding ::backdrop pseudo-element").
@@ -1425,6 +1416,15 @@ internal static partial class CssValueComputer
         return style.Element.NodeDocument.LayoutWorkletOrNull?.GetDocumentLayoutDefinition(name) is not { Options.ChildDisplay: ChildDisplayType.Normal };
     }
 
+    /// <summary>
+    /// https://drafts.csswg.org/css-display/#the-display-properties: the display of the root element, of the floats and of
+    /// the absolutely positioned elements is blockified (https://drafts.csswg.org/css-display/#transformations), as the
+    /// display of the flex and grid items. A vertical -webkit-box whose lines are clamped is a flow-root
+    /// (https://drafts.csswg.org/css-overflow-4/#webkit-line-clamp). The math display of an element that is not a MathML
+    /// element (including the pseudo-elements) is flow (https://w3c.github.io/mathml-core/#new-display-math-value), and
+    /// display: contents computes to none on a MathML element and on the replaced elements and form controls of HTML. The
+    /// parent box of a flex or grid item is the nearest ancestor that is not display: contents.
+    /// </summary>
     private static string ComputeDisplay(ComputedStyle style, string value)
     {
         style.IsLegacyLineClampBox = false;
@@ -1501,10 +1501,6 @@ internal static partial class CssValueComputer
     }
 
     /// <summary>
-    /// https://drafts.csswg.org/css-backgrounds/#border-width: an absolute length snapped as a border width, or zero when
-    /// the style is none (or hidden).
-    /// </summary>
-    /// <summary>
     /// https://drafts.csswg.org/css-gaps/#column-row-rule-width: each width of the list is snapped as a border width, and does
     /// not depend on the rule style.
     /// </summary>
@@ -1554,6 +1550,9 @@ internal static partial class CssValueComputer
         }
     }
 
+    /// <summary>
+    /// https://drafts.csswg.org/css-backgrounds/#border-width: an absolute length snapped as a border width.
+    /// </summary>
     private static string ComputeLineWidth(ComputedStyle style, string value)
     {
         double? width = value switch
@@ -1899,7 +1898,6 @@ internal static partial class CssValueComputer
         return SerializeNumber(x) + " " + SerializeNumber(y) + " " + SerializeNumber(z) + " " + Angle(angle);
     }
 
-    /// <summary>Splits a value on its top-level whitespace (a math function is a single component).</summary>
     /// <summary>
     /// https://drafts.csswg.org/css-text-decor-4/#text-shadow-property: each shadow computes to a color (currentcolor when
     /// it is omitted) and three absolute lengths (the blur radius is 0px when it is omitted).
@@ -1946,6 +1944,7 @@ internal static partial class CssValueComputer
     /// <summary>Splits the space-separated components of a computed value; a function (e.g. calc(50% + 10px)) is one component.</summary>
     internal static string[] SplitSpaceSeparated(string value) => value.Contains('(', StringComparison.Ordinal) ? SplitComponents(value) : value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
 
+    /// <summary>Splits a value on its top-level whitespace (a math function is a single component).</summary>
     internal static string[] SplitComponents(string value)
     {
         var values = ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(value));
@@ -2529,7 +2528,6 @@ internal static partial class CssValueComputer
 
     private static string GetInheritedColor(ComputedStyle style) => style.Parent?.GetComputedValue("color") ?? LightSystemColors["canvastext"];
 
-    /// <summary>Returns the used color scheme of the element (https://drafts.csswg.org/css-color-adjust/#color-scheme-prop).</summary>
     /// <summary>Returns the value of a system color (e.g. <c>canvas</c>, lowercase) for the used color scheme of an element (https://drafts.csswg.org/css-color-adjust-1/#color-scheme-effect).</summary>
     internal static string GetSystemColor(ComputedStyle style, string name) => GetSystemColors(style)[name];
 
@@ -2550,6 +2548,7 @@ internal static partial class CssValueComputer
         return LightSystemColors.ContainsKey(name) ? name : null;
     }
 
+    /// <summary>Returns the used color scheme of the element (https://drafts.csswg.org/css-color-adjust/#color-scheme-prop).</summary>
     internal static string GetUsedColorScheme(ComputedStyle style)
     {
         // https://drafts.csswg.org/css-color-adjust-1/#valdef-color-scheme-normal: "the element supports the page's supported

@@ -16,6 +16,11 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// changes nothing, so an image may be analyzed more than once.
 /// </para>
 /// <para>
+/// When the colors of the opaque pixels are not recorded, an image is read until nothing more can change: the colors do not
+/// fit a palette, a pixel is not gray (or the gray samples need every bit), a pixel is not opaque (or the pixel format has
+/// no alpha), and a 16-bit sample is not an 8-bit value (or the samples are 8-bit). The other rows are skipped.
+/// </para>
+/// <para>
 /// The colors of the opaque pixels are recorded in a set of 2^24 bits (2 MiB, charged to the writer scope) keyed by the
 /// high bytes of their samples, when the pixel format has alpha (for the color key) or the output is an animation (for the
 /// unused color key, <see cref="CreateCandidates"/>). For 16-bit samples the set is conservative: two colors with the same
@@ -32,6 +37,7 @@ internal sealed class PngLayoutAnalysis : IDisposable
 
     private readonly AllocationScope _scope;
     private readonly bool _isWide16;
+    private readonly bool _hasAlpha;
     private readonly List<PngIndexedRows> _copies = [];
     private PngIndexedRows? _palette;
     private PooledBuffer? _opaqueColors;
@@ -42,12 +48,14 @@ internal sealed class PngLayoutAnalysis : IDisposable
     /// <param name="isWide16">Whether the wide rows are 16-bit.</param>
     /// <param name="width">The image width.</param>
     /// <param name="trackOpaqueColors">Whether the colors of the opaque pixels are recorded.</param>
+    /// <param name="hasAlpha">Whether the pixel format of the images has alpha (otherwise every pixel is opaque).</param>
     /// <exception cref="ImageResourceLimitException">The buffers exceed the allocation limit.</exception>
-    public PngLayoutAnalysis(AllocationScope scope, bool isWide16, int width, bool trackOpaqueColors)
+    public PngLayoutAnalysis(AllocationScope scope, bool isWide16, int width, bool trackOpaqueColors, bool hasAlpha)
     {
         ArgumentNullException.ThrowIfNull(scope);
         _scope = scope;
         _isWide16 = isWide16;
+        _hasAlpha = hasAlpha;
         _state = new State(Opaque: true, Gray: true, EightBit: true, GrayDepths: DepthMask1 | DepthMask2 | DepthMask4 | DepthMask8 | (isWide16 ? DepthMask16 : 0), KeyPossible: true, HasTransparent: false, TransparentColor: default, PaletteFits: true);
         try
         {
@@ -87,21 +95,24 @@ internal sealed class PngLayoutAnalysis : IDisposable
         {
             var row = rows.GetRow(y);
             AddRow(row);
-            if (!_state.PaletteFits)
-                continue;
-
-            var status = palette.Collect(row, out x);
-            if (status == PngIndexedRowStatus.Ok)
-                continue;
-
-            if (paletteRequired)
+            if (_state.PaletteFits)
             {
-                _state = saved;
-                palette.Rollback(count);
-                return status;
+                var status = palette.Collect(row, out x);
+                if (status != PngIndexedRowStatus.Ok)
+                {
+                    if (paletteRequired)
+                    {
+                        _state = saved;
+                        palette.Rollback(count);
+                        return status;
+                    }
+
+                    _state = _state with { PaletteFits = false };
+                }
             }
 
-            _state = _state with { PaletteFits = false };
+            if (IsSettled)
+                break;
         }
 
         (x, y) = (-1, -1);
@@ -231,6 +242,20 @@ internal sealed class PngLayoutAnalysis : IDisposable
         }
 
         return palette;
+    }
+
+    /// <summary>Gets a value indicating whether no pixel can change the analysis any more.</summary>
+    private bool IsSettled
+    {
+        get
+        {
+            var state = _state;
+            return _opaqueColors is null
+                && !state.PaletteFits
+                && (!state.Gray || state.GrayDepths == (_isWide16 ? DepthMask16 : DepthMask8))
+                && (!state.Opaque || !_hasAlpha)
+                && (!state.EightBit || !_isWide16);
+        }
     }
 
     public void Dispose()

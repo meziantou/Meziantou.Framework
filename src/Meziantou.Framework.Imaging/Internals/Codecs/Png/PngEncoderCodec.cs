@@ -21,7 +21,13 @@ internal sealed class PngEncoderCodec : ImageEncoderCodec
     public override ImageEncoderSession CreateSession(ImageEncoderSessionOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
-        return options.Encoder is PngEncoder { Optimization: PngOptimization.MinimumSize } ? new PngOptimizedEncoderSession(options) : new Session(options);
+        // The layout analysis only applies to still images: the default session writes animations, as with None
+        return options.Encoder switch
+        {
+            PngEncoder { Optimization: PngOptimization.MinimumSize } => new PngOptimizedEncoderSession(options),
+            PngEncoder { Optimization: PngOptimization.Layout } when !options.Capabilities.IsAnimated => new PngOptimizedEncoderSession(options),
+            _ => new Session(options),
+        };
     }
 
     /// <summary>Throws when an APNG sequence number exceeds the PNG integer limit.</summary>

@@ -313,7 +313,6 @@ public abstract partial class Node : EventTarget
         return builder.ToString();
     }
 
-    /// <summary>https://dom.spec.whatwg.org/#string-replace-all</summary>
     /// <summary>https://dom.spec.whatwg.org/#concept-child-text-content</summary>
     internal string GetChildTextContent()
     {
@@ -329,6 +328,7 @@ public abstract partial class Node : EventTarget
         return builder.ToString();
     }
 
+    /// <summary>https://dom.spec.whatwg.org/#string-replace-all</summary>
     internal void StringReplaceAll(string value)
     {
         Node? node = null;

@@ -1,12 +1,10 @@
 namespace Meziantou.Framework.WebPlatform.Dom;
 
-/// <summary>
-/// The back/forward cache (https://html.spec.whatwg.org/multipage/browsing-the-web.html#note-bfcache): a top-level traversable
-/// keeps the eligible documents it navigates away from alive in their session history entries ("intend to keep in bfcache"
-/// of https://html.spec.whatwg.org/multipage/document-lifecycle.html#unload-a-document), and a traversal to such an entry makes
-/// its document active again (https://html.spec.whatwg.org/multipage/browsing-the-web.html#reactivate-a-document) instead of
-/// loading it again.
-/// </summary>
+// The back/forward cache (https://html.spec.whatwg.org/multipage/browsing-the-web.html#note-bfcache): a top-level traversable
+// keeps the eligible documents it navigates away from alive in their session history entries ("intend to keep in bfcache"
+// of https://html.spec.whatwg.org/multipage/document-lifecycle.html#unload-a-document), and a traversal to such an entry makes
+// its document active again (https://html.spec.whatwg.org/multipage/browsing-the-web.html#reactivate-a-document) instead of
+// loading it again.
 public sealed partial class BrowsingContext
 {
     /// <summary>The documents of the back/forward cache of the traversable, the one cached first first.</summary>

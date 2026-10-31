@@ -9,10 +9,6 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// </summary>
 internal static class ServiceWorkerFetchHandling
 {
-    /// <summary>
-    /// https://w3c.github.io/ServiceWorker/#handle-fetch: returns the response of the service worker, a network error, or
-    /// null when the request is not handled by a service worker (it is fetched from the network).
-    /// </summary>
     /// <summary>Whether the scope of a registration that has an active worker matches <paramref name="url"/>: the navigations of <paramref name="browsingContext"/> to the URL are handled by a service worker.</summary>
     public static bool HasActiveWorker(BrowsingContext browsingContext, Urls.UrlRecord url)
     {
@@ -28,6 +24,10 @@ internal static class ServiceWorkerFetchHandling
         }
     }
 
+    /// <summary>
+    /// https://w3c.github.io/ServiceWorker/#handle-fetch: returns the response of the service worker, a network error, or
+    /// null when the request is not handled by a service worker (it is fetched from the network).
+    /// </summary>
     public static Task<FetchResponse?> HandleFetchAsync(FetchRequest request, CancellationToken cancellationToken)
     {
         var eventLoop = request.Navigable?.EventLoop ?? request.Client?.EnvironmentEventLoop ?? request.KeepaliveBrowsingContext?.EventLoop;

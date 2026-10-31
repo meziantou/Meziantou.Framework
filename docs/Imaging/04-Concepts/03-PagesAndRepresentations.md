@@ -47,6 +47,11 @@ public static Size WriteAndReadTiffDocument(string inputPath, string documentPat
   dispose. Nothing is resized or converted to match the other entries.
 - [Save](cref:Meziantou.Framework.Imaging.ImageCollection.Save) writes pages with the TIFF encoder and representations with the ICO encoder, one entry at a time. A file is
   published only once it is complete, like [`Image.Save`](../05-LoadingAndSaving/04-SavingImages.md).
+  [SaveAsync](cref:Meziantou.Framework.Imaging.ImageCollection.SaveAsync) does the same with asynchronous I/O and a
+  `CancellationToken`; a failed or canceled save leaves no partial file.
+- `Decode` also accepts a `CancellationToken`, checked between the strips, tiles or rows of the entry. The entries of a
+  loaded collection can be decoded from several threads at once; editing the collection and saving it must not overlap
+  any other call.
 
 ## Write and read an icon
 

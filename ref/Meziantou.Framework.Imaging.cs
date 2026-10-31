@@ -573,6 +573,7 @@ namespace Meziantou.Framework.Imaging
         public double TotalSeconds { get => throw null; }
         public static Meziantou.Framework.Imaging.FrameDuration Zero { get => throw null; }
         public FrameDuration(long numerator, long denominator) { }
+        public Meziantou.Framework.Imaging.FrameDuration Add(Meziantou.Framework.Imaging.FrameDuration other) => throw null;
         public int CompareTo(Meziantou.Framework.Imaging.FrameDuration other) => throw null;
         public int CompareTo(object? obj) => throw null;
         public bool Equals(Meziantou.Framework.Imaging.FrameDuration other) => throw null;
@@ -580,14 +581,17 @@ namespace Meziantou.Framework.Imaging
         public static Meziantou.Framework.Imaging.FrameDuration FromMilliseconds(long milliseconds) => throw null;
         public static Meziantou.Framework.Imaging.FrameDuration FromTimeSpan(System.TimeSpan value) => throw null;
         public override int GetHashCode() => throw null;
+        public Meziantou.Framework.Imaging.FrameDuration Subtract(Meziantou.Framework.Imaging.FrameDuration other) => throw null;
         public override string ToString() => throw null;
         public System.TimeSpan ToTimeSpan() => throw null;
+        public static Meziantou.Framework.Imaging.FrameDuration operator +(Meziantou.Framework.Imaging.FrameDuration left, Meziantou.Framework.Imaging.FrameDuration right) => throw null;
         public static bool operator ==(Meziantou.Framework.Imaging.FrameDuration left, Meziantou.Framework.Imaging.FrameDuration right) => throw null;
         public static bool operator >(Meziantou.Framework.Imaging.FrameDuration left, Meziantou.Framework.Imaging.FrameDuration right) => throw null;
         public static bool operator >=(Meziantou.Framework.Imaging.FrameDuration left, Meziantou.Framework.Imaging.FrameDuration right) => throw null;
         public static bool operator !=(Meziantou.Framework.Imaging.FrameDuration left, Meziantou.Framework.Imaging.FrameDuration right) => throw null;
         public static bool operator <(Meziantou.Framework.Imaging.FrameDuration left, Meziantou.Framework.Imaging.FrameDuration right) => throw null;
         public static bool operator <=(Meziantou.Framework.Imaging.FrameDuration left, Meziantou.Framework.Imaging.FrameDuration right) => throw null;
+        public static Meziantou.Framework.Imaging.FrameDuration operator -(Meziantou.Framework.Imaging.FrameDuration left, Meziantou.Framework.Imaging.FrameDuration right) => throw null;
     }
 
     public sealed class FrameRefinement
@@ -791,11 +795,13 @@ namespace Meziantou.Framework.Imaging
         public static Meziantou.Framework.Imaging.Image<TPixel> ImportPixelData<TPixel>(System.ReadOnlySpan<TPixel> source, int width, int height, int strideInPixels = 0, Meziantou.Framework.Imaging.ImageConfiguration? configuration = null) where TPixel : unmanaged => throw null;
         public abstract Meziantou.Framework.Imaging.ImageFrame InsertFrame(int index, Meziantou.Framework.Imaging.ImageFrame source);
         public static Meziantou.Framework.Imaging.Image Load(System.IO.Stream stream, Meziantou.Framework.Imaging.ImageDecodeOptions? options = null) => throw null;
-        public static Meziantou.Framework.Imaging.Image Load(System.ReadOnlySpan<byte> data, Meziantou.Framework.Imaging.ImageDecodeOptions? options = null) => throw null;
+        public static Meziantou.Framework.Imaging.Image Load(System.ReadOnlySpan<byte> data, Meziantou.Framework.Imaging.ImageDecodeOptions? options) => throw null;
         public static Meziantou.Framework.Imaging.Image Load(string path, Meziantou.Framework.Imaging.ImageDecodeOptions? options = null) => throw null;
+        public static Meziantou.Framework.Imaging.Image Load(System.ReadOnlySpan<byte> data, Meziantou.Framework.Imaging.ImageDecodeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static Meziantou.Framework.Imaging.Image<TPixel> Load<TPixel>(System.IO.Stream stream, Meziantou.Framework.Imaging.ImageDecodeOptions? options = null) where TPixel : unmanaged => throw null;
-        public static Meziantou.Framework.Imaging.Image<TPixel> Load<TPixel>(System.ReadOnlySpan<byte> data, Meziantou.Framework.Imaging.ImageDecodeOptions? options = null) where TPixel : unmanaged => throw null;
+        public static Meziantou.Framework.Imaging.Image<TPixel> Load<TPixel>(System.ReadOnlySpan<byte> data, Meziantou.Framework.Imaging.ImageDecodeOptions? options) where TPixel : unmanaged => throw null;
         public static Meziantou.Framework.Imaging.Image<TPixel> Load<TPixel>(string path, Meziantou.Framework.Imaging.ImageDecodeOptions? options = null) where TPixel : unmanaged => throw null;
+        public static Meziantou.Framework.Imaging.Image<TPixel> Load<TPixel>(System.ReadOnlySpan<byte> data, Meziantou.Framework.Imaging.ImageDecodeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) where TPixel : unmanaged => throw null;
         public static System.Threading.Tasks.Task<Meziantou.Framework.Imaging.Image> LoadAsync(System.IO.Stream stream, Meziantou.Framework.Imaging.ImageDecodeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static System.Threading.Tasks.Task<Meziantou.Framework.Imaging.Image> LoadAsync(string path, Meziantou.Framework.Imaging.ImageDecodeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static System.Threading.Tasks.Task<Meziantou.Framework.Imaging.Image<TPixel>> LoadAsync<TPixel>(System.IO.Stream stream, Meziantou.Framework.Imaging.ImageDecodeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) where TPixel : unmanaged => throw null;
@@ -833,6 +839,8 @@ namespace Meziantou.Framework.Imaging
         public void RemoveAt(int index) { }
         public void Save(System.IO.Stream stream, Meziantou.Framework.Imaging.Formats.ImageEncoder encoder) { }
         public void Save(string path, Meziantou.Framework.Imaging.Formats.ImageEncoder? encoder = null) { }
+        public System.Threading.Tasks.Task SaveAsync(System.IO.Stream stream, Meziantou.Framework.Imaging.Formats.ImageEncoder encoder, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Threading.Tasks.Task SaveAsync(string path, Meziantou.Framework.Imaging.Formats.ImageEncoder? encoder = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public Meziantou.Framework.Imaging.ImageCollectionEntry SelectBySize(Meziantou.Framework.Imaging.Size size) => throw null;
     }
 
@@ -846,8 +854,10 @@ namespace Meziantou.Framework.Imaging
         public Meziantou.Framework.Imaging.ImageFormat PayloadFormat { get => throw null; }
         public Meziantou.Framework.Imaging.PixelFormat PixelFormat { get => throw null; }
         public Meziantou.Framework.Imaging.Size Size { get => throw null; }
-        public Meziantou.Framework.Imaging.Image Decode(Meziantou.Framework.Imaging.ImageDecodeOptions? options = null) => throw null;
-        public Meziantou.Framework.Imaging.Image<TPixel> Decode<TPixel>(Meziantou.Framework.Imaging.ImageDecodeOptions? options = null) where TPixel : unmanaged => throw null;
+        public Meziantou.Framework.Imaging.Image Decode(Meziantou.Framework.Imaging.ImageDecodeOptions? options) => throw null;
+        public Meziantou.Framework.Imaging.Image Decode(Meziantou.Framework.Imaging.ImageDecodeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public Meziantou.Framework.Imaging.Image<TPixel> Decode<TPixel>(Meziantou.Framework.Imaging.ImageDecodeOptions? options) where TPixel : unmanaged => throw null;
+        public Meziantou.Framework.Imaging.Image<TPixel> Decode<TPixel>(Meziantou.Framework.Imaging.ImageDecodeOptions? options = null, System.Threading.CancellationToken cancellationToken = default) where TPixel : unmanaged => throw null;
     }
 
     public enum ImageCollectionKind
@@ -915,6 +925,21 @@ namespace Meziantou.Framework.Imaging
         Heic = 15,
         Jpeg2000 = 16,
         OpenExr = 17,
+    }
+
+    public sealed class ImageFormatInfo
+    {
+        public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.ImageFormatInfo> All { get => throw null; }
+        public string DefaultFileExtension { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> FileExtensions { get => throw null; }
+        public Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+        public string MimeType { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> MimeTypes { get => throw null; }
+        public string Name { get => throw null; }
+        public static Meziantou.Framework.Imaging.ImageFormatInfo Get(Meziantou.Framework.Imaging.ImageFormat format) => throw null;
+        public override string ToString() => throw null;
+        public static bool TryGetByFileExtension(System.ReadOnlySpan<char> extension, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Imaging.ImageFormatInfo? info) => throw null;
+        public static bool TryGetByMimeType(System.ReadOnlySpan<char> mimeType, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Imaging.ImageFormatInfo? info) => throw null;
     }
 
     public abstract class ImageFrame
@@ -2926,6 +2951,8 @@ namespace Meziantou.Framework.Imaging.Formats
         public Meziantou.Framework.Imaging.PixelConversionOptions? FloatingPointConversion { get => throw null; init { } }
         public abstract Meziantou.Framework.Imaging.ImageFormat Format { get; }
         public Meziantou.Framework.Imaging.Formats.MetadataHandling MetadataHandling { get => throw null; init { } }
+        public static Meziantou.Framework.Imaging.Formats.ImageEncoder Create(Meziantou.Framework.Imaging.ImageFormat format) => throw null;
+        public static Meziantou.Framework.Imaging.Formats.ImageEncoder FromFileExtension(string extension) => throw null;
     }
 
     public enum Jpeg2000Compression
@@ -3053,6 +3080,7 @@ namespace Meziantou.Framework.Imaging.Formats
     {
         None = 0,
         MinimumSize = 1,
+        Layout = 2,
     }
 
     public enum PngPixelLayout
@@ -3122,7 +3150,10 @@ namespace Meziantou.Framework.Imaging.Formats
         public Meziantou.Framework.Imaging.Formats.JpegChromaSubsampling JpegChromaSubsampling { get => throw null; init { } }
         public int JpegQuality { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.TiffPixelLayout PixelLayout { get => throw null; init { } }
+        public Meziantou.Framework.Imaging.Formats.TiffPredictor Predictor { get => throw null; init { } }
         public int RowsPerStrip { get => throw null; init { } }
+        public int TileHeight { get => throw null; init { } }
+        public int TileWidth { get => throw null; init { } }
     }
 
     public enum TiffPixelLayout
@@ -3130,6 +3161,12 @@ namespace Meziantou.Framework.Imaging.Formats
         Auto = 0,
         Bilevel = 1,
         Indexed = 2,
+    }
+
+    public enum TiffPredictor
+    {
+        None = 0,
+        HorizontalDifferencing = 1,
     }
 
     public enum WebPCompression

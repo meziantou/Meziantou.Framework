@@ -2,7 +2,7 @@ using Meziantou.Framework.WebPlatform.Html.Parsing;
 
 namespace Meziantou.Framework.WebPlatform.Dom;
 
-/// <summary>https://html.spec.whatwg.org/#the-template-element</summary>
+// https://html.spec.whatwg.org/#the-template-element
 public partial class HtmlTemplateElement
 {
     [System.Diagnostics.CodeAnalysis.MemberNotNull(nameof(TemplateContents))]

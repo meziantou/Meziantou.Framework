@@ -295,7 +295,6 @@ internal sealed partial class ComputedStyle
         return result;
     }
 
-    /// <summary>Returns the effect of the CSS transition in effect that animates a property (the last one in the composite order), or null.</summary>
     /// <summary>
     /// Returns whether the style has the same after-change computed values as another style of the same element (e.g. its
     /// before-change style): the elements of the inheritance chain are the same, with the same cascaded values and no
@@ -354,6 +353,7 @@ internal sealed partial class ComputedStyle
         return true;
     }
 
+    /// <summary>Returns the effect of the CSS transition in effect that animates a property (the last one in the composite order), or null.</summary>
     private KeyframeEffect? GetTransitionEffect(string property)
     {
         if (_effects is not { Count: > 0 } effects)

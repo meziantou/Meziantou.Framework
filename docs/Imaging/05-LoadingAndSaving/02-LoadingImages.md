@@ -62,7 +62,9 @@ public static async Task<Image> LoadUploadAsync(Stream upload, CancellationToken
 <!-- endref -->
 
 The asynchronous overloads read with asynchronous I/O and accept a `CancellationToken`. A canceled load throws an
-`OperationCanceledException` and returns no image. Invalid arguments, such as a stream that cannot be read, throw
+`OperationCanceledException` and returns no image. The loads of data already in memory (`Image.Load(bytes, options,
+cancellationToken)`) run synchronously and accept a token too: the decoder checks it between rows, strips, tiles and
+frames. Invalid arguments, such as a stream that cannot be read, throw
 before the task is returned. To protect a service from hostile uploads, combine the load with
 [resource limits](07-ResourceLimits.md) and see [Process untrusted uploads](../03-Guides/07-ProcessUntrustedUploads.md).
 

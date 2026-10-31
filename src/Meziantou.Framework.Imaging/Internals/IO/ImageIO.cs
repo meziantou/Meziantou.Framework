@@ -36,10 +36,11 @@ internal static class ImageIO
     public static Task<ImageInfo> IdentifyAsync(string path, ImageIdentifyOptions? options, CancellationToken cancellationToken)
         => IdentifyCoreAsync(ImageCodecRegistry.Current, path, options, cancellationToken);
 
-    public static Image Load(ReadOnlySpan<byte> data, ImageDecodeOptions? options, PixelFormat? pixelFormat)
+    public static Image Load(ReadOnlySpan<byte> data, ImageDecodeOptions? options, PixelFormat? pixelFormat, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         options ??= ImageDecodeOptions.Default;
-        var context = new ImageCodecContext(options.Configuration, "Image", CancellationToken.None);
+        var context = new ImageCodecContext(options.Configuration, "Image", cancellationToken);
         var codec = ImageInputPump.Detect(ImageCodecRegistry.Current, data, context);
         using var parser = codec.CreateDecodeParser(ImageDecodeRequest.Create(options, pixelFormat).For(codec), context);
         return ImageInputPump.Run(data, parser, context);

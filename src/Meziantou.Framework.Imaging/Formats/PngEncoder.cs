@@ -10,8 +10,9 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// RGB for <see cref="Rgb24"/>/<see cref="Rgb48"/>, RGBA for <see cref="Rgba32"/>/<see cref="Bgra32"/>/<see cref="Rgba64"/>,
 /// and 16-bit samples for the 16-bit pixel formats. <see cref="PngPixelLayout.Indexed"/> writes a palette instead, for the
 /// images whose colors it can hold exactly. <see cref="PngOptimization.MinimumSize"/> chooses the layout, the filters and
-/// the animation frame rectangles that give the smallest file instead. Encoding never reduces precision, never reduces
-/// colors and never drops alpha.
+/// the animation frame rectangles that give the smallest file instead, and <see cref="PngOptimization.Layout"/> only the
+/// layout of a still image, from one pass over its pixels. Encoding never reduces precision, never reduces colors and
+/// never drops alpha.
 /// </para>
 /// <para>
 /// Animated output is written with freshly computed control data: full-canvas frames by default, or the rectangles that

@@ -33,10 +33,10 @@ internal static class ValueMatcher
     private static readonly FrozenSet<string> FrequencyUnits = FrozenSet.Create(StringComparer.Ordinal, "hz", "khz");
     private static readonly FrozenSet<string> ResolutionUnits = FrozenSet.Create(StringComparer.Ordinal, "dpi", "dpcm", "dppx", "x");
 
-    /// <summary>Returns whether a lowercase unit is a known CSS dimension unit (https://drafts.csswg.org/css-values-4/#dimensions).</summary>
     /// <summary>Returns whether a unit (in lowercase) is a length unit (https://drafts.csswg.org/css-values-4/#lengths).</summary>
     public static bool IsLengthUnit(string unit) => LengthUnits.Contains(unit);
 
+    /// <summary>Returns whether a lowercase unit is a known CSS dimension unit (https://drafts.csswg.org/css-values-4/#dimensions).</summary>
     public static bool IsKnownUnit(string unit) => LengthUnits.Contains(unit) || AngleUnits.Contains(unit) || TimeUnits.Contains(unit) || FrequencyUnits.Contains(unit) || ResolutionUnits.Contains(unit) || unit == "fr";
 
     /// <summary>Returns whether the values (whitespace excluded) match the grammar entirely.</summary>
@@ -735,7 +735,6 @@ internal static class ValueMatcher
 
     private static readonly System.Runtime.CompilerServices.ConditionalWeakTable<GrammarNode, System.Runtime.CompilerServices.StrongBox<CssAnchorFunctions>> AnchorFunctionGrammars = [];
 
-    /// <summary>Returns the anchor functions a grammar accepts (outside of its functions): <c>&lt;anchor()&gt;</c> and <c>&lt;anchor-size()&gt;</c>.</summary>
     /// <summary>Returns whether a grammar is the grammar of <c>flex-basis</c> (whose <c>&lt;'width'&gt;</c> reference does not accept the anchor functions).</summary>
     private static bool IsFlexBasisGrammar(GrammarNode grammar)
         => ReferenceEquals(grammar, FlexBasisGrammars.Value.Standard) || ReferenceEquals(grammar, FlexBasisGrammars.Value.Prefixed);
@@ -744,6 +743,7 @@ internal static class ValueMatcher
 
     private static GrammarNode? GetPropertyGrammar(string name) => CssPropertyRegistry.Get(name) is { } property ? CssPropertyRegistry.GetGrammar(property) : null;
 
+    /// <summary>Returns the anchor functions a grammar accepts (outside of its functions): <c>&lt;anchor()&gt;</c> and <c>&lt;anchor-size()&gt;</c>.</summary>
     private static CssAnchorFunctions GetAnchorFunctions(GrammarNode grammar) => AnchorFunctionGrammars.GetValue(grammar, static grammar => new System.Runtime.CompilerServices.StrongBox<CssAnchorFunctions>(CollectAnchorFunctions(grammar))).Value;
 
     private static CssAnchorFunctions CollectAnchorFunctions(GrammarNode node)

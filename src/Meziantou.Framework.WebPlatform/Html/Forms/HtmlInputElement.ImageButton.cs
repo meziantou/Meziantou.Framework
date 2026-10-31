@@ -4,12 +4,10 @@ using Meziantou.Framework.WebPlatform.Rendering;
 
 namespace Meziantou.Framework.WebPlatform.Dom;
 
-/// <summary>
-/// The image of an input element in the Image Button state (https://html.spec.whatwg.org/multipage/input.html#image-button-state-(type=image)):
-/// the image given by its src attribute is fetched, and the element represents it once it is available (a replaced element
-/// rendered as an image, https://html.spec.whatwg.org/multipage/rendering.html#images-3); otherwise it represents a submit
-/// button labeled with its alternative text.
-/// </summary>
+// The image of an input element in the Image Button state (https://html.spec.whatwg.org/multipage/input.html#image-button-state-(type=image)):
+// the image given by its src attribute is fetched, and the element represents it once it is available (a replaced element
+// rendered as an image, https://html.spec.whatwg.org/multipage/rendering.html#images-3); otherwise it represents a submit
+// button labeled with its alternative text.
 public partial class HtmlInputElement
 {
     /// <summary>The request of the image of the image button, or null when no image was fetched.</summary>

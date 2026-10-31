@@ -11,7 +11,8 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// </para>
 /// <para>
 /// Frames are encoded from full displayed frames with freshly computed disposal/transparency control data, so pixels that
-/// become transparent are correctly cleared. Unknown frame counts are supported by the streaming writer without buffering.
+/// become transparent are correctly cleared: full-canvas frames by default, or the regions that change with
+/// <see cref="OptimizeFrames"/>. Unknown frame counts are supported by the streaming writer without buffering.
 /// </para>
 /// </remarks>
 public sealed class GifEncoder : ImageEncoder
@@ -116,6 +117,32 @@ public sealed class GifEncoder : ImageEncoder
 
     /// <summary>Gets a value indicating whether frames are written interlaced. Defaults to <see langword="false"/>.</summary>
     public bool Interlaced { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether the frames of an animation after the first one are written as the region of the
+    /// canvas that changes. Defaults to <see langword="false"/>: every frame covers the canvas and is disposed with "restore
+    /// to background".
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Each frame stores the bounding box of the pixels that differ from the canvas it is drawn on, with the disposal of the
+    /// previous frame ("do not dispose", "restore to background" or "restore to previous") that gives the smallest box; its
+    /// unchanged pixels take the transparent entry, and its palette is built from the pixels of the box. A GIF frame cannot
+    /// make a pixel transparent: the box of the previous frame grows to cover the pixels that become transparent, and its
+    /// disposal clears them. A frame equal to the previous one is a 1x1 image. The first frame covers the canvas, and the
+    /// durations, the play count and the number of frames are the same as without the setting.
+    /// </para>
+    /// <para>
+    /// The pixels are compared after the alpha reduction, before the colors are reduced: when every frame fits its palette,
+    /// the displayed frames are exactly those of the full-frame output. Otherwise a pixel that does not change keeps the
+    /// color the frame that drew it was given, where a full frame would map it to its own palette again.
+    /// </para>
+    /// <para>
+    /// The encoder keeps two copies of the canvas (4 bytes per pixel each), and writes each frame when the next one is
+    /// given (or when the output completes): the control data of a frame holds the disposal chosen for the next one.
+    /// </para>
+    /// </remarks>
+    public bool OptimizeFrames { get; init; }
 
     /// <summary>Gets how frame durations are converted to GIF hundredths of a second. Defaults to <see cref="FrameDurationRounding.RoundToNearest"/>.</summary>
     /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="FrameDurationRounding"/>.</exception>

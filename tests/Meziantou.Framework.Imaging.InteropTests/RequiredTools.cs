@@ -1,5 +1,6 @@
 using Meziantou.Framework.Imaging.TestHarness;
 using Meziantou.Framework.Imaging.TestHarness.ExternalTools;
+using Meziantou.Framework.Imaging.TestHarness.Pixels;
 
 namespace Meziantou.Framework.Imaging.InteropTests;
 
@@ -56,5 +57,26 @@ internal static class RequiredTools
         var swift = ExecutableFinder.GetFullExecutablePath("swift") ?? throw new ExternalToolUnavailableException("swift (Xcode command line tools) is required to run the Apple ImageIO helper.");
         // The Apple ImageIO frame dumper is shared with the corpus generator
         return (swift, RepositoryPaths.Root / "tools" / "Meziantou.Framework.Imaging.CorpusGenerator" / "imageio_frames.swift");
+    }
+
+    /// <summary>Decodes the displayed frames of an 8-bit animation with Apple ImageIO (<see cref="AppleImageIO"/>).</summary>
+    /// <param name="path">The file.</param>
+    /// <param name="width">The canvas width.</param>
+    /// <param name="height">The canvas height.</param>
+    /// <param name="binaryAlpha">Whether every pixel is opaque or fully transparent (GIF), which accepts more decoded layouts.</param>
+    /// <returns>The displayed frames, straight 8-bit RGBA, with the colors of fully transparent pixels cleared.</returns>
+    public static async Task<IReadOnlyList<RawPixelBuffer>> DecodeWithAppleImageIOAsync(FullPath path, int width, int height, bool binaryAlpha)
+    {
+        var (swift, script) = AppleImageIO();
+        var result = await ProcessRunner.RunAsync(swift, binaryAlpha ? [script, "--binary-alpha", path] : [script, path], XunitCancellationToken);
+        if (result.ExitCode != 0)
+            Assert.Fail($"ImageIO failed (exit code {result.ExitCode}): {result.StandardError}");
+
+        var header = result.StandardError.Trim().Split(' ');
+        Assert.Equal(["frames", width.ToString(CultureInfo.InvariantCulture), height.ToString(CultureInfo.InvariantCulture), "8"], [header[0], header[2], header[3], header[4]]);
+        var count = int.Parse(header[1], CultureInfo.InvariantCulture);
+        var frameLength = width * height * 4;
+        Assert.Equal(count * frameLength, result.StandardOutput.Length);
+        return [.. Enumerable.Range(0, count).Select(i => RawPixelBuffer.Create(width, height, RawPixelLayout.Rgba8, result.StandardOutput.Slice(i * frameLength, frameLength).Span).WithTransparentColorsCleared())];
     }
 }

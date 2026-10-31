@@ -6,7 +6,7 @@ public enum PngOptimization
     /// <summary>
     /// The output follows the settings of the encoder: the layout of <see cref="PngEncoder.PixelLayout"/>, the filters of
     /// <see cref="PngEncoder.Filter"/>, the zlib level of <see cref="PngEncoder.CompressionLevel"/> and full-canvas
-    /// animation frames. This is the default.
+    /// animation frames (or the regions that change, with <see cref="PngEncoder.OptimizeFrames"/>). This is the default.
     /// </summary>
     None = 0,
 

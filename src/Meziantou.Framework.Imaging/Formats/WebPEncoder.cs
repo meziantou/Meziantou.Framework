@@ -22,7 +22,8 @@ namespace Meziantou.Framework.Imaging.Formats;
 /// </para>
 /// <para>
 /// An image with several frames or animation settings is written as an animation of full-canvas frames that replace the
-/// canvas ("do not blend", "do not dispose"), with freshly computed control data. A still image (one frame, no animation
+/// canvas ("do not blend", "do not dispose"), or of the regions that change with <see cref="OptimizeFrames"/>, with freshly
+/// computed control data. A still image (one frame, no animation
 /// settings) can be written to any stream. Animations need a seekable destination: the RIFF size and the alpha flag are
 /// patched once every frame is written. A writer with an unknown frame count produces an animation; set
 /// <see cref="ImageWriterOptions.ExpectedFrameCount"/> to 1 to write a still image to a non-seekable stream. Path outputs are
@@ -143,6 +144,33 @@ public sealed class WebPEncoder : ImageEncoder
 
     /// <summary>Gets a value indicating whether 16-bit pixel formats may be reduced to 8 bits per component (nearest rounding). Defaults to <see langword="false"/>.</summary>
     public bool AllowBitDepthReduction { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether the frames of an animation after the first one are written as the region of the
+    /// canvas that changes. Defaults to <see langword="false"/>: every frame covers the canvas and replaces it.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Each frame stores the bounding box of the pixels that differ from the canvas it is drawn on, grown to even coordinates
+    /// (a WebP frame starts at an even offset), with the disposal of the previous frame ("do not dispose" or "dispose to the
+    /// background color", transparent black) that gives the smallest box. The box is blended over the canvas, its unchanged
+    /// pixels fully transparent, when every pixel that changes is opaque and some pixels do not; otherwise it replaces the
+    /// canvas ("do not blend"), which reproduces every pixel, the transparent ones and their colors included. A frame equal
+    /// to the previous one is a 1x1 frame. The first frame covers the canvas, and the durations, the play count and the
+    /// number of frames are the same as without the setting.
+    /// </para>
+    /// <para>
+    /// The pixels are compared as they are given (after <see cref="ClearTransparentColors"/>): lossless output reproduces every
+    /// displayed frame exactly. Lossy output, and lossless output with <see cref="NearLossless"/> below 100, compresses only
+    /// the box: a pixel that does not change keeps the decoded color of the frame that drew it, so a blended box carries an
+    /// alpha channel (exact, whatever <see cref="AlphaQuality"/>, since its pixels are opaque or transparent).
+    /// </para>
+    /// <para>
+    /// The encoder keeps a copy of the displayed frame (4 bytes per pixel), and the disposal chosen by a frame is written into
+    /// the frame before it, in the seekable destination that every animation needs.
+    /// </para>
+    /// </remarks>
+    public bool OptimizeFrames { get; init; }
 
     /// <summary>
     /// Gets how frame durations are converted to WebP milliseconds (24-bit values). Defaults to

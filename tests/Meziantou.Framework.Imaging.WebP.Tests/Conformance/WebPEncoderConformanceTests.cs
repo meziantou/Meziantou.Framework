@@ -231,6 +231,44 @@ public sealed class WebPEncoderConformanceTests
         }
     }
 
+    [Theory]
+    [MemberData(nameof(AnimatedFixtures))]
+    public void OptimizedAnimationsReproduceEveryDisplayedFrame(string id)
+    {
+        var fixture = GoldenCorpus.Default.Get(id);
+        var sourceFormat = fixture.CanonicalLayout == RawPixelLayout.Rgba8 ? PixelFormat.Rgba32 : PixelFormat.Rgba64;
+        var frames = EncoderSources.GetStills(fixture, sourceFormat).Where(still => still.Name != "poster").Select(still => ToRgba8(still.Pixels)).ToList();
+        using var image = EncoderSources.CreateImage(frames[0], PixelFormat.Rgba32);
+        for (var i = 1; i < frames.Count; i++)
+        {
+            using var frame = EncoderSources.CreateImage(frames[i], PixelFormat.Rgba32);
+            image.AppendFrame(frame.Frames[0]);
+        }
+
+        for (var i = 0; i < frames.Count; i++)
+        {
+            var duration = fixture.GetDuration(i);
+            image.Frames[i].Metadata.Duration = new FrameDuration(duration.Numerator, duration.Denominator);
+        }
+
+        image.Animation = new AnimationMetadata { TotalPlays = fixture.Expected.Animation!.TotalPlays is > ushort.MaxValue ? null : fixture.Expected.Animation.TotalPlays };
+        foreach (var encoder in new[] { new WebPEncoder { OptimizeFrames = true }, new WebPEncoder { OptimizeFrames = true, Effort = 0 } })
+        {
+            // The regions, their blending and the disposals are the encoder's; the displayed frames are the source frames
+            var data = Encode(image, encoder);
+            var reader = ReferenceWebP.Parse(data);
+            Assert.Equal(frames.Count, reader.Frames.Count);
+            Assert.Equal((0, 0, image.Width, image.Height), (reader.Frames[0].X, reader.Frames[0].Y, reader.Frames[0].Width, reader.Frames[0].Height));
+            var displayed = reader.ComposeDisplayedFrames();
+            using var decoded = Image.Load<Rgba32>(data);
+            for (var i = 0; i < frames.Count; i++)
+            {
+                AssertExact(frames[i], displayed[i], $"{id} frame {i}, effort {encoder.Effort}");
+                AssertExact(frames[i], ImageSnapshots.CaptureFrame(decoded.Frames[i]), $"{id} frame {i}, effort {encoder.Effort}, decoded by the library");
+            }
+        }
+    }
+
     private static byte[] Encode(Image image, WebPEncoder encoder)
     {
         using var stream = new MemoryStream();

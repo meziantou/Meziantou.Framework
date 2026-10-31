@@ -2861,6 +2861,7 @@ namespace Meziantou.Framework.Imaging.Formats
         public bool Interlaced { get => throw null; init { } }
         [System.Obsolete("Use Quantization.MaxColors.")]
         public int MaxColors { get => throw null; init { } }
+        public bool OptimizeFrames { get => throw null; init { } }
         public Meziantou.Framework.Imaging.QuantizeOptions Quantization { get => throw null; init { } }
     }
 
@@ -3031,6 +3032,7 @@ namespace Meziantou.Framework.Imaging.Formats
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
         public bool Interlaced { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.PngOptimization Optimization { get => throw null; init { } }
+        public bool OptimizeFrames { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.PngPixelLayout PixelLayout { get => throw null; init { } }
         public Meziantou.Framework.Imaging.QuantizeOptions Quantization { get => throw null; init { } }
     }
@@ -3144,6 +3146,7 @@ namespace Meziantou.Framework.Imaging.Formats
         public int Effort { get => throw null; init { } }
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
         public int NearLossless { get => throw null; init { } }
+        public bool OptimizeFrames { get => throw null; init { } }
         public int Quality { get => throw null; init { } }
     }
 }

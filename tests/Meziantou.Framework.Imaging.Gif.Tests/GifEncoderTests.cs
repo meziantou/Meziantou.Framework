@@ -804,6 +804,250 @@ public sealed class GifEncoderTests
         Assert.InRange(quantizer.PaletteCount, 200, 255);
     }
 
+    public static TheoryData<string, bool> OptimizedFrameCases()
+    {
+        var data = new TheoryData<string, bool>();
+        foreach (var name in DeltaFrameAnimations.Names)
+        {
+            data.Add(name, false);
+            data.Add(name, true);
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(OptimizedFrameCases))]
+    public void OptimizedFramesReproduceEveryDisplayedFrame(string name, bool interlaced)
+    {
+        using var image = DeltaFrameAnimations.Create(name);
+        var encoder = new GifEncoder { OptimizeFrames = true, Interlaced = interlaced };
+        var gif = Encode(image, encoder);
+        var verification = GifOutputVerifier.Verify(gif, image, encoder, context: name);
+        Assert.All(verification.Errors, error => Assert.Null(error));
+        Assert.Equal(3, verification.Reference.TotalPlays);
+        AssertRoundTripsThroughLibraryDecoder(gif, verification);
+
+        // The same displayed frames as the full-frame output, in fewer bytes
+        var full = Encode(image, new GifEncoder { Interlaced = interlaced });
+        var fullFrames = ReferenceGif.Parse(full).DecodeDisplayedFrames();
+        for (var i = 0; i < fullFrames.Count; i++)
+        {
+            Assert.True(PixelBufferComparer.Matches(fullFrames[i], verification.Displayed[i], ComparisonPolicy.Exact), $"{name} frame {i}");
+        }
+
+        Assert.InRange(gif.Length, 1, full.Length);
+    }
+
+    [Fact]
+    public void OptimizedFramesStoreTheRegionThatChanges()
+    {
+        // A sprite moves over a background that does not change: each frame covers the old and the new place of the sprite
+        using var image = DeltaFrameAnimations.Create("sprite-opaque");
+        var reference = ReferenceGif.Parse(Encode(image, new GifEncoder { OptimizeFrames = true }));
+        Assert.True(reference.Images[0].CoversCanvas(image.Width, image.Height));
+        for (var i = 1; i < reference.Images.Count; i++)
+        {
+            var region = reference.Images[i];
+            Assert.Equal((3 * i, 4 + i, 9, 6), (region.Left, region.Top, region.Width, region.Height));
+            Assert.Equal(1, reference.Images[i - 1].Control!.DisposalMethod);
+            Assert.Equal((ushort)(5 * (i + 1)), region.Control!.DelayHundredths);
+        }
+    }
+
+    [Fact]
+    public void OptimizedFramesClearASpriteOnATransparentCanvas()
+    {
+        using var image = DeltaFrameAnimations.Create("sprite-transparent");
+        var reference = ReferenceGif.Parse(Encode(image, new GifEncoder { OptimizeFrames = true }));
+        for (var i = 1; i < reference.Images.Count; i++)
+        {
+            // "Restore to background" clears the previous sprite: the frame is only its own sprite
+            var region = reference.Images[i];
+            Assert.Equal((3 + (3 * i), 5 + i, 6, 5), (region.Left, region.Top, region.Width, region.Height));
+            Assert.Equal(2, reference.Images[i - 1].Control!.DisposalMethod);
+        }
+    }
+
+    [Fact]
+    public void OptimizedFramesRestoreTheCanvasUnderABlinkingRegion()
+    {
+        using var image = DeltaFrameAnimations.Create("blink");
+        var reference = ReferenceGif.Parse(Encode(image, new GifEncoder { OptimizeFrames = true }));
+        for (var i = 1; i < reference.Images.Count; i++)
+        {
+            var region = reference.Images[i];
+            if (i % 2 == 1)
+            {
+                // The square appears, then "restore to previous" removes it
+                Assert.Equal((10, 5, 4, 4), (region.Left, region.Top, region.Width, region.Height));
+                if (i < reference.Images.Count - 1)
+                {
+                    Assert.Equal(3, region.Control!.DisposalMethod);
+                }
+            }
+            else
+            {
+                Assert.Equal((0, 0, 1, 1), (region.Left, region.Top, region.Width, region.Height));
+            }
+        }
+    }
+
+    [Fact]
+    public void OptimizedFramesWriteUnchangedFramesAsOneTransparentPixel()
+    {
+        using var image = DeltaFrameAnimations.Create("unchanged");
+        var reference = ReferenceGif.Parse(Encode(image, new GifEncoder { OptimizeFrames = true }));
+        Assert.Equal(image.Frames.Count, reference.Images.Count);
+        foreach (var i in new[] { 2, 4 })
+        {
+            var region = reference.Images[i];
+            Assert.Equal((0, 0, 1, 1), (region.Left, region.Top, region.Width, region.Height));
+            Assert.True(region.Control!.HasTransparency);
+            Assert.Equal(region.Control.TransparentIndex, region.Indices.Span[0]);
+
+            // The frame keeps its own duration: it is not merged into the previous one
+            Assert.Equal((ushort)(5 * (i + 1)), region.Control.DelayHundredths);
+        }
+    }
+
+    [Fact]
+    public void OptimizedFramesGrowThePreviousRegionToClearPixelsThatBecomeTransparent()
+    {
+        // Frame 1 changes one pixel; frame 2 makes another pixel transparent, which a GIF frame cannot draw: the region of
+        // frame 1 grows to cover it, and its disposal clears it
+        using var image = new Image<Rgba32>(10, 10);
+        image.AppendFrame();
+        image.AppendFrame();
+        for (var i = 0; i < 3; i++)
+        {
+            var index = i;
+            Fill(image.Frames[i], (x, y) => (index, x, y) switch
+            {
+                (>= 1, 2, 2) => new Rgba32(0, 0, 255, 255),
+                (2, 8, 8) => default,
+                _ => new Rgba32(255, 255, (byte)(x * 10), 255),
+            });
+        }
+
+        image.Animation = new AnimationMetadata();
+        var encoder = new GifEncoder { OptimizeFrames = true };
+        var gif = Encode(image, encoder);
+        var verification = GifOutputVerifier.Verify(gif, image, encoder);
+        Assert.All(verification.Errors, error => Assert.Null(error));
+        var images = verification.Reference.Images;
+        Assert.Equal((2, 2, 7, 7, 2), (images[1].Left, images[1].Top, images[1].Width, images[1].Height, images[1].Control!.DisposalMethod));
+        Assert.Equal((2, 2, 7, 7), (images[2].Left, images[2].Top, images[2].Width, images[2].Height));
+        AssertRoundTripsThroughLibraryDecoder(gif, verification);
+    }
+
+    [Fact]
+    public void OptimizedFramesWriteUnchangedPixelsInTheirColorsWhenThePaletteIsFull()
+    {
+        // 256 colors in the region: a transparent entry for the unchanged pixels would be a 257th entry and reduce the colors
+        using var image = DeltaFrameAnimations.Create("full-palette");
+        var encoder = new GifEncoder { OptimizeFrames = true };
+        var verification = GifOutputVerifier.Verify(Encode(image, encoder), image, encoder);
+        Assert.All(verification.Errors, error => Assert.Null(error));
+        var last = verification.Reference.Images[2];
+        Assert.True(last.CoversCanvas(32, 16));
+        Assert.False(last.Control!.HasTransparency);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task OptimizedFramesStreamWithUnknownFrameCounts(bool asynchronous)
+    {
+        // Each frame is written when the next one chooses its disposal, the last one at completion
+        using var image = DeltaFrameAnimations.Create("transitions");
+        var encoder = new GifEncoder { OptimizeFrames = true };
+        using var stream = new TestOutputStream { ForbidSynchronousWrites = asynchronous, ForbidAsynchronousWrites = !asynchronous };
+        using (var writer = Image.CreateWriter<Rgba32>(stream, new ImageWriterOptions(image.Width, image.Height) { Encoder = encoder, Animation = image.Animation }))
+        {
+            foreach (var frame in image.Frames)
+            {
+                if (asynchronous)
+                {
+                    await writer.WriteFrameAsync(frame, XunitCancellationToken);
+                }
+                else
+                {
+                    writer.WriteFrame(frame);
+                }
+            }
+
+            if (asynchronous)
+            {
+                await writer.CompleteAsync(XunitCancellationToken);
+            }
+            else
+            {
+                writer.Complete();
+            }
+
+            Assert.Equal(0, writer.Core.Scope.LiveBytes);
+        }
+
+        var verification = GifOutputVerifier.Verify(stream.ToArray(), image, encoder);
+        Assert.All(verification.Errors, error => Assert.Null(error));
+        Assert.Equal(Encode(image, encoder), stream.ToArray());
+    }
+
+    [Fact]
+    public void OptimizedFramesKeepTheReducedColorsOfUnchangedPixels()
+    {
+        // Thousands of colors: frame 1 changes a small region, the pixels around it keep the colors frame 0 was reduced to
+        using var image = Photo(48, 40, seed: 3);
+        image.AppendFrame(image.Frames[0]).ProcessPixelRows(rows =>
+        {
+            for (var y = 5; y < 15; y++)
+            {
+                rows.GetRowSpan(y)[10..20].Fill(new Rgba32(255, 0, 0, 255));
+            }
+        });
+
+        image.Animation = new AnimationMetadata();
+        var encoder = new GifEncoder { OptimizeFrames = true };
+        var verification = GifOutputVerifier.Verify(Encode(image, encoder), image, encoder);
+        var region = verification.Reference.Images[1];
+        Assert.Equal((10, 5, 10, 10), (region.Left, region.Top, region.Width, region.Height));
+        for (var y = 0; y < image.Height; y++)
+        {
+            for (var x = 0; x < image.Width; x++)
+            {
+                var inside = x is >= 10 and < 20 && y is >= 5 and < 15;
+                for (var c = 0; c < 4; c++)
+                {
+                    Assert.Equal(inside ? (c is 0 or 3 ? 255 : 0) : verification.Displayed[0].GetSample(x, y, c), verification.Displayed[1].GetSample(x, y, c));
+                }
+            }
+        }
+
+        AssertQualityWithin(verification, minimumPsnr: 30);
+    }
+
+    [Fact]
+    public void OptimizeFramesDoesNotChangeStillImages()
+    {
+        using var image = DeltaFrameAnimations.Create("palettes");
+        while (image.Frames.Count > 1)
+        {
+            image.RemoveFrame(1);
+        }
+
+        image.Animation = null;
+        Assert.Equal(Encode(image, new GifEncoder()), Encode(image, new GifEncoder { OptimizeFrames = true }));
+    }
+
+    private static void AssertQualityWithin(GifVerification verification, double minimumPsnr)
+    {
+        foreach (var error in verification.Errors)
+        {
+            Assert.True(error is null || error.Psnr >= minimumPsnr, error?.Describe());
+        }
+    }
+
     private static byte[] Encode(Image image, GifEncoder encoder)
     {
         using var stream = new TestOutputStream();

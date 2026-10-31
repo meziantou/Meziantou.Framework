@@ -17,7 +17,8 @@ namespace Meziantou.Framework.Imaging.Tests.Conformance;
 /// documented quantization error bounds, and always exact structure, transparency, timing and plays;
 /// (2) every corpus GIF is decoded, edited (frames moved and removed, opaque regions made transparent) and saved: the encoded
 /// displayed frames must be the corpus references permuted by the edit, independently of the source file's rectangles,
-/// palettes and disposals. FFmpeg and Apple ImageIO decode the same kinds of output in <c>InteropTests/GifEncoderInteropTests</c>.
+/// palettes and disposals. Both run with full-canvas frames and with <see cref="GifEncoder.OptimizeFrames"/> (regions,
+/// disposals 1 to 3). FFmpeg and Apple ImageIO decode the same kinds of output in <c>InteropTests/GifEncoderInteropTests</c>.
 /// </summary>
 public sealed class GifEncoderConformanceTests
 {
@@ -29,6 +30,8 @@ public sealed class GifEncoderConformanceTests
         new GifEncoder { Interlaced = true, Quantization = new QuantizeOptions { Dithering = DitheringMode.FloydSteinberg } },
         new GifEncoder { AlphaThreshold = 200, Quantization = new QuantizeOptions { MaxColors = 16 } },
         new GifEncoder { AlphaMode = GifAlphaMode.Flatten, BackgroundColor = Background, Quantization = new QuantizeOptions { MaxColors = 64, Dithering = DitheringMode.FloydSteinberg } },
+        new GifEncoder { OptimizeFrames = true },
+        new GifEncoder { OptimizeFrames = true, Interlaced = true, AlphaThreshold = 200, Quantization = new QuantizeOptions { Dithering = DitheringMode.FloydSteinberg } },
     ];
 
     public static TheoryData<string, string> Cases()
@@ -102,7 +105,7 @@ public sealed class GifEncoderConformanceTests
         {
             using var stream = new MemoryStream();
             image.Save(stream, encoder);
-            var context = $"{id} as {pixelFormat} (max colors {encoder.Quantization.MaxColors}, {encoder.Quantization.Dithering}, {encoder.AlphaMode}, interlaced {encoder.Interlaced})";
+            var context = $"{id} as {pixelFormat} (max colors {encoder.Quantization.MaxColors}, {encoder.Quantization.Dithering}, {encoder.AlphaMode}, interlaced {encoder.Interlaced}, optimized frames {encoder.OptimizeFrames})";
             var verification = GifOutputVerifier.Verify(stream.ToArray(), image, encoder, context: context);
             for (var i = 0; i < frames.Count; i++)
             {
@@ -201,21 +204,24 @@ public sealed class GifEncoderConformanceTests
 
     private static void AssertSaved(Image image, List<RawPixelBuffer> expectedFrames, string step)
     {
-        var encoder = new GifEncoder();
-        using var stream = new MemoryStream();
-        image.Save(stream, encoder);
-        var verification = GifOutputVerifier.Verify(stream.ToArray(), image, encoder, context: step);
-        for (var i = 0; i < expectedFrames.Count; i++)
+        foreach (var encoder in new[] { new GifEncoder(), new GifEncoder { OptimizeFrames = true } })
         {
-            // Corpus GIF frames are composited from palettes of at most 256 colors; a frame mixing several palettes may exceed
-            // 256 colors, then only the transparency and the quantization error are checked (by the verifier)
-            if (verification.Errors[i] is null)
+            using var stream = new MemoryStream();
+            image.Save(stream, encoder);
+            var context = $"{step}, optimized frames {encoder.OptimizeFrames}";
+            var verification = GifOutputVerifier.Verify(stream.ToArray(), image, encoder, context: context);
+            for (var i = 0; i < expectedFrames.Count; i++)
             {
-                AssertSame(expectedFrames[i], verification.Displayed[i], $"{step}, frame {i}");
+                // Corpus GIF frames are composited from palettes of at most 256 colors; a frame mixing several palettes may
+                // exceed 256 colors, then only the transparency and the quantization error are checked (by the verifier)
+                if (verification.Errors[i] is null)
+                {
+                    AssertSame(expectedFrames[i], verification.Displayed[i], $"{context}, frame {i}");
+                }
             }
-        }
 
-        Assert.Equal(image.Animation is { } animation ? animation.TotalPlays : 1, verification.Reference.TotalPlays);
+            Assert.Equal(image.Animation is { } animation ? animation.TotalPlays : 1, verification.Reference.TotalPlays);
+        }
     }
 
     private static void AssertSame(RawPixelBuffer expected, RawPixelBuffer actual, string context)

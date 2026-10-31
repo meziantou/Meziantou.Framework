@@ -20,6 +20,8 @@
     <Compile Include="..\..\src\Meziantou.Framework\ExecutableFinder.cs" Link="Utils\ExecutableFinder.cs" />
     <!-- The JPEG writer of the tests, which makes the choices an encoder is free to make and does not make -->
     <Compile Include="..\Meziantou.Framework.Imaging.Tests.Shared\Helpers\Codecs\JpegTest*.cs" LinkBase="Shared\Codecs" />
+    <!-- The animations of the encoders that write frames as the regions that change -->
+    <Compile Include="..\Meziantou.Framework.Imaging.Tests.Shared\Helpers\Codecs\DeltaFrameAnimations.cs" LinkBase="Shared\Codecs" />
     <!-- Synthetic ICC profiles shared with the corpus generator -->
     <Compile Include="..\..\tools\Meziantou.Framework.Imaging.CorpusGenerator\Common\IccProfileBuilder.cs" Link="Shared\IccProfileBuilder.cs" />
   </ItemGroup>

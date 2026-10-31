@@ -50,17 +50,30 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
     /// <summary>
     /// The encoding state of one GIF. The first frame writes the header, the logical screen
     /// descriptor (no global color table), the NETSCAPE2.0 loop extension of an animation that does not play once, and one
-    /// comment extension per <see cref="Encode"/> call. Each frame then runs three bounded passes over the borrowed frame:
-    /// the histogram (alpha reduced, colors keyed), the palette, and the mapping and LZW compression of the rows in datastream
-    /// order (interlaced or not), preceded by its Graphic Control Extension, a full-canvas image descriptor and its local
-    /// color table. Completion writes the trailer.
+    /// comment extension per <see cref="Encode"/> call. Each image then runs three bounded passes over its pixels: the
+    /// histogram (alpha reduced, colors keyed), the palette, and the mapping and LZW compression of the rows in datastream
+    /// order (interlaced or not), preceded by its Graphic Control Extension, its image descriptor and its local color table.
+    /// Completion writes the trailer.
     /// </summary>
     /// <remarks>
-    /// Every frame covers the whole canvas and every animation frame is disposed with "restore to background" (2), which
-    /// GIF decoders apply as a clear to transparent: each displayed frame is drawn on a transparent
-    /// canvas, so pixels that become transparent never show stale content, whatever the previous frame. Nothing of a frame
-    /// is kept after its operation: working memory (rows, histogram, string table, and the index plane of interlaced dithered
-    /// frames) is allocated on creation and is independent of the number of frames.
+    /// <para>
+    /// By default, every frame covers the whole canvas and every animation frame is disposed with "restore to background" (2),
+    /// which GIF decoders apply as a clear to transparent: each displayed frame is drawn on a transparent canvas, so pixels
+    /// that become transparent never show stale content, whatever the previous frame. Nothing of a frame is kept after its
+    /// operation: working memory (rows, histogram, string table, and the index plane of interlaced dithered frames) is
+    /// allocated on creation and is independent of the number of frames.
+    /// </para>
+    /// <para>
+    /// With <see cref="GifEncoder.OptimizeFrames"/>, an animation keeps two canvases of alpha-reduced pixels
+    /// (<see cref="AnimationFrameDelta"/>): each frame is compared with the canvases the disposal of the previous frame can
+    /// leave, which chooses that disposal and, for the frames that make visible pixels transparent, grows the region of the
+    /// previous frame. The previous frame is then written from the canvases (its region, its unchanged pixels as the
+    /// transparent entry), and the frame is copied into them: every image is written one operation late, the last one at
+    /// completion. An image whose colors no longer fit its palette because of the transparent entry is analyzed again with
+    /// its unchanged pixels in their colors. The image of a frame that has transparent pixels always has a transparent entry,
+    /// as a full-canvas frame does, even when its region has none: Apple ImageIO restores to background with the background
+    /// color (opaque) instead of transparent pixels when the frame drawn next has no transparent entry.
+    /// </para>
     /// </remarks>
     private sealed class Session : ImageEncoderSession
     {
@@ -70,7 +83,9 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
         private const byte GraphicControlLabel = 0xF9;
         private const byte CommentLabel = 0xFE;
         private const byte ApplicationLabel = 0xFF;
+        private const int DisposeNone = 1;
         private const int DisposeRestoreBackground = 2;
+        private const int DisposeRestorePrevious = 3;
 
         private readonly GifEncoder _encoder;
         private readonly PixelFormat _sourceFormat;
@@ -92,6 +107,8 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
         private PooledBuffer? _indices;
         private PaletteRowMapper? _mapper;
         private PooledBuffer? _plane;
+        private AnimationFrameDelta? _delta;
+        private PooledBuffer? _canonical;
         private ImageFrame? _frame;
         private Step _step;
         private int _commentIndex;
@@ -100,6 +117,19 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
         private ushort _delay;
         private int _transparentIndex;
         private int _colorTableEntries;
+
+        // The image being written: the frame of the operation, or (OptimizeFrames) the previous frame, from the canvases
+        private Rectangle _image;
+        private ushort _imageDelay;
+        private int _imageDisposal;
+        private bool _keepUnchanged;
+        private bool _keptUnchanged;
+        private bool _imageTransparent;
+        private AnimationFramePlan _plan;
+        private ushort _pendingDelay;
+        private bool _pendingTransparent;
+        private bool _frameTransparent;
+        private bool _hasPending;
 
         public Session(ImageEncoderSessionOptions options)
             : base(options)
@@ -117,6 +147,7 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
             _fixedPalette = _quantization.Palette is { } palette ? GetFixedPalette(palette, nameof(options)) : null;
             _width = options.CanvasSize.Width;
             _height = options.CanvasSize.Height;
+            _image = new Rectangle(0, 0, _width, _height);
             _loopCount = _animated ? AnimationTiming.ToGifLoopCount(options.Animation?.TotalPlays) : null;
 
             // Comments (already filtered by the metadata policy: bare Latin-1 comments), one extension each
@@ -144,6 +175,13 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
                 {
                     _plane = scope.Rent((int)planeBytes, AllocationKind.Temporary, clear: false);
                 }
+
+                if (_animated && _encoder.OptimizeFrames)
+                {
+                    // GIF draws every pixel that is not the transparent entry, and only a disposal makes a pixel transparent
+                    _delta = new AnimationFrameDelta(scope, _width, _height, new AnimationDeltaRules { BytesPerPixel = 4, OverBlend = true, RestorePrevious = true, EnlargePreviousRegion = true });
+                    _canonical = scope.Rent(_width * 4, AllocationKind.Temporary, clear: false);
+                }
             }
             catch
             {
@@ -157,10 +195,12 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
             None,
             Header,
             Comments,
+            Compare,
             Histogram,
             Map,
             ImageHeader,
             ImageData,
+            Commit,
             Trailer,
         }
 
@@ -183,13 +223,21 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
             _delay = AnimationTiming.ToGifDelay(frame.Metadata.Duration, _encoder.DurationRounding);
             _frame = frame;
             _row = 0;
-            _step = _headerWritten ? Step.Histogram : Step.Header;
+            _step = _headerWritten ? GetFirstFrameStep() : Step.Header;
         }
 
         public override void BeginComplete(int frameCount)
         {
             if (frameCount < 1 || (!_animated && frameCount != 1))
                 throw new InvalidOperationException("A still GIF has exactly one frame.");
+
+            _row = 0;
+            if (_hasPending)
+            {
+                // The last frame, written from the canvases; its disposal is that of a full-canvas frame
+                StartCanvasImage(_delta!.LastRegion, _pendingDelay, DisposeRestoreBackground, _pendingTransparent);
+                return;
+            }
 
             _step = Step.Trailer;
         }
@@ -212,9 +260,28 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
                         return false;
                     }
 
-                    _step = Step.Histogram;
                     _row = 0;
-                    goto case Step.Histogram;
+                    _step = GetFirstFrameStep();
+                    return false;
+
+                case Step.Compare:
+                    if (!CompareRows())
+                        return false;
+
+                    if (!_delta!.TryChoose(out _plan))
+                    {
+                        // The region of the previous frame grew: the frame is compared again
+                        _row = 0;
+                        return false;
+                    }
+
+                    StartCanvasImage(_plan.PreviousRegion, _pendingDelay, _plan.PreviousDisposal switch
+                    {
+                        AnimationDisposal.None => DisposeNone,
+                        AnimationDisposal.ClearToTransparent => DisposeRestoreBackground,
+                        _ => DisposeRestorePrevious,
+                    }, _pendingTransparent);
+                    return false;
 
                 case Step.Histogram:
                     if (!AnalyzeRows())
@@ -228,6 +295,15 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
                     else
                     {
                         _quantizer!.BuildPalette(_quantizer.HasTransparency ? _quantization.MaxColors - 1 : _quantization.MaxColors);
+                        if (!_quantizer.IsExact && _keptUnchanged && !_imageTransparent)
+                        {
+                            // The transparent entry of the unchanged pixels made the colors exceed the palette: they are
+                            // written in their colors, which the image has anyway
+                            _keepUnchanged = false;
+                            _keptUnchanged = false;
+                            _row = 0;
+                            return false;
+                        }
                     }
 
                     PreparePalette();
@@ -254,6 +330,14 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
                     if (!EncodeRows(output))
                         return false;
 
+                    if (_delta is not null)
+                    {
+                        // The previous frame is written: the frame of the operation is copied into the canvases, or the output ends
+                        _row = 0;
+                        _step = _frame is not null ? Step.Commit : Step.Trailer;
+                        return false;
+                    }
+
                     // The frame is no longer referenced once its operation completes; buffers are kept for the next frame
                     _frame = null;
                     _step = Step.None;
@@ -262,6 +346,17 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
                         ReleaseBuffers();
                     }
 
+                    return true;
+
+                case Step.Commit:
+                    if (!CommitRows())
+                        return false;
+
+                    _pendingDelay = _delay;
+                    _pendingTransparent = _frameTransparent;
+                    _hasPending = true;
+                    _frame = null;
+                    _step = Step.None;
                     return true;
 
                 case Step.Trailer:
@@ -319,6 +414,47 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
             _mapper = null;
             _plane?.Dispose();
             _plane = null;
+            _delta?.Dispose();
+            _delta = null;
+            _canonical?.Dispose();
+            _canonical = null;
+        }
+
+        /// <summary>
+        /// Gets the first step of a frame once the header is written: the image of the frame, or with
+        /// <see cref="GifEncoder.OptimizeFrames"/> its comparison with the canvases (the first frame is copied into them).
+        /// </summary>
+        private Step GetFirstFrameStep()
+        {
+            if (_delta is null)
+            {
+                _image = new Rectangle(0, 0, _width, _height);
+                _imageDelay = _delay;
+                _imageDisposal = _animated ? DisposeRestoreBackground : 0;
+                _imageTransparent = false;
+                _keepUnchanged = false;
+                _keptUnchanged = false;
+                return Step.Histogram;
+            }
+
+            if (_delta.CommittedFrames == 0)
+                return Step.Commit;
+
+            _delta.BeginCompare();
+            return Step.Compare;
+        }
+
+        /// <summary>Starts the image of the previous frame, written from the canvases, and its passes.</summary>
+        private void StartCanvasImage(Rectangle region, ushort delay, int disposal, bool transparent)
+        {
+            _image = region;
+            _imageDelay = delay;
+            _imageDisposal = disposal;
+            _imageTransparent = transparent;
+            _keepUnchanged = true;
+            _keptUnchanged = false;
+            _row = 0;
+            _step = Step.Histogram;
         }
 
         private void WriteHeader(ImageOutputBuffer output)
@@ -349,7 +485,61 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
             }
         }
 
-        /// <summary>Reads source rows into the histogram, a band per call.</summary>
+        /// <summary>Compares the alpha-reduced rows of the frame with the canvases, a band per call.</summary>
+        /// <returns><see langword="true"/> when every row was compared.</returns>
+        private bool CompareRows()
+        {
+            var keys = unsafe(MemoryMarshal.Cast<byte, int>(_keys!.Span));
+            var row = _canonical!.Span;
+            using var lease = _frame!.GetStorage().AcquireLease();
+            var processed = 0;
+            while (_row < _height && (processed == 0 || processed < PixelsPerStep))
+            {
+                LoadKeys(in lease, _row, keys);
+                ToCanonical(keys, row);
+                _delta!.CompareRow(_row, row);
+                _row++;
+                processed += _width;
+            }
+
+            CancellationToken.ThrowIfCancellationRequested();
+            return _row == _height;
+        }
+
+        /// <summary>Copies the alpha-reduced rows of the frame into the canvases, a band per call.</summary>
+        /// <returns><see langword="true"/> when every row was copied.</returns>
+        private bool CommitRows()
+        {
+            var delta = _delta!;
+            if (_row == 0)
+            {
+                delta.BeginCommit(delta.CommittedFrames == 0 ? new Rectangle(0, 0, _width, _height) : _plan.Region);
+                _frameTransparent = false;
+            }
+
+            var keys = unsafe(MemoryMarshal.Cast<byte, int>(_keys!.Span));
+            var row = _canonical!.Span;
+            using var lease = _frame!.GetStorage().AcquireLease();
+            var processed = 0;
+            while (_row < _height && (processed == 0 || processed < PixelsPerStep))
+            {
+                LoadKeys(in lease, _row, keys);
+                _frameTransparent |= keys.Contains(PaletteQuantizer.TransparentKey);
+                ToCanonical(keys, row);
+                delta.CommitRow(_row, row);
+                _row++;
+                processed += _width;
+            }
+
+            CancellationToken.ThrowIfCancellationRequested();
+            if (_row < _height)
+                return false;
+
+            delta.EndCommit();
+            return true;
+        }
+
+        /// <summary>Reads the rows of the image into the histogram, a band per call.</summary>
         /// <returns><see langword="true"/> when every row was added.</returns>
         private bool AnalyzeRows()
         {
@@ -357,21 +547,25 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
             if (_row == 0)
             {
                 quantizer.Begin(_fixedPalette is null ? _quantization.MaxColors : ImagePalette.MaxCount);
+                if (_imageTransparent)
+                {
+                    // The frame has transparent pixels outside the region: the image has the transparent entry anyway
+                    quantizer.Add([PaletteQuantizer.TransparentKey]);
+                }
             }
 
-            using var lease = _frame!.GetStorage().AcquireLease();
-            var keys = unsafe(MemoryMarshal.Cast<byte, int>(_keys!.Span));
+            var keys = unsafe(MemoryMarshal.Cast<byte, int>(_keys!.Span))[.._image.Width];
             var processed = 0;
-            while (_row < _height && (processed == 0 || processed < PixelsPerStep))
+            while (_row < _image.Height && (processed == 0 || processed < PixelsPerStep))
             {
-                LoadKeys(in lease, _row, keys);
+                LoadImageKeys(_row, keys);
                 quantizer.Add(keys);
                 _row++;
-                processed += _width;
+                processed += _image.Width;
             }
 
             CancellationToken.ThrowIfCancellationRequested();
-            return _row == _height;
+            return _row == _image.Height;
         }
 
         private void PreparePalette()
@@ -397,44 +591,45 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
             }
         }
 
-        /// <summary>Maps the rows of an interlaced dithered frame into the index plane, in display order, a band per call.</summary>
+        /// <summary>Maps the rows of an interlaced dithered image into the index plane, in display order, a band per call.</summary>
         private bool MapPlaneRows()
         {
-            using var lease = _frame!.GetStorage().AcquireLease();
-            var keys = unsafe(MemoryMarshal.Cast<byte, int>(_keys!.Span));
+            var width = _image.Width;
+            var keys = unsafe(MemoryMarshal.Cast<byte, int>(_keys!.Span))[..width];
             var plane = _plane!.Span;
             var processed = 0;
-            while (_row < _height && (processed == 0 || processed < PixelsPerStep))
+            while (_row < _image.Height && (processed == 0 || processed < PixelsPerStep))
             {
-                LoadKeys(in lease, _row, keys);
-                MapRow(keys, plane.Slice(_row * _width, _width), _row);
+                LoadImageKeys(_row, keys);
+                MapRow(keys, plane.Slice(_row * width, width), _row);
                 _row++;
-                processed += _width;
+                processed += width;
             }
 
             CancellationToken.ThrowIfCancellationRequested();
-            return _row == _height;
+            return _row == _image.Height;
         }
 
         private void WriteImageHeader(ImageOutputBuffer output)
         {
             var hasTransparency = _transparentIndex >= 0;
-            if (_animated || hasTransparency || _delay != 0)
+            if (_animated || hasTransparency || _imageDelay != 0)
             {
-                // Graphic Control Extension: disposal 2 for animation frames (cleared to transparent before the next frame),
-                // not specified for a still image; the transparent flag and index; the delay in hundredths
+                // Graphic Control Extension: the disposal of the frame (2 for full-canvas animation frames: cleared to
+                // transparent before the next frame; not specified for a still image); the transparent flag and index; the
+                // delay in hundredths
                 Span<byte> control = stackalloc byte[8];
                 control[0] = ExtensionIntroducer;
                 control[1] = GraphicControlLabel;
                 control[2] = 4;
-                control[3] = (byte)(((_animated ? DisposeRestoreBackground : 0) << 2) | (hasTransparency ? 1 : 0));
-                BinaryPrimitives.WriteUInt16LittleEndian(control[4..], _delay);
+                control[3] = (byte)((_imageDisposal << 2) | (hasTransparency ? 1 : 0));
+                BinaryPrimitives.WriteUInt16LittleEndian(control[4..], _imageDelay);
                 control[6] = hasTransparency ? (byte)_transparentIndex : (byte)0;
                 control[7] = 0;
                 output.Write(control);
             }
 
-            // Image descriptor covering the canvas, with a local color table of 2^(n + 1) entries
+            // Image descriptor of the region of the canvas, with a local color table of 2^(n + 1) entries
             var sizeField = 0;
             while ((2 << sizeField) < _colorTableEntries)
             {
@@ -443,10 +638,10 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
 
             Span<byte> descriptor = stackalloc byte[10];
             descriptor[0] = ImageSeparator;
-            BinaryPrimitives.WriteUInt16LittleEndian(descriptor[1..], 0);
-            BinaryPrimitives.WriteUInt16LittleEndian(descriptor[3..], 0);
-            BinaryPrimitives.WriteUInt16LittleEndian(descriptor[5..], (ushort)_width);
-            BinaryPrimitives.WriteUInt16LittleEndian(descriptor[7..], (ushort)_height);
+            BinaryPrimitives.WriteUInt16LittleEndian(descriptor[1..], (ushort)_image.X);
+            BinaryPrimitives.WriteUInt16LittleEndian(descriptor[3..], (ushort)_image.Y);
+            BinaryPrimitives.WriteUInt16LittleEndian(descriptor[5..], (ushort)_image.Width);
+            BinaryPrimitives.WriteUInt16LittleEndian(descriptor[7..], (ushort)_image.Height);
             descriptor[9] = (byte)(0x80 | (_encoder.Interlaced ? 0x40 : 0) | sizeField);
             output.Write(descriptor);
             output.Write(_colorTable.AsSpan(0, _colorTableEntries * 3));
@@ -460,35 +655,73 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
         private bool EncodeRows(ImageOutputBuffer output)
         {
             var lzw = _lzw!;
-            var keys = unsafe(MemoryMarshal.Cast<byte, int>(_keys!.Span));
-            var indices = _indices!.Span[.._width];
-            using (var lease = _frame!.GetStorage().AcquireLease())
+            var width = _image.Width;
+            var height = _image.Height;
+            var keys = unsafe(MemoryMarshal.Cast<byte, int>(_keys!.Span))[..width];
+            var indices = _indices!.Span[..width];
+            var processed = 0;
+            while (_row < height)
             {
-                var processed = 0;
-                while (_row < _height)
+                if (processed > 0 && (processed >= PixelsPerStep || output.ShouldFlush))
+                    return false;
+
+                var y = _encoder.Interlaced ? GetInterlacedRow(_row, height) : _row;
+                if (_plane is not null && !_quantizer!.IsExact)
                 {
-                    if (processed > 0 && (processed >= PixelsPerStep || output.ShouldFlush))
-                        return false;
-
-                    var y = _encoder.Interlaced ? GetInterlacedRow(_row, _height) : _row;
-                    if (_plane is not null && !_quantizer!.IsExact)
-                    {
-                        lzw.Write(_plane.Span.Slice(y * _width, _width), output);
-                    }
-                    else
-                    {
-                        LoadKeys(in lease, y, keys);
-                        MapRow(keys, indices, y);
-                        lzw.Write(indices, output);
-                    }
-
-                    _row++;
-                    processed += _width;
+                    lzw.Write(_plane.Span.Slice(y * width, width), output);
                 }
+                else
+                {
+                    LoadImageKeys(y, keys);
+                    MapRow(keys, indices, y);
+                    lzw.Write(indices, output);
+                }
+
+                _row++;
+                processed += width;
             }
 
             lzw.Finish(output);
             return true;
+        }
+
+        /// <summary>
+        /// Gets the keys of a row of the image: a row of the frame, or (<see cref="GifEncoder.OptimizeFrames"/>) the row of the
+        /// region of the displayed canvas, its unchanged pixels transparent when <see cref="_keepUnchanged"/> is set.
+        /// </summary>
+        /// <param name="y">The row of the image, from the top of its region.</param>
+        /// <param name="keys">The keys, one per pixel of the region.</param>
+        private void LoadImageKeys(int y, Span<int> keys)
+        {
+            if (_delta is null)
+            {
+                using var lease = _frame!.GetStorage().AcquireLease();
+                LoadKeys(in lease, y, keys);
+                return;
+            }
+
+            // The displayed frame of the image, and the canvas it is drawn on
+            var bytes = _image.X * 4;
+            var length = _image.Width * 4;
+            var displayed = _delta.Displayed.GetRow(_image.Y + y).Slice(bytes, length);
+            var canvas = _delta.Canvas!.GetRow(_image.Y + y).Slice(bytes, length);
+            for (var x = 0; x < keys.Length; x++)
+            {
+                var pixel = displayed.Slice(4 * x, 4);
+                if (pixel[3] == 0)
+                {
+                    keys[x] = PaletteQuantizer.TransparentKey;
+                }
+                else if (_keepUnchanged && pixel.SequenceEqual(canvas.Slice(4 * x, 4)))
+                {
+                    keys[x] = PaletteQuantizer.TransparentKey;
+                    _keptUnchanged = true;
+                }
+                else
+                {
+                    keys[x] = (pixel[0] << 16) | (pixel[1] << 8) | pixel[2];
+                }
+            }
         }
 
         /// <summary>
@@ -521,6 +754,27 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
                 {
                     var pixel = source.Slice(3 * x, 3);
                     keys[x] = (pixel[0] << 16) | (pixel[1] << 8) | pixel[2];
+                }
+            }
+        }
+
+        /// <summary>Converts keys to the pixels of the canvases: opaque 8-bit RGBA, or transparent black.</summary>
+        private static void ToCanonical(ReadOnlySpan<int> keys, Span<byte> row)
+        {
+            for (var x = 0; x < keys.Length; x++)
+            {
+                var key = keys[x];
+                var pixel = row.Slice(4 * x, 4);
+                if (key == PaletteQuantizer.TransparentKey)
+                {
+                    pixel.Clear();
+                }
+                else
+                {
+                    pixel[0] = (byte)(key >> 16);
+                    pixel[1] = (byte)(key >> 8);
+                    pixel[2] = (byte)key;
+                    pixel[3] = byte.MaxValue;
                 }
             }
         }

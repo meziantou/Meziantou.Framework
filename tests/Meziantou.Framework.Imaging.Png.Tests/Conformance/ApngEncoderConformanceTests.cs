@@ -33,6 +33,12 @@ public sealed class ApngEncoderConformanceTests
         new PngEncoder { AnimationMode = PngAnimationMode.Animated, Optimization = PngOptimization.MinimumSize, Interlaced = true },
     ];
 
+    private static readonly PngEncoder[] OptimizedFrameEncoders =
+    [
+        new PngEncoder { AnimationMode = PngAnimationMode.Animated, OptimizeFrames = true },
+        new PngEncoder { AnimationMode = PngAnimationMode.Animated, OptimizeFrames = true, Interlaced = true, Filter = PngFilter.Paeth },
+    ];
+
     public static TheoryData<string, string> Cases()
     {
         var data = new TheoryData<string, string>();
@@ -148,6 +154,42 @@ public sealed class ApngEncoderConformanceTests
             using var unoptimized = new MemoryStream();
             image.Save(unoptimized, new PngEncoder { AnimationMode = PngAnimationMode.Animated, Interlaced = encoder.Interlaced });
             Assert.True(stream.Length <= unoptimized.Length, $"{context}: {stream.Length} bytes, {unoptimized.Length} without optimization.");
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(Cases))]
+    public void CorpusReferencesEncodeAsOptimizedFrameAnimations(string id, string format)
+    {
+        // Regions, blending and disposals chosen from the displayed frames, in the layout of the pixel format (or a palette):
+        // the reader composites the frames, then compares them exactly
+        var fixture = GoldenCorpus.Default.Get(id);
+        var pixelFormat = Enum.Parse<PixelFormat>(format);
+        using var image = CreateAnimation(fixture, pixelFormat, out var frames, out var stills);
+        var indexed = IndexedPngExpectation.Create(stills.Select(still => still.Pixels)).IsStorable;
+        foreach (var encoder in OptimizedFrameEncoders.Append(new PngEncoder { AnimationMode = PngAnimationMode.Animated, OptimizeFrames = true, PixelLayout = PngPixelLayout.Indexed }))
+        {
+            if (encoder.PixelLayout == PngPixelLayout.Indexed && !indexed)
+                continue;
+
+            using var stream = new MemoryStream();
+            image.Save(stream, encoder);
+            var context = $"{id} as {pixelFormat} (optimized frames, {encoder.PixelLayout}, filter {encoder.Filter}, interlaced {encoder.Interlaced})";
+            var reference = OptimizedPngOutputVerifier.VerifyAnimation(stream.ToArray(), image, context);
+            var displayed = reference.ComposeDisplayedFramesRgba16();
+            for (var i = 0; i < frames.Count; i++)
+            {
+                AssertSame(ReferencePng.ToRgba16(encoder.PixelLayout == PngPixelLayout.Indexed ? IndexedPngExpectation.ToRgba8(frames[i].Pixels) : frames[i].Pixels), displayed[i], $"{context}, {frames[i].Name}");
+            }
+
+            if (encoder.PixelLayout == PngPixelLayout.Auto)
+            {
+                // The layout of the pixel format, as without the setting
+                using var full = new MemoryStream();
+                image.Save(full, new PngEncoder { AnimationMode = PngAnimationMode.Animated, Interlaced = encoder.Interlaced, Filter = encoder.Filter });
+                var unoptimized = ReferencePng.Parse(full.ToArray());
+                Assert.Equal((unoptimized.ColorType, unoptimized.BitDepth), (reference.ColorType, reference.BitDepth));
+            }
         }
     }
 

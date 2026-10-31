@@ -14,7 +14,9 @@ public ref struct UnicodeScriptRunEnumerator
     private UnicodeScriptRun _current;
 
     // The opening brackets whose closing bracket has not been seen: the closing bracket takes the script of the run
-    // the opening one belongs to.
+    // the opening one belongs to. Consecutive openings of the same bracket in the same run share an entry. When the
+    // stack is full, the outermost entry is dropped: the closing brackets match the innermost openings first, and the
+    // closing brackets of the dropped openings are script-neutral.
     private BracketStack _brackets;
     private int _bracketCount;
 
@@ -60,8 +62,23 @@ public ref struct UnicodeScriptRunEnumerator
                 var codePoint = Unicode.DecodeAt(cluster, 0, out _);
                 switch (UnicodeProperties.GetBidiPairedBracketType(codePoint))
                 {
-                    case UnicodeBidiPairedBracketType.Open when _bracketCount < BracketStack.Capacity && UnicodeProperties.TryGetBidiPairedBracket(codePoint, out var closing):
-                        _brackets[_bracketCount++] = new Bracket(closing, PendingScript);
+                    case UnicodeBidiPairedBracketType.Open when UnicodeProperties.TryGetBidiPairedBracket(codePoint, out var closing):
+                        if (_bracketCount > 0 && _brackets[_bracketCount - 1].Closing == closing && _brackets[_bracketCount - 1].Script == PendingScript)
+                        {
+                            _brackets[_bracketCount - 1] = _brackets[_bracketCount - 1].WithCount(_brackets[_bracketCount - 1].Count + 1);
+                        }
+                        else
+                        {
+                            if (_bracketCount == BracketStack.Capacity)
+                            {
+                                Span<Bracket> brackets = _brackets;
+                                brackets[1..].CopyTo(brackets);
+                                _bracketCount--;
+                            }
+
+                            _brackets[_bracketCount++] = new Bracket(closing, PendingScript, count: 1);
+                        }
+
                         break;
 
                     case UnicodeBidiPairedBracketType.Close:
@@ -117,7 +134,17 @@ public ref struct UnicodeScriptRunEnumerator
 
             if (closedBracket >= 0)
             {
-                _bracketCount = closedBracket;
+                // The closing bracket closes one opening of the entry, and the openings above it that were left open.
+                var count = _brackets[closedBracket].Count;
+                if (count > 1)
+                {
+                    _brackets[closedBracket] = _brackets[closedBracket].WithCount(count - 1);
+                    _bracketCount = closedBracket + 1;
+                }
+                else
+                {
+                    _bracketCount = closedBracket;
+                }
             }
 
             _position += length;
@@ -132,7 +159,7 @@ public ref struct UnicodeScriptRunEnumerator
         // The brackets opened in this run now have a script.
         for (var i = _bracketCount - 1; i >= 0 && _brackets[i].Script == PendingScript; i--)
         {
-            _brackets[i] = new Bracket(_brackets[i].Closing, (int)resolved);
+            _brackets[i] = new Bracket(_brackets[i].Closing, (int)resolved, _brackets[i].Count);
         }
 
         _current = new UnicodeScriptRun(start, _position - start, resolved);
@@ -259,15 +286,21 @@ public ref struct UnicodeScriptRunEnumerator
     [StructLayout(LayoutKind.Auto)]
     private readonly struct Bracket
     {
-        public Bracket(int closing, int script)
+        public Bracket(int closing, int script, int count)
         {
             Closing = closing;
             Script = script;
+            Count = count;
         }
 
         public int Closing { get; }
 
         public int Script { get; }
+
+        /// <summary>Gets the number of openings that are not closed yet.</summary>
+        public int Count { get; }
+
+        public Bracket WithCount(int count) => new(Closing, Script, count);
     }
 
     [InlineArray(Capacity)]

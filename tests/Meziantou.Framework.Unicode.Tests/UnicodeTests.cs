@@ -1317,6 +1317,16 @@ public sealed class UnicodeTests
     [InlineData("\u6F22\u5B57\u3105\u3106")]
     // A prolonged sound mark after katakana.
     [InlineData("\u30A2\u30FC")]
+    // Han and Latin share Hntl (Traditional Han with Latin), in either order and outside ASCII.
+    [InlineData("a\u4E00")]
+    [InlineData("\u4E00a")]
+    [InlineData("abc\u6F22\u5B57")]
+    [InlineData("\u00E9\u4E00")]
+    [InlineData("\u3006\u5207")]
+    // Unassigned characters have the Unknown script, which matches itself and the script-neutral characters.
+    [InlineData("\u0378")]
+    [InlineData("\u0378\u0379")]
+    [InlineData("\u0378 1!")]
     public void IsSingleScript_AcceptsSingleScriptText(string value)
     {
         Assert.True(Unicode.IsSingleScript(value));
@@ -1330,6 +1340,16 @@ public sealed class UnicodeTests
     [InlineData("a\u03B2c")]
     // Hiragana and Hangul share no augmented script.
     [InlineData("\u3053\u3093\u306B\u3061\u306F\uD55C\uAD6D")]
+    // Hntl only joins Han and Latin.
+    [InlineData("a\u0430")]
+    [InlineData("\u4E00\u03B1")]
+    [InlineData("a\u3042")]
+    [InlineData("\u3042\u4E00a")]
+    // Unknown is not script-neutral: it does not match Latin.
+    [InlineData("a\u0378")]
+    [InlineData("\u0378a")]
+    [InlineData("a\uE000")]
+    [InlineData("\u0378\u03B1")]
     public void IsSingleScript_RejectsMixedScriptText(string value)
     {
         Assert.False(Unicode.IsSingleScript(value));
@@ -1338,10 +1358,11 @@ public sealed class UnicodeTests
 
     [Theory]
     // U+30FC and U+3006 both have Script=Common, which on its own would make them match any
-    // script. Their Script_Extensions are {Hiragana, Katakana} and {Han}, so pairing either with
-    // Latin is mixed. These cases only pass when Script_Extensions is consulted.
+    // script. Their Script_Extensions are {Hiragana, Katakana} and {Han}, so pairing the first
+    // with Latin, or the second with Cyrillic, is mixed. These cases only pass when
+    // Script_Extensions is consulted.
     [InlineData("a\u30FC")]
-    [InlineData("a\u3006")]
+    [InlineData("\u0430\u3006")]
     public void IsSingleScript_UsesScriptExtensionsNotJustScript(string value)
     {
         Assert.Equal(UnicodeScript.Common, UnicodeScripts.GetScript(value[1]));
@@ -3537,6 +3558,56 @@ public sealed class UnicodeTests
         Assert.Equal(text.Length, position);
         Assert.Equal(expectedLengths, lengths.ToArray());
         Assert.Equal(expectedScripts, scripts.ToArray());
+    }
+
+    [Theory]
+    // At the capacity of the bracket stack, and beyond it: repeated openings share an entry.
+    [InlineData("(", 31)]
+    [InlineData("(", 32)]
+    [InlineData("(", 100)]
+    // Alternating brackets need an entry each: beyond the capacity, the innermost openings are kept.
+    [InlineData("([", 16)]
+    [InlineData("([", 50)]
+    public void EnumerateScriptRuns_MatchesDeeplyNestedBrackets(string opening, int repeat)
+    {
+        var openings = string.Concat(Enumerable.Repeat(opening, repeat));
+        var closings = new string(openings.Reverse().Select(c => c is '(' ? ')' : ']').ToArray());
+        var text = "a" + openings + "\u03B1(\u03B2)\u03B3" + closings;
+
+        var runs = new List<(int Index, int Length, UnicodeScript Script)>();
+        foreach (var run in Unicode.EnumerateScriptRuns(text))
+        {
+            runs.Add((run.Index, run.Length, run.Script));
+        }
+
+        Assert.Equal(
+            [
+                (0, 1 + openings.Length, UnicodeScript.Latin),
+                (1 + openings.Length, 5, UnicodeScript.Greek),
+                (6 + openings.Length, closings.Length, UnicodeScript.Latin),
+            ],
+            runs);
+    }
+
+    [Fact]
+    public void EnumerateScriptRuns_KeepsTheScriptOfRepeatedOpenings()
+    {
+        // The openings of each run are closed with the script of that run, from the inside out.
+        var text = "a((\u03B1((\u03B2))\u03B3))";
+
+        var runs = new List<(int Index, int Length, UnicodeScript Script)>();
+        foreach (var run in Unicode.EnumerateScriptRuns(text))
+        {
+            runs.Add((run.Index, run.Length, run.Script));
+        }
+
+        Assert.Equal(
+            [
+                (0, 3, UnicodeScript.Latin),
+                (3, 7, UnicodeScript.Greek),
+                (10, 2, UnicodeScript.Latin),
+            ],
+            runs);
     }
 
     [Fact]

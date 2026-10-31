@@ -217,6 +217,72 @@ public sealed class PnmCodecTests
     }
 
     [Fact]
+    public void EveryPamTupleIsDecoded()
+    {
+        // BLACKANDWHITE_ALPHA: an intensity and an alpha sample, both 0 or 1
+        Assert.Equal([new(0, 0, 0, 255), new(255, 255, 255, 0)], Decode(Bytes("P7\nWIDTH 2\nHEIGHT 1\nDEPTH 2\nMAXVAL 1\nTUPLTYPE BLACKANDWHITE_ALPHA\nENDHDR\n", [0, 1, 1, 0])));
+        Assert.Throws<InvalidImageContentException>(() => Image.Load(Bytes("P7\nWIDTH 1\nHEIGHT 1\nDEPTH 2\nMAXVAL 255\nTUPLTYPE BLACKANDWHITE_ALPHA\nENDHDR\n", [0, 1])));
+
+        // Without TUPLTYPE, DEPTH 2 is gray and alpha and DEPTH 4 is RGB and alpha; there is no standard tuple of 5 samples
+        Assert.Equal([new(10, 10, 10, 200)], Decode(Bytes("P7\nWIDTH 1\nHEIGHT 1\nDEPTH 2\nMAXVAL 255\nENDHDR\n", [10, 200])));
+        Assert.Equal([new(1, 2, 3, 4)], Decode(Bytes("P7\nWIDTH 1\nHEIGHT 1\nDEPTH 4\nMAXVAL 255\nENDHDR\n", [1, 2, 3, 4])));
+        var unsupported = Assert.Throws<UnsupportedImageFeatureException>(() => Image.Load(Bytes("P7\nWIDTH 1\nHEIGHT 1\nDEPTH 5\nMAXVAL 255\nENDHDR\n", [1, 2, 3, 4, 5])));
+        Assert.Equal("PAM tuple type", unsupported.Feature);
+
+        // Comments, blank lines, indentation and CRLF line ends between the header lines
+        Assert.Equal([new(1, 2, 3)], Decode(Bytes("P7\r\n# comment\r\n\r\n  WIDTH 1\r\nHEIGHT\t1\r\nDEPTH 3\r\nMAXVAL 255\r\nENDHDR\r\n", [1, 2, 3])));
+    }
+
+    [Theory]
+    [InlineData("TUPLTYPE RGB\nTUPLTYPE RGB\n", "TUPLTYPE more than once")]
+    [InlineData("MAXVAL\n", "has no value")]
+    [InlineData("MAXVAL 0x10\n", "not a decimal number")]
+    [InlineData("MAXVAL 2147483648\n", "larger than 2147483647")]
+    [InlineData("", "before ENDHDR")]
+    public void MalformedPamHeaderLinesAreRejected(string lines, string expectedMessage)
+    {
+        var data = Bytes("P7\nWIDTH 1\nHEIGHT 1\nDEPTH 3\n" + lines + "ENDHDR\n", [1, 2, 3]);
+        Assert.Contains(expectedMessage, Assert.Throws<InvalidImageContentException>(() => Image.Load(data)).Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void APamHeaderLineIsBounded()
+    {
+        var data = Bytes($"P7\n#{new string('c', 70_000)}\nWIDTH 1\nHEIGHT 1\nDEPTH 3\nMAXVAL 255\nENDHDR\n", [1, 2, 3]);
+        Assert.Contains("PAM header line is longer", Assert.Throws<InvalidImageContentException>(() => Image.Load(data)).Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void SamplesBelowTheMaximumOfTheirSizeAreScaled()
+    {
+        // 8-bit RGB and gray-and-alpha samples with MAXVAL 100: round(value * 255 / 100)
+        Assert.Equal([new(0, 128, 255)], Decode(Bytes("P6\n1 1\n100\n", [0, 50, 100])));
+        Assert.Equal([new(128, 128, 128, 255)], Decode(Bytes("P7\nWIDTH 1\nHEIGHT 1\nDEPTH 2\nMAXVAL 100\nTUPLTYPE GRAYSCALE_ALPHA\nENDHDR\n", [50, 100])));
+
+        // A binary sample above MAXVAL is malformed, never clamped
+        Assert.Contains("greater than MAXVAL (100)", Assert.Throws<InvalidImageContentException>(() => Image.Load(Bytes("P5\n2 1\n100\n", [100, 101]))).Message, StringComparison.Ordinal);
+
+        // 16-bit samples: round(value * 65535 / MAXVAL), from a table up to 4096 and computed above
+        Assert.Equal([new Rgba64(32768, 32768, 32768, 65535)], Decode16(Bytes("P5\n1 1\n1000\n", [0x01, 0xF4])));
+        Assert.Equal([new Rgba64(32768, 32768, 32768, 65535), new Rgba64(65535, 65535, 65535, 65535)], Decode16(Bytes("P5\n2 1\n40000\n", [0x4E, 0x20, 0x9C, 0x40])));
+        Assert.Equal([new Rgba64(32768, 32768, 32768, 65535)], Decode16(Bytes("P7\nWIDTH 1\nHEIGHT 1\nDEPTH 2\nMAXVAL 1000\nTUPLTYPE GRAYSCALE_ALPHA\nENDHDR\n", [0x01, 0xF4, 0x03, 0xE8])));
+        Assert.Equal([new Rgba64(0, 32768, 65535, 16384)], Decode16(Bytes("P7\nWIDTH 1\nHEIGHT 1\nDEPTH 4\nMAXVAL 1000\nTUPLTYPE RGB_ALPHA\nENDHDR\n", [0, 0, 0x01, 0xF4, 0x03, 0xE8, 0x00, 0xFA])));
+
+        // Gray and alpha at MAXVAL 65535 are copied
+        Assert.Equal([new Rgba64(0x1234, 0x1234, 0x1234, 0xABCD)], Decode16(Bytes("P7\nWIDTH 1\nHEIGHT 1\nDEPTH 2\nMAXVAL 65535\nTUPLTYPE GRAYSCALE_ALPHA\nENDHDR\n", [0x12, 0x34, 0xAB, 0xCD])));
+    }
+
+    [Fact]
+    public void PlainRastersAcceptOnlyDigitsWhiteSpaceAndComments()
+    {
+        // A comment may end a sample
+        Assert.Equal([new(3, 3, 3), new(255, 255, 255)], Decode(Bytes("P2\n2 1\n255\n3# comment\n255\n", [])));
+        Assert.Contains("byte 0x78", Assert.Throws<InvalidImageContentException>(() => Image.Load(Bytes("P2\n2 1\n255\n3 x\n", []))).Message, StringComparison.Ordinal);
+        Assert.Contains("larger than 65535", Assert.Throws<InvalidImageContentException>(() => Image.Load(Bytes("P2\n1 1\n65535\n65536\n", []))).Message, StringComparison.Ordinal);
+        Assert.Contains("larger than 2147483647", Assert.Throws<InvalidImageContentException>(() => Image.Load(Bytes("P5\n99999999999 1\n255\n", [1]))).Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void IllegalHeaderFieldsAreRejected()
     {
         Assert.Throws<InvalidImageContentException>(() => Image.Load(Bytes("P5\n0 1\n255\n", [1])));
@@ -542,6 +608,12 @@ public sealed class PnmCodecTests
     private static Rgba32[] Decode(byte[] data)
     {
         using var image = Image.Load<Rgba32>(data);
+        return GetPixels(image.Frames[0]);
+    }
+
+    private static Rgba64[] Decode16(byte[] data)
+    {
+        using var image = Image.Load<Rgba64>(data);
         return GetPixels(image.Frames[0]);
     }
 

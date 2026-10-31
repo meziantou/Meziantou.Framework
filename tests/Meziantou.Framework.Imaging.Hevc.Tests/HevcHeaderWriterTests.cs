@@ -404,6 +404,10 @@ public sealed class HevcHeaderWriterTests
             (HevcProfile.Main, 1920, 1080, 777_601, 183, false),
             (HevcProfile.Main, 1920, 1080, 1_336_934, 183, false),
             (HevcProfile.Main, 1920, 1080, 1_336_935, 186, false),
+            (HevcProfile.Main, 1920, 1080, 3_565_158, 186, false),
+            (HevcProfile.Main, 1920, 1080, 3_565_159, 189, false),
+            (HevcProfile.Main, 1920, 1080, 4_010_803, 189, false),
+            (HevcProfile.Main, 1920, 1080, 4_010_804, 213, false),
 
             // Level 7.2 of the Main tier holds 1.5 x 17,112,760,320 / 300 / 6 bytes. The High tier has a smaller
             // MinCrBase (4), but fR is 1 / 960 from level 7: its largest picture is at level 7.2, 1.5 x 17,112,760,320 /

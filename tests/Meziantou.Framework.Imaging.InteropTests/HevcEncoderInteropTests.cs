@@ -121,7 +121,20 @@ public sealed class HevcEncoderInteropTests
 
     [Theory]
     [MemberData(nameof(Cases))]
-    public async Task StreamsAreDecodedByTheReferenceDecoders(int chromaFormatIdc, int bitDepth, bool lossless, string kind, int width, int height, int effort, int quality)
+    public Task StreamsAreDecodedByTheReferenceDecoders(int chromaFormatIdc, int bitDepth, bool lossless, string kind, int width, int height, int effort, int quality)
+        => CheckReferenceDecoders(chromaFormatIdc, bitDepth, lossless, kind, width, height, effort, quality, optimizeQuantization: false);
+
+    [Theory]
+    [InlineData(0, 8, "still", 0, 0)]
+    [InlineData(1, 8, "still", 2, 50)]
+    [InlineData(1, 10, "still-wpp", 5, 75)]
+    [InlineData(2, 12, "sequence", 6, 40)]
+    [InlineData(3, 10, "interval", 7, 100)]
+    [InlineData(3, 8, "sequence-wpp", 6, 25)]
+    public Task OptimizedQuantizationIsDecodedByTheReferenceDecoders(int chromaFormatIdc, int bitDepth, string kind, int effort, int quality)
+        => CheckReferenceDecoders(chromaFormatIdc, bitDepth, lossless: false, kind, width: 64, height: 64, effort, quality, optimizeQuantization: true);
+
+    private static async Task CheckReferenceDecoders(int chromaFormatIdc, int bitDepth, bool lossless, string kind, int width, int height, int effort, int quality, bool optimizeQuantization)
     {
         var cancellationToken = XunitCancellationToken;
         var decoders = await RequiredTools.HevcReferenceDecodersAsync();
@@ -133,7 +146,7 @@ public sealed class HevcEncoderInteropTests
             2 => "422",
             _ => "444",
         };
-        var name = string.Create(CultureInfo.InvariantCulture, $"{format}-{bitDepth}bit-{width}x{height}-{kind}-{(lossless ? "lossless" : "q" + quality.ToString(CultureInfo.InvariantCulture))}-e{effort}");
+        var name = string.Create(CultureInfo.InvariantCulture, $"{format}-{bitDepth}bit-{width}x{height}-{kind}-{(lossless ? "lossless" : "q" + quality.ToString(CultureInfo.InvariantCulture))}-e{effort}{(optimizeQuantization ? "-optimized" : "")}");
         var wavefront = kind.EndsWith("-wpp", StringComparison.Ordinal);
         kind = wavefront ? kind[..^4] : kind;
         var artifacts = InteropSettings.GetArtifactsDirectory(nameof(HevcEncoderInteropTests));
@@ -153,7 +166,7 @@ public sealed class HevcEncoderInteropTests
                 "interval" => 2,
                 _ => 0,
             };
-            var settings = new HevcEncoderSettings(width, height, bitDepth, chromaFormatIdc, ColourPrimaries: 1, TransferCharacteristics: 13, MatrixCoeffs: chromaFormatIdc is 3 ? 0 : 6, FullRange: true, ChromaSampleLocType: 0, StillPicture: kind is "still", lossless, quality, effort, keyFrameInterval, wavefront);
+            var settings = new HevcEncoderSettings(width, height, bitDepth, chromaFormatIdc, ColourPrimaries: 1, TransferCharacteristics: 13, MatrixCoeffs: chromaFormatIdc is 3 ? 0 : 6, FullRange: true, ChromaSampleLocType: 0, StillPicture: kind is "still", lossless, quality, effort, keyFrameInterval, wavefront, optimizeQuantization);
             var encoded = Encode(name, settings, pictureCount, cancellationToken);
             var stream = work / "stream.hevc";
             await File.WriteAllBytesAsync(stream, encoded.ByteStream, cancellationToken);
@@ -242,7 +255,80 @@ public sealed class HevcEncoderInteropTests
     /// <param name="Profile">The profile that the encoder announces.</param>
     private sealed record EncodedStream(byte[] ByteStream, byte[] Expected, HevcSequenceParameterSet Sps, HevcProfile Profile);
 
-    private static EncodedStream Encode(string name, HevcEncoderSettings settings, int pictureCount, CancellationToken cancellationToken)
+    [Theory]
+    [InlineData("photo")]
+    [InlineData("edges")]
+    [InlineData("texture")]
+    public async Task QuantizationRateDistortionIsMeasuredAgainstX265(string content)
+    {
+        var cancellationToken = XunitCancellationToken;
+        var reference = await RequiredTools.HevcReferenceEncoderAsync(HevcReferenceEncoder.X265);
+        var work = InteropSettings.GetArtifactsDirectory(nameof(QuantizationRateDistortionIsMeasuredAgainstX265)) / content;
+        Directory.CreateDirectory(work);
+        try
+        {
+            const int Size = 64;
+            using var input = new MemoryStream();
+            for (var plane = 0; plane < 3; plane++)
+            {
+                var size = plane is 0 ? Size : Size / 2;
+                for (var y = 0; y < size; y++)
+                {
+                    for (var x = 0; x < size; x++)
+                    {
+                        input.WriteByte((byte)Sample(0, plane, x, y));
+                    }
+                }
+            }
+
+            var source = input.ToArray();
+            var inputPath = work / "input.yuv";
+            await File.WriteAllBytesAsync(inputPath, source, cancellationToken);
+            foreach (var quality in new[] { 25, 50, 75 })
+            {
+                var settings = new HevcEncoderSettings(Size, Size, BitDepth: 8, ChromaFormatIdc: 1, ColourPrimaries: 1, TransferCharacteristics: 13, MatrixCoeffs: 6, FullRange: true, ChromaSampleLocType: 0, StillPicture: true, Lossless: false, quality, Effort: 5);
+                var baseline = Encode(content, settings, 1, cancellationToken, Sample);
+                var optimized = Encode(content, settings with { OptimizeQuantization = true }, 1, cancellationToken, Sample);
+                var qp = HevcEncoderDecisions.Create(settings).SliceQp;
+                var stream = work / "reference.hevc";
+                var reconstruction = work / "reference.yuv";
+                var arguments = reference.GetArguments(inputPath, stream, Size, Size, chromaFormatIdc: 1, bitDepth: 8, frameCount: 1,
+                    ["--preset", "medium", "--profile", "mainstillpicture", "--qp", qp.ToString(CultureInfo.InvariantCulture), "--recon", reconstruction]);
+                Assert.Null(await reference.EncodeAsync(arguments, TimeSpan.FromMinutes(1), cancellationToken));
+                var referencePixels = await File.ReadAllBytesAsync(reconstruction, cancellationToken);
+                Assert.HasCount(source.Length, referencePixels);
+                Assert.HasCount(source.Length, baseline.Expected);
+                Assert.HasCount(source.Length, optimized.Expected);
+                TestContext.Current.TestOutputHelper?.WriteLine(string.Create(CultureInfo.InvariantCulture,
+                    $"{content} q{quality} (QP {qp}): baseline {baseline.ByteStream.Length} B/{Psnr(baseline.Expected):F2} dB; optimized {optimized.ByteStream.Length} B/{Psnr(optimized.Expected):F2} dB; x265 {new FileInfo(stream).Length} B/{Psnr(referencePixels):F2} dB"));
+            }
+
+            ushort Sample(int index, int plane, int x, int y) => content switch
+            {
+                "edges" => (ushort)((((x / 8) + (y / 8) + plane) & 1) is 0 ? 32 : 224),
+                "texture" => (ushort)(32 + ((((x * 31) ^ (y * 17) ^ (plane * 97)) & 127) * 3 / 2)),
+                _ => GetSample(index, plane, x, y, bitDepth: 8, subWidth: plane is 0 ? 1 : 2),
+            };
+
+            double Psnr(byte[] pixels)
+            {
+                long error = 0;
+                for (var i = 0; i < pixels.Length; i++)
+                {
+                    var difference = pixels[i] - source[i];
+                    error += difference * difference;
+                }
+
+                return error is 0 ? double.PositiveInfinity : 10 * Math.Log10(255.0 * 255 * source.Length / error);
+            }
+        }
+        finally
+        {
+            Directory.Delete(work, recursive: true);
+        }
+    }
+
+    private static EncodedStream Encode(string name, HevcEncoderSettings settings, int pictureCount, CancellationToken cancellationToken, Func<int, int, int, int, ushort>? getSample = null)
     {
         var scope = AllocationScope.Create(ImageConfiguration.Default, name);
         using var encoder = new HevcEncoder(scope, settings);
@@ -268,7 +354,7 @@ public sealed class HevcEncoderInteropTests
                     var row = buffer.GetRow(y);
                     for (var x = 0; x < row.Length; x++)
                     {
-                        row[x] = GetSample(index, plane, x, y, settings.BitDepth, plane is 0 ? 1 : sps.SubWidthC);
+                        row[x] = getSample is null ? GetSample(index, plane, x, y, settings.BitDepth, plane is 0 ? 1 : sps.SubWidthC) : getSample(index, plane, x, y);
                     }
                 }
             }

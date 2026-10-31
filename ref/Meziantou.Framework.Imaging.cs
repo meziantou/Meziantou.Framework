@@ -2890,6 +2890,7 @@ namespace Meziantou.Framework.Imaging.Formats
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
         public Meziantou.Framework.Imaging.Size? GridTileSize { get => throw null; init { } }
         public int KeyFrameInterval { get => throw null; init { } }
+        public bool OptimizeQuantization { get => throw null; init { } }
         public int Quality { get => throw null; init { } }
     }
 

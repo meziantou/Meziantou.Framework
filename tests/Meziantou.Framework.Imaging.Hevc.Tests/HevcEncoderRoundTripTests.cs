@@ -162,6 +162,77 @@ public sealed class HevcEncoderRoundTripTests
     }
 
     [Theory]
+    [InlineData(8, "420", 0, false)]
+    [InlineData(10, "422", 6, false)]
+    [InlineData(12, "400", 5, true)]
+    [InlineData(8, "444", 7, true)]
+    public void OptimizedQuantizationDecodesToTheReconstruction(int bitDepth, string format, int effort, bool wavefront)
+    {
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(OptimizedQuantizationDecodesToTheReconstruction));
+        var settings = HevcEncoderTestSession.CreateSettings(40, 40, bitDepth, format, lossless: false, quality: 40, effort, stillPicture: false) with
+        {
+            OptimizeQuantization = true,
+            Wavefront = wavefront,
+        };
+        var session = new HevcEncoderTestSession(settings);
+        session.Encode(scope, 3, (index, plane, width, height) => HevcEncoderTestSession.CreateSamples(index is 0 ? "photo" : "text", width, height, bitDepth, seed: plane + index), XunitCancellationToken);
+        var decoded = HevcTestDecoder.Decode(session.ToByteStream(), scope, out _);
+        AssertDecodesToTheReconstruction(session, decoded, $"{bitDepth}-{format}-{effort}-{wavefront}");
+    }
+
+    [Theory]
+    [InlineData(8)]
+    [InlineData(10)]
+    [InlineData(12)]
+    public void OptimizedQuantizationImprovesAggregateRateDistortion(int bitDepth)
+    {
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(OptimizedQuantizationImprovesAggregateRateDistortion));
+        long baselineCost = 0;
+        long optimizedCost = 0;
+        foreach (var content in new[] { "photo", "gradient", "noise", "blocks", "flat", "text", "edges" })
+        {
+            foreach (var quality in new[] { 25, 50, 75 })
+            {
+                var settings = HevcEncoderTestSession.CreateSettings(48, 32, bitDepth, "420", lossless: false, quality, effort: 2);
+                var decisions = HevcEncoderDecisions.Create(settings);
+                var baseline = Encode(optimized: false);
+                var optimized = Encode(optimized: true);
+                baselineCost += Cost(baseline);
+                optimizedCost += Cost(optimized);
+                TestContext.Current.TestOutputHelper?.WriteLine(string.Create(CultureInfo.InvariantCulture, $"{content} q{quality}: {baseline.PayloadLength} -> {optimized.PayloadLength} bytes; {baseline.GetPsnr():F2} -> {optimized.GetPsnr():F2} dB"));
+
+                HevcEncoderTestSession Encode(bool optimized)
+                {
+                    var session = new HevcEncoderTestSession(settings with { OptimizeQuantization = optimized });
+                    session.Encode(scope, 1, (_, plane, width, height) => HevcEncoderTestSession.CreateSamples(content, width, height, bitDepth, seed: 11 + plane), XunitCancellationToken);
+                    return session;
+                }
+
+                long Cost(HevcEncoderTestSession session) => decisions.GetCost(session.GetSquaredError(out _), session.PayloadLength * 8 * HevcCost.Scale);
+            }
+        }
+
+        TestContext.Current.TestOutputHelper?.WriteLine($"{baselineCost} -> {optimizedCost}");
+        Assert.True(optimizedCost < baselineCost, $"{baselineCost} -> {optimizedCost}");
+    }
+
+    [Fact]
+    public void QuantizationOptimizationDoesNotChangeLosslessOutput()
+    {
+        var scope = AllocationScope.Create(ImageConfiguration.Default, nameof(QuantizationOptimizationDoesNotChangeLosslessOutput));
+        var settings = HevcEncoderTestSession.CreateSettings(24, 16, 10, "444", lossless: true, quality: 100, effort: 2);
+        var baseline = new HevcEncoderTestSession(settings);
+        var optimized = new HevcEncoderTestSession(settings with { OptimizeQuantization = true });
+        foreach (var session in new[] { baseline, optimized })
+        {
+            session.Encode(scope, 1, (_, plane, width, height) => HevcEncoderTestSession.CreateSamples("noise", width, height, 10, seed: plane), XunitCancellationToken);
+            AssertReconstructionIsTheSource(session, 0, nameof(QuantizationOptimizationDoesNotChangeLosslessOutput));
+        }
+
+        Assert.Equal(baseline.ToByteStream(), optimized.ToByteStream());
+    }
+
+    [Theory]
     [MemberData(nameof(SequenceCases))]
     public void FramesOfASequenceDecodeToTheReconstructionOfTheEncoder(int width, int height, int bitDepth, string format, string motion, int quality, int effort)
     {

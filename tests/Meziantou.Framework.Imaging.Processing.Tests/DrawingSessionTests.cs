@@ -2797,8 +2797,10 @@ public sealed class DrawingSessionTests
         }
     }
 
-    [Fact]
-    public void WithoutAntialiasingAPixelIsPaintedWhenItsCenterIsInside()
+    [Theory]
+    [InlineData(3, 9)]
+    [InlineData(128, 257)]
+    public void WithoutAntialiasingAPixelIsPaintedWhenItsCenterIsInside(int minPoints, int maxPoints)
     {
         // Random polygons on a grid of a quarter of a pixel, whose sides often go through the centers of pixels, with
         // both fill rules. The oracle counts, in integers, the sides that cross the row of centers (top excluded,
@@ -2806,7 +2808,7 @@ public sealed class DrawingSessionTests
         var random = new Random(12);
         for (var iteration = 0; iteration < 200; iteration++)
         {
-            var points = new (int X, int Y)[random.Next(3, 9)];
+            var points = new (int X, int Y)[random.Next(minPoints, maxPoints)];
             for (var i = 0; i < points.Length; i++)
             {
                 points[i] = (random.Next(-8, 4 * 12 + 8), random.Next(-8, 4 * 10 + 8));
@@ -2854,6 +2856,75 @@ public sealed class DrawingSessionTests
             }
 
             return fillRule == FillRule.EvenOdd ? (winding & 1) != 0 : winding != 0;
+        }
+    }
+
+    [Theory]
+    [InlineData(FillRule.NonZero, false)]
+    [InlineData(FillRule.EvenOdd, false)]
+    [InlineData(FillRule.NonZero, true)]
+    [InlineData(FillRule.EvenOdd, true)]
+    public void ManyCoincidentAliasedCrossingsAreIndependentOfContourOrder(FillRule fillRule, bool clip)
+    {
+        const int Count = 256;
+        var order = Enumerable.Range(0, Count).ToArray();
+        var random = new Random(3754);
+        for (var iteration = 0; iteration < 3; iteration++)
+        {
+            if (iteration == 1)
+            {
+                Array.Reverse(order);
+            }
+            else if (iteration == 2)
+            {
+                random.Shuffle(order);
+            }
+
+            var builder = new VectorPathBuilder();
+            foreach (var i in order)
+            {
+                var left = (i % 16) + 0.5;
+                var top = (i % 4) + 0.5;
+                PointD[] points = [new(left, top), new(left + 3, top), new(left + 3, top + 5), new(left, top + 5)];
+                if (i % 3 == 0)
+                {
+                    Array.Reverse(points);
+                }
+
+                builder.AddPolygon(points);
+            }
+
+            var path = builder.Build();
+            using var image = new Image<Gray8>(20, 10, new Gray8(0));
+            image.Draw(canvas => canvas.Antialiasing(enabled: false, hard =>
+            {
+                if (clip)
+                {
+                    hard.Clip(path, clipped => clipped.Fill(White), fillRule);
+                }
+                else
+                {
+                    hard.Fill(White, path, fillRule);
+                }
+            }), Ct);
+
+            for (var y = 0; y < image.Height; y++)
+            {
+                for (var x = 0; x < image.Width; x++)
+                {
+                    var winding = 0;
+                    for (var i = 0; i < Count; i++)
+                    {
+                        if (x > i % 16 && x <= (i % 16) + 3 && y > i % 4 && y <= (i % 4) + 5)
+                        {
+                            winding += i % 3 == 0 ? -1 : 1;
+                        }
+                    }
+
+                    var inside = fillRule == FillRule.NonZero ? winding != 0 : (winding & 1) != 0;
+                    Assert.Equal(inside ? 255 : 0, (int)image.Frames[0][x, y].Value);
+                }
+            }
         }
     }
 

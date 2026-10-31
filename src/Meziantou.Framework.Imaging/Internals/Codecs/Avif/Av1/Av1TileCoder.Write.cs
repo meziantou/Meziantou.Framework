@@ -659,7 +659,7 @@ internal ref partial struct Av1TileCoder
     /// in scan order, the last one not zero. Like the decoder, leaves the coefficients of the <paramref name="eob"/> first
     /// positions of the scan in <c>Quant</c>, the transform type in <c>PlaneTxType</c>, and updates the level and DC contexts.
     /// </summary>
-    private void WriteCoeffs(int plane, int startX, int startY, int txSz, int lumaTxType, ReadOnlySpan<int> levels, int eob)
+    private void WriteCoeffs(int plane, int startX, int startY, int txSz, int lumaTxType, scoped ReadOnlySpan<int> levels, int eob)
     {
         Debug.Assert(eob is 0 || levels[eob - 1] is not 0);
         var x4 = startX >> 2;
@@ -694,46 +694,7 @@ internal ref partial struct Av1TileCoder
             var scan = GetScan(txSz, _planeTxType);
             var txClass = GetTxClass(_planeTxType);
 
-            // eob_pt_*: eob is 1, 2, or 2^(eobPt - 2) + 1 plus eobPt - 2 extra bits
-            var eobPt = eob <= 2 ? eob : BitOperations.Log2((uint)(eob - 1)) + 2;
-            var eobMultisize = Math.Min((int)Av1Tables.TxWidthLog2[txSz], 5) + Math.Min((int)Av1Tables.TxHeightLog2[txSz], 5) - 4;
-            var eobCtx = txClass is TxClass2D ? 0 : 1;
-            switch (eobMultisize)
-            {
-                case 0:
-                    WriteSymbol(Av1CdfLayout.EobPt16 + (((ptype * 2) + eobCtx) * Av1CdfLayout.EobPt16Size), Av1CdfLayout.EobPt16Size, eobPt - 1);
-                    break;
-                case 1:
-                    WriteSymbol(Av1CdfLayout.EobPt32 + (((ptype * 2) + eobCtx) * Av1CdfLayout.EobPt32Size), Av1CdfLayout.EobPt32Size, eobPt - 1);
-                    break;
-                case 2:
-                    WriteSymbol(Av1CdfLayout.EobPt64 + (((ptype * 2) + eobCtx) * Av1CdfLayout.EobPt64Size), Av1CdfLayout.EobPt64Size, eobPt - 1);
-                    break;
-                case 3:
-                    WriteSymbol(Av1CdfLayout.EobPt128 + (((ptype * 2) + eobCtx) * Av1CdfLayout.EobPt128Size), Av1CdfLayout.EobPt128Size, eobPt - 1);
-                    break;
-                case 4:
-                    WriteSymbol(Av1CdfLayout.EobPt256 + (((ptype * 2) + eobCtx) * Av1CdfLayout.EobPt256Size), Av1CdfLayout.EobPt256Size, eobPt - 1);
-                    break;
-                case 5:
-                    WriteSymbol(Av1CdfLayout.EobPt512 + (ptype * Av1CdfLayout.EobPt512Size), Av1CdfLayout.EobPt512Size, eobPt - 1);
-                    break;
-                default:
-                    WriteSymbol(Av1CdfLayout.EobPt1024 + (ptype * Av1CdfLayout.EobPt1024Size), Av1CdfLayout.EobPt1024Size, eobPt - 1);
-                    break;
-            }
-
-            if (eobPt >= 3)
-            {
-                // eob_extra then eob_extra_bit: the bits of eob - (2^(eobPt - 2) + 1), most significant first
-                var extra = eob - ((1 << (eobPt - 2)) + 1);
-                var extraBits = eobPt - 2;
-                WriteSymbol(Av1CdfLayout.EobExtra + (((((txSzCtx * Av1Constants.PlaneTypes) + ptype) * Av1Constants.EobCoefContexts) + (eobPt - 3)) * Av1CdfLayout.EobExtraSize), Av1CdfLayout.EobExtraSize, (extra >> (extraBits - 1)) & 1);
-                for (var i = extraBits - 2; i >= 0; i--)
-                {
-                    WriteLiteral((extra >> i) & 1, 1);
-                }
-            }
+            WriteEob(txSz, txSzCtx, ptype, txClass, eob);
 
             var adjTxSz = Av1Tables.AdjustedTxSize[txSz];
             var bwl = Av1Tables.TxWidthLog2[adjTxSz];
@@ -828,6 +789,51 @@ internal ref partial struct Av1TileCoder
         {
             leftLevel[(y4 + i) & 31] = (byte)culLevel;
             leftDc[(y4 + i) & 31] = (byte)dcCategory;
+        }
+    }
+
+    // eob_pt_16 to eob_pt_1024, eob_extra and eob_extra_bit (section 5.11.39 "Coefficients syntax")
+    private void WriteEob(int txSz, int txSzCtx, int ptype, int txClass, int eob)
+    {
+        // eob_pt_*: eob is 1, 2, or 2^(eobPt - 2) + 1 plus eobPt - 2 extra bits
+        var eobPt = eob <= 2 ? eob : BitOperations.Log2((uint)(eob - 1)) + 2;
+        var eobMultisize = Math.Min((int)Av1Tables.TxWidthLog2[txSz], 5) + Math.Min((int)Av1Tables.TxHeightLog2[txSz], 5) - 4;
+        var eobCtx = txClass is TxClass2D ? 0 : 1;
+        switch (eobMultisize)
+        {
+            case 0:
+                WriteSymbol(Av1CdfLayout.EobPt16 + (((ptype * 2) + eobCtx) * Av1CdfLayout.EobPt16Size), Av1CdfLayout.EobPt16Size, eobPt - 1);
+                break;
+            case 1:
+                WriteSymbol(Av1CdfLayout.EobPt32 + (((ptype * 2) + eobCtx) * Av1CdfLayout.EobPt32Size), Av1CdfLayout.EobPt32Size, eobPt - 1);
+                break;
+            case 2:
+                WriteSymbol(Av1CdfLayout.EobPt64 + (((ptype * 2) + eobCtx) * Av1CdfLayout.EobPt64Size), Av1CdfLayout.EobPt64Size, eobPt - 1);
+                break;
+            case 3:
+                WriteSymbol(Av1CdfLayout.EobPt128 + (((ptype * 2) + eobCtx) * Av1CdfLayout.EobPt128Size), Av1CdfLayout.EobPt128Size, eobPt - 1);
+                break;
+            case 4:
+                WriteSymbol(Av1CdfLayout.EobPt256 + (((ptype * 2) + eobCtx) * Av1CdfLayout.EobPt256Size), Av1CdfLayout.EobPt256Size, eobPt - 1);
+                break;
+            case 5:
+                WriteSymbol(Av1CdfLayout.EobPt512 + (ptype * Av1CdfLayout.EobPt512Size), Av1CdfLayout.EobPt512Size, eobPt - 1);
+                break;
+            default:
+                WriteSymbol(Av1CdfLayout.EobPt1024 + (ptype * Av1CdfLayout.EobPt1024Size), Av1CdfLayout.EobPt1024Size, eobPt - 1);
+                break;
+        }
+
+        if (eobPt >= 3)
+        {
+            // eob_extra then eob_extra_bit: the bits of eob - (2^(eobPt - 2) + 1), most significant first
+            var extra = eob - ((1 << (eobPt - 2)) + 1);
+            var extraBits = eobPt - 2;
+            WriteSymbol(Av1CdfLayout.EobExtra + (((((txSzCtx * Av1Constants.PlaneTypes) + ptype) * Av1Constants.EobCoefContexts) + (eobPt - 3)) * Av1CdfLayout.EobExtraSize), Av1CdfLayout.EobExtraSize, (extra >> (extraBits - 1)) & 1);
+            for (var i = extraBits - 2; i >= 0; i--)
+            {
+                WriteLiteral((extra >> i) & 1, 1);
+            }
         }
     }
 

@@ -24,6 +24,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <param name="PremultiplyAlpha">Whether the colors are stored multiplied by the alpha of their pixel.</param>
 /// <param name="GridTileSize">The size of the tiles of the grid of a still image, or <see langword="null"/> for an image that is one coded item.</param>
 /// <param name="AutoTiling">Whether the pictures are split into independent parts from their size (<see cref="HeifPictureSettings.AutoTiling"/>).</param>
+/// <param name="OptimizeQuantization">Whether the HEVC encoder searches quantization rounding offsets for lossy blocks.</param>
 [StructLayout(LayoutKind.Auto)]
 internal readonly record struct HeifEncoderSettings(
     string EncoderName,
@@ -42,4 +43,5 @@ internal readonly record struct HeifEncoderSettings(
     Rectangle? CleanAperture = null,
     bool PremultiplyAlpha = false,
     Size? GridTileSize = null,
-    bool AutoTiling = false);
+    bool AutoTiling = false,
+    bool OptimizeQuantization = false);

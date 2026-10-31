@@ -175,13 +175,15 @@ public sealed class ApiSurfaceTests
         Assert.Equal(
             [
                 nameof(HeicEncoder.AllowBitDepthReduction), nameof(HeicEncoder.BitDepth), nameof(HeicEncoder.ChromaSubsampling), nameof(HeicEncoder.ClearTransparentColors), nameof(HeicEncoder.Compression),
-                nameof(HeicEncoder.DurationRounding), nameof(HeicEncoder.Effort), nameof(HeicEncoder.Format), nameof(HeicEncoder.GridTileSize), nameof(HeicEncoder.KeyFrameInterval), nameof(HeicEncoder.Quality),
+                nameof(HeicEncoder.DurationRounding), nameof(HeicEncoder.Effort), nameof(HeicEncoder.Format), nameof(HeicEncoder.GridTileSize), nameof(HeicEncoder.KeyFrameInterval), nameof(HeicEncoder.OptimizeQuantization), nameof(HeicEncoder.Quality),
             ],
             settings);
 
-        // The settings of the AVIF encoder, without the container features that only AVIF writes so far and the AV1 tiles
+        // The shared settings exclude codec-specific options and container features that only AVIF writes so far
         string[] avifOnly = [nameof(AvifEncoder.AutoTiling), nameof(AvifEncoder.CleanAperture), nameof(AvifEncoder.PremultiplyAlpha)];
-        Assert.Equal(typeof(AvifEncoder).GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Except(avifOnly).Order(StringComparer.Ordinal), settings);
+        string[] heicOnly = [nameof(HeicEncoder.OptimizeQuantization)];
+        Assert.Equal(typeof(AvifEncoder).GetProperties(BindingFlags.Instance | BindingFlags.Public | BindingFlags.DeclaredOnly).Select(property => property.Name).Except(avifOnly).Order(StringComparer.Ordinal), settings.Except(heicOnly));
+        Assert.Equal(typeof(bool), GetDeclaredProperty(type, nameof(HeicEncoder.OptimizeQuantization)).PropertyType);
         Assert.Equal(typeof(HeicCompression), GetDeclaredProperty(type, nameof(HeicEncoder.Compression)).PropertyType);
         Assert.Equal(typeof(HeicChromaSubsampling), GetDeclaredProperty(type, nameof(HeicEncoder.ChromaSubsampling)).PropertyType);
         Assert.Equal(Enum.GetNames<AvifCompression>(), Enum.GetNames<HeicCompression>());

@@ -81,7 +81,13 @@ internal struct Av1EncoderDecisions
     /// </summary>
     public int MotionStep;
 
-    /// <summary>Whether the motion search refines a motion vector to a half then to a quarter of a sample.</summary>
+    /// <summary>
+    /// Whether the motion search refines a motion vector to a half then to a quarter of a sample, by the sum of the absolute
+    /// differences of the prediction. A comparison by the Hadamard transform of the differences (SATD) and a refinement to
+    /// an eighth of a sample (<c>allow_high_precision_mv</c>) were measured on the sequences of the avif-quality report and
+    /// left out: neither made them smaller at equal quality, and both took about 15% more encoding time (the AVIF encoding
+    /// limitations of the readme give the figures).
+    /// </summary>
     public bool SubpelMotion;
 
     /// <summary>The number of motion vectors of the stack that the NEARMV mode is evaluated with: 1 to 3.</summary>
@@ -103,6 +109,15 @@ internal struct Av1EncoderDecisions
     public int QuantizerRounding;
 
     /// <summary>
+    /// Whether the levels of a transform block of a lossy frame are lowered where the bits they cost are worth more than the
+    /// error they save (rate-distortion optimized quantization). Measured on 8 photographs, graphics and text, at 8 qualities:
+    /// 2 to 3% smaller at equal RGB PSNR and SSIMULACRA 2 (1 to 2% at equal luma PSNR) at every effort, for 10% of the time
+    /// at effort 0 and up to twice the time at effort 9. It is enabled from effort 6, where it is cheaper than a wider search
+    /// for the same gain: effort 7 with it matches effort 9 without it in less than half the time.
+    /// </summary>
+    public bool OptimizeLevels;
+
+    /// <summary>
     /// Returns the cost of a candidate: its rate (in units of 1/256 bit) for a lossless frame; otherwise its squared error
     /// plus <see cref="Lambda"/> times its rate, in units of 1/256 of a squared sample difference.
     /// </summary>
@@ -119,10 +134,10 @@ internal struct Av1EncoderDecisions
             3 => new() { IntraBlockCopy = true, MaxBlockLevel = 4, MinBlockLevel = 1, LumaModeCandidates = 2, ChromaModeCandidates = 2, AngleDeltas = true, MotionStep = 8, SubpelMotion = true, NearMvCandidates = 1, TransformTypeCandidates = 2, ChromaFromLuma = true, TransformSizeDepth = 1, FilterSearch = 1 },
             4 => new() { IntraBlockCopy = true, MaxBlockLevel = 4, MinBlockLevel = 1, LumaModeCandidates = 2, ChromaModeCandidates = 2, AngleDeltas = true, RectangularPartitions = true, MotionStep = 8, SubpelMotion = true, NearMvCandidates = 1, TransformTypeCandidates = 2, ChromaFromLuma = true, TransformSizeDepth = 1, FilterSearch = 1 },
             5 => new() { IntraBlockCopy = true, MaxBlockLevel = 4, MinBlockLevel = 0, LumaModeCandidates = 3, ChromaModeCandidates = 2, AngleDeltas = true, RectangularPartitions = true, FilterIntra = true, MotionStep = 16, SubpelMotion = true, NearMvCandidates = 2, TransformTypeCandidates = 4, ChromaFromLuma = true, TransformSizeDepth = 1, FilterSearch = 1 },
-            6 => new() { IntraBlockCopy = true, MaxBlockLevel = 4, MinBlockLevel = 0, LumaModeCandidates = 4, ChromaModeCandidates = 3, AngleDeltas = true, RectangularPartitions = true, FilterIntra = true, MotionStep = 16, SubpelMotion = true, NearMvCandidates = 2, TransformTypeCandidates = 4, ChromaFromLuma = true, TransformSizeDepth = 2, FilterSearch = 1 },
-            7 => new() { IntraBlockCopy = true, MaxBlockLevel = 5, MinBlockLevel = 0, LumaModeCandidates = 6, ChromaModeCandidates = 4, AngleDeltas = true, RectangularPartitions = true, FilterIntra = true, MotionStep = 16, SubpelMotion = true, NearMvCandidates = 3, TransformTypeCandidates = 7, ChromaFromLuma = true, TransformSizeDepth = 2, FilterSearch = 1 },
-            8 => new() { IntraBlockCopy = true, MaxBlockLevel = 5, MinBlockLevel = 0, LumaModeCandidates = 13, ChromaModeCandidates = 6, AngleDeltas = true, RectangularPartitions = true, FilterIntra = true, MotionStep = 32, SubpelMotion = true, NearMvCandidates = 3, TransformTypeCandidates = 16, ChromaFromLuma = true, TransformSizeDepth = 2, ExhaustiveSearch = true, FilterSearch = 2 },
-            _ => new() { IntraBlockCopy = true, MaxBlockLevel = 5, MinBlockLevel = 0, LumaModeCandidates = 13, ChromaModeCandidates = 13, AngleDeltas = true, RectangularPartitions = true, FilterIntra = true, MotionStep = 32, SubpelMotion = true, NearMvCandidates = 3, TransformTypeCandidates = 16, ChromaFromLuma = true, TransformSizeDepth = 2, ExhaustiveSearch = true, FilterSearch = 2, ExtendedPartitions = true },
+            6 => new() { OptimizeLevels = true, IntraBlockCopy = true, MaxBlockLevel = 4, MinBlockLevel = 0, LumaModeCandidates = 4, ChromaModeCandidates = 3, AngleDeltas = true, RectangularPartitions = true, FilterIntra = true, MotionStep = 16, SubpelMotion = true, NearMvCandidates = 2, TransformTypeCandidates = 4, ChromaFromLuma = true, TransformSizeDepth = 2, FilterSearch = 1 },
+            7 => new() { OptimizeLevels = true, IntraBlockCopy = true, MaxBlockLevel = 5, MinBlockLevel = 0, LumaModeCandidates = 6, ChromaModeCandidates = 4, AngleDeltas = true, RectangularPartitions = true, FilterIntra = true, MotionStep = 16, SubpelMotion = true, NearMvCandidates = 3, TransformTypeCandidates = 7, ChromaFromLuma = true, TransformSizeDepth = 2, FilterSearch = 1 },
+            8 => new() { OptimizeLevels = true, IntraBlockCopy = true, MaxBlockLevel = 5, MinBlockLevel = 0, LumaModeCandidates = 13, ChromaModeCandidates = 6, AngleDeltas = true, RectangularPartitions = true, FilterIntra = true, MotionStep = 32, SubpelMotion = true, NearMvCandidates = 3, TransformTypeCandidates = 16, ChromaFromLuma = true, TransformSizeDepth = 2, ExhaustiveSearch = true, FilterSearch = 2 },
+            _ => new() { OptimizeLevels = true, IntraBlockCopy = true, MaxBlockLevel = 5, MinBlockLevel = 0, LumaModeCandidates = 13, ChromaModeCandidates = 13, AngleDeltas = true, RectangularPartitions = true, FilterIntra = true, MotionStep = 32, SubpelMotion = true, NearMvCandidates = 3, TransformTypeCandidates = 16, ChromaFromLuma = true, TransformSizeDepth = 2, ExhaustiveSearch = true, FilterSearch = 2, ExtendedPartitions = true },
         };
     }
 }

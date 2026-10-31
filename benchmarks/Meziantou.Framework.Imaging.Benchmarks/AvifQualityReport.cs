@@ -11,8 +11,9 @@ namespace Meziantou.Framework.Imaging.Benchmarks;
 /// compression modes, qualities and efforts, on the deterministic synthetic inputs of the <c>webp-quality</c> command, on
 /// a page of text and on a photograph with edges and little noise, printed as Markdown tables. A row of lossy WebP output at the same quality gives a point of
 /// comparison. A second part encodes the text and the graphics at four times the size, without loss, and a third one
-/// image sequences: a pan over a photograph by whole samples, a drift by fractions of
-/// a sample, a pan with a cut to another scene, a cross-fade and a page of text that scrolls.
+/// image sequences: a pan over a photograph by whole samples, a drift by quarters of a sample, a glide by eighths of a
+/// sample, a zoom (every block moves by another fraction of a sample), a pan with a cut to another scene, a cross-fade
+/// and a page of text that scrolls.
 /// </summary>
 /// <remarks>
 /// Arguments: the width of the inputs (256), the number of timed runs (3), and a text that the names of the inputs to
@@ -118,7 +119,9 @@ internal static class AvifQualityReport
         var sequences = new (string Name, Rgba32[][] Frames)[]
         {
             ("pan", [.. Enumerable.Range(0, FrameCount).Select(i => Pan(sequenceWidth, sequenceHeight, seed: 11, i))]),
-            ("drift", [.. Enumerable.Range(0, FrameCount).Select(i => Drift(sequenceWidth, sequenceHeight, seed: 11, i))]),
+            ("drift", [.. Enumerable.Range(0, FrameCount).Select(i => Drift(sequenceWidth, sequenceHeight, seed: 11, i, scale: 4, margin: 16, stepX: 6, stepY: 3))]),
+            ("glide", [.. Enumerable.Range(0, FrameCount).Select(i => Drift(sequenceWidth, sequenceHeight, seed: 11, i, scale: 8, margin: 8, stepX: 5, stepY: 3))]),
+            ("zoom", [.. Enumerable.Range(0, FrameCount).Select(i => Zoom(sequenceWidth, sequenceHeight, seed: 11, i))]),
             ("cut", [.. Enumerable.Range(0, FrameCount).Select(i => Pan(sequenceWidth, sequenceHeight, seed: i < FrameCount / 2 ? 11 : 13, i))]),
             ("fade", [.. Enumerable.Range(0, FrameCount).Select(i => Fade(Pan(sequenceWidth, sequenceHeight, seed: 11, 0), Pan(sequenceWidth, sequenceHeight, seed: 13, 0), i, FrameCount - 1))]),
             ("scroll", [.. Enumerable.Range(0, FrameCount).Select(i => Text(sequenceWidth, sequenceHeight, scroll: 3 * i))]),
@@ -272,15 +275,47 @@ internal static class AvifQualityReport
         return pixels;
     }
 
-    // The same photograph at four times the size, reduced by averaging blocks of 4x4 samples: the window moves by a
-    // sample and a half to the right and three quarters of a sample down at every image
-    private static Rgba32[] Drift(int width, int height, int seed, int index)
+    // The same photograph at scale times the size, reduced by averaging blocks of scale x scale samples: the window moves
+    // by stepX / scale samples to the right and stepY / scale samples down at every image. "drift" moves by a sample and a
+    // half and three quarters of a sample, "glide" by five eighths and three eighths of a sample
+    private static Rgba32[] Drift(int width, int height, int seed, int index, int scale, int margin, int stepX, int stepY)
     {
-        const int Scale = 4;
-        const int Margin = 16;
-        var (sourceWidth, sourceHeight) = (Scale * (width + Margin), Scale * (height + Margin));
+        var (sourceWidth, sourceHeight) = (scale * (width + margin), scale * (height + margin));
         var source = BenchmarkPixels.Rgba32(sourceWidth, sourceHeight, seed, alpha: false);
         var pixels = new Rgba32[width * height];
+        var count = scale * scale;
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                int r = 0, g = 0, b = 0;
+                for (var j = 0; j < scale; j++)
+                {
+                    var row = source.AsSpan((((scale * y) + j + (stepY * index)) * sourceWidth) + (scale * x) + (stepX * index), scale);
+                    foreach (var sample in row)
+                    {
+                        r += sample.R;
+                        g += sample.G;
+                        b += sample.B;
+                    }
+                }
+
+                pixels[(y * width) + x] = new Rgba32((byte)((r + (count / 2)) / count), (byte)((g + (count / 2)) / count), (byte)((b + (count / 2)) / count));
+            }
+        }
+
+        return pixels;
+    }
+
+    // The photograph at four times the size, magnified by 1.5% more at every image around the center: each block moves by
+    // another fraction of a sample
+    private static Rgba32[] Zoom(int width, int height, int seed, int index)
+    {
+        const int Scale = 4;
+        var (sourceWidth, sourceHeight) = (Scale * width, Scale * height);
+        var source = BenchmarkPixels.Rgba32(sourceWidth, sourceHeight, seed, alpha: false);
+        var pixels = new Rgba32[width * height];
+        var factor = 1 / (1 + (0.015 * index));
         for (var y = 0; y < height; y++)
         {
             for (var x = 0; x < width; x++)
@@ -288,9 +323,11 @@ internal static class AvifQualityReport
                 int r = 0, g = 0, b = 0;
                 for (var j = 0; j < Scale; j++)
                 {
-                    var row = source.AsSpan((((Scale * y) + j + (3 * index)) * sourceWidth) + (Scale * x) + (6 * index), Scale);
-                    foreach (var sample in row)
+                    for (var k = 0; k < Scale; k++)
                     {
+                        var sourceX = (int)Math.Round((sourceWidth / 2.0) + (((Scale * x) + k + 0.5 - (sourceWidth / 2.0)) * factor), MidpointRounding.ToEven);
+                        var sourceY = (int)Math.Round((sourceHeight / 2.0) + (((Scale * y) + j + 0.5 - (sourceHeight / 2.0)) * factor), MidpointRounding.ToEven);
+                        var sample = source[(Math.Clamp(sourceY, 0, sourceHeight - 1) * sourceWidth) + Math.Clamp(sourceX, 0, sourceWidth - 1)];
                         r += sample.R;
                         g += sample.G;
                         b += sample.B;

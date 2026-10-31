@@ -3690,6 +3690,78 @@ public sealed class UnicodeTests
         Assert.Null(result);
     }
 
+    [Fact]
+    public void Punycode_RejectsUnpairedSurrogates()
+    {
+        // InlineData would replace the unpaired surrogates
+        foreach (var value in new[] { "\uD800", "\uDC00", "a\uD800b", "\uDC00\uD800", "\U0001F600\uD800", "a\uD83D" })
+        {
+            Assert.False(UnicodeIdna.TryEncodePunycode(value, out var result));
+            Assert.Null(result);
+        }
+
+        Assert.True(UnicodeIdna.TryEncodePunycode("\uFFFD", out var replacement));
+        Assert.Equal("zn7c", replacement);
+
+        Assert.True(UnicodeIdna.TryEncodePunycode("a\U0001F600", out var pair));
+        Assert.True(UnicodeIdna.TryDecodePunycode(pair, out var decoded));
+        Assert.Equal("a\U0001F600", decoded);
+    }
+
+    [Fact]
+    public void Punycode_RoundTripsLongInputs()
+    {
+        // The conversions are not quadratic: these sizes took seconds with a list insertion per code point
+        Assert.True(UnicodeIdna.TryDecodePunycode(new string('b', 32_000), out var decoded));
+        Assert.True(UnicodeIdna.TryEncodePunycode(decoded, out var encoded));
+        Assert.Equal(new string('b', 32_000), encoded);
+
+        var builder = new StringBuilder();
+        for (var i = 0; i < 1_000; i++)
+        {
+            builder.Append(char.ConvertFromUtf32(0x10000 + (i * 7919 % 1_000)));
+            builder.Append((char)('a' + (i % 26)));
+            builder.Append((char)(0x4E00 + (i * 31 % 500)));
+        }
+
+        var text = builder.ToString();
+        Assert.True(UnicodeIdna.TryEncodePunycode(text, out encoded));
+        Assert.True(UnicodeIdna.TryDecodePunycode(encoded, out decoded));
+        Assert.Equal(text, decoded);
+    }
+
+    [Fact]
+    public void Punycode_EncodesWhatItDecodes()
+    {
+        // The decoding is unique: TryToAscii relies on it to reject a long ACE label without decoding it
+        // Every value of 1 to 4 characters
+        const string Alphabet = "abcdefghijklmnopqrstuvwxyz0123456789-";
+        var value = new char[4];
+        var decodedCount = 0;
+        for (var length = 1; length <= value.Length; length++)
+        {
+            var combinations = (int)Math.Pow(Alphabet.Length, length);
+            for (var combination = 0; combination < combinations; combination++)
+            {
+                var remainder = combination;
+                for (var j = 0; j < length; j++)
+                {
+                    value[j] = Alphabet[remainder % Alphabet.Length];
+                    remainder /= Alphabet.Length;
+                }
+
+                if (UnicodeIdna.TryDecodePunycode(value.AsSpan(0, length), out var decoded))
+                {
+                    decodedCount++;
+                    Assert.True(UnicodeIdna.TryEncodePunycode(decoded, out var encoded));
+                    Assert.Equal(new string(value, 0, length), encoded);
+                }
+            }
+        }
+
+        Assert.True(decodedCount > 10_000, $"Only {decodedCount} values were decoded");
+    }
+
     [Theory]
     [InlineData("example.com", "example.com")]
     [InlineData("EXAMPLE.com", "example.com")]
@@ -3776,6 +3848,56 @@ public sealed class UnicodeTests
     {
         Assert.Equal(expected, UnicodeIdna.ToUnicode(domainName, out var hasErrors));
         Assert.Equal(expectedErrors, hasErrors);
+    }
+
+    [Theory]
+    [InlineData("xn--z.example", "xn--z.example")]
+    [InlineData("example.xn--z", "example.xn--z")]
+    [InlineData("xn--z.xn--a!", "xn--z.xn--a!")]
+    [InlineData("xn--bcher-kva.xn--z", "b\u00FCcher.xn--z")]
+    public void IgnoreInvalidPunycode_KeepsTheLabelButReportsAnError(string domainName, string expected)
+    {
+        // UTS #46, Processing, step 4: the kept label contains only ASCII code points, which is an error
+        foreach (var checkHyphens in new[] { true, false })
+        {
+            foreach (var ignoreInvalidPunycode in new[] { true, false })
+            {
+                var options = new UnicodeIdnaOptions { IgnoreInvalidPunycode = ignoreInvalidPunycode, CheckHyphens = checkHyphens };
+                Assert.Equal(expected, UnicodeIdna.ToUnicode(domainName, options, out var hasErrors));
+                Assert.True(hasErrors);
+                Assert.False(UnicodeIdna.TryToAscii(domainName, options, out var result));
+                Assert.Null(result);
+            }
+        }
+    }
+
+    [Fact]
+    public void TryToAscii_RejectsLongAceLabels()
+    {
+        var longLabel = "xn--" + new string('b', 32_000);
+        Assert.False(UnicodeIdna.TryToAscii(longLabel, out _));
+
+        // An ACE label is rejected without being decoded when it is too long: the result is the same as when it is
+        // decoded and encoded again
+        var noLengthCheck = new UnicodeIdnaOptions { VerifyDnsLength = false };
+        Assert.True(UnicodeIdna.TryToAscii(longLabel, noLengthCheck, out var longResult));
+        Assert.Equal(longLabel, longResult);
+        for (var length = 40; length <= 70; length++)
+        {
+            Assert.True(UnicodeIdna.TryEncodePunycode(new string('a', length) + "\u00FC\u4E00", out var encoded));
+            var label = "xn--" + encoded;
+            Assert.Equal(label.Length <= 63, UnicodeIdna.TryToAscii(label + ".example", out var result));
+            Assert.True(UnicodeIdna.TryToAscii(label + ".example", noLengthCheck, out result));
+            Assert.Equal(label + ".example", result);
+        }
+    }
+
+    [Fact]
+    public void ToUnicode_DoesNotVerifyTheDnsLength()
+    {
+        Assert.True(UnicodeIdna.TryEncodePunycode(new string('a', 100) + "\u00FC", out var encoded));
+        Assert.Equal(new string('a', 100) + "\u00FC.example", UnicodeIdna.ToUnicode("xn--" + encoded + ".example", out var hasErrors));
+        Assert.False(hasErrors);
     }
 
     [Fact]

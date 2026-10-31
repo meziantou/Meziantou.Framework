@@ -51,21 +51,21 @@ jobs:
           run-generate: ${{ case(github.event_name == 'pull_request' || github.event_name == 'push', 'true', 'false') }}
           full-rebuild-triggers: |
             .github/workflows/publish.yml
+            .github/actions/pack/**
             eng/**/*.proj
-
-      - run: dotnet restore ${{ steps.package-project.outputs.project }} -p:Configuration=Release /p:IsOfficialBuild=true /bl:restore.binlog
-        if: steps.package-project.outputs.has-project == 'true'
-      - run: dotnet build src/Meziantou.Framework.PublicApiGenerator.Tool/Meziantou.Framework.PublicApiGenerator.Tool.csproj --configuration Release /p:IsOfficialBuild=true /bl:build.publicapi.binlog
-        if: steps.package-project.outputs.has-project == 'true'
-      - run: dotnet build ${{ steps.package-project.outputs.project }} --configuration Release --no-restore /p:IsOfficialBuild=true /p:PublicApiGeneratorVerifyNoChangeOnBuild=true /bl:build.binlog
-        if: steps.package-project.outputs.has-project == 'true'
 
       - name: Prepare NuGet artifact directory
         run: |
           New-Item -ItemType Directory -Path $env:NuGetDirectory -Force | Out-Null
           Set-Content -Path (Join-Path $env:NuGetDirectory "artifact-placeholder.txt") -Value "placeholder"
-      - run: dotnet pack ${{ steps.package-project.outputs.project }} --configuration Release --no-build /p:IsOfficialBuild=true --output $env:NuGetDirectory /p:RepositoryBranch="$env:GITHUB_REF" "/p:PromptFolder=$env:RUNNER_TEMP/prompt" /bl:pack.binlog
+
+      # Shared with documentation.yml, which packs every package to document them
+      - name: Build and pack
         if: steps.package-project.outputs.has-project == 'true'
+        uses: $/.github/actions/pack
+        with:
+          project: ${{ steps.package-project.outputs.project }}
+          output: ${{ env.NuGetDirectory }}
 
       - name: Skip packaging
         if: steps.package-project.outputs.has-project != 'true'

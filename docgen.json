@@ -50,8 +50,7 @@
   },
   "packages": [
     {
-      "path": "artifacts/package/release",
-      "version": "*-*"
+      "path": "artifacts/package/release"
     }
   ]
 }

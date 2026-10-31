@@ -71,7 +71,7 @@ public sealed class FuzzHarnessSelfTests
         {
             try
             {
-                using var image = Image.Load(seed.Data);
+                using var image = Image.Load(seed.Data, cancellationToken: TestContext.Current.CancellationToken);
             }
             catch (ImageException exception)
             {

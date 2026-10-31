@@ -75,7 +75,10 @@ namespace Meziantou.Framework.WebPlatform
 
     public static class XmlDocumentParser
     {
+        public static Meziantou.Framework.WebPlatform.Dom.Document ParseDocument(System.IO.Stream stream, Meziantou.Framework.WebPlatform.XmlParserOptions? options = null) => throw null;
+        public static Meziantou.Framework.WebPlatform.Dom.Document ParseDocument(System.ReadOnlySpan<byte> xml, Meziantou.Framework.WebPlatform.XmlParserOptions? options = null) => throw null;
         public static Meziantou.Framework.WebPlatform.Dom.Document ParseDocument(string xml, Meziantou.Framework.WebPlatform.XmlParserOptions? options = null) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.Document> ParseDocumentAsync(System.IO.Stream stream, Meziantou.Framework.WebPlatform.XmlParserOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Dom.Document> ParseDocumentAsync(string xml, Meziantou.Framework.WebPlatform.XmlParserOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 

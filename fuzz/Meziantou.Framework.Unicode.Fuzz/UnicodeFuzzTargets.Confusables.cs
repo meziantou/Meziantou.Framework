@@ -6,7 +6,7 @@ namespace Meziantou.Framework.UnicodeFuzz;
 public static partial class UnicodeFuzzTargets
 {
     /// <summary>
-    /// The input is two strings. The skeleton of a well-formed string is in NFD and is its own skeleton; the skeleton of
+    /// The input is two strings. The skeleton of a well-formed string is in NFD and, when it has no right-to-left text, is its own skeleton; the skeleton of
     /// an ill-formed string throws <see cref="ArgumentException"/>. <c>AreConfusable</c> is reflexive (even for
     /// ill-formed strings), symmetric, compares the skeletons, and throws <see cref="ArgumentException"/> only when
     /// the strings differ and one of them is ill-formed.
@@ -62,7 +62,13 @@ public static partial class UnicodeFuzzTargets
         FuzzAssert.True(IsWellFormed(value), "GetConfusableSkeleton does not throw for a string with an unpaired surrogate");
         FuzzAssert.True(IsWellFormed(skeleton), $"The skeleton {FuzzAssert.Format(skeleton)} is not well-formed");
         FuzzAssert.True(UnicodeNormalization.IsNormalized(skeleton, NormalizationForm.FormD), $"The skeleton {FuzzAssert.Format(skeleton)} is not in NFD");
-        FuzzAssert.Equal(skeleton, Unicode.GetConfusableSkeleton(skeleton), "The skeleton of a skeleton is not itself");
+
+        // The bidi skeleton puts the text in display order, so a skeleton with right-to-left text is reordered again.
+        if (!UnicodeBidi.MayRequireBidi(skeleton))
+        {
+            FuzzAssert.Equal(skeleton, Unicode.GetConfusableSkeleton(skeleton), "The skeleton of a skeleton is not itself");
+        }
+
         return skeleton;
     }
 

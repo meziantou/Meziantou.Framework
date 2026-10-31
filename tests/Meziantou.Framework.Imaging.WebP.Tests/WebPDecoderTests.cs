@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
+using System.Security.Cryptography;
 using System.Text;
 using Meziantou.Framework.Imaging.Formats;
 using Meziantou.Framework.Imaging.Internals;
@@ -13,11 +14,21 @@ namespace Meziantou.Framework.Imaging.Tests;
 /// disposal, partial rectangles, an ANIM background color that is never painted), readers and caller edits, frame-limit
 /// prefixes, truncation, limits, bounded sequential memory and cancellation. Frame payloads are VP8L bitstreams encoded by
 /// the library and checked with the independent harness reader; the libwebp corpus covers the bitstream features
-/// (Tests/Conformance).
+/// (Tests/Conformance), and hand-written VP8L streams, filtered ALPH chunks and a libwebp frame with several token
+/// partitions cover what it does not.
 /// </summary>
 public sealed class WebPDecoderTests
 {
     private static readonly Rgba32 Transparent = new(0, 0, 0, 0);
+
+    /// <summary>
+    /// A 32x80 lossy image with four token partitions, encoded by libwebp 1.6.0 (method 1, <c>partitions</c> 2, quality 40;
+    /// methods from 3 use a single partition): the five macroblock rows go to the partitions 0, 1, 2, 3 and 0.
+    /// </summary>
+    private const string MultiPartitionVp8 =
+        "UklGRhABAABXRUJQVlA4IAQBAAAwBwCdASogAFAAPuVao02pJKMiMBmeYSCciWwBOmf1siCtD+yeq+Y7Vv7zshJqrv/nqrf/SuP9UFOEzLa8xwPwxYgARgAAIAAAKwAA" +
+        "/vSc+u6wb/VrJxljvbcTQ0We5+jvuud/6m1F+sGa73R6zsWw8QtHIDfpCgNW8gHdeLz+md0dAPBL4mDOivIbsKSQP5ngAP70/ro4W3dKf6uID4OOldt9vCowkxtKR4EU" +
+        "rohnUmAA/u1/cdrK/ze7Jt3j3TR8Mjt6z0ulcICpy6MbQVB/Nq1y3MX770uH+RkAAO13c0E+D1JoEkma3Ro92zq63BT5Qtxao7I8R8jhMYUsiBfnpUAAAA==";
 
     [Fact]
     public void CanvasCompositionFollowsTheContainerSpecification()
@@ -469,6 +480,147 @@ public sealed class WebPDecoderTests
         Assert.Equal(expected, Enumerable.Range(0, 4).Select(i => BitConverter.ToUInt32(pixels.Memory.Span.Slice(i * sizeof(uint), sizeof(uint)))));
     }
 
+    public static TheoryData<string, string> MalformedLosslessStreams => new()
+    {
+        { "TransformUsedTwice", "transform SubtractGreen is used more than once" },
+        { "ColorCacheBits0", "color cache size of 0 bits is not between 1 and 11" },
+        { "ColorCacheBits12", "color cache size of 12 bits is not between 1 and 11" },
+        { "SimpleCodeSymbolOutsideTheAlphabet", "simple code symbol 200 is outside the alphabet of 40 symbols" },
+        { "CodeWithoutSymbol", "prefix code has no symbol" },
+        { "OverSubscribedCode", "prefix code is not complete" },
+        { "MoreCodeLengthsThanTheAlphabet", "declares 302 code lengths for an alphabet of 280 symbols" },
+        { "RepetitionPastTheEndOfTheAlphabet", "repetition extends past the end of the alphabet" },
+        { "DistanceBeforeTheFirstPixel", "backward reference at pixel 0 has the distance 4, before the first pixel" },
+        { "LengthPastTheLastPixel", "backward reference at pixel 1 copies 2 pixels, past the last pixel" },
+    };
+
+    [Theory]
+    [MemberData(nameof(MalformedLosslessStreams))]
+    public void MalformedLosslessStreamsAreRejected(string name, string message)
+    {
+        var (data, width, height) = MalformedLosslessStream(name);
+        var scope = new AllocationScope(new ImageResourceLimits());
+        var exception = Assert.Throws<InvalidImageContentException>(() => Vp8LDecoder.DecodeImageStream(scope, data, 0, data.Length, width, height, XunitCancellationToken).Dispose());
+        Assert.Contains(message, exception.Message);
+    }
+
+    [Fact]
+    public void LossyImagesWithSeveralTokenPartitionsDecodeLikeTheReference()
+    {
+        // The reconstruction is exact: the Y, U and V planes are those of dwebp -yuv (libwebp 1.6.0)
+        var data = Convert.FromBase64String(MultiPartitionVp8);
+        var scope = new AllocationScope(new ImageResourceLimits());
+        using (var planes = Vp8Decoder.Decode(scope, data, 20, data.Length - 20, XunitCancellationToken))
+        {
+            var yuv = new List<byte>();
+            for (var y = 0; y < 80; y++)
+            {
+                yuv.AddRange(planes.Y.Slice(y * planes.YStride, 32));
+            }
+
+            foreach (var plane in new[] { planes.U.ToArray(), planes.V.ToArray() })
+            {
+                for (var y = 0; y < 40; y++)
+                {
+                    yuv.AddRange(plane.AsSpan(y * planes.UVStride, 16));
+                }
+            }
+
+            Assert.Equal("88cac89f105dbf33572b809602ebe29b3023f391f3c4e21486d064874d45bb9e", Convert.ToHexStringLower(SHA256.HashData(yuv.ToArray())));
+        }
+
+        using var image = Image.Load<Rgb24>(data);
+        Assert.Equal((32, 80), (image.Width, image.Height));
+    }
+
+    [Fact]
+    public void TokenPartitionsMustFitInTheChunk()
+    {
+        // The partition size table follows the frame header and the first partition (57 bytes): partitions 0 to 2 have
+        // 70, 32 and 43 bytes, the last one the 39 bytes left
+        var payload = Convert.FromBase64String(MultiPartitionVp8)[20..];
+        const int Table = 10 + 57;
+        Assert.Equal([70, 0, 0, 32, 0, 0, 43, 0, 0], payload[Table..(Table + 9)]);
+
+        AssertInvalid(payload[..(Table + 5)], "The VP8 partition size table extends past the end of the chunk.");
+
+        var tooLong = payload.ToArray();
+        tooLong[Table + 6] = 0xFF;
+        tooLong[Table + 7] = 0xFF;
+        AssertInvalid(tooLong, "The VP8 token partition 2 (65535 bytes) extends past the end of the chunk.");
+
+        var emptyLast = payload.ToArray();
+        emptyLast[Table + 6] = 43 + 39;
+        AssertInvalid(emptyLast, "The last VP8 token partition is empty");
+
+        static void AssertInvalid(byte[] payload, string message)
+        {
+            byte[] body = [.. Chunk("VP8 ", payload)];
+            byte[] data = [.. "RIFF"u8, .. BitConverter.GetBytes((uint)(body.Length + 4)), .. "WEBP"u8, .. body];
+            var exception = Assert.Throws<InvalidImageContentException>(() => Image.Load(data));
+            Assert.Contains(message, exception.Message);
+        }
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    public void FilteredAlphaIsReconstructedFromThePredictions(int filter)
+    {
+        // An uncompressed ALPH chunk holding the residuals of the horizontal (1), vertical (2) or gradient (3) filter; 21
+        // columns: the vertical filter adds 16 values at a time, then one by one
+        const int Width = 21;
+        const int Height = 6;
+        var alpha = new byte[Width * Height];
+        for (var i = 0; i < alpha.Length; i++)
+        {
+            alpha[i] = (byte)(((uint)i * 2654435761u) >> 24);
+        }
+
+        var residuals = new byte[alpha.Length];
+        for (var y = 0; y < Height; y++)
+        {
+            for (var x = 0; x < Width; x++)
+            {
+                residuals[(y * Width) + x] = (byte)(alpha[(y * Width) + x] - Predict(x, y));
+            }
+        }
+
+        using var opaque = Image.ImportPixelData<Rgba32>(Fill(Width, Height, new Rgba32(90, 160, 30, 255)), Width, Height);
+        using var stream = new MemoryStream();
+        opaque.Save(stream, new WebPEncoder { Compression = WebPCompression.Lossy });
+        var vp8 = Assert.Single(ReferenceWebP.Parse(stream.ToArray()).Chunks, chunk => chunk.FourCC == "VP8 ").Data.ToArray();
+        byte[] body =
+        [
+            .. Chunk("VP8X", [WebPStructureParser.AlphaFlag, 0, 0, 0, .. UInt24(Width - 1), .. UInt24(Height - 1)]),
+            .. Chunk("ALPH", [(byte)(filter << 2), .. residuals]),
+            .. Chunk("VP8 ", vp8),
+        ];
+        byte[] data = [.. "RIFF"u8, .. BitConverter.GetBytes((uint)(body.Length + 4)), .. "WEBP"u8, .. body];
+
+        using var image = Image.Load<Rgba32>(data);
+        Assert.Equal(alpha, GetPixels(image.Frames[0]).Select(pixel => pixel.A));
+
+        // The top-left value predicts 0, the first row its left neighbor, the first column its top neighbor
+        int Predict(int x, int y)
+        {
+            int Value(int x, int y) => alpha[(y * Width) + x];
+            if (y == 0)
+                return x == 0 ? 0 : Value(x - 1, 0);
+
+            if (x == 0)
+                return Value(0, y - 1);
+
+            return filter switch
+            {
+                1 => Value(x - 1, y),
+                2 => Value(x, y - 1),
+                _ => Math.Clamp(Value(x - 1, y) + Value(x, y - 1) - Value(x - 1, y - 1), 0, 255),
+            };
+        }
+    }
+
     /// <summary>
     /// A headerless 4x1 VP8L image stream with a 2-entry color cache: the literal <c>0xFF110033</c>, then the cache keys 0,
     /// 1 and 0. Green is a normal code (symbol 0: <c>0</c>, cache key 0: <c>10</c>, cache key 1: <c>11</c>); red, blue,
@@ -513,22 +665,6 @@ public sealed class WebPDecoderTests
         writer.WriteBits(0, 32);
         writer.Finish();
         return writer.WrittenSpan.ToArray();
-
-        static void WriteCode(LsbBitWriter writer, string bits)
-        {
-            foreach (var bit in bits)
-            {
-                writer.WriteBits(bit == '1' ? 1u : 0u, 1);
-            }
-        }
-
-        static void WriteSimpleCode(LsbBitWriter writer, int symbol)
-        {
-            writer.WriteBits(1, 1);
-            writer.WriteBits(0, 1);
-            writer.WriteBits(1, 1); // 8-bit symbol
-            writer.WriteBits((uint)symbol, 8);
-        }
     }
 
     /// <summary>
@@ -594,16 +730,167 @@ public sealed class WebPDecoderTests
         writer.WriteBits(0, 32);
         writer.Finish();
         return writer.WrittenSpan.ToArray();
+    }
 
-        static void WriteSimpleCode(LsbBitWriter writer, params ReadOnlySpan<int> symbols)
+    /// <summary>
+    /// A headerless VP8L image stream that breaks one rule of the bitstream. The image streams have no transform, color cache
+    /// or meta prefix codes unless the case is about them; the codes are written with the code-length code given in each case.
+    /// </summary>
+    private static (byte[] Data, int Width, int Height) MalformedLosslessStream(string name)
+    {
+        using var writer = new LsbBitWriter(new AllocationScope(new ImageResourceLimits()));
+        var (width, height) = (1, 1);
+        switch (name)
         {
-            writer.WriteBits(1, 1);
-            writer.WriteBits((uint)symbols.Length - 1, 1);
-            writer.WriteBits(1, 1); // 8-bit first symbol
-            foreach (var symbol in symbols)
+            case "TransformUsedTwice":
+                writer.WriteBits(1, 1);
+                writer.WriteBits(2, 2); // subtract green
+                writer.WriteBits(1, 1);
+                writer.WriteBits(2, 2); // subtract green again
+                break;
+
+            case "ColorCacheBits0":
+            case "ColorCacheBits12":
+                writer.WriteBits(0, 1); // no transform
+                writer.WriteBits(1, 1); // color cache
+                writer.WriteBits(name == "ColorCacheBits0" ? 0u : 12u, 4);
+                break;
+
+            case "SimpleCodeSymbolOutsideTheAlphabet":
+                WriteNoTransformNoCacheNoMetaCodes(writer);
+                WriteSimpleCode(writer, 0); // green
+                WriteSimpleCode(writer, 0); // red
+                WriteSimpleCode(writer, 0); // blue
+                WriteSimpleCode(writer, 0); // alpha
+                WriteSimpleCode(writer, 200); // distance: 40 symbols
+                break;
+
+            case "CodeWithoutSymbol":
+                // Green: the code-length code has the single symbol 0 (a zero-bit code), so the 280 code lengths are 0
+                WriteNoTransformNoCacheNoMetaCodes(writer);
+                WriteCodeLengthCode(writer, 0, 0, 1, 0); // lengths of the symbols 17, 18, 0 and 1
+                writer.WriteBits(0, 1); // no maximum symbol count
+                break;
+
+            case "OverSubscribedCode":
+                // Green: the code lengths 0 ("0") and 1 ("1"); the maximum symbol count 3 reads three lengths of 1
+                WriteNoTransformNoCacheNoMetaCodes(writer);
+                WriteCodeLengthCode(writer, 0, 0, 1, 1);
+                writer.WriteBits(1, 1); // maximum symbol count
+                writer.WriteBits(0, 3); // on 2 bits
+                writer.WriteBits(1, 2); // 2 + 1
+                WriteCode(writer, "111");
+                break;
+
+            case "MoreCodeLengthsThanTheAlphabet":
+                WriteNoTransformNoCacheNoMetaCodes(writer);
+                WriteCodeLengthCode(writer, 0, 0, 1, 1);
+                writer.WriteBits(1, 1); // maximum symbol count
+                writer.WriteBits(4, 3); // on 10 bits
+                writer.WriteBits(300, 10); // 2 + 300, for 280 green symbols
+                break;
+
+            case "RepetitionPastTheEndOfTheAlphabet":
+                // Green: the code-length code has the symbols 0 ("0") and 18 ("1"): 138 + 138 + 11 zeros for 280 symbols
+                WriteNoTransformNoCacheNoMetaCodes(writer);
+                WriteCodeLengthCode(writer, 0, 1, 1, 0);
+                writer.WriteBits(0, 1); // no maximum symbol count
+                WriteCode(writer, "1");
+                writer.WriteBits(127, 7);
+                WriteCode(writer, "1");
+                writer.WriteBits(127, 7);
+                WriteCode(writer, "1");
+                writer.WriteBits(0, 7);
+                break;
+
+            case "DistanceBeforeTheFirstPixel":
+                // 4x1: the first pixel is a backward reference of length 1 at the distance code 1, (0, 1): 4 pixels back
+                (width, height) = (4, 1);
+                WriteBackwardReferenceCodes(writer, lengthSymbol: 256);
+                WriteCode(writer, "1");
+                break;
+
+            case "LengthPastTheLastPixel":
+                // 1x2: a literal, then a backward reference of length 2 at the distance code 1, (0, 1): 1 pixel back
+                (width, height) = (1, 2);
+                WriteBackwardReferenceCodes(writer, lengthSymbol: 257);
+                WriteCode(writer, "0");
+                WriteCode(writer, "1");
+                break;
+
+            default:
+                throw new ArgumentOutOfRangeException(nameof(name), name, message: null);
+        }
+
+        writer.WriteBits(0, 32);
+        writer.Finish();
+        return (writer.WrittenSpan.ToArray(), width, height);
+
+        static void WriteNoTransformNoCacheNoMetaCodes(LsbBitWriter writer)
+        {
+            writer.WriteBits(0, 1);
+            writer.WriteBits(0, 1);
+            writer.WriteBits(0, 1);
+        }
+
+        // A normal code whose code-length code gives the lengths of the code-length symbols 17, 18, 0 and 1
+        static void WriteCodeLengthCode(LsbBitWriter writer, uint length17, uint length18, uint length0, uint length1)
+        {
+            writer.WriteBits(0, 1);
+            writer.WriteBits(0, 4); // 4 code-length code lengths
+            writer.WriteBits(length17, 3);
+            writer.WriteBits(length18, 3);
+            writer.WriteBits(length0, 3);
+            writer.WriteBits(length1, 3);
+        }
+
+        // Green has the symbols 0 ("0") and lengthSymbol ("1"); red, blue, alpha and distance are single-symbol codes (0).
+        // The code-length code has the symbols 1 ("0"), 0 ("10") and 18 ("11")
+        static void WriteBackwardReferenceCodes(LsbBitWriter writer, int lengthSymbol)
+        {
+            WriteNoTransformNoCacheNoMetaCodes(writer);
+            WriteCodeLengthCode(writer, 0, 2, 2, 1);
+            writer.WriteBits(0, 1); // no maximum symbol count
+            WriteCode(writer, "0"); // symbol 0: length 1
+            WriteZeros(writer, lengthSymbol - 1);
+            WriteCode(writer, "0"); // lengthSymbol: length 1
+            WriteZeros(writer, 280 - lengthSymbol - 1);
+            WriteSimpleCode(writer, 0);
+            WriteSimpleCode(writer, 0);
+            WriteSimpleCode(writer, 0);
+            WriteSimpleCode(writer, 0);
+        }
+
+        // Runs of 11 to 138 zero lengths (code-length symbol 18)
+        static void WriteZeros(LsbBitWriter writer, int count)
+        {
+            while (count > 0)
             {
-                writer.WriteBits((uint)symbol, 8);
+                var run = Math.Min(count, 138);
+                Assert.True(run >= 11);
+                WriteCode(writer, "11");
+                writer.WriteBits((uint)(run - 11), 7);
+                count -= run;
             }
+        }
+    }
+
+    private static void WriteCode(LsbBitWriter writer, string bits)
+    {
+        foreach (var bit in bits)
+        {
+            writer.WriteBits(bit == '1' ? 1u : 0u, 1);
+        }
+    }
+
+    private static void WriteSimpleCode(LsbBitWriter writer, params ReadOnlySpan<int> symbols)
+    {
+        writer.WriteBits(1, 1);
+        writer.WriteBits((uint)symbols.Length - 1, 1);
+        writer.WriteBits(1, 1); // 8-bit first symbol
+        foreach (var symbol in symbols)
+        {
+            writer.WriteBits((uint)symbol, 8);
         }
     }
 

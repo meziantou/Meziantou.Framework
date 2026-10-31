@@ -2940,8 +2940,33 @@ namespace Meziantou.Framework.Imaging.Formats
     {
         public Meziantou.Framework.Imaging.Formats.Jpeg2000Compression Compression { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Formats.Jpeg2000Container Container { get => throw null; init { } }
+        public int DecompositionLevels { get => throw null; init { } }
         public override Meziantou.Framework.Imaging.ImageFormat Format { get => throw null; }
+        public Meziantou.Framework.Imaging.Formats.Jpeg2000ProgressionOrder ProgressionOrder { get => throw null; init { } }
         public int Quality { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Formats.Jpeg2000QualityLayer> QualityLayers { get => throw null; init { } }
+        public int TileHeight { get => throw null; init { } }
+        public int TileWidth { get => throw null; init { } }
+    }
+
+    public enum Jpeg2000ProgressionOrder
+    {
+        Lrcp = 0,
+        Rlcp = 1,
+        Rpcl = 2,
+        Pcrl = 3,
+        Cprl = 4,
+    }
+
+    public sealed class Jpeg2000QualityLayer
+    {
+        public double? BitsPerPixel { get => throw null; }
+        public static Meziantou.Framework.Imaging.Formats.Jpeg2000QualityLayer Complete { get => throw null; }
+        public bool IsComplete { get => throw null; }
+        public long? Size { get => throw null; }
+        public static Meziantou.Framework.Imaging.Formats.Jpeg2000QualityLayer FromBitsPerPixel(double bitsPerPixel) => throw null;
+        public static Meziantou.Framework.Imaging.Formats.Jpeg2000QualityLayer FromSize(long bytes) => throw null;
+        public override string ToString() => throw null;
     }
 
     public enum JpegChromaSubsampling

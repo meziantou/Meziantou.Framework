@@ -1299,6 +1299,36 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>JPEG 2000 rate control: a file of at most a size, and quality layers in tiles.</summary>
+    #region Imaging_Jpeg2000QualityLayers
+    public static (long SmallLength, long LayeredLength) SaveJpeg2000Layers(string inputPath, string smallPath, string layeredPath)
+    {
+        using var image = Image.Load(inputPath);
+
+        // A file of at most 40 KB: the rate control keeps the coding passes that reduce the error most for their bytes.
+        // Quality only sets the finest quantization, so 100 leaves every choice to the target.
+        image.Save(smallPath, new Jpeg2000Encoder
+        {
+            Compression = Jpeg2000Compression.Lossy,
+            Quality = 100,
+            QualityLayers = [Jpeg2000QualityLayer.FromSize(40_000)],
+        });
+
+        // Three quality layers: a reader that stops after the first 0.25 bit per pixel (the first bytes of the file in the
+        // LRCP order) gets a preview, after 1 bit per pixel a good image, and the last layer makes it lossless. Tiles of
+        // 256x256 bound the memory of the encoder, and a reader can decode one tile alone.
+        image.Save(layeredPath, new Jpeg2000Encoder
+        {
+            QualityLayers = [Jpeg2000QualityLayer.FromBitsPerPixel(0.25), Jpeg2000QualityLayer.FromBitsPerPixel(1), Jpeg2000QualityLayer.Complete],
+            ProgressionOrder = Jpeg2000ProgressionOrder.Lrcp,
+            TileWidth = 256,
+            TileHeight = 256,
+        });
+
+        return (new FileInfo(smallPath).Length, new FileInfo(layeredPath).Length);
+    }
+    #endregion
+
     /// <summary>OpenEXR: floating-point pixels in and out, and the integer version of a high dynamic range image.</summary>
     #region Imaging_OpenExr
     public static Image<Rgba32> ConvertOpenExr(string exrPath, string pizPath)

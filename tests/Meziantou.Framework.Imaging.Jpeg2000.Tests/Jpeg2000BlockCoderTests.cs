@@ -150,6 +150,81 @@ public sealed class Jpeg2000BlockCoderTests
         }
     }
 
+    [Theory]
+    [InlineData(1, 1, 3, false)]
+    [InlineData(4, 4, 8, true)]
+    [InlineData(5, 7, 12, false)]
+    [InlineData(64, 64, 9, false)]
+    [InlineData(64, 64, 9, true)]
+    [InlineData(3, 64, 16, true)]
+    [InlineData(32, 32, 20, false)]
+    [InlineData(64, 64, 30, true)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void EachCodingPassIsDecodedFromItsTruncatedSegment(int width, int height, int bitPlanes, bool isIrreversible)
+    {
+        var scope = new AllocationScope(new ImageResourceLimits());
+        using var encoder = new Jpeg2000Tier1Encoder(scope);
+        using var decoder = new Jpeg2000Tier1Decoder(scope);
+        using var output = new PooledPayloadWriter(scope);
+        var samples = new int[width * height];
+        var decoded = new int[width * height];
+        var expected = new int[width * height];
+        var passes = new Jpeg2000CodingPass[Jpeg2000Tier1Encoder.MaxPasses];
+        for (var seed = 0; seed < 12; seed++)
+        {
+            var random = new Random((seed * 1000) + width + (height * 3) + bitPlanes);
+            var orientation = seed % 3 == 0 ? Jpeg2000Tier1Tables.OrientationLowHorizontal : seed % 3 == 1 ? Jpeg2000Tier1Tables.OrientationHighLow : Jpeg2000Tier1Tables.OrientationHighHigh;
+
+            // Sparse coefficients, or runs of equal ones (long runs of the more probable symbol, at the top of the interval)
+            for (var i = 0; i < samples.Length; i++)
+            {
+                var magnitude = seed % 4 == 3 ? (1 << (bitPlanes - 1)) | (i % 7 == 0 ? 1 : 0) : random.Next(4) == 0 ? random.Next(1 << bitPlanes) : random.Next(1 << (bitPlanes / 2));
+                samples[i] = random.Next(2) == 0 || magnitude == 0 ? magnitude : magnitude | int.MinValue;
+            }
+
+            samples[random.Next(samples.Length)] = (1 << (bitPlanes - 1)) | int.MinValue;
+            output.Reset();
+            Assert.Equal(bitPlanes, encoder.Encode(samples, width, height, orientation, output, out var length, passes, isIrreversible));
+            var data = output.WrittenSpan.ToArray();
+            var passCount = (3 * bitPlanes) - 2;
+            Assert.Equal(length, passes[passCount - 1].Length);
+
+            // The squared error of the coefficients, before any pass, then after each one: a quantization index stands for
+            // the middle of its interval, and a zero for itself
+            var offset = isIrreversible ? 0.5 : 0;
+            var error = samples.Sum(sample => Math.Pow(GetValue(sample), 2));
+            var previousLength = 0;
+            for (var pass = 0; pass < passCount; pass++)
+            {
+                var truncated = passes[pass].Length;
+                Assert.InRange(truncated, previousLength, length);
+                Assert.True(truncated == 0 || data[truncated - 1] != 0xFF, $"pass {pass} ends with an FF byte");
+                previousLength = truncated;
+
+                decoder.Decode(expected, width, height, orientation, style: 0, bitPlanes, data, [new(0, length, pass + 1)]);
+                decoder.Decode(decoded, width, height, orientation, style: 0, bitPlanes, data[..truncated], [new(0, truncated, pass + 1)]);
+                Assert.True(expected.AsSpan().SequenceEqual(decoded), $"{width}x{height}, seed {seed}: pass {pass} is not decoded from its {truncated} bytes (of {length}).");
+
+                // The decoder returns twice the reconstructed magnitude; the reversible path halves it
+                var after = 0.0;
+                for (var i = 0; i < samples.Length; i++)
+                {
+                    var twice = decoded[i] & int.MaxValue;
+                    var reconstruction = isIrreversible ? twice / 2.0 : twice / 2;
+                    after += Math.Pow(GetValue(samples[i]) - reconstruction, 2);
+                }
+
+                Assert.Equal(error - after, passes[pass].Distortion, Math.Max(1e-9, error * 1e-12));
+                error = after;
+            }
+
+            Assert.Equal(0, error);
+            Assert.Equal(length, previousLength);
+
+            double GetValue(int sample) => (sample & int.MaxValue) == 0 ? 0 : (sample & int.MaxValue) + offset;
+        }
+    }
+
     [Fact]
     public void ACodeBlockOfZerosIsNotCoded()
     {

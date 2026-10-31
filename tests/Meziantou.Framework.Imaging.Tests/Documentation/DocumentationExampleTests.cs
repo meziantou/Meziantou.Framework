@@ -1271,6 +1271,34 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void SaveJpeg2000LayersFitsTheTargetAndKeepsTheLastLayerLossless()
+    {
+        var input = GetPath("pattern.png");
+        var pixels = new Rgb24[640 * 480];
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            var (x, y) = (i % 640, i / 640);
+            pixels[i] = new Rgb24((byte)(x / 3), (byte)((x * y) >> 9), (byte)((x ^ y) & 0xFF));
+        }
+
+        using (var source = Image.ImportPixelData<Rgb24>(pixels, 640, 480))
+        {
+            source.Save(input);
+        }
+
+        var small = GetPath("small.jp2");
+        var layered = GetPath("layered.jp2");
+        var (smallLength, layeredLength) = Examples.SaveJpeg2000Layers(input, small, layered);
+        Assert.InRange(smallLength, 38_000, 40_000);
+        Assert.Equal(new FileInfo(layered).Length, layeredLength);
+
+        using var decoded = Image.Load<Rgb24>(layered);
+        var decodedPixels = new Rgb24[pixels.Length];
+        decoded.Frames[0].CopyPixelDataTo(decodedPixels);
+        Assert.Equal(pixels, decodedPixels);
+    }
+
+    [Fact]
     public void SaveHeicWritesALossyPhotoALosslessImageAndAnImageSequence()
     {
         var (apngPath, _) = BuildAnimation();

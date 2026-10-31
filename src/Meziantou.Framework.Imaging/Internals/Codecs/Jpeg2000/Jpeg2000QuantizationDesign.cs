@@ -25,8 +25,12 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </remarks>
 internal static class Jpeg2000QuantizationDesign
 {
-    /// <summary>The largest number of decomposition levels the encoder uses.</summary>
-    public const int MaxLevels = 5;
+    /// <summary>The largest number of decomposition levels of a codestream (T.800, Table A.15).</summary>
+    public const int MaxLevels = 32;
+
+    // The levels whose norms are measured; the norms of the levels above grow by the ratio of the last two measured ones,
+    // which no longer changes
+    private const int MeasuredLevels = 10;
 
     /// <summary>The base step of the luminance, in levels of an 8-bit sample, when the scale of the quality is 1 (the quality 100).</summary>
     public const double LuminanceFactor = 0.47;
@@ -37,8 +41,10 @@ internal static class Jpeg2000QuantizationDesign
     private const int ImpulseLength = 64;
 
     // The norm of the waveform of a low-pass coefficient and of a high-pass coefficient of each decomposition level, in one dimension
-    private static readonly double[] LowNorms = MeasureNorms(isHigh: false);
-    private static readonly double[] HighNorms = MeasureNorms(isHigh: true);
+    private static readonly double[] LowNorms = MeasureNorms(isHigh: false, isReversible: false);
+    private static readonly double[] HighNorms = MeasureNorms(isHigh: true, isReversible: false);
+    private static readonly double[] ReversibleLowNorms = MeasureNorms(isHigh: false, isReversible: true);
+    private static readonly double[] ReversibleHighNorms = MeasureNorms(isHigh: true, isReversible: true);
 
     /// <summary>Gets the base step of a quality, in levels of a sample of <paramref name="precision"/> bits.</summary>
     /// <param name="quality">The quality, 1 to 100.</param>
@@ -76,6 +82,18 @@ internal static class Jpeg2000QuantizationDesign
         return (isHighHorizontally ? HighNorms[level] : LowNorms[level]) * (isHighVertically ? HighNorms[level] : LowNorms[level]);
     }
 
+    /// <summary>Gets the norm of the synthesis waveform of a sub-band of the reversible transformation, without its roundings.</summary>
+    /// <param name="level">The decomposition level of the sub-band, from 1; 0 for the samples themselves.</param>
+    /// <param name="isHighHorizontally">Whether the sub-band is high-pass horizontally.</param>
+    /// <param name="isHighVertically">Whether the sub-band is high-pass vertically.</param>
+    public static double GetReversibleNorm(int level, bool isHighHorizontally, bool isHighVertically)
+    {
+        if (level == 0)
+            return 1;
+
+        return (isHighHorizontally ? ReversibleHighNorms[level] : ReversibleLowNorms[level]) * (isHighVertically ? ReversibleHighNorms[level] : ReversibleLowNorms[level]);
+    }
+
     /// <summary>Gets the exponent and the mantissa that describe the step size nearest below a wanted one (equation E-3).</summary>
     /// <param name="step">The wanted step size, in levels of a sample.</param>
     /// <param name="range">The nominal dynamic range of the sub-band (Rb): the depth of the samples plus the gain of the sub-band.</param>
@@ -93,13 +111,13 @@ internal static class Jpeg2000QuantizationDesign
     /// <summary>Gets the step size an exponent and a mantissa describe (equation E-3).</summary>
     public static float GetStep(int exponent, int mantissa, int range) => (float)Math.ScaleB(1 + (mantissa / 2048.0), range - exponent);
 
-    private static double[] MeasureNorms(bool isHigh)
+    private static double[] MeasureNorms(bool isHigh, bool isReversible)
     {
         var norms = new double[MaxLevels + 1];
         norms[0] = 1;
-        var signal = new float[ImpulseLength << MaxLevels];
-        var scratch = new float[ImpulseLength << MaxLevels];
-        for (var level = 1; level <= MaxLevels; level++)
+        var signal = new float[ImpulseLength << MeasuredLevels];
+        var scratch = new float[ImpulseLength << MeasuredLevels];
+        for (var level = 1; level <= MeasuredLevels; level++)
         {
             // One coefficient of the sub-band, far from the ends of the signal, and nothing else
             var length = ImpulseLength;
@@ -116,7 +134,15 @@ internal static class Jpeg2000QuantizationDesign
                     low[(2 * i) + parity] = signal[i];
                 }
 
-                Jpeg2000Dwt.LiftIrreversible(low, parity: 0);
+                if (isReversible)
+                {
+                    LiftReversibleWithoutRounding(low);
+                }
+                else
+                {
+                    Jpeg2000Dwt.LiftIrreversible(low, parity: 0);
+                }
+
                 length *= 2;
                 low.CopyTo(signal);
             }
@@ -130,6 +156,34 @@ internal static class Jpeg2000QuantizationDesign
             norms[level] = Math.Sqrt(sum);
         }
 
+        for (var level = MeasuredLevels + 1; level <= MaxLevels; level++)
+        {
+            norms[level] = norms[level - 1] * norms[MeasuredLevels] / norms[MeasuredLevels - 1];
+        }
+
         return norms;
+    }
+
+    /// <summary>The synthesis of the reversible filter (F.3.8.1) on an interleaved signal that starts with a low-pass sample, without its roundings.</summary>
+    private static void LiftReversibleWithoutRounding(Span<float> signal)
+    {
+        var length = signal.Length;
+        for (var i = 0; i < length; i += 2)
+        {
+            signal[i] -= (Mirror(signal, i - 1) + Mirror(signal, i + 1)) / 4;
+        }
+
+        for (var i = 1; i < length; i += 2)
+        {
+            signal[i] += (Mirror(signal, i - 1) + Mirror(signal, i + 1)) / 2;
+        }
+
+        static float Mirror(Span<float> signal, int index)
+        {
+            if (index < 0)
+                return signal[-index];
+
+            return index >= signal.Length ? signal[(2 * (signal.Length - 1)) - index] : signal[index];
+        }
     }
 }

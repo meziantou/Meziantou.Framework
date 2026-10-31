@@ -1,6 +1,6 @@
 ---
 title: Color management
-description: Convert images to sRGB, tone map HDR images, load CMYK files, convert sample buffers and choose a rendering intent.
+description: Convert images to sRGB, tone map HDR images, load CMYK files, convert sample buffers, choose a rendering intent, map colors into the gamut and use device link and abstract profiles.
 ---
 
 The samples of an image only mean a color together with a description of their color space: an ICC profile, a CICP
@@ -53,7 +53,8 @@ public static void ConvertToSrgb(string inputPath, string outputPath)
   and [Gray16](cref:Meziantou.Framework.Imaging.Gray16). To change the color model, convert the pixel format, or convert sample buffers with an
   [IccColorTransform](cref:Meziantou.Framework.Imaging.IccColorTransform) (see below).
 - Colors are converted at the precision of the storage: 16-bit images stay 16-bit. Alpha is copied unchanged. Colors
-  outside the destination gamut are clipped per channel.
+  outside the destination gamut are clipped per channel, unless [GamutMapping](cref:Meziantou.Framework.Imaging.IccColorTransformOptions.GamutMapping) maps them (see
+  [Map colors into the gamut](#map-colors-into-the-gamut)).
 - The conversion is all or nothing: on failure or cancellation, the image keeps its pixels and its profile.
 - After the conversion, the profile describes the pixels: a color description that is not sRGB, the light levels and
   the mastering display are removed, and so is the EXIF thumbnail.
@@ -166,7 +167,9 @@ public static byte[] ConvertSamplesToSrgb(IccProfile sourceProfile, ReadOnlySpan
 - A transform is immutable and thread-safe: create it once for a pair of profiles and reuse it. Converting samples
   allocates nothing.
 - Integer samples cover the whole range of their type, floating-point samples are in [0, 1], and colors outside the
-  destination gamut are clipped per channel. CMYK samples are ink amounts: 0 is no ink.
+  destination gamut are clipped per channel unless [GamutMapping](cref:Meziantou.Framework.Imaging.IccColorTransformOptions.GamutMapping) maps them. CMYK samples are ink
+  amounts: 0 is no ink. A conversion to a CMYK printer profile gives CMYK samples, which no pixel format holds and no
+  encoder writes.
 - The source and the destination can be the same buffer when both profiles have the same number of channels.
 
 ## Choose a rendering intent
@@ -189,12 +192,63 @@ public static byte[] ConvertSamplesToSrgb(IccProfile sourceProfile, ReadOnlySpan
   matrix-based one with the perceptual or saturation intent: the black of version 4 tables is that of the perceptual
   reference medium (L* = 3.1373), not 0, and without compensation nothing maps one black to the other.
 
+## Map colors into the gamut
+
+A color that the destination cannot reproduce is clipped per channel by default
+([GamutMapping.Clip](cref:Meziantou.Framework.Imaging.GamutMapping.Clip)), which can change the hue and the lightness of a saturated color.
+[GamutMapping.ReduceChroma](cref:Meziantou.Framework.Imaging.GamutMapping.ReduceChroma) reduces its chroma toward gray instead, at constant lightness and hue in Oklab, with the
+gamut mapping algorithm of CSS Color 4: it stops once the clipped color is within a just noticeable difference of the
+reduced one.
+
+- In-gamut colors are unchanged, and so is every conversion that does not ask for the mapping.
+- It applies to a matrix-based destination (displays, sRGB) whatever the intent, and to a table-based destination
+  (printers) with the colorimetric intents; the destination then needs a table to the profile connection space. The
+  perceptual and saturation tables of a printer profile map the gamut as their creator chose, and a gray destination
+  has no chroma: they are used as they are.
+- It applies to [ConvertColorProfile](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ConvertColorProfile) and to [IccColorTransform](cref:Meziantou.Framework.Imaging.IccColorTransform) alike.
+
+## Convert through a sequence of profiles
+
+[IccColorTransform.Create](cref:Meziantou.Framework.Imaging.IccColorTransform.Create) also takes a list of profiles, in the order the colors go through them. It
+accepts device link profiles, which convert device values to other device values, and abstract profiles, which
+convert colors of the profile connection space (a color correction, a look):
+
+<!-- ref:../../../samples/Meziantou.Framework.Imaging.Samples/ColorExamples.cs;region=Imaging_SoftProof;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static ushort[] SoftProof(IccProfile display, IccProfile printer, ReadOnlySpan<ushort> rgb)
+{
+    // The printer profile appears twice: the colors enter it from the profile connection space to become inks, then
+    // leave it as the colors of these inks. The colors the printer cannot reproduce lose chroma at constant
+    // lightness and hue, instead of being clipped channel by channel.
+    var proof = IccColorTransform.Create([display, printer, printer, display], new IccColorTransformOptions
+    {
+        Intent = IccRenderingIntent.RelativeColorimetric,
+        GamutMapping = GamutMapping.ReduceChroma,
+    });
+
+    // A transform is immutable and thread-safe: create it once and reuse it
+    var preview = new ushort[rgb.Length];
+    proof.Convert(rgb, preview);
+    return preview;
+}
+```
+<!-- endref -->
+
+- Device values that enter a device profile go to the profile connection space; colors of the connection space that
+  enter a device profile become its device values. To go through the device values of a profile, as a soft proof goes
+  through the inks of a printer, the profile appears twice.
+- A device link profile uses its own table whatever the rendering intent, which was chosen when the link was made.
+- Abstract profiles convert the colors after the black point compensation of the device profiles around them.
+- A sequence that does not connect, such as an abstract profile first or a device link profile after a device
+  profile, is an [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException).
+
 ## Supported profiles
 
 ICC version 2 and version 4 profiles of input, display, output and color space classes, for gray, RGB and CMYK data:
-matrix-based profiles (with sampled, gamma and parametric curves) and table-based ones. Conversions are evaluated in
+matrix-based profiles (with sampled, gamma and parametric curves) and table-based ones; device link and abstract
+profiles in a sequence of profiles. Conversions are evaluated in
 double precision from the formulas of the ICC specification, so they give the same results on every platform.
 
-A malformed profile is an [InvalidImageContentException](cref:Meziantou.Framework.Imaging.InvalidImageContentException). A valid profile of another kind (version 5, device link,
-abstract, named color, other color spaces), or one that cannot be a destination, is an
+A malformed profile is an [InvalidImageContentException](cref:Meziantou.Framework.Imaging.InvalidImageContentException). A valid profile of another kind (version 5, named color,
+other color spaces, a device link or abstract profile outside a sequence), or one that cannot be a destination, is an
 [UnsupportedImageFeatureException](cref:Meziantou.Framework.Imaging.UnsupportedImageFeatureException).

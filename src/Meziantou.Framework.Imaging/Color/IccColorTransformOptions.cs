@@ -52,6 +52,29 @@ public sealed class IccColorTransformOptions
     public bool BlackPointCompensation { get; init; } = true;
 
     /// <summary>
+    /// Gets how the colors that the destination cannot reproduce are brought into its gamut. Defaults to
+    /// <see cref="Imaging.GamutMapping.Clip"/>, which clips each channel.
+    /// </summary>
+    /// <remarks>
+    /// The mapping happens in the profile connection space, after black point compensation and the rescaling of the
+    /// ICC-absolute colorimetric intent, right before the conversion to the device values of each destination profile
+    /// (each profile of a sequence that is entered from the connection space). See <see cref="Imaging.GamutMapping"/>
+    /// for the destinations it applies to.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="Imaging.GamutMapping"/>.</exception>
+    public GamutMapping GamutMapping
+    {
+        get;
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The gamut mapping is not valid.");
+
+            field = value;
+        }
+    } = GamutMapping.Clip;
+
+    /// <summary>
     /// Gets how high dynamic range samples are brought to the standard dynamic range of the destination profile, or
     /// <see langword="null"/> (the default) to refuse to convert them.
     /// </summary>

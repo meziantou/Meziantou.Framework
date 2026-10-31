@@ -724,6 +724,19 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   there, then a conversion to `IccCorpus.cs`. The fixtures README lists what LittleCMS cannot judge (CMYK
   interpolation between grid points, three black point compensation cases).
 - Pixels and their profile change together: `ConvertColorProfile` is transactional. No other operation converts colors.
+- Device link and abstract profiles only exist in a sequence (`IccColorTransform.Create(IReadOnlyList<IccProfile>)`,
+  `IccPipeline.Create(IReadOnlyList<IccProfile>, ...)`); `IccProfileModel.Create` refuses them elsewhere. The sequence
+  follows the convention of other color management systems: a device profile entered with device values goes to the
+  connection space, one entered from the connection space goes to its device values, so a proof lists the printer
+  twice. A sequence of two device profiles must stay `IccPipeline.Create(IccProfile, IccProfile, ...)` exactly. The
+  LittleCMS literals of `IccColorTransformTests` come from `cmsCreateMultiprofileTransform` (no optimization) on the
+  synthetic profiles of `IccProfileBuilder`; LittleCMS computes black point compensation and absolute colorimetry per
+  pair of profiles, so compare it only on sequences whose device profiles have a black black.
+- `GamutMapping.ReduceChroma` is the gamut mapping of CSS Color 4 (section 13.2), as an `IccGamutMapStage` inserted
+  right before the conversion of a destination from the connection space (`IccProfileModel.CreateGamutMapping`):
+  exact gamut for matrix-based and CICP destinations, round trip through the colorimetric tables for table-based ones.
+  `Clip` adds no stage, so the default conversions are unchanged bit for bit. The HDR clipping policy is separate
+  (`HdrToneMapStage`).
 
 ## Drawing
 

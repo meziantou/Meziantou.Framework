@@ -601,6 +601,12 @@ namespace Meziantou.Framework.Imaging
         public bool IsFinal { get => throw null; }
     }
 
+    public enum GamutMapping
+    {
+        Clip = 0,
+        ReduceChroma = 1,
+    }
+
     public struct Gray16 : System.IEquatable<Meziantou.Framework.Imaging.Gray16>
     {
         public ushort Value;
@@ -750,6 +756,7 @@ namespace Meziantou.Framework.Imaging
         public void Convert(System.ReadOnlySpan<byte> source, System.Span<byte> destination) { }
         public void Convert(System.ReadOnlySpan<float> source, System.Span<float> destination) { }
         public void Convert(System.ReadOnlySpan<ushort> source, System.Span<ushort> destination) { }
+        public static Meziantou.Framework.Imaging.IccColorTransform Create(System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Imaging.Metadata.IccProfile> profiles, Meziantou.Framework.Imaging.IccColorTransformOptions? options = null) => throw null;
         public static Meziantou.Framework.Imaging.IccColorTransform Create(Meziantou.Framework.Imaging.Metadata.IccProfile source, Meziantou.Framework.Imaging.Metadata.IccProfile destination, Meziantou.Framework.Imaging.IccColorTransformOptions? options = null) => throw null;
     }
 
@@ -757,6 +764,7 @@ namespace Meziantou.Framework.Imaging
     {
         public bool BlackPointCompensation { get => throw null; init { } }
         public static Meziantou.Framework.Imaging.IccColorTransformOptions Default { get => throw null; }
+        public Meziantou.Framework.Imaging.GamutMapping GamutMapping { get => throw null; init { } }
         public Meziantou.Framework.Imaging.Metadata.IccRenderingIntent Intent { get => throw null; init { } }
         public Meziantou.Framework.Imaging.HdrToneMappingOptions? ToneMapping { get => throw null; init { } }
     }

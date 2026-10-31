@@ -17,8 +17,9 @@ lists the main gaps. Each [format page](10-Formats/01-Overview.md) gives the det
 - **No scaled or region decoding.** An image is decoded at its full size; resize it afterward.
 - **Color profiles are never applied implicitly.** Colors change only when you convert them
   ([ConvertColorProfile](cref:Meziantou.Framework.Imaging.ImageProcessingExtensions.ConvertColorProfile)). See [Color management](09-Color/03-ColorManagement.md).
-- **Color management covers ICC versions 2 and 4** grayscale, RGB and CMYK profiles; no iccMAX, device-link, abstract
-  or named-color profiles.
+- **Color management covers ICC versions 2 and 4** grayscale, RGB and CMYK profiles, and device-link and abstract
+  profiles in sequences of profiles; no iccMAX or named-color profiles. CMYK samples are not a pixel format and no
+  encoder writes them. Gamut mapping is per-channel clipping or a chroma reduction, opt-in.
 
 ## Formats
 

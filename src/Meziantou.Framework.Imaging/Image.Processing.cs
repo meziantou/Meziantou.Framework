@@ -636,10 +636,14 @@ public abstract partial class Image
     /// is charged to the scope of the image and rented before any pixel changes; afterward, on failure, some frames or rows
     /// may already be filtered.
     /// </summary>
-    internal void MedianAllFrames(int radius, ConvolutionEdgeMode edgeMode, CancellationToken cancellationToken)
+    /// <param name="radius">The number of pixels on each side of a pixel, positive.</param>
+    /// <param name="edgeMode">The pixels read outside the frames.</param>
+    /// <param name="rank">The rank of the selected sample in each window (<see cref="MedianPlan.Rank"/>), or <see langword="null"/> for the median.</param>
+    /// <param name="cancellationToken">The token checked between rows.</param>
+    internal void MedianAllFrames(int radius, ConvolutionEdgeMode edgeMode, int? rank, CancellationToken cancellationToken)
     {
         Owner.EnsureCanModify("filter the image");
-        using var plan = new MedianPlan(radius, edgeMode, KernelPixelFormat, _size, _configuration.MaxDegreeOfParallelism);
+        using var plan = new MedianPlan(radius, edgeMode, KernelPixelFormat, _size, _configuration.MaxDegreeOfParallelism, rank);
         cancellationToken.ThrowIfCancellationRequested();
         plan.Prepare(Owner.Scope);
         _metadata.RemoveStaleThumbnail();
@@ -651,9 +655,9 @@ public abstract partial class Image
     }
 
     /// <summary>Filters one attached frame of this image in place with a median filter, as <see cref="MedianAllFrames"/> does for all of them.</summary>
-    internal void MedianFrame(ImageFrame frame, PixelStorage storage, int radius, ConvolutionEdgeMode edgeMode, CancellationToken cancellationToken)
+    internal void MedianFrame(ImageFrame frame, PixelStorage storage, int radius, ConvolutionEdgeMode edgeMode, int? rank, CancellationToken cancellationToken)
     {
-        using var plan = new MedianPlan(radius, edgeMode, KernelPixelFormat, _size, _configuration.MaxDegreeOfParallelism);
+        using var plan = new MedianPlan(radius, edgeMode, KernelPixelFormat, _size, _configuration.MaxDegreeOfParallelism, rank);
         cancellationToken.ThrowIfCancellationRequested();
         using var lease = storage.AcquireLease();
         plan.Prepare(Owner.Scope);
@@ -713,7 +717,7 @@ public abstract partial class Image
         // The colors are those of the CICP color description when it is what describes them; otherwise those of a profile
         var hasCicpSource = TryGetCicpColorSpace(options.ToneMapping, out var colorSpace, out var toneMapping);
         var pipeline = hasCicpSource
-            ? IccPipeline.Create(colorSpace, destination, options.Intent, options.BlackPointCompensation, toneMapping)
+            ? IccPipeline.Create(colorSpace, destination, options.Intent, options.BlackPointCompensation, toneMapping, options.GamutMapping)
             : IccColorTransform.Create(GetSourceColorProfile(), destination, options).Pipeline;
         cancellationToken.ThrowIfCancellationRequested();
         if (!pipeline.IsIdentity)
@@ -1013,8 +1017,8 @@ public abstract partial class Image
                 "Paint colors of a profile on high dynamic range samples");
 
         var pipeline = TryGetCicpColorSpace(options: null, out var colorSpace, out _)
-            ? IccPipeline.Create(paints, colorSpace, options.Intent, options.BlackPointCompensation)
-            : IccPipeline.Create(paints, GetSourceColorProfile(), options.Intent, options.BlackPointCompensation);
+            ? IccPipeline.Create(paints, colorSpace, options.Intent, options.BlackPointCompensation, options.GamutMapping)
+            : IccPipeline.Create(paints, GetSourceColorProfile(), options.Intent, options.BlackPointCompensation, options.GamutMapping);
         return pipeline.IsIdentity ? null : pipeline;
     }
 

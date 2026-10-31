@@ -619,7 +619,6 @@ internal enum ScrollbarGutter : byte
     StableBothEdges,
 }
 
-/// <summary>The value of a side of text-overflow (https://drafts.csswg.org/css-overflow-4/#text-overflow).</summary>
 /// <summary>continue (https://drafts.csswg.org/css-overflow-4/#continue), as it applies to the line clamping.</summary>
 internal enum ContinueKind : byte
 {
@@ -676,6 +675,7 @@ internal enum BlockStepRound : byte
 [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
 internal readonly record struct BlockStep(double Size, BlockStepInsert Insert, BlockStepAlign Align, BlockStepRound Round);
 
+/// <summary>The value of a side of text-overflow (https://drafts.csswg.org/css-overflow-4/#text-overflow).</summary>
 internal enum TextOverflowKind : byte
 {
     Clip,

@@ -4,7 +4,7 @@ using Meziantou.Framework.JavaScriptEngine.Interpreter;
 
 namespace Meziantou.Framework.JavaScriptEngine;
 
-/// <summary>The execution context stack and the limits of the running scripts.</summary>
+// The execution context stack and the limits of the running scripts.
 public sealed partial class JsEngine
 {
     // The limits are checked every InterruptCheckInterval interrupt points (the backward jumps and the calls)

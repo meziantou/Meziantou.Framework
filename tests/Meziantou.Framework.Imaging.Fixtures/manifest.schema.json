@@ -522,6 +522,29 @@
         "frameLimit": { "type": "integer", "minimum": 1 }
       }
     },
+    "exrDecoding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["windowMode"],
+      "description": "Unsupported OpenEXR fixtures only (extra channels, layers, pixels outside the display window): a decoding with OpenExrDecodingOptions, and either its pixels (what OpenEXR decodes, presented by the rules of the library) or the error the options still give.",
+      "properties": {
+        "layer": { "type": ["string", "null"], "description": "OpenExrDecodingOptions.Layer: the empty string for the default layer, null to decode every channel." },
+        "windowMode": { "enum": ["DisplayWindow", "CropToDisplayWindow", "DataWindow"] },
+        "width": { "type": "integer", "minimum": 1 },
+        "height": { "type": "integer", "minimum": 1 },
+        "pixelFormat": { "enum": ["RgbaHalf", "RgbaFloat"] },
+        "colorModel": { "enum": ["Grayscale", "GrayscaleAlpha", "Rgb", "Rgba"] },
+        "bitsPerComponent": { "enum": [16, 32] },
+        "buffer": { "$ref": "#/$defs/buffer", "description": "The decoded pixels (rgbaf32le)." },
+        "reference": { "$ref": "#/$defs/reference" },
+        "comparison": { "$ref": "#/$defs/comparison" },
+        "expectedError": { "$ref": "#/$defs/expectedError" }
+      },
+      "oneOf": [
+        { "required": ["width", "height", "pixelFormat", "colorModel", "bitsPerComponent", "buffer", "reference", "comparison"], "not": { "required": ["expectedError"] } },
+        { "required": ["expectedError"], "not": { "anyOf": [{ "required": ["buffer"] }, { "required": ["reference"] }, { "required": ["comparison"] }] } }
+      ]
+    },
     "inkConversion": {
       "type": "object",
       "additionalProperties": false,
@@ -661,6 +684,7 @@
         "expectedError": { "$ref": "#/$defs/expectedError" },
         "decodeOptions": { "$ref": "#/$defs/decodeOptions" },
         "inkConversion": { "$ref": "#/$defs/inkConversion" },
+        "exrDecodings": { "type": "array", "minItems": 1, "items": { "$ref": "#/$defs/exrDecoding" } },
         "notes": { "type": "string" }
       },
       "allOf": [

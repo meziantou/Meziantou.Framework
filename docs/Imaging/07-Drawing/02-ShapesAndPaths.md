@@ -292,6 +292,10 @@ public static void DrawCombinedPaths(string outputPath)
 | [Exclude](cref:Meziantou.Framework.Imaging.Drawing.PathCombineMode.Exclude) | What the first path fills and the second one does not |
 | [Xor](cref:Meziantou.Framework.Imaging.Drawing.PathCombineMode.Xor) | What only one of the paths fills |
 
+What each path fills is decided by a [FillRule](cref:Meziantou.Framework.Imaging.Drawing.FillRule), the same for both paths, or one for each path with the overload
+that takes two: a star drawn as one contour that crosses itself keeps its center with the non-zero rule and loses it
+with the even-odd rule, whatever the rule of the shape it is combined with.
+
 [Simplify](cref:Meziantou.Framework.Imaging.Drawing.VectorPath.Simplify) returns the outline of what one path fills: a path that crosses itself, or whose contours overlap, becomes
 the boundary of its area. The result of both is made of closed contours that do not cross: the outer ones turn
 clockwise on the image and the holes the other way, so both fill rules paint the same pixels.
@@ -394,6 +398,7 @@ public static void DrawRoute(string outputPath)
 | [GetLength()](cref:Meziantou.Framework.Imaging.Drawing.VectorPath.GetLength) | The length of the path |
 | [TryGetPointAtDistance](cref:Meziantou.Framework.Imaging.Drawing.VectorPath.TryGetPointAtDistance) | The point at a distance along the path, and the direction of the path there |
 | [TryGetClosestPoint](cref:Meziantou.Framework.Imaging.Drawing.VectorPath.TryGetClosestPoint) | The point of the path nearest to a position, and its distance along the path: where a click falls on a line |
+| [StrokeContains](cref:Meziantou.Framework.Imaging.Drawing.VectorPath.StrokeContains) | Whether a pen that strokes the path paints a point: a click on a line, with its caps, joins, dashes and markers |
 | [Bounds](cref:Meziantou.Framework.Imaging.Drawing.VectorPath.Bounds), [GetTightBounds()](cref:Meziantou.Framework.Imaging.Drawing.VectorPath.GetTightBounds) | The box of the points and control points, and the box the path really reaches |
 | `GetBounds(pen)` | A box that contains what a pen paints, without computing the stroke |
 | `Widen(pen)` | The path a pen paints when it strokes the path: fill it with the non-zero rule |
@@ -403,6 +408,12 @@ public static void DrawRoute(string outputPath)
 | `Transform(transform)` | The path moved, turned or scaled: curves stay curves, so it stays smooth when enlarged |
 
 With [Widen](cref:Meziantou.Framework.Imaging.Drawing.VectorPath.Widen), the other members answer for a stroke too: the exact bounds of a stroke are the tight bounds of the
-widened path, and a click is on a line when the widened path contains it. The widened path is made of overlapping
+widened path. [StrokeContains](cref:Meziantou.Framework.Imaging.Drawing.VectorPath.StrokeContains) answers what the widened path contains without creating it: only the parts of the path
+near the point are stroked, so a click on a long path stays cheap. The widened path is made of overlapping
 pieces; [Simplify](cref:Meziantou.Framework.Imaging.Drawing.VectorPath.Simplify) turns it into one outline. Lengths and positions are measured on the path as it is drawn, with its
 curves replaced by short chords: transform a path before cutting it, not after.
+
+Each of these members walks the whole path. To ask many questions about the same path (a marker that moves along it,
+a pointer that moves over it), create a [VectorPathMeasure](cref:Meziantou.Framework.Imaging.Drawing.VectorPathMeasure) once: it keeps the chords of the path and gives the same
+length, points at a distance and closest points, finding a distance by a binary search and skipping the parts of the
+path that are far from a position. A path cannot change once it is built, so a measure stays valid as long as it is kept.

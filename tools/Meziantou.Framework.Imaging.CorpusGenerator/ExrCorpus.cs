@@ -347,7 +347,9 @@ internal static partial class ExrCorpus
             var type = channel.GetProperty("pixelType").GetString()!;
             var bytes = File.ReadAllBytes(directory / channel.GetProperty("file").GetString()!);
             var size = type == "HALF" ? 2 : 4;
-            var bits = new uint[width * height];
+
+            // A sub-sampled channel has the samples of the pixels whose coordinates are multiples of its sampling only
+            var bits = new uint[bytes.Length / size];
             for (var i = 0; i < bits.Length; i++)
                 bits[i] = size == 2 ? BinaryPrimitives.ReadUInt16LittleEndian(bytes.AsSpan(2 * i)) : BinaryPrimitives.ReadUInt32LittleEndian(bytes.AsSpan(4 * i));
 
@@ -359,29 +361,43 @@ internal static partial class ExrCorpus
 
     /// <summary>The expected pixels: RGBA floats of the display window, by the rules of the library.</summary>
     private static float[] Present(Dump dump, out bool halfPixels, out string colorModel, out int bits)
+        => Present(dump, layer: null, "DisplayWindow", out halfPixels, out colorModel, out bits, out _, out _);
+
+    /// <summary>
+    /// The expected pixels of a decoding with options: RGBA floats of the display window (cropped) or of the data window,
+    /// from the channels of a layer (<see langword="null"/>: every channel), by the rules of the library.
+    /// </summary>
+    private static float[] Present(Dump dump, string? layer, string windowMode, out bool halfPixels, out string colorModel, out int bits, out int width, out int height)
     {
-        var (data, display) = (dump.DataWindow, dump.DisplayWindow);
-        var displayWidth = display[2] - display[0] + 1;
-        var displayHeight = display[3] - display[1] + 1;
+        var data = dump.DataWindow;
+        var image = windowMode == "DataWindow" ? data : dump.DisplayWindow;
+        width = image[2] - image[0] + 1;
+        height = image[3] - image[1] + 1;
         var dataWidth = data[2] - data[0] + 1;
-        var result = new float[displayWidth * displayHeight * 4];
-        var hasAlpha = dump.Channels.Any(channel => channel.Name == "A");
-        var isLuminance = dump.Channels.Any(channel => channel.Name == "Y");
-        var halfOnly = dump.Channels.All(channel => channel.PixelType == "HALF");
+        var result = new float[width * height * 4];
+
+        // The channels of the layer, by their name without the layer
+        var channels = layer is null
+            ? dump.Channels.Select(channel => (Name: channel.Name, Channel: channel)).ToList()
+            : [.. dump.Channels.Select(channel => (Name: LayerChannel(channel.Name, layer), Channel: channel)).Where(item => item.Name is "R" or "G" or "B" or "A" or "Y")];
+        Py.Assert(channels.Count > 0, "the layer has channels");
+        var hasAlpha = channels.Any(channel => channel.Name == "A");
+        var isLuminance = channels.Any(channel => channel.Name == "Y");
+        var halfOnly = channels.All(channel => channel.Channel.PixelType == "HALF");
         halfPixels = halfOnly && !hasAlpha;
         colorModel = isLuminance ? hasAlpha ? "GrayscaleAlpha" : "Grayscale" : hasAlpha ? "Rgba" : "Rgb";
         bits = halfOnly ? 16 : 32;
-        for (var y = data[1]; y <= data[3]; y++)
+        for (var y = Math.Max(data[1], image[1]); y <= Math.Min(data[3], image[3]); y++)
         {
-            for (var x = data[0]; x <= data[2]; x++)
+            for (var x = Math.Max(data[0], image[0]); x <= Math.Min(data[2], image[2]); x++)
             {
                 var source = ((y - data[1]) * dataWidth) + (x - data[0]);
-                var target = (((y - display[1]) * displayWidth) + (x - display[0])) * 4;
+                var target = (((y - image[1]) * width) + (x - image[0])) * 4;
                 result[target + 3] = 1f;
-                foreach (var channel in dump.Channels)
+                foreach (var (name, channel) in channels)
                 {
                     var value = channel[source];
-                    switch (channel.Name)
+                    switch (name)
                     {
                         case "R": result[target] = value; break;
                         case "G": result[target + 1] = value; break;
@@ -492,7 +508,7 @@ internal static partial class ExrCorpus
             "B44" or "B44A" => ["HALF"],
             _ => [],
         };
-        var channels = d.Channels.Where(channel => !lossyTypes.Contains(channel.PixelType, StringComparer.Ordinal)).ToList();
+        var channels = d.Channels.Where(channel => !lossyTypes.Contains(channel.PixelType, StringComparer.Ordinal) && channel.XSampling == 1 && channel.YSampling == 1).ToList();
         if (channels.Count == 0)
             return null;
 
@@ -565,13 +581,13 @@ internal static partial class ExrCorpus
         return [.. features.Distinct(StringComparer.Ordinal)];
     }
 
-    private static Obj FloatBuffer(Corpus<ExrTools> c, string stem, int width, int height, float[] pixels)
+    private static Obj FloatBuffer(Corpus<ExrTools> c, string path, int width, int height, float[] pixels)
     {
         var bytes = new byte[pixels.Length * 4];
         for (var i = 0; i < pixels.Length; i++)
             BinaryPrimitives.WriteSingleLittleEndian(bytes.AsSpan(4 * i), pixels[i]);
 
-        var entry = c.Write(stem + ".frame-0.rgbaf32le.raw", bytes);
+        var entry = c.Write(path, bytes);
         entry["layout"] = "rgbaf32le";
         entry["width"] = width;
         entry["height"] = height;
@@ -617,7 +633,7 @@ internal static partial class ExrCorpus
         expected["profiles"] = new Obj { ["icc"] = null, ["exif"] = null, ["xmp"] = null };
         expected["text"] = new List<object?>();
         expected["frameCount"] = 1;
-        expected["frames"] = new List<object?> { new Obj { ["duration"] = "0/1", ["buffers"] = new List<object?> { FloatBuffer(c, fixtureId, width, height, pixels) } } };
+        expected["frames"] = new List<object?> { new Obj { ["duration"] = "0/1", ["buffers"] = new List<object?> { FloatBuffer(c, fixtureId + ".frame-0.rgbaf32le.raw", width, height, pixels) } } };
         expected["poster"] = null;
 
         var checks = new List<object?>();
@@ -868,7 +884,8 @@ internal static partial class ExrCorpus
     // -----------------------------------------------------------------------------------------------------------------
 
     private static void AddError(Corpus<ExrTools> c, string kind, string name, string function, byte[] data, Obj expectedError, string notes, List<string>? commands = null,
-        Obj? decodeOptions = null, string origin = "generated", string? source = null, string license = Corpus<ExrTools>.License, bool requireOpenExrRejection = true)
+        Obj? decodeOptions = null, string origin = "generated", string? source = null, string license = Corpus<ExrTools>.License, bool requireOpenExrRejection = true,
+        ExrDecoding[]? decodings = null, Description? pattern = null)
     {
         var fixtureId = kind == "limit" ? "limit/exr/" + name : "invalid/exr/" + name;
         if (requireOpenExrRejection)
@@ -879,7 +896,191 @@ internal static partial class ExrCorpus
         if (source is not null)
             provenance["source"] = source;
 
-        c.AddError(fixtureId, kind, fixtureId + ".exr", data, "exr", provenance, expectedError, decodeOptions: decodeOptions, notes: notes);
+        var entries = decodings is null ? null : Decodings(c, fixtureId, data, decodings, pattern);
+        c.AddError(fixtureId, kind, fixtureId + ".exr", data, "exr", provenance, expectedError, decodeOptions: decodeOptions, notes: notes, exrDecodings: entries);
+    }
+
+    /// <summary>A decoding with options of an OpenEXR file the default options reject: its pixels, or the error it still gives.</summary>
+    private sealed record ExrDecoding(string? Layer, string WindowMode, string? Feature = null);
+
+    private static ExrDecoding Layer(string layer, string windowMode = "DisplayWindow") => new(layer, windowMode);
+
+    private static ExrDecoding Window(string windowMode, string? layer = null) => new(layer, windowMode);
+
+    private static ExrDecoding Rejected(string? layer, string feature, string windowMode = "DisplayWindow") => new(layer, windowMode, feature);
+
+    /// <summary>The manifest entries of the decodings of a file: what OpenEXR decodes, presented by the rules of the library.</summary>
+    private static List<object?> Decodings(Corpus<ExrTools> c, string fixtureId, byte[] data, ExrDecoding[] decodings, Description? pattern)
+    {
+        var result = new List<object?>();
+        var dump = decodings.Any(decoding => decoding.Feature is null) ? Decode(c, data) ?? throw new FatalException(fixtureId + ": OpenEXR does not read the file.") : null;
+        for (var i = 0; i < decodings.Length; i++)
+        {
+            var decoding = decodings[i];
+            var entry = new Obj { ["layer"] = decoding.Layer, ["windowMode"] = decoding.WindowMode };
+            if (decoding.Feature is { } feature)
+            {
+                entry["expectedError"] = Unsupported(feature);
+                result.Add(entry);
+                continue;
+            }
+
+            var pixels = Present(dump!, decoding.Layer, decoding.WindowMode, out var halfPixels, out var colorModel, out var bits, out var width, out var height);
+            var checks = new List<object?>();
+            if (FfmpegDecodingCrossCheck(c, data, dump!, decoding) is { } ffmpegCheck)
+                checks.Add(ffmpegCheck);
+
+            if (pattern is not null && PatternCrossCheck(pattern, dump!) is { } patternCheck)
+                checks.Add(patternCheck);
+
+            Py.Assert(checks.Count > 0, fixtureId + ": no independent cross-check");
+            var options = decoding.Layer switch
+            {
+                null => "every channel",
+                "" => "the default layer",
+                var layer => $"the layer '{layer}'",
+            };
+            entry["width"] = width;
+            entry["height"] = height;
+            entry["pixelFormat"] = halfPixels ? "RgbaHalf" : "RgbaFloat";
+            entry["colorModel"] = colorModel;
+            entry["bitsPerComponent"] = bits;
+            entry["buffer"] = FloatBuffer(c, fixtureId + string.Create(CultureInfo.InvariantCulture, $".decoding-{i}.rgbaf32le.raw"), width, height, pixels);
+            entry["reference"] = new Obj
+            {
+                ["method"] = "decoded",
+                ["description"] = $"The samples OpenEXR decodes, presented by the rules of the library: {options}, the {(decoding.WindowMode == "DataWindow" ? "data window" : "display window")} is the image{(decoding.WindowMode == "CropToDisplayWindow" ? " (the pixels of the data window outside it are cropped)" : "")}, the other channels are ignored, the colors are divided by alpha.",
+                ["decoder"] = $"OpenEXR {c.Tools.OpenExrVersion} (exr-to-raw)",
+                ["backend"] = "exr-to-raw of the meziantou/prebuilt release: the decoded samples of every channel, in their own type, bit for bit",
+                ["command"] = dump!.Command,
+                ["crossChecks"] = checks,
+            };
+            entry["comparison"] = new Obj { ["mode"] = "exact" };
+            result.Add(entry);
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Decodes a file with FFmpeg, which selects a layer (its <c>layer</c> option), and compares the samples it stores with
+    /// those of OpenEXR where the data window covers the image. FFmpeg 9.0.2 gives an image of the size of the display
+    /// window, but places the data window at its coordinates from (0, 0) whatever the origin of the display window: when the
+    /// data window has no negative coordinate, FFmpeg reads a copy of the file whose display window is (0, 0) to the
+    /// bottom-right corner of the data window, which shows every sample at its coordinates; otherwise the file itself, when
+    /// its display window is the image and starts at (0, 0). FFmpeg reads the channels R, G and B with or without A, or Y, of
+    /// one type, and no sub-sampled channel.
+    /// </summary>
+    private static Obj? FfmpegDecodingCrossCheck(Corpus<ExrTools> c, byte[] data, Dump dump, ExrDecoding decoding)
+    {
+        var layer = decoding.Layer ?? "";
+        var channels = dump.Channels.Select(channel => (Name: LayerChannel(channel.Name, layer), Channel: channel)).Where(item => item.Name is "R" or "G" or "B" or "A" or "Y").ToList();
+        var names = string.Concat(channels.Select(channel => channel.Name).Order(StringComparer.Ordinal));
+        var types = channels.Select(channel => channel.Channel.PixelType).Distinct(StringComparer.Ordinal).ToList();
+        if (names is not ("BGR" or "ABGR" or "Y") || types.Count != 1 || types[0] == "UINT" || dump.Part.GetProperty("channels").EnumerateArray().Any(channel => channel.GetProperty("xSampling").GetInt32() != 1 || channel.GetProperty("ySampling").GetInt32() != 1))
+            return null;
+
+        // The frame of FFmpeg: the pixels (0, 0) to (window[2], window[3]) of the file
+        var input = data;
+        int[] window;
+        var image = decoding.WindowMode == "DataWindow" ? dump.DataWindow : dump.DisplayWindow;
+        if (dump.DataWindow[0] >= 0 && dump.DataWindow[1] >= 0)
+        {
+            // The display window of the copy: its box2i value follows the name, the type and the size of the attribute
+            window = [0, 0, dump.DataWindow[2], dump.DataWindow[3]];
+            input = data.ToArray();
+            var at = Bytes.Find(input, "displayWindow\0box2i\0"u8) + "displayWindow\0box2i\0"u8.Length + 4;
+            for (var i = 0; i < 4; i++)
+                BinaryPrimitives.WriteInt32LittleEndian(input.AsSpan(at + (4 * i)), window[i]);
+        }
+        else if (decoding.WindowMode != "DataWindow" && dump.DisplayWindow[0] == 0 && dump.DisplayWindow[1] == 0)
+        {
+            window = dump.DisplayWindow;
+        }
+        else
+        {
+            return null;
+        }
+
+        var half = types[0] == "HALF";
+        var pixelFormat = (names, half) switch
+        {
+            ("Y", true) => "grayf16le",
+            ("Y", false) => "grayf32le",
+            ("BGR", true) => "gbrpf16le",
+            ("BGR", false) => "gbrpf32le",
+            ("ABGR", true) => "gbrapf16le",
+            _ => "gbrapf32le",
+        };
+        var planeOrder = names == "Y" ? ["Y"] : names == "BGR" ? new[] { "G", "B", "R" } : ["G", "B", "R", "A"];
+        var width = window[2] - window[0] + 1;
+        var height = window[3] - window[1] + 1;
+        var size = half ? 2 : 4;
+        var path = c.Scratch / "ffmpeg-decoding.exr";
+        File.WriteAllBytes(path, input);
+        var check = new Obj { ["decoder"] = $"{c.Tools.FfmpegLabel} (libavcodec exr decoder)" };
+        byte[] frame;
+        try
+        {
+            List<string> command = c.Tools.FfmpegCmd([.. (layer.Length > 0 ? ["-layer", layer] : Array.Empty<string>()), "-noautorotate", "-i", path.Value, .. CommonCorpus.FfmpegDecodeFlags, "-pix_fmt", pixelFormat, "-"]);
+            frame = Proc.Run(command);
+            check["command"] = CommonCorpus.Display(command, c.Tools, [(path.Value, ReferenceEquals(input, data) ? "{input}" : "{input with the display window (0, 0) - (dataWindow.max)}")]);
+            if (frame.Length != width * height * size * planeOrder.Length)
+                throw new ToolException(string.Create(CultureInfo.InvariantCulture, $"ffmpeg produced {frame.Length} bytes, not a {width}x{height} {pixelFormat} frame"));
+        }
+        catch (ToolException error)
+        {
+            // The first line of the error output, without the paths of the command
+            var lines = error.Message.Split('\n');
+            var message = lines.Length > 1 ? System.Text.RegularExpressions.Regex.Replace(lines[1], @"^(\[[^\]]*\]\s*)+", "", System.Text.RegularExpressions.RegexOptions.ExplicitCapture, TimeSpan.FromSeconds(1)) : "no error output";
+            check["result"] = "differs";
+            check["excludedFromTolerance"] = true;
+            check["notes"] = "FFmpeg failed to decode the input: " + message;
+            return check;
+        }
+
+        var (data0, plane) = (dump.DataWindow, width * height);
+        var dataWidth = data0[2] - data0[0] + 1;
+        var (compared, differing) = (0, 0);
+        for (var p = 0; p < planeOrder.Length; p++)
+        {
+            var channel = channels.First(item => item.Name == planeOrder[p]).Channel;
+            for (var y = Math.Max(data0[1], image[1]); y <= Math.Min(data0[3], image[3]); y++)
+            {
+                for (var x = Math.Max(data0[0], image[0]); x <= Math.Min(data0[2], image[2]); x++)
+                {
+                    var offset = ((p * plane) + ((y - window[1]) * width) + (x - window[0])) * size;
+                    var bits = half ? BinaryPrimitives.ReadUInt16LittleEndian(frame.AsSpan(offset)) : BinaryPrimitives.ReadUInt32LittleEndian(frame.AsSpan(offset));
+                    compared++;
+                    if (bits != channel.Bits[((y - data0[1]) * dataWidth) + (x - data0[0])])
+                        differing++;
+                }
+            }
+        }
+
+        if (differing == 0)
+        {
+            check["result"] = "exact";
+            check["maxAbsoluteError"] = 0;
+            check["meanAbsoluteError"] = 0.0;
+            check["notes"] = string.Create(CultureInfo.InvariantCulture, $"The {compared} stored samples of the selected channels that the data window gives to the image (FFmpeg does not divide the colors by alpha), bit for bit.");
+        }
+        else
+        {
+            check["result"] = "differs";
+            check["excludedFromTolerance"] = true;
+            check["notes"] = string.Create(CultureInfo.InvariantCulture, $"{differing} of the {compared} stored samples of the selected channels differ from OpenEXR.");
+        }
+
+        return check;
+    }
+
+    /// <summary>The name of a channel without its layer, or <see langword="null"/> when it is not a channel of the layer.</summary>
+    private static string? LayerChannel(string name, string layer)
+    {
+        var dot = name.LastIndexOf('.', StringComparison.Ordinal);
+        var channelLayer = dot < 0 ? "" : name[..dot];
+        return channelLayer == layer ? name[(dot + 1)..] : null;
     }
 
     private static Obj Invalid() => new() { ["exception"] = "InvalidImageContentException", ["format"] = "OpenExr" };
@@ -948,25 +1149,72 @@ internal static partial class ExrCorpus
             AddError(c, "unsupported", "compression-" + compression.ToLowerInvariant(), Function, data, Unsupported("Compression: " + compression), $"The {compression} compression.", [command], requireOpenExrRejection: false);
         }
 
-        void AddUnsupported(string name, Description d, string feature, string notes)
+        void AddUnsupported(string name, Description d, string feature, string notes, params ExrDecoding[] decodings)
         {
             var (data, command) = Write(c, d);
-            AddError(c, "unsupported", name, Function, data, Unsupported(feature), notes, [command], requireOpenExrRejection: false);
+            AddError(c, "unsupported", name, Function, data, Unsupported(feature), notes, [command], requireOpenExrRejection: false, decodings: decodings.Length == 0 ? null : decodings, pattern: d);
         }
 
         AddUnsupported("extra-channel", new Description { Width = 4, Height = 4, Compression = "ZIP", Channels = [.. Rgb("HALF", 31), new("Z", "FLOAT", Wave(31))] }, "Extra channels",
-            "A Z channel next to the colors: it would be lost.");
+            "A Z channel next to the colors: it would be lost. The default layer is decoded without it.", Layer(""));
         AddUnsupported("layer-channels", new Description { Width = 4, Height = 4, Compression = "ZIP", Channels = [new("diffuse.B", "HALF", Wave(32)), new("diffuse.G", "HALF", Wave(33)), new("diffuse.R", "HALF", Wave(34))] }, "Extra channels",
-            "The channels of a layer.");
+            "The channels of a layer. The layer is decoded when it is selected; the default layer has no channel.", Layer("diffuse"), Rejected("", "Missing layer"), Rejected("diffuse.R", "Missing layer"));
         AddUnsupported("luminance-chroma", new Description
         {
             Width = 8,
             Height = 6,
             Compression = "PIZ",
             Channels = [new("BY", "HALF", Wave(35), PLinear: true, XSampling: 2, YSampling: 2), new("RY", "HALF", Wave(36), PLinear: true, XSampling: 2, YSampling: 2), new("Y", "HALF", Smooth(37))],
-        }, "Extra channels", "A luminance and two sub-sampled chroma channels.");
+        }, "Extra channels", "A luminance and two sub-sampled chroma channels: the chroma channels are not decoded, also in a layer.", Rejected("", "Luminance-chroma channels"));
         AddUnsupported("data-window-outside", new Description { Width = 10, Height = 10, DisplayWindow = [2, 2, 7, 7], Compression = "ZIP", Channels = Rgb("HALF", 38) }, "Pixels outside the display window",
-            "The data window is larger than the display window: its pixels outside would be lost.");
+            "The data window is larger than the display window: its pixels outside would be lost. They are cropped, or the data window is the image.", Window("CropToDisplayWindow"), Window("DataWindow"));
+
+        // Renderer outputs: colors next to depth, a layer of other outputs, an overscan, in every compression the decoder reads
+        foreach (var compression in Compressions)
+        {
+            // The colors are of a type the compression keeps exactly, so that the pattern checks them: B44 packs HALF samples
+            var type = compression is "B44" or "B44A" ? "FLOAT" : "HALF";
+            AddUnsupported("overscan-layers-" + compression.ToLowerInvariant(), new Description
+            {
+                Width = 13,
+                Height = 11,
+                X0 = -2,
+                Y0 = -3,
+                DisplayWindow = [0, 0, 8, 5],
+                Compression = compression,
+                Channels = [.. Rgba(type, 50), new("Z", "FLOAT", Smooth(51)), new("N.X", type, Wave(52)), new("N.Y", type, Wave(53)), new("N.Z", type, Wave(54))],
+            }, "Extra channels", $"RGBA, a depth and the normals of a renderer (N.X, N.Y, N.Z), {compression}, with an overscan of 2 to 4 pixels around the display window. The layer N is a vector: its N.Y is not a luminance.",
+                Layer("", "CropToDisplayWindow"), Layer("", "DataWindow"), Rejected("N", "Ambiguous layer", "CropToDisplayWindow"), Rejected("", "Pixels outside the display window"), Rejected("P", "Missing layer", "CropToDisplayWindow"));
+        }
+
+        AddUnsupported("tiles-layers-overscan", new Description
+        {
+            Width = 37,
+            Height = 21,
+            X0 = -5,
+            Y0 = -2,
+            DisplayWindow = [0, 0, 25, 14],
+            Compression = "PIZ",
+            Tiles = (8, 8, "ONE_LEVEL", "ROUND_DOWN"),
+            Channels = [.. Rgb("HALF", 55), new("Z", "FLOAT", Smooth(56)), new("diffuse.A", "HALF", Alpha), new("diffuse.B", "FLOAT", Wave(57)), new("diffuse.G", "FLOAT", Wave(58)), new("diffuse.R", "FLOAT", Wave(59)), new("shadow.Y", "HALF", Smooth(60))],
+        }, "Extra channels", "Tiles of 8x8 pixels, PIZ: the default layer (HALF RGB), a depth, a diffuse layer (FLOAT RGB and HALF alpha) and a shadow layer (HALF luminance), with an overscan.",
+            Layer("", "CropToDisplayWindow"), Layer("diffuse", "CropToDisplayWindow"), Layer("shadow", "DataWindow"), Layer("diffuse", "DataWindow"));
+        AddUnsupported("tiles-mipmap-layers", new Description
+        {
+            Width = 19,
+            Height = 13,
+            Compression = "ZIP",
+            Tiles = (8, 4, "MIPMAP_LEVELS", "ROUND_DOWN"),
+            Channels = [new("beauty.B", "HALF", Wave(61)), new("beauty.G", "HALF", Wave(62)), new("beauty.R", "HALF", Wave(63)), new("depth.Z", "FLOAT", Smooth(64))],
+        }, "Extra channels", "Mipmap levels of ZIP tiles holding a beauty layer and a depth layer, and no default layer: the full-resolution level of the layer is decoded.",
+            Layer("beauty"), Rejected("", "Missing layer"), Rejected("depth", "Missing layer"));
+        AddUnsupported("subsampled-extra-channel", new Description
+        {
+            Width = 12,
+            Height = 8,
+            Compression = "RLE",
+            Channels = [.. Rgb("HALF", 65), new("C", "HALF", Wave(66), XSampling: 2, YSampling: 2)],
+        }, "Extra channels", "A channel sub-sampled by 2 along x and y next to the colors: the lines of the chunks do not all have its samples.", Layer(""));
         AddUnsupported("deep-scanline", new Description { Width = 4, Height = 3, Compression = "ZIPS", Type = "deepscanline", Channels = [new("Z", "FLOAT", Flat(1))] }, "Deep data",
             "Deep data: a list of samples per pixel.");
 
@@ -978,7 +1226,8 @@ internal static partial class ExrCorpus
         })
         {
             AddError(c, "unsupported", "openexr-images-" + Path.GetFileNameWithoutExtension(path).ToLowerInvariant(), nameof(BuildUnsupported), ReadExternal(images, path), Unsupported("Pixels outside the display window"),
-                notes + " A sample image of the OpenEXR project.", origin: "external", source: OpenExrImagesUrl + path, license: "BSD-3-Clause", requireOpenExrRejection: false);
+                notes + " A sample image of the OpenEXR project.", origin: "external", source: OpenExrImagesUrl + path, license: "BSD-3-Clause", requireOpenExrRejection: false,
+                decodings: [Window("CropToDisplayWindow"), Window("DataWindow")]);
         }
     }
 

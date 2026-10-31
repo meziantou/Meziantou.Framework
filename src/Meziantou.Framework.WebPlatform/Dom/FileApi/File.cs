@@ -36,10 +36,10 @@ public sealed class File : Blob
         LastModified = lastModified;
     }
 
-    /// <summary>The serialization steps of File (https://w3c.github.io/FileAPI/#file-section): the bytes, the type, the name and the last modification date.</summary>
     /// <summary>The current time, in milliseconds since the Unix epoch, measured with the clock of the current global object (<see cref="BrowsingContextOptions.TimeProvider"/>).</summary>
     private static long GetCurrentTime() => (GlobalScope.Current?.EventLoop.TimeProvider ?? TimeProvider.System).GetUtcNow().ToUnixTimeMilliseconds();
 
+    /// <summary>The serialization steps of File (https://w3c.github.io/FileAPI/#file-section): the bytes, the type, the name and the last modification date.</summary>
     private protected override Blob CloneForStructuredSerialization() => new File(Content, Type, Name, LastModified);
 
     /// <summary>

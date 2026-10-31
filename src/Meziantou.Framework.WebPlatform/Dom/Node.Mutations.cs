@@ -3,7 +3,7 @@ using Meziantou.Framework.WebPlatform.Html;
 
 namespace Meziantou.Framework.WebPlatform.Dom;
 
-/// <summary>Mutation algorithms (https://dom.spec.whatwg.org/#mutation-algorithms).</summary>
+// Mutation algorithms (https://dom.spec.whatwg.org/#mutation-algorithms).
 public abstract partial class Node
 {
 

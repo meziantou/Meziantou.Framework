@@ -59,6 +59,14 @@ public sealed class FixtureEntry
     [JsonPropertyName("inkConversion")]
     public InkConversionDefinition? InkConversion { get; init; }
 
+    /// <summary>
+    /// Gets, for an OpenEXR file rejected with the default options (extra channels, layers, pixels outside the display
+    /// window), its decodings with other options and their pixels. The fixture is then an
+    /// <see cref="FixtureKinds.Unsupported"/> one.
+    /// </summary>
+    [JsonPropertyName("exrDecodings")]
+    public IReadOnlyList<ExrDecodingDefinition>? ExrDecodings { get; init; }
+
     /// <summary>Gets free-form notes for reviewers.</summary>
     [JsonPropertyName("notes")]
     public string? Notes { get; init; }

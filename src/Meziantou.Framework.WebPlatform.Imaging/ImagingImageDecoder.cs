@@ -786,13 +786,6 @@ internal sealed class ImagingImageDecoder : RenderingImageDecoder
         return orientation.SwapsAxes() ? new ImagingRenderingImage(height, width, oriented) : new ImagingRenderingImage(width, height, oriented);
     }
 
-    /// <summary>
-    /// Returns the durations in milliseconds of the frames of a GIF image whose data is complete
-    /// (https://www.w3.org/Graphics/GIF/spec-gif89a.txt): the header of a GIF image does not have its number of frames, so its
-    /// blocks are walked (the image data is skipped, not decoded). The delay of a frame is the one of the graphic control
-    /// extension that precedes it (none: 0). The frames of an incomplete image that are cut are not counted: the codec cannot
-    /// decode a part of a frame.
-    /// </summary>
     /// <summary>The durations of the frames of an animation read by the codec (each frame is decoded), in milliseconds.</summary>
     private static double[] ReadFrameDurations(ReadOnlyMemory<byte> bytes)
     {
@@ -811,6 +804,13 @@ internal sealed class ImagingImageDecoder : RenderingImageDecoder
         return [.. durations];
     }
 
+    /// <summary>
+    /// Returns the durations in milliseconds of the frames of a GIF image whose data is complete
+    /// (https://www.w3.org/Graphics/GIF/spec-gif89a.txt): the header of a GIF image does not have its number of frames, so its
+    /// blocks are walked (the image data is skipped, not decoded). The delay of a frame is the one of the graphic control
+    /// extension that precedes it (none: 0). The frames of an incomplete image that are cut are not counted: the codec cannot
+    /// decode a part of a frame.
+    /// </summary>
     private static double[] ReadGifFrameDurations(ReadOnlySpan<byte> bytes)
     {
         var durations = new List<double>();

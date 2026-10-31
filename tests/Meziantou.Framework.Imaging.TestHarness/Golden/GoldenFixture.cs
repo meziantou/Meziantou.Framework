@@ -91,6 +91,18 @@ public sealed class GoldenFixture
     /// <returns>The buffer (<c>rgb8</c>).</returns>
     public RawPixelBuffer GetInkConversionReference() => RawBufferReader.Read(RootDirectory, InkConversion.Buffer);
 
+    /// <summary>Gets the decodings of an OpenEXR fixture with options other than the default ones.</summary>
+    public IReadOnlyList<ExrDecodingDefinition> ExrDecodings => Entry.ExrDecodings ?? throw new InvalidOperationException($"Fixture '{Id}' declares no OpenEXR decoding.");
+
+    /// <summary>Reads the decoded pixels of one of <see cref="ExrDecodings"/>.</summary>
+    /// <param name="decoding">The decoding.</param>
+    /// <returns>The buffer (<c>rgbaf32le</c>).</returns>
+    public RawPixelBuffer GetExrDecodingReference(ExrDecodingDefinition decoding)
+    {
+        ArgumentNullException.ThrowIfNull(decoding);
+        return RawBufferReader.Read(RootDirectory, decoding.Buffer ?? throw new InvalidOperationException($"A decoding of the fixture '{Id}' gives an error, not pixels."));
+    }
+
     /// <inheritdoc/>
     public override string ToString() => Id;
 

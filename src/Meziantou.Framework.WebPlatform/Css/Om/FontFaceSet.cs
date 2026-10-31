@@ -88,6 +88,7 @@ public sealed class FontFaceSet : EventTarget, IReadOnlyCollection<FontFace>
     private readonly List<FontFace> _loadingFonts = [];
     private List<FontFace> _loadedFonts = [];
     private List<FontFace> _failedFonts = [];
+    // The [[ReadyPromise]]: fulfilled when the document is loaded and no font face of the set is loading
     private TaskCompletionSource<FontFaceSet> _readyPromise;
     private bool _stuckOnTheEnvironment;
     private bool _isUpdatingLayout;
@@ -182,7 +183,6 @@ public sealed class FontFaceSet : EventTarget, IReadOnlyCollection<FontFace>
         set => SetEventHandler("loadingerror", value);
     }
 
-    /// <summary>The [[ReadyPromise]]: fulfilled when the document is loaded and no font face of the set is loading.</summary>
     /// <summary>
     /// Gets the promise resolved when the set is loaded. The font faces used by the text of the document that is not rendered
     /// yet are loaded first: the set is pending on the environment while the document has pending layout operations

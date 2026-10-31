@@ -52,6 +52,16 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// then converted to the pixel format like any brush color. Where the color is the color of a stop (before the first
 /// one, from the last one, or between two stops of the same color), it is that 16-bit color itself.
 /// </para>
+/// <para>
+/// <b>Dithering.</b> With <see cref="GradientBrush.Dither"/>, on a frame of 8 bits per component, the rounding of a
+/// pixel <c>(x, y)</c> of the frame is <c>floor(v + (B[y mod 8][x mod 8] + 1/2) / 64)</c> instead, <c>B</c> being the
+/// 8x8 Bayer matrix: the same threshold for the four samples of the pixel, of mean 1/2, so that the average of the
+/// samples over the matrix follows the color of the gradient between two steps. A sample that is a whole number is
+/// kept, and so is the color of a stop. In another color space, the 16-bit colors are moved by <c>round(257 (B + 1/2) / 64) - 128</c> (kept from
+/// 0 to 65535) before they are converted: a step of 8 bits is 257 steps of 16 bits, so the conversion, which rounds to
+/// the nearest, then gives that threshold: a color of 8 bits per component is kept. A frame of more than 8 bits per
+/// component is never dithered.
+/// </para>
 /// </remarks>
 internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
 {
@@ -107,6 +117,7 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
     private double _max;
     private int _width;
     private bool _hasRowColors;
+    private bool _dither;
 
     public GradientEvaluator(AllocationScope scope)
     {
@@ -194,6 +205,9 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
         _stopCount = stops.Length;
         _spreadMode = brush.SpreadMode;
         _max = max;
+
+        // A step of a sample larger than 8 bits does not show: only a frame of 8 bits per component is dithered
+        _dither = brush.Dither && frame is not null && max == byte.MaxValue;
         var values = Stops;
         var transparent = true;
         for (var i = 0; i < stops.Length; i++)
@@ -331,7 +345,7 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
     /// </remarks>
     public override ReadOnlySpan<ushort> Evaluate(int y, int x, int count)
     {
-        if (_kind == GradientKind.Linear && _axisY == 0 && !_hasTransform && !_isProjective && !_degenerate && x >= 0 && count <= _width - x)
+        if (_kind == GradientKind.Linear && _axisY == 0 && !_hasTransform && !_isProjective && !_degenerate && !_dither && x >= 0 && count <= _width - x)
         {
             if (!_hasRowColors)
             {
@@ -411,16 +425,17 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
             var from = stops.Slice(index * ValuesPerStop, ValuesPerStop);
             var u = (t - from[0]) / from[OffsetStep];
             var alpha = from[1] + (u * from[AlphaStep]);
-            var roundedAlpha = Round(alpha);
+            var offset = _dither ? GetDitherThreshold(x + i, y) : RoundingOffset;
+            var roundedAlpha = Round(alpha, offset);
             if (roundedAlpha == 0)
             {
                 output.Clear();
                 continue;
             }
 
-            output[0] = Round((from[Premultiplied] + (u * from[PremultipliedStep])) / alpha);
-            output[1] = Round((from[Premultiplied + 1] + (u * from[PremultipliedStep + 1])) / alpha);
-            output[2] = Round((from[Premultiplied + 2] + (u * from[PremultipliedStep + 2])) / alpha);
+            output[0] = Round((from[Premultiplied] + (u * from[PremultipliedStep])) / alpha, offset);
+            output[1] = Round((from[Premultiplied + 1] + (u * from[PremultipliedStep + 1])) / alpha, offset);
+            output[2] = Round((from[Premultiplied + 2] + (u * from[PremultipliedStep + 2])) / alpha, offset);
             output[3] = roundedAlpha;
         }
 
@@ -437,7 +452,7 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
     public override bool TryGetRowColor(int y, int x, out DrawingColor color)
     {
         var isOneColor = _stopCount == 1 && _spreadMode != GradientSpreadMode.Transparent && !_isProjective && _kind != GradientKind.Cone;
-        if (_degenerate || isOneColor || (_kind == GradientKind.Linear && !_hasTransform && !_isProjective && _axisX == 0))
+        if (_degenerate || isOneColor || (_kind == GradientKind.Linear && !_hasTransform && !_isProjective && _axisX == 0 && !_dither))
         {
             var samples = Evaluate(y, x, 1);
             color = new DrawingColor(samples[0], samples[1], samples[2], samples[3]);
@@ -820,7 +835,20 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
             }
         }
 
+        if (_dither)
+        {
+            // The rounding of the conversion to 8 bits becomes the threshold of the pixel
+            for (var i = 0; i < count; i++)
+            {
+                var offset = (int)Math.Floor((257 * GetDitherThreshold(x + i, y)) + 0.5) - 128;
+                ref var sample = ref samples[i];
+                sample = new Rgba64(Dither(sample.R, offset), Dither(sample.G, offset), Dither(sample.B, offset), Dither(sample.A, offset));
+            }
+        }
+
         _frame.ConvertDrawingColors(samples, colors);
+
+        static ushort Dither(ushort value, int offset) => (ushort)Math.Clamp(value + offset, 0, ushort.MaxValue);
     }
 
     /// <summary>Converts a 16-bit sRGB color to the color space of the gradient: its alpha, then its three components.</summary>
@@ -898,11 +926,28 @@ internal sealed class GradientEvaluator : PaintEvaluator, IDisposable
         output[3] = (ushort)entry[1];
     }
 
-    private ushort Round(double value)
+    /// <summary>Rounds a sample down after adding an offset: <see cref="RoundingOffset"/>, or the threshold of a dithered pixel.</summary>
+    private ushort Round(double value, double offset)
     {
-        var rounded = Math.Floor(value + RoundingOffset);
+        var rounded = Math.Floor(value + offset);
         return rounded <= 0 ? (ushort)0 : rounded >= _max ? (ushort)_max : (ushort)rounded;
     }
+
+    /// <summary>Gets the threshold of a pixel of the frame in the 8x8 Bayer matrix: from 1/128 to 127/128, of mean 1/2.</summary>
+    private static double GetDitherThreshold(int x, int y) => (BayerMatrix[((y & 7) * 8) + (x & 7)] + 0.5) / 64;
+
+    /// <summary>Gets the 8x8 Bayer matrix, row by row: each value from 0 to 63 once, those of a 2x2 or 4x4 block spread.</summary>
+    private static ReadOnlySpan<byte> BayerMatrix =>
+    [
+        0, 32, 8, 40, 2, 34, 10, 42,
+        48, 16, 56, 24, 50, 18, 58, 26,
+        12, 44, 4, 36, 14, 46, 6, 38,
+        60, 28, 52, 20, 62, 30, 54, 22,
+        3, 35, 11, 43, 1, 33, 9, 41,
+        51, 19, 59, 27, 49, 17, 57, 25,
+        15, 47, 7, 39, 13, 45, 5, 37,
+        63, 31, 55, 23, 61, 29, 53, 21,
+    ];
 
     private enum GradientKind : byte
     {

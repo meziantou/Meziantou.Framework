@@ -34,7 +34,8 @@ namespace Meziantou.Framework.Imaging;
 /// (the decoding itself still runs in parallel). The caller must not use a stream given to
 /// <see cref="Load(Stream, ImageConfiguration?)"/> while the collection is alive. Disposing the collection while an entry is decoding waits for the read in progress; the decode
 /// then completes or throws <see cref="ObjectDisposedException"/>. Editing the collection (<see cref="Add(Image, Point?)"/>,
-/// <c>Insert</c>, <c>Move</c>, <c>RemoveAt</c>) and <c>Save</c> are not thread-safe and must not overlap any other call.
+/// <c>Insert</c>, <c>Move</c>, <c>RemoveAt</c>), <c>Save</c> and <c>SaveAsync</c> (until its task completes) are not
+/// thread-safe and must not overlap any other call.
 /// </para>
 /// <para>
 /// <strong>Loading is synchronous.</strong> A random-access decoder issues many small reads whose offsets depend on the
@@ -336,6 +337,66 @@ public sealed class ImageCollection : IDisposable
     }
 
     /// <summary>
+    /// Asynchronously encodes the collection to a file, with the same atomic-publication guarantees as
+    /// <see cref="Save(string, ImageEncoder?)"/>.
+    /// </summary>
+    /// <param name="path">The destination path.</param>
+    /// <param name="encoder">The encoder, or <see langword="null"/> to select it from the extension (<c>.tif</c>, <c>.tiff</c>, <c>.ico</c>, <c>.cur</c>).</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests. On cancellation, no file is published.</param>
+    /// <returns>A task that completes when the file has been published.</returns>
+    /// <remarks>
+    /// <para>
+    /// The arguments, the encoder and the collection are validated before the method returns, as by
+    /// <see cref="Save(string, ImageEncoder?)"/>. The file is written with asynchronous I/O; the entries are encoded, and
+    /// the entries backed by the encoded input are read and decoded, synchronously between the writes, one entry at a
+    /// time. The token is checked before the file is created, before each entry, between the strips of a TIFF page and by
+    /// every write. A failure or a cancellation deletes the temporary file and leaves an existing destination unchanged.
+    /// </para>
+    /// <para>
+    /// Like <see cref="Save(string, ImageEncoder?)"/>, the save must not overlap any other call on the collection until
+    /// the task completes.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentException"><paramref name="path"/> is empty, or the extension does not select a multi-entry encoder.</exception>
+    /// <exception cref="InvalidOperationException">The collection is empty.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">An entry cannot be encoded without a loss the encoder settings do not allow.</exception>
+    /// <exception cref="IOException">An I/O error occurred.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public Task SaveAsync(string path, ImageEncoder? encoder = null, CancellationToken cancellationToken = default)
+    {
+        ThrowIfDisposed();
+        ArgumentException.ThrowIfNullOrEmpty(path);
+        encoder ??= ImageEncoder.FromPath(path);
+        return ImageCollectionWriterCore.SaveAsync(this, path, encoder, cancellationToken);
+    }
+
+    /// <summary>Asynchronously encodes the collection to a stream, starting at its current position. The stream is left open.</summary>
+    /// <param name="stream">The writable destination. TIFF output also requires a seekable stream (the directory offsets are patched once the pages are written).</param>
+    /// <param name="encoder">The encoder.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>A task that completes when the collection has been written and the stream flushed.</returns>
+    /// <remarks>
+    /// The arguments, the encoder and the collection are validated before the method returns. The stream is written with
+    /// <see cref="Stream.WriteAsync(ReadOnlyMemory{byte}, CancellationToken)"/>; the entries are encoded synchronously between
+    /// the writes, one entry at a time. On failure or cancellation, the bytes already written stay in the stream: its
+    /// content is then not a valid file. The save must not overlap any other call on the collection until the task completes.
+    /// </remarks>
+    /// <exception cref="ArgumentException"><paramref name="stream"/> is not writable, is not seekable when the output requires it, or the encoder does not produce a multi-entry format.</exception>
+    /// <exception cref="InvalidOperationException">The collection is empty.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">An entry cannot be encoded without a loss the encoder settings do not allow.</exception>
+    /// <exception cref="OperationCanceledException">The operation was canceled.</exception>
+    public Task SaveAsync(Stream stream, ImageEncoder encoder, CancellationToken cancellationToken = default)
+    {
+        ThrowIfDisposed();
+        ArgumentNullException.ThrowIfNull(stream);
+        ArgumentNullException.ThrowIfNull(encoder);
+        if (!stream.CanWrite)
+            throw new ArgumentException("The stream is not writable.", nameof(stream));
+
+        return ImageCollectionWriterCore.SaveAsync(this, stream, encoder, cancellationToken);
+    }
+
+    /// <summary>
     /// Releases the input of a loaded collection and the images of the entries that own one. Images returned by
     /// <see cref="ImageCollectionEntry.Decode(ImageDecodeOptions)"/> are owned by their caller and are not affected.
     /// </summary>
@@ -355,10 +416,10 @@ public sealed class ImageCollection : IDisposable
     }
 
     /// <summary>Decodes an entry backed by the encoded input.</summary>
-    internal Image DecodeSourceEntry(int sourceIndex, ImageDecodeOptions options, PixelFormat? pixelFormat)
+    internal Image DecodeSourceEntry(int sourceIndex, ImageDecodeOptions options, PixelFormat? pixelFormat, CancellationToken cancellationToken)
     {
         var reader = _reader ?? throw new InvalidOperationException("The collection has no encoded input.");
-        return reader.Decode(sourceIndex, options, pixelFormat);
+        return reader.Decode(sourceIndex, options, pixelFormat, cancellationToken);
     }
 
     internal void ThrowIfDisposed() => ObjectDisposedException.ThrowIf(_disposed, this);

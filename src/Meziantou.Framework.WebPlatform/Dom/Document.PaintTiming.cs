@@ -624,11 +624,9 @@ public partial class Document
     }
 }
 
-/// <summary>
-/// The flag of a window that stops the reporting of the largest contentful paint (https://w3c.github.io/largest-contentful-paint/#sec-modifications-DOM).
-/// As in the browsers, only the user scrolls stop it, not the scroll events of the scripted scrolls (the trusted scroll events of
-/// the specification): the user scrolling is not implemented, so the scrolls never stop it.
-/// </summary>
+// The flag of a window that stops the reporting of the largest contentful paint (https://w3c.github.io/largest-contentful-paint/#sec-modifications-DOM).
+// As in the browsers, only the user scrolls stop it, not the scroll events of the scripted scrolls (the trusted scroll events of
+// the specification): the user scrolling is not implemented, so the scrolls never stop it.
 public partial class Window
 {
     /// <summary>

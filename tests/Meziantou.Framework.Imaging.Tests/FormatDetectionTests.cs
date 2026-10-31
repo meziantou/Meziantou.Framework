@@ -174,4 +174,122 @@ public sealed class FormatDetectionTests
         Assert.Equal(ImageFormat.Unknown, Image.DetectFormat(header.AsSpan(0, 17)));
         Assert.Equal(18, Image.FormatDetectionPrefixLength);
     }
+
+    [Theory]
+    [InlineData(ImageFormat.Png, "PNG", "image/png", ".png")]
+    [InlineData(ImageFormat.Gif, "GIF", "image/gif", ".gif")]
+    [InlineData(ImageFormat.Jpeg, "JPEG", "image/jpeg", ".jpg")]
+    [InlineData(ImageFormat.WebP, "WebP", "image/webp", ".webp")]
+    [InlineData(ImageFormat.Qoi, "QOI", "image/x-qoi", ".qoi")]
+    [InlineData(ImageFormat.Bmp, "BMP", "image/bmp", ".bmp")]
+    [InlineData(ImageFormat.Tga, "TGA", "image/x-tga", ".tga")]
+    [InlineData(ImageFormat.Pnm, "PNM", "image/x-portable-anymap", ".pnm")]
+    [InlineData(ImageFormat.Tiff, "TIFF", "image/tiff", ".tiff")]
+    [InlineData(ImageFormat.Ico, "ICO", "image/vnd.microsoft.icon", ".ico")]
+    [InlineData(ImageFormat.Cur, "CUR", "image/x-win-bitmap", ".cur")]
+    [InlineData(ImageFormat.Ani, "ANI", "application/x-navi-animation", ".ani")]
+    [InlineData(ImageFormat.Avif, "AVIF", "image/avif", ".avif")]
+    [InlineData(ImageFormat.JpegXl, "JPEG XL", "image/jxl", ".jxl")]
+    [InlineData(ImageFormat.Heic, "HEIC", "image/heic", ".heic")]
+    [InlineData(ImageFormat.Jpeg2000, "JPEG 2000", "image/jp2", ".jp2")]
+    [InlineData(ImageFormat.OpenExr, "OpenEXR", "image/x-exr", ".exr")]
+    public void FormatsDescribeTheirNameMimeTypeAndExtension(ImageFormat format, string name, string mimeType, string extension)
+    {
+        // The registered media types (IANA) where there is one, otherwise those of the freedesktop.org shared MIME
+        // database, which libmagic and Python's mimetypes report too
+        var info = ImageFormatInfo.Get(format);
+        Assert.Equal(format, info.Format);
+        Assert.Equal(name, info.Name);
+        Assert.Equal(name, info.ToString());
+        Assert.Equal(mimeType, info.MimeType);
+        Assert.Equal(mimeType, info.MimeTypes[0]);
+        Assert.Equal(extension, info.DefaultFileExtension);
+        Assert.Equal(extension, info.FileExtensions[0]);
+        Assert.Same(info, ImageFormatInfo.Get(format));
+
+        Assert.True(ImageFormatInfo.TryGetByMimeType(mimeType, out var byMimeType));
+        Assert.Same(info, byMimeType);
+        Assert.True(ImageFormatInfo.TryGetByFileExtension(extension, out var byExtension));
+        Assert.Same(info, byExtension);
+    }
+
+    [Fact]
+    public void EveryFormatIsDescribedOnceAndEveryNameMapsToOneFormat()
+    {
+        var formats = Enum.GetValues<ImageFormat>().Where(format => format != ImageFormat.Unknown).ToArray();
+        Assert.Equal(formats, ImageFormatInfo.All.Select(info => info.Format));
+
+        var extensions = ImageFormatInfo.All.SelectMany(info => info.FileExtensions).ToArray();
+        var mimeTypes = ImageFormatInfo.All.SelectMany(info => info.MimeTypes).ToArray();
+        Assert.HasCount(extensions.Length, extensions.Distinct(StringComparer.OrdinalIgnoreCase));
+        Assert.HasCount(mimeTypes.Length, mimeTypes.Distinct(StringComparer.OrdinalIgnoreCase));
+        foreach (var info in ImageFormatInfo.All)
+        {
+            Assert.NotEmpty(info.MimeTypes);
+            Assert.NotEmpty(info.FileExtensions);
+            foreach (var extension in info.FileExtensions)
+            {
+                Assert.StartsWith(".", extension, StringComparison.Ordinal);
+                Assert.Equal(extension.ToLowerInvariant(), extension);
+                Assert.True(ImageFormatInfo.TryGetByFileExtension(extension, out var found));
+                Assert.Same(info, found);
+            }
+
+            foreach (var mimeType in info.MimeTypes)
+            {
+                Assert.Equal(mimeType.ToLowerInvariant(), mimeType);
+                Assert.True(ImageFormatInfo.TryGetByMimeType(mimeType, out var found));
+                Assert.Same(info, found);
+            }
+        }
+
+        Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageFormatInfo.Get(ImageFormat.Unknown));
+        Assert.Throws<ArgumentOutOfRangeException>("format", () => ImageFormatInfo.Get((ImageFormat)1000));
+    }
+
+    [Theory]
+    [InlineData("jpg", ImageFormat.Jpeg)]
+    [InlineData(".JPEG", ImageFormat.Jpeg)]
+    [InlineData("apng", ImageFormat.Png)]
+    [InlineData(".Pbm", ImageFormat.Pnm)]
+    [InlineData(".tif", ImageFormat.Tiff)]
+    [InlineData(".cur", ImageFormat.Cur)]
+    [InlineData(".avifs", ImageFormat.Avif)]
+    [InlineData(".heifs", ImageFormat.Heic)]
+    [InlineData(".j2k", ImageFormat.Jpeg2000)]
+    [InlineData(".jph", ImageFormat.Jpeg2000)]
+    [InlineData("", ImageFormat.Unknown)]
+    [InlineData(".", ImageFormat.Unknown)]
+    [InlineData("..png", ImageFormat.Unknown)]
+    [InlineData("photo.png", ImageFormat.Unknown)]
+    [InlineData(" .png", ImageFormat.Unknown)]
+    [InlineData(".xyz", ImageFormat.Unknown)]
+    public void FormatsAreFoundByFileExtension(string extension, ImageFormat expected)
+    {
+        var found = ImageFormatInfo.TryGetByFileExtension(extension, out var info);
+        Assert.Equal(expected != ImageFormat.Unknown, found);
+        Assert.Equal(expected, info?.Format ?? ImageFormat.Unknown);
+    }
+
+    [Theory]
+    [InlineData("image/png", ImageFormat.Png)]
+    [InlineData("IMAGE/PNG", ImageFormat.Png)]
+    [InlineData("image/apng", ImageFormat.Png)]
+    [InlineData("  image/jpeg ; q=0.9", ImageFormat.Jpeg)]
+    [InlineData("image/jpeg;charset=binary", ImageFormat.Jpeg)]
+    [InlineData("image/x-icon", ImageFormat.Ico)]
+    [InlineData("image/heif-sequence", ImageFormat.Heic)]
+    [InlineData("image/x-portable-pixmap", ImageFormat.Pnm)]
+    [InlineData("image/svg+xml", ImageFormat.Unknown)]
+    [InlineData("image/*", ImageFormat.Unknown)]
+    [InlineData("image", ImageFormat.Unknown)]
+    [InlineData("png", ImageFormat.Unknown)]
+    [InlineData("", ImageFormat.Unknown)]
+    [InlineData(" ; ", ImageFormat.Unknown)]
+    public void FormatsAreFoundByMimeType(string mimeType, ImageFormat expected)
+    {
+        var found = ImageFormatInfo.TryGetByMimeType(mimeType, out var info);
+        Assert.Equal(expected != ImageFormat.Unknown, found);
+        Assert.Equal(expected, info?.Format ?? ImageFormat.Unknown);
+    }
 }

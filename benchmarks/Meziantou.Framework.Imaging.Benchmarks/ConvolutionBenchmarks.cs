@@ -157,6 +157,42 @@ public class ConvolutionBenchmarks
     [Workload("1920x1080 RgbaFloat median, radius 15 (31x31)")]
     public int Median15Float() => Filter(_float, image => image.MedianBlur(15));
 
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 erosion, 3x3 rectangle")]
+    public int Erode1() => Filter(_rgba32, image => image.Erode(StructuringElement.CreateRectangle(1, 1)));
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 erosion, 11x11 rectangle")]
+    public int Erode5() => Filter(_rgba32, image => image.Erode(StructuringElement.CreateRectangle(5, 5)));
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 erosion, 51x51 rectangle")]
+    public int Erode25() => Filter(_rgba32, image => image.Erode(StructuringElement.CreateRectangle(25, 25)));
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 erosion, disk of radius 5")]
+    public int ErodeDisk5() => Filter(_rgba32, image => image.Erode(StructuringElement.CreateEllipse(5, 5)));
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba64 opening, 11x11 rectangle")]
+    public int Open5Rgba64() => Filter(_rgba64, image => image.MorphologicalOpen(StructuringElement.CreateRectangle(5, 5)));
+
+    [Benchmark]
+    [Workload("1920x1080 RgbaFloat dilation, 11x11 rectangle")]
+    public int Dilate5Float() => Filter(_float, image => image.Dilate(StructuringElement.CreateRectangle(5, 5)));
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 top-hat, 11x11 rectangle")]
+    public int TopHat5() => Filter(_rgba32, image => image.TopHat(StructuringElement.CreateRectangle(5, 5)));
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 25th percentile, radius 5 (11x11)")]
+    public int Percentile5() => Filter(_rgba32, image => image.PercentileFilter(5, 25));
+
+    [Benchmark]
+    [Workload("1920x1080 Rgba32 motion blur of 15 pixels at 30 degrees")]
+    public int MotionBlur15() => Filter(_rgba32, image => image.Convolve(new ConvolutionOptions(ConvolutionKernel.CreateMotionBlur(15, 30))));
+
     private static int Filter(Image source, Action<Image> filter)
     {
         using var result = ImageWorkloads.FilterCopy(source, filter);

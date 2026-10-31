@@ -65,6 +65,9 @@ internal sealed class TiffPageSpec
         if (EncodedBlocks is not null)
             return EncodedBlocks;
 
+        if (PlanarConfiguration == 2 && SamplesPerPixel > 1)
+            return BuildPlanes(bigEndian);
+
         // Rows are padded to whole bytes; tile widths are multiples of 16 pixels, so a tile starts on a byte of the row
         var bitsPerPixel = SamplesPerPixel * BitsPerSample;
         var rowLength = ((Width * bitsPerPixel) + 7) / 8;
@@ -102,6 +105,43 @@ internal sealed class TiffPageSpec
         {
             var count = Math.Min(rows, Height - top);
             blocks.Add(Finish(Samples.AsSpan(top * rowLength, count * rowLength).ToArray(), rowLength, bigEndian));
+        }
+
+        return [.. blocks];
+    }
+
+    /// <summary>
+    /// Builds the blocks of a page of separate planes from its chunky <see cref="Samples"/>: every block of the first sample,
+    /// then the ones of the second sample, and so on, each plane with the geometry, the predictor and the compression of
+    /// a page of one sample per pixel.
+    /// </summary>
+    private byte[][] BuildPlanes(bool bigEndian)
+    {
+        var bytesPerSample = BitsPerSample / 8;
+        var pixelCount = Width * Height;
+        var blocks = new List<byte[]>();
+        for (var plane = 0; plane < SamplesPerPixel; plane++)
+        {
+            var samples = new byte[pixelCount * bytesPerSample];
+            for (var i = 0; i < pixelCount; i++)
+            {
+                Samples.AsSpan(((i * SamplesPerPixel) + plane) * bytesPerSample, bytesPerSample).CopyTo(samples.AsSpan(i * bytesPerSample));
+            }
+
+            var spec = new TiffPageSpec
+            {
+                Width = Width,
+                Height = Height,
+                BitsPerSample = BitsPerSample,
+                Compression = Compression,
+                RowsPerStrip = RowsPerStrip,
+                TileWidth = TileWidth,
+                TileLength = TileLength,
+                Predictor = Predictor,
+                Samples = samples,
+            };
+
+            blocks.AddRange(spec.BuildBlocks(bigEndian));
         }
 
         return [.. blocks];

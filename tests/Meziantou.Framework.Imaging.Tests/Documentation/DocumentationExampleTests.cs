@@ -1597,6 +1597,87 @@ public sealed class DocumentationExampleTests : IDisposable
     }
 
     [Fact]
+    public void GradePhotoAppliesTheCurvesAndTheLookupTable()
+    {
+        var input = GetPath("photo.png");
+        using (var photo = new Image<Rgb24>(32, 32))
+        {
+            for (var y = 0; y < 32; y++)
+            {
+                for (var x = 0; x < 32; x++)
+                {
+                    photo.Frames[0][x, y] = new Rgb24((byte)(x * 8), (byte)(y * 8), 128);
+                }
+            }
+
+            photo.Save(input);
+        }
+
+        // A look that swaps red and blue: a lattice of 2 points per axis
+        var cube = GetPath("swap.cube");
+        File.WriteAllText(cube, "TITLE \"Swap\"\nLUT_3D_SIZE 2\n0 0 0\n0 0 1\n0 1 0\n0 1 1\n1 0 0\n1 0 1\n1 1 0\n1 1 1\n");
+
+        var output = GetPath("graded.png");
+        Examples.GradePhoto(input, cube, output);
+        using var image = Image.Load<Rgb24>(output);
+
+        // The look swaps red and blue: the mid blue of the photo becomes red, and its brightest red becomes blue
+        var corner = image.Frames[0][0, 0];
+        Assert.InRange(corner.R, 100, 200);
+        Assert.Equal(0, corner.G);
+        Assert.Equal(0, corner.B);
+        Assert.InRange(image.Frames[0][31, 0].B, 200, 255);
+        Assert.Equal(0, image.Frames[0][31, 0].G);
+    }
+
+    [Fact]
+    public void ExtractTextMakesTheTextWhiteOnBlack()
+    {
+        // A page lit from the right: the paper goes from 110 to 240, and lines of text are 90 levels darker
+        var input = GetPath("page.png");
+        using (var page = new Image<Rgb24>(160, 64))
+        {
+            for (var y = 0; y < 64; y++)
+            {
+                for (var x = 0; x < 160; x++)
+                {
+                    var paper = 110 + (x * 130 / 159);
+                    var text = y % 16 is >= 6 and < 10 && x % 6 < 3;
+                    var level = (byte)(text ? paper - 90 : paper);
+                    page.Frames[0][x, y] = new Rgb24(level, level, level);
+                }
+            }
+
+            page.Save(input);
+        }
+
+        var output = GetPath("text.png");
+        Examples.ExtractText(input, output);
+        using var image = Image.Load<Rgb24>(output);
+        Assert.Equal(new Rgb24(255, 255, 255), image.Frames[0][1, 7]);
+        Assert.Equal(new Rgb24(255, 255, 255), image.Frames[0][151, 8]);
+        Assert.Equal(new Rgb24(0, 0, 0), image.Frames[0][4, 1]);
+        Assert.Equal(new Rgb24(0, 0, 0), image.Frames[0][150, 2]);
+    }
+
+    [Fact]
+    public void StraightenDocumentGivesTheSizeOfThePage()
+    {
+        var input = GetPath("angle.png");
+        using (var photo = new Image<Rgb24>(64, 48, new Rgb24(60, 60, 60)))
+        {
+            photo.Save(input);
+        }
+
+        var output = GetPath("straight.png");
+        var size = Examples.StraightenDocument(input, output, new PointD(8, 6), new PointD(56, 10), new PointD(52, 42), new PointD(12, 40));
+        Assert.Equal(new Size(48, 34), size);
+        using var image = Image.Load<Rgb24>(output);
+        Assert.Equal(size, image.Size);
+        Assert.Equal(new Rgb24(60, 60, 60), image.Frames[0][24, 17]);
+    }
+
+    [Fact]
     public void SaveScanAsBilevelWritesTheTextInBlackOnWhite()
     {
         // A page lit from the right: the paper goes from 110 to 240, and dark lines of text are 90 levels darker
@@ -3834,6 +3915,30 @@ public sealed class DocumentationExampleTests : IDisposable
         Assert.Equal(new Size(20, 40), image.Size);
         Assert.Equal(Red, image.Frames[0][10, 5]);
         Assert.Equal(Blue, image.Frames[0][10, 35]);
+    }
+
+    [Fact]
+    public void SoftProofShowsTheColorsOfThePrinter()
+    {
+        // Saturated red, which the CMYK printer cannot reproduce, and a light blue it can
+        var display = IccTestProfiles.Rgb(IccTestProfiles.SrgbColorants, IccTestProfiles.SrgbCurve());
+        var printer = IccTestProfiles.CmykLabLutAToB();
+        ushort[] rgb = [65535, 0, 0, 30000, 40000, 50000];
+        var preview = ColorExamples.SoftProof(display, printer, rgb);
+
+        // The preview is the conversion to the inks, then back to the display (up to the 16-bit rounding of the inks)
+        var options = new IccColorTransformOptions { GamutMapping = GamutMapping.ReduceChroma };
+        var inks = new ushort[8];
+        var expected = new ushort[6];
+        IccColorTransform.Create(display, printer, options).Convert(rgb, inks);
+        IccColorTransform.Create(printer, display, options).Convert(inks, expected);
+        for (var i = 0; i < expected.Length; i++)
+        {
+            Assert.InRange(preview[i], expected[i] - 2, expected[i] + 2);
+        }
+
+        // The red of the print is not the red of the display
+        Assert.NotEqual(rgb[..3], preview[..3]);
     }
 
     [Fact]

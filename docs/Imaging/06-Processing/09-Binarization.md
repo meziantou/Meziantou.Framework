@@ -43,7 +43,7 @@ or white. See [TIFF](../10-Formats/10-Tiff.md) and [Netpbm](../10-Formats/09-Net
 | [Sauvola](cref:Meziantou.Framework.Imaging.ThresholdMethod.Sauvola) | A threshold computed from the mean and the contrast of the window around each pixel ([SauvolaK](cref:Meziantou.Framework.Imaging.ThresholdOptions.SauvolaK), [SauvolaR](cref:Meziantou.Framework.Imaging.ThresholdOptions.SauvolaR)) | Documents: a blank background stays blank, even in a shadow |
 
 - [ImageHistogram.GetOtsuThreshold()](cref:Meziantou.Framework.Imaging.ImageHistogram.GetOtsuThreshold) returns the Otsu level of any histogram, for example to inspect it before
-  thresholding with [Fixed](cref:Meziantou.Framework.Imaging.ThresholdMethod.Fixed) (see [Histograms and levels](07-HistogramsAndLevels.md)).
+  thresholding with [Fixed](cref:Meziantou.Framework.Imaging.ThresholdMethod.Fixed) (see [Histograms, levels and curves](07-HistogramsAndLevels.md)).
 - [WindowSize](cref:Meziantou.Framework.Imaging.ThresholdOptions.WindowSize) (15 by default) is an odd number of pixels. Choose a window larger than the strokes to keep: about twice
   the height of a line of text, for a document.
 - [EdgeMode](cref:Meziantou.Framework.Imaging.ThresholdOptions.EdgeMode) ([Mirror](cref:Meziantou.Framework.Imaging.ConvolutionEdgeMode.Mirror) by default) says which pixels the windows read outside the frame.

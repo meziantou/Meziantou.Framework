@@ -738,6 +738,251 @@ public sealed class TiffEncoderTests
     }
 
     [Fact]
+    public void ThePredictorAndTheTilesNeedSettingsThatCanStoreThem()
+    {
+        using var source = Image.ImportPixelData<Gray8>([new Gray8(0), new Gray8(255)], 2, 1);
+        using var stream = new MemoryStream();
+
+        // Readers apply a predictor to Deflate and LZW data, and horizontal differencing predicts samples of 8 and 16 bits
+        foreach (var compression in new[] { TiffCompression.None, TiffCompression.PackBits, TiffCompression.Jpeg })
+        {
+            Assert.Throws<ArgumentException>(() => source.Save(stream, new TiffEncoder { Compression = compression, Predictor = TiffPredictor.HorizontalDifferencing }));
+        }
+
+        Assert.Throws<ArgumentException>(() => source.Save(stream, new TiffEncoder { Compression = TiffCompression.CcittGroup4, PixelLayout = TiffPixelLayout.Bilevel, Predictor = TiffPredictor.HorizontalDifferencing }));
+        foreach (var layout in new[] { TiffPixelLayout.Bilevel, TiffPixelLayout.Indexed })
+        {
+            Assert.Throws<ArgumentException>(() => source.Save(stream, new TiffEncoder { PixelLayout = layout, Predictor = TiffPredictor.HorizontalDifferencing }));
+        }
+
+        // A tile has both sizes, and a JPEG page is one strip
+        Assert.Throws<ArgumentException>(() => source.Save(stream, new TiffEncoder { TileWidth = 16 }));
+        Assert.Throws<ArgumentException>(() => source.Save(stream, new TiffEncoder { TileHeight = 16 }));
+        Assert.Throws<ArgumentException>(() => source.Save(stream, new TiffEncoder { Compression = TiffCompression.Jpeg, TileWidth = 16, TileHeight = 16 }));
+
+        using var pages = ImageCollection.Create(ImageCollectionKind.Pages);
+        pages.Add(source);
+        Assert.Throws<ArgumentException>(() => pages.Save(stream, new TiffEncoder { Compression = TiffCompression.PackBits, Predictor = TiffPredictor.HorizontalDifferencing }));
+        Assert.Equal(0, stream.Length);
+    }
+
+    [Fact]
+    public void HorizontalDifferencingStoresTheDifferencesOfTheSpecification()
+    {
+        // TIFF 6.0, section 14: in each row, every sample but the first of its channel is replaced with its difference from
+        // the sample of the same channel on its left, modulo 2^8 or 2^16
+        using (var gray = Image.ImportPixelData<Gray8>([.. new byte[] { 10, 12, 9, 200, 100, 0 }.Select(value => new Gray8(value))], 3, 2))
+        {
+            var file = Save(gray, new TiffEncoder { Predictor = TiffPredictor.HorizontalDifferencing });
+            Assert.Equal([2UL], ReadTags(file)[317]);
+            Assert.Equal([10, 2, 253, 200, 156, 156], Inflate(ReadStrip(file)));
+        }
+
+        using (var rgb = Image.ImportPixelData<Rgb24>([new Rgb24(1, 2, 3), new Rgb24(5, 1, 250)], 2, 1))
+        {
+            var file = Save(rgb, new TiffEncoder { Compression = TiffCompression.Lzw, Predictor = TiffPredictor.HorizontalDifferencing });
+            Assert.Equal([2UL], ReadTags(file)[317]);
+            Assert.Equal(TiffReferenceCodecs.EncodeLzw([1, 2, 3, 4, 255, 247]), ReadStrip(file));
+        }
+
+        using (var deep = Image.ImportPixelData<La32>([new La32(1000, 65535), new La32(999, 0), new La32(65535, 1)], 3, 1))
+        {
+            var differences = new byte[12];
+            ushort[] expected = [1000, 65535, 65535, 1, 64536, 1];
+            for (var i = 0; i < expected.Length; i++)
+            {
+                BinaryPrimitives.WriteUInt16LittleEndian(differences.AsSpan(i * 2), expected[i]);
+            }
+
+            Assert.Equal(differences, Inflate(ReadStrip(Save(deep, new TiffEncoder { Predictor = TiffPredictor.HorizontalDifferencing }))));
+        }
+
+        // Floating-point samples keep the floating-point predictor, and the file it always had
+        using var floats = CreateFloatingPointPattern(5, 3, gray: false, opaque: false);
+        var predicted = Save(floats, new TiffEncoder { Predictor = TiffPredictor.HorizontalDifferencing });
+        Assert.Equal([3UL], ReadTags(predicted)[317]);
+        Assert.Equal(Save(floats, new TiffEncoder()), predicted);
+    }
+
+    [Theory]
+    [InlineData(TiffCompression.Deflate, false, false)]
+    [InlineData(TiffCompression.Lzw, false, false)]
+    [InlineData(TiffCompression.Deflate, true, false)]
+    [InlineData(TiffCompression.Lzw, true, true)]
+    public void HorizontalDifferencingStoresEveryIntegerPixelFormatExactly(TiffCompression compression, bool bigEndian, bool bigTiff)
+    {
+        // Strips of 5 rows, whose rows each start their own differences
+        var encoder = new TiffEncoder { Compression = compression, Predictor = TiffPredictor.HorizontalDifferencing, BigEndian = bigEndian, BigTiff = bigTiff, RowsPerStrip = 5 };
+        var opaque = new PixelConversionOptions { BackgroundColor = new Rgba64(0, 0, 0) };
+        using var rgba = CreatePattern(37, 23);
+        using var rgba64 = CreateWorkerImage("rgba64", ImageConfiguration.Default);
+        Func<Image>[] images =
+        [
+            rgba.Clone, rgba64.Clone, () => rgba.CloneAs<Rgb24>(opaque), () => rgba.CloneAs<Gray8>(opaque), () => rgba.CloneAs<La16>(), () => rgba.CloneAs<Bgra32>(),
+            () => rgba64.CloneAs<Rgb48>(opaque), () => rgba64.CloneAs<Gray16>(opaque), () => rgba64.CloneAs<La32>(),
+        ];
+
+        foreach (var create in images)
+        {
+            using var image = create();
+            using var decoded = RoundTrip(image, encoder);
+            using var expected = image.PixelFormat == PixelFormat.Bgra32 ? image.CloneAs<Rgba32>() : image.Clone();
+            Assert.Equal(expected.PixelFormat, decoded.PixelFormat);
+            Assert.Equal(GetPixelBytes(expected), GetPixelBytes(decoded));
+        }
+    }
+
+    [Fact]
+    public void TiledPagesHaveTheTilesOfTheSpecification()
+    {
+        // 37x23 pixels in 16x16 tiles: three tiles across and two down, stored in full, the ones of the right and bottom
+        // edges padded with zero samples
+        using var source = CreatePattern(37, 23);
+        var file = Save(source, new TiffEncoder { Compression = TiffCompression.None, TileWidth = 16, TileHeight = 16, RowsPerStrip = 5 });
+        var tags = ReadTags(file);
+        Assert.Equal([16UL], tags[322]);
+        Assert.Equal([16UL], tags[323]);
+        Assert.HasCount(6, tags[324]);
+        Assert.Equal(Enumerable.Repeat(16UL * 16 * 4, 6).ToArray(), tags[325]);
+        Assert.DoesNotContain((ushort)273, tags.Keys);
+        Assert.DoesNotContain((ushort)278, tags.Keys);
+        Assert.DoesNotContain((ushort)279, tags.Keys);
+        Assert.DoesNotContain((ushort)317, tags.Keys);
+
+        var pixels = GetPixelBytes(source);
+        for (var tile = 0; tile < 6; tile++)
+        {
+            var expected = new byte[16 * 16 * 4];
+            var left = tile % 3 * 16;
+            var top = tile / 3 * 16;
+            for (var y = 0; y < 16 && top + y < 23; y++)
+            {
+                var columns = Math.Min(16, 37 - left);
+                pixels.AsSpan((((top + y) * 37) + left) * 4, columns * 4).CopyTo(expected.AsSpan(y * 16 * 4));
+            }
+
+            Assert.Equal(expected, file.AsSpan((int)tags[324][tile], (int)tags[325][tile]).ToArray());
+        }
+
+        // With horizontal differencing, each row of a tile starts its own differences, over the padded width
+        var predicted = Save(source, new TiffEncoder { Predictor = TiffPredictor.HorizontalDifferencing, TileWidth = 16, TileHeight = 16 });
+        var predictedTags = ReadTags(predicted);
+        Assert.Equal([2UL], predictedTags[317]);
+        var lastTile = Inflate(predicted.AsSpan((int)predictedTags[324][5], (int)predictedTags[325][5]).ToArray());
+        var firstRow = pixels.AsSpan(((16 * 37) + 32) * 4, 5 * 4).ToArray();
+        Assert.Equal(firstRow[..4], lastTile[..4]);
+        Assert.Equal((byte)(firstRow[4] - firstRow[0]), lastTile[4]);
+        Assert.Equal((byte)(0 - firstRow[16]), lastTile[20]);
+        Assert.Equal(new byte[(16 - 6) * 4], lastTile.AsSpan(6 * 4, (16 - 6) * 4).ToArray());
+    }
+
+    public static TheoryData<string> TiledPageCases =>
+    [
+        "rgba32-none", "rgba32-deflate", "rgba32-lzw-predictor", "rgba32-packbits", "rgba64-deflate-predictor-big-endian",
+        "rgba64-lzw-predictor-bigtiff", "float-deflate", "float-lzw-big-endian", "indexed-lzw", "indexed-packbits",
+        "bilevel-group4", "bilevel-group3", "bilevel-modified-huffman", "bilevel-none", "noise-deflate-predictor", "rgba32-one-tile",
+    ];
+
+    [Theory]
+    [MemberData(nameof(TiledPageCases))]
+    public void TiledPagesStoreThePixelsOfStrips(string name)
+    {
+        // A page of 300x230 pixels in tiles of 64x48 pixels: five tiles across and five down, the last ones partial
+        var pixels = name.Split('-')[0];
+        using var image = CreateWorkerImage(pixels, ImageConfiguration.Default);
+        var compression = name.Contains("-deflate", StringComparison.Ordinal) ? TiffCompression.Deflate
+            : name.Contains("-lzw", StringComparison.Ordinal) ? TiffCompression.Lzw
+            : name.Contains("-packbits", StringComparison.Ordinal) ? TiffCompression.PackBits
+            : name.Contains("-group4", StringComparison.Ordinal) ? TiffCompression.CcittGroup4
+            : name.Contains("-group3", StringComparison.Ordinal) ? TiffCompression.CcittGroup3
+            : name.Contains("-modified-huffman", StringComparison.Ordinal) ? TiffCompression.CcittModifiedHuffman
+            : name.Contains("-one-tile", StringComparison.Ordinal) ? TiffCompression.Deflate
+            : TiffCompression.None;
+        var strips = new TiffEncoder
+        {
+            Compression = compression,
+            Predictor = name.Contains("-predictor", StringComparison.Ordinal) ? TiffPredictor.HorizontalDifferencing : TiffPredictor.None,
+            BigEndian = name.EndsWith("-big-endian", StringComparison.Ordinal),
+            BigTiff = name.EndsWith("-bigtiff", StringComparison.Ordinal),
+            PixelLayout = pixels switch
+            {
+                "indexed" => TiffPixelLayout.Indexed,
+                "bilevel" => TiffPixelLayout.Bilevel,
+                _ => TiffPixelLayout.Auto,
+            },
+        };
+
+        var tileSize = name.EndsWith("-one-tile", StringComparison.Ordinal) ? 304 : 0;
+        var tiles = new TiffEncoder
+        {
+            Compression = strips.Compression,
+            Predictor = strips.Predictor,
+            BigEndian = strips.BigEndian,
+            BigTiff = strips.BigTiff,
+            PixelLayout = strips.PixelLayout,
+            TileWidth = tileSize > 0 ? tileSize : 64,
+            TileHeight = tileSize > 0 ? tileSize : 48,
+        };
+
+        using var expected = Image.Load(Save(image, strips));
+        var file = Save(image, tiles);
+        using var decoded = Image.Load(file);
+        Assert.Equal(expected.PixelFormat, decoded.PixelFormat);
+        Assert.Equal(GetPixelBytes(expected), GetPixelBytes(decoded));
+        if (!tiles.BigEndian && !tiles.BigTiff)
+        {
+            Assert.HasCount(tileSize > 0 ? 1 : 25, ReadTags(file)[324]);
+        }
+
+        // The pages of a document are written the same way
+        using var pages = ImageCollection.Create(ImageCollectionKind.Pages);
+        pages.Add(image);
+        pages.Add(image);
+        using var stream = new MemoryStream();
+        pages.Save(stream, tiles);
+        using var reloaded = ImageCollection.Load(stream.ToArray());
+        using var second = reloaded[1].Decode();
+        Assert.Equal(GetPixelBytes(expected), GetPixelBytes(second));
+    }
+
+    [Theory]
+    [InlineData(TiffCompression.Lzw, "rgba32", 64, 48, TiffPredictor.None)]
+    [InlineData(TiffCompression.Deflate, "rgba64-big-endian", 16, 32, TiffPredictor.HorizontalDifferencing)]
+    [InlineData(TiffCompression.Deflate, "rgba32", 0, 0, TiffPredictor.HorizontalDifferencing)]
+    [InlineData(TiffCompression.Lzw, "float", 128, 16, TiffPredictor.None)]
+    [InlineData(TiffCompression.CcittGroup4, "bilevel", 64, 64, TiffPredictor.None)]
+    public void TilesAndPredictedStripsCompressedByWorkersAreTheFileOfOneWorker(TiffCompression compression, string pixels, int tileWidth, int tileHeight, TiffPredictor predictor)
+    {
+        var encoder = new TiffEncoder
+        {
+            Compression = compression,
+            Predictor = predictor,
+            TileWidth = tileWidth,
+            TileHeight = tileHeight,
+            RowsPerStrip = 7,
+            BigEndian = pixels == "rgba64-big-endian",
+            PixelLayout = pixels == "bilevel" ? TiffPixelLayout.Bilevel : TiffPixelLayout.Auto,
+        };
+
+        var (expected, peak) = SaveWithWorkers(pixels, encoder, workers: 1);
+        foreach (var workers in new[] { 2, 3, 16 })
+        {
+            var (file, workerPeak) = SaveWithWorkers(pixels, encoder, workers);
+            Assert.Equal(expected, file);
+
+            // Each worker rents a block and an output: the LZW and Deflate blocks are compressed by workers, the CCITT ones by one
+            if (compression is TiffCompression.Lzw or TiffCompression.Deflate)
+            {
+                Assert.InRange(workerPeak, peak + 1, long.MaxValue);
+            }
+            else
+            {
+                Assert.Equal(peak, workerPeak);
+            }
+        }
+    }
+
+    [Fact]
     public void ADocumentUsesTheLayoutAndTheCompressionForEveryPage()
     {
         // Pages of other sizes and pixel formats, each with its own colors: a color map per page
@@ -1300,6 +1545,15 @@ public sealed class TiffEncoderTests
         }
 
         return tags;
+    }
+
+    private static byte[] Inflate(byte[] compressed)
+    {
+        using var input = new MemoryStream(compressed);
+        using var zlib = new ZLibStream(input, CompressionMode.Decompress);
+        using var output = new MemoryStream();
+        zlib.CopyTo(output);
+        return output.ToArray();
     }
 
     /// <summary>Reads the stored bytes of one strip of the first directory of a little-endian classic TIFF.</summary>

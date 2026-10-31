@@ -1,0 +1,41 @@
+name: Pack
+description: |
+  Build and pack the NuGet packages of a traversal project, as they are published. Used by publish.yml, which packs the
+  packages changed since the base commit, and by documentation.yml, which packs all of them to document the API of the
+  checked-out commit. Writes restore.binlog, build.publicapi.binlog, build.binlog and pack.binlog in the workspace.
+
+inputs:
+  project:
+    description: Traversal project listing the package projects, such as eng/packages.proj or its delta project
+    required: true
+  output:
+    description: Folder where the packages are written
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Restore
+      shell: pwsh
+      env:
+        PROJECT: ${{ inputs.project }}
+      run: dotnet restore $env:PROJECT -p:Configuration=Release /p:IsOfficialBuild=true /bl:restore.binlog
+
+    # Building a package project generates its public API with this tool, and the traversal project does not
+    # necessarily contain it
+    - name: Build the public API generator
+      shell: pwsh
+      run: dotnet build src/Meziantou.Framework.PublicApiGenerator.Tool/Meziantou.Framework.PublicApiGenerator.Tool.csproj --configuration Release /p:IsOfficialBuild=true /bl:build.publicapi.binlog
+
+    - name: Build
+      shell: pwsh
+      env:
+        PROJECT: ${{ inputs.project }}
+      run: dotnet build $env:PROJECT --configuration Release --no-restore /p:IsOfficialBuild=true /p:PublicApiGeneratorVerifyNoChangeOnBuild=true /bl:build.binlog
+
+    - name: Pack
+      shell: pwsh
+      env:
+        PROJECT: ${{ inputs.project }}
+        OUTPUT: ${{ inputs.output }}
+      run: dotnet pack $env:PROJECT --configuration Release --no-build /p:IsOfficialBuild=true --output $env:OUTPUT /p:RepositoryBranch="$env:GITHUB_REF" "/p:PromptFolder=$env:RUNNER_TEMP/prompt" /bl:pack.binlog

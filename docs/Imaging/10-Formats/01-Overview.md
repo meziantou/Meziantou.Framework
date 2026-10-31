@@ -99,7 +99,7 @@ To convert files from one format to another, see [Converting between formats](..
 
 - [PNG and APNG](02-Png.md): lossless still images and animations, palettes, the smallest file.
 - [GIF](03-Gif.md): animations for every viewer, and how colors and transparency are reduced.
-- [JPEG](04-Jpeg.md): photos; quality, progressive files, and what JPEG cannot store.
+- [JPEG](04-Jpeg.md): photos; quality, progressive files, smaller baseline files, and what JPEG cannot store.
 - [WebP](05-WebP.md): lossless and lossy images and animations for the web.
 - [QOI](06-Qoi.md): a simple lossless format for 8-bit RGB and RGBA images.
 - [BMP](07-Bmp.md): Windows bitmaps, indexed and run-length layouts.

@@ -2304,4 +2304,76 @@ public sealed class ConvolutionTests
         frame.CopyPixelDataTo(pixels);
         return pixels;
     }
+
+    [Fact]
+    public void MotionBlurKernel_WeighsTheLengthOfTheSegmentInEachPixel()
+    {
+        var horizontal = ConvolutionKernel.CreateMotionBlur(5, 0);
+        Assert.Equal(5, horizontal.Width);
+        Assert.Equal(1, horizontal.Height);
+        for (var x = 0; x < 5; x++)
+        {
+            Assert.Equal(0.2, horizontal[x, 0], 1e-15);
+        }
+
+        // A segment of 4 pixels covers half of the pixels at its ends
+        double[] four = [0.125, 0.25, 0.25, 0.25, 0.125];
+        var even = ConvolutionKernel.CreateMotionBlur(4, 180);
+        Assert.Equal(5, even.Width);
+        for (var x = 0; x < 5; x++)
+        {
+            Assert.Equal(four[x], even[x, 0], 1e-15);
+        }
+
+        var vertical = ConvolutionKernel.CreateMotionBlur(3, -90);
+        Assert.Equal(1, vertical.Width);
+        Assert.Equal(3, vertical.Height);
+        Assert.Equal(1 / 3.0, vertical[0, 2], 1e-15);
+
+        // 45 degrees clockwise: down to the right, through the corners of the pixels
+        var diagonal = ConvolutionKernel.CreateMotionBlur(3, 45);
+        Assert.Equal(3, diagonal.Width);
+        Assert.Equal(3, diagonal.Height);
+        Assert.Equal(Math.Sqrt(2) / 3, diagonal[1, 1], 1e-12);
+        Assert.Equal((3 - Math.Sqrt(2)) / 6, diagonal[0, 0], 1e-12);
+        Assert.Equal((3 - Math.Sqrt(2)) / 6, diagonal[2, 2], 1e-12);
+        Assert.Equal(0, diagonal[2, 0], 1e-12);
+        Assert.Equal(0, diagonal[1, 0], 1e-12);
+
+        var single = ConvolutionKernel.CreateMotionBlur(1, 30);
+        Assert.Equal(1, single.Width);
+        Assert.Equal(1, single.Height);
+        Assert.Equal(1, single[0, 0], 1e-15);
+
+        // Any angle: the weights add up to 1 and are symmetric about the center
+        var oblique = ConvolutionKernel.CreateMotionBlur(9.5, 23);
+        var sum = 0.0;
+        for (var y = 0; y < oblique.Height; y++)
+        {
+            for (var x = 0; x < oblique.Width; x++)
+            {
+                sum += oblique[x, y];
+                Assert.Equal(oblique[x, y], oblique[oblique.Width - 1 - x, oblique.Height - 1 - y], 1e-12);
+            }
+        }
+
+        Assert.Equal(1, sum, 1e-12);
+
+        Assert.Throws<ArgumentOutOfRangeException>("length", () => ConvolutionKernel.CreateMotionBlur(0.5, 0));
+        Assert.Throws<ArgumentOutOfRangeException>("length", () => ConvolutionKernel.CreateMotionBlur(double.NaN, 0));
+        Assert.Throws<ArgumentException>("degrees", () => ConvolutionKernel.CreateMotionBlur(3, double.PositiveInfinity));
+    }
+
+    [Fact]
+    public void MotionBlurKernel_DrawsATrail()
+    {
+        using var image = new Image<Gray8>(9, 3);
+        image.Frames[0][4, 1] = new Gray8(250);
+        image.Convolve(new ConvolutionOptions(ConvolutionKernel.CreateMotionBlur(5, 0)), Ct);
+        for (var x = 0; x < 9; x++)
+        {
+            Assert.Equal(x is >= 2 and <= 6 ? 50 : 0, image.Frames[0][x, 1].Value);
+            Assert.Equal(0, image.Frames[0][x, 0].Value);
+        }
+    }
 }

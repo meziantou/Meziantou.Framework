@@ -1133,7 +1133,10 @@ thin public types over its `FontFace`.
   `ILanes`: with AVX2, blocks at least 8 wide run the column pass 8 columns at a time in `Vector256`.
 - `Vector256` (AVX2) and `Vector512` (AVX-512) paths never run on Arm64. Test them on an x64 machine three ways: by
   default, with `DOTNET_EnableAVX512=0` (`DOTNET_EnableAVX512F=0` leaves `Vector512` accelerated on .NET 11) and with
-  `DOTNET_EnableAVX=0`, and check with a deliberately broken path that each setting runs the path it is meant to.
+  `DOTNET_EnableAVX2=0` (it turns off AVX2, FMA and `Vector256` together; `DOTNET_EnableAVX=0` changes nothing), and check
+  with a deliberately broken path that each setting runs the path it is meant to. `VectorizedKernelFallbackTests` runs
+  `VectorizedKernelTests` again in a child process with each of these settings and `DOTNET_EnableHWIntrinsic=0` on x64
+  (the CI legs included), so a kernel tested there has its narrower paths and its scalar fallback tested too.
 - A function that encodes a value with `Math.Pow` and rounds it to an 8-bit sample is replaced by its thresholds
   (`QuantizationThresholds`, built lazily from the scalar function and compared with it around every threshold): the
   linear-light `Store` of `WorkingSamples` and the linear-light compositing of drawing use it, and so do the 8-bit ICC

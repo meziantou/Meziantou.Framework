@@ -13,6 +13,31 @@ namespace Meziantou.Framework.Imaging.Tests;
 /// </summary>
 public sealed class VectorizedKernelTests
 {
+    // VectorizedKernelFallbackTests runs this class again with instruction sets turned off: each setting must turn off what it
+    // is meant to, otherwise that run silently tests the default paths a second time
+    [Fact]
+    public void InstructionSetsTurnedOffByTheEnvironmentAreOff()
+    {
+        if (Environment.GetEnvironmentVariable("DOTNET_EnableHWIntrinsic") is "0")
+        {
+            Assert.False(Vector128.IsHardwareAccelerated);
+            Assert.False(Vector.IsHardwareAccelerated);
+        }
+
+        if (Environment.GetEnvironmentVariable("DOTNET_EnableAVX2") is "0")
+        {
+            Assert.False(Avx2.IsSupported);
+            Assert.False(Fma.IsSupported);
+            Assert.False(Vector256.IsHardwareAccelerated);
+            Assert.False(Vector512.IsHardwareAccelerated);
+        }
+
+        if (Environment.GetEnvironmentVariable("DOTNET_EnableAVX512") is "0")
+        {
+            Assert.False(Vector512.IsHardwareAccelerated);
+        }
+    }
+
     [Theory]
     [InlineData(1)]
     [InlineData(2)]

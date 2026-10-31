@@ -1181,6 +1181,199 @@ public sealed class AutoCropTests
     }
 
     /// <summary>Everything a read-only analysis or a failed auto-crop must preserve.</summary>
+    #region SuggestCrop_KeepTheSubject
+    [Fact]
+    public void SuggestCrop_KeepTheSubject()
+    {
+        // A wide photo: a flat sky, with a detailed subject on the right
+        using var image = new Image<Rgb24>(160, 90, new Rgb24(120, 170, 230));
+        for (var y = 30; y < 80; y++)
+        {
+            for (var x = 110; x < 150; x++)
+            {
+                image.Frames[0][x, y] = (x + y) % 3 == 0 ? new Rgb24(40, 30, 20) : new Rgb24(200, 180, 90);
+            }
+        }
+
+        // The square crop keeps the subject instead of the middle of the sky
+        var crop = image.SuggestCrop(1, 1);
+        Assert.Equal(new Size(90, 90), crop.Size);
+        Assert.True(crop.X <= 110 && crop.Right >= 150, $"The crop {crop} cuts the subject");
+
+        image.Crop(crop);
+        Assert.Equal(new Size(90, 90), image.Size);
+    }
+    #endregion
+
+    [Theory]
+    [InlineData(4000, 3000, 1, 1, 1.0, 3000, 3000)]
+    [InlineData(4000, 3000, 16, 9, 1.0, 4000, 2250)]
+    [InlineData(4000, 3000, 9, 16, 1.0, 1688, 3000)]
+    [InlineData(4000, 3000, 4, 3, 1.0, 4000, 3000)]
+    [InlineData(4000, 3000, 4, 3, 0.5, 2000, 1500)]
+    [InlineData(3, 1000, 1, 1, 1.0, 3, 3)]
+    [InlineData(1, 1, 16, 9, 0.01, 1, 1)]
+    public void SuggestCrop_SizeIsTheLargestRectangleOfTheRatio(int width, int height, int aspectWidth, int aspectHeight, double scale, int expectedWidth, int expectedHeight)
+        => Assert.Equal(new Size(expectedWidth, expectedHeight), CropSuggester.GetCropSize(new Size(width, height), aspectWidth, aspectHeight, scale));
+
+    [Theory]
+    [InlineData(CropEnergy.Edges)]
+    [InlineData(CropEnergy.Saliency)]
+    public void SuggestCrop_FlatImagesGetTheCenteredCrop(CropEnergy energy)
+    {
+        // 21 positions: the middle one; with an even number of positions, the left one of the two in the middle
+        using var odd = new Image<Rgba32>(40, 20, new Rgba32(10, 200, 30, 255));
+        Assert.Equal(new Rectangle(10, 0, 20, 20), odd.SuggestCrop(1, 1, new CropSuggestionOptions { Energy = energy }, Ct));
+        using var even = new Image<Rgba32>(41, 20, new Rgba32(10, 200, 30, 255));
+        Assert.Equal(new Rectangle(10, 0, 20, 20), even.SuggestCrop(1, 1, new CropSuggestionOptions { Energy = energy }, Ct));
+        using var tall = new Image<Gray16>(10, 31);
+        Assert.Equal(new Rectangle(0, 10, 10, 10), tall.SuggestCrop(1, 1, new CropSuggestionOptions { Energy = energy }, Ct));
+        Assert.Equal(new Rectangle(0, 0, 10, 31), tall.SuggestCrop(10, 31, cancellationToken: Ct));
+    }
+
+    [Fact]
+    public void SuggestCrop_SaliencyKeepsASmoothSubjectThatStandsOut()
+    {
+        // A smooth red disc on a gray background with a fine gray texture on the left: the texture has the edges, the disc
+        // the saliency
+        using var image = new Image<Rgb24>(120, 40);
+        for (var y = 0; y < 40; y++)
+        {
+            for (var x = 0; x < 120; x++)
+            {
+                var distance = Math.Sqrt(((x - 95.5) * (x - 95.5)) + ((y - 19.5) * (y - 19.5)));
+                var weight = Math.Clamp((14 - distance) / 6, 0, 1);
+                var texture = x < 40 && (x + y) % 2 == 0 ? 40 : 0;
+                image.Frames[0][x, y] = new Rgb24((byte)(128 + texture + (weight * 100)), (byte)(128 + texture - (weight * 100)), (byte)(128 + texture - (weight * 100)));
+            }
+        }
+
+        var salient = image.SuggestCrop(1, 1, new CropSuggestionOptions { Energy = CropEnergy.Saliency }, Ct);
+        Assert.True(salient.X <= 82 && salient.Right >= 110, $"The crop {salient} cuts the disc");
+        var detailed = image.SuggestCrop(1, 1, new CropSuggestionOptions { Energy = CropEnergy.Edges }, Ct);
+        Assert.Equal(0, detailed.X);
+    }
+
+    [Fact]
+    public void SuggestCrop_ScaleZoomsOnTheContent()
+    {
+        using var image = new Image<Gray8>(100, 50);
+        for (var y = 20; y < 30; y++)
+        {
+            for (var x = 60; x < 70; x++)
+            {
+                image.Frames[0][x, y] = new Gray8((byte)((x + y) % 2 * 255));
+            }
+        }
+
+        var crop = image.SuggestCrop(2, 1, new CropSuggestionOptions { Scale = 0.3 }, Ct);
+        Assert.Equal(new Size(30, 15), crop.Size);
+        Assert.True(crop.X <= 59 && crop.Right >= 70 && crop.Y <= 19 && crop.Bottom >= 30, $"The crop {crop} cuts the detail");
+    }
+
+    [Fact]
+    public void SuggestCrop_TransparentAreasHaveNoContent()
+    {
+        // A transparent image hiding strong noise, with a small opaque subject on the right
+        using var image = new Image<Rgba32>(80, 20);
+        using var clean = new Image<Rgba32>(80, 20);
+        for (var y = 0; y < 20; y++)
+        {
+            for (var x = 0; x < 80; x++)
+            {
+                var subject = x is >= 62 and < 70 && y is >= 6 and < 14;
+                var pixel = subject ? new Rgba32(90, 90, 90, 255) : new Rgba32((byte)((x * 37) + (y * 91)), (byte)(x * y), 255, 0);
+                image.Frames[0][x, y] = pixel;
+                clean.Frames[0][x, y] = subject ? pixel : default;
+            }
+        }
+
+        // The hidden colors do not count: the crop is the one of the subject on transparent black
+        var crop = image.SuggestCrop(1, 1, cancellationToken: Ct);
+        Assert.True(crop.X <= 61 && crop.Right >= 70, $"The crop {crop} cuts the subject");
+        Assert.Equal(clean.SuggestCrop(1, 1, cancellationToken: Ct), crop);
+    }
+
+    [Fact]
+    public void SuggestCrop_AddsTheEnergiesOfEveryFrame()
+    {
+        // Frame 0 has a detail on the left, frame 1 a stronger one on the right
+        using var image = new Image<Gray8>(60, 20);
+        var second = image.AppendFrame();
+        for (var y = 0; y < 20; y++)
+        {
+            for (var x = 0; x < 6; x++)
+            {
+                image.Frames[0][x + 2, y] = new Gray8((byte)((x + y) % 2 * 120));
+                second[x + 50, y] = new Gray8((byte)((x + y) % 2 * 250));
+            }
+        }
+
+        var all = image.SuggestCrop(1, 1, cancellationToken: Ct);
+        Assert.True(all.X <= 49 && all.Right >= 56, $"The crop {all} cuts the stronger detail");
+        var first = image.Frames[0].SuggestCrop(1, 1, cancellationToken: Ct);
+        Assert.True(first.X <= 1 && first.Right >= 8, $"The crop {first} cuts the detail of the first frame");
+        Assert.Equal(all, image.Frames[1].SuggestCrop(1, 1, cancellationToken: Ct));
+    }
+
+    [Fact]
+    public void SuggestCrop_ReadsEveryPixelFormatAndClampsHighDynamicRangeSamples()
+    {
+        using var image = new Image<Rgba32>(60, 20, new Rgba32(20, 20, 20, 255));
+        for (var y = 0; y < 20; y++)
+        {
+            for (var x = 44; x < 52; x++)
+            {
+                image.Frames[0][x, y] = new Rgba32((byte)((x + y) % 2 * 200), 40, 40, 255);
+            }
+        }
+
+        var expected = image.SuggestCrop(1, 1, cancellationToken: Ct);
+        Func<Image, Image>[] conversions = [i => i.CloneAs<Gray8>(), i => i.CloneAs<La32>(), i => i.CloneAs<Rgb48>(), i => i.CloneAs<Bgra32>(), i => i.CloneAs<Rgba1010102>(), i => i.CloneAs<RgbaHalf>(), i => i.CloneAs<RgbaFloat>()];
+        foreach (var conversion in conversions)
+        {
+            using var converted = conversion(image);
+            Assert.Equal(expected, converted.SuggestCrop(1, 1, cancellationToken: Ct));
+        }
+
+        using var floats = image.CloneAs<RgbaFloat>();
+        floats.Frames[0][1, 1] = new RgbaFloat(50f, 50f, 50f);
+        Assert.Equal(expected, floats.SuggestCrop(1, 1, cancellationToken: Ct));
+        floats.Frames[0][1, 1] = new RgbaFloat(float.NaN, 0, 0);
+        Assert.Throws<UnsupportedImageFeatureException>(() => floats.SuggestCrop(1, 1, cancellationToken: Ct));
+    }
+
+    [Fact]
+    public void SuggestCrop_ValidatesItsArguments()
+    {
+        using var image = new Image<Rgb24>(10, 10);
+        Assert.Throws<ArgumentNullException>("image", () => ((Image)null!).SuggestCrop(1, 1));
+        Assert.Throws<ArgumentNullException>("frame", () => ((ImageFrame)null!).SuggestCrop(1, 1));
+        Assert.Throws<ArgumentOutOfRangeException>("aspectWidth", () => image.SuggestCrop(0, 1));
+        Assert.Throws<ArgumentOutOfRangeException>("aspectHeight", () => image.Frames[0].SuggestCrop(1, -2));
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new CropSuggestionOptions { Scale = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new CropSuggestionOptions { Scale = 1.5 });
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => new CropSuggestionOptions { Energy = (CropEnergy)5 });
+        using var source = new CancellationTokenSource();
+        source.Cancel();
+        Assert.Throws<OperationCanceledException>(() => image.SuggestCrop(1, 1, cancellationToken: source.Token));
+        var frame = image.Frames[0];
+        image.Dispose();
+        Assert.Throws<ObjectDisposedException>(() => image.SuggestCrop(1, 1));
+        Assert.Throws<ObjectDisposedException>(() => frame.SuggestCrop(1, 1));
+    }
+
+    [Fact]
+    public void SuggestCrop_ReleasesItsTable()
+    {
+        using var image = new Image<Rgba32>(64, 48, new Rgba32(1, 2, 3, 255));
+        var before = image.Owner.Scope.LiveBytes;
+        _ = image.SuggestCrop(1, 1, new CropSuggestionOptions { Energy = CropEnergy.Saliency }, Ct);
+        Assert.Equal(before, image.Owner.Scope.LiveBytes);
+        using var limited = new Image<Rgba32>(64, 48, new Rgba32(1, 2, 3, 255), new ImageConfiguration { Limits = new ImageResourceLimits { MaxLiveAllocationBytes = 64 * 48 * 6 } });
+        Assert.Throws<ImageResourceLimitException>(() => limited.SuggestCrop(1, 1, cancellationToken: Ct));
+    }
+
     private sealed class Snapshot
     {
         private Size _size;

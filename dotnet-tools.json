@@ -10,7 +10,7 @@
       "rollForward": false
     },
     "meziantou.documentationgenerator": {
-      "version": "0.9.3",
+      "version": "0.9.4",
       "commands": [
         "Meziantou.DocumentationGenerator"
       ],

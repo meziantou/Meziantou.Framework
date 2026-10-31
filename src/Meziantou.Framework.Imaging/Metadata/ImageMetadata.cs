@@ -110,6 +110,16 @@ public sealed class ImageMetadata
     /// </remarks>
     public PixelAspectRatio? PixelAspectRatio { get; set; }
 
+    /// <summary>
+    /// Gets or sets the windows of the OpenEXR file the image was decoded from, or <see langword="null"/> for the other
+    /// formats. This is informational only, like <see cref="SourceFormat"/>: it describes the file, not the pixels.
+    /// </summary>
+    /// <remarks>
+    /// No operation updates it, and every encoder ignores it: <see cref="Formats.OpenExrEncoder"/> writes both windows from
+    /// (0, 0), the size of the image.
+    /// </remarks>
+    public OpenExrWindows? OpenExrWindows { get; set; }
+
     /// <summary>Gets or sets the EXIF profile, or <see langword="null"/> if none.</summary>
     public ExifProfile? ExifProfile { get; set; }
 
@@ -134,6 +144,7 @@ public sealed class ImageMetadata
             ContentLightLevel = ContentLightLevel,
             MasteringDisplay = MasteringDisplay,
             PixelAspectRatio = PixelAspectRatio,
+            OpenExrWindows = OpenExrWindows,
             ExifProfile = ExifProfile,
             XmpProfile = XmpProfile,
         };

@@ -1,6 +1,6 @@
 ---
 title: Rendering quality
-description: Draw with hard edges or in linear light, keep 16-bit precision, smooth curves further, and draw colors of a color profile.
+description: Draw with hard edges or in linear light, keep 16-bit precision, dither gradients, smooth curves further, and draw colors of a color profile.
 ---
 
 By default, shapes are antialiased and composited on the stored sample values of the image, as browsers do. The
@@ -93,6 +93,15 @@ other, nested layers and filters accumulate those roundings. `canvas.HighPrecisi
 copy of the pixels with 16-bit samples, then writes the result back: each color is rounded once. It costs 8 bytes per
 pixel the clip shows, for each frame, while the callback runs. On a canvas of 16-bit samples ([Rgba64](cref:Meziantou.Framework.Imaging.Rgba64), for instance),
 the callback draws on the canvas itself.
+
+## Avoid bands in slow gradients
+
+On an image of 8 bits per component, a gradient between two close colors over a long distance shows bands: each
+sample is rounded to the nearest of 256 values, so tens of pixels in a row get the same one. Set
+[Dither](cref:Meziantou.Framework.Imaging.Drawing.GradientBrush.Dither) on the brush to round each pixel up or down by a fixed pattern (the 8x8 Bayer matrix) instead: over a few
+pixels, the samples average to the color between two steps, and the bands disappear. The pattern is the same at every
+drawing, so the result is reproducible; a color that 8 bits hold exactly, such as the color of a stop, is kept. Images
+of 16 bits per component or of floating-point components are not dithered: their steps do not show.
 
 ## Make curves smoother
 

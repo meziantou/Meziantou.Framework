@@ -125,7 +125,12 @@ internal sealed class IccPipeline
     /// <summary>Creates the conversion between two profiles.</summary>
     /// <exception cref="InvalidImageContentException">A profile is malformed.</exception>
     /// <exception cref="UnsupportedImageFeatureException">A profile is valid but not supported in its role.</exception>
-    public static IccPipeline Create(IccProfile source, IccProfile destination, IccRenderingIntent intent, bool blackPointCompensation)
+    /// <param name="source">The profile describing the source samples.</param>
+    /// <param name="destination">The profile describing the converted samples.</param>
+    /// <param name="intent">The rendering intent.</param>
+    /// <param name="blackPointCompensation">Whether the black of the source is mapped to the black of the destination.</param>
+    /// <param name="gamutMapping">How the colors outside the gamut of the destination are brought into it.</param>
+    public static IccPipeline Create(IccProfile source, IccProfile destination, IccRenderingIntent intent, bool blackPointCompensation, GamutMapping gamutMapping = GamutMapping.Clip)
     {
         var sourceModel = IccProfileModel.Create(source, "source");
         var destinationModel = IccProfileModel.Create(destination, "destination");
@@ -147,13 +152,151 @@ internal sealed class IccPipeline
             stages.Add(compensation);
         }
 
-        destinationModel.AppendFromConnectionSpace(stages, intent);
+        AppendDestination(stages, destinationModel, intent, gamutMapping);
         return new IccPipeline(stages.ToArray(), sourceModel.ChannelCount, destinationModel.ChannelCount, isIdentity: false);
     }
 
     /// <summary>
+    /// Creates the conversion through a sequence of profiles (ICC.1:2022 sections 8.6 and 8.7): device profiles, device link
+    /// profiles and abstract profiles. Device values enter a device profile, which converts them to the connection space,
+    /// and the next device profile converts them back to its device values; a device link profile converts device values
+    /// to device values; an abstract profile converts colors of the connection space.
+    /// </summary>
+    /// <remarks>
+    /// Where the colors cross the connection space, from a device profile to the next one, the stages are the ones of
+    /// <see cref="Create(IccProfile, IccProfile, IccRenderingIntent, bool, GamutMapping)"/> with the abstract profiles in
+    /// the middle: the conversion of the first profile, the rescaling of the ICC-absolute colorimetric intent by its media
+    /// white or black point compensation, the abstract profiles, the rescaling by the media white of the second profile,
+    /// the gamut mapping, then the conversion of the second profile. A sequence of two device profiles is
+    /// <see cref="Create(IccProfile, IccProfile, IccRenderingIntent, bool, GamutMapping)"/> exactly.
+    /// </remarks>
+    /// <exception cref="ArgumentException">The sequence is empty.</exception>
+    /// <exception cref="InvalidImageContentException">A profile is malformed.</exception>
+    /// <exception cref="UnsupportedImageFeatureException">A profile is not supported, or the sequence does not connect.</exception>
+    public static IccPipeline Create(IReadOnlyList<IccProfile> profiles, IccRenderingIntent intent, bool blackPointCompensation, GamutMapping gamutMapping)
+    {
+        if (profiles.Count == 0)
+            throw new ArgumentException("The sequence of profiles is empty.", nameof(profiles));
+
+        var models = new IccProfileModel[profiles.Count];
+        for (var i = 0; i < models.Length; i++)
+        {
+            var role = i == 0 ? "source" : i == models.Length - 1 ? "destination" : string.Create(CultureInfo.InvariantCulture, $"intermediate (at index {i})");
+            models[i] = IccProfileModel.Create(profiles[i], role, allowLinkAndAbstract: true);
+        }
+
+        if (models.Length == 2 && !models[0].IsDeviceLink && !models[0].IsAbstract && !models[1].IsDeviceLink && !models[1].IsAbstract)
+            return Create(profiles[0], profiles[1], intent, blackPointCompensation, gamutMapping);
+
+        var stages = new IccStageList();
+        uint? deviceSpace = null;           // the color space of the device values, outside the connection space
+        IccProfileModel? connectionSource = null; // the device profile that entered the connection space
+        List<IccProfileModel>? abstracts = null;
+        for (var i = 0; i < models.Length; i++)
+        {
+            var model = models[i];
+            if (model.IsAbstract)
+            {
+                if (connectionSource is null)
+                    throw CreateUnconnected(i, "an abstract profile converts colors of the profile connection space, but the colors are device values there");
+
+                (abstracts ??= []).Add(model);
+                continue;
+            }
+
+            if (connectionSource is null)
+            {
+                if (deviceSpace is { } space && space != model.InputColorSpace)
+                    throw CreateUnconnected(i, $"its input color space {IccReader.FormatSignature(model.InputColorSpace)} is not the color space of the colors there, {IccReader.FormatSignature(space)}");
+
+                if (model.IsDeviceLink)
+                {
+                    model.AppendDeviceLink(stages);
+                    deviceSpace = model.OutputColorSpace;
+                }
+                else
+                {
+                    model.AppendToConnectionSpace(stages, intent);
+                    connectionSource = model;
+                }
+
+                continue;
+            }
+
+            if (model.IsDeviceLink)
+                throw CreateUnconnected(i, "a device link profile converts device values, but the colors are in the profile connection space there");
+
+            AppendConnection(stages, connectionSource, abstracts, model, intent, blackPointCompensation);
+            AppendDestination(stages, model, intent, gamutMapping);
+            connectionSource = null;
+            abstracts = null;
+            deviceSpace = model.InputColorSpace;
+        }
+
+        if (connectionSource is not null)
+            throw new UnsupportedImageFeatureException("The sequence of ICC profiles ends in the profile connection space: the last profile must be a device or device link profile.", ImageFormat.Unknown, "Sequence of ICC profiles that does not connect");
+
+        return new IccPipeline(stages.ToArray(), models[0].ChannelCount, models[^1].IsDeviceLink ? models[^1].OutputChannelCount : models[^1].ChannelCount, isIdentity: false);
+    }
+
+    // The middle of a conversion through the connection space, from the device profile that entered it to the one that
+    // leaves it, with the abstract profiles between them
+    private static void AppendConnection(IccStageList stages, IccProfileModel source, List<IccProfileModel>? abstracts, IccProfileModel destination, IccRenderingIntent intent, bool blackPointCompensation)
+    {
+        if (intent == IccRenderingIntent.AbsoluteColorimetric)
+        {
+            var sourceWhite = source.GetMediaWhitePoint();
+            var destinationWhite = destination.GetMediaWhitePoint();
+            if (abstracts is null)
+            {
+                // As Create: one rescaling from the media white of the source to the one of the destination
+                stages.Add(IccMatrixStage.CreateScale(sourceWhite.X / destinationWhite.X, sourceWhite.Y / destinationWhite.Y, sourceWhite.Z / destinationWhite.Z));
+                return;
+            }
+
+            // The abstract profiles convert ICC-absolute colorimetry: relative to the illuminant of the connection space
+            stages.Add(IccMatrixStage.CreateScale(sourceWhite.X / IccColorimetry.D50X, sourceWhite.Y / IccColorimetry.D50Y, sourceWhite.Z / IccColorimetry.D50Z));
+            AppendAbstracts(stages, abstracts);
+            stages.Add(IccMatrixStage.CreateScale(IccColorimetry.D50X / destinationWhite.X, IccColorimetry.D50Y / destinationWhite.Y, IccColorimetry.D50Z / destinationWhite.Z));
+            return;
+        }
+
+        if (blackPointCompensation && IccBlackPoint.CreateCompensation(source, destination, intent) is { } compensation)
+        {
+            stages.Add(compensation);
+        }
+
+        if (abstracts is not null)
+        {
+            AppendAbstracts(stages, abstracts);
+        }
+    }
+
+    private static void AppendAbstracts(IccStageList stages, List<IccProfileModel> abstracts)
+    {
+        foreach (var model in abstracts)
+        {
+            model.AppendAbstract(stages);
+        }
+    }
+
+    // The gamut mapping of the destination (if any), then its conversion from the connection space
+    private static void AppendDestination(IccStageList stages, IccProfileModel destination, IccRenderingIntent intent, GamutMapping gamutMapping)
+    {
+        if (destination.CreateGamutMapping(intent, gamutMapping) is { } mapping)
+        {
+            stages.Add(mapping);
+        }
+
+        destination.AppendFromConnectionSpace(stages, intent);
+    }
+
+    private static UnsupportedImageFeatureException CreateUnconnected(int index, string reason)
+        => new(string.Create(CultureInfo.InvariantCulture, $"The ICC profile at index {index} of the sequence cannot follow the previous profiles: {reason}."), ImageFormat.Unknown, "Sequence of ICC profiles that does not connect");
+
+    /// <summary>
     /// Creates the conversion from the device values of a profile to CIEXYZ of the connection space (relative to its D50
-    /// illuminant, Y = 1 for the white): the first half of <see cref="Create(IccProfile, IccProfile, IccRenderingIntent, bool)"/>.
+    /// illuminant, Y = 1 for the white): the first half of <see cref="Create(IccProfile, IccProfile, IccRenderingIntent, bool, GamutMapping)"/>.
     /// </summary>
     /// <exception cref="InvalidImageContentException">The profile is malformed.</exception>
     /// <exception cref="UnsupportedImageFeatureException">The profile is valid but not supported.</exception>
@@ -194,9 +337,10 @@ internal sealed class IccPipeline
     /// <param name="intent">The rendering intent, which selects the conversion of the destination.</param>
     /// <param name="blackPointCompensation">Whether the black of the source is mapped to the black of the destination.</param>
     /// <param name="toneMapping">The stage that brings the light of high dynamic range samples to [0, 1], or <see langword="null"/> for samples of a standard dynamic range.</param>
+    /// <param name="gamutMapping">How the colors outside the gamut of the destination are brought into it.</param>
     /// <exception cref="InvalidImageContentException">The profile is malformed.</exception>
     /// <exception cref="UnsupportedImageFeatureException">The profile is valid but cannot be a destination, or the primaries do not define a color space.</exception>
-    public static IccPipeline Create(CicpColorSpace source, IccProfile destination, IccRenderingIntent intent, bool blackPointCompensation, HdrToneMapStage? toneMapping = null)
+    public static IccPipeline Create(CicpColorSpace source, IccProfile destination, IccRenderingIntent intent, bool blackPointCompensation, HdrToneMapStage? toneMapping = null, GamutMapping gamutMapping = GamutMapping.Clip)
     {
         var destinationModel = IccProfileModel.Create(destination, "destination");
         var stages = new IccStageList();
@@ -227,7 +371,7 @@ internal sealed class IccPipeline
             stages.Add(compensation);
         }
 
-        destinationModel.AppendFromConnectionSpace(stages, intent);
+        AppendDestination(stages, destinationModel, intent, gamutMapping);
         return new IccPipeline(stages.ToArray(), source.ChannelCount, destinationModel.ChannelCount, isIdentity: false);
     }
 
@@ -242,9 +386,10 @@ internal sealed class IccPipeline
     /// <param name="destination">The color space of the converted samples, of a standard dynamic range.</param>
     /// <param name="intent">The rendering intent, which selects the conversion of the source.</param>
     /// <param name="blackPointCompensation">Whether the black of the source is mapped to the black of the destination.</param>
+    /// <param name="gamutMapping">How the colors outside the gamut of the destination are brought into it.</param>
     /// <exception cref="InvalidImageContentException">The profile is malformed.</exception>
     /// <exception cref="UnsupportedImageFeatureException">The profile is valid but not supported, or the primaries do not define a color space.</exception>
-    public static IccPipeline Create(IccProfile source, CicpColorSpace destination, IccRenderingIntent intent, bool blackPointCompensation)
+    public static IccPipeline Create(IccProfile source, CicpColorSpace destination, IccRenderingIntent intent, bool blackPointCompensation, GamutMapping gamutMapping = GamutMapping.Clip)
     {
         var sourceModel = IccProfileModel.Create(source, "source");
         var stages = new IccStageList();
@@ -270,6 +415,12 @@ internal sealed class IccPipeline
             Span<double> inverse = stackalloc double[9];
             if (!destination.TryGetToConnectionSpace(matrix) || !IccMatrixStage.TryInvert(matrix, inverse))
                 throw new UnsupportedImageFeatureException($"The color primaries {destination.Primaries} of the CICP color description do not define a color space.", ImageFormat.Unknown, "CICP color primaries without a color space");
+
+            // The transfer functions of a standard dynamic range encode [0, 1] to [0, 1]
+            if (gamutMapping != GamutMapping.Clip && IccMatrixGamutMapStage.Create(matrix, [0, 0, 0], [1, 1, 1]) is { } mapping)
+            {
+                stages.Add(mapping);
+            }
 
             stages.Add(new IccMatrixStage(inverse));
         }

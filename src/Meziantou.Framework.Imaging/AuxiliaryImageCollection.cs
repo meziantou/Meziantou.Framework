@@ -153,7 +153,7 @@ public sealed class AuxiliaryImageCollection : IReadOnlyList<AuxiliaryImage>
         }
 
         options = GetOptions(options);
-        using var baseImage = ImageIO.Load(_data, options, pixelFormat: null);
+        using var baseImage = ImageIO.Load(_data, options, pixelFormat: null, cancellationToken);
         using var map = DecodeEntry(gainMap, options, pixelFormat: null, cancellationToken);
         return GainMapRenderer.Render(baseImage, map, metadata, metadata.GetWeight(hdrHeadroom), gainMap.AlternatePrimaries, cancellationToken);
     }
@@ -168,7 +168,7 @@ public sealed class AuxiliaryImageCollection : IReadOnlyList<AuxiliaryImage>
     {
         options = GetOptions(options);
         if (image.JpegRange is var (offset, length))
-            return ImageIO.Load(_data.AsSpan(offset, length), options, pixelFormat);
+            return ImageIO.Load(_data.AsSpan(offset, length), options, pixelFormat, cancellationToken);
 
         // A HEIF item is decoded as the primary item would be, by the decoder of the file
         var context = new ImageCodecContext(options.Configuration, "Image", cancellationToken);

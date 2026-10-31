@@ -1085,6 +1085,283 @@ public sealed class DrawingPathTests
     }
 
     [Fact]
+    public void AStrokeContainsWhatItsCapsJoinsAndDashesCover()
+    {
+        // A horizontal line 3 wide: half the width on each side, and what the cap adds beyond the ends
+        var line = new VectorPathBuilder().MoveTo(2, 5).LineTo(12, 5).Build();
+        var butt = new Pen(White, 3);
+        Assert.True(line.StrokeContains(new PointD(7, 6.4), butt));
+        Assert.False(line.StrokeContains(new PointD(7, 6.6), butt));
+        Assert.False(line.StrokeContains(new PointD(1.9, 5), butt));
+        Assert.True(line.StrokeContains(new PointD(0.6, 6.4), new Pen(White, 3) { LineCap = LineCap.Square }));
+        Assert.True(line.StrokeContains(new PointD(1, 5), new Pen(White, 3) { LineCap = LineCap.Round }));
+
+        // (1, 6.4) is 1.72 from the end: outside the round cap, inside the square one
+        Assert.False(line.StrokeContains(new PointD(1, 6.4), new Pen(White, 3) { LineCap = LineCap.Round }));
+        Assert.True(line.StrokeContains(new PointD(1, 6.4), new Pen(White, 3) { LineCap = LineCap.Square }));
+
+        // The outer corner of a right angle 2 wide is (11, -1): (10.9, -0.9) is in the miter, 1.27 from the vertex (out
+        // of the round join), and beyond the bevel from (11, 0) to (10, -1)
+        var corner = new VectorPathBuilder().MoveTo(0, 0).LineTo(10, 0).LineTo(10, 10).Build();
+        var miter = new Pen(White, 2);
+        var tip = new PointD(10.9, -0.9);
+        Assert.True(corner.StrokeContains(tip, miter));
+        Assert.False(corner.StrokeContains(tip, new Pen(White, 2) { LineJoin = LineJoin.Round }));
+        Assert.False(corner.StrokeContains(tip, new Pen(White, 2) { LineJoin = LineJoin.Bevel }));
+        Assert.True(corner.StrokeContains(new PointD(10.4, -0.4), new Pen(White, 2) { LineJoin = LineJoin.Bevel }));
+
+        // The miter of a right angle is sqrt(2) times the width: a limit of 1.4 bevels it
+        Assert.False(corner.StrokeContains(tip, new Pen(White, 2) { MiterLimit = 1.4 }));
+        Assert.True(corner.StrokeContains(tip, new Pen(White, 2) { MiterLimit = 1.5 }));
+
+        // Dashes of 4 and gaps of 2, and the pattern moved by its offset
+        var dashed = new VectorPathBuilder().MoveTo(0, 0).LineTo(20, 0).Build();
+        var dashes = new Pen(White, 2) { DashPattern = [4, 2] };
+        Assert.True(dashed.StrokeContains(new PointD(1, 0.5), dashes));
+        Assert.False(dashed.StrokeContains(new PointD(5, 0.5), dashes));
+        Assert.True(dashed.StrokeContains(new PointD(7, 0.5), dashes));
+        Assert.True(dashed.StrokeContains(new PointD(5, 0.5), new Pen(White, 2) { DashPattern = [4, 2], DashOffset = 3 }));
+        Assert.True(dashed.StrokeContains(new PointD(4.8, 0.3), new Pen(White, 2) { DashPattern = [4, 2], LineCap = LineCap.Round }));
+        Assert.False(dashed.StrokeContains(new PointD(4.8, 0.3), dashes));
+        Assert.False(dashed.StrokeContains(new PointD(5, 0.9), new Pen(White, 2) { DashPattern = [4, 2], LineCap = LineCap.Round }));
+
+        // A hairline is one unit wide; a closed contour has no cap
+        Assert.True(line.StrokeContains(new PointD(7, 5.45), new Pen(White, 0)));
+        Assert.False(line.StrokeContains(new PointD(7, 5.55), new Pen(White, 0)));
+        var square = new VectorPathBuilder().AddRectangle(new RectangleD(0, 0, 10, 10)).Build();
+        Assert.True(square.StrokeContains(new PointD(-0.9, -0.9), miter));
+        Assert.False(square.StrokeContains(new PointD(5, 5), miter));
+
+        // A stroke on one side of the path
+        Assert.True(square.StrokeContains(new PointD(1.5, 5), new Pen(White, 2) { Alignment = PenAlignment.Inside }));
+        Assert.False(square.StrokeContains(new PointD(-0.5, 5), new Pen(White, 2) { Alignment = PenAlignment.Inside }));
+        Assert.True(square.StrokeContains(new PointD(-1.5, 5), new Pen(White, 2) { Alignment = PenAlignment.Outside }));
+        Assert.False(square.StrokeContains(new PointD(0.5, 5), new Pen(White, 2) { Alignment = PenAlignment.Outside }));
+
+        // Nothing to contain
+        Assert.False(new VectorPathBuilder().Build().StrokeContains(new PointD(0, 0), butt));
+        Assert.False(new VectorPathBuilder().MoveTo(1, 1).Build().StrokeContains(new PointD(1, 1), butt));
+        Assert.True(new VectorPathBuilder().MoveTo(1, 1).Build().StrokeContains(new PointD(1, 1), new Pen(White, 3) { LineCap = LineCap.Round }));
+        Assert.False(line.StrokeContains(new PointD(double.NaN, 5), butt));
+        Assert.False(line.StrokeContains(new PointD(7, double.PositiveInfinity), butt));
+        Assert.Throws<ArgumentNullException>(() => line.StrokeContains(new PointD(7, 5), null!));
+    }
+
+    [Fact]
+    public void AStrokeContainsWhatItsWidenedPathContains()
+    {
+        // Sharp and blunt corners, a corner sharper than the default miter limit, curves, an arc, a closed contour and a
+        // contour of one point
+        var path = new VectorPathBuilder()
+            .MoveTo(2, 2).LineTo(14, 3).LineTo(5, 9).QuadraticBezierTo(15, 12, 13, 17).Close()
+            .MoveTo(1, 14).CubicBezierTo(4, 10, 6, 20, 9, 15)
+            .AddArc(new PointD(10, 10), 4, 3, 200, 120)
+            .MoveTo(17, 1).LineTo(18, 12).LineTo(16.5, 2)
+            .MoveTo(19, 19)
+            .Build();
+        Pen[] pens =
+        [
+            .. new[] { LineCap.Butt, LineCap.Round, LineCap.Square }.SelectMany(cap => new[] { LineJoin.Miter, LineJoin.Round, LineJoin.Bevel }.Select(lineJoin => new Pen(White, 1.5) { LineCap = cap, LineJoin = lineJoin })),
+            new Pen(White, 1.5) { MiterLimit = 1 },
+            new Pen(White, 1.5) { MiterLimit = 20 },
+            new Pen(White, 1.25) { DashPattern = [2, 1], DashOffset = 0.5 },
+            new Pen(White, 1.25) { DashPattern = [0, 1.5], LineCap = LineCap.Round },
+            new Pen(White, 1.25) { DashPattern = [3, 0.75, 0.5, 0.75], LineCap = LineCap.Square, LineJoin = LineJoin.Round },
+            new Pen(White, 0),
+
+            // Wider than the curves are round: the chords are swept by the perpendicular to the curve
+            new Pen(White, 7) { LineJoin = LineJoin.Round },
+            new Pen(White, 1.5) { EndMarker = LineMarker.Arrow, StartMarker = LineMarker.Circle },
+            new Pen(White, 1.5) { Alignment = PenAlignment.Inside },
+            new Pen(White, 1.5) { Alignment = PenAlignment.Outside, DashPattern = [2, 1] },
+        ];
+
+        foreach (var pen in pens)
+        {
+            var widened = path.Widen(pen);
+
+            // An outline with a side kept is on the grid of the combination of paths, 1/1024 of a pixel
+            var near = pen.Alignment == PenAlignment.Center ? 1e-6 : 4.0 / 1024;
+            var differences = 0;
+            for (var y = -5.0; y <= 25; y += 0.2)
+            {
+                for (var x = -5.0; x <= 25; x += 0.2)
+                {
+                    var point = new PointD(x + 0.013, y + 0.007);
+                    var expected = widened.Contains(point);
+                    if (path.StrokeContains(point, pen) == expected)
+                        continue;
+
+                    // A point on the outline may be reported either way
+                    differences++;
+                    Assert.True(IsNearOutline(widened, point, expected, near), $"pen {pen.Width} {pen.LineCap} {pen.LineJoin} {pen.MiterLimit} {pen.DashPattern.Length} {pen.Alignment}, point ({point.X}, {point.Y})");
+                }
+            }
+
+            Assert.InRange(differences, 0, 3);
+        }
+
+        static bool IsNearOutline(VectorPath path, PointD point, bool inside, double distance)
+        {
+            for (var i = 0; i < 8; i++)
+            {
+                var (sin, cos) = Math.SinCos(i * Math.PI / 4);
+                if (path.Contains(new PointD(point.X + (distance * cos), point.Y + (distance * sin))) != inside)
+                    return true;
+            }
+
+            return false;
+        }
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [InlineData(4)]
+    public void AStrokeOfARandomPathContainsWhatItsWidenedPathContains(int seed)
+    {
+        // Long contours whose chords are near the point and far from it in turn: the chords far from the point are not
+        // stroked, and those near it keep the joins and the curves of their neighbors
+        var random = new Random(20261030 + seed);
+        for (var iteration = 0; iteration < 25; iteration++)
+        {
+            var builder = new VectorPathBuilder();
+            var contours = random.Next(1, 4);
+            for (var contour = 0; contour < contours; contour++)
+            {
+                builder.MoveTo(Next());
+                var segments = random.Next(1, 40);
+                for (var segment = 0; segment < segments; segment++)
+                {
+                    switch (random.Next(6))
+                    {
+                        case 0:
+                            builder.QuadraticBezierTo(Next(), Next());
+                            break;
+
+                        case 1:
+                            builder.CubicBezierTo(Next(), Next(), Next());
+                            break;
+
+                        case 2:
+                            builder.ArcTo(2 + (random.NextDouble() * 10), 2 + (random.NextDouble() * 10), random.Next(90), random.Next(2) == 0, random.Next(2) == 0, Next());
+                            break;
+
+                        case 3:
+                            // A segment without length
+                            var point = Next();
+                            builder.LineTo(point).LineTo(point);
+                            break;
+
+                        default:
+                            builder.LineTo(Next());
+                            break;
+                    }
+                }
+
+                switch (random.Next(3))
+                {
+                    case 0:
+                        builder.Close();
+                        break;
+
+                    case 1:
+                        // Segments after a closed contour start at its first point
+                        builder.Close().LineTo(Next()).LineTo(Next());
+                        break;
+                }
+            }
+
+            var path = builder.Build();
+            var pen = new Pen(White, random.NextDouble() * 6)
+            {
+                LineCap = (LineCap)random.Next(3),
+                LineJoin = (LineJoin)random.Next(3),
+                MiterLimit = 1 + (random.NextDouble() * 8),
+                DashPattern = random.Next(4) == 0 ? [1 + (random.NextDouble() * 6), random.NextDouble() * 4] : [],
+            };
+            var widened = path.Widen(pen);
+            for (var sample = 0; sample < 300; sample++)
+            {
+                // Points along the path, moved by up to the reach of the stroke, and points anywhere
+                PointD position;
+                if (sample % 3 != 0 && path.TryGetPointAtDistance(random.NextDouble() * path.GetLength(), out var onPath, out _))
+                {
+                    position = new PointD(onPath.X + ((random.NextDouble() - 0.5) * pen.Width * pen.MiterLimit), onPath.Y + ((random.NextDouble() - 0.5) * pen.Width * pen.MiterLimit));
+                }
+                else
+                {
+                    position = new PointD((random.NextDouble() * 60) - 10, (random.NextDouble() * 60) - 10);
+                }
+
+                var expected = widened.Contains(position);
+                if (path.StrokeContains(position, pen) != expected)
+                {
+                    Assert.True(IsNearOutline(widened, position, expected), $"seed {seed}, iteration {iteration}, point ({position.X}, {position.Y})");
+                }
+            }
+        }
+
+        PointD Next() => new(random.NextDouble() * 40, random.NextDouble() * 40);
+
+        static bool IsNearOutline(VectorPath path, PointD point, bool inside)
+        {
+            for (var i = 0; i < 8; i++)
+            {
+                var (sin, cos) = Math.SinCos(i * Math.PI / 4);
+                if (path.Contains(new PointD(point.X + (1e-6 * cos), point.Y + (1e-6 * sin))) != inside)
+                    return true;
+            }
+
+            return false;
+        }
+    }
+
+    [Fact]
+    public void AStrokeIsHitTestedWithoutCreatingItsPath()
+    {
+        // A spiral of many chords: the test of a point allocates the same small amount whatever the length of the path,
+        // where widening it allocates its pieces
+        static VectorPath CreateSpiral(int turns)
+        {
+            var builder = new VectorPathBuilder().MoveTo(500, 500);
+            for (var i = 1; i <= turns * 64; i++)
+            {
+                var (sin, cos) = Math.SinCos(i * Math.PI / 32);
+                builder.LineTo(500 + (i * 0.1 * cos), 500 + (i * 0.1 * sin));
+            }
+
+            return builder.Build();
+        }
+
+        var pen = new Pen(White, 2) { LineJoin = LineJoin.Round, LineCap = LineCap.Round };
+        var small = CreateSpiral(2);
+        var large = CreateSpiral(40);
+        var point = new PointD(500.5, 507);
+        Assert.Equal(large.Widen(pen).Contains(point), large.StrokeContains(point, pen));
+        Assert.Equal(small.Widen(pen).Contains(point), small.StrokeContains(point, pen));
+
+        var smallBytes = MeasureAllocations(() => small.StrokeContains(point, pen));
+        var largeBytes = MeasureAllocations(() => large.StrokeContains(point, pen));
+        var widenBytes = MeasureAllocations(() => large.Widen(pen).Contains(point));
+        Assert.InRange(largeBytes, 0, smallBytes + 256);
+        Assert.InRange(largeBytes * 100, 0, widenBytes);
+
+        static long MeasureAllocations(Func<bool> action)
+        {
+            _ = action();
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            for (var i = 0; i < 10; i++)
+            {
+                _ = action();
+            }
+
+            return (GC.GetAllocatedBytesForCurrentThread() - before) / 10;
+        }
+    }
+
+    [Fact]
     public void TheSegmentsOfAPathAreWhatTheBuilderAdded()
     {
         var path = new VectorPathBuilder()
@@ -1454,9 +1731,32 @@ public sealed class DrawingPathTests
         Assert.Equal(first.ToSvgPathData(), nested.Combine(empty, PathCombineMode.Union).ToSvgPathData());
         Assert.Equal(ring.ToSvgPathData(), nested.Combine(empty, PathCombineMode.Union, FillRule.EvenOdd).ToSvgPathData());
 
+        // Each path can have a rule of its own: the square with the ring that the even-odd rule makes of the nested
+        // squares, and with the whole square that the non-zero rule makes of them
+        Assert.Equal(ring.ToSvgPathData(), first.Combine(nested, PathCombineMode.Intersect, FillRule.NonZero, FillRule.EvenOdd).ToSvgPathData());
+        Assert.Equal("M3 3 L7 3 L7 7 L3 7 Z", first.Combine(nested, PathCombineMode.Exclude, FillRule.NonZero, FillRule.EvenOdd).ToSvgPathData());
+        Assert.True(first.Combine(nested, PathCombineMode.Exclude, FillRule.EvenOdd, FillRule.NonZero).IsEmpty);
+        Assert.Equal(ring.ToSvgPathData(), nested.Combine(first, PathCombineMode.Intersect, FillRule.EvenOdd, FillRule.NonZero).ToSvgPathData());
+
+        // A star of five branches drawn as one contour that crosses itself: its center is filled with the non-zero rule
+        // and not with the even-odd one, whatever the rule of the square it is combined with
+        var star = new VectorPathBuilder().AddPolygon([new PointD(50, 5), new PointD(79, 95), new PointD(3, 39), new PointD(97, 39), new PointD(21, 95)]).Build();
+        var center = new VectorPathBuilder().AddRectangle(new RectangleD(45, 50, 10, 10)).Build();
+        var centerPoint = new PointD(50, 55);
+        Assert.True(star.Combine(center, PathCombineMode.Xor, FillRule.EvenOdd, FillRule.NonZero).Contains(centerPoint));
+        Assert.False(star.Combine(center, PathCombineMode.Xor, FillRule.NonZero, FillRule.EvenOdd).Contains(centerPoint));
+        Assert.True(center.Combine(star, PathCombineMode.Exclude, FillRule.NonZero, FillRule.EvenOdd).Contains(centerPoint));
+        Assert.False(center.Combine(star, PathCombineMode.Exclude, FillRule.EvenOdd, FillRule.NonZero).Contains(centerPoint));
+        Assert.True(star.Combine(center, PathCombineMode.Union, FillRule.EvenOdd, FillRule.NonZero).Contains(new PointD(30, 45)));
+        Assert.Equal(star.Combine(center, PathCombineMode.Union, FillRule.EvenOdd, FillRule.EvenOdd).ToSvgPathData(), star.Combine(center, PathCombineMode.Union, FillRule.EvenOdd, FillRule.NonZero).ToSvgPathData());
+
         Assert.Throws<ArgumentNullException>(() => first.Combine(null!, PathCombineMode.Union));
         Assert.Throws<ArgumentOutOfRangeException>(() => first.Combine(second, (PathCombineMode)4));
         Assert.Throws<ArgumentOutOfRangeException>(() => first.Combine(second, PathCombineMode.Union, (FillRule)2));
+        Assert.Throws<ArgumentOutOfRangeException>(() => first.Combine(second, PathCombineMode.Union, (FillRule)2, FillRule.NonZero));
+        Assert.Throws<ArgumentOutOfRangeException>(() => first.Combine(second, PathCombineMode.Union, FillRule.NonZero, (FillRule)2));
+        Assert.Throws<ArgumentOutOfRangeException>(() => first.Combine(second, (PathCombineMode)4, FillRule.NonZero, FillRule.NonZero));
+        Assert.Throws<ArgumentNullException>(() => first.Combine(null!, PathCombineMode.Union, FillRule.NonZero, FillRule.EvenOdd));
         Assert.Throws<ArgumentOutOfRangeException>(() => first.Simplify((FillRule)2));
         using var canceled = new CancellationTokenSource();
         canceled.Cancel();
@@ -1563,9 +1863,12 @@ public sealed class DrawingPathTests
         for (var iteration = 0; iteration < 60; iteration++)
         {
             var fillRule = iteration % 3 == 0 ? FillRule.EvenOdd : FillRule.NonZero;
+
+            // Each path can have a rule of its own
+            var otherFillRule = iteration % 4 == 1 ? FillRule.EvenOdd : iteration % 4 == 2 ? FillRule.NonZero : fillRule;
             var first = CreateShape(random);
             var second = CreateShape(random);
-            var combined = first.Combine(second, mode, fillRule, Ct);
+            var combined = otherFillRule == fillRule ? first.Combine(second, mode, fillRule, Ct) : first.Combine(second, mode, fillRule, otherFillRule, Ct);
 
             // The outline does not cross itself: both fill rules agree, and it is its own outline
             var simplified = combined.Simplify(cancellationToken: Ct);
@@ -1575,11 +1878,11 @@ public sealed class DrawingPathTests
                 var point = new PointD((random.NextDouble() * 44) - 2, (random.NextDouble() * 44) - 2);
 
                 // A point next to an outline can be on either side of its chords once they are on the grid
-                if (IsNearOutline(first, point, fillRule) || IsNearOutline(second, point, fillRule))
+                if (IsNearOutline(first, point, fillRule) || IsNearOutline(second, point, otherFillRule))
                     continue;
 
                 var inFirst = first.Contains(point, fillRule);
-                var inSecond = second.Contains(point, fillRule);
+                var inSecond = second.Contains(point, otherFillRule);
                 var expected = mode switch
                 {
                     PathCombineMode.Union => inFirst || inSecond,
@@ -1825,6 +2128,88 @@ public sealed class DrawingPathTests
         Assert.Throws<ArgumentException>(() => rectangle.RoundCorners(double.NaN));
 
         static string[] Describe(VectorPath path) => [.. path.EnumerateSegments().Select(segment => segment.Kind is PathSegmentKind.Close ? "Close" : string.Create(CultureInfo.InvariantCulture, $"{segment.Kind} ({Math.Round(segment.Point.X, 9, MidpointRounding.AwayFromZero)}, {Math.Round(segment.Point.Y, 9, MidpointRounding.AwayFromZero)})"))];
+    }
+
+    [Fact]
+    public void AMeasureOfAPathAnswersAsThePathDoes()
+    {
+        VectorPath[] paths =
+        [
+            new VectorPathBuilder().MoveTo(0, 0).LineTo(10, 0).LineTo(10, 10).Build(),
+            new VectorPathBuilder().MoveTo(0, 0).LineTo(10, 0).LineTo(10, 10).Close().MoveTo(20, 0).LineTo(20, 0).LineTo(25, 5).Build(),
+            new VectorPathBuilder()
+                .MoveTo(2, 2).LineTo(14, 3).LineTo(5, 9).QuadraticBezierTo(15, 12, 13, 17).Close()
+                .MoveTo(1, 14).CubicBezierTo(4, 10, 6, 20, 9, 15)
+                .AddArc(new PointD(10, 10), 4, 3, 200, 120)
+                .AddEllipse(new PointD(30, 20), 12, 5, 30)
+                .MoveTo(19, 19)
+                .Build(),
+
+            // Many chords, in many groups, that go back over each other: the nearest points of a position are found
+            // in several groups, and the first one along the path is given
+            CreateZigzag(),
+        ];
+
+        var random = new Random(20261030);
+        foreach (var path in paths)
+        {
+            var measure = new VectorPathMeasure(path);
+            Assert.Same(path, measure.Path);
+            Assert.Equal(path.GetLength(), measure.Length);
+            double[] distances = [double.NegativeInfinity, -1, 0, 5, 10, 10.5, 20, measure.Length, measure.Length + 1, double.PositiveInfinity, .. Enumerable.Range(0, 500).Select(_ => random.NextDouble() * measure.Length)];
+            foreach (var distance in distances)
+            {
+                Assert.Equal(path.TryGetPointAtDistance(distance, out var expectedPoint, out var expectedTangent), measure.TryGetPointAtDistance(distance, out var point, out var tangent));
+                Assert.Equal(expectedPoint, point, $"distance {distance}");
+                Assert.Equal(expectedTangent, tangent, $"distance {distance}");
+            }
+
+            for (var i = 0; i < 500; i++)
+            {
+                // Positions anywhere, and positions on whole and half coordinates, which are as near to several chords
+                var position = i % 2 == 0 ? new PointD((random.NextDouble() * 60) - 10, (random.NextDouble() * 40) - 10) : new PointD(random.Next(-4, 60) / 2.0, random.Next(-4, 40) / 2.0);
+                Assert.Equal(path.TryGetClosestPoint(position, out var expectedClosest, out var expectedDistance), measure.TryGetClosestPoint(position, out var closest, out var distance));
+                Assert.Equal(expectedClosest, closest, $"position ({position.X}, {position.Y})");
+                Assert.Equal(expectedDistance, distance, $"position ({position.X}, {position.Y})");
+            }
+
+            Assert.Throws<ArgumentException>(() => measure.TryGetPointAtDistance(double.NaN, out _, out _));
+            Assert.Throws<ArgumentException>(() => measure.TryGetClosestPoint(new PointD(double.NaN, 0), out _, out _));
+        }
+
+        // The first of two nearest points that are in different groups of chords
+        var zigzag = new VectorPathMeasure(paths[^1]);
+        Assert.True(zigzag.TryGetClosestPoint(new PointD(30.25, 3), out var first, out var along));
+        Assert.Equal(new PointD(30.25, 0), first);
+        Assert.Equal(30.25, along);
+
+        // A path without length has no point
+        foreach (var empty in new[] { new VectorPathBuilder().Build(), new VectorPathBuilder().MoveTo(1, 1).LineTo(1, 1).Build() })
+        {
+            var measure = new VectorPathMeasure(empty);
+            Assert.Equal(0d, measure.Length);
+            Assert.False(measure.TryGetPointAtDistance(0, out _, out _));
+            Assert.False(measure.TryGetClosestPoint(new PointD(1, 1), out _, out _));
+        }
+
+        Assert.Throws<ArgumentNullException>(() => new VectorPathMeasure(null!));
+
+        static VectorPath CreateZigzag()
+        {
+            // Along the x axis to 100 and back, one unit at a time
+            var builder = new VectorPathBuilder().MoveTo(0, 0);
+            for (var x = 1; x <= 100; x++)
+            {
+                builder.LineTo(x, 0);
+            }
+
+            for (var x = 99; x >= 0; x--)
+            {
+                builder.LineTo(x, 0);
+            }
+
+            return builder.Build();
+        }
     }
 
     [Fact]

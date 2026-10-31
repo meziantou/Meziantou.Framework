@@ -1,20 +1,6 @@
 namespace Meziantou.Framework.WebPlatform.Css.Layout;
 
 /// <summary>
-/// The painting order of the fragments (https://drafts.csswg.org/css2/#elaborate-stacking-contexts, CSS 2 Appendix E): the
-/// box and text fragments from the bottom to the top, by stacking context (the negative <c>z-index</c> stacking contexts,
-/// the in-flow block-level boxes, the floats, the inline content, the positioned boxes and the stacking contexts with
-/// <c>z-index: auto</c> or 0 in tree order, the positive <c>z-index</c> stacking contexts), then the top layer. Used by the
-/// hit testing (which walks it from the top), and by the painting (<see cref="Painter"/>).
-/// </summary>
-/// <remarks>
-/// The floats, the atomic inlines and the positioned boxes with <c>z-index: auto</c> are painted as if they established a
-/// stacking context, but their positioned descendants and the stacking contexts they contain belong to the parent
-/// stacking context. The flex items are painted the same way as the atomic inlines, in order-modified document order (the
-/// order of their fragments, https://drafts.csswg.org/css-flexbox-1/#painting). The line boxes are not part of the list
-/// (their contents are), nor the fragments without box.
-/// </remarks>
-/// <summary>
 /// An item of the painting order: a box or text fragment, or the band of a block split out of inline boxes
 /// (<see cref="IsSplitInlineBand"/>: the area of the anonymous block box that the inline boxes contain, across their block
 /// container, https://drafts.csswg.org/css2/#anonymous-block-level), which belongs to the inline boxes.
@@ -82,6 +68,20 @@ internal enum PaintItemMarker : byte
     Outlines,
 }
 
+/// <summary>
+/// The painting order of the fragments (https://drafts.csswg.org/css2/#elaborate-stacking-contexts, CSS 2 Appendix E): the
+/// box and text fragments from the bottom to the top, by stacking context (the negative <c>z-index</c> stacking contexts,
+/// the in-flow block-level boxes, the floats, the inline content, the positioned boxes and the stacking contexts with
+/// <c>z-index: auto</c> or 0 in tree order, the positive <c>z-index</c> stacking contexts), then the top layer. Used by the
+/// hit testing (which walks it from the top), and by the painting (<see cref="Painter"/>).
+/// </summary>
+/// <remarks>
+/// The floats, the atomic inlines and the positioned boxes with <c>z-index: auto</c> are painted as if they established a
+/// stacking context, but their positioned descendants and the stacking contexts they contain belong to the parent
+/// stacking context. The flex items are painted the same way as the atomic inlines, in order-modified document order (the
+/// order of their fragments, https://drafts.csswg.org/css-flexbox-1/#painting). The line boxes are not part of the list
+/// (their contents are), nor the fragments without box.
+/// </remarks>
 internal static class PaintOrder
 {
     /// <summary>Appends the fragments of the fragment tree whose root is <paramref name="root"/> to <paramref name="output"/>, in painting order (the bottommost first).</summary>
@@ -276,7 +276,6 @@ internal static class PaintOrder
         }
     }
 
-    /// <summary>Returns the fragment of the nearest ancestor of a box in the box tree that establishes a stacking context, or null.</summary>
     /// <summary>
     /// Returns the last fragment of the box of a fragment that is in the fragment tree of <paramref name="root"/>, or null when
     /// there is none: the pages of a paginated document are separate trees, whose fragments of a box split by the pages are
@@ -310,6 +309,7 @@ internal static class PaintOrder
         }
     }
 
+    /// <summary>Returns the fragment of the nearest ancestor of a box in the box tree that establishes a stacking context, or null.</summary>
     private static BoxFragment? GetAncestorStackingContext(BoxFragment fragment)
     {
         for (var box = fragment.Box.Parent; box is not null; box = box.Parent)

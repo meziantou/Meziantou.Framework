@@ -441,10 +441,6 @@ internal sealed class LayoutStyle
         }
     }
 
-    /// <summary>
-    /// Whether the box is a multi-column container (https://drafts.csswg.org/css-multicol-2/#multi-column-container): column-count,
-    /// column-width or column-height is not auto.
-    /// </summary>
     /// <summary>text-group-align (https://drafts.csswg.org/css-text-4/#text-group-align-property), which applies to the block containers (see <see cref="TextGroupAlignment"/>).</summary>
     public TextGroupAlign TextGroupAlign
     {
@@ -524,6 +520,10 @@ internal sealed class LayoutStyle
         return _style.IsLegacyLineClampBox ? ContinueKind.WebkitLegacy : ContinueKind.Auto;
     }
 
+    /// <summary>
+    /// Whether the box is a multi-column container (https://drafts.csswg.org/css-multicol-2/#multi-column-container): column-count,
+    /// column-width or column-height is not auto.
+    /// </summary>
     public bool IsMultiColumnContainer
     {
         get

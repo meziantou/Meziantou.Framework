@@ -332,7 +332,6 @@ public abstract class AnimationEffect : IRealmBoundPlatformObject
     /// <summary>Whether the associated animation plays backwards (https://drafts.csswg.org/web-animations-1/#animation-direction).</summary>
     private bool IsBackwards => Animation is { } animation && animation.PlaybackRate < 0;
 
-    /// <summary>https://drafts.csswg.org/web-animations-1/#animation-effect-phases-and-states</summary>
     /// <summary>
     /// Whether the phases are determined with the endpoint-inclusive active interval flag (used to commit the computed styles,
     /// https://drafts.csswg.org/web-animations-1/#commit-computed-styles).
@@ -356,6 +355,7 @@ public abstract class AnimationEffect : IRealmBoundPlatformObject
         public void Dispose() => s_endpointInclusive = _previous;
     }
 
+    /// <summary>https://drafts.csswg.org/web-animations-1/#animation-effect-phases-and-states</summary>
     internal AnimationEffectPhase GetPhase(double? localTime)
     {
         if (localTime is not { } time)

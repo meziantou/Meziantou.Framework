@@ -713,7 +713,7 @@ public abstract partial class Image
         // The colors are those of the CICP color description when it is what describes them; otherwise those of a profile
         var hasCicpSource = TryGetCicpColorSpace(options.ToneMapping, out var colorSpace, out var toneMapping);
         var pipeline = hasCicpSource
-            ? IccPipeline.Create(colorSpace, destination, options.Intent, options.BlackPointCompensation, toneMapping)
+            ? IccPipeline.Create(colorSpace, destination, options.Intent, options.BlackPointCompensation, toneMapping, options.GamutMapping)
             : IccColorTransform.Create(GetSourceColorProfile(), destination, options).Pipeline;
         cancellationToken.ThrowIfCancellationRequested();
         if (!pipeline.IsIdentity)
@@ -1013,8 +1013,8 @@ public abstract partial class Image
                 "Paint colors of a profile on high dynamic range samples");
 
         var pipeline = TryGetCicpColorSpace(options: null, out var colorSpace, out _)
-            ? IccPipeline.Create(paints, colorSpace, options.Intent, options.BlackPointCompensation)
-            : IccPipeline.Create(paints, GetSourceColorProfile(), options.Intent, options.BlackPointCompensation);
+            ? IccPipeline.Create(paints, colorSpace, options.Intent, options.BlackPointCompensation, options.GamutMapping)
+            : IccPipeline.Create(paints, GetSourceColorProfile(), options.Intent, options.BlackPointCompensation, options.GamutMapping);
         return pipeline.IsIdentity ? null : pipeline;
     }
 

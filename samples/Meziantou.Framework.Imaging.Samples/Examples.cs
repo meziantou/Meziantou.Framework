@@ -1317,6 +1317,33 @@ internal static class Examples
     }
     #endregion
 
+    /// <summary>OpenEXR renderer outputs: one layer of a file with other channels, cropped to its display window.</summary>
+    #region Imaging_OpenExrLayers
+    public static (Image Image, Point Origin) LoadRenderLayer(string exrPath, string layer)
+    {
+        // Renderers store RGBA next to depth (Z) and other layers (diffuse.R, diffuse.G, ...), often with an overscan
+        // around the display window: the default options reject such a file, since those channels and pixels would be lost
+        var configuration = new ImageConfiguration
+        {
+            OpenExrDecoding = new OpenExrDecodingOptions
+            {
+                // "" is the default layer (R, G, B, A or Y); "diffuse" selects diffuse.R, diffuse.G, diffuse.B, diffuse.A
+                Layer = layer,
+
+                // DataWindow keeps every stored pixel instead
+                WindowMode = OpenExrWindowMode.CropToDisplayWindow,
+            },
+        };
+
+        // Identify, readers and collections take the same configuration, and report the same image
+        var image = Image.Load(exrPath, new ImageDecodeOptions { Configuration = configuration });
+
+        // The windows of the file, in its pixel coordinates: the cropped image starts at the display window
+        var windows = image.Metadata.OpenExrWindows!;
+        return (image, windows.DisplayWindowMin);
+    }
+    #endregion
+
     /// <summary>Progressive reading: the renderings of a frame before it is complete.</summary>
     #region Imaging_ProgressiveRead
     public static int ShowWhileReading(Stream input, Action<Image<Rgba32>, FrameRefinement> show)

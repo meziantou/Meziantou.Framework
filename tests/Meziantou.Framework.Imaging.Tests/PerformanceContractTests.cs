@@ -422,6 +422,13 @@ public sealed class PerformanceContractTests
         var toDisplayP3 = IccColorTransform.Create(Metadata.IccProfile.Srgb, IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve()));
         var toCmyk = IccColorTransform.Create(Metadata.IccProfile.Srgb, cmyk);
         var fromCmyk = IccColorTransform.Create(cmyk, Metadata.IccProfile.SrgbGray);
+
+        // Gamut mapping (matrix-based and table-based destinations) and a sequence with an abstract profile, on saturated
+        // colors that the mapping changes
+        var mapping = new IccColorTransformOptions { GamutMapping = GamutMapping.ReduceChroma };
+        var displayP3 = IccTestProfiles.Rgb(IccTestProfiles.DisplayP3Colorants, IccTestProfiles.SrgbCurve());
+        var mappedToSrgb = IccColorTransform.Create(displayP3, Metadata.IccProfile.Srgb, mapping);
+        var mappedToCmyk = IccColorTransform.Create([displayP3, IccTestProfiles.LabAbstractLutAToB(), cmyk], mapping);
         foreach (var colors in new[] { 1, 5000, IccPipeline.ByteOutputTablesThreshold })
         {
             var bytes = new byte[colors * 3];
@@ -429,6 +436,13 @@ public sealed class PerformanceContractTests
             var floats = new float[colors * 3];
             var inks = new byte[colors * 4];
             var gray = new byte[colors];
+            var saturated = new byte[colors * 3];
+            var mapped = new byte[colors * 3];
+            for (var i = 0; i < saturated.Length; i++)
+            {
+                saturated[i] = (byte)(i % 3 == i / 3 % 3 ? 255 : 0);
+            }
+
             Assert.Equal(0, MeasureSteadyStateAllocations(() =>
             {
                 toDisplayP3.Convert(bytes, bytes);
@@ -436,6 +450,8 @@ public sealed class PerformanceContractTests
                 toDisplayP3.Convert(floats, floats);
                 toCmyk.Convert(bytes, inks);
                 fromCmyk.Convert(inks, gray);
+                mappedToSrgb.Convert(saturated, mapped);
+                mappedToCmyk.Convert(saturated, inks);
             }));
         }
     }

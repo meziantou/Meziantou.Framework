@@ -87,6 +87,25 @@ public abstract class GradientBrush : Brush
     /// </remarks>
     public AffineTransform Transform { get; init; }
 
+    /// <summary>
+    /// Gets a value indicating whether the colors of the gradient are dithered on a canvas of 8 bits per component, so
+    /// that a slow transition does not show as bands. Defaults to <see langword="false"/>.
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// A dithered pixel is rounded up or down to one of the two nearest samples, by an ordered pattern (the 8x8 Bayer
+    /// matrix, placed on the pixels of the frame from its top-left corner) instead of to the nearest one: over a few
+    /// pixels, the samples average to the color between two steps. The same threshold is used for the color and the
+    /// alpha of a pixel. The pattern is fixed: the same drawing gives the same pixels.
+    /// </para>
+    /// <para>
+    /// A color that a frame of 8 bits per component holds exactly, such as the color of a stop, is not changed. A frame
+    /// of 16 bits per component or of floating-point components, whose steps do not show, is not dithered, and neither
+    /// are the colors of a gradient that are not drawn on a frame (the paints of color glyphs).
+    /// </para>
+    /// </remarks>
+    public bool Dither { get; init; }
+
     /// <summary>Gets the stops without copying them.</summary>
     internal ReadOnlySpan<GradientStop> StopSpan => _stops;
 }

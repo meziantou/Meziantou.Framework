@@ -198,7 +198,11 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   (`PngImageDataEncoder.StartSource` with `count: true`), in bands, and the winner is compressed again for real; nothing
   is buffered. Every still image keeps the layout of the pixel format among the candidates and the level of the default
   encoder among the trials, so it is never larger than the default output (the conformance suite asserts it for the
-  corpus, animations included). Keep these findings:
+  corpus, animations included). `PngOptimization.Layout` goes through the same session for still images only (an
+  animation keeps the default session): it skips every trial, takes the candidate with the smallest unfiltered data
+  (`GetSmallestUnfiltered`), and compresses once with the filter strategy and the level of the encoder. Its analysis does
+  not record the opaque colors (no color key, no 2 MiB set), which lets `PngLayoutAnalysis` stop reading rows once nothing
+  can change. Keep these findings:
   - A lower zlib level is sometimes smaller than `SmallestSize` (zlib-ng uses other match strategies): the last stage
     tries `Fastest`, `Optimal` and `SmallestSize`.
   - FFmpeg 9 misplaces the packed samples (1, 2 and 4 bits) of an APNG frame region that does not start at column 0, even
@@ -646,11 +650,23 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   significant first whatever the byte order of the file; on a little-endian computer, `tiffcp -B` of libtiff 4.7.0
   writes big-endian pages that libtiff and GDAL read back with the bytes of each sample swapped, so a big-endian oracle
   file comes from GDAL, which reads and writes them consistently.
+  A page of separate planes (`TiffPage.IsPlanar`) has blocks of one sample per pixel (`BlockSamplesPerPixel`), each
+  predicted on its own; the decoder reads the blocks of the planes of one place together (`TiffPage.GetBlockIndex`, also
+  the order of `TiffBlockWorkers`) and interleaves them into chunky rows (`TiffPageDecoder.Interleave`), so the expander
+  never sees planes. Planar YCbCr data is rejected (its planes may have their own sizes). The writer serializes blocks
+  (`TiffDocumentWriter.FillBlock`): the rows of a strip, or a tile cut from a band of the rows of its row of tiles and
+  padded with zero samples; the predictors (`ApplyPredictor`) then work on each row of the block. Default settings must
+  keep writing the same bytes.
 - **OpenEXR** (`Internals/Codecs/Exr`). The structure parser reads the header (validated whole by `ExrHeader.Complete`,
   so that `Identify` reports every rejection), the offset table, then the chunks in the order of their offsets: the input
   is read forward only, and a chunk must start at its offset, carry its own coordinates and end before the next one.
   `ExrDecoder` decompresses each chunk of the full-resolution image (`ExrChunkDecompressor`) and writes its samples in
-  place in the rows of the frame (a tile covers part of a row); when the frame is not in the source layout, it decodes
+  place in the rows of the frame (a tile covers part of a row), only the lines and columns inside the image window
+  (`ExrHeader.ImageWindow`: the display window, or the data window with `OpenExrWindowMode.DataWindow`). With a layer
+  (`OpenExrDecodingOptions.Layer`), `ExrHeader.ResolveRoles` gives the other channels the role `Ignored`: they are
+  decompressed with the chunk and skipped, line by line, since a scan-line channel that is ignored may be sub-sampled.
+  The options live on `ImageConfiguration` so that `Identify`, loads, readers and collections report the same image; a
+  layer never falls back to another one. When the frame is not in the source layout, it decodes
   into a staging image and converts it at the end (`Image.PrepareConversion`: a tone mapping needs the peak of the whole
   image). The compressions cite the sections of `ExrCompression.md`; they are bit-exact with OpenEXR, PXR24 and B44
   included (their loss happens when the file is written). The B44 table of pLinear channels is computed from
@@ -708,6 +724,19 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   there, then a conversion to `IccCorpus.cs`. The fixtures README lists what LittleCMS cannot judge (CMYK
   interpolation between grid points, three black point compensation cases).
 - Pixels and their profile change together: `ConvertColorProfile` is transactional. No other operation converts colors.
+- Device link and abstract profiles only exist in a sequence (`IccColorTransform.Create(IReadOnlyList<IccProfile>)`,
+  `IccPipeline.Create(IReadOnlyList<IccProfile>, ...)`); `IccProfileModel.Create` refuses them elsewhere. The sequence
+  follows the convention of other color management systems: a device profile entered with device values goes to the
+  connection space, one entered from the connection space goes to its device values, so a proof lists the printer
+  twice. A sequence of two device profiles must stay `IccPipeline.Create(IccProfile, IccProfile, ...)` exactly. The
+  LittleCMS literals of `IccColorTransformTests` come from `cmsCreateMultiprofileTransform` (no optimization) on the
+  synthetic profiles of `IccProfileBuilder`; LittleCMS computes black point compensation and absolute colorimetry per
+  pair of profiles, so compare it only on sequences whose device profiles have a black black.
+- `GamutMapping.ReduceChroma` is the gamut mapping of CSS Color 4 (section 13.2), as an `IccGamutMapStage` inserted
+  right before the conversion of a destination from the connection space (`IccProfileModel.CreateGamutMapping`):
+  exact gamut for matrix-based and CICP destinations, round trip through the colorimetric tables for table-based ones.
+  `Clip` adds no stage, so the default conversions are unchanged bit for bit. The HDR clipping policy is separate
+  (`HdrToneMapStage`).
 - `IccColorTransformOptions.ClipFloatingPointSamples = false` evaluates `IccStage.ApplyUnbounded` instead of `Apply` for
   the floating-point samples of `IccColorTransform`: tone curves extended beyond [0, 1] (`IccCurve.EvaluateUnbounded`,
   `IccInverseCurve.EvaluateUnbounded`), matrices as they are, clipping stages skipped. A stage that has a range (a lookup
@@ -770,6 +799,10 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
     `GradientColorSpace` other than `Encoded`, the stops stay 16-bit sRGB colors, are mixed in linear light or in
     Oklab (`SrgbTransfer`, `Math.Cbrt`: the one place of the drawing code that uses functions of the platform), and
     the 16-bit result is converted like a brush color; the color of a stop is always written as it is.
+  - `GradientBrush.Dither` (off by default) replaces the rounding offset by the threshold of the 8x8 Bayer matrix at
+    the pixel of the frame, only on frames of 8 bits per component (`GetPaintMax` is 255); in the other color spaces
+    the 16-bit colors are moved by less than half an 8-bit step before their conversion. A dithered gradient never
+    takes the row-color shortcuts of `GradientEvaluator`.
 - `PaintProfile` is the one way a color profile reaches a drawing: the colors the caller gives go through
   `PaintColorConverter` (the pipeline of `Image.CreatePaintPipeline`, whose destination is the profile of the image,
   or its CICP color space through `IccPipeline.Create(IccProfile, CicpColorSpace, ...)`) before `ConvertDrawingColor`.
@@ -797,6 +830,12 @@ is under `Internals/Drawing`. A draw call goes through: path or shortcut -> `Pat
   into a sink, as drawing does, so that they answer for what is drawn; `GetTightBounds` (`PathBounds`) is computed from
   the curves, and contains their chords. `Widen` runs the `Stroker` into a path builder: the same pieces in the same
   order as a draw call, so filling the result is stroking, bit for bit (`FillingAWidenedPathIsStrokingThePath`).
+  `StrokeContains` runs the same `Stroker` into a `WindingSink` (no path is built): its `NearChordFilter` passes on
+  only the runs of chords within the reach of the pen from the point, each with one chord of context on both sides (a
+  join that can contain the point is at a vertex whose two chords are near), and the arcs of joins and caps whose
+  triangle misses the point become chords. Change the stroker with `AStrokeOfARandomPathContainsWhatItsWidenedPathContains`
+  green. `VectorPathMeasure` keeps the chords `DistanceSink` and `ClosestPointSink` walk, and gives their answers bit
+  for bit (same operations, same order; groups of chords are skipped by a bound with a margin, never by a tie).
 - `EnumerateSegments` is the only public view of the elements of a path: it gives what the builder takes, never the
   internal form (an `ArcPiece` becomes the arc of SVG, through `ArcGeometry.GetAxes`; an ellipse becomes two arcs).
   `Reverse` (`PathReverser`) works on the elements, exactly; `Trim` (`TrimSink`) works on the chords, like the other
@@ -1376,7 +1415,10 @@ dotnet publish tests/Meziantou.Framework.Imaging.AotSmoke -c Release -f net11.0 
   FFmpeg or Apple ImageIO (the JPEG pages, which FFmpeg does not read), and the pages FFmpeg writes with the library.
   FFmpeg 9.0.2 reads only the floating-point RGB and RGBA pages of little-endian classic files (no gray, no big-endian
   floats, no BigTIFF): every floating-point layout, byte order and offset size of the encoder was checked with GDAL and
-  libtiff in the same Docker image when it was written; check them again there after changing the writer.
+  libtiff in the same Docker image when it was written; check them again there after changing the writer. `tiffcp -p
+  separate` of libtiff 4.7.2 only separates 8-bit samples (and leaves a broken file otherwise): the 16-bit and
+  floating-point planar fixtures come from GDAL (`gdal_translate -co INTERLEAVE=BAND`). Apple ImageIO fails on some
+  PackBits tiles, libtiff's own included (a tile as wide as the page): it is no oracle for them.
 - **CMYK JPEG fixtures.** A four-component JPEG file is an `unsupported` fixture (identified, rejected by a load
   without conversion) that declares one conversion and its pixels (`inkConversion`). The reference has two independent
   stages: the samples decoded by `djpeg` from files the generator regroups scan by scan, then the decimal reference of

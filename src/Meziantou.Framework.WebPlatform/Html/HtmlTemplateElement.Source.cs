@@ -4,12 +4,10 @@ using Meziantou.Framework.WebPlatform.Html.Parsing;
 
 namespace Meziantou.Framework.WebPlatform.Dom;
 
-/// <summary>
-/// The tentative <c>src</c> attribute of a template that patches content (the declarative partial updates,
-/// https://github.com/WICG/declarative-partial-updates/blob/main/fragment-include-explainer.md): the content is fetched from
-/// the URL instead of the children of the template, and parsed into the target as it arrives (or at once with
-/// <c>buffer</c>), asynchronously: the parser of the document is not blocked.
-/// </summary>
+// The tentative src attribute of a template that patches content (the declarative partial updates,
+// https://github.com/WICG/declarative-partial-updates/blob/main/fragment-include-explainer.md): the content is fetched from
+// the URL instead of the children of the template, and parsed into the target as it arrives (or at once with
+// buffer), asynchronously: the parser of the document is not blocked.
 public partial class HtmlTemplateElement
 {
     /// <summary>The fetch of the content of the template (see <see cref="StartSourcePatch"/>), or null.</summary>

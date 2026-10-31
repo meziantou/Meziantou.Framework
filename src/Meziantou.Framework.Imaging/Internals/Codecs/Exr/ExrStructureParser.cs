@@ -88,7 +88,7 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
     /// <summary>Gets the header, once it is read.</summary>
     public ExrHeader Header { get; private set; } = null!;
 
-    /// <summary>Gets the size of the image: its display window.</summary>
+    /// <summary>Gets the size of the image: its display window, or its data window (<see cref="ExrHeader.ImageWindow"/>).</summary>
     public Size Size { get; private set; }
 
     public ImageMetadata Metadata => _metadata.Metadata;
@@ -310,9 +310,11 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
     private bool OnHeaderEnd()
     {
         var header = Header;
-        header.Complete(_context.Limits);
-        Size = new Size((int)header.DisplayWindow.Width, (int)header.DisplayWindow.Height);
+        header.Complete(_context.Limits, _context.Configuration.OpenExrDecoding);
+        Size = new Size((int)header.ImageWindow.Width, (int)header.ImageWindow.Height);
         ExrColorDescription.Apply(header, _metadata.Metadata);
+        var (data, display) = (header.DataWindow, header.DisplayWindow);
+        _metadata.Metadata.OpenExrWindows = new OpenExrWindows(new Point(data.MinX, data.MinY), new Point(data.MaxX, data.MaxY), new Point(display.MinX, display.MinY), new Point(display.MaxX, display.MaxY));
         if (_walk == StructureWalk.Header)
         {
             _result = CreateInfo(ImageIdentifyMode.Header);
@@ -564,7 +566,7 @@ internal sealed class ExrStructureParser : ImageParser<ImageInfo>
             frameCount: 1,
             isAnimated: false,
             hasPosterFrame: false,
-            mayHaveTransparency: header.HasAlpha || header.DataWindow != header.DisplayWindow,
+            mayHaveTransparency: header.HasAlpha || !header.DataWindowCoversImage,
             animation: null,
             _metadata.Metadata,
             mode);

@@ -52,6 +52,29 @@ public sealed class IccColorTransformOptions
     public bool BlackPointCompensation { get; init; } = true;
 
     /// <summary>
+    /// Gets how the colors that the destination cannot reproduce are brought into its gamut. Defaults to
+    /// <see cref="Imaging.GamutMapping.Clip"/>, which clips each channel.
+    /// </summary>
+    /// <remarks>
+    /// The mapping happens in the profile connection space, after black point compensation and the rescaling of the
+    /// ICC-absolute colorimetric intent, right before the conversion to the device values of each destination profile
+    /// (each profile of a sequence that is entered from the connection space). See <see cref="Imaging.GamutMapping"/>
+    /// for the destinations it applies to.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a defined <see cref="Imaging.GamutMapping"/>.</exception>
+    public GamutMapping GamutMapping
+    {
+        get;
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The gamut mapping is not valid.");
+
+            field = value;
+        }
+    } = GamutMapping.Clip;
+
+    /// <summary>
     /// Gets a value indicating whether <see cref="IccColorTransform.Convert(ReadOnlySpan{float}, Span{float})"/> clips the
     /// samples to [0, 1]. Defaults to <see langword="true"/>.
     /// </summary>
@@ -67,7 +90,8 @@ public sealed class IccColorTransformOptions
     /// <para>
     /// Only conversions made of tone curves and matrices can do so (matrix-based profiles, the RGB and grayscale profiles
     /// of displays and color spaces): a conversion through a lookup table (an <c>AToB</c> or <c>BToA</c> table, a profile
-    /// connection space in CIELAB) is refused by <see cref="IccColorTransform.Create(IccProfile, IccProfile, IccColorTransformOptions?)"/>.
+    /// connection space in CIELAB) and a gamut mapping other than <see cref="Imaging.GamutMapping.Clip"/> are refused by
+    /// <see cref="IccColorTransform.Create(IccProfile, IccProfile, IccColorTransformOptions?)"/>.
     /// The 8-bit and 16-bit conversions always cover the whole range of their type, which the option does not change.
     /// </para>
     /// </remarks>

@@ -43,7 +43,7 @@ internal static class Test262Expectations
         return file;
     }
 
-    private static string GetPath(string area) => Path.Combine(Test262Paths.Expectations, area + ".txt");
+    private static FullPath GetPath(string area) => Test262Paths.Expectations / (area + ".txt");
 
     public static bool IsExpectedToFail(string id, Test262Mode mode)
     {

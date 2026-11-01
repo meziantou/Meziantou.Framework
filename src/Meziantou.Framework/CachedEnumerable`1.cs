@@ -1,5 +1,5 @@
 using System.Collections;
-using System.Diagnostics;
+using System.Runtime.ExceptionServices;
 
 namespace Meziantou.Framework;
 
@@ -8,7 +8,9 @@ internal sealed class CachedEnumerable<T> : ICachedEnumerable<T>
     private readonly List<T> _cache = [];
     private readonly IEnumerable<T> _enumerable;
     private IEnumerator<T>? _enumerator;
+    private ExceptionDispatchInfo? _exception;
     private bool _enumerated;
+    private bool _disposed;
 
     public CachedEnumerable(IEnumerable<T> enumerable)
     {
@@ -37,6 +39,8 @@ internal sealed class CachedEnumerable<T> : ICachedEnumerable<T>
 
     private bool TryGetItem(int index, out T result)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
         // if the item is in the cache, use it
         if (index < _cache.Count)
         {
@@ -44,10 +48,8 @@ internal sealed class CachedEnumerable<T> : ICachedEnumerable<T>
             return true;
         }
 
-        if (_enumerator is null && !_enumerated)
-        {
-            _enumerator = _enumerable.GetEnumerator();
-        }
+        // The source failed: replay its exception instead of ending the sequence early
+        _exception?.Throw();
 
         // If we have already enumerate the whole stream, there is nothing else to do
         if (_enumerated)
@@ -56,32 +58,47 @@ internal sealed class CachedEnumerable<T> : ICachedEnumerable<T>
             return false;
         }
 
+        _enumerator ??= _enumerable.GetEnumerator();
+
         // Get the next item and store it to the cache
-        Debug.Assert(_enumerator is not null);
-        if (_enumerator.MoveNext())
+        bool hasNext;
+        try
+        {
+            hasNext = _enumerator.MoveNext();
+        }
+        catch (Exception ex)
+        {
+            // The source enumerator cannot be resumed after an exception
+            _exception = ExceptionDispatchInfo.Capture(ex);
+            DisposeEnumerator();
+            throw;
+        }
+
+        if (hasNext)
         {
             result = _enumerator.Current;
             _cache.Add(result);
             return true;
         }
-        else
-        {
-            // There are no more items, we can dispose the underlying enumerator
-            _enumerator.Dispose();
-            _enumerator = null;
-            _enumerated = true;
-            result = default!;
-            return false;
-        }
+
+        // There are no more items, we can dispose the underlying enumerator
+        _enumerated = true;
+        DisposeEnumerator();
+        result = default!;
+        return false;
+    }
+
+    private void DisposeEnumerator()
+    {
+        var enumerator = _enumerator;
+        _enumerator = null;
+        enumerator?.Dispose();
     }
 
     public void Dispose()
     {
-        if (_enumerator is not null)
-        {
-            _enumerator.Dispose();
-            _enumerator = null;
-        }
+        _disposed = true;
+        DisposeEnumerator();
     }
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();

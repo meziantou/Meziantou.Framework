@@ -116,24 +116,34 @@ namespace Meziantou.Framework
     {
         public static System.Action Debounce(this System.Action action, System.TimeSpan interval) => throw null;
         public static System.Action Debounce(this System.Action action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action Debounce(this System.Action action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0> Debounce<T0>(this System.Action<T0> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0> Debounce<T0>(this System.Action<T0> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0> Debounce<T0>(this System.Action<T0> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0, T1> Debounce<T0, T1>(this System.Action<T0, T1> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0, T1> Debounce<T0, T1>(this System.Action<T0, T1> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1> Debounce<T0, T1>(this System.Action<T0, T1> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0, T1, T2> Debounce<T0, T1, T2>(this System.Action<T0, T1, T2> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0, T1, T2> Debounce<T0, T1, T2>(this System.Action<T0, T1, T2> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2> Debounce<T0, T1, T2>(this System.Action<T0, T1, T2> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0, T1, T2, T3> Debounce<T0, T1, T2, T3>(this System.Action<T0, T1, T2, T3> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0, T1, T2, T3> Debounce<T0, T1, T2, T3>(this System.Action<T0, T1, T2, T3> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3> Debounce<T0, T1, T2, T3>(this System.Action<T0, T1, T2, T3> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0, T1, T2, T3, T4> Debounce<T0, T1, T2, T3, T4>(this System.Action<T0, T1, T2, T3, T4> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0, T1, T2, T3, T4> Debounce<T0, T1, T2, T3, T4>(this System.Action<T0, T1, T2, T3, T4> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4> Debounce<T0, T1, T2, T3, T4>(this System.Action<T0, T1, T2, T3, T4> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5> Debounce<T0, T1, T2, T3, T4, T5>(this System.Action<T0, T1, T2, T3, T4, T5> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5> Debounce<T0, T1, T2, T3, T4, T5>(this System.Action<T0, T1, T2, T3, T4, T5> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5> Debounce<T0, T1, T2, T3, T4, T5>(this System.Action<T0, T1, T2, T3, T4, T5> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5, T6> Debounce<T0, T1, T2, T3, T4, T5, T6>(this System.Action<T0, T1, T2, T3, T4, T5, T6> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5, T6> Debounce<T0, T1, T2, T3, T4, T5, T6>(this System.Action<T0, T1, T2, T3, T4, T5, T6> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5, T6> Debounce<T0, T1, T2, T3, T4, T5, T6>(this System.Action<T0, T1, T2, T3, T4, T5, T6> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7> Debounce<T0, T1, T2, T3, T4, T5, T6, T7>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7> Debounce<T0, T1, T2, T3, T4, T5, T6, T7>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7> Debounce<T0, T1, T2, T3, T4, T5, T6, T7>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> Debounce<T0, T1, T2, T3, T4, T5, T6, T7, T8>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> Debounce<T0, T1, T2, T3, T4, T5, T6, T7, T8>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> Debounce<T0, T1, T2, T3, T4, T5, T6, T7, T8>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
     }
 
     public static class DeterministicGuid
@@ -207,7 +217,8 @@ namespace Meziantou.Framework
         public static void Replace<T>(this System.Collections.Generic.IList<T> list, T oldItem, T newItem) { }
         public static System.TimeSpan Sum(this System.Collections.Generic.IEnumerable<System.TimeSpan> enumerable) => throw null;
         public static System.Threading.Tasks.Task<T[]> ToArrayAsync<T>(this System.Threading.Tasks.Task<System.Collections.Generic.IEnumerable<T>> task) => throw null;
-        public static System.Collections.Generic.IAsyncEnumerable<T> ToAsyncEnumerable<T>(this System.Collections.Generic.IEnumerable<T> source) => throw null;
+        [System.Obsolete("Use System.Linq.AsyncEnumerable.ToAsyncEnumerable instead.")]
+        public static System.Collections.Generic.IAsyncEnumerable<T> ToAsyncEnumerable<T>(System.Collections.Generic.IEnumerable<T> source) => throw null;
         public static System.Collections.Generic.IAsyncEnumerator<T> ToAsyncEnumerator<T>(this System.Collections.Generic.IEnumerator<T> source) => throw null;
         public static System.Collections.Generic.ICollection<T> ToCollection<T>(this System.Collections.Generic.IEnumerable<T> sequence) => throw null;
         public static System.Threading.Tasks.Task<System.Collections.Generic.List<T>> ToListAsync<T>(this System.Threading.Tasks.Task<System.Collections.Generic.IEnumerable<T>> task) => throw null;
@@ -492,6 +503,12 @@ namespace Meziantou.Framework
     public static class RegexExtensions
     {
         public static System.Threading.Tasks.Task<string> ReplaceAsync(this System.Text.RegularExpressions.Regex regex, string input, System.Func<System.Text.RegularExpressions.Match, System.Threading.Tasks.Task<string>> replacementFn) => throw null;
+        public static System.Threading.Tasks.ValueTask<string> ReplaceAsync(this System.Text.RegularExpressions.Regex regex, string input, System.Func<System.Text.RegularExpressions.Match, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<string>> replacementFn, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<string> ReplaceAsync(this System.Text.RegularExpressions.Regex regex, string input, System.Func<System.Text.RegularExpressions.Match, System.Threading.Tasks.Task<string>> replacementFn, System.Threading.CancellationToken cancellationToken) => throw null;
+        public static System.Threading.Tasks.ValueTask<string> ReplaceAsync(this System.Text.RegularExpressions.Regex regex, string input, System.Func<System.Text.RegularExpressions.Match, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<string>> replacementFn, int count, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<string> ReplaceAsync(this System.Text.RegularExpressions.Regex regex, string input, System.Func<System.Text.RegularExpressions.Match, System.Threading.Tasks.Task<string>> replacementFn, int count, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.ValueTask<string> ReplaceAsync(this System.Text.RegularExpressions.Regex regex, string input, System.Func<System.Text.RegularExpressions.Match, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<string>> replacementFn, int count, int startat, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<string> ReplaceAsync(this System.Text.RegularExpressions.Regex regex, string input, System.Func<System.Text.RegularExpressions.Match, System.Threading.Tasks.Task<string>> replacementFn, int count, int startat, System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 
     public sealed class RestrictedStream : System.IO.Stream
@@ -700,26 +717,37 @@ namespace Meziantou.Framework
     {
         public static System.Action Throttle(this System.Action action, System.TimeSpan interval) => throw null;
         public static System.Action Throttle(this System.Action action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action Throttle(this System.Action action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0> Throttle<T0>(this System.Action<T0> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0> Throttle<T0>(this System.Action<T0> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0> Throttle<T0>(this System.Action<T0> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0, T1> Throttle<T0, T1>(this System.Action<T0, T1> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0, T1> Throttle<T0, T1>(this System.Action<T0, T1> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1> Throttle<T0, T1>(this System.Action<T0, T1> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0, T1, T2> Throttle<T0, T1, T2>(this System.Action<T0, T1, T2> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0, T1, T2> Throttle<T0, T1, T2>(this System.Action<T0, T1, T2> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2> Throttle<T0, T1, T2>(this System.Action<T0, T1, T2> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0, T1, T2, T3> Throttle<T0, T1, T2, T3>(this System.Action<T0, T1, T2, T3> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0, T1, T2, T3> Throttle<T0, T1, T2, T3>(this System.Action<T0, T1, T2, T3> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3> Throttle<T0, T1, T2, T3>(this System.Action<T0, T1, T2, T3> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0, T1, T2, T3, T4> Throttle<T0, T1, T2, T3, T4>(this System.Action<T0, T1, T2, T3, T4> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0, T1, T2, T3, T4> Throttle<T0, T1, T2, T3, T4>(this System.Action<T0, T1, T2, T3, T4> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4> Throttle<T0, T1, T2, T3, T4>(this System.Action<T0, T1, T2, T3, T4> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5> Throttle<T0, T1, T2, T3, T4, T5>(this System.Action<T0, T1, T2, T3, T4, T5> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5> Throttle<T0, T1, T2, T3, T4, T5>(this System.Action<T0, T1, T2, T3, T4, T5> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5> Throttle<T0, T1, T2, T3, T4, T5>(this System.Action<T0, T1, T2, T3, T4, T5> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5, T6> Throttle<T0, T1, T2, T3, T4, T5, T6>(this System.Action<T0, T1, T2, T3, T4, T5, T6> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5, T6> Throttle<T0, T1, T2, T3, T4, T5, T6>(this System.Action<T0, T1, T2, T3, T4, T5, T6> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5, T6> Throttle<T0, T1, T2, T3, T4, T5, T6>(this System.Action<T0, T1, T2, T3, T4, T5, T6> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7> Throttle<T0, T1, T2, T3, T4, T5, T6, T7>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7> Throttle<T0, T1, T2, T3, T4, T5, T6, T7>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7> Throttle<T0, T1, T2, T3, T4, T5, T6, T7>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
     }
 
     public static class TupleExtensions

@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Tests;
 
@@ -241,6 +242,153 @@ public sealed class CachedEnumerableTests
 
         Assert.Equal([1, 2, 3], cachedEnumerable);
         Assert.Equal([1, 2, 3], cachedEnumerable);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Enumerable_EnumerateAfterDispose_Throws(bool threadSafe)
+    {
+        var cachedEnumerable = CachedEnumerable.Create(new SingleEnumerable<int>(Enumerable.Range(1, 3)), threadSafe);
+        using (var enumerator = cachedEnumerable.GetEnumerator())
+        {
+            Assert.True(enumerator.MoveNext());
+        }
+
+        cachedEnumerable.Dispose();
+        cachedEnumerable.Dispose();
+
+        Assert.Throws<ObjectDisposedException>(() => cachedEnumerable.ToList());
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public void Enumerable_SourceException_IsRethrownByLaterEnumerations(bool threadSafe)
+    {
+        var enumerationCount = 0;
+        IEnumerable<int> GetData()
+        {
+            enumerationCount++;
+            yield return 1;
+            throw new InvalidOperationException("boom");
+        }
+
+        using var cachedEnumerable = CachedEnumerable.Create(GetData(), threadSafe);
+
+        Assert.Equal("boom", Assert.Throws<InvalidOperationException>(() => cachedEnumerable.ToList()).Message);
+        Assert.Equal("boom", Assert.Throws<InvalidOperationException>(() => cachedEnumerable.ToList()).Message);
+        Assert.Equal(1, cachedEnumerable.First());
+        Assert.Equal(1, enumerationCount);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task AsyncEnumerable_EnumerateAfterDispose_Throws(bool threadSafe)
+    {
+        var cachedEnumerable = CachedEnumerable.Create(new SingleAsyncEnumerable<int>(RangeAsync(1, 3)), threadSafe);
+        await using (var enumerator = cachedEnumerable.GetAsyncEnumerator())
+        {
+            Assert.True(await enumerator.MoveNextAsync());
+        }
+
+        await cachedEnumerable.DisposeAsync();
+        await cachedEnumerable.DisposeAsync();
+
+        await Assert.Throws<ObjectDisposedException>(async () => { await cachedEnumerable.ToListAsync(); });
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task AsyncEnumerable_SourceException_IsRethrownByLaterEnumerations(bool threadSafe)
+    {
+        var enumerationCount = 0;
+        async IAsyncEnumerable<int> GetData()
+        {
+            enumerationCount++;
+            yield return 1;
+            await Task.Yield();
+            throw new InvalidOperationException("boom");
+        }
+
+        await using var cachedEnumerable = CachedEnumerable.Create(GetData(), threadSafe);
+
+        Assert.Equal("boom", (await Assert.Throws<InvalidOperationException>(async () => { await cachedEnumerable.ToListAsync(); })).Message);
+        Assert.Equal("boom", (await Assert.Throws<InvalidOperationException>(async () => { await cachedEnumerable.ToListAsync(); })).Message);
+        Assert.Equal(1, await cachedEnumerable.FirstAsync());
+        Assert.Equal(1, enumerationCount);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task AsyncEnumerable_CancellingAConsumer_DoesNotAffectTheOtherConsumers(bool threadSafe)
+    {
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var sourceToken = CancellationToken.None;
+        async IAsyncEnumerable<int> GetData([EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            sourceToken = cancellationToken;
+            yield return 1;
+            await gate.Task;
+            yield return 2;
+        }
+
+        await using var cachedEnumerable = CachedEnumerable.Create(new SingleAsyncEnumerable<int>(GetData()), threadSafe);
+
+        using var cts = new CancellationTokenSource();
+        await using (var enumerator = cachedEnumerable.GetAsyncEnumerator(cts.Token))
+        {
+            Assert.True(await enumerator.MoveNextAsync());
+            var moveNext = enumerator.MoveNextAsync().AsTask();
+
+            // The consumer stops waiting for the source as soon as its token is cancelled
+            await cts.CancelAsync();
+            await Assert.ThrowsAny<OperationCanceledException>(() => moveNext);
+        }
+
+        // The source does not use the token of the first consumer
+        Assert.False(sourceToken.IsCancellationRequested);
+
+        gate.SetResult();
+        await Assert.Equal([1, 2], cachedEnumerable);
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task AsyncEnumerable_Dispose_CancelsThePendingSourceOperation(bool threadSafe)
+    {
+        var sourceCancelled = false;
+        async IAsyncEnumerable<int> GetData([EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            yield return 1;
+            try
+            {
+                await Task.Delay(Timeout.Infinite, cancellationToken);
+            }
+            finally
+            {
+                sourceCancelled = cancellationToken.IsCancellationRequested;
+            }
+
+            yield return 2;
+        }
+
+        var cachedEnumerable = CachedEnumerable.Create(GetData(), threadSafe);
+        using var cts = new CancellationTokenSource();
+        await using (var enumerator = cachedEnumerable.GetAsyncEnumerator(cts.Token))
+        {
+            Assert.True(await enumerator.MoveNextAsync());
+            var moveNext = enumerator.MoveNextAsync().AsTask();
+            await cts.CancelAsync();
+            await Assert.ThrowsAny<OperationCanceledException>(() => moveNext);
+        }
+
+        await cachedEnumerable.DisposeAsync();
+        Assert.True(sourceCancelled);
     }
 
     private static async IAsyncEnumerable<int> RangeAsync(int start, int count)

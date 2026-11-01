@@ -26,13 +26,30 @@ public static class DebounceExtensions
     /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
     /// the timer is reset and only the most recent call is executed.
     /// </summary>
+    /// <remarks>An exception thrown by <paramref name="action"/> is unhandled and terminates the process, as for any timer callback. Use the overload that takes an error handler to handle it.</remarks>
 <#= GetTypeParamDocs(i) #>    /// <param name="action">The action to debounce.</param>
     /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
     /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
     public static Action<#= GetTemplateString(i) #> Debounce<#= GetTemplateString(i) #>(this Action<#= GetTemplateString(i) #> action, TimeSpan interval)
     {
-        return Debounce(action, interval, TimeProvider.System);
+        return Debounce(action, interval, TimeProvider.System, onError: null);
+    }
+
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is only invoked once <paramref name="interval"/>
+    /// has elapsed since the last call. If the returned delegate is called again before the interval elapses,
+    /// the timer is reset and only the most recent call is executed.
+    /// </summary>
+    /// <remarks>An exception thrown by <paramref name="action"/> is unhandled and terminates the process, as for any timer callback. Use the overload that takes an error handler to handle it.</remarks>
+<#= GetTypeParamDocs(i) #>    /// <param name="action">The action to debounce.</param>
+    /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
+    /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+    /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
+    public static Action<#= GetTemplateString(i) #> Debounce<#= GetTemplateString(i) #>(this Action<#= GetTemplateString(i) #> action, TimeSpan interval, TimeProvider timeProvider)
+    {
+        return Debounce(action, interval, timeProvider, onError: null);
     }
 
     /// <summary>
@@ -43,9 +60,13 @@ public static class DebounceExtensions
 <#= GetTypeParamDocs(i) #>    /// <param name="action">The action to debounce.</param>
     /// <param name="interval">The amount of time to wait after the last call before invoking <paramref name="action"/>.</param>
     /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+    /// <param name="onError">
+    /// Called with the exception thrown by <paramref name="action"/>. When <see langword="null"/>, the exception is unhandled and
+    /// terminates the process, as for any timer callback.
+    /// </param>
     /// <returns>A debounced delegate that wraps <paramref name="action"/>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
-    public static Action<#= GetTemplateString(i) #> Debounce<#= GetTemplateString(i) #>(this Action<#= GetTemplateString(i) #> action, TimeSpan interval, TimeProvider timeProvider)
+    public static Action<#= GetTemplateString(i) #> Debounce<#= GetTemplateString(i) #>(this Action<#= GetTemplateString(i) #> action, TimeSpan interval, TimeProvider timeProvider, Action<Exception>? onError)
     {
         ArgumentNullException.ThrowIfNull(action);
         ArgumentNullException.ThrowIfNull(timeProvider);
@@ -75,7 +96,14 @@ public static class DebounceExtensions
                     }
 
 <# } #>
-                    action(<#= GetTupleItemsString(i, "pendingArgs") #>);
+                    try
+                    {
+                        action(<#= GetTupleItemsString(i, "pendingArgs") #>);
+                    }
+                    catch (Exception ex) when (onError is not null)
+                    {
+                        onError(ex);
+                    }
                 }, state: null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
 
                 // Restart the countdown so only the last call of a burst fires

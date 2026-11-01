@@ -11,7 +11,7 @@
 //------------------------------------------------------------------------------
 #nullable enable
 using System;
-using System.Threading.Tasks;
+using System.Threading;
 
 namespace Meziantou.Framework;
 
@@ -27,13 +27,30 @@ public static class ThrottleExtensions
     /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
     /// an invocation is pending are ignored except for updating the arguments.
     /// </summary>
+    /// <remarks>An exception thrown by <paramref name="action"/> is unhandled and terminates the process, as for any timer callback. Use the overload that takes an error handler to handle it.</remarks>
 <#= GetTypeParamDocs(i) #>    /// <param name="action">The action to throttle.</param>
     /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
     /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
     public static Action<#= GetTemplateString(i) #> Throttle<#= GetTemplateString(i) #>(this Action<#= GetTemplateString(i) #> action, TimeSpan interval)
     {
-        return Throttle(action, interval, TimeProvider.System);
+        return Throttle(action, interval, TimeProvider.System, onError: null);
+    }
+
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+    /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+    /// an invocation is pending are ignored except for updating the arguments.
+    /// </summary>
+    /// <remarks>An exception thrown by <paramref name="action"/> is unhandled and terminates the process, as for any timer callback. Use the overload that takes an error handler to handle it.</remarks>
+<#= GetTypeParamDocs(i) #>    /// <param name="action">The action to throttle.</param>
+    /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+    /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+    /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
+    public static Action<#= GetTemplateString(i) #> Throttle<#= GetTemplateString(i) #>(this Action<#= GetTemplateString(i) #> action, TimeSpan interval, TimeProvider timeProvider)
+    {
+        return Throttle(action, interval, timeProvider, onError: null);
     }
 
     /// <summary>
@@ -44,15 +61,20 @@ public static class ThrottleExtensions
 <#= GetTypeParamDocs(i) #>    /// <param name="action">The action to throttle.</param>
     /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
     /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+    /// <param name="onError">
+    /// Called with the exception thrown by <paramref name="action"/>. When <see langword="null"/>, the exception is unhandled and
+    /// terminates the process, as for any timer callback. The throttle keeps working after the action throws.
+    /// </param>
     /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
-    public static Action<#= GetTemplateString(i) #> Throttle<#= GetTemplateString(i) #>(this Action<#= GetTemplateString(i) #> action, TimeSpan interval, TimeProvider timeProvider)
+    public static Action<#= GetTemplateString(i) #> Throttle<#= GetTemplateString(i) #>(this Action<#= GetTemplateString(i) #> action, TimeSpan interval, TimeProvider timeProvider, Action<Exception>? onError)
     {
         ArgumentNullException.ThrowIfNull(action);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        Task? task = null;
         var l = new object();
+        ITimer? timer = null;
+        var pending = false;
 <# if (i > 0) { #>
         <#= GetTupleTypeString(i) #> args = <#= GetTupleDefaultValue(i) #>;
 <# } #>
@@ -67,12 +89,15 @@ public static class ThrottleExtensions
                 args = <#= GetTupleCreationExpression(i) #>;
 
 <# } #>
-                // task is only ever read and written under the lock, so the scheduling decision
+                // pending is only ever read and written under the lock, so the scheduling decision
                 // cannot be made against a stale value.
-                if (task is not null)
+                if (pending)
                     return;
 
-                task = Task.Delay(interval, timeProvider).ContinueWith(_ =>
+                pending = true;
+
+                // A single timer is reused for every interval, instead of allocating a delay and a continuation each time
+                timer ??= timeProvider.CreateTimer(_ =>
                 {
 <# if (i > 0) { #>
                     <#= GetTupleTypeString(i) #> pendingArgs;
@@ -86,15 +111,21 @@ public static class ThrottleExtensions
                     {
                         action(<#= GetTupleItemsString(i, "pendingArgs") #>);
                     }
+                    catch (Exception ex) when (onError is not null)
+                    {
+                        onError(ex);
+                    }
                     finally
                     {
                         // Reset in a finally so an action that throws does not stall the throttle forever
                         lock (l)
                         {
-                            task = null;
+                            pending = false;
                         }
                     }
-                }, TaskScheduler.Default);
+                }, state: null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+
+                timer.Change(interval, Timeout.InfiniteTimeSpan);
             }
         };
     }

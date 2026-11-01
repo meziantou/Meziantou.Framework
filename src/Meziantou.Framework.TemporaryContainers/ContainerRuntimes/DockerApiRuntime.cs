@@ -324,10 +324,11 @@ internal sealed class DockerApiRuntime : ContainerRuntime
     {
         var createExecRequest = new DockerApiModels.ExecCreateRequest
         {
-            AttachStdout = true,
-            AttachStderr = true,
+            AttachStdout = !options.Detach,
+            AttachStderr = !options.Detach,
             AttachStdin = options.StandardInput is not null,
-            Tty = false,
+            Tty = options.Tty,
+            Privileged = options.Privileged,
             Cmd = [.. options.Command],
             Env = [.. options.Environment.Select(static pair => pair.Key + "=" + pair.Value)],
             User = options.User,
@@ -340,21 +341,28 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         var createExecResult = await JsonSerializer.DeserializeAsync(createExecStream, DockerApiJsonContext.Default.ExecCreateResponse, cancellationToken).ConfigureAwait(false);
         var execId = createExecResult?.Id ?? throw CreateException("Unable to create exec command: missing exec id.", statusCode: null);
 
-        var startExecRequest = JsonSerializer.Serialize(new DockerApiModels.ExecStartRequest { Detach = false, Tty = false }, DockerApiJsonContext.Default.ExecStartRequest);
+        var startExecRequest = JsonSerializer.Serialize(new DockerApiModels.ExecStartRequest { Detach = options.Detach, Tty = options.Tty }, DockerApiJsonContext.Default.ExecStartRequest);
         var startEndpoint = "/exec/" + Uri.EscapeDataString(execId) + "/start";
+
+        if (options.Detach)
+        {
+            using var detachedContent = new StringContent(startExecRequest, Encoding.UTF8, "application/json");
+            using var detachedResponse = await SendAsync(HttpMethod.Post, startEndpoint, detachedContent, cancellationToken).ConfigureAwait(false);
+            return new ExecResult(0, "", "");
+        }
 
         string standardOutput;
         string standardError;
         if (options.StandardInput is { } standardInput)
         {
-            (standardOutput, standardError) = await StartExecWithStandardInputAsync(startEndpoint, startExecRequest, standardInput, cancellationToken).ConfigureAwait(false);
+            (standardOutput, standardError) = await StartExecWithStandardInputAsync(startEndpoint, startExecRequest, standardInput, options, cancellationToken).ConfigureAwait(false);
         }
         else
         {
             using var startExecContent = new StringContent(startExecRequest, Encoding.UTF8, "application/json");
             using var startExecResponse = await SendAsync(HttpMethod.Post, startEndpoint, startExecContent, cancellationToken, completionOption: HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
             await using var startExecStream = await startExecResponse.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-            (standardOutput, standardError) = await ReadMultiplexedTextAsync(startExecStream, cancellationToken).ConfigureAwait(false);
+            (standardOutput, standardError) = await ReadExecOutputAsync(startExecStream, options, cancellationToken).ConfigureAwait(false);
         }
 
         var exitCode = await WaitForExecExitCodeAsync(execId, cancellationToken).ConfigureAwait(false);
@@ -362,7 +370,7 @@ internal sealed class DockerApiRuntime : ContainerRuntime
     }
 
     /// <summary>Starts an exec over a connection the daemon takes over, sends the standard input while the output is read, and closes the input side once it is sent, which is how the process sees the end of its input.</summary>
-    private async Task<(string StandardOutput, string StandardError)> StartExecWithStandardInputAsync(string endpoint, string body, InputSource standardInput, CancellationToken cancellationToken)
+    private async Task<(string StandardOutput, string StandardError)> StartExecWithStandardInputAsync(string endpoint, string body, InputSource standardInput, ExecOptions options, CancellationToken cancellationToken)
     {
         var connection = await EnsureConnectionOrThrowAsync(cancellationToken).ConfigureAwait(false);
         var (upgraded, statusCode, errorBody) = await DockerApiTransport.SendUpgradeRequestAsync(connection.Endpoint, connection.Tls, BuildEndpoint(connection, endpoint), body, cancellationToken).ConfigureAwait(false);
@@ -373,12 +381,13 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         {
             // The output is read while the input is written: a process that echoes its input would otherwise fill the
             // buffers of the connection and never read the rest.
-            var output = ReadMultiplexedTextAsync(upgraded.Stream, cancellationToken);
+            var output = ReadExecOutputAsync(upgraded.Stream, options, cancellationToken);
             await WriteStandardInputAsync(upgraded, standardInput, cancellationToken).ConfigureAwait(false);
             return await output.ConfigureAwait(false);
         }
     }
 
+    /// <summary>Copies the standard input to the exec. The source is read asynchronously, so a slow source does not hold a thread of the pool while it is pumped.</summary>
     private static async Task WriteStandardInputAsync(DockerApiTransport.UpgradedConnection connection, InputSource standardInput, CancellationToken cancellationToken)
     {
         var buffer = ArrayPool<byte>.Shared.Rent(81920);
@@ -386,8 +395,7 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         {
             while (true)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-                var read = standardInput.Read(buffer);
+                var read = await standardInput.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
                 if (read <= 0)
                     break;
 
@@ -408,6 +416,56 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         finally
         {
             ArrayPool<byte>.Shared.Return(buffer);
+        }
+    }
+
+    /// <summary>Reads the output of an exec: multiplexed frames, or the raw bytes of the terminal when the exec has one. The output goes to the streams of the options when they are set, and is decoded as text otherwise.</summary>
+    internal static async Task<(string StandardOutput, string StandardError)> ReadExecOutputAsync(Stream stream, ExecOptions options, CancellationToken cancellationToken)
+    {
+        if (options.Tty)
+        {
+            // A terminal has a single output, which carries both streams.
+            if (options.StandardOutput is { } target)
+            {
+                await stream.CopyToAsync(target, cancellationToken).ConfigureAwait(false);
+                return ("", "");
+            }
+
+            using var reader = new StreamReader(stream, Encoding.UTF8, detectEncodingFromByteOrderMarks: false, leaveOpen: true);
+            return (await reader.ReadToEndAsync(cancellationToken).ConfigureAwait(false), "");
+        }
+
+        if (options.StandardOutput is null && options.StandardError is null)
+            return await ReadMultiplexedTextAsync(stream, cancellationToken).ConfigureAwait(false);
+
+        // At least one stream has a target: the other one is decoded as text.
+        using var frames = new DockerMultiplexedStreamReader(stream);
+        using var standardOutputText = new DockerStreamTextBuffer();
+        using var standardErrorText = new DockerStreamTextBuffer();
+        var standardOutput = new StringBuilder();
+        var standardError = new StringBuilder();
+        while (await frames.ReadFrameAsync(cancellationToken).ConfigureAwait(false))
+        {
+            var isStandardError = frames.CurrentStream is LogStream.Stderr;
+            if ((isStandardError ? options.StandardError : options.StandardOutput) is { } target)
+            {
+                await target.WriteAsync(frames.CurrentPayloadMemory, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                AppendText(isStandardError ? standardErrorText : standardOutputText, isStandardError ? standardError : standardOutput, frames.CurrentPayload, flush: false);
+            }
+        }
+
+        AppendText(standardOutputText, standardOutput, [], flush: true);
+        AppendText(standardErrorText, standardError, [], flush: true);
+        return (standardOutput.ToString(), standardError.ToString());
+
+        static void AppendText(DockerStreamTextBuffer buffer, StringBuilder builder, ReadOnlySpan<byte> bytes, bool flush)
+        {
+            buffer.Append(bytes, flush);
+            builder.Append(buffer.Pending);
+            buffer.Clear();
         }
     }
 

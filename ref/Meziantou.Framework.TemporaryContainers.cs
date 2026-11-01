@@ -130,6 +130,16 @@ namespace Meziantou.Framework.TemporaryContainers
         public bool Remove(string name) => throw null;
     }
 
+    public sealed class ContainerExecException : System.Exception
+    {
+        public System.Collections.Generic.IReadOnlyList<string> Command { get => throw null; }
+        public int ExitCode { get => throw null; }
+        public string StandardError { get => throw null; }
+        public string StandardOutput { get => throw null; }
+        public ContainerExecException(string message) { }
+        public ContainerExecException(string message, System.Exception innerException) { }
+    }
+
     public sealed class ContainerExposedPort : System.IEquatable<Meziantou.Framework.TemporaryContainers.ContainerExposedPort>
     {
         public int Port { get => throw null; init { } }
@@ -389,8 +399,14 @@ namespace Meziantou.Framework.TemporaryContainers
     public sealed class ExecOptions
     {
         public System.Collections.Generic.IList<string> Command { get => throw null; set { } }
+        public bool Detach { get => throw null; set { } }
         public System.Collections.Generic.IDictionary<string, string> Environment { get => throw null; }
+        public bool Privileged { get => throw null; set { } }
+        public System.IO.Stream? StandardError { get => throw null; set { } }
         public Meziantou.Framework.InputSource? StandardInput { get => throw null; set { } }
+        public System.IO.Stream? StandardOutput { get => throw null; set { } }
+        public System.TimeSpan? Timeout { get => throw null; set { } }
+        public bool Tty { get => throw null; set { } }
         public string? User { get => throw null; set { } }
         public string? WorkingDirectory { get => throw null; set { } }
     }
@@ -402,6 +418,7 @@ namespace Meziantou.Framework.TemporaryContainers
         public string StandardOutput { get => throw null; init { } }
         public ExecResult(int ExitCode, string StandardOutput, string StandardError) { }
         public void Deconstruct(out int ExitCode, out string StandardOutput, out string StandardError) => throw null;
+        public Meziantou.Framework.TemporaryContainers.ExecResult EnsureSuccess() => throw null;
         public bool Equals(Meziantou.Framework.TemporaryContainers.ExecResult? other) => throw null;
         public override bool Equals(object? obj) => throw null;
         public override int GetHashCode() => throw null;

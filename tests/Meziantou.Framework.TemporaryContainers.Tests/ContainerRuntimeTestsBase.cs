@@ -764,6 +764,124 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ExecAsync_EnsureSuccessReportsTheStandardError()
+    {
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The command is run with a POSIX shell.");
+
+        await using var container = await StartWithRetryAsync(CreateHttpServerDefinition());
+
+        var exec = await container.ExecAsync(options =>
+        {
+            options.Command.Add("sh");
+            options.Command.Add("-c");
+            options.Command.Add("echo boom >&2; exit 3");
+        }, XunitCancellationToken);
+
+        var exception = Assert.Throws<ContainerExecException>(() => exec.EnsureSuccess());
+        Assert.Equal(3, exception.ExitCode);
+        Assert.Contains("boom", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("exit 3", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ExecAsync_CopiesTheOutputsToStreamsByteForByte()
+    {
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The command is run with a POSIX shell.");
+
+        await using var container = await StartWithRetryAsync(CreateHttpServerDefinition());
+
+        // Bytes that are not valid UTF-8, which decoding the output as text would replace.
+        using var standardOutput = new MemoryStream();
+        using var standardError = new MemoryStream();
+        var exec = await container.ExecAsync(options =>
+        {
+            options.Command.Add("sh");
+            options.Command.Add("-c");
+            options.Command.Add("printf '\\377\\000\\201'; printf '\\376' >&2");
+            options.StandardOutput = standardOutput;
+            options.StandardError = standardError;
+        }, XunitCancellationToken);
+
+        exec.EnsureSuccess();
+        Assert.Equal([0xFF, 0x00, 0x81], standardOutput.ToArray());
+        Assert.Equal([0xFE], standardError.ToArray());
+        Assert.Equal("", exec.StandardOutput);
+        Assert.Equal("", exec.StandardError);
+    }
+
+    [Fact]
+    public async Task ExecAsync_TimesOut()
+    {
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The command is run with a POSIX shell.");
+
+        await using var container = await StartWithRetryAsync(CreateHttpServerDefinition());
+
+        await Assert.ThrowsAsync<TimeoutException>(() => container.ExecAsync(options =>
+        {
+            options.Command.Add("sleep");
+            options.Command.Add("60");
+            options.Timeout = TimeSpan.FromSeconds(1);
+        }, XunitCancellationToken));
+    }
+
+    [Fact]
+    public async Task ExecAsync_DetachedCommandKeepsRunning()
+    {
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The command is run with a POSIX shell.");
+
+        await using var container = await StartWithRetryAsync(CreateHttpServerDefinition());
+
+        if (Runtime == ContainerRuntime.Wslc)
+        {
+            await Assert.ThrowsAsync<NotSupportedException>(() => container.ExecAsync(options =>
+            {
+                options.Command.Add("true");
+                options.Detach = true;
+            }, XunitCancellationToken));
+            return;
+        }
+
+        // The command runs for a minute: had ExecAsync waited for it, /tmp/done would exist when it returns.
+        // No timing threshold, since starting an exec takes seconds on some runtimes.
+        var exec = await container.ExecAsync(options =>
+        {
+            options.Command.Add("sh");
+            options.Command.Add("-c");
+            options.Command.Add("touch /tmp/started; sleep 60; touch /tmp/done");
+            options.Detach = true;
+        }, XunitCancellationToken);
+
+        Assert.Equal(0, exec.ExitCode);
+
+        var check = await container.ExecAsync(options =>
+        {
+            options.Command.Add("sh");
+            options.Command.Add("-c");
+            options.Command.Add("for i in $(seq 1 100); do [ -f /tmp/started ] && break; sleep 0.2; done; [ -f /tmp/started ] && [ ! -f /tmp/done ]");
+        }, XunitCancellationToken);
+        Assert.Equal(0, check.ExitCode);
+    }
+
+    [Fact]
+    public async Task ExecAsync_RunsInATerminal()
+    {
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The command is run with a POSIX shell.");
+
+        await using var container = await StartWithRetryAsync(CreateHttpServerDefinition());
+
+        var exec = await container.ExecAsync(options =>
+        {
+            options.Command.Add("sh");
+            options.Command.Add("-c");
+            options.Command.Add("[ -t 1 ] && echo terminal");
+            options.Tty = true;
+        }, XunitCancellationToken);
+
+        exec.EnsureSuccess();
+        Assert.Contains("terminal", exec.StandardOutput, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task WaitForPort_WaitsForTheServiceRatherThanThePortForwarder()
     {
         // The port forwarders of the runtimes accept a connection before anything listens in the container.
@@ -1197,6 +1315,29 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
     }
 
     /// <summary>Shared assertion that the cleanup removes the volume of a run that is over (called from the runtimes that support volumes).</summary>
+    /// <summary>Shared assertion that a privileged command gets more capabilities than a regular one (called from the runtimes that support privileged commands).</summary>
+    protected async Task AssertPrivilegedExecAsync()
+    {
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The capabilities are read from /proc.");
+
+        await using var container = await StartWithRetryAsync(CreateHttpServerDefinition());
+
+        async Task<string> ReadCapabilitiesAsync(bool privileged)
+        {
+            var exec = await container.ExecAsync(options =>
+            {
+                options.Command.Add("grep");
+                options.Command.Add("CapEff");
+                options.Command.Add("/proc/self/status");
+                options.Privileged = privileged;
+            }, XunitCancellationToken);
+
+            return exec.EnsureSuccess().StandardOutput.Trim();
+        }
+
+        Assert.NotEqual(await ReadCapabilitiesAsync(privileged: false), await ReadCapabilitiesAsync(privileged: true));
+    }
+
     protected async Task AssertCleanupRemovesOrphanedVolumeAsync()
     {
         await using var volume = new VolumeDefinition { Runtime = Runtime, Identity = CreateDeadRunIdentity() }.CreateVolume();

@@ -233,6 +233,21 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
         if (options.StandardInput is not null)
             args.Add("-i");
 
+        if (options.Tty)
+            args.Add("-t");
+
+        if (options.Detach)
+        {
+            // wslc accepts -d but waits for the command to exit.
+            if (_flavor is Flavor.Wslc)
+                throw new NotSupportedException("The 'wslc' runtime does not support detached commands.");
+
+            args.Add("-d");
+        }
+
+        if (options.Privileged)
+            args.Add("--privileged");
+
         if (options.WorkingDirectory is not null)
         {
             args.Add("--workdir");

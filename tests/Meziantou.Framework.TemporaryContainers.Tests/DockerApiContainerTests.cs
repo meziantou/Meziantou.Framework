@@ -30,6 +30,9 @@ public sealed class DockerApiContainerTests() : ContainerRuntimeTestsBase(Contai
     public Task Cleanup_RemovesTheVolumeOfARunThatIsOver() => AssertCleanupRemovesOrphanedVolumeAsync();
 
     [Fact]
+    public Task ExecAsync_RunsAPrivilegedCommand() => AssertPrivilegedExecAsync();
+
+    [Fact]
     public Task Cleanup_RemovesTheNetworkOfARunThatIsOver() => AssertCleanupRemovesOrphanedNetworkAsync();
 
     [Fact]

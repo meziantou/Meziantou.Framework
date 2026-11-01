@@ -248,6 +248,17 @@ public sealed class AppleContainerRuntimeAdapterTests
     }
 
     [Fact]
+    public void BuildsTheExecOptions()
+    {
+        var runtime = CreateRuntime();
+        var options = new ExecOptions { Tty = true, Detach = true };
+        options.Command.Add("ls");
+
+        Assert.Equal("exec -t -d abc ls", string.Join(' ', runtime.BuildExecArguments("abc", options)));
+        Assert.Throws<NotSupportedException>(() => runtime.BuildExecArguments("abc", new ExecOptions { Privileged = true }));
+    }
+
+    [Fact]
     public void BuildCreatePassesTheSupportedCreationOptions()
     {
         var runtime = CreateRuntime();

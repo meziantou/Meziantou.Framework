@@ -64,6 +64,7 @@ internal static class DockerApiModels
         public bool AttachStderr { get; set; }
         public bool AttachStdin { get; set; }
         public bool Tty { get; set; }
+        public bool Privileged { get; set; }
         public string[]? Cmd { get; set; }
         public string[]? Env { get; set; }
         public string? User { get; set; }

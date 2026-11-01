@@ -137,10 +137,7 @@ public sealed class QRCode
 
     private static QRCode BuildStandardMatrix(byte[] allCodewords, int version, ErrorCorrectionLevel errorCorrectionLevel)
     {
-        var bestMask = MaskEvaluator.FindBestMask(allCodewords, version, errorCorrectionLevel);
-        var builder = new MatrixBuilder(version);
-        builder.Build(allCodewords, errorCorrectionLevel, bestMask);
-
-        return new QRCode(builder.Modules, version, QRCodeType.Standard, errorCorrectionLevel);
+        var modules = MaskEvaluator.BuildMatrix(allCodewords, version, errorCorrectionLevel);
+        return new QRCode(modules, version, QRCodeType.Standard, errorCorrectionLevel);
     }
 }

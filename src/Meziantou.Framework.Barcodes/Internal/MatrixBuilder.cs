@@ -22,9 +22,10 @@ internal sealed class MatrixBuilder
     public bool[,] IsReserved => _isReserved;
 
     /// <summary>
-    /// Builds the complete QR code matrix with all function patterns and data.
+    /// Places everything that does not depend on the mask: function patterns, version information and unmasked data.
+    /// The format information areas are reserved but left empty; use <see cref="ApplyMask"/> and <see cref="PlaceFormatInfo"/> to complete the symbol.
     /// </summary>
-    public void Build(byte[] codewords, ErrorCorrectionLevel ecLevel, int maskPattern)
+    public void PlaceFunctionPatternsAndData(byte[] codewords)
     {
         PlaceFinderPatterns();
         PlaceAlignmentPatterns();
@@ -33,8 +34,6 @@ internal sealed class MatrixBuilder
         ReserveFormatInfoAreas();
         ReserveVersionInfoAreas();
         PlaceDataBits(codewords);
-        ApplyMask(maskPattern);
-        PlaceFormatInfo(ecLevel, maskPattern);
         PlaceVersionInfo();
     }
 
@@ -280,39 +279,39 @@ internal sealed class MatrixBuilder
         }
     }
 
+    /// <summary>
+    /// Flips the data modules selected by the mask pattern. Applying the same mask twice restores the unmasked data.
+    /// </summary>
     public void ApplyMask(int maskPattern)
+    {
+        // Dispatch once per call instead of once per module: each pattern gets its own specialized loop
+        switch (maskPattern)
+        {
+            case 0: ApplyMask<Mask0>(); break;
+            case 1: ApplyMask<Mask1>(); break;
+            case 2: ApplyMask<Mask2>(); break;
+            case 3: ApplyMask<Mask3>(); break;
+            case 4: ApplyMask<Mask4>(); break;
+            case 5: ApplyMask<Mask5>(); break;
+            case 6: ApplyMask<Mask6>(); break;
+            case 7: ApplyMask<Mask7>(); break;
+            default: throw new ArgumentOutOfRangeException(nameof(maskPattern));
+        }
+    }
+
+    private void ApplyMask<TMask>()
+        where TMask : struct, IMaskPattern
     {
         for (var row = 0; row < _size; row++)
         {
             for (var col = 0; col < _size; col++)
             {
-                if (_isReserved[row, col])
-                {
-                    continue;
-                }
-
-                if (ShouldApplyMask(maskPattern, row, col))
+                if (!_isReserved[row, col] && TMask.ShouldApply(row, col))
                 {
                     _modules[row, col] = !_modules[row, col];
                 }
             }
         }
-    }
-
-    private static bool ShouldApplyMask(int maskPattern, int row, int col)
-    {
-        return maskPattern switch
-        {
-            0 => (row + col) % 2 == 0,
-            1 => row % 2 == 0,
-            2 => col % 3 == 0,
-            3 => (row + col) % 3 == 0,
-            4 => ((row / 2) + (col / 3)) % 2 == 0,
-            5 => ((row * col) % 2) + ((row * col) % 3) == 0,
-            6 => (((row * col) % 2) + ((row * col) % 3)) % 2 == 0,
-            7 => (((row + col) % 2) + ((row * col) % 3)) % 2 == 0,
-            _ => throw new ArgumentOutOfRangeException(nameof(maskPattern)),
-        };
     }
 
     public void PlaceFormatInfo(ErrorCorrectionLevel ecLevel, int maskPattern)
@@ -385,5 +384,50 @@ internal sealed class MatrixBuilder
     private void SetReserved(int row, int col)
     {
         _isReserved[row, col] = true;
+    }
+
+    private interface IMaskPattern
+    {
+        static abstract bool ShouldApply(int row, int col);
+    }
+
+    private readonly struct Mask0 : IMaskPattern
+    {
+        public static bool ShouldApply(int row, int col) => (row + col) % 2 == 0;
+    }
+
+    private readonly struct Mask1 : IMaskPattern
+    {
+        public static bool ShouldApply(int row, int col) => row % 2 == 0;
+    }
+
+    private readonly struct Mask2 : IMaskPattern
+    {
+        public static bool ShouldApply(int row, int col) => col % 3 == 0;
+    }
+
+    private readonly struct Mask3 : IMaskPattern
+    {
+        public static bool ShouldApply(int row, int col) => (row + col) % 3 == 0;
+    }
+
+    private readonly struct Mask4 : IMaskPattern
+    {
+        public static bool ShouldApply(int row, int col) => ((row / 2) + (col / 3)) % 2 == 0;
+    }
+
+    private readonly struct Mask5 : IMaskPattern
+    {
+        public static bool ShouldApply(int row, int col) => ((row * col) % 2) + ((row * col) % 3) == 0;
+    }
+
+    private readonly struct Mask6 : IMaskPattern
+    {
+        public static bool ShouldApply(int row, int col) => (((row * col) % 2) + ((row * col) % 3)) % 2 == 0;
+    }
+
+    private readonly struct Mask7 : IMaskPattern
+    {
+        public static bool ShouldApply(int row, int col) => (((row + col) % 2) + ((row * col) % 3)) % 2 == 0;
     }
 }

@@ -3,18 +3,27 @@ namespace Meziantou.Framework.Barcodes.Internal;
 internal static class MaskEvaluator
 {
     /// <summary>
-    /// Evaluates all 8 mask patterns and returns the one with the lowest penalty score.
+    /// Builds the QR code matrix using the mask pattern with the lowest penalty score among the 8 standard patterns.
     /// </summary>
-    public static int FindBestMask(byte[] codewords, int version, ErrorCorrectionLevel ecLevel)
+    /// <remarks>
+    /// The function patterns and unmasked data are placed once. Each candidate mask is applied in place, scored with
+    /// its format information, then removed again, so a single matrix is allocated whatever the number of candidates.
+    /// When several masks have the same penalty, the lowest mask number wins.
+    /// </remarks>
+    public static bool[,] BuildMatrix(byte[] codewords, int version, ErrorCorrectionLevel ecLevel)
     {
+        var builder = new MatrixBuilder(version);
+        builder.PlaceFunctionPatternsAndData(codewords);
+
         var bestMask = 0;
         var bestPenalty = int.MaxValue;
 
         for (var mask = 0; mask < 8; mask++)
         {
-            var builder = new MatrixBuilder(version);
-            builder.Build(codewords, ecLevel, mask);
+            builder.ApplyMask(mask);
+            builder.PlaceFormatInfo(ecLevel, mask);
             var penalty = EvaluatePenalty(builder.Modules, builder.Size);
+            builder.ApplyMask(mask);
 
             if (penalty < bestPenalty)
             {
@@ -23,7 +32,9 @@ internal static class MaskEvaluator
             }
         }
 
-        return bestMask;
+        builder.ApplyMask(bestMask);
+        builder.PlaceFormatInfo(ecLevel, bestMask);
+        return builder.Modules;
     }
 
     /// <summary>

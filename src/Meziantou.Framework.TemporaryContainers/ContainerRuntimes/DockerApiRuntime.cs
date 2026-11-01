@@ -1,5 +1,4 @@
 using System.Buffers;
-using System.Buffers.Binary;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Sockets;
@@ -180,13 +179,32 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         return DockerContainerInfoParser.ParseInspectResult(result);
     }
 
-    internal override async IAsyncEnumerable<LogEntry> GetLogsAsync(string id, bool follow, [EnumeratorCancellation] CancellationToken cancellationToken)
+    internal override async IAsyncEnumerable<LogEntry> GetLogsAsync(string id, ContainerLogsOptions options, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var endpoint = "/containers/" + Uri.EscapeDataString(id) + "/logs?stdout=1&stderr=1&timestamps=1&follow=" + (follow ? "1" : "0");
+        var endpoint = BuildLogsEndpoint(id, options);
         using var response = await SendAsync(HttpMethod.Get, endpoint, content: null, cancellationToken, completionOption: HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
         await foreach (var entry in ReadMultiplexedLogsAsync(stream, cancellationToken).ConfigureAwait(false))
             yield return entry;
+    }
+
+    internal static string BuildLogsEndpoint(string id, ContainerLogsOptions options)
+    {
+        var endpoint = new StringBuilder();
+        endpoint.Append("/containers/").Append(Uri.EscapeDataString(id)).Append("/logs?timestamps=1");
+        endpoint.Append("&stdout=").Append(options.IncludeStandardOutput ? '1' : '0');
+        endpoint.Append("&stderr=").Append(options.IncludeStandardError ? '1' : '0');
+        endpoint.Append("&follow=").Append(options.Follow ? '1' : '0');
+        if (options.Since is { } since)
+            endpoint.Append("&since=").Append(LogTimestamps.FormatUnix(since));
+
+        if (options.Until is { } until)
+            endpoint.Append("&until=").Append(LogTimestamps.FormatUnix(until));
+
+        if (options.Tail is { } tail)
+            endpoint.Append("&tail=").Append(tail.ToString(CultureInfo.InvariantCulture));
+
+        return endpoint.ToString();
     }
 
     internal override async Task<ExecResult> ExecAsync(string id, ExecOptions options, CancellationToken cancellationToken)
@@ -695,161 +713,99 @@ internal sealed class DockerApiRuntime : ContainerRuntime
 
     internal static async IAsyncEnumerable<LogEntry> ReadMultiplexedLogsAsync(Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var buffers = new Dictionary<LogStream, StringBuilder>
+        using var reader = new DockerMultiplexedStreamReader(stream);
+        using var standardOutput = new DockerStreamTextBuffer();
+        using var standardError = new DockerStreamTextBuffer();
+        while (await reader.ReadFrameAsync(cancellationToken).ConfigureAwait(false))
         {
-            [LogStream.Stdout] = new StringBuilder(),
-            [LogStream.Stderr] = new StringBuilder(),
-        };
-
-        await foreach (var (logStream, text) in ReadMultiplexedFramesAsync(stream, cancellationToken).ConfigureAwait(false))
-        {
-            var buffer = buffers[logStream];
-            buffer.Append(text);
-
-            while (TryReadLine(buffer, out var line))
+            var logStream = reader.CurrentStream;
+            var buffer = logStream is LogStream.Stderr ? standardError : standardOutput;
+            buffer.Append(reader.CurrentPayload, flush: false);
+            while (TryReadLogLine(buffer, logStream, out var entry))
             {
-                var parsed = ParseLogLine(logStream, line);
-                if (parsed is not null)
-                    yield return parsed;
+                if (entry is not null)
+                    yield return entry;
             }
         }
 
         // The stream ended. Whatever is left was never terminated by a newline, but it is still a log line: a process
         // that writes its readiness marker with 'printf' and no '\n', or that dies mid-line, would otherwise never be
-        // reported and every wait strategy watching for it would time out.
-        foreach (var (logStream, buffer) in buffers)
+        // reported and every wait strategy watching for it would time out. A stream that ends in the middle of a
+        // character still reports what it received.
+        foreach (var (logStream, buffer) in new[] { (LogStream.Stdout, standardOutput), (LogStream.Stderr, standardError) })
         {
-            if (buffer.Length == 0)
-                continue;
+            buffer.Append([], flush: true);
+            while (TryReadLogLine(buffer, logStream, out var entry))
+            {
+                if (entry is not null)
+                    yield return entry;
+            }
 
-            // TrimEnd mirrors what TryReadLine does for every other line, so the last one is not the only one that can
-            // come out with a trailing CR. It matters when the stream stops between the CR and the LF of a CRLF ending.
-            var parsed = ParseLogLine(logStream, buffer.ToString().TrimEnd('\r'));
-            if (parsed is not null)
-                yield return parsed;
+            if (TryReadTrailingLogLine(buffer, logStream) is { } trailing)
+                yield return trailing;
         }
     }
 
     internal static async Task<(string StandardOutput, string StandardError)> ReadMultiplexedTextAsync(Stream stream, CancellationToken cancellationToken)
     {
+        using var reader = new DockerMultiplexedStreamReader(stream);
+        using var standardOutput = new DockerStreamTextBuffer();
+        using var standardError = new DockerStreamTextBuffer();
         var stdout = new StringBuilder();
         var stderr = new StringBuilder();
-        await foreach (var (logStream, text) in ReadMultiplexedFramesAsync(stream, cancellationToken).ConfigureAwait(false))
+        while (await reader.ReadFrameAsync(cancellationToken).ConfigureAwait(false))
         {
-            if (logStream is LogStream.Stdout)
-                stdout.Append(text);
-            else
-                stderr.Append(text);
+            var (buffer, builder) = reader.CurrentStream is LogStream.Stderr ? (standardError, stderr) : (standardOutput, stdout);
+            AppendText(buffer, builder, reader.CurrentPayload, flush: false);
         }
 
+        AppendText(standardOutput, stdout, [], flush: true);
+        AppendText(standardError, stderr, [], flush: true);
         return (stdout.ToString(), stderr.ToString());
+
+        static void AppendText(DockerStreamTextBuffer buffer, StringBuilder builder, ReadOnlySpan<byte> bytes, bool flush)
+        {
+            buffer.Append(bytes, flush);
+            builder.Append(buffer.Pending);
+            buffer.Clear();
+        }
     }
 
-    /// <summary>Reads the frames of a stream multiplexed by the daemon: each payload is prefixed by an 8-byte header whose first byte is the stream and whose last four bytes are the big-endian payload length.</summary>
-    /// <remarks>The daemon cuts frames wherever its reads end, not between characters, so each stream keeps its own decoder: a character split between two frames is decoded once both halves have arrived.</remarks>
-    private static async IAsyncEnumerable<(LogStream Stream, string Text)> ReadMultiplexedFramesAsync(Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken)
+    /// <summary>Reads the next complete line of a stream. The entry is <see langword="null"/> for an empty line.</summary>
+    private static bool TryReadLogLine(DockerStreamTextBuffer buffer, LogStream stream, out LogEntry? entry)
     {
-        var standardOutputDecoder = Encoding.UTF8.GetDecoder();
-        var standardErrorDecoder = Encoding.UTF8.GetDecoder();
-        var header = new byte[8];
-        while (await FillBufferAsync(stream, header, cancellationToken).ConfigureAwait(false))
+        if (!buffer.TryReadLine(out var line))
         {
-            var streamKind = header[0] switch
-            {
-                2 => LogStream.Stderr,
-                _ => LogStream.Stdout,
-            };
-
-            var payloadLength = BinaryPrimitives.ReadInt32BigEndian(header.AsSpan(4));
-            if (payloadLength <= 0)
-                continue;
-
-            var rented = ArrayPool<byte>.Shared.Rent(payloadLength);
-            try
-            {
-                await ReadExactlyAsync(stream, rented.AsMemory(0, payloadLength), cancellationToken).ConfigureAwait(false);
-                var text = Decode(streamKind is LogStream.Stderr ? standardErrorDecoder : standardOutputDecoder, rented.AsSpan(0, payloadLength), flush: false);
-                if (text.Length > 0)
-                    yield return (streamKind, text);
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(rented);
-            }
+            entry = null;
+            return false;
         }
 
-        // A stream that ends in the middle of a character still reports what it received.
-        if (Decode(standardOutputDecoder, [], flush: true) is { Length: > 0 } standardOutputRest)
-            yield return (LogStream.Stdout, standardOutputRest);
-
-        if (Decode(standardErrorDecoder, [], flush: true) is { Length: > 0 } standardErrorRest)
-            yield return (LogStream.Stderr, standardErrorRest);
-    }
-
-    private static string Decode(Decoder decoder, ReadOnlySpan<byte> bytes, bool flush)
-    {
-        var chars = new char[decoder.GetCharCount(bytes, flush)];
-        var written = decoder.GetChars(bytes, chars, flush);
-        return new string(chars, 0, written);
-    }
-
-    private static async ValueTask<bool> FillBufferAsync(Stream stream, byte[] buffer, CancellationToken cancellationToken)
-    {
-        var offset = 0;
-        while (offset < buffer.Length)
-        {
-            var read = await stream.ReadAsync(buffer.AsMemory(offset, buffer.Length - offset), cancellationToken).ConfigureAwait(false);
-            if (read == 0)
-                return offset != 0 ? throw new EndOfStreamException("Unexpected end of stream while reading Docker API logs.") : false;
-
-            offset += read;
-        }
-
+        entry = ParseLogLine(stream, line);
         return true;
     }
 
-    private static async ValueTask ReadExactlyAsync(Stream stream, Memory<byte> buffer, CancellationToken cancellationToken)
+    /// <summary>Reads what is left of a stream that ended without a newline. Trimming the carriage returns mirrors what <see cref="DockerStreamTextBuffer.TryReadLine"/> does for every other line, which matters when the stream stops between the CR and the LF of a CRLF ending.</summary>
+    private static LogEntry? TryReadTrailingLogLine(DockerStreamTextBuffer buffer, LogStream stream)
     {
-        var offset = 0;
-        while (offset < buffer.Length)
-        {
-            var read = await stream.ReadAsync(buffer[offset..], cancellationToken).ConfigureAwait(false);
-            if (read == 0)
-                throw new EndOfStreamException("Unexpected end of stream while reading Docker API payload.");
-
-            offset += read;
-        }
+        var line = buffer.Pending.TrimEnd('\r');
+        var entry = buffer.Pending.IsEmpty ? null : ParseLogLine(stream, line);
+        buffer.Clear();
+        return entry;
     }
 
-    private static bool TryReadLine(StringBuilder builder, out string line)
+    private static LogEntry? ParseLogLine(LogStream stream, ReadOnlySpan<char> line)
     {
-        for (var i = 0; i < builder.Length; i++)
-        {
-            if (builder[i] is '\n')
-            {
-                line = builder.ToString(0, i).TrimEnd('\r');
-                builder.Remove(0, i + 1);
-                return true;
-            }
-        }
-
-        line = string.Empty;
-        return false;
-    }
-
-    private static LogEntry? ParseLogLine(LogStream stream, string line)
-    {
-        var spaceIndex = line.IndexOf(' ', StringComparison.Ordinal);
+        var spaceIndex = line.IndexOf(' ');
         if (spaceIndex > 0 &&
             DateTimeOffset.TryParse(line[..spaceIndex], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var timestamp))
         {
-            return new LogEntry(stream, line[(spaceIndex + 1)..], timestamp);
+            return new LogEntry(stream, line[(spaceIndex + 1)..].ToString(), timestamp);
         }
 
-        if (line.Length == 0)
+        if (line.IsEmpty)
             return null;
 
-        return new LogEntry(stream, line, Timestamp: null);
+        return new LogEntry(stream, line.ToString(), Timestamp: null);
     }
 
     private static StringContent CreateJsonContent<T>(T payload, JsonTypeInfo<T> typeInfo)

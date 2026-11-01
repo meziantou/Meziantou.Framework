@@ -183,10 +183,10 @@ internal sealed class AutoContainerRuntime : ContainerRuntime
         return await runtime.InspectAsync(id, cancellationToken).ConfigureAwait(false);
     }
 
-    internal override async IAsyncEnumerable<LogEntry> GetLogsAsync(string id, bool follow, [EnumeratorCancellation] CancellationToken cancellationToken)
+    internal override async IAsyncEnumerable<LogEntry> GetLogsAsync(string id, ContainerLogsOptions options, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
-        await foreach (var entry in runtime.GetLogsAsync(id, follow, cancellationToken).ConfigureAwait(false))
+        await foreach (var entry in runtime.GetLogsAsync(id, options, cancellationToken).ConfigureAwait(false))
             yield return entry;
     }
 

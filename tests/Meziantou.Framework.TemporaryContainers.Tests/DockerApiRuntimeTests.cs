@@ -61,6 +61,67 @@ public sealed class DockerApiRuntimeTests
     }
 
     [Fact]
+    public async Task ReadMultiplexedLogsAsync_JoinsALongLineDeliveredInManyFrames()
+    {
+        // A long JSON or base64 line arrives in many frames, each of them cut anywhere, even inside a character or
+        // between the CR and the LF.
+        var line = string.Concat(Enumerable.Repeat("é0123456789🎉", 2000));
+        var bytes = Encoding.UTF8.GetBytes("2026-08-27T10:11:12.123456789Z " + line + "\r\nnext\n");
+        var frames = new List<(LogStream Stream, byte[] Payload)>();
+        for (var offset = 0; offset < bytes.Length; offset += 7)
+            frames.Add((LogStream.Stdout, bytes[offset..Math.Min(bytes.Length, offset + 7)]));
+
+        using var stream = new MemoryStream(BuildRawFrames(frames));
+        var entries = new List<LogEntry>();
+        await foreach (var entry in DockerApiRuntime.ReadMultiplexedLogsAsync(stream, XunitCancellationToken))
+            entries.Add(entry);
+
+        Assert.Equal([line, "next"], entries.Select(entry => entry.Message));
+        Assert.Equal(DateTimeOffset.Parse("2026-08-27T10:11:12.1234568Z", CultureInfo.InvariantCulture), entries[0].Timestamp); // rounded to 100 ns
+    }
+
+    [Fact]
+    public async Task ReadMultiplexedLogsAsync_KeepsTheLinesOfEachStreamApart()
+    {
+        var entries = await ReadAllAsync(
+            (LogStream.Stdout, "out-"),
+            (LogStream.Stderr, "err-"),
+            (LogStream.Stdout, "line\nlast-out"),
+            (LogStream.Stderr, "line\n\nlast-err"));
+
+        Assert.Equal(["out-line", "err-line", "last-out", "last-err"], entries.Select(entry => entry.Message));
+        Assert.Equal([LogStream.Stdout, LogStream.Stderr, LogStream.Stdout, LogStream.Stderr], entries.Select(entry => entry.Stream));
+    }
+
+    [Fact]
+    public async Task ReadMultiplexedTextAsync_ReadsPayloadsLargerThanTheBuffers()
+    {
+        var text = new string('a', 100_000) + "é";
+        using var stream = new MemoryStream(BuildFrames([(LogStream.Stdout, "start "), (LogStream.Stdout, text), (LogStream.Stderr, text)]));
+
+        var (standardOutput, standardError) = await DockerApiRuntime.ReadMultiplexedTextAsync(stream, XunitCancellationToken);
+
+        Assert.Equal("start " + text, standardOutput);
+        Assert.Equal(text, standardError);
+    }
+
+    [Fact]
+    public void BuildLogsEndpoint_MapsTheOptions()
+    {
+        var options = new ContainerLogsOptions
+        {
+            Since = DateTimeOffset.UnixEpoch.AddSeconds(1_700_000_000).AddTicks(1234567),
+            Until = DateTimeOffset.UnixEpoch.AddSeconds(1_700_000_060),
+            Tail = 0,
+            Follow = false,
+            IncludeStandardOutput = false,
+        };
+
+        Assert.Equal("/containers/a%2Fb/logs?timestamps=1&stdout=0&stderr=1&follow=0&since=1700000000.123456700&until=1700000060.000000000&tail=0", DockerApiRuntime.BuildLogsEndpoint("a/b", options));
+        Assert.Equal("/containers/abc/logs?timestamps=1&stdout=1&stderr=1&follow=1", DockerApiRuntime.BuildLogsEndpoint("abc", new ContainerLogsOptions()));
+    }
+
+    [Fact]
     public async Task ReadMultiplexedTextAsync_DecodesACharacterSplitAcrossFrames()
     {
         // The daemon cuts frames wherever its reads end, which can be in the middle of a character.

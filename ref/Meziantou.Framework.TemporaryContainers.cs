@@ -155,6 +155,16 @@ namespace Meziantou.Framework.TemporaryContainers
         public Microsoft.Extensions.Logging.ILogger? Logger { get => throw null; set { } }
     }
 
+    public sealed class ContainerLogsOptions
+    {
+        public bool Follow { get => throw null; set { } }
+        public bool IncludeStandardError { get => throw null; set { } }
+        public bool IncludeStandardOutput { get => throw null; set { } }
+        public System.DateTimeOffset? Since { get => throw null; set { } }
+        public int? Tail { get => throw null; set { } }
+        public System.DateTimeOffset? Until { get => throw null; set { } }
+    }
+
     public sealed class ContainerMountCollection : System.Collections.Generic.IEnumerable<Meziantou.Framework.TemporaryContainers.IMount>, System.Collections.IEnumerable
     {
         public int Count { get => throw null; }
@@ -407,7 +417,8 @@ namespace Meziantou.Framework.TemporaryContainers
         public System.Threading.Tasks.Task<Meziantou.Framework.TemporaryContainers.ExecResult> ExecAsync(System.Action<Meziantou.Framework.TemporaryContainers.ExecOptions> configure, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public System.Threading.Tasks.Task<bool> ExistsAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         public string GetHostAddress(int containerPort) => throw null;
-        public System.Collections.Generic.IAsyncEnumerable<Meziantou.Framework.TemporaryContainers.LogEntry> GetLogsAsync([System.Runtime.CompilerServices.EnumeratorCancellation] System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Collections.Generic.IAsyncEnumerable<Meziantou.Framework.TemporaryContainers.LogEntry> GetLogsAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public System.Collections.Generic.IAsyncEnumerable<Meziantou.Framework.TemporaryContainers.LogEntry> GetLogsAsync(Meziantou.Framework.TemporaryContainers.ContainerLogsOptions options, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public int GetMappedPort(int containerPort) => throw null;
         public System.Threading.Tasks.Task<Meziantou.Framework.TemporaryContainers.ContainerInfo> InspectAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         public System.Threading.Tasks.Task KillAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;

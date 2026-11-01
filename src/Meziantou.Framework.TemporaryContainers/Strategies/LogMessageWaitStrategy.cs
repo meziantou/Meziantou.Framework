@@ -30,18 +30,21 @@ internal sealed class LogMessageWaitStrategy(Regex pattern, int occurrences, str
         ArgumentNullException.ThrowIfNull(container);
 
         // Only the logs of the current run count: a container started again keeps the ready message of its earlier run.
-        return WaitCoreAsync(ct => container.GetCurrentRunLogsAsync(follow: true, ct), ct => TryInspectAsync(container, ct), cancellationToken);
+        // The cursor makes every attach resume where the previous one stopped, so the log is not read again from the
+        // start of the run each time the runtime ends the stream.
+        var cursor = container.CreateCurrentRunLogCursor();
+        return WaitCoreAsync(ct => container.GetLogsAfterAsync(cursor, follow: true, tail: null, ct), ct => TryInspectAsync(container, ct), cancellationToken);
     }
 
     /// <summary>The wait itself, taking the log stream and the container state as delegates so both can be faked.</summary>
+    /// <param name="getLogs">Attaches to the logs. Every attach resumes after the entries the previous ones returned, so the matches are counted across attaches.</param>
     internal async Task WaitCoreAsync(Func<CancellationToken, IAsyncEnumerable<LogEntry>> getLogs, Func<CancellationToken, Task<ContainerInfo?>> inspect, CancellationToken cancellationToken)
     {
         var failedInspections = 0;
+        var count = 0;
+        var tail = new Queue<string>(MaxReportedLines);
         for (var attempt = 0; ; attempt++)
         {
-            // Attaching to the logs replays them from the beginning, so every attempt counts the matches from scratch.
-            var count = 0;
-            var tail = new Queue<string>(MaxReportedLines);
             Exception? streamFailure = null;
             try
             {

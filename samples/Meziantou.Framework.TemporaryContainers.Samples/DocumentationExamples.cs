@@ -288,6 +288,25 @@ public static class DocumentationExamples
         #endregion
     }
 
+    public static async Task LogsOptions(TemporaryContainer container)
+    {
+        #region TemporaryContainers_LogsOptions
+        // The last 50 lines of the standard error written in the last 5 minutes, without following the new ones
+        var options = new ContainerLogsOptions
+        {
+            Since = DateTimeOffset.UtcNow.AddMinutes(-5),
+            Tail = 50,
+            Follow = false,
+            IncludeStandardOutput = false,
+        };
+
+        await foreach (var entry in container.GetLogsAsync(options))
+        {
+            Console.WriteLine($"{entry.Timestamp:O} {entry.Message}");
+        }
+        #endregion
+    }
+
     public static ContainerDefinition ForwardLogs(ILogger logger)
     {
         #region TemporaryContainers_ForwardLogs

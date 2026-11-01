@@ -42,6 +42,8 @@ public class StringBuilderExtensionsTests
     [InlineData("", 'a', "")]
     [InlineData("abc", 'a', "bc")]
     [InlineData("aaabc", 'a', "bc")]
+    [InlineData("a", 'a', "")]
+    [InlineData("aaa", 'a', "")]
     [InlineData("abc", 'b', "abc")]
     public void TrimStart(string str, char c, string expected)
     {
@@ -54,6 +56,8 @@ public class StringBuilderExtensionsTests
     [InlineData("", 'a', "")]
     [InlineData("abc", 'c', "ab")]
     [InlineData("abccc", 'c', "ab")]
+    [InlineData("c", 'c', "")]
+    [InlineData("ccc", 'c', "")]
     [InlineData("abc", 'b', "abc")]
     public void TrimEnd(string str, char c, string expected)
     {
@@ -67,6 +71,8 @@ public class StringBuilderExtensionsTests
     [InlineData("abc", 'c', "ab")]
     [InlineData("cccabccc", 'c', "ab")]
     [InlineData("cccacbccc", 'c', "acb")]
+    [InlineData("a", 'a', "")]
+    [InlineData("aaa", 'a', "")]
     [InlineData("abc", 'b', "abc")]
     public void Trim(string str, char c, string expected)
     {

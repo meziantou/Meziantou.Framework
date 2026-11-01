@@ -153,7 +153,7 @@ Assert.True(sb.StartsWith("apple"));
 <!-- endref -->
 
 [StartsWith](cref:Meziantou.Framework.StringBuilderExtensions.StartsWith) and [EndsWith](cref:Meziantou.Framework.StringBuilderExtensions.EndsWith) check the content of a `StringBuilder` without creating a string, and [TrimStart](cref:Meziantou.Framework.StringBuilderExtensions.TrimStart),
-[TrimEnd](cref:Meziantou.Framework.StringBuilderExtensions.TrimEnd) and [Trim](cref:Meziantou.Framework.StringBuilderExtensions.Trim) remove a repeated character at its ends. To append values formatted with the invariant culture,
+[TrimEnd](cref:Meziantou.Framework.StringBuilderExtensions.TrimEnd) and [Trim](cref:Meziantou.Framework.StringBuilderExtensions.Trim) remove a repeated character at its ends. A builder that contains only this character becomes empty. To append values formatted with the invariant culture,
 see [Formatting and cultures](04-FormattingAndCultures.md#append-invariant-values).
 
 ## Escape Markdown

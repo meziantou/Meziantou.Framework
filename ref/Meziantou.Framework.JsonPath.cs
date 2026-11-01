@@ -119,6 +119,9 @@ namespace Meziantou.Framework.Json
 
     public abstract class JsonPathNavigator<TValue>
     {
+        public virtual bool HasConstantTimeElementAccess { get => throw null; }
+        public virtual bool HasConstantTimePropertyLookup { get => throw null; }
+        public virtual void CopyElements(TValue? value, TValue?[] destination) { }
         public abstract int GetArrayLength(TValue? value);
         public abstract Meziantou.Framework.Json.JsonPathNodeKind GetKind(TValue? value);
         public abstract System.Collections.Generic.IEnumerable<Meziantou.Framework.Json.JsonPathProperty<TValue>> GetProperties(TValue? value);

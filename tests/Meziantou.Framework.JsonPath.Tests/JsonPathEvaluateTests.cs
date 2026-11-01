@@ -2,6 +2,7 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Meziantou.Framework.Json;
 using Meziantou.Framework.Json.Internals;
+using Meziantou.Framework.ExternalJsonNavigatorTests;
 
 namespace Meziantou.Framework.JsonPathTests;
 
@@ -606,6 +607,34 @@ public sealed class JsonPathEvaluateTests
         Assert.Equal("[5]", Select("$[?@.value == @.missing].id"));
         Assert.Equal("[]", Select("$[?@.value < @.missing || @.value > @.missing].id"));
         #endregion
+    }
+
+    [Fact]
+    public void Evaluate_JsonElement_ObjectEquality_UsesMemberNamesAndNestedValues()
+    {
+        using var document = JsonDocument.Parse("""
+            [
+              {"a":1,"nested":{"x":[1,2]}},
+              {"nested":{"x":[1.0,2]},"a":1},
+              {"a":1,"nested":{"x":[1,3]}},
+              {"a":1},
+              {"A":1,"nested":{"x":[1,2]}}
+            ]
+            """);
+
+        var result = JsonPath.Parse("$[?@ == $[0]]").Evaluate(document);
+
+        Assert.Equal(2, result.Count);
+    }
+
+    [Fact]
+    public void Evaluate_JsonElement_ObjectEquality_DuplicateNamesUseLastValue()
+    {
+        using var document = JsonDocument.Parse("""[{"a":1,"a":2},{"a":2}]""");
+
+        var result = JsonPath.Parse("$[?@ == $[0]]").Evaluate(document);
+
+        Assert.Equal(2, result.Count);
     }
 
     [Fact]
@@ -2277,6 +2306,87 @@ public sealed class JsonPathEvaluateTests
         Assert.Single(descendantResult);
         Assert.Equal("$['metadata']['title']", descendantResult[0].Path);
         Assert.Equal("Catalog", descendantResult[0].Value!.StringValue);
+    }
+
+    [Fact]
+    public void Evaluate_ExternalNavigator_SlicesAvoidUnneededCopies()
+    {
+        var root = ExternalJsonNode.CreateArray(Enumerable.Range(0, 20)
+            .Select(index => ExternalJsonNode.CreateObject(("value", ExternalJsonNode.CreateNumber(index))))
+            .ToArray());
+        var navigator = new ExternalJsonNavigator();
+
+        Assert.Empty(JsonPath.Parse("$[10:10]").Evaluate(root, navigator));
+        Assert.Equal(0, navigator.CopyElementsCount);
+        Assert.Equal(0, navigator.ElementAccessCount);
+
+        navigator.ResetCounters();
+        var single = JsonPath.Parse("$[10:11]").Evaluate(root, navigator);
+        Assert.Single(single);
+        Assert.Equal(10, single[0].Value!.Properties["value"]!.NumberValue);
+        Assert.Equal(0, navigator.CopyElementsCount);
+        Assert.Equal(1, navigator.ElementAccessCount);
+
+        navigator.ResetCounters();
+        var small = JsonPath.Parse("$[0:4]").Evaluate(root, navigator);
+        Assert.Equal(4, small.Count);
+        Assert.Equal(0, navigator.CopyElementsCount);
+        Assert.Equal(4, navigator.ElementAccessCount);
+
+        navigator.ResetCounters();
+        var tail = JsonPath.Parse("$[18:20]").Evaluate(root, navigator);
+        Assert.Equal(2, tail.Count);
+        Assert.Equal(1, navigator.CopyElementsCount);
+        Assert.Equal(0, navigator.ElementAccessCount);
+
+        navigator.ResetCounters();
+        var larger = JsonPath.Parse("$[0:5]").Evaluate(root, navigator);
+        Assert.Equal(5, larger.Count);
+        Assert.Equal(1, navigator.CopyElementsCount);
+        Assert.Equal(20, navigator.CopiedElementCount);
+        Assert.Equal(0, navigator.ElementAccessCount);
+
+        navigator.ResetCounters();
+        var reversed = JsonPath.Parse("$[::-1]").Evaluate(root, navigator);
+        Assert.Equal(20, reversed.Count);
+        Assert.Equal(19, reversed[0].Value!.Properties["value"]!.NumberValue);
+        Assert.Equal(1, navigator.CopyElementsCount);
+    }
+
+    [Fact]
+    public void Evaluate_ExternalNavigator_UsesBulkAccessForTraversalsAndEquality()
+    {
+        var root = ExternalJsonNode.CreateArray(
+            ExternalJsonNode.CreateObject(
+                ("value", ExternalJsonNode.CreateNumber(1)),
+                ("items", ExternalJsonNode.CreateArray(ExternalJsonNode.CreateNumber(10), ExternalJsonNode.CreateNumber(20)))),
+            ExternalJsonNode.CreateObject(
+                ("value", ExternalJsonNode.CreateNumber(1)),
+                ("items", ExternalJsonNode.CreateArray(ExternalJsonNode.CreateNumber(10), ExternalJsonNode.CreateNumber(20)))),
+            ExternalJsonNode.CreateObject(
+                ("value", ExternalJsonNode.CreateNumber(2)),
+                ("items", ExternalJsonNode.CreateArray(ExternalJsonNode.CreateNumber(30), ExternalJsonNode.CreateNumber(40)))));
+        var navigator = new ExternalJsonNavigator();
+
+        Assert.Equal(3, JsonPath.Parse("$[*]").Evaluate(root, navigator).Count);
+        Assert.Equal(1, navigator.CopyElementsCount);
+        Assert.Equal(0, navigator.ElementAccessCount);
+
+        navigator.ResetCounters();
+        Assert.Equal(2, JsonPath.Parse("$[?@.value == 1]").Evaluate(root, navigator).Count);
+        Assert.Equal(1, navigator.CopyElementsCount);
+        Assert.Equal(0, navigator.ElementAccessCount);
+
+        navigator.ResetCounters();
+        Assert.Equal(3, JsonPath.Parse("$..value").Evaluate(root, navigator).Count);
+        Assert.Equal(4, navigator.CopyElementsCount);
+        Assert.Equal(0, navigator.ElementAccessCount);
+
+        navigator.ResetCounters();
+        Assert.Equal(2, JsonPath.Parse("$[?@.items == $[0].items]").Evaluate(root, navigator).Count);
+        Assert.True(navigator.CopyElementsCount >= 5);
+        Assert.Equal(3, navigator.ElementAccessCount);
+        Assert.Equal(3, navigator.ElementVisitCount);
     }
 
     [Fact]

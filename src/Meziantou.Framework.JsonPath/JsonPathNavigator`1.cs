@@ -60,12 +60,24 @@ public abstract class JsonPathNavigator<TValue>
     /// Gets whether <see cref="TryGetElement"/> takes constant time. When it does not, the evaluator copies an array
     /// with <see cref="CopyElements"/> before walking it, so that visiting every element stays linear.
     /// </summary>
-    internal virtual bool HasConstantTimeElementAccess => true;
+    public virtual bool HasConstantTimeElementAccess => true;
+
+    /// <summary>Gets whether <see cref="TryGetPropertyValue"/> takes constant time.</summary>
+    /// <remarks>
+    /// When this is <see langword="false"/>, the evaluator enumerates the right object once to build an ordinal lookup
+    /// table when comparing objects for equality. If a name occurs more than once, the last value is used and earlier
+    /// values are ignored, matching the semantics of <see cref="TryGetPropertyValue"/>.
+    /// </remarks>
+    public virtual bool HasConstantTimePropertyLookup => true;
 
     /// <summary>Copies the elements of an array, in index order, to the start of <paramref name="destination"/>.</summary>
     /// <param name="value">The array value.</param>
     /// <param name="destination">A buffer holding at least <see cref="GetArrayLength"/> items.</param>
-    internal virtual void CopyElements(TValue? value, TValue?[] destination)
+    /// <remarks>
+    /// Implementations must write the first <see cref="GetArrayLength"/> items in index order. If an element cannot
+    /// be retrieved, write <see langword="default"/> at its index.
+    /// </remarks>
+    public virtual void CopyElements(TValue? value, TValue?[] destination)
     {
         var length = GetArrayLength(value);
         for (var i = 0; i < length; i++)

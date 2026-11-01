@@ -131,6 +131,9 @@ A navigator answers the questions the evaluator asks about a value:
 | [TryGetPropertyValue](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetPropertyValue) | The value of one member of an object, and whether the member exists |
 | [GetArrayLength](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.GetArrayLength) | The number of elements of an array |
 | [TryGetElement](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetElement) | The element at a zero-based index, and whether it exists |
+| [HasConstantTimeElementAccess](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.HasConstantTimeElementAccess) | Whether reading an element by index takes constant time |
+| [CopyElements](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.CopyElements) | Copies array elements in index order when indexed access is not constant time |
+| [HasConstantTimePropertyLookup](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.HasConstantTimePropertyLookup) | Whether looking up an object member by name takes constant time |
 | [TryGetString](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetString), [TryGetNumber](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetNumber), [TryGetBoolean](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetBoolean) | The scalar value, and whether the value has that type |
 
 ## Rules for a navigator
@@ -144,4 +147,9 @@ A navigator answers the questions the evaluator asks about a value:
   [Number precision](09-Limitations.md#number-precision).
 - **Expose a tree, not a graph.** A cycle, such as a back-reference to the parent, is reported as a depth error
   ([JsonPathEvaluationException](cref:Meziantou.Framework.Json.JsonPathEvaluationException)) when a descendant segment or a comparison walks it, instead of looping forever.
-- **Make [TryGetElement](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetElement) fast.** The evaluator reads elements by index: back arrays with a list or an array.
+- **Keep array traversal linear.** If [TryGetElement](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetElement) is not constant-time, override
+  [HasConstantTimeElementAccess](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.HasConstantTimeElementAccess) to return `false` and implement
+  [CopyElements](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.CopyElements) to copy the array in index order. The default copies by calling
+  [TryGetElement](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetElement) for every index.
+- **Keep object equality linear.** If [TryGetPropertyValue](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.TryGetPropertyValue) is not constant-time, override
+  [HasConstantTimePropertyLookup](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.HasConstantTimePropertyLookup) to return `false`. The evaluator then builds a lookup table from the object's members when comparing objects.

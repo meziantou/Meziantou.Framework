@@ -65,7 +65,7 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
         }
         else
         {
-            global::Xunit.Assert.SkipUnless(availability.IsAvailable, $"The '{Runtime}' container runtime is not available on this system.");
+            global::Xunit.Assert.SkipUnless(availability.IsAvailable, $"The '{Runtime}' container runtime is not available on this system. {availability.Details}");
         }
 
         _useWindowsContainerImages = DetectUseWindowsContainerImages(Runtime);

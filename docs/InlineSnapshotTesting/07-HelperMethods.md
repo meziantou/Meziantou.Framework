@@ -31,3 +31,9 @@ When the snapshot changes, the library updates the `expected` argument of the ca
 
 Without the forwarded caller information, the location points inside the helper instead of its caller: the update fails
 and asks you to add the parameters. The helper can be a local function, as above, or a regular method.
+
+The helper can also be an extension method. The library reads the receiver of the call to tell the extension syntax
+(`value.Check("...")`) from a static call (`HelperExtensions.Check(value, "...")`), including a static call through a
+`using` alias declared in the same file. When the receiver could be either a value or a type,
+such as an alias declared in another file by a `global using`, and two arguments hold the old snapshot, the update fails
+rather than changing the input of the test: name the snapshot argument (`expected: "..."`) so it can be found.

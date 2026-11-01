@@ -19,6 +19,8 @@ namespace Meziantou.Framework.InlineSnapshotTesting;
 /// <param name="IsExtensionMethod">Whether the method is an extension method, whose first parameter is the receiver when called with the extension syntax.</param>
 /// <param name="DeclaringTypeName">The name of the type declaring the method.</param>
 /// <param name="CallerMemberName">The name of the member, as written in source, containing the call to update, or null when it cannot be named.</param>
+/// <param name="CallerTypeName">The name of the type declaring the member containing the call to update, as written in source, or null when it cannot be named.</param>
+/// <param name="CallerParameterCount">The number of parameters of the member containing the call to update, or -1 when the call is in a lambda or a local function, whose parameters are not the ones of that member.</param>
 /// <param name="AssemblyLocation">The assembly whose PDB describes how the source file was compiled.</param>
 internal readonly record struct CallerContext(
     FullPath FilePath,
@@ -32,6 +34,8 @@ internal readonly record struct CallerContext(
     bool IsExtensionMethod,
     string? DeclaringTypeName,
     string? CallerMemberName,
+    string? CallerTypeName,
+    int CallerParameterCount,
     string? AssemblyLocation)
 {
     private static readonly Guid CompilationOptionsGuid = new(0xB5FEEC05, 0x8CD0, 0x4A83, 0x96, 0xDA, 0x46, 0x62, 0x84, 0xBB, 0x4B, 0xD8) /* B5FEEC05-8CD0-4A83-96DA-466284BB4BD8 */;
@@ -161,6 +165,8 @@ internal readonly record struct CallerContext(
             attributedMethod.IsDefined(typeof(ExtensionAttribute), inherit: false),
             attributedMethod.DeclaringType?.Name,
             GetSourceMemberName(callerFrame.GetMethod()),
+            GetSourceTypeName(callerFrame.GetMethod()),
+            GetSourceParameterCount(callerFrame.GetMethod()),
             string.IsNullOrEmpty(assemblyLocation) ? null : assemblyLocation);
     }
 
@@ -185,7 +191,58 @@ internal readonly record struct CallerContext(
             name = name[1..end];
         }
 
+        // An explicit interface implementation is named after the interface, for example "System.IDisposable.Dispose"
+        if (name is not (".ctor" or ".cctor"))
+        {
+            var dot = name.LastIndexOf('.', StringComparison.Ordinal);
+            if (dot >= 0)
+            {
+                name = name[(dot + 1)..];
+            }
+        }
+
         return name is ".ctor" or ".cctor" or "Main" || name.Contains('<', StringComparison.Ordinal) || name.Contains('$', StringComparison.Ordinal) ? null : name;
+    }
+
+    /// <summary>
+    /// Returns the name of the type declaring the member as written in source. Lambdas, local functions and state machines
+    /// are compiled to nested types (for example <c>&lt;&gt;c__DisplayClass0_0</c>) of the type declaring the member.
+    /// </summary>
+    internal static string? GetSourceTypeName(MethodBase? method)
+    {
+        if (method is null)
+            return null;
+
+        method = CallerContextUtilities.ResolveActualMethod(method);
+        for (var type = method.DeclaringType; type is not null; type = type.DeclaringType)
+        {
+            var name = type.Name;
+
+            // Compiler-generated types, and file-local types whose name is mangled
+            if (name.StartsWith('<', StringComparison.Ordinal))
+                continue;
+
+            var arity = name.IndexOf('`', StringComparison.Ordinal);
+            return arity >= 0 ? name[..arity] : name;
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Returns the number of parameters of the member as written in source, or -1 when the method is a lambda or a local
+    /// function, whose parameters are not the ones of the member declaring it.
+    /// </summary>
+    internal static int GetSourceParameterCount(MethodBase? method)
+    {
+        if (method is null)
+            return -1;
+
+        method = CallerContextUtilities.ResolveActualMethod(method);
+        if (method.Name.StartsWith('<', StringComparison.Ordinal))
+            return -1;
+
+        return method.GetParameters().Length;
     }
 
     public string[]? GetCompilationDefines() => GetCompilationOptions().Defines;

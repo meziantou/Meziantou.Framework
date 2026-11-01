@@ -8,11 +8,11 @@ namespace Meziantou.Framework;
 static partial class PublicSuffixList
 {
     // Public Suffix List source: https://publicsuffix.org/list/public_suffix_list.dat
-    // Version: 2026-10-22T08:36:41.0000000+00:00
-    // Commit: https://github.com/publicsuffix/list/commit/8437e5262f13305f94087abe699b4fe2be1d1de8
-    private const int EntryCount = 10397;
-    private const int RuleCountValue = 10397;
-    private const long LastUpdatedTicks = 639282550010000000L;
+    // Version: 2026-10-31T14:17:28.0000000+00:00
+    // Commit: https://github.com/publicsuffix/list/commit/73f8cc701c084fe07d888ec552b2f0b53281a674
+    private const int EntryCount = 10396;
+    private const int RuleCountValue = 10396;
+    private const long LastUpdatedTicks = 639290530480000000L;
 
     private static FrozenDictionary<string, PublicSuffixRuleFlags> LoadRules()
     {
@@ -2242,7 +2242,6 @@ static partial class PublicSuffixList
         "heguri.nara.jp",
         "hekinan.aichi.jp",
         "help",
-        "helsinki",
         "hemne.no",
         "hemnes.no",
         "hemsedal.no",

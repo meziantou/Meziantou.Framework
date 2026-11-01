@@ -310,12 +310,18 @@ internal static class FileEditor
     {
         var invocations = root.DescendantNodes().OfType<InvocationExpressionSyntax>().Where(invocation => IsInvocationOf(invocation, context.MethodName)).ToArray();
 
+        // The line comes from the build, while the file may have been edited since. The line may now hold a call of
+        // another member with the same snapshot, so only the calls of the member that made the call are candidates.
+        var callerMembers = FindCallerMembers(context, root);
+
         // [CallerLineNumber] reports the line of the method name, which is not the first line of a multi-line call
         var lineIndex = GetActualLine(context.FilePath, context.LineNumber) - 1;
         List<InvocationExpressionSyntax> candidates = [];
         if (lineIndex >= 0 && lineIndex < sourceText.Lines.Count)
         {
-            candidates.AddRange(invocations.Where(invocation => sourceText.Lines.GetLineFromPosition(GetMethodNameToken(invocation).SpanStart).LineNumber == lineIndex));
+            candidates.AddRange(invocations.Where(invocation =>
+                sourceText.Lines.GetLineFromPosition(GetMethodNameToken(invocation).SpanStart).LineNumber == lineIndex &&
+                IsLineCandidate(callerMembers, invocation)));
         }
 
         // Several calls on the same line: keep the ones in the statement the PDB attributes the call to
@@ -329,16 +335,22 @@ internal static class FileEditor
         }
 
         if (TryFindUniqueMatch(context, candidates, existingValue, out var match, out var firstActualValue))
+        {
+            EnsureCallerMemberIsUnambiguous(context, callerMembers, invocations, match.Invocation, existingValue);
             return (match.Invocation, match.Argument, IsUpToDate: false);
+        }
 
         // The snapshot on the expected line already holds the new value. It is checked before searching the member for
         // the previous value, which could belong to another call that still has to be updated.
         if (TryFindUniqueMatch(context, candidates, newValue, out match, out _))
+        {
+            EnsureCallerMemberIsUnambiguous(context, callerMembers, invocations, match.Invocation, newValue);
             return (match.Invocation, match.Argument, IsUpToDate: true);
+        }
 
         // The call is not where it is expected. The file may have been edited since the build, by the user, by another
         // test process, or by a merge tool. Search the whole member for a unique call whose snapshot is the expected one.
-        var memberInvocations = invocations.Where(invocation => !candidates.Contains(invocation) && IsInCallerMember(context, invocation)).ToList();
+        var memberInvocations = invocations.Where(invocation => !candidates.Contains(invocation) && IsInCallerMember(callerMembers, invocation)).ToList();
         if (TryFindUniqueMatch(context, memberInvocations, existingValue, out match, out _))
             return (match.Invocation, match.Argument, IsUpToDate: false);
 
@@ -349,6 +361,52 @@ internal static class FileEditor
             throw new InlineSnapshotException($"Cannot find the argument to update. The current value doesn't match the expected value.\nExpected: <{existingValue}>\nActual: <{firstActualValue}>");
 
         throw new InlineSnapshotException("Cannot find the SyntaxNode to update");
+    }
+
+    /// <summary>
+    /// Returns the declarations of the members that may have made the call, or <see langword="null"/> when the caller
+    /// member is unknown, such as a constructor or top-level statements. Several members match when the name, the type
+    /// and the number of parameters do not tell them apart, such as overloads with as many parameters.
+    /// </summary>
+    private static HashSet<SyntaxNode>? FindCallerMembers(CallerContext context, SyntaxNode root)
+    {
+        if (context.CallerMemberName is null)
+            return null;
+
+        return root.DescendantNodes().Where(node => IsCallerMember(context, node)).ToHashSet();
+    }
+
+    /// <summary>
+    /// A call on the recorded line is a candidate when it is in the caller member. When the file declares no member
+    /// matching the caller, which happens for member kinds that cannot be matched from the syntax, the line is trusted.
+    /// </summary>
+    private static bool IsLineCandidate(HashSet<SyntaxNode>? callerMembers, SyntaxNode node) => callerMembers is null or { Count: 0 } || GetCallerMember(callerMembers, node) is not null;
+
+    private static bool IsInCallerMember(HashSet<SyntaxNode>? callerMembers, SyntaxNode node) => callerMembers is null || GetCallerMember(callerMembers, node) is not null;
+
+    private static SyntaxNode? GetCallerMember(HashSet<SyntaxNode> callerMembers, SyntaxNode node) => node.Ancestors().FirstOrDefault(callerMembers.Contains);
+
+    /// <summary>
+    /// The recorded line only identifies the call when no other member that may have made the call holds a matching
+    /// snapshot. Otherwise, a stale line would update a call of the wrong member, so the update is refused.
+    /// </summary>
+    private static void EnsureCallerMemberIsUnambiguous(CallerContext context, HashSet<SyntaxNode>? callerMembers, InvocationExpressionSyntax[] invocations, InvocationExpressionSyntax match, string? value)
+    {
+        if (callerMembers is not { Count: > 1 })
+            return;
+
+        var matchMember = GetCallerMember(callerMembers, match);
+        foreach (var invocation in invocations)
+        {
+            var member = GetCallerMember(callerMembers, invocation);
+            if (member is not null && member != matchMember && TryMatchArgument(context, invocation, value, out _, out _))
+            {
+                throw new InlineSnapshotException($"""
+                    Cannot tell which call to update: several members named '{context.CallerMemberName}' contain a call whose snapshot is <{value}>, and the file may have changed since the build.
+                    Rebuild the project and run the test again, or rename one of the members.
+                    """);
+            }
+        }
     }
 
     /// <param name="firstActualValue">The value of the snapshot of the first invocation, when none of them matches.</param>
@@ -404,33 +462,51 @@ internal static class FileEditor
         return result;
     }
 
-    private static bool IsInCallerMember(CallerContext context, SyntaxNode node)
+    private static bool IsCallerMember(CallerContext context, SyntaxNode node)
     {
-        if (context.CallerMemberName is null)
-            return true;
-
-        foreach (var ancestor in node.Ancestors())
+        var callerMemberName = context.CallerMemberName;
+        var isCallerMember = node switch
         {
-            var isCallerMember = ancestor switch
-            {
-                MethodDeclarationSyntax method => method.Identifier.ValueText == context.CallerMemberName,
-                LocalFunctionStatementSyntax localFunction => localFunction.Identifier.ValueText == context.CallerMemberName,
-                PropertyDeclarationSyntax property => IsAccessorOf(property.Identifier.ValueText, context.CallerMemberName),
-                EventDeclarationSyntax @event => IsAccessorOf(@event.Identifier.ValueText, context.CallerMemberName),
-                _ => false,
-            };
+            MethodDeclarationSyntax method => method.Identifier.ValueText == callerMemberName && HasCallerParameterCount(context, method),
+            LocalFunctionStatementSyntax localFunction => localFunction.Identifier.ValueText == callerMemberName,
+            PropertyDeclarationSyntax property => IsAccessorOf(property.Identifier.ValueText, callerMemberName),
+            EventDeclarationSyntax @event => IsAccessorOf(@event.Identifier.ValueText, callerMemberName),
 
-            if (isCallerMember)
-                return true;
-        }
+            // The name of an indexer can be changed with [IndexerName], so any indexer may declare the accessor
+            IndexerDeclarationSyntax => callerMemberName is not null && (callerMemberName.StartsWith("get_", StringComparison.Ordinal) || callerMemberName.StartsWith("set_", StringComparison.Ordinal)),
+            OperatorDeclarationSyntax or ConversionOperatorDeclarationSyntax => callerMemberName is not null && callerMemberName.StartsWith("op_", StringComparison.Ordinal),
+            DestructorDeclarationSyntax => callerMemberName == "Finalize",
+            _ => false,
+        };
 
-        return false;
+        // A local function is declared in a member, not in a type
+        if (!isCallerMember || node is LocalFunctionStatementSyntax || context.CallerTypeName is null)
+            return isCallerMember;
 
-        static bool IsAccessorOf(string memberName, string methodName)
+        return GetDeclaringTypeName(node) is not { } typeName || typeName == context.CallerTypeName;
+
+        static bool IsAccessorOf(string memberName, string? methodName)
         {
+            if (methodName is null)
+                return false;
+
             var separator = methodName.IndexOf('_', StringComparison.Ordinal);
             return separator > 0 && methodName.AsSpan(separator + 1).SequenceEqual(memberName);
         }
+
+        static bool HasCallerParameterCount(CallerContext context, MethodDeclarationSyntax method)
+        {
+            // The method compiled for an extension block member also receives the receiver as a parameter
+            if (context.CallerParameterCount < 0 || method.Parent is ExtensionBlockDeclarationSyntax)
+                return true;
+
+            return method.ParameterList.Parameters.Count == context.CallerParameterCount;
+        }
+
+        // Members of an extension block are compiled into the static class declaring the block
+        static string? GetDeclaringTypeName(SyntaxNode node) => node.Ancestors()
+            .OfType<BaseTypeDeclarationSyntax>()
+            .FirstOrDefault(type => type is not ExtensionBlockDeclarationSyntax)?.Identifier.ValueText;
     }
 
     private static bool IsInvocationOf(InvocationExpressionSyntax invocation, string methodName)
@@ -457,32 +533,131 @@ internal static class FileEditor
 
     /// <summary>
     /// Returns the argument indexes that may hold the snapshot, the most likely first. An extension method called with
-    /// the extension syntax does not receive its first parameter as an argument. Whether the receiver is a value or the
-    /// type declaring the method cannot be told without a semantic model, so both indexes are tried.
+    /// the extension syntax does not receive its first parameter as an argument. Without a semantic model, the receiver
+    /// is classified from the syntax: when it cannot be told whether it is a value or the type declaring the method, both
+    /// indexes are returned.
     /// </summary>
     private static int[] GetArgumentIndexes(CallerContext context, InvocationExpressionSyntax invocation)
     {
         if (!context.IsExtensionMethod || context.ParameterIndex == 0)
             return [context.ParameterIndex];
 
-        var isExtensionSyntax = invocation.Expression switch
+        var extensionSyntaxIndex = context.ParameterIndex - 1;
+        return invocation.Expression switch
         {
-            MemberBindingExpressionSyntax => true,
-            MemberAccessExpressionSyntax memberAccess => !IsReferenceToDeclaringType(memberAccess.Expression, context.DeclaringTypeName),
-            _ => false,
-        };
-
-        return isExtensionSyntax ? [context.ParameterIndex - 1, context.ParameterIndex] : [context.ParameterIndex, context.ParameterIndex - 1];
-
-        static bool IsReferenceToDeclaringType(ExpressionSyntax expression, string? typeName)
-        {
-            return expression switch
+            MemberBindingExpressionSyntax => [extensionSyntaxIndex],
+            MemberAccessExpressionSyntax memberAccess => GetReceiverKind(memberAccess.Expression, context.DeclaringTypeName) switch
             {
-                IdentifierNameSyntax identifier => identifier.Identifier.ValueText == typeName,
-                MemberAccessExpressionSyntax memberAccess => memberAccess.Name.Identifier.ValueText == typeName,
-                AliasQualifiedNameSyntax aliasQualified => aliasQualified.Name.Identifier.ValueText == typeName,
-                _ => false,
+                ReceiverKind.Value => [extensionSyntaxIndex],
+                ReceiverKind.DeclaringType => [context.ParameterIndex],
+                _ => [extensionSyntaxIndex, context.ParameterIndex],
+            },
+
+            // A classic extension method has no implicit receiver, so a call without one is a static call. Inside an
+            // extension block, the receiver parameter may be implicit.
+            _ when invocation.Ancestors().Any(ancestor => ancestor is ExtensionBlockDeclarationSyntax) => [context.ParameterIndex, extensionSyntaxIndex],
+            _ => [context.ParameterIndex],
+        };
+    }
+
+    private static ReceiverKind GetReceiverKind(ExpressionSyntax receiver, string? declaringTypeName)
+    {
+        switch (receiver)
+        {
+            case IdentifierNameSyntax identifier:
+                var name = identifier.Identifier.ValueText;
+                if (name == declaringTypeName)
+                    return ReceiverKind.DeclaringType;
+
+                var root = identifier.SyntaxTree.GetRoot();
+
+                // A local, a parameter or a member with the same name hides the alias
+                var declaresValue = DeclaresValue(root, name);
+                if (FindAliasTarget(identifier, name) is { } aliasTarget)
+                    return !declaresValue && GetRightmostName(aliasTarget) == declaringTypeName ? ReceiverKind.DeclaringType : ReceiverKind.Unknown;
+
+                // The name may also be an alias declared in another file, such as a global using
+                return declaresValue && !DeclaresType(root, name) ? ReceiverKind.Value : ReceiverKind.Unknown;
+
+            // Namespace.Type, Type.NestedType, or value.Member: only the type declaring the method can be the
+            // receiver of the static call, and an alias cannot be qualified
+            case MemberAccessExpressionSyntax memberAccess:
+                return memberAccess.Name.Identifier.ValueText == declaringTypeName ? ReceiverKind.DeclaringType : ReceiverKind.Value;
+
+            // global::Type, extern_alias::Type
+            case AliasQualifiedNameSyntax aliasQualified:
+                return aliasQualified.Name.Identifier.ValueText == declaringTypeName ? ReceiverKind.DeclaringType : ReceiverKind.Unknown;
+
+            case GenericNameSyntax or PredefinedTypeSyntax:
+                return ReceiverKind.Unknown;
+
+            // Literals, invocations, object creations, this, parenthesized expressions, and so on
+            default:
+                return ReceiverKind.Value;
+        }
+
+        static TypeSyntax? FindAliasTarget(SyntaxNode node, string name)
+        {
+            foreach (var ancestor in node.Ancestors())
+            {
+                var usings = ancestor switch
+                {
+                    CompilationUnitSyntax compilationUnit => compilationUnit.Usings,
+                    BaseNamespaceDeclarationSyntax @namespace => @namespace.Usings,
+                    _ => default,
+                };
+
+                foreach (var usingDirective in usings)
+                {
+                    if (usingDirective.Alias?.Name.Identifier.ValueText == name)
+                        return usingDirective.NamespaceOrType;
+                }
+            }
+
+            return null;
+        }
+
+        static string? GetRightmostName(TypeSyntax type)
+        {
+            var name = type switch
+            {
+                QualifiedNameSyntax qualified => qualified.Right,
+                AliasQualifiedNameSyntax aliasQualified => aliasQualified.Name,
+                SimpleNameSyntax simple => simple,
+                _ => null,
             };
+
+            return name is IdentifierNameSyntax identifier ? identifier.Identifier.ValueText : null;
+        }
+
+        static bool DeclaresValue(SyntaxNode root, string name)
+        {
+            return root.DescendantNodes().Any(node => node switch
+            {
+                VariableDeclaratorSyntax variable => variable.Identifier.ValueText == name,
+                ParameterSyntax parameter => parameter.Identifier.ValueText == name,
+                SingleVariableDesignationSyntax designation => designation.Identifier.ValueText == name,
+                ForEachStatementSyntax forEach => forEach.Identifier.ValueText == name,
+                CatchDeclarationSyntax catchDeclaration => catchDeclaration.Identifier.ValueText == name,
+                PropertyDeclarationSyntax property => property.Identifier.ValueText == name,
+                EventDeclarationSyntax @event => @event.Identifier.ValueText == name,
+                FromClauseSyntax from => from.Identifier.ValueText == name,
+                LetClauseSyntax let => let.Identifier.ValueText == name,
+                JoinClauseSyntax join => join.Identifier.ValueText == name,
+                JoinIntoClauseSyntax joinInto => joinInto.Identifier.ValueText == name,
+                QueryContinuationSyntax continuation => continuation.Identifier.ValueText == name,
+                _ => false,
+            });
+        }
+
+        static bool DeclaresType(SyntaxNode root, string name)
+        {
+            return root.DescendantNodes().Any(node => node switch
+            {
+                BaseTypeDeclarationSyntax type => type.Identifier.ValueText == name,
+                DelegateDeclarationSyntax @delegate => @delegate.Identifier.ValueText == name,
+                _ => false,
+            });
         }
     }
 
@@ -502,6 +677,7 @@ internal static class FileEditor
 
         argumentExpression = null;
         actualValue = null;
+        var found = false;
         var isMostLikelyIndex = true;
         foreach (var index in GetArgumentIndexes(context, invocation))
         {
@@ -509,17 +685,25 @@ internal static class FileEditor
             {
                 if (ExpressionSyntaxMatchesValue(arguments[index].Expression, existingValue, out var value))
                 {
+                    // Updating the wrong one would change the input of the test instead of its snapshot
+                    if (found)
+                    {
+                        throw new InlineSnapshotException($"""
+                            Cannot tell which argument of the call to '{context.MethodName}' holds the snapshot: it cannot be told from the syntax whether the call uses the extension syntax, and two arguments hold <{existingValue}>.
+                            Name the argument ({context.ParameterName}: ...) to update it.
+                            """);
+                    }
+
                     argumentExpression = arguments[index].Expression;
                     actualValue = value;
-                    return true;
+                    found = true;
                 }
-
-                if (isMostLikelyIndex)
+                else if (isMostLikelyIndex)
                 {
                     actualValue = value;
                 }
             }
-            else if (existingValue is null || existingValue == context.ParameterDefaultValue)
+            else if (!found && (existingValue is null || existingValue == context.ParameterDefaultValue))
             {
                 // The argument is omitted, so the method received the default value of the parameter
                 actualValue = existingValue;
@@ -529,7 +713,7 @@ internal static class FileEditor
             isMostLikelyIndex = false;
         }
 
-        return false;
+        return found;
     }
 
     private static ArgumentSyntax CreateArgument(CallerContext context, InvocationExpressionSyntax invocation, ExpressionSyntax expression)
@@ -539,7 +723,9 @@ internal static class FileEditor
 
         // A positional argument only binds to the snapshot parameter when every parameter before it has an argument.
         // Otherwise, it would silently bind to another optional parameter.
-        if (GetArgumentIndexes(context, invocation)[0] != arguments.Count || arguments.Any(existingArgument => existingArgument.NameColon is not null))
+        // When the index depends on whether the call uses the extension syntax, a named argument binds either way.
+        var indexes = GetArgumentIndexes(context, invocation);
+        if (indexes.Length > 1 || indexes[0] != arguments.Count || arguments.Any(existingArgument => existingArgument.NameColon is not null))
         {
             argument = argument.WithNameColon(SyntaxFactory.NameColon(SyntaxFactory.IdentifierName(context.ParameterName)).WithTrailingTrivia(SyntaxFactory.Space));
         }
@@ -614,6 +800,13 @@ internal static class FileEditor
         }
 
         return Environment.NewLine;
+    }
+
+    private enum ReceiverKind
+    {
+        Unknown,
+        Value,
+        DeclaringType,
     }
 
     private sealed record FileEdit(int StartLine, int BeforeLineSpan, int AfterLineSpan);

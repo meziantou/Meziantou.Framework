@@ -89,6 +89,11 @@ The library finds the call to update from the `[CallerFilePath]` and `[CallerLin
   [Deterministic source paths](03-Settings.md#deterministic-source-paths).
 - **The expected argument must still hold the old value.** If the source file changed since the build, so that the
   argument no longer contains the expected value the test ran with, the update fails instead of editing the wrong code.
+- **The call must be in the member that made it.** A call on the recorded line is only updated when it is in the
+  member, and the type, that made the call. When the file changed since the build so that the line holds the call of
+  another member, the library searches the calling member instead. When several members cannot be told apart, such as
+  overloads with as many parameters, and more than one of them holds the old snapshot, the update fails: rebuild the
+  project and run the test again.
 - **Several test processes can update the same file.** A test project that targets several frameworks runs one process
   per framework: the processes take turns to edit a file.
 

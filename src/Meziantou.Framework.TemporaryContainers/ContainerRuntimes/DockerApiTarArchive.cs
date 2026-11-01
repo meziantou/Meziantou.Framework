@@ -66,23 +66,24 @@ internal static class DockerApiTarArchive
     /// <param name="directory">The directory to archive.</param>
     /// <param name="entryPrefix">A directory name every entry is placed under, or an empty string to archive the content of <paramref name="directory"/> at the root. When it is not empty, it must end with a slash.</param>
     /// <param name="additionalFile">A file to add to the archive under a name of the caller's choosing, on top of the content of <paramref name="directory"/>.</param>
+    /// <param name="ignore">The rules of the <c>.dockerignore</c> file of a build context, or <see langword="null"/> to archive everything.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
-    public static async Task WriteDirectoryAsync(Stream destination, string directory, string entryPrefix, (string SourcePath, string EntryName)? additionalFile, CancellationToken cancellationToken)
+    public static async Task WriteDirectoryAsync(Stream destination, string directory, string entryPrefix, (string SourcePath, string EntryName)? additionalFile, DockerIgnore? ignore, CancellationToken cancellationToken)
     {
         await using var writer = new TarWriter(destination, TarEntryFormat.Pax, leaveOpen: true);
         var root = new DirectoryInfo(directory);
         if (entryPrefix.Length > 0)
             await WriteEntryAsync(writer, root.FullName, entryPrefix, cancellationToken).ConfigureAwait(false);
 
-        // .dockerignore is not applied: it is a client-side filter the daemon never sees, so the whole context is sent.
-        await WriteDirectoryContentAsync(writer, root, entryPrefix, cancellationToken).ConfigureAwait(false);
+        // .dockerignore is a client-side filter the daemon never sees, so it is applied here, like the docker CLI does.
+        await WriteDirectoryContentAsync(writer, root, entryPrefix, relativePrefix: "", ignore, cancellationToken).ConfigureAwait(false);
 
         if (additionalFile is var (sourcePath, additionalEntryName))
             await WriteEntryAsync(writer, sourcePath, additionalEntryName, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Writes the content of a directory, recursively. A symbolic link is archived as a link, like the docker CLI does, and a linked directory is not walked into.</summary>
-    private static async Task WriteDirectoryContentAsync(TarWriter writer, DirectoryInfo directory, string entryPrefix, CancellationToken cancellationToken)
+    private static async Task WriteDirectoryContentAsync(TarWriter writer, DirectoryInfo directory, string entryPrefix, string relativePrefix, DockerIgnore? ignore, CancellationToken cancellationToken)
     {
         var options = new EnumerationOptions
         {
@@ -93,14 +94,24 @@ internal static class DockerApiTarArchive
         foreach (var item in directory.EnumerateFileSystemInfos("*", options))
         {
             var entryName = entryPrefix + item.Name;
+            var relativePath = relativePrefix + item.Name;
+            var excluded = ignore?.IsExcluded(relativePath) is true;
             if (item is DirectoryInfo subdirectory && item.LinkTarget is null)
             {
-                await WriteEntryAsync(writer, subdirectory.FullName, entryName + "/", cancellationToken).ConfigureAwait(false);
-                await WriteDirectoryContentAsync(writer, subdirectory, entryName + "/", cancellationToken).ConfigureAwait(false);
+                // An excluded directory is still walked when an exception can bring back something below it. Its own
+                // entry is left out: the daemon creates the parent directories of the entries it extracts.
+                if (excluded && ignore?.CanIncludeBelow(relativePath) is not true)
+                    continue;
+
+                if (!excluded)
+                    await WriteEntryAsync(writer, subdirectory.FullName, entryName + "/", cancellationToken).ConfigureAwait(false);
+
+                await WriteDirectoryContentAsync(writer, subdirectory, entryName + "/", relativePath + "/", ignore, cancellationToken).ConfigureAwait(false);
                 continue;
             }
 
-            await WriteEntryAsync(writer, item.FullName, entryName, cancellationToken).ConfigureAwait(false);
+            if (!excluded)
+                await WriteEntryAsync(writer, item.FullName, entryName, cancellationToken).ConfigureAwait(false);
         }
     }
 

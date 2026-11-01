@@ -21,6 +21,7 @@ namespace Meziantou.Framework.TemporaryContainers.Internals;
 [JsonSerializable(typeof(DockerApiModels.ContainerPathStat))]
 [JsonSerializable(typeof(DockerApiModels.VolumeInspectResponse))]
 [JsonSerializable(typeof(Dictionary<string, string>))]
+[JsonSerializable(typeof(Dictionary<string, DockerApiModels.RegistryAuthHeader>))]
 [JsonSourceGenerationOptions(
     PropertyNameCaseInsensitive = true,
     RespectNullableAnnotations = true,

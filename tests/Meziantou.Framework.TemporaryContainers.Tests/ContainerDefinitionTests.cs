@@ -140,6 +140,7 @@ public sealed class ContainerDefinitionTests
             User = "user",
             WorkingDirectory = "/app",
             StartupTimeout = TimeSpan.FromSeconds(42),
+            Platform = "linux/amd64",
         };
 
         var copy = new ContainerDefinition(original);
@@ -152,6 +153,49 @@ public sealed class ContainerDefinitionTests
         Assert.Equal("user", copy.User);
         Assert.Equal("/app", copy.WorkingDirectory);
         Assert.Equal(TimeSpan.FromSeconds(42), copy.StartupTimeout);
+        Assert.Equal("linux/amd64", copy.Platform);
+    }
+
+    [Fact]
+    public void ConfigurationHash_DependsOnThePlatform()
+    {
+        var definition = new ContainerDefinition(ImageSource.FromRegistry("redis:8"));
+        var withPlatform = new ContainerDefinition(definition) { Platform = "linux/amd64" };
+
+        Assert.NotEqual(ContainerConfigurationHash.Compute(definition), ContainerConfigurationHash.Compute(withPlatform));
+    }
+
+    [Fact]
+    public void ConfigurationHash_DependsOnTheBuildOptionsThatChangeTheImage()
+    {
+        var dockerfile = ImageSource.FromDockerfile("/src/Dockerfile", "/src");
+        var defaultOptions = ImageSource.FromDockerfile("/src/Dockerfile", "/src", new DockerfileBuildOptions());
+        var cacheOptions = ImageSource.FromDockerfile("/src/Dockerfile", "/src", new DockerfileBuildOptions { NoCache = true, Pull = true });
+        var targetOptions = ImageSource.FromDockerfile("/src/Dockerfile", "/src", new DockerfileBuildOptions { Target = "test" });
+        var argumentOptions = new DockerfileBuildOptions();
+        argumentOptions.BuildArguments.Add("VERSION", "1");
+
+        var hash = Hash(dockerfile);
+        Assert.Equal(hash, Hash(defaultOptions));
+        Assert.Equal(hash, Hash(cacheOptions));
+        Assert.NotEqual(hash, Hash(targetOptions));
+        Assert.NotEqual(hash, Hash(ImageSource.FromDockerfile("/src/Dockerfile", "/src", argumentOptions)));
+
+        static string Hash(ImageSource image) => ContainerConfigurationHash.Compute(new ContainerDefinition(image));
+    }
+
+    [Fact]
+    public void ImageSource_FromDockerfile_CopiesTheBuildOptions()
+    {
+        var options = new DockerfileBuildOptions { Target = "test" };
+        options.BuildArguments.Add("VERSION", "1");
+
+        var image = Assert.IsType<DockerfileImage>(ImageSource.FromDockerfile("Dockerfile", ".", options));
+        options.Target = "other";
+        options.BuildArguments.Add("OTHER", "2");
+
+        Assert.Equal("test", image.Settings.Target);
+        Assert.Equal([new KeyValuePair<string, string>("VERSION", "1")], image.Settings.BuildArguments);
     }
 
     [Theory]

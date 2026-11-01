@@ -19,6 +19,7 @@ internal static class DockerCreateArgumentBuilder
         AddOption(args, "--user", definition.User);
         AddOption(args, "--workdir", definition.WorkingDirectory);
         AddOption(args, "--pull", pullPolicyValue);
+        AddOption(args, "--platform", definition.Platform);
 
         if (definition.Resources.ReadOnlyRootFilesystem)
             args.Add("--read-only");

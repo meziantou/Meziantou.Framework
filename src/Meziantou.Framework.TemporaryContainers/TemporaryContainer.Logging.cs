@@ -59,23 +59,19 @@ public partial class TemporaryContainer
 
     private async Task ForwardLogsAsync(ILogger logger, CancellationToken cancellationToken)
     {
-        var consumedCount = 0;
+        // The cursor resumes every attach where the previous one stopped: the logger must not see the whole log again on
+        // every re-attach, and the runtime does not have to send it again.
+        var cursor = CreateCurrentRunLogCursor();
         var attempt = 0;
         var failedInspections = 0;
         while (!cancellationToken.IsCancellationRequested)
         {
-            var consumedBeforeAttach = consumedCount;
+            var consumed = false;
             try
             {
-                var index = 0;
-                await foreach (var entry in GetCurrentRunLogsAsync(follow: true, cancellationToken).ConfigureAwait(false))
+                await foreach (var entry in GetLogsAfterAsync(cursor, follow: true, tail: null, cancellationToken).ConfigureAwait(false))
                 {
-                    // Attaching to the logs replays them from the beginning, so the lines consumed by a previous
-                    // attach have to be dropped: the logger must not see the whole log again on every re-attach.
-                    if (index++ < consumedCount)
-                        continue;
-
-                    consumedCount = index;
+                    consumed = true;
                     if (!TryLog(logger, entry))
                         return;
                 }
@@ -107,7 +103,7 @@ public partial class TemporaryContainer
             }
 
             // A stream that carried something was a working one, so the next attach is worth making right away.
-            attempt = consumedCount > consumedBeforeAttach ? 0 : attempt + 1;
+            attempt = consumed ? 0 : attempt + 1;
 
             try
             {

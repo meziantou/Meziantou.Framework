@@ -57,6 +57,36 @@ Assert.False(glob.IsPartialMatch("docs"));
 [IsPartialMatch](cref:Meziantou.Framework.Globbing.Glob.IsPartialMatch) returns `true` when it cannot rule the directory out: a `true` means "look inside", not "something
 matches". [Enumerating files](06-EnumeratingFiles.md) calls it for you.
 
+## Find the base directory of a pattern
+
+[TrySplitBasePath](cref:Meziantou.Framework.Globbing.Glob.TrySplitBasePath) splits a pattern into its base path, the leading directories that hold no wildcard, and a
+pattern that matches the rest of the path:
+
+<!-- ref:../../tests/Meziantou.Framework.Globbing.Tests/GlobTests.cs;region=Glob_TrySplitBasePath;format=md-fenced-code-block;dedent=true -->
+```csharp
+var glob = Glob.Parse("src/app/**/*.cs", GlobDialect.Standard);
+Assert.True(glob.TrySplitBasePath(out var basePath, out var relativeGlob));
+Assert.Equal("src/app", basePath);
+Assert.Equal("**/*.cs", relativeGlob.ToString());
+Assert.True(relativeGlob.IsMatch("Models/User.cs"));
+
+// MSBuild resolves a leading '..' against the directory
+Assert.True(Glob.Parse("../shared/*.cs", GlobDialect.MSBuild).TrySplitBasePath(out basePath, out _));
+Assert.Equal("../shared", basePath);
+
+// The pattern starts with a wildcard
+Assert.False(Glob.Parse("**/*.cs", GlobDialect.Standard).TrySplitBasePath(out _, out _));
+```
+<!-- endref -->
+
+- The base path uses `/` as the separator. It starts with a `/` for an absolute pattern, and with `..` for an MSBuild
+  pattern that goes up from the directory.
+- The last segment of the pattern is never part of the base path, even when it holds no wildcard.
+- With [GlobOptions.IgnoreCase](cref:Meziantou.Framework.Globbing.GlobOptions.IgnoreCase), a directory that holds a letter is not part of the base path: it does not have a single
+  spelling. A Git pattern only has a base path when it is anchored, and a Posix pattern never has one.
+
+[Enumerating files](06-EnumeratingFiles.md) uses it to start at the base directory.
+
 ## Match patterns together
 
 [Glob](cref:Meziantou.Framework.Globbing.Glob) and [GlobCollection](cref:Meziantou.Framework.Globbing.GlobCollection) both implement [IGlobEvaluatable](cref:Meziantou.Framework.Globbing.IGlobEvaluatable), so `IsMatch` and `IsPartialMatch` work the same on a

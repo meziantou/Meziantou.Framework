@@ -9,6 +9,8 @@ internal sealed class LastSegment : Segment
         _innerSegment = innerSegment;
     }
 
+    public Segment InnerSegment => _innerSegment;
+
     public override bool IsMatch(ref PathReader pathReader)
     {
         pathReader.ConsumeToLastSegment();

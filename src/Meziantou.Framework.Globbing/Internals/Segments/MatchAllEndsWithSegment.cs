@@ -8,8 +8,13 @@ internal sealed class MatchAllEndsWithSegment : Segment
     public MatchAllEndsWithSegment(string suffix, bool ignoreCase)
     {
         _suffix = suffix;
+        IgnoreCase = ignoreCase;
         _stringComparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
     }
+
+    public string Suffix => _suffix;
+
+    public bool IgnoreCase { get; }
 
     public override bool IsMatch(ref PathReader pathReader)
     {

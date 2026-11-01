@@ -791,6 +791,7 @@ public sealed class ImageRendererTests
             BarcodeType.UpcA => Barcode.CreateUpcA("03600029145"),
             BarcodeType.Codabar => Barcode.CreateCodabar("40156"),
             BarcodeType.Itf => Barcode.CreateItf("12345678"),
+            BarcodeType.Gs1128 => Barcode.CreateGs1128(new Gs1Element("01", "09521234543213"), new Gs1Element("10", "ABC123")),
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, message: null),
         };
     }

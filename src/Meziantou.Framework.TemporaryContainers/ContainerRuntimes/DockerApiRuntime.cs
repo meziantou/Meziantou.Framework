@@ -1,9 +1,9 @@
 using System.Buffers;
-using System.Buffers.Binary;
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
@@ -24,6 +24,7 @@ internal sealed class DockerApiRuntime : ContainerRuntime
     private readonly Lock _connectionLock = new();
     private volatile DockerApiConnection? _connection;
     private Task<DockerApiConnection?>? _connectionProbe;
+    private volatile string? _unavailableReason;
 
     internal DockerApiRuntime()
         : base("DockerApi")
@@ -46,6 +47,9 @@ internal sealed class DockerApiRuntime : ContainerRuntime
             return reusedContainerId;
 
         var connection = await EnsureConnectionOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        if (definition.Logging.Logger is { } logger)
+            Log.DockerApiEndpointSelected(logger, connection.Endpoint.DisplayName, connection.Endpoint.Source);
+
         var imageRef = await PrepareImageAsync(definition, cancellationToken).ConfigureAwait(false);
         var payload = DockerApiCreateRequestBuilder.Build(definition, imageRef, hostIpSupported: !connection.IsWindowsDaemon);
         using var content = CreateJsonContent(payload, DockerApiJsonContext.Default.CreateContainerRequest);
@@ -175,13 +179,32 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         return DockerContainerInfoParser.ParseInspectResult(result);
     }
 
-    internal override async IAsyncEnumerable<LogEntry> GetLogsAsync(string id, bool follow, [EnumeratorCancellation] CancellationToken cancellationToken)
+    internal override async IAsyncEnumerable<LogEntry> GetLogsAsync(string id, ContainerLogsOptions options, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var endpoint = "/containers/" + Uri.EscapeDataString(id) + "/logs?stdout=1&stderr=1&timestamps=1&follow=" + (follow ? "1" : "0");
+        var endpoint = BuildLogsEndpoint(id, options);
         using var response = await SendAsync(HttpMethod.Get, endpoint, content: null, cancellationToken, completionOption: HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
         await foreach (var entry in ReadMultiplexedLogsAsync(stream, cancellationToken).ConfigureAwait(false))
             yield return entry;
+    }
+
+    internal static string BuildLogsEndpoint(string id, ContainerLogsOptions options)
+    {
+        var endpoint = new StringBuilder();
+        endpoint.Append("/containers/").Append(Uri.EscapeDataString(id)).Append("/logs?timestamps=1");
+        endpoint.Append("&stdout=").Append(options.IncludeStandardOutput ? '1' : '0');
+        endpoint.Append("&stderr=").Append(options.IncludeStandardError ? '1' : '0');
+        endpoint.Append("&follow=").Append(options.Follow ? '1' : '0');
+        if (options.Since is { } since)
+            endpoint.Append("&since=").Append(LogTimestamps.FormatUnix(since));
+
+        if (options.Until is { } until)
+            endpoint.Append("&until=").Append(LogTimestamps.FormatUnix(until));
+
+        if (options.Tail is { } tail)
+            endpoint.Append("&tail=").Append(tail.ToString(CultureInfo.InvariantCulture));
+
+        return endpoint.ToString();
     }
 
     internal override async Task<ExecResult> ExecAsync(string id, ExecOptions options, CancellationToken cancellationToken)
@@ -229,7 +252,7 @@ internal sealed class DockerApiRuntime : ContainerRuntime
     private async Task<(string StandardOutput, string StandardError)> StartExecWithStandardInputAsync(string endpoint, string body, InputSource standardInput, CancellationToken cancellationToken)
     {
         var connection = await EnsureConnectionOrThrowAsync(cancellationToken).ConfigureAwait(false);
-        var (upgraded, statusCode, errorBody) = await DockerApiTransport.SendUpgradeRequestAsync(connection.Endpoint, BuildEndpoint(connection, endpoint), body, cancellationToken).ConfigureAwait(false);
+        var (upgraded, statusCode, errorBody) = await DockerApiTransport.SendUpgradeRequestAsync(connection.Endpoint, connection.Tls, BuildEndpoint(connection, endpoint), body, cancellationToken).ConfigureAwait(false);
         if (upgraded is null)
             throw CreateException("Docker API request POST " + endpoint + " failed with status " + (int)statusCode + " (" + statusCode.ToString() + "): " + errorBody, statusCode);
 
@@ -299,15 +322,39 @@ internal sealed class DockerApiRuntime : ContainerRuntime
     internal override async Task<Stream> OpenReadAsync(string id, string path, CancellationToken cancellationToken)
     {
         var (resolvedPath, _) = await ResolvePathAsync(id, path, cancellationToken).ConfigureAwait(false);
-        using var response = await SendAsync(HttpMethod.Get, BuildArchiveEndpoint(id, resolvedPath), content: null, cancellationToken, completionOption: HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
-        await using var archive = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-        return await DockerApiTarArchive.ReadSingleFileAsync(archive, path, cancellationToken).ConfigureAwait(false);
+        return await OpenArchiveFileAsync(id, resolvedPath, path, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Opens the file the archive endpoint returns for a path. The returned stream reads the file from the response as it is read, and owns the response.</summary>
+    private async Task<Stream> OpenArchiveFileAsync(string id, string resolvedPath, string requestedPath, CancellationToken cancellationToken)
+    {
+        var response = await SendAsync(HttpMethod.Get, BuildArchiveEndpoint(id, resolvedPath), content: null, cancellationToken, completionOption: HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+        try
+        {
+            var archive = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+            return await DockerApiTarArchive.OpenSingleFileAsync(archive, requestedPath, response, cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            response.Dispose();
+            throw;
+        }
     }
 
     internal override async Task WriteFileAsync(string id, string path, Stream content, CancellationToken cancellationToken)
     {
-        await using var archive = await DockerApiTarArchive.CreateForFileAsync(GetContainerPathName(path), content, DockerApiTarArchive.RegularFileMode, cancellationToken).ConfigureAwait(false);
-        await PutArchiveAsync(id, GetContainerParentPath(path), archive, cancellationToken).ConfigureAwait(false);
+        // A stream whose length is unknown is copied to a temporary file first; any other one is sent as it is read.
+        var seekableContent = await DockerApiTarArchive.EnsureSeekableAsync(content, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var entryName = GetContainerPathName(path);
+            await PutArchiveAsync(id, GetContainerParentPath(path), (destination, ct) => DockerApiTarArchive.WriteFileAsync(destination, entryName, seekableContent, DockerApiTarArchive.RegularFileMode, ct), cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            if (!ReferenceEquals(seekableContent, content))
+                await seekableContent.DisposeAsync().ConfigureAwait(false);
+        }
     }
 
     internal override async Task CopyToContainerAsync(string id, string source, string destination, CancellationToken cancellationToken)
@@ -319,24 +366,23 @@ internal sealed class DockerApiRuntime : ContainerRuntime
 
         if (Directory.Exists(source))
         {
-            await using var directoryArchive = await DockerApiTarArchive.CreateForDirectoryAsync(source, entryName + "/", additionalFile: null, cancellationToken).ConfigureAwait(false);
-            await PutArchiveAsync(id, targetDirectory, directoryArchive, cancellationToken).ConfigureAwait(false);
+            await PutArchiveAsync(id, targetDirectory, (stream, ct) => DockerApiTarArchive.WriteDirectoryAsync(stream, source, entryName + "/", additionalFile: null, ct), cancellationToken).ConfigureAwait(false);
             return;
         }
 
         await using var file = File.OpenRead(source);
-        await using var archive = await DockerApiTarArchive.CreateForFileAsync(entryName, file, DockerApiTarArchive.GetFileMode(source), cancellationToken).ConfigureAwait(false);
-        await PutArchiveAsync(id, targetDirectory, archive, cancellationToken).ConfigureAwait(false);
+        var mode = DockerApiTarArchive.GetFileMode(source);
+        await PutArchiveAsync(id, targetDirectory, (stream, ct) => DockerApiTarArchive.WriteFileAsync(stream, entryName, file, mode, ct), cancellationToken).ConfigureAwait(false);
     }
 
     internal override async Task CopyFromContainerAsync(string id, string source, string destination, CancellationToken cancellationToken)
     {
         var (resolvedSource, sourceStat) = await ResolvePathAsync(id, source, cancellationToken).ConfigureAwait(false);
-        using var response = await SendAsync(HttpMethod.Get, BuildArchiveEndpoint(id, resolvedSource), content: null, cancellationToken, completionOption: HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
-        await using var archive = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-
         if (sourceStat is { IsDirectory: true })
         {
+            using var response = await SendAsync(HttpMethod.Get, BuildArchiveEndpoint(id, resolvedSource), content: null, cancellationToken, completionOption: HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+            await using var archive = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+
             // A destination directory that does not exist yet takes the place of the copied one, so the archive's own top-level directory is dropped.
             var destinationExists = Directory.Exists(destination);
             Directory.CreateDirectory(destination);
@@ -349,7 +395,7 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         if (Path.GetDirectoryName(Path.GetFullPath(targetFile)) is { } parent)
             Directory.CreateDirectory(parent);
 
-        await using var content = await DockerApiTarArchive.ReadSingleFileAsync(archive, source, cancellationToken).ConfigureAwait(false);
+        await using var content = await OpenArchiveFileAsync(id, resolvedSource, source, cancellationToken).ConfigureAwait(false);
         await using var file = File.Create(targetFile);
         await content.CopyToAsync(file, cancellationToken).ConfigureAwait(false);
     }
@@ -365,10 +411,10 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         return (path, stat);
     }
 
-    private async Task PutArchiveAsync(string id, string directory, Stream archive, CancellationToken cancellationToken)
+    /// <summary>Extracts an archive in a directory of the container. The archive is written into the body of the request as it is sent.</summary>
+    private async Task PutArchiveAsync(string id, string directory, Func<Stream, CancellationToken, Task> writeArchive, CancellationToken cancellationToken)
     {
-        using var content = new StreamContent(archive);
-        content.Headers.ContentType = new MediaTypeHeaderValue("application/x-tar");
+        using var content = DockerApiTarArchive.CreateContent(writeArchive);
         using var response = await SendAsync(HttpMethod.Put, BuildArchiveEndpoint(id, directory), content, cancellationToken).ConfigureAwait(false);
     }
 
@@ -410,6 +456,12 @@ internal sealed class DockerApiRuntime : ContainerRuntime
             0 => "/",
             var separatorIndex => trimmed[..separatorIndex],
         };
+    }
+
+    internal override async Task<string?> GetRemoteDaemonHostAsync(CancellationToken cancellationToken)
+    {
+        var connection = await EnsureConnectionOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        return HostAddress.GetRemoteHost(connection.Endpoint);
     }
 
     internal override IReadOnlyDictionary<int, int> ResolvePortMap(ContainerInfo info, ContainerDefinition definition)
@@ -537,9 +589,8 @@ internal sealed class DockerApiRuntime : ContainerRuntime
             additionalFile = (dockerfile.DockerfilePath, dockerfileName);
         }
 
-        await using var context = await DockerApiTarArchive.CreateForDirectoryAsync(contextDirectory, entryPrefix: "", additionalFile, cancellationToken).ConfigureAwait(false);
-        using var content = new StreamContent(context);
-        content.Headers.ContentType = new MediaTypeHeaderValue("application/x-tar");
+        // The context is archived into the body of the request as it is sent, rather than into a temporary file first.
+        using var content = DockerApiTarArchive.CreateContent((stream, ct) => DockerApiTarArchive.WriteDirectoryAsync(stream, contextDirectory, entryPrefix: "", additionalFile, ct));
 
         // The labels are what the cleanup and the reaper find a built image by.
         var endpoint = "/build?rm=1&dockerfile=" + Uri.EscapeDataString(dockerfileName) + "&t=" + Uri.EscapeDataString(tag) +
@@ -684,161 +735,99 @@ internal sealed class DockerApiRuntime : ContainerRuntime
 
     internal static async IAsyncEnumerable<LogEntry> ReadMultiplexedLogsAsync(Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
-        var buffers = new Dictionary<LogStream, StringBuilder>
+        using var reader = new DockerMultiplexedStreamReader(stream);
+        using var standardOutput = new DockerStreamTextBuffer();
+        using var standardError = new DockerStreamTextBuffer();
+        while (await reader.ReadFrameAsync(cancellationToken).ConfigureAwait(false))
         {
-            [LogStream.Stdout] = new StringBuilder(),
-            [LogStream.Stderr] = new StringBuilder(),
-        };
-
-        await foreach (var (logStream, text) in ReadMultiplexedFramesAsync(stream, cancellationToken).ConfigureAwait(false))
-        {
-            var buffer = buffers[logStream];
-            buffer.Append(text);
-
-            while (TryReadLine(buffer, out var line))
+            var logStream = reader.CurrentStream;
+            var buffer = logStream is LogStream.Stderr ? standardError : standardOutput;
+            buffer.Append(reader.CurrentPayload, flush: false);
+            while (TryReadLogLine(buffer, logStream, out var entry))
             {
-                var parsed = ParseLogLine(logStream, line);
-                if (parsed is not null)
-                    yield return parsed;
+                if (entry is not null)
+                    yield return entry;
             }
         }
 
         // The stream ended. Whatever is left was never terminated by a newline, but it is still a log line: a process
         // that writes its readiness marker with 'printf' and no '\n', or that dies mid-line, would otherwise never be
-        // reported and every wait strategy watching for it would time out.
-        foreach (var (logStream, buffer) in buffers)
+        // reported and every wait strategy watching for it would time out. A stream that ends in the middle of a
+        // character still reports what it received.
+        foreach (var (logStream, buffer) in new[] { (LogStream.Stdout, standardOutput), (LogStream.Stderr, standardError) })
         {
-            if (buffer.Length == 0)
-                continue;
+            buffer.Append([], flush: true);
+            while (TryReadLogLine(buffer, logStream, out var entry))
+            {
+                if (entry is not null)
+                    yield return entry;
+            }
 
-            // TrimEnd mirrors what TryReadLine does for every other line, so the last one is not the only one that can
-            // come out with a trailing CR. It matters when the stream stops between the CR and the LF of a CRLF ending.
-            var parsed = ParseLogLine(logStream, buffer.ToString().TrimEnd('\r'));
-            if (parsed is not null)
-                yield return parsed;
+            if (TryReadTrailingLogLine(buffer, logStream) is { } trailing)
+                yield return trailing;
         }
     }
 
     internal static async Task<(string StandardOutput, string StandardError)> ReadMultiplexedTextAsync(Stream stream, CancellationToken cancellationToken)
     {
+        using var reader = new DockerMultiplexedStreamReader(stream);
+        using var standardOutput = new DockerStreamTextBuffer();
+        using var standardError = new DockerStreamTextBuffer();
         var stdout = new StringBuilder();
         var stderr = new StringBuilder();
-        await foreach (var (logStream, text) in ReadMultiplexedFramesAsync(stream, cancellationToken).ConfigureAwait(false))
+        while (await reader.ReadFrameAsync(cancellationToken).ConfigureAwait(false))
         {
-            if (logStream is LogStream.Stdout)
-                stdout.Append(text);
-            else
-                stderr.Append(text);
+            var (buffer, builder) = reader.CurrentStream is LogStream.Stderr ? (standardError, stderr) : (standardOutput, stdout);
+            AppendText(buffer, builder, reader.CurrentPayload, flush: false);
         }
 
+        AppendText(standardOutput, stdout, [], flush: true);
+        AppendText(standardError, stderr, [], flush: true);
         return (stdout.ToString(), stderr.ToString());
+
+        static void AppendText(DockerStreamTextBuffer buffer, StringBuilder builder, ReadOnlySpan<byte> bytes, bool flush)
+        {
+            buffer.Append(bytes, flush);
+            builder.Append(buffer.Pending);
+            buffer.Clear();
+        }
     }
 
-    /// <summary>Reads the frames of a stream multiplexed by the daemon: each payload is prefixed by an 8-byte header whose first byte is the stream and whose last four bytes are the big-endian payload length.</summary>
-    /// <remarks>The daemon cuts frames wherever its reads end, not between characters, so each stream keeps its own decoder: a character split between two frames is decoded once both halves have arrived.</remarks>
-    private static async IAsyncEnumerable<(LogStream Stream, string Text)> ReadMultiplexedFramesAsync(Stream stream, [EnumeratorCancellation] CancellationToken cancellationToken)
+    /// <summary>Reads the next complete line of a stream. The entry is <see langword="null"/> for an empty line.</summary>
+    private static bool TryReadLogLine(DockerStreamTextBuffer buffer, LogStream stream, out LogEntry? entry)
     {
-        var standardOutputDecoder = Encoding.UTF8.GetDecoder();
-        var standardErrorDecoder = Encoding.UTF8.GetDecoder();
-        var header = new byte[8];
-        while (await FillBufferAsync(stream, header, cancellationToken).ConfigureAwait(false))
+        if (!buffer.TryReadLine(out var line))
         {
-            var streamKind = header[0] switch
-            {
-                2 => LogStream.Stderr,
-                _ => LogStream.Stdout,
-            };
-
-            var payloadLength = BinaryPrimitives.ReadInt32BigEndian(header.AsSpan(4));
-            if (payloadLength <= 0)
-                continue;
-
-            var rented = ArrayPool<byte>.Shared.Rent(payloadLength);
-            try
-            {
-                await ReadExactlyAsync(stream, rented.AsMemory(0, payloadLength), cancellationToken).ConfigureAwait(false);
-                var text = Decode(streamKind is LogStream.Stderr ? standardErrorDecoder : standardOutputDecoder, rented.AsSpan(0, payloadLength), flush: false);
-                if (text.Length > 0)
-                    yield return (streamKind, text);
-            }
-            finally
-            {
-                ArrayPool<byte>.Shared.Return(rented);
-            }
+            entry = null;
+            return false;
         }
 
-        // A stream that ends in the middle of a character still reports what it received.
-        if (Decode(standardOutputDecoder, [], flush: true) is { Length: > 0 } standardOutputRest)
-            yield return (LogStream.Stdout, standardOutputRest);
-
-        if (Decode(standardErrorDecoder, [], flush: true) is { Length: > 0 } standardErrorRest)
-            yield return (LogStream.Stderr, standardErrorRest);
-    }
-
-    private static string Decode(Decoder decoder, ReadOnlySpan<byte> bytes, bool flush)
-    {
-        var chars = new char[decoder.GetCharCount(bytes, flush)];
-        var written = decoder.GetChars(bytes, chars, flush);
-        return new string(chars, 0, written);
-    }
-
-    private static async ValueTask<bool> FillBufferAsync(Stream stream, byte[] buffer, CancellationToken cancellationToken)
-    {
-        var offset = 0;
-        while (offset < buffer.Length)
-        {
-            var read = await stream.ReadAsync(buffer.AsMemory(offset, buffer.Length - offset), cancellationToken).ConfigureAwait(false);
-            if (read == 0)
-                return offset != 0 ? throw new EndOfStreamException("Unexpected end of stream while reading Docker API logs.") : false;
-
-            offset += read;
-        }
-
+        entry = ParseLogLine(stream, line);
         return true;
     }
 
-    private static async ValueTask ReadExactlyAsync(Stream stream, Memory<byte> buffer, CancellationToken cancellationToken)
+    /// <summary>Reads what is left of a stream that ended without a newline. Trimming the carriage returns mirrors what <see cref="DockerStreamTextBuffer.TryReadLine"/> does for every other line, which matters when the stream stops between the CR and the LF of a CRLF ending.</summary>
+    private static LogEntry? TryReadTrailingLogLine(DockerStreamTextBuffer buffer, LogStream stream)
     {
-        var offset = 0;
-        while (offset < buffer.Length)
-        {
-            var read = await stream.ReadAsync(buffer[offset..], cancellationToken).ConfigureAwait(false);
-            if (read == 0)
-                throw new EndOfStreamException("Unexpected end of stream while reading Docker API payload.");
-
-            offset += read;
-        }
+        var line = buffer.Pending.TrimEnd('\r');
+        var entry = buffer.Pending.IsEmpty ? null : ParseLogLine(stream, line);
+        buffer.Clear();
+        return entry;
     }
 
-    private static bool TryReadLine(StringBuilder builder, out string line)
+    private static LogEntry? ParseLogLine(LogStream stream, ReadOnlySpan<char> line)
     {
-        for (var i = 0; i < builder.Length; i++)
-        {
-            if (builder[i] is '\n')
-            {
-                line = builder.ToString(0, i).TrimEnd('\r');
-                builder.Remove(0, i + 1);
-                return true;
-            }
-        }
-
-        line = string.Empty;
-        return false;
-    }
-
-    private static LogEntry? ParseLogLine(LogStream stream, string line)
-    {
-        var spaceIndex = line.IndexOf(' ', StringComparison.Ordinal);
+        var spaceIndex = line.IndexOf(' ');
         if (spaceIndex > 0 &&
             DateTimeOffset.TryParse(line[..spaceIndex], CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var timestamp))
         {
-            return new LogEntry(stream, line[(spaceIndex + 1)..], timestamp);
+            return new LogEntry(stream, line[(spaceIndex + 1)..].ToString(), timestamp);
         }
 
-        if (line.Length == 0)
+        if (line.IsEmpty)
             return null;
 
-        return new LogEntry(stream, line, Timestamp: null);
+        return new LogEntry(stream, line.ToString(), Timestamp: null);
     }
 
     private static StringContent CreateJsonContent<T>(T payload, JsonTypeInfo<T> typeInfo)
@@ -875,43 +864,100 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         return await probe.WaitAsync(cancellationToken).ConfigureAwait(false);
     }
 
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The certificates are disposed in the finally block, unless the published connection owns them.")]
     private async Task<DockerApiConnection?> ProbeConnectionAsync()
     {
-        foreach (var endpoint in DockerApiTransport.GetEndpoints())
+        var discovery = DockerEndpointDiscovery.CreateForCurrentProcess().Discover();
+        var failures = new List<string>(discovery.Diagnostics);
+        foreach (var endpoint in discovery.Endpoints)
         {
-            HttpClient? candidateClient = null;
+            DockerApiTransport.TlsCredentials? tls = null;
             try
             {
-                candidateClient = DockerApiTransport.CreateClient(endpoint);
-                using var cts = new CancellationTokenSource(ProbeTimeout);
-                using var versionResponse = await candidateClient.GetAsync("/version", cts.Token).ConfigureAwait(false);
-                if (!versionResponse.IsSuccessStatusCode)
-                    continue;
+                if (endpoint.Tls is { } tlsSettings)
+                    tls = DockerApiTransport.TlsCredentials.Load(tlsSettings);
 
-                await using var stream = await versionResponse.Content.ReadAsStreamAsync(cts.Token).ConfigureAwait(false);
-                var version = await JsonSerializer.DeserializeAsync(stream, DockerApiJsonContext.Default.Version, cts.Token).ConfigureAwait(false);
-                if (string.IsNullOrWhiteSpace(version?.ApiVersion))
-                    continue;
+                var (connection, failure) = await ProbeEndpointAsync(endpoint, tls).ConfigureAwait(false);
+                if (connection is not null)
+                {
+                    // The connection lives as long as the runtime, and keeps the certificates its client uses.
+                    tls = null;
+                    _unavailableReason = null;
+                    _connection = connection;
+                    return connection;
+                }
 
-                // The client and the API version are published together, so a caller that sees the connection sees both.
-                var connection = new DockerApiConnection(candidateClient, version.ApiVersion, endpoint, string.Equals(version.Os, "windows", StringComparison.OrdinalIgnoreCase));
-                candidateClient = null;
-                _connection = connection;
-                return connection;
+                failures.Add($"{endpoint}: {failure}");
             }
-            catch (Exception ex) when (ex is OperationCanceledException or HttpRequestException or SocketException or IOException or JsonException)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or CryptographicException)
             {
+                failures.Add($"{endpoint}: cannot load the TLS certificates: {ex.Message}");
             }
             finally
             {
-                candidateClient?.Dispose();
+                tls?.Dispose();
             }
         }
 
+        _unavailableReason = failures.Count > 0 ? string.Join(" ", failures) : "No Docker endpoint was found.";
         return null;
+    }
+
+    private static async Task<(DockerApiConnection? Connection, string? Failure)> ProbeEndpointAsync(DockerApiTransport.Endpoint endpoint, DockerApiTransport.TlsCredentials? tls)
+    {
+        HttpClient? candidateClient = null;
+        try
+        {
+            candidateClient = DockerApiTransport.CreateClient(endpoint, tls);
+            using var cts = new CancellationTokenSource(ProbeTimeout);
+            using var versionResponse = await candidateClient.GetAsync("/version", cts.Token).ConfigureAwait(false);
+            if (!versionResponse.IsSuccessStatusCode)
+                return (null, string.Create(CultureInfo.InvariantCulture, $"GET /version returned {(int)versionResponse.StatusCode}."));
+
+            await using var stream = await versionResponse.Content.ReadAsStreamAsync(cts.Token).ConfigureAwait(false);
+            var version = await JsonSerializer.DeserializeAsync(stream, DockerApiJsonContext.Default.Version, cts.Token).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(version?.ApiVersion))
+                return (null, "GET /version did not return an API version.");
+
+            // The client and the API version are published together, so a caller that sees the connection sees both.
+            var connection = new DockerApiConnection(candidateClient, tls, version.ApiVersion, endpoint, string.Equals(version.Os, "windows", StringComparison.OrdinalIgnoreCase));
+            candidateClient = null;
+            return (connection, null);
+        }
+        catch (OperationCanceledException)
+        {
+            return (null, "the daemon did not answer within " + ProbeTimeout.TotalSeconds.ToString(CultureInfo.InvariantCulture) + " seconds.");
+        }
+        catch (Exception ex) when (ex is HttpRequestException or SocketException or IOException or JsonException)
+        {
+            return (null, GetInnermostMessage(ex));
+        }
+        finally
+        {
+            candidateClient?.Dispose();
+        }
+    }
+
+    private static string GetInnermostMessage(Exception exception)
+    {
+        while (exception.InnerException is { } inner)
+            exception = inner;
+
+        return exception.Message;
+    }
+
+    /// <summary>Why the last probe did not find a daemon, listing every endpoint it tried; <see langword="null"/> once a daemon answered.</summary>
+    internal override string? UnavailableReason => _unavailableReason;
+
+    /// <summary>The daemon the runtime talks to, connecting to it first if needed.</summary>
+    internal async Task<DockerApiTransport.Endpoint> GetEndpointAsync(CancellationToken cancellationToken)
+    {
+        var connection = await EnsureConnectionOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        return connection.Endpoint;
     }
 
     /// <summary>The endpoint the runtime talks to, published as a single value so that a caller never sees a client without its API version.</summary>
     /// <param name="IsWindowsDaemon">Whether the daemon runs Windows containers, which cannot publish a port on a specific host address.</param>
-    private sealed record DockerApiConnection(HttpClient HttpClient, string ApiVersion, DockerApiTransport.Endpoint Endpoint, bool IsWindowsDaemon);
+    /// <param name="Tls">The certificates of the TLS connections to the daemon, shared by <paramref name="HttpClient"/> and the connections of the standard input of an exec.</param>
+    private sealed record DockerApiConnection(HttpClient HttpClient, DockerApiTransport.TlsCredentials? Tls, string ApiVersion, DockerApiTransport.Endpoint Endpoint, bool IsWindowsDaemon);
 }

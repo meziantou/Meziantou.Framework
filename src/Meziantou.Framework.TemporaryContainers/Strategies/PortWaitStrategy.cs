@@ -1,4 +1,3 @@
-using System.Net;
 using System.Net.Sockets;
 
 namespace Meziantou.Framework.TemporaryContainers.Strategies;
@@ -14,24 +13,27 @@ internal sealed class PortWaitStrategy(int containerPort) : IWaitStrategy
     {
         ArgumentNullException.ThrowIfNull(container);
 
+        // The address of the binding, or the host of a remote daemon: a port published elsewhere than the loopback
+        // address is not reachable there.
+        var host = container.GetHostAddress(containerPort);
         var hostPort = container.GetMappedPort(containerPort);
         while (true)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            if (await IsListeningAsync(hostPort, DefaultProbeDuration, cancellationToken).ConfigureAwait(false))
+            if (await IsListeningAsync(host, hostPort, DefaultProbeDuration, cancellationToken).ConfigureAwait(false))
                 return;
 
             await Task.Delay(TimeSpan.FromMilliseconds(100), cancellationToken).ConfigureAwait(false);
         }
     }
 
-    /// <summary>Determines whether a listener accepts connections on a local port, rather than a forwarder that accepts them on its behalf.</summary>
-    internal static async Task<bool> IsListeningAsync(int port, TimeSpan probeDuration, CancellationToken cancellationToken)
+    /// <summary>Determines whether a listener accepts connections on a port, rather than a forwarder that accepts them on its behalf.</summary>
+    internal static async Task<bool> IsListeningAsync(string host, int port, TimeSpan probeDuration, CancellationToken cancellationToken)
     {
         using var client = new TcpClient();
         try
         {
-            await client.ConnectAsync(IPAddress.Loopback, port, cancellationToken).ConfigureAwait(false);
+            await client.ConnectAsync(host, port, cancellationToken).ConfigureAwait(false);
 
             using var probeCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             probeCts.CancelAfter(probeDuration);

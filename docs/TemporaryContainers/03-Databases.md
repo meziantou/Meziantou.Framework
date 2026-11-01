@@ -15,7 +15,8 @@ method.
 | `ContainerDefinition.CreateMongoDb()` | `mongo:8` | 27017 | [MongoDbContainer](cref:Meziantou.Framework.TemporaryContainers.MongoDbContainer) |
 | `ContainerDefinition.CreateSqlServer()` | `mcr.microsoft.com/mssql/server:2025-latest` | 1433 | [SqlServerContainer](cref:Meziantou.Framework.TemporaryContainers.SqlServerContainer) |
 
-The connection strings point to `127.0.0.1` and the host port of the container, so call `GetConnectionString` after
+The connection strings point to the [host address](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.GetHostAddress) (`127.0.0.1`, unless the [daemon runs on another
+machine](04-Configuration/04-Ports.md#connect-to-a-remote-daemon)) and the host port of the container, so call `GetConnectionString` after
 [StartAsync](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.StartAsync): before, it throws an `InvalidOperationException`.
 
 ## Redis

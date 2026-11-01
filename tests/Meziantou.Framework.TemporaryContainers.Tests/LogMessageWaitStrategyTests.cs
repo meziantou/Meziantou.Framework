@@ -30,24 +30,42 @@ public sealed class LogMessageWaitStrategyTests
     }
 
     [Fact]
-    public async Task WaitAsync_CountsTheOccurrencesOfEachAttachFromScratch()
+    public async Task WaitAsync_CountsTheOccurrencesAcrossAttaches()
     {
-        // Attaching to the logs replays them from the beginning, so counting the matches of a new attach on top of
-        // the previous ones would report a container as ready after a single occurrence seen twice.
+        // Every attach resumes after the entries the previous ones returned, so an occurrence seen before the runtime
+        // ended the stream still counts.
         var attachCount = 0;
         var strategy = CreateStrategy("SERVER READY", occurrences: 2);
 
-        var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () => await strategy.WaitCoreAsync(
+        await strategy.WaitCoreAsync(
             _ =>
             {
                 attachCount++;
                 return CreateLogsAsync("SERVER READY");
             },
+            _ => Task.FromResult<ContainerInfo?>(RunningContainer),
+            XunitCancellationToken);
+
+        Assert.Equal(2, attachCount);
+    }
+
+    [Fact]
+    public async Task WaitAsync_ReportsTheLinesOfEveryAttach()
+    {
+        var attachCount = 0;
+        var strategy = CreateStrategy("SERVER READY", occurrences: 1);
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () => await strategy.WaitCoreAsync(
+            _ =>
+            {
+                attachCount++;
+                return CreateLogsAsync("attach " + attachCount.ToString(CultureInfo.InvariantCulture));
+            },
             _ => Task.FromResult<ContainerInfo?>(attachCount < 2 ? RunningContainer : ExitedContainer),
             XunitCancellationToken));
 
-        Assert.Equal(2, attachCount);
-        Assert.Contains("matched 1 time(s)", exception.Message);
+        Assert.Contains("attach 1", exception.Message);
+        Assert.Contains("attach 2", exception.Message);
     }
 
     [Fact]

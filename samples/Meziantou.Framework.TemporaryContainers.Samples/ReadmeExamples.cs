@@ -15,11 +15,12 @@ public static class ReadmeExamples
         await using var container = definition.CreateContainer();
         await container.StartAsync();
 
+        var host = container.GetHostAddress(6379); // 127.0.0.1, unless the daemon runs on another machine
         var hostPort = container.GetMappedPort(6379);
-        // connect to 127.0.0.1:hostPort
+        // connect to host:hostPort
         #endregion
 
-        Console.WriteLine(hostPort);
+        Console.WriteLine($"{host}:{hostPort}");
     }
 
     public static void PublishOnEveryInterface(ContainerDefinition definition)

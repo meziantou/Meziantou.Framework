@@ -18,7 +18,7 @@ public sealed class AppleContainerRuntimeAdapterTests
         Assert.Equal("delete --force abc", string.Join(' ', runtime.BuildRemoveArguments("abc")));
         Assert.Equal("copy src abc:/dst", string.Join(' ', runtime.BuildCopyToContainerArguments("abc", "src", "/dst")));
         Assert.Equal("copy abc:/src dst", string.Join(' ', runtime.BuildCopyFromContainerArguments("abc", "/src", "dst")));
-        Assert.Equal("logs --follow abc", string.Join(' ', runtime.BuildLogsArguments("abc")));
+        Assert.Equal("logs --follow abc", string.Join(' ', runtime.BuildLogsArguments("abc", new ContainerLogsOptions())));
         Assert.Equal("ls -q", string.Join(' ', runtime.BuildProbeArguments()));
     }
 
@@ -152,7 +152,26 @@ public sealed class AppleContainerRuntimeAdapterTests
     [Fact]
     public void BuildLogsArgumentsCanStopAtTheCurrentEnd()
     {
-        Assert.Equal("logs abc", string.Join(' ', CreateRuntime().BuildLogsArguments("abc", follow: false)));
+        Assert.Equal("logs abc", string.Join(' ', CreateRuntime().BuildLogsArguments("abc", new ContainerLogsOptions { Follow = false })));
+    }
+
+    [Fact]
+    public void BuildLogsArgumentsMapsTheTail()
+    {
+        Assert.Equal("logs --follow -n 5 abc", string.Join(' ', CreateRuntime().BuildLogsArguments("abc", new ContainerLogsOptions { Tail = 5 })));
+    }
+
+    [Fact]
+    public async Task GetLogsAsyncRefusesATimeRange()
+    {
+        // The CLI records no timestamps, so returning the whole log would silently ignore the range.
+        var runtime = CreateRuntime();
+
+        await Assert.ThrowsAsync<NotSupportedException>(async () =>
+        {
+            await foreach (var entry in runtime.GetLogsAsync("abc", new ContainerLogsOptions { Since = DateTimeOffset.UnixEpoch }, XunitCancellationToken))
+                _ = entry;
+        });
     }
 
     [Fact]

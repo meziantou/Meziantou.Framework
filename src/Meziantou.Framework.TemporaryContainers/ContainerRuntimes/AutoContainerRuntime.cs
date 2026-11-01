@@ -108,6 +108,12 @@ internal sealed class AutoContainerRuntime : ContainerRuntime
         return await runtime.ListManagedImagesAsync(cancellationToken).ConfigureAwait(false);
     }
 
+    internal override async Task<string?> GetRemoteDaemonHostAsync(CancellationToken cancellationToken)
+    {
+        var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        return await runtime.GetRemoteDaemonHostAsync(cancellationToken).ConfigureAwait(false);
+    }
+
     internal override async Task<string> GetReaperSocketPathAsync(CancellationToken cancellationToken)
     {
         var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
@@ -117,6 +123,9 @@ internal sealed class AutoContainerRuntime : ContainerRuntime
     internal override async Task<string> EnsureCreatedAsync(ContainerDefinition definition, CancellationToken cancellationToken)
     {
         var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        if (runtime != DockerApi && DockerApi.UnavailableReason is { } reason && definition.Logging.Logger is { } logger)
+            Log.DockerApiSkipped(logger, runtime.ToString(), reason);
+
         return await runtime.EnsureCreatedAsync(definition, cancellationToken).ConfigureAwait(false);
     }
 
@@ -174,10 +183,10 @@ internal sealed class AutoContainerRuntime : ContainerRuntime
         return await runtime.InspectAsync(id, cancellationToken).ConfigureAwait(false);
     }
 
-    internal override async IAsyncEnumerable<LogEntry> GetLogsAsync(string id, bool follow, [EnumeratorCancellation] CancellationToken cancellationToken)
+    internal override async IAsyncEnumerable<LogEntry> GetLogsAsync(string id, ContainerLogsOptions options, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
         var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
-        await foreach (var entry in runtime.GetLogsAsync(id, follow, cancellationToken).ConfigureAwait(false))
+        await foreach (var entry in runtime.GetLogsAsync(id, options, cancellationToken).ConfigureAwait(false))
             yield return entry;
     }
 

@@ -38,6 +38,9 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
 
     internal virtual bool SupportsRestart => false;
 
+    /// <summary>Whether the logs command selects the entries by time and keeps the last ones itself. A CLI that cannot is given neither option, and the entries it returns are selected here instead.</summary>
+    internal virtual bool SupportsLogsSelection => true;
+
     /// <summary>Whether the CLI reads environment variables from a file, which keeps their values off the command line.</summary>
     internal virtual bool SupportsEnvironmentFile => true;
 
@@ -189,7 +192,8 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
 
     internal abstract IReadOnlyList<string> BuildInspectArguments(string id);
 
-    internal abstract IReadOnlyList<string> BuildLogsArguments(string id, bool follow = true);
+    /// <summary>Builds the arguments of the command that streams the logs. The CLIs cannot select a stream, so <see cref="ContainerLogsOptions.IncludeStandardOutput"/> and <see cref="ContainerLogsOptions.IncludeStandardError"/> are applied to their output instead.</summary>
+    internal abstract IReadOnlyList<string> BuildLogsArguments(string id, ContainerLogsOptions options);
 
     internal abstract IReadOnlyList<string> BuildExecArguments(string id, ExecOptions options, EnvironmentFile? environmentFile = null);
 
@@ -438,8 +442,17 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
         return ParseInspect(result.StandardOutput);
     }
 
-    internal override async IAsyncEnumerable<LogEntry> GetLogsAsync(string id, bool follow, [EnumeratorCancellation] CancellationToken cancellationToken)
+    internal override async IAsyncEnumerable<LogEntry> GetLogsAsync(string id, ContainerLogsOptions options, [EnumeratorCancellation] CancellationToken cancellationToken)
     {
+        if (!LogsIncludeTimestamps && (options.Since is not null || options.Until is not null))
+            throw new NotSupportedException($"The '{this}' runtime does not record the time of the log entries, so it cannot select them by time.");
+
+        // Keeping the last entries of a log that is still being written needs to know where the existing entries end,
+        // which only the runtime does.
+        var selectHere = !SupportsLogsSelection;
+        if (selectHere && options.Follow && options.Tail is not null)
+            throw new NotSupportedException($"The '{this}' runtime cannot follow the last entries of the logs. Set Follow to false, or use Since instead of Tail.");
+
         var channel = Channel.CreateUnbounded<LogEntry>(new UnboundedChannelOptions
         {
             SingleReader = true,
@@ -447,16 +460,45 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
         });
 
         var instance = Cli.ExecuteStreaming(
-            BuildLogsArguments(id, follow),
-            line => channel.Writer.TryWrite(ParseLog(line, LogStream.Stdout, LogsIncludeTimestamps)),
-            line => channel.Writer.TryWrite(ParseLog(line, LogStream.Stderr, LogsIncludeTimestamps)),
+            BuildLogsArguments(id, options),
+            line =>
+            {
+                if (options.IncludeStandardOutput)
+                    channel.Writer.TryWrite(ParseLog(line, LogStream.Stdout, LogsIncludeTimestamps));
+            },
+            line =>
+            {
+                if (options.IncludeStandardError)
+                    channel.Writer.TryWrite(ParseLog(line, LogStream.Stderr, LogsIncludeTimestamps));
+            },
             cancellationToken);
 
         var completion = CompleteChannelWhenDoneAsync(instance, channel.Writer);
         try
         {
+            var tail = selectHere && options.Tail is not null ? new List<LogEntry>() : null;
             await foreach (var entry in channel.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false))
-                yield return entry;
+            {
+                if (selectHere && (entry.Timestamp < options.Since || entry.Timestamp > options.Until))
+                    continue;
+
+                if (tail is null)
+                {
+                    yield return entry;
+                    continue;
+                }
+
+                tail.Add(entry);
+            }
+
+            if (tail is not null)
+            {
+                // The two streams come from two pipes, so the order of arrival is not the order of the log: an entry of
+                // the standard error can arrive after newer entries of the standard output. The last entries are the
+                // newest ones, as the runtimes select them. The sort is stable, so entries of the same time keep their order.
+                foreach (var entry in tail.OrderBy(entry => entry.Timestamp).TakeLast(options.Tail!.Value))
+                    yield return entry;
+            }
         }
         finally
         {
@@ -533,16 +575,20 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
             options.Command.Add(item);
 
         var args = BuildExecArguments(id, options);
-        var stream = new MemoryStream();
+
+        // The content goes to a file only the current user can read, rather than to memory: the file can be large. The
+        // caller gets a seekable stream, and the file is deleted when it is disposed.
+        var tempFile = PrivateTemporaryFile.CreatePath();
         try
         {
-            await Cli.RunToStreamAsync(args, stream, cancellationToken).ConfigureAwait(false);
-            stream.Position = 0;
-            return stream;
+            await using (var file = PrivateTemporaryFile.Create(tempFile))
+                await Cli.RunToStreamAsync(args, file, cancellationToken).ConfigureAwait(false);
+
+            return new TemporaryFileStream(tempFile);
         }
         catch
         {
-            await stream.DisposeAsync().ConfigureAwait(false);
+            File.Delete(tempFile);
             throw;
         }
     }

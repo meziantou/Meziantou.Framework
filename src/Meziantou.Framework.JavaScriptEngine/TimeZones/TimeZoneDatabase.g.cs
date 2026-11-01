@@ -5,7 +5,7 @@ namespace Meziantou.Framework.JavaScriptEngine.TimeZones;
 internal sealed partial class TimeZoneDatabase
 {
     /// <summary>The release of the IANA time zone database embedded in tzdb.bin.</summary>
-    public const string EmbeddedTzdataVersion = "2026e";
+    public const string EmbeddedTzdataVersion = "2026f";
 
     /// <summary>The release of CLDR whose windowsZones.xml is embedded in tzdb.bin.</summary>
     public const string EmbeddedCldrVersion = "release-49";

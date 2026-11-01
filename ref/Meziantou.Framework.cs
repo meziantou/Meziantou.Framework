@@ -406,27 +406,38 @@ namespace Meziantou.Framework
     public static class RandomExtensions
     {
         public static bool NextBoolean(this System.Random random) => throw null;
-        public static byte NextByte(this System.Random random, byte min = 0, byte max = 255) => throw null;
+        public static byte NextByte(this System.Random random) => throw null;
+        public static byte NextByte(this System.Random random, byte min, byte max) => throw null;
         public static System.DateTime NextDateTime(this System.Random random, System.DateTime min, System.DateTime max) => throw null;
         public static decimal NextDecimal(this System.Random random, decimal min = -79228162514264337593543950335m, decimal max = 79228162514264337593543950335m) => throw null;
         public static double NextDouble(this System.Random random, double min = 0d, double max = 1d) => throw null;
         public static T NextFromList<T>(this System.Random random, System.Collections.Generic.ICollection<T> list) => throw null;
+        [System.Runtime.CompilerServices.OverloadResolutionPriority(2)]
         public static T NextFromList<T>(this System.Random random, System.Collections.Generic.IList<T> list) => throw null;
+        [System.Runtime.CompilerServices.OverloadResolutionPriority(-1)]
         public static T NextFromList<T>(this System.Random random, System.Collections.Generic.IReadOnlyCollection<T> list) => throw null;
+        [System.Runtime.CompilerServices.OverloadResolutionPriority(1)]
         public static T NextFromList<T>(this System.Random random, System.Collections.Generic.IReadOnlyList<T> list) => throw null;
         public static T NextFromList<T>(this System.Random random, System.ReadOnlyMemory<T> list) => throw null;
         public static T NextFromList<T>(this System.Random random, System.ReadOnlySpan<T> list) => throw null;
+        [System.Runtime.CompilerServices.OverloadResolutionPriority(3)]
         public static T NextFromList<T>(this System.Random random, T[] array) => throw null;
-        public static short NextInt16(this System.Random random, short min = 0, short max = 32767) => throw null;
+        public static short NextInt16(this System.Random random) => throw null;
+        public static short NextInt16(this System.Random random, short min, short max) => throw null;
         public static int NextInt32(this System.Random random, int min = 0, int max = 2147483647) => throw null;
+        [System.Obsolete("Use Random.NextInt64. The instance methods of Random take precedence over this extension method.")]
         public static long NextInt64(this System.Random random, long min = 0L, long max = 9223372036854775807L) => throw null;
-        public static sbyte NextSByte(this System.Random random, sbyte min = 0, sbyte max = 127) => throw null;
+        public static sbyte NextSByte(this System.Random random) => throw null;
+        public static sbyte NextSByte(this System.Random random, sbyte min, sbyte max) => throw null;
         public static float NextSingle(this System.Random random, float min = 0f, float max = 1f) => throw null;
         public static string NextString(this System.Random random, int length, string chars) => throw null;
         public static string NextString(this System.Random random, int minLength, int maxLength, string chars) => throw null;
-        public static ushort NextUInt16(this System.Random random, ushort min = 0, ushort max = 65535) => throw null;
-        public static uint NextUInt32(this System.Random random, uint min = 0U, uint max = 4294967295U) => throw null;
-        public static ulong NextUInt64(this System.Random random, ulong min = 0UL, ulong max = 18446744073709551615UL) => throw null;
+        public static ushort NextUInt16(this System.Random random) => throw null;
+        public static ushort NextUInt16(this System.Random random, ushort min, ushort max) => throw null;
+        public static uint NextUInt32(this System.Random random) => throw null;
+        public static uint NextUInt32(this System.Random random, uint min, uint max) => throw null;
+        public static ulong NextUInt64(this System.Random random) => throw null;
+        public static ulong NextUInt64(this System.Random random, ulong min, ulong max) => throw null;
     }
 
     public static class Range

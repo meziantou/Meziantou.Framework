@@ -134,7 +134,7 @@ public abstract partial class ContainerRuntime
 
     private NotSupportedException CreateNotSupportedException() => new($"The '{this}' runtime cannot execute container operations.");
 
-    /// <summary>Why the last probe found the runtime unavailable, when the runtime can tell.</summary>
+    /// <summary>Why the last probe found the runtime unavailable, when the runtime can tell. <see langword="null"/> once a probe succeeded.</summary>
     internal virtual string? UnavailableReason => null;
 
     private protected static InvalidOperationException CreateUnavailableRuntimeException(ContainerRuntime runtime)
@@ -143,10 +143,11 @@ public abstract partial class ContainerRuntime
             ? "No supported container runtime (Docker Engine API, 'docker', 'podman', 'container', or 'wslc') is available."
             : $"The '{runtime}' runtime is not available.";
 
-        // Only the Docker Engine API knows why it is unavailable: it tries several endpoints, and the reason tells which
-        // daemon it looked for.
-        if ((runtime == Auto ? DockerApi : runtime).UnavailableReason is { } reason)
-            message += " Docker Engine API: " + reason;
+        // For Auto, the reason of the Docker Engine API is the one worth reporting: it tries several endpoints, and the
+        // reason tells which daemon it looked for.
+        var reasonRuntime = runtime == Auto ? DockerApi : runtime;
+        if (reasonRuntime.UnavailableReason is { } reason)
+            message += reasonRuntime == DockerApi ? " Docker Engine API: " + reason : " " + reason;
 
         return new InvalidOperationException(message);
     }

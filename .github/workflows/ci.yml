@@ -95,10 +95,13 @@ jobs:
         if: steps.build-project.outputs.has-project == 'true'
 
       # Analyzers are disabled when building the tests (RunAnalyzers=false) and the IDExxxx
-      # diagnostics are only reported in Release with IsOfficialBuild
+      # diagnostics are only reported in Release with IsOfficialBuild.
+      # -graph schedules each project once its references are built. Without it, a project that
+      # waits for a reference stays on its node, so the long compilations queue on a few nodes
+      # while the others are idle.
       - name: Build all projects
         if: steps.build-project.outputs.has-project == 'true'
-        run: dotnet build ${{ steps.build-project.outputs.project }} --configuration Release /p:IsOfficialBuild=true /p:SkipUnsupportedPlatforms=false /bl:build.binlog
+        run: dotnet build ${{ steps.build-project.outputs.project }} -graph --configuration Release /p:IsOfficialBuild=true /p:SkipUnsupportedPlatforms=false /bl:build.binlog
 
       - name: Skip build
         if: steps.build-project.outputs.has-project != 'true'
@@ -617,9 +620,10 @@ jobs:
         if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.Pdf.Corpus')
         run: dotnet run eng/pdf/fetch-tests.cs
 
+      # -graph: see the "Build all projects" step of the run_analyzers job
       - name: Build
         if: steps.build-project.outputs.has-project == 'true'
-        run: dotnet build ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} /bl ${{ env.ADDITIONAL_ARGUMENTS }}
+        run: dotnet build ${{ steps.build-project.outputs.project }} -graph --configuration ${{ matrix.configuration }} /bl ${{ env.ADDITIONAL_ARGUMENTS }}
 
       - name: Run tests
         if: steps.build-project.outputs.has-project == 'true'
@@ -637,6 +641,24 @@ jobs:
           }
 
           exit $LASTEXITCODE
+
+      # wslc sometimes stops answering between the two TFM runs of the tests. The state of WSL once the tests are over
+      # tells whether it recovered on its own (slow boot) or stayed stuck.
+      - name: Diagnose wslc
+        if: failure() && startsWith(matrix.runs-on, 'windows') && matrix.test-group.id == 'TemporaryContainers' && steps.build-project.outputs.has-project == 'true'
+        continue-on-error: true
+        run: |
+          wsl --version
+          wsl --list --verbose
+          Get-Process | Where-Object { $_.Name -match 'wsl|vmmem|vmcompute' } | Format-Table Name, Id, StartTime, WorkingSet64 -AutoSize | Out-String | Write-Host
+          for ($i = 1; $i -le 3; $i++) {
+            $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+            $output = wslc list -q 2>&1 | Out-String
+            Write-Host "wslc list -q (attempt $i): exit code $LASTEXITCODE in $([int]$stopwatch.Elapsed.TotalSeconds)s"
+            Write-Host $output
+            if ($LASTEXITCODE -eq 0) { break }
+            Start-Sleep -Seconds 20
+          }
 
       - name: Cleanup test results
         if: steps.build-project.outputs.has-project == 'true'

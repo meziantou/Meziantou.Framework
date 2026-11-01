@@ -169,9 +169,21 @@ internal static class MicroQRVersion
         };
     }
 
+    // Check whether a version of the range supports the given EC level
+    public static bool IsECLevelSupported(int minVersion, int maxVersion, ErrorCorrectionLevel ecLevel)
+    {
+        for (var version = minVersion; version <= maxVersion; version++)
+        {
+            if (IsECLevelSupported(version, ecLevel))
+                return true;
+        }
+
+        return false;
+    }
+
     // Determine the best version for the given data, EC level, and mode.
-    // Returns the smallest version that can hold the data.
-    public static int DetermineVersion(string data, ErrorCorrectionLevel ecLevel, EncodingMode mode)
+    // Returns the smallest version of the range that can hold the data.
+    public static int DetermineVersion(string data, ErrorCorrectionLevel ecLevel, EncodingMode mode, int minVersion, int maxVersion)
     {
         var charCount = mode switch
         {
@@ -180,18 +192,15 @@ internal static class MicroQRVersion
             _ => data.Length,
         };
 
-        for (var version = 1; version <= 4; version++)
+        var isModeSupported = false;
+        for (var version = minVersion; version <= maxVersion; version++)
         {
-            if (!IsModeSupported(version, mode))
+            if (!IsModeSupported(version, mode) || !IsECLevelSupported(version, ecLevel))
             {
                 continue;
             }
 
-            if (!IsECLevelSupported(version, ecLevel))
-            {
-                continue;
-            }
-
+            isModeSupported = true;
             var capacity = GetCharacterCapacity(version, ecLevel, mode);
             if (capacity >= charCount)
             {
@@ -199,7 +208,18 @@ internal static class MicroQRVersion
             }
         }
 
-        throw new InvalidOperationException("The data is too long to be encoded in a Micro QR code.");
+        var range = minVersion == maxVersion ? $"M{maxVersion}" : $"M{minVersion} to M{maxVersion}";
+        if (!isModeSupported)
+        {
+            throw new InvalidOperationException($"The data has characters that a Micro QR code of version {range} cannot encode with the error correction level {ecLevel}: M1 encodes digits, M2 digits and uppercase alphanumeric characters.");
+        }
+
+        if (minVersion == 1 && maxVersion == 4)
+        {
+            throw new InvalidOperationException("The data is too long to be encoded in a Micro QR code.");
+        }
+
+        throw new InvalidOperationException($"The data is too long to be encoded in a Micro QR code of version {range}.");
     }
 
     // Resolve the effective EC level for M1 (which only supports error detection)

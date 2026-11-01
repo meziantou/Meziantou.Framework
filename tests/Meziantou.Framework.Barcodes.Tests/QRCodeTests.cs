@@ -69,6 +69,11 @@ public class QRCodeTests
         // Any other text is encoded as UTF-8, and binary data as it is
         Assert.Equal(1, QRCode.Create("Caf\u00E9").Version);
         Assert.Equal(1, QRCode.Create([0x00, 0x01, 0xFE, 0xFF]).Version);
+
+        // A text that mixes kinds of characters is split into segments of different modes when it gives a smaller code:
+        // the lowercase letters in byte mode, the order number in numeric mode
+        Assert.Equal(1, QRCode.Create("order 1234567890123456").Version);
+        Assert.Equal(2, QRCode.Create(Encoding.UTF8.GetBytes("order 1234567890123456")).Version);
         #endregion
     }
 
@@ -294,6 +299,253 @@ public class QRCodeTests
         Snapshot.Validate(RenderAsSvg(qr), SnapshotType.Svg);
     }
 
+    // Pairs of characters that share a Shift JIS code: a best-fit mapping of the encoder, or a code that the JIS X 0208
+    // table and code page 932 decode differently. Both are encoded in byte mode, so that every reader gives them back.
+    [Theory]
+    [InlineData("\u00A2", "\uFFE0")]
+    [InlineData("\u00A3", "\uFFE1")]
+    [InlineData("\u00AC", "\uFFE2")]
+    [InlineData("\u301C", "\uFF5E")]
+    [InlineData("\u2016", "\u2225")]
+    [InlineData("\u2212", "\uFF0D")]
+    [InlineData("\u2015", "\u2014")]
+    [InlineData("\u00AB", "\u226A")]
+    [InlineData("\u00B7", "\u30FB")]
+    public void Create_Kanji_AmbiguousShiftJisCharacters_AreEncodedInByteMode(string value, string other)
+    {
+        Assert.True(HasSameModules(QRCode.Create(Encoding.UTF8.GetBytes(value)), QRCode.Create(value)));
+        Assert.False(HasSameModules(QRCode.Create(value), QRCode.Create(other)));
+        Assert.False(HasSameModules(QRCode.CreateMicroQR(value), QRCode.CreateMicroQR(other)));
+        Assert.False(HasSameModules(QRCode.CreateRMQR(value), QRCode.CreateRMQR(other)));
+    }
+
+    [Theory]
+    [InlineData("\u226A")] // ≪, the target of the best-fit mapping of «
+    [InlineData("\u30FB")] // ・, the target of the best-fit mapping of ·
+    [InlineData("\uFF3C")] // ＼, 0x815F in code page 932
+    [InlineData("\u2460")] // ①, an NEC special character, not in JIS X 0208
+    [InlineData("\u7E8A")] // 纊, an IBM extension, not in JIS X 0208
+    public void Create_Kanji_DetectsTheCharactersEveryReaderDecodes(string value)
+    {
+        var isKanji = value is "\u226A" or "\u30FB";
+        Assert.Equal(!isKanji, HasSameModules(QRCode.Create(Encoding.UTF8.GetBytes(value)), QRCode.Create(value)));
+    }
+
+    private static bool HasSameModules(QRCode first, QRCode second)
+    {
+        if (first.Width != second.Width || first.Height != second.Height)
+            return false;
+
+        for (var row = 0; row < first.Height; row++)
+        {
+            for (var column = 0; column < first.Width; column++)
+            {
+                if (first[row, column] != second[row, column])
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
+    // ───── Mixed modes ─────
+
+    [Fact]
+    public void Create_MixedModes_EncodesEachRunInItsOwnMode()
+    {
+        // Byte mode for the whole text needs version 11: a byte segment and a numeric segment fit in version 6
+        var qr = QRCode.Create("a" + new string('1', 300), ErrorCorrectionLevel.L);
+
+        Assert.Equal((6, 41), (qr.Version, qr.Size));
+    }
+
+    [Fact]
+    public void Create_MixedModes_AtMaximumCapacity()
+    {
+        // Version 40-L holds 23,648 data bits: 28 for the byte segment, 18 + 23,600 for 7,080 digits
+        Assert.Equal(40, QRCode.Create("a" + new string('7', 7080), ErrorCorrectionLevel.L).Version);
+        Assert.Throws<InvalidOperationException>(() => QRCode.Create("a" + new string('7', 7081), ErrorCorrectionLevel.L));
+    }
+
+    [Fact]
+    public void Create_MixedModes_NonAsciiText_UsesASingleMode()
+    {
+        // Readers guess the encoding of each byte segment, and could take a short UTF-8 segment for another encoding
+        var data = "\u00E9" + new string('1', 300);
+
+        Assert.True(HasSameModules(QRCode.Create(Encoding.UTF8.GetBytes(data), ErrorCorrectionLevel.L), QRCode.Create(data, ErrorCorrectionLevel.L)));
+    }
+
+    [Theory]
+    [InlineData("HELLO WORLD")]
+    [InlineData("hello world")]
+    [InlineData("0123456789")]
+    [InlineData("漢字のテスト")]
+    [InlineData("https://www.meziantou.net/")]
+    public void Create_SingleMode_WhenSegmentsAreNotSmaller(string data)
+    {
+        // The whole text in byte mode, as the binary overload encodes it, unless a single other mode is smaller
+        var bytes = QRCode.Create(Encoding.UTF8.GetBytes(data));
+        var text = QRCode.Create(data);
+        Assert.Equal(data is "hello world" or "https://www.meziantou.net/", HasSameModules(bytes, text));
+    }
+
+    // ───── ECI ─────
+
+    [Fact]
+    public void Documentation_Eci()
+    {
+        #region QRCode_Eci
+        // Declare the text as UTF-8 (ECI assignment number 26), so that readers do not guess its encoding
+        var options = new QRCodeOptions { EciAssignmentNumber = QRCodeOptions.Utf8EciAssignmentNumber };
+        var qrCode = QRCode.Create("Caf\u00E9 cr\u00E8me", ErrorCorrectionLevel.M, options);
+
+        // Binary data can declare any encoding, such as ISO-8859-1 (ECI assignment number 3)
+        var latin1 = QRCode.Create([0x63, 0x61, 0x66, 0xE9], ErrorCorrectionLevel.M, new QRCodeOptions { EciAssignmentNumber = 3 });
+        #endregion
+
+        Assert.Equal((1, 1), (qrCode.Version, latin1.Version));
+    }
+
+    [Fact]
+    public void Create_Eci_IsOptIn()
+    {
+        var utf8 = new QRCodeOptions { EciAssignmentNumber = QRCodeOptions.Utf8EciAssignmentNumber };
+
+        Assert.True(HasSameModules(QRCode.Create("\u00E9"), QRCode.Create("\u00E9", ErrorCorrectionLevel.M, options: null)));
+        Assert.True(HasSameModules(QRCode.Create("\u00E9"), QRCode.Create("\u00E9", ErrorCorrectionLevel.M, new QRCodeOptions())));
+        Assert.True(HasSameModules(QRCode.Create(Encoding.UTF8.GetBytes("\u00E9")), QRCode.Create("\u00E9")));
+        Assert.False(HasSameModules(QRCode.Create("\u00E9"), QRCode.Create("\u00E9", ErrorCorrectionLevel.M, utf8)));
+        Assert.True(HasSameModules(QRCode.Create(Encoding.UTF8.GetBytes("h\u00E9llo"), ErrorCorrectionLevel.M, utf8), QRCode.Create("h\u00E9llo", ErrorCorrectionLevel.M, utf8)));
+    }
+
+    [Fact]
+    public void Create_Eci_KanjiAreEncodedAsUtf8()
+    {
+        var utf8 = new QRCodeOptions { EciAssignmentNumber = QRCodeOptions.Utf8EciAssignmentNumber };
+
+        Assert.True(HasSameModules(QRCode.Create(Encoding.UTF8.GetBytes("漢字"), ErrorCorrectionLevel.M, utf8), QRCode.Create("漢字", ErrorCorrectionLevel.M, utf8)));
+    }
+
+    [Fact]
+    public void Create_Eci_HeaderIsCountedInTheCapacity()
+    {
+        // Version 40-L holds 2,953 bytes, or 2,952 after the 12 bits of an ECI header
+        var options = new QRCodeOptions { EciAssignmentNumber = 3 };
+
+        Assert.Equal(40, QRCode.Create(new byte[2953], ErrorCorrectionLevel.L).Version);
+        Assert.Equal(40, QRCode.Create(new byte[2952], ErrorCorrectionLevel.L, options).Version);
+        Assert.Throws<InvalidOperationException>(() => QRCode.Create(new byte[2953], ErrorCorrectionLevel.L, options));
+        Assert.Throws<InvalidOperationException>(() => QRCode.Create(new string('x', 2953), ErrorCorrectionLevel.L, new QRCodeOptions { EciAssignmentNumber = 26 }));
+
+        // Version 1-L holds 17 bytes, or 16 after the ECI header
+        Assert.Equal(1, QRCode.Create(new byte[16], ErrorCorrectionLevel.L, options).Version);
+        Assert.Equal(2, QRCode.Create(new byte[17], ErrorCorrectionLevel.L, options).Version);
+    }
+
+    [Fact]
+    public void Create_Eci_TextAcceptsOnlyUtf8()
+    {
+        Assert.Throws<ArgumentException>("options", () => QRCode.Create("abc", ErrorCorrectionLevel.M, new QRCodeOptions { EciAssignmentNumber = 3 }));
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(1_000_000)]
+    public void QRCodeOptions_EciAssignmentNumberOutOfRange_Throws(int value)
+    {
+        var options = new QRCodeOptions();
+
+        Assert.Throws<ArgumentOutOfRangeException>(nameof(value), () => options.EciAssignmentNumber = value);
+    }
+
+    // ───── Size constraints ─────
+
+    [Fact]
+    public void Documentation_FixedSize()
+    {
+        #region QRCode_FixedSize
+        // Every label gets a version 4 code (33 × 33 modules), whatever the length of its data
+        var exact = new QRCodeOptions { MinimumVersion = 4, MaximumVersion = 4 };
+        var shortLabel = QRCode.Create("A1", ErrorCorrectionLevel.Q, exact);
+        var longLabel = QRCode.Create("https://example.com/items/1234", ErrorCorrectionLevel.Q, exact);
+        Assert.Equal((33, 33), (shortLabel.Size, longLabel.Size));
+
+        // A code that must fit in the space of a version 2 code: larger data throws instead of giving a larger code
+        var bounded = new QRCodeOptions { MaximumVersion = 2 };
+        Assert.Throws<InvalidOperationException>(() => QRCode.Create(new string('x', 100), ErrorCorrectionLevel.M, bounded));
+
+        // The Micro QR version, and the rMQR height and width, in modules
+        var microQr = QRCode.CreateMicroQR("12345", ErrorCorrectionLevel.L, new MicroQRCodeOptions { MinimumVersion = 3, MaximumVersion = 3 });
+        var rmqr = QRCode.CreateRMQR("12345", ErrorCorrectionLevel.M, new RMQRCodeOptions { MaximumHeight = 7 });
+        Assert.Equal((15, 15), (microQr.Width, microQr.Height));
+        Assert.Equal((43, 7), (rmqr.Width, rmqr.Height));
+
+        // The size of the image is set by the renderer: 33 modules of 10 pixels, plus a quiet zone of 4 modules on each side
+        var png = shortLabel.ToPng(new QRCodePngOptions { ModuleSize = 10 });
+        #endregion
+
+        Assert.NotEmpty(png);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(10)]
+    [InlineData(27)]
+    [InlineData(40)]
+    public void Create_ExactVersion(int version)
+    {
+        var options = new QRCodeOptions { MinimumVersion = version, MaximumVersion = version };
+
+        Assert.Equal(version, QRCode.Create("HELLO", ErrorCorrectionLevel.H, options).Version);
+        Assert.Equal(version, QRCode.Create("h\u00E9llo", ErrorCorrectionLevel.H, options).Version);
+        Assert.Equal(version, QRCode.Create([1, 2, 3], ErrorCorrectionLevel.H, options).Version);
+    }
+
+    [Fact]
+    public void Create_VersionRange_UsesTheSmallestVersionThatHoldsTheData()
+    {
+        var options = new QRCodeOptions { MinimumVersion = 3, MaximumVersion = 6 };
+
+        Assert.Equal(3, QRCode.Create("HELLO", ErrorCorrectionLevel.M, options).Version);
+        Assert.Equal(5, QRCode.Create(new string('x', 70), ErrorCorrectionLevel.M, options).Version);
+        Assert.Equal(5, QRCode.Create(new byte[70], ErrorCorrectionLevel.M, options).Version);
+    }
+
+    [Fact]
+    public void Create_DataTooLongForTheMaximumVersion_Throws()
+    {
+        var options = new QRCodeOptions { MaximumVersion = 2 };
+
+        // Version 2-M holds 26 bytes
+        Assert.Equal(2, QRCode.Create(new string('x', 26), ErrorCorrectionLevel.M, options).Version);
+        var exception = Assert.Throws<InvalidOperationException>(() => QRCode.Create(new string('x', 27), ErrorCorrectionLevel.M, options));
+        Assert.Equal("The data is too long to be encoded in a QR code of version 1 to 2.", exception.Message);
+        Assert.Throws<InvalidOperationException>(() => QRCode.Create(new byte[27], ErrorCorrectionLevel.M, options));
+        Assert.Throws<InvalidOperationException>(() => QRCode.Create(new string('x', 26), ErrorCorrectionLevel.M, new QRCodeOptions { MaximumVersion = 2, EciAssignmentNumber = 26 }));
+    }
+
+    [Fact]
+    public void Create_MinimumVersionGreaterThanMaximumVersion_Throws()
+    {
+        var options = new QRCodeOptions { MinimumVersion = 5, MaximumVersion = 4 };
+
+        Assert.Throws<ArgumentException>("options", () => QRCode.Create("HELLO", ErrorCorrectionLevel.M, options));
+        Assert.Throws<ArgumentException>("options", () => QRCode.Create([1], ErrorCorrectionLevel.M, options));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(41)]
+    [InlineData(-1)]
+    public void QRCodeOptions_InvalidVersion_Throws(int value)
+    {
+        var options = new QRCodeOptions();
+
+        Assert.Throws<ArgumentOutOfRangeException>(nameof(value), () => options.MinimumVersion = value);
+        Assert.Throws<ArgumentOutOfRangeException>(nameof(value), () => options.MaximumVersion = value);
+    }
+
     // ───── Higher versions / different sizes ─────
 
     [Fact]
@@ -481,6 +733,31 @@ public class QRCodeTests
     public void Create_EmptyBinaryData_ThrowsArgumentException()
     {
         Assert.Throws<ArgumentException>(() => QRCode.Create(Array.Empty<byte>(), ErrorCorrectionLevel.M));
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(4)]
+    [InlineData(int.MaxValue)]
+    [InlineData(int.MinValue)]
+    public void Create_UndefinedErrorCorrectionLevel_ThrowsArgumentOutOfRangeException(int value)
+    {
+        var level = (ErrorCorrectionLevel)value;
+
+        Assert.Throws<ArgumentOutOfRangeException>("errorCorrectionLevel", () => QRCode.Create("123", level));
+        Assert.Throws<ArgumentOutOfRangeException>("errorCorrectionLevel", () => QRCode.Create([1, 2, 3], level));
+        Assert.Throws<ArgumentOutOfRangeException>("errorCorrectionLevel", () => QRCode.CreateMicroQR("123", level));
+        Assert.Throws<ArgumentOutOfRangeException>("errorCorrectionLevel", () => QRCode.CreateRMQR("123", level));
+    }
+
+    [Theory]
+    [InlineData(ErrorCorrectionLevel.L)]
+    [InlineData(ErrorCorrectionLevel.M)]
+    [InlineData(ErrorCorrectionLevel.Q)]
+    [InlineData(ErrorCorrectionLevel.H)]
+    public void Create_Binary_ReportsTheErrorCorrectionLevel(ErrorCorrectionLevel ecLevel)
+    {
+        Assert.Equal(ecLevel, QRCode.Create([1, 2, 3], ecLevel).ErrorCorrectionLevel);
     }
 
     [Theory]

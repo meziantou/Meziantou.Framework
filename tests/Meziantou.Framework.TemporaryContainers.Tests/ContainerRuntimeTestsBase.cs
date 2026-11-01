@@ -26,10 +26,7 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
 
     // Whether a runtime answers is decided once: waiting for a runtime that never comes up (wslc boots a virtual machine,
     // and the runners sometimes never finish installing it) would otherwise cost that wait in every test of the class.
-    private static readonly ConcurrentDictionary<ContainerRuntime, Task<bool>> RuntimeAvailability = new();
-
-    // Why a required runtime did not answer, worked out once for the whole class like its availability.
-    private static readonly ConcurrentDictionary<ContainerRuntime, string> RuntimeProbeDiagnostics = new();
+    private static readonly ConcurrentDictionary<ContainerRuntime, Task<RuntimeAvailabilityResult>> RuntimeAvailability = new();
 
     private bool _useWindowsContainerImages;
 
@@ -56,21 +53,17 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
     /// <summary>Checking that the runtime answers is asynchronous, so the skip gate cannot live in the constructor.</summary>
     public async ValueTask InitializeAsync()
     {
-        var available = await RuntimeAvailability.GetOrAdd(Runtime, runtime => IsRuntimeRequired
+        var availability = await RuntimeAvailability.GetOrAdd(Runtime, runtime => IsRuntimeRequired
             ? WaitUntilRuntimeAnswersAsync(runtime)
-            : runtime.IsSupportedAsync(CancellationToken.None));
+            : ProbeOnceAsync(runtime));
 
         if (IsRuntimeRequired)
         {
-            if (!available)
-            {
-                var diagnostics = RuntimeProbeDiagnostics.GetOrAdd(Runtime, DescribeProbe);
-                global::Xunit.Assert.Fail($"The '{Runtime}' container runtime must be available in this environment, but it did not answer. {diagnostics}");
-            }
+            global::Xunit.Assert.True(availability.IsAvailable, $"The '{Runtime}' container runtime must be available in this environment, but it did not answer. {availability.Details}");
         }
         else
         {
-            global::Xunit.Assert.SkipUnless(available, $"The '{Runtime}' container runtime is not available on this system.");
+            global::Xunit.Assert.SkipUnless(availability.IsAvailable, $"The '{Runtime}' container runtime is not available on this system.");
         }
 
         _useWindowsContainerImages = DetectUseWindowsContainerImages(Runtime);
@@ -79,70 +72,37 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 
     /// <summary>Waits for a required runtime to answer. It can still be starting when the first test of the class runs: wslc boots its WSL virtual machine on demand and the probe fails until it is up, so a single failed probe would report a broken setup for what is only a cold start. The answer is shared by every test of the runtime, so a runtime that never comes up is waited for once.</summary>
-    private static async Task<bool> WaitUntilRuntimeAnswersAsync(ContainerRuntime runtime)
+    private static async Task<RuntimeAvailabilityResult> WaitUntilRuntimeAnswersAsync(ContainerRuntime runtime)
     {
         var stopwatch = Stopwatch.StartNew();
+        var attempts = 0;
+        string? firstReason = null;
         while (true)
         {
+            attempts++;
             if (await runtime.IsSupportedAsync(CancellationToken.None))
-                return true;
+                return new RuntimeAvailabilityResult(IsAvailable: true, Details: null);
 
+            // The first and the last reasons both matter: a runtime can fail differently while it boots and once it is stuck.
+            firstReason ??= runtime.UnavailableReason;
             if (stopwatch.Elapsed >= RuntimeStartupTimeout)
-                return false;
+            {
+                return new RuntimeAvailabilityResult(
+                    IsAvailable: false,
+                    Details: string.Create(CultureInfo.InvariantCulture, $"{attempts} probes failed in {stopwatch.Elapsed.TotalSeconds:F0} seconds. First failure: {firstReason ?? "unknown"} Last failure: {runtime.UnavailableReason ?? "unknown"}"));
+            }
 
             await Task.Delay(TimeSpan.FromSeconds(1), CancellationToken.None);
         }
     }
 
-    /// <summary>Runs the probe of the runtime once more and reports what it printed, as the probe of the library only tells whether it succeeded.</summary>
-    private static string DescribeProbe(ContainerRuntime runtime)
+    private static async Task<RuntimeAvailabilityResult> ProbeOnceAsync(ContainerRuntime runtime)
     {
-        if (runtime is not ExecutableContainerRuntime executableRuntime)
-            return string.Empty;
-
-        if (executableRuntime.FindExecutable() is not { } executable)
-            return $"'{executableRuntime.ExecutableName}' is not on the PATH.";
-
-        var arguments = executableRuntime.BuildProbeArguments();
-        var commandLine = $"'{executable} {string.Join(' ', arguments)}'";
-        try
-        {
-            using var process = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = executable,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                },
-            };
-
-            foreach (var argument in arguments)
-                process.StartInfo.ArgumentList.Add(argument);
-
-            process.Start();
-            var standardOutputTask = process.StandardOutput.ReadToEndAsync();
-            var standardErrorTask = process.StandardError.ReadToEndAsync();
-            if (!process.WaitForExit(TimeSpan.FromSeconds(30)))
-            {
-                process.Kill(entireProcessTree: true);
-                return $"{commandLine} did not exit within 30 seconds.";
-            }
-
-            // A child process that inherited the pipes can keep them open after the probe exits.
-            var outputs = Task.WhenAll(standardOutputTask, standardErrorTask);
-            if (!outputs.Wait(TimeSpan.FromSeconds(5)))
-                return $"{commandLine} exited with code {process.ExitCode}, but its output was not closed.";
-
-            return $"{commandLine} exited with code {process.ExitCode}. Standard output: '{standardOutputTask.Result.Trim()}'. Standard error: '{standardErrorTask.Result.Trim()}'.";
-        }
-        catch (Exception ex)
-        {
-            return $"{commandLine} could not be run: {ex.Message}";
-        }
+        var available = await runtime.IsSupportedAsync(CancellationToken.None);
+        return new RuntimeAvailabilityResult(available, available ? null : runtime.UnavailableReason);
     }
+
+    private sealed record RuntimeAvailabilityResult(bool IsAvailable, string? Details);
 
     private static bool DetectUseWindowsContainerImages(ContainerRuntime runtime)
     {

@@ -1276,6 +1276,26 @@ public sealed class DockerRuntimeAdapterTests
         Assert.Equal("network connect --alias a --alias b second abc", string.Join(' ', runtime.BuildConnectNetworkArguments("abc", connect)));
     }
 
+    [Theory]
+    [InlineData("windows", "network create --driver nat --label ")]
+    [InlineData("linux", "network create --label ")]
+    public async Task BuildsNetworkArguments_UsesTheNatDriverOnAWindowsDaemon(string serverOs, string expectedPrefix)
+    {
+        var executable = CreateScriptCli(posix: "echo " + serverOs, windows: "@echo " + serverOs);
+        try
+        {
+            var runtime = new DockerContainerRuntime(nameof(ContainerRuntime.Docker), DockerContainerRuntime.Flavor.Docker, executable);
+            Assert.True(await runtime.IsSupportedAsync(XunitCancellationToken));
+
+            Assert.StartsWith(expectedPrefix, string.Join(' ', runtime.BuildCreateNetworkArguments(new NetworkDefinition(), "my-network")));
+            Assert.StartsWith("network create --driver transparent ", string.Join(' ', runtime.BuildCreateNetworkArguments(new NetworkDefinition { Driver = "transparent" }, "my-network")));
+        }
+        finally
+        {
+            File.Delete(executable);
+        }
+    }
+
     [Fact]
     public void ParsesTheLabelsOfANetworkWhateverTheCaseOfTheOutput()
     {

@@ -56,9 +56,12 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
     private bool IsHostIpSupported => _flavor switch
     {
         Flavor.Wslc => false,
-        Flavor.Docker => !string.Equals(ProbeOutput?.Trim(), "windows", StringComparison.OrdinalIgnoreCase),
+        Flavor.Docker => !IsWindowsDaemon,
         _ => true,
     };
+
+    /// <summary>Whether the docker daemon runs Windows containers, as the probe reports it.</summary>
+    private bool IsWindowsDaemon => _flavor is Flavor.Docker && string.Equals(ProbeOutput?.Trim(), "windows", StringComparison.OrdinalIgnoreCase);
 
     internal override async Task<string> PrepareImageAsync(ContainerDefinition definition, CancellationToken cancellationToken)
     {
@@ -319,7 +322,9 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
         EnsureNetworksSupported();
 
         var args = new List<string> { "network", "create" };
-        if (definition.Driver is { } driver)
+
+        // The docker CLI sends 'bridge' when no driver is given, which a daemon running Windows containers does not have.
+        if ((definition.Driver ?? (IsWindowsDaemon ? "nat" : null)) is { } driver)
         {
             args.Add("--driver");
             args.Add(driver);

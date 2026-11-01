@@ -70,7 +70,7 @@ public sealed class NetworkDefinition
         }
     }
 
-    /// <summary>Gets or sets the network driver. When <see langword="null"/>, the runtime uses its default driver (<c>bridge</c>).</summary>
+    /// <summary>Gets or sets the network driver. When <see langword="null"/>, the runtime uses its default driver: <c>bridge</c>, or <c>nat</c> on a daemon that runs Windows containers.</summary>
     /// <remarks>Apple's container runtime does not support network drivers.</remarks>
     public string? Driver
     {

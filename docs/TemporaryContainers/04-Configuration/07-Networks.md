@@ -54,7 +54,7 @@ Console.WriteLine(network.Name); // a random name, removed when the network is d
 | Property | Description |
 | --- | --- |
 | [Name](cref:Meziantou.Framework.TemporaryContainers.NetworkDefinition.Name) | The name of the network. A random name when it is not set. |
-| [Driver](cref:Meziantou.Framework.TemporaryContainers.NetworkDefinition.Driver) | The network driver. The runtime uses `bridge` when it is not set. |
+| [Driver](cref:Meziantou.Framework.TemporaryContainers.NetworkDefinition.Driver) | The network driver. The runtime uses `bridge` when it is not set, or `nat` on a daemon that runs Windows containers. |
 | [Internal](cref:Meziantou.Framework.TemporaryContainers.NetworkDefinition.Internal) | Isolates the network from the outside: its containers reach each other, but not the internet. |
 | [ReuseId](cref:Meziantou.Framework.TemporaryContainers.NetworkDefinition.ReuseId) | Reuses the network across runs, and keeps it on dispose. |
 | [Labels](cref:Meziantou.Framework.TemporaryContainers.NetworkDefinition.Labels) | Labels added to the network. |

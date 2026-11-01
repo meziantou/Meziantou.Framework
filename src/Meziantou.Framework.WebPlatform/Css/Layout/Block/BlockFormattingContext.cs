@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Html;
+using Meziantou.Framework.WebPlatform.Infra;
 
 namespace Meziantou.Framework.WebPlatform.Css.Layout;
 
@@ -1226,6 +1227,14 @@ internal sealed class BlockFormattingContext : FormattingContext
     /// <summary>Adds the block-start margins of the first children of a box to <paramref name="margins"/>; returns whether all its children collapse through.</summary>
     private static bool CollectChildrenStartMargins(ContainerBox box, WritingDirection writingDirection, double contentInlineSize, BlockFormattingContextState blockFormattingContext, bool trimsStartMargins, bool trimsEndMargins, ref MarginStrut margins)
     {
+        if (!StackGuard.HasSufficientStack)
+        {
+            var marginsCopy = margins;
+            var result = StackGuard.RunOnNewStack(() => CollectChildrenStartMargins(box, writingDirection, contentInlineSize, blockFormattingContext, trimsStartMargins, trimsEndMargins, ref marginsCopy));
+            margins = marginsCopy;
+            return result;
+        }
+
         var marginsBeforeChildren = margins;
         if (box.SkipsContents || GetKind(box) is not (FormattingContextKind.Block or FormattingContextKind.Inline))
             return false;
@@ -1301,6 +1310,9 @@ internal sealed class BlockFormattingContext : FormattingContext
     /// </summary>
     private static bool HasLineContent(ContainerBox container)
     {
+        if (!StackGuard.HasSufficientStack)
+            return StackGuard.RunOnNewStack(() => HasLineContent(container));
+
         foreach (var child in container.Children)
         {
             switch (child)

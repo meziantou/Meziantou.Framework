@@ -536,6 +536,46 @@ the test host (exit code 7; the tests that did not run are reported as not run).
 dump tell what it waits for (`dotnet-dump analyze <dump> -c "clrstack -all"` for the managed frames,
 `lldb -c <dump> -b -o "bt all"` for the native ones).
 
+## Large decoded response regression
+
+The large gzip and Brotli tests (`fetch/content-encoding/gzip/big-gzip-body.https.any.js` and
+`fetch/content-encoding/br/big-br-body.https.any.js`) run with the ordinary Fetch group on each WPT CI run, in a window,
+a dedicated worker and a shared worker. Both the `arrayBuffer()` and the BYOB reader subtests require all 27,000,000
+decoded bytes and SHA-256 `4a6425f3933d743cf1dd7e121847cc1c323ec98298e1d9b70ac98fd6669bd4f8`.
+The loader decodes the compressed fixture before delivering the response; these tests also exercise the JavaScript
+stream and hashing paths, not just decompression.
+
+To measure these cases without changing the expectations or increasing the ordinary timeout:
+
+```bash
+./eng/webplatform/fetch-tests.sh
+dotnet build tests/Meziantou.Framework.WebPlatform.Wpt -c Release /p:TreatsWarningsAsErrors=true
+WPT_FILTER='big-gzip-body|big-br-body' WPT_REPORT=/tmp/large-response.jsonl \
+  dotnet test --project tests/Meziantou.Framework.WebPlatform.Wpt -c Release --framework net11.0 --no-build \
+  --filter-method '*WptTests.Fetch' --minimum-expected-tests 6
+```
+
+Use a fresh report path for each repetition: `WPT_REPORT` appends results. The six report entries must have an `OK`
+harness and two `PASS` subtests each. Their `durationMs` measures the runner's wall-clock duration, excluding test
+discovery; the JavaScript clocks are virtual and cannot measure runtime. The upstream BYOB tests deliberately choose
+random chunk sizes, so repeat the measurement and compare the slowest case with the timeout, rather than relying on
+a single timing. Use `--parallel none` to distinguish serialized workload cost from concurrent allocation and GC
+pressure.
+
+For managed stack sampling, run the built test application under `dotnet-trace`:
+
+```bash
+WPT_FILTER='big-gzip-body|big-br-body' dotnet-trace collect \
+  --providers Microsoft-DotNETCore-SampleProfiler --format speedscope --output /tmp/large-response.nettrace \
+  -- dotnet artifacts/bin/Meziantou.Framework.WebPlatform.Wpt/release_net11.0/Meziantou.Framework.WebPlatform.Wpt.dll \
+  --filter-method '*WptTests.Fetch' --minimum-expected-tests 6 --parallel none
+```
+
+Separate discovery, initialization and waiting stacks from `WptTestRunner.Run` when inspecting the trace. Profile
+before optimizing: same-sized engine-owned ArrayBuffers already transfer their storage without copying, and
+same-type typed array `set()` already uses a bulk copy. A longer overall test process does not by itself show a slow
+decoded-body path.
+
 ## Reasons
 
 Every test that does not pass has a reason in the [coverage pages](../../../docs/WebPlatform/10-WptCoverage/01-Overview.md):

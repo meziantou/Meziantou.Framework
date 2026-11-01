@@ -47,5 +47,6 @@ Assert.Equal("""
   which is about square in most terminals. [ModuleWidth](cref:Meziantou.Framework.Barcodes.QRCodeConsoleOptions.ModuleWidth) repeats each module in characters and [ModuleHeight](cref:Meziantou.Framework.Barcodes.QRCodeConsoleOptions.ModuleHeight) in half
   lines: increase both together to get a larger code that stays square.
 - The terminal must use a font that has the block characters, and display the output in UTF-8.
+- The output must fit in a string: options that make it larger throw an `ArgumentOutOfRangeException`.
 
 The console renderer draws QR codes only, not linear barcodes.

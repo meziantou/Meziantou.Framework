@@ -66,6 +66,23 @@ public class ColorTests
         Assert.Equal(color, Color.Parse(color.ToCssString()));
     }
 
+    [Theory]
+    [InlineData("rgb(1,,2,3)")]
+    [InlineData("rgb(,1,2,3)")]
+    [InlineData("rgb(1,2,3,)")]
+    [InlineData("rgb(1, ,2)")]
+    [InlineData("rgb(1,2,)")]
+    [InlineData("rgb(,)")]
+    [InlineData("rgba(1,,2,3,0.5)")]
+    [InlineData("rgba(1,2,3,0.5,)")]
+    [InlineData("rgba(,1,2,3,0.5)")]
+    [InlineData("rgba(1,2,,0.5)")]
+    public void TryParse_FunctionWithEmptyComponent_Fails(string value)
+    {
+        Assert.False(Color.TryParse(value, out _));
+        Assert.Throws<ArgumentException>(() => Color.Parse(value));
+    }
+
     [Fact]
     public void Parse_InvalidValue_Throws()
     {

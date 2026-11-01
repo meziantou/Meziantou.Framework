@@ -367,6 +367,84 @@ public sealed class DockerRuntimeAdapterTests
         Assert.False(DockerApiTransport.TryParseDockerHost(dockerHost, tls: null, out _));
     }
 
+    [Theory]
+    [InlineData("tcp://10.0.0.1:2375", "10.0.0.1")]
+    [InlineData("tcp://docker.example.com:2376", "docker.example.com")]
+    [InlineData("ssh://user@docker.example.com", "docker.example.com")]
+    [InlineData("ssh://user@docker.example.com:2222", "docker.example.com")]
+    [InlineData("https://docker.example.com:2376", "docker.example.com")]
+    [InlineData("tcp://[2001:db8::1]:2375", "2001:db8::1")]
+    [InlineData(@"npipe://server/pipe/docker_engine", "server")]
+    [InlineData("tcp://127.0.0.1:2375", null)]
+    [InlineData("tcp://localhost:2375", null)]
+    [InlineData("tcp://[::1]:2375", null)]
+    [InlineData("ssh://core@127.0.0.1:50123", null)]
+    [InlineData("unix:///var/run/docker.sock", null)]
+    [InlineData(@"npipe:////./pipe/docker_engine", null)]
+    [InlineData("", null)]
+    [InlineData(null, null)]
+    public void GetRemoteHost_ReadsTheHostOfARemoteDaemon(string? daemonAddress, string? expected)
+    {
+        Assert.Equal(expected, HostAddress.GetRemoteHost(daemonAddress));
+    }
+
+    [Theory]
+    [InlineData("tcp://10.0.0.1:2375", "10.0.0.1")]
+    [InlineData("tcp://localhost:2375", null)]
+    [InlineData(@"npipe://server/pipe/custom", "server")]
+    [InlineData(@"npipe:////./pipe/docker_engine", null)]
+    public void GetRemoteHost_ReadsTheHostOfAnEngineApiEndpoint(string dockerHost, string? expected)
+    {
+        Assert.True(DockerApiTransport.TryParseDockerHost(dockerHost, tls: null, out var endpoint));
+        Assert.Equal(expected, HostAddress.GetRemoteHost(endpoint));
+    }
+
+    [Fact]
+    public void GetRemoteHost_AUnixSocketIsLocal()
+    {
+        Assert.Null(HostAddress.GetRemoteHost(DockerApiTransport.Endpoint.ForUnixSocket(FullPath.FromPath(OperatingSystem.IsWindows() ? @"C:\docker.sock" : "/var/run/docker.sock"))));
+    }
+
+    [Theory]
+    [InlineData(null, null, "127.0.0.1")]
+    [InlineData("", null, "127.0.0.1")]
+    [InlineData("0.0.0.0", null, "127.0.0.1")]
+    [InlineData("::", null, "::1")]
+    [InlineData("127.0.0.1", null, "127.0.0.1")]
+    [InlineData("::1", null, "::1")]
+    [InlineData("192.168.1.10", null, "192.168.1.10")]
+    [InlineData(null, "docker.example.com", "docker.example.com")]
+    [InlineData("0.0.0.0", "docker.example.com", "docker.example.com")]
+    [InlineData("::", "docker.example.com", "docker.example.com")]
+    [InlineData("127.0.0.1", "docker.example.com", "docker.example.com")]
+    [InlineData("10.0.0.5", "docker.example.com", "10.0.0.5")]
+    public void ResolveHostAddress_UsesTheBindingOrTheDaemonHost(string? bindingAddress, string? daemonHost, string expected)
+    {
+        Assert.Equal(expected, HostAddress.Resolve(bindingAddress, daemonHost));
+    }
+
+    [Theory]
+    [InlineData("127.0.0.1", "127.0.0.1")]
+    [InlineData("docker.example.com", "docker.example.com")]
+    [InlineData("::1", "[::1]")]
+    public void FormatHostForUri_EnclosesAnIPv6AddressInBrackets(string host, string expected)
+    {
+        Assert.Equal(expected, HostAddress.FormatForUri(host));
+    }
+
+    [Fact]
+    public async Task IsListeningAsync_ProbesTheSpecifiedAddress()
+    {
+        global::Xunit.Assert.SkipUnless(Socket.OSSupportsIPv6, "IPv6 is not supported on this machine.");
+
+        // A service published on the IPv6 loopback address only is not reachable on 127.0.0.1.
+        using var listener = new TcpListener(IPAddress.IPv6Loopback, 0);
+        listener.Start();
+        var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+
+        Assert.True(await Strategies.PortWaitStrategy.IsListeningAsync("::1", port, TimeSpan.FromMilliseconds(200), XunitCancellationToken));
+    }
+
     [Fact]
     public void ParseInspect_ReadsTheBindingsUnderNetworkSettings()
     {
@@ -396,6 +474,8 @@ public sealed class DockerRuntimeAdapterTests
         Assert.Equal(50809, container.Ports[8080]);
         Assert.Equal(50810, container.Ports[5432]);
         Assert.False(container.Ports.ContainsKey(9090));
+        Assert.Equal("0.0.0.0", container.PortHostIps[8080]);
+        Assert.False(container.PortHostIps.ContainsKey(5432));
         Assert.Equal("a=b", container.Environment["PASSWORD"]);
     }
 

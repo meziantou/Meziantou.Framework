@@ -79,6 +79,7 @@ public partial class TemporaryContainer
         _name = null;
         _created = false;
         _portMap = null;
+        _portHostAddresses = null;
         _startedAt = null;
         _logEntriesToSkip = 0;
     }

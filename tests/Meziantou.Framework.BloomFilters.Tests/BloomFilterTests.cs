@@ -152,6 +152,229 @@ public sealed class BloomFilterTests
     }
 
     [Fact]
+    public void Documentation_Union()
+    {
+        #region BloomFilter_Union
+        // Size each filter for the total number of values: the merged filter holds them all
+        var size = BloomFilterSize.CreateOptimalSize(expectedItemCount: 2000, falsePositiveProbability: 0.01);
+        var europe = BloomFilter.CreateXXHash128(size);
+        var america = BloomFilter.CreateXXHash128(size);
+
+        europe.Add("alice@example.com");
+        america.Add("bob@example.com");
+
+        // Add the values of america to europe
+        europe.UnionWith(america);
+        Assert.True(europe.MayContain("alice@example.com"));
+        Assert.True(europe.MayContain("bob@example.com"));
+
+        // The filters must use the same hash algorithm, number of bits and number of hash functions
+        var other = BloomFilter.CreateXXHash3(size);
+        Assert.Throws<ArgumentException>(() => europe.UnionWith(other));
+        #endregion
+    }
+
+    [Theory]
+    [InlineData(1L, 1)]
+    [InlineData(63L, 2)]
+    [InlineData(64L, 3)]
+    [InlineData(65L, 3)]
+    [InlineData(1_000L, 4)]
+    [InlineData(100_003L, 7)]
+    public void UnionWith_MatchesFilterBuiltFromBothSets(long bitCount, int hashCount)
+    {
+        var size = BloomFilterSize.CreateExact(bitCount, hashCount);
+        var first = BloomFilter.CreateXXHash128(size);
+        var second = BloomFilter.CreateXXHash128(size);
+        var expected = BloomFilter.CreateXXHash128(size);
+        for (var i = 0; i < 2_000; i++)
+        {
+            first.Add(i);
+            expected.Add(i);
+        }
+
+        for (var i = 1_000; i < 5_000; i++)
+        {
+            second.Add(i);
+            expected.Add(i);
+        }
+
+        var secondEstimate = second.GetEstimateCount();
+        first.UnionWith(second);
+
+        for (var i = 0; i < 5_000; i++)
+        {
+            Assert.True(first.MayContain(i));
+        }
+
+        // Same set bits as a filter built from both sets: same answers for absent values and the same bit count
+        for (var i = 5_000; i < 20_000; i++)
+        {
+            Assert.Equal(expected.MayContain(i), first.MayContain(i));
+        }
+
+        Assert.Equal(expected.GetEstimateCount(), first.GetEstimateCount());
+        Assert.Equal(secondEstimate, second.GetEstimateCount());
+    }
+
+    [Theory]
+    [MemberData(nameof(AllAlgorithmsAndValues))]
+    public void UnionWith_ForAllAlgorithmsAndTypes_KeepsValuesOfBothFilters(string createMethodName, object value)
+    {
+        var size = BloomFilterSize.CreateOptimalSize(1000, 0.01);
+        var destination = CreateBloomFilter(createMethodName, size);
+        var source = CreateBloomFilter(createMethodName, size);
+        ((IBloomFilter)destination).Add("destination-value");
+        AddValue((IBloomFilter)source, value);
+
+        destination.UnionWith(source);
+
+        Assert.True(((IBloomFilter)destination).MayContain("destination-value"));
+        Assert.True(MayContainValue((IBloomFilter)destination, value));
+    }
+
+    [Fact]
+    public void UnionWith_EmptySource_LeavesDestinationUnchanged()
+    {
+        var size = BloomFilterSize.CreateOptimalSize(1000, 0.01);
+        var destination = BloomFilter.CreateXXHash3(size);
+        for (var i = 0; i < 500; i++)
+        {
+            destination.Add(i);
+        }
+
+        var estimate = destination.GetEstimateCount();
+        destination.UnionWith(BloomFilter.CreateXXHash3(size));
+
+        Assert.Equal(estimate, destination.GetEstimateCount());
+    }
+
+    [Fact]
+    public void UnionWith_EmptyDestination_CopiesSource()
+    {
+        var size = BloomFilterSize.CreateOptimalSize(1000, 0.01);
+        var source = BloomFilter.CreateXXHash3(size);
+        for (var i = 0; i < 500; i++)
+        {
+            source.Add(i);
+        }
+
+        var destination = BloomFilter.CreateXXHash3(size);
+        destination.UnionWith(source);
+
+        Assert.Equal(source.GetEstimateCount(), destination.GetEstimateCount());
+        for (var i = 0; i < 10_000; i++)
+        {
+            Assert.Equal(source.MayContain(i), destination.MayContain(i));
+        }
+    }
+
+    [Fact]
+    public void UnionWith_BothEmpty_StaysEmpty()
+    {
+        var size = BloomFilterSize.CreateOptimalSize(1000, 0.01);
+        var destination = BloomFilter.CreateXXHash3(size);
+
+        destination.UnionWith(BloomFilter.CreateXXHash3(size));
+
+        Assert.Equal(0d, destination.GetEstimateCount());
+    }
+
+    [Fact]
+    public void UnionWith_Self_IsNoOp()
+    {
+        var filter = BloomFilter.CreateXXHash64(BloomFilterSize.CreateOptimalSize(1000, 0.01));
+        for (var i = 0; i < 500; i++)
+        {
+            filter.Add(i);
+        }
+
+        var estimate = filter.GetEstimateCount();
+        filter.UnionWith(filter);
+
+        Assert.Equal(estimate, filter.GetEstimateCount());
+    }
+
+    [Fact]
+    public void UnionWith_Twice_IsIdempotent()
+    {
+        var size = BloomFilterSize.CreateOptimalSize(1000, 0.01);
+        var destination = BloomFilter.CreateXXHash64(size);
+        var source = BloomFilter.CreateXXHash64(size);
+        for (var i = 0; i < 500; i++)
+        {
+            destination.Add(i);
+            source.Add(-i - 1);
+        }
+
+        destination.UnionWith(source);
+        var estimate = destination.GetEstimateCount();
+        destination.UnionWith(source);
+
+        Assert.Equal(estimate, destination.GetEstimateCount());
+    }
+
+    [Fact]
+    public void UnionWith_ConcurrentAddsToDestination_AreKept()
+    {
+        var size = BloomFilterSize.CreateOptimalSize(200_000, 0.01);
+        var destination = BloomFilter.CreateXXHash128(size);
+        var source = BloomFilter.CreateXXHash128(size);
+        for (var i = 0; i < 100_000; i++)
+        {
+            source.Add(i);
+        }
+
+        Parallel.Invoke(
+            () => Parallel.For(100_000, 200_000, i => destination.Add(i)),
+            () => destination.UnionWith(source));
+
+        for (var i = 0; i < 200_000; i++)
+        {
+            Assert.True(destination.MayContain(i));
+        }
+    }
+
+    [Fact]
+    public void UnionWith_Null_Throws()
+    {
+        var filter = BloomFilter.CreateXXHash128(BloomFilterSize.CreateOptimalSize(1000, 0.01));
+
+        Assert.Throws<ArgumentNullException>("other", () => filter.UnionWith(null!));
+    }
+
+    [Theory]
+    [InlineData("CreateXXHash64", 1000L, 3)]
+    [InlineData("CreateXXHash128", 1001L, 3)]
+    [InlineData("CreateXXHash128", 1000L, 4)]
+    public void UnionWith_IncompatibleFilter_ThrowsAndLeavesDestinationUnchanged(string sourceCreateMethodName, long sourceBitCount, int sourceHashCount)
+    {
+        var destination = BloomFilter.CreateXXHash128(BloomFilterSize.CreateExact(1000, 3));
+        var source = CreateBloomFilter(sourceCreateMethodName, BloomFilterSize.CreateExact(sourceBitCount, sourceHashCount));
+        for (var i = 0; i < 100; i++)
+        {
+            ((IBloomFilter)source).Add(i);
+        }
+
+        Assert.Throws<ArgumentException>("other", () => destination.UnionWith(source));
+
+        Assert.Equal(0d, destination.GetEstimateCount());
+    }
+
+    [Fact]
+    public void SegmentedBitStorage_UnionWith_CombinesEverySegment()
+    {
+        // A real filter only gets a second segment past 2^36 bits, so the segments are built by hand
+        ulong[][] destination = [[0b0001, 0, ulong.MaxValue], [0, 0b1000], [0x8000_0000_0000_0000]];
+        ulong[][] source = [[0b0010, 0, 0b0110], [0xFF00, 0], [1]];
+
+        SegmentedBitStorage.UnionWith(destination, source);
+
+        Assert.Equal<ulong[][]>([[0b0011, 0, ulong.MaxValue], [0xFF00, 0b1000], [0x8000_0000_0000_0001]], destination);
+        Assert.Equal<ulong[][]>([[0b0010, 0, 0b0110], [0xFF00, 0], [1]], source);
+    }
+
+    [Fact]
     public void Documentation_CountingSaturation()
     {
         #region CountingBloomFilter_Saturation
@@ -889,6 +1112,11 @@ public sealed class BloomFilterTests
             (Int128)1234567890123456789,
             (Int128)(-1234567890123456789),
         ];
+    }
+
+    private static BloomFilter CreateBloomFilter(string createMethodName, BloomFilterSize size)
+    {
+        return (BloomFilter)typeof(BloomFilter).GetMethod(createMethodName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)!.Invoke(null, [size])!;
     }
 
     private static void AddValue(IBloomFilter filter, object value)

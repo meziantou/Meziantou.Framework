@@ -100,3 +100,18 @@ Assert.Equal("\U0001F1EB\U0001F1F7", flag2); // FR flag emoji
 
 [Country.GetUnicodeFlag](cref:Meziantou.Framework.Country.GetUnicodeFlag) returns the flag emoji of a country, from a `RegionInfo` or a two-letter ISO region code. The
 emoji is made of two regional indicator symbols: how it is displayed depends on the fonts of the system.
+
+The region code must be made of two ASCII letters, uppercase or lowercase: `GetUnicodeFlag` throws an `ArgumentException` otherwise. This
+includes regions whose `TwoLetterISORegionName` is a numeric UN M.49 code, such as `419` for `es-419`. Use
+[Country.TryGetUnicodeFlag](cref:Meziantou.Framework.Country.TryGetUnicodeFlag) when the code comes from user input or from
+an arbitrary `RegionInfo`:
+
+<!-- ref:../../tests/Meziantou.Framework.Tests/CountryTests.cs;region=Country_TryGetUnicodeFlag;format=md-fenced-code-block;dedent=true -->
+```csharp
+Assert.True(Country.TryGetUnicodeFlag("FR", out var flag));
+Assert.Equal("\U0001F1EB\U0001F1F7", flag); // FR flag emoji
+
+// "419" (Latin America) is a numeric UN M.49 code, not a country code
+Assert.False(Country.TryGetUnicodeFlag("419", out _));
+```
+<!-- endref -->

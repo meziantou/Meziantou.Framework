@@ -135,6 +135,22 @@ public sealed class ImmutableEquatableArrayTests
     }
 
     [Fact]
+    public void GetEnumerator_CurrentIsReadOnlyReference()
+    {
+        var array = ImmutableEquatableArray.Create(new[] { 1, 2, 3 });
+        var result = new List<int>();
+        foreach (ref readonly var item in array)
+        {
+            result.Add(item);
+        }
+
+        Assert.Equal([1, 2, 3], result);
+
+        var current = typeof(ImmutableEquatableArray<int>.Enumerator).GetProperty(nameof(ImmutableEquatableArray<int>.Enumerator.Current))!;
+        Assert.True(current.GetMethod!.ReturnParameter.IsDefined(typeof(System.Runtime.CompilerServices.IsReadOnlyAttribute), inherit: false));
+    }
+
+    [Fact]
     public void IEnumerable_GetEnumerator_ShouldWork()
     {
         var values = new[] { "a", "b", "c" };

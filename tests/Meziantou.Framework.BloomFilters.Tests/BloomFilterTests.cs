@@ -654,6 +654,395 @@ public sealed class BloomFilterTests
         Assert.Equal(size.BitCount, countingSize.CounterCount);
     }
 
+    [Fact]
+    public void Documentation_Snapshot()
+    {
+        #region BloomFilter_Snapshot
+        var filter = BloomFilter.CreateXXHash128(BloomFilterSize.CreateOptimalSize(expectedItemCount: 1000, falsePositiveProbability: 0.01));
+        filter.Add("alice@example.com");
+
+        // Save the filter to a stream, such as a FileStream, and load it after a restart
+        using var stream = new MemoryStream();
+        filter.Save(stream);
+
+        stream.Position = 0;
+        var restored = BloomFilter.Load<BloomFilterXXHash128>(stream);
+
+        Assert.True(restored.MayContain("alice@example.com"));
+        Assert.False(restored.MayContain("bob@example.com"));
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_CountingSnapshot()
+    {
+        #region CountingBloomFilter_Snapshot
+        var filter = CountingBloomFilter.CreateXXHash128(CountingBloomFilterSize.CreateOptimalSize(expectedItemCount: 1000, falsePositiveProbability: 0.01));
+        filter.Add("alice@example.com");
+        filter.Add("alice@example.com");
+
+        using var stream = new MemoryStream();
+        await filter.SaveAsync(stream);
+
+        stream.Position = 0;
+        var restored = await CountingBloomFilter.LoadAsync<CountingBloomFilterXXHash128>(stream);
+
+        Assert.Equal(2, restored.GetEstimatedCount("alice@example.com"));
+        #endregion
+    }
+
+    public static TheoryData<string, long, bool> SnapshotRoundTripData()
+    {
+        var data = new TheoryData<string, long, bool>();
+        foreach (var method in GetCreateMethodNames())
+        {
+            foreach (var positionCount in (long[])[1, 63, 64, 65, 1000, 70_001])
+            {
+                data.Add(method, positionCount, false);
+                data.Add(method, positionCount, true);
+            }
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(SnapshotRoundTripData))]
+    public async Task Snapshot_BloomFilter_RoundTrip(string createMethodName, long bitCount, bool populated)
+    {
+        var filter = (BloomFilter)typeof(BloomFilter).GetMethod(createMethodName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)!.Invoke(null, [BloomFilterSize.CreateExact(bitCount, 3)])!;
+        var values = (IBloomFilter)filter;
+        if (populated)
+        {
+            foreach (var value in GetValues())
+            {
+                AddValue(values, value);
+            }
+
+            for (var i = 0; i < 500; i++)
+            {
+                values.Add(i);
+            }
+        }
+
+        using var stream = new MemoryStream();
+        filter.Save(stream);
+        var snapshot = stream.ToArray();
+        Assert.Equal(32 + ((((bitCount - 1) / 64) + 1) * 8) + 8, snapshot.LongLength);
+
+        stream.Position = 0;
+        var restored = BloomFilter.Load(stream);
+        Assert.Equal(stream.Length, stream.Position);
+        AssertSameBloomFilter(filter, restored, snapshot);
+
+        using var asyncStream = new NonSeekableStream(snapshot);
+        var restoredAsync = await BloomFilter.LoadAsync(asyncStream);
+        AssertSameBloomFilter(filter, restoredAsync, snapshot);
+
+        using var asyncSaveStream = new MemoryStream();
+        await filter.SaveAsync(asyncSaveStream);
+        Assert.Equal(snapshot, asyncSaveStream.ToArray());
+
+        static void AssertSameBloomFilter(BloomFilter expected, BloomFilter actual, byte[] snapshot)
+        {
+            Assert.Equal(expected.GetType(), actual.GetType());
+            Assert.Equal(expected.GetEstimateCount(), actual.GetEstimateCount());
+
+            var expectedValues = (IBloomFilter)expected;
+            var actualValues = (IBloomFilter)actual;
+            foreach (var value in GetValues())
+            {
+                Assert.Equal(MayContainValue(expectedValues, value), MayContainValue(actualValues, value));
+            }
+
+            for (var i = 0; i < 2000; i++)
+            {
+                Assert.Equal(expectedValues.MayContain(i), actualValues.MayContain(i));
+            }
+
+            using var stream = new MemoryStream();
+            actual.Save(stream);
+            Assert.Equal(snapshot, stream.ToArray());
+        }
+    }
+
+    [Theory]
+    [MemberData(nameof(SnapshotRoundTripData))]
+    public async Task Snapshot_CountingBloomFilter_RoundTrip(string createMethodName, long counterCount, bool populated)
+    {
+        var filter = (CountingBloomFilter)typeof(CountingBloomFilter).GetMethod(createMethodName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)!.Invoke(null, [CountingBloomFilterSize.CreateExact(counterCount, 3)])!;
+        var values = (ICountingBloomFilter)filter;
+        if (populated)
+        {
+            foreach (var value in GetValues())
+            {
+                AddValue(values, value);
+                AddValue(values, value);
+            }
+
+            for (var i = 0; i < 500; i++)
+            {
+                values.Add(i);
+            }
+
+            // Saturate the counters of a value
+            for (var i = 0; i < 300; i++)
+            {
+                values.Add("saturated");
+            }
+
+            values.Remove(10);
+        }
+
+        using var stream = new MemoryStream();
+        filter.Save(stream);
+        var snapshot = stream.ToArray();
+        Assert.Equal(32 + counterCount + 8, snapshot.LongLength);
+
+        stream.Position = 0;
+        var restored = CountingBloomFilter.Load(stream);
+        Assert.Equal(stream.Length, stream.Position);
+        AssertSameCountingBloomFilter(filter, restored, snapshot);
+
+        using var asyncStream = new NonSeekableStream(snapshot);
+        var restoredAsync = await CountingBloomFilter.LoadAsync(asyncStream);
+        AssertSameCountingBloomFilter(filter, restoredAsync, snapshot);
+
+        using var asyncSaveStream = new MemoryStream();
+        await filter.SaveAsync(asyncSaveStream);
+        Assert.Equal(snapshot, asyncSaveStream.ToArray());
+
+        if (populated)
+        {
+            var restoredValues = (ICountingBloomFilter)restored;
+            Assert.Equal(255, restoredValues.GetEstimatedCount("saturated"));
+            restoredValues.Remove("saturated");
+            Assert.Equal(255, restoredValues.GetEstimatedCount("saturated"));
+        }
+
+        static void AssertSameCountingBloomFilter(CountingBloomFilter expected, CountingBloomFilter actual, byte[] snapshot)
+        {
+            Assert.Equal(expected.GetType(), actual.GetType());
+
+            var expectedValues = (ICountingBloomFilter)expected;
+            var actualValues = (ICountingBloomFilter)actual;
+            foreach (var value in GetValues().Append("saturated"))
+            {
+                Assert.Equal(MayContainValue(expectedValues, value), MayContainValue(actualValues, value));
+                Assert.Equal(GetEstimatedCountValue(expectedValues, value), GetEstimatedCountValue(actualValues, value));
+            }
+
+            for (var i = 0; i < 2000; i++)
+            {
+                Assert.Equal(expectedValues.MayContain(i), actualValues.MayContain(i));
+                Assert.Equal(expectedValues.GetEstimatedCount(i), actualValues.GetEstimatedCount(i));
+            }
+
+            using var stream = new MemoryStream();
+            actual.Save(stream);
+            Assert.Equal(snapshot, stream.ToArray());
+        }
+    }
+
+    [Fact]
+    public void Snapshot_LoadTyped_ReturnsConcreteType()
+    {
+        var filter = BloomFilter.CreateCrc64(BloomFilterSize.CreateExact(100, 2));
+        filter.Add(42);
+        var snapshot = SaveSnapshot(filter);
+
+        var restored = BloomFilter.Load<BloomFilterCrc64>(new MemoryStream(snapshot));
+
+        Assert.True(restored.MayContain(42));
+    }
+
+    [Fact]
+    public async Task Snapshot_LoadTyped_OtherAlgorithm_Throws()
+    {
+        var snapshot = SaveSnapshot(BloomFilter.CreateXXHash128(BloomFilterSize.CreateExact(100, 2)));
+
+        var exception = Assert.Throws<InvalidDataException>(() => BloomFilter.Load<BloomFilterCrc32>(new MemoryStream(snapshot)));
+        Assert.Contains("BloomFilterXXHash128", exception.Message, StringComparison.Ordinal);
+
+        await Assert.Throws<InvalidDataException>(async () => await BloomFilter.LoadAsync<BloomFilterCrc32>(new MemoryStream(snapshot)));
+
+        using var countingStream = new MemoryStream();
+        CountingBloomFilter.CreateXXHash128(CountingBloomFilterSize.CreateExact(100, 2)).Save(countingStream);
+        Assert.Throws<InvalidDataException>(() => CountingBloomFilter.Load<CountingBloomFilterCrc32>(new MemoryStream(countingStream.ToArray())));
+    }
+
+    [Fact]
+    public void Snapshot_KindMismatch_Throws()
+    {
+        var bloomSnapshot = SaveSnapshot(BloomFilter.CreateXXHash128(BloomFilterSize.CreateExact(100, 2)));
+        using var countingStream = new MemoryStream();
+        CountingBloomFilter.CreateXXHash128(CountingBloomFilterSize.CreateExact(100, 2)).Save(countingStream);
+
+        var exception = Assert.Throws<InvalidDataException>(() => BloomFilter.Load(new MemoryStream(countingStream.ToArray())));
+        Assert.Contains("CountingBloomFilter.Load", exception.Message, StringComparison.Ordinal);
+
+        exception = Assert.Throws<InvalidDataException>(() => CountingBloomFilter.Load(new MemoryStream(bloomSnapshot)));
+        Assert.Contains("BloomFilter.Load", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Snapshot_NullStream_Throws()
+    {
+        var filter = BloomFilter.CreateXXHash128(BloomFilterSize.CreateExact(100, 2));
+        var countingFilter = CountingBloomFilter.CreateXXHash128(CountingBloomFilterSize.CreateExact(100, 2));
+
+        Assert.Throws<ArgumentNullException>("stream", () => filter.Save(null!));
+        Assert.Throws<ArgumentNullException>("stream", () => countingFilter.Save(null!));
+        Assert.Throws<ArgumentNullException>("stream", () => BloomFilter.Load(null!));
+        Assert.Throws<ArgumentNullException>("stream", () => CountingBloomFilter.Load(null!));
+    }
+
+    [Theory]
+    [InlineData("Magic", "magic number")]
+    [InlineData("FormatVersion", "format version 2")]
+    [InlineData("UnknownKind", "unknown filter kind")]
+    [InlineData("AlgorithmZero", "unknown hash algorithm")]
+    [InlineData("AlgorithmTooLarge", "unknown hash algorithm")]
+    [InlineData("HashDerivationVersion", "hash derivation version 2")]
+    [InlineData("UnknownByteOrder", "unknown key byte order")]
+    [InlineData("OtherByteOrder", "endian machine")]
+    [InlineData("Reserved", "reserved byte")]
+    [InlineData("ZeroHashCount", "invalid hash count")]
+    [InlineData("NegativeHashCount", "invalid hash count")]
+    [InlineData("ZeroSize", "invalid size")]
+    [InlineData("NegativeSize", "invalid size")]
+    [InlineData("PayloadLength", "payload length")]
+    [InlineData("HugeSize", "truncated")]
+    [InlineData("TruncatedHeader", "truncated")]
+    [InlineData("TruncatedPayload", "truncated")]
+    [InlineData("TruncatedChecksum", "truncated")]
+    [InlineData("Checksum", "checksum")]
+    [InlineData("PaddingBit", "past the size of the filter")]
+    public async Task Snapshot_InvalidData_Throws(string corruption, string expectedMessage)
+    {
+        const long BitCount = 1000; // Not a multiple of 64: the last word has padding bits
+        var filter = BloomFilter.CreateXXHash128(BloomFilterSize.CreateExact(BitCount, 3));
+        for (var i = 0; i < 100; i++)
+        {
+            filter.Add(i);
+        }
+
+        var snapshot = SaveSnapshot(filter);
+        switch (corruption)
+        {
+            case "Magic":
+                snapshot[0] = (byte)'X';
+                break;
+            case "FormatVersion":
+                snapshot[4] = 2;
+                break;
+            case "UnknownKind":
+                snapshot[6] = 3;
+                break;
+            case "AlgorithmZero":
+                snapshot[7] = 0;
+                break;
+            case "AlgorithmTooLarge":
+                snapshot[7] = 8;
+                break;
+            case "HashDerivationVersion":
+                snapshot[8] = 2;
+                break;
+            case "UnknownByteOrder":
+                snapshot[10] = 3;
+                break;
+            case "OtherByteOrder":
+                snapshot[10] = BitConverter.IsLittleEndian ? (byte)2 : (byte)1;
+                break;
+            case "Reserved":
+                snapshot[11] = 1;
+                break;
+            case "ZeroHashCount":
+                System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(snapshot.AsSpan(12), 0);
+                break;
+            case "NegativeHashCount":
+                System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(snapshot.AsSpan(12), -1);
+                break;
+            case "ZeroSize":
+                System.Buffers.Binary.BinaryPrimitives.WriteInt64LittleEndian(snapshot.AsSpan(16), 0);
+                break;
+            case "NegativeSize":
+                System.Buffers.Binary.BinaryPrimitives.WriteInt64LittleEndian(snapshot.AsSpan(16), -1);
+                break;
+            case "PayloadLength":
+                System.Buffers.Binary.BinaryPrimitives.WriteInt64LittleEndian(snapshot.AsSpan(24), 136);
+                break;
+            case "HugeSize":
+                // A consistent header for a 1 EiB filter: the stream is too short, so nothing is allocated
+                System.Buffers.Binary.BinaryPrimitives.WriteInt64LittleEndian(snapshot.AsSpan(16), long.MaxValue);
+                System.Buffers.Binary.BinaryPrimitives.WriteInt64LittleEndian(snapshot.AsSpan(24), 1L << 60);
+                break;
+            case "TruncatedHeader":
+                snapshot = snapshot[..10];
+                break;
+            case "TruncatedPayload":
+                snapshot = snapshot[..^20];
+                break;
+            case "TruncatedChecksum":
+                snapshot = snapshot[..^1];
+                break;
+            case "Checksum":
+                snapshot[40] ^= 0x01;
+                break;
+            case "PaddingBit":
+                snapshot[^9] |= 0x80; // The last bit of the last word
+                System.Buffers.Binary.BinaryPrimitives.WriteUInt64LittleEndian(snapshot.AsSpan(snapshot.Length - 8), System.IO.Hashing.XxHash3.HashToUInt64(snapshot.AsSpan(0, snapshot.Length - 8)));
+                break;
+            default:
+                throw new ArgumentOutOfRangeException(nameof(corruption));
+        }
+
+        var exception = Assert.Throws<InvalidDataException>(() => BloomFilter.Load(new MemoryStream(snapshot)));
+        Assert.Contains(expectedMessage, exception.Message, StringComparison.Ordinal);
+
+        // A non-seekable stream detects a truncated payload only when it reaches its end
+        if (corruption is not "HugeSize")
+        {
+            exception = await Assert.Throws<InvalidDataException>(async () => await BloomFilter.LoadAsync(new NonSeekableStream(snapshot)));
+            Assert.Contains(expectedMessage, exception.Message, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public void Snapshot_CountingBloomFilter_Checksum_Throws()
+    {
+        var filter = CountingBloomFilter.CreateXXHash64(CountingBloomFilterSize.CreateExact(100, 3));
+        filter.Add(1);
+        using var stream = new MemoryStream();
+        filter.Save(stream);
+        var snapshot = stream.ToArray();
+        snapshot[50] ^= 0x01;
+
+        var exception = Assert.Throws<InvalidDataException>(() => CountingBloomFilter.Load(new MemoryStream(snapshot)));
+        Assert.Contains("checksum", exception.Message, StringComparison.Ordinal);
+    }
+
+    private static byte[] SaveSnapshot(BloomFilter filter)
+    {
+        using var stream = new MemoryStream();
+        filter.Save(stream);
+        return stream.ToArray();
+    }
+
+    private static string[] GetCreateMethodNames()
+    {
+        return
+        [
+            nameof(BloomFilter.CreateXXHash128),
+            nameof(BloomFilter.CreateXXHash64),
+            nameof(BloomFilter.CreateXXHash32),
+            nameof(BloomFilter.CreateXXHash3),
+            nameof(BloomFilter.CreateCrc64),
+            nameof(BloomFilter.CreateCrc32),
+            nameof(BloomFilter.CreateAdler32),
+        ];
+    }
+
     private static IEnumerable<object> GetValues()
     {
         return
@@ -845,5 +1234,32 @@ public sealed class BloomFilterTests
             Int128 v => filter.GetEstimatedCount(v),
             _ => throw new ArgumentOutOfRangeException(nameof(value)),
         };
+    }
+
+    private sealed class NonSeekableStream(byte[] data) : Stream
+    {
+        private readonly MemoryStream _inner = new(data);
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+
+        public override int Read(byte[] buffer, int offset, int count) => _inner.Read(buffer, offset, count);
+        public override void Flush() => throw new NotSupportedException();
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _inner.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
     }
 }

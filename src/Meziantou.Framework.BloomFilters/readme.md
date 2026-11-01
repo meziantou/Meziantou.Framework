@@ -44,6 +44,25 @@ Counters are 8-bit. A counter that reaches 255 saturates and is never decremente
 
 Only remove values that were added. `Remove` ignores a value the filter can prove is absent, but a value that is absent yet reported as present (a false positive) decrements counters that belong to other values, and those values may then be reported as absent.
 
+Save a filter to a stream and load it later, for instance after a restart, without adding its values again. Stop updating the filter while it is saved. A snapshot written on a machine with another byte order is rejected, because values are hashed from their in-memory bytes.
+
+<!-- ref:../../tests/Meziantou.Framework.BloomFilters.Tests/BloomFilterTests.cs;region=BloomFilter_Snapshot;format=md-fenced-code-block;dedent=true -->
+```csharp
+var filter = BloomFilter.CreateXXHash128(BloomFilterSize.CreateOptimalSize(expectedItemCount: 1000, falsePositiveProbability: 0.01));
+filter.Add("alice@example.com");
+
+// Save the filter to a stream, such as a FileStream, and load it after a restart
+using var stream = new MemoryStream();
+filter.Save(stream);
+
+stream.Position = 0;
+var restored = BloomFilter.Load<BloomFilterXXHash128>(stream);
+
+Assert.True(restored.MayContain("alice@example.com"));
+Assert.False(restored.MayContain("bob@example.com"));
+```
+<!-- endref -->
+
 Available factory methods:
 
 - `BloomFilter.CreateXXHash128`, `CreateXXHash64`, `CreateXXHash32`, `CreateXXHash3`, `CreateCrc64`, `CreateCrc32`, `CreateAdler32`

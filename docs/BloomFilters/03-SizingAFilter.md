@@ -12,13 +12,14 @@ that all those bits are set. Its size has two parts:
 ## Compute the optimal size
 
 [BloomFilterSize.CreateOptimalSize](cref:Meziantou.Framework.BloomFilters.BloomFilterSize.CreateOptimalSize) takes the number of values you expect to add and the false positive probability you
-accept, and returns the number of bits and of hash functions that give this probability with the least memory:
+accept, and returns the smallest number of bits, with its number of hash functions, that keeps the probability at or
+below this target:
 
 <!-- ref:../../tests/Meziantou.Framework.BloomFilters.Tests/BloomFilterTests.cs;region=BloomFilter_Size;format=md-fenced-code-block;dedent=true -->
 ```csharp
 // The size for 1 million items and a 1% false positive probability
 var size = BloomFilterSize.CreateOptimalSize(expectedItemCount: 1_000_000, falsePositiveProbability: 0.01);
-Assert.Equal(9_585_059, size.BitCount); // about 1.2 MB of memory
+Assert.Equal(9_592_955, size.BitCount); // about 1.2 MB of memory
 Assert.Equal(7, size.HashCount);
 
 // Or choose the number of bits and of hash functions yourself
@@ -29,6 +30,11 @@ Assert.True(filter.MayContain("alice@example.com"));
 ```
 <!-- endref -->
 
+- The probability is computed with the usual approximation of a Bloom filter, `(1 - e^(-kn/m))^k` for `n` values,
+  `m` bits and `k` hash functions. It assumes hash functions that spread the values evenly: the false positive rate
+  measured on a given set of values is close to the target, but can be a little higher.
+- The number of hash functions is a whole number, so a target above 0.5 still uses one hash function, with more bits
+  than the formula for the optimal size gives.
 - `expectedItemCount` must be greater than 0, and `falsePositiveProbability` between 0 and 1 (both excluded). A size
   too large to represent throws an `ArgumentOutOfRangeException`.
 - The memory grows with the number of values, and with the precision: dividing the false positive probability by 10

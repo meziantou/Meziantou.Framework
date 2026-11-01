@@ -247,6 +247,28 @@ public sealed class DockerRuntimeAdapterTests
     }
 
     [Fact]
+    public async Task IsSupportedAsync_ReportsWhyTheProbeCommandFailed()
+    {
+        var executable = CreateScriptCli(
+            posix: "echo 'the daemon is down' >&2\nexit 3",
+            windows: "@echo the daemon is down 1>&2\r\n@exit /b 3");
+        try
+        {
+            var runtime = new DockerContainerRuntime(nameof(ContainerRuntime.Wslc), DockerContainerRuntime.Flavor.Wslc, executable);
+
+            Assert.False(await runtime.IsSupportedAsync(XunitCancellationToken));
+            Assert.Equal("The command 'wslc list -q' exited with code 3. Output: the daemon is down", runtime.UnavailableReason);
+
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => runtime.EnsureSupportedAsync(XunitCancellationToken));
+            Assert.Equal("The 'Wslc' runtime is not available. The command 'wslc list -q' exited with code 3. Output: the daemon is down", exception.Message);
+        }
+        finally
+        {
+            File.Delete(executable);
+        }
+    }
+
+    [Fact]
     public async Task IsSupportedAsync_ReturnsFalseWhenTheExecutableCannotBeStarted()
     {
         var missing = Path.Combine(Path.GetTempPath(), "MezTC-missing-" + Guid.NewGuid().ToString("N"));

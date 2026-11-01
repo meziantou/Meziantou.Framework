@@ -34,6 +34,8 @@ internal sealed class SegmentedCounterStorage
 
     public long CounterCount { get; }
 
+    public ReadOnlySpan<byte[]> Segments => _segments;
+
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public void Increment(long counterIndex)
     {

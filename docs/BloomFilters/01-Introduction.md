@@ -26,6 +26,8 @@ of a URL already seen.
   [Counting Bloom filters](05-CountingBloomFilters.md).
 - **Choose the hash algorithm.** See [Hash algorithms](06-HashAlgorithms.md).
 - **Merge filters** built separately into one. See [Combining filters](07-CombiningFilters.md).
+- **Save a filter and load it** after a restart or in another process. See
+  [Saving and loading filters](09-SavingAndLoading.md).
 
 ## Namespace
 

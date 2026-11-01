@@ -403,7 +403,7 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
         var completion = CompleteChannelWhenDoneAsync(instance, channel.Writer);
         try
         {
-            var tail = selectHere && options.Tail is { } count ? new Queue<LogEntry>(count) : null;
+            var tail = selectHere && options.Tail is not null ? new List<LogEntry>() : null;
             await foreach (var entry in channel.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false))
             {
                 if (selectHere && (entry.Timestamp < options.Since || entry.Timestamp > options.Until))
@@ -415,20 +415,15 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
                     continue;
                 }
 
-                if (tail.Count == options.Tail)
-                {
-                    if (tail.Count == 0)
-                        continue;
-
-                    tail.Dequeue();
-                }
-
-                tail.Enqueue(entry);
+                tail.Add(entry);
             }
 
             if (tail is not null)
             {
-                foreach (var entry in tail)
+                // The two streams come from two pipes, so the order of arrival is not the order of the log: an entry of
+                // the standard error can arrive after newer entries of the standard output. The last entries are the
+                // newest ones, as the runtimes select them. The sort is stable, so entries of the same time keep their order.
+                foreach (var entry in tail.OrderBy(entry => entry.Timestamp).TakeLast(options.Tail!.Value))
                     yield return entry;
             }
         }

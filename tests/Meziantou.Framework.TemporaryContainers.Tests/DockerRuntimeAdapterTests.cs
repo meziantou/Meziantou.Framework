@@ -90,6 +90,37 @@ public sealed class DockerRuntimeAdapterTests
     }
 
     [Fact]
+    public async Task GetLogsAsyncSelectsTheNewestEntriesOnWslc()
+    {
+        // The oldest entry is written last, to the other stream: the last entries are the newest, not the last to arrive.
+        var executable = CreateScriptCli(
+            posix: """
+                echo '2026-01-02T03:04:06.000000000Z out-1'
+                echo '2026-01-02T03:04:07.000000000Z out-2'
+                echo '2026-01-02T03:04:05.000000000Z err-1' >&2
+                """,
+            windows: """
+                @echo 2026-01-02T03:04:06.000000000Z out-1
+                @echo 2026-01-02T03:04:07.000000000Z out-2
+                @echo 2026-01-02T03:04:05.000000000Z err-1 1>&2
+                """);
+        try
+        {
+            var runtime = new DockerContainerRuntime(nameof(ContainerRuntime.Wslc), DockerContainerRuntime.Flavor.Wslc, executable);
+
+            var messages = new List<string>();
+            await foreach (var entry in runtime.GetLogsAsync("abc", new ContainerLogsOptions { Follow = false, Tail = 2 }, XunitCancellationToken))
+                messages.Add(entry.Message);
+
+            Assert.Equal(["out-1", "out-2"], messages);
+        }
+        finally
+        {
+            File.Delete(executable);
+        }
+    }
+
+    [Fact]
     public void DockerUsesDockerDialect()
     {
         var runtime = Assert.IsAssignableTo<DockerContainerRuntime>(ContainerRuntime.Docker);
@@ -806,6 +837,25 @@ public sealed class DockerRuntimeAdapterTests
             path += ".sh";
             var failing = failingCommand is null ? "" : $"if [ \"$1\" = \"{failingCommand}\" ]; then exit 1; fi\n";
             File.WriteAllText(path, $"#!/bin/sh\n{failing}exit {exitCode}\n");
+            File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            WaitUntilExecutable(path);
+        }
+
+        return path;
+    }
+
+    private static string CreateScriptCli(string posix, string windows)
+    {
+        var path = Path.Combine(Path.GetTempPath(), "MezTC-stub-" + Guid.NewGuid().ToString("N"));
+        if (OperatingSystem.IsWindows())
+        {
+            path += ".cmd";
+            File.WriteAllText(path, windows.ReplaceLineEndings("\r\n") + "\r\n@exit /b 0\r\n");
+        }
+        else
+        {
+            path += ".sh";
+            File.WriteAllText(path, "#!/bin/sh\n" + posix.ReplaceLineEndings("\n") + "\nexit 0\n");
             File.SetUnixFileMode(path, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
             WaitUntilExecutable(path);
         }

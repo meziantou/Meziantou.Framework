@@ -293,8 +293,22 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
 
     internal override IReadOnlyList<string> BuildInspectArguments(string id) => ["inspect", id];
 
-    internal override IReadOnlyList<string> BuildLogsArguments(string id, bool follow = true)
-        => follow ? ["logs", "--follow", id] : ["logs", id];
+    /// <remarks>The CLI does not record when an entry was written, so <see cref="ContainerLogsOptions.Since"/> and <see cref="ContainerLogsOptions.Until"/> are refused before the arguments are built.</remarks>
+    internal override IReadOnlyList<string> BuildLogsArguments(string id, ContainerLogsOptions options)
+    {
+        var args = new List<string> { "logs" };
+        if (options.Follow)
+            args.Add("--follow");
+
+        if (options.Tail is { } tail)
+        {
+            args.Add("-n");
+            args.Add(tail.ToString(CultureInfo.InvariantCulture));
+        }
+
+        args.Add(id);
+        return args;
+    }
 
     internal override IReadOnlyList<string> BuildExecArguments(string id, ExecOptions options, EnvironmentFile? environmentFile = null)
     {

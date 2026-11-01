@@ -1,4 +1,6 @@
 using System.Formats.Tar;
+using System.Net;
+using System.Net.Http.Headers;
 
 namespace Meziantou.Framework.TemporaryContainers.Internals;
 
@@ -12,84 +14,36 @@ internal static class DockerApiTarArchive
     // executable: a script in a build context must still run once it is copied into a Linux image.
     private const UnixFileMode WindowsFileMode = RegularFileMode | UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute;
 
-    /// <summary>Creates an archive holding <paramref name="content"/> as its only file entry.</summary>
+    /// <summary>Writes an archive holding <paramref name="content"/> as its only file entry.</summary>
+    /// <param name="destination">The stream the archive is written to, typically the body of a request. It does not need to be seekable.</param>
     /// <param name="entryName">The name the file takes inside the archive, which is the name it takes in the container.</param>
-    /// <param name="content">The content of the file.</param>
+    /// <param name="content">The content of the file. It must be seekable: the tar entry declares its length before the content. See <see cref="EnsureSeekableAsync"/>.</param>
     /// <param name="mode">The permissions the file gets in the container.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>The archive, positioned at its beginning.</returns>
-    public static async Task<Stream> CreateForFileAsync(string entryName, Stream content, UnixFileMode mode, CancellationToken cancellationToken)
+    public static async Task WriteFileAsync(Stream destination, string entryName, Stream content, UnixFileMode mode, CancellationToken cancellationToken)
     {
-        // The tar entry declares its length up front, so a stream whose length cannot be read is buffered first.
-        MemoryStream? buffer = null;
-        try
+        await using var writer = new TarWriter(destination, TarEntryFormat.Pax, leaveOpen: true);
+        var entry = new PaxTarEntry(TarEntryType.RegularFile, entryName)
         {
-            if (!content.CanSeek)
-            {
-                buffer = new MemoryStream();
-                await content.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
-                buffer.Position = 0;
-            }
+            DataStream = content,
+            Mode = mode,
+        };
 
-            var archive = new MemoryStream();
-            try
-            {
-                await using (var writer = new TarWriter(archive, TarEntryFormat.Pax, leaveOpen: true))
-                {
-                    var entry = new PaxTarEntry(TarEntryType.RegularFile, entryName)
-                    {
-                        DataStream = buffer ?? content,
-                        Mode = mode,
-                    };
-
-                    await writer.WriteEntryAsync(entry, cancellationToken).ConfigureAwait(false);
-                }
-
-                archive.Position = 0;
-                return archive;
-            }
-            catch
-            {
-                await archive.DisposeAsync().ConfigureAwait(false);
-                throw;
-            }
-        }
-        finally
-        {
-            if (buffer is not null)
-                await buffer.DisposeAsync().ConfigureAwait(false);
-        }
+        await writer.WriteEntryAsync(entry, cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Gets the permissions a host file keeps once it is copied into a container.</summary>
-    public static UnixFileMode GetFileMode(string path)
-        => OperatingSystem.IsWindows() ? WindowsFileMode : File.GetUnixFileMode(path);
-
-    /// <summary>Creates an archive of <paramref name="directory"/> and everything below it.</summary>
-    /// <param name="directory">The directory to archive.</param>
-    /// <param name="entryPrefix">A directory name every entry is placed under, or an empty string to archive the content of <paramref name="directory"/> at the root. When it is not empty, it must end with a slash.</param>
-    /// <param name="additionalFile">A file to add to the archive under a name of the caller's choosing, on top of the content of <paramref name="directory"/>.</param>
-    /// <param name="ignore">The rules of the <c>.dockerignore</c> file of a build context, or <see langword="null"/> to archive everything.</param>
-    /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>The archive, positioned at its beginning. It is backed by a temporary file that is deleted when the stream is disposed.</returns>
-    public static async Task<Stream> CreateForDirectoryAsync(string directory, string entryPrefix, (string SourcePath, string EntryName)? additionalFile, DockerIgnore? ignore, CancellationToken cancellationToken)
+    /// <summary>Returns a seekable stream with the content of <paramref name="content"/>: the stream itself when it is seekable, and a copy in a private temporary file, deleted when the returned stream is disposed, otherwise.</summary>
+    /// <remarks>A tar entry declares its length before its content, so a stream whose length is unknown has to be read whole first. A temporary file keeps that copy out of memory.</remarks>
+    public static async Task<Stream> EnsureSeekableAsync(Stream content, CancellationToken cancellationToken)
     {
+        if (content.CanSeek)
+            return content;
+
         var tempFile = PrivateTemporaryFile.CreatePath();
         try
         {
             await using (var file = PrivateTemporaryFile.Create(tempFile))
-            await using (var writer = new TarWriter(file, TarEntryFormat.Pax, leaveOpen: true))
-            {
-                var root = new DirectoryInfo(directory);
-                if (entryPrefix.Length > 0)
-                    await WriteEntryAsync(writer, root.FullName, entryPrefix, cancellationToken).ConfigureAwait(false);
-
-                // .dockerignore is a client-side filter the daemon never sees, so it is applied here, like the docker CLI does.
-                await WriteDirectoryContentAsync(writer, root, entryPrefix, relativePrefix: "", ignore, cancellationToken).ConfigureAwait(false);
-
-                if (additionalFile is var (sourcePath, additionalEntryName))
-                    await WriteEntryAsync(writer, sourcePath, additionalEntryName, cancellationToken).ConfigureAwait(false);
-            }
+                await content.CopyToAsync(file, cancellationToken).ConfigureAwait(false);
 
             return new TemporaryFileStream(tempFile);
         }
@@ -98,6 +52,34 @@ internal static class DockerApiTarArchive
             File.Delete(tempFile);
             throw;
         }
+    }
+
+    /// <summary>Creates the body of a request whose content is written by <paramref name="write"/> while the request is sent, so the archive is never held in memory or in a file.</summary>
+    public static HttpContent CreateContent(Func<Stream, CancellationToken, Task> write) => new StreamingTarContent(write);
+
+    /// <summary>Gets the permissions a host file keeps once it is copied into a container.</summary>
+    public static UnixFileMode GetFileMode(string path)
+        => OperatingSystem.IsWindows() ? WindowsFileMode : File.GetUnixFileMode(path);
+
+    /// <summary>Writes an archive of <paramref name="directory"/> and everything below it.</summary>
+    /// <param name="destination">The stream the archive is written to, typically the body of a request. It does not need to be seekable.</param>
+    /// <param name="directory">The directory to archive.</param>
+    /// <param name="entryPrefix">A directory name every entry is placed under, or an empty string to archive the content of <paramref name="directory"/> at the root. When it is not empty, it must end with a slash.</param>
+    /// <param name="additionalFile">A file to add to the archive under a name of the caller's choosing, on top of the content of <paramref name="directory"/>.</param>
+    /// <param name="ignore">The rules of the <c>.dockerignore</c> file of a build context, or <see langword="null"/> to archive everything.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    public static async Task WriteDirectoryAsync(Stream destination, string directory, string entryPrefix, (string SourcePath, string EntryName)? additionalFile, DockerIgnore? ignore, CancellationToken cancellationToken)
+    {
+        await using var writer = new TarWriter(destination, TarEntryFormat.Pax, leaveOpen: true);
+        var root = new DirectoryInfo(directory);
+        if (entryPrefix.Length > 0)
+            await WriteEntryAsync(writer, root.FullName, entryPrefix, cancellationToken).ConfigureAwait(false);
+
+        // .dockerignore is a client-side filter the daemon never sees, so it is applied here, like the docker CLI does.
+        await WriteDirectoryContentAsync(writer, root, entryPrefix, relativePrefix: "", ignore, cancellationToken).ConfigureAwait(false);
+
+        if (additionalFile is var (sourcePath, additionalEntryName))
+            await WriteEntryAsync(writer, sourcePath, additionalEntryName, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Writes the content of a directory, recursively. A symbolic link is archived as a link, like the docker CLI does, and a linked directory is not walked into.</summary>
@@ -160,38 +142,41 @@ internal static class DockerApiTarArchive
         await writer.WriteEntryAsync(new PaxTarEntry(TarEntryType.RegularFile, entryName) { DataStream = content, Mode = WindowsFileMode }, cancellationToken).ConfigureAwait(false);
     }
 
-    /// <summary>Reads the content of the file an archive returned by <c>GET /containers/{id}/archive</c> holds.</summary>
-    /// <param name="archive">The archive returned by the daemon.</param>
+    /// <summary>Opens the content of the file an archive returned by <c>GET /containers/{id}/archive</c> holds. The content is read from the archive as the returned stream is read, so the file is never held in memory.</summary>
+    /// <param name="archive">The archive returned by the daemon. The returned stream owns it.</param>
     /// <param name="containerPath">The path that was requested, used to report a path that turned out not to be a file.</param>
+    /// <param name="owner">An object disposed with the returned stream, such as the response the archive is read from.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
-    /// <returns>The content of the file, positioned at its beginning.</returns>
+    /// <returns>A stream, which cannot seek, positioned at the beginning of the content of the file. Its length is known.</returns>
     /// <exception cref="FileNotFoundException">The archive does not hold a file: the path is a directory, or a link that was not resolved.</exception>
-    public static async Task<Stream> ReadSingleFileAsync(Stream archive, string containerPath, CancellationToken cancellationToken)
+    public static async Task<Stream> OpenSingleFileAsync(Stream archive, string containerPath, IDisposable? owner, CancellationToken cancellationToken)
     {
-        await using var reader = new TarReader(archive, leaveOpen: true);
-
-        // The daemon archives the requested path as the first entry. A directory comes with everything below it, so
-        // the first entry is the only one that says what the path is.
-        var entry = await GetNextEntryAsync(reader, cancellationToken).ConfigureAwait(false);
-        if (entry is null || !IsRegularFile(entry.EntryType))
-            throw new FileNotFoundException($"The path '{containerPath}' does not point to a file in the container.", containerPath);
-
-        var content = new MemoryStream();
+        TarReader? reader = null;
+        var transferred = false;
         try
         {
-            // An empty file has no data stream at all.
-            if (entry.DataStream is { } data)
-            {
-                await data.CopyToAsync(content, cancellationToken).ConfigureAwait(false);
-                content.Position = 0;
-            }
+            reader = new TarReader(archive, leaveOpen: true);
 
-            return content;
+            // The daemon archives the requested path as the first entry. A directory comes with everything below it, so
+            // the first entry is the only one that says what the path is.
+            var entry = await GetNextEntryAsync(reader, cancellationToken).ConfigureAwait(false);
+            if (entry is null || !IsRegularFile(entry.EntryType))
+                throw new FileNotFoundException($"The path '{containerPath}' does not point to a file in the container.", containerPath);
+
+            // An empty file has no data stream at all. The stream takes the reader, the archive and the owner over.
+            var stream = new TarEntryStream(entry.DataStream, entry.Length, reader, archive, owner);
+            reader = null;
+            transferred = true;
+            return stream;
         }
-        catch
+        finally
         {
-            await content.DisposeAsync().ConfigureAwait(false);
-            throw;
+            reader?.Dispose();
+            if (!transferred)
+            {
+                await archive.DisposeAsync().ConfigureAwait(false);
+                owner?.Dispose();
+            }
         }
     }
 
@@ -315,6 +300,112 @@ internal static class DockerApiTarArchive
                 throw new InvalidOperationException($"The archive entry '{entryName}' is written through the symbolic link '{current}'.");
 
             current = Path.GetDirectoryName(current);
+        }
+    }
+
+    /// <summary>A request body written while the request is sent.</summary>
+    private sealed class StreamingTarContent : HttpContent
+    {
+        private readonly Func<Stream, CancellationToken, Task> _write;
+
+        public StreamingTarContent(Func<Stream, CancellationToken, Task> write)
+        {
+            _write = write;
+            Headers.ContentType = new MediaTypeHeaderValue("application/x-tar");
+        }
+
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context) => _write(stream, CancellationToken.None);
+
+        protected override Task SerializeToStreamAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken) => _write(stream, cancellationToken);
+
+        // The length of the archive is only known once it is written: the body is sent with a chunked encoding.
+        protected override bool TryComputeLength(out long length)
+        {
+            length = 0;
+            return false;
+        }
+    }
+
+    /// <summary>The content of a tar entry, read from the archive as it is read. Disposing it disposes the archive and what it was read from.</summary>
+    private sealed class TarEntryStream(Stream? data, long length, TarReader reader, Stream archive, IDisposable? owner) : Stream
+    {
+        private long _position;
+        private bool _disposed;
+
+        public override bool CanRead => !_disposed;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => false;
+
+        public override long Length => length;
+
+        public override long Position
+        {
+            get => _position;
+            set => throw new NotSupportedException();
+        }
+
+        public override int Read(byte[] buffer, int offset, int count) => Read(buffer.AsSpan(offset, count));
+
+        public override int Read(Span<byte> buffer)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (data is null)
+                return 0;
+
+            var read = data.Read(buffer);
+            _position += read;
+            return read;
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            ObjectDisposedException.ThrowIf(_disposed, this);
+            if (data is null)
+                return 0;
+
+            var read = await data.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+            _position += read;
+            return read;
+        }
+
+        public override void Flush()
+        {
+        }
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        protected override void Dispose(bool disposing)
+        {
+            if (!_disposed && disposing)
+            {
+                _disposed = true;
+                reader.Dispose();
+                archive.Dispose();
+                owner?.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
+
+        public override async ValueTask DisposeAsync()
+        {
+            if (!_disposed)
+            {
+                _disposed = true;
+                await reader.DisposeAsync().ConfigureAwait(false);
+                await archive.DisposeAsync().ConfigureAwait(false);
+                owner?.Dispose();
+            }
+
+            await base.DisposeAsync().ConfigureAwait(false);
         }
     }
 }

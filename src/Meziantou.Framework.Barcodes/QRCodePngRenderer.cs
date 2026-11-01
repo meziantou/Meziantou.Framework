@@ -40,20 +40,38 @@ public static class QRCodePngRenderer
         var width = GetTotalDimension(qrCode.Width, options.QuietZoneModules, options.ModuleSize);
         var height = GetTotalDimension(qrCode.Height, options.QuietZoneModules, options.ModuleSize);
 
+        var moduleSize = options.ModuleSize;
+        var quietZoneModules = options.QuietZoneModules;
         PngWriter.WritePalette(stream, width, height, options.LightColor, options.DarkColor, (row, y) =>
         {
-            var sourceRow = (y / options.ModuleSize) - options.QuietZoneModules;
-            if (sourceRow < 0 || sourceRow >= qrCode.Height)
-                return;
+            // Every pixel row of a module row is the same, and the quiet zones above and below
+            // the code are blank, so each of them is rendered once for all of its rows.
+            var sourceRow = (y / moduleSize) - quietZoneModules;
+            if (sourceRow < 0)
+                return (quietZoneModules * moduleSize) - y;
 
-            for (var x = 0; x < width; x++)
+            if (sourceRow >= qrCode.Height)
+                return height - y;
+
+            var column = 0;
+            while (column < qrCode.Width)
             {
-                var sourceColumn = (x / options.ModuleSize) - options.QuietZoneModules;
-                if (sourceColumn >= 0 && sourceColumn < qrCode.Width && qrCode[sourceRow, sourceColumn])
+                if (!qrCode[sourceRow, column])
                 {
-                    row[x >> 3] |= (byte)(0x80 >> (x & 7));
+                    column++;
+                    continue;
                 }
+
+                var runStart = column;
+                while (column < qrCode.Width && qrCode[sourceRow, column])
+                {
+                    column++;
+                }
+
+                PngWriter.SetPixels(row, (quietZoneModules + runStart) * moduleSize, (column - runStart) * moduleSize);
             }
+
+            return moduleSize - (y % moduleSize);
         });
     }
 

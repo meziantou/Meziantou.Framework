@@ -11,12 +11,8 @@ internal static class MicroQREncoder
         var dataCodewords = EncodeData(data, version, effectiveECLevel, mode);
         var allCodewords = AddErrorCorrection(dataCodewords, version, effectiveECLevel);
 
-        var bestMask = FindBestMask(allCodewords, version, effectiveECLevel);
-
-        var builder = new MicroQRMatrixBuilder(version);
-        builder.Build(allCodewords, effectiveECLevel, bestMask);
-
-        return new QRCode(builder.Modules, version, QRCodeType.MicroQR, effectiveECLevel);
+        var modules = BuildMatrix(allCodewords, version, effectiveECLevel);
+        return new QRCode(modules, version, QRCodeType.MicroQR, effectiveECLevel);
     }
 
     private static byte[] EncodeData(string data, int version, ErrorCorrectionLevel ecLevel, EncodingMode mode)
@@ -93,23 +89,29 @@ internal static class MicroQREncoder
     }
 
     /// <summary>
-    /// Picks the mask with the highest score, per ISO/IEC 18004 section 7.8.3.2.
+    /// Builds the Micro QR matrix using the mask with the highest score, per ISO/IEC 18004 section 7.8.3.2.
     /// </summary>
     /// <remarks>
     /// Micro QR maximises its mask score, unlike standard QR which minimises a penalty. Flipping
-    /// this comparison to match <see cref="MaskEvaluator.FindBestMask"/> would silently degrade
+    /// this comparison to match <see cref="MaskEvaluator.BuildMatrix"/> would silently degrade
     /// every Micro QR symbol.
+    /// The function patterns and unmasked data are placed once; each candidate mask is applied in place, scored, then
+    /// removed again, so a single matrix is allocated. When several masks have the same score, the lowest mask number wins.
     /// </remarks>
-    private static int FindBestMask(byte[] codewords, int version, ErrorCorrectionLevel ecLevel)
+    private static bool[,] BuildMatrix(byte[] codewords, int version, ErrorCorrectionLevel ecLevel)
     {
+        var builder = new MicroQRMatrixBuilder(version);
+        builder.PlaceFunctionPatternsAndData(codewords, ecLevel);
+
         var bestMask = 0;
         var bestScore = -1;
 
         for (var mask = 0; mask < 4; mask++)
         {
-            var builder = new MicroQRMatrixBuilder(version);
-            builder.Build(codewords, ecLevel, mask);
+            builder.ApplyMask(mask);
+            builder.PlaceFormatInfo(ecLevel, mask);
             var score = MicroQRMatrixBuilder.EvaluateMaskScore(builder.Modules, builder.Size);
+            builder.ApplyMask(mask);
 
             if (score > bestScore)
             {
@@ -118,6 +120,8 @@ internal static class MicroQREncoder
             }
         }
 
-        return bestMask;
+        builder.ApplyMask(bestMask);
+        builder.PlaceFormatInfo(ecLevel, bestMask);
+        return builder.Modules;
     }
 }

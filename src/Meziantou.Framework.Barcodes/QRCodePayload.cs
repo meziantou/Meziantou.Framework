@@ -384,14 +384,37 @@ public static class QRCodePayload
     /// <param name="accountName">The account name (e.g., user email).</param>
     /// <param name="issuer">The issuer name (e.g., service name).</param>
     /// <param name="algorithm">The hash algorithm. Default is SHA1.</param>
-    /// <param name="digits">The number of digits in the OTP code. Default is 6.</param>
-    /// <param name="period">For TOTP: the time step in seconds. Default is 30.</param>
-    /// <param name="counter">For HOTP: the initial counter value.</param>
+    /// <param name="digits">The number of digits in the OTP code: 6, 7 or 8 (RFC 4226). Default is 6. Google Authenticator documents only 6 and 8.</param>
+    /// <param name="period">For TOTP: the time step in seconds, greater than 0. Default is 30. Ignored for HOTP.</param>
+    /// <param name="counter">For HOTP: the initial counter value, required and greater than or equal to 0. Ignored for TOTP.</param>
     /// <returns>A string formatted as an otpauth URI.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="digits"/> is not 6, 7 or 8; or <paramref name="period"/> is not positive for TOTP; or <paramref name="counter"/> is negative for HOTP.</exception>
+    /// <exception cref="ArgumentException"><paramref name="counter"/> is <see langword="null"/> for HOTP.</exception>
     public static string OneTimePassword(OneTimePasswordType type, string secret, string accountName, string? issuer = null, OneTimePasswordAlgorithm algorithm = OneTimePasswordAlgorithm.SHA1, int digits = 6, int period = 30, long? counter = null)
     {
         ArgumentNullException.ThrowIfNull(secret);
         ArgumentNullException.ThrowIfNull(accountName);
+
+        // An authenticator cannot provision a URI with these values, so they are rejected rather
+        // than emitted. See https://github.com/google/google-authenticator/wiki/Key-Uri-Format
+        if (digits is < 6 or > 8)
+        {
+            throw new ArgumentOutOfRangeException(nameof(digits), digits, "The number of digits must be 6, 7 or 8.");
+        }
+
+        if (type == OneTimePasswordType.Totp)
+        {
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(period);
+        }
+        else if (type == OneTimePasswordType.Hotp)
+        {
+            if (counter is null)
+            {
+                throw new ArgumentException("A HOTP URI requires an initial counter.", nameof(counter));
+            }
+
+            ArgumentOutOfRangeException.ThrowIfNegative(counter.Value, nameof(counter));
+        }
 
         var sb = new StringBuilder();
         sb.Append("otpauth://");
@@ -442,10 +465,10 @@ public static class QRCodePayload
             sb.Append(period.ToString(CultureInfo.InvariantCulture));
         }
 
-        if (type == OneTimePasswordType.Hotp && counter is not null)
+        if (type == OneTimePasswordType.Hotp)
         {
             sb.Append("&counter=");
-            sb.Append(counter.Value.ToString(CultureInfo.InvariantCulture));
+            sb.Append(counter.GetValueOrDefault().ToString(CultureInfo.InvariantCulture));
         }
 
         return sb.ToString();
@@ -499,12 +522,19 @@ public static class QRCodePayload
     /// </summary>
     /// <param name="beneficiaryName">The name of the beneficiary (max 70 characters).</param>
     /// <param name="iban">The IBAN of the beneficiary.</param>
-    /// <param name="amount">The amount in EUR (0.01 to 999999999.99).</param>
+    /// <param name="amount">The amount in EUR (0.01 to 999999999.99), a whole number of cents.</param>
     /// <param name="bic">The BIC/SWIFT code of the beneficiary's bank.</param>
     /// <param name="remittanceReference">A structured remittance reference (ISO 11649). Mutually exclusive with <paramref name="remittanceText"/>.</param>
     /// <param name="remittanceText">An unstructured remittance text (max 140 characters). Mutually exclusive with <paramref name="remittanceReference"/>.</param>
     /// <param name="information">Beneficiary to originator information (max 70 characters).</param>
     /// <returns>A string formatted as an EPC QR code payload.</returns>
+    /// <remarks>
+    /// The payload is at most 331 bytes in UTF-8, the limit of EPC069-12. The guidelines also require a symbol of version 13
+    /// at most with error correction level <see cref="ErrorCorrectionLevel.M"/>: create the QR code with
+    /// <see cref="QRCode.Create(string, ErrorCorrectionLevel)"/> and its default level.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="amount"/> is out of range or has a fraction of a cent.</exception>
+    /// <exception cref="ArgumentException">A value is too long or contains a control character, both remittance values are set, or the payload exceeds 331 bytes in UTF-8.</exception>
     public static string SepaPayment(string beneficiaryName, string iban, decimal amount, string? bic = null, string? remittanceReference = null, string? remittanceText = null, string? information = null)
     {
         ArgumentNullException.ThrowIfNull(beneficiaryName);
@@ -527,28 +557,66 @@ public static class QRCodePayload
             throw new ArgumentOutOfRangeException(nameof(amount), amount, "The amount must be between 0.01 and 999999999.99.");
         }
 
+        // The amount is written with two decimals. Rounding a value such as 0.015 would silently
+        // change the payment the payer is asked to make, so it is rejected instead. 10.000 is still
+        // accepted because its value is a whole number of cents.
+        if (amount % 0.01m != 0m)
+        {
+            throw new ArgumentOutOfRangeException(nameof(amount), amount, "The amount must be a whole number of cents.");
+        }
+
         // EPC069-12 separates the twelve elements with a line feed, so the separator is written
         // explicitly rather than through AppendLine, whose separator depends on the platform.
+        // The elements are positional, so an empty element before a populated one keeps its
+        // separator, but the last populated element must not be followed by a separator.
+        string?[] elements =
+        [
+            "BCD",                  // Service Tag
+            "002",                  // Version
+            "1",                    // Character set (1 = UTF-8)
+            "SCT",                  // Identification code
+            bic,
+            beneficiaryName,
+            iban,
+            "EUR" + amount.ToString("F2", CultureInfo.InvariantCulture),
+            null,                   // Purpose
+            remittanceReference,    // Structured remittance
+            remittanceText,         // Unstructured remittance
+            information,            // Beneficiary to originator information
+        ];
+
+        var count = elements.Length;
+        while (string.IsNullOrEmpty(elements[count - 1]))
+        {
+            count--;
+        }
+
         var sb = new StringBuilder();
-        sb.Append("BCD\n");                     // Service Tag
-        sb.Append("002\n");                     // Version
-        sb.Append("1\n");                       // Character set (1 = UTF-8)
-        sb.Append("SCT\n");                     // Identification code
-        sb.Append(bic).Append('\n');            // BIC
-        sb.Append(beneficiaryName).Append('\n');
-        sb.Append(iban).Append('\n');
-        sb.Append("EUR").Append(amount.ToString("F2", CultureInfo.InvariantCulture)).Append('\n');
+        for (var i = 0; i < count; i++)
+        {
+            if (i > 0)
+            {
+                sb.Append('\n');
+            }
 
-        // Purpose (empty)
-        sb.Append('\n');
+            sb.Append(elements[i]);
+        }
 
-        // Remittance reference (structured) or text (unstructured)
-        sb.Append(remittanceReference).Append('\n');
-        sb.Append(remittanceText).Append('\n');
+        var payload = sb.ToString();
+        var byteCount = Encoding.UTF8.GetByteCount(payload);
+        if (byteCount > SepaPaymentMaxPayloadBytes)
+        {
+            throw new ArgumentException($"The payload is {byteCount.ToString(CultureInfo.InvariantCulture)} bytes in UTF-8, but EPC069-12 allows at most {SepaPaymentMaxPayloadBytes.ToString(CultureInfo.InvariantCulture)} bytes. Shorten the text values; characters outside ASCII take several bytes.", paramName: null);
+        }
 
-        sb.Append(information);
-        return sb.ToString();
+        return payload;
     }
+
+    /// <summary>
+    /// EPC069-12 limits the whole payload to 331 bytes, the byte capacity of a version 13 symbol
+    /// at error correction level M, the largest symbol the guidelines allow.
+    /// </summary>
+    private const int SepaPaymentMaxPayloadBytes = 331;
 
     /// <summary>
     /// Validates a single EPC element.

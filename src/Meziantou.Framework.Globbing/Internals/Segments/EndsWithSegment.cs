@@ -7,10 +7,13 @@ internal sealed class EndsWithSegment : Segment
     public EndsWithSegment(string value, bool ignoreCase)
     {
         Value = value;
+        IgnoreCase = ignoreCase;
         _stringComparison = ignoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal;
     }
 
     public string Value { get; }
+
+    public bool IgnoreCase { get; }
 
     public override bool IsMatch(ref PathReader pathReader)
     {

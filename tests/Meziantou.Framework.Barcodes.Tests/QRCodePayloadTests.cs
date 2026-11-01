@@ -490,6 +490,80 @@ public class QRCodePayloadTests
     }
 
     [Fact]
+    public void OneTimePassword_Hotp_CounterZero_ProducesExpectedPayload()
+    {
+        var payload = QRCodePayload.OneTimePassword(OneTimePasswordType.Hotp, "JBSWY3DPEHPK3PXP", "test", counter: 0);
+
+        Assert.Equal("otpauth://hotp/test?secret=JBSWY3DPEHPK3PXP&counter=0", payload);
+    }
+
+    [Fact]
+    public void OneTimePassword_Hotp_ThrowsWhenCounterIsMissing()
+    {
+        var exception = Assert.Throws<ArgumentException>(() => QRCodePayload.OneTimePassword(OneTimePasswordType.Hotp, "JBSWY3DPEHPK3PXP", "test"));
+
+        Assert.Equal("counter", exception.ParamName);
+    }
+
+    [Fact]
+    public void OneTimePassword_Hotp_ThrowsWhenCounterIsNegative()
+    {
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => QRCodePayload.OneTimePassword(OneTimePasswordType.Hotp, "JBSWY3DPEHPK3PXP", "test", counter: -1));
+
+        Assert.Equal("counter", exception.ParamName);
+    }
+
+    [Fact]
+    public void OneTimePassword_Hotp_IgnoresPeriod()
+    {
+        var payload = QRCodePayload.OneTimePassword(OneTimePasswordType.Hotp, "JBSWY3DPEHPK3PXP", "test", period: 0, counter: 1);
+
+        Assert.Equal("otpauth://hotp/test?secret=JBSWY3DPEHPK3PXP&counter=1", payload);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-30)]
+    public void OneTimePassword_Totp_ThrowsWhenPeriodIsNotPositive(int period)
+    {
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => QRCodePayload.OneTimePassword(OneTimePasswordType.Totp, "JBSWY3DPEHPK3PXP", "test", period: period));
+
+        Assert.Equal("period", exception.ParamName);
+    }
+
+    [Fact]
+    public void OneTimePassword_Totp_IgnoresNegativeCounter()
+    {
+        var payload = QRCodePayload.OneTimePassword(OneTimePasswordType.Totp, "JBSWY3DPEHPK3PXP", "test", counter: -1);
+
+        Assert.Equal("otpauth://totp/test?secret=JBSWY3DPEHPK3PXP", payload);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-6)]
+    [InlineData(5)]
+    [InlineData(9)]
+    [InlineData(10)]
+    public void OneTimePassword_ThrowsWhenDigitsAreNotSupported(int digits)
+    {
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => QRCodePayload.OneTimePassword(OneTimePasswordType.Totp, "JBSWY3DPEHPK3PXP", "test", digits: digits));
+
+        Assert.Equal("digits", exception.ParamName);
+    }
+
+    [Theory]
+    [InlineData(6, "otpauth://totp/test?secret=JBSWY3DPEHPK3PXP")]
+    [InlineData(7, "otpauth://totp/test?secret=JBSWY3DPEHPK3PXP&digits=7")]
+    [InlineData(8, "otpauth://totp/test?secret=JBSWY3DPEHPK3PXP&digits=8")]
+    public void OneTimePassword_SupportedDigits_ProducesExpectedPayload(int digits, string expected)
+    {
+        var payload = QRCodePayload.OneTimePassword(OneTimePasswordType.Totp, "JBSWY3DPEHPK3PXP", "test", digits: digits);
+
+        Assert.Equal(expected, payload);
+    }
+
+    [Fact]
     public void OneTimePassword_ThrowsWhenSecretIsNull()
     {
         Assert.Throws<ArgumentNullException>(() => QRCodePayload.OneTimePassword(
@@ -544,7 +618,7 @@ public class QRCodePayloadTests
             bic: "COBADEFFXXX",
             remittanceText: "Donation");
 
-        Assert.Equal("BCD\n002\n1\nSCT\nCOBADEFFXXX\nRed Cross\nDE89370400440532013000\nEUR12.50\n\n\nDonation\n", payload);
+        Assert.Equal("BCD\n002\n1\nSCT\nCOBADEFFXXX\nRed Cross\nDE89370400440532013000\nEUR12.50\n\n\nDonation", payload);
     }
 
     [Fact]
@@ -555,7 +629,7 @@ public class QRCodePayloadTests
             "NL91ABNA0417164300",
             100.00m);
 
-        Assert.Equal("BCD\n002\n1\nSCT\n\nJohn Doe\nNL91ABNA0417164300\nEUR100.00\n\n\n\n", payload);
+        Assert.Equal("BCD\n002\n1\nSCT\n\nJohn Doe\nNL91ABNA0417164300\nEUR100.00", payload);
     }
 
     [Fact]
@@ -567,7 +641,7 @@ public class QRCodePayloadTests
             50.00m,
             remittanceReference: "RF18539007547034");
 
-        Assert.Equal("BCD\n002\n1\nSCT\n\nCompany\nDE89370400440532013000\nEUR50.00\n\nRF18539007547034\n\n", payload);
+        Assert.Equal("BCD\n002\n1\nSCT\n\nCompany\nDE89370400440532013000\nEUR50.00\n\nRF18539007547034", payload);
     }
 
     [Fact]
@@ -646,10 +720,88 @@ public class QRCodePayloadTests
         Assert.Throws<ArgumentOutOfRangeException>(() => QRCodePayload.SepaPayment("Name", "DE89370400440532013000", amount));
     }
 
+    [Theory]
+    [InlineData(0.015)]
+    [InlineData(10.001)]
+    [InlineData(0.011)]
+    [InlineData(123.456)]
+    public void SepaPayment_ThrowsWhenAmountHasFractionalCents(double amount)
+    {
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => QRCodePayload.SepaPayment("Name", "DE89370400440532013000", (decimal)amount));
+
+        Assert.Equal("amount", exception.ParamName);
+    }
+
+    public static TheoryData<decimal, string> SepaPaymentExactCentAmounts() => new()
+    {
+        { 0.01m, "EUR0.01" },
+        { 10m, "EUR10.00" },
+        { 10.000m, "EUR10.00" },
+        { 10.5m, "EUR10.50" },
+        { 0.0100m, "EUR0.01" },
+        { 999999999.99m, "EUR999999999.99" },
+    };
+
+    [Theory]
+    [MemberData(nameof(SepaPaymentExactCentAmounts))]
+    public void SepaPayment_AcceptsAmountsInWholeCents(decimal amount, string expected)
+    {
+        var payload = QRCodePayload.SepaPayment("Name", "DE89370400440532013000", amount);
+
+        Assert.Equal("BCD\n002\n1\nSCT\n\nName\nDE89370400440532013000\n" + expected, payload);
+    }
+
+    [Fact]
+    public void SepaPayment_KeepsInteriorEmptyElements()
+    {
+        var payload = QRCodePayload.SepaPayment("Name", "DE89370400440532013000", 10m, remittanceText: "Invoice 1", information: "Thanks");
+
+        Assert.Equal("BCD\n002\n1\nSCT\n\nName\nDE89370400440532013000\nEUR10.00\n\n\nInvoice 1\nThanks", payload);
+    }
+
+    [Fact]
+    public void SepaPayment_EmptyTrailingValuesAreNotFollowedBySeparators()
+    {
+        var payload = QRCodePayload.SepaPayment("Name", "DE89370400440532013000", 10m, remittanceReference: "RF18539007547034", information: "");
+
+        Assert.Equal("BCD\n002\n1\nSCT\n\nName\nDE89370400440532013000\nEUR10.00\n\nRF18539007547034", payload);
+    }
+
+    [Fact]
+    public void SepaPayment_AcceptsPayloadOf331Bytes()
+    {
+        // 70 two-byte characters fit the 70-character limit of the name but take 140 bytes.
+        var payload = QRCodePayload.SepaPayment(new string('é', 70), "DE89370400440532013000", 1000m, remittanceText: new string('é', 69) + "a");
+
+        Assert.Equal("BCD\n002\n1\nSCT\n\n" + new string('é', 70) + "\nDE89370400440532013000\nEUR1000.00\n\n\n" + new string('é', 69) + "a", payload);
+        Assert.Equal(331, Encoding.UTF8.GetByteCount(payload));
+
+        // EPC069-12 requires version 13 at most with error correction level M
+        var qrCode = QRCode.Create(payload);
+        Assert.Equal(ErrorCorrectionLevel.M, qrCode.ErrorCorrectionLevel);
+        Assert.True(qrCode.Version <= 13);
+    }
+
+    [Fact]
+    public void SepaPayment_ThrowsWhenPayloadExceeds331Bytes()
+    {
+        // One more byte than the 331-byte case: the last character of the text takes 2 bytes instead of 1
+        Assert.Throws<ArgumentException>(() => QRCodePayload.SepaPayment(new string('é', 70), "DE89370400440532013000", 1000m, remittanceText: new string('é', 70)));
+    }
+
+    [Fact]
+    public void SepaPayment_ThrowsWhenMultibyteFieldsExceedThePayloadLimit()
+    {
+        Assert.Throws<ArgumentException>(() => QRCodePayload.SepaPayment(
+            new string('é', 70), "DE89370400440532013000", 10m,
+            remittanceText: new string('é', 140),
+            information: new string('é', 70)));
+    }
+
     [Fact]
     public void SepaPayment_UsesLineFeedRegardlessOfPlatform()
     {
-        var payload = QRCodePayload.SepaPayment("Name", "DE89370400440532013000", 10m);
+        var payload = QRCodePayload.SepaPayment("Name", "DE89370400440532013000", 10m, information: "Info");
 
         Assert.DoesNotContain('\r', payload);
         Assert.Equal(11, payload.Count(c => c == '\n'));

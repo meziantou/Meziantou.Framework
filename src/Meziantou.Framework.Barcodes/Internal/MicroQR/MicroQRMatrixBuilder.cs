@@ -19,15 +19,17 @@ internal sealed class MicroQRMatrixBuilder
     public bool[,] Modules => _modules;
     public bool[,] IsReserved => _isReserved;
 
-    public void Build(byte[] codewords, ErrorCorrectionLevel ecLevel, int maskPattern)
+    /// <summary>
+    /// Places everything that does not depend on the mask: function patterns and unmasked data.
+    /// The format information area is reserved but left empty; use <see cref="ApplyMask"/> and <see cref="PlaceFormatInfo"/> to complete the symbol.
+    /// </summary>
+    public void PlaceFunctionPatternsAndData(byte[] codewords, ErrorCorrectionLevel ecLevel)
     {
         PlaceFinderPattern();
         PlaceSeparators();
         PlaceTimingPatterns();
         ReserveFormatInfoArea();
         PlaceDataBits(codewords, ecLevel);
-        ApplyMask(maskPattern);
-        PlaceFormatInfo(ecLevel, maskPattern);
     }
 
     private void PlaceFinderPattern()
@@ -139,6 +141,9 @@ internal sealed class MicroQRMatrixBuilder
         }
     }
 
+    /// <summary>
+    /// Flips the data modules selected by the mask pattern. Applying the same mask twice restores the unmasked data.
+    /// </summary>
     public void ApplyMask(int maskPattern)
     {
         for (var row = 0; row < _size; row++)

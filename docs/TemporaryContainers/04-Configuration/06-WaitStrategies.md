@@ -20,7 +20,7 @@ definition.StartupTimeout = TimeSpan.FromMinutes(2); // 5 minutes by default
 | --- | --- |
 | `Wait.ForLogMessage(text, occurrences)` | The given number of log lines contain the text. |
 | `Wait.ForLogMessage(regex, occurrences)` | The given number of log lines match the regular expression. |
-| `Wait.ForPort(containerPort)` | A TCP connection to the published host port, on `127.0.0.1`, reaches a listening service. |
+| `Wait.ForPort(containerPort)` | A TCP connection to the published host port, on the [host address](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.GetHostAddress) of the port, reaches a listening service. |
 | `Wait.ForDelay(delay)` | The delay has elapsed. |
 
 - The strategies run one after the other, in the order you added them, so combine them: a log message says that the
@@ -59,7 +59,7 @@ public sealed class HttpHealthWaitStrategy(int containerPort, string path) : IWa
 {
     public async Task WaitAsync(TemporaryContainer container, CancellationToken cancellationToken)
     {
-        var url = new UriBuilder("http", "127.0.0.1", container.GetMappedPort(containerPort), path).Uri;
+        var url = new UriBuilder("http", container.GetHostAddress(containerPort), container.GetMappedPort(containerPort), path).Uri;
         using var httpClient = new HttpClient();
         while (true)
         {

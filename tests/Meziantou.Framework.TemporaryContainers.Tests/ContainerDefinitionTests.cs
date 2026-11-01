@@ -432,6 +432,152 @@ public sealed class ContainerDefinitionTests
     }
 
     [Fact]
+    public async Task StartAsync_TheWaitFindsTheReadyMessageWhenTheLogsOfTheEarlierRunAreRotated()
+    {
+        // A log driver that rotates the log while the new run starts removes entries of the earlier run: skipping as
+        // many entries as the earlier run wrote would skip the ready message of the new one.
+        var runtime = new InMemoryRuntime { LogsHaveTimestamps = true };
+        var definition = new ContainerDefinition(ImageSource.FromExisting("sha256:test"))
+        {
+            Runtime = runtime,
+            StartupTimeout = TimeSpan.FromMinutes(5),
+        };
+        definition.WaitStrategies.Add(Wait.ForLogMessage("SERVER READY"));
+
+        await using var container = definition.CreateContainer();
+        runtime.OnStart = () =>
+        {
+            runtime.Emit(LogStream.Stdout, "starting");
+            runtime.Emit(LogStream.Stdout, "SERVER READY");
+        };
+        await container.StartAsync(XunitCancellationToken);
+        await container.StopAsync(XunitCancellationToken);
+
+        runtime.OnStart = () =>
+        {
+            runtime.RotateLogs();
+            runtime.Emit(LogStream.Stdout, "SERVER READY");
+        };
+        await container.StartAsync(XunitCancellationToken);
+    }
+
+    [Fact]
+    public async Task RestartAsync_ForwardsTheNewRunWhenTheLogsOfTheEarlierRunAreRotated()
+    {
+        var runtime = new InMemoryRuntime { LogsHaveTimestamps = true };
+        var logger = new ListLogger();
+        var definition = new ContainerDefinition(ImageSource.FromExisting("sha256:test"))
+        {
+            Runtime = runtime,
+        };
+        definition.Logging.Logger = logger;
+
+        await using var container = definition.CreateContainer();
+        await container.StartAsync(XunitCancellationToken);
+        runtime.Emit(LogStream.Stdout, "before-restart");
+        await logger.WaitForMessageAsync("before-restart");
+
+        runtime.OnStart = () =>
+        {
+            runtime.RotateLogs();
+            runtime.Emit(LogStream.Stdout, "after-restart");
+        };
+        await container.RestartAsync(XunitCancellationToken);
+        await logger.WaitForMessageAsync("after-restart");
+
+        Assert.Equal(1, logger.Messages.Count(message => string.Equals(message, "before-restart", StringComparison.Ordinal)));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task StartAsync_TheWaitDoesNotMatchTheLogsOfAnEarlierRunOfAnAdoptedContainer(bool logsIncludeTimestamps)
+    {
+        // Another process created the reused container, ran it and stopped it: its logs are all from an earlier run.
+        var runtime = new InMemoryRuntime { LogsHaveTimestamps = logsIncludeTimestamps, State = ContainerState.Exited };
+        runtime.Emit(LogStream.Stdout, "SERVER READY");
+        var definition = new ContainerDefinition(ImageSource.FromExisting("sha256:test"))
+        {
+            Runtime = runtime,
+            ReuseId = "reuse",
+            StartupTimeout = TimeSpan.FromMinutes(5),
+        };
+        definition.WaitStrategies.Add(Wait.ForLogMessage("SERVER READY"));
+
+        await using var container = definition.CreateContainer();
+        var start = container.StartAsync(XunitCancellationToken);
+        await runtime.WaitForLogAttachAsync(0);
+
+        Assert.NotSame(start, await Task.WhenAny(start, Task.Delay(TimeSpan.FromMilliseconds(200), XunitCancellationToken)));
+
+        runtime.Emit(LogStream.Stdout, "SERVER READY");
+        await start;
+    }
+
+    [Fact]
+    public async Task StartAsync_ReattachingTheLogPumpResumesAtTheLastForwardedEntry()
+    {
+        var runtime = new InMemoryRuntime { LogsHaveTimestamps = true };
+        var logger = new ListLogger();
+        var definition = new ContainerDefinition(ImageSource.FromExisting("sha256:test"))
+        {
+            Runtime = runtime,
+        };
+        definition.Logging.Logger = logger;
+
+        await using var container = definition.CreateContainer();
+        await container.StartAsync(XunitCancellationToken);
+        runtime.Emit(LogStream.Stdout, "before-the-stream-ended");
+        await logger.WaitForMessageAsync("before-the-stream-ended");
+
+        runtime.EndLogStream();
+        await runtime.WaitForLogAttachAsync(1);
+        runtime.Emit(LogStream.Stdout, "after-the-stream-ended");
+        await logger.WaitForMessageAsync("after-the-stream-ended");
+
+        // The runtime is asked for the entries from the last one forwarded, rather than for the whole log.
+        var reattach = runtime.LogRequests.Where(options => options.Follow).ElementAt(1);
+        Assert.NotNull(reattach.Since);
+        Assert.Equal(1, logger.Messages.Count(message => string.Equals(message, "before-the-stream-ended", StringComparison.Ordinal)));
+    }
+
+    [Fact]
+    public async Task GetLogsAsync_PassesACopyOfTheOptionsToTheRuntime()
+    {
+        var runtime = new InMemoryRuntime { LogsHaveTimestamps = true };
+        var definition = new ContainerDefinition(ImageSource.FromExisting("sha256:test")) { Runtime = runtime };
+
+        await using var container = definition.CreateContainer();
+        await container.StartAsync(XunitCancellationToken);
+        runtime.Emit(LogStream.Stdout, "first");
+        runtime.Emit(LogStream.Stderr, "error");
+        runtime.Emit(LogStream.Stdout, "second");
+        runtime.Emit(LogStream.Stdout, "third");
+
+        var options = new ContainerLogsOptions { Follow = false, Tail = 3, IncludeStandardError = false };
+        var logs = container.GetLogsAsync(options, XunitCancellationToken);
+        options.Tail = null;
+
+        var messages = new List<string>();
+        await foreach (var entry in logs)
+            messages.Add(entry.Message);
+
+        Assert.Equal(["second", "third"], messages);
+    }
+
+    [Fact]
+    public async Task GetLogsAsync_RefusesOptionsWithoutAStream()
+    {
+        var runtime = new InMemoryRuntime();
+        var definition = new ContainerDefinition(ImageSource.FromExisting("sha256:test")) { Runtime = runtime };
+
+        await using var container = definition.CreateContainer();
+        await container.EnsureCreatedAsync(XunitCancellationToken);
+
+        Assert.Throws<ArgumentException>("options", () => container.GetLogsAsync(new ContainerLogsOptions { IncludeStandardOutput = false, IncludeStandardError = false }, XunitCancellationToken));
+    }
+
+    [Fact]
     public async Task DeleteAsync_ALaterStartCreatesANewContainer()
     {
         var runtime = new InMemoryRuntime();
@@ -575,6 +721,8 @@ public sealed class ContainerDefinitionTests
     private sealed class InMemoryRuntime : ContainerRuntime
     {
         private readonly List<LogEntry> _logs = [];
+        private readonly ConcurrentQueue<ContainerLogsOptions> _logRequests = new();
+        private int _removedLogCount;
         private int _logStreamGeneration;
         private int _logAttachCount;
         private int _inspectCount;
@@ -605,6 +753,9 @@ public sealed class ContainerDefinitionTests
         public Dictionary<string, string> Environment { get; } = new(StringComparer.Ordinal);
 
         private DateTimeOffset? StartedAt { get; set; }
+
+        /// <summary>Gets the options of every request for the logs, in order.</summary>
+        public IReadOnlyCollection<ContainerLogsOptions> LogRequests => _logRequests.ToArray();
 
         /// <summary>Gets the number of times the log stream has been attached to.</summary>
         public int LogAttachCount => Volatile.Read(ref _logAttachCount);
@@ -695,30 +846,42 @@ public sealed class ContainerDefinitionTests
                 await Task.Delay(10, XunitCancellationToken);
         }
 
-        internal override async IAsyncEnumerable<LogEntry> GetLogsAsync(string id, bool follow, [EnumeratorCancellation] CancellationToken cancellationToken)
+        internal override async IAsyncEnumerable<LogEntry> GetLogsAsync(string id, ContainerLogsOptions options, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            // Mimics the real runtimes: every attach replays the log from the beginning, and the stream can end on
-            // its own while the container is still running.
-            if (follow)
+            // Mimics the real runtimes: every attach replays the log from the beginning (or from 'since', inclusive,
+            // or from the last 'tail' entries), and the stream can end on its own while the container is still running.
+            _logRequests.Enqueue(options);
+            if (options.Follow)
                 Interlocked.Increment(ref _logAttachCount);
 
             var generation = Volatile.Read(ref _logStreamGeneration);
-            var index = 0;
+            int index;
+            lock (_logs)
+            {
+                index = options.Tail is { } tail ? Math.Max(0, _logs.Count - tail) : 0;
+                index += _removedLogCount;
+            }
+
             while (Volatile.Read(ref _logStreamGeneration) == generation)
             {
                 LogEntry? entry = null;
                 lock (_logs)
                 {
-                    if (index < _logs.Count)
+                    // An entry the rotation removed while the stream was attached is not sent.
+                    index = Math.Max(index, _removedLogCount);
+                    if (index - _removedLogCount < _logs.Count)
                     {
-                        entry = _logs[index];
+                        entry = _logs[index - _removedLogCount];
                         index++;
                     }
                 }
 
+                if (entry is not null && (!options.Includes(entry.Stream) || entry.Timestamp < options.Since || entry.Timestamp > options.Until))
+                    continue;
+
                 if (entry is null)
                 {
-                    if (!follow)
+                    if (!options.Follow)
                         yield break;
 
                     await Task.Delay(10, cancellationToken);
@@ -732,6 +895,16 @@ public sealed class ContainerDefinitionTests
         internal override IReadOnlyDictionary<int, int> ResolvePortMap(ContainerInfo info, ContainerDefinition definition)
         {
             return new Dictionary<int, int>();
+        }
+
+        /// <summary>Removes the oldest entries of the log, as a log driver that rotates or truncates the log does.</summary>
+        public void RotateLogs()
+        {
+            lock (_logs)
+            {
+                _removedLogCount += _logs.Count;
+                _logs.Clear();
+            }
         }
 
         public void Emit(LogStream stream, string message)

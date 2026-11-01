@@ -77,11 +77,12 @@ public abstract partial class ContainerRuntime
     internal virtual Task<ContainerInfo> InspectAsync(string id, CancellationToken cancellationToken)
         => throw CreateNotSupportedException();
 
-    /// <summary>Streams the logs of a container from its creation.</summary>
+    /// <summary>Streams the logs of a container.</summary>
     /// <param name="id">The container.</param>
-    /// <param name="follow">Whether the stream keeps following new entries, or ends with the entries written so far.</param>
+    /// <param name="options">The entries to return. The caller does not change it once the call is made.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
-    internal virtual IAsyncEnumerable<LogEntry> GetLogsAsync(string id, bool follow, CancellationToken cancellationToken)
+    /// <exception cref="NotSupportedException"><see cref="ContainerLogsOptions.Since"/> or <see cref="ContainerLogsOptions.Until"/> is set, and the runtime does not record timestamps.</exception>
+    internal virtual IAsyncEnumerable<LogEntry> GetLogsAsync(string id, ContainerLogsOptions options, CancellationToken cancellationToken)
         => throw CreateNotSupportedException();
 
     internal virtual Task<ExecResult> ExecAsync(string id, ExecOptions options, CancellationToken cancellationToken)
@@ -101,6 +102,9 @@ public abstract partial class ContainerRuntime
 
     internal virtual IReadOnlyDictionary<int, int> ResolvePortMap(ContainerInfo info, ContainerDefinition definition)
         => throw CreateNotSupportedException();
+
+    /// <summary>Gets the host of the daemon when it runs on another machine (a <c>tcp://</c> or <c>ssh://</c> endpoint), or <see langword="null"/> when it runs on this one.</summary>
+    internal virtual Task<string?> GetRemoteDaemonHostAsync(CancellationToken cancellationToken) => Task.FromResult<string?>(null);
 
     /// <summary>Determines whether a failure to start a container comes from a host port another process took, which a new container with other random ports can avoid.</summary>
     internal virtual bool IsHostPortConflict(Exception exception) => false;
@@ -130,10 +134,22 @@ public abstract partial class ContainerRuntime
 
     private NotSupportedException CreateNotSupportedException() => new($"The '{this}' runtime cannot execute container operations.");
 
+    /// <summary>Why the last probe found the runtime unavailable, when the runtime can tell.</summary>
+    internal virtual string? UnavailableReason => null;
+
     private protected static InvalidOperationException CreateUnavailableRuntimeException(ContainerRuntime runtime)
-        => new(runtime == Auto
+    {
+        var message = runtime == Auto
             ? "No supported container runtime (Docker Engine API, 'docker', 'podman', 'container', or 'wslc') is available."
-            : $"The '{runtime}' runtime is not available.");
+            : $"The '{runtime}' runtime is not available.";
+
+        // Only the Docker Engine API knows why it is unavailable: it tries several endpoints, and the reason tells which
+        // daemon it looked for.
+        if ((runtime == Auto ? DockerApi : runtime).UnavailableReason is { } reason)
+            message += " Docker Engine API: " + reason;
+
+        return new InvalidOperationException(message);
+    }
 
     public override string ToString() => _name;
 }

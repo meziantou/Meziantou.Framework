@@ -16,8 +16,9 @@ definition.Ports.Add(new ContainerPort(9000) with { HostIp = "0.0.0.0" }); // ev
 await using var container = definition.CreateContainer();
 await container.StartAsync();
 
+var host = container.GetHostAddress(80); // 127.0.0.1, or the host of a remote daemon
 var hostPort = container.GetMappedPort(80);
-var url = new UriBuilder("http", "127.0.0.1", hostPort).Uri;
+var url = new UriBuilder("http", host, hostPort).Uri;
 ```
 <!-- endref -->
 
@@ -28,6 +29,9 @@ var url = new UriBuilder("http", "127.0.0.1", hostPort).Uri;
   removes it, for instance from a [database definition](../03-Databases.md) you want to publish differently.
 - [GetMappedPort](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.GetMappedPort) returns the host port of a published container port. It throws an `InvalidOperationException` before
   [StartAsync](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.StartAsync), and for a port that is not published.
+- [GetHostAddress](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.GetHostAddress) returns the address to connect to: `127.0.0.1` unless the port is published on another
+  address or the [daemon runs on another machine](#connect-to-a-remote-daemon). It throws in the same cases as
+  [GetMappedPort](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.GetMappedPort).
 
 When a random host port is taken by another process between the creation of the container and its start, [StartAsync](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.StartAsync)
 creates a new container with other ports, unless the container has a [ReuseId](cref:Meziantou.Framework.TemporaryContainers.ContainerDefinition.ReuseId).
@@ -46,6 +50,44 @@ definition.Ports.Add(new ContainerPort(8080) with { HostIp = "0.0.0.0" }); // ev
 
 Windows containers cannot bind a specific address, and `wslc` publishes through the loopback forwarding of WSL, so the
 address is not passed to them. Apple's `container` cannot publish a port on an IPv6 address.
+
+## Connect to a remote daemon
+
+[GetHostAddress](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.GetHostAddress) tells where a published port is reached from this machine. The database
+[connection strings](../03-Databases.md) and [Wait.ForPort](06-WaitStrategies.md) use it too.
+
+| The port is published on | The daemon runs on this machine | The daemon runs on another machine |
+| --- | --- | --- |
+| A specific address, such as `192.168.1.10` | That address | That address |
+| The loopback address (`127.0.0.1`, `::1`) | That address | The host of the daemon |
+| Every interface (`0.0.0.0`, `::`) | `127.0.0.1` (`::1` for `::`) | The host of the daemon |
+
+The daemon runs on another machine when it is reached over `tcp://`, `ssh://`, `http(s)://`, or a named pipe of another
+server, whose host is not `localhost` or a loopback address:
+
+- the `docker` runtime reads `DOCKER_HOST`, then the endpoint of the current context (`docker context inspect`);
+- the `podman` runtime reads `CONTAINER_HOST`;
+- the Docker Engine API runtime uses the daemon it connects to (see [Runtimes](../06-Runtimes.md#connect-to-a-docker-daemon)).
+
+The address is returned as is, an IPv6 address without brackets: enclose it in brackets in a URI, or use `UriBuilder`.
+
+A port published on the loopback address of a remote daemon is only reachable from that machine. Publish it on every
+interface, keeping in mind that the service is then reachable from the network:
+
+<!-- ref:../../../samples/Meziantou.Framework.TemporaryContainers.Samples/DocumentationExamples.cs;region=TemporaryContainers_RemoteDaemon;format=md-fenced-code-block;dedent=true -->
+```csharp
+// DOCKER_HOST=tcp://docker.example.com:2376 or ssh://user@docker.example.com
+var definition = ContainerDefinition.CreatePostgreSql();
+definition.Ports.Remove(5432);
+definition.Ports.Add(new ContainerPort(5432) with { HostIp = "0.0.0.0" });
+
+await using var postgres = definition.CreateContainer();
+await postgres.StartAsync();
+
+var host = postgres.GetHostAddress(5432); // docker.example.com
+var connectionString = postgres.GetConnectionString(); // Host=docker.example.com;Port=<port>;...
+```
+<!-- endref -->
 
 ## After a restart
 

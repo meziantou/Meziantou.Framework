@@ -16,7 +16,9 @@ internal static class DataAnalyzer
         return Encoding.GetEncoding("shift_jis", new EncoderReplacementFallback(""), new DecoderReplacementFallback(""));
     }
 
-    public static EncodingMode DetermineMode(string data)
+    public static EncodingMode DetermineMode(string data) => DetermineMode(data, allowKanji: true);
+
+    public static EncodingMode DetermineMode(string data, bool allowKanji)
     {
         if (IsNumeric(data))
         {
@@ -28,7 +30,7 @@ internal static class DataAnalyzer
             return EncodingMode.Alphanumeric;
         }
 
-        if (IsKanji(data))
+        if (allowKanji && IsKanji(data))
         {
             return EncodingMode.Kanji;
         }
@@ -42,18 +44,6 @@ internal static class DataAnalyzer
 
         // Binary data always uses byte mode
         return EncodingMode.Byte;
-    }
-
-    public static int DetermineVersion(string data, ErrorCorrectionLevel ecLevel, EncodingMode mode)
-    {
-        var charCount = mode switch
-        {
-            EncodingMode.Byte => Encoding.UTF8.GetByteCount(data),
-            EncodingMode.Kanji => data.Length,
-            _ => data.Length,
-        };
-
-        return DetermineVersion(charCount, ecLevel, mode);
     }
 
     public static int DetermineVersion(int dataLength, ErrorCorrectionLevel ecLevel, EncodingMode mode)
@@ -98,13 +88,33 @@ internal static class DataAnalyzer
     {
         foreach (var c in data)
         {
-            if (!AlphanumericChars.Contains(c, StringComparison.Ordinal))
+            if (!IsAlphanumeric(c))
             {
                 return false;
             }
         }
 
         return data.Length > 0;
+    }
+
+    public static bool IsAlphanumeric(char c) => AlphanumericChars.Contains(c, StringComparison.Ordinal);
+
+    /// <summary>
+    /// Checks if a text without an ECI designator can be split into segments: its byte segments hold UTF-8 that readers
+    /// decode by guessing the encoding of each segment, and a short UTF-8 segment can be guessed as another encoding
+    /// (zbarimg reads "Café " as EUC-JP). The segments are safe when the text only has ASCII and Kanji characters.
+    /// </summary>
+    public static bool CanSegmentWithoutEci(string data)
+    {
+        foreach (var c in data)
+        {
+            if (!char.IsAscii(c) && !IsKanji(c))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /// <summary>

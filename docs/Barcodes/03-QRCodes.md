@@ -89,7 +89,7 @@ var highPng = high.ToPng(new QRCodePngOptions { ModuleSize = 4 });
 
 ## How the data is encoded
 
-The whole text is encoded in one mode, the most compact one that can hold all its characters:
+A QR code stores text in modes that take more or fewer bits per character:
 
 - Digits only take the fewest bits.
 - Uppercase letters, digits, the space and `$%*+-./:` (the alphanumeric mode) take fewer bits than other characters.
@@ -97,7 +97,13 @@ The whole text is encoded in one mode, the most compact one that can hold all it
   the kanji mode. Only the characters of JIS X 0208 that every reader decodes to the same character qualify: the few
   codes that the Shift JIS tables of readers disagree on (`¢`, `£`, `¬`, `―`, `\`, `〜`, `‖`, `−` and their fullwidth
   forms) and the vendor extensions, such as `①`, are encoded as UTF-8.
-- Any other text is encoded as UTF-8. [Create](cref:Meziantou.Framework.Barcodes.QRCode.Create) also takes bytes, encoded as they are.
+- Any other text is encoded as UTF-8 in the byte mode. [Create](cref:Meziantou.Framework.Barcodes.QRCode.Create) also takes bytes, encoded as they are.
+
+[Create](cref:Meziantou.Framework.Barcodes.QRCode.Create) encodes a text in the most compact mode that can hold all its characters, or splits it into
+segments of different modes when that gives a smaller code, such as a long number after a few lowercase letters. Each
+segment has a header of a few bits, so short runs stay in the mode of their neighbors. Without an ECI designator,
+readers guess the encoding of each byte-mode segment, so a text with non-ASCII characters other than kanji and kana
+is not split: it stays in one byte-mode segment. Micro QR codes and rMQR codes always encode the whole text in one mode.
 
 <!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/QRCodeTests.cs;region=QRCode_EncodingModes;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -111,6 +117,11 @@ Assert.Equal(1, QRCode.Create("0123456789012345678901234567890123").Version);
 // Any other text is encoded as UTF-8, and binary data as it is
 Assert.Equal(1, QRCode.Create("Caf\u00E9").Version);
 Assert.Equal(1, QRCode.Create([0x00, 0x01, 0xFE, 0xFF]).Version);
+
+// A text that mixes kinds of characters is split into segments of different modes when it gives a smaller code:
+// the lowercase letters in byte mode, the order number in numeric mode
+Assert.Equal(1, QRCode.Create("order 1234567890123456").Version);
+Assert.Equal(2, QRCode.Create(Encoding.UTF8.GetBytes("order 1234567890123456")).Version);
 ```
 <!-- endref -->
 

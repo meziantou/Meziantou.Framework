@@ -7,9 +7,10 @@ description: What the barcode packages do not do.
 - **The symbologies listed** only: standard QR codes, Micro QR codes, rMQR codes, Code 39, Code 93, Code 128, EAN-8,
   EAN-13, UPC-A, Codabar and ITF. Other two-dimensional codes (Data Matrix, PDF417, Aztec) and other linear barcodes
   (UPC-E, GS1-128 application identifiers) are not supported.
-- **One encoding mode per QR code.** The whole text is encoded in one mode; a text that mixes digits and lowercase
-  letters is entirely encoded in the byte mode, which can give a larger code than a mix of modes would. The byte mode
-  holds UTF-8 without an ECI designator.
+- **Mixed modes in standard QR codes only.** [QRCode.Create](cref:Meziantou.Framework.Barcodes.QRCode.Create) splits a text into segments of different modes,
+  except a text with non-ASCII characters other than kanji and kana; Micro QR codes and rMQR codes encode the whole
+  text in one mode. There is no API to choose the segments yourself. The byte mode holds UTF-8 without an ECI
+  designator.
 - **No structured append**: data too large for one QR code is not split across several codes.
 - **Logos in SVG only.** The PNG renderer and the image renderer do not draw logos; draw them on the image yourself.
 - **No text under the bars** in the SVG and PNG renderers: the image renderer prints it, with a font.

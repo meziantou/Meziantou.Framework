@@ -160,6 +160,38 @@ public sealed class DecodeInteropTests
     }
 
     [Fact]
+    public async Task MixedModeQRCodes_AreDecoded()
+    {
+        (string Data, ErrorCorrectionLevel Level)[] values =
+        [
+            ("a" + new string('1', 300), ErrorCorrectionLevel.L),
+            ("a" + new string('7', 7080), ErrorCorrectionLevel.L),
+            ("Order 1234567890123456789012345678901234567890, ROOM 42, ok", ErrorCorrectionLevel.M),
+            ("漢字テスト abc 12345678901234567890 ABCDEFGHIJ 漢字", ErrorCorrectionLevel.Q),
+            ("Café 2026-11-01 1234567890123456789012345678901234567890 ÉÀ", ErrorCorrectionLevel.H), // one byte segment without ECI
+            ("https://example.com/PRODUCT/12345678901234567890?ref=ABCDEFGHIJKLMNOPQRSTUVWXYZ", ErrorCorrectionLevel.L),
+        ];
+
+        var tools = await BarcodeTools.GetAsync();
+        await using var directory = TemporaryDirectory.Create();
+        var cases = new List<(string Path, string Data)>();
+        foreach (var (data, level) in values)
+        {
+            var path = directory.FullPath / $"mixed-{cases.Count.ToString(CultureInfo.InvariantCulture)}.png";
+            await File.WriteAllBytesAsync(path, QRCode.Create(data, level).ToPng(new QRCodePngOptions { ModuleSize = 3 }), XunitCancellationToken);
+            cases.Add((path, data));
+        }
+
+        var results = await tools.ReadWithZXingAsync([.. cases.Select(item => item.Path)]);
+        foreach (var (path, data) in cases)
+        {
+            var result = Assert.Single(results, result => result.FilePath == path, message: Escape(data));
+            Assert.Equal(data, result.Text, message: Escape(data));
+            Assert.Equal(["QR-Code:" + data], await tools.ReadWithZBarAsync(path));
+        }
+    }
+
+    [Fact]
     public async Task KanjiModeCharacters_AreDecoded()
     {
         // Every character of JIS X 0208 that the readers decode the same way (zbarimg decodes 0x815C as U+2014 and code page

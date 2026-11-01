@@ -69,6 +69,11 @@ public class QRCodeTests
         // Any other text is encoded as UTF-8, and binary data as it is
         Assert.Equal(1, QRCode.Create("Caf\u00E9").Version);
         Assert.Equal(1, QRCode.Create([0x00, 0x01, 0xFE, 0xFF]).Version);
+
+        // A text that mixes kinds of characters is split into segments of different modes when it gives a smaller code:
+        // the lowercase letters in byte mode, the order number in numeric mode
+        Assert.Equal(1, QRCode.Create("order 1234567890123456").Version);
+        Assert.Equal(2, QRCode.Create(Encoding.UTF8.GetBytes("order 1234567890123456")).Version);
         #endregion
     }
 
@@ -341,6 +346,48 @@ public class QRCodeTests
         }
 
         return true;
+    }
+
+    // ───── Mixed modes ─────
+
+    [Fact]
+    public void Create_MixedModes_EncodesEachRunInItsOwnMode()
+    {
+        // Byte mode for the whole text needs version 11: a byte segment and a numeric segment fit in version 6
+        var qr = QRCode.Create("a" + new string('1', 300), ErrorCorrectionLevel.L);
+
+        Assert.Equal((6, 41), (qr.Version, qr.Size));
+    }
+
+    [Fact]
+    public void Create_MixedModes_AtMaximumCapacity()
+    {
+        // Version 40-L holds 23,648 data bits: 28 for the byte segment, 18 + 23,600 for 7,080 digits
+        Assert.Equal(40, QRCode.Create("a" + new string('7', 7080), ErrorCorrectionLevel.L).Version);
+        Assert.Throws<InvalidOperationException>(() => QRCode.Create("a" + new string('7', 7081), ErrorCorrectionLevel.L));
+    }
+
+    [Fact]
+    public void Create_MixedModes_NonAsciiText_UsesASingleMode()
+    {
+        // Readers guess the encoding of each byte segment, and could take a short UTF-8 segment for another encoding
+        var data = "\u00E9" + new string('1', 300);
+
+        Assert.True(HasSameModules(QRCode.Create(Encoding.UTF8.GetBytes(data), ErrorCorrectionLevel.L), QRCode.Create(data, ErrorCorrectionLevel.L)));
+    }
+
+    [Theory]
+    [InlineData("HELLO WORLD")]
+    [InlineData("hello world")]
+    [InlineData("0123456789")]
+    [InlineData("漢字のテスト")]
+    [InlineData("https://www.meziantou.net/")]
+    public void Create_SingleMode_WhenSegmentsAreNotSmaller(string data)
+    {
+        // The whole text in byte mode, as the binary overload encodes it, unless a single other mode is smaller
+        var bytes = QRCode.Create(Encoding.UTF8.GetBytes(data));
+        var text = QRCode.Create(data);
+        Assert.Equal(data is "hello world" or "https://www.meziantou.net/", HasSameModules(bytes, text));
     }
 
     // ───── Higher versions / different sizes ─────

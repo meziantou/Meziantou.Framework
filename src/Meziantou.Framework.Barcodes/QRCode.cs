@@ -69,9 +69,8 @@ public sealed class QRCode
 
         ValidateErrorCorrectionLevel(errorCorrectionLevel);
 
-        var mode = DataAnalyzer.DetermineMode(data);
-        var version = DataAnalyzer.DetermineVersion(data, errorCorrectionLevel, mode);
-        var dataCodewords = DataEncoder.Encode(data, version, errorCorrectionLevel, mode);
+        var (segments, version) = QRSegmentOptimizer.Optimize(data, errorCorrectionLevel, minVersion: 1, maxVersion: 40, allowSegments: DataAnalyzer.CanSegmentWithoutEci(data), allowKanji: true);
+        var dataCodewords = DataEncoder.Encode(data, segments, version, errorCorrectionLevel);
         var allCodewords = ErrorCorrectionEncoder.AddErrorCorrection(dataCodewords, version, errorCorrectionLevel);
 
         return BuildStandardMatrix(allCodewords, version, errorCorrectionLevel);

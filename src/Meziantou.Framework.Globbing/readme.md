@@ -16,7 +16,7 @@
 | Dialect | Follows | Notes |
 | --- | --- | --- |
 | `Standard` | the syntax above | Wildcards skip names starting with a dot unless `GlobOptions.MatchLeadingDot` is set |
-| `Git` | gitignore(5) and git's wildmatch | `[^a]`, `[[:alpha:]]`, `\` escapes in brackets; `{}` are literal; use `GlobCollection.ParseGitIgnore` for a whole `.gitignore` file |
+| `Git` | gitignore(5) and git's wildmatch | `[^a]`, `[[:alpha:]]`, `\` escapes in brackets; `{}` are literal; use `GlobCollection.ParseGitIgnore` for a whole `.gitignore` file, and `GitIgnoreMatcher` for the ignore files of a working tree |
 | `MSBuild` | MSBuild item specs | `/` and `\` are separators, `%XX` escapes, `*.*` matches every file, a leading `..` is kept |
 | `Posix` | `fnmatch(3)` without flags | Matches a plain string: `*` and `?` match `/`; `[[:alpha:]]`, `[[=a=]]`, `[[.-.]]`, `[^a]` |
 | `PosixPath` | `fnmatch(3)` with `FNM_PATHNAME` | Same syntax as `Posix`, but a `/` is only matched by a `/` |

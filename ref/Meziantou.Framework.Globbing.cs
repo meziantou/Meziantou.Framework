@@ -4,6 +4,21 @@
 
 namespace Meziantou.Framework.Globbing
 {
+    public sealed class GitIgnoreMatcher
+    {
+        public string RootDirectory { get => throw null; }
+        public GitIgnoreMatcher(string rootDirectory, Meziantou.Framework.Globbing.GitIgnoreMatcherOptions? options = null) { }
+        public System.Collections.Generic.IEnumerable<string> EnumerateFiles(System.IO.EnumerationOptions? options = null) => throw null;
+        public bool IsIgnored(string path) => throw null;
+        public bool IsIgnored(System.ReadOnlySpan<char> path, Meziantou.Framework.Globbing.PathItemType itemType) => throw null;
+    }
+
+    public sealed class GitIgnoreMatcherOptions
+    {
+        public string? GlobalExcludesFile { get => throw null; set { } }
+        public bool UseRepositoryExcludeFile { get => throw null; set { } }
+    }
+
     public sealed class Glob : Meziantou.Framework.Globbing.IGlobEvaluatable
     {
         bool Meziantou.Framework.Globbing.IGlobEvaluatable.CanMatchDirectories { get => throw null; }
@@ -37,7 +52,9 @@ namespace Meziantou.Framework.Globbing
         public static System.Threading.Tasks.Task<Meziantou.Framework.Globbing.GlobCollection> LoadGitIgnoreAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static System.Threading.Tasks.Task<Meziantou.Framework.Globbing.GlobCollection> LoadGitIgnoreAsync(System.IO.TextReader reader, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static System.Threading.Tasks.Task<Meziantou.Framework.Globbing.GlobCollection> LoadGitIgnoreAsync(string path, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.Globbing.GlobCollection> LoadGitIgnoreAsync(string path, string? baseDirectory, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static Meziantou.Framework.Globbing.GlobCollection ParseGitIgnore(System.ReadOnlySpan<char> gitIgnoreContent) => throw null;
+        public static Meziantou.Framework.Globbing.GlobCollection ParseGitIgnore(System.ReadOnlySpan<char> gitIgnoreContent, string? baseDirectory) => throw null;
     }
 
     public enum GlobDialect

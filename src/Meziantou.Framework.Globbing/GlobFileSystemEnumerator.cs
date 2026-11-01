@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO.Enumeration;
 
 namespace Meziantou.Framework.Globbing;
@@ -8,6 +9,14 @@ public abstract class GlobFileSystemEnumerator<T> : FileSystemEnumerator<T>
 {
     private readonly IGlobEvaluatable _glob;
 
+    // A collection created from gitignore content matches every path below an excluded directory. Each directory is
+    // resolved once, when deciding whether to recurse into it, and its entries reuse the result instead of
+    // evaluating every ancestor again.
+    private readonly GlobCollection? _gitIgnore;
+    private Dictionary<string, bool>? _pendingDirectories;
+    private string? _currentDirectory;
+    private bool _currentDirectoryIgnored;
+
     /// <summary>Initializes a new instance of the <see cref="GlobFileSystemEnumerator{T}"/> class.</summary>
     /// <param name="glob">The glob pattern to match against.</param>
     /// <param name="directory">The directory to enumerate.</param>
@@ -16,11 +25,24 @@ public abstract class GlobFileSystemEnumerator<T> : FileSystemEnumerator<T>
         : base(directory, options)
     {
         _glob = glob;
+        _gitIgnore = glob is GlobCollection { IsGitIgnore: true } gitIgnore ? gitIgnore : null;
     }
 
     protected override bool ShouldRecurseIntoEntry(ref FileSystemEntry entry)
     {
-        return base.ShouldRecurseIntoEntry(ref entry) && _glob.IsPartialMatch(ref entry);
+        if (!base.ShouldRecurseIntoEntry(ref entry))
+            return false;
+
+        if (_gitIgnore is null)
+            return _glob.IsPartialMatch(ref entry);
+
+        var relativeDirectory = Glob.GetRelativeDirectory(ref entry);
+        var ignored = IsCurrentDirectoryIgnored(ref entry) || _gitIgnore.GetLastMatch(relativeDirectory, entry.FileName, PathItemType.Directory) is GlobMode.Include;
+        if (!_gitIgnore.IsGitIgnorePartialMatch(relativeDirectory, entry.FileName, ignored))
+            return false;
+
+        (_pendingDirectories ??= new(StringComparer.Ordinal))[entry.ToFullPath()] = ignored;
+        return true;
     }
 
     protected override bool ShouldIncludeEntry(ref FileSystemEntry entry)
@@ -31,7 +53,40 @@ public abstract class GlobFileSystemEnumerator<T> : FileSystemEnumerator<T>
         if (!entry.IsDirectory && !_glob.CanMatchFiles)
             return false;
 
-        return base.ShouldIncludeEntry(ref entry) && _glob.IsMatch(ref entry);
+        if (!base.ShouldIncludeEntry(ref entry))
+            return false;
+
+        if (_gitIgnore is null)
+            return _glob.IsMatch(ref entry);
+
+        return IsCurrentDirectoryIgnored(ref entry)
+            || _gitIgnore.GetLastMatch(Glob.GetRelativeDirectory(ref entry), entry.FileName, entry.IsDirectory ? PathItemType.Directory : PathItemType.File) is GlobMode.Include;
+    }
+
+    // Whether the directory that holds the entry, or one of its ancestors, is excluded by the gitignore content
+    private bool IsCurrentDirectoryIgnored(ref FileSystemEntry entry)
+    {
+        Debug.Assert(_gitIgnore is not null);
+
+        var directory = entry.Directory;
+        if (_currentDirectory is null || !directory.SequenceEqual(_currentDirectory))
+        {
+            _currentDirectory = directory.ToString();
+            if (directory.Length == entry.RootDirectory.Length)
+            {
+                _currentDirectoryIgnored = false;
+            }
+            else if (_pendingDirectories is not null && _pendingDirectories.Remove(_currentDirectory, out var ignored))
+            {
+                _currentDirectoryIgnored = ignored;
+            }
+            else
+            {
+                _currentDirectoryIgnored = _gitIgnore.IsMatch(Glob.GetRelativeDirectory(ref entry), [], PathItemType.Directory);
+            }
+        }
+
+        return _currentDirectoryIgnored;
     }
 }
 

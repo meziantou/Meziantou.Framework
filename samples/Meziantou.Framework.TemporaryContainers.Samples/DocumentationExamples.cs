@@ -139,11 +139,31 @@ public static class DocumentationExamples
         await using var container = definition.CreateContainer();
         await container.StartAsync();
 
+        var host = container.GetHostAddress(80); // 127.0.0.1, or the host of a remote daemon
         var hostPort = container.GetMappedPort(80);
-        var url = new UriBuilder("http", "127.0.0.1", hostPort).Uri;
+        var url = new UriBuilder("http", host, hostPort).Uri;
         #endregion
 
         Console.WriteLine(url);
+    }
+
+    public static async Task RemoteDaemon()
+    {
+        #region TemporaryContainers_RemoteDaemon
+        // DOCKER_HOST=tcp://docker.example.com:2376 or ssh://user@docker.example.com
+        var definition = ContainerDefinition.CreatePostgreSql();
+        definition.Ports.Remove(5432);
+        definition.Ports.Add(new ContainerPort(5432) with { HostIp = "0.0.0.0" });
+
+        await using var postgres = definition.CreateContainer();
+        await postgres.StartAsync();
+
+        var host = postgres.GetHostAddress(5432); // docker.example.com
+        var connectionString = postgres.GetConnectionString(); // Host=docker.example.com;Port=<port>;...
+        #endregion
+
+        Console.WriteLine(host);
+        Console.WriteLine(connectionString);
     }
 
     public static async Task VolumeOptions()
@@ -174,7 +194,7 @@ public static class DocumentationExamples
     {
         public async Task WaitAsync(TemporaryContainer container, CancellationToken cancellationToken)
         {
-            var url = new UriBuilder("http", "127.0.0.1", container.GetMappedPort(containerPort), path).Uri;
+            var url = new UriBuilder("http", container.GetHostAddress(containerPort), container.GetMappedPort(containerPort), path).Uri;
             using var httpClient = new HttpClient();
             while (true)
             {

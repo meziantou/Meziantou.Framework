@@ -10,7 +10,7 @@ public sealed class SqlServerContainer : TemporaryContainer
     {
     }
 
-    /// <summary>Gets a SQL Server connection string for the running container, using credentials from the definition's environment variables (<c>MSSQL_SA_PASSWORD</c>).</summary>
+    /// <summary>Gets a SQL Server connection string for the running container (on <see cref="TemporaryContainer.GetHostAddress"/>), using credentials from the definition's environment variables (<c>MSSQL_SA_PASSWORD</c>).</summary>
     /// <returns>The connection string.</returns>
     /// <exception cref="InvalidOperationException">The container has not been started.</exception>
     public string GetConnectionString()
@@ -24,7 +24,7 @@ public sealed class SqlServerContainer : TemporaryContainer
         // end the entry and have the rest of it parsed as further keywords.
         var builder = new DbConnectionStringBuilder
         {
-            ["Server"] = string.Create(CultureInfo.InvariantCulture, $"127.0.0.1,{port}"),
+            ["Server"] = string.Create(CultureInfo.InvariantCulture, $"{GetHostAddress(1433)},{port}"),
             ["Database"] = "master",
             ["User Id"] = "sa",
             ["Pwd"] = password,

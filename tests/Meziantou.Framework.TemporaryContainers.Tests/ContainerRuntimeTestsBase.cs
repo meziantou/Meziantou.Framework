@@ -664,8 +664,9 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
 
         await using var container = await StartWithRetryAsync(definition);
 
+        Assert.Equal("127.0.0.1", container.GetHostAddress(8080));
         using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
-        Assert.Equal("hello from container", await client.GetStringAsync(new Uri($"http://127.0.0.1:{container.GetMappedPort(8080)}/"), XunitCancellationToken));
+        Assert.Equal("hello from container", await client.GetStringAsync(new UriBuilder("http", container.GetHostAddress(8080), container.GetMappedPort(8080)).Uri, XunitCancellationToken));
     }
 
     private static async Task ExecShellAsync(TemporaryContainer container, string command)

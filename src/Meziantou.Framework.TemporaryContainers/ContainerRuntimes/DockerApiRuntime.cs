@@ -430,6 +430,12 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         };
     }
 
+    internal override async Task<string?> GetRemoteDaemonHostAsync(CancellationToken cancellationToken)
+    {
+        var connection = await EnsureConnectionOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        return HostAddress.GetRemoteHost(connection.Endpoint);
+    }
+
     internal override IReadOnlyDictionary<int, int> ResolvePortMap(ContainerInfo info, ContainerDefinition definition)
     {
         return info.Ports;

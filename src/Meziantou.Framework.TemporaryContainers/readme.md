@@ -16,8 +16,9 @@ definition.WaitStrategies.Add(Wait.ForPort(6379));
 await using var container = definition.CreateContainer();
 await container.StartAsync();
 
+var host = container.GetHostAddress(6379); // 127.0.0.1, unless the daemon runs on another machine
 var hostPort = container.GetMappedPort(6379);
-// connect to 127.0.0.1:hostPort
+// connect to host:hostPort
 ```
 <!-- endref -->
 
@@ -35,6 +36,8 @@ definition.Ports.Add(new ContainerPort(8080) with { HostIp = "0.0.0.0" }); // ev
 <!-- endref -->
 
 Windows containers cannot bind a specific address and `wslc` publishes through the loopback forwarding of WSL, so the address is not passed to them.
+
+`GetHostAddress(containerPort)` returns the address to connect to: the address the port is published on, `127.0.0.1` for a port published on every interface, or the host of the daemon when it runs on another machine (`DOCKER_HOST=tcp://…` or `ssh://…`, a remote docker context, `CONTAINER_HOST` for podman). The database connection strings and `Wait.ForPort` use it. With a remote daemon, publish the ports on `0.0.0.0`: the loopback address of the daemon's machine is not reachable from this one.
 
 ## Building an image
 

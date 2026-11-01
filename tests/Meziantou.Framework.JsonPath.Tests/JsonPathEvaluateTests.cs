@@ -668,6 +668,125 @@ public sealed class JsonPathEvaluateTests
     }
 
     [Fact]
+    public void Evaluate_NameSelector_CaseInsensitiveObject_UsesOrdinalMatching()
+    {
+        var options = new JsonNodeOptions { PropertyNameCaseInsensitive = true };
+        var doc = new JsonObject(options)
+        {
+            ["Name"] = 1,
+        };
+
+        Assert.Empty(JsonPath.Parse("$.name").Evaluate(doc));
+        Assert.Equal("$['Name']", JsonPath.Parse("$.*").Evaluate(doc)[0].Path);
+        Assert.Equal("$['Name']", JsonPath.Parse("$.Name").Evaluate(doc)[0].Path);
+        Assert.Throws<JsonPathEvaluationException>(() => JsonPath.Parse("$.name").Evaluate(doc, JsonPathEvaluationMode.Strict));
+    }
+
+    [Fact]
+    public void Evaluate_NameSelector_CaseInsensitiveInheritedOptions_UsesOrdinalMatching()
+    {
+        var doc = new JsonObject(new JsonNodeOptions { PropertyNameCaseInsensitive = true })
+        {
+            ["child"] = new JsonObject
+            {
+                ["Name"] = 1,
+            },
+        };
+
+        Assert.Empty(JsonPath.Parse("$.child.name").Evaluate(doc));
+        Assert.Equal("$['child']['Name']", JsonPath.Parse("$.child.Name").Evaluate(doc)[0].Path);
+    }
+
+    [Fact]
+    public void Evaluate_FilterSelector_CaseInsensitiveObject_UsesOrdinalMatching()
+    {
+        var options = new JsonNodeOptions { PropertyNameCaseInsensitive = true };
+        var doc = new JsonArray(options)
+        {
+            new JsonObject(options)
+            {
+                ["Name"] = 1,
+            },
+        };
+
+        Assert.Empty(JsonPath.Parse("$[?@.name == 1]").Evaluate(doc));
+        Assert.Single(JsonPath.Parse("$[?@.Name == 1]").Evaluate(doc));
+    }
+
+    [Fact]
+    public void Evaluate_ObjectEquality_CaseInsensitiveObject_UsesOrdinalMatching()
+    {
+        var options = new JsonNodeOptions { PropertyNameCaseInsensitive = true };
+        var doc = new JsonArray(options)
+        {
+            new JsonObject(options)
+            {
+                ["Name"] = 1,
+            },
+            new JsonObject(options)
+            {
+                ["name"] = 1,
+            },
+        };
+
+        Assert.Single(JsonPath.Parse("$[?@ == $[0]]").Evaluate(doc));
+    }
+
+    [Fact]
+    public void Evaluate_WrappedJsonValueDictionary_UsesFreshSnapshotPerEvaluation()
+    {
+        var data = new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            ["a"] = 1,
+        };
+        JsonNode root = JsonValue.Create(data)!;
+        var path = JsonPath.Parse("$.a");
+
+        Assert.Equal(1, path.EvaluateValue(root)!.GetValue<int>());
+
+        data["a"] = 2;
+        data["b"] = 3;
+        Assert.Equal(2, path.EvaluateValue(root)!.GetValue<int>());
+        Assert.Equal(3, JsonPath.Parse("$.b").EvaluateValue(root)!.GetValue<int>());
+
+        data.Remove("a");
+        Assert.Null(path.EvaluateValue(root));
+    }
+
+    [Fact]
+    public void Evaluate_WrappedJsonValueList_UsesFreshSnapshotPerEvaluation()
+    {
+        var data = new List<int> { 1 };
+        JsonNode root = JsonValue.Create(data)!;
+        var path = JsonPath.Parse("$[*]");
+
+        Assert.Equal([1], path.Evaluate(root).Select(match => match.Value!.GetValue<int>()));
+
+        data.Add(2);
+        Assert.Equal([1, 2], path.Evaluate(root).Select(match => match.Value!.GetValue<int>()));
+
+        data.RemoveAt(0);
+        Assert.Equal([2], path.Evaluate(root).Select(match => match.Value!.GetValue<int>()));
+    }
+
+    [Fact]
+    public void Evaluate_WrappedJsonValue_DetachedMatchMutationDoesNotAffectNextEvaluation()
+    {
+        var data = new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            ["a"] = 2,
+        };
+        JsonNode root = JsonValue.Create(data)!;
+        var path = JsonPath.Parse("$.a");
+
+        var result = path.EvaluateValue(root)!;
+        ((JsonObject)result.Parent!)["a"] = 99;
+
+        Assert.Equal(2, path.EvaluateValue(root)!.GetValue<int>());
+        Assert.Equal(2, data["a"]);
+    }
+
+    [Fact]
     public void Evaluate_WildcardSelector_Array()
     {
         var doc = JsonNode.Parse("""[1, 2, 3]""");

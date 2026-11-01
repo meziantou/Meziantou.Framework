@@ -4,6 +4,11 @@ namespace Meziantou.Framework.Json;
 /// <typeparam name="TValue">The node type used by the custom object model.</typeparam>
 public abstract class JsonPathNavigator<TValue>
 {
+    internal virtual JsonPathNavigator<TValue> CreateEvaluationNavigator()
+    {
+        return this;
+    }
+
     /// <summary>Gets the JSON node kind represented by <paramref name="value"/>.</summary>
     /// <param name="value">The value to inspect. Navigators may use <see langword="null"/> or a model-specific value to represent JSON <c language="json">null</c>.</param>
     /// <returns>The JSON node kind represented by <paramref name="value"/>.</returns>

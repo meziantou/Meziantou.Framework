@@ -9,15 +9,20 @@ internal sealed class JsonNodeNavigator : JsonPathNavigator<JsonNode>
 {
     /// <summary>
     /// The objects and arrays parsed out of a <see cref="JsonValue"/> that wraps a CLR object serialized as one.
-    /// Parsing on every access would make walking such a value quadratic. System.Text.Json already caches the kind
-    /// of a wrapped value, so it too assumes the value does not change shape once wrapped.
+    /// Parsing on every access would make walking such a value quadratic. This cache belongs to one evaluation so
+    /// changes to the wrapped value and to returned detached nodes cannot affect later evaluations.
     /// </summary>
-    private static readonly ConditionalWeakTable<JsonValue, JsonNode> ParsedContainers = new();
+    private readonly ConditionalWeakTable<JsonValue, JsonNode> _parsedContainers = new();
 
-    public static JsonNodeNavigator Instance { get; } = new();
+    public static JsonNodeNavigator Instance => new();
 
-    private JsonNodeNavigator()
+    internal JsonNodeNavigator()
     {
+    }
+
+    internal override JsonPathNavigator<JsonNode> CreateEvaluationNavigator()
+    {
+        return new JsonNodeNavigator();
     }
 
     public override JsonPathNodeKind GetKind(JsonNode? value)
@@ -44,6 +49,21 @@ internal sealed class JsonNodeNavigator : JsonPathNavigator<JsonNode>
     {
         if (AsContainer(value) is JsonObject obj)
         {
+            if (obj.Options?.PropertyNameCaseInsensitive is true)
+            {
+                foreach (var property in obj)
+                {
+                    if (string.Equals(property.Key, name, StringComparison.Ordinal))
+                    {
+                        result = property.Value;
+                        return true;
+                    }
+                }
+
+                result = null;
+                return false;
+            }
+
             return obj.TryGetPropertyValue(name, out result);
         }
 
@@ -128,11 +148,11 @@ internal sealed class JsonNodeNavigator : JsonPathNavigator<JsonNode>
     /// as an object or an array; its members are only reachable from its serialized form, so the nodes found
     /// inside it are detached copies rather than parts of the original tree.
     /// </summary>
-    private static JsonNode? AsContainer(JsonNode? value)
+    private JsonNode? AsContainer(JsonNode? value)
     {
         if (value is JsonValue jsonValue && jsonValue.GetValueKind() is JsonValueKind.Object or JsonValueKind.Array)
         {
-            return ParsedContainers.GetValue(jsonValue, wrapped =>
+            return _parsedContainers.GetValue(jsonValue, wrapped =>
             {
                 var reader = CreateReader(wrapped);
                 return JsonNode.Parse(ref reader)!;

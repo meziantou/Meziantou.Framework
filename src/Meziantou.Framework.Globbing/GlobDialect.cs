@@ -5,8 +5,8 @@ public enum GlobDialect
 {
     /// <summary>
     ///     Use the default glob pattern syntax: <c>*</c>, <c>?</c>, <c>**</c>, bracket expressions, <c>{a,b}</c> sets,
-    ///     <c>\</c> escapes and a leading <c>!</c> to negate the pattern. Wildcards do not match a leading dot unless
-    ///     <see cref="GlobOptions.MatchLeadingDot"/> is set.
+    ///     <c>\</c> escapes and a leading <c>!</c> to negate the pattern. A leading <c>/</c> makes the pattern absolute.
+    ///     Wildcards do not match a leading dot unless <see cref="GlobOptions.MatchLeadingDot"/> is set.
     /// </summary>
     Standard = 0,
 

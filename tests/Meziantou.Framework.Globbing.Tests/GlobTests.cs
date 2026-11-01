@@ -294,6 +294,16 @@ public class GlobTests
     }
 
     [Fact]
+    public void DocumentationExample_AbsolutePath()
+    {
+        #region Glob_AbsolutePath
+        var glob = Glob.Parse("/home/*.txt", GlobDialect.Standard);
+        Assert.True(glob.IsMatch("/home/notes.txt"));
+        Assert.False(glob.IsMatch("home/notes.txt"));
+        #endregion
+    }
+
+    [Fact]
     public void DocumentationExample_LeadingDot()
     {
         #region Glob_LeadingDot
@@ -1197,6 +1207,40 @@ public class GlobTests
         Assert.Equal(expected, glob.IsMatch(path.AsSpan(0, index <= 0 ? index + 1 : index), path.AsSpan(index + 1), PathItemType.File));
     }
 
+    [Theory]
+    [InlineData("/home/*.txt", "/home/a.txt", true)]
+    [InlineData("/home/*.txt", "home/a.txt", false)]
+    [InlineData("/a/b", "/a/b", true)]
+    [InlineData("/a/b", "a/b", false)]
+    [InlineData("a/b", "/a/b", false)]
+    [InlineData("/**/*.cs", "/usr/src/a.cs", true)]
+    [InlineData("/**/*.cs", "usr/src/a.cs", false)]
+    [InlineData("/*", "/a", true)]
+    // Separators that follow another one are collapsed
+    [InlineData("/home//*.txt", "/home/a.txt", true)]
+    [InlineData("home//*.txt", "home/a.txt", true)]
+    public void StandardLeadingSeparatorMakesThePatternAbsolute(string pattern, string path, bool expected)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard);
+        Assert.Equal(expected, glob.IsMatch(path));
+
+        // The root directory keeps its separator: "/a" is the file "a" in the directory "/"
+        var index = path.AsSpan().LastIndexOf('/');
+        Assert.Equal(expected, glob.IsMatch(path.AsSpan(0, index <= 0 ? index + 1 : index), path.AsSpan(index + 1), PathItemType.File));
+
+        var roundTrip = Glob.Parse(glob.ToString(), GlobDialect.Standard);
+        Assert.Equal(expected, roundTrip.IsMatch(path));
+    }
+
+    [Fact]
+    public void StandardAbsolutePatternKeepsItsLeadingSeparator()
+    {
+        var glob = Glob.Parse("/home/*.txt", GlobDialect.Standard);
+        Assert.Equal("/home/*.txt", glob.ToString());
+        Assert.True(glob.IsMatch("/home", "a.txt"));
+        Assert.True(glob.IsMatch("/home/", "a.txt"));
+    }
+
     [Fact]
     public void MSBuildMatchesLeadingDotsWithoutTheOption()
     {
@@ -1902,6 +1946,84 @@ public class GlobTests
     }
 
     [Theory]
+    // Ordinal case-insensitive comparison does not fold a non-ASCII character to an ASCII one: the long s (U+017F),
+    // the dotless i (U+0131) and the Kelvin sign (U+212A) are not 's', 'i' and 'k'. Ranges must agree with literals
+    // and sets.
+    [InlineData("S", "\u017F")]
+    [InlineData("s", "\u017F")]
+    [InlineData("[S]", "\u017F")]
+    [InlineData("[rs]", "\u017F")]
+    [InlineData("[r-s]", "\u017F")]
+    [InlineData("[R-S]", "\u017F")]
+    [InlineData("I", "\u0131")]
+    [InlineData("[I]", "\u0131")]
+    [InlineData("[H-I]", "\u0131")]
+    [InlineData("[h-i]", "\u0131")]
+    [InlineData("k", "\u212A")]
+    [InlineData("[k]", "\u212A")]
+    [InlineData("[J-K]", "\u212A")]
+    [InlineData("[j-k]", "\u212A")]
+    public void IgnoreCaseDoesNotFoldNonAsciiCharactersToAscii(string pattern, string path)
+    {
+        Assert.False(Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.IgnoreCase).IsMatch(path));
+        if (pattern[0] is '[')
+        {
+            Assert.True(Glob.Parse("[!" + pattern[1..], GlobDialect.Standard, GlobOptions.IgnoreCase).IsMatch(path));
+        }
+    }
+
+    [Theory]
+    // The final sigma (U+03C2) is equal to both the capital and the small sigma, although neither of them is a case
+    // variant of the final sigma. A range of a single character is a set, so the ranges hold two characters.
+    [InlineData("[\u03C1-\u03C2]", "\u03C3")]
+    [InlineData("[\u03C1-\u03C2]", "\u03A3")]
+    [InlineData("[\u03C3-\u03C4]", "\u03C2")]
+    [InlineData("[\u03A3-\u03A4]", "\u03C2")]
+    // The theta symbol (U+03D1) is equal to the capital theta (U+0398), and so to the small one (U+03B8)
+    [InlineData("[\u03D1-\u03D2]", "\u03B8")]
+    [InlineData("[\u03B8-\u03B9]", "\u03D1")]
+    public void IgnoreCaseRangeMatchesEveryOrdinalCaseInsensitiveEquivalent(string pattern, string path)
+    {
+        Assert.True(Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.IgnoreCase).IsMatch(path));
+        Assert.False(Glob.Parse("[!" + pattern[1..], GlobDialect.Standard, GlobOptions.IgnoreCase).IsMatch(path));
+    }
+
+    [Theory]
+    [InlineData('a', 'z')]
+    [InlineData('A', 'Z')]
+    [InlineData('R', 'S')]
+    [InlineData('j', 'k')]
+    [InlineData('\u00C0', '\u00FF')]
+    [InlineData('\u0100', '\u017F')]
+    [InlineData('\u0391', '\u03A9')]
+    [InlineData('\u03B1', '\u03C9')]
+    [InlineData('\u03C2', '\u03D1')]
+    [InlineData('\u0400', '\u042F')]
+    [InlineData('\u2120', '\u2130')]
+    public void IgnoreCaseRangeMatchesLikeTheSetOfItsCharacters(char min, char max)
+    {
+        // A set compares the characters with StringComparison.OrdinalIgnoreCase
+        var characters = new string([.. Enumerable.Range(min, max - min + 1).Select(c => (char)c)]);
+        var range = Glob.Parse($"[{min}-{max}]", GlobDialect.Standard, GlobOptions.IgnoreCase | GlobOptions.MatchLeadingDot);
+        var inverseRange = Glob.Parse($"[!{min}-{max}]", GlobDialect.Standard, GlobOptions.IgnoreCase | GlobOptions.MatchLeadingDot);
+        var mismatches = new List<string>();
+        for (var c = 0; c <= char.MaxValue; c++)
+        {
+            var path = ((char)c).ToString();
+            if (path is "/" or "\\" || char.IsSurrogate((char)c))
+                continue;
+
+            var expected = characters.Contains(path, StringComparison.OrdinalIgnoreCase);
+            if (range.IsMatch(path) != expected || inverseRange.IsMatch(path) == expected)
+            {
+                mismatches.Add($"U+{c:X4}");
+            }
+        }
+
+        Assert.Empty(mismatches);
+    }
+
+    [Theory]
     // A 'char' counter wraps around when a range ends at char.MaxValue, which used to make the parser allocate
     // until it ran out of memory, or read past the end of the array it was filling.
     [InlineData("[￾-￿]", "￿")]
@@ -2317,6 +2439,8 @@ public class GlobTests
     [InlineData("2024/*.log", GlobDialect.Standard, GlobOptions.IgnoreCase, "2024", "*.log")]
     [InlineData("2024/logs/*.log", GlobDialect.Standard, GlobOptions.IgnoreCase, "2024", "logs/*.log")]
     [InlineData(@"a\*b/c/*.txt", GlobDialect.Standard, GlobOptions.None, "a*b/c", "*.txt")]
+    [InlineData("/usr/src/*.cs", GlobDialect.Standard, GlobOptions.None, "/usr/src", "*.cs")]
+    [InlineData("/*.cs", GlobDialect.Standard, GlobOptions.None, "/", "*.cs")]
     [InlineData("../shared/*.cs", GlobDialect.MSBuild, GlobOptions.None, "../shared", "*.cs")]
     [InlineData("../../shared/src/*.cs", GlobDialect.MSBuild, GlobOptions.None, "../../shared/src", "*.cs")]
     [InlineData(@"src\app\*.cs", GlobDialect.MSBuild, GlobOptions.None, "src/app", "*.cs")]
@@ -2516,6 +2640,23 @@ public class GlobTests
 
         var sharedDirectory = Path.Combine(directory.FullPath, "shared").Replace('\\', '/');
         var glob = Glob.Parse(sharedDirectory + "/**/*.cs", GlobDialect.MSBuild);
+        var files = glob.EnumerateFiles(Path.Combine(directory.FullPath, "project")).Order(StringComparer.Ordinal).ToList();
+        Assert.Equal([Path.Combine(directory.FullPath, "shared", "a.cs"), Path.Combine(directory.FullPath, "shared", "sub", "b.cs")], files);
+    }
+
+    [Fact]
+    public void EnumerateFiles_StandardAbsolutePattern()
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("shared/a.cs");
+        directory.CreateEmptyFile("shared/sub/b.cs");
+        directory.CreateDirectory("project");
+
+        // A Windows path such as "C:/" is not an absolute pattern: only a leading separator is
+        var sharedDirectory = Path.Combine(directory.FullPath, "shared").Replace('\\', '/');
+        global::Xunit.Assert.SkipUnless(sharedDirectory.StartsWith("/", StringComparison.Ordinal), "The temporary directory is not rooted at '/'");
+
+        var glob = Glob.Parse(sharedDirectory + "/**/*.cs", GlobDialect.Standard);
         var files = glob.EnumerateFiles(Path.Combine(directory.FullPath, "project")).Order(StringComparer.Ordinal).ToList();
         Assert.Equal([Path.Combine(directory.FullPath, "shared", "a.cs"), Path.Combine(directory.FullPath, "shared", "sub", "b.cs")], files);
     }

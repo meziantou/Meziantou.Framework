@@ -40,8 +40,18 @@ public sealed class GlobCollection : IReadOnlyList<IGlobEvaluatable>, IGlobEvalu
     private ExclusionInfo? _exclusionInfo;
 
     /// <summary>Initializes a new instance of the <see cref="GlobCollection"/> class.</summary>
-    /// <param name="globs">The glob patterns to include in the collection.</param>
-    public GlobCollection(params IGlobEvaluatable[] globs) => _globs = globs;
+    /// <param name="globs">The glob patterns to include in the collection. The collection keeps a copy of the array.</param>
+    /// <exception cref="ArgumentNullException"><paramref name="globs"/> is <see langword="null"/>.</exception>
+    /// <exception cref="ArgumentException"><paramref name="globs"/> contains a <see langword="null"/> element.</exception>
+    public GlobCollection(params IGlobEvaluatable[] globs)
+    {
+        ArgumentNullException.ThrowIfNull(globs);
+
+        // Copy the array so that the collection stays immutable when the caller changes it
+        _globs = [.. globs];
+        if (Array.Exists(_globs, glob => glob is null))
+            throw new ArgumentException("The collection cannot contain a null glob.", nameof(globs));
+    }
 
     private GlobCollection(Glob[] gitIgnoreRules, string baseDirectory)
     {

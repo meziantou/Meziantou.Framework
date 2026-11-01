@@ -87,9 +87,22 @@ public sealed class AppleContainerRuntimeAdapterTests
     {
         var runtime = CreateRuntime();
 
-        var alias = new ContainerDefinition(new RegistryImage("nginx"));
-        alias.Network.Alias = "my-alias";
-        Assert.Throws<NotSupportedException>(() => runtime.BuildCreateArguments(alias, "nginx"));
+        Assert.Throws<NotSupportedException>(() => runtime.BuildCreateArguments(new ContainerDefinition(new RegistryImage("nginx")) { Privileged = true }, "nginx"));
+        Assert.Throws<NotSupportedException>(() => runtime.BuildCreateArguments(new ContainerDefinition(new RegistryImage("nginx")) { Healthcheck = ContainerHealthcheck.Disabled }, "nginx"));
+        Assert.Throws<NotSupportedException>(() => runtime.BuildCreateArguments(new ContainerDefinition(new RegistryImage("nginx")) { StopTimeout = TimeSpan.FromSeconds(1) }, "nginx"));
+        Assert.Throws<NotSupportedException>(() => runtime.BuildCreateArguments(new ContainerDefinition(new RegistryImage("nginx")) { StopSignal = "SIGINT" }, "nginx"));
+
+        var extraHost = new ContainerDefinition(new RegistryImage("nginx"));
+        extraHost.ExtraHosts.Add(ContainerExtraHost.ForHostGateway());
+        Assert.Throws<NotSupportedException>(() => runtime.BuildCreateArguments(extraHost, "nginx"));
+
+        var exposed = new ContainerDefinition(new RegistryImage("nginx"));
+        exposed.ExposedPorts.Add(new ContainerExposedPort(80));
+        Assert.Throws<NotSupportedException>(() => runtime.BuildCreateArguments(exposed, "nginx"));
+
+        var tmpfs = new ContainerDefinition(new RegistryImage("nginx"));
+        tmpfs.Mounts.AddTmpfs("/scratch", size: 1024);
+        Assert.Throws<NotSupportedException>(() => runtime.BuildCreateArguments(tmpfs, "nginx"));
 
         // Apple's parser splits the mount descriptor on ',' without honouring quotes.
         var comma = new ContainerDefinition(new RegistryImage("nginx"));
@@ -243,5 +256,48 @@ public sealed class AppleContainerRuntimeAdapterTests
 
         Assert.Equal("exec -t -d abc ls", string.Join(' ', runtime.BuildExecArguments("abc", options)));
         Assert.Throws<NotSupportedException>(() => runtime.BuildExecArguments("abc", new ExecOptions { Privileged = true }));
+    }
+
+    [Fact]
+    public void BuildCreatePassesTheSupportedCreationOptions()
+    {
+        var runtime = CreateRuntime();
+        var definition = new ContainerDefinition(new RegistryImage("nginx"));
+        definition.Resources.SharedMemorySize = 64 * 1024 * 1024;
+        definition.Resources.Ulimits.Add(new ContainerUlimit("nofile", 1024, 2048));
+        definition.CapAdd.Add("CAP_NET_RAW");
+        definition.CapDrop.Add("ALL");
+        definition.Ports.Add(new ContainerPort(5353, 53) { Protocol = ContainerPortProtocol.Udp });
+        definition.Network.Alias = "web";
+        definition.Network.Add("second", "a", "b");
+        definition.AdditionalCreateArguments.Add("--init");
+
+        var args = string.Join(' ', runtime.BuildCreateArguments(definition, "nginx"));
+
+        Assert.Contains(" --network default,alias=web --network second,alias=a,alias=b ", args);
+        Assert.Contains(" --shm-size 64M ", args);
+        Assert.Contains(" --ulimit nofile=1024:2048 ", args);
+        Assert.Contains(" --cap-add CAP_NET_RAW --cap-drop ALL ", args);
+        Assert.Contains(" --publish 127.0.0.1:5353:53/udp ", args);
+        Assert.EndsWith(" --init nginx", args);
+        Assert.Empty(runtime.GetNetworksToConnectAfterCreate(definition));
+    }
+
+    [Fact]
+    public void BuildsNetworkArguments()
+    {
+        var runtime = CreateRuntime();
+
+        var createArguments = string.Join(' ', runtime.BuildCreateNetworkArguments(new NetworkDefinition { Internal = true }, "my-network", "instance"));
+        Assert.StartsWith("network create --internal --label ", createArguments);
+        Assert.Contains($"--label {ResourceLabels.Instance}=instance", createArguments);
+        Assert.EndsWith(" my-network", createArguments);
+        Assert.Equal("network delete my-network", string.Join(' ', runtime.BuildDeleteNetworkArguments("my-network")));
+        Assert.Equal("network inspect my-network", string.Join(' ', runtime.BuildNetworkInspectArguments("my-network")));
+        Assert.Throws<NotSupportedException>(() => runtime.BuildCreateNetworkArguments(new NetworkDefinition { Driver = "bridge" }, "my-network"));
+
+        const string Output = """[{"configuration":{"labels":{"meziantou.tc.managed":"1"},"name":"my-network"},"id":"my-network","status":{}}]""";
+        Assert.Equal("1", runtime.ParseNetworkLabels(Output)![ResourceLabels.Managed]);
+        Assert.Equal("my-network", Assert.Single(AppleContainerRuntime.ParseManagedResources(Output)).Id);
     }
 }

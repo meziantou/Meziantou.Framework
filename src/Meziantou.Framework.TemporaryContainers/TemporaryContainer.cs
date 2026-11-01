@@ -78,6 +78,7 @@ public partial class TemporaryContainer : IAsyncDisposable
 
         await EnsureRuntimeSupportedAsync(cancellationToken).ConfigureAwait(false);
         await EnsureOwnedVolumesCreatedAsync(cancellationToken).ConfigureAwait(false);
+        await EnsureTemporaryNetworksCreatedAsync(cancellationToken).ConfigureAwait(false);
 
         // A previous attempt may have created the container and failed afterwards: that container is the one to use,
         // rather than a second one whose id would replace the first and leave it behind.
@@ -333,6 +334,20 @@ public partial class TemporaryContainer : IAsyncDisposable
 
             effectiveRuntime ??= await Runtime.GetEffectiveRuntimeAsync(cancellationToken).ConfigureAwait(false);
             await owned.Volume.EnsureCreatedAsync(effectiveRuntime, cancellationToken).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>Creates the networks added through <see cref="ContainerNetworkOptions.Add(TemporaryNetwork, string[])"/>, which the container cannot be connected to before they exist.</summary>
+    private async Task EnsureTemporaryNetworksCreatedAsync(CancellationToken cancellationToken)
+    {
+        ContainerRuntime? effectiveRuntime = null;
+        foreach (var attachment in _definition.Network.Attachments)
+        {
+            if (attachment.TemporaryNetwork is not { } network)
+                continue;
+
+            effectiveRuntime ??= await Runtime.GetEffectiveRuntimeAsync(cancellationToken).ConfigureAwait(false);
+            await network.EnsureCreatedAsync(effectiveRuntime, cancellationToken).ConfigureAwait(false);
         }
     }
 

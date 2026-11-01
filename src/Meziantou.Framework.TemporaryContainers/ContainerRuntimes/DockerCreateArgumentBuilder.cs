@@ -30,8 +30,39 @@ internal static class DockerCreateArgumentBuilder
         if (definition.Resources.CpuLimit is { } cpu)
             AddOption(args, "--cpus", cpu.ToString(CultureInfo.InvariantCulture));
 
-        AddOption(args, "--network", definition.Network.Network);
-        AddOption(args, "--network-alias", definition.Network.Alias);
+        if (definition.Resources.SharedMemorySize is { } sharedMemorySize)
+            AddOption(args, "--shm-size", sharedMemorySize.ToString(CultureInfo.InvariantCulture) + "b");
+
+        foreach (var ulimit in definition.Resources.Ulimits)
+            AddOption(args, "--ulimit", ulimit.Format());
+
+        if (definition.Privileged)
+            args.Add("--privileged");
+
+        foreach (var capability in definition.CapAdd)
+            AddOption(args, "--cap-add", capability);
+
+        foreach (var capability in definition.CapDrop)
+            AddOption(args, "--cap-drop", capability);
+
+        foreach (var host in definition.ExtraHosts)
+            AddOption(args, "--add-host", host.Format());
+
+        AddHealthcheck(args, definition.Healthcheck);
+
+        if (definition.StopTimeout is { } stopTimeout)
+            AddOption(args, "--stop-timeout", ((long)stopTimeout.TotalSeconds).ToString(CultureInfo.InvariantCulture));
+
+        AddOption(args, "--stop-signal", definition.StopSignal);
+
+        // The other networks are connected once the container exists: only recent versions of docker take several
+        // networks at creation.
+        if (definition.Network.GetNetworkPlan().Primary is { } network)
+        {
+            AddOption(args, "--network", network.Name);
+            foreach (var alias in network.Aliases)
+                AddOption(args, "--network-alias", alias);
+        }
 
         foreach (var (name, value) in ResourceLabels.Build(definition))
         {
@@ -47,6 +78,9 @@ internal static class DockerCreateArgumentBuilder
             args.Add(FormatPort(port, hostIpSupported));
         }
 
+        foreach (var port in definition.ExposedPorts)
+            AddOption(args, "--expose", string.Create(CultureInfo.InvariantCulture, $"{port.Port}/{ContainerPort.GetProtocolName(port.Protocol)}"));
+
         foreach (var mount in definition.Mounts)
             AppendMount(args, mount, quotedMountFieldsSupported);
 
@@ -54,6 +88,7 @@ internal static class DockerCreateArgumentBuilder
         if (entrypoint.Count > 0)
             AddOption(args, "--entrypoint", entrypoint[0]);
 
+        args.AddRange(definition.AdditionalCreateArguments);
         args.Add(imageRef);
 
         for (var i = 1; i < entrypoint.Count; i++)
@@ -68,13 +103,37 @@ internal static class DockerCreateArgumentBuilder
     /// <summary>Formats a <c>-p</c> value: <c>ip:hostPort:containerPort</c>, where an empty host port asks for a random one and an IPv6 address is enclosed in brackets.</summary>
     internal static string FormatPort(ContainerPort port, bool hostIpSupported)
     {
+        // TCP is the default of every runtime, and leaving it out keeps the arguments the runtimes always got.
+        var protocol = port.Protocol is ContainerPortProtocol.Tcp ? "" : "/" + port.ProtocolName;
         var hostPort = port.HostPort?.ToString(CultureInfo.InvariantCulture);
         if (!hostIpSupported)
-            return hostPort is null ? port.Port.ToString(CultureInfo.InvariantCulture) : string.Create(CultureInfo.InvariantCulture, $"{hostPort}:{port.Port}");
+            return hostPort is null ? string.Create(CultureInfo.InvariantCulture, $"{port.Port}{protocol}") : string.Create(CultureInfo.InvariantCulture, $"{hostPort}:{port.Port}{protocol}");
 
         var hostIp = port.HostIp.Contains(':', StringComparison.Ordinal) ? "[" + port.HostIp + "]" : port.HostIp;
-        return string.Create(CultureInfo.InvariantCulture, $"{hostIp}:{hostPort}:{port.Port}");
+        return string.Create(CultureInfo.InvariantCulture, $"{hostIp}:{hostPort}:{port.Port}{protocol}");
     }
+
+    private static void AddHealthcheck(List<string> args, ContainerHealthcheck? healthcheck)
+    {
+        if (healthcheck is null)
+            return;
+
+        if (healthcheck.GetShellCommand() is not { } command)
+        {
+            args.Add("--no-healthcheck");
+            return;
+        }
+
+        AddOption(args, "--health-cmd", command);
+        AddOption(args, "--health-interval", FormatDuration(healthcheck.Interval));
+        AddOption(args, "--health-timeout", FormatDuration(healthcheck.Timeout));
+        AddOption(args, "--health-start-period", FormatDuration(healthcheck.StartPeriod));
+        AddOption(args, "--health-retries", healthcheck.Retries?.ToString(CultureInfo.InvariantCulture));
+    }
+
+    /// <summary>Formats a duration the way Go parses it, in milliseconds so that no precision the API would keep is lost.</summary>
+    private static string? FormatDuration(TimeSpan? value)
+        => value is { } duration ? ((long)duration.TotalMilliseconds).ToString(CultureInfo.InvariantCulture) + "ms" : null;
 
     private static void AddOption(List<string> args, string flag, string? value)
     {
@@ -102,8 +161,9 @@ internal static class DockerCreateArgumentBuilder
                 break;
 
             case TmpfsMount tmpfs:
+                var options = tmpfs.FormatOptions();
                 args.Add("--tmpfs");
-                args.Add(tmpfs.Target);
+                args.Add(options.Length > 0 ? tmpfs.Target + ":" + options : tmpfs.Target);
                 break;
 
             default:

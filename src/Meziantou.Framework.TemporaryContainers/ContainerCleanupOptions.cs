@@ -20,6 +20,9 @@ public sealed class ContainerCleanupOptions
     /// <summary>Gets or sets a value indicating whether volumes are removed. Defaults to <see langword="true"/>. Volumes are removed after the containers, so a volume a removed container used is no longer in use.</summary>
     public bool IncludeVolumes { get; set; } = true;
 
+    /// <summary>Gets or sets a value indicating whether networks are removed. Defaults to <see langword="true"/>. Networks are removed after the containers, so a network a removed container joined is no longer in use.</summary>
+    public bool IncludeNetworks { get; set; } = true;
+
     /// <summary>Gets or sets a value indicating whether the resources created with a <see cref="ContainerDefinition.ReuseId"/> are removed. Defaults to <see langword="false"/>: such a resource outlives the run that created it on purpose, and another run may be using it right now.</summary>
     public bool IncludeReusedResources { get; set; }
 }

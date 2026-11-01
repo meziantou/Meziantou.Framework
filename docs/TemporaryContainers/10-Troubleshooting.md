@@ -41,7 +41,8 @@ catch (TimeoutException ex)
   started by an IDE does not always have the `PATH` of your terminal.
 - Check that its daemon runs: start Docker Desktop or the Podman machine, or run `container system start` for Apple's
   `container`.
-- With the Docker Engine API runtime, check `DOCKER_HOST`. See
+- With the Docker Engine API runtime, read the end of the message: it lists the endpoints the runtime tried and why each
+  one failed. Check `DOCKER_HOST`, `DOCKER_CONTEXT` and the current docker context (`docker context ls`). See
   [Connect to a Docker daemon](06-Runtimes.md#connect-to-a-docker-daemon).
 
 ## The container is never ready

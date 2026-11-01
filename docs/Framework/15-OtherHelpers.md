@@ -222,6 +222,8 @@ Assert.Equal("Hello Ada, you have 3 messages", result);
 <!-- endref -->
 
 The function is called for each match, one after the other: the next match waits for the previous replacement.
+The matches are processed in the order the regex finds them, like `Regex.Replace`: from right to left when the regex uses
+`RegexOptions.RightToLeft`.
 
 ## Runes of UTF-8 bytes
 

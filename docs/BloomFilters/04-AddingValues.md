@@ -6,8 +6,8 @@ description: Add numbers, GUIDs, strings and bytes, add many values in one call,
 ## Supported values
 
 `Add` and `MayContain` have an overload for each supported type: `int`, `uint`, `long`, `ulong`, `Int128`, `UInt128`,
-`Guid`, `string` and `ReadOnlySpan<byte>`. Other values go through `ReadOnlySpan<byte>`: pass their bytes, for
-instance their UTF-8 encoding or a binary key.
+`Guid`, `string`, `ReadOnlySpan<char>` and `ReadOnlySpan<byte>`. Other values go through `ReadOnlySpan<byte>`: pass
+their bytes, for instance their UTF-8 encoding or a binary key.
 
 <!-- ref:../../tests/Meziantou.Framework.BloomFilters.Tests/BloomFilterTests.cs;region=BloomFilter_Values;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -73,6 +73,35 @@ static byte[] CreateKey(byte kind, int id)
 }
 ```
 <!-- endref -->
+
+## Add characters without a string
+
+The `ReadOnlySpan<char>` overloads take a part of a larger string, a pooled character buffer or a stack buffer, without
+allocating a string. A span of characters is the same value as a `string` with the same characters, so you can add a
+value with one and test it with the other. The [counting filters](05-CountingBloomFilters.md) have the same overloads
+for `Remove` and `GetEstimatedCount`.
+
+<!-- ref:../../tests/Meziantou.Framework.BloomFilters.Tests/BloomFilterTests.cs;region=BloomFilter_CharSpan;format=md-fenced-code-block;dedent=true -->
+```csharp
+var filter = BloomFilter.CreateXXHash128(BloomFilterSize.CreateOptimalSize(expectedItemCount: 1000, falsePositiveProbability: 0.01));
+
+// Add a part of a larger string without allocating a substring
+var line = "user=alice;role=admin";
+filter.Add(line.AsSpan(5, 5));
+
+// A span of chars and a string with the same characters are the same value
+Assert.True(filter.MayContain("alice"));
+
+// Characters from a stack buffer
+Span<char> buffer = stackalloc char[5];
+"alice".CopyTo(buffer);
+Assert.True(filter.MayContain(buffer));
+```
+<!-- endref -->
+
+The characters are hashed as they are, like a `string`: a span that cuts a surrogate pair in half is the unpaired
+surrogate, not a replacement character. Don't encode the characters as UTF-8 to get the same value as a `string`: the
+UTF-8 bytes are a different value.
 
 ## Add many values
 

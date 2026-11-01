@@ -70,8 +70,16 @@ static partial class StringExtensions
         if (str is null)
             return null;
 
-        var normalizedString = str.Normalize(NormalizationForm.FormD);
-        var stringBuilder = new StringBuilder(normalizedString.Length);
+        var firstNonAsciiIndex = str.AsSpan().IndexOfAnyExceptInRange('\0', '\u007F');
+        if (firstNonAsciiIndex < 0)
+            return str;
+
+        // ASCII characters have no diacritics and are not changed by the normalization, so the ASCII prefix is copied as-is.
+        // The last ASCII character is processed with the rest of the string, as it can combine with the next character.
+        var prefixLength = Math.Max(0, firstNonAsciiIndex - 1);
+        var normalizedString = (prefixLength is 0 ? str : str[prefixLength..]).Normalize(NormalizationForm.FormD);
+        var stringBuilder = new StringBuilder(prefixLength + normalizedString.Length);
+        stringBuilder.Append(str, 0, prefixLength);
 
         // InvariantMode doesn't support string normalization, so the decomposed characters are replaced using a table
         // generated from the Unicode Character Database (StringExtensions.g.cs)

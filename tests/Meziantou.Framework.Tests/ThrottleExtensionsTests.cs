@@ -65,31 +65,91 @@ public class ThrottleExtensionsTests
     {
         var timeProvider = new FakeTimeProvider();
         var callCount = 0;
+        var errors = new List<Exception>();
         var throttled = ((Action)(() =>
         {
-            Interlocked.Increment(ref callCount);
+            callCount++;
             throw new InvalidOperationException("boom");
-        })).Throttle(TimeSpan.FromSeconds(1), timeProvider);
+        })).Throttle(TimeSpan.FromSeconds(1), timeProvider, errors.Add);
+
+        // FakeTimeProvider invokes the timer callback synchronously from Advance
+        throttled();
+        timeProvider.Advance(TimeSpan.FromSeconds(1));
+        Assert.Equal(1, callCount);
 
         throttled();
-        timeProvider.Advance(TimeSpan.FromSeconds(2));
-        Assert.True(
-            SpinWait.SpinUntil(() => Volatile.Read(ref callCount) >= 1, TimeSpan.FromSeconds(30)),
-            "The action was not invoked");
+        timeProvider.Advance(TimeSpan.FromSeconds(1));
+        Assert.Equal(2, callCount);
 
-        // The first invocation threw; the throttle must not be stuck. It is reset after the action
-        // returns, which is after the counter is incremented, so the call below can still be
-        // throttled by the invocation that just threw: keep calling until one gets through.
-        Assert.True(
-            SpinWait.SpinUntil(
-                () =>
-                {
-                    throttled();
-                    timeProvider.Advance(TimeSpan.FromSeconds(2));
-                    return Volatile.Read(ref callCount) >= 2;
-                },
-                TimeSpan.FromSeconds(30)),
-            "The throttle is stuck after the action threw");
+        Assert.HasCount(2, errors);
+        Assert.All(errors, error => Assert.Equal("boom", error.Message));
+    }
+
+    [Fact]
+    public void Throttle_WithoutErrorHandler_ExceptionIsUnhandled()
+    {
+        var timeProvider = new FakeTimeProvider();
+        var throttled = ((Action)(() => throw new InvalidOperationException("boom"))).Throttle(TimeSpan.FromSeconds(1), timeProvider);
+
+        throttled();
+
+        // The exception propagates to the timer callback: with FakeTimeProvider, to Advance
+        Assert.Equal("boom", Assert.Throws<InvalidOperationException>(() => timeProvider.Advance(TimeSpan.FromSeconds(1))).Message);
+    }
+
+    [Fact]
+    public void Throttle_ReusesASingleTimer()
+    {
+        var fakeTimeProvider = new FakeTimeProvider();
+        var timeProvider = new CountingTimeProvider(fakeTimeProvider);
+        var callCount = 0;
+        var throttled = ((Action)(() => callCount++)).Throttle(TimeSpan.FromSeconds(1), timeProvider);
+
+        for (var i = 0; i < 100; i++)
+        {
+            throttled();
+            throttled();
+            fakeTimeProvider.Advance(TimeSpan.FromSeconds(1));
+        }
+
+        Assert.Equal(100, callCount);
+        Assert.Equal(1, timeProvider.TimersCreated);
+    }
+
+    private sealed class CountingTimeProvider(TimeProvider inner) : TimeProvider
+    {
+        private int _timersCreated;
+
+        public int TimersCreated => Volatile.Read(ref _timersCreated);
+
+        public override ITimer CreateTimer(TimerCallback callback, object? state, TimeSpan dueTime, TimeSpan period)
+        {
+            Interlocked.Increment(ref _timersCreated);
+            return inner.CreateTimer(callback, state, dueTime, period);
+        }
+
+        public override DateTimeOffset GetUtcNow() => inner.GetUtcNow();
+        public override long GetTimestamp() => inner.GetTimestamp();
+        public override TimeZoneInfo LocalTimeZone => inner.LocalTimeZone;
+        public override long TimestampFrequency => inner.TimestampFrequency;
+    }
+
+    [Fact]
+    public void Documentation_Throttle_OnError()
+    {
+        #region ThrottleExtensions_OnError
+        var timeProvider = new FakeTimeProvider();
+        var errors = new List<Exception>();
+        var refresh = ThrottleExtensions.Throttle(
+            () => throw new InvalidOperationException("The server is unavailable"),
+            TimeSpan.FromSeconds(1),
+            timeProvider,
+            onError: errors.Add); // For instance, log the exception
+
+        refresh();
+        timeProvider.Advance(TimeSpan.FromSeconds(1));
+        Assert.Equal("The server is unavailable", Assert.Single(errors).Message);
+        #endregion
     }
 
     [Fact]

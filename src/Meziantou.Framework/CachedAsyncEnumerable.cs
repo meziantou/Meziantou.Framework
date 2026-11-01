@@ -1,19 +1,14 @@
-using System.Diagnostics;
-
 namespace Meziantou.Framework;
 
 internal sealed class CachedAsyncEnumerable<T> : ICachedAsyncEnumerable<T>
 {
     private readonly List<T> _cache = [];
-    private readonly IAsyncEnumerable<T> _enumerable;
-    private IAsyncEnumerator<T>? _enumerator;
-    private bool _enumerated;
+    private readonly CachedAsyncEnumerableSource<T> _source;
+    private bool _disposed;
 
     public CachedAsyncEnumerable(IAsyncEnumerable<T> enumerable)
     {
-        ArgumentNullException.ThrowIfNull(enumerable);
-
-        _enumerable = enumerable;
+        _source = new CachedAsyncEnumerableSource<T>(enumerable);
     }
 
     public async IAsyncEnumerator<T> GetAsyncEnumerator(CancellationToken cancellationToken = default)
@@ -21,6 +16,7 @@ internal sealed class CachedAsyncEnumerable<T> : ICachedAsyncEnumerable<T>
         var index = 0;
         while (true)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             var item = await TryGetItem(index, cancellationToken).ConfigureAwait(false);
             if (item.HasValue)
             {
@@ -37,43 +33,28 @@ internal sealed class CachedAsyncEnumerable<T> : ICachedAsyncEnumerable<T>
 
     private async ValueTask<Optional<T>> TryGetItem(int index, CancellationToken cancellationToken)
     {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+
         // if the item is in the cache, use it
         if (index < _cache.Count)
             return new(_cache[index]);
 
-        if (_enumerator is null && !_enumerated)
-        {
-            _enumerator = _enumerable.GetAsyncEnumerator(cancellationToken);
-        }
-
-        // If we have already enumerate the whole stream, there is nothing else to do
-        if (_enumerated)
-            return new();
-
         // Get the next item and store it to the cache
-        Debug.Assert(_enumerator is not null);
-        if (await _enumerator.MoveNextAsync().ConfigureAwait(false))
+        var result = await _source.MoveNextAsync(cancellationToken).ConfigureAwait(false);
+        if (result.HasValue)
         {
-            var result = _enumerator.Current;
-            _cache.Add(result);
-            return new(result);
+            _cache.Add(result.Value);
         }
-        else
-        {
-            // There are no more items, we can dispose the underlying enumerator
-            await _enumerator.DisposeAsync().ConfigureAwait(false);
-            _enumerator = null;
-            _enumerated = true;
-            return new();
-        }
+
+        return result;
     }
 
     public async ValueTask DisposeAsync()
     {
-        if (_enumerator is not null)
-        {
-            await _enumerator.DisposeAsync().ConfigureAwait(false);
-            _enumerator = null;
-        }
+        if (_disposed)
+            return;
+
+        _disposed = true;
+        await _source.DisposeAsync().ConfigureAwait(false);
     }
 }

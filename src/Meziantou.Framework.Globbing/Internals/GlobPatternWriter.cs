@@ -100,12 +100,12 @@ internal static class GlobPatternWriter
         }
     }
 
-    /// <summary>Writes an alternative of a <see cref="GlobDialect.Standard"/> literal set, such as <c>{a,b}</c>.</summary>
-    public static void AppendLiteralSetValue(ref ValueStringBuilder sb, string value)
+    /// <summary>Writes the literal text of an alternative of a <see cref="GlobDialect.Standard"/> brace expression, such as <c>{a,b}</c>.</summary>
+    public static void AppendAlternativeLiteral(ref ValueStringBuilder sb, string value)
     {
         foreach (var c in value)
         {
-            if (c is '\\' or ',' or '}')
+            if (c is '\\' or ',' or '}' or '*' or '?' or '[' or '{')
             {
                 sb.Append('\\');
             }

@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO.Enumeration;
 
 namespace Meziantou.Framework.Globbing.Tests;
@@ -46,9 +47,10 @@ public class GlobTests
     [InlineData("a[/]b")]  // literal contains '/'
     [InlineData("a[a/]b")]  // literal contains '/'
     [InlineData("a[.-0]b")] // literal contains '/'
-    [InlineData("a{/}b")]  // literal contains '/'
-    [InlineData("a{a,/}b")] // literal contains '/'
-    [InlineData(@"a{a,\/}b")] // literal contains an escaped '/'
+    [InlineData("{a,[/]}")] // literal contains '/'
+    [InlineData("{a,{b}")] // Missing '}'
+    [InlineData("{a,\\")] // Cannot ends with the escape character '\'
+    [InlineData("{a/,b}{a/,b}{a/,b}{a/,b}{a/,b}{a/,b}{a/,b}{a/,b}{a/,b}{a/,b}{a/,b}")] // expands into 2048 patterns
     [InlineData("[z-a]")] // reversed range
     public void ParseInvalid(string pattern)
     {
@@ -245,12 +247,30 @@ public class GlobTests
         Assert.True(Glob.Parse("file[0-9].txt", GlobDialect.Standard).IsMatch("file7.txt"));
         Assert.False(Glob.Parse("file[!0-9].txt", GlobDialect.Standard).IsMatch("file7.txt"));
 
-        // Braces match one of the literals
+        // Braces match one of the alternatives
         Assert.True(Glob.Parse("*.{png,jpg}", GlobDialect.Standard).IsMatch("photo.jpg"));
 
         // '**' matches zero or more directories
         Assert.True(Glob.Parse("**/*.txt", GlobDialect.Standard).IsMatch("readme.txt"));
         Assert.True(Glob.Parse("**/*.txt", GlobDialect.Standard).IsMatch("docs/guides/readme.txt"));
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_Braces()
+    {
+        #region Glob_Braces
+        // An alternative can hold wildcards and other braces
+        var projects = Glob.Parse("*.{cs,*proj,{props,targets}}", GlobDialect.Standard);
+        Assert.True(projects.IsMatch("App.csproj"));
+        Assert.True(projects.IsMatch("Directory.Build.props"));
+        Assert.False(projects.IsMatch("readme.md"));
+
+        // An alternative can hold a '/' or a '**'
+        var sources = Glob.Parse("{src/**,tests}/*.cs", GlobDialect.Standard);
+        Assert.True(sources.IsMatch("src/App/Program.cs"));
+        Assert.True(sources.IsMatch("tests/AppTests.cs"));
+        Assert.False(sources.IsMatch("tests/unit/AppTests.cs"));
         #endregion
     }
 
@@ -1632,6 +1652,173 @@ public class GlobTests
     {
         var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
         Assert.True(glob.IsMatch(path));
+    }
+
+    [Theory]
+    [InlineData("*.{cs,*proj}", "a.csproj")]
+    [InlineData("*.{cs,*proj}", "a.cs")]
+    [InlineData("{a,[bc]}", "b")]
+    [InlineData("{a,?}", "z")]
+    [InlineData("{a,{b,c}}", "c")]
+    [InlineData("{a,x{b,c{d,e}}}f", "xcef")]
+    [InlineData("{a,ab}{b,bc}c", "abcc")]
+    [InlineData("{*a,b*}{c,*d}", "xadd")]
+    [InlineData(@"{\*,a}", "*")]
+    [InlineData(@"{\,,a}", ",")]
+    [InlineData(@"{\},a}", "}")]
+    [InlineData("{[,}],a}", ",")]
+    [InlineData("{[,}],a}", "}")]
+    [InlineData("a{}b", "ab")]
+    [InlineData("{src/a,test}", "src/a")]
+    [InlineData("{src/a,test}", "test")]
+    [InlineData("a{a,/}b", "aab")]
+    [InlineData("a{a,/}b", "a/b")]
+    [InlineData(@"a{a,\/}b", "a/b")]
+    [InlineData("{src/**,tests}/*.cs", "src/a.cs")]
+    [InlineData("{src/**,tests}/*.cs", "src/a/b/c.cs")]
+    [InlineData("{src/**,tests}/*.cs", "tests/a.cs")]
+    [InlineData("x{a,b/{c,d/e}}y", "xb/d/ey")]
+    [InlineData("x{a,**}y", "xzy")]
+    [InlineData("x/{a,**}/y", "x/z/w/y")]
+    [InlineData("{!a/b,c}", "!a/b")]
+    [InlineData("!{!a,b}", "!a")]
+    [InlineData(@"{a\,b,c}", "a,b")]
+    [InlineData("{**/bin,obj}", "x/y/bin")]
+    [InlineData("src{,/a}", "src")]
+    [InlineData("src{,/a}", "src/a")]
+    public void BraceExpressionMatchesOneOfItsAlternatives(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.True(glob.IsMatch(path));
+
+        var roundTripped = Glob.Parse(glob.ToString(), GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.True(roundTripped.IsMatch(path));
+    }
+
+    [Theory]
+    [InlineData("*.{cs,*proj}", "a.txt")]
+    [InlineData("*.{cs,*proj}", "a.csproja")]
+    [InlineData("{a,[bc]}", "d")]
+    [InlineData("{a,[bc]}", "[bc]")]
+    [InlineData("{a,{b,c}}", "{b,c}")]
+    [InlineData("{a,x{b,c{d,e}}}f", "xcf")]
+    [InlineData(@"{\*,a}", "b")]
+    [InlineData("{src/a,test}", "src")]
+    [InlineData("{src/a,test}", "src/a/b")]
+    [InlineData("{src/**,tests}/*.cs", "docs/a.cs")]
+    [InlineData("{src/**,tests}/*.cs", "tests/a/b.cs")]
+    [InlineData("x{a,**}y", "xz/wy")]
+    [InlineData("{!a/b,c}", "a/b")]
+    [InlineData("src/{,a}", "src")]
+    [InlineData("src/{,a}", "src/b")]
+    public void BraceExpressionRejectsPathsNoAlternativeMatches(string pattern, string path)
+    {
+        var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.False(glob.IsMatch(path));
+
+        var roundTripped = Glob.Parse(glob.ToString(), GlobDialect.Standard, GlobOptions.MatchLeadingDot);
+        Assert.False(roundTripped.IsMatch(path));
+    }
+
+    [Theory]
+    [InlineData("{.*,x}", ".a", true)]
+    [InlineData("{*,x}", ".a", false)]
+    [InlineData("{?a,x}", ".a", false)]
+    [InlineData("{?a,.a}", ".a", true)]
+    [InlineData("{{,.}a,x}", ".a", true)]
+    [InlineData("{{,*}a,x}", ".a", false)]
+    [InlineData("{.github/*,docs}/*.yml", ".github/workflows/ci.yml", true)]
+    [InlineData("{src/**,docs}/*.yml", "src/.github/ci.yml", false)]
+    public void BraceExpressionOnlyMatchesALeadingDotWrittenInThePattern(string pattern, string path, bool expected)
+    {
+        Assert.Equal(expected, Glob.Parse(pattern, GlobDialect.Standard).IsMatch(path));
+        Assert.True(Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot).IsMatch(path));
+    }
+
+    [Fact]
+    public void BraceExpressionWithASeparatorKeepsTheKindOfEachAlternative()
+    {
+        // The trailing '/' of an alternative only restricts that alternative to directories
+        var glob = Glob.Parse("{a/,b}", GlobDialect.Standard);
+        Assert.True(glob.IsMatch("", "a", PathItemType.Directory));
+        Assert.False(glob.IsMatch("", "a", PathItemType.File));
+        Assert.True(glob.IsMatch("", "b", PathItemType.File));
+        Assert.False(glob.IsMatch("", "b", PathItemType.Directory));
+        Assert.Equal("{a/,b}", glob.ToString());
+    }
+
+    [Fact]
+    public void BraceExpressionWithASeparatorKeepsTheModeOfThePattern()
+    {
+        var glob = Glob.Parse("!{src/a,b}", GlobDialect.Standard);
+        Assert.Equal(GlobMode.Exclude, glob.Mode);
+        Assert.True(glob.IsMatch("src/a"));
+        Assert.Equal("!{src/a,b}", glob.ToString());
+    }
+
+    [Theory]
+    [InlineData("{src,tests/unit}/*.cs", "tests", true)]
+    [InlineData("{src,tests/unit}/*.cs", "src", true)]
+    [InlineData("{src,tests/unit}/*.cs", "docs", false)]
+    [InlineData("{src,tests/unit}/*.cs", "tests/integration", false)]
+    public void BraceExpressionWithASeparatorRecursesIntoTheDirectoriesOfEveryAlternative(string pattern, string folderPath, bool expected)
+    {
+        Assert.Equal(expected, Glob.Parse(pattern, GlobDialect.Standard).IsPartialMatch(folderPath));
+    }
+
+    [Fact]
+    public void BraceExpressionWithASeparatorEnumeratesTheFilesOfEveryAlternative()
+    {
+        using var rootDirectory = TemporaryDirectory.Create();
+        rootDirectory.CreateEmptyFile("src/a/a.cs");
+        rootDirectory.CreateEmptyFile("tests/b.cs");
+        rootDirectory.CreateEmptyFile("tests/c/c.cs");
+        rootDirectory.CreateEmptyFile("docs/d.cs");
+
+        var glob = Glob.Parse("{src/**,tests}/*.cs", GlobDialect.Standard);
+        var files = glob.EnumerateFiles(rootDirectory.FullPath).Select(path => Path.GetRelativePath(rootDirectory.FullPath, path).Replace('\\', '/')).Order(StringComparer.Ordinal).ToList();
+
+        Assert.Equal(["src/a/a.cs", "tests/b.cs"], files);
+    }
+
+    [Theory]
+    [InlineData("*a*a*a*a*a*a*a*a*a*a*b", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
+    [InlineData("*a*a*a*a*a*a*a*a*a*a*b*", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
+    [InlineData("*?*?*?*?*?*?*?*?*?*?*b", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
+    [InlineData("**/a/**/a/**/a/**/a/**/a/**/a/**/a/b", "a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/c")]
+    [InlineData("**/*a/**/*a/**/*a/**/*a/**/*a/**/*a/**/*a/b", "a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/c")]
+    [InlineData("{a,aa}{a,aa}{a,aa}{a,aa}{a,aa}{a,aa}{a,aa}{a,aa}{a,aa}{a,aa}{a,aa}{a,aa}{a,aa}{a,aa}{a,aa}{a,aa}{a,aa}{a,aa}{a,aa}{a,aa}b", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
+    [InlineData("*{a,*a}*{a,*a}*{a,*a}*{a,*a}*{a,*a}*{a,*a}*{a,*a}*{a,*a}b", "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")]
+    public void MatchingTimeIsPolynomialInTheNumberOfWildcards(string pattern, string path)
+    {
+        // Each of these used to take from seconds to hours, as the matcher backtracked over every way the wildcards
+        // could split the path.
+        var stopwatch = Stopwatch.StartNew();
+        foreach (var options in new[] { GlobOptions.None, GlobOptions.MatchLeadingDot, GlobOptions.IgnoreCase })
+        {
+            Assert.False(Glob.Parse(pattern, GlobDialect.Standard, options).IsMatch(path));
+            Assert.True(Glob.Parse(pattern, GlobDialect.Standard, options).IsMatch(path[..^1] + "b"));
+        }
+
+        if (!pattern.Contains('{', StringComparison.Ordinal))
+        {
+            foreach (var dialect in new[] { GlobDialect.Git, GlobDialect.Posix, GlobDialect.PosixPath })
+            {
+                Assert.False(Glob.Parse(pattern, dialect).IsMatch(path));
+            }
+        }
+
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"Matching took {stopwatch.Elapsed}");
+    }
+
+    [Theory]
+    // A '**' cannot consume a name that starts with a dot, so a later '**' does not make the earlier ones useless:
+    // the earlier '**' must consume 'x' for '{.b,x}' to consume '.b'.
+    [InlineData("**/x/{.b,x}/**/c", "x/x/.b/c")]
+    [InlineData("**/x/{.b,x}/**/c/**/d", "x/x/.b/c/d")]
+    public void RecursiveWildcardsRetryTheEarlierOnesWhenALaterOneIsBlockedByALeadingDot(string pattern, string path)
+    {
+        Assert.True(Glob.Parse(pattern, GlobDialect.Standard).IsMatch(path));
     }
 
     [Theory]

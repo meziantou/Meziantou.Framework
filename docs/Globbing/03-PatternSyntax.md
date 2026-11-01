@@ -19,7 +19,7 @@ Assert.True(Glob.Parse("file?.txt", GlobDialect.Standard).IsMatch("file1.txt"));
 Assert.True(Glob.Parse("file[0-9].txt", GlobDialect.Standard).IsMatch("file7.txt"));
 Assert.False(Glob.Parse("file[!0-9].txt", GlobDialect.Standard).IsMatch("file7.txt"));
 
-// Braces match one of the literals
+// Braces match one of the alternatives
 Assert.True(Glob.Parse("*.{png,jpg}", GlobDialect.Standard).IsMatch("photo.jpg"));
 
 // '**' matches zero or more directories
@@ -35,13 +35,42 @@ Assert.True(Glob.Parse("**/*.txt", GlobDialect.Standard).IsMatch("docs/guides/re
 | `[abc]` | One of the characters in the brackets. |
 | `[a-z]` | One character of the range. |
 | `[!abc]`, `[!a-z]` | One character that is not in the brackets. |
-| `{abc,123}` | One of the literals separated by commas. |
+| `{abc,*.cs}` | One of the alternatives separated by commas. See [Braces](#braces). |
 | `**` | Zero or more directories, when it makes a whole path segment, as in `src/**/*.cs`. |
 | `!pattern` | The paths that the pattern matches, to exclude them. See [Combining patterns](07-CombiningPatterns.md). |
 | `\x` | The character `x` itself. |
 
 A `**` at the end of a pattern matches at least one segment: `src/**` matches everything inside `src`, but not `src`
 itself.
+
+## Braces
+
+An alternative of a brace expression is a pattern of its own: it can hold `*`, `?`, `[...]` and other braces. It can
+also hold a `/` or a `**`: the pattern is then read once per alternative, as if you had written several patterns.
+
+<!-- ref:../../tests/Meziantou.Framework.Globbing.Tests/GlobTests.cs;region=Glob_Braces;format=md-fenced-code-block;dedent=true -->
+```csharp
+// An alternative can hold wildcards and other braces
+var projects = Glob.Parse("*.{cs,*proj,{props,targets}}", GlobDialect.Standard);
+Assert.True(projects.IsMatch("App.csproj"));
+Assert.True(projects.IsMatch("Directory.Build.props"));
+Assert.False(projects.IsMatch("readme.md"));
+
+// An alternative can hold a '/' or a '**'
+var sources = Glob.Parse("{src/**,tests}/*.cs", GlobDialect.Standard);
+Assert.True(sources.IsMatch("src/App/Program.cs"));
+Assert.True(sources.IsMatch("tests/AppTests.cs"));
+Assert.False(sources.IsMatch("tests/unit/AppTests.cs"));
+```
+<!-- endref -->
+
+Inside the braces, escape a `,`, a `}` or a wildcard with a `\` to match it as an ordinary character: `{a\,b,c}` matches
+`a,b` or `c`. A `**` is a recursive wildcard when it makes a whole path segment of the pattern as written or of one
+alternative, as in `{**/bin,obj}`. An alternative cannot make a path segment empty: `src/{,a}` matches `src/a` only.
+Write `src{,/a}` to match `src` too.
+
+A brace expression that holds a `/` or a `**` expands into one pattern per alternative, and expansions multiply:
+[Glob.Parse](cref:Meziantou.Framework.Globbing.Glob.Parse) rejects a pattern that expands into more than 1,024 patterns.
 
 ## Files and directories
 
@@ -172,6 +201,6 @@ paths. It is not always the text you parsed.
 
 ## Patterns from untrusted sources
 
-Matching backtracks: the cost of matching one path grows exponentially with the number of `*` in one path segment of
-the pattern. Ordinary patterns are not affected, but someone can write a pattern that is slow on purpose. Limit the
-length and the number of wildcards of a pattern that comes from an untrusted source before you parse it.
+The cost of matching one path grows polynomially with the length of the pattern and of the path, whatever the number
+of wildcards, so a pattern cannot be made exponentially slow on purpose. Still limit the length of a pattern that comes
+from an untrusted source, as a long pattern matched against long paths costs more.

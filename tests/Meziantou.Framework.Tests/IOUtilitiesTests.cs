@@ -1,4 +1,6 @@
 #pragma warning disable CS0618 // Type or member is obsolete
+using System.Runtime.Versioning;
+
 namespace Meziantou.Framework.Tests;
 
 public class IOUtilitiesTests
@@ -20,6 +22,94 @@ public class IOUtilitiesTests
     {
         var result = IOUtilities.ToValidFileName(fileName);
         Assert.Equal(expectedResult, result);
+    }
+
+    [Theory]
+    [InlineData("a\0b", "a_x0_b")]
+    [InlineData("a/b/c", "a_x47_b_x47_c")]
+    [InlineData("/.", "_x47__x46_")]
+    public void ToValidFileName_InvalidCharacters(string fileName, string expectedResult)
+    {
+        Assert.Equal(expectedResult, IOUtilities.ToValidFileName(fileName));
+    }
+
+    [Fact]
+    public void ToValidFileName_ValidName_ReturnsSameInstance()
+    {
+        var fileName = new string(['s', 'a', 'm', 'p', 'l', 'e']);
+
+        Assert.Same(fileName, IOUtilities.ToValidFileName(fileName));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CopyDirectory_DirectorySymbolicLinkToAncestor_CopiesTheLink(bool useDirectoryInfo)
+    {
+        var root = Directory.CreateTempSubdirectory();
+        try
+        {
+            var source = root.CreateSubdirectory("source");
+            File.WriteAllText(Path.Combine(source.FullName, "file.txt"), "content");
+            Directory.CreateSymbolicLink(Path.Combine(source.FullName, "loop"), source.FullName);
+            var destination = Path.Combine(root.FullName, "destination");
+
+            if (useDirectoryInfo)
+            {
+                IOUtilities.CopyDirectory(source, new DirectoryInfo(destination));
+            }
+            else
+            {
+                IOUtilities.CopyDirectory(source.FullName, destination);
+            }
+
+            Assert.Equal("content", File.ReadAllText(Path.Combine(destination, "file.txt")));
+            Assert.Equal(source.FullName, new DirectoryInfo(Path.Combine(destination, "loop")).LinkTarget);
+        }
+        finally
+        {
+            IOUtilities.Delete(root);
+        }
+    }
+
+    [Fact]
+    public void Delete_ReadOnlyDirectory_DeletesTheTree()
+    {
+        if (OperatingSystem.IsWindows())
+            return;
+
+        var root = CreateTreeWithReadOnlyDirectory();
+
+        IOUtilities.Delete(root);
+
+        Assert.False(Directory.Exists(root.FullName));
+    }
+
+    [Fact]
+    public async Task DeleteAsync_ReadOnlyDirectory_DeletesTheTree()
+    {
+        if (OperatingSystem.IsWindows())
+            return;
+
+        var root = CreateTreeWithReadOnlyDirectory();
+
+        await IOUtilities.DeleteAsync(root, XunitCancellationToken);
+
+        Assert.False(Directory.Exists(root.FullName));
+    }
+
+    // Deleting an entry requires write permission on its parent directory on Unix, e.g. the Go module cache
+    [UnsupportedOSPlatform("windows")]
+    private static DirectoryInfo CreateTreeWithReadOnlyDirectory()
+    {
+        var root = Directory.CreateTempSubdirectory();
+        var readOnly = root.CreateSubdirectory("ro");
+        var nested = readOnly.CreateSubdirectory("nested");
+        File.WriteAllText(Path.Combine(readOnly.FullName, "f.txt"), "content");
+        File.WriteAllText(Path.Combine(nested.FullName, "g.txt"), "content");
+        File.SetUnixFileMode(nested.FullName, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+        File.SetUnixFileMode(readOnly.FullName, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+        return root;
     }
 
     [Fact]

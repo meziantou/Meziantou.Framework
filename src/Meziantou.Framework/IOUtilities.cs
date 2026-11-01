@@ -1,3 +1,5 @@
+using System.Buffers;
+
 namespace Meziantou.Framework;
 
 #if PUBLIC_IO_UTILITIES
@@ -13,6 +15,8 @@ static partial class IOUtilities
         "com0", "com1", "com2", "com3", "com4", "com5", "com6", "com7", "com8", "com9",
         "lpt0", "lpt1", "lpt2", "lpt3", "lpt4", "lpt5", "lpt6", "lpt7", "lpt8", "lpt9",
     ];
+
+    private static readonly SearchValues<char> InvalidFileNameChars = SearchValues.Create(Path.GetInvalidFileNameChars());
 
     /// <summary>Makes sure a directory exists for a given file path.</summary>
     /// <param name="filePath">The file path. Note this is not to be confused with the directory path. May not be null.</param>
@@ -70,8 +74,6 @@ static partial class IOUtilities
             return string.Format(CultureInfo.InvariantCulture, reservedNameFormat, fileName);
         }
 
-        var invalid = Path.GetInvalidFileNameChars();
-
         // Windows silently strips trailing periods and spaces, so a name keeping them would be
         // created under a different name than the caller was given. They are escaped like any other
         // character that cannot be used as-is.
@@ -81,11 +83,21 @@ static partial class IOUtilities
             trailingStart--;
         }
 
-        var sb = new StringBuilder(fileName.Length);
-        for (var i = 0; i < fileName.Length; i++)
+        var firstInvalid = fileName.AsSpan(0, trailingStart).IndexOfAny(InvalidFileNameChars);
+        if (firstInvalid < 0)
+        {
+            if (trailingStart == fileName.Length)
+                return fileName;
+
+            firstInvalid = trailingStart;
+        }
+
+        var sb = new StringBuilder(fileName.Length + 8);
+        sb.Append(fileName, 0, firstInvalid);
+        for (var i = firstInvalid; i < fileName.Length; i++)
         {
             var c = fileName[i];
-            if (Array.IndexOf(invalid, c) >= 0 || i >= trailingStart)
+            if (i >= trailingStart || InvalidFileNameChars.Contains(c))
             {
                 sb.AppendFormat(CultureInfo.InvariantCulture, reservedCharFormat, (short)c);
             }
@@ -95,13 +107,7 @@ static partial class IOUtilities
             }
         }
 
-        var s = sb.ToString();
-        if (string.Equals(s, fileName, StringComparison.Ordinal))
-        {
-            s = fileName;
-        }
-
-        return s;
+        return sb.ToString();
     }
 
     private static bool IsAllDots(string fileName)
@@ -115,60 +121,53 @@ static partial class IOUtilities
         return true;
     }
 
+    /// <summary>Copies a directory and its content to a new location.</summary>
+    /// <remarks>Symbolic links to directories are copied as links instead of being followed, as <c>cp -R</c> does.</remarks>
     public static void CopyDirectory(string sourcePath, string destinationPath)
     {
         ArgumentNullException.ThrowIfNull(sourcePath);
 
         ArgumentNullException.ThrowIfNull(destinationPath);
 
-        // Get the subdirectories for the specified directory.
-        var dir = new DirectoryInfo(sourcePath);
-        if (!dir.Exists)
-            throw new DirectoryNotFoundException("Source directory does not exist or could not be found: " + sourcePath);
-
-        var dirs = dir.GetDirectories();
-        if (!Directory.Exists(destinationPath))
-        {
-            Directory.CreateDirectory(destinationPath);
-        }
-
-        // Get the files in the directory and copy them to the new location.
-        var files = dir.GetFiles();
-        foreach (var file in files)
-        {
-            var temppath = Path.Combine(destinationPath, file.Name);
-            file.CopyTo(temppath, overwrite: false);
-        }
-
-        // Copy subdirectories
-        foreach (var subdir in dirs)
-        {
-            var tempPath = Path.Combine(destinationPath, subdir.Name);
-            CopyDirectory(subdir.FullName, tempPath);
-        }
+        CopyDirectory(new DirectoryInfo(sourcePath), new DirectoryInfo(destinationPath));
     }
 
+    /// <summary>Copies a directory and its content to a new location.</summary>
+    /// <remarks>Symbolic links to directories are copied as links instead of being followed, as <c>cp -R</c> does.</remarks>
     public static void CopyDirectory(DirectoryInfo source, DirectoryInfo destination)
     {
+        ArgumentNullException.ThrowIfNull(source);
+
+        ArgumentNullException.ThrowIfNull(destination);
+
         if (!source.Exists)
             throw new DirectoryNotFoundException("Source directory does not exist or could not be found: " + source);
 
+        CopyDirectoryContent(source, destination);
+    }
+
+    private static void CopyDirectoryContent(DirectoryInfo source, DirectoryInfo destination)
+    {
         destination.Create();
 
-        // Get the files in the directory and copy them to the new location.
-        var files = source.GetFiles();
-        foreach (var file in files)
+        foreach (var file in source.GetFiles())
         {
-            var temppath = Path.Combine(destination.FullName, file.Name);
-            file.CopyTo(temppath, overwrite: false);
+            var destinationPath = Path.Combine(destination.FullName, file.Name);
+            file.CopyTo(destinationPath, overwrite: false);
         }
 
-        // Copy subdirectories
-        var dirs = source.GetDirectories();
-        foreach (var subdir in dirs)
+        foreach (var subdirectory in source.GetDirectories())
         {
-            var temppath = new DirectoryInfo(Path.Combine(destination.FullName, subdir.Name));
-            CopyDirectory(subdir, temppath);
+            var destinationPath = Path.Combine(destination.FullName, subdirectory.Name);
+
+            // Following a link would copy its target, and a link to an ancestor would recurse until the path is too long
+            if (subdirectory.LinkTarget is { } linkTarget)
+            {
+                Directory.CreateSymbolicLink(destinationPath, linkTarget);
+                continue;
+            }
+
+            CopyDirectoryContent(subdirectory, new DirectoryInfo(destinationPath));
         }
     }
 }

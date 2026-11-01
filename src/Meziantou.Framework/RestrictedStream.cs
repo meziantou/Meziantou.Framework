@@ -17,12 +17,24 @@ public sealed class RestrictedStream(Stream stream, RestrictedStreamOptions opti
     public override bool CanWrite => stream.CanWrite && options.AllowWriting;
 
     /// <inheritdoc />
-    public override long Length => stream.Length;
+    public override long Length
+    {
+        get
+        {
+            ThrowIfSeekingNotAllowed();
+            return stream.Length;
+        }
+    }
 
     /// <inheritdoc />
     public override long Position
     {
-        get => stream.Position;
+        get
+        {
+            ThrowIfSeekingNotAllowed();
+            return stream.Position;
+        }
+
         set
         {
             ThrowIfSeekingNotAllowed();
@@ -34,7 +46,12 @@ public sealed class RestrictedStream(Stream stream, RestrictedStreamOptions opti
     public override void Flush()
     {
         ThrowIfSynchronousCallNotAllowed();
-        ThrowIfWritingNotAllowed();
+
+        // Flushing a stream that cannot be written is a no-op, as for FileStream. Wrappers such as
+        // BufferedStream flush the inner stream unconditionally.
+        if (!options.AllowWriting)
+            return;
+
         stream.Flush();
     }
 
@@ -57,6 +74,8 @@ public sealed class RestrictedStream(Stream stream, RestrictedStreamOptions opti
     /// <inheritdoc />
     public override void SetLength(long value)
     {
+        ThrowIfSynchronousCallNotAllowed();
+        ThrowIfSeekingNotAllowed();
         ThrowIfWritingNotAllowed();
         stream.SetLength(value);
     }
@@ -162,7 +181,11 @@ public sealed class RestrictedStream(Stream stream, RestrictedStreamOptions opti
     public override Task FlushAsync(CancellationToken cancellationToken)
     {
         ThrowIfAsynchronousCallNotAllowed();
-        ThrowIfWritingNotAllowed();
+
+        // See Flush
+        if (!options.AllowWriting)
+            return Task.CompletedTask;
+
         return stream.FlushAsync(cancellationToken);
     }
 

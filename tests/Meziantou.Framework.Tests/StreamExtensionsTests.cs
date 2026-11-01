@@ -30,6 +30,44 @@ public sealed class StreamExtensionsTests
         Assert.Equal([0, 1, 2, 3, 4], result);
     }
 
+    [Fact]
+    public void ReadToEnd_PositionPastEnd_ReturnsEmptyArray()
+    {
+        using var stream = new MemoryStream(new byte[10]) { Position = 100 };
+
+        Assert.Empty(stream.ReadToEnd());
+    }
+
+    [Fact]
+    public async Task ReadToEndAsync_PositionPastEnd_ReturnsEmptyArray()
+    {
+        using var stream = new MemoryStream(new byte[10]) { Position = 100 };
+
+        Assert.Empty(await stream.ReadToEndAsync());
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(2)]
+    [InlineData(5)]
+    public void ReadToEnd_StreamLongerThanLength_ReadsUntilTheEnd(int reportedLength)
+    {
+        using var stream = new UnderreportedLengthStream([0, 1, 2, 3, 4], reportedLength);
+
+        Assert.Equal([0, 1, 2, 3, 4], stream.ReadToEnd());
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(2)]
+    [InlineData(5)]
+    public async Task ReadToEndAsync_StreamLongerThanLength_ReadsUntilTheEnd(int reportedLength)
+    {
+        using var stream = new UnderreportedLengthStream([0, 1, 2, 3, 4], reportedLength);
+
+        Assert.Equal([0, 1, 2, 3, 4], await stream.ReadToEndAsync());
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -105,6 +143,12 @@ public sealed class StreamExtensionsTests
         public override void SetLength(long value) => throw new NotSupportedException();
 
         public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    }
+
+    // Simulates a stream that grows while it is read, such as a log file being appended
+    private sealed class UnderreportedLengthStream(byte[] buffer, long reportedLength) : MemoryStream(buffer)
+    {
+        public override long Length => reportedLength;
     }
 
     [Fact]

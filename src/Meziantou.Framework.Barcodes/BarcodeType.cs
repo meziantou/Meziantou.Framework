@@ -28,4 +28,7 @@ public enum BarcodeType
 
     /// <summary>Interleaved 2 of 5 (ITF) barcode.</summary>
     Itf,
+
+    /// <summary>GS1-128 barcode: a Code 128 symbol that starts with FNC1 and holds GS1 element strings.</summary>
+    Gs1128,
 }

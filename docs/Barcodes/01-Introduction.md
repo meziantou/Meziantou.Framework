@@ -12,8 +12,8 @@ or as text for a terminal. It is written entirely in C# and has no native depend
 
 - **Generate QR codes** of three kinds: standard QR codes, Micro QR codes for very small spaces, and rectangular Micro
   QR codes (rMQR) for narrow ones. The version, the encoding and the mask are chosen for you. See [QR codes](03-QRCodes.md).
-- **Generate linear barcodes**: Code 39, Code 93, Code 128, EAN-8, EAN-13, UPC-A (with their 2- or 5-digit add-ons),
-  Codabar and Interleaved 2 of 5. Check digits are computed or checked. See [Linear barcodes](04-LinearBarcodes.md).
+- **Generate linear barcodes**: Code 39, Code 93, Code 128, GS1-128, EAN-8, EAN-13, UPC-A (with their 2- or 5-digit
+  add-ons), Codabar and Interleaved 2 of 5. Check digits are computed or checked. See [Linear barcodes](04-LinearBarcodes.md).
 - **Build the content** of QR codes that phones understand: Wi-Fi networks, contacts, events, payments, two-factor
   authentication. See [QR code content](05-QRCodeContent.md).
 - **Render** as SVG or PNG with your colors and sizes, or as text in a terminal. See

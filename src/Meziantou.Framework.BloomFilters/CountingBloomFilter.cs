@@ -2,7 +2,7 @@ using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.BloomFilters;
 
-public abstract partial class CountingBloomFilter
+public closed partial class CountingBloomFilter
 {
     private protected readonly SegmentedCounterStorage Counters;
     private protected readonly int HashCount;

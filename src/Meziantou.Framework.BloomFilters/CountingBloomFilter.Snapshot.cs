@@ -3,7 +3,7 @@ using static Meziantou.Framework.BloomFilters.BloomFilterSnapshot;
 
 namespace Meziantou.Framework.BloomFilters;
 
-public abstract partial class CountingBloomFilter
+public closed partial class CountingBloomFilter
 {
     /// <summary>
     /// Writes a snapshot of the filter to a stream: its hash algorithm, its size and its counters.

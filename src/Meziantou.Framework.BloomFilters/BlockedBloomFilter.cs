@@ -14,7 +14,7 @@ namespace Meziantou.Framework.BloomFilters;
 /// so a blocked filter needs a little more memory for the same false positive probability; size it with
 /// <see cref="BlockedBloomFilterSize"/>.
 /// </remarks>
-public abstract partial class BlockedBloomFilter
+public closed partial class BlockedBloomFilter
 {
     private const int WordsPerBlock = BlockedBloomFilterSize.BitsPerBlock / 64;
     private const int BlockSize = WordsPerBlock * sizeof(ulong);

@@ -2,7 +2,7 @@ using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.BloomFilters;
 
-public abstract partial class BloomFilter
+public closed partial class BloomFilter
 {
     private protected readonly SegmentedBitStorage Bits;
     private protected readonly int HashCount;

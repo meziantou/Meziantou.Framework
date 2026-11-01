@@ -4,7 +4,7 @@
 
 namespace Meziantou.Framework.BloomFilters
 {
-    public abstract class BlockedBloomFilter
+    public closed class BlockedBloomFilter
     {
         public static Meziantou.Framework.BloomFilters.BlockedBloomFilterAdler32 CreateAdler32(Meziantou.Framework.BloomFilters.BlockedBloomFilterSize size) => throw null;
         public static Meziantou.Framework.BloomFilters.BlockedBloomFilterCrc32 CreateCrc32(Meziantou.Framework.BloomFilters.BlockedBloomFilterSize size) => throw null;
@@ -194,7 +194,7 @@ namespace Meziantou.Framework.BloomFilters
         public bool MayContain(ulong value) => throw null;
     }
 
-    public abstract class BloomFilter
+    public closed class BloomFilter
     {
         public static Meziantou.Framework.BloomFilters.BloomFilterAdler32 CreateAdler32(Meziantou.Framework.BloomFilters.BloomFilterSize size) => throw null;
         public static Meziantou.Framework.BloomFilters.BloomFilterCrc32 CreateCrc32(Meziantou.Framework.BloomFilters.BloomFilterSize size) => throw null;
@@ -395,7 +395,7 @@ namespace Meziantou.Framework.BloomFilters
         public bool MayContain(ulong value) => throw null;
     }
 
-    public abstract class CountingBloomFilter
+    public closed class CountingBloomFilter
     {
         public static Meziantou.Framework.BloomFilters.CountingBloomFilterAdler32 CreateAdler32(Meziantou.Framework.BloomFilters.CountingBloomFilterSize size) => throw null;
         public static Meziantou.Framework.BloomFilters.CountingBloomFilterCrc32 CreateCrc32(Meziantou.Framework.BloomFilters.CountingBloomFilterSize size) => throw null;

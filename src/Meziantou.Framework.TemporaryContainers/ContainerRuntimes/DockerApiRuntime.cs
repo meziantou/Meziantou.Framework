@@ -4,6 +4,7 @@ using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Sockets;
 using System.Runtime.CompilerServices;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
@@ -24,6 +25,7 @@ internal sealed class DockerApiRuntime : ContainerRuntime
     private readonly Lock _connectionLock = new();
     private volatile DockerApiConnection? _connection;
     private Task<DockerApiConnection?>? _connectionProbe;
+    private volatile string? _unavailableReason;
 
     internal DockerApiRuntime()
         : base("DockerApi")
@@ -46,6 +48,9 @@ internal sealed class DockerApiRuntime : ContainerRuntime
             return reusedContainerId;
 
         var connection = await EnsureConnectionOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        if (definition.Logging.Logger is { } logger)
+            Log.DockerApiEndpointSelected(logger, connection.Endpoint.DisplayName, connection.Endpoint.Source);
+
         var imageRef = await PrepareImageAsync(definition, cancellationToken).ConfigureAwait(false);
         var payload = DockerApiCreateRequestBuilder.Build(definition, imageRef, hostIpSupported: !connection.IsWindowsDaemon);
         using var content = CreateJsonContent(payload, DockerApiJsonContext.Default.CreateContainerRequest);
@@ -229,7 +234,7 @@ internal sealed class DockerApiRuntime : ContainerRuntime
     private async Task<(string StandardOutput, string StandardError)> StartExecWithStandardInputAsync(string endpoint, string body, InputSource standardInput, CancellationToken cancellationToken)
     {
         var connection = await EnsureConnectionOrThrowAsync(cancellationToken).ConfigureAwait(false);
-        var (upgraded, statusCode, errorBody) = await DockerApiTransport.SendUpgradeRequestAsync(connection.Endpoint, BuildEndpoint(connection, endpoint), body, cancellationToken).ConfigureAwait(false);
+        var (upgraded, statusCode, errorBody) = await DockerApiTransport.SendUpgradeRequestAsync(connection.Endpoint, connection.Tls, BuildEndpoint(connection, endpoint), body, cancellationToken).ConfigureAwait(false);
         if (upgraded is null)
             throw CreateException("Docker API request POST " + endpoint + " failed with status " + (int)statusCode + " (" + statusCode.ToString() + "): " + errorBody, statusCode);
 
@@ -881,43 +886,100 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         return await probe.WaitAsync(cancellationToken).ConfigureAwait(false);
     }
 
+    [SuppressMessage("Reliability", "CA2000:Dispose objects before losing scope", Justification = "The certificates are disposed in the finally block, unless the published connection owns them.")]
     private async Task<DockerApiConnection?> ProbeConnectionAsync()
     {
-        foreach (var endpoint in DockerApiTransport.GetEndpoints())
+        var discovery = DockerEndpointDiscovery.CreateForCurrentProcess().Discover();
+        var failures = new List<string>(discovery.Diagnostics);
+        foreach (var endpoint in discovery.Endpoints)
         {
-            HttpClient? candidateClient = null;
+            DockerApiTransport.TlsCredentials? tls = null;
             try
             {
-                candidateClient = DockerApiTransport.CreateClient(endpoint);
-                using var cts = new CancellationTokenSource(ProbeTimeout);
-                using var versionResponse = await candidateClient.GetAsync("/version", cts.Token).ConfigureAwait(false);
-                if (!versionResponse.IsSuccessStatusCode)
-                    continue;
+                if (endpoint.Tls is { } tlsSettings)
+                    tls = DockerApiTransport.TlsCredentials.Load(tlsSettings);
 
-                await using var stream = await versionResponse.Content.ReadAsStreamAsync(cts.Token).ConfigureAwait(false);
-                var version = await JsonSerializer.DeserializeAsync(stream, DockerApiJsonContext.Default.Version, cts.Token).ConfigureAwait(false);
-                if (string.IsNullOrWhiteSpace(version?.ApiVersion))
-                    continue;
+                var (connection, failure) = await ProbeEndpointAsync(endpoint, tls).ConfigureAwait(false);
+                if (connection is not null)
+                {
+                    // The connection lives as long as the runtime, and keeps the certificates its client uses.
+                    tls = null;
+                    _unavailableReason = null;
+                    _connection = connection;
+                    return connection;
+                }
 
-                // The client and the API version are published together, so a caller that sees the connection sees both.
-                var connection = new DockerApiConnection(candidateClient, version.ApiVersion, endpoint, string.Equals(version.Os, "windows", StringComparison.OrdinalIgnoreCase));
-                candidateClient = null;
-                _connection = connection;
-                return connection;
+                failures.Add($"{endpoint}: {failure}");
             }
-            catch (Exception ex) when (ex is OperationCanceledException or HttpRequestException or SocketException or IOException or JsonException)
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or CryptographicException)
             {
+                failures.Add($"{endpoint}: cannot load the TLS certificates: {ex.Message}");
             }
             finally
             {
-                candidateClient?.Dispose();
+                tls?.Dispose();
             }
         }
 
+        _unavailableReason = failures.Count > 0 ? string.Join(" ", failures) : "No Docker endpoint was found.";
         return null;
+    }
+
+    private static async Task<(DockerApiConnection? Connection, string? Failure)> ProbeEndpointAsync(DockerApiTransport.Endpoint endpoint, DockerApiTransport.TlsCredentials? tls)
+    {
+        HttpClient? candidateClient = null;
+        try
+        {
+            candidateClient = DockerApiTransport.CreateClient(endpoint, tls);
+            using var cts = new CancellationTokenSource(ProbeTimeout);
+            using var versionResponse = await candidateClient.GetAsync("/version", cts.Token).ConfigureAwait(false);
+            if (!versionResponse.IsSuccessStatusCode)
+                return (null, string.Create(CultureInfo.InvariantCulture, $"GET /version returned {(int)versionResponse.StatusCode}."));
+
+            await using var stream = await versionResponse.Content.ReadAsStreamAsync(cts.Token).ConfigureAwait(false);
+            var version = await JsonSerializer.DeserializeAsync(stream, DockerApiJsonContext.Default.Version, cts.Token).ConfigureAwait(false);
+            if (string.IsNullOrWhiteSpace(version?.ApiVersion))
+                return (null, "GET /version did not return an API version.");
+
+            // The client and the API version are published together, so a caller that sees the connection sees both.
+            var connection = new DockerApiConnection(candidateClient, tls, version.ApiVersion, endpoint, string.Equals(version.Os, "windows", StringComparison.OrdinalIgnoreCase));
+            candidateClient = null;
+            return (connection, null);
+        }
+        catch (OperationCanceledException)
+        {
+            return (null, "the daemon did not answer within " + ProbeTimeout.TotalSeconds.ToString(CultureInfo.InvariantCulture) + " seconds.");
+        }
+        catch (Exception ex) when (ex is HttpRequestException or SocketException or IOException or JsonException)
+        {
+            return (null, GetInnermostMessage(ex));
+        }
+        finally
+        {
+            candidateClient?.Dispose();
+        }
+    }
+
+    private static string GetInnermostMessage(Exception exception)
+    {
+        while (exception.InnerException is { } inner)
+            exception = inner;
+
+        return exception.Message;
+    }
+
+    /// <summary>Why the last probe did not find a daemon, listing every endpoint it tried; <see langword="null"/> once a daemon answered.</summary>
+    internal override string? UnavailableReason => _unavailableReason;
+
+    /// <summary>The daemon the runtime talks to, connecting to it first if needed.</summary>
+    internal async Task<DockerApiTransport.Endpoint> GetEndpointAsync(CancellationToken cancellationToken)
+    {
+        var connection = await EnsureConnectionOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        return connection.Endpoint;
     }
 
     /// <summary>The endpoint the runtime talks to, published as a single value so that a caller never sees a client without its API version.</summary>
     /// <param name="IsWindowsDaemon">Whether the daemon runs Windows containers, which cannot publish a port on a specific host address.</param>
-    private sealed record DockerApiConnection(HttpClient HttpClient, string ApiVersion, DockerApiTransport.Endpoint Endpoint, bool IsWindowsDaemon);
+    /// <param name="Tls">The certificates of the TLS connections to the daemon, shared by <paramref name="HttpClient"/> and the connections of the standard input of an exec.</param>
+    private sealed record DockerApiConnection(HttpClient HttpClient, DockerApiTransport.TlsCredentials? Tls, string ApiVersion, DockerApiTransport.Endpoint Endpoint, bool IsWindowsDaemon);
 }

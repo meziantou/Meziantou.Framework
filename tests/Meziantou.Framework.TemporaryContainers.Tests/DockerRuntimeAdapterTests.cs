@@ -1,5 +1,8 @@
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using Meziantou.Framework.TemporaryContainers.Internals;
 
 namespace Meziantou.Framework.TemporaryContainers.Tests;
@@ -340,7 +343,7 @@ public sealed class DockerRuntimeAdapterTests
     [Fact]
     public void TryParseDockerHost_UsesTlsWhenTheCliIsConfiguredForIt()
     {
-        var tls = new DockerApiTransport.TlsSettings("/certs");
+        var tls = new DockerApiTransport.TlsSettings(FullPath.FromPath("/certs"));
 
         Assert.True(DockerApiTransport.TryParseDockerHost("tcp://docker.example.com:2376", tls, out var endpoint));
 
@@ -443,6 +446,367 @@ public sealed class DockerRuntimeAdapterTests
         var port = ((IPEndPoint)listener.LocalEndpoint).Port;
 
         Assert.True(await Strategies.PortWaitStrategy.IsListeningAsync("::1", port, TimeSpan.FromMilliseconds(200), XunitCancellationToken));
+    }
+
+    [Fact]
+    public void Endpoint_ExposesTheAddressOfTheDaemon()
+    {
+        Assert.True(DockerApiTransport.TryParseDockerHost("tcp://docker.example.com:2375", tls: null, out var tcp));
+        Assert.Equal("docker.example.com", tcp.TcpHost);
+        Assert.Equal(new Uri("http://docker.example.com:2375/"), tcp.Address);
+
+        Assert.True(DockerApiTransport.TryParseDockerHost(@"npipe:////./pipe/docker_engine", tls: null, out var pipe));
+        Assert.Null(pipe.TcpHost);
+        Assert.Equal("npipe", pipe.Address.Scheme);
+    }
+
+    [Fact]
+    public void Endpoint_ExposesTheAddressOfAUnixSocket()
+    {
+        global::Xunit.Assert.SkipWhen(OperatingSystem.IsWindows(), "A unix socket path is not a Windows path.");
+
+        Assert.True(DockerApiTransport.TryParseDockerHost("unix:///var/run/docker.sock", tls: null, out var endpoint));
+        Assert.Null(endpoint.TcpHost);
+        Assert.Equal(new Uri("unix:///var/run/docker.sock"), endpoint.Address);
+    }
+
+    [Fact]
+    public void Discover_DockerHostTakesPrecedenceOverTheContext()
+    {
+        using var home = TemporaryDirectory.Create();
+        CreateContext(home, "remote", "tcp://remote:2375");
+        var discovery = CreateDiscovery(home, new() { ["DOCKER_HOST"] = "tcp://docker-host:2375", ["DOCKER_CONTEXT"] = "remote" });
+
+        var result = discovery.Discover();
+
+        var endpoint = Assert.Single(result.Endpoints);
+        Assert.Equal("http://docker-host:2375/", endpoint.DisplayName);
+        Assert.Equal("DOCKER_HOST", endpoint.Source);
+    }
+
+    [Fact]
+    public void Discover_ReportsAnUnsupportedDockerHost()
+    {
+        using var home = TemporaryDirectory.Create();
+        var discovery = CreateDiscovery(home, new() { ["DOCKER_HOST"] = "ssh://user@host" }, sockets: [FullPath.FromPath("/var/run/docker.sock")]);
+
+        var result = discovery.Discover();
+
+        Assert.Empty(result.Endpoints);
+        Assert.Contains("ssh://user@host", Assert.Single(result.Diagnostics));
+    }
+
+    [Fact]
+    public void Discover_UsesTheContextOfDockerContext()
+    {
+        using var home = TemporaryDirectory.Create();
+        CreateConfig(home, "other");
+        CreateContext(home, "remote", "tcp://remote:2375");
+        var discovery = CreateDiscovery(home, new() { ["DOCKER_CONTEXT"] = "remote" });
+
+        var endpoint = Assert.Single(discovery.Discover().Endpoints);
+
+        Assert.Equal("http://remote:2375/", endpoint.DisplayName);
+        Assert.Equal("docker context 'remote'", endpoint.Source);
+        Assert.Null(endpoint.Tls);
+    }
+
+    [Fact]
+    public void Discover_UsesTheCurrentContextOfConfigJson()
+    {
+        global::Xunit.Assert.SkipWhen(OperatingSystem.IsWindows(), "A unix socket path is not a Windows path.");
+
+        using var home = TemporaryDirectory.Create();
+        CreateConfig(home, "desktop-linux");
+        CreateContext(home, "desktop-linux", "unix:///Users/me/.docker/run/docker.sock");
+        var discovery = CreateDiscovery(home, [], sockets: [FullPath.FromPath("/var/run/docker.sock")]);
+
+        var endpoint = Assert.Single(discovery.Discover().Endpoints);
+
+        Assert.Equal(FullPath.FromPath("/Users/me/.docker/run/docker.sock"), endpoint.UnixSocketPath);
+        Assert.Equal("docker context 'desktop-linux'", endpoint.Source);
+    }
+
+    [Fact]
+    public void Discover_ReadsTheConfigurationFromDockerConfig()
+    {
+        using var home = TemporaryDirectory.Create();
+        using var configuration = TemporaryDirectory.Create();
+        CreateConfig(home, "ignored");
+        configuration.CreateTextFile("config.json", """{ "currentContext": "remote" }""");
+        configuration.CreateTextFile("contexts/meta/" + DockerEndpointDiscovery.GetContextDirectoryName("remote") + "/meta.json", """{ "Name": "remote", "Endpoints": { "docker": { "Host": "tcp://remote:2375" } } }""");
+        var discovery = CreateDiscovery(home, new() { ["DOCKER_CONFIG"] = configuration.FullPath.Value });
+
+        var endpoint = Assert.Single(discovery.Discover().Endpoints);
+
+        Assert.Equal("http://remote:2375/", endpoint.DisplayName);
+    }
+
+    [Fact]
+    public void Discover_UsesTheTlsMaterialOfTheContext()
+    {
+        using var home = TemporaryDirectory.Create();
+        CreateConfig(home, "secure");
+        CreateContext(home, "secure", "tcp://secure:2376");
+        home.CreateTextFile(".docker/contexts/tls/" + DockerEndpointDiscovery.GetContextDirectoryName("secure") + "/docker/ca.pem", "");
+        var discovery = CreateDiscovery(home, new() { ["DOCKER_TLS_VERIFY"] = "1", ["DOCKER_CERT_PATH"] = "/ignored" });
+
+        var endpoint = Assert.Single(discovery.Discover().Endpoints);
+
+        Assert.Equal("https://secure:2376/", endpoint.DisplayName);
+        Assert.NotNull(endpoint.Tls);
+        Assert.Equal(home.FullPath / ".docker" / "contexts" / "tls" / DockerEndpointDiscovery.GetContextDirectoryName("secure") / "docker", endpoint.Tls.CertificateDirectory);
+        Assert.True(endpoint.Tls.VerifyServerCertificate);
+    }
+
+    [Fact]
+    public void Discover_HonorsSkipTlsVerifyOfTheContext()
+    {
+        using var home = TemporaryDirectory.Create();
+        CreateConfig(home, "insecure");
+        CreateContext(home, "insecure", "tcp://insecure:2376", skipTlsVerify: true);
+        var discovery = CreateDiscovery(home, []);
+
+        var endpoint = Assert.Single(discovery.Discover().Endpoints);
+
+        Assert.Equal("https://insecure:2376/", endpoint.DisplayName);
+        Assert.NotNull(endpoint.Tls);
+        Assert.False(endpoint.Tls.VerifyServerCertificate);
+    }
+
+    [Fact]
+    public void Discover_ReportsAMissingContext()
+    {
+        using var home = TemporaryDirectory.Create();
+        var discovery = CreateDiscovery(home, new() { ["DOCKER_CONTEXT"] = "missing" }, sockets: [FullPath.FromPath("/var/run/docker.sock")]);
+
+        var result = discovery.Discover();
+
+        Assert.Empty(result.Endpoints);
+        Assert.Contains("'missing'", Assert.Single(result.Diagnostics));
+    }
+
+    [Fact]
+    public void Discover_ReportsAnSshContext()
+    {
+        using var home = TemporaryDirectory.Create();
+        CreateContext(home, "ssh", "ssh://user@remote");
+        var discovery = CreateDiscovery(home, new() { ["DOCKER_CONTEXT"] = "ssh" });
+
+        var result = discovery.Discover();
+
+        Assert.Empty(result.Endpoints);
+        Assert.Contains("ssh://user@remote", Assert.Single(result.Diagnostics));
+    }
+
+    [Fact]
+    public void Discover_TheDefaultContextUsesTheWellKnownSockets()
+    {
+        global::Xunit.Assert.SkipWhen(OperatingSystem.IsWindows(), "A unix socket path is not a Windows path.");
+
+        using var home = TemporaryDirectory.Create();
+        CreateConfig(home, "default");
+        var discovery = CreateDiscovery(home, [], sockets: [home.FullPath / ".orbstack" / "run" / "docker.sock", home.FullPath / ".colima" / "default" / "docker.sock"]);
+
+        var result = discovery.Discover();
+
+        Assert.Equal(["Colima", "OrbStack"], result.Endpoints.Select(endpoint => endpoint.Source).ToArray());
+        Assert.Equal(home.FullPath / ".colima" / "default" / "docker.sock", result.Endpoints[0].UnixSocketPath);
+        Assert.Empty(result.Diagnostics);
+    }
+
+    [Theory]
+    [InlineData(".docker/run/docker.sock", "Docker Desktop")]
+    [InlineData(".colima/default/docker.sock", "Colima")]
+    [InlineData(".orbstack/run/docker.sock", "OrbStack")]
+    [InlineData(".rd/docker.sock", "Rancher Desktop")]
+    public void Discover_FindsTheSocketOfADistribution(string relativePath, string expectedSource)
+    {
+        global::Xunit.Assert.SkipWhen(OperatingSystem.IsWindows(), "A unix socket path is not a Windows path.");
+
+        using var home = TemporaryDirectory.Create();
+        var discovery = CreateDiscovery(home, [], sockets: [home.FullPath / relativePath]);
+
+        var endpoint = Assert.Single(discovery.Discover().Endpoints);
+
+        Assert.Equal(home.FullPath / relativePath, endpoint.UnixSocketPath);
+        Assert.Equal(expectedSource, endpoint.Source);
+    }
+
+    [Fact]
+    public void Discover_FindsTheRootlessSockets()
+    {
+        global::Xunit.Assert.SkipWhen(OperatingSystem.IsWindows(), "A unix socket path is not a Windows path.");
+
+        using var home = TemporaryDirectory.Create();
+        var discovery = CreateDiscovery(home, new() { ["XDG_RUNTIME_DIR"] = "/run/user/1000" }, sockets: [FullPath.FromPath("/run/user/1000/docker.sock"), FullPath.FromPath("/run/user/1000/podman/podman.sock")]);
+
+        var result = discovery.Discover();
+
+        Assert.Equal(["rootless Docker", "Podman"], result.Endpoints.Select(endpoint => endpoint.Source).ToArray());
+        Assert.Equal(FullPath.FromPath("/run/user/1000/podman/podman.sock"), result.Endpoints[1].UnixSocketPath);
+    }
+
+    [Fact]
+    public void Discover_ReportsTheSearchedSocketsWhenNoneExists()
+    {
+        global::Xunit.Assert.SkipWhen(OperatingSystem.IsWindows(), "A unix socket path is not a Windows path.");
+
+        using var home = TemporaryDirectory.Create();
+        var discovery = CreateDiscovery(home, []);
+
+        var result = discovery.Discover();
+
+        Assert.Empty(result.Endpoints);
+        var diagnostic = Assert.Single(result.Diagnostics);
+        Assert.Contains("/var/run/docker.sock", diagnostic);
+        Assert.Contains((home.FullPath / ".orbstack" / "run" / "docker.sock").Value, diagnostic);
+    }
+
+    [Fact]
+    public void Discover_UsesTheNamedPipeOnWindows()
+    {
+        using var home = TemporaryDirectory.Create();
+        var discovery = CreateDiscovery(home, [], platform: DockerHostPlatform.Windows);
+
+        var endpoint = Assert.Single(discovery.Discover().Endpoints);
+
+        Assert.Equal("docker_engine", endpoint.NamedPipeName);
+    }
+
+    [Theory]
+    [InlineData("1", null, true)]
+    [InlineData(null, "1", false)]
+    [InlineData("1", "1", true)]
+    public void Discover_HonorsDockerTlsAndDockerTlsVerify(string? tlsVerify, string? tls, bool expectedVerify)
+    {
+        using var home = TemporaryDirectory.Create();
+        var environment = new Dictionary<string, string>(StringComparer.Ordinal) { ["DOCKER_HOST"] = "tcp://docker:2376" };
+        if (tlsVerify is not null)
+            environment["DOCKER_TLS_VERIFY"] = tlsVerify;
+
+        if (tls is not null)
+            environment["DOCKER_TLS"] = tls;
+
+        var endpoint = Assert.Single(CreateDiscovery(home, environment).Discover().Endpoints);
+
+        Assert.Equal("https://docker:2376/", endpoint.DisplayName);
+        Assert.NotNull(endpoint.Tls);
+        Assert.Equal(expectedVerify, endpoint.Tls.VerifyServerCertificate);
+        Assert.Equal(home.FullPath / ".docker", endpoint.Tls.CertificateDirectory);
+    }
+
+    [Fact]
+    public void Discover_UsesPlainHttpWithoutTlsVariables()
+    {
+        using var home = TemporaryDirectory.Create();
+        var endpoint = Assert.Single(CreateDiscovery(home, new() { ["DOCKER_HOST"] = "tcp://docker:2375", ["DOCKER_CERT_PATH"] = "/certs" }).Discover().Endpoints);
+
+        Assert.Equal("http://docker:2375/", endpoint.DisplayName);
+        Assert.Null(endpoint.Tls);
+    }
+
+    [Fact]
+    public void TlsCredentials_TrustsAChainThroughTheIntermediateOfTheBundle()
+    {
+        using var root = CreateAuthority("CN=Root", issuer: null);
+        using var intermediate = CreateAuthority("CN=Intermediate", root);
+        using var server = CreateServerCertificate(intermediate);
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateTextFile("ca.pem", intermediate.ExportCertificatePem() + "\n" + root.ExportCertificatePem());
+
+        using var credentials = DockerApiTransport.TlsCredentials.Load(new DockerApiTransport.TlsSettings(directory.FullPath));
+
+        Assert.HasCount(2, credentials.Authorities);
+        Assert.True(credentials.IsTrusted(server, chain: null, SslPolicyErrors.RemoteCertificateChainErrors));
+        Assert.False(credentials.IsTrusted(server, chain: null, SslPolicyErrors.RemoteCertificateChainErrors | SslPolicyErrors.RemoteCertificateNameMismatch));
+    }
+
+    [Fact]
+    public void TlsCredentials_RejectsAChainWithoutItsIntermediate()
+    {
+        using var root = CreateAuthority("CN=Root", issuer: null);
+        using var intermediate = CreateAuthority("CN=Intermediate", root);
+        using var server = CreateServerCertificate(intermediate);
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateTextFile("ca.pem", root.ExportCertificatePem());
+
+        using var credentials = DockerApiTransport.TlsCredentials.Load(new DockerApiTransport.TlsSettings(directory.FullPath));
+
+        Assert.False(credentials.IsTrusted(server, chain: null, SslPolicyErrors.RemoteCertificateChainErrors));
+    }
+
+    [Fact]
+    public void TlsCredentials_DoesNotVerifyTheServerWithDockerTlsAlone()
+    {
+        using var directory = TemporaryDirectory.Create();
+        using var credentials = DockerApiTransport.TlsCredentials.Load(new DockerApiTransport.TlsSettings(directory.FullPath, VerifyServerCertificate: false));
+
+        Assert.True(credentials.IsTrusted(certificate: null, chain: null, SslPolicyErrors.RemoteCertificateChainErrors | SslPolicyErrors.RemoteCertificateNameMismatch));
+        Assert.NotNull(credentials.CreateSslOptions("docker").RemoteCertificateValidationCallback);
+    }
+
+    [Fact]
+    public void TlsCredentials_DisposesTheCertificates()
+    {
+        using var root = CreateAuthority("CN=Root", issuer: null);
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateTextFile("ca.pem", root.ExportCertificatePem());
+        var credentials = DockerApiTransport.TlsCredentials.Load(new DockerApiTransport.TlsSettings(directory.FullPath));
+        var authority = Assert.Single(credentials.Authorities);
+
+        credentials.Dispose();
+
+        Assert.Equal(IntPtr.Zero, authority.Handle);
+    }
+
+    private static DockerEndpointDiscovery CreateDiscovery(TemporaryDirectory home, Dictionary<string, string> environment, IEnumerable<FullPath>? sockets = null, DockerHostPlatform platform = DockerHostPlatform.Linux)
+    {
+        var existingSockets = new HashSet<FullPath>(sockets ?? []);
+        return new DockerEndpointDiscovery
+        {
+            GetEnvironmentVariable = name => environment.TryGetValue(name, out var value) ? value : null,
+            HomeDirectory = home.FullPath,
+            Platform = platform,
+            SocketExists = existingSockets.Contains,
+        };
+    }
+
+    private static void CreateConfig(TemporaryDirectory home, string currentContext)
+    {
+        home.CreateTextFile(".docker/config.json", $$"""{ "auths": {}, "currentContext": "{{currentContext}}" }""");
+    }
+
+    private static void CreateContext(TemporaryDirectory home, string name, string host, bool skipTlsVerify = false)
+    {
+        var skip = skipTlsVerify ? "true" : "false";
+        home.CreateTextFile(".docker/contexts/meta/" + DockerEndpointDiscovery.GetContextDirectoryName(name) + "/meta.json", $$"""{ "Name": "{{name}}", "Metadata": {}, "Endpoints": { "docker": { "Host": "{{host}}", "SkipTLSVerify": {{skip}} } } }""");
+    }
+
+    private static X509Certificate2 CreateAuthority(string subject, X509Certificate2? issuer)
+    {
+        using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var request = new CertificateRequest(subject, key, HashAlgorithmName.SHA256);
+        request.CertificateExtensions.Add(new X509BasicConstraintsExtension(certificateAuthority: true, hasPathLengthConstraint: false, pathLengthConstraint: 0, critical: true));
+        request.CertificateExtensions.Add(new X509KeyUsageExtension(X509KeyUsageFlags.KeyCertSign | X509KeyUsageFlags.CrlSign, critical: true));
+        request.CertificateExtensions.Add(new X509SubjectKeyIdentifierExtension(request.PublicKey, critical: false));
+        // Each certificate is valid within the validity of its issuer.
+        var notBefore = issuer is null ? DateTimeOffset.UtcNow.AddDays(-2) : DateTimeOffset.UtcNow.AddDays(-1);
+        var notAfter = issuer is null ? DateTimeOffset.UtcNow.AddDays(2) : DateTimeOffset.UtcNow.AddDays(1);
+        if (issuer is null)
+            return request.CreateSelfSigned(notBefore, notAfter);
+
+        using var certificate = request.Create(issuer, notBefore, notAfter, RandomNumberGenerator.GetBytes(8));
+        return certificate.CopyWithPrivateKey(key);
+    }
+
+    private static X509Certificate2 CreateServerCertificate(X509Certificate2 issuer)
+    {
+        using var key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var request = new CertificateRequest("CN=docker", key, HashAlgorithmName.SHA256);
+        request.CertificateExtensions.Add(new X509BasicConstraintsExtension(certificateAuthority: false, hasPathLengthConstraint: false, pathLengthConstraint: 0, critical: false));
+        request.CertificateExtensions.Add(new X509EnhancedKeyUsageExtension([new Oid("1.3.6.1.5.5.7.3.1")], critical: false));
+        return request.Create(issuer, DateTimeOffset.UtcNow.AddHours(-1), DateTimeOffset.UtcNow.AddHours(12), RandomNumberGenerator.GetBytes(8));
     }
 
     [Fact]

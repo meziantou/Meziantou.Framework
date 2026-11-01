@@ -10,88 +10,176 @@ namespace Meziantou.Framework.TemporaryContainers.Internals;
 
 internal static class DockerApiTransport
 {
+    /// <summary>A daemon to connect to. The certificates of <see cref="Tls"/> are loaded by <see cref="TlsCredentials.Load"/>, and belong to the connection.</summary>
     internal sealed class Endpoint
     {
-        private Endpoint(Uri baseAddress)
+        private Endpoint(Uri baseAddress, Uri address, string source)
         {
             BaseAddress = baseAddress;
+            Address = address;
+            Source = source;
         }
 
+        /// <summary>The base address of the HTTP requests. It is <c>http://localhost</c> for a socket or a named pipe.</summary>
         public Uri BaseAddress { get; }
+
+        /// <summary>The address of the daemon, as <c>DOCKER_HOST</c> would write it: <c>unix:///var/run/docker.sock</c>, <c>npipe://./pipe/docker_engine</c>, <c>http://host:2375/</c> or <c>https://host:2376/</c>.</summary>
+        public Uri Address { get; }
+
+        /// <summary>The name or the address of the machine running the daemon when it is reached over TCP, which is where the published ports of the containers listen; <see langword="null"/> for a socket or a named pipe, whose daemon runs on this machine (or in a virtual machine that forwards the ports to it).</summary>
+        public string? TcpHost => UnixSocketPath is null && NamedPipeName is null ? BaseAddress.Host : null;
+
+        /// <summary>Where the endpoint comes from: <c>DOCKER_HOST</c>, a docker context, or the name of a well-known socket.</summary>
+        public string Source { get; }
+
         public FullPath? UnixSocketPath { get; private set; }
         public string? NamedPipeServer { get; private set; }
         public string? NamedPipeName { get; private set; }
         public TlsSettings? Tls { get; private set; }
         public string DisplayName { get; private set; } = "";
 
-        public static Endpoint ForHttp(Uri baseAddress, TlsSettings? tls = null)
+        public static Endpoint ForHttp(Uri baseAddress, TlsSettings? tls = null, string source = "DOCKER_HOST")
         {
-            return new Endpoint(baseAddress)
+            return new Endpoint(baseAddress, baseAddress, source)
             {
                 Tls = tls,
                 DisplayName = baseAddress.ToString(),
             };
         }
 
-        public static Endpoint ForUnixSocket(FullPath socketPath)
+        public static Endpoint ForUnixSocket(FullPath socketPath, string source = "DOCKER_HOST")
         {
-            return new Endpoint(new Uri("http://localhost"))
+            var displayName = "unix://" + socketPath.Value;
+            return new Endpoint(new Uri("http://localhost"), new Uri("unix:///" + socketPath.Value.Replace('\\', '/').TrimStart('/')), source)
             {
                 UnixSocketPath = socketPath,
-                DisplayName = "unix://" + socketPath.Value,
+                DisplayName = displayName,
             };
         }
 
-        public static Endpoint ForNamedPipe(string server, string name)
+        public static Endpoint ForNamedPipe(string server, string name, string source = "DOCKER_HOST")
         {
-            return new Endpoint(new Uri("http://localhost"))
+            return new Endpoint(new Uri("http://localhost"), new Uri("npipe://" + server + "/pipe/" + name.Replace('\\', '/')), source)
             {
                 NamedPipeServer = server,
                 NamedPipeName = name,
                 DisplayName = @"npipe://\\" + server + @"\pipe\" + name,
             };
         }
+
+        public override string ToString() => DisplayName + " (" + Source + ")";
     }
 
-    /// <summary>The TLS configuration of a daemon reached over TCP, read from the variables the docker CLI reads.</summary>
+    /// <summary>The TLS configuration of a daemon reached over TCP.</summary>
     /// <param name="CertificateDirectory">The directory holding <c>ca.pem</c>, <c>cert.pem</c> and <c>key.pem</c>.</param>
-    internal sealed record TlsSettings(string CertificateDirectory);
+    /// <param name="VerifyServerCertificate">Whether the daemon certificate is verified. The docker CLI does not verify it with <c>DOCKER_TLS</c> alone, nor for a context created with <c>skip-tls-verify</c>.</param>
+    internal sealed record TlsSettings(FullPath CertificateDirectory, bool VerifyServerCertificate = true);
 
-    public static IEnumerable<Endpoint> GetEndpoints()
+    /// <summary>The client certificate and the certificate authorities of a <see cref="TlsSettings"/>, loaded once and shared by every connection to the daemon.</summary>
+    internal sealed class TlsCredentials : IDisposable
     {
-        var dockerHost = Environment.GetEnvironmentVariable("DOCKER_HOST");
-        if (!string.IsNullOrWhiteSpace(dockerHost))
+        private TlsCredentials(bool verifyServerCertificate, X509Certificate2? clientCertificate, X509Certificate2Collection authorities)
         {
-            if (TryParseDockerHost(dockerHost, GetTlsSettings(), out var endpoint))
-                yield return endpoint;
-
-            yield break;
+            VerifyServerCertificate = verifyServerCertificate;
+            ClientCertificate = clientCertificate;
+            Authorities = authorities;
         }
 
-        if (OperatingSystem.IsLinux() || OperatingSystem.IsMacOS())
-            yield return Endpoint.ForUnixSocket(FullPath.FromPath("/var/run/docker.sock"));
+        public bool VerifyServerCertificate { get; }
 
-        if (OperatingSystem.IsLinux() && TryGetLinuxRootlessSocket(out var rootlessSocket))
-            yield return Endpoint.ForUnixSocket(rootlessSocket);
+        public X509Certificate2? ClientCertificate { get; }
 
-        if (OperatingSystem.IsWindows())
-            yield return Endpoint.ForNamedPipe(".", "docker_engine");
+        /// <summary>Every certificate of <c>ca.pem</c>: a bundle can hold an intermediate authority along with the root.</summary>
+        public X509Certificate2Collection Authorities { get; }
+
+        public static TlsCredentials Load(TlsSettings settings)
+        {
+            X509Certificate2? clientCertificate = null;
+            var authorities = new X509Certificate2Collection();
+            try
+            {
+                var certificatePath = settings.CertificateDirectory / "cert.pem";
+                var keyPath = settings.CertificateDirectory / "key.pem";
+                if (File.Exists(certificatePath) && File.Exists(keyPath))
+                {
+                    using var pemCertificate = X509Certificate2.CreateFromPemFile(certificatePath, keyPath);
+
+                    // SChannel cannot use the ephemeral key of a certificate loaded from PEM files, so it goes through PKCS#12.
+                    clientCertificate = X509CertificateLoader.LoadPkcs12(pemCertificate.Export(X509ContentType.Pkcs12), password: null);
+                }
+
+                // The daemon certificate is signed by the certificate authority of the directory, which the machine does
+                // not trust on its own. The authorities only matter when the certificate is verified.
+                var authorityPath = settings.CertificateDirectory / "ca.pem";
+                if (settings.VerifyServerCertificate && File.Exists(authorityPath))
+                    authorities.ImportFromPemFile(authorityPath);
+
+                var credentials = new TlsCredentials(settings.VerifyServerCertificate, clientCertificate, authorities);
+                clientCertificate = null;
+                authorities = null;
+                return credentials;
+            }
+            finally
+            {
+                clientCertificate?.Dispose();
+                DisposeAll(authorities);
+            }
+        }
+
+        public SslClientAuthenticationOptions CreateSslOptions(string host)
+        {
+            var options = new SslClientAuthenticationOptions
+            {
+                TargetHost = host,
+            };
+
+            if (ClientCertificate is not null)
+                options.ClientCertificates = [ClientCertificate];
+
+            if (!VerifyServerCertificate || Authorities.Count > 0)
+                options.RemoteCertificateValidationCallback = (_, certificate, chain, errors) => IsTrusted(certificate, chain, errors);
+
+            return options;
+        }
+
+        internal bool IsTrusted(X509Certificate? certificate, X509Chain? chain, SslPolicyErrors errors)
+        {
+            if (!VerifyServerCertificate || errors is SslPolicyErrors.None)
+                return true;
+
+            // Only the chain is re-evaluated: a certificate whose name does not match the host is still rejected.
+            if (certificate is null || Authorities.Count == 0 || (errors & ~SslPolicyErrors.RemoteCertificateChainErrors) != SslPolicyErrors.None)
+                return false;
+
+            using var customChain = new X509Chain();
+            customChain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+            customChain.ChainPolicy.CustomTrustStore.AddRange(Authorities);
+            customChain.ChainPolicy.ExtraStore.AddRange(Authorities);
+            if (chain is not null)
+                customChain.ChainPolicy.ExtraStore.AddRange(chain.ChainPolicy.ExtraStore);
+
+            customChain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+            using var serverCertificate = new X509Certificate2(certificate);
+            return customChain.Build(serverCertificate);
+        }
+
+        public void Dispose()
+        {
+            ClientCertificate?.Dispose();
+            DisposeAll(Authorities);
+        }
+
+        private static void DisposeAll(X509Certificate2Collection? certificates)
+        {
+            if (certificates is null)
+                return;
+
+            foreach (var certificate in certificates)
+                certificate.Dispose();
+        }
     }
 
-    /// <summary>Reads the TLS configuration of the docker CLI: TLS is used when <c>DOCKER_TLS_VERIFY</c> or <c>DOCKER_TLS</c> is set, with the certificates of <c>DOCKER_CERT_PATH</c> (<c>~/.docker</c> by default).</summary>
-    private static TlsSettings? GetTlsSettings()
-    {
-        if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DOCKER_TLS_VERIFY")) && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DOCKER_TLS")))
-            return null;
-
-        var certificateDirectory = Environment.GetEnvironmentVariable("DOCKER_CERT_PATH");
-        if (string.IsNullOrWhiteSpace(certificateDirectory))
-            certificateDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".docker");
-
-        return new TlsSettings(certificateDirectory);
-    }
-
-    public static HttpClient CreateClient(Endpoint endpoint)
+    public static HttpClient CreateClient(Endpoint endpoint, TlsCredentials? tls)
     {
         SocketsHttpHandler? handler = null;
         try
@@ -111,9 +199,9 @@ internal static class DockerApiTransport
                     return stream;
                 };
             }
-            else if (endpoint.Tls is { } tls)
+            else if (tls is not null)
             {
-                handler.SslOptions = CreateSslOptions(endpoint.BaseAddress.Host, tls);
+                handler.SslOptions = tls.CreateSslOptions(endpoint.BaseAddress.Host);
             }
 
             var client = new HttpClient(handler, disposeHandler: true)
@@ -148,61 +236,15 @@ internal static class DockerApiTransport
         }
     }
 
-    private static SslClientAuthenticationOptions CreateSslOptions(string host, TlsSettings tls)
-    {
-        var options = new SslClientAuthenticationOptions
-        {
-            TargetHost = host,
-        };
-
-        var certificatePath = Path.Combine(tls.CertificateDirectory, "cert.pem");
-        var keyPath = Path.Combine(tls.CertificateDirectory, "key.pem");
-        if (File.Exists(certificatePath) && File.Exists(keyPath))
-        {
-            using var pemCertificate = X509Certificate2.CreateFromPemFile(certificatePath, keyPath);
-
-            // SChannel cannot use the ephemeral key of a certificate loaded from PEM files, so it goes through PKCS#12.
-            options.ClientCertificates = [X509CertificateLoader.LoadPkcs12(pemCertificate.Export(X509ContentType.Pkcs12), password: null)];
-        }
-
-        // The daemon certificate is signed by the certificate authority of DOCKER_CERT_PATH, which the machine does not
-        // trust on its own.
-        var authorityPath = Path.Combine(tls.CertificateDirectory, "ca.pem");
-        if (File.Exists(authorityPath))
-        {
-            var authority = X509CertificateLoader.LoadCertificateFromFile(authorityPath);
-            options.RemoteCertificateValidationCallback = (_, certificate, _, errors) => IsTrustedByAuthority(certificate, errors, authority);
-        }
-
-        return options;
-    }
-
-    private static bool IsTrustedByAuthority(X509Certificate? certificate, SslPolicyErrors errors, X509Certificate2 authority)
-    {
-        if (errors is SslPolicyErrors.None)
-            return true;
-
-        // Only the chain is re-evaluated: a certificate whose name does not match the host is still rejected.
-        if (certificate is null || (errors & ~SslPolicyErrors.RemoteCertificateChainErrors) != SslPolicyErrors.None)
-            return false;
-
-        using var chain = new X509Chain();
-        chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-        chain.ChainPolicy.CustomTrustStore.Add(authority);
-        chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
-        using var serverCertificate = new X509Certificate2(certificate);
-        return chain.Build(serverCertificate);
-    }
-
     /// <summary>Sends a request whose connection the daemon takes over, and returns that connection once the response headers are read. The standard input of an exec needs it: the process only sees the end of its input when the client closes its side of the connection, which an <see cref="HttpClient"/> cannot do.</summary>
     /// <returns>The connection, or the status and the body the daemon refused the request with.</returns>
     /// <exception cref="NotSupportedException">The daemon is reached over a named pipe, which cannot be half-closed.</exception>
-    public static async Task<(UpgradedConnection? Connection, HttpStatusCode StatusCode, string ErrorBody)> SendUpgradeRequestAsync(Endpoint endpoint, string pathAndQuery, string jsonBody, CancellationToken cancellationToken)
+    public static async Task<(UpgradedConnection? Connection, HttpStatusCode StatusCode, string ErrorBody)> SendUpgradeRequestAsync(Endpoint endpoint, TlsCredentials? tls, string pathAndQuery, string jsonBody, CancellationToken cancellationToken)
     {
         if (endpoint.NamedPipeName is not null)
             throw new NotSupportedException("The Docker API runtime cannot send a standard input to a command over a named pipe. Use the 'docker' CLI runtime instead.");
 
-        var connection = await ConnectRawAsync(endpoint, cancellationToken).ConfigureAwait(false);
+        var connection = await ConnectRawAsync(endpoint, tls, cancellationToken).ConfigureAwait(false);
         try
         {
             var body = Encoding.UTF8.GetBytes(jsonBody);
@@ -230,7 +272,7 @@ internal static class DockerApiTransport
         }
     }
 
-    private static async Task<UpgradedConnection> ConnectRawAsync(Endpoint endpoint, CancellationToken cancellationToken)
+    private static async Task<UpgradedConnection> ConnectRawAsync(Endpoint endpoint, TlsCredentials? tls, CancellationToken cancellationToken)
     {
         Socket? socket = null;
         try
@@ -247,7 +289,7 @@ internal static class DockerApiTransport
             }
 
             var networkStream = new NetworkStream(socket, ownsSocket: true);
-            if (endpoint.Tls is not { } tls)
+            if (tls is null)
             {
                 var plain = new UpgradedConnection(socket, networkStream, sslStream: null);
                 socket = null;
@@ -257,7 +299,7 @@ internal static class DockerApiTransport
             var sslStream = new SslStream(networkStream, leaveInnerStreamOpen: false);
             try
             {
-                await sslStream.AuthenticateAsClientAsync(CreateSslOptions(endpoint.BaseAddress.Host, tls), cancellationToken).ConfigureAwait(false);
+                await sslStream.AuthenticateAsClientAsync(tls.CreateSslOptions(endpoint.BaseAddress.Host), cancellationToken).ConfigureAwait(false);
             }
             catch
             {
@@ -317,14 +359,14 @@ internal static class DockerApiTransport
         return Encoding.UTF8.GetString(body);
     }
 
-    internal static bool TryParseDockerHost(string dockerHost, TlsSettings? tls, out Endpoint endpoint)
+    internal static bool TryParseDockerHost(string dockerHost, TlsSettings? tls, [NotNullWhen(true)] out Endpoint? endpoint, string source = "DOCKER_HOST")
     {
         if (dockerHost.StartsWith("unix://", StringComparison.OrdinalIgnoreCase))
         {
             var path = dockerHost["unix://".Length..];
             if (!string.IsNullOrWhiteSpace(path))
             {
-                endpoint = Endpoint.ForUnixSocket(FullPath.FromPath(Uri.UnescapeDataString(path)));
+                endpoint = Endpoint.ForUnixSocket(FullPath.FromPath(Uri.UnescapeDataString(path)), source);
                 return true;
             }
         }
@@ -338,7 +380,7 @@ internal static class DockerApiTransport
 
             if (!string.IsNullOrEmpty(pipePath))
             {
-                endpoint = Endpoint.ForNamedPipe(server, pipePath.Replace('/', '\\'));
+                endpoint = Endpoint.ForNamedPipe(server, pipePath.Replace('/', '\\'), source);
                 return true;
             }
         }
@@ -348,38 +390,18 @@ internal static class DockerApiTransport
             var scheme = tls is null ? "http://" : "https://";
             if (Uri.TryCreate(scheme + dockerHost["tcp://".Length..], UriKind.Absolute, out var tcpUri))
             {
-                endpoint = Endpoint.ForHttp(tcpUri, tls);
+                endpoint = Endpoint.ForHttp(tcpUri, tls, source);
                 return true;
             }
         }
         else if (Uri.TryCreate(dockerHost, UriKind.Absolute, out var uri) &&
                  (uri.Scheme.Equals("http", StringComparison.OrdinalIgnoreCase) || uri.Scheme.Equals("https", StringComparison.OrdinalIgnoreCase)))
         {
-            endpoint = Endpoint.ForHttp(uri, uri.Scheme.Equals("https", StringComparison.OrdinalIgnoreCase) ? tls : null);
+            endpoint = Endpoint.ForHttp(uri, uri.Scheme.Equals("https", StringComparison.OrdinalIgnoreCase) ? tls : null, source);
             return true;
         }
 
-        endpoint = null!;
-        return false;
-    }
-
-    private static bool TryGetLinuxRootlessSocket(out FullPath path)
-    {
-        var xdgRuntimeDirectory = Environment.GetEnvironmentVariable("XDG_RUNTIME_DIR");
-        if (!string.IsNullOrWhiteSpace(xdgRuntimeDirectory))
-        {
-            path = FullPath.FromPath(xdgRuntimeDirectory) / "docker.sock";
-            return true;
-        }
-
-        var uid = Environment.GetEnvironmentVariable("UID");
-        if (!string.IsNullOrEmpty(uid))
-        {
-            path = FullPath.FromPath(string.Create(CultureInfo.InvariantCulture, $"/run/user/{uid}/docker.sock"));
-            return true;
-        }
-
-        path = default;
+        endpoint = null;
         return false;
     }
 

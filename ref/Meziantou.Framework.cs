@@ -442,6 +442,7 @@ namespace Meziantou.Framework
         public bool Equals(Meziantou.Framework.Range<T> other) => throw null;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] object? obj) => throw null;
         public override int GetHashCode() => throw null;
+        public Meziantou.Framework.Range<T>? Intersect(Meziantou.Framework.Range<T> range) => throw null;
         public bool IsInRangeExclusive(Meziantou.Framework.Range<T> range) => throw null;
         public bool IsInRangeExclusive(T value) => throw null;
         public bool IsInRangeInclusive(Meziantou.Framework.Range<T> range) => throw null;
@@ -450,6 +451,7 @@ namespace Meziantou.Framework
         public bool IsInRangeLowerInclusive(T value) => throw null;
         public bool IsInRangeUpperInclusive(Meziantou.Framework.Range<T> range) => throw null;
         public bool IsInRangeUpperInclusive(T value) => throw null;
+        public bool Overlaps(Meziantou.Framework.Range<T> range) => throw null;
         public override string? ToString() => throw null;
         public static bool operator ==(Meziantou.Framework.Range<T> left, Meziantou.Framework.Range<T> right) => throw null;
         public static bool operator !=(Meziantou.Framework.Range<T> left, Meziantou.Framework.Range<T> right) => throw null;
@@ -1191,6 +1193,11 @@ namespace Meziantou.Framework.DataAnnotations
         public AbsoluteUriAttribute(string errorMessage) { }
         public override bool IsValid(object? value) => throw null;
         protected override System.ComponentModel.DataAnnotations.ValidationResult? IsValid(object? value, System.ComponentModel.DataAnnotations.ValidationContext validationContext) => throw null;
+    }
+
+    public sealed class CollectionItemsValidationResult : System.ComponentModel.DataAnnotations.ValidationResult
+    {
+        public System.Collections.Generic.IReadOnlyList<System.ComponentModel.DataAnnotations.ValidationResult> Errors { get => throw null; }
     }
 
     [System.AttributeUsage(System.AttributeTargets.Property)]

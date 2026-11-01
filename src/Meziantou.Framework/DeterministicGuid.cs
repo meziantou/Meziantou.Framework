@@ -1,5 +1,6 @@
 #pragma warning disable CA5350 // Do Not Use Weak Cryptographic Algorithms
 #pragma warning disable CA5351 // Do Not Use Broken Cryptographic Algorithms
+using System.Buffers;
 using System.Security.Cryptography;
 
 namespace Meziantou.Framework;
@@ -73,6 +74,9 @@ namespace Meziantou.Framework;
 /// </example>
 public static class DeterministicGuid
 {
+    private const int NamespaceLength = 16;
+    private const int StackAllocThreshold = 256;
+
     /// <summary>Gets the DNS namespace UUID as defined in RFC 4122.</summary>
     public static Guid DnsNamespace { get; } = new Guid(0x6ba7b810, 0x9dad, 0x11d1, 0x80, 0xb4, 0x0, 0xc0, 0x4f, 0xd4, 0x30, 0xc8) /* 6ba7b810-9dad-11d1-80b4-00c04fd430c8 */;
 
@@ -88,37 +92,71 @@ public static class DeterministicGuid
     /// <summary>Creates a deterministic GUID from a namespace and name using the specified version.</summary>
     public static Guid Create(Guid @namespace, string name, DeterministicGuidVersion version)
     {
-        var nameBytes = Encoding.UTF8.GetBytes(name);
-        return Create(@namespace, nameBytes, version);
+        ArgumentNullException.ThrowIfNull(name);
+        ValidateVersion(version);
+
+        // Encode the name right after the namespace bytes, in a single buffer
+        var maxLength = NamespaceLength + Encoding.UTF8.GetMaxByteCount(name.Length);
+        byte[]? rentedBuffer = null;
+        var buffer = maxLength <= StackAllocThreshold
+            ? stackalloc byte[StackAllocThreshold]
+            : (rentedBuffer = ArrayPool<byte>.Shared.Rent(maxLength));
+        try
+        {
+            var nameLength = Encoding.UTF8.GetBytes(name, buffer[NamespaceLength..]);
+            return CreateCore(@namespace, buffer[..(NamespaceLength + nameLength)], version);
+        }
+        finally
+        {
+            if (rentedBuffer is not null)
+                ArrayPool<byte>.Shared.Return(rentedBuffer);
+        }
     }
 
     /// <summary>Creates a deterministic GUID from a namespace and name bytes using the specified version.</summary>
     public static Guid Create(Guid @namespace, ReadOnlySpan<byte> name, DeterministicGuidVersion version)
     {
+        ValidateVersion(version);
+
+        var length = NamespaceLength + name.Length;
+        byte[]? rentedBuffer = null;
+        var buffer = length <= StackAllocThreshold
+            ? stackalloc byte[StackAllocThreshold]
+            : (rentedBuffer = ArrayPool<byte>.Shared.Rent(length));
+        try
+        {
+            name.CopyTo(buffer[NamespaceLength..]);
+            return CreateCore(@namespace, buffer[..length], version);
+        }
+        finally
+        {
+            if (rentedBuffer is not null)
+                ArrayPool<byte>.Shared.Return(rentedBuffer);
+        }
+    }
+
+    private static void ValidateVersion(DeterministicGuidVersion version)
+    {
         if (version is not DeterministicGuidVersion.Version3 and not DeterministicGuidVersion.Version5)
             throw new ArgumentOutOfRangeException(nameof(version), $"Version '{version}' is not valid.");
+    }
 
-        // convert the namespace UUID to network order (step 3)
-        Span<byte> namespaceBytes = stackalloc byte[16];
-        if (!@namespace.TryWriteBytes(namespaceBytes))
+    // data starts with NamespaceLength free bytes for the namespace, followed by the name
+    private static Guid CreateCore(Guid @namespace, Span<byte> data, DeterministicGuidVersion version)
+    {
+        // put the namespace ID in network byte order (step 3)
+        if (!@namespace.TryWriteBytes(data[..NamespaceLength], bigEndian: true, out _))
             throw new InvalidOperationException("Cannot convert Guid to byte array");
 
-        ReorderBytes(namespaceBytes);
-
-        Span<byte> hash = stackalloc byte[version is DeterministicGuidVersion.Version3 ? 16 : 20];
-
-        var combinedBytes = new byte[namespaceBytes.Length + name.Length];
-        namespaceBytes.CopyTo(combinedBytes.AsSpan());
-        name.CopyTo(combinedBytes.AsSpan()[namespaceBytes.Length..]);
-
+        Span<byte> hash = stackalloc byte[20];
         if (version is DeterministicGuidVersion.Version3)
         {
-            if (!MD5.TryHashData(combinedBytes, hash, out _))
+            if (!MD5.TryHashData(data, hash, out _))
                 throw new InvalidOperationException("Cannot compute MD5 hash");
         }
         else
         {
-            if (!SHA1.TryHashData(combinedBytes, hash, out _))
+            if (!SHA1.TryHashData(data, hash, out _))
                 throw new InvalidOperationException("Cannot compute SHA1 hash");
         }
 
@@ -126,15 +164,6 @@ public static class DeterministicGuid
         newGuid[6] = (byte)((newGuid[6] & 0x0F) | ((int)version << 4));
         newGuid[8] = (byte)((newGuid[8] & 0x3F) | 0x80);
 
-        ReorderBytes(newGuid);
-        return new Guid(newGuid);
-    }
-
-    private static void ReorderBytes(Span<byte> guid)
-    {
-        (guid[6], guid[7]) = (guid[7], guid[6]);
-        (guid[4], guid[5]) = (guid[5], guid[4]);
-        (guid[0], guid[3]) = (guid[3], guid[0]);
-        (guid[2], guid[1]) = (guid[1], guid[2]);
+        return new Guid(newGuid, bigEndian: true);
     }
 }

@@ -299,15 +299,39 @@ internal sealed class DockerApiRuntime : ContainerRuntime
     internal override async Task<Stream> OpenReadAsync(string id, string path, CancellationToken cancellationToken)
     {
         var (resolvedPath, _) = await ResolvePathAsync(id, path, cancellationToken).ConfigureAwait(false);
-        using var response = await SendAsync(HttpMethod.Get, BuildArchiveEndpoint(id, resolvedPath), content: null, cancellationToken, completionOption: HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
-        await using var archive = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-        return await DockerApiTarArchive.ReadSingleFileAsync(archive, path, cancellationToken).ConfigureAwait(false);
+        return await OpenArchiveFileAsync(id, resolvedPath, path, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>Opens the file the archive endpoint returns for a path. The returned stream reads the file from the response as it is read, and owns the response.</summary>
+    private async Task<Stream> OpenArchiveFileAsync(string id, string resolvedPath, string requestedPath, CancellationToken cancellationToken)
+    {
+        var response = await SendAsync(HttpMethod.Get, BuildArchiveEndpoint(id, resolvedPath), content: null, cancellationToken, completionOption: HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+        try
+        {
+            var archive = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+            return await DockerApiTarArchive.OpenSingleFileAsync(archive, requestedPath, response, cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            response.Dispose();
+            throw;
+        }
     }
 
     internal override async Task WriteFileAsync(string id, string path, Stream content, CancellationToken cancellationToken)
     {
-        await using var archive = await DockerApiTarArchive.CreateForFileAsync(GetContainerPathName(path), content, DockerApiTarArchive.RegularFileMode, cancellationToken).ConfigureAwait(false);
-        await PutArchiveAsync(id, GetContainerParentPath(path), archive, cancellationToken).ConfigureAwait(false);
+        // A stream whose length is unknown is copied to a temporary file first; any other one is sent as it is read.
+        var seekableContent = await DockerApiTarArchive.EnsureSeekableAsync(content, cancellationToken).ConfigureAwait(false);
+        try
+        {
+            var entryName = GetContainerPathName(path);
+            await PutArchiveAsync(id, GetContainerParentPath(path), (destination, ct) => DockerApiTarArchive.WriteFileAsync(destination, entryName, seekableContent, DockerApiTarArchive.RegularFileMode, ct), cancellationToken).ConfigureAwait(false);
+        }
+        finally
+        {
+            if (!ReferenceEquals(seekableContent, content))
+                await seekableContent.DisposeAsync().ConfigureAwait(false);
+        }
     }
 
     internal override async Task CopyToContainerAsync(string id, string source, string destination, CancellationToken cancellationToken)
@@ -319,24 +343,23 @@ internal sealed class DockerApiRuntime : ContainerRuntime
 
         if (Directory.Exists(source))
         {
-            await using var directoryArchive = await DockerApiTarArchive.CreateForDirectoryAsync(source, entryName + "/", additionalFile: null, cancellationToken).ConfigureAwait(false);
-            await PutArchiveAsync(id, targetDirectory, directoryArchive, cancellationToken).ConfigureAwait(false);
+            await PutArchiveAsync(id, targetDirectory, (stream, ct) => DockerApiTarArchive.WriteDirectoryAsync(stream, source, entryName + "/", additionalFile: null, ct), cancellationToken).ConfigureAwait(false);
             return;
         }
 
         await using var file = File.OpenRead(source);
-        await using var archive = await DockerApiTarArchive.CreateForFileAsync(entryName, file, DockerApiTarArchive.GetFileMode(source), cancellationToken).ConfigureAwait(false);
-        await PutArchiveAsync(id, targetDirectory, archive, cancellationToken).ConfigureAwait(false);
+        var mode = DockerApiTarArchive.GetFileMode(source);
+        await PutArchiveAsync(id, targetDirectory, (stream, ct) => DockerApiTarArchive.WriteFileAsync(stream, entryName, file, mode, ct), cancellationToken).ConfigureAwait(false);
     }
 
     internal override async Task CopyFromContainerAsync(string id, string source, string destination, CancellationToken cancellationToken)
     {
         var (resolvedSource, sourceStat) = await ResolvePathAsync(id, source, cancellationToken).ConfigureAwait(false);
-        using var response = await SendAsync(HttpMethod.Get, BuildArchiveEndpoint(id, resolvedSource), content: null, cancellationToken, completionOption: HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
-        await using var archive = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-
         if (sourceStat is { IsDirectory: true })
         {
+            using var response = await SendAsync(HttpMethod.Get, BuildArchiveEndpoint(id, resolvedSource), content: null, cancellationToken, completionOption: HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+            await using var archive = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+
             // A destination directory that does not exist yet takes the place of the copied one, so the archive's own top-level directory is dropped.
             var destinationExists = Directory.Exists(destination);
             Directory.CreateDirectory(destination);
@@ -349,7 +372,7 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         if (Path.GetDirectoryName(Path.GetFullPath(targetFile)) is { } parent)
             Directory.CreateDirectory(parent);
 
-        await using var content = await DockerApiTarArchive.ReadSingleFileAsync(archive, source, cancellationToken).ConfigureAwait(false);
+        await using var content = await OpenArchiveFileAsync(id, resolvedSource, source, cancellationToken).ConfigureAwait(false);
         await using var file = File.Create(targetFile);
         await content.CopyToAsync(file, cancellationToken).ConfigureAwait(false);
     }
@@ -365,10 +388,10 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         return (path, stat);
     }
 
-    private async Task PutArchiveAsync(string id, string directory, Stream archive, CancellationToken cancellationToken)
+    /// <summary>Extracts an archive in a directory of the container. The archive is written into the body of the request as it is sent.</summary>
+    private async Task PutArchiveAsync(string id, string directory, Func<Stream, CancellationToken, Task> writeArchive, CancellationToken cancellationToken)
     {
-        using var content = new StreamContent(archive);
-        content.Headers.ContentType = new MediaTypeHeaderValue("application/x-tar");
+        using var content = DockerApiTarArchive.CreateContent(writeArchive);
         using var response = await SendAsync(HttpMethod.Put, BuildArchiveEndpoint(id, directory), content, cancellationToken).ConfigureAwait(false);
     }
 
@@ -537,9 +560,8 @@ internal sealed class DockerApiRuntime : ContainerRuntime
             additionalFile = (dockerfile.DockerfilePath, dockerfileName);
         }
 
-        await using var context = await DockerApiTarArchive.CreateForDirectoryAsync(contextDirectory, entryPrefix: "", additionalFile, cancellationToken).ConfigureAwait(false);
-        using var content = new StreamContent(context);
-        content.Headers.ContentType = new MediaTypeHeaderValue("application/x-tar");
+        // The context is archived into the body of the request as it is sent, rather than into a temporary file first.
+        using var content = DockerApiTarArchive.CreateContent((stream, ct) => DockerApiTarArchive.WriteDirectoryAsync(stream, contextDirectory, entryPrefix: "", additionalFile, ct));
 
         // The labels are what the cleanup and the reaper find a built image by.
         var endpoint = "/build?rm=1&dockerfile=" + Uri.EscapeDataString(dockerfileName) + "&t=" + Uri.EscapeDataString(tag) +

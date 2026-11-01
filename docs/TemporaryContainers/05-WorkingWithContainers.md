@@ -65,7 +65,20 @@ var osRelease = await reader.ReadToEndAsync();
 | `WriteFileAsync(path, content)` | Creates or overwrites a file of the container with the content of a stream. |
 | `CopyToContainerAsync(source, destination)` | Copies a file or a directory of the host into the container. |
 | `CopyFromContainerAsync(source, destination)` | Copies a file or a directory of the container to the host. |
-| `OpenReadAsync(path)` | Reads a file of the container, as a seekable stream. |
+| `OpenReadAsync(path)` | Reads a file of the container, as a stream to dispose once read. |
+
+Files are streamed, never loaded in memory, so copying a database dump or a large artifact does not cost its size in
+memory:
+
+- With the Docker Engine API, the stream [OpenReadAsync](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.OpenReadAsync) returns reads the file from the daemon as you read it. It cannot
+  seek, but its `Length` is known: copy it to a `MemoryStream` when you need to seek. The CLI runtimes copy the file to a
+  temporary file first, and return a seekable stream that deletes it when disposed.
+- [WriteFileAsync](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.WriteFileAsync) reads the content from its current position. With the Docker Engine API, a seekable stream is
+  sent as it is read; a stream whose length is unknown (a network stream, a pipe) is copied to a temporary file first,
+  because the archive sent to the daemon declares the length of the file before its content.
+- The build context of a [Dockerfile image](04-Configuration/02-Images.md) is sent to the daemon as it is archived.
+
+The temporary files are only readable by the current user, since a file can hold secrets.
 
 To give files to the container before it starts, a [bind mount](04-Configuration/05-VolumesAndMounts.md) is often
 simpler.

@@ -444,6 +444,32 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
     }
 
     [Fact]
+    public async Task Files_WriteAndReadALargeFileFromAStreamOfUnknownLength()
+    {
+        await using var container = await StartWithRetryAsync(CreateHttpServerDefinition());
+
+        var content = new byte[8 * 1024 * 1024 + 3];
+        System.Security.Cryptography.RandomNumberGenerator.Fill(content);
+        var path = TempDirectory + "/large.bin";
+
+        // A pipe has no length, which the tar archive of the Docker Engine API needs up front.
+        var pipe = new System.IO.Pipelines.Pipe();
+        var writer = Task.Run(async () =>
+        {
+            await pipe.Writer.WriteAsync(content, XunitCancellationToken);
+            await pipe.Writer.CompleteAsync();
+        }, XunitCancellationToken);
+        await container.WriteFileAsync(path, pipe.Reader.AsStream(), XunitCancellationToken);
+        await writer;
+
+        await using var stream = await container.OpenReadAsync(path, XunitCancellationToken);
+        using var result = new MemoryStream();
+        await stream.CopyToAsync(result, XunitCancellationToken);
+        Assert.Equal(content.Length, result.Length);
+        Assert.True(content.AsSpan().SequenceEqual(result.ToArray()), "The content read back differs from the content written.");
+    }
+
+    [Fact]
     public async Task Files_ReadAnEmptyFileAndASymbolicLink()
     {
         // The Docker API archives an empty file without content and a link without its target, where 'cat' reads both.

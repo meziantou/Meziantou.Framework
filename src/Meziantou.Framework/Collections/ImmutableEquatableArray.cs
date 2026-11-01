@@ -16,6 +16,8 @@ public sealed class ImmutableEquatableArray<T> : IEquatable<ImmutableEquatableAr
     public static ImmutableEquatableArray<T> Empty { get; } = new([]);
 
     private readonly T[] _values;
+    private int _hashCode;
+
     public ref readonly T this[int index] => ref _values[index];
     public int Length => _values.Length;
 
@@ -30,7 +32,29 @@ public sealed class ImmutableEquatableArray<T> : IEquatable<ImmutableEquatableAr
 
     public override bool Equals([NotNullWhen(true)] object? obj) => obj is ImmutableEquatableArray<T> other && Equals(other);
 
-    public override int GetHashCode() => _values.Length;
+    public override int GetHashCode()
+    {
+        // The instance is immutable, so the hash code is computed once. 0 means "not computed yet".
+        var hashCode = _hashCode;
+        if (hashCode is 0)
+        {
+            var hash = new HashCode();
+            foreach (var value in _values)
+            {
+                hash.Add(value);
+            }
+
+            hashCode = hash.ToHashCode();
+            if (hashCode is 0)
+            {
+                hashCode = 1;
+            }
+
+            _hashCode = hashCode;
+        }
+
+        return hashCode;
+    }
 
     public Enumerator GetEnumerator() => new(_values);
 
@@ -73,8 +97,8 @@ public sealed class ImmutableEquatableArray<T> : IEquatable<ImmutableEquatableAr
     bool IList.IsFixedSize => true;
     bool IList.IsReadOnly => true;
     T IReadOnlyList<T>.this[int index] => _values[index];
-    T IList<T>.this[int index] { get => _values[index]; set => throw new InvalidOperationException(); }
-    object? IList.this[int index] { get => _values[index]; set => throw new InvalidOperationException(); }
+    T IList<T>.this[int index] { get => _values[index]; set => throw new NotSupportedException(); }
+    object? IList.this[int index] { get => _values[index]; set => throw new NotSupportedException(); }
     void ICollection<T>.CopyTo(T[] array, int arrayIndex) => _values.CopyTo(array, arrayIndex);
     void ICollection.CopyTo(Array array, int index) => _values.CopyTo(array, index);
     int IList<T>.IndexOf(T item) => _values.AsSpan().IndexOf(item);
@@ -88,16 +112,16 @@ public sealed class ImmutableEquatableArray<T> : IEquatable<ImmutableEquatableAr
     int ICollection<T>.Count => Length;
     int ICollection.Count => Length;
 
-    void ICollection<T>.Add(T item) => throw new InvalidOperationException();
-    bool ICollection<T>.Remove(T item) => throw new InvalidOperationException();
-    void ICollection<T>.Clear() => throw new InvalidOperationException();
-    void IList<T>.Insert(int index, T item) => throw new InvalidOperationException();
-    void IList<T>.RemoveAt(int index) => throw new InvalidOperationException();
-    int IList.Add(object? value) => throw new InvalidOperationException();
-    void IList.Clear() => throw new InvalidOperationException();
-    void IList.Insert(int index, object? value) => throw new InvalidOperationException();
-    void IList.Remove(object? value) => throw new InvalidOperationException();
-    void IList.RemoveAt(int index) => throw new InvalidOperationException();
+    void ICollection<T>.Add(T item) => throw new NotSupportedException();
+    bool ICollection<T>.Remove(T item) => throw new NotSupportedException();
+    void ICollection<T>.Clear() => throw new NotSupportedException();
+    void IList<T>.Insert(int index, T item) => throw new NotSupportedException();
+    void IList<T>.RemoveAt(int index) => throw new NotSupportedException();
+    int IList.Add(object? value) => throw new NotSupportedException();
+    void IList.Clear() => throw new NotSupportedException();
+    void IList.Insert(int index, object? value) => throw new NotSupportedException();
+    void IList.Remove(object? value) => throw new NotSupportedException();
+    void IList.RemoveAt(int index) => throw new NotSupportedException();
 
     private sealed class DebugView(ImmutableEquatableArray<T> array)
     {

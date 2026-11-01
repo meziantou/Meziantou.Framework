@@ -779,10 +779,12 @@ namespace Meziantou.Framework.Collections
         public int Count { get => throw null; }
         public BTree(System.Collections.Generic.IComparer<T>? comparer = null) { }
         public bool Add(T item) => throw null;
+        public void Clear() { }
         public bool Contains(T item) => throw null;
         public Meziantou.Framework.Collections.BTree<T>.Enumerator GetEnumerator() => throw null;
         System.Collections.Generic.IEnumerator<T> System.Collections.Generic.IEnumerable<T>.GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        public bool Remove(T item) => throw null;
         public struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
             public readonly T Current { get => throw null; }
@@ -976,7 +978,7 @@ namespace Meziantou.Framework.Collections
     [System.Diagnostics.DebuggerDisplay("Count = {Count}")]
     [System.Diagnostics.DebuggerTypeProxy(typeof(Meziantou.Framework.Collections.ImmutableEquatableSet<>.DebugView))]
     [System.Runtime.CompilerServices.CollectionBuilder(typeof(Meziantou.Framework.Collections.ImmutableEquatableSet), "Create")]
-    public sealed class ImmutableEquatableSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.ISet<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.IEquatable<Meziantou.Framework.Collections.ImmutableEquatableSet<T>> where T : System.IEquatable<T>
+    public sealed class ImmutableEquatableSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlySet<T>, System.Collections.Generic.ISet<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.IEquatable<Meziantou.Framework.Collections.ImmutableEquatableSet<T>> where T : System.IEquatable<T>
     {
         public int Count { get => throw null; }
         public static Meziantou.Framework.Collections.ImmutableEquatableSet<T> Empty { get => throw null; }
@@ -997,12 +999,18 @@ namespace Meziantou.Framework.Collections
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public override int GetHashCode() => throw null;
         void System.Collections.Generic.ISet<T>.IntersectWith(System.Collections.Generic.IEnumerable<T> other) { }
+        bool System.Collections.Generic.IReadOnlySet<T>.IsProperSubsetOf(System.Collections.Generic.IEnumerable<T> other) => throw null;
         bool System.Collections.Generic.ISet<T>.IsProperSubsetOf(System.Collections.Generic.IEnumerable<T> other) => throw null;
+        bool System.Collections.Generic.IReadOnlySet<T>.IsProperSupersetOf(System.Collections.Generic.IEnumerable<T> other) => throw null;
         bool System.Collections.Generic.ISet<T>.IsProperSupersetOf(System.Collections.Generic.IEnumerable<T> other) => throw null;
+        bool System.Collections.Generic.IReadOnlySet<T>.IsSubsetOf(System.Collections.Generic.IEnumerable<T> other) => throw null;
         bool System.Collections.Generic.ISet<T>.IsSubsetOf(System.Collections.Generic.IEnumerable<T> other) => throw null;
+        bool System.Collections.Generic.IReadOnlySet<T>.IsSupersetOf(System.Collections.Generic.IEnumerable<T> other) => throw null;
         bool System.Collections.Generic.ISet<T>.IsSupersetOf(System.Collections.Generic.IEnumerable<T> other) => throw null;
+        bool System.Collections.Generic.IReadOnlySet<T>.Overlaps(System.Collections.Generic.IEnumerable<T> other) => throw null;
         bool System.Collections.Generic.ISet<T>.Overlaps(System.Collections.Generic.IEnumerable<T> other) => throw null;
         bool System.Collections.Generic.ICollection<T>.Remove(T item) => throw null;
+        bool System.Collections.Generic.IReadOnlySet<T>.SetEquals(System.Collections.Generic.IEnumerable<T> other) => throw null;
         bool System.Collections.Generic.ISet<T>.SetEquals(System.Collections.Generic.IEnumerable<T> other) => throw null;
         void System.Collections.Generic.ISet<T>.SymmetricExceptWith(System.Collections.Generic.IEnumerable<T> other) { }
         void System.Collections.Generic.ISet<T>.UnionWith(System.Collections.Generic.IEnumerable<T> other) { }
@@ -1113,6 +1121,7 @@ namespace Meziantou.Framework.Collections
         public SortedList(int capacity) { }
         public SortedList(int capacity, System.Collections.Generic.IComparer<T>? comparer) { }
         public void Add(T item) { }
+        public void AddRange(System.Collections.Generic.IEnumerable<T> items) { }
         public int BinarySearch(T item) => throw null;
         public void Clear() { }
         public bool Contains(T item) => throw null;

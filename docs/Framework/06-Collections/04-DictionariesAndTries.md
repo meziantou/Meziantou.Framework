@@ -74,6 +74,9 @@ Assert.Equal([KeyValuePair.Create("car", 10L), KeyValuePair.Create("cat", 7L)], 
   frequency of the prefix itself when it is also a term, and 0 otherwise.
 - The tree skips the branches whose frequencies cannot reach the results, so the lookup stays fast with many terms.
   Pass `pruning: false` to visit every branch.
+- [AddRange](cref:Meziantou.Framework.Collections.PruningRadixTree.AddRange) adds many terms at once, and adds the frequencies of duplicate terms. It builds the
+  tree from the sorted terms when the tree is empty or when you add more terms than it contains, and adds them one by
+  one otherwise.
 - Terms are case-sensitive: normalize them, for instance to lower case, before adding and searching.
 
 ## Lists of key-value pairs

@@ -33,4 +33,56 @@ public sealed class CountryTests
         Assert.Equal("\U0001F1EB\U0001F1F7", flag2); // FR flag emoji
         #endregion
     }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("F")]
+    [InlineData("FRA")]
+    [InlineData("12")]
+    [InlineData("F1")]
+    [InlineData("419")]
+    [InlineData("@[")]
+    [InlineData("`{")]
+    [InlineData("\u00C9\u00C9")]
+    public void InvalidRegionName(string name)
+    {
+        Assert.Throws<ArgumentException>("twoLetterISORegionName", () => Country.GetUnicodeFlag(name));
+        Assert.False(Country.TryGetUnicodeFlag(name, out var flag));
+        Assert.Null(flag);
+    }
+
+    [Fact]
+    public void NullRegionName()
+    {
+        Assert.Throws<ArgumentNullException>("twoLetterISORegionName", () => Country.GetUnicodeFlag((string)null!));
+        Assert.False(Country.TryGetUnicodeFlag((string?)null, out _));
+    }
+
+    [Theory]
+    [InlineData("az", "\U0001F1E6\U0001F1FF")]
+    [InlineData("ZA", "\U0001F1FF\U0001F1E6")]
+    public void FirstAndLastLetters(string name, string expected)
+    {
+        Assert.Equal(expected, Country.GetUnicodeFlag(name));
+    }
+
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    public void RegionWithoutLetterCode()
+    {
+        var region = new RegionInfo("es-419");
+        Assert.Throws<ArgumentException>("region", () => Country.GetUnicodeFlag(region));
+        Assert.False(Country.TryGetUnicodeFlag(region, out _));
+    }
+
+    [Fact]
+    public void Country_TryGetUnicodeFlag_Example()
+    {
+        #region Country_TryGetUnicodeFlag
+        Assert.True(Country.TryGetUnicodeFlag("FR", out var flag));
+        Assert.Equal("\U0001F1EB\U0001F1F7", flag); // FR flag emoji
+
+        // "419" (Latin America) is a numeric UN M.49 code, not a country code
+        Assert.False(Country.TryGetUnicodeFlag("419", out _));
+        #endregion
+    }
 }

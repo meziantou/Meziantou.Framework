@@ -41,19 +41,19 @@ public static class Country
 
     /// <summary>Tries to get the Unicode flag emoji for the specified region.</summary>
     /// <returns><see langword="true"/> if <paramref name="region"/> is not <see langword="null"/> and its two-letter ISO region name is made of two ASCII letters; otherwise, <see langword="false"/>.</returns>
-    public static bool TryGetUnicodeFlag(RegionInfo? region, [NotNullWhen(true)] out string? flag)
+    public static bool TryGetUnicodeFlag([NotNullWhen(true)] RegionInfo? region, [NotNullWhen(true)] out string? flag)
     {
         return TryCreateFlag(region?.TwoLetterISORegionName, out flag);
     }
 
     /// <summary>Tries to get the Unicode flag emoji for the specified two-letter ISO region code.</summary>
     /// <returns><see langword="true"/> if <paramref name="twoLetterISORegionName"/> is made of two ASCII letters; otherwise, <see langword="false"/>.</returns>
-    public static bool TryGetUnicodeFlag(string? twoLetterISORegionName, [NotNullWhen(true)] out string? flag)
+    public static bool TryGetUnicodeFlag([NotNullWhen(true)] string? twoLetterISORegionName, [NotNullWhen(true)] out string? flag)
     {
         return TryCreateFlag(twoLetterISORegionName, out flag);
     }
 
-    private static bool TryCreateFlag(string? twoLetterISORegionName, [NotNullWhen(true)] out string? flag)
+    private static bool TryCreateFlag([NotNullWhen(true)] string? twoLetterISORegionName,[NotNullWhen(true)] out string? flag)
     {
         if (twoLetterISORegionName is not { Length: 2 } || !char.IsAsciiLetter(twoLetterISORegionName[0]) || !char.IsAsciiLetter(twoLetterISORegionName[1]))
         {

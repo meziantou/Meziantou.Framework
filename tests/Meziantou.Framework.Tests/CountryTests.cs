@@ -59,6 +59,26 @@ public sealed class CountryTests
     }
 
     [Fact]
+    public void TryGetUnicodeFlag_NameIsNotNullWhenTrue()
+    {
+        var name = AsNullable("FR");
+
+        // Fails to compile (CS8602) if the parameter is not annotated with [NotNullWhen(true)]
+        Assert.True(Country.TryGetUnicodeFlag(name, out _) && name.Length is 2);
+    }
+
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    public void TryGetUnicodeFlag_RegionIsNotNullWhenTrue()
+    {
+        var region = AsNullable(new RegionInfo("FR"));
+
+        // Fails to compile (CS8602) if the parameter is not annotated with [NotNullWhen(true)]
+        Assert.True(Country.TryGetUnicodeFlag(region, out _) && region.TwoLetterISORegionName is "FR");
+    }
+
+    private static T? AsNullable<T>(T value) where T : class => value;
+
+    [Fact]
     public void NullRegion()
     {
         Assert.Throws<ArgumentNullException>("region", () => Country.GetUnicodeFlag((RegionInfo)null!));

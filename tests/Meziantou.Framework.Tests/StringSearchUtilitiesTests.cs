@@ -70,6 +70,29 @@ public class StringSearchUtilitiesTests
     }
 
     [Fact]
+    public void Hamming_Enumerable_SameLength()
+    {
+        Assert.Equal(1, StringSearchUtilities.Hamming(new[] { 1, 2, 3 }, new[] { 1, 2, 4 }));
+        Assert.Equal(0, StringSearchUtilities.Hamming(new[] { 1, 2, 3 }, new[] { 1, 2, 3 }));
+        Assert.Equal(3, StringSearchUtilities.Hamming(new[] { 1, 2, 3 }, new[] { 4, 5, 6 }));
+        Assert.Equal(1, StringSearchUtilities.Hamming(Enumerable.Range(0, 3), new[] { 0, 1, 3 }));
+    }
+
+    [Fact]
+    public void Hamming_Enumerable_Empty()
+    {
+        Assert.Equal(0, StringSearchUtilities.Hamming(Array.Empty<int>(), Array.Empty<int>()));
+    }
+
+    [Fact]
+    public void Hamming_Enumerable_DifferentLength()
+    {
+        Assert.Throws<ArgumentException>("word2", () => StringSearchUtilities.Hamming(new[] { 1, 2 }, new[] { 1, 2, 3 }));
+        Assert.Throws<ArgumentException>("word2", () => StringSearchUtilities.Hamming(new[] { 1, 2, 3 }, new[] { 1, 2 }));
+        Assert.Throws<ArgumentException>("word2", () => StringSearchUtilities.Hamming(Array.Empty<int>(), new[] { 1 }));
+    }
+
+    [Fact]
     public void Soundex_Test()
     {
         var soundex = StringSearchUtilities.Soundex("", new Dictionary<char, byte>());

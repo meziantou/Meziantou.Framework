@@ -124,6 +124,215 @@ public sealed class DecodeInteropTests
         }
     }
 
+    [Theory]
+    [InlineData(QRCodeType.Standard)]
+    [InlineData(QRCodeType.MicroQR)]
+    [InlineData(QRCodeType.RMQR)]
+    public async Task AmbiguousShiftJisCharacters_AreDecoded(QRCodeType type)
+    {
+        // Pairs of characters that share a Shift JIS code, through a best-fit mapping of the encoder or because the
+        // JIS X 0208 table and code page 932 decode the code differently
+        string[] values = ["\u00A2", "\uFFE0", "\u00A3", "\uFFE1", "\u00AC", "\uFFE2", "\u301C", "\uFF5E", "\u2016", "\u2225", "\u2212", "\uFF0D", "\u2014", "\u2015", "\uFF3C", "\u00A2\u00A3\u00AC", "\uFFE0\uFFE1\uFFE2"];
+        var tools = await BarcodeTools.GetAsync();
+        await using var directory = TemporaryDirectory.Create();
+        var cases = new List<(string Path, string Data)>();
+        foreach (var data in values)
+        {
+            var qr = type switch
+            {
+                QRCodeType.MicroQR => QRCode.CreateMicroQR(data, ErrorCorrectionLevel.L),
+                QRCodeType.RMQR => QRCode.CreateRMQR(data, ErrorCorrectionLevel.M),
+                _ => QRCode.Create(data, ErrorCorrectionLevel.M),
+            };
+
+            var path = directory.FullPath / $"sjis-{cases.Count.ToString(CultureInfo.InvariantCulture)}.png";
+            await File.WriteAllBytesAsync(path, qr.ToPng(new QRCodePngOptions { ModuleSize = 4 }), XunitCancellationToken);
+            cases.Add((path, data));
+        }
+
+        // zbarimg guesses the encoding of byte mode, and takes a few UTF-8 bytes for Shift JIS: ECI removes the guess
+        var results = await tools.ReadWithZXingAsync([.. cases.Select(item => item.Path)]);
+        foreach (var (path, data) in cases)
+        {
+            var result = Assert.Single(results, result => result.FilePath == path, message: Escape(data));
+            Assert.Equal(data, result.Text, message: Escape(data));
+        }
+    }
+
+    [Fact]
+    public async Task MixedModeQRCodes_AreDecoded()
+    {
+        (string Data, ErrorCorrectionLevel Level)[] values =
+        [
+            ("a" + new string('1', 300), ErrorCorrectionLevel.L),
+            ("a" + new string('7', 7080), ErrorCorrectionLevel.L),
+            ("Order 1234567890123456789012345678901234567890, ROOM 42, ok", ErrorCorrectionLevel.M),
+            ("漢字テスト abc 12345678901234567890 ABCDEFGHIJ 漢字", ErrorCorrectionLevel.Q),
+            ("Café 2026-11-01 1234567890123456789012345678901234567890 ÉÀ", ErrorCorrectionLevel.H), // one byte segment without ECI
+            ("https://example.com/PRODUCT/12345678901234567890?ref=ABCDEFGHIJKLMNOPQRSTUVWXYZ", ErrorCorrectionLevel.L),
+        ];
+
+        var tools = await BarcodeTools.GetAsync();
+        await using var directory = TemporaryDirectory.Create();
+        var cases = new List<(string Path, string Data)>();
+        foreach (var (data, level) in values)
+        {
+            var path = directory.FullPath / $"mixed-{cases.Count.ToString(CultureInfo.InvariantCulture)}.png";
+            await File.WriteAllBytesAsync(path, QRCode.Create(data, level).ToPng(new QRCodePngOptions { ModuleSize = 3 }), XunitCancellationToken);
+            cases.Add((path, data));
+        }
+
+        var results = await tools.ReadWithZXingAsync([.. cases.Select(item => item.Path)]);
+        foreach (var (path, data) in cases)
+        {
+            var result = Assert.Single(results, result => result.FilePath == path, message: Escape(data));
+            Assert.Equal(data, result.Text, message: Escape(data));
+            Assert.Equal(["QR-Code:" + data], await tools.ReadWithZBarAsync(path));
+        }
+    }
+
+    [Fact]
+    public async Task EciQRCodes_AreDecoded()
+    {
+        // Short sequences that zbarimg guesses as another encoding without ECI ("¢" is EUC-JP 瞽), accented and non-Latin
+        // texts, kanji (UTF-8 with ECI, not Kanji mode), and mixed modes
+        string[] values =
+        [
+            "\u00A2",
+            "\uFFE0",
+            "é",
+            "Café 2026-11-01 1234567890123456789012345678901234567890 ÉÀ",
+            "Ελληνικά, кириллица, עברית, العربية",
+            "漢字テスト abc 12345678901234567890",
+            "😀 0123456789012345678901234567890123456789 😀",
+            "a" + new string('1', 300),
+        ];
+
+        var tools = await BarcodeTools.GetAsync();
+        await using var directory = TemporaryDirectory.Create();
+        var cases = new List<(string Path, string Data)>();
+        var options = new QRCodeOptions { EciAssignmentNumber = QRCodeOptions.Utf8EciAssignmentNumber };
+        foreach (var data in values)
+        {
+            var path = directory.FullPath / $"eci-{cases.Count.ToString(CultureInfo.InvariantCulture)}.png";
+            await File.WriteAllBytesAsync(path, QRCode.Create(data, ErrorCorrectionLevel.M, options).ToPng(new QRCodePngOptions { ModuleSize = 3 }), XunitCancellationToken);
+            cases.Add((path, data));
+        }
+
+        var results = await tools.ReadWithZXingAsync([.. cases.Select(item => item.Path)]);
+        foreach (var (path, data) in cases)
+        {
+            var result = Assert.Single(results, result => result.FilePath == path, message: Escape(data));
+            Assert.Equal(data, result.Text, message: Escape(data));
+            Assert.True(result.HasEci, message: Escape(data));
+            Assert.Equal(["QR-Code:" + data], await tools.ReadWithZBarAsync(path));
+        }
+    }
+
+    [Fact]
+    public async Task BinaryEciQRCode_IsDecodedWithTheDeclaredEncoding()
+    {
+        // 0xE9 is é in ISO-8859-1 (ECI 3), and invalid UTF-8
+        var tools = await BarcodeTools.GetAsync();
+        await using var directory = TemporaryDirectory.Create();
+        var path = directory.FullPath / "latin1.png";
+        await File.WriteAllBytesAsync(path, QRCode.Create([0x63, 0x61, 0x66, 0xE9], ErrorCorrectionLevel.M, new QRCodeOptions { EciAssignmentNumber = 3 }).ToPng(new QRCodePngOptions { ModuleSize = 3 }), XunitCancellationToken);
+
+        var result = Assert.Single(await tools.ReadWithZXingAsync([path]));
+        Assert.Equal("café", result.Text);
+        Assert.True(result.HasEci);
+        Assert.Equal(["QR-Code:café"], await tools.ReadWithZBarAsync(path));
+    }
+
+    [Fact]
+    public async Task SizeConstrainedQRCodes_AreDecoded()
+    {
+        var tools = await BarcodeTools.GetAsync();
+        await using var directory = TemporaryDirectory.Create();
+        var cases = new List<(string Path, QRCode QRCode, string Data, string Version)>();
+        void Add(QRCode qr, string data, string version)
+        {
+            cases.Add((directory.FullPath / $"size-{cases.Count.ToString(CultureInfo.InvariantCulture)}.png", qr, data, version));
+        }
+
+        foreach (var version in new[] { 1, 2, 7, 15, 26, 27, 40 })
+        {
+            Add(QRCode.Create("Fixed 123", ErrorCorrectionLevel.Q, new QRCodeOptions { MinimumVersion = version, MaximumVersion = version }), "Fixed 123", version.ToString(CultureInfo.InvariantCulture));
+        }
+
+        foreach (var version in new[] { 2, 3, 4 })
+        {
+            Add(QRCode.CreateMicroQR("12", ErrorCorrectionLevel.M, new MicroQRCodeOptions { MinimumVersion = version, MaximumVersion = version }), "12", "M" + version.ToString(CultureInfo.InvariantCulture));
+        }
+
+        foreach (var (height, width) in new[] { (7, 43), (9, 139), (11, 27), (13, 77), (17, 99) })
+        {
+            Add(QRCode.CreateRMQR("12", ErrorCorrectionLevel.H, new RMQRCodeOptions { Height = height, Width = width }), "12", "R" + height.ToString(CultureInfo.InvariantCulture) + "x" + width.ToString(CultureInfo.InvariantCulture));
+        }
+
+        foreach (var (path, qr, _, _) in cases)
+        {
+            await File.WriteAllBytesAsync(path, qr.ToPng(new QRCodePngOptions { ModuleSize = 3 }), XunitCancellationToken);
+        }
+
+        var results = await tools.ReadWithZXingAsync([.. cases.Select(item => item.Path)]);
+        foreach (var (path, _, data, version) in cases)
+        {
+            var result = Assert.Single(results, result => result.FilePath == path, message: version);
+            Assert.Equal(data, result.Text, message: version);
+            Assert.Equal(version, result.Version);
+        }
+    }
+
+    [Fact]
+    public async Task KanjiModeCharacters_AreDecoded()
+    {
+        // Every character of JIS X 0208 that the readers decode the same way (zbarimg decodes 0x815C as U+2014 and code page
+        // 932 as U+2015, the JIS X 0208 table and code page 932 differ on the other excluded codes): chunks of 1,500
+        // characters only fit in a version 40 symbol in Kanji mode (their UTF-8 bytes would not)
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+        var shiftJis = Encoding.GetEncoding("shift_jis", EncoderFallback.ExceptionFallback, new DecoderReplacementFallback(""));
+        var characters = new StringBuilder();
+        for (var lead = 0x81; lead <= 0xEA; lead++)
+        {
+            for (var trail = 0x40; trail <= 0xFC; trail++)
+            {
+                var code = (lead << 8) | trail;
+                var row = ((lead - (lead <= 0x9F ? 0x81 : 0xC1)) * 2) + (trail >= 0x9F ? 2 : 1);
+                if (lead is > 0x9F and < 0xE0 || trail is 0x7F || row is (> 8 and < 16) or > 84 || code is 0x815C or 0x815F or 0x8160 or 0x8161 or 0x817C or 0x8191 or 0x8192 or 0x81CA)
+                    continue;
+
+                var decoded = shiftJis.GetString([(byte)lead, (byte)trail]);
+                if (decoded.Length is 1)
+                {
+                    characters.Append(decoded);
+                }
+            }
+        }
+
+        var text = characters.ToString();
+        Assert.HasCount(6879 - 8, text); // JIS X 0208-1990 has 6,879 characters
+
+        var tools = await BarcodeTools.GetAsync();
+        await using var directory = TemporaryDirectory.Create();
+        var cases = new List<(string Path, string Data)>();
+        for (var i = 0; i < text.Length; i += 1500)
+        {
+            var data = text.Substring(i, Math.Min(1500, text.Length - i));
+            var path = directory.FullPath / $"kanji-{cases.Count.ToString(CultureInfo.InvariantCulture)}.png";
+            await File.WriteAllBytesAsync(path, QRCode.Create(data, ErrorCorrectionLevel.L).ToPng(new QRCodePngOptions { ModuleSize = 3 }), XunitCancellationToken);
+            cases.Add((path, data));
+        }
+
+        var results = await tools.ReadWithZXingAsync([.. cases.Select(item => item.Path)]);
+        foreach (var (path, data) in cases)
+        {
+            var result = Assert.Single(results, result => result.FilePath == path);
+            Assert.Equal(data, result.Text);
+            Assert.Equal(["QR-Code:" + data], await tools.ReadWithZBarAsync(path));
+        }
+    }
+
     [Fact]
     public async Task RandomBarcodePayloads_AreDecoded()
     {

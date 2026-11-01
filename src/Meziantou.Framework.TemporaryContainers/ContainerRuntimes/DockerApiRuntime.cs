@@ -61,8 +61,15 @@ internal sealed class DockerApiRuntime : ContainerRuntime
             ? definitionName
             : definition.ReuseId is { } namedReuseId ? ResourceNaming.GetReuseName(namedReuseId) : null;
 
+        var query = new List<string>();
         if (name is not null)
-            endpoint += "?name=" + Uri.EscapeDataString(name);
+            query.Add("name=" + Uri.EscapeDataString(name));
+
+        if (definition.Platform is { } platform)
+            query.Add("platform=" + Uri.EscapeDataString(platform));
+
+        if (query.Count > 0)
+            endpoint += "?" + string.Join('&', query);
 
         using var response = await SendAsync(HttpMethod.Post, endpoint, content, cancellationToken, allowedStatusCodes: definition.ReuseId is null ? null : [HttpStatusCode.Conflict]).ConfigureAwait(false);
         if (response.StatusCode is HttpStatusCode.Conflict)
@@ -472,7 +479,7 @@ internal sealed class DockerApiRuntime : ContainerRuntime
 
         if (Directory.Exists(source))
         {
-            await PutArchiveAsync(id, targetDirectory, (stream, ct) => DockerApiTarArchive.WriteDirectoryAsync(stream, source, entryName + "/", additionalFile: null, ct), cancellationToken).ConfigureAwait(false);
+            await PutArchiveAsync(id, targetDirectory, (stream, ct) => DockerApiTarArchive.WriteDirectoryAsync(stream, source, entryName + "/", additionalFile: null, ignore: null, ct), cancellationToken).ConfigureAwait(false);
             return;
         }
 
@@ -662,8 +669,8 @@ internal sealed class DockerApiRuntime : ContainerRuntime
             case RegistryImage registry:
                 // The Engine API pulls every tag of a reference that has none, where the CLI pulls 'latest'.
                 var imageName = ImageReference.WithDefaultTag(registry.Name);
-                if (definition.PullPolicy is PullPolicy.Always || definition.PullPolicy is PullPolicy.IfMissing && !await ImageExistsAsync(imageName, logger, cancellationToken).ConfigureAwait(false))
-                    await PullImageAsync(imageName, logger, cancellationToken).ConfigureAwait(false);
+                if (definition.PullPolicy is PullPolicy.Always || definition.PullPolicy is PullPolicy.IfMissing && !await ImageExistsAsync(imageName, definition.Platform, logger, cancellationToken).ConfigureAwait(false))
+                    await PullImageAsync(imageName, definition.Platform, logger, cancellationToken).ConfigureAwait(false);
 
                 return imageName;
 
@@ -671,7 +678,7 @@ internal sealed class DockerApiRuntime : ContainerRuntime
                 return existing.ImageId;
 
             case DockerfileImage dockerfile:
-                return await BuildImageAsync(dockerfile, ResourceLabels.BuildForImage(definition), cancellationToken).ConfigureAwait(false);
+                return await BuildImageAsync(definition, dockerfile, cancellationToken).ConfigureAwait(false);
 
             case ArchiveImage archive:
                 return await LoadImageAsync(archive, cancellationToken).ConfigureAwait(false);
@@ -681,9 +688,10 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         }
     }
 
-    private async Task<string> BuildImageAsync(DockerfileImage dockerfile, Dictionary<string, string> labels, CancellationToken cancellationToken)
+    private async Task<string> BuildImageAsync(ContainerDefinition definition, DockerfileImage dockerfile, CancellationToken cancellationToken)
     {
-        var tag = ResourceNaming.BuiltImagePrefix + Guid.NewGuid().ToString("N") + ":latest";
+        var settings = dockerfile.Settings;
+        var tag = ImageBuild.GetTag(dockerfile);
         var contextDirectory = Path.GetFullPath(dockerfile.ContextDirectory);
         var dockerfileName = Path.GetRelativePath(contextDirectory, Path.GetFullPath(dockerfile.DockerfilePath)).Replace('\\', '/');
 
@@ -696,16 +704,60 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         }
 
         // The context is archived into the body of the request as it is sent, rather than into a temporary file first.
-        using var content = DockerApiTarArchive.CreateContent((stream, ct) => DockerApiTarArchive.WriteDirectoryAsync(stream, contextDirectory, entryPrefix: "", additionalFile, ct));
+        var ignore = await DockerIgnore.LoadAsync(contextDirectory, dockerfile.DockerfilePath, dockerfileName, cancellationToken).ConfigureAwait(false);
+        using var content = DockerApiTarArchive.CreateContent((stream, ct) => DockerApiTarArchive.WriteDirectoryAsync(stream, contextDirectory, entryPrefix: "", additionalFile, ignore, ct));
 
         // The labels are what the cleanup and the reaper find a built image by.
-        var endpoint = "/build?rm=1&dockerfile=" + Uri.EscapeDataString(dockerfileName) + "&t=" + Uri.EscapeDataString(tag) +
-            "&labels=" + Uri.EscapeDataString(JsonSerializer.Serialize(labels, DockerApiJsonContext.Default.DictionaryStringString));
-        using var response = await SendAsync(HttpMethod.Post, endpoint, content, cancellationToken, completionOption: HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+        var labels = ImageBuild.GetLabels(definition, dockerfile, includeLibraryLabels: true);
+        var endpoint = new StringBuilder("/build?rm=1&dockerfile=").Append(Uri.EscapeDataString(dockerfileName))
+            .Append("&t=").Append(Uri.EscapeDataString(tag))
+            .Append("&labels=").Append(Uri.EscapeDataString(JsonSerializer.Serialize(labels, DockerApiJsonContext.Default.DictionaryStringString)));
+
+        if (settings.BuildArguments.Count > 0)
+        {
+            var buildArguments = new Dictionary<string, string>(settings.BuildArguments, StringComparer.Ordinal);
+            endpoint.Append("&buildargs=").Append(Uri.EscapeDataString(JsonSerializer.Serialize(buildArguments, DockerApiJsonContext.Default.DictionaryStringString)));
+        }
+
+        if (settings.Target is not null)
+            endpoint.Append("&target=").Append(Uri.EscapeDataString(settings.Target));
+
+        if (settings.GetPlatform(definition) is { } platform)
+            endpoint.Append("&platform=").Append(Uri.EscapeDataString(platform));
+
+        if (settings.NoCache)
+            endpoint.Append("&nocache=1");
+
+        if (settings.Pull)
+            endpoint.Append("&pull=1");
+
+        // The daemon pulls the base images itself, with the credentials the client sends for each registry, like the
+        // docker CLI does.
+        var registryConfig = await GetRegistryConfigAsync(dockerfile, cancellationToken).ConfigureAwait(false);
+
+        var connection = await EnsureConnectionOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        using var request = new HttpRequestMessage(HttpMethod.Post, BuildEndpoint(connection, endpoint.ToString()))
+        {
+            Content = content,
+        };
+
+        if (registryConfig is not null)
+            request.Headers.TryAddWithoutValidation("X-Registry-Config", registryConfig);
+
+        using var response = await connection.HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+        if (!response.IsSuccessStatusCode)
+            throw await CreateRequestExceptionAsync(response, request.Method.Method, request.RequestUri?.AbsolutePath ?? "/build", cancellationToken).ConfigureAwait(false);
 
         // The daemon answers as soon as the build starts, so a failure is only reported in the stream of messages that follows.
-        await ReadProgressAsync(response, "Unable to build the image from '" + dockerfile.DockerfilePath + "': ", cancellationToken).ConfigureAwait(false);
+        await ReadProgressAsync(response, "Unable to build the image from '" + dockerfile.DockerfilePath + "': ", cancellationToken, ImageBuild.CreateOutputCallback(definition, dockerfile)).ConfigureAwait(false);
         return tag;
+    }
+
+    private async Task<string?> GetRegistryConfigAsync(DockerfileImage dockerfile, CancellationToken cancellationToken)
+    {
+        var content = await File.ReadAllTextAsync(dockerfile.DockerfilePath, cancellationToken).ConfigureAwait(false);
+        var images = DockerfileBaseImages.Parse(content, dockerfile.Settings.BuildArguments);
+        return images.Count is 0 ? null : await _authProvider.GetRegistryConfigHeaderValueAsync(images, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task<string> LoadImageAsync(ArchiveImage archive, CancellationToken cancellationToken)
@@ -721,7 +773,7 @@ internal sealed class DockerApiRuntime : ContainerRuntime
     }
 
     /// <summary>Reads the stream of JSON messages the daemon answers a build or a load with, and returns the text they carry. A failure is only ever reported there.</summary>
-    private async Task<string> ReadProgressAsync(HttpResponseMessage response, string errorPrefix, CancellationToken cancellationToken)
+    private async Task<string> ReadProgressAsync(HttpResponseMessage response, string errorPrefix, CancellationToken cancellationToken, Action<string>? onOutput = null)
     {
         var output = new StringBuilder();
         await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
@@ -736,44 +788,70 @@ internal sealed class DockerApiRuntime : ContainerRuntime
             if (!string.IsNullOrEmpty(errorMessage))
                 throw CreateException(errorPrefix + errorMessage, statusCode: null);
 
-            output.Append(progress?.Stream);
+            if (progress?.Stream is { } text)
+            {
+                output.Append(text);
+                onOutput?.Invoke(text);
+            }
         }
 
         return output.ToString();
     }
 
-    private Task<bool> ImageExistsAsync(string imageName, ILogger? logger, CancellationToken cancellationToken)
+    private Task<bool> ImageExistsAsync(string imageName, string? platform, ILogger? logger, CancellationToken cancellationToken)
     {
         return RetryStrategy.ExecuteAsync(
-            ct => ImageExistsCoreAsync(imageName, ct),
+            ct => ImageExistsCoreAsync(imageName, platform, ct),
             TransientError.IsTransient,
             Log.CreateImageLookupRetryCallback(logger, imageName),
             RetryStrategy.DefaultBaseDelay,
             cancellationToken);
     }
 
-    private async Task<bool> ImageExistsCoreAsync(string imageName, CancellationToken cancellationToken)
+    private async Task<bool> ImageExistsCoreAsync(string imageName, string? platform, CancellationToken cancellationToken)
     {
-        using var response = await SendAsync(HttpMethod.Get, "/images/" + Uri.EscapeDataString(imageName) + "/json", content: null, cancellationToken, allowedStatusCodes: [HttpStatusCode.NotFound]).ConfigureAwait(false);
+        // A multi-platform image can be on the machine for another platform only. The daemon checks the platform since
+        // API 1.49; an older one ignores the parameter, and the creation then reports the missing variant.
+        var endpoint = "/images/" + Uri.EscapeDataString(imageName) + "/json";
+        if (platform is not null)
+            endpoint += "?platform=" + Uri.EscapeDataString(FormatPlatformAsJson(platform));
+
+        using var response = await SendAsync(HttpMethod.Get, endpoint, content: null, cancellationToken, allowedStatusCodes: [HttpStatusCode.NotFound]).ConfigureAwait(false);
         return response.StatusCode != HttpStatusCode.NotFound;
+    }
+
+    /// <summary>Formats a platform such as <c>linux/arm64/v8</c> as the JSON object the image endpoints expect, where the other endpoints take the text as it is.</summary>
+    internal static string FormatPlatformAsJson(string platform)
+    {
+        var parts = platform.Split('/');
+        var json = new StringBuilder("{\"os\":\"").Append(JsonEncodedText.Encode(parts[0])).Append('"');
+        if (parts.Length > 1)
+            json.Append(",\"architecture\":\"").Append(JsonEncodedText.Encode(parts[1])).Append('"');
+
+        if (parts.Length > 2)
+            json.Append(",\"variant\":\"").Append(JsonEncodedText.Encode(parts[2])).Append('"');
+
+        return json.Append('}').ToString();
     }
 
     /// <summary>Pulls the image, running the whole pull again when the registry fails for a reason that a second attempt can resolve.</summary>
     /// <remarks>A pull is idempotent, and the layers that were already fetched are cached by the daemon, so an attempt that follows a failure resumes instead of downloading everything again.</remarks>
-    private Task PullImageAsync(string imageName, ILogger? logger, CancellationToken cancellationToken)
+    private Task PullImageAsync(string imageName, string? platform, ILogger? logger, CancellationToken cancellationToken)
     {
         return RetryStrategy.ExecuteAsync(
-            ct => PullImageCoreAsync(imageName, ct),
+            ct => PullImageCoreAsync(imageName, platform, ct),
             TransientError.IsTransient,
             Log.CreateImagePullRetryCallback(logger, imageName),
             RetryStrategy.DefaultBaseDelay,
             cancellationToken);
     }
 
-    private async Task PullImageCoreAsync(string imageName, CancellationToken cancellationToken)
+    private async Task PullImageCoreAsync(string imageName, string? platform, CancellationToken cancellationToken)
     {
         var connection = await EnsureConnectionOrThrowAsync(cancellationToken).ConfigureAwait(false);
         var endpoint = "/images/create?fromImage=" + Uri.EscapeDataString(imageName);
+        if (platform is not null)
+            endpoint += "&platform=" + Uri.EscapeDataString(platform);
         using var request = new HttpRequestMessage(HttpMethod.Post, BuildEndpoint(connection, endpoint));
         var registryAuth = await _authProvider.GetRegistryAuthHeaderValueAsync(imageName, cancellationToken).ConfigureAwait(false);
         if (!string.IsNullOrEmpty(registryAuth))

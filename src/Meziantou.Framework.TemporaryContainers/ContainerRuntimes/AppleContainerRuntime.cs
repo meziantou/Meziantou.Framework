@@ -63,22 +63,15 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
         switch (definition.Image)
         {
             case RegistryImage registry:
-                await EnsureRegistryImageAsync(["image", "inspect", registry.Name], ["image", "pull", registry.Name], registry.Name, definition.PullPolicy, definition.Logging.Logger, cancellationToken).ConfigureAwait(false);
+                IReadOnlyList<string> pullArguments = definition.Platform is { } platform ? ["image", "pull", "--platform", platform, registry.Name] : ["image", "pull", registry.Name];
+                await EnsureRegistryImageAsync(["image", "inspect", registry.Name], pullArguments, registry.Name, definition.PullPolicy, definition.Logging.Logger, cancellationToken).ConfigureAwait(false);
                 return registry.Name;
 
             case DockerfileImage dockerfile:
-                var tag = ResourceNaming.BuiltImagePrefix + Guid.NewGuid().ToString("N") + ":latest";
-                var args = new List<string> { "build", "-t", tag, "-f", dockerfile.DockerfilePath };
-
                 // The labels are what the cleanup finds a built image by.
-                foreach (var (name, value) in ResourceLabels.BuildForImage(definition))
-                {
-                    args.Add("--label");
-                    args.Add($"{name}={value}");
-                }
-
-                args.Add(dockerfile.ContextDirectory);
-                await Cli.RunBufferedAsync(args, cancellationToken).ConfigureAwait(false);
+                var tag = ImageBuild.GetTag(dockerfile);
+                var args = ImageBuild.BuildCliArguments(definition, dockerfile, tag, includeLibraryLabels: true);
+                await Cli.RunBufferedAsync(args, cancellationToken, onOutput: ImageBuild.CreateOutputCallback(definition, dockerfile)).ConfigureAwait(false);
                 return tag;
 
             case ArchiveImage archive:
@@ -121,6 +114,7 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
         var name = definition.Name ?? (definition.ReuseId is { } reuseId ? ResourceNaming.GetReuseName(reuseId) : null);
         AddOption(args, "--name", name);
         AddNetworks(args, definition);
+        AddOption(args, "--platform", definition.Platform);
 
         if (definition.Resources.ReadOnlyRootFilesystem)
             args.Add("--read-only");

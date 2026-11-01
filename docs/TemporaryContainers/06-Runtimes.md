@@ -119,6 +119,7 @@ A daemon on another machine publishes the ports of the containers on that machin
 | Privileged mode, extra hosts, healthcheck, stop signal and timeout, exposed ports, tmpfs options ([Advanced options](04-Configuration/08-AdvancedOptions.md)) | Yes | Yes | No | Not verified |
 | [HostIp](cref:Meziantou.Framework.TemporaryContainers.ContainerPort.HostIp) of a port | Yes, except Windows containers | Yes | Yes, IPv4 only | No, loopback forwarding of WSL |
 | [PullPolicy.Never](cref:Meziantou.Framework.TemporaryContainers.PullPolicy.Never) | Yes | Yes | Yes | No |
+| [Platform](cref:Meziantou.Framework.TemporaryContainers.ContainerDefinition.Platform) of a container | Yes | Yes | Yes | No |
 | Built images removed and cleaned up | Yes | Yes | Yes | No, they are not labeled |
 | Anonymous volumes removed with the container | Yes | Yes | Yes | No |
 | [Reaper](07-Cleanup.md#remove-the-containers-as-soon-as-the-process-dies) | Yes | Yes | No | No |

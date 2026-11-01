@@ -188,4 +188,79 @@ public sealed class DockerCreateArgumentBuilderTests
         Assert.Contains(" --network first --network-alias a --network-alias b ", args);
         Assert.DoesNotContain("second", args);
     }
+
+    [Fact]
+    public void PassesThePlatform()
+    {
+        var definition = new ContainerDefinition(new RegistryImage("mcr.microsoft.com/mssql/server:2025-latest")) { Platform = "linux/amd64" };
+
+        var args = DockerCreateArgumentBuilder.Build(definition, "mcr.microsoft.com/mssql/server:2025-latest", pullPolicyValue: null, quotedMountFieldsSupported: true);
+
+        Assert.Equal("linux/amd64", args[args.IndexOf("--platform") + 1]);
+        Assert.True(args.IndexOf("--platform") < args.IndexOf("mcr.microsoft.com/mssql/server:2025-latest"));
+    }
+
+    [Fact]
+    public void OmitsThePlatformByDefault()
+    {
+        var definition = new ContainerDefinition(new RegistryImage("redis:8"));
+
+        var args = DockerCreateArgumentBuilder.Build(definition, "redis:8", pullPolicyValue: null, quotedMountFieldsSupported: true);
+
+        Assert.DoesNotContain("--platform", args);
+    }
+
+    [Fact]
+    public void BuildCliArguments_PassesTheBuildOptions()
+    {
+        var options = new DockerfileBuildOptions
+        {
+            Target = "test",
+            Platform = "linux/arm64",
+            NoCache = true,
+            Pull = true,
+        };
+        options.BuildArguments.Add("VERSION", "1.2.3");
+        options.Labels.Add("org.opencontainers.image.title", "app");
+        var image = (DockerfileImage)ImageSource.FromDockerfile("/src/Dockerfile", "/src", options);
+        var definition = new ContainerDefinition(image) { Platform = "linux/amd64" };
+
+        var args = ImageBuild.BuildCliArguments(definition, image, "my-app:test", includeLibraryLabels: true);
+
+        Assert.Equal(["build", "-t", "my-app:test", "-f", image.DockerfilePath, "--build-arg", "VERSION=1.2.3"], args.Take(7));
+        Assert.Contains("org.opencontainers.image.title=app", args);
+        Assert.Contains($"{ResourceLabels.Managed}=1", args);
+        Assert.Equal("test", args[args.IndexOf("--target") + 1]);
+        Assert.Equal("linux/arm64", args[args.IndexOf("--platform") + 1]);
+        Assert.Contains("--no-cache", args);
+        Assert.Contains("--pull", args);
+        Assert.Equal(image.ContextDirectory, args[^1]);
+    }
+
+    [Fact]
+    public void BuildCliArguments_BuildsForThePlatformOfTheContainer()
+    {
+        var image = (DockerfileImage)ImageSource.FromDockerfile("/src/Dockerfile");
+        var definition = new ContainerDefinition(image) { Platform = "linux/amd64" };
+
+        var args = ImageBuild.BuildCliArguments(definition, image, "tag", includeLibraryLabels: false);
+
+        Assert.Equal("linux/amd64", args[args.IndexOf("--platform") + 1]);
+        Assert.DoesNotContain("--label", args);
+        Assert.DoesNotContain("--no-cache", args);
+        Assert.DoesNotContain("--pull", args);
+    }
+
+    [Fact]
+    public void BuildCliArguments_DoesNotLabelAnImageWithATagOfTheCaller()
+    {
+        var options = new DockerfileBuildOptions { Tag = "my-app:test" };
+        var image = (DockerfileImage)ImageSource.FromDockerfile("/src/Dockerfile", "/src", options);
+        var definition = new ContainerDefinition(image);
+
+        var args = ImageBuild.BuildCliArguments(definition, image, ImageBuild.GetTag(image), includeLibraryLabels: true);
+
+        Assert.Equal("my-app:test", args[2]);
+        Assert.DoesNotContain("--label", args);
+    }
 }

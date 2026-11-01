@@ -99,7 +99,6 @@ public sealed class ZintMatrixTests
     [MemberData(nameof(QRCodes))]
     public async Task QRCode_MatchesZint(QRCodeType type, ErrorCorrectionLevel level, string data)
     {
-        var tools = await BarcodeTools.GetAsync();
         var qr = type switch
         {
             QRCodeType.MicroQR => QRCode.CreateMicroQR(data, level),
@@ -107,6 +106,52 @@ public sealed class ZintMatrixTests
             _ => QRCode.Create(data, level),
         };
 
+        await AssertMatchesZintAsync(qr, level, data);
+    }
+
+    public static TheoryData<QRCodeType, ErrorCorrectionLevel, string, int, int> SizeConstrainedQRCodes()
+    {
+        // The type, the level, the data, and the version (Micro QR, standard) or the height and the width (rMQR)
+        return new TheoryData<QRCodeType, ErrorCorrectionLevel, string, int, int>
+        {
+            { QRCodeType.Standard, ErrorCorrectionLevel.M, "HELLO WORLD", 10, 0 },
+            { QRCodeType.Standard, ErrorCorrectionLevel.H, "0123456789", 7, 0 },
+            { QRCodeType.Standard, ErrorCorrectionLevel.L, "hello", 27, 0 },
+            { QRCodeType.MicroQR, ErrorCorrectionLevel.L, "12345", 4, 0 },
+            { QRCodeType.MicroQR, ErrorCorrectionLevel.M, "AB", 3, 0 },
+            { QRCodeType.RMQR, ErrorCorrectionLevel.M, "HELLO", 17, 139 },
+            { QRCodeType.RMQR, ErrorCorrectionLevel.H, "1234", 7, 99 },
+            { QRCodeType.RMQR, ErrorCorrectionLevel.M, "123", 13, 27 },
+        };
+    }
+
+    [Theory]
+    [MemberData(nameof(SizeConstrainedQRCodes))]
+    public async Task SizeConstrainedQRCode_MatchesZint(QRCodeType type, ErrorCorrectionLevel level, string data, int version, int width)
+    {
+        var qr = type switch
+        {
+            QRCodeType.MicroQR => QRCode.CreateMicroQR(data, level, new MicroQRCodeOptions { MinimumVersion = version, MaximumVersion = version }),
+            QRCodeType.RMQR => QRCode.CreateRMQR(data, level, new RMQRCodeOptions { Height = version, Width = width }),
+            _ => QRCode.Create(data, level, new QRCodeOptions { MinimumVersion = version, MaximumVersion = version }),
+        };
+
+        if (type is QRCodeType.RMQR)
+        {
+            Assert.Equal((version, width), (qr.Height, qr.Width));
+        }
+        else
+        {
+            Assert.Equal(version, qr.Version);
+        }
+
+        await AssertMatchesZintAsync(qr, level, data);
+    }
+
+    private static async Task AssertMatchesZintAsync(QRCode qr, ErrorCorrectionLevel level, string data)
+    {
+        var tools = await BarcodeTools.GetAsync();
+        var type = qr.Type;
         await using var directory = TemporaryDirectory.Create();
         var path = directory.FullPath / "qrcode.png";
         await File.WriteAllBytesAsync(path, qr.ToPng(new QRCodePngOptions { ModuleSize = 4 }), XunitCancellationToken);
@@ -131,6 +176,40 @@ public sealed class ZintMatrixTests
         if (!Ascii.IsValid(data) && !data.Any(IsKanji))
         {
             arguments.Add("--binary"); // our byte mode is UTF-8 without an ECI header
+        }
+
+        var expected = await tools.GetZintMatrixAsync(arguments, data, qr.Width);
+        AssertSameModules(expected, qr.Width, qr.Height, (row, column) => qr[row, column]);
+    }
+
+    [Theory]
+    [InlineData(26, "héllo wörld", true)]
+    [InlineData(26, "漢字のテスト", true)]
+    [InlineData(26, "Ελληνικά и кириллица", true)]
+    [InlineData(26, "plain ascii text", true)]
+    [InlineData(3, "caf\u00E9", false)]
+    [InlineData(170, "two-byte designator", false)]
+    [InlineData(899, "binary", false)]
+    [InlineData(20000, "three-byte designator", false)]
+    [InlineData(999999, "largest designator", false)]
+    public async Task QRCodeWithEci_MatchesZint(int eci, string data, bool text)
+    {
+        var tools = await BarcodeTools.GetAsync();
+        var options = new QRCodeOptions { EciAssignmentNumber = eci };
+        var qr = text ? QRCode.Create(data, ErrorCorrectionLevel.M, options) : QRCode.Create(Encoding.UTF8.GetBytes(data), ErrorCorrectionLevel.M, options);
+
+        await using var directory = TemporaryDirectory.Create();
+        var path = directory.FullPath / "qrcode.png";
+        await File.WriteAllBytesAsync(path, qr.ToPng(new QRCodePngOptions { ModuleSize = 4 }), XunitCancellationToken);
+        var decoded = Assert.Single(await tools.ReadWithZXingAsync([path]));
+        Assert.True(decoded.HasEci);
+        Assert.NotNull(decoded.DataMask);
+        Assert.Equal(Encoding.UTF8.GetBytes(data), decoded.Bytes);
+
+        List<string> arguments = ["-b", "58", "--vers=" + qr.Version.ToString(CultureInfo.InvariantCulture), "--mask=" + decoded.DataMask.Value.ToString(CultureInfo.InvariantCulture), "--secure=2", "--eci=" + eci.ToString(CultureInfo.InvariantCulture)];
+        if (!text)
+        {
+            arguments.Add("--binary");
         }
 
         var expected = await tools.GetZintMatrixAsync(arguments, data, qr.Width);

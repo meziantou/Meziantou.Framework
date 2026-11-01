@@ -12,4 +12,5 @@ namespace Meziantou.Framework.Barcodes.InteropTests;
 /// <param name="Error">The error ZXingReader reports, or <see langword="null"/>.</param>
 /// <param name="SymbologyIdentifier">The symbology identifier, such as <c>]C0</c> (Code 128) or <c>]C1</c> (GS1-128).</param>
 /// <param name="ContentType">The type of content, such as <c>Text</c> or <c>GS1</c>.</param>
-internal sealed record ZXingResult(string FilePath, string Text, string HumanReadableText, byte[] Bytes, string Format, string? Version, string? ErrorCorrectionLevel, int? DataMask, string? Error, string? SymbologyIdentifier, string? ContentType);
+/// <param name="HasEci">Whether the symbol declares the encoding of its data with an ECI designator.</param>
+internal sealed record ZXingResult(string FilePath, string Text, string HumanReadableText, byte[] Bytes, string Format, string? Version, string? ErrorCorrectionLevel, int? DataMask, string? Error, string? SymbologyIdentifier, string? ContentType, bool HasEci);

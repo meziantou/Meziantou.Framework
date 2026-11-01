@@ -59,6 +59,7 @@ public class ContainerDefinition
         Image = other.Image;
         Runtime = other.Runtime;
         PullPolicy = other.PullPolicy;
+        Platform = other.Platform;
 
         // The name a container was given by the library belongs to that container: a copy that kept it would create a
         // second container with the name of the first.
@@ -127,6 +128,18 @@ public class ContainerDefinition
             field = value;
         }
     } = PullPolicy.IfMissing;
+
+    /// <summary>Gets or sets the platform of the image, such as <c>linux/amd64</c> or <c>linux/arm64</c>. It selects the variant of a multi-platform image that is pulled and run, and the platform a Dockerfile is built for. When <see langword="null"/>, the runtime picks the platform of the machine.</summary>
+    /// <remarks>Running an image of another architecture requires emulation, such as Rosetta on Apple Silicon or QEMU on Linux.</remarks>
+    public string? Platform
+    {
+        get;
+        set
+        {
+            DefinitionReadOnly.ThrowIf(_isReadOnly);
+            field = value;
+        }
+    }
 
     /// <summary>Gets or sets the container name. When <see langword="null"/>, the container is named after <see cref="ReuseId"/> when it is set, and gets a random name otherwise.</summary>
     public string? Name

@@ -25,6 +25,7 @@ namespace Meziantou.Framework.TemporaryContainers.Internals;
 [JsonSerializable(typeof(DockerApiModels.NetworkSummary))]
 [JsonSerializable(typeof(DockerApiModels.NetworkSummary[]))]
 [JsonSerializable(typeof(Dictionary<string, string>))]
+[JsonSerializable(typeof(Dictionary<string, DockerApiModels.RegistryAuthHeader>))]
 [JsonSourceGenerationOptions(
     PropertyNameCaseInsensitive = true,
     RespectNullableAnnotations = true,

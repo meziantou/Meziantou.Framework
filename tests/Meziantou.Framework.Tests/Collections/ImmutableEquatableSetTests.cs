@@ -115,11 +115,36 @@ public sealed class ImmutableEquatableSetTests
     }
 
     [Fact]
-    public void GetHashCode_ShouldReturnCount()
+    public void GetHashCode_SameItemsInAnyOrder_ShouldReturnSameValue()
     {
-        var set = ImmutableEquatableSet.Create(new HashSet<string>(StringComparer.Ordinal) { "a", "b", "c" });
+        var set1 = ImmutableEquatableSet.Create(new[] { "a", "b", "c" });
+        var set2 = ImmutableEquatableSet.Create(new[] { "c", "a", "b" });
 
-        Assert.Equal(3, set.GetHashCode());
+        Assert.Equal(set1.GetHashCode(), set2.GetHashCode());
+    }
+
+    [Fact]
+    public void GetHashCode_SameCountDifferentItems_ShouldReturnDifferentValues()
+    {
+        var hashCodes = Enumerable.Range(0, 100).Select(i => ImmutableEquatableSet.Create(new[] { i, i + 1000 }).GetHashCode()).Distinct().Count();
+
+        Assert.True(hashCodes > 90);
+    }
+
+    [Fact]
+    public void IReadOnlySet_ShouldForwardToSet()
+    {
+        IReadOnlySet<string> set = ImmutableEquatableSet.Create(new[] { "a", "b" });
+
+        Assert.True(set.Contains("a"));
+        Assert.False(set.Contains("c"));
+        Assert.True(set.IsSubsetOf(["a", "b", "c"]));
+        Assert.True(set.IsProperSubsetOf(["a", "b", "c"]));
+        Assert.True(set.IsSupersetOf(["a"]));
+        Assert.True(set.IsProperSupersetOf(["a"]));
+        Assert.True(set.Overlaps(["b", "c"]));
+        Assert.True(set.SetEquals(["b", "a"]));
+        Assert.False(set.SetEquals(["a"]));
     }
 
     [Fact]
@@ -278,20 +303,20 @@ public sealed class ImmutableEquatableSetTests
     }
 
     [Fact]
-    public void MutatingOperations_ShouldThrowInvalidOperationException()
+    public void MutatingOperations_ShouldThrowNotSupportedException()
     {
         var set = ImmutableEquatableSet.Create(new HashSet<string>(StringComparer.Ordinal) { "a", "b" });
         var collection = (ICollection<string>)set;
         var iset = (ISet<string>)set;
 
-        Assert.Throws<InvalidOperationException>(() => collection.Add("c"));
-        Assert.Throws<InvalidOperationException>(() => collection.Remove("a"));
-        Assert.Throws<InvalidOperationException>(() => collection.Clear());
-        Assert.Throws<InvalidOperationException>(() => iset.Add("c"));
-        Assert.Throws<InvalidOperationException>(() => iset.UnionWith(new[] { "c" }));
-        Assert.Throws<InvalidOperationException>(() => iset.IntersectWith(new[] { "a" }));
-        Assert.Throws<InvalidOperationException>(() => iset.ExceptWith(new[] { "a" }));
-        Assert.Throws<InvalidOperationException>(() => iset.SymmetricExceptWith(new[] { "c" }));
+        Assert.Throws<NotSupportedException>(() => collection.Add("c"));
+        Assert.Throws<NotSupportedException>(() => collection.Remove("a"));
+        Assert.Throws<NotSupportedException>(() => collection.Clear());
+        Assert.Throws<NotSupportedException>(() => iset.Add("c"));
+        Assert.Throws<NotSupportedException>(() => iset.UnionWith(new[] { "c" }));
+        Assert.Throws<NotSupportedException>(() => iset.IntersectWith(new[] { "a" }));
+        Assert.Throws<NotSupportedException>(() => iset.ExceptWith(new[] { "a" }));
+        Assert.Throws<NotSupportedException>(() => iset.SymmetricExceptWith(new[] { "c" }));
     }
 
     [Fact]

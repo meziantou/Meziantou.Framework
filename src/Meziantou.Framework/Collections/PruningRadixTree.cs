@@ -66,6 +66,7 @@ public sealed class PruningRadixTree : IEnumerable<KeyValuePair<string, long>>
     /// <exception cref="ArgumentOutOfRangeException">One of the frequencies is less than or equal to 0.</exception>
     /// <remarks>
     /// This method is optimized for bulk loading by aggregating duplicate keys and building the radix tree from sorted entries.
+    /// When the tree already contains more terms than the sequence, the terms are added one by one instead of rebuilding the tree.
     /// </remarks>
     public void AddRange(IEnumerable<KeyValuePair<string, long>> terms)
     {
@@ -96,6 +97,17 @@ public sealed class PruningRadixTree : IEnumerable<KeyValuePair<string, long>>
         if (Count is 0)
         {
             RebuildTree(additions);
+            return;
+        }
+
+        // Rebuilding enumerates and sorts all the terms, so it is only worth it when adding many terms
+        if (additions.Count < Count)
+        {
+            foreach (var addition in additions)
+            {
+                AddCore(_root, addition.Key, addition.Key, addition.Value);
+            }
+
             return;
         }
 
@@ -271,7 +283,7 @@ public sealed class PruningRadixTree : IEnumerable<KeyValuePair<string, long>>
             }
 
             node.TermFrequency += frequency;
-            RecalculateMetadata(node);
+            UpdateMaxSubtreeFrequency(node);
             return;
         }
 
@@ -289,7 +301,7 @@ public sealed class PruningRadixTree : IEnumerable<KeyValuePair<string, long>>
 
             node.Children.Add(new Edge(term.ToString(), child));
             Count++;
-            RecalculateMetadata(node);
+            RepositionChild(node, node.Children.Count - 1);
             return;
         }
 
@@ -299,7 +311,7 @@ public sealed class PruningRadixTree : IEnumerable<KeyValuePair<string, long>>
         if (commonPrefixLength == edge.Label.Length)
         {
             AddCore(edge.Child, term[commonPrefixLength..], storedTerm, frequency);
-            RecalculateMetadata(node);
+            RepositionChild(node, childIndex);
             return;
         }
 
@@ -315,7 +327,7 @@ public sealed class PruningRadixTree : IEnumerable<KeyValuePair<string, long>>
             Count++;
             RecalculateMetadata(splitNode);
             node.Children[childIndex] = new Edge(term.ToString(), splitNode);
-            RecalculateMetadata(node);
+            RepositionChild(node, childIndex);
             return;
         }
 
@@ -336,7 +348,7 @@ public sealed class PruningRadixTree : IEnumerable<KeyValuePair<string, long>>
         Count++;
         RecalculateMetadata(branchNode);
         node.Children[childIndex] = new Edge(edge.Label[..commonPrefixLength], branchNode);
-        RecalculateMetadata(node);
+        RepositionChild(node, childIndex);
     }
 
     private static bool RemoveCore(Node node, ReadOnlySpan<char> term)
@@ -348,7 +360,7 @@ public sealed class PruningRadixTree : IEnumerable<KeyValuePair<string, long>>
 
             node.TermFrequency = 0;
             node.Term = null;
-            RecalculateMetadata(node);
+            UpdateMaxSubtreeFrequency(node);
             return true;
         }
 
@@ -367,32 +379,42 @@ public sealed class PruningRadixTree : IEnumerable<KeyValuePair<string, long>>
         if (!removed)
             return false;
 
-        CompactChildIfNeeded(node, childIndex);
-        RecalculateMetadata(node);
+        if (CompactChildIfNeeded(node, childIndex))
+        {
+            UpdateMaxSubtreeFrequency(node);
+        }
+        else
+        {
+            RepositionChild(node, childIndex);
+        }
+
         return true;
     }
 
-    private static void CompactChildIfNeeded(Node node, int childIndex)
+    // Returns true when the child was removed
+    private static bool CompactChildIfNeeded(Node node, int childIndex)
     {
         if (node.Children is null)
-            return;
+            return false;
 
         var edge = node.Children[childIndex];
         var child = edge.Child;
         if (child.TermFrequency is not 0)
-            return;
+            return false;
 
         if (child.Children is null || child.Children.Count is 0)
         {
+            // Removing an item keeps the other children sorted
             node.Children.RemoveAt(childIndex);
-            return;
+            return true;
         }
 
         if (child.Children.Count is not 1)
-            return;
+            return false;
 
         var grandChildEdge = child.Children[0];
         node.Children[childIndex] = new Edge(edge.Label + grandChildEdge.Label, grandChildEdge.Child);
+        return false;
     }
 
     private bool TryGetExactNode(ReadOnlySpan<char> term, [NotNullWhen(true)] out Node? node)
@@ -567,30 +589,57 @@ public sealed class PruningRadixTree : IEnumerable<KeyValuePair<string, long>>
         }
     }
 
+    // Children are sorted by descending maximum subtree frequency, so the lookup can stop at the first child that cannot reach the results
     private static void RecalculateMetadata(Node node)
     {
+        node.Children?.Sort(CompareEdges);
+        UpdateMaxSubtreeFrequency(node);
+    }
+
+    // The children must be sorted
+    private static void UpdateMaxSubtreeFrequency(Node node)
+    {
         var maxSubtreeFrequency = node.TermFrequency;
-        if (node.Children is not null)
+        if (node.Children is [var firstEdge, ..] && firstEdge.Child.MaxSubtreeFrequency > maxSubtreeFrequency)
         {
-            foreach (var edge in node.Children)
-            {
-                if (edge.Child.MaxSubtreeFrequency > maxSubtreeFrequency)
-                {
-                    maxSubtreeFrequency = edge.Child.MaxSubtreeFrequency;
-                }
-            }
-
-            node.Children.Sort((left, right) =>
-            {
-                var compareByFrequency = right.Child.MaxSubtreeFrequency.CompareTo(left.Child.MaxSubtreeFrequency);
-                if (compareByFrequency is not 0)
-                    return compareByFrequency;
-
-                return string.CompareOrdinal(left.Label, right.Label);
-            });
+            maxSubtreeFrequency = firstEdge.Child.MaxSubtreeFrequency;
         }
 
         node.MaxSubtreeFrequency = maxSubtreeFrequency;
+    }
+
+    // Moves the child at the specified index to its sorted position after it changed. The other children must be sorted.
+    private static void RepositionChild(Node node, int index)
+    {
+        var children = node.Children!;
+        var edge = children[index];
+        var newIndex = index;
+        while (newIndex > 0 && CompareEdges(children[newIndex - 1], edge) > 0)
+        {
+            children[newIndex] = children[newIndex - 1];
+            newIndex--;
+        }
+
+        if (newIndex == index)
+        {
+            while (newIndex < children.Count - 1 && CompareEdges(children[newIndex + 1], edge) < 0)
+            {
+                children[newIndex] = children[newIndex + 1];
+                newIndex++;
+            }
+        }
+
+        children[newIndex] = edge;
+        UpdateMaxSubtreeFrequency(node);
+    }
+
+    private static int CompareEdges(Edge left, Edge right)
+    {
+        var compareByFrequency = right.Child.MaxSubtreeFrequency.CompareTo(left.Child.MaxSubtreeFrequency);
+        if (compareByFrequency is not 0)
+            return compareByFrequency;
+
+        return string.CompareOrdinal(left.Label, right.Label);
     }
 
     private static int FindChildIndex(Node node, char firstChar)

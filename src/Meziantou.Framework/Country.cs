@@ -40,12 +40,10 @@ public static class Country
     }
 
     /// <summary>Tries to get the Unicode flag emoji for the specified region.</summary>
-    /// <returns><see langword="true"/> if the two-letter ISO region name of <paramref name="region"/> is made of two ASCII letters; otherwise, <see langword="false"/>.</returns>
-    public static bool TryGetUnicodeFlag(RegionInfo region, [NotNullWhen(true)] out string? flag)
+    /// <returns><see langword="true"/> if <paramref name="region"/> is not <see langword="null"/> and its two-letter ISO region name is made of two ASCII letters; otherwise, <see langword="false"/>.</returns>
+    public static bool TryGetUnicodeFlag(RegionInfo? region, [NotNullWhen(true)] out string? flag)
     {
-        ArgumentNullException.ThrowIfNull(region);
-
-        return TryCreateFlag(region.TwoLetterISORegionName, out flag);
+        return TryCreateFlag(region?.TwoLetterISORegionName, out flag);
     }
 
     /// <summary>Tries to get the Unicode flag emoji for the specified two-letter ISO region code.</summary>

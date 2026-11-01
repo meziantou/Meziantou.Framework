@@ -38,7 +38,7 @@ namespace Meziantou.Framework
     {
         public static string GetUnicodeFlag(System.Globalization.RegionInfo region) => throw null;
         public static string GetUnicodeFlag(string twoLetterISORegionName) => throw null;
-        public static bool TryGetUnicodeFlag(System.Globalization.RegionInfo region, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out string? flag) => throw null;
+        public static bool TryGetUnicodeFlag(System.Globalization.RegionInfo? region, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out string? flag) => throw null;
         public static bool TryGetUnicodeFlag(string? twoLetterISORegionName, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out string? flag) => throw null;
     }
 

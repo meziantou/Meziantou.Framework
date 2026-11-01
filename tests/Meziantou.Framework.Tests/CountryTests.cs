@@ -58,6 +58,14 @@ public sealed class CountryTests
         Assert.False(Country.TryGetUnicodeFlag((string?)null, out _));
     }
 
+    [Fact]
+    public void NullRegion()
+    {
+        Assert.Throws<ArgumentNullException>("region", () => Country.GetUnicodeFlag((RegionInfo)null!));
+        Assert.False(Country.TryGetUnicodeFlag((RegionInfo?)null, out var flag));
+        Assert.Null(flag);
+    }
+
     [Theory]
     [InlineData("az", "\U0001F1E6\U0001F1FF")]
     [InlineData("ZA", "\U0001F1FF\U0001F1E6")]

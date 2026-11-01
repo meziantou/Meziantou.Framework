@@ -2651,6 +2651,179 @@ public sealed partial class SnapshotTests
         Assert.False(Directory.Exists(copyDirectory));
     }
 
+    [Fact, RunIf(TestOperatingSystems.Linux | TestOperatingSystems.MacOS)]
+    public void GitDiffTool_PassesAbsolutePathsWhenTheInputsAreRelative()
+    {
+        global::Xunit.Assert.SkipWhen(ExecutableFinder.GetFullExecutablePath("git") is null, "git is not installed.");
+
+        using var directory = TemporaryDirectory.Create();
+        var repository = directory.GetFullPath("repo");
+        Directory.CreateDirectory(repository / "tests");
+        RunGitCommand(repository, "init");
+        RunGitCommand(repository, "config", "diff.tool", "my tool");
+        RunGitCommand(repository, "config", "difftool.my tool.cmd", """printf '%s\n' "$LOCAL" "$REMOTE" "$MERGED" "$BASE" > variables.txt && cat "$LOCAL" "$REMOTE" "$MERGED" "$BASE" > contents.txt""");
+
+        var verifiedPath = repository / "tests" / "snapshot.verified.txt";
+        var actualPath = repository / "tests" / "snapshot.actual.txt";
+        File.WriteAllText(verifiedPath, "recorded");
+        File.WriteAllText(actualPath, "sample");
+
+        // The tool runs in the directory of the verified file, not in the current directory the paths are relative to.
+        var relativeVerifiedPath = Path.GetRelativePath(Environment.CurrentDirectory, verifiedPath);
+        var relativeActualPath = Path.GetRelativePath(Environment.CurrentDirectory, actualPath);
+        Assert.False(Path.IsPathRooted(relativeVerifiedPath));
+
+        using (var result = MergeTool.GitDiffTool.Start(relativeVerifiedPath, relativeActualPath))
+        {
+            Assert.NotNull(result);
+            result.WaitForExit();
+            Assert.Equal(0, ((ProcessMergeToolResult)result).Process.ExitCode);
+        }
+
+        string[] expectedVariables = [verifiedPath.Value, actualPath.Value, verifiedPath.Value, verifiedPath.Value];
+        Assert.Equal(expectedVariables, File.ReadAllLines(repository / "tests" / "variables.txt"));
+        Assert.Equal("recordedsamplerecordedrecorded", File.ReadAllText(repository / "tests" / "contents.txt"));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Linux | TestOperatingSystems.MacOS)]
+    public void GitMergeTool_WritesTheMergedFileWhenTheInputsAreRelative()
+    {
+        global::Xunit.Assert.SkipWhen(ExecutableFinder.GetFullExecutablePath("git") is null, "git is not installed.");
+
+        using var directory = TemporaryDirectory.Create();
+        var repository = directory.GetFullPath("repo");
+        Directory.CreateDirectory(repository / "tests");
+        RunGitCommand(repository, "init");
+        RunGitCommand(repository, "config", "merge.tool", "my tool");
+        RunGitCommand(repository, "config", "mergetool.my tool.cmd", """printf '%s\n' "$REMOTE" "$MERGED" > variables.txt && cat "$LOCAL" "$BASE" > contents.txt && cp "$REMOTE" "$MERGED" """);
+
+        var verifiedPath = repository / "tests" / "snapshot.verified.txt";
+        var actualPath = repository / "tests" / "snapshot.actual.txt";
+        File.WriteAllText(verifiedPath, "recorded");
+        File.WriteAllText(actualPath, "sample");
+
+        using (var result = MergeTool.GitMergeTool.Start(Path.GetRelativePath(Environment.CurrentDirectory, verifiedPath), Path.GetRelativePath(Environment.CurrentDirectory, actualPath)))
+        {
+            Assert.NotNull(result);
+            result.WaitForExit();
+            Assert.Equal(0, ((ProcessMergeToolResult)result).Process.ExitCode);
+        }
+
+        string[] expectedVariables = [actualPath.Value, verifiedPath.Value];
+        Assert.Equal(expectedVariables, File.ReadAllLines(repository / "tests" / "variables.txt"));
+        Assert.Equal("recordedrecorded", File.ReadAllText(repository / "tests" / "contents.txt"));
+        Assert.Equal("sample", File.ReadAllText(verifiedPath));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Linux | TestOperatingSystems.MacOS)]
+    public void Launch_TriesTheNextMergeToolWhenTheGitCommandDoesNotExist()
+    {
+        global::Xunit.Assert.SkipWhen(ExecutableFinder.GetFullExecutablePath("git") is null, "git is not installed.");
+
+        using var directory = TemporaryDirectory.Create();
+        RunGitCommand(directory.FullPath, "init");
+        RunGitCommand(directory.FullPath, "config", "merge.tool", "removed");
+        RunGitCommand(directory.FullPath, "config", "mergetool.removed.cmd", """meziantou-merge-tool-that-does-not-exist "$LOCAL" "$REMOTE" "$MERGED" """);
+
+        var verifiedPath = directory.GetFullPath("snapshot.verified.txt");
+        var actualPath = directory.GetFullPath("snapshot.actual.txt");
+        File.WriteAllText(verifiedPath, "recorded");
+        File.WriteAllText(actualPath, "sample");
+
+        var fallbackTool = new RecordingMergeTool();
+        var failures = new List<MergeToolLaunchFailure>();
+        using var result = MergeTool.Launch([MergeTool.GitMergeTool, fallbackTool], verifiedPath, actualPath, waitForMerge: true, failures);
+
+        Assert.IsType<CompletedMergeToolResult>(result);
+        Assert.Equal(1, fallbackTool.StartCount);
+        var failure = Assert.Single(failures);
+        Assert.Same(MergeTool.GitMergeTool, failure.Tool);
+        Assert.Contains("127", failure.Exception.Message, StringComparison.Ordinal);
+        Assert.Equal("recorded", File.ReadAllText(verifiedPath));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Linux | TestOperatingSystems.MacOS)]
+    public void Launch_DoesNotStartAnotherMergeToolWhenTheGitCommandIsCancelled()
+    {
+        global::Xunit.Assert.SkipWhen(ExecutableFinder.GetFullExecutablePath("git") is null, "git is not installed.");
+
+        using var directory = TemporaryDirectory.Create();
+        RunGitCommand(directory.FullPath, "init");
+        RunGitCommand(directory.FullPath, "config", "merge.tool", "cancelled");
+
+        // A merge the developer cancels typically ends with a nonzero exit code.
+        RunGitCommand(directory.FullPath, "config", "mergetool.cancelled.cmd", "exit 1");
+
+        var verifiedPath = directory.GetFullPath("snapshot.verified.txt");
+        var actualPath = directory.GetFullPath("snapshot.actual.txt");
+        File.WriteAllText(verifiedPath, "recorded");
+        File.WriteAllText(actualPath, "sample");
+
+        var fallbackTool = new RecordingMergeTool();
+        var failures = new List<MergeToolLaunchFailure>();
+        using var result = MergeTool.Launch([MergeTool.GitMergeTool, fallbackTool], verifiedPath, actualPath, waitForMerge: true, failures);
+
+        var processResult = Assert.IsType<ProcessMergeToolResult>(result);
+        processResult.WaitForExit();
+        Assert.Equal(1, processResult.Process.ExitCode);
+        Assert.Equal(0, fallbackTool.StartCount);
+        Assert.Empty(failures);
+    }
+
+    [Fact]
+    public void AutoDiffEngineTool_StartFirstTool_TriesTheNextToolWhenOneFailsToStart()
+    {
+        (DiffTool Tool, bool SupportsText, IEnumerable<string> BinaryExtensions)[] availableTools =
+        [
+            (DiffTool.Vim, true, [".png"]),
+            (DiffTool.Meld, true, []),
+            (DiffTool.BeyondCompare, true, [".png"]),
+            (DiffTool.WinMerge, true, [".png"]),
+        ];
+
+        var startedTools = new List<DiffTool>();
+        var failures = new List<MergeToolLaunchFailure>();
+        using var expectedResult = new CompletedMergeToolResult(waitsForMerge: true);
+        var result = AutoDiffEngineTool.StartFirstTool(".png", availableTools, tool =>
+        {
+            startedTools.Add(tool);
+            return tool is DiffTool.BeyondCompare ? throw new InvalidOperationException("Permission denied") : expectedResult;
+        }, failures);
+
+        Assert.Same(expectedResult, result);
+        DiffTool[] expectedTools = [DiffTool.BeyondCompare, DiffTool.WinMerge];
+        Assert.Equal(expectedTools, startedTools);
+        var failure = Assert.Single(failures);
+        Assert.Equal("BeyondCompare", failure.Tool.ToString());
+        Assert.Equal("Permission denied", failure.Exception.Message);
+    }
+
+    [Fact]
+    public void AutoDiffEngineTool_StartFirstTool_RecordsEachToolThatFailsToStart()
+    {
+        (DiffTool Tool, bool SupportsText, IEnumerable<string> BinaryExtensions)[] availableTools =
+        [
+            (DiffTool.Neovim, true, []),
+            (DiffTool.Meld, true, []),
+            (DiffTool.MsWordDiff, false, [".docx"]),
+            (DiffTool.WinMerge, true, []),
+        ];
+
+        var startedTools = new List<DiffTool>();
+        var failures = new List<MergeToolLaunchFailure>();
+        var result = AutoDiffEngineTool.StartFirstTool(".txt", availableTools, tool =>
+        {
+            startedTools.Add(tool);
+            throw new InvalidOperationException(tool + " is broken");
+        }, failures);
+
+        Assert.Null(result);
+        DiffTool[] expectedTools = [DiffTool.Meld, DiffTool.WinMerge];
+        Assert.Equal(expectedTools, startedTools);
+        string[] expectedMessages = ["Meld is broken", "WinMerge is broken"];
+        Assert.Equal(expectedMessages, failures.Select(failure => failure.Exception.Message));
+    }
+
     private static void RunGitCommand(string workingDirectory, params string[] arguments)
     {
         var psi = new ProcessStartInfo(ExecutableFinder.GetFullExecutablePath("git")!)

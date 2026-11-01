@@ -1,13 +1,17 @@
+using System.Runtime.ExceptionServices;
 using Meziantou.Framework.DiffEngine;
 
 #if MEZIANTOU_INLINE_SNAPSHOT_TESTING
+using SnapshotException = Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotException;
+
 namespace Meziantou.Framework.InlineSnapshotTesting.MergeTools;
 #else
 namespace Meziantou.Framework.SnapshotTesting.MergeTools;
 #endif
 
 /// <summary>
-/// Starts the first installed diff tool that supports the file, in the order DiffEngine prefers them.
+/// Starts the first installed diff tool that supports the file, in the order DiffEngine prefers them. When a tool fails
+/// to start, the next one is tried.
 /// </summary>
 /// <remarks>
 /// Terminal tools (Vim, Neovim) are never picked here. The test host has no terminal they could draw in, so they never
@@ -22,40 +26,89 @@ internal sealed class AutoDiffEngineTool : MergeTool
 
     internal override MergeToolResult? Start(string currentFilePath, string newFilePath, bool waitForMerge)
     {
-        var availableTools = ResolveAvailableTools();
-        var selectedTool = SelectTool(FullPath.FromPath(currentFilePath).Extension, availableTools.Select(tool => (tool.Tool, tool.SupportsText, (IEnumerable<string>)tool.BinaryExtensions)));
-        if (selectedTool is null)
-            return null;
+        var failures = new List<MergeToolLaunchFailure>();
+        var result = Start(currentFilePath, newFilePath, waitForMerge, failures);
+        if (result is not null || failures.Count is 0)
+            return result;
 
-        var resolvedTool = availableTools.First(tool => tool.Tool == selectedTool.Value);
-        return DiffEngineTool.Start(resolvedTool, currentFilePath, newFilePath, waitForMerge);
+        if (failures.Count is 1)
+        {
+            ExceptionDispatchInfo.Throw(failures[0].Exception);
+        }
+
+        throw new SnapshotException("Failed to launch any of the installed diff tools: " + string.Join(", ", failures.Select(failure => failure.Tool)), new AggregateException(failures.Select(failure => failure.Exception)));
+    }
+
+    internal override MergeToolResult? Start(string currentFilePath, string newFilePath, bool waitForMerge, List<MergeToolLaunchFailure> failures)
+    {
+        var availableTools = ResolveAvailableTools();
+        return StartFirstTool(
+            FullPath.FromPath(currentFilePath).Extension,
+            [.. availableTools.Select(tool => (tool.Tool, tool.SupportsText, (IEnumerable<string>)tool.BinaryExtensions))],
+            tool => DiffEngineTool.Start(availableTools.First(resolvedTool => resolvedTool.Tool == tool), currentFilePath, newFilePath, waitForMerge),
+            failures);
     }
 
     internal static bool IsTerminalTool(DiffTool tool) => tool is DiffTool.Vim or DiffTool.Neovim;
 
     /// <summary>
-    /// Selects the tool to start among the installed ones, given in order of preference: the first tool dedicated to
-    /// the extension of the file, or else the first tool that supports text, as
-    /// <see cref="DiffTools.TryFindByExtension(string, out ResolvedTool?)" /> does. Terminal tools are skipped.
+    /// Starts the candidates returned by <see cref="GetCandidates" /> in order, until one starts. A tool that throws is
+    /// recorded in <paramref name="failures" /> and the next one is tried. A tool that started is never followed by
+    /// another one, even when the developer closes it without merging.
+    /// </summary>
+    internal static MergeToolResult? StartFirstTool(string extension, IReadOnlyList<(DiffTool Tool, bool SupportsText, IEnumerable<string> BinaryExtensions)> availableTools, Func<DiffTool, MergeToolResult?> startTool, List<MergeToolLaunchFailure> failures)
+    {
+        foreach (var tool in GetCandidates(extension, availableTools))
+        {
+            try
+            {
+                var result = startTool(tool);
+                if (result is not null)
+                    return result;
+            }
+            catch (Exception exception)
+            {
+                failures.Add(new MergeToolLaunchFailure(new DiffEngineTool(tool), exception));
+            }
+        }
+
+        return null;
+    }
+
+    /// <summary>
+    /// Selects the tool to start among the installed ones, given in order of preference. See <see cref="GetCandidates" />.
     /// </summary>
     internal static DiffTool? SelectTool(string extension, IEnumerable<(DiffTool Tool, bool SupportsText, IEnumerable<string> BinaryExtensions)> availableTools)
     {
-        DiffTool? textTool = null;
+        return GetCandidates(extension, availableTools) is [var tool, ..] ? tool : null;
+    }
+
+    /// <summary>
+    /// Orders the installed tools, given in order of preference, the way they must be tried: first the tools dedicated
+    /// to the extension of the file, then the other tools that support text, as
+    /// <see cref="DiffTools.TryFindByExtension(string, out ResolvedTool?)" /> does. Terminal tools are skipped.
+    /// </summary>
+    internal static List<DiffTool> GetCandidates(string extension, IEnumerable<(DiffTool Tool, bool SupportsText, IEnumerable<string> BinaryExtensions)> availableTools)
+    {
+        var dedicatedTools = new List<DiffTool>();
+        var textTools = new List<DiffTool>();
         foreach (var (tool, supportsText, binaryExtensions) in availableTools)
         {
             if (IsTerminalTool(tool))
                 continue;
 
             if (extension is not "" && binaryExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
-                return tool;
-
-            if (supportsText)
             {
-                textTool ??= tool;
+                dedicatedTools.Add(tool);
+            }
+            else if (supportsText)
+            {
+                textTools.Add(tool);
             }
         }
 
-        return textTool;
+        dedicatedTools.AddRange(textTools);
+        return dedicatedTools;
     }
 
     private static List<ResolvedTool> ResolveAvailableTools()

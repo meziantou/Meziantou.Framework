@@ -10,7 +10,10 @@ internal sealed class GitMergeTool : GitTool
 
     internal override MergeToolResult? Start(string currentFilePath, string newFilePath, bool waitForMerge)
     {
-        var workingDirectory = Path.GetDirectoryName(currentFilePath);
+        // The command runs in the directory of the file, so a relative path would no longer point to the file there.
+        var currentFullPath = FullPath.FromPath(currentFilePath);
+        var newFullPath = FullPath.FromPath(newFilePath);
+        var workingDirectory = currentFullPath.Parent;
         var command = GetToolCommand(workingDirectory, "merge.tool", "mergetool");
         if (command is null)
             return null;
@@ -19,20 +22,20 @@ internal sealed class GitMergeTool : GitTool
         // "theirs", the new snapshot, and MERGED is the file the tool writes the result to. The verified file as it is
         // now is also the common ancestor of both sides, so BASE is the same copy as LOCAL. The copy keeps LOCAL and
         // BASE intact while the tool writes MERGED.
-        var originalCopy = CopyFileToTemp(currentFilePath);
+        var originalCopy = CopyFileToTemp(currentFullPath);
         try
         {
             var startInfo = CreateCommandStartInfo(command, workingDirectory,
             [
                 new("LOCAL", originalCopy),
-                new("REMOTE", newFilePath),
+                new("REMOTE", newFullPath),
                 new("BASE", originalCopy),
-                new("MERGED", currentFilePath),
+                new("MERGED", currentFullPath),
             ]);
 
             // git waits for the command to exit before it deletes its own copies, so a merge tool command is
             // expected to block until the merge is done.
-            return ProcessMergeToolResult.Start(startInfo, onExited: () => DeleteTemporaryCopy(originalCopy));
+            return StartCommand(startInfo, command, onExited: () => DeleteTemporaryCopy(originalCopy));
         }
         catch
         {

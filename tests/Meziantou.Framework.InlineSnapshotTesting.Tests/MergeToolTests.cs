@@ -156,6 +156,61 @@ public sealed class MergeToolTests
     }
 
     [Fact]
+    public void AutoDiffEngineTool_StartFirstTool_TriesTheNextToolWhenOneFailsToStart()
+    {
+        var startedTools = new List<DiffTool>();
+        var failures = new List<MergeToolLaunchFailure>();
+        using var expectedResult = new CompletedMergeToolResult();
+        var result = AutoDiffEngineTool.StartFirstTool(".cs",
+        [
+            (DiffTool.Vim, true, []),
+            (DiffTool.BeyondCompare, true, []),
+            (DiffTool.Meld, true, []),
+            (DiffTool.WinMerge, true, []),
+        ], tool =>
+        {
+            startedTools.Add(tool);
+            return tool is DiffTool.BeyondCompare ? throw new InvalidOperationException("Permission denied") : expectedResult;
+        }, failures);
+
+        Assert.Same(expectedResult, result);
+        DiffTool[] expectedTools = [DiffTool.BeyondCompare, DiffTool.Meld];
+        Assert.Equal(expectedTools, startedTools);
+        var failure = Assert.Single(failures);
+        Assert.Equal("BeyondCompare", failure.Tool.ToString());
+        Assert.Equal("Permission denied", failure.Exception.Message);
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Linux | TestOperatingSystems.MacOS)]
+    public void Launch_TriesTheNextMergeToolWhenTheGitCommandDoesNotExist()
+    {
+        var gitPath = ExecutableFinder.GetFullExecutablePath("git");
+        global::Xunit.Assert.SkipWhen(gitPath is null, "git is not installed.");
+
+        using var directory = TemporaryDirectory.Create();
+        var repository = directory.GetFullPath("repo");
+        Directory.CreateDirectory(repository / "tests");
+        RunGit(gitPath, repository, "init");
+        RunGit(gitPath, repository, "config", "merge.tool", "removed");
+        RunGit(gitPath, repository, "config", "mergetool.removed.cmd", """meziantou-merge-tool-that-does-not-exist "$LOCAL" "$REMOTE" "$MERGED" """);
+
+        var sourcePath = repository / "tests" / "Sample.cs";
+        var updatedPath = repository / "tests" / "Updated.cs";
+        File.WriteAllText(sourcePath, "recorded");
+        File.WriteAllText(updatedPath, "sample");
+
+        var failures = new List<MergeToolLaunchFailure>();
+        using var expectedResult = new CompletedMergeToolResult();
+        var result = MergeTool.Launch([MergeTool.GitMergeTool, new FixedMergeTool(expectedResult)], Path.GetRelativePath(Environment.CurrentDirectory, sourcePath), Path.GetRelativePath(Environment.CurrentDirectory, updatedPath), waitForMerge: true, failures);
+
+        Assert.Same(expectedResult, result);
+        var failure = Assert.Single(failures);
+        Assert.Same(MergeTool.GitMergeTool, failure.Tool);
+        Assert.Contains("127", failure.Exception.Message, StringComparison.Ordinal);
+        Assert.Equal("recorded", File.ReadAllText(sourcePath));
+    }
+
+    [Fact]
     public void DiffEngineTool_CreateStartInfo_EscapesTheArgumentsOfABatchFileForCmd()
     {
         var startInfo = DiffEngineTool.CreateStartInfo(@"C:\Tools\code.cmd", CommandLineBuilder.WindowsQuotedArguments("--diff", @"C:\src\R&D\a b.cs", @"C:\100%\b.cs"));

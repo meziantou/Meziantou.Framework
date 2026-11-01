@@ -62,7 +62,17 @@ internal static class DataAnalyzer
             }
         }
 
-        throw new InvalidOperationException("The data is too long to be encoded in a QR code.");
+        throw CreateDataTooLongException(minVersion, maxVersion);
+    }
+
+    public static InvalidOperationException CreateDataTooLongException(int minVersion, int maxVersion)
+    {
+        return (minVersion, maxVersion) switch
+        {
+            (1, 40) => new InvalidOperationException("The data is too long to be encoded in a QR code."),
+            _ when minVersion == maxVersion => new InvalidOperationException($"The data is too long to be encoded in a QR code of version {maxVersion}."),
+            _ => new InvalidOperationException($"The data is too long to be encoded in a QR code of version {minVersion} to {maxVersion}."),
+        };
     }
 
     public static int GetAlphanumericValue(char c)

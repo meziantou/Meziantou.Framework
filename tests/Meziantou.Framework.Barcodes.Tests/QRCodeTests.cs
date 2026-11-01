@@ -459,6 +459,93 @@ public class QRCodeTests
         Assert.Throws<ArgumentOutOfRangeException>(nameof(value), () => options.EciAssignmentNumber = value);
     }
 
+    // ───── Size constraints ─────
+
+    [Fact]
+    public void Documentation_FixedSize()
+    {
+        #region QRCode_FixedSize
+        // Every label gets a version 4 code (33 × 33 modules), whatever the length of its data
+        var exact = new QRCodeOptions { MinimumVersion = 4, MaximumVersion = 4 };
+        var shortLabel = QRCode.Create("A1", ErrorCorrectionLevel.Q, exact);
+        var longLabel = QRCode.Create("https://example.com/items/1234", ErrorCorrectionLevel.Q, exact);
+        Assert.Equal((33, 33), (shortLabel.Size, longLabel.Size));
+
+        // A code that must fit in the space of a version 2 code: larger data throws instead of giving a larger code
+        var bounded = new QRCodeOptions { MaximumVersion = 2 };
+        Assert.Throws<InvalidOperationException>(() => QRCode.Create(new string('x', 100), ErrorCorrectionLevel.M, bounded));
+
+        // The Micro QR version, and the rMQR height and width, in modules
+        var microQr = QRCode.CreateMicroQR("12345", ErrorCorrectionLevel.L, new MicroQRCodeOptions { MinimumVersion = 3, MaximumVersion = 3 });
+        var rmqr = QRCode.CreateRMQR("12345", ErrorCorrectionLevel.M, new RMQRCodeOptions { MaximumHeight = 7 });
+        Assert.Equal((15, 15), (microQr.Width, microQr.Height));
+        Assert.Equal((43, 7), (rmqr.Width, rmqr.Height));
+
+        // The size of the image is set by the renderer: 33 modules of 10 pixels, plus a quiet zone of 4 modules on each side
+        var png = shortLabel.ToPng(new QRCodePngOptions { ModuleSize = 10 });
+        #endregion
+
+        Assert.NotEmpty(png);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(10)]
+    [InlineData(27)]
+    [InlineData(40)]
+    public void Create_ExactVersion(int version)
+    {
+        var options = new QRCodeOptions { MinimumVersion = version, MaximumVersion = version };
+
+        Assert.Equal(version, QRCode.Create("HELLO", ErrorCorrectionLevel.H, options).Version);
+        Assert.Equal(version, QRCode.Create("h\u00E9llo", ErrorCorrectionLevel.H, options).Version);
+        Assert.Equal(version, QRCode.Create([1, 2, 3], ErrorCorrectionLevel.H, options).Version);
+    }
+
+    [Fact]
+    public void Create_VersionRange_UsesTheSmallestVersionThatHoldsTheData()
+    {
+        var options = new QRCodeOptions { MinimumVersion = 3, MaximumVersion = 6 };
+
+        Assert.Equal(3, QRCode.Create("HELLO", ErrorCorrectionLevel.M, options).Version);
+        Assert.Equal(5, QRCode.Create(new string('x', 70), ErrorCorrectionLevel.M, options).Version);
+        Assert.Equal(5, QRCode.Create(new byte[70], ErrorCorrectionLevel.M, options).Version);
+    }
+
+    [Fact]
+    public void Create_DataTooLongForTheMaximumVersion_Throws()
+    {
+        var options = new QRCodeOptions { MaximumVersion = 2 };
+
+        // Version 2-M holds 26 bytes
+        Assert.Equal(2, QRCode.Create(new string('x', 26), ErrorCorrectionLevel.M, options).Version);
+        var exception = Assert.Throws<InvalidOperationException>(() => QRCode.Create(new string('x', 27), ErrorCorrectionLevel.M, options));
+        Assert.Equal("The data is too long to be encoded in a QR code of version 1 to 2.", exception.Message);
+        Assert.Throws<InvalidOperationException>(() => QRCode.Create(new byte[27], ErrorCorrectionLevel.M, options));
+        Assert.Throws<InvalidOperationException>(() => QRCode.Create(new string('x', 26), ErrorCorrectionLevel.M, new QRCodeOptions { MaximumVersion = 2, EciAssignmentNumber = 26 }));
+    }
+
+    [Fact]
+    public void Create_MinimumVersionGreaterThanMaximumVersion_Throws()
+    {
+        var options = new QRCodeOptions { MinimumVersion = 5, MaximumVersion = 4 };
+
+        Assert.Throws<ArgumentException>("options", () => QRCode.Create("HELLO", ErrorCorrectionLevel.M, options));
+        Assert.Throws<ArgumentException>("options", () => QRCode.Create([1], ErrorCorrectionLevel.M, options));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(41)]
+    [InlineData(-1)]
+    public void QRCodeOptions_InvalidVersion_Throws(int value)
+    {
+        var options = new QRCodeOptions();
+
+        Assert.Throws<ArgumentOutOfRangeException>(nameof(value), () => options.MinimumVersion = value);
+        Assert.Throws<ArgumentOutOfRangeException>(nameof(value), () => options.MaximumVersion = value);
+    }
+
     // ───── Higher versions / different sizes ─────
 
     [Fact]

@@ -42,7 +42,7 @@ internal static class QRSegmentOptimizer
             }
         }
 
-        throw new InvalidOperationException("The data is too long to be encoded in a QR code.");
+        throw DataAnalyzer.CreateDataTooLongException(minVersion, maxVersion);
     }
 
     /// <summary>

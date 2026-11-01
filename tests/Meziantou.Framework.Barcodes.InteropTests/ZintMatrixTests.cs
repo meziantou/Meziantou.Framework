@@ -86,7 +86,6 @@ public sealed class ZintMatrixTests
     [MemberData(nameof(QRCodes))]
     public async Task QRCode_MatchesZint(QRCodeType type, ErrorCorrectionLevel level, string data)
     {
-        var tools = await BarcodeTools.GetAsync();
         var qr = type switch
         {
             QRCodeType.MicroQR => QRCode.CreateMicroQR(data, level),
@@ -94,6 +93,52 @@ public sealed class ZintMatrixTests
             _ => QRCode.Create(data, level),
         };
 
+        await AssertMatchesZintAsync(qr, level, data);
+    }
+
+    public static TheoryData<QRCodeType, ErrorCorrectionLevel, string, int, int> SizeConstrainedQRCodes()
+    {
+        // The type, the level, the data, and the version (Micro QR, standard) or the height and the width (rMQR)
+        return new TheoryData<QRCodeType, ErrorCorrectionLevel, string, int, int>
+        {
+            { QRCodeType.Standard, ErrorCorrectionLevel.M, "HELLO WORLD", 10, 0 },
+            { QRCodeType.Standard, ErrorCorrectionLevel.H, "0123456789", 7, 0 },
+            { QRCodeType.Standard, ErrorCorrectionLevel.L, "hello", 27, 0 },
+            { QRCodeType.MicroQR, ErrorCorrectionLevel.L, "12345", 4, 0 },
+            { QRCodeType.MicroQR, ErrorCorrectionLevel.M, "AB", 3, 0 },
+            { QRCodeType.RMQR, ErrorCorrectionLevel.M, "HELLO", 17, 139 },
+            { QRCodeType.RMQR, ErrorCorrectionLevel.H, "1234", 7, 99 },
+            { QRCodeType.RMQR, ErrorCorrectionLevel.M, "123", 13, 27 },
+        };
+    }
+
+    [Theory]
+    [MemberData(nameof(SizeConstrainedQRCodes))]
+    public async Task SizeConstrainedQRCode_MatchesZint(QRCodeType type, ErrorCorrectionLevel level, string data, int version, int width)
+    {
+        var qr = type switch
+        {
+            QRCodeType.MicroQR => QRCode.CreateMicroQR(data, level, new MicroQRCodeOptions { MinimumVersion = version, MaximumVersion = version }),
+            QRCodeType.RMQR => QRCode.CreateRMQR(data, level, new RMQRCodeOptions { Height = version, Width = width }),
+            _ => QRCode.Create(data, level, new QRCodeOptions { MinimumVersion = version, MaximumVersion = version }),
+        };
+
+        if (type is QRCodeType.RMQR)
+        {
+            Assert.Equal((version, width), (qr.Height, qr.Width));
+        }
+        else
+        {
+            Assert.Equal(version, qr.Version);
+        }
+
+        await AssertMatchesZintAsync(qr, level, data);
+    }
+
+    private static async Task AssertMatchesZintAsync(QRCode qr, ErrorCorrectionLevel level, string data)
+    {
+        var tools = await BarcodeTools.GetAsync();
+        var type = qr.Type;
         await using var directory = TemporaryDirectory.Create();
         var path = directory.FullPath / "qrcode.png";
         await File.WriteAllBytesAsync(path, qr.ToPng(new QRCodePngOptions { ModuleSize = 4 }), XunitCancellationToken);

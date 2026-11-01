@@ -193,4 +193,67 @@ public class MicroQRCodeTests
             QuietZoneModules = 0,
         });
     }
+
+    // ───── Size constraints ─────
+
+    [Theory]
+    [InlineData(1, 11)]
+    [InlineData(2, 13)]
+    [InlineData(3, 15)]
+    [InlineData(4, 17)]
+    public void CreateMicroQR_ExactVersion(int version, int size)
+    {
+        var qr = QRCode.CreateMicroQR("12", ErrorCorrectionLevel.L, new MicroQRCodeOptions { MinimumVersion = version, MaximumVersion = version });
+
+        Assert.Equal((version, size, size), (qr.Version, qr.Width, qr.Height));
+    }
+
+    [Fact]
+    public void CreateMicroQR_VersionRange_UsesTheSmallestVersionThatHoldsTheData()
+    {
+        var options = new MicroQRCodeOptions { MinimumVersion = 2, MaximumVersion = 3 };
+
+        Assert.Equal(2, QRCode.CreateMicroQR("12345", ErrorCorrectionLevel.M, options).Version);
+        Assert.Equal(3, QRCode.CreateMicroQR("hello", ErrorCorrectionLevel.M, options).Version);
+    }
+
+    [Theory]
+    [InlineData(1, 1, ErrorCorrectionLevel.M)]
+    [InlineData(1, 3, ErrorCorrectionLevel.Q)]
+    [InlineData(1, 1, ErrorCorrectionLevel.Q)]
+    public void CreateMicroQR_NoVersionSupportsTheErrorCorrectionLevel_Throws(int minVersion, int maxVersion, ErrorCorrectionLevel level)
+    {
+        var options = new MicroQRCodeOptions { MinimumVersion = minVersion, MaximumVersion = maxVersion };
+
+        Assert.Throws<ArgumentException>("options", () => QRCode.CreateMicroQR("1", level, options));
+    }
+
+    [Fact]
+    public void CreateMicroQR_DataDoesNotFitTheAllowedVersions_Throws()
+    {
+        var options = new MicroQRCodeOptions { MaximumVersion = 2 };
+
+        // M2-L holds 10 digits, and no lowercase letters
+        Assert.Equal(2, QRCode.CreateMicroQR("0123456789", ErrorCorrectionLevel.L, options).Version);
+        var exception = Assert.Throws<InvalidOperationException>(() => QRCode.CreateMicroQR("01234567890", ErrorCorrectionLevel.L, options));
+        Assert.Equal("The data is too long to be encoded in a Micro QR code of version M1 to M2.", exception.Message);
+        Assert.Throws<InvalidOperationException>(() => QRCode.CreateMicroQR("a", ErrorCorrectionLevel.L, options));
+    }
+
+    [Fact]
+    public void CreateMicroQR_MinimumVersionGreaterThanMaximumVersion_Throws()
+    {
+        Assert.Throws<ArgumentException>("options", () => QRCode.CreateMicroQR("1", ErrorCorrectionLevel.L, new MicroQRCodeOptions { MinimumVersion = 3, MaximumVersion = 2 }));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(5)]
+    public void MicroQRCodeOptions_InvalidVersion_Throws(int value)
+    {
+        var options = new MicroQRCodeOptions();
+
+        Assert.Throws<ArgumentOutOfRangeException>(nameof(value), () => options.MinimumVersion = value);
+        Assert.Throws<ArgumentOutOfRangeException>(nameof(value), () => options.MaximumVersion = value);
+    }
 }

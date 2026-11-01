@@ -245,6 +245,46 @@ public sealed class DecodeInteropTests
     }
 
     [Fact]
+    public async Task SizeConstrainedQRCodes_AreDecoded()
+    {
+        var tools = await BarcodeTools.GetAsync();
+        await using var directory = TemporaryDirectory.Create();
+        var cases = new List<(string Path, QRCode QRCode, string Data, string Version)>();
+        void Add(QRCode qr, string data, string version)
+        {
+            cases.Add((directory.FullPath / $"size-{cases.Count.ToString(CultureInfo.InvariantCulture)}.png", qr, data, version));
+        }
+
+        foreach (var version in new[] { 1, 2, 7, 15, 26, 27, 40 })
+        {
+            Add(QRCode.Create("Fixed 123", ErrorCorrectionLevel.Q, new QRCodeOptions { MinimumVersion = version, MaximumVersion = version }), "Fixed 123", version.ToString(CultureInfo.InvariantCulture));
+        }
+
+        foreach (var version in new[] { 2, 3, 4 })
+        {
+            Add(QRCode.CreateMicroQR("12", ErrorCorrectionLevel.M, new MicroQRCodeOptions { MinimumVersion = version, MaximumVersion = version }), "12", "M" + version.ToString(CultureInfo.InvariantCulture));
+        }
+
+        foreach (var (height, width) in new[] { (7, 43), (9, 139), (11, 27), (13, 77), (17, 99) })
+        {
+            Add(QRCode.CreateRMQR("12", ErrorCorrectionLevel.H, new RMQRCodeOptions { Height = height, Width = width }), "12", "R" + height.ToString(CultureInfo.InvariantCulture) + "x" + width.ToString(CultureInfo.InvariantCulture));
+        }
+
+        foreach (var (path, qr, _, _) in cases)
+        {
+            await File.WriteAllBytesAsync(path, qr.ToPng(new QRCodePngOptions { ModuleSize = 3 }), XunitCancellationToken);
+        }
+
+        var results = await tools.ReadWithZXingAsync([.. cases.Select(item => item.Path)]);
+        foreach (var (path, _, data, version) in cases)
+        {
+            var result = Assert.Single(results, result => result.FilePath == path, message: version);
+            Assert.Equal(data, result.Text, message: version);
+            Assert.Equal(version, result.Version);
+        }
+    }
+
+    [Fact]
     public async Task KanjiModeCharacters_AreDecoded()
     {
         // Every character of JIS X 0208 that the readers decode the same way (zbarimg decodes 0x815C as U+2014 and code page

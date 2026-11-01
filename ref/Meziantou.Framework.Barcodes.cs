@@ -100,6 +100,12 @@ namespace Meziantou.Framework.Barcodes
         H = 3,
     }
 
+    public sealed class MicroQRCodeOptions
+    {
+        public int MaximumVersion { get => throw null; set { } }
+        public int MinimumVersion { get => throw null; set { } }
+    }
+
     public enum OneTimePasswordAlgorithm
     {
         SHA1 = 0,
@@ -127,7 +133,9 @@ namespace Meziantou.Framework.Barcodes
         public static Meziantou.Framework.Barcodes.QRCode Create(System.ReadOnlySpan<byte> data, Meziantou.Framework.Barcodes.ErrorCorrectionLevel errorCorrectionLevel, Meziantou.Framework.Barcodes.QRCodeOptions? options) => throw null;
         public static Meziantou.Framework.Barcodes.QRCode Create(string data, Meziantou.Framework.Barcodes.ErrorCorrectionLevel errorCorrectionLevel, Meziantou.Framework.Barcodes.QRCodeOptions? options) => throw null;
         public static Meziantou.Framework.Barcodes.QRCode CreateMicroQR(string data, Meziantou.Framework.Barcodes.ErrorCorrectionLevel errorCorrectionLevel = Meziantou.Framework.Barcodes.ErrorCorrectionLevel.L) => throw null;
+        public static Meziantou.Framework.Barcodes.QRCode CreateMicroQR(string data, Meziantou.Framework.Barcodes.ErrorCorrectionLevel errorCorrectionLevel, Meziantou.Framework.Barcodes.MicroQRCodeOptions? options) => throw null;
         public static Meziantou.Framework.Barcodes.QRCode CreateRMQR(string data, Meziantou.Framework.Barcodes.ErrorCorrectionLevel errorCorrectionLevel = Meziantou.Framework.Barcodes.ErrorCorrectionLevel.M) => throw null;
+        public static Meziantou.Framework.Barcodes.QRCode CreateRMQR(string data, Meziantou.Framework.Barcodes.ErrorCorrectionLevel errorCorrectionLevel, Meziantou.Framework.Barcodes.RMQRCodeOptions? options) => throw null;
     }
 
     public sealed class QRCodeConsoleOptions
@@ -152,6 +160,8 @@ namespace Meziantou.Framework.Barcodes
     {
         public const int Utf8EciAssignmentNumber = 26;
         public int? EciAssignmentNumber { get => throw null; set { } }
+        public int MaximumVersion { get => throw null; set { } }
+        public int MinimumVersion { get => throw null; set { } }
     }
 
     public static class QRCodePayload
@@ -206,6 +216,14 @@ namespace Meziantou.Framework.Barcodes
         Standard = 0,
         MicroQR = 1,
         RMQR = 2,
+    }
+
+    public sealed class RMQRCodeOptions
+    {
+        public int? Height { get => throw null; set { } }
+        public int? MaximumHeight { get => throw null; set { } }
+        public int? MaximumWidth { get => throw null; set { } }
+        public int? Width { get => throw null; set { } }
     }
 
     public enum WifiAuthentication

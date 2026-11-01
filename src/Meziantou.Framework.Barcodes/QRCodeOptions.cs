@@ -3,6 +3,10 @@ namespace Meziantou.Framework.Barcodes;
 /// <summary>
 /// Options for the creation of standard QR codes by <see cref="QRCode.Create(string, ErrorCorrectionLevel, QRCodeOptions)"/>.
 /// </summary>
+/// <remarks>
+/// The version sets the number of modules of the symbol (17 + 4 × version per side), not the size of the image: the
+/// <c>ModuleSize</c> of the renderers sets how many pixels or units a module takes.
+/// </remarks>
 public sealed class QRCodeOptions
 {
     /// <summary>The ECI assignment number of UTF-8 (26).</summary>
@@ -35,4 +39,41 @@ public sealed class QRCodeOptions
             field = value;
         }
     }
+
+    /// <summary>
+    /// Gets or sets the smallest version the symbol can have, from 1 (21 × 21 modules) to 40 (177 × 177 modules). The default is 1.
+    /// </summary>
+    /// <remarks>
+    /// The symbol has the smallest version from <see cref="MinimumVersion"/> to <see cref="MaximumVersion"/> that holds the
+    /// data. Set both to the same value to get a symbol of that exact version: data shorter than its capacity is padded.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is less than 1 or greater than 40.</exception>
+    public int MinimumVersion
+    {
+        get;
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, 1);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 40);
+            field = value;
+        }
+    } = 1;
+
+    /// <summary>
+    /// Gets or sets the largest version the symbol can have, from 1 (21 × 21 modules) to 40 (177 × 177 modules). The default is 40.
+    /// </summary>
+    /// <remarks>
+    /// Data that does not fit in this version throws an <see cref="InvalidOperationException"/>, instead of giving a larger symbol.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException">The value is less than 1 or greater than 40.</exception>
+    public int MaximumVersion
+    {
+        get;
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfLessThan(value, 1);
+            ArgumentOutOfRangeException.ThrowIfGreaterThan(value, 40);
+            field = value;
+        }
+    } = 40;
 }

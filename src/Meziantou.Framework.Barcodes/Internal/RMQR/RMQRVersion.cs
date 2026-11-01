@@ -170,7 +170,18 @@ internal static class RMQRVersion
 
     public static int GetTerminatorBits() => 3;
 
-    public static int DetermineVersion(string data, ErrorCorrectionLevel ecLevel, EncodingMode mode)
+    public static bool HasVersion(RMQRSizeConstraints constraints)
+    {
+        for (var version = 1; version <= 32; version++)
+        {
+            if (constraints.Allows(GetHeight(version), GetWidth(version)))
+                return true;
+        }
+
+        return false;
+    }
+
+    public static int DetermineVersion(string data, ErrorCorrectionLevel ecLevel, EncodingMode mode, RMQRSizeConstraints constraints)
     {
         var charCount = mode switch
         {
@@ -184,6 +195,11 @@ internal static class RMQRVersion
 
         for (var version = 1; version <= 32; version++)
         {
+            if (!constraints.Allows(GetHeight(version), GetWidth(version)))
+            {
+                continue;
+            }
+
             var totalDataBits = GetDataCodewords(version, ecLevel) * 8;
             var cciBits = GetCharacterCountBits(version, mode);
             if (charCount >= (1 << cciBits))
@@ -207,7 +223,7 @@ internal static class RMQRVersion
 
         if (bestVersion < 0)
         {
-            throw new InvalidOperationException("The data is too long to be encoded in an rMQR code.");
+            throw new InvalidOperationException(constraints.IsEmpty ? "The data is too long to be encoded in an rMQR code." : $"The data is too long to be encoded in an rMQR code of the allowed sizes ({constraints}).");
         }
 
         return bestVersion;

@@ -87,6 +87,50 @@ var highPng = high.ToPng(new QRCodePngOptions { ModuleSize = 4 });
   `ArgumentOutOfRangeException`.
 - [QRCode.ErrorCorrectionLevel](cref:Meziantou.Framework.Barcodes.QRCode.ErrorCorrectionLevel) gives the level the code was built with, and [Version](cref:Meziantou.Framework.Barcodes.QRCode.Version) its version.
 
+## Choose the size of the code
+
+By default, a code has the smallest size that holds the data. To print codes of a fixed size, or to make sure a code
+fits a known space, constrain the number of modules:
+
+- [QRCodeOptions.MinimumVersion](cref:Meziantou.Framework.Barcodes.QRCodeOptions.MinimumVersion) and [QRCodeOptions.MaximumVersion](cref:Meziantou.Framework.Barcodes.QRCodeOptions.MaximumVersion) bound the version of a standard QR code (1 to 40); set both
+  to the same value for an exact version.
+- [MicroQRCodeOptions.MinimumVersion](cref:Meziantou.Framework.Barcodes.MicroQRCodeOptions.MinimumVersion) and [MicroQRCodeOptions.MaximumVersion](cref:Meziantou.Framework.Barcodes.MicroQRCodeOptions.MaximumVersion) do the same for Micro QR codes (1 to 4, M1 to M4).
+- [RMQRCodeOptions.Height](cref:Meziantou.Framework.Barcodes.RMQRCodeOptions.Height) and [RMQRCodeOptions.Width](cref:Meziantou.Framework.Barcodes.RMQRCodeOptions.Width) set the exact height (7 to 17 modules) or width (27 to 139 modules) of an
+  rMQR code, and [RMQRCodeOptions.MaximumHeight](cref:Meziantou.Framework.Barcodes.RMQRCodeOptions.MaximumHeight) and [RMQRCodeOptions.MaximumWidth](cref:Meziantou.Framework.Barcodes.RMQRCodeOptions.MaximumWidth) bound them. Among the allowed sizes, the code
+  has the one with the fewest modules.
+
+<!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/QRCodeTests.cs;region=QRCode_FixedSize;format=md-fenced-code-block;dedent=true -->
+```csharp
+// Every label gets a version 4 code (33 × 33 modules), whatever the length of its data
+var exact = new QRCodeOptions { MinimumVersion = 4, MaximumVersion = 4 };
+var shortLabel = QRCode.Create("A1", ErrorCorrectionLevel.Q, exact);
+var longLabel = QRCode.Create("https://example.com/items/1234", ErrorCorrectionLevel.Q, exact);
+Assert.Equal((33, 33), (shortLabel.Size, longLabel.Size));
+
+// A code that must fit in the space of a version 2 code: larger data throws instead of giving a larger code
+var bounded = new QRCodeOptions { MaximumVersion = 2 };
+Assert.Throws<InvalidOperationException>(() => QRCode.Create(new string('x', 100), ErrorCorrectionLevel.M, bounded));
+
+// The Micro QR version, and the rMQR height and width, in modules
+var microQr = QRCode.CreateMicroQR("12345", ErrorCorrectionLevel.L, new MicroQRCodeOptions { MinimumVersion = 3, MaximumVersion = 3 });
+var rmqr = QRCode.CreateRMQR("12345", ErrorCorrectionLevel.M, new RMQRCodeOptions { MaximumHeight = 7 });
+Assert.Equal((15, 15), (microQr.Width, microQr.Height));
+Assert.Equal((43, 7), (rmqr.Width, rmqr.Height));
+
+// The size of the image is set by the renderer: 33 modules of 10 pixels, plus a quiet zone of 4 modules on each side
+var png = shortLabel.ToPng(new QRCodePngOptions { ModuleSize = 10 });
+```
+<!-- endref -->
+
+- Data that does not fit in the largest allowed size throws an `InvalidOperationException`: the code is never larger
+  than requested. Data smaller than the capacity of the size is padded.
+- Constraints that no size satisfies throw an `ArgumentException`: a minimum version greater than the maximum one, an
+  rMQR height and width that do not make a size (such as 7 × 27), or Micro QR versions that do not support the error
+  correction level (M1 has no error correction, only M4 supports [Q](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.Q)).
+- These options set the number of modules. The size of the image is set by the renderer: its module size gives the
+  pixels (or SVG units) of a module, and the quiet zone adds a margin. Scaling the image does not change the version, so
+  it does not change how much data the code holds.
+
 ## How the data is encoded
 
 A QR code stores text in modes that take more or fewer bits per character:

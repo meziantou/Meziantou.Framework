@@ -45,9 +45,109 @@ The settings are in the `DnsProxy` section of the ASP.NET Core configuration. Se
   DnsProxy__DnsPort=53 DnsProxy__MaxCacheEntries=50000 Meziantou.DnsProxy
   ```
 
-- **An `appsettings.json` file in the current directory**, the content root of the application. The
-  [`appsettings.json` of the project](https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.DnsProxy/appsettings.json)
-  shows the structure, with the default values.
+- **An `appsettings.json` file in the current directory**, the content root of the application. The `appsettings.json`
+  of the project shows the structure, with the default values:
+
+<!-- ref:../../../src/Meziantou.DnsProxy/appsettings.json;format=md-fenced-code-block;language=json -->
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "localhost",
+  "DnsProxy": {
+    "DnsPort": 5053,
+    "HttpPort": 5080,
+    "BindAddresses": [ "127.0.0.1", "::1" ],
+    "AllowedClientNetworks": [],
+    "DnsOverHttpsPort": 0,
+    "DnsOverHttpsPath": "/dns-query",
+    "DnsOverTlsPort": 0,
+    "DnsOverQuicPort": 0,
+    "CertificatePath": "",
+    "CertificatePassword": "",
+    "DiagnosticsHistoryCapacity": 10000,
+    "FilterRefreshInterval": "00:30:00",
+    "FilterDownloadTimeout": "00:02:00",
+    "MaxFilterListSizeInBytes": 67108864,
+    "BlockListCacheFolderPath": "",
+    "PositiveCacheDuration": "00:05:00",
+    "NegativeCacheDuration": "00:05:00",
+    "MaximumCacheDuration": "01:00:00",
+    "MaxCacheEntries": 10000,
+    "MaxDnsQueriesPerClientPerMinute": 600,
+    "DnssecValidationMode": "None",
+    "BootstrapDnsServers": [
+      "9.9.9.9",
+      "149.112.112.112",
+      "1.1.1.1",
+      "1.0.0.1",
+      "2620:fe::fe",
+      "2620:fe::9",
+      "2606:4700:4700::1111",
+      "2606:4700:4700::1001"
+    ],
+    "Upstreams": [
+      {
+        "Name": "Cloudflare H3",
+        "Url": "h3://cloudflare-dns.com/dns-query",
+        "Priority": 0
+      },
+      {
+        "Name": "NextDNS DoQ",
+        "Url": "quic://dns.nextdns.io",
+        "Priority": 1
+      },
+      {
+        "Name": "Quad9 DoQ",
+        "Url": "quic://dns.quad9.net",
+        "Priority": 2
+      },
+      {
+        "Name": "Cloudflare DoH",
+        "Url": "https://cloudflare-dns.com/dns-query",
+        "Priority": 3
+      },
+      {
+        "Name": "NextDNS DoH",
+        "Url": "https://dns.nextdns.io",
+        "Priority": 4
+      },
+      {
+        "Name": "Quad9 DoH",
+        "Url": "https://dns.quad9.net/dns-query",
+        "Priority": 5
+      }
+    ],
+    "Filters": [
+      {
+        "Url": "https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt",
+        "Format": "AdBlock"
+      },
+      {
+        "Url": "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts",
+        "Format": "Hosts"
+      }
+    ],
+    "CustomRecords": [
+      {
+        "Domain": "localhost",
+        "Type": "A",
+        "Value": "127.0.0.1"
+      },
+      {
+        "Domain": "localhost",
+        "Type": "AAAA",
+        "Value": "::1"
+      }
+    ]
+  }
+}
+```
+<!-- endref -->
 
 The tool package does not include an `appsettings.json` file, so the installed tool starts with the defaults of the
 code. They are the same as that file, except two settings of the file: `AllowedHosts` (`localhost`, see

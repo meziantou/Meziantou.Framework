@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of fetch, and why the tests 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 326 | 407 | 3 | 81% |
+| [Stable](#stable-tests) | 328 | 407 | 1 | 81% |
 | [Tentative](#tentative-tests) | 13 | 77 | 1 | 17% |
 | [Reftests](#reftests) | 9 | 11 | 0 | 82% |
-| **All** | **348** | **495** | **4** | **71%** |
+| **All** | **350** | **495** | **2** | **71%** |
 
 ## Stable tests
 
@@ -206,11 +206,11 @@ description: "The results of the web-platform-tests of fetch, and why the tests 
 | [`api/response/response-stream-with-broken-then.any.js`](https://wpt.fyi/results/fetch/api/response/response-stream-with-broken-then.any.js) | Pass | 18 / 18 |  |  |
 | [`connection-pool/network-partition-key.html`](https://wpt.fyi/results/fetch/connection-pool/network-partition-key.html) | Timeout | 0 / 9 | TEST RUNNER | `fetch/connection-pool/resources/network-partition-key.py` is not emulated (connection pool partitioning cannot be observed) |
 | [`content-encoding/br/bad-br-body.https.any.js`](https://wpt.fyi/results/fetch/content-encoding/br/bad-br-body.https.any.js) | Fail | 0 / 6 | TEST RUNNER | `bad-br-body.py` is not emulated (404): the WPT loader gives the decoded body of a response, it cannot fail while the body is read |
-| [`content-encoding/br/big-br-body.https.any.js`](https://wpt.fyi/results/fetch/content-encoding/br/big-br-body.https.any.js) | Disabled | – | PERFORMANCE | Runs ~45 seconds, close to the maximum duration of the runner (1 minute), so it times out randomly: the test reads a decoded body of 27 MB through a BYOB reader in chunks of at most 64 KB, then hashes it; it passes when it completes |
+| [`content-encoding/br/big-br-body.https.any.js`](https://wpt.fyi/results/fetch/content-encoding/br/big-br-body.https.any.js) | Pass | 6 / 6 |  |  |
 | [`content-encoding/br/br-body.https.any.js`](https://wpt.fyi/results/fetch/content-encoding/br/br-body.https.any.js) | Pass | 6 / 6 |  |  |
 | [`content-encoding/br/br-navigation.https.window.js`](https://wpt.fyi/results/fetch/content-encoding/br/br-navigation.https.window.js) | Pass | 1 / 1 |  |  |
 | [`content-encoding/gzip/bad-gzip-body.any.js`](https://wpt.fyi/results/fetch/content-encoding/gzip/bad-gzip-body.any.js) | Fail | 0 / 21 | TEST RUNNER | `bad-gzip-body.py` is not emulated (404): the WPT loader gives the decoded body of a response, it cannot fail while the body is read |
-| [`content-encoding/gzip/big-gzip-body.https.any.js`](https://wpt.fyi/results/fetch/content-encoding/gzip/big-gzip-body.https.any.js) | Disabled | – | PERFORMANCE | Runs ~45 seconds, close to the maximum duration of the runner (1 minute), so it times out randomly: the test reads a decoded body of 27 MB through a BYOB reader in chunks of at most 64 KB, then hashes it; it passes when it completes |
+| [`content-encoding/gzip/big-gzip-body.https.any.js`](https://wpt.fyi/results/fetch/content-encoding/gzip/big-gzip-body.https.any.js) | Pass | 6 / 6 |  |  |
 | [`content-encoding/gzip/gzip-body.any.js`](https://wpt.fyi/results/fetch/content-encoding/gzip/gzip-body.any.js) | Pass | 6 / 6 |  |  |
 | [`content-encoding/gzip/gzip-navigation.https.window.js`](https://wpt.fyi/results/fetch/content-encoding/gzip/gzip-navigation.https.window.js) | Pass | 1 / 1 |  |  |
 | [`content-encoding/zstd/bad-zstd-body.https.any.js`](https://wpt.fyi/results/fetch/content-encoding/zstd/bad-zstd-body.https.any.js) | Fail | 0 / 21 | TEST RUNNER | `bad-zstd-body.py` is not emulated (404), and the WPT loader does not decode `zstd` |

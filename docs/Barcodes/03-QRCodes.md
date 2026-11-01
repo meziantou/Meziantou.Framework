@@ -94,7 +94,9 @@ The whole text is encoded in one mode, the most compact one that can hold all it
 - Digits only take the fewest bits.
 - Uppercase letters, digits, the space and `$%*+-./:` (the alphanumeric mode) take fewer bits than other characters.
 - A text whose characters are all double-byte Shift JIS characters, such as Japanese kanji and kana, is encoded in
-  the kanji mode.
+  the kanji mode. Only the characters of JIS X 0208 that every reader decodes to the same character qualify: the few
+  codes that the Shift JIS tables of readers disagree on (`¢`, `£`, `¬`, `―`, `\`, `〜`, `‖`, `−` and their fullwidth
+  forms) and the vendor extensions, such as `①`, are encoded as UTF-8.
 - Any other text is encoded as UTF-8. [Create](cref:Meziantou.Framework.Barcodes.QRCode.Create) also takes bytes, encoded as they are.
 
 <!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/QRCodeTests.cs;region=QRCode_EncodingModes;format=md-fenced-code-block;dedent=true -->

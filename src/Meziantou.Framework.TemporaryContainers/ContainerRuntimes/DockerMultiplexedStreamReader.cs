@@ -25,6 +25,9 @@ internal sealed class DockerMultiplexedStreamReader : IDisposable
     /// <summary>Gets the payload of the current frame.</summary>
     public ReadOnlySpan<byte> CurrentPayload => _payload.AsSpan(0, _payloadLength);
 
+    /// <summary>Gets the payload of the current frame, to write it to a stream asynchronously.</summary>
+    public ReadOnlyMemory<byte> CurrentPayloadMemory => _payload.AsMemory(0, _payloadLength);
+
     /// <summary>Reads the next frame that has a payload.</summary>
     /// <returns><see langword="false"/> when the stream ended between two frames.</returns>
     /// <exception cref="EndOfStreamException">The stream ended in the middle of a frame.</exception>

@@ -52,6 +52,19 @@ public sealed class ProcessPipe
         return bytesRead;
     }
 
+    internal async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
+    {
+        ThrowIfReaderDisposed();
+
+        var bytesRead = await _inputStream.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
+        if (bytesRead == 0)
+        {
+            DisposeReader();
+        }
+
+        return bytesRead;
+    }
+
     internal void DisposeReader()
     {
         var shouldDispose = false;

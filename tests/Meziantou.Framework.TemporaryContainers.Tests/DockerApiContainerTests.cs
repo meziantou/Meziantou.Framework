@@ -15,6 +15,9 @@ public sealed class DockerApiContainerTests() : ContainerRuntimeTestsBase(Contai
     public Task PauseAndUnpause() => AssertPauseUnpauseAsync();
 
     [Fact]
+    public Task WaitForHealthcheck_WaitsUntilTheContainerIsHealthy() => AssertWaitForHealthcheckAsync();
+
+    [Fact]
     public Task StartAsync_ContainerExitsBeforeTheReadyMessage_ReportsWhatTheContainerPrinted() => AssertStartFailureReportsContainerOutputAsync();
 
     [Fact]
@@ -28,6 +31,18 @@ public sealed class DockerApiContainerTests() : ContainerRuntimeTestsBase(Contai
 
     [Fact]
     public Task Cleanup_RemovesTheVolumeOfARunThatIsOver() => AssertCleanupRemovesOrphanedVolumeAsync();
+
+    [Fact]
+    public Task ExecAsync_RunsAPrivilegedCommand() => AssertPrivilegedExecAsync();
+
+    [Fact]
+    public Task Cleanup_RemovesTheNetworkOfARunThatIsOver() => AssertCleanupRemovesOrphanedNetworkAsync();
+
+    [Fact]
+    public Task Network_ConnectsContainersByAlias() => AssertNetworkConnectsContainersByAliasAsync();
+
+    [Fact]
+    public Task CreationOptions_ReachTheContainer() => AssertCreationOptionsReachTheContainerAsync();
 
     [Fact]
     public Task Reaper_WatchesTheSessionAndStopsWithIt() => AssertReaperLifecycleAsync();

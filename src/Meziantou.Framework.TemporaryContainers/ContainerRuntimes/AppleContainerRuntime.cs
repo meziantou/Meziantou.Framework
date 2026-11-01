@@ -35,7 +35,7 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
         foreach (var port in definition.Ports)
         {
             if (port.HostPort is null)
-                definition.AllocatedHostPorts[port.Port] = GetFreeTcpPort();
+                definition.AllocatedHostPorts[port.Port] = port.Protocol is ContainerPortProtocol.Udp ? GetFreeUdpPort() : GetFreeTcpPort();
         }
     }
 
@@ -44,6 +44,12 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
         using var listener = new TcpListener(IPAddress.Loopback, 0);
         listener.Start();
         return ((IPEndPoint)listener.LocalEndpoint).Port;
+    }
+
+    private static int GetFreeUdpPort()
+    {
+        using var client = new UdpClient(new IPEndPoint(IPAddress.Loopback, 0));
+        return ((IPEndPoint)client.Client.LocalEndPoint!).Port;
     }
 
     /// <summary>Apple's runtime binds the host ports when it starts the container, so a port picked when the container was created can have been taken by then.</summary>
@@ -57,22 +63,15 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
         switch (definition.Image)
         {
             case RegistryImage registry:
-                await EnsureRegistryImageAsync(["image", "inspect", registry.Name], ["image", "pull", registry.Name], registry.Name, definition.PullPolicy, definition.Logging.Logger, cancellationToken).ConfigureAwait(false);
+                IReadOnlyList<string> pullArguments = definition.Platform is { } platform ? ["image", "pull", "--platform", platform, registry.Name] : ["image", "pull", registry.Name];
+                await EnsureRegistryImageAsync(["image", "inspect", registry.Name], pullArguments, registry.Name, definition.PullPolicy, definition.Logging.Logger, cancellationToken).ConfigureAwait(false);
                 return registry.Name;
 
             case DockerfileImage dockerfile:
-                var tag = ResourceNaming.BuiltImagePrefix + Guid.NewGuid().ToString("N") + ":latest";
-                var args = new List<string> { "build", "-t", tag, "-f", dockerfile.DockerfilePath };
-
                 // The labels are what the cleanup finds a built image by.
-                foreach (var (name, value) in ResourceLabels.BuildForImage(definition))
-                {
-                    args.Add("--label");
-                    args.Add($"{name}={value}");
-                }
-
-                args.Add(dockerfile.ContextDirectory);
-                await Cli.RunBufferedAsync(args, cancellationToken).ConfigureAwait(false);
+                var tag = ImageBuild.GetTag(dockerfile);
+                var args = ImageBuild.BuildCliArguments(definition, dockerfile, tag, includeLibraryLabels: true);
+                await Cli.RunBufferedAsync(args, cancellationToken, onOutput: ImageBuild.CreateOutputCallback(definition, dockerfile)).ConfigureAwait(false);
                 return tag;
 
             case ArchiveImage archive:
@@ -105,8 +104,7 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
 
     internal override IReadOnlyList<string> BuildCreateArguments(ContainerDefinition definition, string imageRef, EnvironmentFile? environmentFile = null)
     {
-        if (definition.Network.Alias is not null)
-            throw new NotSupportedException("Apple's container runtime does not support network aliases.");
+        EnsureCreateOptionsSupported(definition);
 
         if (definition.Hostname is not null)
             throw new NotSupportedException("Apple's container runtime does not support setting the hostname: the container is named after its id.");
@@ -115,7 +113,8 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
 
         var name = definition.Name ?? (definition.ReuseId is { } reuseId ? ResourceNaming.GetReuseName(reuseId) : null);
         AddOption(args, "--name", name);
-        AddOption(args, "--network", definition.Network.Network);
+        AddNetworks(args, definition);
+        AddOption(args, "--platform", definition.Platform);
 
         if (definition.Resources.ReadOnlyRootFilesystem)
             args.Add("--read-only");
@@ -127,6 +126,18 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
 
         if (definition.Resources.CpuLimit is { } cpu)
             AddOption(args, "--cpus", cpu.ToString(CultureInfo.InvariantCulture));
+
+        if (definition.Resources.SharedMemorySize is { } sharedMemorySize)
+            AddOption(args, "--shm-size", FormatSize(sharedMemorySize));
+
+        foreach (var ulimit in definition.Resources.Ulimits)
+            AddOption(args, "--ulimit", ulimit.Format());
+
+        foreach (var capability in definition.CapAdd)
+            AddOption(args, "--cap-add", capability);
+
+        foreach (var capability in definition.CapDrop)
+            AddOption(args, "--cap-drop", capability);
 
         foreach (var (labelName, labelValue) in ResourceLabels.Build(definition))
         {
@@ -142,7 +153,7 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
                 throw new NotSupportedException($"Apple's container runtime cannot publish a port on the IPv6 address '{port.HostIp}'.");
 
             args.Add("--publish");
-            args.Add(string.Create(CultureInfo.InvariantCulture, $"{port.HostIp}:{GetHostPort(port, definition)}:{port.Port}"));
+            args.Add(string.Create(CultureInfo.InvariantCulture, $"{port.HostIp}:{GetHostPort(port, definition)}:{port.Port}") + (port.Protocol is ContainerPortProtocol.Tcp ? "" : "/" + port.ProtocolName));
         }
 
         foreach (var mount in definition.Mounts)
@@ -152,6 +163,7 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
         if (entrypoint.Count > 0)
             AddOption(args, "--entrypoint", entrypoint[0]);
 
+        args.AddRange(definition.AdditionalCreateArguments);
         args.Add(imageRef);
 
         for (var i = 1; i < entrypoint.Count; i++)
@@ -161,6 +173,102 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
             args.Add(token);
 
         return args;
+    }
+
+    /// <summary>Rejects the options Apple's CLI has no flag for: silently dropping one would create a container that does not match its definition.</summary>
+    private static void EnsureCreateOptionsSupported(ContainerDefinition definition)
+    {
+        if (definition.Privileged)
+            throw new NotSupportedException("Apple's container runtime does not support privileged containers.");
+
+        if (definition.ExtraHosts.Count > 0)
+            throw new NotSupportedException("Apple's container runtime does not support extra hosts.");
+
+        if (definition.ExposedPorts.Count > 0)
+            throw new NotSupportedException("Apple's container runtime does not support exposing a port without publishing it.");
+
+        if (definition.Healthcheck is not null)
+            throw new NotSupportedException("Apple's container runtime does not support healthchecks.");
+
+        if (definition.StopTimeout is not null || definition.StopSignal is not null)
+            throw new NotSupportedException("Apple's container runtime does not support setting the stop timeout or the stop signal of a container.");
+    }
+
+    /// <summary>Adds every network the container joins: Apple's CLI takes them all at creation, each with its aliases.</summary>
+    private static void AddNetworks(List<string> args, ContainerDefinition definition)
+    {
+        var (primary, additional) = definition.Network.GetNetworkPlan();
+        if (primary is { } endpoint)
+            AddNetwork(args, endpoint.Name ?? "default", endpoint.Aliases);
+
+        foreach (var attachment in additional)
+            AddNetwork(args, attachment.Network, attachment.Aliases);
+    }
+
+    private static void AddNetwork(List<string> args, string network, IReadOnlyList<string> aliases)
+    {
+        // The value is split on ',', without honouring quotes.
+        EnsureDescriptorValue(network);
+        var value = new StringBuilder(network);
+        foreach (var alias in aliases)
+        {
+            EnsureDescriptorValue(alias);
+            value.Append(",alias=").Append(alias);
+        }
+
+        args.Add("--network");
+        args.Add(value.ToString());
+    }
+
+    /// <summary>Formats a size with the largest unit that represents it exactly, since the CLI takes sizes such as <c>64M</c>.</summary>
+    private static string FormatSize(long bytes) => bytes switch
+    {
+        _ when bytes % (1024 * 1024 * 1024) == 0 => (bytes / (1024 * 1024 * 1024)).ToString(CultureInfo.InvariantCulture) + "G",
+        _ when bytes % (1024 * 1024) == 0 => (bytes / (1024 * 1024)).ToString(CultureInfo.InvariantCulture) + "M",
+        _ when bytes % 1024 == 0 => (bytes / 1024).ToString(CultureInfo.InvariantCulture) + "K",
+        _ => bytes.ToString(CultureInfo.InvariantCulture),
+    };
+
+    // Every network is passed to the create command.
+    internal override IReadOnlyList<ContainerNetworkAttachment> GetNetworksToConnectAfterCreate(ContainerDefinition definition) => [];
+
+    internal override bool SupportsNetworks => true;
+
+    internal override IReadOnlyList<string> BuildCreateNetworkArguments(NetworkDefinition definition, string name, string? instanceId = null)
+    {
+        if (definition.Driver is not null)
+            throw new NotSupportedException("Apple's container runtime does not support network drivers.");
+
+        var labels = ResourceLabels.Build(definition.Labels, definition.ReuseId, sessionOwned: true, definition.Identity);
+        if (instanceId is not null)
+            labels[ResourceLabels.Instance] = instanceId;
+
+        var args = new List<string> { "network", "create" };
+        if (definition.Internal)
+            args.Add("--internal");
+
+        foreach (var (labelName, labelValue) in labels)
+        {
+            args.Add("--label");
+            args.Add($"{labelName}={labelValue}");
+        }
+
+        args.Add(name);
+        return args;
+    }
+
+    internal override IReadOnlyList<string> BuildDeleteNetworkArguments(string name) => ["network", "delete", name];
+
+    internal override IReadOnlyList<string> BuildNetworkInspectArguments(string name) => ["network", "inspect", name];
+
+    // A network is reported in the same shape as a container: an id and a configuration that holds the labels.
+    internal override IReadOnlyDictionary<string, string>? ParseNetworkLabels(string output)
+        => ParseResources(output, managedOnly: false) is [var network, ..] ? network.Labels : null;
+
+    internal override async Task<IReadOnlyList<ManagedResource>> ListManagedNetworksAsync(CancellationToken cancellationToken)
+    {
+        var result = await Cli.RunBufferedAsync(["network", "ls", "--format", "json"], cancellationToken).ConfigureAwait(false);
+        return ParseManagedResources(result.StandardOutput);
     }
 
     private static int GetHostPort(ContainerPort port, ContainerDefinition definition)
@@ -318,9 +426,18 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
 
     internal override IReadOnlyList<string> BuildExecArguments(string id, ExecOptions options, EnvironmentFile? environmentFile = null)
     {
+        if (options.Privileged)
+            throw new NotSupportedException("Apple's container runtime does not support privileged commands.");
+
         var args = new List<string> { "exec" };
         if (options.StandardInput is not null)
             args.Add("-i");
+
+        if (options.Tty)
+            args.Add("-t");
+
+        if (options.Detach)
+            args.Add("-d");
 
         if (options.WorkingDirectory is not null)
         {
@@ -398,7 +515,7 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
 
         foreach (var port in publishedPorts)
         {
-            if (port.Proto is null or "tcp" && port.HostPort > 0)
+            if (port.Proto is null or "tcp" or "udp" && port.HostPort > 0)
                 ports[port.ContainerPort] = port.HostPort;
         }
 
@@ -497,6 +614,9 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
                 break;
 
             case TmpfsMount tmpfs:
+                if (tmpfs.Size is not null || tmpfs.Mode is not null)
+                    throw new NotSupportedException("Apple's container runtime does not take options for a tmpfs mount.");
+
                 args.Add("--tmpfs");
                 args.Add(tmpfs.Target);
                 break;
@@ -522,6 +642,6 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
     private static void EnsureDescriptorValue(string value)
     {
         if (value.Contains(',', StringComparison.Ordinal))
-            throw new NotSupportedException($"Apple's container runtime cannot mount '{value}' because the path contains a comma.");
+            throw new NotSupportedException($"Apple's container runtime cannot use '{value}' because it contains a comma.");
     }
 }

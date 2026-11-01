@@ -56,6 +56,9 @@ await downstream;
 | A `TextReader`, encoded in UTF-8 | [InputSource.FromTextReader](cref:Meziantou.Framework.InputSource.FromTextReader), or the reader |
 | The output of another process | [InputSource.FromProcessPipe](cref:Meziantou.Framework.InputSource.FromProcessPipe), or a [ProcessPipe](cref:Meziantou.Framework.ProcessPipe) |
 
+To consume a source yourself, call [ReadAsync](cref:Meziantou.Framework.InputSource.ReadAsync): it reads streams, files and pipes
+without blocking a thread, where [Read](cref:Meziantou.Framework.InputSource.Read) blocks until data is available.
+
 The standard input is closed once the whole source is written, so a process that reads until the end of its input
 exits. Without [WithInputStream](cref:Meziantou.Framework.ProcessWrapper.WithInputStream), the standard input is not redirected.
 

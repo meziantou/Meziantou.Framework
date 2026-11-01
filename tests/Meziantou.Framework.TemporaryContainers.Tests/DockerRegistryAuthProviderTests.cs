@@ -238,6 +238,40 @@ public sealed class DockerRegistryAuthProviderTests
         Assert.Equal(expected, DockerRegistryAuthProvider.GetConfigurationDirectory(dockerConfig));
     }
 
+    [Fact]
+    public async Task GetRegistryConfigHeaderValueAsync_MapsTheCredentialsOfEveryRegistry()
+    {
+        var config = new DockerApiModels.AuthConfigFile
+        {
+            Auths = new Dictionary<string, DockerApiModels.AuthEntry>(StringComparer.Ordinal)
+            {
+                ["https://index.docker.io/v1/"] = new DockerApiModels.AuthEntry { Username = "john", Password = "hub-secret" },
+                ["registry.example.com"] = new DockerApiModels.AuthEntry { Username = "alice", Password = "private-secret" },
+            },
+        };
+
+        var provider = new DockerRegistryAuthProvider(overrideConfiguration: config);
+        var header = await provider.GetRegistryConfigHeaderValueAsync(["redis:8", "registry.example.com/app:1", "registry.example.com/sdk:1", "ghcr.io/owner/tool:1"], CancellationToken.None);
+
+        Assert.NotNull(header);
+        var json = Encoding.UTF8.GetString(Base64Url.DecodeFromChars(header));
+        var payload = JsonSerializer.Deserialize(json, DockerApiJsonContext.Default.DictionaryStringRegistryAuthHeader);
+        Assert.NotNull(payload);
+        Assert.Equal(["https://index.docker.io/v1/", "registry.example.com"], payload.Keys.Order(StringComparer.Ordinal));
+        Assert.Equal("john", payload["https://index.docker.io/v1/"].Username);
+        Assert.Equal("hub-secret", payload["https://index.docker.io/v1/"].Password);
+        Assert.Equal("alice", payload["registry.example.com"].Username);
+        Assert.Equal("private-secret", payload["registry.example.com"].Password);
+    }
+
+    [Fact]
+    public async Task GetRegistryConfigHeaderValueAsync_ReturnsNullWithoutCredentials()
+    {
+        var provider = new DockerRegistryAuthProvider(overrideConfiguration: new DockerApiModels.AuthConfigFile());
+
+        Assert.Null(await provider.GetRegistryConfigHeaderValueAsync(["redis:8"], CancellationToken.None));
+    }
+
     private static DockerApiModels.RegistryAuthHeader DecodeHeader(string value)
     {
         var json = Encoding.UTF8.GetString(Base64Url.DecodeFromChars(value));

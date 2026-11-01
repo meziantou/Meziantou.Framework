@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using Meziantou.Extensions.Logging.Xunit.v3;
 using Meziantou.Framework.TemporaryContainers.Internals;
@@ -13,6 +14,7 @@ namespace Meziantou.Framework.TemporaryContainers.Tests;
 public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
 {
     private const string LinuxImage = "busybox:1.37";
+    private const string PlatformTestImage = "busybox:1.36";
     private const string WindowsImage = "mcr.microsoft.com/windows/servercore:ltsc2022";
     private const string LinuxIndexFilePath = "/www/index.html";
     private const string LinuxTempDirectory = "/tmp";
@@ -300,7 +302,7 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
     public async Task DockerfileImage_BuildsAndServesHttp()
     {
         var imageDirectory = Path.Combine(AppContext.BaseDirectory, "TestImage");
-        var definition = new ContainerDefinition(new DockerfileImage(Path.Combine(imageDirectory, DockerfileName), imageDirectory))
+        var definition = new ContainerDefinition(new DockerfileImage(Path.Combine(imageDirectory, DockerfileName), imageDirectory, DockerfileBuildSettings.Default))
         {
             Runtime = Runtime,
         };
@@ -330,6 +332,94 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
 
         static bool IsOfSession(ManagedResource resource, string sessionId)
             => resource.Labels.TryGetValue(ResourceLabels.SessionId, out var value) && value == sessionId;
+    }
+
+    [Fact]
+    public async Task DockerfileImage_AppliesTheBuildOptionsAndTheIgnoreFile()
+    {
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The Dockerfile uses a POSIX shell.");
+
+        using var context = TemporaryDirectory.Create();
+        await File.WriteAllTextAsync(context.FullPath / "Dockerfile", """
+            FROM busybox:1.38@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e AS base
+            ARG GREETING=default
+            RUN printf '%s' "$GREETING" > /greeting.txt
+            COPY . /context/
+
+            FROM base AS broken
+            RUN exit 1
+            """, XunitCancellationToken);
+        await File.WriteAllTextAsync(context.FullPath / ".dockerignore", "secret.txt\nlogs\n!logs/keep.log\n", XunitCancellationToken);
+        await File.WriteAllTextAsync(context.FullPath / "app.txt", "app", XunitCancellationToken);
+        await File.WriteAllTextAsync(context.FullPath / "secret.txt", "secret", XunitCancellationToken);
+        Directory.CreateDirectory(context.FullPath / "logs");
+        await File.WriteAllTextAsync(context.FullPath / "logs" / "keep.log", "", XunitCancellationToken);
+        await File.WriteAllTextAsync(context.FullPath / "logs" / "drop.log", "", XunitCancellationToken);
+
+        var options = new DockerfileBuildOptions { Target = "base" };
+        options.BuildArguments.Add("GREETING", "hello from build args");
+        var definition = new ContainerDefinition(ImageSource.FromDockerfile(context.FullPath / "Dockerfile", context.FullPath, options))
+        {
+            Runtime = Runtime,
+        };
+        definition.Command.AddRange(["sh", "-c", "echo SERVER READY; exec sleep 3600"]);
+        definition.WaitStrategies.Add(Wait.ForLogMessage("SERVER READY"));
+        definition.Logging.Logger = XUnitLogger.CreateLogger();
+
+        await using var container = await StartWithRetryAsync(definition);
+        var exec = await container.ExecAsync(options =>
+        {
+            options.Command.Add("sh");
+            options.Command.Add("-c");
+            options.Command.Add("cat /greeting.txt; echo; cd /context && find . -type f | sort");
+        }, XunitCancellationToken);
+
+        Assert.Equal(0, exec.ExitCode);
+        var lines = exec.StandardOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        Assert.Equal("hello from build args", lines[0]);
+        Assert.Equal(["./.dockerignore", "./Dockerfile", "./app.txt", "./logs/keep.log"], lines.Skip(1));
+    }
+
+    [Fact]
+    public async Task Platform_RunsTheVariantOfTheRequestedPlatform()
+    {
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "Windows images have a single platform.");
+        global::Xunit.Assert.SkipWhen(Runtime == ContainerRuntime.Wslc, "wslc cannot choose the platform of a container.");
+
+        // The other variant is the one the machine does not run natively, so the image may already be there for the
+        // native platform only. Pulling it points the tag at that variant, so the image is not the one the other tests,
+        // which run at the same time on the same daemon, use.
+        var (platform, machine) = RuntimeInformation.OSArchitecture is Architecture.Arm64 ? ("linux/amd64", "x86_64") : ("linux/arm64", "aarch64");
+        var definition = new ContainerDefinition(PlatformTestImage)
+        {
+            Runtime = Runtime,
+            Platform = platform,
+        };
+        definition.Command.Add("sh");
+        definition.Command.Add("-c");
+        definition.Command.Add("echo SERVER READY; exec sleep 3600");
+        definition.WaitStrategies.Add(Wait.ForLogMessage("SERVER READY"));
+        definition.Logging.Logger = XUnitLogger.CreateLogger();
+
+        ExecResult exec;
+        try
+        {
+            await using var container = await StartWithRetryAsync(definition);
+            exec = await container.ExecAsync(options =>
+            {
+                options.Command.Add("uname");
+                options.Command.Add("-m");
+            }, XunitCancellationToken);
+        }
+        catch (Exception ex) when (ex.ToString().Contains("exec format error", StringComparison.OrdinalIgnoreCase))
+        {
+            // The image is the right one, but the machine has no emulator (QEMU, Rosetta) to run it.
+            global::Xunit.Assert.Skip($"The machine cannot run '{platform}' images.");
+            return;
+        }
+
+        Assert.Equal(0, exec.ExitCode);
+        Assert.Equal(machine, exec.StandardOutput.Trim());
     }
 
     [Fact]
@@ -691,6 +781,124 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
     }
 
     [Fact]
+    public async Task ExecAsync_EnsureSuccessReportsTheStandardError()
+    {
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The command is run with a POSIX shell.");
+
+        await using var container = await StartWithRetryAsync(CreateHttpServerDefinition());
+
+        var exec = await container.ExecAsync(options =>
+        {
+            options.Command.Add("sh");
+            options.Command.Add("-c");
+            options.Command.Add("echo boom >&2; exit 3");
+        }, XunitCancellationToken);
+
+        var exception = Assert.Throws<ContainerExecException>(() => exec.EnsureSuccess());
+        Assert.Equal(3, exception.ExitCode);
+        Assert.Contains("boom", exception.Message, StringComparison.Ordinal);
+        Assert.Contains("exit 3", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ExecAsync_CopiesTheOutputsToStreamsByteForByte()
+    {
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The command is run with a POSIX shell.");
+
+        await using var container = await StartWithRetryAsync(CreateHttpServerDefinition());
+
+        // Bytes that are not valid UTF-8, which decoding the output as text would replace.
+        using var standardOutput = new MemoryStream();
+        using var standardError = new MemoryStream();
+        var exec = await container.ExecAsync(options =>
+        {
+            options.Command.Add("sh");
+            options.Command.Add("-c");
+            options.Command.Add("printf '\\377\\000\\201'; printf '\\376' >&2");
+            options.StandardOutput = standardOutput;
+            options.StandardError = standardError;
+        }, XunitCancellationToken);
+
+        exec.EnsureSuccess();
+        Assert.Equal([0xFF, 0x00, 0x81], standardOutput.ToArray());
+        Assert.Equal([0xFE], standardError.ToArray());
+        Assert.Equal("", exec.StandardOutput);
+        Assert.Equal("", exec.StandardError);
+    }
+
+    [Fact]
+    public async Task ExecAsync_TimesOut()
+    {
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The command is run with a POSIX shell.");
+
+        await using var container = await StartWithRetryAsync(CreateHttpServerDefinition());
+
+        await Assert.ThrowsAsync<TimeoutException>(() => container.ExecAsync(options =>
+        {
+            options.Command.Add("sleep");
+            options.Command.Add("60");
+            options.Timeout = TimeSpan.FromSeconds(1);
+        }, XunitCancellationToken));
+    }
+
+    [Fact]
+    public async Task ExecAsync_DetachedCommandKeepsRunning()
+    {
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The command is run with a POSIX shell.");
+
+        await using var container = await StartWithRetryAsync(CreateHttpServerDefinition());
+
+        if (Runtime == ContainerRuntime.Wslc)
+        {
+            await Assert.ThrowsAsync<NotSupportedException>(() => container.ExecAsync(options =>
+            {
+                options.Command.Add("true");
+                options.Detach = true;
+            }, XunitCancellationToken));
+            return;
+        }
+
+        // The command runs for a minute: had ExecAsync waited for it, /tmp/done would exist when it returns.
+        // No timing threshold, since starting an exec takes seconds on some runtimes.
+        var exec = await container.ExecAsync(options =>
+        {
+            options.Command.Add("sh");
+            options.Command.Add("-c");
+            options.Command.Add("touch /tmp/started; sleep 60; touch /tmp/done");
+            options.Detach = true;
+        }, XunitCancellationToken);
+
+        Assert.Equal(0, exec.ExitCode);
+
+        var check = await container.ExecAsync(options =>
+        {
+            options.Command.Add("sh");
+            options.Command.Add("-c");
+            options.Command.Add("for i in $(seq 1 100); do [ -f /tmp/started ] && break; sleep 0.2; done; [ -f /tmp/started ] && [ ! -f /tmp/done ]");
+        }, XunitCancellationToken);
+        Assert.Equal(0, check.ExitCode);
+    }
+
+    [Fact]
+    public async Task ExecAsync_RunsInATerminal()
+    {
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The command is run with a POSIX shell.");
+
+        await using var container = await StartWithRetryAsync(CreateHttpServerDefinition());
+
+        var exec = await container.ExecAsync(options =>
+        {
+            options.Command.Add("sh");
+            options.Command.Add("-c");
+            options.Command.Add("[ -t 1 ] && echo terminal");
+            options.Tty = true;
+        }, XunitCancellationToken);
+
+        exec.EnsureSuccess();
+        Assert.Contains("terminal", exec.StandardOutput, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public async Task WaitForPort_WaitsForTheServiceRatherThanThePortForwarder()
     {
         // The port forwarders of the runtimes accept a connection before anything listens in the container.
@@ -710,6 +918,96 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
         Assert.Equal("127.0.0.1", container.GetHostAddress(8080));
         using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
         Assert.Equal("hello from container", await client.GetStringAsync(new UriBuilder("http", container.GetHostAddress(8080), container.GetMappedPort(8080)).Uri, XunitCancellationToken));
+    }
+
+    [Fact]
+    public async Task WaitForCommand_WaitsUntilTheCommandSucceeds()
+    {
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The command is run with a POSIX shell.");
+
+        var definition = new ContainerDefinition(new RegistryImage(ContainerImage)) { Runtime = Runtime };
+        definition.Command.Add("sh");
+        definition.Command.Add("-c");
+        definition.Command.Add("sleep 2; touch /tmp/ready; exec sleep 3600");
+        definition.WaitStrategies.Add(Wait.ForCommand("test", "-f", "/tmp/ready"));
+        definition.Logging.Logger = XUnitLogger.CreateLogger();
+
+        await using var container = await StartWithRetryAsync(definition);
+
+        var exec = await container.ExecAsync(options =>
+        {
+            options.Command.Add("test");
+            options.Command.Add("-f");
+            options.Command.Add("/tmp/ready");
+        }, XunitCancellationToken);
+        Assert.Equal(0, exec.ExitCode);
+    }
+
+    [Fact]
+    public async Task WaitForHttp_WaitsForTheExpectedResponse()
+    {
+        global::Xunit.Assert.SkipWhen(Runtime == ContainerRuntime.AppleContainer, "The published port is not reachable from the host with apple/container.");
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The server is started with a POSIX shell.");
+
+        // The server answers with an empty page first: the body predicate must keep the wait going until the content is there.
+        var definition = new ContainerDefinition(new RegistryImage(ContainerImage)) { Runtime = Runtime };
+        definition.Command.Add("sh");
+        definition.Command.Add("-c");
+        definition.Command.Add("mkdir -p /www; touch /www/index.html; (sleep 3; printf 'hello from container' > /www/index.html) & exec httpd -f -p 8080 -h /www");
+        AddHttpPortBinding(definition);
+        definition.WaitStrategies.Add(Wait.ForAll(
+            Wait.ForHttp(8080, "/index.html", options => options.ResponseBodyPredicate = body => body == "hello from container"),
+            Wait.ForCommand("test", "-s", "/www/index.html")).WithTimeout(TimeSpan.FromMinutes(2)));
+        definition.Logging.Logger = XUnitLogger.CreateLogger();
+
+        await using var container = await StartWithRetryAsync(definition);
+
+        using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+        Assert.Equal("hello from container", await client.GetStringAsync(new Uri($"http://127.0.0.1:{container.GetMappedPort(8080)}/index.html"), XunitCancellationToken));
+    }
+
+    [Fact]
+    public async Task WaitForHealthcheck_FailsAtOnceWhenTheImageHasNoHealthcheck()
+    {
+        var definition = CreateHttpServerDefinition();
+        definition.WaitStrategies.Add(Wait.ForHealthcheck());
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => StartWithRetryAsync(definition));
+        Assert.Contains("HEALTHCHECK", exception.Message);
+    }
+
+    /// <summary>Shared health check assertion for the runtimes that run the <c>HEALTHCHECK</c> of an image (called from the relevant subclasses). podman is left out: it runs health checks from systemd timers, which the CI agents do not have.</summary>
+    protected async Task AssertWaitForHealthcheckAsync()
+    {
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The image is built from a Linux base image.");
+
+        using (var directory = TemporaryDirectory.Create())
+        {
+            await using var container = await StartWithRetryAsync(CreateHealthcheckDefinition(directory, "wget -qO- http://127.0.0.1:8080/ || exit 1"));
+            var info = await container.InspectAsync(XunitCancellationToken);
+            Assert.Equal(ContainerHealthStatus.Healthy, info.Health);
+        }
+
+        using (var directory = TemporaryDirectory.Create())
+        {
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => StartWithRetryAsync(CreateHealthcheckDefinition(directory, "echo probe failed; exit 1")));
+            Assert.Contains("probe failed", exception.Message);
+        }
+
+        ContainerDefinition CreateHealthcheckDefinition(TemporaryDirectory directory, string healthcheck)
+        {
+            var dockerfilePath = directory.FullPath / "Dockerfile";
+            File.WriteAllText(dockerfilePath, $"""
+                FROM {LinuxImage}
+                HEALTHCHECK --interval=1s --timeout=5s --retries=2 CMD sh -c '{healthcheck}'
+                CMD ["sh", "-c", "mkdir -p /www; printf 'hello from container' > /www/index.html; exec httpd -f -p 8080 -h /www"]
+                """);
+
+            var definition = new ContainerDefinition(new DockerfileImage(dockerfilePath, directory.FullPath, DockerfileBuildSettings.Default)) { Runtime = Runtime };
+            definition.WaitStrategies.Add(Wait.ForHealthcheck(options => options.PollInterval = TimeSpan.FromMilliseconds(100)));
+            definition.Logging.Logger = XUnitLogger.CreateLogger();
+            return definition;
+        }
     }
 
     private static async Task ExecShellAsync(TemporaryContainer container, string command)
@@ -1124,6 +1422,29 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
     }
 
     /// <summary>Shared assertion that the cleanup removes the volume of a run that is over (called from the runtimes that support volumes).</summary>
+    /// <summary>Shared assertion that a privileged command gets more capabilities than a regular one (called from the runtimes that support privileged commands).</summary>
+    protected async Task AssertPrivilegedExecAsync()
+    {
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The capabilities are read from /proc.");
+
+        await using var container = await StartWithRetryAsync(CreateHttpServerDefinition());
+
+        async Task<string> ReadCapabilitiesAsync(bool privileged)
+        {
+            var exec = await container.ExecAsync(options =>
+            {
+                options.Command.Add("grep");
+                options.Command.Add("CapEff");
+                options.Command.Add("/proc/self/status");
+                options.Privileged = privileged;
+            }, XunitCancellationToken);
+
+            return exec.EnsureSuccess().StandardOutput.Trim();
+        }
+
+        Assert.NotEqual(await ReadCapabilitiesAsync(privileged: false), await ReadCapabilitiesAsync(privileged: true));
+    }
+
     protected async Task AssertCleanupRemovesOrphanedVolumeAsync()
     {
         await using var volume = new VolumeDefinition { Runtime = Runtime, Identity = CreateDeadRunIdentity() }.CreateVolume();
@@ -1133,6 +1454,114 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
         await Runtime.CleanupAsync(XunitCancellationToken);
 
         Assert.False(await volume.ExistsAsync(XunitCancellationToken), "The cleanup left behind the volume of a run that is over.");
+    }
+
+    protected async Task AssertCleanupRemovesOrphanedNetworkAsync()
+    {
+        await using var network = new NetworkDefinition { Runtime = Runtime, Identity = CreateDeadRunIdentity() }.CreateNetwork();
+        await network.EnsureCreatedAsync(XunitCancellationToken);
+        Assert.True(await network.ExistsAsync(XunitCancellationToken));
+
+        var result = await Runtime.CleanupAsync(XunitCancellationToken);
+
+        Assert.Contains(network.Name, result.RemovedNetworks);
+        Assert.False(await network.ExistsAsync(XunitCancellationToken), "The cleanup left behind the network of a run that is over.");
+    }
+
+    /// <summary>Shared assertion that containers reach each other by alias on a <see cref="TemporaryNetwork"/>, including on a network the container joins after its creation, and that the network is removed on dispose.</summary>
+    protected Task AssertNetworkConnectsContainersByAliasAsync()
+    {
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The client runs a POSIX shell.");
+
+        return ContainerTestHelper.RunWithRuntimeRetryAsync(async () =>
+        {
+            string firstNetworkName;
+            string secondNetworkName;
+            await using (var firstNetwork = new NetworkDefinition { Runtime = Runtime }.CreateNetwork())
+            await using (var secondNetwork = new NetworkDefinition { Runtime = Runtime }.CreateNetwork())
+            {
+                firstNetworkName = firstNetwork.Name;
+                secondNetworkName = secondNetwork.Name;
+
+                var serverDefinition = CreateHttpServerDefinition();
+                serverDefinition.Network.Add(firstNetwork, "web");
+                serverDefinition.Network.Add(secondNetwork, "web-second", "web-other");
+                await using var server = await StartWithRetryAsync(serverDefinition);
+
+                // The client only joins the second network, which the server joined once it was created.
+                var clientDefinition = CreateHttpServerDefinition();
+                clientDefinition.Network.Add(secondNetwork);
+                await using var client = await StartWithRetryAsync(clientDefinition);
+
+                foreach (var alias in new[] { "web-second", "web-other" })
+                {
+                    var exec = await client.ExecAsync(options =>
+                    {
+                        options.Command.Add("wget");
+                        options.Command.Add("-qO-");
+                        options.Command.Add("http://" + alias + ":8080/");
+                    }, XunitCancellationToken);
+
+                    Assert.Equal(0, exec.ExitCode);
+                    Assert.Equal("hello from container", exec.StandardOutput.Trim());
+                }
+
+                var unreachable = await client.ExecAsync(options =>
+                {
+                    options.Command.Add("wget");
+                    options.Command.Add("-qO-");
+                    options.Command.Add("-T");
+                    options.Command.Add("2");
+                    options.Command.Add("http://web:8080/");
+                }, XunitCancellationToken);
+                Assert.NotEqual(0, unreachable.ExitCode);
+            }
+
+            Assert.False(await Runtime.NetworkExistsAsync(firstNetworkName, XunitCancellationToken), "Disposing the network left it behind.");
+            Assert.False(await Runtime.NetworkExistsAsync(secondNetworkName, XunitCancellationToken), "Disposing the network left it behind.");
+        }, XunitCancellationToken);
+    }
+
+    /// <summary>Shared assertion that the creation options reach the container (called from the docker-compatible runtimes).</summary>
+    protected async Task AssertCreationOptionsReachTheContainerAsync()
+    {
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The options are read with a POSIX shell.");
+
+        var definition = CreateHttpServerDefinition();
+        definition.ExtraHosts.Add(ContainerExtraHost.ForHostGateway());
+        definition.ExtraHosts.Add(new ContainerExtraHost("custom.test", "10.1.2.3"));
+        definition.Resources.SharedMemorySize = 128 * 1024 * 1024;
+        definition.Resources.Ulimits.Add(new ContainerUlimit("nofile", 1234, 2345));
+        definition.Mounts.AddTmpfs("/scratch", size: 32 * 1024 * 1024, mode: (UnixFileMode)Convert.ToInt32("1777", 8));
+        definition.CapDrop.Add("NET_RAW");
+        definition.ExposedPorts.Add(new ContainerExposedPort(9090, ContainerPortProtocol.Udp));
+        definition.StopTimeout = TimeSpan.FromSeconds(3);
+        definition.StopSignal = "SIGINT";
+        definition.Healthcheck = new ContainerHealthcheck(["true"]) { Interval = TimeSpan.FromSeconds(1), Retries = 3 };
+        definition.Ports.Add(new ContainerPort(5353) { Protocol = ContainerPortProtocol.Udp });
+        if (Runtime == ContainerRuntime.DockerApi)
+            definition.DockerApiCreateRequestCustomizer = request => request["Env"]!.AsArray().Add("CUSTOMIZED=1");
+        else
+            definition.AdditionalCreateArguments.Add("--env=CUSTOMIZED=1");
+
+        await using var container = await StartWithRetryAsync(definition);
+
+        var exec = await container.ExecAsync(options =>
+        {
+            options.Command.Add("sh");
+            options.Command.Add("-c");
+            options.Command.Add("cat /etc/hosts; echo; ulimit -Sn; ulimit -Hn; df -k /dev/shm /scratch; stat -c %a /scratch; echo CUSTOMIZED=$CUSTOMIZED");
+        }, XunitCancellationToken);
+
+        Assert.Equal(0, exec.ExitCode);
+        Assert.Contains("host.docker.internal", exec.StandardOutput, StringComparison.Ordinal);
+        Assert.Contains("10.1.2.3", exec.StandardOutput, StringComparison.Ordinal);
+        Assert.Contains("1234\n2345\n", exec.StandardOutput, StringComparison.Ordinal);
+        Assert.Contains("131072", exec.StandardOutput, StringComparison.Ordinal);
+        Assert.Contains("32768", exec.StandardOutput, StringComparison.Ordinal);
+        Assert.Contains("\n1777\n", exec.StandardOutput, StringComparison.Ordinal);
+        Assert.Contains("CUSTOMIZED=1", exec.StandardOutput, StringComparison.Ordinal);
+        Assert.True(container.GetMappedPort(5353) > 0);
     }
 
     /// <summary>Shared assertion that the reaper starts, acknowledges the session, and removes nothing when it is stopped cleanly (called from the runtimes driven by a docker-compatible socket).</summary>

@@ -272,7 +272,7 @@ public sealed class DockerApiRuntimeTests
 
         using var archive = new MemoryStream();
         using var destination = new NonSeekableStream(archive);
-        await DockerApiTarArchive.WriteDirectoryAsync(destination, context.FullPath, entryPrefix: "", additionalFile: null, XunitCancellationToken);
+        await DockerApiTarArchive.WriteDirectoryAsync(destination, context.FullPath, entryPrefix: "", additionalFile: null, ignore: null, XunitCancellationToken);
         archive.Position = 0;
 
         var entries = new Dictionary<string, TarEntry>(StringComparer.Ordinal);
@@ -359,6 +359,223 @@ public sealed class DockerApiRuntimeTests
     public void Reaper_FiltersOnTheSessionLabel()
     {
         Assert.Equal("label=meziantou.tc.session%3Dabc\n", ContainerReaper.BuildFilter("abc"));
+    }
+
+    [Fact]
+    public async Task ReadExecOutputAsync_CopiesTheBytesOfAStreamAndDecodesTheOther()
+    {
+        using var stream = new OneByteAtATimeStream(BuildRawFrames(
+        [
+            (LogStream.Stdout, [0xFF, 0x00]),
+            (LogStream.Stderr, Encoding.UTF8.GetBytes("bo")),
+            (LogStream.Stdout, [0x81]),
+            (LogStream.Stderr, Encoding.UTF8.GetBytes("om")),
+        ]));
+        using var standardOutput = new MemoryStream();
+
+        var (text, error) = await DockerApiRuntime.ReadExecOutputAsync(stream, new ExecOptions { StandardOutput = standardOutput }, CancellationToken.None);
+
+        Assert.Equal([0xFF, 0x00, 0x81], standardOutput.ToArray());
+        Assert.Equal("", text);
+        Assert.Equal("boom", error);
+    }
+
+    [Fact]
+    public async Task ReadExecOutputAsync_ReadsTheRawOutputOfATerminal()
+    {
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes("héllo\r\n"));
+
+        var (text, error) = await DockerApiRuntime.ReadExecOutputAsync(stream, new ExecOptions { Tty = true }, CancellationToken.None);
+
+        Assert.Equal("héllo\r\n", text);
+        Assert.Equal("", error);
+    }
+
+    [Theory]
+    [InlineData("secret.txt", "secret.txt", true)]
+    [InlineData("secret.txt", "sub/secret.txt", false)]
+    [InlineData("*.log", "app.log", true)]
+    [InlineData("*.log", "logs/app.log", false)]
+    [InlineData("*/*.log", "logs/app.log", true)]
+    [InlineData("**/*.log", "app.log", true)]
+    [InlineData("**/*.log", "a/b/c/app.log", true)]
+    [InlineData("bin", "bin/Debug/app.dll", true)]
+    [InlineData("/bin/", "bin/Debug/app.dll", true)]
+    [InlineData("./obj", "obj/project.assets.json", true)]
+    [InlineData("src/**", "src/a/b.cs", true)]
+    [InlineData("src/**", "srcfile", false)]
+    [InlineData("**", "anything/at/all", true)]
+    [InlineData("file?.txt", "file1.txt", true)]
+    [InlineData("file?.txt", "file10.txt", false)]
+    [InlineData("file[0-9].txt", "file5.txt", true)]
+    [InlineData("file[^0-9].txt", "file5.txt", false)]
+    [InlineData("file[^0-9].txt", "filea.txt", true)]
+    [InlineData("a[/]b", "a/b", false)]
+    [InlineData("data.json", "data_json", false)]
+    [InlineData("  spaced.txt  ", "spaced.txt", true)]
+    [InlineData("../outside", "outside", false)]
+    public void DockerIgnore_MatchesLikeTheDockerCli(string pattern, string path, bool excluded)
+    {
+        var ignore = DockerIgnore.Parse(pattern, alwaysIncludedPaths: []);
+
+        Assert.Equal(excluded, ignore.IsExcluded(path));
+    }
+
+    [Fact]
+    public void DockerIgnore_ABackslashEscapesAWildcard()
+    {
+        global::Xunit.Assert.SkipWhen(OperatingSystem.IsWindows(), "A backslash is a path separator on Windows.");
+
+        var ignore = DockerIgnore.Parse("file\\*.txt", alwaysIncludedPaths: []);
+
+        Assert.True(ignore.IsExcluded("file*.txt"));
+        Assert.False(ignore.IsExcluded("file1.txt"));
+    }
+
+    [Fact]
+    public void DockerIgnore_TheLastMatchingPatternWins()
+    {
+        var ignore = DockerIgnore.Parse("""
+            # Build outputs
+            *.md
+            !README.md
+            docs
+            !docs/keep.txt
+            README-secret.md
+            """, alwaysIncludedPaths: []);
+
+        Assert.True(ignore.IsExcluded("CHANGELOG.md"));
+        Assert.False(ignore.IsExcluded("README.md"));
+        Assert.True(ignore.IsExcluded("README-secret.md"));
+        Assert.True(ignore.IsExcluded("docs/guide.txt"));
+        Assert.False(ignore.IsExcluded("docs/keep.txt"));
+        Assert.True(ignore.HasExceptions);
+    }
+
+    [Fact]
+    public void DockerIgnore_NeverExcludesTheDockerfileAndTheIgnoreFile()
+    {
+        var ignore = DockerIgnore.Parse("*\n", alwaysIncludedPaths: ["build/Dockerfile", ".dockerignore"]);
+
+        Assert.True(ignore.IsExcluded("src/app.cs"));
+        Assert.False(ignore.IsExcluded("build/Dockerfile"));
+        Assert.False(ignore.IsExcluded(".dockerignore"));
+        Assert.True(ignore.CanIncludeBelow("build"));
+        Assert.False(ignore.CanIncludeBelow("node_modules"));
+    }
+
+    [Theory]
+    [InlineData("!src/keep.txt", "src", true)]
+    [InlineData("!src/keep.txt", "src/sub", false)]
+    [InlineData("!src/keep.txt", "other", false)]
+    [InlineData("!*.txt", "anything", true)]
+    [InlineData("!src/*/keep.txt", "src/sub", true)]
+    [InlineData("!**/keep.txt", "a/b", true)]
+    public void DockerIgnore_WalksAnExcludedDirectoryOnlyWhenAnExceptionCanMatchBelowIt(string exception, string directory, bool expected)
+    {
+        var ignore = DockerIgnore.Parse("*\n" + exception, alwaysIncludedPaths: []);
+
+        Assert.Equal(expected, ignore.CanIncludeBelow(directory));
+    }
+
+    [Fact]
+    public async Task WriteDirectoryAsync_AppliesTheIgnoreFile()
+    {
+        using var context = TemporaryDirectory.Create();
+        await File.WriteAllTextAsync(context.FullPath / "Dockerfile", "FROM scratch", XunitCancellationToken);
+        await File.WriteAllTextAsync(context.FullPath / ".dockerignore", "*\n!src\nsrc/**/*.secret\n", XunitCancellationToken);
+        await File.WriteAllTextAsync(context.FullPath / ".env", "SECRET=1", XunitCancellationToken);
+        Directory.CreateDirectory(context.FullPath / "src" / "nested");
+        await File.WriteAllTextAsync(context.FullPath / "src" / "app.cs", "", XunitCancellationToken);
+        await File.WriteAllTextAsync(context.FullPath / "src" / "nested" / "key.secret", "", XunitCancellationToken);
+        Directory.CreateDirectory(context.FullPath / "node_modules" / "package");
+        await File.WriteAllTextAsync(context.FullPath / "node_modules" / "package" / "index.js", "", XunitCancellationToken);
+
+        var ignore = await DockerIgnore.LoadAsync(context.FullPath, context.FullPath / "Dockerfile", "Dockerfile", XunitCancellationToken);
+        using var archive = new MemoryStream();
+        await DockerApiTarArchive.WriteDirectoryAsync(archive, context.FullPath, entryPrefix: "", additionalFile: null, ignore, XunitCancellationToken);
+        archive.Position = 0;
+
+        Assert.Equal([".dockerignore", "Dockerfile", "src/", "src/app.cs", "src/nested/"], await ReadEntryNamesAsync(archive));
+    }
+
+    [Fact]
+    public async Task WriteDirectoryAsync_KeepsAFileAnExceptionBringsBackFromAnExcludedDirectory()
+    {
+        using var context = TemporaryDirectory.Create();
+        Directory.CreateDirectory(context.FullPath / "config");
+        await File.WriteAllTextAsync(context.FullPath / "config" / "appsettings.json", "", XunitCancellationToken);
+        await File.WriteAllTextAsync(context.FullPath / "config" / "secrets.json", "", XunitCancellationToken);
+        await File.WriteAllTextAsync(context.FullPath / "Dockerfile", "FROM scratch", XunitCancellationToken);
+        await File.WriteAllTextAsync(context.FullPath / "Dockerfile.dockerignore", "config\n!config/appsettings.json\n", XunitCancellationToken);
+        await File.WriteAllTextAsync(context.FullPath / ".dockerignore", "Dockerfile.dockerignore\n", XunitCancellationToken);
+
+        // The ignore file named after the Dockerfile takes precedence over the one of the context.
+        var ignore = await DockerIgnore.LoadAsync(context.FullPath, context.FullPath / "Dockerfile", "Dockerfile", XunitCancellationToken);
+        using var archive = new MemoryStream();
+        await DockerApiTarArchive.WriteDirectoryAsync(archive, context.FullPath, entryPrefix: "", additionalFile: null, ignore, XunitCancellationToken);
+        archive.Position = 0;
+
+        Assert.Equal([".dockerignore", "Dockerfile", "Dockerfile.dockerignore", "config/appsettings.json"], await ReadEntryNamesAsync(archive));
+    }
+
+    [Fact]
+    public async Task DockerIgnore_LoadAsync_ReturnsNullWithoutAnIgnoreFile()
+    {
+        using var context = TemporaryDirectory.Create();
+
+        Assert.Null(await DockerIgnore.LoadAsync(context.FullPath, context.FullPath / "Dockerfile", "Dockerfile", XunitCancellationToken));
+    }
+
+    [Fact]
+    public void DockerfileBaseImages_ListsTheImagesTheBuildPulls()
+    {
+        var images = DockerfileBaseImages.Parse("""
+            # syntax=docker/dockerfile:1
+            ARG REGISTRY=registry.example.com
+            ARG VERSION
+            FROM --platform=linux/amd64 ${REGISTRY}/sdk:10.0 AS build
+            RUN dotnet publish
+            FROM build AS test
+            FROM $REGISTRY/runtime:$VERSION
+            FROM scratch
+            FROM ghcr.io/owner/tool:1 \
+                AS tool
+            COPY --from=build /app /app
+            COPY --from=docker.io/library/busybox:1.38 /bin/sh /bin/sh
+            COPY --from=0 /app /app
+            FROM mcr.microsoft.com/dotnet/runtime:10.0
+            """, [new("VERSION", "10.0")]);
+
+        Assert.Equal(["registry.example.com/sdk:10.0", "registry.example.com/runtime:10.0", "ghcr.io/owner/tool:1", "docker.io/library/busybox:1.38", "mcr.microsoft.com/dotnet/runtime:10.0"], images);
+    }
+
+    [Fact]
+    public void DockerfileBaseImages_SkipsAnImageWhoseArgumentHasNoValue()
+    {
+        var images = DockerfileBaseImages.Parse("ARG BASE\nFROM ${BASE}\nFROM alpine:3\n", []);
+
+        Assert.Equal(["alpine:3"], images);
+    }
+
+    [Theory]
+    [InlineData("linux", """{"os":"linux"}""")]
+    [InlineData("linux/amd64", """{"os":"linux","architecture":"amd64"}""")]
+    [InlineData("linux/arm64/v8", """{"os":"linux","architecture":"arm64","variant":"v8"}""")]
+    public void FormatPlatformAsJson_WritesTheObjectTheImageEndpointsExpect(string platform, string expected)
+    {
+        Assert.Equal(expected, DockerApiRuntime.FormatPlatformAsJson(platform));
+    }
+
+    private static async Task<List<string>> ReadEntryNamesAsync(Stream archive)
+    {
+        var names = new List<string>();
+        using var reader = new TarReader(archive);
+        while (await reader.GetNextEntryAsync(copyData: false, XunitCancellationToken) is { } entry)
+            names.Add(entry.Name);
+
+        names.Sort(StringComparer.Ordinal);
+        return names;
     }
 
     private static async Task<MemoryStream> CreateArchiveAsync(Action<TarWriter> write)

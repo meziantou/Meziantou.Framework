@@ -56,12 +56,19 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
     private bool IsHostIpSupported => _flavor switch
     {
         Flavor.Wslc => false,
-        Flavor.Docker => !string.Equals(ProbeOutput?.Trim(), "windows", StringComparison.OrdinalIgnoreCase),
+        Flavor.Docker => !IsWindowsDaemon,
         _ => true,
     };
 
+    /// <summary>Whether the docker daemon runs Windows containers, as the probe reports it.</summary>
+    private bool IsWindowsDaemon => _flavor is Flavor.Docker && string.Equals(ProbeOutput?.Trim(), "windows", StringComparison.OrdinalIgnoreCase);
+
     internal override async Task<string> PrepareImageAsync(ContainerDefinition definition, CancellationToken cancellationToken)
     {
+        // 'wslc create' has no '--platform' option, so the variant the container runs could not be chosen.
+        if (_flavor is Flavor.Wslc && definition.Platform is not null)
+            throw new NotSupportedException($"The 'wslc' runtime does not support '{nameof(ContainerDefinition)}.{nameof(ContainerDefinition.Platform)}'.");
+
         var logger = definition.Logging.Logger;
         switch (definition.Image)
         {
@@ -71,31 +78,21 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
 
                 // wslc pulls a missing image when it creates the container.
                 if (definition.PullPolicy is PullPolicy.Always)
-                    await PullImageAsync(["pull", registry.Name], registry.Name, logger, cancellationToken).ConfigureAwait(false);
+                    await PullImageAsync(BuildPullArguments(registry.Name, definition.Platform), registry.Name, logger, cancellationToken).ConfigureAwait(false);
 
                 return registry.Name;
 
             case RegistryImage registry:
                 // The image is pulled here, where a transient registry failure is retried, rather than by the create
                 // command, which then never pulls.
-                await EnsureRegistryImageAsync(["image", "inspect", registry.Name], ["pull", registry.Name], registry.Name, definition.PullPolicy, logger, cancellationToken).ConfigureAwait(false);
+                await EnsureRegistryImageAsync(["image", "inspect", registry.Name], BuildPullArguments(registry.Name, definition.Platform), registry.Name, definition.PullPolicy, logger, cancellationToken).ConfigureAwait(false);
                 return registry.Name;
 
             case DockerfileImage dockerfile:
-                var tag = ResourceNaming.BuiltImagePrefix + Guid.NewGuid().ToString("N") + ":latest";
-                var args = new List<string> { "build", "-t", tag, "-f", dockerfile.DockerfilePath };
-                if (SupportsImageCleanup)
-                {
-                    // The labels are what the cleanup and the reaper find a built image by.
-                    foreach (var (name, value) in ResourceLabels.BuildForImage(definition))
-                    {
-                        args.Add("--label");
-                        args.Add($"{name}={value}");
-                    }
-                }
-
-                args.Add(dockerfile.ContextDirectory);
-                await Cli.RunBufferedAsync(args, cancellationToken).ConfigureAwait(false);
+                // The labels are what the cleanup and the reaper find a built image by.
+                var tag = ImageBuild.GetTag(dockerfile);
+                var args = ImageBuild.BuildCliArguments(definition, dockerfile, tag, includeLibraryLabels: SupportsImageCleanup);
+                await Cli.RunBufferedAsync(args, cancellationToken, onOutput: ImageBuild.CreateOutputCallback(definition, dockerfile)).ConfigureAwait(false);
                 return tag;
 
             case ArchiveImage archive:
@@ -110,6 +107,9 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
                 throw new NotSupportedException($"Image source '{definition.Image.GetType()}' is not supported.");
         }
     }
+
+    internal static IReadOnlyList<string> BuildPullArguments(string imageName, string? platform)
+        => platform is null ? ["pull", imageName] : ["pull", "--platform", platform, imageName];
 
     internal override async Task<string?> FindReusableContainerAsync(string reuseId, CancellationToken cancellationToken)
     {
@@ -151,9 +151,11 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
 
     internal override IReadOnlyList<string> BuildCreateArguments(ContainerDefinition definition, string imageRef, EnvironmentFile? environmentFile = null)
     {
-        // The image is already there: PrepareImageAsync pulled it when it had to.
+        // The image is already there: PrepareImageAsync pulled it when it had to. With a platform, it may be there for
+        // another platform only, which 'image inspect' does not tell, so the create command pulls the missing variant.
         var pullPolicyValue = _flavor is Flavor.Wslc ? null : definition.Image switch
         {
+            RegistryImage when definition.Platform is not null && definition.PullPolicy is not PullPolicy.Never => "missing",
             RegistryImage or ExistingImage => "never",
             _ => null,
         };
@@ -230,6 +232,21 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
         var args = new List<string> { "exec" };
         if (options.StandardInput is not null)
             args.Add("-i");
+
+        if (options.Tty)
+            args.Add("-t");
+
+        if (options.Detach)
+        {
+            // wslc accepts -d but waits for the command to exit.
+            if (_flavor is Flavor.Wslc)
+                throw new NotSupportedException("The 'wslc' runtime does not support detached commands.");
+
+            args.Add("-d");
+        }
+
+        if (options.Privileged)
+            args.Add("--privileged");
 
         if (options.WorkingDirectory is not null)
         {
@@ -310,6 +327,112 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
         => DockerVolumeInspectResult.Parse(output) is [var volume, ..] ? volume.Labels : null;
 
     internal override bool SupportsVolumes => _flavor is not Flavor.Wslc;
+
+    // wslc is not known to have network commands.
+    internal override bool SupportsNetworks => _flavor is not Flavor.Wslc;
+
+    internal override IReadOnlyList<string> BuildCreateNetworkArguments(NetworkDefinition definition, string name, string? instanceId = null)
+    {
+        EnsureNetworksSupported();
+
+        var args = new List<string> { "network", "create" };
+
+        // The docker CLI sends 'bridge' when no driver is given, which a daemon running Windows containers does not have.
+        if ((definition.Driver ?? (IsWindowsDaemon ? "nat" : null)) is { } driver)
+        {
+            args.Add("--driver");
+            args.Add(driver);
+        }
+
+        if (definition.Internal)
+            args.Add("--internal");
+
+        var labels = ResourceLabels.Build(definition.Labels, definition.ReuseId, sessionOwned: true, definition.Identity);
+        if (instanceId is not null)
+            labels[ResourceLabels.Instance] = instanceId;
+
+        foreach (var (labelName, labelValue) in labels)
+        {
+            args.Add("--label");
+            args.Add($"{labelName}={labelValue}");
+        }
+
+        args.Add(name);
+        return args;
+    }
+
+    internal override IReadOnlyList<string> BuildDeleteNetworkArguments(string name)
+    {
+        EnsureNetworksSupported();
+        return ["network", "rm", name];
+    }
+
+    internal override IReadOnlyList<string> BuildNetworkInspectArguments(string name)
+    {
+        EnsureNetworksSupported();
+        return ["network", "inspect", name];
+    }
+
+    // docker reports 'Name' and 'Labels', podman 'name' and 'labels': the parser of the volumes ignores the case.
+    internal override IReadOnlyDictionary<string, string>? ParseNetworkLabels(string output)
+        => DockerVolumeInspectResult.Parse(output) is [var network, ..] ? network.Labels : null;
+
+    internal override IReadOnlyList<ContainerNetworkAttachment> GetNetworksToConnectAfterCreate(ContainerDefinition definition)
+    {
+        var networks = base.GetNetworksToConnectAfterCreate(definition);
+        if (networks.Count > 0)
+            EnsureNetworksSupported();
+
+        return networks;
+    }
+
+    internal override IReadOnlyList<string> BuildConnectNetworkArguments(string id, ContainerNetworkAttachment attachment)
+    {
+        EnsureNetworksSupported();
+
+        var args = new List<string> { "network", "connect" };
+        foreach (var alias in attachment.Aliases)
+        {
+            args.Add("--alias");
+            args.Add(alias);
+        }
+
+        args.Add(attachment.Network);
+        args.Add(id);
+        return args;
+    }
+
+    internal IReadOnlyList<string> BuildListManagedNetworksArguments()
+    {
+        EnsureNetworksSupported();
+        return ["network", "ls", "--filter", $"label={ResourceLabels.Managed}", "--format", "{{.Name}}"];
+    }
+
+    internal override async Task<IReadOnlyList<ManagedResource>> ListManagedNetworksAsync(CancellationToken cancellationToken)
+    {
+        var list = await Cli.RunBufferedAsync(BuildListManagedNetworksArguments(), cancellationToken).ConfigureAwait(false);
+        var names = new List<string>();
+        foreach (var line in list.StandardOutput.Split('\n'))
+        {
+            var trimmed = line.Trim();
+            if (!string.IsNullOrEmpty(trimmed))
+                names.Add(trimmed);
+        }
+
+        if (names.Count == 0)
+            return [];
+
+        var inspectArgs = new List<string> { "network", "inspect" };
+        inspectArgs.AddRange(names);
+        var inspect = await Cli.RunBufferedAsync(inspectArgs, cancellationToken, allowNonZero: true).ConfigureAwait(false);
+        return DockerVolumeInspectResult.Parse(inspect.StandardOutput);
+    }
+
+    private void EnsureNetworksSupported()
+    {
+        if (_flavor is Flavor.Wslc)
+            throw new NotSupportedException("The 'wslc' CLI does not have network commands, so a container cannot join several networks.");
+    }
 
     internal override bool SupportsReaper => _flavor is not Flavor.Wslc;
 

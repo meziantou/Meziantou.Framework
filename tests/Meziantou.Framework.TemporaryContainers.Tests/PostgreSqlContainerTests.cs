@@ -28,7 +28,7 @@ public sealed class PostgreSqlContainerTests
         Assert.Equal(password, definition.Environment.GetValue("POSTGRES_PASSWORD"));
         Assert.NotEqual(password, ContainerDefinition.CreatePostgreSql().Password);
         Assert.Equal(1, definition.Ports.Count);
-        Assert.Equal(3, definition.WaitStrategies.Count);
+        Assert.Equal(2, definition.WaitStrategies.Count);
     }
 
     [Fact]

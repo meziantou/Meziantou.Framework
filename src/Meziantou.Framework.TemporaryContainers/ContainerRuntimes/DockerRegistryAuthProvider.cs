@@ -31,17 +31,52 @@ internal sealed class DockerRegistryAuthProvider
         if (configuration is null)
             return null;
 
-        var registry = GetRegistryFromImageName(imageName);
+        var credentials = await GetCredentialsAsync(configuration, GetRegistryFromImageName(imageName), cancellationToken).ConfigureAwait(false);
+        return credentials is null ? null : Encode(JsonSerializer.SerializeToUtf8Bytes(credentials, DockerApiJsonContext.Default.RegistryAuthHeader));
+    }
+
+    /// <summary>Builds the value of the <c>X-Registry-Config</c> header of a build: the credentials of every registry the images come from, keyed by registry.</summary>
+    /// <param name="imageNames">The images the build pulls, such as the ones of the <c>FROM</c> instructions of the Dockerfile.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <returns>The header value, or <see langword="null"/> when there are no credentials for any of these registries.</returns>
+    public async Task<string?> GetRegistryConfigHeaderValueAsync(IEnumerable<string> imageNames, CancellationToken cancellationToken)
+    {
+        var configuration = _configuration.Value;
+        if (configuration is null)
+            return null;
+
+        var registries = new Dictionary<string, DockerApiModels.RegistryAuthHeader>(StringComparer.OrdinalIgnoreCase);
+        var visited = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var imageName in imageNames)
+        {
+            var registry = GetRegistryFromImageName(imageName);
+            if (!visited.Add(registry))
+                continue;
+
+            // The daemon looks the credentials up by the address the docker CLI stores them under.
+            var credentials = await GetCredentialsAsync(configuration, registry, cancellationToken).ConfigureAwait(false);
+            if (credentials is not null)
+                registries[GetHelperServerAddress(registry)] = credentials;
+        }
+
+        if (registries.Count is 0)
+            return null;
+
+        return Encode(JsonSerializer.SerializeToUtf8Bytes(registries, DockerApiJsonContext.Default.DictionaryStringRegistryAuthHeader));
+    }
+
+    private static async Task<DockerApiModels.RegistryAuthHeader?> GetCredentialsAsync(DockerApiModels.AuthConfigFile configuration, string registry, CancellationToken cancellationToken)
+    {
         var helper = GetCredentialHelper(configuration, registry);
         if (!string.IsNullOrEmpty(helper))
         {
             var credentials = await ResolveCredentialsFromHelperAsync(registry, helper, cancellationToken).ConfigureAwait(false);
             if (credentials is not null)
-                return BuildRegistryAuthHeader(credentials);
+                return credentials;
         }
 
         if (TryGetCredentialsFromAuths(configuration, registry, out var authCredentials))
-            return BuildRegistryAuthHeader(authCredentials);
+            return authCredentials;
 
         return null;
     }
@@ -191,11 +226,9 @@ internal sealed class DockerRegistryAuthProvider
         };
     }
 
-    private static string BuildRegistryAuthHeader(DockerApiModels.RegistryAuthHeader credentials)
+    private static string Encode(byte[] bytes)
     {
-        var bytes = JsonSerializer.SerializeToUtf8Bytes(credentials, DockerApiJsonContext.Default.RegistryAuthHeader);
-
-        // The daemon decodes X-Registry-Auth with Go's padded base64url encoding: '+' and '/' from the standard alphabet
+        // The daemon decodes X-Registry-Auth and X-Registry-Config with Go's padded base64url encoding: '+' and '/' from the standard alphabet
         // are rejected, and so is a value without its '=' padding, whose last block the decoder drops.
         return Convert.ToBase64String(bytes).Replace('+', '-').Replace('/', '_');
     }

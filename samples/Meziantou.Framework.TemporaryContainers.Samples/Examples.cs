@@ -28,4 +28,26 @@ internal static class Examples
         await container.StartAsync();
         #endregion
     }
+
+    public static async Task CreateContainersOnANetwork()
+    {
+        #region NetworkDefinition_Example
+        await using var network = new NetworkDefinition().CreateNetwork();
+
+        var redisDefinition = new ContainerDefinition(ImageSource.FromRegistry("redis:8"));
+        redisDefinition.Network.Add(network, "redis");
+        await using var redis = redisDefinition.CreateContainer();
+        await redis.StartAsync();
+
+        // The second container reaches the first one by its alias.
+        var clientDefinition = new ContainerDefinition(ImageSource.FromRegistry("redis:8"));
+        clientDefinition.Network.Add(network);
+        clientDefinition.Command.Add("redis-cli");
+        clientDefinition.Command.Add("-h");
+        clientDefinition.Command.Add("redis");
+        clientDefinition.Command.Add("ping");
+        await using var client = clientDefinition.CreateContainer();
+        await client.StartAsync();
+        #endregion
+    }
 }

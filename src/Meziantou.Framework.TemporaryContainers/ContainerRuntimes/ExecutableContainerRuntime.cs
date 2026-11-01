@@ -250,6 +250,25 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
     internal virtual IReadOnlyDictionary<string, string>? ParseVolumeLabels(string output)
         => throw CreateVolumesNotSupportedException();
 
+    internal virtual IReadOnlyList<string> BuildCreateNetworkArguments(NetworkDefinition definition, string name, string? instanceId = null)
+        => throw CreateNetworksNotSupportedException();
+
+    internal virtual IReadOnlyList<string> BuildDeleteNetworkArguments(string name)
+        => throw CreateNetworksNotSupportedException();
+
+    internal virtual IReadOnlyList<string> BuildNetworkInspectArguments(string name)
+        => throw CreateNetworksNotSupportedException();
+
+    internal virtual IReadOnlyDictionary<string, string>? ParseNetworkLabels(string output)
+        => throw CreateNetworksNotSupportedException();
+
+    /// <summary>The networks a new container is connected to once it exists, because the create command only took the first one.</summary>
+    internal virtual IReadOnlyList<ContainerNetworkAttachment> GetNetworksToConnectAfterCreate(ContainerDefinition definition)
+        => definition.Network.GetNetworkPlan().Additional;
+
+    internal virtual IReadOnlyList<string> BuildConnectNetworkArguments(string id, ContainerNetworkAttachment attachment)
+        => throw CreateNetworksNotSupportedException();
+
     private NotSupportedException CreateVolumesNotSupportedException()
         => new($"The '{this}' runtime does not support volumes.");
 
@@ -279,10 +298,11 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
 
         using var environmentFile = SupportsEnvironmentFile ? EnvironmentFile.Create(definition.Environment) : null;
         var args = BuildCreateArguments(definition, imageRef, environmentFile);
+        string id;
         try
         {
             var createResult = await Cli.RunBufferedAsync(args, cancellationToken).ConfigureAwait(false);
-            return createResult.StandardOutput.Trim();
+            id = createResult.StandardOutput.Trim();
         }
         catch (ContainerRuntimeException) when (definition.ReuseId is not null)
         {
@@ -290,6 +310,37 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
             // name it already uses. Adopting it is the whole point of a reuse identifier.
             if (await ReuseAdoption.FindAsync(ct => FindReusableContainerAsync(definition.ReuseId, ct), cancellationToken).ConfigureAwait(false) is { } concurrentId)
                 return concurrentId;
+
+            throw;
+        }
+
+        await ConnectAdditionalNetworksAsync(id, definition, cancellationToken).ConfigureAwait(false);
+        return id;
+    }
+
+    private async Task ConnectAdditionalNetworksAsync(string id, ContainerDefinition definition, CancellationToken cancellationToken)
+    {
+        var networks = GetNetworksToConnectAfterCreate(definition);
+        if (networks.Count == 0)
+            return;
+
+        try
+        {
+            foreach (var attachment in networks)
+                await Cli.RunBufferedAsync(BuildConnectNetworkArguments(id, attachment), cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            // The caller never learns the id of a container whose creation failed, so nobody else would remove it.
+            try
+            {
+                using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(1));
+                await Cli.RunBufferedAsync(BuildRemoveArguments(id), cts.Token, allowNonZero: true).ConfigureAwait(false);
+            }
+            catch
+            {
+                // The connection failure is what the caller needs to see.
+            }
 
             throw;
         }
@@ -388,6 +439,28 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
         return null;
     }
 
+    internal override async Task CreateNetworkAsync(NetworkDefinition definition, string name, string instanceId, CancellationToken cancellationToken)
+    {
+        await Cli.RunBufferedAsync(BuildCreateNetworkArguments(definition, name, instanceId), cancellationToken).ConfigureAwait(false);
+    }
+
+    internal override async Task DeleteNetworkAsync(string name, CancellationToken cancellationToken)
+    {
+        // A network still in use is not removed, which the callers detect by probing the network again.
+        await Cli.RunBufferedAsync(BuildDeleteNetworkArguments(name), cancellationToken, allowNonZero: true).ConfigureAwait(false);
+    }
+
+    internal override async Task<IReadOnlyDictionary<string, string>?> GetNetworkLabelsAsync(string name, CancellationToken cancellationToken)
+    {
+        var args = BuildNetworkInspectArguments(name);
+        var result = await Cli.RunBufferedAsync(args, cancellationToken, allowNonZero: true).ConfigureAwait(false);
+        if (result.ExitCode == 0)
+            return ParseNetworkLabels(result.StandardOutput) ?? new Dictionary<string, string>(StringComparer.Ordinal);
+
+        await EnsureDaemonAnswersAsync(result, args, cancellationToken).ConfigureAwait(false);
+        return null;
+    }
+
     internal override async Task DeleteImageAsync(string image, CancellationToken cancellationToken)
     {
         var args = BuildDeleteImageArguments(image);
@@ -478,8 +551,11 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
     {
         using var environmentFile = SupportsEnvironmentFile ? EnvironmentFile.Create(options.Environment) : null;
         var args = BuildExecArguments(id, options, environmentFile);
-        var result = await Cli.RunBufferedAsync(args, cancellationToken, allowNonZero: true, input: options.StandardInput).ConfigureAwait(false);
-        return new ExecResult(result.ExitCode, result.StandardOutput, result.StandardError);
+        var result = options.StandardOutput is null && options.StandardError is null
+            ? await Cli.RunBufferedAsync(args, cancellationToken, allowNonZero: true, input: options.StandardInput).ConfigureAwait(false)
+            : await Cli.RunToStreamsAsync(args, options.StandardOutput, options.StandardError, options.StandardInput, cancellationToken).ConfigureAwait(false);
+
+        return options.Detach ? new ExecResult(result.ExitCode, "", "") : new ExecResult(result.ExitCode, result.StandardOutput, result.StandardError);
     }
 
     internal override async Task<Stream> OpenReadAsync(string id, string path, CancellationToken cancellationToken)

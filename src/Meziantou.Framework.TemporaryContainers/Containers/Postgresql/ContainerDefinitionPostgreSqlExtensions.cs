@@ -1,5 +1,3 @@
-using Meziantou.Framework.TemporaryContainers.Strategies;
-
 namespace Meziantou.Framework.TemporaryContainers;
 
 /// <summary>
@@ -28,10 +26,10 @@ public static class ContainerDefinitionPostgreSqlExtensions
 
             // On an empty data directory, the image starts a temporary server to run the initialization scripts, stops it,
             // then starts the real one; on a data directory that is already initialized, it only starts the real one. The
-            // ready message is therefore logged once or twice. The temporary server does not listen on TCP, and
-            // pg_isready only succeeds once a server accepts connections, not while it is still starting up.
-            definition.WaitStrategies.Add(Wait.ForLogMessage("database system is ready to accept connections"));
-            definition.WaitStrategies.Add(new CommandWaitStrategy(["pg_isready", "--host", "127.0.0.1", "--port", "5432"]));
+            // ready message is therefore logged once or twice, so it cannot tell the two servers apart. The temporary
+            // server does not listen on TCP, and pg_isready only succeeds once a server accepts connections, so a
+            // pg_isready over TCP only succeeds against the real server.
+            definition.WaitStrategies.Add(Wait.ForCommand("pg_isready", "--host", "127.0.0.1", "--port", "5432"));
             definition.WaitStrategies.Add(Wait.ForPort(5432));
             return definition;
         }

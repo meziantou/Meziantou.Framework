@@ -44,6 +44,14 @@ public sealed class DockerRuntimeAdapterTests
     }
 
     [Fact]
+    public void FormatCommand_RedactsBuildArgumentValues()
+    {
+        var command = ContainerCli.FormatCommand("docker", ["build", "--build-arg", "NUGET_TOKEN=hunter2", "."]);
+
+        Assert.Equal("docker build --build-arg NUGET_TOKEN=*** .", command);
+    }
+
+    [Fact]
     public void FormatCommand_RedactsVolumeDriverOptionValues()
     {
         var command = ContainerCli.FormatCommand("docker", ["volume", "create", "--opt", "password=hunter2", "-o", "o=addr=10.0.0.1", "data"]);
@@ -80,6 +88,15 @@ public sealed class DockerRuntimeAdapterTests
 
         Assert.False(runtime.SupportsLogsSelection);
         Assert.Equal("logs --timestamps abc", string.Join(' ', runtime.BuildLogsArguments("abc", new ContainerLogsOptions { Follow = false, Since = DateTimeOffset.UnixEpoch, Tail = 1 })));
+    }
+
+    [Fact]
+    public async Task PrepareImageAsyncRefusesAPlatformOnWslc()
+    {
+        var runtime = Assert.IsAssignableTo<DockerContainerRuntime>(ContainerRuntime.Wslc);
+        var definition = new ContainerDefinition("busybox:1.37") { Platform = "linux/arm64" };
+
+        await Assert.ThrowsAsync<NotSupportedException>(() => runtime.PrepareImageAsync(definition, XunitCancellationToken));
     }
 
     [Fact]
@@ -929,6 +946,21 @@ public sealed class DockerRuntimeAdapterTests
         Assert.Equal("a=b", container.Environment["PASSWORD"]);
     }
 
+    [Theory]
+    [InlineData("""{ "Status": "running", "Health": { "Status": "unhealthy", "FailingStreak": 3, "Log": [ { "ExitCode": 1, "Output": "first" }, { "ExitCode": 1, "Output": "last" } ] } }""", ContainerHealthStatus.Unhealthy, "last")]
+    [InlineData("""{ "Status": "running", "Health": { "Status": "healthy", "FailingStreak": 0, "Log": [] } }""", ContainerHealthStatus.Healthy, null)]
+    [InlineData("""{ "Status": "running", "Healthcheck": { "Status": "starting", "FailingStreak": 0, "Log": null } }""", ContainerHealthStatus.Starting, null)]
+    [InlineData("""{ "Status": "running", "Health": { "Status": "", "FailingStreak": 0, "Log": null } }""", ContainerHealthStatus.None, null)]
+    [InlineData("""{ "Status": "running" }""", ContainerHealthStatus.None, null)]
+    public void ParseInspect_ReadsTheHealth(string state, ContainerHealthStatus expectedHealth, string? expectedOutput)
+    {
+        // podman reports the health under 'Healthcheck' before version 4.3.
+        var container = DockerContainerInfoParser.ParseInspectOutput($$"""[ { "Id": "container-id", "State": {{state}} } ]""");
+
+        Assert.Equal(expectedHealth, container.Health);
+        Assert.Equal(expectedOutput, container.HealthCheckOutput);
+    }
+
     [Fact]
     public void ParseInspect_AnEmptyNetworkSettingsDoesNotHideTheTopLevelBindings()
     {
@@ -1274,4 +1306,107 @@ public sealed class DockerRuntimeAdapterTests
 
     private static ContainerRuntimeException ApiFailure(HttpStatusCode statusCode)
         => new("boom", ContainerRuntime.DockerApi, statusCode);
+
+    [Fact]
+    public void BuildsTheExecOptions()
+    {
+        var runtime = Assert.IsAssignableTo<DockerContainerRuntime>(ContainerRuntime.Docker);
+        var options = new ExecOptions { Tty = true, Detach = true, Privileged = true };
+        options.Command.Add("ls");
+
+        Assert.Equal("exec -t -d --privileged abc ls", string.Join(' ', runtime.BuildExecArguments("abc", options)));
+    }
+
+    [Fact]
+    public void BuildsTheExecOptions_WslcRejectsDetach()
+    {
+        var runtime = Assert.IsAssignableTo<DockerContainerRuntime>(ContainerRuntime.Wslc);
+        var options = new ExecOptions { Detach = true };
+        options.Command.Add("ls");
+
+        Assert.Throws<NotSupportedException>(() => runtime.BuildExecArguments("abc", options));
+    }
+
+    [Fact]
+    public void ExecResult_EnsureSuccessReportsTheCommandAndTheStandardError()
+    {
+        var success = new ExecResult(0, "out", "");
+        Assert.Same(success, success.EnsureSuccess());
+
+        var failure = new ExecResult(2, "out", "boom\n") { Command = ["sh", "-c", "exit 2"] };
+        var exception = Assert.Throws<ContainerExecException>(() => failure.EnsureSuccess());
+        Assert.Equal("The command exited with code 2.\nCommand: sh -c \"exit 2\"\nStandard error:\nboom", exception.Message);
+        Assert.Equal("out", exception.StandardOutput);
+        Assert.Equal("boom\n", exception.StandardError);
+        Assert.Equal(["sh", "-c", "exit 2"], exception.Command);
+
+        // Without a standard error, the standard output is the only clue left.
+        Assert.Equal("The command exited with code 1.\nStandard output:\nout", Assert.Throws<ContainerExecException>(() => new ExecResult(1, "out", " ").EnsureSuccess()).Message);
+    }
+
+    [Fact]
+    public void BuildsNetworkArguments()
+    {
+        var runtime = Assert.IsAssignableTo<DockerContainerRuntime>(ContainerRuntime.Docker);
+        var definition = new NetworkDefinition { Driver = "bridge", Internal = true };
+        definition.Labels.Add("owner", "meziantou");
+
+        var createArguments = string.Join(' ', runtime.BuildCreateNetworkArguments(definition, "my-network", "instance"));
+        Assert.StartsWith("network create --driver bridge --internal --label owner=meziantou --label ", createArguments);
+        Assert.Contains($"--label {ResourceLabels.Managed}=1", createArguments);
+        Assert.Contains($"--label {ResourceLabels.Instance}=instance", createArguments);
+        Assert.EndsWith(" my-network", createArguments);
+        Assert.Equal("network rm my-network", string.Join(' ', runtime.BuildDeleteNetworkArguments("my-network")));
+        Assert.Equal("network inspect my-network", string.Join(' ', runtime.BuildNetworkInspectArguments("my-network")));
+        Assert.Equal($"network ls --filter label={ResourceLabels.Managed} --format {{{{.Name}}}}", string.Join(' ', runtime.BuildListManagedNetworksArguments()));
+
+        var container = new ContainerDefinition(new RegistryImage("redis:8"));
+        container.Network.Add("first");
+        container.Network.Add("second", "a", "b");
+        var connect = Assert.Single(runtime.GetNetworksToConnectAfterCreate(container));
+        Assert.Equal("network connect --alias a --alias b second abc", string.Join(' ', runtime.BuildConnectNetworkArguments("abc", connect)));
+    }
+
+    [Theory]
+    [InlineData("windows", "network create --driver nat --label ")]
+    [InlineData("linux", "network create --label ")]
+    public async Task BuildsNetworkArguments_UsesTheNatDriverOnAWindowsDaemon(string serverOs, string expectedPrefix)
+    {
+        var executable = CreateScriptCli(posix: "echo " + serverOs, windows: "@echo " + serverOs);
+        try
+        {
+            var runtime = new DockerContainerRuntime(nameof(ContainerRuntime.Docker), DockerContainerRuntime.Flavor.Docker, executable);
+            Assert.True(await runtime.IsSupportedAsync(XunitCancellationToken));
+
+            Assert.StartsWith(expectedPrefix, string.Join(' ', runtime.BuildCreateNetworkArguments(new NetworkDefinition(), "my-network")));
+            Assert.StartsWith("network create --driver transparent ", string.Join(' ', runtime.BuildCreateNetworkArguments(new NetworkDefinition { Driver = "transparent" }, "my-network")));
+        }
+        finally
+        {
+            File.Delete(executable);
+        }
+    }
+
+    [Fact]
+    public void ParsesTheLabelsOfANetworkWhateverTheCaseOfTheOutput()
+    {
+        var runtime = Assert.IsAssignableTo<DockerContainerRuntime>(ContainerRuntime.Docker);
+
+        Assert.Equal("1", runtime.ParseNetworkLabels("""[{"Name":"net","Labels":{"a":"1"}}]""")!["a"]);
+        Assert.Equal("1", runtime.ParseNetworkLabels("""[{"name":"net","labels":{"a":"1"}}]""")!["a"]);
+        Assert.Null(runtime.ParseNetworkLabels("[]"));
+    }
+
+    [Fact]
+    public void WslcRejectsSeveralNetworks()
+    {
+        var wslc = Assert.IsAssignableTo<DockerContainerRuntime>(ContainerRuntime.Wslc);
+        var definition = new ContainerDefinition(new RegistryImage("redis:8"));
+        definition.Network.Add("first");
+        definition.Network.Add("second");
+
+        Assert.False(wslc.SupportsNetworks);
+        Assert.Throws<NotSupportedException>(() => wslc.GetNetworksToConnectAfterCreate(definition));
+        Assert.Throws<NotSupportedException>(() => wslc.BuildCreateNetworkArguments(new NetworkDefinition(), "my-network"));
+    }
 }

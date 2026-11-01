@@ -41,7 +41,8 @@ catch (TimeoutException ex)
   started by an IDE does not always have the `PATH` of your terminal.
 - Check that its daemon runs: start Docker Desktop or the Podman machine, or run `container system start` for Apple's
   `container`.
-- With the Docker Engine API runtime, check `DOCKER_HOST`. See
+- With the Docker Engine API runtime, read the end of the message: it lists the endpoints the runtime tried and why each
+  one failed. Check `DOCKER_HOST`, `DOCKER_CONTEXT` and the current docker context (`docker context ls`). See
   [Connect to a Docker daemon](06-Runtimes.md#connect-to-a-docker-daemon).
 
 ## The container is never ready
@@ -63,7 +64,10 @@ The `TimeoutException` says which strategy did not complete and shows the last l
 
 - Use the host port: `GetMappedPort(containerPort)` returns it. The container port is only reachable from the network
   of the container.
-- Connect to `127.0.0.1`: ports are published on the loopback address by default. See [Ports](04-Configuration/04-Ports.md).
+- Connect to the address `GetHostAddress(containerPort)` returns: `127.0.0.1` by default, the host of the daemon when it
+  runs on another machine. See [Ports](04-Configuration/04-Ports.md).
+- With a daemon on another machine, publish the port on `0.0.0.0`: a port published on the loopback address is only
+  reachable from the daemon's machine.
 - Read the port again after [StartAsync](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.StartAsync) or [RestartAsync](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.RestartAsync).
 
 ## Containers are left behind

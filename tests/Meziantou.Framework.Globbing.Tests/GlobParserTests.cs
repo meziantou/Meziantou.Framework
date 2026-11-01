@@ -186,6 +186,10 @@ public class GlobParserTests
     [InlineData("p?th/a")]
     [InlineData("*[abc]d")]
     [InlineData("*{a,ab}c")]
+    [InlineData("*.{cs,*proj}")]
+    [InlineData("{a,[bc],?,{d,e{f,g}}}")]
+    [InlineData(@"{\*,\,,\},\{,\?,\[,\\}")]
+    [InlineData("{src/**,tests}/*.cs")]
     public void ToStringRoundTripsToAnEquivalentPattern(string pattern)
     {
         var glob = Glob.Parse(pattern, GlobDialect.Standard, GlobOptions.MatchLeadingDot);
@@ -206,6 +210,10 @@ public class GlobParserTests
     [InlineData(GlobDialect.Standard, @"\[ab]", "[ab]", "a")]
     [InlineData(GlobDialect.Standard, @"\{a,b\}", "{a,b}", "a")]
     [InlineData(GlobDialect.Standard, @"{a\,,b}", "a,", "a", "b")]
+    [InlineData(GlobDialect.Standard, @"{a\*,b?}", "a*", "ab", "bc", "b")]
+    [InlineData(GlobDialect.Standard, "{a,[bc]}", "c", "a", "d", "[bc]")]
+    [InlineData(GlobDialect.Standard, "{a,{b,c}d}", "cd", "a", "c", "bd")]
+    [InlineData(GlobDialect.Standard, "{src/**,tests}/*.cs", "src/a/b.cs", "tests/a.cs", "tests/a/b.cs")]
     [InlineData(GlobDialect.Standard, @"\!a", "!a", "a")]
     [InlineData(GlobDialect.Standard, @"\.\.", "..")]
     [InlineData(GlobDialect.Standard, @"**/\./a", "x/./a", "x/a")]

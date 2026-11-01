@@ -83,6 +83,8 @@ var highPng = high.ToPng(new QRCodePngOptions { ModuleSize = 4 });
 - Not every kind supports every level. Micro QR versions M2 and M3 support [L](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.L) and [M](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.M), M4 supports [L](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.L), [M](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.M) and [Q](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.Q),
   and M1 only detects errors (its [ErrorCorrectionLevel](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel) is reported as [L](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.L)). [CreateMicroQR](cref:Meziantou.Framework.Barcodes.QRCode.CreateMicroQR) uses [L](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.L) by default.
   rMQR codes support [M](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.M) and [H](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.H) only.
+  A level the kind does not support, or a value that is not a member of [ErrorCorrectionLevel](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel), throws an
+  `ArgumentOutOfRangeException`.
 - [QRCode.ErrorCorrectionLevel](cref:Meziantou.Framework.Barcodes.QRCode.ErrorCorrectionLevel) gives the level the code was built with, and [Version](cref:Meziantou.Framework.Barcodes.QRCode.Version) its version.
 
 ## How the data is encoded
@@ -92,7 +94,9 @@ The whole text is encoded in one mode, the most compact one that can hold all it
 - Digits only take the fewest bits.
 - Uppercase letters, digits, the space and `$%*+-./:` (the alphanumeric mode) take fewer bits than other characters.
 - A text whose characters are all double-byte Shift JIS characters, such as Japanese kanji and kana, is encoded in
-  the kanji mode.
+  the kanji mode. Only the characters of JIS X 0208 that every reader decodes to the same character qualify: the few
+  codes that the Shift JIS tables of readers disagree on (`¢`, `£`, `¬`, `―`, `\`, `〜`, `‖`, `−` and their fullwidth
+  forms) and the vendor extensions, such as `①`, are encoded as UTF-8.
 - Any other text is encoded as UTF-8. [Create](cref:Meziantou.Framework.Barcodes.QRCode.Create) also takes bytes, encoded as they are.
 
 <!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/QRCodeTests.cs;region=QRCode_EncodingModes;format=md-fenced-code-block;dedent=true -->

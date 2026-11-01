@@ -61,6 +61,67 @@ public sealed class DockerApiRuntimeTests
     }
 
     [Fact]
+    public async Task ReadMultiplexedLogsAsync_JoinsALongLineDeliveredInManyFrames()
+    {
+        // A long JSON or base64 line arrives in many frames, each of them cut anywhere, even inside a character or
+        // between the CR and the LF.
+        var line = string.Concat(Enumerable.Repeat("é0123456789🎉", 2000));
+        var bytes = Encoding.UTF8.GetBytes("2026-08-27T10:11:12.123456789Z " + line + "\r\nnext\n");
+        var frames = new List<(LogStream Stream, byte[] Payload)>();
+        for (var offset = 0; offset < bytes.Length; offset += 7)
+            frames.Add((LogStream.Stdout, bytes[offset..Math.Min(bytes.Length, offset + 7)]));
+
+        using var stream = new MemoryStream(BuildRawFrames(frames));
+        var entries = new List<LogEntry>();
+        await foreach (var entry in DockerApiRuntime.ReadMultiplexedLogsAsync(stream, XunitCancellationToken))
+            entries.Add(entry);
+
+        Assert.Equal([line, "next"], entries.Select(entry => entry.Message));
+        Assert.Equal(DateTimeOffset.Parse("2026-08-27T10:11:12.1234568Z", CultureInfo.InvariantCulture), entries[0].Timestamp); // rounded to 100 ns
+    }
+
+    [Fact]
+    public async Task ReadMultiplexedLogsAsync_KeepsTheLinesOfEachStreamApart()
+    {
+        var entries = await ReadAllAsync(
+            (LogStream.Stdout, "out-"),
+            (LogStream.Stderr, "err-"),
+            (LogStream.Stdout, "line\nlast-out"),
+            (LogStream.Stderr, "line\n\nlast-err"));
+
+        Assert.Equal(["out-line", "err-line", "last-out", "last-err"], entries.Select(entry => entry.Message));
+        Assert.Equal([LogStream.Stdout, LogStream.Stderr, LogStream.Stdout, LogStream.Stderr], entries.Select(entry => entry.Stream));
+    }
+
+    [Fact]
+    public async Task ReadMultiplexedTextAsync_ReadsPayloadsLargerThanTheBuffers()
+    {
+        var text = new string('a', 100_000) + "é";
+        using var stream = new MemoryStream(BuildFrames([(LogStream.Stdout, "start "), (LogStream.Stdout, text), (LogStream.Stderr, text)]));
+
+        var (standardOutput, standardError) = await DockerApiRuntime.ReadMultiplexedTextAsync(stream, XunitCancellationToken);
+
+        Assert.Equal("start " + text, standardOutput);
+        Assert.Equal(text, standardError);
+    }
+
+    [Fact]
+    public void BuildLogsEndpoint_MapsTheOptions()
+    {
+        var options = new ContainerLogsOptions
+        {
+            Since = DateTimeOffset.UnixEpoch.AddSeconds(1_700_000_000).AddTicks(1234567),
+            Until = DateTimeOffset.UnixEpoch.AddSeconds(1_700_000_060),
+            Tail = 0,
+            Follow = false,
+            IncludeStandardOutput = false,
+        };
+
+        Assert.Equal("/containers/a%2Fb/logs?timestamps=1&stdout=0&stderr=1&follow=0&since=1700000000.123456700&until=1700000060.000000000&tail=0", DockerApiRuntime.BuildLogsEndpoint("a/b", options));
+        Assert.Equal("/containers/abc/logs?timestamps=1&stdout=1&stderr=1&follow=1", DockerApiRuntime.BuildLogsEndpoint("abc", new ContainerLogsOptions()));
+    }
+
+    [Fact]
     public async Task ReadMultiplexedTextAsync_DecodesACharacterSplitAcrossFrames()
     {
         // The daemon cuts frames wherever its reads end, which can be in the middle of a character.
@@ -110,9 +171,10 @@ public sealed class DockerApiRuntimeTests
         // The tar reader has no data stream at all for an entry of size 0.
         using var archive = await CreateArchiveAsync(writer => writer.WriteEntry(new PaxTarEntry(TarEntryType.RegularFile, "empty.txt")));
 
-        await using var content = await DockerApiTarArchive.ReadSingleFileAsync(archive, "/app/empty.txt", XunitCancellationToken);
+        await using var content = await DockerApiTarArchive.OpenSingleFileAsync(archive, "/app/empty.txt", owner: null, XunitCancellationToken);
 
         Assert.Equal(0, content.Length);
+        Assert.Equal(0, await content.ReadAsync(new byte[16], XunitCancellationToken));
     }
 
     [Fact]
@@ -125,7 +187,7 @@ public sealed class DockerApiRuntimeTests
             writer.WriteEntry(new PaxTarEntry(TarEntryType.RegularFile, "etc/hostname") { DataStream = new MemoryStream("host"u8.ToArray()) });
         });
 
-        await Assert.ThrowsAsync<FileNotFoundException>(() => DockerApiTarArchive.ReadSingleFileAsync(archive, "/etc", XunitCancellationToken));
+        await Assert.ThrowsAsync<FileNotFoundException>(() => DockerApiTarArchive.OpenSingleFileAsync(archive, "/etc", owner: null, XunitCancellationToken));
     }
 
     [Fact]
@@ -133,7 +195,7 @@ public sealed class DockerApiRuntimeTests
     {
         using var archive = await CreateArchiveAsync(writer => writer.WriteEntry(new PaxTarEntry(TarEntryType.SymbolicLink, "os-release") { LinkName = "../usr/lib/os-release" }));
 
-        await Assert.ThrowsAsync<FileNotFoundException>(() => DockerApiTarArchive.ReadSingleFileAsync(archive, "/etc/os-release", XunitCancellationToken));
+        await Assert.ThrowsAsync<FileNotFoundException>(() => DockerApiTarArchive.OpenSingleFileAsync(archive, "/etc/os-release", owner: null, XunitCancellationToken));
     }
 
     [Fact]
@@ -208,7 +270,10 @@ public sealed class DockerApiRuntimeTests
         Directory.CreateDirectory(context.FullPath / "sub");
         File.CreateSymbolicLink(context.FullPath / "link", "entrypoint.sh");
 
-        await using var archive = await DockerApiTarArchive.CreateForDirectoryAsync(context.FullPath, entryPrefix: "", additionalFile: null, XunitCancellationToken);
+        using var archive = new MemoryStream();
+        using var destination = new NonSeekableStream(archive);
+        await DockerApiTarArchive.WriteDirectoryAsync(destination, context.FullPath, entryPrefix: "", additionalFile: null, XunitCancellationToken);
+        archive.Position = 0;
 
         var entries = new Dictionary<string, TarEntry>(StringComparer.Ordinal);
         using var reader = new TarReader(archive);
@@ -223,17 +288,63 @@ public sealed class DockerApiRuntimeTests
     }
 
     [Fact]
-    public async Task CreateForDirectoryAsync_WritesAContextOnlyTheCurrentUserCanRead()
+    public async Task EnsureSeekableAsync_CopiesAStreamOfUnknownLengthToAFileOnlyTheCurrentUserCanRead()
     {
-        global::Xunit.Assert.SkipWhen(OperatingSystem.IsWindows(), "The temporary directory is private on Windows.");
+        using var seekable = new MemoryStream("content"u8.ToArray());
+        Assert.Same(seekable, await DockerApiTarArchive.EnsureSeekableAsync(seekable, XunitCancellationToken));
 
-        using var context = TemporaryDirectory.Create();
-        await File.WriteAllTextAsync(context.FullPath / ".env", "SECRET=1", XunitCancellationToken);
+        string path;
+        using var source = new NonSeekableStream(new MemoryStream("content"u8.ToArray()));
+        await using (var copy = await DockerApiTarArchive.EnsureSeekableAsync(source, XunitCancellationToken))
+        {
+            path = Assert.IsType<TemporaryFileStream>(copy).FilePath;
+            if (!OperatingSystem.IsWindows())
+                Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(path));
 
-        await using var archive = await DockerApiTarArchive.CreateForDirectoryAsync(context.FullPath, entryPrefix: "", additionalFile: null, XunitCancellationToken);
+            Assert.Equal(7, copy.Length);
+            using var reader = new StreamReader(copy);
+            Assert.Equal("content", await reader.ReadToEndAsync(XunitCancellationToken));
+        }
 
-        var path = Assert.IsType<TemporaryFileStream>(archive).FilePath;
-        Assert.Equal(UnixFileMode.UserRead | UnixFileMode.UserWrite, File.GetUnixFileMode(path));
+        Assert.False(File.Exists(path), "The temporary copy was not deleted.");
+    }
+
+    [Fact]
+    public async Task WriteFileAsync_StreamsTheArchiveThatOpenSingleFileAsyncReadsBack()
+    {
+        var content = new byte[1024 * 1024 + 17];
+        System.Security.Cryptography.RandomNumberGenerator.Fill(content);
+
+        // Neither side can seek: the archive goes to the body of a request, and comes back from the body of a response.
+        using var archive = new MemoryStream();
+        using var destination = new NonSeekableStream(archive);
+        using (var source = new MemoryStream(content))
+            await DockerApiTarArchive.WriteFileAsync(destination, "data.bin", source, DockerApiTarArchive.RegularFileMode, XunitCancellationToken);
+
+        using var owner = new DisposeTracker();
+        await using (var file = await DockerApiTarArchive.OpenSingleFileAsync(new OneByteAtATimeStream(archive.ToArray()), "/data.bin", owner, XunitCancellationToken))
+        {
+            Assert.False(file.CanSeek);
+            Assert.Equal(content.Length, file.Length);
+
+            using var result = new MemoryStream();
+            await file.CopyToAsync(result, XunitCancellationToken);
+            Assert.Equal(content, result.ToArray());
+            Assert.False(owner.IsDisposed);
+        }
+
+        Assert.True(owner.IsDisposed, "Disposing the stream did not dispose the response it reads from.");
+    }
+
+    [Fact]
+    public async Task OpenSingleFileAsync_DisposesTheOwnerWhenThePathIsNotAFile()
+    {
+        using var archive = await CreateArchiveAsync(writer => writer.WriteEntry(new PaxTarEntry(TarEntryType.Directory, "etc/")));
+        using var owner = new DisposeTracker();
+
+        await Assert.ThrowsAsync<FileNotFoundException>(() => DockerApiTarArchive.OpenSingleFileAsync(archive, "/etc", owner, XunitCancellationToken));
+
+        Assert.True(owner.IsDisposed);
     }
 
     [Fact]
@@ -321,6 +432,41 @@ public sealed class DockerApiRuntimeTests
         }
 
         return [.. result];
+    }
+
+    private sealed class DisposeTracker : IDisposable
+    {
+        public bool IsDisposed { get; private set; }
+
+        public void Dispose() => IsDisposed = true;
+    }
+
+    /// <summary>A stream that cannot seek, like the body of a request or a response.</summary>
+    private sealed class NonSeekableStream(Stream inner) : Stream
+    {
+        public override bool CanRead => inner.CanRead;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => inner.CanWrite;
+
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override void Flush() => inner.Flush();
+
+        public override int Read(byte[] buffer, int offset, int count) => inner.Read(buffer, offset, count);
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => inner.Write(buffer, offset, count);
     }
 
     /// <summary>A stream that returns one byte per read, as a socket under load can.</summary>

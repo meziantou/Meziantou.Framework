@@ -16,7 +16,8 @@ QR and barcode generation library with SVG and PNG renderers, plus a console ren
 |------|--------|-------------|
 | Code 39 | `Barcode.CreateCode39(...)` | Supports standard Code 39 alphabet, optional Mod 43 checksum |
 | Code 93 | `Barcode.CreateCode93(...)` | Supports standard and extended Code 93 character encoding |
-| Code 128 | `Barcode.CreateCode128(...)` | Supports Code Set B and automatic switching to Code Set C for numeric runs |
+| Code 128 | `Barcode.CreateCode128(...)` | Supports all ASCII characters, control characters included, with automatic switching between Code Sets A, B and C |
+| GS1-128 | `Barcode.CreateGs1128(...)` | Supports GS1 element strings, with the leading FNC1 and the FNC1 separators after variable-length elements |
 | EAN-8 | `Barcode.CreateEan8(...)` | Supports 7/8-digit payloads and optional 2/5-digit add-on extension |
 | EAN-13 | `Barcode.CreateEan13(...)` | Supports 12/13-digit payloads and optional 2/5-digit add-on extension |
 | UPC-A | `Barcode.CreateUpcA(...)` | Supports 11/12-digit payloads and optional 2/5-digit add-on extension |

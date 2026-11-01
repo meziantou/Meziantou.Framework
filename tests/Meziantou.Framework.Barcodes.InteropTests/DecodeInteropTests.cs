@@ -124,6 +124,90 @@ public sealed class DecodeInteropTests
         }
     }
 
+    [Theory]
+    [InlineData(QRCodeType.Standard)]
+    [InlineData(QRCodeType.MicroQR)]
+    [InlineData(QRCodeType.RMQR)]
+    public async Task AmbiguousShiftJisCharacters_AreDecoded(QRCodeType type)
+    {
+        // Pairs of characters that share a Shift JIS code, through a best-fit mapping of the encoder or because the
+        // JIS X 0208 table and code page 932 decode the code differently
+        string[] values = ["\u00A2", "\uFFE0", "\u00A3", "\uFFE1", "\u00AC", "\uFFE2", "\u301C", "\uFF5E", "\u2016", "\u2225", "\u2212", "\uFF0D", "\u2014", "\u2015", "\uFF3C", "\u00A2\u00A3\u00AC", "\uFFE0\uFFE1\uFFE2"];
+        var tools = await BarcodeTools.GetAsync();
+        await using var directory = TemporaryDirectory.Create();
+        var cases = new List<(string Path, string Data)>();
+        foreach (var data in values)
+        {
+            var qr = type switch
+            {
+                QRCodeType.MicroQR => QRCode.CreateMicroQR(data, ErrorCorrectionLevel.L),
+                QRCodeType.RMQR => QRCode.CreateRMQR(data, ErrorCorrectionLevel.M),
+                _ => QRCode.Create(data, ErrorCorrectionLevel.M),
+            };
+
+            var path = directory.FullPath / $"sjis-{cases.Count.ToString(CultureInfo.InvariantCulture)}.png";
+            await File.WriteAllBytesAsync(path, qr.ToPng(new QRCodePngOptions { ModuleSize = 4 }), XunitCancellationToken);
+            cases.Add((path, data));
+        }
+
+        // zbarimg guesses the encoding of byte mode, and takes a few UTF-8 bytes for Shift JIS: ECI removes the guess
+        var results = await tools.ReadWithZXingAsync([.. cases.Select(item => item.Path)]);
+        foreach (var (path, data) in cases)
+        {
+            var result = Assert.Single(results, result => result.FilePath == path, message: Escape(data));
+            Assert.Equal(data, result.Text, message: Escape(data));
+        }
+    }
+
+    [Fact]
+    public async Task KanjiModeCharacters_AreDecoded()
+    {
+        // Every character of JIS X 0208 that the readers decode the same way (zbarimg decodes 0x815C as U+2014 and code page
+        // 932 as U+2015, the JIS X 0208 table and code page 932 differ on the other excluded codes): chunks of 1,500
+        // characters only fit in a version 40 symbol in Kanji mode (their UTF-8 bytes would not)
+        Encoding.RegisterProvider(CodePagesEncodingProvider.Instance);
+        var shiftJis = Encoding.GetEncoding("shift_jis", EncoderFallback.ExceptionFallback, new DecoderReplacementFallback(""));
+        var characters = new StringBuilder();
+        for (var lead = 0x81; lead <= 0xEA; lead++)
+        {
+            for (var trail = 0x40; trail <= 0xFC; trail++)
+            {
+                var code = (lead << 8) | trail;
+                var row = ((lead - (lead <= 0x9F ? 0x81 : 0xC1)) * 2) + (trail >= 0x9F ? 2 : 1);
+                if (lead is > 0x9F and < 0xE0 || trail is 0x7F || row is (> 8 and < 16) or > 84 || code is 0x815C or 0x815F or 0x8160 or 0x8161 or 0x817C or 0x8191 or 0x8192 or 0x81CA)
+                    continue;
+
+                var decoded = shiftJis.GetString([(byte)lead, (byte)trail]);
+                if (decoded.Length is 1)
+                {
+                    characters.Append(decoded);
+                }
+            }
+        }
+
+        var text = characters.ToString();
+        Assert.HasCount(6879 - 8, text); // JIS X 0208-1990 has 6,879 characters
+
+        var tools = await BarcodeTools.GetAsync();
+        await using var directory = TemporaryDirectory.Create();
+        var cases = new List<(string Path, string Data)>();
+        for (var i = 0; i < text.Length; i += 1500)
+        {
+            var data = text.Substring(i, Math.Min(1500, text.Length - i));
+            var path = directory.FullPath / $"kanji-{cases.Count.ToString(CultureInfo.InvariantCulture)}.png";
+            await File.WriteAllBytesAsync(path, QRCode.Create(data, ErrorCorrectionLevel.L).ToPng(new QRCodePngOptions { ModuleSize = 3 }), XunitCancellationToken);
+            cases.Add((path, data));
+        }
+
+        var results = await tools.ReadWithZXingAsync([.. cases.Select(item => item.Path)]);
+        foreach (var (path, data) in cases)
+        {
+            var result = Assert.Single(results, result => result.FilePath == path);
+            Assert.Equal(data, result.Text);
+            Assert.Equal(["QR-Code:" + data], await tools.ReadWithZBarAsync(path));
+        }
+    }
+
     [Fact]
     public async Task RandomBarcodePayloads_AreDecoded()
     {
@@ -147,9 +231,52 @@ public sealed class DecodeInteropTests
         {
             var (main, addOn) = SplitAddOn(barcode);
             var expected = GetExpectedZXingText(barcode.Type, main, addOn);
-            var found = results.Where(result => result.FilePath == path).Select(result => result.Text).ToList();
+            var found = results.Where(result => result.FilePath == path).Select(result => barcode.Type is BarcodeType.Gs1128 ? result.HumanReadableText : result.Text).ToList();
             Assert.Contains(expected, found);
         }
+    }
+
+    // A reader reports a GS1-128 symbol with the symbology identifier ]C1, and its FNC1 separators as GS (U+001D)
+    [Theory]
+    [MemberData(nameof(DrawingVariants))]
+    public async Task Gs1128_IsReadAsGs1(string variant)
+    {
+        var tools = await BarcodeTools.GetAsync();
+        await using var directory = TemporaryDirectory.Create();
+        (Barcode Barcode, string Data)[] samples =
+        [
+            (Barcode.CreateGs1128(new Gs1Element("01", "09521234543213"), new Gs1Element("17", "250101"), new Gs1Element("10", "ABC123")), "01095212345432131725010110ABC123"),
+            (Barcode.CreateGs1128(new Gs1Element("01", "09521234543213"), new Gs1Element("10", "ABC123"), new Gs1Element("21", "XY")), "010952123454321310ABC123\u001D21XY"),
+            (Barcode.CreateGs1128(new Gs1Element("00", "123456789012345675")), "00123456789012345675"),
+            (Barcode.CreateGs1128(new Gs1Element("10", "1234"), new Gs1Element("21", "5678"), new Gs1Element("3103", "000123")), "101234\u001D215678\u001D3103000123"),
+        ];
+
+        foreach (var (barcode, data) in samples)
+        {
+            var path = directory.FullPath / "gs1.png";
+            await File.WriteAllBytesAsync(path, RenderBarcode(barcode, variant), XunitCancellationToken);
+
+            var result = Assert.Single(await tools.ReadWithZXingAsync([path]));
+            Assert.Equal("]C1", result.SymbologyIdentifier);
+            Assert.Equal("GS1", result.ContentType);
+            Assert.Equal(data, result.Text);
+            Assert.Equal(barcode.Text, result.HumanReadableText);
+
+            Assert.Equal(["CODE-128:" + data], await tools.ReadWithZBarAsync(path));
+        }
+    }
+
+    [Fact]
+    public async Task Code128_IsNotReadAsGs1()
+    {
+        var tools = await BarcodeTools.GetAsync();
+        await using var directory = TemporaryDirectory.Create();
+        var path = directory.FullPath / "code128.png";
+        await File.WriteAllBytesAsync(path, Barcode.CreateCode128("0109521234543213").ToPng(new BarcodePngOptions { ModuleWidth = 2, ModuleHeight = 60 }), XunitCancellationToken);
+
+        var result = Assert.Single(await tools.ReadWithZXingAsync([path]));
+        Assert.Equal("]C0", result.SymbologyIdentifier);
+        Assert.Equal("0109521234543213", result.Text);
     }
 
     private static IEnumerable<(QRCode QRCode, string Data)> GetSampleQRCodes()
@@ -325,13 +452,14 @@ public sealed class DecodeInteropTests
             // Without $ / + %: a reader may take "/F" for the Full ASCII "&" of Code 39 Extended
             BarcodeType.Code39 => Barcode.CreateCode39(From("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-. ", 1, 20), includeChecksum: random.Next(2) == 0),
             BarcodeType.Code93 => Barcode.CreateCode93(From("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-. $/+%", 1, 20)),
-            BarcodeType.Code128 => Barcode.CreateCode128(From("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz !#$%&()*+,-./:;<=>?@[]^_{|}~", 1, 30)),
+            BarcodeType.Code128 => Barcode.CreateCode128(From("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz !#$%&()*+,-./:;<=>?@[]^_{|}~\t\n\r\u001b\u001d\u007f", 1, 30)),
             BarcodeType.Ean8 => Barcode.CreateEan8(Digits(7), AddOn()),
             BarcodeType.Ean13 => Barcode.CreateEan13(Digits(12), AddOn()),
             BarcodeType.UpcA => Barcode.CreateUpcA(Digits(11), AddOn()),
             BarcodeType.Codabar => Barcode.CreateCodabar(From("0123456789-$:/.+", 1, 20), "ABCD"[random.Next(4)], "ABCD"[random.Next(4)]),
             // ZXingReader reads ITF symbols of 6 digits or more
             BarcodeType.Itf => Barcode.CreateItf(Digits(2 * random.Next(3, 10))),
+            BarcodeType.Gs1128 => Barcode.CreateGs1128([.. ZintMatrixTests.ParseGs1(ZintMatrixTests.CreateRandomGs1Data(random))]),
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, message: null),
         };
     }

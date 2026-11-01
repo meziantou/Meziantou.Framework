@@ -112,7 +112,7 @@ public class MicroQRCodeTests
     {
         // No Micro QR version supports H. This used to report "the data is too long", and for
         // data small enough to fit M1 it silently returned a symbol with no error correction.
-        Assert.Throws<ArgumentOutOfRangeException>(() => QRCode.CreateMicroQR(data, ErrorCorrectionLevel.H));
+        Assert.Throws<ArgumentOutOfRangeException>("errorCorrectionLevel", () => QRCode.CreateMicroQR(data, ErrorCorrectionLevel.H));
     }
 
     [Fact]

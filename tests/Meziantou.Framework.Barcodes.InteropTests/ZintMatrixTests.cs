@@ -9,6 +9,7 @@ namespace Meziantou.Framework.Barcodes.InteropTests;
 /// reads from our symbol are given to zint, so that the matrices only differ when the encodings differ. The payloads use one
 /// encoding mode, where the segmentation of the data cannot legitimately differ.
 /// </summary>
+[SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
 public sealed class ZintMatrixTests
 {
     // The rMQR sizes in the order of their version numbers (ISO/IEC 23941, Table 1), which is the order of zint's --vers
@@ -74,6 +75,12 @@ public sealed class ZintMatrixTests
             { BarcodeType.Code128, "ab\t\n\rcd", "" },
             { BarcodeType.Code128, "\u0000\u0001ABC123456\u001f", "" },
             { BarcodeType.Code128, "\tA\na\rB", "" },
+            { BarcodeType.Gs1128, "[01]09521234543213[17]250101[10]ABC123", "" },
+            { BarcodeType.Gs1128, "[01]09521234543213[10]ABC123[17]250101", "" },
+            { BarcodeType.Gs1128, "[00]123456789012345675", "" },
+            { BarcodeType.Gs1128, "[3103]000123[410]1234567890123", "" },
+            { BarcodeType.Gs1128, "[8200]A(1)%[22]b-2", "" }, // parentheses are data
+            { BarcodeType.Gs1128, "[10]1234[21]5678", "" },
             { BarcodeType.Ean8, "5512345", "" },
             { BarcodeType.Ean8, "9638507", "12" },
             { BarcodeType.Ean13, "590123412345", "" },
@@ -147,6 +154,7 @@ public sealed class ZintMatrixTests
             BarcodeType.UpcA => (Barcode.CreateUpcA(data, extension), ["-b", "34", "--addongap=9"], WithAddOn(data, extension)),
             BarcodeType.Codabar => (Barcode.CreateCodabar(data), ["-b", "18"], "A" + data + "B"),
             BarcodeType.Itf => (Barcode.CreateItf(data), ["-b", "3"], data),
+            BarcodeType.Gs1128 => (Barcode.CreateGs1128([.. ParseGs1(data)]), ["-b", "16", "--gs1nocheck"], data),
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, message: null),
         };
 
@@ -159,7 +167,6 @@ public sealed class ZintMatrixTests
     // zint picks the shortest sequence of code sets; when several sequences have the same length, it may choose another
     // one than ours, so the random payloads only compare the number of modules
     [Fact]
-    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
     public async Task Code128_RandomAscii_IsAsShortAsZint()
     {
         var tools = await BarcodeTools.GetAsync();
@@ -182,6 +189,51 @@ public sealed class ZintMatrixTests
             var barcode = Barcode.CreateCode128(data.ToString());
             var zintRow = await tools.GetZintRowsAsync(["-b", "20", "--esc"], EscapeForZint(data.ToString()));
             Assert.HasCount((barcode.Width + 3) / 4, Assert.Single(zintRow), message: EscapeForZint(data.ToString()));
+        }
+    }
+
+    [Fact]
+    public async Task Gs1128_RandomElements_AreAsShortAsZint()
+    {
+        var tools = await BarcodeTools.GetAsync();
+        var random = new Random(4203);
+        for (var i = 0; i < 200; i++)
+        {
+            var zintData = CreateRandomGs1Data(random);
+            var barcode = Barcode.CreateGs1128([.. ParseGs1(zintData)]);
+            var zintRow = await tools.GetZintRowsAsync(["-b", "16", "--gs1nocheck"], zintData);
+            Assert.HasCount((barcode.Width + 3) / 4, Assert.Single(zintRow), message: zintData);
+        }
+    }
+
+    // Element strings in the syntax of zint: [01]09521234543213[10]ABC
+    internal static string CreateRandomGs1Data(Random random)
+    {
+        string From(string characters, int min, int max) => string.Concat(Enumerable.Range(0, random.Next(min, max + 1)).Select(_ => characters[random.Next(characters.Length)]));
+
+        var data = new StringBuilder();
+        var count = random.Next(1, 4);
+        for (var i = 0; i < count; i++)
+        {
+            data.Append(random.Next(5) switch
+            {
+                0 => "[01]" + From("0123456789", 14, 14),
+                1 => "[17]" + From("0123456789", 6, 6),
+                2 => "[3103]" + From("0123456789", 6, 6),
+                3 => "[10]" + From("0123456789", 1, 10),
+                _ => "[21]" + From("0123456789ABCXYZabcxyz-./_%", 1, 10),
+            });
+        }
+
+        return data.ToString();
+    }
+
+    internal static IEnumerable<Gs1Element> ParseGs1(string data)
+    {
+        foreach (var part in data.Split('[', StringSplitOptions.RemoveEmptyEntries))
+        {
+            var index = part.IndexOf(']', StringComparison.Ordinal);
+            yield return new Gs1Element(part[..index], part[(index + 1)..]);
         }
     }
 

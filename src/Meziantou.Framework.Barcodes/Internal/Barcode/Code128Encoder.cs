@@ -1,11 +1,17 @@
+using System.Runtime.InteropServices;
+
 namespace Meziantou.Framework.Barcodes.Internal.Linear;
 
 internal static class Code128Encoder
 {
+    /// <summary>Stands for the FNC1 function character in the data given to <see cref="Encode(string, BarcodeType, string)"/>.</summary>
+    public const char Fnc1 = '\uFFFF';
+
     private const int Shift = 98;
     private const int CodeSetC = 99;
     private const int CodeSetB = 100;
     private const int CodeSetA = 101;
+    private const int Fnc1Codeword = 102;
     private const int StartCodeA = 103;
     private const int StartCodeB = 104;
     private const int StartCodeC = 105;
@@ -36,10 +42,16 @@ internal static class Code128Encoder
             }
         }
 
+        return Encode(data, BarcodeType.Code128, data);
+    }
+
+    /// <summary>Encodes ASCII data in which <see cref="Fnc1"/> stands for the FNC1 function character.</summary>
+    public static Barcode Encode(string data, BarcodeType type, string text)
+    {
         var codewords = CreateCodewords(data);
         var modules = EncodeCodewords(codewords);
 
-        return BarcodeEncoderHelper.CreateBarcode(BarcodeType.Code128, modules, data);
+        return BarcodeEncoderHelper.CreateBarcode(type, modules, text);
     }
 
     // Follows the minimal-length guidelines of ISO/IEC 15417 Annex E: code set C for runs of digits, code set A for
@@ -58,6 +70,14 @@ internal static class Code128Encoder
 
         while (index < data.Length)
         {
+            // All the code sets hold FNC1
+            if (data[index] == Fnc1)
+            {
+                codewords.Add(Fnc1Codeword);
+                index++;
+                continue;
+            }
+
             if (currentCodeSet == CodeSet.C)
             {
                 if (CanEncodeCodeSetCPair(data, index))
@@ -72,10 +92,10 @@ internal static class Code128Encoder
                 continue;
             }
 
-            var digits = CountConsecutiveDigits(data, index);
-            if (ShouldSwitchToCodeSetC(digits, data.Length - index))
+            var run = ScanNumericRun(data, index);
+            if (ShouldSwitchToCodeSetC(run, data.Length - index))
             {
-                if ((digits & 1) == 1)
+                if ((run.LeadingDigits & 1) == 1)
                 {
                     codewords.Add(GetValue(data[index], currentCodeSet));
                     index++;
@@ -134,8 +154,13 @@ internal static class Code128Encoder
 
     private static int SelectInitialCodeSet(string data)
     {
-        var leadingDigits = CountConsecutiveDigits(data, 0);
-        if (leadingDigits >= 4 || (leadingDigits == data.Length && leadingDigits >= 2))
+        // The digits after a leading FNC1 (GS1-128) choose the start character as the digits of ordinary data do
+        var start = data.Length > 0 && data[0] == Fnc1 ? 1 : 0;
+        var run = ScanNumericRun(data, start);
+
+        // An odd number of digits before a FNC1 that code set C continues after: the first digit goes in code set A or B
+        var oddBeforeFnc1 = (run.LeadingDigits & 1) == 1 && run.Length > run.LeadingDigits;
+        if (!oddBeforeFnc1 && ShouldSwitchToCodeSetC(run, data.Length - start))
         {
             return CodeSet.C;
         }
@@ -155,6 +180,9 @@ internal static class Code128Encoder
         for (var i = startIndex; i < data.Length; i++)
         {
             var character = data[i];
+            if (character == Fnc1)
+                continue;
+
             if (character < ' ')
                 return CodeSet.A;
 
@@ -170,9 +198,29 @@ internal static class Code128Encoder
         return codeSet == CodeSet.A ? character < '`' : character >= ' ';
     }
 
-    private static bool ShouldSwitchToCodeSetC(int digits, int remainingLength)
+    private static bool ShouldSwitchToCodeSetC(NumericRun run, int remainingLength)
     {
-        return digits >= 4 || (digits >= 2 && digits == remainingLength);
+        return run.Digits >= 4 || (run.Digits >= 2 && run.Length == remainingLength);
+    }
+
+    // The digits from startIndex that code set C can encode. A FNC1 between pairs of digits does not end the run, as all
+    // the code sets hold it: the run continues over a FNC1 followed by an even number of digits.
+    private static NumericRun ScanNumericRun(string data, int startIndex)
+    {
+        var leadingDigits = CountConsecutiveDigits(data, startIndex);
+        var digits = leadingDigits;
+        var end = startIndex + leadingDigits;
+        while (leadingDigits > 0 && end < data.Length && data[end] == Fnc1)
+        {
+            var next = CountConsecutiveDigits(data, end + 1);
+            if (next == 0 || (next & 1) == 1)
+                break;
+
+            digits += next;
+            end += 1 + next;
+        }
+
+        return new NumericRun(leadingDigits, digits, end - startIndex);
     }
 
     private static bool CanEncodeCodeSetCPair(string data, int index)
@@ -219,6 +267,12 @@ internal static class Code128Encoder
 
         return count;
     }
+
+    /// <param name="LeadingDigits">The digits before the first FNC1 of the run.</param>
+    /// <param name="Digits">The digits of the run.</param>
+    /// <param name="Length">The characters of the run, FNC1 included.</param>
+    [StructLayout(LayoutKind.Auto)]
+    private readonly record struct NumericRun(int LeadingDigits, int Digits, int Length);
 
     private static class CodeSet
     {

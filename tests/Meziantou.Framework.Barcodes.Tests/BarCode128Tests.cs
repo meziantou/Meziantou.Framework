@@ -343,4 +343,105 @@ public class BarCode128Tests
             Assert.Equal(data.ToString(), Code128Symbols.Interpret(codewords));
         }
     }
+
+    [Fact]
+    public void CreateGs1128()
+    {
+        #region Barcode_Gs1128
+        // A GTIN, an expiry date and a batch number
+        var barcode = Barcode.CreateGs1128(
+            new Gs1Element("01", "09521234543213"),
+            new Gs1Element("17", "250101"),
+            new Gs1Element("10", "ABC123"));
+
+        // The human-readable interpretation printed under the bars: the parentheses are not encoded
+        Assert.Equal("(01)09521234543213(17)250101(10)ABC123", barcode.Text);
+        Assert.Equal(BarcodeType.Gs1128, barcode.Type);
+        #endregion
+
+        var codewords = Code128Symbols.Decode(barcode);
+        Assert.Equal([105, 102, 1, 9, 52, 12, 34, 54, 32, 13, 17, 25, 1, 1, 10, 100, 33, 34, 35, 17, 99, 23], codewords[..^2]);
+        Code128Symbols.AssertValidChecksum(codewords);
+    }
+
+    [Fact]
+    public void CreateGs1128_VariableLengthElement_IsFollowedByFnc1()
+    {
+        var barcode = Barcode.CreateGs1128(new Gs1Element("01", "09521234543213"), new Gs1Element("10", "ABC123"), new Gs1Element("17", "250101"));
+
+        // Code set C continues over the FNC1 separator, which every code set holds
+        var codewords = Code128Symbols.Decode(barcode);
+        Assert.Equal([105, 102, 1, 9, 52, 12, 34, 54, 32, 13, 10, 100, 33, 34, 35, 17, 99, 23, 102, 17, 25, 1, 1], codewords[..^2]);
+        Code128Symbols.AssertValidChecksum(codewords);
+        Assert.Equal("\u00F1010952123454321310ABC123\u00F117250101", Code128Symbols.Interpret(codewords));
+        Assert.Equal("(01)09521234543213(10)ABC123(17)250101", barcode.Text);
+    }
+
+    [Theory]
+    [InlineData(new[] { "00", "123456789012345675" }, "\u00F100123456789012345675")]
+    [InlineData(new[] { "3103", "000123", "41", "x" }, null)]
+    [InlineData(new[] { "3103", "000123", "410", "1234567890123" }, "\u00F131030001234101234567890123")] // two predefined lengths: no separator
+    [InlineData(new[] { "21", "A(1)", "22", "b-2" }, "\u00F121A(1)\u00F122b-2")] // parentheses are data
+    [InlineData(new[] { "8200", "http://example.com" }, "\u00F18200http://example.com")]
+    [InlineData(new[] { "10", "1234", "21", "5678" }, "\u00F1101234\u00F1215678")]
+    public void CreateGs1128_EncodesTheElementStrings(string[] parts, string? expected)
+    {
+        if (expected is null)
+        {
+            Assert.Throws<ArgumentException>(() => CreateGs1128(parts));
+            return;
+        }
+
+        var codewords = Code128Symbols.Decode(CreateGs1128(parts));
+        Code128Symbols.AssertValidChecksum(codewords);
+        Assert.Equal(expected, Code128Symbols.Interpret(codewords));
+
+        static Barcode CreateGs1128(string[] parts) => Barcode.CreateGs1128([.. parts.Chunk(2).Select(part => new Gs1Element(part[0], part[1]))]);
+    }
+
+    [Theory]
+    [InlineData("1", "123")]
+    [InlineData("12345", "123")]
+    [InlineData("0A", "123")]
+    [InlineData("310", "000123")] // 31nn has 4 digits
+    [InlineData("4100", "1234567890123")] // 41n has 3 digits
+    public void Gs1Element_InvalidApplicationIdentifier_ThrowsArgumentException(string applicationIdentifier, string value)
+    {
+        Assert.Throws<ArgumentException>(nameof(applicationIdentifier), () => new Gs1Element(applicationIdentifier, value));
+    }
+
+    [Theory]
+    [InlineData("10", "")]
+    [InlineData("10", "AB C")] // space is not in character set 82
+    [InlineData("10", "AB#")]
+    [InlineData("10", "AB\u001d")]
+    [InlineData("10", "caf\u00e9")]
+    [InlineData("01", "0952123454321")] // 13 digits instead of 14
+    [InlineData("01", "095212345432130")]
+    [InlineData("17", "25010A")]
+    public void Gs1Element_InvalidValue_ThrowsArgumentException(string applicationIdentifier, string value)
+    {
+        Assert.Throws<ArgumentException>(nameof(value), () => new Gs1Element(applicationIdentifier, value));
+    }
+
+    [Fact]
+    public void CreateGs1128_InvalidElements_ThrowsArgumentException()
+    {
+        Assert.Throws<ArgumentException>("elements", () => Barcode.CreateGs1128());
+        Assert.Throws<ArgumentException>("elements", () => Barcode.CreateGs1128([null!]));
+
+        // 48 data characters at most, application identifiers and separators included
+        var maximum = Barcode.CreateGs1128(new Gs1Element("10", new string('A', 20)), new Gs1Element("21", new string('B', 23)));
+        Assert.Equal(BarcodeType.Gs1128, maximum.Type);
+        Assert.Throws<ArgumentException>("elements", () => Barcode.CreateGs1128(new Gs1Element("10", new string('A', 20)), new Gs1Element("21", new string('B', 24))));
+    }
+
+    [Fact]
+    public void CreateCode128_ElementStrings_AreNotGs1128()
+    {
+        var codewords = Code128Symbols.Decode(Barcode.CreateCode128("(01)09521234543213"));
+
+        Assert.DoesNotContain(102, codewords);
+        Assert.Equal("(01)09521234543213", Code128Symbols.Interpret(codewords));
+    }
 }

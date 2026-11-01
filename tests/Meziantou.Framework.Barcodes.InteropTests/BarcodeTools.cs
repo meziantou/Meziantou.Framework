@@ -109,12 +109,15 @@ internal sealed class BarcodeTools
             results.Add(new ZXingResult(
                 FilePath: arguments.GetValueOrDefault(filePath, filePath),
                 Text: root.TryGetProperty("Text", out var text) ? text.GetString() ?? "" : "",
+                HumanReadableText: root.TryGetProperty("HRI", out var humanReadableText) ? humanReadableText.GetString() ?? "" : "",
                 Bytes: root.TryGetProperty("Bytes", out var bytes) ? Convert.FromHexString((bytes.GetString() ?? "").Replace(" ", "", StringComparison.Ordinal)) : [],
                 Format: root.GetProperty("Format").GetString()!,
                 Version: root.TryGetProperty("Version", out var version) ? version.GetString() : null,
                 ErrorCorrectionLevel: root.TryGetProperty("ECLevel", out var ecLevel) ? ecLevel.GetString() : null,
                 DataMask: root.TryGetProperty("DataMask", out var mask) ? mask.GetInt32() : null,
-                Error: root.TryGetProperty("Error", out var error) ? error.GetString() : null));
+                Error: root.TryGetProperty("Error", out var error) ? error.GetString() : null,
+                SymbologyIdentifier: root.TryGetProperty("Identifier", out var identifier) ? identifier.GetString() : null,
+                ContentType: root.TryGetProperty("ContentType", out var contentType) ? contentType.GetString() : null));
         }
 
         return results;

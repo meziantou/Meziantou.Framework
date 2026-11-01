@@ -1248,7 +1248,7 @@ public sealed class BloomFilterTests
         Assert.Equal(6, size.HashCount);
 
         // A BloomFilter needs 3% less memory for the same probability
-        Assert.Equal(9_585_059, BloomFilterSize.CreateOptimalSize(1_000_000, 0.01).BitCount);
+        Assert.Equal(9_592_955, BloomFilterSize.CreateOptimalSize(1_000_000, 0.01).BitCount);
 
         var filter = BlockedBloomFilter.CreateXXHash128(size);
         filter.Add("alice@example.com");

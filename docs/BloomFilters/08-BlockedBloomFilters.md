@@ -24,7 +24,7 @@ Assert.Equal(19_328, size.BlockCount); // 64 bytes per block: about 1.24 MB of m
 Assert.Equal(6, size.HashCount);
 
 // A BloomFilter needs 3% less memory for the same probability
-Assert.Equal(9_585_059, BloomFilterSize.CreateOptimalSize(1_000_000, 0.01).BitCount);
+Assert.Equal(9_592_955, BloomFilterSize.CreateOptimalSize(1_000_000, 0.01).BitCount);
 
 var filter = BlockedBloomFilter.CreateXXHash128(size);
 filter.Add("alice@example.com");
@@ -56,7 +56,7 @@ a blocked filter needs more bits than a classic one, and the stricter the probab
 
 | False positive probability | Bits per value, classic | Bits per value, blocked | Extra memory |
 | ---: | ---: | ---: | ---: |
-| 10% | 4.8 | 4.8 | +1% |
+| 10% | 4.8 | 4.8 | +0.5% |
 | 1% | 9.6 | 9.9 | +3% |
 | 0.1% | 14.4 | 15.5 | +8% |
 | 0.01% | 19.2 | 21.9 | +14% |

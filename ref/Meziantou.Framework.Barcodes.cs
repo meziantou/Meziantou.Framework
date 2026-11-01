@@ -17,6 +17,7 @@ namespace Meziantou.Framework.Barcodes
         public static Meziantou.Framework.Barcodes.Barcode CreateCode93(string data) => throw null;
         public static Meziantou.Framework.Barcodes.Barcode CreateEan13(string data, string? extension = null) => throw null;
         public static Meziantou.Framework.Barcodes.Barcode CreateEan8(string data, string? extension = null) => throw null;
+        public static Meziantou.Framework.Barcodes.Barcode CreateGs1128(params System.ReadOnlySpan<Meziantou.Framework.Barcodes.Gs1Element> elements) => throw null;
         public static Meziantou.Framework.Barcodes.Barcode CreateItf(string data) => throw null;
         public static Meziantou.Framework.Barcodes.Barcode CreateUpcA(string data, string? extension = null) => throw null;
     }
@@ -63,6 +64,7 @@ namespace Meziantou.Framework.Barcodes
         UpcA = 5,
         Codabar = 6,
         Itf = 7,
+        Gs1128 = 8,
     }
 
     public readonly struct Color : System.IEquatable<Meziantou.Framework.Barcodes.Color>
@@ -98,6 +100,14 @@ namespace Meziantou.Framework.Barcodes
         M = 1,
         Q = 2,
         H = 3,
+    }
+
+    public sealed class Gs1Element
+    {
+        public string ApplicationIdentifier { get => throw null; }
+        public string Value { get => throw null; }
+        public Gs1Element(string applicationIdentifier, string value) { }
+        public override string ToString() => throw null;
     }
 
     public sealed class MicroQRCodeOptions

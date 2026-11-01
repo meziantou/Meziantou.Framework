@@ -7,7 +7,9 @@ namespace Meziantou.Framework.Globbing;
 
 internal static class GlobParser
 {
-    private static readonly char[] DirectorySeparator = [Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar];
+    // A brace expression whose alternatives hold a '/' is expanded into one pattern per alternative, and the
+    // expansions multiply. This bounds the number of patterns that a single pattern can expand into.
+    private const int MaxExpandedPatternCount = 1024;
 
     public static bool TryParse(ReadOnlySpan<char> pattern, GlobDialect dialect, GlobOptions options, [NotNullWhen(true)] out Glob? result, [NotNullWhen(false)] out string? errorMessage)
     {
@@ -22,7 +24,15 @@ internal static class GlobParser
     /// </param>
     public static bool TryParse(ReadOnlySpan<char> pattern, GlobDialect dialect, GlobOptions options, bool matchGitDirectoryContent, [NotNullWhen(true)] out Glob? result, [NotNullWhen(false)] out string? errorMessage)
     {
+        var expansionBudget = MaxExpandedPatternCount;
+        return TryParse(pattern, dialect, options, matchGitDirectoryContent, ref expansionBudget, out result, out errorMessage);
+    }
+
+    /// <param name="expansionBudget">The number of patterns that brace expressions can still be expanded into.</param>
+    private static bool TryParse(ReadOnlySpan<char> pattern, GlobDialect dialect, GlobOptions options, bool matchGitDirectoryContent, ref int expansionBudget, [NotNullWhen(true)] out Glob? result, [NotNullWhen(false)] out string? errorMessage)
+    {
         result = null;
+        var originalPattern = pattern;
         if (pattern.IsEmpty)
         {
             errorMessage = "The pattern is empty";
@@ -86,9 +96,7 @@ internal static class GlobParser
         }
 
         List<Segment>? subSegments = null;
-        List<string>? setSubsegment = null;
         var currentSegmentMatchLeadingDot = settings.MatchLeadingDot;
-        var parserContext = GlobParserContext.Segment;
         var isAtPatternStart = true;
 
         Span<char> sbSpan = stackalloc char[128];
@@ -98,48 +106,6 @@ internal static class GlobParser
             for (var i = 0; i < pattern.Length; i++)
             {
                 var c = pattern[i];
-                if (parserContext == GlobParserContext.LiteralSet)
-                {
-                    Debug.Assert(setSubsegment is not null);
-                    if (c == '\\')
-                    {
-                        if (i + 1 >= pattern.Length)
-                        {
-                            errorMessage = "Expecting a character after '\\'";
-                            return false;
-                        }
-
-                        i++;
-                        currentLiteral.Append(pattern[i]);
-                    }
-                    else if (c == ',') // end of current value
-                    {
-                        setSubsegment.Add(currentLiteral.AsSpan().ToString());
-                        currentLiteral.Clear();
-                    }
-                    else if (c == '}') // end of literal set
-                    {
-                        setSubsegment.Add(currentLiteral.AsSpan().ToString());
-                        currentLiteral.Clear();
-
-                        if (settings.PathSeparatorAware && setSubsegment.Exists(s => s.IndexOfAny(DirectorySeparator) >= 0))
-                        {
-                            errorMessage = "set contains a path separator";
-                            return false;
-                        }
-
-                        AddSubsegment(ref subSegments, ref currentLiteral, settings.IgnoreCase, new LiteralSetSegment(setSubsegment.ToArray(), settings.IgnoreCase));
-                        setSubsegment = null;
-                        parserContext = GlobParserContext.Segment;
-                    }
-                    else
-                    {
-                        currentLiteral.Append(c);
-                    }
-
-                    continue;
-                }
-
                 // An escaped separator ('\/', or '%2F' for MSBuild) still separates two segments: escaping an
                 // ordinary character yields the character itself.
                 var separatorLength = GetSeparatorLength(pattern, i, settings);
@@ -256,11 +222,19 @@ internal static class GlobParser
                         AddSubsegment(ref subSegments, ref currentLiteral, settings.IgnoreCase, MatchAllSubSegment.Instance);
                         break;
 
-                    case '{' when settings.SupportsLiteralSet:
-                        Debug.Assert(setSubsegment is null);
-                        AddSubsegment(ref subSegments, ref currentLiteral, settings.IgnoreCase, subSegment: null);
-                        parserContext = GlobParserContext.LiteralSet;
-                        setSubsegment = [];
+                    case '{' when settings.SupportsBraceExpression:
+                        if (!TryParseAlternation(pattern, i, settings, out var alternation, out var alternationEnd, out var alternativeRanges, out errorMessage))
+                            return false;
+
+                        if (alternation is null)
+                        {
+                            // An alternative holds a '/' or a '**', whose meaning depends on the text around the
+                            // braces: parse the pattern once per alternative instead.
+                            return TryExpandAlternation(originalPattern, pattern, i, alternationEnd, alternativeRanges, dialect, options, matchGitDirectoryContent, exclude, ref expansionBudget, out result, out errorMessage);
+                        }
+
+                        AddSubsegment(ref subSegments, ref currentLiteral, settings.IgnoreCase, alternation);
+                        i = alternationEnd - 1;
                         break;
 
                     case '[' when settings.SupportsBracketExpression:
@@ -286,12 +260,6 @@ internal static class GlobParser
                         AppendLiteral(ref currentLiteral, ref currentSegmentMatchLeadingDot, subSegments, c, settings.MatchLeadingDot);
                         break;
                 }
-            }
-
-            if (parserContext != GlobParserContext.Segment)
-            {
-                errorMessage = $"The '{parserContext}' is not complete";
-                return false;
             }
 
             FinishSegment(segments, matchLeadingDot, ref subSegments, ref currentLiteral, settings.IgnoreCase, currentSegmentMatchLeadingDot, settings.PathSeparatorAware);
@@ -349,7 +317,7 @@ internal static class GlobParser
                 currentLiteral.Clear();
             }
 
-            // A literal set that starts the segment decides whether a leading dot is written in the pattern, but only
+            // An alternation that starts the segment decides whether a leading dot is written in the pattern, but only
             // the alternative the path takes tells: '{.a,b}' matches '.a', and '{.a,}*' does not match '.b'. The
             // segment checks it while matching, so the leading dot must not be rejected before.
             var requiresLiteralLeadingDot = !currentSegmentMatchLeadingDot && CanStartWithLiteralDot(subSegments);
@@ -365,26 +333,251 @@ internal static class GlobParser
         }
     }
 
-    /// <summary>Whether a literal set that starts the segment can match a leading dot with a '.' written in the pattern.</summary>
-    private static bool CanStartWithLiteralDot(List<Segment> parts)
+    /// <summary>Whether an alternation that starts the segment can match a leading dot with a '.' written in the pattern.</summary>
+    private static bool CanStartWithLiteralDot(IEnumerable<Segment> parts)
     {
         foreach (var part in parts)
         {
             if (part is LiteralSegment literal)
                 return literal.Value[0] == '.';
 
-            if (part is not LiteralSetSegment literalSet)
+            if (part is not AlternationSegment alternation)
                 return false;
 
-            if (Array.Exists(literalSet.Values, value => value is ['.', ..]))
+            if (Array.Exists(alternation.Alternatives, alternative => CanStartWithLiteralDot(alternative)))
                 return true;
 
-            // An empty alternative consumes nothing, so the next part may still provide the dot
-            if (!Array.Exists(literalSet.Values, value => value.Length == 0))
+            // An alternative that consumes nothing lets the next part provide the dot
+            if (!Array.Exists(alternation.Alternatives, CanBeEmptyWithoutWildcard))
                 return false;
         }
 
         return false;
+
+        // Only a literal can consume a leading dot, so an alternative only lets the next part provide it when it
+        // consumes nothing without a wildcard.
+        static bool CanBeEmptyWithoutWildcard(Segment[] alternative)
+        {
+            return Array.TrueForAll(alternative, part => part is AlternationSegment nested && Array.Exists(nested.Alternatives, CanBeEmptyWithoutWildcard));
+        }
+    }
+
+    /// <summary>Parses the brace expression whose '{' is at <paramref name="start"/>.</summary>
+    /// <param name="segment">
+    ///     The alternation, or <see langword="null"/> when an alternative holds a '/' or a '**': their meaning depends
+    ///     on the text around the braces, so the pattern must be expanded.
+    /// </param>
+    /// <param name="end">The index of the character that follows the closing '}'.</param>
+    /// <param name="alternativeRanges">The start and the end of each alternative in <paramref name="pattern"/>.</param>
+    private static bool TryParseAlternation(ReadOnlySpan<char> pattern, int start, GlobParserSettings settings, out AlternationSegment? segment, out int end, out List<(int Start, int End)> alternativeRanges, [NotNullWhen(false)] out string? errorMessage)
+    {
+        segment = null;
+        end = start;
+        alternativeRanges = [];
+
+        var requiresExpansion = false;
+        var alternatives = new List<Segment[]>();
+        var parts = new List<Segment>();
+        var currentLiteral = new ValueStringBuilder(stackalloc char[64]);
+        try
+        {
+            var alternativeStart = start + 1;
+            var i = start + 1;
+            while (true)
+            {
+                if (i >= pattern.Length)
+                {
+                    errorMessage = "The brace expression is not complete";
+                    return false;
+                }
+
+                var c = pattern[i];
+                if (c is ',' or '}')
+                {
+                    FlushLiteral(parts, ref currentLiteral, settings.IgnoreCase);
+                    alternatives.Add([.. parts]);
+                    parts.Clear();
+                    alternativeRanges.Add((alternativeStart, i));
+                    i++;
+                    if (c == '}')
+                        break;
+
+                    alternativeStart = i;
+                    continue;
+                }
+
+                if (c == '\\')
+                {
+                    if (i + 1 >= pattern.Length)
+                    {
+                        errorMessage = "Expecting a character after '\\'";
+                        return false;
+                    }
+
+                    // An escaped separator still separates two segments
+                    if (settings.IsPatternSeparator(pattern[i + 1]))
+                    {
+                        requiresExpansion = true;
+                    }
+
+                    currentLiteral.Append(pattern[i + 1]);
+                    i += 2;
+                    continue;
+                }
+
+                if (settings.IsPatternSeparator(c))
+                {
+                    requiresExpansion = true;
+                    currentLiteral.Append(c);
+                    i++;
+                    continue;
+                }
+
+                switch (c)
+                {
+                    case '?':
+                        FlushLiteral(parts, ref currentLiteral, settings.IgnoreCase);
+                        parts.Add(settings.AnyCharacterSegment);
+                        i++;
+                        break;
+
+                    case '*':
+                        var starCount = 1;
+                        while (i + starCount < pattern.Length && pattern[i + starCount] == '*')
+                        {
+                            starCount++;
+                        }
+
+                        // '**' is a recursive wildcard when it makes a whole path segment once the braces are expanded
+                        if (starCount > 1)
+                        {
+                            requiresExpansion = true;
+                        }
+
+                        FlushLiteral(parts, ref currentLiteral, settings.IgnoreCase);
+                        if (parts.Count == 0 || parts[^1] is not MatchAllSubSegment)
+                        {
+                            parts.Add(MatchAllSubSegment.Instance);
+                        }
+
+                        i += starCount;
+                        break;
+
+                    case '[' when settings.SupportsBracketExpression:
+                        switch (ParseBracketExpression(pattern, i, settings, out var bracketExpression, out var bracketExpressionEnd, out errorMessage))
+                        {
+                            case BracketExpressionParseResult.Parsed:
+                                FlushLiteral(parts, ref currentLiteral, settings.IgnoreCase);
+                                parts.Add(bracketExpression!);
+                                i = bracketExpressionEnd;
+                                break;
+
+                            case BracketExpressionParseResult.NotABracketExpression:
+                                currentLiteral.Append(c);
+                                i++;
+                                break;
+
+                            default:
+                                Debug.Assert(errorMessage is not null);
+                                return false;
+                        }
+
+                        break;
+
+                    case '{':
+                        if (!TryParseAlternation(pattern, i, settings, out var nested, out var nestedEnd, out _, out errorMessage))
+                            return false;
+
+                        if (nested is null)
+                        {
+                            requiresExpansion = true;
+                        }
+                        else
+                        {
+                            FlushLiteral(parts, ref currentLiteral, settings.IgnoreCase);
+                            parts.Add(nested);
+                        }
+
+                        i = nestedEnd;
+                        break;
+
+                    default:
+                        currentLiteral.Append(c);
+                        i++;
+                        break;
+                }
+            }
+
+            end = i;
+            errorMessage = null;
+            if (!requiresExpansion)
+            {
+                segment = new AlternationSegment([.. alternatives]);
+            }
+
+            return true;
+        }
+        finally
+        {
+            currentLiteral.Dispose();
+        }
+
+        static void FlushLiteral(List<Segment> parts, ref ValueStringBuilder currentLiteral, bool ignoreCase)
+        {
+            if (currentLiteral.Length > 0)
+            {
+                parts.Add(new LiteralSegment(currentLiteral.AsSpan().ToString(), ignoreCase));
+                currentLiteral.Clear();
+            }
+        }
+    }
+
+    /// <summary>
+    ///     Parses the pattern once per alternative of the brace expression between <paramref name="start"/> and
+    ///     <paramref name="end"/>, as bash does for a brace expansion, and returns a glob that matches the paths one
+    ///     of the patterns matches.
+    /// </summary>
+    /// <param name="originalPattern">The pattern given to the parser, which <paramref name="pattern"/> is a part of.</param>
+    private static bool TryExpandAlternation(ReadOnlySpan<char> originalPattern, ReadOnlySpan<char> pattern, int start, int end, List<(int Start, int End)> alternativeRanges, GlobDialect dialect, GlobOptions options, bool matchGitDirectoryContent, bool exclude, ref int expansionBudget, [NotNullWhen(true)] out Glob? result, [NotNullWhen(false)] out string? errorMessage)
+    {
+        result = null;
+
+        // The text around the braces comes from the original pattern, which keeps what the parser trimmed before
+        // reading the braces, such as a leading '!'. Should the parser read a copy instead, rebuild that '!'.
+        string? copiedPattern = null;
+        if (!originalPattern.Overlaps(pattern, out var offset))
+        {
+            copiedPattern = exclude ? string.Concat("!", pattern) : pattern.ToString();
+            originalPattern = copiedPattern;
+            offset = exclude ? 1 : 0;
+        }
+
+        var prefix = originalPattern[..(offset + start)];
+        var suffix = originalPattern[(offset + end)..];
+        var alternatives = new List<Glob>(alternativeRanges.Count);
+        foreach (var (alternativeStart, alternativeEnd) in alternativeRanges)
+        {
+            expansionBudget--;
+            if (expansionBudget < 0)
+            {
+                errorMessage = $"the brace expressions expand into more than {MaxExpandedPatternCount} patterns";
+                return false;
+            }
+
+            var alternative = pattern[alternativeStart..alternativeEnd];
+
+            // A '!' that starts the expanded pattern would negate it
+            var escapeExclamationMark = prefix.IsEmpty && alternative is ['!', ..];
+            var expanded = string.Concat(prefix, escapeExclamationMark ? "\\" : "", alternative, suffix);
+            if (!TryParse(expanded, dialect, options, matchGitDirectoryContent, ref expansionBudget, out var glob, out errorMessage))
+                return false;
+
+            alternatives.Add(glob);
+        }
+
+        errorMessage = null;
+        result = Glob.CreateUnion(alternatives, copiedPattern ?? originalPattern.ToString(), exclude ? GlobMode.Exclude : GlobMode.Include, dialect);
+        return true;
     }
 
     /// <param name="isAtPatternStart">Whether only separators precede the separator, which makes the pattern an absolute path.</param>
@@ -940,11 +1133,11 @@ internal static class GlobParser
     }
 
     /// <param name="restrictsLeadingDot">Whether a leading dot of the path segment must be written in the pattern instead of being matched by a wildcard or a bracket expression.</param>
-    /// <param name="requiresLiteralLeadingDot">Whether the segment itself must check that a leading dot is written in the pattern, as it depends on the alternative of a literal set.</param>
+    /// <param name="requiresLiteralLeadingDot">Whether the segment itself must check that a leading dot is written in the pattern, as it depends on the alternative of an alternation.</param>
     private static Segment CreateSegment(List<Segment> parts, bool ignoreCase, bool pathSeparatorAware, bool restrictsLeadingDot, bool requiresLiteralLeadingDot)
     {
         Debug.Assert(parts.Count > 0);
-        Debug.Assert(!requiresLiteralLeadingDot || parts[0] is LiteralSetSegment);
+        Debug.Assert(!requiresLiteralLeadingDot || parts[0] is AlternationSegment);
 
         // Concat Literal and single character sets (abc[d])
         for (var i = parts.Count - 2; i >= 0; i--)
@@ -1001,7 +1194,7 @@ internal static class GlobParser
             }
 
             // *(pattern) => Check if the first character is known and easily validatable
-            // /, \, Literal[0], CharacterSet [abc], CharacterRange [a-z] if interval is small (<=5), LiteralSet {abc,def}
+            // /, \, Literal[0], CharacterSet [abc], CharacterRange [a-z] if interval is small (<=5), Alternation {abc,def}
             for (var i = 0; i < parts.Count - 1; i++)
             {
                 if (parts[i] is MatchAllSubSegment)
@@ -1027,19 +1220,13 @@ internal static class GlobParser
                             nextCharacters = [.. characterRange.Range.EnumerateCharacters()];
                             break;
 
-                        case LiteralSetSegment literalSet:
-                            nextCharacters = [];
-                            foreach (var value in literalSet.Values)
+                        case AlternationSegment alternation:
+                            // An alternative that can start with any character, or consume nothing, makes the next
+                            // character unknown.
+                            var alternationCharacters = RaggedSegment.GetLeadingCharacters([alternation]);
+                            if (alternationCharacters is not null)
                             {
-                                // An empty alternative consumes nothing, so the next character is the one the rest
-                                // of the pattern requires and no character can be required here.
-                                if (value.Length == 0)
-                                {
-                                    nextCharacters = null;
-                                    break;
-                                }
-
-                                nextCharacters.Add(value[0]);
+                                nextCharacters = [.. alternationCharacters];
                             }
 
                             break;
@@ -1071,9 +1258,9 @@ internal static class GlobParser
             parts[^1] = MatchAllEndOfSegment.Instance;
         }
 
-        // A literal set is a branch point that only the backtracking matcher in RaggedSegment can resolve, so it
-        // never becomes a standalone segment.
-        if (parts.Count == 1 && parts[0] is not LiteralSetSegment)
+        // An alternation is a branch point that only the matcher in RaggedSegment can resolve, so it never becomes a
+        // standalone segment.
+        if (parts.Count == 1 && parts[0] is not AlternationSegment)
             return parts[0];
 
         return new RaggedSegment(parts.ToArray(), requiresLiteralLeadingDot);
@@ -1142,7 +1329,7 @@ internal static class GlobParser
         public bool SupportsEscape => Dialect is not GlobDialect.MSBuild;
 
         // git treats '{' and '}' as ordinary characters.
-        public bool SupportsLiteralSet => Dialect is GlobDialect.Standard;
+        public bool SupportsBraceExpression => Dialect is GlobDialect.Standard;
         public bool SupportsRecursiveWildcard => Dialect is GlobDialect.Standard or GlobDialect.Git or GlobDialect.MSBuild;
 
         // gitignore reads any run of '*' that makes a whole path segment as '**'

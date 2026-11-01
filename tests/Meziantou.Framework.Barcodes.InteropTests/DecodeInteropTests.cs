@@ -356,9 +356,52 @@ public sealed class DecodeInteropTests
         {
             var (main, addOn) = SplitAddOn(barcode);
             var expected = GetExpectedZXingText(barcode.Type, main, addOn);
-            var found = results.Where(result => result.FilePath == path).Select(result => result.Text).ToList();
+            var found = results.Where(result => result.FilePath == path).Select(result => barcode.Type is BarcodeType.Gs1128 ? result.HumanReadableText : result.Text).ToList();
             Assert.Contains(expected, found);
         }
+    }
+
+    // A reader reports a GS1-128 symbol with the symbology identifier ]C1, and its FNC1 separators as GS (U+001D)
+    [Theory]
+    [MemberData(nameof(DrawingVariants))]
+    public async Task Gs1128_IsReadAsGs1(string variant)
+    {
+        var tools = await BarcodeTools.GetAsync();
+        await using var directory = TemporaryDirectory.Create();
+        (Barcode Barcode, string Data)[] samples =
+        [
+            (Barcode.CreateGs1128(new Gs1Element("01", "09521234543213"), new Gs1Element("17", "250101"), new Gs1Element("10", "ABC123")), "01095212345432131725010110ABC123"),
+            (Barcode.CreateGs1128(new Gs1Element("01", "09521234543213"), new Gs1Element("10", "ABC123"), new Gs1Element("21", "XY")), "010952123454321310ABC123\u001D21XY"),
+            (Barcode.CreateGs1128(new Gs1Element("00", "123456789012345675")), "00123456789012345675"),
+            (Barcode.CreateGs1128(new Gs1Element("10", "1234"), new Gs1Element("21", "5678"), new Gs1Element("3103", "000123")), "101234\u001D215678\u001D3103000123"),
+        ];
+
+        foreach (var (barcode, data) in samples)
+        {
+            var path = directory.FullPath / "gs1.png";
+            await File.WriteAllBytesAsync(path, RenderBarcode(barcode, variant), XunitCancellationToken);
+
+            var result = Assert.Single(await tools.ReadWithZXingAsync([path]));
+            Assert.Equal("]C1", result.SymbologyIdentifier);
+            Assert.Equal("GS1", result.ContentType);
+            Assert.Equal(data, result.Text);
+            Assert.Equal(barcode.Text, result.HumanReadableText);
+
+            Assert.Equal(["CODE-128:" + data], await tools.ReadWithZBarAsync(path));
+        }
+    }
+
+    [Fact]
+    public async Task Code128_IsNotReadAsGs1()
+    {
+        var tools = await BarcodeTools.GetAsync();
+        await using var directory = TemporaryDirectory.Create();
+        var path = directory.FullPath / "code128.png";
+        await File.WriteAllBytesAsync(path, Barcode.CreateCode128("0109521234543213").ToPng(new BarcodePngOptions { ModuleWidth = 2, ModuleHeight = 60 }), XunitCancellationToken);
+
+        var result = Assert.Single(await tools.ReadWithZXingAsync([path]));
+        Assert.Equal("]C0", result.SymbologyIdentifier);
+        Assert.Equal("0109521234543213", result.Text);
     }
 
     private static IEnumerable<(QRCode QRCode, string Data)> GetSampleQRCodes()
@@ -534,13 +577,14 @@ public sealed class DecodeInteropTests
             // Without $ / + %: a reader may take "/F" for the Full ASCII "&" of Code 39 Extended
             BarcodeType.Code39 => Barcode.CreateCode39(From("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-. ", 1, 20), includeChecksum: random.Next(2) == 0),
             BarcodeType.Code93 => Barcode.CreateCode93(From("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-. $/+%", 1, 20)),
-            BarcodeType.Code128 => Barcode.CreateCode128(From("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz !#$%&()*+,-./:;<=>?@[]^_{|}~", 1, 30)),
+            BarcodeType.Code128 => Barcode.CreateCode128(From("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz !#$%&()*+,-./:;<=>?@[]^_{|}~\t\n\r\u001b\u001d\u007f", 1, 30)),
             BarcodeType.Ean8 => Barcode.CreateEan8(Digits(7), AddOn()),
             BarcodeType.Ean13 => Barcode.CreateEan13(Digits(12), AddOn()),
             BarcodeType.UpcA => Barcode.CreateUpcA(Digits(11), AddOn()),
             BarcodeType.Codabar => Barcode.CreateCodabar(From("0123456789-$:/.+", 1, 20), "ABCD"[random.Next(4)], "ABCD"[random.Next(4)]),
             // ZXingReader reads ITF symbols of 6 digits or more
             BarcodeType.Itf => Barcode.CreateItf(Digits(2 * random.Next(3, 10))),
+            BarcodeType.Gs1128 => Barcode.CreateGs1128([.. ZintMatrixTests.ParseGs1(ZintMatrixTests.CreateRandomGs1Data(random))]),
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, message: null),
         };
     }

@@ -56,15 +56,11 @@ internal sealed class BarcodeTools
     /// <param name="width">The width of the symbol, which the hexadecimal rows do not give exactly.</param>
     public async Task<bool[,]> GetZintMatrixAsync(IEnumerable<string> arguments, string data, int width)
     {
-        var result = await RunAsync(ZintPath, [.. arguments, "--dump", "-d", data], XunitCancellationToken).ConfigureAwait(false);
-        if (result.ExitCode != 0)
-            throw new InvalidOperationException($"zint failed (exit code {result.ExitCode.ToString(CultureInfo.InvariantCulture)}): {result.StandardError}{result.StandardOutput}");
-
-        var rows = result.StandardOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        var matrix = new bool[rows.Length, width];
-        for (var row = 0; row < rows.Length; row++)
+        var rows = await GetZintRowsAsync(arguments, data).ConfigureAwait(false);
+        var matrix = new bool[rows.Count, width];
+        for (var row = 0; row < rows.Count; row++)
         {
-            var hex = rows[row].Replace(" ", "", StringComparison.Ordinal);
+            var hex = rows[row];
             if (hex.Length != (width + 3) / 4)
                 throw new InvalidOperationException($"zint row {row.ToString(CultureInfo.InvariantCulture)} has {hex.Length.ToString(CultureInfo.InvariantCulture)} digits, a symbol {width.ToString(CultureInfo.InvariantCulture)} modules wide needs {((width + 3) / 4).ToString(CultureInfo.InvariantCulture)}: {rows[row]}");
 
@@ -76,6 +72,18 @@ internal sealed class BarcodeTools
         }
 
         return matrix;
+    }
+
+    /// <summary>Encodes data with zint and returns the rows of its <c>--dump</c> output: one hexadecimal digit per 4 modules, the last one padded.</summary>
+    /// <param name="arguments">The options (<c>-b</c>, <c>--vers</c>, <c>--mask</c>, <c>--secure</c>, ...), without <c>-d</c>.</param>
+    /// <param name="data">The data to encode.</param>
+    public async Task<IReadOnlyList<string>> GetZintRowsAsync(IEnumerable<string> arguments, string data)
+    {
+        var result = await RunAsync(ZintPath, [.. arguments, "--dump", "-d", data], XunitCancellationToken).ConfigureAwait(false);
+        if (result.ExitCode != 0)
+            throw new InvalidOperationException($"zint failed (exit code {result.ExitCode.ToString(CultureInfo.InvariantCulture)}): {result.StandardError}{result.StandardOutput}");
+
+        return [.. result.StandardOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Select(row => row.Replace(" ", "", StringComparison.Ordinal))];
     }
 
     /// <summary>Reads the barcodes of image files with ZXingReader.</summary>
@@ -101,12 +109,15 @@ internal sealed class BarcodeTools
             results.Add(new ZXingResult(
                 FilePath: arguments.GetValueOrDefault(filePath, filePath),
                 Text: root.TryGetProperty("Text", out var text) ? text.GetString() ?? "" : "",
+                HumanReadableText: root.TryGetProperty("HRI", out var humanReadableText) ? humanReadableText.GetString() ?? "" : "",
                 Bytes: root.TryGetProperty("Bytes", out var bytes) ? Convert.FromHexString((bytes.GetString() ?? "").Replace(" ", "", StringComparison.Ordinal)) : [],
                 Format: root.GetProperty("Format").GetString()!,
                 Version: root.TryGetProperty("Version", out var version) ? version.GetString() : null,
                 ErrorCorrectionLevel: root.TryGetProperty("ECLevel", out var ecLevel) ? ecLevel.GetString() : null,
                 DataMask: root.TryGetProperty("DataMask", out var mask) ? mask.GetInt32() : null,
                 Error: root.TryGetProperty("Error", out var error) ? error.GetString() : null,
+                SymbologyIdentifier: root.TryGetProperty("Identifier", out var identifier) ? identifier.GetString() : null,
+                ContentType: root.TryGetProperty("ContentType", out var contentType) ? contentType.GetString() : null,
                 HasEci: root.TryGetProperty("HasECI", out var hasEci) && hasEci.GetBoolean()));
         }
 

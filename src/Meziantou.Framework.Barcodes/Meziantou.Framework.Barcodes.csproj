@@ -15,4 +15,8 @@
     <ProjectReference Include="..\Meziantou.Framework.Hashing\Meziantou.Framework.Hashing.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="Meziantou.Framework.Barcodes.Tests" />
+  </ItemGroup>
+
 </Project>

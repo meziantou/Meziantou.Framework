@@ -106,7 +106,8 @@ internal sealed class BarcodeTools
                 Version: root.TryGetProperty("Version", out var version) ? version.GetString() : null,
                 ErrorCorrectionLevel: root.TryGetProperty("ECLevel", out var ecLevel) ? ecLevel.GetString() : null,
                 DataMask: root.TryGetProperty("DataMask", out var mask) ? mask.GetInt32() : null,
-                Error: root.TryGetProperty("Error", out var error) ? error.GetString() : null));
+                Error: root.TryGetProperty("Error", out var error) ? error.GetString() : null,
+                HasEci: root.TryGetProperty("HasECI", out var hasEci) && hasEci.GetBoolean()));
         }
 
         return results;

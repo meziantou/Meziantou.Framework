@@ -61,6 +61,24 @@ public sealed class QRCode
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="errorCorrectionLevel"/> is not a defined <see cref="Barcodes.ErrorCorrectionLevel"/> value.</exception>
     public static QRCode Create(string data, ErrorCorrectionLevel errorCorrectionLevel = ErrorCorrectionLevel.M)
     {
+        return Create(data, errorCorrectionLevel, options: null);
+    }
+
+    /// <summary>
+    /// Creates a standard QR code from the specified text data.
+    /// </summary>
+    /// <param name="data">The text data to encode.</param>
+    /// <param name="errorCorrectionLevel">The error correction level.</param>
+    /// <param name="options">The options, or <see langword="null"/> for the defaults.</param>
+    /// <returns>A new <see cref="QRCode"/> instance.</returns>
+    /// <remarks>
+    /// The text is encoded as UTF-8, without an ECI designator unless <see cref="QRCodeOptions.EciAssignmentNumber"/> is
+    /// <see cref="QRCodeOptions.Utf8EciAssignmentNumber"/>.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="errorCorrectionLevel"/> is not a defined <see cref="Barcodes.ErrorCorrectionLevel"/> value.</exception>
+    /// <exception cref="ArgumentException"><see cref="QRCodeOptions.EciAssignmentNumber"/> is not <see langword="null"/> or <see cref="QRCodeOptions.Utf8EciAssignmentNumber"/>.</exception>
+    public static QRCode Create(string data, ErrorCorrectionLevel errorCorrectionLevel, QRCodeOptions? options)
+    {
         ArgumentNullException.ThrowIfNull(data);
         if (data.Length == 0)
         {
@@ -69,8 +87,17 @@ public sealed class QRCode
 
         ValidateErrorCorrectionLevel(errorCorrectionLevel);
 
-        var (segments, version) = QRSegmentOptimizer.Optimize(data, errorCorrectionLevel, minVersion: 1, maxVersion: 40, allowSegments: DataAnalyzer.CanSegmentWithoutEci(data), allowKanji: true);
-        var dataCodewords = DataEncoder.Encode(data, segments, version, errorCorrectionLevel);
+        var eci = options?.EciAssignmentNumber;
+        if (eci is not (null or QRCodeOptions.Utf8EciAssignmentNumber))
+        {
+            throw new ArgumentException($"A text is encoded as UTF-8, so its ECI assignment number must be {QRCodeOptions.Utf8EciAssignmentNumber}. Encode the text yourself and pass its bytes to declare another assignment number.", nameof(options));
+        }
+
+        // With an ECI designator, the encoding of the bytes is explicit: readers do not guess it, and Kanji mode is not used
+        var (segments, version) = eci is null
+            ? QRSegmentOptimizer.Optimize(data, errorCorrectionLevel, minVersion: 1, maxVersion: 40, headerBitCount: 0, allowSegments: DataAnalyzer.CanSegmentWithoutEci(data), allowKanji: true)
+            : QRSegmentOptimizer.Optimize(data, errorCorrectionLevel, minVersion: 1, maxVersion: 40, headerBitCount: DataEncoder.GetEciBitCount(eci.Value), allowSegments: true, allowKanji: false);
+        var dataCodewords = DataEncoder.Encode(data, segments, version, errorCorrectionLevel, eci);
         var allCodewords = ErrorCorrectionEncoder.AddErrorCorrection(dataCodewords, version, errorCorrectionLevel);
 
         return BuildStandardMatrix(allCodewords, version, errorCorrectionLevel);
@@ -85,6 +112,22 @@ public sealed class QRCode
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="errorCorrectionLevel"/> is not a defined <see cref="Barcodes.ErrorCorrectionLevel"/> value.</exception>
     public static QRCode Create(ReadOnlySpan<byte> data, ErrorCorrectionLevel errorCorrectionLevel = ErrorCorrectionLevel.M)
     {
+        return Create(data, errorCorrectionLevel, options: null);
+    }
+
+    /// <summary>
+    /// Creates a standard QR code from the specified binary data.
+    /// </summary>
+    /// <param name="data">The binary data to encode.</param>
+    /// <param name="errorCorrectionLevel">The error correction level.</param>
+    /// <param name="options">The options, or <see langword="null"/> for the defaults.</param>
+    /// <returns>A new <see cref="QRCode"/> instance.</returns>
+    /// <remarks>
+    /// The bytes are encoded as they are, in byte mode, preceded by an ECI designator when <see cref="QRCodeOptions.EciAssignmentNumber"/> is set.
+    /// </remarks>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="errorCorrectionLevel"/> is not a defined <see cref="Barcodes.ErrorCorrectionLevel"/> value.</exception>
+    public static QRCode Create(ReadOnlySpan<byte> data, ErrorCorrectionLevel errorCorrectionLevel, QRCodeOptions? options)
+    {
         if (data.IsEmpty)
         {
             throw new ArgumentException("The data cannot be empty.", nameof(data));
@@ -92,8 +135,10 @@ public sealed class QRCode
 
         ValidateErrorCorrectionLevel(errorCorrectionLevel);
 
-        var version = DataAnalyzer.DetermineVersion(data.Length, errorCorrectionLevel, EncodingMode.Byte);
-        var dataCodewords = DataEncoder.Encode(data, version, errorCorrectionLevel);
+        var eci = options?.EciAssignmentNumber;
+        var headerBitCount = eci is null ? 0 : DataEncoder.GetEciBitCount(eci.Value);
+        var version = DataAnalyzer.DetermineVersion(data.Length, errorCorrectionLevel, minVersion: 1, maxVersion: 40, headerBitCount);
+        var dataCodewords = DataEncoder.Encode(data, version, errorCorrectionLevel, eci);
         var allCodewords = ErrorCorrectionEncoder.AddErrorCorrection(dataCodewords, version, errorCorrectionLevel);
 
         return BuildStandardMatrix(allCodewords, version, errorCorrectionLevel);

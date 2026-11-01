@@ -124,6 +124,8 @@ namespace Meziantou.Framework.Barcodes
         public int Width { get => throw null; }
         public static Meziantou.Framework.Barcodes.QRCode Create(System.ReadOnlySpan<byte> data, Meziantou.Framework.Barcodes.ErrorCorrectionLevel errorCorrectionLevel = Meziantou.Framework.Barcodes.ErrorCorrectionLevel.M) => throw null;
         public static Meziantou.Framework.Barcodes.QRCode Create(string data, Meziantou.Framework.Barcodes.ErrorCorrectionLevel errorCorrectionLevel = Meziantou.Framework.Barcodes.ErrorCorrectionLevel.M) => throw null;
+        public static Meziantou.Framework.Barcodes.QRCode Create(System.ReadOnlySpan<byte> data, Meziantou.Framework.Barcodes.ErrorCorrectionLevel errorCorrectionLevel, Meziantou.Framework.Barcodes.QRCodeOptions? options) => throw null;
+        public static Meziantou.Framework.Barcodes.QRCode Create(string data, Meziantou.Framework.Barcodes.ErrorCorrectionLevel errorCorrectionLevel, Meziantou.Framework.Barcodes.QRCodeOptions? options) => throw null;
         public static Meziantou.Framework.Barcodes.QRCode CreateMicroQR(string data, Meziantou.Framework.Barcodes.ErrorCorrectionLevel errorCorrectionLevel = Meziantou.Framework.Barcodes.ErrorCorrectionLevel.L) => throw null;
         public static Meziantou.Framework.Barcodes.QRCode CreateRMQR(string data, Meziantou.Framework.Barcodes.ErrorCorrectionLevel errorCorrectionLevel = Meziantou.Framework.Barcodes.ErrorCorrectionLevel.M) => throw null;
     }
@@ -144,6 +146,12 @@ namespace Meziantou.Framework.Barcodes
         public static void WriteTo(this Meziantou.Framework.Barcodes.QRCode qrCode, System.IO.TextWriter writer, Meziantou.Framework.Barcodes.QRCodeConsoleOptions options) { }
         public static void WriteToConsole(this Meziantou.Framework.Barcodes.QRCode qrCode) { }
         public static void WriteToConsole(this Meziantou.Framework.Barcodes.QRCode qrCode, Meziantou.Framework.Barcodes.QRCodeConsoleOptions options) { }
+    }
+
+    public sealed class QRCodeOptions
+    {
+        public const int Utf8EciAssignmentNumber = 26;
+        public int? EciAssignmentNumber { get => throw null; set { } }
     }
 
     public static class QRCodePayload

@@ -101,9 +101,10 @@ A QR code stores text in modes that take more or fewer bits per character:
 
 [Create](cref:Meziantou.Framework.Barcodes.QRCode.Create) encodes a text in the most compact mode that can hold all its characters, or splits it into
 segments of different modes when that gives a smaller code, such as a long number after a few lowercase letters. Each
-segment has a header of a few bits, so short runs stay in the mode of their neighbors. Without an ECI designator,
-readers guess the encoding of each byte-mode segment, so a text with non-ASCII characters other than kanji and kana
-is not split: it stays in one byte-mode segment. Micro QR codes and rMQR codes always encode the whole text in one mode.
+segment has a header of a few bits, so short runs stay in the mode of their neighbors. Without an ECI designator (see
+below), readers guess the encoding of each byte-mode segment, so a text with non-ASCII characters other than kanji and
+kana is not split: it stays in one byte-mode segment. Micro QR codes and rMQR codes always encode the whole text in one
+mode.
 
 <!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/QRCodeTests.cs;region=QRCode_EncodingModes;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -129,6 +130,32 @@ The scheme and the host name of a URL are not case-sensitive, so an uppercase UR
 path of the site accepts uppercase too.
 
 Data too long for the largest version throws an `InvalidOperationException`; empty data throws an `ArgumentException`.
+
+## Declare the encoding with ECI
+
+By default, the byte mode holds UTF-8 with nothing that says so, and readers guess the encoding. Most guess UTF-8
+right, but a few bytes can look like another encoding: a reader can show `¢` as `瞽`. An ECI (Extended Channel
+Interpretation) designator declares the encoding. Set [QRCodeOptions.EciAssignmentNumber](cref:Meziantou.Framework.Barcodes.QRCodeOptions.EciAssignmentNumber) to
+[QRCodeOptions.Utf8EciAssignmentNumber](cref:Meziantou.Framework.Barcodes.QRCodeOptions.Utf8EciAssignmentNumber) (26) to declare a text as UTF-8, or to any assignment number for bytes you encoded yourself:
+
+<!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/QRCodeTests.cs;region=QRCode_Eci;format=md-fenced-code-block;dedent=true -->
+```csharp
+// Declare the text as UTF-8 (ECI assignment number 26), so that readers do not guess its encoding
+var options = new QRCodeOptions { EciAssignmentNumber = QRCodeOptions.Utf8EciAssignmentNumber };
+var qrCode = QRCode.Create("Caf\u00E9 cr\u00E8me", ErrorCorrectionLevel.M, options);
+
+// Binary data can declare any encoding, such as ISO-8859-1 (ECI assignment number 3)
+var latin1 = QRCode.Create([0x63, 0x61, 0x66, 0xE9], ErrorCorrectionLevel.M, new QRCodeOptions { EciAssignmentNumber = 3 });
+```
+<!-- endref -->
+
+- ECI is opt-in, so the codes created without options do not change. Most current readers support it; very old ones
+  can show the designator as text or fail to read the code.
+- The designator takes 12 to 28 bits, which can give a larger code. A text with an ECI designator is never encoded in
+  the kanji mode, and it is split into segments whatever its characters.
+- A text accepts only the assignment number 26, since it is encoded as UTF-8: another one throws an
+  `ArgumentException`. Encode the text yourself and pass the bytes to declare another encoding.
+- Micro QR codes cannot hold an ECI designator, and [CreateRMQR](cref:Meziantou.Framework.Barcodes.QRCode.CreateRMQR) does not write one.
 
 ## Read the modules
 

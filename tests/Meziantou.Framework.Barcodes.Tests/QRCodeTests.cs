@@ -390,6 +390,75 @@ public class QRCodeTests
         Assert.Equal(data is "hello world" or "https://www.meziantou.net/", HasSameModules(bytes, text));
     }
 
+    // ───── ECI ─────
+
+    [Fact]
+    public void Documentation_Eci()
+    {
+        #region QRCode_Eci
+        // Declare the text as UTF-8 (ECI assignment number 26), so that readers do not guess its encoding
+        var options = new QRCodeOptions { EciAssignmentNumber = QRCodeOptions.Utf8EciAssignmentNumber };
+        var qrCode = QRCode.Create("Caf\u00E9 cr\u00E8me", ErrorCorrectionLevel.M, options);
+
+        // Binary data can declare any encoding, such as ISO-8859-1 (ECI assignment number 3)
+        var latin1 = QRCode.Create([0x63, 0x61, 0x66, 0xE9], ErrorCorrectionLevel.M, new QRCodeOptions { EciAssignmentNumber = 3 });
+        #endregion
+
+        Assert.Equal((1, 1), (qrCode.Version, latin1.Version));
+    }
+
+    [Fact]
+    public void Create_Eci_IsOptIn()
+    {
+        var utf8 = new QRCodeOptions { EciAssignmentNumber = QRCodeOptions.Utf8EciAssignmentNumber };
+
+        Assert.True(HasSameModules(QRCode.Create("\u00E9"), QRCode.Create("\u00E9", ErrorCorrectionLevel.M, options: null)));
+        Assert.True(HasSameModules(QRCode.Create("\u00E9"), QRCode.Create("\u00E9", ErrorCorrectionLevel.M, new QRCodeOptions())));
+        Assert.True(HasSameModules(QRCode.Create(Encoding.UTF8.GetBytes("\u00E9")), QRCode.Create("\u00E9")));
+        Assert.False(HasSameModules(QRCode.Create("\u00E9"), QRCode.Create("\u00E9", ErrorCorrectionLevel.M, utf8)));
+        Assert.True(HasSameModules(QRCode.Create(Encoding.UTF8.GetBytes("h\u00E9llo"), ErrorCorrectionLevel.M, utf8), QRCode.Create("h\u00E9llo", ErrorCorrectionLevel.M, utf8)));
+    }
+
+    [Fact]
+    public void Create_Eci_KanjiAreEncodedAsUtf8()
+    {
+        var utf8 = new QRCodeOptions { EciAssignmentNumber = QRCodeOptions.Utf8EciAssignmentNumber };
+
+        Assert.True(HasSameModules(QRCode.Create(Encoding.UTF8.GetBytes("漢字"), ErrorCorrectionLevel.M, utf8), QRCode.Create("漢字", ErrorCorrectionLevel.M, utf8)));
+    }
+
+    [Fact]
+    public void Create_Eci_HeaderIsCountedInTheCapacity()
+    {
+        // Version 40-L holds 2,953 bytes, or 2,952 after the 12 bits of an ECI header
+        var options = new QRCodeOptions { EciAssignmentNumber = 3 };
+
+        Assert.Equal(40, QRCode.Create(new byte[2953], ErrorCorrectionLevel.L).Version);
+        Assert.Equal(40, QRCode.Create(new byte[2952], ErrorCorrectionLevel.L, options).Version);
+        Assert.Throws<InvalidOperationException>(() => QRCode.Create(new byte[2953], ErrorCorrectionLevel.L, options));
+        Assert.Throws<InvalidOperationException>(() => QRCode.Create(new string('x', 2953), ErrorCorrectionLevel.L, new QRCodeOptions { EciAssignmentNumber = 26 }));
+
+        // Version 1-L holds 17 bytes, or 16 after the ECI header
+        Assert.Equal(1, QRCode.Create(new byte[16], ErrorCorrectionLevel.L, options).Version);
+        Assert.Equal(2, QRCode.Create(new byte[17], ErrorCorrectionLevel.L, options).Version);
+    }
+
+    [Fact]
+    public void Create_Eci_TextAcceptsOnlyUtf8()
+    {
+        Assert.Throws<ArgumentException>("options", () => QRCode.Create("abc", ErrorCorrectionLevel.M, new QRCodeOptions { EciAssignmentNumber = 3 }));
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(1_000_000)]
+    public void QRCodeOptions_EciAssignmentNumberOutOfRange_Throws(int value)
+    {
+        var options = new QRCodeOptions();
+
+        Assert.Throws<ArgumentOutOfRangeException>(nameof(value), () => options.EciAssignmentNumber = value);
+    }
+
     // ───── Higher versions / different sizes ─────
 
     [Fact]

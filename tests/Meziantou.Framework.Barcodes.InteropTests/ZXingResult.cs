@@ -9,4 +9,5 @@ namespace Meziantou.Framework.Barcodes.InteropTests;
 /// <param name="ErrorCorrectionLevel">The error correction level of a QR code (<c>L</c>, <c>M</c>, <c>Q</c>, <c>H</c>), or <see langword="null"/>.</param>
 /// <param name="DataMask">The mask of a QR code, or <see langword="null"/>.</param>
 /// <param name="Error">The error ZXingReader reports, or <see langword="null"/>.</param>
-internal sealed record ZXingResult(string FilePath, string Text, byte[] Bytes, string Format, string? Version, string? ErrorCorrectionLevel, int? DataMask, string? Error);
+/// <param name="HasEci">Whether the symbol declares the encoding of its data with an ECI designator.</param>
+internal sealed record ZXingResult(string FilePath, string Text, byte[] Bytes, string Format, string? Version, string? ErrorCorrectionLevel, int? DataMask, string? Error, bool HasEci);

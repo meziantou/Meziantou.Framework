@@ -46,12 +46,17 @@ internal static class DataAnalyzer
         return EncodingMode.Byte;
     }
 
-    public static int DetermineVersion(int dataLength, ErrorCorrectionLevel ecLevel, EncodingMode mode)
+    /// <summary>
+    /// Gets the smallest standard QR version that holds bytes in one byte-mode segment, after a header of
+    /// <paramref name="headerBitCount"/> bits (an ECI designator).
+    /// </summary>
+    public static int DetermineVersion(int byteCount, ErrorCorrectionLevel ecLevel, int minVersion, int maxVersion, int headerBitCount)
     {
-        for (var version = 1; version <= 40; version++)
+        for (var version = minVersion; version <= maxVersion; version++)
         {
-            var capacity = QRCodeVersion.GetCharacterCapacity(version, ecLevel, mode);
-            if (capacity >= dataLength)
+            var countBits = QRCodeVersion.GetCharacterCountBits(version, EncodingMode.Byte);
+            var bitCount = headerBitCount + 4 + countBits + (byteCount * 8L);
+            if (byteCount < (1 << countBits) && bitCount <= QRCodeVersion.GetDataCodewords(version, ecLevel) * 8)
             {
                 return version;
             }

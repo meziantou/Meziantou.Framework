@@ -125,6 +125,40 @@ public sealed class ZintMatrixTests
     }
 
     [Theory]
+    [InlineData(26, "héllo wörld", true)]
+    [InlineData(26, "漢字のテスト", true)]
+    [InlineData(26, "Ελληνικά и кириллица", true)]
+    [InlineData(26, "plain ascii text", true)]
+    [InlineData(3, "caf\u00E9", false)]
+    [InlineData(170, "two-byte designator", false)]
+    [InlineData(899, "binary", false)]
+    [InlineData(20000, "three-byte designator", false)]
+    [InlineData(999999, "largest designator", false)]
+    public async Task QRCodeWithEci_MatchesZint(int eci, string data, bool text)
+    {
+        var tools = await BarcodeTools.GetAsync();
+        var options = new QRCodeOptions { EciAssignmentNumber = eci };
+        var qr = text ? QRCode.Create(data, ErrorCorrectionLevel.M, options) : QRCode.Create(Encoding.UTF8.GetBytes(data), ErrorCorrectionLevel.M, options);
+
+        await using var directory = TemporaryDirectory.Create();
+        var path = directory.FullPath / "qrcode.png";
+        await File.WriteAllBytesAsync(path, qr.ToPng(new QRCodePngOptions { ModuleSize = 4 }), XunitCancellationToken);
+        var decoded = Assert.Single(await tools.ReadWithZXingAsync([path]));
+        Assert.True(decoded.HasEci);
+        Assert.NotNull(decoded.DataMask);
+        Assert.Equal(Encoding.UTF8.GetBytes(data), decoded.Bytes);
+
+        List<string> arguments = ["-b", "58", "--vers=" + qr.Version.ToString(CultureInfo.InvariantCulture), "--mask=" + decoded.DataMask.Value.ToString(CultureInfo.InvariantCulture), "--secure=2", "--eci=" + eci.ToString(CultureInfo.InvariantCulture)];
+        if (!text)
+        {
+            arguments.Add("--binary");
+        }
+
+        var expected = await tools.GetZintMatrixAsync(arguments, data, qr.Width);
+        AssertSameModules(expected, qr.Width, qr.Height, (row, column) => qr[row, column]);
+    }
+
+    [Theory]
     [MemberData(nameof(Barcodes))]
     public async Task Barcode_MatchesZint(BarcodeType type, string data, string option)
     {

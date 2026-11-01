@@ -15,7 +15,7 @@ internal static class QRSegmentOptimizer
 
     private static ReadOnlySpan<EncodingMode> Modes => [EncodingMode.Numeric, EncodingMode.Alphanumeric, EncodingMode.Byte, EncodingMode.Kanji];
 
-    public static (QRSegment[] Segments, int Version) Optimize(string data, ErrorCorrectionLevel ecLevel, int minVersion, int maxVersion, bool allowSegments, bool allowKanji)
+    public static (QRSegment[] Segments, int Version) Optimize(string data, ErrorCorrectionLevel ecLevel, int minVersion, int maxVersion, int headerBitCount, bool allowSegments, bool allowKanji)
     {
         QRSegment[]? segments = null;
         var bitCount = -1;
@@ -36,7 +36,7 @@ internal static class QRSegmentOptimizer
                 bitCount = GetBitCount(data, segments, version);
             }
 
-            if (bitCount >= 0 && bitCount <= QRCodeVersion.GetDataCodewords(version, ecLevel) * 8)
+            if (bitCount >= 0 && headerBitCount + bitCount <= QRCodeVersion.GetDataCodewords(version, ecLevel) * 8)
             {
                 return (segments!, version);
             }

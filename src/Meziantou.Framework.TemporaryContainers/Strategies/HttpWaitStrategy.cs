@@ -36,11 +36,11 @@ internal sealed class HttpWaitStrategy : IWaitStrategy
         return WaitCoreAsync(GetUri(container), cancellationToken);
     }
 
-    /// <summary>The one place that decides where the endpoint is reached from: the published host port, on the loopback address.</summary>
+    /// <summary>The one place that decides where the endpoint is reached from: the published host port, on its host address.</summary>
     private Uri GetUri(TemporaryContainer container)
     {
         var scheme = _useHttps ? Uri.UriSchemeHttps : Uri.UriSchemeHttp;
-        var baseUri = new UriBuilder(scheme, IPAddress.Loopback.ToString(), container.GetMappedPort(_containerPort)).Uri;
+        var baseUri = new UriBuilder(scheme, container.GetHostAddress(_containerPort), container.GetMappedPort(_containerPort)).Uri;
         return new Uri(baseUri, _path);
     }
 

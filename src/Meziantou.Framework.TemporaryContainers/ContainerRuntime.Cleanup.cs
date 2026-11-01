@@ -4,14 +4,14 @@ namespace Meziantou.Framework.TemporaryContainers;
 
 public partial class ContainerRuntime
 {
-    /// <summary>Removes the containers, images and volumes this library left behind, for instance by a run that was interrupted before it could dispose them.</summary>
+    /// <summary>Removes the containers, images, volumes and networks this library left behind, for instance by a run that was interrupted before it could dispose them.</summary>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>The removed resources.</returns>
     /// <exception cref="InvalidOperationException">The runtime is not available.</exception>
     public Task<ContainerCleanupResult> CleanupAsync(CancellationToken cancellationToken = default)
         => CleanupAsync(new ContainerCleanupOptions(), cancellationToken);
 
-    /// <summary>Removes the containers, images and volumes this library left behind, for instance by a run that was interrupted before it could dispose them.</summary>
+    /// <summary>Removes the containers, images, volumes and networks this library left behind, for instance by a run that was interrupted before it could dispose them.</summary>
     /// <param name="options">What to remove. By default, only the resources whose creating process is gone.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
     /// <returns>The removed resources.</returns>
@@ -27,6 +27,7 @@ public partial class ContainerRuntime
         var removedContainers = new List<string>();
         var removedImages = new List<string>();
         var removedVolumes = new List<string>();
+        var removedNetworks = new List<string>();
         var errors = new List<Exception>();
         var now = DateTimeOffset.UtcNow;
 
@@ -49,8 +50,8 @@ public partial class ContainerRuntime
             }
         }
 
-        // Images and volumes come after the containers: a runtime refuses to remove an image or a volume a container
-        // still uses, and the containers that used these ones have just been removed.
+        // Images, volumes and networks come after the containers: a runtime refuses to remove an image, a volume or a
+        // network a container still uses, and the containers that used these ones have just been removed.
         if (options.IncludeImages && runtime.SupportsImageCleanup)
         {
             foreach (var image in await ListSafeAsync(runtime.ListManagedImagesAsync, errors, cancellationToken).ConfigureAwait(false))
@@ -95,7 +96,31 @@ public partial class ContainerRuntime
             }
         }
 
-        return new ContainerCleanupResult(removedContainers, removedImages, removedVolumes, errors);
+        if (options.IncludeNetworks && runtime.SupportsNetworks)
+        {
+            foreach (var network in await ListSafeAsync(runtime.ListManagedNetworksAsync, errors, cancellationToken).ConfigureAwait(false))
+            {
+                if (!ShouldRemove(network, options, now))
+                    continue;
+
+                try
+                {
+                    await runtime.DeleteNetworkAsync(network.Id, cancellationToken).ConfigureAwait(false);
+
+                    // Same as the volumes: a network still in use is reported like one that is already gone.
+                    if (await runtime.NetworkExistsAsync(network.Id, cancellationToken).ConfigureAwait(false))
+                        errors.Add(new InvalidOperationException($"The network '{network.Id}' could not be removed. It is probably still used by a container."));
+                    else
+                        removedNetworks.Add(network.Id);
+                }
+                catch (Exception ex) when (ex is not OperationCanceledException)
+                {
+                    errors.Add(ex);
+                }
+            }
+        }
+
+        return new ContainerCleanupResult(removedContainers, removedImages, removedVolumes, removedNetworks, errors);
     }
 
     /// <summary>Lists the containers created by this library, whichever process created them.</summary>
@@ -108,6 +133,10 @@ public partial class ContainerRuntime
 
     /// <summary>Lists the images built by this library, whichever process built them.</summary>
     internal virtual Task<IReadOnlyList<ManagedResource>> ListManagedImagesAsync(CancellationToken cancellationToken)
+        => throw CreateNotSupportedException();
+
+    /// <summary>Lists the networks created by this library, whichever process created them.</summary>
+    internal virtual Task<IReadOnlyList<ManagedResource>> ListManagedNetworksAsync(CancellationToken cancellationToken)
         => throw CreateNotSupportedException();
 
     internal virtual bool SupportsVolumes => true;

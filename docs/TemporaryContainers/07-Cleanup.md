@@ -10,17 +10,18 @@ or dispose it in the teardown of your test fixture:
 
 - Disposing never throws and is bounded in time: a runtime that does not answer cannot block the end of a test run.
 - A container that has a [ReuseId](cref:Meziantou.Framework.TemporaryContainers.ContainerDefinition.ReuseId) is kept. See [Reusing a container](08-ReusingContainers.md).
-- Disposing a [TemporaryVolume](cref:Meziantou.Framework.TemporaryContainers.TemporaryVolume) removes the volume, when the library created it.
+- Disposing a [TemporaryVolume](cref:Meziantou.Framework.TemporaryContainers.TemporaryVolume) removes the volume, and disposing a [TemporaryNetwork](cref:Meziantou.Framework.TemporaryContainers.TemporaryNetwork) removes the network, when the
+  library created them.
 
 ## Remove the leftovers of interrupted runs
 
-A test run that is stopped in the debugger or killed never disposes its containers. Every container, volume and built
-image the library creates is labeled with the process that created it, so a later run can find these leftovers and
+A test run that is stopped in the debugger or killed never disposes its containers. Every container, volume, network and
+built image the library creates is labeled with the process that created it, so a later run can find these leftovers and
 remove them, and only them:
 
 <!-- ref:../../samples/Meziantou.Framework.TemporaryContainers.Samples/ReadmeExamples.cs;region=TemporaryContainers_Cleanup;format=md-fenced-code-block;dedent=true -->
 ```csharp
-// Removes the containers, images and volumes whose creating process is gone. Nothing else is touched:
+// Removes the containers, images, volumes and networks whose creating process is gone. Nothing else is touched:
 // not the resources of a live process, not those created on another machine, not the reused ones.
 var result = await ContainerRuntime.Auto.CleanupAsync();
 Console.WriteLine($"{result.RemovedCount} leftovers removed");
@@ -37,7 +38,7 @@ Call it once when a test run starts: an xUnit assembly fixture (see
   [ReuseId](cref:Meziantou.Framework.TemporaryContainers.ContainerDefinition.ReuseId) are left alone.
 - The resources of the current process are never removed, whatever the options: a cleanup at the start of a run cannot
   remove the containers that run is about to use.
-- The result lists what was removed ([RemovedContainers](cref:Meziantou.Framework.TemporaryContainers.ContainerCleanupResult.RemovedContainers), [RemovedImages](cref:Meziantou.Framework.TemporaryContainers.ContainerCleanupResult.RemovedImages), [RemovedVolumes](cref:Meziantou.Framework.TemporaryContainers.ContainerCleanupResult.RemovedVolumes), [RemovedCount](cref:Meziantou.Framework.TemporaryContainers.ContainerCleanupResult.RemovedCount)) and the
+- The result lists what was removed ([RemovedContainers](cref:Meziantou.Framework.TemporaryContainers.ContainerCleanupResult.RemovedContainers), [RemovedImages](cref:Meziantou.Framework.TemporaryContainers.ContainerCleanupResult.RemovedImages), [RemovedVolumes](cref:Meziantou.Framework.TemporaryContainers.ContainerCleanupResult.RemovedVolumes), [RemovedNetworks](cref:Meziantou.Framework.TemporaryContainers.ContainerCleanupResult.RemovedNetworks), [RemovedCount](cref:Meziantou.Framework.TemporaryContainers.ContainerCleanupResult.RemovedCount)) and the
   failures in [Errors](cref:Meziantou.Framework.TemporaryContainers.ContainerCleanupResult.Errors): a resource that cannot be removed does not stop the cleanup.
 
 ## Choose what to remove
@@ -63,6 +64,7 @@ await ContainerRuntime.Docker.CleanupAsync(new ContainerCleanupOptions
 | [MinimumAge](cref:Meziantou.Framework.TemporaryContainers.ContainerCleanupOptions.MinimumAge) | `TimeSpan.Zero` | Only removes the resources at least this old. |
 | [IncludeContainers](cref:Meziantou.Framework.TemporaryContainers.ContainerCleanupOptions.IncludeContainers) | `true` | Removes containers. |
 | [IncludeVolumes](cref:Meziantou.Framework.TemporaryContainers.ContainerCleanupOptions.IncludeVolumes) | `true` | Removes volumes, after the containers. |
+| [IncludeNetworks](cref:Meziantou.Framework.TemporaryContainers.ContainerCleanupOptions.IncludeNetworks) | `true` | Removes networks, after the containers. |
 | [IncludeImages](cref:Meziantou.Framework.TemporaryContainers.ContainerCleanupOptions.IncludeImages) | `true` | Removes the images built from a Dockerfile, after the containers. `wslc` does not label them, so they are not found. |
 | [IncludeReusedResources](cref:Meziantou.Framework.TemporaryContainers.ContainerCleanupOptions.IncludeReusedResources) | `false` | Also removes the resources that have a [ReuseId](cref:Meziantou.Framework.TemporaryContainers.ContainerDefinition.ReuseId). |
 

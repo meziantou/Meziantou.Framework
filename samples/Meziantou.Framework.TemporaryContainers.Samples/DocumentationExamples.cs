@@ -96,6 +96,40 @@ public static class DocumentationExamples
         #endregion
     }
 
+    public static ContainerDefinition DockerfileBuildOptionsExample()
+    {
+        #region TemporaryContainers_DockerfileBuildOptions
+        var options = new DockerfileBuildOptions
+        {
+            Target = "runtime",              // the stage of a multi-stage Dockerfile to build
+            Platform = "linux/amd64",        // build for another platform than the machine
+            Pull = true,                     // pull newer base images
+            NoCache = false,                 // keep using the build cache
+        };
+        options.BuildArguments.Add("DOTNET_VERSION", "10.0"); // the value of 'ARG DOTNET_VERSION'
+        options.Labels.Add("org.opencontainers.image.title", "my-app");
+
+        var definition = new ContainerDefinition(ImageSource.FromDockerfile("src/MyApp/Dockerfile", "src", options));
+        #endregion
+        return definition;
+    }
+
+    public static ContainerDefinition StableTagExample()
+    {
+        #region TemporaryContainers_DockerfileStableTag
+        var options = new DockerfileBuildOptions { Tag = "my-app:tests" };
+        var definition = new ContainerDefinition(ImageSource.FromDockerfile("./Dockerfile", ".", options));
+        #endregion
+        return definition;
+    }
+
+    public static void PlatformExample(ContainerDefinition definition)
+    {
+        #region TemporaryContainers_Platform
+        definition.Platform = "linux/amd64"; // run the amd64 variant, for instance on Apple Silicon
+        #endregion
+    }
+
     public static ContainerDefinition CommandAndEnvironment()
     {
         #region TemporaryContainers_CommandAndEnvironment
@@ -126,6 +160,110 @@ public static class DocumentationExamples
         #region TemporaryContainers_Network
         definition.Network.Network = "integration-tests"; // a network that already exists
         definition.Network.Alias = "database"; // the name the other containers of the network use
+        #endregion
+    }
+
+    public static void SeveralNetworks(ContainerDefinition definition)
+    {
+        #region TemporaryContainers_SeveralNetworks
+        definition.Network.Add("frontend", "api"); // an existing network, and the aliases of the container on it
+        definition.Network.Add("backend", "api", "api-internal");
+        #endregion
+    }
+
+    public static async Task TemporaryNetworkLifetime()
+    {
+        #region TemporaryContainers_TemporaryNetworkOptions
+        var networkDefinition = new NetworkDefinition
+        {
+            Internal = true, // the containers reach each other, but not the internet
+        };
+        networkDefinition.Labels.Add("purpose", "tests");
+
+        await using var network = networkDefinition.CreateNetwork();
+        await network.EnsureCreatedAsync(); // optional: the first container that joins the network creates it
+        Console.WriteLine(network.Name); // a random name, removed when the network is disposed
+        #endregion
+    }
+
+    public static void SecurityOptions(ContainerDefinition definition)
+    {
+        #region TemporaryContainers_SecurityOptions
+        definition.CapAdd.Add("NET_ADMIN");
+        definition.CapDrop.Add("MKNOD");
+        definition.Privileged = true; // every capability, and the devices of the host
+        #endregion
+    }
+
+    public static void ExtraHosts(ContainerDefinition definition)
+    {
+        #region TemporaryContainers_ExtraHosts
+        // host.docker.internal resolves to the machine that runs the tests, on Linux too
+        definition.ExtraHosts.Add(ContainerExtraHost.ForHostGateway());
+        definition.ExtraHosts.Add(new ContainerExtraHost("api.test", "10.0.0.5"));
+        #endregion
+    }
+
+    public static void SharedMemoryAndUlimits(ContainerDefinition definition)
+    {
+        #region TemporaryContainers_SharedMemoryAndUlimits
+        definition.Resources.SharedMemorySize = 1024L * 1024 * 1024; // /dev/shm, in bytes
+        definition.Resources.Ulimits.Add(new ContainerUlimit("nofile", 65536)); // soft and hard limit
+        definition.Resources.Ulimits.Add(new ContainerUlimit("nproc", 1024, 2048)); // soft limit, hard limit
+        #endregion
+    }
+
+    public static void Healthcheck(ContainerDefinition definition)
+    {
+        #region TemporaryContainers_Healthcheck
+        definition.Healthcheck = new ContainerHealthcheck("pg_isready -U postgres")
+        {
+            Interval = TimeSpan.FromSeconds(1),
+            Timeout = TimeSpan.FromSeconds(5),
+            StartPeriod = TimeSpan.FromSeconds(10),
+            Retries = 30,
+        };
+        #endregion
+    }
+
+    public static void DisableHealthcheck(ContainerDefinition definition)
+    {
+        #region TemporaryContainers_DisableHealthcheck
+        definition.Healthcheck = ContainerHealthcheck.Disabled; // ignore the HEALTHCHECK of the image
+        #endregion
+    }
+
+    public static void StopOptions(ContainerDefinition definition)
+    {
+        #region TemporaryContainers_StopOptions
+        definition.StopSignal = "SIGINT"; // the signal StopAsync sends
+        definition.StopTimeout = TimeSpan.FromSeconds(30); // how long the runtime waits before it kills the container
+        #endregion
+    }
+
+    public static void EscapeHatches(ContainerDefinition definition)
+    {
+        #region TemporaryContainers_EscapeHatches
+        // The CLI runtimes (docker, podman, container, wslc): arguments added before the image
+        definition.AdditionalCreateArguments.Add("--init");
+
+        // The Docker Engine API: the JSON body of POST /containers/create
+        definition.DockerApiCreateRequestCustomizer = request => request["HostConfig"]!["Init"] = true;
+        #endregion
+    }
+
+    public static void UdpAndExposedPorts(ContainerDefinition definition)
+    {
+        #region TemporaryContainers_UdpAndExposedPorts
+        definition.Ports.Add(new ContainerPort(53) { Protocol = ContainerPortProtocol.Udp }); // published, UDP
+        definition.ExposedPorts.Add(new ContainerExposedPort(9000)); // exposed, not published
+        #endregion
+    }
+
+    public static void TmpfsOptions(ContainerDefinition definition)
+    {
+        #region TemporaryContainers_TmpfsOptions
+        definition.Mounts.AddTmpfs("/scratch", size: 64L * 1024 * 1024, mode: UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
         #endregion
     }
 

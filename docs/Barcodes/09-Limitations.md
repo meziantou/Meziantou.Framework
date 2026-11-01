@@ -9,9 +9,11 @@ description: What the barcode packages do not do.
   barcodes (UPC-E, GS1 DataBar) are not supported.
 - **GS1 syntax only.** GS1-128 elements are checked against the syntax rules of element strings, not against the GS1
   dictionary of application identifiers: the format of the data and its check digits are not verified.
-- **One encoding mode per QR code.** The whole text is encoded in one mode; a text that mixes digits and lowercase
-  letters is entirely encoded in the byte mode, which can give a larger code than a mix of modes would. The byte mode
-  holds UTF-8 without an ECI designator.
+- **Mixed modes in standard QR codes only.** [QRCode.Create](cref:Meziantou.Framework.Barcodes.QRCode.Create) splits a text into segments of different modes,
+  except a text with non-ASCII characters other than kanji and kana; Micro QR codes and rMQR codes encode the whole
+  text in one mode. There is no API to choose the segments yourself.
+- **ECI in standard QR codes only, and opt-in.** Without [QRCodeOptions.EciAssignmentNumber](cref:Meziantou.Framework.Barcodes.QRCodeOptions.EciAssignmentNumber), the byte mode holds
+  UTF-8 without an ECI designator. Micro QR codes and rMQR codes never have one.
 - **No structured append**: data too large for one QR code is not split across several codes.
 - **Logos in SVG only.** The PNG renderer and the image renderer do not draw logos; draw them on the image yourself.
 - **No text under the bars** in the SVG and PNG renderers: the image renderer prints it, with a font.

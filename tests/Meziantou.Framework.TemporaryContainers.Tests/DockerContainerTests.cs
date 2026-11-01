@@ -36,6 +36,15 @@ public sealed class DockerContainerTests() : ContainerRuntimeTestsBase(Container
     public Task Cleanup_RemovesTheVolumeOfARunThatIsOver() => AssertCleanupRemovesOrphanedVolumeAsync();
 
     [Fact]
+    public Task Cleanup_RemovesTheNetworkOfARunThatIsOver() => AssertCleanupRemovesOrphanedNetworkAsync();
+
+    [Fact]
+    public Task Network_ConnectsContainersByAlias() => AssertNetworkConnectsContainersByAliasAsync();
+
+    [Fact]
+    public Task CreationOptions_ReachTheContainer() => AssertCreationOptionsReachTheContainerAsync();
+
+    [Fact]
     public Task Reaper_WatchesTheSessionAndStopsWithIt() => AssertReaperLifecycleAsync();
 
     [Fact]

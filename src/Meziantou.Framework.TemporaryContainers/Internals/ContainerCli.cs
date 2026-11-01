@@ -14,7 +14,12 @@ internal sealed class ContainerCli
 
     public ContainerRuntime Runtime { get; }
 
-    public async Task<CliResult> RunBufferedAsync(IReadOnlyList<string> args, CancellationToken cancellationToken, bool allowNonZero = false, InputSource? input = null)
+    /// <param name="args">The arguments of the command.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    /// <param name="allowNonZero">Whether a non-zero exit code is returned rather than thrown.</param>
+    /// <param name="input">The standard input of the command.</param>
+    /// <param name="onOutput">A callback that receives every line of the standard output and the standard error as it is written, on top of the buffering.</param>
+    public async Task<CliResult> RunBufferedAsync(IReadOnlyList<string> args, CancellationToken cancellationToken, bool allowNonZero = false, InputSource? input = null, Action<string>? onOutput = null)
     {
         // The validation is not delegated to ProcessWrapper: it throws before the output is read, which leaves the
         // caller with an exit code and no indication of what the runtime actually complained about.
@@ -24,6 +29,9 @@ internal sealed class ContainerCli
 
         if (input is not null)
             wrapper = wrapper.WithInputStream(input);
+
+        if (onOutput is not null)
+            wrapper = wrapper.AddOutputStream(OutputTarget.ToTextDelegate(onOutput)).AddErrorStream(OutputTarget.ToTextDelegate(onOutput));
 
         var result = await wrapper.ExecuteBufferedAsync(cancellationToken).ConfigureAwait(false);
 
@@ -97,9 +105,9 @@ internal sealed class ContainerCli
         {
             result.Append(' ').Append(CommandLineBuilder.WindowsQuotedArgument(redactNextValue ? Redact(arg) : arg));
 
-            // Environment variables and volume driver options (a CIFS password, for instance) are where the caller
-            // passes secrets to the runtime.
-            redactNextValue = arg is "--env" or "-e" or "--opt" or "-o";
+            // Environment variables, volume driver options (a CIFS password, for instance) and build arguments (a
+            // token to a package feed) are where the caller passes secrets to the runtime.
+            redactNextValue = arg is "--env" or "-e" or "--opt" or "-o" or "--build-arg";
         }
 
         return result.ToString();

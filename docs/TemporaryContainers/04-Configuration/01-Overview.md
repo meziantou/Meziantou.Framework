@@ -41,3 +41,6 @@ A few rules hold for every setting:
 - [Ports](04-Ports.md): publish the ports of the container and find the host port they were given.
 - [Volumes and mounts](05-VolumesAndMounts.md): share files with the host or between containers.
 - [Wait strategies](06-WaitStrategies.md): decide when [StartAsync](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.StartAsync) considers the container ready.
+- [Networks](07-Networks.md): create a temporary network and connect containers to several networks, with aliases.
+- [Advanced options](08-AdvancedOptions.md): capabilities, extra hosts, shared memory, ulimits, healthchecks, the stop
+  signal, and the options the definition does not have.

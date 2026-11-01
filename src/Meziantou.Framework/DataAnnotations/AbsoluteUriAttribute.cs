@@ -15,6 +15,8 @@ namespace Meziantou.Framework.DataAnnotations;
 [AttributeUsage(AttributeTargets.Property)]
 public sealed class AbsoluteUriAttribute : ValidationAttribute
 {
+    private readonly bool _hasCustomErrorMessage;
+
     public AbsoluteUriAttribute()
     {
     }
@@ -22,21 +24,39 @@ public sealed class AbsoluteUriAttribute : ValidationAttribute
     public AbsoluteUriAttribute(string errorMessage)
         : base(errorMessage)
     {
+        _hasCustomErrorMessage = true;
     }
 
     public override bool IsValid(object? value)
     {
         if (value is string str)
-            return Uri.TryCreate(str, UriKind.Absolute, out _);
+            return IsAbsoluteUri(str);
 
         return true;
     }
 
     protected override ValidationResult? IsValid(object? value, ValidationContext validationContext)
     {
-        if (!IsValid(value))
-            return new ValidationResult($"Uri '{value}' is not an absolute URI");
+        if (IsValid(value))
+            return ValidationResult.Success;
 
-        return null;
+        // Keep the historical message unless the user provides one
+        var message = !_hasCustomErrorMessage && ErrorMessage is null && ErrorMessageResourceName is null
+            ? $"Uri '{value}' is not an absolute URI"
+            : FormatErrorMessage(validationContext.DisplayName);
+
+        return new ValidationResult(message, validationContext.MemberName is { } memberName ? [memberName] : null);
+    }
+
+    private static bool IsAbsoluteUri(string value)
+    {
+        if (!Uri.TryCreate(value, UriKind.Absolute, out var uri))
+            return false;
+
+        // Uri accepts "/path" (Unix), "C:\path" and "\\server\share" as implicit file URIs: require an explicit scheme
+        if (uri.IsFile && !value.AsSpan().TrimStart().StartsWith(Uri.UriSchemeFile + ":", StringComparison.OrdinalIgnoreCase))
+            return false;
+
+        return true;
     }
 }

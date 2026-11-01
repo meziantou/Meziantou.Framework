@@ -71,6 +71,24 @@ Assert.False(range.IsInRangeInclusive(Range.Create(5, 15)));
 
 - Each method has an overload that takes a [Range\<T\>](cref:Meziantou.Framework.Range{T}): it returns `true` when both bounds of that range pass the check.
 - For a reference type, such as `string`, a `null` bound is not checked: the range is open on that side.
+- The constructor throws an `ArgumentException` when [From](cref:Meziantou.Framework.Range{T}.From) is greater than [To](cref:Meziantou.Framework.Range{T}.To).
+
+[Overlaps](cref:Meziantou.Framework.Range{T}.Overlaps) checks whether two ranges have a value in common, and [Intersect](cref:Meziantou.Framework.Range{T}.Intersect) returns the values they have in
+common, or `null` when they have none. Both include the bounds:
+
+<!-- ref:../../tests/Meziantou.Framework.Tests/RangeTests.cs;region=Range_OverlapsAndIntersect;format=md-fenced-code-block;dedent=true -->
+```csharp
+var range = Range.Create(1, 10);
+
+Assert.True(range.Overlaps(Range.Create(5, 15)));
+Assert.True(range.Overlaps(Range.Create(10, 20))); // The bounds are inclusive
+Assert.False(range.Overlaps(Range.Create(11, 20)));
+
+Assert.Equal(Range.Create(5, 10), range.Intersect(Range.Create(5, 15)));
+Assert.Null(range.Intersect(Range.Create(11, 20)));
+```
+<!-- endref -->
+
 - [Range\<T\>](cref:Meziantou.Framework.Range{T}) is a read-only struct. Two ranges are equal when their bounds are equal.
 
 [Meziantou.Framework.Range](cref:Meziantou.Framework.Range) and [Meziantou.Framework.Range\<T\>](cref:Meziantou.Framework.Range{T}) have the same name as `System.Range`, the type of the

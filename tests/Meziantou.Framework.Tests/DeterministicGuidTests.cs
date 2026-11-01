@@ -31,4 +31,43 @@ public sealed class DeterministicGuidTests
         var actual = DeterministicGuid.Create(DeterministicGuid.DnsNamespace, name, DeterministicGuidVersion.Version3);
         Assert.Equal(Guid.Parse(expectedGuid), actual);
     }
+
+    [Theory]
+    [InlineData(DeterministicGuidVersion.Version3)]
+    [InlineData(DeterministicGuidVersion.Version5)]
+    public void StringAndBytesOverloadsMatch(DeterministicGuidVersion version)
+    {
+        foreach (var length in new[] { 0, 1, 239, 240, 241, 1000 })
+        {
+            var name = new string('\u00e9', length);
+            var expected = DeterministicGuid.Create(DeterministicGuid.UrlNamespace, Encoding.UTF8.GetBytes(name), version);
+            Assert.Equal(expected, DeterministicGuid.Create(DeterministicGuid.UrlNamespace, name, version));
+        }
+    }
+
+    [Fact]
+    public void LongName()
+    {
+        var name = new string('a', 10_000);
+        var expected = ReferenceImplementation(DeterministicGuid.DnsNamespace, Encoding.UTF8.GetBytes(name));
+        Assert.Equal(expected, DeterministicGuid.Create(DeterministicGuid.DnsNamespace, name, DeterministicGuidVersion.Version5));
+    }
+
+    [Fact]
+    public void InvalidVersion()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>("version", () => DeterministicGuid.Create(DeterministicGuid.DnsNamespace, "a", (DeterministicGuidVersion)4));
+    }
+
+    // Straightforward SHA-1 (version 5) implementation of RFC 4122, section 4.3
+    private static Guid ReferenceImplementation(Guid @namespace, byte[] name)
+    {
+        var namespaceBytes = @namespace.ToByteArray(bigEndian: true);
+#pragma warning disable CA5350 // Do Not Use Weak Cryptographic Algorithms
+        var hash = System.Security.Cryptography.SHA1.HashData([.. namespaceBytes, .. name]);
+#pragma warning restore CA5350
+        hash[6] = (byte)((hash[6] & 0x0F) | 0x50);
+        hash[8] = (byte)((hash[8] & 0x3F) | 0x80);
+        return new Guid(hash.AsSpan(0, 16), bigEndian: true);
+    }
 }

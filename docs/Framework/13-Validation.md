@@ -37,14 +37,16 @@ Assert.Equal("Uri 'images/logo.png' is not an absolute URI", result.ErrorMessage
 ```
 <!-- endref -->
 
-- A string is valid when `Uri.TryCreate(value, UriKind.Absolute, out _)` succeeds. The attribute accepts any scheme, not
-  only `http` and `https`: check the scheme in your code, for instance with [IsHttpOrHttps](cref:Meziantou.Framework.UriExtensions.IsHttpOrHttps) (see
-  [Other helpers](15-OtherHelpers.md#uris)).
+- A string is valid when `Uri.TryCreate(value, UriKind.Absolute, out _)` succeeds and the value starts with a scheme. The
+  attribute accepts any scheme, not only `http` and `https`: check the scheme in your code, for instance with
+  [IsHttpOrHttps](cref:Meziantou.Framework.UriExtensions.IsHttpOrHttps) (see [Other helpers](15-OtherHelpers.md#uris)).
+- File paths, such as `/images/logo.png`, `C:\images\logo.png` or `\\server\share`, are not valid, although `Uri` reads
+  them as `file://` URIs. Write `file:///images/logo.png` to accept a file.
 - `null` and values that are not strings are valid. Add `[Required]` to reject a missing value.
-- The error message is `Uri '<value>' is not an absolute URI`. The message passed to the constructor
-  (`[AbsoluteUri("...")]`) is not used by `Validator`.
-
-On Linux and macOS, a path that starts with `/`, such as `/images/logo.png`, is an absolute `file://` URI, so it is valid.
+- The default error message is `Uri '<value>' is not an absolute URI`. A message passed to the constructor
+  (`[AbsoluteUri("{0} must be an absolute URI")]`), to `ErrorMessage`, or through `ErrorMessageResourceName` replaces it;
+  `{0}` is the display name of the property.
+- The result has the name of the property in `MemberNames`, so ASP.NET Core and Blazor show the error next to the field.
 
 ## Collection items
 
@@ -80,17 +82,23 @@ var model = new MyModel
 var results = new List<ValidationResult>();
 var isValid = Validator.TryValidateObject(model, new ValidationContext(model), results, validateAllProperties: true);
 
-// The result is the first error of the first invalid item
+// The result is the first error, and its member name tells which item is invalid
 Assert.False(isValid);
 var error = Assert.Single(results);
 Assert.Equal("The Name field is required.", error.ErrorMessage);
+Assert.Equal(["Items[1].Name"], error.MemberNames);
 ```
 <!-- endref -->
 
-- Each item is validated with `Validator.TryValidateObject` and all its properties.
-- The validation stops at the first invalid item, and reports its first error, with the message of the attribute that
-  failed. It does not tell which item is invalid.
-- A `null` collection is valid. Add `[Required]` to reject it.
+- Each item is validated with `Validator.TryValidateObject` and all its properties. The validation context of each item
+  has the service provider and the `Items` of the context of the model.
+- Every item is validated. The attribute reports one [CollectionItemsValidationResult](cref:Meziantou.Framework.DataAnnotations.CollectionItemsValidationResult): its message and member
+  name are those of the first error, and its [Errors](cref:Meziantou.Framework.DataAnnotations.CollectionItemsValidationResult.Errors) property holds the errors of all the items.
+- Member names are prefixed with the name of the collection and the index of the item, such as `Items[1].Name`. An
+  error without a member name, such as one from `IValidatableObject`, gets the path of the item, such as `Items[1]`.
+- With a custom message (`[ValidateCollectionItems(ErrorMessage = "{0} contains invalid items")]`), the result has
+  this message and the member names of all the errors.
+- A `null` collection is valid, and `null` items are skipped. Add `[Required]` to reject a missing collection.
 - The items are validated one level deep: a collection inside an item needs its own [\[ValidateCollectionItems\]](cref:Meziantou.Framework.DataAnnotations.ValidateCollectionItemsAttribute).
 
 [ValidateCollectionItemsAttribute](cref:Meziantou.Framework.DataAnnotations.ValidateCollectionItemsAttribute) discovers the properties of the items at run time, so it is not compatible with

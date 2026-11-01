@@ -50,9 +50,9 @@ The features of `REQUIRES`:
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 25,396 | 29,435 | 2,545 | 94% |
-| [Tentative](#tentative-tests) | 1,168 | 3,044 | 837 | 53% |
+| [Tentative](#tentative-tests) | 1,171 | 3,044 | 837 | 53% |
 | [Reftests](#reftests) | 27,504 | 28,889 | 180 | 96% |
-| **All** | **54,068** | **61,368** | **3,562** | **94%** |
+| **All** | **54,071** | **61,368** | **3,562** | **94%** |
 
 ## Stable tests
 
@@ -550,7 +550,7 @@ The features of `REQUIRES`:
 | [`trust-tokens`](trust-tokens.md#tentative-tests) | 0 | 3 | 3 | – |
 | [`trusted-types`](trusted-types.md#tentative-tests) | 6 | 9 | 0 | 67% |
 | [`uievents`](uievents.md#tentative-tests) | 1 | 3 | 0 | 33% |
-| [`urlpattern`](urlpattern.md#tentative-tests) | 0 | 3 | 0 | 0% |
+| [`urlpattern`](urlpattern.md#tentative-tests) | 3 | 3 | 0 | 100% |
 | [`wai-aria`](wai-aria.md#tentative-tests) | 3 | 14 | 0 | 21% |
 | [`wasm`](wasm.md#tentative-tests) | 15 | 70 | 0 | 21% |
 | [`web-animations`](web-animations.md#tentative-tests) | 3 | 8 | 0 | 38% |
@@ -570,7 +570,7 @@ The features of `REQUIRES`:
 | [`workers`](workers.md#tentative-tests) | 0 | 8 | 0 | 0% |
 | [`xhr`](xhr.md#tentative-tests) | 2 | 2 | 0 | 100% |
 | [`xml`](xml.md#tentative-tests) | 0 | 2 | 2 | – |
-| **Total (163 sections)** | **1,168** | **3,044** | **837** | **53%** |
+| **Total (163 sections)** | **1,171** | **3,044** | **837** | **53%** |
 
 ## Reftests
 

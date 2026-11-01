@@ -316,8 +316,7 @@ See [docs/rendering.md](docs/rendering.md) for what is painted, and [Printing](d
   Embedded Enforcement (the `csp` attribute of the `iframe` element, `Sec-Required-CSP` and `Allow-CSP-From`). The
   Reporting API only generates the CSP, COEP and test reports (no deprecation, intervention, COOP or Document Policy
   reports).
-- Streams cannot be transferred, and the tentative `URLPattern` methods `compareComponent()` and `generate()` are not
-  implemented.
+- Streams cannot be transferred.
 - **Experimental APIs.** The public APIs of the tentative features (proposals that no specification defines yet, e.g.
   `Element.StreamAppendHtml()`, `Element.MatchContainer()`) have the `[Experimental]` attribute:
   suppress their diagnostic (`WEBPLATEXP0002`...) to use them, see [docs/experimental-apis.md](docs/experimental-apis.md).
@@ -328,7 +327,7 @@ See [docs/rendering.md](docs/rendering.md) for what is painted, and [Printing](d
 |---|---|---|
 | Encoding | [WHATWG Encoding](https://encoding.spec.whatwg.org/) | Done |
 | URL | [WHATWG URL](https://url.spec.whatwg.org/), [UTS #46](https://www.unicode.org/reports/tr46/) | Done |
-| URL Pattern | [URL Pattern](https://urlpattern.spec.whatwg.org/) | Done (`UrlPattern`; the patterns are compiled to .NET regular expressions with the semantics of the ECMAScript `v` flag, the Unicode property escapes of the custom groups are limited to the General_Category values; the tentative `compareComponent()` and `generate()` are not implemented) |
+| URL Pattern | [URL Pattern](https://urlpattern.spec.whatwg.org/) | Done (`UrlPattern`; the patterns are compiled to .NET regular expressions with the semantics of the ECMAScript `v` flag, the Unicode property escapes of the custom groups are limited to the General_Category values; tentative `compareComponent()` and `generate()` are experimental) |
 | HTML parsing | [WHATWG HTML](https://html.spec.whatwg.org/multipage/parsing.html) | Done (the encoding declared by a `<meta>` element is found by tokenizing the head, as the browsers do and as proposed by [whatwg/html#6962](https://github.com/whatwg/html/issues/6962), rather than by the prescan of the first 1024 bytes; a `<meta>` element of the head after the first 1024 bytes changes the encoding when the parser inserts it, without the re-parse of the specification; the encoding of a document that does not declare it is detected from its content by a port of chardetng, the detector of Firefox, see [Encoding detection](docs/browsing-context.md#encoding-detection)) |
 | HTML serialization | [WHATWG HTML](https://html.spec.whatwg.org/multipage/parsing.html#serialising-html-fragments) | Done (`innerHTML`, `outerHTML`, `getHTML()`; `Document.GetHtml()` and `Document.WriteHtml(TextWriter)` serialize a whole document) |
 | HTML formatting | [WHATWG HTML](https://html.spec.whatwg.org/multipage/syntax.html#optional-tags) | Done (`Node.ToHtml(HtmlFormatter)`: minified output, pretty printing and custom formatters): see [docs/html-formatting.md](docs/html-formatting.md) |

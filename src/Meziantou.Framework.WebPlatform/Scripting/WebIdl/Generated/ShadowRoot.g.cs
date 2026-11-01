@@ -101,11 +101,14 @@ internal static class Binding_ShadowRoot<TAdapter, TValue> where TAdapter : stru
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.ShadowRoot>(t, Binding);
         var result = o.GetAnimations(); return r.FromSequence(result, static (r, e) => r.Wrap(e));
     }
+    #pragma warning disable WEBPLATEXP0009 // The binding exposes the experimental Web IDL member
     private static TValue Op_getSelection(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.ShadowRoot>(t, Binding);
         var result = o.GetSelection(); return r.Wrap(result);
     }
+    #pragma warning restore WEBPLATEXP0009
+    #pragma warning disable WEBPLATEXP0009 // The binding exposes the experimental Web IDL member
     private static TValue Op_elementFromPoint(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.ShadowRoot>(t, Binding);
@@ -114,6 +117,8 @@ internal static class Binding_ShadowRoot<TAdapter, TValue> where TAdapter : stru
         var a1 = r.ToDouble(a[1], restricted: true);
         var result = o.ElementFromPoint(a0, a1); return r.Wrap(result);
     }
+    #pragma warning restore WEBPLATEXP0009
+    #pragma warning disable WEBPLATEXP0009 // The binding exposes the experimental Web IDL member
     private static TValue Op_elementsFromPoint(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.ShadowRoot>(t, Binding);
@@ -122,6 +127,7 @@ internal static class Binding_ShadowRoot<TAdapter, TValue> where TAdapter : stru
         var a1 = r.ToDouble(a[1], restricted: true);
         var result = o.ElementsFromPoint(a0, a1); return r.FromSequence(result, static (r, e) => r.Wrap(e));
     }
+    #pragma warning restore WEBPLATEXP0009
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
         r.DefineAttribute(instanceTarget, "mode", Get_mode, null);

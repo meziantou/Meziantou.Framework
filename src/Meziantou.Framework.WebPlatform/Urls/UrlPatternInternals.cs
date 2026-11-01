@@ -108,6 +108,10 @@ internal sealed class UrlPatternComponent
 
     public required string[] GroupNameList { get; init; }
 
+    public required List<UrlPatternPart> Parts { get; init; }
+
+    public required Func<string, string> EncodingCallback { get; init; }
+
     public required bool HasRegExpGroups { get; init; }
 
     /// <summary>https://urlpattern.spec.whatwg.org/#compile-a-component</summary>
@@ -123,8 +127,53 @@ internal sealed class UrlPatternComponent
             PatternString = UrlPatternParser.GeneratePatternString(partList, options),
             RegularExpression = regularExpression,
             GroupNameList = [.. nameList],
+            Parts = partList,
+            EncodingCallback = encodingCallback,
             HasRegExpGroups = partList.Exists(part => part.Type == UrlPatternPartType.Regexp),
         };
+    }
+
+    public string Generate(IReadOnlyDictionary<string, string> groups)
+    {
+        var result = new StringBuilder();
+        var generatedGroups = new List<string>(GroupNameList.Length);
+        foreach (var part in Parts)
+        {
+            if (part.Modifier != UrlPatternPartModifier.None)
+                throw new TypeErrorException("URLPattern.generate() does not support modifiers");
+
+            switch (part.Type)
+            {
+                case UrlPatternPartType.FixedText:
+                    result.Append(part.Value);
+                    break;
+
+                case UrlPatternPartType.SegmentWildcard when part.Name.Length > 0:
+                    if (!groups.TryGetValue(part.Name, out var groupValue))
+                        throw new TypeErrorException($"The group '{part.Name}' is required");
+
+                    var encodedGroupValue = EncodingCallback(groupValue);
+                    result.Append(part.Prefix).Append(encodedGroupValue).Append(part.Suffix);
+                    generatedGroups.Add(encodedGroupValue);
+                    break;
+
+                default:
+                    throw new TypeErrorException("URLPattern.generate() does not support wildcards or regular expressions");
+            }
+        }
+
+        var generatedValue = result.ToString();
+        var match = RegularExpression.Match(generatedValue);
+        if (!match.Success || generatedGroups.Count != GroupNameList.Length)
+            throw new TypeErrorException("The generated value does not match the URLPattern component");
+
+        for (var index = 0; index < generatedGroups.Count; index++)
+        {
+            if (!match.Groups[index + 1].Success || match.Groups[index + 1].Value != generatedGroups[index])
+                throw new TypeErrorException("The generated value does not match the URLPattern component");
+        }
+
+        return generatedValue;
     }
 
     /// <summary>https://urlpattern.spec.whatwg.org/#protocol-component-matches-a-special-scheme</summary>

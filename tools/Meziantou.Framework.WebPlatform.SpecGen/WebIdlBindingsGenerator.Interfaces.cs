@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Text;
 using Meziantou.Framework.WebPlatform;
@@ -517,6 +518,12 @@ internal sealed partial class WebIdlBindingsGenerator
             body.Add("}");
         }
 
+        var experimentalDiagnosticId = operation.ClrMethods
+            .Select(method => method.GetCustomAttribute<ExperimentalAttribute>()?.DiagnosticId)
+            .FirstOrDefault(diagnosticId => diagnosticId is not null);
+        if (experimentalDiagnosticId is not null)
+            writer.Line($"#pragma warning disable {experimentalDiagnosticId} // The binding exposes the experimental Web IDL member");
+
         using (writer.Block($"private static TValue {methodName}({Realm} r, TValue t, global::System.ReadOnlySpan<TValue> a)"))
         {
             foreach (var statement in body)
@@ -524,6 +531,9 @@ internal sealed partial class WebIdlBindingsGenerator
                 writer.Line(statement);
             }
         }
+
+        if (experimentalDiagnosticId is not null)
+            writer.Line($"#pragma warning restore {experimentalDiagnosticId}");
 
         return true;
     }

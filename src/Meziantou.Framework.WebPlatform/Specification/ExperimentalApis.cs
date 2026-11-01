@@ -53,4 +53,7 @@ internal static class ExperimentalApis
 
     /// <summary>The source phase imports (https://github.com/tc39/proposal-source-phase-imports) and the module source of <c>WebAssembly.Module</c> (https://github.com/WebAssembly/esm-integration).</summary>
     public const string SourcePhaseImports = "WEBPLATEXP0014";
+
+    /// <summary>The tentative <c>URLPattern.compareComponent()</c> and <c>URLPattern.prototype.generate()</c> methods.</summary>
+    public const string UrlPatternTentativeMethods = "WEBPLATEXP0015";
 }

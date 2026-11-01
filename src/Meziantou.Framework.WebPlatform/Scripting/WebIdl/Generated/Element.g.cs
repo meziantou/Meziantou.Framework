@@ -733,6 +733,7 @@ internal static class Binding_Element<TAdapter, TValue> where TAdapter : struct,
         var a0 = r.IsMissing(a, 0) ? (global::Meziantou.Framework.WebPlatform.Dom.GetAnimationsOptions)WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_GetAnimationsOptions(r, r.Adapter.Undefined) : WebIdlHelpers<TAdapter, TValue>.ToDictionary_Dom_GetAnimationsOptions(r, a[0]);
         var result = o.GetAnimations(a0); return r.FromSequence(result, static (r, e) => r.Wrap(e));
     }
+    #pragma warning disable WEBPLATEXP0005 // The binding exposes the experimental Web IDL member
     private static TValue Op_matchContainer(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Element>(t, Binding);
@@ -740,6 +741,7 @@ internal static class Binding_Element<TAdapter, TValue> where TAdapter : struct,
         var a0 = r.ToDomString(a[0]);
         var result = o.MatchContainer(a0); return r.Wrap(result);
     }
+    #pragma warning restore WEBPLATEXP0005
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
         r.DefineAttribute(instanceTarget, "namespaceURI", Get_namespaceURI, null);

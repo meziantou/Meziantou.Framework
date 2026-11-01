@@ -78,6 +78,9 @@ The Docker Engine API runtime reads the same environment variables as the docker
 - Without `DOCKER_HOST`, it uses `/var/run/docker.sock` on Linux and macOS, then the socket of a rootless daemon on Linux
   (`$XDG_RUNTIME_DIR/docker.sock`), and the `docker_engine` named pipe on Windows.
 
+A daemon on another machine publishes the ports of the containers on that machine: see
+[Connect to a remote daemon](04-Configuration/04-Ports.md#connect-to-a-remote-daemon) for the address to connect to.
+
 ## Runtime differences
 
 | | Docker Engine API, Docker | Podman | Apple container | wslc |

@@ -56,4 +56,41 @@ public sealed class DataBinderTests
         var obj = new { A = 0 };
         Assert.Throws<ArgumentException>(() => DataBinder.Eval(obj, "A[0]"));
     }
+
+    [Fact]
+    public void QuotedIndexContainingDotsAndBrackets()
+    {
+        var obj = new
+        {
+            Items = new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["a.b"] = "dot",
+                ["a]b"] = "bracket",
+                ["x"] = "quote",
+            },
+        };
+
+        Assert.Equal("dot", DataBinder.Eval(obj, "Items[\"a.b\"]"));
+        Assert.Equal("dot", DataBinder.Eval(obj, "Items['a.b']"));
+        Assert.Equal("bracket", DataBinder.Eval(obj, "Items[\"a]b\"]"));
+        Assert.Equal(3, DataBinder.Eval(obj, "Items[\"a.b\"].Length"));
+        Assert.Equal("quote", DataBinder.Eval(obj, "Items[ 'x' ]"));
+    }
+
+    [Theory]
+    [InlineData("Items[\"]")]
+    [InlineData("Items[']")]
+    [InlineData("Items[\"a]")]
+    public void UnterminatedQuotedIndex(string expression)
+    {
+        var obj = new { Items = new Dictionary<string, string>(StringComparer.Ordinal) };
+        Assert.Throws<ArgumentException>(() => DataBinder.Eval(obj, expression));
+    }
+
+    [Fact]
+    public void IndexContainingDot()
+    {
+        var obj = new { Items = new Dictionary<string, int>(StringComparer.Ordinal) { ["1.5"] = 2 } };
+        Assert.Equal(2, DataBinder.Eval(obj, "Items[1.5]"));
+    }
 }

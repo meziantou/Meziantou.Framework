@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace Meziantou.Framework.Tests;
 
 public class ReflectionDynamicObjectTests
@@ -204,5 +206,120 @@ public class ReflectionDynamicObjectTests
         {
             Value = int.Parse(value, CultureInfo.InvariantCulture);
         }
+    }
+
+    [Fact]
+    public void ReflectionDynamicObject_ConvertToBaseTypeAndInterface()
+    {
+        var instance = new Test2();
+        dynamic rdo = new ReflectionDynamicObject(instance);
+
+        Test baseValue = rdo;
+        Assert.Same(instance, baseValue);
+
+        using var stream = new MemoryStream();
+        dynamic streamRdo = new ReflectionDynamicObject(stream);
+        IDisposable interfaceValue = streamRdo;
+        Assert.Same(stream, interfaceValue);
+    }
+
+    [Fact]
+    public void ReflectionDynamicObject_ConvertIConvertible()
+    {
+        dynamic rdo = new ReflectionDynamicObject(42);
+        Assert.Equal(42L, (long)rdo);
+        Assert.Equal(42L, (long?)rdo);
+    }
+
+    [Fact]
+    public void ReflectionDynamicObject_ConvertToUnrelatedType()
+    {
+        dynamic rdo = new ReflectionDynamicObject(new Test3());
+        Assert.Throws<Microsoft.CSharp.RuntimeBinder.RuntimeBinderException>(() => (string)rdo);
+    }
+
+    [Fact]
+    public void ReflectionDynamicObject_ConvertStaticWrapper()
+    {
+        dynamic rdo = new ReflectionDynamicObject(typeof(Test3));
+        Assert.Null((string?)rdo);
+        Assert.Throws<Microsoft.CSharp.RuntimeBinder.RuntimeBinderException>(() => (int)rdo);
+    }
+
+    [Fact]
+    public void ReflectionDynamicObject_IndexerExceptionIsRethrown()
+    {
+        dynamic dictionary = new ReflectionDynamicObject(new Dictionary<string, int>(StringComparer.Ordinal) { ["a"] = 1 });
+        Assert.Equal(1, dictionary["a"]);
+        Assert.Throws<KeyNotFoundException>(() => { _ = dictionary["missing"]; });
+
+        dynamic list = new ReflectionDynamicObject(new List<int> { 1, 2 });
+        Assert.Equal(2, list[1]);
+        Assert.Throws<ArgumentOutOfRangeException>(() => { _ = list[5]; });
+        Assert.Throws<ArgumentOutOfRangeException>(() => { list[5] = 3; });
+    }
+
+    [Fact]
+    public void ReflectionDynamicObject_IndexerWithWideningConversion()
+    {
+        dynamic rdo = new ReflectionDynamicObject(new LongIndexer());
+        Assert.Equal(43L, rdo[42]);
+    }
+
+    [Fact]
+    public void ReflectionDynamicObject_GetDynamicMemberNames_Instance()
+    {
+        var names = new ReflectionDynamicObject(new Test()).GetDynamicMemberNames().ToList();
+
+        Assert.Contains("_privateField", names);
+        Assert.Contains("PrivateProperty", names);
+        Assert.DoesNotContain("StaticProperty", names);
+        Assert.DoesNotContain("Item", names);
+        Assert.DoesNotContain(names, name => name.Contains("k__BackingField", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void ReflectionDynamicObject_GetDynamicMemberNames_Static()
+    {
+        var names = new ReflectionDynamicObject(typeof(Test)).GetDynamicMemberNames().ToList();
+
+        Assert.Contains("StaticProperty", names);
+        Assert.DoesNotContain("_privateField", names);
+        Assert.DoesNotContain("PrivateProperty", names);
+        Assert.DoesNotContain(names, name => name.Contains("k__BackingField", StringComparison.Ordinal));
+    }
+
+    [Fact]
+    public void ReflectionDynamicObject_DoesNotPreventAssemblyUnloading()
+    {
+        var weakReference = WrapTypeOfCollectibleAssembly();
+        for (var i = 0; i < 10 && weakReference.IsAlive; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+
+        Assert.False(weakReference.IsAlive);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static WeakReference WrapTypeOfCollectibleAssembly()
+    {
+        var assemblyBuilder = System.Reflection.Emit.AssemblyBuilder.DefineDynamicAssembly(new System.Reflection.AssemblyName("ReflectionDynamicObjectCollectible"), System.Reflection.Emit.AssemblyBuilderAccess.RunAndCollect);
+        var moduleBuilder = assemblyBuilder.DefineDynamicModule("ReflectionDynamicObjectCollectible");
+        var typeBuilder = moduleBuilder.DefineType("CollectibleType", System.Reflection.TypeAttributes.Public);
+        typeBuilder.DefineField("Value", typeof(int), System.Reflection.FieldAttributes.Public);
+        var type = typeBuilder.CreateType();
+
+        dynamic rdo = new ReflectionDynamicObject(Activator.CreateInstance(type)!);
+        rdo.Value = 1;
+        Assert.Equal(1, (int)rdo.Value);
+
+        return new WeakReference(type);
+    }
+
+    private sealed class LongIndexer
+    {
+        public long this[long value] => value + 1;
     }
 }

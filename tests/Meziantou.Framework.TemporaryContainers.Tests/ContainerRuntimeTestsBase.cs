@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Net.Sockets;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using Meziantou.Extensions.Logging.Xunit.v3;
 using Meziantou.Framework.TemporaryContainers.Internals;
@@ -283,7 +284,7 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
     public async Task DockerfileImage_BuildsAndServesHttp()
     {
         var imageDirectory = Path.Combine(AppContext.BaseDirectory, "TestImage");
-        var definition = new ContainerDefinition(new DockerfileImage(Path.Combine(imageDirectory, DockerfileName), imageDirectory))
+        var definition = new ContainerDefinition(new DockerfileImage(Path.Combine(imageDirectory, DockerfileName), imageDirectory, DockerfileBuildSettings.Default))
         {
             Runtime = Runtime,
         };
@@ -313,6 +314,92 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
 
         static bool IsOfSession(ManagedResource resource, string sessionId)
             => resource.Labels.TryGetValue(ResourceLabels.SessionId, out var value) && value == sessionId;
+    }
+
+    [Fact]
+    public async Task DockerfileImage_AppliesTheBuildOptionsAndTheIgnoreFile()
+    {
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The Dockerfile uses a POSIX shell.");
+
+        using var context = TemporaryDirectory.Create();
+        await File.WriteAllTextAsync(context.FullPath / "Dockerfile", """
+            FROM busybox:1.38@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e AS base
+            ARG GREETING=default
+            RUN printf '%s' "$GREETING" > /greeting.txt
+            COPY . /context/
+
+            FROM base AS broken
+            RUN exit 1
+            """, XunitCancellationToken);
+        await File.WriteAllTextAsync(context.FullPath / ".dockerignore", "secret.txt\nlogs\n!logs/keep.log\n", XunitCancellationToken);
+        await File.WriteAllTextAsync(context.FullPath / "app.txt", "app", XunitCancellationToken);
+        await File.WriteAllTextAsync(context.FullPath / "secret.txt", "secret", XunitCancellationToken);
+        Directory.CreateDirectory(context.FullPath / "logs");
+        await File.WriteAllTextAsync(context.FullPath / "logs" / "keep.log", "", XunitCancellationToken);
+        await File.WriteAllTextAsync(context.FullPath / "logs" / "drop.log", "", XunitCancellationToken);
+
+        var options = new DockerfileBuildOptions { Target = "base" };
+        options.BuildArguments.Add("GREETING", "hello from build args");
+        var definition = new ContainerDefinition(ImageSource.FromDockerfile(context.FullPath / "Dockerfile", context.FullPath, options))
+        {
+            Runtime = Runtime,
+        };
+        definition.Command.AddRange(["sh", "-c", "echo SERVER READY; exec sleep 3600"]);
+        definition.WaitStrategies.Add(Wait.ForLogMessage("SERVER READY"));
+        definition.Logging.Logger = XUnitLogger.CreateLogger();
+
+        await using var container = await StartWithRetryAsync(definition);
+        var exec = await container.ExecAsync(options =>
+        {
+            options.Command.Add("sh");
+            options.Command.Add("-c");
+            options.Command.Add("cat /greeting.txt; echo; cd /context && find . -type f | sort");
+        }, XunitCancellationToken);
+
+        Assert.Equal(0, exec.ExitCode);
+        var lines = exec.StandardOutput.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        Assert.Equal("hello from build args", lines[0]);
+        Assert.Equal(["./.dockerignore", "./Dockerfile", "./app.txt", "./logs/keep.log"], lines.Skip(1));
+    }
+
+    [Fact]
+    public async Task Platform_RunsTheVariantOfTheRequestedPlatform()
+    {
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "Windows images have a single platform.");
+
+        // The other variant is the one the machine does not run natively, so the image may already be there for the
+        // native platform only.
+        var (platform, machine) = RuntimeInformation.OSArchitecture is Architecture.Arm64 ? ("linux/amd64", "x86_64") : ("linux/arm64", "aarch64");
+        var definition = new ContainerDefinition(LinuxImage)
+        {
+            Runtime = Runtime,
+            Platform = platform,
+        };
+        definition.Command.Add("sh");
+        definition.Command.Add("-c");
+        definition.Command.Add("echo SERVER READY; exec sleep 3600");
+        definition.WaitStrategies.Add(Wait.ForLogMessage("SERVER READY"));
+        definition.Logging.Logger = XUnitLogger.CreateLogger();
+
+        ExecResult exec;
+        try
+        {
+            await using var container = await StartWithRetryAsync(definition);
+            exec = await container.ExecAsync(options =>
+            {
+                options.Command.Add("uname");
+                options.Command.Add("-m");
+            }, XunitCancellationToken);
+        }
+        catch (Exception ex) when (ex.ToString().Contains("exec format error", StringComparison.OrdinalIgnoreCase))
+        {
+            // The image is the right one, but the machine has no emulator (QEMU, Rosetta) to run it.
+            global::Xunit.Assert.Skip($"The machine cannot run '{platform}' images.");
+            return;
+        }
+
+        Assert.Equal(0, exec.ExitCode);
+        Assert.Equal(machine, exec.StandardOutput.Trim());
     }
 
     [Fact]

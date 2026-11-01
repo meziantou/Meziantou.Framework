@@ -95,6 +95,40 @@ public static class DocumentationExamples
         #endregion
     }
 
+    public static ContainerDefinition DockerfileBuildOptionsExample()
+    {
+        #region TemporaryContainers_DockerfileBuildOptions
+        var options = new DockerfileBuildOptions
+        {
+            Target = "runtime",              // the stage of a multi-stage Dockerfile to build
+            Platform = "linux/amd64",        // build for another platform than the machine
+            Pull = true,                     // pull newer base images
+            NoCache = false,                 // keep using the build cache
+        };
+        options.BuildArguments.Add("DOTNET_VERSION", "10.0"); // the value of 'ARG DOTNET_VERSION'
+        options.Labels.Add("org.opencontainers.image.title", "my-app");
+
+        var definition = new ContainerDefinition(ImageSource.FromDockerfile("src/MyApp/Dockerfile", "src", options));
+        #endregion
+        return definition;
+    }
+
+    public static ContainerDefinition StableTagExample()
+    {
+        #region TemporaryContainers_DockerfileStableTag
+        var options = new DockerfileBuildOptions { Tag = "my-app:tests" };
+        var definition = new ContainerDefinition(ImageSource.FromDockerfile("./Dockerfile", ".", options));
+        #endregion
+        return definition;
+    }
+
+    public static void PlatformExample(ContainerDefinition definition)
+    {
+        #region TemporaryContainers_Platform
+        definition.Platform = "linux/amd64"; // run the amd64 variant, for instance on Apple Silicon
+        #endregion
+    }
+
     public static ContainerDefinition CommandAndEnvironment()
     {
         #region TemporaryContainers_CommandAndEnvironment

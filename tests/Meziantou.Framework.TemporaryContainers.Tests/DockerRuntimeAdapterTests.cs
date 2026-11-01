@@ -41,6 +41,14 @@ public sealed class DockerRuntimeAdapterTests
     }
 
     [Fact]
+    public void FormatCommand_RedactsBuildArgumentValues()
+    {
+        var command = ContainerCli.FormatCommand("docker", ["build", "--build-arg", "NUGET_TOKEN=hunter2", "."]);
+
+        Assert.Equal("docker build --build-arg NUGET_TOKEN=*** .", command);
+    }
+
+    [Fact]
     public void FormatCommand_RedactsVolumeDriverOptionValues()
     {
         var command = ContainerCli.FormatCommand("docker", ["volume", "create", "--opt", "password=hunter2", "-o", "o=addr=10.0.0.1", "data"]);

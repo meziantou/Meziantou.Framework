@@ -68,6 +68,7 @@ namespace Meziantou.Framework.TemporaryContainers
         public Meziantou.Framework.TemporaryContainers.ContainerMountCollection Mounts { get => throw null; }
         public string? Name { get => throw null; set { } }
         public Meziantou.Framework.TemporaryContainers.ContainerNetworkOptions Network { get => throw null; }
+        public string? Platform { get => throw null; set { } }
         public Meziantou.Framework.TemporaryContainers.ContainerPortCollection Ports { get => throw null; }
         public Meziantou.Framework.TemporaryContainers.PullPolicy PullPolicy { get => throw null; set { } }
         public Meziantou.Framework.TemporaryContainers.ContainerResourceOptions Resources { get => throw null; }
@@ -270,6 +271,17 @@ namespace Meziantou.Framework.TemporaryContainers
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
     }
 
+    public sealed class DockerfileBuildOptions
+    {
+        public System.Collections.Generic.IDictionary<string, string> BuildArguments { get => throw null; }
+        public System.Collections.Generic.IDictionary<string, string> Labels { get => throw null; }
+        public bool NoCache { get => throw null; set { } }
+        public string? Platform { get => throw null; set { } }
+        public bool Pull { get => throw null; set { } }
+        public string? Tag { get => throw null; set { } }
+        public string? Target { get => throw null; set { } }
+    }
+
     public sealed class ExecOptions
     {
         public System.Collections.Generic.IList<string> Command { get => throw null; set { } }
@@ -311,6 +323,7 @@ namespace Meziantou.Framework.TemporaryContainers
         public override bool Equals(object? obj) => throw null;
         public static Meziantou.Framework.TemporaryContainers.ImageSource FromArchive(string archivePath) => throw null;
         public static Meziantou.Framework.TemporaryContainers.ImageSource FromDockerfile(string dockerfilePath, string? contextDirectory = null) => throw null;
+        public static Meziantou.Framework.TemporaryContainers.ImageSource FromDockerfile(string dockerfilePath, string? contextDirectory, Meziantou.Framework.TemporaryContainers.DockerfileBuildOptions? options) => throw null;
         public static Meziantou.Framework.TemporaryContainers.ImageSource FromExisting(string imageId) => throw null;
         public static Meziantou.Framework.TemporaryContainers.ImageSource FromRegistry(string name) => throw null;
         public override int GetHashCode() => throw null;

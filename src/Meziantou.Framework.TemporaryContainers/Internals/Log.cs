@@ -12,6 +12,9 @@ internal static partial class Log
     [LoggerMessage(EventId = 2, Level = LogLevel.Warning, Message = "Looking up the image '{Image}' failed on attempt {Attempt}. Retrying in {Delay}.")]
     public static partial void ImageLookupRetry(ILogger logger, string image, int attempt, TimeSpan delay);
 
+    [LoggerMessage(EventId = 20, Level = LogLevel.Debug, Message = "Building '{Dockerfile}': {Output}")]
+    public static partial void ImageBuildOutput(ILogger logger, string dockerfile, string output);
+
     public static Action<Exception, int, TimeSpan>? CreateImagePullRetryCallback(ILogger? logger, string image)
     {
         if (logger is not { } imageLogger)

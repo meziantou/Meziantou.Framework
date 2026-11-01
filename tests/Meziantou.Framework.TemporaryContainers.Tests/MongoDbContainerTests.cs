@@ -50,7 +50,7 @@ public sealed class MongoDbContainerTests
     {
         await using var container = ContainerDefinition.CreateMongoDb().CreateContainer();
 
-        Assert.Contains("j=false", container.BuildConnectionString(27017, enableJournaling: false));
+        Assert.Contains("j=false", container.BuildConnectionString("127.0.0.1", 27017, enableJournaling: false));
     }
 
     [Fact]
@@ -58,7 +58,16 @@ public sealed class MongoDbContainerTests
     {
         await using var container = ContainerDefinition.CreateMongoDb().CreateContainer();
 
-        Assert.Contains("j=true", container.BuildConnectionString(27017, enableJournaling: true));
+        Assert.Contains("j=true", container.BuildConnectionString("127.0.0.1", 27017, enableJournaling: true));
+    }
+
+    [Fact]
+    public async Task GetConnectionString_UsesTheHostAddress()
+    {
+        await using var container = ContainerDefinition.CreateMongoDb().CreateContainer();
+
+        Assert.Contains("@docker.example.com:27017/", container.BuildConnectionString("docker.example.com", 27017, enableJournaling: false), StringComparison.Ordinal);
+        Assert.Contains("@[::1]:27017/", container.BuildConnectionString("::1", 27017, enableJournaling: false), StringComparison.Ordinal);
     }
 
     [Fact]
@@ -69,7 +78,7 @@ public sealed class MongoDbContainerTests
         definition.RootPassword = "p@ss%w+rd?/";
         await using var container = definition.CreateContainer();
 
-        var connectionString = container.BuildConnectionString(27017, enableJournaling: false);
+        var connectionString = container.BuildConnectionString("127.0.0.1", 27017, enableJournaling: false);
 
         Assert.Equal("mongodb://ro%3Aot:p%40ss%25w%2Brd%3F%2F@127.0.0.1:27017/?authSource=admin&j=false", connectionString);
         var url = MongoUrl.Create(connectionString);

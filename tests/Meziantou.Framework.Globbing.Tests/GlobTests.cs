@@ -2153,9 +2153,587 @@ public class GlobTests
         protected override string TransformEntry(ref FileSystemEntry entry) => entry.ToFullPath();
     }
 
-    private static void AssertEnumerateFiles(TemporaryDirectory directory, IGlobEvaluatable glob, string[] expectedResult)
+    [Fact]
+    public void DocumentationExample_EscapeText()
     {
-        var items = glob.EnumerateFiles(directory.FullPath)
+        #region Glob_EscapeText
+        // Build a pattern from a folder name that holds special characters
+        var pattern = Glob.Escape("Reports [2024]", GlobDialect.Standard) + "/**/*.pdf";
+        Assert.Equal(@"Reports \[2024]/**/*.pdf", pattern);
+
+        var glob = Glob.Parse(pattern, GlobDialect.Standard);
+        Assert.True(glob.IsMatch("Reports [2024]/Q1/summary.pdf"));
+        Assert.False(glob.IsMatch("Reports 2/Q1/summary.pdf"));
+
+        // Each dialect has its own escaping rules
+        Assert.Equal("100%25 done.txt", Glob.Escape("100% done.txt", GlobDialect.MSBuild));
+        Assert.Equal(@"\#notes.txt", Glob.Escape("#notes.txt", GlobDialect.Git));
+        #endregion
+    }
+
+    public static TheoryData<string, GlobDialect> EscapeRoundTripData()
+    {
+        string[] texts =
+        [
+            "a",
+            "a*b",
+            "a?b",
+            "a**b",
+            "[abc]",
+            "[!abc]",
+            "a]b",
+            "{a,b}",
+            "a}b",
+            "a,b",
+            "!important",
+            "a!b",
+            "#comment",
+            "a#b",
+            " leading space",
+            "trailing space ",
+            "two trailing spaces  ",
+            "100%",
+            "100%25",
+            "a;b$(c)@'d'",
+            "a^b",
+            "-",
+            "é",
+            "a\tb",
+            "dir/file*.txt",
+            "dir/[x]/f?.txt",
+            "a/b/c",
+            ".hidden",
+            "dir/.hidden/file",
+            "*.*",
+            "**",
+            "a/**/b",
+        ];
+
+        var data = new TheoryData<string, GlobDialect>();
+        foreach (var text in texts)
+        {
+            foreach (var dialect in Enum.GetValues<GlobDialect>())
+            {
+                data.Add(text, dialect);
+            }
+        }
+
+        if (!OperatingSystem.IsWindows())
+        {
+            // '\' is an ordinary character of a file name outside Windows. MSBuild reads it as a separator, even escaped.
+            foreach (var dialect in Enum.GetValues<GlobDialect>().Where(dialect => dialect is not GlobDialect.MSBuild))
+            {
+                data.Add(@"a\b", dialect);
+                data.Add(@"dir/a\*b", dialect);
+            }
+        }
+
+        return data;
+    }
+
+    [Theory]
+    [MemberData(nameof(EscapeRoundTripData))]
+    public void Escape_RoundTrip(string text, GlobDialect dialect)
+    {
+        var pattern = Glob.Escape(text, dialect);
+        Assert.Equal(pattern, Glob.Escape(text.AsSpan(), dialect));
+
+        var glob = Glob.Parse(pattern, dialect);
+        Assert.Equal(GlobMode.Include, glob.Mode);
+        Assert.True(glob.IsMatch(text), $"'{pattern}' does not match '{text}'");
+        Assert.False(glob.IsMatch(text + "z"), $"'{pattern}' matches '{text}z'");
+        Assert.False(glob.IsMatch("z" + text), $"'{pattern}' matches 'z{text}'");
+
+        if (dialect is GlobDialect.Git)
+        {
+            // The pattern can be written in a .gitignore file, which drops trailing spaces and comments
+            Assert.True(GlobCollection.ParseGitIgnore(pattern).IsMatch(text), $"The gitignore entry '{pattern}' does not match '{text}'");
+        }
+    }
+
+    [Theory]
+    [InlineData(".", GlobDialect.Standard, @"\.")]
+    [InlineData("..", GlobDialect.Standard, @"\..")]
+    [InlineData("a/../b", GlobDialect.Standard, @"a/\../b")]
+    [InlineData("a/./b", GlobDialect.MSBuild, "a/%2E/b")]
+    [InlineData("..", GlobDialect.Git, "..")]
+    [InlineData("a/b", GlobDialect.Posix, "a/b")]
+    [InlineData("a*/b", GlobDialect.PosixPath, @"a\*/b")]
+    [InlineData("{a}", GlobDialect.Git, "{a}")]
+    [InlineData("{a}", GlobDialect.Standard, @"\{a}")]
+    [InlineData("a b ", GlobDialect.Git, @"a b\ ")]
+    [InlineData("!a", GlobDialect.Posix, "!a")]
+    [InlineData("", GlobDialect.Standard, "")]
+    public void Escape(string text, GlobDialect dialect, string expected)
+    {
+        Assert.Equal(expected, Glob.Escape(text, dialect));
+    }
+
+    [Fact]
+    public void Escape_KeepsPathSeparators()
+    {
+        Assert.Equal("a/b", Glob.Escape("a/b", GlobDialect.Standard));
+        Assert.Equal("a/b", Glob.Escape("a/b", GlobDialect.Posix));
+
+        // MSBuild reads both '/' and '\' as separators
+        Assert.Equal(@"a/b\c", Glob.Escape(@"a/b\c", GlobDialect.MSBuild));
+        if (OperatingSystem.IsWindows())
+        {
+            Assert.Equal("a/b", Glob.Escape(@"a\b", GlobDialect.Standard));
+        }
+        else
+        {
+            Assert.Equal(@"a\\b", Glob.Escape(@"a\b", GlobDialect.Standard));
+        }
+    }
+
+    [Fact]
+    public void DocumentationExample_TrySplitBasePath()
+    {
+        #region Glob_TrySplitBasePath
+        var glob = Glob.Parse("src/app/**/*.cs", GlobDialect.Standard);
+        Assert.True(glob.TrySplitBasePath(out var basePath, out var relativeGlob));
+        Assert.Equal("src/app", basePath);
+        Assert.Equal("**/*.cs", relativeGlob.ToString());
+        Assert.True(relativeGlob.IsMatch("Models/User.cs"));
+
+        // MSBuild resolves a leading '..' against the directory
+        Assert.True(Glob.Parse("../shared/*.cs", GlobDialect.MSBuild).TrySplitBasePath(out basePath, out _));
+        Assert.Equal("../shared", basePath);
+
+        // The pattern starts with a wildcard
+        Assert.False(Glob.Parse("**/*.cs", GlobDialect.Standard).TrySplitBasePath(out _, out _));
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("src/*.cs", GlobDialect.Standard, GlobOptions.None, "src", "*.cs")]
+    [InlineData("src/app/**/*.cs", GlobDialect.Standard, GlobOptions.None, "src/app", "**/*.cs")]
+    [InlineData("src/a*/b/*.cs", GlobDialect.Standard, GlobOptions.None, "src", "a*/b/*.cs")]
+    [InlineData("src/file.cs", GlobDialect.Standard, GlobOptions.None, "src", "file.cs")]
+    [InlineData("src/**", GlobDialect.Standard, GlobOptions.None, "src", "**")]
+    [InlineData("src/bin/", GlobDialect.Standard, GlobOptions.None, "src", "bin/")]
+    [InlineData("src/.vscode/*.json", GlobDialect.Standard, GlobOptions.None, "src/.vscode", "*.json")]
+    [InlineData("2024/*.log", GlobDialect.Standard, GlobOptions.IgnoreCase, "2024", "*.log")]
+    [InlineData("2024/logs/*.log", GlobDialect.Standard, GlobOptions.IgnoreCase, "2024", "logs/*.log")]
+    [InlineData(@"a\*b/c/*.txt", GlobDialect.Standard, GlobOptions.None, "a*b/c", "*.txt")]
+    [InlineData("../shared/*.cs", GlobDialect.MSBuild, GlobOptions.None, "../shared", "*.cs")]
+    [InlineData("../../shared/src/*.cs", GlobDialect.MSBuild, GlobOptions.None, "../../shared/src", "*.cs")]
+    [InlineData(@"src\app\*.cs", GlobDialect.MSBuild, GlobOptions.None, "src/app", "*.cs")]
+    [InlineData("/usr/src/*.cs", GlobDialect.MSBuild, GlobOptions.None, "/usr/src", "*.cs")]
+    [InlineData("/*.cs", GlobDialect.MSBuild, GlobOptions.None, "/", "*.cs")]
+    [InlineData("/usr/src/*.c", GlobDialect.PosixPath, GlobOptions.None, "/usr/src", "*.c")]
+    [InlineData("a//b/*.c", GlobDialect.PosixPath, GlobOptions.None, "a", "/b/*.c")]
+    [InlineData("//server/share/*.c", GlobDialect.PosixPath, GlobOptions.None, "//server/share", "*.c")]
+    [InlineData("/src/*.cs", GlobDialect.Git, GlobOptions.None, "src", "/*.cs")]
+    [InlineData("src/app/Program.cs", GlobDialect.Git, GlobOptions.None, "src/app", "/Program.cs")]
+    [InlineData("/a/b/", GlobDialect.Git, GlobOptions.None, "a", "/b/")]
+    public void TrySplitBasePath(string pattern, GlobDialect dialect, GlobOptions options, string expectedBasePath, string expectedRelativePattern)
+    {
+        var glob = Glob.Parse(pattern, dialect, options);
+        Assert.True(glob.TrySplitBasePath(out var basePath, out var relativeGlob));
+        Assert.Equal(expectedBasePath, basePath);
+        Assert.Equal(expectedRelativePattern, relativeGlob.ToString());
+        Assert.Equal(glob.Mode, relativeGlob.Mode);
+    }
+
+    [Theory]
+    [InlineData("*.cs", GlobDialect.Standard, GlobOptions.None)]
+    [InlineData("file.cs", GlobDialect.Standard, GlobOptions.None)]
+    [InlineData("**/src/*.cs", GlobDialect.Standard, GlobOptions.None)]
+    [InlineData("{a,b}/*.cs", GlobDialect.Standard, GlobOptions.None)]
+    [InlineData("src/*.cs", GlobDialect.Standard, GlobOptions.IgnoreCase)]
+    [InlineData(@"\../*.cs", GlobDialect.Standard, GlobOptions.None)]
+    [InlineData("src/*", GlobDialect.Posix, GlobOptions.None)]
+    [InlineData("src/", GlobDialect.Git, GlobOptions.None)]
+    [InlineData("*.log", GlobDialect.Git, GlobOptions.None)]
+    [InlineData("/src/", GlobDialect.Git, GlobOptions.None)]
+    [InlineData("/../x", GlobDialect.Git, GlobOptions.None)]
+    [InlineData("*.cs", GlobDialect.MSBuild, GlobOptions.None)]
+    public void TrySplitBasePath_NoBasePath(string pattern, GlobDialect dialect, GlobOptions options)
+    {
+        var glob = Glob.Parse(pattern, dialect, options);
+        Assert.False(glob.TrySplitBasePath(out var basePath, out var relativeGlob));
+        Assert.Null(basePath);
+        Assert.Null(relativeGlob);
+    }
+
+    [Theory]
+    [InlineData("src/app/**/*.cs", GlobDialect.Standard, "src/app/Models/User.cs", true)]
+    [InlineData("src/app/**/*.cs", GlobDialect.Standard, "src/app/Program.cs", true)]
+    [InlineData("src/app/**/*.cs", GlobDialect.Standard, "src/Program.cs", false)]
+    [InlineData("/a/b/", GlobDialect.Git, "a/b/", true)]
+    [InlineData("/a/b/", GlobDialect.Git, "a/b/c.txt", true)]
+    [InlineData("../shared/*.cs", GlobDialect.MSBuild, "../shared/a.cs", true)]
+    public void TrySplitBasePath_RelativeGlobMatchesSamePaths(string pattern, GlobDialect dialect, string path, bool expected)
+    {
+        var glob = Glob.Parse(pattern, dialect);
+        Assert.True(glob.TrySplitBasePath(out var basePath, out var relativeGlob));
+        Assert.Equal(expected, glob.IsMatch(path));
+
+        var prefix = basePath + "/";
+        if (path.StartsWith(prefix, StringComparison.Ordinal))
+        {
+            Assert.Equal(expected, relativeGlob.IsMatch(path[prefix.Length..]));
+        }
+    }
+
+    [Fact]
+    public void EnumerateFiles_DoesNotReturnDirectories()
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("a.log");
+        directory.CreateDirectory("docs");
+        directory.CreateEmptyFile("logs/a");
+        directory.CreateEmptyFile("logs/important/b");
+
+        AssertEnumerateFiles(directory, Glob.Parse("*", GlobDialect.Posix), ["a.log", "logs/a", "logs/important/b"]);
+        AssertEnumerateFiles(directory, Glob.Parse("logs/", GlobDialect.Git), ["logs/a", "logs/important/b"]);
+        AssertEnumerateFiles(directory, Glob.Parse("*", GlobDialect.Git), ["a.log", "logs/a", "logs/important/b"]);
+
+        // The directories are still returned with the files by EnumerateFileSystemEntries
+        AssertEnumerateFileSystemEntries(directory, Glob.Parse("logs/", GlobDialect.Git), ["logs", "logs/a", "logs/important", "logs/important/b"]);
+    }
+
+    [Fact]
+    public void EnumerateFiles_GitIgnore_DoesNotReturnDirectories()
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("build/out.dll");
+        directory.CreateEmptyFile("src/build/obj.dll");
+        directory.CreateEmptyFile("q/tmp/file.txt");
+        directory.CreateEmptyFile("src/Program.cs");
+        directory.CreateDirectory("empty/tmp");
+
+        var gitIgnore = GlobCollection.ParseGitIgnore("build/\n**/tmp\n");
+        AssertEnumerateFiles(directory, gitIgnore, ["build/out.dll", "q/tmp/file.txt", "src/build/obj.dll"]);
+        AssertEnumerateFileSystemEntries(directory, gitIgnore, ["build", "build/out.dll", "empty/tmp", "q/tmp", "q/tmp/file.txt", "src/build", "src/build/obj.dll"]);
+    }
+
+    [Fact]
+    public void DocumentationExample_EnumerateFilesRelativePaths()
+    {
+        #region Glob_EnumerateFilesRelativePaths
+        using var rootDirectory = TemporaryDirectory.Create();
+        rootDirectory.CreateEmptyFile("src/App/Program.cs");
+        rootDirectory.CreateEmptyFile("src/Lib/Helper.cs");
+
+        // Return the paths relative to the enumerated directory, as the pattern matches them
+        var glob = Glob.Parse("src/**/*.cs", GlobDialect.Standard);
+        var files = glob.EnumerateFiles(rootDirectory.FullPath, GlobPathFormat.RelativePath).Order(StringComparer.Ordinal).ToList();
+
+        Assert.Equal(
+            [
+                Path.Combine("src", "App", "Program.cs"),
+                Path.Combine("src", "Lib", "Helper.cs"),
+            ],
+            files);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_EnumerateFileInfos()
+    {
+        #region Glob_EnumerateFileInfos
+        using var rootDirectory = TemporaryDirectory.Create();
+        rootDirectory.CreateTextFile("logs/app.log", "started");
+        rootDirectory.CreateTextFile("logs/error.log", "");
+
+        // The FileInfo objects are filled during the enumeration: reading Length does not access the disk again
+        var glob = Glob.Parse("logs/*.log", GlobDialect.Standard);
+        var nonEmptyFiles = glob.EnumerateFileInfos(rootDirectory.FullPath)
+            .Where(file => file.Length > 0)
+            .Select(file => file.Name)
+            .ToList();
+
+        Assert.Equal(["app.log"], nonEmptyFiles);
+        #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_EnumerateFilesParentDirectory()
+    {
+        #region Glob_EnumerateFilesParentDirectory
+        using var rootDirectory = TemporaryDirectory.Create();
+        rootDirectory.CreateEmptyFile("shared/Helper.cs");
+        rootDirectory.CreateEmptyFile("app/Program.cs");
+        var projectDirectory = Path.Combine(rootDirectory.FullPath, "app");
+
+        // The enumeration starts at the base path of the pattern, which can be outside the directory
+        var glob = Glob.Parse("../shared/*.cs", GlobDialect.MSBuild);
+        Assert.Equal([Path.Combine(rootDirectory.FullPath, "shared", "Helper.cs")], glob.EnumerateFiles(projectDirectory).ToList());
+        Assert.Equal([Path.Combine("..", "shared", "Helper.cs")], glob.EnumerateFiles(projectDirectory, GlobPathFormat.RelativePath).ToList());
+        #endregion
+    }
+
+    [Fact]
+    public void EnumerateFileSystemInfos()
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateTextFile("src/a.txt", "abc");
+        directory.CreateDirectory("src/sub");
+
+        var glob = Glob.Parse("src/*", GlobDialect.Git);
+        var items = glob.EnumerateFileSystemInfos(directory.FullPath).OrderBy(item => item.Name, StringComparer.Ordinal).ToList();
+        Assert.Collection(items,
+            item =>
+            {
+                var file = Assert.IsType<FileInfo>(item);
+                Assert.Equal(Path.Combine(directory.FullPath, "src", "a.txt"), file.FullName);
+                Assert.Equal(3, file.Length);
+            },
+            item => Assert.Equal(Path.Combine(directory.FullPath, "src", "sub"), Assert.IsType<DirectoryInfo>(item).FullName));
+
+        Assert.Equal(["a.txt"], glob.EnumerateFileInfos(directory.FullPath).Select(file => file.Name).ToList());
+    }
+
+    [Fact]
+    public void EnumerateFileSystemEntries_RelativePaths()
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("a.txt");
+        directory.CreateEmptyFile("src/b.txt");
+
+        var glob = Glob.Parse("**/*", GlobDialect.Git);
+        var items = glob.EnumerateFileSystemEntries(directory.FullPath, GlobPathFormat.RelativePath).Order(StringComparer.Ordinal).ToList();
+        Assert.Equal(["a.txt", "src", Path.Combine("src", "b.txt")], items);
+    }
+
+    [Fact]
+    public void EnumerateFiles_InvalidPathFormat()
+    {
+        var glob = Glob.Parse("*", GlobDialect.Standard);
+        Assert.Throws<ArgumentOutOfRangeException>("pathFormat", () => glob.EnumerateFiles(".", (GlobPathFormat)42));
+    }
+
+    [Fact]
+    public void EnumerateFiles_AbsolutePattern()
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("shared/a.cs");
+        directory.CreateEmptyFile("shared/sub/b.cs");
+        directory.CreateDirectory("project");
+
+        var sharedDirectory = Path.Combine(directory.FullPath, "shared").Replace('\\', '/');
+        var glob = Glob.Parse(sharedDirectory + "/**/*.cs", GlobDialect.MSBuild);
+        var files = glob.EnumerateFiles(Path.Combine(directory.FullPath, "project")).Order(StringComparer.Ordinal).ToList();
+        Assert.Equal([Path.Combine(directory.FullPath, "shared", "a.cs"), Path.Combine(directory.FullPath, "shared", "sub", "b.cs")], files);
+    }
+
+    [Fact]
+    public void EnumerateFiles_MissingBaseDirectory()
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("file");
+
+        Assert.Empty(Glob.Parse("missing/*.cs", GlobDialect.Standard).EnumerateFiles(directory.FullPath));
+        Assert.Empty(Glob.Parse("file/*.cs", GlobDialect.Standard).EnumerateFiles(directory.FullPath));
+        Assert.Empty(Glob.Parse("../missing/*.cs", GlobDialect.MSBuild).EnumerateFiles(directory.FullPath));
+
+        // Enumerating a directory that does not exist throws, as it always did
+        var missingDirectory = Path.Combine(directory.FullPath, "missing");
+        Assert.Throws<DirectoryNotFoundException>(() => Glob.Parse("src/*.cs", GlobDialect.Standard).EnumerateFiles(missingDirectory).ToList());
+        Assert.Throws<DirectoryNotFoundException>(() => Glob.Parse("*.cs", GlobDialect.Standard).EnumerateFiles(missingDirectory).ToList());
+    }
+
+    [Fact]
+    public void EnumerateFiles_BaseDirectory_KeepsMaxRecursionDepth()
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("logs/app.log");
+        directory.CreateEmptyFile("logs/2024/app.log");
+        directory.CreateEmptyFile("logs/2024/01/app.log");
+
+        var glob = Glob.Parse("logs/**/*.log", GlobDialect.Standard);
+        AssertEnumerateFiles(directory, glob, ["logs/2024/01/app.log", "logs/2024/app.log", "logs/app.log"]);
+        AssertEnumerateFiles(directory, glob, ["logs/app.log"], new EnumerationOptions { RecurseSubdirectories = true, MaxRecursionDepth = 1 });
+        AssertEnumerateFiles(directory, glob, ["logs/2024/app.log", "logs/app.log"], new EnumerationOptions { RecurseSubdirectories = true, MaxRecursionDepth = 2 });
+        AssertEnumerateFiles(directory, glob, [], new EnumerationOptions { RecurseSubdirectories = true, MaxRecursionDepth = 0 });
+        AssertEnumerateFiles(directory, glob, [], new EnumerationOptions { RecurseSubdirectories = false });
+    }
+
+    public static TheoryData<string, GlobDialect, GlobOptions> EnumerationParityData()
+    {
+        return new TheoryData<string, GlobDialect, GlobOptions>
+        {
+            { "src/*.cs", GlobDialect.Standard, GlobOptions.None },
+            { "src/**/*.cs", GlobDialect.Standard, GlobOptions.None },
+            { "src/**", GlobDialect.Standard, GlobOptions.None },
+            { "src/sub/", GlobDialect.Standard, GlobOptions.None },
+            { "src/*/", GlobDialect.Standard, GlobOptions.None },
+            { "src/sub/deep/*.cs", GlobDialect.Standard, GlobOptions.None },
+            { "src/sub/deep/d.cs", GlobDialect.Standard, GlobOptions.None },
+            { "src/.cfg/*.json", GlobDialect.Standard, GlobOptions.None },
+            { ".cfg/*.json", GlobDialect.Standard, GlobOptions.None },
+            { ".cfg/*.json", GlobDialect.Standard, GlobOptions.MatchLeadingDot },
+            { "SRC/**/*.cs", GlobDialect.Standard, GlobOptions.IgnoreCase },
+            { "docs/*.md", GlobDialect.Standard, GlobOptions.IgnoreCase },
+            { "Docs/*.md", GlobDialect.Standard, GlobOptions.None },
+            { "notadir/*", GlobDialect.Standard, GlobOptions.None },
+            { "missing/*.cs", GlobDialect.Standard, GlobOptions.None },
+            { "logs/2024/", GlobDialect.Standard, GlobOptions.None },
+            { "logs/**/*.log", GlobDialect.Standard, GlobOptions.None },
+            { "**/*.cs", GlobDialect.Standard, GlobOptions.None },
+            { @"weird \[x]/*.txt", GlobDialect.Standard, GlobOptions.None },
+            { "/src/sub/", GlobDialect.Git, GlobOptions.None },
+            { "/src/sub", GlobDialect.Git, GlobOptions.None },
+            { "logs/", GlobDialect.Git, GlobOptions.None },
+            { "/logs/2024/*.log", GlobDialect.Git, GlobOptions.None },
+            { "src/sub/deep/d.cs", GlobDialect.Git, GlobOptions.None },
+            { "/src/*.cs", GlobDialect.Git, GlobOptions.None },
+            { "/src/**", GlobDialect.Git, GlobOptions.None },
+            { "src/**/*.cs", GlobDialect.MSBuild, GlobOptions.None },
+            { @"src\sub\*.cs", GlobDialect.MSBuild, GlobOptions.None },
+            { "100%25/*.txt", GlobDialect.MSBuild, GlobOptions.None },
+            { "src/*.*", GlobDialect.MSBuild, GlobOptions.None },
+            { "src/*.cs", GlobDialect.PosixPath, GlobOptions.None },
+            { "src/sub/*", GlobDialect.PosixPath, GlobOptions.None },
+            { "src/*", GlobDialect.Posix, GlobOptions.None },
+        };
+    }
+
+    [Theory]
+    [MemberData(nameof(EnumerationParityData))]
+    public void Enumerate_ReturnsSameEntriesAsFullTraversal(string pattern, GlobDialect dialect, GlobOptions options)
+    {
+        using var directory = CreateEnumerationFixture();
+        var glob = Glob.Parse(pattern, dialect, options);
+        AssertSameEntriesAsFullTraversal(directory, glob);
+    }
+
+    [Fact]
+    public void Enumerate_GlobCollection_ReturnsSameEntriesAsFullTraversal()
+    {
+        using var directory = CreateEnumerationFixture();
+        AssertSameEntriesAsFullTraversal(directory, new GlobCollection(
+            Glob.Parse("src/**/*.cs", GlobDialect.Standard),
+            Glob.Parse("logs/*.log", GlobDialect.Standard),
+            Glob.Parse("!src/sub/deep/**", GlobDialect.Standard)));
+
+        AssertSameEntriesAsFullTraversal(directory, new GlobCollection(
+            Glob.Parse("src/**/*.cs", GlobDialect.Standard),
+            Glob.Parse("src/sub/*.cs", GlobDialect.Standard),
+            Glob.Parse("missing/*.cs", GlobDialect.Standard)));
+
+        AssertSameEntriesAsFullTraversal(directory, new GlobCollection(
+            Glob.Parse("src/*.cs", GlobDialect.Standard),
+            Glob.Parse("**/*.md", GlobDialect.Standard, GlobOptions.IgnoreCase)));
+
+        AssertSameEntriesAsFullTraversal(directory, new GlobCollection(
+            Glob.Parse("logs/**/*.log", GlobDialect.Standard),
+            new GlobCollection(Glob.Parse("src/*.txt", GlobDialect.Standard))));
+
+        AssertSameEntriesAsFullTraversal(directory, GlobCollection.ParseGitIgnore("/src/sub/\n/logs/2024/\n!/logs/2024/app.log\n/src/*.txt\n"));
+    }
+
+    [Fact]
+    public void Enumerate_GlobCollection_ParentDirectory()
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("shared/a.cs");
+        directory.CreateEmptyFile("shared/b.txt");
+        directory.CreateEmptyFile("app/Program.cs");
+        directory.CreateEmptyFile("app/src/Helper.cs");
+        var projectDirectory = Path.Combine(directory.FullPath, "app");
+
+        var globs = new GlobCollection(
+            Glob.Parse("**/*.cs", GlobDialect.MSBuild),
+            Glob.Parse("../shared/*.cs", GlobDialect.MSBuild),
+            Glob.Parse("!src/**", GlobDialect.Standard));
+
+        Assert.Equal(
+            [Path.Combine("..", "shared", "a.cs"), "Program.cs"],
+            globs.EnumerateFiles(projectDirectory, GlobPathFormat.RelativePath).Order(StringComparer.Ordinal).ToList());
+    }
+
+    [Fact]
+    public void Enumerate_GlobCollection_OverlappingBaseDirectories_ReturnsEachEntryOnce()
+    {
+        using var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("app/src/a.cs");
+        var projectDirectory = Path.Combine(directory.FullPath, "app");
+
+        // Both patterns lead to the same directory
+        var globs = new GlobCollection(
+            Glob.Parse("src/*.cs", GlobDialect.MSBuild),
+            Glob.Parse("../app/src/*.cs", GlobDialect.MSBuild));
+
+        Assert.Equal([Path.Combine(directory.FullPath, "app", "src", "a.cs")], globs.EnumerateFiles(projectDirectory).ToList());
+    }
+
+    private static TemporaryDirectory CreateEnumerationFixture()
+    {
+        var directory = TemporaryDirectory.Create();
+        directory.CreateEmptyFile("a.txt");
+        directory.CreateEmptyFile(".hidden.txt");
+        directory.CreateEmptyFile("src/a.cs");
+        directory.CreateEmptyFile("src/b.txt");
+        directory.CreateEmptyFile("src/sub/c.cs");
+        directory.CreateEmptyFile("src/sub/deep/d.cs");
+        directory.CreateEmptyFile("src/.cfg/e.json");
+        directory.CreateEmptyFile(".cfg/f.json");
+        directory.CreateEmptyFile("Docs/readme.md");
+        directory.CreateEmptyFile("logs/app.log");
+        directory.CreateEmptyFile("logs/2024/app.log");
+        directory.CreateEmptyFile("logs/2024/01/app.log");
+        directory.CreateEmptyFile("notadir");
+        directory.CreateEmptyFile("weird [x]/y.txt");
+        directory.CreateEmptyFile("100%/z.txt");
+        return directory;
+    }
+
+    private static void AssertSameEntriesAsFullTraversal(TemporaryDirectory directory, IGlobEvaluatable glob)
+    {
+        EnumerationOptions?[] optionsList =
+        [
+            null,
+            new EnumerationOptions(),
+            new EnumerationOptions { RecurseSubdirectories = true },
+            new EnumerationOptions { RecurseSubdirectories = true, MaxRecursionDepth = 1 },
+            new EnumerationOptions { RecurseSubdirectories = true, MaxRecursionDepth = 2 },
+            new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.None },
+            new EnumerationOptions { RecurseSubdirectories = true, MaxRecursionDepth = 2, AttributesToSkip = FileAttributes.None },
+        ];
+
+        foreach (var options in optionsList)
+        {
+            // The enumerator walks the whole tree from the directory, which is how EnumerateFiles used to work
+            var referenceOptions = options ?? GetDefaultEnumerationOptions(glob);
+            var expectedEntries = new List<string>();
+            using (var enumerator = new GlobFileSystemEnumerator(glob, directory.FullPath, referenceOptions))
+            {
+                while (enumerator.MoveNext())
+                {
+                    expectedEntries.Add(enumerator.Current);
+                }
+            }
+
+            expectedEntries.Sort(StringComparer.Ordinal);
+            var expectedFiles = expectedEntries.Where(path => !Directory.Exists(path)).ToList();
+            var expectedRelativeEntries = expectedEntries.Select(path => Path.GetRelativePath(directory.FullPath, path)).ToList();
+
+            var message = $"Options: {(options is null ? "default" : $"Recurse={options.RecurseSubdirectories} Depth={options.MaxRecursionDepth} Skip={options.AttributesToSkip}")}";
+            Assert.Equal(expectedEntries, glob.EnumerateFileSystemEntries(directory.FullPath, options).Order(StringComparer.Ordinal).ToList(), "EnumerateFileSystemEntries. " + message);
+            Assert.Equal(expectedFiles, glob.EnumerateFiles(directory.FullPath, options).Order(StringComparer.Ordinal).ToList(), "EnumerateFiles. " + message);
+            Assert.Equal(expectedRelativeEntries, glob.EnumerateFileSystemEntries(directory.FullPath, GlobPathFormat.RelativePath, options).Order(StringComparer.Ordinal).ToList(), "EnumerateFileSystemEntries(RelativePath). " + message);
+            Assert.Equal(expectedFiles, glob.EnumerateFileInfos(directory.FullPath, options).Select(file => file.FullName).Order(StringComparer.Ordinal).ToList(), "EnumerateFileInfos. " + message);
+            Assert.Equal(expectedEntries, glob.EnumerateFileSystemInfos(directory.FullPath, options).Select(file => file.FullName).Order(StringComparer.Ordinal).ToList(), "EnumerateFileSystemInfos. " + message);
+        }
+
+        static EnumerationOptions GetDefaultEnumerationOptions(IGlobEvaluatable glob)
+        {
+            var matchLeadingDot = glob is Glob { MatchLeadingDot: true } or GlobCollection { MatchLeadingDot: true };
+            return new EnumerationOptions
+            {
+                RecurseSubdirectories = glob.TraverseDirectories,
+                AttributesToSkip = matchLeadingDot ? FileAttributes.None : FileAttributes.Hidden | FileAttributes.System,
+            };
+        }
+    }
+
+    private static void AssertEnumerateFiles(TemporaryDirectory directory, IGlobEvaluatable glob, string[] expectedResult, EnumerationOptions? options = null)
+    {
+        var items = glob.EnumerateFiles(directory.FullPath, options)
             .AsEnumerable()
             .Select(path => FullPath.FromPath(path).MakePathRelativeTo(directory.FullPath).Replace('\\', '/'))
             .Order(StringComparer.Ordinal)

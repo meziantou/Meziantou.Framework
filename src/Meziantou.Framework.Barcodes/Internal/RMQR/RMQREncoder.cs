@@ -2,10 +2,10 @@ namespace Meziantou.Framework.Barcodes.Internal.RMQR;
 
 internal static class RMQREncoder
 {
-    public static QRCode Encode(string data, ErrorCorrectionLevel ecLevel)
+    public static QRCode Encode(string data, ErrorCorrectionLevel ecLevel, RMQRSizeConstraints constraints)
     {
         var mode = DataAnalyzer.DetermineMode(data);
-        var version = RMQRVersion.DetermineVersion(data, ecLevel, mode);
+        var version = RMQRVersion.DetermineVersion(data, ecLevel, mode, constraints);
 
         var dataCodewords = EncodeData(data, version, ecLevel, mode);
         var allCodewords = AddErrorCorrection(dataCodewords, version, ecLevel);

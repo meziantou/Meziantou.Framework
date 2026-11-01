@@ -87,9 +87,53 @@ var highPng = high.ToPng(new QRCodePngOptions { ModuleSize = 4 });
   `ArgumentOutOfRangeException`.
 - [QRCode.ErrorCorrectionLevel](cref:Meziantou.Framework.Barcodes.QRCode.ErrorCorrectionLevel) gives the level the code was built with, and [Version](cref:Meziantou.Framework.Barcodes.QRCode.Version) its version.
 
+## Choose the size of the code
+
+By default, a code has the smallest size that holds the data. To print codes of a fixed size, or to make sure a code
+fits a known space, constrain the number of modules:
+
+- [QRCodeOptions.MinimumVersion](cref:Meziantou.Framework.Barcodes.QRCodeOptions.MinimumVersion) and [QRCodeOptions.MaximumVersion](cref:Meziantou.Framework.Barcodes.QRCodeOptions.MaximumVersion) bound the version of a standard QR code (1 to 40); set both
+  to the same value for an exact version.
+- [MicroQRCodeOptions.MinimumVersion](cref:Meziantou.Framework.Barcodes.MicroQRCodeOptions.MinimumVersion) and [MicroQRCodeOptions.MaximumVersion](cref:Meziantou.Framework.Barcodes.MicroQRCodeOptions.MaximumVersion) do the same for Micro QR codes (1 to 4, M1 to M4).
+- [RMQRCodeOptions.Height](cref:Meziantou.Framework.Barcodes.RMQRCodeOptions.Height) and [RMQRCodeOptions.Width](cref:Meziantou.Framework.Barcodes.RMQRCodeOptions.Width) set the exact height (7 to 17 modules) or width (27 to 139 modules) of an
+  rMQR code, and [RMQRCodeOptions.MaximumHeight](cref:Meziantou.Framework.Barcodes.RMQRCodeOptions.MaximumHeight) and [RMQRCodeOptions.MaximumWidth](cref:Meziantou.Framework.Barcodes.RMQRCodeOptions.MaximumWidth) bound them. Among the allowed sizes, the code
+  has the one with the fewest modules.
+
+<!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/QRCodeTests.cs;region=QRCode_FixedSize;format=md-fenced-code-block;dedent=true -->
+```csharp
+// Every label gets a version 4 code (33 × 33 modules), whatever the length of its data
+var exact = new QRCodeOptions { MinimumVersion = 4, MaximumVersion = 4 };
+var shortLabel = QRCode.Create("A1", ErrorCorrectionLevel.Q, exact);
+var longLabel = QRCode.Create("https://example.com/items/1234", ErrorCorrectionLevel.Q, exact);
+Assert.Equal((33, 33), (shortLabel.Size, longLabel.Size));
+
+// A code that must fit in the space of a version 2 code: larger data throws instead of giving a larger code
+var bounded = new QRCodeOptions { MaximumVersion = 2 };
+Assert.Throws<InvalidOperationException>(() => QRCode.Create(new string('x', 100), ErrorCorrectionLevel.M, bounded));
+
+// The Micro QR version, and the rMQR height and width, in modules
+var microQr = QRCode.CreateMicroQR("12345", ErrorCorrectionLevel.L, new MicroQRCodeOptions { MinimumVersion = 3, MaximumVersion = 3 });
+var rmqr = QRCode.CreateRMQR("12345", ErrorCorrectionLevel.M, new RMQRCodeOptions { MaximumHeight = 7 });
+Assert.Equal((15, 15), (microQr.Width, microQr.Height));
+Assert.Equal((43, 7), (rmqr.Width, rmqr.Height));
+
+// The size of the image is set by the renderer: 33 modules of 10 pixels, plus a quiet zone of 4 modules on each side
+var png = shortLabel.ToPng(new QRCodePngOptions { ModuleSize = 10 });
+```
+<!-- endref -->
+
+- Data that does not fit in the largest allowed size throws an `InvalidOperationException`: the code is never larger
+  than requested. Data smaller than the capacity of the size is padded.
+- Constraints that no size satisfies throw an `ArgumentException`: a minimum version greater than the maximum one, an
+  rMQR height and width that do not make a size (such as 7 × 27), or Micro QR versions that do not support the error
+  correction level (M1 has no error correction, only M4 supports [Q](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.Q)).
+- These options set the number of modules. The size of the image is set by the renderer: its module size gives the
+  pixels (or SVG units) of a module, and the quiet zone adds a margin. Scaling the image does not change the version, so
+  it does not change how much data the code holds.
+
 ## How the data is encoded
 
-The whole text is encoded in one mode, the most compact one that can hold all its characters:
+A QR code stores text in modes that take more or fewer bits per character:
 
 - Digits only take the fewest bits.
 - Uppercase letters, digits, the space and `$%*+-./:` (the alphanumeric mode) take fewer bits than other characters.
@@ -97,7 +141,14 @@ The whole text is encoded in one mode, the most compact one that can hold all it
   the kanji mode. Only the characters of JIS X 0208 that every reader decodes to the same character qualify: the few
   codes that the Shift JIS tables of readers disagree on (`¢`, `£`, `¬`, `―`, `\`, `〜`, `‖`, `−` and their fullwidth
   forms) and the vendor extensions, such as `①`, are encoded as UTF-8.
-- Any other text is encoded as UTF-8. [Create](cref:Meziantou.Framework.Barcodes.QRCode.Create) also takes bytes, encoded as they are.
+- Any other text is encoded as UTF-8 in the byte mode. [Create](cref:Meziantou.Framework.Barcodes.QRCode.Create) also takes bytes, encoded as they are.
+
+[Create](cref:Meziantou.Framework.Barcodes.QRCode.Create) encodes a text in the most compact mode that can hold all its characters, or splits it into
+segments of different modes when that gives a smaller code, such as a long number after a few lowercase letters. Each
+segment has a header of a few bits, so short runs stay in the mode of their neighbors. Without an ECI designator (see
+below), readers guess the encoding of each byte-mode segment, so a text with non-ASCII characters other than kanji and
+kana is not split: it stays in one byte-mode segment. Micro QR codes and rMQR codes always encode the whole text in one
+mode.
 
 <!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/QRCodeTests.cs;region=QRCode_EncodingModes;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -111,6 +162,11 @@ Assert.Equal(1, QRCode.Create("0123456789012345678901234567890123").Version);
 // Any other text is encoded as UTF-8, and binary data as it is
 Assert.Equal(1, QRCode.Create("Caf\u00E9").Version);
 Assert.Equal(1, QRCode.Create([0x00, 0x01, 0xFE, 0xFF]).Version);
+
+// A text that mixes kinds of characters is split into segments of different modes when it gives a smaller code:
+// the lowercase letters in byte mode, the order number in numeric mode
+Assert.Equal(1, QRCode.Create("order 1234567890123456").Version);
+Assert.Equal(2, QRCode.Create(Encoding.UTF8.GetBytes("order 1234567890123456")).Version);
 ```
 <!-- endref -->
 
@@ -118,6 +174,32 @@ The scheme and the host name of a URL are not case-sensitive, so an uppercase UR
 path of the site accepts uppercase too.
 
 Data too long for the largest version throws an `InvalidOperationException`; empty data throws an `ArgumentException`.
+
+## Declare the encoding with ECI
+
+By default, the byte mode holds UTF-8 with nothing that says so, and readers guess the encoding. Most guess UTF-8
+right, but a few bytes can look like another encoding: a reader can show `¢` as `瞽`. An ECI (Extended Channel
+Interpretation) designator declares the encoding. Set [QRCodeOptions.EciAssignmentNumber](cref:Meziantou.Framework.Barcodes.QRCodeOptions.EciAssignmentNumber) to
+[QRCodeOptions.Utf8EciAssignmentNumber](cref:Meziantou.Framework.Barcodes.QRCodeOptions.Utf8EciAssignmentNumber) (26) to declare a text as UTF-8, or to any assignment number for bytes you encoded yourself:
+
+<!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/QRCodeTests.cs;region=QRCode_Eci;format=md-fenced-code-block;dedent=true -->
+```csharp
+// Declare the text as UTF-8 (ECI assignment number 26), so that readers do not guess its encoding
+var options = new QRCodeOptions { EciAssignmentNumber = QRCodeOptions.Utf8EciAssignmentNumber };
+var qrCode = QRCode.Create("Caf\u00E9 cr\u00E8me", ErrorCorrectionLevel.M, options);
+
+// Binary data can declare any encoding, such as ISO-8859-1 (ECI assignment number 3)
+var latin1 = QRCode.Create([0x63, 0x61, 0x66, 0xE9], ErrorCorrectionLevel.M, new QRCodeOptions { EciAssignmentNumber = 3 });
+```
+<!-- endref -->
+
+- ECI is opt-in, so the codes created without options do not change. Most current readers support it; very old ones
+  can show the designator as text or fail to read the code.
+- The designator takes 12 to 28 bits, which can give a larger code. A text with an ECI designator is never encoded in
+  the kanji mode, and it is split into segments whatever its characters.
+- A text accepts only the assignment number 26, since it is encoded as UTF-8: another one throws an
+  `ArgumentException`. Encode the text yourself and pass the bytes to declare another encoding.
+- Micro QR codes cannot hold an ECI designator, and [CreateRMQR](cref:Meziantou.Framework.Barcodes.QRCode.CreateRMQR) does not write one.
 
 ## Read the modules
 

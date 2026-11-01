@@ -62,6 +62,10 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
 
     internal override async Task<string> PrepareImageAsync(ContainerDefinition definition, CancellationToken cancellationToken)
     {
+        // 'wslc create' has no '--platform' option, so the variant the container runs could not be chosen.
+        if (_flavor is Flavor.Wslc && definition.Platform is not null)
+            throw new NotSupportedException($"The 'wslc' runtime does not support '{nameof(ContainerDefinition)}.{nameof(ContainerDefinition.Platform)}'.");
+
         var logger = definition.Logging.Logger;
         switch (definition.Image)
         {
@@ -71,31 +75,21 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
 
                 // wslc pulls a missing image when it creates the container.
                 if (definition.PullPolicy is PullPolicy.Always)
-                    await PullImageAsync(["pull", registry.Name], registry.Name, logger, cancellationToken).ConfigureAwait(false);
+                    await PullImageAsync(BuildPullArguments(registry.Name, definition.Platform), registry.Name, logger, cancellationToken).ConfigureAwait(false);
 
                 return registry.Name;
 
             case RegistryImage registry:
                 // The image is pulled here, where a transient registry failure is retried, rather than by the create
                 // command, which then never pulls.
-                await EnsureRegistryImageAsync(["image", "inspect", registry.Name], ["pull", registry.Name], registry.Name, definition.PullPolicy, logger, cancellationToken).ConfigureAwait(false);
+                await EnsureRegistryImageAsync(["image", "inspect", registry.Name], BuildPullArguments(registry.Name, definition.Platform), registry.Name, definition.PullPolicy, logger, cancellationToken).ConfigureAwait(false);
                 return registry.Name;
 
             case DockerfileImage dockerfile:
-                var tag = ResourceNaming.BuiltImagePrefix + Guid.NewGuid().ToString("N") + ":latest";
-                var args = new List<string> { "build", "-t", tag, "-f", dockerfile.DockerfilePath };
-                if (SupportsImageCleanup)
-                {
-                    // The labels are what the cleanup and the reaper find a built image by.
-                    foreach (var (name, value) in ResourceLabels.BuildForImage(definition))
-                    {
-                        args.Add("--label");
-                        args.Add($"{name}={value}");
-                    }
-                }
-
-                args.Add(dockerfile.ContextDirectory);
-                await Cli.RunBufferedAsync(args, cancellationToken).ConfigureAwait(false);
+                // The labels are what the cleanup and the reaper find a built image by.
+                var tag = ImageBuild.GetTag(dockerfile);
+                var args = ImageBuild.BuildCliArguments(definition, dockerfile, tag, includeLibraryLabels: SupportsImageCleanup);
+                await Cli.RunBufferedAsync(args, cancellationToken, onOutput: ImageBuild.CreateOutputCallback(definition, dockerfile)).ConfigureAwait(false);
                 return tag;
 
             case ArchiveImage archive:
@@ -110,6 +104,9 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
                 throw new NotSupportedException($"Image source '{definition.Image.GetType()}' is not supported.");
         }
     }
+
+    internal static IReadOnlyList<string> BuildPullArguments(string imageName, string? platform)
+        => platform is null ? ["pull", imageName] : ["pull", "--platform", platform, imageName];
 
     internal override async Task<string?> FindReusableContainerAsync(string reuseId, CancellationToken cancellationToken)
     {
@@ -151,9 +148,11 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
 
     internal override IReadOnlyList<string> BuildCreateArguments(ContainerDefinition definition, string imageRef, EnvironmentFile? environmentFile = null)
     {
-        // The image is already there: PrepareImageAsync pulled it when it had to.
+        // The image is already there: PrepareImageAsync pulled it when it had to. With a platform, it may be there for
+        // another platform only, which 'image inspect' does not tell, so the create command pulls the missing variant.
         var pullPolicyValue = _flavor is Flavor.Wslc ? null : definition.Image switch
         {
+            RegistryImage when definition.Platform is not null && definition.PullPolicy is not PullPolicy.Never => "missing",
             RegistryImage or ExistingImage => "never",
             _ => null,
         };

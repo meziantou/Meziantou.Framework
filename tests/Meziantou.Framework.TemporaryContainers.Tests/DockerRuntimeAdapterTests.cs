@@ -44,6 +44,14 @@ public sealed class DockerRuntimeAdapterTests
     }
 
     [Fact]
+    public void FormatCommand_RedactsBuildArgumentValues()
+    {
+        var command = ContainerCli.FormatCommand("docker", ["build", "--build-arg", "NUGET_TOKEN=hunter2", "."]);
+
+        Assert.Equal("docker build --build-arg NUGET_TOKEN=*** .", command);
+    }
+
+    [Fact]
     public void FormatCommand_RedactsVolumeDriverOptionValues()
     {
         var command = ContainerCli.FormatCommand("docker", ["volume", "create", "--opt", "password=hunter2", "-o", "o=addr=10.0.0.1", "data"]);
@@ -80,6 +88,15 @@ public sealed class DockerRuntimeAdapterTests
 
         Assert.False(runtime.SupportsLogsSelection);
         Assert.Equal("logs --timestamps abc", string.Join(' ', runtime.BuildLogsArguments("abc", new ContainerLogsOptions { Follow = false, Since = DateTimeOffset.UnixEpoch, Tail = 1 })));
+    }
+
+    [Fact]
+    public async Task PrepareImageAsyncRefusesAPlatformOnWslc()
+    {
+        var runtime = Assert.IsAssignableTo<DockerContainerRuntime>(ContainerRuntime.Wslc);
+        var definition = new ContainerDefinition("busybox:1.37") { Platform = "linux/arm64" };
+
+        await Assert.ThrowsAsync<NotSupportedException>(() => runtime.PrepareImageAsync(definition, XunitCancellationToken));
     }
 
     [Fact]

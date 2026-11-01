@@ -2,10 +2,10 @@ namespace Meziantou.Framework.Barcodes.Internal.MicroQR;
 
 internal static class MicroQREncoder
 {
-    public static QRCode Encode(string data, ErrorCorrectionLevel ecLevel)
+    public static QRCode Encode(string data, ErrorCorrectionLevel ecLevel, int minVersion, int maxVersion)
     {
         var mode = DataAnalyzer.DetermineMode(data);
-        var version = MicroQRVersion.DetermineVersion(data, ecLevel, mode);
+        var version = MicroQRVersion.DetermineVersion(data, ecLevel, mode, minVersion, maxVersion);
         var effectiveECLevel = MicroQRVersion.ResolveECLevel(version, ecLevel);
 
         var dataCodewords = EncodeData(data, version, effectiveECLevel, mode);

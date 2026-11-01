@@ -16,7 +16,9 @@ internal static class DataAnalyzer
         return Encoding.GetEncoding("shift_jis", new EncoderReplacementFallback(""), new DecoderReplacementFallback(""));
     }
 
-    public static EncodingMode DetermineMode(string data)
+    public static EncodingMode DetermineMode(string data) => DetermineMode(data, allowKanji: true);
+
+    public static EncodingMode DetermineMode(string data, bool allowKanji)
     {
         if (IsNumeric(data))
         {
@@ -28,7 +30,7 @@ internal static class DataAnalyzer
             return EncodingMode.Alphanumeric;
         }
 
-        if (IsKanji(data))
+        if (allowKanji && IsKanji(data))
         {
             return EncodingMode.Kanji;
         }
@@ -44,30 +46,33 @@ internal static class DataAnalyzer
         return EncodingMode.Byte;
     }
 
-    public static int DetermineVersion(string data, ErrorCorrectionLevel ecLevel, EncodingMode mode)
+    /// <summary>
+    /// Gets the smallest standard QR version that holds bytes in one byte-mode segment, after a header of
+    /// <paramref name="headerBitCount"/> bits (an ECI designator).
+    /// </summary>
+    public static int DetermineVersion(int byteCount, ErrorCorrectionLevel ecLevel, int minVersion, int maxVersion, int headerBitCount)
     {
-        var charCount = mode switch
+        for (var version = minVersion; version <= maxVersion; version++)
         {
-            EncodingMode.Byte => Encoding.UTF8.GetByteCount(data),
-            EncodingMode.Kanji => data.Length,
-            _ => data.Length,
-        };
-
-        return DetermineVersion(charCount, ecLevel, mode);
-    }
-
-    public static int DetermineVersion(int dataLength, ErrorCorrectionLevel ecLevel, EncodingMode mode)
-    {
-        for (var version = 1; version <= 40; version++)
-        {
-            var capacity = QRCodeVersion.GetCharacterCapacity(version, ecLevel, mode);
-            if (capacity >= dataLength)
+            var countBits = QRCodeVersion.GetCharacterCountBits(version, EncodingMode.Byte);
+            var bitCount = headerBitCount + 4 + countBits + (byteCount * 8L);
+            if (byteCount < (1 << countBits) && bitCount <= QRCodeVersion.GetDataCodewords(version, ecLevel) * 8)
             {
                 return version;
             }
         }
 
-        throw new InvalidOperationException("The data is too long to be encoded in a QR code.");
+        throw CreateDataTooLongException(minVersion, maxVersion);
+    }
+
+    public static InvalidOperationException CreateDataTooLongException(int minVersion, int maxVersion)
+    {
+        return (minVersion, maxVersion) switch
+        {
+            (1, 40) => new InvalidOperationException("The data is too long to be encoded in a QR code."),
+            _ when minVersion == maxVersion => new InvalidOperationException($"The data is too long to be encoded in a QR code of version {maxVersion}."),
+            _ => new InvalidOperationException($"The data is too long to be encoded in a QR code of version {minVersion} to {maxVersion}."),
+        };
     }
 
     public static int GetAlphanumericValue(char c)
@@ -98,13 +103,33 @@ internal static class DataAnalyzer
     {
         foreach (var c in data)
         {
-            if (!AlphanumericChars.Contains(c, StringComparison.Ordinal))
+            if (!IsAlphanumeric(c))
             {
                 return false;
             }
         }
 
         return data.Length > 0;
+    }
+
+    public static bool IsAlphanumeric(char c) => AlphanumericChars.Contains(c, StringComparison.Ordinal);
+
+    /// <summary>
+    /// Checks if a text without an ECI designator can be split into segments: its byte segments hold UTF-8 that readers
+    /// decode by guessing the encoding of each segment, and a short UTF-8 segment can be guessed as another encoding
+    /// (zbarimg reads "Café " as EUC-JP). The segments are safe when the text only has ASCII and Kanji characters.
+    /// </summary>
+    public static bool CanSegmentWithoutEci(string data)
+    {
+        foreach (var c in data)
+        {
+            if (!char.IsAscii(c) && !IsKanji(c))
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /// <summary>

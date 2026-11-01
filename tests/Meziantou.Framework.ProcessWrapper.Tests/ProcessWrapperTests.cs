@@ -2408,9 +2408,10 @@ public class ProcessWrapperTests
         {
             try
             {
-                if (File.Exists(path))
+                // The shell creates the file when it opens the redirection, before the command writes to it
+                if (File.Exists(path) && await File.ReadAllTextAsync(path) is { Length: > 0 } text)
                 {
-                    return await File.ReadAllTextAsync(path);
+                    return text;
                 }
             }
             catch (IOException)
@@ -2420,7 +2421,7 @@ public class ProcessWrapperTests
             await Task.Delay(50);
         }
 
-        throw new TimeoutException($"The file '{path}' was not created.");
+        throw new TimeoutException($"The file '{path}' was not written.");
     }
 #endif
 

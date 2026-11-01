@@ -15,6 +15,7 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
     private readonly Lock _syncObject = new();
     private ContainerCli? _cli;
     private volatile string? _probeOutput;
+    private volatile string? _unavailableReason;
     private Task<string?>? _probe;
 
     /// <param name="executablePath">When set, the CLI to run instead of looking <see cref="ExecutableName"/> up in the PATH.</param>
@@ -47,13 +48,18 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
     public override async Task<bool> IsSupportedAsync(CancellationToken cancellationToken = default)
     {
         if (EnsureCliInitialized() is not { } cli)
+        {
+            _unavailableReason = $"'{ExecutableName}' was not found in the PATH.";
             return false;
+        }
 
         return await GetProbeOutputAsync(cli, cancellationToken).ConfigureAwait(false) is not null;
     }
 
     /// <summary>Arguments of a cheap command that succeeds only when the daemon behind the CLI answers.</summary>
     internal abstract IReadOnlyList<string> BuildProbeArguments();
+
+    internal override string? UnavailableReason => _unavailableReason;
 
     /// <summary>The standard output of the probe that succeeded, which some runtimes use to learn about their daemon. <see langword="null"/> until the runtime is known to be operational.</summary>
     private protected string? ProbeOutput => _probeOutput;
@@ -117,16 +123,43 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
         {
             var result = await cli.RunBufferedAsync(BuildProbeArguments(), cancellationTokenSource.Token, allowNonZero: true).ConfigureAwait(false);
             if (result.ExitCode != 0)
+            {
+                _unavailableReason = DescribeProbeFailure($"exited with code {result.ExitCode.ToString(CultureInfo.InvariantCulture)}", result.StandardError, result.StandardOutput);
                 return null;
+            }
 
+            _unavailableReason = null;
             _probeOutput = result.StandardOutput;
             return result.StandardOutput;
         }
-        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or IOException or OperationCanceledException)
+        catch (OperationCanceledException)
         {
-            // The probe is a diagnostic: whatever prevents it from completing, including the timeout, means the runtime cannot be used.
+            // A runtime that boots on demand (wslc starts a virtual machine) can hang instead of failing, which is worth telling apart.
+            _unavailableReason = DescribeProbeFailure($"did not complete within {ProbeTimeout.TotalSeconds.ToString(CultureInfo.InvariantCulture)} seconds", standardError: null, standardOutput: null);
             return null;
         }
+        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or IOException)
+        {
+            // The probe is a diagnostic: whatever prevents it from completing means the runtime cannot be used.
+            _unavailableReason = DescribeProbeFailure("could not be started: " + ex.Message, standardError: null, standardOutput: null);
+            return null;
+        }
+    }
+
+    private string DescribeProbeFailure(string outcome, string? standardError, string? standardOutput)
+    {
+        // The runtimes do not consistently use the standard error, so the standard output is the clue left when it is empty.
+        var details = !string.IsNullOrWhiteSpace(standardError) ? standardError : standardOutput;
+        var message = $"The command '{ExecutableName} {string.Join(' ', BuildProbeArguments())}' {outcome}.";
+        if (string.IsNullOrWhiteSpace(details))
+            return message;
+
+        const int MaxDetailsLength = 1000;
+        details = details.Trim();
+        if (details.Length > MaxDetailsLength)
+            details = string.Concat(details.AsSpan(0, MaxDetailsLength), "...");
+
+        return message + " Output: " + details;
     }
 
     /// <summary>Tells a command that failed because its target is missing from one that failed because the daemon did not answer: the probe only succeeds in the first case.</summary>

@@ -77,6 +77,38 @@ internal sealed class SegmentedBitStorage
         return (Volatile.Read(ref wordRef) & (1UL << (int)bitIndex)) != 0;
     }
 
+    /// <summary>
+    /// Sets in this storage every bit that is set in <paramref name="other"/>, which must have the same bit count.
+    /// </summary>
+    public void UnionWith(SegmentedBitStorage other)
+    {
+        Debug.Assert(other.BitCount == BitCount);
+        UnionWith(_segments, other._segments);
+    }
+
+    // Takes the segments rather than the storage so that tests can cover several segments without allocating 8 GiB.
+    internal static void UnionWith(ulong[][] destination, ulong[][] source)
+    {
+        Debug.Assert(destination.Length == source.Length);
+        for (var segmentIndex = 0; segmentIndex < destination.Length; segmentIndex++)
+        {
+            var destinationSegment = destination[segmentIndex].AsSpan();
+            var sourceSegment = source[segmentIndex].AsSpan(0, destinationSegment.Length);
+            for (var index = 0; index < destinationSegment.Length; index++)
+            {
+                var sourceWord = Volatile.Read(ref sourceSegment[index]);
+                ref var destinationWord = ref destinationSegment[index];
+
+                // Skipping the words that would not change avoids an atomic operation, and a cache line write, for most
+                // words of a filter that already contains most of the source.
+                if ((sourceWord & ~Volatile.Read(ref destinationWord)) != 0)
+                {
+                    Interlocked.Or(ref destinationWord, sourceWord);
+                }
+            }
+        }
+    }
+
     [Conditional("DEBUG")]
     private void ValidateBitIndex(long bitIndex)
     {

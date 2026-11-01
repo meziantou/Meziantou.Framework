@@ -68,3 +68,27 @@ runs:
 
         Write-Host "Found wslc: $wslc"
         Add-Content -LiteralPath $env:GITHUB_PATH -Value (Split-Path -Parent $wslc)
+        "WSLC_PATH=$wslc" | Add-Content -LiteralPath $env:GITHUB_ENV
+
+    - name: Keep the wslc virtual machine running
+      shell: pwsh
+      run: |
+        # wslc stops its virtual machine about 30 seconds after the last container is gone, and boots it again on the
+        # next command. The tests run once per target framework, so the second run has to boot it again, and on the CI
+        # agents that second boot sometimes hangs: every 'wslc' command then times out for minutes. A container that
+        # runs for the whole job keeps the machine up, so it boots once, here, before the tests start.
+        if (-not $env:WSLC_PATH) {
+          Write-Host "wslc.exe was not found; the Wslc tests report it."
+          exit 0
+        }
+
+        $stopwatch = [System.Diagnostics.Stopwatch]::StartNew()
+        & $env:WSLC_PATH run -d --name meziantou-ci-wslc-keepalive busybox:1.37 sleep 86400
+        $exitCode = $LASTEXITCODE
+        Write-Host "Started the keep-alive container in $([int]$stopwatch.Elapsed.TotalSeconds) second(s) (exit code $exitCode)"
+        if ($exitCode -ne 0) {
+          # The tests still run without it and report a wslc that does not answer, so this is only a warning
+          Write-Host "::warning::Could not start the wslc keep-alive container (exit code $exitCode)"
+        }
+
+        exit 0

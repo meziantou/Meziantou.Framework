@@ -25,8 +25,9 @@ of a URL already seen.
 - **Remove values and count them** with [CountingBloomFilter](cref:Meziantou.Framework.BloomFilters.CountingBloomFilter). See
   [Counting Bloom filters](05-CountingBloomFilters.md).
 - **Choose the hash algorithm.** See [Hash algorithms](06-HashAlgorithms.md).
+- **Merge filters** built separately into one. See [Combining filters](07-CombiningFilters.md).
 - **Save a filter and load it** after a restart or in another process. See
-  [Saving and loading filters](07-SavingAndLoading.md).
+  [Saving and loading filters](08-SavingAndLoading.md).
 
 ## Namespace
 

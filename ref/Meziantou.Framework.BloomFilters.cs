@@ -20,6 +20,7 @@ namespace Meziantou.Framework.BloomFilters
         public static System.Threading.Tasks.Task<TFilter> LoadAsync<TFilter>(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = default) where TFilter : Meziantou.Framework.BloomFilters.BloomFilter => throw null;
         public void Save(System.IO.Stream stream) { }
         public System.Threading.Tasks.Task SaveAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public void UnionWith(Meziantou.Framework.BloomFilters.BloomFilter other) { }
     }
 
     public sealed class BloomFilterAdler32 : Meziantou.Framework.BloomFilters.BloomFilter, Meziantou.Framework.BloomFilters.IBloomFilter

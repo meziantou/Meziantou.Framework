@@ -62,6 +62,9 @@ jobs:
     if: github.event_name != 'schedule'
     runs-on: ubuntu-26.04
     timeout-minutes: 60
+    env:
+      # This job only compiles the .NET code, so the npm packages of the projects are not needed
+      EnableDefaultNpmPackageFile: false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:

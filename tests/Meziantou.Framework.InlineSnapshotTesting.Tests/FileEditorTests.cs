@@ -291,9 +291,7 @@ public sealed class FileEditorTests
 
     private sealed class GenericType<T> : IDisposable
     {
-        public static void Method(T value, int count)
-        {
-        }
+        public static string Method(T value, int count) => $"{value}{count}";
 
         void IDisposable.Dispose()
         {

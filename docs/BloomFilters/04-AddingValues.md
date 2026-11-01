@@ -26,20 +26,53 @@ Assert.True(filter.MayContain(42));
 Assert.True(filter.MayContain("alice@example.com"u8));
 Assert.True(filter.MayContain(2L));
 
-// The type is part of the value: 42 as an int and 42 as a long are different values,
-// like a string and its UTF-8 bytes
+// A value is identified by its bytes, not by its type. 42 as an int (4 bytes) and as a long (8 bytes)
+// are different values, but 42 as an int and as a uint have the same bytes, so they are the same value
 Assert.False(filter.MayContain(42L));
+Assert.True(filter.MayContain(42u));
+
+// A string is hashed from its UTF-16 characters, so it is a different value from its UTF-8 bytes
 Assert.False(filter.MayContain("alice@example.com"));
 ```
 <!-- endref -->
 
-A value is hashed from its bytes, so its type is part of it:
+A value is hashed from its bytes, not from its type. Two values with the same bytes are the same value, and two
+values with different bytes are different values:
 
 - `42` as an `int` (4 bytes) and `42` as a `long` (8 bytes) are different values. Use the same type to add a value and
   to test it, especially with integer literals.
-- A `string` is hashed from its UTF-16 characters, so it is a different value from its UTF-8 bytes.
+- Signed and unsigned integers of the same size are the same value when their bytes match: `42` and `42u`, or `-1`
+  and `uint.MaxValue`. In a [counting Bloom filter](05-CountingBloomFilters.md), removing one removes the other.
+- A number is hashed from its bytes in the byte order of the machine, so `42` and `BitConverter.GetBytes(42)` are
+  the same value. A filter that hashes numbers gives different results on a big-endian machine.
+- A `string` is hashed from its UTF-16 characters in the byte order of the machine: it is the same value as these
+  bytes, and a different value from its UTF-8 bytes.
 - The comparison is ordinal: `"Alice"` and `"alice"` are different values. Normalize the values (case, Unicode form,
   whitespace) before adding and testing them when they should match.
+
+When values of different kinds share a filter, for instance user ids and order ids, add a prefix that identifies the
+kind. Write numbers with an explicit byte order when the filter is shared between machines:
+
+<!-- ref:../../tests/Meziantou.Framework.BloomFilters.Tests/BloomFilterTests.cs;region=BloomFilter_KeyPrefix;format=md-fenced-code-block;dedent=true -->
+```csharp
+var filter = BloomFilter.CreateXXHash128(BloomFilterSize.CreateOptimalSize(expectedItemCount: 1000, falsePositiveProbability: 0.01));
+
+// Prefix the value with its kind, and write numbers with an explicit byte order,
+// so user 42 and order 42 are different values on every machine
+filter.Add(CreateKey(kind: 1, id: 42)); // user 42
+
+Assert.True(filter.MayContain(CreateKey(kind: 1, id: 42)));
+Assert.False(filter.MayContain(CreateKey(kind: 2, id: 42))); // order 42
+
+static byte[] CreateKey(byte kind, int id)
+{
+    var key = new byte[5];
+    key[0] = kind;
+    System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(key.AsSpan(1), id);
+    return key;
+}
+```
+<!-- endref -->
 
 ## Add many values
 

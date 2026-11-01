@@ -15,6 +15,9 @@ public sealed class DockerContainerTests() : ContainerRuntimeTestsBase(Container
     public Task PauseAndUnpause() => AssertPauseUnpauseAsync();
 
     [Fact]
+    public Task WaitForHealthcheck_WaitsUntilTheContainerIsHealthy() => AssertWaitForHealthcheckAsync();
+
+    [Fact]
     public Task StartAsync_ContainerExitsBeforeTheReadyMessage_ReportsWhatTheContainerPrinted() => AssertStartFailureReportsContainerOutputAsync();
 
     [Fact]

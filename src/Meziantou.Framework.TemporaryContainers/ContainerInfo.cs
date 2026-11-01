@@ -27,6 +27,12 @@ public sealed record ContainerInfo
     /// <summary>Gets the exit code of the container, when it has exited.</summary>
     public int? ExitCode { get; init; }
 
+    /// <summary>Gets the status of the health check of the container (the <c>HEALTHCHECK</c> instruction of its image), or <see cref="ContainerHealthStatus.None"/> when it has none or the runtime does not report it.</summary>
+    public ContainerHealthStatus Health { get; init; }
+
+    /// <summary>The output of the last health check, which explains why a container is unhealthy.</summary>
+    internal string? HealthCheckOutput { get; init; }
+
     /// <summary>Gets the container IP address on its primary network, when available.</summary>
     public string? IPAddress { get; init; }
 

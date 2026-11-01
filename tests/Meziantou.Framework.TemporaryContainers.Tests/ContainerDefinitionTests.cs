@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using System.Runtime.CompilerServices;
 using Meziantou.Framework.TemporaryContainers.Internals;
-using Meziantou.Framework.TemporaryContainers.Strategies;
 using Microsoft.Extensions.Logging;
 
 namespace Meziantou.Framework.TemporaryContainers.Tests;
@@ -815,7 +814,10 @@ public sealed class ContainerDefinitionTests
     {
         Assert.Equal("port 8080", Wait.ForPort(8080).ToString());
         Assert.Equal("log message 'READY' (2 occurrence(s))", Wait.ForLogMessage("READY", occurrences: 2).ToString());
-        Assert.Equal("command 'pg_isready --host 127.0.0.1'", new CommandWaitStrategy(["pg_isready", "--host", "127.0.0.1"]).ToString());
+        Assert.Equal("command 'pg_isready --host 127.0.0.1'", Wait.ForCommand("pg_isready", "--host", "127.0.0.1").ToString());
+        Assert.Equal("HTTPS HEAD /health on port 8443", Wait.ForHttp(8443, "/health", options => { options.UseHttps = true; options.Method = HttpMethod.Head; }).ToString());
+        Assert.Equal("healthcheck", Wait.ForHealthcheck().ToString());
+        Assert.Equal("any of (healthcheck, port 8080)", Wait.ForAny(Wait.ForHealthcheck(), Wait.ForPort(8080)).ToString());
     }
 
     private sealed class ThrowingWaitStrategy(Exception exception) : IWaitStrategy

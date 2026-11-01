@@ -1,3 +1,4 @@
+using System.Net;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
 
@@ -322,8 +323,43 @@ public static class DocumentationExamples
         definition.WaitStrategies.Add(Wait.ForLogMessage("Now listening on")); // a log line contains the text
         definition.WaitStrategies.Add(Wait.ForLogMessage(new Regex(@"ready in \d+ ms", RegexOptions.None, TimeSpan.FromSeconds(1)), occurrences: 2));
         definition.WaitStrategies.Add(Wait.ForPort(8080)); // a TCP connection succeeds on the published port
+        definition.WaitStrategies.Add(Wait.ForHttp(8080, "/health")); // an HTTP request gets a 2xx status code
+        definition.WaitStrategies.Add(Wait.ForCommand("pg_isready", "--host", "127.0.0.1")); // a command run in the container exits with code 0
+        definition.WaitStrategies.Add(Wait.ForHealthcheck()); // the HEALTHCHECK of the image reports healthy
         definition.WaitStrategies.Add(Wait.ForDelay(TimeSpan.FromSeconds(1)));
         definition.StartupTimeout = TimeSpan.FromMinutes(2); // 5 minutes by default
+        #endregion
+    }
+
+    public static void HttpWaitStrategy(ContainerDefinition definition)
+    {
+        #region TemporaryContainers_HttpWaitStrategy
+        definition.Ports.Add(8443);
+        definition.WaitStrategies.Add(Wait.ForHttp(8443, "/api/status", options =>
+        {
+            options.UseHttps = true;
+            options.ValidateServerCertificate = false; // the container serves a self-signed certificate
+            options.Method = HttpMethod.Get;
+            options.StatusCodes.Add(HttpStatusCode.OK);
+            options.StatusCodes.Add(HttpStatusCode.Unauthorized); // the service answers, even without credentials
+            options.ResponseBodyPredicate = body => !body.Contains("\"starting\"", StringComparison.Ordinal);
+            options.PollInterval = TimeSpan.FromMilliseconds(500);
+        }));
+        #endregion
+    }
+
+    public static void ComposeWaitStrategies(ContainerDefinition definition)
+    {
+        #region TemporaryContainers_ComposeWaitStrategies
+        // Both must complete; they run at the same time
+        definition.WaitStrategies.Add(Wait.ForAll(
+            Wait.ForLogMessage("Now listening on"),
+            Wait.ForPort(8080)));
+
+        // The first one that completes is enough: images with a HEALTHCHECK, and the others
+        definition.WaitStrategies.Add(Wait.ForAny(
+            Wait.ForHealthcheck(),
+            Wait.ForHttp(8080, "/health")).WithTimeout(TimeSpan.FromSeconds(30)));
         #endregion
     }
 

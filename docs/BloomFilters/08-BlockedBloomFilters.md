@@ -82,5 +82,6 @@ values added, like on a classic filter.
 ## Limitations
 
 - There is no `AddRange`: add the values one at a time.
+- There is no [UnionWith](cref:Meziantou.Framework.BloomFilters.BloomFilter.UnionWith): blocked filters cannot be [combined](07-CombiningFilters.md).
 - The memory of a blocked filter is pinned, so that its blocks stay aligned on cache lines. It is allocated in segments
   of 1 GiB at most.

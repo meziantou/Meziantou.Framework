@@ -78,7 +78,7 @@ public sealed class BloomFilterTests
         #region BloomFilter_Size
         // The size for 1 million items and a 1% false positive probability
         var size = BloomFilterSize.CreateOptimalSize(expectedItemCount: 1_000_000, falsePositiveProbability: 0.01);
-        Assert.Equal(9_585_059, size.BitCount); // about 1.2 MB of memory
+        Assert.Equal(9_592_955, size.BitCount); // about 1.2 MB of memory
         Assert.Equal(7, size.HashCount);
 
         // Or choose the number of bits and of hash functions yourself
@@ -108,12 +108,78 @@ public sealed class BloomFilterTests
         Assert.True(filter.MayContain("alice@example.com"u8));
         Assert.True(filter.MayContain(2L));
 
-        // The type is part of the value: 42 as an int and 42 as a long are different values,
-        // like a string and its UTF-8 bytes
+        // A value is identified by its bytes, not by its type. 42 as an int (4 bytes) and as a long (8 bytes)
+        // are different values, but 42 as an int and as a uint have the same bytes, so they are the same value
         Assert.False(filter.MayContain(42L));
+        Assert.True(filter.MayContain(42u));
+
+        // A string is hashed from its UTF-16 characters, so it is a different value from its UTF-8 bytes
         Assert.False(filter.MayContain("alice@example.com"));
         #endregion
     }
+
+    [Fact]
+    public void Documentation_KeyPrefix()
+    {
+        #region BloomFilter_KeyPrefix
+        var filter = BloomFilter.CreateXXHash128(BloomFilterSize.CreateOptimalSize(expectedItemCount: 1000, falsePositiveProbability: 0.01));
+
+        // Prefix the value with its kind, and write numbers with an explicit byte order,
+        // so user 42 and order 42 are different values on every machine
+        filter.Add(CreateKey(kind: 1, id: 42)); // user 42
+
+        Assert.True(filter.MayContain(CreateKey(kind: 1, id: 42)));
+        Assert.False(filter.MayContain(CreateKey(kind: 2, id: 42))); // order 42
+
+        static byte[] CreateKey(byte kind, int id)
+        {
+            var key = new byte[5];
+            key[0] = kind;
+            System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(key.AsSpan(1), id);
+            return key;
+        }
+        #endregion
+    }
+
+    [Theory]
+    [MemberData(nameof(AllAlgorithms))]
+    public void BloomFilter_ValuesWithSameBytes_AreTheSameValue(string createMethodName)
+    {
+        var filter = (IBloomFilter)typeof(BloomFilter).GetMethod(createMethodName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)!.Invoke(null, [BloomFilterSize.CreateOptimalSize(1000, 0.01)])!;
+
+        filter.Add(42);
+        Assert.True(filter.MayContain(42u));
+        Assert.True(filter.MayContain(BitConverter.GetBytes(42)));
+
+        filter.Add(-1L);
+        Assert.True(filter.MayContain(ulong.MaxValue));
+
+        filter.Add("ab");
+        Assert.True(filter.MayContain((BitConverter.IsLittleEndian ? System.Text.Encoding.Unicode : System.Text.Encoding.BigEndianUnicode).GetBytes("ab")));
+    }
+
+    [Theory]
+    [MemberData(nameof(AllCountingAlgorithms))]
+    public void CountingBloomFilter_ValuesWithSameBytes_AreTheSameValue(string createMethodName)
+    {
+        var filter = (ICountingBloomFilter)typeof(CountingBloomFilter).GetMethod(createMethodName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)!.Invoke(null, [CountingBloomFilterSize.CreateOptimalSize(1000, 0.01)])!;
+
+        filter.Add(42);
+        Assert.True(filter.MayContain(42u));
+        Assert.True(filter.GetEstimatedCount(BitConverter.GetBytes(42)) >= 1);
+
+        // Removing the uint removes the int: they are the same value
+        filter.Remove(42u);
+        Assert.False(filter.MayContain(42));
+
+        filter.Add(-1);
+        filter.Remove(BitConverter.GetBytes(uint.MaxValue));
+        Assert.False(filter.MayContain(-1));
+    }
+
+    public static TheoryData<string> AllAlgorithms() => [.. typeof(BloomFilter).GetMethods().Where(m => m.Name.StartsWith("Create", StringComparison.Ordinal) && m.GetParameters() is [{ ParameterType: var type }] && type == typeof(BloomFilterSize)).Select(m => m.Name)];
+
+    public static TheoryData<string> AllCountingAlgorithms() => [.. typeof(CountingBloomFilter).GetMethods().Where(m => m.Name.StartsWith("Create", StringComparison.Ordinal) && m.GetParameters() is [{ ParameterType: var type }] && type == typeof(CountingBloomFilterSize)).Select(m => m.Name)];
 
     [Fact]
     public void Documentation_CharSpan()
@@ -975,6 +1041,41 @@ public sealed class BloomFilterTests
     }
 
     [Theory]
+    [InlineData(nameof(CountingBloomFilter.CreateXXHash128))]
+    [InlineData(nameof(CountingBloomFilter.CreateXXHash64))]
+    [InlineData(nameof(CountingBloomFilter.CreateXXHash32))]
+    [InlineData(nameof(CountingBloomFilter.CreateXXHash3))]
+    [InlineData(nameof(CountingBloomFilter.CreateCrc64))]
+    [InlineData(nameof(CountingBloomFilter.CreateCrc32))]
+    [InlineData(nameof(CountingBloomFilter.CreateAdler32))]
+    public void CountingBloomFilter_GetEstimatedCount_EmptyFilterReturnsZero(string createMethodName)
+    {
+        var size = CountingBloomFilterSize.CreateOptimalSize(1000, 0.01);
+        var filter = (ICountingBloomFilter)typeof(CountingBloomFilter).GetMethod(createMethodName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)!.Invoke(null, [size])!;
+        for (var value = 0; value < 1000; value++)
+        {
+            Assert.Equal(0, filter.GetEstimatedCount(value));
+            Assert.False(filter.MayContain(value));
+        }
+    }
+
+    [Fact]
+    public void CountingBloomFilter_GetEstimatedCount_RepeatedPositions()
+    {
+        // With a single counter, every hash function reads the same counter
+        var filter = CountingBloomFilter.CreateXXHash128(CountingBloomFilterSize.CreateExact(counterCount: 1, hashCount: 7));
+        Assert.Equal(0, filter.GetEstimatedCount("value"));
+
+        filter.Add("value");
+        Assert.Equal(7, filter.GetEstimatedCount("value"));
+        Assert.Equal(7, filter.GetEstimatedCount("other"));
+
+        filter.Remove("value");
+        Assert.Equal(0, filter.GetEstimatedCount("value"));
+        Assert.False(filter.MayContain("other"));
+    }
+
+    [Theory]
     [InlineData(0.5, 1)]
     [InlineData(0.1, 3)]
     [InlineData(0.01, 7)]
@@ -983,6 +1084,88 @@ public sealed class BloomFilterTests
     {
         Assert.Equal(expectedHashCount, BloomFilterSize.CreateOptimalSize(1000, falsePositiveProbability).HashCount);
         Assert.Equal(expectedHashCount, CountingBloomFilterSize.CreateOptimalSize(1000, falsePositiveProbability).HashCount);
+    }
+
+    [Theory]
+    [InlineData(1, 0.5)]
+    [InlineData(1000, 0.000001)]
+    [InlineData(1000, 0.001)]
+    [InlineData(1000, 0.01)]
+    [InlineData(1000, 0.1)]
+    [InlineData(1000, 0.3)]
+    [InlineData(1000, 0.5)]
+    [InlineData(1000, 0.6)]
+    [InlineData(1000, 0.9)]
+    [InlineData(1000, 0.99)]
+    [InlineData(1_000_000_000, 0.01)]
+    public void CreateOptimalSize_ModelFalsePositiveProbability_DoesNotExceedTarget(long expectedItemCount, double falsePositiveProbability)
+    {
+        var size = BloomFilterSize.CreateOptimalSize(expectedItemCount, falsePositiveProbability);
+        var countingSize = CountingBloomFilterSize.CreateOptimalSize(expectedItemCount, falsePositiveProbability);
+
+        Assert.Equal(size.BitCount, countingSize.CounterCount);
+        Assert.Equal(size.HashCount, countingSize.HashCount);
+
+        // The returned size meets the target, allowing for floating-point rounding only
+        Assert.True(GetModelFalsePositiveProbability(size.BitCount, size.HashCount) <= falsePositiveProbability * (1 + 1e-12));
+
+        // One position less would miss the target: the size is the smallest for its hash count
+        if (size.BitCount > 1)
+        {
+            Assert.True(GetModelFalsePositiveProbability(size.BitCount - 1, size.HashCount) > falsePositiveProbability * (1 - 1e-12));
+        }
+
+        // No other hash count reaches the target with fewer positions
+        for (var hashCount = 1; hashCount <= size.HashCount + 5; hashCount++)
+        {
+            if (hashCount != size.HashCount)
+            {
+                Assert.True(GetModelFalsePositiveProbability(size.BitCount - 1, hashCount) > falsePositiveProbability * (1 - 1e-12));
+            }
+        }
+
+        double GetModelFalsePositiveProbability(long positionCount, int hashCount) => Math.Pow(1 - Math.Exp(-hashCount * (double)expectedItemCount / positionCount), hashCount);
+    }
+
+    [Theory]
+    [InlineData(0.9, 435)]
+    [InlineData(0.99, 218)]
+    public void CreateOptimalSize_ProbabilityAboveHalf_GrowsStorageForSingleHash(double falsePositiveProbability, long expectedPositionCount)
+    {
+        var size = BloomFilterSize.CreateOptimalSize(1000, falsePositiveProbability);
+        Assert.Equal(expectedPositionCount, size.BitCount);
+        Assert.Equal(1, size.HashCount);
+
+        var countingSize = CountingBloomFilterSize.CreateOptimalSize(1000, falsePositiveProbability);
+        Assert.Equal(expectedPositionCount, countingSize.CounterCount);
+        Assert.Equal(1, countingSize.HashCount);
+    }
+
+    [Fact]
+    public void CreateOptimalSize_MeasuredFalsePositiveRate_StaysNearTarget()
+    {
+        const int ItemCount = 1000;
+        const int ProbeCount = 100_000;
+
+        foreach (var falsePositiveProbability in new[] { 0.01, 0.1, 0.9 })
+        {
+            var filter = BloomFilter.CreateXXHash128(BloomFilterSize.CreateOptimalSize(ItemCount, falsePositiveProbability));
+            for (var value = 0; value < ItemCount; value++)
+            {
+                filter.Add(value);
+            }
+
+            var falsePositiveCount = 0;
+            for (var value = ItemCount; value < ItemCount + ProbeCount; value++)
+            {
+                if (filter.MayContain(value))
+                {
+                    falsePositiveCount++;
+                }
+            }
+
+            Assert.InRange((double)falsePositiveCount / ProbeCount, 0, falsePositiveProbability * 1.1);
+        }
     }
 
     [Fact]

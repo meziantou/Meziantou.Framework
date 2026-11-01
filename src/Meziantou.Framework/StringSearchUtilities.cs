@@ -67,19 +67,23 @@ public static partial class StringSearchUtilities
 
         using var enumerator1 = word1.GetEnumerator();
         using var enumerator2 = word2.GetEnumerator();
-        bool firstMoveNext;
-        var secondMoveNext = false;
+        var comparer = EqualityComparer<T>.Default;
 
-        while ((firstMoveNext = enumerator1.MoveNext()) && (secondMoveNext = enumerator2.MoveNext()))
+        while (true)
         {
-            if (!enumerator1.Current.Equals(enumerator2.Current))
+            var firstMoveNext = enumerator1.MoveNext();
+            var secondMoveNext = enumerator2.MoveNext();
+            if (firstMoveNext != secondMoveNext)
+                throw new ArgumentException("Lists must have the same length.", nameof(word2));
+
+            if (!firstMoveNext)
+                break;
+
+            if (!comparer.Equals(enumerator1.Current, enumerator2.Current))
             {
                 result++;
             }
         }
-
-        if (firstMoveNext != secondMoveNext)
-            throw new ArgumentException("Lists must have the same length.", nameof(word2));
 
         return result;
     }

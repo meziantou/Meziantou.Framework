@@ -90,18 +90,30 @@ public static class CultureInfoUtilities
         if (name is null)
             return null;
 
+        // A number is an LCID, never a culture name. ICU would accept it as the name of a made-up culture.
+        if (int.TryParse(name, NumberStyles.Integer, CultureInfo.InvariantCulture, out var lcid))
+        {
+            if (lcid <= 0)
+                return null;
+
+            try
+            {
+                return CultureInfo.GetCultureInfo(lcid);
+            }
+            catch (CultureNotFoundException)
+            {
+                return null;
+            }
+        }
+
         try
         {
             return CultureInfo.GetCultureInfo(name);
         }
         catch (CultureNotFoundException)
         {
+            return null;
         }
-
-        if (int.TryParse(name, NumberStyles.Integer, CultureInfo.InvariantCulture, out var i))
-            return CultureInfo.GetCultureInfo(i);
-
-        return null;
     }
 
     /// <summary>Gets the neutral culture for a specific culture (e.g., "en" for "en-US").</summary>

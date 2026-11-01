@@ -50,12 +50,12 @@ public abstract partial class CountingBloomFilter
         var result = int.MaxValue;
         for (var i = 0; i < HashCount; i++)
         {
-            result = Math.Min(result, Counters.Get(BloomFilterHash.Reduce(combined, counterCount)));
-
-            // Counters are never negative, so the other counters cannot lower the minimum any further
-            if (result == 0)
+            // Counters are never negative, so once a counter is zero the minimum is zero
+            var counter = Counters.Get(BloomFilterHash.Reduce(combined, counterCount));
+            if (counter == 0)
                 return 0;
 
+            result = Math.Min(result, counter);
             combined += hash.Hash2;
         }
 

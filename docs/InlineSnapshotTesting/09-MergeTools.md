@@ -26,7 +26,8 @@ default:
    process on Windows, Linux and macOS.
 5. The first GUI diff tool installed on the machine, detected by
    <NuGetReference Id="Meziantou.Framework.DiffEngine" />. Terminal tools such
-   as Vim and Neovim are skipped, as they cannot run without a terminal.
+   as Vim and Neovim are skipped, as they cannot run without a terminal. When the preferred tool fails to start, the
+   next installed one is tried.
 
 To use specific tools, set [MergeTools](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings.MergeTools), as in the
 [module initializer example](03-Settings.md#configure-every-test). The [MergeTool](cref:Meziantou.Framework.InlineSnapshotTesting.MergeTool) class has a property for each
@@ -45,7 +46,8 @@ The snapshot difference is reported as a regular assertion failure, and the sour
   [Continuous integration](10-ContinuousIntegration.md).
 
 When merge tools are enabled but none of them can be started, the assertion fails with the paths to compare and the
-reason each tool could not start. A tool that fails to start does not prevent the next ones from being tried.
+reason each tool could not start. A tool that fails to start does not prevent the next ones from being tried. A tool
+that started ends the search, even if you close it without merging.
 
 ## Git tools
 
@@ -53,6 +55,11 @@ The `cmd` of a git `mergetool.<tool>` or `difftool.<tool>` is run like git runs 
 `LOCAL`, `REMOTE`, `BASE` and `MERGED` environment variables set. `"$LOCAL"`, `${REMOTE}`, `~` or `&&` work as they do
 with git, and paths may contain spaces or quotes. On Windows, the `sh.exe` of Git for Windows is used; when it cannot be
 found, each placeholder is replaced by its value, quoted as a single argument.
+
+The command runs in the directory of the source file, and the variables hold absolute paths. When the shell cannot run
+the command, because it exits within a second with code `127` (command not found) or `126` (not executable), the tool
+counts as failed to start and the next one is tried. Any other exit code, such as the one of a cancelled merge, is the
+tool's own and does not start another tool.
 
 - For a merge tool, `LOCAL` and `BASE` are a temporary copy of the source file as it was before the merge, `REMOTE` is a
   temporary copy of the source file that contains the new snapshot, and `MERGED` is the source file the tool writes the

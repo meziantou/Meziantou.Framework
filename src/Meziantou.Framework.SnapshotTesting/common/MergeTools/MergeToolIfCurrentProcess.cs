@@ -26,14 +26,24 @@ internal sealed class MergeToolIfCurrentProcess(MergeTool tool, string[] process
 
     internal override MergeToolResult? Start(string currentFilePath, string newFilePath, bool waitForMerge)
     {
-        var processName = CurrentProcessName.Value;
-        if (processName is null)
+        if (!IsCurrentProcess())
             return null;
 
-        if (processNames.Contains(processName, StringComparer.OrdinalIgnoreCase))
-            return tool.Start(currentFilePath, newFilePath, waitForMerge);
+        return tool.Start(currentFilePath, newFilePath, waitForMerge);
+    }
 
-        return null;
+    internal override MergeToolResult? Start(string currentFilePath, string newFilePath, bool waitForMerge, List<MergeToolLaunchFailure> failures)
+    {
+        if (!IsCurrentProcess())
+            return null;
+
+        return tool.Start(currentFilePath, newFilePath, waitForMerge, failures);
+    }
+
+    private bool IsCurrentProcess()
+    {
+        var processName = CurrentProcessName.Value;
+        return processName is not null && processNames.Contains(processName, StringComparer.OrdinalIgnoreCase);
     }
 
     internal static string? GetContextProcessName()

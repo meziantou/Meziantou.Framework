@@ -2,6 +2,8 @@ using System.Diagnostics;
 using System.Text.RegularExpressions;
 
 #if MEZIANTOU_INLINE_SNAPSHOT_TESTING
+using SnapshotException = Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotException;
+
 namespace Meziantou.Framework.InlineSnapshotTesting.MergeTools;
 #else
 namespace Meziantou.Framework.SnapshotTesting.MergeTools;
@@ -10,6 +12,14 @@ namespace Meziantou.Framework.SnapshotTesting.MergeTools;
 internal abstract partial class GitTool : MergeTool
 {
     private const int GitTimeoutInMilliseconds = 10_000;
+
+    // The exit codes of a POSIX shell for a command it found but cannot run, and for a command it cannot find.
+    private const int CommandNotExecutableExitCode = 126;
+    private const int CommandNotFoundExitCode = 127;
+
+    // A shell that cannot find the command exits within milliseconds. A tool that started keeps running much longer
+    // than this, or hands the files over to a running instance and exits with its own code.
+    private static readonly TimeSpan StartupFailureDetectionTimeout = TimeSpan.FromSeconds(1);
 
     protected static readonly Lazy<string?> GitPath = new(() => ExecutableFinder.GetFullExecutablePath("git"));
 
@@ -85,6 +95,29 @@ internal abstract partial class GitTool : MergeTool
         }
 
         return startInfo;
+    }
+
+    /// <summary>
+    /// Starts a command created by <see cref="CreateCommandStartInfo" />. The shell starts even when the command it runs
+    /// does not exist, so a shell that exits right away with <c>126</c> or <c>127</c> means that the tool could not be
+    /// started: an exception is thrown, so the next merge tool is tried. Any other exit code is the tool's own, such as
+    /// the one of a merge the developer cancelled, and must not start another tool.
+    /// </summary>
+    protected static ProcessMergeToolResult StartCommand(ProcessStartInfo startInfo, string command, Action? onExited)
+    {
+        var result = ProcessMergeToolResult.Start(startInfo, onExited);
+        if (result.Process.WaitForExit(StartupFailureDetectionTimeout))
+        {
+            var exitCode = result.Process.ExitCode;
+            if (exitCode is CommandNotExecutableExitCode or CommandNotFoundExitCode)
+            {
+                result.Dispose();
+                var reason = exitCode is CommandNotFoundExitCode ? "command not found" : "command not executable";
+                throw new SnapshotException($"Failed to launch the git command '{command}': the shell exited with code {exitCode.ToString(CultureInfo.InvariantCulture)} ({reason}).");
+            }
+        }
+
+        return result;
     }
 
     protected internal static ProcessStartInfo CreateShellCommandStartInfo(string shellPath, string command, IReadOnlyList<KeyValuePair<string, string>> variables)

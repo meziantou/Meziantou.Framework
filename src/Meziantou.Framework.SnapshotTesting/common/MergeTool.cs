@@ -63,6 +63,12 @@ public abstract class MergeTool
     internal virtual MergeToolResult? Start(string currentFilePath, string newFilePath, bool waitForMerge) => Start(currentFilePath, newFilePath);
 
     /// <summary>
+    /// Starts the merge tool. A tool that tries several candidates records in <paramref name="failures" /> those that
+    /// failed to start before one of them started, instead of throwing.
+    /// </summary>
+    internal virtual MergeToolResult? Start(string currentFilePath, string newFilePath, bool waitForMerge, List<MergeToolLaunchFailure> failures) => Start(currentFilePath, newFilePath, waitForMerge);
+
+    /// <summary>
     /// Indicates whether merge tools must not be started. <c>DiffEngine_Disabled</c> always wins. The environments
     /// detected by <see cref="ContinuousEnvironmentDetector" /> - a build server, a continuous testing runner or an LLM
     /// agent - only apply when <paramref name="autoDetectContinuousEnvironment" /> is set, so that turning the
@@ -86,7 +92,8 @@ public abstract class MergeTool
     /// <summary>
     /// Starts the first merge tool that can be started. A tool that fails to start - a stale executable, an invalid
     /// <c>DiffEngine_&lt;Tool&gt;</c> variable, a broken git command - must not prevent the next ones from being
-    /// tried, so its exception is recorded in <paramref name="failures" /> and the search goes on.
+    /// tried, so its exception is recorded in <paramref name="failures" /> and the search goes on. A tool that started
+    /// ends the search, even if the developer closes it without merging.
     /// </summary>
     internal static MergeToolResult? Launch(IEnumerable<MergeTool?>? mergeTools, string currentFilePath, string newFilePath, bool waitForMerge, List<MergeToolLaunchFailure> failures)
     {
@@ -100,7 +107,7 @@ public abstract class MergeTool
 
             try
             {
-                var result = mergeTool.Start(currentFilePath, newFilePath, waitForMerge);
+                var result = mergeTool.Start(currentFilePath, newFilePath, waitForMerge, failures);
                 if (result is not null)
                     return result;
             }

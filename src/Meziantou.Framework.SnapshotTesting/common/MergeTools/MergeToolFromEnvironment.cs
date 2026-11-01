@@ -15,6 +15,11 @@ internal sealed class MergeToolFromEnvironment : MergeTool
         return GetTool()?.Start(currentFilePath, newFilePath, waitForMerge);
     }
 
+    internal override MergeToolResult? Start(string currentFilePath, string newFilePath, bool waitForMerge, List<MergeToolLaunchFailure> failures)
+    {
+        return GetTool()?.Start(currentFilePath, newFilePath, waitForMerge, failures);
+    }
+
     /// <summary>Resolves the <see cref="MergeTool" /> property named by <c>DiffEngine_Tool</c>, ignoring the case.</summary>
     internal static MergeTool? GetTool()
     {

@@ -10,9 +10,9 @@ description: "The results of the web-platform-tests of urlpattern, and why the t
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 6 | 6 | 0 | 100% |
-| [Tentative](#tentative-tests) | 0 | 3 | 0 | 0% |
+| [Tentative](#tentative-tests) | 3 | 3 | 0 | 100% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **6** | **9** | **0** | **67%** |
+| **All** | **9** | **9** | **0** | **100%** |
 
 ## Stable tests
 
@@ -29,6 +29,6 @@ description: "The results of the web-platform-tests of urlpattern, and why the t
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`urlpattern-compare.tentative.any.js`](https://wpt.fyi/results/urlpattern/urlpattern-compare.tentative.any.js) | Fail | 3 / 78 | NOT IMPLEMENTED | `URLPattern.compareComponent()` (tentative) |
-| [`urlpattern-compare.tentative.https.any.js`](https://wpt.fyi/results/urlpattern/urlpattern-compare.tentative.https.any.js) | Fail | 3 / 78 | NOT IMPLEMENTED | `URLPattern.compareComponent()` (tentative) |
-| [`urlpattern-generate.tentative.any.js`](https://wpt.fyi/results/urlpattern/urlpattern-generate.tentative.any.js) | Fail | 33 / 60 | NOT IMPLEMENTED | `URLPattern.prototype.generate()` (tentative) |
+| [`urlpattern-compare.tentative.any.js`](https://wpt.fyi/results/urlpattern/urlpattern-compare.tentative.any.js) | Pass | 78 / 78 |  |  |
+| [`urlpattern-compare.tentative.https.any.js`](https://wpt.fyi/results/urlpattern/urlpattern-compare.tentative.https.any.js) | Pass | 78 / 78 |  |  |
+| [`urlpattern-generate.tentative.any.js`](https://wpt.fyi/results/urlpattern/urlpattern-generate.tentative.any.js) | Pass | 60 / 60 |  |  |

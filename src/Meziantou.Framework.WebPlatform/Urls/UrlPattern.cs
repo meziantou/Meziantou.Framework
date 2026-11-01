@@ -163,6 +163,47 @@ public sealed class UrlPattern
     [IdlMember("test", "https://urlpattern.spec.whatwg.org/#dom-urlpattern-test")]
     public bool Test(UrlPatternInput input = default, string? baseUrl = null) => Match(input, baseUrl) is not null;
 
+    /// <summary>Compares the specificity of one component of two URL patterns.</summary>
+    /// <param name="component">The URL component to compare.</param>
+    /// <param name="left">The first pattern.</param>
+    /// <param name="right">The second pattern.</param>
+    /// <returns>A negative number when <paramref name="left"/> sorts before <paramref name="right"/>, zero when they are equivalent, or a positive number otherwise.</returns>
+    /// <exception cref="TypeErrorException"><paramref name="component"/> is not a URLPattern component.</exception>
+    /// <seealso href="https://github.com/web-platform-tests/wpt/blob/3d98b9b722ca38685e04dea4e5208d45ce7fd55f/urlpattern/resources/urlpattern-compare-tests.tentative.js#L1"/>
+    [Experimental(ExperimentalApis.UrlPatternTentativeMethods, UrlFormat = ExperimentalApis.UrlFormat)]
+    [IdlMember("compareComponent", "https://github.com/web-platform-tests/wpt/blob/3d98b9b722ca38685e04dea4e5208d45ce7fd55f/urlpattern/resources/urlpattern-compare-tests.tentative.js#L1")]
+    public static int CompareComponent(string component, UrlPattern left, UrlPattern right)
+    {
+        ArgumentNullException.ThrowIfNull(component);
+        ArgumentNullException.ThrowIfNull(left);
+        ArgumentNullException.ThrowIfNull(right);
+
+        var componentName = ParseComponentName(component);
+        return UrlPatternParser.CompareComponents(left.GetComponent(componentName), right.GetComponent(componentName));
+    }
+
+    /// <summary>Generates the string for one URL component from the pattern and the values of its named groups.</summary>
+    /// <param name="component">The URL component to generate.</param>
+    /// <param name="groups">The group names and values.</param>
+    /// <returns>The generated component value.</returns>
+    /// <exception cref="TypeErrorException">The component is invalid, a required group is missing, or the component uses unsupported pattern syntax.</exception>
+    /// <seealso href="https://github.com/web-platform-tests/wpt/blob/3d98b9b722ca38685e04dea4e5208d45ce7fd55f/urlpattern/urlpattern-generate.tentative.any.js#L1"/>
+    [Experimental(ExperimentalApis.UrlPatternTentativeMethods, UrlFormat = ExperimentalApis.UrlFormat)]
+    [IdlMember("generate", "https://github.com/web-platform-tests/wpt/blob/3d98b9b722ca38685e04dea4e5208d45ce7fd55f/urlpattern/urlpattern-generate.tentative.any.js#L1")]
+    public string Generate(string component, IEnumerable<KeyValuePair<string, string>> groups)
+    {
+        ArgumentNullException.ThrowIfNull(component);
+        ArgumentNullException.ThrowIfNull(groups);
+
+        var groupMap = new Dictionary<string, string>(StringComparer.Ordinal);
+        foreach (var (name, value) in groups)
+        {
+            groupMap.Add(name, value);
+        }
+
+        return GetComponent(ParseComponentName(component)).Generate(groupMap);
+    }
+
     /// <summary>Returns whether the pattern matches a URL.</summary>
     [NotInIdl]
     public bool Test(Url url)
@@ -188,6 +229,38 @@ public sealed class UrlPattern
             UrlPatternInit init => new UrlPattern(init.BaseUrl is null ? init.WithBaseUrl(baseUrl.Serialize()) : init),
             string value => new UrlPattern(value, baseUrl.Serialize()),
             _ => throw new UnreachableException(),
+        };
+    }
+
+    private UrlPatternComponent GetComponent(UrlPatternComponentName component)
+    {
+        return component switch
+        {
+            UrlPatternComponentName.Protocol => _protocol,
+            UrlPatternComponentName.Username => _username,
+            UrlPatternComponentName.Password => _password,
+            UrlPatternComponentName.Hostname => _hostname,
+            UrlPatternComponentName.Port => _port,
+            UrlPatternComponentName.Pathname => _pathname,
+            UrlPatternComponentName.Search => _search,
+            UrlPatternComponentName.Hash => _hash,
+            _ => throw new UnreachableException(),
+        };
+    }
+
+    private static UrlPatternComponentName ParseComponentName(string component)
+    {
+        return component switch
+        {
+            "protocol" => UrlPatternComponentName.Protocol,
+            "username" => UrlPatternComponentName.Username,
+            "password" => UrlPatternComponentName.Password,
+            "hostname" => UrlPatternComponentName.Hostname,
+            "port" => UrlPatternComponentName.Port,
+            "pathname" => UrlPatternComponentName.Pathname,
+            "search" => UrlPatternComponentName.Search,
+            "hash" => UrlPatternComponentName.Hash,
+            _ => throw new TypeErrorException($"Invalid URLPattern component '{component}'"),
         };
     }
 

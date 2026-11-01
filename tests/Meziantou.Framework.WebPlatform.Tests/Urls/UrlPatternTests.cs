@@ -1,10 +1,105 @@
 using Meziantou.Framework.WebPlatform.Dom;
 using Meziantou.Framework.WebPlatform.Infra;
 
+#pragma warning disable WEBPLATEXP0015
+
 namespace Meziantou.Framework.WebPlatform.Tests.Urls;
 
 public sealed class UrlPatternTests
 {
+    [Theory]
+    [InlineData("pathname", "/foo/a", "/foo/b", -1)]
+    [InlineData("pathname", "/foo/b", "/foo/bar", -1)]
+    [InlineData("pathname", "/foo/bar", "/foo/:bar", 1)]
+    [InlineData("pathname", "/foo/", "/foo/:bar", 1)]
+    [InlineData("pathname", "/foo/:bar", "/foo/*", 1)]
+    [InlineData("pathname", "/foo/{bar}", "/foo/(bar)", 1)]
+    [InlineData("pathname", "/foo/{bar}", "/foo/{bar}+", 1)]
+    [InlineData("pathname", "/foo/{bar}+", "/foo/{bar}?", 1)]
+    [InlineData("pathname", "/foo/{bar}?", "/foo/{bar}*", 1)]
+    [InlineData("pathname", "/foo/(123)", "/foo/(12)", 1)]
+    [InlineData("pathname", "/foo/:b", "/foo/:a", 0)]
+    [InlineData("pathname", "*/foo", "*", 1)]
+    [InlineData("port", "9", "100", 1)]
+    [InlineData("pathname", "foo/:bar?/baz", "foo/{:bar}?/baz", -1)]
+    [InlineData("pathname", "foo/:bar?/baz", "foo{/:bar}?/baz", 0)]
+    [InlineData("pathname", "foo/:bar?/baz", "fo{o/:bar}?/baz", 1)]
+    [InlineData("pathname", "foo/:bar?/baz", "foo{/:bar/}?baz", -1)]
+    [InlineData("protocol", "a", "b", -1)]
+    [InlineData("username", "a", "b", -1)]
+    [InlineData("password", "a", "b", -1)]
+    [InlineData("hostname", "a", "b", -1)]
+    [InlineData("search", "a", "b", -1)]
+    [InlineData("hash", "a", "b", -1)]
+    public void CompareComponent(string component, string leftValue, string rightValue, int expected)
+    {
+        var left = CreatePattern(component, leftValue);
+        var right = CreatePattern(component, rightValue);
+
+        Assert.Equal(expected, UrlPattern.CompareComponent(component, left, right));
+        Assert.Equal(-expected, UrlPattern.CompareComponent(component, right, left));
+        Assert.Equal(0, UrlPattern.CompareComponent(component, left, left));
+        Assert.Equal(0, UrlPattern.CompareComponent(component, right, right));
+    }
+
+    [Fact]
+    public void CompareComponent_UrlInput()
+    {
+        var left = new UrlPattern("https://a.example.com/b?a");
+        var right = new UrlPattern("https://b.example.com/a?b");
+
+        Assert.Equal(1, UrlPattern.CompareComponent("pathname", left, right));
+    }
+
+    [Fact]
+    public void CompareComponent_InvalidComponent_Throws()
+    {
+        var pattern = new UrlPattern("/foo", "https://example.com");
+
+        Assert.Throws<TypeErrorException>(() => UrlPattern.CompareComponent("invalid", pattern, pattern));
+    }
+
+    [Fact]
+    public void Generate()
+    {
+        Assert.Equal("/foo", new UrlPattern(new UrlPatternInit { Pathname = "/foo" }).Generate("pathname", []));
+        Assert.Equal("/bar", new UrlPattern(new UrlPatternInit { Pathname = "/:foo" }).Generate("pathname", new Dictionary<string, string> { ["foo"] = "bar" }));
+        Assert.Equal("/%F0%9F%8D%85", new UrlPattern(new UrlPatternInit { Pathname = "/:foo" }).Generate("pathname", new Dictionary<string, string> { ["foo"] = "🍅" }));
+        Assert.Equal("xn--fi8h.example.com", new UrlPattern(new UrlPatternInit { Hostname = "{:foo}.example.com" }).Generate("hostname", new Dictionary<string, string> { ["foo"] = "🍅" }));
+        Assert.Equal("/%20", new UrlPattern("https://example.com/:foo").Generate("pathname", new Dictionary<string, string> { ["foo"] = " " }));
+        Assert.Equal("/ ", new UrlPattern("original-scheme://example.com/:foo").Generate("pathname", new Dictionary<string, string> { ["foo"] = " " }));
+    }
+
+    [Fact]
+    public void Generate_InvalidInput_Throws()
+    {
+        Assert.Throws<TypeErrorException>(() => new UrlPattern(new UrlPatternInit { Pathname = "/foo" }).Generate("invalid", []));
+        Assert.Throws<TypeErrorException>(() => new UrlPattern(new UrlPatternInit { Pathname = "/:foo" }).Generate("pathname", []));
+        Assert.Throws<TypeErrorException>(() => new UrlPattern(new UrlPatternInit { Pathname = "/:foo" }).Generate("pathname", new Dictionary<string, string> { ["foo"] = "bar/baz" }));
+        Assert.Throws<TypeErrorException>(() => new UrlPattern(new UrlPatternInit { Pathname = "*" }).Generate("pathname", []));
+        Assert.Throws<TypeErrorException>(() => new UrlPattern(new UrlPatternInit { Pathname = "/{foo}+" }).Generate("pathname", []));
+        Assert.Throws<TypeErrorException>(() => new UrlPattern(new UrlPatternInit { Pathname = "/(regexp)" }).Generate("pathname", []));
+        Assert.Throws<TypeErrorException>(() => new UrlPattern(new UrlPatternInit { Port = "([^\\:]+?)" }).Generate("port", []));
+    }
+
+    private static UrlPattern CreatePattern(string component, string value)
+    {
+        var init = component switch
+        {
+            "protocol" => new UrlPatternInit { Protocol = value },
+            "username" => new UrlPatternInit { Username = value },
+            "password" => new UrlPatternInit { Password = value },
+            "hostname" => new UrlPatternInit { Hostname = value },
+            "port" => new UrlPatternInit { Port = value },
+            "pathname" => new UrlPatternInit { Pathname = value },
+            "search" => new UrlPatternInit { Search = value },
+            "hash" => new UrlPatternInit { Hash = value },
+            _ => throw new ArgumentOutOfRangeException(nameof(component)),
+        };
+
+        return new UrlPattern(init);
+    }
+
     [Fact]
     public void Exec_NamedGroups()
     {

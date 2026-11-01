@@ -502,6 +502,75 @@ internal static class UrlPatternParser
     /// <summary>https://urlpattern.spec.whatwg.org/#generate-a-segment-wildcard-regexp</summary>
     public static string GenerateSegmentWildcardRegexp(UrlPatternCompileOptions options) => "[^" + EscapeRegexpString(options.DelimiterCodePoint) + "]+?";
 
+    public static int CompareComponents(UrlPatternComponent left, UrlPatternComponent right)
+    {
+        var partCount = Math.Min(left.Parts.Count, right.Parts.Count);
+        for (var index = 0; index < partCount; index++)
+        {
+            var comparison = CompareParts(left.Parts[index], right.Parts[index]);
+            if (comparison != 0)
+                return comparison;
+        }
+
+        if (left.Parts.Count == right.Parts.Count)
+            return 0;
+
+        if (left.Parts.Count < right.Parts.Count)
+            return CompareEndToPart(right.Parts[partCount]);
+
+        return -CompareEndToPart(left.Parts[partCount]);
+    }
+
+    private static int CompareParts(UrlPatternPart left, UrlPatternPart right)
+    {
+        var comparison = PartPrecedence(left.Type).CompareTo(PartPrecedence(right.Type));
+        if (comparison != 0)
+            return comparison;
+
+        comparison = string.CompareOrdinal(left.Prefix, right.Prefix);
+        if (comparison != 0)
+            return Math.Sign(comparison);
+
+        comparison = string.CompareOrdinal(left.Value, right.Value);
+        if (comparison != 0)
+            return Math.Sign(comparison);
+
+        comparison = string.CompareOrdinal(left.Suffix, right.Suffix);
+        if (comparison != 0)
+            return Math.Sign(comparison);
+
+        return ModifierPrecedence(left.Modifier).CompareTo(ModifierPrecedence(right.Modifier));
+    }
+
+    private static int CompareEndToPart(UrlPatternPart part)
+    {
+        return part.Type == UrlPatternPartType.FixedText && part.Modifier == UrlPatternPartModifier.None ? -1 : 1;
+    }
+
+    private static int PartPrecedence(UrlPatternPartType type)
+    {
+        return type switch
+        {
+            UrlPatternPartType.FixedText => 4,
+            UrlPatternPartType.Regexp => 3,
+            UrlPatternPartType.SegmentWildcard => 2,
+            UrlPatternPartType.FullWildcard => 1,
+            _ => 0,
+        };
+    }
+
+    private static int ModifierPrecedence(UrlPatternPartModifier modifier)
+    {
+        return modifier switch
+        {
+            UrlPatternPartModifier.None => 4,
+            UrlPatternPartModifier.OneOrMore => 3,
+            UrlPatternPartModifier.Optional => 2,
+            UrlPatternPartModifier.ZeroOrMore => 1,
+            _ => 0,
+        };
+    }
+
     /// <summary>https://urlpattern.spec.whatwg.org/#generate-a-regular-expression-and-name-list</summary>
     public static (string RegularExpression, List<string> NameList) GenerateRegularExpressionAndNameList(List<UrlPatternPart> partList, UrlPatternCompileOptions options)
     {

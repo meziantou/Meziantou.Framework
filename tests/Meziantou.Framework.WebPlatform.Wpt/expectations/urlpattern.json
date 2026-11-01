@@ -1,183 +1,21 @@
 {
   "urlpattern/urlpattern-compare.tentative.any.js": {
-    "total": 26,
-    "failures": {
-      "Component: hash Left: {\"hash\":\"a\"} Right: {\"hash\":\"b\"}": "FAIL",
-      "Component: hostname Left: {\"hostname\":\"a\"} Right: {\"hostname\":\"b\"}": "FAIL",
-      "Component: password Left: {\"password\":\"a\"} Right: {\"password\":\"b\"}": "FAIL",
-      "Component: pathname Left: \"https://a.example.com/b?a\" Right: \"https://b.example.com/a?b\"": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"*/foo\"} Right: {\"pathname\":\"*\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/\"} Right: {\"pathname\":\"/foo/:bar\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/(123)\"} Right: {\"pathname\":\"/foo/(12)\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/:b\"} Right: {\"pathname\":\"/foo/:a\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/:bar\"} Right: {\"pathname\":\"/foo/*\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/a\"} Right: {\"pathname\":\"/foo/b\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/b\"} Right: {\"pathname\":\"/foo/bar\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/bar\"} Right: {\"pathname\":\"/foo/:bar\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/{bar}\"} Right: {\"pathname\":\"/foo/(bar)\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/{bar}\"} Right: {\"pathname\":\"/foo/{bar}+\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/{bar}+\"} Right: {\"pathname\":\"/foo/{bar}?\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/{bar}/baz\"} Right: {\"pathname\":\"/foo/bar/baz\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/{bar}?\"} Right: {\"pathname\":\"/foo/{bar}*\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"foo/:bar?/baz\"} Right: {\"pathname\":\"foo/{:bar}?/baz\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"foo/:bar?/baz\"} Right: {\"pathname\":\"foo{/:bar/}?baz\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"foo/:bar?/baz\"} Right: {\"pathname\":\"foo{/:bar}?/baz\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"foo/:bar?/baz\"} Right: {\"pathname\":\"fo{o/:bar}?/baz\"}": "FAIL",
-      "Component: port Left: {\"port\":\"9\"} Right: {\"port\":\"100\"}": "FAIL",
-      "Component: protocol Left: {\"protocol\":\"a\"} Right: {\"protocol\":\"b\"}": "FAIL",
-      "Component: search Left: {\"search\":\"a\"} Right: {\"search\":\"b\"}": "FAIL",
-      "Component: username Left: {\"username\":\"a\"} Right: {\"username\":\"b\"}": "FAIL"
-    }
+    "total": 26
   },
   "urlpattern/urlpattern-compare.tentative.any.js#dedicatedworker": {
-    "total": 26,
-    "failures": {
-      "Component: hash Left: {\"hash\":\"a\"} Right: {\"hash\":\"b\"}": "FAIL",
-      "Component: hostname Left: {\"hostname\":\"a\"} Right: {\"hostname\":\"b\"}": "FAIL",
-      "Component: password Left: {\"password\":\"a\"} Right: {\"password\":\"b\"}": "FAIL",
-      "Component: pathname Left: \"https://a.example.com/b?a\" Right: \"https://b.example.com/a?b\"": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"*/foo\"} Right: {\"pathname\":\"*\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/\"} Right: {\"pathname\":\"/foo/:bar\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/(123)\"} Right: {\"pathname\":\"/foo/(12)\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/:b\"} Right: {\"pathname\":\"/foo/:a\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/:bar\"} Right: {\"pathname\":\"/foo/*\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/a\"} Right: {\"pathname\":\"/foo/b\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/b\"} Right: {\"pathname\":\"/foo/bar\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/bar\"} Right: {\"pathname\":\"/foo/:bar\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/{bar}\"} Right: {\"pathname\":\"/foo/(bar)\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/{bar}\"} Right: {\"pathname\":\"/foo/{bar}+\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/{bar}+\"} Right: {\"pathname\":\"/foo/{bar}?\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/{bar}/baz\"} Right: {\"pathname\":\"/foo/bar/baz\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/{bar}?\"} Right: {\"pathname\":\"/foo/{bar}*\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"foo/:bar?/baz\"} Right: {\"pathname\":\"foo/{:bar}?/baz\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"foo/:bar?/baz\"} Right: {\"pathname\":\"foo{/:bar/}?baz\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"foo/:bar?/baz\"} Right: {\"pathname\":\"foo{/:bar}?/baz\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"foo/:bar?/baz\"} Right: {\"pathname\":\"fo{o/:bar}?/baz\"}": "FAIL",
-      "Component: port Left: {\"port\":\"9\"} Right: {\"port\":\"100\"}": "FAIL",
-      "Component: protocol Left: {\"protocol\":\"a\"} Right: {\"protocol\":\"b\"}": "FAIL",
-      "Component: search Left: {\"search\":\"a\"} Right: {\"search\":\"b\"}": "FAIL",
-      "Component: username Left: {\"username\":\"a\"} Right: {\"username\":\"b\"}": "FAIL"
-    }
+    "total": 26
   },
   "urlpattern/urlpattern-compare.tentative.any.js#sharedworker": {
-    "total": 26,
-    "failures": {
-      "Component: hash Left: {\"hash\":\"a\"} Right: {\"hash\":\"b\"}": "FAIL",
-      "Component: hostname Left: {\"hostname\":\"a\"} Right: {\"hostname\":\"b\"}": "FAIL",
-      "Component: password Left: {\"password\":\"a\"} Right: {\"password\":\"b\"}": "FAIL",
-      "Component: pathname Left: \"https://a.example.com/b?a\" Right: \"https://b.example.com/a?b\"": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"*/foo\"} Right: {\"pathname\":\"*\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/\"} Right: {\"pathname\":\"/foo/:bar\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/(123)\"} Right: {\"pathname\":\"/foo/(12)\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/:b\"} Right: {\"pathname\":\"/foo/:a\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/:bar\"} Right: {\"pathname\":\"/foo/*\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/a\"} Right: {\"pathname\":\"/foo/b\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/b\"} Right: {\"pathname\":\"/foo/bar\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/bar\"} Right: {\"pathname\":\"/foo/:bar\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/{bar}\"} Right: {\"pathname\":\"/foo/(bar)\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/{bar}\"} Right: {\"pathname\":\"/foo/{bar}+\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/{bar}+\"} Right: {\"pathname\":\"/foo/{bar}?\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/{bar}/baz\"} Right: {\"pathname\":\"/foo/bar/baz\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/{bar}?\"} Right: {\"pathname\":\"/foo/{bar}*\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"foo/:bar?/baz\"} Right: {\"pathname\":\"foo/{:bar}?/baz\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"foo/:bar?/baz\"} Right: {\"pathname\":\"foo{/:bar/}?baz\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"foo/:bar?/baz\"} Right: {\"pathname\":\"foo{/:bar}?/baz\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"foo/:bar?/baz\"} Right: {\"pathname\":\"fo{o/:bar}?/baz\"}": "FAIL",
-      "Component: port Left: {\"port\":\"9\"} Right: {\"port\":\"100\"}": "FAIL",
-      "Component: protocol Left: {\"protocol\":\"a\"} Right: {\"protocol\":\"b\"}": "FAIL",
-      "Component: search Left: {\"search\":\"a\"} Right: {\"search\":\"b\"}": "FAIL",
-      "Component: username Left: {\"username\":\"a\"} Right: {\"username\":\"b\"}": "FAIL"
-    }
+    "total": 26
   },
   "urlpattern/urlpattern-compare.tentative.https.any.js": {
-    "total": 26,
-    "failures": {
-      "Component: hash Left: {\"hash\":\"a\"} Right: {\"hash\":\"b\"}": "FAIL",
-      "Component: hostname Left: {\"hostname\":\"a\"} Right: {\"hostname\":\"b\"}": "FAIL",
-      "Component: password Left: {\"password\":\"a\"} Right: {\"password\":\"b\"}": "FAIL",
-      "Component: pathname Left: \"https://a.example.com/b?a\" Right: \"https://b.example.com/a?b\"": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"*/foo\"} Right: {\"pathname\":\"*\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/\"} Right: {\"pathname\":\"/foo/:bar\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/(123)\"} Right: {\"pathname\":\"/foo/(12)\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/:b\"} Right: {\"pathname\":\"/foo/:a\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/:bar\"} Right: {\"pathname\":\"/foo/*\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/a\"} Right: {\"pathname\":\"/foo/b\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/b\"} Right: {\"pathname\":\"/foo/bar\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/bar\"} Right: {\"pathname\":\"/foo/:bar\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/{bar}\"} Right: {\"pathname\":\"/foo/(bar)\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/{bar}\"} Right: {\"pathname\":\"/foo/{bar}+\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/{bar}+\"} Right: {\"pathname\":\"/foo/{bar}?\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/{bar}/baz\"} Right: {\"pathname\":\"/foo/bar/baz\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/{bar}?\"} Right: {\"pathname\":\"/foo/{bar}*\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"foo/:bar?/baz\"} Right: {\"pathname\":\"foo/{:bar}?/baz\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"foo/:bar?/baz\"} Right: {\"pathname\":\"foo{/:bar/}?baz\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"foo/:bar?/baz\"} Right: {\"pathname\":\"foo{/:bar}?/baz\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"foo/:bar?/baz\"} Right: {\"pathname\":\"fo{o/:bar}?/baz\"}": "FAIL",
-      "Component: port Left: {\"port\":\"9\"} Right: {\"port\":\"100\"}": "FAIL",
-      "Component: protocol Left: {\"protocol\":\"a\"} Right: {\"protocol\":\"b\"}": "FAIL",
-      "Component: search Left: {\"search\":\"a\"} Right: {\"search\":\"b\"}": "FAIL",
-      "Component: username Left: {\"username\":\"a\"} Right: {\"username\":\"b\"}": "FAIL"
-    }
+    "total": 26
   },
   "urlpattern/urlpattern-compare.tentative.https.any.js#dedicatedworker": {
-    "total": 26,
-    "failures": {
-      "Component: hash Left: {\"hash\":\"a\"} Right: {\"hash\":\"b\"}": "FAIL",
-      "Component: hostname Left: {\"hostname\":\"a\"} Right: {\"hostname\":\"b\"}": "FAIL",
-      "Component: password Left: {\"password\":\"a\"} Right: {\"password\":\"b\"}": "FAIL",
-      "Component: pathname Left: \"https://a.example.com/b?a\" Right: \"https://b.example.com/a?b\"": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"*/foo\"} Right: {\"pathname\":\"*\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/\"} Right: {\"pathname\":\"/foo/:bar\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/(123)\"} Right: {\"pathname\":\"/foo/(12)\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/:b\"} Right: {\"pathname\":\"/foo/:a\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/:bar\"} Right: {\"pathname\":\"/foo/*\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/a\"} Right: {\"pathname\":\"/foo/b\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/b\"} Right: {\"pathname\":\"/foo/bar\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/bar\"} Right: {\"pathname\":\"/foo/:bar\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/{bar}\"} Right: {\"pathname\":\"/foo/(bar)\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/{bar}\"} Right: {\"pathname\":\"/foo/{bar}+\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/{bar}+\"} Right: {\"pathname\":\"/foo/{bar}?\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/{bar}/baz\"} Right: {\"pathname\":\"/foo/bar/baz\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/{bar}?\"} Right: {\"pathname\":\"/foo/{bar}*\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"foo/:bar?/baz\"} Right: {\"pathname\":\"foo/{:bar}?/baz\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"foo/:bar?/baz\"} Right: {\"pathname\":\"foo{/:bar/}?baz\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"foo/:bar?/baz\"} Right: {\"pathname\":\"foo{/:bar}?/baz\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"foo/:bar?/baz\"} Right: {\"pathname\":\"fo{o/:bar}?/baz\"}": "FAIL",
-      "Component: port Left: {\"port\":\"9\"} Right: {\"port\":\"100\"}": "FAIL",
-      "Component: protocol Left: {\"protocol\":\"a\"} Right: {\"protocol\":\"b\"}": "FAIL",
-      "Component: search Left: {\"search\":\"a\"} Right: {\"search\":\"b\"}": "FAIL",
-      "Component: username Left: {\"username\":\"a\"} Right: {\"username\":\"b\"}": "FAIL"
-    }
+    "total": 26
   },
   "urlpattern/urlpattern-compare.tentative.https.any.js#sharedworker": {
-    "total": 26,
-    "failures": {
-      "Component: hash Left: {\"hash\":\"a\"} Right: {\"hash\":\"b\"}": "FAIL",
-      "Component: hostname Left: {\"hostname\":\"a\"} Right: {\"hostname\":\"b\"}": "FAIL",
-      "Component: password Left: {\"password\":\"a\"} Right: {\"password\":\"b\"}": "FAIL",
-      "Component: pathname Left: \"https://a.example.com/b?a\" Right: \"https://b.example.com/a?b\"": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"*/foo\"} Right: {\"pathname\":\"*\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/\"} Right: {\"pathname\":\"/foo/:bar\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/(123)\"} Right: {\"pathname\":\"/foo/(12)\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/:b\"} Right: {\"pathname\":\"/foo/:a\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/:bar\"} Right: {\"pathname\":\"/foo/*\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/a\"} Right: {\"pathname\":\"/foo/b\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/b\"} Right: {\"pathname\":\"/foo/bar\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/bar\"} Right: {\"pathname\":\"/foo/:bar\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/{bar}\"} Right: {\"pathname\":\"/foo/(bar)\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/{bar}\"} Right: {\"pathname\":\"/foo/{bar}+\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/{bar}+\"} Right: {\"pathname\":\"/foo/{bar}?\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/{bar}/baz\"} Right: {\"pathname\":\"/foo/bar/baz\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"/foo/{bar}?\"} Right: {\"pathname\":\"/foo/{bar}*\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"foo/:bar?/baz\"} Right: {\"pathname\":\"foo/{:bar}?/baz\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"foo/:bar?/baz\"} Right: {\"pathname\":\"foo{/:bar/}?baz\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"foo/:bar?/baz\"} Right: {\"pathname\":\"foo{/:bar}?/baz\"}": "FAIL",
-      "Component: pathname Left: {\"pathname\":\"foo/:bar?/baz\"} Right: {\"pathname\":\"fo{o/:bar}?/baz\"}": "FAIL",
-      "Component: port Left: {\"port\":\"9\"} Right: {\"port\":\"100\"}": "FAIL",
-      "Component: protocol Left: {\"protocol\":\"a\"} Right: {\"protocol\":\"b\"}": "FAIL",
-      "Component: search Left: {\"search\":\"a\"} Right: {\"search\":\"b\"}": "FAIL",
-      "Component: username Left: {\"username\":\"a\"} Right: {\"username\":\"b\"}": "FAIL"
-    }
+    "total": 26
   },
   "urlpattern/urlpattern-constructor.any.js": {
     "total": 2
@@ -195,46 +33,13 @@
     "total": 2
   },
   "urlpattern/urlpattern-generate.tentative.any.js": {
-    "total": 20,
-    "failures": {
-      "Pattern: \"https://example.com/:foo\" Component: pathname Groups: {\"foo\":\" \"}": "FAIL",
-      "Pattern: \"original-scheme://example.com/:foo\" Component: pathname Groups: {\"foo\":\" \"}": "FAIL",
-      "Pattern: {\"hostname\":\"{:foo}.example.com\"} Component: hostname Groups: {\"foo\":\"\uD83C\uDF45\"}": "FAIL",
-      "Pattern: {\"pathname\":\"/:foo\"} Component: pathname Groups: {\"foo\":\"bar\"}": "FAIL",
-      "Pattern: {\"pathname\":\"/:foo\"} Component: pathname Groups: {\"foo\":\"\uD83C\uDF45\"}": "FAIL",
-      "Pattern: {\"pathname\":\"/:foo/:bar\"} Component: pathname Groups: {\"foo\":\"baz\",\"bar\":\"qux\"}": "FAIL",
-      "Pattern: {\"pathname\":\"/foo\"} Component: pathname Groups: {}": "FAIL",
-      "Pattern: {\"pathname\":\"/foo/:bar\"} Component: pathname Groups: {\"bar\":\"baz\"}": "FAIL",
-      "Pattern: {\"pathname\":\"/foo:bar\"} Component: pathname Groups: {\"bar\":\"baz\"}": "FAIL"
-    }
+    "total": 20
   },
   "urlpattern/urlpattern-generate.tentative.any.js#dedicatedworker": {
-    "total": 20,
-    "failures": {
-      "Pattern: \"https://example.com/:foo\" Component: pathname Groups: {\"foo\":\" \"}": "FAIL",
-      "Pattern: \"original-scheme://example.com/:foo\" Component: pathname Groups: {\"foo\":\" \"}": "FAIL",
-      "Pattern: {\"hostname\":\"{:foo}.example.com\"} Component: hostname Groups: {\"foo\":\"\uD83C\uDF45\"}": "FAIL",
-      "Pattern: {\"pathname\":\"/:foo\"} Component: pathname Groups: {\"foo\":\"bar\"}": "FAIL",
-      "Pattern: {\"pathname\":\"/:foo\"} Component: pathname Groups: {\"foo\":\"\uD83C\uDF45\"}": "FAIL",
-      "Pattern: {\"pathname\":\"/:foo/:bar\"} Component: pathname Groups: {\"foo\":\"baz\",\"bar\":\"qux\"}": "FAIL",
-      "Pattern: {\"pathname\":\"/foo\"} Component: pathname Groups: {}": "FAIL",
-      "Pattern: {\"pathname\":\"/foo/:bar\"} Component: pathname Groups: {\"bar\":\"baz\"}": "FAIL",
-      "Pattern: {\"pathname\":\"/foo:bar\"} Component: pathname Groups: {\"bar\":\"baz\"}": "FAIL"
-    }
+    "total": 20
   },
   "urlpattern/urlpattern-generate.tentative.any.js#sharedworker": {
-    "total": 20,
-    "failures": {
-      "Pattern: \"https://example.com/:foo\" Component: pathname Groups: {\"foo\":\" \"}": "FAIL",
-      "Pattern: \"original-scheme://example.com/:foo\" Component: pathname Groups: {\"foo\":\" \"}": "FAIL",
-      "Pattern: {\"hostname\":\"{:foo}.example.com\"} Component: hostname Groups: {\"foo\":\"\uD83C\uDF45\"}": "FAIL",
-      "Pattern: {\"pathname\":\"/:foo\"} Component: pathname Groups: {\"foo\":\"bar\"}": "FAIL",
-      "Pattern: {\"pathname\":\"/:foo\"} Component: pathname Groups: {\"foo\":\"\uD83C\uDF45\"}": "FAIL",
-      "Pattern: {\"pathname\":\"/:foo/:bar\"} Component: pathname Groups: {\"foo\":\"baz\",\"bar\":\"qux\"}": "FAIL",
-      "Pattern: {\"pathname\":\"/foo\"} Component: pathname Groups: {}": "FAIL",
-      "Pattern: {\"pathname\":\"/foo/:bar\"} Component: pathname Groups: {\"bar\":\"baz\"}": "FAIL",
-      "Pattern: {\"pathname\":\"/foo:bar\"} Component: pathname Groups: {\"bar\":\"baz\"}": "FAIL"
-    }
+    "total": 20
   },
   "urlpattern/urlpattern-hasregexpgroups.any.js": {
     "total": 1

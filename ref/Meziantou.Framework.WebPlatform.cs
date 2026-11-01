@@ -11686,8 +11686,12 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public string Username { get => throw null; }
         public UrlPattern(Meziantou.Framework.WebPlatform.Dom.UrlPatternInput input = default, Meziantou.Framework.WebPlatform.Dom.UrlPatternOptions? options = null) { }
         public UrlPattern(Meziantou.Framework.WebPlatform.Dom.UrlPatternInput input, string baseUrl, Meziantou.Framework.WebPlatform.Dom.UrlPatternOptions? options = null) { }
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0015", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public static int CompareComponent(string component, Meziantou.Framework.WebPlatform.Dom.UrlPattern left, Meziantou.Framework.WebPlatform.Dom.UrlPattern right) => throw null;
         public Meziantou.Framework.WebPlatform.Dom.UrlPatternResult? Exec(Meziantou.Framework.WebPlatform.Dom.Url url) => throw null;
         public Meziantou.Framework.WebPlatform.Dom.UrlPatternResult? Exec(Meziantou.Framework.WebPlatform.Dom.UrlPatternInput input = default, string? baseUrl = null) => throw null;
+        [System.Diagnostics.CodeAnalysis.Experimental("WEBPLATEXP0015", UrlFormat = "https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/docs/experimental-apis.md#{0}")]
+        public string Generate(string component, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, string>> groups) => throw null;
         public bool Test(Meziantou.Framework.WebPlatform.Dom.Url url) => throw null;
         public bool Test(Meziantou.Framework.WebPlatform.Dom.UrlPatternInput input = default, string? baseUrl = null) => throw null;
     }

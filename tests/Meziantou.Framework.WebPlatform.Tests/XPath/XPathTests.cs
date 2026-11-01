@@ -499,6 +499,30 @@ public sealed class XPathTests
         Assert.Equal("@ns:title", Ids(Snapshot(document, "//div/@n:title", resolver: new Resolver(("n", "urn:ns")))));
     }
 
+    [Theory]
+    [InlineData("_html-default-element-ns")]
+    [InlineData("_html-xpath-fn")]
+    public void Resolver_CanUseFormerHtmlHelperPrefixesInHtml(string prefix)
+    {
+        var document = HtmlDocumentParser.ParseDocument("<!DOCTYPE html>");
+        var item = document.CreateElementNS("urn:test", prefix + ":item");
+        document.Body!.AppendChild(item);
+
+        Assert.Same(item, Assert.Single(Snapshot(document, "//" + prefix + ":item", resolver: new Resolver((prefix, "urn:test")))));
+        Assert.Equal("NamespaceError", Assert.Throws<DomException>(() => Snapshot(document, "//" + prefix + ":item")).Name);
+    }
+
+    [Theory]
+    [InlineData("_html-default-element-ns")]
+    [InlineData("_html-xpath-fn")]
+    public void Resolver_CanUseFormerHtmlHelperPrefixesInXml(string prefix)
+    {
+        var document = XmlDocumentParser.ParseDocument($"<root xmlns:{prefix}='urn:test'><{prefix}:item/></root>");
+
+        Assert.Single(Snapshot(document, "//" + prefix + ":item", resolver: new Resolver((prefix, "urn:test"))));
+        Assert.Equal("NamespaceError", Assert.Throws<DomException>(() => Snapshot(document, "//" + prefix + ":item")).Name);
+    }
+
     [Fact]
     public void XmlDocument_NoRewriting()
     {
@@ -840,12 +864,13 @@ public sealed class XPathTests
     [Fact]
     public void Results_AreInDocumentOrder()
     {
-        var document = HtmlDocumentParser.ParseDocument("<!DOCTYPE html><div id=a title=t><span id=b></span></div><span id=c></span>");
-        Assert.Equal("a,@title,b,c", Ids(Snapshot(document, "//span | //@title | //div")));
+        var document = HtmlDocumentParser.ParseDocument("<!DOCTYPE html><div id=a title=t><span id=b></span><span id=c></span></div><span id=d></span>");
+        Assert.Equal("a,@title,b,c,d", Ids(Snapshot(document, "//span | //@title | //div")));
         Assert.Equal("a,@id,@title", Ids(Snapshot(document, "//div/@* | //div")));
         Assert.Equal("a", ((Element)document.Evaluate("//span | //div", document, type: XPathResult.FirstOrderedNodeType).SingleNodeValue!).Id);
-        Assert.Equal("b", ((Element)document.Evaluate("//span[@id='c']/preceding::span", document, type: XPathResult.FirstOrderedNodeType).SingleNodeValue!).Id);
-        Assert.Equal("a", document.Evaluate("string(//span[@id='c']/preceding::*/@id)", document).StringValue);
+        Assert.Equal("b", ((Element)document.Evaluate("//span[@id='d']/preceding::span", document, type: XPathResult.FirstOrderedNodeType).SingleNodeValue!).Id);
+        Assert.Equal("a", document.Evaluate("string(//span[@id='d']/preceding::*/@id)", document).StringValue);
+        Assert.Equal("b,c", Ids(Snapshot(document, "//span[@id='d']/preceding::span")));
     }
 
     [Fact]

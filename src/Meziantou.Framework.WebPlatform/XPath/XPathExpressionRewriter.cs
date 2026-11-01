@@ -3,6 +3,8 @@ using Meziantou.Framework.WebPlatform.Infra;
 
 namespace Meziantou.Framework.WebPlatform.XPath;
 
+internal sealed record RewrittenXPathExpression(string Expression, string HtmlPrefix, string AttributeFunctionPrefix);
+
 /// <summary>
 /// Rewrites the name tests of an XPath 1.0 expression evaluated against an HTML document, as required by
 /// https://html.spec.whatwg.org/multipage/infrastructure.html#interactions-with-xpath-and-xslt: unprefixed element name
@@ -20,6 +22,15 @@ internal static class XPathExpressionRewriter
 
     public const string AttributeFunctionName = "attribute-name-matches";
 
+    public static string Rewrite(string expression) => RewriteWithNamespaces(expression).Expression;
+
+    public static RewrittenXPathExpression RewriteWithNamespaces(string expression)
+    {
+        var htmlPrefix = GetUnusedPrefix(expression, HtmlPrefix);
+        var attributeFunctionPrefix = GetUnusedPrefix(expression, AttributeFunctionPrefix);
+        return new RewrittenXPathExpression(RewriteCore(expression, htmlPrefix, attributeFunctionPrefix), htmlPrefix, attributeFunctionPrefix);
+    }
+
     private enum TokenType
     {
         Other,
@@ -33,7 +44,7 @@ internal static class XPathExpressionRewriter
         Star,
     }
 
-    public static string Rewrite(string expression)
+    private static string RewriteCore(string expression, string htmlPrefix, string attributeFunctionPrefix)
     {
         var output = new StringBuilder(expression.Length + 16);
         var previous = TokenType.Operator; // the start of the expression behaves like after an operator
@@ -196,7 +207,7 @@ internal static class XPathExpressionRewriter
                     continue;
                 }
 
-                output.Append(RewriteNameTest(name, pendingAxis ?? "child"));
+                output.Append(RewriteNameTest(name, pendingAxis ?? "child", htmlPrefix, attributeFunctionPrefix));
                 previous = TokenType.Other;
                 pendingAxis = null;
                 continue;
@@ -210,7 +221,20 @@ internal static class XPathExpressionRewriter
         return output.ToString();
     }
 
-    private static string RewriteNameTest(string name, string axis)
+    private static string GetUnusedPrefix(string expression, string prefix)
+    {
+        var candidate = prefix;
+        var suffix = 0;
+        while (expression.Contains(candidate, StringComparison.Ordinal))
+        {
+            suffix++;
+            candidate = prefix + "-" + suffix.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+
+        return candidate;
+    }
+
+    private static string RewriteNameTest(string name, string axis, string htmlPrefix, string attributeFunctionPrefix)
     {
         if (name.Contains(':', StringComparison.Ordinal))
             return name; // Prefixed name tests are not affected
@@ -224,11 +248,11 @@ internal static class XPathExpressionRewriter
             if (name.AsSpan().IndexOfAnyInRange('A', 'Z') < 0)
                 return name;
 
-            return "*[" + AttributeFunctionPrefix + ":" + AttributeFunctionName + "('" + name + "')]";
+            return "*[" + attributeFunctionPrefix + ":" + AttributeFunctionName + "('" + name + "')]";
         }
 
         // The principal node type of the other axes is element
-        return HtmlPrefix + ":" + InfraAscii.ToAsciiLowercase(name);
+        return htmlPrefix + ":" + InfraAscii.ToAsciiLowercase(name);
     }
 
     private static int SkipWhitespace(string expression, int index)

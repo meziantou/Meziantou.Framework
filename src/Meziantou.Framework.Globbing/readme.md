@@ -8,7 +8,7 @@
 - `[!abc]` matches any character not in the brackets
 - `[a-z]` matches one character from the range given in the bracket
 - `[!a-z]` matches one character not in the range given in the bracket
-- `{abc,123}` matches one of the literals
+- `{abc,*.cs}` matches one of the alternatives, which can hold wildcards, other braces and `/`
 - `**` matches zero or more directories
 
 ## Dialects
@@ -16,7 +16,7 @@
 | Dialect | Follows | Notes |
 | --- | --- | --- |
 | `Standard` | the syntax above | Wildcards skip names starting with a dot unless `GlobOptions.MatchLeadingDot` is set |
-| `Git` | gitignore(5) and git's wildmatch | `[^a]`, `[[:alpha:]]`, `\` escapes in brackets; `{}` are literal; use `GlobCollection.ParseGitIgnore` for a whole `.gitignore` file |
+| `Git` | gitignore(5) and git's wildmatch | `[^a]`, `[[:alpha:]]`, `\` escapes in brackets; `{}` are literal; use `GlobCollection.ParseGitIgnore` for a whole `.gitignore` file, and `GitIgnoreMatcher` for the ignore files of a working tree |
 | `MSBuild` | MSBuild item specs | `/` and `\` are separators, `%XX` escapes, `*.*` matches every file, a leading `..` is kept |
 | `Posix` | `fnmatch(3)` without flags | Matches a plain string: `*` and `?` match `/`; `[[:alpha:]]`, `[[=a=]]`, `[[.-.]]`, `[^a]` |
 | `PosixPath` | `fnmatch(3)` with `FNM_PATHNAME` | Same syntax as `Posix`, but a `/` is only matched by a `/` |
@@ -45,7 +45,8 @@ dotnet package add Meziantou.Framework.Globbing
 
 - Enumerate files that match a glob pattern (the example creates the files in a
   [`TemporaryDirectory`](https://www.nuget.org/packages/Meziantou.Framework.TemporaryDirectory/)). `EnumerateFiles`
-  returns full paths.
+  returns full paths; pass `GlobPathFormat.RelativePath` to get paths relative to the directory, or call
+  `EnumerateFileInfos` to get `FileInfo` objects. The enumeration starts at the literal base directory of the pattern.
 
     <!-- ref:../../tests/Meziantou.Framework.Globbing.Tests/GlobTests.cs;region=Glob_EnumerateFiles;format=md-fenced-code-block;dedent=true -->
     ```csharp

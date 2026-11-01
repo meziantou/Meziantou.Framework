@@ -299,7 +299,7 @@ public sealed class VolumeDefinitionTests
         internal override Task<ContainerInfo> InspectAsync(string id, CancellationToken cancellationToken)
             => Task.FromResult(new ContainerInfo { Id = id, Name = "name", State = ContainerState.Running });
 
-        internal override IAsyncEnumerable<LogEntry> GetLogsAsync(string id, bool follow, CancellationToken cancellationToken) => AsyncEnumerable.Empty<LogEntry>();
+        internal override IAsyncEnumerable<LogEntry> GetLogsAsync(string id, ContainerLogsOptions options, CancellationToken cancellationToken) => AsyncEnumerable.Empty<LogEntry>();
 
         internal override IReadOnlyDictionary<int, int> ResolvePortMap(ContainerInfo info, ContainerDefinition definition) => new Dictionary<int, int>();
     }

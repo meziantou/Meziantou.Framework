@@ -63,7 +63,11 @@ public sealed class Barcode
     /// <summary>
     /// Creates a Code 128 barcode from the specified data.
     /// </summary>
-    /// <param name="data">The data to encode.</param>
+    /// <param name="data">The data to encode: ASCII characters (U+0000 to U+007F), control characters included.</param>
+    /// <remarks>
+    /// The encoder chooses the code sets: C for runs of digits, A for control characters, B for lowercase letters, with a
+    /// SHIFT when the other code set is needed for a single character.
+    /// </remarks>
     /// <returns>A new <see cref="Barcode"/> instance.</returns>
     public static Barcode CreateCode128(string data)
     {
@@ -74,6 +78,34 @@ public sealed class Barcode
         }
 
         return Code128Encoder.Encode(data);
+    }
+
+    /// <summary>
+    /// Creates a GS1-128 barcode from GS1 element strings.
+    /// </summary>
+    /// <param name="elements">The element strings, in the order they are encoded.</param>
+    /// <returns>A new <see cref="Barcode"/> instance, whose <see cref="Text"/> is the human-readable interpretation: each application identifier in parentheses, followed by its data.</returns>
+    /// <remarks>
+    /// <para>
+    /// The symbol starts with the FNC1 function character that identifies GS1-128, and a FNC1 separator follows each element
+    /// whose application identifier does not have a predefined length, except the last one. The parentheses of the
+    /// human-readable interpretation are not encoded. A reader returns the data with the separators as the ASCII group
+    /// separator character (U+001D) and the symbology identifier <c>]C1</c>.
+    /// </para>
+    /// <para>
+    /// Put the elements of variable length last to save separators. <see cref="CreateCode128(string)"/> never adds FNC1:
+    /// the symbols it creates are not GS1-128 symbols, even when the data looks like element strings.
+    /// </para>
+    /// </remarks>
+    /// <exception cref="ArgumentException"><paramref name="elements"/> is empty, contains <see langword="null"/>, or needs more than the 48 data characters of a GS1-128 symbol (application identifiers and separators included).</exception>
+    public static Barcode CreateGs1128(params ReadOnlySpan<Gs1Element> elements)
+    {
+        if (elements.IsEmpty)
+        {
+            throw new ArgumentException("The elements cannot be empty.", nameof(elements));
+        }
+
+        return Gs1128Encoder.Encode(elements);
     }
 
     /// <summary>

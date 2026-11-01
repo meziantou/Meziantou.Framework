@@ -79,8 +79,9 @@ public partial class TemporaryContainer
         _name = null;
         _created = false;
         _portMap = null;
+        _portHostAddresses = null;
         _startedAt = null;
-        _logEntriesToSkip = 0;
+        _currentRunLogStart = null;
     }
 
     /// <summary>Determines whether the container still exists.</summary>

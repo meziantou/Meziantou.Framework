@@ -23,8 +23,9 @@ public partial class TemporaryContainer : IAsyncDisposable
     private string? _name;
     private string? _builtImage;
     private Dictionary<int, int>? _portMap;
+    private Dictionary<int, string>? _portHostAddresses;
     private DateTimeOffset? _startedAt;
-    private int _logEntriesToSkip;
+    private LogCursor? _currentRunLogStart;
     private CancellationTokenSource? _forwardLogsCancellationTokenSource;
     private Task? _forwardLogsTask;
     private bool _created;
@@ -206,7 +207,7 @@ public partial class TemporaryContainer : IAsyncDisposable
             message.Append('.');
 
             var tail = new Queue<string>(MaxReportedLogLines);
-            await foreach (var entry in GetCurrentRunLogsAsync(follow: false, cts.Token).ConfigureAwait(false))
+            await foreach (var entry in GetLogsAfterAsync(CreateCurrentRunLogCursor(), follow: false, MaxReportedLogLines, cts.Token).ConfigureAwait(false))
             {
                 if (tail.Count == MaxReportedLogLines)
                     tail.Dequeue();
@@ -246,6 +247,28 @@ public partial class TemporaryContainer : IAsyncDisposable
 
         if (_portMap.TryGetValue(containerPort, out var hostPort))
             return hostPort;
+
+        throw new InvalidOperationException(string.Create(CultureInfo.InvariantCulture, $"Container port {containerPort} is not published."));
+    }
+
+    /// <summary>Gets the host address at which the specified published container port is reached from this machine.</summary>
+    /// <param name="containerPort">The container port.</param>
+    /// <returns>
+    /// The host name or IP address to connect to, together with <see cref="GetMappedPort"/>. An IPv6 address is returned without brackets.
+    /// <list type="bullet">
+    /// <item><description>A port bound to a specific address (<see cref="ContainerPort.HostIp"/>) is reached on that address.</description></item>
+    /// <item><description>A port bound to every interface is reached on the host of a daemon that runs on another machine (a <c>tcp://</c> or <c>ssh://</c> endpoint), and on the loopback address otherwise.</description></item>
+    /// </list>
+    /// </returns>
+    /// <exception cref="InvalidOperationException">The port mapping is not available (the container has not been started) or the port is not published.</exception>
+    public string GetHostAddress(int containerPort)
+    {
+        ObjectDisposedException.ThrowIf(_disposed, this);
+        if (_portHostAddresses is null)
+            throw new InvalidOperationException("The port mapping is not available. Call StartAsync first.");
+
+        if (_portHostAddresses.TryGetValue(containerPort, out var hostAddress))
+            return hostAddress;
 
         throw new InvalidOperationException(string.Create(CultureInfo.InvariantCulture, $"Container port {containerPort} is not published."));
     }

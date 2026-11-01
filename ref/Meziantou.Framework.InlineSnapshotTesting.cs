@@ -184,6 +184,7 @@ namespace Meziantou.Framework.InlineSnapshotTesting
     public abstract class SnapshotComparer
     {
         public static Meziantou.Framework.InlineSnapshotTesting.SnapshotComparer Default { get => throw null; }
+        public static Meziantou.Framework.InlineSnapshotTesting.SnapshotComparer Ordinal { get => throw null; }
         public abstract bool AreEqual(string? actual, string? expected);
         public virtual string? NormalizeValue(string? value) => throw null;
     }

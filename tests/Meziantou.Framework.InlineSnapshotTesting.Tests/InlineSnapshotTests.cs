@@ -441,6 +441,16 @@ public sealed partial class InlineSnapshotTests(ITestOutputHelper testOutputHelp
     }
 
     [Fact]
+    public void ReadmeExample_OrdinalComparer()
+    {
+        #region InlineSnapshot_OrdinalComparer
+        InlineSnapshot
+            .WithSettings(settings => settings.SnapshotComparer = SnapshotComparer.Ordinal)
+            .Validate("name:\tvalue", "name:\tvalue");
+        #endregion
+    }
+
+    [Fact]
     public void ReadmeExample_RawStringIndentation()
     {
         #region InlineSnapshot_RawString
@@ -720,6 +730,78 @@ public sealed partial class InlineSnapshotTests(ITestOutputHelper testOutputHelp
             var settings = InlineSnapshotSettings.Default with { AllowedStringFormats = CSharpStringFormats.{{format}} };
             InlineSnapshot.Validate(new object(), settings, {{expectedLiteral}});
             #endif
+            """);
+    }
+
+    [Fact]
+    public async Task UpdateSnapshot_OrdinalComparer_UsesQuotedStringWhenLineEndingsDiffer()
+    {
+        // The default serializer writes every line break as \n, so the value goes through a serializer that keeps it
+        await AssertSnapshot(
+            """
+            var settings = InlineSnapshotSettings.Default with { SnapshotComparer = SnapshotComparer.Ordinal, SnapshotSerializer = new TextSerializer() };
+            InlineSnapshot.Validate("line1\r\nline2\rline3\n\tline4\n    \nline5\n", settings, "");
+
+            sealed class TextSerializer : Meziantou.Framework.InlineSnapshotTesting.Serialization.SnapshotSerializer
+            {
+                public override string Serialize(object value) => (string)value;
+            }
+            """,
+            """
+            var settings = InlineSnapshotSettings.Default with { SnapshotComparer = SnapshotComparer.Ordinal, SnapshotSerializer = new TextSerializer() };
+            InlineSnapshot.Validate("line1\r\nline2\rline3\n\tline4\n    \nline5\n", settings, "line1\r\nline2\rline3\n\tline4\n    \nline5\n");
+
+            sealed class TextSerializer : Meziantou.Framework.InlineSnapshotTesting.Serialization.SnapshotSerializer
+            {
+                public override string Serialize(object value) => (string)value;
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task UpdateSnapshot_OrdinalComparer_UsesVerbatimStringForWhitespaceOnlyLines()
+    {
+        await AssertSnapshot(
+            """
+            var settings = InlineSnapshotSettings.Default with { SnapshotComparer = SnapshotComparer.Ordinal };
+            InlineSnapshot.Validate("line1\n    \nline2", settings, "");
+            """,
+            """
+            var settings = InlineSnapshotSettings.Default with { SnapshotComparer = SnapshotComparer.Ordinal };
+            InlineSnapshot.Validate("line1\n    \nline2", settings, @"line1
+
+            line2");
+            """);
+    }
+
+    [Fact]
+    public async Task UpdateSnapshot_OrdinalComparer_KeepsRawStringWhenLossless()
+    {
+        await AssertSnapshot(
+            """"
+            var settings = InlineSnapshotSettings.Default with { SnapshotComparer = SnapshotComparer.Ordinal };
+            InlineSnapshot.Validate("line1\n  line2\n", settings, "");
+            """",
+            """"
+            var settings = InlineSnapshotSettings.Default with { SnapshotComparer = SnapshotComparer.Ordinal };
+            InlineSnapshot.Validate("line1\n  line2\n", settings, """
+                line1
+                  line2
+
+                """);
+            """");
+    }
+
+    [Theory]
+    [InlineData(nameof(CSharpStringFormats.Raw))]
+    [InlineData(nameof(CSharpStringFormats.LeftAlignedRaw))]
+    [InlineData(nameof(CSharpStringFormats.Verbatim))]
+    public async Task UpdateSnapshot_UnpairedSurrogateWithoutQuoted_DoesNotChangeTheFile(string format)
+    {
+        await AssertSnapshot(
+            $$"""
+            var settings = InlineSnapshotSettings.Default with { AllowedStringFormats = CSharpStringFormats.{{format}} };
+            InlineSnapshot.Validate("a\uD800b", settings, "");
             """);
     }
 

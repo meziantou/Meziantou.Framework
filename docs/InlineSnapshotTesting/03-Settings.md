@@ -104,6 +104,20 @@ InlineSnapshot
 spaces, and lines that contain only whitespace become empty. A snapshot whose line endings or indentation were changed
 by an editor still matches.
 
+Use [SnapshotComparer.Ordinal](cref:Meziantou.Framework.InlineSnapshotTesting.SnapshotComparer.Ordinal) when whitespace matters, for instance for generated source code, Markdown or a
+network protocol. It compares the values exactly, and the updated snapshots keep the exact line endings and whitespace:
+a raw string is used only when it gives back the exact value. See
+[Values a format cannot write](06-StringFormatsAndSourceFiles.md#values-a-format-cannot-write). The default serializer
+writes every line break as `\n`: to compare the line endings of a string too, use a serializer that returns it unchanged.
+
+<!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_OrdinalComparer;format=md-fenced-code-block;dedent=true -->
+```csharp
+InlineSnapshot
+    .WithSettings(settings => settings.SnapshotComparer = SnapshotComparer.Ordinal)
+    .Validate("name:\tvalue", "name:\tvalue");
+```
+<!-- endref -->
+
 To compare differently, derive from [SnapshotComparer](cref:Meziantou.Framework.InlineSnapshotTesting.SnapshotComparer): [NormalizeValue](cref:Meziantou.Framework.InlineSnapshotTesting.SnapshotComparer.NormalizeValue) prepares each value (it returns the value
 unchanged by default), and [AreEqual](cref:Meziantou.Framework.InlineSnapshotTesting.SnapshotComparer.AreEqual) compares the normalized values. The normalized values are also the ones shown in
 the failure message.

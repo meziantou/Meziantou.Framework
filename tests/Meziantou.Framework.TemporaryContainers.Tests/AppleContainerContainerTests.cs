@@ -25,4 +25,10 @@ public sealed class AppleContainerContainerTests() : ContainerRuntimeTestsBase(C
 
     [Fact]
     public Task Cleanup_RemovesTheVolumeOfARunThatIsOver() => AssertCleanupRemovesOrphanedVolumeAsync();
+
+    [Fact]
+    public Task Cleanup_RemovesTheNetworkOfARunThatIsOver() => AssertCleanupRemovesOrphanedNetworkAsync();
+
+    [Fact]
+    public Task Network_ConnectsContainersByAlias() => AssertNetworkConnectsContainersByAliasAsync();
 }

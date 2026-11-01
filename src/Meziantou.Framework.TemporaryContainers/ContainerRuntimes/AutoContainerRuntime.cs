@@ -252,4 +252,30 @@ internal sealed class AutoContainerRuntime : ContainerRuntime
         var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
         return await runtime.VolumeExistsAsync(name, cancellationToken).ConfigureAwait(false);
     }
+
+    internal override bool SupportsNetworks => ResolvedRuntime.SupportsNetworks;
+
+    internal override async Task CreateNetworkAsync(NetworkDefinition definition, string name, string instanceId, CancellationToken cancellationToken)
+    {
+        var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        await runtime.CreateNetworkAsync(definition, name, instanceId, cancellationToken).ConfigureAwait(false);
+    }
+
+    internal override async Task DeleteNetworkAsync(string name, CancellationToken cancellationToken)
+    {
+        var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        await runtime.DeleteNetworkAsync(name, cancellationToken).ConfigureAwait(false);
+    }
+
+    internal override async Task<IReadOnlyDictionary<string, string>?> GetNetworkLabelsAsync(string name, CancellationToken cancellationToken)
+    {
+        var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        return await runtime.GetNetworkLabelsAsync(name, cancellationToken).ConfigureAwait(false);
+    }
+
+    internal override async Task<IReadOnlyList<ManagedResource>> ListManagedNetworksAsync(CancellationToken cancellationToken)
+    {
+        var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        return await runtime.ListManagedNetworksAsync(cancellationToken).ConfigureAwait(false);
+    }
 }

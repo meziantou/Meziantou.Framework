@@ -27,6 +27,79 @@ internal static class GlobPatternWriter
         AppendLiteral(ref sb, value, dialect);
     }
 
+    /// <summary>
+    ///     Writes text as a pattern that matches exactly this text. A path separator stays a separator, so each path
+    ///     segment is written as a literal segment. The output can be embedded in a larger pattern.
+    /// </summary>
+    public static void AppendEscapedText(ref ValueStringBuilder sb, ReadOnlySpan<char> text, GlobDialect dialect)
+    {
+        if (text.IsEmpty)
+            return;
+
+        // A leading '!' negates the pattern, and a gitignore line starting with '#' is a comment
+        if ((text[0] is '!' && dialect is GlobDialect.Standard or GlobDialect.Git) || (text[0] is '#' && dialect is GlobDialect.Git))
+        {
+            sb.Append('\\');
+            sb.Append(text[0]);
+            text = text[1..];
+        }
+
+        while (true)
+        {
+            var separatorIndex = IndexOfSeparator(text, dialect);
+            var segment = separatorIndex < 0 ? text : text[..separatorIndex];
+            AppendEscapedSegment(ref sb, segment, dialect);
+            if (separatorIndex < 0)
+                break;
+
+            // MSBuild reads both '/' and '\' as separators, so the original one is kept
+            sb.Append(dialect is GlobDialect.MSBuild ? text[separatorIndex] : '/');
+            text = text[(separatorIndex + 1)..];
+        }
+
+        // gitignore drops the trailing spaces of a line, unless the last one is escaped
+        if (dialect is GlobDialect.Git && sb.Length > 0 && sb[^1] == ' ')
+        {
+            sb.Insert(sb.Length - 1, "\\");
+        }
+
+        static int IndexOfSeparator(ReadOnlySpan<char> text, GlobDialect dialect)
+        {
+            return dialect switch
+            {
+                // fnmatch without FNM_PATHNAME matches a plain string: a '/' is an ordinary character
+                GlobDialect.Posix => -1,
+                GlobDialect.MSBuild => text.IndexOfAny('/', '\\'),
+
+                // On Windows, a '\' separates path segments too
+                _ => text.IndexOfAny('/', Path.DirectorySeparatorChar),
+            };
+        }
+
+        static void AppendEscapedSegment(ref ValueStringBuilder sb, ReadOnlySpan<char> segment, GlobDialect dialect)
+        {
+            if (segment is "." or ".." && dialect is GlobDialect.Standard or GlobDialect.MSBuild)
+            {
+                AppendEscaped(ref sb, '.', dialect);
+                segment = segment[1..];
+            }
+
+            foreach (var c in segment)
+            {
+                // These characters have a meaning in an MSBuild item, so they are escaped too for the pattern to be
+                // usable in a project file
+                if (dialect is GlobDialect.MSBuild && c is ';' or '$' or '@' or '\'' or '(' or ')')
+                {
+                    AppendEscaped(ref sb, c, dialect);
+                }
+                else
+                {
+                    AppendLiteral(ref sb, c, dialect);
+                }
+            }
+        }
+    }
+
     /// <summary>Writes an alternative of a <see cref="GlobDialect.Standard"/> literal set, such as <c>{a,b}</c>.</summary>
     public static void AppendLiteralSetValue(ref ValueStringBuilder sb, string value)
     {

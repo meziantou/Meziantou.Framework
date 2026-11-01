@@ -117,6 +117,34 @@ Assert.True(Glob.Parse(@"\!readme.txt", GlobDialect.Standard).IsMatch("!readme.t
 `\` is an escape character in a pattern, not a separator: write `src/*.cs`, not `src\*.cs`, even on Windows. The
 MSBuild dialect is the exception: it reads both as separators.
 
+## Build a pattern from a name
+
+To use a file or folder name in a pattern, escape it with [Glob.Escape](cref:Meziantou.Framework.Globbing.Glob.Escape) instead of concatenating it as is. A name
+that holds a `*`, a `[` or a leading `!` would otherwise change the meaning of the pattern:
+
+<!-- ref:../../tests/Meziantou.Framework.Globbing.Tests/GlobTests.cs;region=Glob_EscapeText;format=md-fenced-code-block;dedent=true -->
+```csharp
+// Build a pattern from a folder name that holds special characters
+var pattern = Glob.Escape("Reports [2024]", GlobDialect.Standard) + "/**/*.pdf";
+Assert.Equal(@"Reports \[2024]/**/*.pdf", pattern);
+
+var glob = Glob.Parse(pattern, GlobDialect.Standard);
+Assert.True(glob.IsMatch("Reports [2024]/Q1/summary.pdf"));
+Assert.False(glob.IsMatch("Reports 2/Q1/summary.pdf"));
+
+// Each dialect has its own escaping rules
+Assert.Equal("100%25 done.txt", Glob.Escape("100% done.txt", GlobDialect.MSBuild));
+Assert.Equal(@"\#notes.txt", Glob.Escape("#notes.txt", GlobDialect.Git));
+```
+<!-- endref -->
+
+- The result matches exactly the text, and can be combined with other parts of a pattern.
+- Each dialect has its own rules: a `\` before the character, or `%XX` for MSBuild, which also escapes the characters
+  that have a meaning in a project file (`;`, `$`, `@`, `'`, `(` and `)`). The Git dialect also escapes a leading `#`
+  and a trailing space, so the result can be written in a `.gitignore` file.
+- A path separator stays a separator: `/`, and `\` on Windows. The text `src/file*.cs` gives the pattern `src/file\*.cs`.
+- A Git pattern without a `/` matches the name at any depth. Prepend a `/` to the result to anchor it to the root.
+
 ## `.` and `..`
 
 The segments `.` and `..` are resolved when the pattern is parsed: `a/./b` is `a/b`, and `a/../b` is `b`. A pattern

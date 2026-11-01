@@ -25,6 +25,8 @@ of a URL already seen.
 - **Remove values and count them** with [CountingBloomFilter](cref:Meziantou.Framework.BloomFilters.CountingBloomFilter). See
   [Counting Bloom filters](05-CountingBloomFilters.md).
 - **Choose the hash algorithm.** See [Hash algorithms](06-HashAlgorithms.md).
+- **Speed up large filters** with [BlockedBloomFilter](cref:Meziantou.Framework.BloomFilters.BlockedBloomFilter), which
+  keeps the bits of each value in one cache line. See [Blocked Bloom filters](07-BlockedBloomFilters.md).
 
 ## Namespace
 
@@ -38,6 +40,8 @@ The types are in the [Meziantou.Framework.BloomFilters](cref:Meziantou.Framework
 | [CountingBloomFilter](cref:Meziantou.Framework.BloomFilters.CountingBloomFilter) | The factory methods of counting Bloom filters |
 | [CountingBloomFilterSize](cref:Meziantou.Framework.BloomFilters.CountingBloomFilterSize) | The size of a counting Bloom filter: its number of counters and of hash functions |
 | [ICountingBloomFilter](cref:Meziantou.Framework.BloomFilters.ICountingBloomFilter) | The methods of a counting Bloom filter, whatever its hash algorithm |
+| [BlockedBloomFilter](cref:Meziantou.Framework.BloomFilters.BlockedBloomFilter) | The factory methods of blocked Bloom filters, which keep the bits of a value in one cache line |
+| [BlockedBloomFilterSize](cref:Meziantou.Framework.BloomFilters.BlockedBloomFilterSize) | The size of a blocked Bloom filter: its number of 512-bit blocks and of bits set per value |
 
 ## Next steps
 

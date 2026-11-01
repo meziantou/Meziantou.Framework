@@ -4,6 +4,182 @@
 
 namespace Meziantou.Framework.BloomFilters
 {
+    public abstract class BlockedBloomFilter
+    {
+        public static Meziantou.Framework.BloomFilters.BlockedBloomFilterAdler32 CreateAdler32(Meziantou.Framework.BloomFilters.BlockedBloomFilterSize size) => throw null;
+        public static Meziantou.Framework.BloomFilters.BlockedBloomFilterCrc32 CreateCrc32(Meziantou.Framework.BloomFilters.BlockedBloomFilterSize size) => throw null;
+        public static Meziantou.Framework.BloomFilters.BlockedBloomFilterCrc64 CreateCrc64(Meziantou.Framework.BloomFilters.BlockedBloomFilterSize size) => throw null;
+        public static Meziantou.Framework.BloomFilters.BlockedBloomFilterXXHash128 CreateXXHash128(Meziantou.Framework.BloomFilters.BlockedBloomFilterSize size) => throw null;
+        public static Meziantou.Framework.BloomFilters.BlockedBloomFilterXXHash3 CreateXXHash3(Meziantou.Framework.BloomFilters.BlockedBloomFilterSize size) => throw null;
+        public static Meziantou.Framework.BloomFilters.BlockedBloomFilterXXHash32 CreateXXHash32(Meziantou.Framework.BloomFilters.BlockedBloomFilterSize size) => throw null;
+        public static Meziantou.Framework.BloomFilters.BlockedBloomFilterXXHash64 CreateXXHash64(Meziantou.Framework.BloomFilters.BlockedBloomFilterSize size) => throw null;
+        public double GetEstimateCount() => throw null;
+    }
+
+    public sealed class BlockedBloomFilterAdler32 : Meziantou.Framework.BloomFilters.BlockedBloomFilter, Meziantou.Framework.BloomFilters.IBloomFilter
+    {
+        public void Add(System.Guid value) { }
+        public void Add(System.Int128 value) { }
+        public void Add(System.ReadOnlySpan<byte> value) { }
+        public void Add(System.UInt128 value) { }
+        public void Add(int value) { }
+        public void Add(long value) { }
+        public void Add(string value) { }
+        public void Add(uint value) { }
+        public void Add(ulong value) { }
+        public bool MayContain(System.Guid value) => throw null;
+        public bool MayContain(System.Int128 value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.UInt128 value) => throw null;
+        public bool MayContain(int value) => throw null;
+        public bool MayContain(long value) => throw null;
+        public bool MayContain(string value) => throw null;
+        public bool MayContain(uint value) => throw null;
+        public bool MayContain(ulong value) => throw null;
+    }
+
+    public sealed class BlockedBloomFilterCrc32 : Meziantou.Framework.BloomFilters.BlockedBloomFilter, Meziantou.Framework.BloomFilters.IBloomFilter
+    {
+        public void Add(System.Guid value) { }
+        public void Add(System.Int128 value) { }
+        public void Add(System.ReadOnlySpan<byte> value) { }
+        public void Add(System.UInt128 value) { }
+        public void Add(int value) { }
+        public void Add(long value) { }
+        public void Add(string value) { }
+        public void Add(uint value) { }
+        public void Add(ulong value) { }
+        public bool MayContain(System.Guid value) => throw null;
+        public bool MayContain(System.Int128 value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.UInt128 value) => throw null;
+        public bool MayContain(int value) => throw null;
+        public bool MayContain(long value) => throw null;
+        public bool MayContain(string value) => throw null;
+        public bool MayContain(uint value) => throw null;
+        public bool MayContain(ulong value) => throw null;
+    }
+
+    public sealed class BlockedBloomFilterCrc64 : Meziantou.Framework.BloomFilters.BlockedBloomFilter, Meziantou.Framework.BloomFilters.IBloomFilter
+    {
+        public void Add(System.Guid value) { }
+        public void Add(System.Int128 value) { }
+        public void Add(System.ReadOnlySpan<byte> value) { }
+        public void Add(System.UInt128 value) { }
+        public void Add(int value) { }
+        public void Add(long value) { }
+        public void Add(string value) { }
+        public void Add(uint value) { }
+        public void Add(ulong value) { }
+        public bool MayContain(System.Guid value) => throw null;
+        public bool MayContain(System.Int128 value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.UInt128 value) => throw null;
+        public bool MayContain(int value) => throw null;
+        public bool MayContain(long value) => throw null;
+        public bool MayContain(string value) => throw null;
+        public bool MayContain(uint value) => throw null;
+        public bool MayContain(ulong value) => throw null;
+    }
+
+    public readonly struct BlockedBloomFilterSize
+    {
+        public long BitCount { get => throw null; }
+        public long BlockCount { get => throw null; }
+        public int HashCount { get => throw null; }
+        public static Meziantou.Framework.BloomFilters.BlockedBloomFilterSize CreateExact(long blockCount, int hashCount) => throw null;
+        public static Meziantou.Framework.BloomFilters.BlockedBloomFilterSize CreateOptimalSize(long expectedItemCount, double falsePositiveProbability) => throw null;
+        public double GetFalsePositiveProbability(long itemCount) => throw null;
+    }
+
+    public sealed class BlockedBloomFilterXXHash128 : Meziantou.Framework.BloomFilters.BlockedBloomFilter, Meziantou.Framework.BloomFilters.IBloomFilter
+    {
+        public void Add(System.Guid value) { }
+        public void Add(System.Int128 value) { }
+        public void Add(System.ReadOnlySpan<byte> value) { }
+        public void Add(System.UInt128 value) { }
+        public void Add(int value) { }
+        public void Add(long value) { }
+        public void Add(string value) { }
+        public void Add(uint value) { }
+        public void Add(ulong value) { }
+        public bool MayContain(System.Guid value) => throw null;
+        public bool MayContain(System.Int128 value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.UInt128 value) => throw null;
+        public bool MayContain(int value) => throw null;
+        public bool MayContain(long value) => throw null;
+        public bool MayContain(string value) => throw null;
+        public bool MayContain(uint value) => throw null;
+        public bool MayContain(ulong value) => throw null;
+    }
+
+    public sealed class BlockedBloomFilterXXHash3 : Meziantou.Framework.BloomFilters.BlockedBloomFilter, Meziantou.Framework.BloomFilters.IBloomFilter
+    {
+        public void Add(System.Guid value) { }
+        public void Add(System.Int128 value) { }
+        public void Add(System.ReadOnlySpan<byte> value) { }
+        public void Add(System.UInt128 value) { }
+        public void Add(int value) { }
+        public void Add(long value) { }
+        public void Add(string value) { }
+        public void Add(uint value) { }
+        public void Add(ulong value) { }
+        public bool MayContain(System.Guid value) => throw null;
+        public bool MayContain(System.Int128 value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.UInt128 value) => throw null;
+        public bool MayContain(int value) => throw null;
+        public bool MayContain(long value) => throw null;
+        public bool MayContain(string value) => throw null;
+        public bool MayContain(uint value) => throw null;
+        public bool MayContain(ulong value) => throw null;
+    }
+
+    public sealed class BlockedBloomFilterXXHash32 : Meziantou.Framework.BloomFilters.BlockedBloomFilter, Meziantou.Framework.BloomFilters.IBloomFilter
+    {
+        public void Add(System.Guid value) { }
+        public void Add(System.Int128 value) { }
+        public void Add(System.ReadOnlySpan<byte> value) { }
+        public void Add(System.UInt128 value) { }
+        public void Add(int value) { }
+        public void Add(long value) { }
+        public void Add(string value) { }
+        public void Add(uint value) { }
+        public void Add(ulong value) { }
+        public bool MayContain(System.Guid value) => throw null;
+        public bool MayContain(System.Int128 value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.UInt128 value) => throw null;
+        public bool MayContain(int value) => throw null;
+        public bool MayContain(long value) => throw null;
+        public bool MayContain(string value) => throw null;
+        public bool MayContain(uint value) => throw null;
+        public bool MayContain(ulong value) => throw null;
+    }
+
+    public sealed class BlockedBloomFilterXXHash64 : Meziantou.Framework.BloomFilters.BlockedBloomFilter, Meziantou.Framework.BloomFilters.IBloomFilter
+    {
+        public void Add(System.Guid value) { }
+        public void Add(System.Int128 value) { }
+        public void Add(System.ReadOnlySpan<byte> value) { }
+        public void Add(System.UInt128 value) { }
+        public void Add(int value) { }
+        public void Add(long value) { }
+        public void Add(string value) { }
+        public void Add(uint value) { }
+        public void Add(ulong value) { }
+        public bool MayContain(System.Guid value) => throw null;
+        public bool MayContain(System.Int128 value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.UInt128 value) => throw null;
+        public bool MayContain(int value) => throw null;
+        public bool MayContain(long value) => throw null;
+        public bool MayContain(string value) => throw null;
+        public bool MayContain(uint value) => throw null;
+        public bool MayContain(ulong value) => throw null;
+    }
+
     public abstract class BloomFilter
     {
         public static Meziantou.Framework.BloomFilters.BloomFilterAdler32 CreateAdler32(Meziantou.Framework.BloomFilters.BloomFilterSize size) => throw null;

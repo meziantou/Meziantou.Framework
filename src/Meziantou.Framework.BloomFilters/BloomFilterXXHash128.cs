@@ -88,7 +88,7 @@ public sealed partial class BloomFilterXXHash128 : BloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static BloomFilterHash Hash(ReadOnlySpan<byte> value)
+    internal static BloomFilterHash Hash(ReadOnlySpan<byte> value)
     {
         return BloomFilterHash.FromUInt128(XxHash128.HashToUInt128(value));
     }

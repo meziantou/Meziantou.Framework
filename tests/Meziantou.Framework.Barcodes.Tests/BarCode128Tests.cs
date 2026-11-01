@@ -241,4 +241,28 @@ public class BarCode128Tests
     {
         Assert.Equal(expected, BarcodeModulePattern.Render(Barcode.CreateCode128(data)));
     }
+
+    [Theory]
+    [InlineData('\u007f', 7000)]
+    [InlineData('a', 10000)]
+    [InlineData('z', 50000)]
+    public void CreateCode128_LongInput_ComputesTheChecksumWithoutOverflow(char character, int length)
+    {
+        var barcode = Barcode.CreateCode128(new string(character, length));
+
+        var codewords = Code128Symbols.Decode(barcode);
+        Assert.HasCount(length + 3, codewords);
+        Assert.Equal(104, codewords[0]);
+        Assert.All(codewords[1..^2], codeword => Assert.Equal(character - ' ', codeword));
+        Code128Symbols.AssertValidChecksum(codewords);
+    }
+
+    [Theory]
+    [InlineData("SKU-123456")]
+    [InlineData("12345678")]
+    [InlineData("AB123456CD78")]
+    public void CreateCode128_ChecksumMatchesIndependentCalculation(string data)
+    {
+        Code128Symbols.AssertValidChecksum(Code128Symbols.Decode(Barcode.CreateCode128(data)));
+    }
 }

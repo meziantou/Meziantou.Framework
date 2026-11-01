@@ -136,13 +136,14 @@ internal static class Code128Encoder
 
     private static int CalculateChecksum(List<int> codewords)
     {
-        var checksum = codewords[0];
+        // Reduce at each step: the weighted sum of a long symbol overflows an int
+        var checksum = codewords[0] % 103;
         for (var i = 1; i < codewords.Count; i++)
         {
-            checksum += codewords[i] * i;
+            checksum = (checksum + (codewords[i] * (i % 103))) % 103;
         }
 
-        return checksum % 103;
+        return checksum;
     }
 
     private static int CountConsecutiveDigits(string data, int startIndex)

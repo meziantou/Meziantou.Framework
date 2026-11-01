@@ -391,9 +391,73 @@ internal sealed partial class IdlModel
         AddCssPrivateRule(model);
         AddTestReportBody(model);
         AddAnimationRanges(model);
+        AddUrlPatternTentativeMethods(model);
         ReplaceSvgPathSegmentInterfaceWithDictionary(model);
         FixCssParserApiTypes(model);
         return model;
+    }
+
+    /// <summary>
+    /// The tentative compareComponent() and generate() methods of URLPattern, tested by the WPT revision pinned in
+    /// tests/Meziantou.Framework.WebPlatform.SpecData/versions.json.
+    /// </summary>
+    private static void AddUrlPatternTentativeMethods(IdlModel model)
+    {
+        if (!model.Definitions.TryGetValue("URLPattern", out var definition))
+            return;
+
+        model.Definitions["URLPatternComponent"] = new IdlDefinition
+        {
+            Name = "URLPatternComponent",
+            Kind = IdlDefinitionKind.Enum,
+            EnumValues = ["protocol", "username", "password", "hostname", "port", "pathname", "search", "hash"],
+            Source = "urlpattern",
+            SpecUrl = "https://github.com/web-platform-tests/wpt/tree/3d98b9b722ca38685e04dea4e5208d45ce7fd55f/urlpattern",
+        };
+
+        const string CompareComponentHref = "https://github.com/web-platform-tests/wpt/blob/3d98b9b722ca38685e04dea4e5208d45ce7fd55f/urlpattern/resources/urlpattern-compare-tests.tentative.js#L1";
+        const string GenerateHref = "https://github.com/web-platform-tests/wpt/blob/3d98b9b722ca38685e04dea4e5208d45ce7fd55f/urlpattern/urlpattern-generate.tentative.any.js#L1";
+
+        definition.Members.Add(new IdlMember
+        {
+            Kind = IdlMemberKind.Operation,
+            Name = "compareComponent",
+            Type = new IdlType { Name = "long" },
+            Arguments =
+            [
+                new IdlArgument { Name = "component", Type = new IdlType { Name = "URLPatternComponent" } },
+                new IdlArgument { Name = "left", Type = new IdlType { Name = "URLPattern" } },
+                new IdlArgument { Name = "right", Type = new IdlType { Name = "URLPattern" } },
+            ],
+            Special = "static",
+            Source = "urlpattern",
+            DeclaringDefinition = definition.Name,
+            ExperimentalApi = "UrlPatternTentativeMethods",
+            Href = CompareComponentHref,
+        });
+        definition.Members.Add(new IdlMember
+        {
+            Kind = IdlMemberKind.Operation,
+            Name = "generate",
+            Type = new IdlType { Name = "USVString" },
+            Arguments =
+            [
+                new IdlArgument { Name = "component", Type = new IdlType { Name = "URLPatternComponent" } },
+                new IdlArgument
+                {
+                    Name = "groups",
+                    Type = new IdlType
+                    {
+                        Generic = "record",
+                        Subtypes = [new IdlType { Name = "USVString" }, new IdlType { Name = "USVString" }],
+                    },
+                },
+            ],
+            Source = "urlpattern",
+            DeclaringDefinition = definition.Name,
+            ExperimentalApi = "UrlPatternTentativeMethods",
+            Href = GenerateHref,
+        });
     }
 
     /// <summary>

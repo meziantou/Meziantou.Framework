@@ -347,6 +347,8 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
 
     internal static readonly string[] Enum_TouchType_Values = new[] { "direct", "stylus" };
 
+    internal static readonly string[] Enum_URLPatternComponent_Values = new[] { "protocol", "username", "password", "hostname", "port", "pathname", "search", "hash" };
+
     internal static readonly string[] Enum_WorkerType_Values = new[] { "classic", "module" };
 
     internal static readonly string[] Enum_XMLHttpRequestResponseType_Values = new[] { "", "arraybuffer", "blob", "document", "json", "text" };

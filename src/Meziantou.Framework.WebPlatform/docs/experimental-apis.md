@@ -154,3 +154,12 @@ The properties of `CssStyleProperties` that the browsers implement but no specif
 `%AbstractModuleSource%` intrinsic of the [source phase imports proposal](https://github.com/tc39/proposal-source-phase-imports)
 (TC39), as the [ESM integration of WebAssembly](https://github.com/WebAssembly/esm-integration) defines, and its instances
 are module source objects. Only the script engine adapters implement or call them.
+
+<a id="WEBPLATEXP0015"></a>
+
+## WEBPLATEXP0015: URLPattern compareComponent() and generate()
+
+`UrlPattern.CompareComponent()` and `UrlPattern.Generate()` implement the tentative
+`URLPattern.compareComponent()` and `URLPattern.prototype.generate()` methods, as tested by the pinned
+[web-platform-tests](https://github.com/web-platform-tests/wpt/tree/3d98b9b722ca38685e04dea4e5208d45ce7fd55f/urlpattern).
+Their APIs and behavior may change while the proposals are under discussion.

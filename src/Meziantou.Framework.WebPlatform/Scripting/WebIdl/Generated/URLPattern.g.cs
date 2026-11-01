@@ -42,6 +42,26 @@ internal static class Binding_URLPattern<TAdapter, TValue> where TAdapter : stru
         var has1 = !r.IsMissing(a, 1); var a1 = has1 ? (string?)r.ToUsvString(a[1]) : default;
         var result = o.Exec(WebIdlHelpers<TAdapter, TValue>.ToUnionStruct_Dom_UrlPatternInput(r, a0), (has1 ? a1 : (string?)null)); return (result is { } dictionaryValue ? WebIdlHelpers<TAdapter, TValue>.FromDictionary_Dom_UrlPatternResult(r, dictionaryValue) : r.Adapter.Null);
     }
+    #pragma warning disable WEBPLATEXP0015 // The binding exposes the experimental Web IDL member
+    private static TValue Op_compareComponent_Static(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        if (a.Length < 3) throw r.NotEnoughArguments("compareComponent", 3, a.Length);
+        var a0 = r.ToEnumerationValue(a[0], "URLPatternComponent", WebIdlHelpers<TAdapter, TValue>.Enum_URLPatternComponent_Values);
+        var a1 = r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.UrlPattern>(a[1], "URLPattern");
+        var a2 = r.ToInterface<global::Meziantou.Framework.WebPlatform.Dom.UrlPattern>(a[2], "URLPattern");
+        var result = global::Meziantou.Framework.WebPlatform.Dom.UrlPattern.CompareComponent(a0, a1, a2); return r.FromNumber((double)result);
+    }
+    #pragma warning restore WEBPLATEXP0015
+    #pragma warning disable WEBPLATEXP0015 // The binding exposes the experimental Web IDL member
+    private static TValue Op_generate(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.UrlPattern>(t, Binding);
+        if (a.Length < 2) throw r.NotEnoughArguments("generate", 2, a.Length);
+        var a0 = r.ToEnumerationValue(a[0], "URLPatternComponent", WebIdlHelpers<TAdapter, TValue>.Enum_URLPatternComponent_Values);
+        var a1 = r.ToRecord(a[1], static (r, k) => r.ToUsvString(k), static (r, e) => r.ToUsvString(e));
+        var result = o.Generate(a0, a1); return r.FromString(result);
+    }
+    #pragma warning restore WEBPLATEXP0015
     private static void DefineMembers(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue interfaceObject, TValue prototype, TValue instanceTarget)
     {
         r.DefineAttribute(instanceTarget, "protocol", Get_protocol, null);
@@ -55,6 +75,8 @@ internal static class Binding_URLPattern<TAdapter, TValue> where TAdapter : stru
         r.DefineAttribute(instanceTarget, "hasRegExpGroups", Get_hasRegExpGroups, null);
         r.DefineOperation(instanceTarget, "test", 0, Op_test);
         r.DefineOperation(instanceTarget, "exec", 0, Op_exec);
+        r.DefineOperation(interfaceObject, "compareComponent", 3, Op_compareComponent_Static);
+        r.DefineOperation(instanceTarget, "generate", 2, Op_generate);
     }
 
     private static readonly global::Meziantou.Framework.WebPlatform.Scripting.OverloadInfo[] Construct_Overloads = [new(new global::Meziantou.Framework.WebPlatform.Scripting.OverloadArgument[] { new("(USVString or URLPatternInit)", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.String | global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Dictionary, new global::System.Type[] {  }, false, false), new("USVString", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.String, new global::System.Type[] {  }, false, false), new("URLPatternOptions", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Dictionary, new global::System.Type[] {  }, true, false) }), new(new global::Meziantou.Framework.WebPlatform.Scripting.OverloadArgument[] { new("(USVString or URLPatternInit)", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.String | global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Dictionary, new global::System.Type[] {  }, true, false), new("URLPatternOptions", global::Meziantou.Framework.WebPlatform.Scripting.OverloadTypeKinds.Dictionary, new global::System.Type[] {  }, true, false) })];

@@ -64,7 +64,7 @@ public abstract partial class CanvasRenderingContext2DBase
         Alpha = Settings.Alpha,
         Desynchronized = Settings.Desynchronized,
         ColorSpace = Settings.ColorSpace,
-        ColorType = Settings.ColorType,
+        ColorType = Bitmap.Options.ColorType,
         WillReadFrequently = Settings.WillReadFrequently,
     };
 
@@ -420,7 +420,7 @@ public abstract partial class CanvasRenderingContext2DBase
 
             default:
                 var text = value as string ?? Convert.ToString(value, CultureInfo.InvariantCulture) ?? "";
-                return CanvasColors.Parse(text, CanvasElement, Bitmap.Options.ColorSpace) is { } color ? new CanvasStyle(color.Serialization, color.Color) : null;
+                return CanvasColors.Parse(text, CanvasElement, Bitmap.Options.ColorSpace, preserveRange: Bitmap.Options.ColorType == CanvasColorType.Float16) is { } color ? new CanvasStyle(color.Serialization, color.Color) : null;
         }
     }
 
@@ -482,7 +482,7 @@ public abstract partial class CanvasRenderingContext2DBase
         set
         {
             ArgumentNullException.ThrowIfNull(value);
-            if (CanvasColors.Parse(value, CanvasElement, Bitmap.Options.ColorSpace) is { } color)
+            if (CanvasColors.Parse(value, CanvasElement, Bitmap.Options.ColorSpace, preserveRange: Bitmap.Options.ColorType == CanvasColorType.Float16) is { } color)
             {
                 _state.ShadowColorText = color.Serialization;
                 _state.ShadowColor = color.Color;

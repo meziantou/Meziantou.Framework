@@ -213,19 +213,13 @@
     "total": 1
   },
   "html/canvas/element/color-type/2d.color.type.u8p3.to.f16srgb.to.u8p3.html": {
-    "total": 1,
-    "failures": {
-      "test srgb float16 canvas storing 8-bit display-p3 data accurately": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/color-type/2d.color.type.u8p3.to.u8srgb.to.u8p3.html": {
     "total": 1
   },
   "html/canvas/element/color-type/2d.color.type.u8srgb.to.f16p3.to.u8srgb.html": {
-    "total": 1,
-    "failures": {
-      "test display-p3 float16 canvas storing 8-bit srgb data accurately": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/color-type/2d.color.type.u8srgb.to.u8p3.to.u8srgb.html": {
     "total": 1
@@ -4822,10 +4816,7 @@
     }
   },
   "html/canvas/element/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.float16.html": {
-    "total": 1,
-    "failures": {
-      "Verify round-trip of 16-bit float sRGB data ImageData through ImageBitmap": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.unorm8.html": {
     "total": 1
@@ -4939,10 +4930,7 @@
     "total": 1
   },
   "html/canvas/element/pixel-manipulation/2d.imageData.put.basic.rgba.float16.html": {
-    "total": 1,
-    "failures": {
-      "putImageData() puts 16-bit floating point image data from getImageData() onto the canvas": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/element/pixel-manipulation/2d.imageData.put.clip.html": {
     "total": 1
@@ -5955,13 +5943,7 @@
     "total": 4
   },
   "html/canvas/element/wide-gamut-canvas/2d.color.space.toBlob.toDataURL.png.linear.float.html": {
-    "total": 4,
-    "failures": {
-      "Test toBlob creates a png image using an appropriate encoding to not lose precision from a display-p3-linear float16 canvas": "FAIL",
-      "Test toBlob creates a png image using an appropriate encoding to not lose precision from a srgb-linear float16 canvas": "FAIL",
-      "Test toDataURL creates a png image using an appropriate encoding to not lose precision from a display-p3-linear float16 canvas": "FAIL",
-      "Test toDataURL creates a png image using an appropriate encoding to not lose precision from a srgb-linear float16 canvas": "FAIL"
-    }
+    "total": 4
   },
   "html/canvas/element/wide-gamut-canvas/2d.color.space.toDataURL.convert.html": {
     "total": 4,
@@ -6295,16 +6277,10 @@
     "total": 1
   },
   "html/canvas/offscreen/color-type/2d.color.type.u8p3.to.f16srgb.to.u8p3.html": {
-    "total": 1,
-    "failures": {
-      "test srgb float16 canvas storing 8-bit display-p3 data accurately": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/color-type/2d.color.type.u8p3.to.f16srgb.to.u8p3.worker.js": {
-    "total": 1,
-    "failures": {
-      "test srgb float16 canvas storing 8-bit display-p3 data accurately": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/color-type/2d.color.type.u8p3.to.u8srgb.to.u8p3.html": {
     "total": 1
@@ -6313,16 +6289,10 @@
     "total": 1
   },
   "html/canvas/offscreen/color-type/2d.color.type.u8srgb.to.f16p3.to.u8srgb.html": {
-    "total": 1,
-    "failures": {
-      "test display-p3 float16 canvas storing 8-bit srgb data accurately": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/color-type/2d.color.type.u8srgb.to.f16p3.to.u8srgb.worker.js": {
-    "total": 1,
-    "failures": {
-      "test display-p3 float16 canvas storing 8-bit srgb data accurately": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/color-type/2d.color.type.u8srgb.to.u8p3.to.u8srgb.html": {
     "total": 1
@@ -11394,16 +11364,10 @@
     }
   },
   "html/canvas/offscreen/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.float16.html": {
-    "total": 1,
-    "failures": {
-      "Verify round-trip of 16-bit float sRGB data ImageData through ImageBitmap": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.float16.worker.js": {
-    "total": 1,
-    "failures": {
-      "Verify round-trip of 16-bit float sRGB data ImageData through ImageBitmap": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.unorm8.html": {
     "total": 1
@@ -11583,16 +11547,10 @@
     "total": 1
   },
   "html/canvas/offscreen/pixel-manipulation/2d.imageData.put.basic.rgba.float16.html": {
-    "total": 1,
-    "failures": {
-      "putImageData() puts 16-bit floating point image data from getImageData() onto the canvas": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/pixel-manipulation/2d.imageData.put.basic.rgba.float16.worker.js": {
-    "total": 1,
-    "failures": {
-      "putImageData() puts 16-bit floating point image data from getImageData() onto the canvas": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/pixel-manipulation/2d.imageData.put.basic.worker.js": {
     "total": 1
@@ -13431,10 +13389,6 @@
     "total": 2
   },
   "html/canvas/offscreen/wide-gamut-canvas/2d.color.space.toBlob.toDataURL.png.linear.float.html": {
-    "total": 2,
-    "failures": {
-      "Test convertToBlob creates a png image using an appropriate encoding to not lose precision from a display-p3-linear float16 canvas": "FAIL",
-      "Test convertToBlob creates a png image using an appropriate encoding to not lose precision from a srgb-linear float16 canvas": "FAIL"
-    }
+    "total": 2
   }
 }

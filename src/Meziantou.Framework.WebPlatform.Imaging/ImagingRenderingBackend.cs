@@ -57,10 +57,14 @@ public sealed class ImagingRenderingBackend : RenderingBackend
     internal override RenderingImageDecoder? CreateImageDecoder(ReadOnlyMemory<byte> data, string? mimeType) => ImagingImageDecoder.Create(data);
 
     /// <inheritdoc/>
-    internal override RenderingImage? CreateImage(int width, int height, ReadOnlySpan<byte> pixels)
+    internal override RenderingImage? CreateImage(int width, int height, ReadOnlySpan<byte> pixels, ImageDataPixelFormat pixelFormat = ImageDataPixelFormat.RgbaUnorm8)
     {
-        if (width < 1 || height < 1 || pixels.Length < (long)width * height * 4)
+        var bytesPerPixel = pixelFormat == ImageDataPixelFormat.RgbaFloat16 ? 8 : 4;
+        if (width < 1 || height < 1 || pixels.Length < (long)width * height * bytesPerPixel)
             return null;
+
+        if (pixelFormat == ImageDataPixelFormat.RgbaFloat16)
+            return new ImagingRenderingImage(Meziantou.Framework.Imaging.Image.ImportPixelBytes<Meziantou.Framework.Imaging.RgbaHalf>(pixels[..(width * height * 8)], width, height, width * 8), RenderingColorSpace.Srgb);
 
         return new ImagingRenderingImage(width, height, pixels[..(width * height * 4)]);
     }

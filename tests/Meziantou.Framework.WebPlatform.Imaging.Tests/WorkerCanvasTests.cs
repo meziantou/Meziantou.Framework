@@ -41,6 +41,30 @@ public sealed class WorkerCanvasTests : IDisposable
     }
 
     [Fact]
+    public async Task Float16_WorkerPreservesPrecisionAndReportsBackingFormat()
+    {
+        var message = await RunWorkerAsync("""
+            (async () => {
+              const canvas = new OffscreenCanvas(2, 1);
+              const context = canvas.getContext('2d', {colorType: 'float16'});
+              const input = new ImageData(new Float16Array([0.1234, 0.501, 0.333, 1]), 1, 1, {pixelFormat: 'rgba-float16'});
+              context.putImageData(input, 0, 0);
+              context.drawImage(canvas, 1, 0);
+              const output = context.getImageData(1, 0, 1, 1, {pixelFormat: 'rgba-float16'});
+              postMessage([
+                context.getContextAttributes().colorType,
+                output.pixelFormat,
+                output.data instanceof Float16Array,
+                Array.from(output.data).every((value, index) => value === input.data[index]),
+                context.getImageData(0, 0, 1, 1).data instanceof Uint8ClampedArray
+              ].join());
+            })().catch(e => postMessage('error: ' + e));
+            """);
+
+        Assert.Equal("float16,rgba-float16,true,true,true", message);
+    }
+
+    [Fact]
     public async Task Text_UsesTheLoadedFontFacesOfTheWorker()
     {
         // The glyphs of the font are 1em squares with a 0.8em ascent: the text is measured and drawn with the font face once it

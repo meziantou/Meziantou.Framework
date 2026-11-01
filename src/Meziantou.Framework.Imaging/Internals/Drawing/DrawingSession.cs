@@ -42,6 +42,7 @@ internal sealed partial class DrawingSession : IDisposable
     private GradientEvaluator? _gradient;
     private PathGradientEvaluator? _pathGradient;
     private ImageEvaluator? _imagePaint;
+    private FloatSolidEvaluator? _floatSolidPaint;
     private GlyphPathSink? _glyphSink;
     private GlyphScratch? _glyphScratch;
     private PathMeasure? _pathMeasure;
@@ -927,6 +928,8 @@ internal sealed partial class DrawingSession : IDisposable
         _pathGradient = null;
         _imagePaint?.Dispose();
         _imagePaint = null;
+        _floatSolidPaint?.Dispose();
+        _floatSolidPaint = null;
         _rasterizer?.Dispose();
         _edges?.Dispose();
         _gradient = null;
@@ -1260,6 +1263,12 @@ internal sealed partial class DrawingSession : IDisposable
     /// <summary>Evaluates the colors of a run and composites it onto every frame.</summary>
     private void PaintRun(PaintEvaluator evaluator, int y, int x, ReadOnlySpan<uint> coverage, CompositeMode mode, BlendMode blend, double alphaFactor)
     {
+        if (evaluator.TryEvaluateFloat(y, x, coverage.Length, alphaFactor, out var floatColors))
+        {
+            CompositeRun(y, x, coverage, new DrawingSource(floatColors, mode, blend, _transfer, _curves));
+            return;
+        }
+
         var colors = evaluator.Evaluate(y, x, coverage.Length);
         if (alphaFactor != 1)
         {
@@ -1314,6 +1323,14 @@ internal sealed partial class DrawingSession : IDisposable
 
         if (brush is SolidBrush solid)
         {
+            if (solid.FloatColor is { } floatColor && _frames[0].PixelFormat is PixelFormat.RgbaFloat or PixelFormat.RgbaHalf)
+            {
+                var floatPaint = _floatSolidPaint ??= new FloatSolidEvaluator(_image.Owner.Scope);
+                floatPaint.Prepare(floatColor, Width);
+                evaluator = floatPaint;
+                return true;
+            }
+
             color = _frames[0].ConvertDrawingColor(ToImageColor(solid.Color));
             if (brush.Opacity != 1)
             {

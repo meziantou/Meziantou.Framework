@@ -128,23 +128,23 @@ internal sealed class CanvasBitmap
     }
 
     /// <summary>Copies the pixels of a rectangle (RGBA, not premultiplied, in the color space of the bitmap); the pixels outside of the bitmap are transparent black.</summary>
-    public void ReadPixels(int x, int y, int width, int height, Span<byte> destination)
+    public void ReadPixels(int x, int y, int width, int height, Span<byte> destination, ImageDataPixelFormat pixelFormat = ImageDataPixelFormat.RgbaUnorm8)
     {
         Flush();
         if (_surface is null)
         {
-            destination[..(width * height * 4)].Clear();
+            destination[..(width * height * (pixelFormat == ImageDataPixelFormat.RgbaFloat16 ? 8 : 4))].Clear();
             return;
         }
 
-        _surface.ReadPixels(x, y, width, height, destination);
+        _surface.ReadPixels(x, y, width, height, destination, pixelFormat);
     }
 
     /// <summary>Replaces the pixels of a rectangle (RGBA, not premultiplied, in the color space of the bitmap), without compositing.</summary>
-    public void WritePixels(int x, int y, int width, int height, ReadOnlySpan<byte> source)
+    public void WritePixels(int x, int y, int width, int height, ReadOnlySpan<byte> source, ImageDataPixelFormat pixelFormat = ImageDataPixelFormat.RgbaUnorm8)
     {
         Flush();
-        _surface?.WritePixels(x, y, width, height, source);
+        _surface?.WritePixels(x, y, width, height, source, pixelFormat);
         OnChanged();
     }
 
@@ -168,16 +168,20 @@ internal sealed class CanvasBitmap
     /// </summary>
     public BitmapPixels GetPixels()
     {
-        var pixels = new byte[(long)Width * Height * 4];
+        var pixelFormat = Options.ColorType == CanvasColorType.Float16 ? ImageDataPixelFormat.RgbaFloat16 : ImageDataPixelFormat.RgbaUnorm8;
+        var pixels = new byte[(long)Width * Height * (pixelFormat == ImageDataPixelFormat.RgbaFloat16 ? 8 : 4)];
         if (Width > 0 && Height > 0)
         {
-            ReadPixels(0, 0, Width, Height, pixels);
+            ReadPixels(0, 0, Width, Height, pixels, pixelFormat);
             if (Options.ColorSpace == RenderingColorSpace.DisplayP3)
             {
-                CanvasRenderingContext2DBase.ConvertColorSpace(pixels, PredefinedColorSpace.DisplayP3, PredefinedColorSpace.Srgb);
+                if (pixelFormat == ImageDataPixelFormat.RgbaFloat16)
+                    CanvasRenderingContext2DBase.ConvertColorSpace(unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, Half>(pixels.AsSpan())), PredefinedColorSpace.DisplayP3, PredefinedColorSpace.Srgb);
+                else
+                    CanvasRenderingContext2DBase.ConvertColorSpace(pixels, PredefinedColorSpace.DisplayP3, PredefinedColorSpace.Srgb);
             }
         }
 
-        return new BitmapPixels(Width, Height, pixels, IsOriginClean);
+        return new BitmapPixels(Width, Height, pixels, IsOriginClean, pixelFormat);
     }
 }

@@ -19,7 +19,12 @@ internal sealed partial class DisplayListRasterizer
     {
         var (composite, blend) = GetModes(paint.BlendMode);
         if (paint.Shader is not { } shader)
+        {
+            if (_floatTarget)
+                return new D.SolidBrush(ColorSpaces.ToRgbaFloat(paint.Color, _colorSpace)) { CompositeMode = composite, BlendMode = blend };
+
             return new D.SolidBrush(ColorSpaces.ToRgba64(paint.Color, _colorSpace)) { CompositeMode = composite, BlendMode = blend };
+        }
 
         var opacity = float.IsNaN(paint.Color.A) ? 0 : Math.Clamp(paint.Color.A, 0, 1);
         try
@@ -86,7 +91,7 @@ internal sealed partial class DisplayListRasterizer
                 var (localScaleX, localScaleY) = GetScaleFactors(transform);
                 var deviceScaleX = scale.X * localScaleX / pixelScaleX;
                 var deviceScaleY = scale.Y * localScaleY / pixelScaleY;
-                var frame = image.GetFrame(_colorSpace);
+                var frame = image.GetFrame(_colorSpace, preserveRange: _floatTarget);
                 var toNatural = pixelScaleX != 1 || pixelScaleY != 1 ? new AffineTransform(1 / pixelScaleX, 0, 0, 1 / pixelScaleY, 0, 0) : AffineTransform.Identity;
                 Meziantou.Framework.Imaging.Rectangle? region = null;
                 if (imageShader.SourceRect is { } sourceRect)

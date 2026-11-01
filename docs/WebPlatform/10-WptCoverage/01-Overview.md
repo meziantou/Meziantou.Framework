@@ -49,10 +49,10 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 25,396 | 29,435 | 2,545 | 94% |
+| [Stable](#stable-tests) | 25,410 | 29,435 | 2,545 | 94% |
 | [Tentative](#tentative-tests) | 1,171 | 3,044 | 837 | 53% |
 | [Reftests](#reftests) | 27,504 | 28,889 | 180 | 96% |
-| **All** | **54,071** | **61,368** | **3,562** | **94%** |
+| **All** | **54,085** | **61,368** | **3,562** | **94%** |
 
 ## Stable tests
 
@@ -222,7 +222,7 @@ The features of `REQUIRES`:
 | [`html-aam`](html-aam.md) | 24 | 26 | 0 | 92% |
 | [`html-media-capture`](html-media-capture.md) | 0 | 2 | 2 | – |
 | [`html/browsers`](html/browsers.md) | 691 | 743 | 0 | 93% |
-| [`html/canvas`](html/canvas.md) | 3,034 | 3,139 | 0 | 97% |
+| [`html/canvas`](html/canvas.md) | 3,048 | 3,139 | 0 | 97% |
 | [`html/cross-origin-embedder-policy`](html/cross-origin-embedder-policy.md) | 53 | 73 | 0 | 73% |
 | [`html/cross-origin-opener-policy`](html/cross-origin-opener-policy.md) | 67 | 114 | 0 | 59% |
 | [`html/dom`](html/dom.md) | 209 | 215 | 0 | 97% |
@@ -401,7 +401,7 @@ The features of `REQUIRES`:
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 317 | 330 | 0 | 96% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **25,396** | **29,435** | **2,545** | **94%** |
+| **Total (343 sections)** | **25,410** | **29,435** | **2,545** | **94%** |
 
 ## Tentative tests
 

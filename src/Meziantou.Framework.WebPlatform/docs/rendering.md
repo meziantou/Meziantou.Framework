@@ -265,9 +265,10 @@ sample is published with Native AOT on CI), and the same document gives the same
   opacity groups, the blend modes and the filters are not rounded to 8 bits between the operations. The pixels are rounded
   to 8 bits once, when they are read (`ReadPixels`, the screenshots: `PixelConversions.ToByte`), to the nearest level with
   a bias of 1/256 of a level, so that a coverage of a half rounded on a layer then on the canvas gives the same level as on
-  the canvas directly. The bitmap of a canvas (`RenderingSurfaceOptions.IsCanvasBitmap`) has 8 bits per component, as in
-  the browsers, and so has the drawing of a paint worklet (`DisplayListShader.IsCanvasRecording`: a pattern whose tile has
-  8-bit samples, `PatternTilePrecision.EightBit`). The colors of the display lists are converted to the color space of the surface (sRGB or
+  the canvas directly. The bitmap of a canvas (`RenderingSurfaceOptions.IsCanvasBitmap`) has 8 bits per component by default,
+  or half-float components when `colorType: "float16"` is requested. The drawing of a paint worklet
+  (`DisplayListShader.IsCanvasRecording`) uses a pattern whose tile has
+  8-bit samples (`PatternTilePrecision.EightBit`). The colors of the display lists are converted to the color space of the surface (sRGB or
   Display P3) and clipped to its gamut, and a color whose alpha rounds to 0 in 8 bits is transparent.
 - **Display lists** (`DisplayListRasterizer`): the state operations of a display list are a stack (save, restore), the ones of
   a `DrawingCanvas` are callbacks: a transform (2D, or 3D with `Transform3D`, combined in three dimensions), a clip (a
@@ -443,10 +444,10 @@ operations (see [Paint worklet images](#paint-worklet-images)).
   `getImageData()`, `toDataURL()`, `toBlob()` and `convertToBlob()` then throw a `SecurityError`.
 - **Pixels**: `getImageData()`, `putImageData()` (not composited, not clipped, not transformed) and `createImageData()`,
   with the conversion between the color space of the canvas and the one of the image data (`srgb`, `display-p3` and their
-  linear variants) and the `rgba-float16` format. The bitmaps have 8-bit components, premultiplied by the backend (a
-  `float16` canvas stores 8-bit components).
+  linear variants) and the `rgba-float16` format. Float16 canvases store half-float components, with format-aware pixel
+  transfers that preserve negative colors, highlights and subnormal samples; color-space conversion does not quantize through bytes.
 - **Serialization**: `toDataURL()`, `toBlob()` and `OffscreenCanvas.convertToBlob()` serialize the bitmap (converted to sRGB)
-  as PNG (encoded by the library), JPEG or WebP (encoded by the backend, with their quality); another type is PNG.
+  as PNG (encoded by the library, with 16-bit integer samples for float16 bitmaps), JPEG or WebP (encoded by the backend, with their quality); another type is PNG.
 - **OffscreenCanvas**: its 2D or `bitmaprenderer` context, `transferToImageBitmap()`, `convertToBlob()`, its transfer to a
   worker (a canvas with a context cannot be transferred), and `canvas.transferControlToOffscreen()`: the canvas element
   becomes its placeholder (its `getContext()` and the setters of its `width` and `height` throw an `InvalidStateError`). The
@@ -459,8 +460,8 @@ operations (see [Paint worklet images](#paint-worklet-images)).
   document.
 - `drawFocusIfNeeded()` strokes the path with a 2px ring when the element is focused and is a descendant of the canvas.
 - Not implemented: the canvas layers (`beginLayer()`, `endLayer()`, a proposal that the HTML Standard does not define yet),
-  `CanvasFilter` objects, the HDR settings (`toneMapping`), the 16-bit
-  storage of the `float16` canvases, the wide-gamut colors of the images (decoded to sRGB),
+  `CanvasFilter` objects, the HDR settings (`toneMapping`), HDR gradient colors and intermediate layers and effects,
+  the wide-gamut colors of the decoded images (decoded to sRGB),
   `captureStream()`, the text clusters of `TextMetrics`, HTML-in-canvas (`drawElementImage()`), WebGL and WebGPU.
 
 ## Display list

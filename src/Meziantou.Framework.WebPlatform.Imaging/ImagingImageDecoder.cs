@@ -248,6 +248,26 @@ internal sealed class ImagingImageDecoder : RenderingImageDecoder
             // ignored: its colors are sRGB, unless its cICP chunk describes them (the codec only reports the embedded ICC
             // profile and the CICP color description, and never applies them)
             var transform = convertToSrgb ? GetColorTransform() : null;
+            if (_format == ImageFormat.Png && _hasWideSamples && _frameCount == 1 && transform is null && (!convertToSrgb || _cicp is null))
+            {
+                var image = DecodeWidePng();
+                if (image is null)
+                    return null;
+
+                try
+                {
+                    image.Metadata.Orientation = (Meziantou.Framework.Imaging.Metadata.ExifOrientation)orientation;
+                    image.AutoOrient();
+                    var result = new ImagingRenderingImage(image, RenderingColorSpace.Srgb);
+                    image = null;
+                    return result;
+                }
+                finally
+                {
+                    image?.Dispose();
+                }
+            }
+
             byte[]? pixels = null;
             if (_format is ImageFormat.Ico or ImageFormat.Cur)
             {
@@ -287,6 +307,53 @@ internal sealed class ImagingImageDecoder : RenderingImageDecoder
             // The data is corrupted, uses a feature the codec does not support, or needs too much memory
             CloseReader();
             return null;
+        }
+    }
+
+    private Image<Rgba64>? DecodeWidePng()
+    {
+        while (true)
+        {
+            Image<Rgba64>? image = new(_width, _height, Configuration);
+            try
+            {
+                try
+                {
+                    using var reader = OpenReader<Rgba64>();
+                    if (!reader.ReadFrameInto(image))
+                    {
+                        return null;
+                    }
+                }
+                catch (InvalidImageContentException)
+                {
+                    if (!_repaired)
+                    {
+                        _repaired = true;
+                        if (Repair(_format, _data.Span) is { } repaired)
+                        {
+                            _data = repaired;
+                            continue;
+                        }
+                    }
+
+                    // Keep the rows and interlace passes written before the failure, without reducing their precision.
+                    var pixels = new byte[checked(_width * _height * 8)];
+                    image.Frames[0].CopyPixelBytesTo(pixels);
+                    if (!HasDecodedPixels(pixels))
+                    {
+                        return null;
+                    }
+                }
+
+                var result = image;
+                image = null;
+                return result;
+            }
+            finally
+            {
+                image?.Dispose();
+            }
         }
     }
 

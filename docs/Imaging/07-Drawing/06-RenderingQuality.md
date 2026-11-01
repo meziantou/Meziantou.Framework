@@ -165,7 +165,9 @@ See [Color management](../09-Color/03-ColorManagement.md) for the profiles of im
   entirely by an opaque color gets exactly that color.
 - **Frames without alpha stay opaque**, and a pixel that would stay fully transparent keeps its hidden color.
 - **Floating-point images** ([RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat), [RgbaHalf](cref:Meziantou.Framework.Imaging.RgbaHalf)) are composited in double precision without clipping the colors, so
-  [Plus](cref:Meziantou.Framework.Imaging.Drawing.CompositeMode.Plus) adds light beyond white. Layers, patterns, filters, shadows and blurs read the pixels as 16-bit colors, and
+  [Plus](cref:Meziantou.Framework.Imaging.Drawing.CompositeMode.Plus) adds light beyond white. A [SolidBrush](cref:Meziantou.Framework.Imaging.Drawing.SolidBrush)
+  created from [RgbaFloat](cref:Meziantou.Framework.Imaging.RgbaFloat), and floating-point images drawn directly or with an image brush,
+  retain their sample precision and range on a floating-point target. Layers, filters, shadows and blurs read the pixels as 16-bit colors, and
   reject values outside the range from 0 to 1.
 - **Metadata.** The first shape that changes a pixel removes the EXIF thumbnail, which no longer matches the image.
   Everything else, cursor hotspots included, is kept.

@@ -60,6 +60,7 @@ internal static class FloatDrawingKernels
         var blend = source.Blend;
         var isInert = DrawingKernels.IsTransparentPaintInert(mode);
         var colors = source.Colors;
+        var floatColors = source.FloatColors;
         var color = source.Color;
         Span<ushort> paint = [color.C0, color.C1, color.C2, color.Alpha];
         Span<double> s = stackalloc double[3];
@@ -76,16 +77,19 @@ internal static class FloatDrawingKernels
                 colors.Slice(i * 4, 4).CopyTo(paint);
             }
 
-            int paintAlpha = paint[3];
+            var paintAlpha = floatColors.IsEmpty ? paint[3] / PaintMax : floatColors[(i * 4) + 3];
             if (paintAlpha == 0 && isInert)
                 continue;
 
             ref var pixel = ref pixels[i];
             Read(ref pixel, out d[0], out d[1], out d[2], out var destinationAlpha);
-            if (q == CoverageRasterizer.FullCoverage && paintAlpha == ushort.MaxValue && (mode == CompositeMode.Source || (mode == CompositeMode.SourceOver && (blend == BlendMode.Normal || destinationAlpha == 0))))
+            if (q == CoverageRasterizer.FullCoverage && paintAlpha == 1 && (mode == CompositeMode.Source || (mode == CompositeMode.SourceOver && (blend == BlendMode.Normal || destinationAlpha == 0))))
             {
                 // The paint replaces the pixel: its samples, exactly
-                Write(ref pixel, paint[0] / PaintMax, paint[1] / PaintMax, paint[2] / PaintMax, 1);
+                if (floatColors.IsEmpty)
+                    Write(ref pixel, paint[0] / PaintMax, paint[1] / PaintMax, paint[2] / PaintMax, 1);
+                else
+                    Write(ref pixel, floatColors[i * 4], floatColors[(i * 4) + 1], floatColors[(i * 4) + 2], 1);
                 continue;
             }
 
@@ -93,16 +97,16 @@ internal static class FloatDrawingKernels
             {
                 if (isLinear)
                 {
-                    s[c] = decode[paint[c]];
+                    s[c] = floatColors.IsEmpty ? decode[paint[c]] : DecodePixel(transfer, floatColors[(i * 4) + c]);
                     d[c] = DecodePixel(transfer, d[c]);
                 }
                 else
                 {
-                    s[c] = paint[c] / PaintMax;
+                    s[c] = floatColors.IsEmpty ? paint[c] / PaintMax : floatColors[(i * 4) + c];
                 }
             }
 
-            var sourceAlpha = paintAlpha / PaintMax;
+            var sourceAlpha = paintAlpha;
             var backdrop = destinationAlpha;
             if (blend != BlendMode.Normal && paintAlpha != 0 && destinationAlpha != 0)
             {

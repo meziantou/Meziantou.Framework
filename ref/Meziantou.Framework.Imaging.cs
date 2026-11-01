@@ -2803,6 +2803,7 @@ namespace Meziantou.Framework.Imaging.Drawing
     {
         public Meziantou.Framework.Imaging.Rgba64 Color { get => throw null; }
         public SolidBrush(Meziantou.Framework.Imaging.Rgba64 color) { }
+        public SolidBrush(Meziantou.Framework.Imaging.RgbaFloat color) { }
     }
 
     public sealed class SpecularLightingPrimitive : Meziantou.Framework.Imaging.Drawing.FilterPrimitive

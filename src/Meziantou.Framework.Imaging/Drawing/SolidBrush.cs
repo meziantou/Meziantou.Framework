@@ -10,6 +10,18 @@ public sealed class SolidBrush : Brush
         Color = color;
     }
 
+    /// <summary>Creates a paint whose sample range and precision are preserved on floating-point canvases.</summary>
+    /// <param name="color">The color, with straight alpha. Integer canvases use its normalized 16-bit representation.</param>
+    public SolidBrush(RgbaFloat color)
+    {
+        FloatColor = color;
+        Color = new Rgba64(ToSample(color.R), ToSample(color.G), ToSample(color.B), ToSample(color.A));
+    }
+
+    internal RgbaFloat? FloatColor { get; }
+
+    private static ushort ToSample(float value) => float.IsNaN(value) ? (ushort)0 : (ushort)Math.Round(Math.Clamp((double)value, 0, 1) * ushort.MaxValue, MidpointRounding.AwayFromZero);
+
     /// <summary>Gets the color, with straight alpha.</summary>
     public Rgba64 Color { get; }
 }

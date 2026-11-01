@@ -3,7 +3,7 @@ using static Meziantou.Framework.BloomFilters.BloomFilterSnapshot;
 
 namespace Meziantou.Framework.BloomFilters;
 
-public abstract partial class BloomFilter
+public partial class BloomFilter
 {
     /// <summary>
     /// Writes a snapshot of the filter to a stream: its hash algorithm, its size and its bits.

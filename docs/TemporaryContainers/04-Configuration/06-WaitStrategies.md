@@ -23,8 +23,8 @@ definition.StartupTimeout = TimeSpan.FromMinutes(2); // 5 minutes by default
 | --- | --- |
 | `Wait.ForLogMessage(text, occurrences)` | The given number of log lines contain the text. |
 | `Wait.ForLogMessage(regex, occurrences)` | The given number of log lines match the regular expression. |
-| `Wait.ForPort(containerPort)` | A TCP connection to the published host port, on `127.0.0.1`, reaches a listening service. |
-| `Wait.ForHttp(containerPort, path, configure)` | An HTTP request to the published host port, on `127.0.0.1`, gets an expected response (any 2xx status code by default). |
+| `Wait.ForPort(containerPort)` | A TCP connection to the published host port, on the [host address](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.GetHostAddress) of the port, reaches a listening service. |
+| `Wait.ForHttp(containerPort, path, configure)` | An HTTP request to the published host port, on the [host address](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.GetHostAddress) of the port, gets an expected response (any 2xx status code by default). |
 | `Wait.ForCommand(command)` | A command run inside the container exits with code 0. It is run again until it does. |
 | `Wait.ForHealthcheck(configure)` | The runtime reports the `HEALTHCHECK` of the image as healthy. |
 | `Wait.ForAll(strategies)`, `Wait.ForAny(strategies)` | All of the strategies, or the first one, completed. See [Combine strategies](#combine-strategies). |
@@ -136,7 +136,7 @@ public sealed class HttpHealthWaitStrategy(int containerPort, string path) : IWa
 {
     public async Task WaitAsync(TemporaryContainer container, CancellationToken cancellationToken)
     {
-        var url = new UriBuilder("http", "127.0.0.1", container.GetMappedPort(containerPort), path).Uri;
+        var url = new UriBuilder("http", container.GetHostAddress(containerPort), container.GetMappedPort(containerPort), path).Uri;
         using var httpClient = new HttpClient();
         while (true)
         {

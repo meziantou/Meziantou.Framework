@@ -39,6 +39,9 @@ public sealed record ContainerInfo
     /// <summary>Gets the published ports, mapping each container port to its host port.</summary>
     public IReadOnlyDictionary<int, int> Ports { get; init; } = new Dictionary<int, int>();
 
+    /// <summary>The host address each published port is bound to, as the runtime reports it (<c>0.0.0.0</c> for every interface). A runtime that does not report it leaves it out.</summary>
+    internal IReadOnlyDictionary<int, string> PortHostIps { get; init; } = new Dictionary<int, string>();
+
     /// <summary>Gets the container labels.</summary>
     public IReadOnlyDictionary<string, string> Labels { get; init; } = new Dictionary<string, string>(StringComparer.Ordinal);
 

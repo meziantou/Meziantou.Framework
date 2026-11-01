@@ -1,6 +1,6 @@
 ---
 title: Enumerating files
-description: List the files or the directories that match a pattern, set the enumeration options, and plug a pattern into System.IO.Enumeration.
+description: List the files or the directories that match a pattern as paths or FileInfo objects, set the enumeration options, and plug a pattern into System.IO.Enumeration.
 ---
 
 ## Enumerate files
@@ -27,15 +27,89 @@ Assert.Equal([Path.Combine(rootDirectory.FullPath, "src", "a", "abc.txt")], file
 <!-- endref -->
 
 - The pattern is matched against the path of each file relative to the directory you pass.
-- The enumeration only goes into the directories that can hold a match, as [IsPartialMatch](cref:Meziantou.Framework.Globbing.Glob.IsPartialMatch) decides. A pattern such as
-  `**/*.txt` visits the whole tree; `src/*.txt` only goes into `src`.
+- The enumeration starts at the [base path](05-MatchingPaths.md#find-the-base-directory-of-a-pattern) of the pattern: `src/app/**/*.cs` opens `src/app` directly,
+  without listing the directory and `src`. When the base directory does not exist, nothing is returned.
+- From there, it only goes into the directories that can hold a match, as [IsPartialMatch](cref:Meziantou.Framework.Globbing.Glob.IsPartialMatch) decides. A pattern
+  such as `**/*.txt` visits the whole tree.
 - The results are returned as they are found, in the order of the file system. Sort them if you need a stable order.
-- A pattern that only matches directories, such as a standard pattern that ends with a `/`, returns no file.
+- Only files are returned, even for a pattern that also matches directories, such as a Git pattern. A pattern that only
+  matches directories, such as a standard pattern that ends with a `/`, returns no file.
+
+## Get relative paths
+
+Pass [GlobPathFormat.RelativePath](cref:Meziantou.Framework.Globbing.GlobPathFormat.RelativePath) to get the paths relative to the directory, which are the paths the pattern matches.
+It saves a `Path.GetRelativePath` call on each result:
+
+<!-- ref:../../tests/Meziantou.Framework.Globbing.Tests/GlobTests.cs;region=Glob_EnumerateFilesRelativePaths;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var rootDirectory = TemporaryDirectory.Create();
+rootDirectory.CreateEmptyFile("src/App/Program.cs");
+rootDirectory.CreateEmptyFile("src/Lib/Helper.cs");
+
+// Return the paths relative to the enumerated directory, as the pattern matches them
+var glob = Glob.Parse("src/**/*.cs", GlobDialect.Standard);
+var files = glob.EnumerateFiles(rootDirectory.FullPath, GlobPathFormat.RelativePath).Order(StringComparer.Ordinal).ToList();
+
+Assert.Equal(
+    [
+        Path.Combine("src", "App", "Program.cs"),
+        Path.Combine("src", "Lib", "Helper.cs"),
+    ],
+    files);
+```
+<!-- endref -->
+
+The paths use the separator of the operating system, `\` on Windows.
+
+## Get FileInfo objects
+
+[EnumerateFileInfos](cref:Meziantou.Framework.Globbing.GlobExtensions.EnumerateFileInfos) returns `FileInfo` objects instead of paths, and [EnumerateFileSystemInfos](cref:Meziantou.Framework.Globbing.GlobExtensions.EnumerateFileSystemInfos) returns a
+`FileInfo` for a file and a `DirectoryInfo` for a directory. They hold the data read during the enumeration, so reading
+the length or a timestamp does not access the disk again:
+
+<!-- ref:../../tests/Meziantou.Framework.Globbing.Tests/GlobTests.cs;region=Glob_EnumerateFileInfos;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var rootDirectory = TemporaryDirectory.Create();
+rootDirectory.CreateTextFile("logs/app.log", "started");
+rootDirectory.CreateTextFile("logs/error.log", "");
+
+// The FileInfo objects are filled during the enumeration: reading Length does not access the disk again
+var glob = Glob.Parse("logs/*.log", GlobDialect.Standard);
+var nonEmptyFiles = glob.EnumerateFileInfos(rootDirectory.FullPath)
+    .Where(file => file.Length > 0)
+    .Select(file => file.Name)
+    .ToList();
+
+Assert.Equal(["app.log"], nonEmptyFiles);
+```
+<!-- endref -->
+
+## Enumerate outside the directory
+
+A pattern whose base path goes up from the directory, such as the MSBuild pattern `../shared/*.cs`, or that is absolute,
+such as `/usr/src/*.c`, is enumerated from its base directory. MSBuild resolves its patterns against the directory of the
+project the same way:
+
+<!-- ref:../../tests/Meziantou.Framework.Globbing.Tests/GlobTests.cs;region=Glob_EnumerateFilesParentDirectory;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var rootDirectory = TemporaryDirectory.Create();
+rootDirectory.CreateEmptyFile("shared/Helper.cs");
+rootDirectory.CreateEmptyFile("app/Program.cs");
+var projectDirectory = Path.Combine(rootDirectory.FullPath, "app");
+
+// The enumeration starts at the base path of the pattern, which can be outside the directory
+var glob = Glob.Parse("../shared/*.cs", GlobDialect.MSBuild);
+Assert.Equal([Path.Combine(rootDirectory.FullPath, "shared", "Helper.cs")], glob.EnumerateFiles(projectDirectory).ToList());
+Assert.Equal([Path.Combine("..", "shared", "Helper.cs")], glob.EnumerateFiles(projectDirectory, GlobPathFormat.RelativePath).ToList());
+```
+<!-- endref -->
+
+The full paths are normalized, and the relative paths start with `..`.
 
 ## Enumerate directories
 
 [EnumerateFileSystemEntries](cref:Meziantou.Framework.Globbing.GlobExtensions.EnumerateFileSystemEntries) returns the files and the directories that match. With a pattern that ends with a `/`,
-it returns directories only:
+it returns directories only. It also accepts a [GlobPathFormat](cref:Meziantou.Framework.Globbing.GlobPathFormat):
 
 <!-- ref:../../tests/Meziantou.Framework.Globbing.Tests/GlobTests.cs;region=Glob_EnumerateFileSystemEntries;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -88,7 +162,9 @@ Assert.Equal([Path.Combine(rootDirectory.FullPath, "logs", "app.log")], files);
 ```
 <!-- endref -->
 
-`MaxRecursionDepth = 1` stops the enumeration one level below the root, so `logs/2024/app.log` is not returned.
+`MaxRecursionDepth = 1` stops the enumeration one level below the root, so `logs/2024/app.log` is not returned. The
+depth counts from the directory you pass, even when the enumeration starts at a base directory below it, and the
+directories of the base path are skipped as the enumeration would skip them, for instance a hidden one.
 
 ## Use a pattern with System.IO.Enumeration
 

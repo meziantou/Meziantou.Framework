@@ -10,7 +10,7 @@ public sealed class PostgreSqlContainer : TemporaryContainer
     {
     }
 
-    /// <summary>Gets an Npgsql connection string for the running container, using the credentials from the definition's environment variables (<c>POSTGRES_USER</c>, <c>POSTGRES_PASSWORD</c>, <c>POSTGRES_DB</c>).</summary>
+    /// <summary>Gets an Npgsql connection string for the running container (on <see cref="TemporaryContainer.GetHostAddress"/>), using the credentials from the definition's environment variables (<c>POSTGRES_USER</c>, <c>POSTGRES_PASSWORD</c>, <c>POSTGRES_DB</c>).</summary>
     /// <returns>The connection string.</returns>
     /// <exception cref="InvalidOperationException">The container has not been started.</exception>
     public string GetConnectionString()
@@ -23,7 +23,7 @@ public sealed class PostgreSqlContainer : TemporaryContainer
         // otherwise end the entry and have the rest of it parsed as further keywords.
         var builder = new DbConnectionStringBuilder
         {
-            ["Host"] = "127.0.0.1",
+            ["Host"] = GetHostAddress(5432),
             ["Port"] = port.ToString(CultureInfo.InvariantCulture),
             ["Username"] = username,
             ["Password"] = password,

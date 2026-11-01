@@ -14,6 +14,7 @@ namespace Meziantou.Framework.BloomFilters
         public static Meziantou.Framework.BloomFilters.BloomFilterXXHash32 CreateXXHash32(Meziantou.Framework.BloomFilters.BloomFilterSize size) => throw null;
         public static Meziantou.Framework.BloomFilters.BloomFilterXXHash64 CreateXXHash64(Meziantou.Framework.BloomFilters.BloomFilterSize size) => throw null;
         public double GetEstimateCount() => throw null;
+        public void UnionWith(Meziantou.Framework.BloomFilters.BloomFilter other) { }
     }
 
     public sealed class BloomFilterAdler32 : Meziantou.Framework.BloomFilters.BloomFilter, Meziantou.Framework.BloomFilters.IBloomFilter

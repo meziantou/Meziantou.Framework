@@ -1,7 +1,7 @@
 namespace Meziantou.Framework.InlineSnapshotTesting.Tests;
 public sealed class InlineDiffAssertionMessageFormatterTests
 {
-    private static void Test(string left, string right, string expected)
+    private static void Test(string? left, string? right, string expected)
     {
         var message = InlineDiffAssertionMessageFormatter.Instance.FormatMessage(left, right);
         message = message.ReplaceLineEndings("\n");
@@ -56,6 +56,50 @@ public sealed class InlineDiffAssertionMessageFormatterTests
     public void TrailingWhitespace()
     {
         Test("line1\nline2 ", "line1\nline2", "  line1\n- line2 \n+ line2\n\nNote: some lines differ only by trailing whitespace, which is not visible above.");
+    }
+
+    [Fact]
+    public void EmptyAndEmpty()
+    {
+        Test("", "", "  ");
+    }
+
+    [Fact]
+    public void NullSnapshot_EmptyReceived()
+    {
+        Test(null, "", "+ \n\nNote: there is no snapshot (null). The received value is an empty string.");
+    }
+
+    [Fact]
+    public void NullSnapshot_EmptyReceived_DiffersFromEmptySnapshot()
+    {
+        Assert.NotEqual(
+            InlineDiffAssertionMessageFormatter.Instance.FormatMessage("", ""),
+            InlineDiffAssertionMessageFormatter.Instance.FormatMessage(null, ""));
+    }
+
+    [Fact]
+    public void NullSnapshot_NonEmptyReceived()
+    {
+        Test(null, "line1\nline2", "+ line1\n+ line2\n\nNote: there is no snapshot (null).");
+    }
+
+    [Fact]
+    public void NullReceived_EmptySnapshot()
+    {
+        Test("", null, "- \n\nNote: the received value is null. The snapshot is an empty string.");
+    }
+
+    [Fact]
+    public void NullReceived_NonEmptySnapshot()
+    {
+        Test("line1", null, "- line1\n\nNote: the received value is null.");
+    }
+
+    [Fact]
+    public void NullSnapshot_NullReceived()
+    {
+        Test(null, null, "Note: the snapshot and the received value are both null.");
     }
 
     [Fact]

@@ -4,7 +4,10 @@ description: Choose how inline snapshots are updated in your source code, for ev
 ---
 
 When a snapshot does not match, the test fails and the failure message shows the difference between the expected and the
-actual value. [InlineSnapshotSettings.SnapshotUpdateStrategy](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings.SnapshotUpdateStrategy) decides whether the library also updates the snapshot in
+actual value. A missing snapshot (`null`) is not shown as an empty line: a note at the end of the message says which value
+is `null`, so it cannot be confused with an empty string.
+
+[InlineSnapshotSettings.SnapshotUpdateStrategy](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotSettings.SnapshotUpdateStrategy) decides whether the library also updates the snapshot in
 your source code:
 
 | Strategy | Source file | Test |

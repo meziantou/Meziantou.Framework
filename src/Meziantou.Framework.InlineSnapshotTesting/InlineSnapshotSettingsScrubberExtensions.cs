@@ -16,10 +16,12 @@ public static class InlineSnapshotSettingsScrubberExtensions
     /// <summary>Adds a scrubber that removes lines containing any of the specified text values with the specified comparison.</summary>
     public static void ScrubLinesContaining(this InlineSnapshotSettings settings, StringComparison stringComparison, params string[] searchText)
     {
-        foreach (var text in searchText)
-        {
-            settings.Scrubbers.Add(new LineFilterScrubber(line => line.Contains(text, stringComparison)));
-        }
+        if (searchText.Length is 0)
+            return;
+
+        // A single scrubber reads the text once, whatever the number of search texts. The array is copied so that
+        // later changes to the caller's array do not change the scrubber.
+        settings.Scrubbers.Add(new LineContainsScrubber([.. searchText], stringComparison));
     }
 
     /// <summary>Adds a scrubber that removes lines matching the specified regular expression.</summary>

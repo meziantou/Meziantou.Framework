@@ -9,11 +9,9 @@ internal sealed class LineFilterScrubber : LineScrubber
         _predicate = predicate;
     }
 
-    protected override string? ScrubLine(string line)
+    protected override bool TryScrubLine(ReadOnlySpan<char> line, out string? newLine)
     {
-        if (_predicate(line))
-            return null;
-
-        return line;
+        newLine = null;
+        return _predicate(line.ToString());
     }
 }

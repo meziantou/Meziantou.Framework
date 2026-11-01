@@ -43,7 +43,9 @@ Assert.Equal([2, 3], buffer);
   overwrites the first item and [AddFirst](cref:Meziantou.Framework.Collections.CircularBuffer{T}.AddFirst) the last one.
 - [RemoveFirst](cref:Meziantou.Framework.Collections.CircularBuffer{T}.RemoveFirst) and [RemoveLast](cref:Meziantou.Framework.Collections.CircularBuffer{T}.RemoveLast) remove and return an item, and throw an `InvalidOperationException` when the buffer is
   empty.
-- The indexer reads an item by its position, from the first item. You can change [Capacity](cref:Meziantou.Framework.Collections.CircularBuffer{T}.Capacity) after the buffer is created.
+- The indexer reads an item by its position, from the first item. You can change [Capacity](cref:Meziantou.Framework.Collections.CircularBuffer{T}.Capacity) after the buffer is created, to any
+  value greater than 0 that holds the current items.
+- [CopyTo](cref:Meziantou.Framework.Collections.CircularBuffer{T}.CopyTo) checks that the destination array has room for all the items before it writes any of them.
 
 Use it for the last N log lines, measurements or events.
 
@@ -87,6 +89,10 @@ Assert.Equal(["d.txt", "c.txt", "b.txt"], recentFiles);
 
 [AddFirst](cref:Meziantou.Framework.Collections.LimitList{T}.AddFirst) drops the last item, and [AddLast](cref:Meziantou.Framework.Collections.LimitList{T}.AddLast) drops the first one. Unlike [CircularBuffer\<T\>](cref:Meziantou.Framework.Collections.CircularBuffer{T}), a full [LimitList\<T\>](cref:Meziantou.Framework.Collections.LimitList{T})
 never throws. It also supports `Remove`, [RemoveAt](cref:Meziantou.Framework.Collections.LimitList{T}.RemoveAt), [RemoveFirst](cref:Meziantou.Framework.Collections.LimitList{T}.RemoveFirst), [RemoveLast](cref:Meziantou.Framework.Collections.LimitList{T}.RemoveLast) and setting an item by index.
+
+[LimitList\<T\>](cref:Meziantou.Framework.Collections.LimitList{T}) implements `IList<T>` and `IReadOnlyList<T>`. It stores the items in a ring buffer, so reading an item by index and adding or
+removing an item at either end take constant time. [Insert](cref:Meziantou.Framework.Collections.LimitList{T}.Insert) on a full list drops the last item, except at index [Count](cref:Meziantou.Framework.Collections.LimitList{T}.Count), where it
+behaves like [AddLast](cref:Meziantou.Framework.Collections.LimitList{T}.AddLast) and drops the first one. `foreach` uses a struct enumerator, so it does not allocate.
 
 ## Append-only collection
 

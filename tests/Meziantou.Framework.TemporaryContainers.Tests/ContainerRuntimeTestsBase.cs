@@ -14,6 +14,7 @@ namespace Meziantou.Framework.TemporaryContainers.Tests;
 public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
 {
     private const string LinuxImage = "busybox:1.37";
+    private const string PlatformTestImage = "busybox:1.36";
     private const string WindowsImage = "mcr.microsoft.com/windows/servercore:ltsc2022";
     private const string LinuxIndexFilePath = "/www/index.html";
     private const string LinuxTempDirectory = "/tmp";
@@ -366,11 +367,13 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
     public async Task Platform_RunsTheVariantOfTheRequestedPlatform()
     {
         global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "Windows images have a single platform.");
+        global::Xunit.Assert.SkipWhen(Runtime == ContainerRuntime.Wslc, "wslc cannot choose the platform of a container.");
 
         // The other variant is the one the machine does not run natively, so the image may already be there for the
-        // native platform only.
+        // native platform only. Pulling it points the tag at that variant, so the image is not the one the other tests,
+        // which run at the same time on the same daemon, use.
         var (platform, machine) = RuntimeInformation.OSArchitecture is Architecture.Arm64 ? ("linux/amd64", "x86_64") : ("linux/arm64", "aarch64");
-        var definition = new ContainerDefinition(LinuxImage)
+        var definition = new ContainerDefinition(PlatformTestImage)
         {
             Runtime = Runtime,
             Platform = platform,

@@ -62,6 +62,10 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
 
     internal override async Task<string> PrepareImageAsync(ContainerDefinition definition, CancellationToken cancellationToken)
     {
+        // 'wslc create' has no '--platform' option, so the variant the container runs could not be chosen.
+        if (_flavor is Flavor.Wslc && definition.Platform is not null)
+            throw new NotSupportedException($"The 'wslc' runtime does not support '{nameof(ContainerDefinition)}.{nameof(ContainerDefinition.Platform)}'.");
+
         var logger = definition.Logging.Logger;
         switch (definition.Image)
         {

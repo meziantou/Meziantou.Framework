@@ -135,6 +135,7 @@ definition.Platform = "linux/amd64"; // run the amd64 variant, for instance on A
   [DockerfileBuildOptions.Platform](cref:Meziantou.Framework.TemporaryContainers.DockerfileBuildOptions.Platform) sets another one).
 - Running an image of another architecture needs an emulator: Rosetta on Apple Silicon (Docker Desktop and Apple's
   `container`), or QEMU on Linux.
+- `wslc` cannot choose the platform of a container: it throws a `NotSupportedException` when the property is set.
 - A container adopted through [ReuseId](cref:Meziantou.Framework.TemporaryContainers.ContainerDefinition.ReuseId) must have been created for the same platform.
 
 ## Private registries

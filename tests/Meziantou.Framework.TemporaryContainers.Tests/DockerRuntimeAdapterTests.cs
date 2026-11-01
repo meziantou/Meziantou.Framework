@@ -91,6 +91,15 @@ public sealed class DockerRuntimeAdapterTests
     }
 
     [Fact]
+    public async Task PrepareImageAsyncRefusesAPlatformOnWslc()
+    {
+        var runtime = Assert.IsAssignableTo<DockerContainerRuntime>(ContainerRuntime.Wslc);
+        var definition = new ContainerDefinition("busybox:1.37") { Platform = "linux/arm64" };
+
+        await Assert.ThrowsAsync<NotSupportedException>(() => runtime.PrepareImageAsync(definition, XunitCancellationToken));
+    }
+
+    [Fact]
     public async Task GetLogsAsyncRefusesToFollowTheTailOnWslc()
     {
         await Assert.ThrowsAsync<NotSupportedException>(async () =>

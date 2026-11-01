@@ -642,23 +642,23 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
 
         await using var container = await StartWithRetryAsync(CreateHttpServerDefinition());
 
-        var stopwatch = Stopwatch.StartNew();
+        // The command runs for a minute: had ExecAsync waited for it, /tmp/done would exist when it returns.
+        // No timing threshold, since starting an exec takes seconds on some runtimes.
         var exec = await container.ExecAsync(options =>
         {
             options.Command.Add("sh");
             options.Command.Add("-c");
-            options.Command.Add("sleep 2; touch /tmp/detached");
+            options.Command.Add("touch /tmp/started; sleep 60; touch /tmp/done");
             options.Detach = true;
         }, XunitCancellationToken);
 
         Assert.Equal(0, exec.ExitCode);
-        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(2), "ExecAsync waited for the detached command.");
 
         var check = await container.ExecAsync(options =>
         {
             options.Command.Add("sh");
             options.Command.Add("-c");
-            options.Command.Add("for i in $(seq 1 100); do [ -f /tmp/detached ] && exit 0; sleep 0.2; done; exit 1");
+            options.Command.Add("for i in $(seq 1 100); do [ -f /tmp/started ] && break; sleep 0.2; done; [ -f /tmp/started ] && [ ! -f /tmp/done ]");
         }, XunitCancellationToken);
         Assert.Equal(0, check.ExitCode);
     }

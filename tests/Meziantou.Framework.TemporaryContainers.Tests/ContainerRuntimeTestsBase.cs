@@ -370,6 +370,79 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
     }
 
     [Fact]
+    public async Task GetLogsAsync_SelectsTheEntries()
+    {
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The test writes to the standard error with a POSIX shell.");
+
+        var definition = new ContainerDefinition(new RegistryImage(ContainerImage))
+        {
+            Runtime = Runtime,
+        };
+        definition.Command.Add("sh");
+        definition.Command.Add("-c");
+        // The runtime reads the two streams from two pipes, so an entry of one stream can be recorded after a later entry
+        // of the other: the pause keeps the order of the entries known.
+        definition.Command.Add("echo err-1 >&2; sleep 1; echo out-1; echo out-2; echo LOGS DONE; exec sleep 3600");
+        definition.WaitStrategies.Add(Wait.ForLogMessage("LOGS DONE"));
+        await using var container = await StartWithRetryAsync(definition);
+
+        Assert.Equal(["out-2", "LOGS DONE"], await ReadMessagesAsync(new ContainerLogsOptions { Follow = false, Tail = 2 }));
+        Assert.Equal(["out-1", "out-2", "LOGS DONE"], await ReadMessagesAsync(new ContainerLogsOptions { Follow = false, IncludeStandardError = false }));
+        Assert.Equal(["err-1"], await ReadMessagesAsync(new ContainerLogsOptions { Follow = false, IncludeStandardOutput = false }));
+
+        var all = new List<LogEntry>();
+        await foreach (var entry in container.GetLogsAsync(new ContainerLogsOptions { Follow = false }, XunitCancellationToken))
+            all.Add(entry);
+
+        if (!Runtime.LogsIncludeTimestamps)
+        {
+            await Assert.ThrowsAsync<NotSupportedException>(async () => await ReadMessagesAsync(new ContainerLogsOptions { Follow = false, Since = DateTimeOffset.UtcNow }));
+            return;
+        }
+
+        // The runtimes record nanoseconds and the timestamps are rounded to 100 ns, so the bounds are widened by one tick.
+        var first = all.Single(entry => entry.Message is "out-1").Timestamp!.Value;
+        var last = all.Single(entry => entry.Message is "LOGS DONE").Timestamp!.Value;
+        Assert.Equal(["LOGS DONE"], await ReadMessagesAsync(new ContainerLogsOptions { Follow = false, Since = last.AddTicks(-1) }));
+        Assert.DoesNotContain("LOGS DONE", await ReadMessagesAsync(new ContainerLogsOptions { Follow = false, Until = first.AddTicks(1) }));
+        Assert.Contains("out-1", await ReadMessagesAsync(new ContainerLogsOptions { Follow = false, Until = first.AddTicks(1) }));
+
+        async Task<List<string>> ReadMessagesAsync(ContainerLogsOptions options)
+        {
+            var messages = new List<string>();
+            await foreach (var entry in container.GetLogsAsync(options, XunitCancellationToken))
+                messages.Add(entry.Message);
+
+            return messages;
+        }
+    }
+
+    [Fact]
+    public async Task StartAsync_TheWaitDoesNotMatchTheReadyMessageOfTheEarlierRun()
+    {
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The test uses a POSIX shell.");
+
+        // The container keeps its file system, and its logs, from one run to the next: only the first run is ready.
+        var definition = new ContainerDefinition(new RegistryImage(ContainerImage))
+        {
+            Runtime = Runtime,
+            StartupTimeout = TimeSpan.FromSeconds(30),
+        };
+        definition.Command.Add("sh");
+        definition.Command.Add("-c");
+        definition.Command.Add("if [ -f /tmp/started ]; then echo second run; else touch /tmp/started; echo SERVER READY; fi; exec sleep 3600");
+        definition.WaitStrategies.Add(Wait.ForLogMessage("SERVER READY"));
+        await using var container = await StartWithRetryAsync(definition);
+
+        await container.StopAsync(XunitCancellationToken);
+        var exception = await Assert.ThrowsAsync<TimeoutException>(async () => await container.StartAsync(XunitCancellationToken));
+
+        // The timeout reports the logs of the current run only.
+        Assert.Contains("second run", exception.Message);
+        Assert.DoesNotContain("SERVER READY", exception.Message.Split("did not complete.")[1]);
+    }
+
+    [Fact]
     public async Task Files_OpenReadWriteAndCopy()
     {
         await using var container = await StartWithRetryAsync(CreateHttpServerDefinition());

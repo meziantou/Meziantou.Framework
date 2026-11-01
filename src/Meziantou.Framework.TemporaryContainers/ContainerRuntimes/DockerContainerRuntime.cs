@@ -182,8 +182,43 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
 
     internal override IReadOnlyList<string> BuildInspectArguments(string id) => ["inspect", id];
 
-    internal override IReadOnlyList<string> BuildLogsArguments(string id, bool follow = true)
-        => follow ? ["logs", "-f", "--timestamps", id] : ["logs", "--timestamps", id];
+    // The options of 'wslc logs' are not documented, so it is given none that 'docker logs' has and it might not.
+    internal override bool SupportsLogsSelection => _flavor is not Flavor.Wslc;
+
+    internal override IReadOnlyList<string> BuildLogsArguments(string id, ContainerLogsOptions options)
+    {
+        var args = new List<string> { "logs" };
+        if (options.Follow)
+            args.Add("-f");
+
+        args.Add("--timestamps");
+        if (!SupportsLogsSelection)
+        {
+            args.Add(id);
+            return args;
+        }
+
+        if (options.Since is { } since)
+        {
+            args.Add("--since");
+            args.Add(LogTimestamps.FormatRfc3339(since));
+        }
+
+        if (options.Until is { } until)
+        {
+            args.Add("--until");
+            args.Add(LogTimestamps.FormatRfc3339(until));
+        }
+
+        if (options.Tail is { } tail)
+        {
+            args.Add("--tail");
+            args.Add(tail.ToString(CultureInfo.InvariantCulture));
+        }
+
+        args.Add(id);
+        return args;
+    }
 
     internal override IReadOnlyList<string> BuildDeleteImageArguments(string image) => ["image", "rm", image];
 

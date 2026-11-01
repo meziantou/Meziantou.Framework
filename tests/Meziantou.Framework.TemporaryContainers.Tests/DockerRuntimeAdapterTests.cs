@@ -57,6 +57,39 @@ public sealed class DockerRuntimeAdapterTests
     }
 
     [Fact]
+    public void BuildLogsArgumentsMapsTheOptions()
+    {
+        var runtime = Assert.IsAssignableTo<DockerContainerRuntime>(ContainerRuntime.Podman);
+        var options = new ContainerLogsOptions
+        {
+            Since = new DateTimeOffset(2026, 1, 2, 4, 4, 5, TimeSpan.FromHours(1)).AddTicks(1234567),
+            Until = new DateTimeOffset(2026, 1, 2, 3, 5, 0, TimeSpan.Zero),
+            Tail = 10,
+        };
+
+        Assert.Equal("logs -f --timestamps --since 2026-01-02T03:04:05.1234567Z --until 2026-01-02T03:05:00.0000000Z --tail 10 abc", string.Join(' ', runtime.BuildLogsArguments("abc", options)));
+    }
+
+    [Fact]
+    public void BuildLogsArgumentsDoesNotGiveWslcTheSelectionOptions()
+    {
+        var runtime = Assert.IsAssignableTo<DockerContainerRuntime>(ContainerRuntime.Wslc);
+
+        Assert.False(runtime.SupportsLogsSelection);
+        Assert.Equal("logs --timestamps abc", string.Join(' ', runtime.BuildLogsArguments("abc", new ContainerLogsOptions { Follow = false, Since = DateTimeOffset.UnixEpoch, Tail = 1 })));
+    }
+
+    [Fact]
+    public async Task GetLogsAsyncRefusesToFollowTheTailOnWslc()
+    {
+        await Assert.ThrowsAsync<NotSupportedException>(async () =>
+        {
+            await foreach (var entry in ContainerRuntime.Wslc.GetLogsAsync("abc", new ContainerLogsOptions { Tail = 1 }, XunitCancellationToken))
+                _ = entry;
+        });
+    }
+
+    [Fact]
     public void DockerUsesDockerDialect()
     {
         var runtime = Assert.IsAssignableTo<DockerContainerRuntime>(ContainerRuntime.Docker);
@@ -67,9 +100,9 @@ public sealed class DockerRuntimeAdapterTests
         Assert.Equal("rm -f -v abc", string.Join(' ', runtime.BuildRemoveArguments("abc")));
         Assert.Equal("cp src abc:/dst", string.Join(' ', runtime.BuildCopyToContainerArguments("abc", "src", "/dst")));
         Assert.Equal("cp abc:/src dst", string.Join(' ', runtime.BuildCopyFromContainerArguments("abc", "/src", "dst")));
-        Assert.Contains("--timestamps", runtime.BuildLogsArguments("abc"));
+        Assert.Contains("--timestamps", runtime.BuildLogsArguments("abc", new ContainerLogsOptions()));
         Assert.Equal("version --format {{.Server.Os}}", string.Join(' ', runtime.BuildProbeArguments()));
-        Assert.Equal("logs --timestamps abc", string.Join(' ', runtime.BuildLogsArguments("abc", follow: false)));
+        Assert.Equal("logs --timestamps abc", string.Join(' ', runtime.BuildLogsArguments("abc", new ContainerLogsOptions { Follow = false })));
         Assert.Equal("image rm meziantou-tc/abc:latest", string.Join(' ', runtime.BuildDeleteImageArguments("meziantou-tc/abc:latest")));
     }
 

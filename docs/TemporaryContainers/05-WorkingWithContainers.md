@@ -89,6 +89,37 @@ stops. On a running container, the loop does not end on its own: break out of it
 [LogEntry](cref:Meziantou.Framework.TemporaryContainers.LogEntry) has the [Message](cref:Meziantou.Framework.TemporaryContainers.LogEntry.Message), the [Stream](cref:Meziantou.Framework.TemporaryContainers.LogEntry.Stream) it was written to ([LogStream.Stdout](cref:Meziantou.Framework.TemporaryContainers.LogStream.Stdout) or [LogStream.Stderr](cref:Meziantou.Framework.TemporaryContainers.LogStream.Stderr)) and, when the
 runtime reports it, a [Timestamp](cref:Meziantou.Framework.TemporaryContainers.LogEntry.Timestamp).
 
+To read only part of the logs, pass a [ContainerLogsOptions](cref:Meziantou.Framework.TemporaryContainers.ContainerLogsOptions):
+
+<!-- ref:../../samples/Meziantou.Framework.TemporaryContainers.Samples/DocumentationExamples.cs;region=TemporaryContainers_LogsOptions;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The last 50 lines of the standard error written in the last 5 minutes, without following the new ones
+var options = new ContainerLogsOptions
+{
+    Since = DateTimeOffset.UtcNow.AddMinutes(-5),
+    Tail = 50,
+    Follow = false,
+    IncludeStandardOutput = false,
+};
+
+await foreach (var entry in container.GetLogsAsync(options))
+{
+    Console.WriteLine($"{entry.Timestamp:O} {entry.Message}");
+}
+```
+<!-- endref -->
+
+| Option | Effect |
+| --- | --- |
+| [Since](cref:Meziantou.Framework.TemporaryContainers.ContainerLogsOptions.Since), [Until](cref:Meziantou.Framework.TemporaryContainers.ContainerLogsOptions.Until) | Return the entries written in this time range, bounds included. |
+| [Tail](cref:Meziantou.Framework.TemporaryContainers.ContainerLogsOptions.Tail) | Return the last entries only. The runtime takes them first, then applies the time range and the stream selection. |
+| [Follow](cref:Meziantou.Framework.TemporaryContainers.ContainerLogsOptions.Follow) | Keep returning the new entries (the default), or end with the entries written so far. |
+| [IncludeStandardOutput](cref:Meziantou.Framework.TemporaryContainers.ContainerLogsOptions.IncludeStandardOutput), [IncludeStandardError](cref:Meziantou.Framework.TemporaryContainers.ContainerLogsOptions.IncludeStandardError) | Select the streams. At least one must be included. |
+
+The times are compared with the timestamps the runtime records, which come from the clock of the runtime: `wslc`
+reports the time of its virtual machine, which can differ from the time of the host. Apple's `container` records no
+timestamps, so it does not support `Since` and `Until` and throws a `NotSupportedException`.
+
 ## Forward the logs to a logger
 
 To see what the container prints, for instance in the output of a failed test, give the definition an `ILogger`:
@@ -103,7 +134,10 @@ definition.Logging.CaptureStandardOutput = false; // forward standard error only
 
 The lines are forwarded while the container runs, from [StartAsync](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.StartAsync) until it stops or is disposed: standard output at
 the `Information` level, standard error at the `Error` level. A logger that throws stops the forwarding, but never
-fails the container. To write them to the output of an xUnit test, see
+fails the container. A container started again, or restarted, keeps the logs of its earlier runs: only the entries of
+the current run are forwarded, and the [log wait strategy](04-Configuration/06-WaitStrategies.md) only looks for its
+message there. When the runtime ends the log stream while the container runs, the forwarding attaches again from the
+last entry it forwarded. To write them to the output of an xUnit test, see
 [Using containers in tests and CI](09-TestFrameworksAndCI.md#see-the-container-logs-in-the-test-output).
 
 ## Stop, restart and inspect

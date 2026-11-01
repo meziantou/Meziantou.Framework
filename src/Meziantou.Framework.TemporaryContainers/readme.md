@@ -214,6 +214,6 @@ The values of the environment variables are passed to the CLIs through a file on
 
 ## Runtime differences
 
-- Apple's `container` cannot set `Hostname` or `Network.Alias`, nor publish a port on an IPv6 address, and has no pause or restart (a restart is a stop and a start).
+- Apple's `container` cannot set `Hostname` or `Network.Alias`, nor publish a port on an IPv6 address, and has no pause or restart (a restart is a stop and a start). It records no log timestamps, so `ContainerLogsOptions.Since` and `Until` are not supported.
 - `wslc` cannot honor `PullPolicy.Never`, has no volume commands, and does not remove the anonymous volumes of a container.
 - The Docker Engine API cannot send `ExecOptions.StandardInput` to a daemon reached over a named pipe (the Windows default): use the `docker` CLI runtime there.

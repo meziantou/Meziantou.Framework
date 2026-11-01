@@ -77,11 +77,12 @@ public abstract partial class ContainerRuntime
     internal virtual Task<ContainerInfo> InspectAsync(string id, CancellationToken cancellationToken)
         => throw CreateNotSupportedException();
 
-    /// <summary>Streams the logs of a container from its creation.</summary>
+    /// <summary>Streams the logs of a container.</summary>
     /// <param name="id">The container.</param>
-    /// <param name="follow">Whether the stream keeps following new entries, or ends with the entries written so far.</param>
+    /// <param name="options">The entries to return. The caller does not change it once the call is made.</param>
     /// <param name="cancellationToken">A cancellation token.</param>
-    internal virtual IAsyncEnumerable<LogEntry> GetLogsAsync(string id, bool follow, CancellationToken cancellationToken)
+    /// <exception cref="NotSupportedException"><see cref="ContainerLogsOptions.Since"/> or <see cref="ContainerLogsOptions.Until"/> is set, and the runtime does not record timestamps.</exception>
+    internal virtual IAsyncEnumerable<LogEntry> GetLogsAsync(string id, ContainerLogsOptions options, CancellationToken cancellationToken)
         => throw CreateNotSupportedException();
 
     internal virtual Task<ExecResult> ExecAsync(string id, ExecOptions options, CancellationToken cancellationToken)

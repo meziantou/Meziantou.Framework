@@ -24,7 +24,7 @@ public partial class TemporaryContainer : IAsyncDisposable
     private string? _builtImage;
     private Dictionary<int, int>? _portMap;
     private DateTimeOffset? _startedAt;
-    private int _logEntriesToSkip;
+    private LogCursor? _currentRunLogStart;
     private CancellationTokenSource? _forwardLogsCancellationTokenSource;
     private Task? _forwardLogsTask;
     private bool _created;
@@ -206,7 +206,7 @@ public partial class TemporaryContainer : IAsyncDisposable
             message.Append('.');
 
             var tail = new Queue<string>(MaxReportedLogLines);
-            await foreach (var entry in GetCurrentRunLogsAsync(follow: false, cts.Token).ConfigureAwait(false))
+            await foreach (var entry in GetLogsAfterAsync(CreateCurrentRunLogCursor(), follow: false, MaxReportedLogLines, cts.Token).ConfigureAwait(false))
             {
                 if (tail.Count == MaxReportedLogLines)
                     tail.Dequeue();

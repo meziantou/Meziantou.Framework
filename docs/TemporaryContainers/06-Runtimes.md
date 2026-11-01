@@ -90,6 +90,7 @@ The Docker Engine API runtime reads the same environment variables as the docker
 | Built images removed and cleaned up | Yes | Yes | Yes | No, they are not labeled |
 | Anonymous volumes removed with the container | Yes | Yes | Yes | No |
 | [Reaper](07-Cleanup.md#remove-the-containers-as-soon-as-the-process-dies) | Yes | Yes | No | No |
+| Log timestamps, [ContainerLogsOptions.Since and Until](cref:Meziantou.Framework.TemporaryContainers.ContainerLogsOptions.Since) | Yes | Yes | No | Yes, clock of the WSL virtual machine |
 
 The Docker Engine API cannot send [ExecOptions.StandardInput](cref:Meziantou.Framework.TemporaryContainers.ExecOptions.StandardInput) to a daemon reached over a named pipe, the default on
 Windows: use the `docker` runtime there.

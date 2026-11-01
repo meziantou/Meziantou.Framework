@@ -73,6 +73,15 @@ public sealed class ContainerMountCollection : IEnumerable<IMount>
         AddCore(new TmpfsMount(containerPath));
     }
 
+    /// <summary>Adds a tmpfs (in-memory) mount with options.</summary>
+    /// <param name="containerPath">The path inside the container.</param>
+    /// <param name="size">The maximum size of the mount, in bytes, or <see langword="null"/> to keep the default of the runtime.</param>
+    /// <param name="mode">The permissions of the root of the mount, or <see langword="null"/> to keep the default of the runtime.</param>
+    public void AddTmpfs(string containerPath, long? size, UnixFileMode? mode = null)
+    {
+        AddCore(new TmpfsMount(containerPath) { Size = size, Mode = mode });
+    }
+
     /// <summary>Returns an enumerator over the mounts.</summary>
     /// <returns>An enumerator.</returns>
     public IEnumerator<IMount> GetEnumerator() => _mounts.GetEnumerator();

@@ -48,7 +48,7 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         var connection = await EnsureConnectionOrThrowAsync(cancellationToken).ConfigureAwait(false);
         var imageRef = await PrepareImageAsync(definition, cancellationToken).ConfigureAwait(false);
         var payload = DockerApiCreateRequestBuilder.Build(definition, imageRef, hostIpSupported: !connection.IsWindowsDaemon);
-        using var content = CreateJsonContent(payload, DockerApiJsonContext.Default.CreateContainerRequest);
+        using var content = new StringContent(DockerApiCreateRequestBuilder.Serialize(definition, payload), Encoding.UTF8, "application/json");
         var endpoint = "/containers/create";
 
         // A reused container gets a deterministic name so the daemon itself rejects a second creation: two processes
@@ -74,7 +74,53 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         if (string.IsNullOrWhiteSpace(createResponse?.Id))
             throw CreateException("Unable to create the container: the Docker API response does not contain an id.", statusCode: null);
 
+        await ConnectAdditionalNetworksAsync(createResponse.Id, definition, cancellationToken).ConfigureAwait(false);
         return createResponse.Id;
+    }
+
+    /// <summary>Connects a new container to the networks it was not created on. The daemons older than API 1.44 only take one network at creation.</summary>
+    private async Task ConnectAdditionalNetworksAsync(string id, ContainerDefinition definition, CancellationToken cancellationToken)
+    {
+        var (_, additionalNetworks) = definition.Network.GetNetworkPlan();
+        if (additionalNetworks.Count == 0)
+            return;
+
+        try
+        {
+            foreach (var attachment in additionalNetworks)
+                await ConnectNetworkAsync(id, attachment, cancellationToken).ConfigureAwait(false);
+        }
+        catch
+        {
+            // The caller never learns the id of a container whose creation failed, so nobody else would remove it.
+            await DeleteQuietlyAsync(id).ConfigureAwait(false);
+            throw;
+        }
+    }
+
+    private async Task ConnectNetworkAsync(string id, ContainerNetworkAttachment attachment, CancellationToken cancellationToken)
+    {
+        var request = new DockerApiModels.NetworkConnectRequest
+        {
+            Container = id,
+            EndpointConfig = new DockerApiModels.EndpointSettings { Aliases = attachment.Aliases.Count > 0 ? [.. attachment.Aliases] : null },
+        };
+
+        using var content = CreateJsonContent(request, DockerApiJsonContext.Default.NetworkConnectRequest);
+        using var response = await SendAsync(HttpMethod.Post, "/networks/" + Uri.EscapeDataString(attachment.Network) + "/connect", content, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task DeleteQuietlyAsync(string id)
+    {
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(1));
+            await DeleteAsync(id, cts.Token).ConfigureAwait(false);
+        }
+        catch
+        {
+            // The creation failure is what the caller needs to see.
+        }
     }
 
     internal override async Task StartAsync(string id, CancellationToken cancellationToken)
@@ -158,6 +204,66 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
         var volume = await JsonSerializer.DeserializeAsync(stream, DockerApiJsonContext.Default.VolumeInspectResponse, cancellationToken).ConfigureAwait(false);
         return volume?.Labels ?? new Dictionary<string, string>(StringComparer.Ordinal);
+    }
+
+    internal override bool SupportsNetworks => true;
+
+    internal override async Task CreateNetworkAsync(NetworkDefinition definition, string name, string instanceId, CancellationToken cancellationToken)
+    {
+        var labels = ResourceLabels.Build(definition.Labels, definition.ReuseId, sessionOwned: true, definition.Identity);
+        labels[ResourceLabels.Instance] = instanceId;
+
+        var payload = new DockerApiModels.NetworkCreateRequest
+        {
+            Name = name,
+            Driver = definition.Driver,
+            Internal = definition.Internal,
+
+            // The daemon accepts two networks with the same name otherwise, up to API 1.43.
+            CheckDuplicate = true,
+            Labels = labels,
+        };
+
+        using var content = CreateJsonContent(payload, DockerApiJsonContext.Default.NetworkCreateRequest);
+        using var response = await SendAsync(HttpMethod.Post, "/networks/create", content, cancellationToken).ConfigureAwait(false);
+    }
+
+    internal override async Task DeleteNetworkAsync(string name, CancellationToken cancellationToken)
+    {
+        // A network a container still joins answers 403 (409 on older daemons), which the caller detects by probing the
+        // network again, like a volume.
+        using var response = await SendAsync(HttpMethod.Delete, "/networks/" + Uri.EscapeDataString(name), content: null, cancellationToken, allowedStatusCodes: [HttpStatusCode.NotFound, HttpStatusCode.Forbidden, HttpStatusCode.Conflict]).ConfigureAwait(false);
+    }
+
+    internal override async Task<IReadOnlyDictionary<string, string>?> GetNetworkLabelsAsync(string name, CancellationToken cancellationToken)
+    {
+        using var response = await SendAsync(HttpMethod.Get, "/networks/" + Uri.EscapeDataString(name), content: null, cancellationToken, allowedStatusCodes: [HttpStatusCode.NotFound]).ConfigureAwait(false);
+        if (response.StatusCode == HttpStatusCode.NotFound)
+            return null;
+
+        using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        var network = await JsonSerializer.DeserializeAsync(stream, DockerApiJsonContext.Default.NetworkSummary, cancellationToken).ConfigureAwait(false);
+        return network?.Labels ?? new Dictionary<string, string>(StringComparer.Ordinal);
+    }
+
+    internal override async Task<IReadOnlyList<ManagedResource>> ListManagedNetworksAsync(CancellationToken cancellationToken)
+    {
+        var endpoint = "/networks?filters=" + Uri.EscapeDataString(BuildManagedLabelFilter());
+        using var response = await SendAsync(HttpMethod.Get, endpoint, content: null, cancellationToken).ConfigureAwait(false);
+        using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+        var networks = await JsonSerializer.DeserializeAsync(stream, DockerApiJsonContext.Default.NetworkSummaryArray, cancellationToken).ConfigureAwait(false);
+        if (networks is null)
+            return [];
+
+        // A network is removed by name, which is also how the library refers to it everywhere else.
+        var resources = new List<ManagedResource>(networks.Length);
+        foreach (var network in networks)
+        {
+            if (!string.IsNullOrEmpty(network.Name))
+                resources.Add(new ManagedResource(network.Name, network.Labels ?? new Dictionary<string, string>(StringComparer.Ordinal)));
+        }
+
+        return resources;
     }
 
     internal override async Task DeleteImageAsync(string image, CancellationToken cancellationToken)

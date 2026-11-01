@@ -83,8 +83,10 @@ The Docker Engine API runtime reads the same environment variables as the docker
 | | Docker Engine API, Docker | Podman | Apple container | wslc |
 | --- | --- | --- | --- | --- |
 | Volumes ([TemporaryVolume](cref:Meziantou.Framework.TemporaryContainers.TemporaryVolume)) | Yes | Yes | Yes, no driver | No |
+| Networks ([TemporaryNetwork](cref:Meziantou.Framework.TemporaryContainers.TemporaryNetwork)), several networks per container | Yes | Yes | Yes, no driver | No |
 | Pause, restart | Yes | Yes | No (a restart is a stop and a start) | Pause only (a restart is a stop and a start) |
-| [Hostname](cref:Meziantou.Framework.TemporaryContainers.ContainerDefinition.Hostname), `Network.Alias` | Yes | Yes | No | Yes |
+| [Hostname](cref:Meziantou.Framework.TemporaryContainers.ContainerDefinition.Hostname) | Yes | Yes | No | Yes |
+| Privileged mode, extra hosts, healthcheck, stop signal and timeout, exposed ports, tmpfs options ([Advanced options](04-Configuration/08-AdvancedOptions.md)) | Yes | Yes | No | Not verified |
 | [HostIp](cref:Meziantou.Framework.TemporaryContainers.ContainerPort.HostIp) of a port | Yes, except Windows containers | Yes | Yes, IPv4 only | No, loopback forwarding of WSL |
 | [PullPolicy.Never](cref:Meziantou.Framework.TemporaryContainers.PullPolicy.Never) | Yes | Yes | Yes | No |
 | Built images removed and cleaned up | Yes | Yes | Yes | No, they are not labeled |

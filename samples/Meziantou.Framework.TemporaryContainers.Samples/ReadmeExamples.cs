@@ -69,7 +69,7 @@ public static class ReadmeExamples
     public static async Task Cleanup()
     {
         #region TemporaryContainers_Cleanup
-        // Removes the containers, images and volumes whose creating process is gone. Nothing else is touched:
+        // Removes the containers, images, volumes and networks whose creating process is gone. Nothing else is touched:
         // not the resources of a live process, not those created on another machine, not the reused ones.
         var result = await ContainerRuntime.Auto.CleanupAsync();
         Console.WriteLine($"{result.RemovedCount} leftovers removed");

@@ -128,4 +128,64 @@ public sealed class DockerCreateArgumentBuilderTests
         Assert.True(args.IndexOf("-c") > imageIndex);
         Assert.True(args.IndexOf("echo hi") > imageIndex);
     }
+
+    [Fact]
+    public void AddsTheCreationOptions()
+    {
+        var definition = new ContainerDefinition(new RegistryImage("redis:8"))
+        {
+            Privileged = true,
+            StopTimeout = TimeSpan.FromSeconds(42),
+            StopSignal = "SIGINT",
+            Healthcheck = new ContainerHealthcheck(["redis-cli", "it's"]) { Interval = TimeSpan.FromSeconds(1.5), Timeout = TimeSpan.FromSeconds(2), StartPeriod = TimeSpan.FromSeconds(3), Retries = 4 },
+        };
+        definition.CapAdd.Add("NET_ADMIN");
+        definition.CapDrop.Add("ALL");
+        definition.ExtraHosts.Add(ContainerExtraHost.ForHostGateway());
+        definition.Resources.SharedMemorySize = 1024;
+        definition.Resources.Ulimits.Add(new ContainerUlimit("nofile", 1024));
+        definition.Mounts.AddTmpfs("/scratch", size: 65536, mode: (UnixFileMode)Convert.ToInt32("1777", 8));
+        definition.ExposedPorts.Add(new ContainerExposedPort(9001, ContainerPortProtocol.Udp));
+        definition.Ports.Add(new ContainerPort(53) { Protocol = ContainerPortProtocol.Udp });
+        definition.AdditionalCreateArguments.Add("--init");
+        definition.Command.Add("redis-server");
+
+        var args = string.Join(' ', DockerCreateArgumentBuilder.Build(definition, "redis:8", pullPolicyValue: null, quotedMountFieldsSupported: true));
+
+        Assert.Contains(" --shm-size 1024b ", args);
+        Assert.Contains(" --ulimit nofile=1024:1024 ", args);
+        Assert.Contains(" --privileged ", args);
+        Assert.Contains(" --cap-add NET_ADMIN --cap-drop ALL ", args);
+        Assert.Contains(" --add-host host.docker.internal:host-gateway ", args);
+        Assert.Contains(" --health-cmd 'redis-cli' 'it'\\''s' --health-interval 1500ms --health-timeout 2000ms --health-start-period 3000ms --health-retries 4 ", args);
+        Assert.Contains(" --stop-timeout 42 --stop-signal SIGINT ", args);
+        Assert.Contains(" -p 127.0.0.1::53/udp ", args);
+        Assert.Contains(" --expose 9001/udp ", args);
+        Assert.Contains(" --tmpfs /scratch:size=65536,mode=1777 ", args);
+        Assert.EndsWith(" --init redis:8 redis-server", args);
+    }
+
+    [Fact]
+    public void DisablesTheHealthcheck()
+    {
+        var definition = new ContainerDefinition(new RegistryImage("redis:8")) { Healthcheck = ContainerHealthcheck.Disabled };
+
+        var args = DockerCreateArgumentBuilder.Build(definition, "redis:8", pullPolicyValue: null, quotedMountFieldsSupported: true);
+
+        Assert.Contains("--no-healthcheck", args);
+        Assert.DoesNotContain("--health-cmd", args);
+    }
+
+    [Fact]
+    public void CreatesTheContainerOnTheFirstNetworkOnly()
+    {
+        var definition = new ContainerDefinition(new RegistryImage("redis:8"));
+        definition.Network.Add("first", "a", "b");
+        definition.Network.Add("second", "c");
+
+        var args = string.Join(' ', DockerCreateArgumentBuilder.Build(definition, "redis:8", pullPolicyValue: null, quotedMountFieldsSupported: true));
+
+        Assert.Contains(" --network first --network-alias a --network-alias b ", args);
+        Assert.DoesNotContain("second", args);
+    }
 }

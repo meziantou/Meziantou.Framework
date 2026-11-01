@@ -92,6 +92,18 @@ public sealed class ContainerDefinitionTests
         Assert.Throws<InvalidOperationException>(() => container.Definition.Resources.MemoryLimit = 1);
         Assert.Throws<InvalidOperationException>(() => container.Definition.Network.Alias = "alias");
         Assert.Throws<InvalidOperationException>(() => container.Definition.Command.Clear());
+        Assert.Throws<InvalidOperationException>(() => container.Definition.Network.Add("network"));
+        Assert.Throws<InvalidOperationException>(() => container.Definition.CapAdd.Add("NET_ADMIN"));
+        Assert.Throws<InvalidOperationException>(() => container.Definition.ExtraHosts.Add(ContainerExtraHost.ForHostGateway()));
+        Assert.Throws<InvalidOperationException>(() => container.Definition.ExposedPorts.Clear());
+        Assert.Throws<InvalidOperationException>(() => container.Definition.AdditionalCreateArguments.Add("--init"));
+        Assert.Throws<InvalidOperationException>(() => container.Definition.Resources.Ulimits.Add(new ContainerUlimit("nofile", 1)));
+        Assert.Throws<InvalidOperationException>(() => container.Definition.Resources.SharedMemorySize = 1);
+        Assert.Throws<InvalidOperationException>(() => container.Definition.Privileged = true);
+        Assert.Throws<InvalidOperationException>(() => container.Definition.Healthcheck = ContainerHealthcheck.Disabled);
+        Assert.Throws<InvalidOperationException>(() => container.Definition.StopTimeout = TimeSpan.Zero);
+        Assert.Throws<InvalidOperationException>(() => container.Definition.StopSignal = "SIGINT");
+        Assert.Throws<InvalidOperationException>(() => container.Definition.DockerApiCreateRequestCustomizer = null);
 
         // A copy of it is a new definition, which can be changed.
         var copy = new ContainerDefinition(container.Definition) { ReuseId = "reuse" };
@@ -125,6 +137,99 @@ public sealed class ContainerDefinitionTests
 
         Assert.True(copy.Labels.Contains("a"));
         Assert.False(copy.Labels.Contains("b"));
+    }
+
+    [Fact]
+    public void CopyConstructor_CopiesTheCreationOptions()
+    {
+        Action<System.Text.Json.Nodes.JsonObject> customizer = _ => { };
+        var healthcheck = new ContainerHealthcheck("true");
+        var original = new ContainerDefinition(new RegistryImage("redis:8"))
+        {
+            Privileged = true,
+            Healthcheck = healthcheck,
+            StopTimeout = TimeSpan.FromSeconds(3),
+            StopSignal = "SIGINT",
+            DockerApiCreateRequestCustomizer = customizer,
+        };
+        original.CapAdd.Add("NET_ADMIN");
+        original.CapDrop.Add("ALL");
+        original.ExtraHosts.Add(ContainerExtraHost.ForHostGateway());
+        original.ExposedPorts.Add(new ContainerExposedPort(80));
+        original.AdditionalCreateArguments.Add("--init");
+        original.Resources.SharedMemorySize = 1024;
+        original.Resources.Ulimits.Add(new ContainerUlimit("nofile", 1));
+        original.Network.Add("network", "alias");
+
+        var copy = new ContainerDefinition(original);
+        original.CapAdd.Add("SYS_ADMIN");
+        original.Resources.Ulimits.Clear();
+        original.Network.Add("other");
+
+        Assert.True(copy.Privileged);
+        Assert.Same(healthcheck, copy.Healthcheck);
+        Assert.Equal(TimeSpan.FromSeconds(3), copy.StopTimeout);
+        Assert.Equal("SIGINT", copy.StopSignal);
+        Assert.Same(customizer, copy.DockerApiCreateRequestCustomizer);
+        Assert.Equal(["NET_ADMIN"], copy.CapAdd);
+        Assert.Equal(["ALL"], copy.CapDrop);
+        Assert.Equal([ContainerExtraHost.ForHostGateway()], copy.ExtraHosts);
+        Assert.Equal([new ContainerExposedPort(80)], copy.ExposedPorts);
+        Assert.Equal(["--init"], copy.AdditionalCreateArguments);
+        Assert.Equal(1024, copy.Resources.SharedMemorySize);
+        Assert.Equal([new ContainerUlimit("nofile", 1)], copy.Resources.Ulimits);
+        var attachment = Assert.Single(copy.Network.Attachments);
+        Assert.Equal("network", attachment.Network);
+        Assert.Equal(["alias"], attachment.Aliases);
+    }
+
+    [Fact]
+    public void ConfigurationHash_TracksTheCreationOptionsAndKeepsTheHashOfTheDefinitionsThatDoNotUseThem()
+    {
+        var baseline = new ContainerDefinition(new RegistryImage("redis:8"));
+        var hash = ContainerConfigurationHash.Compute(baseline);
+
+        static string ComputeWith(Action<ContainerDefinition> configure)
+        {
+            var definition = new ContainerDefinition(new RegistryImage("redis:8"));
+            configure(definition);
+            return ContainerConfigurationHash.Compute(definition);
+        }
+
+        string[] hashes =
+        [
+            ComputeWith(d => d.Privileged = true),
+            ComputeWith(d => d.CapAdd.Add("NET_ADMIN")),
+            ComputeWith(d => d.CapDrop.Add("NET_ADMIN")),
+            ComputeWith(d => d.ExtraHosts.Add(ContainerExtraHost.ForHostGateway())),
+            ComputeWith(d => d.ExposedPorts.Add(new ContainerExposedPort(80))),
+            ComputeWith(d => d.Healthcheck = ContainerHealthcheck.Disabled),
+            ComputeWith(d => d.Healthcheck = new ContainerHealthcheck("true") { Retries = 2 }),
+            ComputeWith(d => d.StopTimeout = TimeSpan.FromSeconds(1)),
+            ComputeWith(d => d.StopSignal = "SIGINT"),
+            ComputeWith(d => d.AdditionalCreateArguments.Add("--init")),
+            ComputeWith(d => d.Resources.SharedMemorySize = 1024),
+            ComputeWith(d => d.Resources.Ulimits.Add(new ContainerUlimit("nofile", 1))),
+            ComputeWith(d => d.Network.Add("network")),
+            ComputeWith(d => d.Mounts.AddTmpfs("/tmp", size: 1024)),
+            ComputeWith(d => d.Ports.Add(new ContainerPort(53) { Protocol = ContainerPortProtocol.Udp })),
+        ];
+
+        Assert.DoesNotContain(hash, hashes);
+        Assert.HasCount(hashes.Length, hashes.Distinct(StringComparer.Ordinal));
+        Assert.Equal(hash, ComputeWith(d => d.DockerApiCreateRequestCustomizer = _ => { }));
+        Assert.Equal(ComputeWith(d => d.Mounts.AddTmpfs("/tmp")), ComputeWith(d => d.Mounts.AddTmpfs("/tmp", size: null)));
+    }
+
+    [Fact]
+    public void ContainerHealthcheck_ValidatesItsValues()
+    {
+        Assert.Throws<ArgumentException>(() => new ContainerHealthcheck(" "));
+        Assert.Throws<ArgumentException>(() => new ContainerHealthcheck(Array.Empty<string>()));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ContainerHealthcheck("true") { Interval = TimeSpan.Zero });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new ContainerHealthcheck("true") { Retries = -1 });
+        Assert.True(ContainerHealthcheck.Disabled.IsDisabled);
+        Assert.False(new ContainerHealthcheck("true").IsDisabled);
     }
 
     [Fact]

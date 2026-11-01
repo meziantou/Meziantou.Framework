@@ -20,6 +20,10 @@ namespace Meziantou.Framework.TemporaryContainers.Internals;
 [JsonSerializable(typeof(DockerApiModels.RegistryAuthHeader))]
 [JsonSerializable(typeof(DockerApiModels.ContainerPathStat))]
 [JsonSerializable(typeof(DockerApiModels.VolumeInspectResponse))]
+[JsonSerializable(typeof(DockerApiModels.NetworkCreateRequest))]
+[JsonSerializable(typeof(DockerApiModels.NetworkConnectRequest))]
+[JsonSerializable(typeof(DockerApiModels.NetworkSummary))]
+[JsonSerializable(typeof(DockerApiModels.NetworkSummary[]))]
 [JsonSerializable(typeof(Dictionary<string, string>))]
 [JsonSourceGenerationOptions(
     PropertyNameCaseInsensitive = true,

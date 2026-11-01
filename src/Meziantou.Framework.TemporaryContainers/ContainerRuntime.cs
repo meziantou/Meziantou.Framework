@@ -124,6 +124,31 @@ public abstract partial class ContainerRuntime
     internal virtual Task<IReadOnlyDictionary<string, string>?> GetVolumeLabelsAsync(string name, CancellationToken cancellationToken)
         => throw CreateNotSupportedException();
 
+    /// <summary>Whether the runtime can create networks and connect a container to several of them.</summary>
+    internal virtual bool SupportsNetworks => false;
+
+    /// <summary>Creates a network.</summary>
+    /// <param name="definition">The network definition.</param>
+    /// <param name="name">The network name.</param>
+    /// <param name="instanceId">The identifier of the <see cref="TemporaryNetwork"/> creating it, recorded in its labels.</param>
+    /// <param name="cancellationToken">A cancellation token.</param>
+    internal virtual Task CreateNetworkAsync(NetworkDefinition definition, string name, string instanceId, CancellationToken cancellationToken)
+        => throw CreateNetworksNotSupportedException();
+
+    /// <summary>Removes a network. A network that does not exist, or that a container still uses, is not an error: the callers probe the network again.</summary>
+    internal virtual Task DeleteNetworkAsync(string name, CancellationToken cancellationToken)
+        => throw CreateNetworksNotSupportedException();
+
+    /// <summary>Determines whether a network exists. A runtime that cannot answer throws rather than reporting the network as missing.</summary>
+    internal async Task<bool> NetworkExistsAsync(string name, CancellationToken cancellationToken)
+        => await GetNetworkLabelsAsync(name, cancellationToken).ConfigureAwait(false) is not null;
+
+    /// <summary>Reads the labels of a network, or <see langword="null"/> when it does not exist.</summary>
+    internal virtual Task<IReadOnlyDictionary<string, string>?> GetNetworkLabelsAsync(string name, CancellationToken cancellationToken)
+        => throw CreateNetworksNotSupportedException();
+
+    private protected NotSupportedException CreateNetworksNotSupportedException() => new($"The '{this}' runtime does not support creating networks.");
+
     /// <summary>Removes an image the library built. An image that does not exist is not an error.</summary>
     internal virtual Task DeleteImageAsync(string image, CancellationToken cancellationToken)
         => throw CreateNotSupportedException();

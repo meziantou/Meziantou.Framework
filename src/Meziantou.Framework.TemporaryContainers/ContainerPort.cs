@@ -27,6 +27,20 @@ public sealed record ContainerPort(int? HostPort, int Port)
     /// <remarks>Windows containers cannot be published on a specific address, and <c>wslc</c> publishes through the loopback forwarding of WSL, so the address is not passed to them.</remarks>
     public string HostIp { get; init => field = ValidateHostIp(value); } = DefaultHostIp;
 
+    /// <summary>Gets the transport protocol of the port. Defaults to <see cref="ContainerPortProtocol.Tcp"/>.</summary>
+    /// <remarks>A container port is published once, whatever its protocol: publishing it for both TCP and UDP is not supported.</remarks>
+    public ContainerPortProtocol Protocol { get; init; }
+
+    /// <summary>The suffix the runtimes give the port: <c>tcp</c> or <c>udp</c>.</summary>
+    internal string ProtocolName => GetProtocolName(Protocol);
+
+    internal static string GetProtocolName(ContainerPortProtocol protocol) => protocol switch
+    {
+        ContainerPortProtocol.Tcp => "tcp",
+        ContainerPortProtocol.Udp => "udp",
+        _ => throw new ArgumentOutOfRangeException(nameof(protocol), protocol, message: null),
+    };
+
     private static int? ValidateHostPort(int? hostPort)
     {
         if (hostPort is { } value)

@@ -82,13 +82,40 @@ The volume is only removed when the library created it. A `VolumeDefinition.Name
 
 Runtime differences: `wslc` has no volume commands; Apple's `container` has no volume driver, its mount descriptors cannot contain a comma, and (as of 1.1.0) it hangs on a container that mounts a volume a deleted container used, so a volume there is best kept to a single container.
 
+## Networks
+
+A `TemporaryNetwork` creates a network with a random name and removes it when disposed. Containers on the same network reach each other by alias, and a container can join several networks:
+
+<!-- ref:../../samples/Meziantou.Framework.TemporaryContainers.Samples/Examples.cs;region=NetworkDefinition_Example;format=md-fenced-code-block;dedent=true -->
+```csharp
+await using var network = new NetworkDefinition().CreateNetwork();
+
+var redisDefinition = new ContainerDefinition(ImageSource.FromRegistry("redis:8"));
+redisDefinition.Network.Add(network, "redis");
+await using var redis = redisDefinition.CreateContainer();
+await redis.StartAsync();
+
+// The second container reaches the first one by its alias.
+var clientDefinition = new ContainerDefinition(ImageSource.FromRegistry("redis:8"));
+clientDefinition.Network.Add(network);
+clientDefinition.Command.Add("redis-cli");
+clientDefinition.Command.Add("-h");
+clientDefinition.Command.Add("redis");
+clientDefinition.Command.Add("ping");
+await using var client = clientDefinition.CreateContainer();
+await client.StartAsync();
+```
+<!-- endref -->
+
+Like a volume, a network is labelled, so the cleanup and the reaper remove it when a run never disposes it. `wslc` has no network commands.
+
 ## Cleaning up leftovers
 
-Every container, volume and built image the library creates is labelled with the run that created it, so a later run can tell its own leftovers from the resources it must not touch. Disposal already removes them; the labels are what makes a run that was interrupted (a debugger stopped, a killed test host) recoverable.
+Every container, volume, network and built image the library creates is labelled with the run that created it, so a later run can tell its own leftovers from the resources it must not touch. Disposal already removes them; the labels are what makes a run that was interrupted (a debugger stopped, a killed test host) recoverable.
 
 <!-- ref:../../samples/Meziantou.Framework.TemporaryContainers.Samples/ReadmeExamples.cs;region=TemporaryContainers_Cleanup;format=md-fenced-code-block;dedent=true -->
 ```csharp
-// Removes the containers, images and volumes whose creating process is gone. Nothing else is touched:
+// Removes the containers, images, volumes and networks whose creating process is gone. Nothing else is touched:
 // not the resources of a live process, not those created on another machine, not the reused ones.
 var result = await ContainerRuntime.Auto.CleanupAsync();
 Console.WriteLine($"{result.RemovedCount} leftovers removed");

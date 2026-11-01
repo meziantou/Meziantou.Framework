@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using Meziantou.Framework.TemporaryContainers.Internals;
 
 namespace Meziantou.Framework.TemporaryContainers;
@@ -17,6 +18,11 @@ namespace Meziantou.Framework.TemporaryContainers;
 public class ContainerDefinition
 {
     private readonly Dictionary<string, string> _generatedEnvironmentValues;
+    private readonly FreezableList<string> _capAdd;
+    private readonly FreezableList<string> _capDrop;
+    private readonly FreezableList<ContainerExtraHost> _extraHosts;
+    private readonly FreezableList<ContainerExposedPort> _exposedPorts;
+    private readonly FreezableList<string> _additionalCreateArguments;
     private string? _name;
     private bool _hasGeneratedName;
     private bool _isReadOnly;
@@ -38,6 +44,11 @@ public class ContainerDefinition
         Resources = new ContainerResourceOptions();
         Logging = new ContainerLoggingOptions();
         _generatedEnvironmentValues = new Dictionary<string, string>(StringComparer.Ordinal);
+        _capAdd = [];
+        _capDrop = [];
+        _extraHosts = [];
+        _exposedPorts = [];
+        _additionalCreateArguments = [];
     }
 
     /// <summary>Initializes a new instance of the <see cref="ContainerDefinition"/> class by deep-copying another definition. The copy can be changed even when <paramref name="other"/> belongs to a container.</summary>
@@ -67,6 +78,16 @@ public class ContainerDefinition
         Network = new ContainerNetworkOptions(other.Network);
         Resources = new ContainerResourceOptions(other.Resources);
         Logging = new ContainerLoggingOptions(other.Logging);
+        Privileged = other.Privileged;
+        Healthcheck = other.Healthcheck;
+        StopTimeout = other.StopTimeout;
+        StopSignal = other.StopSignal;
+        DockerApiCreateRequestCustomizer = other.DockerApiCreateRequestCustomizer;
+        _capAdd = new FreezableList<string>(other._capAdd);
+        _capDrop = new FreezableList<string>(other._capDrop);
+        _extraHosts = new FreezableList<ContainerExtraHost>(other._extraHosts);
+        _exposedPorts = new FreezableList<ContainerExposedPort>(other._exposedPorts);
+        _additionalCreateArguments = new FreezableList<string>(other._additionalCreateArguments);
         SessionOwned = other.SessionOwned;
         Identity = other.Identity;
         _generatedEnvironmentValues = new Dictionary<string, string>(other._generatedEnvironmentValues, StringComparer.Ordinal);
@@ -204,6 +225,90 @@ public class ContainerDefinition
     /// <summary>Gets the logging options.</summary>
     public ContainerLoggingOptions Logging { get; }
 
+    /// <summary>Gets or sets a value indicating whether the container runs in privileged mode, with every capability and access to the devices of the host.</summary>
+    /// <remarks>Apple's container runtime does not support privileged containers.</remarks>
+    public bool Privileged
+    {
+        get;
+        set
+        {
+            DefinitionReadOnly.ThrowIf(_isReadOnly);
+            field = value;
+        }
+    }
+
+    /// <summary>Gets the Linux capabilities added to the container, such as <c>NET_ADMIN</c>.</summary>
+    public IList<string> CapAdd => _capAdd;
+
+    /// <summary>Gets the Linux capabilities dropped from the container, such as <c>ALL</c>.</summary>
+    public IList<string> CapDrop => _capDrop;
+
+    /// <summary>Gets the entries added to the <c>/etc/hosts</c> file of the container. Use <see cref="ContainerExtraHost.ForHostGateway(string)"/> to reach the host from the container on Linux.</summary>
+    /// <remarks>Apple's container runtime does not support extra hosts.</remarks>
+    public IList<ContainerExtraHost> ExtraHosts => _extraHosts;
+
+    /// <summary>Gets the ports the container exposes without publishing them to the host. See <see cref="Ports"/> for the published ports.</summary>
+    /// <remarks>Apple's container runtime does not support exposing a port.</remarks>
+    public IList<ContainerExposedPort> ExposedPorts => _exposedPorts;
+
+    /// <summary>Gets or sets the healthcheck that replaces the one the image declares. <see langword="null"/> keeps the healthcheck of the image; <see cref="ContainerHealthcheck.Disabled"/> disables it.</summary>
+    /// <remarks>Apple's container runtime has no healthcheck.</remarks>
+    public ContainerHealthcheck? Healthcheck
+    {
+        get;
+        set
+        {
+            DefinitionReadOnly.ThrowIf(_isReadOnly);
+            field = value;
+        }
+    }
+
+    /// <summary>Gets or sets the time the runtime waits for the container to stop before killing it. <see langword="null"/> keeps the default of the runtime (10 seconds for docker). The value is rounded down to whole seconds.</summary>
+    /// <remarks>Apple's container runtime does not support it.</remarks>
+    public TimeSpan? StopTimeout
+    {
+        get;
+        set
+        {
+            if (value is { } timeout)
+                ArgumentOutOfRangeException.ThrowIfLessThan(timeout, TimeSpan.Zero, nameof(value));
+
+            DefinitionReadOnly.ThrowIf(_isReadOnly);
+            field = value;
+        }
+    }
+
+    /// <summary>Gets or sets the signal sent to the container to stop it, such as <c>SIGINT</c>. <see langword="null"/> keeps the one of the image, or <c>SIGTERM</c>.</summary>
+    /// <remarks>Apple's container runtime does not support it.</remarks>
+    public string? StopSignal
+    {
+        get;
+        set
+        {
+            DefinitionReadOnly.ThrowIf(_isReadOnly);
+            field = value;
+        }
+    }
+
+    /// <summary>Gets the arguments added to the <c>create</c> command of the CLI runtimes (docker, podman, Apple's <c>container</c>, wslc), right before the image. Use it for an option the definition does not have.</summary>
+    /// <remarks>The Docker Engine API runtime ignores these arguments; use <see cref="DockerApiCreateRequestCustomizer"/> instead. The library does not check them: an argument the runtime does not know makes the creation fail.</remarks>
+    public IList<string> AdditionalCreateArguments => _additionalCreateArguments;
+
+    /// <summary>Gets or sets a callback that changes the JSON body of the <c>POST /containers/create</c> request the Docker Engine API runtime sends, right before it is sent. Use it for an option the definition does not have.</summary>
+    /// <remarks>
+    /// <para>The CLI runtimes ignore the callback; use <see cref="AdditionalCreateArguments"/> instead.</para>
+    /// <para>The callback is not part of the configuration a container reused through <see cref="ReuseId"/> is matched against, since what it does cannot be compared: change the <see cref="ReuseId"/> when you change what it does.</para>
+    /// </remarks>
+    public Action<JsonObject>? DockerApiCreateRequestCustomizer
+    {
+        get;
+        set
+        {
+            DefinitionReadOnly.ThrowIf(_isReadOnly);
+            field = value;
+        }
+    }
+
     /// <summary>Gets a value indicating whether the definition belongs to a container, in which case it can no longer be changed.</summary>
     public bool IsReadOnly => _isReadOnly;
 
@@ -274,6 +379,11 @@ public class ContainerDefinition
         Network.MakeReadOnly();
         Resources.MakeReadOnly();
         Logging.MakeReadOnly();
+        _capAdd.MakeReadOnly();
+        _capDrop.MakeReadOnly();
+        _extraHosts.MakeReadOnly();
+        _exposedPorts.MakeReadOnly();
+        _additionalCreateArguments.MakeReadOnly();
         ConfigurationHash = ContainerConfigurationHash.Compute(this);
     }
 }

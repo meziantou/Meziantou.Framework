@@ -273,6 +273,110 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
 
     internal override bool SupportsVolumes => _flavor is not Flavor.Wslc;
 
+    // wslc is not known to have network commands.
+    internal override bool SupportsNetworks => _flavor is not Flavor.Wslc;
+
+    internal override IReadOnlyList<string> BuildCreateNetworkArguments(NetworkDefinition definition, string name, string? instanceId = null)
+    {
+        EnsureNetworksSupported();
+
+        var args = new List<string> { "network", "create" };
+        if (definition.Driver is { } driver)
+        {
+            args.Add("--driver");
+            args.Add(driver);
+        }
+
+        if (definition.Internal)
+            args.Add("--internal");
+
+        var labels = ResourceLabels.Build(definition.Labels, definition.ReuseId, sessionOwned: true, definition.Identity);
+        if (instanceId is not null)
+            labels[ResourceLabels.Instance] = instanceId;
+
+        foreach (var (labelName, labelValue) in labels)
+        {
+            args.Add("--label");
+            args.Add($"{labelName}={labelValue}");
+        }
+
+        args.Add(name);
+        return args;
+    }
+
+    internal override IReadOnlyList<string> BuildDeleteNetworkArguments(string name)
+    {
+        EnsureNetworksSupported();
+        return ["network", "rm", name];
+    }
+
+    internal override IReadOnlyList<string> BuildNetworkInspectArguments(string name)
+    {
+        EnsureNetworksSupported();
+        return ["network", "inspect", name];
+    }
+
+    // docker reports 'Name' and 'Labels', podman 'name' and 'labels': the parser of the volumes ignores the case.
+    internal override IReadOnlyDictionary<string, string>? ParseNetworkLabels(string output)
+        => DockerVolumeInspectResult.Parse(output) is [var network, ..] ? network.Labels : null;
+
+    internal override IReadOnlyList<ContainerNetworkAttachment> GetNetworksToConnectAfterCreate(ContainerDefinition definition)
+    {
+        var networks = base.GetNetworksToConnectAfterCreate(definition);
+        if (networks.Count > 0)
+            EnsureNetworksSupported();
+
+        return networks;
+    }
+
+    internal override IReadOnlyList<string> BuildConnectNetworkArguments(string id, ContainerNetworkAttachment attachment)
+    {
+        EnsureNetworksSupported();
+
+        var args = new List<string> { "network", "connect" };
+        foreach (var alias in attachment.Aliases)
+        {
+            args.Add("--alias");
+            args.Add(alias);
+        }
+
+        args.Add(attachment.Network);
+        args.Add(id);
+        return args;
+    }
+
+    internal IReadOnlyList<string> BuildListManagedNetworksArguments()
+    {
+        EnsureNetworksSupported();
+        return ["network", "ls", "--filter", $"label={ResourceLabels.Managed}", "--format", "{{.Name}}"];
+    }
+
+    internal override async Task<IReadOnlyList<ManagedResource>> ListManagedNetworksAsync(CancellationToken cancellationToken)
+    {
+        var list = await Cli.RunBufferedAsync(BuildListManagedNetworksArguments(), cancellationToken).ConfigureAwait(false);
+        var names = new List<string>();
+        foreach (var line in list.StandardOutput.Split('\n'))
+        {
+            var trimmed = line.Trim();
+            if (!string.IsNullOrEmpty(trimmed))
+                names.Add(trimmed);
+        }
+
+        if (names.Count == 0)
+            return [];
+
+        var inspectArgs = new List<string> { "network", "inspect" };
+        inspectArgs.AddRange(names);
+        var inspect = await Cli.RunBufferedAsync(inspectArgs, cancellationToken, allowNonZero: true).ConfigureAwait(false);
+        return DockerVolumeInspectResult.Parse(inspect.StandardOutput);
+    }
+
+    private void EnsureNetworksSupported()
+    {
+        if (_flavor is Flavor.Wslc)
+            throw new NotSupportedException("The 'wslc' CLI does not have network commands, so a container cannot join several networks.");
+    }
+
     internal override bool SupportsReaper => _flavor is not Flavor.Wslc;
 
     internal IReadOnlyList<string> BuildListManagedContainersArguments()

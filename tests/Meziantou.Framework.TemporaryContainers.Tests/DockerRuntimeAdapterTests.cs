@@ -725,4 +725,50 @@ public sealed class DockerRuntimeAdapterTests
 
     private static ContainerRuntimeException ApiFailure(HttpStatusCode statusCode)
         => new("boom", ContainerRuntime.DockerApi, statusCode);
+
+    [Fact]
+    public void BuildsNetworkArguments()
+    {
+        var runtime = Assert.IsAssignableTo<DockerContainerRuntime>(ContainerRuntime.Docker);
+        var definition = new NetworkDefinition { Driver = "bridge", Internal = true };
+        definition.Labels.Add("owner", "meziantou");
+
+        var createArguments = string.Join(' ', runtime.BuildCreateNetworkArguments(definition, "my-network", "instance"));
+        Assert.StartsWith("network create --driver bridge --internal --label owner=meziantou --label ", createArguments);
+        Assert.Contains($"--label {ResourceLabels.Managed}=1", createArguments);
+        Assert.Contains($"--label {ResourceLabels.Instance}=instance", createArguments);
+        Assert.EndsWith(" my-network", createArguments);
+        Assert.Equal("network rm my-network", string.Join(' ', runtime.BuildDeleteNetworkArguments("my-network")));
+        Assert.Equal("network inspect my-network", string.Join(' ', runtime.BuildNetworkInspectArguments("my-network")));
+        Assert.Equal($"network ls --filter label={ResourceLabels.Managed} --format {{{{.Name}}}}", string.Join(' ', runtime.BuildListManagedNetworksArguments()));
+
+        var container = new ContainerDefinition(new RegistryImage("redis:8"));
+        container.Network.Add("first");
+        container.Network.Add("second", "a", "b");
+        var connect = Assert.Single(runtime.GetNetworksToConnectAfterCreate(container));
+        Assert.Equal("network connect --alias a --alias b second abc", string.Join(' ', runtime.BuildConnectNetworkArguments("abc", connect)));
+    }
+
+    [Fact]
+    public void ParsesTheLabelsOfANetworkWhateverTheCaseOfTheOutput()
+    {
+        var runtime = Assert.IsAssignableTo<DockerContainerRuntime>(ContainerRuntime.Docker);
+
+        Assert.Equal("1", runtime.ParseNetworkLabels("""[{"Name":"net","Labels":{"a":"1"}}]""")!["a"]);
+        Assert.Equal("1", runtime.ParseNetworkLabels("""[{"name":"net","labels":{"a":"1"}}]""")!["a"]);
+        Assert.Null(runtime.ParseNetworkLabels("[]"));
+    }
+
+    [Fact]
+    public void WslcRejectsSeveralNetworks()
+    {
+        var wslc = Assert.IsAssignableTo<DockerContainerRuntime>(ContainerRuntime.Wslc);
+        var definition = new ContainerDefinition(new RegistryImage("redis:8"));
+        definition.Network.Add("first");
+        definition.Network.Add("second");
+
+        Assert.False(wslc.SupportsNetworks);
+        Assert.Throws<NotSupportedException>(() => wslc.GetNetworksToConnectAfterCreate(definition));
+        Assert.Throws<NotSupportedException>(() => wslc.BuildCreateNetworkArguments(new NetworkDefinition(), "my-network"));
+    }
 }

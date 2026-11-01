@@ -60,10 +60,11 @@ definition.Network.Alias = "database"; // the name the other containers of the n
 ```
 <!-- endref -->
 
-The library does not create networks: create the network with the runtime first, for instance with
-`docker network create integration-tests`.
+To have the library create the network, and to connect a container to several networks, see [Networks](07-Networks.md).
+Capabilities, shared memory, ulimits and the other less common options are described in
+[Advanced options](08-AdvancedOptions.md).
 
 ## Runtime differences
 
-Apple's `container` cannot set [Hostname](cref:Meziantou.Framework.TemporaryContainers.ContainerDefinition.Hostname) or `Network.Alias`. See [Container runtimes](../06-Runtimes.md) for the other
+Apple's `container` cannot set [Hostname](cref:Meziantou.Framework.TemporaryContainers.ContainerDefinition.Hostname). See [Container runtimes](../06-Runtimes.md) for the other
 differences.

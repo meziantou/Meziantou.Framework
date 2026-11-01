@@ -1018,6 +1018,114 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
         Assert.False(await volume.ExistsAsync(XunitCancellationToken), "The cleanup left behind the volume of a run that is over.");
     }
 
+    protected async Task AssertCleanupRemovesOrphanedNetworkAsync()
+    {
+        await using var network = new NetworkDefinition { Runtime = Runtime, Identity = CreateDeadRunIdentity() }.CreateNetwork();
+        await network.EnsureCreatedAsync(XunitCancellationToken);
+        Assert.True(await network.ExistsAsync(XunitCancellationToken));
+
+        var result = await Runtime.CleanupAsync(XunitCancellationToken);
+
+        Assert.Contains(network.Name, result.RemovedNetworks);
+        Assert.False(await network.ExistsAsync(XunitCancellationToken), "The cleanup left behind the network of a run that is over.");
+    }
+
+    /// <summary>Shared assertion that containers reach each other by alias on a <see cref="TemporaryNetwork"/>, including on a network the container joins after its creation, and that the network is removed on dispose.</summary>
+    protected Task AssertNetworkConnectsContainersByAliasAsync()
+    {
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The client runs a POSIX shell.");
+
+        return ContainerTestHelper.RunWithRuntimeRetryAsync(async () =>
+        {
+            string firstNetworkName;
+            string secondNetworkName;
+            await using (var firstNetwork = new NetworkDefinition { Runtime = Runtime }.CreateNetwork())
+            await using (var secondNetwork = new NetworkDefinition { Runtime = Runtime }.CreateNetwork())
+            {
+                firstNetworkName = firstNetwork.Name;
+                secondNetworkName = secondNetwork.Name;
+
+                var serverDefinition = CreateHttpServerDefinition();
+                serverDefinition.Network.Add(firstNetwork, "web");
+                serverDefinition.Network.Add(secondNetwork, "web-second", "web-other");
+                await using var server = await StartWithRetryAsync(serverDefinition);
+
+                // The client only joins the second network, which the server joined once it was created.
+                var clientDefinition = CreateHttpServerDefinition();
+                clientDefinition.Network.Add(secondNetwork);
+                await using var client = await StartWithRetryAsync(clientDefinition);
+
+                foreach (var alias in new[] { "web-second", "web-other" })
+                {
+                    var exec = await client.ExecAsync(options =>
+                    {
+                        options.Command.Add("wget");
+                        options.Command.Add("-qO-");
+                        options.Command.Add("http://" + alias + ":8080/");
+                    }, XunitCancellationToken);
+
+                    Assert.Equal(0, exec.ExitCode);
+                    Assert.Equal("hello from container", exec.StandardOutput.Trim());
+                }
+
+                var unreachable = await client.ExecAsync(options =>
+                {
+                    options.Command.Add("wget");
+                    options.Command.Add("-qO-");
+                    options.Command.Add("-T");
+                    options.Command.Add("2");
+                    options.Command.Add("http://web:8080/");
+                }, XunitCancellationToken);
+                Assert.NotEqual(0, unreachable.ExitCode);
+            }
+
+            Assert.False(await Runtime.NetworkExistsAsync(firstNetworkName, XunitCancellationToken), "Disposing the network left it behind.");
+            Assert.False(await Runtime.NetworkExistsAsync(secondNetworkName, XunitCancellationToken), "Disposing the network left it behind.");
+        }, XunitCancellationToken);
+    }
+
+    /// <summary>Shared assertion that the creation options reach the container (called from the docker-compatible runtimes).</summary>
+    protected async Task AssertCreationOptionsReachTheContainerAsync()
+    {
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The options are read with a POSIX shell.");
+
+        var definition = CreateHttpServerDefinition();
+        definition.ExtraHosts.Add(ContainerExtraHost.ForHostGateway());
+        definition.ExtraHosts.Add(new ContainerExtraHost("custom.test", "10.1.2.3"));
+        definition.Resources.SharedMemorySize = 128 * 1024 * 1024;
+        definition.Resources.Ulimits.Add(new ContainerUlimit("nofile", 1234, 2345));
+        definition.Mounts.AddTmpfs("/scratch", size: 32 * 1024 * 1024, mode: (UnixFileMode)Convert.ToInt32("1777", 8));
+        definition.CapDrop.Add("NET_RAW");
+        definition.ExposedPorts.Add(new ContainerExposedPort(9090, ContainerPortProtocol.Udp));
+        definition.StopTimeout = TimeSpan.FromSeconds(3);
+        definition.StopSignal = "SIGINT";
+        definition.Healthcheck = new ContainerHealthcheck(["true"]) { Interval = TimeSpan.FromSeconds(1), Retries = 3 };
+        definition.Ports.Add(new ContainerPort(5353) { Protocol = ContainerPortProtocol.Udp });
+        if (Runtime == ContainerRuntime.DockerApi)
+            definition.DockerApiCreateRequestCustomizer = request => request["Env"]!.AsArray().Add("CUSTOMIZED=1");
+        else
+            definition.AdditionalCreateArguments.Add("--env=CUSTOMIZED=1");
+
+        await using var container = await StartWithRetryAsync(definition);
+
+        var exec = await container.ExecAsync(options =>
+        {
+            options.Command.Add("sh");
+            options.Command.Add("-c");
+            options.Command.Add("cat /etc/hosts; echo; ulimit -Sn; ulimit -Hn; df -k /dev/shm /scratch; stat -c %a /scratch; echo CUSTOMIZED=$CUSTOMIZED");
+        }, XunitCancellationToken);
+
+        Assert.Equal(0, exec.ExitCode);
+        Assert.Contains("host.docker.internal", exec.StandardOutput, StringComparison.Ordinal);
+        Assert.Contains("10.1.2.3", exec.StandardOutput, StringComparison.Ordinal);
+        Assert.Contains("1234\n2345\n", exec.StandardOutput, StringComparison.Ordinal);
+        Assert.Contains("131072", exec.StandardOutput, StringComparison.Ordinal);
+        Assert.Contains("32768", exec.StandardOutput, StringComparison.Ordinal);
+        Assert.Contains("\n1777\n", exec.StandardOutput, StringComparison.Ordinal);
+        Assert.Contains("CUSTOMIZED=1", exec.StandardOutput, StringComparison.Ordinal);
+        Assert.True(container.GetMappedPort(5353) > 0);
+    }
+
     /// <summary>Shared assertion that the reaper starts, acknowledges the session, and removes nothing when it is stopped cleanly (called from the runtimes driven by a docker-compatible socket).</summary>
     protected async Task AssertReaperLifecycleAsync()
     {

@@ -14,6 +14,14 @@ public sealed class ImmutableEquatableSetTests
     }
 
     [Fact]
+    public void Create_FromEmptyCollection_ShouldReturnEmpty()
+    {
+        var empty = ImmutableEquatableSet.Create(new List<string>());
+
+        Assert.Same(ImmutableEquatableSet<string>.Empty, empty);
+    }
+
+    [Fact]
     public void Constructor_ShouldCreateSetWithUniqueItems()
     {
         var values = new HashSet<string>(StringComparer.Ordinal) { "a", "b", "c" };

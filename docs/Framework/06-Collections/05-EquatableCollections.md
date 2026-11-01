@@ -40,11 +40,13 @@ private sealed record Model(string Name, ImmutableEquatableArray<string> Items);
 | [ImmutableEquatableDictionary\<TKey, TValue\>](cref:Meziantou.Framework.Collections.ImmutableEquatableDictionary{TKey,TValue}) | [ToImmutableEquatableDictionary()](cref:Meziantou.Framework.Collections.ImmutableEquatableDictionary.ToImmutableEquatableDictionary) from pairs, tuples or with key and value selectors, [ImmutableEquatableDictionary.Empty\<TKey, TValue\>()](cref:Meziantou.Framework.Collections.ImmutableEquatableDictionary.Empty) |
 
 The items, and the keys and values of the dictionary, must implement `IEquatable<T>`.
+Creating a collection from an empty collection returns the shared `Empty` instance.
 
 ## Equality
 
 - The array is equal to another array with the same items in the same order.
 - The set and the dictionary are equal to another set or dictionary with the same items, whatever their order.
+- A `null` value of the dictionary is equal to another `null` value.
 - `==`, `!=`, `Equals` and `GetHashCode` all follow these rules.
 
 They implement the read-only collection interfaces (`IReadOnlyList<T>`, `ISet<T>`, `IReadOnlyDictionary<TKey, TValue>`

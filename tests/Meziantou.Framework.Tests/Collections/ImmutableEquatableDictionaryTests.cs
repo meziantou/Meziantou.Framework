@@ -59,6 +59,30 @@ public sealed class ImmutableEquatableDictionaryTests
     }
 
     [Fact]
+    public void ToImmutableEquatableDictionary_FromEmptyTuples_ShouldReturnEmpty()
+    {
+        var empty = Array.Empty<(string, int)>().ToImmutableEquatableDictionary();
+
+        Assert.Same(ImmutableEquatableDictionary<string, int>.Empty, empty);
+    }
+
+    [Fact]
+    public void ToImmutableEquatableDictionary_WithKeySelector_FromEmptyCollection_ShouldReturnEmpty()
+    {
+        var empty = new List<string>().ToImmutableEquatableDictionary(s => s[0]);
+
+        Assert.Same(ImmutableEquatableDictionary<char, string>.Empty, empty);
+    }
+
+    [Fact]
+    public void ToImmutableEquatableDictionary_WithKeyAndValueSelectors_FromEmptyCollection_ShouldReturnEmpty()
+    {
+        var empty = Array.Empty<string>().ToImmutableEquatableDictionary(s => s[0], s => s.Length);
+
+        Assert.Same(ImmutableEquatableDictionary<char, int>.Empty, empty);
+    }
+
+    [Fact]
     public void ToImmutableEquatableDictionary_WithKeySelector_ShouldCreateDictionary()
     {
         var values = new[] { "apple", "banana", "cherry" };
@@ -169,6 +193,18 @@ public sealed class ImmutableEquatableDictionaryTests
         Assert.False(dict1.Equals(dict2));
         Assert.False(dict1 == dict2);
         Assert.True(dict1 != dict2);
+    }
+
+    [Fact]
+    public void Equals_NullValues_ShouldNotThrow()
+    {
+        var dict1 = new[] { ("a", (string)null!), ("b", "value") }.ToImmutableEquatableDictionary();
+        var dict2 = new[] { ("a", (string)null!), ("b", "value") }.ToImmutableEquatableDictionary();
+        var dict3 = new[] { ("a", "value"), ("b", "value") }.ToImmutableEquatableDictionary();
+
+        Assert.True(dict1.Equals(dict2));
+        Assert.False(dict1.Equals(dict3));
+        Assert.False(dict3.Equals(dict1));
     }
 
     [Fact]

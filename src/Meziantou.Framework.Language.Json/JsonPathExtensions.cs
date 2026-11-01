@@ -6,6 +6,58 @@ namespace Meziantou.Framework.Language.Json;
 /// <summary>Provides JSONPath evaluation helpers for JSON syntax trees.</summary>
 public static class JsonPathExtensions
 {
+    /// <summary>Evaluates a syntax tree using cooperative cancellation and resource limits.</summary>
+    public static JsonPathResult<JsonSyntaxNode> Evaluate(this JsonPath path, JsonSyntaxTree? root, JsonPathEvaluationOptions options, JsonPathEvaluationMode mode = JsonPathEvaluationMode.Lax)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        return path.Evaluate(GetJsonSyntaxRoot(root), JsonSyntaxNodeNavigator.Instance, options, mode);
+    }
+
+    /// <summary>Evaluates a syntax tree using cooperative cancellation and resource limits.</summary>
+    public static JsonPathResult<JsonSyntaxNode> Evaluate(this JsonSyntaxTree? root, JsonPath path, JsonPathEvaluationOptions options, JsonPathEvaluationMode mode = JsonPathEvaluationMode.Lax)
+    {
+        return Evaluate(path, root, options, mode);
+    }
+
+    /// <summary>Evaluates a syntax node using cooperative cancellation and resource limits.</summary>
+    public static JsonPathResult<JsonSyntaxNode> Evaluate(this JsonPath path, JsonSyntaxNode? root, JsonPathEvaluationOptions options, JsonPathEvaluationMode mode = JsonPathEvaluationMode.Lax)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        return path.Evaluate(GetJsonSyntaxRoot(root), JsonSyntaxNodeNavigator.Instance, options, mode);
+    }
+
+    /// <summary>Evaluates a syntax node using cooperative cancellation and resource limits.</summary>
+    public static JsonPathResult<JsonSyntaxNode> Evaluate(this JsonSyntaxNode? root, JsonPath path, JsonPathEvaluationOptions options, JsonPathEvaluationMode mode = JsonPathEvaluationMode.Lax)
+    {
+        return Evaluate(path, root, options, mode);
+    }
+
+    /// <summary>Returns the first syntax node using cooperative cancellation and resource limits.</summary>
+    public static JsonSyntaxNode? EvaluateValue(this JsonPath path, JsonSyntaxTree? root, JsonPathEvaluationOptions options, JsonPathEvaluationMode mode = JsonPathEvaluationMode.Lax)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        return path.EvaluateValue(GetJsonSyntaxRoot(root), JsonSyntaxNodeNavigator.Instance, options, mode);
+    }
+
+    /// <summary>Returns the first syntax node using cooperative cancellation and resource limits.</summary>
+    public static JsonSyntaxNode? EvaluateValue(this JsonSyntaxTree? root, JsonPath path, JsonPathEvaluationOptions options, JsonPathEvaluationMode mode = JsonPathEvaluationMode.Lax)
+    {
+        return EvaluateValue(path, root, options, mode);
+    }
+
+    /// <summary>Returns the first syntax node using cooperative cancellation and resource limits.</summary>
+    public static JsonSyntaxNode? EvaluateValue(this JsonPath path, JsonSyntaxNode? root, JsonPathEvaluationOptions options, JsonPathEvaluationMode mode = JsonPathEvaluationMode.Lax)
+    {
+        ArgumentNullException.ThrowIfNull(path);
+        return path.EvaluateValue(GetJsonSyntaxRoot(root), JsonSyntaxNodeNavigator.Instance, options, mode);
+    }
+
+    /// <summary>Returns the first syntax node using cooperative cancellation and resource limits.</summary>
+    public static JsonSyntaxNode? EvaluateValue(this JsonSyntaxNode? root, JsonPath path, JsonPathEvaluationOptions options, JsonPathEvaluationMode mode = JsonPathEvaluationMode.Lax)
+    {
+        return EvaluateValue(path, root, options, mode);
+    }
+
     /// <summary>Evaluates this JSONPath expression against a JSON syntax tree.</summary>
     /// <param name="path">The JSONPath expression to evaluate.</param>
     /// <param name="root">The root JSON syntax tree to query. May be <see langword="null"/>.</param>
@@ -121,8 +173,8 @@ public static class JsonPathExtensions
     /// <exception cref="JsonPathEvaluationException">The path cannot be evaluated in <see cref="JsonPathEvaluationMode.Strict"/> mode.</exception>
     public static JsonSyntaxNode? EvaluateValue(this JsonPath path, JsonSyntaxTree? root, JsonPathEvaluationMode mode)
     {
-        var result = Evaluate(path, root, mode);
-        return result.Count > 0 ? result[0].Value : null;
+        ArgumentNullException.ThrowIfNull(path);
+        return path.EvaluateValue(GetJsonSyntaxRoot(root), JsonSyntaxNodeNavigator.Instance, mode);
     }
 
     /// <summary>
@@ -174,8 +226,8 @@ public static class JsonPathExtensions
     /// <exception cref="JsonPathEvaluationException">The path cannot be evaluated in <see cref="JsonPathEvaluationMode.Strict"/> mode.</exception>
     public static JsonSyntaxNode? EvaluateValue(this JsonPath path, JsonSyntaxNode? root, JsonPathEvaluationMode mode)
     {
-        var result = Evaluate(path, root, mode);
-        return result.Count > 0 ? result[0].Value : null;
+        ArgumentNullException.ThrowIfNull(path);
+        return path.EvaluateValue(GetJsonSyntaxRoot(root), JsonSyntaxNodeNavigator.Instance, mode);
     }
 
     /// <summary>

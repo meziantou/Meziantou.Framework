@@ -1,5 +1,4 @@
 using BenchmarkDotNet.Running;
 using Meziantou.Framework.JsonPath.Benchmarks;
 
-BenchmarkRunner.Run<JsonPathSliceBenchmark>();
-BenchmarkRunner.Run<JsonPathObjectEqualityBenchmark>();
+BenchmarkSwitcher.FromAssembly(typeof(EvaluationBenchmark).Assembly).Run(args);

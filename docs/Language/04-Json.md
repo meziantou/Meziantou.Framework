@@ -67,6 +67,11 @@ Assert.Equal("2", value?.ToString());
 
 [JsonPath](cref:Meziantou.Framework.Json.JsonPath) is in the [Meziantou.Framework.Json](cref:Meziantou.Framework.Json) namespace. The results are nodes of the tree, so you can replace them.
 
+[EvaluateValue](cref:Meziantou.Framework.Language.Json.JsonPathExtensions.EvaluateValue) uses the value-only first-match
+path; Strict mode still validates later branches. The tree and node extension overloads also accept
+[JsonPathEvaluationOptions](cref:Meziantou.Framework.Json.JsonPathEvaluationOptions) for cooperative cancellation and
+resource limits. See [Cancel or bound evaluation](../JsonPath/06-EvaluatingQueries.md#cancel-or-bound-evaluation).
+
 ## Edit a document
 
 Replace a value with a node built by [SyntaxFactory](cref:Meziantou.Framework.Language.Json.SyntaxFactory). The rest of the document is kept as it is:

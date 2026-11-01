@@ -484,6 +484,31 @@ public class QRCodeTests
     }
 
     [Theory]
+    [InlineData(-1)]
+    [InlineData(4)]
+    [InlineData(int.MaxValue)]
+    [InlineData(int.MinValue)]
+    public void Create_UndefinedErrorCorrectionLevel_ThrowsArgumentOutOfRangeException(int value)
+    {
+        var level = (ErrorCorrectionLevel)value;
+
+        Assert.Throws<ArgumentOutOfRangeException>("errorCorrectionLevel", () => QRCode.Create("123", level));
+        Assert.Throws<ArgumentOutOfRangeException>("errorCorrectionLevel", () => QRCode.Create([1, 2, 3], level));
+        Assert.Throws<ArgumentOutOfRangeException>("errorCorrectionLevel", () => QRCode.CreateMicroQR("123", level));
+        Assert.Throws<ArgumentOutOfRangeException>("errorCorrectionLevel", () => QRCode.CreateRMQR("123", level));
+    }
+
+    [Theory]
+    [InlineData(ErrorCorrectionLevel.L)]
+    [InlineData(ErrorCorrectionLevel.M)]
+    [InlineData(ErrorCorrectionLevel.Q)]
+    [InlineData(ErrorCorrectionLevel.H)]
+    public void Create_Binary_ReportsTheErrorCorrectionLevel(ErrorCorrectionLevel ecLevel)
+    {
+        Assert.Equal(ecLevel, QRCode.Create([1, 2, 3], ecLevel).ErrorCorrectionLevel);
+    }
+
+    [Theory]
     [InlineData(ErrorCorrectionLevel.L)]
     [InlineData(ErrorCorrectionLevel.M)]
     [InlineData(ErrorCorrectionLevel.Q)]

@@ -83,6 +83,8 @@ var highPng = high.ToPng(new QRCodePngOptions { ModuleSize = 4 });
 - Not every kind supports every level. Micro QR versions M2 and M3 support [L](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.L) and [M](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.M), M4 supports [L](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.L), [M](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.M) and [Q](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.Q),
   and M1 only detects errors (its [ErrorCorrectionLevel](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel) is reported as [L](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.L)). [CreateMicroQR](cref:Meziantou.Framework.Barcodes.QRCode.CreateMicroQR) uses [L](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.L) by default.
   rMQR codes support [M](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.M) and [H](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel.H) only.
+  A level the kind does not support, or a value that is not a member of [ErrorCorrectionLevel](cref:Meziantou.Framework.Barcodes.ErrorCorrectionLevel), throws an
+  `ArgumentOutOfRangeException`.
 - [QRCode.ErrorCorrectionLevel](cref:Meziantou.Framework.Barcodes.QRCode.ErrorCorrectionLevel) gives the level the code was built with, and [Version](cref:Meziantou.Framework.Barcodes.QRCode.Version) its version.
 
 ## How the data is encoded

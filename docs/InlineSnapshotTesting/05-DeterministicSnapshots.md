@@ -141,7 +141,7 @@ InlineSnapshot
 ```
 <!-- endref -->
 
-Remove the lines that contain a text:
+Remove the lines that contain a text. Pass several texts to remove the lines that contain any of them, in a single pass over the snapshot:
 
 <!-- ref:../../tests/Meziantou.Framework.InlineSnapshotTesting.Tests/InlineSnapshotTests.cs;region=InlineSnapshot_ScrubLinesContaining;format=md-fenced-code-block;dedent=true -->
 ```csharp

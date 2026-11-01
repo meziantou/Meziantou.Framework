@@ -1726,6 +1726,73 @@ public sealed partial class InlineSnapshotTests(ITestOutputHelper testOutputHelp
         Assert.Equal(expected, Assert.Single(settings.Scrubbers).Scrub(text));
     }
 
+    [Theory]
+    [InlineData("a1\nb2\nc3\nd4", "c3")]
+    [InlineData("a1\r\nb2\r\nc3\r\nd4", "c3")]
+    [InlineData("a1\nab\nc3\nb2", "c3")]
+    [InlineData("c3\nb2\n", "c3\n")]
+    [InlineData("A1\nB2\nc3", "c3")]
+    public void ScrubLinesContaining_MultiplePatterns_UsesOneScrubber(string text, string expected)
+    {
+        var settings = new InlineSnapshotSettings();
+        settings.ScrubLinesContaining(StringComparison.OrdinalIgnoreCase, "a", "b", "ab", "d");
+
+        Assert.Equal(expected, Assert.Single(settings.Scrubbers).Scrub(text));
+    }
+
+    [Fact]
+    public void ScrubLinesContaining_MultiplePatterns_RespectsComparison()
+    {
+        var settings = new InlineSnapshotSettings();
+        settings.ScrubLinesContaining(StringComparison.Ordinal, "a", "B");
+
+        Assert.Equal("A1\nb2", Assert.Single(settings.Scrubbers).Scrub("A1\na2\nb2\nB3"));
+    }
+
+    [Fact]
+    public void ScrubLinesContaining_EmptySearchText_RemovesAllLines()
+    {
+        var settings = new InlineSnapshotSettings();
+        settings.ScrubLinesContaining(StringComparison.Ordinal, "missing", "");
+
+        Assert.Equal("", Assert.Single(settings.Scrubbers).Scrub("a\nb"));
+    }
+
+    [Fact]
+    public void ScrubLinesContaining_NoSearchText_AddsNoScrubber()
+    {
+        var settings = new InlineSnapshotSettings();
+        settings.ScrubLinesContaining(StringComparison.Ordinal);
+
+        Assert.Empty(settings.Scrubbers);
+    }
+
+    [Fact]
+    public void ScrubLinesContaining_ChangingTheArrayAfterwards_DoesNotChangeTheScrubber()
+    {
+        var settings = new InlineSnapshotSettings();
+        var searchText = new[] { "a" };
+        settings.ScrubLinesContaining(StringComparison.Ordinal, searchText);
+        searchText[0] = "b";
+
+        Assert.Equal("b", Assert.Single(settings.Scrubbers).Scrub("a\nb"));
+    }
+
+    [Fact]
+    public void ScrubLines_NoChange_ReturnsTheSameInstance()
+    {
+        var settings = new InlineSnapshotSettings();
+        settings.ScrubLinesContaining(StringComparison.Ordinal, "missing-0", "missing-1");
+        settings.ScrubLinesWithReplace(line => line);
+        settings.ScrubLines(_ => false);
+
+        var text = "line1\r\nline2\nline3\n";
+        foreach (var scrubber in settings.Scrubbers)
+        {
+            Assert.Same(text, scrubber.Scrub(text));
+        }
+    }
+
     [Fact]
     public void ScrubLinesContaining_DoesNotSplitOnUnicodeLineSeparators()
     {

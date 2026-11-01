@@ -9,6 +9,7 @@ namespace Meziantou.Framework.Json;
 /// This class is immutable and thread-safe; a single instance can be reused to evaluate
 /// multiple JSON documents.
 /// </summary>
+/// <remarks>Custom function implementations are shared and must also be thread-safe.</remarks>
 public sealed class JsonPath : IParsable<JsonPath>, ISpanParsable<JsonPath>
 {
     private readonly string _expression;
@@ -38,6 +39,41 @@ public sealed class JsonPath : IParsable<JsonPath>, ISpanParsable<JsonPath>
     public static JsonPath Parse(ReadOnlySpan<char> expression)
     {
         return Parse(expression, originalString: null);
+    }
+
+    /// <summary>Parses an expression using an immutable opt-in custom function registry.</summary>
+    public static JsonPath Parse(string expression, JsonPathFunctionRegistry functions)
+    {
+        ArgumentNullException.ThrowIfNull(expression);
+        ArgumentNullException.ThrowIfNull(functions);
+        return Parse(expression.AsSpan(), expression, functions);
+    }
+
+    /// <summary>Parses an expression span using an immutable opt-in custom function registry.</summary>
+    public static JsonPath Parse(ReadOnlySpan<char> expression, JsonPathFunctionRegistry functions)
+    {
+        ArgumentNullException.ThrowIfNull(functions);
+        return Parse(expression, originalString: null, functions);
+    }
+
+    /// <summary>Tries to parse an expression using an immutable opt-in custom function registry.</summary>
+    public static bool TryParse(string? expression, JsonPathFunctionRegistry functions, [NotNullWhen(true)] out JsonPath? result)
+    {
+        ArgumentNullException.ThrowIfNull(functions);
+        if (expression is null)
+        {
+            result = null;
+            return false;
+        }
+
+        return TryParse(expression.AsSpan(), expression, out result, functions);
+    }
+
+    /// <summary>Tries to parse an expression span using an immutable opt-in custom function registry.</summary>
+    public static bool TryParse(ReadOnlySpan<char> expression, JsonPathFunctionRegistry functions, [NotNullWhen(true)] out JsonPath? result)
+    {
+        ArgumentNullException.ThrowIfNull(functions);
+        return TryParse(expression, originalString: null, out result, functions);
     }
 
     /// <summary>Tries to parse a JSONPath expression.</summary>
@@ -266,15 +302,15 @@ public sealed class JsonPath : IParsable<JsonPath>, ISpanParsable<JsonPath>
         return TryParse(s, out result);
     }
 
-    private static JsonPath Parse(ReadOnlySpan<char> expression, string? originalString)
+    private static JsonPath Parse(ReadOnlySpan<char> expression, string? originalString, JsonPathFunctionRegistry? functions = null)
     {
-        var ast = JsonPathParser.Parse(expression);
+        var ast = JsonPathParser.Parse(expression, functions);
         return new JsonPath(originalString ?? expression.ToString(), ast);
     }
 
-    private static bool TryParse(ReadOnlySpan<char> expression, string? originalString, [NotNullWhen(true)] out JsonPath? result)
+    private static bool TryParse(ReadOnlySpan<char> expression, string? originalString, [NotNullWhen(true)] out JsonPath? result, JsonPathFunctionRegistry? functions = null)
     {
-        if (!JsonPathParser.TryParse(expression, out var ast))
+        if (!JsonPathParser.TryParse(expression, out var ast, functions))
         {
             result = null;
             return false;

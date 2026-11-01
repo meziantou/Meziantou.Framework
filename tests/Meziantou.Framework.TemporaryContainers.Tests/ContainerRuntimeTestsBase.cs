@@ -741,6 +741,16 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
 
         await using var container = await StartWithRetryAsync(CreateHttpServerDefinition());
 
+        if (Runtime == ContainerRuntime.Wslc)
+        {
+            await Assert.ThrowsAsync<NotSupportedException>(() => container.ExecAsync(options =>
+            {
+                options.Command.Add("true");
+                options.Detach = true;
+            }, XunitCancellationToken));
+            return;
+        }
+
         // The command runs for a minute: had ExecAsync waited for it, /tmp/done would exist when it returns.
         // No timing threshold, since starting an exec takes seconds on some runtimes.
         var exec = await container.ExecAsync(options =>

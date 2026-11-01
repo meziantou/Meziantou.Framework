@@ -98,7 +98,7 @@ await container.ExecAsync(options =>
 <!-- endref -->
 
 - [Detach](cref:Meziantou.Framework.TemporaryContainers.ExecOptions.Detach) starts the command and returns at once, with an exit code of 0 and no output. A detached command cannot have a
-  standard input, an output stream or a timeout.
+  standard input, an output stream or a timeout. `wslc` does not support it.
 - [Tty](cref:Meziantou.Framework.TemporaryContainers.ExecOptions.Tty) runs the command in a pseudo-terminal, for the commands that only print colors or progress, or only behave
   interactively, in one. A terminal merges the standard error into the standard output and ends lines with `\r\n`.
 - [Privileged](cref:Meziantou.Framework.TemporaryContainers.ExecOptions.Privileged) runs the command with every capability. Apple's `container` does not support it.

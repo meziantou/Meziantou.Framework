@@ -1264,6 +1264,16 @@ public sealed class DockerRuntimeAdapterTests
     }
 
     [Fact]
+    public void BuildsTheExecOptions_WslcRejectsDetach()
+    {
+        var runtime = Assert.IsAssignableTo<DockerContainerRuntime>(ContainerRuntime.Wslc);
+        var options = new ExecOptions { Detach = true };
+        options.Command.Add("ls");
+
+        Assert.Throws<NotSupportedException>(() => runtime.BuildExecArguments("abc", options));
+    }
+
+    [Fact]
     public void ExecResult_EnsureSuccessReportsTheCommandAndTheStandardError()
     {
         var success = new ExecResult(0, "out", "");

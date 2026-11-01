@@ -38,6 +38,6 @@ public sealed class ExecOptions
     public TimeSpan? Timeout { get; set; }
 
     /// <summary>Gets or sets a value indicating whether the command is started in the background. <see cref="TemporaryContainer.ExecAsync"/> returns as soon as it is started, with an exit code of 0 and no output, and the command keeps running.</summary>
-    /// <remarks>A detached command cannot have a <see cref="StandardInput"/>, a <see cref="StandardOutput"/>, a <see cref="StandardError"/> or a <see cref="Timeout"/>.</remarks>
+    /// <remarks>A detached command cannot have a <see cref="StandardInput"/>, a <see cref="StandardOutput"/>, a <see cref="StandardError"/> or a <see cref="Timeout"/>. The <c>wslc</c> runtime does not support it and throws a <see cref="NotSupportedException"/>.</remarks>
     public bool Detach { get; set; }
 }

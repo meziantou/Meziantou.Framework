@@ -1010,7 +1010,7 @@ namespace Meziantou.Framework.Collections
         public static bool operator !=(Meziantou.Framework.Collections.ImmutableEquatableSet<T>? left, Meziantou.Framework.Collections.ImmutableEquatableSet<T>? right) => throw null;
     }
 
-    public sealed class LimitList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.IEnumerable
+    public sealed class LimitList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.IEnumerable
     {
         public int Capacity { get => throw null; }
         public int Count { get => throw null; }
@@ -1023,13 +1023,23 @@ namespace Meziantou.Framework.Collections
         public void Clear() { }
         public bool Contains(T item) => throw null;
         public void CopyTo(T[] array, int arrayIndex) { }
-        public System.Collections.Generic.IEnumerator<T> GetEnumerator() => throw null;
+        public Meziantou.Framework.Collections.LimitList<T>.Enumerator GetEnumerator() => throw null;
+        System.Collections.Generic.IEnumerator<T> System.Collections.Generic.IEnumerable<T>.GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public int IndexOf(T item) => throw null;
+        public void Insert(int index, T item) { }
         public bool Remove(T item) => throw null;
         public void RemoveAt(int index) { }
         public void RemoveFirst() { }
         public void RemoveLast() { }
+        public struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
+        {
+            public readonly T Current { get => throw null; }
+            readonly object? System.Collections.IEnumerator.Current { get => throw null; }
+            public readonly void Dispose() { }
+            public bool MoveNext() => throw null;
+            void System.Collections.IEnumerator.Reset() { }
+        }
     }
 
     public sealed class MultiValueDictionary<TKey, TValue> : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, System.Collections.Generic.IReadOnlyCollection<TValue>>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, System.Collections.Generic.IReadOnlyCollection<TValue>>>, System.Collections.Generic.IReadOnlyDictionary<TKey, System.Collections.Generic.IReadOnlyCollection<TValue>>, System.Collections.IEnumerable where TKey : notnull
@@ -1049,12 +1059,20 @@ namespace Meziantou.Framework.Collections
         public bool Contains(TKey key, TValue value) => throw null;
         public bool ContainsKey(TKey key) => throw null;
         public bool ContainsValue(TValue value) => throw null;
-        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, System.Collections.Generic.IReadOnlyCollection<TValue>>> GetEnumerator() => throw null;
+        public Meziantou.Framework.Collections.MultiValueDictionary<TKey, TValue>.Enumerator GetEnumerator() => throw null;
         System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, System.Collections.Generic.IReadOnlyCollection<TValue>>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey,System.Collections.Generic.IReadOnlyCollection<TValue>>>.GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public bool Remove(TKey key) => throw null;
         public bool Remove(TKey key, TValue value) => throw null;
         public bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out System.Collections.Generic.IReadOnlyCollection<TValue> value) => throw null;
+        public struct Enumerator : System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, System.Collections.Generic.IReadOnlyCollection<TValue>>>, System.Collections.IEnumerator, System.IDisposable
+        {
+            public readonly System.Collections.Generic.KeyValuePair<TKey, System.Collections.Generic.IReadOnlyCollection<TValue>> Current { get => throw null; }
+            readonly object System.Collections.IEnumerator.Current { get => throw null; }
+            public void Dispose() { }
+            public bool MoveNext() => throw null;
+            void System.Collections.IEnumerator.Reset() { }
+        }
     }
 
     public sealed class PruningRadixTree : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, long>>, System.Collections.IEnumerable
@@ -1150,24 +1168,39 @@ namespace Meziantou.Framework.Collections
         public Trie(bool ignoreCase) { }
         public void Add(string key, TValue value) { }
         public bool ContainsKey(string key) => throw null;
-        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, TValue>> GetEnumerator() => throw null;
+        public Meziantou.Framework.Collections.Trie<TValue>.Enumerator GetEnumerator() => throw null;
+        System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, TValue>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<System.String,TValue>>.GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public bool Remove(string key) => throw null;
         public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, TValue>> StartsWith(string prefix) => throw null;
         public bool TryGetValue(string key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TValue value) => throw null;
+        public struct Enumerator : System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, TValue>>, System.Collections.IEnumerator, System.IDisposable
+        {
+            public readonly System.Collections.Generic.KeyValuePair<string, TValue> Current { get => throw null; }
+            readonly object System.Collections.IEnumerator.Current { get => throw null; }
+            public readonly void Dispose() { }
+            public bool MoveNext() => throw null;
+            void System.Collections.IEnumerator.Reset() { }
+        }
     }
 
     public sealed class UnsafeListDictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IDictionary<TKey, TValue>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>, System.Collections.IEnumerable where TKey : notnull
     {
+        public System.Collections.Generic.IEqualityComparer<TKey> Comparer { get => throw null; }
         public int Count { get => throw null; }
         bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey,TValue>>.IsReadOnly { get => throw null; }
         public TValue this[TKey key] { get => throw null; set { } }
-        public System.Collections.Generic.ICollection<TKey> Keys { get => throw null; }
+        public Meziantou.Framework.Collections.UnsafeListDictionary<TKey, TValue>.KeyCollection Keys { get => throw null; }
+        System.Collections.Generic.ICollection<TKey> System.Collections.Generic.IDictionary<TKey,TValue>.Keys { get => throw null; }
         System.Collections.Generic.IEnumerable<TKey> System.Collections.Generic.IReadOnlyDictionary<TKey,TValue>.Keys { get => throw null; }
-        public System.Collections.Generic.ICollection<TValue> Values { get => throw null; }
+        public Meziantou.Framework.Collections.UnsafeListDictionary<TKey, TValue>.ValueCollection Values { get => throw null; }
+        System.Collections.Generic.ICollection<TValue> System.Collections.Generic.IDictionary<TKey,TValue>.Values { get => throw null; }
         System.Collections.Generic.IEnumerable<TValue> System.Collections.Generic.IReadOnlyDictionary<TKey,TValue>.Values { get => throw null; }
         public UnsafeListDictionary(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>> items) { }
+        public UnsafeListDictionary(System.Collections.Generic.IEqualityComparer<TKey>? comparer) { }
         public UnsafeListDictionary(int capacity) { }
+        public UnsafeListDictionary(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>> items, System.Collections.Generic.IEqualityComparer<TKey>? comparer) { }
+        public UnsafeListDictionary(int capacity, System.Collections.Generic.IEqualityComparer<TKey>? comparer) { }
         public void Add(System.Collections.Generic.KeyValuePair<TKey, TValue> item) { }
         public void Add(TKey key, TValue value) { }
         public void AddRange(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>> items) { }
@@ -1181,6 +1214,48 @@ namespace Meziantou.Framework.Collections
         public bool Remove(System.Collections.Generic.KeyValuePair<TKey, TValue> item) => throw null;
         public bool Remove(TKey key) => throw null;
         public bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TValue value) => throw null;
+        public sealed class KeyCollection : System.Collections.Generic.ICollection<TKey>, System.Collections.Generic.IEnumerable<TKey>, System.Collections.Generic.IReadOnlyCollection<TKey>, System.Collections.IEnumerable
+        {
+            public int Count { get => throw null; }
+            bool System.Collections.Generic.ICollection<TKey>.IsReadOnly { get => throw null; }
+            void System.Collections.Generic.ICollection<TKey>.Add(TKey item) { }
+            void System.Collections.Generic.ICollection<TKey>.Clear() { }
+            public bool Contains(TKey item) => throw null;
+            public void CopyTo(TKey[] array, int arrayIndex) { }
+            public Meziantou.Framework.Collections.UnsafeListDictionary<TKey, TValue>.KeyCollection.Enumerator GetEnumerator() => throw null;
+            System.Collections.Generic.IEnumerator<TKey> System.Collections.Generic.IEnumerable<TKey>.GetEnumerator() => throw null;
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+            bool System.Collections.Generic.ICollection<TKey>.Remove(TKey item) => throw null;
+            public struct Enumerator : System.Collections.Generic.IEnumerator<TKey>, System.Collections.IEnumerator, System.IDisposable
+            {
+                public readonly TKey Current { get => throw null; }
+                readonly object System.Collections.IEnumerator.Current { get => throw null; }
+                public void Dispose() { }
+                public bool MoveNext() => throw null;
+                void System.Collections.IEnumerator.Reset() { }
+            }
+        }
+        public sealed class ValueCollection : System.Collections.Generic.ICollection<TValue>, System.Collections.Generic.IEnumerable<TValue>, System.Collections.Generic.IReadOnlyCollection<TValue>, System.Collections.IEnumerable
+        {
+            public int Count { get => throw null; }
+            bool System.Collections.Generic.ICollection<TValue>.IsReadOnly { get => throw null; }
+            void System.Collections.Generic.ICollection<TValue>.Add(TValue item) { }
+            void System.Collections.Generic.ICollection<TValue>.Clear() { }
+            public bool Contains(TValue item) => throw null;
+            public void CopyTo(TValue[] array, int arrayIndex) { }
+            public Meziantou.Framework.Collections.UnsafeListDictionary<TKey, TValue>.ValueCollection.Enumerator GetEnumerator() => throw null;
+            System.Collections.Generic.IEnumerator<TValue> System.Collections.Generic.IEnumerable<TValue>.GetEnumerator() => throw null;
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+            bool System.Collections.Generic.ICollection<TValue>.Remove(TValue item) => throw null;
+            public struct Enumerator : System.Collections.Generic.IEnumerator<TValue>, System.Collections.IEnumerator, System.IDisposable
+            {
+                public readonly TValue Current { get => throw null; }
+                readonly object? System.Collections.IEnumerator.Current { get => throw null; }
+                public void Dispose() { }
+                public bool MoveNext() => throw null;
+                void System.Collections.IEnumerator.Reset() { }
+            }
+        }
     }
 }
 namespace Meziantou.Framework.DataAnnotations

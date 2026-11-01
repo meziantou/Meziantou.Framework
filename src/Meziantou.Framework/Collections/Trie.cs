@@ -96,10 +96,11 @@ public sealed class Trie<TValue> : IEnumerable<KeyValuePair<string, TValue>>
         if (!TryGetNode(prefix, out var node))
             return [];
 
-        return EnumerateFrom(node);
+        return new NodeEnumerable(node);
     }
 
-    public IEnumerator<KeyValuePair<string, TValue>> GetEnumerator() => StartsWith(string.Empty).GetEnumerator();
+    public Enumerator GetEnumerator() => new(_root);
+    IEnumerator<KeyValuePair<string, TValue>> IEnumerable<KeyValuePair<string, TValue>>.GetEnumerator() => GetEnumerator();
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
     private TrieNode GetOrCreateNode(string key)
@@ -132,24 +133,102 @@ public sealed class Trie<TValue> : IEnumerable<KeyValuePair<string, TValue>>
         return _ignoreCase ? char.ToUpperInvariant(c) : c;
     }
 
-    private static IEnumerable<KeyValuePair<string, TValue>> EnumerateFrom(TrieNode node)
+    /// <summary>Enumerates the key-value pairs of a trie, in depth-first order, using an explicit stack instead of recursive iterators.</summary>
+    public struct Enumerator : IEnumerator<KeyValuePair<string, TValue>>
     {
-        if (node.HasValue)
-            yield return new KeyValuePair<string, TValue>(node.Key!, node.Value);
+        private readonly TrieNode? _start;
+        private Dictionary<char, TrieNode>.Enumerator[]? _stack;
+        private int _depth;
+        private bool _started;
 
-        if (node.Children is null)
-            yield break;
-
-        foreach (var child in node.Children.Values)
+        internal Enumerator(TrieNode? start)
         {
-            foreach (var item in EnumerateFrom(child))
+            _start = start;
+        }
+
+        public KeyValuePair<string, TValue> Current { readonly get => field; private set; }
+
+        readonly object IEnumerator.Current => Current;
+
+        public bool MoveNext()
+        {
+            if (!_started)
             {
-                yield return item;
+                _started = true;
+                if (_start is null)
+                    return false;
+
+                Push(_start);
+                if (_start.HasValue)
+                {
+                    Current = new(_start.Key!, _start.Value);
+                    return true;
+                }
             }
+
+            while (_depth > 0)
+            {
+                ref var enumerator = ref _stack![_depth - 1];
+                if (enumerator.MoveNext())
+                {
+                    var child = enumerator.Current.Value;
+                    Push(child);
+                    if (child.HasValue)
+                    {
+                        Current = new(child.Key!, child.Value);
+                        return true;
+                    }
+                }
+                else
+                {
+                    _depth--;
+                    _stack[_depth] = default;
+                }
+            }
+
+            Current = default;
+            return false;
+        }
+
+        private void Push(TrieNode node)
+        {
+            if (node.Children is null)
+                return;
+
+            _stack ??= new Dictionary<char, TrieNode>.Enumerator[4];
+            if (_depth == _stack.Length)
+            {
+                Array.Resize(ref _stack, _stack.Length * 2);
+            }
+
+            _stack[_depth] = node.Children.GetEnumerator();
+            _depth++;
+        }
+
+        void IEnumerator.Reset()
+        {
+            if (_stack is not null)
+            {
+                Array.Clear(_stack, 0, _depth);
+            }
+
+            _depth = 0;
+            _started = false;
+            Current = default;
+        }
+
+        public readonly void Dispose()
+        {
         }
     }
 
-    private sealed class TrieNode
+    private sealed class NodeEnumerable(TrieNode node) : IEnumerable<KeyValuePair<string, TValue>>
+    {
+        public IEnumerator<KeyValuePair<string, TValue>> GetEnumerator() => new Enumerator(node);
+        IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+    }
+
+    internal sealed class TrieNode
     {
         private Dictionary<char, TrieNode>? _children;
 

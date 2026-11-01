@@ -33,7 +33,7 @@ sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
         get => _items.Length;
         set
         {
-            ArgumentOutOfRangeException.ThrowIfNegative(value);
+            ArgumentOutOfRangeException.ThrowIfNegativeOrZero(value);
             ArgumentOutOfRangeException.ThrowIfLessThan(value, Count);
 
             if (value != _items.Length)
@@ -176,6 +176,85 @@ sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
         }
     }
 
+    /// <summary>Replaces the item at the specified position.</summary>
+    internal void SetItem(int index, T value)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, Count);
+
+        _items[(_startIndex + index) % Capacity] = value;
+        _version++;
+    }
+
+    /// <summary>Inserts an item at the specified position. The buffer must not be full.</summary>
+    internal void Insert(int index, T value)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(index, Count);
+        if (Count == Capacity)
+            throw new InvalidOperationException("The buffer is full");
+
+        if (index < Count - index)
+        {
+            // Shift the items before the insertion point one slot to the left
+            _startIndex = (_startIndex - 1 + Capacity) % Capacity;
+            for (var i = 0; i < index; i++)
+            {
+                _items[(_startIndex + i) % Capacity] = _items[(_startIndex + i + 1) % Capacity];
+            }
+        }
+        else
+        {
+            // Shift the items after the insertion point one slot to the right
+            for (var i = Count; i > index; i--)
+            {
+                _items[(_startIndex + i) % Capacity] = _items[(_startIndex + i - 1) % Capacity];
+            }
+        }
+
+        _items[(_startIndex + index) % Capacity] = value;
+        Count++;
+        _version++;
+    }
+
+    /// <summary>Removes the item at the specified position.</summary>
+    internal void RemoveAt(int index)
+    {
+        ArgumentOutOfRangeException.ThrowIfNegative(index);
+        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, Count);
+
+        int emptiedSlot;
+        if (index < Count - index - 1)
+        {
+            // Shift the items before the removed item one slot to the right
+            for (var i = index; i > 0; i--)
+            {
+                _items[(_startIndex + i) % Capacity] = _items[(_startIndex + i - 1) % Capacity];
+            }
+
+            emptiedSlot = _startIndex;
+            _startIndex = (_startIndex + 1) % Capacity;
+        }
+        else
+        {
+            // Shift the items after the removed item one slot to the left
+            for (var i = index; i < Count - 1; i++)
+            {
+                _items[(_startIndex + i) % Capacity] = _items[(_startIndex + i + 1) % Capacity];
+            }
+
+            emptiedSlot = (_startIndex + Count - 1) % Capacity;
+        }
+
+        if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+        {
+            _items[emptiedSlot] = default!;
+        }
+
+        Count--;
+        _version++;
+    }
+
     public void Clear()
     {
         // Clear the elements so that the gc can reclaim the references.
@@ -202,8 +281,12 @@ sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
     {
         ArgumentNullException.ThrowIfNull(array);
         ArgumentOutOfRangeException.ThrowIfNegative(arrayIndex);
-        if (array.Rank is not 1)
-            throw new ArgumentException("Array must be single-dimensional", nameof(array));
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(arrayIndex, array.Length);
+        if (array.Length - arrayIndex < Count)
+            throw new ArgumentException("Destination array is not long enough to copy all the items in the collection. Check array index and length.", nameof(array));
+
+        if (Count is 0)
+            return;
 
         var length = Math.Min(Count, _items.Length - _startIndex);
         Array.Copy(_items, _startIndex, array, arrayIndex, length);
@@ -298,7 +381,9 @@ sealed class CircularBuffer<T> : ICollection<T>, IReadOnlyList<T>
             }
         }
 
-        void IEnumerator.Reset()
+        void IEnumerator.Reset() => Reset();
+
+        internal void Reset()
         {
             if (_version != _list._version)
             {

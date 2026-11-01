@@ -117,7 +117,8 @@ internal sealed class BarcodeTools
                 DataMask: root.TryGetProperty("DataMask", out var mask) ? mask.GetInt32() : null,
                 Error: root.TryGetProperty("Error", out var error) ? error.GetString() : null,
                 SymbologyIdentifier: root.TryGetProperty("Identifier", out var identifier) ? identifier.GetString() : null,
-                ContentType: root.TryGetProperty("ContentType", out var contentType) ? contentType.GetString() : null));
+                ContentType: root.TryGetProperty("ContentType", out var contentType) ? contentType.GetString() : null,
+                HasEci: root.TryGetProperty("HasECI", out var hasEci) && hasEci.GetBoolean()));
         }
 
         return results;

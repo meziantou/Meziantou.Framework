@@ -337,11 +337,10 @@ async Task<bool> GenerateWptCoverageAsync(bool check)
         Console.Error.WriteLine($"error: invalid reason in {error}");
     }
 
-    // The pages of the sections are the only files of src/Meziantou.Framework.WebPlatform/docs/wpt-coverage/, so the pages of the removed sections are deleted
-    var docsDirectory = Path.Combine(root, "src", "Meziantou.Framework.WebPlatform", "docs");
-    var sectionDirectory = Path.Combine(docsDirectory, WptCoverage.SectionDirectory);
-    var existingPages = Directory.Exists(sectionDirectory)
-        ? Directory.EnumerateFiles(sectionDirectory, "*", SearchOption.AllDirectories).Select(p => Path.GetRelativePath(docsDirectory, p).Replace(Path.DirectorySeparatorChar, '/')).ToList()
+    // The generated files are the only files of the folder, so the pages of the removed sections are deleted
+    var docsDirectory = Path.Combine(root, WptCoverage.OutputDirectory);
+    var existingPages = Directory.Exists(docsDirectory)
+        ? Directory.EnumerateFiles(docsDirectory, "*", SearchOption.AllDirectories).Select(p => Path.GetRelativePath(docsDirectory, p).Replace(Path.DirectorySeparatorChar, '/')).ToList()
         : [];
     if (check)
     {
@@ -356,7 +355,7 @@ async Task<bool> GenerateWptCoverageAsync(bool check)
             return false;
         }
 
-        Console.WriteLine("src/Meziantou.Framework.WebPlatform/docs/wpt-coverage.md is up to date");
+        Console.WriteLine($"{WptCoverage.OutputDirectory} is up to date");
         return result.MissingReasons.Count == 0 && result.InvalidReasons.Count == 0;
     }
 
@@ -372,7 +371,7 @@ async Task<bool> GenerateWptCoverageAsync(bool check)
         File.WriteAllText(path, content);
     }
 
-    Console.WriteLine($"Wrote src/Meziantou.Framework.WebPlatform/docs/{WptCoverage.IndexPath} and {result.Pages.Count - 1} section pages ({result.MissingReasons.Count} tests without reason)");
+    Console.WriteLine($"Wrote {WptCoverage.OutputDirectory}/{WptCoverage.IndexPath} and {result.Pages.Count(p => p.Key.EndsWith(".md", StringComparison.Ordinal)) - 1} section pages ({result.MissingReasons.Count} tests without reason)");
     return result.InvalidReasons.Count == 0;
 }
 

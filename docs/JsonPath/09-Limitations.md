@@ -3,7 +3,7 @@ title: Limitations
 description: What the library does not support, the depth limits, and how numbers are compared.
 ---
 
-The library implements RFC 9535 and nothing else. This page lists what that leaves out, the limits that protect your
+The library implements RFC 9535 with opt-in typed function extensions. This page lists what that leaves out, the limits that protect your
 application from hostile input, and the precision of number comparisons.
 
 ## Other JSONPath dialects
@@ -18,7 +18,8 @@ rejects most of them:
   [`match()` and `search()`](05-Functions.md#test-strings-with-a-regular-expression).
 - **No parent or property name operators** (`^`, `~`), and no filters evaluated as JavaScript or C# code: filters use
   the standard operators and functions only.
-- **No other functions** than the five of RFC 9535, and no way to register one.
+- **Only five functions by default.** Domain-specific functions require an explicit
+  [custom function registry](05-Functions.md#register-custom-functions).
 
 <!-- ref:../../tests/Meziantou.Framework.JsonPath.Tests/JsonPathEvaluateTests.cs;region=JsonPath_LengthIsAMemberName;format=md-fenced-code-block;dedent=true -->
 ```csharp

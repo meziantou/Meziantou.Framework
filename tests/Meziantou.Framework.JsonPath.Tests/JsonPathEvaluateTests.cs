@@ -284,6 +284,291 @@ public sealed class JsonPathEvaluateTests
     }
 
     [Fact]
+    public void CustomFunctions_Usage()
+    {
+        #region JsonPath_CustomFunctions
+        var functions = JsonPathFunctionRegistry.Default.WithFunction(new IsValidFunction());
+        var path = JsonPath.Parse("$[?isvalid(@.code)].code", functions);
+        var document = JsonNode.Parse("""[{"code":"valid"},{"code":"invalid"},{},{"code":null}]""");
+        Assert.Equal("""["valid"]""", path.Evaluate(document).ToJsonArray().ToJsonString());
+        #endregion
+    }
+
+    #region JsonPath_IsValidFunction
+    internal sealed class IsValidFunction() : JsonPathFunction("isvalid", JsonPathFunctionType.Logical, JsonPathFunctionType.Value)
+    {
+        public override JsonPathFunctionArgument<TValue> Invoke<TValue>(
+            IReadOnlyList<JsonPathFunctionArgument<TValue>> arguments, JsonPathNavigator<TValue> navigator)
+        {
+            var valid = arguments[0].TryGetString(navigator, out var code) && code is "valid";
+            return JsonPathFunctionArgument<TValue>.FromLogical(valid);
+        }
+    }
+    #endregion
+
+    [Fact]
+    public void CustomFunctions_RegistryAndSignatureAreImmutable()
+    {
+        var parameters = new[] { JsonPathFunctionType.Value };
+        var function = new TestFunction("identity", JsonPathFunctionType.Value, parameters);
+        var registry = JsonPathFunctionRegistry.Default.WithFunction(function);
+        parameters[0] = JsonPathFunctionType.Logical;
+        Assert.Equal(JsonPathFunctionType.Value, function.ParameterTypes[0]);
+        Assert.Throws<NotSupportedException>(() => ((IList<JsonPathFunctionType>)function.ParameterTypes)[0] = JsonPathFunctionType.Nodes);
+        Assert.Throws<ArgumentException>(() => registry.WithFunction(function));
+        Assert.Throws<ArgumentException>(() => registry.WithFunction(new TestFunction("length", JsonPathFunctionType.Value)));
+        Assert.Throws<FormatException>(() => JsonPath.Parse("$[?identity(@) == 1]"));
+        Assert.False(JsonPath.TryParse("$[?identity(@) == 1]", out _));
+        Assert.True(JsonPath.TryParse("$[?identity(@) == 1]", registry, out var path));
+        Assert.True(JsonPath.TryParse("$[?identity(@) == 1]".AsSpan(), registry, out _));
+        Assert.Equal("[1]", path.Evaluate(JsonNode.Parse("[1,2]")).ToJsonArray().ToJsonString());
+        Assert.Equal("[1]", JsonPath.Parse("$[?identity(@) == 1]".AsSpan(), registry).Evaluate(JsonNode.Parse("[1,2]")).ToJsonArray().ToJsonString());
+        Assert.False(JsonPath.TryParse((string?)null, registry, out _));
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("Bad")]
+    [InlineData("_bad")]
+    [InlineData("a-b")]
+    [InlineData("aB")]
+    [InlineData("a b")]
+    public void CustomFunctions_InvalidNames(string name)
+    {
+        Assert.Throws<ArgumentException>(() => new TestFunction(name, JsonPathFunctionType.Value));
+    }
+
+    [Fact]
+    public void CustomFunctions_InvalidSignatures()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TestFunction("invalid", (JsonPathFunctionType)42));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new TestFunction("invalid", JsonPathFunctionType.Value, (JsonPathFunctionType)42));
+    }
+
+    [Theory]
+    [InlineData("$[?identity()]")]
+    [InlineData("$[?identity(@,@)]")]
+    [InlineData("$[?identity(@.*) == 1]")]
+    [InlineData("$[?identity(@)]")]
+    [InlineData("$[?identity(nodes(@)) == 1]")]
+    [InlineData("$[?count(identity(@)) > 0]")]
+    [InlineData("$[?isvalid(@) == true]")]
+    [InlineData("$[?isvalid(isvalid(@))]")]
+    public void CustomFunctions_InvalidCalls(string query)
+    {
+        var functions = CreateTestFunctions().WithFunction(new IsValidFunction());
+        Assert.Throws<FormatException>(() => JsonPath.Parse(query, functions));
+        Assert.False(JsonPath.TryParse(query, functions, out _));
+    }
+
+    [Theory]
+    [InlineData("$[?identity(identity(@)) == 1]", "[1,null]", "[1]")]
+    [InlineData("$[?identity(@.missing) == @.othermissing]", "[{}]", "[{}]")]
+    [InlineData("$[?identity(@.missing) == null]", "[{}]", "[]")]
+    [InlineData("$[?identity(@.present) == null]", """[{"present":null},{}]""", """[{"present":null}]""")]
+    [InlineData("$[?identity(null) == null]", "[1]", "[1]")]
+    [InlineData("$[?identity(true) == true]", "[1]", "[1]")]
+    [InlineData("$[?identity(false) == false]", "[1]", "[1]")]
+    [InlineData("$[?identity('a') == 'a']", "[1]", "[1]")]
+    [InlineData("$[?identity(2.5) == 2.5]", "[1]", "[1]")]
+    [InlineData("$[?identity(1e400) == 1e500]", "[1]", "[1]")]
+    [InlineData("$[?identity(@) == @]", "[[],{},null,true,1]", "[[],{},null,true,1]")]
+    [InlineData("$[?length(identity(@)) == 2]", """["ab",[1,2],{"a":1,"b":2},null]""", """["ab",[1,2],{"a":1,"b":2}]""")]
+    [InlineData("$[?logical(match(identity(@), 'ab'))]", """["ab","abc",null]""", """["ab"]""")]
+    [InlineData("$[?count(nodes(@.*)) == 2]", "[[1,2],[3]]", "[[1,2]]")]
+    [InlineData("$[?count(nodes(nodes(@.*))) == 2]", "[[1,2],[3]]", "[[1,2]]")]
+    [InlineData("$[?value(nodes(@.*)) == 3]", "[[1,2],[3]]", "[[3]]")]
+    [InlineData("$[?value(nodes(@.*)) == null]", "[[],[null],[null,null]]", "[[null]]")]
+    [InlineData("$[?nodes(@.*)]", "[[],[null]]", "[[null]]")]
+    [InlineData("$[?logical(nodes(@.*))]", "[[],[null]]", "[[null]]")]
+    [InlineData("$[?logical(@.*)]", "[[],[null]]", "[[null]]")]
+    [InlineData("$[?logical(@.x == 1 || @.y == 2)]", """[{"x":1},{"y":2},{}]""", """[{"x":1},{"y":2}]""")]
+    public void CustomFunctions_TypesAndNesting(string query, string json, string expected)
+    {
+        var path = JsonPath.Parse(query, CreateTestFunctions());
+        Assert.Equal(expected, path.Evaluate(JsonNode.Parse(json)).ToJsonArray().ToJsonString());
+        using var document = JsonDocument.Parse(json);
+        Assert.Equal(expected, JsonSerializer.Serialize(path.Evaluate(document).Select(match => match.Value)));
+        Assert.Equal(expected, JsonSerializer.Serialize(path.Evaluate(document.RootElement).Select(match => match.Value)));
+    }
+
+    [Fact]
+    public void CustomFunctions_CustomNavigatorAndNativeValues()
+    {
+        var root = MyNode.Array(MyNode.String("valid"), MyNode.String("invalid"));
+        var path = JsonPath.Parse("$[?isvalid(identity(@))]", CreateTestFunctions().WithFunction(new IsValidFunction()));
+        var result = path.Evaluate(root, MyNodeNavigator.Instance);
+        Assert.Single(result);
+        Assert.True(MyNodeNavigator.Instance.TryGetElement(root, 0, out var first));
+        Assert.Same(first, result[0].Value);
+    }
+
+    [Fact]
+    public void CustomFunctions_NodeListsPreserveNullDuplicatesAndSnapshot()
+    {
+        var values = new List<JsonNode?> { null, JsonValue.Create(1), null };
+        var result = JsonPathFunctionArgument<JsonNode>.FromNodes(values);
+        values.Clear();
+        Assert.Equal(3, result.Nodes.Count);
+        Assert.Null(result.Nodes[0]);
+        Assert.Null(result.Nodes[2]);
+        Assert.Throws<NotSupportedException>(() => ((IList<JsonNode?>)result.Nodes).Clear());
+        Assert.Throws<InvalidOperationException>(() => result.Node);
+        Assert.Throws<InvalidOperationException>(() => result.Logical);
+        Assert.Throws<InvalidOperationException>(() => result.GetValueKind(JsonNodeNavigator.Instance));
+        Assert.Throws<InvalidOperationException>(() => JsonPathFunctionArgument<JsonNode>.Null.Nodes);
+        Assert.True(JsonPathFunctionArgument<JsonNode>.FromNumber(double.PositiveInfinity).TryGetNumber(JsonNodeNavigator.Instance, out var number));
+        Assert.Equal(double.PositiveInfinity, number);
+        Assert.Null(JsonPathFunctionArgument<JsonNode>.Nothing.GetValueKind(JsonNodeNavigator.Instance));
+        Assert.Equal(JsonPathNodeKind.Null, JsonPathFunctionArgument<JsonNode>.Null.GetValueKind(JsonNodeNavigator.Instance));
+        var path = JsonPath.Parse("$[?count(nodes(@[0,0])) == 2]", CreateTestFunctions());
+        Assert.Single(path.Evaluate(JsonNode.Parse("[[null]]")));
+    }
+
+    [Fact]
+    public void CustomFunctions_ExceptionsAndIncorrectResults()
+    {
+        var functions = JsonPathFunctionRegistry.Default
+            .WithFunction(new TestFunction("throws", JsonPathFunctionType.Value))
+            .WithFunction(new TestFunction("wrong", JsonPathFunctionType.Logical));
+        var document = JsonNode.Parse("[1]");
+        Assert.Throws<InvalidOperationException>(() => JsonPath.Parse("$[?throws() == 1]", functions).Evaluate(document));
+        Assert.Throws<JsonPathEvaluationException>(() => JsonPath.Parse("$[?wrong()]", functions).Evaluate(document));
+        Assert.Throws<InvalidOperationException>(() => JsonPath.Parse("$[?throws() == 1]", functions).Evaluate(document, JsonPathEvaluationMode.Strict));
+        Assert.Throws<JsonPathEvaluationException>(() => JsonPath.Parse("$[?wrong()]", functions).Evaluate(document, JsonPathEvaluationMode.Strict));
+    }
+
+    [Fact]
+    public void CustomFunctions_AreNotCachedAndShortCircuit()
+    {
+        var counter = new CounterFunction();
+        var functions = JsonPathFunctionRegistry.Default.WithFunction(counter);
+        var document = JsonNode.Parse("[1,2,3]");
+        Assert.Equal(3, JsonPath.Parse("$[?counter()]", functions).Evaluate(document).Count);
+        Assert.Equal(3, counter.Count);
+        Assert.Empty(JsonPath.Parse("$[?@ == 0 && counter()]", functions).Evaluate(document));
+        Assert.Equal(3, counter.Count);
+    }
+
+    [Fact]
+    public void CustomFunctions_InsideRootCountAreNotCached()
+    {
+        var counter = new CounterFunction();
+        var functions = JsonPathFunctionRegistry.Default.WithFunction(counter);
+        var path = JsonPath.Parse("$[?count($[?counter()]) > 0]", functions);
+        Assert.HasCount(3, path.Evaluate(JsonNode.Parse("[1,2,3]")));
+        Assert.Equal(9, counter.Count);
+    }
+
+    [Fact]
+    public void CustomFunctions_CancellationAfterCallback()
+    {
+        using var cancellation = new CancellationTokenSource();
+        var counter = new CounterFunction { OnInvoke = cancellation.Cancel };
+        var path = JsonPath.Parse("$[?counter()]", JsonPathFunctionRegistry.Default.WithFunction(counter));
+        var exception = Assert.Throws<OperationCanceledException>(() => path.Evaluate(JsonNode.Parse("[1,2,3]"),
+            new JsonPathEvaluationOptions { CancellationToken = cancellation.Token }));
+        Assert.Equal(cancellation.Token, exception.CancellationToken);
+        Assert.Equal(1, counter.Count);
+    }
+
+    [Fact]
+    public void CustomFunctions_ShareNavigatorWorkBudget()
+    {
+        var functions = JsonPathFunctionRegistry.Default.WithFunction(new NavigatorWorkFunction());
+        var path = JsonPath.Parse("$[?work(@)]", functions);
+        var document = JsonNode.Parse("[1]");
+        Assert.Throws<JsonPathEvaluationException>(() => path.Evaluate(document, new JsonPathEvaluationOptions { MaximumWork = 100 }));
+        Assert.Single(path.Evaluate(document));
+    }
+
+    [Fact]
+    public void CustomFunctions_NodeResultsShareIntermediateLimits()
+    {
+        var path = JsonPath.Parse("$[?count(nodes(@.*)) > 0]", CreateTestFunctions());
+        var document = JsonNode.Parse("[[1,2,3]]");
+        Assert.Throws<JsonPathEvaluationException>(() => path.Evaluate(document,
+            new JsonPathEvaluationOptions { MaximumIntermediateResults = 2 }));
+        Assert.Single(path.Evaluate(document));
+    }
+
+    [Fact]
+    public void CustomFunctions_ExplicitEvaluationHasIndependentBudget()
+    {
+        var functions = JsonPathFunctionRegistry.Default.WithFunction(new IndependentEvaluationFunction());
+        var path = JsonPath.Parse("$[?independent(@)]", functions);
+        Assert.Single(path.Evaluate(JsonNode.Parse("[[1,2,3,4,5]]"), new JsonPathEvaluationOptions { MaximumWork = 20 }));
+    }
+
+    [Fact]
+    public async Task CustomFunctions_ReuseAcrossThreadsAndDocuments()
+    {
+        var path = JsonPath.Parse("$[?identity(@) == 1]", CreateTestFunctions());
+        await Task.WhenAll(Enumerable.Range(0, 20).Select(_ => Task.Run(() =>
+        {
+            var document = JsonNode.Parse("[1,2]");
+            var result = path.Evaluate(document);
+            Assert.Single(result);
+            Assert.Same(document![0], result[0].Value);
+        })));
+    }
+
+    private static JsonPathFunctionRegistry CreateTestFunctions() => JsonPathFunctionRegistry.Default
+        .WithFunction(new TestFunction("identity", JsonPathFunctionType.Value, JsonPathFunctionType.Value))
+        .WithFunction(new TestFunction("nodes", JsonPathFunctionType.Nodes, JsonPathFunctionType.Nodes))
+        .WithFunction(new TestFunction("logical", JsonPathFunctionType.Logical, JsonPathFunctionType.Logical));
+
+    private sealed class TestFunction(string name, JsonPathFunctionType resultType, params JsonPathFunctionType[] parameterTypes)
+        : JsonPathFunction(name, resultType, parameterTypes)
+    {
+        public override JsonPathFunctionArgument<TValue> Invoke<TValue>(IReadOnlyList<JsonPathFunctionArgument<TValue>> arguments, JsonPathNavigator<TValue> navigator)
+        {
+            if (Name is "throws")
+                throw new InvalidOperationException("Custom failure.");
+            if (Name is "wrong")
+                return JsonPathFunctionArgument<TValue>.Null;
+
+            return arguments.Count is 0 ? JsonPathFunctionArgument<TValue>.Null : arguments[0];
+        }
+    }
+
+    private sealed class CounterFunction() : JsonPathFunction("counter", JsonPathFunctionType.Logical)
+    {
+        public int Count { get; private set; }
+
+        public Action? OnInvoke { get; init; }
+
+        public override JsonPathFunctionArgument<TValue> Invoke<TValue>(IReadOnlyList<JsonPathFunctionArgument<TValue>> arguments, JsonPathNavigator<TValue> navigator)
+        {
+            Count++;
+            OnInvoke?.Invoke();
+            return JsonPathFunctionArgument<TValue>.FromLogical(true);
+        }
+    }
+
+    private sealed class NavigatorWorkFunction() : JsonPathFunction("work", JsonPathFunctionType.Logical, JsonPathFunctionType.Value)
+    {
+        public override JsonPathFunctionArgument<TValue> Invoke<TValue>(IReadOnlyList<JsonPathFunctionArgument<TValue>> arguments, JsonPathNavigator<TValue> navigator)
+        {
+            for (var i = 0; i < 1_000; i++)
+                _ = navigator.GetKind(arguments[0].Node);
+
+            return JsonPathFunctionArgument<TValue>.FromLogical(true);
+        }
+    }
+
+    private sealed class IndependentEvaluationFunction() : JsonPathFunction("independent", JsonPathFunctionType.Logical, JsonPathFunctionType.Value)
+    {
+        private readonly JsonPath _path = JsonPath.Parse("$[*]");
+
+        public override JsonPathFunctionArgument<TValue> Invoke<TValue>(IReadOnlyList<JsonPathFunctionArgument<TValue>> arguments, JsonPathNavigator<TValue> navigator)
+        {
+            var nodes = _path.Evaluate(arguments[0].Node, navigator);
+            return JsonPathFunctionArgument<TValue>.FromLogical(nodes.Count is 5);
+        }
+    }
+
+    [Fact]
     public void ReadmeExample_Usage()
     {
         #region JsonPath_Usage
@@ -941,6 +1226,138 @@ public sealed class JsonPathEvaluateTests
         var path = JsonPath.Parse("$.b");
         var exception = Assert.Throws<JsonPathEvaluationException>(() => path.Evaluate(doc, JsonPathEvaluationMode.Strict));
         Assert.Contains("$", exception.Message);
+    }
+
+    [Fact]
+    public void Evaluate_NameSelector_CaseInsensitiveObject_UsesOrdinalMatching()
+    {
+        var options = new JsonNodeOptions { PropertyNameCaseInsensitive = true };
+        var doc = new JsonObject(options)
+        {
+            ["Name"] = 1,
+        };
+
+        Assert.Empty(JsonPath.Parse("$.name").Evaluate(doc));
+        Assert.Equal("$['Name']", JsonPath.Parse("$.*").Evaluate(doc)[0].Path);
+        Assert.Equal("$['Name']", JsonPath.Parse("$.Name").Evaluate(doc)[0].Path);
+        Assert.Throws<JsonPathEvaluationException>(() => JsonPath.Parse("$.name").Evaluate(doc, JsonPathEvaluationMode.Strict));
+    }
+
+    [Fact]
+    public void Evaluate_NameSelector_CaseInsensitiveInheritedOptions_UsesOrdinalMatching()
+    {
+        var doc = new JsonObject(new JsonNodeOptions { PropertyNameCaseInsensitive = true })
+        {
+            ["child"] = new JsonObject
+            {
+                ["Name"] = 1,
+            },
+        };
+
+        Assert.Empty(JsonPath.Parse("$.child.name").Evaluate(doc));
+        Assert.Equal("$['child']['Name']", JsonPath.Parse("$.child.Name").Evaluate(doc)[0].Path);
+    }
+
+    [Fact]
+    public void Evaluate_FilterSelector_CaseInsensitiveObject_UsesOrdinalMatching()
+    {
+        var options = new JsonNodeOptions { PropertyNameCaseInsensitive = true };
+        var doc = new JsonArray(options)
+        {
+            new JsonObject(options)
+            {
+                ["Name"] = 1,
+            },
+        };
+
+        Assert.Empty(JsonPath.Parse("$[?@.name == 1]").Evaluate(doc));
+        Assert.Single(JsonPath.Parse("$[?@.Name == 1]").Evaluate(doc));
+    }
+
+    [Fact]
+    public void Evaluate_ObjectEquality_CaseInsensitiveObject_UsesOrdinalMatching()
+    {
+        var options = new JsonNodeOptions { PropertyNameCaseInsensitive = true };
+        var doc = new JsonArray(options)
+        {
+            new JsonObject(options)
+            {
+                ["Name"] = 1,
+            },
+            new JsonObject(options)
+            {
+                ["name"] = 1,
+            },
+        };
+
+        Assert.Single(JsonPath.Parse("$[?@ == $[0]]").Evaluate(doc));
+    }
+
+    [Fact]
+    public void Evaluate_WrappedJsonValueDictionary_UsesFreshSnapshotPerEvaluation()
+    {
+        var data = new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            ["a"] = 1,
+        };
+        JsonNode root = JsonValue.Create(data)!;
+        var path = JsonPath.Parse("$.a");
+
+        Assert.Equal(1, path.EvaluateValue(root)!.GetValue<int>());
+
+        data["a"] = 2;
+        data["b"] = 3;
+        Assert.Equal(2, path.EvaluateValue(root)!.GetValue<int>());
+        Assert.Equal(3, JsonPath.Parse("$.b").EvaluateValue(root)!.GetValue<int>());
+
+        data.Remove("a");
+        Assert.Null(path.EvaluateValue(root));
+    }
+
+    [Fact]
+    public void Evaluate_ReusedJsonNodeNavigatorGetsFreshSnapshots()
+    {
+        var data = new Dictionary<string, int>(StringComparer.Ordinal) { ["a"] = 1 };
+        JsonNode root = JsonValue.Create(data)!;
+        var navigator = JsonNodeNavigator.Instance;
+        var path = JsonPath.Parse("$.a");
+        Assert.Equal(1, path.EvaluateValue(root, navigator)!.GetValue<int>());
+        data["a"] = 2;
+        Assert.Equal(2, path.EvaluateValue(root, navigator)!.GetValue<int>());
+        Assert.Equal(2, path.Evaluate(root, navigator)[0].Value!.GetValue<int>());
+    }
+
+    [Fact]
+    public void Evaluate_WrappedJsonValueList_UsesFreshSnapshotPerEvaluation()
+    {
+        var data = new List<int> { 1 };
+        JsonNode root = JsonValue.Create(data)!;
+        var path = JsonPath.Parse("$[*]");
+
+        Assert.Equal([1], path.Evaluate(root).Select(match => match.Value!.GetValue<int>()));
+
+        data.Add(2);
+        Assert.Equal([1, 2], path.Evaluate(root).Select(match => match.Value!.GetValue<int>()));
+
+        data.RemoveAt(0);
+        Assert.Equal([2], path.Evaluate(root).Select(match => match.Value!.GetValue<int>()));
+    }
+
+    [Fact]
+    public void Evaluate_WrappedJsonValue_DetachedMatchMutationDoesNotAffectNextEvaluation()
+    {
+        var data = new Dictionary<string, int>(StringComparer.Ordinal)
+        {
+            ["a"] = 2,
+        };
+        JsonNode root = JsonValue.Create(data)!;
+        var path = JsonPath.Parse("$.a");
+
+        var result = path.EvaluateValue(root)!;
+        ((JsonObject)result.Parent!)["a"] = 99;
+
+        Assert.Equal(2, path.EvaluateValue(root)!.GetValue<int>());
+        Assert.Equal(2, data["a"]);
     }
 
     [Fact]

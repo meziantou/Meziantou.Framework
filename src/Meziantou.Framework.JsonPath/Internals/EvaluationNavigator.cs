@@ -10,7 +10,7 @@ internal sealed class EvaluationNavigator<TValue> : JsonPathNavigator<TValue>
 
     public EvaluationNavigator(JsonPathNavigator<TValue> inner, JsonPathEvaluationOptions? options)
     {
-        _inner = inner;
+        _inner = inner.CreateEvaluationNavigator();
         _cancellationToken = options?.CancellationToken ?? default;
         _maximumWork = options?.MaximumWork;
         MaximumResults = options?.MaximumResults;
@@ -27,6 +27,11 @@ internal sealed class EvaluationNavigator<TValue> : JsonPathNavigator<TValue>
     public Dictionary<FunctionCallExpression, double> Counts { get; } = [];
 
     public override bool IsPure => _inner.IsPure;
+
+    internal override JsonPathNavigator<TValue> CreateEvaluationNavigator()
+    {
+        return _inner.CreateEvaluationNavigator();
+    }
 
     public void Check(long work = 1)
     {

@@ -40,6 +40,8 @@ extension methods of the JSON value:
 - Use `JsonDocument` or `JsonElement` to read a document: they are read-only views of the parsed JSON. Dispose the
   `JsonDocument` once you are done with the results, because the `JsonElement` values they hold belong to it.
 - Use `JsonNode` when you also want to change the document.
+- When a `JsonValue` wraps a CLR object or array, its matches are detached copies of the serialized value; changes to
+  the wrapped object are reflected by the next evaluation, but changing a match does not change the wrapped object.
 - For other object models, see [Custom object models](08-CustomObjectModels.md).
 
 ## Read the matches
@@ -150,7 +152,9 @@ retains only the first. Intermediate limits can require materializing intermedia
 short-circuiting them.
 
 Work counts are implementation-dependent, not elapsed-time or byte limits. Cancellation is cooperative: the evaluator
-cannot interrupt a custom navigator operation or a running regex match. Regex matches retain their per-call timeout.
+cannot interrupt a custom navigator operation, a custom function callback or a running regex match.
+Custom callbacks are checked before and after invocation, and their navigator accesses share the evaluation budget.
+Regex matches retain their per-call timeout.
 Use a work budget as well as result limits to bound broad scans that select few results. Do not mutate the document
 or options while evaluation is running; options are snapshotted once per call.
 

@@ -9,7 +9,7 @@ namespace Meziantou.Framework;
 /// The algorithm is the one of Unicode Standard Annex #9 for <see cref="UnicodeProperties.UnicodeVersion"/>, whatever
 /// the version of the runtime. It is applied in two steps, as the annex specifies: <see cref="ResolveLevels(ReadOnlySpan{char}, UnicodeBidiDirection, Span{byte})"/>
 /// gives an embedding level to each UTF-16 code unit of a paragraph (rules P2 to I2); then, once the paragraph is
-/// broken into lines, <see cref="ResetLineLevels(ReadOnlySpan{char}, int, Span{byte})"/> (rule L1) and <see cref="GetVisualOrder"/> (rule L2) give the
+/// broken into lines, <see cref="ResetLineLevels(ReadOnlySpan{char}, int, Span{byte})"/> (rule L1) and <see cref="GetVisualOrder(ReadOnlySpan{char}, ReadOnlySpan{byte}, Span{int})"/> (rule L2) give the
 /// display order of each line. A character whose level is odd is displayed right to left.
 /// </para>
 /// <para>
@@ -222,7 +222,7 @@ public static class UnicodeBidi
     /// The paragraph level is given to the segment and paragraph separators, to the white space and isolate
     /// formatting characters before them, and to those at the end of the line: white space at the end of a line
     /// always follows the direction of the paragraph. Call it for each line, after the paragraph is broken into
-    /// lines and before <see cref="GetVisualOrder"/>.
+    /// lines and before <see cref="GetVisualOrder(ReadOnlySpan{char}, ReadOnlySpan{byte}, Span{int})"/>.
     /// </remarks>
     /// <exception cref="ArgumentException"><paramref name="levels"/> is shorter than <paramref name="line"/>.</exception>
     /// <exception cref="ArgumentOutOfRangeException"><paramref name="paragraphLevel"/> is not 0 or 1.</exception>
@@ -284,14 +284,59 @@ public static class UnicodeBidi
     }
 
     /// <summary>Computes the display order of the elements of a line from their levels (rule L2).</summary>
-    /// <param name="levels">The levels of the elements of the line, in the order of the text. An element is a code unit, or anything coarser that has one level, such as a run of text.</param>
+    /// <param name="levels">The levels of the elements of the line, in the order of the text. An element is a code unit, a code point, or anything coarser that has one level, such as a run of text.</param>
     /// <param name="visualToLogical">The buffer that receives, for each display position from left to right, the index of the element displayed there.</param>
+    /// <remarks>
+    /// The elements are reversed independently of each other. When they are the UTF-16 code units of a text, the two
+    /// code units of a surrogate pair at an odd level are reversed too: use
+    /// <see cref="GetVisualOrder(ReadOnlySpan{char}, ReadOnlySpan{byte}, Span{int})"/>, which keeps them in order.
+    /// </remarks>
     /// <exception cref="ArgumentException"><paramref name="visualToLogical"/> is shorter than <paramref name="levels"/>.</exception>
     public static void GetVisualOrder(ReadOnlySpan<byte> levels, Span<int> visualToLogical)
     {
         if (visualToLogical.Length < levels.Length)
             throw new ArgumentException("The buffer is shorter than the levels", nameof(visualToLogical));
 
+        Reorder(text: default, levels, visualToLogical[..levels.Length]);
+    }
+
+    /// <summary>Computes the display order of the UTF-16 code units of a line from their levels (rule L2).</summary>
+    /// <param name="line">The text of the line.</param>
+    /// <param name="levels">The levels of the code units of <paramref name="line"/>, as given by <see cref="ResolveLevels(ReadOnlySpan{char}, UnicodeBidiDirection, Span{byte})"/> and <see cref="ResetLineLevels(ReadOnlySpan{char}, int, Span{byte})"/>.</param>
+    /// <param name="visualToLogical">The buffer that receives, for each display position from left to right, the index of the code unit displayed there.</param>
+    /// <remarks>
+    /// The two code units of a surrogate pair stay in the order of the text, whatever their level: applying the
+    /// order to a well-formed text gives a well-formed text. A pair has the level of its first code unit.
+    /// </remarks>
+    /// <exception cref="ArgumentException"><paramref name="levels"/> or <paramref name="visualToLogical"/> is shorter than <paramref name="line"/>.</exception>
+    public static void GetVisualOrder(ReadOnlySpan<char> line, ReadOnlySpan<byte> levels, Span<int> visualToLogical)
+    {
+        if (levels.Length < line.Length)
+            throw new ArgumentException("The buffer is shorter than the line", nameof(levels));
+
+        if (visualToLogical.Length < line.Length)
+            throw new ArgumentException("The buffer is shorter than the line", nameof(visualToLogical));
+
+        visualToLogical = visualToLogical[..line.Length];
+        Reorder(line, levels[..line.Length], visualToLogical);
+
+        // Both code units of a pair have the same level, so they are reversed together: a reversed pair is adjacent.
+        for (var i = 0; i + 1 < visualToLogical.Length; i++)
+        {
+            var first = visualToLogical[i];
+            var second = visualToLogical[i + 1];
+            if (first == second + 1 && IsPairStart(line, second))
+            {
+                visualToLogical[i] = second;
+                visualToLogical[i + 1] = first;
+                i++;
+            }
+        }
+    }
+
+    /// <summary>Rule L2. When <paramref name="text"/> is not empty, the second code unit of a pair takes the level of the first.</summary>
+    private static void Reorder(ReadOnlySpan<char> text, ReadOnlySpan<byte> levels, Span<int> visualToLogical)
+    {
         var highest = 0;
         var lowestOdd = int.MaxValue;
         for (var i = 0; i < levels.Length; i++)
@@ -310,14 +355,14 @@ public static class UnicodeBidi
         {
             for (var i = 0; i < levels.Length;)
             {
-                if (levels[i] < level)
+                if (GetLevel(text, levels, i) < level)
                 {
                     i++;
                     continue;
                 }
 
                 var start = i;
-                while (i < levels.Length && levels[i] >= level)
+                while (i < levels.Length && GetLevel(text, levels, i) >= level)
                 {
                     i++;
                 }
@@ -325,6 +370,16 @@ public static class UnicodeBidi
                 visualToLogical[start..i].Reverse();
             }
         }
+
+        static byte GetLevel(ReadOnlySpan<char> text, ReadOnlySpan<byte> levels, int index)
+        {
+            return index > 0 && index < text.Length && IsPairStart(text, index - 1) ? levels[index - 1] : levels[index];
+        }
+    }
+
+    private static bool IsPairStart(ReadOnlySpan<char> text, int index)
+    {
+        return char.IsHighSurrogate(text[index]) && index + 1 < text.Length && char.IsLowSurrogate(text[index + 1]);
     }
 
     /// <summary>Resolves the levels from the classes stored in the first part of the workspace.</summary>

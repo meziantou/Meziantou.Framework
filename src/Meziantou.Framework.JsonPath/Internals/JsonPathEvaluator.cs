@@ -1150,6 +1150,11 @@ internal static class JsonPathEvaluator
     {
         if (func.ResultType is FunctionExpressionType.LogicalType)
         {
+            if (func.CustomFunction is not null)
+            {
+                return EvaluateCustomFunction(func, currentNode, root, navigator).Logical;
+            }
+
             return func.Name switch
             {
                 "match" => EvaluateMatchFunction(func, currentNode, root, navigator),
@@ -1173,6 +1178,37 @@ internal static class JsonPathEvaluator
         TValue? root,
         JsonPathNavigator<TValue> navigator)
     {
+        if (func.CustomFunction is not null)
+        {
+            var value = EvaluateCustomFunction(func, currentNode, root, navigator);
+            if (value.IsNothing)
+            {
+                return ResolvedValue<TValue>.FromNothing();
+            }
+
+            if (value.IsNode)
+            {
+                return ResolvedValue<TValue>.FromNode(value.Node);
+            }
+
+            if (value.TryGetString(navigator, out var text))
+            {
+                return ResolvedValue<TValue>.FromScalar(ScalarValue.FromString(text));
+            }
+
+            if (value.TryGetNumber(navigator, out var number))
+            {
+                return ResolvedValue<TValue>.FromScalar(ScalarValue.FromNumber(number));
+            }
+
+            if (value.TryGetBoolean(navigator, out var boolean))
+            {
+                return ResolvedValue<TValue>.FromScalar(ScalarValue.FromBoolean(boolean));
+            }
+
+            return ResolvedValue<TValue>.FromScalar(ScalarValue.Null());
+        }
+
         return func.Name switch
         {
             "length" => EvaluateLengthFunction(func, currentNode, root, navigator),
@@ -1191,12 +1227,76 @@ internal static class JsonPathEvaluator
         JsonPathNavigator<TValue> navigator,
         int limit)
     {
-        _ = func;
-        _ = currentNode;
-        _ = root;
-        _ = navigator;
-        _ = limit;
-        return [];
+        var nodes = EvaluateCustomFunction(func, currentNode, root, navigator).Nodes;
+        var result = new NodeSink<TValue>((EvaluationNavigator<TValue>)navigator);
+        foreach (var node in nodes)
+        {
+            if (result.Count >= limit)
+            {
+                break;
+            }
+
+            result.Add((node, null));
+        }
+
+        return result;
+    }
+
+    private static JsonPathFunctionArgument<TValue> EvaluateCustomFunction<TValue>(
+        FunctionCallExpression func,
+        TValue? currentNode,
+        TValue? root,
+        JsonPathNavigator<TValue> navigator)
+    {
+        var evaluation = (EvaluationNavigator<TValue>)navigator;
+        evaluation.Check();
+        var function = func.CustomFunction ?? throw new InvalidOperationException("Missing custom function implementation.");
+        var arguments = new JsonPathFunctionArgument<TValue>[func.Arguments.Length];
+        for (var i = 0; i < arguments.Length; i++)
+        {
+            evaluation.Check();
+            var argument = func.Arguments[i];
+            arguments[i] = function.ParameterTypes[i] switch
+            {
+                JsonPathFunctionType.Value => ToFunctionValue(ResolveFunctionArgumentAsValue(argument, currentNode, root, navigator)),
+                JsonPathFunctionType.Logical => JsonPathFunctionArgument<TValue>.FromLogical(
+                    EvaluateLogicalExpression((LogicalExpression)argument.Value!, currentNode, root, navigator)),
+                JsonPathFunctionType.Nodes => JsonPathFunctionArgument<TValue>.FromNodes(
+                    ResolveFunctionArgumentAsNodes(argument, currentNode, root, navigator, int.MaxValue).Select(node => node.Node)),
+                _ => throw new InvalidOperationException("Invalid custom function parameter type."),
+            };
+        }
+
+        evaluation.Check();
+        var result = function.Invoke(Array.AsReadOnly(arguments), navigator);
+        evaluation.Check();
+        if (result.Type != function.ResultType)
+        {
+            throw new JsonPathEvaluationException($"Function '{function.Name}' returned {result.Type}, but declared {function.ResultType}.");
+        }
+
+        return result;
+    }
+
+    private static JsonPathFunctionArgument<TValue> ToFunctionValue<TValue>(ResolvedValue<TValue> value)
+    {
+        if (value.IsNothing)
+        {
+            return JsonPathFunctionArgument<TValue>.Nothing;
+        }
+
+        if (value.Kind is ResolvedValueKind.Node)
+        {
+            return JsonPathFunctionArgument<TValue>.FromNode(value.Node);
+        }
+
+        return value.Scalar.Kind switch
+        {
+            JsonPathNodeKind.String => JsonPathFunctionArgument<TValue>.FromString(value.Scalar.StringValue!),
+            JsonPathNodeKind.Number => JsonPathFunctionArgument<TValue>.FromNumber(value.Scalar.NumberValue),
+            JsonPathNodeKind.Boolean => JsonPathFunctionArgument<TValue>.FromBoolean(value.Scalar.BooleanValue),
+            _ => JsonPathFunctionArgument<TValue>.Null,
+        };
     }
 
     private static ResolvedValue<TValue> EvaluateLengthFunction<TValue>(
@@ -1260,7 +1360,7 @@ internal static class JsonPathEvaluator
         {
             FilterQuery query => query.Segments.All(segment => segment.Selectors.All(selector =>
                 selector is not FilterSelector filter || ContainsOnlyBuiltInFunctions(filter.Expression))),
-            FunctionCallExpression function => function.Name is "count" or "length" or "value" or "match" or "search"
+            FunctionCallExpression function => function.CustomFunction is null && function.Name is "count" or "length" or "value" or "match" or "search"
                 && function.Arguments.All(argument => ContainsOnlyBuiltInFunctions(argument.Value)),
             OrExpression or => or.Operands.All(ContainsOnlyBuiltInFunctions),
             AndExpression and => and.Operands.All(ContainsOnlyBuiltInFunctions),

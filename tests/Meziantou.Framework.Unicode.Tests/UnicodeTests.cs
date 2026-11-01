@@ -19,6 +19,7 @@ public sealed class UnicodeTests
         #region Unicode_AreConfusable
         Assert.True(Unicode.AreConfusable("paypal", "\u0440\u0430\u0443\u0440\u0430l")); // Cyrillic look-alikes
         Assert.True(Unicode.AreConfusable("caf\u00E9", "cafe\u0301")); // composed vs decomposed
+        Assert.True(Unicode.AreConfusable("paypal", "pay\u200Bpal")); // invisible characters are ignored
         Assert.False(Unicode.AreConfusable("paypal", "example"));
         #endregion
     }
@@ -428,7 +429,7 @@ public sealed class UnicodeTests
         // For each line, once the paragraph is broken into lines:
         UnicodeBidi.ResetLineLevels(paragraph, paragraphLevel, levels);
         Span<int> visualToLogical = stackalloc int[paragraph.Length];
-        UnicodeBidi.GetVisualOrder(levels, visualToLogical);
+        UnicodeBidi.GetVisualOrder(paragraph, levels, visualToLogical);
 
         Assert.Equal<int>([0, 1, 2, 3, 6, 5, 4, 7], visualToLogical);
         #endregion
@@ -1191,6 +1192,55 @@ public sealed class UnicodeTests
     public void AreConfusable_DoesNotReportUnrelatedStrings(string a, string b)
     {
         Assert.False(Unicode.AreConfusable(a, b));
+    }
+
+    [Fact]
+    public void AreConfusable_IgnoresDefaultIgnorableCharacters()
+    {
+        Assert.True(Unicode.AreConfusable("paypal", "pay\u200Bpal"));
+        Assert.True(Unicode.AreConfusable("paypal", "paypal\uFE0F"));
+        Assert.True(Unicode.AreConfusable("paypal", "\u2066pay\u00ADpal\u2069"));
+        Assert.Equal("paypal", Unicode.GetConfusableSkeleton("pay\u200Dpal\U000E0100"));
+
+        // Combining marks are not default-ignorable: they are kept.
+        Assert.False(Unicode.AreConfusable("e", "e\u0301"));
+        Assert.Equal("e\u0301", Unicode.GetConfusableSkeleton("\u00E9\u200B"));
+    }
+
+    [Fact]
+    public void AreConfusable_ComparesTheTextInDisplayOrder()
+    {
+        // The example of UTS #39: both strings are displayed "A1<" then shin with a dot above in a left-to-right paragraph.
+        var s1 = "A1<\u05E9\u05C2";
+        var s2 = "\u0391\u05E9\u05BA>1";
+        Assert.True(Unicode.AreConfusable(s1, s2));
+        Assert.Equal("Al<\u05E9\u0307", Unicode.GetConfusableSkeleton(s1));
+        Assert.Equal("Al<\u05E9\u0307", Unicode.GetConfusableSkeleton(s2));
+        Assert.Equal(Unicode.GetConfusableSkeleton(s1), Unicode.GetConfusableSkeleton(s1, UnicodeBidiDirection.LeftToRight));
+
+        // In a right-to-left paragraph they look different. The first strong character of both is Latin or Greek.
+        Assert.False(Unicode.AreConfusable(s1, s2, UnicodeBidiDirection.RightToLeft));
+        Assert.True(Unicode.AreConfusable(s1, s2, UnicodeBidiDirection.Auto));
+    }
+
+    [Fact]
+    public void GetConfusableSkeleton_AppliesTheBidiReorderingRules()
+    {
+        // L2: a right-to-left run is reversed, supplementary characters included.
+        Assert.Equal("\U0001E901\U0001E900", Unicode.GetConfusableSkeleton("\U0001E900\U0001E901"));
+
+        // L3: combining marks follow their base character; L4: a right-to-left parenthesis is mirrored.
+        Assert.Equal("\u05D1)\u05D0\u05B8", Unicode.GetConfusableSkeleton("\u05D0\u05B8(\u05D1"));
+
+        // Left-to-right text in a right-to-left paragraph: the punctuation at the end is displayed first.
+        Assert.Equal("!abc", Unicode.GetConfusableSkeleton("abc!", UnicodeBidiDirection.RightToLeft));
+        Assert.Equal("abc!", Unicode.GetConfusableSkeleton("abc!", UnicodeBidiDirection.Auto));
+
+        // Each paragraph is reordered on its own.
+        Assert.Equal("\u05D1\u05D0\n\u05D3\u05D2", Unicode.GetConfusableSkeleton("\u05D0\u05D1\n\u05D2\u05D3"));
+
+        Assert.Throws<ArgumentOutOfRangeException>("direction", () => Unicode.GetConfusableSkeleton("a", (UnicodeBidiDirection)3));
+        Assert.Throws<ArgumentOutOfRangeException>("direction", () => Unicode.AreConfusable("a", "a", (UnicodeBidiDirection)3));
     }
 
     [Fact]
@@ -3503,6 +3553,61 @@ public sealed class UnicodeTests
         Assert.Throws<ArgumentOutOfRangeException>("paragraphLevel", () => UnicodeBidi.ResetLineLevels("a", 2, new byte[1]));
         Assert.Throws<ArgumentException>("levels", () => UnicodeBidi.ResetLineLevels("ab", 0, new byte[1]));
         Assert.Throws<ArgumentException>("visualToLogical", () => UnicodeBidi.GetVisualOrder(new byte[2], new int[1]));
+        Assert.Throws<ArgumentException>("levels", () => UnicodeBidi.GetVisualOrder("ab", new byte[1], new int[2]));
+        Assert.Throws<ArgumentException>("visualToLogical", () => UnicodeBidi.GetVisualOrder("ab", new byte[2], new int[1]));
+    }
+
+    [Fact]
+    public void GetVisualOrder_KeepsSurrogatePairsInOrder()
+    {
+        var text = "\U0001E900";
+        var levels = new byte[text.Length];
+        UnicodeBidi.ResolveLevels(text, UnicodeBidiDirection.Auto, levels);
+        Assert.Equal(new byte[] { 1, 1 }, levels);
+
+        var order = new int[text.Length];
+        UnicodeBidi.GetVisualOrder(text, levels, order);
+        Assert.Equal(new[] { 0, 1 }, order);
+
+        // The levels-only overload reverses the elements it is given, whatever they are.
+        UnicodeBidi.GetVisualOrder(levels, order);
+        Assert.Equal(new[] { 1, 0 }, order);
+    }
+
+    [Fact]
+    public void GetVisualOrder_KeepsSupplementaryCharactersWellFormed()
+    {
+        // Adlam is right-to-left, the mathematical letters are left-to-right; both are outside the Basic Multilingual Plane.
+        Assert.Equal("a\U0001E901\U0001E900b", Reorder("a\U0001E900\U0001E901b", UnicodeBidiDirection.LeftToRight));
+        Assert.Equal("\U0001E901\U0001E900", Reorder("\U0001E900\U0001E901", UnicodeBidiDirection.LeftToRight));
+        Assert.Equal("\U0001E901\U0001E900", Reorder("\U0001E900\U0001E901", UnicodeBidiDirection.RightToLeft));
+        Assert.Equal("\U0001D400\U0001D401", Reorder("\U0001D400\U0001D401", UnicodeBidiDirection.LeftToRight));
+        Assert.Equal("\U0001D400\U0001D401", Reorder("\U0001D400\U0001D401", UnicodeBidiDirection.RightToLeft));
+        Assert.Equal("!\U0001D400\U0001D401", Reorder("\U0001D400\U0001D401!", UnicodeBidiDirection.RightToLeft));
+        Assert.Equal("\U0001D400 \U0001E901\U0001E900", Reorder("\U0001D400 \U0001E900\U0001E901", UnicodeBidiDirection.Auto));
+        Assert.Equal("\U0001E901\U0001E900 \U0001D400", Reorder("\U0001D400 \U0001E900\U0001E901", UnicodeBidiDirection.RightToLeft));
+
+        static string Reorder(string text, UnicodeBidiDirection direction)
+        {
+            var levels = new byte[text.Length];
+            var paragraphLevel = UnicodeBidi.ResolveLevels(text, direction, levels);
+            UnicodeBidi.ResetLineLevels(text, paragraphLevel, levels);
+            var order = new int[text.Length];
+            UnicodeBidi.GetVisualOrder(text, levels, order);
+            var result = string.Concat(order.Select(index => text[index]));
+
+            // Throws on a reversed surrogate pair.
+            _ = new UTF8Encoding(encoderShouldEmitUTF8Identifier: false, throwOnInvalidBytes: true).GetByteCount(result);
+            return result;
+        }
+    }
+
+    [Fact]
+    public void GetVisualOrder_GivesAPairTheLevelOfItsFirstCodeUnit()
+    {
+        var order = new int[4];
+        UnicodeBidi.GetVisualOrder("\U0001E900a", [1, 0, 1], order);
+        Assert.Equal(new[] { 2, 0, 1 }, order.AsSpan(0, 3).ToArray());
     }
 
     [Fact]

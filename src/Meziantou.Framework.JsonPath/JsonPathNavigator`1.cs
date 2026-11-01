@@ -4,6 +4,11 @@ namespace Meziantou.Framework.Json;
 /// <typeparam name="TValue">The node type used by the custom object model.</typeparam>
 public abstract class JsonPathNavigator<TValue>
 {
+    internal virtual JsonPathNavigator<TValue> CreateEvaluationNavigator()
+    {
+        return this;
+    }
+
     /// <summary>Gets whether navigation is side-effect-free and values remain stable throughout an evaluation.</summary>
     /// <remarks>Override with <see langword="true"/> to permit per-evaluation reuse of root-invariant built-in function results. The default is <see langword="false"/>.</remarks>
     public virtual bool IsPure => false;

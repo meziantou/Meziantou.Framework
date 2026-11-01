@@ -126,4 +126,4 @@ a task of the event loop.
   `MediaStreamAudioDestinationNode`) and the factories of `AudioContext` that create them.
 - The `interrupted` state (e.g. a context whose document is hidden when `media-playback-while-not-visible` is disallowed).
 
-The results of the web-platform-tests are in [docs/wpt-coverage/webaudio.md](wpt-coverage/webaudio.md).
+The results of the web-platform-tests are in [the WPT coverage of webaudio](../../../docs/WebPlatform/10-WptCoverage/webaudio.md).

@@ -84,7 +84,7 @@ The screenshots are compared with the ones of Playwright by `ChromiumDiff --rend
 (`dotnet run --project samples/Meziantou.Framework.WebPlatform.ScreenshotSample -- https://example.com/ page.png`).
 
 The screenshots are tested by the [reftests of the web-platform-tests](web-platform-tests.md#reftests): most of the
-~28,000 reftests of the fetched directories pass (see [wpt-coverage.md](wpt-coverage.md#reftests)); the coverage pages give the reason of each other one (the
+~28,000 reftests of the fetched directories pass (see [the WPT coverage](../../../docs/WebPlatform/10-WptCoverage/01-Overview.md#reftests)); the coverage pages give the reason of each other one (the
 layout and painting features that are not implemented, and the bugs).
 
 ## Printing

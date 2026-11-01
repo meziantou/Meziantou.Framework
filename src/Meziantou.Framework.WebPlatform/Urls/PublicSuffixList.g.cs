@@ -4,7 +4,7 @@
 // </auto-generated>
 #nullable enable
 
-// The rules of this file come from the Public Suffix List (https://publicsuffix.org/list/public_suffix_list.dat), version 2026-10-22_08-36-41_UTC:
+// The rules of this file come from the Public Suffix List (https://publicsuffix.org/list/public_suffix_list.dat), version 2026-10-31_14-17-28_UTC:
 // This Source Code Form is subject to the terms of the Mozilla Public
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
@@ -530,7 +530,7 @@ internal static partial class PublicSuffixList
         hattfjelldal.no haugesund.no haugiang.vn haus hayakawa.yamanashi.jp hayashima.okayama.jp hazu.aichi.jp
         hb.cldmail.ru hb.cn hbo hdfc hdfcbank he.cn health health-carereform.com health.nz health.vn healthcare
         heavy.jp heguri.nara.jp heimdns.de heimdns.online heiyu.space hekinan.aichi.jp helioho.st heliohost.us help
-        helsinki hemne.no hemnes.no hemsedal.no hepforge.org her.jp herad.no hercules-app.com hercules-dev.com here
+        hemne.no hemnes.no hemsedal.no hepforge.org her.jp herad.no hercules-app.com hercules-dev.com here
         here-for-more.info here.now hermes herokuapp.com heroy.more-og-romsdal.no heroy.nordland.no heteml.net
         heyflow.page heyflow.site hf.space hi.cn hi.us hicam.net hichiso.gifu.jp hida.gifu.jp hidaka.hokkaido.jp
         hidaka.kochi.jp hidaka.saitama.jp hidaka.wakayama.jp hidns.co hidns.vip higashi.fukuoka.jp

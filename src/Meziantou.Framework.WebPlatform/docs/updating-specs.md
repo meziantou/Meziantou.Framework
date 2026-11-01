@@ -70,7 +70,7 @@ Sources:
     references of the WPT reftests of the paths that are outside of them (read from the manifest, e.g. `css/reference`)
     are fetched too.
   - `verify`: checks that `tests/Meziantou.Framework.WebPlatform.SpecData/` matches the checksums in `versions.json`
-  - `wpt-coverage`: generates [wpt-coverage.md](wpt-coverage.md) and the pages of its sections (`docs/wpt-coverage/`)
+  - `wpt-coverage`: generates the WPT coverage pages of the documentation ([`docs/WebPlatform/10-WptCoverage/`](../../../docs/WebPlatform/10-WptCoverage/01-Overview.md))
     from the WPT manifest and the expectations and reasons of `tests/Meziantou.Framework.WebPlatform.Wpt`. `--check`
     fails if the committed files are outdated or if a test that does not pass has no reason.
 - `tools/Meziantou.Framework.WebPlatform.SpecGen`: regenerates every `*.g.cs` file from `tests/Meziantou.Framework.WebPlatform.SpecData/`. `--check` fails if the committed files are outdated.
@@ -111,9 +111,9 @@ Sources:
 ```
 
 The script updates the inputs, fetches the test suites, regenerates the code, runs the tests and regenerates
-[wpt-coverage.md](wpt-coverage.md). Review the diff of `tests/Meziantou.Framework.WebPlatform.SpecData/` and of the generated files, fix the failing tests,
+[the WPT coverage pages](../../../docs/WebPlatform/10-WptCoverage/01-Overview.md). Review the diff of `tests/Meziantou.Framework.WebPlatform.SpecData/` and of the generated files, fix the failing tests,
 update the WPT expectations, add the reasons of the new failures to `wpt-reasons.json`
-([Reasons](web-platform-tests.md#reasons)), regenerate `wpt-coverage.md`, then commit.
+([Reasons](web-platform-tests.md#reasons)), regenerate the WPT coverage pages, then commit.
 
 `eng/webplatform/update-wpt.sh` updates WPT to its latest release, rewrites the WPT expectations from the new results
 (`WPT_UPDATE_EXPECTATIONS=1`) and regenerates the coverage, so the diff of `expectations/` lists the tests whose result

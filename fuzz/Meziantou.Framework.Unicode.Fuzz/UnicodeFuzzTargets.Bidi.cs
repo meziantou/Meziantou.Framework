@@ -10,7 +10,8 @@ public static partial class UnicodeFuzzTargets
     /// overload with a workspace (of the exact size, with garbage in it) gives the same levels, and a text for which
     /// <c>MayRequireBidi</c> is false has only level 0 when it is not right-to-left. After <c>ResetLineLevels</c>, the
     /// levels stay in range and <c>GetVisualOrder</c> is a permutation (the identity, or the reverse order, when every
-    /// level is 0, or 1).
+    /// level is 0, or 1). The overload that takes the text gives the same order except that it keeps surrogate pairs in
+    /// order, so a well-formed text stays well-formed.
     /// </summary>
     private static void Bidi(ReadOnlySpan<byte> data)
     {
@@ -90,6 +91,27 @@ public static partial class UnicodeFuzzTargets
             {
                 FuzzAssert.Equal(levels.Length - 1 - position, logical, "GetVisualOrder does not reverse a line whose levels are all 1");
             }
+        }
+
+        // The text overload is the same permutation, except that the two code units of a pair stay in order.
+        var unitOrder = new int[paragraph.Length];
+        UnicodeBidi.GetVisualOrder(paragraph, levels, unitOrder);
+        for (var position = 0; position < unitOrder.Length; position++)
+        {
+            var logical = unitOrder[position];
+            var expected = visualToLogical[position];
+            if (logical != expected)
+            {
+                FuzzAssert.True(position + 1 < unitOrder.Length && expected == logical + 1 && visualToLogical[position + 1] == logical && unitOrder[position + 1] == expected, $"GetVisualOrder(line) differs from GetVisualOrder at {position} other than by a swapped pair");
+                FuzzAssert.True(char.IsHighSurrogate(paragraph[logical]) && char.IsLowSurrogate(paragraph[expected]), $"GetVisualOrder(line) swaps {logical} and {expected}, which are not a surrogate pair");
+                position++;
+            }
+        }
+
+        if (IsWellFormed(paragraph))
+        {
+            var reordered = string.Concat(unitOrder.Select(index => paragraph[index]));
+            FuzzAssert.True(IsWellFormed(reordered), "GetVisualOrder(line) gives an ill-formed text for a well-formed one");
         }
     }
 

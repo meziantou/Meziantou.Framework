@@ -62,7 +62,7 @@ Assert.True(canadianFrench.NeutralEquals(CultureInfo.GetCultureInfo("fr-FR")));
 - The delegate is synchronous. With an `async` lambda, the cultures are restored at the first `await` that does not
   complete synchronously.
 - [SetCurrentThreadCulture](cref:Meziantou.Framework.CultureInfoUtilities.SetCurrentThreadCulture) sets both cultures without restoring them.
-- [GetCulture](cref:Meziantou.Framework.CultureInfoUtilities.GetCulture) returns a culture from its name or its LCID, or `null` when it does not exist.
+- [GetCulture](cref:Meziantou.Framework.CultureInfoUtilities.GetCulture) returns a culture from its name or its LCID, or `null` when it does not exist. A number is always read as an LCID.
 - [GetNeutralCulture](cref:Meziantou.Framework.CultureInfoUtilities.GetNeutralCulture) returns the neutral culture (`fr` for `fr-CA`), and [NeutralEquals](cref:Meziantou.Framework.CultureInfoUtilities.NeutralEquals) tells whether two cultures
   share the same neutral culture.
 

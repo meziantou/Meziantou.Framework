@@ -502,16 +502,20 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
             options.Command.Add(item);
 
         var args = BuildExecArguments(id, options);
-        var stream = new MemoryStream();
+
+        // The content goes to a file only the current user can read, rather than to memory: the file can be large. The
+        // caller gets a seekable stream, and the file is deleted when it is disposed.
+        var tempFile = PrivateTemporaryFile.CreatePath();
         try
         {
-            await Cli.RunToStreamAsync(args, stream, cancellationToken).ConfigureAwait(false);
-            stream.Position = 0;
-            return stream;
+            await using (var file = PrivateTemporaryFile.Create(tempFile))
+                await Cli.RunToStreamAsync(args, file, cancellationToken).ConfigureAwait(false);
+
+            return new TemporaryFileStream(tempFile);
         }
         catch
         {
-            await stream.DisposeAsync().ConfigureAwait(false);
+            File.Delete(tempFile);
             throw;
         }
     }

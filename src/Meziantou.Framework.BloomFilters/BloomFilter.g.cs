@@ -29,6 +29,8 @@ public partial interface IBloomFilter
     bool MayContain(global::System.Int128 value);
     void Add(System.ReadOnlySpan<byte> value);
     bool MayContain(System.ReadOnlySpan<byte> value);
+    void Add(System.ReadOnlySpan<char> value);
+    bool MayContain(System.ReadOnlySpan<char> value);
 }
 
 public partial interface ICountingBloomFilter
@@ -69,6 +71,10 @@ public partial interface ICountingBloomFilter
     void Remove(System.ReadOnlySpan<byte> value);
     bool MayContain(System.ReadOnlySpan<byte> value);
     int GetEstimatedCount(System.ReadOnlySpan<byte> value);
+    void Add(System.ReadOnlySpan<char> value);
+    void Remove(System.ReadOnlySpan<char> value);
+    bool MayContain(System.ReadOnlySpan<char> value);
+    int GetEstimatedCount(System.ReadOnlySpan<char> value);
 }
 
 partial class BloomFilter
@@ -108,10 +114,10 @@ partial class BloomFilterXXHash128 : IBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static BloomFilterHash Hash(string value)
+    private static BloomFilterHash Hash(System.ReadOnlySpan<char> value)
     {
-        var chars = value.AsSpan();
-        var bytes = unsafe(MemoryMarshal.AsBytes(chars));
+        // Hash the UTF-16 code units as-is, so a string and the equivalent span of chars are the same value
+        var bytes = unsafe(MemoryMarshal.AsBytes(value));
         return Hash(bytes);
     }
 
@@ -125,14 +131,16 @@ partial class BloomFilterXXHash128 : IBloomFilter
     public bool MayContain(ulong value) => MayContainHash(Hash(value));
     public void Add(global::System.Guid value) => AddHash(Hash(value));
     public bool MayContain(global::System.Guid value) => MayContainHash(Hash(value));
-    public void Add(string value) => AddHash(Hash(value));
-    public bool MayContain(string value) => MayContainHash(Hash(value));
+    public void Add(string value) => AddHash(Hash(value.AsSpan()));
+    public bool MayContain(string value) => MayContainHash(Hash(value.AsSpan()));
     public void Add(global::System.UInt128 value) => AddHash(Hash(value));
     public bool MayContain(global::System.UInt128 value) => MayContainHash(Hash(value));
     public void Add(global::System.Int128 value) => AddHash(Hash(value));
     public bool MayContain(global::System.Int128 value) => MayContainHash(Hash(value));
     public void Add(System.ReadOnlySpan<byte> value) => AddHash(Hash(value));
     public bool MayContain(System.ReadOnlySpan<byte> value) => MayContainHash(Hash(value));
+    public void Add(System.ReadOnlySpan<char> value) => AddHash(Hash(value));
+    public bool MayContain(System.ReadOnlySpan<char> value) => MayContainHash(Hash(value));
     public void AddRange(params System.ReadOnlySpan<long> values) => AddRangeCore(values);
     public void AddRange(params System.ReadOnlySpan<ulong> values) => AddRangeCore(values);
 }
@@ -152,10 +160,10 @@ partial class BloomFilterXXHash64 : IBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static BloomFilterHash Hash(string value)
+    private static BloomFilterHash Hash(System.ReadOnlySpan<char> value)
     {
-        var chars = value.AsSpan();
-        var bytes = unsafe(MemoryMarshal.AsBytes(chars));
+        // Hash the UTF-16 code units as-is, so a string and the equivalent span of chars are the same value
+        var bytes = unsafe(MemoryMarshal.AsBytes(value));
         return Hash(bytes);
     }
 
@@ -169,14 +177,16 @@ partial class BloomFilterXXHash64 : IBloomFilter
     public bool MayContain(ulong value) => MayContainHash(Hash(value));
     public void Add(global::System.Guid value) => AddHash(Hash(value));
     public bool MayContain(global::System.Guid value) => MayContainHash(Hash(value));
-    public void Add(string value) => AddHash(Hash(value));
-    public bool MayContain(string value) => MayContainHash(Hash(value));
+    public void Add(string value) => AddHash(Hash(value.AsSpan()));
+    public bool MayContain(string value) => MayContainHash(Hash(value.AsSpan()));
     public void Add(global::System.UInt128 value) => AddHash(Hash(value));
     public bool MayContain(global::System.UInt128 value) => MayContainHash(Hash(value));
     public void Add(global::System.Int128 value) => AddHash(Hash(value));
     public bool MayContain(global::System.Int128 value) => MayContainHash(Hash(value));
     public void Add(System.ReadOnlySpan<byte> value) => AddHash(Hash(value));
     public bool MayContain(System.ReadOnlySpan<byte> value) => MayContainHash(Hash(value));
+    public void Add(System.ReadOnlySpan<char> value) => AddHash(Hash(value));
+    public bool MayContain(System.ReadOnlySpan<char> value) => MayContainHash(Hash(value));
     public void AddRange(params System.ReadOnlySpan<long> values) => AddRangeCore(values);
     public void AddRange(params System.ReadOnlySpan<ulong> values) => AddRangeCore(values);
 }
@@ -196,10 +206,10 @@ partial class BloomFilterXXHash32 : IBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static BloomFilterHash Hash(string value)
+    private static BloomFilterHash Hash(System.ReadOnlySpan<char> value)
     {
-        var chars = value.AsSpan();
-        var bytes = unsafe(MemoryMarshal.AsBytes(chars));
+        // Hash the UTF-16 code units as-is, so a string and the equivalent span of chars are the same value
+        var bytes = unsafe(MemoryMarshal.AsBytes(value));
         return Hash(bytes);
     }
 
@@ -213,14 +223,16 @@ partial class BloomFilterXXHash32 : IBloomFilter
     public bool MayContain(ulong value) => MayContainHash(Hash(value));
     public void Add(global::System.Guid value) => AddHash(Hash(value));
     public bool MayContain(global::System.Guid value) => MayContainHash(Hash(value));
-    public void Add(string value) => AddHash(Hash(value));
-    public bool MayContain(string value) => MayContainHash(Hash(value));
+    public void Add(string value) => AddHash(Hash(value.AsSpan()));
+    public bool MayContain(string value) => MayContainHash(Hash(value.AsSpan()));
     public void Add(global::System.UInt128 value) => AddHash(Hash(value));
     public bool MayContain(global::System.UInt128 value) => MayContainHash(Hash(value));
     public void Add(global::System.Int128 value) => AddHash(Hash(value));
     public bool MayContain(global::System.Int128 value) => MayContainHash(Hash(value));
     public void Add(System.ReadOnlySpan<byte> value) => AddHash(Hash(value));
     public bool MayContain(System.ReadOnlySpan<byte> value) => MayContainHash(Hash(value));
+    public void Add(System.ReadOnlySpan<char> value) => AddHash(Hash(value));
+    public bool MayContain(System.ReadOnlySpan<char> value) => MayContainHash(Hash(value));
     public void AddRange(params System.ReadOnlySpan<int> values) => AddRangeCore(values);
     public void AddRange(params System.ReadOnlySpan<uint> values) => AddRangeCore(values);
 }
@@ -240,10 +252,10 @@ partial class BloomFilterXXHash3 : IBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static BloomFilterHash Hash(string value)
+    private static BloomFilterHash Hash(System.ReadOnlySpan<char> value)
     {
-        var chars = value.AsSpan();
-        var bytes = unsafe(MemoryMarshal.AsBytes(chars));
+        // Hash the UTF-16 code units as-is, so a string and the equivalent span of chars are the same value
+        var bytes = unsafe(MemoryMarshal.AsBytes(value));
         return Hash(bytes);
     }
 
@@ -257,14 +269,16 @@ partial class BloomFilterXXHash3 : IBloomFilter
     public bool MayContain(ulong value) => MayContainHash(Hash(value));
     public void Add(global::System.Guid value) => AddHash(Hash(value));
     public bool MayContain(global::System.Guid value) => MayContainHash(Hash(value));
-    public void Add(string value) => AddHash(Hash(value));
-    public bool MayContain(string value) => MayContainHash(Hash(value));
+    public void Add(string value) => AddHash(Hash(value.AsSpan()));
+    public bool MayContain(string value) => MayContainHash(Hash(value.AsSpan()));
     public void Add(global::System.UInt128 value) => AddHash(Hash(value));
     public bool MayContain(global::System.UInt128 value) => MayContainHash(Hash(value));
     public void Add(global::System.Int128 value) => AddHash(Hash(value));
     public bool MayContain(global::System.Int128 value) => MayContainHash(Hash(value));
     public void Add(System.ReadOnlySpan<byte> value) => AddHash(Hash(value));
     public bool MayContain(System.ReadOnlySpan<byte> value) => MayContainHash(Hash(value));
+    public void Add(System.ReadOnlySpan<char> value) => AddHash(Hash(value));
+    public bool MayContain(System.ReadOnlySpan<char> value) => MayContainHash(Hash(value));
 }
 
 partial class BloomFilterCrc64 : IBloomFilter
@@ -282,10 +296,10 @@ partial class BloomFilterCrc64 : IBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static BloomFilterHash Hash(string value)
+    private static BloomFilterHash Hash(System.ReadOnlySpan<char> value)
     {
-        var chars = value.AsSpan();
-        var bytes = unsafe(MemoryMarshal.AsBytes(chars));
+        // Hash the UTF-16 code units as-is, so a string and the equivalent span of chars are the same value
+        var bytes = unsafe(MemoryMarshal.AsBytes(value));
         return Hash(bytes);
     }
 
@@ -299,14 +313,16 @@ partial class BloomFilterCrc64 : IBloomFilter
     public bool MayContain(ulong value) => MayContainHash(Hash(value));
     public void Add(global::System.Guid value) => AddHash(Hash(value));
     public bool MayContain(global::System.Guid value) => MayContainHash(Hash(value));
-    public void Add(string value) => AddHash(Hash(value));
-    public bool MayContain(string value) => MayContainHash(Hash(value));
+    public void Add(string value) => AddHash(Hash(value.AsSpan()));
+    public bool MayContain(string value) => MayContainHash(Hash(value.AsSpan()));
     public void Add(global::System.UInt128 value) => AddHash(Hash(value));
     public bool MayContain(global::System.UInt128 value) => MayContainHash(Hash(value));
     public void Add(global::System.Int128 value) => AddHash(Hash(value));
     public bool MayContain(global::System.Int128 value) => MayContainHash(Hash(value));
     public void Add(System.ReadOnlySpan<byte> value) => AddHash(Hash(value));
     public bool MayContain(System.ReadOnlySpan<byte> value) => MayContainHash(Hash(value));
+    public void Add(System.ReadOnlySpan<char> value) => AddHash(Hash(value));
+    public bool MayContain(System.ReadOnlySpan<char> value) => MayContainHash(Hash(value));
 }
 
 partial class BloomFilterCrc32 : IBloomFilter
@@ -324,10 +340,10 @@ partial class BloomFilterCrc32 : IBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static BloomFilterHash Hash(string value)
+    private static BloomFilterHash Hash(System.ReadOnlySpan<char> value)
     {
-        var chars = value.AsSpan();
-        var bytes = unsafe(MemoryMarshal.AsBytes(chars));
+        // Hash the UTF-16 code units as-is, so a string and the equivalent span of chars are the same value
+        var bytes = unsafe(MemoryMarshal.AsBytes(value));
         return Hash(bytes);
     }
 
@@ -341,14 +357,16 @@ partial class BloomFilterCrc32 : IBloomFilter
     public bool MayContain(ulong value) => MayContainHash(Hash(value));
     public void Add(global::System.Guid value) => AddHash(Hash(value));
     public bool MayContain(global::System.Guid value) => MayContainHash(Hash(value));
-    public void Add(string value) => AddHash(Hash(value));
-    public bool MayContain(string value) => MayContainHash(Hash(value));
+    public void Add(string value) => AddHash(Hash(value.AsSpan()));
+    public bool MayContain(string value) => MayContainHash(Hash(value.AsSpan()));
     public void Add(global::System.UInt128 value) => AddHash(Hash(value));
     public bool MayContain(global::System.UInt128 value) => MayContainHash(Hash(value));
     public void Add(global::System.Int128 value) => AddHash(Hash(value));
     public bool MayContain(global::System.Int128 value) => MayContainHash(Hash(value));
     public void Add(System.ReadOnlySpan<byte> value) => AddHash(Hash(value));
     public bool MayContain(System.ReadOnlySpan<byte> value) => MayContainHash(Hash(value));
+    public void Add(System.ReadOnlySpan<char> value) => AddHash(Hash(value));
+    public bool MayContain(System.ReadOnlySpan<char> value) => MayContainHash(Hash(value));
 }
 
 partial class BloomFilterAdler32 : IBloomFilter
@@ -366,10 +384,10 @@ partial class BloomFilterAdler32 : IBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static BloomFilterHash Hash(string value)
+    private static BloomFilterHash Hash(System.ReadOnlySpan<char> value)
     {
-        var chars = value.AsSpan();
-        var bytes = unsafe(MemoryMarshal.AsBytes(chars));
+        // Hash the UTF-16 code units as-is, so a string and the equivalent span of chars are the same value
+        var bytes = unsafe(MemoryMarshal.AsBytes(value));
         return Hash(bytes);
     }
 
@@ -383,14 +401,16 @@ partial class BloomFilterAdler32 : IBloomFilter
     public bool MayContain(ulong value) => MayContainHash(Hash(value));
     public void Add(global::System.Guid value) => AddHash(Hash(value));
     public bool MayContain(global::System.Guid value) => MayContainHash(Hash(value));
-    public void Add(string value) => AddHash(Hash(value));
-    public bool MayContain(string value) => MayContainHash(Hash(value));
+    public void Add(string value) => AddHash(Hash(value.AsSpan()));
+    public bool MayContain(string value) => MayContainHash(Hash(value.AsSpan()));
     public void Add(global::System.UInt128 value) => AddHash(Hash(value));
     public bool MayContain(global::System.UInt128 value) => MayContainHash(Hash(value));
     public void Add(global::System.Int128 value) => AddHash(Hash(value));
     public bool MayContain(global::System.Int128 value) => MayContainHash(Hash(value));
     public void Add(System.ReadOnlySpan<byte> value) => AddHash(Hash(value));
     public bool MayContain(System.ReadOnlySpan<byte> value) => MayContainHash(Hash(value));
+    public void Add(System.ReadOnlySpan<char> value) => AddHash(Hash(value));
+    public bool MayContain(System.ReadOnlySpan<char> value) => MayContainHash(Hash(value));
 }
 
 partial class CountingBloomFilterXXHash128 : ICountingBloomFilter
@@ -408,10 +428,10 @@ partial class CountingBloomFilterXXHash128 : ICountingBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static BloomFilterHash Hash(string value)
+    private static BloomFilterHash Hash(System.ReadOnlySpan<char> value)
     {
-        var chars = value.AsSpan();
-        var bytes = unsafe(MemoryMarshal.AsBytes(chars));
+        // Hash the UTF-16 code units as-is, so a string and the equivalent span of chars are the same value
+        var bytes = unsafe(MemoryMarshal.AsBytes(value));
         return Hash(bytes);
     }
 
@@ -435,10 +455,10 @@ partial class CountingBloomFilterXXHash128 : ICountingBloomFilter
     public void Remove(global::System.Guid value) => RemoveHash(Hash(value));
     public bool MayContain(global::System.Guid value) => MayContainHash(Hash(value));
     public int GetEstimatedCount(global::System.Guid value) => GetEstimatedCountHash(Hash(value));
-    public void Add(string value) => AddHash(Hash(value));
-    public void Remove(string value) => RemoveHash(Hash(value));
-    public bool MayContain(string value) => MayContainHash(Hash(value));
-    public int GetEstimatedCount(string value) => GetEstimatedCountHash(Hash(value));
+    public void Add(string value) => AddHash(Hash(value.AsSpan()));
+    public void Remove(string value) => RemoveHash(Hash(value.AsSpan()));
+    public bool MayContain(string value) => MayContainHash(Hash(value.AsSpan()));
+    public int GetEstimatedCount(string value) => GetEstimatedCountHash(Hash(value.AsSpan()));
     public void Add(global::System.UInt128 value) => AddHash(Hash(value));
     public void Remove(global::System.UInt128 value) => RemoveHash(Hash(value));
     public bool MayContain(global::System.UInt128 value) => MayContainHash(Hash(value));
@@ -451,6 +471,10 @@ partial class CountingBloomFilterXXHash128 : ICountingBloomFilter
     public void Remove(System.ReadOnlySpan<byte> value) => RemoveHash(Hash(value));
     public bool MayContain(System.ReadOnlySpan<byte> value) => MayContainHash(Hash(value));
     public int GetEstimatedCount(System.ReadOnlySpan<byte> value) => GetEstimatedCountHash(Hash(value));
+    public void Add(System.ReadOnlySpan<char> value) => AddHash(Hash(value));
+    public void Remove(System.ReadOnlySpan<char> value) => RemoveHash(Hash(value));
+    public bool MayContain(System.ReadOnlySpan<char> value) => MayContainHash(Hash(value));
+    public int GetEstimatedCount(System.ReadOnlySpan<char> value) => GetEstimatedCountHash(Hash(value));
     public void AddRange(params System.ReadOnlySpan<long> values) => AddRangeCore(values);
     public void RemoveRange(params System.ReadOnlySpan<long> values) => RemoveRangeCore(values);
     public void AddRange(params System.ReadOnlySpan<ulong> values) => AddRangeCore(values);
@@ -472,10 +496,10 @@ partial class CountingBloomFilterXXHash64 : ICountingBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static BloomFilterHash Hash(string value)
+    private static BloomFilterHash Hash(System.ReadOnlySpan<char> value)
     {
-        var chars = value.AsSpan();
-        var bytes = unsafe(MemoryMarshal.AsBytes(chars));
+        // Hash the UTF-16 code units as-is, so a string and the equivalent span of chars are the same value
+        var bytes = unsafe(MemoryMarshal.AsBytes(value));
         return Hash(bytes);
     }
 
@@ -499,10 +523,10 @@ partial class CountingBloomFilterXXHash64 : ICountingBloomFilter
     public void Remove(global::System.Guid value) => RemoveHash(Hash(value));
     public bool MayContain(global::System.Guid value) => MayContainHash(Hash(value));
     public int GetEstimatedCount(global::System.Guid value) => GetEstimatedCountHash(Hash(value));
-    public void Add(string value) => AddHash(Hash(value));
-    public void Remove(string value) => RemoveHash(Hash(value));
-    public bool MayContain(string value) => MayContainHash(Hash(value));
-    public int GetEstimatedCount(string value) => GetEstimatedCountHash(Hash(value));
+    public void Add(string value) => AddHash(Hash(value.AsSpan()));
+    public void Remove(string value) => RemoveHash(Hash(value.AsSpan()));
+    public bool MayContain(string value) => MayContainHash(Hash(value.AsSpan()));
+    public int GetEstimatedCount(string value) => GetEstimatedCountHash(Hash(value.AsSpan()));
     public void Add(global::System.UInt128 value) => AddHash(Hash(value));
     public void Remove(global::System.UInt128 value) => RemoveHash(Hash(value));
     public bool MayContain(global::System.UInt128 value) => MayContainHash(Hash(value));
@@ -515,6 +539,10 @@ partial class CountingBloomFilterXXHash64 : ICountingBloomFilter
     public void Remove(System.ReadOnlySpan<byte> value) => RemoveHash(Hash(value));
     public bool MayContain(System.ReadOnlySpan<byte> value) => MayContainHash(Hash(value));
     public int GetEstimatedCount(System.ReadOnlySpan<byte> value) => GetEstimatedCountHash(Hash(value));
+    public void Add(System.ReadOnlySpan<char> value) => AddHash(Hash(value));
+    public void Remove(System.ReadOnlySpan<char> value) => RemoveHash(Hash(value));
+    public bool MayContain(System.ReadOnlySpan<char> value) => MayContainHash(Hash(value));
+    public int GetEstimatedCount(System.ReadOnlySpan<char> value) => GetEstimatedCountHash(Hash(value));
     public void AddRange(params System.ReadOnlySpan<long> values) => AddRangeCore(values);
     public void RemoveRange(params System.ReadOnlySpan<long> values) => RemoveRangeCore(values);
     public void AddRange(params System.ReadOnlySpan<ulong> values) => AddRangeCore(values);
@@ -536,10 +564,10 @@ partial class CountingBloomFilterXXHash32 : ICountingBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static BloomFilterHash Hash(string value)
+    private static BloomFilterHash Hash(System.ReadOnlySpan<char> value)
     {
-        var chars = value.AsSpan();
-        var bytes = unsafe(MemoryMarshal.AsBytes(chars));
+        // Hash the UTF-16 code units as-is, so a string and the equivalent span of chars are the same value
+        var bytes = unsafe(MemoryMarshal.AsBytes(value));
         return Hash(bytes);
     }
 
@@ -563,10 +591,10 @@ partial class CountingBloomFilterXXHash32 : ICountingBloomFilter
     public void Remove(global::System.Guid value) => RemoveHash(Hash(value));
     public bool MayContain(global::System.Guid value) => MayContainHash(Hash(value));
     public int GetEstimatedCount(global::System.Guid value) => GetEstimatedCountHash(Hash(value));
-    public void Add(string value) => AddHash(Hash(value));
-    public void Remove(string value) => RemoveHash(Hash(value));
-    public bool MayContain(string value) => MayContainHash(Hash(value));
-    public int GetEstimatedCount(string value) => GetEstimatedCountHash(Hash(value));
+    public void Add(string value) => AddHash(Hash(value.AsSpan()));
+    public void Remove(string value) => RemoveHash(Hash(value.AsSpan()));
+    public bool MayContain(string value) => MayContainHash(Hash(value.AsSpan()));
+    public int GetEstimatedCount(string value) => GetEstimatedCountHash(Hash(value.AsSpan()));
     public void Add(global::System.UInt128 value) => AddHash(Hash(value));
     public void Remove(global::System.UInt128 value) => RemoveHash(Hash(value));
     public bool MayContain(global::System.UInt128 value) => MayContainHash(Hash(value));
@@ -579,6 +607,10 @@ partial class CountingBloomFilterXXHash32 : ICountingBloomFilter
     public void Remove(System.ReadOnlySpan<byte> value) => RemoveHash(Hash(value));
     public bool MayContain(System.ReadOnlySpan<byte> value) => MayContainHash(Hash(value));
     public int GetEstimatedCount(System.ReadOnlySpan<byte> value) => GetEstimatedCountHash(Hash(value));
+    public void Add(System.ReadOnlySpan<char> value) => AddHash(Hash(value));
+    public void Remove(System.ReadOnlySpan<char> value) => RemoveHash(Hash(value));
+    public bool MayContain(System.ReadOnlySpan<char> value) => MayContainHash(Hash(value));
+    public int GetEstimatedCount(System.ReadOnlySpan<char> value) => GetEstimatedCountHash(Hash(value));
     public void AddRange(params System.ReadOnlySpan<int> values) => AddRangeCore(values);
     public void RemoveRange(params System.ReadOnlySpan<int> values) => RemoveRangeCore(values);
     public void AddRange(params System.ReadOnlySpan<uint> values) => AddRangeCore(values);
@@ -600,10 +632,10 @@ partial class CountingBloomFilterXXHash3 : ICountingBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static BloomFilterHash Hash(string value)
+    private static BloomFilterHash Hash(System.ReadOnlySpan<char> value)
     {
-        var chars = value.AsSpan();
-        var bytes = unsafe(MemoryMarshal.AsBytes(chars));
+        // Hash the UTF-16 code units as-is, so a string and the equivalent span of chars are the same value
+        var bytes = unsafe(MemoryMarshal.AsBytes(value));
         return Hash(bytes);
     }
 
@@ -627,10 +659,10 @@ partial class CountingBloomFilterXXHash3 : ICountingBloomFilter
     public void Remove(global::System.Guid value) => RemoveHash(Hash(value));
     public bool MayContain(global::System.Guid value) => MayContainHash(Hash(value));
     public int GetEstimatedCount(global::System.Guid value) => GetEstimatedCountHash(Hash(value));
-    public void Add(string value) => AddHash(Hash(value));
-    public void Remove(string value) => RemoveHash(Hash(value));
-    public bool MayContain(string value) => MayContainHash(Hash(value));
-    public int GetEstimatedCount(string value) => GetEstimatedCountHash(Hash(value));
+    public void Add(string value) => AddHash(Hash(value.AsSpan()));
+    public void Remove(string value) => RemoveHash(Hash(value.AsSpan()));
+    public bool MayContain(string value) => MayContainHash(Hash(value.AsSpan()));
+    public int GetEstimatedCount(string value) => GetEstimatedCountHash(Hash(value.AsSpan()));
     public void Add(global::System.UInt128 value) => AddHash(Hash(value));
     public void Remove(global::System.UInt128 value) => RemoveHash(Hash(value));
     public bool MayContain(global::System.UInt128 value) => MayContainHash(Hash(value));
@@ -643,6 +675,10 @@ partial class CountingBloomFilterXXHash3 : ICountingBloomFilter
     public void Remove(System.ReadOnlySpan<byte> value) => RemoveHash(Hash(value));
     public bool MayContain(System.ReadOnlySpan<byte> value) => MayContainHash(Hash(value));
     public int GetEstimatedCount(System.ReadOnlySpan<byte> value) => GetEstimatedCountHash(Hash(value));
+    public void Add(System.ReadOnlySpan<char> value) => AddHash(Hash(value));
+    public void Remove(System.ReadOnlySpan<char> value) => RemoveHash(Hash(value));
+    public bool MayContain(System.ReadOnlySpan<char> value) => MayContainHash(Hash(value));
+    public int GetEstimatedCount(System.ReadOnlySpan<char> value) => GetEstimatedCountHash(Hash(value));
 }
 
 partial class CountingBloomFilterCrc64 : ICountingBloomFilter
@@ -660,10 +696,10 @@ partial class CountingBloomFilterCrc64 : ICountingBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static BloomFilterHash Hash(string value)
+    private static BloomFilterHash Hash(System.ReadOnlySpan<char> value)
     {
-        var chars = value.AsSpan();
-        var bytes = unsafe(MemoryMarshal.AsBytes(chars));
+        // Hash the UTF-16 code units as-is, so a string and the equivalent span of chars are the same value
+        var bytes = unsafe(MemoryMarshal.AsBytes(value));
         return Hash(bytes);
     }
 
@@ -687,10 +723,10 @@ partial class CountingBloomFilterCrc64 : ICountingBloomFilter
     public void Remove(global::System.Guid value) => RemoveHash(Hash(value));
     public bool MayContain(global::System.Guid value) => MayContainHash(Hash(value));
     public int GetEstimatedCount(global::System.Guid value) => GetEstimatedCountHash(Hash(value));
-    public void Add(string value) => AddHash(Hash(value));
-    public void Remove(string value) => RemoveHash(Hash(value));
-    public bool MayContain(string value) => MayContainHash(Hash(value));
-    public int GetEstimatedCount(string value) => GetEstimatedCountHash(Hash(value));
+    public void Add(string value) => AddHash(Hash(value.AsSpan()));
+    public void Remove(string value) => RemoveHash(Hash(value.AsSpan()));
+    public bool MayContain(string value) => MayContainHash(Hash(value.AsSpan()));
+    public int GetEstimatedCount(string value) => GetEstimatedCountHash(Hash(value.AsSpan()));
     public void Add(global::System.UInt128 value) => AddHash(Hash(value));
     public void Remove(global::System.UInt128 value) => RemoveHash(Hash(value));
     public bool MayContain(global::System.UInt128 value) => MayContainHash(Hash(value));
@@ -703,6 +739,10 @@ partial class CountingBloomFilterCrc64 : ICountingBloomFilter
     public void Remove(System.ReadOnlySpan<byte> value) => RemoveHash(Hash(value));
     public bool MayContain(System.ReadOnlySpan<byte> value) => MayContainHash(Hash(value));
     public int GetEstimatedCount(System.ReadOnlySpan<byte> value) => GetEstimatedCountHash(Hash(value));
+    public void Add(System.ReadOnlySpan<char> value) => AddHash(Hash(value));
+    public void Remove(System.ReadOnlySpan<char> value) => RemoveHash(Hash(value));
+    public bool MayContain(System.ReadOnlySpan<char> value) => MayContainHash(Hash(value));
+    public int GetEstimatedCount(System.ReadOnlySpan<char> value) => GetEstimatedCountHash(Hash(value));
 }
 
 partial class CountingBloomFilterCrc32 : ICountingBloomFilter
@@ -720,10 +760,10 @@ partial class CountingBloomFilterCrc32 : ICountingBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static BloomFilterHash Hash(string value)
+    private static BloomFilterHash Hash(System.ReadOnlySpan<char> value)
     {
-        var chars = value.AsSpan();
-        var bytes = unsafe(MemoryMarshal.AsBytes(chars));
+        // Hash the UTF-16 code units as-is, so a string and the equivalent span of chars are the same value
+        var bytes = unsafe(MemoryMarshal.AsBytes(value));
         return Hash(bytes);
     }
 
@@ -747,10 +787,10 @@ partial class CountingBloomFilterCrc32 : ICountingBloomFilter
     public void Remove(global::System.Guid value) => RemoveHash(Hash(value));
     public bool MayContain(global::System.Guid value) => MayContainHash(Hash(value));
     public int GetEstimatedCount(global::System.Guid value) => GetEstimatedCountHash(Hash(value));
-    public void Add(string value) => AddHash(Hash(value));
-    public void Remove(string value) => RemoveHash(Hash(value));
-    public bool MayContain(string value) => MayContainHash(Hash(value));
-    public int GetEstimatedCount(string value) => GetEstimatedCountHash(Hash(value));
+    public void Add(string value) => AddHash(Hash(value.AsSpan()));
+    public void Remove(string value) => RemoveHash(Hash(value.AsSpan()));
+    public bool MayContain(string value) => MayContainHash(Hash(value.AsSpan()));
+    public int GetEstimatedCount(string value) => GetEstimatedCountHash(Hash(value.AsSpan()));
     public void Add(global::System.UInt128 value) => AddHash(Hash(value));
     public void Remove(global::System.UInt128 value) => RemoveHash(Hash(value));
     public bool MayContain(global::System.UInt128 value) => MayContainHash(Hash(value));
@@ -763,6 +803,10 @@ partial class CountingBloomFilterCrc32 : ICountingBloomFilter
     public void Remove(System.ReadOnlySpan<byte> value) => RemoveHash(Hash(value));
     public bool MayContain(System.ReadOnlySpan<byte> value) => MayContainHash(Hash(value));
     public int GetEstimatedCount(System.ReadOnlySpan<byte> value) => GetEstimatedCountHash(Hash(value));
+    public void Add(System.ReadOnlySpan<char> value) => AddHash(Hash(value));
+    public void Remove(System.ReadOnlySpan<char> value) => RemoveHash(Hash(value));
+    public bool MayContain(System.ReadOnlySpan<char> value) => MayContainHash(Hash(value));
+    public int GetEstimatedCount(System.ReadOnlySpan<char> value) => GetEstimatedCountHash(Hash(value));
 }
 
 partial class CountingBloomFilterAdler32 : ICountingBloomFilter
@@ -780,10 +824,10 @@ partial class CountingBloomFilterAdler32 : ICountingBloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static BloomFilterHash Hash(string value)
+    private static BloomFilterHash Hash(System.ReadOnlySpan<char> value)
     {
-        var chars = value.AsSpan();
-        var bytes = unsafe(MemoryMarshal.AsBytes(chars));
+        // Hash the UTF-16 code units as-is, so a string and the equivalent span of chars are the same value
+        var bytes = unsafe(MemoryMarshal.AsBytes(value));
         return Hash(bytes);
     }
 
@@ -807,10 +851,10 @@ partial class CountingBloomFilterAdler32 : ICountingBloomFilter
     public void Remove(global::System.Guid value) => RemoveHash(Hash(value));
     public bool MayContain(global::System.Guid value) => MayContainHash(Hash(value));
     public int GetEstimatedCount(global::System.Guid value) => GetEstimatedCountHash(Hash(value));
-    public void Add(string value) => AddHash(Hash(value));
-    public void Remove(string value) => RemoveHash(Hash(value));
-    public bool MayContain(string value) => MayContainHash(Hash(value));
-    public int GetEstimatedCount(string value) => GetEstimatedCountHash(Hash(value));
+    public void Add(string value) => AddHash(Hash(value.AsSpan()));
+    public void Remove(string value) => RemoveHash(Hash(value.AsSpan()));
+    public bool MayContain(string value) => MayContainHash(Hash(value.AsSpan()));
+    public int GetEstimatedCount(string value) => GetEstimatedCountHash(Hash(value.AsSpan()));
     public void Add(global::System.UInt128 value) => AddHash(Hash(value));
     public void Remove(global::System.UInt128 value) => RemoveHash(Hash(value));
     public bool MayContain(global::System.UInt128 value) => MayContainHash(Hash(value));
@@ -823,5 +867,9 @@ partial class CountingBloomFilterAdler32 : ICountingBloomFilter
     public void Remove(System.ReadOnlySpan<byte> value) => RemoveHash(Hash(value));
     public bool MayContain(System.ReadOnlySpan<byte> value) => MayContainHash(Hash(value));
     public int GetEstimatedCount(System.ReadOnlySpan<byte> value) => GetEstimatedCountHash(Hash(value));
+    public void Add(System.ReadOnlySpan<char> value) => AddHash(Hash(value));
+    public void Remove(System.ReadOnlySpan<char> value) => RemoveHash(Hash(value));
+    public bool MayContain(System.ReadOnlySpan<char> value) => MayContainHash(Hash(value));
+    public int GetEstimatedCount(System.ReadOnlySpan<char> value) => GetEstimatedCountHash(Hash(value));
 }
 

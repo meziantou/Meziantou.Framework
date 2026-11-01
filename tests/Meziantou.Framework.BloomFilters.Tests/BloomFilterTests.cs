@@ -116,6 +116,26 @@ public sealed class BloomFilterTests
     }
 
     [Fact]
+    public void Documentation_CharSpan()
+    {
+        #region BloomFilter_CharSpan
+        var filter = BloomFilter.CreateXXHash128(BloomFilterSize.CreateOptimalSize(expectedItemCount: 1000, falsePositiveProbability: 0.01));
+
+        // Add a part of a larger string without allocating a substring
+        var line = "user=alice;role=admin";
+        filter.Add(line.AsSpan(5, 5));
+
+        // A span of chars and a string with the same characters are the same value
+        Assert.True(filter.MayContain("alice"));
+
+        // Characters from a stack buffer
+        Span<char> buffer = stackalloc char[5];
+        "alice".CopyTo(buffer);
+        Assert.True(filter.MayContain(buffer));
+        #endregion
+    }
+
+    [Fact]
     public void Documentation_Concurrency()
     {
         #region BloomFilter_Concurrency
@@ -205,6 +225,149 @@ public sealed class BloomFilterTests
             filter.Remove(value);
             Assert.False(filter.MayContain(value));
             Assert.Equal(0, filter.GetEstimatedCount(value));
+        }
+    }
+
+    [Fact]
+    public void BloomFilter_ReadOnlySpanOfChar_IsInterchangeableWithString_ForAllAlgorithms()
+    {
+        var size = BloomFilterSize.CreateOptimalSize(1000, 0.01);
+        foreach (var method in GetBloomFilterCreateMethods())
+        {
+            foreach (var key in GetCharKeys())
+            {
+                var filterFromString = (IBloomFilter)method.Invoke(null, [size])!;
+                filterFromString.Add(key);
+                Assert.True(filterFromString.MayContain(key.AsSpan()));
+
+                var filterFromSpan = (IBloomFilter)method.Invoke(null, [size])!;
+                filterFromSpan.Add(key.AsSpan());
+                Assert.True(filterFromSpan.MayContain(key));
+                Assert.True(filterFromSpan.MayContain(key.AsSpan()));
+
+                Assert.Equal(filterFromString.GetEstimateCount(), filterFromSpan.GetEstimateCount());
+            }
+        }
+    }
+
+    [Fact]
+    public void CountingBloomFilter_ReadOnlySpanOfChar_IsInterchangeableWithString_ForAllAlgorithms()
+    {
+        var size = CountingBloomFilterSize.CreateOptimalSize(1000, 0.01);
+        foreach (var method in GetCountingBloomFilterCreateMethods())
+        {
+            foreach (var key in GetCharKeys())
+            {
+                var filter = (ICountingBloomFilter)method.Invoke(null, [size])!;
+
+                filter.Add(key);
+                filter.Add(key.AsSpan());
+                Assert.True(filter.MayContain(key));
+                Assert.True(filter.MayContain(key.AsSpan()));
+                Assert.Equal(filter.GetEstimatedCount(key), filter.GetEstimatedCount(key.AsSpan()));
+                Assert.True(filter.GetEstimatedCount(key.AsSpan()) >= 2);
+
+                // Removing with the other representation clears the counters set by the first one
+                filter.Remove(key.AsSpan());
+                Assert.True(filter.GetEstimatedCount(key) >= 1);
+                filter.Remove(key);
+                Assert.False(filter.MayContain(key.AsSpan()));
+                Assert.Equal(0, filter.GetEstimatedCount(key.AsSpan()));
+                Assert.Equal(0, filter.GetEstimatedCount(key));
+
+                filter.Add(key.AsSpan());
+                filter.Remove(key);
+                Assert.Equal(0, filter.GetEstimatedCount(key.AsSpan()));
+            }
+        }
+    }
+
+    [Fact]
+    public void BloomFilter_ReadOnlySpanOfChar_Slice_MatchesSubstring()
+    {
+        const string Text = "user=alice;role=admin";
+        var surrogatePair = new string([(char)0xD83D, (char)0xDE00]);
+        var textWithSurrogatePair = "a" + surrogatePair + "b";
+
+        foreach (var method in GetBloomFilterCreateMethods())
+        {
+            var filter = (IBloomFilter)method.Invoke(null, [BloomFilterSize.CreateOptimalSize(1000, 0.01)])!;
+            filter.Add(Text.AsSpan(5, 5));
+            Assert.True(filter.MayContain("alice"));
+            Assert.False(filter.MayContain(Text));
+
+            // A slice that splits a surrogate pair is the unpaired surrogate, not a replacement character
+            filter.Add(textWithSurrogatePair.AsSpan(0, 2));
+            Assert.True(filter.MayContain("a" + (char)0xD83D));
+            Assert.False(filter.MayContain("a" + (char)0xFFFD));
+        }
+
+        foreach (var method in GetCountingBloomFilterCreateMethods())
+        {
+            var filter = (ICountingBloomFilter)method.Invoke(null, [CountingBloomFilterSize.CreateOptimalSize(1000, 0.01)])!;
+            filter.Add(Text.AsSpan(16));
+            Assert.Equal(1, filter.GetEstimatedCount("admin"));
+            filter.Remove("admin");
+            Assert.False(filter.MayContain(Text.AsSpan(16)));
+        }
+    }
+
+    [Fact]
+    public void BloomFilter_ReadOnlySpanOfChar_IsOrdinal()
+    {
+        var composed = new string([(char)0x00E9]);
+        var decomposed = new string(['e', (char)0x0301]);
+
+        foreach (var method in GetBloomFilterCreateMethods())
+        {
+            var filter = (IBloomFilter)method.Invoke(null, [BloomFilterSize.CreateOptimalSize(1000, 0.01)])!;
+            filter.Add("Alice".AsSpan());
+            filter.Add(composed.AsSpan());
+
+            Assert.True(filter.MayContain("Alice".AsSpan()));
+            Assert.False(filter.MayContain("alice".AsSpan()));
+            Assert.True(filter.MayContain(composed.AsSpan()));
+            Assert.False(filter.MayContain(decomposed.AsSpan()));
+        }
+    }
+
+    [Fact]
+    public void BloomFilter_ReadOnlySpanOfChar_DoesNotAllocate()
+    {
+        Span<char> buffer = stackalloc char[16];
+        "key-0000".AsSpan().CopyTo(buffer);
+        var key = buffer[..8];
+
+        var filters = GetBloomFilterCreateMethods().Select(method => (IBloomFilter)method.Invoke(null, [BloomFilterSize.CreateOptimalSize(1000, 0.01)])!).ToArray();
+        var countingFilters = GetCountingBloomFilterCreateMethods().Select(method => (ICountingBloomFilter)method.Invoke(null, [CountingBloomFilterSize.CreateOptimalSize(1000, 0.01)])!).ToArray();
+
+        // Warm up so that JIT compilation is not measured
+        Exercise(filters, countingFilters, key);
+
+        var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+        for (var i = 0; i < 100; i++)
+        {
+            Exercise(filters, countingFilters, key);
+        }
+
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
+        Assert.Equal(0L, allocated);
+
+        static void Exercise(IBloomFilter[] filters, ICountingBloomFilter[] countingFilters, ReadOnlySpan<char> key)
+        {
+            foreach (var filter in filters)
+            {
+                filter.Add(key);
+                _ = filter.MayContain(key);
+            }
+
+            foreach (var filter in countingFilters)
+            {
+                filter.Add(key);
+                _ = filter.MayContain(key);
+                _ = filter.GetEstimatedCount(key);
+                filter.Remove(key);
+            }
         }
     }
 
@@ -1040,6 +1203,34 @@ public sealed class BloomFilterTests
             nameof(BloomFilter.CreateCrc64),
             nameof(BloomFilter.CreateCrc32),
             nameof(BloomFilter.CreateAdler32),
+        ];
+    }
+
+    private static IEnumerable<System.Reflection.MethodInfo> GetBloomFilterCreateMethods()
+    {
+        return typeof(BloomFilter).GetMethods().Where(m => m.Name.StartsWith("Create", StringComparison.Ordinal) && m.GetParameters().Length == 1 && m.GetParameters()[0].ParameterType == typeof(BloomFilterSize));
+    }
+
+    private static IEnumerable<System.Reflection.MethodInfo> GetCountingBloomFilterCreateMethods()
+    {
+        return typeof(CountingBloomFilter).GetMethods().Where(m => m.Name.StartsWith("Create", StringComparison.Ordinal) && m.GetParameters().Length == 1 && m.GetParameters()[0].ParameterType == typeof(CountingBloomFilterSize));
+    }
+
+    private static string[] GetCharKeys()
+    {
+        return
+        [
+            string.Empty,
+            "a",
+            "hello",
+            new string('x', 257),
+            "caf" + (char)0x00E9, // non-ASCII
+            new string([(char)0x65E5, (char)0x672C, (char)0x8A9E]), // CJK
+            new string([(char)0xD83D, (char)0xDE00]), // surrogate pair
+            "a" + (char)0xD800 + "b", // unpaired high surrogate
+            "a" + (char)0xDC00, // unpaired low surrogate
+            new string([(char)0xDE00, (char)0xD83D]), // reversed surrogate pair
+            new string([(char)0x0000, (char)0xFFFF]),
         ];
     }
 

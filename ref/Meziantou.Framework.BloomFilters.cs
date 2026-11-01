@@ -27,6 +27,7 @@ namespace Meziantou.Framework.BloomFilters
         public void Add(System.Guid value) { }
         public void Add(System.Int128 value) { }
         public void Add(System.ReadOnlySpan<byte> value) { }
+        public void Add(System.ReadOnlySpan<char> value) { }
         public void Add(System.UInt128 value) { }
         public void Add(int value) { }
         public void Add(long value) { }
@@ -36,6 +37,7 @@ namespace Meziantou.Framework.BloomFilters
         public bool MayContain(System.Guid value) => throw null;
         public bool MayContain(System.Int128 value) => throw null;
         public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
         public bool MayContain(System.UInt128 value) => throw null;
         public bool MayContain(int value) => throw null;
         public bool MayContain(long value) => throw null;
@@ -49,6 +51,7 @@ namespace Meziantou.Framework.BloomFilters
         public void Add(System.Guid value) { }
         public void Add(System.Int128 value) { }
         public void Add(System.ReadOnlySpan<byte> value) { }
+        public void Add(System.ReadOnlySpan<char> value) { }
         public void Add(System.UInt128 value) { }
         public void Add(int value) { }
         public void Add(long value) { }
@@ -58,6 +61,7 @@ namespace Meziantou.Framework.BloomFilters
         public bool MayContain(System.Guid value) => throw null;
         public bool MayContain(System.Int128 value) => throw null;
         public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
         public bool MayContain(System.UInt128 value) => throw null;
         public bool MayContain(int value) => throw null;
         public bool MayContain(long value) => throw null;
@@ -71,6 +75,7 @@ namespace Meziantou.Framework.BloomFilters
         public void Add(System.Guid value) { }
         public void Add(System.Int128 value) { }
         public void Add(System.ReadOnlySpan<byte> value) { }
+        public void Add(System.ReadOnlySpan<char> value) { }
         public void Add(System.UInt128 value) { }
         public void Add(int value) { }
         public void Add(long value) { }
@@ -80,6 +85,7 @@ namespace Meziantou.Framework.BloomFilters
         public bool MayContain(System.Guid value) => throw null;
         public bool MayContain(System.Int128 value) => throw null;
         public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
         public bool MayContain(System.UInt128 value) => throw null;
         public bool MayContain(int value) => throw null;
         public bool MayContain(long value) => throw null;
@@ -101,6 +107,7 @@ namespace Meziantou.Framework.BloomFilters
         public void Add(System.Guid value) { }
         public void Add(System.Int128 value) { }
         public void Add(System.ReadOnlySpan<byte> value) { }
+        public void Add(System.ReadOnlySpan<char> value) { }
         public void Add(System.UInt128 value) { }
         public void Add(int value) { }
         public void Add(long value) { }
@@ -112,6 +119,7 @@ namespace Meziantou.Framework.BloomFilters
         public bool MayContain(System.Guid value) => throw null;
         public bool MayContain(System.Int128 value) => throw null;
         public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
         public bool MayContain(System.UInt128 value) => throw null;
         public bool MayContain(int value) => throw null;
         public bool MayContain(long value) => throw null;
@@ -125,6 +133,7 @@ namespace Meziantou.Framework.BloomFilters
         public void Add(System.Guid value) { }
         public void Add(System.Int128 value) { }
         public void Add(System.ReadOnlySpan<byte> value) { }
+        public void Add(System.ReadOnlySpan<char> value) { }
         public void Add(System.UInt128 value) { }
         public void Add(int value) { }
         public void Add(long value) { }
@@ -134,6 +143,7 @@ namespace Meziantou.Framework.BloomFilters
         public bool MayContain(System.Guid value) => throw null;
         public bool MayContain(System.Int128 value) => throw null;
         public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
         public bool MayContain(System.UInt128 value) => throw null;
         public bool MayContain(int value) => throw null;
         public bool MayContain(long value) => throw null;
@@ -147,6 +157,7 @@ namespace Meziantou.Framework.BloomFilters
         public void Add(System.Guid value) { }
         public void Add(System.Int128 value) { }
         public void Add(System.ReadOnlySpan<byte> value) { }
+        public void Add(System.ReadOnlySpan<char> value) { }
         public void Add(System.UInt128 value) { }
         public void Add(int value) { }
         public void Add(long value) { }
@@ -158,6 +169,7 @@ namespace Meziantou.Framework.BloomFilters
         public bool MayContain(System.Guid value) => throw null;
         public bool MayContain(System.Int128 value) => throw null;
         public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
         public bool MayContain(System.UInt128 value) => throw null;
         public bool MayContain(int value) => throw null;
         public bool MayContain(long value) => throw null;
@@ -171,6 +183,7 @@ namespace Meziantou.Framework.BloomFilters
         public void Add(System.Guid value) { }
         public void Add(System.Int128 value) { }
         public void Add(System.ReadOnlySpan<byte> value) { }
+        public void Add(System.ReadOnlySpan<char> value) { }
         public void Add(System.UInt128 value) { }
         public void Add(int value) { }
         public void Add(long value) { }
@@ -182,6 +195,7 @@ namespace Meziantou.Framework.BloomFilters
         public bool MayContain(System.Guid value) => throw null;
         public bool MayContain(System.Int128 value) => throw null;
         public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
         public bool MayContain(System.UInt128 value) => throw null;
         public bool MayContain(int value) => throw null;
         public bool MayContain(long value) => throw null;
@@ -212,6 +226,7 @@ namespace Meziantou.Framework.BloomFilters
         public void Add(System.Guid value) { }
         public void Add(System.Int128 value) { }
         public void Add(System.ReadOnlySpan<byte> value) { }
+        public void Add(System.ReadOnlySpan<char> value) { }
         public void Add(System.UInt128 value) { }
         public void Add(int value) { }
         public void Add(long value) { }
@@ -221,6 +236,7 @@ namespace Meziantou.Framework.BloomFilters
         public int GetEstimatedCount(System.Guid value) => throw null;
         public int GetEstimatedCount(System.Int128 value) => throw null;
         public int GetEstimatedCount(System.ReadOnlySpan<byte> value) => throw null;
+        public int GetEstimatedCount(System.ReadOnlySpan<char> value) => throw null;
         public int GetEstimatedCount(System.UInt128 value) => throw null;
         public int GetEstimatedCount(int value) => throw null;
         public int GetEstimatedCount(long value) => throw null;
@@ -230,6 +246,7 @@ namespace Meziantou.Framework.BloomFilters
         public bool MayContain(System.Guid value) => throw null;
         public bool MayContain(System.Int128 value) => throw null;
         public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
         public bool MayContain(System.UInt128 value) => throw null;
         public bool MayContain(int value) => throw null;
         public bool MayContain(long value) => throw null;
@@ -239,6 +256,7 @@ namespace Meziantou.Framework.BloomFilters
         public void Remove(System.Guid value) { }
         public void Remove(System.Int128 value) { }
         public void Remove(System.ReadOnlySpan<byte> value) { }
+        public void Remove(System.ReadOnlySpan<char> value) { }
         public void Remove(System.UInt128 value) { }
         public void Remove(int value) { }
         public void Remove(long value) { }
@@ -252,6 +270,7 @@ namespace Meziantou.Framework.BloomFilters
         public void Add(System.Guid value) { }
         public void Add(System.Int128 value) { }
         public void Add(System.ReadOnlySpan<byte> value) { }
+        public void Add(System.ReadOnlySpan<char> value) { }
         public void Add(System.UInt128 value) { }
         public void Add(int value) { }
         public void Add(long value) { }
@@ -261,6 +280,7 @@ namespace Meziantou.Framework.BloomFilters
         public int GetEstimatedCount(System.Guid value) => throw null;
         public int GetEstimatedCount(System.Int128 value) => throw null;
         public int GetEstimatedCount(System.ReadOnlySpan<byte> value) => throw null;
+        public int GetEstimatedCount(System.ReadOnlySpan<char> value) => throw null;
         public int GetEstimatedCount(System.UInt128 value) => throw null;
         public int GetEstimatedCount(int value) => throw null;
         public int GetEstimatedCount(long value) => throw null;
@@ -270,6 +290,7 @@ namespace Meziantou.Framework.BloomFilters
         public bool MayContain(System.Guid value) => throw null;
         public bool MayContain(System.Int128 value) => throw null;
         public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
         public bool MayContain(System.UInt128 value) => throw null;
         public bool MayContain(int value) => throw null;
         public bool MayContain(long value) => throw null;
@@ -279,6 +300,7 @@ namespace Meziantou.Framework.BloomFilters
         public void Remove(System.Guid value) { }
         public void Remove(System.Int128 value) { }
         public void Remove(System.ReadOnlySpan<byte> value) { }
+        public void Remove(System.ReadOnlySpan<char> value) { }
         public void Remove(System.UInt128 value) { }
         public void Remove(int value) { }
         public void Remove(long value) { }
@@ -292,6 +314,7 @@ namespace Meziantou.Framework.BloomFilters
         public void Add(System.Guid value) { }
         public void Add(System.Int128 value) { }
         public void Add(System.ReadOnlySpan<byte> value) { }
+        public void Add(System.ReadOnlySpan<char> value) { }
         public void Add(System.UInt128 value) { }
         public void Add(int value) { }
         public void Add(long value) { }
@@ -301,6 +324,7 @@ namespace Meziantou.Framework.BloomFilters
         public int GetEstimatedCount(System.Guid value) => throw null;
         public int GetEstimatedCount(System.Int128 value) => throw null;
         public int GetEstimatedCount(System.ReadOnlySpan<byte> value) => throw null;
+        public int GetEstimatedCount(System.ReadOnlySpan<char> value) => throw null;
         public int GetEstimatedCount(System.UInt128 value) => throw null;
         public int GetEstimatedCount(int value) => throw null;
         public int GetEstimatedCount(long value) => throw null;
@@ -310,6 +334,7 @@ namespace Meziantou.Framework.BloomFilters
         public bool MayContain(System.Guid value) => throw null;
         public bool MayContain(System.Int128 value) => throw null;
         public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
         public bool MayContain(System.UInt128 value) => throw null;
         public bool MayContain(int value) => throw null;
         public bool MayContain(long value) => throw null;
@@ -319,6 +344,7 @@ namespace Meziantou.Framework.BloomFilters
         public void Remove(System.Guid value) { }
         public void Remove(System.Int128 value) { }
         public void Remove(System.ReadOnlySpan<byte> value) { }
+        public void Remove(System.ReadOnlySpan<char> value) { }
         public void Remove(System.UInt128 value) { }
         public void Remove(int value) { }
         public void Remove(long value) { }
@@ -340,6 +366,7 @@ namespace Meziantou.Framework.BloomFilters
         public void Add(System.Guid value) { }
         public void Add(System.Int128 value) { }
         public void Add(System.ReadOnlySpan<byte> value) { }
+        public void Add(System.ReadOnlySpan<char> value) { }
         public void Add(System.UInt128 value) { }
         public void Add(int value) { }
         public void Add(long value) { }
@@ -351,6 +378,7 @@ namespace Meziantou.Framework.BloomFilters
         public int GetEstimatedCount(System.Guid value) => throw null;
         public int GetEstimatedCount(System.Int128 value) => throw null;
         public int GetEstimatedCount(System.ReadOnlySpan<byte> value) => throw null;
+        public int GetEstimatedCount(System.ReadOnlySpan<char> value) => throw null;
         public int GetEstimatedCount(System.UInt128 value) => throw null;
         public int GetEstimatedCount(int value) => throw null;
         public int GetEstimatedCount(long value) => throw null;
@@ -360,6 +388,7 @@ namespace Meziantou.Framework.BloomFilters
         public bool MayContain(System.Guid value) => throw null;
         public bool MayContain(System.Int128 value) => throw null;
         public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
         public bool MayContain(System.UInt128 value) => throw null;
         public bool MayContain(int value) => throw null;
         public bool MayContain(long value) => throw null;
@@ -369,6 +398,7 @@ namespace Meziantou.Framework.BloomFilters
         public void Remove(System.Guid value) { }
         public void Remove(System.Int128 value) { }
         public void Remove(System.ReadOnlySpan<byte> value) { }
+        public void Remove(System.ReadOnlySpan<char> value) { }
         public void Remove(System.UInt128 value) { }
         public void Remove(int value) { }
         public void Remove(long value) { }
@@ -384,6 +414,7 @@ namespace Meziantou.Framework.BloomFilters
         public void Add(System.Guid value) { }
         public void Add(System.Int128 value) { }
         public void Add(System.ReadOnlySpan<byte> value) { }
+        public void Add(System.ReadOnlySpan<char> value) { }
         public void Add(System.UInt128 value) { }
         public void Add(int value) { }
         public void Add(long value) { }
@@ -393,6 +424,7 @@ namespace Meziantou.Framework.BloomFilters
         public int GetEstimatedCount(System.Guid value) => throw null;
         public int GetEstimatedCount(System.Int128 value) => throw null;
         public int GetEstimatedCount(System.ReadOnlySpan<byte> value) => throw null;
+        public int GetEstimatedCount(System.ReadOnlySpan<char> value) => throw null;
         public int GetEstimatedCount(System.UInt128 value) => throw null;
         public int GetEstimatedCount(int value) => throw null;
         public int GetEstimatedCount(long value) => throw null;
@@ -402,6 +434,7 @@ namespace Meziantou.Framework.BloomFilters
         public bool MayContain(System.Guid value) => throw null;
         public bool MayContain(System.Int128 value) => throw null;
         public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
         public bool MayContain(System.UInt128 value) => throw null;
         public bool MayContain(int value) => throw null;
         public bool MayContain(long value) => throw null;
@@ -411,6 +444,7 @@ namespace Meziantou.Framework.BloomFilters
         public void Remove(System.Guid value) { }
         public void Remove(System.Int128 value) { }
         public void Remove(System.ReadOnlySpan<byte> value) { }
+        public void Remove(System.ReadOnlySpan<char> value) { }
         public void Remove(System.UInt128 value) { }
         public void Remove(int value) { }
         public void Remove(long value) { }
@@ -424,6 +458,7 @@ namespace Meziantou.Framework.BloomFilters
         public void Add(System.Guid value) { }
         public void Add(System.Int128 value) { }
         public void Add(System.ReadOnlySpan<byte> value) { }
+        public void Add(System.ReadOnlySpan<char> value) { }
         public void Add(System.UInt128 value) { }
         public void Add(int value) { }
         public void Add(long value) { }
@@ -435,6 +470,7 @@ namespace Meziantou.Framework.BloomFilters
         public int GetEstimatedCount(System.Guid value) => throw null;
         public int GetEstimatedCount(System.Int128 value) => throw null;
         public int GetEstimatedCount(System.ReadOnlySpan<byte> value) => throw null;
+        public int GetEstimatedCount(System.ReadOnlySpan<char> value) => throw null;
         public int GetEstimatedCount(System.UInt128 value) => throw null;
         public int GetEstimatedCount(int value) => throw null;
         public int GetEstimatedCount(long value) => throw null;
@@ -444,6 +480,7 @@ namespace Meziantou.Framework.BloomFilters
         public bool MayContain(System.Guid value) => throw null;
         public bool MayContain(System.Int128 value) => throw null;
         public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
         public bool MayContain(System.UInt128 value) => throw null;
         public bool MayContain(int value) => throw null;
         public bool MayContain(long value) => throw null;
@@ -453,6 +490,7 @@ namespace Meziantou.Framework.BloomFilters
         public void Remove(System.Guid value) { }
         public void Remove(System.Int128 value) { }
         public void Remove(System.ReadOnlySpan<byte> value) { }
+        public void Remove(System.ReadOnlySpan<char> value) { }
         public void Remove(System.UInt128 value) { }
         public void Remove(int value) { }
         public void Remove(long value) { }
@@ -468,6 +506,7 @@ namespace Meziantou.Framework.BloomFilters
         public void Add(System.Guid value) { }
         public void Add(System.Int128 value) { }
         public void Add(System.ReadOnlySpan<byte> value) { }
+        public void Add(System.ReadOnlySpan<char> value) { }
         public void Add(System.UInt128 value) { }
         public void Add(int value) { }
         public void Add(long value) { }
@@ -479,6 +518,7 @@ namespace Meziantou.Framework.BloomFilters
         public int GetEstimatedCount(System.Guid value) => throw null;
         public int GetEstimatedCount(System.Int128 value) => throw null;
         public int GetEstimatedCount(System.ReadOnlySpan<byte> value) => throw null;
+        public int GetEstimatedCount(System.ReadOnlySpan<char> value) => throw null;
         public int GetEstimatedCount(System.UInt128 value) => throw null;
         public int GetEstimatedCount(int value) => throw null;
         public int GetEstimatedCount(long value) => throw null;
@@ -488,6 +528,7 @@ namespace Meziantou.Framework.BloomFilters
         public bool MayContain(System.Guid value) => throw null;
         public bool MayContain(System.Int128 value) => throw null;
         public bool MayContain(System.ReadOnlySpan<byte> value) => throw null;
+        public bool MayContain(System.ReadOnlySpan<char> value) => throw null;
         public bool MayContain(System.UInt128 value) => throw null;
         public bool MayContain(int value) => throw null;
         public bool MayContain(long value) => throw null;
@@ -497,6 +538,7 @@ namespace Meziantou.Framework.BloomFilters
         public void Remove(System.Guid value) { }
         public void Remove(System.Int128 value) { }
         public void Remove(System.ReadOnlySpan<byte> value) { }
+        public void Remove(System.ReadOnlySpan<char> value) { }
         public void Remove(System.UInt128 value) { }
         public void Remove(int value) { }
         public void Remove(long value) { }
@@ -512,6 +554,7 @@ namespace Meziantou.Framework.BloomFilters
         void Add(System.Guid value);
         void Add(System.Int128 value);
         void Add(System.ReadOnlySpan<byte> value);
+        void Add(System.ReadOnlySpan<char> value);
         void Add(System.UInt128 value);
         void Add(int value);
         void Add(long value);
@@ -522,6 +565,7 @@ namespace Meziantou.Framework.BloomFilters
         bool MayContain(System.Guid value);
         bool MayContain(System.Int128 value);
         bool MayContain(System.ReadOnlySpan<byte> value);
+        bool MayContain(System.ReadOnlySpan<char> value);
         bool MayContain(System.UInt128 value);
         bool MayContain(int value);
         bool MayContain(long value);
@@ -535,6 +579,7 @@ namespace Meziantou.Framework.BloomFilters
         void Add(System.Guid value);
         void Add(System.Int128 value);
         void Add(System.ReadOnlySpan<byte> value);
+        void Add(System.ReadOnlySpan<char> value);
         void Add(System.UInt128 value);
         void Add(int value);
         void Add(long value);
@@ -544,6 +589,7 @@ namespace Meziantou.Framework.BloomFilters
         int GetEstimatedCount(System.Guid value);
         int GetEstimatedCount(System.Int128 value);
         int GetEstimatedCount(System.ReadOnlySpan<byte> value);
+        int GetEstimatedCount(System.ReadOnlySpan<char> value);
         int GetEstimatedCount(System.UInt128 value);
         int GetEstimatedCount(int value);
         int GetEstimatedCount(long value);
@@ -553,6 +599,7 @@ namespace Meziantou.Framework.BloomFilters
         bool MayContain(System.Guid value);
         bool MayContain(System.Int128 value);
         bool MayContain(System.ReadOnlySpan<byte> value);
+        bool MayContain(System.ReadOnlySpan<char> value);
         bool MayContain(System.UInt128 value);
         bool MayContain(int value);
         bool MayContain(long value);
@@ -562,6 +609,7 @@ namespace Meziantou.Framework.BloomFilters
         void Remove(System.Guid value);
         void Remove(System.Int128 value);
         void Remove(System.ReadOnlySpan<byte> value);
+        void Remove(System.ReadOnlySpan<char> value);
         void Remove(System.UInt128 value);
         void Remove(int value);
         void Remove(long value);

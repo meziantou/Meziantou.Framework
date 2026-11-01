@@ -74,4 +74,4 @@ The 32-bit algorithms (`XXHash32`, `Crc32` and `Adler32`) cannot tell apart two 
 
 Adler32 distributes short inputs poorly: many small integers or short strings share the same checksum. With a filter configured for a 1% false positive rate, the measured rate is about 90% for sequential integers and 60% for short strings. Prefer another algorithm unless you need Adler32 specifically.
 
-Supported value types include `int`, `uint`, `long`, `ulong`, `Guid`, `string`, `Int128`, `UInt128`, and `ReadOnlySpan<byte>`.
+Supported value types include `int`, `uint`, `long`, `ulong`, `Guid`, `string`, `Int128`, `UInt128`, `ReadOnlySpan<char>` (the same value as the equivalent `string`), and `ReadOnlySpan<byte>`.

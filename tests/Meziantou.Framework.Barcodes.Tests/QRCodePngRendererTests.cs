@@ -407,6 +407,44 @@ public class QRCodePngRendererTests
         Assert.Throws<ArgumentOutOfRangeException>(() => qr.ToPng(new QRCodePngOptions { ModuleSize = 1, QuietZoneModules = int.MaxValue }));
     }
 
+    [Theory]
+    [InlineData(1, 1)]
+    [InlineData(7, 1)]
+    [InlineData(8, 1)]
+    [InlineData(9, 2)]
+    [InlineData(16, 2)]
+    [InlineData(17, 3)]
+    [InlineData(int.MaxValue - 8, 268_435_455)]
+    [InlineData(int.MaxValue - 7, 268_435_455)]
+    [InlineData(int.MaxValue - 6, 268_435_456)]
+    [InlineData(int.MaxValue, 268_435_456)]
+    public void PngWriter_GetBytesPerRow_RoundsUpWithoutOverflowing(int width, int expected)
+    {
+        Assert.Equal(expected, Internal.PngWriter.GetBytesPerRow(width));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(int.MinValue)]
+    public void PngWriter_GetBytesPerRow_NonPositiveWidth_ThrowsArgumentOutOfRangeException(int width)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(nameof(width), () => Internal.PngWriter.GetBytesPerRow(width));
+    }
+
+    [Theory]
+    [InlineData(0, 1)]
+    [InlineData(1, 0)]
+    [InlineData(-1, 1)]
+    [InlineData(1, -1)]
+    public void PngWriter_WritePalette_EmptyImage_ThrowsArgumentOutOfRangeExceptionBeforeWriting(int width, int height)
+    {
+        using var stream = new MemoryStream();
+
+        Assert.Throws<ArgumentOutOfRangeException>(() => Internal.PngWriter.WritePalette(stream, width, height, Color.White, Color.Black, (row, rowIndex) => { }));
+        Assert.Equal(0, stream.Length);
+    }
+
     [Fact]
     public void WriteToPng_NullStream_ThrowsArgumentNullException()
     {

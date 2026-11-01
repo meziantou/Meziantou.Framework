@@ -36,7 +36,10 @@ internal static class PngWriter
     /// </remarks>
     public static void WritePalette(Stream stream, int width, int height, Color lightColor, Color darkColor, PngRowRenderer renderRow)
     {
-        var compressedImageData = CompressRows(width, height, renderRow);
+        var bytesPerRow = GetBytesPerRow(width);
+        ArgumentOutOfRangeException.ThrowIfLessThan(height, 1);
+
+        var compressedImageData = CompressRows(bytesPerRow, height, renderRow);
 
         stream.Write(Signature);
 
@@ -63,9 +66,22 @@ internal static class PngWriter
         WriteChunk(stream, IendChunkType, ReadOnlySpan<byte>.Empty);
     }
 
-    private static byte[] CompressRows(int width, int height, PngRowRenderer renderRow)
+    /// <summary>
+    /// Gets the number of bytes of a packed scanline at one bit per pixel, without its filter byte.
+    /// </summary>
+    /// <param name="width">The image width in pixels.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="width"/> is not positive.</exception>
+    internal static int GetBytesPerRow(int width)
     {
-        var bytesPerRow = (width + 7) / 8;
+        ArgumentOutOfRangeException.ThrowIfLessThan(width, 1);
+
+        // (width + 7) / 8 overflows for the widest images, so round up without the addition. The
+        // result is at most 2^28, so the scanline and its filter byte always fit in an array.
+        return (width >> 3) + ((width & 7) is 0 ? 0 : 1);
+    }
+
+    private static byte[] CompressRows(int bytesPerRow, int height, PngRowRenderer renderRow)
+    {
         var current = new byte[bytesPerRow];
         var previous = new byte[bytesPerRow];
         var filtered = new byte[bytesPerRow + 1];

@@ -24,6 +24,22 @@ public class CultureInfoUtilitiesTests
         Assert.False(fr.NeutralEquals(en));
     }
 
+    [Theory]
+    [InlineData("-5")]
+    [InlineData("0")]
+    [InlineData("2147483647")]
+    [InlineData("not a culture")]
+    public void GetCulture_Unknown_ReturnsNull(string name)
+    {
+        Assert.Null(CultureInfoUtilities.GetCulture(name));
+    }
+
+    [Fact, RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
+    public void GetCulture_Lcid()
+    {
+        Assert.Equal("fr-FR", CultureInfoUtilities.GetCulture("1036")?.Name);
+    }
+
     [Fact]
     public void UseCulture()
     {

@@ -94,4 +94,120 @@ public sealed class CSharpStringLiteralTests
         var result = CSharpStringLiteral.Create("line1\nline2", CSharpStringFormats.LeftAlignedRaw, "    ", 0, "\n");
         Assert.Equal("\"\"\"\nline1\nline2\n\"\"\"", result);
     }
+
+    [Fact]
+    public void CreateRawString_DefaultComparer_NormalizesLineEndingsAndWhitespaceOnlyLines()
+    {
+        var result = CSharpStringLiteral.Create("line1\r\n  \nline2", CSharpStringFormats.Default, "    ", 0, "\n", SnapshotComparer.Default);
+        Assert.Equal("\"\"\"\n    line1\n\n    line2\n    \"\"\"", result);
+    }
+
+    [Theory]
+    [InlineData(CSharpStringFormats.Raw)]
+    [InlineData(CSharpStringFormats.LeftAlignedRaw)]
+    [InlineData(CSharpStringFormats.Verbatim)]
+    [InlineData(CSharpStringFormats.Raw | CSharpStringFormats.Verbatim)]
+    public void Create_UnpairedSurrogates_WithoutQuoted_Throws(CSharpStringFormats formats)
+    {
+        // Attribute arguments are stored as UTF-8, which cannot represent an unpaired surrogate
+        foreach (var value in new[] { "a\uD800b", "a\uDC00b", "a\uD800", "\uDC00a", "line1\nline2\uD800" })
+        {
+            var ex = Assert.Throws<InlineSnapshotException>(() => CSharpStringLiteral.Create(value, formats, "    ", 0, "\n"));
+            Assert.Contains("unpaired UTF-16 surrogate", ex.Message, StringComparison.Ordinal);
+            Assert.Contains(nameof(CSharpStringFormats.Quoted), ex.Message, StringComparison.Ordinal);
+        }
+    }
+
+    [Theory]
+    [InlineData(CSharpStringFormats.Raw)]
+    [InlineData(CSharpStringFormats.LeftAlignedRaw)]
+    [InlineData(CSharpStringFormats.Verbatim)]
+    public void Create_PairedSurrogates_WithoutQuoted_RoundTrips(CSharpStringFormats formats)
+    {
+        AssertRoundTrip("a\uD83D\uDE00b", formats, "\n", SnapshotComparer.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("line1\r\nline2")]
+    [InlineData("line1\rline2")]
+    [InlineData("line1\nline2")]
+    [InlineData("line1\n\tline2")]
+    [InlineData("\tline1\nline2\t")]
+    [InlineData("line1\n    \nline2")]
+    [InlineData("line1\n\t\nline2")]
+    [InlineData("line1\nline2\n")]
+    [InlineData("line1\nline2\r\n")]
+    [InlineData("line1\nline2\n\n")]
+    [InlineData("line1\nline2\n  ")]
+    [InlineData("line1\r\nline2\nline3\rline4")]
+    [InlineData("line1\fline2")]
+    [InlineData("line1\u2028line2")]
+    public void Create_OrdinalComparer_RoundTrips(string value)
+    {
+        foreach (var eol in new[] { "\n", "\r\n" })
+        {
+            AssertRoundTrip(value, CSharpStringFormats.Default, eol, SnapshotComparer.Ordinal);
+            AssertRoundTrip(value, CSharpStringFormats.Quoted | CSharpStringFormats.Raw, eol, SnapshotComparer.Ordinal);
+            AssertRoundTrip(value, CSharpStringFormats.Quoted | CSharpStringFormats.LeftAlignedRaw, eol, SnapshotComparer.Ordinal);
+            AssertRoundTrip(value, CSharpStringFormats.Quoted | CSharpStringFormats.Verbatim, eol, SnapshotComparer.Ordinal);
+            AssertRoundTrip(value, CSharpStringFormats.Default, eol, SnapshotComparer.Default);
+        }
+    }
+
+    [Theory]
+    [InlineData("line1\nline2", "\n")]
+    [InlineData("line1\r\nline2", "\r\n")]
+    [InlineData("line1\n\tline2\n", "\n")]
+    public void Create_OrdinalComparer_KeepsRawStringWhenLossless(string value, string eol)
+    {
+        var result = CSharpStringLiteral.Create(value, CSharpStringFormats.Default, "    ", 0, eol, SnapshotComparer.Ordinal);
+        Assert.StartsWith("\"\"\"", result, StringComparison.Ordinal);
+        AssertRoundTrip(value, CSharpStringFormats.Default, eol, SnapshotComparer.Ordinal);
+    }
+
+    [Theory]
+    [InlineData("line1\r\nline2", "\n", "\"line1\\r\\nline2\"")]
+    [InlineData("line1\nline2", "\r\n", "\"line1\\nline2\"")]
+    [InlineData("line1\rline2", "\n", "\"line1\\rline2\"")]
+    [InlineData("line1\nline2\n  ", "\n", "@\"line1\nline2\n  \"")]
+    [InlineData("line1\n    \nline2", "\n", "@\"line1\n    \nline2\"")]
+    public void Create_OrdinalComparer_FallsBackWhenRawStringIsLossy(string value, string eol, string expected)
+    {
+        var result = CSharpStringLiteral.Create(value, CSharpStringFormats.Default, "    ", 0, eol, SnapshotComparer.Ordinal);
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData(CSharpStringFormats.Raw)]
+    [InlineData(CSharpStringFormats.LeftAlignedRaw)]
+    [InlineData(CSharpStringFormats.Verbatim)]
+    [InlineData(CSharpStringFormats.Raw | CSharpStringFormats.Verbatim)]
+    public void Create_OrdinalComparer_WithoutQuoted_ThrowsWhenNoFormatIsExact(CSharpStringFormats formats)
+    {
+        var ex = Assert.Throws<InlineSnapshotException>(() => CSharpStringLiteral.Create("line1\r\nline2", formats, "    ", 0, "\n", SnapshotComparer.Ordinal));
+        Assert.Contains(nameof(CSharpStringFormats.Quoted), ex.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Create_OrdinalComparer_WithoutQuoted_UsesVerbatimForWhitespaceOnlyLines()
+    {
+        var result = CSharpStringLiteral.Create("line1\n    \nline2", CSharpStringFormats.Raw | CSharpStringFormats.Verbatim, "    ", 0, "\n", SnapshotComparer.Ordinal);
+        Assert.Equal("@\"line1\n    \nline2\"", result);
+    }
+
+    private static void AssertRoundTrip(string value, CSharpStringFormats formats, string eol, SnapshotComparer comparer)
+    {
+        var literal = CSharpStringLiteral.Create(value, formats, "    ", 4, eol, comparer);
+
+        // Save the generated code like the source file would be, convert its line endings like git or an editor may do,
+        // then compile it again
+        var source = "class Sample" + eol + "{" + eol + "    void M()" + eol + "    {" + eol + "        _ = " + literal + ";" + eol + "    }" + eol + "}" + eol;
+        var savedSource = Encoding.UTF8.GetString(Encoding.UTF8.GetBytes(source)).ReplaceLineEndings(eol);
+        var tree = CSharpSyntaxTree.ParseText(savedSource);
+        Assert.Empty(tree.GetDiagnostics());
+
+        var expression = Assert.IsType<LiteralExpressionSyntax>(tree.GetRoot().DescendantNodes().Single(node => node is LiteralExpressionSyntax));
+        var compiledValue = expression.Token.ValueText;
+        Assert.True(comparer.AreEqual(comparer.NormalizeValue(value), comparer.NormalizeValue(compiledValue)), $"The literal does not round-trip: {literal}");
+    }
 }

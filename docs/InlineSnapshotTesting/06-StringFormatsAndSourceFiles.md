@@ -55,6 +55,25 @@ the indentation of the calling code:
 ```
 <!-- endref -->
 
+### Values a format cannot write
+
+Only a quoted string can escape characters. The library writes the value with the first allowed format that keeps it:
+
+- **Invisible characters** (control and format characters, such as an ANSI escape sequence or a zero-width space) and
+  the Unicode newline characters (`\u0085`, `\u2028`, `\u2029`) are written as escape sequences in a quoted string
+  when [Quoted](cref:Meziantou.Framework.InlineSnapshotTesting.CSharpStringFormats.Quoted) is allowed.
+- **Unpaired UTF-16 surrogates** cannot be stored by any file encoding. Without
+  [Quoted](cref:Meziantou.Framework.InlineSnapshotTesting.CSharpStringFormats.Quoted), the update fails with an [InlineSnapshotException](cref:Meziantou.Framework.InlineSnapshotTesting.InlineSnapshotException) and the source file is not changed.
+- **A raw string is not exact.** Its lines end with the line ending of the source file, and the library leaves the lines
+  that contain only whitespace empty. The library uses a raw string only when the
+  [SnapshotComparer](03-Settings.md#comparing-snapshots) considers its compiled value equal to the actual value. With
+  [SnapshotComparer.Default](cref:Meziantou.Framework.InlineSnapshotTesting.SnapshotComparer.Default), which ignores these differences, a multi-line value is always a raw string. With
+  [SnapshotComparer.Ordinal](cref:Meziantou.Framework.InlineSnapshotTesting.SnapshotComparer.Ordinal), a value with whitespace-only lines is written as a verbatim string, and a
+  value whose line endings differ from the ones of the file (`\r\n` in a file that uses `\n`, or a lone `\r`) as a
+  quoted string with escape sequences: git and editors may convert the line endings of the file, so a verbatim string
+  cannot keep them. When none of the allowed formats can keep the value, the update fails and asks you to allow
+  [Quoted](cref:Meziantou.Framework.InlineSnapshotTesting.CSharpStringFormats.Quoted).
+
 ## Indentation, line endings and encoding
 
 By default, the indentation, the line endings and the encoding are detected from the source file, so an edit looks like

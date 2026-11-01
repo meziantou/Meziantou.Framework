@@ -224,8 +224,10 @@ public readonly partial struct Color : IEquatable<Color>
         }
 
         var content = value.Slice(functionName.Length, value.Length - functionName.Length - 1);
-        components = content.ToString().Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries);
-        return components.Length > 0;
+        components = content.ToString().Split(',', StringSplitOptions.TrimEntries);
+
+        // Empty components (e.g. "rgb(1,,2,3)" or a trailing comma) make the function malformed.
+        return !components.Contains(string.Empty, StringComparer.Ordinal);
     }
 
     private static bool TryParseHexNibble(char value, out int result)

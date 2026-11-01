@@ -324,4 +324,22 @@ public class QRCodeConsoleRendererTests
 
         Assert.Throws<ArgumentOutOfRangeException>(() => qr.ToConsoleString(new QRCodeConsoleOptions { QuietZoneModules = quietZoneModules }));
     }
+
+    [Theory]
+    [InlineData(1, 100_000_000, 0)]
+    [InlineData(1, 1, 1_073_741_824)]
+    [InlineData(1, 1, int.MaxValue)]
+    [InlineData(int.MaxValue, 1, 0)]
+    [InlineData(int.MaxValue, int.MaxValue, int.MaxValue)]
+    [InlineData(100_000, 100_000, 0)]
+    public void ToConsoleString_OverflowingDimensions_Throws(int moduleWidth, int moduleHeight, int quietZoneModules)
+    {
+        // These used to wrap around and silently return an empty or truncated string.
+        var qr = QRCode.Create("A", ErrorCorrectionLevel.L);
+        var options = new QRCodeConsoleOptions { ModuleWidth = moduleWidth, ModuleHeight = moduleHeight, QuietZoneModules = quietZoneModules };
+
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => qr.ToConsoleString(options));
+        Assert.Equal("options", exception.ParamName);
+        Assert.Throws<ArgumentOutOfRangeException>(() => qr.WriteTo(TextWriter.Null, options));
+    }
 }

@@ -123,7 +123,8 @@ Assert.Equal("rgba(0,0,0,0.502)", Color.FromArgb(128, 0, 0, 0).ToCssString());
 
 [Parse](cref:Meziantou.Framework.Barcodes.Color.Parse) accepts `#RGB`, `#ARGB`, `#RRGGBB`, `#AARRGGBB`, `rgb(r,g,b)` and `rgba(r,g,b,a)`, and throws an
 `ArgumentException` for another form; [TryParse](cref:Meziantou.Framework.Barcodes.Color.TryParse) returns `false` instead. Unlike CSS, the alpha of a hexadecimal color
-comes first. [ToCssString](cref:Meziantou.Framework.Barcodes.Color.ToCssString) gives the form an SVG document uses.
+comes first. The components of `rgb()` and `rgba()` can have spaces around them, but none can be empty: `rgb(1,,2,3)` and `rgb(1,2,3,)` are rejected.
+[ToCssString](cref:Meziantou.Framework.Barcodes.Color.ToCssString) gives the form an SVG document uses.
 
 <!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/QRCodePngRendererTests.cs;region=QRCode_Colors;format=md-fenced-code-block;dedent=true -->
 ```csharp

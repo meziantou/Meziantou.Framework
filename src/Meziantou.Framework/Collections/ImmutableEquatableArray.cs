@@ -64,7 +64,7 @@ public sealed class ImmutableEquatableArray<T> : IEquatable<ImmutableEquatableAr
         }
 
         public bool MoveNext() => ++_index < _values.Length;
-        public readonly ref T Current => ref _values[_index];
+        public readonly ref readonly T Current => ref _values[_index];
     }
 
     IEnumerator<T> IEnumerable<T>.GetEnumerator() => ((IEnumerable<T>)_values).GetEnumerator();

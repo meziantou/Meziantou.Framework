@@ -253,73 +253,7 @@ See [docs/rendering.md](docs/rendering.md) for what is painted, and [Printing](d
 
 ## Limitations
 
-- **Layout.** The layout engine is internal ([docs/layout.md](docs/layout.md)): it runs on demand, when a web API reads
-  the geometry, and it is exposed only through the web APIs: CSSOM View (`getBoundingClientRect()`, `getClientRects()`, the
-  `offset*`, `scroll*` and `client*` members, `elementFromPoint()` and the hit testing, `caretPositionFromPoint()`,
-  `getBoxQuads()`, the `MouseEvent` coordinates, the scrolling and its events), the used values of `getComputedStyle()`
-  (see [docs/computed-style.md](docs/computed-style.md#layout-dependent-values)), the SVG geometry, `ResizeObserver`,
-  `IntersectionObserver` and the lazy loading, the layout shifts, the size and scroll-state container queries, the viewport
-  units and `window.visualViewport`, `Selection.modify()` and the caret movement keys. It implements the block and inline
-  layouts (line breaking, bidirectional text, the CSS Text features), the floats and `shape-outside`, the replaced elements
-  and the form controls, the intrinsic sizes, the containment and `content-visibility`, the positioned layout and the anchor
-  positioning, the overflow (and `text-overflow`, `line-clamp`), the scrolling, the scroll snapping and the scroll anchoring,
-  the scroll markers and the scroll buttons (`::scroll-marker-group`, `::scroll-marker`, `::scroll-button()`, `scroll-target-group`),
-  the flex (and `-webkit-box`), grid (with the subgrids), grid lanes (masonry) and table layouts, the ruby layout, the box
-  alignment, the gap decorations (the column and row rules of the grid, flex and multi-column containers), the writing modes, the multi-column layout and the block fragmentation in its columns (with the floats pushed to the next column and the repeated table headers and footers), the paged media (the pagination of the printed documents: `@page`, the page breaks, the named pages, the page-margin boxes), the MathML Core layout
-  and the SVG layout. The wheel, a panning touch, the keys and the scrollbars scroll (`BrowsingContext.Input`). Not implemented: the selection with the
-  pointer, the layout of the pages whose inline size differs from the first page, the repetition of a hyphen at the start of the next line, the spelling changes at a hyphenation break of the languages other than Dutch, Hungarian and Pinyin and the hyphenation
-  dictionaries under copyleft licenses (cs, hu, hy, lv), the
-  scrolling of a `::scroll-marker-group` that is a scroll container, pinch zoom, and, in the shaping of the complex scripts (the shaper of Meziantou.Framework.Fonts), the Myanmar Zawgyi encoding and
-  the Arabic fallback shaping of the Windows-1256 fonts.
-- **No rasterizer in the core library.** The documents are painted into a backend-agnostic display list (the painting
-  order of CSS, the stacking contexts, the clips, the transforms and effects, the backgrounds, the borders, the outlines, the
-  texts with the glyphs of the managed text shaping, the images including the SVG images, the SVG content): the pixels are produced by a rendering
-  backend plugged with `BrowsingContextOptions.RenderingBackend`: `ImagingRenderingBackend` of the
-  `Meziantou.Framework.WebPlatform.Imaging` package (the managed drawing API of Meziantou.Framework.Imaging), which also takes the screenshots (see
-  [docs/rendering.md](docs/rendering.md)) and draws the 2D canvases (`CanvasRenderingContext2D`, `OffscreenCanvas`, also
-  in the workers) and the `paint()` images of the paint worklets (`CSS.paintWorklet`, see
-  [docs/rendering.md](docs/rendering.md#paint-worklet-images)). Without a backend, nothing is rasterized and `canvas.getContext('2d')` returns null. Not painted yet:
-  the color glyphs other than the layers of `COLR` version 0 with the palettes of `font-palette` (the paint graphs of
-  `COLR` version 1, the bitmap and SVG glyphs), the wrapping of the SVG texts in the shapes of `shape-inside`. The canvas layers (`beginLayer()`)
-  are not implemented. The Imaging backend supports `float16` canvas storage, pixel transfers, solid paints and image drawing; gradients and intermediate effects still use normalized 16-bit colors.
-  As in Blink, the painted boxes and the baselines are snapped to the device pixels and the metrics of the fonts are
-  rounded to whole pixels (the layout keeps its fractional geometry).
-- **Injected user input.** There is no window: the host injects the pointer and wheel input of the user with
-  `BrowsingContext.Input` (mouse, pen and touch pointers, wheel; see [docs/browsing-context.md](docs/browsing-context.md#user-input)),
-  which fires the trusted pointer, mouse, touch and click events and runs the default actions (focus, activation, light
-  dismiss, drag and drop, scrolling, the picker of the `select` elements: the customizable select, `appearance: base-select`,
-  is rendered) and the classic scrollbars (a press on the track, a drag
-  of the thumb), and the keys of the keyboard (`BrowsingContext.Input.Keyboard`: the trusted keyboard events, the typing of the
-  text, the focus navigation and the shortcuts). There is no pinch zoom. The
-  [Playwright server](../Meziantou.Framework.WebPlatform.Playwright/readme.md) automates the pages with the Playwright clients.
-- **Opt-in network and scripting.** Without a `DocumentLoader`, nothing is fetched; without a script engine, the scripts
-  are never fetched nor run, and the event handler attributes have no effect. A document parsed with
-  `HtmlDocumentParser` has no browsing context: no window, no computed style, no event loop (the mutation observer
-  callbacks are not invoked).
-- **Images are decoded by the rendering backend**, not by the core library: without a backend, only the natural dimensions
-  of the images are read from their header (`decode()` resolves once the image is available, `createImageBitmap()` rejects
-  the images and the blobs). The Imaging backend decodes PNG (including the animated PNG), JPEG (including CMYK), GIF,
-  WebP, AVIF, JPEG XL, BMP and ICO images, with their EXIF orientation (the orientation of the codestream of a JPEG XL
-  image), their EXIF resolution (the density-corrected size) and their color profile or CICP color description.
-- **Media (audio, video) are not decoded by the library**: the processing model of the media elements (resource selection,
-  events, `play()`, seeking...) runs on top of a media backend provided by the application
-  (`BrowsingContextOptions.MediaBackend`, see [docs/browsing-context.md](docs/browsing-context.md#media-elements)); without
-  it, the media elements have no media resource. The Media Source Extensions are implemented on top of the segment
-  parsers of the backend (the coded frames are not decoded); Encrypted Media and the controls of the media elements are
-  not implemented.
-- **No downloads**, and the third-party cookies are not blocked.
-- **Content Security Policy** covers the fetch directives, the inline checks (scripts, styles, event handlers, `style`
-  attributes, `javascript:` URLs), `'unsafe-eval'`/`'wasm-unsafe-eval'` (`eval()` and the `Function` constructors), the
-  navigation and document directives (`frame-src`, `form-action`, `frame-ancestors`, `base-uri`, `object-src`,
-  `worker-src`), `upgrade-insecure-requests`, the inheritance of the policies and the Trusted Types directives,
-  with their violation reports (`securitypolicyviolation`, `report-uri`, and `report-to` with the Reporting API), and CSP
-  Embedded Enforcement (the `csp` attribute of the `iframe` element, `Sec-Required-CSP` and `Allow-CSP-From`). The
-  Reporting API only generates the CSP, COEP and test reports (no deprecation, intervention, COOP or Document Policy
-  reports).
-- Streams cannot be transferred.
-- **Experimental APIs.** The public APIs of the tentative features (proposals that no specification defines yet, e.g.
-  `Element.StreamAppendHtml()`, `Element.MatchContainer()`) have the `[Experimental]` attribute:
-  suppress their diagnostic (`WEBPLATEXP0002`...) to use them, see [docs/experimental-apis.md](docs/experimental-apis.md).
+The limitations of the library are listed in the [documentation](https://meziantou.github.io/Meziantou.Framework/webplatform/limitations.html).
 
 ## Specifications
 

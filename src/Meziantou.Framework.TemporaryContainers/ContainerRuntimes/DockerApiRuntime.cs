@@ -325,37 +325,35 @@ internal sealed class DockerApiRuntime : ContainerRuntime
         if (options.StandardOutput is null && options.StandardError is null)
             return await ReadMultiplexedTextAsync(stream, cancellationToken).ConfigureAwait(false);
 
-        var standardOutputDecoder = Encoding.UTF8.GetDecoder();
-        var standardErrorDecoder = Encoding.UTF8.GetDecoder();
+        // At least one stream has a target: the other one is decoded as text.
+        using var frames = new DockerMultiplexedStreamReader(stream);
+        using var standardOutputText = new DockerStreamTextBuffer();
+        using var standardErrorText = new DockerStreamTextBuffer();
         var standardOutput = new StringBuilder();
         var standardError = new StringBuilder();
-        var header = new byte[8];
-        while (await FillBufferAsync(stream, header, cancellationToken).ConfigureAwait(false))
+        while (await frames.ReadFrameAsync(cancellationToken).ConfigureAwait(false))
         {
-            var isStandardError = header[0] is 2;
-            var payloadLength = BinaryPrimitives.ReadInt32BigEndian(header.AsSpan(4));
-            if (payloadLength <= 0)
-                continue;
-
-            var rented = ArrayPool<byte>.Shared.Rent(payloadLength);
-            try
+            var isStandardError = frames.CurrentStream is LogStream.Stderr;
+            if ((isStandardError ? options.StandardError : options.StandardOutput) is { } target)
             {
-                var payload = rented.AsMemory(0, payloadLength);
-                await ReadExactlyAsync(stream, payload, cancellationToken).ConfigureAwait(false);
-                if ((isStandardError ? options.StandardError : options.StandardOutput) is { } target)
-                    await target.WriteAsync(payload, cancellationToken).ConfigureAwait(false);
-                else
-                    (isStandardError ? standardError : standardOutput).Append(Decode(isStandardError ? standardErrorDecoder : standardOutputDecoder, payload.Span, flush: false));
+                await target.WriteAsync(frames.CurrentPayloadMemory, cancellationToken).ConfigureAwait(false);
             }
-            finally
+            else
             {
-                ArrayPool<byte>.Shared.Return(rented);
+                AppendText(isStandardError ? standardErrorText : standardOutputText, isStandardError ? standardError : standardOutput, frames.CurrentPayload, flush: false);
             }
         }
 
-        standardOutput.Append(Decode(standardOutputDecoder, [], flush: true));
-        standardError.Append(Decode(standardErrorDecoder, [], flush: true));
+        AppendText(standardOutputText, standardOutput, [], flush: true);
+        AppendText(standardErrorText, standardError, [], flush: true);
         return (standardOutput.ToString(), standardError.ToString());
+
+        static void AppendText(DockerStreamTextBuffer buffer, StringBuilder builder, ReadOnlySpan<byte> bytes, bool flush)
+        {
+            buffer.Append(bytes, flush);
+            builder.Append(buffer.Pending);
+            buffer.Clear();
+        }
     }
 
     /// <summary>Reads the exit code of an exec. The output stream ends when the process closes it, which is not necessarily when the process exits, and the daemon records the exit asynchronously, so the exec is polled until the daemon reports it as done.</summary>

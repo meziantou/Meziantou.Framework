@@ -63,7 +63,11 @@ public sealed class Barcode
     /// <summary>
     /// Creates a Code 128 barcode from the specified data.
     /// </summary>
-    /// <param name="data">The data to encode.</param>
+    /// <param name="data">The data to encode: ASCII characters (U+0000 to U+007F), control characters included.</param>
+    /// <remarks>
+    /// The encoder chooses the code sets: C for runs of digits, A for control characters, B for lowercase letters, with a
+    /// SHIFT when the other code set is needed for a single character.
+    /// </remarks>
     /// <returns>A new <see cref="Barcode"/> instance.</returns>
     public static Barcode CreateCode128(string data)
     {

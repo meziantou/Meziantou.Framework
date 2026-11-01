@@ -325,7 +325,7 @@ public sealed class DecodeInteropTests
             // Without $ / + %: a reader may take "/F" for the Full ASCII "&" of Code 39 Extended
             BarcodeType.Code39 => Barcode.CreateCode39(From("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ-. ", 1, 20), includeChecksum: random.Next(2) == 0),
             BarcodeType.Code93 => Barcode.CreateCode93(From("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-. $/+%", 1, 20)),
-            BarcodeType.Code128 => Barcode.CreateCode128(From("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz !#$%&()*+,-./:;<=>?@[]^_{|}~", 1, 30)),
+            BarcodeType.Code128 => Barcode.CreateCode128(From("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz !#$%&()*+,-./:;<=>?@[]^_{|}~\t\n\r\u001b\u001d\u007f", 1, 30)),
             BarcodeType.Ean8 => Barcode.CreateEan8(Digits(7), AddOn()),
             BarcodeType.Ean13 => Barcode.CreateEan13(Digits(12), AddOn()),
             BarcodeType.UpcA => Barcode.CreateUpcA(Digits(11), AddOn()),

@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Diagnostics.CodeAnalysis;
 using System.Xml.Linq;
 using Meziantou.Framework.SnapshotTesting;
 
@@ -264,5 +265,82 @@ public class BarCode128Tests
     public void CreateCode128_ChecksumMatchesIndependentCalculation(string data)
     {
         Code128Symbols.AssertValidChecksum(Code128Symbols.Decode(Barcode.CreateCode128(data)));
+    }
+
+    [Fact]
+    public void CreateCode128_ControlCharacters()
+    {
+        #region Barcode_Code128ControlCharacters
+        // A Tab between the fields and an Enter at the end, for a scanner that types the data into a form
+        var barcode = Barcode.CreateCode128("SKU-123456\tQTY-5\r");
+        Assert.Equal("SKU-123456\tQTY-5\r", barcode.Text);
+        #endregion
+    }
+
+    [Fact]
+    public void CreateCode128_FullAsciiRange_RoundTrips()
+    {
+        var data = string.Concat(Enumerable.Range(0, 128).Select(value => (char)value));
+        var barcode = Barcode.CreateCode128(data);
+
+        var codewords = Code128Symbols.Decode(barcode);
+        Code128Symbols.AssertValidChecksum(codewords);
+        Assert.Equal(data, Code128Symbols.Interpret(codewords));
+        Assert.Equal(data, barcode.Text);
+    }
+
+    [Theory]
+    [InlineData("A\nB", new[] { 103, 33, 74, 34 })] // control character before any lowercase letter: start A
+    [InlineData("\u0000", new[] { 103, 64 })]
+    [InlineData("abc\tdef", new[] { 104, 65, 66, 67, 98, 73, 68, 69, 70 })] // a lone control character between lowercase letters: SHIFT
+    [InlineData("ab\t\ncd", new[] { 104, 65, 66, 101, 73, 74, 100, 67, 68 })] // two control characters: switch to A and back
+    [InlineData("\tA\na\rB", new[] { 103, 73, 33, 74, 98, 65, 77, 34 })] // a lone lowercase letter between control characters: SHIFT
+    [InlineData("\t123456", new[] { 103, 73, 99, 12, 34, 56 })]
+    [InlineData("\t12345a", new[] { 103, 73, 17, 99, 23, 45, 100, 65 })]
+    [InlineData("1234\t", new[] { 105, 12, 34, 101, 73 })]
+    [InlineData("1234a\t", new[] { 105, 12, 34, 100, 65, 101, 73 })]
+    [InlineData("a\t1234\tb", new[] { 104, 65, 101, 73, 99, 12, 34, 101, 73, 100, 66 })]
+    public void CreateCode128_ControlCharacters_UseCodeSetA(string data, int[] expected)
+    {
+        var codewords = Code128Symbols.Decode(Barcode.CreateCode128(data));
+
+        Assert.Equal(expected, codewords[..^2]);
+        Code128Symbols.AssertValidChecksum(codewords);
+        Assert.Equal(data, Code128Symbols.Interpret(codewords));
+    }
+
+    [Theory]
+    [InlineData("Caf\u00e9")]
+    [InlineData("\u0080")]
+    public void CreateCode128_NonAsciiCharacter_ThrowsArgumentException(string data)
+    {
+        Assert.Throws<ArgumentException>(nameof(data), () => Barcode.CreateCode128(data));
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void CreateCode128_RandomAscii_RoundTrips()
+    {
+        var random = new Random(4204);
+        for (var i = 0; i < 2000; i++)
+        {
+            // Runs from a few classes, so that the encoder switches between the code sets
+            string[] classes = ["0123456789", "\u0000\u0001\t\n\r\u001b\u001f", "ABCXYZ !@_^", "abcxyz`{|}~\u007f"];
+            var data = new StringBuilder();
+            var length = random.Next(1, 40);
+            while (data.Length < length)
+            {
+                var characters = classes[random.Next(classes.Length)];
+                var runLength = random.Next(1, 7);
+                for (var j = 0; j < runLength; j++)
+                {
+                    data.Append(characters[random.Next(characters.Length)]);
+                }
+            }
+
+            var codewords = Code128Symbols.Decode(Barcode.CreateCode128(data.ToString()));
+            Code128Symbols.AssertValidChecksum(codewords);
+            Assert.Equal(data.ToString(), Code128Symbols.Interpret(codewords));
+        }
     }
 }

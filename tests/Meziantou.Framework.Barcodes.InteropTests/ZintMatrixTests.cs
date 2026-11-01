@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Text;
 
@@ -68,6 +69,11 @@ public sealed class ZintMatrixTests
             { BarcodeType.Code128, "hello world", "" },
             { BarcodeType.Code128, "12345678", "" },
             { BarcodeType.Code128, "SKU-123456", "" },
+            { BarcodeType.Code128, "A\nB", "" },
+            { BarcodeType.Code128, "abc\tdef", "" },
+            { BarcodeType.Code128, "ab\t\n\rcd", "" },
+            { BarcodeType.Code128, "\u0000\u0001ABC123456\u001f", "" },
+            { BarcodeType.Code128, "\tA\na\rB", "" },
             { BarcodeType.Ean8, "5512345", "" },
             { BarcodeType.Ean8, "9638507", "12" },
             { BarcodeType.Ean13, "590123412345", "" },
@@ -135,7 +141,7 @@ public sealed class ZintMatrixTests
             BarcodeType.Code39 when option is "checksum" => (Barcode.CreateCode39(data, includeChecksum: true), new[] { "-b", "8", "--vers=1" }, data),
             BarcodeType.Code39 => (Barcode.CreateCode39(data), ["-b", "8"], data),
             BarcodeType.Code93 => (Barcode.CreateCode93(data), ["-b", "25"], data),
-            BarcodeType.Code128 => (Barcode.CreateCode128(data), ["-b", "20"], data),
+            BarcodeType.Code128 => (Barcode.CreateCode128(data), ["-b", "20", "--esc"], EscapeForZint(data)),
             BarcodeType.Ean8 => (Barcode.CreateEan8(data, extension), ["-b", "10", "--addongap=7"], WithAddOn(data, extension)),
             BarcodeType.Ean13 => (Barcode.CreateEan13(data, extension), ["-b", "15", "--addongap=7"], WithAddOn(data, extension)),
             BarcodeType.UpcA => (Barcode.CreateUpcA(data, extension), ["-b", "34", "--addongap=9"], WithAddOn(data, extension)),
@@ -148,6 +154,58 @@ public sealed class ZintMatrixTests
         AssertSameModules(expected, barcode.Width, barcode.Height, (row, column) => barcode[row, column]);
 
         static string WithAddOn(string data, string? extension) => extension is null ? data : data + "+" + extension;
+    }
+
+    // zint picks the shortest sequence of code sets; when several sequences have the same length, it may choose another
+    // one than ours, so the random payloads only compare the number of modules
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public async Task Code128_RandomAscii_IsAsShortAsZint()
+    {
+        var tools = await BarcodeTools.GetAsync();
+        var random = new Random(4204);
+        string[] classes = ["0123456789", "\u0000\u0001\t\n\r\u001b\u001f", "ABCXYZ !@_^\\", "abcxyz`{|}~\u007f"];
+        for (var i = 0; i < 200; i++)
+        {
+            var data = new StringBuilder();
+            var length = random.Next(1, 30);
+            while (data.Length < length)
+            {
+                var characters = classes[random.Next(classes.Length)];
+                var runLength = random.Next(1, 7);
+                for (var j = 0; j < runLength; j++)
+                {
+                    data.Append(characters[random.Next(characters.Length)]);
+                }
+            }
+
+            var barcode = Barcode.CreateCode128(data.ToString());
+            var zintRow = await tools.GetZintRowsAsync(["-b", "20", "--esc"], EscapeForZint(data.ToString()));
+            Assert.HasCount((barcode.Width + 3) / 4, Assert.Single(zintRow), message: EscapeForZint(data.ToString()));
+        }
+    }
+
+    // zint reads control characters as escape sequences (--esc), and a backslash as a double backslash
+    private static string EscapeForZint(string data)
+    {
+        var builder = new StringBuilder();
+        foreach (var character in data)
+        {
+            if (character == '\\')
+            {
+                builder.Append(@"\\");
+            }
+            else if (character < ' ' || character == '\u007f')
+            {
+                builder.Append(CultureInfo.InvariantCulture, $"\\x{(int)character:X2}");
+            }
+            else
+            {
+                builder.Append(character);
+            }
+        }
+
+        return builder.ToString();
     }
 
     private static string GetZintLevel(ErrorCorrectionLevel level) => level switch

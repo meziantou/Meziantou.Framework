@@ -63,4 +63,59 @@ internal static class Code128Symbols
         Assert.Equal((int)(sum % 103), codewords[^2]);
         Assert.Equal(106, codewords[^1]);
     }
+
+    /// <summary>Interprets the codewords of a symbol (start to stop) as ISO/IEC 15417 defines them. FNC1 is returned as <c>\u00F1</c>.</summary>
+    public static string Interpret(int[] codewords)
+    {
+        var codeSet = codewords[0] switch
+        {
+            103 => 'A',
+            104 => 'B',
+            105 => 'C',
+            _ => throw new InvalidOperationException($"Invalid start character {codewords[0]}"),
+        };
+
+        var text = new StringBuilder();
+        var shifted = false;
+        for (var i = 1; i < codewords.Length - 2; i++)
+        {
+            var value = codewords[i];
+            var set = shifted ? (codeSet == 'A' ? 'B' : 'A') : codeSet;
+            shifted = false;
+            switch (set, value)
+            {
+                case (_, 102):
+                    text.Append('\u00F1');
+                    break;
+                case ('C', < 100):
+                    text.Append(value.ToString("00", CultureInfo.InvariantCulture));
+                    break;
+                case ('C', 100):
+                case ('A', 100):
+                    codeSet = 'B';
+                    break;
+                case ('C', 101):
+                case ('B', 101):
+                    codeSet = 'A';
+                    break;
+                case ('A' or 'B', 99):
+                    codeSet = 'C';
+                    break;
+                case ('A' or 'B', 98):
+                    shifted = true;
+                    break;
+                case ('A', < 64):
+                case ('B', < 96):
+                    text.Append((char)(value + ' '));
+                    break;
+                case ('A', < 96):
+                    text.Append((char)(value - 64));
+                    break;
+                default:
+                    throw new InvalidOperationException($"Unexpected codeword {value} in code set {set}");
+            }
+        }
+
+        return text.ToString();
+    }
 }

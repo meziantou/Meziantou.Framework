@@ -47,7 +47,7 @@ shipping label often uses Code 128.
 | --- | --- | --- |
 | Code 39 | [CreateCode39](cref:Meziantou.Framework.Barcodes.Barcode.CreateCode39) | Uppercase letters, digits and `-. $/+%`; an optional Mod 43 check character (`includeChecksum`) |
 | Code 93 | [CreateCode93](cref:Meziantou.Framework.Barcodes.Barcode.CreateCode93) | Any ASCII character: the characters outside the base set are encoded with the extended encoding |
-| Code 128 | [CreateCode128](cref:Meziantou.Framework.Barcodes.Barcode.CreateCode128) | The printable ASCII characters (code set B); runs of digits switch to the denser code set C |
+| Code 128 | [CreateCode128](cref:Meziantou.Framework.Barcodes.Barcode.CreateCode128) | Any ASCII character, control characters included; the method switches between code sets A, B and C |
 | EAN-8 | [CreateEan8](cref:Meziantou.Framework.Barcodes.Barcode.CreateEan8) | 7 digits, or 8 with the check digit |
 | EAN-13 | [CreateEan13](cref:Meziantou.Framework.Barcodes.Barcode.CreateEan13) | 12 digits, or 13 with the check digit |
 | UPC-A | [CreateUpcA](cref:Meziantou.Framework.Barcodes.Barcode.CreateUpcA) | 11 digits, or 12 with the check digit |
@@ -55,6 +55,25 @@ shipping label often uses Code 128.
 | ITF (Interleaved 2 of 5) | [CreateItf](cref:Meziantou.Framework.Barcodes.Barcode.CreateItf) | An even number of digits |
 
 For free text, prefer Code 128: it encodes letters of both cases and is compact, especially for digits.
+
+## Code 128 code sets
+
+Code 128 has three code sets: A holds the uppercase letters, the digits, the punctuation and the ASCII control
+characters (`\t`, `\r`, `\n`, ...); B holds the same printable characters and the lowercase letters; C holds pairs of
+digits, which halves the width of numbers. You pass the text, and
+[CreateCode128](cref:Meziantou.Framework.Barcodes.Barcode.CreateCode128) chooses the code sets: C for runs of 4 digits or
+more, A for control characters, B for lowercase letters, and a single-character shift when the other set is only needed
+for one character. Control characters let a scanner that types the data into a form move between fields or submit it:
+
+<!-- ref:../../tests/Meziantou.Framework.Barcodes.Tests/BarCode128Tests.cs;region=Barcode_Code128ControlCharacters;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A Tab between the fields and an Enter at the end, for a scanner that types the data into a form
+var barcode = Barcode.CreateCode128("SKU-123456\tQTY-5\r");
+Assert.Equal("SKU-123456\tQTY-5\r", barcode.Text);
+```
+<!-- endref -->
+
+Characters outside ASCII (`é`, `€`) throw an `ArgumentException`.
 
 ## Check digits and add-ons
 

@@ -2,8 +2,11 @@ namespace Meziantou.Framework.Barcodes.Internal.Linear;
 
 internal static class Code128Encoder
 {
+    private const int Shift = 98;
     private const int CodeSetC = 99;
     private const int CodeSetB = 100;
+    private const int CodeSetA = 101;
+    private const int StartCodeA = 103;
     private const int StartCodeB = 104;
     private const int StartCodeC = 105;
     private const int StopCode = 106;
@@ -25,18 +28,33 @@ internal static class Code128Encoder
 
     public static Barcode Encode(string data)
     {
+        foreach (var character in data)
+        {
+            if (!char.IsAscii(character))
+            {
+                throw new ArgumentException($"The character '{character}' is not supported by Code 128.", nameof(data));
+            }
+        }
+
         var codewords = CreateCodewords(data);
         var modules = EncodeCodewords(codewords);
 
         return BarcodeEncoderHelper.CreateBarcode(BarcodeType.Code128, modules, data);
     }
 
+    // Follows the minimal-length guidelines of ISO/IEC 15417 Annex E: code set C for runs of digits, code set A for
+    // control characters and code set B for lowercase letters, with a SHIFT for a single character of the other set.
     private static List<int> CreateCodewords(string data)
     {
         var codewords = new List<int>(data.Length + 4);
         var index = 0;
         var currentCodeSet = SelectInitialCodeSet(data);
-        codewords.Add(currentCodeSet == CodeSet.C ? StartCodeC : StartCodeB);
+        codewords.Add(currentCodeSet switch
+        {
+            CodeSet.A => StartCodeA,
+            CodeSet.B => StartCodeB,
+            _ => StartCodeC,
+        });
 
         while (index < data.Length)
         {
@@ -49,8 +67,8 @@ internal static class Code128Encoder
                     continue;
                 }
 
-                codewords.Add(CodeSetB);
-                currentCodeSet = CodeSet.B;
+                currentCodeSet = SelectAlphanumericCodeSet(data, index);
+                codewords.Add(currentCodeSet == CodeSet.A ? CodeSetA : CodeSetB);
                 continue;
             }
 
@@ -59,7 +77,7 @@ internal static class Code128Encoder
             {
                 if ((digits & 1) == 1)
                 {
-                    codewords.Add(GetCodeSetBValue(data[index], nameof(data)));
+                    codewords.Add(GetValue(data[index], currentCodeSet));
                     index++;
                 }
 
@@ -68,7 +86,25 @@ internal static class Code128Encoder
                 continue;
             }
 
-            codewords.Add(GetCodeSetBValue(data[index], nameof(data)));
+            var character = data[index];
+            if (!IsInCodeSet(character, currentCodeSet))
+            {
+                // A single character of the other set is shifted when the next character that only one set holds
+                // belongs to the current set: it saves the switch back
+                var otherCodeSet = currentCodeSet == CodeSet.A ? CodeSet.B : CodeSet.A;
+                if (FindExclusiveCodeSet(data, index + 1) == currentCodeSet)
+                {
+                    codewords.Add(Shift);
+                    codewords.Add(GetValue(character, otherCodeSet));
+                    index++;
+                    continue;
+                }
+
+                codewords.Add(otherCodeSet == CodeSet.A ? CodeSetA : CodeSetB);
+                currentCodeSet = otherCodeSet;
+            }
+
+            codewords.Add(GetValue(character, currentCodeSet));
             index++;
         }
 
@@ -104,7 +140,34 @@ internal static class Code128Encoder
             return CodeSet.C;
         }
 
-        return CodeSet.B;
+        return SelectAlphanumericCodeSet(data, 0);
+    }
+
+    // Code set A when a control character comes before any lowercase letter, otherwise code set B
+    private static int SelectAlphanumericCodeSet(string data, int startIndex)
+    {
+        return FindExclusiveCodeSet(data, startIndex) == CodeSet.A ? CodeSet.A : CodeSet.B;
+    }
+
+    // Returns the code set of the first character from startIndex that only one of code sets A and B holds, or -1
+    private static int FindExclusiveCodeSet(string data, int startIndex)
+    {
+        for (var i = startIndex; i < data.Length; i++)
+        {
+            var character = data[i];
+            if (character < ' ')
+                return CodeSet.A;
+
+            if (character >= '`')
+                return CodeSet.B;
+        }
+
+        return -1;
+    }
+
+    private static bool IsInCodeSet(char character, int codeSet)
+    {
+        return codeSet == CodeSet.A ? character < '`' : character >= ' ';
     }
 
     private static bool ShouldSwitchToCodeSetC(int digits, int remainingLength)
@@ -124,14 +187,11 @@ internal static class Code128Encoder
         return ((data[index] - '0') * 10) + (data[index + 1] - '0');
     }
 
-    private static int GetCodeSetBValue(char character, string parameterName)
+    private static int GetValue(char character, int codeSet)
     {
-        if (character is < ' ' or > '\u007f')
-        {
-            throw new ArgumentException($"The character '{character}' is not supported by Code 128.", parameterName);
-        }
-
-        return character - ' ';
+        // Code set A holds the characters 0x20-0x5F as values 0-63 and the control characters as values 64-95;
+        // code set B holds the characters 0x20-0x7F as values 0-95
+        return codeSet == CodeSet.A && character < ' ' ? character + 64 : character - ' ';
     }
 
     private static int CalculateChecksum(List<int> codewords)
@@ -162,7 +222,8 @@ internal static class Code128Encoder
 
     private static class CodeSet
     {
-        public const int B = 0;
-        public const int C = 1;
+        public const int A = 0;
+        public const int B = 1;
+        public const int C = 2;
     }
 }

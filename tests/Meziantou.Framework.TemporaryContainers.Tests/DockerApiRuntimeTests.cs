@@ -250,6 +250,36 @@ public sealed class DockerApiRuntimeTests
         Assert.Equal("label=meziantou.tc.session%3Dabc\n", ContainerReaper.BuildFilter("abc"));
     }
 
+    [Fact]
+    public async Task ReadExecOutputAsync_CopiesTheBytesOfAStreamAndDecodesTheOther()
+    {
+        using var stream = new OneByteAtATimeStream(BuildRawFrames(
+        [
+            (LogStream.Stdout, [0xFF, 0x00]),
+            (LogStream.Stderr, Encoding.UTF8.GetBytes("bo")),
+            (LogStream.Stdout, [0x81]),
+            (LogStream.Stderr, Encoding.UTF8.GetBytes("om")),
+        ]));
+        using var standardOutput = new MemoryStream();
+
+        var (text, error) = await DockerApiRuntime.ReadExecOutputAsync(stream, new ExecOptions { StandardOutput = standardOutput }, CancellationToken.None);
+
+        Assert.Equal([0xFF, 0x00, 0x81], standardOutput.ToArray());
+        Assert.Equal("", text);
+        Assert.Equal("boom", error);
+    }
+
+    [Fact]
+    public async Task ReadExecOutputAsync_ReadsTheRawOutputOfATerminal()
+    {
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes("héllo\r\n"));
+
+        var (text, error) = await DockerApiRuntime.ReadExecOutputAsync(stream, new ExecOptions { Tty = true }, CancellationToken.None);
+
+        Assert.Equal("héllo\r\n", text);
+        Assert.Equal("", error);
+    }
+
     private static async Task<MemoryStream> CreateArchiveAsync(Action<TarWriter> write)
     {
         var archive = new MemoryStream();

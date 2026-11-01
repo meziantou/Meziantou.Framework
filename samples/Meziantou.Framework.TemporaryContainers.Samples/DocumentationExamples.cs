@@ -238,6 +238,44 @@ public static class DocumentationExamples
         Console.WriteLine(result.ExitCode);
     }
 
+    public static async Task ExecEnsureSuccess(TemporaryContainer container)
+    {
+        #region TemporaryContainers_ExecEnsureSuccess
+        var result = await container.ExecAsync(options =>
+        {
+            options.Command = ["psql", "--username", "postgres", "--command", "CREATE DATABASE app"];
+            options.Timeout = TimeSpan.FromSeconds(30); // throws a TimeoutException after 30 seconds
+        });
+
+        result.EnsureSuccess(); // throws a ContainerExecException, with the standard error, when the exit code is not 0
+        #endregion
+    }
+
+    public static async Task ExecBinaryOutput(TemporaryContainer container)
+    {
+        #region TemporaryContainers_ExecBinaryOutput
+        await using var dump = File.Create("database.dump");
+        var result = await container.ExecAsync(options =>
+        {
+            options.Command = ["pg_dump", "--username", "postgres", "--format", "custom", "postgres"];
+            options.StandardOutput = dump; // copied byte for byte, never decoded as text
+        });
+
+        result.EnsureSuccess();
+        #endregion
+    }
+
+    public static async Task ExecInBackground(TemporaryContainer container)
+    {
+        #region TemporaryContainers_ExecDetach
+        await container.ExecAsync(options =>
+        {
+            options.Command = ["sh", "-c", "seed-data.sh > /tmp/seed.log 2>&1"];
+            options.Detach = true; // returns as soon as the command is started
+        });
+        #endregion
+    }
+
     public static async Task Files(TemporaryContainer container)
     {
         #region TemporaryContainers_Files

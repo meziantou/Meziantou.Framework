@@ -403,8 +403,11 @@ internal abstract class ExecutableContainerRuntime : ContainerRuntime
     {
         using var environmentFile = SupportsEnvironmentFile ? EnvironmentFile.Create(options.Environment) : null;
         var args = BuildExecArguments(id, options, environmentFile);
-        var result = await Cli.RunBufferedAsync(args, cancellationToken, allowNonZero: true, input: options.StandardInput).ConfigureAwait(false);
-        return new ExecResult(result.ExitCode, result.StandardOutput, result.StandardError);
+        var result = options.StandardOutput is null && options.StandardError is null
+            ? await Cli.RunBufferedAsync(args, cancellationToken, allowNonZero: true, input: options.StandardInput).ConfigureAwait(false)
+            : await Cli.RunToStreamsAsync(args, options.StandardOutput, options.StandardError, options.StandardInput, cancellationToken).ConfigureAwait(false);
+
+        return options.Detach ? new ExecResult(result.ExitCode, "", "") : new ExecResult(result.ExitCode, result.StandardOutput, result.StandardError);
     }
 
     internal override async Task<Stream> OpenReadAsync(string id, string path, CancellationToken cancellationToken)

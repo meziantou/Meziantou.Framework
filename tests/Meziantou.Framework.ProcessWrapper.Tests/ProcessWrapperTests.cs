@@ -1392,6 +1392,42 @@ public class ProcessWrapperTests
     }
 
     [Fact]
+    public async Task InputSource_ReadAsync_ReadsEverySourceToItsEnd()
+    {
+        var filePath = Path.GetTempFileName();
+        try
+        {
+            await File.WriteAllTextAsync(filePath, "content", XunitCancellationToken);
+            using var reader = new StringReader("content");
+            await using var stream = new MemoryStream(Encoding.UTF8.GetBytes("content"));
+
+            InputSource[] sources =
+            [
+                InputSource.FromText("content"),
+                InputSource.FromBytes(Encoding.UTF8.GetBytes("content")),
+                InputSource.FromTextReader(reader),
+                InputSource.FromStream(stream),
+                InputSource.FromFile(filePath),
+            ];
+
+            foreach (var source in sources)
+            {
+                var result = new MemoryStream();
+                var buffer = new byte[3];
+                int read;
+                while ((read = await source.ReadAsync(buffer, XunitCancellationToken)) > 0)
+                    result.Write(buffer, 0, read);
+
+                Assert.Equal("content", Encoding.UTF8.GetString(result.ToArray()));
+            }
+        }
+        finally
+        {
+            File.Delete(filePath);
+        }
+    }
+
+    [Fact]
     public async Task WithInputStream_ProcessPipe()
     {
         var pipe = new ProcessPipe();

@@ -725,4 +725,31 @@ public sealed class DockerRuntimeAdapterTests
 
     private static ContainerRuntimeException ApiFailure(HttpStatusCode statusCode)
         => new("boom", ContainerRuntime.DockerApi, statusCode);
+
+    [Fact]
+    public void BuildsTheExecOptions()
+    {
+        var runtime = Assert.IsAssignableTo<DockerContainerRuntime>(ContainerRuntime.Docker);
+        var options = new ExecOptions { Tty = true, Detach = true, Privileged = true };
+        options.Command.Add("ls");
+
+        Assert.Equal("exec -t -d --privileged abc ls", string.Join(' ', runtime.BuildExecArguments("abc", options)));
+    }
+
+    [Fact]
+    public void ExecResult_EnsureSuccessReportsTheCommandAndTheStandardError()
+    {
+        var success = new ExecResult(0, "out", "");
+        Assert.Same(success, success.EnsureSuccess());
+
+        var failure = new ExecResult(2, "out", "boom\n") { Command = ["sh", "-c", "exit 2"] };
+        var exception = Assert.Throws<ContainerExecException>(() => failure.EnsureSuccess());
+        Assert.Equal("The command exited with code 2.\nCommand: sh -c \"exit 2\"\nStandard error:\nboom", exception.Message);
+        Assert.Equal("out", exception.StandardOutput);
+        Assert.Equal("boom\n", exception.StandardError);
+        Assert.Equal(["sh", "-c", "exit 2"], exception.Command);
+
+        // Without a standard error, the standard output is the only clue left.
+        Assert.Equal("The command exited with code 1.\nStandard output:\nout", Assert.Throws<ContainerExecException>(() => new ExecResult(1, "out", " ").EnsureSuccess()).Message);
+    }
 }

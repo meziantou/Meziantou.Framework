@@ -193,6 +193,15 @@ internal sealed class DockerContainerRuntime : ExecutableContainerRuntime
         if (options.StandardInput is not null)
             args.Add("-i");
 
+        if (options.Tty)
+            args.Add("-t");
+
+        if (options.Detach)
+            args.Add("-d");
+
+        if (options.Privileged)
+            args.Add("--privileged");
+
         if (options.WorkingDirectory is not null)
         {
             args.Add("--workdir");

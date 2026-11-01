@@ -55,6 +55,24 @@ internal sealed class ContainerCli
             throw CreateFailure(args, exitCode, standardOutput: "", standardError.ToString());
     }
 
+    /// <summary>Runs a command whose outputs are copied byte for byte to the streams that are set, and captured as text otherwise. A non-zero exit code is not an error.</summary>
+    public async Task<CliResult> RunToStreamsAsync(IReadOnlyList<string> args, Stream? standardOutput, Stream? standardError, InputSource? input, CancellationToken cancellationToken)
+    {
+        var standardOutputText = new StringBuilder();
+        var standardErrorText = new StringBuilder();
+        var wrapper = ProcessWrapper.Create(_executable)
+            .WithArguments(args)
+            .WithValidation(ProcessValidationMode.None)
+            .WithOutputStream(standardOutput is null ? OutputTarget.ToStringBuilder(standardOutputText) : OutputTarget.ToStream(standardOutput))
+            .WithErrorStream(standardError is null ? OutputTarget.ToStringBuilder(standardErrorText) : OutputTarget.ToStream(standardError));
+
+        if (input is not null)
+            wrapper = wrapper.WithInputStream(input);
+
+        var result = await wrapper.ExecuteAsync(cancellationToken).ConfigureAwait(false);
+        return new CliResult(result.ExitCode.Value, standardOutputText.ToString(), standardErrorText.ToString());
+    }
+
     public ProcessInstance ExecuteStreaming(IReadOnlyList<string> args, Action<string> onStandardOutput, Action<string> onStandardError, CancellationToken cancellationToken)
     {
         return ProcessWrapper.Create(_executable)

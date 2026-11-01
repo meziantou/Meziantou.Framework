@@ -44,6 +44,65 @@ var result = await container.ExecAsync(options =>
 [InputSource](cref:Meziantou.Framework.InputSource) also reads from a stream, bytes or a file. The Docker Engine API runtime cannot send the standard input to
 a daemon reached over a named pipe, the default on Windows: use the `docker` runtime there.
 
+### Fail when the command fails
+
+[EnsureSuccess](cref:Meziantou.Framework.TemporaryContainers.ExecResult.EnsureSuccess) throws a [ContainerExecException](cref:Meziantou.Framework.TemporaryContainers.ContainerExecException) when the exit code is not 0. Its message has the command
+and the standard error, so a failed setup step explains itself in the test output. [Timeout](cref:Meziantou.Framework.TemporaryContainers.ExecOptions.Timeout) bounds the time
+[ExecAsync](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.ExecAsync) waits:
+
+<!-- ref:../../samples/Meziantou.Framework.TemporaryContainers.Samples/DocumentationExamples.cs;region=TemporaryContainers_ExecEnsureSuccess;format=md-fenced-code-block;dedent=true -->
+```csharp
+var result = await container.ExecAsync(options =>
+{
+    options.Command = ["psql", "--username", "postgres", "--command", "CREATE DATABASE app"];
+    options.Timeout = TimeSpan.FromSeconds(30); // throws a TimeoutException after 30 seconds
+});
+
+result.EnsureSuccess(); // throws a ContainerExecException, with the standard error, when the exit code is not 0
+```
+<!-- endref -->
+
+The runtimes cannot stop a command they started without a terminal: after the timeout, the command may keep running in
+the container.
+
+### Binary or large output
+
+[StandardOutput](cref:Meziantou.Framework.TemporaryContainers.ExecOptions.StandardOutput) and [StandardError](cref:Meziantou.Framework.TemporaryContainers.ExecOptions.StandardError) copy the outputs to a stream, byte for byte, instead of decoding them as text.
+Use them for a database dump or an archive, which decoding would corrupt, or for an output too large to keep in memory:
+
+<!-- ref:../../samples/Meziantou.Framework.TemporaryContainers.Samples/DocumentationExamples.cs;region=TemporaryContainers_ExecBinaryOutput;format=md-fenced-code-block;dedent=true -->
+```csharp
+await using var dump = File.Create("database.dump");
+var result = await container.ExecAsync(options =>
+{
+    options.Command = ["pg_dump", "--username", "postgres", "--format", "custom", "postgres"];
+    options.StandardOutput = dump; // copied byte for byte, never decoded as text
+});
+
+result.EnsureSuccess();
+```
+<!-- endref -->
+
+The matching property of the [ExecResult](cref:Meziantou.Framework.TemporaryContainers.ExecResult) is then empty. The streams are not disposed.
+
+### Background commands, terminals and privileges
+
+<!-- ref:../../samples/Meziantou.Framework.TemporaryContainers.Samples/DocumentationExamples.cs;region=TemporaryContainers_ExecDetach;format=md-fenced-code-block;dedent=true -->
+```csharp
+await container.ExecAsync(options =>
+{
+    options.Command = ["sh", "-c", "seed-data.sh > /tmp/seed.log 2>&1"];
+    options.Detach = true; // returns as soon as the command is started
+});
+```
+<!-- endref -->
+
+- [Detach](cref:Meziantou.Framework.TemporaryContainers.ExecOptions.Detach) starts the command and returns at once, with an exit code of 0 and no output. A detached command cannot have a
+  standard input, an output stream or a timeout.
+- [Tty](cref:Meziantou.Framework.TemporaryContainers.ExecOptions.Tty) runs the command in a pseudo-terminal, for the commands that only print colors or progress, or only behave
+  interactively, in one. A terminal merges the standard error into the standard output and ends lines with `\r\n`.
+- [Privileged](cref:Meziantou.Framework.TemporaryContainers.ExecOptions.Privileged) runs the command with every capability. Apple's `container` does not support it.
+
 ## Copy files
 
 <!-- ref:../../samples/Meziantou.Framework.TemporaryContainers.Samples/DocumentationExamples.cs;region=TemporaryContainers_Files;format=md-fenced-code-block;dedent=true -->

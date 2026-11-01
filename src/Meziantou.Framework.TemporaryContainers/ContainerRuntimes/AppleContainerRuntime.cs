@@ -304,9 +304,18 @@ internal sealed class AppleContainerRuntime : ExecutableContainerRuntime
 
     internal override IReadOnlyList<string> BuildExecArguments(string id, ExecOptions options, EnvironmentFile? environmentFile = null)
     {
+        if (options.Privileged)
+            throw new NotSupportedException("Apple's container runtime does not support privileged commands.");
+
         var args = new List<string> { "exec" };
         if (options.StandardInput is not null)
             args.Add("-i");
+
+        if (options.Tty)
+            args.Add("-t");
+
+        if (options.Detach)
+            args.Add("-d");
 
         if (options.WorkingDirectory is not null)
         {

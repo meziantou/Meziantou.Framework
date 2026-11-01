@@ -84,6 +84,7 @@ namespace Meziantou.Framework
         public static Meziantou.Framework.InputSource FromText(string text) => throw null;
         public static Meziantou.Framework.InputSource FromTextReader(System.IO.TextReader reader) => throw null;
         public abstract int Read(byte[] buffer);
+        public abstract System.Threading.Tasks.ValueTask<int> ReadAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken = default);
         public static implicit operator Meziantou.Framework.InputSource(System.IO.Stream stream) => throw null;
         public static implicit operator Meziantou.Framework.InputSource(System.IO.TextReader reader) => throw null;
         public static implicit operator Meziantou.Framework.InputSource(System.ReadOnlyMemory<byte> bytes) => throw null;

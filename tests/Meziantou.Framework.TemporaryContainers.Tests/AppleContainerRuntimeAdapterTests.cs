@@ -214,4 +214,15 @@ public sealed class AppleContainerRuntimeAdapterTests
         Assert.Equal("app", info.Labels["meziantou.tc.reuse"]);
         Assert.Equal(53432, runtime.ResolvePortMap(info, definition)[8080]);
     }
+
+    [Fact]
+    public void BuildsTheExecOptions()
+    {
+        var runtime = CreateRuntime();
+        var options = new ExecOptions { Tty = true, Detach = true };
+        options.Command.Add("ls");
+
+        Assert.Equal("exec -t -d abc ls", string.Join(' ', runtime.BuildExecArguments("abc", options)));
+        Assert.Throws<NotSupportedException>(() => runtime.BuildExecArguments("abc", new ExecOptions { Privileged = true }));
+    }
 }

@@ -40,20 +40,32 @@ public static class BarcodePngRenderer
         var width = GetTotalDimensionWithQuietZone(barcode.Width, options.QuietZoneModules, options.ModuleWidth, nameof(options.ModuleWidth));
         var height = GetTotalDimension(barcode.Height, options.ModuleHeight, nameof(options.ModuleHeight));
 
+        var moduleWidth = options.ModuleWidth;
+        var moduleHeight = options.ModuleHeight;
+        var quietZoneModules = options.QuietZoneModules;
         PngWriter.WritePalette(stream, width, height, options.LightColor, options.DarkColor, (row, y) =>
         {
-            var sourceRow = y / options.ModuleHeight;
-            if (sourceRow < 0 || sourceRow >= barcode.Height)
-                return;
-
-            for (var x = 0; x < width; x++)
+            // Every pixel row of a module row is the same, so render it once for all of them.
+            var sourceRow = y / moduleHeight;
+            var column = 0;
+            while (column < barcode.Width)
             {
-                var sourceColumn = (x / options.ModuleWidth) - options.QuietZoneModules;
-                if (sourceColumn >= 0 && sourceColumn < barcode.Width && barcode[sourceRow, sourceColumn])
+                if (!barcode[sourceRow, column])
                 {
-                    row[x >> 3] |= (byte)(0x80 >> (x & 7));
+                    column++;
+                    continue;
                 }
+
+                var runStart = column;
+                while (column < barcode.Width && barcode[sourceRow, column])
+                {
+                    column++;
+                }
+
+                PngWriter.SetPixels(row, (quietZoneModules + runStart) * moduleWidth, (column - runStart) * moduleWidth);
             }
+
+            return moduleHeight - (y % moduleHeight);
         });
     }
 

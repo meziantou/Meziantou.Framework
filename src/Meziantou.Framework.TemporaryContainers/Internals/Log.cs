@@ -43,6 +43,9 @@ internal static partial class Log
         }
     }
 
+    [LoggerMessage(EventId = 22, Level = LogLevel.Debug, Message = "Building '{Dockerfile}': {Output}")]
+    public static partial void ImageBuildOutput(ILogger logger, string dockerfile, string output);
+
     public static Action<Exception, int, TimeSpan>? CreateImagePullRetryCallback(ILogger? logger, string image)
     {
         if (logger is not { } imageLogger)

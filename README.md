@@ -2,6 +2,8 @@
 
 `Meziantou.Framework` is a comprehensive collection of utility libraries designed to enhance development in the .NET ecosystem. It provides a wide range of tools and functionalities that simplify tasks across various domains, including ASP.NET Core, Blazor, WPF, and Win32 APIs
 
+Documentation: <https://meziantou.github.io/Meziantou.Framework/>
+
 # NuGet packages
 
 | Name | Version | Readme |

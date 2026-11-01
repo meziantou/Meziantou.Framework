@@ -21,6 +21,17 @@ definition.Mounts.AddTmpfs("/scratch");
 | `AddVolume(volume, containerPath, readOnly)` | A [TemporaryVolume](cref:Meziantou.Framework.TemporaryContainers.TemporaryVolume), created before the container (see below). |
 | `AddTmpfs(containerPath)` | A file system in memory, empty at every start. Use it for scratch space, or with a read-only root file system. |
 
+A tmpfs mount takes no more than half of the memory of the host by default. Pass a size, in bytes, and the permissions
+of its root to limit it:
+
+<!-- ref:../../../samples/Meziantou.Framework.TemporaryContainers.Samples/DocumentationExamples.cs;region=TemporaryContainers_TmpfsOptions;format=md-fenced-code-block;dedent=true -->
+```csharp
+definition.Mounts.AddTmpfs("/scratch", size: 64L * 1024 * 1024, mode: UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+```
+<!-- endref -->
+
+Apple's `container` does not take options for a tmpfs mount.
+
 The [BindMount](cref:Meziantou.Framework.TemporaryContainers.BindMount), [VolumeMount](cref:Meziantou.Framework.TemporaryContainers.VolumeMount) and [TmpfsMount](cref:Meziantou.Framework.TemporaryContainers.TmpfsMount) records describe the same mounts; pass one to `Mounts.Add`.
 
 ## Create a volume for the test

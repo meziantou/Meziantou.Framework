@@ -14,11 +14,15 @@ internal static class ContainerConfigurationHash
         Append(builder, "image", definition.Image switch
         {
             RegistryImage registry => "registry:" + registry.Name,
-            DockerfileImage dockerfile => "dockerfile:" + dockerfile.DockerfilePath + "|" + dockerfile.ContextDirectory,
+            DockerfileImage dockerfile => "dockerfile:" + dockerfile.DockerfilePath + "|" + dockerfile.ContextDirectory + GetBuildSettings(dockerfile.Settings),
             ArchiveImage archive => "archive:" + archive.ArchivePath,
             ExistingImage existing => "existing:" + existing.ImageId,
             var other => other.ToString(),
         });
+
+        // Only added when set, so the hash of a container created before the platform could be chosen does not change.
+        if (definition.Platform is not null)
+            Append(builder, "platform", definition.Platform);
 
         Append(builder, "name", definition.Name);
         Append(builder, "hostname", definition.Hostname);
@@ -41,7 +45,10 @@ internal static class ContainerConfigurationHash
             Append(builder, "label", name + "=" + value);
 
         foreach (var port in definition.Ports.OrderBy(static port => port.Port))
-            Append(builder, "port", string.Create(CultureInfo.InvariantCulture, $"{port.HostIp}:{port.HostPort}:{port.Port}"));
+            Append(builder, "port", string.Create(CultureInfo.InvariantCulture, $"{port.HostIp}:{port.HostPort}:{port.Port}") + (port.Protocol is ContainerPortProtocol.Tcp ? "" : "/" + port.ProtocolName));
+
+        foreach (var port in definition.ExposedPorts)
+            Append(builder, "expose", string.Create(CultureInfo.InvariantCulture, $"{port.Port}/{ContainerPort.GetProtocolName(port.Protocol)}"));
 
         foreach (var mount in definition.Mounts)
         {
@@ -50,7 +57,7 @@ internal static class ContainerConfigurationHash
                 BindMount bind => string.Create(CultureInfo.InvariantCulture, $"bind|{bind.Source}|{bind.Target}|{bind.ReadOnly}"),
                 VolumeMount volume => string.Create(CultureInfo.InvariantCulture, $"volume|{volume.Name}|{volume.Target}|{volume.ReadOnly}"),
                 OwnedVolumeMount owned => string.Create(CultureInfo.InvariantCulture, $"volume|{owned.Volume.Name}|{owned.Target}|{owned.ReadOnly}"),
-                TmpfsMount tmpfs => "tmpfs|" + tmpfs.Target,
+                TmpfsMount tmpfs => "tmpfs|" + tmpfs.Target + (tmpfs.FormatOptions() is { Length: > 0 } options ? "|" + options : ""),
                 var other => other.ToString(),
             });
         }
@@ -61,7 +68,57 @@ internal static class ContainerConfigurationHash
         Append(builder, "cpus", definition.Resources.CpuLimit?.ToString(CultureInfo.InvariantCulture));
         Append(builder, "read-only", definition.Resources.ReadOnlyRootFilesystem ? "true" : "false");
 
+        // The options below were added later. They are only hashed when they are set, so a container created by an
+        // earlier version of the library keeps the hash it was created with.
+        foreach (var attachment in definition.Network.Attachments)
+            Append(builder, "network-attachment", attachment.Network + "|" + string.Join(',', attachment.Aliases));
+
+        AppendIfSet(builder, "shm-size", definition.Resources.SharedMemorySize?.ToString(CultureInfo.InvariantCulture));
+        foreach (var ulimit in definition.Resources.Ulimits)
+            Append(builder, "ulimit", ulimit.Format());
+
+        AppendIfSet(builder, "privileged", definition.Privileged ? "true" : null);
+        foreach (var capability in definition.CapAdd)
+            Append(builder, "cap-add", capability);
+
+        foreach (var capability in definition.CapDrop)
+            Append(builder, "cap-drop", capability);
+
+        foreach (var host in definition.ExtraHosts)
+            Append(builder, "extra-host", host.Format());
+
+        AppendIfSet(builder, "healthcheck", definition.Healthcheck?.GetHashValue());
+        AppendIfSet(builder, "stop-timeout", definition.StopTimeout is { } stopTimeout ? ((long)stopTimeout.TotalSeconds).ToString(CultureInfo.InvariantCulture) : null);
+        AppendIfSet(builder, "stop-signal", definition.StopSignal);
+        foreach (var argument in definition.AdditionalCreateArguments)
+            Append(builder, "create-argument", argument);
+
         return Convert.ToHexStringLower(SHA256.HashData(Encoding.UTF8.GetBytes(builder.ToString())));
+    }
+
+    private static void AppendIfSet(StringBuilder builder, string name, string? value)
+    {
+        if (value is not null)
+            Append(builder, name, value);
+    }
+
+    /// <summary>The build options that change the content of the image. Nothing is added for the default options, so the hash of a container created before the options existed does not change.</summary>
+    private static string GetBuildSettings(DockerfileBuildSettings settings)
+    {
+        var builder = new StringBuilder();
+        foreach (var (name, value) in settings.BuildArguments)
+            Append(builder, "build-arg", name + "=" + value);
+
+        foreach (var (name, value) in settings.Labels)
+            Append(builder, "build-label", name + "=" + value);
+
+        if (settings.Target is not null)
+            Append(builder, "target", settings.Target);
+
+        if (settings.Platform is not null)
+            Append(builder, "build-platform", settings.Platform);
+
+        return builder.Length is 0 ? "" : "|" + builder;
     }
 
     /// <summary>Appends one field. The length prefix keeps a value containing a separator from being read as two fields.</summary>

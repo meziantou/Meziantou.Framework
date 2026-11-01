@@ -89,6 +89,49 @@ internal static class DockerApiModels
         public Dictionary<string, EmptyObject>? ExposedPorts { get; set; }
         public HostConfig? HostConfig { get; set; }
         public NetworkingConfig? NetworkingConfig { get; set; }
+        public Healthcheck? Healthcheck { get; set; }
+        public int? StopTimeout { get; set; }
+        public string? StopSignal { get; set; }
+    }
+
+    internal sealed class Healthcheck
+    {
+        public string[]? Test { get; set; }
+
+        /// <summary>The durations are in nanoseconds.</summary>
+        public long? Interval { get; set; }
+        public long? Timeout { get; set; }
+        public long? StartPeriod { get; set; }
+        public int? Retries { get; set; }
+    }
+
+    internal sealed class Ulimit
+    {
+        public string? Name { get; set; }
+        public long Soft { get; set; }
+        public long Hard { get; set; }
+    }
+
+    internal sealed class NetworkCreateRequest
+    {
+        public string? Name { get; set; }
+        public string? Driver { get; set; }
+        public bool Internal { get; set; }
+        public bool CheckDuplicate { get; set; }
+        public Dictionary<string, string>? Labels { get; set; }
+    }
+
+    internal sealed class NetworkConnectRequest
+    {
+        public string? Container { get; set; }
+        public EndpointSettings? EndpointConfig { get; set; }
+    }
+
+    internal sealed class NetworkSummary
+    {
+        public string? Id { get; set; }
+        public string? Name { get; set; }
+        public Dictionary<string, string>? Labels { get; set; }
     }
 
     internal sealed class VolumeListResponse
@@ -124,6 +167,12 @@ internal static class DockerApiModels
         public Dictionary<string, List<DockerPortBindingDto>?>? PortBindings { get; set; }
         public List<Mount>? Mounts { get; set; }
         public Dictionary<string, string>? Tmpfs { get; set; }
+        public bool Privileged { get; set; }
+        public string[]? CapAdd { get; set; }
+        public string[]? CapDrop { get; set; }
+        public string[]? ExtraHosts { get; set; }
+        public long? ShmSize { get; set; }
+        public Ulimit[]? Ulimits { get; set; }
     }
 
     internal sealed class Mount

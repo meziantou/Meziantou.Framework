@@ -51,6 +51,24 @@ definition.Ports.Add(new ContainerPort(8080) with { HostIp = "0.0.0.0" }); // ev
 Windows containers cannot bind a specific address, and `wslc` publishes through the loopback forwarding of WSL, so the
 address is not passed to them. Apple's `container` cannot publish a port on an IPv6 address.
 
+## UDP and exposed ports
+
+A port is published for TCP. Set [Protocol](cref:Meziantou.Framework.TemporaryContainers.ContainerPort.Protocol) to publish a UDP port, and add a port to
+[ExposedPorts](cref:Meziantou.Framework.TemporaryContainers.ContainerDefinition.ExposedPorts) to expose it without publishing it to the host:
+
+<!-- ref:../../../samples/Meziantou.Framework.TemporaryContainers.Samples/DocumentationExamples.cs;region=TemporaryContainers_UdpAndExposedPorts;format=md-fenced-code-block;dedent=true -->
+```csharp
+definition.Ports.Add(new ContainerPort(53) { Protocol = ContainerPortProtocol.Udp }); // published, UDP
+definition.ExposedPorts.Add(new ContainerExposedPort(9000)); // exposed, not published
+```
+<!-- endref -->
+
+- A container port is published once: it cannot be published for both TCP and UDP.
+  [GetMappedPort](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.GetMappedPort) returns its host port whatever the protocol.
+- An exposed port is metadata: the containers of a [network](07-Networks.md) reach every port of the container, exposed or
+  not. Apple's `container` does not support exposing a port.
+- [Wait.ForPort](cref:Meziantou.Framework.TemporaryContainers.Wait.ForPort) opens a TCP connection, so it cannot wait for a UDP port.
+
 ## Connect to a remote daemon
 
 [GetHostAddress](cref:Meziantou.Framework.TemporaryContainers.TemporaryContainer.GetHostAddress) tells where a published port is reached from this machine. The database

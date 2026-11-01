@@ -204,6 +204,12 @@ namespace Meziantou.Framework.BloomFilters
         public static Meziantou.Framework.BloomFilters.BloomFilterXXHash32 CreateXXHash32(Meziantou.Framework.BloomFilters.BloomFilterSize size) => throw null;
         public static Meziantou.Framework.BloomFilters.BloomFilterXXHash64 CreateXXHash64(Meziantou.Framework.BloomFilters.BloomFilterSize size) => throw null;
         public double GetEstimateCount() => throw null;
+        public static Meziantou.Framework.BloomFilters.BloomFilter Load(System.IO.Stream stream) => throw null;
+        public static TFilter Load<TFilter>(System.IO.Stream stream) where TFilter : Meziantou.Framework.BloomFilters.BloomFilter => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.BloomFilters.BloomFilter> LoadAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<TFilter> LoadAsync<TFilter>(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = default) where TFilter : Meziantou.Framework.BloomFilters.BloomFilter => throw null;
+        public void Save(System.IO.Stream stream) { }
+        public System.Threading.Tasks.Task SaveAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public void UnionWith(Meziantou.Framework.BloomFilters.BloomFilter other) { }
     }
 
@@ -398,6 +404,12 @@ namespace Meziantou.Framework.BloomFilters
         public static Meziantou.Framework.BloomFilters.CountingBloomFilterXXHash3 CreateXXHash3(Meziantou.Framework.BloomFilters.CountingBloomFilterSize size) => throw null;
         public static Meziantou.Framework.BloomFilters.CountingBloomFilterXXHash32 CreateXXHash32(Meziantou.Framework.BloomFilters.CountingBloomFilterSize size) => throw null;
         public static Meziantou.Framework.BloomFilters.CountingBloomFilterXXHash64 CreateXXHash64(Meziantou.Framework.BloomFilters.CountingBloomFilterSize size) => throw null;
+        public static Meziantou.Framework.BloomFilters.CountingBloomFilter Load(System.IO.Stream stream) => throw null;
+        public static TFilter Load<TFilter>(System.IO.Stream stream) where TFilter : Meziantou.Framework.BloomFilters.CountingBloomFilter => throw null;
+        public static System.Threading.Tasks.Task<Meziantou.Framework.BloomFilters.CountingBloomFilter> LoadAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<TFilter> LoadAsync<TFilter>(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = default) where TFilter : Meziantou.Framework.BloomFilters.CountingBloomFilter => throw null;
+        public void Save(System.IO.Stream stream) { }
+        public System.Threading.Tasks.Task SaveAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 
     public sealed class CountingBloomFilterAdler32 : Meziantou.Framework.BloomFilters.CountingBloomFilter, Meziantou.Framework.BloomFilters.ICountingBloomFilter

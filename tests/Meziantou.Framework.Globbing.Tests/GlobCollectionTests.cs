@@ -17,6 +17,34 @@ public sealed class GlobCollectionTests
     }
 
     [Fact]
+    public void Constructor_CopiesTheArray()
+    {
+        var array = new IGlobEvaluatable[] { Glob.Parse("*.txt", GlobDialect.Standard) };
+        var collection = new GlobCollection(array);
+        array[0] = Glob.Parse("!*.txt", GlobDialect.Standard);
+
+        Assert.True(collection.IsMatch("a.txt"));
+        Assert.Equal(GlobMode.Include, collection[0].Mode);
+    }
+
+    [Fact]
+    public void Constructor_RejectsNull()
+    {
+        Assert.Throws<ArgumentNullException>("globs", () => new GlobCollection(null!));
+        Assert.Throws<ArgumentException>("globs", () => new GlobCollection(Glob.Parse("*.txt", GlobDialect.Standard), null!));
+    }
+
+    [Fact]
+    public void CollectionExpression_RejectsNull()
+    {
+        Assert.Throws<ArgumentException>("globs", () =>
+        {
+            GlobCollection collection = [Glob.Parse("*.txt", GlobDialect.Standard), null!];
+            return collection;
+        });
+    }
+
+    [Fact]
     public void DocumentationExample_IncludeExclude()
     {
         #region GlobCollection_IncludeExclude

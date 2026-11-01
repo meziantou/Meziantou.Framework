@@ -33,6 +33,8 @@ internal sealed class SegmentedBitStorage
 
     public long BitCount { get; }
 
+    public ReadOnlySpan<ulong[]> Segments => _segments;
+
     public long CountSetBits()
     {
         long count = 0;

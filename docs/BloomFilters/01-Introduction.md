@@ -28,6 +28,8 @@ of a URL already seen.
 - **Merge filters** built separately into one. See [Combining filters](07-CombiningFilters.md).
 - **Speed up large filters** with [BlockedBloomFilter](cref:Meziantou.Framework.BloomFilters.BlockedBloomFilter), which
   keeps the bits of each value in one cache line. See [Blocked Bloom filters](08-BlockedBloomFilters.md).
+- **Save a filter and load it** after a restart or in another process. See
+  [Saving and loading filters](09-SavingAndLoading.md).
 
 ## Namespace
 

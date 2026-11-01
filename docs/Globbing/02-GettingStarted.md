@@ -28,7 +28,8 @@ Assert.False(glob.IsMatch("docs/file.txt"));
   [Pattern syntax](03-PatternSyntax.md); the others follow git, MSBuild and `fnmatch`.
 - `src/**/*.txt` matches the `.txt` files of `src` and of all its subdirectories. `**` matches zero or more
   directories, and `*` matches any characters of one file name.
-- Paths are relative, and use `/` as a separator. On Windows, `\` is a separator too.
+- Paths use `/` as a separator. On Windows, `\` is a separator too. A pattern that starts with a `/` matches absolute
+  paths, and the others match relative paths.
 
 ## Ignore the case
 

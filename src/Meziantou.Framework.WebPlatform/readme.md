@@ -281,7 +281,7 @@ See [docs/rendering.md](docs/rendering.md) for what is painted, and [Printing](d
   [docs/rendering.md](docs/rendering.md#paint-worklet-images)). Without a backend, nothing is rasterized and `canvas.getContext('2d')` returns null. Not painted yet:
   the color glyphs other than the layers of `COLR` version 0 with the palettes of `font-palette` (the paint graphs of
   `COLR` version 1, the bitmap and SVG glyphs), the wrapping of the SVG texts in the shapes of `shape-inside`. The canvas layers (`beginLayer()`)
-  and the `float16` canvases are not implemented.
+  are not implemented. The Imaging backend supports `float16` canvas storage, pixel transfers, solid paints and image drawing; gradients and intermediate effects still use normalized 16-bit colors.
   As in Blink, the painted boxes and the baselines are snapped to the device pixels and the metrics of the fonts are
   rounded to whole pixels (the layout keeps its fractional geometry).
 - **Injected user input.** There is no window: the host injects the pointer and wheel input of the user with

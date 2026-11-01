@@ -19,7 +19,7 @@ internal static partial class CanvasColors
     /// color. <c>currentcolor</c> is the computed color of the canvas element when it is connected, else opaque black. The
     /// color to paint is CSS gamut mapped to the color space of the canvas (https://drafts.csswg.org/css-color-4/#css-gamut-mapping).
     /// </summary>
-    public static ParsedColor? Parse(string value, Element? element, RenderingColorSpace gamut = RenderingColorSpace.Srgb)
+    public static ParsedColor? Parse(string value, Element? element, RenderingColorSpace gamut = RenderingColorSpace.Srgb, bool preserveRange = false)
     {
         if (value.Contains("currentcolor", StringComparison.OrdinalIgnoreCase))
         {
@@ -27,7 +27,7 @@ internal static partial class CanvasColors
             value = CurrentColorRegex().Replace(value, currentColor);
         }
 
-        if (CssValueComputer.ParseCssColorValue(value) is not { } color || DisplayColor.FromCss(color, gamut) is not { } displayColor)
+        if (CssValueComputer.ParseCssColorValue(value) is not { } color || (preserveRange ? DisplayColor.FromCssUnmapped(color) : DisplayColor.FromCss(color, gamut)) is not { } displayColor)
             return null;
 
         return new ParsedColor(Serialize(color, IsLegacySyntax(value)), displayColor, color);

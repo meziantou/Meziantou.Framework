@@ -39,7 +39,7 @@ public enum ImageDataPixelFormat
     [IdlMember("rgba-unorm8", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagedatapixelformat-rgba-unorm8")]
     RgbaUnorm8,
 
-    /// <summary>4 half-precision floats per pixel (R, G, B, A, from 0 to 1), in a <c>Float16Array</c>.</summary>
+    /// <summary>4 half-precision floats per pixel (R, G, B, A), in a <c>Float16Array</c>; the color channels can include values outside of [0, 1].</summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagedatapixelformat-rgba-float16"/>
     [IdlMember("rgba-float16", "https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#dom-imagedatapixelformat-rgba-float16")]
     RgbaFloat16,

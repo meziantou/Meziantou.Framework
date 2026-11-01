@@ -97,6 +97,7 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
     private readonly AllocationScope _scope;
     private PooledBuffer? _colors;
     private PooledBuffer? _samples;
+    private PooledBuffer? _floatColors;
     private int _width;
     private PooledBuffer? _rows;
     private int _rowCapacity;
@@ -471,11 +472,160 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
         return colors;
     }
 
+    /// <summary>Samples floating-point images without passing their colors through normalized 16-bit integers.</summary>
+    public override bool TryEvaluateFloat(int y, int x, int count, double alphaFactor, out ReadOnlySpan<double> colors)
+    {
+        colors = default;
+        if (_source!.PixelFormat is not (PixelFormat.RgbaHalf or PixelFormat.RgbaFloat) || _destination!.PixelFormat is not (PixelFormat.RgbaHalf or PixelFormat.RgbaFloat))
+            return false;
+
+        if (_floatColors is null || _floatColors.Span.Length < count * 4 * sizeof(double))
+        {
+            _floatColors?.Dispose();
+            _floatColors = ResampleWeights.Rent<double>(_scope, 4L * _width);
+        }
+
+        var output = unsafe(MemoryMarshal.Cast<byte, double>(_floatColors.Span))[..(count * 4)];
+        output.Clear();
+        if (!_isEmpty)
+        {
+            for (var i = 0; i < count; i++)
+            {
+                var px = x + i + 0.5;
+                var py = y + 0.5;
+                var u = _inverse.TransformX(px, py);
+                var v = _inverse.TransformY(px, py);
+                if (_isProjective)
+                {
+                    var w = (_h6 * px) + (_h7 * py) + _h8;
+                    if (!(w > 0))
+                        continue;
+
+                    u = ((_h0 * px) + (_h1 * py) + _h2) / w;
+                    v = ((_h3 * px) + (_h4 * py) + _h5) / w;
+                }
+
+                if (_hasDomain)
+                {
+                    u = Math.Clamp(u, _domainLeft, _domainRight);
+                    v = Math.Clamp(v, _domainTop, _domainBottom);
+                }
+
+                u = Math.Abs(u) < MaxPosition ? u : (u < 0 ? -MaxPosition : MaxPosition);
+                v = Math.Abs(v) < MaxPosition ? v : (v < 0 ? -MaxPosition : MaxPosition);
+                var pixel = output.Slice(i * 4, 4);
+                if (_isNearest)
+                {
+                    AccumulateFloat((int)Math.Floor(u), (int)Math.Floor(v), 1, pixel);
+                }
+                else if (_isBicubic)
+                {
+                    var left = (int)Math.Floor(u - 0.5);
+                    var top = (int)Math.Floor(v - 0.5);
+                    for (var row = top - 1; row <= top + 2; row++)
+                    {
+                        for (var column = left - 1; column <= left + 2; column++)
+                        {
+                            AccumulateFloat(column, row, Kernel(u - column - 0.5) * Kernel(v - row - 0.5), pixel);
+                        }
+                    }
+                }
+                else if (_isReduced)
+                {
+                    double totalWeight = 0;
+                    for (var row = (int)Math.Floor(v - _spanY); row <= Math.Ceiling(v + _spanY); row++)
+                    {
+                        var wy = _isBox ? Math.Max(0, Math.Min(row + 1, v + (_spanY / 2)) - Math.Max(row, v - (_spanY / 2))) : Math.Max(0, 1 - (Math.Abs(row + 0.5 - v) / _spanY));
+                        for (var column = (int)Math.Floor(u - _spanX); column <= Math.Ceiling(u + _spanX); column++)
+                        {
+                            var wx = _isBox ? Math.Max(0, Math.Min(column + 1, u + (_spanX / 2)) - Math.Max(column, u - (_spanX / 2))) : Math.Max(0, 1 - (Math.Abs(column + 0.5 - u) / _spanX));
+                            var weight = wx * wy;
+                            totalWeight += weight;
+                            AccumulateFloat(column, row, weight, pixel);
+                        }
+                    }
+
+                    if (totalWeight > 0)
+                    {
+                        for (var c = 0; c < 4; c++)
+                        {
+                            pixel[c] /= totalWeight;
+                        }
+                    }
+                }
+                else
+                {
+                    var left = (int)Math.Floor(u - 0.5);
+                    var top = (int)Math.Floor(v - 0.5);
+                    var fx = u - 0.5 - left;
+                    var fy = v - 0.5 - top;
+                    for (var row = 0; row < 2; row++)
+                    {
+                        for (var column = 0; column < 2; column++)
+                        {
+                            AccumulateFloat(left + column, top + row, (column == 0 ? 1 - fx : fx) * (row == 0 ? 1 - fy : fy), pixel);
+                        }
+                    }
+                }
+
+                var alpha = pixel[3];
+                if (alpha > 0)
+                {
+                    for (var c = 0; c < 3; c++)
+                    {
+                        pixel[c] /= alpha;
+                    }
+                }
+
+                pixel[3] = Math.Clamp(alpha, 0, 1) * alphaFactor;
+            }
+        }
+
+        colors = output;
+        return true;
+    }
+
+    private void AccumulateFloat(int column, int row, double weight, Span<double> sum)
+    {
+        if (weight == 0 || !TryWrap(column, _left, _regionWidth, _wrapModeX, out var x) || !TryWrap(row, _top, _regionHeight, _wrapModeY, out var y))
+            return;
+
+        var bytes = _storage!.GetRowSpanCore(_top + y);
+        double r, g, b, a;
+        if (_source!.PixelFormat == PixelFormat.RgbaHalf)
+        {
+            var pixel = unsafe(MemoryMarshal.Cast<byte, RgbaHalf>(bytes))[_left + x];
+            r = (double)pixel.R;
+            g = (double)pixel.G;
+            b = (double)pixel.B;
+            a = (double)pixel.A;
+        }
+        else
+        {
+            var pixel = unsafe(MemoryMarshal.Cast<byte, RgbaFloat>(bytes))[_left + x];
+            r = pixel.R;
+            g = pixel.G;
+            b = pixel.B;
+            a = pixel.A;
+        }
+
+        var alpha = Math.Clamp(a, 0, 1) * weight;
+        if (alpha == 0)
+            return;
+
+        sum[0] += r * alpha;
+        sum[1] += g * alpha;
+        sum[2] += b * alpha;
+        sum[3] += alpha;
+    }
+
     public void Dispose()
     {
         End();
         _colors?.Dispose();
         _samples?.Dispose();
+        _floatColors?.Dispose();
+        _floatColors = null;
         _rows?.Dispose();
         _sums?.Dispose();
         _tapCounts?.Dispose();
@@ -865,18 +1015,18 @@ internal sealed class ImageEvaluator : PaintEvaluator, IDisposable
 
         return new Rgba64(Round(Math.Clamp(red, 0, 65535 * a) / a), Round(Math.Clamp(green, 0, 65535 * a) / a), Round(Math.Clamp(blue, 0, 65535 * a) / a), resultAlpha);
 
-        // The cubic of Mitchell and Netravali for B = C = 1/3, of a distance
-        static double Kernel(double distance)
-        {
-            var t = Math.Abs(distance);
-            if (t < 1)
-                return ((((7 * t) - 12) * t * t) + (16.0 / 3)) / 6;
+    }
 
-            if (t < 2)
-                return (((((-7.0 / 3) * t) + 12) * t * t) - (20 * t) + (32.0 / 3)) / 6;
+    private static double Kernel(double distance)
+    {
+        var t = Math.Abs(distance);
+        if (t < 1)
+            return ((((7 * t) - 12) * t * t) + (16.0 / 3)) / 6;
 
-            return 0;
-        }
+        if (t < 2)
+            return (((((-7.0 / 3) * t) + 12) * t * t) - (20 * t) + (32.0 / 3)) / 6;
+
+        return 0;
     }
 
     /// <summary>Gets the color of the image at a position: the pixel that contains it, or the four pixels around it, interpolated.</summary>

@@ -14,7 +14,8 @@ fails.
 - **Layout.** The layout engine is internal: its results are read through the web APIs (CSSOM View, the computed styles,
   the observers). The features that are not implemented are listed in the
   [readme of the package](https://github.com/meziantou/Meziantou.Framework/blob/main/src/Meziantou.Framework.WebPlatform/readme.md#limitations).
-- **Painting.** The canvas layers (`beginLayer()`) and the `float16` canvases are not implemented. Without a
+- **Painting.** The canvas layers (`beginLayer()`) are not implemented. Float16 canvas storage and transfers are supported,
+  but gradients and intermediate effects use normalized 16-bit colors (see [Canvas](07-Rendering/05-Canvas.md)). Without a
   [rendering backend](07-Rendering/01-Overview.md), nothing is painted and the images are not decoded.
 
 ## Media and network

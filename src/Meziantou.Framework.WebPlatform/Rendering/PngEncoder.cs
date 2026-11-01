@@ -7,7 +7,7 @@ namespace Meziantou.Framework.WebPlatform.Rendering;
 /// <summary>
 /// Encodes pixels as a PNG image (https://w3c.github.io/png/): the serialization of the bitmaps as <c>image/png</c>
 /// (<c>toDataURL()</c>, <c>toBlob()</c>, <c>convertToBlob()</c>), which works without a rendering backend. The image is a
-/// truecolor image with alpha, 8 bits per channel (or a truecolor image without alpha for the opaque bitmaps), whose rows are
+/// truecolor image with alpha, 8 or 16 bits per channel (or a truecolor image without alpha for the opaque bitmaps), whose rows are
 /// filtered with the Paeth or the Sub filter and compressed with zlib.
 /// </summary>
 internal static class PngEncoder
@@ -19,12 +19,18 @@ internal static class PngEncoder
     /// <param name="height">The height in pixels (at least 1).</param>
     /// <param name="rgba">The pixels.</param>
     /// <param name="hasAlpha">Whether the alpha channel is kept (an opaque bitmap is encoded without it).</param>
-    public static byte[] Encode(int width, int height, ReadOnlySpan<byte> rgba, bool hasAlpha = true)
+    /// <param name="bitDepth">8, or 16 for samples stored in big-endian order.</param>
+    public static byte[] Encode(int width, int height, ReadOnlySpan<byte> rgba, bool hasAlpha = true, int bitDepth = 8)
     {
         ArgumentOutOfRangeException.ThrowIfLessThan(width, 1);
         ArgumentOutOfRangeException.ThrowIfLessThan(height, 1);
+        if (bitDepth is not (8 or 16))
+            throw new ArgumentOutOfRangeException(nameof(bitDepth));
+
+        var bytesPerSample = bitDepth / 8;
         var channels = hasAlpha ? 4 : 3;
-        var stride = width * channels;
+        var bytesPerPixel = channels * bytesPerSample;
+        var stride = width * bytesPerPixel;
 
         using var output = new MemoryStream();
         output.Write(Signature);
@@ -33,7 +39,7 @@ internal static class PngEncoder
         Span<byte> header = stackalloc byte[13];
         BinaryPrimitives.WriteUInt32BigEndian(header, (uint)width);
         BinaryPrimitives.WriteUInt32BigEndian(header[4..], (uint)height);
-        header[8] = 8;
+        header[8] = (byte)bitDepth;
         header[9] = hasAlpha ? (byte)6 : (byte)2;
         header[10] = 0;
         header[11] = 0;
@@ -50,7 +56,7 @@ internal static class PngEncoder
                 var filtered = new byte[stride + 1];
                 for (var y = 0; y < height; y++)
                 {
-                    var row = rgba.Slice(y * width * 4, width * 4);
+                    var row = rgba.Slice(y * width * 4 * bytesPerSample, width * 4 * bytesPerSample);
                     if (hasAlpha)
                     {
                         row.CopyTo(current);
@@ -59,9 +65,7 @@ internal static class PngEncoder
                     {
                         for (var x = 0; x < width; x++)
                         {
-                            current[x * 3] = row[x * 4];
-                            current[(x * 3) + 1] = row[(x * 4) + 1];
-                            current[(x * 3) + 2] = row[(x * 4) + 2];
+                            row.Slice(x * 4 * bytesPerSample, 3 * bytesPerSample).CopyTo(current.AsSpan(x * 3 * bytesPerSample));
                         }
                     }
 
@@ -69,7 +73,7 @@ internal static class PngEncoder
                     filtered[0] = y == 0 ? (byte)1 : (byte)4;
                     for (var i = 0; i < stride; i++)
                     {
-                        var left = i >= channels ? current[i - channels] : 0;
+                        var left = i >= bytesPerPixel ? current[i - bytesPerPixel] : 0;
                         if (y == 0)
                         {
                             filtered[i + 1] = (byte)(current[i] - left);
@@ -77,7 +81,7 @@ internal static class PngEncoder
                         else
                         {
                             var up = previous[i];
-                            var upperLeft = i >= channels ? previous[i - channels] : 0;
+                            var upperLeft = i >= bytesPerPixel ? previous[i - bytesPerPixel] : 0;
                             filtered[i + 1] = (byte)(current[i] - Paeth(left, up, upperLeft));
                         }
                     }

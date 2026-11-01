@@ -72,13 +72,13 @@ public abstract class RenderingBackend
     /// e.g. the bitmap of an <c>ImageBitmap</c>.
     /// </summary>
     /// <returns>The image, or null when it cannot be created (e.g. it is too large).</returns>
-    internal virtual RenderingImage? CreateImage(int width, int height, ReadOnlySpan<byte> pixels)
+    internal virtual RenderingImage? CreateImage(int width, int height, ReadOnlySpan<byte> pixels, ImageDataPixelFormat pixelFormat = ImageDataPixelFormat.RgbaUnorm8)
     {
-        using var surface = CreateSurface(width, height, RenderingSurfaceOptions.Default);
+        using var surface = CreateSurface(width, height, RenderingSurfaceOptions.Default with { IsCanvasBitmap = true, ColorType = pixelFormat == ImageDataPixelFormat.RgbaFloat16 ? CanvasColorType.Float16 : CanvasColorType.Unorm8 });
         if (surface is null)
             return null;
 
-        surface.WritePixels(0, 0, width, height, pixels);
+        surface.WritePixels(0, 0, width, height, pixels, pixelFormat);
         return surface.CreateSnapshot();
     }
 
@@ -109,9 +109,12 @@ public abstract class RenderingBackend
 /// </param>
 internal sealed record RenderingSurfaceOptions(bool HasAlpha = true, RenderingColorSpace ColorSpace = RenderingColorSpace.Srgb, bool WillReadFrequently = false)
 {
+    /// <summary>The component format of a canvas bitmap.</summary>
+    public CanvasColorType ColorType { get; init; }
+
     /// <summary>
     /// Whether the surface is the bitmap of a canvas (https://html.spec.whatwg.org/multipage/canvas.html#concept-canvas-bitmap):
-    /// its pixels have 8 bits per premultiplied component, as in the browsers (the pixels read with <c>getImageData()</c> and
+    /// its pixels use <see cref="ColorType"/> (the pixels read with <c>getImageData()</c> and
     /// written back, or transferred as an <c>ImageBitmap</c>, are the pixels the canvas paints). The other surfaces (e.g. the
     /// snapshots of the view transitions) can keep the precision of the rasterizer.
     /// </summary>
@@ -154,14 +157,14 @@ internal abstract class RenderingSurface : IDisposable
     public abstract void Clear(DisplayColor color);
 
     /// <summary>
-    /// Copies the pixels of a rectangle of the surface to <paramref name="destination"/>: 4 bytes per pixel in the order R, G,
+    /// Copies the pixels of a rectangle of the surface to <paramref name="destination"/>: 4 bytes or 4 native-endian half floats per pixel in the order R, G,
     /// B, A, not premultiplied, in the color space of the surface, row by row (the format of <c>ImageData</c>). The pixels
     /// outside of the surface are transparent black.
     /// </summary>
-    public abstract void ReadPixels(int x, int y, int width, int height, Span<byte> destination);
+    public abstract void ReadPixels(int x, int y, int width, int height, Span<byte> destination, ImageDataPixelFormat pixelFormat = ImageDataPixelFormat.RgbaUnorm8);
 
     /// <summary>Replaces the pixels of a rectangle of the surface with <paramref name="source"/> (the format of <see cref="ReadPixels"/>), without compositing.</summary>
-    public abstract void WritePixels(int x, int y, int width, int height, ReadOnlySpan<byte> source);
+    public abstract void WritePixels(int x, int y, int width, int height, ReadOnlySpan<byte> source, ImageDataPixelFormat pixelFormat = ImageDataPixelFormat.RgbaUnorm8);
 
     /// <summary>Returns an immutable copy of the pixels of the surface, e.g. to draw a canvas into another canvas or into a page.</summary>
     public abstract RenderingImage CreateSnapshot();
@@ -188,6 +191,23 @@ internal abstract class RenderingImage : IDisposable
 
     /// <summary>Copies the pixels of the image to <paramref name="destination"/>, in the format of <see cref="RenderingSurface.ReadPixels"/> (sRGB).</summary>
     public abstract void ReadPixels(Span<byte> destination);
+
+    /// <summary>The component format that preserves the precision of the decoded pixels.</summary>
+    public virtual ImageDataPixelFormat PixelFormat => ImageDataPixelFormat.RgbaUnorm8;
+
+    /// <summary>Copies the sRGB pixels in the requested component format.</summary>
+    public virtual void ReadPixels(Span<byte> destination, ImageDataPixelFormat pixelFormat)
+    {
+        if (pixelFormat == ImageDataPixelFormat.RgbaUnorm8)
+        {
+            ReadPixels(destination);
+            return;
+        }
+
+        var pixels = new byte[checked(Width * Height * 4)];
+        ReadPixels(pixels);
+        CanvasRenderingContext2DBase.CopyBytesToHalf(pixels, destination);
+    }
 
     /// <summary>Releases the pixels of the image.</summary>
     public void Dispose()

@@ -403,14 +403,26 @@ public abstract partial class CanvasRenderingContext2DBase
         var imageData = new ImageData((uint)width, (uint)height, new ImageDataSettings { ColorSpace = colorSpace, PixelFormat = format });
 
         // 4-5. The pixels of the rectangle, converted from the color space of the bitmap
-        var pixels = new byte[width * height * 4];
+        var transferFormat = format == ImageDataPixelFormat.RgbaFloat16 || Bitmap.Options.ColorType == CanvasColorType.Float16 ? ImageDataPixelFormat.RgbaFloat16 : ImageDataPixelFormat.RgbaUnorm8;
+        var pixels = new byte[width * height * (transferFormat == ImageDataPixelFormat.RgbaFloat16 ? 8 : 4)];
         if (x < int.MaxValue && y < int.MaxValue && x + width > int.MinValue && y + height > int.MinValue)
         {
-            ReadPixels(x, y, (int)width, (int)height, pixels);
+            ReadPixels(x, y, (int)width, (int)height, pixels, transferFormat);
         }
 
-        ConvertColorSpace(pixels, SurfaceColorSpace, colorSpace);
-        WriteImageData(imageData, pixels);
+        if (transferFormat == ImageDataPixelFormat.RgbaFloat16)
+        {
+            ConvertColorSpace(unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, Half>(pixels.AsSpan())), SurfaceColorSpace, colorSpace);
+            if (format == ImageDataPixelFormat.RgbaFloat16)
+                pixels.CopyTo(imageData.Data.Span);
+            else
+                CopyHalfToBytes(pixels, imageData.Data.Span);
+        }
+        else
+        {
+            ConvertColorSpace(pixels, SurfaceColorSpace, colorSpace);
+            WriteImageData(imageData, pixels);
+        }
         return imageData;
     }
 
@@ -471,14 +483,25 @@ public abstract partial class CanvasRenderingContext2DBase
             return;
 
         // 5. The pixels of the dirty rectangle, converted to the color space of the bitmap, replace the pixels at (dx + x, dy + y)
-        var source = imageData.ToRgbaBytes();
-        var rectangle = new byte[width * height * 4];
+        var pixelFormat = imageData.PixelFormat == ImageDataPixelFormat.RgbaFloat16 || Bitmap.Options.ColorType == CanvasColorType.Float16 ? ImageDataPixelFormat.RgbaFloat16 : ImageDataPixelFormat.RgbaUnorm8;
+        var bytesPerPixel = pixelFormat == ImageDataPixelFormat.RgbaFloat16 ? 8 : 4;
+        var source = imageData.Data.ToArray();
+        if (pixelFormat == ImageDataPixelFormat.RgbaFloat16 && imageData.PixelFormat == ImageDataPixelFormat.RgbaUnorm8)
+        {
+            var halfSource = new byte[source.Length * 2];
+            CopyBytesToHalf(source, halfSource);
+            source = halfSource;
+        }
+        var rectangle = new byte[width * height * bytesPerPixel];
         for (var row = 0; row < height; row++)
         {
-            Array.Copy(source, (((y + row) * imageData.Width) + x) * 4, rectangle, row * width * 4, width * 4);
+            Array.Copy(source, (((y + row) * imageData.Width) + x) * bytesPerPixel, rectangle, row * width * bytesPerPixel, width * bytesPerPixel);
         }
 
-        ConvertColorSpace(rectangle, imageData.ColorSpace, SurfaceColorSpace);
+        if (pixelFormat == ImageDataPixelFormat.RgbaFloat16)
+            ConvertColorSpace(unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, Half>(rectangle.AsSpan())), imageData.ColorSpace, SurfaceColorSpace);
+        else
+            ConvertColorSpace(rectangle, imageData.ColorSpace, SurfaceColorSpace);
 
         // The part of the rectangle outside of the bitmap is ignored
         var left = dx + x;
@@ -492,18 +515,18 @@ public abstract partial class CanvasRenderingContext2DBase
 
         var clippedWidth = clippedRight - clippedLeft;
         var clippedHeight = clippedBottom - clippedTop;
-        var clipped = new byte[clippedWidth * clippedHeight * 4];
+        var clipped = new byte[clippedWidth * clippedHeight * bytesPerPixel];
         for (var row = 0; row < clippedHeight; row++)
         {
-            Array.Copy(rectangle, (((clippedTop - top + row) * width) + (clippedLeft - left)) * 4, clipped, row * clippedWidth * 4, clippedWidth * 4);
+            Array.Copy(rectangle, (((clippedTop - top + row) * width) + (clippedLeft - left)) * bytesPerPixel, clipped, row * clippedWidth * bytesPerPixel, clippedWidth * bytesPerPixel);
         }
 
-        Bitmap.WritePixels((int)clippedLeft, (int)clippedTop, (int)clippedWidth, (int)clippedHeight, clipped);
+        Bitmap.WritePixels((int)clippedLeft, (int)clippedTop, (int)clippedWidth, (int)clippedHeight, clipped, pixelFormat);
         OnBitmapChanged();
     }
 
     /// <summary>Reads the pixels of a rectangle that may be partly outside of the bitmap (those pixels are transparent black).</summary>
-    private void ReadPixels(long x, long y, int width, int height, byte[] destination)
+    private void ReadPixels(long x, long y, int width, int height, byte[] destination, ImageDataPixelFormat pixelFormat)
     {
         var left = Math.Max(x, 0);
         var top = Math.Max(y, 0);
@@ -516,15 +539,50 @@ public abstract partial class CanvasRenderingContext2DBase
         var readHeight = (int)(bottom - top);
         if (readWidth == width && readHeight == height)
         {
-            Bitmap.ReadPixels((int)left, (int)top, width, height, destination);
+            Bitmap.ReadPixels((int)left, (int)top, width, height, destination, pixelFormat);
             return;
         }
 
-        var buffer = new byte[(long)readWidth * readHeight * 4];
-        Bitmap.ReadPixels((int)left, (int)top, readWidth, readHeight, buffer);
+        var bytesPerPixel = pixelFormat == ImageDataPixelFormat.RgbaFloat16 ? 8 : 4;
+        var buffer = new byte[(long)readWidth * readHeight * bytesPerPixel];
+        Bitmap.ReadPixels((int)left, (int)top, readWidth, readHeight, buffer, pixelFormat);
         for (var row = 0; row < readHeight; row++)
         {
-            Array.Copy(buffer, (long)row * readWidth * 4, destination, ((((top - y) + row) * width) + (left - x)) * 4, readWidth * 4);
+            Array.Copy(buffer, (long)row * readWidth * bytesPerPixel, destination, ((((top - y) + row) * width) + (left - x)) * bytesPerPixel, readWidth * bytesPerPixel);
+        }
+    }
+
+    internal static void CopyHalfToBytes(ReadOnlySpan<byte> source, Span<byte> destination)
+    {
+        var halves = unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, Half>(source));
+        for (var i = 0; i < halves.Length; i++)
+        {
+            var value = (double)halves[i];
+            destination[i] = double.IsNaN(value) ? (byte)0 : (byte)Math.Round(Math.Clamp(value, 0, 1) * 255, MidpointRounding.AwayFromZero);
+        }
+    }
+
+    internal static void CopyBytesToHalf(ReadOnlySpan<byte> source, Span<byte> destination)
+    {
+        var halves = unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, Half>(destination));
+        for (var i = 0; i < source.Length; i++)
+        {
+            halves[i] = (Half)(source[i] / 255.0);
+        }
+    }
+
+    internal static void ConvertColorSpace(Span<Half> pixels, PredefinedColorSpace from, PredefinedColorSpace to)
+    {
+        if (from == to)
+            return;
+
+        for (var i = 0; i < pixels.Length; i += 4)
+        {
+            var xyz = CssColorConversion.ToXyz(GetColorSpaceName(from), [(double)pixels[i], (double)pixels[i + 1], (double)pixels[i + 2]]);
+            var result = CssColorConversion.FromXyz(GetColorSpaceName(to), xyz);
+            pixels[i] = (Half)result[0];
+            pixels[i + 1] = (Half)result[1];
+            pixels[i + 2] = (Half)result[2];
         }
     }
 

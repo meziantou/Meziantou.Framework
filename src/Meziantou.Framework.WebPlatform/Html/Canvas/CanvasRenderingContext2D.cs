@@ -90,7 +90,7 @@ internal static class CanvasContexts
             return null;
 
         var colorSpace = settings.ColorSpace is PredefinedColorSpace.DisplayP3 or PredefinedColorSpace.DisplayP3Linear ? RenderingColorSpace.DisplayP3 : RenderingColorSpace.Srgb;
-        return new CanvasBitmap(backend, width, height, new RenderingSurfaceOptions(settings.Alpha, colorSpace, settings.WillReadFrequently));
+        return new CanvasBitmap(backend, width, height, new RenderingSurfaceOptions(settings.Alpha, colorSpace, settings.WillReadFrequently) { ColorType = settings.ColorType });
     }
 
     /// <summary>
@@ -112,6 +112,20 @@ internal static class CanvasContexts
         {
             if (backend.EncodeImage(pixels.Width, pixels.Height, pixels.Rgba, mimeType, quality is >= 0 and <= 1 ? quality : null) is { } encoded)
                 return (encoded, mimeType);
+        }
+
+        if (pixels.PixelFormat == ImageDataPixelFormat.RgbaFloat16)
+        {
+            var halves = unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, Half>(pixels.PixelBytes));
+            var rgba16 = new byte[pixels.PixelBytes.Length];
+            for (var i = 0; i < halves.Length; i++)
+            {
+                var value = (double)halves[i];
+                var sample = double.IsNaN(value) ? (ushort)0 : (ushort)Math.Round(Math.Clamp(value, 0, 1) * ushort.MaxValue, MidpointRounding.AwayFromZero);
+                System.Buffers.Binary.BinaryPrimitives.WriteUInt16BigEndian(rgba16.AsSpan(i * 2), sample);
+            }
+
+            return (PngEncoder.Encode(pixels.Width, pixels.Height, rgba16, bitDepth: 16), "image/png");
         }
 
         return (PngEncoder.Encode(pixels.Width, pixels.Height, pixels.Rgba), "image/png");

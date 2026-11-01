@@ -5,7 +5,7 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// <summary>
 /// The bitmap data of an <see cref="ImageBitmap"/> or of the output bitmap of an <see cref="ImageBitmapRenderingContext"/>
 /// (https://html.spec.whatwg.org/multipage/imagebitmap-and-animations.html#concept-imagebitmap-bitmap-data): immutable pixels in
-/// the format of the canvases (4 bytes per pixel, R, G, B, A, not premultiplied, sRGB), and its origin-clean flag. The image a
+/// the format of the canvases (4 bytes or 4 half floats per pixel, R, G, B, A, not premultiplied, sRGB), and its origin-clean flag. The image a
 /// rendering backend draws is created on demand (<see cref="GetPaintImage"/>).
 /// </summary>
 internal sealed class BitmapPixels
@@ -15,12 +15,14 @@ internal sealed class BitmapPixels
 
     private readonly Lock _lock = new();
     private PaintImage? _paintImage;
+    private byte[]? _rgba;
 
-    public BitmapPixels(int width, int height, byte[] rgba, bool originClean = true)
+    public BitmapPixels(int width, int height, byte[] rgba, bool originClean = true, ImageDataPixelFormat pixelFormat = ImageDataPixelFormat.RgbaUnorm8)
     {
         Width = width;
         Height = height;
-        Rgba = rgba;
+        PixelBytes = rgba;
+        PixelFormat = pixelFormat;
         IsOriginClean = originClean;
     }
 
@@ -31,7 +33,31 @@ internal sealed class BitmapPixels
     public int Height { get; }
 
     /// <summary>The pixels, row by row (4 bytes per pixel, not premultiplied, sRGB). They must not be modified.</summary>
-    public byte[] Rgba { get; }
+    public byte[] Rgba
+    {
+        get
+        {
+            if (PixelFormat == ImageDataPixelFormat.RgbaUnorm8)
+                return PixelBytes;
+
+            lock (_lock)
+            {
+                if (_rgba is null)
+                {
+                    _rgba = new byte[(long)Width * Height * 4];
+                    CanvasRenderingContext2DBase.CopyHalfToBytes(PixelBytes, _rgba);
+                }
+
+                return _rgba;
+            }
+        }
+    }
+
+    /// <summary>The stored pixels, in their original component format.</summary>
+    public byte[] PixelBytes { get; }
+
+    /// <summary>The component format of the pixels.</summary>
+    public ImageDataPixelFormat PixelFormat { get; }
 
     /// <summary>
     /// Whether the pixels do not come from a resource of another origin (https://html.spec.whatwg.org/multipage/canvas.html#concept-canvas-origin-clean):
@@ -50,7 +76,7 @@ internal sealed class BitmapPixels
             if (_paintImage is not null && _paintImage.GetDecodedImage(backend) is not null)
                 return _paintImage;
 
-            if (Width <= 0 || Height <= 0 || backend.CreateImage(Width, Height, Rgba) is not { } image)
+            if (Width <= 0 || Height <= 0 || backend.CreateImage(Width, Height, PixelBytes, PixelFormat) is not { } image)
                 return null;
 
             _paintImage = new PaintImage("", backend, image);

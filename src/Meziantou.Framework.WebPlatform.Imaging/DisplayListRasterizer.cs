@@ -18,6 +18,7 @@ internal sealed partial class DisplayListRasterizer
     private readonly ImagingRenderingBackend _backend;
     private readonly RenderingColorSpace _colorSpace;
     private readonly bool _antiAliasEnabled;
+    private readonly bool _floatTarget;
     private DisplayList _list = DisplayList.Empty;
     private int _index;
 
@@ -32,17 +33,20 @@ internal sealed partial class DisplayListRasterizer
 
     /// <param name="backend">The backend: its options, its fonts and its images.</param>
     /// <param name="colorSpace">The color space of the pixels of the bitmap.</param>
-    public DisplayListRasterizer(ImagingRenderingBackend backend, RenderingColorSpace colorSpace)
+    /// <param name="floatTarget">Whether solid paints retain floating-point components.</param>
+    public DisplayListRasterizer(ImagingRenderingBackend backend, RenderingColorSpace colorSpace, bool floatTarget = false)
     {
         _backend = backend;
         _colorSpace = colorSpace;
         _antiAliasEnabled = backend.Options.AntiAlias;
+        _floatTarget = floatTarget;
     }
 
     /// <summary>Draws a display list on a frame (the coordinates of the display list are the pixels of the frame).</summary>
     public static void Rasterize(ImagingRenderingBackend backend, ImageFrame frame, DisplayList displayList, RenderingColorSpace colorSpace)
     {
-        frame.Draw((backend, displayList, colorSpace), static (canvas, state) => new DisplayListRasterizer(state.backend, state.colorSpace).Draw(canvas, state.displayList, DisplayMatrix.Identity));
+        var floatTarget = frame.PixelFormat is Meziantou.Framework.Imaging.PixelFormat.RgbaFloat or Meziantou.Framework.Imaging.PixelFormat.RgbaHalf;
+        frame.Draw((backend, displayList, colorSpace, floatTarget), static (canvas, state) => new DisplayListRasterizer(state.backend, state.colorSpace, state.floatTarget).Draw(canvas, state.displayList, DisplayMatrix.Identity));
     }
 
     /// <summary>
@@ -687,7 +691,7 @@ internal sealed partial class DisplayListRasterizer
         (destinationLeft, destinationTop) = (destinationRect.X, destinationRect.Y);
 
         var (deviceScaleX, deviceScaleY) = GetScaleFactors();
-        var frame = image.GetFrame(_colorSpace);
+        var frame = image.GetFrame(_colorSpace, preserveRange: _floatTarget);
         var sampling = GetSampling(draw.Sampling, scaleX * deviceScaleX, scaleY * deviceScaleY);
         var sourceRect = RectangleD.FromLTRB(clippedLeft, clippedTop, clippedRight, clippedBottom);
         if (composite == D.CompositeMode.SourceOver && blend == D.BlendMode.Normal)

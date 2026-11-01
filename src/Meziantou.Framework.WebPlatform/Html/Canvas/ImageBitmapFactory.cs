@@ -135,9 +135,13 @@ internal static class ImageBitmapFactory
                     throw InvalidState("The buffer of the image data is detached");
 
                 // The bitmaps are sRGB: the pixels of the other color spaces are converted
-                var pixels = imageData.ToRgbaBytes();
-                CanvasRenderingContext2DBase.ConvertColorSpace(pixels, imageData.ColorSpace, PredefinedColorSpace.Srgb);
-                return new BitmapPixels((int)imageData.Width, (int)imageData.Height, pixels);
+                var pixels = imageData.Data.ToArray();
+                if (imageData.PixelFormat == ImageDataPixelFormat.RgbaFloat16)
+                    CanvasRenderingContext2DBase.ConvertColorSpace(unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, Half>(pixels.AsSpan())), imageData.ColorSpace, PredefinedColorSpace.Srgb);
+                else
+                    CanvasRenderingContext2DBase.ConvertColorSpace(pixels, imageData.ColorSpace, PredefinedColorSpace.Srgb);
+
+                return new BitmapPixels((int)imageData.Width, (int)imageData.Height, pixels, pixelFormat: imageData.PixelFormat);
             }
 
             case Blob blob:
@@ -247,9 +251,9 @@ internal static class ImageBitmapFactory
     private static BitmapPixels Decode(RenderingImageDecoder decoder, ExifOrientation orientation, bool convertColors, bool originClean)
     {
         using var frame = decoder.DecodeFrame(0, orientation, convertColors) ?? throw InvalidState("The image cannot be decoded");
-        var pixels = new byte[(long)frame.Width * frame.Height * 4];
-        frame.ReadPixels(pixels);
-        return new BitmapPixels(frame.Width, frame.Height, pixels, originClean);
+        var pixels = new byte[(long)frame.Width * frame.Height * (frame.PixelFormat == ImageDataPixelFormat.RgbaFloat16 ? 8 : 4)];
+        frame.ReadPixels(pixels, frame.PixelFormat);
+        return new BitmapPixels(frame.Width, frame.Height, pixels, originClean, frame.PixelFormat);
     }
 
     /// <summary>
@@ -305,49 +309,50 @@ internal static class ImageBitmapFactory
         var outputHeight = (long)outputHeightValue;
 
         // 4-5. The source rectangle of the input (the pixels outside of the input are transparent black)
+        var bytesPerPixel = input.PixelFormat == ImageDataPixelFormat.RgbaFloat16 ? 8 : 4;
         byte[] cropped;
         if (sx == 0 && sy == 0 && sw == input.Width && sh == input.Height)
         {
-            cropped = input.Rgba;
+            cropped = input.PixelBytes;
         }
         else
         {
-            cropped = new byte[sw * sh * 4];
+            cropped = new byte[sw * sh * bytesPerPixel];
             var left = Math.Max(0, sx);
             var right = Math.Min(input.Width, sx + sw);
             if (right > left)
             {
                 for (var row = Math.Max(0, sy); row < Math.Min(input.Height, sy + sh); row++)
                 {
-                    var sourceOffset = ((row * input.Width) + left) * 4;
-                    var destinationOffset = (((row - sy) * sw) + (left - sx)) * 4;
-                    Array.Copy(input.Rgba, sourceOffset, cropped, destinationOffset, (right - left) * 4);
+                    var sourceOffset = ((row * input.Width) + left) * bytesPerPixel;
+                    var destinationOffset = (((row - sy) * sw) + (left - sx)) * bytesPerPixel;
+                    Array.Copy(input.PixelBytes, sourceOffset, cropped, destinationOffset, (right - left) * bytesPerPixel);
                 }
             }
         }
 
         // 6. Scaled to the output size with the resize quality
-        var output = outputWidth == sw && outputHeight == sh ? cropped : Resize(cropped, (int)sw, (int)sh, (int)outputWidth, (int)outputHeight, options.ResizeQuality);
+        var output = outputWidth == sw && outputHeight == sh ? cropped : Resize(cropped, (int)sw, (int)sh, (int)outputWidth, (int)outputHeight, options.ResizeQuality, input.PixelFormat);
 
         // 7. Flipped vertically
         if (options.ImageOrientation == ImageBitmapOrientation.FlipY)
         {
-            output = FlipVertically(output, (int)outputWidth, (int)outputHeight);
+            output = FlipVertically(output, (int)outputWidth, (int)outputHeight, bytesPerPixel);
         }
 
         // 8. Premultiplied: the colors keep the precision of premultiplied 8-bit components (the bitmap stores unpremultiplied colors)
         if (options.PremultiplyAlpha == PremultiplyAlpha.Premultiply)
         {
-            output = ReducePrecisionByPremultiplication(output);
+            output = ReducePrecisionByPremultiplication(output, input.PixelFormat);
         }
 
-        return new BitmapPixels((int)outputWidth, (int)outputHeight, ReferenceEquals(output, input.Rgba) ? input.Rgba : output, input.IsOriginClean);
+        return new BitmapPixels((int)outputWidth, (int)outputHeight, output, input.IsOriginClean, input.PixelFormat);
     }
 
-    private static byte[] FlipVertically(byte[] pixels, int width, int height)
+    private static byte[] FlipVertically(byte[] pixels, int width, int height, int bytesPerPixel = 4)
     {
         var result = new byte[pixels.Length];
-        var stride = width * 4;
+        var stride = width * bytesPerPixel;
         for (var row = 0; row < height; row++)
         {
             Array.Copy(pixels, row * stride, result, (height - 1 - row) * stride, stride);
@@ -356,9 +361,30 @@ internal static class ImageBitmapFactory
         return result;
     }
 
-    private static byte[] ReducePrecisionByPremultiplication(byte[] pixels)
+    private static byte[] ReducePrecisionByPremultiplication(byte[] pixels, ImageDataPixelFormat pixelFormat)
     {
         var result = new byte[pixels.Length];
+        if (pixelFormat == ImageDataPixelFormat.RgbaFloat16)
+        {
+            var source = unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, Half>(pixels.AsSpan()));
+            var target = unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, Half>(result.AsSpan()));
+            for (var i = 0; i < source.Length; i += 4)
+            {
+                var alpha = (float)source[i + 3];
+                target[i + 3] = source[i + 3];
+                if (alpha == 0)
+                    continue;
+
+                for (var c = 0; c < 3; c++)
+                {
+                    var premultiplied = (Half)((float)source[i + c] * alpha);
+                    target[i + c] = (Half)((float)premultiplied / alpha);
+                }
+            }
+
+            return result;
+        }
+
         for (var i = 0; i < pixels.Length; i += 4)
         {
             var alpha = pixels[i + 3];
@@ -381,9 +407,10 @@ internal static class ImageBitmapFactory
     /// the nearest pixel for <c>pixelated</c>, a bilinear interpolation of the premultiplied colors otherwise, which averages
     /// the covered pixels when the image is reduced with the <c>medium</c> and <c>high</c> qualities.
     /// </summary>
-    internal static byte[] Resize(byte[] pixels, int width, int height, int outputWidth, int outputHeight, ResizeQuality quality)
+    internal static byte[] Resize(byte[] pixels, int width, int height, int outputWidth, int outputHeight, ResizeQuality quality, ImageDataPixelFormat pixelFormat = ImageDataPixelFormat.RgbaUnorm8)
     {
-        var result = new byte[(long)outputWidth * outputHeight * 4];
+        var bytesPerPixel = pixelFormat == ImageDataPixelFormat.RgbaFloat16 ? 8 : 4;
+        var result = new byte[(long)outputWidth * outputHeight * bytesPerPixel];
         var scaleX = (double)width / outputWidth;
         var scaleY = (double)height / outputHeight;
         Span<double> sum = stackalloc double[4];
@@ -396,7 +423,7 @@ internal static class ImageBitmapFactory
                 {
                     var sourceX = Math.Min(width - 1, (int)((x + 0.5) * scaleX));
                     var sourceY = Math.Min(height - 1, (int)((y + 0.5) * scaleY));
-                    Array.Copy(pixels, (((long)sourceY * width) + sourceX) * 4, result, destination, 4);
+                    Array.Copy(pixels, (((long)sourceY * width) + sourceX) * bytesPerPixel, result, destination * (bytesPerPixel / 4), bytesPerPixel);
                     continue;
                 }
 
@@ -414,7 +441,7 @@ internal static class ImageBitmapFactory
                         for (var sourceX = (int)x0; sourceX < Math.Min(width, (int)Math.Ceiling(x1)); sourceX++)
                         {
                             var coverage = coverageY * (Math.Min(x1, sourceX + 1) - Math.Max(x0, sourceX));
-                            Accumulate(pixels, (((long)sourceY * width) + sourceX) * 4, coverage, sum);
+                            Accumulate(pixels, (((long)sourceY * width) + sourceX) * 4, coverage, sum, pixelFormat);
                         }
                     }
                 }
@@ -437,7 +464,7 @@ internal static class ImageBitmapFactory
                             var weight = weightY * (i == 0 ? 1 - fx : fx);
                             if (weight > 0)
                             {
-                                Accumulate(pixels, (((long)sourceY * width) + sourceX) * 4, weight, sum);
+                                Accumulate(pixels, (((long)sourceY * width) + sourceX) * 4, weight, sum, pixelFormat);
                             }
                         }
                     }
@@ -448,26 +475,40 @@ internal static class ImageBitmapFactory
                 if (totalAlpha <= 0)
                     continue;
 
-                result[destination + 3] = ToByte(totalAlpha / WeightSum(quality, scaleX, scaleY, x, y, width, height) * 255);
+                WriteComponent(result, destination + 3, totalAlpha / WeightSum(quality, scaleX, scaleY, x, y, width, height), pixelFormat);
                 for (var c = 0; c < 3; c++)
                 {
-                    result[destination + c] = ToByte(sum[c] / totalAlpha * 255);
+                    WriteComponent(result, destination + c, sum[c] / totalAlpha, pixelFormat);
                 }
             }
         }
 
         return result;
 
-        static void Accumulate(byte[] pixels, long offset, double weight, Span<double> sum)
+        static void Accumulate(byte[] pixels, long offset, double weight, Span<double> sum, ImageDataPixelFormat pixelFormat)
         {
-            var alpha = pixels[offset + 3] / 255.0 * weight;
-            sum[0] += pixels[offset] / 255.0 * alpha;
-            sum[1] += pixels[offset + 1] / 255.0 * alpha;
-            sum[2] += pixels[offset + 2] / 255.0 * alpha;
+            var alpha = ReadComponent(pixels, offset + 3, pixelFormat) * weight;
+            sum[0] += ReadComponent(pixels, offset, pixelFormat) * alpha;
+            sum[1] += ReadComponent(pixels, offset + 1, pixelFormat) * alpha;
+            sum[2] += ReadComponent(pixels, offset + 2, pixelFormat) * alpha;
             sum[3] += alpha;
         }
 
-        static byte ToByte(double value) => (byte)Math.Clamp(Math.Round(value, MidpointRounding.AwayFromZero), 0, 255);
+        static double ReadComponent(byte[] pixels, long offset, ImageDataPixelFormat pixelFormat)
+            => pixelFormat == ImageDataPixelFormat.RgbaFloat16 ? (double)unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, Half>(pixels.AsSpan()))[(int)offset] : pixels[offset] / 255.0;
+
+        static void WriteComponent(byte[] pixels, long offset, double value, ImageDataPixelFormat pixelFormat)
+        {
+            if (pixelFormat == ImageDataPixelFormat.RgbaFloat16)
+            {
+                var halves = unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, Half>(pixels.AsSpan()));
+                halves[(int)offset] = (Half)value;
+            }
+            else
+            {
+                pixels[offset] = (byte)Math.Clamp(Math.Round(value * 255, MidpointRounding.AwayFromZero), 0, 255);
+            }
+        }
     }
 
     /// <summary>The total weight of the source pixels of a destination pixel (the area of the pixel in source pixels, 1 for the bilinear interpolation).</summary>

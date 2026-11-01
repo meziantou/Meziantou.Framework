@@ -29,6 +29,18 @@ internal readonly ref struct DrawingSource
         Curves = curves;
     }
 
+    public DrawingSource(ReadOnlySpan<double> colors, CompositeMode mode, BlendMode blend, byte transfer, LinearLightCurves? curves)
+    {
+        FloatColors = colors;
+        Mode = mode;
+        Blend = blend;
+        Transfer = transfer;
+        Curves = curves;
+    }
+
+    /// <summary>Gets floating-point paint samples when the source and target have floating-point pixels.</summary>
+    public ReadOnlySpan<double> FloatColors { get; }
+
     /// <summary>Gets the color of every pixel when <see cref="Colors"/> is empty.</summary>
     public DrawingColor Color { get; }
 
@@ -61,5 +73,6 @@ internal readonly ref struct DrawingSource
     /// <param name="length">The number of pixels of the part.</param>
     /// <returns>The paint of the part.</returns>
     public DrawingSource Slice(int start, int length)
-        => Colors.IsEmpty ? this : new DrawingSource(Colors.Slice(start * 4, length * 4), Mode, Blend, Transfer, Curves);
+        => !FloatColors.IsEmpty ? new DrawingSource(FloatColors.Slice(start * 4, length * 4), Mode, Blend, Transfer, Curves)
+            : Colors.IsEmpty ? this : new DrawingSource(Colors.Slice(start * 4, length * 4), Mode, Blend, Transfer, Curves);
 }

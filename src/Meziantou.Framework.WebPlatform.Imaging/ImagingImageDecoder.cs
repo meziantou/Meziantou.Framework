@@ -248,6 +248,22 @@ internal sealed class ImagingImageDecoder : RenderingImageDecoder
             // ignored: its colors are sRGB, unless its cICP chunk describes them (the codec only reports the embedded ICC
             // profile and the CICP color description, and never applies them)
             var transform = convertToSrgb ? GetColorTransform() : null;
+            if (_format == ImageFormat.Png && _hasWideSamples && _frameCount == 1 && transform is null && (!convertToSrgb || _cicp is null))
+            {
+                var image = Image.Load<Rgba64>(_data.Span, DecodeOptions);
+                try
+                {
+                    image.Metadata.Orientation = (Meziantou.Framework.Imaging.Metadata.ExifOrientation)orientation;
+                    image.AutoOrient();
+                    return new ImagingRenderingImage(image, RenderingColorSpace.Srgb);
+                }
+                catch
+                {
+                    image.Dispose();
+                    throw;
+                }
+            }
+
             byte[]? pixels = null;
             if (_format is ImageFormat.Ico or ImageFormat.Cur)
             {

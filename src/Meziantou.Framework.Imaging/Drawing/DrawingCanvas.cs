@@ -44,8 +44,9 @@ namespace Meziantou.Framework.Imaging.Drawing;
 /// (<see cref="BackdropLayer(Filter?, RectangleD, double, DrawingAction, CompositeMode, BlendMode)"/>,
 /// <see cref="BlurBackdrop(double)"/>, a <see cref="Group(GroupOptions, DrawingAction, DrawingAction?)"/> that is not isolated, a
 /// <see cref="KnockoutElement(double, DrawingAction, DrawingAction?, MaskMode)"/> outside a knockout group) rejects such a sample with an
-/// <see cref="UnsupportedImageFeatureException"/> instead of clipping it, and so does drawing a floating-point image
-/// (<see cref="DrawImage(ImageFrame, PointD, double)"/>, <see cref="ImageBrush"/>) on any canvas. To use those effects
+/// <see cref="UnsupportedImageFeatureException"/> instead of clipping it. Drawing a floating-point image
+/// (<see cref="DrawImage(ImageFrame, PointD, double)"/>, <see cref="ImageBrush"/>) on a floating-point canvas preserves
+/// its sample range and precision; drawing it on an integer canvas still rejects out-of-range samples. To use those effects
 /// on highlights, draw on an <see cref="Rgba64"/> copy (<see cref="Image.CloneAs{TPixel}(PixelConversionOptions?)"/>
 /// with options that clip or tone map the samples).
 /// </para>

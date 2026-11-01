@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of html/canvas, and why the 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 3,034 | 3,139 | 0 | 97% |
+| [Stable](#stable-tests) | 3,048 | 3,139 | 0 | 97% |
 | [Tentative](#tentative-tests) | 7 | 247 | 0 | 3% |
 | [Reftests](#reftests) | 205 | 536 | 0 | 38% |
-| **All** | **3,246** | **3,922** | **0** | **83%** |
+| **All** | **3,260** | **3,922** | **0** | **83%** |
 
 ## Stable tests
 
@@ -87,9 +87,9 @@ description: "The results of the web-platform-tests of html/canvas, and why the 
 | [`element/canvas-host/2d.canvas.host.size.large.html`](https://wpt.fyi/results/html/canvas/element/canvas-host/2d.canvas.host.size.large.html) | Pass | 1 / 1 |  |  |
 | [`element/canvas-host/2d.canvas.host.type.delete.html`](https://wpt.fyi/results/html/canvas/element/canvas-host/2d.canvas.host.type.delete.html) | Pass | 1 / 1 |  |  |
 | [`element/canvas-host/2d.canvas.host.type.name.html`](https://wpt.fyi/results/html/canvas/element/canvas-host/2d.canvas.host.type.name.html) | Pass | 1 / 1 |  |  |
-| [`element/color-type/2d.color.type.u8p3.to.f16srgb.to.u8p3.html`](https://wpt.fyi/results/html/canvas/element/color-type/2d.color.type.u8p3.to.f16srgb.to.u8p3.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `float16` canvases (`colorType: "float16"`): the bitmaps have 8-bit components |
+| [`element/color-type/2d.color.type.u8p3.to.f16srgb.to.u8p3.html`](https://wpt.fyi/results/html/canvas/element/color-type/2d.color.type.u8p3.to.f16srgb.to.u8p3.html) | Pass | 1 / 1 |  |  |
 | [`element/color-type/2d.color.type.u8p3.to.u8srgb.to.u8p3.html`](https://wpt.fyi/results/html/canvas/element/color-type/2d.color.type.u8p3.to.u8srgb.to.u8p3.html) | Pass | 1 / 1 |  |  |
-| [`element/color-type/2d.color.type.u8srgb.to.f16p3.to.u8srgb.html`](https://wpt.fyi/results/html/canvas/element/color-type/2d.color.type.u8srgb.to.f16p3.to.u8srgb.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `float16` canvases (`colorType: "float16"`): the bitmaps have 8-bit components |
+| [`element/color-type/2d.color.type.u8srgb.to.f16p3.to.u8srgb.html`](https://wpt.fyi/results/html/canvas/element/color-type/2d.color.type.u8srgb.to.f16p3.to.u8srgb.html) | Pass | 1 / 1 |  |  |
 | [`element/color-type/2d.color.type.u8srgb.to.u8p3.to.u8srgb.html`](https://wpt.fyi/results/html/canvas/element/color-type/2d.color.type.u8srgb.to.u8p3.to.u8srgb.html) | Pass | 1 / 1 |  |  |
 | [`element/compositing/2d.composite.canvas.clear.html`](https://wpt.fyi/results/html/canvas/element/compositing/2d.composite.canvas.clear.html) | Pass | 1 / 1 |  |  |
 | [`element/compositing/2d.composite.canvas.copy.html`](https://wpt.fyi/results/html/canvas/element/compositing/2d.composite.canvas.copy.html) | Pass | 1 / 1 |  |  |
@@ -859,7 +859,7 @@ description: "The results of the web-platform-tests of html/canvas, and why the 
 | [`element/pixel-manipulation/2d.imageData.create2.type.html`](https://wpt.fyi/results/html/canvas/element/pixel-manipulation/2d.imageData.create2.type.html) | Pass | 1 / 1 |  |  |
 | [`element/pixel-manipulation/2d.imageData.create2.zero.html`](https://wpt.fyi/results/html/canvas/element/pixel-manipulation/2d.imageData.create2.zero.html) | Pass | 1 / 1 |  |  |
 | [`element/pixel-manipulation/2d.imageData.createImageBitmap.p3.rgba.unorm8.html`](https://wpt.fyi/results/html/canvas/element/pixel-manipulation/2d.imageData.createImageBitmap.p3.rgba.unorm8.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the wide-gamut images: the images are decoded to sRGB (their colors outside of sRGB are clamped), and the bitmaps are sRGB |
-| [`element/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.float16.html`](https://wpt.fyi/results/html/canvas/element/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.float16.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `float16` canvases (`colorType: "float16"`): the bitmaps have 8-bit components |
+| [`element/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.float16.html`](https://wpt.fyi/results/html/canvas/element/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.float16.html) | Pass | 1 / 1 |  |  |
 | [`element/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.unorm8.html`](https://wpt.fyi/results/html/canvas/element/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.unorm8.html) | Pass | 1 / 1 |  |  |
 | [`element/pixel-manipulation/2d.imageData.get.basic.html`](https://wpt.fyi/results/html/canvas/element/pixel-manipulation/2d.imageData.get.basic.html) | Pass | 1 / 1 |  |  |
 | [`element/pixel-manipulation/2d.imageData.get.clamp.html`](https://wpt.fyi/results/html/canvas/element/pixel-manipulation/2d.imageData.get.clamp.html) | Pass | 1 / 1 |  |  |
@@ -897,7 +897,7 @@ description: "The results of the web-platform-tests of html/canvas, and why the 
 | [`element/pixel-manipulation/2d.imageData.object.undefined.html`](https://wpt.fyi/results/html/canvas/element/pixel-manipulation/2d.imageData.object.undefined.html) | Pass | 1 / 1 |  |  |
 | [`element/pixel-manipulation/2d.imageData.put.alpha.html`](https://wpt.fyi/results/html/canvas/element/pixel-manipulation/2d.imageData.put.alpha.html) | Pass | 1 / 1 |  |  |
 | [`element/pixel-manipulation/2d.imageData.put.basic.html`](https://wpt.fyi/results/html/canvas/element/pixel-manipulation/2d.imageData.put.basic.html) | Pass | 1 / 1 |  |  |
-| [`element/pixel-manipulation/2d.imageData.put.basic.rgba.float16.html`](https://wpt.fyi/results/html/canvas/element/pixel-manipulation/2d.imageData.put.basic.rgba.float16.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `float16` canvases (`colorType: "float16"`): the bitmaps have 8-bit components |
+| [`element/pixel-manipulation/2d.imageData.put.basic.rgba.float16.html`](https://wpt.fyi/results/html/canvas/element/pixel-manipulation/2d.imageData.put.basic.rgba.float16.html) | Pass | 1 / 1 |  |  |
 | [`element/pixel-manipulation/2d.imageData.put.clip.html`](https://wpt.fyi/results/html/canvas/element/pixel-manipulation/2d.imageData.put.clip.html) | Pass | 1 / 1 |  |  |
 | [`element/pixel-manipulation/2d.imageData.put.created.html`](https://wpt.fyi/results/html/canvas/element/pixel-manipulation/2d.imageData.put.created.html) | Pass | 1 / 1 |  |  |
 | [`element/pixel-manipulation/2d.imageData.put.cross.html`](https://wpt.fyi/results/html/canvas/element/pixel-manipulation/2d.imageData.put.cross.html) | Pass | 1 / 1 |  |  |
@@ -1145,7 +1145,7 @@ description: "The results of the web-platform-tests of html/canvas, and why the 
 | [`element/wide-gamut-canvas/2d.color.space.p3.strokeText.html`](https://wpt.fyi/results/html/canvas/element/wide-gamut-canvas/2d.color.space.p3.strokeText.html) | Pass | 1 / 1 |  |  |
 | [`element/wide-gamut-canvas/2d.color.space.toBlob.convert.html`](https://wpt.fyi/results/html/canvas/element/wide-gamut-canvas/2d.color.space.toBlob.convert.html) | Fail | 2 / 4 | NOT IMPLEMENTED | the wide-gamut images: the images are decoded to sRGB (their colors outside of sRGB are clamped), and the bitmaps are sRGB |
 | [`element/wide-gamut-canvas/2d.color.space.toBlob.toDataURL.jpeg.linear.float.html`](https://wpt.fyi/results/html/canvas/element/wide-gamut-canvas/2d.color.space.toBlob.toDataURL.jpeg.linear.float.html) | Pass | 4 / 4 |  |  |
-| [`element/wide-gamut-canvas/2d.color.space.toBlob.toDataURL.png.linear.float.html`](https://wpt.fyi/results/html/canvas/element/wide-gamut-canvas/2d.color.space.toBlob.toDataURL.png.linear.float.html) | Fail | 0 / 4 | NOT IMPLEMENTED | the 16-bit PNG serialization of the `float16` and linear canvases (the PNG images have 8-bit components) |
+| [`element/wide-gamut-canvas/2d.color.space.toBlob.toDataURL.png.linear.float.html`](https://wpt.fyi/results/html/canvas/element/wide-gamut-canvas/2d.color.space.toBlob.toDataURL.png.linear.float.html) | Pass | 4 / 4 |  |  |
 | [`element/wide-gamut-canvas/2d.color.space.toDataURL.convert.html`](https://wpt.fyi/results/html/canvas/element/wide-gamut-canvas/2d.color.space.toDataURL.convert.html) | Fail | 2 / 4 | NOT IMPLEMENTED | the wide-gamut images: the images are decoded to sRGB (their colors outside of sRGB are clamped), and the bitmaps are sRGB |
 | [`historical.any.js`](https://wpt.fyi/results/html/canvas/historical.any.js) | Pass | 2 / 2 |  |  |
 | [`historical.window.js`](https://wpt.fyi/results/html/canvas/historical.window.js) | Pass | 1 / 1 |  |  |
@@ -1252,12 +1252,12 @@ description: "The results of the web-platform-tests of html/canvas, and why the 
 | [`offscreen/canvas-host/2d.canvas.host.type.delete.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/canvas-host/2d.canvas.host.type.delete.worker.js) | Pass | 1 / 1 |  |  |
 | [`offscreen/canvas-host/2d.canvas.host.type.name.html`](https://wpt.fyi/results/html/canvas/offscreen/canvas-host/2d.canvas.host.type.name.html) | Pass | 1 / 1 |  |  |
 | [`offscreen/canvas-host/2d.canvas.host.type.name.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/canvas-host/2d.canvas.host.type.name.worker.js) | Pass | 1 / 1 |  |  |
-| [`offscreen/color-type/2d.color.type.u8p3.to.f16srgb.to.u8p3.html`](https://wpt.fyi/results/html/canvas/offscreen/color-type/2d.color.type.u8p3.to.f16srgb.to.u8p3.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `float16` canvases (`colorType: "float16"`): the bitmaps have 8-bit components |
-| [`offscreen/color-type/2d.color.type.u8p3.to.f16srgb.to.u8p3.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/color-type/2d.color.type.u8p3.to.f16srgb.to.u8p3.worker.js) | Fail | 0 / 1 | NOT IMPLEMENTED | the `float16` canvases (`colorType: "float16"`): the bitmaps have 8-bit components |
+| [`offscreen/color-type/2d.color.type.u8p3.to.f16srgb.to.u8p3.html`](https://wpt.fyi/results/html/canvas/offscreen/color-type/2d.color.type.u8p3.to.f16srgb.to.u8p3.html) | Pass | 1 / 1 |  |  |
+| [`offscreen/color-type/2d.color.type.u8p3.to.f16srgb.to.u8p3.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/color-type/2d.color.type.u8p3.to.f16srgb.to.u8p3.worker.js) | Pass | 1 / 1 |  |  |
 | [`offscreen/color-type/2d.color.type.u8p3.to.u8srgb.to.u8p3.html`](https://wpt.fyi/results/html/canvas/offscreen/color-type/2d.color.type.u8p3.to.u8srgb.to.u8p3.html) | Pass | 1 / 1 |  |  |
 | [`offscreen/color-type/2d.color.type.u8p3.to.u8srgb.to.u8p3.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/color-type/2d.color.type.u8p3.to.u8srgb.to.u8p3.worker.js) | Pass | 1 / 1 |  |  |
-| [`offscreen/color-type/2d.color.type.u8srgb.to.f16p3.to.u8srgb.html`](https://wpt.fyi/results/html/canvas/offscreen/color-type/2d.color.type.u8srgb.to.f16p3.to.u8srgb.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `float16` canvases (`colorType: "float16"`): the bitmaps have 8-bit components |
-| [`offscreen/color-type/2d.color.type.u8srgb.to.f16p3.to.u8srgb.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/color-type/2d.color.type.u8srgb.to.f16p3.to.u8srgb.worker.js) | Fail | 0 / 1 | NOT IMPLEMENTED | the `float16` canvases (`colorType: "float16"`): the bitmaps have 8-bit components |
+| [`offscreen/color-type/2d.color.type.u8srgb.to.f16p3.to.u8srgb.html`](https://wpt.fyi/results/html/canvas/offscreen/color-type/2d.color.type.u8srgb.to.f16p3.to.u8srgb.html) | Pass | 1 / 1 |  |  |
+| [`offscreen/color-type/2d.color.type.u8srgb.to.f16p3.to.u8srgb.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/color-type/2d.color.type.u8srgb.to.f16p3.to.u8srgb.worker.js) | Pass | 1 / 1 |  |  |
 | [`offscreen/color-type/2d.color.type.u8srgb.to.u8p3.to.u8srgb.html`](https://wpt.fyi/results/html/canvas/offscreen/color-type/2d.color.type.u8srgb.to.u8p3.to.u8srgb.html) | Pass | 1 / 1 |  |  |
 | [`offscreen/color-type/2d.color.type.u8srgb.to.u8p3.to.u8srgb.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/color-type/2d.color.type.u8srgb.to.u8p3.to.u8srgb.worker.js) | Pass | 1 / 1 |  |  |
 | [`offscreen/compositing/2d.composite.canvas.clear.html`](https://wpt.fyi/results/html/canvas/offscreen/compositing/2d.composite.canvas.clear.html) | Pass | 1 / 1 |  |  |
@@ -2630,8 +2630,8 @@ description: "The results of the web-platform-tests of html/canvas, and why the 
 | [`offscreen/pixel-manipulation/2d.imageData.create2.zero.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/pixel-manipulation/2d.imageData.create2.zero.worker.js) | Pass | 1 / 1 |  |  |
 | [`offscreen/pixel-manipulation/2d.imageData.createImageBitmap.p3.rgba.unorm8.html`](https://wpt.fyi/results/html/canvas/offscreen/pixel-manipulation/2d.imageData.createImageBitmap.p3.rgba.unorm8.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the wide-gamut images: the images are decoded to sRGB (their colors outside of sRGB are clamped), and the bitmaps are sRGB |
 | [`offscreen/pixel-manipulation/2d.imageData.createImageBitmap.p3.rgba.unorm8.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/pixel-manipulation/2d.imageData.createImageBitmap.p3.rgba.unorm8.worker.js) | Fail | 0 / 1 | NOT IMPLEMENTED | the wide-gamut images: the images are decoded to sRGB (their colors outside of sRGB are clamped), and the bitmaps are sRGB |
-| [`offscreen/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.float16.html`](https://wpt.fyi/results/html/canvas/offscreen/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.float16.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `float16` canvases (`colorType: "float16"`): the bitmaps have 8-bit components |
-| [`offscreen/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.float16.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.float16.worker.js) | Fail | 0 / 1 | NOT IMPLEMENTED | the `float16` canvases (`colorType: "float16"`): the bitmaps have 8-bit components |
+| [`offscreen/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.float16.html`](https://wpt.fyi/results/html/canvas/offscreen/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.float16.html) | Pass | 1 / 1 |  |  |
+| [`offscreen/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.float16.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.float16.worker.js) | Pass | 1 / 1 |  |  |
 | [`offscreen/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.unorm8.html`](https://wpt.fyi/results/html/canvas/offscreen/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.unorm8.html) | Pass | 1 / 1 |  |  |
 | [`offscreen/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.unorm8.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/pixel-manipulation/2d.imageData.createImageBitmap.srgb.rgba.unorm8.worker.js) | Pass | 1 / 1 |  |  |
 | [`offscreen/pixel-manipulation/2d.imageData.get.basic.html`](https://wpt.fyi/results/html/canvas/offscreen/pixel-manipulation/2d.imageData.get.basic.html) | Pass | 1 / 1 |  |  |
@@ -2691,8 +2691,8 @@ description: "The results of the web-platform-tests of html/canvas, and why the 
 | [`offscreen/pixel-manipulation/2d.imageData.put.alpha.html`](https://wpt.fyi/results/html/canvas/offscreen/pixel-manipulation/2d.imageData.put.alpha.html) | Pass | 1 / 1 |  |  |
 | [`offscreen/pixel-manipulation/2d.imageData.put.alpha.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/pixel-manipulation/2d.imageData.put.alpha.worker.js) | Pass | 1 / 1 |  |  |
 | [`offscreen/pixel-manipulation/2d.imageData.put.basic.html`](https://wpt.fyi/results/html/canvas/offscreen/pixel-manipulation/2d.imageData.put.basic.html) | Pass | 1 / 1 |  |  |
-| [`offscreen/pixel-manipulation/2d.imageData.put.basic.rgba.float16.html`](https://wpt.fyi/results/html/canvas/offscreen/pixel-manipulation/2d.imageData.put.basic.rgba.float16.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `float16` canvases (`colorType: "float16"`): the bitmaps have 8-bit components |
-| [`offscreen/pixel-manipulation/2d.imageData.put.basic.rgba.float16.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/pixel-manipulation/2d.imageData.put.basic.rgba.float16.worker.js) | Fail | 0 / 1 | NOT IMPLEMENTED | the `float16` canvases (`colorType: "float16"`): the bitmaps have 8-bit components |
+| [`offscreen/pixel-manipulation/2d.imageData.put.basic.rgba.float16.html`](https://wpt.fyi/results/html/canvas/offscreen/pixel-manipulation/2d.imageData.put.basic.rgba.float16.html) | Pass | 1 / 1 |  |  |
+| [`offscreen/pixel-manipulation/2d.imageData.put.basic.rgba.float16.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/pixel-manipulation/2d.imageData.put.basic.rgba.float16.worker.js) | Pass | 1 / 1 |  |  |
 | [`offscreen/pixel-manipulation/2d.imageData.put.basic.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/pixel-manipulation/2d.imageData.put.basic.worker.js) | Pass | 1 / 1 |  |  |
 | [`offscreen/pixel-manipulation/2d.imageData.put.clip.html`](https://wpt.fyi/results/html/canvas/offscreen/pixel-manipulation/2d.imageData.put.clip.html) | Pass | 1 / 1 |  |  |
 | [`offscreen/pixel-manipulation/2d.imageData.put.clip.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/pixel-manipulation/2d.imageData.put.clip.worker.js) | Pass | 1 / 1 |  |  |
@@ -3156,7 +3156,7 @@ description: "The results of the web-platform-tests of html/canvas, and why the 
 | [`offscreen/wide-gamut-canvas/2d.color.space.getImageData.convert.html`](https://wpt.fyi/results/html/canvas/offscreen/wide-gamut-canvas/2d.color.space.getImageData.convert.html) | Pass | 4 / 4 |  |  |
 | [`offscreen/wide-gamut-canvas/2d.color.space.getImageData.convert.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/wide-gamut-canvas/2d.color.space.getImageData.convert.worker.js) | Pass | 4 / 4 |  |  |
 | [`offscreen/wide-gamut-canvas/2d.color.space.toBlob.toDataURL.jpeg.linear.float.html`](https://wpt.fyi/results/html/canvas/offscreen/wide-gamut-canvas/2d.color.space.toBlob.toDataURL.jpeg.linear.float.html) | Pass | 2 / 2 |  |  |
-| [`offscreen/wide-gamut-canvas/2d.color.space.toBlob.toDataURL.png.linear.float.html`](https://wpt.fyi/results/html/canvas/offscreen/wide-gamut-canvas/2d.color.space.toBlob.toDataURL.png.linear.float.html) | Fail | 0 / 2 | NOT IMPLEMENTED | the 16-bit PNG serialization of the `float16` and linear canvases (the PNG images have 8-bit components) |
+| [`offscreen/wide-gamut-canvas/2d.color.space.toBlob.toDataURL.png.linear.float.html`](https://wpt.fyi/results/html/canvas/offscreen/wide-gamut-canvas/2d.color.space.toBlob.toDataURL.png.linear.float.html) | Pass | 2 / 2 |  |  |
 
 ## Tentative tests
 

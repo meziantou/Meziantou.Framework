@@ -60,6 +60,19 @@ internal readonly record struct DisplayColor(float R, float G, float B, float A)
         return FromCss(components, gamut, defaultAlpha: 0);
     }
 
+    /// <summary>Converts a CSS color to extended sRGB without gamut mapping, for floating-point canvases.</summary>
+    internal static DisplayColor? FromCssUnmapped(CssColor color)
+    {
+        if (color.LegacyRgb)
+            return FromCss(color);
+
+        if (CssColorConversion.FromColor(color) is not { } components)
+            return null;
+
+        var channels = CssColorConversion.FromXyz("srgb", CssColorConversion.ToXyz(components.Space, [components.Channels[0] ?? 0, components.Channels[1] ?? 0, components.Channels[2] ?? 0]));
+        return new DisplayColor((float)channels[0], (float)channels[1], (float)channels[2], (float)Math.Clamp(components.Alpha ?? 0, 0, 1));
+    }
+
     /// <summary>Converts the components of a color to a display color, CSS gamut mapped to the gamut of a surface (<see cref="FromCss(CssColor, RenderingColorSpace)"/>).</summary>
     internal static DisplayColor FromCss(CssColorComponents color, RenderingColorSpace gamut, double defaultAlpha)
     {

@@ -1071,6 +1071,46 @@ public sealed class DrawingCompositeTests
     }
 
     [Fact]
+    public void FloatingPointSolidPaintsAndImagesKeepTheirSamples()
+    {
+        var color = new RgbaFloat(2, -1, 1e-7f, 1);
+        using var source = new Image<RgbaFloat>(1, 1, color);
+        using var target = new Image<RgbaFloat>(2, 1);
+        target.Draw(canvas =>
+        {
+            canvas.FillRectangle(new SolidBrush(color), new RectangleD(0, 0, 1, 1));
+            canvas.DrawImage(source.Frames[0], new PointD(1, 0));
+        }, Ct);
+        Assert.Equal(color, target.Frames[0][0, 0]);
+        Assert.Equal(color, target.Frames[0][1, 0]);
+
+        target.Draw(canvas => canvas.FillRectangle(new SolidBrush(new RgbaFloat(4, -2, 0, 0.5f)), new RectangleD(0, 0, 1, 1)), Ct);
+        Assert.Equal(new RgbaFloat(3, -1.5f, 0.5e-7f, 1), target.Frames[0][0, 0]);
+
+        using var translucent = new Image<RgbaFloat>(1, 1);
+        translucent.Draw(canvas => canvas.FillRectangle(new SolidBrush(color) { Opacity = 0.25 }, WholePixel), Ct);
+        Assert.Equal(new RgbaFloat(2, -1, 1e-7f, 0.25f), translucent.Frames[0][0, 0]);
+    }
+
+    [Theory]
+    [InlineData(ImageSampling.Bilinear)]
+    [InlineData(ImageSampling.Bicubic)]
+    [InlineData(ImageSampling.Smooth)]
+    [InlineData(ImageSampling.Box)]
+    public void FloatingPointImageInterpolationKeepsExtendedAndSmallSamples(ImageSampling sampling)
+    {
+        using var source = new Image<RgbaFloat>(2, 1, new RgbaFloat(2, -1, 1e-7f, 1));
+        source.Frames[0][1, 0] = new RgbaFloat(4, -3, 3e-7f, 1);
+        using var target = new Image<RgbaFloat>(1, 1);
+        target.Draw(canvas => canvas.DrawImage(source.Frames[0], new Rectangle(0, 0, 1, 1), sampling), Ct);
+        var pixel = target.Frames[0][0, 0];
+        Assert.Equal(3, pixel.R, 1e-6);
+        Assert.Equal(-2, pixel.G, 1e-6);
+        Assert.Equal(2e-7f, pixel.B, 1e-13);
+        Assert.Equal(1, pixel.A, 1e-6);
+    }
+
+    [Fact]
     public void AFloatingPointImageIsDrawnThroughSixteenBitColors()
     {
         // In [0, 1], its samples are 16-bit colors like those of any image
@@ -1083,7 +1123,8 @@ public sealed class DrawingCompositeTests
         source.Frames[0][0, 0] = new RgbaFloat(1.5f, 0.5f, 0);
         Assert.Throws<UnsupportedImageFeatureException>(() => canvas.Draw(c => c.DrawImage(source.Frames[0], new Point(0, 0)), Ct));
         using var floats = new Image<RgbaFloat>(1, 1);
-        Assert.Throws<UnsupportedImageFeatureException>(() => floats.Draw(c => c.DrawImage(source.Frames[0], new Point(0, 0)), Ct));
+        floats.Draw(c => c.DrawImage(source.Frames[0], new Point(0, 0)), Ct);
+        Assert.Equal(source.Frames[0][0, 0], floats.Frames[0][0, 0]);
     }
 
     [Fact]

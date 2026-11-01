@@ -44,6 +44,213 @@ public sealed class CanvasTests : IDisposable
     }
 
     [Fact]
+    public void Float16_PutGetPreservesHalfBitsAndDirtyRectangles()
+    {
+        var (_, canvas, context) = Create(3, 2, new CanvasRenderingContext2DSettings { ColorType = CanvasColorType.Float16 });
+        Assert.Equal(CanvasColorType.Float16, context.GetContextAttributes().ColorType);
+        Assert.Same(context, canvas.GetContext("2d", new CanvasRenderingContext2DSettings()));
+
+        var settings = new ImageDataSettings { PixelFormat = ImageDataPixelFormat.RgbaFloat16 };
+        var input = new ImageData(2, 1, settings);
+        Half[] values = [(Half)0.1234, Half.Epsilon, (Half)1.5, Half.One, (Half)(-0.25), (Half)0.501, (Half)0.0001, (Half)0.333];
+        var bytes = unsafe(System.Runtime.InteropServices.MemoryMarshal.AsBytes(values.AsSpan()));
+        bytes.CopyTo(input.Data.Span);
+        context.PutImageData(input, 0, 0);
+        Assert.Equal(input.Data.ToArray(), context.GetImageData(0, 0, 2, 1, settings).Data.ToArray());
+        Assert.Equal(ImageDataPixelFormat.RgbaUnorm8, context.GetImageData(0, 0, 1, 1).PixelFormat);
+        Assert.Equal([31, 0, 255, 255], GetPixel(context, 0, 0));
+
+        context.PutImageData(input, 1, 1, 1, 0, 1, 1);
+        var output = context.GetImageData(-1, 1, 4, 1, settings);
+        Assert.Equal(new byte[24], output.Data.Span[..24].ToArray());
+        Assert.Equal(input.Data.Span[8..].ToArray(), output.Data.Span[24..].ToArray());
+
+        canvas.Width = 3;
+        Assert.Equal(CanvasColorType.Float16, context.GetContextAttributes().ColorType);
+        Assert.Equal(new byte[8], context.GetImageData(0, 0, 1, 1, settings).Data.ToArray());
+    }
+
+    [Fact]
+    public void Float16_DrawAndSnapshotPreserveMoreThanEightBits()
+    {
+        var (_, canvas, context) = Create(2, 1, new CanvasRenderingContext2DSettings { ColorType = CanvasColorType.Float16 });
+        var settings = new ImageDataSettings { PixelFormat = ImageDataPixelFormat.RgbaFloat16 };
+        var input = new ImageData(1, 1, settings);
+        Half[] values = [(Half)0.1234, (Half)0.501, (Half)0.333, Half.One];
+        var bytes = unsafe(System.Runtime.InteropServices.MemoryMarshal.AsBytes(values.AsSpan()));
+        bytes.CopyTo(input.Data.Span);
+        context.PutImageData(input, 0, 0);
+        context.DrawImage(canvas, 1, 0);
+        Assert.Equal(input.Data.ToArray(), context.GetImageData(1, 0, 1, 1, settings).Data.ToArray());
+
+        context.FillStyle = "rgba(255, 0, 0, 0.5)";
+        context.FillRect(0, 0, 1, 1);
+        var output = context.GetImageData(0, 0, 1, 1, settings);
+        var actual = unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, Half>(output.Data.Span));
+        Assert.InRange((double)actual[0], 0.561, 0.563);
+        Assert.InRange((double)actual[1], 0.250, 0.251);
+        Assert.Equal(Half.One, actual[3]);
+        context.ClearRect(1, 0, 1, 1);
+        Assert.Equal(new byte[8], context.GetImageData(1, 0, 1, 1, settings).Data.ToArray());
+    }
+
+    [Fact]
+    public async Task Float16_ImageBitmapsPreserveFormatAcrossCropResizeAndTransfer()
+    {
+        var (browsingContext, canvas, context) = Create(2, 1, new CanvasRenderingContext2DSettings { ColorType = CanvasColorType.Float16 });
+        var settings = new ImageDataSettings { PixelFormat = ImageDataPixelFormat.RgbaFloat16 };
+        var input = new ImageData(1, 1, settings);
+        Half[] values = [(Half)0.1234, (Half)0.501, (Half)0.333, Half.One];
+        var bytes = unsafe(System.Runtime.InteropServices.MemoryMarshal.AsBytes(values.AsSpan()));
+        bytes.CopyTo(input.Data.Span);
+        var task = canvas.OwnerDocument!.DefaultView!.CreateImageBitmap(input, new ImageBitmapOptions { ResizeWidth = 2, ResizeQuality = ResizeQuality.Pixelated });
+        browsingContext.EventLoop.RunUntilIdle();
+        var bitmap = await task;
+        Assert.Equal(ImageDataPixelFormat.RgbaFloat16, bitmap.Bitmap!.PixelFormat);
+        Assert.Equal(input.Data.ToArray(), bitmap.Bitmap.PixelBytes.AsSpan(8, 8).ToArray());
+        context.DrawImage(bitmap, 0, 0);
+        Assert.Equal(input.Data.ToArray(), context.GetImageData(1, 0, 1, 1, settings).Data.ToArray());
+
+        var croppedTask = canvas.OwnerDocument.DefaultView.CreateImageBitmap(canvas, 1, 0, 1, 1);
+        browsingContext.EventLoop.RunUntilIdle();
+        var cropped = await croppedTask;
+        Assert.Equal(input.Data.ToArray(), cropped.Bitmap!.PixelBytes);
+
+        var formatted = ImageBitmapFactory.Format(cropped.Bitmap, null, new ImageBitmapOptions { ResizeWidth = 2, ResizeQuality = ResizeQuality.High, ImageOrientation = ImageBitmapOrientation.FlipY })!;
+        Assert.Equal(input.Data.ToArray(), formatted.PixelBytes.AsSpan(8, 8).ToArray());
+
+        var sourceCanvas = (HtmlCanvasElement)canvas.OwnerDocument.CreateElement("canvas");
+        sourceCanvas.Width = 1;
+        sourceCanvas.Height = 1;
+        var offscreen = sourceCanvas.TransferControlToOffscreen();
+        var offscreenContext = (OffscreenCanvasRenderingContext2D)offscreen.GetContext(OffscreenRenderingContextId.TwoD, new CanvasRenderingContext2DSettings { ColorType = CanvasColorType.Float16 })!;
+        offscreenContext.PutImageData(input, 0, 0);
+        var transferred = offscreen.TransferToImageBitmap();
+        Assert.Equal(input.Data.ToArray(), transferred.Bitmap!.PixelBytes);
+        context.DrawImage(transferred, 0, 0);
+        Assert.Equal(input.Data.ToArray(), context.GetImageData(0, 0, 1, 1, settings).Data.ToArray());
+        Assert.Equal(new byte[8], offscreenContext.GetImageData(0, 0, 1, 1, settings).Data.ToArray());
+    }
+
+    [Fact]
+    public void Float16_WideGamutPaintAndReadbackDoNotClipColors()
+    {
+        var (_, _, context) = Create(1, 1, new CanvasRenderingContext2DSettings { ColorType = CanvasColorType.Float16 });
+        context.FillStyle = "color(display-p3 1 0 0)";
+        context.FillRect(0, 0, 1, 1);
+        var output = context.GetImageData(0, 0, 1, 1, new ImageDataSettings { ColorSpace = PredefinedColorSpace.DisplayP3, PixelFormat = ImageDataPixelFormat.RgbaFloat16 });
+        var values = unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, Half>(output.Data.Span));
+        Assert.InRange((double)values[0], 0.999, 1.001);
+        Assert.InRange((double)values[1], -0.001, 0.001);
+        Assert.InRange((double)values[2], -0.001, 0.001);
+    }
+
+    [Fact]
+    public void Float16_ImagesAndPatternsCanBeDrawnOnUnorm8Canvases()
+    {
+        var (_, targetCanvas, target) = Create(2, 1);
+        var canvas = (HtmlCanvasElement)targetCanvas.OwnerDocument!.CreateElement("canvas");
+        canvas.Width = 1;
+        canvas.Height = 1;
+        var context = (CanvasRenderingContext2D)canvas.GetContext("2d", new CanvasRenderingContext2DSettings { ColorType = CanvasColorType.Float16 })!;
+        var input = new ImageData(1, 1, new ImageDataSettings { PixelFormat = ImageDataPixelFormat.RgbaFloat16 });
+        Half[] values = [(Half)2, (Half)(-1), (Half)0.501, Half.One];
+        var bytes = unsafe(System.Runtime.InteropServices.MemoryMarshal.AsBytes(values.AsSpan()));
+        bytes.CopyTo(input.Data.Span);
+        context.PutImageData(input, 0, 0);
+
+        target.DrawImage(canvas, 0, 0);
+        target.FillStyle = target.CreatePattern(canvas, "repeat")!;
+        target.FillRect(1, 0, 1, 1);
+        Assert.Equal([255, 0, 128, 255], GetPixel(target, 0, 0));
+        Assert.Equal([255, 0, 128, 255], GetPixel(target, 1, 0));
+        Assert.Equal(CanvasColorType.Unorm8, target.GetContextAttributes().ColorType);
+    }
+
+    [Fact]
+    public async Task Float16_PngImageBitmapRoundTripPreservesAGrayscaleRamp()
+    {
+        var (browsingContext, canvas, context) = Create(1024, 1, new CanvasRenderingContext2DSettings { ColorType = CanvasColorType.Float16 });
+        for (var i = 0; i < 1024; i++)
+        {
+            var value = i / 1023.0;
+            context.FillStyle = FormattableString.Invariant($"color(srgb {value} {value} {value})");
+            context.FillRect(i, 0, 1, 1);
+        }
+
+        var png = Convert.FromBase64String(canvas.ToDataUrl()["data:image/png;base64,".Length..]);
+        var bitmapTask = canvas.OwnerDocument!.DefaultView!.CreateImageBitmap(new Blob([png]));
+        browsingContext.EventLoop.RunUntilIdle();
+        var bitmap = await bitmapTask;
+        Assert.Equal(ImageDataPixelFormat.RgbaFloat16, bitmap.Bitmap!.PixelFormat);
+        context.ClearRect(0, 0, 1024, 1);
+        context.DrawImage(bitmap, 0, 0);
+        var output = context.GetImageData(0, 0, 1024, 1, new ImageDataSettings { PixelFormat = ImageDataPixelFormat.RgbaFloat16 });
+        var samples = unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, Half>(output.Data.Span));
+        var distinct = new HashSet<Half>();
+        for (var i = 0; i < samples.Length; i += 4)
+        {
+            distinct.Add(samples[i]);
+        }
+
+        Assert.True(distinct.Count > 1000, $"The PNG round trip retained only {distinct.Count} distinct grayscale samples.");
+    }
+
+    [Theory]
+    [InlineData(ImageSmoothingQuality.Low)]
+    [InlineData(ImageSmoothingQuality.Medium)]
+    [InlineData(ImageSmoothingQuality.High)]
+    public void Float16_DrawImagePreservesHighlightsAndSubnormalSamples(ImageSmoothingQuality quality)
+    {
+        var (_, canvas, context) = Create(2, 1, new CanvasRenderingContext2DSettings { ColorType = CanvasColorType.Float16 });
+        var input = new ImageData(1, 1, new ImageDataSettings { PixelFormat = ImageDataPixelFormat.RgbaFloat16 });
+        Half[] values = [(Half)2, (Half)(-1), Half.Epsilon, Half.One];
+        var bytes = unsafe(System.Runtime.InteropServices.MemoryMarshal.AsBytes(values.AsSpan()));
+        bytes.CopyTo(input.Data.Span);
+        context.PutImageData(input, 0, 0);
+        context.ImageSmoothingQuality = quality;
+        context.DrawImage(canvas, 0, 0, 1, 1, 1, 0, 1, 1);
+        Assert.Equal(input.Data.ToArray(), context.GetImageData(1, 0, 1, 1, new ImageDataSettings { PixelFormat = ImageDataPixelFormat.RgbaFloat16 }).Data.ToArray());
+    }
+
+    [Fact]
+    public void Float16_PngSerializationUsesSixteenBitSamples()
+    {
+        var (_, canvas, context) = Create(1, 1, new CanvasRenderingContext2DSettings { ColorType = CanvasColorType.Float16 });
+        var input = new ImageData(1, 1, new ImageDataSettings { PixelFormat = ImageDataPixelFormat.RgbaFloat16 });
+        Half[] values = [(Half)0.1234, (Half)0.501, (Half)0.333, Half.One];
+        var bytes = unsafe(System.Runtime.InteropServices.MemoryMarshal.AsBytes(values.AsSpan()));
+        bytes.CopyTo(input.Data.Span);
+        context.PutImageData(input, 0, 0);
+        var png = Convert.FromBase64String(canvas.ToDataUrl()["data:image/png;base64,".Length..]);
+        Assert.Equal(16, png[24]);
+        using var image = Image.Load<Rgba64>(png);
+        var pixels = new Rgba64[1];
+        image.Frames[0].CopyPixelDataTo(pixels);
+        Assert.InRange(pixels[0].R / 65535.0, (double)values[0] - (1.0 / 65535), (double)values[0] + (1.0 / 65535));
+        Assert.Equal(ushort.MaxValue, pixels[0].A);
+    }
+
+    [Fact]
+    public void Float16_OpaqueCanvasPreservesColorPrecision()
+    {
+        var (_, _, context) = Create(1, 1, new CanvasRenderingContext2DSettings { ColorType = CanvasColorType.Float16, Alpha = false });
+        var settings = new ImageDataSettings { PixelFormat = ImageDataPixelFormat.RgbaFloat16 };
+        Assert.False(context.GetContextAttributes().Alpha);
+        var input = new ImageData(1, 1, settings);
+        Half[] values = [(Half)0.1234, (Half)0.501, (Half)0.333, (Half)0.5];
+        var bytes = unsafe(System.Runtime.InteropServices.MemoryMarshal.AsBytes(values.AsSpan()));
+        bytes.CopyTo(input.Data.Span);
+        context.PutImageData(input, 0, 0);
+        var output = context.GetImageData(0, 0, 1, 1, settings);
+        var actual = unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, Half>(output.Data.Span));
+        Assert.Equal((Half)((float)values[0] * 0.5f), actual[0]);
+        Assert.Equal(Half.One, actual[3]);
+        context.Reset();
+        Assert.Equal([0, 0, 0, 255], GetPixel(context, 0, 0));
+    }
+
+    [Fact]
     public void FillRect_GetImageData()
     {
         var (_, _, context) = Create();

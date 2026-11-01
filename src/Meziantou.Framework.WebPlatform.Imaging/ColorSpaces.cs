@@ -10,6 +10,16 @@ internal static class ColorSpaces
     /// <summary>The smallest alpha that is visible: a color whose alpha rounds to 0 in 8 bits is transparent.</summary>
     private const float MinVisibleAlpha = 0.5f / 255;
 
+    /// <summary>Returns a paint color without clipping its gamut or rounding its samples.</summary>
+    public static RgbaFloat ToRgbaFloat(DisplayColor color, RenderingColorSpace colorSpace)
+    {
+        var rgb = new Vector3(color.R, color.G, color.B);
+        if (colorSpace == RenderingColorSpace.DisplayP3)
+            rgb = SrgbToDisplayP3(rgb);
+
+        return new RgbaFloat(rgb.X, rgb.Y, rgb.Z, float.IsNaN(color.A) ? 0 : Math.Clamp(color.A, 0, 1));
+    }
+
     /// <summary>Returns a color (straight alpha) in the color space of a bitmap, with 16 bits per component.</summary>
     public static Rgba64 ToRgba64(DisplayColor color, RenderingColorSpace colorSpace)
     {
@@ -99,6 +109,20 @@ internal static class ColorSpaces
             var color = new Vector3(pixel.R, pixel.G, pixel.B) / ushort.MaxValue;
             color = to == RenderingColorSpace.DisplayP3 ? SrgbToDisplayP3(color) : DisplayP3ToSrgb(color);
             pixel = new Rgba64(ToUInt16(color.X), ToUInt16(color.Y), ToUInt16(color.Z), pixel.A);
+        }
+    }
+
+    /// <summary>Converts half-float pixels without clipping colors outside the destination gamut.</summary>
+    public static void Convert(Span<RgbaHalf> pixels, RenderingColorSpace from, RenderingColorSpace to)
+    {
+        if (from == to)
+            return;
+
+        foreach (ref var pixel in pixels)
+        {
+            var color = new Vector3((float)pixel.R, (float)pixel.G, (float)pixel.B);
+            color = to == RenderingColorSpace.DisplayP3 ? SrgbToDisplayP3(color) : DisplayP3ToSrgb(color);
+            pixel = new RgbaHalf((Half)color.X, (Half)color.Y, (Half)color.Z, pixel.A);
         }
     }
 

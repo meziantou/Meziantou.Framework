@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.IO.Compression;
+using System.Numerics;
 using Meziantou.Framework.Hashing;
 
 namespace Meziantou.Framework.Barcodes.Internal;
@@ -25,12 +26,14 @@ internal static class PngWriter
     /// <param name="lightColor">The colour for a clear bit.</param>
     /// <param name="darkColor">The colour for a set bit.</param>
     /// <param name="renderRow">
-    /// Fills one packed scanline. The span is cleared before each call and holds one bit per
-    /// pixel, most significant bit leftmost; set a bit to make that pixel dark.
+    /// Fills one packed scanline and returns how many consecutive rows share it. The span is
+    /// cleared before each call and holds one bit per pixel, most significant bit leftmost; set a
+    /// bit to make that pixel dark.
     /// </param>
     /// <remarks>
     /// QR codes and barcodes are two-colour images, so an indexed palette stores them at a
-    /// thirty-second of the bytes truecolour-with-alpha needs. Rows are streamed into the
+    /// thirty-second of the bytes truecolour-with-alpha needs. A scanline is rendered once and
+    /// reused for the rows that repeat it, which is every row of a module but the first. Rows are streamed into the
     /// compressor as they are produced rather than buffered, so peak memory does not scale with
     /// the image size.
     /// </remarks>
@@ -80,6 +83,30 @@ internal static class PngWriter
         return (width >> 3) + ((width & 7) is 0 ? 0 : 1);
     }
 
+    /// <summary>
+    /// Sets the bits of the pixels in [<paramref name="start"/>, <paramref name="start"/> + <paramref name="count"/>) of a packed scanline.
+    /// </summary>
+    internal static void SetPixels(Span<byte> row, int start, int count)
+    {
+        if (count <= 0)
+            return;
+
+        var last = start + count - 1;
+        var firstByte = start >> 3;
+        var lastByte = last >> 3;
+        var firstMask = (byte)(0xFF >> (start & 7));
+        var lastMask = (byte)(0xFF << (7 - (last & 7)));
+        if (firstByte == lastByte)
+        {
+            row[firstByte] |= (byte)(firstMask & lastMask);
+            return;
+        }
+
+        row[firstByte] |= firstMask;
+        row[(firstByte + 1)..lastByte].Fill(0xFF);
+        row[lastByte] |= lastMask;
+    }
+
     private static byte[] CompressRows(int bytesPerRow, int height, PngRowRenderer renderRow)
     {
         var current = new byte[bytesPerRow];
@@ -89,10 +116,13 @@ internal static class PngWriter
         using var output = new MemoryStream();
         using (var compressionStream = new ZLibStream(output, CompressionLevel.SmallestSize, leaveOpen: true))
         {
-            for (var row = 0; row < height; row++)
+            var row = 0;
+            while (row < height)
             {
                 Array.Clear(current);
-                renderRow(current, row);
+                var rowCount = renderRow(current, row);
+                if (rowCount < 1 || rowCount > height - row)
+                    throw new InvalidOperationException($"The row renderer returned {rowCount} rows at row {row} of {height}.");
 
                 // The Up filter turns a row identical to the one above it into zeroes, which is
                 // the common case here because every module spans ModuleSize rows.
@@ -104,18 +134,46 @@ internal static class PngWriter
                 else
                 {
                     filtered[0] = 2; // Up
-                    for (var i = 0; i < bytesPerRow; i++)
-                    {
-                        filtered[i + 1] = (byte)(current[i] - previous[i]);
-                    }
+                    Subtract(current, previous, filtered.AsSpan(1));
                 }
 
                 compressionStream.Write(filtered);
                 (previous, current) = (current, previous);
+
+                if (rowCount > 1)
+                {
+                    // The repeated rows are identical to the one above them, so their Up filter is
+                    // all zeroes: write it without rendering or subtracting anything.
+                    filtered[0] = 2; // Up
+                    filtered.AsSpan(1).Clear();
+                    for (var i = 1; i < rowCount; i++)
+                    {
+                        compressionStream.Write(filtered);
+                    }
+                }
+
+                row += rowCount;
             }
         }
 
         return output.ToArray();
+    }
+
+    private static void Subtract(ReadOnlySpan<byte> current, ReadOnlySpan<byte> previous, Span<byte> destination)
+    {
+        var i = 0;
+        if (Vector.IsHardwareAccelerated)
+        {
+            for (; i <= current.Length - Vector<byte>.Count; i += Vector<byte>.Count)
+            {
+                (new Vector<byte>(current[i..]) - new Vector<byte>(previous[i..])).CopyTo(destination[i..]);
+            }
+        }
+
+        for (; i < current.Length; i++)
+        {
+            destination[i] = (byte)(current[i] - previous[i]);
+        }
     }
 
     private static void WriteChunk(Stream stream, ReadOnlySpan<byte> chunkType, ReadOnlySpan<byte> data)

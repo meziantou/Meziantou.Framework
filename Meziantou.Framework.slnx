@@ -1,6 +1,7 @@
 <Solution>
   <Folder Name="/benchmarks/">
     <Project Path="benchmarks/Meziantou.Framework.Assertions.Benchmarks/Meziantou.Framework.Assertions.Benchmarks.csproj" />
+    <Project Path="benchmarks/Meziantou.Framework.Barcodes.Benchmarks/Meziantou.Framework.Barcodes.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.BloomFilters.Benchmarks/Meziantou.Framework.BloomFilters.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.DependencyScanning.Benchmarks/Meziantou.Framework.DependencyScanning.Benchmarks.csproj" />
     <Project Path="benchmarks/Meziantou.Framework.FastEnumGenerator.Benchmarks/Meziantou.Framework.FastEnumGenerator.Benchmarks.csproj" />

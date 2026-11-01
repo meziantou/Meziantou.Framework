@@ -441,8 +441,108 @@ public class QRCodePngRendererTests
     {
         using var stream = new MemoryStream();
 
-        Assert.Throws<ArgumentOutOfRangeException>(() => Internal.PngWriter.WritePalette(stream, width, height, Color.White, Color.Black, (row, rowIndex) => { }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Internal.PngWriter.WritePalette(stream, width, height, Color.White, Color.Black, (row, rowIndex) => 1));
         Assert.Equal(0, stream.Length);
+    }
+
+    [Fact]
+    public void PngWriter_SetPixels_SetsExactlyTheRequestedBits()
+    {
+        for (var start = 0; start < 40; start++)
+        {
+            for (var count = 0; start + count <= 40; count++)
+            {
+                var actual = new byte[5];
+                Internal.PngWriter.SetPixels(actual, start, count);
+
+                var expected = new byte[5];
+                for (var x = start; x < start + count; x++)
+                {
+                    expected[x >> 3] |= (byte)(0x80 >> (x & 7));
+                }
+
+                if (!expected.AsSpan().SequenceEqual(actual))
+                {
+                    Assert.Fail($"SetPixels({start}, {count}) wrote {Convert.ToHexString(actual)} instead of {Convert.ToHexString(expected)}.");
+                }
+            }
+        }
+    }
+
+    [Fact]
+    public void PngWriter_SetPixels_KeepsTheBitsAlreadySet()
+    {
+        var row = new byte[] { 0x81, 0x00, 0x01 };
+        Internal.PngWriter.SetPixels(row, 3, 10);
+
+        Assert.Equal(new byte[] { 0x9F, 0xF8, 0x01 }, row);
+    }
+
+    [Fact]
+    public void PngWriter_RepeatedRows_MatchRenderingEachRow()
+    {
+        // 13 pixels wide, so the last byte of each row is partly padding.
+        const int Width = 13;
+        const int Height = 12;
+        static void Fill(Span<byte> row, int band)
+        {
+            Internal.PngWriter.SetPixels(row, band, Width - (2 * band));
+        }
+
+        using var eachRow = new MemoryStream();
+        Internal.PngWriter.WritePalette(eachRow, Width, Height, Color.White, Color.Black, (row, y) =>
+        {
+            Fill(row, y / 4);
+            return 1;
+        });
+
+        var calls = new List<int>();
+        using var repeated = new MemoryStream();
+        Internal.PngWriter.WritePalette(repeated, Width, Height, Color.White, Color.Black, (row, y) =>
+        {
+            calls.Add(y);
+            Fill(row, y / 4);
+            return 4;
+        });
+
+        Assert.Equal([0, 4, 8], calls);
+        Assert.Equal(eachRow.ToArray(), repeated.ToArray());
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(4)]
+    public void PngWriter_InvalidRowCount_ThrowsInvalidOperationException(int rowCount)
+    {
+        using var stream = new MemoryStream();
+
+        Assert.Throws<InvalidOperationException>(() => Internal.PngWriter.WritePalette(stream, 8, 3, Color.White, Color.Black, (row, y) => rowCount));
+    }
+
+    [Fact]
+    public void ToPng_BarcodePixelsMatchTheModules()
+    {
+        var barcode = Barcode.CreateCode128("Hello 123");
+        foreach (var (moduleWidth, quietZoneModules) in new[] { (1, 0), (1, 3), (3, 1), (5, 2) })
+        {
+            var parsed = ParsePng(barcode.ToPng(new BarcodePngOptions { ModuleWidth = moduleWidth, ModuleHeight = 3, QuietZoneModules = quietZoneModules }));
+            Assert.Equal((barcode.Width + (2 * quietZoneModules)) * moduleWidth, parsed.Width);
+            Assert.Equal(barcode.Height * 3, parsed.Height);
+
+            for (var y = 0; y < parsed.Height; y++)
+            {
+                for (var x = 0; x < parsed.BytesPerRow * 8; x++)
+                {
+                    var column = (x / moduleWidth) - quietZoneModules;
+                    var expected = x < parsed.Width && column >= 0 && column < barcode.Width && barcode[y / 3, column];
+                    if (expected != parsed.IsSet(y, x))
+                    {
+                        Assert.Fail($"Pixel ({x}, {y}) with module width {moduleWidth} and quiet zone {quietZoneModules} is wrong.");
+                    }
+                }
+            }
+        }
     }
 
     [Fact]

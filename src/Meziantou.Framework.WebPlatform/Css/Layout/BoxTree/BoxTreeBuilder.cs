@@ -259,6 +259,18 @@ internal sealed partial class BoxTreeBuilder
     /// <summary>Removes the boxes of the descendants of a box from the boxes by node, and collects the elements whose ::first-letter box is there but which are not descendants of the container.</summary>
     private static void RemoveBoxes(Dictionary<(Node Node, string? PseudoElement), LayoutBox> boxes, ContainerBox parent, Element container, ref List<Element>? firstLetterAncestors, HashSet<LayoutBox>? kept = null)
     {
+        if (!StackGuard.HasSufficientStack)
+        {
+            var firstLetterAncestorsCopy = firstLetterAncestors;
+            StackGuard.RunOnNewStack(() =>
+            {
+                RemoveBoxes(boxes, parent, container, ref firstLetterAncestorsCopy, kept);
+                return true;
+            });
+            firstLetterAncestors = firstLetterAncestorsCopy;
+            return;
+        }
+
         foreach (var child in parent.Children)
         {
             // (the boxes kept by a patch of the tree, see TryPatch)
@@ -563,6 +575,16 @@ internal sealed partial class BoxTreeBuilder
 
     private void BuildViewTransitionGroup(Element root, ViewTransitionGroup group, ContainerBox parent)
     {
+        if (!StackGuard.HasSufficientStack)
+        {
+            StackGuard.RunOnNewStack(() =>
+            {
+                BuildViewTransitionGroup(root, group, parent);
+                return true;
+            });
+            return;
+        }
+
         if (BuildViewTransitionBox(root, ViewTransitionPseudoTree.GroupPrefix + group.Name + ")", parent) is not { } groupBox)
             return;
 
@@ -669,6 +691,16 @@ internal sealed partial class BoxTreeBuilder
     /// </summary>
     private void BuildElement(Element element, ContainerBox parent)
     {
+        if (!StackGuard.HasSufficientStack)
+        {
+            StackGuard.RunOnNewStack(() =>
+            {
+                BuildElement(element, parent);
+                return true;
+            });
+            return;
+        }
+
         // A patch of the tree keeps the boxes of the elements that did not change (see TryPatch)
         if (_patch is { } patch && patch.TryKeep(element, parent))
             return;
@@ -1335,6 +1367,16 @@ internal sealed partial class BoxTreeBuilder
 
     private void BuildForeignObjects(Element element, ContainerBox svgBox)
     {
+        if (!StackGuard.HasSufficientStack)
+        {
+            StackGuard.RunOnNewStack(() =>
+            {
+                BuildForeignObjects(element, svgBox);
+                return true;
+            });
+            return;
+        }
+
         for (var child = element.FirstElementChild; child is not null; child = child.NextElementSibling)
         {
             if (!BoxGeneration.IsSvgElement(child) || BoxGeneration.IsNeverRenderedSvgElement(child))

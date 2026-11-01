@@ -17,7 +17,7 @@ using SpecUpdate;
 //                            the improvements and the duration ratio; fails on a regression not listed in the allowed file
 //                            (one test id per line, a trailing * matches a prefix, # starts a comment; or a JSON object
 //                            whose keys are the test ids and whose values are the reasons, e.g. engine-parity-exceptions.json)
-//   SpecUpdate wpt-coverage  Generate src/Meziantou.Framework.WebPlatform/docs/wpt-coverage.md and src/Meziantou.Framework.WebPlatform/docs/wpt-coverage/ from the WPT manifest, the expectations and the reasons (--check: fail if they are outdated or a reason is missing)
+//   SpecUpdate wpt-coverage  Generate docs/WebPlatform/10-WptCoverage/ from the WPT manifest, the expectations and the reasons (--check: fail if they are outdated or a reason is missing)
 
 var root = FindRepositoryRoot();
 var specDataDirectory = Path.Combine(root, "tests", "Meziantou.Framework.WebPlatform.SpecData");

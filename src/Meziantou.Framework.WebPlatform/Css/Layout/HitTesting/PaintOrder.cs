@@ -1,3 +1,5 @@
+using Meziantou.Framework.WebPlatform.Infra;
+
 namespace Meziantou.Framework.WebPlatform.Css.Layout;
 
 /// <summary>
@@ -261,6 +263,16 @@ internal static class PaintOrder
     /// </summary>
     private static void CollectHiddenLayers(Fragment fragment, List<(BoxFragment Fragment, int ZIndex)> layers, TreeOrder treeOrder)
     {
+        if (!StackGuard.HasSufficientStack)
+        {
+            StackGuard.RunOnNewStack(() =>
+            {
+                CollectHiddenLayers(fragment, layers, treeOrder);
+                return true;
+            });
+            return;
+        }
+
         if (treeOrder.HiddenContexts is not { } hiddenContexts)
             return;
 
@@ -432,6 +444,16 @@ internal static class PaintOrder
     /// <param name="continuations">The other fragments of the inline box of <paramref name="context"/>, whose stacking contexts are painted in its group (see <see cref="PaintLayerStackingContext"/>).</param>
     private static void PaintStackingContext(BoxFragment context, List<PaintItem> output, List<BoxFragment>? excluded, bool markers, TreeOrder treeOrder, List<BoxFragment>? adopted = null, List<(BoxFragment Fragment, int ZIndex)>? continuations = null)
     {
+        if (!StackGuard.HasSufficientStack)
+        {
+            StackGuard.RunOnNewStack(() =>
+            {
+                PaintStackingContext(context, output, excluded, markers, treeOrder, adopted, continuations);
+                return true;
+            });
+            return;
+        }
+
         if (treeOrder.Adopted?.GetValueOrDefault(context) is { } adoptedLayers)
         {
             adopted = adopted is null ? adoptedLayers : [.. adopted, .. adoptedLayers];
@@ -573,6 +595,16 @@ internal static class PaintOrder
 
         void Visit(ContainerBox inline)
         {
+            if (!StackGuard.HasSufficientStack)
+            {
+                StackGuard.RunOnNewStack(() =>
+                {
+                    Visit(inline);
+                    return true;
+                });
+                return;
+            }
+
             foreach (var child in inline.Children)
             {
                 if (child is not ContainerBox container)
@@ -867,6 +899,16 @@ internal static class PaintOrder
     /// </summary>
     private static void CollectLayers(Fragment fragment, List<(BoxFragment Fragment, int ZIndex)> layers, List<BoxFragment>? excluded, TreeOrder treeOrder)
     {
+        if (!StackGuard.HasSufficientStack)
+        {
+            StackGuard.RunOnNewStack(() =>
+            {
+                CollectLayers(fragment, layers, excluded, treeOrder);
+                return true;
+            });
+            return;
+        }
+
         // The children of a replaced box (the foreignObject boxes of an svg element) are painted by its contents (the SVG
         // painting), but the boxes of the parts of a form control (see FormControlContents)
         if (fragment is BoxFragment { Box.Kind: ContainerBoxKind.Replaced } replaced && !FormControlContents.HasContentsFragment(replaced))
@@ -966,6 +1008,16 @@ internal static class PaintOrder
     /// </summary>
     private static void PaintBackplates(BoxFragment fragment, List<PaintItem> output)
     {
+        if (!StackGuard.HasSufficientStack)
+        {
+            StackGuard.RunOnNewStack(() =>
+            {
+                PaintBackplates(fragment, output);
+                return true;
+            });
+            return;
+        }
+
         var hasLines = false;
         foreach (var child in fragment.ChildrenSpan)
         {
@@ -988,6 +1040,16 @@ internal static class PaintOrder
     /// <summary>The backgrounds of the in-flow, non-positioned, block-level descendants, in tree order.</summary>
     private static void PaintBlocks(Fragment fragment, List<PaintItem> output)
     {
+        if (!StackGuard.HasSufficientStack)
+        {
+            StackGuard.RunOnNewStack(() =>
+            {
+                PaintBlocks(fragment, output);
+                return true;
+            });
+            return;
+        }
+
         if (PaintsChildrenAtomically(fragment))
             return;
 
@@ -1046,6 +1108,9 @@ internal static class PaintOrder
     /// </summary>
     internal static BoxFragment? GetLastPaintedBlock(Fragment fragment)
     {
+        if (!StackGuard.HasSufficientStack)
+            return StackGuard.RunOnNewStack(() => GetLastPaintedBlock(fragment));
+
         if (PaintsChildrenAtomically(fragment))
             return null;
 
@@ -1065,6 +1130,16 @@ internal static class PaintOrder
     /// <summary>The non-positioned floats, in tree order, painted as pseudo stacking contexts.</summary>
     private static void PaintFloats(Fragment fragment, List<PaintItem> output, bool markers)
     {
+        if (!StackGuard.HasSufficientStack)
+        {
+            StackGuard.RunOnNewStack(() =>
+            {
+                PaintFloats(fragment, output, markers);
+                return true;
+            });
+            return;
+        }
+
         // The floats of a flex item are painted with it
         if (PaintsChildrenAtomically(fragment))
             return;
@@ -1102,6 +1177,16 @@ internal static class PaintOrder
     /// <summary>The inline content of the line boxes of the block containers, in tree order, and the flex items.</summary>
     private static void PaintInlines(Fragment fragment, List<PaintItem> output, bool markers)
     {
+        if (!StackGuard.HasSufficientStack)
+        {
+            StackGuard.RunOnNewStack(() =>
+            {
+                PaintInlines(fragment, output, markers);
+                return true;
+            });
+            return;
+        }
+
         if (PaintsChildrenAtomically(fragment))
         {
             foreach (var child in fragment.ChildrenSpan)
@@ -1272,6 +1357,16 @@ internal static class PaintOrder
     /// </summary>
     private static void PaintInlineContent(Fragment fragment, List<PaintItem> output, bool markers, LineTruncation? truncation)
     {
+        if (!StackGuard.HasSufficientStack)
+        {
+            StackGuard.RunOnNewStack(() =>
+            {
+                PaintInlineContent(fragment, output, markers, truncation);
+                return true;
+            });
+            return;
+        }
+
         foreach (var child in fragment.ChildrenSpan)
         {
             switch (child)

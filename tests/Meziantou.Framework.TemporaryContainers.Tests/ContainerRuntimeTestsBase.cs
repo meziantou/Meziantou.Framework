@@ -28,6 +28,9 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
     // and the runners sometimes never finish installing it) would otherwise cost that wait in every test of the class.
     private static readonly ConcurrentDictionary<ContainerRuntime, Task<bool>> RuntimeAvailability = new();
 
+    // Why a required runtime did not answer, worked out once for the whole class like its availability.
+    private static readonly ConcurrentDictionary<ContainerRuntime, string> RuntimeProbeDiagnostics = new();
+
     private bool _useWindowsContainerImages;
 
     private bool UseWindowsContainerImages => _useWindowsContainerImages;
@@ -59,7 +62,11 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
 
         if (IsRuntimeRequired)
         {
-            global::Xunit.Assert.True(available, $"The '{Runtime}' container runtime must be available in this environment, but it did not answer.");
+            if (!available)
+            {
+                var diagnostics = RuntimeProbeDiagnostics.GetOrAdd(Runtime, DescribeProbe);
+                global::Xunit.Assert.Fail($"The '{Runtime}' container runtime must be available in this environment, but it did not answer. {diagnostics}");
+            }
         }
         else
         {
@@ -84,6 +91,56 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
                 return false;
 
             await Task.Delay(TimeSpan.FromSeconds(1), CancellationToken.None);
+        }
+    }
+
+    /// <summary>Runs the probe of the runtime once more and reports what it printed, as the probe of the library only tells whether it succeeded.</summary>
+    private static string DescribeProbe(ContainerRuntime runtime)
+    {
+        if (runtime is not ExecutableContainerRuntime executableRuntime)
+            return string.Empty;
+
+        if (executableRuntime.FindExecutable() is not { } executable)
+            return $"'{executableRuntime.ExecutableName}' is not on the PATH.";
+
+        var arguments = executableRuntime.BuildProbeArguments();
+        var commandLine = $"'{executable} {string.Join(' ', arguments)}'";
+        try
+        {
+            using var process = new Process
+            {
+                StartInfo = new ProcessStartInfo
+                {
+                    FileName = executable,
+                    RedirectStandardOutput = true,
+                    RedirectStandardError = true,
+                    UseShellExecute = false,
+                    CreateNoWindow = true,
+                },
+            };
+
+            foreach (var argument in arguments)
+                process.StartInfo.ArgumentList.Add(argument);
+
+            process.Start();
+            var standardOutputTask = process.StandardOutput.ReadToEndAsync();
+            var standardErrorTask = process.StandardError.ReadToEndAsync();
+            if (!process.WaitForExit(TimeSpan.FromSeconds(30)))
+            {
+                process.Kill(entireProcessTree: true);
+                return $"{commandLine} did not exit within 30 seconds.";
+            }
+
+            // A child process that inherited the pipes can keep them open after the probe exits.
+            var outputs = Task.WhenAll(standardOutputTask, standardErrorTask);
+            if (!outputs.Wait(TimeSpan.FromSeconds(5)))
+                return $"{commandLine} exited with code {process.ExitCode}, but its output was not closed.";
+
+            return $"{commandLine} exited with code {process.ExitCode}. Standard output: '{standardOutputTask.Result.Trim()}'. Standard error: '{standardErrorTask.Result.Trim()}'.";
+        }
+        catch (Exception ex)
+        {
+            return $"{commandLine} could not be run: {ex.Message}";
         }
     }
 

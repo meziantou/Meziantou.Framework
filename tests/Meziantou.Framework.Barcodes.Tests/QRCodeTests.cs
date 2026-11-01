@@ -294,6 +294,55 @@ public class QRCodeTests
         Snapshot.Validate(RenderAsSvg(qr), SnapshotType.Svg);
     }
 
+    // Pairs of characters that share a Shift JIS code: a best-fit mapping of the encoder, or a code that the JIS X 0208
+    // table and code page 932 decode differently. Both are encoded in byte mode, so that every reader gives them back.
+    [Theory]
+    [InlineData("\u00A2", "\uFFE0")]
+    [InlineData("\u00A3", "\uFFE1")]
+    [InlineData("\u00AC", "\uFFE2")]
+    [InlineData("\u301C", "\uFF5E")]
+    [InlineData("\u2016", "\u2225")]
+    [InlineData("\u2212", "\uFF0D")]
+    [InlineData("\u2015", "\u2014")]
+    [InlineData("\u00AB", "\u226A")]
+    [InlineData("\u00B7", "\u30FB")]
+    public void Create_Kanji_AmbiguousShiftJisCharacters_AreEncodedInByteMode(string value, string other)
+    {
+        Assert.True(HasSameModules(QRCode.Create(Encoding.UTF8.GetBytes(value)), QRCode.Create(value)));
+        Assert.False(HasSameModules(QRCode.Create(value), QRCode.Create(other)));
+        Assert.False(HasSameModules(QRCode.CreateMicroQR(value), QRCode.CreateMicroQR(other)));
+        Assert.False(HasSameModules(QRCode.CreateRMQR(value), QRCode.CreateRMQR(other)));
+    }
+
+    [Theory]
+    [InlineData("\u226A")] // ≪, the target of the best-fit mapping of «
+    [InlineData("\u30FB")] // ・, the target of the best-fit mapping of ·
+    [InlineData("\uFF3C")] // ＼, 0x815F in code page 932
+    [InlineData("\u2460")] // ①, an NEC special character, not in JIS X 0208
+    [InlineData("\u7E8A")] // 纊, an IBM extension, not in JIS X 0208
+    public void Create_Kanji_DetectsTheCharactersEveryReaderDecodes(string value)
+    {
+        var isKanji = value is "\u226A" or "\u30FB";
+        Assert.Equal(!isKanji, HasSameModules(QRCode.Create(Encoding.UTF8.GetBytes(value)), QRCode.Create(value)));
+    }
+
+    private static bool HasSameModules(QRCode first, QRCode second)
+    {
+        if (first.Width != second.Width || first.Height != second.Height)
+            return false;
+
+        for (var row = 0; row < first.Height; row++)
+        {
+            for (var column = 0; column < first.Width; column++)
+            {
+                if (first[row, column] != second[row, column])
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
     // ───── Higher versions / different sizes ─────
 
     [Fact]
@@ -481,6 +530,31 @@ public class QRCodeTests
     public void Create_EmptyBinaryData_ThrowsArgumentException()
     {
         Assert.Throws<ArgumentException>(() => QRCode.Create(Array.Empty<byte>(), ErrorCorrectionLevel.M));
+    }
+
+    [Theory]
+    [InlineData(-1)]
+    [InlineData(4)]
+    [InlineData(int.MaxValue)]
+    [InlineData(int.MinValue)]
+    public void Create_UndefinedErrorCorrectionLevel_ThrowsArgumentOutOfRangeException(int value)
+    {
+        var level = (ErrorCorrectionLevel)value;
+
+        Assert.Throws<ArgumentOutOfRangeException>("errorCorrectionLevel", () => QRCode.Create("123", level));
+        Assert.Throws<ArgumentOutOfRangeException>("errorCorrectionLevel", () => QRCode.Create([1, 2, 3], level));
+        Assert.Throws<ArgumentOutOfRangeException>("errorCorrectionLevel", () => QRCode.CreateMicroQR("123", level));
+        Assert.Throws<ArgumentOutOfRangeException>("errorCorrectionLevel", () => QRCode.CreateRMQR("123", level));
+    }
+
+    [Theory]
+    [InlineData(ErrorCorrectionLevel.L)]
+    [InlineData(ErrorCorrectionLevel.M)]
+    [InlineData(ErrorCorrectionLevel.Q)]
+    [InlineData(ErrorCorrectionLevel.H)]
+    public void Create_Binary_ReportsTheErrorCorrectionLevel(ErrorCorrectionLevel ecLevel)
+    {
+        Assert.Equal(ecLevel, QRCode.Create([1, 2, 3], ecLevel).ErrorCorrectionLevel);
     }
 
     [Theory]

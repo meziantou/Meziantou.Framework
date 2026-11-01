@@ -4,11 +4,6 @@ internal static class RMQREncoder
 {
     public static QRCode Encode(string data, ErrorCorrectionLevel ecLevel)
     {
-        if (ecLevel is not (ErrorCorrectionLevel.M or ErrorCorrectionLevel.H))
-        {
-            throw new ArgumentOutOfRangeException(nameof(ecLevel), $"rMQR only supports EC levels M and H, got {ecLevel}.");
-        }
-
         var mode = DataAnalyzer.DetermineMode(data);
         var version = RMQRVersion.DetermineVersion(data, ecLevel, mode);
 

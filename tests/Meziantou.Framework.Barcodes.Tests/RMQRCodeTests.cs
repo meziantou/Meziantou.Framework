@@ -139,13 +139,13 @@ public class RMQRCodeTests
     [Fact]
     public void CreateRMQR_ECLevel_L_ThrowsArgumentOutOfRangeException()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => QRCode.CreateRMQR("AB", ErrorCorrectionLevel.L));
+        Assert.Throws<ArgumentOutOfRangeException>("errorCorrectionLevel", () => QRCode.CreateRMQR("AB", ErrorCorrectionLevel.L));
     }
 
     [Fact]
     public void CreateRMQR_ECLevel_Q_ThrowsArgumentOutOfRangeException()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => QRCode.CreateRMQR("AB", ErrorCorrectionLevel.Q));
+        Assert.Throws<ArgumentOutOfRangeException>("errorCorrectionLevel", () => QRCode.CreateRMQR("AB", ErrorCorrectionLevel.Q));
     }
 
     // ───── Determinism ─────

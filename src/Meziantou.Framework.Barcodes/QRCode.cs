@@ -58,6 +58,7 @@ public sealed class QRCode
     /// <param name="data">The text data to encode.</param>
     /// <param name="errorCorrectionLevel">The error correction level.</param>
     /// <returns>A new <see cref="QRCode"/> instance.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="errorCorrectionLevel"/> is not a defined <see cref="Barcodes.ErrorCorrectionLevel"/> value.</exception>
     public static QRCode Create(string data, ErrorCorrectionLevel errorCorrectionLevel = ErrorCorrectionLevel.M)
     {
         ArgumentNullException.ThrowIfNull(data);
@@ -65,6 +66,8 @@ public sealed class QRCode
         {
             throw new ArgumentException("The data cannot be empty.", nameof(data));
         }
+
+        ValidateErrorCorrectionLevel(errorCorrectionLevel);
 
         var mode = DataAnalyzer.DetermineMode(data);
         var version = DataAnalyzer.DetermineVersion(data, errorCorrectionLevel, mode);
@@ -80,12 +83,15 @@ public sealed class QRCode
     /// <param name="data">The binary data to encode.</param>
     /// <param name="errorCorrectionLevel">The error correction level.</param>
     /// <returns>A new <see cref="QRCode"/> instance.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="errorCorrectionLevel"/> is not a defined <see cref="Barcodes.ErrorCorrectionLevel"/> value.</exception>
     public static QRCode Create(ReadOnlySpan<byte> data, ErrorCorrectionLevel errorCorrectionLevel = ErrorCorrectionLevel.M)
     {
         if (data.IsEmpty)
         {
             throw new ArgumentException("The data cannot be empty.", nameof(data));
         }
+
+        ValidateErrorCorrectionLevel(errorCorrectionLevel);
 
         var version = DataAnalyzer.DetermineVersion(data.Length, errorCorrectionLevel, EncodingMode.Byte);
         var dataCodewords = DataEncoder.Encode(data, version, errorCorrectionLevel);
@@ -101,6 +107,7 @@ public sealed class QRCode
     /// <param name="data">The text data to encode.</param>
     /// <param name="errorCorrectionLevel">The error correction level. M1 only supports detection; M2/M3 support L/M; M4 supports L/M/Q.</param>
     /// <returns>A new <see cref="QRCode"/> instance.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="errorCorrectionLevel"/> is not <see cref="ErrorCorrectionLevel.L"/>, <see cref="ErrorCorrectionLevel.M"/> or <see cref="ErrorCorrectionLevel.Q"/>.</exception>
     public static QRCode CreateMicroQR(string data, ErrorCorrectionLevel errorCorrectionLevel = ErrorCorrectionLevel.L)
     {
         ArgumentNullException.ThrowIfNull(data);
@@ -109,7 +116,7 @@ public sealed class QRCode
             throw new ArgumentException("The data cannot be empty.", nameof(data));
         }
 
-        if (errorCorrectionLevel is ErrorCorrectionLevel.H)
+        if (errorCorrectionLevel is not (ErrorCorrectionLevel.L or ErrorCorrectionLevel.M or ErrorCorrectionLevel.Q))
         {
             throw new ArgumentOutOfRangeException(nameof(errorCorrectionLevel), errorCorrectionLevel, "Micro QR only supports EC levels L, M and Q.");
         }
@@ -124,6 +131,7 @@ public sealed class QRCode
     /// <param name="data">The text data to encode.</param>
     /// <param name="errorCorrectionLevel">The error correction level. Only M and H are supported.</param>
     /// <returns>A new <see cref="QRCode"/> instance.</returns>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="errorCorrectionLevel"/> is not <see cref="ErrorCorrectionLevel.M"/> or <see cref="ErrorCorrectionLevel.H"/>.</exception>
     public static QRCode CreateRMQR(string data, ErrorCorrectionLevel errorCorrectionLevel = ErrorCorrectionLevel.M)
     {
         ArgumentNullException.ThrowIfNull(data);
@@ -132,7 +140,20 @@ public sealed class QRCode
             throw new ArgumentException("The data cannot be empty.", nameof(data));
         }
 
+        if (errorCorrectionLevel is not (ErrorCorrectionLevel.M or ErrorCorrectionLevel.H))
+        {
+            throw new ArgumentOutOfRangeException(nameof(errorCorrectionLevel), errorCorrectionLevel, "rMQR only supports EC levels M and H.");
+        }
+
         return RMQREncoder.Encode(data, errorCorrectionLevel);
+    }
+
+    private static void ValidateErrorCorrectionLevel(ErrorCorrectionLevel errorCorrectionLevel)
+    {
+        if (errorCorrectionLevel is not (ErrorCorrectionLevel.L or ErrorCorrectionLevel.M or ErrorCorrectionLevel.Q or ErrorCorrectionLevel.H))
+        {
+            throw new ArgumentOutOfRangeException(nameof(errorCorrectionLevel), errorCorrectionLevel, "The error correction level must be L, M, Q or H.");
+        }
     }
 
     private static QRCode BuildStandardMatrix(byte[] allCodewords, int version, ErrorCorrectionLevel errorCorrectionLevel)

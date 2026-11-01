@@ -70,6 +70,7 @@ internal static class DockerContainerInfoParser
             }
         }
 
+        var health = result.State?.Health ?? result.State?.Healthcheck;
         return new ContainerInfo
         {
             Id = result.Id ?? "",
@@ -80,6 +81,8 @@ internal static class DockerContainerInfoParser
             StartedAt = ParseDate(result.State?.StartedAt),
             FinishedAt = ParseDate(result.State?.FinishedAt),
             ExitCode = result.State is null ? null : unchecked((int)result.State.ExitCode),
+            Health = ParseHealth(health?.Status),
+            HealthCheckOutput = health?.Log is [.., var lastCheck] ? lastCheck.Output : null,
             IPAddress = result.NetworkSettings?.IPAddress,
             Ports = ports,
             Labels = result.Config?.Labels ?? result.Labels ?? new Dictionary<string, string>(StringComparer.Ordinal),
@@ -111,6 +114,17 @@ internal static class DockerContainerInfoParser
             "exited" or "dead" => ContainerState.Exited,
             "removing" => ContainerState.Removed,
             _ => ContainerState.Unknown,
+        };
+    }
+
+    public static ContainerHealthStatus ParseHealth(string? status)
+    {
+        return status switch
+        {
+            "starting" => ContainerHealthStatus.Starting,
+            "healthy" => ContainerHealthStatus.Healthy,
+            "unhealthy" => ContainerHealthStatus.Unhealthy,
+            _ => ContainerHealthStatus.None,
         };
     }
 

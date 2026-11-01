@@ -399,6 +399,21 @@ public sealed class DockerRuntimeAdapterTests
         Assert.Equal("a=b", container.Environment["PASSWORD"]);
     }
 
+    [Theory]
+    [InlineData("""{ "Status": "running", "Health": { "Status": "unhealthy", "FailingStreak": 3, "Log": [ { "ExitCode": 1, "Output": "first" }, { "ExitCode": 1, "Output": "last" } ] } }""", ContainerHealthStatus.Unhealthy, "last")]
+    [InlineData("""{ "Status": "running", "Health": { "Status": "healthy", "FailingStreak": 0, "Log": [] } }""", ContainerHealthStatus.Healthy, null)]
+    [InlineData("""{ "Status": "running", "Healthcheck": { "Status": "starting", "FailingStreak": 0, "Log": null } }""", ContainerHealthStatus.Starting, null)]
+    [InlineData("""{ "Status": "running", "Health": { "Status": "", "FailingStreak": 0, "Log": null } }""", ContainerHealthStatus.None, null)]
+    [InlineData("""{ "Status": "running" }""", ContainerHealthStatus.None, null)]
+    public void ParseInspect_ReadsTheHealth(string state, ContainerHealthStatus expectedHealth, string? expectedOutput)
+    {
+        // podman reports the health under 'Healthcheck' before version 4.3.
+        var container = DockerContainerInfoParser.ParseInspectOutput($$"""[ { "Id": "container-id", "State": {{state}} } ]""");
+
+        Assert.Equal(expectedHealth, container.Health);
+        Assert.Equal(expectedOutput, container.HealthCheckOutput);
+    }
+
     [Fact]
     public void ParseInspect_AnEmptyNetworkSettingsDoesNotHideTheTopLevelBindings()
     {

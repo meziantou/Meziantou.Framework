@@ -1,10 +1,8 @@
 namespace Meziantou.Framework.TemporaryContainers.Strategies;
 
 /// <summary>Waits until a command run inside the container succeeds.</summary>
-internal sealed class CommandWaitStrategy(IReadOnlyList<string> command) : IWaitStrategy
+internal sealed class CommandWaitStrategy(IReadOnlyList<string> command, TimeSpan pollInterval) : IWaitStrategy
 {
-    private static readonly TimeSpan RetryDelay = TimeSpan.FromMilliseconds(250);
-
     public async Task WaitAsync(TemporaryContainer container, CancellationToken cancellationToken)
     {
         ArgumentNullException.ThrowIfNull(container);
@@ -20,7 +18,7 @@ internal sealed class CommandWaitStrategy(IReadOnlyList<string> command) : IWait
             if (result.ExitCode == 0)
                 return;
 
-            await Task.Delay(RetryDelay, cancellationToken).ConfigureAwait(false);
+            await Task.Delay(pollInterval, cancellationToken).ConfigureAwait(false);
         }
     }
 

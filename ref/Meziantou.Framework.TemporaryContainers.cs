@@ -117,10 +117,19 @@ namespace Meziantou.Framework.TemporaryContainers
         public bool Remove(string name) => throw null;
     }
 
+    public enum ContainerHealthStatus
+    {
+        None = 0,
+        Starting = 1,
+        Healthy = 2,
+        Unhealthy = 3,
+    }
+
     public sealed class ContainerInfo : System.IEquatable<Meziantou.Framework.TemporaryContainers.ContainerInfo>
     {
         public int? ExitCode { get => throw null; init { } }
         public System.DateTimeOffset? FinishedAt { get => throw null; init { } }
+        public Meziantou.Framework.TemporaryContainers.ContainerHealthStatus Health { get => throw null; init { } }
         public string? IPAddress { get => throw null; init { } }
         public required string Id { get => throw null; init { } }
         public string? Image { get => throw null; init { } }
@@ -294,6 +303,16 @@ namespace Meziantou.Framework.TemporaryContainers
         public static bool operator !=(Meziantou.Framework.TemporaryContainers.ExecResult? left, Meziantou.Framework.TemporaryContainers.ExecResult? right) => throw null;
     }
 
+    public sealed class HttpWaitStrategyOptions : Meziantou.Framework.TemporaryContainers.PollingWaitStrategyOptions
+    {
+        public System.Net.Http.HttpMethod Method { get => throw null; set { } }
+        public System.TimeSpan RequestTimeout { get => throw null; set { } }
+        public System.Func<string, bool>? ResponseBodyPredicate { get => throw null; set { } }
+        public System.Collections.Generic.ICollection<System.Net.HttpStatusCode> StatusCodes { get => throw null; }
+        public bool UseHttps { get => throw null; set { } }
+        public bool ValidateServerCertificate { get => throw null; set { } }
+    }
+
     public interface IMount
     {
     }
@@ -352,6 +371,11 @@ namespace Meziantou.Framework.TemporaryContainers
         public string RootPassword { get => throw null; set { } }
         public string RootUsername { get => throw null; set { } }
         public override Meziantou.Framework.TemporaryContainers.MongoDbContainer CreateContainer() => throw null;
+    }
+
+    public class PollingWaitStrategyOptions
+    {
+        public System.TimeSpan PollInterval { get => throw null; set { } }
     }
 
     public sealed class PostgreSqlContainer : Meziantou.Framework.TemporaryContainers.TemporaryContainer
@@ -486,9 +510,20 @@ namespace Meziantou.Framework.TemporaryContainers
 
     public static class Wait
     {
+        public static Meziantou.Framework.TemporaryContainers.IWaitStrategy ForAll(params Meziantou.Framework.TemporaryContainers.IWaitStrategy[] strategies) => throw null;
+        public static Meziantou.Framework.TemporaryContainers.IWaitStrategy ForAny(params Meziantou.Framework.TemporaryContainers.IWaitStrategy[] strategies) => throw null;
+        public static Meziantou.Framework.TemporaryContainers.IWaitStrategy ForCommand(params string[] command) => throw null;
+        public static Meziantou.Framework.TemporaryContainers.IWaitStrategy ForCommand(System.Collections.Generic.IEnumerable<string> command, System.Action<Meziantou.Framework.TemporaryContainers.PollingWaitStrategyOptions>? configure) => throw null;
         public static Meziantou.Framework.TemporaryContainers.IWaitStrategy ForDelay(System.TimeSpan delay) => throw null;
+        public static Meziantou.Framework.TemporaryContainers.IWaitStrategy ForHealthcheck(System.Action<Meziantou.Framework.TemporaryContainers.PollingWaitStrategyOptions>? configure = null) => throw null;
+        public static Meziantou.Framework.TemporaryContainers.IWaitStrategy ForHttp(int containerPort, string path = "/", System.Action<Meziantou.Framework.TemporaryContainers.HttpWaitStrategyOptions>? configure = null) => throw null;
         public static Meziantou.Framework.TemporaryContainers.IWaitStrategy ForLogMessage(System.Text.RegularExpressions.Regex pattern, int occurrences = 1) => throw null;
         public static Meziantou.Framework.TemporaryContainers.IWaitStrategy ForLogMessage(string substring, int occurrences = 1) => throw null;
         public static Meziantou.Framework.TemporaryContainers.IWaitStrategy ForPort(int containerPort) => throw null;
+    }
+
+    public static class WaitStrategyExtensions
+    {
+        public static Meziantou.Framework.TemporaryContainers.IWaitStrategy WithTimeout(this Meziantou.Framework.TemporaryContainers.IWaitStrategy strategy, System.TimeSpan timeout) => throw null;
     }
 }

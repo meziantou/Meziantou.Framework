@@ -595,6 +595,96 @@ public abstract class ContainerRuntimeTestsBase : IAsyncLifetime
         Assert.Equal("hello from container", await client.GetStringAsync(new Uri($"http://127.0.0.1:{container.GetMappedPort(8080)}/"), XunitCancellationToken));
     }
 
+    [Fact]
+    public async Task WaitForCommand_WaitsUntilTheCommandSucceeds()
+    {
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The command is run with a POSIX shell.");
+
+        var definition = new ContainerDefinition(new RegistryImage(ContainerImage)) { Runtime = Runtime };
+        definition.Command.Add("sh");
+        definition.Command.Add("-c");
+        definition.Command.Add("sleep 2; touch /tmp/ready; exec sleep 3600");
+        definition.WaitStrategies.Add(Wait.ForCommand("test", "-f", "/tmp/ready"));
+        definition.Logging.Logger = XUnitLogger.CreateLogger();
+
+        await using var container = await StartWithRetryAsync(definition);
+
+        var exec = await container.ExecAsync(options =>
+        {
+            options.Command.Add("test");
+            options.Command.Add("-f");
+            options.Command.Add("/tmp/ready");
+        }, XunitCancellationToken);
+        Assert.Equal(0, exec.ExitCode);
+    }
+
+    [Fact]
+    public async Task WaitForHttp_WaitsForTheExpectedResponse()
+    {
+        global::Xunit.Assert.SkipWhen(Runtime == ContainerRuntime.AppleContainer, "The published port is not reachable from the host with apple/container.");
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The server is started with a POSIX shell.");
+
+        // The server answers with an empty page first: the body predicate must keep the wait going until the content is there.
+        var definition = new ContainerDefinition(new RegistryImage(ContainerImage)) { Runtime = Runtime };
+        definition.Command.Add("sh");
+        definition.Command.Add("-c");
+        definition.Command.Add("mkdir -p /www; touch /www/index.html; (sleep 3; printf 'hello from container' > /www/index.html) & exec httpd -f -p 8080 -h /www");
+        AddHttpPortBinding(definition);
+        definition.WaitStrategies.Add(Wait.ForAll(
+            Wait.ForHttp(8080, "/index.html", options => options.ResponseBodyPredicate = body => body == "hello from container"),
+            Wait.ForCommand("test", "-s", "/www/index.html")).WithTimeout(TimeSpan.FromMinutes(2)));
+        definition.Logging.Logger = XUnitLogger.CreateLogger();
+
+        await using var container = await StartWithRetryAsync(definition);
+
+        using var client = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
+        Assert.Equal("hello from container", await client.GetStringAsync(new Uri($"http://127.0.0.1:{container.GetMappedPort(8080)}/index.html"), XunitCancellationToken));
+    }
+
+    [Fact]
+    public async Task WaitForHealthcheck_FailsAtOnceWhenTheImageHasNoHealthcheck()
+    {
+        var definition = CreateHttpServerDefinition();
+        definition.WaitStrategies.Add(Wait.ForHealthcheck());
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => StartWithRetryAsync(definition));
+        Assert.Contains("HEALTHCHECK", exception.Message);
+    }
+
+    /// <summary>Shared health check assertion for the runtimes that run the <c>HEALTHCHECK</c> of an image (called from the relevant subclasses). podman is left out: it runs health checks from systemd timers, which the CI agents do not have.</summary>
+    protected async Task AssertWaitForHealthcheckAsync()
+    {
+        global::Xunit.Assert.SkipWhen(UseWindowsContainerImages, "The image is built from a Linux base image.");
+
+        using (var directory = TemporaryDirectory.Create())
+        {
+            await using var container = await StartWithRetryAsync(CreateHealthcheckDefinition(directory, "wget -qO- http://127.0.0.1:8080/ || exit 1"));
+            var info = await container.InspectAsync(XunitCancellationToken);
+            Assert.Equal(ContainerHealthStatus.Healthy, info.Health);
+        }
+
+        using (var directory = TemporaryDirectory.Create())
+        {
+            var exception = await Assert.ThrowsAsync<InvalidOperationException>(() => StartWithRetryAsync(CreateHealthcheckDefinition(directory, "echo probe failed; exit 1")));
+            Assert.Contains("probe failed", exception.Message);
+        }
+
+        ContainerDefinition CreateHealthcheckDefinition(TemporaryDirectory directory, string healthcheck)
+        {
+            var dockerfilePath = directory.FullPath / "Dockerfile";
+            File.WriteAllText(dockerfilePath, $"""
+                FROM {LinuxImage}
+                HEALTHCHECK --interval=1s --timeout=5s --retries=2 CMD sh -c '{healthcheck}'
+                CMD ["sh", "-c", "mkdir -p /www; printf 'hello from container' > /www/index.html; exec httpd -f -p 8080 -h /www"]
+                """);
+
+            var definition = new ContainerDefinition(new DockerfileImage(dockerfilePath, directory.FullPath)) { Runtime = Runtime };
+            definition.WaitStrategies.Add(Wait.ForHealthcheck(options => options.PollInterval = TimeSpan.FromMilliseconds(100)));
+            definition.Logging.Logger = XUnitLogger.CreateLogger();
+            return definition;
+        }
+    }
+
     private static async Task ExecShellAsync(TemporaryContainer container, string command)
     {
         var exec = await container.ExecAsync(options =>

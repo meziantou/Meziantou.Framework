@@ -109,6 +109,16 @@ internal ref struct PathReader
 
     public readonly bool IsEndOfPath => CurrentText.IsEmpty;
 
+    /// <summary>
+    ///     A number that identifies the position of the reader in the path, which memoizes the result of matching
+    ///     the rest of the pattern from there. The text left to read is a suffix of the path, so its length identifies
+    ///     it, except that the end of the directory and the start of the file name leave the same text.
+    /// </summary>
+    public readonly int MemoPosition => ((CurrentText.Length + _filename.Length) * 2) + (CurrentText.IsEmpty && !_filename.IsEmpty ? 1 : 0);
+
+    /// <summary>The number of values <see cref="MemoPosition"/> can take from the current position to the end of the path.</summary>
+    public readonly int MemoPositionCount => MemoPosition + 2;
+
     public void ConsumeInSegment(int count)
     {
         Debug.Assert(count > 0);

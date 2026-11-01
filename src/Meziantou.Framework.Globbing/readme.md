@@ -8,7 +8,7 @@
 - `[!abc]` matches any character not in the brackets
 - `[a-z]` matches one character from the range given in the bracket
 - `[!a-z]` matches one character not in the range given in the bracket
-- `{abc,123}` matches one of the literals
+- `{abc,*.cs}` matches one of the alternatives, which can hold wildcards, other braces and `/`
 - `**` matches zero or more directories
 
 ## Dialects

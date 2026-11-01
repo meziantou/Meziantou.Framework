@@ -41,7 +41,7 @@ public sealed class ImmutableEquatableDictionary<TKey, TValue> : IEquatable<Immu
 
         foreach (var entry in thisDict)
         {
-            if (!otherDict.TryGetValue(entry.Key, out var otherValue) || !entry.Value.Equals(otherValue))
+            if (!otherDict.TryGetValue(entry.Key, out var otherValue) || !EqualityComparer<TValue>.Default.Equals(entry.Value, otherValue))
                 return false;
         }
 
@@ -136,7 +136,7 @@ public static class ImmutableEquatableDictionary
         where TKey : IEquatable<TKey>
         where TValue : IEquatable<TValue>
     {
-        return values is ICollection<KeyValuePair<TKey, TValue>> { Count: 0 }
+        return values is ICollection<TValue> { Count: 0 }
             ? ImmutableEquatableDictionary<TKey, TValue>.Empty
             : new ImmutableEquatableDictionary<TKey, TValue>(values.ToDictionary(keySelector));
     }
@@ -168,8 +168,7 @@ public static class ImmutableEquatableDictionary
     {
         return values switch
         {
-            ICollection<KeyValuePair<TKey, TValue>> { Count: 0 } => ImmutableEquatableDictionary<TKey, TValue>.Empty,
-            IDictionary<TKey, TValue> dict => new ImmutableEquatableDictionary<TKey, TValue>(new(dict)),
+            ICollection<(TKey, TValue)> { Count: 0 } => ImmutableEquatableDictionary<TKey, TValue>.Empty,
             _ => new ImmutableEquatableDictionary<TKey, TValue>(values.ToDictionary(kvp => kvp.Item1, kvp => kvp.Item2)),
         };
     }

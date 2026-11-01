@@ -111,5 +111,5 @@ public static class ImmutableEquatableSet
         => values.IsEmpty ? ImmutableEquatableSet<T>.Empty : new ImmutableEquatableSet<T>([.. values]);
 
     public static ImmutableEquatableSet<T> Create<T>(IEnumerable<T> values) where T : IEquatable<T>
-        => new([.. values]);
+        => values is ICollection<T> { Count: 0 } ? ImmutableEquatableSet<T>.Empty : new ImmutableEquatableSet<T>([.. values]);
 }

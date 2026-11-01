@@ -521,6 +521,120 @@ public class QRCodePngRendererTests
     }
 
     [Fact]
+    public void PngWriter_SmallChunks_SplitOneZlibStream()
+    {
+        const int Width = 61;
+        const int Height = 40;
+        var lightColor = Color.Transparent;
+
+        using var single = new MemoryStream();
+        Internal.PngWriter.WritePalette(single, Width, Height, lightColor, Color.Black, FillNoise, maxIdatChunkLength: 1 << 20);
+        using var split = new MemoryStream();
+        Internal.PngWriter.WritePalette(split, Width, Height, lightColor, Color.Black, FillNoise, maxIdatChunkLength: 16);
+
+        var singleChunks = ReadChunks(single.ToArray());
+        var splitChunks = ReadChunks(split.ToArray());
+        var idatChunks = splitChunks.Where(chunk => chunk.Type is "IDAT").ToList();
+        string[] expectedTypes = ["IHDR", "PLTE", "tRNS", .. idatChunks.Select(chunk => chunk.Type), "IEND"];
+
+        Assert.Equal(expectedTypes, splitChunks.Select(chunk => chunk.Type));
+        Assert.HasCountGreaterThan(2, idatChunks);
+        Assert.All(idatChunks.SkipLast(1), chunk => Assert.HasCount(16, chunk.Data));
+        Assert.InRange(idatChunks[^1].Data.Length, 1, 16);
+        Assert.All(splitChunks, chunk => Assert.Equal(ComputeCrc32(chunk.Type, chunk.Data), chunk.Crc));
+
+        // The chunks are pieces of the same zlib stream, not separately compressed parts.
+        Assert.Equal(singleChunks.Single(chunk => chunk.Type is "IDAT").Data, idatChunks.SelectMany(chunk => chunk.Data));
+        Assert.Equal(new byte[] { 0x00, 0xff }, ParsePng(split.ToArray()).Transparency);
+    }
+
+    [Fact]
+    public void PngWriter_LargeImage_IsSplitIntoBoundedChunks()
+    {
+        const int Width = 512;
+        const int Height = 512;
+
+        using var stream = new MemoryStream();
+        Internal.PngWriter.WritePalette(stream, Width, Height, Color.White, Color.Black, FillNoise);
+
+        var png = stream.ToArray();
+        var idatChunks = ReadChunks(png).Where(chunk => chunk.Type is "IDAT").ToList();
+        Assert.HasCountGreaterThan(1, idatChunks);
+        Assert.All(idatChunks, chunk => Assert.InRange(chunk.Data.Length, 1, Internal.PngWriter.DefaultMaxIdatChunkLength));
+
+        var expected = new byte[Width / 8 * Height];
+        for (var y = 0; y < Height; y++)
+        {
+            FillNoise(expected.AsSpan(y * Width / 8, Width / 8), y);
+        }
+
+        Assert.Equal(expected, ParsePng(png).ImageData);
+    }
+
+    [Fact]
+    public void PngWriter_WritesTheHeadersBeforeRenderingAnyRow()
+    {
+        using var stream = new MemoryStream();
+        var headerLength = -1L;
+        Internal.PngWriter.WritePalette(stream, 8, 2, Color.Transparent, Color.Black, (row, y) =>
+        {
+            if (y is 0)
+            {
+                headerLength = stream.Length;
+            }
+
+            return 1;
+        });
+
+        // Signature, then IHDR (13 bytes), PLTE (6 bytes) and tRNS (2 bytes), each with 12 bytes of overhead.
+        Assert.Equal(8 + (12 + 13) + (12 + 6) + (12 + 2), headerLength);
+    }
+
+    [Fact]
+    public void PngWriter_RendererThrows_PropagatesTheException()
+    {
+        using var stream = new MemoryStream();
+
+        var exception = Assert.Throws<InvalidOperationException>(() => Internal.PngWriter.WritePalette(stream, 8, 4, Color.White, Color.Black, (row, y) => y is 2 ? throw new InvalidOperationException("sample") : 1));
+
+        Assert.Equal("sample", exception.Message);
+        Assert.DoesNotContain("IEND", ReadChunks(stream.ToArray()).Select(chunk => chunk.Type));
+    }
+
+    [Fact]
+    public void WriteToPng_NonSeekableStream_MatchesToPng()
+    {
+        var qr = QRCode.Create("https://www.meziantou.net/", ErrorCorrectionLevel.Q);
+        var options = new QRCodePngOptions { LightColor = Color.Transparent };
+        var barcode = Barcode.CreateCode128("Hello 123");
+
+        using var qrStream = new WriteOnlyStream();
+        qr.WriteToPng(qrStream, options);
+        using var barcodeStream = new WriteOnlyStream();
+        barcode.WriteToPng(barcodeStream);
+
+        Assert.Equal(qr.ToPng(options), qrStream.ToArray());
+        Assert.Equal(barcode.ToPng(), barcodeStream.ToArray());
+    }
+
+    /// <summary>Fills a row with bits that do not compress, and are different for each row.</summary>
+    private static int FillNoise(Span<byte> row, int y)
+    {
+        for (var i = 0; i < row.Length; i++)
+        {
+            // A bit-mixing hash: a linear sequence would turn into a constant once Up-filtered.
+            var hash = (uint)((y << 16) | i);
+            hash = (hash ^ (hash >> 16)) * 0x7feb352du;
+            hash = (hash ^ (hash >> 15)) * 0x846ca68bu;
+            row[i] = (byte)(hash ^ (hash >> 16));
+        }
+
+        // Keep the padding bits of a partial last byte clear, as the renderers do.
+        row[^1] &= 0xF8;
+        return 1;
+    }
+
+    [Fact]
     public void ToPng_BarcodePixelsMatchTheModules()
     {
         var barcode = Barcode.CreateCode128("Hello 123");
@@ -585,6 +699,52 @@ public class QRCodePngRendererTests
     }
 
     private sealed record PngChunk(string Type, byte[] Data, uint Crc);
+
+    /// <summary>A stream that can only be written to, like a network stream.</summary>
+    private sealed class WriteOnlyStream : Stream
+    {
+        private readonly MemoryStream _inner = new();
+
+        public override bool CanRead => false;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => true;
+
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public byte[] ToArray() => _inner.ToArray();
+
+        public override void Write(byte[] buffer, int offset, int count) => _inner.Write(buffer, offset, count);
+
+        public override void Write(ReadOnlySpan<byte> buffer) => _inner.Write(buffer);
+
+        public override void Flush()
+        {
+        }
+
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _inner.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
+    }
 
     private static ParsedPng ParsePng(byte[] data)
     {

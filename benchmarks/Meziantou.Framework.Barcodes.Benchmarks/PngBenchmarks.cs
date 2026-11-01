@@ -8,7 +8,7 @@ public class PngBenchmarks
     private readonly QRCode _qrCode = QRCode.Create("https://www.meziantou.net/", ErrorCorrectionLevel.M);
     private readonly Barcode _barcode = Barcode.CreateCode128("Meziantou.Framework.Barcodes");
 
-    [Params(1, 4)]
+    [Params(1, 4, 16)]
     public int Scale { get; set; }
 
     [Benchmark]

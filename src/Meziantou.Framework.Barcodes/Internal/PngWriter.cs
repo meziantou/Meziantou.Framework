@@ -1,4 +1,6 @@
+using System.Buffers;
 using System.Buffers.Binary;
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Compression;
 using System.Numerics;
 using Meziantou.Framework.Hashing;
@@ -18,6 +20,12 @@ internal static class PngWriter
     private static readonly byte[] IendChunkType = [73, 69, 78, 68];
 
     /// <summary>
+    /// The largest IDAT chunk written. libpng uses the same size: the 12 bytes of chunk overhead
+    /// are negligible, and the buffer is small enough to rent for every image.
+    /// </summary>
+    internal const int DefaultMaxIdatChunkLength = 8192;
+
+    /// <summary>
     /// Writes a two-colour indexed PNG at one bit per pixel.
     /// </summary>
     /// <param name="stream">The destination stream.</param>
@@ -30,19 +38,26 @@ internal static class PngWriter
     /// cleared before each call and holds one bit per pixel, most significant bit leftmost; set a
     /// bit to make that pixel dark.
     /// </param>
+    /// <param name="maxIdatChunkLength">The largest IDAT chunk to write, in bytes.</param>
     /// <remarks>
+    /// <para>
     /// QR codes and barcodes are two-colour images, so an indexed palette stores them at a
     /// thirty-second of the bytes truecolour-with-alpha needs. A scanline is rendered once and
-    /// reused for the rows that repeat it, which is every row of a module but the first. Rows are streamed into the
-    /// compressor as they are produced rather than buffered, so peak memory does not scale with
-    /// the image size.
+    /// reused for the rows that repeat it, which is every row of a module but the first.
+    /// </para>
+    /// <para>
+    /// The headers are written first. Rows are then compressed as they are produced into one zlib
+    /// stream, which is split into IDAT chunks of at most <paramref name="maxIdatChunkLength"/>
+    /// bytes as it fills them. Peak memory is three scanlines, one chunk and the compressor's
+    /// state, whatever the image height, and the destination stream needs neither seeking nor
+    /// reading. If rendering or writing fails, the destination holds an incomplete PNG.
+    /// </para>
     /// </remarks>
-    public static void WritePalette(Stream stream, int width, int height, Color lightColor, Color darkColor, PngRowRenderer renderRow)
+    public static void WritePalette(Stream stream, int width, int height, Color lightColor, Color darkColor, PngRowRenderer renderRow, int maxIdatChunkLength = DefaultMaxIdatChunkLength)
     {
         var bytesPerRow = GetBytesPerRow(width);
         ArgumentOutOfRangeException.ThrowIfLessThan(height, 1);
-
-        var compressedImageData = CompressRows(bytesPerRow, height, renderRow);
+        ArgumentOutOfRangeException.ThrowIfLessThan(maxIdatChunkLength, 1);
 
         stream.Write(Signature);
 
@@ -65,7 +80,22 @@ internal static class PngWriter
             WriteChunk(stream, TrnsChunkType, transparency);
         }
 
-        WriteChunk(stream, IdatChunkType, compressedImageData);
+        var chunkBuffer = ArrayPool<byte>.Shared.Rent(maxIdatChunkLength);
+        try
+        {
+            var idatStream = new IdatChunkStream(stream, chunkBuffer.AsMemory(0, maxIdatChunkLength));
+            using (var compressionStream = new ZLibStream(idatStream, CompressionLevel.SmallestSize, leaveOpen: true))
+            {
+                CompressRows(compressionStream, bytesPerRow, height, renderRow);
+            }
+
+            idatStream.WriteLastChunk();
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(chunkBuffer);
+        }
+
         WriteChunk(stream, IendChunkType, ReadOnlySpan<byte>.Empty);
     }
 
@@ -107,56 +137,50 @@ internal static class PngWriter
         row[lastByte] |= lastMask;
     }
 
-    private static byte[] CompressRows(int bytesPerRow, int height, PngRowRenderer renderRow)
+    private static void CompressRows(ZLibStream compressionStream, int bytesPerRow, int height, PngRowRenderer renderRow)
     {
         var current = new byte[bytesPerRow];
         var previous = new byte[bytesPerRow];
         var filtered = new byte[bytesPerRow + 1];
 
-        using var output = new MemoryStream();
-        using (var compressionStream = new ZLibStream(output, CompressionLevel.SmallestSize, leaveOpen: true))
+        var row = 0;
+        while (row < height)
         {
-            var row = 0;
-            while (row < height)
+            Array.Clear(current);
+            var rowCount = renderRow(current, row);
+            if (rowCount < 1 || rowCount > height - row)
+                throw new InvalidOperationException($"The row renderer returned {rowCount} rows at row {row} of {height}.");
+
+            // The Up filter turns a row identical to the one above it into zeroes, which is
+            // the common case here because every module spans ModuleSize rows.
+            if (row is 0)
             {
-                Array.Clear(current);
-                var rowCount = renderRow(current, row);
-                if (rowCount < 1 || rowCount > height - row)
-                    throw new InvalidOperationException($"The row renderer returned {rowCount} rows at row {row} of {height}.");
-
-                // The Up filter turns a row identical to the one above it into zeroes, which is
-                // the common case here because every module spans ModuleSize rows.
-                if (row is 0)
-                {
-                    filtered[0] = 0; // None
-                    current.CopyTo(filtered.AsSpan(1));
-                }
-                else
-                {
-                    filtered[0] = 2; // Up
-                    Subtract(current, previous, filtered.AsSpan(1));
-                }
-
-                compressionStream.Write(filtered);
-                (previous, current) = (current, previous);
-
-                if (rowCount > 1)
-                {
-                    // The repeated rows are identical to the one above them, so their Up filter is
-                    // all zeroes: write it without rendering or subtracting anything.
-                    filtered[0] = 2; // Up
-                    filtered.AsSpan(1).Clear();
-                    for (var i = 1; i < rowCount; i++)
-                    {
-                        compressionStream.Write(filtered);
-                    }
-                }
-
-                row += rowCount;
+                filtered[0] = 0; // None
+                current.CopyTo(filtered.AsSpan(1));
             }
-        }
+            else
+            {
+                filtered[0] = 2; // Up
+                Subtract(current, previous, filtered.AsSpan(1));
+            }
 
-        return output.ToArray();
+            compressionStream.Write(filtered);
+            (previous, current) = (current, previous);
+
+            if (rowCount > 1)
+            {
+                // The repeated rows are identical to the one above them, so their Up filter is
+                // all zeroes: write it without rendering or subtracting anything.
+                filtered[0] = 2; // Up
+                filtered.AsSpan(1).Clear();
+                for (var i = 1; i < rowCount; i++)
+                {
+                    compressionStream.Write(filtered);
+                }
+            }
+
+            row += rowCount;
+        }
     }
 
     private static void Subtract(ReadOnlySpan<byte> current, ReadOnlySpan<byte> previous, Span<byte> destination)
@@ -187,5 +211,85 @@ internal static class PngWriter
         var crc = Crc32.Append(Crc32.Compute(chunkType), data);
         BinaryPrimitives.WriteUInt32BigEndian(uintBuffer, crc);
         stream.Write(uintBuffer);
+    }
+
+    /// <summary>
+    /// A write-only stream that splits what is written to it into IDAT chunks of a bounded length.
+    /// </summary>
+    private sealed class IdatChunkStream : Stream
+    {
+        [SuppressMessage("Usage", "CA2213:Disposable fields should be disposed", Justification = "The caller owns the destination stream")]
+        private readonly Stream _destination;
+        private readonly Memory<byte> _chunk;
+        private int _length;
+
+        public IdatChunkStream(Stream destination, Memory<byte> chunk)
+        {
+            _destination = destination;
+            _chunk = chunk;
+        }
+
+        public override bool CanRead => false;
+
+        public override bool CanSeek => false;
+
+        public override bool CanWrite => true;
+
+        public override long Length => throw new NotSupportedException();
+
+        public override long Position
+        {
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
+        }
+
+        public override void Write(ReadOnlySpan<byte> buffer)
+        {
+            while (!buffer.IsEmpty)
+            {
+                var count = Math.Min(buffer.Length, _chunk.Length - _length);
+                buffer[..count].CopyTo(_chunk.Span[_length..]);
+                _length += count;
+                buffer = buffer[count..];
+
+                if (_length == _chunk.Length)
+                {
+                    WriteChunk(_destination, IdatChunkType, _chunk.Span);
+                    _length = 0;
+                }
+            }
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            ValidateBufferArguments(buffer, offset, count);
+            Write(buffer.AsSpan(offset, count));
+        }
+
+        public override void WriteByte(byte value)
+        {
+            Write([value]);
+        }
+
+        /// <summary>Writes the data left in the buffer, if any, as the last IDAT chunk.</summary>
+        public void WriteLastChunk()
+        {
+            if (_length > 0)
+            {
+                WriteChunk(_destination, IdatChunkType, _chunk.Span[.._length]);
+                _length = 0;
+            }
+        }
+
+        // Chunks are only written when they are full, or at the end: flushing does not cut one short.
+        public override void Flush()
+        {
+        }
+
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+
+        public override void SetLength(long value) => throw new NotSupportedException();
     }
 }

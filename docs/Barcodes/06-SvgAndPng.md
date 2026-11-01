@@ -78,6 +78,11 @@ var barcodePng = barcode.ToPng(new BarcodePngOptions
 ```
 <!-- endref -->
 
+`WriteToPng` writes as it renders: the PNG headers come first, then the image data in chunks of at most 8 KiB. It
+keeps a few rows of pixels in memory, whatever the size of the image, and the stream does not need to be seekable, so
+you can write to a network or HTTP response stream. If writing to the stream fails, the stream holds an incomplete
+PNG file. `ToPng` returns the whole file in an array.
+
 The PNG renderer has no dependency: it does not need `Meziantou.Framework.Imaging`. To save in another format, or to
 draw the code on an image, see [Images](08-Images.md).
 

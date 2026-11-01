@@ -192,6 +192,200 @@ public sealed class Glob : IGlobEvaluatable
         return GlobParser.TryParse(pattern, dialect, options, out result, out errorMessage);
     }
 
+    /// <summary>Escapes text so that it can be used as a pattern, or as a part of a pattern, that matches exactly this text.</summary>
+    /// <param name="text">The text to escape, such as a file name or a relative path.</param>
+    /// <param name="dialect">The dialect of the pattern.</param>
+    /// <returns>A pattern that matches <paramref name="text"/>.</returns>
+    /// <remarks>
+    ///     <para>
+    ///         Every character that <paramref name="dialect"/> reads as syntax is escaped, as well as a leading <c>!</c>
+    ///         (and <c>#</c> for <see cref="GlobDialect.Git"/>) and a trailing space for <see cref="GlobDialect.Git"/>.
+    ///         <see cref="GlobDialect.MSBuild"/> also escapes the characters that have a meaning in a project file
+    ///         (<c>;</c>, <c>$</c>, <c>@</c>, <c>'</c>, <c>(</c> and <c>)</c>).
+    ///     </para>
+    ///     <para>
+    ///         A path separator stays a separator: <c>/</c>, <c>\</c> on Windows, and both for
+    ///         <see cref="GlobDialect.MSBuild"/>. <see cref="GlobDialect.Posix"/> matches a plain string, so it has no
+    ///         separator. As for any <see cref="GlobDialect.Git"/> pattern, a result without a <c>/</c> matches the
+    ///         name at any depth; prepend a <c>/</c> to anchor it to the root.
+    ///     </para>
+    /// </remarks>
+    /// <example>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Globbing.Tests/GlobTests.cs" ref:region="Glob_EscapeText" ref:dedent="true">
+    /// // Build a pattern from a folder name that holds special characters
+    /// var pattern = Glob.Escape("Reports [2024]", GlobDialect.Standard) + "/**/*.pdf";
+    /// Assert.Equal(@"Reports \[2024]/**/*.pdf", pattern);
+    ///
+    /// var glob = Glob.Parse(pattern, GlobDialect.Standard);
+    /// Assert.True(glob.IsMatch("Reports [2024]/Q1/summary.pdf"));
+    /// Assert.False(glob.IsMatch("Reports 2/Q1/summary.pdf"));
+    ///
+    /// // Each dialect has its own escaping rules
+    /// Assert.Equal("100%25 done.txt", Glob.Escape("100% done.txt", GlobDialect.MSBuild));
+    /// Assert.Equal(@"\#notes.txt", Glob.Escape("#notes.txt", GlobDialect.Git));
+    /// </code>
+    /// </example>
+    public static string Escape(string text, GlobDialect dialect)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+
+        return Escape(text.AsSpan(), dialect);
+    }
+
+    /// <summary>Escapes text so that it can be used as a pattern, or as a part of a pattern, that matches exactly this text.</summary>
+    /// <param name="text">The text to escape, such as a file name or a relative path.</param>
+    /// <param name="dialect">The dialect of the pattern.</param>
+    /// <returns>A pattern that matches <paramref name="text"/>.</returns>
+    /// <remarks>See <see cref="Escape(string, GlobDialect)"/>.</remarks>
+    public static string Escape(ReadOnlySpan<char> text, GlobDialect dialect)
+    {
+        var sb = new ValueStringBuilder(stackalloc char[128]);
+        GlobPatternWriter.AppendEscapedText(ref sb, text, dialect);
+        return sb.ToString();
+    }
+
+    /// <summary>
+    ///     Splits the pattern into its base path, the leading directories that do not hold any wildcard, and a pattern
+    ///     that matches the rest of the path relative to that base path.
+    /// </summary>
+    /// <param name="basePath">
+    ///     When this method returns <see langword="true"/>, the base path, with <c>/</c> as the separator. It starts
+    ///     with a <c>/</c> for an absolute pattern, and with <c>..</c> for an <see cref="GlobDialect.MSBuild"/> pattern
+    ///     that goes up from the directory.
+    /// </param>
+    /// <param name="relativeGlob">
+    ///     When this method returns <see langword="true"/>, a glob with the same dialect, options and mode that matches
+    ///     a path relative to <paramref name="basePath"/>: a path <c>basePath/path</c> matches this glob when
+    ///     <c>path</c> matches <paramref name="relativeGlob"/>.
+    /// </param>
+    /// <returns><see langword="true"/> if the pattern starts with at least one literal directory; otherwise, <see langword="false"/>.</returns>
+    /// <remarks>
+    ///     The last segment of the pattern, which matches the name of the item, is never part of the base path. A
+    ///     directory is not part of the base path when it does not have a single spelling: one holding a letter when
+    ///     <see cref="GlobOptions.IgnoreCase"/> is set, a <c>.</c> or <c>..</c> directory (except a leading <c>..</c>
+    ///     for <see cref="GlobDialect.MSBuild"/>), or one holding a path separator of the current platform.
+    ///     A <see cref="GlobDialect.Posix"/> pattern never has a base path, and a <see cref="GlobDialect.Git"/>
+    ///     pattern has one only when it is anchored.
+    /// </remarks>
+    /// <example>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Globbing.Tests/GlobTests.cs" ref:region="Glob_TrySplitBasePath" ref:dedent="true">
+    /// var glob = Glob.Parse("src/app/**/*.cs", GlobDialect.Standard);
+    /// Assert.True(glob.TrySplitBasePath(out var basePath, out var relativeGlob));
+    /// Assert.Equal("src/app", basePath);
+    /// Assert.Equal("**/*.cs", relativeGlob.ToString());
+    /// Assert.True(relativeGlob.IsMatch("Models/User.cs"));
+    ///
+    /// // MSBuild resolves a leading '..' against the directory
+    /// Assert.True(Glob.Parse("../shared/*.cs", GlobDialect.MSBuild).TrySplitBasePath(out basePath, out _));
+    /// Assert.Equal("../shared", basePath);
+    ///
+    /// // The pattern starts with a wildcard
+    /// Assert.False(Glob.Parse("**/*.cs", GlobDialect.Standard).TrySplitBasePath(out _, out _));
+    /// </code>
+    /// </example>
+    public bool TrySplitBasePath([NotNullWhen(true)] out string? basePath, [NotNullWhen(true)] out Glob? relativeGlob)
+    {
+        var count = GetBasePathSegmentCount();
+        if (count == 0)
+        {
+            basePath = null;
+            relativeGlob = null;
+            return false;
+        }
+
+        var sb = new ValueStringBuilder(stackalloc char[128]);
+        var hasName = false;
+        for (var i = 0; i < count; i++)
+        {
+            if (i > 0)
+            {
+                sb.Append('/');
+            }
+
+            if (_segments[i] is LiteralSegment literal)
+            {
+                sb.Append(literal.Value);
+                hasName = true;
+            }
+        }
+
+        // The pattern only starts with separators, such as "/*.txt": the base path is the root
+        if (!hasName)
+        {
+            sb.Append('/');
+        }
+
+        basePath = sb.ToString();
+        relativeGlob = new Glob(_segments[count..], _matchLeadingDot[count..], _pathSeparatorAware, Mode, _matchType, _dialect);
+        return true;
+    }
+
+    private int GetBasePathSegmentCount()
+    {
+        if (!_pathSeparatorAware)
+            return 0;
+
+        // The rest of the pattern must still match a name, so the base path stops before the last segment that
+        // cannot match an empty path. For a gitignore entry such as "/a/b/", it is "b", as the entry matches the
+        // directory "a/b" itself.
+        var limit = _segments.Length - 1;
+        while (limit > 0 && _segments[limit].CanMatchEmptyPath)
+        {
+            limit--;
+        }
+
+        var count = 0;
+        var hasName = false;
+        var hasOnlyParentDirectories = true;
+        while (count < limit)
+        {
+            switch (_segments[count])
+            {
+                // Only the leading separators of an absolute path; two consecutive separators elsewhere stop the base path
+                case EmptySegment when !hasName:
+                    break;
+
+                case LiteralSegment literal when IsBasePathLiteral(literal, canBeParentDirectory: hasOnlyParentDirectories):
+                    hasName = true;
+                    hasOnlyParentDirectories &= literal.Value is "..";
+                    break;
+
+                default:
+                    return count;
+            }
+
+            count++;
+        }
+
+        return count;
+    }
+
+    private bool IsBasePathLiteral(LiteralSegment literal, bool canBeParentDirectory)
+    {
+        var value = literal.Value;
+        if (value.Length == 0 || value is ".")
+            return false;
+
+        // MSBuild resolves a leading '..' against the directory. The other dialects only have a '..' directory when
+        // it is escaped, which no file system holds.
+        if (value is "..")
+            return _dialect is GlobDialect.MSBuild && canBeParentDirectory;
+
+        if (value.AsSpan().IndexOfAny(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar) >= 0)
+            return false;
+
+        if (literal.IgnoreCase)
+        {
+            foreach (var c in value)
+            {
+                if (char.ToUpperInvariant(c) != c || char.ToLowerInvariant(c) != c)
+                    return false;
+            }
+        }
+
+        return true;
+    }
+
     /// <summary>
     ///     Parses one line of gitignore content on behalf of <see cref="GlobCollection"/>, which excludes the whole
     ///     content of an excluded directory itself. An entry ending with a '/' therefore only has to match the

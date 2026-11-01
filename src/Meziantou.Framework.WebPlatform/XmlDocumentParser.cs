@@ -47,6 +47,24 @@ public static class XmlDocumentParser
     }
 
     /// <summary>
+    /// Parses XML bytes, determining the encoding from the byte order mark, byte signature and XML declaration, or UTF-8
+    /// by default. Throws <see cref="XmlException"/> for malformed bytes, conflicting encodings or invalid XML.
+    /// </summary>
+    public static Document ParseDocument(ReadOnlySpan<byte> xml, XmlParserOptions? options = null) => ParseDocument(XmlByteDecoder.Decode(xml), options);
+
+    /// <summary>
+    /// Parses XML from the current position of a stream, determining its encoding as for byte inputs.
+    /// Buffers the input and leaves the caller-owned stream open.
+    /// </summary>
+    public static Document ParseDocument(Stream stream, XmlParserOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+        using var memory = new MemoryStream();
+        stream.CopyTo(memory);
+        return ParseDocument(memory.GetBuffer().AsSpan(0, (int)memory.Length), options);
+    }
+
+    /// <summary>
     /// Parses an XML document, and waits until the parser has finished: while the parser waits for a script, the tasks of
     /// the <see cref="DomEventLoop"/> of the browsing context run. Throws <see cref="XmlException"/> when the document is
     /// not namespace-well-formed (before the parser waits for a script; afterwards, the document shows the error).
@@ -54,6 +72,22 @@ public static class XmlDocumentParser
     public static async Task<Document> ParseDocumentAsync(string xml, XmlParserOptions? options = null, CancellationToken cancellationToken = default)
     {
         var document = ParseDocument(xml, options);
+        await HtmlDocumentParser.WaitForParserAsync(document, cancellationToken).ConfigureAwait(false);
+        return document;
+    }
+
+    /// <summary>
+    /// Asynchronously reads XML from the current position of a stream and waits until the parser has finished.
+    /// Buffers the input and leaves the caller-owned stream open. Cancellation interrupts reading and waiting for the parser.
+    /// </summary>
+    public static async Task<Document> ParseDocumentAsync(Stream stream, XmlParserOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+        cancellationToken.ThrowIfCancellationRequested();
+        using var memory = new MemoryStream();
+        await stream.CopyToAsync(memory, cancellationToken).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+        var document = ParseDocument(memory.GetBuffer().AsSpan(0, (int)memory.Length), options);
         await HtmlDocumentParser.WaitForParserAsync(document, cancellationToken).ConfigureAwait(false);
         return document;
     }

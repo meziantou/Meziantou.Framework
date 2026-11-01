@@ -16,6 +16,7 @@ internal static class JsonPathEvaluator
     /// of 64 that bounds any document produced by System.Text.Json's own parsers.
     /// </summary>
     private const int MaxRecursionDepth = 256;
+    private const int MaxDirectSliceElements = 4;
 
     /// <summary>
     /// Backstop for a single <c>match()</c>/<c>search()</c> evaluation. <see cref="RegexOptions.NonBacktracking"/>
@@ -433,8 +434,7 @@ internal static class JsonPathEvaluator
             return;
         }
 
-        using var elements = new ArrayElements<TValue>(navigator, node, copyElements: context.Limit != 1);
-        var len = elements.Length;
+        var len = navigator.GetArrayLength(node);
         var start = selector.Start ?? (step >= 0 ? 0 : len - 1);
         var end = selector.End ?? (step >= 0 ? len : -len - 1);
 
@@ -453,40 +453,116 @@ internal static class JsonPathEvaluator
             lower = Math.Clamp(nEnd, -1, len - 1);
         }
 
+        var selectionLength = upper - lower;
+        if (selectionLength <= 0)
+        {
+            return;
+        }
+
+        var useDirectAccess = context.Limit is 1 || ShouldUseDirectArrayAccess(lower, upper, step, len);
+        using var elements = new ArrayElements<TValue>(navigator, node, copyElements: !useDirectAccess);
+
         if (step > 0)
         {
-            for (var i = lower; i < upper; i += step)
+            for (var i = lower; i < upper;)
             {
                 if (result.IsComplete(context.Limit))
                 {
                     return;
                 }
 
-                if (!elements.TryGet((int)i, out var value))
+                if (elements.TryGet((int)i, out var value))
                 {
-                    continue;
+                    result.Add((value, ExtendWithIndex(path, i, context.TrackPaths)));
                 }
 
-                result.Add((value, ExtendWithIndex(path, i, context.TrackPaths)));
+                if (step >= upper - i)
+                {
+                    break;
+                }
+
+                i += step;
+            }
+        }
+
+        else
+        {
+            for (var i = upper; lower < i;)
+            {
+                if (result.IsComplete(context.Limit))
+                {
+                    return;
+                }
+
+                if (elements.TryGet((int)i, out var value))
+                {
+                    result.Add((value, ExtendWithIndex(path, i, context.TrackPaths)));
+                }
+
+                if (step <= lower - i)
+                {
+                    break;
+                }
+
+                i += step;
+            }
+        }
+    }
+
+    private static bool ShouldUseDirectArrayAccess(long lower, long upper, long step, int arrayLength)
+    {
+        var selectedCount = 0;
+        long estimatedAccessCount = 0;
+        if (step > 0)
+        {
+            for (var index = lower; index < upper;)
+            {
+                selectedCount++;
+                if (selectedCount > MaxDirectSliceElements)
+                {
+                    return false;
+                }
+
+                estimatedAccessCount += index + 1;
+                if (selectedCount > 1 && estimatedAccessCount >= arrayLength)
+                {
+                    return false;
+                }
+
+                if (step >= upper - index)
+                {
+                    break;
+                }
+
+                index += step;
             }
         }
         else
         {
-            for (var i = upper; lower < i; i += step)
+            for (var index = upper; lower < index;)
             {
-                if (result.IsComplete(context.Limit))
+                selectedCount++;
+                if (selectedCount > MaxDirectSliceElements)
                 {
-                    return;
+                    return false;
                 }
 
-                if (!elements.TryGet((int)i, out var value))
+                estimatedAccessCount += index + 1;
+                if (selectedCount > 1 && estimatedAccessCount >= arrayLength)
                 {
-                    continue;
+                    return false;
                 }
 
-                result.Add((value, ExtendWithIndex(path, i, context.TrackPaths)));
+                if (step <= lower - index)
+                {
+                    break;
+                }
+
+                index += step;
             }
         }
+
+        return true;
     }
 
     private static void ApplyFilterSelector<TValue>(
@@ -981,22 +1057,57 @@ internal static class JsonPathEvaluator
 
     private static bool ObjectsEqual<TValue>(TValue? left, TValue? right, JsonPathNavigator<TValue> navigator, int depth)
     {
-        var leftCount = 0;
+        if (navigator.HasConstantTimePropertyLookup)
+        {
+            var leftCount = 0;
+            foreach (var property in navigator.GetProperties(left))
+            {
+                leftCount++;
+                if (!navigator.TryGetPropertyValue(right, property.Name, out var rightValue))
+                {
+                    return false;
+                }
+
+                if (!NodesEqual(property.Value, rightValue, navigator, depth + 1))
+                {
+                    return false;
+                }
+            }
+
+            return leftCount == CountProperties(right, navigator);
+        }
+
+        var leftProperties = new Dictionary<string, TValue?>(StringComparer.Ordinal);
         foreach (var property in navigator.GetProperties(left))
         {
-            leftCount++;
-            if (!navigator.TryGetPropertyValue(right, property.Name, out var rightValue))
+            leftProperties[property.Name] = property.Value;
+        }
+
+        var rightProperties = new Dictionary<string, TValue?>(StringComparer.Ordinal);
+        foreach (var property in navigator.GetProperties(right))
+        {
+            rightProperties[property.Name] = property.Value;
+        }
+
+        if (leftProperties.Count != rightProperties.Count)
+        {
+            return false;
+        }
+
+        foreach (var (name, leftValue) in leftProperties)
+        {
+            if (!rightProperties.TryGetValue(name, out var rightValue))
             {
                 return false;
             }
 
-            if (!NodesEqual(property.Value, rightValue, navigator, depth + 1))
+            if (!NodesEqual(leftValue, rightValue, navigator, depth + 1))
             {
                 return false;
             }
         }
 
-        return leftCount == CountProperties(right, navigator);
+        return true;
     }
 
     private static bool TryGetNumber<TValue>(ResolvedValue<TValue> value, JsonPathNavigator<TValue> navigator, out double result)

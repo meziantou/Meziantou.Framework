@@ -97,9 +97,11 @@ internal sealed class EvaluationNavigator<TValue> : JsonPathNavigator<TValue>
         return _inner.TryGetBoolean(value, out result);
     }
 
-    internal override bool HasConstantTimeElementAccess => _inner.HasConstantTimeElementAccess;
+    public override bool HasConstantTimeElementAccess => _inner.HasConstantTimeElementAccess;
 
-    internal override void CopyElements(TValue? value, TValue?[] destination)
+    public override bool HasConstantTimePropertyLookup => _inner.HasConstantTimePropertyLookup;
+
+    public override void CopyElements(TValue? value, TValue?[] destination)
     {
         Check(_inner.GetArrayLength(value));
         _inner.CopyElements(value, destination);

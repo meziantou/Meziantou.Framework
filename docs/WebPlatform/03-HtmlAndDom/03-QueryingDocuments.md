@@ -122,6 +122,7 @@ Assert.Equal(87, total);
 The `type` argument is one of the constants of [XPathResult](cref:Meziantou.Framework.WebPlatform.Dom.XPathResult): [FirstOrderedNodeType](cref:Meziantou.Framework.WebPlatform.Dom.XPathResult.FirstOrderedNodeType) (read [SingleNodeValue](cref:Meziantou.Framework.WebPlatform.Dom.XPathResult.SingleNodeValue)),
 [OrderedNodeSnapshotType](cref:Meziantou.Framework.WebPlatform.Dom.XPathResult.OrderedNodeSnapshotType) (read [SnapshotLength](cref:Meziantou.Framework.WebPlatform.Dom.XPathResult.SnapshotLength) and [SnapshotItem](cref:Meziantou.Framework.WebPlatform.Dom.XPathResult.SnapshotItem)), [NumberType](cref:Meziantou.Framework.WebPlatform.Dom.XPathResult.NumberType), [StringType](cref:Meziantou.Framework.WebPlatform.Dom.XPathResult.StringType), [BooleanType](cref:Meziantou.Framework.WebPlatform.Dom.XPathResult.BooleanType), or the
 iterator types. In an XML document, pass an [IXPathNSResolver](cref:Meziantou.Framework.WebPlatform.Dom.IXPathNSResolver) to resolve the namespace prefixes of the expression.
+Use `FirstOrderedNodeType` when only the first matching node is needed; it returns that node in document order without creating a full snapshot.
 
 ## Text and attributes
 

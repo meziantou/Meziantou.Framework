@@ -1,3 +1,4 @@
+using System.Text;
 using System.Xml;
 using Meziantou.Framework.WebPlatform.Dom;
 
@@ -6,6 +7,155 @@ namespace Meziantou.Framework.WebPlatform.Tests.Xml;
 public sealed class XmlParserTests
 {
     private static string Serialize(Node node) => new XmlSerializer().SerializeToString(node);
+
+    [Theory]
+    [InlineData("utf-8", false)]
+    [InlineData("utf-8", true)]
+    [InlineData("utf-16", true)]
+    [InlineData("utf-16BE", true)]
+    [InlineData("utf-16BE", false)]
+    [InlineData("utf-32", true)]
+    [InlineData("iso-8859-1", false)]
+    public async Task ByteAndStreamInputs_DetermineEncoding(string label, bool bom)
+    {
+        var encoding = Encoding.GetEncoding(label);
+        var xml = $"<?xml version='1.0' encoding='{label}'?><root attr='caf\u00e9'>caf\u00e9</root>";
+        var bytes = (bom ? encoding.GetPreamble() : []).Concat(encoding.GetBytes(xml)).ToArray();
+        var expected = Serialize(XmlDocumentParser.ParseDocument(xml));
+        Assert.Equal(expected, Serialize(XmlDocumentParser.ParseDocument(bytes)));
+        using var stream = new MemoryStream(bytes);
+        Assert.Equal(expected, Serialize(XmlDocumentParser.ParseDocument(stream)));
+        Assert.True(stream.CanRead);
+        stream.Position = 0;
+        Assert.Equal(expected, Serialize(await XmlDocumentParser.ParseDocumentAsync(stream)));
+        Assert.True(stream.CanRead);
+    }
+
+    [Theory]
+    [InlineData("utf-8")]
+    [InlineData("utf-16")]
+    [InlineData("utf-16BE")]
+    public void ByteInputs_WithoutDeclaration(string label)
+    {
+        var encoding = Encoding.GetEncoding(label);
+        var bytes = encoding.GetPreamble().Concat(encoding.GetBytes("<root>caf\u00e9</root>")).ToArray();
+        Assert.Equal("caf\u00e9", XmlDocumentParser.ParseDocument(bytes).DocumentElement!.TextContent);
+        Assert.Equal("caf\u00e9", XmlDocumentParser.ParseDocument("<root>caf\u00e9</root>"u8).DocumentElement!.TextContent);
+    }
+
+    [Theory]
+    [InlineData("utf-8", "iso-8859-1")]
+    [InlineData("utf-16", "utf-8")]
+    [InlineData("utf-16BE", "utf-16LE")]
+    public async Task ByteInputs_ConflictingDeclarationsThrow(string actual, string declared)
+    {
+        var encoding = Encoding.GetEncoding(actual);
+        var bytes = encoding.GetPreamble().Concat(encoding.GetBytes($"<?xml version='1.0' encoding='{declared}'?><root/>")).ToArray();
+        Assert.Throws<XmlException>(() => XmlDocumentParser.ParseDocument(bytes));
+        using var stream = new MemoryStream(bytes);
+        Assert.Throws<XmlException>(() => XmlDocumentParser.ParseDocument(stream));
+        stream.Position = 0;
+        await Assert.ThrowsAsync<XmlException>(() => XmlDocumentParser.ParseDocumentAsync(stream));
+        Assert.True(stream.CanRead);
+    }
+
+    [Theory]
+    [InlineData("<?xml version='1.0' encoding='unknown-encoding'?><root/>")]
+    [InlineData("<?xml version='1.0' encoding='utf-16'?><root/>")]
+    [InlineData("<?xml version='1.0' encoding='utf-8' encoding='utf-8'?><root/>")]
+    [InlineData("<root><unclosed></root>")]
+    [InlineData("")]
+    public void ByteInputs_InvalidXmlThrows(string xml)
+    {
+        Assert.Throws<XmlException>(() => XmlDocumentParser.ParseDocument(Encoding.UTF8.GetBytes(xml)));
+    }
+
+    [Theory]
+    [InlineData("utf-8")]
+    [InlineData("utf-16")]
+    [InlineData("utf-16BE")]
+    public async Task ByteInputs_MalformedSequencesThrow(string label)
+    {
+        var encoding = Encoding.GetEncoding(label);
+        var bytes = encoding.GetPreamble().Concat(encoding.GetBytes("<root/>")).Append((byte)0xFF).ToArray();
+        Assert.Throws<XmlException>(() => XmlDocumentParser.ParseDocument(bytes));
+        using var stream = new MemoryStream(bytes);
+        Assert.Throws<XmlException>(() => XmlDocumentParser.ParseDocument(stream));
+        stream.Position = 0;
+        await Assert.ThrowsAsync<XmlException>(() => XmlDocumentParser.ParseDocumentAsync(stream));
+    }
+
+    [Fact]
+    public void ByteInputs_GenericUtf16PreservesBigEndian()
+    {
+        var encoding = Encoding.BigEndianUnicode;
+        var bytes = encoding.GetPreamble().Concat(encoding.GetBytes("<?xml version='1.0' encoding='UTF-16'?><root>caf\u00e9</root>")).ToArray();
+        Assert.Equal("caf\u00e9", XmlDocumentParser.ParseDocument(bytes).DocumentElement!.TextContent);
+    }
+
+    [Fact]
+    public void StringInputs_DoNotDecodeDeclarations()
+    {
+        Assert.Equal("\u20ac", XmlDocumentParser.ParseDocument("<?xml version='1.0' encoding='iso-8859-1'?><root>\u20ac</root>").DocumentElement!.TextContent);
+        Assert.Equal("\u20ac", XmlDocumentParser.ParseDocument("<?xml version='1.0' encoding='unknown-encoding'?><root>\u20ac</root>").DocumentElement!.TextContent);
+    }
+
+    [Theory]
+    [InlineData("C0AF")]
+    [InlineData("EDA080")]
+    [InlineData("E282")]
+    [InlineData("FF")]
+    public void ByteInputs_InvalidUtf8IsNotReplaced(string hex)
+    {
+        var bytes = "<root>"u8.ToArray().Concat(Convert.FromHexString(hex)).Concat("</root>"u8.ToArray()).ToArray();
+        Assert.Throws<XmlException>(() => XmlDocumentParser.ParseDocument(bytes));
+    }
+
+    [Fact]
+    public void ByteInputs_CustomElementsAreConstructed()
+    {
+        var registry = new CustomElementRegistry();
+        HtmlElement? constructed = null;
+        registry.Define("x-example", new CustomElementConstructor(element =>
+        {
+            constructed = element;
+            return new TestCustomElement(element);
+        }));
+        var document = XmlDocumentParser.ParseDocument("<x-example xmlns='http://www.w3.org/1999/xhtml'/>"u8, new XmlParserOptions { CustomElementRegistry = registry });
+        Assert.Same(document.DocumentElement, constructed);
+        Assert.NotNull(((HtmlElement)document.DocumentElement!).CustomElement);
+    }
+
+    [Fact]
+    public async Task StreamInputs_UseCurrentPositionAndPreserveOptions()
+    {
+        var registry = new CustomElementRegistry();
+        var options = new XmlParserOptions { Url = "https://example.com/document.xml", ContentType = "application/xhtml+xml", CustomElementRegistry = registry };
+        using var stream = new MemoryStream("skip<html xmlns='http://www.w3.org/1999/xhtml'><a href='next'>caf\u00e9</a><svg xmlns='http://www.w3.org/2000/svg'/></html>"u8.ToArray());
+        stream.Position = 4;
+        var document = await XmlDocumentParser.ParseDocumentAsync(stream, options);
+        Assert.Equal(options.Url, document.Url);
+        Assert.Equal(options.ContentType, document.ContentType);
+        Assert.Same(registry, document.CustomElementRegistry);
+        Assert.IsType<HtmlHtmlElement>(document.DocumentElement);
+        var anchor = Assert.IsType<HtmlAnchorElement>(document.DocumentElement!.FirstElementChild);
+        Assert.Equal("https://example.com/next", anchor.Href);
+        Assert.Equal("caf\u00e9", anchor.TextContent);
+        Assert.IsType<SvgSvgElement>(anchor.NextElementSibling);
+        Assert.True(stream.CanRead);
+    }
+
+    [Fact]
+    public async Task StreamInputs_Cancellation()
+    {
+        using var cancellation = new CancellationTokenSource();
+        using var stream = new CancellationStream(cancellation);
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => XmlDocumentParser.ParseDocumentAsync(stream, cancellationToken: cancellation.Token));
+        Assert.True(stream.CanRead);
+        using var memory = new MemoryStream("<root/>"u8.ToArray());
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => XmlDocumentParser.ParseDocumentAsync(memory, cancellationToken: cancellation.Token));
+        Assert.Equal(0, memory.Position);
+    }
 
     [Fact]
     public void Namespaces()
@@ -41,6 +191,9 @@ public sealed class XmlParserTests
     {
         var document = XmlDocumentParser.ParseDocument("<!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Strict//EN' 'http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd'><html xmlns='http://www.w3.org/1999/xhtml'>&nbsp;&eacute;&AMP;&LT;&nvlt;</html>");
         Assert.Equal("" + (char)0xA0 + (char)0xE9 + "&<<" + (char)0x20D2, document.DocumentElement!.TextContent);
+        Assert.Equal(Serialize(document), Serialize(XmlDocumentParser.ParseDocument(Encoding.UTF8.GetBytes(Serialize(document)))));
+        var bytes = Encoding.Latin1.GetBytes("<?xml version='1.0' encoding='iso-8859-1'?><!DOCTYPE html PUBLIC '-//W3C//DTD XHTML 1.0 Strict//EN' 'unused'><html xmlns='http://www.w3.org/1999/xhtml'>&nbsp;&eacute;</html>");
+        Assert.Equal("\u00a0\u00e9", XmlDocumentParser.ParseDocument(bytes).DocumentElement!.TextContent);
         Assert.Throws<XmlException>(() => XmlDocumentParser.ParseDocument("<html>&nbsp;</html>"));
     }
 
@@ -61,13 +214,22 @@ public sealed class XmlParserTests
         }
     }
 
-    [Fact]
-    public void EntityExpansion_IsLimited()
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void EntityExpansion_IsLimited(bool bytes)
     {
         var xml = "<!DOCTYPE lolz [<!ENTITY lol 'lollollollollollollollollollol'>" +
             string.Concat(Enumerable.Range(1, 8).Select(i => $"<!ENTITY lol{i} '{string.Concat(Enumerable.Repeat(i == 1 ? "&lol;" : $"&lol{i - 1};", 10))}'>")) +
             "]><lolz>&lol8;</lolz>";
-        Assert.Throws<XmlException>(() => XmlDocumentParser.ParseDocument(xml));
+        Assert.Throws<XmlException>(() => bytes ? XmlDocumentParser.ParseDocument(Encoding.UTF8.GetBytes(xml)) : XmlDocumentParser.ParseDocument(xml));
+    }
+
+    [Fact]
+    public void ByteInputs_ExternalEntitiesAreNotLoaded()
+    {
+        var document = XmlDocumentParser.ParseDocument("<!DOCTYPE root SYSTEM 'https://example.invalid/external.dtd' [<!ENTITY ext SYSTEM 'https://example.invalid/secret'>]><root>&ext;</root>"u8);
+        Assert.Equal("", document.DocumentElement!.TextContent);
     }
 
     [Fact]
@@ -181,5 +343,45 @@ public sealed class XmlParserTests
         var invalid = new DomParser().ParseFromString("<root><item></root>", DomParserSupportedType.ApplicationXml);
         Assert.Equal("parsererror", invalid.DocumentElement!.LocalName);
         #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_ParseXmlBytes()
+    {
+        #region WebPlatform_ParseXmlBytes
+        var bytes = Encoding.Latin1.GetBytes("<?xml version='1.0' encoding='iso-8859-1'?><root>caf\u00e9</root>");
+        var document = XmlDocumentParser.ParseDocument(bytes);
+        Assert.Equal("caf\u00e9", document.DocumentElement!.TextContent);
+
+        using var stream = new MemoryStream(bytes);
+        var streamed = await XmlDocumentParser.ParseDocumentAsync(stream, cancellationToken: CancellationToken.None);
+        Assert.Equal("caf\u00e9", streamed.DocumentElement!.TextContent);
+        Assert.True(stream.CanRead);
+        #endregion
+    }
+
+    private sealed class TestCustomElement(HtmlElement element) : CustomElement(element)
+    {
+    }
+
+    private sealed class CancellationStream(CancellationTokenSource cancellation) : Stream
+    {
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+        public override void Flush() => throw new NotSupportedException();
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            await cancellation.CancelAsync();
+            cancellationToken.ThrowIfCancellationRequested();
+            return 0;
+        }
     }
 }

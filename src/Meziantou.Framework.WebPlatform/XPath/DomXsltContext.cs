@@ -23,11 +23,15 @@ internal sealed class DomXsltContext : XsltContext
     private const string FunctionNamespace = "urn:meziantou-html:xpath-functions";
 
     private readonly IXPathNSResolver? _resolver;
+    private readonly string? _htmlPrefix;
+    private readonly string? _attributeFunctionPrefix;
 
-    public DomXsltContext(IXPathNSResolver? resolver)
+    public DomXsltContext(IXPathNSResolver? resolver, string? htmlPrefix, string? attributeFunctionPrefix)
         : base(new NameTable())
     {
         _resolver = resolver;
+        _htmlPrefix = htmlPrefix;
+        _attributeFunctionPrefix = attributeFunctionPrefix;
     }
 
     public override bool Whitespace => true;
@@ -37,10 +41,10 @@ internal sealed class DomXsltContext : XsltContext
         if (prefix.Length == 0)
             return "";
 
-        if (prefix == XPathExpressionRewriter.HtmlPrefix)
+        if (prefix == _htmlPrefix)
             return Namespaces.Html;
 
-        if (prefix == XPathExpressionRewriter.AttributeFunctionPrefix)
+        if (prefix == _attributeFunctionPrefix)
             return FunctionNamespace;
 
         if (prefix == "xml")
@@ -71,7 +75,7 @@ internal sealed class DomXsltContext : XsltContext
 
     public override IXsltContextFunction ResolveFunction(string prefix, string name, XPathResultType[] argTypes)
     {
-        if (prefix == XPathExpressionRewriter.AttributeFunctionPrefix && name == XPathExpressionRewriter.AttributeFunctionName)
+        if (prefix == _attributeFunctionPrefix && name == XPathExpressionRewriter.AttributeFunctionName)
             return AttributeNameMatchesFunction.Instance;
 
         throw new XPathDomException(DomException.Syntax($"The function '{(prefix.Length > 0 ? prefix + ":" : "")}{name}' is not supported"));

@@ -143,6 +143,8 @@ Assert.Equal("[]", Select("$[?@.value < @.missing || @.value > @.missing].id"));
 - **Strings compare by Unicode code point**, without culture rules: `"B" < "a"` is true, `"a" < "B"` is false.
 - **Arrays and objects compare deeply**: equal when they have the same elements in the same order, or the same members
   with equal values in any order.
+- For objects with duplicate member names, `JsonElement` equality uses the last value for each name, as does
+  `JsonElement.TryGetProperty`; earlier values for that name are ignored.
 - **Only numbers and strings are ordered**: `<`, `<=`, `>` and `>=` are false for Booleans, `null`, arrays, objects and
   values of different types. `<=` is "less than or equal", so `null <= null` is true.
 - **A query that selects nothing compares only with another query that selects nothing**: both sides are then equal,

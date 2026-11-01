@@ -180,7 +180,9 @@ public sealed class XPathResult
 [IdlInterface("XPathExpression", "https://dom.spec.whatwg.org/#xpathexpression")]
 public sealed class XPathExpression
 {
-    private static readonly ConcurrentDictionary<(string Expression, bool Html), ClrXPathExpression> Cache = new();
+    private sealed record CompiledXPathExpression(ClrXPathExpression Expression, string? HtmlPrefix, string? AttributeFunctionPrefix);
+
+    private static readonly ConcurrentDictionary<(string Expression, bool Html), CompiledXPathExpression> Cache = new();
     private static readonly System.Buffers.SearchValues<char> NumberChars = System.Buffers.SearchValues.Create("0123456789.");
 
     private readonly string _expression;
@@ -195,11 +197,16 @@ public sealed class XPathExpression
         _ = GetCompiled(isHtml: false);
     }
 
-    private static ClrXPathExpression GetCompiled(bool isHtml, string expression) => Cache.GetOrAdd((expression, isHtml), static key =>
+    private static CompiledXPathExpression GetCompiled(bool isHtml, string expression) => Cache.GetOrAdd((expression, isHtml), static key =>
     {
         try
         {
-            return ClrXPathExpression.Compile(key.Html ? XPathExpressionRewriter.Rewrite(key.Expression) : key.Expression);
+            var rewritten = key.Html ? XPathExpressionRewriter.RewriteWithNamespaces(key.Expression) : null;
+            var expressionToCompile = rewritten?.Expression ?? key.Expression;
+            return new CompiledXPathExpression(
+                ClrXPathExpression.Compile(expressionToCompile),
+                rewritten?.HtmlPrefix,
+                rewritten?.AttributeFunctionPrefix);
         }
         catch (XPathException ex)
         {
@@ -207,7 +214,7 @@ public sealed class XPathExpression
         }
     });
 
-    private ClrXPathExpression GetCompiled(bool isHtml)
+    private CompiledXPathExpression GetCompiled(bool isHtml)
     {
         var compiled = GetCompiled(isHtml, _expression);
         if (Cache.Count > 1024)
@@ -221,10 +228,11 @@ public sealed class XPathExpression
     /// <summary>Compiles the expression (rewritten for HTML documents) and binds the namespace resolver.</summary>
     private ClrXPathExpression Compile(bool isHtml)
     {
-        var clone = GetCompiled(isHtml).Clone();
+        var compiled = GetCompiled(isHtml);
+        var clone = compiled.Expression.Clone();
         try
         {
-            clone.SetContext(new DomXsltContext(_resolver));
+            clone.SetContext(new DomXsltContext(_resolver, compiled.HtmlPrefix, compiled.AttributeFunctionPrefix));
         }
         catch (Exception ex)
         {
@@ -338,39 +346,39 @@ public sealed class XPathExpression
                 if (value is not XPathNodeIterator nodeIterator)
                     throw new TypeErrorException("The result of the expression is not a node-set");
 
-                var nodes = CollectNodes(nodeIterator);
-                if (type is XPathResult.AnyUnorderedNodeType or XPathResult.FirstOrderedNodeType && nodes.Count > 1)
-                {
-                    nodes.RemoveRange(1, nodes.Count - 1);
-                }
+                var nodes = type is XPathResult.AnyUnorderedNodeType or XPathResult.FirstOrderedNodeType
+                    ? CollectSingleNode(nodeIterator)
+                    : CollectNodes(nodeIterator);
 
                 return new XPathResult(type, nodes, contextNode);
         }
     }
 
-    /// <summary>Returns the nodes of a node-set in document order (namespace nodes are not DOM nodes and are skipped).</summary>
+    /// <summary>Returns the DOM nodes of the node-set in XPath iterator order (namespace nodes are not DOM nodes).</summary>
     private static List<Node> CollectNodes(XPathNodeIterator iterator)
     {
-        var navigators = new List<DomXPathNavigator>();
+        var nodes = new List<Node>();
         while (iterator.MoveNext())
         {
             if (iterator.Current is DomXPathNavigator navigator && navigator.CurrentNode is not null)
             {
-                navigators.Add((DomXPathNavigator)navigator.Clone());
+                nodes.Add(navigator.CurrentNode);
             }
         }
 
-        navigators.Sort(static (a, b) => a.ComparePosition(b) switch
-        {
-            XmlNodeOrder.Before => -1,
-            XmlNodeOrder.After => 1,
-            _ => 0,
-        });
+        return nodes;
+    }
 
-        var nodes = new List<Node>(navigators.Count);
-        foreach (var navigator in navigators)
+    private static List<Node> CollectSingleNode(XPathNodeIterator iterator)
+    {
+        var nodes = new List<Node>(1);
+        while (iterator.MoveNext())
         {
-            nodes.Add(navigator.CurrentNode!);
+            if (iterator.Current is DomXPathNavigator { CurrentNode: { } node })
+            {
+                nodes.Add(node);
+                break;
+            }
         }
 
         return nodes;
@@ -379,16 +387,12 @@ public sealed class XPathExpression
     private static string GetFirstNodeStringValue(XPathNodeIterator iterator)
     {
         // The string-value of the node-set is the string-value of its first node in document order
-        var first = default(XPathNavigator);
         while (iterator.MoveNext())
         {
-            if (first is null || iterator.Current!.ComparePosition(first) == XmlNodeOrder.Before)
-            {
-                first = iterator.Current!.Clone();
-            }
+            return iterator.Current!.Value;
         }
 
-        return first?.Value ?? "";
+        return "";
     }
 
     /// <summary>https://www.w3.org/TR/xpath-10/#function-number</summary>

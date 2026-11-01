@@ -159,6 +159,29 @@ Assert.Equal("parsererror", invalid.DocumentElement!.LocalName);
 ```
 <!-- endref -->
 
+- Parse XML bytes with `ParseDocument(ReadOnlySpan<byte>)`, or streams with `ParseDocument(Stream)` and
+  [ParseDocumentAsync](cref:Meziantou.Framework.WebPlatform.XmlDocumentParser.ParseDocumentAsync). The byte order mark and
+  XML byte signature determine the byte order; the XML declaration selects a supported .NET encoding. Without either,
+  the encoding is UTF-8. Malformed byte sequences, unsupported encodings and declarations conflicting with a byte order
+  mark or signature throw `XmlException`. Strings are already decoded: their declarations never change their characters.
+- Stream overloads read from the current position, buffer the input and leave the caller-owned stream open, including
+  on errors or cancellation. The asynchronous overload honors cancellation during reading and while waiting for the parser;
+  DOM construction itself is synchronous. These overloads do not promise incremental or constant-memory parsing.
+- External entities are never fetched, and the entity expansion limit also applies to byte and stream inputs.
+
+<!-- ref:../../../tests/Meziantou.Framework.WebPlatform.Tests/Xml/XmlParserTests.cs;region=WebPlatform_ParseXmlBytes;format=md-fenced-code-block;dedent=true -->
+```csharp
+var bytes = Encoding.Latin1.GetBytes("<?xml version='1.0' encoding='iso-8859-1'?><root>caf\u00e9</root>");
+var document = XmlDocumentParser.ParseDocument(bytes);
+Assert.Equal("caf\u00e9", document.DocumentElement!.TextContent);
+
+using var stream = new MemoryStream(bytes);
+var streamed = await XmlDocumentParser.ParseDocumentAsync(stream, cancellationToken: CancellationToken.None);
+Assert.Equal("caf\u00e9", streamed.DocumentElement!.TextContent);
+Assert.True(stream.CanRead);
+```
+<!-- endref -->
+
 - [XmlParserOptions.ContentType](cref:Meziantou.Framework.WebPlatform.XmlParserOptions.ContentType) is the type of the document: `application/xml` (the default), `text/xml`,
   `application/xhtml+xml` or `image/svg+xml`. `Url` is its URL.
 - Use [GetElementsByTagNameNS](cref:Meziantou.Framework.WebPlatform.Dom.Element.GetElementsByTagNameNS) and the namespace-aware members ([NamespaceUri](cref:Meziantou.Framework.WebPlatform.Dom.Element.NamespaceUri), [LocalName](cref:Meziantou.Framework.WebPlatform.Dom.Element.LocalName)) with XML: element names are

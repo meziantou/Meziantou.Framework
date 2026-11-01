@@ -43,6 +43,13 @@ Assert.Equal("""["Al"]""", Select("$[?count(@.tags[?@ == 'a' || @ == 'b']) == 2]
 - `length()` counts the characters of a string as Unicode code points: an emoji outside the Basic Multilingual Plane
   counts as one character, not two as in `string.Length`.
 - `count()` takes any query, including wildcards, filters and descendant segments.
+- `count()` counts final nodes without retaining a final match list and counts duplicate selections separately.
+  A root-only query such as `count($[*])` is reused within one evaluation, not across documents or calls.
+  Predicates inside that absolute query have their own candidate: `count($.items[?@.enabled])` is still root-only.
+  Candidate-dependent queries such as `count(@.items[*])` are evaluated for each candidate.
+  Built-in navigators permit this reuse; custom navigators must opt in with
+  [IsPure](cref:Meziantou.Framework.Json.JsonPathNavigator{TValue}.IsPure), promising side-effect-free navigation and
+  values that remain stable throughout the evaluation.
 
 ## Test strings with a regular expression
 
@@ -188,5 +195,7 @@ depend on callback order or invocation counts. Custom callback results are not c
 calls. Exceptions from callbacks propagate unchanged in both lax and strict mode.
 
 The library cannot interrupt a callback, bound its own allocations, or account for work that bypasses the navigator.
+Cancellation and work budgets are checked before and after each callback. Navigator operations and argument queries
+share the current evaluation's budget; returned node lists also obey intermediate-result limits when consumed.
 Keep callbacks bounded. Calling another query's evaluation from a callback starts an independent evaluation; it does
 not share the outer evaluation's controls.

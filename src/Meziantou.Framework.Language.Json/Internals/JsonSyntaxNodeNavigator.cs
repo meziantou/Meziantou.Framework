@@ -4,6 +4,8 @@ namespace Meziantou.Framework.Language.Json.Internals;
 
 internal sealed class JsonSyntaxNodeNavigator : JsonPathNavigator<JsonSyntaxNode>
 {
+    public override bool IsPure => true;
+
     public static JsonSyntaxNodeNavigator Instance { get; } = new();
 
     private JsonSyntaxNodeNavigator()

@@ -177,6 +177,16 @@ internal sealed partial class Painter
     /// <summary>Paints an element of an SVG document fragment and its descendants, with its effects and its group opacity (https://drafts.csswg.org/css-color-4/#transparency).</summary>
     private void PaintSvgElement(Element element, SvgAffine parentToGroup, SvgPaintContext context)
     {
+        if (!StackGuard.HasSufficientStack)
+        {
+            StackGuard.RunOnNewStack(() =>
+            {
+                PaintSvgElement(element, parentToGroup, context);
+                return true;
+            });
+            return;
+        }
+
         if (element is not SvgElement || !element.IsConnected || context.Depth > MaxSvgDepth)
             return;
 

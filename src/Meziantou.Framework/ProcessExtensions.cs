@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
@@ -16,9 +17,7 @@ public static partial class ProcessExtensions
         if (!OperatingSystem.IsWindows())
             throw new PlatformNotSupportedException("Only supported on Windows");
 
-        var children = new List<Process>();
-        GetChildProcesses(process, children, int.MaxValue, 0);
-        return children;
+        return GetChildProcesses(process, int.MaxValue);
     }
 
     [SupportedOSPlatform("windows")]
@@ -29,9 +28,7 @@ public static partial class ProcessExtensions
         if (!OperatingSystem.IsWindows())
             throw new PlatformNotSupportedException("Only supported on Windows");
 
-        var children = new List<Process>();
-        GetChildProcesses(process, children, 1, 0);
-        return children;
+        return GetChildProcesses(process, 1);
     }
 
     [SupportedOSPlatform("windows")]
@@ -85,54 +82,24 @@ public static partial class ProcessExtensions
             if (!OperatingSystem.IsWindows())
                 throw new PlatformNotSupportedException("Only supported on Windows");
 
-            foreach (var entry in GetAncestorProcessIdsIterator())
+            // A process starts after its parent. When a parent id refers to a process that started later, the parent
+            // exited and its id was reused by an unrelated process, so the rest of the chain is not an ancestor.
+            var childStartTime = process.StartTime;
+            foreach (var parentProcessId in GetAncestorProcessIds(process))
             {
-                Process? p = null;
-                try
+                var parent = TryGetProcessById(parentProcessId);
+                if (parent is null)
+                    continue; // The process exited since the snapshot
+
+                var parentStartTime = TryGetStartTime(parent);
+                if (parentStartTime is null || parentStartTime > childStartTime)
                 {
-                    p = entry.ToProcess();
-                    if (p is null || p.StartTime > process.StartTime)
-                    {
-                        p?.Dispose();
-                        continue;
-                    }
-                }
-                catch (ArgumentException)
-                {
-                    // process might have exited since the snapshot, ignore it
+                    parent.Dispose();
+                    yield break;
                 }
 
-                if (p is not null)
-                {
-                    yield return p;
-                }
-            }
-
-            IEnumerable<ProcessEntry> GetAncestorProcessIdsIterator()
-            {
-                var returnedProcesses = new HashSet<int>();
-                var processId = process.Id;
-                var processes = GetProcesses().ToList();
-                var found = true;
-                while (found)
-                {
-                    found = false;
-                    foreach (var entry in processes)
-                    {
-                        if (entry.ProcessId == processId)
-                        {
-                            if (returnedProcesses.Add(entry.ParentProcessId))
-                            {
-                                yield return entry;
-                                processId = entry.ParentProcessId;
-                                found = true;
-                            }
-                        }
-                    }
-
-                    if (!found)
-                        yield break;
-                }
+                childStartTime = parentStartTime.Value;
+                yield return parent;
             }
         }
     }
@@ -193,9 +160,18 @@ public static partial class ProcessExtensions
         if (parentProcessId is null)
             return null;
 
-        var parentProcess = Process.GetProcessById(parentProcessId.Value);
-        if (parentProcess is null || parentProcess.StartTime > process.StartTime)
+        var startTime = process.StartTime;
+        var parentProcess = TryGetProcessById(parentProcessId.Value);
+        if (parentProcess is null)
             return null;
+
+        // A parent that started after the process means the parent exited and its id was reused
+        var parentStartTime = TryGetStartTime(parentProcess);
+        if (parentStartTime is null || parentStartTime > startTime)
+        {
+            parentProcess.Dispose();
+            return null;
+        }
 
         return parentProcess;
     }
@@ -224,50 +200,90 @@ public static partial class ProcessExtensions
     }
 
     [SupportedOSPlatform("windows")]
-    private static void GetChildProcesses(Process process, List<Process> children, int maxDepth, int currentDepth)
+    private static List<Process> GetChildProcesses(Process process, int maxDepth)
     {
-        ArgumentNullException.ThrowIfNull(process);
-
-        var entries = new List<ProcessEntry>(100);
-        foreach (var entry in GetProcesses())
+        var entries = GetProcesses().ToList();
+        var startTime = process.StartTime;
+        var children = new List<Process>();
+        try
         {
-            entries.Add(entry);
+            GetChildProcesses(entries, process.Id, startTime, children, maxDepth, currentDepth: 0);
+        }
+        catch
+        {
+            foreach (var child in children)
+            {
+                child.Dispose();
+            }
+
+            throw;
         }
 
-        GetChildProcesses(entries, process, children, maxDepth, currentDepth);
+        return children;
     }
 
-    private static void GetChildProcesses(List<ProcessEntry> entries, Process process, List<Process> children, int maxDepth, int currentDepth)
+    private static void GetChildProcesses(List<ProcessEntry> entries, int processId, DateTime startTime, List<Process> children, int maxDepth, int currentDepth)
     {
-        var processId = process.Id;
         foreach (var entry in entries)
         {
-            if (entry.ParentProcessId == processId)
+            if (entry.ParentProcessId != processId)
+                continue;
+
+            var child = TryGetProcessById(entry.ProcessId);
+            if (child is null)
+                continue; // The process exited since the snapshot
+
+            // A child that started before the process is an unrelated process whose parent id was reused
+            var childStartTime = TryGetStartTime(child);
+            if (childStartTime is null || childStartTime < startTime)
             {
-                try
-                {
-                    var child = entry.ToProcess();
-                    if (child is null || child.StartTime < process.StartTime)
-                    {
-                        child?.Dispose();
-                        continue;
-                    }
+                child.Dispose();
+                continue;
+            }
 
-                    children.Add(child);
+            children.Add(child);
 
-                    // currentDepth is the depth of the children being collected, so descending is only
-                    // allowed while the next level still fits within maxDepth
-                    if (currentDepth + 1 < maxDepth)
-                    {
-                        GetChildProcesses(entries, child, children, maxDepth, currentDepth + 1);
-                    }
-                }
-                catch (ArgumentException)
-                {
-                    // process might have exited since the snapshot, ignore it
-                }
+            // currentDepth is the depth of the children being collected, so descending is only
+            // allowed while the next level still fits within maxDepth
+            if (currentDepth + 1 < maxDepth)
+            {
+                GetChildProcesses(entries, child.Id, childStartTime.Value, children, maxDepth, currentDepth + 1);
             }
         }
     }
 
+    private static Process? TryGetProcessById(int processId)
+    {
+        try
+        {
+            return Process.GetProcessById(processId);
+        }
+        catch (ArgumentException)
+        {
+            // The process is not running
+            return null;
+        }
+        catch (InvalidOperationException)
+        {
+            return null;
+        }
+    }
+
+    private static DateTime? TryGetStartTime(Process process)
+    {
+        try
+        {
+            return process.StartTime;
+        }
+        catch (InvalidOperationException)
+        {
+            // The process exited
+            return null;
+        }
+        catch (Win32Exception)
+        {
+            // The process exited, or its information cannot be read, e.g. access denied
+            return null;
+        }
+    }
 }

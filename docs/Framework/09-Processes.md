@@ -19,7 +19,8 @@ if (gitPath is not null)
 a shell does, and returns its full path, or `null` when it is not found:
 
 - On Windows, a name without extension is completed with the extensions of `PATHEXT` (`.COM`, `.EXE`, `.BAT` and `.CMD`
-  when it is not set), and an extensionless file is never returned.
+  when it is not set), and an extensionless file is never returned. As with `cmd.exe`, the quotes around a `PATH` entry,
+  such as `"C:\Program Files\Tool"`, are removed, a quoted entry can contain `;`, and empty entries are ignored.
 - On Linux and macOS, only files that are executable are returned.
 - When you pass a working directory, it is searched before the folders of `PATH`. Pass it only when the folder is
   trusted: a file in it would take precedence over the executable of `PATH`.
@@ -55,4 +56,7 @@ On other operating systems, the Windows-only methods throw a `PlatformNotSupport
 returns `null` on macOS. The `Process` instances these methods return must be disposed.
 
 A process id can be reused once the process exits, so [GetParentProcessId](cref:Meziantou.Framework.ProcessExtensions.GetParentProcessId) can return the id of an unrelated process
-when the parent has exited. [GetParentProcess](cref:Meziantou.Framework.ProcessExtensions.GetParentProcess) returns `null` when the process with that id started after the child.
+when the parent has exited. [GetParentProcess](cref:Meziantou.Framework.ProcessExtensions.GetParentProcess) returns `null` when the parent has exited, or when the process with that id
+started after the child or its start time cannot be read. For the same reason, [GetAncestorProcesses](cref:Meziantou.Framework.ProcessExtensions.GetAncestorProcesses) stops at the first
+ancestor that started after its child, and [GetChildProcesses](cref:Meziantou.Framework.ProcessExtensions.GetChildProcesses) and [GetDescendantProcesses](cref:Meziantou.Framework.ProcessExtensions.GetDescendantProcesses) skip the processes that exit while
+they are listed.

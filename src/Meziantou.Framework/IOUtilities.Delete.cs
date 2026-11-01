@@ -48,6 +48,9 @@ static partial class IOUtilities
             // A reparse point is deleted as a link. Enumerating it would delete the content of its target instead.
             if (fileSystemInfo is DirectoryInfo directoryInfo && !fileSystemInfo.Attributes.HasFlag(FileAttributes.ReparsePoint))
             {
+                // On Unix, removing an entry requires write permission on the directory that contains it
+                Retry(() => RemoveReadOnlyAttribute(directoryInfo));
+
                 foreach (var childInfo in directoryInfo.GetFileSystemInfos())
                 {
                     if (childInfo.Attributes.HasFlag(FileAttributes.ReparsePoint))
@@ -148,6 +151,9 @@ static partial class IOUtilities
             // A reparse point is deleted as a link. Enumerating it would delete the content of its target instead.
             if (fileSystemInfo is DirectoryInfo directoryInfo && !fileSystemInfo.Attributes.HasFlag(FileAttributes.ReparsePoint))
             {
+                // On Unix, removing an entry requires write permission on the directory that contains it
+                await RetryOnSharingViolationAsync(() => RemoveReadOnlyAttribute(directoryInfo), cancellationToken).ConfigureAwait(false);
+
                 foreach (var childInfo in directoryInfo.GetFileSystemInfos())
                 {
                     if (childInfo.Attributes.HasFlag(FileAttributes.ReparsePoint))

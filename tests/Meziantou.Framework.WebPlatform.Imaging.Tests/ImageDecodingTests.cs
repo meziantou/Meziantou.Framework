@@ -809,6 +809,56 @@ public sealed class ImageDecodingTests : IDisposable
         }
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Truncated_WidePngPreservesDecodedSamples(bool interlaced)
+    {
+        using var source = new Image<Rgba64>(64, 64);
+        source.Frames[0].ProcessPixelRows(accessor =>
+        {
+            for (var y = 0; y < accessor.Height; y++)
+            {
+                var row = accessor.GetRowSpan(y);
+                for (var x = 0; x < row.Length; x++)
+                {
+                    row[x] = new Rgba64((ushort)((x * 997) + 123), (ushort)((y * 991) + 321), (ushort)((x * y * 13) + 111), ushort.MaxValue);
+                }
+            }
+        });
+
+        var png = Encode(source, new ImagingFormats.PngEncoder { Interlaced = interlaced });
+        using var decoder = _backend.CreateImageDecoder(png.AsMemory(0, png.Length / 2), "image/png");
+        Assert.NotNull(decoder);
+        using var decoded = decoder.DecodeFrame(0, ExifOrientation.TopLeft, convertToSrgb: true);
+        Assert.NotNull(decoded);
+        Assert.Equal(ImageDataPixelFormat.RgbaFloat16, decoded.PixelFormat);
+        var bytes = new byte[64 * 64 * 8];
+        decoded.ReadPixels(bytes, ImageDataPixelFormat.RgbaFloat16);
+        var samples = unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, Half>(bytes.AsSpan()));
+        var decodedPixels = 0;
+        for (var y = 0; y < 64; y++)
+        {
+            for (var x = 0; x < 64; x++)
+            {
+                var pixel = samples.Slice(((y * 64) + x) * 4, 4);
+                if (pixel[3] == Half.Zero)
+                {
+                    Assert.Equal(new Half[4], pixel.ToArray());
+                    continue;
+                }
+
+                Assert.Equal((Half)(((x * 997) + 123) / 65535.0), pixel[0]);
+                Assert.Equal((Half)(((y * 991) + 321) / 65535.0), pixel[1]);
+                Assert.Equal((Half)(((x * y * 13) + 111) / 65535.0), pixel[2]);
+                Assert.Equal(Half.One, pixel[3]);
+                decodedPixels++;
+            }
+        }
+
+        Assert.InRange(decodedPixels, 1, (64 * 64) - 1);
+    }
+
     [Fact]
     public void Truncated_JpegIsDecodedUpToItsLastRows()
     {

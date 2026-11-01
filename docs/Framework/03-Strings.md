@@ -68,7 +68,7 @@ Assert.Equal("Creme brulee a l'Ile-de-France", "Crème brûlée à l'Île-de-Fra
 <!-- endref -->
 
 [RemoveDiacritics](cref:Meziantou.Framework.StringExtensions.RemoveDiacritics) removes the accents and other combining marks, for instance to build a URL slug or to search without
-accents. It also works when the application runs in invariant globalization mode.
+accents. It also works when the application runs in invariant globalization mode. A string that contains only ASCII characters is returned as is, without allocating.
 
 ## Replace several characters
 
@@ -174,4 +174,5 @@ Assert.Equal("`` `code` ``", MarkdownBuilder.CreateCodeSpan("`code`"));
 - [MarkdownBuilder.Escape](cref:Meziantou.Framework.MarkdownBuilder.Escape) adds a backslash before every ASCII punctuation character, so the text is displayed as is
   instead of being interpreted as Markdown.
 - [MarkdownBuilder.CreateCodeSpan](cref:Meziantou.Framework.MarkdownBuilder.CreateCodeSpan) creates an inline code span. It uses more backticks than the longest run of backticks
-  in the content, and adds spaces when the content starts or ends with a backtick.
+  in the content, and adds spaces when the content starts or ends with a backtick, or starts and ends with a space (Markdown would remove these spaces otherwise).
+  Markdown has no empty code span, so an empty content returns an empty string.

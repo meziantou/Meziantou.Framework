@@ -1,4 +1,4 @@
-using System.Diagnostics.Contracts;
+using System.Buffers;
 
 namespace Meziantou.Framework;
 
@@ -8,349 +8,233 @@ public static partial class StringSearchUtilities
     {
         ArgumentNullException.ThrowIfNull(s);
 
-        const string Vowels = "AEIOU";
-        const string Frontv = "EIY";
-        const string Varson = "CSPTG";
-        const int MaxCodeLen = 4;
-
         if (s.Length is 0)
             return "";
 
         if (s.Length is 1)
             return s.ToUpperInvariant();
 
-        var inwd = s.ToUpperInvariant().ToCharArray();
-        var local = new StringBuilder(40); // manipulate
-        var code = new StringBuilder(10); // output
+        const int StackAllocThreshold = 256;
+        char[]? rentedBuffer = null;
+        var buffer = s.Length <= StackAllocThreshold
+            ? stackalloc char[StackAllocThreshold]
+            : (rentedBuffer = ArrayPool<char>.Shared.Rent(s.Length));
+
+        try
+        {
+            var upper = buffer[..s.Length];
+            s.AsSpan().ToUpperInvariant(upper);
+            return MetaphoneCore(upper);
+        }
+        finally
+        {
+            if (rentedBuffer is not null)
+            {
+                ArrayPool<char>.Shared.Return(rentedBuffer);
+            }
+        }
+    }
+
+    private static string MetaphoneCore(Span<char> local)
+    {
+        const string Vowels = "AEIOU";
+        const string Frontv = "EIY";
+        const string Varson = "CSPTG";
+        const int MaxCodeLen = 4;
 
         // handle initial 2 characters exceptions
-        switch (inwd[0])
+        switch (local[0])
         {
-            case 'K':
-            case 'G':
-            case 'P': /* looking for KN, etc*/
-                if (inwd[1] == 'N')
-                {
-                    local.Append(inwd, 1, inwd.Length - 1);
-                }
-                else
-                {
-                    local.Append(inwd);
-                }
-
+            case 'K' or 'G' or 'P' when local[1] is 'N': // KN, GN, PN -> N
+            case 'A' when local[1] is 'E': // AE -> E
+            case 'W' when local[1] is 'R': // WR -> R
+                local = local[1..];
                 break;
-            case 'A': /* looking for AE */
-                if (inwd[1] == 'E')
-                {
-                    local.Append(inwd, 1, inwd.Length - 1);
-                }
-                else
-                {
-                    local.Append(inwd);
-                }
 
+            case 'W' when local[1] is 'H': // WH -> W
+                local = local[1..];
+                local[0] = 'W';
                 break;
-            case 'W': /* looking for WR or WH */
-                if (inwd[1] == 'R')
-                {
-                    // WR -> R
-                    local.Append(inwd, 1, inwd.Length - 1);
-                    break;
-                }
 
-                if (inwd[1] == 'H')
-                {
-                    local.Append(inwd, 1, inwd.Length - 1);
-                    local[0] = 'W'; // WH -> W
-                }
-                else
-                {
-                    local.Append(inwd);
-                }
-
-                break;
-            case 'X': /* initial X becomes S */
-                inwd[0] = 'S';
-                local.Append(inwd);
-                break;
-            default:
-                local.Append(inwd);
+            case 'X': // initial X becomes S
+                local[0] = 'S';
                 break;
         }
 
-        // now local has working string with initials fixed
+        // The X case can append 2 letters when the code has MaxCodeLen - 1 letters
+        Span<char> code = stackalloc char[MaxCodeLen + 1];
+        var codeLength = 0;
+
         var wdsz = local.Length;
-        var mtsz = 0;
         var n = 0;
-        while ((mtsz < MaxCodeLen) && // max code size of 4 works well
-               (n < wdsz))
+        while (codeLength < MaxCodeLen && n < wdsz)
         {
             var symb = local[n];
 
             // remove duplicate letters except C
-            if ((symb != 'C') && (n > 0) && (local[n - 1] == symb))
+            if (symb != 'C' && n > 0 && local[n - 1] == symb)
             {
                 n++;
+                continue;
             }
-            else
+
+            var remaining = local[n..];
+            switch (symb)
             {
-                // not dup
-                string tmpS;
-                switch (symb)
-                {
-                    case 'A':
-                    case 'E':
-                    case 'I':
-                    case 'O':
-                    case 'U':
-                        if (n is 0)
-                        {
-                            code.Append(symb);
-                            mtsz++;
-                        }
+                case 'A' or 'E' or 'I' or 'O' or 'U':
+                    if (n is 0)
+                    {
+                        code[codeLength++] = symb;
+                    }
 
-                        break; // only use vowel if leading char
-                    case 'B':
-                        if ((n > 0) && n == wdsz - 1 && (local[n - 1] == 'M'))
-                        {
-                            break;
-                        }
+                    break; // only use vowel if leading char
 
-                        code.Append(symb);
-                        mtsz++;
+                case 'B':
+                    if (n > 0 && n == wdsz - 1 && local[n - 1] == 'M')
                         break;
 
-                    case 'C': // lots of C special cases
-                        /* discard if SCI, SCE or SCY */
-                        if ((n > 0) && (local[n - 1] == 'S') && (n + 1 < wdsz)
-                            && Frontv.Contains(local[n + 1], StringComparison.Ordinal))
-                        {
-                            break;
-                        }
+                    code[codeLength++] = symb;
+                    break;
 
-                        tmpS = local.ToString();
-                        Contract.Assume(local.Length == tmpS.Length);
-                        if (tmpS.IndexOf("CIA", n, StringComparison.Ordinal) == n)
-                        {
-                            // "CIA" -> X
-                            code.Append('X');
-                            mtsz++;
-                            break;
-                        }
-
-                        if ((n + 1 < wdsz) && Frontv.Contains(local[n + 1], StringComparison.Ordinal))
-                        {
-                            code.Append('S');
-                            mtsz++;
-                            break; // CI,CE,CY -> S
-                        }
-
-                        if ((n > 0) && (tmpS.IndexOf("SCH", n - 1, StringComparison.Ordinal) == n - 1))
-                        {
-                            // SCH->sk
-                            code.Append('K');
-                            mtsz++;
-                            break;
-                        }
-
-                        if (tmpS.IndexOf("CH", n, StringComparison.Ordinal) == n)
-                        {
-                            // detect CH
-                            if ((n is 0) && (wdsz >= 3) && // CH consonant -> K consonant
-                                !Vowels.Contains(local[2], StringComparison.Ordinal))
-                            {
-                                code.Append('K');
-                            }
-                            else
-                            {
-                                code.Append('X'); // CHvowel -> X
-                            }
-
-                            mtsz++;
-                        }
-                        else
-                        {
-                            code.Append('K');
-                            mtsz++;
-                        }
-
+                case 'C': // lots of C special cases
+                    // discard if SCI, SCE or SCY
+                    if (n > 0 && local[n - 1] == 'S' && n + 1 < wdsz && Frontv.Contains(local[n + 1], StringComparison.Ordinal))
                         break;
 
-                    case 'D':
-                        if ((n + 2 < wdsz) && // DGE DGI DGY -> J
-                            (local[n + 1] == 'G') && Frontv.Contains(local[n + 2], StringComparison.Ordinal))
-                        {
-                            code.Append('J');
-                            n += 2;
-                        }
-                        else
-                        {
-                            code.Append('T');
-                        }
+                    if (remaining.StartsWith("CIA"))
+                    {
+                        code[codeLength++] = 'X'; // CIA -> X
+                        break;
+                    }
 
-                        mtsz++;
+                    if (n + 1 < wdsz && Frontv.Contains(local[n + 1], StringComparison.Ordinal))
+                    {
+                        code[codeLength++] = 'S'; // CI,CE,CY -> S
+                        break;
+                    }
+
+                    if (n > 0 && local[(n - 1)..].StartsWith("SCH"))
+                    {
+                        code[codeLength++] = 'K'; // SCH -> SK
+                        break;
+                    }
+
+                    if (remaining.StartsWith("CH"))
+                    {
+                        // CH consonant -> K consonant, CH vowel -> X
+                        code[codeLength++] = n is 0 && wdsz >= 3 && !Vowels.Contains(local[2], StringComparison.Ordinal) ? 'K' : 'X';
+                    }
+                    else
+                    {
+                        code[codeLength++] = 'K';
+                    }
+
+                    break;
+
+                case 'D':
+                    if (n + 2 < wdsz && local[n + 1] == 'G' && Frontv.Contains(local[n + 2], StringComparison.Ordinal))
+                    {
+                        code[codeLength++] = 'J'; // DGE DGI DGY -> J
+                        n += 2;
+                    }
+                    else
+                    {
+                        code[codeLength++] = 'T';
+                    }
+
+                    break;
+
+                case 'G': // GH silent at end or before consonant
+                    if (n + 2 == wdsz && local[n + 1] == 'H')
                         break;
 
-                    case 'G': // GH silent at end or before consonant
-                        if ((n + 2 == wdsz) && (local[n + 1] == 'H'))
-                            break;
-
-                        if ((n + 2 < wdsz) && (local[n + 1] == 'H') && !Vowels.Contains(local[n + 2], StringComparison.Ordinal))
-                            break;
-
-                        tmpS = local.ToString();
-                        if (n > 0 && (tmpS.IndexOf("GN", n, StringComparison.Ordinal) == n || tmpS.IndexOf("GNED", n, StringComparison.Ordinal) == n))
-                            break; // silent G
-
-                        // bool hard = false;
-                        // if ((n > 0) &&
-                        // (local[n - 1] == 'G')) hard = true;//totest
-                        // else hard = false;
-                        if ((n + 1 < wdsz) && Frontv.Contains(local[n + 1], StringComparison.Ordinal) /*&& !hard*/)
-                        {
-                            code.Append('J');
-                        }
-                        else
-                        {
-                            code.Append('K');
-                        }
-
-                        mtsz++;
+                    if (n + 2 < wdsz && local[n + 1] == 'H' && !Vowels.Contains(local[n + 2], StringComparison.Ordinal))
                         break;
 
-                    case 'H':
-                        if (n + 1 == wdsz)
-                            break; // terminal H
+                    if (n > 0 && remaining.StartsWith("GN"))
+                        break; // silent G
 
-                        if (n > 0 && Varson.Contains(local[n - 1], StringComparison.Ordinal))
-                            break;
+                    code[codeLength++] = n + 1 < wdsz && Frontv.Contains(local[n + 1], StringComparison.Ordinal) ? 'J' : 'K';
+                    break;
 
-                        if (Vowels.Contains(local[n + 1], StringComparison.Ordinal))
-                        {
-                            code.Append('H');
-                            mtsz++; // Hvowel
-                        }
+                case 'H':
+                    if (n + 1 == wdsz)
+                        break; // terminal H
 
+                    if (n > 0 && Varson.Contains(local[n - 1], StringComparison.Ordinal))
                         break;
 
-                    case 'F':
-                    case 'J':
-                    case 'L':
-                    case 'M':
-                    case 'N':
-                    case 'R':
-                        code.Append(symb);
-                        mtsz++;
+                    if (Vowels.Contains(local[n + 1], StringComparison.Ordinal))
+                    {
+                        code[codeLength++] = 'H'; // H vowel
+                    }
+
+                    break;
+
+                case 'F' or 'J' or 'L' or 'M' or 'N' or 'R':
+                    code[codeLength++] = symb;
+                    break;
+
+                case 'K':
+                    // CK -> K
+                    if (n is 0 || local[n - 1] != 'C')
+                    {
+                        code[codeLength++] = symb;
+                    }
+
+                    break;
+
+                case 'P':
+                    code[codeLength++] = n + 1 < wdsz && local[n + 1] == 'H' ? 'F' : symb; // PH -> F
+                    break;
+
+                case 'Q':
+                    code[codeLength++] = 'K';
+                    break;
+
+                case 'S':
+                    code[codeLength++] = remaining.StartsWith("SH") || remaining.StartsWith("SIO") || remaining.StartsWith("SIA") ? 'X' : 'S';
+                    break;
+
+                case 'T':
+                    if (remaining.StartsWith("TIA") || remaining.StartsWith("TIO"))
+                    {
+                        code[codeLength++] = 'X'; // TIA TIO -> X
+                        break;
+                    }
+
+                    if (remaining.StartsWith("TCH"))
                         break;
 
-                    case 'K':
-                        if (n > 0)
-                        {
-                            // not initial
-                            if (local[n - 1] != 'C')
-                            {
-                                code.Append(symb);
-                            }
-                        }
-                        else
-                        {
-                            code.Append(symb); // initial K
-                        }
+                    // substitute numeral 0 for TH (resembles theta after all)
+                    code[codeLength++] = remaining.StartsWith("TH") ? '0' : 'T';
+                    break;
 
-                        mtsz++;
-                        break;
+                case 'V':
+                    code[codeLength++] = 'F';
+                    break;
 
-                    case 'P':
-                        // PH -> F
-                        if ((n + 1 < wdsz) && (local[n + 1] == 'H'))
-                        {
-                            code.Append('F');
-                        }
-                        else
-                        {
-                            code.Append(symb);
-                        }
+                case 'W' or 'Y': // silent if not followed by vowel
+                    if (n + 1 < wdsz && Vowels.Contains(local[n + 1], StringComparison.Ordinal))
+                    {
+                        code[codeLength++] = symb;
+                    }
 
-                        mtsz++;
-                        break;
+                    break;
 
-                    case 'Q':
-                        code.Append('K');
-                        mtsz++;
-                        break;
+                case 'X':
+                    code[codeLength++] = 'K';
+                    code[codeLength++] = 'S';
+                    break;
 
-                    case 'S':
-                        tmpS = local.ToString();
-                        Contract.Assume(tmpS.Length == local.Length);
-                        if ((tmpS.IndexOf("SH", n, StringComparison.Ordinal) == n) || (tmpS.IndexOf("SIO", n, StringComparison.Ordinal) == n)
-                            || (tmpS.IndexOf("SIA", n, StringComparison.Ordinal) == n))
-                        {
-                            code.Append('X');
-                        }
-                        else
-                        {
-                            code.Append('S');
-                        }
-
-                        mtsz++;
-                        break;
-
-                    case 'T':
-                        tmpS = local.ToString(); // TIA TIO -> X
-                        Contract.Assume(tmpS.Length == local.Length);
-                        if ((tmpS.IndexOf("TIA", n, StringComparison.Ordinal) == n) || (tmpS.IndexOf("TIO", n, StringComparison.Ordinal) == n))
-                        {
-                            code.Append('X');
-                            mtsz++;
-                            break;
-                        }
-
-                        if (tmpS.IndexOf("TCH", n, StringComparison.Ordinal) == n)
-                            break;
-
-                        // substitute numeral 0 for TH (resembles theta after all)
-                        code.Append(tmpS.IndexOf("TH", n, StringComparison.Ordinal) == n ? '0' : 'T');
-                        mtsz++;
-                        break;
-
-                    case 'V':
-                        code.Append('F');
-                        mtsz++;
-                        break;
-
-                    case 'W':
-                    case 'Y': // silent if not followed by vowel
-                        if ((n + 1 < wdsz) && Vowels.Contains(local[n + 1], StringComparison.Ordinal))
-                        {
-                            code.Append(symb);
-                            mtsz++;
-                        }
-
-                        break;
-
-                    case 'X':
-                        code.Append('K');
-                        code.Append('S');
-                        mtsz += 2;
-                        break;
-
-                    case 'Z':
-                        code.Append('S');
-                        mtsz++;
-                        break;
-                }
-
-                // end switch
-                n++;
+                case 'Z':
+                    code[codeLength++] = 'S';
+                    break;
             }
 
-            // end else from symb != 'C'
-            if (mtsz > 4)
-            {
-                code.Length = 4;
-            }
+            n++;
         }
 
-        return code.ToString();
+        return new string(code[..Math.Min(codeLength, MaxCodeLen)]);
     }
 }

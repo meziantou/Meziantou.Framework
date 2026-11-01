@@ -3,31 +3,36 @@ namespace Meziantou.Framework;
 /// <summary>Provides extension methods for numeric types.</summary>
 public static class NumberExtensions
 {
-    /// <summary>Returns the number with the same sign as the specified value.</summary>
+    /// <summary>Returns the absolute value of <paramref name="number"/> with the sign of <paramref name="sign"/>.</summary>
+    /// <remarks>A zero <paramref name="sign"/> is positive, unless it is a negative zero, like <see cref="Math.CopySign(double, double)"/>.</remarks>
     public static decimal MakeSameSignAs(this decimal number, decimal sign)
     {
-        return Math.Abs(number) * Math.Sign(sign);
+        return decimal.CopySign(number, sign);
     }
 
-    /// <summary>Returns the number with the same sign as the specified value.</summary>
+    /// <summary>Returns the absolute value of <paramref name="number"/> with the sign of <paramref name="sign"/>.</summary>
+    /// <remarks>A zero <paramref name="sign"/> is positive.</remarks>
+    /// <exception cref="OverflowException"><paramref name="number"/> is <see cref="int.MinValue"/> and <paramref name="sign"/> is positive or zero.</exception>
     public static int MakeSameSignAs(this int number, int sign)
     {
-        return Math.Abs(number) * Math.Sign(sign);
+        return int.CopySign(number, sign);
     }
 
-    /// <summary>Returns the number with the same sign as the specified value.</summary>
+    /// <summary>Returns the absolute value of <paramref name="number"/> with the sign of <paramref name="sign"/>.</summary>
+    /// <remarks>A zero <paramref name="sign"/> is positive.</remarks>
+    /// <exception cref="OverflowException"><paramref name="number"/> is <see cref="long.MinValue"/> and <paramref name="sign"/> is positive or zero.</exception>
     public static long MakeSameSignAs(this long number, long sign)
     {
-        return Math.Abs(number) * Math.Sign(sign);
+        return long.CopySign(number, sign);
     }
 
-    /// <summary>Returns the number with the same sign as the specified value.</summary>
+    /// <summary>Returns the absolute value of <paramref name="number"/> with the sign of <paramref name="sign"/>.</summary>
     public static float MakeSameSignAs(this float number, float sign)
     {
         return MathF.CopySign(number, sign);
     }
 
-    /// <summary>Returns the number with the same sign as the specified value.</summary>
+    /// <summary>Returns the absolute value of <paramref name="number"/> with the sign of <paramref name="sign"/>.</summary>
     public static double MakeSameSignAs(this double number, double sign)
     {
         return Math.CopySign(number, sign);

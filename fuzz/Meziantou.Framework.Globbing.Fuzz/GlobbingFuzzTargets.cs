@@ -173,8 +173,25 @@ public static class GlobbingFuzzTargets
             CheckCollectionMatch(collection, fromBuilder, reversed, path, "", PathItemType.File);
             CheckCollectionMatch(collection, fromBuilder, reversed, path, "", PathItemType.Directory);
 
+            // A directory can only be a partial match when one of the include globs is. It may be rejected when an
+            // exclude glob matches its whole content, so check that no path below it matches.
             var isPartialMatch = collection.IsPartialMatch(path);
-            FuzzAssert.Equal(GetExpectedPartialMatch(collection, path), isPartialMatch, $"The collection is not a partial match of {FuzzAssert.Format(path)} exactly when one of its include globs is");
+            if (isPartialMatch)
+            {
+                FuzzAssert.True(GetExpectedPartialMatch(collection, path), $"The collection is a partial match of {FuzzAssert.Format(path)} although none of its include globs is");
+            }
+            else
+            {
+                foreach (var other in paths)
+                {
+                    if (other.Length > path.Length + 1 && other.StartsWith(path, StringComparison.Ordinal) && other[path.Length] is '/' && IsSimpleRelativePath(other))
+                    {
+                        FuzzAssert.False(collection.IsMatch(other, [], PathItemType.File), $"{FuzzAssert.Format(other)} matches as a file, but its directory {FuzzAssert.Format(path)} is not a partial match");
+                        FuzzAssert.False(collection.IsMatch(other, [], PathItemType.Directory), $"{FuzzAssert.Format(other)} matches as a directory, but its directory {FuzzAssert.Format(path)} is not a partial match");
+                    }
+                }
+            }
+
             FuzzAssert.Equal(isPartialMatch, fromBuilder.IsPartialMatch(path), $"The collection expression and the constructor disagree on the partial match of {FuzzAssert.Format(path)}");
             FuzzAssert.Equal(isPartialMatch, reversed.IsPartialMatch(path), $"The order of the globs changes the partial match of {FuzzAssert.Format(path)}");
 

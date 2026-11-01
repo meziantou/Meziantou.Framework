@@ -515,4 +515,338 @@ y
         Assert.False(globs.IsMatch("5"));
         Assert.False(globs.IsMatch("a"));
     }
+
+    [Fact]
+    public void DocumentationExample_ExcludedDirectoriesAreNotVisited()
+    {
+        #region GlobCollection_ExcludedDirectoriesAreNotVisited
+        GlobCollection globs =
+        [
+            Glob.Parse("**/*", GlobDialect.Standard),
+            Glob.Parse("!**/node_modules/**", GlobDialect.Standard),
+        ];
+
+        // The exclude pattern matches the whole content of node_modules: the enumeration does not go into it
+        Assert.False(globs.IsPartialMatch("src/node_modules"));
+        Assert.True(globs.IsPartialMatch("src/app"));
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("!**/node_modules/**", "node_modules", false)]
+    [InlineData("!**/node_modules/**", "a/b/node_modules", false)]
+    [InlineData("!**/node_modules/**", "a/node_modules/b", false)]
+    [InlineData("!**/node_modules/**", "node_modules2", true)]
+    [InlineData("!**/node_modules/*", "node_modules", true)] // only the direct children are excluded
+    [InlineData("!node_modules/**", "node_modules", false)]
+    [InlineData("!node_modules/**", "a/node_modules", true)] // anchored to the root
+    [InlineData("!**/obj/**/*", "src/obj", false)]
+    [InlineData("!**/*.txt", "src", true)] // only some files are excluded
+    [InlineData("!**/obj/", "obj", true)] // the directory itself, not its content
+    [InlineData("!**", "src", false)]
+    public void IsPartialMatch_PrunesDirectoriesWhoseContentIsExcluded(string exclude, string directory, bool expected)
+    {
+        GlobCollection globs = [Glob.Parse("**/*", GlobDialect.Standard), Glob.Parse(exclude, GlobDialect.Standard)];
+        Assert.Equal(expected, globs.IsPartialMatch(directory));
+    }
+
+    [Fact]
+    public void IsPartialMatch_ExcludeThatSkipsHiddenSegmentsOnlyPrunesWhenIncludesSkipThemToo()
+    {
+        // '**' does not match '.bin' in the standard dialect, so 'node_modules/.bin/x' is not excluded
+        GlobCollection standardInclude = [Glob.Parse("**/*", GlobDialect.Standard), Glob.Parse("!**/node_modules/**", GlobDialect.Standard)];
+        Assert.False(standardInclude.IsPartialMatch("node_modules"));
+
+        GlobCollection hiddenInclude = [Glob.Parse("**/*", GlobDialect.Standard, GlobOptions.MatchLeadingDot), Glob.Parse("!**/node_modules/**", GlobDialect.Standard)];
+        Assert.True(hiddenInclude.IsPartialMatch("node_modules"));
+        Assert.True(hiddenInclude.IsMatch("node_modules/.bin/x"));
+
+        GlobCollection hiddenExclude = [Glob.Parse("**/*", GlobDialect.Standard, GlobOptions.MatchLeadingDot), Glob.Parse("!**/node_modules/**", GlobDialect.Standard, GlobOptions.MatchLeadingDot)];
+        Assert.False(hiddenExclude.IsPartialMatch("node_modules"));
+    }
+
+    [Fact]
+    public void IsPartialMatch_ExcludeMustCoverEveryKindOfItem()
+    {
+        // The exclude pattern only matches directories, so the files below node_modules are still included
+        GlobCollection globs = [Glob.Parse("**/*", GlobDialect.Standard), Glob.Parse("!**/node_modules/**/", GlobDialect.Standard)];
+        Assert.True(globs.IsPartialMatch("node_modules"));
+        Assert.True(globs.IsMatch("node_modules/a.js"));
+    }
+
+    [Fact]
+    public void EnumerateFiles_DoesNotVisitExcludedDirectories()
+    {
+        using var rootDirectory = TemporaryDirectory.Create();
+        rootDirectory.CreateEmptyFile("src/app.js");
+        rootDirectory.CreateEmptyFile("src/node_modules/lib/index.js");
+        rootDirectory.CreateEmptyFile("node_modules/lib/index.js");
+
+        GlobCollection globs =
+        [
+            Glob.Parse("**/*", GlobDialect.Standard),
+            Glob.Parse("!**/node_modules/**", GlobDialect.Standard),
+        ];
+
+        using var enumerator = new RecordingEnumerator(globs, rootDirectory.FullPath);
+        var files = new List<string>();
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        Assert.Equal([Path.Combine(rootDirectory.FullPath, "src", "app.js")], files);
+        Assert.Equal(["src"], enumerator.VisitedDirectories);
+    }
+
+    [Fact]
+    public void EnumerateFiles_GitIgnoreDoesNotVisitDirectoriesReIncludedAsAWhole()
+    {
+        using var rootDirectory = TemporaryDirectory.Create();
+        rootDirectory.CreateEmptyFile("a.log");
+        rootDirectory.CreateEmptyFile("docs/b.log");
+        rootDirectory.CreateEmptyFile("docs/sub/c.log");
+
+        var gitIgnore = GlobCollection.ParseGitIgnore("""
+            *.log
+            !/docs/**
+            """);
+
+        Assert.False(gitIgnore.IsPartialMatch("docs"));
+
+        using var enumerator = new RecordingEnumerator(gitIgnore, rootDirectory.FullPath);
+        var files = new List<string>();
+        while (enumerator.MoveNext())
+        {
+            files.Add(enumerator.Current);
+        }
+
+        Assert.Equal([Path.Combine(rootDirectory.FullPath, "a.log")], files);
+        Assert.Empty(enumerator.VisitedDirectories);
+    }
+
+    [Fact]
+    public void EnumerateFiles_GitIgnoreReturnsTheContentOfAnAnchoredExcludedDirectory()
+    {
+        using var rootDirectory = TemporaryDirectory.Create();
+        rootDirectory.CreateEmptyFile("bin/a.dll");
+        rootDirectory.CreateEmptyFile("src/bin/b.dll");
+
+        // '/bin' has no trailing '/': it matches the directory, and git excludes everything below it
+        var gitIgnore = GlobCollection.ParseGitIgnore("/bin");
+        Assert.True(gitIgnore.IsMatch("bin/a.dll"));
+        Assert.True(gitIgnore.IsPartialMatch("bin"));
+
+        // Only look at the files: the directory matches too
+        var files = gitIgnore.EnumerateFiles(rootDirectory.FullPath).Where(File.Exists).ToList();
+        Assert.Equal([Path.Combine(rootDirectory.FullPath, "bin", "a.dll")], files);
+    }
+
+    [Fact]
+    public void DocumentationExample_ParseGitIgnoreWithBaseDirectory()
+    {
+        #region GlobCollection_ParseGitIgnoreWithBaseDirectory
+        // The content of src/App/.gitignore
+        var gitIgnore = GlobCollection.ParseGitIgnore("""
+            /generated/
+            *.tmp
+            """, baseDirectory: "src/App");
+
+        // Paths are relative to the root of the repository
+        Assert.True(gitIgnore.IsMatch("src/App/generated/Model.cs"));
+        Assert.True(gitIgnore.IsMatch("src/App/Data/cache.tmp"));
+        Assert.False(gitIgnore.IsMatch("generated/Model.cs"));
+        Assert.False(gitIgnore.IsMatch("src/Lib/cache.tmp"));
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("src/App", "", "x.tmp", false)]
+    [InlineData("src/App", "src", "App", false)] // the base directory itself
+    [InlineData("src/App", "src/App", "", false)]
+    [InlineData("src/App", "src/App/", "", false)]
+    [InlineData("src/App", "src/App", "x.tmp", true)]
+    [InlineData("src/App", "src/App/", "x.tmp", true)]
+    [InlineData("src/App", "src/App/a", "x.tmp", true)]
+    [InlineData("src/App", "src/AppX", "x.tmp", false)]
+    [InlineData("src/App", "src/App/a/x.tmp", "", true)]
+    [InlineData("./src/App/", "src/App/a/x.tmp", "", true)]
+    [InlineData(".", "x.tmp", "", true)]
+    [InlineData("", "x.tmp", "", true)]
+    [InlineData(null, "x.tmp", "", true)]
+    public void ParseGitIgnoreWithBaseDirectory_MatchesPathsBelowTheBaseDirectory(string? baseDirectory, string directory, string filename, bool expected)
+    {
+        var gitIgnore = GlobCollection.ParseGitIgnore("*.tmp\nApp\n", baseDirectory);
+        Assert.Equal(expected, gitIgnore.IsMatch(directory, filename));
+    }
+
+    [Fact]
+    public void ParseGitIgnoreWithBaseDirectory_AnchorsPatternsToTheBaseDirectory()
+    {
+        var gitIgnore = GlobCollection.ParseGitIgnore("/local.txt\nbin/\n", "src");
+
+        Assert.True(gitIgnore.IsMatch("src/local.txt"));
+        Assert.False(gitIgnore.IsMatch("src/a/local.txt"));
+        Assert.False(gitIgnore.IsMatch("local.txt"));
+        Assert.True(gitIgnore.IsMatch("src/a/bin/x.dll"));
+        Assert.False(gitIgnore.IsMatch("bin/x.dll"));
+
+        Assert.True(gitIgnore.IsPartialMatch(""));
+        Assert.True(gitIgnore.IsPartialMatch("src"));
+        Assert.True(gitIgnore.IsPartialMatch("src/a/bin"));
+        Assert.False(gitIgnore.IsPartialMatch("tests"));
+    }
+
+    [Fact]
+    public async Task LoadGitIgnoreAsyncWithBaseDirectory()
+    {
+        using var rootDirectory = TemporaryDirectory.Create();
+        var path = rootDirectory.CreateTextFile("src/.gitignore", "*.tmp\n");
+
+        var gitIgnore = await GlobCollection.LoadGitIgnoreAsync(path, "src");
+
+        Assert.True(gitIgnore.IsMatch("src/a.tmp"));
+        Assert.False(gitIgnore.IsMatch("a.tmp"));
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void GitIgnoreRuleIndexAgreesWithEvaluatingEveryRule()
+    {
+        // Every rule evaluated from the last one is the reference: the collection only evaluates the rules whose name
+        // or extension can match the path
+        string[] rulePool =
+        [
+            "*.log", "*.txt", "!*.txt", "!important.log", "bin/", "!bin/", "bin", "/bin", "obj/", "a/bin/", "**/bin",
+            "*.tar.gz", "*~", "*.", ".*", "!.keep", "build*/", "a", "!a", "a/", "b/a", "/a/b", "*.a", "!*.a/", "a.b",
+            "x/**/y", "x/**", "!x/**", "*/", "**/", "[ab]", "a.log/", "README", "*.Log", "!/a/*", "\\!a", "a\\ ",
+        ];
+        string[] pathPool =
+        [
+            "a", "b", "a/b", "b/a", "a/a", "bin", "a/bin", "x/bin/y", "a.log", "a/important.log", "important.log",
+            "a.txt", "a/b.txt", "x.tar.gz", "y.gz", "x~", "a.", ".a", ".keep", "a/.keep", "build1", "a/build", "a.a",
+            "a/b.a", "a.b", "x/y", "x/a/y", "x/y/z", "README", "a/README", "a.Log", "a/a.log", "!a", "a ", "a/a.log/c",
+            "a/.b.txt", "a.b.c",
+        ];
+
+        var random = new Random(42);
+        for (var iteration = 0; iteration < 500; iteration++)
+        {
+            var rules = Enumerable.Range(0, random.Next(1, 12)).Select(_ => rulePool[random.Next(rulePool.Length)]).ToArray();
+            var gitIgnore = GlobCollection.ParseGitIgnore(string.Join('\n', rules));
+            foreach (var path in pathPool)
+            {
+                foreach (var itemType in new PathItemType?[] { PathItemType.File, PathItemType.Directory, null })
+                {
+                    var expected = IsIgnoredReference(gitIgnore, path, itemType);
+                    Assert.Equal(expected, gitIgnore.IsMatch(path, [], itemType), $"Rules: {string.Join(" | ", rules)}; path: {path}; type: {itemType}");
+
+                    var index = path.LastIndexOf('/', StringComparison.Ordinal);
+                    if (index >= 0)
+                    {
+                        Assert.Equal(expected, gitIgnore.IsMatch(path.AsSpan(0, index), path.AsSpan(index + 1), itemType), $"Rules: {string.Join(" | ", rules)}; path: {path}; type: {itemType} (split)");
+                    }
+                }
+            }
+        }
+
+        static bool IsIgnoredReference(GlobCollection gitIgnore, string path, PathItemType? itemType)
+        {
+            var segments = path.Split('/');
+            for (var i = 1; i < segments.Length; i++)
+            {
+                if (GetLastMatch(gitIgnore, string.Join('/', segments[..i]), PathItemType.Directory) is GlobMode.Include)
+                    return true;
+            }
+
+            return GetLastMatch(gitIgnore, path, itemType) is GlobMode.Include;
+        }
+
+        static GlobMode? GetLastMatch(GlobCollection gitIgnore, string path, PathItemType? itemType)
+        {
+            for (var i = gitIgnore.Count - 1; i >= 0; i--)
+            {
+                if (gitIgnore[i].IsMatch(path, [], itemType))
+                    return gitIgnore[i].Mode;
+            }
+
+            return null;
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    public void EnumerateFileSystemEntriesAgreesWithIsMatch()
+    {
+        // The enumeration resolves each directory once and prunes directories, which must not change the results
+        string[] files =
+        [
+            "a.txt", "a.log", ".hidden/a.txt", "src/a.txt", "src/b.log", "src/bin/a.dll", "src/bin/sub/b.dll", "bin/c.dll",
+            "docs/a.txt", "docs/sub/b.log", "node_modules/x/index.js", "src/node_modules/y/index.js", "x/y/z/a.txt",
+            "x/y/.keep", "build1/out.txt",
+        ];
+
+        using var rootDirectory = TemporaryDirectory.Create();
+        foreach (var file in files)
+        {
+            rootDirectory.CreateEmptyFile(file);
+        }
+
+        var allEntries = Directory.EnumerateFileSystemEntries(rootDirectory.FullPath, "*", SearchOption.AllDirectories)
+            .Select(path => (Path: Path.GetRelativePath(rootDirectory.FullPath, path).Replace('\\', '/'), IsDirectory: Directory.Exists(path)))
+            .ToArray();
+
+        string[] gitIgnoreRulePool = ["*.log", "!b.log", "bin/", "/bin", "!src/bin/", "src/*", "!src/a.txt", "node_modules", "!/docs/**", "docs/", ".*", "x/**", "!x/y/", "build*/", "!*.txt", "**/sub", "*"];
+        string[] globPool = ["**/*", "**/*.txt", "src/**", "!**/node_modules/**", "!**/bin/**", "!src/**", "!**/sub/**/*", "!.hidden/**", "!x/**/", "*", "!**/*.log", "**/"];
+
+        var options = new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = default(FileAttributes) };
+        var random = new Random(1);
+        for (var iteration = 0; iteration < 200; iteration++)
+        {
+            var gitIgnoreRules = Enumerable.Range(0, random.Next(1, 8)).Select(_ => gitIgnoreRulePool[random.Next(gitIgnoreRulePool.Length)]).ToArray();
+            AssertEnumeration(GlobCollection.ParseGitIgnore(string.Join('\n', gitIgnoreRules)), string.Join(" | ", gitIgnoreRules));
+
+            var globs = Enumerable.Range(0, random.Next(1, 5)).Select(_ => globPool[random.Next(globPool.Length)]).ToArray();
+            var options2 = random.Next(2) == 0 ? GlobOptions.None : GlobOptions.MatchLeadingDot;
+            AssertEnumeration(new GlobCollection([.. globs.Select(glob => Glob.Parse(glob, GlobDialect.Standard, options2))]), string.Join(" | ", globs) + " " + options2);
+        }
+
+        void AssertEnumeration(GlobCollection collection, string description)
+        {
+            var expected = allEntries
+                .Where(entry => entry.IsDirectory ? ((IGlobEvaluatable)collection).CanMatchDirectories : ((IGlobEvaluatable)collection).CanMatchFiles)
+                .Where(entry => collection.IsMatch(entry.Path, [], entry.IsDirectory ? PathItemType.Directory : PathItemType.File))
+                .Select(entry => entry.Path)
+                .Order(StringComparer.Ordinal)
+                .ToArray();
+
+            var actual = collection.EnumerateFileSystemEntries(rootDirectory.FullPath, options)
+                .Select(path => Path.GetRelativePath(rootDirectory.FullPath, path).Replace('\\', '/'))
+                .Order(StringComparer.Ordinal)
+                .ToArray();
+
+            Assert.Equal(expected, actual, description);
+        }
+    }
+
+    private sealed class RecordingEnumerator(IGlobEvaluatable glob, string directory)
+        : GlobFileSystemEnumerator<string>(glob, directory, new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = default(FileAttributes) })
+    {
+        public List<string> VisitedDirectories { get; } = [];
+
+        protected override bool ShouldRecurseIntoEntry(ref FileSystemEntry entry)
+        {
+            var result = base.ShouldRecurseIntoEntry(ref entry);
+            if (result)
+            {
+                VisitedDirectories.Add(Path.GetRelativePath(RootDirectory, entry.ToFullPath()).Replace('\\', '/'));
+            }
+
+            return result;
+        }
+
+        protected override string TransformEntry(ref FileSystemEntry entry) => entry.ToFullPath();
+
+        private string RootDirectory { get; } = directory;
+    }
 }

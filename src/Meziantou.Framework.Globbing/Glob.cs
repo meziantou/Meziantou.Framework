@@ -100,7 +100,7 @@ namespace Meziantou.Framework.Globbing;
 /// </example>
 /// <seealso href="https://en.wikipedia.org/wiki/Glob_(programming)"/>
 /// <seealso href="https://www.meziantou.net/enumerating-files-using-globbing-and-system-io-enumeration.htm"/>
-public sealed class Glob : IGlobEvaluatable
+public sealed partial class Glob : IGlobEvaluatable
 {
     private readonly GlobMatchType _matchType;
     private readonly GlobDialect _dialect;

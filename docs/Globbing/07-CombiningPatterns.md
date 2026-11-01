@@ -92,7 +92,24 @@ Assert.Equal([Path.Combine(rootDirectory.FullPath, "src", "App", "Program.cs")],
 <!-- endref -->
 
 The include patterns decide which directories are visited: the enumeration starts at the base directory of each
-include pattern, and visits a directory once when several patterns share it. An exclude pattern does not stop the enumeration from going
-into a directory. The files below an excluded directory are read, then discarded. To skip a large excluded tree, such
-as `node_modules`, use a `FileSystemEnumerable<T>` whose `ShouldRecursePredicate` rejects it, as in
-[Use a pattern with System.IO.Enumeration](06-EnumeratingFiles.md#use-a-pattern-with-systemioenumeration).
+include pattern, and visits a directory once when several patterns share it. The enumeration does not go into a directory when an exclude pattern matches everything below it, such as
+`!**/node_modules/**` or `!**/bin/**/*`, so a large excluded tree is not read. A pattern that only excludes some of the
+files of a directory, such as `!**/*.log`, does not stop the enumeration from reading the directory.
+
+In the standard dialect, `**` does not match a name that starts with a dot, so `!**/node_modules/**` does not exclude
+`node_modules/.bin/tool`. The directory is still skipped when the include patterns cannot match such a name either,
+which is the case unless they use [GlobOptions.MatchLeadingDot](cref:Meziantou.Framework.Globbing.GlobOptions.MatchLeadingDot).
+
+<!-- ref:../../tests/Meziantou.Framework.Globbing.Tests/GlobCollectionTests.cs;region=GlobCollection_ExcludedDirectoriesAreNotVisited;format=md-fenced-code-block;dedent=true -->
+```csharp
+GlobCollection globs =
+[
+    Glob.Parse("**/*", GlobDialect.Standard),
+    Glob.Parse("!**/node_modules/**", GlobDialect.Standard),
+];
+
+// The exclude pattern matches the whole content of node_modules: the enumeration does not go into it
+Assert.False(globs.IsPartialMatch("src/node_modules"));
+Assert.True(globs.IsPartialMatch("src/app"));
+```
+<!-- endref -->

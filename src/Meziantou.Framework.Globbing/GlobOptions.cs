@@ -7,7 +7,10 @@ public enum GlobOptions
     /// <summary>No special options.</summary>
     None = 0,
 
-    /// <summary>Perform case-insensitive matching. Only ASCII letters are supported for case-insensitive character ranges.</summary>
+    /// <summary>
+    ///     Perform case-insensitive matching: characters are compared as <see cref="StringComparison.OrdinalIgnoreCase"/>
+    ///     compares them. A character matches a range when it is equal, ignoring the case, to one of the characters of the range.
+    /// </summary>
     IgnoreCase = 0x1,
 
     /// <summary>

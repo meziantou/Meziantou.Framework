@@ -97,6 +97,22 @@ When you match a path, say what it is with a [PathItemType](cref:Meziantou.Frame
 without a trailing separator and without a [PathItemType](cref:Meziantou.Framework.Globbing.PathItemType) is a file. [Enumerating files](06-EnumeratingFiles.md) passes
 the right kind for each entry.
 
+## Absolute paths
+
+A pattern that starts with a `/` is absolute: it matches absolute paths only, and a pattern without it matches
+relative paths only.
+
+<!-- ref:../../tests/Meziantou.Framework.Globbing.Tests/GlobTests.cs;region=Glob_AbsolutePath;format=md-fenced-code-block;dedent=true -->
+```csharp
+var glob = Glob.Parse("/home/*.txt", GlobDialect.Standard);
+Assert.True(glob.IsMatch("/home/notes.txt"));
+Assert.False(glob.IsMatch("home/notes.txt"));
+```
+<!-- endref -->
+
+[Enumerating files](06-EnumeratingFiles.md) with an absolute pattern lists the files of the directory the pattern
+names, wherever the directory you enumerate is.
+
 ## Names that start with a dot
 
 On Linux and macOS, a name that starts with a dot, such as `.git` or `.vscode`, is hidden. The wildcards `*`, `?`,
@@ -122,8 +138,10 @@ Only the standard dialect reads [MatchLeadingDot](cref:Meziantou.Framework.Globb
 ## Ignore the case
 
 [GlobOptions.IgnoreCase](cref:Meziantou.Framework.Globbing.GlobOptions.IgnoreCase) compares the characters as `StringComparison.OrdinalIgnoreCase` does. In a range, a character
-matches when it, its lowercase form or its uppercase form is in the range: `[a-z]` matches `Q`. Combine the options
-with `|`: `GlobOptions.IgnoreCase | GlobOptions.MatchLeadingDot`.
+matches when it is equal, ignoring the case, to one of the characters of the range: `[a-z]` matches `Q`. As
+`StringComparison.OrdinalIgnoreCase` does, a non-ASCII character is never equal to an ASCII one: `[r-s]` does not match
+`ſ` (U+017F), and `[j-k]` does not match the Kelvin sign `K` (U+212A). Combine the options with `|`:
+`GlobOptions.IgnoreCase | GlobOptions.MatchLeadingDot`.
 
 ## Escape a special character
 

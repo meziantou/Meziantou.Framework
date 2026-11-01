@@ -2,11 +2,11 @@ namespace Meziantou.Framework.Globbing.Internals;
 
 internal sealed class CharacterRangeIgnoreCaseInverseSegment : Segment
 {
-    private readonly CharacterRange _range;
+    private readonly IgnoreCaseCharacterRange _range;
 
     public CharacterRangeIgnoreCaseInverseSegment(CharacterRange range)
     {
-        _range = range;
+        _range = new IgnoreCaseCharacterRange(range);
     }
 
     public override bool IsMatch(ref PathReader pathReader)
@@ -16,7 +16,7 @@ internal sealed class CharacterRangeIgnoreCaseInverseSegment : Segment
 
         // The negation applies to the complete case-insensitive membership, otherwise a character that the range
         // contains as written would be reported as being outside of it.
-        var result = !_range.IsInRangeIgnoreCase(pathReader.CurrentText[0]);
+        var result = !_range.Contains(pathReader.CurrentText[0]);
         if (result)
         {
             pathReader.ConsumeInSegment(1);
@@ -29,9 +29,9 @@ internal sealed class CharacterRangeIgnoreCaseInverseSegment : Segment
     {
         using var sb = new ValueStringBuilder();
         sb.Append("[!");
-        sb.Append(_range.Min);
+        sb.Append(_range.Range.Min);
         sb.Append('-');
-        sb.Append(_range.Max);
+        sb.Append(_range.Range.Max);
         sb.Append(']');
         return sb.ToString();
     }

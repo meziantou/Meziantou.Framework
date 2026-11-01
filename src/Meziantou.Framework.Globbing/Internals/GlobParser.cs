@@ -1340,6 +1340,7 @@ internal static class GlobParser
             GlobDialect.PosixPath => EmptySegmentHandling.Match,
             GlobDialect.MSBuild => EmptySegmentHandling.MatchLeading,
             GlobDialect.Git => EmptySegmentHandling.Reject,
+            GlobDialect.Standard => EmptySegmentHandling.MatchLeading,
             _ => EmptySegmentHandling.Ignore,
         };
 

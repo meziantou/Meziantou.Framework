@@ -36,6 +36,7 @@ They differ from these tools on purpose in a few points:
 | `{abc,123}` | Yes | No, plain text | No, plain text | No, plain text |
 | A leading `!` negates the pattern | Yes | Yes | No, plain text | No, plain text |
 | Escape | `\x` | `\x` | `%XX` | `\x` |
+| A leading `/` | Makes the pattern absolute | Anchors the pattern to the root | Makes the pattern absolute | Makes the pattern absolute in [PosixPath](cref:Meziantou.Framework.Globbing.GlobDialect.PosixPath) |
 | Path separators | `/` | `/` | `/` and `\` | `/` in [PosixPath](cref:Meziantou.Framework.Globbing.GlobDialect.PosixPath), none in [Posix](cref:Meziantou.Framework.Globbing.GlobDialect.Posix) |
 | Wildcards match a leading dot | With [MatchLeadingDot](cref:Meziantou.Framework.Globbing.GlobOptions.MatchLeadingDot) | Yes | Yes | Yes |
 

@@ -620,9 +620,10 @@ jobs:
         if: steps.build-project.outputs.has-project == 'true' && contains(matrix.test-group.projects, 'Meziantou.Framework.Pdf.Corpus')
         run: dotnet run eng/pdf/fetch-tests.cs
 
+      # -graph: see the "Build all projects" step of the run_analyzers job
       - name: Build
         if: steps.build-project.outputs.has-project == 'true'
-        run: dotnet build ${{ steps.build-project.outputs.project }} --configuration ${{ matrix.configuration }} /bl ${{ env.ADDITIONAL_ARGUMENTS }}
+        run: dotnet build ${{ steps.build-project.outputs.project }} -graph --configuration ${{ matrix.configuration }} /bl ${{ env.ADDITIONAL_ARGUMENTS }}
 
       - name: Run tests
         if: steps.build-project.outputs.has-project == 'true'

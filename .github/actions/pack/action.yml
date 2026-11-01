@@ -41,7 +41,7 @@ runs:
       env:
         PROJECT: ${{ inputs.project }}
         BUILD_VERSION_SUFFIX: ${{ inputs.build-version-suffix }}
-      run: dotnet build $env:PROJECT --configuration Release --no-restore /p:IsOfficialBuild=true /p:PublicApiGeneratorVerifyNoChangeOnBuild=true /p:EnableGitHubBuildVersionSuffix=$env:BUILD_VERSION_SUFFIX /bl:build.binlog
+      run: dotnet build $env:PROJECT -graph --configuration Release --no-restore /p:IsOfficialBuild=true /p:PublicApiGeneratorVerifyNoChangeOnBuild=true /p:EnableGitHubBuildVersionSuffix=$env:BUILD_VERSION_SUFFIX /bl:build.binlog
 
     - name: Pack
       shell: pwsh

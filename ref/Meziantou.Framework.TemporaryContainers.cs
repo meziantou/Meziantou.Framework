@@ -406,6 +406,7 @@ namespace Meziantou.Framework.TemporaryContainers
         public System.Threading.Tasks.Task EnsureCreatedAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
         public System.Threading.Tasks.Task<Meziantou.Framework.TemporaryContainers.ExecResult> ExecAsync(System.Action<Meziantou.Framework.TemporaryContainers.ExecOptions> configure, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public System.Threading.Tasks.Task<bool> ExistsAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public string GetHostAddress(int containerPort) => throw null;
         public System.Collections.Generic.IAsyncEnumerable<Meziantou.Framework.TemporaryContainers.LogEntry> GetLogsAsync([System.Runtime.CompilerServices.EnumeratorCancellation] System.Threading.CancellationToken cancellationToken = default) => throw null;
         public int GetMappedPort(int containerPort) => throw null;
         public System.Threading.Tasks.Task<Meziantou.Framework.TemporaryContainers.ContainerInfo> InspectAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;

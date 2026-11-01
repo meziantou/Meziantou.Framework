@@ -43,6 +43,7 @@ internal static class DockerContainerInfoParser
     public static ContainerInfo ParseInspectResult(DockerInspectResult result)
     {
         var ports = new Dictionary<int, int>();
+        var hostIps = new Dictionary<int, string>();
         // docker and podman report the bindings under NetworkSettings, wslc at the top level. An empty dictionary in one
         // place does not hide the bindings reported in the other.
         var portBindings = result.NetworkSettings?.Ports is { Count: > 0 } networkPorts ? networkPorts : result.Ports ?? result.NetworkSettings?.Ports;
@@ -63,7 +64,9 @@ internal static class DockerContainerInfoParser
                 {
                     if (int.TryParse(binding.HostPort, NumberStyles.Integer, CultureInfo.InvariantCulture, out var hostPort))
                     {
-                        ports.TryAdd(containerPort, hostPort);
+                        if (ports.TryAdd(containerPort, hostPort) && !string.IsNullOrEmpty(binding.HostIp))
+                            hostIps[containerPort] = binding.HostIp;
+
                         break;
                     }
                 }
@@ -82,6 +85,7 @@ internal static class DockerContainerInfoParser
             ExitCode = result.State is null ? null : unchecked((int)result.State.ExitCode),
             IPAddress = result.NetworkSettings?.IPAddress,
             Ports = ports,
+            PortHostIps = hostIps,
             Labels = result.Config?.Labels ?? result.Labels ?? new Dictionary<string, string>(StringComparer.Ordinal),
             Environment = ParseEnvironment(result.Config?.Env),
         };

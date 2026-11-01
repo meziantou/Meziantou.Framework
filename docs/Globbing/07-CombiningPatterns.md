@@ -91,7 +91,8 @@ Assert.Equal([Path.Combine(rootDirectory.FullPath, "src", "App", "Program.cs")],
 ```
 <!-- endref -->
 
-The enumeration does not go into a directory when an exclude pattern matches everything below it, such as
+The include patterns decide which directories are visited: the enumeration starts at the base directory of each
+include pattern, and visits a directory once when several patterns share it. The enumeration does not go into a directory when an exclude pattern matches everything below it, such as
 `!**/node_modules/**` or `!**/bin/**/*`, so a large excluded tree is not read. A pattern that only excludes some of the
 files of a directory, such as `!**/*.log`, does not stop the enumeration from reading the directory.
 

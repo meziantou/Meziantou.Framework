@@ -56,8 +56,9 @@ definition.WaitStrategies.Add(Wait.ForPort(6379));
 await using var container = definition.CreateContainer();
 await container.StartAsync();
 
+var host = container.GetHostAddress(6379); // 127.0.0.1, unless the daemon runs on another machine
 var hostPort = container.GetMappedPort(6379);
-// connect to 127.0.0.1:hostPort
+// connect to host:hostPort
 ```
 <!-- endref -->
 

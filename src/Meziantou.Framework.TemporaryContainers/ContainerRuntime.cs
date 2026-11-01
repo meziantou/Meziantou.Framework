@@ -102,6 +102,9 @@ public abstract partial class ContainerRuntime
     internal virtual IReadOnlyDictionary<int, int> ResolvePortMap(ContainerInfo info, ContainerDefinition definition)
         => throw CreateNotSupportedException();
 
+    /// <summary>Gets the host of the daemon when it runs on another machine (a <c>tcp://</c> or <c>ssh://</c> endpoint), or <see langword="null"/> when it runs on this one.</summary>
+    internal virtual Task<string?> GetRemoteDaemonHostAsync(CancellationToken cancellationToken) => Task.FromResult<string?>(null);
+
     /// <summary>Determines whether a failure to start a container comes from a host port another process took, which a new container with other random ports can avoid.</summary>
     internal virtual bool IsHostPortConflict(Exception exception) => false;
 

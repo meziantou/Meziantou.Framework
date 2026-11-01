@@ -45,7 +45,8 @@ dotnet package add Meziantou.Framework.Globbing
 
 - Enumerate files that match a glob pattern (the example creates the files in a
   [`TemporaryDirectory`](https://www.nuget.org/packages/Meziantou.Framework.TemporaryDirectory/)). `EnumerateFiles`
-  returns full paths.
+  returns full paths; pass `GlobPathFormat.RelativePath` to get paths relative to the directory, or call
+  `EnumerateFileInfos` to get `FileInfo` objects. The enumeration starts at the literal base directory of the pattern.
 
     <!-- ref:../../tests/Meziantou.Framework.Globbing.Tests/GlobTests.cs;region=Glob_EnumerateFiles;format=md-fenced-code-block;dedent=true -->
     ```csharp

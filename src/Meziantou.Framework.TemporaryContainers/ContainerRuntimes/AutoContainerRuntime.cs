@@ -108,6 +108,12 @@ internal sealed class AutoContainerRuntime : ContainerRuntime
         return await runtime.ListManagedImagesAsync(cancellationToken).ConfigureAwait(false);
     }
 
+    internal override async Task<string?> GetRemoteDaemonHostAsync(CancellationToken cancellationToken)
+    {
+        var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);
+        return await runtime.GetRemoteDaemonHostAsync(cancellationToken).ConfigureAwait(false);
+    }
+
     internal override async Task<string> GetReaperSocketPathAsync(CancellationToken cancellationToken)
     {
         var runtime = await GetResolvedRuntimeOrThrowAsync(cancellationToken).ConfigureAwait(false);

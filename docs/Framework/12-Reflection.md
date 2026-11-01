@@ -60,7 +60,15 @@ private sealed class Counter
   public constructors that have as many parameters as the arguments, and throws an `ArgumentException` when none of them
   accepts them.
 - The values are `dynamic`: cast them when an overload must be chosen, as in `(string)counterType.Name`.
+- Casting the wrapper returns the wrapped object when it is of the target type, such as a base type or an interface, and
+  uses `Convert.ChangeType` for the other conversions of an `IConvertible` value.
+- An indexer is chosen by its parameters: the ones whose types accept the indexes as they are come first, then the
+  public ones before the private ones and the explicit interface implementations. An exception thrown by the indexer,
+  such as a `KeyNotFoundException`, is rethrown as is.
 - A member that does not exist throws a `RuntimeBinderException` when it is used.
+- The debugger and the tools that list the members of a `dynamic` object see the instance members for an object and the
+  static members for a type. Indexers and compiler-generated fields, such as the backing fields of auto-properties, are
+  not listed.
 
 ## Check attributes
 
@@ -80,7 +88,9 @@ Assert.True(method.GetParameters()[1].HasCustomAttribute<ParamArrayAttribute>())
 <!-- endref -->
 
 [HasCustomAttribute](cref:Meziantou.Framework.CustomAttributeExtensions.HasCustomAttribute) exists for `Type`, `MemberInfo`, `ParameterInfo`, `Module` and `Assembly`, with the attribute type as
-a generic argument or as a `Type`. It does not search the base types unless you pass `inherit: true`.
+a generic argument or as a `Type`. It does not search the base types unless you pass `inherit: true`. With
+`inherit: true`, the attributes of an overridden property, event or method, and of the parameters of an overridden
+method, are found too, unlike `MemberInfo.IsDefined` that ignores `inherit` for properties, events and parameters.
 
 ## Read assembly information
 
@@ -127,9 +137,9 @@ Assert.Null(ReflectionUtilities.GetImplicitConversion(42, typeof(long)));
 
 - [IsNullableOfT](cref:Meziantou.Framework.ReflectionUtilities.IsNullableOfT) tells whether a type is a `Nullable<T>`, such as `int?`.
 - [IsFlagsEnum](cref:Meziantou.Framework.ReflectionUtilities.IsFlagsEnum) tells whether a type is an enum marked with `[Flags]`. It returns `false` for any other type.
-- `GetImplicitConversion(value, targetType)` returns the `op_Implicit` operator that the type of the value declares to
-  convert it to the target type, or `null`. It does not see operators declared by the target type, nor the conversions
-  built into the language.
+- `GetImplicitConversion(value, targetType)` returns the `op_Implicit` operator that converts the value to the target
+  type, declared by the type of the value or by the target type, or `null`. It does not see the conversions built into
+  the language.
 
 [GetMethodLocation](cref:Meziantou.Framework.ReflectionUtilities.GetMethodLocation) finds the source file and the first line of a method, from the portable PDB of its assembly, embedded
 or next to the file:
@@ -222,7 +232,7 @@ Assert.Equal("Order #42", DataBinder.Eval(order, "Number", "Order #{0}"));
 
 - The parts of the path are separated by dots. Property names are case-insensitive.
 - An index is written between `[]` or `()`: a number for arrays and lists, a number or a quoted string for any type with
-  an indexer, such as a dictionary.
+  an indexer, such as a dictionary. A quoted string can contain dots and brackets, as in `Settings["a.b"]`.
 - [Eval](cref:Meziantou.Framework.DataBinder.Eval) returns `null` when the container or an intermediate value is `null`. A property that does not exist throws an
   `ArgumentException`.
 - The overload with a format returns a string: an empty string for `null`, otherwise the value formatted with
@@ -268,7 +278,10 @@ Assert.Equal(["Ada", "Keyboard", "Mouse"], collector.Strings.Order(StringCompare
 ```
 <!-- endref -->
 
-- Each object is visited once, compared by reference, so cycles do not loop forever.
+- Each object is visited once, compared by reference, so cycles do not loop forever. A value type is not visited again
+  inside itself, such as `DateTime.Date` that returns another `DateTime`.
+- The properties of primitive types, enums, `decimal`, `DateTime`, `DateTimeOffset`, `TimeSpan`, `DateOnly`, `TimeOnly`
+  and `Guid` are not visited: these values are visited, but not walked into.
 - Indexers and write-only properties are skipped. Strings are visited as values, not as collections of characters.
 - The properties of every object are visited, including the ones of arrays and collections, such as `Length` or
   `Count`.

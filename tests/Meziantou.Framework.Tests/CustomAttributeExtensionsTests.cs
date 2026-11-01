@@ -253,4 +253,70 @@ public class CustomAttributeExtensionsTests
     private sealed class TestParameterAttribute : Attribute
     {
     }
+
+    [Fact]
+    public void PropertyInfo_HasCustomAttribute_Inherit_ShouldDetectAttributeOfOverriddenProperty()
+    {
+        var property = typeof(DerivedMembers).GetProperty(nameof(DerivedMembers.VirtualProperty));
+        Assert.NotNull(property);
+        Assert.True(property.HasCustomAttribute<TestMemberAttribute>(inherit: true));
+        Assert.True(property.HasCustomAttribute(typeof(TestMemberAttribute), inherit: true));
+        Assert.False(property.HasCustomAttribute<TestMemberAttribute>(inherit: false));
+        Assert.False(property.HasCustomAttribute<TestMemberAttribute>());
+    }
+
+    [Fact]
+    public void EventInfo_HasCustomAttribute_Inherit_ShouldDetectAttributeOfOverriddenEvent()
+    {
+        var eventInfo = typeof(DerivedMembers).GetEvent(nameof(DerivedMembers.VirtualEvent));
+        Assert.NotNull(eventInfo);
+        Assert.True(eventInfo.HasCustomAttribute<TestMemberAttribute>(inherit: true));
+        Assert.False(eventInfo.HasCustomAttribute<TestMemberAttribute>(inherit: false));
+    }
+
+    [Fact]
+    public void ParameterInfo_HasCustomAttribute_Inherit_ShouldDetectAttributeOfOverriddenMethodParameter()
+    {
+        var method = typeof(DerivedMembers).GetMethod(nameof(DerivedMembers.VirtualMethod));
+        Assert.NotNull(method);
+        var parameter = method.GetParameters()[0];
+        Assert.True(parameter.HasCustomAttribute<TestMemberAttribute>(inherit: true));
+        Assert.True(parameter.HasCustomAttribute(typeof(TestMemberAttribute), inherit: true));
+        Assert.False(parameter.HasCustomAttribute<TestMemberAttribute>(inherit: false));
+    }
+
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Event | AttributeTargets.Parameter, Inherited = true)]
+    private sealed class TestMemberAttribute : Attribute
+    {
+    }
+
+    private class BaseMembers
+    {
+        [TestMember]
+        public virtual int VirtualProperty { get; set; }
+
+        [TestMember]
+        public virtual event EventHandler? VirtualEvent;
+
+        public virtual void VirtualMethod([TestMember] int value)
+        {
+        }
+
+        protected void RaiseVirtualEvent() => VirtualEvent?.Invoke(this, EventArgs.Empty);
+    }
+
+    private sealed class DerivedMembers : BaseMembers
+    {
+        public override int VirtualProperty { get; set; }
+
+        public override event EventHandler? VirtualEvent
+        {
+            add { }
+            remove { }
+        }
+
+        public override void VirtualMethod(int value)
+        {
+        }
+    }
 }

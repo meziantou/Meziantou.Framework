@@ -40,15 +40,23 @@ static class ReflectionUtilities
         if (value is null)
             return null;
 
-        var valueType = value.GetType();
-        var methods = valueType.GetMethods(BindingFlags.Public | BindingFlags.Static);
-        foreach (var method in methods)
-        {
-            if (IsImplicitOperator(method, valueType, targetType))
-                return method;
-        }
+        ArgumentNullException.ThrowIfNull(targetType);
 
-        return null;
+        // The operator can be declared by the source type or by the target type
+        var valueType = value.GetType();
+        return FindImplicitOperator(valueType, valueType, targetType)
+            ?? FindImplicitOperator(targetType, valueType, targetType);
+
+        static MethodInfo? FindImplicitOperator(Type declaringType, Type sourceType, Type targetType)
+        {
+            foreach (var method in declaringType.GetMethods(BindingFlags.Public | BindingFlags.Static))
+            {
+                if (IsImplicitOperator(method, sourceType, targetType))
+                    return method;
+            }
+
+            return null;
+        }
 
         static bool IsImplicitOperator(MethodInfo mi, Type sourceType, Type targetType)
         {

@@ -67,6 +67,9 @@ Available factory methods:
 
 - `BloomFilter.CreateXXHash128`, `CreateXXHash64`, `CreateXXHash32`, `CreateXXHash3`, `CreateCrc64`, `CreateCrc32`, `CreateAdler32`
 - `CountingBloomFilter.CreateXXHash128`, `CreateXXHash64`, `CreateXXHash32`, `CreateXXHash3`, `CreateCrc64`, `CreateCrc32`, `CreateAdler32`
+- `BlockedBloomFilter.CreateXXHash128`, `CreateXXHash64`, `CreateXXHash32`, `CreateXXHash3`, `CreateCrc64`, `CreateCrc32`, `CreateAdler32`
+
+Use `BlockedBloomFilter` for large filters (larger than the CPU caches) that are updated or queried often: it keeps the bits of each value in one 64-byte block, so an operation reads one cache line instead of one per hash function. It needs a little more memory for the same false positive probability (about 3% more at 1%, 8% more at 0.1%); size it with `BlockedBloomFilterSize.CreateOptimalSize`, not `BloomFilterSize`.
 
 `XXHash128` is the fastest algorithm and the recommended default.
 

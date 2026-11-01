@@ -60,7 +60,7 @@ public sealed partial class BloomFilterXXHash32 : BloomFilter
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static BloomFilterHash Hash(ReadOnlySpan<byte> value)
+    internal static BloomFilterHash Hash(ReadOnlySpan<byte> value)
     {
         return BloomFilterHash.FromUInt32(XxHash32.HashToUInt32(value));
     }

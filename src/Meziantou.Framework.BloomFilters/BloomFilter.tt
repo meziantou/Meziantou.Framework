@@ -68,6 +68,13 @@ partial class CountingBloomFilter
 <# } #>
 }
 
+partial class BlockedBloomFilter
+{
+<# foreach (var algorithm in hashAlgorithms) { #>
+    public static BlockedBloomFilter<#= algorithm.Name #> Create<#= algorithm.Name #>(BlockedBloomFilterSize size) => new(size.BlockCount, size.HashCount);
+<# } #>
+}
+
 <# foreach (var algorithm in hashAlgorithms) { #>
 partial class BloomFilter<#= algorithm.Name #> : IBloomFilter
 {
@@ -133,6 +140,40 @@ partial class CountingBloomFilter<#= algorithm.Name #> : ICountingBloomFilter
 <# foreach (var type in algorithm.BatchTypes) { #>
     public void AddRange(params System.ReadOnlySpan<<#= ToCsharpTypeName(type) #>> values) => AddRangeCore(values);
     public void RemoveRange(params System.ReadOnlySpan<<#= ToCsharpTypeName(type) #>> values) => RemoveRangeCore(values);
+<# } #>
+}
+
+<# } #>
+<# foreach (var algorithm in hashAlgorithms) { #>
+public sealed partial class BlockedBloomFilter<#= algorithm.Name #> : BlockedBloomFilter, IBloomFilter
+{
+    internal BlockedBloomFilter<#= algorithm.Name #>(long blockCount, int hashCount)
+        : base(blockCount, hashCount)
+    {
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static BloomFilterHash Hash<T>(in T value) where T : unmanaged
+    {
+        var bytes = unsafe(MemoryMarshal.AsBytes(MemoryMarshal.CreateReadOnlySpan(ref Unsafe.AsRef(in value), 1)));
+        return Hash(bytes);
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static BloomFilterHash Hash(System.ReadOnlySpan<char> value)
+    {
+        // Hash the UTF-16 code units as-is, so a string and the equivalent span of chars are the same value
+        var bytes = unsafe(MemoryMarshal.AsBytes(value));
+        return Hash(bytes);
+    }
+
+    // Same hash as BloomFilter<#= algorithm.Name #>: only the layout of the bits differs.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static BloomFilterHash Hash(System.ReadOnlySpan<byte> value) => BloomFilter<#= algorithm.Name #>.Hash(value);
+
+<# foreach (var type in types) { #>
+    public void Add(<#= ToCsharpTypeName(type) #> value) => AddHash(Hash(value));
+    public bool MayContain(<#= ToCsharpTypeName(type) #> value) => MayContainHash(Hash(value));
 <# } #>
 }
 

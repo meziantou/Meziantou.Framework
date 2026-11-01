@@ -521,15 +521,16 @@ public sealed class BloomFilterTests
     public void BloomFilter_ReadOnlySpanOfChar_IsInterchangeableWithString_ForAllAlgorithms()
     {
         var size = BloomFilterSize.CreateOptimalSize(1000, 0.01);
-        foreach (var method in GetBloomFilterCreateMethods())
+        var blockedSize = BlockedBloomFilterSize.CreateOptimalSize(1000, 0.01);
+        foreach (var (method, methodSize) in GetBloomFilterCreateMethods().Select(m => (m, (object)size)).Concat(GetBlockedCreateMethods().Select(m => (m, (object)blockedSize))))
         {
             foreach (var key in GetCharKeys())
             {
-                var filterFromString = (IBloomFilter)method.Invoke(null, [size])!;
+                var filterFromString = (IBloomFilter)method.Invoke(null, [methodSize])!;
                 filterFromString.Add(key);
                 Assert.True(filterFromString.MayContain(key.AsSpan()));
 
-                var filterFromSpan = (IBloomFilter)method.Invoke(null, [size])!;
+                var filterFromSpan = (IBloomFilter)method.Invoke(null, [methodSize])!;
                 filterFromSpan.Add(key.AsSpan());
                 Assert.True(filterFromSpan.MayContain(key));
                 Assert.True(filterFromSpan.MayContain(key.AsSpan()));
@@ -1221,6 +1222,224 @@ public sealed class BloomFilterTests
         Assert.Equal(7, countingSize.HashCount);
         Assert.InRange(size.BitCount, ExpectedItemCount * 9, ExpectedItemCount * 10);
         Assert.Equal(size.BitCount, countingSize.CounterCount);
+    }
+
+    public static TheoryData<string, object> AllBlockedAlgorithmsAndValues()
+    {
+        var data = new TheoryData<string, object>();
+        foreach (var method in GetBlockedCreateMethods())
+        {
+            foreach (var value in GetValues())
+            {
+                data.Add(method.Name, value);
+            }
+        }
+
+        return data;
+    }
+
+    [Fact]
+    public void Documentation_BlockedBloomFilter()
+    {
+        #region BlockedBloomFilter_Usage
+        // The size for 1 million items and a 1% false positive probability
+        var size = BlockedBloomFilterSize.CreateOptimalSize(expectedItemCount: 1_000_000, falsePositiveProbability: 0.01);
+        Assert.Equal(19_328, size.BlockCount); // 64 bytes per block: about 1.24 MB of memory
+        Assert.Equal(6, size.HashCount);
+
+        // A BloomFilter needs 3% less memory for the same probability
+        Assert.Equal(9_592_955, BloomFilterSize.CreateOptimalSize(1_000_000, 0.01).BitCount);
+
+        var filter = BlockedBloomFilter.CreateXXHash128(size);
+        filter.Add("alice@example.com");
+        filter.Add(42);
+
+        Assert.True(filter.MayContain("alice@example.com"));
+        Assert.True(filter.MayContain(42));
+        #endregion
+    }
+
+    [Theory]
+    [MemberData(nameof(AllBlockedAlgorithmsAndValues))]
+    public void BlockedBloomFilter_Add_ThenMayContain_ReturnsTrue_ForAllAlgorithmsAndTypes(string createMethodName, object value)
+    {
+        var filter = CreateBlockedFilter(createMethodName, BlockedBloomFilterSize.CreateOptimalSize(1000, 0.01));
+        Assert.False(MayContainValue(filter, value));
+
+        AddValue(filter, value);
+        Assert.True(MayContainValue(filter, value));
+    }
+
+    [Fact]
+    public void BlockedBloomFilter_ReadOnlySpanOfByte_ForAllAlgorithms()
+    {
+        ReadOnlySpan<byte> value = [1, 2, 3, 4];
+        foreach (var method in GetBlockedCreateMethods())
+        {
+            var filter = CreateBlockedFilter(method.Name, BlockedBloomFilterSize.CreateOptimalSize(1000, 0.01));
+            Assert.False(filter.MayContain(value));
+
+            filter.Add(value);
+            Assert.True(filter.MayContain(value));
+        }
+    }
+
+    [Theory]
+    [InlineData(nameof(BlockedBloomFilter.CreateXXHash128), 0.01)]
+    [InlineData(nameof(BlockedBloomFilter.CreateXXHash128), 0.001)]
+    [InlineData(nameof(BlockedBloomFilter.CreateXXHash64), 0.01)]
+    [InlineData(nameof(BlockedBloomFilter.CreateXXHash32), 0.01)]
+    [InlineData(nameof(BlockedBloomFilter.CreateXXHash3), 0.01)]
+    [InlineData(nameof(BlockedBloomFilter.CreateCrc64), 0.01)]
+    [InlineData(nameof(BlockedBloomFilter.CreateCrc32), 0.01)]
+    public void BlockedBloomFilter_FalsePositiveRate_MatchesModel_WithoutFalseNegatives(string createMethodName, double falsePositiveProbability)
+    {
+        const int ItemCount = 20_000;
+        const int ProbeCount = 200_000;
+
+        var size = BlockedBloomFilterSize.CreateOptimalSize(ItemCount, falsePositiveProbability);
+        var filter = CreateBlockedFilter(createMethodName, size);
+        for (var value = 0; value < ItemCount; value++)
+        {
+            filter.Add(value);
+        }
+
+        for (var value = 0; value < ItemCount; value++)
+        {
+            Assert.True(filter.MayContain(value));
+        }
+
+        var falsePositiveCount = 0;
+        for (var value = ItemCount; value < ItemCount + ProbeCount; value++)
+        {
+            if (filter.MayContain(value))
+            {
+                falsePositiveCount++;
+            }
+        }
+
+        Assert.InRange(size.GetFalsePositiveProbability(ItemCount), falsePositiveProbability * 0.9, falsePositiveProbability);
+        Assert.InRange((double)falsePositiveCount / ProbeCount, falsePositiveProbability * 0.6, falsePositiveProbability * 1.4);
+        Assert.InRange(filter.GetEstimateCount(), ItemCount * 0.95, ItemCount * 1.05);
+    }
+
+    [Fact]
+    public void BlockedBloomFilter_ConcurrentAdds_AreAllVisible()
+    {
+        const int ItemCount = 100_000;
+        var filter = BlockedBloomFilter.CreateXXHash128(BlockedBloomFilterSize.CreateOptimalSize(ItemCount, 0.01));
+
+        Parallel.For(0, ItemCount, i => filter.Add(i));
+
+        for (var i = 0; i < ItemCount; i++)
+        {
+            Assert.True(filter.MayContain(i));
+        }
+    }
+
+    [Fact]
+    public void BlockedBloomFilter_GetEstimateCount_EmptyFilter_ReturnsZero()
+    {
+        var filter = BlockedBloomFilter.CreateXXHash128(BlockedBloomFilterSize.CreateOptimalSize(1000, 0.01));
+
+        Assert.Equal(0, filter.GetEstimateCount());
+    }
+
+    [Fact]
+    public void BlockedBloomFilter_GetEstimateCount_FullFilter_ReturnsPositiveInfinity()
+    {
+        var filter = BlockedBloomFilter.CreateXXHash128(BlockedBloomFilterSize.CreateExact(blockCount: 1, hashCount: 64));
+        for (var value = 0; value < 1000; value++)
+        {
+            filter.Add(value);
+        }
+
+        Assert.Equal(double.PositiveInfinity, filter.GetEstimateCount());
+        Assert.True(filter.MayContain(-1));
+    }
+
+    [Fact]
+    public void BlockedBloomFilter_ValuesSpreadOverEveryBlock()
+    {
+        // 3 blocks and 1 bit per value: once the filter holds enough values, every block has bits set, so no block
+        // index is unreachable (an off-by-one in the block or alignment computation would leave one empty).
+        var size = BlockedBloomFilterSize.CreateExact(blockCount: 3, hashCount: 1);
+        var filter = BlockedBloomFilter.CreateXXHash128(size);
+        for (var value = 0; value < 3000; value++)
+        {
+            filter.Add(value);
+        }
+
+        Assert.InRange(filter.GetEstimateCount(), 2500, 3500);
+    }
+
+    [Theory]
+    [InlineData(0.1)]
+    [InlineData(0.01)]
+    [InlineData(0.001)]
+    [InlineData(0.0001)]
+    public void BlockedBloomFilterSize_CreateOptimalSize_ReturnsSmallestSizeReachingTarget(double falsePositiveProbability)
+    {
+        const long ItemCount = 100_000;
+        var size = BlockedBloomFilterSize.CreateOptimalSize(ItemCount, falsePositiveProbability);
+
+        Assert.True(size.GetFalsePositiveProbability(ItemCount) <= falsePositiveProbability);
+        Assert.Equal(size.BlockCount * 512, size.BitCount);
+
+        // One block less misses the target whatever the hash count.
+        for (var hashCount = 1; hashCount <= 32; hashCount++)
+        {
+            Assert.True(BlockedBloomFilterSize.CreateExact(size.BlockCount - 1, hashCount).GetFalsePositiveProbability(ItemCount) > falsePositiveProbability);
+        }
+
+        // The skew of the blocks costs memory, more as the target gets stricter.
+        Assert.True(size.BitCount >= BloomFilterSize.CreateOptimalSize(ItemCount, falsePositiveProbability).BitCount);
+    }
+
+    [Fact]
+    public void BlockedBloomFilterSize_GetFalsePositiveProbability_EdgeCases()
+    {
+        var size = BlockedBloomFilterSize.CreateExact(blockCount: 10, hashCount: 4);
+
+        Assert.Equal(0, size.GetFalsePositiveProbability(0));
+        Assert.Equal(1, size.GetFalsePositiveProbability(1_000_000), tolerance: 1e-9);
+        Assert.Throws<ArgumentOutOfRangeException>(() => size.GetFalsePositiveProbability(-1));
+    }
+
+    [Theory]
+    [InlineData(0, 1)]
+    [InlineData(-1, 1)]
+    [InlineData(1, 0)]
+    [InlineData(1, -1)]
+    [InlineData(1, 513)]
+    [InlineData(long.MaxValue, 1)]
+    public void BlockedBloomFilterSize_CreateExact_ValidatesArguments(long blockCount, int hashCount)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => BlockedBloomFilterSize.CreateExact(blockCount, hashCount));
+    }
+
+    [Theory]
+    [InlineData(0, 0.01)]
+    [InlineData(-1, 0.01)]
+    [InlineData(1, 0)]
+    [InlineData(1, -0.01)]
+    [InlineData(1, 1)]
+    [InlineData(1, 1.01)]
+    [InlineData(long.MaxValue, 0.01)]
+    [InlineData(950_000_000_000_000_000L, 0.01)] // fits a BloomFilter, not a blocked filter
+    public void BlockedBloomFilterSize_CreateOptimalSize_ValidatesArguments(long expectedItemCount, double falsePositiveProbability)
+    {
+        Assert.Throws<ArgumentOutOfRangeException>(() => BlockedBloomFilterSize.CreateOptimalSize(expectedItemCount, falsePositiveProbability));
+    }
+
+    private static IEnumerable<System.Reflection.MethodInfo> GetBlockedCreateMethods()
+    {
+        return typeof(BlockedBloomFilter).GetMethods().Where(m => m.Name.StartsWith("Create", StringComparison.Ordinal) && m.GetParameters().Length == 1 && m.GetParameters()[0].ParameterType == typeof(BlockedBloomFilterSize));
+    }
+
+    private static IBloomFilter CreateBlockedFilter(string createMethodName, BlockedBloomFilterSize size)
+    {
+        return (IBloomFilter)typeof(BlockedBloomFilter).GetMethod(createMethodName, System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static)!.Invoke(null, [size])!;
     }
 
     [Fact]

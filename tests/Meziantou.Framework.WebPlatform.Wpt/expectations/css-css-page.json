@@ -377,6 +377,21 @@
   "css/css-page/page-box-011-print.html": {
     "reftest": "PASS"
   },
+  "css/css-page/page-context-inherits-from-root-custom-property-print.html": {
+    "reftest": "PASS"
+  },
+  "css/css-page/page-context-inherits-from-root-em-rem-print.html": {
+    "reftest": "PASS"
+  },
+  "css/css-page/page-context-inherits-from-root-font-size-001-print.html": {
+    "reftest": "PASS"
+  },
+  "css/css-page/page-context-inherits-from-root-font-size-002-print.html": {
+    "reftest": "PASS"
+  },
+  "css/css-page/page-context-inherits-from-root-rem-print.html": {
+    "reftest": "PASS"
+  },
   "css/css-page/page-left-right-001-print.html": {
     "reftest": "PASS"
   },

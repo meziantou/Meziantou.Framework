@@ -561,6 +561,9 @@
   "css/cssom-view/scroll-position-root-child-ib-split-insertion.html": {
     "total": 1
   },
+  "css/cssom-view/scroll-width-with-over-constrained-block-in-inline.html": {
+    "total": 2
+  },
   "css/cssom-view/scroll-zoom.html": {
     "total": 3
   },
@@ -801,6 +804,13 @@
   },
   "css/cssom-view/ttwf-js-cssomview-getclientrects-length.html": {
     "total": 3
+  },
+  "css/cssom-view/user-scroll-interrupts-smooth-scroll.html": {
+    "total": 3,
+    "failures": {
+      "Aborting a smooth scroll with a keyboard event that causes another scroll": "FAIL",
+      "Aborting a smooth scroll with a keyboard event that does not cause another scroll": "FAIL"
+    }
   },
   "css/cssom-view/visual-scrollIntoView-001.html": {
     "total": 1,

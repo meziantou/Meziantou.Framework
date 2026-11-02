@@ -140,6 +140,12 @@
   "intersection-observer/observer-without-js-reference.html": {
     "total": 3
   },
+  "intersection-observer/offset-iframe-cross-origin.html": {
+    "total": 1
+  },
+  "intersection-observer/offset-iframe-same-origin.html": {
+    "total": 1
+  },
   "intersection-observer/padding-clip.html": {
     "total": 1
   },

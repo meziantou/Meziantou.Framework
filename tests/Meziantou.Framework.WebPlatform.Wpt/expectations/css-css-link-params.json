@@ -25,6 +25,9 @@
   "css/css-link-params/link-parameters-no-interpolation.html": {
     "total": 42
   },
+  "css/css-link-params/link-parameters-substitution.html": {
+    "total": 5
+  },
   "css/css-link-params/link-parameters-typed.html": {
     "total": 15,
     "failures": {

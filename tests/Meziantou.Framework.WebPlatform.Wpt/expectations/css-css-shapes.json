@@ -316,6 +316,18 @@
   "css/css-shapes/shape-outside/shape-box/shape-outside-border-box-oversized-float-direction.html": {
     "total": 2
   },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-border-box-shape-margin-with-margin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-border-box-with-block-start-margin.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-border-box-with-margin-right-float.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-border-box-with-margin.html": {
+    "reftest": "PASS"
+  },
   "css/css-shapes/shape-outside/shape-box/shape-outside-box-002.html": {
     "reftest": "PASS"
   },
@@ -350,6 +362,9 @@
     "reftest": "PASS"
   },
   "css/css-shapes/shape-outside/shape-box/shape-outside-content-box-border-radius-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-content-box-with-margin.html": {
     "reftest": "PASS"
   },
   "css/css-shapes/shape-outside/shape-box/shape-outside-margin-box-001.html": {
@@ -395,6 +410,9 @@
     "reftest": "PASS"
   },
   "css/css-shapes/shape-outside/shape-box/shape-outside-padding-box-border-radius-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-shapes/shape-outside/shape-box/shape-outside-padding-box-with-margin.html": {
     "reftest": "PASS"
   },
   "css/css-shapes/shape-outside/shape-image/gradients/shape-outside-linear-gradient-001.html": {

@@ -3004,6 +3004,18 @@
   "css/css-ui/outline-style-inherit.html": {
     "reftest": "PASS"
   },
+  "css/css-ui/outline-svg-a-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ui/outline-svg-g-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ui/outline-svg-g-auto-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-ui/outline-svg-nested-svg-001.html": {
+    "reftest": "FAIL"
+  },
   "css/css-ui/outline-width-rounding.tentative.html": {
     "total": 12
   },

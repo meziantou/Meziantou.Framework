@@ -58,6 +58,9 @@
   "compat/webkit-box-vertically-centered.html": {
     "total": 1
   },
+  "compat/webkit-box-z-index-002.html": {
+    "reftest": "PASS"
+  },
   "compat/webkit-box-z-index.html": {
     "reftest": "PASS"
   },

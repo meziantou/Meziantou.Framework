@@ -506,6 +506,12 @@
   "css/cssom/getComputedStyle-insets-relative.html": {
     "total": 252
   },
+  "css/cssom/getComputedStyle-insets-relpos-block-in-inline.html": {
+    "total": 4
+  },
+  "css/cssom/getComputedStyle-insets-relpos-inline-002.html": {
+    "total": 4
+  },
   "css/cssom/getComputedStyle-insets-relpos-inline.html": {
     "total": 4
   },
@@ -740,6 +746,9 @@
       "outline-color: invert": "FAIL"
     }
   },
+  "css/cssom/serialize-variable-reference-whitespace.html": {
+    "total": 8
+  },
   "css/cssom/serialize-variable-reference.html": {
     "total": 4
   },
@@ -850,6 +859,9 @@
   },
   "css/cssom/stylesheet-title.html": {
     "total": 2
+  },
+  "css/cssom/stylesheets-in-non-rendered-document.html": {
+    "total": 3
   },
   "css/cssom/system-color-inherit.html": {
     "total": 2

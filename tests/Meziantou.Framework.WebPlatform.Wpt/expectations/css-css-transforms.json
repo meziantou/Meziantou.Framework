@@ -316,10 +316,16 @@
   "css/css-transforms/backface-visibility-hidden-animated-002.html": {
     "reftest": "PASS"
   },
+  "css/css-transforms/backface-visibility-hidden-background-blend-mode.html": {
+    "reftest": "PASS"
+  },
   "css/css-transforms/backface-visibility-hidden-child-translate.html": {
     "reftest": "PASS"
   },
   "css/css-transforms/backface-visibility-hidden-child-will-change-transform.html": {
+    "reftest": "PASS"
+  },
+  "css/css-transforms/backface-visibility-hidden-filter.html": {
     "reftest": "PASS"
   },
   "css/css-transforms/backface-visibility-with-sibling-001.html": {

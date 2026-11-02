@@ -1417,6 +1417,9 @@
   "content-security-policy/img-src/svg-use-blocked.tentative.html": {
     "total": 1
   },
+  "content-security-policy/inheritance/about-blank-from-javascript-url-inherits-csp-from-initiator.sub.html": {
+    "total": 1
+  },
   "content-security-policy/inheritance/auxiliary-blank-document.html": {
     "total": 3
   },
@@ -1765,6 +1768,9 @@
     "failures": {
       "Report is observable to ReportingObserver": "FAIL"
     }
+  },
+  "content-security-policy/reporting-api/reporting-api-sends-reports-on-violation-for-css-background-image.https.sub.html": {
+    "total": 1
   },
   "content-security-policy/reporting-api/reporting-api-sends-reports-on-violation-for-dedicated-worker-import.https.sub.html": {
     "total": 2
@@ -2376,6 +2382,15 @@
   "content-security-policy/securitypolicyviolation/linenumber.tentative.html": {
     "total": 1
   },
+  "content-security-policy/securitypolicyviolation/no-violation-for-inline-handler-in-document-without-browsing-context.html": {
+    "total": 5,
+    "failures": {
+      "DOMParser.parseFromString()": "FAIL",
+      "setAttribute() in a document created by createHTMLDocument()": "FAIL",
+      "setAttribute() in template contents": "FAIL",
+      "template.innerHTML": "FAIL"
+    }
+  },
   "content-security-policy/securitypolicyviolation/script-sample-no-opt-in.html": {
     "total": 4
   },
@@ -2526,6 +2541,15 @@
     "total": 1
   },
   "content-security-policy/style-src/style-blocked.html": {
+    "total": 2
+  },
+  "content-security-policy/style-src/style-src-attr-blocked-createhtmldocument-adopt.html": {
+    "total": 2
+  },
+  "content-security-policy/style-src/style-src-attr-blocked-domparser-adopt.html": {
+    "total": 2
+  },
+  "content-security-policy/style-src/style-src-attr-blocked-template-move.html": {
     "total": 2
   },
   "content-security-policy/style-src/style-src-error-event-fires.html": {
@@ -2929,7 +2953,10 @@
     "total": 1
   },
   "content-security-policy/worker-src/service-worker-src-child-fallback-blocked.https.sub.html": {
-    "total": 1
+    "total": 1,
+    "failures": {
+      "Same-origin service worker allowed by child-src 'self'.": "FAIL"
+    }
   },
   "content-security-policy/worker-src/service-worker-src-child-fallback.https.sub.html": {
     "total": 1

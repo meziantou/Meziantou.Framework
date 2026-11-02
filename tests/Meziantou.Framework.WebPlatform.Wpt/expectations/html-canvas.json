@@ -23,6 +23,9 @@
   "html/canvas/element/2d.text-outside-of-the-flat-tree.html": {
     "reftest": "PASS"
   },
+  "html/canvas/element/2d.text-root-font-relative-units.html": {
+    "total": 11
+  },
   "html/canvas/element/canvas-context/2d.canvas.context.exists.html": {
     "total": 1
   },
@@ -1373,6 +1376,9 @@
   "html/canvas/element/fill-and-stroke-styles/2d.gradient.radial.transform.3.html": {
     "total": 1
   },
+  "html/canvas/element/fill-and-stroke-styles/2d.gradient.radial.transform.translated.repeat.html": {
+    "reftest": "PASS"
+  },
   "html/canvas/element/fill-and-stroke-styles/2d.gradient.relativecolor.html": {
     "total": 1,
     "failures": {
@@ -1567,6 +1573,12 @@
   },
   "html/canvas/element/fill-and-stroke-styles/2d.strokeStyle.default.html": {
     "total": 1
+  },
+  "html/canvas/element/fill-and-stroke-styles/2d.strokeStyle.gradient.arc.html": {
+    "reftest": "PASS"
+  },
+  "html/canvas/element/fill-and-stroke-styles/2d.strokeStyle.pattern.arc.html": {
+    "reftest": "PASS"
   },
   "html/canvas/element/fill-and-stroke-styles/2d.strokeStyle.relativecolor.html": {
     "total": 1
@@ -2172,6 +2184,9 @@
   "html/canvas/element/manual/draw-element-image/broken-image.tentative.html": {
     "reftest": "TIMEOUT"
   },
+  "html/canvas/element/manual/draw-element-image/canvas-content-drawable-stacking-context.tentative.html": {
+    "reftest": "FAIL"
+  },
   "html/canvas/element/manual/draw-element-image/canvas-in-custom-element-multiple.tentative.html": {
     "reftest": "TIMEOUT"
   },
@@ -2333,7 +2348,31 @@
   "html/canvas/element/manual/draw-element-image/css-mask-on-div.tentative.html": {
     "reftest": "TIMEOUT"
   },
+  "html/canvas/element/manual/draw-element-image/css-object-fit-contain-tall.tentative.html": {
+    "reftest": "TIMEOUT"
+  },
+  "html/canvas/element/manual/draw-element-image/css-object-fit-contain-wide.tentative.html": {
+    "reftest": "TIMEOUT"
+  },
+  "html/canvas/element/manual/draw-element-image/css-object-fit-cover-tall.tentative.html": {
+    "reftest": "TIMEOUT"
+  },
+  "html/canvas/element/manual/draw-element-image/css-object-fit-cover-wide.tentative.html": {
+    "reftest": "TIMEOUT"
+  },
+  "html/canvas/element/manual/draw-element-image/css-object-fit-fill-tall.tentative.html": {
+    "reftest": "TIMEOUT"
+  },
+  "html/canvas/element/manual/draw-element-image/css-object-fit-fill-wide.tentative.html": {
+    "reftest": "TIMEOUT"
+  },
   "html/canvas/element/manual/draw-element-image/css-object-fit-nested-canvas.tentative.html": {
+    "reftest": "TIMEOUT"
+  },
+  "html/canvas/element/manual/draw-element-image/css-object-fit-none-tall.tentative.html": {
+    "reftest": "TIMEOUT"
+  },
+  "html/canvas/element/manual/draw-element-image/css-object-fit-none-wide.tentative.html": {
     "reftest": "TIMEOUT"
   },
   "html/canvas/element/manual/draw-element-image/css-opacity-on-div.tentative.html": {
@@ -2477,6 +2516,54 @@
   },
   "html/canvas/element/manual/draw-element-image/hit-test/elementsFromPoint-no-content-drawable.tentative.html": {
     "total": 1
+  },
+  "html/canvas/element/manual/draw-element-image/hit-test/elementsFromPoint-object-fit-contain-tall.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Canvas descendants' transforms are correct when object-fit: contain is active.": "FAIL"
+    }
+  },
+  "html/canvas/element/manual/draw-element-image/hit-test/elementsFromPoint-object-fit-contain-wide.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Canvas descendants' transforms are correct when object-fit: contain is active.": "FAIL"
+    }
+  },
+  "html/canvas/element/manual/draw-element-image/hit-test/elementsFromPoint-object-fit-cover-tall.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Canvas descendants' transforms are correct when object-fit: cover is active.": "FAIL"
+    }
+  },
+  "html/canvas/element/manual/draw-element-image/hit-test/elementsFromPoint-object-fit-cover-wide.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Canvas descendants' transforms are correct when object-fit: cover is active.": "FAIL"
+    }
+  },
+  "html/canvas/element/manual/draw-element-image/hit-test/elementsFromPoint-object-fit-fill-tall.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Canvas descendants' transforms are correct when object-fit: fill is active.": "FAIL"
+    }
+  },
+  "html/canvas/element/manual/draw-element-image/hit-test/elementsFromPoint-object-fit-fill-wide.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Canvas descendants' transforms are correct when object-fit: fill is active.": "FAIL"
+    }
+  },
+  "html/canvas/element/manual/draw-element-image/hit-test/elementsFromPoint-object-fit-none-tall.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Canvas descendants' transforms are correct when object-fit none is active.": "FAIL"
+    }
+  },
+  "html/canvas/element/manual/draw-element-image/hit-test/elementsFromPoint-object-fit-none-wide.tentative.html": {
+    "total": 1,
+    "failures": {
+      "Canvas descendants' transforms are correct when object-fit: none is active.": "FAIL"
+    }
   },
   "html/canvas/element/manual/draw-element-image/hit-test/elementsFromPoint-update-element-geometry-offscreen.tentative.html": {
     "total": 9,
@@ -2856,6 +2943,12 @@
       "drawElementImage does not draw cross-origin box-reflect images in an iframe moved under canvas": "FAIL"
     }
   },
+  "html/canvas/element/manual/draw-element-image/privacy/box-reflect-images-in-iframe-multicol-moved-ignored.tentative.https.sub.html": {
+    "total": 1,
+    "failures": {
+      "drawElementImage does not draw cross-origin box-reflect images in a multicol inside an iframe moved under canvas": "FAIL"
+    }
+  },
   "html/canvas/element/manual/draw-element-image/privacy/canvas-in-custom-element-images-ignored.tentative.html": {
     "harness": "ERROR",
     "total": 0
@@ -2900,6 +2993,12 @@
     "total": 1,
     "failures": {
       "drawElementImage does not use cross-origin SVG filter content via CSS": "FAIL"
+    }
+  },
+  "html/canvas/element/manual/draw-element-image/privacy/filtered-div-removed-contain-paint.tentative.https.sub.html": {
+    "total": 1,
+    "failures": {
+      "drawElementImage draws same-origin feImage content inside contain:paint after ancestor cross-origin filter is removed": "FAIL"
     }
   },
   "html/canvas/element/manual/draw-element-image/privacy/filtered-outside-subtree-ignored.tentative.html": {
@@ -3217,6 +3316,12 @@
       "drawElementImage does not use cross-origin images in SVG patterns": "FAIL"
     }
   },
+  "html/canvas/element/manual/draw-element-image/privacy/svg/svg-pattern-filter-transformed-text.tentative.https.sub.html": {
+    "total": 1,
+    "failures": {
+      "drawElementImage ignores cross-origin filters on transformed text in SVG patterns": "FAIL"
+    }
+  },
   "html/canvas/element/manual/draw-element-image/privacy/svg/svg-pattern-href-outside-subtree-ignored.tentative.html": {
     "total": 1,
     "failures": {
@@ -3233,6 +3338,12 @@
     "total": 1,
     "failures": {
       "drawElementImage does not use cross-origin feImages in SVG patterns": "FAIL"
+    }
+  },
+  "html/canvas/element/manual/draw-element-image/privacy/svg/svg-pattern-with-feImage-transformed-text.tentative.https.sub.html": {
+    "total": 1,
+    "failures": {
+      "drawElementImage does not use cross-origin feImages on transformed SVG text in patterns": "FAIL"
     }
   },
   "html/canvas/element/manual/draw-element-image/privacy/svg/svg-radial-gradient-href-outside-subtree-ignored.tentative.html": {
@@ -3564,6 +3675,21 @@
   },
   "html/canvas/element/manual/filters/svg-filter-lh-rlh.html": {
     "reftest": "TIMEOUT"
+  },
+  "html/canvas/element/manual/filters/svg-filter-visited-link-color-taints.html": {
+    "total": 11,
+    "failures": {
+      "Dynamically turning an ancestor <a> into a visited link causes feDiffuseLighting to taint 2D canvas": "FAIL",
+      "Dynamically turning an ancestor <a> into a visited link causes feFlood to taint 2D canvas": "FAIL",
+      "Dynamically turning an ancestor <a> into a visited link taints immediate canvas draw": "FAIL",
+      "Dynamically turning an ancestor <a> into an unvisited link causes feDiffuseLighting to taint 2D canvas": "FAIL",
+      "Dynamically turning an ancestor <a> into an unvisited link causes feFlood to taint 2D canvas": "FAIL",
+      "Filters inside a link whose :visited color matches unvisited do not taint": "FAIL",
+      "feDiffuseLighting with :visited color taints 2D canvas": "FAIL",
+      "feDropShadow with :visited color taints 2D canvas": "FAIL",
+      "feFlood with :visited color taints 2D canvas": "FAIL",
+      "feSpecularLighting with :visited color taints 2D canvas": "FAIL"
+    }
   },
   "html/canvas/element/manual/filters/svg-flood-filter-visited-color-taints.html": {
     "total": 1,
@@ -4146,6 +4272,29 @@
       "Generic-CMYK-FF000000.jpg, Context display-p3, ImageData display-p3": "FAIL"
     }
   },
+  "html/canvas/element/manual/wide-gamut-canvas/encode-hdr.html": {
+    "total": 18,
+    "failures": {
+      "convertToBlob image/jpeg toneMapping=extended": "FAIL",
+      "convertToBlob image/jpeg toneMapping=standard": "FAIL",
+      "convertToBlob image/png toneMapping=extended": "FAIL",
+      "convertToBlob image/png toneMapping=standard": "FAIL",
+      "convertToBlob image/webp toneMapping=extended": "FAIL",
+      "convertToBlob image/webp toneMapping=standard": "FAIL",
+      "toBlob image/jpeg toneMapping=extended": "FAIL",
+      "toBlob image/jpeg toneMapping=standard": "FAIL",
+      "toBlob image/png toneMapping=extended": "FAIL",
+      "toBlob image/png toneMapping=standard": "FAIL",
+      "toBlob image/webp toneMapping=extended": "FAIL",
+      "toBlob image/webp toneMapping=standard": "FAIL",
+      "toDataURL image/jpeg toneMapping=extended": "FAIL",
+      "toDataURL image/jpeg toneMapping=standard": "FAIL",
+      "toDataURL image/png toneMapping=extended": "FAIL",
+      "toDataURL image/png toneMapping=standard": "FAIL",
+      "toDataURL image/webp toneMapping=extended": "FAIL",
+      "toDataURL image/webp toneMapping=standard": "FAIL"
+    }
+  },
   "html/canvas/element/path-objects/2d.path.arc.angle.1.html": {
     "total": 1
   },
@@ -4413,6 +4562,18 @@
   "html/canvas/element/path-objects/2d.path.isPointInPath.empty.html": {
     "total": 1
   },
+  "html/canvas/element/path-objects/2d.path.isPointInPath.nobitmap.html": {
+    "total": 1
+  },
+  "html/canvas/element/path-objects/2d.path.isPointInPath.nobitmap.path2d.html": {
+    "total": 1
+  },
+  "html/canvas/element/path-objects/2d.path.isPointInPath.nobitmap.transform.html": {
+    "total": 1
+  },
+  "html/canvas/element/path-objects/2d.path.isPointInPath.nobitmap.winding.html": {
+    "total": 1
+  },
   "html/canvas/element/path-objects/2d.path.isPointInPath.nonfinite.html": {
     "total": 1
   },
@@ -4438,6 +4599,15 @@
     "total": 1
   },
   "html/canvas/element/path-objects/2d.path.isPointInPath.winding.html": {
+    "total": 1
+  },
+  "html/canvas/element/path-objects/2d.path.isPointInStroke.nobitmap.html": {
+    "total": 1
+  },
+  "html/canvas/element/path-objects/2d.path.isPointInStroke.nobitmap.path2d.html": {
+    "total": 1
+  },
+  "html/canvas/element/path-objects/2d.path.isPointInStroke.nobitmap.transform.html": {
     "total": 1
   },
   "html/canvas/element/path-objects/2d.path.isPointInStroke.scaleddashes.html": {
@@ -5292,6 +5462,9 @@
   "html/canvas/element/text/2d.text.direction.valid.html": {
     "total": 1
   },
+  "html/canvas/element/text/2d.text.draw.align.center.complex-shaping.html": {
+    "total": 2
+  },
   "html/canvas/element/text/2d.text.draw.align.center.html": {
     "total": 1
   },
@@ -5507,6 +5680,12 @@
   },
   "html/canvas/element/text/2d.text.lang.valid.html": {
     "total": 1
+  },
+  "html/canvas/element/text/2d.text.measure.actualBoundingBox.combining-mark-offset.html": {
+    "total": 1,
+    "failures": {
+      "measureText() bounding box ascent and descent include the offset of combining marks": "FAIL"
+    }
   },
   "html/canvas/element/text/2d.text.measure.actualBoundingBox.html": {
     "total": 1
@@ -5777,6 +5956,12 @@
     "reftest": "PASS"
   },
   "html/canvas/element/text/direction-rtl.html": {
+    "reftest": "PASS"
+  },
+  "html/canvas/element/text/fillText-bidi-ltr.html": {
+    "reftest": "PASS"
+  },
+  "html/canvas/element/text/fillText-bidi-rtl.html": {
     "reftest": "PASS"
   },
   "html/canvas/element/text/parent-style-relative-units.html": {
@@ -8550,6 +8735,12 @@
   "html/canvas/offscreen/fill-and-stroke-styles/2d.gradient.radial.transform.3.worker.js": {
     "total": 1
   },
+  "html/canvas/offscreen/fill-and-stroke-styles/2d.gradient.radial.transform.translated.repeat.html": {
+    "reftest": "PASS"
+  },
+  "html/canvas/offscreen/fill-and-stroke-styles/2d.gradient.radial.transform.translated.repeat.w.html": {
+    "reftest": "PASS"
+  },
   "html/canvas/offscreen/fill-and-stroke-styles/2d.gradient.relativecolor.html": {
     "total": 1,
     "failures": {
@@ -10583,6 +10774,30 @@
   "html/canvas/offscreen/path-objects/2d.path.isPointInPath.empty.worker.js": {
     "total": 1
   },
+  "html/canvas/offscreen/path-objects/2d.path.isPointInPath.nobitmap.html": {
+    "total": 1
+  },
+  "html/canvas/offscreen/path-objects/2d.path.isPointInPath.nobitmap.path2d.html": {
+    "total": 1
+  },
+  "html/canvas/offscreen/path-objects/2d.path.isPointInPath.nobitmap.path2d.worker.js": {
+    "total": 1
+  },
+  "html/canvas/offscreen/path-objects/2d.path.isPointInPath.nobitmap.transform.html": {
+    "total": 1
+  },
+  "html/canvas/offscreen/path-objects/2d.path.isPointInPath.nobitmap.transform.worker.js": {
+    "total": 1
+  },
+  "html/canvas/offscreen/path-objects/2d.path.isPointInPath.nobitmap.winding.html": {
+    "total": 1
+  },
+  "html/canvas/offscreen/path-objects/2d.path.isPointInPath.nobitmap.winding.worker.js": {
+    "total": 1
+  },
+  "html/canvas/offscreen/path-objects/2d.path.isPointInPath.nobitmap.worker.js": {
+    "total": 1
+  },
   "html/canvas/offscreen/path-objects/2d.path.isPointInPath.nonfinite.html": {
     "total": 1
   },
@@ -10641,6 +10856,24 @@
     "total": 1
   },
   "html/canvas/offscreen/path-objects/2d.path.isPointInStroke.basic.worker.js": {
+    "total": 1
+  },
+  "html/canvas/offscreen/path-objects/2d.path.isPointInStroke.nobitmap.html": {
+    "total": 1
+  },
+  "html/canvas/offscreen/path-objects/2d.path.isPointInStroke.nobitmap.path2d.html": {
+    "total": 1
+  },
+  "html/canvas/offscreen/path-objects/2d.path.isPointInStroke.nobitmap.path2d.worker.js": {
+    "total": 1
+  },
+  "html/canvas/offscreen/path-objects/2d.path.isPointInStroke.nobitmap.transform.html": {
+    "total": 1
+  },
+  "html/canvas/offscreen/path-objects/2d.path.isPointInStroke.nobitmap.transform.worker.js": {
+    "total": 1
+  },
+  "html/canvas/offscreen/path-objects/2d.path.isPointInStroke.nobitmap.worker.js": {
     "total": 1
   },
   "html/canvas/offscreen/path-objects/2d.path.isPointInStroke.scaleddashes.html": {
@@ -12928,7 +13161,10 @@
     "total": 1
   },
   "html/canvas/offscreen/text/2d.text.measure.lang.inherit.html": {
-    "total": 1
+    "total": 1,
+    "failures": {
+      "Testing the lang attribute": "FAIL"
+    }
   },
   "html/canvas/offscreen/text/2d.text.measure.lang.worker.js": {
     "total": 1

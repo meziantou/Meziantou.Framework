@@ -1754,6 +1754,21 @@
   "css/css-text/line-break/line-break-normal-hyphens-003.html": {
     "reftest": "PASS"
   },
+  "css/css-text/line-break/line-break-quotation-double-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/line-break/line-break-quotation-double-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/line-break/line-break-quotation-double-cjk-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/line-break/line-break-quotation-double-cjk-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/line-break/line-break-quotation-double-cjk-003.html": {
+    "reftest": "PASS"
+  },
   "css/css-text/line-break/line-break-shaping-001.html": {
     "reftest": "PASS"
   },
@@ -2604,6 +2619,15 @@
   "css/css-text/parsing/white-space-shorthand.html": {
     "total": 45
   },
+  "css/css-text/parsing/white-space-trim-computed.html": {
+    "total": 7
+  },
+  "css/css-text/parsing/white-space-trim-invalid.html": {
+    "total": 7
+  },
+  "css/css-text/parsing/white-space-trim-valid.html": {
+    "total": 11
+  },
   "css/css-text/parsing/white-space-valid.html": {
     "total": 6
   },
@@ -2937,6 +2961,9 @@
   "css/css-text/text-align/text-align-justify-bidi-control.html": {
     "reftest": "PASS"
   },
+  "css/css-text/text-align/text-align-justify-block-in-inline.html": {
+    "reftest": "PASS"
+  },
   "css/css-text/text-align/text-align-justify-last-center.html": {
     "reftest": "PASS"
   },
@@ -3008,6 +3035,9 @@
   },
   "css/css-text/text-align/text-align-last-interpolation.html": {
     "total": 168
+  },
+  "css/css-text/text-align/text-align-last-justify-block-in-inline.html": {
+    "reftest": "PASS"
   },
   "css/css-text/text-align/text-align-last-justify-br.html": {
     "reftest": "PASS"
@@ -3383,6 +3413,9 @@
   },
   "css/css-text/text-indent/text-indent-dynamic-hanging-002.html": {
     "reftest": "PASS"
+  },
+  "css/css-text/text-indent/text-indent-each-line-after-block-level-box.html": {
+    "reftest": "FAIL"
   },
   "css/css-text/text-indent/text-indent-each-line-hanging.html": {
     "reftest": "PASS"
@@ -3881,6 +3914,9 @@
   },
   "css/css-text/text-transform/text-transform-fullwidth-010.html": {
     "reftest": "PASS"
+  },
+  "css/css-text/text-transform/text-transform-georgian.html": {
+    "total": 8
   },
   "css/css-text/text-transform/text-transform-letter-spacing-001.html": {
     "reftest": "PASS"
@@ -5205,6 +5241,9 @@
   "css/css-text/white-space/trailing-space-and-text-alignment-rtl-005.html": {
     "reftest": "PASS"
   },
+  "css/css-text/white-space/trailing-space-before-block-in-inline-001.html": {
+    "total": 4
+  },
   "css/css-text/white-space/trailing-space-before-br-001.html": {
     "total": 8
   },
@@ -5391,8 +5430,62 @@
   "css/css-text/white-space/white-space-pre-wrap-trailing-spaces-023.html": {
     "reftest": "PASS"
   },
+  "css/css-text/white-space/white-space-trim-atomic-inline.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/white-space/white-space-trim-block-in-inline.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/white-space/white-space-trim-break-spaces.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/white-space/white-space-trim-content.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/white-space/white-space-trim-discard-after.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/white-space/white-space-trim-discard-before-after.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/white-space/white-space-trim-discard-before.html": {
+    "reftest": "PASS"
+  },
   "css/css-text/white-space/white-space-trim-discard-inner-001.xht": {
     "reftest": "FAIL"
+  },
+  "css/css-text/white-space/white-space-trim-discard-inner.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-text/white-space/white-space-trim-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/white-space/white-space-trim-generated-content.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/white-space/white-space-trim-inline-block-dynamic.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-text/white-space/white-space-trim-inline-block.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-text/white-space/white-space-trim-interaction.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/white-space/white-space-trim-intrinsic-width.html": {
+    "total": 8
+  },
+  "css/css-text/white-space/white-space-trim-nested.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/white-space/white-space-trim-rtl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/white-space/white-space-trim-white-space.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/white-space/white-space-trim-wrap.html": {
+    "reftest": "PASS"
   },
   "css/css-text/white-space/white-space-vs-joiners-001.html": {
     "reftest": "PASS"
@@ -5882,6 +5975,78 @@
   },
   "css/css-text/word-spacing/word-spacing-percent-001.html": {
     "reftest": "PASS"
+  },
+  "css/css-text/wrap-inside/wrap-inside-auto.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/wrap-inside/wrap-inside-avoid-block-child.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-text/wrap-inside/wrap-inside-avoid-break-all.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-text/wrap-inside/wrap-inside-avoid-break-before-then-inside.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-text/wrap-inside/wrap-inside-avoid-dynamic.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-text/wrap-inside/wrap-inside-avoid-forced-break.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/wrap-inside/wrap-inside-avoid-inline-block-child.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-text/wrap-inside/wrap-inside-avoid-inline-flex-child.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-text/wrap-inside/wrap-inside-avoid-inline-grid-child.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-text/wrap-inside/wrap-inside-avoid-inline-table-child.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-text/wrap-inside/wrap-inside-avoid-keeps-box-together.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-text/wrap-inside/wrap-inside-avoid-last-resort.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/wrap-inside/wrap-inside-avoid-line-break-anywhere.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-text/wrap-inside/wrap-inside-avoid-nested-auto.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-text/wrap-inside/wrap-inside-avoid-nested-deep.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-text/wrap-inside/wrap-inside-avoid-nested-only.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-text/wrap-inside/wrap-inside-avoid-nested.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-text/wrap-inside/wrap-inside-avoid-nowrap-child.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/wrap-inside/wrap-inside-avoid-nowrap.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/wrap-inside/wrap-inside-avoid-overflow-wrap.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/wrap-inside/wrap-inside-avoid-removed-dynamic.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/wrap-inside/wrap-inside-avoid-siblings.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-text/wrap-inside/wrap-inside-avoid-single-word.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text/wrap-inside/wrap-inside-computed.html": {
+    "total": 6
   },
   "css/css-text/writing-system/writing-system-font-001.html": {
     "reftest": "PASS"

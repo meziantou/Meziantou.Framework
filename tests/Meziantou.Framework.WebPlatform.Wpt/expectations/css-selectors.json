@@ -2483,6 +2483,9 @@
   "css/selectors/x-pseudo-element.html": {
     "total": 1
   },
+  "css/selectors/xml-class-selector-combinators.xml": {
+    "total": 4
+  },
   "css/selectors/xml-class-selector.xml": {
     "reftest": "PASS"
   }

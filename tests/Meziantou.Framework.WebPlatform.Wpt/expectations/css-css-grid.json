@@ -120,7 +120,7 @@
     "reftest": "PASS"
   },
   "css/css-grid/abspos/grid-abspos-staticpos-align-self-safe-001.html": {
-    "reftest": "PASS"
+    "reftest": "FAIL"
   },
   "css/css-grid/abspos/grid-abspos-staticpos-align-self-safe-outer-cb-001.tentative.html": {
     "reftest": "PASS"
@@ -2084,6 +2084,9 @@
   "css/css-grid/firefox-bug-1881495.html": {
     "reftest": "PASS"
   },
+  "css/css-grid/firefox-bug-2084787.html": {
+    "total": 1
+  },
   "css/css-grid/grid-calc-margin.html": {
     "reftest": "PASS"
   },
@@ -2159,8 +2162,26 @@
   "css/css-grid/grid-definition/grid-auto-fill-rows-001.html": {
     "total": 35
   },
+  "css/css-grid/grid-definition/grid-auto-fit-collapsed-gutters-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-definition/grid-auto-fit-collapsed-rows-001.html": {
+    "reftest": "PASS"
+  },
   "css/css-grid/grid-definition/grid-auto-fit-columns-001.html": {
     "total": 35
+  },
+  "css/css-grid/grid-definition/grid-auto-fit-empty-repeat-range-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-definition/grid-auto-fit-fewer-items-than-tracks-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-definition/grid-auto-fit-implicit-and-spanning-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-definition/grid-auto-fit-intrinsic-collapsed-001.html": {
+    "reftest": "PASS"
   },
   "css/css-grid/grid-definition/grid-auto-fit-rows-001.html": {
     "total": 33
@@ -2675,6 +2696,9 @@
   },
   "css/css-grid/grid-items/grid-item-min-auto-size-001.html": {
     "total": 4
+  },
+  "css/css-grid/grid-items/grid-item-min-block-size-dynamic-container-shrink-001.html": {
+    "total": 1
   },
   "css/css-grid/grid-items/grid-item-min-contribution-behaves-as-auto-001.html": {
     "total": 2
@@ -3213,6 +3237,18 @@
   "css/css-grid/grid-lanes/abspos/column-grid-lanes-oof-justify-content-001.html": {
     "reftest": "PASS"
   },
+  "css/css-grid/grid-lanes/abspos/column-grid-lanes-oof-track-reverse-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-grid/grid-lanes/abspos/column-grid-lanes-oof-track-reverse-002.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-grid/grid-lanes/abspos/column-grid-lanes-oof-track-reverse-003.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-grid/grid-lanes/abspos/column-grid-lanes-oof-track-reverse-rtl-001.html": {
+    "reftest": "FAIL"
+  },
   "css/css-grid/grid-lanes/abspos/column-grid-lanes-out-of-flow-001.html": {
     "reftest": "PASS"
   },
@@ -3251,6 +3287,18 @@
   },
   "css/css-grid/grid-lanes/abspos/row-grid-lanes-oof-justify-content-002.html": {
     "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/abspos/row-grid-lanes-oof-track-reverse-001.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-grid/grid-lanes/abspos/row-grid-lanes-oof-track-reverse-002.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-grid/grid-lanes/abspos/row-grid-lanes-oof-track-reverse-003.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-grid/grid-lanes/abspos/row-grid-lanes-oof-track-reverse-rtl-001.html": {
+    "reftest": "FAIL"
   },
   "css/css-grid/grid-lanes/abspos/row-grid-lanes-out-of-flow-001.html": {
     "reftest": "PASS"
@@ -4179,6 +4227,15 @@
   "css/css-grid/grid-lanes/item-placement/dense-packing/column-dense-packing-008.html": {
     "reftest": "PASS"
   },
+  "css/css-grid/grid-lanes/item-placement/dense-packing/column-dense-packing-fit-tolerance-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/item-placement/dense-packing/column-dense-packing-fit-tolerance-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/item-placement/dense-packing/column-dense-packing-fit-tolerance-003.html": {
+    "reftest": "PASS"
+  },
   "css/css-grid/grid-lanes/item-placement/dense-packing/column-dense-packing-flow-tolerance-001.html": {
     "reftest": "PASS"
   },
@@ -4227,10 +4284,19 @@
   "css/css-grid/grid-lanes/item-placement/dense-packing/column-fill-reverse-dense-packing-definite-size-001.html": {
     "reftest": "PASS"
   },
+  "css/css-grid/grid-lanes/item-placement/dense-packing/column-fill-reverse-dense-packing-fit-tolerance-001.html": {
+    "reftest": "PASS"
+  },
   "css/css-grid/grid-lanes/item-placement/dense-packing/column-fill-reverse-dense-packing-flow-tolerance-001.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/item-placement/dense-packing/column-fill-reverse-dense-packing-indefinite-size-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/item-placement/dense-packing/column-track-reverse-dense-packing-fit-tolerance-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/item-placement/dense-packing/column-track-reverse-dense-packing-fit-tolerance-002.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/item-placement/dense-packing/column-track-reverse-dense-packing-flow-tolerance-001.html": {
@@ -4249,6 +4315,15 @@
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/item-placement/dense-packing/row-dense-packing-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/item-placement/dense-packing/row-dense-packing-fit-tolerance-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/item-placement/dense-packing/row-dense-packing-fit-tolerance-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/item-placement/dense-packing/row-dense-packing-fit-tolerance-003.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/item-placement/dense-packing/row-dense-packing-flow-tolerance-001.html": {
@@ -4284,10 +4359,67 @@
   "css/css-grid/grid-lanes/item-placement/dense-packing/row-fill-reverse-dense-packing-indefinite-size-001.html": {
     "reftest": "PASS"
   },
+  "css/css-grid/grid-lanes/item-placement/dense-packing/row-track-reverse-dense-packing-fit-tolerance-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/item-placement/dense-packing/row-track-reverse-dense-packing-fit-tolerance-002.html": {
+    "reftest": "PASS"
+  },
   "css/css-grid/grid-lanes/item-placement/dense-packing/row-track-reverse-dense-packing-flow-tolerance-001.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/item-placement/dense-packing/row-track-reverse-dense-packing-flow-tolerance-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/item-placement/fit-tolerance/column-fit-tolerance-infinite.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/item-placement/fit-tolerance/column-initial-fit-tolerance.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/item-placement/fit-tolerance/fit-tolerance-column-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/item-placement/fit-tolerance/fit-tolerance-column-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/item-placement/fit-tolerance/fit-tolerance-column-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/item-placement/fit-tolerance/fit-tolerance-column-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/item-placement/fit-tolerance/fit-tolerance-dynamic-update.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/item-placement/fit-tolerance/fit-tolerance-percentage-column-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/item-placement/fit-tolerance/fit-tolerance-percentage-intrinsic-column-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/item-placement/fit-tolerance/fit-tolerance-percentage-intrinsic-row-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/item-placement/fit-tolerance/fit-tolerance-percentage-row-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/item-placement/fit-tolerance/fit-tolerance-row-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/item-placement/fit-tolerance/fit-tolerance-row-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/item-placement/fit-tolerance/fit-tolerance-row-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/item-placement/fit-tolerance/fit-tolerance-row-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/item-placement/fit-tolerance/row-fit-tolerance-infinite.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-lanes/item-placement/fit-tolerance/row-initial-fit-tolerance.html": {
     "reftest": "PASS"
   },
   "css/css-grid/grid-lanes/item-placement/flow-tolerance/column-fit-tolerance-infinite-explicit-placement.html": {
@@ -5568,6 +5700,15 @@
   "css/css-grid/grid-lanes/tentative/item-placement/row-reverse-dense-packing-multi-span-005.html": {
     "reftest": "PASS"
   },
+  "css/css-grid/grid-lanes/tentative/parsing/fit-tolerance-computed.html": {
+    "total": 7
+  },
+  "css/css-grid/grid-lanes/tentative/parsing/fit-tolerance-invalid.html": {
+    "total": 12
+  },
+  "css/css-grid/grid-lanes/tentative/parsing/fit-tolerance-valid.html": {
+    "total": 8
+  },
   "css/css-grid/grid-lanes/tentative/parsing/flow-tolerance-computed.html": {
     "total": 7
   },
@@ -6366,6 +6507,12 @@
   "css/css-grid/grid-model/grid-item-accepts-first-line-001.html": {
     "total": 2
   },
+  "css/css-grid/grid-model/grid-item-first-line-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-grid/grid-model/grid-item-first-line-002.html": {
+    "reftest": "PASS"
+  },
   "css/css-grid/grid-model/grid-item-hit-test.html": {
     "total": 1
   },
@@ -6546,6 +6693,9 @@
   "css/css-grid/layout-algorithm/flex-sizing-rows-min-max-height-001.html": {
     "total": 12
   },
+  "css/css-grid/layout-algorithm/flex-sizing-rows-min-max-height-002.html": {
+    "total": 14
+  },
   "css/css-grid/layout-algorithm/flex-sizing-rows-min-max-height-border-box-001.html": {
     "total": 6
   },
@@ -6578,6 +6728,9 @@
   },
   "css/css-grid/layout-algorithm/grid-auto-columns-content-resolution-001.html": {
     "total": 3
+  },
+  "css/css-grid/layout-algorithm/grid-auto-row-regrows-after-container-height-shrinks-001.html": {
+    "total": 1
   },
   "css/css-grid/layout-algorithm/grid-auto-rows-content-resolution-001.html": {
     "total": 3
@@ -7487,6 +7640,9 @@
   },
   "css/css-grid/subgrid/subgrid-button.html": {
     "reftest": "PASS"
+  },
+  "css/css-grid/subgrid/subgrid-item-aspect-ratio-001.html": {
+    "total": 3
   },
   "css/css-grid/subgrid/subgrid-item-block-size-001.html": {
     "reftest": "PASS"

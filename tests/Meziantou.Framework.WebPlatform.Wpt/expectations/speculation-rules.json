@@ -74,6 +74,14 @@
   "speculation-rules/prefetch/document-rules-pending-stylesheet.https.html": {
     "total": 1
   },
+  "speculation-rules/prefetch/document-rules-visibility.https.html": {
+    "harness": "ERROR",
+    "total": 6,
+    "failures": {
+      "test that empty link with display:contents is NOT prefetched": "TIMEOUT",
+      "test that link with display:contents and only hidden children is NOT prefetched": "NOTRUN"
+    }
+  },
   "speculation-rules/prefetch/document-rules.https.html?include=and": {
     "total": 1
   },
@@ -211,6 +219,20 @@
   },
   "speculation-rules/prefetch/navigation-timing-sizes.https.html?prefetch=true&bypass_cache=true": {
     "total": 1
+  },
+  "speculation-rules/prefetch/no-http-cache-interference-inflight.https.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Navigation should not use an in-flight prefetch response that returns 503.": "TIMEOUT"
+    }
+  },
+  "speculation-rules/prefetch/no-http-cache-interference-slow-error.https.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Navigation should not reuse a prefetch with 503 response headers while body is still loading.": "TIMEOUT"
+    }
   },
   "speculation-rules/prefetch/no-http-cache-interference.https.html": {
     "total": 1
@@ -435,6 +457,9 @@
     "total": 1
   },
   "speculation-rules/prefetch/out-of-document-rule-set.https.html?include=UseNonUTF8EncodingForSpeculationRulesSet": {
+    "total": 1
+  },
+  "speculation-rules/prefetch/prefetch-inflight-success.https.html": {
     "total": 1
   },
   "speculation-rules/prefetch/prefetch-single.https.html?from_protocol=http&to_protocol=http": {
@@ -1606,8 +1631,8 @@
     "harness": "TIMEOUT",
     "total": 2,
     "failures": {
-      "it is allowed to access the notification API in the prerenderingchange\n    event": "TIMEOUT",
-      "Displaying Notification should be deferred until the prerendered page is\n activated": "NOTRUN"
+      "Displaying Notification should be deferred until the prerendered page is\n activated": "NOTRUN",
+      "it is allowed to access the notification API in the prerenderingchange\n    event": "TIMEOUT"
     }
   },
   "speculation-rules/prerender/restriction-presentation-request.https.html": {

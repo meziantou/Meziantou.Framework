@@ -132,6 +132,9 @@
   "uievents/mouse/mouseenter-mouseleave-on-drag.html": {
     "total": 3
   },
+  "uievents/mouse/mouseevent-constructor-button-range.html": {
+    "total": 59
+  },
   "uievents/mouse/mouseevent_move_button.html": {
     "total": 1
   },

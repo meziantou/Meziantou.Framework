@@ -215,6 +215,18 @@
   "css/css-display/display-contents-svg-switch-child.html": {
     "total": 1
   },
+  "css/css-display/display-contents-svg-tspan-child-character-positions.html": {
+    "total": 1
+  },
+  "css/css-display/display-contents-svg-tspan-child-display-changed.html": {
+    "total": 1
+  },
+  "css/css-display/display-contents-svg-tspan-child-removed.html": {
+    "total": 1
+  },
+  "css/css-display/display-contents-svg-tspan-child-text-inserted.html": {
+    "total": 1
+  },
   "css/css-display/display-contents-table-001.html": {
     "reftest": "PASS"
   },
@@ -328,6 +340,24 @@
   },
   "css/css-display/parsing/tentative/display-valid.html": {
     "total": 6
+  },
+  "css/css-display/reading-flow/reading-flow-computed.html": {
+    "total": 7
+  },
+  "css/css-display/reading-flow/reading-flow-invalid.html": {
+    "total": 9
+  },
+  "css/css-display/reading-flow/reading-flow-valid.html": {
+    "total": 7
+  },
+  "css/css-display/reading-flow/reading-order-computed.html": {
+    "total": 4
+  },
+  "css/css-display/reading-flow/reading-order-invalid.html": {
+    "total": 9
+  },
+  "css/css-display/reading-flow/reading-order-valid.html": {
+    "total": 4
   },
   "css/css-display/reading-flow/tentative/reading-flow-computed.html": {
     "total": 7

@@ -76,6 +76,15 @@
   "css/css-fonts/cjk-kerning.html": {
     "total": 9
   },
+  "css/css-fonts/cluster-matching-canonical-equivalence-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/cluster-matching-canonical-equivalence-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/cluster-matching-canonical-equivalence-003.html": {
+    "reftest": "PASS"
+  },
   "css/css-fonts/crash-font-face-invalid-descriptor.html": {
     "total": 1
   },
@@ -188,6 +197,12 @@
     "reftest": "PASS"
   },
   "css/css-fonts/font-face-unicode-range-nbsp.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-face-unicode-range-no-match-no-download.html": {
+    "total": 1
+  },
+  "css/css-fonts/font-face-unicode-range-stretch-isolation.html": {
     "reftest": "PASS"
   },
   "css/css-fonts/font-face-weight-auto-static.html": {
@@ -458,6 +473,9 @@
     "reftest": "PASS"
   },
   "css/css-fonts/font-palette-empty-font-family.html": {
+    "reftest": "PASS"
+  },
+  "css/css-fonts/font-palette-mix.html": {
     "reftest": "PASS"
   },
   "css/css-fonts/font-palette-modify-2.html": {
@@ -1020,6 +1038,9 @@
   },
   "css/css-fonts/generic-family-keywords-003.html": {
     "total": 15
+  },
+  "css/css-fonts/generic-family-lang-attr-cascade.html": {
+    "reftest": "FAIL"
   },
   "css/css-fonts/getComputedStyle-fontFamily.html": {
     "total": 2

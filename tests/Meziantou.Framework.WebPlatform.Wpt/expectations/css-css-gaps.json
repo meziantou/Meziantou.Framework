@@ -284,6 +284,9 @@
   "css/css-gaps/flex/flex-gap-decorations-069.html": {
     "reftest": "PASS"
   },
+  "css/css-gaps/flex/flex-gap-decorations-070.html": {
+    "reftest": "PASS"
+  },
   "css/css-gaps/flex/flex-gap-decorations-auto-repeat-flex-direction-reverse.html": {
     "reftest": "PASS"
   },
@@ -720,12 +723,15 @@
     "reftest": "PASS"
   },
   "css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-between-015.html": {
-    "reftest": "PASS"
+    "reftest": "FAIL"
   },
   "css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-between-016.html": {
     "reftest": "FAIL"
   },
   "css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-between-017.html": {
+    "reftest": "PASS"
+  },
+  "css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-between-018.html": {
     "reftest": "PASS"
   },
   "css/css-gaps/grid-lanes/column-gap-decorations-rule-visibility-items-empty-all.html": {

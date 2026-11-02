@@ -104,25 +104,25 @@
   "performance-timeline/not-restored-reasons/performance-navigation-timing-attributes.tentative.window.js": {
     "total": 1,
     "failures": {
-      "RemoteContextHelper navigation using BFCache": "FAIL"
+      "Ensure that empty attributes are reported as empty strings and missing attributes are reported as null.": "FAIL"
     }
   },
   "performance-timeline/not-restored-reasons/performance-navigation-timing-bfcache-reasons-stay.tentative.window.js": {
     "total": 1,
     "failures": {
-      "RemoteContextHelper navigation using BFCache": "FAIL"
+      "Ensure that notRestoredReasons are only updated after non BFCache navigation.": "FAIL"
     }
   },
   "performance-timeline/not-restored-reasons/performance-navigation-timing-bfcache.tentative.window.js": {
     "total": 1,
     "failures": {
-      "RemoteContextHelper navigation using BFCache": "FAIL"
+      "Ensure that notRestoredReasons is empty for successful BFCache restore.": "FAIL"
     }
   },
   "performance-timeline/not-restored-reasons/performance-navigation-timing-cross-origin-bfcache.tentative.window.js": {
     "total": 1,
     "failures": {
-      "RemoteContextHelper navigation using BFCache": "FAIL"
+      "Ensure that cross-origin subtree's reasons are not exposed to notRestoredReasons.": "FAIL"
     }
   },
   "performance-timeline/not-restored-reasons/performance-navigation-timing-fetch.tentative.window.js": {
@@ -134,7 +134,7 @@
   "performance-timeline/not-restored-reasons/performance-navigation-timing-iframes-without-attributes.tentative.window.js": {
     "total": 1,
     "failures": {
-      "RemoteContextHelper navigation using BFCache": "FAIL"
+      "Ensure that empty attributes are reported as empty strings and missing attributes are reported as null": "FAIL"
     }
   },
   "performance-timeline/not-restored-reasons/performance-navigation-timing-navigation-failure.tentative.window.js": {
@@ -143,31 +143,31 @@
   "performance-timeline/not-restored-reasons/performance-navigation-timing-not-bfcached.tentative.window.js": {
     "total": 1,
     "failures": {
-      "RemoteContextHelper navigation using BFCache": "FAIL"
+      "Ensure that notRestoredReasons is populated when not restored.": "FAIL"
     }
   },
   "performance-timeline/not-restored-reasons/performance-navigation-timing-redirect-on-history.tentative.window.js": {
     "total": 1,
     "failures": {
-      "RemoteContextHelper navigation using BFCache": "FAIL"
+      "Ensure that notRestoredReasons reset after the server redirect.": "FAIL"
     }
   },
   "performance-timeline/not-restored-reasons/performance-navigation-timing-reload.tentative.window.js": {
     "total": 1,
     "failures": {
-      "RemoteContextHelper navigation using BFCache": "FAIL"
+      "Ensure that notRestoredReasons reset after a reload": "FAIL"
     }
   },
   "performance-timeline/not-restored-reasons/performance-navigation-timing-same-origin-bfcache.tentative.window.js": {
     "total": 1,
     "failures": {
-      "RemoteContextHelper navigation using BFCache": "FAIL"
+      "Ensure that same-origin subtree's reasons are exposed to notRestoredReasons.": "FAIL"
     }
   },
   "performance-timeline/not-restored-reasons/performance-navigation-timing-same-origin-replace.tentative.window.js": {
     "total": 1,
     "failures": {
-      "RemoteContextHelper navigation using BFCache": "FAIL"
+      "Ensure that notRestoredReasons are accessible after history replace.": "FAIL"
     }
   },
   "performance-timeline/observer-buffered-false.any.js": {

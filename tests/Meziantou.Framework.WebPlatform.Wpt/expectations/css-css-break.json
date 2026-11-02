@@ -290,6 +290,14 @@
   "css/css-break/box-decoration-break-clone-037.html": {
     "reftest": "PASS"
   },
+  "css/css-break/box-decoration-break-clone-block-in-inline-001.html": {
+    "total": 5,
+    "failures": {
+      "An empty inline box between two block level boxes does not add a line": "FAIL",
+      "The empty inline box between the two block level boxes has no size": "FAIL",
+      "Two block level boxes with only an empty inline box in-between are adjacent": "FAIL"
+    }
+  },
   "css/css-break/box-decoration-break-clone-inline-001.html": {
     "reftest": "PASS"
   },
@@ -3018,6 +3026,12 @@
     "reftest": "PASS"
   },
   "css/css-break/table/oof-in-cell-with-alignment-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/table/oof-static-pos-percentage-height-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-break/table/oof-static-pos-percentage-height-002.html": {
     "reftest": "PASS"
   },
   "css/css-break/table/overflow-scroll-row.html": {

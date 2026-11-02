@@ -50,6 +50,9 @@
   "css/css-viewport/zoom/box-shadow.html": {
     "reftest": "PASS"
   },
+  "css/css-viewport/zoom/calc-computed.html": {
+    "total": 2
+  },
   "css/css-viewport/zoom/canvas.html": {
     "reftest": "PASS"
   },
@@ -163,6 +166,9 @@
   },
   "css/css-viewport/zoom/filters-drop-shadow.html": {
     "reftest": "PASS"
+  },
+  "css/css-viewport/zoom/flex-item-margin.html": {
+    "total": 4
   },
   "css/css-viewport/zoom/font-relative-units-with-zoom.html": {
     "total": 7

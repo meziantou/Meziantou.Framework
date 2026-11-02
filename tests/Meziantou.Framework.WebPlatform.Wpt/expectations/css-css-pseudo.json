@@ -96,7 +96,7 @@
     "reftest": "PASS"
   },
   "css/css-pseudo/before-as-flex-container.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-pseudo/before-dynamic-display-none.html": {
     "reftest": "PASS"
@@ -181,6 +181,18 @@
   "css/css-pseudo/first-letter-background-image.html": {
     "reftest": "PASS"
   },
+  "css/css-pseudo/first-letter-before-dynamic-multi.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-before-dynamic-on-block.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-before-dynamic-punctuation.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-before-dynamic.html": {
+    "reftest": "PASS"
+  },
   "css/css-pseudo/first-letter-block-to-inline.html": {
     "reftest": "PASS"
   },
@@ -206,6 +218,9 @@
     "reftest": "PASS"
   },
   "css/css-pseudo/first-letter-exclude-inline-marker.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-letter-float-insert-text-before.html": {
     "reftest": "PASS"
   },
   "css/css-pseudo/first-letter-hi-001.html": {
@@ -353,6 +368,9 @@
     "reftest": "PASS"
   },
   "css/css-pseudo/first-line-with-out-of-flow.html": {
+    "reftest": "PASS"
+  },
+  "css/css-pseudo/first-line-with-quote.html": {
     "reftest": "PASS"
   },
   "css/css-pseudo/focus-visible-originating-element.html": {

@@ -47,6 +47,12 @@
   "css/css-tables/absolute-tables-016.html": {
     "reftest": "PASS"
   },
+  "css/css-tables/absolute-tables-height-001.html": {
+    "total": 11
+  },
+  "css/css-tables/absolute-tables-height-quirks-001.html": {
+    "total": 1
+  },
   "css/css-tables/abspos-container-change-dynamic-001.html": {
     "reftest": "PASS"
   },
@@ -154,6 +160,9 @@
   },
   "css/css-tables/col_removal.html": {
     "total": 1
+  },
+  "css/css-tables/collapsed-border-background-inset.html": {
+    "reftest": "FAIL"
   },
   "css/css-tables/collapsed-border-color-change-with-compositing.html": {
     "reftest": "PASS"
@@ -614,6 +623,12 @@
   "css/css-tables/table-has-box-sizing-border-box-002.html": {
     "reftest": "PASS"
   },
+  "css/css-tables/table-height-distribution-proportional.html": {
+    "total": 2
+  },
+  "css/css-tables/table-height-distribution-with-border-spacing.html": {
+    "reftest": "PASS"
+  },
   "css/css-tables/table-intrinsic-size-001.html": {
     "reftest": "PASS"
   },
@@ -640,6 +655,9 @@
   },
   "css/css-tables/table-row-group-nested-anonymous-001.html": {
     "reftest": "PASS"
+  },
+  "css/css-tables/table-stretch-in-flex-and-grid.html": {
+    "total": 6
   },
   "css/css-tables/table_grid_size_col_colspan.html": {
     "reftest": "PASS"

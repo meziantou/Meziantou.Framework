@@ -119,6 +119,12 @@
   "webvtt/parsing/file-parsing/tests/header-timings.html": {
     "total": 1
   },
+  "webvtt/parsing/file-parsing/tests/ids-across-region-block.html": {
+    "total": 1
+  },
+  "webvtt/parsing/file-parsing/tests/ids-across-style-block.html": {
+    "total": 1
+  },
   "webvtt/parsing/file-parsing/tests/ids.html": {
     "total": 1
   },
@@ -279,7 +285,7 @@
     "reftest": "FAIL"
   },
   "webvtt/rendering/cues-with-video/processing-model/bidi/start_alignment.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "webvtt/rendering/cues-with-video/processing-model/bidi/u002E_LF_u05D0.html": {
     "reftest": "FAIL"
@@ -474,10 +480,10 @@
     "reftest": "PASS"
   },
   "webvtt/rendering/cues-with-video/processing-model/selectors/cue/font_properties.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "webvtt/rendering/cues-with-video/processing-model/selectors/cue/font_shorthand.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "webvtt/rendering/cues-with-video/processing-model/selectors/cue/fontsize_smaller_than_container.tentative.html": {
     "reftest": "FAIL"
@@ -684,10 +690,10 @@
     "reftest": "PASS"
   },
   "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/font_properties.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/font_shorthand.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "webvtt/rendering/cues-with-video/processing-model/selectors/cue_function/id_color.html": {
     "reftest": "PASS"

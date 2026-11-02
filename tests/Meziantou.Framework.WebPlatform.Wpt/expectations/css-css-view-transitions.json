@@ -116,6 +116,9 @@
   "css/css-view-transitions/content-with-transform-old-image.html": {
     "reftest": "PASS"
   },
+  "css/css-view-transitions/content-with-transformed-child-old-image.html": {
+    "reftest": "PASS"
+  },
   "css/css-view-transitions/content-with-transparent-background.html": {
     "reftest": "PASS"
   },
@@ -439,6 +442,9 @@
     "failures": {
       "navigation with a  same-origin final url with cross-origin redirects": "FAIL"
     }
+  },
+  "css/css-view-transitions/navigation/no-view-transition-with-csp-sandbox.html": {
+    "total": 1
   },
   "css/css-view-transitions/navigation/old_vt_promises_bfcache.html": {
     "total": 1
@@ -1181,6 +1187,15 @@
   "css/css-view-transitions/scoped/hit-test-captured-scope.html": {
     "total": 4
   },
+  "css/css-view-transitions/scoped/hit-test-overflow-clipped-scope.html": {
+    "total": 8,
+    "failures": {
+      "overflow: hidden; ancestor overflow: hidden; transform: none": "FAIL",
+      "overflow: hidden; ancestor overflow: hidden; transform: translateX(0)": "FAIL",
+      "overflow: hidden; ancestor overflow: visible; transform: none": "FAIL",
+      "overflow: hidden; ancestor overflow: visible; transform: translateX(0)": "FAIL"
+    }
+  },
   "css/css-view-transitions/scoped/hit-test-vt-overlay.html": {
     "total": 1
   },
@@ -1234,6 +1249,13 @@
   },
   "css/css-view-transitions/scoped/run_in_parallel.html": {
     "total": 3
+  },
+  "css/css-view-transitions/scoped/scope-becomes-document-element.html": {
+    "total": 2,
+    "failures": {
+      "A scope becoming the document element before capture skips the transition": "FAIL",
+      "A scope becoming the document element during the update callback skips the transition": "FAIL"
+    }
   },
   "css/css-view-transitions/scoped/scope-containment-during-capture.html": {
     "total": 1

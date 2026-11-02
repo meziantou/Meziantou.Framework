@@ -941,6 +941,9 @@
   "dom/nodes/Document-contentType/contentType/contenttype_mimeheader_02.html": {
     "total": 1
   },
+  "dom/nodes/Document-contentType/contentType/contenttype_mimeheader_03.html": {
+    "total": 1
+  },
   "dom/nodes/Document-contentType/contentType/contenttype_png.html": {
     "total": 1
   },

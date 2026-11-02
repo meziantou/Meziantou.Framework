@@ -173,6 +173,18 @@
   "css/css-align/abspos/justify-self-static-position-001.html": {
     "reftest": "PASS"
   },
+  "css/css-align/abspos/justify-self-static-position-htb-ltr-htb.html": {
+    "total": 14
+  },
+  "css/css-align/abspos/justify-self-static-position-htb-rtl-htb.html": {
+    "total": 14
+  },
+  "css/css-align/abspos/justify-self-static-position-vlr-ltr-vlr.html": {
+    "total": 14
+  },
+  "css/css-align/abspos/justify-self-static-position-vrl-ltr-vrl.html": {
+    "total": 14
+  },
   "css/css-align/abspos/justify-self-stretch-auto-margins-aspect-ratio.html": {
     "reftest": "PASS"
   },
@@ -216,22 +228,106 @@
     "total": 20
   },
   "css/css-align/abspos/safe-align-self-htb.html": {
-    "total": 24
+    "total": 24,
+    "failures": {
+      ".item 1": "FAIL",
+      ".item 13": "FAIL",
+      ".item 14": "FAIL",
+      ".item 15": "FAIL",
+      ".item 16": "FAIL",
+      ".item 17": "FAIL",
+      ".item 18": "FAIL",
+      ".item 2": "FAIL",
+      ".item 3": "FAIL",
+      ".item 4": "FAIL",
+      ".item 5": "FAIL",
+      ".item 6": "FAIL"
+    }
   },
   "css/css-align/abspos/safe-align-self-vlr.html": {
-    "total": 24
+    "total": 24,
+    "failures": {
+      ".item 1": "FAIL",
+      ".item 13": "FAIL",
+      ".item 14": "FAIL",
+      ".item 15": "FAIL",
+      ".item 16": "FAIL",
+      ".item 17": "FAIL",
+      ".item 18": "FAIL",
+      ".item 2": "FAIL",
+      ".item 3": "FAIL",
+      ".item 4": "FAIL",
+      ".item 5": "FAIL",
+      ".item 6": "FAIL"
+    }
   },
   "css/css-align/abspos/safe-align-self-vrl.html": {
-    "total": 24
+    "total": 24,
+    "failures": {
+      ".item 1": "FAIL",
+      ".item 13": "FAIL",
+      ".item 14": "FAIL",
+      ".item 15": "FAIL",
+      ".item 16": "FAIL",
+      ".item 17": "FAIL",
+      ".item 18": "FAIL",
+      ".item 2": "FAIL",
+      ".item 3": "FAIL",
+      ".item 4": "FAIL",
+      ".item 5": "FAIL",
+      ".item 6": "FAIL"
+    }
   },
   "css/css-align/abspos/safe-justify-self-htb.html": {
-    "total": 24
+    "total": 24,
+    "failures": {
+      ".item 1": "FAIL",
+      ".item 13": "FAIL",
+      ".item 14": "FAIL",
+      ".item 15": "FAIL",
+      ".item 16": "FAIL",
+      ".item 17": "FAIL",
+      ".item 18": "FAIL",
+      ".item 2": "FAIL",
+      ".item 3": "FAIL",
+      ".item 4": "FAIL",
+      ".item 5": "FAIL",
+      ".item 6": "FAIL"
+    }
   },
   "css/css-align/abspos/safe-justify-self-vlr.html": {
-    "total": 24
+    "total": 24,
+    "failures": {
+      ".item 1": "FAIL",
+      ".item 13": "FAIL",
+      ".item 14": "FAIL",
+      ".item 15": "FAIL",
+      ".item 16": "FAIL",
+      ".item 17": "FAIL",
+      ".item 18": "FAIL",
+      ".item 2": "FAIL",
+      ".item 3": "FAIL",
+      ".item 4": "FAIL",
+      ".item 5": "FAIL",
+      ".item 6": "FAIL"
+    }
   },
   "css/css-align/abspos/safe-justify-self-vrl.html": {
-    "total": 24
+    "total": 24,
+    "failures": {
+      ".item 1": "FAIL",
+      ".item 13": "FAIL",
+      ".item 14": "FAIL",
+      ".item 15": "FAIL",
+      ".item 16": "FAIL",
+      ".item 17": "FAIL",
+      ".item 18": "FAIL",
+      ".item 2": "FAIL",
+      ".item 3": "FAIL",
+      ".item 4": "FAIL",
+      ".item 5": "FAIL",
+      ".item 6": "FAIL"
+    }
   },
   "css/css-align/abspos/stretch-intrinsic-size-htb-htb.html": {
     "total": 12
@@ -281,6 +377,9 @@
   "css/css-align/baseline-of-single-axis-scroll-container.html": {
     "total": 2
   },
+  "css/css-align/baseline-rules/first-baseline-block-in-inline-001.html": {
+    "total": 3
+  },
   "css/css-align/baseline-rules/grid-item-input-type-number.html": {
     "reftest": "PASS"
   },
@@ -297,6 +396,9 @@
     "reftest": "PASS"
   },
   "css/css-align/baseline-rules/inline-table-inline-block-baseline.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/baseline-rules/overflow-hidden-block-in-inline-baseline.html": {
     "reftest": "PASS"
   },
   "css/css-align/baseline-rules/synthesized-baseline-flexbox-001.html": {
@@ -363,6 +465,12 @@
     "total": 8
   },
   "css/css-align/blocks/align-content-block-dynamic-content.html": {
+    "reftest": "PASS"
+  },
+  "css/css-align/blocks/align-content-block-float-001.html": {
+    "total": 4
+  },
+  "css/css-align/blocks/align-content-block-in-inline-001.html": {
     "reftest": "PASS"
   },
   "css/css-align/blocks/align-content-block-overflow-000.html": {
@@ -840,30 +948,36 @@
     "total": 19
   },
   "css/css-align/parsing/align-items-computed.html": {
-    "total": 17,
+    "total": 19,
     "failures": {
       "Property align-items value 'flex-end'": "FAIL",
-      "Property align-items value 'flex-start'": "FAIL"
+      "Property align-items value 'flex-start'": "FAIL",
+      "Property align-items value 'safe normal'": "FAIL",
+      "Property align-items value 'unsafe normal'": "FAIL"
     }
   },
   "css/css-align/parsing/align-items-invalid.html": {
-    "total": 24
+    "total": 26
   },
   "css/css-align/parsing/align-items-valid.html": {
-    "total": 18
+    "total": 20,
+    "failures": {
+      "e.style['align-items'] = \"safe normal\" should set the property value": "FAIL",
+      "e.style['align-items'] = \"unsafe normal\" should set the property value": "FAIL"
+    }
   },
   "css/css-align/parsing/align-self-computed.html": {
-    "total": 18,
+    "total": 20,
     "failures": {
       "Property align-self value 'flex-end'": "FAIL",
       "Property align-self value 'flex-start'": "FAIL"
     }
   },
   "css/css-align/parsing/align-self-invalid.html": {
-    "total": 22
+    "total": 24
   },
   "css/css-align/parsing/align-self-valid.html": {
-    "total": 19
+    "total": 21
   },
   "css/css-align/parsing/column-gap-computed.html": {
     "total": 5
@@ -931,30 +1045,36 @@
     "total": 18
   },
   "css/css-align/parsing/justify-items-computed.html": {
-    "total": 24,
+    "total": 26,
     "failures": {
       "Property justify-items value 'flex-end'": "FAIL",
-      "Property justify-items value 'flex-start'": "FAIL"
+      "Property justify-items value 'flex-start'": "FAIL",
+      "Property justify-items value 'safe normal'": "FAIL",
+      "Property justify-items value 'unsafe normal'": "FAIL"
     }
   },
   "css/css-align/parsing/justify-items-invalid.html": {
-    "total": 19
+    "total": 21
   },
   "css/css-align/parsing/justify-items-valid.html": {
-    "total": 24
+    "total": 26,
+    "failures": {
+      "e.style['justify-items'] = \"safe normal\" should set the property value": "FAIL",
+      "e.style['justify-items'] = \"unsafe normal\" should set the property value": "FAIL"
+    }
   },
   "css/css-align/parsing/justify-self-computed.html": {
-    "total": 20,
+    "total": 22,
     "failures": {
       "Property justify-self value 'flex-end'": "FAIL",
       "Property justify-self value 'flex-start'": "FAIL"
     }
   },
   "css/css-align/parsing/justify-self-invalid.html": {
-    "total": 20
+    "total": 22
   },
   "css/css-align/parsing/justify-self-valid.html": {
-    "total": 21
+    "total": 23
   },
   "css/css-align/parsing/place-content-computed.html": {
     "total": 25,
@@ -974,36 +1094,54 @@
     "total": 26
   },
   "css/css-align/parsing/place-items-computed.html": {
-    "total": 21,
+    "total": 25,
     "failures": {
       "Property place-items value 'flex-end legacy'": "FAIL",
-      "Property place-items value 'flex-end'": "FAIL"
+      "Property place-items value 'flex-end'": "FAIL",
+      "Property place-items value 'normal safe normal'": "FAIL",
+      "Property place-items value 'safe normal safe normal'": "FAIL",
+      "Property place-items value 'safe normal unsafe normal'": "FAIL",
+      "Property place-items value 'unsafe normal unsafe normal'": "FAIL"
     }
   },
   "css/css-align/parsing/place-items-invalid.html": {
-    "total": 15
+    "total": 17
   },
   "css/css-align/parsing/place-items-shorthand.html": {
-    "total": 12
+    "total": 18,
+    "failures": {
+      "e.style['place-items'] = \"safe normal unsafe normal\" should not set unrelated longhands": "FAIL",
+      "e.style['place-items'] = \"safe normal unsafe normal\" should set align-items": "FAIL",
+      "e.style['place-items'] = \"safe normal unsafe normal\" should set justify-items": "FAIL",
+      "e.style['place-items'] = \"safe normal\" should not set unrelated longhands": "FAIL",
+      "e.style['place-items'] = \"safe normal\" should set align-items": "FAIL",
+      "e.style['place-items'] = \"safe normal\" should set justify-items": "FAIL"
+    }
   },
   "css/css-align/parsing/place-items-valid.html": {
-    "total": 20
+    "total": 24,
+    "failures": {
+      "e.style['place-items'] = \"normal safe normal\" should set the property value": "FAIL",
+      "e.style['place-items'] = \"safe normal safe normal\" should set the property value": "FAIL",
+      "e.style['place-items'] = \"safe normal unsafe normal\" should set the property value": "FAIL",
+      "e.style['place-items'] = \"unsafe normal unsafe normal\" should set the property value": "FAIL"
+    }
   },
   "css/css-align/parsing/place-self-computed.html": {
-    "total": 18,
+    "total": 23,
     "failures": {
       "Property place-self value 'baseline flex-end'": "FAIL",
       "Property place-self value 'flex-end'": "FAIL"
     }
   },
   "css/css-align/parsing/place-self-invalid.html": {
-    "total": 9
+    "total": 11
   },
   "css/css-align/parsing/place-self-shorthand.html": {
-    "total": 12
+    "total": 18
   },
   "css/css-align/parsing/place-self-valid.html": {
-    "total": 18
+    "total": 23
   },
   "css/css-align/parsing/row-gap-computed.html": {
     "total": 6

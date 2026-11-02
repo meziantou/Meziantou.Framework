@@ -545,6 +545,9 @@
   "css/css-sizing/aspect-ratio/flex-aspect-ratio-055.html": {
     "reftest": "PASS"
   },
+  "css/css-sizing/aspect-ratio/flex-aspect-ratio-056.html": {
+    "reftest": "PASS"
+  },
   "css/css-sizing/aspect-ratio/flex-aspect-ratio-orthogonal-percentage-child.html": {
     "total": 4
   },
@@ -1655,6 +1658,12 @@
   "css/css-sizing/intrinsic-percent-replaced-033.html": {
     "total": 9
   },
+  "css/css-sizing/intrinsic-percent-replaced-034.html": {
+    "reftest": "PASS"
+  },
+  "css/css-sizing/intrinsic-percent-replaced-035.html": {
+    "reftest": "PASS"
+  },
   "css/css-sizing/intrinsic-percent-replaced-dynamic-001.html": {
     "reftest": "PASS"
   },
@@ -1793,6 +1802,20 @@
   "css/css-sizing/parsing/max-height-valid.html": {
     "total": 10
   },
+  "css/css-sizing/parsing/max-size-invalid.html": {
+    "total": 10
+  },
+  "css/css-sizing/parsing/max-size-shorthand.html": {
+    "total": 15
+  },
+  "css/css-sizing/parsing/max-size-valid.html": {
+    "total": 14,
+    "failures": {
+      "e.style['max-size'] = \"0\" should set the property value": "FAIL",
+      "e.style['max-size'] = \"100px 100px\" should set the property value": "FAIL",
+      "e.style['max-size'] = \"calc(10% - 0.5em)\" should set the property value": "FAIL"
+    }
+  },
   "css/css-sizing/parsing/max-width-computed.html": {
     "total": 12
   },
@@ -1810,6 +1833,20 @@
   },
   "css/css-sizing/parsing/min-height-valid.html": {
     "total": 10
+  },
+  "css/css-sizing/parsing/min-size-invalid.html": {
+    "total": 10
+  },
+  "css/css-sizing/parsing/min-size-shorthand.html": {
+    "total": 15
+  },
+  "css/css-sizing/parsing/min-size-valid.html": {
+    "total": 14,
+    "failures": {
+      "e.style['min-size'] = \"0\" should set the property value": "FAIL",
+      "e.style['min-size'] = \"100px 100px\" should set the property value": "FAIL",
+      "e.style['min-size'] = \"calc(10% - 0.5em)\" should set the property value": "FAIL"
+    }
   },
   "css/css-sizing/parsing/min-width-computed.html": {
     "total": 11
@@ -1906,6 +1943,9 @@
   },
   "css/css-sizing/replaced-min-height-min-content.html": {
     "reftest": "PASS"
+  },
+  "css/css-sizing/replaced-min-width-greater-than-max-width.html": {
+    "total": 1
   },
   "css/css-sizing/replaced-min-width-min-content.html": {
     "reftest": "PASS"
@@ -2206,7 +2246,15 @@
     "reftest": "PASS"
   },
   "css/css-sizing/size-shorthand-serialization.tentative.html": {
-    "total": 5
+    "total": 15,
+    "failures": {
+      "Content authored with max-size serializes back as the max-width and max-height longhands, not as max-size": "FAIL",
+      "Content authored with min-size serializes back as the min-width and min-height longhands, not as min-size": "FAIL",
+      "Equal max-width and max-height longhands do not collapse into the max-size shorthand when serializing": "FAIL",
+      "Equal min-width and min-height longhands do not collapse into the min-size shorthand when serializing": "FAIL",
+      "max-width and max-height longhands do not collapse into the max-size shorthand when serializing": "FAIL",
+      "min-width and min-height longhands do not collapse into the min-size shorthand when serializing": "FAIL"
+    }
   },
   "css/css-sizing/slice-intrinsic-size.html": {
     "reftest": "PASS"
@@ -2483,6 +2531,9 @@
   },
   "css/css-sizing/svg-intrinsic-size-011.html": {
     "total": 4
+  },
+  "css/css-sizing/svg-intrinsic-size-zero-img-and-object.html": {
+    "total": 14
   },
   "css/css-sizing/svg-no-ar-max-height-min-content.html": {
     "reftest": "PASS"

@@ -1356,6 +1356,9 @@
       "document.onreadystatechange is not shadowed": "FAIL"
     }
   },
+  "html/dom/documents/dom-tree-accessors/nameditem-setattribute-attr-mutation.html": {
+    "total": 4
+  },
   "html/dom/documents/dom-tree-accessors/nameditem-supported-property-names-order.html": {
     "total": 1
   },
@@ -2031,7 +2034,7 @@
     "total": 298
   },
   "html/dom/idlharness.https.html?include=HTML.+": {
-    "total": 3903
+    "total": 3951
   },
   "html/dom/partial-updates/tentative/chained-streaming-templates-with-custom-element.html": {
     "total": 1

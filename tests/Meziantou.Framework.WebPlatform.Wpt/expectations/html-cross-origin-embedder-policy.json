@@ -324,9 +324,11 @@
   },
   "html/cross-origin-embedder-policy/reporting-cached-and-service-worker-responses.https.html": {
     "harness": "TIMEOUT",
-    "total": 10,
+    "total": 12,
     "failures": {
+      "Cross-Origin-Embedder-Policy reports a Cache API response a service worker responds with by its URL": "NOTRUN",
       "Cross-Origin-Embedder-Policy reports a cross-origin response a service worker responds with": "NOTRUN",
+      "Cross-Origin-Embedder-Policy reports a redirected response a service worker fetched from another URL by that URL": "NOTRUN",
       "Cross-Origin-Embedder-Policy reports a redirected response a service worker responds with by its first URL": "NOTRUN",
       "Cross-Origin-Embedder-Policy reports a response a service worker fetched from another URL by that URL": "NOTRUN",
       "Cross-Origin-Embedder-Policy reports an image that a document of another site loaded before": "NOTRUN",

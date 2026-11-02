@@ -698,6 +698,15 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
     /// </summary>
     private static void ReportDeconstructedValueMismatch(OperationAnalysisContext context, TagResolver resolver, IOperation element, ISymbol? target, string? targetKind, TagInfo elementTags, TagInfo expected)
     {
+        var targetDescription = target is null ? ValueTagDescriptions.Describe(element) : ValueTagDescriptions.DescribeSymbol(target) + ValueTagDescriptions.GetSite(target, element.Syntax.SyntaxTree);
+        ReportDeconstructedValueMismatch(context, resolver, element.Syntax.GetLocation(), targetDescription, target, targetKind, elementTags, expected);
+    }
+
+    /// <summary>
+    /// Reports a deconstructed value at <paramref name="location"/>, e.g. on the variable of a positional pattern in <c>pair is (var key /* ValueTag=OrderId */, var value)</c>.
+    /// </summary>
+    private static void ReportDeconstructedValueMismatch(OperationAnalysisContext context, TagResolver resolver, Location location, string targetDescription, ISymbol? target, string? targetKind, TagInfo elementTags, TagInfo expected)
+    {
         var properties = ImmutableDictionary<string, string?>.Empty;
         var additionalLocations = new List<Location>();
         if (targetKind is not null && elementTags.IsExplicit && target is not null && !target.IsImplicitlyDeclared && CanChangeTagOf(target, resolver) && resolver.GetLocationInCompilation(target) is { } targetLocation)
@@ -710,12 +719,12 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
 
         context.ReportDiagnostic(Diagnostic.Create(
             FlowMismatch,
-            element.Syntax.GetLocation(),
+            location,
             additionalLocations,
             properties,
             "the deconstructed value",
             elementTags.ToAttributeString(),
-            target is null ? ValueTagDescriptions.Describe(element) : ValueTagDescriptions.DescribeSymbol(target) + ValueTagDescriptions.GetSite(target, element.Syntax.SyntaxTree),
+            targetDescription,
             expected.ToAttributeString()));
     }
 
@@ -756,12 +765,19 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
         if (expected.IsEmpty)
             return;
 
-        // The tags of a key or a value of a deconstructed KeyValuePair have no operation to report on
         var (value, tags) = resolver.GetPatternInput(pattern);
-        if (value is null || tags is not null)
-            return;
-
-        ReportFlow(context, resolver, value, local, expected, ValueTagTargetKind.Local);
+        if (tags is null)
+        {
+            if (value is not null)
+            {
+                ReportFlow(context, resolver, value, local, expected, ValueTagTargetKind.Local);
+            }
+        }
+        else if (!tags.IsEmpty && !TagInfo.AreCompatible(tags, expected) && local.Locations is [var localLocation, ..])
+        {
+            // The key or the value of a KeyValuePair, or the out parameter of a Deconstruct method, have no operation to report on
+            ReportDeconstructedValueMismatch(context, resolver, localLocation, ValueTagDescriptions.DescribeSymbol(local) + ValueTagDescriptions.GetSite(local, localLocation.SourceTree), local, ValueTagTargetKind.Local, tags, expected);
+        }
     }
 
     private static void AnalyzeMemberInitializer(OperationAnalysisContext context, TagResolver resolver)

@@ -732,6 +732,43 @@ public sealed class LocalTagTests : TaggedValuesAnalyzerTestBase
     }
 
     [Fact]
+    public async Task ReportDiagnostic_WhenTheCommentOfAPositionalPatternVariableDisagreesWithTheDeconstructedValue()
+    {
+        await VerifyAsync("""
+            record Order([ValueTag("OrderId")] Guid Id, [ValueTag("ProjectId")] Guid ProjectId);
+
+            record Line(Order Order, int Quantity);
+
+            class Pair
+            {
+                public void Deconstruct([ValueTag("OrderId")] out Guid orderId, [ValueTag("ProjectId")] out Guid projectId)
+                {
+                    orderId = Guid.Empty;
+                    projectId = Guid.Empty;
+                }
+            }
+
+            class Sample
+            {
+                void M([ValueTag(Key = "OrderId", Value = "ProjectId")] KeyValuePair<Guid, Guid> pair, Order order, Pair custom, Line line, [ValueTag("ProjectId")] Guid[] ids)
+                {
+                    if (pair is (var {|MFTV0002:a|} /* ValueTag=ProjectId */, var {|MFTV0002:b|} /* ValueTag=OrderId */)) { }
+                    if (pair is (var c /* ValueTag=OrderId */, var d /* ValueTag=ProjectId */)) { }
+                    if (pair is (Guid {|MFTV0002:e|} /* ValueTag=ProjectId */, _)) { }
+                    if (order is (var {|MFTV0002:f|} /* ValueTag=ProjectId */, var g /* ValueTag=ProjectId */)) { }
+                    if (custom is (var h /* ValueTag=OrderId */, var {|MFTV0002:i|} /* ValueTag=OrderId */)) { }
+                    if (line is ((var {|MFTV0002:j|} /* ValueTag=ProjectId */, _), _)) { }
+                    if (line is ({ {|MFTV0002:Id|}: var k /* ValueTag=ProjectId */ }, _)) { }
+                    if (pair is (var {|MFTV0002:l|} /* ValueTag=ProjectId */, _) and (_, _)) { }
+                    _ = pair switch { (var {|MFTV0002:m|} /* ValueTag=ProjectId */, _) => 0 };
+                    if ({|MFTV0002:ids|} is [var n /* ValueTag=OrderId */]) { }
+                    if (ids is [var o /* ValueTag=ProjectId */]) { }
+                }
+            }
+            """);
+    }
+
+    [Fact]
     public async Task LongChainsOfCopiesKeepTheTags()
     {
         var statements = new System.Text.StringBuilder();

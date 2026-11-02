@@ -175,6 +175,30 @@ public sealed class ChangeValueTagCodeFixTests : TaggedValuesAnalyzerTestBase
     }
 
     [Fact]
+    public async Task ChangesTheTagOfThePositionalPatternVariableComment()
+    {
+        await VerifyCodeFixAsync<ChangeValueTagCodeFixProviderType>(
+            """
+            class Sample
+            {
+                void M([ValueTag(Key = "OrderId", Value = "ProjectId")] KeyValuePair<Guid, Guid> pair)
+                {
+                    if (pair is (var {|MFTV0002:key|} /* ValueTag=ProjectId */, var value)) { }
+                }
+            }
+            """,
+            """
+            class Sample
+            {
+                void M([ValueTag(Key = "OrderId", Value = "ProjectId")] KeyValuePair<Guid, Guid> pair)
+                {
+                    if (pair is (var key /* ValueTag=OrderId */, var value)) { }
+                }
+            }
+            """);
+    }
+
+    [Fact]
     public async Task CopiesTheTagOfTheOverriddenMember()
     {
         await VerifyCodeFixAsync<ChangeValueTagCodeFixProviderType>(

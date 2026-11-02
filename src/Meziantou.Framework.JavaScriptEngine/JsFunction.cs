@@ -14,7 +14,7 @@ public abstract class JsFunction : JsObject
     public JsRealm Realm { get; }
 
     /// <summary>Gets the name given by SetFunctionName ([[InitialName]]), used by <c>Function.prototype.toString</c>.</summary>
-    internal string? InitialName { get; private set; }
+    internal string? InitialName { get; set; }
 
     /// <summary>Gets the source text of the function ([[SourceText]]), or null for a function without source text (built-in functions).</summary>
     internal virtual string? GetSourceText() => null;

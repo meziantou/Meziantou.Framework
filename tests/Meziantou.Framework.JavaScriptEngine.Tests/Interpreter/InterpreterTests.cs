@@ -15,6 +15,20 @@ public sealed class InterpreterTests
     }
 
     [Theory]
+    [InlineData("function f(a, b) { } Object.getOwnPropertyNames(f).join()", "length,name,arguments,caller,prototype")]
+    [InlineData("function f(a, b) { 'use strict'; } Object.getOwnPropertyNames(f).join()", "length,name,prototype")]
+    [InlineData("var a = (x) => x; var o = { m() { } }; Object.getOwnPropertyNames(a).join() + ';' + Object.getOwnPropertyNames(o.m).join()", "length,name;length,name")]
+    [InlineData("function* g() { } Object.getOwnPropertyNames(g).join() + ';' + (Object.getPrototypeOf(g.prototype) === Object.getPrototypeOf(function* () { }).prototype) + ',' + Object.hasOwn(g.prototype, 'constructor')", "length,name,prototype;true,false")]
+    [InlineData("function f(a, b) { } var d = Object.getOwnPropertyDescriptor(f, 'prototype'); var l = Object.getOwnPropertyDescriptor(f, 'length'); [d.writable, d.enumerable, d.configurable, l.value, l.writable, l.configurable, f.prototype.constructor === f, Object.getOwnPropertyDescriptor(f.prototype, 'constructor').enumerable].join()", "true,false,false,2,false,true,true,false")]
+    [InlineData("var fs = []; for (var i = 0; i < 3; i++) fs.push(function () { }); [fs[0] !== fs[1], fs[0].prototype !== fs[1].prototype, fs[1].prototype.constructor === fs[1], new fs[2]() instanceof fs[2]].join()", "true,true,true,true")]
+    [InlineData("function mk() { return function f() { }; } var a = mk(), b = mk(); a.x = 1; a.prototype = 5; delete b.name; [a.x, a.prototype, b.x, typeof b.prototype, b.name, Object.getOwnPropertyNames(b).join()].join()", "1,5,,object,,length,arguments,caller,prototype")]
+    [InlineData("var f = function named() { return named; }; [f() === f, f.name].join()", "true,named")]
+    public void Evaluate_FunctionObjects(string code, string expected)
+    {
+        Assert.Equal(expected, Run(code));
+    }
+
+    [Theory]
     [InlineData("1 + 2", "3")]
     [InlineData("'a' + 1", "a1")]
     [InlineData("var x = 1; x += 2; x", "3")]

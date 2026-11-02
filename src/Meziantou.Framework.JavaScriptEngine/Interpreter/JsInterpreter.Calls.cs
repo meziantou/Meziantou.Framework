@@ -417,30 +417,37 @@ internal static partial class JsInterpreter
         }
 
         var closure = new JsClosure(realm, template, environment, prototype, script);
-        closure.SetFunctionLength(template.Length);
-        closure.SetFunctionName(template.NameValue);
         nameEnvironment?.Slots[0] = closure;
 
+        // SetFunctionLength, SetFunctionName, then the prototype property: the properties get their final shape at once
+        var shapes = realm.Engine.ClosureShapes;
+        var name = template.NameValue;
+        closure.InitialName = name.ToString();
         if (template.IsGenerator)
         {
             // The prototype of the generator objects (not a constructor: no constructor property)
             var generatorPrototype = new JsObject(template.IsAsync ? intrinsics.AsyncGeneratorPrototype : intrinsics.GeneratorPrototype);
-            closure.DefineBuiltIn("prototype", generatorPrototype, PropertyFlags.Writable);
+            closure.InitializeProperties(shapes.LengthNamePrototype, [template.Length, JsValue.FromJsString(name), generatorPrototype]);
         }
         else if ((template.Flags & FunctionTemplateFlags.Constructor) != 0 && !template.IsClassConstructor)
         {
-            // Non-strict functions have caller and arguments own properties, accessors that read the running frames: an
-            // extension the spec allows, that the browsers implement
-            if (!template.IsStrict)
-            {
-                closure.DefineBuiltInAccessor("arguments", intrinsics.FunctionArgumentsProperty, PropertyFlags.None);
-                closure.DefineBuiltInAccessor("caller", intrinsics.FunctionCallerProperty, PropertyFlags.None);
-            }
-
             // MakeConstructor
             var functionPrototype = new JsObject(intrinsics.ObjectPrototype);
-            functionPrototype.DefineBuiltIn("constructor", closure);
-            closure.DefineBuiltIn("prototype", functionPrototype, PropertyFlags.Writable);
+            functionPrototype.InitializeProperties(shapes.Constructor, [closure]);
+            if (template.IsStrict)
+            {
+                closure.InitializeProperties(shapes.LengthNamePrototype, [template.Length, JsValue.FromJsString(name), functionPrototype]);
+            }
+            else
+            {
+                // Non-strict functions have caller and arguments own properties, accessors that read the running frames:
+                // an extension the spec allows, that the browsers implement
+                closure.InitializeProperties(shapes.LengthNameLegacyPrototype, [template.Length, JsValue.FromJsString(name), new JsValue(intrinsics.FunctionArgumentsProperty), new JsValue(intrinsics.FunctionCallerProperty), functionPrototype]);
+            }
+        }
+        else
+        {
+            closure.InitializeProperties(shapes.LengthName, [template.Length, JsValue.FromJsString(name)]);
         }
 
         return closure;

@@ -19,6 +19,9 @@ public sealed partial class JsEngine
     /// </summary>
     internal int InlineCacheEpoch { get; set; }
 
+    /// <summary>Gets the shapes of the new function objects (created on first use).</summary>
+    internal Interpreter.ClosureShapes ClosureShapes => field ??= new(ShapeRoots);
+
     /// <summary>Gets the inline caches of the code of a template for the frames of this engine.</summary>
     internal PropertyCacheEntry?[] GetInlineCaches(FunctionTemplate template)
     {

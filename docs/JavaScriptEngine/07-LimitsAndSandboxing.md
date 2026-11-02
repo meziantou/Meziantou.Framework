@@ -47,7 +47,11 @@ Assert.Equal("RangeError", realm.Execute("function f() { return 1 + f(); } try {
   discard the realm when the script is not trusted.
 - `MemoryLimit` counts what the thread allocates, not the memory that the script keeps: a script that allocates and
   drops many objects reaches it too, and so does the allocation of your .NET functions. The built-ins check it before
-  they create a large string or array.
+  they create a large string or array, and the regular expressions check it before they grow their backtracking stack.
+- The regular expressions use a backtracking matcher: some patterns, such as `/^(a+)+$/`, take an exponential time on
+  some strings. The matcher checks the limits and the cancellation while it backtracks and while it scans the string
+  for the position where a match can start, so `Timeout`, [RegExpTimeout](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.RegExpTimeout) and the [CancellationToken](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.CancellationToken) stop a long
+  match, even one that never backtracks.
 - The interpreter does not use the .NET stack for JavaScript calls, so a deep recursion of JavaScript code never
   overflows the stack of the thread; a recursion through .NET functions throws a `RangeError` before it does.
 

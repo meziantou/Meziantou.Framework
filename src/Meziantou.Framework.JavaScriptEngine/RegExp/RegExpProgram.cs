@@ -52,6 +52,9 @@ internal sealed class RegExpProgram
     /// <summary>Gets the number of capturing groups.</summary>
     public int GroupCount { get; }
 
+    /// <summary>Gets the number of capture slots of a match: the start and the end of the match and of each group.</summary>
+    public int SlotCount => (GroupCount + 1) * 2;
+
     /// <summary>Gets the name of each group (index 0 is the whole match), null for an unnamed group.</summary>
     public string?[] GroupNames { get; }
 
@@ -89,15 +92,19 @@ internal sealed class RegExpProgram
     /// <param name="lastIndex">The index where the search starts, at most the length of the string.</param>
     /// <param name="sticky">Whether the match must start at <paramref name="lastIndex"/>.</param>
     /// <param name="engine">The engine whose budget the match uses, if any.</param>
+    /// <param name="destination">
+    /// The array that receives the capture slots when its length is <see cref="SlotCount"/>; otherwise a new array is
+    /// allocated.
+    /// </param>
     /// <returns>
     /// The capture slots (start and end of each group, -1 when undefined), or null when there is no match.
     /// </returns>
-    public int[]? Exec(string input, int lastIndex, bool sticky, JsEngine? engine)
+    public int[]? Exec(string input, int lastIndex, bool sticky, JsEngine? engine, int[]? destination = null)
     {
         var runner = RegExpRunner.Rent();
         try
         {
-            return runner.Exec(this, input, lastIndex, sticky, engine);
+            return runner.Exec(this, input, lastIndex, sticky, engine, destination);
         }
         finally
         {

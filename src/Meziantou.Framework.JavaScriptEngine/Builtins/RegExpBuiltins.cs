@@ -7,6 +7,11 @@ namespace Meziantou.Framework.JavaScriptEngine;
 internal static class RegExpBuiltins
 {
     private static readonly PropertyKey LastIndexKey = JsRegExpObject.LastIndexKey;
+
+    // The capture slots of the matches whose slots are read right after the match, before any code of the script runs
+    // (test, search, match with the global flag, split): one array per thread instead of one per match
+    [ThreadStatic]
+    private static int[]? s_scratchCaptures;
     private static readonly PropertyKey ExecKey = new("exec");
     private static readonly PropertyKey FlagsKey = new("flags");
     private static readonly PropertyKey SourceKey = new("source");
@@ -316,7 +321,11 @@ internal static class RegExpBuiltins
     /// <param name="currentRealm">The current realm: the realm of the exec function.</param>
     /// <param name="regexp">R</param>
     /// <param name="input">S</param>
-    private static int[]? BuiltinExecCore(JsRealm currentRealm, JsRegExpObject regexp, string input)
+    /// <param name="scratch">
+    /// Whether the slots can be written to the array of the thread (<see cref="GetScratchCaptures"/>): the caller reads
+    /// them before the next match, and does not keep them.
+    /// </param>
+    private static int[]? BuiltinExecCore(JsRealm currentRealm, JsRegExpObject regexp, string input, bool scratch = false)
     {
         var length = input.Length;
         var lastIndex = JsOperations.ToLength(regexp.Get(LastIndexKey));
@@ -331,7 +340,8 @@ internal static class RegExpBuiltins
         int[]? captures = null;
         if (lastIndex <= length)
         {
-            captures = regexp.Matcher!.Exec(input, (int)lastIndex, sticky, JsEngine.Current);
+            var matcher = regexp.Matcher!;
+            captures = matcher.Exec(input, (int)lastIndex, sticky, JsEngine.Current, scratch ? GetScratchCaptures(matcher) : null);
         }
 
         if (captures is null)
@@ -350,6 +360,18 @@ internal static class RegExpBuiltins
         }
 
         UpdateLegacyStaticProperties(currentRealm, regexp, input, captures);
+        return captures;
+    }
+
+    private static int[] GetScratchCaptures(RegExpProgram program)
+    {
+        var captures = s_scratchCaptures;
+        if (captures is null || captures.Length != program.SlotCount)
+        {
+            captures = new int[program.SlotCount];
+            s_scratchCaptures = captures;
+        }
+
         return captures;
     }
 
@@ -497,11 +519,14 @@ internal static class RegExpBuiltins
     }
 
     /// <summary>RegExpExec(R, S) when the intrinsic exec runs: the capture slots, or null; otherwise the result object.</summary>
-    private static (int[]? Captures, JsValue Result) RegExpExecRaw(JsObject regexp, string input)
+    /// <param name="regexp">R</param>
+    /// <param name="input">S</param>
+    /// <param name="scratch">Whether the caller reads the capture slots before the next match, and does not keep them.</param>
+    private static (int[]? Captures, JsValue Result) RegExpExecRaw(JsObject regexp, string input, bool scratch = false)
     {
         if (TryGetBuiltinExec(regexp, out var builtin))
         {
-            var captures = BuiltinExecCore(builtin.Realm, builtin, input);
+            var captures = BuiltinExecCore(builtin.Realm, builtin, input, scratch);
             return (captures, captures is null ? JsValue.Null : default);
         }
 
@@ -666,7 +691,7 @@ internal static class RegExpBuiltins
             return ThrowHelper.ThrowTypeError<JsValue>("RegExp.prototype.test called on a non-object");
 
         var input = JsOperations.ToString(arguments.Length > 0 ? arguments[0] : default);
-        var (captures, result) = RegExpExecRaw(regexp, input);
+        var (captures, result) = RegExpExecRaw(regexp, input, scratch: true);
         return captures is not null || result.IsObject;
     }
 
@@ -722,7 +747,7 @@ internal static class RegExpBuiltins
         var array = new JsArray(function.Realm.Intrinsics.ArrayPrototype);
         while (true)
         {
-            var (captures, result) = RegExpExecRaw(regexp, input);
+            var (captures, result) = RegExpExecRaw(regexp, input, scratch: true);
             string matched;
             if (captures is not null)
             {
@@ -1059,15 +1084,16 @@ internal static class RegExpBuiltins
             regexp.Set(LastIndexKey, 0, throwOnFailure: true);
         }
 
-        var (captures, result) = RegExpExecRaw(regexp, input);
+        var (captures, result) = RegExpExecRaw(regexp, input, scratch: true);
+        var index = captures?[0];
         var currentLastIndex = regexp.Get(LastIndexKey);
         if (!JsOperations.SameValue(currentLastIndex, previousLastIndex))
         {
             regexp.Set(LastIndexKey, previousLastIndex, throwOnFailure: true);
         }
 
-        if (captures is not null)
-            return captures[0];
+        if (index is { } matchIndex)
+            return matchIndex;
 
         if (result.Cell is not JsObject resultObject)
             return -1;
@@ -1122,7 +1148,8 @@ internal static class RegExpBuiltins
             JsValue result = default;
             if (builtinSplitter is not null)
             {
-                captures = builtinSplitter.Matcher!.Exec(input, searchIndex, sticky: false, JsEngine.Current);
+                var matcher = builtinSplitter.Matcher!;
+                captures = matcher.Exec(input, searchIndex, sticky: false, JsEngine.Current, GetScratchCaptures(matcher));
                 if (captures is null || captures[0] >= size)
                     break;
 

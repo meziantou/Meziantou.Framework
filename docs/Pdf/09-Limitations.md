@@ -5,12 +5,14 @@ description: What the library does not do, so that you can plan around it.
 
 ## Creating documents
 
-- The content builder does not lay out text: it shows each text where it is told to. Line breaking, justification and
-  tables are up to the application: see [Wrap a paragraph](03-CreatingDocuments/03-Text.md#wrap-a-paragraph).
+- The content builder breaks a text into lines at its spaces ([Wrap a paragraph](03-CreatingDocuments/03-Text.md#wrap-a-paragraph)),
+  but it does not apply the Unicode line breaking rules, hyphenate words, nor lay out tables.
 - The standard 14 fonts show the characters of `WinAnsiEncoding` (Symbol and ZapfDingbats their own); other characters
   need an embedded font.
 - The fonts with CFF2 outlines, the bitmap fonts and the instances of variable fonts are not embedded.
-- The API has no method to copy pages from one document to another, nor to create interactive form fields.
+- The API reads, fills and flattens interactive form fields, but does not create them; the appearances it writes for
+  the values of the fields use the standard 14 fonts.
+- A page copied from another document is not tagged: the structure tree belongs to the document of the page.
 
 ## Reading and extracting
 

@@ -71,9 +71,11 @@ internal static class PdfTextLayout
             // A word wider than the box is broken between its characters
             var pieceStart = wordStart;
             var piece = new StringBuilder();
+            var runeStart = 0;
             foreach (var rune in word.EnumerateRunes())
             {
-                var next = piece + rune.ToString();
+                var length = rune.Utf16SequenceLength;
+                var next = string.Concat(piece.ToString().AsSpan(), word.AsSpan(runeStart, length));
                 if (piece.Length > 0 && font.GetTextWidth(next, fontSize) > width)
                 {
                     lines.Add(new Line(piece.ToString(), offset + pieceStart, EndsParagraph: false));
@@ -81,7 +83,8 @@ internal static class PdfTextLayout
                     piece.Clear();
                 }
 
-                piece.Append(rune.ToString());
+                piece.Append(word, runeStart, length);
+                runeStart += length;
             }
 
             current.Append(piece);

@@ -12,6 +12,8 @@ Besides its pages, a document carries what describes it and what helps readers m
 | Add bookmarks | [Outlines](cref:Meziantou.Framework.Pdf.PdfDocument.Outlines) | [Outline and links](03-OutlineAndLinks.md) |
 | Link to a page or a website | `PdfPage.Annotations.AddLink` | [Outline and links](03-OutlineAndLinks.md) |
 | Attach files to the document or to a page | [EmbeddedFiles](cref:Meziantou.Framework.Pdf.PdfDocument.EmbeddedFiles), `PdfPage.Annotations.AddFileAttachment` | [Embedded files](04-EmbeddedFiles.md) |
+| Number the pages i, ii, iii, then 1, 2, 3 | [PageLabels](cref:Meziantou.Framework.Pdf.PdfDocument.PageLabels) | [Page labels](05-PageLabels.md) |
+| Add notes, highlights, free texts and stamps | `PdfPage.Annotations.AddNote`, `AddTextMarkup`, `AddFreeText`, `AddStamp` | [Annotations](06-Annotations.md) |
 
 The changes are written when the document is saved, by a full or an incremental save: see
 [Modifying documents](../05-ReadingAndModifying/04-ModifyingDocuments.md).
@@ -21,3 +23,5 @@ The changes are written when the document is saved, by a full or an incremental 
 - [Metadata](02-Metadata.md): the document information, the XMP metadata and the language.
 - [Outline and links](03-OutlineAndLinks.md): bookmarks, destinations and link annotations.
 - [Embedded files](04-EmbeddedFiles.md): attach files to a document or to a page, and read them back.
+- [Page labels](05-PageLabels.md): the labels viewers show instead of the page numbers.
+- [Annotations](06-Annotations.md): notes, text markups, free texts, stamps, and the flags of the annotations.

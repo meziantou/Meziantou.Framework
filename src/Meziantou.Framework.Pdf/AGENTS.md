@@ -52,6 +52,13 @@ the XML documentation and `readme.md` consistent in the same change.
   `PdfExtGState`, `PdfShadingPattern`, `PdfSoftMask`) create their objects in each document that uses them, once
   (`PdfDocument.SharedResources`); the objects with content (`PdfForm`, `PdfTilingPattern`) belong to their document and
   are created by it. The meshes are written with 32-bit coordinates and 16-bit components mapped by `/Decode`.
+- **Pages and forms** (`PdfPageCollection.cs`, `PdfObjectImporter.cs`, `PdfPageReferenceRemover.cs`, `Forms/`): a page
+  imported from another document is deep-copied by the importer of that source (one per pair of documents, so that the
+  shared objects are copied once); the copy stops at the page objects, whose references are patched when their page is
+  imported. Removing a page removes the references of the document to it (destinations, named destinations, structure
+  tree, form fields). The caches of the document model (annotations of a page, resource names of a builder) are
+  invalidated by the `Version` of `PdfArray` and `PdfDictionary`, incremented by every change. The appearances the
+  library writes for form fields and markup annotations use the standard 14 fonts.
 - **Embedded fonts** (`Fonts/EmbeddedPdfFont.cs`, `Fonts/EmbeddedFontUsage.cs`): a `Type0` font with `Identity-H`
   codes that are the glyph identifiers (the subset keeps them: CID = GID), a `ToUnicode` CMap of the glyphs that show
   one cluster, and `/ActualText` around the texts whose glyphs cannot give them back. The content builder shapes the

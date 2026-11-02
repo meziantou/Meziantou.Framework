@@ -35,3 +35,7 @@ data of the file it was read from.
 - [Modifying documents](04-ModifyingDocuments.md): stamp the pages, add and remove pages, full and incremental saves.
 - [The object model](05-ObjectModel.md): read and change the objects of a document directly.
 - [Errors and limits](06-ErrorsAndLimits.md): the exceptions, and how to open the files of untrusted users.
+- [Managing pages](07-ManagingPages.md): move, duplicate, remove and merge pages, page boxes, display coordinates, and
+  stamp a page on others.
+- [Extracting images](08-ExtractingImages.md): the images of a page, where they are, and their pixels.
+- [Forms](09-Forms.md): read, fill and flatten the fields of an interactive form.

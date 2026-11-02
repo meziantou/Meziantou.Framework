@@ -23,8 +23,11 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
   (`PdfPage.CreateContentBuilder`), shadings and functions (`PdfShading`, `PdfFunction`), patterns, form XObjects,
   transparency (`PdfExtGState`: alpha, blend modes, soft masks; transparency groups), the standard 14 fonts and embedded TrueType and OpenType fonts, images (`PdfImage`: JPEG files as they are, other images
   of `Meziantou.Framework.Imaging` with their alpha channel and ICC profile), the document information and the XMP
-  metadata, the outline (bookmarks), links and annotations, embedded files (`PdfDocument.EmbeddedFiles`, file
-  attachment annotations), text extraction (`PdfPage.ExtractText`)
+  metadata, the outline (bookmarks), links and annotations (notes, text markups, free texts, stamps, flags), page
+  labels, embedded files (`PdfDocument.EmbeddedFiles`, file attachment annotations), text boxes
+  (`PdfContentBuilder.DrawTextBox`), pages moved, duplicated, removed and imported from other documents (merging), a
+  page as a form XObject, the page boxes and display coordinates, text extraction (`PdfPage.ExtractText`), image
+  extraction (`PdfPage.GetImages`), interactive forms read, filled and flattened (`PdfDocument.Form`)
 - **Rendering** (`Meziantou.Framework.Pdf.Rendering`): the pages drawn to images on the canvas of
   `Meziantou.Framework.Imaging`: paths, clipping, optional content and annotation appearances; embedded TrueType, CFF,
   Type 1 and Type 3 fonts and substituted fonts; every color space and image filter; functions, the seven shading types
@@ -280,6 +283,52 @@ cover.Annotations.AddLink(new PdfRectangle(50, 100, 250, 130), new Uri("https://
 ```
 <!-- endref -->
 
+## Merge documents
+
+`PdfDocument.Pages.Add` with a page of another document copies the page and the objects it uses; the objects shared by
+the pages of a document, such as the fonts, are copied once.
+
+<!-- ref:../../tests/Meziantou.Framework.Pdf.Tests/PdfPageTests.cs;region=Pdf_MergeDocuments;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static byte[] Merge(IEnumerable<byte[]> files)
+{
+    var result = new PdfDocument();
+    foreach (var file in files)
+    {
+        // The source documents must stay open until the result is saved
+        var source = PdfDocument.Open(file);
+        foreach (var page in source.Pages)
+        {
+            result.Pages.Add(page);
+        }
+    }
+
+    return result.ToByteArray();
+}
+```
+<!-- endref -->
+
+## Fill a form
+
+`PdfDocument.Form` reads the fields of an interactive form. Setting a value writes the value and the appearance of the
+widgets; `PdfInteractiveForm.Flatten` draws the fields on their pages and removes them.
+
+<!-- ref:../../tests/Meziantou.Framework.Pdf.Tests/PdfInteractiveFormTests.cs;region=Pdf_FillForm;format=md-fenced-code-block;dedent=true -->
+```csharp
+var document = PdfDocument.Open(data);
+var form = document.Form;
+form.FindField("name")!.Value = "Jane Doe";
+((PdfCheckBoxField)form.FindField("agree")!).IsChecked = true;
+form.FindField("size")!.Value = "L";
+form.FindField("country")!.Value = "de";
+((PdfChoiceField)form.FindField("colors")!).SetSelectedValues(["red", "blue"]);
+
+// The values and the appearances of the fields are appended: the signatures stay valid
+using var output = new MemoryStream();
+document.SaveIncremental(output);
+```
+<!-- endref -->
+
 ## Embedded files
 
 `PdfDocument.EmbeddedFiles` holds the files of the document (the `/EmbeddedFiles` name tree), which the save also
@@ -459,3 +508,5 @@ specification says; a content stream that cannot be decoded throws when its data
   the other rules of the level.
 - The text extraction follows the order of the content and joins the glyphs into lines by their positions; it does
   not detect columns.
+- The API reads, fills and flattens the fields of interactive forms, but does not create them. The text boxes break the
+  lines at the spaces, without the Unicode line breaking rules nor hyphenation.

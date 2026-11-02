@@ -223,20 +223,20 @@ internal static class InteropDocuments
         var page = document.Pages.Add(PdfSize.A5);
         var helvetica = document.Objects.Add(new Objects.PdfDictionary
         {
-            [Objects.PdfNames.Type] = Objects.PdfNames.Font,
-            [Objects.PdfNames.Subtype] = Objects.PdfName.Create("Type1"),
-            [Objects.PdfNames.BaseFont] = Objects.PdfName.Create("Helvetica"),
-            [Objects.PdfNames.Encoding] = Objects.PdfNames.WinAnsiEncoding,
+            [Objects.PdfName.Create("Type")] = Objects.PdfName.Create("Font"),
+            [Objects.PdfName.Create("Subtype")] = Objects.PdfName.Create("Type1"),
+            [Objects.PdfName.Create("BaseFont")] = Objects.PdfName.Create("Helvetica"),
+            [Objects.PdfName.Create("Encoding")] = Objects.PdfName.Create("WinAnsiEncoding"),
         });
         Objects.PdfDictionary Widget(string? fieldName, double y, Objects.PdfReference? parent = null)
         {
             var widget = new Objects.PdfDictionary
             {
-                [Objects.PdfNames.Type] = Objects.PdfNames.Annot,
-                [Objects.PdfNames.Subtype] = Objects.PdfName.Create("Widget"),
-                [Objects.PdfNames.Rect] = Objects.PdfArray.FromNumbers(30, y, 230, y + 20),
-                [Objects.PdfNames.P] = page.Reference,
-                [Objects.PdfNames.F] = Objects.PdfInteger.Get(4),
+                [Objects.PdfName.Create("Type")] = Objects.PdfName.Create("Annot"),
+                [Objects.PdfName.Create("Subtype")] = Objects.PdfName.Create("Widget"),
+                [Objects.PdfName.Create("Rect")] = Objects.PdfArray.FromNumbers(30, y, 230, y + 20),
+                [Objects.PdfName.Create("P")] = page.Reference,
+                [Objects.PdfName.Create("F")] = Objects.PdfInteger.Get(4),
             };
             if (fieldName is not null)
             {
@@ -245,7 +245,7 @@ internal static class InteropDocuments
 
             if (parent is not null)
             {
-                widget[Objects.PdfNames.Parent] = parent;
+                widget[Objects.PdfName.Create("Parent")] = parent;
             }
 
             return widget;
@@ -259,7 +259,7 @@ internal static class InteropDocuments
         var city = Widget("city", 460, addressReference);
         city[Objects.PdfName.Create("FT")] = Objects.PdfName.Create("Tx");
         var cityReference = document.Objects.Add(city);
-        address[Objects.PdfNames.Kids] = new Objects.PdfArray(cityReference);
+        address[Objects.PdfName.Create("Kids")] = new Objects.PdfArray(cityReference);
 
         var on = document.CreateForm(new PdfRectangle(0, 0, 200, 20));
         on.CreateContentBuilder().SetFillGray(0).Rectangle(2, 2, 16, 16).Fill();
@@ -269,15 +269,15 @@ internal static class InteropDocuments
         agree[Objects.PdfName.Create("FT")] = Objects.PdfName.Create("Btn");
         agree[Objects.PdfName.Create("V")] = Objects.PdfName.Create("Off");
         agree[Objects.PdfName.Create("AS")] = Objects.PdfName.Create("Off");
-        agree[Objects.PdfName.Create("AP")] = new Objects.PdfDictionary { [Objects.PdfNames.N] = new Objects.PdfDictionary { [Objects.PdfName.Create("Yes")] = on.Reference, [Objects.PdfName.Create("Off")] = off.Reference } };
+        agree[Objects.PdfName.Create("AP")] = new Objects.PdfDictionary { [Objects.PdfName.Create("N")] = new Objects.PdfDictionary { [Objects.PdfName.Create("Yes")] = on.Reference, [Objects.PdfName.Create("Off")] = off.Reference } };
         var agreeReference = document.Objects.Add(agree);
 
-        page.Dictionary[Objects.PdfNames.Annots] = new Objects.PdfArray(nameReference, cityReference, agreeReference);
+        page.Dictionary[Objects.PdfName.Create("Annots")] = new Objects.PdfArray(nameReference, cityReference, agreeReference);
         document.Catalog[Objects.PdfName.Create("AcroForm")] = new Objects.PdfDictionary
         {
             [Objects.PdfName.Create("Fields")] = new Objects.PdfArray(nameReference, addressReference, agreeReference),
             [Objects.PdfName.Create("DA")] = Objects.PdfString.FromText("/Helv 0 Tf 0 g"),
-            [Objects.PdfName.Create("DR")] = new Objects.PdfDictionary { [Objects.PdfNames.Font] = new Objects.PdfDictionary { [Objects.PdfName.Create("Helv")] = helvetica } },
+            [Objects.PdfName.Create("DR")] = new Objects.PdfDictionary { [Objects.PdfName.Create("Font")] = new Objects.PdfDictionary { [Objects.PdfName.Create("Helv")] = helvetica } },
         };
     }
 

@@ -495,8 +495,15 @@ internal sealed partial class ScopeAnalyzer
 
                     break;
                 case IfStatement ifStatement:
-                    DeclareVarScoped(ifStatement.Consequent, scope, isTopLevel: false);
-                    DeclareVarScoped(ifStatement.Alternate, scope, isTopLevel: false);
+                    for (var current = ifStatement; current is not null; current = current.Alternate as IfStatement)
+                    {
+                        DeclareVarScoped(current.Consequent, scope, isTopLevel: false);
+                        if (current.Alternate is not IfStatement)
+                        {
+                            DeclareVarScoped(current.Alternate, scope, isTopLevel: false);
+                        }
+                    }
+
                     break;
                 case WhileStatement whileStatement:
                     DeclareVarScoped(whileStatement.Body, scope, isTopLevel: false);
@@ -736,9 +743,16 @@ internal sealed partial class ScopeAnalyzer
                     Scan(labeled.Body, inThisScope);
                     return;
                 case IfStatement ifStatement:
-                    Scan(ifStatement.Test, inThisScope);
-                    Scan(ifStatement.Consequent, inThisScope);
-                    Scan(ifStatement.Alternate, inThisScope);
+                    for (var current = ifStatement; current is not null; current = current.Alternate as IfStatement)
+                    {
+                        Scan(current.Test, inThisScope);
+                        Scan(current.Consequent, inThisScope);
+                        if (current.Alternate is not IfStatement)
+                        {
+                            Scan(current.Alternate, inThisScope);
+                        }
+                    }
+
                     return;
                 case SwitchStatement switchStatement:
                 {

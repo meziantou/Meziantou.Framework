@@ -23,7 +23,9 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
   languages and artifacts (`PdfDocument.StructureTree`, `PdfContentBuilder.BeginStructureElement`); the documents are
   validated by veraPDF in the tests
 - **Encryption**: the standard security handler, revisions 2 to 6 (RC4 with 40-bit and 128-bit keys, AES-128,
-  AES-256), with crypt filters, for reading (`PdfReadOptions.Password`) and writing (`PdfDocument.Encryption`)
+  AES-256), with crypt filters, for reading (`PdfReadOptions.Password`) and writing (`PdfDocument.Encryption`), and the
+  public-key security handler for the RSA certificates of recipients (`PdfEncryptionRecipient`,
+  `PdfReadOptions.Certificate`)
 - **Document API**: pages (`PdfDocument.Pages`), a content builder for paths, colors, text, images and marked content
   (`PdfPage.CreateContentBuilder`), shadings and functions (`PdfShading`, `PdfFunction`), patterns, form XObjects,
   transparency (`PdfExtGState`: alpha, blend modes, soft masks; transparency groups), the standard 14 fonts and embedded TrueType and OpenType fonts, images (`PdfImage`: JPEG files as they are, other images
@@ -251,7 +253,9 @@ var pdf = document.ToByteArray();
 `PdfDocument.Encryption` encrypts the strings and streams of the document when it is saved, with AES-256 by default.
 A document read from an encrypted file keeps its encryption: set the property to `null` to save it in clear, or to
 another `PdfEncryption` to change its passwords. `PdfDocument.Permissions` gives the operations the password the
-document was opened with allows; the library does not enforce them.
+document was opened with allows; the library does not enforce them. `new PdfEncryption(new PdfEncryptionRecipient(certificate))`
+encrypts the document for certificates instead of passwords, and `PdfReadOptions.Certificate` opens it with the private
+key of a recipient.
 
 <!-- ref:../../tests/Meziantou.Framework.Pdf.Tests/PdfDocumentTests.cs;region=Pdf_Encryption;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -440,8 +444,11 @@ size).
   operator and group is an element; the fill and the stroke of a path are one element, whose stroke composites over its
   fill, and the alpha of a paint of an element counts as its shape; the alpha-is-shape parameter (`AIS`) makes the
   constant alpha and the soft mask shape. The glyphs of a text-showing operator knock out one another, unless the text
-  knockout parameter (`TK`) is false. A transfer function applies to the result of a group. Overprint and halftones are
-  not simulated
+  knockout parameter (`TK`) is false. A transfer function applies to the result of a group. Overprint is not
+  simulated
+- **Halftones**: ignored by default, as viewers do. With `PdfRenderOptions.UseHalftones`, the halftones of the graphics
+  states (`HT`: types 1, 5, 6, 10 and 16, the predefined spot functions; `HTO`) turn the red, green and blue components
+  of the fully opaque objects on or off, in the pixels of the image; the default halftone leaves the colors as they are
 
 ### Fonts that are not embedded
 
@@ -537,8 +544,8 @@ specification says; a content stream that cannot be decoded throws when its data
 
 ## Limitations
 
-- The public-key security handlers (certificates) are not supported; the writer encrypts the embedded files with the
-  method of the other streams.
+- The public-key security handler needs RSA certificates (no key agreement); the writer encrypts the embedded files with
+  the method of the other streams.
 - The standard 14 fonts show the text of `WinAnsiEncoding` (or the encodings of Symbol and ZapfDingbats); an embedded
   font shows any text it has the glyphs of. The fonts with CFF2 outlines, and the instances of variable fonts, are not
   embedded. The save checks what the conformance levels require of the document as a whole; the
@@ -549,4 +556,5 @@ specification says; a content stream that cannot be decoded throws when its data
   text, but not their CIDs: their glyphs get the default width of the font.
 - The API reads, fills and flattens the fields of interactive forms, but does not create them. The text boxes break the
   lines at the spaces, without the Unicode line breaking rules nor hyphenation.
-- The renderer composites in sRGB: overprint and halftones are not simulated.
+- The renderer composites in sRGB: overprint is not simulated, and the halftones are applied to the red, green and blue
+  components only, when `PdfRenderOptions.UseHalftones` asks for them.

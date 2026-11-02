@@ -233,6 +233,7 @@ internal static class StringRegExpBuiltins
             for (var i = 0; i < outLength; i++)
             {
                 array.Push(JsValue.FromJsString(JsString.Create(input[i])));
+                JsEngine.CountCurrentWork(1);
             }
 
             return array;
@@ -249,6 +250,7 @@ internal static class StringRegExpBuiltins
         while (matchIndex >= 0)
         {
             array.Push(input[searchStart..matchIndex]);
+            JsEngine.CountCurrentWork(1 + matchIndex - searchStart);
             if (array.Length == lim)
                 return array;
 

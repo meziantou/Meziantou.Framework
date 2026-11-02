@@ -128,7 +128,8 @@ internal sealed partial class ContentRenderer
         };
         void Content(DrawingCanvas target)
         {
-            var renderer = CreateChild(state, isKnockout, element: null);
+            // The objects of a group painted with an alpha, a blend mode or a soft mask are not opaque (11.7.5.2)
+            var renderer = CreateChild(state, isKnockout, element: null, suppressHalftones: alpha < 1 || blend != BlendMode.Normal || softMask is not null);
             renderer.ClipToRectangle(bbox);
             renderer.Run(target, form.GetDecodedData(), resources);
         }
@@ -161,10 +162,11 @@ internal sealed partial class ContentRenderer
     }
 
     /// <summary>Creates the renderer of the content of a form, a group or a glyph, which paints with this one.</summary>
-    private ContentRenderer CreateChild(RenderGraphicsState state, bool isKnockout, double? element)
+    private ContentRenderer CreateChild(RenderGraphicsState state, bool isKnockout, double? element, bool suppressHalftones = false)
     {
         var renderer = new ContentRenderer(_cache, _document, state, _depth + 1, _optionalContent)
         {
+            SuppressHalftones = SuppressHalftones || suppressHalftones,
             ForcedColor = ForcedColor,
             BaseMatrix = state.Ctm,
             DeviceSize = DeviceSize,
@@ -197,7 +199,7 @@ internal sealed partial class ContentRenderer
             {
                 var alpha = ElementAlpha(_state.FillAlpha);
                 var blend = _state.BlendMode;
-                PaintWithState(element, target => DrawBlended(target, blend, c => c.DrawImage(image.Frames[0], origin, alpha)), bounds);
+                PaintWithState(element, target => DrawBlended(target, blend, c => c.DrawImage(image.Frames[0], origin, alpha)), bounds, GetHalftone(_state.FillAlpha));
             });
         }
     }
@@ -229,7 +231,10 @@ internal sealed partial class ContentRenderer
     {
         // The color space of the image may be a default color space of the resources (8.6.5.6)
         var image = _cache.GetOrCreate(stream, resources, () => PdfImageDecoder.Decode(stream, resources, _cache));
-        DrawDecodedImage(canvas, image);
+
+        // An image with a soft mask is not opaque, for the halftones (11.7.5.2)
+        var hasSoftMask = stream.Dictionary.GetResolved(PdfNames.SMask) is PdfStream || stream.Dictionary.GetInteger(PdfName.Create("SMaskInData"), 0) != 0;
+        DrawDecodedImage(canvas, image, hasSoftMask);
     }
 
     private void DrawInlineImage(DrawingCanvas canvas, PdfDictionary dictionary, ReadOnlyMemory<byte> data, PdfDictionary? resources)
@@ -241,7 +246,7 @@ internal sealed partial class ContentRenderer
     }
 
     /// <summary>Draws an image in the unit square of user space (8.9.4); a stencil mask is painted with the fill color.</summary>
-    private void DrawDecodedImage(DrawingCanvas canvas, DecodedImage? image)
+    private void DrawDecodedImage(DrawingCanvas canvas, DecodedImage? image, bool hasSoftMask = false)
     {
         if (image is null || !_optionalContent.IsVisible)
             return;
@@ -257,7 +262,7 @@ internal sealed partial class ContentRenderer
         if (IsKnockoutContext && _element is null)
         {
             // In a knockout group, the image is an element of the group, of the pixels it covers
-            canvas.Clip(bounds, target => PaintElement(target, _state.FillAlpha, element => DrawDecodedImage(element, image)));
+            canvas.Clip(bounds, target => PaintElement(target, _state.FillAlpha, element => DrawDecodedImage(element, image, hasSoftMask)));
             return;
         }
 
@@ -275,7 +280,7 @@ internal sealed partial class ContentRenderer
                     return;
 
                 var frame = image.Image.Frames[0];
-                PaintWithState(canvas, target => target.Mask(mask => mask.DrawImage(frame, transform, sampling), content => content.Fill(brush), MaskMode.Alpha), bounds);
+                PaintWithState(canvas, target => target.Mask(mask => mask.DrawImage(frame, transform, sampling), content => content.Fill(brush), MaskMode.Alpha), bounds, GetHalftone(_state.FillAlpha));
             }
             finally
             {
@@ -288,7 +293,7 @@ internal sealed partial class ContentRenderer
         var alpha = ElementAlpha(_state.FillAlpha);
         var blend = _state.BlendMode;
         var source = image.Image.Frames[0];
-        PaintWithState(canvas, target => DrawBlended(target, blend, c => c.DrawImage(source, transform, sampling, alpha)), bounds);
+        PaintWithState(canvas, target => DrawBlended(target, blend, c => c.DrawImage(source, transform, sampling, alpha)), bounds, GetHalftone(_state.FillAlpha, hasSoftMask));
     }
 
     /// <summary>Gets the pixels an image covers once transformed, with a pixel around them for the filtering; <see langword="null"/> when none is on the device.</summary>

@@ -527,24 +527,42 @@ internal sealed partial class CodeGenerator
         }
     }
 
+    /// <summary>Emits an if statement; an else if chain is emitted in a loop (a long chain of generated code does not recurse), whose branches jump to the same end.</summary>
     private void EmitIf(IfStatement ifStatement)
     {
-        ResetCompletion();
-        EmitExpression(ifStatement.Test);
-        var elseLabel = _builder.DefineLabel();
-        _builder.EmitJump(OpCode.JumpIfFalse, elseLabel);
-        EmitSubStatement(ifStatement.Consequent);
-        if (ifStatement.Alternate is not null)
+        Label? endLabel = null;
+        var current = ifStatement;
+        while (true)
         {
-            var endLabel = _builder.DefineLabel();
-            _builder.EmitJump(OpCode.Jump, endLabel);
+            ResetCompletion();
+            EmitExpression(current.Test);
+            var elseLabel = _builder.DefineLabel();
+            _builder.EmitJump(OpCode.JumpIfFalse, elseLabel);
+            EmitSubStatement(current.Consequent);
+            if (current.Alternate is null)
+            {
+                _builder.MarkLabel(elseLabel);
+                break;
+            }
+
+            endLabel ??= _builder.DefineLabel();
+            _builder.EmitJump(OpCode.Jump, endLabel.Value);
             _builder.MarkLabel(elseLabel);
-            EmitSubStatement(ifStatement.Alternate);
-            _builder.MarkLabel(endLabel);
+            if (current.Alternate is IfStatement next)
+            {
+                CompilerStack.EnsureSufficientStack();
+                _builder.SetPosition(next.Start);
+                current = next;
+                continue;
+            }
+
+            EmitSubStatement(current.Alternate);
+            break;
         }
-        else
+
+        if (endLabel is { } end)
         {
-            _builder.MarkLabel(elseLabel);
+            _builder.MarkLabel(end);
         }
     }
 

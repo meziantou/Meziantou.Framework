@@ -41,14 +41,8 @@ public partial class JsObject
     /// <summary>[[OwnPropertyKeys]]: the keys of the own properties, in the order of the specification.</summary>
     public IReadOnlyList<JsPropertyKey> GetOwnPropertyKeys()
     {
-        var keys = OwnPropertyKeys();
-        var result = new JsPropertyKey[keys.Count];
-        for (var i = 0; i < result.Length; i++)
-        {
-            result[i] = new JsPropertyKey(keys[i]);
-        }
-
-        return result;
+        // The list is a new one: no copy
+        return new JsPropertyKeyList(OwnPropertyKeys());
     }
 
     /// <summary>[[GetPrototypeOf]]</summary>

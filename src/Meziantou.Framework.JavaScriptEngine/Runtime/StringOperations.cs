@@ -24,6 +24,9 @@ internal static class StringOperations
     public static void Append(StringBuilder builder, ReadOnlySpan<char> value, long repeatCount)
     {
         CheckLength(builder.Length + (repeatCount * value.Length));
+        if (value.IsEmpty)
+            return;
+
         if (value.Length == 1)
         {
             // A single allocation: the string builder can grow to the maximum length of a string
@@ -178,6 +181,10 @@ internal static class StringOperations
             JsEngine.EnsureCurrentCanAllocate((maxLength * sizeof(char)) + ((maxLength - asciiPrefixLength) * sizeof(int)));
         }
 
+        // A long string is normalized in chunks: the limits of the running entry are checked between them
+        if (value.Length > NormalizationChunkLength)
+            return NormalizeInChunks(value, form);
+
         if (UnicodeNormalization.IsNormalized(value, form))
             return value;
 
@@ -187,6 +194,109 @@ internal static class StringOperations
         }
 
         return UnicodeNormalization.Normalize(value, form);
+    }
+
+    private const int NormalizationChunkLength = 1 << 16;
+
+    // The starters that are the second code point of a canonical composition (they combine with the code point before them)
+    private static HashSet<int>? s_composableStarters;
+
+    /// <summary>
+    /// Normalizes a long string in chunks of about <see cref="NormalizationChunkLength"/> UTF-16 code units, which end before a
+    /// normalization boundary (<see cref="IsNormalizationBoundary"/>): the normalization of the string is the concatenation of
+    /// the normalizations of its chunks.
+    /// </summary>
+    private static string NormalizeInChunks(string value, NormalizationForm form)
+    {
+        StringBuilder? builder = null;
+        var start = 0;
+        while (start < value.Length)
+        {
+            var end = start + NormalizationChunkLength;
+            while (end < value.Length && !IsNormalizationBoundary(value, end))
+            {
+                end++;
+            }
+
+            end = Math.Min(end, value.Length);
+            var chunk = value.Substring(start, end - start);
+            var normalized = UnicodeNormalization.Normalize(chunk, form);
+            JsEngine.CountCurrentWork(end - start);
+            if (builder is null && !ReferenceEquals(normalized, chunk))
+            {
+                builder = new StringBuilder(value.Length);
+                builder.Append(value, 0, start);
+            }
+
+            if (builder is not null)
+            {
+                builder.Append(normalized);
+                if (builder.Length > JsString.MaxLength)
+                {
+                    CheckLength(builder.Length + (long)(value.Length - end));
+                }
+            }
+
+            start = end;
+        }
+
+        return builder?.ToString() ?? value;
+    }
+
+    /// <summary>
+    /// Whether the normalization of a string can be split before the code point at <paramref name="index"/>, in every
+    /// normalization form: the code point is a starter, the first code point of its decompositions is a starter that
+    /// does not combine with the code points before it. The code points before it then never reorder nor compose with
+    /// the code points from it.
+    /// </summary>
+    private static bool IsNormalizationBoundary(string value, int index)
+    {
+        var c = value[index];
+        if (char.IsAscii(c))
+            return true;
+
+        if (char.IsLowSurrogate(c))
+            return false;
+
+        var codePoint = char.IsHighSurrogate(c) && index + 1 < value.Length && char.IsLowSurrogate(value[index + 1]) ? char.ConvertToUtf32(c, value[index + 1]) : c;
+        if (char.IsSurrogate(c) && codePoint == c)
+            return false;
+
+        if (UnicodeProperties.GetCanonicalCombiningClass(codePoint) != 0)
+            return false;
+
+        var text = char.ConvertFromUtf32(codePoint);
+        return IsNonComposableStarter(UnicodeNormalization.Normalize(text, NormalizationForm.FormD)) && IsNonComposableStarter(UnicodeNormalization.Normalize(text, NormalizationForm.FormKD));
+
+        static bool IsNonComposableStarter(string decomposition)
+        {
+            if (decomposition.Length == 0)
+                return false;
+
+            var first = char.ConvertToUtf32(decomposition, 0);
+            return UnicodeProperties.GetCanonicalCombiningClass(first) == 0 && !GetComposableStarters().Contains(first);
+        }
+    }
+
+    private static HashSet<int> GetComposableStarters()
+    {
+        if (s_composableStarters is { } result)
+            return result;
+
+        result = [];
+        for (var codePoint = 0; codePoint <= 0x10FFFF; codePoint++)
+        {
+            if (codePoint is >= 0xD800 and <= 0xDFFF)
+                continue;
+
+            if (UnicodeNormalization.TryDecomposeCanonical(codePoint, out _, out var second) && second >= 0 && UnicodeProperties.GetCanonicalCombiningClass(second) == 0)
+            {
+                result.Add(second);
+            }
+        }
+
+        s_composableStarters = result;
+        return result;
     }
 
     /// <summary>
@@ -201,6 +311,11 @@ internal static class StringOperations
         long length = 0;
         for (var i = 0; i < value.Length; i++)
         {
+            if ((i & 0xFFFF) == 0)
+            {
+                JsEngine.CountCurrentWork(0x10000);
+            }
+
             var c = value[i];
             if (char.IsAscii(c))
             {

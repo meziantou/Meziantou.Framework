@@ -404,7 +404,10 @@ namespace Meziantou.Framework.Pdf
         public bool EncryptMetadata { get => throw null; init { } }
         public string? OwnerPassword { get => throw null; }
         public Meziantou.Framework.Pdf.PdfPermissions Permissions { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfEncryptionRecipient> Recipients { get => throw null; }
         public string? UserPassword { get => throw null; }
+        public bool UsesCertificates { get => throw null; }
+        public PdfEncryption(params System.Collections.Generic.IEnumerable<Meziantou.Framework.Pdf.PdfEncryptionRecipient> recipients) { }
         public PdfEncryption(string userPassword, string ownerPassword) { }
     }
 
@@ -414,6 +417,13 @@ namespace Meziantou.Framework.Pdf
         Rc4With128BitKey = 1,
         AesWith128BitKey = 2,
         AesWith256BitKey = 3,
+    }
+
+    public sealed class PdfEncryptionRecipient
+    {
+        public System.Security.Cryptography.X509Certificates.X509Certificate2 Certificate { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfPermissions? Permissions { get => throw null; init { } }
+        public PdfEncryptionRecipient(System.Security.Cryptography.X509Certificates.X509Certificate2 certificate) { }
     }
 
     public class PdfException : System.Exception
@@ -825,6 +835,7 @@ namespace Meziantou.Framework.Pdf
 
     public sealed class PdfReadOptions
     {
+        public System.Security.Cryptography.X509Certificates.X509Certificate2? Certificate { get => throw null; init { } }
         public static Meziantou.Framework.Pdf.PdfReadOptions Default { get => throw null; }
         public long MaxDecodedStreamLength { get => throw null; init { } }
         public int MaxNestingDepth { get => throw null; init { } }
@@ -1340,6 +1351,7 @@ namespace Meziantou.Framework.Pdf.Rendering
         public Meziantou.Framework.Pdf.PdfRectangle? Region { get => throw null; init { } }
         public bool RenderAnnotations { get => throw null; init { } }
         public bool TextAntialiasing { get => throw null; init { } }
+        public bool UseHalftones { get => throw null; init { } }
         public bool UseSystemFonts { get => throw null; init { } }
         public int? Width { get => throw null; init { } }
     }

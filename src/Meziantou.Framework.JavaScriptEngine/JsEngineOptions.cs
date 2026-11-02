@@ -27,6 +27,13 @@ public sealed class JsEngineOptions
     /// </summary>
     public TimeSpan? RegExpTimeout { get; set; }
 
+    /// <summary>
+    /// Gets or sets whether the scripts can block the thread with <c>Atomics.wait</c> (the [[CanBlock]] field of the agent).
+    /// When false, <c>Atomics.wait</c> throws a TypeError, as on the main thread of a browser; <c>Atomics.waitAsync</c> still
+    /// works. A blocking wait is bounded by <see cref="Timeout"/> and <see cref="CancellationToken"/> either way.
+    /// </summary>
+    public bool CanBlock { get; set; } = true;
+
     /// <summary>Gets or sets the token that stops the running script when it is canceled.</summary>
     public CancellationToken CancellationToken { get; set; }
 

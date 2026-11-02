@@ -6,10 +6,12 @@ using Meziantou.Framework.Pdf.Text;
 namespace Meziantou.Framework.Pdf.Security;
 
 /// <summary>
-/// The standard security handler (ISO 32000-2, 7.6.4): the file key computed from a password, and the encryption of the
-/// strings and streams of each object with RC4 (revisions 2 and 3), AES-128 (revision 4) or AES-256 (revisions 5 and 6).
+/// A security handler (ISO 32000-2, 7.6): the file key, and the encryption of the strings and streams of each object with
+/// RC4, AES-128 or AES-256. The standard security handler (7.6.4) computes the file key from a password; the public-key
+/// security handler (7.6.5, in <c>SecurityHandler.PublicKey.cs</c>) from a seed encrypted for the certificates of the
+/// recipients.
 /// </summary>
-internal sealed class StandardSecurityHandler
+internal sealed partial class SecurityHandler
 {
     private const int PermissionsReservedBits = unchecked((int)0xFFFFF0C0);
 
@@ -17,17 +19,17 @@ internal sealed class StandardSecurityHandler
     private static readonly PdfName ByteRangeName = PdfName.Create("ByteRange");
 
     private readonly byte[] _fileKey;
-    private readonly int _revision;
     private readonly CryptMethod _stringMethod;
     private readonly CryptMethod _streamMethod;
     private readonly CryptMethod _embeddedFileMethod;
     private readonly Dictionary<string, CryptMethod> _cryptFilters;
 
-    private StandardSecurityHandler(PdfDictionary dictionary, byte[] fileKey, int revision, int permissions, bool encryptMetadata, CryptMethod stringMethod, CryptMethod streamMethod, CryptMethod embeddedFileMethod, Dictionary<string, CryptMethod> cryptFilters, bool isOwner)
+    private SecurityHandler(PdfDictionary dictionary, byte[] fileKey, PdfEncryptionAlgorithm algorithm, int permissions, bool encryptMetadata, CryptMethod stringMethod, CryptMethod streamMethod, CryptMethod embeddedFileMethod, Dictionary<string, CryptMethod> cryptFilters, bool isOwner, bool isPublicKey = false)
     {
         Dictionary = dictionary;
         _fileKey = fileKey;
-        _revision = revision;
+        Algorithm = algorithm;
+        IsPublicKey = isPublicKey;
         RawPermissions = permissions;
         EncryptMetadata = encryptMetadata;
         _stringMethod = stringMethod;
@@ -50,12 +52,22 @@ internal sealed class StandardSecurityHandler
     /// <summary>Gets a value indicating whether the password is the owner password: the permissions do not apply.</summary>
     public bool IsOwner { get; }
 
-    public PdfEncryptionAlgorithm Algorithm => _revision switch
+    /// <summary>Gets a value indicating whether the handler is the public-key security handler (<c>/Adobe.PubSec</c>).</summary>
+    public bool IsPublicKey { get; }
+
+    public PdfEncryptionAlgorithm Algorithm { get; }
+
+    /// <summary>
+    /// Gets the version of PDF the encryption needs: revision 3 of the standard security handler needs PDF 1.4, the
+    /// crypt filters PDF 1.5, AES-128 PDF 1.6 and AES-256 PDF 2.0.
+    /// </summary>
+    public PdfVersion? MinimumVersion => Algorithm switch
     {
-        2 => PdfEncryptionAlgorithm.Rc4With40BitKey,
-        >= 5 => PdfEncryptionAlgorithm.AesWith256BitKey,
-        _ when _streamMethod == CryptMethod.AesV2 || _stringMethod == CryptMethod.AesV2 => PdfEncryptionAlgorithm.AesWith128BitKey,
-        _ => PdfEncryptionAlgorithm.Rc4With128BitKey,
+        PdfEncryptionAlgorithm.AesWith128BitKey => PdfVersion.Pdf16,
+        PdfEncryptionAlgorithm.AesWith256BitKey => PdfVersion.Pdf20,
+        _ when IsPublicKey => PdfVersion.Pdf15,
+        PdfEncryptionAlgorithm.Rc4With128BitKey => PdfVersion.Pdf14,
+        _ => null,
     };
 
     private static ReadOnlySpan<byte> Padding =>
@@ -64,16 +76,23 @@ internal sealed class StandardSecurityHandler
         0x2E, 0x2E, 0x00, 0xB6, 0xD0, 0x68, 0x3E, 0x80, 0x2F, 0x0C, 0xA9, 0xFE, 0x64, 0x53, 0x69, 0x7A,
     ];
 
-    /// <summary>Reads the encryption dictionary of a file and authenticates the password (7.6.4.4).</summary>
-    /// <exception cref="UnsupportedPdfFeatureException">The document uses another security handler, or an unknown version.</exception>
+    /// <summary>Reads the encryption dictionary of a file and authenticates the password (7.6.4.4) or the certificate (7.6.5).</summary>
+    /// <exception cref="UnsupportedPdfFeatureException">The document uses another security handler, an unknown version, or an unsupported algorithm.</exception>
     /// <exception cref="InvalidPdfContentException">The encryption dictionary is invalid.</exception>
-    /// <exception cref="PdfPasswordException">The password is neither the user nor the owner password.</exception>
-    public static StandardSecurityHandler Open(PdfDictionary dictionary, ReadOnlySpan<byte> id, string? password)
+    /// <exception cref="PdfPasswordException">The password is neither the user nor the owner password, or the certificate is not a recipient.</exception>
+    public static SecurityHandler Open(PdfDictionary dictionary, ReadOnlySpan<byte> id, PdfReadOptions options)
     {
         var filter = dictionary.GetName(PdfNames.Filter)?.Value;
-        if (filter != "Standard")
-            throw new UnsupportedPdfFeatureException($"The document is encrypted with the security handler '{filter}': only the standard security handler is supported");
+        return filter switch
+        {
+            "Standard" => OpenStandard(dictionary, id, options.Password),
+            "Adobe.PubSec" => OpenPublicKey(dictionary, options.Certificate),
+            _ => throw new UnsupportedPdfFeatureException($"The document is encrypted with the security handler '{filter}': only the standard and the public-key (Adobe.PubSec) security handlers are supported"),
+        };
+    }
 
+    private static SecurityHandler OpenStandard(PdfDictionary dictionary, ReadOnlySpan<byte> id, string? password)
+    {
         var version = (int)dictionary.GetInteger(PdfName.Create("V"), 0);
         var revision = (int)dictionary.GetInteger(PdfName.Create("R"), 0);
         if (version is not (1 or 2 or 4 or 5) || revision is < 2 or > 6)
@@ -83,51 +102,7 @@ internal sealed class StandardSecurityHandler
         var user = dictionary.TryGetResolved<PdfString>(PdfName.Create("U"), out var u) ? u.Span.ToArray() : throw new InvalidPdfContentException("The encryption dictionary has no /U");
         var permissions = unchecked((int)dictionary.GetInteger(PdfName.Create("P"), 0));
         var encryptMetadata = version < 4 || dictionary.GetBoolean(PdfName.Create("EncryptMetadata"), defaultValue: true);
-
-        // The crypt filters of versions 4 and 5 (7.6.6); the methods of versions 1 and 2 are RC4
-        var cryptFilters = new Dictionary<string, CryptMethod>(StringComparer.Ordinal) { ["Identity"] = CryptMethod.None };
-        var keyLength = version == 1 ? 5 : ReadKeyLength(dictionary.GetInteger(PdfNames.Length, 40));
-        CryptMethod stringMethod;
-        CryptMethod streamMethod;
-        CryptMethod embeddedFileMethod;
-        if (version >= 4)
-        {
-            if (dictionary.GetResolved(PdfName.Create("CF")) is PdfDictionary filters)
-            {
-                foreach (var (name, value) in filters)
-                {
-                    if (PdfReference.ResolveIfReference(value) is not PdfDictionary cryptFilter)
-                        continue;
-
-                    var method = cryptFilter.GetName(PdfName.Create("CFM"))?.Value switch
-                    {
-                        "V2" => CryptMethod.Rc4,
-                        "AESV2" => CryptMethod.AesV2,
-                        "AESV3" => CryptMethod.AesV3,
-                        _ => CryptMethod.None,
-                    };
-                    cryptFilters[name.Value] = method;
-                    if (method == CryptMethod.Rc4 && cryptFilter.TryGetResolved<PdfInteger>(PdfNames.Length, out var length))
-                    {
-                        keyLength = ReadKeyLength(length.Value);
-                    }
-                }
-            }
-
-            stringMethod = GetCryptFilter(cryptFilters, dictionary.GetName(PdfName.Create("StrF"))?.Value);
-            streamMethod = GetCryptFilter(cryptFilters, dictionary.GetName(PdfName.Create("StmF"))?.Value);
-            embeddedFileMethod = dictionary.GetName(PdfName.Create("EFF")) is { } eff ? GetCryptFilter(cryptFilters, eff.Value) : streamMethod;
-            if (stringMethod == CryptMethod.AesV2 || streamMethod == CryptMethod.AesV2)
-            {
-                keyLength = 16;
-            }
-        }
-        else
-        {
-            stringMethod = CryptMethod.Rc4;
-            streamMethod = CryptMethod.Rc4;
-            embeddedFileMethod = CryptMethod.Rc4;
-        }
+        var (cryptFilters, stringMethod, streamMethod, embeddedFileMethod, keyLength) = ReadCryptFilters(dictionary, version);
 
         byte[] fileKey;
         bool isOwner;
@@ -197,12 +172,66 @@ internal sealed class StandardSecurityHandler
             permissions = PermissionsReservedBits;
         }
 
-        return new StandardSecurityHandler(CopyDirect(dictionary), fileKey, revision, permissions, encryptMetadata, stringMethod, streamMethod, embeddedFileMethod, cryptFilters, isOwner);
+        var algorithm = revision switch
+        {
+            2 => PdfEncryptionAlgorithm.Rc4With40BitKey,
+            >= 5 => PdfEncryptionAlgorithm.AesWith256BitKey,
+            _ when streamMethod == CryptMethod.AesV2 || stringMethod == CryptMethod.AesV2 => PdfEncryptionAlgorithm.AesWith128BitKey,
+            _ => PdfEncryptionAlgorithm.Rc4With128BitKey,
+        };
+        return new SecurityHandler(CopyDirect(dictionary), fileKey, algorithm, permissions, encryptMetadata, stringMethod, streamMethod, embeddedFileMethod, cryptFilters, isOwner);
+    }
+
+    /// <summary>
+    /// Reads the crypt filters of versions 4 and 5 (7.6.6) and the methods of the strings, the streams and the embedded
+    /// files; the methods of versions 1 and 2 are RC4. The key length is in bytes.
+    /// </summary>
+    private static (Dictionary<string, CryptMethod> CryptFilters, CryptMethod StringMethod, CryptMethod StreamMethod, CryptMethod EmbeddedFileMethod, int KeyLength) ReadCryptFilters(PdfDictionary dictionary, int version)
+    {
+        var cryptFilters = new Dictionary<string, CryptMethod>(StringComparer.Ordinal) { ["Identity"] = CryptMethod.None };
+        var keyLength = version == 1 ? 5 : ReadKeyLength(dictionary.GetInteger(PdfNames.Length, 40));
+        if (version < 4)
+            return (cryptFilters, CryptMethod.Rc4, CryptMethod.Rc4, CryptMethod.Rc4, keyLength);
+
+        if (dictionary.GetResolved(PdfName.Create("CF")) is PdfDictionary filters)
+        {
+            foreach (var (name, value) in filters)
+            {
+                if (PdfReference.ResolveIfReference(value) is not PdfDictionary cryptFilter)
+                    continue;
+
+                var method = cryptFilter.GetName(PdfName.Create("CFM"))?.Value switch
+                {
+                    "V2" => CryptMethod.Rc4,
+                    "AESV2" => CryptMethod.AesV2,
+                    "AESV3" => CryptMethod.AesV3,
+                    _ => CryptMethod.None,
+                };
+                cryptFilters[name.Value] = method;
+                if (method == CryptMethod.Rc4 && cryptFilter.TryGetResolved<PdfInteger>(PdfNames.Length, out var length))
+                {
+                    keyLength = ReadKeyLength(length.Value);
+                }
+            }
+        }
+
+        var stringMethod = GetCryptFilter(cryptFilters, dictionary.GetName(PdfName.Create("StrF"))?.Value);
+        var streamMethod = GetCryptFilter(cryptFilters, dictionary.GetName(PdfName.Create("StmF"))?.Value);
+        var embeddedFileMethod = dictionary.GetName(PdfName.Create("EFF")) is { } eff ? GetCryptFilter(cryptFilters, eff.Value) : streamMethod;
+        if (stringMethod == CryptMethod.AesV2 || streamMethod == CryptMethod.AesV2)
+        {
+            keyLength = 16;
+        }
+
+        return (cryptFilters, stringMethod, streamMethod, embeddedFileMethod, keyLength);
     }
 
     /// <summary>Creates the security handler of the encryption of a document that is saved, with its encryption dictionary.</summary>
-    public static StandardSecurityHandler Create(PdfEncryption encryption, ReadOnlySpan<byte> id)
+    public static SecurityHandler Create(PdfEncryption encryption, ReadOnlySpan<byte> id)
     {
+        if (encryption.Recipients.Count > 0)
+            return CreatePublicKey(encryption);
+
         var permissions = PermissionsReservedBits | (int)(encryption.Permissions & PdfPermissions.All);
         var userPassword = encryption.UserPassword ?? "";
         var ownerPassword = string.IsNullOrEmpty(encryption.OwnerPassword) ? userPassword : encryption.OwnerPassword;
@@ -260,7 +289,7 @@ internal sealed class StandardSecurityHandler
             }
 
             cryptFilters["StdCF"] = CryptMethod.AesV3;
-            return new StandardSecurityHandler(dictionary, fileKey, 6, permissions, encryptMetadata, CryptMethod.AesV3, CryptMethod.AesV3, CryptMethod.AesV3, cryptFilters, isOwner: true);
+            return new SecurityHandler(dictionary, fileKey, PdfEncryptionAlgorithm.AesWith256BitKey, permissions, encryptMetadata, CryptMethod.AesV3, CryptMethod.AesV3, CryptMethod.AesV3, cryptFilters, isOwner: true);
         }
 
         var (version, revision, keyLength, method) = encryption.Algorithm switch
@@ -301,7 +330,7 @@ internal sealed class StandardSecurityHandler
         dictionary[PdfName.Create("O")] = PdfString.FromBytes(ownerEntry, hexadecimal: true);
         dictionary[PdfName.Create("U")] = PdfString.FromBytes(userEntry, hexadecimal: true);
         dictionary[PdfName.Create("P")] = PdfInteger.Get(permissions);
-        return new StandardSecurityHandler(dictionary, legacyFileKey, revision, permissions, encryptMetadata, method, method, method, cryptFilters, isOwner: true);
+        return new SecurityHandler(dictionary, legacyFileKey, encryption.Algorithm, permissions, encryptMetadata, method, method, method, cryptFilters, isOwner: true);
     }
 
     /// <summary>Gets the method of the strings and streams of an object; a stream can name another crypt filter (7.6.6) or not be encrypted.</summary>

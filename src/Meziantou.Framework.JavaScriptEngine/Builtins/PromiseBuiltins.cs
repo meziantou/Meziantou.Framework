@@ -62,15 +62,21 @@ internal static class PromiseBuiltins
         var resolvingFunctions = new PromiseResolvingFunctions(promise, function.Realm);
         var resolve = resolvingFunctions.ResolveFunction;
         var reject = resolvingFunctions.RejectFunction;
+        // The promise is rejected after the catch block: a call made from a catch block runs on top of the frames of the
+        // exception dispatch, and an error of a deep recursion (new Promise(f) in f) would nest a dispatch in each level
+        // and overflow the stack of the thread
+        JsValue error;
         try
         {
             executor.AsObject().Call(JsValue.Undefined, [resolve, reject]);
+            return promise;
         }
         catch (JsException exception)
         {
-            reject.Call(JsValue.Undefined, [exception.Value]);
+            error = exception.Value;
         }
 
+        reject.Call(JsValue.Undefined, [error]);
         return promise;
     }
 

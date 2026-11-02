@@ -57,6 +57,80 @@ Assert.Equal("RangeError", realm.Execute("function f() { return 1 + f(); } try {
 - The interpreter does not use the .NET stack for JavaScript calls, so a deep recursion of JavaScript code never
   overflows the stack of the thread; a recursion through .NET functions throws a `RangeError` before it does.
 
+### What the limits cover
+
+An entry includes everything the engine does for it, not only the JavaScript code:
+
+- The parsing and the compilation of the source of [Execute](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.Execute), [ParseModule](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.ParseModule), `eval` and `new Function`: the parser and the
+  compiler check the limits periodically, so a huge source is stopped by `Timeout`, `MemoryLimit` or the cancellation
+  like a long loop. [JsPreparedScript.Parse](cref:Meziantou.Framework.JavaScriptEngine.JsPreparedScript.Parse) runs outside any entry: parse it in an execution scope (below)
+  to bound it. Bound the length of the source yourself when you do not want to parse a huge one at all.
+- The built-ins called by .NET: `engine.Call(repeat, "abcd", 1 << 26)` is stopped by `MemoryLimit` as
+  `'abcd'.repeat(1 << 26)` is in a script.
+- The long operations of the built-ins (sorting a large typed array, normalizing or splitting a long string, joining a
+  large array...), which check the limits while they run.
+- `Atomics.wait`: a blocking wait is bounded by the time left to the entry, and stops when the execution is canceled.
+  Set [CanBlock](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.CanBlock) to `false` to forbid the blocking waits: `Atomics.wait` then throws a `TypeError`, as on the
+  main thread of a browser.
+
+The straight-line code between two loops or calls is not counted by `MaxStatements`: it is bounded by the length of the
+source, whose parsing is checked.
+
+### Nested calls
+
+A .NET function called by a script, which calls JavaScript again (`engine.Call`), is part of the same entry: the limits
+are not restarted. When the nested call is terminated, the termination stays until the outermost entry returns: a .NET
+function that catches the [JsTerminationException](cref:Meziantou.Framework.JavaScriptEngine.JsTerminationException) cannot let the script continue, the engine throws it again
+when the function returns, and at the next call into JavaScript.
+
+### Jobs
+
+[RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs) runs each job in its own entry: the limits apply to each job, not to the whole drain. Promise jobs that keep
+enqueuing jobs (`function f() { Promise.resolve().then(f); }`) keep [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs) running forever. Run the jobs in an
+execution scope to bound the drain as a whole. Once the execution is canceled, [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs) throws before it runs the
+next job, which stays in the queue.
+
+## Limit a request
+
+[EnterExecutionScope](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.EnterExecutionScope) makes the calls made until the scope is disposed one entry into JavaScript. The
+[JsExecutionLimits](cref:Meziantou.Framework.JavaScriptEngine.JsExecutionLimits) of the scope apply to them as a whole, in addition to the limits of the options, which apply to the
+scope as a whole too. It gives a request its own cancellation token and budget without changing the options of a
+shared engine, and bounds a script together with the jobs it enqueues:
+
+<!-- ref:../../tests/Meziantou.Framework.JavaScriptEngine.Tests/JsEngineTests.cs;region=JavaScriptEngine_ExecutionScope;format=md-fenced-code-block;dedent=true -->
+```csharp
+// One engine serves several requests: its options apply to every entry
+using var engine = new JsEngine(new JsEngineOptions { MaxStatements = 1_000_000 });
+var realm = engine.CreateRealm();
+
+// A request gets its own token and budget, shared by the script and by the jobs it enqueues
+using var requestAborted = new CancellationTokenSource();
+var exception = Assert.Throws<JsTerminationException>(() =>
+{
+    using var scope = engine.EnterExecutionScope(new JsExecutionLimits
+    {
+        CancellationToken = requestAborted.Token,
+        Timeout = TimeSpan.FromSeconds(5),
+        MaxStatements = 10_000,
+    });
+
+    realm.Execute("function tick() { Promise.resolve().then(tick); } tick();");
+    engine.RunJobs(); // the jobs keep enqueuing jobs: the limits of the scope stop the drain
+});
+Assert.Equal(JsTerminationReason.StatementLimit, exception.Reason);
+
+// The next request starts with a new budget
+Assert.Equal(2, realm.Execute("1 + 1").AsNumber());
+```
+<!-- endref -->
+
+- A scope whose token is already canceled does not start: [EnterExecutionScope](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.EnterExecutionScope) throws a [JsTerminationException](cref:Meziantou.Framework.JavaScriptEngine.JsTerminationException).
+- The token of the scope can be canceled from any thread. The engine and the .NET functions that call
+  `engine.CheckInterrupt()` check it with the limits.
+- The scopes nest: an inner scope adds its limits until it is disposed. Dispose them in the reverse order, on the thread
+  that entered them.
+- A scope also makes the engine the engine of the thread, as [Enter](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.Enter) does.
+
 ## Cancel a script
 
 The [CancellationToken](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.CancellationToken) of the options stops the running script when it is canceled, from any thread, for instance
@@ -89,7 +163,9 @@ Assert.Equal(JsTerminationReason.Canceled, exception.Reason);
 <!-- endref -->
 
 The engine checks the token periodically while JavaScript code runs. The token is the one of the engine for its whole
-life: once it is canceled, the engine stops every script at its next check, so create a new engine for the next work.
+life: once it is canceled, the engine stops every script at its next check and does not start new entries, so create a
+new engine for the next work. To cancel one request of an engine that serves several of them, give the request its own
+token with an execution scope ([Limit a request](#limit-a-request)).
 
 ## Forbid eval
 

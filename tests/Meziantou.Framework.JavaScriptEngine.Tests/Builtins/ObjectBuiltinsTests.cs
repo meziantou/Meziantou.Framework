@@ -1,7 +1,73 @@
+using System.Globalization;
+
 namespace Meziantou.Framework.JavaScriptEngine.Tests.Builtins;
 
 public sealed class ObjectBuiltinsTests
 {
+    [Fact]
+    public void PropertyTable_RepeatedAddAndRemove_KeepsTheOrder()
+    {
+        // String keys and array indices whose hash codes collide in the index (the indices are their own hash codes)
+        var table = new PropertyTable();
+        var expected = new List<PropertyKey>();
+        var seed = 42u;
+        for (var step = 0; step < 20000; step++)
+        {
+            seed = (seed * 1103515245) + 12345;
+            var value = (int)(seed >> 8);
+            var key = value % 3 == 0 ? new PropertyKey((uint)(value % 64 * 32)) : new PropertyKey("k" + (value % 64).ToString(CultureInfo.InvariantCulture));
+            var position = table.Find(key);
+            Assert.Equal(expected.Contains(key), position >= 0);
+            if (position >= 0)
+            {
+                Assert.Equal(key, table.GetKey(position));
+                table.Remove(position);
+                expected.Remove(key);
+            }
+            else
+            {
+                table.Add(key, step, PropertyFlags.Default);
+                expected.Add(key);
+            }
+
+            if (step % 97 == 0)
+            {
+                var keys = new List<PropertyKey>();
+                for (var i = 0; i < table.Capacity; i++)
+                {
+                    if (!table.IsDeleted(i))
+                    {
+                        keys.Add(table.GetKey(i));
+                        Assert.Equal(i, table.Find(table.GetKey(i)));
+                    }
+                }
+
+                Assert.Equal(expected, keys);
+                Assert.Equal(expected.Where(k => k.IsArrayIndex).Select(k => k.ArrayIndex).Order(), table.GetSortedIndices().ToArray());
+            }
+        }
+    }
+
+    [Fact]
+    public void RepeatedAddAndDelete_KeepsTheOrderOfTheKeys()
+    {
+        using var engine = new JsEngine();
+        var result = engine.CreateRealm().Execute("""
+            const o = {};
+            const m = new Map();
+            for (let i = 0; i < 100; i++) { o['p' + i] = i; m.set('p' + i, i); }
+            for (let i = 0; i < 5000; i++) {
+              o.tmp = i; delete o.tmp;
+              const k = 'q' + (i % 7);
+              o[k] = i; m.set(k, i);
+              if (i % 3 === 0) { const d = 'q' + ((i + 1) % 7); delete o[d]; m.delete(d); }
+              if (i % 11 === 0) { const d = 'p' + (i % 100); delete o[d]; m.delete(d); o[d] = i; m.set(d, i); }
+            }
+            JSON.stringify(Object.entries(o)) === JSON.stringify([...m]) ? 'same' : JSON.stringify(Object.keys(o))
+            """);
+        Assert.Equal("same", engine.ToString(result));
+    }
+
     [Fact]
     public void Constructor_WrapsPrimitivesAndCreatesObjects()
     {

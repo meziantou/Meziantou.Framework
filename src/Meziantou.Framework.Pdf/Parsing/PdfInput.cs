@@ -1,5 +1,3 @@
-using System.Buffers;
-
 namespace Meziantou.Framework.Pdf.Parsing;
 
 /// <summary>
@@ -23,22 +21,6 @@ internal abstract class PdfInput
         var buffer = new byte[length];
         var read = Read(offset, buffer);
         return buffer.AsMemory(0, read);
-    }
-
-    /// <summary>Writes every byte of the input.</summary>
-    public virtual void CopyTo(IBufferWriter<byte> output)
-    {
-        const int ChunkSize = 1024 * 1024;
-        for (long offset = 0; offset < Length;)
-        {
-            var span = output.GetSpan((int)Math.Min(ChunkSize, Length - offset));
-            var read = Read(offset, span[..(int)Math.Min(span.Length, Length - offset)]);
-            if (read <= 0)
-                break;
-
-            output.Advance(read);
-            offset += read;
-        }
     }
 
     /// <summary>Gets the last byte of the input, or -1 when it is empty.</summary>

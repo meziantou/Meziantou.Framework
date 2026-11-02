@@ -28,7 +28,7 @@ public sealed partial class JsEngine
     /// <exception cref="JsException">The value is not callable (a TypeError), or the function threw an exception.</exception>
     public JsValue Call(JsValue function, JsValue thisValue, params ReadOnlySpan<JsValue> arguments)
     {
-        using var scope = Enter();
+        using var entry = EnterHostEntry();
         return JsOperations.Call(function, thisValue, arguments);
     }
 
@@ -36,7 +36,7 @@ public sealed partial class JsEngine
     /// <exception cref="JsException">The value is not a constructor (a TypeError), or the constructor threw an exception.</exception>
     public JsValue Construct(JsValue constructor, ReadOnlySpan<JsValue> arguments, JsValue newTarget = default)
     {
-        using var scope = Enter();
+        using var entry = EnterHostEntry();
         if (constructor.TryGetObject() is not { IsConstructor: true } constructorObject)
             return ThrowHelper.ThrowTypeError<JsValue>(JsOperations.DescribeForError(constructor) + " is not a constructor");
 
@@ -55,14 +55,14 @@ public sealed partial class JsEngine
     /// <summary>ToNumber(value) (https://tc39.es/ecma262/#sec-tonumber); it may run code (valueOf).</summary>
     public double ToNumber(JsValue value)
     {
-        using var scope = Enter();
+        using var entry = EnterHostEntry();
         return JsOperations.ToNumber(value);
     }
 
     /// <summary>ToString(value) (https://tc39.es/ecma262/#sec-tostring); it may run code, and throws a TypeError for a symbol.</summary>
     public string ToString(JsValue value)
     {
-        using var scope = Enter();
+        using var entry = EnterHostEntry();
         return JsOperations.ToString(value);
     }
 
@@ -72,21 +72,21 @@ public sealed partial class JsEngine
     /// <summary>ToBigInt(value) (https://tc39.es/ecma262/#sec-tobigint).</summary>
     public BigInteger ToBigInt(JsValue value)
     {
-        using var scope = Enter();
+        using var entry = EnterHostEntry();
         return BigIntOperations.ToBigInt(value);
     }
 
     /// <summary>ToObject(value) (https://tc39.es/ecma262/#sec-toobject): a TypeError for undefined and null.</summary>
     public JsObject ToObject(JsValue value)
     {
-        using var scope = Enter();
+        using var entry = EnterHostEntry();
         return JsOperations.ToObject(value);
     }
 
     /// <summary>ToPropertyKey(value) (https://tc39.es/ecma262/#sec-topropertykey); it may run code.</summary>
     public JsPropertyKey ToPropertyKey(JsValue value)
     {
-        using var scope = Enter();
+        using var entry = EnterHostEntry();
         return new JsPropertyKey(JsOperations.ToPropertyKey(value));
     }
 
@@ -96,7 +96,7 @@ public sealed partial class JsEngine
     /// <summary>IsArray(value) (https://tc39.es/ecma262/#sec-isarray): true for arrays and proxies of arrays; throws for a revoked proxy.</summary>
     public bool IsArray(JsValue value)
     {
-        using var scope = Enter();
+        using var entry = EnterHostEntry();
         return JsOperations.IsArray(value);
     }
 

@@ -48,6 +48,7 @@ internal sealed class RenderCache(PdfRenderOptions options) : IDisposable
     private readonly Dictionary<PdfStream, ParsedContent?> _contents = new(ReferenceEqualityComparer.Instance);
     private readonly Dictionary<PdfStream, Mesh> _meshes = new(ReferenceEqualityComparer.Instance);
     private readonly Dictionary<SoftMaskKey, SoftMaskEntry> _softMasks = [];
+    private readonly Dictionary<PdfObject, RenderHalftone?> _halftones = new(ReferenceEqualityComparer.Instance);
     private readonly List<IDisposable> _cachedDisposables = [];
     private readonly List<IDisposable> _pageDisposables = [];
     private int _creating;
@@ -58,6 +59,9 @@ internal sealed class RenderCache(PdfRenderOptions options) : IDisposable
     public PdfRenderOptions Options { get; } = options;
 
     public FontEnvironment FontEnvironment { get; } = new PooledFontEnvironment(FontResourceLimits.Default, MaxFontAllocationBytes);
+
+    /// <summary>Gets or sets the resolution of the device of the page being rendered, in pixels per inch: the size of the cells of the halftones of type 1.</summary>
+    public double DeviceResolution { get; set; } = 72;
 
     /// <summary>Gets the size of the objects the caches keep, measured roughly.</summary>
     public long CachedBytes { get; private set; }
@@ -84,6 +88,12 @@ internal sealed class RenderCache(PdfRenderOptions options) : IDisposable
 
         _softMasks.Clear();
         _softMaskImages = 0;
+        foreach (var halftone in _halftones.Values)
+        {
+            halftone?.Dispose();
+        }
+
+        _halftones.Clear();
         _cancellationToken = default;
         DisposeAll(_pageDisposables);
     }
@@ -100,6 +110,19 @@ internal sealed class RenderCache(PdfRenderOptions options) : IDisposable
         }
 
         return value;
+    }
+
+    /// <summary>Gets a halftone of the page being rendered, reading it once: its screens depend on the resolution of the page, and its images on the size of the device.</summary>
+    public RenderHalftone? GetHalftone(PdfObject value, Func<RenderHalftone?> create)
+    {
+        var key = PdfReference.ResolveIfReference(value);
+        if (!_halftones.TryGetValue(key, out var halftone))
+        {
+            halftone = create();
+            _halftones[key] = halftone;
+        }
+
+        return halftone;
     }
 
     public RenderFunction GetFunction(PdfObject value)

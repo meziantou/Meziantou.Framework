@@ -42,7 +42,11 @@ the XML documentation and `readme.md` consistent in the same change.
   documents with the veraPDF of the Meziantou.Prebuilt release: the rules they are known to fail are listed in
   `tests/Meziantou.Framework.Pdf.InteropTests/verapdf-known-failures.txt`, which must stay empty unless a rule cannot
   be met.
-- **Encryption** (`Security/`): the standard security handler (7.6.4), revisions 2 to 6. The reader decrypts each
+- **Encryption** (`Security/`): `SecurityHandler` holds the file key and the crypt filters. The standard security
+  handler (7.6.4), revisions 2 to 6, computes the key from a password; the public-key security handler (7.6.5,
+  `SecurityHandler.PublicKey.cs`, `adbe.pkcs7.s3`/`s4`/`s5`) from a seed decrypted with `EnvelopedCms` and the private
+  key of `PdfReadOptions.Certificate`, and writes `adbe.pkcs7.s5` with one enveloped data per set of permissions. Its
+  fixtures are written by pyHanko (`eng/pdf/generate-pubsec-fixtures.py`, `TestData/PubSec` of the tests). The reader decrypts each
   object when it is loaded (`PdfFileReader.Security`), except the encryption dictionary, the cross-reference streams,
   the metadata when `/EncryptMetadata` is false and the signature of a signature dictionary; the objects of an object
   stream are decrypted with their container. The writer encrypts the strings through the serializer and the streams
@@ -110,6 +114,9 @@ the XML documentation and `readme.md` consistent in the same change.
 - **Bounded output buffers.** A save streams the file through `PdfByteWriter` with a `PdfOutputSink`: a stream for the
   synchronous saves, blocks of memory for `SaveAsync` and `ToByteArray`. The file identifier is an incremental MD5 of
   what is written, so nothing reads the output back; the original file of an incremental save is passed as one block.
+  The data of the file a seekable stream is read from (`PdfStream.PendingRange`, the original file of an incremental
+  save) is copied from the input in chunks (`PdfByteWriter.Write(PdfInput, ...)`), or kept as a range by the segments
+  of the asynchronous saves and read when they are written: a save of a file larger than 2 GB never holds it in memory.
 
 ## Renderer (`Rendering/`, namespace `Meziantou.Framework.Pdf.Rendering`)
 

@@ -260,9 +260,7 @@ internal sealed class PdfObjectParser
         }
 
         // The data is after the window: it is read from the input when it is first used
-        var input = Window.Input;
-        var offset = Window.Offset + start;
-        stream.SetLoadedData(() => input.GetMemory(offset, length));
+        stream.SetLoadedData(new PdfInputRange(Window.Input, Window.Offset + start, length));
     }
 
     /// <summary>Moves after the data of a stream; a position after the window of the input ends the parsing of the object.</summary>

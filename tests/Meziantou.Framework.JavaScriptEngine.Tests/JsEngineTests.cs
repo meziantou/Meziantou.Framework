@@ -714,10 +714,9 @@ public sealed class JsEngineTests
         }
     }
 
-    // The sort of the large typed arrays works on runs that it merges, and a long string is normalized in chunks: the
-    // results are the ones of a single operation
+    // The sort of the large typed arrays works on runs that it merges: the results are the ones of a single sort
     [Fact]
-    public void LongBuiltins_SameResults()
+    public void LongBuiltins_SortSameResults()
     {
         using var engine = new JsEngine();
         var realm = engine.CreateRealm();
@@ -732,7 +731,25 @@ public sealed class JsEngineTests
                 && same(Array.from(new Uint8Array(values).sort()), Array.from(new Uint8Array(values)).sort((a, b) => a - b))
                 && same(Array.from(new BigInt64Array(values.map(v => BigInt(v | 0))).toSorted()), values.map(v => BigInt(v | 0)).sort((a, b) => a < b ? -1 : a > b ? 1 : 0))
             """).AsBoolean());
+    }
 
+    // A long string is normalized in chunks: the result is the one of a single normalization
+    [Fact]
+    public void LongBuiltins_NormalizeSameResults()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        var text = CreateNormalizationText();
+        realm.GlobalObject.SetProperty("text", text);
+        foreach (var form in new[] { NormalizationForm.FormC, NormalizationForm.FormD, NormalizationForm.FormKC, NormalizationForm.FormKD })
+        {
+            var name = form switch { NormalizationForm.FormC => "NFC", NormalizationForm.FormD => "NFD", NormalizationForm.FormKC => "NFKC", _ => "NFKD" };
+            Assert.Equal(UnicodeNormalization.Normalize(text, form), realm.Execute("text.normalize('" + name + "')").AsString());
+        }
+    }
+
+    private static string CreateNormalizationText()
+    {
         // Starters, combining marks, Hangul jamos and syllables, characters whose decomposition starts with a mark...
         string[] pieces = ["a", "e", "é", "́", "̣", "ᄀ", "ᅡ", "ᆨ", "가", "각", "ཱི", "ﾞ", "େ", "ା", "ḋ", "ﬁ", "Å", "̈́", "𝐀", "゙", "か"];
         var builder = new StringBuilder();
@@ -743,13 +760,7 @@ public sealed class JsEngineTests
             builder.Append(pieces[(seed >> 16) % pieces.Length]);
         }
 
-        var text = builder.ToString();
-        realm.GlobalObject.SetProperty("text", text);
-        foreach (var form in new[] { NormalizationForm.FormC, NormalizationForm.FormD, NormalizationForm.FormKC, NormalizationForm.FormKD })
-        {
-            var name = form switch { NormalizationForm.FormC => "NFC", NormalizationForm.FormD => "NFD", NormalizationForm.FormKC => "NFKC", _ => "NFKD" };
-            Assert.Equal(UnicodeNormalization.Normalize(text, form), realm.Execute("text.normalize('" + name + "')").AsString());
-        }
+        return builder.ToString();
     }
 
     // The parsing and the compilation of a source are part of the entry that runs it
@@ -804,20 +815,19 @@ public sealed class JsEngineTests
             var realm = engine.CreateRealm();
             realm.Execute("var i32 = new Int32Array(new SharedArrayBuffer(4));");
 
-            // The timeout of the wait elapses first; then the timeout of the engine stops the wait, which leaves no waiter
-            Assert.Equal("timed-out", realm.Execute("Atomics.wait(i32, 0, 0, 10)").AsString());
+            // The timeout of the engine stops the wait, which leaves no waiter
             var stopwatch = Stopwatch.StartNew();
             var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("Atomics.wait(i32, 0, 0)"));
             Assert.Equal(JsTerminationReason.Timeout, exception.Reason);
             Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(30));
             Assert.Equal(0, realm.Execute("Atomics.notify(i32, 0)").AsNumber());
-
         }
 
         using (var engine = new JsEngine())
         {
             var realm = engine.CreateRealm();
             realm.Execute("var i32 = new Int32Array(new SharedArrayBuffer(4));");
+            Assert.Equal("timed-out", realm.Execute("Atomics.wait(i32, 0, 0, 10)").AsString());
             using var cancellation = new CancellationTokenSource();
             DefineCancel(realm, cancellation);
             var exception = Assert.Throws<JsTerminationException>(() =>

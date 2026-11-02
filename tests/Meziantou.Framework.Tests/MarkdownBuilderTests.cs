@@ -52,11 +52,24 @@ public sealed class MarkdownBuilderTests
     [InlineData("` ` `")]
     [InlineData("`teste```testr`")]
     [InlineData("`tes````te```testr`")]
+    [InlineData(" a ")]
+    [InlineData("  a  ")]
+    [InlineData(" a")]
+    [InlineData("a ")]
+    [InlineData(" ")]
+    [InlineData("   ")]
+    [InlineData(" `a` ")]
     public void CreateInlineCode(string text)
     {
         var value = MarkdownBuilder.CreateCodeSpan(text);
         var html = MarkdownConverter.ToHtml(value);
         Assert.Equal("<p><code>" + HtmlEncoder.Default.Encode(text) + "</code></p>\n", html);
+    }
+
+    [Fact]
+    public void CreateInlineCode_Empty()
+    {
+        Assert.Equal("", MarkdownBuilder.CreateCodeSpan(""));
     }
 
     [Fact]

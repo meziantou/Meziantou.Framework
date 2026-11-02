@@ -38,6 +38,27 @@ public class StringSearchUtilitiesTests
         Assert.Equal(expected, StringSearchUtilities.Levenshtein(word1.AsSpan(), word2.AsSpan(), maxDistance));
     }
 
+    [Theory]
+    [InlineData(int.MaxValue)]
+    [InlineData(int.MaxValue - 1)]
+    [InlineData(101)]
+    [InlineData(1000)]
+    public void Levenshtein_Bounded_LargeMaxDistance(int maxDistance)
+    {
+        var word1 = new string('a', 100) + "x";
+        var word2 = "y" + new string('b', 100);
+        Assert.Equal(101, StringSearchUtilities.Levenshtein(word1, word2, maxDistance));
+    }
+
+    [Fact]
+    public void Levenshtein_Bounded_LongWords()
+    {
+        var word1 = new string('a', 100) + "x";
+        var word2 = "y" + new string('b', 100);
+        Assert.Equal(100, StringSearchUtilities.Levenshtein(word1, word2, 99));
+        Assert.Equal(101, StringSearchUtilities.Levenshtein(word1, word2, 100));
+    }
+
     [Fact]
     public void LevenshteinBatch_Test()
     {
@@ -57,6 +78,9 @@ public class StringSearchUtilitiesTests
     [InlineData(0b010101u, 0b101010u, 6u)]
     [InlineData(0b1111u, 0b0u, 4u)]
     [InlineData(0b11111111u, 0b11110111u, 1u)]
+    [InlineData(uint.MaxValue, 0u, 32u)]
+    [InlineData(0x80000000u, 0u, 1u)]
+    [InlineData(0x80000001u, 0x00000001u, 1u)]
     public void Hamming_Uint32Tests(uint word1, uint word2, uint expected)
     {
         Assert.Equal(expected, StringSearchUtilities.Hamming(word1, word2));
@@ -157,6 +181,11 @@ public class StringSearchUtilitiesTests
     [InlineData("MLN ", "MOULIN")]
     [InlineData("RS  ", "ROUSSEAU")]
     [InlineData("RS  ", "YROUSSYEAU")]
+    [InlineData("FLP ", "PHILIPPE")]
+    [InlineData("SMT ", "SCHMITT")]
+    [InlineData("NG  ", "KNIGHT")]
+    [InlineData("FR  ", "PFEIFFER")]
+    [InlineData("AZ  ", "ASAS")]
     public void Soundex2_Test(string expected, string value)
     {
         Assert.Equal(expected, StringSearchUtilities.Soundex2(value));
@@ -205,6 +234,9 @@ public class StringSearchUtilitiesTests
     [InlineData("KSK", "chzkou")]
     [InlineData("BLKK", "blaggyguest")]
     [InlineData("AXXX", "atiatiotch")]
+    [InlineData("JKSN", "Jackson")]
+    [InlineData("TKNS", "Dickens")]
+    [InlineData("KK", "kck")]
     public void Metaphone_Test(string expected, string value)
     {
         Assert.Equal(expected, StringSearchUtilities.Metaphone(value));

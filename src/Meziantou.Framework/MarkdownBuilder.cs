@@ -67,7 +67,13 @@ static class MarkdownBuilder
     // https://spec.commonmark.org/0.30/#code-spans
     public static string CreateCodeSpan(string content)
     {
-        var needSpace = content.StartsWith('`', StringComparison.Ordinal) || content.EndsWith('`', StringComparison.Ordinal);
+        // A code span cannot be empty
+        if (content.Length is 0)
+            return "";
+
+        // CommonMark strips one space on both sides when the content starts and ends with a space and is not only spaces.
+        // Adding a space on both sides keeps the original content.
+        var needSpace = content[0] is '`' || content[^1] is '`' || (content[0] is ' ' && content[^1] is ' ' && content.AsSpan().ContainsAnyExcept(' '));
         var openCount = CountMaximumConsecutiveCharacters(content, '`') + 1;
 
         var sb = new StringBuilder();

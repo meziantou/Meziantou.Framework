@@ -20,6 +20,27 @@ public class StringExtensionsTests
         Assert.Equal(expected, actual);
     }
 
+    [Theory]
+    [InlineData("")]
+    [InlineData("abc")]
+    [InlineData("Hello, World! 0123456789 ~\u007F\0")]
+    public void RemoveDiacritics_Ascii_ReturnsSameInstance(string str)
+    {
+        Assert.Same(str, str.RemoveDiacritics());
+    }
+
+    [Theory]
+    [InlineData("abcde\u0301", "abcde")]
+    [InlineData("abcd\u00e9fgh", "abcdefgh")]
+    [InlineData("\u00e9abc", "eabc")]
+    [InlineData("abc\u00e9", "abce")]
+    [InlineData("abc\u0301\u00e9", "abce")]
+    [InlineData("abc d\u0308e\u0301", "abc de")]
+    public void RemoveDiacritics_AsciiPrefix(string str, string expected)
+    {
+        Assert.Equal(expected, str.RemoveDiacritics());
+    }
+
     [Fact, RunIf(globalizationMode: TestGlobalizationMode.NotInvariant)]
     public void RemoveDiacritic_MatchesNormalization()
     {

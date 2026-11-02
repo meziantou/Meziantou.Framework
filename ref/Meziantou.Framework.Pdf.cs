@@ -70,6 +70,13 @@ namespace Meziantou.Framework.Pdf
         Schema = 7,
     }
 
+    public enum PdfBilevelCompression
+    {
+        CcittGroup4 = 0,
+        Jbig2 = 1,
+        Flate = 2,
+    }
+
     public enum PdfBlendMode
     {
         Normal = 0,
@@ -438,6 +445,7 @@ namespace Meziantou.Framework.Pdf
         public bool HasSoftMask { get => throw null; }
         public int Height { get => throw null; }
         public int Width { get => throw null; }
+        public static Meziantou.Framework.Pdf.PdfImage FromBilevel(System.ReadOnlySpan<byte> pixels, int width, int height, Meziantou.Framework.Pdf.PdfBilevelCompression compression = Meziantou.Framework.Pdf.PdfBilevelCompression.CcittGroup4) => throw null;
         public static Meziantou.Framework.Pdf.PdfImage FromImage(Meziantou.Framework.Imaging.Image image) => throw null;
         public static Meziantou.Framework.Pdf.PdfImage FromJpeg(System.ReadOnlySpan<byte> data) => throw null;
         public static Meziantou.Framework.Pdf.PdfImage Load(System.ReadOnlySpan<byte> data) => throw null;

@@ -55,7 +55,8 @@ nested very deeply, a page tree or an outline that loops. Everything a file can 
 takes time and memory in proportion to its size, and the loops are detected.
 
 - Lower [MaxDecodedStreamLength](cref:Meziantou.Framework.Pdf.PdfReadOptions.MaxDecodedStreamLength) (256 MiB by default) to the size of the documents you expect: it is checked while a
-  stream is decoded, so the data is never decoded past the limit.
+  stream is decoded, so the data is never decoded past the limit. It also bounds the bitmaps of a JBIG2 image and the
+  work of their decoding: a few bytes of JBIG2 data cannot make the reader decode billions of pixels.
 - A page that is rendered is bounded by [PdfRenderOptions.MaxOperations](cref:Meziantou.Framework.Pdf.Rendering.PdfRenderOptions.MaxOperations), and the extraction of its text by a limit of
   its own: see [Rendering](../06-Rendering/01-Overview.md).
 - No other exception than those above escapes the reader on a damaged or hostile file: the library is tested against

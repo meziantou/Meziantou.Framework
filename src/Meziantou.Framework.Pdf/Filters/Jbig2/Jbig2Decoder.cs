@@ -19,11 +19,37 @@ internal sealed class Jbig2Decoder
     private bool _pageOverridesCombination;
     private bool _pageHeightUnknown;
     private int _segmentCount;
+    private int _pageMaxStripeSize;
 
     public Jbig2Decoder(long limit)
     {
         _budget = new Jbig2Budget(limit);
     }
+
+    /// <summary>Creates a decoder that starts with global segments decoded before (<see cref="GetGlobals"/>).</summary>
+    /// <remarks>The memory and the work of the global segments are charged again: the limit applies to each image as if it decoded them.</remarks>
+    public Jbig2Decoder(long limit, Jbig2Globals globals)
+        : this(limit)
+    {
+        _budget.ChargeMemory(globals.Memory);
+        _budget.ChargeWork(globals.Work);
+        foreach (var (number, result) in globals.Results)
+        {
+            _results[number] = result;
+        }
+
+        _segmentCount = globals.SegmentCount;
+    }
+
+    /// <summary>Gets the budget of the decoding.</summary>
+    internal Jbig2Budget Budget => _budget;
+
+    /// <summary>
+    /// Gets the results of the segments decoded so far, to start the decoding of other images with them, or
+    /// <see langword="null"/> when they painted a page: the bitmaps of the results are never changed after they are
+    /// decoded (the contexts a dictionary retains are copied by the dictionaries that use them), but a page is.
+    /// </summary>
+    public Jbig2Globals? GetGlobals() => _page is null ? new Jbig2Globals(new Dictionary<uint, SegmentResult>(_results), _budget.Memory, _budget.Work, _segmentCount) : null;
 
     /// <summary>Decodes the segments of a stream: the global segments first, then those of the image.</summary>
     /// <remarks>
@@ -97,17 +123,16 @@ internal sealed class Jbig2Decoder
     }
 
     /// <summary>Gets the page: one bit per pixel, 0 for black and 1 for white as the image data of a PDF file is (7.4.7).</summary>
+    /// <remarks>The bits of the page are inverted in place and the page is given to the caller: the decoder has no page after it.</remarks>
     public byte[] GetPage()
     {
         if (_page is null)
             throw new InvalidPdfContentException("The JBIG2 data has no page information segment");
 
-        var result = new byte[_page.Data.Length];
-        for (var i = 0; i < result.Length; i++)
-        {
-            result[i] = (byte)~_page.Data[i];
-        }
-
+        // The page belongs to this decoder only (the global segments never paint a page that is reused, GetGlobals)
+        var result = _page.Data;
+        _page = null;
+        CcittFaxFilter.Invert(result);
         return result;
     }
 
@@ -241,6 +266,7 @@ internal sealed class Jbig2Decoder
                     if (_page is not null && _pageHeightUnknown && row < int.MaxValue)
                     {
                         _page.GrowHeight((int)row + 1, _pageDefaultPixel, _budget);
+                        SetPageWork();
                     }
 
                     break;
@@ -270,10 +296,23 @@ internal sealed class Jbig2Decoder
         _pageCombinationOperator = (flags >> 3) & 3;
         _pageOverridesCombination = (flags & 0x40) != 0;
         _pageHeightUnknown = height == uint.MaxValue;
+
+        // A page of unknown height grows by stripes of at most the maximum stripe size (7.4.8.6)
+        _pageMaxStripeSize = reader.Remaining >= 2 ? reader.ReadUInt16() & 0x7FFF : 0;
         _page = new Jbig2Bitmap(width, _pageHeightUnknown ? 0 : (int)Math.Min(height, int.MaxValue), _budget);
+        SetPageWork();
         if (_pageDefaultPixel != 0)
         {
             _page.Fill(1);
+        }
+    }
+
+    /// <summary>Bounds the work by the size of the page (<see cref="Jbig2Budget.SetPageArea"/>): the page so far and, when its height is unknown, its next stripe.</summary>
+    private void SetPageWork()
+    {
+        if (_page is not null)
+        {
+            _budget.SetPageArea((long)_page.Width * (_page.Height + (long)(_pageHeightUnknown ? Math.Max(_pageMaxStripeSize, 1) : 0)));
         }
     }
 
@@ -448,10 +487,11 @@ internal sealed class Jbig2Decoder
         if (_pageHeightUnknown && info.Y + (long)info.Height > _page.Height)
         {
             _page.GrowHeight((int)Math.Min(info.Y + (long)info.Height, int.MaxValue), _pageDefaultPixel, _budget);
+            SetPageWork();
         }
 
         var combinationOperator = _pageOverridesCombination ? info.CombinationOperator : _pageCombinationOperator;
-        _budget.ChargeWork(bitmap.Width, bitmap.Height);
+        _budget.ChargePlacement(bitmap);
         _page.Combine(bitmap, info.X, info.Y, combinationOperator);
     }
 
@@ -474,7 +514,7 @@ internal sealed class Jbig2Decoder
 
     private sealed record Header(uint Number, int Type, uint[] Referred, uint DataLength);
 
-    private sealed class SegmentResult
+    internal sealed class SegmentResult
     {
         public List<Jbig2Bitmap>? Symbols { get; init; }
 

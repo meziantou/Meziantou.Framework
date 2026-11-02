@@ -126,6 +126,14 @@ public static partial class TaskExtensions
     }
 
     public static ValueTaskAwaiter<ValueTuple<<#= GetTemplateString(i) #>>> GetAwaiter<<#= GetTemplateString(i) #>>(this ValueTuple<<#= Join(", ", i, i => "ValueTask<T" + i + ">") #>> tasks) => WhenAll(<#= Join(", ", i, i => "tasks.Item" + i) #>).GetAwaiter();
+
+    /// <summary>
+    /// Configures how awaiting all the value tasks of the tuple resumes. The tasks are combined the same way as <see cref="WhenAll{<#= GetTemplateString(i) #>}(<#= Join(", ", i, i => "ValueTask{T" + i + "}") #>)"/>,
+    /// and the result is the tuple of their results.
+    /// </summary>
+    /// <param name="tasks">The value tasks to await. Each of them is consumed once.</param>
+    /// <param name="continueOnCapturedContext"><see langword="true"/> to resume on the captured context; otherwise, <see langword="false"/>.</param>
+    public static ConfiguredValueTaskAwaitable<ValueTuple<<#= GetTemplateString(i) #>>> ConfigureAwait<<#= GetTemplateString(i) #>>(this ValueTuple<<#= Join(", ", i, i => "ValueTask<T" + i + ">") #>> tasks, bool continueOnCapturedContext) => WhenAll(<#= Join(", ", i, i => "tasks.Item" + i) #>).ConfigureAwait(continueOnCapturedContext);
 <# } #>
     private static ValueTask WhenAll(ValueTask task1) => task1;
 <# for (int i = 2; i <= count; i++) { #>
@@ -179,6 +187,14 @@ public static partial class TaskExtensions
     }
 
     public static ValueTaskAwaiter GetAwaiter(this ValueTuple<<#= Join(", ", i, i => "ValueTask") #>> tasks) => WhenAll(<#= Join(", ", i, i => "tasks.Item" + i) #>).GetAwaiter();
+
+    /// <summary>
+    /// Configures how awaiting all the value tasks of the tuple resumes. The tasks are combined the same way as
+    /// <see cref="Task.WhenAll(Task[])"/>.
+    /// </summary>
+    /// <param name="tasks">The value tasks to await. Each of them is consumed once.</param>
+    /// <param name="continueOnCapturedContext"><see langword="true"/> to resume on the captured context; otherwise, <see langword="false"/>.</param>
+    public static ConfiguredValueTaskAwaitable ConfigureAwait(this ValueTuple<<#= Join(", ", i, i => "ValueTask") #>> tasks, bool continueOnCapturedContext) => WhenAll(<#= Join(", ", i, i => "tasks.Item" + i) #>).ConfigureAwait(continueOnCapturedContext);
 <# } #>
 
 <# for (int i = 2; i <= count; i++) { #>

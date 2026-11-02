@@ -86,9 +86,10 @@ public sealed class JsModuleLoadRequest
 
     /// <summary>Completes the request with the loaded module (FinishLoadingImportedModule).</summary>
     /// <remarks>
-    /// On a thread that has entered the engine (e.g. in <see cref="JsModuleLoader.LoadImportedModule"/>), the loading
-    /// continues now. On another thread (e.g. the continuation of a download), the completion is queued and the loading
-    /// continues on the thread of the engine, from the next <see cref="JsEngine.RunJobs"/>.
+    /// On the thread of the engine (a thread that has entered it, e.g. in <see cref="JsModuleLoader.LoadImportedModule"/>,
+    /// or the last thread that entered it), the loading continues now. On another thread (e.g. the continuation of a
+    /// download), the completion is queued and the loading continues on the thread of the engine, from the next
+    /// <see cref="JsEngine.RunJobs"/>.
     /// </remarks>
     /// <exception cref="InvalidOperationException">The request is already completed.</exception>
     public void Complete(JsModule module)
@@ -152,8 +153,10 @@ public sealed class JsModuleLoadRequest
     private void FinishOnEngineThread(JsModule? module, JsValue error, string? errorMessage)
     {
         var engine = Realm.Engine;
-        if (JsEngine.Current == engine)
+        var current = JsEngine.Current;
+        if (current == engine || (current is null && System.Environment.CurrentManagedThreadId == engine.LastEnteredThreadId))
         {
+            using var scope = engine.Enter();
             FinishCore(module, error, errorMessage);
             return;
         }

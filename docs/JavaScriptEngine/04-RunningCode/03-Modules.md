@@ -194,8 +194,9 @@ Assert.Equal("TypeError: Cannot find the module './missing.js'", engine.ToString
 A loader does not have to complete a request before it returns. [Complete](cref:Meziantou.Framework.JavaScriptEngine.JsModuleLoadRequest.Complete) and [Fail](cref:Meziantou.Framework.JavaScriptEngine.JsModuleLoadRequest.Fail) can be called from any
 thread:
 
-- On a thread that has entered the engine, such as in [LoadImportedModule](cref:Meziantou.Framework.JavaScriptEngine.JsModuleLoader.LoadImportedModule) or in a callback of a script, the loading
-  continues immediately.
+- On the thread of the engine, the loading continues immediately: a thread that has entered the engine, such as in
+  [LoadImportedModule](cref:Meziantou.Framework.JavaScriptEngine.JsModuleLoader.LoadImportedModule) or in a callback of a script, or the last thread that entered it, such as the event
+  loop of your application between two scripts.
 - On another thread, such as the continuation of a download, the completion is queued: the engine is not touched from
   that thread, and the loading continues on the thread of the engine, from the next [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs). The completions run in
   the order they were made, even when a script runs while they arrive.

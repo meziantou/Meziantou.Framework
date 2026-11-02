@@ -40,6 +40,12 @@ internal sealed class SourceText
     /// </summary>
     public bool IsShared { get; init; }
 
+    /// <summary>
+    /// Gets or sets whether the code is compiled for a debugger: an instruction at the start of each statement raises the
+    /// events of <see cref="JsDebugger"/>. The nested functions are compiled from the same source text, so they are too.
+    /// </summary>
+    public bool IsInstrumented { get; set; }
+
     public int Length => Text.Length;
 
     public char this[int index] => Text[index];

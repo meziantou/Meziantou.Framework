@@ -569,7 +569,7 @@ internal sealed class BytecodeBuilder
             >= OpCode.JumpIfLessThan and <= OpCode.JumpIfStrictNotEqual => -2,
             OpCode.JumpIfTrueKeep or OpCode.JumpIfFalseKeep or OpCode.JumpIfNullishKeep or OpCode.JumpIfNotNullishKeep or OpCode.JumpIfNotUndefinedKeep => 0,
             OpCode.Throw or OpCode.Return => -1,
-            OpCode.ThrowError or OpCode.Debugger => 0,
+            OpCode.ThrowError or OpCode.Debugger or OpCode.DebugStatement => 0,
             OpCode.NewObject or OpCode.NewArray or OpCode.NewArgumentList => 1,
             OpCode.ArrayAppend or OpCode.ArrayAppendSpread or OpCode.ArgumentListAppend or OpCode.ArgumentListAppendSpread => -1,
             OpCode.GetProperty => 0,

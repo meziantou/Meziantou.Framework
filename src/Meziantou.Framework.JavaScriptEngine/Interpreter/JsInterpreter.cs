@@ -1099,6 +1099,7 @@ internal static partial class JsInterpreter
             OpCode.JumpIfUndefinedPop => ExecuteJumpIfUndefinedPop(frame, sp),
             OpCode.ThrowError => ExecuteThrowError(frame),
             OpCode.Debugger => ExecuteDebugger(frame, sp),
+            OpCode.DebugStatement => ExecuteDebugStatement(frame, sp),
             OpCode.ArrayAppendSpread => ExecuteArrayAppendSpread(frame, sp),
             OpCode.ArgumentListAppendSpread => ExecuteArgumentListAppendSpread(frame, sp),
             OpCode.DeleteProperty => ExecuteDeleteProperty(frame, sp),

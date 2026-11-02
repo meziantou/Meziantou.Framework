@@ -376,7 +376,20 @@ internal sealed class PdfFileWriter
         var data = stream.EncodedData;
         if (_options.CompressStreams && stream.IsCompressible && !dictionary.ContainsKey(PdfNames.Filter) && data.Length > 0)
         {
-            data = FlateFilter.Encode(data.Span);
+            var compressed = FlateFilter.Encode(data.Span);
+            if (stream.PngPredictor is { } predictor)
+            {
+                // The PNG predictors make most photos smaller, and some flat images larger: the smaller data is kept
+                var predicted = FlateFilter.Encode(Predictor.EncodePng(data.Span, predictor.RowLength, predictor.BytesPerPixel));
+                if (predicted.Length < compressed.Length)
+                {
+                    compressed = predicted;
+                    dictionary[PdfNames.DecodeParms] = predictor.CreateParameters();
+                }
+            }
+
+            data = compressed;
+
             dictionary[PdfNames.Filter] = PdfNames.FlateDecode;
         }
 

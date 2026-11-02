@@ -237,6 +237,36 @@ public sealed class PdfRendererTests
     }
 
     [Theory]
+    [InlineData(1, 255, 0, 0)]
+    [InlineData(0, 76, 85, 255)] // The YCbCr samples of red drawn as RGB
+    public void DctColorTransformIsHonored(int colorTransform, int r, int g, int b)
+    {
+        using var red = Image.ImportPixelData<Rgb24>([.. Enumerable.Repeat(new Rgb24(255, 0, 0), 64)], 8, 8);
+        using var jpeg = new MemoryStream();
+        red.Save(jpeg, new Imaging.Formats.JpegEncoder { Quality = 100, ChromaSubsampling = Imaging.Formats.JpegChromaSubsampling.Ratio444 });
+        var document = new PdfDocument();
+        var page = document.Pages.Add(Size);
+        page.CreateContentBuilder().AppendRawContent("q 100 0 0 100 0 0 cm /Im0 Do Q"u8);
+        var image = new PdfStream(new PdfDictionary
+        {
+            [PdfNames.Type] = PdfNames.XObject,
+            [PdfNames.Subtype] = PdfName.Create("Image"),
+            [PdfNames.Width] = PdfInteger.Get(8),
+            [PdfNames.Height] = PdfInteger.Get(8),
+            [PdfNames.BitsPerComponent] = PdfInteger.Get(8),
+            [PdfNames.ColorSpace] = PdfNames.DeviceRGB,
+        });
+        image.SetEncodedData(jpeg.ToArray(), PdfNames.DCTDecode, new PdfDictionary { [PdfName.Create("ColorTransform")] = PdfInteger.Get(colorTransform) });
+        var resources = page.Dictionary.Get<PdfDictionary>(PdfNames.Resources) ?? new PdfDictionary();
+        page.Dictionary[PdfNames.Resources] = resources;
+        resources[PdfNames.XObject] = new PdfDictionary { [PdfName.Create("Im0")] = document.Objects.Add(image) };
+
+        using var rendered = Render(document);
+
+        AssertColor(Pixel(rendered, 50, 50), r, g, b, tolerance: 4);
+    }
+
+    [Theory]
     [InlineData("/W 2 /H 1 /BPC 1 /IM true", "@", 0, 255, 0, 255, 255, 255)]
     [InlineData("/W 2 /H 1 /BPC 1 /IM true /D [1 0]", "@", 255, 255, 255, 0, 255, 0)]
     [InlineData("/W 2 /H 1 /BPC 8 /CS /G", "\u0000\u00FF", 0, 0, 0, 255, 255, 255)]
@@ -255,6 +285,21 @@ public sealed class PdfRendererTests
 
         AssertColor(Pixel(image, 25, 50), r1, g1, b1);
         AssertColor(Pixel(image, 75, 50), r2, g2, b2);
+    }
+
+    [Fact]
+    public void InlineImagesHaveTheDecodeLimitsOfTheDocument()
+    {
+        // An inline image of 200 samples in 4 bytes of RunLengthDecode (two runs of 100 zeros): within the limit of the
+        // content stream, beyond the limit of the decoded data the document is opened with
+        var document = new PdfDocument();
+        var content = Encoding.Latin1.GetBytes("q 100 0 0 100 0 0 cm BI /W 200 /H 1 /BPC 8 /CS /G /F /RL ID \u009D\u0000\u009D\u0000\u0080 EI Q");
+        document.Pages.Add(Size).CreateContentBuilder().AppendRawContent(content);
+        var data = document.ToByteArray(new PdfSaveOptions { CompressStreams = false });
+
+        using var image = PdfRenderer.RenderPage(PdfDocument.Open(data, new PdfReadOptions { MaxDecodedStreamLength = 1000 }).Pages[0], new PdfRenderOptions { UseSystemFonts = false });
+        AssertColor(Pixel(image, 50, 50), 0, 0, 0);
+        Assert.Throws<PdfResourceLimitException>(() => PdfRenderer.RenderPage(PdfDocument.Open(data, new PdfReadOptions { MaxDecodedStreamLength = 150 }).Pages[0], new PdfRenderOptions { UseSystemFonts = false }));
     }
 
     [Fact]

@@ -317,6 +317,104 @@ public sealed class RegExpMatcherTests
         Assert.Equal(expectedIndex, Index(pattern, flags, input));
     }
 
+    // A failed match of a leading greedy loop skips the run of characters the loop consumed
+    [Theory]
+    [InlineData("\\s+$", "", "   x  ", 0, "  ")]
+    [InlineData("\\s+$", "", "   x", 0, null)]
+    [InlineData("\\s+$", "m", "  x  \n y", 0, "  ")]
+    [InlineData("\\s*$", "", "  x", 0, "")]
+    [InlineData("\\s+$", "y", "  x", 1, null)]
+    [InlineData("\\s+$", "y", "x  ", 1, "  ")]
+    [InlineData("\\s+$", "g", "  x  ", 1, "  ")]
+    [InlineData("a*b", "", "aaaac", 0, null)]
+    [InlineData("a*b", "", "aacab", 0, "ab")]
+    [InlineData("a{2,}b", "", "abaab", 0, "aab")]
+    [InlineData("a+(?<=ba+)c", "", "aaabaac", 0, "aac")]
+    [InlineData("a+(?=(c))\\1", "", "aaabaac", 0, "aac")]
+    [InlineData("[a-z]+\\d", "", "abc def1", 0, "def1")]
+    [InlineData("\\u{1F600}+$", "u", "\U0001F600\U0001F600x\U0001F600", 0, "\U0001F600")]
+    [InlineData(".+$", "u", "\U0001F600\U0001F600\nx", 0, "x")]
+    [InlineData("k+$", "iu", "kKKx", 0, null)]
+    [InlineData("k+$", "iu", "xkKK", 0, "kKK")]
+    [InlineData("\\d+(?:px|em)", "", "12 34pt 56em", 0, "56em")]
+    public void Exec_LeadingGreedyLoop(string pattern, string flags, string input, int lastIndex, string? expected)
+    {
+        var captures = Exec(pattern, flags, input, lastIndex);
+        Assert.Equal(expected, captures?[0]);
+    }
+
+    [Theory]
+    [InlineData("(\\s+)$", "", "  x  ", new[] { "  ", "  " })]
+    [InlineData("(a+)b", "", "aaac aab", new[] { "aab", "aa" })]
+    public void Exec_LeadingGreedyLoopCaptures(string pattern, string flags, string input, string[] expected)
+    {
+        Assert.Equal(expected, Exec(pattern, flags, input));
+    }
+
+    // The searches of a prefix or of the first characters scan the input in chunks of 16384 code units
+    [Fact]
+    public void Exec_SearchAcrossScanChunks()
+    {
+        foreach (var start in new[] { 16370, 32755, 49140 })
+        {
+            for (var n = start; n < start + 30; n++)
+            {
+                var padding = new string('x', n);
+                Assert.Equal(n, Index("ab", "", padding + "ab"));
+                Assert.Equal(n, Index("abcdef", "", padding + "abcdef"));
+                Assert.Equal(n, Index("abc", "i", padding + "aBC"));
+                Assert.Equal(n, Index("[ab]", "", padding + "b"));
+                Assert.Equal(n, Index("[ab]", "u", padding + "b"));
+                Assert.Equal(n, Index("[^x]", "", padding + "y"));
+                Assert.Equal(-1, Index("ab", "", padding + "a"));
+                Assert.Equal(-1, Index("[ab]", "", padding));
+
+                // Under "u", a low surrogate of a pair is not the start of a character
+                Assert.Equal(n + 2, Index("\\uDE00", "u", padding + "😀\uDE00"));
+                Assert.Equal(n + 1, Index("\\uDE00", "", padding + "😀\uDE00"));
+            }
+        }
+    }
+
+    // A case-insensitive literal prefix is searched with OrdinalIgnoreCase when its characters have only ASCII case
+    // equivalents
+    [Theory]
+    [InlineData("hello", "i", "xxHeLLo", 2)]
+    [InlineData("hello", "iu", "xxHeLLo", 2)]
+    [InlineData("1-ab", "i", "x1-aB", 1)]
+    [InlineData("abé", "i", "xABÉ", 1)]
+    [InlineData("éab", "i", "xÉAB", 1)]
+    [InlineData("kelvin", "i", "Kelvin", -1)]
+    [InlineData("kelvin", "iu", "Kelvin", 0)]
+    [InlineData("kelvin", "iu", "xKELVIN", 1)]
+    [InlineData("ask", "i", "aſk", -1)]
+    [InlineData("ask", "iu", "aſk", 0)]
+    [InlineData("ask", "iu", "xASK", 1)]
+    [InlineData("a(?i:b)c", "", "xAbc aBc", 5)]
+    [InlineData("a(?-i:b)c", "i", "xABC AbC", 5)]
+    [InlineData("Été", "i", "éTÉ", 0)]
+    [InlineData("😀a", "iu", "x😀A", 1)]
+    public void Exec_IgnoreCasePrefix(string pattern, string flags, string input, int expectedIndex)
+    {
+        Assert.Equal(expectedIndex, Index(pattern, flags, input));
+    }
+
+    // A greedy loop of a class of code units searches the end of its run with a vectorized search
+    [Theory]
+    [InlineData("\\w+", "", "  abcdefghij_klmn op", "abcdefghij_klmn")]
+    [InlineData("\\S+", "", "   abcdefghijk  ", "abcdefghijk")]
+    [InlineData("[^a-z]+", "", "abc1234567890xyz", "1234567890")]
+    [InlineData("[^\"]*\"", "", "aaaaaaaaaaaaaaaaaa\"b", "aaaaaaaaaaaaaaaaaa\"")]
+    [InlineData("[à-ÿ]+", "", "xxàáâãäåæçèéx", "àáâãäåæçèé")]
+    [InlineData("[a-zĀ-Ȁ]+", "", "1abŐőcdȀefȁ", "abŐőcdȀef")]
+    [InlineData("[a-z]+", "i", "1abCDEFGhijKLM2", "abCDEFGhijKLM")]
+    [InlineData("[\\s\\S]+", "", "abcdefghij", "abcdefghij")]
+    [InlineData("[^\\s\\S]+", "", "abcdefghij", null)]
+    public void Exec_ClassRuns(string pattern, string flags, string input, string? expected)
+    {
+        Assert.Equal(expected, Exec(pattern, flags, input)?[0]);
+    }
+
     [Theory]
     [InlineData("\\8", "", "8", new[] { "8" })]
     [InlineData("\\9", "", "9", new[] { "9" })]
@@ -450,14 +548,51 @@ public sealed class RegExpMatcherTests
     }
 
     [Fact]
-    public void Cache_ClearedWhenFull()
+    public void Cache_KeepsTheEntriesInUseWhenFull()
     {
-        var cache = new RegExpProgramCache(maxSize: 2);
+        var cache = new RegExpProgramCache(maxSize: 8);
+        var hot = cache.GetOrCompile("hot", RegExpFlags.None, out _);
+        var hotIgnoreCase = cache.GetOrCompile("hot", RegExpFlags.IgnoreCase, out _);
+        for (var i = 0; i < 100; i++)
+        {
+            cache.GetOrCompile("cold" + i.ToString(System.Globalization.CultureInfo.InvariantCulture), RegExpFlags.None, out _);
+            Assert.Same(hot, cache.GetOrCompile("hot", RegExpFlags.Global, out _));
+            Assert.Same(hotIgnoreCase, cache.GetOrCompile("hot", RegExpFlags.IgnoreCase | RegExpFlags.Sticky, out _));
+            Assert.True(cache.Count <= 8);
+        }
+    }
+
+    [Fact]
+    public void Cache_EvictsTheEntriesNotUsedWhenFull()
+    {
+        var cache = new RegExpProgramCache(maxSize: 4);
         var a = cache.GetOrCompile("a", RegExpFlags.None, out _);
         Assert.Same(a, cache.GetOrCompile("a", RegExpFlags.None, out _));
-        cache.GetOrCompile("b", RegExpFlags.None, out _);
-        cache.GetOrCompile("c", RegExpFlags.None, out _);
+        for (var i = 0; i < 10; i++)
+        {
+            cache.GetOrCompile("b" + i.ToString(System.Globalization.CultureInfo.InvariantCulture), RegExpFlags.None, out _);
+        }
+
+        Assert.True(cache.Count <= 4);
         Assert.NotSame(a, cache.GetOrCompile("a", RegExpFlags.None, out _));
+    }
+
+    [Fact]
+    public void Cache_BoundedByTheSizeOfThePrograms()
+    {
+        var cache = new RegExpProgramCache(maxSize: 1000, maxWeight: 2000);
+        for (var i = 0; i < 100; i++)
+        {
+            Assert.NotNull(cache.GetOrCompile("[a-z]+[0-9]{2}" + i.ToString(System.Globalization.CultureInfo.InvariantCulture), RegExpFlags.None, out _));
+        }
+
+        Assert.InRange(cache.Count, 1, 30);
+
+        // A program larger than the bound is compiled, but not cached
+        var large = new string('a', 5000);
+        var program = cache.GetOrCompile(large, RegExpFlags.None, out _);
+        Assert.NotNull(program);
+        Assert.NotSame(program, cache.GetOrCompile(large, RegExpFlags.None, out _));
     }
 
     [Fact]

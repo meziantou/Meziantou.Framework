@@ -8,15 +8,23 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// </summary>
 internal sealed class RegExpSearchInfo
 {
-    public RegExpSearchInfo(string? prefix, RegExpCharClass? firstCharacters, bool anchoredAtStart)
+    public RegExpSearchInfo(string? prefix, RegExpCharClass? firstCharacters, bool anchoredAtStart, bool prefixIgnoreCase = false)
     {
         Prefix = prefix;
+        PrefixIgnoreCase = prefixIgnoreCase;
         FirstCharacters = firstCharacters;
         AnchoredAtStart = anchoredAtStart;
     }
 
-    /// <summary>Gets the case-sensitive literal every match starts with, if any.</summary>
+    /// <summary>Gets the literal every match starts with, if any.</summary>
     public string? Prefix { get; }
+
+    /// <summary>
+    /// Gets whether <see cref="Prefix"/> is searched with <see cref="StringComparison.OrdinalIgnoreCase"/>: it is ASCII,
+    /// and its case-insensitive characters have no non-ASCII case equivalent. The search finds a superset of the
+    /// positions where a match can start, and the matcher checks each of them.
+    /// </summary>
+    public bool PrefixIgnoreCase { get; }
 
     /// <summary>Gets the code units a match can start with (the first code unit of a character), or null when any.</summary>
     public RegExpCharClass? FirstCharacters { get; }
@@ -25,16 +33,17 @@ internal sealed class RegExpSearchInfo
     public bool AnchoredAtStart { get; }
 
     /// <summary>
-    /// Gets whether the program starts with an unbounded loop of one character that never gives a character back, and
-    /// has no backreference: when the match fails at a position, it fails at every position of the run of characters
-    /// the loop consumed, and at the end of that run, as what follows the loop sees the same state.
+    /// Gets whether the program starts with an unbounded greedy loop of one character, and has no backreference: when the
+    /// match fails at a position, it fails at every position of the run of characters the loop consumed, and at the end
+    /// of that run. From a later start in the run, the loop ends at the same position, and gives characters back down to
+    /// a later position, so what follows the loop is tried at a subset of the positions already tried, in the same state.
     /// </summary>
     public bool SkipLeadingRun { get; init; }
 
     public static RegExpSearchInfo Create(RegExpNode root, bool unicode)
     {
         var anchored = IsAnchored(root);
-        var prefix = GetPrefix(root, unicode);
+        var (prefix, prefixIgnoreCase) = GetPrefix(root, unicode);
         RegExpCharClass? first = null;
         if (prefix is null && !anchored)
         {
@@ -45,7 +54,7 @@ internal sealed class RegExpSearchInfo
             }
         }
 
-        return new RegExpSearchInfo(prefix, first, anchored);
+        return new RegExpSearchInfo(prefix, first, anchored, prefixIgnoreCase);
     }
 
     private static bool IsAnchored(RegExpNode node)
@@ -60,18 +69,37 @@ internal sealed class RegExpSearchInfo
         };
     }
 
-    private static string? GetPrefix(RegExpNode root, bool unicode)
+    private static (string? Prefix, bool IgnoreCase) GetPrefix(RegExpNode root, bool unicode)
     {
         var items = root is RegExpSequenceNode sequence ? sequence.Items : [root];
         var builder = new StringBuilder();
+        var ignoreCase = false;
+        var ascii = true;
         foreach (var item in items)
         {
-            if (item is not RegExpCharNode { IgnoreCase: false } character)
+            if (item is not RegExpCharNode character)
                 break;
 
             var value = character.Value;
             if (unicode && value is >= 0xD800 and <= 0xDFFF)
                 break;
+
+            if (character.IgnoreCase)
+            {
+                // A case-insensitive prefix is searched with OrdinalIgnoreCase, which matches exactly the ASCII case
+                // equivalents (K and s also match U+212A and U+017F under "u" or "v": they end the prefix)
+                if (!ascii || !HasOnlyAsciiCaseEquivalents(value, unicode))
+                    break;
+
+                ignoreCase = true;
+            }
+            else if (value > 0x7F)
+            {
+                if (ignoreCase)
+                    break;
+
+                ascii = false;
+            }
 
             if (value > 0xFFFF)
             {
@@ -83,7 +111,29 @@ internal sealed class RegExpSearchInfo
             }
         }
 
-        return builder.Length > 0 ? builder.ToString() : null;
+        // One case-insensitive character is searched as well by the first characters
+        if (builder.Length == 0 || (ignoreCase && builder.Length < 2))
+            return (null, false);
+
+        return (builder.ToString(), ignoreCase);
+    }
+
+    private static bool HasOnlyAsciiCaseEquivalents(int value, bool unicode)
+    {
+        if (value > 0x7F)
+            return false;
+
+        var equivalents = RegExpCaseFolding.AddCaseEquivalents(CodePointSet.Single(value), unicode);
+        for (var i = 0; i < equivalents.RangeCount; i++)
+        {
+            for (var c = equivalents.GetRangeStart(i); c <= equivalents.GetRangeEnd(i); c++)
+            {
+                if (c > 0x7F || char.ToUpperInvariant((char)c) != char.ToUpperInvariant((char)value))
+                    return false;
+            }
+        }
+
+        return true;
     }
 
     /// <summary>Gets the first code units of the matches of a node (null for any), and whether the node can match the empty string.</summary>

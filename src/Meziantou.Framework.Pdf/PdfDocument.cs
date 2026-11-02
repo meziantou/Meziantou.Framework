@@ -51,6 +51,7 @@ public sealed partial class PdfDocument
         Reader = reader;
         Objects = reader.Objects;
         Trailer = reader.Trailer;
+        OriginalTrailerFingerprint = PdfObjectFingerprint.Compute(Trailer);
         var version = reader.HeaderVersion;
         if (Catalog.GetName(PdfNames.Version) is { } catalogVersion && PdfVersion.TryParse(catalogVersion.Value, out var parsed) && parsed > version)
         {
@@ -66,6 +67,9 @@ public sealed partial class PdfDocument
 
     /// <summary>Gets the indirect objects of the document.</summary>
     public PdfIndirectObjectCollection Objects { get; }
+
+    /// <summary>Gets the fingerprint of the trailer of the file the document was read from: an incremental save of a document whose objects and trailer did not change writes the file as it is.</summary>
+    internal PdfObjectFingerprint? OriginalTrailerFingerprint { get; }
 
     /// <summary>Gets the trailer dictionary (ISO 32000-2, 7.5.5): <c>/Root</c>, <c>/Info</c> and <c>/ID</c>. The writer computes the other entries.</summary>
     public PdfDictionary Trailer { get; }
@@ -347,21 +351,32 @@ public sealed partial class PdfDocument
     /// <summary>Writes the whole document: the objects reachable from the catalog, renumbered in the order they are reached.</summary>
     /// <param name="stream">The stream to write to. It is not closed.</param>
     /// <param name="options">The options, or <see langword="null"/> for <see cref="PdfSaveOptions.Default"/>.</param>
+    /// <remarks>The file is written to the stream as it is serialized, through a buffer of bounded size: when the save fails, the stream may contain the beginning of the file.</remarks>
     public void Save(Stream stream, PdfSaveOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(stream);
-        stream.Write(SaveCore(options, incremental: false).WrittenSpan);
+        options = PrepareSave(options, incremental: false);
+        WriteSave(new PdfByteWriter(new StreamOutputSink(stream)), options, incremental: false, CancellationToken.None);
     }
 
     /// <summary>Writes the whole document to a file.</summary>
     /// <param name="path">The path of the file. An existing file is replaced.</param>
     /// <param name="options">The options, or <see langword="null"/> for <see cref="PdfSaveOptions.Default"/>.</param>
+    /// <remarks>The file is written as the document is serialized; when the save fails, the incomplete file is deleted.</remarks>
     public void Save(string path, PdfSaveOptions? options = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
-        var output = SaveCore(options, incremental: false);
-        using var stream = File.Create(path);
-        stream.Write(output.WrittenSpan);
+        options = PrepareSave(options, incremental: false);
+        try
+        {
+            using var stream = File.Create(path);
+            WriteSave(new PdfByteWriter(new StreamOutputSink(stream)), options, incremental: false, CancellationToken.None);
+        }
+        catch
+        {
+            File.Delete(path);
+            throw;
+        }
     }
 
     /// <summary>Writes the whole document to a stream.</summary>
@@ -369,30 +384,44 @@ public sealed partial class PdfDocument
     /// <param name="options">The options, or <see langword="null"/> for <see cref="PdfSaveOptions.Default"/>.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <returns>A task that completes when the document is written.</returns>
+    /// <remarks>
+    /// The document is serialized synchronously, on the calling thread, into blocks of memory, and the blocks are then
+    /// written to the stream asynchronously. Cancellation is observed while the objects are serialized, between the
+    /// objects, and while the blocks are written: the stream is untouched when the save is canceled before the first
+    /// block is written, and may contain the beginning of the file otherwise.
+    /// </remarks>
+    /// <exception cref="OperationCanceledException">The save was canceled.</exception>
     public async Task SaveAsync(Stream stream, PdfSaveOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(stream);
-        var output = SaveCore(options, incremental: false);
-        await stream.WriteAsync(output.WrittenMemory, cancellationToken).ConfigureAwait(false);
+        var output = SaveToSegments(options, incremental: false, cancellationToken);
+        await output.WriteToAsync(stream, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Writes the whole document to an array.</summary>
     /// <param name="options">The options, or <see langword="null"/> for <see cref="PdfSaveOptions.Default"/>.</param>
     /// <returns>The content of the file.</returns>
-    public byte[] ToByteArray(PdfSaveOptions? options = null) => SaveCore(options, incremental: false).ToArray();
+    public byte[] ToByteArray(PdfSaveOptions? options = null) => SaveToSegments(options, incremental: false, CancellationToken.None).ToArray();
 
     /// <summary>
     /// Writes the original file followed by an incremental update (ISO 32000-2, 7.5.6): the objects that were added or
-    /// changed, a cross-reference section of the kind of the original file, and a trailer that points to the original one.
-    /// The bytes of the original file are kept, so its signatures stay valid.
+    /// changed, the free entries of the removed objects, a cross-reference section of the kind of the original file, and
+    /// a trailer that points to the original one. The bytes of the original file are kept, so its signatures stay valid.
+    /// When nothing changed, the original file is written as it is.
     /// </summary>
     /// <param name="stream">The stream to write to. It is not closed.</param>
-    /// <param name="options">The options, or <see langword="null"/> for <see cref="PdfSaveOptions.Default"/>. Object streams are not used.</param>
+    /// <param name="options">
+    /// The options, or <see langword="null"/> for <see cref="PdfSaveOptions.Default"/>. With
+    /// <see cref="PdfSaveOptions.UseObjectStreams"/>, the objects of the update are written in object streams when the
+    /// original file has cross-reference streams.
+    /// </param>
+    /// <remarks>The original file is copied to the stream without being buffered again, and the update is written through a buffer of bounded size: when the save fails, the stream may contain the beginning of the file.</remarks>
     /// <exception cref="InvalidOperationException">The document was not read from a file, or its cross-reference information was rebuilt (<see cref="IsRepaired"/>).</exception>
     public void SaveIncremental(Stream stream, PdfSaveOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(stream);
-        stream.Write(SaveCore(options, incremental: true).WrittenSpan);
+        options = PrepareSave(options, incremental: true);
+        WriteSave(new PdfByteWriter(new StreamOutputSink(stream)), options, incremental: true, CancellationToken.None);
     }
 
     /// <summary>Writes the original file followed by an incremental update (ISO 32000-2, 7.5.6).</summary>
@@ -400,34 +429,53 @@ public sealed partial class PdfDocument
     /// <param name="options">The options, or <see langword="null"/> for <see cref="PdfSaveOptions.Default"/>.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <returns>A task that completes when the document is written.</returns>
+    /// <remarks>
+    /// The update is serialized synchronously, on the calling thread, and the original file and the update are then
+    /// written to the stream asynchronously; the original file is not copied in memory. Cancellation is observed as for
+    /// <see cref="SaveAsync(Stream, PdfSaveOptions?, CancellationToken)"/>.
+    /// </remarks>
     /// <exception cref="InvalidOperationException">The document was not read from a file, or its cross-reference information was rebuilt (<see cref="IsRepaired"/>).</exception>
+    /// <exception cref="OperationCanceledException">The save was canceled.</exception>
     public async Task SaveIncrementalAsync(Stream stream, PdfSaveOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(stream);
-        var output = SaveCore(options, incremental: true);
-        await stream.WriteAsync(output.WrittenMemory, cancellationToken).ConfigureAwait(false);
+        var output = SaveToSegments(options, incremental: true, cancellationToken);
+        await output.WriteToAsync(stream, cancellationToken).ConfigureAwait(false);
     }
 
-    private PdfByteWriter SaveCore(PdfSaveOptions? options, bool incremental)
+    private SegmentedOutputSink SaveToSegments(PdfSaveOptions? options, bool incremental, CancellationToken cancellationToken)
+    {
+        options = PrepareSave(options, incremental, cancellationToken);
+        var sink = new SegmentedOutputSink();
+        WriteSave(new PdfByteWriter(sink), options, incremental, cancellationToken);
+        return sink;
+    }
+
+    /// <summary>Writes into the objects what the save needs, before the file is written.</summary>
+    private PdfSaveOptions PrepareSave(PdfSaveOptions? options, bool incremental, CancellationToken cancellationToken = default)
     {
         options ??= PdfSaveOptions.Default;
         if (incremental && Reader is null)
             throw new InvalidOperationException("Only a document read from a file can be saved incrementally");
 
+        cancellationToken.ThrowIfCancellationRequested();
         PrepareForSave();
+        cancellationToken.ThrowIfCancellationRequested();
         _structureTree?.Write();
         Conformance.ConformanceWriter.Apply(this, options);
-        var output = new PdfByteWriter(64 * 1024);
+        return options;
+    }
+
+    private void WriteSave(PdfByteWriter output, PdfSaveOptions options, bool incremental, CancellationToken cancellationToken)
+    {
         if (incremental)
         {
-            PdfFileWriter.WriteIncremental(this, options, output);
+            PdfFileWriter.WriteIncremental(this, options, output, cancellationToken);
         }
         else
         {
-            PdfFileWriter.WriteFull(this, options, output);
+            PdfFileWriter.WriteFull(this, options, output, cancellationToken);
         }
-
-        return output;
     }
 
     /// <summary>Writes what the high-level members keep apart from the objects: the outline and the subsets of the embedded fonts.</summary>

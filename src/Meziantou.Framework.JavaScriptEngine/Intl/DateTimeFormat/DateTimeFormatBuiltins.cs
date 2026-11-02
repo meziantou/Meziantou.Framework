@@ -248,20 +248,20 @@ internal static class DateTimeFormatBuiltins
         dateTimeFormat.HourCycle = hc;
 
         var timeZoneValue = options.Get("timeZone");
-        string timeZoneText;
         if (timeZoneValue.IsUndefined)
         {
-            timeZoneText = toLocaleStringTimeZone?.Identifier ?? TemporalOperations.SystemTimeZoneIdentifier(JsEngine.Current!).Identifier;
+            // The system time zone may be a custom zone of the host that is not in the database: use it directly
+            var timeZone = toLocaleStringTimeZone ?? TemporalOperations.SystemTimeZoneIdentifier(JsEngine.Current!);
+            dateTimeFormat.TimeZoneIdentifier = timeZone.Identifier;
+            dateTimeFormat.TimeZone = timeZone;
         }
         else
         {
             if (toLocaleStringTimeZone is not null)
                 ThrowHelper.ThrowTypeError("The timeZone option is not allowed by Temporal.ZonedDateTime.prototype.toLocaleString");
 
-            timeZoneText = JsOperations.ToString(timeZoneValue);
+            SetTimeZone(dateTimeFormat, JsOperations.ToString(timeZoneValue));
         }
-
-        SetTimeZone(dateTimeFormat, timeZoneText, toLocaleStringTimeZone);
 
         var formatOptions = new DateTimeComponents { HourCycle = hc };
         var hasExplicitFormatComponents = false;
@@ -334,15 +334,8 @@ internal static class DateTimeFormatBuiltins
         return dateTimeFormat;
     }
 
-    private static void SetTimeZone(JsDateTimeFormatObject dateTimeFormat, string timeZone, TemporalTimeZone? toLocaleStringTimeZone)
+    private static void SetTimeZone(JsDateTimeFormatObject dateTimeFormat, string timeZone)
     {
-        if (toLocaleStringTimeZone is not null && ReferenceEquals(timeZone, toLocaleStringTimeZone.Identifier))
-        {
-            dateTimeFormat.TimeZoneIdentifier = toLocaleStringTimeZone.Identifier;
-            dateTimeFormat.TimeZone = toLocaleStringTimeZone;
-            return;
-        }
-
         if (timeZone.Length > 0 && timeZone[0] is '+' or '-' or '\u2212')
         {
             // IsTimeZoneOffsetString: an offset with seconds is a RangeError
@@ -665,29 +658,56 @@ internal static class DateTimeFormatBuiltins
         }
     }
 
+    /// <summary>The parts reused by <see cref="FormatDateTime"/>: format() needs only the text, not the parts.</summary>
+    [ThreadStatic]
+    private static List<DateTimePart>? s_cachedParts;
+
     /// <summary>PartitionDateTimePattern(dateTimeFormat, x)</summary>
     internal static List<DateTimePart> PartitionDateTimePattern(JsDateTimeFormatObject dtf, JsValue x)
     {
-        var (format, epochNanoseconds, isPlain) = HandleDateTimeValue(dtf, x);
         var result = new List<DateTimePart>();
-        DateTimeFormatter.FormatPattern(dtf, format, epochNanoseconds, isPlain, result);
+        PartitionDateTimePattern(dtf, x, result);
         return result;
+    }
+
+    private static void PartitionDateTimePattern(JsDateTimeFormatObject dtf, JsValue x, List<DateTimePart> result)
+    {
+        var (format, epochNanoseconds, isPlain) = HandleDateTimeValue(dtf, x);
+        DateTimeFormatter.FormatPattern(dtf, format, epochNanoseconds, isPlain, result);
     }
 
     /// <summary>FormatDateTime(dateTimeFormat, x)</summary>
     internal static string FormatDateTime(JsDateTimeFormatObject dtf, JsValue x)
     {
-        var parts = PartitionDateTimePattern(dtf, x);
-        if (parts.Count == 1)
-            return parts[0].Value;
-
-        var result = new StringBuilder();
-        foreach (var part in parts)
+        // Take the cached list, so that a nested call would allocate its own
+        var parts = s_cachedParts ?? [];
+        s_cachedParts = null;
+        try
         {
-            result.Append(part.Value);
-        }
+            PartitionDateTimePattern(dtf, x, parts);
+            if (parts.Count == 1)
+                return parts[0].Value;
 
-        return result.ToString();
+            var length = 0;
+            foreach (var part in parts)
+            {
+                length += part.Value.Length;
+            }
+
+            return string.Create(length, parts, static (span, parts) =>
+            {
+                foreach (var part in parts)
+                {
+                    part.Value.CopyTo(span);
+                    span = span[part.Value.Length..];
+                }
+            });
+        }
+        finally
+        {
+            parts.Clear();
+            s_cachedParts = parts;
+        }
     }
 
     /// <summary>get Intl.DateTimeFormat.prototype.format</summary>

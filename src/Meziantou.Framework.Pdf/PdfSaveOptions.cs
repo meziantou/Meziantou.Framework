@@ -13,9 +13,23 @@ public sealed class PdfSaveOptions
     /// <summary>
     /// Gets a value indicating whether the objects that are not streams are written in object streams, with a
     /// cross-reference stream (PDF 1.5, ISO 32000-2, 7.5.7 and 7.5.8). The default is <see langword="true"/>. An
-    /// incremental save keeps the kind of cross-reference of the original file and writes no object stream.
+    /// incremental save keeps the kind of cross-reference of the original file: it writes the objects of the update in
+    /// object streams when the file has cross-reference streams.
     /// </summary>
     public bool UseObjectStreams { get; init; } = true;
+
+    /// <summary>
+    /// Gets a value indicating whether the file is linearized for fast web view (ISO 32000-2, Annex F): the objects of
+    /// the first page come first, with hint tables that let a viewer show each page before the file is fully
+    /// downloaded. The default is <see langword="false"/>.
+    /// </summary>
+    /// <remarks>
+    /// A linearized file uses cross-reference tables and no object stream (<see cref="UseObjectStreams"/> is ignored),
+    /// and is built in memory before it is written. The inheritable attributes of the page tree are written on the
+    /// pages. It cannot be encrypted, and an incremental save cannot be linearized: an incremental update of a
+    /// linearized file keeps the original file, which is then no longer linearized.
+    /// </remarks>
+    public bool Linearize { get; init; }
 
     /// <summary>
     /// Gets the number of whitespace bytes the XMP packet the save writes for <see cref="PdfDocument.PdfAConformance"/>

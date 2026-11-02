@@ -861,6 +861,7 @@ namespace Meziantou.Framework.Pdf
     {
         public bool CompressStreams { get => throw null; init { } }
         public static Meziantou.Framework.Pdf.PdfSaveOptions Default { get => throw null; }
+        public bool Linearize { get => throw null; init { } }
         public bool UseObjectStreams { get => throw null; init { } }
         public Meziantou.Framework.Pdf.PdfVersion? Version { get => throw null; init { } }
         public int XmpPadding { get => throw null; init { } }
@@ -1192,6 +1193,7 @@ namespace Meziantou.Framework.Pdf.Objects
         public int MaxObjectNumber { get => throw null; }
         public Meziantou.Framework.Pdf.Objects.PdfReference Add(Meziantou.Framework.Pdf.Objects.PdfObject value) => throw null;
         public System.Collections.Generic.IEnumerable<Meziantou.Framework.Pdf.Objects.PdfReference> GetReferences() => throw null;
+        public bool Remove(Meziantou.Framework.Pdf.Objects.PdfReference reference) => throw null;
         public Meziantou.Framework.Pdf.Objects.PdfObject Resolve(Meziantou.Framework.Pdf.Objects.PdfReference reference) => throw null;
         public void Set(Meziantou.Framework.Pdf.Objects.PdfReference reference, Meziantou.Framework.Pdf.Objects.PdfObject value) { }
         public bool TryGetReference(int objectNumber, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.Pdf.Objects.PdfReference? reference) => throw null;

@@ -8,9 +8,31 @@ using Meziantou.Framework.JavaScriptEngine.Benchmarks;
 //   dotnet run -c Release -f net10.0 -- quick [workload] [iterations]  times the workloads (a quick, noisy measurement)
 //   dotnet run -c Release -f net10.0 -- profile <workload or file> <seconds>   runs a workload (a script that defines run()) in a loop (to attach a profiler)
 //   dotnet run -c Release -f net10.0 -- dump <workload or file>         prints the bytecode of a workload
+//   dotnet run -c Release -f net10.0 -- cold <script or file>           runs a script once in a new process: the cold start (data loading) and the retained memory
 if (args is ["dump", var dumpWorkload])
 {
     Console.WriteLine(Disassembler.Disassemble(Workloads.All.TryGetValue(dumpWorkload, out var dumpCode) ? dumpCode : File.ReadAllText(dumpWorkload)));
+    return 0;
+}
+
+if (args is ["cold", var coldScript])
+{
+    // The engine and the realm are created first: the time and the memory are the ones of the script (e.g. the Intl data)
+    var code = Workloads.ColdStart.TryGetValue(coldScript, out var coldCode) ? coldCode : File.Exists(coldScript) ? File.ReadAllText(coldScript) : coldScript;
+    using var coldEngine = new JsEngine();
+    var coldRealm = coldEngine.CreateRealm();
+    coldRealm.Execute("1 + 1");
+    var retainedBefore = GC.GetTotalMemory(forceFullCollection: true);
+    var allocatedBefore = GC.GetTotalAllocatedBytes(precise: true);
+    var coldStart = Stopwatch.GetTimestamp();
+    coldRealm.Execute(code);
+    var elapsed = Stopwatch.GetElapsedTime(coldStart);
+    var allocated = GC.GetTotalAllocatedBytes(precise: true) - allocatedBefore;
+    var retained = GC.GetTotalMemory(forceFullCollection: true) - retainedBefore;
+    var warmStart = Stopwatch.GetTimestamp();
+    coldRealm.Execute(code);
+    Console.WriteLine($"cold {elapsed.TotalMilliseconds:F1} ms, warm {Stopwatch.GetElapsedTime(warmStart).TotalMilliseconds:F1} ms, allocated {allocated / 1024.0 / 1024.0:F1} MB, retained {retained / 1024.0 / 1024.0:F1} MB");
+    GC.KeepAlive(coldRealm);
     return 0;
 }
 

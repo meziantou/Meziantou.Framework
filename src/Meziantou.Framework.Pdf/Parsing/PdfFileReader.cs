@@ -3,6 +3,7 @@ using System.Text;
 using Meziantou.Framework.Pdf.Filters;
 using Meziantou.Framework.Pdf.Objects;
 using Meziantou.Framework.Pdf.Security;
+using Meziantou.Framework.Pdf.Writing;
 
 namespace Meziantou.Framework.Pdf.Parsing;
 
@@ -258,7 +259,10 @@ internal sealed class PdfFileReader : IPdfObjectLoader
 
         Trailer = StripXrefKeys(trailer);
         RegisterEntries(entries);
-        Objects.Reserve((int)Math.Clamp(Trailer.GetInteger(PdfNames.Size, 0) - 1, 0, int.MaxValue - 1));
+        // The numbers below /Size are not given to new objects, even when the file does not use them. A bogus /Size
+        // (2147483647) would leave no number to give: the numbers the file uses are registered, so the numbers that
+        // are not are kept below the length of the file
+        Objects.Reserve((int)Math.Clamp(Trailer.GetInteger(PdfNames.Size, 0) - 1, 0, Math.Min(_input.Length, PdfIndirectObjectCollection.MaxAllocatableObjectNumber)));
         return true;
     }
 
@@ -682,14 +686,20 @@ internal sealed class PdfFileReader : IPdfObjectLoader
         }
     }
 
+    /// <summary>
+    /// Gets the entries of the trailer that are not about its cross-reference section (<c>/Prev</c>, <c>/XRefStm</c>,
+    /// and the entries of a cross-reference stream, 7.5.8.2): the writer writes them again, and keeps the others,
+    /// including the private ones (7.5.6: an update contains the entries of the previous trailer).
+    /// </summary>
     private static PdfDictionary StripXrefKeys(PdfDictionary trailer)
     {
         var result = new PdfDictionary();
-        foreach (var key in TrailerKeys)
+        foreach (var (key, value) in trailer)
         {
-            if (trailer[key] is { } value and not PdfNull)
+            // The entries are set as parsed: an incremental save compares the trailer with what was read
+            if (value is not PdfNull && !PdfFileWriter.IsCrossReferenceKey(key))
             {
-                result[key] = value;
+                result.SetParsed(key, value);
             }
         }
 

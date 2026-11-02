@@ -638,6 +638,89 @@ public sealed class JsEngineTests
         Assert.Equal(JsTerminationReason.Timeout, exception.Reason);
     }
 
+    // The search of a literal prefix or of the first characters of a pattern has no backtracking step: it counts the
+    // code units it scans, so a long search checks the limits too. The input comes from the host, so the search is the
+    // first code that checks the limits.
+    [Theory]
+    [InlineData("/[ab]/.test(s)")]
+    [InlineData("/[ab]/u.test(s)")]
+    [InlineData("/\\d/.test(s)")]
+    [InlineData("/ab/.test(s)")]
+    [InlineData("/ab/i.test(s)")]
+    [InlineData("/[^x]/.test(s)")]
+    [InlineData("/\\s+$/.test(s)")]
+    public void ExecutionLimits_RegExpSearchChecksTheLimits(string code)
+    {
+        var input = new string('x', 4_000_000);
+        using (var engine = new JsEngine(new JsEngineOptions { RegExpTimeout = TimeSpan.FromTicks(1) }))
+        {
+            var realm = engine.CreateRealm();
+            realm.GlobalObject.SetProperty("s", input);
+            var exception = Assert.Throws<JsTerminationException>(() => realm.Execute(code));
+            Assert.Equal(JsTerminationReason.Timeout, exception.Reason);
+        }
+
+        using (var engine = new JsEngine(new JsEngineOptions { Timeout = TimeSpan.FromTicks(1) }))
+        {
+            var realm = engine.CreateRealm();
+            realm.GlobalObject.SetProperty("s", input);
+            var exception = Assert.Throws<JsTerminationException>(() => realm.Execute(code));
+            Assert.Equal(JsTerminationReason.Timeout, exception.Reason);
+        }
+
+        using var cancellation = new CancellationTokenSource();
+        using (var engine = new JsEngine(new JsEngineOptions { CancellationToken = cancellation.Token }))
+        {
+            var realm = engine.CreateRealm();
+            realm.GlobalObject.SetProperty("s", input);
+            realm.GlobalObject.SetProperty("cancel", realm.CreateFunction("cancel", 0, (_, _) =>
+            {
+                cancellation.Cancel();
+                return default;
+            }));
+            var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("cancel(); " + code));
+            Assert.Equal(JsTerminationReason.Canceled, exception.Reason);
+        }
+
+        using (var engine = new JsEngine(new JsEngineOptions { RegExpTimeout = TimeSpan.FromSeconds(30), Timeout = TimeSpan.FromSeconds(30) }))
+        {
+            var realm = engine.CreateRealm();
+            realm.GlobalObject.SetProperty("s", input);
+            Assert.False(realm.Execute(code).AsBoolean());
+            realm.GlobalObject.SetProperty("s", input + "ab1");
+            Assert.True(realm.Execute(code.Replace("\\s+$", "\\d$", StringComparison.Ordinal)).AsBoolean());
+        }
+    }
+
+    // The backtracking stack of the matcher checks the memory limit before it grows: without the check, the stack
+    // doubles until the next periodic check, and allocates about twice the limit
+    [Fact]
+    public void ExecutionLimits_RegExpBacktrackingStackChecksTheMemoryLimit()
+    {
+        const long MemoryLimit = 16 * 1024 * 1024;
+        var input = new string('a', 1_000_000);
+        using (var engine = new JsEngine(new JsEngineOptions { MemoryLimit = MemoryLimit }))
+        {
+            var realm = engine.CreateRealm();
+            realm.GlobalObject.SetProperty("s", input);
+            var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+            var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("/^(?:a|b)*c/.test(s)"));
+            var allocated = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
+            Assert.Equal(JsTerminationReason.MemoryLimit, exception.Reason);
+            Assert.True(allocated < MemoryLimit, "allocated: " + allocated.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        }
+
+        // The runner of the thread is reused after the termination, and a deep backtracking within the limit succeeds
+        using (var engine = new JsEngine(new JsEngineOptions { MemoryLimit = 256 * 1024 * 1024 }))
+        {
+            var realm = engine.CreateRealm();
+            realm.GlobalObject.SetProperty("s", input);
+            Assert.False(realm.Execute("/^(?:a|b)*c/.test(s)").AsBoolean());
+            Assert.True(realm.Execute("/^(?:a|b)*$/.test(s)").AsBoolean());
+            Assert.Equal("b,b", realm.Execute("/(a)|(b)/.exec('xb').slice(0, 3).filter(Boolean).join()").ToString());
+        }
+    }
+
     [Fact]
     public void DeepRecursionThroughHostFunctionsThrowsARangeError()
     {
@@ -1866,6 +1949,31 @@ public sealed class JsEngineTests
         Assert.Equal("2026-10-29T23:30:00.000Z", realm.Execute("new Date().toISOString()").AsString());
         Assert.Equal("2026-10-30", realm.Execute("Temporal.Now.plainDateISO().toString()").AsString());
         Assert.Equal(8, realm.Execute("new Date().getHours()").AsNumber());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_CustomTimeZone()
+    {
+        #region JavaScriptEngine_CustomTimeZone
+        // A time zone that is not in the IANA database: +05:00, and +06:00 from the last Sunday of March to the last Sunday of October
+        var rule = TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(
+            DateTime.MinValue.Date,
+            DateTime.MaxValue.Date,
+            TimeSpan.FromHours(1),
+            TimeZoneInfo.TransitionTime.CreateFloatingDateRule(new DateTime(1, 1, 1, 2, 0, 0), month: 3, week: 5, DayOfWeek.Sunday),
+            TimeZoneInfo.TransitionTime.CreateFloatingDateRule(new DateTime(1, 1, 1, 3, 0, 0), month: 10, week: 5, DayOfWeek.Sunday));
+        var timeZone = TimeZoneInfo.CreateCustomTimeZone("Test/Zone", TimeSpan.FromHours(5), "Test zone", "Test standard time", "Test daylight time", [rule]);
+
+        using var engine = new JsEngine(new JsEngineOptions
+        {
+            TimeProvider = new FixedTimeProvider(new DateTimeOffset(2026, 7, 1, 12, 0, 0, TimeSpan.Zero), timeZone),
+        });
+        var realm = engine.CreateRealm();
+
+        Assert.Equal(18, realm.Execute("new Date().getHours()").AsNumber());
+        Assert.Equal(-300, realm.Execute("new Date(2026, 0, 1).getTimezoneOffset()").AsNumber());
+        Assert.Equal("Test/Zone", realm.Execute("Temporal.Now.timeZoneId()").AsString());
         #endregion
     }
 

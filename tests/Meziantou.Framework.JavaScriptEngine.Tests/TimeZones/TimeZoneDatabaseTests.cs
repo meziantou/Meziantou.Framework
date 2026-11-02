@@ -250,4 +250,71 @@ public sealed class TimeZoneDatabaseTests
         Assert.Null(zone.GetNextTransition(ToEpochSeconds(2024, 1, 1)));
         Assert.NotNull(zone.GetPreviousTransition(ToEpochSeconds(2024, 1, 1)));
     }
+
+    [Fact]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Test data, with fixed seeds")]
+    public void CachedRuleTransitions_ConcurrentLookups()
+    {
+        // The zones cache the transitions computed from their rules. A zone decoded for a single lookup has an empty cache:
+        // its answer is the reference for the shared zone, queried from several threads in random order.
+        byte[] data;
+        using (var stream = typeof(TimeZoneDatabase).Assembly.GetManifestResourceStream("Meziantou.Framework.JavaScriptEngine.TimeZones.tzdb.bin")!)
+        using (var brotli = new System.IO.Compression.BrotliStream(stream, System.IO.Compression.CompressionMode.Decompress))
+        using (var memory = new MemoryStream())
+        {
+            brotli.CopyTo(memory);
+            data = memory.ToArray();
+        }
+
+        string[] ids = ["Europe/Paris", "America/New_York", "Australia/Lord_Howe", "America/Santiago", "Europe/Dublin", "Africa/Casablanca", "Asia/Kolkata"];
+        var random = new Random(42);
+        var queries = new List<(string Id, long Time, long LocalTime)>();
+        foreach (var id in ids)
+        {
+            for (var i = 0; i < 150; i++)
+            {
+                // Historical offsets, recent and future years, the far future, and the seconds around a transition
+                var time = (i % 5) switch
+                {
+                    0 => random.NextInt64(ToEpochSeconds(1850, 1, 1), ToEpochSeconds(1990, 1, 1)),
+                    1 => random.NextInt64(ToEpochSeconds(1990, 1, 1), ToEpochSeconds(2060, 1, 1)),
+                    2 => random.NextInt64(ToEpochSeconds(2060, 1, 1), ToEpochSeconds(275000, 1, 1)),
+                    _ => (GetZone(id).GetNextTransition(random.NextInt64(ToEpochSeconds(2000, 1, 1), ToEpochSeconds(2100, 1, 1))) ?? 0) + random.Next(-2, 2),
+                };
+                queries.Add((id, time, time + random.Next(-86_400, 86_400)));
+            }
+        }
+
+        var expected = queries.Select(query =>
+        {
+            var zone = TimeZoneDatabase.Load(data).GetTimeZone(query.Id)!;
+            var next = TimeZoneDatabase.Load(data).GetTimeZone(query.Id)!.GetNextTransition(query.Time);
+            var possible = new long[2];
+            var possibleCount = TimeZoneDatabase.Load(data).GetTimeZone(query.Id)!.GetPossibleEpochSeconds(query.LocalTime, possible);
+            return (Offset: zone.GetOffsetSeconds(query.Time), Next: next, Possible: string.Join(',', possible.Take(possibleCount)));
+        }).ToArray();
+
+        Parallel.For(0, 8, worker =>
+        {
+            var order = Enumerable.Range(0, queries.Count).ToArray();
+            new Random(worker).Shuffle(order);
+            var possible = new long[2];
+            foreach (var index in order)
+            {
+                var (id, time, localTime) = queries[index];
+                var zone = GetZone(id);
+                Assert.Equal(expected[index].Offset, zone.GetOffsetSeconds(time));
+                Assert.Equal(expected[index].Next, zone.GetNextTransition(time));
+                var possibleCount = zone.GetPossibleEpochSeconds(localTime, possible);
+                Assert.Equal(expected[index].Possible, string.Join(',', possible.Take(possibleCount)));
+            }
+        });
+
+        // DST boundaries of the rules: the last Sunday of March and of October in Paris
+        var paris = GetZone("Europe/Paris");
+        Assert.Equal(3600, paris.GetOffsetSeconds(ToEpochSeconds(2124, 3, 26, 0, 59, 59)));
+        Assert.Equal(7200, paris.GetOffsetSeconds(ToEpochSeconds(2124, 3, 26, 1)));
+        Assert.Equal(7200, paris.GetOffsetSeconds(ToEpochSeconds(2124, 10, 29, 0, 59, 59)));
+        Assert.Equal(3600, paris.GetOffsetSeconds(ToEpochSeconds(2124, 10, 29, 1)));
+    }
 }

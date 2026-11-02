@@ -480,6 +480,15 @@ internal partial class AssertionFormatter
             .ToString();
     }
 
+    public virtual string Format(RefStructInRangeAssertionError error)
+    {
+        return CreateMessage(error.IsNegative ? "Assert.NotInRange() assertion failed." : "Assert.InRange() assertion failed.", error.Message)
+            .Append("Expression", error.ActualExpression)
+            .Append(error.IsNegative ? "Not expected" : "Expected", $"in range [{error.LowExpression}, {error.HighExpression}]")
+            .Append("Type", FormatType(error.ValueType) + " (ref struct values cannot be displayed)")
+            .ToString();
+    }
+
     public virtual string Format(ThrowsAssertionError error)
     {
         return CreateMessage($"Assert.{(error.AllowDerivedTypes ? "ThrowsAny" : "Throws")}() assertion failed.", error.Message)

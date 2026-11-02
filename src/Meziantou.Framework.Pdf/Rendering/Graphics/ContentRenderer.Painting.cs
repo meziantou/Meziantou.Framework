@@ -88,7 +88,7 @@ internal sealed partial class ContentRenderer
             if (brush is null)
                 return;
 
-            PaintWithState(canvas, target => draw(target, brush), bounds);
+            PaintWithState(canvas, target => draw(target, brush), bounds, GetHalftone(stroke ? _state.StrokeAlpha : _state.FillAlpha));
         }
         finally
         {
@@ -126,17 +126,23 @@ internal sealed partial class ContentRenderer
     /// The pixels the drawing can change, when they are known: the layers of the clip and of the masks are limited to
     /// them, which matters for the many small images of a page of scanned glyphs.
     /// </param>
-    private void PaintWithState(DrawingCanvas canvas, Action<DrawingCanvas> draw, Rectangle? bounds = null)
+    /// <param name="halftone">The halftone of the drawing, which includes the transfer functions; <see langword="null"/> for none.</param>
+    private void PaintWithState(DrawingCanvas canvas, Action<DrawingCanvas> draw, Rectangle? bounds = null, RenderHalftone? halftone = null)
     {
         if (bounds is { } area)
         {
-            canvas.Clip(area, target => PaintWithState(target, draw));
+            canvas.Clip(area, target => PaintWithState(target, draw, bounds: null, halftone));
             return;
         }
 
         var softMask = _state.SoftMask;
         var masked = draw;
-        if (_state.Transfer is { } transfer)
+        if (halftone is not null)
+        {
+            var filter = CreateHalftoneFilter(halftone);
+            masked = target => target.Filter(filter, filtered => draw(filtered));
+        }
+        else if (_state.Transfer is { } transfer)
         {
             var filter = new FilterGraph(transfer);
             masked = target => target.Filter(filter, filtered => draw(filtered));
@@ -462,6 +468,8 @@ internal sealed partial class ContentRenderer
         var state = new RenderGraphicsState { Ctm = formMatrix * matrix };
         var renderer = new ContentRenderer(_cache, _document, state, _depth + 1, _optionalContent)
         {
+            // A pattern cell and a soft mask are not painted on the device: the object they are used by is
+            SuppressHalftones = true,
             ForcedColor = forcedColor,
             BaseMatrix = baseMatrix,
             DeviceSize = deviceSize,

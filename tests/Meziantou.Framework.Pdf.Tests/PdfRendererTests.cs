@@ -19,6 +19,11 @@ public sealed class PdfRendererTests
     // The glyph procedure of Type3SquareFont: a square of the glyph space, painted with the fill color (d1)
     private static readonly string Type3SquareProcedure = HandWrittenPdf.Stream("1000 0 0 0 1000 1000 d1 0 0 1000 1000 re f");
 
+    // A 4 x 4 threshold array of 16 levels: at the gray 0.5, the pixels whose x + y is even are white
+    private static readonly byte[] BayerThresholds = [8, 136, 40, 168, 200, 72, 232, 104, 56, 184, 24, 152, 248, 120, 216, 88];
+
+    private static readonly PdfRenderOptions HalftoneOptions = new() { UseSystemFonts = false, UseHalftones = true, PathAntialiasing = false };
+
     [Fact]
     public void Example_RenderPage()
     {
@@ -460,6 +465,248 @@ public sealed class PdfRendererTests
 
         AssertColor(Pixel(image, 25, 50), 0, 255, 255);
         AssertColor(Pixel(image, 75, 50), 255, 0, 0);
+    }
+
+    [Fact]
+    public void Example_RenderHalftones()
+    {
+        // A page whose gray is halftoned by a 4 x 4 threshold array (a type 6 halftone)
+        var thresholds = HalftoneStream(" /HalftoneType 6 /Width 4 /Height 4", BayerThresholds);
+        var document = OpenHandWritten("/H gs 0.5 g 0 0 100 100 re f", "<< /ExtGState << /H << /HT 5 0 R >> >> >>", objects: thresholds);
+
+        #region PdfRendering_RenderHalftones
+        var page = document.Pages[0];
+
+        // The halftones of the document turn the color components on or off, as a printer would
+        var options = new PdfRenderOptions
+        {
+            UseHalftones = true,
+            PathAntialiasing = false,
+            TextAntialiasing = false,
+        };
+
+        using var image = page.Render(options);
+        #endregion
+
+        AssertHalftone(image, (x, y) => (x + y) % 2 == 0);
+    }
+
+    [Fact]
+    public void HalftonesAreIgnoredByDefault()
+    {
+        using var image = RenderHandWritten("/H gs 0.5 g 0 0 100 100 re f", "<< /ExtGState << /H << /HT 5 0 R >> >> >>", objects: HalftoneStream(" /HalftoneType 6 /Width 4 /Height 4", BayerThresholds));
+
+        AssertColor(Pixel(image, 10, 10), 128, 128, 128);
+        AssertColor(Pixel(image, 11, 10), 128, 128, 128);
+    }
+
+    [Fact]
+    public void HalftoneThresholdArray()
+    {
+        // 10.6.5.3: the first threshold at the device origin (the top left pixel), the rows from the top. A component
+        // below the threshold of its pixel is off (black). Ghostscript 10.06 (pbm device) gives the same pixels for gray.
+        var thresholds = HalftoneStream(" /HalftoneType 6 /Width 4 /Height 4", BayerThresholds);
+        using var gray = RenderHalftone("0.5 g 0 0 100 100 re f", "<< /HT 5 0 R >>", thresholds);
+        AssertHalftone(gray, (x, y) => (x + y) % 2 == 0);
+
+        // Each component of the device is halftoned on its own: 0.25 × 255 = 63.75 turns on the thresholds up to 64
+        using var color = RenderHalftone("1 0.5 0.25 rg 0 0 100 100 re f", "<< /HT 5 0 R >>", thresholds);
+        AssertHalftone(color, (x, y) => true, (x, y) => (x + y) % 2 == 0, (x, y) => BayerThresholds[(4 * (y % 4)) + (x % 4)] <= 64);
+    }
+
+    [Theory]
+    [InlineData(0, 0)]
+    [InlineData(1, 2)]
+    [InlineData(128, 129)]
+    [InlineData(254, 255)]
+    [InlineData(255, 256)]
+    public void HalftoneThresholdComparison(int level, int whitePixels)
+    {
+        // The thresholds 0 to 255: a level turns on the thresholds up to it, and 0 counts as 1, so that black stays
+        // black (10.6.4). Ghostscript 10.06 gives these counts for 0, 1, 128 and 255.
+        var thresholds = HalftoneStream(" /HalftoneType 6 /Width 16 /Height 16", [.. Enumerable.Range(0, 256).Select(value => (byte)value)]);
+        using var image = RenderHalftone(string.Create(CultureInfo.InvariantCulture, $"{level / 255.0:0.######} g 0 0 100 100 re f"), "<< /HT 5 0 R >>", thresholds);
+
+        Assert.Equal(whitePixels, CountDevicePixels(image, 0, 0, 16, 16, pixel => pixel.R == 255));
+        Assert.Equal(256 - whitePixels, CountDevicePixels(image, 0, 0, 16, 16, pixel => pixel.R == 0));
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(5)]
+    [InlineData(12)]
+    public void HalftoneType10(int level)
+    {
+        // Two squares of 3 and 2 pixels, the thresholds 10 + 20 × rank: the level 20 × k turns on the ranks below k. The
+        // ranks of the pixels of a period of device space were read from the output of Ghostscript 10.06 (pbm device).
+        int[] ranks = [5, 0, 9, 2, 11, 7, 1, 12, 4, 8, 3, 10, 6];
+        var thresholds = HalftoneStream(" /HalftoneType 10 /Xsquare 3 /Ysquare 2", [.. ranks.Select(rank => (byte)(10 + (20 * rank)))]);
+        using var image = RenderHalftone(string.Create(CultureInfo.InvariantCulture, $"{20 * level / 255.0:0.######} g 0 0 100 100 re f"), "<< /HT 5 0 R >>", thresholds);
+
+        var expected = ParseRanks("""
+             5  0  9  1 12  4 10  6  2 11  7  8  3
+             2 11  7  8  3  5  0  9  1 12  4 10  6
+             1 12  4 10  6  2 11  7  8  3  5  0  9
+             8  3  5  0  9  1 12  4 10  6  2 11  7
+            10  6  2 11  7  8  3  5  0  9  1 12  4
+             0  9  1 12  4 10  6  2 11  7  8  3  5
+            11  7  8  3  5  0  9  1 12  4 10  6  2
+            12  4 10  6  2 11  7  8  3  5  0  9  1
+             3  5  0  9  1 12  4 10  6  2 11  7  8
+             6  2 11  7  8  3  5  0  9  1 12  4 10
+             9  1 12  4 10  6  2 11  7  8  3  5  0
+             7  8  3  5  0  9  1 12  4 10  6  2 11
+             4 10  6  2 11  7  8  3  5  0  9  1 12
+            """);
+        AssertHalftone(image, (x, y) => expected[y % 13][x % 13] < level);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(6)]
+    [InlineData(11)]
+    public void HalftoneType16WithTwoRectangles(int level)
+    {
+        // A rectangle of 3 x 2 pixels, and one of 2 x 3 below it, of 16-bit thresholds 257 × (10 + 20 × rank). The ranks
+        // of a period of device space are in the order of the output of Ghostscript 10.06 (pbm device), which turns on
+        // floor(g × n) pixels of the 12 of a cell instead of comparing the thresholds.
+        int[] ranks = [3, 0, 7, 10, 1, 5, 11, 2, 8, 6, 4, 9];
+        var data = ranks.SelectMany(rank => new[] { (byte)((257 * (10 + (20 * rank))) >> 8), (byte)(257 * (10 + (20 * rank))) }).ToArray();
+        var thresholds = HalftoneStream(" /HalftoneType 16 /Width 3 /Height 2 /Width2 2 /Height2 3", data);
+        using var image = RenderHalftone(string.Create(CultureInfo.InvariantCulture, $"{20 * level / 255.0:0.######} g 0 0 100 100 re f"), "<< /HT 5 0 R >>", thresholds);
+
+        var expected = ParseRanks("""
+             3  0  7  8  6 10  1  5  4  9 11  2
+            10  1  5  4  9 11  2  3  0  7  8  6
+            11  2  3  0  7  8  6 10  1  5  4  9
+             8  6 10  1  5  4  9 11  2  3  0  7
+             4  9 11  2  3  0  7  8  6 10  1  5
+             0  7  8  6 10  1  5  4  9 11  2  3
+             1  5  4  9 11  2  3  0  7  8  6 10
+             2  3  0  7  8  6 10  1  5  4  9 11
+             6 10  1  5  4  9 11  2  3  0  7  8
+             9 11  2  3  0  7  8  6 10  1  5  4
+             7  8  6 10  1  5  4  9 11  2  3  0
+             5  4  9 11  2  3  0  7  8  6 10  1
+            """);
+        AssertHalftone(image, (x, y) => expected[y % 12][x % 12] < level);
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(20)]
+    [InlineData(63)]
+    public void HalftoneSpotFunction(int level)
+    {
+        // 9 cells per inch at 72 dpi: cells of 8 x 8 pixels from the device origin. The spot function 0.9 x + 0.1 y
+        // whitens the columns from the left, each from the top (10.6.3: the lowest value first), and the gray k / 64
+        // whitens k pixels. Ghostscript 10.06 whitens the pixels in the same order, from a cell that starts elsewhere.
+        var spotFunction = HandWrittenPdf.Stream("{ 0.1 mul exch 0.9 mul add }", " /FunctionType 4 /Domain [-1 1 -1 1] /Range [-1 1]");
+        using var image = RenderHalftone(string.Create(CultureInfo.InvariantCulture, $"{level / 64.0:0.######} g 0 0 100 100 re f"), "<< /HT << /HalftoneType 1 /Frequency 9 /Angle 0 /SpotFunction 5 0 R >> >>", spotFunction);
+
+        AssertHalftone(image, (x, y) => (8 * (x % 8)) + (y % 8) < level);
+    }
+
+    [Theory]
+    [InlineData("SimpleDot", 0)]
+    [InlineData("Round", 0)]
+    [InlineData("SimpleDot", 45)]
+    [InlineData("Ellipse", 30)]
+    public void HalftonePredefinedSpotFunctions(string name, int angle)
+    {
+        // A cell of n pixels renders a gray g with floor(g × n) white pixels (10.6.2): at 45 degrees, the cell of side
+        // 4√2 pixels is spanned by (4, 4) and (-4, 4), two cells of 32 pixels in each 8 x 8 block; the side of 8 pixels at
+        // 30 degrees is rounded to (7, 4), cells of 65 pixels. Ghostscript 10.06 gives the same counts at 0 and 45 degrees.
+        var frequency = angle == 45 ? 72 / (4 * Math.Sqrt(2)) : 9;
+        var halftone = string.Create(CultureInfo.InvariantCulture, $"<< /HT << /HalftoneType 1 /Frequency {frequency:0.######} /Angle {angle} /SpotFunction /{name} >> >>");
+        using var image = RenderHalftone("0.3 g 0 0 100 100 re f", halftone);
+
+        if (angle == 30)
+        {
+            // The lattice of (7, 4) and (-4, 7) repeats every 65 pixels on both axes: 65 x 65 pixels are 65 cells
+            Assert.Equal(65 * 19, CountDevicePixels(image, 0, 0, 65, 65, pixel => pixel.R == 255));
+            return;
+        }
+
+        var cells = angle == 45 ? 2 : 1;
+        Assert.Equal(cells * (int)Math.Floor(0.3 * 64 / cells), CountDevicePixels(image, 0, 0, 8, 8, pixel => pixel.R == 255));
+        Assert.Equal(64 - (cells * (int)Math.Floor(0.3 * 64 / cells)), CountDevicePixels(image, 0, 0, 8, 8, pixel => pixel.R == 0));
+    }
+
+    [Fact]
+    public void HalftoneType5()
+    {
+        // A screen for the red component, and the default one for green and blue (10.6.5.6)
+        var red = HalftoneStream(" /HalftoneType 6 /Width 2 /Height 2", [200, 8, 8, 200]);
+        var fallback = HalftoneStream(" /HalftoneType 6 /Width 4 /Height 4", BayerThresholds);
+        using var image = RenderHalftone("0.5 g 0 0 100 100 re f", "<< /HT << /HalftoneType 5 /Red 5 0 R /Default 6 0 R >> >>", red, fallback);
+
+        AssertHalftone(image, (x, y) => (x + y) % 2 == 1, (x, y) => (x + y) % 2 == 0, (x, y) => (x + y) % 2 == 0);
+    }
+
+    [Fact]
+    public void HalftoneOrigin()
+    {
+        // The first threshold at the halftone origin (HTO, PDF 2.0) instead of the device origin. Ghostscript 10.06
+        // ignores HTO: the pixels are computed by hand.
+        var thresholds = HalftoneStream(" /HalftoneType 6 /Width 4 /Height 4", BayerThresholds);
+        using var image = RenderHalftone("0.25 g 0 0 100 100 re f", "<< /HT 5 0 R /HTO [1 2] >>", thresholds);
+
+        AssertHalftone(image, (x, y) => BayerThresholds[(4 * ((y + 2) % 4)) + ((x + 3) % 4)] <= 64);
+    }
+
+    [Fact]
+    public void HalftoneTransferFunction()
+    {
+        // The transfer function of the halftone replaces the one of the graphics state: here an inversion of the gray
+        var thresholds = HalftoneStream(" /HalftoneType 6 /Width 4 /Height 4", BayerThresholds);
+        var thresholdsWithIdentity = HalftoneStream(" /HalftoneType 6 /Width 4 /Height 4 /TransferFunction /Identity", BayerThresholds);
+        const string Invert = "<< /FunctionType 2 /Domain [0 1] /C0 [1] /C1 [0] /N 1 >>";
+        using var inverted = RenderHalftone("0.25 g 0 0 100 100 re f", "<< /HT 5 0 R /TR " + Invert + " >>", thresholds);
+        using var identity = RenderHalftone("0.25 g 0 0 100 100 re f", "<< /HT 5 0 R /TR " + Invert + " >>", thresholdsWithIdentity);
+
+        AssertHalftone(inverted, (x, y) => BayerThresholds[(4 * (y % 4)) + (x % 4)] <= 192);
+        AssertHalftone(identity, (x, y) => BayerThresholds[(4 * (y % 4)) + (x % 4)] <= 64);
+    }
+
+    [Theory]
+    [InlineData("<< /HT 5 0 R /ca 0.5 >>", 191)]
+    [InlineData("<< /HT 5 0 R /BM /Multiply >>", 128)]
+    [InlineData("<< /HT /Default >>", 128)]
+    [InlineData("<< /HT 6 0 R >>", 128)]
+    public void HalftonesApplyToOpaqueObjects(string graphicsState, int gray)
+    {
+        // The halftone of a transparent object is the default halftone (11.7.5.2); /Default and a threshold array that
+        // is too short are the default halftone too
+        var thresholds = HalftoneStream(" /HalftoneType 6 /Width 4 /Height 4", BayerThresholds);
+        var tooShort = HalftoneStream(" /HalftoneType 6 /Width 4 /Height 4", [1, 2, 3]);
+        using var image = RenderHandWritten("/H0 gs /H gs 0.5 g 0 0 100 100 re f", "<< /ExtGState << /H0 << /HT 5 0 R >> /H " + graphicsState + " >> >>", options: HalftoneOptions, objects: [thresholds, tooShort]);
+
+        Assert.Equal(10_000, CountPixels(image, pixel => Math.Abs(pixel.R - gray) <= 2));
+    }
+
+    [Fact]
+    public void HalftonesInGroups()
+    {
+        // The objects of a group painted with an alpha are not opaque (11.7.5.2); in an opaque group, they are
+        var thresholds = HalftoneStream(" /HalftoneType 6 /Width 4 /Height 4", BayerThresholds);
+        var group = HandWrittenPdf.Stream("0.5 g 0 0 100 100 re f", " /Type /XObject /Subtype /Form /BBox [0 0 100 100] /Group << /S /Transparency >>");
+        using var transparent = RenderHandWritten("/H gs /A gs /G Do", "<< /ExtGState << /H << /HT 5 0 R >> /A << /ca 0.5 >> >> /XObject << /G 6 0 R >> >>", options: HalftoneOptions, objects: [thresholds, group]);
+        using var opaque = RenderHandWritten("/H gs /G Do", "<< /ExtGState << /H << /HT 5 0 R >> >> /XObject << /G 6 0 R >> >>", options: HalftoneOptions, objects: [thresholds, group]);
+
+        Assert.Equal(10_000, CountPixels(transparent, pixel => Math.Abs(pixel.R - 191) <= 2));
+        AssertHalftone(opaque, (x, y) => (x + y) % 2 == 0);
+    }
+
+    [Fact]
+    public void HalftonesOfImages()
+    {
+        // An image is halftoned in the pixels of the device it covers
+        var thresholds = HalftoneStream(" /HalftoneType 6 /Width 4 /Height 4", BayerThresholds);
+        var image = HandWrittenPdf.Stream("80>", " /Type /XObject /Subtype /Image /Width 1 /Height 1 /ColorSpace /DeviceGray /BitsPerComponent 8 /Filter /ASCIIHexDecode");
+        using var rendered = RenderHandWritten("/H gs 100 0 0 100 0 0 cm /I Do", "<< /ExtGState << /H << /HT 5 0 R >> >> /XObject << /I 6 0 R >> >>", options: HalftoneOptions, objects: [thresholds, image]);
+
+        AssertHalftone(rendered, (x, y) => BayerThresholds[(4 * (y % 4)) + (x % 4)] <= 128);
     }
 
     [Fact]
@@ -1763,6 +2010,49 @@ public sealed class PdfRendererTests
 
         stream.SetData(profile.Data.ToArray());
         return stream;
+    }
+
+    /// <summary>Gets a halftone stream whose thresholds are written in hexadecimal.</summary>
+    private static string HalftoneStream(string entries, byte[] thresholds) => HandWrittenPdf.Stream(Convert.ToHexString(thresholds) + ">", " /Type /Halftone /Filter /ASCIIHexDecode" + entries);
+
+    /// <summary>Renders a page whose content is painted after the graphics state <c>/H</c>, with the halftones applied.</summary>
+    private static Image<Rgba32> RenderHalftone(string content, string graphicsState, params string[] objects)
+        => RenderHandWritten("/H gs " + content, "<< /ExtGState << /H " + graphicsState + " >> >>", options: HalftoneOptions, objects: objects);
+
+    private static int[][] ParseRanks(string text) => [.. text.Split('\n').Select(line => line.Split(' ', StringSplitOptions.RemoveEmptyEntries).Select(value => int.Parse(value, CultureInfo.InvariantCulture)).ToArray())];
+
+    /// <summary>Checks that every pixel of the image is fully on or off, as a function of its device coordinates (y down) says.</summary>
+    private static void AssertHalftone(Image<Rgba32> image, Func<int, int, bool> isWhite) => AssertHalftone(image, isWhite, isWhite, isWhite);
+
+    private static void AssertHalftone(Image<Rgba32> image, Func<int, int, bool> red, Func<int, int, bool> green, Func<int, int, bool> blue)
+    {
+        for (var y = 0; y < image.Height; y++)
+        {
+            for (var x = 0; x < image.Width; x++)
+            {
+                var pixel = image.Frames[0][x, y];
+                var expected = (R: red(x, y) ? 255 : 0, G: green(x, y) ? 255 : 0, B: blue(x, y) ? 255 : 0);
+                Assert.True(pixel.R == expected.R && pixel.G == expected.G && pixel.B == expected.B, $"The pixel ({x}, {y}) is ({pixel.R}, {pixel.G}, {pixel.B}), not {expected}");
+            }
+        }
+    }
+
+    /// <summary>Counts the pixels of a rectangle of the device (y down) that match a predicate.</summary>
+    private static int CountDevicePixels(Image<Rgba32> image, int left, int top, int right, int bottom, Func<Rgba32, bool> predicate)
+    {
+        var count = 0;
+        for (var y = top; y < bottom; y++)
+        {
+            for (var x = left; x < right; x++)
+            {
+                if (predicate(image.Frames[0][x, y]))
+                {
+                    count++;
+                }
+            }
+        }
+
+        return count;
     }
 
     /// <summary>Renders the page of a document written by hand: object 3 is the page (100 x 100), 4 its content, and the objects given are numbered from 5.</summary>

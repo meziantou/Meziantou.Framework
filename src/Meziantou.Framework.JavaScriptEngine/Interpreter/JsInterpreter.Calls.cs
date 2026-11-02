@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using Meziantou.Framework.JavaScriptEngine.Compiler;
 
 namespace Meziantou.Framework.JavaScriptEngine.Interpreter;
@@ -213,6 +214,14 @@ internal static partial class JsInterpreter
         ThrowHelper.ThrowTypeError($"{DescribeCallee(frame)} is not a function");
         _ = value;
     }
+
+    /// <summary>The TypeError of the call of a value that is not callable, thrown by the running instruction without a .NET exception (see ThrowNotCallable).</summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static JsValue CreateNotCallableError(Frame frame) => new(frame.Realm.Engine.CurrentRealm!.CreateError(ErrorType.TypeError, $"{DescribeCallee(frame)} is not a function"));
+
+    /// <summary>The TypeError of a property of null or undefined, thrown by the running instruction without a .NET exception (see GetPrimitivePrototype).</summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static JsValue CreateNullishPropertyReadError(Frame frame, int name, JsValue target) => new(frame.Realm.Engine.CurrentRealm!.CreateError(ErrorType.TypeError, $"Cannot read properties of {target} (reading '{frame.Code.Keys[name]}')"));
 
     /// <summary>Describes the callee of the current call for the error messages (the source text of the call, e.g. "obj.method").</summary>
     private static string DescribeCallee(Frame frame)

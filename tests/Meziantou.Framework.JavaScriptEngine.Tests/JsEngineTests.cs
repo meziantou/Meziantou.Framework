@@ -243,6 +243,14 @@ public sealed class JsEngineTests
         Assert.Equal("script.js", exception.Location?.Url);
         Assert.Equal(2, exception.Location?.Line);
 
+        exception = Assert.Throws<JsException>(() => realm.Execute("function f() {\n  return  undefined.x;\n}\nf();", "script.js"));
+        Assert.Equal(new JsSourceLocation("script.js", 2, 11), exception.Location);
+        Assert.Equal("TypeError: Cannot read properties of undefined (reading 'x')", exception.Message);
+
+        exception = Assert.Throws<JsException>(() => realm.Execute("var o = {};\n  o.m();", "script.js"));
+        Assert.Equal(new JsSourceLocation("script.js", 2, 5), exception.Location);
+        Assert.Equal("TypeError: o.m is not a function", exception.Message);
+
         using var scope = engine.Enter();
         var error = realm.CreateError(JsErrorType.RangeError, "out of range");
         Assert.True(error.HasInternalSlot(JsInternalSlot.ErrorData));

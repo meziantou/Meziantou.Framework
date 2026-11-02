@@ -349,16 +349,15 @@ internal static partial class JsInterpreter
     {
         if (target.Cell is JsObject obj && frame.Caches[cache] is { } entry && ReferenceEquals(obj.Map, entry.Map))
         {
-            var engine = frame.Realm.Engine;
             switch (entry.Kind)
             {
                 case PropertyCacheKind.OwnSlot:
                     obj.Slots![entry.Position] = value;
                     return;
-                case PropertyCacheKind.Add when ReferenceEquals(obj.PrototypeSlot, entry.Prototype) && entry.Epoch == engine.InlineCacheEpoch && obj.IsExtensibleSlot && ReferenceEquals(entry.Engine, engine):
+                case PropertyCacheKind.Add when ReferenceEquals(obj.PrototypeSlot, entry.Prototype) && entry.Epoch == frame.Realm.Engine.InlineCacheEpoch && obj.IsExtensibleSlot && ReferenceEquals(entry.Engine, frame.Realm.Engine):
                     obj.AddPropertyForCache(entry.NextShape!, value);
                     return;
-                case PropertyCacheKind.OwnTable when entry.Epoch == engine.InlineCacheEpoch:
+                case PropertyCacheKind.OwnTable when entry.Epoch == frame.Realm.Engine.InlineCacheEpoch:
                     obj.SetValueForCache(entry.Position, inTable: true, value);
                     return;
             }

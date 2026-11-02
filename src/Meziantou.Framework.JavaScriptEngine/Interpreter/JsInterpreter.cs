@@ -149,6 +149,7 @@ internal static partial class JsInterpreter
         var values = frame.Values;
         var pc = frame.Pc;
         var sp = frame.Sp;
+        JsValue error;
 
         while (true)
         {
@@ -773,6 +774,12 @@ internal static partial class JsInterpreter
                     ((ArgumentList)values[sp - 1].Cell!).Add(values[sp]);
                     break;
                 case OpCode.GetProperty:
+                    if (values[sp - 1].IsNullOrUndefined)
+                    {
+                        error = CreateNullishPropertyReadError(frame, code[pc], values[sp - 1]);
+                        goto ThrowError;
+                    }
+
                     JsValue.Store(ref values[sp - 1], GetProperty(frame, code[pc], code[pc + 1], values[sp - 1]));
                     pc += 2;
                     break;
@@ -780,6 +787,12 @@ internal static partial class JsInterpreter
                     {
                         // object -> function object
                         var target = values[sp - 1];
+                        if (target.IsNullOrUndefined)
+                        {
+                            error = CreateNullishPropertyReadError(frame, code[pc], target);
+                            goto ThrowError;
+                        }
+
                         values[sp - 1] = GetProperty(frame, code[pc], code[pc + 1], target);
                         values[sp++] = target;
                         pc += 2;
@@ -838,6 +851,12 @@ internal static partial class JsInterpreter
                         }
 
                         frame.Sp = sp;
+                        if (!values[functionIndex].IsCallable)
+                        {
+                            error = CreateNotCallableError(frame);
+                            goto ThrowError;
+                        }
+
                         values[sp] = CallValue(frame, values[functionIndex], values[functionIndex + 1], values.AsSpan(functionIndex + 2, argumentCount));
                         sp++;
                         break;
@@ -950,6 +969,24 @@ internal static partial class JsInterpreter
                     sp = ExecuteCold(frame, op, sp);
                     pc = frame.Pc;
                     break;
+            }
+
+            continue;
+
+        // The frequent TypeErrors of the instructions (a property of null, a call of a value that is not callable) are
+        // handled as a throw statement: a handler of the run does not need a .NET exception
+        ThrowError:
+            {
+                frame.Sp = sp;
+                var location = engine.GetCurrentLocation();
+                if (!HandleException(ref current, entry, engine, error, isFaultingFrame: true))
+                    throw new JsException(error, location);
+
+                frame = current;
+                code = frame.Code.Code;
+                values = frame.Values;
+                pc = frame.Pc;
+                sp = frame.Sp;
             }
         }
     }

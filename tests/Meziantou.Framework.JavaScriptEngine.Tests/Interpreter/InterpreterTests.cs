@@ -15,6 +15,20 @@ public sealed class InterpreterTests
     }
 
     [Theory]
+    [InlineData("var r = []; for (var v of [null, undefined]) { try { v.x; } catch (e) { r.push(e instanceof TypeError, e.message); } } r.join()", "true,Cannot read properties of null (reading 'x'),true,Cannot read properties of undefined (reading 'x')")]
+    [InlineData("var o = { a: null }; try { o.a.m(); } catch (e) { e.message }", "Cannot read properties of null (reading 'm')")]
+    [InlineData("var o = { }; try { o.f(1); } catch (e) { e.constructor.name + ': ' + e.message }", "TypeError: o.f is not a function")]
+    [InlineData("var log = []; try { try { undefined.x; } finally { log.push('finally'); } } catch (e) { log.push(e.constructor.name); } log.join()", "finally,TypeError")]
+    [InlineData("function f() { let x = 1; null.x; } function g() { try { f(); } catch (e) { return e.message; } } g()", "Cannot read properties of null (reading 'x')")]
+    [InlineData("function f() { null.x; } try { f(); } catch (e) { e.stack.split('\\n').slice(0, 2).map(s => s.trim().split(' ')[0] + ' ' + s.trim().split(' ')[1]).join('|') }", "TypeError: Cannot|at f")]
+    [InlineData("var n = 0; for (var i = 0; i < 100; i++) { try { (i % 2 ? null : undefined)(); } catch { n++; } try { null[i]; } catch { n++; } } n", "200")]
+    [InlineData("function* g() { try { yield null.x; } catch (e) { yield e.constructor.name; } } [...g()].join()", "TypeError")]
+    public void Evaluate_RuntimeErrors(string code, string expected)
+    {
+        Assert.Equal(expected, Run(code));
+    }
+
+    [Theory]
     [InlineData("function* g() { var r = []; r.push(yield 1); r.push(yield 2); return r; } var out = []; for (var v of g()) out.push(v); out.join() + ';' + [...g()].join()", "1,2;1,2")]
     [InlineData("function* g() { yield 1; } var it = g(); var a = it.next(); var b = it.next(); [a.value, a.done, b.done, a !== b, Object.keys(a).join()].join()", "1,false,true,true,value,done")]
     [InlineData("var log = []; function* g() { try { yield 1; yield 2; } finally { log.push('finally'); } } for (var v of g()) { log.push(v); break; } log.join()", "1,finally")]

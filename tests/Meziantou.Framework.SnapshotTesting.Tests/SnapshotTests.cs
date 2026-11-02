@@ -686,6 +686,184 @@ public sealed partial class SnapshotTests
         }
     }
 
+    [Theory]
+    [InlineData("NUL.report")]
+    [InlineData("nul.report")]
+    [InlineData("CON.details")]
+    [InlineData("COM1.case")]
+    [InlineData("LPT9.a.b")]
+    public void SnapshotPathStrategy_EscapesWindowsDeviceNamesFollowedByADot(string testName)
+    {
+        var settings = new SnapshotSettings { SnapshotNamingStrategy = SnapshotNamingStrategies.TestName };
+        var path = settings.SnapshotPathStrategy(new SnapshotPathContext(
+            SourceFilePath: FullPath.FromPath(Path.Combine(Path.GetTempPath(), "SampleTests.cs")),
+            ClassName: null,
+            MethodName: "MethodName",
+            LineNumber: 42,
+            Type: SnapshotType.Default,
+            Index: 0,
+            Extension: "txt",
+            TestContext: new SnapshotTestContext(testName),
+            Settings: settings));
+
+        // Windows opens the device named by the part before the first dot.
+        var dotIndex = testName.IndexOf('.', StringComparison.Ordinal);
+        Assert.Equal(testName[..dotIndex] + "_" + testName[dotIndex..], path.Name[..(testName.Length + 1)]);
+        Assert.Matches(SnapshotNameWithHashSuffixRegex(), path.Name);
+    }
+
+    [Fact]
+    public void SnapshotPathStrategy_EscapesWindowsDeviceNames_WhenTheClassHasADeviceName()
+    {
+        var settings = new SnapshotSettings { SnapshotNamingStrategy = SnapshotNamingStrategies.FullName };
+        var path = settings.SnapshotPathStrategy(new SnapshotPathContext(
+            SourceFilePath: FullPath.FromPath(Path.Combine(Path.GetTempPath(), "SampleTests.cs")),
+            ClassName: "Aux",
+            MethodName: "MethodName",
+            LineNumber: 42,
+            Type: SnapshotType.Default,
+            Index: 0,
+            Extension: "txt",
+            TestContext: new SnapshotTestContext("MethodName"),
+            Settings: settings));
+
+        Assert.StartsWith("Aux_.MethodName_", path.Name, StringComparison.Ordinal);
+        Assert.Matches(SnapshotNameWithHashSuffixRegex(), path.Name);
+    }
+
+    [Theory]
+    [InlineData(20, 4, 'x', 3, 1)]
+    [InlineData(23, 100, 'x', 3, 1)]
+    [InlineData(26, 100, 'x', 3, 3)]
+    [InlineData(30, 100, 'x', 3, 12)]
+    [InlineData(128, 4, 'e', 1, 1)]
+    [InlineData(128, 200, 'e', 1, 1)]
+    [InlineData(128, 200, 'e', 100, 1)]
+    [InlineData(128, 200, '名', 40, 2)]
+    [InlineData(300, 200, '名', 70, 2)]
+    public void SnapshotPathStrategy_FileNameFitsTheLimits(int maxFileNameLength, int testNameLength, char extensionChar, int extensionLength, int snapshotCount)
+    {
+        var extension = new string(extensionChar, extensionLength);
+        var settings = new SnapshotSettings { SnapshotNamingStrategy = SnapshotNamingStrategies.TestName, MaxSnapshotFileNameLength = maxFileNameLength };
+        for (var index = 0; index < snapshotCount; index++)
+        {
+            var fileName = settings.SnapshotPathStrategy(new SnapshotPathContext(
+                SourceFilePath: FullPath.FromPath(Path.Combine(Path.GetTempPath(), "SampleTests.cs")),
+                ClassName: null,
+                MethodName: "MethodName",
+                LineNumber: 42,
+                Type: SnapshotType.Default,
+                Index: index,
+                Extension: extension,
+                TestContext: new SnapshotTestContext(new string('a', testNameLength)),
+                Settings: settings,
+                SnapshotCount: snapshotCount)).Name;
+
+            Assert.HasCountLessThanOrEqual(maxFileNameLength, fileName);
+            Assert.True(Encoding.UTF8.GetByteCount(fileName) <= 255, fileName);
+            Assert.EndsWith(".verified." + extension, fileName, StringComparison.Ordinal);
+            Assert.StartsWith("a", fileName, StringComparison.Ordinal);
+        }
+    }
+
+    [Theory]
+    [InlineData(20, 100, 3)]
+    [InlineData(22, 100, 3)]
+    [InlineData(128, 4, 300)]
+    [InlineData(128, 200, 120)]
+    public void SnapshotPathStrategy_Throws_WhenTheSuffixLeavesNoRoomForTheName(int maxFileNameLength, int testNameLength, int extensionLength)
+    {
+        var settings = new SnapshotSettings { SnapshotNamingStrategy = SnapshotNamingStrategies.TestName, MaxSnapshotFileNameLength = maxFileNameLength };
+        var context = new SnapshotPathContext(
+            SourceFilePath: FullPath.FromPath(Path.Combine(Path.GetTempPath(), "SampleTests.cs")),
+            ClassName: null,
+            MethodName: "MethodName",
+            LineNumber: 42,
+            Type: SnapshotType.Default,
+            Index: 0,
+            Extension: new string('e', extensionLength),
+            TestContext: new SnapshotTestContext(new string('a', testNameLength)),
+            Settings: settings);
+
+        var exception = Assert.Throws<SnapshotException>(() => settings.SnapshotPathStrategy(context));
+        Assert.Contains(nameof(SnapshotSettings.MaxSnapshotFileNameLength), exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void SnapshotPathStrategy_Throws_WhenAMultibyteExtensionExceedsTheByteLimit()
+    {
+        var settings = new SnapshotSettings { SnapshotNamingStrategy = SnapshotNamingStrategies.TestName, MaxSnapshotFileNameLength = 300 };
+        var context = new SnapshotPathContext(
+            SourceFilePath: FullPath.FromPath(Path.Combine(Path.GetTempPath(), "SampleTests.cs")),
+            ClassName: null,
+            MethodName: "MethodName",
+            LineNumber: 42,
+            Type: SnapshotType.Default,
+            Index: 0,
+            Extension: new string('名', 82),
+            TestContext: new SnapshotTestContext("Test"),
+            Settings: settings);
+
+        // 82 characters fit in MaxSnapshotFileNameLength, but take 246 bytes.
+        Assert.Throws<SnapshotException>(() => settings.SnapshotPathStrategy(context));
+    }
+
+    [Theory]
+    [InlineData(new[] { "txt", "json" }, new[] { "txt", "xml" })]
+    [InlineData(new[] { "txt", "xml" }, new[] { "txt", "json" })]
+    [InlineData(new[] { "txt" }, new[] { "txt", "json" })]
+    [InlineData(new[] { "json" }, new[] { "txt", "txt" })]
+    [InlineData(new[] { "txt", "json", "xml" }, new[] { "txt" })]
+    [InlineData(new[] { "txt", "json", "md" }, new[] { "txt", "json" })]
+    public void Validate_RemovesTheFilesALongNamedAssertionLeftBehind(string[] previousExtensions, string[] extensions)
+    {
+        using var directory = TemporaryDirectory.Create();
+        var sourceFile = CreateSourceFile(directory);
+        var context = CreateDetectedTestContext("C", "M", new string('n', 70));
+
+        ValidateLongNamedFiles(previousExtensions, SnapshotUpdateStrategy.OverwriteWithoutFailure);
+
+        var previousFileNames = GetSnapshotFileNames(directory);
+
+        // The files of the earlier run are reported, not ignored.
+        var exception = Assert.Throws<SnapshotAssertionException>(() => ValidateLongNamedFiles(extensions, SnapshotUpdateStrategy.Disallow));
+
+        ValidateLongNamedFiles(extensions, SnapshotUpdateStrategy.OverwriteWithoutFailure);
+        var fileNames = GetSnapshotFileNames(directory);
+        Assert.HasCount(extensions.Length, fileNames);
+        Assert.Equal(extensions.Order(StringComparer.Ordinal), fileNames.Select(name => name[(name.IndexOf(".verified.", StringComparison.Ordinal) + ".verified.".Length)..]).Order(StringComparer.Ordinal));
+        Assert.All(fileNames, name => Assert.HasCountLessThanOrEqual(50, name));
+
+        var obsoleteFileNames = previousFileNames.Except(fileNames, StringComparer.Ordinal).ToArray();
+        Assert.NotEmpty(obsoleteFileNames);
+        Assert.All(obsoleteFileNames, name => Assert.Contains(name, exception.Message, StringComparison.Ordinal));
+
+        void ValidateLongNamedFiles(string[] fileExtensions, SnapshotUpdateStrategy strategy)
+        {
+            var settings = new SnapshotSettings
+            {
+                AutoDetectContinuousEnvironment = false,
+                SnapshotUpdateStrategy = strategy,
+                SnapshotNamingStrategy = SnapshotNamingStrategies.TestName,
+                MaxSnapshotFileNameLength = 50,
+            };
+            settings.Serializers.Add(new ExtensionsSerializer(fileExtensions));
+            using (new SnapshotTestContextScope(context))
+            {
+                Snapshot.Validate("sample", settings, sourceFile.Value, lineNumber: 10);
+            }
+        }
+    }
+
+    private sealed class ExtensionsSerializer(string[] extensions) : ISnapshotSerializer
+    {
+        public bool TrySerialize(SnapshotType type, object? value, [NotNullWhen(true)] out SerializedSnapshot? result)
+        {
+            result = new SerializedSnapshot([.. extensions.Select(extension => new SnapshotData(extension, Encoding.UTF8.GetBytes("content")))]);
+            return true;
+        }
+    }
+
     [Fact]
     public void Validate_SupportsExtensionsContainingADot()
     {
@@ -1210,6 +1388,238 @@ public sealed partial class SnapshotTests
 
         Assert.Equal(1, retryCount);
         Assert.Equal("actual", File.ReadAllText(actualPath));
+    }
+
+    [Fact]
+    public void OverwriteWithoutFailure_ObsoleteVerifiedFileCannotBeDeleted_Throws()
+    {
+        global::Xunit.Assert.SkipWhen(OperatingSystem.IsWindows(), "Uses Unix file permissions.");
+        global::Xunit.Assert.SkipWhen(Environment.IsPrivilegedProcess, "Permissions do not apply to root.");
+
+        using var directory = TemporaryDirectory.Create();
+        var snapshotDirectory = directory.GetFullPath("snapshots");
+        Directory.CreateDirectory(snapshotDirectory);
+        var verifiedPath = snapshotDirectory / "case.verified.txt";
+        var obsoletePath = snapshotDirectory / "case.verified.bin";
+        File.WriteAllText(verifiedPath, "same");
+        File.WriteAllText(obsoletePath, "obsolete");
+        var settings = new SnapshotSettings
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
+            SnapshotPathStrategy = _ => verifiedPath,
+        };
+
+        File.SetUnixFileMode(snapshotDirectory, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+        SnapshotException exception;
+        try
+        {
+            exception = Assert.Throws<SnapshotException>(() => Snapshot.Validate("same", settings));
+        }
+        finally
+        {
+            File.SetUnixFileMode(snapshotDirectory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
+
+        Assert.Contains(obsoletePath.Value, exception.Message);
+        Assert.IsType<UnauthorizedAccessException>(exception.InnerException);
+        Assert.True(File.Exists(obsoletePath));
+    }
+
+    // Replaces the process-wide retry notification, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
+    public void OverwriteWithoutFailure_RetriesDeletingObsoleteVerifiedFile()
+    {
+        global::Xunit.Assert.SkipWhen(Environment.IsPrivilegedProcess, "Permissions do not apply to root.");
+
+        using var directory = TemporaryDirectory.Create();
+        var snapshotDirectory = directory.GetFullPath("snapshots");
+        Directory.CreateDirectory(snapshotDirectory);
+        var verifiedPath = snapshotDirectory / "case.verified.txt";
+        var obsoletePath = snapshotDirectory / "case.verified.bin";
+        File.WriteAllText(verifiedPath, "same");
+        File.WriteAllText(obsoletePath, "obsolete");
+        var settings = new SnapshotSettings
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
+            SnapshotPathStrategy = _ => verifiedPath,
+        };
+
+        // The obsolete file is locked on Windows, and its directory is read-only elsewhere. The first failed attempt
+        // releases it, so the retry succeeds whatever the load of the machine.
+        var retryCount = 0;
+        FileStream? lockStream = null;
+        if (OperatingSystem.IsWindows())
+        {
+            lockStream = new FileStream(obsoletePath, FileMode.Open, FileAccess.Read, FileShare.None);
+        }
+        else
+        {
+            File.SetUnixFileMode(snapshotDirectory, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+        }
+
+        SnapshotUpdateStrategy.RetryingFileOperation = _ =>
+        {
+            retryCount++;
+            Unlock();
+        };
+        try
+        {
+            Snapshot.Validate("same", settings);
+        }
+        finally
+        {
+            SnapshotUpdateStrategy.RetryingFileOperation = null;
+            Unlock();
+        }
+
+        Assert.Equal(1, retryCount);
+        Assert.False(File.Exists(obsoletePath));
+        Assert.Equal("same", File.ReadAllText(verifiedPath));
+
+        void Unlock()
+        {
+            lockStream?.Dispose();
+            if (!OperatingSystem.IsWindows())
+            {
+                File.SetUnixFileMode(snapshotDirectory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            }
+        }
+    }
+
+    [Fact]
+    public void UpdateFiles_ObsoleteVerifiedFileAlreadyDeleted_DoesNotThrow()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = new SnapshotSettings { AutoDetectContinuousEnvironment = false };
+
+        SnapshotUpdateStrategy.OverwriteWithoutFailure.UpdateFiles(
+            settings,
+            [],
+            [directory.GetFullPath("case.verified.bin"), directory.GetFullPath("missing/case.verified.bin")]);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(4096)]
+    [InlineData(4097)]
+    [InlineData((1024 * 1024) + 3)]
+    public void ReadAllBytesWithRetry_ReadsWholeFile(int length)
+    {
+        using var directory = TemporaryDirectory.Create();
+        var path = directory.GetFullPath("snapshot.verified.bin");
+        var content = CreatePatternContent(length);
+        File.WriteAllBytes(path, content);
+
+        Assert.Equal(content, SnapshotUpdateStrategy.ReadAllBytesWithRetry(path));
+    }
+
+    [Fact]
+    public void ReadAllBytesWithRetry_MissingFile_Throws()
+    {
+        using var directory = TemporaryDirectory.Create();
+
+        Assert.Throws<FileNotFoundException>(() => SnapshotUpdateStrategy.ReadAllBytesWithRetry(directory.GetFullPath("missing.verified.bin")));
+    }
+
+    [Theory]
+    [InlineData(1024)]
+    [InlineData(8 * 1024 * 1024)]
+    public void ReadAllBytesWithRetry_AllocatesAboutOnePayload(int length)
+    {
+        using var directory = TemporaryDirectory.Create();
+        var path = directory.GetFullPath("snapshot.verified.bin");
+        File.WriteAllBytes(path, new byte[length]);
+        Func<string, byte[]> read = SnapshotUpdateStrategy.ReadAllBytesWithRetry;
+        read(path);
+
+        // The smallest of a few measurements, so that a GC trimming a pool during one of them does not count
+        var allocatedBytes = long.MaxValue;
+        for (var i = 0; i < 3; i++)
+        {
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            read(path);
+            allocatedBytes = Math.Min(allocatedBytes, GC.GetAllocatedBytesForCurrentThread() - before);
+        }
+
+        Assert.True(allocatedBytes < length + 1024, $"Allocated {allocatedBytes} bytes to read {length} bytes");
+    }
+
+    [Theory]
+    [InlineData(10, 10)]
+    [InlineData(10, 4)]
+    [InlineData(10, 25)]
+    [InlineData(0, 25)]
+    [InlineData(10, 0)]
+    [InlineData(-1, 25)]
+    public void ReadToEnd_ReturnsTheStreamContent_WhateverTheExpectedLength(long expectedLength, int actualLength)
+    {
+        var content = CreatePatternContent(actualLength);
+        using var stream = new ShortReadStream(content);
+
+        Assert.Equal(content, SnapshotUpdateStrategy.ReadToEnd(stream, expectedLength));
+    }
+
+    [Fact]
+    public async Task ReadAllBytesWithRetry_ConcurrentAtomicReplacements_ReadsACompleteVersion()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var path = directory.GetFullPath("snapshot.verified.bin");
+        File.WriteAllBytes(path, CreateVersion(0));
+
+        using var cts = new CancellationTokenSource();
+        var writer = Task.Run(() =>
+        {
+            for (var version = 1; !cts.IsCancellationRequested; version++)
+            {
+                SnapshotUpdateStrategy.WriteAllBytesWithRetry(path, CreateVersion(version));
+            }
+        });
+
+        try
+        {
+            for (var i = 0; i < 200; i++)
+            {
+                var content = SnapshotUpdateStrategy.ReadAllBytesWithRetry(path);
+                var version = content[0];
+                Assert.Equal(CreateVersion(version), content);
+            }
+        }
+        finally
+        {
+            await cts.CancelAsync();
+            await writer;
+        }
+
+        // Each version has its own length and is filled with its own number, so a mix of two versions is detected
+        static byte[] CreateVersion(int version)
+        {
+            var value = (byte)(version % 251);
+            var content = new byte[1000 + (value * 37)];
+            content.AsSpan().Fill(value);
+            return content;
+        }
+    }
+
+    private static byte[] CreatePatternContent(int length)
+    {
+        var content = new byte[length];
+        for (var i = 0; i < content.Length; i++)
+        {
+            content[i] = (byte)((i * 31) + 7);
+        }
+
+        return content;
+    }
+
+    // A stream that returns fewer bytes than requested, as a file that is being written can
+    private sealed class ShortReadStream(byte[] content) : MemoryStream(content, writable: false)
+    {
+        public override int Read(byte[] buffer, int offset, int count) => base.Read(buffer, offset, Math.Min(count, 3));
+
+        public override int Read(Span<byte> buffer) => base.Read(buffer[..Math.Min(buffer.Length, 3)]);
     }
 
     [Fact]
@@ -1804,6 +2214,96 @@ public sealed partial class SnapshotTests
         Snapshot.Validate("sample", settings);
 
         Assert.True(comparer.InvocationCount > 0, "The comparer registered for the requested type was not used.");
+    }
+
+    [Fact]
+    public void Validate_StoredBinaryFormat_IsComparedByteForByteWhenTextWasRequested()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var path = directory / "snapshot.verified.bin";
+        var settings = CreateStoredFormatSettings(path, new FixedFormatSerializer("bin", [13, 10]));
+        File.WriteAllBytes(path, [10]);
+
+        Assert.Throws<SnapshotAssertionException>(() => Snapshot.Validate("value", SnapshotType.Default, settings));
+    }
+
+    [Fact]
+    public void Validate_StoredTextFormat_IgnoresLineEndingsWhenABinaryFormatWasRequested()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var path = directory / "snapshot.verified.json";
+        var settings = CreateStoredFormatSettings(path, new FixedFormatSerializer("json", [13, 10]));
+        File.WriteAllBytes(path, [10]);
+
+        Snapshot.Validate("value", SnapshotType.Png, settings);
+
+        Assert.False(File.Exists(directory / "snapshot.actual.json"));
+    }
+
+    [Fact]
+    public void Validate_ComparerRegisteredForTheStoredFormat_WinsOverTheRequestedType()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var path = directory / "snapshot.verified.bin";
+        var settings = CreateStoredFormatSettings(path, new FixedFormatSerializer("bin", [13, 10]));
+        var storedComparer = new RecordingSnapshotComparer();
+        var requestedComparer = new RecordingSnapshotComparer();
+        settings.Comparers.Set(SnapshotType.Create("bin"), storedComparer);
+        settings.Comparers.Set(SnapshotType.Create("custom"), requestedComparer);
+        File.WriteAllBytes(path, [13, 10]);
+
+        Snapshot.Validate("value", SnapshotType.Create("custom"), settings);
+
+        Assert.True(storedComparer.InvocationCount > 0, "The comparer registered for the stored format was not used.");
+        Assert.Equal(0, requestedComparer.InvocationCount);
+    }
+
+    [Fact]
+    public void Validate_CustomComparerRegisteredForTheRequestedType_AppliesToAnotherStoredFormat()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var path = directory / "snapshot.verified.cs";
+        var settings = CreateStoredFormatSettings(path, new FixedFormatSerializer("cs", [13, 10]));
+        var comparer = new RecordingSnapshotComparer();
+        settings.Comparers.Set(SnapshotType.Create("custom"), comparer);
+        File.WriteAllBytes(path, [13, 10]);
+
+        Snapshot.Validate("value", SnapshotType.Create("custom"), settings);
+
+        Assert.True(comparer.InvocationCount > 0, "The comparer registered for the requested type was not used.");
+    }
+
+    [Fact]
+    public void Validate_BuiltInTextComparerRegisteredForTheRequestedType_DoesNotApplyToABinaryStoredFormat()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var path = directory / "snapshot.verified.bin";
+        var settings = CreateStoredFormatSettings(path, new FixedFormatSerializer("bin", [13, 10]));
+        File.WriteAllBytes(path, [10]);
+
+        // SnapshotType.Svg is registered with the built-in text comparer.
+        Assert.Throws<SnapshotAssertionException>(() => Snapshot.Validate("value", SnapshotType.Svg, settings));
+    }
+
+    private static SnapshotSettings CreateStoredFormatSettings(FullPath path, ISnapshotSerializer serializer)
+    {
+        var settings = new SnapshotSettings
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
+            SnapshotPathStrategy = _ => path,
+        };
+        settings.Serializers.Add(serializer);
+        return settings;
+    }
+
+    private sealed class FixedFormatSerializer(string extension, byte[] data) : ISnapshotSerializer
+    {
+        public bool TrySerialize(SnapshotType type, object? value, [NotNullWhen(true)] out SerializedSnapshot? result)
+        {
+            result = new SerializedSnapshot([new SnapshotData(extension, data)]);
+            return true;
+        }
     }
 
     private sealed class RecordingSnapshotComparer : ISnapshotComparer
@@ -4136,6 +4636,10 @@ public sealed partial class SnapshotTests
     [InlineData("md")]
     [InlineData("csv")]
     [InlineData("txt")]
+    [InlineData("g.cs")]
+    [InlineData("d.ts")]
+    [InlineData("G.CS")]
+    [InlineData("generated.d.TS")]
     public void Validate_TextSnapshots_IgnoreLineEndingsAndByteOrderMark(string extension)
     {
         using var directory = TemporaryDirectory.Create();
@@ -4169,6 +4673,36 @@ public sealed partial class SnapshotTests
         File.WriteAllBytes(path, "line1\r\nline2"u8.ToArray());
 
         Assert.Throws<SnapshotAssertionException>(() => Snapshot.Validate("line1\nline2"u8.ToArray(), SnapshotType.Create("bin"), settings));
+    }
+
+    [Theory]
+    [InlineData("tar.gz")]
+    [InlineData("g.png")]
+    [InlineData("TAR.GZ")]
+    public void Validate_CompoundBinarySnapshots_AreComparedByteForByte(string extension)
+    {
+        using var directory = TemporaryDirectory.Create();
+        var path = directory / ("snapshot.verified." + extension);
+        var settings = new SnapshotSettings
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
+            SnapshotPathStrategy = _ => path,
+        };
+
+        File.WriteAllBytes(path, "line1\r\nline2"u8.ToArray());
+
+        Assert.Throws<SnapshotAssertionException>(() => Snapshot.Validate("line1\nline2"u8.ToArray(), SnapshotType.Create(extension), settings));
+    }
+
+    [Theory]
+    [InlineData(".g.cs")]
+    [InlineData(".D.TS")]
+    public void TextComparer_IsUsedForCompoundTextExtensionsWithALeadingDot(string extension)
+    {
+        var comparer = new SnapshotSettings().Comparers.Get(SnapshotType.Create(extension));
+
+        Assert.True(comparer.Equals(new SnapshotData(extension, [0xEF, 0xBB, 0xBF, (byte)'a', 13, 10]), new SnapshotData(extension, [(byte)'a', 10])));
     }
 
     [Theory]

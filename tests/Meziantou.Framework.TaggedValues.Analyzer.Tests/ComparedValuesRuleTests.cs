@@ -123,6 +123,50 @@ public sealed class ComparedValuesRuleTests : TaggedValuesAnalyzerTestBase
     }
 
     [Fact]
+    public async Task ReportDiagnostic_ForTheElementsOfTupleLocals()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                void M([ValueTag("OrderId")] Guid orderId, [ValueTag("ProjectId")] Guid projectId, int a)
+                {
+                    var orders = (orderId, orderId);
+                    var projects = (projectId, projectId);
+                    var copy = projects;
+                    var mixed = (orderId, projectId);
+                    _ = {|MFTV0001:orders == projects|};
+                    _ = {|MFTV0001:orders != copy|};
+                    _ = ({|MFTV0001:orderId|}, projectId) == projects;
+                    _ = projects == ({|MFTV0001:orderId|}, projectId);
+                    _ = mixed == (orderId, projectId);
+                    _ = mixed == mixed;
+                    _ = mixed == ({|MFTV0001:mixed.Item2|}, {|MFTV0001:mixed.Item1|});
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task ReportDiagnostic_ForTheElementsOfNestedTupleLocals()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                void M([ValueTag("OrderId")] Guid orderId, [ValueTag("ProjectId")] Guid projectId, int a)
+                {
+                    var inner = (orderId, a);
+                    var outer = (inner, projectId);
+                    var other = ((projectId, a), projectId);
+                    _ = {|MFTV0001:outer == other|};
+                    _ = outer == ((orderId, a), projectId);
+                    _ = outer.Item1 == (orderId, a);
+                    _ = ({|MFTV0001:outer.Item1.Item1|}, a) == (projectId, a);
+                }
+            }
+            """);
+    }
+
+    [Fact]
     public async Task ReportDiagnostic_ForLiftedNullableComparison()
     {
         await VerifyAsync("""

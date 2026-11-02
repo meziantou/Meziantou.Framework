@@ -180,6 +180,14 @@ internal sealed partial class ContentRenderer
             Element = _element,
         };
         renderer._activeForms.UnionWith(_activeForms);
-        renderer.Run(canvas, procedure.GetDecodedData(), glyphs.Resources ?? resources);
+        // A glyph is shown many times: its procedure is decoded and parsed once
+        if (_cache.GetParsedContent(procedure) is { } content)
+        {
+            renderer.Run(canvas, content, glyphs.Resources ?? resources);
+        }
+        else
+        {
+            renderer.Run(canvas, procedure.GetDecodedData(), glyphs.Resources ?? resources);
+        }
     }
 }

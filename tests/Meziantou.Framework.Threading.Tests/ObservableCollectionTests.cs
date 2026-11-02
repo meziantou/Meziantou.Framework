@@ -725,6 +725,487 @@ public sealed partial class ObservableCollectionTests : IDisposable
         }
     }
 
+    [Fact]
+    public void Add_PropertyChangedHandlerThrowingForCountStillRaisesTheOtherNotifications()
+    {
+        var collection = CreateCollection<int>();
+        var observable = collection.AsObservable;
+        using var eventAssert = new EventAssert(observable);
+
+        void OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName is "Count")
+                throw new InvalidOperationException("Handler failure");
+        }
+
+        observable.PropertyChanged += OnPropertyChanged;
+        try
+        {
+            var exception = Assert.Throws<InvalidOperationException>(() => collection.Add(1));
+            Assert.Equal("Handler failure", exception.Message);
+        }
+        finally
+        {
+            observable.PropertyChanged -= OnPropertyChanged;
+        }
+
+        Assert.Equal([1], observable.ToList());
+        eventAssert.AssertPropertyChanged("Count", "Item[]");
+        eventAssert.AssertCollectionChangedAddItem(1);
+    }
+
+    [Fact]
+    public void PendingModifications_PropertyChangedHandlerThrowingStillRaisesEveryNotification()
+    {
+        WithQueuedSynchronizationContext(context =>
+        {
+            var collection = new ConcurrentObservableCollection<int>(context);
+            var observable = collection.AsObservable;
+            using var eventAssert = new EventAssert(observable);
+
+            void OnPropertyChanged(object? sender, PropertyChangedEventArgs e)
+            {
+                if (e.PropertyName is "Count" or "Item[]")
+                    throw new InvalidOperationException("Handler failure: " + e.PropertyName);
+            }
+
+            observable.PropertyChanged += OnPropertyChanged;
+            try
+            {
+                Assert.Null(RunOnAnotherThread(() =>
+                {
+                    collection.Add(1);
+                    collection.Insert(0, 2);
+                    collection[1] = 3;
+                }));
+
+                var exception = Assert.Throws<AggregateException>(() => context.Run());
+
+                // Two failures for each Add and Insert (Count and Item[]), one for the Replace (Item[])
+                Assert.Equal(
+                    ["Handler failure: Count", "Handler failure: Item[]", "Handler failure: Count", "Handler failure: Item[]", "Handler failure: Item[]"],
+                    exception.InnerExceptions.Select(ex => ex.Message).ToList());
+            }
+            finally
+            {
+                observable.PropertyChanged -= OnPropertyChanged;
+            }
+
+            Assert.Equal([2, 3], observable.ToList());
+            Assert.Equal(
+                [NotifyCollectionChangedAction.Add, NotifyCollectionChangedAction.Add, NotifyCollectionChangedAction.Replace],
+                eventAssert.CollectionChangedArgs.Select(e => e.Action).ToList());
+        });
+    }
+
+    [Fact]
+    public void Remove_ReportsTheStoredItemInsteadOfTheSearchedValue()
+    {
+        var collection = CreateCollection<MutableKey>();
+        var stored = new MutableKey(1);
+        collection.Add(stored);
+        collection.Add(new MutableKey(2));
+        using var eventAssert = new EventAssert(collection.AsObservable);
+
+        Assert.True(collection.Remove(new MutableKey(1)));
+
+        var args = Assert.Single(eventAssert.CollectionChangedArgs);
+        Assert.Same(stored, args.OldItems![0]);
+        Assert.Equal(0, args.OldStartingIndex);
+    }
+
+    [Fact]
+    public void Remove_DuplicateValuesRemovesTheFirstOne()
+    {
+        var collection = CreateCollection<MutableKey>();
+        var first = new MutableKey(1);
+        var second = new MutableKey(1);
+        collection.AddRange(new MutableKey(0), first, second);
+        using var eventAssert = new EventAssert(collection.AsObservable);
+
+        Assert.True(collection.Remove(new MutableKey(1)));
+
+        var args = Assert.Single(eventAssert.CollectionChangedArgs);
+        Assert.Same(first, args.OldItems![0]);
+        Assert.Equal(1, args.OldStartingIndex);
+        Assert.Same(second, collection[1]);
+        Assert.Equal(collection.ToList(), collection.AsObservable.ToList());
+    }
+
+    [Fact]
+    public void Remove_ReplaysTheCommittedPositionWhenTheSearchedValueChangesBeforeTheNotification()
+    {
+        WithQueuedSynchronizationContext(context =>
+        {
+            var a = new MutableKey(1);
+            var b = new MutableKey(2);
+            var collection = new ConcurrentObservableCollection<MutableKey>(context);
+            collection.AddRange(a, b);
+            var observable = collection.AsObservable;
+            using var eventAssert = new EventAssert(observable);
+
+            var probe = new MutableKey(1);
+            Assert.Null(RunOnAnotherThread(() => Assert.True(collection.Remove(probe))));
+            probe.Key = 2;
+            context.Run();
+
+            Assert.Equal([b], collection.ToList());
+            Assert.Equal([b], observable.ToList());
+            Assert.Same(a, Assert.Single(eventAssert.CollectionChangedArgs).OldItems![0]);
+        });
+    }
+
+    [Fact]
+    public void Remove_EqualsModifyingTheCollectionThrows()
+    {
+        var collection = CreateCollection<ReentrantEquals>();
+        var observable = collection.AsObservable;
+        void AddItem() => collection.Add(new ReentrantEquals());
+        collection.Add(new ReentrantEquals { OnEquals = AddItem });
+
+        Assert.Throws<InvalidOperationException>(() => collection.Remove(new ReentrantEquals { OnEquals = AddItem }));
+
+        // The item added by Equals is kept, and the view matches the collection
+        Assert.HasCount(2, collection);
+        Assert.Equal(collection.ToList(), observable.ToList(), ReferenceEqualityComparer.Instance);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void AddRange_EnumerationModifyingTheCollectionKeepsTheModification(bool supportRangeNotifications)
+    {
+        var collection = CreateCollection<int>();
+        collection.SupportRangeNotifications = supportRangeNotifications;
+        collection.Add(0);
+        var observable = collection.AsObservable;
+
+        IEnumerable<int> Items()
+        {
+            yield return 1;
+            collection.Add(99);
+            yield return 2;
+        }
+
+        collection.AddRange(Items());
+
+        Assert.Equal([0, 99, 1, 2], collection.ToList());
+        Assert.Equal([0, 99, 1, 2], observable.ToList());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void InsertRange_EnumerationModifyingTheCollectionKeepsTheModification(bool supportRangeNotifications)
+    {
+        var collection = CreateCollection<int>();
+        collection.SupportRangeNotifications = supportRangeNotifications;
+        collection.Add(0);
+        var observable = collection.AsObservable;
+
+        IEnumerable<int> Items()
+        {
+            yield return 1;
+            collection.Add(99);
+            yield return 2;
+        }
+
+        collection.InsertRange(1, Items());
+
+        Assert.Equal([0, 1, 2, 99], collection.ToList());
+        Assert.Equal([0, 1, 2, 99], observable.ToList());
+    }
+
+    [Fact]
+    public void AddRange_ThrowingEnumerationDoesNotModifyTheCollection()
+    {
+        var collection = CreateCollection<int>();
+        collection.Add(0);
+        var observable = collection.AsObservable;
+        using var eventAssert = new EventAssert(observable);
+
+        IEnumerable<int> Items()
+        {
+            yield return 1;
+            throw new InvalidOperationException("Enumeration failure");
+        }
+
+        Assert.Throws<InvalidOperationException>(() => collection.AddRange(Items()));
+        Assert.Throws<InvalidOperationException>(() => collection.InsertRange(0, Items()));
+
+        Assert.Equal([0], collection.ToList());
+        Assert.Equal([0], observable.ToList());
+        Assert.Empty(eventAssert.CollectionChangedArgs);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void Sort_ComparerModifyingTheCollectionThrows(bool stable)
+    {
+        var collection = CreateCollection<int>();
+        collection.AddRange(2, 1);
+        var observable = collection.AsObservable;
+
+        var modified = false;
+        var comparer = Comparer<int>.Create((x, y) =>
+        {
+            if (!modified)
+            {
+                modified = true;
+                collection.Add(0);
+            }
+
+            return x.CompareTo(y);
+        });
+
+        if (stable)
+        {
+            Assert.Throws<InvalidOperationException>(() => collection.StableSort(comparer));
+        }
+        else
+        {
+            Assert.Throws<InvalidOperationException>(() => collection.Sort(comparer));
+        }
+
+        Assert.Equal([2, 1, 0], collection.ToList());
+        Assert.Equal([2, 1, 0], observable.ToList());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ObservableRemoveAt_TargetsTheDisplayedItemWhenAnInsertionIsPending(bool useNonGenericList)
+    {
+        WithQueuedSynchronizationContext(context =>
+        {
+            var (collection, observable) = CreateCollectionWithPendingModification(context, [10, 20], c => c.Insert(0, 99));
+
+            if (useNonGenericList)
+            {
+                ((IList)observable).RemoveAt(0);
+            }
+            else
+            {
+                ((IList<int>)observable).RemoveAt(0);
+            }
+
+            Assert.Equal([99, 20], collection.ToList());
+            context.Run();
+            Assert.Equal([99, 20], observable.ToList());
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ObservableIndexer_TargetsTheDisplayedItemWhenARemovalIsPending(bool useNonGenericList)
+    {
+        WithQueuedSynchronizationContext(context =>
+        {
+            var (collection, observable) = CreateCollectionWithPendingModification(context, [10, 20, 30], c => c.RemoveAt(0));
+
+            if (useNonGenericList)
+            {
+                ((IList)observable)[2] = 31;
+            }
+            else
+            {
+                ((IList<int>)observable)[2] = 31;
+            }
+
+            Assert.Equal([20, 31], collection.ToList());
+            context.Run();
+            Assert.Equal([20, 31], observable.ToList());
+        });
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ObservableInsert_UsesThePositionOfTheViewWhenModificationsArePending(bool useNonGenericList)
+    {
+        WithQueuedSynchronizationContext(context =>
+        {
+            var (collection, observable) = CreateCollectionWithPendingModification(context, [10, 20], c =>
+            {
+                c.Insert(0, 99);
+                c.Add(30);
+            });
+
+            // Position 2 is the end of the view [10, 20]: the item goes after 20, before the pending 30
+            if (useNonGenericList)
+            {
+                ((IList)observable).Insert(2, 25);
+            }
+            else
+            {
+                ((IList<int>)observable).Insert(2, 25);
+            }
+
+            Assert.Equal([99, 10, 20, 30, 25], collection.ToList());
+            context.Run();
+            Assert.Equal(collection.ToList(), observable.ToList());
+        });
+    }
+
+    [Fact]
+    public void ObservableIndexedEdit_ThrowsWhenTheDisplayedItemWasRemoved()
+    {
+        WithQueuedSynchronizationContext(context =>
+        {
+            var (collection, observable) = CreateCollectionWithPendingModification(context, [10, 20], c => c.Remove(10));
+            var list = (IList<int>)observable;
+
+            Assert.Throws<InvalidOperationException>(() => list.RemoveAt(0));
+            Assert.Throws<InvalidOperationException>(() => list[0] = 11);
+            Assert.Throws<InvalidOperationException>(() => ((IList)observable).RemoveAt(0));
+
+            // The position of the other item is still known
+            list.RemoveAt(1);
+
+            Assert.Empty(collection);
+            context.Run();
+            Assert.Empty(observable);
+        });
+    }
+
+    [Fact]
+    public void ObservableIndexedEdit_ThrowsWhenTheCollectionWasReordered()
+    {
+        WithQueuedSynchronizationContext(context =>
+        {
+            var (collection, observable) = CreateCollectionWithPendingModification(context, [20, 10], c => c.Sort());
+            var list = (IList<int>)observable;
+
+            Assert.Throws<InvalidOperationException>(() => list.RemoveAt(0));
+            Assert.Throws<InvalidOperationException>(() => list.Insert(0, 5));
+
+            Assert.Equal([10, 20], collection.ToList());
+            context.Run();
+            Assert.Equal([10, 20], observable.ToList());
+        });
+    }
+
+    [Fact]
+    public void ObservableIndexedEdit_ThrowsWhenTheIndexIsOutOfTheView()
+    {
+        WithQueuedSynchronizationContext(context =>
+        {
+            var (collection, observable) = CreateCollectionWithPendingModification(context, [10], c => c.Add(20));
+            var list = (IList<int>)observable;
+
+            // Index 1 is valid in the source collection but not in the view
+            Assert.Throws<ArgumentOutOfRangeException>(() => list.RemoveAt(1));
+            Assert.Throws<ArgumentOutOfRangeException>(() => list.Insert(2, 5));
+            Assert.Equal([10, 20], collection.ToList());
+        });
+    }
+
+    [Fact]
+    public void ObservableIndexedEdit_FromAHandlerUsesThePositionOfTheView()
+    {
+        var collection = CreateCollection<int>();
+        collection.Add(10);
+        var observable = collection.AsObservable;
+
+        var removed = false;
+        void OnCollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            // When the first item of the range is notified, the view is [10, 1] while the collection is [10, 1, 2]
+            if (!removed)
+            {
+                removed = true;
+                ((IList<int>)observable).RemoveAt(0);
+            }
+        }
+
+        observable.CollectionChanged += OnCollectionChanged;
+        try
+        {
+            collection.AddRange(1, 2);
+        }
+        finally
+        {
+            observable.CollectionChanged -= OnCollectionChanged;
+        }
+
+        Assert.Equal([1, 2], collection.ToList());
+        Assert.Equal([1, 2], observable.ToList());
+    }
+
+    [Fact]
+    public async Task CollectionCreatedWithoutSynchronizationContext_HandlersCanAccessTheView()
+    {
+        var previousSynchronizationContext = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext(null);
+        try
+        {
+            await AssertHandlerCanAccessTheView(new ConcurrentObservableCollection<int>());
+            await AssertHandlerCanAccessTheView(new ConcurrentObservableCollection<int>(new SynchronizationContext()));
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(previousSynchronizationContext);
+        }
+
+        static async Task AssertHandlerCanAccessTheView(ConcurrentObservableCollection<int> collection)
+        {
+            var observable = collection.AsObservable;
+            var result = new TaskCompletionSource<(int Count, int[] Items, int First)>(TaskCreationOptions.RunContinuationsAsynchronously);
+            observable.CollectionChanged += (sender, e) =>
+            {
+                try
+                {
+                    result.TrySetResult((observable.Count, observable.ToArray(), observable[0]));
+                }
+                catch (Exception ex)
+                {
+                    result.TrySetException(ex);
+                }
+            };
+
+            collection.Add(42);
+
+            var (count, items, first) = await result.Task.WaitAsync(TimeSpan.FromSeconds(30));
+            Assert.Equal(1, count);
+            Assert.Equal([42], items);
+            Assert.Equal(42, first);
+
+            // The access is granted to the drain only, not to every thread pool thread
+            await Task.Run(() => Assert.Throws<InvalidOperationException>(() => observable.Count));
+        }
+    }
+
+    private static (ConcurrentObservableCollection<int> Collection, IReadOnlyObservableCollection<int> Observable) CreateCollectionWithPendingModification(
+        QueuedSynchronizationContext context,
+        int[] initialItems,
+        Action<ConcurrentObservableCollection<int>> modification)
+    {
+        var collection = new ConcurrentObservableCollection<int>(context);
+        collection.AddRange(initialItems);
+        var observable = collection.AsObservable;
+
+        Assert.Null(RunOnAnotherThread(() => modification(collection)));
+        Assert.Equal(initialItems, observable.ToList());
+        return (collection, observable);
+    }
+
+    private static void WithQueuedSynchronizationContext(Action<QueuedSynchronizationContext> action)
+    {
+        var context = new QueuedSynchronizationContext();
+        var previousSynchronizationContext = SynchronizationContext.Current;
+        SynchronizationContext.SetSynchronizationContext(context);
+        try
+        {
+            action(context);
+        }
+        finally
+        {
+            SynchronizationContext.SetSynchronizationContext(previousSynchronizationContext);
+        }
+    }
+
     /// <summary>Runs <paramref name="action"/> on a thread with no synchronization context and returns the exception it threw, if any.</summary>
     private static Exception? RunOnAnotherThread(Action action)
     {
@@ -776,6 +1257,32 @@ public sealed partial class ObservableCollectionTests : IDisposable
     }
 
     private sealed record Sample(int Index, string Value);
+
+    private sealed class MutableKey(int key) : IEquatable<MutableKey>
+    {
+        public int Key { get; set; } = key;
+
+        public bool Equals([NotNullWhen(true)] MutableKey? other) => other is not null && other.Key == Key;
+
+        public override bool Equals([NotNullWhen(true)] object? obj) => Equals(obj as MutableKey);
+
+        public override int GetHashCode() => 0;
+    }
+
+    private sealed class ReentrantEquals : IEquatable<ReentrantEquals>
+    {
+        public Action? OnEquals { get; init; }
+
+        public bool Equals([NotNullWhen(true)] ReentrantEquals? other)
+        {
+            OnEquals?.Invoke();
+            return false;
+        }
+
+        public override bool Equals([NotNullWhen(true)] object? obj) => Equals(obj as ReentrantEquals);
+
+        public override int GetHashCode() => 0;
+    }
 
     private sealed class SampleComparer : IComparer<Sample>
     {

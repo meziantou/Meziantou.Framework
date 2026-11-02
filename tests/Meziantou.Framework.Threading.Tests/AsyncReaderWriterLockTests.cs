@@ -486,4 +486,209 @@ public class AsyncReaderWriterLockTests
         writer.Dispose();
         (await blocked.WaitAsync(TimeSpan.FromSeconds(30))).Dispose();
     }
+
+    [Theory]
+    [InlineData(2)]
+    [InlineData(32)]
+    [InlineData(1024)]
+    public async Task ReaderBatch_IsGrantedExactlyOnce(int readerCount)
+    {
+        var rwLock = new AsyncReaderWriterLock();
+        var writer = await rwLock.WriterLockAsync();
+
+        var readers = new Task<AsyncReaderWriterLock.Releaser>[readerCount];
+        for (var i = 0; i < readers.Length; i++)
+        {
+            readers[i] = rwLock.ReaderLockAsync().AsTask();
+        }
+
+        writer.Dispose();
+        var releasers = await Task.WhenAll(readers).WaitAsync(TimeSpan.FromSeconds(30));
+
+        // Every reader of the batch was counted once, so a writer waits for the last of them to release.
+        var queuedWriter = rwLock.WriterLockAsync().AsTask();
+        var lateReader = rwLock.ReaderLockAsync().AsTask(); // queued behind the writer, so not part of any batch
+        foreach (var releaser in releasers)
+        {
+            Assert.False(queuedWriter.IsCompleted);
+            releaser.Dispose();
+        }
+
+        using (await queuedWriter.WaitAsync(TimeSpan.FromSeconds(30)))
+        {
+            Assert.False(lateReader.IsCompleted);
+        }
+
+        // The reader queue is reusable after a batch was handed over.
+        (await lateReader.WaitAsync(TimeSpan.FromSeconds(30))).Dispose();
+        (await rwLock.WriterLockAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(30))).Dispose();
+    }
+
+    [Fact]
+    public async Task ReaderBatch_CancellationRacingTheGrant_GrantsOrCancelsEachReaderExactlyOnce()
+    {
+        // The readers are canceled from the end of the batch, which is completed last, so that the cancellations
+        // land while the grant is still walking the batch.
+        const int ReaderCount = 64;
+        for (var iteration = 0; iteration < 100; iteration++)
+        {
+            var rwLock = new AsyncReaderWriterLock();
+            var writer = await rwLock.WriterLockAsync();
+
+            var sources = new CancellationTokenSource[ReaderCount];
+            var readers = new Task<AsyncReaderWriterLock.Releaser>[ReaderCount];
+            for (var i = 0; i < ReaderCount; i++)
+            {
+                sources[i] = new CancellationTokenSource();
+                readers[i] = rwLock.ReaderLockAsync(sources[i].Token).AsTask();
+            }
+
+            using var start = new ManualResetEventSlim();
+            var cancel = Task.Run(() =>
+            {
+                start.Wait();
+                for (var i = sources.Length - 1; i >= 0; i--)
+                {
+                    sources[i].Cancel();
+                }
+            });
+            var release = Task.Run(() =>
+            {
+                start.Wait();
+                writer.Dispose();
+            });
+            start.Set();
+            await Task.WhenAll(cancel, release).WaitAsync(TimeSpan.FromSeconds(30));
+
+            var granted = new List<AsyncReaderWriterLock.Releaser>();
+            foreach (var reader in readers)
+            {
+                try
+                {
+                    granted.Add(await reader.WaitAsync(TimeSpan.FromSeconds(30)));
+                }
+                catch (TaskCanceledException)
+                {
+                }
+            }
+
+            // Only the granted readers hold the lock: once they release, a writer must get it. A canceled reader
+            // that was also counted as an owner would block it forever.
+            var nextWriter = rwLock.WriterLockAsync().AsTask();
+            foreach (var releaser in granted)
+            {
+                Assert.False(nextWriter.IsCompleted);
+                releaser.Dispose();
+            }
+
+            var writerReleaser = await nextWriter.WaitAsync(TimeSpan.FromSeconds(30));
+
+            // The reader queue must still be consistent, so that a reader queued behind the writer gets admitted.
+            var lateReader = rwLock.ReaderLockAsync().AsTask();
+            writerReleaser.Dispose();
+            (await lateReader.WaitAsync(TimeSpan.FromSeconds(30))).Dispose();
+
+            foreach (var source in sources)
+            {
+                source.Dispose();
+            }
+        }
+    }
+
+    [Fact]
+    public async Task ReaderBatch_CopiedReleaserDisposedTwice_ReleasesOnlyItsOwnReader()
+    {
+        var rwLock = new AsyncReaderWriterLock();
+        var writer = await rwLock.WriterLockAsync();
+        var reader1 = rwLock.ReaderLockAsync().AsTask();
+        var reader2 = rwLock.ReaderLockAsync().AsTask();
+        var reader3 = rwLock.ReaderLockAsync().AsTask();
+        writer.Dispose();
+
+        var releaser1 = await reader1.WaitAsync(TimeSpan.FromSeconds(30));
+        var releaser2 = await reader2.WaitAsync(TimeSpan.FromSeconds(30));
+        var releaser3 = await reader3.WaitAsync(TimeSpan.FromSeconds(30));
+
+        var copy = releaser1;
+        releaser1.Dispose();
+        copy.Dispose();
+        releaser1.Dispose();
+
+        var queuedWriter = rwLock.WriterLockAsync().AsTask();
+        Assert.False(queuedWriter.IsCompleted, "A copied releaser released another reader of the batch");
+
+        releaser2.Dispose();
+        Assert.False(queuedWriter.IsCompleted, "A copied releaser released another reader of the batch");
+
+        releaser3.Dispose();
+        (await queuedWriter.WaitAsync(TimeSpan.FromSeconds(30))).Dispose();
+    }
+
+    [Fact]
+    public async Task CancelingTheLastQueuedWriter_AdmitsTheWholeReaderBatch_WhileAnotherReaderHoldsTheLock()
+    {
+        var rwLock = new AsyncReaderWriterLock();
+        using var cts = new CancellationTokenSource();
+
+        var reader = await rwLock.ReaderLockAsync();
+        var queuedWriter = rwLock.WriterLockAsync(cts.Token).AsTask();
+        var readers = new Task<AsyncReaderWriterLock.Releaser>[16];
+        for (var i = 0; i < readers.Length; i++)
+        {
+            readers[i] = rwLock.ReaderLockAsync().AsTask();
+        }
+
+        Assert.All(readers, task => Assert.False(task.IsCompleted));
+
+        await cts.CancelAsync();
+        await Assert.ThrowsAsync<TaskCanceledException>(() => queuedWriter);
+
+        var releasers = await Task.WhenAll(readers).WaitAsync(TimeSpan.FromSeconds(30));
+        var writer = rwLock.WriterLockAsync().AsTask();
+        reader.Dispose();
+        foreach (var releaser in releasers)
+        {
+            Assert.False(writer.IsCompleted);
+            releaser.Dispose();
+        }
+
+        (await writer.WaitAsync(TimeSpan.FromSeconds(30))).Dispose();
+    }
+
+    [Fact]
+    public async Task CancelingTheLastQueuedWriter_AdmitsTheReaderBatch_WhenTheWriterAheadReleases()
+    {
+        var rwLock = new AsyncReaderWriterLock();
+        using var cts = new CancellationTokenSource();
+
+        var reader = await rwLock.ReaderLockAsync();
+        var writer1 = rwLock.WriterLockAsync().AsTask();
+        var writer2 = rwLock.WriterLockAsync(cts.Token).AsTask();
+        var readers = new Task<AsyncReaderWriterLock.Releaser>[16];
+        for (var i = 0; i < readers.Length; i++)
+        {
+            readers[i] = rwLock.ReaderLockAsync().AsTask();
+        }
+
+        // writer1 is still queued, so canceling writer2 does not admit the readers yet.
+        await cts.CancelAsync();
+        await Assert.ThrowsAsync<TaskCanceledException>(() => writer2);
+        Assert.All(readers, task => Assert.False(task.IsCompleted));
+
+        reader.Dispose();
+        var writer1Releaser = await writer1.WaitAsync(TimeSpan.FromSeconds(30));
+        Assert.All(readers, task => Assert.False(task.IsCompleted));
+
+        writer1Releaser.Dispose();
+        var releasers = await Task.WhenAll(readers).WaitAsync(TimeSpan.FromSeconds(30));
+
+        var writer = rwLock.WriterLockAsync().AsTask();
+        foreach (var releaser in releasers)
+        {
+            Assert.False(writer.IsCompleted);
+            releaser.Dispose();
+        }
+
+        (await writer.WaitAsync(TimeSpan.FromSeconds(30))).Dispose();
+    }
 }

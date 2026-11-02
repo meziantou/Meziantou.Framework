@@ -1,4 +1,5 @@
 using Meziantou.Framework.Imaging;
+using Meziantou.Framework.Pdf.Filters;
 using Meziantou.Framework.Pdf.Objects;
 using Meziantou.Framework.Pdf.Rendering;
 using Meziantou.Framework.Pdf.Rendering.Images;
@@ -107,7 +108,7 @@ public sealed class PdfImageOccurrence
         using var cache = new RenderCache(new PdfRenderOptions { UseSystemFonts = false });
         var decoded = _stream is not null
             ? PdfImageDecoder.Decode(_stream, _resources, cache)
-            : PdfImageDecoder.DecodeInline(_inlineDictionary!, EncodedData, _resources, cache);
+            : PdfImageDecoder.DecodeInline(_inlineDictionary!, EncodedData, _resources, Page.Document.Reader?.DecodeLimits ?? PdfDecodeLimits.Default, cache);
         // The images the decoder creates belong to the cache: the caller gets a copy
         return decoded?.Image.CloneAs<Rgba32>();
     }

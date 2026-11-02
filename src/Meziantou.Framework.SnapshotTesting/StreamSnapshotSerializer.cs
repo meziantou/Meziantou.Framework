@@ -14,9 +14,23 @@ internal sealed class StreamSnapshotSerializer : ISnapshotSerializer
 
         // Read from wherever the stream currently is, rather than rewinding it: seeking would change what a
         // caller who deliberately positioned the stream gets back.
-        using var ms = new MemoryStream();
-        stream.CopyTo(ms);
-        result = new SerializedSnapshot([new SnapshotData(type.FileExtension, ms.ToArray())]);
+        var content = SnapshotUpdateStrategy.ReadToEnd(stream, GetRemainingLength(stream));
+        result = new SerializedSnapshot([new SnapshotData(type.FileExtension, content)]);
         return true;
+    }
+
+    private static long GetRemainingLength(Stream stream)
+    {
+        if (!stream.CanSeek)
+            return -1;
+
+        try
+        {
+            return Math.Max(0, stream.Length - stream.Position);
+        }
+        catch (NotSupportedException)
+        {
+            return -1;
+        }
     }
 }

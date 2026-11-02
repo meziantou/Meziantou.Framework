@@ -4,6 +4,12 @@ using System.ComponentModel;
 
 namespace Meziantou.Framework.Collections.Concurrent;
 
+/// <remarks>
+/// Each modification raises up to three notifications: <c>Count</c>, <c>Item[]</c> and <see cref="CollectionChanged"/>.
+/// A handler that throws doesn't prevent the following notifications of the modification from being raised: the exceptions
+/// are added to the list provided by the caller, which reports them once every notification has been raised. The handlers
+/// subscribed to the same event after the one that threw are not invoked, as with any multicast delegate.
+/// </remarks>
 internal abstract class ObservableCollectionBase<T> : INotifyCollectionChanged, INotifyPropertyChanged
 {
     public event NotifyCollectionChangedEventHandler? CollectionChanged;
@@ -16,95 +22,99 @@ internal abstract class ObservableCollectionBase<T> : INotifyCollectionChanged, 
         Items = [.. items];
     }
 
-    protected void ReplaceItem(int index, T item)
+    protected void ReplaceItem(int index, T item, ref List<Exception>? exceptions)
     {
         var oldItem = Items[index];
         Items[index] = item;
 
-        OnIndexerPropertyChanged();
-        OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, item, oldItem, index));
+        RaiseNotifications(raiseCountChanged: false, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Replace, item, oldItem, index), ref exceptions);
     }
 
-    protected void InsertItem(int index, T item)
+    protected void InsertItem(int index, T item, ref List<Exception>? exceptions)
     {
         Items.Insert(index, item);
 
-        OnCountPropertyChanged();
-        OnIndexerPropertyChanged();
-        OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
+        RaiseNotifications(raiseCountChanged: true, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index), ref exceptions);
     }
 
-    protected void InsertItems(int index, ImmutableList<T> items)
+    protected void InsertItems(int index, ImmutableList<T> items, ref List<Exception>? exceptions)
     {
         Items.InsertRange(index, items);
 
-        OnCountPropertyChanged();
-        OnIndexerPropertyChanged();
-        OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, items, index));
+        RaiseNotifications(raiseCountChanged: true, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, items, index), ref exceptions);
     }
 
-    protected void AddItem(T item)
+    protected void AddItem(T item, ref List<Exception>? exceptions)
     {
         var index = Items.Count;
         Items.Add(item);
 
-        OnCountPropertyChanged();
-        OnIndexerPropertyChanged();
-        OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index));
+        RaiseNotifications(raiseCountChanged: true, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, item, index), ref exceptions);
     }
 
-    protected void AddItems(ImmutableList<T> items)
+    protected void AddItems(ImmutableList<T> items, ref List<Exception>? exceptions)
     {
         var index = Items.Count;
         Items.AddRange(items);
 
-        OnCountPropertyChanged();
-        OnIndexerPropertyChanged();
-        OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, items, index));
+        RaiseNotifications(raiseCountChanged: true, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Add, items, index), ref exceptions);
     }
 
-    protected void RemoveItemAt(int index)
+    protected void RemoveItemAt(int index, ref List<Exception>? exceptions)
     {
         var item = Items[index];
         Items.RemoveAt(index);
 
-        OnCountPropertyChanged();
-        OnIndexerPropertyChanged();
-        OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, item, index));
+        RaiseNotifications(raiseCountChanged: true, new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, item, index), ref exceptions);
     }
 
-    protected bool RemoveItem(T item)
-    {
-        var index = Items.IndexOf(item);
-        if (index < 0)
-            return false;
-
-        Items.RemoveAt(index);
-
-        OnCountPropertyChanged();
-        OnIndexerPropertyChanged();
-        OnCollectionChanged(new NotifyCollectionChangedEventArgs(NotifyCollectionChangedAction.Remove, item, index));
-        return true;
-    }
-
-    protected void ClearItems()
+    protected void ClearItems(ref List<Exception>? exceptions)
     {
         Items.Clear();
-        OnCountPropertyChanged();
-        OnIndexerPropertyChanged();
-        CollectionChanged?.Invoke(this, EventArgsCache.ResetCollectionChanged);
+
+        RaiseNotifications(raiseCountChanged: true, EventArgsCache.ResetCollectionChanged, ref exceptions);
     }
 
-    protected void Reset(ImmutableList<T> items)
+    protected void Reset(ImmutableList<T> items, ref List<Exception>? exceptions)
     {
         Items.Clear();
         Items.AddRange(items);
-        OnIndexerPropertyChanged();
-        OnCollectionChanged(EventArgsCache.ResetCollectionChanged);
+
+        RaiseNotifications(raiseCountChanged: false, EventArgsCache.ResetCollectionChanged, ref exceptions);
     }
 
-    private void OnCountPropertyChanged() => OnPropertyChanged(EventArgsCache.CountPropertyChanged);
-    private void OnIndexerPropertyChanged() => OnPropertyChanged(EventArgsCache.IndexerPropertyChanged);
+    private void RaiseNotifications(bool raiseCountChanged, NotifyCollectionChangedEventArgs args, ref List<Exception>? exceptions)
+    {
+        if (raiseCountChanged)
+        {
+            try
+            {
+                OnPropertyChanged(EventArgsCache.CountPropertyChanged);
+            }
+            catch (Exception ex)
+            {
+                (exceptions ??= []).Add(ex);
+            }
+        }
+
+        try
+        {
+            OnPropertyChanged(EventArgsCache.IndexerPropertyChanged);
+        }
+        catch (Exception ex)
+        {
+            (exceptions ??= []).Add(ex);
+        }
+
+        try
+        {
+            OnCollectionChanged(args);
+        }
+        catch (Exception ex)
+        {
+            (exceptions ??= []).Add(ex);
+        }
+    }
 
     protected virtual void OnPropertyChanged(PropertyChangedEventArgs args) => PropertyChanged?.Invoke(this, args);
     protected virtual void OnCollectionChanged(NotifyCollectionChangedEventArgs args) => CollectionChanged?.Invoke(this, args);

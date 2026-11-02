@@ -222,8 +222,9 @@ internal sealed class PdfFileReader : IPdfObjectLoader
                 offset = section.Trailer.GetResolved(PdfNames.Prev) is PdfNumber prev ? (long)prev.DoubleValue : -1;
             }
         }
-        catch (InvalidPdfContentException)
+        catch (Exception ex) when (ex is InvalidPdfContentException or UnsupportedPdfFeatureException)
         {
+            // A cross-reference stream with a filter that is not supported is read like a damaged one
             if (trailer is null)
                 return false;
         }

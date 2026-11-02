@@ -302,6 +302,7 @@ internal static class InteropDocuments
         ("non-isolated-knockout-group", [(40, 100, 255, 128, 0, 12), (100, 100, 128, 128, 128, 12)]),
         ("knockout-fill-and-stroke", [(45, 100, 128, 64, 191, 12), (100, 100, 255, 128, 128, 12)]),
         ("soft-mask-multiply", [(50, 100, 0, 255, 0, 12), (150, 100, 255, 255, 0, 12)]),
+        ("image-encodings", [(50, 100, 128, 128, 128, 12), (50, 190, 128, 13, 128, 12), (150, 100, 255, 128, 0, 12)]),
     ];
 
     private static void CreateAdvancedGraphics(PdfDocument document)
@@ -438,6 +439,17 @@ internal static class InteropDocuments
                 case "sampled":
                     builder.PaintShading(PdfShading.Axial(PdfDeviceColorSpace.Rgb, 0, 0, 200, 0, PdfFunction.Sampled([2], 8, [0, 1], [0, 1, 0, 1, 0, 1], [255, 0, 0, 0, 255, 0]), extendStart: true, extendEnd: true));
                     break;
+                case "image-encodings":
+                    {
+                        // A gradient (r = 2 x, g = 2 y from the top row) stored with the PNG predictors, and an orange image
+                        // compressed as JPEG
+                        using var gradient = Image.ImportPixelData<Rgb24>([.. Enumerable.Range(0, 128 * 128).Select(i => new Rgb24((byte)(i % 128 * 2), (byte)(i / 128 * 2), 128))], 128, 128);
+                        using var orange = Image.ImportPixelData<Rgb24>([.. Enumerable.Repeat(new Rgb24(255, 128, 0), 16 * 16)], 16, 16);
+                        builder.DrawImage(PdfImage.FromImage(gradient), 0, 0, 100, 200)
+                            .DrawImage(PdfImage.FromImageAsJpeg(orange), 100, 0, 100, 200);
+                        break;
+                    }
+
                 default:
                     throw new InvalidOperationException("Unknown page " + name);
             }

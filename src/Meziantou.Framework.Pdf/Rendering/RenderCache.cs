@@ -53,6 +53,7 @@ internal sealed class RenderCache(PdfRenderOptions options) : IDisposable
     private int _creating;
     private int _softMaskImages;
     private long _operations;
+    private CancellationToken _cancellationToken;
 
     public PdfRenderOptions Options { get; } = options;
 
@@ -62,9 +63,11 @@ internal sealed class RenderCache(PdfRenderOptions options) : IDisposable
     public long CachedBytes { get; private set; }
 
     /// <summary>Starts the rendering of a page: its work is counted from 0, and the caches are emptied when they hold too much.</summary>
-    public void BeginPage()
+    /// <param name="cancellationToken">The token of the rendering of the page, which <see cref="Charge"/> checks.</param>
+    public void BeginPage(CancellationToken cancellationToken = default)
     {
         _operations = 0;
+        _cancellationToken = cancellationToken;
         if (CachedBytes > MaxCachedBytes)
         {
             ClearObjects();
@@ -81,6 +84,7 @@ internal sealed class RenderCache(PdfRenderOptions options) : IDisposable
 
         _softMasks.Clear();
         _softMaskImages = 0;
+        _cancellationToken = default;
         DisposeAll(_pageDisposables);
     }
 
@@ -324,8 +328,10 @@ internal sealed class RenderCache(PdfRenderOptions options) : IDisposable
 
     /// <summary>Charges the work of the page.</summary>
     /// <exception cref="PdfResourceLimitException">The page does more work than <see cref="PdfRenderOptions.MaxOperations"/>.</exception>
+    /// <exception cref="OperationCanceledException">The rendering of the page was canceled.</exception>
     public void Charge(long count)
     {
+        _cancellationToken.ThrowIfCancellationRequested();
         _operations += Math.Max(count, 1);
         if (_operations > Options.MaxOperations)
             throw new PdfResourceLimitException($"The page does more than {Options.MaxOperations} operations");

@@ -5,8 +5,14 @@ namespace Meziantou.Framework.Pdf;
 
 /// <summary>The items of a level of the document outline (ISO 32000-2, 12.3.3).</summary>
 /// <remarks>
+/// <para>
 /// The outline of a file is read when it is first accessed; a save writes it back: the links between the items are
 /// rewritten, and the other properties of an item read from the file only when they were changed.
+/// </para>
+/// <para>
+/// An item is in one collection at most, once: adding an item that is already in a collection, or that contains the
+/// collection, throws <see cref="InvalidOperationException"/>. Remove it from its collection first.
+/// </para>
 /// </remarks>
 public sealed class PdfOutlineCollection : IList<PdfOutlineItem>, IReadOnlyList<PdfOutlineItem>
 {
@@ -15,9 +21,13 @@ public sealed class PdfOutlineCollection : IList<PdfOutlineItem>, IReadOnlyList<
 
     private readonly List<PdfOutlineItem> _items = [];
 
-    internal PdfOutlineCollection()
+    internal PdfOutlineCollection(PdfOutlineItem? owner = null)
     {
+        Owner = owner;
     }
+
+    /// <summary>Gets the item whose children the collection holds, or <see langword="null"/> for the top level.</summary>
+    internal PdfOutlineItem? Owner { get; }
 
     /// <summary>Gets the number of items.</summary>
     public int Count => _items.Count;
@@ -33,6 +43,12 @@ public sealed class PdfOutlineCollection : IList<PdfOutlineItem>, IReadOnlyList<
         set
         {
             ArgumentNullException.ThrowIfNull(value);
+            var current = _items[index];
+            if (ReferenceEquals(current, value))
+                return;
+
+            Attach(value);
+            current.Collection = null;
             _items[index] = value;
         }
     }
@@ -44,26 +60,40 @@ public sealed class PdfOutlineCollection : IList<PdfOutlineItem>, IReadOnlyList<
     public PdfOutlineItem Add(string title, PdfDestination? destination = null)
     {
         var item = new PdfOutlineItem(title, destination);
+        Attach(item);
         _items.Add(item);
         return item;
     }
 
     /// <inheritdoc/>
+    /// <exception cref="InvalidOperationException">The item is already in a collection, or it contains this collection.</exception>
     public void Add(PdfOutlineItem item)
     {
         ArgumentNullException.ThrowIfNull(item);
+        Attach(item);
         _items.Add(item);
     }
 
     /// <inheritdoc/>
+    /// <exception cref="InvalidOperationException">The item is already in a collection, or it contains this collection.</exception>
     public void Insert(int index, PdfOutlineItem item)
     {
         ArgumentNullException.ThrowIfNull(item);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan((uint)index, (uint)_items.Count, nameof(index));
+        Attach(item);
         _items.Insert(index, item);
     }
 
     /// <inheritdoc/>
-    public void Clear() => _items.Clear();
+    public void Clear()
+    {
+        foreach (var item in _items)
+        {
+            item.Collection = null;
+        }
+
+        _items.Clear();
+    }
 
     /// <inheritdoc/>
     public bool Contains(PdfOutlineItem item) => _items.Contains(item);
@@ -75,15 +105,41 @@ public sealed class PdfOutlineCollection : IList<PdfOutlineItem>, IReadOnlyList<
     public int IndexOf(PdfOutlineItem item) => _items.IndexOf(item);
 
     /// <inheritdoc/>
-    public bool Remove(PdfOutlineItem item) => _items.Remove(item);
+    public bool Remove(PdfOutlineItem item)
+    {
+        if (item is null || !ReferenceEquals(item.Collection, this))
+            return false;
+
+        item.Collection = null;
+        return _items.Remove(item);
+    }
 
     /// <inheritdoc/>
-    public void RemoveAt(int index) => _items.RemoveAt(index);
+    public void RemoveAt(int index)
+    {
+        _items[index].Collection = null;
+        _items.RemoveAt(index);
+    }
 
     /// <inheritdoc/>
     public IEnumerator<PdfOutlineItem> GetEnumerator() => _items.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    /// <summary>Makes the collection the collection of an item: the item must not be in a collection, nor be this collection's item or one of its ancestors.</summary>
+    private void Attach(PdfOutlineItem item)
+    {
+        if (item.Collection is not null)
+            throw new InvalidOperationException("The item is already in a collection of the outline: remove it first");
+
+        for (var (ancestor, depth) = (Owner, 0); ancestor is not null && depth <= MaxItems; (ancestor, depth) = (ancestor.Collection?.Owner, depth + 1))
+        {
+            if (ReferenceEquals(ancestor, item))
+                throw new InvalidOperationException("The item cannot be added to its own children or descendants");
+        }
+
+        item.Collection = this;
+    }
 
     internal static PdfOutlineCollection Load(PdfDocument document)
     {
@@ -228,6 +284,7 @@ public sealed class PdfOutlineCollection : IList<PdfOutlineItem>, IReadOnlyList<
             var flags = dictionary.GetInteger(PdfNames.F, 0);
             var item = new PdfOutlineItem(title, destination, isOpen: dictionary.GetInteger(PdfNames.Count, 0) > 0, color, isBold: (flags & 2) != 0, isItalic: (flags & 1) != 0, dictionary, current);
             item.Children.LoadChildren(document, dictionary, visited, ref count, depth + 1);
+            item.Collection = this;
             _items.Add(item);
             current = dictionary[PdfNames.Next] as PdfReference;
         }

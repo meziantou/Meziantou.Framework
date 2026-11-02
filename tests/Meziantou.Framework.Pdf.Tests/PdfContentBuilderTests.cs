@@ -360,6 +360,163 @@ public sealed class PdfContentBuilderTests
     }
 
     [Fact]
+    public void Example_TextBox()
+    {
+        var document = new PdfDocument();
+        var builder = document.Pages.Add(PdfSize.A5).CreateContentBuilder();
+        var font = PdfFont.GetStandardFont(PdfStandardFont.Helvetica);
+        var text = "The quick brown fox jumps over the lazy dog. " + string.Concat(Enumerable.Repeat("Lorem ipsum dolor sit amet. ", 20));
+
+        #region Pdf_TextBox
+        // The text is broken into lines that fit the width of the box; what does not fit in its height is returned
+        builder.DrawTextBox(text, font, 10, new PdfRectangle(50, 400, 250, 550), new PdfTextBoxOptions { Alignment = PdfTextAlignment.Justify }, out var remaining);
+        if (remaining.Length > 0)
+        {
+            builder.DrawTextBox(remaining, font, 10, new PdfRectangle(50, 100, 250, 380));
+        }
+        #endregion
+
+        Assert.NotEmpty(remaining);
+        Assert.StartsWith("The quick brown fox", PdfDocument.Open(document.ToByteArray()).Pages[0].ExtractText(), StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(PdfTextAlignment.Left, "10")]
+    [InlineData(PdfTextAlignment.Center, "22")]
+    [InlineData(PdfTextAlignment.Right, "34")]
+    [InlineData(PdfTextAlignment.Justify, "10")]
+    public void TextBoxLines(PdfTextAlignment alignment, string x)
+    {
+        // Courier: every glyph is 600 units wide, 6 points at 10 points; the box is 10 characters wide
+        var (page, builder) = Create();
+        var font = PdfFont.GetStandardFont(PdfStandardFont.Courier);
+        builder.DrawTextBox("aaaaaa bbbbbbbbbbbbbbbbbbbbbbbbb c\nd", font, 10, new PdfRectangle(10, 0, 70, 200), new PdfTextBoxOptions { Alignment = alignment, LineHeight = 2 }, out var remaining);
+
+        Assert.Equal("", remaining);
+        var content = Encoding.ASCII.GetString(page.GetContentData());
+        var lines = content.Split('\n').Where(line => line.EndsWith(" Tj", StringComparison.Ordinal)).ToList();
+        Assert.Equal(["(aaaaaa) Tj", "(bbbbbbbbbb) Tj", "(bbbbbbbbbb) Tj", "(bbbbb c) Tj", "(d) Tj"], lines);
+
+        // The first baseline is below the top by the ascent (629 units), the next ones 20 points lower; the lines of one word are not justified
+        Assert.Contains("1 0 0 1 " + x + " 193.71 Tm", content, StringComparison.Ordinal);
+        Assert.Contains("1 0 0 1 10 173.71 Tm", content, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void TextBoxReturnsWhatDoesNotFit()
+    {
+        var (page, builder) = Create();
+        var font = PdfFont.GetStandardFont(PdfStandardFont.Courier);
+
+        // 12 points high: one line of 10 points (ascent 6.29 + descent 1.57) fits, not two; the baseline is 12 - 6.29
+        builder.DrawTextBox("one two three", font, 10, new PdfRectangle(0, 0, 30, 12), options: null, out var remaining);
+        Assert.Equal("two three", remaining);
+        Assert.Throws<ArgumentException>(() => builder.DrawTextBox("\u4E2D", font, 10, new PdfRectangle(0, 0, 30, 12)));
+        builder.DrawTextBox("x", font, 10, new PdfRectangle(0, 0, 30, 2), options: null, out remaining);
+        Assert.Equal("x", remaining);
+
+        Assert.Equal("BT\n/F1 10 Tf\n1 0 0 1 0 5.71 Tm\n(one) Tj\nET\n", Encoding.ASCII.GetString(page.GetContentData()));
+    }
+
+    [Fact]
+    public void JustifiedTextBoxesStretchTheSpaces()
+    {
+        var font = PdfFont.Load(File.ReadAllBytes(TestHarness.RepositoryPaths.Fonts / "noto-sans" / "NotoSans-Regular.subset.ttf"));
+        var document = new PdfDocument();
+        var builder = document.Pages.Add(PdfSize.A5).CreateContentBuilder();
+        builder.DrawTextBox("Office AVATAR Office AVATAR Office", font, 12, new PdfRectangle(0, 0, 120, 100), new PdfTextBoxOptions { Alignment = PdfTextAlignment.Justify });
+
+        var text = PdfDocument.Open(document.ToByteArray()).Pages[0].ExtractText();
+        Assert.Contains("Office", text, StringComparison.Ordinal);
+        Assert.Contains("AVATAR", text, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AFailedOperatorLeavesTheContentUnchanged()
+    {
+        var (page, builder) = Create();
+        Assert.Throws<ArgumentOutOfRangeException>(() => builder.SetDashPattern([1, -1]));
+        Assert.Throws<ArgumentOutOfRangeException>(() => builder.SetDashPattern([double.NaN]));
+        builder.BeginText().SetFont(PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 10);
+        Assert.Throws<ArgumentException>(() => builder.ShowText(PdfTextSegment.FromText("ok"), PdfTextSegment.FromAdjustment(-100), PdfTextSegment.FromText("\u4E2D")));
+        Assert.Throws<ArgumentException>(() => builder.ShowText("\u4E2D"));
+        builder.ShowText(PdfTextSegment.FromText("A"), PdfTextSegment.FromAdjustment(-100), PdfTextSegment.FromText("B")).EndText();
+
+        Assert.Equal("BT\n/F1 10 Tf\n[(A) -100 (B)] TJ\nET\n", Encoding.ASCII.GetString(page.GetContentData()));
+    }
+
+    [Fact]
+    public void CompleteChecksThatTheContentIsBalanced()
+    {
+        var (_, builder) = Create();
+        Assert.Equal(0, builder.MarkedContentDepth);
+        Assert.False(builder.IsInTextObject);
+
+        builder.SaveGraphicsState().BeginMarkedContent("Span").BeginText();
+        Assert.True(builder.IsInTextObject);
+        Assert.Equal(1, builder.MarkedContentDepth);
+        Assert.Contains("text object", Assert.Throws<InvalidOperationException>(builder.Complete).Message, StringComparison.Ordinal);
+        builder.EndText();
+        Assert.Contains("graphics state", Assert.Throws<InvalidOperationException>(builder.Complete).Message, StringComparison.Ordinal);
+        builder.RestoreGraphicsState();
+        Assert.Contains("marked-content", Assert.Throws<InvalidOperationException>(builder.Complete).Message, StringComparison.Ordinal);
+        builder.EndMarkedContent();
+        builder.Complete();
+        builder.Complete();
+
+        // A completed builder does not write anymore, and the unmatched closes are refused
+        Assert.Throws<InvalidOperationException>(() => builder.Rectangle(0, 0, 1, 1));
+        Assert.Throws<InvalidOperationException>(() => builder.AppendRawContent("n"u8));
+        var (_, other) = Create();
+        Assert.Throws<InvalidOperationException>(() => other.RestoreGraphicsState());
+        Assert.Throws<InvalidOperationException>(() => other.EndText());
+        Assert.Throws<InvalidOperationException>(() => other.EndMarkedContent());
+    }
+
+    [Fact]
+    public void BuildersOfAPageAreCheckedOneByOne()
+    {
+        var (page, first) = Create();
+        first.SaveGraphicsState().Translate(10, 10);
+        var second = page.CreateContentBuilder().Rectangle(0, 0, 1, 1).Fill();
+
+        second.Complete();
+        Assert.Throws<InvalidOperationException>(first.Complete);
+        first.RestoreGraphicsState().Complete();
+    }
+
+    [Fact]
+    public void ResourcesAreNamedOnceWithManyResources()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(PdfSize.A4);
+        var builder = page.CreateContentBuilder();
+        var forms = Enumerable.Range(0, 300).Select(_ => document.CreateForm(new PdfRectangle(0, 0, 1, 1))).ToList();
+        foreach (var form in forms)
+        {
+            builder.DrawForm(form);
+        }
+
+        foreach (var form in forms)
+        {
+            builder.DrawForm(form);
+        }
+
+        var xobjects = page.Resources!.Get<PdfDictionary>(PdfNames.XObject)!;
+        Assert.HasCount(300, xobjects);
+        Assert.Equal(forms[299].Reference, xobjects[PdfName.Create("Fm300")]);
+
+        // A change of the dictionary outside the builder is seen: the name it took is not given again
+        xobjects[PdfName.Create("Fm301")] = forms[0].Reference;
+        xobjects.Remove(PdfName.Create("Fm1"));
+        var extra = document.CreateForm(new PdfRectangle(0, 0, 1, 1));
+        builder.DrawForm(extra).DrawForm(forms[0]);
+        Assert.Equal(extra.Reference, xobjects[PdfName.Create("Fm1")]);
+        Assert.HasCount(301, xobjects);
+        Assert.EndsWith("/Fm1 Do\n/Fm301 Do\n", Encoding.ASCII.GetString(page.GetContentData()), StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void Example_DrawingMethods()
     {
         using var directory = TemporaryDirectory.Create();

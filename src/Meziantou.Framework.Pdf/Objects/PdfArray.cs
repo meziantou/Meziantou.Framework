@@ -36,10 +36,16 @@ public sealed class PdfArray : PdfObject, IList<PdfObject>, IReadOnlyList<PdfObj
     /// <inheritdoc/>
     public override PdfObjectKind Kind => PdfObjectKind.Array;
 
+    /// <summary>Gets a value indicating whether the items changed after the array was parsed: an incremental save writes the object that contains it.</summary>
+    internal bool IsModified { get; private set; }
+
     /// <inheritdoc cref="ICollection{T}.Count"/>
     public int Count => _items.Count;
 
     bool ICollection<PdfObject>.IsReadOnly => false;
+
+    /// <summary>Gets a number that changes when the items change, so that the caches of the library can tell they are stale.</summary>
+    internal int Version { get; private set; }
 
     /// <summary>Gets or sets the item at an index. The item is not resolved: it may be a <see cref="PdfReference"/>.</summary>
     /// <param name="index">The index.</param>
@@ -50,7 +56,12 @@ public sealed class PdfArray : PdfObject, IList<PdfObject>, IReadOnlyList<PdfObj
         set
         {
             ArgumentNullException.ThrowIfNull(value);
-            _items[index] = value;
+            if (!ReferenceEquals(_items[index], value))
+            {
+                Version++;
+                _items[index] = value;
+                IsModified = true;
+            }
         }
     }
 
@@ -105,7 +116,9 @@ public sealed class PdfArray : PdfObject, IList<PdfObject>, IReadOnlyList<PdfObj
     public void Add(PdfObject item)
     {
         ArgumentNullException.ThrowIfNull(item);
+        Version++;
         _items.Add(item);
+        IsModified = true;
     }
 
     /// <summary>Inserts an item.</summary>
@@ -114,11 +127,18 @@ public sealed class PdfArray : PdfObject, IList<PdfObject>, IReadOnlyList<PdfObj
     public void Insert(int index, PdfObject item)
     {
         ArgumentNullException.ThrowIfNull(item);
+        Version++;
         _items.Insert(index, item);
+        IsModified = true;
     }
 
     /// <inheritdoc/>
-    public void Clear() => _items.Clear();
+    public void Clear()
+    {
+        Version++;
+        IsModified |= _items.Count > 0;
+        _items.Clear();
+    }
 
     /// <inheritdoc/>
     public bool Contains(PdfObject item) => _items.Contains(item);
@@ -130,10 +150,21 @@ public sealed class PdfArray : PdfObject, IList<PdfObject>, IReadOnlyList<PdfObj
     public int IndexOf(PdfObject item) => _items.IndexOf(item);
 
     /// <inheritdoc/>
-    public bool Remove(PdfObject item) => _items.Remove(item);
+    public bool Remove(PdfObject item)
+    {
+        Version++;
+        var removed = _items.Remove(item);
+        IsModified |= removed;
+        return removed;
+    }
 
     /// <inheritdoc/>
-    public void RemoveAt(int index) => _items.RemoveAt(index);
+    public void RemoveAt(int index)
+    {
+        Version++;
+        _items.RemoveAt(index);
+        IsModified = true;
+    }
 
     /// <summary>Returns an enumerator over the items, which are not resolved.</summary>
     /// <returns>The enumerator.</returns>
@@ -142,4 +173,7 @@ public sealed class PdfArray : PdfObject, IList<PdfObject>, IReadOnlyList<PdfObj
     IEnumerator<PdfObject> IEnumerable<PdfObject>.GetEnumerator() => _items.GetEnumerator();
 
     IEnumerator IEnumerable.GetEnumerator() => _items.GetEnumerator();
+
+    /// <summary>Replaces an item while the object is loaded (the decryption): the array is not modified.</summary>
+    internal void SetParsed(int index, PdfObject value) => _items[index] = value;
 }

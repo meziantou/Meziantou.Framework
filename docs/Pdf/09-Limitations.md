@@ -5,12 +5,14 @@ description: What the library does not do, so that you can plan around it.
 
 ## Creating documents
 
-- The content builder does not lay out text: it shows each text where it is told to. Line breaking, justification and
-  tables are up to the application: see [Wrap a paragraph](03-CreatingDocuments/03-Text.md#wrap-a-paragraph).
+- The content builder breaks a text into lines at its spaces ([Wrap a paragraph](03-CreatingDocuments/03-Text.md#wrap-a-paragraph)),
+  but it does not apply the Unicode line breaking rules, hyphenate words, nor lay out tables.
 - The standard 14 fonts show the characters of `WinAnsiEncoding` (Symbol and ZapfDingbats their own); other characters
   need an embedded font.
 - The fonts with CFF2 outlines, the bitmap fonts and the instances of variable fonts are not embedded.
-- The API has no method to copy pages from one document to another, nor to create interactive form fields.
+- The API reads, fills and flattens interactive form fields, but does not create them; the appearances it writes for
+  the values of the fields use the standard 14 fonts.
+- A page copied from another document is not tagged: the structure tree belongs to the document of the page.
 
 ## Reading and extracting
 
@@ -19,6 +21,8 @@ description: What the library does not do, so that you can plan around it.
 - The text extraction follows the order of the content and joins the glyphs into lines by their positions; it does not
   detect columns, and it does not recognize the text of scanned pages.
 - The library reports the permissions of an encrypted document, but does not enforce them.
+- A file larger than 2 GB is read with [OpenSeekable](cref:Meziantou.Framework.Pdf.PdfDocument.OpenSeekable), but a document is saved in memory: a document whose file
+  would be larger than 2 GB cannot be saved, in full or incrementally. One stream cannot be larger than 2 GB.
 
 ## Conformance and signatures
 
@@ -30,3 +34,11 @@ description: What the library does not do, so that you can plan around it.
 - The verification of a signature does not decide whether the signer is trusted: the application builds the certificate
   chain.
 - The writer encrypts the embedded files with the method of the other streams.
+
+## Rendering
+
+- The renderer composites the page in sRGB, for a screen: overprint (`OP`, `op`, `OPM`) is not simulated, and the
+  halftones and the other parameters of the output device (black generation, undercolor removal) are ignored. The
+  colors of prepress documents that rely on them can differ from an overprint preview.
+- The appearances generated for the annotations that have none are simple: the line endings, the rich text and the
+  comb fields are not drawn.

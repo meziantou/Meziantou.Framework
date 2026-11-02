@@ -56,7 +56,7 @@ internal sealed class JsGenerator(JsObject prototype, Frame frame) : JsObject(pr
                 result = JsInterpreter.ResumeGenerator(Frame, value, kind);
             }
         }
-        catch (Exception ex) when (ex is JsException or JsTerminationException && SetCompleted())
+        catch (Exception) when (SetCompleted())
         {
             throw new UnreachableException();
         }
@@ -109,7 +109,8 @@ internal sealed class JsGenerator(JsObject prototype, Frame frame) : JsObject(pr
     }
 
     /// <summary>
-    /// An exception filter that completes the generator when its code throws, and does not catch the exception: a catch
+    /// An exception filter that completes the generator when its code throws (a JavaScript exception, a termination or a
+    /// .NET exception of a host function), and does not catch the exception: a catch
     /// block that rethrows nests the exception dispatch in each .NET level of a deep recursion through generators, which
     /// overflows the stack.
     /// </summary>

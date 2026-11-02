@@ -1213,6 +1213,238 @@ public sealed partial class SnapshotTests
     }
 
     [Fact]
+    public void OverwriteWithoutFailure_ObsoleteVerifiedFileCannotBeDeleted_Throws()
+    {
+        global::Xunit.Assert.SkipWhen(OperatingSystem.IsWindows(), "Uses Unix file permissions.");
+        global::Xunit.Assert.SkipWhen(Environment.IsPrivilegedProcess, "Permissions do not apply to root.");
+
+        using var directory = TemporaryDirectory.Create();
+        var snapshotDirectory = directory.GetFullPath("snapshots");
+        Directory.CreateDirectory(snapshotDirectory);
+        var verifiedPath = snapshotDirectory / "case.verified.txt";
+        var obsoletePath = snapshotDirectory / "case.verified.bin";
+        File.WriteAllText(verifiedPath, "same");
+        File.WriteAllText(obsoletePath, "obsolete");
+        var settings = new SnapshotSettings
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
+            SnapshotPathStrategy = _ => verifiedPath,
+        };
+
+        File.SetUnixFileMode(snapshotDirectory, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+        SnapshotException exception;
+        try
+        {
+            exception = Assert.Throws<SnapshotException>(() => Snapshot.Validate("same", settings));
+        }
+        finally
+        {
+            File.SetUnixFileMode(snapshotDirectory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+        }
+
+        Assert.Contains(obsoletePath.Value, exception.Message);
+        Assert.IsType<UnauthorizedAccessException>(exception.InnerException);
+        Assert.True(File.Exists(obsoletePath));
+    }
+
+    // Replaces the process-wide retry notification, so it must not run beside any other test
+    [Fact(DisableParallelization = true)]
+    public void OverwriteWithoutFailure_RetriesDeletingObsoleteVerifiedFile()
+    {
+        global::Xunit.Assert.SkipWhen(Environment.IsPrivilegedProcess, "Permissions do not apply to root.");
+
+        using var directory = TemporaryDirectory.Create();
+        var snapshotDirectory = directory.GetFullPath("snapshots");
+        Directory.CreateDirectory(snapshotDirectory);
+        var verifiedPath = snapshotDirectory / "case.verified.txt";
+        var obsoletePath = snapshotDirectory / "case.verified.bin";
+        File.WriteAllText(verifiedPath, "same");
+        File.WriteAllText(obsoletePath, "obsolete");
+        var settings = new SnapshotSettings
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
+            SnapshotPathStrategy = _ => verifiedPath,
+        };
+
+        // The obsolete file is locked on Windows, and its directory is read-only elsewhere. The first failed attempt
+        // releases it, so the retry succeeds whatever the load of the machine.
+        var retryCount = 0;
+        FileStream? lockStream = null;
+        if (OperatingSystem.IsWindows())
+        {
+            lockStream = new FileStream(obsoletePath, FileMode.Open, FileAccess.Read, FileShare.None);
+        }
+        else
+        {
+            File.SetUnixFileMode(snapshotDirectory, UnixFileMode.UserRead | UnixFileMode.UserExecute);
+        }
+
+        SnapshotUpdateStrategy.RetryingFileOperation = _ =>
+        {
+            retryCount++;
+            Unlock();
+        };
+        try
+        {
+            Snapshot.Validate("same", settings);
+        }
+        finally
+        {
+            SnapshotUpdateStrategy.RetryingFileOperation = null;
+            Unlock();
+        }
+
+        Assert.Equal(1, retryCount);
+        Assert.False(File.Exists(obsoletePath));
+        Assert.Equal("same", File.ReadAllText(verifiedPath));
+
+        void Unlock()
+        {
+            lockStream?.Dispose();
+            if (!OperatingSystem.IsWindows())
+            {
+                File.SetUnixFileMode(snapshotDirectory, UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute);
+            }
+        }
+    }
+
+    [Fact]
+    public void UpdateFiles_ObsoleteVerifiedFileAlreadyDeleted_DoesNotThrow()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = new SnapshotSettings { AutoDetectContinuousEnvironment = false };
+
+        SnapshotUpdateStrategy.OverwriteWithoutFailure.UpdateFiles(
+            settings,
+            [],
+            [directory.GetFullPath("case.verified.bin"), directory.GetFullPath("missing/case.verified.bin")]);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(4096)]
+    [InlineData(4097)]
+    [InlineData((1024 * 1024) + 3)]
+    public void ReadAllBytesWithRetry_ReadsWholeFile(int length)
+    {
+        using var directory = TemporaryDirectory.Create();
+        var path = directory.GetFullPath("snapshot.verified.bin");
+        var content = CreatePatternContent(length);
+        File.WriteAllBytes(path, content);
+
+        Assert.Equal(content, SnapshotUpdateStrategy.ReadAllBytesWithRetry(path));
+    }
+
+    [Fact]
+    public void ReadAllBytesWithRetry_MissingFile_Throws()
+    {
+        using var directory = TemporaryDirectory.Create();
+
+        Assert.Throws<FileNotFoundException>(() => SnapshotUpdateStrategy.ReadAllBytesWithRetry(directory.GetFullPath("missing.verified.bin")));
+    }
+
+    [Theory]
+    [InlineData(1024)]
+    [InlineData(8 * 1024 * 1024)]
+    public void ReadAllBytesWithRetry_AllocatesAboutOnePayload(int length)
+    {
+        using var directory = TemporaryDirectory.Create();
+        var path = directory.GetFullPath("snapshot.verified.bin");
+        File.WriteAllBytes(path, new byte[length]);
+        Func<string, byte[]> read = SnapshotUpdateStrategy.ReadAllBytesWithRetry;
+        read(path);
+
+        // The smallest of a few measurements, so that a GC trimming a pool during one of them does not count
+        var allocatedBytes = long.MaxValue;
+        for (var i = 0; i < 3; i++)
+        {
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            read(path);
+            allocatedBytes = Math.Min(allocatedBytes, GC.GetAllocatedBytesForCurrentThread() - before);
+        }
+
+        Assert.True(allocatedBytes < length + 1024, $"Allocated {allocatedBytes} bytes to read {length} bytes");
+    }
+
+    [Theory]
+    [InlineData(10, 10)]
+    [InlineData(10, 4)]
+    [InlineData(10, 25)]
+    [InlineData(0, 25)]
+    [InlineData(10, 0)]
+    [InlineData(-1, 25)]
+    public void ReadToEnd_ReturnsTheStreamContent_WhateverTheExpectedLength(long expectedLength, int actualLength)
+    {
+        var content = CreatePatternContent(actualLength);
+        using var stream = new ShortReadStream(content);
+
+        Assert.Equal(content, SnapshotUpdateStrategy.ReadToEnd(stream, expectedLength));
+    }
+
+    [Fact]
+    public async Task ReadAllBytesWithRetry_ConcurrentAtomicReplacements_ReadsACompleteVersion()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var path = directory.GetFullPath("snapshot.verified.bin");
+        File.WriteAllBytes(path, CreateVersion(0));
+
+        using var cts = new CancellationTokenSource();
+        var writer = Task.Run(() =>
+        {
+            for (var version = 1; !cts.IsCancellationRequested; version++)
+            {
+                SnapshotUpdateStrategy.WriteAllBytesWithRetry(path, CreateVersion(version));
+            }
+        });
+
+        try
+        {
+            for (var i = 0; i < 200; i++)
+            {
+                var content = SnapshotUpdateStrategy.ReadAllBytesWithRetry(path);
+                var version = content[0];
+                Assert.Equal(CreateVersion(version), content);
+            }
+        }
+        finally
+        {
+            await cts.CancelAsync();
+            await writer;
+        }
+
+        // Each version has its own length and is filled with its own number, so a mix of two versions is detected
+        static byte[] CreateVersion(int version)
+        {
+            var value = (byte)(version % 251);
+            var content = new byte[1000 + (value * 37)];
+            content.AsSpan().Fill(value);
+            return content;
+        }
+    }
+
+    private static byte[] CreatePatternContent(int length)
+    {
+        var content = new byte[length];
+        for (var i = 0; i < content.Length; i++)
+        {
+            content[i] = (byte)((i * 31) + 7);
+        }
+
+        return content;
+    }
+
+    // A stream that returns fewer bytes than requested, as a file that is being written can
+    private sealed class ShortReadStream(byte[] content) : MemoryStream(content, writable: false)
+    {
+        public override int Read(byte[] buffer, int offset, int count) => base.Read(buffer, offset, Math.Min(count, 3));
+
+        public override int Read(Span<byte> buffer) => base.Read(buffer[..Math.Min(buffer.Length, 3)]);
+    }
+
+    [Fact]
     public void Validate_ErrorMessageIncludesVerifiedAndActualPaths_ForAllChangedFiles()
     {
         using var directory = TemporaryDirectory.Create();

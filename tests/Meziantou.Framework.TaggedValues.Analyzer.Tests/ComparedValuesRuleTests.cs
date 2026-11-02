@@ -332,6 +332,38 @@ public sealed class ComparedValuesRuleTests : TaggedValuesAnalyzerTestBase
     }
 
     [Fact]
+    public async Task ReportDiagnostic_ForReorderedNamedArguments()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                void M([ValueTag("OrderId")] Guid orderId, [ValueTag("ProjectId")] Guid projectId, [ValueTag("OrderName")] string orderName, [ValueTag("ProjectName")] string projectName)
+                {
+                    _ = {|MFTV0001:string.Equals(comparisonType: StringComparison.Ordinal, a: orderName, b: projectName)|};
+                    _ = {|MFTV0001:string.Equals(b: projectName, comparisonType: StringComparison.Ordinal, a: orderName)|};
+                    _ = {|MFTV0001:string.Compare(comparisonType: StringComparison.Ordinal, strA: orderName, strB: projectName)|};
+                    _ = {|MFTV0001:orderName.Equals(comparisonType: StringComparison.Ordinal, value: projectName)|};
+                    _ = {|MFTV0001:StringComparer.Ordinal.Equals(y: projectName, x: orderName)|};
+                    _ = {|MFTV0001:EqualityComparer<Guid>.Default.Equals(y: projectId, x: orderId)|};
+                    _ = string.Equals(comparisonType: StringComparison.Ordinal, a: orderName, b: orderName);
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task NoDiagnostic_ForReorderedNamedArgumentsWithDifferentParameterTypes()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                int M([ValueTag("OrderName")] string orderName, [ValueTag("ProjectName")] string projectName)
+                    => string.Compare(length: 1, indexA: 0, strA: orderName, comparisonType: StringComparison.Ordinal, indexB: 0, strB: projectName);
+            }
+            """);
+    }
+
+    [Fact]
     public async Task NoDiagnostic_ForTheCharactersOfTaggedStrings()
     {
         await VerifyAsync("""

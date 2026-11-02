@@ -8,6 +8,8 @@ internal interface IWaiterQueueNode<T>
     T? Previous { get; set; }
     T? Next { get; set; }
 
-    /// <summary>Whether the waiter currently belongs to a queue. Guarded by the queue owner's lock.</summary>
-    bool IsQueued { get; set; }
+    /// <summary>The generation of the queue the waiter was enqueued in, or 0 once it was removed. The waiter belongs
+    /// to the queue only while this value matches the queue's current generation. Guarded by the queue owner's lock;
+    /// only <see cref="WaiterQueue{T}"/> uses it.</summary>
+    int QueueGeneration { get; set; }
 }

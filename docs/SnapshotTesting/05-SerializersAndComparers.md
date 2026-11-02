@@ -16,7 +16,9 @@ the *comparers* decide whether each file matches its verified file. Both are con
   values are indented, the attributes of XML elements are ordered, and the converters for HTTP messages and their
   headers are registered.
 - **`byte[]`** values are stored as their bytes.
-- **`Stream`** values are stored as their bytes, read from the current position of the stream to its end.
+- **`Stream`** values are stored as their bytes, read from the current position of the stream to its end. Use
+  [Snapshot.ValidateAsync](cref:Meziantou.Framework.SnapshotTesting.Snapshot.ValidateAsync) to read the stream asynchronously (see
+  [Snapshot types](03-WritingTests/02-SnapshotTypes.md#validate-a-stream-asynchronously)).
 
 ## Configure how objects are written
 

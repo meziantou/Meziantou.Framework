@@ -349,6 +349,8 @@ Snapshot.Validate(value, SnapshotType.Default, settings);
 <!-- endref -->
 
 The default serializers handle human-readable objects, `byte[]`, and `Stream`.
+`Snapshot.ValidateAsync` reads a `Stream` asynchronously, with a `CancellationToken`, so a stream that only supports
+asynchronous reads can be validated without blocking the test.
 Image snapshots (`SnapshotType.Png`, `SnapshotType.Jpeg`, ...) are compared byte for byte unless a comparer is
 registered for their type. A custom `ISnapshotComparer` can explain a mismatch, shown under the changed file in the
 assertion message, by implementing `Equals(SnapshotData expected, SnapshotData actual, out string? mismatchReason)`.

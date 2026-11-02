@@ -281,6 +281,17 @@ public sealed partial class SnapshotTests
     }
 
     [Fact]
+    public async Task DocumentationExample_ValidateAsync()
+    {
+        #region Snapshot_ValidateAsync
+        await using var stream = new MemoryStream("Hello, world!"u8.ToArray());
+
+        // The stream is read with CopyToAsync, from its current position, and is neither rewound nor disposed
+        await Snapshot.ValidateAsync(stream, TestContext.Current.CancellationToken); // __snapshots__/SnapshotTests_DocumentationExample_ValidateAsync.verified.txt
+        #endregion
+    }
+
+    [Fact]
     public void Validate_CreateSnapshotFile()
     {
         using var directory = TemporaryDirectory.Create();
@@ -1114,6 +1125,130 @@ public sealed partial class SnapshotTests
     }
 
     [Fact]
+    public async Task ValidateAsync_HandlesAsyncOnlyNonSeekableStream()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = CreateOverwriteSettings(directory);
+        var expectedBytes = "stream-binary-data"u8.ToArray();
+        await using var stream = new AsyncOnlyStream(expectedBytes);
+
+        Assert.Throws<NotSupportedException>(() => Snapshot.Validate(stream, SnapshotType.None, settings));
+        await Snapshot.ValidateAsync(stream, SnapshotType.None, settings, TestContext.Current.CancellationToken);
+
+        Assert.Equal(expectedBytes, await File.ReadAllBytesAsync(directory / "snapshot.verified.bin", TestContext.Current.CancellationToken));
+        Assert.False(stream.IsDisposed);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_ReadsTheStreamFromItsCurrentPosition()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = CreateOverwriteSettings(directory);
+        await using var stream = new MemoryStream("stream-binary-data"u8.ToArray());
+        stream.Position = "stream-".Length;
+
+        await Snapshot.ValidateAsync(stream, SnapshotType.None, settings, TestContext.Current.CancellationToken);
+
+        Assert.Equal("binary-data"u8.ToArray(), await File.ReadAllBytesAsync(directory / "snapshot.verified.bin", TestContext.Current.CancellationToken));
+        Assert.Equal(stream.Length, stream.Position);
+        Assert.True(stream.CanRead);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_ProducesAnEmptySnapshotForAStreamPositionedAtTheEnd()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = CreateOverwriteSettings(directory);
+        await using var stream = new MemoryStream();
+        stream.Write("stream-binary-data"u8);
+
+        await Snapshot.ValidateAsync(stream, SnapshotType.None, settings, TestContext.Current.CancellationToken);
+
+        Assert.Empty(await File.ReadAllBytesAsync(directory / "snapshot.verified.bin", TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task ValidateAsync_ThrowsWhenTheSnapshotDiffers()
+    {
+        using var directory = TemporaryDirectory.Create();
+        await File.WriteAllTextAsync(directory / "snapshot.verified.txt", "expected", TestContext.Current.CancellationToken);
+        var settings = CreateOverwriteSettings(directory) with { SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow };
+        await using var stream = new AsyncOnlyStream("actual"u8.ToArray());
+
+        await Assert.ThrowsAsync<SnapshotAssertionException>(() => Snapshot.ValidateAsync(stream, settings, TestContext.Current.CancellationToken));
+
+        Assert.Equal("expected", await File.ReadAllTextAsync(directory / "snapshot.verified.txt", TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task ValidateAsync_DoesNotWriteSnapshots_WhenTheReadIsCanceled()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = CreateOverwriteSettings(directory);
+        using var cts = new CancellationTokenSource();
+        await using var stream = new AsyncOnlyStream("stream-binary-data"u8.ToArray(), blockAfterFirstRead: true);
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+        {
+            var validation = Snapshot.ValidateAsync(stream, SnapshotType.None, settings, cts.Token);
+            await stream.Blocked.WaitAsync(TestContext.Current.CancellationToken);
+            await cts.CancelAsync();
+            await validation;
+        });
+        Assert.Empty(Directory.GetFiles(directory.FullPath));
+    }
+
+    [Fact]
+    public async Task ValidateAsync_ThrowsWhenTheStreamIsNull()
+    {
+        await Assert.ThrowsAsync<ArgumentNullException>(() => Snapshot.ValidateAsync(null!, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task ValidateAsync_CapturesTheTestMethodBeforeReadingTheStream()
+    {
+        using var directory = TemporaryDirectory.Create();
+        SnapshotPathContext? capturedContext = null;
+        var settings = new SnapshotSettings()
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
+            SnapshotPathStrategy = context =>
+            {
+                capturedContext = context;
+                return directory / (context.ClassName + "_" + context.MethodName + ".verified.txt");
+            },
+        };
+
+        // The explicit context carries no names, so they come from the call stack. The stream completes its reads
+        // asynchronously, so the call stack no longer has the test method when the snapshot is named.
+        await using var stream = new AsyncOnlyStream("sample"u8.ToArray(), yieldOnRead: true);
+        using (new SnapshotTestContextScope(new SnapshotTestContext(TestName: "custom")))
+        {
+            await Snapshot.ValidateAsync(stream, settings, TestContext.Current.CancellationToken);
+        }
+
+        Assert.NotNull(capturedContext);
+        Assert.Equal(nameof(ValidateAsync_CapturesTheTestMethodBeforeReadingTheStream), capturedContext.MethodName);
+        Assert.Equal(nameof(SnapshotTests), capturedContext.ClassName);
+        Assert.Equal("SnapshotTests.cs", capturedContext.SourceFilePath.Name);
+
+        var files = Directory.GetFiles(directory.FullPath);
+        Assert.Single(files);
+        Assert.Equal(nameof(SnapshotTests) + "_" + nameof(ValidateAsync_CapturesTheTestMethodBeforeReadingTheStream) + ".verified.txt", Path.GetFileName(files[0]));
+    }
+
+    private static SnapshotSettings CreateOverwriteSettings(TemporaryDirectory directory)
+    {
+        return new SnapshotSettings()
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
+            SnapshotPathStrategy = context => directory / ("snapshot.verified." + context.Extension),
+        };
+    }
+
+    [Fact]
     public void DefaultSerializer_HandlesGifByteArrayAsSingleBinarySnapshot()
     {
         var snapshotType = SnapshotType.Gif;
@@ -1820,6 +1955,62 @@ public sealed partial class SnapshotTests
     private sealed class NonSeekableStream(byte[] data) : MemoryStream(data)
     {
         public override bool CanSeek => false;
+    }
+
+    /// <summary>A non-seekable stream that only supports asynchronous reads, like some network streams.</summary>
+    private sealed class AsyncOnlyStream(byte[] data, bool yieldOnRead = false, bool blockAfterFirstRead = false) : Stream
+    {
+        private readonly TaskCompletionSource _blocked = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        private int _position;
+        private int _readCount;
+
+        public bool IsDisposed { get; private set; }
+
+        public Task Blocked => _blocked.Task;
+
+        public override bool CanRead => true;
+        public override bool CanSeek => false;
+        public override bool CanWrite => false;
+        public override long Length => throw new NotSupportedException();
+        public override long Position { get => throw new NotSupportedException(); set => throw new NotSupportedException(); }
+
+        public override int Read(byte[] buffer, int offset, int count) => throw new NotSupportedException("Synchronous reads are not supported.");
+
+        public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            if (yieldOnRead)
+            {
+                await Task.Yield();
+            }
+
+            if (blockAfterFirstRead && _readCount > 0)
+            {
+                _blocked.TrySetResult();
+                await Task.Delay(Timeout.Infinite, cancellationToken);
+            }
+
+            _readCount++;
+
+            // One byte at a time, so the copy needs several reads.
+            if (_position >= data.Length || buffer.IsEmpty)
+                return 0;
+
+            buffer.Span[0] = data[_position++];
+            return 1;
+        }
+
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) => ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
+
+        public override void Flush() => throw new NotSupportedException();
+        public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+        public override void SetLength(long value) => throw new NotSupportedException();
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+
+        protected override void Dispose(bool disposing)
+        {
+            IsDisposed = true;
+            base.Dispose(disposing);
+        }
     }
 
     private sealed class EnvironmentVariableScope : IDisposable

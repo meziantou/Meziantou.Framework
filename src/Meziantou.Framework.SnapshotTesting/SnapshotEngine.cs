@@ -19,9 +19,39 @@ internal static class SnapshotEngine
     {
         ArgumentNullException.ThrowIfNull(settings);
 
-        type ??= SnapshotType.Default;
         testContext ??= SnapshotTestContext.Get();
         var callerContext = SnapshotCallerContext.Create(filePath, lineNumber, memberName, testContext);
+        Validate(type, value, settings, callerContext, testContext);
+    }
+
+    /// <summary>
+    /// Reads <paramref name="stream" /> asynchronously, from its current position, and validates its content like
+    /// <see cref="Validate(SnapshotType?, object?, SnapshotSettings, string?, int, string?, SnapshotTestContext?)" />
+    /// validates a stream. The stream is neither rewound nor disposed.
+    /// </summary>
+    /// <remarks>
+    /// Everything that identifies the caller is captured before the first await: the continuation no longer has the
+    /// frames of the test on its call stack. No file is read or written until the stream is fully read, so a canceled
+    /// or failed read leaves the snapshots untouched.
+    /// </remarks>
+    public static async Task ValidateAsync(SnapshotType? type, Stream stream, SnapshotSettings settings, string? filePath, int lineNumber, string? memberName, SnapshotTestContext? testContext, CancellationToken cancellationToken)
+    {
+        testContext ??= SnapshotTestContext.Get();
+        var callerContext = SnapshotCallerContext.Create(filePath, lineNumber, memberName, testContext);
+        callerContext.CaptureCallStack();
+
+        using var buffer = new MemoryStream();
+        await stream.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
+        buffer.Position = 0;
+
+        // The buffered content goes through the serializers as a stream, so a serializer registered for streams
+        // applies as it does for the synchronous overloads.
+        Validate(type, buffer, settings, callerContext, testContext);
+    }
+
+    private static void Validate(SnapshotType? type, object? value, SnapshotSettings settings, SnapshotCallerContext callerContext, SnapshotTestContext testContext)
+    {
+        type ??= SnapshotType.Default;
         var serialized = Serialize(settings, type, value);
 
         if (serialized is null || serialized.Count == 0)

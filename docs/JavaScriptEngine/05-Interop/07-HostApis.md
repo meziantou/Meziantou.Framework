@@ -212,6 +212,6 @@ To await a .NET `Task` from a script, settle a promise from the same loop: see
 - `structuredClone`, `atob`, `btoa`, `TextEncoder`, `TextDecoder`, `URL`: implement the ones you need in .NET with
   [Functions](04-Functions.md), or in JavaScript with a script that you run first in each realm (a polyfill). A
   [prepared script](../04-RunningCode/02-Scripts.md#reuse-a-compiled-script) avoids parsing it for each realm.
-- `require`: see [CommonJS modules](../04-RunningCode/05-CommonJsModules.md).
+- `require`: see [CommonJS modules](../04-RunningCode/06-CommonJsModules.md).
 - `fetch` and the file system: expose the operations that the scripts need, not a general access. Check every URL or
   path they give, as you would check the input of a user.

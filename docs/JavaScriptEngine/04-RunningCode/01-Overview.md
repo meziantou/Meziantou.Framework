@@ -18,7 +18,9 @@ In both cases, an uncaught error is thrown to .NET as a [JsException](cref:Mezia
 - [Scripts](02-Scripts.md): run a script, give it a file name, compile it once and run it in several engines, check its
   syntax without running it.
 - [Modules](03-Modules.md): write a module loader, load JSON, text and .NET modules, read the exports, use `import()`.
-- [Handling errors](04-HandlingErrors.md): catch the errors of the scripts, find where they were thrown, throw
-  JavaScript errors from .NET.
-- [CommonJS modules](05-CommonJsModules.md): run code that uses `require` and `module.exports`, with a loader that you
+- [Handling errors](04-HandlingErrors.md): catch the errors of the scripts, find where they were thrown, map them to the
+  original sources with source maps, throw JavaScript errors from .NET.
+- [Debugging and inspecting scripts](05-Debugging.md): stop at breakpoints, step through the statements, measure the
+  code coverage.
+- [CommonJS modules](06-CommonJsModules.md): run code that uses `require` and `module.exports`, with a loader that you
   control.

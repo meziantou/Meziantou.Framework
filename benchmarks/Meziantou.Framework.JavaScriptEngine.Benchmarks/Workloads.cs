@@ -37,6 +37,14 @@ internal static class Workloads
             const text = JSON.stringify(Array.from({ length: 500 }, (_, i) => ({ id: i, name: 'item ' + i, tags: ['a', 'b'], nested: { value: i / 3 } })));
             function run() { return JSON.stringify(JSON.parse(text)).length; }
             """,
+        ["JsonParse"] = """
+            const text = JSON.stringify(Array.from({ length: 10000 }, (_, i) => ({ a: i, b: 'x' + i, c: [1.5, true, null] })));
+            function run() { return JSON.parse(text).length; }
+            """,
+        ["JsonStringify"] = """
+            const data = Array.from({ length: 10000 }, (_, i) => ({ a: i, b: 'x' + i, c: [1.5, true, null] }));
+            function run() { return JSON.stringify(data).length; }
+            """,
         ["RegExp"] = """
             const lines = Array.from({ length: 1000 }, (_, i) => i % 3 === 0 ? 'user' + i + '@example.com' : 'not an email ' + i);
             function run() { let n = 0; const re = /^[\w.+-]+@[\w-]+\.[\w.]+$/; for (const line of lines) { if (re.test(line)) n++; } return n + 'a-b_c d'.replace(/[-_ ]/g, '').length; }

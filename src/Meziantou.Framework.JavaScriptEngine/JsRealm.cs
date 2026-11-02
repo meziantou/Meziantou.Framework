@@ -69,7 +69,7 @@ public sealed partial class JsRealm
     public JsValue Execute(string code, string? url = null)
     {
         using var scope = Engine.Enter();
-        var source = new Text.SourceText(code, url);
+        var source = new Text.SourceText(code, url) { IsInstrumented = Engine.Options.Debugger is not null };
         return Run(source, Compile(source), hostDefined: null, mutedErrors: false);
     }
 
@@ -82,6 +82,18 @@ public sealed partial class JsRealm
     {
         ArgumentNullException.ThrowIfNull(script);
         using var scope = Engine.Enter();
+        if (Engine.Options.Debugger is not null && !script.Source.IsInstrumented)
+        {
+            // A prepared script is compiled without the instructions of the debugger
+            var source = new Text.SourceText(script.Source.Text, script.Source.Url, script.Source.LineOffset, script.Source.ColumnOffset)
+            {
+                UnboundNameFunctionStart = script.Source.UnboundNameFunctionStart,
+                IsInstrumented = true,
+            };
+
+            return Run(source, Compile(source), hostDefined, mutedErrors);
+        }
+
         return Run(script.Source, script.Template, hostDefined, mutedErrors);
     }
 
@@ -141,7 +153,7 @@ public sealed partial class JsRealm
         Engine.CurrentRealm = this;
         try
         {
-            return JsSourceTextModule.Parse(this, new Text.SourceText(code, url, lineOffset, columnOffset), hostDefined);
+            return JsSourceTextModule.Parse(this, new Text.SourceText(code, url, lineOffset, columnOffset) { IsInstrumented = Engine.Options.Debugger is not null }, hostDefined);
         }
         finally
         {

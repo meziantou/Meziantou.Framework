@@ -26,7 +26,7 @@ them with this engine.
 
 - Only ES modules are supported. A CommonJS package (`require`, `module.exports`) must be bundled or converted to an
   ES module first, or run by a `require` that your application provides: see
-  [CommonJS modules](04-RunningCode/05-CommonJsModules.md).
+  [CommonJS modules](04-RunningCode/06-CommonJsModules.md).
 - The engine resolves and reads no file: your module loader resolves each specifier and gives its source. There is no
   `node_modules` resolution and no import map. See [Modules](04-RunningCode/03-Modules.md).
 - The `export defer` proposal is not implemented (`import defer` is).

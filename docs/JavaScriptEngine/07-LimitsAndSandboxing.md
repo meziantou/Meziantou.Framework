@@ -44,7 +44,9 @@ Assert.Equal("RangeError", realm.Execute("function f() { return 1 + f(); } try {
 - The limits are off by default, except [RecursionLimit](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.RecursionLimit).
 - A [JsTerminationException](cref:Meziantou.Framework.JavaScriptEngine.JsTerminationException) cannot be caught by JavaScript code: neither the `catch` nor the `finally` blocks of the
   script run. The realm can still run code afterwards, but the state that the stopped script left may be incomplete:
-  discard the realm when the script is not trusted.
+  discard the realm when the script is not trusted. The generators, async functions and modules that it stopped are
+  completed: the promises of the async functions and of the modules are rejected with an error such as
+  `Error: The execution was terminated: The script exceeded its time limit`.
 - `MemoryLimit` counts what the thread allocates, not the memory that the script keeps: a script that allocates and
   drops many objects reaches it too, and so does the allocation of your .NET functions. The built-ins check it before
   they create a large string or array.

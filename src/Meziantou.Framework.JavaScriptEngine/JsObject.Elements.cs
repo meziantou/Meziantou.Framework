@@ -351,6 +351,7 @@ public partial class JsObject
         }
 
         FillDenseHoles(values.Length, length - values.Length);
+        _denseCount = values.Length;
     }
 
     /// <summary>Makes a hole of an element.</summary>

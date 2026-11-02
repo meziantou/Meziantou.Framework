@@ -666,6 +666,20 @@ public sealed class ArrayBuiltinsTests
     }
 
     [Fact]
+    public void CreatedArrayCountsItsElements()
+    {
+        using var context = new BuiltinsTestContext();
+        JsArray[] arrays = [context.Array(1, 2, 3), context.Array("a", "b", "c"), context.Array(1, "b", context.Object())];
+        foreach (var array in arrays)
+        {
+            Assert.Equal(["0", "1", "2", "length"], array.OwnPropertyKeys().Select(k => k.ToString()).ToArray());
+            Assert.True(array.Delete(new PropertyKey(1)));
+            Assert.Equal(["0", "2", "length"], array.OwnPropertyKeys().Select(k => k.ToString()).ToArray());
+            Assert.Equal(2, CallArray(context, "filter", array, context.Function((_, _) => true)).AsObject().Get(new PropertyKey("length")).AsNumber());
+        }
+    }
+
+    [Fact]
     public void Unscopables()
     {
         using var context = new BuiltinsTestContext();

@@ -677,7 +677,11 @@ public sealed class JsEngineTests
         using (var engine = new JsEngine(new JsEngineOptions { RegExpTimeout = TimeSpan.FromTicks(1) }))
         {
             var realm = engine.CreateRealm();
-            realm.GlobalObject.SetProperty("s", input);
+            using (engine.Enter())
+            {
+                realm.GlobalObject.SetProperty("s", input);
+            }
+
             var exception = Assert.Throws<JsTerminationException>(() => realm.Execute(code));
             Assert.Equal(JsTerminationReason.Timeout, exception.Reason);
         }
@@ -685,7 +689,11 @@ public sealed class JsEngineTests
         using (var engine = new JsEngine(new JsEngineOptions { Timeout = TimeSpan.FromTicks(1) }))
         {
             var realm = engine.CreateRealm();
-            realm.GlobalObject.SetProperty("s", input);
+            using (engine.Enter())
+            {
+                realm.GlobalObject.SetProperty("s", input);
+            }
+
             var exception = Assert.Throws<JsTerminationException>(() => realm.Execute(code));
             Assert.Equal(JsTerminationReason.Timeout, exception.Reason);
         }
@@ -694,12 +702,16 @@ public sealed class JsEngineTests
         using (var engine = new JsEngine(new JsEngineOptions { CancellationToken = cancellation.Token }))
         {
             var realm = engine.CreateRealm();
-            realm.GlobalObject.SetProperty("s", input);
-            realm.GlobalObject.SetProperty("cancel", realm.CreateFunction("cancel", 0, (_, _) =>
+            using (engine.Enter())
             {
-                cancellation.Cancel();
-                return default;
-            }));
+                realm.GlobalObject.SetProperty("s", input);
+                realm.GlobalObject.SetProperty("cancel", realm.CreateFunction("cancel", 0, (_, _) =>
+                {
+                    cancellation.Cancel();
+                    return default;
+                }));
+            }
+
             var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("cancel(); " + code));
             Assert.Equal(JsTerminationReason.Canceled, exception.Reason);
         }
@@ -707,6 +719,7 @@ public sealed class JsEngineTests
         using (var engine = new JsEngine(new JsEngineOptions { RegExpTimeout = TimeSpan.FromSeconds(30), Timeout = TimeSpan.FromSeconds(30) }))
         {
             var realm = engine.CreateRealm();
+            using var scope = engine.Enter();
             realm.GlobalObject.SetProperty("s", input);
             Assert.False(realm.Execute(code).AsBoolean());
             realm.GlobalObject.SetProperty("s", input + "ab1");
@@ -724,7 +737,11 @@ public sealed class JsEngineTests
         using (var engine = new JsEngine(new JsEngineOptions { MemoryLimit = MemoryLimit }))
         {
             var realm = engine.CreateRealm();
-            realm.GlobalObject.SetProperty("s", input);
+            using (engine.Enter())
+            {
+                realm.GlobalObject.SetProperty("s", input);
+            }
+
             var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
             var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("/^(?:a|b)*c/.test(s)"));
             var allocated = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
@@ -736,7 +753,11 @@ public sealed class JsEngineTests
         using (var engine = new JsEngine(new JsEngineOptions { MemoryLimit = 256 * 1024 * 1024 }))
         {
             var realm = engine.CreateRealm();
-            realm.GlobalObject.SetProperty("s", input);
+            using (engine.Enter())
+            {
+                realm.GlobalObject.SetProperty("s", input);
+            }
+
             Assert.False(realm.Execute("/^(?:a|b)*c/.test(s)").AsBoolean());
             Assert.True(realm.Execute("/^(?:a|b)*$/.test(s)").AsBoolean());
             Assert.Equal("b,b", realm.Execute("/(a)|(b)/.exec('xb').slice(0, 3).filter(Boolean).join()").ToString());

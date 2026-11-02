@@ -10,7 +10,8 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// <para>
 /// The limits (<see cref="RecursionLimit"/>, <see cref="Timeout"/>, <see cref="MemoryLimit"/>, <see cref="MaxStatements"/>,
 /// <see cref="RegExpTimeout"/> and <see cref="CancellationToken"/>) can be changed through <see cref="JsEngine.Options"/>
-/// on the thread of the engine: the change applies from the next check of the limits. The other options configure the
+/// on the thread of the engine: the change applies from the next check of the limits. So can the <see cref="Debugger"/>.
+/// The other options configure the
 /// engine for its whole life: setting them on <see cref="JsEngine.Options"/> throws an <see cref="InvalidOperationException"/>.
 /// </para>
 /// </remarks>
@@ -146,6 +147,7 @@ public sealed class JsEngineOptions
             DefaultLocale = DefaultLocale,
             ModuleLoader = ModuleLoader,
             Host = Host,
+            Debugger = Debugger,
             _isEngineCopy = true,
         };
     }

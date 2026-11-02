@@ -271,6 +271,7 @@ public sealed class JsEngineEmbeddingTests
             DefaultLocale = "fr-FR",
             ModuleLoader = new NoModuleLoader(),
             Host = new JsHost(),
+            Debugger = new NoDebugger(),
         };
 
         using var engine = new JsEngine(options);
@@ -283,6 +284,10 @@ public sealed class JsEngineEmbeddingTests
     private sealed class FixedTimeProvider : TimeProvider
     {
         public override DateTimeOffset GetUtcNow() => new(2000, 1, 1, 0, 0, 0, TimeSpan.Zero);
+    }
+
+    private sealed class NoDebugger : JsDebugger
+    {
     }
 
     private sealed class NoModuleLoader : JsModuleLoader

@@ -43,7 +43,23 @@ public sealed partial class JsRealm
     {
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(function);
-        var result = CreateBuiltinFunction(name, length, (_, thisValue, arguments, _) => function(thisValue, arguments));
+        var engine = Engine;
+        var result = CreateBuiltinFunction(name, length, (_, thisValue, arguments, _) =>
+        {
+            JsValue value;
+            try
+            {
+                value = function(thisValue, arguments);
+            }
+            catch (JsTerminationException exception) when (engine.RecordTermination(exception))
+            {
+                throw;
+            }
+
+            // The function may have caught the termination of a nested call: the script must not continue
+            engine.ThrowIfTerminationPending();
+            return value;
+        });
         result.RunsInCallerRealm = runInCallerRealm;
         return result;
     }
@@ -53,7 +69,22 @@ public sealed partial class JsRealm
     {
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(constructor);
-        return CreateBuiltinFunction(name, length, (_, thisValue, arguments, newTarget) => constructor(thisValue, arguments, newTarget), isConstructor: true);
+        var engine = Engine;
+        return CreateBuiltinFunction(name, length, (_, thisValue, arguments, newTarget) =>
+        {
+            JsValue value;
+            try
+            {
+                value = constructor(thisValue, arguments, newTarget);
+            }
+            catch (JsTerminationException exception) when (engine.RecordTermination(exception))
+            {
+                throw;
+            }
+
+            engine.ThrowIfTerminationPending();
+            return value;
+        }, isConstructor: true);
     }
 
     /// <summary>Creates a native error of the realm, with its stack trace.</summary>

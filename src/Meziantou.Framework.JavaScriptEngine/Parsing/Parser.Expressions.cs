@@ -331,9 +331,13 @@ internal sealed partial class Parser
         _ => throw new InvalidOperationException("Not a binary operator: " + kind),
     };
 
+    /// <summary>
+    /// Parses a unary expression. It is not a nesting level of its own: the nesting is counted when it parses another unary
+    /// expression (<see cref="ParseNestedUnary"/>), and by the assignment that contains it, so that a parenthesized
+    /// expression is one level.
+    /// </summary>
     private Node ParseUnary(DestructuringErrors? errors, bool sawUnary, bool incDec, bool noIn)
     {
-        using var recursion = EnterRecursion();
         var start = _token.Start;
         Node expression;
         var kind = _token.Kind;
@@ -345,7 +349,7 @@ internal sealed partial class Parser
         else if (kind is TokenKind.PlusPlus or TokenKind.MinusMinus)
         {
             Next();
-            var argument = ParseUnary(errors: null, sawUnary: true, incDec: true, noIn);
+            var argument = ParseNestedUnary(sawUnary: true, incDec: true, noIn);
             CheckExpressionErrors(errors);
             if (!IsWebCompatCallTarget(argument))
             {
@@ -357,7 +361,7 @@ internal sealed partial class Parser
         else if (GetUnaryOperator(kind) is { } op)
         {
             Next();
-            var argument = ParseUnary(errors: null, sawUnary: true, incDec: false, noIn);
+            var argument = ParseNestedUnary(sawUnary: true, incDec: false, noIn);
             CheckExpressionErrors(errors);
             if (op == UnaryOperator.Delete)
             {
@@ -396,11 +400,18 @@ internal sealed partial class Parser
                 Raise(_token.Start, "Unary operator used immediately before exponentiation expression. Parenthesis must be used to disambiguate operator precedence");
 
             Next();
-            var right = ParseUnary(errors: null, sawUnary: false, incDec: false, noIn);
+            var right = ParseNestedUnary(sawUnary: false, incDec: false, noIn);
             return Finish(new BinaryExpression { Operator = BinaryOperator.Exponentiate, Left = expression, Right = right }, start);
         }
 
         return expression;
+    }
+
+    /// <summary>Parses the operand of a unary operator (or the right operand of <c>**</c>): a nesting level.</summary>
+    private Node ParseNestedUnary(bool sawUnary, bool incDec, bool noIn)
+    {
+        using var recursion = EnterRecursion();
+        return ParseUnary(errors: null, sawUnary, incDec, noIn);
     }
 
     private static UnaryOperator? GetUnaryOperator(TokenKind kind) => kind switch
@@ -434,7 +445,7 @@ internal sealed partial class Parser
         }
 
         Next();
-        var argument = ParseUnary(errors: null, sawUnary: true, incDec: false, noIn);
+        var argument = ParseNestedUnary(sawUnary: true, incDec: false, noIn);
         return Finish(new AwaitExpression { Argument = argument }, start);
     }
 
@@ -906,6 +917,8 @@ internal sealed partial class Parser
 
     private Node ParseNew()
     {
+        // new new new ... X recurses without an assignment expression
+        using var recursion = EnterRecursion();
         var start = _token.Start;
         Next();
         if (_token.Kind == TokenKind.Dot)

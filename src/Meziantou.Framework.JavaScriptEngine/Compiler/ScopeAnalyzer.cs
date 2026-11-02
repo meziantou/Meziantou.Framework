@@ -152,8 +152,16 @@ internal sealed partial class ScopeAnalyzer
 
                 break;
             case IfStatement ifStatement:
-                DeclareVarScoped(ifStatement.Consequent, varScope, isTopLevel: false);
-                DeclareVarScoped(ifStatement.Alternate, varScope, isTopLevel: false);
+                // An else if chain is walked in a loop: a long chain (generated code) does not recurse
+                for (var current = ifStatement; current is not null; current = current.Alternate as IfStatement)
+                {
+                    DeclareVarScoped(current.Consequent, varScope, isTopLevel: false);
+                    if (current.Alternate is not IfStatement)
+                    {
+                        DeclareVarScoped(current.Alternate, varScope, isTopLevel: false);
+                    }
+                }
+
                 break;
             case WhileStatement whileStatement:
                 DeclareVarScoped(whileStatement.Body, varScope, isTopLevel: false);
@@ -760,9 +768,16 @@ internal sealed partial class ScopeAnalyzer
                 }
 
             case IfStatement ifStatement:
-                VisitExpression(ifStatement.Test, scope);
-                VisitSubStatement(ifStatement.Consequent, scope);
-                VisitSubStatement(ifStatement.Alternate, scope);
+                for (var current = ifStatement; current is not null; current = current.Alternate as IfStatement)
+                {
+                    VisitExpression(current.Test, scope);
+                    VisitSubStatement(current.Consequent, scope);
+                    if (current.Alternate is not IfStatement)
+                    {
+                        VisitSubStatement(current.Alternate, scope);
+                    }
+                }
+
                 return;
             case LabeledStatement labeled:
                 // A labelled function declaration belongs to the enclosing statement list

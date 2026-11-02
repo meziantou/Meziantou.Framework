@@ -1220,7 +1220,7 @@
       "values": [
         {
           "name": "normal",
-          "prose": "Same behavior as ideograph-alpha ideograph-numeric.",
+          "prose": "Same behavior as ideograph-alpha ideograph-numeric. This is the default behavior as well as the initial value: if insert or replace are specified on their own, normal is assumed.",
           "href": "https://drafts.csswg.org/css-text-4/#valdef-text-autospace-normal",
           "type": "value",
           "value": "normal"

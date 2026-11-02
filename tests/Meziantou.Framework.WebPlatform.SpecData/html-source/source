@@ -89856,7 +89856,7 @@ body { display:none }
    If the boolean argument is true, then the algorithm can return either true to indicate that the
    caller will proceed to the <span data-x="close-watcher-close-action">close action</span>, or
    false to indicate that the caller will bail out. If the argument is false, then the return value
-   is always false. This algorithm can never throw an exception.</p></li>
+   is always true. This algorithm can never throw an exception.</p></li>
 
    <li><p>A <dfn data-x="close-watcher-close-action">close action</dfn>, an algorithm accepting no
    arguments and returning nothing. This algorithm can never throw an exception.</p></li>
@@ -89872,8 +89872,9 @@ body { display:none }
   <div algorithm>
   <p>A <span>close watcher</span> <var>closeWatcher</var> <dfn data-x="close-watcher-active">is
   active</dfn> if <var>closeWatcher</var>'s <span data-x="close-watcher-window">window</span>'s
-  <span>close watcher manager</span> <span data-x="list contains">contains</span> any list which
-  <span data-x="list contains">contains</span> <var>closeWatcher</var>.</p>
+  <span>close watcher manager</span>'s <span data-x="close watcher manager groups">groups</span>
+  <span data-x="list contains">contains</span> any list which <span data-x="list
+  contains">contains</span> <var>closeWatcher</var>.</p>
   </div>
 
   <hr>
@@ -119279,7 +119280,7 @@ document.querySelector("button").addEventListener("click", bound);
 
    <li>
     <p>If <var>performFetch</var> was given, run <var>performFetch</var> with <var>request</var>,
-    <var>isTopLevel</var>, and with <var>processResponseConsumeBody</var> as defined below.</p>
+    true, and with <var>processResponseConsumeBody</var> as defined below.</p>
 
     <p>Otherwise, <span data-x="concept-fetch">fetch</span> <var>request</var> with <i
     data-x="processResponseConsumeBody">processResponseConsumeBody</i> set to
@@ -132907,7 +132908,7 @@ interface <dfn interface>ImageData</dfn> {
 
      <li><p>Otherwise, if <var>settings</var>["<code
      data-x="dom-ImageDataSettings-pixelFormat">pixelFormat</code>"] is "<span
-     data-x="dom-ImageDataPixelFormat-rgba-unorm8">rgba-float16</span>", then initialize the <code
+     data-x="dom-ImageDataPixelFormat-rgba-float16">rgba-float16</span>", then initialize the <code
      data-x="dom-imagedata-data">data</code> attribute of <var>imageData</var> to a new <code
      data-x="idl-Float16Array">Float16Array</code> object. The <code
      data-x="idl-Float16Array">Float16Array</code> object must use a new
@@ -160533,12 +160534,12 @@ interface <dfn interface>External</dfn> {
      <td> <span>Unordered set of unique space-separated tokens</span> consisting of IDs*
     <tr>
      <th> <code data-x="">headingoffset</code>
-     <td> <span data-x="attr-tabindex">HTML elements</span>
+     <td> <span data-x="attr-headingoffset">HTML elements</span>
      <td> Offsets heading levels for descendants
      <td> <span>Valid non-negative integer</span> between 0 and 8
     <tr>
      <th> <code data-x="">headingreset</code>
-     <td> <span data-x="attr-tabindex">HTML elements</span>
+     <td> <span data-x="attr-headingreset">HTML elements</span>
      <td> Prevents a heading offset computation from traversing beyond the element with the attribute
      <td> <span>Boolean attribute</span>
     <tr>
@@ -161056,7 +161057,7 @@ interface <dfn interface>External</dfn> {
      <td> <span>Valid source size list</span>
     <tr>
      <th> <code data-x="">slot</code>
-     <td> <span data-x="attr-id">HTML elements</span>
+     <td> <span data-x="attr-slot">HTML elements</span>
      <td> The element's desired slot
      <td> <a href="#attribute-text">Text</a>
     <tr>
@@ -163847,6 +163848,7 @@ INSERT INTERFACES HERE
   Francis Brosnan Blazquez,
   Franck 'Shift' Qu&eacute;lain,
   Fran&ccedil;ois Marier,
+  Fran&ccedil;ois Martin,
   Frank Barchard,
   Frank Liberato,
   Franklin Shirley,

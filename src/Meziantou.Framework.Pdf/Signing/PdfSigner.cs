@@ -280,7 +280,7 @@ public static class PdfSigner
         using var stream = new MemoryStream();
         if (document.Reader is { IsRepaired: false } reader)
         {
-            stream.Capacity = reader.Data.Length + 65536;
+            stream.Capacity = (int)Math.Min(reader.Input.Length + 65536, Array.MaxLength);
             document.SaveIncremental(stream);
         }
         else

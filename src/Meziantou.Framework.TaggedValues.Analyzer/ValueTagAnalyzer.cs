@@ -134,6 +134,9 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
             context.RegisterOperationAction(context => AnalyzeMemberInitializer(context, resolver), OperationKind.FieldInitializer, OperationKind.PropertyInitializer);
             context.RegisterOperationAction(context => AnalyzeReturn(context, resolver), OperationKind.Return, OperationKind.YieldReturn);
             context.RegisterOperationAction(context => AnalyzeCompoundAssignment(context, resolver), OperationKind.CompoundAssignment);
+            context.RegisterOperationAction(context => AnalyzeUnary(context, resolver), OperationKind.Unary);
+            context.RegisterOperationAction(context => AnalyzeIncrementOrDecrement(context, resolver), OperationKind.Increment, OperationKind.Decrement);
+            context.RegisterOperationAction(context => AnalyzeConversion(context, resolver), OperationKind.Conversion);
             context.RegisterOperationAction(context => AnalyzeCombinedValues(context, resolver), OperationKind.Conditional, OperationKind.Coalesce, OperationKind.SwitchExpression, OperationKind.ArrayInitializer, OperationKind.CollectionExpression, OperationKind.ObjectOrCollectionInitializer);
             context.RegisterOperationAction(context => AnalyzeAttribute(context, resolver), OperationKind.Attribute);
             context.RegisterSemanticModelAction(context => AnalyzeComments(context, resolver));
@@ -219,6 +222,43 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
             {
                 context.ReportDiagnostic(FlowMismatch, operation.Syntax, ValueTagDescriptions.DescribeSymbol(binaryOperator), resultTags.ToAttributeString(), ValueTagDescriptions.Describe(operation.Target), targetTags.ToAttributeString());
             }
+        }
+    }
+
+    private static void AnalyzeUnary(OperationAnalysisContext context, TagResolver resolver)
+    {
+        // -meters: the operand of a user-defined operator flows to its parameter
+        var operation = (IUnaryOperation)context.Operation;
+        if (!TagResolver.IsBuiltInNumericOperator(operation.OperatorMethod, operation.Type) && operation.OperatorMethod is { Parameters.Length: 1 } operatorMethod)
+        {
+            ReportTaggedParameterFlow(context, resolver, operation.Operand, operatorMethod.Parameters[0]);
+        }
+    }
+
+    private static void AnalyzeIncrementOrDecrement(OperationAnalysisContext context, TagResolver resolver)
+    {
+        var operation = (IIncrementOrDecrementOperation)context.Operation;
+        if (TagResolver.IsBuiltInNumericOperator(operation.OperatorMethod, operation.Type) || operation.OperatorMethod is not { IsStatic: true, Parameters.Length: 1 } operatorMethod)
+            return;
+
+        // meters++: the target flows to the parameter of the operator, and the result of the operator flows back to the target
+        ReportTaggedParameterFlow(context, resolver, operation.Target, operatorMethod.Parameters[0]);
+
+        var resultTags = resolver.GetDeclaredTags(operatorMethod);
+        var targetTags = resolver.GetTag(operation.Target);
+        if (!resultTags.IsEmpty && !targetTags.IsEmpty && !TagInfo.AreCompatible(resultTags, targetTags))
+        {
+            context.ReportDiagnostic(FlowMismatch, operation.Syntax, ValueTagDescriptions.DescribeSymbol(operatorMethod), resultTags.ToAttributeString(), ValueTagDescriptions.Describe(operation.Target), targetTags.ToAttributeString());
+        }
+    }
+
+    private static void AnalyzeConversion(OperationAnalysisContext context, TagResolver resolver)
+    {
+        // (int)meters: the operand of a user-defined conversion flows to its parameter
+        var operation = (IConversionOperation)context.Operation;
+        if (operation.Conversion is { IsUserDefined: true, MethodSymbol: { Parameters.Length: 1 } conversionMethod })
+        {
+            ReportTaggedParameterFlow(context, resolver, operation.Operand, conversionMethod.Parameters[0]);
         }
     }
 

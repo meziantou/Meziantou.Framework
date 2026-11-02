@@ -15,6 +15,23 @@ public sealed class InterpreterTests
     }
 
     [Theory]
+    [InlineData("var fs = []; for (let i = 0; i < 6; i++) { if (i % 2 === 0) fs.push(() => i); } fs.map(f => f()).join()", "0,2,4")]
+    [InlineData("var fs = []; for (let i = 0; i < 6; i++) { if (i === 1) continue; if (i === 3) { fs.push(() => i); continue; } if (i === 5) break; fs.push(() => i++); } fs.map(f => f()).join() + ';' + fs.map(f => f()).join()", "0,2,3,4;1,3,3,5")]
+    [InlineData("var fs = []; for (let i = 0, f = () => i; i < 3; i++) { fs.push(f, () => i); } fs.map(f => f()).join()", "0,0,0,1,0,2")]
+    [InlineData("var fs = []; for (let i = 0; i < 4; fs.push(() => i), i++) { } fs.map(f => f()).join()", "1,2,3,4")]
+    [InlineData("var fs = []; for (let i = 0; i < 4; i++) { { let j = i * 10; if (i > 1) fs.push(() => i + j); } } fs.map(f => f()).join()", "22,33")]
+    [InlineData("var fs = []; for (let i = 0; i < 4; i++) { if (i === 2) eval('fs.push(() => i)'); } fs.map(f => f()).join()", "2")]
+    [InlineData("var fs = []; for (let i = 0; i < 4; i++) { if (i === 2) fs.push(function* () { yield i; }); } fs[0]().next().value", "2")]
+    [InlineData("var fs = []; for (let i = 0; i < 4; i++) { if (i === 1) fs.push(class { static v = i; m() { return i; } }); } fs[0].v + ',' + new fs[0]().m()", "1,1")]
+    [InlineData("function* g() { for (let i = 0; i < 3; i++) { yield () => i; } } [...g()].map(f => f()).join()", "0,1,2")]
+    [InlineData("var fs = []; for (let i = 0; i < 4; i++) { try { if (i === 2) throw 0; } catch { fs.push(() => i); } finally { if (i === 3) fs.push(() => i); } } fs.map(f => f()).join()", "2,3")]
+    [InlineData("var fs = []; var o = { i: 'o' }; for (let k = 0; k < 3; k++) { with (o) { if (k === 1) fs.push(() => i + k); } } fs.map(f => f()).join()", "o1")]
+    public void Evaluate_PerIterationEnvironments(string code, string expected)
+    {
+        Assert.Equal(expected, Run(code));
+    }
+
+    [Theory]
     [InlineData("function f(a, b) { } Object.getOwnPropertyNames(f).join()", "length,name,arguments,caller,prototype")]
     [InlineData("function f(a, b) { 'use strict'; } Object.getOwnPropertyNames(f).join()", "length,name,prototype")]
     [InlineData("var a = (x) => x; var o = { m() { } }; Object.getOwnPropertyNames(a).join() + ';' + Object.getOwnPropertyNames(o.m).join()", "length,name;length,name")]

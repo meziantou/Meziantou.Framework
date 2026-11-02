@@ -318,8 +318,18 @@ internal static partial class JsInterpreter
                     frame.Environment = frame.Environment.Outer!;
                     break;
                 case OpCode.CopyScope:
-                    frame.Environment = ((DeclarativeEnvironment)frame.Environment).Copy();
-                    break;
+                    {
+                        // CreatePerIterationEnvironment: a copy only when a function object captured the bindings of the
+                        // iteration (otherwise, nothing can observe that the next iteration uses the same environment)
+                        var environment = (DeclarativeEnvironment)frame.Environment;
+                        if (environment.IsCaptured)
+                        {
+                            frame.Environment = environment.Copy();
+                        }
+
+                        break;
+                    }
+
                 case OpCode.LoadArgument:
                     {
                         // The arguments are stored after the registers

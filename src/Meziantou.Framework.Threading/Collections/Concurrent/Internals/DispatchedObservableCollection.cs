@@ -18,6 +18,11 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
     private int _isPostPending;
     private int _isDraining;
 
+    // The thread running the drain, while it runs. The default SynchronizationContext runs its callbacks on the thread
+    // pool without installing itself as the current context, so the handlers would otherwise be refused access to the
+    // view they are notified for. The drain is serialized, so this thread is the only one using the view meanwhile.
+    private Thread? _drainingThread;
+
     public DispatchedObservableCollection(ConcurrentObservableCollection<T> collection, SynchronizationContext synchronizationContext)
         : base(collection)
     {
@@ -25,9 +30,14 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
         _synchronizationContext = synchronizationContext ?? throw new ArgumentNullException(nameof(synchronizationContext));
     }
 
+    private bool IsOnSynchronizationContextThread()
+    {
+        return _collection.IsOnSynchronizationContextThread() || Volatile.Read(ref _drainingThread) == Thread.CurrentThread;
+    }
+
     private void AssertIsOnSynchronizationContextThread()
     {
-        if (!_collection.IsOnSynchronizationContextThread())
+        if (!IsOnSynchronizationContextThread())
         {
             var currentThreadId = Environment.CurrentManagedThreadId;
             throw new InvalidOperationException("The collection must be accessed from the synchronization context thread only. Current thread ID: " + currentThreadId.ToString(CultureInfo.InvariantCulture));
@@ -107,9 +117,8 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
 
         set
         {
-            // it will immediately modify both collections as we are on the synchronization context thread
             AssertIsOnSynchronizationContextThread();
-            ((IList)_collection)[index] = value;
+            _collection.SetItemFromView(index, ConcurrentObservableCollection<T>.ConvertValue(value));
         }
     }
 
@@ -122,9 +131,8 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
         }
         set
         {
-            // it will immediately modify both collections as we are on the synchronization context thread
             AssertIsOnSynchronizationContextThread();
-            _collection[index] = value;
+            _collection.SetItemFromView(index, value);
         }
     }
 
@@ -181,11 +189,6 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
     internal void EnqueueAddRange(System.Collections.Immutable.ImmutableList<T> items)
     {
         EnqueueEvent(PendingEvent.AddRange(items));
-    }
-
-    internal void EnqueueRemove(T item)
-    {
-        EnqueueEvent(PendingEvent.Remove(item));
     }
 
     internal void EnqueueRemoveAt(int index)
@@ -250,7 +253,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
     /// modifications, and a post that the context refused is retried by the next modification.</summary>
     private void PostIfNotOnSynchronizationContextThread()
     {
-        if (_collection.IsOnSynchronizationContextThread())
+        if (IsOnSynchronizationContextThread())
             return;
 
         if (Interlocked.CompareExchange(ref _isPostPending, 1, 0) is not 0)
@@ -275,7 +278,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
     /// thread that modifies the collection, which would otherwise deadlock.</remarks>
     internal void ProcessPendingEventsIfOnSynchronizationContextThread()
     {
-        if (_collection.IsOnSynchronizationContextThread())
+        if (IsOnSynchronizationContextThread())
         {
             ProcessPendingEvents();
         }
@@ -293,27 +296,22 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
         List<Exception>? exceptions = null;
         do
         {
+            Volatile.Write(ref _drainingThread, Thread.CurrentThread);
             try
             {
                 Interlocked.Exchange(ref _isPostPending, 0);
                 while (_pendingEvents.TryDequeue(out var pendingEvent))
                 {
-                    try
-                    {
-                        ApplyPendingEvent(pendingEvent);
-                    }
-                    catch (Exception ex)
-                    {
-                        // The view is updated before its handlers are notified, so a handler that throws doesn't undo
-                        // the change. The remaining events are still applied to keep the view synchronized with the
-                        // source collection, and the failures are reported once the queue is drained.
-                        exceptions ??= [];
-                        exceptions.Add(ex);
-                    }
+                    // The view is updated before its handlers are notified, so a handler that throws doesn't undo
+                    // the change. The remaining notifications and events are still raised and applied to keep the
+                    // view synchronized with the source collection, and the failures are reported once the queue
+                    // is drained.
+                    ApplyPendingEvent(pendingEvent, ref exceptions);
                 }
             }
             finally
             {
+                Volatile.Write(ref _drainingThread, value: null);
                 Interlocked.Exchange(ref _isDraining, 0);
             }
 
@@ -333,60 +331,125 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
         }
     }
 
-    private void ApplyPendingEvent(PendingEvent<T> pendingEvent)
+    private void ApplyPendingEvent(PendingEvent<T> pendingEvent, ref List<Exception>? exceptions)
     {
         switch (pendingEvent.Type)
         {
             case PendingEventType.Add:
-                AddItem(pendingEvent.Item);
+                AddItem(pendingEvent.Item, ref exceptions);
                 break;
 
             case PendingEventType.AddRange:
-                AddItems(pendingEvent.Items!);
-                break;
-
-            case PendingEventType.Remove:
-                RemoveItem(pendingEvent.Item);
+                AddItems(pendingEvent.Items!, ref exceptions);
                 break;
 
             case PendingEventType.Clear:
-                ClearItems();
+                ClearItems(ref exceptions);
                 break;
 
             case PendingEventType.Insert:
-                InsertItem(pendingEvent.Index, pendingEvent.Item);
+                InsertItem(pendingEvent.Index, pendingEvent.Item, ref exceptions);
                 break;
 
             case PendingEventType.InsertRange:
-                InsertItems(pendingEvent.Index, pendingEvent.Items!);
+                InsertItems(pendingEvent.Index, pendingEvent.Items!, ref exceptions);
                 break;
 
             case PendingEventType.RemoveAt:
-                RemoveItemAt(pendingEvent.Index);
+                RemoveItemAt(pendingEvent.Index, ref exceptions);
                 break;
 
             case PendingEventType.Replace:
-                ReplaceItem(pendingEvent.Index, pendingEvent.Item);
+                ReplaceItem(pendingEvent.Index, pendingEvent.Item, ref exceptions);
                 break;
 
             case PendingEventType.Reset:
-                Reset(pendingEvent.Items!);
+                Reset(pendingEvent.Items!, ref exceptions);
                 break;
+        }
+    }
+
+    /// <summary>
+    /// Converts an index of the view into the index of the same position in the source collection, which can be ahead of
+    /// the view by the queued events. Must be called on the synchronization context thread while the source collection
+    /// holds its lock: no event can be queued or applied meanwhile, so the queued events are exactly the difference
+    /// between the view and the source collection.
+    /// </summary>
+    /// <param name="index">The index in the view.</param>
+    /// <param name="isInsertion"><see langword="true"/> when <paramref name="index"/> designates a position between items, from 0 to <c>Count</c>; <see langword="false"/> when it designates an item.</param>
+    /// <exception cref="InvalidOperationException">The item designated by <paramref name="index"/> was removed from the source collection, or the source collection was cleared or reordered, by a modification whose notification is still queued.</exception>
+    internal int GetSourceIndex(int index, bool isInsertion)
+    {
+        var count = Items.Count;
+        if ((uint)index > (uint)count || (!isInsertion && index == count))
+            throw new ArgumentOutOfRangeException(nameof(index), index, "Index was out of range. Must be non-negative and less than the size of the collection.");
+
+        foreach (var pendingEvent in _pendingEvents)
+        {
+            switch (pendingEvent.Type)
+            {
+                case PendingEventType.Add:
+                    ShiftForInsertion(insertionIndex: count, insertedCount: 1);
+                    break;
+
+                case PendingEventType.AddRange:
+                    ShiftForInsertion(insertionIndex: count, pendingEvent.Items!.Count);
+                    break;
+
+                case PendingEventType.Insert:
+                    ShiftForInsertion(pendingEvent.Index, insertedCount: 1);
+                    break;
+
+                case PendingEventType.InsertRange:
+                    ShiftForInsertion(pendingEvent.Index, pendingEvent.Items!.Count);
+                    break;
+
+                case PendingEventType.RemoveAt:
+                    count--;
+                    if (pendingEvent.Index < index)
+                    {
+                        index--;
+                    }
+                    else if (pendingEvent.Index == index && !isInsertion)
+                    {
+                        throw new InvalidOperationException("The item of the view was removed from the collection by a modification whose notification is still pending.");
+                    }
+
+                    break;
+
+                case PendingEventType.Replace:
+                    // The position still exists in the source collection, only its value changed
+                    break;
+
+                case PendingEventType.Clear:
+                case PendingEventType.Reset:
+                    throw new InvalidOperationException("The collection was cleared or reordered by a modification whose notification is still pending, so the index of the view doesn't match any position of the collection.");
+            }
+        }
+
+        return index;
+
+        void ShiftForInsertion(int insertionIndex, int insertedCount)
+        {
+            // Items inserted at the designated position are placed before it, as they are for an item
+            count += insertedCount;
+            if (insertionIndex <= index)
+            {
+                index += insertedCount;
+            }
         }
     }
 
     void IList<T>.Insert(int index, T item)
     {
-        // it will immediately modify both collections as we are on the synchronization context thread
         AssertIsOnSynchronizationContextThread();
-        _collection.Insert(index, item);
+        _collection.InsertFromView(index, item);
     }
 
     void IList<T>.RemoveAt(int index)
     {
-        // it will immediately modify both collections as we are on the synchronization context thread
         AssertIsOnSynchronizationContextThread();
-        _collection.RemoveAt(index);
+        _collection.RemoveAtFromView(index);
     }
 
     void ICollection<T>.Add(T item)
@@ -455,9 +518,8 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
 
     void IList.Insert(int index, object? value)
     {
-        // it will immediately modify both collections as we are on the synchronization context thread
         AssertIsOnSynchronizationContextThread();
-        ((IList)_collection).Insert(index, value);
+        _collection.InsertFromView(index, ConcurrentObservableCollection<T>.ConvertValue(value));
     }
 
     void IList.Remove(object? value)
@@ -469,8 +531,7 @@ internal sealed class DispatchedObservableCollection<T> : ObservableCollectionBa
 
     void IList.RemoveAt(int index)
     {
-        // it will immediately modify both collections as we are on the synchronization context thread
         AssertIsOnSynchronizationContextThread();
-        ((IList)_collection).RemoveAt(index);
+        _collection.RemoveAtFromView(index);
     }
 }

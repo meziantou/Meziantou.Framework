@@ -27,6 +27,11 @@ internal sealed partial class ServiceWorkerRegistry
     private static readonly ConditionalWeakTable<BrowsingContext, ServiceWorkerRegistry> Registries = [];
 
     private readonly Lock _lock = new();
+
+    // Orders the writes to the backend (see Persist): two algorithms that run in parallel (e.g. the end of the installation
+    // and the activation started when the install event ends) save the registration in the order of their changes, so the
+    // last saved state is the latest one. It is acquired before _lock, and never while holding it.
+    private readonly Lock _backendWriteLock = new();
     private readonly Dictionary<StorageKey, OrderedDictionary<string, ServiceWorkerRegistrationRecord>> _registrations = [];
     private readonly Dictionary<(StorageKey StorageKey, string Scope), List<ServiceWorkerJob>> _jobQueues = [];
     private readonly List<WeakReference<GlobalScope>> _objectHolders = [];
@@ -155,65 +160,67 @@ internal sealed partial class ServiceWorkerRegistry
     /// <summary>Removes a registration from the registration map: it is unregistered.</summary>
     private void RemoveRegistration(ServiceWorkerRegistrationRecord registration)
     {
-        lock (_lock)
+        lock (_backendWriteLock)
         {
-            var registrations = GetRegistrationsLocked(registration.StorageKey);
-            if (registrations.TryGetValue(registration.Scope, out var existing) && ReferenceEquals(existing, registration))
+            lock (_lock)
             {
-                registrations.Remove(registration.Scope);
+                var registrations = GetRegistrationsLocked(registration.StorageKey);
+                if (registrations.TryGetValue(registration.Scope, out var existing) && ReferenceEquals(existing, registration))
+                {
+                    registrations.Remove(registration.Scope);
+                }
+
+                registration.IsUnregistered = true;
             }
 
-            registration.IsUnregistered = true;
-        }
-
-        try
-        {
-            if (IsPersisted(registration.StorageKey))
+            try
             {
-                Backend.DeleteRegistration(registration.StorageKey.Origin, registration.Scope);
+                if (IsPersisted(registration.StorageKey))
+                {
+                    Backend.DeleteRegistration(registration.StorageKey.Origin, registration.Scope);
+                }
             }
-        }
 #pragma warning disable CA1031 // The registration is removed from memory anyway
-        catch (Exception)
+            catch (Exception)
 #pragma warning restore CA1031
-        {
+            {
+            }
         }
     }
 
-    /// <summary>Saves a registration in the backend (only the installed and activated workers are stored).</summary>
+    /// <summary>
+    /// Saves a registration in the backend (only the installed and activated workers are stored). The state is read and
+    /// written while holding <see cref="_backendWriteLock"/>: the backend receives the states in the order they were read.
+    /// </summary>
     internal void Persist(ServiceWorkerRegistrationRecord registration)
     {
-        StoredServiceWorkerRegistration stored;
-        lock (_lock)
+        lock (_backendWriteLock)
         {
-            if (registration.IsUnregistered || !IsPersisted(registration.StorageKey))
-                return;
+            StoredServiceWorkerRegistration? stored;
+            lock (_lock)
+            {
+                if (registration.IsUnregistered || !IsPersisted(registration.StorageKey))
+                    return;
 
-            if (registration.Waiting is null && registration.Active is null)
-            {
-                stored = null!;
+                stored = registration.Waiting is null && registration.Active is null ? null : registration.ToStored();
             }
-            else
-            {
-                stored = registration.ToStored();
-            }
-        }
 
-        try
-        {
-            if (stored is null)
+            try
             {
-                Backend.DeleteRegistration(registration.StorageKey.Origin, registration.Scope);
+                if (stored is null)
+                {
+                    Backend.DeleteRegistration(registration.StorageKey.Origin, registration.Scope);
+                }
+                else
+                {
+                    Backend.SaveRegistration(registration.StorageKey.Origin, stored);
+                }
             }
-            else
-            {
-                Backend.SaveRegistration(registration.StorageKey.Origin, stored);
-            }
-        }
 #pragma warning disable CA1031 // The registration is kept in memory anyway
-        catch (Exception)
+            catch (Exception)
 #pragma warning restore CA1031
-        {
+            {
+            }
         }
     }
 

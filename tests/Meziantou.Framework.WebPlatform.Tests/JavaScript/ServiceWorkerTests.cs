@@ -485,6 +485,64 @@ public sealed class ServiceWorkerTests : IDisposable
     }
 
     [Fact]
+    public async Task Registrations_AreSavedInTheOrderOfTheirChanges()
+    {
+        // The install event ends while its job saves the installed worker: the activation that runs in parallel saves the
+        // registration too, and the backend must keep the last state (the activated worker)
+        AddScript("https://example.com/dir/sw.js", """
+            self.addEventListener('install', e => e.addRoutes({ condition: { not: { urlPattern: '/**/*.txt' } }, source: 'network' }));
+            self.addEventListener('fetch', e => e.respondWith(new Response('sw')));
+            """);
+        AddPage("https://example.com/dir/controlled.html", """
+            <script>
+              fetch('other.txt').then(r => r.text()).then(text => parent.document.title = text + ' ' + (navigator.serviceWorker.controller !== null));
+            </script>
+            """);
+        _loader.Resources["https://example.com/dir/other.txt"] = new DocumentResource("other");
+        using var backend = new ConcurrentSavesBackend();
+        Assert.Equal("sw true", await WaitForTitleAsync(Load(RegisterAndOpenControlledFrame, backend)));
+
+        var stored = Assert.Single(backend.GetRegistrations("https://example.com"));
+        Assert.Null(stored.Waiting);
+        Assert.Equal("activated", stored.Active?.State);
+
+        // A new browsing context group reads the registration from the backend
+        var document = CreateContext(backend).Navigate("https://example.com/dir/page2.html", _ => "<iframe src='controlled.html'></iframe>");
+        Assert.Equal("sw true", await WaitForTitleAsync(document));
+    }
+
+    /// <summary>
+    /// A backend whose first save of a registration without an active worker waits until the activated worker is saved (or
+    /// 1 second when the saves are ordered): without ordering, the first save is the last one stored.
+    /// </summary>
+    private sealed class ConcurrentSavesBackend : ServiceWorkerBackend, IDisposable
+    {
+        private readonly InMemoryServiceWorkerBackend _inner = new();
+        private readonly ManualResetEventSlim _activatedSaved = new();
+        private int _heldSaves;
+
+        public void Dispose() => _activatedSaved.Dispose();
+
+        public override IReadOnlyList<StoredServiceWorkerRegistration> GetRegistrations(string origin) => _inner.GetRegistrations(origin);
+
+        public override void SaveRegistration(string origin, StoredServiceWorkerRegistration registration)
+        {
+            if (registration.Active is null && Interlocked.Increment(ref _heldSaves) == 1)
+            {
+                _activatedSaved.Wait(TimeSpan.FromSeconds(1));
+            }
+
+            _inner.SaveRegistration(origin, registration);
+            if (registration.Active?.State == "activated")
+            {
+                _activatedSaved.Set();
+            }
+        }
+
+        public override bool DeleteRegistration(string origin, string scopeUrl) => _inner.DeleteRegistration(origin, scopeUrl);
+    }
+
+    [Fact]
     public async Task UnregisterThenRegister_HasAnInstallingWorker()
     {
         AddScript("https://example.com/dir/resources/worker.js", "self.onfetch = e => {};");

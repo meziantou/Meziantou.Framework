@@ -894,6 +894,129 @@ public sealed class JsEngineTests
         Assert.Equal(["1:1", "8:2"], events);
     }
 
+    [Fact]
+    public void Documentation_SourceMaps()
+    {
+        #region JavaScriptEngine_SourceMaps
+        // A bundle generated from src/check.ts and src/run.ts, and its source map
+        var bundle = """
+            function check(order) {
+              if (!order.id) throw new RangeError('The order has no id');
+            }
+            function run() { check({}); }
+            run();
+            """;
+        var sourceMap = JsSourceMap.Parse("""
+            {
+              "version": 3,
+              "file": "bundle.js",
+              "sourceRoot": "src",
+              "sources": ["check.ts", "run.ts"],
+              "mappings": "AAAA;AAGA,EAAE;AAEF;ACIA,iBACE;AAEF"
+            }
+            """, "dist/bundle.js.map");
+
+        var mapper = new JsSourceMapper();
+        mapper.Add("bundle.js", sourceMap);
+
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        var exception = Assert.Throws<JsException>(() => realm.Execute(bundle, "bundle.js"));
+
+        // The positions in the original sources
+        Assert.Equal(new JsSourceLocation("bundle.js", 2, 18), exception.Location);
+        Assert.Equal(new JsSourceLocation("dist/src/check.ts", 4, 3), mapper.MapLocation(exception.Location));
+        using (engine.Enter())
+        {
+            var stack = exception.Value.AsObject().GetErrorStack();
+            Assert.Equal("RangeError: The order has no id\n    at check (dist/src/check.ts:4:3)\n    at run (dist/src/run.ts:11:3)\n    at dist/src/run.ts:13:1", mapper.MapStackTrace(stack!));
+        }
+        #endregion
+    }
+
+    [Fact]
+    public void SourceMaps_UnmappedPositionsAreNotChanged()
+    {
+        var calls = new List<string>();
+        var mapper = new JsSourceMapper(url =>
+        {
+            calls.Add(url);
+            return url == "bundle.js" ? JsSourceMap.Parse("""{"version":3,"sources":["a.js"],"mappings":"AAAA;;A;CAAC"}""") : null;
+        });
+
+        // No source map for the URL, no URL, a line without mapping, a segment without source, a line after the mappings
+        Assert.Equal(new JsSourceLocation("other.js", 1, 1), mapper.MapLocation(new JsSourceLocation("other.js", 1, 1)));
+        Assert.Equal(new JsSourceLocation(null, 1, 1), mapper.MapLocation(new JsSourceLocation(null, 1, 1)));
+        Assert.Null(mapper.MapLocation(null));
+        Assert.Equal(new JsSourceLocation("bundle.js", 2, 5), mapper.MapLocation(new JsSourceLocation("bundle.js", 2, 5)));
+        Assert.Equal(new JsSourceLocation("bundle.js", 3, 5), mapper.MapLocation(new JsSourceLocation("bundle.js", 3, 5)));
+        Assert.Equal(new JsSourceLocation("bundle.js", 9, 1), mapper.MapLocation(new JsSourceLocation("bundle.js", 9, 1)));
+
+        // Before the first segment of a line, and after it
+        Assert.Equal(new JsSourceLocation("bundle.js", 4, 1), mapper.MapLocation(new JsSourceLocation("bundle.js", 4, 1)));
+        Assert.Equal(new JsSourceLocation("a.js", 1, 2), mapper.MapLocation(new JsSourceLocation("bundle.js", 4, 7)));
+        Assert.Equal(new JsSourceLocation("a.js", 1, 1), mapper.MapLocation(new JsSourceLocation("bundle.js", 1, 40)));
+
+        // The resolver is called once per URL; the other lines of a stack trace are kept
+        Assert.Equal("Error: x\n    at f (a.js:1:1)\n    at other.js:3:4\n    at <anonymous>:1:1\nnot a frame", mapper.MapStackTrace("Error: x\n    at f (bundle.js:1:3)\n    at other.js:3:4\n    at <anonymous>:1:1\nnot a frame"));
+        Assert.Equal(["other.js", "bundle.js", "<anonymous>"], calls);
+    }
+
+    [Fact]
+    public void SourceMaps_SectionsAndSourceUrls()
+    {
+        var sourceMap = JsSourceMap.Parse("""
+            {
+              "version": 3,
+              "sections": [
+                { "offset": { "line": 0, "column": 0 }, "map": { "version": 3, "sources": ["../lib/a.js"], "mappings": "AAAA" } },
+                { "offset": { "line": 1, "column": 10 }, "map": { "version": 3, "sourceRoot": "https://cdn.example.com/src/", "sources": ["b.js"], "mappings": "AACA" } }
+              ]
+            }
+            """, "https://example.com/dist/app.js.map");
+
+        Assert.Equal(["https://example.com/lib/a.js", "https://cdn.example.com/src/b.js"], sourceMap.Sources);
+        Assert.True(sourceMap.TryGetOriginalLocation(1, 5, out var location));
+        Assert.Equal(new JsSourceLocation("https://example.com/lib/a.js", 1, 1), location);
+        Assert.False(sourceMap.TryGetOriginalLocation(2, 5, out _));
+        Assert.True(sourceMap.TryGetOriginalLocation(2, 11, out location));
+        Assert.Equal(new JsSourceLocation("https://cdn.example.com/src/b.js", 2, 1), location);
+        Assert.False(sourceMap.TryGetOriginalLocation(3, 1, out _));
+        Assert.Equal(["webpack:///src/c.ts"], JsSourceMap.Parse("""{"version":3,"sourceRoot":"ignored","sources":["webpack:///src/c.ts"],"mappings":""}""", "dist/c.js.map").Sources);
+    }
+
+    [Theory]
+    [InlineData("not json")]
+    [InlineData("[]")]
+    [InlineData("""{"version":2,"sources":[],"mappings":""}""")]
+    [InlineData("""{"version":3,"mappings":""}""")]
+    [InlineData("""{"version":3,"sources":["a.js"],"mappings":"AA"}""")]
+    [InlineData("""{"version":3,"sources":["a.js"],"mappings":"AA!A"}""")]
+    [InlineData("""{"version":3,"sources":["a.js"],"mappings":"ACAA"}""")]
+    [InlineData("""{"version":3,"sources":["a.js"],"mappings":"g"}""")]
+    [InlineData("""{"version":3,"sections":[{"offset":{"line":1,"column":0},"map":{"version":3,"sources":[],"mappings":""}},{"offset":{"line":0,"column":0},"map":{"version":3,"sources":[],"mappings":""}}]}""")]
+    public void SourceMaps_InvalidMaps(string json)
+    {
+        Assert.Throws<FormatException>(() => JsSourceMap.Parse(json));
+        Assert.False(JsSourceMap.TryParse(json, url: null, out var sourceMap));
+        Assert.Null(sourceMap);
+    }
+
+    [Fact]
+    public void SourceMaps_ResolverExceptionsPropagate()
+    {
+        var calls = 0;
+        var mapper = new JsSourceMapper(_ =>
+        {
+            calls++;
+            throw new IOException("Cannot read the source map");
+        });
+
+        Assert.Throws<IOException>(() => mapper.MapLocation(new JsSourceLocation("a.js", 1, 1)));
+        Assert.Throws<IOException>(() => mapper.MapStackTrace("Error\n    at a.js:1:1"));
+        Assert.Equal(2, calls);
+    }
+
     // The examples of the documentation site (docs/JavaScriptEngine)
     [Fact]
     public void Documentation_HelloWorld()

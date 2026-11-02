@@ -81,8 +81,11 @@ Assert.False(range.IsInRangeInclusive(Range.Create(5, 15)));
 `MakeSameSignAs(sign)` returns the absolute value of the number with the sign of another one: `5.MakeSameSignAs(-1)` is
 `-5`, and `(-5).MakeSameSignAs(3)` is `5`. It exists for `int`, `long`, `float`, `double` and `decimal`.
 
-For `int`, `long` and `decimal`, the result is 0 when `sign` is 0. For `float` and `double`, it follows
-`Math.CopySign`: a zero `sign` is positive or negative zero, and gives a positive or negative result.
+A zero `sign` is positive, so `(-5).MakeSameSignAs(0)` is `5`. For `float`, `double` and `decimal`, which have a
+negative zero, a negative zero `sign` gives a negative result, like `Math.CopySign`.
+
+For `int` and `long`, `int.MinValue.MakeSameSignAs(-1)` is `int.MinValue`, but a positive or zero `sign` throws an
+`OverflowException`: the absolute value of `int.MinValue` is not an `int`.
 
 ## Random values
 
@@ -111,16 +114,27 @@ Assert.Equal(2026, date.Year);
 | Method | Returns |
 | --- | --- |
 | [NextBoolean()](cref:Meziantou.Framework.RandomExtensions.NextBoolean) | `true` or `false` |
-| [NextByte](cref:Meziantou.Framework.RandomExtensions.NextByte), [NextSByte](cref:Meziantou.Framework.RandomExtensions.NextSByte), [NextInt16](cref:Meziantou.Framework.RandomExtensions.NextInt16), [NextInt32](cref:Meziantou.Framework.RandomExtensions.NextInt32), [NextInt64](cref:Meziantou.Framework.RandomExtensions.NextInt64), [NextUInt16](cref:Meziantou.Framework.RandomExtensions.NextUInt16), [NextUInt32](cref:Meziantou.Framework.RandomExtensions.NextUInt32), [NextUInt64](cref:Meziantou.Framework.RandomExtensions.NextUInt64) | An integer, from `min` (included) to `max` (excluded) |
+| [NextByte()](cref:Meziantou.Framework.RandomExtensions.NextByte), [NextSByte()](cref:Meziantou.Framework.RandomExtensions.NextSByte), [NextInt16()](cref:Meziantou.Framework.RandomExtensions.NextInt16), [NextUInt16()](cref:Meziantou.Framework.RandomExtensions.NextUInt16), [NextUInt32()](cref:Meziantou.Framework.RandomExtensions.NextUInt32), [NextUInt64()](cref:Meziantou.Framework.RandomExtensions.NextUInt64) | Any value of the type, `MinValue` and `MaxValue` included |
+| `NextByte(min, max)`, `NextSByte(min, max)`, `NextInt16(min, max)`, [NextInt32](cref:Meziantou.Framework.RandomExtensions.NextInt32), `NextUInt16(min, max)`, `NextUInt32(min, max)`, `NextUInt64(min, max)` | An integer, from `min` (included) to `max` (excluded) |
 | [NextSingle](cref:Meziantou.Framework.RandomExtensions.NextSingle), [NextDouble](cref:Meziantou.Framework.RandomExtensions.NextDouble), [NextDecimal](cref:Meziantou.Framework.RandomExtensions.NextDecimal) | A number from `min` (included) to `max` (excluded) |
 | `NextDateTime(min, max)` | A date from `min` (included) to `max` (excluded) |
 | `NextFromList(list)` | A random element of an array, a list, a collection, a span or a memory |
 | `NextString(length, chars)` | A string of `length` characters taken from `chars` |
 | `NextString(minLength, maxLength, chars)` | The same, with a length from `minLength` to `maxLength`, both included |
 
-- The `min` and `max` parameters are optional: they default to the whole range of the type, or to 0 and 1 for
-  [NextSingle](cref:Meziantou.Framework.RandomExtensions.NextSingle) and [NextDouble](cref:Meziantou.Framework.RandomExtensions.NextDouble).
-- [NextInt64](cref:Meziantou.Framework.RandomExtensions.NextInt64) and [NextDecimal](cref:Meziantou.Framework.RandomExtensions.NextDecimal) scale the result of `Random.NextDouble`, so they cannot return every value of a large
+- To get any value of the type, call the overload without parameters: the maximum of a range is excluded, so
+  `NextByte(0, 255)` never returns 255.
+- [NextInt32](cref:Meziantou.Framework.RandomExtensions.NextInt32) works like `Random.Next`: `min` and `max` default to 0
+  and `int.MaxValue`, so it returns a non-negative value by default.
+- For `long`, use `Random.NextInt64`. `RandomExtensions.NextInt64` is obsolete: `random.NextInt64(...)` always calls the
+  method of `Random`.
+- [NextSingle](cref:Meziantou.Framework.RandomExtensions.NextSingle), [NextDouble](cref:Meziantou.Framework.RandomExtensions.NextDouble) and [NextDecimal](cref:Meziantou.Framework.RandomExtensions.NextDecimal) default to 0 and 1, or to the
+  whole range of `decimal`. They work for any range, including `double.MinValue` to `double.MaxValue`. They throw an
+  `ArgumentOutOfRangeException` when `min` is greater than `max`, as does `NextDateTime`. `random.NextSingle()` calls
+  `Random.NextSingle`, which also returns a value from 0 to 1.
+- [NextDecimal](cref:Meziantou.Framework.RandomExtensions.NextDecimal) scales the result of `Random.NextDouble`, so it cannot return every value of a large
   range. [NextUInt64](cref:Meziantou.Framework.RandomExtensions.NextUInt64) uses the 64 bits of a random value.
+- `NextFromList` accepts a `List<T>`, a `HashSet<T>` or any other collection. For a collection that is not a list, it
+  enumerates the collection to find the element.
 - These methods are not suited for security. Use `System.Security.Cryptography.RandomNumberGenerator` for passwords,
   tokens or keys.

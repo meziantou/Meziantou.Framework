@@ -1,4 +1,6 @@
 #pragma warning disable CA5394 // Random is insecure
+using System.Runtime.CompilerServices;
+
 namespace Meziantou.Framework;
 
 /// <summary>
@@ -6,7 +8,12 @@ namespace Meziantou.Framework;
 /// </summary>
 public static class RandomExtensions
 {
+    // List<T>, Collection<T> or ImmutableArray<T> implement both IList<T> and IReadOnlyList<T>, and HashSet<T>
+    // implements both ICollection<T> and IReadOnlyCollection<T>. The priorities pick the overload with the
+    // fastest access instead of reporting an ambiguous call (CS0121).
+
     /// <summary>Returns a random element from an array.</summary>
+    [OverloadResolutionPriority(3)]
     public static T NextFromList<T>(this Random random, T[] array)
     {
         ArgumentNullException.ThrowIfNull(random);
@@ -20,6 +27,7 @@ public static class RandomExtensions
     }
 
     /// <summary>Returns a random element from a list.</summary>
+    [OverloadResolutionPriority(2)]
     public static T NextFromList<T>(this Random random, IList<T> list)
     {
         ArgumentNullException.ThrowIfNull(random);
@@ -33,6 +41,7 @@ public static class RandomExtensions
     }
 
     /// <summary>Returns a random element from a collection.</summary>
+    /// <remarks>When the collection is not a list, the element is found by enumerating the collection.</remarks>
     public static T NextFromList<T>(this Random random, ICollection<T> list)
     {
         ArgumentNullException.ThrowIfNull(random);
@@ -70,6 +79,7 @@ public static class RandomExtensions
     }
 
     /// <summary>Returns a random element from a read-only list.</summary>
+    [OverloadResolutionPriority(1)]
     public static T NextFromList<T>(this Random random, IReadOnlyList<T> list)
     {
         ArgumentNullException.ThrowIfNull(random);
@@ -83,6 +93,8 @@ public static class RandomExtensions
     }
 
     /// <summary>Returns a random element from a read-only collection.</summary>
+    /// <remarks>When the collection is not a list, the element is found by enumerating the collection.</remarks>
+    [OverloadResolutionPriority(-1)]
     public static T NextFromList<T>(this Random random, IReadOnlyCollection<T> list)
     {
         ArgumentNullException.ThrowIfNull(random);
@@ -92,6 +104,9 @@ public static class RandomExtensions
             throw new ArgumentException("List is empty.", nameof(list));
 
         var index = random.NextInt32(0, list.Count);
+        if (list is IReadOnlyList<T> readOnlyList)
+            return readOnlyList[index];
+
         return list.ElementAt(index);
     }
 
@@ -103,43 +118,77 @@ public static class RandomExtensions
         return random.Next(0, 2) != 0;
     }
 
-    /// <summary>Returns a random byte value within the specified range.</summary>
-    public static byte NextByte(this Random random, byte min = 0, byte max = byte.MaxValue)
+    /// <summary>Returns a random byte value, from <see cref="byte.MinValue"/> to <see cref="byte.MaxValue"/>, both included.</summary>
+    public static byte NextByte(this Random random)
+    {
+        ArgumentNullException.ThrowIfNull(random);
+
+        return (byte)random.Next(byte.MinValue, byte.MaxValue + 1);
+    }
+
+    /// <summary>Returns a random byte value greater than or equal to <paramref name="min"/> and less than <paramref name="max"/>.</summary>
+    public static byte NextByte(this Random random, byte min, byte max)
     {
         ArgumentNullException.ThrowIfNull(random);
 
         return (byte)random.Next(min, max);
     }
 
-    /// <summary>Returns a random signed byte value within the specified range.</summary>
-    public static sbyte NextSByte(this Random random, sbyte min = 0, sbyte max = sbyte.MaxValue)
+    /// <summary>Returns a random signed byte value, from <see cref="sbyte.MinValue"/> to <see cref="sbyte.MaxValue"/>, both included.</summary>
+    public static sbyte NextSByte(this Random random)
+    {
+        ArgumentNullException.ThrowIfNull(random);
+
+        return (sbyte)random.Next(sbyte.MinValue, sbyte.MaxValue + 1);
+    }
+
+    /// <summary>Returns a random signed byte value greater than or equal to <paramref name="min"/> and less than <paramref name="max"/>.</summary>
+    public static sbyte NextSByte(this Random random, sbyte min, sbyte max)
     {
         ArgumentNullException.ThrowIfNull(random);
 
         return (sbyte)random.Next(min, max);
     }
 
-    /// <summary>Returns a random <see cref="DateTime"/> value within the specified range.</summary>
+    /// <summary>Returns a random <see cref="DateTime"/> value greater than or equal to <paramref name="min"/> and less than <paramref name="max"/>.</summary>
+    /// <remarks>The result has the <see cref="DateTime.Kind"/> of <paramref name="min"/>.</remarks>
     public static DateTime NextDateTime(this Random random, DateTime min, DateTime max)
     {
         ArgumentNullException.ThrowIfNull(random);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(min.Ticks, max.Ticks, nameof(min));
 
-        var diff = max.Ticks - min.Ticks;
-        var range = (long)(diff * random.NextDouble());
-
-        return min + new TimeSpan(range);
+        // Draw the ticks as an integer: scaling the range by a double loses precision for ranges longer
+        // than 2^53 ticks (about 28 years), and could round up to max.
+        return min.AddTicks(random.NextInt64(0, max.Ticks - min.Ticks));
     }
 
-    /// <summary>Returns a random double value within the specified range.</summary>
+    /// <summary>Returns a random double value greater than or equal to <paramref name="min"/> and less than <paramref name="max"/>.</summary>
     public static double NextDouble(this Random random, double min = 0D, double max = 1D)
     {
         ArgumentNullException.ThrowIfNull(random);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(min, max);
 
-        return (random.NextDouble() * (max - min)) + min;
+        if (min == max)
+            return min;
+
+        // Interpolate instead of scaling (max - min), which overflows to infinity for ranges wider than double.MaxValue
+        var ratio = random.NextDouble();
+        var result = (min * (1D - ratio)) + (max * ratio);
+
+        // Rounding can reach max, which is excluded
+        return result < max ? result : Math.BitDecrement(max);
     }
 
-    /// <summary>Returns a random 16-bit signed integer within the specified range.</summary>
-    public static short NextInt16(this Random random, short min = 0, short max = short.MaxValue)
+    /// <summary>Returns a random 16-bit signed integer, from <see cref="short.MinValue"/> to <see cref="short.MaxValue"/>, both included.</summary>
+    public static short NextInt16(this Random random)
+    {
+        ArgumentNullException.ThrowIfNull(random);
+
+        return (short)random.Next(short.MinValue, short.MaxValue + 1);
+    }
+
+    /// <summary>Returns a random 16-bit signed integer greater than or equal to <paramref name="min"/> and less than <paramref name="max"/>.</summary>
+    public static short NextInt16(this Random random, short min, short max)
     {
         ArgumentNullException.ThrowIfNull(random);
 
@@ -154,45 +203,79 @@ public static class RandomExtensions
         return random.Next(min, max);
     }
 
-    /// <summary>Returns a random 64-bit signed integer within the specified range.</summary>
+    /// <summary>Returns a random 64-bit signed integer greater than or equal to <paramref name="min"/> and less than <paramref name="max"/>.</summary>
+    /// <remarks>
+    /// <see cref="Random.NextInt64()"/>, <see cref="Random.NextInt64(long)"/> and <see cref="Random.NextInt64(long, long)"/> are instance
+    /// methods, so <c>random.NextInt64(...)</c> never calls this extension method. This method calls <see cref="Random.NextInt64(long, long)"/>.
+    /// </remarks>
+    [Obsolete("Use Random.NextInt64. The instance methods of Random take precedence over this extension method.")]
     public static long NextInt64(this Random random, long min = 0L, long max = long.MaxValue)
     {
         ArgumentNullException.ThrowIfNull(random);
 
-        if (min == max)
-        {
-            return min;
-        }
-
-        return (long)((random.NextDouble() * (max - min)) + min);
+        return random.NextInt64(min, max);
     }
 
-    /// <summary>Returns a random single-precision floating point value within the specified range.</summary>
+    /// <summary>Returns a random single-precision floating point value greater than or equal to <paramref name="min"/> and less than <paramref name="max"/>.</summary>
+    /// <remarks><see cref="Random.NextSingle()"/> is an instance method, so <c>random.NextSingle()</c> calls it instead of this extension method. It returns the same range.</remarks>
     public static float NextSingle(this Random random, float min = 0f, float max = 1f)
     {
         ArgumentNullException.ThrowIfNull(random);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(min, max);
 
-        return (float)random.NextDouble(min, max);
+        if (min == max)
+            return min;
+
+        var result = (float)random.NextDouble(min, max);
+
+        // Converting to float can round up to max, which is excluded
+        return result < max ? result : MathF.BitDecrement(max);
     }
 
-    /// <summary>Returns a random 16-bit unsigned integer within the specified range.</summary>
-    public static ushort NextUInt16(this Random random, ushort min = 0, ushort max = ushort.MaxValue)
+    /// <summary>Returns a random 16-bit unsigned integer, from <see cref="ushort.MinValue"/> to <see cref="ushort.MaxValue"/>, both included.</summary>
+    public static ushort NextUInt16(this Random random)
+    {
+        ArgumentNullException.ThrowIfNull(random);
+
+        return (ushort)random.Next(ushort.MinValue, ushort.MaxValue + 1);
+    }
+
+    /// <summary>Returns a random 16-bit unsigned integer greater than or equal to <paramref name="min"/> and less than <paramref name="max"/>.</summary>
+    public static ushort NextUInt16(this Random random, ushort min, ushort max)
     {
         ArgumentNullException.ThrowIfNull(random);
 
         return (ushort)random.Next(min, max);
     }
 
-    /// <summary>Returns a random 32-bit unsigned integer within the specified range.</summary>
-    public static uint NextUInt32(this Random random, uint min = 0u, uint max = uint.MaxValue)
+    /// <summary>Returns a random 32-bit unsigned integer, from <see cref="uint.MinValue"/> to <see cref="uint.MaxValue"/>, both included.</summary>
+    public static uint NextUInt32(this Random random)
+    {
+        ArgumentNullException.ThrowIfNull(random);
+
+        return (uint)random.NextInt64(uint.MinValue, (long)uint.MaxValue + 1);
+    }
+
+    /// <summary>Returns a random 32-bit unsigned integer greater than or equal to <paramref name="min"/> and less than <paramref name="max"/>.</summary>
+    public static uint NextUInt32(this Random random, uint min, uint max)
     {
         ArgumentNullException.ThrowIfNull(random);
 
         return (uint)random.NextInt64(min, max);
     }
 
+    /// <summary>Returns a random 64-bit unsigned integer, from <see cref="ulong.MinValue"/> to <see cref="ulong.MaxValue"/>, both included.</summary>
+    public static ulong NextUInt64(this Random random)
+    {
+        ArgumentNullException.ThrowIfNull(random);
+
+        Span<byte> buffer = stackalloc byte[sizeof(ulong)];
+        random.NextBytes(buffer);
+        return BitConverter.ToUInt64(buffer);
+    }
+
     /// <summary>Returns a random 64-bit unsigned integer greater than or equal to <paramref name="min"/> and less than <paramref name="max"/>.</summary>
-    public static ulong NextUInt64(this Random random, ulong min = 0ul, ulong max = ulong.MaxValue)
+    public static ulong NextUInt64(this Random random, ulong min, ulong max)
     {
         ArgumentNullException.ThrowIfNull(random);
         ArgumentOutOfRangeException.ThrowIfGreaterThan(min, max);

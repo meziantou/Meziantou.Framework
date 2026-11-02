@@ -310,7 +310,7 @@ internal static class PdfFieldAppearance
 
     private static PdfColor? ReadColor(PdfArray? components)
     {
-        double Get(int index) => Math.Clamp(components!.GetNumber(index), 0, 1);
+        double Get(int index) => Math.Clamp(components.GetNumber(index), 0, 1);
         return components?.Count switch
         {
             1 => PdfColor.FromGray(Get(0)),

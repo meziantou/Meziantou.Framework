@@ -56,7 +56,7 @@ public class PdfAnnotation
         get
         {
             var components = Dictionary.Get<PdfArray>(PdfNames.C);
-            double Get(int index) => Math.Clamp(components!.GetNumber(index), 0, 1);
+            double Get(int index) => Math.Clamp(components.GetNumber(index), 0, 1);
             return components?.Count switch
             {
                 1 => PdfColor.FromGray(Get(0)),

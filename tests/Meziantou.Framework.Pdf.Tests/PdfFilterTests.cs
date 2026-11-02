@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.IO.Compression;
 using System.Text;
 using Meziantou.Framework.Imaging;
@@ -713,6 +714,367 @@ public sealed class PdfFilterTests
 
         encoder.Flush();
         return output.WrittenMemory.ToArray();
+    }
+
+    [Fact]
+    public void CcittFaxRowCountIsCheckedWithoutOverflow()
+    {
+        // 2^61 rows of 8 bytes: the product wraps to 0 in 64 bits
+        Assert.Throws<PdfResourceLimitException>(() => CcittFaxFilter.Decode([0], CcittParameters(k: -1, columns: 64, rows: 1L << 61), Limit));
+        Assert.Throws<PdfResourceLimitException>(() => CcittFaxFilter.Decode([0], CcittParameters(k: -1, columns: 64, rows: long.MaxValue), Limit));
+
+        // The rows of the limit exactly, then one more
+        Assert.HasCount(1 << 16, CcittFaxFilter.Decode([0], CcittParameters(k: -1, columns: 64, rows: 8192), 1 << 16));
+        Assert.Throws<PdfResourceLimitException>(() => CcittFaxFilter.Decode([0], CcittParameters(k: -1, columns: 64, rows: 8193), 1 << 16));
+    }
+
+    [Fact]
+    public void CcittFaxTruncatedDataIsPaddedWithoutCopies()
+    {
+        // One byte of data and 10000 declared rows of 2000 bytes: the white rows are the output, allocated once
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var decoded = CcittFaxFilter.Decode([0], CcittParameters(k: -1, columns: 16000, rows: 10000), 1 << 26);
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        Assert.HasCount(20_000_000, decoded);
+        Assert.False(decoded.AsSpan().ContainsAnyExcept((byte)0xFF));
+        Assert.True(allocated < decoded.Length + 1_000_000, $"{allocated} bytes allocated");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void CcittFaxWideRowsAreNotAllocatedPerRow(bool blackIs1)
+    {
+        // Rows of 2000 bytes, inverted (BlackIs1 false) into the output itself
+        const int Width = 16000;
+        const int Height = 64;
+        var bitmap = CreateBitmap(Width, Height);
+        var encoded = EncodeCcitt(bitmap, Width, Height, 4);
+        var parameters = CcittParameters(k: -1, columns: Width, rows: Height);
+        parameters[PdfNames.BlackIs1] = PdfBoolean.Get(blackIs1);
+
+        // The first decoding allocates what the runtime initializes once
+        _ = CcittFaxFilter.Decode(encoded, parameters, Limit);
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var decoded = CcittFaxFilter.Decode(encoded, parameters, Limit);
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        Assert.Equal(blackIs1 ? bitmap : [.. bitmap.Select(value => (byte)~value)], decoded);
+
+        // The output, the two change lists, and no row: an array per row would be 64 x 2000 bytes more
+        Assert.True(allocated < decoded.Length + (2 * 4 * (Width + 8)) + 16384, $"{allocated} bytes allocated");
+    }
+
+    [Theory]
+    [InlineData(false, 0, new byte[] { 0x0F, 0x00, 0x00, 0x00 })]
+    [InlineData(true, 0, new byte[] { 0x0F, 0x00, 0x00, 0x00 })]
+    [InlineData(true, 1, new byte[] { 0x0F, 0x0F, 0x00, 0xFF })]
+    public void CcittFaxDamagedRowsBeforeError(bool endOfLine, int damagedRowsBeforeError, byte[] expected)
+    {
+        // Group 3, one-dimensional coding of rows of 8 pixels, each after an end-of-line code (T.4, tables 2 and 3):
+        // 4 white 4 black, then a damaged row whose black run passes the end of the row, then 8 white, then 8 black
+        var encoded = BitString(Eol, "1011" + "011", Eol, "1011" + "000101", Eol, "10011", Eol, "00110101" + "000101", Eol, Eol, Eol, Eol, Eol, Eol);
+        var parameters = CcittParameters(k: 0, columns: 8, rows: 4);
+        parameters[PdfNames.BlackIs1] = PdfBoolean.True;
+        parameters[PdfName.Create("EndOfLine")] = PdfBoolean.Get(endOfLine);
+        parameters[PdfName.Create("DamagedRowsBeforeError")] = PdfInteger.Get(damagedRowsBeforeError);
+
+        Assert.Equal(expected, CcittFaxFilter.Decode(encoded, parameters, Limit));
+    }
+
+    [Fact]
+    public void CcittFaxConsecutiveDamagedRowsAreWhite()
+    {
+        // The second of two damaged rows has no undamaged row above it: it is white (Table 11)
+        var encoded = BitString(Eol, "1011" + "011", Eol, "1011" + "000101", Eol, "1011" + "000101", Eol, "00110101" + "000101", Eol, Eol);
+        var parameters = CcittParameters(k: 0, columns: 8, rows: 4);
+        parameters[PdfNames.BlackIs1] = PdfBoolean.True;
+        parameters[PdfName.Create("EndOfLine")] = PdfBoolean.True;
+        parameters[PdfName.Create("DamagedRowsBeforeError")] = PdfInteger.Get(2);
+
+        Assert.Equal([0x0F, 0x0F, 0x00, 0xFF], CcittFaxFilter.Decode(encoded, parameters, Limit));
+
+        // Without /BlackIs1 the bits are inverted, the repeated row too
+        parameters.Remove(PdfNames.BlackIs1);
+        Assert.Equal([0xF0, 0xF0, 0xFF, 0x00], CcittFaxFilter.Decode(encoded, parameters, Limit));
+    }
+
+    [Theory]
+    [InlineData(false, 0, new byte[] { 0x0F, 0x00, 0xFF })]
+    [InlineData(true, 0, new byte[] { 0x0F, 0x00, 0x00 })]
+    [InlineData(true, 1, new byte[] { 0x0F, 0x0F, 0xFF })]
+    public void CcittFaxEndOfLine(bool endOfLine, int damagedRowsBeforeError, byte[] expected)
+    {
+        // The second row has no end-of-line code: it is a row with /EndOfLine false, a damaged row with /EndOfLine true
+        var encoded = BitString(Eol, "1011" + "011", "10011", Eol, "00110101" + "000101", Eol, Eol);
+        var parameters = CcittParameters(k: 0, columns: 8, rows: 3);
+        parameters[PdfNames.BlackIs1] = PdfBoolean.True;
+        parameters[PdfName.Create("EndOfLine")] = PdfBoolean.Get(endOfLine);
+        parameters[PdfName.Create("DamagedRowsBeforeError")] = PdfInteger.Get(damagedRowsBeforeError);
+
+        Assert.Equal(expected, CcittFaxFilter.Decode(encoded, parameters, Limit));
+    }
+
+    [Fact]
+    public void CcittFaxWithoutEndOfLine()
+    {
+        // Group 3 without any end-of-line code, and mixed one- and two-dimensional coding (K 2): tag bit 1, then one dimension
+        var parameters = CcittParameters(k: 0, columns: 8, rows: 3);
+        parameters[PdfNames.BlackIs1] = PdfBoolean.True;
+        Assert.Equal([0x0F, 0x00, 0xFF], CcittFaxFilter.Decode(BitString("1011" + "011", "10011", "00110101" + "000101"), parameters, Limit));
+
+        // The second row repeats the first one in two dimensions: tag bit 0 and two vertical codes V0 (T.4, table 4)
+        parameters[PdfNames.K] = PdfInteger.Get(2);
+        parameters[PdfName.Create("EndOfLine")] = PdfBoolean.True;
+        Assert.Equal([0x0F, 0x0F, 0xFF], CcittFaxFilter.Decode(BitString(Eol, "1" + "1011" + "011", Eol, "0" + "1" + "1", Eol, "1" + "00110101" + "000101", Eol, Eol), parameters, Limit));
+    }
+
+    [Theory]
+    [InlineData(1, 1)]
+    [InlineData(8, 3)]
+    [InlineData(77, 41)]
+    [InlineData(3000, 17)]
+    public void CcittGroup4EncoderRoundTrip(int width, int height)
+    {
+        var bitmap = CreateBitmap(width, height);
+        var encoded = CcittFaxFilter.EncodeGroup4(bitmap, width, height);
+        var parameters = CcittParameters(k: -1, columns: width, rows: height);
+        parameters[PdfNames.BlackIs1] = PdfBoolean.True;
+
+        Assert.Equal(bitmap, CcittFaxFilter.Decode(encoded, parameters, Limit));
+
+        // Without /Rows, the end-of-facsimile-block code ends the data
+        parameters.Remove(PdfName.Create("Rows"));
+        Assert.Equal(bitmap, CcittFaxFilter.Decode(encoded, parameters, Limit));
+
+        // The Group 4 encoder of the TIFF codec of Imaging codes the same changes with the same codes
+        Assert.Equal(EncodeCcitt(bitmap, width, height, 4), encoded);
+    }
+
+    [Theory]
+    [InlineData(1, 1)]
+    [InlineData(8, 3)]
+    [InlineData(77, 41)]
+    [InlineData(1000, 64)]
+    public void Jbig2EncoderRoundTrip(int width, int height)
+    {
+        var bitmap = CreateBitmap(width, height);
+
+        // Repeated rows and white rows exercise typical prediction
+        var stride = (width + 7) / 8;
+        if (height > 3)
+        {
+            bitmap.AsSpan(stride, stride).CopyTo(bitmap.AsSpan(2 * stride, stride));
+            bitmap.AsSpan(0, stride).Clear();
+        }
+
+        var encoded = Filters.Jbig2.Jbig2Encoder.Encode(bitmap, width, height);
+        var decoded = Jbig2Filter.Decode(encoded, parameters: null, Limit);
+
+        Assert.HasCount(bitmap.Length, decoded);
+        for (var y = 0; y < height; y++)
+        {
+            for (var x = 0; x < width; x++)
+            {
+                Assert.Equal(GetBit(bitmap, stride, x, y), !GetBit(decoded, stride, x, y));
+            }
+        }
+    }
+
+    [Fact]
+    public void Jbig2EncoderIgnoresThePaddingBits()
+    {
+        // The bits after the last pixel of a row are not pixels: a row of 4 pixels with garbage after them repeats the row above
+        var withPadding = Filters.Jbig2.Jbig2Encoder.Encode([0xA5, 0xAF, 0xA3], 4, 3);
+        var withoutPadding = Filters.Jbig2.Jbig2Encoder.Encode([0xA0, 0xA0, 0xA0], 4, 3);
+
+        Assert.Equal(withoutPadding, withPadding);
+        Assert.Equal([0x5F, 0x5F, 0x5F], Jbig2Filter.Decode(withPadding, parameters: null, Limit));
+    }
+
+    [Fact]
+    public void Jbig2BitmapSizesAreCheckedWithoutOverflow()
+    {
+        // A budget that allows any size: each bitmap is charged to its own
+        static Filters.Jbig2.Jbig2Budget Unlimited() => new(long.MaxValue / 64);
+
+        // (int.MaxValue + 7) / 8 overflows in 32 bits; the size of 16 rows of it is more than an array holds
+        Assert.Throws<PdfResourceLimitException>(() => new Filters.Jbig2.Jbig2Bitmap(int.MaxValue, 16, Unlimited()));
+        Assert.Throws<PdfResourceLimitException>(() => new Filters.Jbig2.Jbig2Bitmap(int.MaxValue, int.MaxValue, Unlimited()));
+
+        // A bitmap of no row has a size of 0 bytes, whatever its width
+        var empty = new Filters.Jbig2.Jbig2Bitmap(int.MaxValue, 0, Unlimited());
+        Assert.Equal(268_435_456, empty.Stride);
+        Assert.Empty(empty.Data);
+        Assert.Throws<PdfResourceLimitException>(() => empty.GrowHeight(16, 0, Unlimited()));
+
+        // The memory limit is checked before the allocation
+        Assert.Throws<PdfResourceLimitException>(() => new Filters.Jbig2.Jbig2Bitmap(int.MaxValue, 1, new Filters.Jbig2.Jbig2Budget(1 << 20)));
+        Assert.Throws<PdfResourceLimitException>(() => Jbig2Filter.Decode([.. Segment(0, 48, [], PageInformation(int.MaxValue, int.MaxValue, flags: 0))], parameters: null, Limit));
+        Assert.Empty(Jbig2Filter.Decode([.. Segment(0, 48, [], PageInformation(int.MaxValue, 0, flags: 0))], parameters: null, Limit));
+    }
+
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    [Fact]
+    public void Jbig2BitmapCombineAndExtractMatchThePixels()
+    {
+        var random = new Random(42);
+        var budget = new Filters.Jbig2.Jbig2Budget(long.MaxValue / 64);
+        for (var i = 0; i < 400; i++)
+        {
+            // The padding bits of the source are random: they are not pixels
+            var target = new Filters.Jbig2.Jbig2Bitmap(random.Next(1, 70), random.Next(1, 20), budget);
+            var source = new Filters.Jbig2.Jbig2Bitmap(random.Next(0, 50), random.Next(0, 20), budget);
+            random.NextBytes(target.Data);
+            random.NextBytes(source.Data);
+            var x = random.Next(-60, 80);
+            var y = random.Next(-25, 25);
+            var combinationOperator = random.Next(0, 5);
+
+            var expected = new Filters.Jbig2.Jbig2Bitmap(target.Width, target.Height, budget);
+            target.Data.CopyTo(expected.Data, 0);
+            for (var row = 0; row < source.Height; row++)
+            {
+                for (var column = 0; column < source.Width; column++)
+                {
+                    var tx = x + column;
+                    var ty = y + row;
+                    if (tx < 0 || tx >= target.Width || ty < 0 || ty >= target.Height)
+                        continue;
+
+                    var value = source.GetPixel(column, row);
+                    var existing = expected.GetPixel(tx, ty);
+                    expected.SetPixel(tx, ty, combinationOperator switch
+                    {
+                        0 => existing | value,
+                        1 => existing & value,
+                        2 => existing ^ value,
+                        3 => 1 - (existing ^ value),
+                        _ => value,
+                    });
+                }
+            }
+
+            target.Combine(source, x, y, combinationOperator);
+            Assert.Equal(expected.Data, target.Data);
+
+            var width = random.Next(0, 60);
+            var height = random.Next(0, 20);
+            var extracted = target.Extract(x, y, width, height, budget);
+            var expectedPart = new Filters.Jbig2.Jbig2Bitmap(width, height, budget);
+            for (var row = 0; row < height; row++)
+            {
+                for (var column = 0; column < width; column++)
+                {
+                    expectedPart.SetPixel(column, row, target.GetPixel(x + column, y + row));
+                }
+            }
+
+            Assert.Equal(expectedPart.Data, extracted.Data);
+        }
+    }
+
+    [Fact]
+    public void Jbig2PageIsInvertedInPlace()
+    {
+        // A white page of 4960 x 7016 pixels: the bits of the page are inverted, not copied
+        var decoder = new Filters.Jbig2.Jbig2Decoder(Limit);
+        decoder.DecodeSegments([.. Segment(0, 48, [], PageInformation(4960, 7016, flags: 0))]);
+
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var page = decoder.GetPage();
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        Assert.HasCount(620 * 7016, page);
+        Assert.False(page.AsSpan().ContainsAnyExcept((byte)0xFF));
+        Assert.True(allocated < 1024, $"{allocated} bytes allocated");
+        Assert.Throws<InvalidPdfContentException>(() => decoder.GetPage());
+    }
+
+    [Fact]
+    public void Jbig2TinyStreamsDoNotDecodeHugeRegions()
+    {
+        // A page of 2048 x 2048 pixels and immediate generic regions of the page with 40 bytes of data each: the
+        // arithmetic decoder decodes any number of pixels past the end of the data, so the work is bounded by the page
+        static byte[] Region(uint number) => Segment(number, 38, [], [.. RegionInfo(2048, 2048, 0, 0, 0), 0, 3, 0xFF, 0xFD, 0xFF, 2, 0xFE, 0xFE, 0xFE, .. new byte[40]]);
+
+        var page = Segment(0, 48, [], PageInformation(2048, 2048, flags: 0));
+        var stream = new List<byte>(page);
+        for (var i = 1u; i <= 7; i++)
+        {
+            stream.AddRange(Region(i));
+        }
+
+        // Seven regions are seven times the pixels of the page (and 36 MiB, below the limit): more than 3 times the page and 16 million
+        var decoder = new Filters.Jbig2.Jbig2Decoder(PdfReadOptions.DefaultMaxDecodedStreamLength);
+        Assert.Throws<PdfResourceLimitException>(() => decoder.DecodeSegments([.. stream]));
+        Assert.True(decoder.Budget.Work <= (1 << 24) + (3L * 2048 * 2048) + 2049, $"{decoder.Budget.Work} units of work");
+
+        // Two regions are decoded and placed
+        Assert.HasCount(256 * 2048, Jbig2Filter.Decode([.. page, .. Region(1), .. Region(2)], parameters: null, PdfReadOptions.DefaultMaxDecodedStreamLength));
+    }
+
+    [Fact]
+    public void Jbig2GlobalSegmentsAreDecodedOncePerStream()
+    {
+        // The globals: a pattern dictionary of two 4 x 4 patterns (white, black), whose collective bitmap is coded with MMR
+        static PdfStream CreateGlobals(byte[] collective)
+        {
+            var globals = new PdfStream();
+            globals.SetData([.. Segment(0, 16, [], [1, 4, 4, 0, 0, 0, 1, .. EncodeCcitt(collective, 8, 4, 4)])]);
+            return globals;
+        }
+
+        // The image: a halftone region of 4 x 4 cells of 4 x 4 pixels, its gray-scale values (one bit plane, MMR) a checkerboard
+        var plane = EncodeCcitt([0xA0, 0x50, 0xA0, 0x50], 4, 4, 4);
+        byte[] halftone = [.. RegionInfo(16, 16, 0, 0, 0), 1, .. BigEndian(4), .. BigEndian(4), .. BigEndian(0), .. BigEndian(0), 4, 0, 0, 0, .. plane];
+        byte[] image = [.. Segment(1, 48, [], PageInformation(16, 16, flags: 0)), .. Segment(2, 22, [0], halftone)];
+        var globals = CreateGlobals([0x0F, 0x0F, 0x0F, 0x0F]);
+        var parameters = new PdfDictionary { [PdfName.Create("JBIG2Globals")] = globals };
+
+        // 0 is black: the cells of value 1 are the black pattern
+        byte[] expected = [.. Enumerable.Range(0, 16).SelectMany(row => (row / 4 % 2 == 0) ? new byte[] { 0x0F, 0x0F } : [0xF0, 0xF0])];
+        Assert.Equal(expected, Jbig2Filter.Decode(image, parameters, Limit));
+        Assert.True(Jbig2Filter.IsCached(globals, Limit));
+        Assert.False(Jbig2Filter.IsCached(globals, Limit / 2));
+        Assert.Equal(expected, Jbig2Filter.Decode(image, parameters, Limit));
+
+        // The data of the globals changes: the patterns are swapped
+        globals.SetData([.. Segment(0, 16, [], [1, 4, 4, 0, 0, 0, 1, .. EncodeCcitt([0xF0, 0xF0, 0xF0, 0xF0], 8, 4, 4)])]);
+        Assert.False(Jbig2Filter.IsCached(globals, Limit));
+        Assert.Equal(expected.Select(value => (byte)~value), Jbig2Filter.Decode(image, parameters, Limit));
+
+        // Globals that paint a page are not shared: each image paints its own page
+        var withPage = new PdfStream();
+        withPage.SetData([.. Segment(0, 48, [], PageInformation(16, 8, flags: 0))]);
+        _ = Jbig2Filter.Decode([.. Segment(1, 38, [], [.. RegionInfo(16, 8, 0, 0, 0), 1, .. EncodeCcitt(CreateBitmap(16, 8), 16, 8, 4)])], new PdfDictionary { [PdfName.Create("JBIG2Globals")] = withPage }, Limit);
+        Assert.False(Jbig2Filter.IsCached(withPage, Limit));
+    }
+
+    private const string Eol = "000000000001";
+
+    private static PdfDictionary CcittParameters(int k, int columns, long rows) => new()
+    {
+        [PdfNames.K] = PdfInteger.Get(k),
+        [PdfNames.Columns] = PdfInteger.Get(columns),
+        [PdfName.Create("Rows")] = PdfInteger.Get(rows),
+    };
+
+    /// <summary>Packs codes written as strings of 0 and 1, most significant bit first, the last byte padded with zeros.</summary>
+    private static byte[] BitString(params string[] codes)
+    {
+        var bits = string.Concat(codes);
+        var data = new byte[(bits.Length + 7) / 8];
+        for (var i = 0; i < bits.Length; i++)
+        {
+            if (bits[i] == '1')
+            {
+                data[i / 8] |= (byte)(0x80 >> (i % 8));
+            }
+        }
+
+        return data;
     }
 
     [Theory]

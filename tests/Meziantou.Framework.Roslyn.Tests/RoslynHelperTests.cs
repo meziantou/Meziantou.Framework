@@ -1335,6 +1335,28 @@ public sealed class RoslynHelperTests
     }
 
     [Fact]
+    public void InParameterOrder_SortsNamedArgumentsByParameterOrdinal()
+    {
+        var compilation = CreateCompilation("""
+            public class Sample
+            {
+                public void M(string a, string b)
+                {
+                    object reordered = string.Equals(comparisonType: System.StringComparison.Ordinal, b: b, a: a);
+                    object ordered = string.Equals(a, b, System.StringComparison.Ordinal);
+                }
+            }
+            """);
+        var semanticModel = GetSemanticModel(compilation);
+        var reordered = (IInvocationOperation)GetInitializerOperation(semanticModel, "reordered").UnwrapImplicitConversions();
+        var ordered = (IInvocationOperation)GetInitializerOperation(semanticModel, "ordered").UnwrapImplicitConversions();
+
+        Assert.Equal(["comparisonType", "b", "a"], reordered.Arguments.Select(argument => argument.Parameter!.Name));
+        Assert.Equal(["a", "b", "comparisonType"], reordered.Arguments.InParameterOrder().Select(argument => argument.Parameter!.Name));
+        Assert.Equal(ordered.Arguments, ordered.Arguments.InParameterOrder());
+    }
+
+    [Fact]
     public void UnwrapConversions_RemovesImplicitAndExplicitConversions()
     {
         var compilation = CreateCompilation("""

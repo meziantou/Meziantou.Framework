@@ -12,7 +12,8 @@ namespace Meziantou.Framework.WebPlatform.Dom;
 /// The methods are called on the threads of the event loops of the windows and the workers that use the registrations: an
 /// implementation must be thread-safe. A registration is saved as a whole (<see cref="SaveRegistration"/>) each time it
 /// changes: its waiting or active worker is installed or activated, its last update check time or its navigation preload
-/// state changes.
+/// state changes. A browsing context group calls <see cref="SaveRegistration"/> and <see cref="DeleteRegistration"/> one at a
+/// time, in the order of the changes of its registrations: the last call for a registration gives its current state.
 /// </para>
 /// <para>
 /// The browsing contexts that share a backend share the registrations, but each browsing context group runs its own

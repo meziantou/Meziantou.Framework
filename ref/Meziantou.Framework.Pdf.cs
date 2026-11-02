@@ -70,6 +70,13 @@ namespace Meziantou.Framework.Pdf
         Schema = 7,
     }
 
+    public enum PdfBilevelCompression
+    {
+        CcittGroup4 = 0,
+        Jbig2 = 1,
+        Flate = 2,
+    }
+
     public enum PdfBlendMode
     {
         Normal = 0,
@@ -453,6 +460,7 @@ namespace Meziantou.Framework.Pdf
         public bool HasSoftMask { get => throw null; }
         public int Height { get => throw null; }
         public int Width { get => throw null; }
+        public static Meziantou.Framework.Pdf.PdfImage FromBilevel(System.ReadOnlySpan<byte> pixels, int width, int height, Meziantou.Framework.Pdf.PdfBilevelCompression compression = Meziantou.Framework.Pdf.PdfBilevelCompression.CcittGroup4) => throw null;
         public static Meziantou.Framework.Pdf.PdfImage FromImage(Meziantou.Framework.Imaging.Image image) => throw null;
         public static Meziantou.Framework.Pdf.PdfImage FromImageAsJpeg(Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Formats.JpegEncoder? encoder = null) => throw null;
         public static Meziantou.Framework.Pdf.PdfImage FromJpeg(System.ReadOnlySpan<byte> data) => throw null;
@@ -1046,6 +1054,13 @@ namespace Meziantou.Framework.Pdf.Rendering
         public string? StandardName { get => throw null; }
     }
 
+    public enum PdfRenderIntent
+    {
+        View = 0,
+        Print = 1,
+        Export = 2,
+    }
+
     public sealed class PdfRenderOptions
     {
         public Meziantou.Framework.Imaging.Rgba32? Background { get => throw null; init { } }
@@ -1053,9 +1068,17 @@ namespace Meziantou.Framework.Pdf.Rendering
         public static Meziantou.Framework.Pdf.Rendering.PdfRenderOptions Default { get => throw null; }
         public double Dpi { get => throw null; init { } }
         public System.Func<Meziantou.Framework.Pdf.Rendering.PdfFontRequest, Meziantou.Framework.Fonts.FontFace?>? FontResolver { get => throw null; init { } }
+        public int? Height { get => throw null; init { } }
+        public Meziantou.Framework.Pdf.Rendering.PdfRenderIntent Intent { get => throw null; init { } }
         public long MaxOperations { get => throw null; init { } }
+        public string? OptionalContentConfiguration { get => throw null; init { } }
+        public System.Collections.Generic.IReadOnlyDictionary<string, bool>? OptionalContentGroupStates { get => throw null; init { } }
+        public bool PathAntialiasing { get => throw null; init { } }
+        public Meziantou.Framework.Pdf.PdfRectangle? Region { get => throw null; init { } }
         public bool RenderAnnotations { get => throw null; init { } }
+        public bool TextAntialiasing { get => throw null; init { } }
         public bool UseSystemFonts { get => throw null; init { } }
+        public int? Width { get => throw null; init { } }
     }
 
     public sealed class PdfRenderSession : System.IDisposable
@@ -1065,12 +1088,17 @@ namespace Meziantou.Framework.Pdf.Rendering
         public PdfRenderSession(Meziantou.Framework.Pdf.PdfDocument document, Meziantou.Framework.Pdf.Rendering.PdfRenderOptions? options = null) { }
         public void Dispose() { }
         public Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32> RenderPage(Meziantou.Framework.Pdf.PdfPage page) => throw null;
+        public Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32> RenderPage(Meziantou.Framework.Pdf.PdfPage page, System.Threading.CancellationToken cancellationToken) => throw null;
+        public void RenderPage(Meziantou.Framework.Pdf.PdfPage page, Meziantou.Framework.Imaging.Image target, System.Threading.CancellationToken cancellationToken = default) { }
     }
 
     public static class PdfRenderer
     {
+        public static Meziantou.Framework.Imaging.Size GetImageSize(Meziantou.Framework.Pdf.PdfPage page, Meziantou.Framework.Pdf.Rendering.PdfRenderOptions? options = null) => throw null;
         public static Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32> Render(this Meziantou.Framework.Pdf.PdfPage page, Meziantou.Framework.Pdf.Rendering.PdfRenderOptions? options = null) => throw null;
         public static Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32> RenderPage(Meziantou.Framework.Pdf.PdfPage page, Meziantou.Framework.Pdf.Rendering.PdfRenderOptions? options = null) => throw null;
+        public static Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32> RenderPage(Meziantou.Framework.Pdf.PdfPage page, Meziantou.Framework.Pdf.Rendering.PdfRenderOptions? options, System.Threading.CancellationToken cancellationToken) => throw null;
+        public static void RenderPage(Meziantou.Framework.Pdf.PdfPage page, Meziantou.Framework.Imaging.Image target, Meziantou.Framework.Pdf.Rendering.PdfRenderOptions? options = null, System.Threading.CancellationToken cancellationToken = default) { }
     }
 }
 namespace Meziantou.Framework.Pdf.Signing

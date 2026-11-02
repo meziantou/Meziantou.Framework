@@ -32,6 +32,9 @@ internal sealed partial class ContentRenderer
         }
     }
 
+    /// <summary>Paints the appearance of an annotation (12.5.5): a form, painted as a transparency group when it is one.</summary>
+    public void PaintAppearance(DrawingCanvas canvas, PdfStream appearance) => PaintForm(canvas, appearance);
+
     private void PaintForm(DrawingCanvas canvas, PdfStream form)
     {
         if (_depth >= MaxDepth || !_activeForms.Add(form))
@@ -78,7 +81,7 @@ internal sealed partial class ContentRenderer
         // In an element of a knockout group, the element applies the alpha and the soft mask
         var alpha = ElementAlpha(_state.FillAlpha);
         var blend = _state.BlendMode;
-        var softMask = _element is null && _depth < MaxDepth ? _state.SoftMask : null;
+        var softMask = (_element is null || _state.AlphaIsShape) && _depth < MaxDepth ? _state.SoftMask : null;
         var ctm = formMatrix * _state.Ctm;
 
         // The content starts with the graphics state of the Do operator, with the alpha, the blend mode and the soft

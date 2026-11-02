@@ -25,7 +25,7 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
 - **Document API**: pages (`PdfDocument.Pages`), a content builder for paths, colors, text, images and marked content
   (`PdfPage.CreateContentBuilder`), shadings and functions (`PdfShading`, `PdfFunction`), patterns, form XObjects,
   transparency (`PdfExtGState`: alpha, blend modes, soft masks; transparency groups), the standard 14 fonts and embedded TrueType and OpenType fonts, images (`PdfImage`: JPEG files as they are, other images
-  of `Meziantou.Framework.Imaging` with their alpha channel and ICC profile, compressed without loss with the PNG predictors or as JPEG), the document information and the XMP
+  of `Meziantou.Framework.Imaging` with their alpha channel and ICC profile, compressed without loss with the PNG predictors or as JPEG, black and white images compressed with CCITT Group 4 or JBIG2), the document information and the XMP
   metadata, the outline (bookmarks), links and annotations, embedded files (`PdfDocument.EmbeddedFiles`, file
   attachment annotations), text extraction (`PdfPage.ExtractText`)
 - **Rendering** (`Meziantou.Framework.Pdf.Rendering`): the pages drawn to images on the canvas of
@@ -361,10 +361,18 @@ image.Save(png, new Imaging.Formats.PngEncoder());
 <!-- endref -->
 
 The image is the crop box of the page, rotated as the page is shown, on a white background (`PdfRenderOptions.Background`,
-`null` for a transparent one). `PdfRenderOptions.RenderAnnotations` draws the appearances of the annotations.
+`null` for a transparent one). `PdfRenderOptions.RenderAnnotations` draws the appearances of the annotations, and
+generates one for the annotations and the form fields that have none. `PdfRenderOptions.Region` renders part of the
+page, `Width` and `Height` fit it to a size in pixels instead of `Dpi`, and `PathAntialiasing` and `TextAntialiasing`
+turn the antialiasing off. `PdfRenderOptions.Intent` renders for viewing, printing or exporting (the annotations with
+the Print flag, the layers whose usage is for printing), `OptionalContentConfiguration` selects a configuration of the
+layers and `OptionalContentGroupStates` turns layers on or off by their name. An overload of `RenderPage` takes a
+`CancellationToken`, and another draws on an image of the application, of any pixel format (`GetImageSize` gives its
+size).
 
 - **Graphics**: paths, line styles and dashes, clipping (paths and text), the page boxes and rotation, optional content
-  (layers), the appearance streams of the annotations
+  (layers, their configurations, intents and usage), the appearance streams of the annotations (as transparency groups,
+  with their constant opacity and the NoZoom and NoRotate flags)
 - **Text**: embedded TrueType, CFF (`Type1C`, `CIDFontType0C`, OpenType) and Type 1 fonts, Type 3 fonts, the fonts that
   are not embedded replaced by a font of the system or of the application, the text rendering modes
 - **Colors**: the device color spaces, `ICCBased` (through the ICC profiles of Imaging), `CalRGB`, `CalGray`, `Lab`,
@@ -378,8 +386,10 @@ The image is the crop box of the page, rotated as the page is shown, on a white 
   masks and the page group included), soft masks (alpha and luminosity, with their backdrop and transfer function), the
   transfer functions of the graphics state. In a knockout group, each painting operator, image, shading, text-showing
   operator and group is an element; the fill and the stroke of a path are one element, whose stroke composites over its
-  fill, and the alpha of a paint of an element counts as its shape. A transfer function applies to the result of a
-  group
+  fill, and the alpha of a paint of an element counts as its shape; the alpha-is-shape parameter (`AIS`) makes the
+  constant alpha and the soft mask shape. The glyphs of a text-showing operator knock out one another, unless the text
+  knockout parameter (`TK`) is false. A transfer function applies to the result of a group. Overprint and halftones are
+  not simulated
 
 ### Fonts that are not embedded
 
@@ -394,7 +404,8 @@ A font that the document does not embed is replaced, in this order, by:
 
 The bundled fonts (SIL Open Font License 1.1, see `THIRD-PARTY-NOTICES.md`) have the characters of the Latin encodings
 of PDF. With `UseSystemFonts` set to `false`, the rendering does not depend on the fonts of the machine. Symbol and
-ZapfDingbats are only replaced by the resolver or the fonts of the system.
+ZapfDingbats are only replaced by the resolver or the fonts of the system. The glyphs of a replacement font are scaled
+horizontally to the widths of the document.
 
 ### Limits of the rendering
 
@@ -483,3 +494,4 @@ specification says; a content stream that cannot be decoded throws when its data
   the other rules of the level.
 - The text extraction follows the order of the content and joins the glyphs into lines by their positions; it does
   not detect columns.
+- The renderer composites in sRGB: overprint and halftones are not simulated.

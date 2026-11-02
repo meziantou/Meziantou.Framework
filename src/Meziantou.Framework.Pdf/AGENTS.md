@@ -27,6 +27,8 @@ the XML documentation and `readme.md` consistent in the same change.
   this library in its namespace (`MEZIANTOU_FRAMEWORK_PDF`, see the project file): a change to them changes both. JBIG2 follows T.88 with the context bit order of its figures: the typical prediction
   contexts alias the contexts of particular templates, so the order matters. Both were checked pixel by pixel against
   MuPDF, Poppler and PDFium on the corpora (`expectations/bilevel-images.txt` of the corpus tests records the digests).
+  The encoders of `PdfImage.FromBilevel` (`CcittFaxFilter.EncodeGroup4`, `Jbig2Encoder`: one lossless generic region)
+  are checked the same way by `RenderingInteropTests.BilevelImagesAreDecodedByOtherReaders`.
 - **Conformance** (`Conformance/`, `Structure/`): the save checks what it can of the PDF/A and PDF/UA levels and writes
   what they need (output intent, XMP identification with the extension schema of PDF/UA for PDF/A-2 and -3, viewer
   preferences, annotation flags; PDF/A-4 leaves the document information dictionary out of the trailer; PDF/A-1 is

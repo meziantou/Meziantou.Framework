@@ -30,6 +30,7 @@ using Meziantou.Framework.Roslyn;
 - `DiagnosticReporter.CanReportDiagnostic`
 - `ExpressionSyntax.Parenthesize`
 - `GeneratedCodeExtensions.IsGeneratedCodeFile`
+- `ImmutableArray<IArgumentOperation>.InParameterOrder`
 - `IOperation.UnwrapImplicitConversions`
 - `LanguageVersionExtensions`
 - `LocalDataFlowAnalysis`

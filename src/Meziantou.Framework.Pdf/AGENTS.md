@@ -136,6 +136,12 @@ Signs and verifies the signatures of documents, with `System.Security.Cryptograp
   widths; the writer does not encrypt the `/Contents` of a signature dictionary.
 - PAdES baseline: the signed attributes are content-type, message-digest and ESS signing-certificate-v2; the
   signing-time attribute is not written (the time is `/M`).
+- The CMS signed data is encoded and checked by `CmsSignature`, not by `SignedCms`, so that the digest of the file is
+  computed range by range without a copy of the file; `SignedCms` decodes the signatures and checks the algorithms
+  `CmsSignature` does not know, and the signatures without signed attributes, with a copy of the signed bytes.
+- The verifier reads a signature dictionary from the revision the signature covers (a prefix of the file opened as a
+  document), and `PdfModificationAnalyzer` compares that revision with the document to list and classify the changes
+  made after it, for the DocMDP and FieldMDP permissions.
 - Tests: `PdfSignerTests` (certificates created by the tests and a time stamp authority of the tests, an
   `HttpMessageHandler`, no network); `tests/Meziantou.Framework.Pdf.InteropTests` (`SignatureInteropTests`): Poppler's
   pdfsig checks the signatures (the pinned release has no pdfsig for Windows, so they run on Linux and macOS);

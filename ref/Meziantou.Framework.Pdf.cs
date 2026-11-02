@@ -1103,21 +1103,74 @@ namespace Meziantou.Framework.Pdf.Rendering
 }
 namespace Meziantou.Framework.Pdf.Signing
 {
+    public enum PdfCertificationLevel
+    {
+        NoChanges = 1,
+        FormFilling = 2,
+        FormFillingAndAnnotations = 3,
+    }
+
+    public sealed class PdfFieldLock
+    {
+        public Meziantou.Framework.Pdf.Signing.PdfFieldLockAction Action { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> Fields { get => throw null; }
+        public PdfFieldLock(Meziantou.Framework.Pdf.Signing.PdfFieldLockAction action, System.Collections.Generic.IEnumerable<string>? fields = null) { }
+    }
+
+    public enum PdfFieldLockAction
+    {
+        All = 0,
+        Include = 1,
+        Exclude = 2,
+    }
+
+    public sealed class PdfModification
+    {
+        public string? FieldName { get => throw null; }
+        public bool IsNewObject { get => throw null; }
+        public Meziantou.Framework.Pdf.Signing.PdfModificationKind Kind { get => throw null; }
+        public int ObjectNumber { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public enum PdfModificationKind
+    {
+        ValidationData = 0,
+        DocumentTimestamp = 1,
+        Signature = 2,
+        FormFilling = 3,
+        Annotation = 4,
+        Other = 5,
+    }
+
+    public sealed class PdfSignatureAppearance
+    {
+        public System.Action<Meziantou.Framework.Pdf.PdfContentBuilder>? Draw { get => throw null; init { } }
+        public int PageIndex { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfRectangle Rectangle { get => throw null; }
+        public PdfSignatureAppearance(int pageIndex, Meziantou.Framework.Pdf.PdfRectangle rectangle) { }
+    }
+
     public sealed class PdfSignatureInfo
     {
+        public bool AreModificationsPermitted { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<(long Offset, long Length)> ByteRanges { get => throw null; }
         public System.Security.Cryptography.X509Certificates.X509Certificate2? Certificate { get => throw null; }
         public System.Security.Cryptography.X509Certificates.X509Certificate2Collection Certificates { get => throw null; }
+        public Meziantou.Framework.Pdf.Signing.PdfCertificationLevel? CertificationLevel { get => throw null; }
         public string? ContactInfo { get => throw null; }
         public bool CoversWholeDocument { get => throw null; }
         public string? Error { get => throw null; }
+        public Meziantou.Framework.Pdf.Signing.PdfFieldLock? FieldLock { get => throw null; }
         public string FieldName { get => throw null; }
         public bool IsDocumentIntact { get => throw null; }
         public bool IsDocumentTimestamp { get => throw null; }
         public bool IsSignatureValid { get => throw null; }
+        public bool? IsSigningCertificateValid { get => throw null; }
         public bool? IsTimestampValid { get => throw null; }
         public bool IsValid { get => throw null; }
         public string? Location { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.Signing.PdfModification> Modifications { get => throw null; }
         public string? Reason { get => throw null; }
         public string? SignerName { get => throw null; }
         public System.DateTimeOffset? SigningTime { get => throw null; }
@@ -1127,15 +1180,19 @@ namespace Meziantou.Framework.Pdf.Signing
 
     public sealed class PdfSignatureOptions
     {
+        public Meziantou.Framework.Pdf.Signing.PdfSignatureAppearance? Appearance { get => throw null; init { } }
         public System.Security.Cryptography.X509Certificates.X509Certificate2 Certificate { get => throw null; }
         public System.Security.Cryptography.X509Certificates.X509Certificate2Collection Certificates { get => throw null; }
+        public Meziantou.Framework.Pdf.Signing.PdfCertificationLevel? Certification { get => throw null; init { } }
         public string? ContactInfo { get => throw null; init { } }
+        public Meziantou.Framework.Pdf.Signing.PdfFieldLock? FieldLock { get => throw null; init { } }
         public string? FieldName { get => throw null; init { } }
         public System.Security.Cryptography.HashAlgorithmName HashAlgorithm { get => throw null; init { } }
         public System.Net.Http.HttpClient? HttpClient { get => throw null; init { } }
         public string? Location { get => throw null; init { } }
         public string? Reason { get => throw null; init { } }
         public int ReservedSize { get => throw null; init { } }
+        public System.Security.Cryptography.RSASignaturePadding? RsaSignaturePadding { get => throw null; init { } }
         public string? SignerName { get => throw null; init { } }
         public System.DateTimeOffset? SigningTime { get => throw null; init { } }
         public System.Uri? TimestampAuthority { get => throw null; init { } }
@@ -1144,12 +1201,32 @@ namespace Meziantou.Framework.Pdf.Signing
 
     public static class PdfSignatureVerifier
     {
+        public static Meziantou.Framework.Pdf.Signing.PdfValidationData GetValidationData(byte[] file, Meziantou.Framework.Pdf.PdfReadOptions? options = null) => throw null;
         public static System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.Signing.PdfSignatureInfo> Verify(byte[] file, Meziantou.Framework.Pdf.PdfReadOptions? options = null) => throw null;
     }
 
     public static class PdfSigner
     {
+        public static byte[] AddValidationData(Meziantou.Framework.Pdf.PdfDocument document, Meziantou.Framework.Pdf.Signing.PdfValidationData validationData) => throw null;
         public static byte[] Sign(Meziantou.Framework.Pdf.PdfDocument document, Meziantou.Framework.Pdf.Signing.PdfSignatureOptions options) => throw null;
         public static System.Threading.Tasks.Task<byte[]> SignAsync(Meziantou.Framework.Pdf.PdfDocument document, Meziantou.Framework.Pdf.Signing.PdfSignatureOptions options, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<byte[]> TimestampAsync(Meziantou.Framework.Pdf.PdfDocument document, Meziantou.Framework.Pdf.Signing.PdfTimestampOptions options, System.Threading.CancellationToken cancellationToken = default) => throw null;
+    }
+
+    public sealed class PdfTimestampOptions
+    {
+        public string? FieldName { get => throw null; init { } }
+        public System.Security.Cryptography.HashAlgorithmName HashAlgorithm { get => throw null; init { } }
+        public System.Net.Http.HttpClient? HttpClient { get => throw null; init { } }
+        public int ReservedSize { get => throw null; init { } }
+        public System.Uri TimestampAuthority { get => throw null; }
+        public PdfTimestampOptions(System.Uri timestampAuthority) { }
+    }
+
+    public sealed class PdfValidationData
+    {
+        public System.Collections.Generic.IList<byte[]> CertificateRevocationLists { get => throw null; }
+        public System.Security.Cryptography.X509Certificates.X509Certificate2Collection Certificates { get => throw null; }
+        public System.Collections.Generic.IList<byte[]> OcspResponses { get => throw null; }
     }
 }

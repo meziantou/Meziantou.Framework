@@ -32,8 +32,10 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
   `Meziantou.Framework.Imaging`: paths, clipping, optional content and annotation appearances; embedded TrueType, CFF,
   Type 1 and Type 3 fonts and substituted fonts; every color space and image filter; functions, the seven shading types
   and tiling patterns; transparency groups, soft masks and blend modes
-- **Signatures** (`Meziantou.Framework.Pdf.Signing`): PAdES baseline B-B and B-T signatures (CAdES detached signatures,
-  RFC 3161 time stamps), appended as incremental updates, and the verification of the signatures of a document
+- **Signatures** (`Meziantou.Framework.Pdf.Signing`): PAdES baseline B-B, B-T, B-LT and B-LTA signatures (CAdES
+  detached signatures, RFC 3161 time stamps, the document security store, document time stamps), certification and
+  field locks, visible signatures, appended as incremental updates, and the verification of the signatures of a
+  document and of the changes made after them
 
 ## Create a document
 
@@ -418,11 +420,15 @@ Digital signatures (ISO 32000-2, 12.8): PAdES baseline signatures (ETSI EN 319 1
 signatures of a document.
 
 - **Signing**: B-B, a CAdES detached signature (`ETSI.CAdES.detached`) with the ESS signing certificate, and B-T, its
-  RFC 3161 time stamp; RSA and ECDSA keys, SHA-256, SHA-384 and SHA-512; the signature is appended as an incremental
-  update, so that the signatures of the document stay valid; encrypted documents are signed with their keys
-- **Verification**: the integrity of the bytes each signature covers, the CMS signature, the time stamps, and whether
-  the signature covers the whole file (`adbe.pkcs7.detached`, `ETSI.CAdES.detached`, `adbe.pkcs7.sha1`, document time
-  stamps `ETSI.RFC3161`)
+  RFC 3161 time stamp; RSA (PKCS #1 v1.5 or PSS) and ECDSA keys, SHA-256, SHA-384 and SHA-512; certification
+  signatures (DocMDP) and field locks (FieldMDP); visible signatures (`PdfSignatureAppearance`); the validation data of
+  B-LT (`PdfSigner.AddValidationData`) and the document time stamps of B-LTA (`PdfSigner.TimestampAsync`); every
+  operation is appended as an incremental update, so that the signatures of the document stay valid; encrypted
+  documents are signed with their keys
+- **Verification**: the integrity of the bytes each signature covers, the CMS signature (one signer), the ESS signing
+  certificate, every time stamp, whether the signature covers the whole file, and the changes made after it compared
+  with its certification and its field lock (`adbe.pkcs7.detached`, `ETSI.CAdES.detached`, `adbe.pkcs7.sha1`, document
+  time stamps `ETSI.RFC3161`); the information of a signature is read from the revision it signs
 
 <!-- ref:../../tests/Meziantou.Framework.Pdf.Tests/PdfSignerTests.cs;region=PdfSigning_Sign;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -438,8 +444,11 @@ var isValid = signature.IsValid && signature.CoversWholeDocument;
 ```
 <!-- endref -->
 
-The signature field is invisible, on the first page. `PdfSignatureOptions` sets the information of the signature
-dictionary (reason, location, contact, name, time) and the other certificates of the chain to embed.
+The signature field is invisible, on the first page, unless `PdfSignatureOptions.Appearance` places it. The field name
+is unique: an existing signature field that is not signed yet is signed, another existing name throws.
+`PdfSignatureOptions` also sets the information of the signature dictionary (reason, location, contact, name, time),
+the other certificates of the chain to embed, the certification level and the field lock. A document certified with
+`PdfCertificationLevel.NoChanges` cannot be signed again.
 
 ### Time stamp a signature (PAdES B-T)
 
@@ -460,7 +469,7 @@ var signed = await PdfSigner.SignAsync(document, options, XunitCancellationToken
 `PdfSignatureVerifier` checks that the document was not modified and that the signature matches the certificate it
 embeds; it does not decide whether the signer is trusted. Build the chain of `PdfSignatureInfo.Certificate` with
 `X509Chain`, with the trust anchors and the revocation policy of the application, and check `CoversWholeDocument`:
-a signature that does not cover the whole file was followed by incremental updates.
+a signature that does not cover the whole file was followed by incremental updates, which `Modifications` lists.
 
 ## Errors and limits
 

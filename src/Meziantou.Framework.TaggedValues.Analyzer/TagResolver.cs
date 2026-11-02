@@ -613,28 +613,104 @@ internal sealed class TagResolver
         var startType = receiverType as INamedTypeSymbol ?? member.ContainingType;
         for (var type = startType; type is not null; type = type.BaseType)
         {
-            result = TagInfo.Union(result, GetExternalTags(externalTags, type, member.Name));
+            result = TagInfo.Union(result, GetExternalTags(externalTags, type, member, startType));
         }
 
         if (startType is not null)
         {
             foreach (var @interface in startType.AllInterfaces)
             {
-                result = TagInfo.Union(result, GetExternalTags(externalTags, @interface, member.Name));
+                result = TagInfo.Union(result, GetExternalTags(externalTags, @interface, member, startType));
             }
         }
 
         return result;
 
-        static TagInfo GetExternalTags(ExternalTags externalTags, INamedTypeSymbol type, string memberName)
+        static TagInfo GetExternalTags(ExternalTags externalTags, INamedTypeSymbol type, ISymbol member, INamedTypeSymbol? startType)
         {
-            var result = externalTags.Tags.TryGetValue((type.OriginalDefinition, memberName), out var tags) ? tags : TagInfo.None;
-            if (type.IsGenericType && !SymbolEqualityComparer.Default.Equals(type, type.OriginalDefinition) && externalTags.Tags.TryGetValue((type, memberName), out var constructedTags))
+            var result = externalTags.Tags.TryGetValue((type.OriginalDefinition, member.Name), out var tags) ? tags : TagInfo.None;
+            if (type.IsGenericType && !SymbolEqualityComparer.Default.Equals(type, type.OriginalDefinition) && externalTags.Tags.TryGetValue((type, member.Name), out var constructedTags))
             {
                 result = TagInfo.Union(result, constructedTags);
             }
 
+            // The attribute names a member of 'type', which is not the accessed member when the accessed member hides it, or is hidden by it
+            if (!result.IsEmpty && !IsSameOrRelatedMember(member, FindExternalMember(type, member.Name), startType))
+                return TagInfo.None;
+
             return result;
+        }
+    }
+
+    /// <summary>
+    /// Returns the field or property that <c>[assembly: ValueTag(typeof(Type), "Member", ...)]</c> names: the member of the type,
+    /// or the inherited member when the type does not declare it.
+    /// </summary>
+    private static ISymbol? FindExternalMember(INamedTypeSymbol type, string memberName)
+    {
+        for (var current = type; current is not null; current = current.BaseType)
+        {
+            var member = FindFieldOrProperty(current, memberName);
+            if (member is not null)
+                return member;
+        }
+
+        if (type.TypeKind is TypeKind.Interface)
+        {
+            foreach (var @interface in type.AllInterfaces)
+            {
+                var member = FindFieldOrProperty(@interface, memberName);
+                if (member is not null)
+                    return member;
+            }
+        }
+
+        return null;
+
+        static ISymbol? FindFieldOrProperty(INamedTypeSymbol type, string memberName)
+        {
+            foreach (var member in type.GetMembers(memberName))
+            {
+                if (member is IFieldSymbol or IPropertySymbol { IsIndexer: false })
+                    return member;
+            }
+
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Returns whether the accessed member is the annotated member, overrides it, is overridden by it, or implements it.
+    /// </summary>
+    private static bool IsSameOrRelatedMember(ISymbol accessedMember, ISymbol? annotatedMember, INamedTypeSymbol? receiverType)
+    {
+        if (annotatedMember is null)
+            return false;
+
+        if (IsInOverrideChain(accessedMember, annotatedMember) || IsInOverrideChain(annotatedMember, accessedMember))
+            return true;
+
+        // An interface member is implemented by the member the receiver uses, which can be declared in a base type
+        if (annotatedMember.ContainingType is { TypeKind: TypeKind.Interface } && receiverType is not null)
+        {
+            var implementation = receiverType.FindImplementationForInterfaceMember(annotatedMember);
+            if (implementation is not null && (IsInOverrideChain(implementation, accessedMember) || IsInOverrideChain(accessedMember, implementation)))
+                return true;
+
+            return accessedMember.ContainingType is not null && SymbolEqualityComparer.Default.Equals(accessedMember.ContainingType.FindImplementationForInterfaceMember(annotatedMember)?.OriginalDefinition, accessedMember.OriginalDefinition);
+        }
+
+        return false;
+
+        static bool IsInOverrideChain(ISymbol member, ISymbol baseMember)
+        {
+            for (ISymbol? current = member; current is not null; current = (current as IPropertySymbol)?.OverriddenProperty)
+            {
+                if (SymbolEqualityComparer.Default.Equals(current.OriginalDefinition, baseMember.OriginalDefinition))
+                    return true;
+            }
+
+            return false;
         }
     }
 

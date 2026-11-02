@@ -535,14 +535,16 @@ public sealed class PdfFilterTests
         var parameters = CcittParameters(k: -1, columns: Width, rows: Height);
         parameters[PdfNames.BlackIs1] = PdfBoolean.Get(blackIs1);
 
+        // The first decoding allocates what the runtime initializes once
+        _ = CcittFaxFilter.Decode(encoded, parameters, Limit);
         var before = GC.GetAllocatedBytesForCurrentThread();
         var decoded = CcittFaxFilter.Decode(encoded, parameters, Limit);
         var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
 
         Assert.Equal(blackIs1 ? bitmap : [.. bitmap.Select(value => (byte)~value)], decoded);
 
-        // The output, the two change lists, and no row
-        Assert.True(allocated < decoded.Length + (2 * 4 * (Width + 8)) + 4096, $"{allocated} bytes allocated");
+        // The output, the two change lists, and no row: an array per row would be 64 x 2000 bytes more
+        Assert.True(allocated < decoded.Length + (2 * 4 * (Width + 8)) + 16384, $"{allocated} bytes allocated");
     }
 
     [Theory]

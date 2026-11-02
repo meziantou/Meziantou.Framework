@@ -77,11 +77,15 @@ the XML documentation and `readme.md` consistent in the same change.
   before the damage. A reference to an object that does not exist is the null object (7.3.10).
 - **Bounded work.** Everything a file can make expand is bounded: the decoded length of a stream
   (`MaxDecodedStreamLength`, checked as the output grows), the nesting of objects (`MaxNestingDepth`), the page tree and
-  the outline (depth and visited sets), chains of references and of `/Prev` sections, the `/W` arrays of CID fonts (a
+  the outline (depth and visited sets), chains of references and of `/Prev` sections, the objects of a repaired file (parsed up to the next object or trailer the scan found, `PdfRecoveryScanner.GetBoundary`), the decoded object streams kept (`ObjectStreamCache`), the names shared by a reader (`PdfNameCache`), the `/W` arrays of CID fonts (a
   budget of assignments). A hostile file must take time and memory in proportion to its size.
 - **Objects are loaded lazily** (`PdfIndirectObjectCollection`): an object of the file is parsed when a reference to it
-  is first resolved. When it is loaded, its fingerprint (`PdfObjectFingerprint`) is taken: an incremental save writes
-  the objects whose fingerprint changed, and the new ones. Mutating an object therefore needs no other bookkeeping.
+  is first resolved, and from a seekable stream (`PdfDocument.OpenSeekable`, `StreamPdfInput`) the data of a stream is
+  read when it is first used. When an object is loaded, its fingerprint (`PdfObjectFingerprint`) records the instance and
+  the version of the data of a stream; `PdfDictionary` and `PdfArray` record that a public member modified them after
+  they were parsed. An incremental save writes the objects that were replaced or whose containers were modified, and the
+  new ones: mutating an object through the public API needs no other bookkeeping, but code that loads objects (the
+  parser, the decryption) uses the internal `SetParsed` members, which do not mark them modified.
 - **The high-level API writes the objects.** `PdfPage`, `PdfDocumentInformation`, `PdfAnnotationCollection` read and
   write the dictionaries directly; the outline is the exception (`PdfOutlineCollection` is a model written back by
   `PdfDocument.PrepareForSave`, which only rewrites what changed).

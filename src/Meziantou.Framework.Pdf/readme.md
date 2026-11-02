@@ -5,7 +5,9 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
 - **Object model**: `PdfDictionary`, `PdfArray`, `PdfStream`, `PdfName`, `PdfString`, numbers, references
   (`Meziantou.Framework.Pdf.Objects`), with the indirect objects of a document in `PdfDocument.Objects`
 - **Reader**: cross-reference tables and streams, hybrid files, object streams, incremental updates, linearized files;
-  the files whose cross-reference information is wrong are repaired by scanning them (`PdfDocument.IsRepaired`)
+  the files whose cross-reference information is wrong are repaired by scanning them (`PdfDocument.IsRepaired`); a
+  seekable stream is read on demand (`PdfDocument.OpenSeekable`), without copying the file to memory, so that a file
+  can be larger than 2 GB; the encrypted payload of PDF 2.0 unencrypted wrapper documents (`PdfDocument.EncryptedPayload`)
 - **Filters**: `FlateDecode` and `LZWDecode` (with the PNG and TIFF predictors), `ASCIIHexDecode`, `ASCII85Decode`,
   `RunLengthDecode`, `CCITTFaxDecode` (Group 3 and Group 4), `JBIG2Decode` (generic, refinement, text and halftone
   regions, symbol and pattern dictionaries, arithmetic, MMR and Huffman coding); `DCTDecode` and `JPXDecode` through the
@@ -124,6 +126,18 @@ builder.SetFillPattern(checkerboard).Rectangle(300, 600, 200, 100).Fill();
 ```csharp
 var document = PdfDocument.Open(file);
 var pageCount = document.Pages.Count;
+var text = document.Pages[0].ExtractText();
+```
+<!-- endref -->
+
+`PdfDocument.OpenSeekable` reads the objects of a seekable stream when they are first used: the stream belongs to the
+caller and stays open while the document is used.
+
+<!-- ref:../../tests/Meziantou.Framework.Pdf.Tests/PdfDocumentTests.cs;region=Pdf_OpenSeekable;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The objects are read from the stream when they are first used: it stays open while the document is used
+using var stream = File.OpenRead(path);
+var document = PdfDocument.OpenSeekable(stream);
 var text = document.Pages[0].ExtractText();
 ```
 <!-- endref -->

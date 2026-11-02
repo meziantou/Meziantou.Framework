@@ -193,9 +193,43 @@ public sealed partial class PdfDocument
     public static PdfDocument Open(Stream stream, PdfReadOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(stream);
-        using var buffer = new MemoryStream();
-        stream.CopyTo(buffer);
-        return Open(buffer.ToArray(), options);
+        return Open(PdfStreamReader.ReadToEnd(stream), options);
+    }
+
+    /// <summary>
+    /// Reads a document from a seekable stream without copying it to memory: the objects are read from the stream when
+    /// they are first used, so that the memory does not grow with the size of the file, and a file can be larger than 2 GB.
+    /// </summary>
+    /// <param name="stream">
+    /// The stream, positioned at the start of the file. It belongs to the caller: the document does not close it. It must
+    /// stay open and unchanged while the document is used, and it must not be used by anything else meanwhile: the document
+    /// moves its position.
+    /// </param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="PdfReadOptions.Default"/>.</param>
+    /// <returns>The document.</returns>
+    /// <exception cref="ArgumentException">The stream cannot seek or cannot be read.</exception>
+    /// <exception cref="InvalidPdfContentException">The data is not a PDF document, or it cannot be recovered.</exception>
+    /// <exception cref="UnsupportedPdfFeatureException">The document uses a feature the library does not support.</exception>
+    /// <exception cref="PdfResourceLimitException">The document exceeds a limit of the options.</exception>
+    /// <exception cref="PdfPasswordException">The document is encrypted, and <see cref="PdfReadOptions.Password"/> is neither its user nor its owner password.</exception>
+    /// <remarks>The errors of the stream (<see cref="IOException"/>, <see cref="ObjectDisposedException"/>) are not caught: they can occur whenever an object is first used.</remarks>
+    /// <example>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Pdf.Tests/PdfDocumentTests.cs" ref:region="Pdf_OpenSeekable" ref:dedent="true">
+    /// // The objects are read from the stream when they are first used: it stays open while the document is used
+    /// using var stream = File.OpenRead(path);
+    /// var document = PdfDocument.OpenSeekable(stream);
+    /// var text = document.Pages[0].ExtractText();
+    /// </code>
+    /// </example>
+    public static PdfDocument OpenSeekable(Stream stream, PdfReadOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+        if (!stream.CanSeek || !stream.CanRead)
+            throw new ArgumentException("The stream must be readable and seekable", nameof(stream));
+
+        options ??= PdfReadOptions.Default;
+        var reader = PdfFileReader.Open(new StreamPdfInput(stream), options);
+        return new PdfDocument(reader);
     }
 
     /// <summary>Reads a document from a file.</summary>
@@ -224,9 +258,7 @@ public sealed partial class PdfDocument
     public static async Task<PdfDocument> OpenAsync(Stream stream, PdfReadOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(stream);
-        using var buffer = new MemoryStream();
-        await stream.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
-        return Open(buffer.ToArray(), options);
+        return Open(await PdfStreamReader.ReadToEndAsync(stream, cancellationToken).ConfigureAwait(false), options);
     }
 
     /// <summary>Reads a document from a file.</summary>

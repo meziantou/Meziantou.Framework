@@ -138,8 +138,10 @@ internal abstract class RenderColorSpace
                 if (space.ComponentCount == device.ComponentCount)
                     return space;
             }
-            catch (InvalidPdfContentException)
+            catch (Exception ex) when (ex is InvalidPdfContentException or UnsupportedPdfFeatureException)
             {
+                // A default color space that is invalid or not supported: the device color space is used (a limit of the
+                // work, PdfResourceLimitException, still stops the page)
             }
         }
 
@@ -158,8 +160,7 @@ internal abstract class RenderColorSpace
             case "DeviceCMYK" or "CMYK":
                 return Cmyk;
             case "CalGray":
-                // The CIE-based gray is drawn as the device gray, as viewers do
-                return Gray;
+                return new CalGraySpace(array.Count > 1 ? array.GetResolved(1) as PdfDictionary : null);
             case "CalRGB":
                 return new CalRgbSpace(array.Count > 1 ? array.GetResolved(1) as PdfDictionary : null);
             case "Lab":
@@ -235,7 +236,7 @@ internal abstract class RenderColorSpace
             var profile = new IccProfile(new MetadataBlob(stream.GetDecodedData()));
             var transform = IccColorTransform.Create(profile, IccProfile.Srgb);
             if (count == 0 || transform.SourceChannelCount == count)
-                return new IccSpace(transform);
+                return new IccSpace(transform, ReadRange(stream.Dictionary, transform.SourceChannelCount));
         }
         catch (Exception ex) when (ex is InvalidImageContentException or UnsupportedImageFeatureException or InvalidPdfContentException or ArgumentException)
         {
@@ -251,6 +252,21 @@ internal abstract class RenderColorSpace
             4 => Cmyk,
             _ => Rgb,
         };
+    }
+
+    /// <summary>Reads the <c>/Range</c> of an ICC-based color space: the minimum and maximum of each component, 0 and 1 by default (8.6.5.5).</summary>
+    private static double[] ReadRange(PdfDictionary dictionary, int count)
+    {
+        var range = RenderFunction.ReadNumbers(dictionary.Get<PdfArray>(PdfName.Create("Range")));
+        var result = new double[count * 2];
+        for (var i = 0; i < count; i++)
+        {
+            var (min, max) = range is not null && range.Length >= 2 * count && double.IsFinite(range[2 * i]) && double.IsFinite(range[(2 * i) + 1]) && range[(2 * i) + 1] > range[2 * i] ? (range[2 * i], range[(2 * i) + 1]) : (0, 1);
+            result[2 * i] = min;
+            result[(2 * i) + 1] = max;
+        }
+
+        return result;
     }
 
     private sealed class DeviceGraySpace : RenderColorSpace
@@ -292,21 +308,84 @@ internal abstract class RenderColorSpace
         public override void ToRgb(ReadOnlySpan<double> components, Span<byte> rgb) => ConvertBytes(Transform.Value, 4, components, rgb);
     }
 
-    private sealed class IccSpace(IccColorTransform transform) : RenderColorSpace
+    /// <summary>
+    /// An ICC-based color space (8.6.5.5): the components, within the <c>/Range</c> of the color space, are mapped to the
+    /// 0 to 1 of the encoding of the profile (the L*a*b* values of a profile whose data color space is Lab, for instance),
+    /// then converted by the profile.
+    /// </summary>
+    private sealed class IccSpace(IccColorTransform transform, double[] range) : RenderColorSpace
     {
         private readonly IccColorCache _colors = new(transform);
+        private readonly bool _isDefaultRange = range.Select((value, index) => value == index % 2).All(value => value);
 
         public override int ComponentCount => transform.SourceChannelCount;
 
-        public override double[] GetInitialColor() => ComponentCount == 4 ? [0, 0, 0, 1] : new double[ComponentCount];
+        public override double[] GetInitialColor()
+        {
+            // All the components 0, or the nearest value of the range; no ink for CMYK
+            var result = new double[ComponentCount];
+            for (var i = 0; i < result.Length; i++)
+            {
+                result[i] = Math.Clamp(ComponentCount == 4 && i == 3 ? 1 : 0, range[2 * i], range[(2 * i) + 1]);
+            }
 
-        public override RgbColor ToRgb(ReadOnlySpan<double> components) => _colors.ToRgb(components);
+            return result;
+        }
 
-        public override void ToRgb(ReadOnlySpan<double> components, Span<byte> rgb) => ConvertBytes(transform, ComponentCount, components, rgb);
+        public override double[] GetDefaultDecode(int bitsPerComponent) => [.. range];
+
+        public override RgbColor ToRgb(ReadOnlySpan<double> components)
+        {
+            if (_isDefaultRange)
+                return _colors.ToRgb(components);
+
+            Span<double> normalized = stackalloc double[ComponentCount];
+            Normalize(components, normalized);
+            return _colors.ToRgb(normalized);
+        }
+
+        public override void ToRgb(ReadOnlySpan<double> components, Span<byte> rgb)
+        {
+            if (_isDefaultRange)
+            {
+                ConvertBytes(transform, ComponentCount, components, rgb);
+                return;
+            }
+
+            // The components mapped to the 0 to 1 of the profile first
+            var normalized = ArrayPool<double>.Shared.Rent(components.Length);
+            try
+            {
+                var channels = ComponentCount;
+                for (var i = 0; i < components.Length; i++)
+                {
+                    normalized[i] = Normalize(components[i], i % channels);
+                }
+
+                ConvertBytes(transform, channels, normalized.AsSpan(0, components.Length), rgb);
+            }
+            finally
+            {
+                ArrayPool<double>.Shared.Return(normalized);
+            }
+        }
+
+        private void Normalize(ReadOnlySpan<double> components, Span<double> normalized)
+        {
+            for (var i = 0; i < normalized.Length; i++)
+            {
+                normalized[i] = Normalize(i < components.Length ? components[i] : 0, i);
+            }
+        }
+
+        private double Normalize(double value, int component) => (value - range[2 * component]) / (range[(2 * component) + 1] - range[2 * component]);
     }
 
     private sealed class IndexedSpace(RenderColorSpace baseSpace, int high, byte[] lookup) : RenderColorSpace
     {
+        // The bytes of the table are scaled to the range of the components of the base color space (8.6.6.3)
+        private readonly double[] _baseRange = baseSpace.GetDefaultDecode(8);
+
         public override int ComponentCount => 1;
 
         public override double[] GetDefaultDecode(int bitsPerComponent) => [0, (1 << bitsPerComponent) - 1];
@@ -319,7 +398,9 @@ internal abstract class RenderColorSpace
             for (var i = 0; i < count; i++)
             {
                 var position = (index * count) + i;
-                values[i] = (position < lookup.Length ? lookup[position] : 0) / 255.0;
+                var min = (2 * i) + 1 < _baseRange.Length ? _baseRange[2 * i] : 0;
+                var max = (2 * i) + 1 < _baseRange.Length ? _baseRange[(2 * i) + 1] : 1;
+                values[i] = min + ((position < lookup.Length ? lookup[position] : 0) / 255.0 * (max - min));
             }
 
             return baseSpace.ToRgb(values);

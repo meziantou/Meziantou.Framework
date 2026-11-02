@@ -20,6 +20,9 @@ Snapshot.Validate(svgText, SnapshotType.Svg);
 ```
 <!-- endref -->
 
+To read a `Stream` asynchronously, use [Snapshot.ValidateAsync](cref:Meziantou.Framework.SnapshotTesting.Snapshot.ValidateAsync), see
+[Asynchronous values](07-AsynchronousValues.md).
+
 A type also converts from a string, which is the extension of the file: `Snapshot.Validate(spec, "yaml")` stores a
 `.yaml` file. `SnapshotType.Create("cs")` does the same, and `SnapshotType.Create(type, mimeType, displayName)` also
 sets the [MimeType](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.MimeType) and [DisplayName](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.DisplayName) of the type. A leading dot is ignored, and `jpg` and `tif` are the same types as

@@ -2,7 +2,6 @@ rendering/pdfjs/test/pdfs/160F-2019.pdf#0: Different
 rendering/pdfjs/test/pdfs/Brotli-Prototype-FileA.pdf#0: MissingPage
 rendering/pdfjs/test/pdfs/ThuluthFeatures.pdf#0: Different
 rendering/pdfjs/test/pdfs/XiaoBiaoSong.pdf#0: Different
-rendering/pdfjs/test/pdfs/annotation-square-circle-without-appearance.pdf#0: Different
 rendering/pdfjs/test/pdfs/bomb_giant.pdf#0: PdfResourceLimitException
 rendering/pdfjs/test/pdfs/bug1669099.pdf#0: Different
 rendering/pdfjs/test/pdfs/bug1671312_ArialNarrow.pdf#0: Different
@@ -12,6 +11,7 @@ rendering/pdfjs/test/pdfs/bug1799927.pdf#0: Different
 rendering/pdfjs/test/pdfs/bug1802506.pdf#0: Different
 rendering/pdfjs/test/pdfs/bug1872721.pdf#0: Different
 rendering/pdfjs/test/pdfs/bug1947248_forms.pdf#0: Different
+rendering/pdfjs/test/pdfs/calgray.pdf#0: Different
 rendering/pdfjs/test/pdfs/ccitt_EndOfBlock_false.pdf#0: Different
 rendering/pdfjs/test/pdfs/endchar.pdf#0: Different
 rendering/pdfjs/test/pdfs/freeculture.pdf#0: Different

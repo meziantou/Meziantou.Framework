@@ -113,16 +113,23 @@ internal sealed partial class ContentRenderer
 
             // The text rendering matrix: text space to device space; a vertical font places the glyph by its position vector
             var rendering = new PdfMatrix(_state.FontSize * _state.HorizontalScaling, 0, 0, _state.FontSize, 0, _state.TextRise) * _textMatrix;
+            var (verticalDisplacement, vx, vy) = font.IsVertical ? font.GetVerticalMetrics(code, width) : default;
             if (font.IsVertical)
             {
-                rendering = PdfMatrix.CreateTranslation(-width / 2, -0.88) * rendering;
+                rendering = PdfMatrix.CreateTranslation(-vx, -vy) * rendering;
             }
 
             if (font.Type3 is { } type3)
             {
                 if (paints)
                 {
-                    RenderType3Glyph(canvas, type3, code, rendering, resources);
+                    RenderType3Glyph(canvas, type3, code, rendering, resources, clipCollector: null);
+                }
+
+                // The clipping modes: the shapes the glyph procedure paints are the glyph (9.3.6 leaves Type 3 glyphs to the processor)
+                if (mode >= 4)
+                {
+                    RenderType3Glyph(canvas, type3, code, rendering, resources, _textClip ??= []);
                 }
             }
             else if (font.GetGlyphPath(code) is { } glyph && (paints || mode >= 4))
@@ -133,7 +140,7 @@ internal sealed partial class ContentRenderer
             // The displacement: the width, the character spacing, the word spacing for the single-byte code 32 (9.4.4)
             var spacing = _state.CharacterSpacing + (isSpace ? _state.WordSpacing : 0);
             _textMatrix = font.IsVertical
-                ? PdfMatrix.CreateTranslation(0, (-1 * _state.FontSize) + spacing) * _textMatrix
+                ? PdfMatrix.CreateTranslation(0, (verticalDisplacement * _state.FontSize) + spacing) * _textMatrix
                 : PdfMatrix.CreateTranslation(((width * _state.FontSize) + spacing) * _state.HorizontalScaling, 0) * _textMatrix;
         }
     }
@@ -158,8 +165,11 @@ internal sealed partial class ContentRenderer
         }
     }
 
-    /// <summary>Runs the glyph procedure of a Type 3 font (9.6.4) with the font matrix and the text rendering matrix as transformation.</summary>
-    private void RenderType3Glyph(DrawingCanvas canvas, Type3Glyphs glyphs, uint code, PdfMatrix rendering, PdfDictionary? resources)
+    /// <summary>
+    /// Runs the glyph procedure of a Type 3 font (9.6.4) with the font matrix and the text rendering matrix as
+    /// transformation; with a collector, the paths it paints are added to it instead of being painted.
+    /// </summary>
+    private void RenderType3Glyph(DrawingCanvas canvas, Type3Glyphs glyphs, uint code, PdfMatrix rendering, PdfDictionary? resources, List<VectorPath>? clipCollector)
     {
         if (glyphs.GetProcedure(code) is not { } procedure || _depth >= MaxDepth)
             return;
@@ -178,6 +188,7 @@ internal sealed partial class ContentRenderer
             // A glyph of a text-showing operator of a knockout group is drawn in the element of the operator
             IsKnockoutContext = IsKnockoutContext,
             Element = _element,
+            ClipCollector = clipCollector,
         };
         renderer._activeForms.UnionWith(_activeForms);
         // A glyph is shown many times: its procedure is decoded and parsed once

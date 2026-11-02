@@ -20,6 +20,9 @@ internal sealed partial class ContentRenderer
     private double _startY;
     private FillRule? _pendingClip;
 
+    /// <summary>Gets or initializes the paths that a glyph procedure of a Type 3 font paints in a text clipping mode: they are added to it instead of being painted.</summary>
+    public List<VectorPath>? ClipCollector { get; init; }
+
     private void MoveTo(double x, double y)
     {
         CheckPoint(x, y);
@@ -114,6 +117,17 @@ internal sealed partial class ContentRenderer
             return;
 
         var path = builder.Build();
+        if (ClipCollector is not null)
+        {
+            // The glyph of a Type 3 font in a clipping mode: what it paints is the glyph
+            if ((fill is not null || stroke) && !path.IsEmpty && TryGetDeviceTransform(_state.Ctm, out var glyphTransform) && TransformPath(path, glyphTransform) is { } glyphPath)
+            {
+                ClipCollector.Add(glyphPath);
+            }
+
+            return;
+        }
+
         if (path.IsEmpty || !_optionalContent.IsVisible && clip is null)
             return;
 
@@ -144,11 +158,39 @@ internal sealed partial class ContentRenderer
             }
         }
 
-        if (clip is { } clipRule && TryGetDeviceTransform(_state.Ctm, out var transform) && TransformPath(path, transform) is { } devicePath)
+        if (clip is { } clipRule)
         {
-            AddClip(devicePath, clipRule);
+            AddClip(ToDeviceClip(path), clipRule);
         }
     }
+
+    /// <summary>
+    /// Transforms a clipping path to device space. A path that cannot be transformed still clips, conservatively: a
+    /// matrix that is degenerate or not finite collapses the region to nothing, and a path the matrix takes beyond the
+    /// coordinates the canvas draws clips to its bounding box on the device.
+    /// </summary>
+    private VectorPath ToDeviceClip(VectorPath path)
+    {
+        if (!TryGetDeviceTransform(_state.Ctm, out var transform))
+            return EmptyPath;
+
+        if (TransformPath(path, transform) is { } devicePath)
+            return devicePath;
+
+        var bounds = path.Bounds;
+        var matrix = _state.Ctm;
+        var corners = new[] { matrix.Transform(bounds.X, bounds.Y), matrix.Transform(bounds.X + bounds.Width, bounds.Y), matrix.Transform(bounds.X, bounds.Y + bounds.Height), matrix.Transform(bounds.X + bounds.Width, bounds.Y + bounds.Height) };
+        var left = Math.Max(-1, corners.Min(point => point.X));
+        var top = Math.Max(-1, corners.Min(point => point.Y));
+        var right = Math.Min(DeviceSize.Width + 1, corners.Max(point => point.X));
+        var bottom = Math.Min(DeviceSize.Height + 1, corners.Max(point => point.Y));
+        if (!(right > left && bottom > top))
+            return EmptyPath;
+
+        return new VectorPathBuilder().MoveTo(left, top).LineTo(right, top).LineTo(right, bottom).LineTo(left, bottom).Close().Build();
+    }
+
+    private static VectorPath EmptyPath => new VectorPathBuilder().Build();
 
     /// <summary>Intersects the clipping region with a path in device space (8.5.4).</summary>
     private void AddClip(VectorPath devicePath, FillRule fillRule)

@@ -34,3 +34,11 @@ description: What the library does not do, so that you can plan around it.
 - The writer encrypts the embedded files with the method of the other streams.
 - A linearized file cannot be encrypted, has no object streams, and is built in memory before it is written. It has no
   thumbnail hint table: the thumbnails of the pages, if any, are counted with the objects of their pages.
+
+## Rendering
+
+- The renderer composites the page in sRGB, for a screen: overprint (`OP`, `op`, `OPM`) is not simulated, and the
+  halftones and the other parameters of the output device (black generation, undercolor removal) are ignored. The
+  colors of prepress documents that rely on them can differ from an overprint preview.
+- The appearances generated for the annotations that have none are simple: the line endings, the rich text and the
+  comb fields are not drawn.

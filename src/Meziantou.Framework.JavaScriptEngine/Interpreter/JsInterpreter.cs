@@ -765,6 +765,13 @@ internal static partial class JsInterpreter
                     sp--;
                     ArrayAppend(values[sp - 1], values[sp]);
                     break;
+                case OpCode.NewArgumentList:
+                    values[sp++] = new JsValue(new ArgumentList());
+                    break;
+                case OpCode.ArgumentListAppend:
+                    sp--;
+                    ((ArgumentList)values[sp - 1].Cell!).Add(values[sp]);
+                    break;
                 case OpCode.GetProperty:
                     JsValue.Store(ref values[sp - 1], GetProperty(frame, code[pc], code[pc + 1], values[sp - 1]));
                     pc += 2;
@@ -849,7 +856,7 @@ internal static partial class JsInterpreter
                             pc++;
                         }
 
-                        var arguments = GetSpreadArguments(values[--sp]);
+                        var arguments = GetSpreadArguments(values[--sp]).Values;
                         sp -= 2;
                         if (values[sp].Cell is JsClosure closure && CanRunInline(closure))
                         {
@@ -875,7 +882,7 @@ internal static partial class JsInterpreter
                     {
                         int constructorIndex;
                         int argumentCount;
-                        JsValue[]? spreadArguments = null;
+                        ArgumentList? spreadArguments = null;
                         if (op == OpCode.New)
                         {
                             argumentCount = code[pc++];
@@ -885,12 +892,12 @@ internal static partial class JsInterpreter
                         {
                             spreadArguments = GetSpreadArguments(values[--sp]);
                             constructorIndex = sp - 1;
-                            argumentCount = spreadArguments.Length;
+                            argumentCount = spreadArguments.Values.Length;
                         }
 
                         sp = constructorIndex;
                         frame.Sp = sp;
-                        var arguments = spreadArguments ?? values.AsSpan(constructorIndex + 1, argumentCount);
+                        var arguments = spreadArguments is not null ? spreadArguments.Values : values.AsSpan(constructorIndex + 1, argumentCount);
                         var constructor = GetConstructor(frame, values[constructorIndex]);
                         if (constructor is JsClosure closure && CanConstructInline(closure))
                         {
@@ -1056,6 +1063,7 @@ internal static partial class JsInterpreter
             OpCode.ThrowError => ExecuteThrowError(frame),
             OpCode.Debugger => ExecuteDebugger(frame, sp),
             OpCode.ArrayAppendSpread => ExecuteArrayAppendSpread(frame, sp),
+            OpCode.ArgumentListAppendSpread => ExecuteArgumentListAppendSpread(frame, sp),
             OpCode.DeleteProperty => ExecuteDeleteProperty(frame, sp),
             OpCode.DeleteElement => ExecuteDeleteElement(frame, sp),
             OpCode.DefineFieldComputed => ExecuteDefineFieldComputed(frame, sp),

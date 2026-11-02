@@ -282,7 +282,13 @@ internal static partial class JsInterpreter
     {
         var values = frame.Values;
         var pc = frame.Pc + 1;
-        values[sp++] = JsArray.Create(frame.Realm, frame.Arguments);
+        var list = new ArgumentList();
+        foreach (var argument in frame.Arguments)
+        {
+            list.Add(argument);
+        }
+
+        values[sp++] = new JsValue(list);
         frame.Pc = pc;
         return sp;
     }
@@ -652,6 +658,17 @@ internal static partial class JsInterpreter
         return sp;
     }
 
+    private static int ExecuteArgumentListAppendSpread(Frame frame, int sp)
+    {
+        var values = frame.Values;
+        var pc = frame.Pc + 1;
+        var iterable = values[--sp];
+        frame.Sp = sp;
+        ((ArgumentList)values[sp - 1].Cell!).AddSpread(frame.Realm, iterable);
+        frame.Pc = pc;
+        return sp;
+    }
+
     private static int ExecuteArrayAppendSpread(Frame frame, int sp)
     {
         var values = frame.Values;
@@ -887,7 +904,7 @@ internal static partial class JsInterpreter
         else
         {
             context = (EvalContext)frame.Code.Objects[code[pc++]];
-            arguments = GetSpreadArguments(values[--sp]);
+            arguments = GetSpreadArguments(values[--sp]).ToArray();
             thisValue = values[--sp];
             function = values[--sp];
         }
@@ -912,7 +929,7 @@ internal static partial class JsInterpreter
         }
         else
         {
-            arguments = GetSpreadArguments(values[--sp]);
+            arguments = GetSpreadArguments(values[--sp]).ToArray();
         }
 
         var newTarget = values[--sp];

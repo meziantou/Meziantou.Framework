@@ -1370,7 +1370,7 @@ internal sealed partial class CodeGenerator
         var hasSpread = call.Arguments.Exists(a => a is SpreadElement);
         if (hasSpread)
         {
-            EmitArgumentsArray(call.Arguments);
+            EmitArgumentList(call.Arguments);
         }
         else
         {
@@ -1442,20 +1442,20 @@ internal sealed partial class CodeGenerator
             PrivateNames: [.. privateNames]);
     }
 
-    private void EmitArgumentsArray(List<Node> arguments)
+    private void EmitArgumentList(List<Node> arguments)
     {
-        _builder.Emit(OpCode.NewArray);
+        _builder.Emit(OpCode.NewArgumentList);
         foreach (var argument in arguments)
         {
             if (argument is SpreadElement spread)
             {
                 EmitExpression(spread.Argument);
-                _builder.Emit(OpCode.ArrayAppendSpread);
+                _builder.Emit(OpCode.ArgumentListAppendSpread);
             }
             else
             {
                 EmitExpression(argument);
-                _builder.Emit(OpCode.ArrayAppend);
+                _builder.Emit(OpCode.ArgumentListAppend);
             }
         }
     }
@@ -1476,7 +1476,7 @@ internal sealed partial class CodeGenerator
         EmitExpression(newExpression.Callee);
         if (newExpression.Arguments.Exists(a => a is SpreadElement))
         {
-            EmitArgumentsArray(newExpression.Arguments);
+            EmitArgumentList(newExpression.Arguments);
             _builder.SetPosition(GetCallPosition(newExpression.Callee, newExpression.Start));
             _builder.AddCallSite(newExpression.Callee.Start, newExpression.Callee.End);
             _builder.Emit(OpCode.NewSpread);
@@ -1501,7 +1501,7 @@ internal sealed partial class CodeGenerator
         EmitLoadSpecial(call, VariableKind.NewTarget, checkInitialized: false);
         if (call.Arguments.Exists(a => a is SpreadElement))
         {
-            EmitArgumentsArray(call.Arguments);
+            EmitArgumentList(call.Arguments);
             _builder.SetPosition(call.Start);
             _builder.Emit(OpCode.SuperCallSpread);
         }

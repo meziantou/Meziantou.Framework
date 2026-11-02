@@ -333,17 +333,8 @@ internal static partial class JsInterpreter
         }
     }
 
-    private static JsValue[] GetSpreadArguments(JsValue array)
-    {
-        var jsArray = (JsArray)array.Cell!;
-        var result = new JsValue[jsArray.Length];
-        for (var i = 0u; i < jsArray.Length; i++)
-        {
-            result[i] = jsArray.Get(new PropertyKey(i));
-        }
-
-        return result;
-    }
+    /// <summary>Gets the argument list of a call with a spread argument (NewArgumentList).</summary>
+    private static ArgumentList GetSpreadArguments(JsValue list) => (ArgumentList)list.Cell!;
 
     private static void AppendSpread(JsArray array, JsValue iterable)
     {

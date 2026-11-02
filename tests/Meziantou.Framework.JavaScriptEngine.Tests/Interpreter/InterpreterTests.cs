@@ -15,6 +15,26 @@ public sealed class InterpreterTests
     }
 
     [Theory]
+    [InlineData("function f() { return [...arguments].join(); } var a = [1, 2, 3]; f(...a) + ';' + f(0, ...a, 4, ...'xy')", "1,2,3;0,1,2,3,4,x,y")]
+    [InlineData("function f() { return arguments.length + ':' + [...arguments].join(); } f(...[1, , 3])", "3:1,,3")]
+    [InlineData("Array.prototype[1] = 'p'; function f(a, b, c) { return a + b + c; } var r = f(...[1, , 3]); delete Array.prototype[1]; r", "1p3")]
+    [InlineData("var a = [1, 2]; Object.defineProperty(Array.prototype, 2, { get() { a.push(9); return 'g'; }, configurable: true }); a.length = 3; function f() { return [...arguments].join(); } var r = f(...a); delete Array.prototype[2]; r", "1,2,g,9")]
+    [InlineData("var it = { [Symbol.iterator]() { var i = 0; return { next() { return { value: i++, done: i > 3 }; } }; } }; function f() { return [...arguments].join(); } f(...it)", "0,1,2")]
+    [InlineData("var a = [1, 2]; a[Symbol.iterator] = function* () { yield 'own'; }; function f() { return [...arguments].join(); } f(...a)", "own")]
+    [InlineData("var saved = Array.prototype[Symbol.iterator]; Array.prototype[Symbol.iterator] = function* () { yield 'proto'; }; function f() { return [...arguments].join(); } var r = f(...[1, 2]); Array.prototype[Symbol.iterator] = saved; r", "proto")]
+    [InlineData("var proto = Object.getPrototypeOf([][Symbol.iterator]()); var saved = proto.next; proto.next = function () { return { done: true }; }; function f() { return arguments.length; } var r = f(...[1, 2]); proto.next = saved; r", "0")]
+    [InlineData("var it = { [Symbol.iterator]() { return { next() { throw new RangeError('x'); } }; } }; function f() { } try { f(...it); } catch (e) { e.constructor.name }", "RangeError")]
+    [InlineData("function f() { } try { f(...1); } catch (e) { e.constructor.name }", "TypeError")]
+    [InlineData("class A { constructor(...a) { this.v = a.join(); } } class B extends A { } class C extends A { constructor(...a) { super(...a, 3); } } new B(1, 2).v + ';' + new C(1, 2).v + ';' + new A(...[4, 5]).v", "1,2;1,2,3;4,5")]
+    [InlineData("var a = ['1 + 2']; eval(...a)", "3")]
+    [InlineData("var o = { m() { return this === o && arguments.length; } }; o.m(...[1, 2]) + ',' + Math.max(...[1, 5, 3]) + ',' + String.fromCharCode(...[104, 105])", "2,5,hi")]
+    [InlineData("function f() { return arguments.length; } f(...new Array(3000))", "3000")]
+    public void Evaluate_SpreadArguments(string code, string expected)
+    {
+        Assert.Equal(expected, Run(code));
+    }
+
+    [Theory]
     [InlineData("function f() { var s = 0; for (var i = 0; i < arguments.length; i++) s += arguments[i]; return s; } f(1, 2, 3) + f()", "6")]
     [InlineData("function f(a) { a = 5; return arguments[0]; } f(1)", "5")]
     [InlineData("function f(a) { 'use strict'; a = 5; return arguments[0]; } f(1)", "1")]

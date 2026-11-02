@@ -404,6 +404,15 @@ internal enum OpCode
     /// <summary>array iterable -> array</summary>
     ArrayAppendSpread,
 
+    /// <summary>-> list: the argument list of a call with a spread argument (Interpreter.ArgumentList)</summary>
+    NewArgumentList,
+
+    /// <summary>list value -> list</summary>
+    ArgumentListAppend,
+
+    /// <summary>list iterable -> list</summary>
+    ArgumentListAppendSpread,
+
     /// <summary>(key) object -> value</summary>
     GetProperty,
 
@@ -506,7 +515,7 @@ internal enum OpCode
     /// <summary>superConstructor newTarget argumentsArray -> this</summary>
     SuperCallSpread,
 
-    /// <summary>-> array: the arguments of a derived default constructor (forwarded to super)</summary>
+    /// <summary>-> list: the arguments of a derived default constructor (forwarded to super, see <see cref="NewArgumentList"/>)</summary>
     LoadAllArguments,
 
     /// <summary>specifier options -> promise: import()</summary>

@@ -66,6 +66,42 @@ internal static class Workloads
               return numbers.length + objects.length + numbers.map(x => x + 1).length;
             }
             """,
+        ["LoopCapture"] = """
+            function run() { let sum = 0; for (let i = 0; i < 100000; i++) { if (i < 0) { let f = () => i; sum += f(); } else { sum += i; } } return sum; }
+            """,
+        ["ClosureCreate"] = """
+            function run() {
+              let s = 0;
+              for (let i = 0; i < 30000; i++) {
+                const f = function () { return 1; };
+                const a = () => 2;
+                const c = () => i;
+                s += f() + a() + c();
+              }
+              return s;
+            }
+            """,
+        ["Arguments"] = """
+            function sum() { let s = 0; for (let i = 0; i < arguments.length; i++) s += arguments[i]; return s; }
+            function run() { let s = 0; for (let i = 0; i < 50000; i++) s += sum(i, 1, 2); return s; }
+            """,
+        ["SpreadCall"] = """
+            function add(a, b, c) { return a + b + c; }
+            function run() { const values = [1, 2, 3]; let s = 0; for (let i = 0; i < 50000; i++) s += add(...values); return s; }
+            """,
+        ["GlobalStore"] = """
+            var total = 0;
+            var counter = 0;
+            let lexical = 0;
+            function run() { total = 0; lexical = 0; for (counter = 0; counter < 100000; counter++) { total += counter; lexical += 1; } return total + lexical; }
+            """,
+        ["Generators"] = """
+            function* range(n) { for (let i = 0; i < n; i++) yield i; }
+            function run() { let s = 0; for (const v of range(20000)) s += v; const it = range(20000); for (let r = it.next(); !r.done; r = it.next()) s += r.value; return s; }
+            """,
+        ["Errors"] = """
+            function run() { let n = 0; for (let i = 0; i < 2000; i++) { try { null.x; } catch { n++; } try { undefined(); } catch { n++; } } return n; }
+            """,
     };
 
     /// <summary>A test file of the web-platform-tests style, run after testharness.js (the harness command).</summary>

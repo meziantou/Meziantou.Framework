@@ -34,6 +34,12 @@ internal sealed class SourceText
     /// </summary>
     public int UnboundNameFunctionStart { get; init; } = -1;
 
+    /// <summary>
+    /// Gets whether the code compiled from the source can run in several engines (a <see cref="JsPreparedScript"/>): the
+    /// engines keep the inline caches of its templates (<see cref="JsEngine.GetInlineCaches"/>).
+    /// </summary>
+    public bool IsShared { get; init; }
+
     public int Length => Text.Length;
 
     public char this[int index] => Text[index];

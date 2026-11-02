@@ -40,7 +40,7 @@ internal sealed partial class Intrinsics
     /// </summary>
     public bool IsArrayIterationIntact()
     {
-        var epoch = InlineCache.Epoch;
+        var epoch = Realm.Engine.InlineCacheEpoch;
         if (epoch != _arrayIterationEpoch)
         {
             _arrayIterationShapeIntact = ComputeArrayIterationShape();

@@ -46,7 +46,7 @@ public sealed class JsPreparedScript
     public static JsPreparedScript Parse(string code, string? url, int lineOffset, int columnOffset, int unboundNameFunctionStart)
     {
         ArgumentNullException.ThrowIfNull(code);
-        var source = new SourceText(code, url, lineOffset, columnOffset) { UnboundNameFunctionStart = unboundNameFunctionStart };
+        var source = new SourceText(code, url, lineOffset, columnOffset) { UnboundNameFunctionStart = unboundNameFunctionStart, IsShared = true };
         var program = Parsing.JsParser.ParseScript(source, Parsing.ParserOptions.Script);
         return new JsPreparedScript(source, CodeGenerator.CompileProgram(program, source, ProgramKind.Script, isStrict: false));
     }

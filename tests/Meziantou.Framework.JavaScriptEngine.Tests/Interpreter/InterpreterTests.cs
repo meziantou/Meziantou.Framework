@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace Meziantou.Framework.JavaScriptEngine.Tests.Interpreter;
 
 public sealed class InterpreterTests
@@ -337,6 +339,92 @@ public sealed class InterpreterTests
         realm1.Execute("proto.x = 3;");
         Assert.Equal(120, realm1.Execute(script).AsNumber());
         Assert.Equal(80, realm2.Execute(script).AsNumber());
+    }
+
+    [Fact]
+    public void InlineCaches_PreparedScriptDoesNotKeepEngineAlive()
+    {
+        var script = JsPreparedScript.Parse("""
+            function get(o) { return o.x + o.y; }
+            class Point { constructor(x) { this.x = x; } get y() { return 1; } }
+            var s = 0;
+            for (var i = 0; i < 20; i++) { s += get(new Point(i)) + get({ x: i, y: 2 }); }
+            s
+            """);
+        var engine = RunAndForget(script);
+        for (var i = 0; i < 10 && engine.IsAlive; i++)
+        {
+            GC.Collect();
+            GC.WaitForPendingFinalizers();
+        }
+
+        Assert.False(engine.IsAlive);
+        GC.KeepAlive(script);
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        static WeakReference RunAndForget(JsPreparedScript script)
+        {
+            using var engine = new JsEngine();
+            Assert.Equal(440, engine.CreateRealm().Execute(script).AsNumber());
+            return new WeakReference(engine);
+        }
+    }
+
+    [Fact]
+    public void InlineCaches_PreparedScriptCachesBelongToEachEngine()
+    {
+        var script = JsPreparedScript.Parse("function get(o) { return o.x; } var s = 0; for (var i = 0; i < 10; i++) { s += get({ x: i }); } s");
+        using var engine1 = new JsEngine();
+        using var engine2 = new JsEngine();
+        var realm1 = engine1.CreateRealm();
+        var realm2 = engine2.CreateRealm();
+        Assert.Equal(45, realm1.Execute(script).AsNumber());
+        Assert.Equal(45, realm2.Execute(script).AsNumber());
+
+        // The template keeps no entry: each engine has its own caches
+        Assert.All(script.Template.Caches, entry => Assert.Null(entry));
+        Assert.NotSame(engine1.GetInlineCaches(script.Template), engine2.GetInlineCaches(script.Template));
+        Assert.Contains(engine1.GetInlineCaches(script.Template), entry => entry is not null);
+    }
+
+    [Fact]
+    public void InlineCaches_InvalidationIsScopedToTheEngine()
+    {
+        using var engine1 = new JsEngine();
+        using var engine2 = new JsEngine();
+        var realm1 = engine1.CreateRealm();
+        var realm2 = engine2.CreateRealm();
+        realm1.Execute("var proto = { x: 1 }; function get(o) { return o.x; } var o = Object.create(proto); get(o) + get(o)");
+        realm2.Execute("var proto = { x: 1 }; function get(o) { return o.x; } var o = Object.create(proto); get(o) + get(o)");
+        var epoch1 = engine1.InlineCacheEpoch;
+        var epoch2 = engine2.InlineCacheEpoch;
+
+        realm2.Execute("delete proto.x; proto.x = 5;");
+        Assert.Equal(epoch1, engine1.InlineCacheEpoch);
+        Assert.NotEqual(epoch2, engine2.InlineCacheEpoch);
+        Assert.Equal(1, realm1.Execute("get(o)").AsNumber());
+        Assert.Equal(5, realm2.Execute("get(o)").AsNumber());
+
+        realm1.Execute("Object.setPrototypeOf(proto, { y: 3 }); proto.x = 2;");
+        Assert.Equal(2, realm1.Execute("get(o)").AsNumber());
+        Assert.Equal(3, realm1.Execute("o.y").AsNumber());
+    }
+
+    [Fact]
+    public void InlineCaches_ChangeWithoutCurrentEngineInvalidatesOnEnter()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        realm.Execute("var proto = { x: 1 }; function get(o) { return o.x; } var o = Object.create(proto); get(o) + get(o)");
+        JsObject proto;
+        using (engine.Enter())
+        {
+            proto = realm.GlobalObject.Get(new PropertyKey("proto")).AsObject();
+        }
+
+        // A change made while no engine is current is seen when the engine is entered again
+        proto.Delete(new PropertyKey("x"));
+        Assert.Equal("undefined", realm.Execute("typeof get(o)").AsString());
     }
 
     // The nested functions are compiled on their first call, in the scopes that enclose them

@@ -16,6 +16,7 @@ namespace Meziantou.Framework.Pdf.Objects;
 public sealed class PdfStream : PdfObject
 {
     private ReadOnlyMemory<byte> _encoded;
+    private Func<ReadOnlyMemory<byte>>? _pendingData;
     private ArrayBufferWriter<byte>? _appended;
 
     /// <summary>Initializes a new instance of the <see cref="PdfStream"/> class with an empty dictionary and no data.</summary>
@@ -52,6 +53,7 @@ public sealed class PdfStream : PdfObject
     {
         get
         {
+            LoadPendingData();
             Flush();
             return _encoded;
         }
@@ -84,6 +86,7 @@ public sealed class PdfStream : PdfObject
         Dictionary.Remove(PdfNames.DecodeParms);
         Dictionary.Remove(PdfNames.DL);
         _appended = null;
+        _pendingData = null;
         _encoded = data.ToArray();
         IsCompressible = true;
         DataVersion++;
@@ -114,6 +117,7 @@ public sealed class PdfStream : PdfObject
     internal void SetData(ReadOnlyMemory<byte> data, bool compressible)
     {
         _appended = null;
+        _pendingData = null;
         _encoded = data;
         IsCompressible = compressible;
         DataVersion++;
@@ -124,7 +128,29 @@ public sealed class PdfStream : PdfObject
     internal void SetLoadedData(ReadOnlyMemory<byte> data)
     {
         _encoded = data;
+        _pendingData = null;
         IsCompressible = false;
+    }
+
+    /// <summary>Sets the data the parser found in a file it reads on demand: the data is read when it is first used.</summary>
+    internal void SetLoadedData(Func<ReadOnlyMemory<byte>> data)
+    {
+        _encoded = default;
+        _pendingData = data;
+        IsCompressible = false;
+    }
+
+    /// <summary>Transforms the data the parser read (the decryption), when it is first used if it is not read yet.</summary>
+    internal void TransformLoadedData(Func<ReadOnlyMemory<byte>, ReadOnlyMemory<byte>> transform)
+    {
+        if (_pendingData is { } pending)
+        {
+            _pendingData = () => transform(pending());
+        }
+        else
+        {
+            SetLoadedData(transform(EncodedData));
+        }
     }
 
     /// <summary>Appends data to a stream without filter (content builders).</summary>
@@ -132,6 +158,7 @@ public sealed class PdfStream : PdfObject
     {
         if (_appended is null)
         {
+            LoadPendingData();
             if (Dictionary.ContainsKey(PdfNames.Filter))
                 throw new InvalidOperationException("Data cannot be appended to an encoded stream");
 
@@ -142,6 +169,15 @@ public sealed class PdfStream : PdfObject
 
         _appended.Write(data);
         DataVersion++;
+    }
+
+    private void LoadPendingData()
+    {
+        if (_pendingData is { } pending)
+        {
+            _encoded = pending();
+            _pendingData = null;
+        }
     }
 
     private void Flush()

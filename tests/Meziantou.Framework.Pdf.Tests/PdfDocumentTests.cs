@@ -1539,4 +1539,416 @@ public sealed class PdfDocumentTests
         Assert.Equal(["Lead", "Link"], Assert.Single(read.StructureTree.Elements).Children.Select(child => child.Type));
         Assert.Equal("The website of the author", Assert.Single(read.Pages[0].Annotations).Contents);
     }
+
+    [Fact]
+    public void Example_OpenSeekable()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var path = directory.GetFullPath("document.pdf");
+        File.WriteAllBytes(path, HandWrittenPdf.CreateSimple("Some text").ToArray());
+
+        #region Pdf_OpenSeekable
+        // The objects are read from the stream when they are first used: it stays open while the document is used
+        using var stream = File.OpenRead(path);
+        var document = PdfDocument.OpenSeekable(stream);
+        var text = document.Pages[0].ExtractText();
+        #endregion
+
+        Assert.Equal("Some text", text);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task OpenStreamReadsFromItsPosition(bool seekable)
+    {
+        var file = HandWrittenPdf.CreateSimple().ToArray();
+        var content = Encoding.ASCII.GetBytes("prefix").Concat(file).ToArray();
+
+        var sync = new TestStream(content, seekable) { Position = 6 };
+        var asynchronous = new TestStream(content, seekable) { Position = 6 };
+
+        Assert.Equal("Hello", PdfDocument.Open(sync).Pages[0].ExtractText());
+        Assert.Equal("Hello", (await PdfDocument.OpenAsync(asynchronous)).Pages[0].ExtractText());
+        Assert.Equal(content.Length, sync.Offset);
+        Assert.Equal(content.Length, asynchronous.Offset);
+    }
+
+    [Fact]
+    public void OpenStreamCopiesTheBufferOfAMemoryStream()
+    {
+        var file = HandWrittenPdf.CreateSimple().ToArray();
+        var buffer = file.ToArray();
+        var stream = new MemoryStream(buffer, 0, buffer.Length, writable: true, publiclyVisible: true);
+
+        var document = PdfDocument.Open(stream);
+        Array.Clear(buffer);
+
+        Assert.Equal("Hello", document.Pages[0].ExtractText());
+    }
+
+    [Fact]
+    public void OpenStreamReadsALargeNonSeekableStreamInChunks()
+    {
+        var file = HandWrittenPdf.CreateSimple().Add(6, HandWrittenPdf.Stream(new string('x', 3 * 1024 * 1024))).ToArray();
+
+        var document = PdfDocument.Open(new TestStream(file, seekable: false));
+
+        Assert.True(document.Objects.TryGetReference(6, out var reference));
+        Assert.HasCount(3 * 1024 * 1024, Assert.IsType<PdfStream>(reference.Resolve()).GetDecodedData());
+    }
+
+    [Fact]
+    public void OpenSeekableReadsTheObjectsItUses()
+    {
+        var large = new string('x', 8 * 1024 * 1024);
+        var file = HandWrittenPdf.CreateSimple().Add(6, HandWrittenPdf.Stream(large)).ToArray();
+        var stream = new TestStream(file, seekable: true);
+
+        var document = PdfDocument.OpenSeekable(stream);
+        Assert.Equal("Hello", document.Pages[0].ExtractText());
+        Assert.True(document.Objects.TryGetReference(6, out var reference));
+        var data = Assert.IsType<PdfStream>(reference.Resolve());
+
+        Assert.InRange(stream.BytesRead, 1, 256 * 1024);
+        Assert.Equal(large, Encoding.Latin1.GetString(data.GetDecodedData()));
+        Assert.InRange(stream.BytesRead, large.Length, large.Length + (256 * 1024));
+    }
+
+    [Fact]
+    public void OpenSeekableReadsObjectsLargerThanTheWindow()
+    {
+        var items = string.Join(' ', Enumerable.Range(0, 50_000).Select(i => i.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        var file = HandWrittenPdf.CreateSimple().Add(6, "[" + items + "]").Add(7, "<< /Length 8 0 R >>\nstream\n" + items + "\nendstream").Add(8, Encoding.ASCII.GetByteCount(items).ToString(System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+
+        var document = PdfDocument.OpenSeekable(new MemoryStream(file));
+
+        Assert.True(document.Objects.TryGetReference(6, out var array));
+        Assert.HasCount(50_000, Assert.IsType<PdfArray>(array.Resolve()));
+        Assert.True(document.Objects.TryGetReference(7, out var stream));
+        Assert.Equal(items, Encoding.ASCII.GetString(Assert.IsType<PdfStream>(stream.Resolve()).GetDecodedData()));
+    }
+
+    [Fact]
+    public void OpenSeekableRepairsADamagedFile()
+    {
+        var file = HandWrittenPdf.CreateSimple().Compress(1, 2, 3, 4);
+        file.UseXrefStream = true;
+        var text = Encoding.Latin1.GetString(file.ToArray()).Replace("startxref", "startxreX", StringComparison.Ordinal);
+
+        var document = PdfDocument.OpenSeekable(new MemoryStream(Encoding.Latin1.GetBytes(text)));
+
+        Assert.True(document.IsRepaired);
+        Assert.Equal("Hello", document.Pages[0].ExtractText());
+    }
+
+    [Fact]
+    public void OpenSeekableReadsEncryptedDocuments()
+    {
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("Text", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 24, 60, 700);
+        document.Information.Title = "Title";
+        document.Encryption = new PdfEncryption("user", "owner");
+        var file = document.ToByteArray(new PdfSaveOptions { UseObjectStreams = false });
+
+        var read = PdfDocument.OpenSeekable(new MemoryStream(file), new PdfReadOptions { Password = "user" });
+
+        Assert.Equal("Title", read.Information.Title);
+        Assert.Equal("Text", read.Pages[0].ExtractText());
+    }
+
+    [Fact]
+    public void OpenSeekableDocumentIsSavedIncrementally()
+    {
+        var file = HandWrittenPdf.CreateSimple().ToArray();
+        var document = PdfDocument.OpenSeekable(new MemoryStream(file));
+        document.Information.Title = "Updated";
+
+        using var output = new MemoryStream();
+        document.SaveIncremental(output);
+
+        Assert.Equal(file, output.ToArray().AsSpan(0, file.Length).ToArray());
+        var read = PdfDocument.Open(output.ToArray());
+        Assert.Equal("Updated", read.Information.Title);
+        Assert.Equal("Hello", read.Pages[0].ExtractText());
+        Assert.Equal("Hello", PdfDocument.Open(document.ToByteArray()).Pages[0].ExtractText());
+    }
+
+    [Fact]
+    public void OpenSeekableRequiresASeekableStream()
+    {
+        Assert.Throws<ArgumentException>(() => PdfDocument.OpenSeekable(new TestStream([], seekable: false)));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void OpenSeekableReadsFilesLargerThan2GB(bool repair)
+    {
+        // A file of 3 GB whose objects are after 2.5 GB, and NUL bytes (whitespace) before them: the stream generates it
+        const long Start = 2_500_000_000L;
+        var header = Encoding.ASCII.GetBytes("%PDF-1.7\n");
+        var body = new StringBuilder();
+        var offsets = new List<long>();
+        foreach (var obj in new[]
+        {
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+            HandWrittenPdf.Stream("BT /F1 12 Tf 72 720 Td (Far away) Tj ET"),
+        })
+        {
+            offsets.Add(Start + body.Length);
+            body.Append(System.Globalization.CultureInfo.InvariantCulture, $"{offsets.Count} 0 obj\n{obj}\nendobj\n");
+        }
+
+        var xref = Start + body.Length;
+        if (!repair)
+        {
+            body.Append("xref\n0 6\n0000000000 65535 f \n");
+            foreach (var offset in offsets)
+            {
+                body.Append(System.Globalization.CultureInfo.InvariantCulture, $"{offset:D10} 00000 n \n");
+            }
+
+            body.Append(System.Globalization.CultureInfo.InvariantCulture, $"trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n");
+        }
+
+        var stream = new TestStream([(0, header), (Start, Encoding.ASCII.GetBytes(body.ToString()))], Start + body.Length);
+
+        var document = PdfDocument.OpenSeekable(stream);
+
+        Assert.Equal(repair, document.IsRepaired);
+        Assert.Equal("Far away", document.Pages[0].ExtractText());
+    }
+
+    [Fact]
+    public void RecoveryScanOfAStreamFindsWhatTheScanOfMemoryFinds()
+    {
+        // The stream is scanned in chunks of 4 MiB: objects and trailers are placed around the end of the first chunk
+        var file = new StringBuilder("%PDF-1.7\n");
+        file.Append('%', (4 * 1024 * 1024) - 300).Append('\n');
+        for (var i = 0; i < 40; i++)
+        {
+            file.Append(System.Globalization.CultureInfo.InvariantCulture, $"{i + 1} 0 obj\n(x)\nendobj\n");
+            if (i % 5 == 0)
+            {
+                file.Append("trailer\n<< /Root 1 0 R >>\n");
+            }
+        }
+
+        for (var shift = 0; shift < 12; shift++)
+        {
+            var bytes = Encoding.Latin1.GetBytes(new string(' ', shift) + file);
+            var memory = Parsing.PdfRecoveryScanner.Scan(new Parsing.MemoryPdfInput(bytes), maxDepth: 64);
+            var stream = Parsing.PdfRecoveryScanner.Scan(new Parsing.StreamPdfInput(new MemoryStream(bytes)), maxDepth: 64);
+
+            Assert.HasCount(40, memory.Offsets);
+            Assert.Equal(memory.Offsets.OrderBy(o => o.Key), stream.Offsets.OrderBy(o => o.Key));
+            Assert.Equal(memory.TrailerOffsets, stream.TrailerOffsets);
+        }
+    }
+
+    [Fact]
+    public void ReadingADocumentDoesNotChangeItsObjects()
+    {
+        var file = HandWrittenPdf.CreateSimple().Add(6, "<< /Title (T) /Nested << /Array [1 [2 3] << /A 1 >>] >> >>").ToArray();
+        var document = PdfDocument.Open(file);
+        document.Pages[0].ExtractText();
+        foreach (var reference in document.Objects.GetReferences())
+        {
+            reference.Resolve();
+        }
+
+        using var output = new MemoryStream();
+        document.SaveIncremental(output);
+
+        var update = Encoding.Latin1.GetString(output.ToArray()[file.Length..]);
+        Assert.DoesNotContain(" obj", update, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void IncrementalSaveWritesTheObjectsWhoseNestedObjectsChanged()
+    {
+        var file = HandWrittenPdf.CreateSimple().Add(6, "<< /Nested << /Array [1 [2 3]] >> >>").Add(7, "(Seven)").Add(8, HandWrittenPdf.Stream("q Q")).ToArray();
+        var document = PdfDocument.Open(file);
+        var objects = document.Objects;
+        Assert.True(objects.TryGetReference(6, out var nested));
+        Assert.True(objects.TryGetReference(7, out var replaced));
+        Assert.True(objects.TryGetReference(8, out var stream));
+        Assert.True(objects.TryGetReference(4, out var font));
+        font.Resolve();
+
+        var array = Assert.IsType<PdfArray>(Assert.IsType<PdfDictionary>(nested.Resolve()).Get<PdfDictionary>(PdfName.Create("Nested"))!.Get<PdfArray>(PdfName.Create("Array"))!);
+        Assert.IsType<PdfArray>(array[1]).Add(PdfInteger.Get(4));
+        objects.Set(replaced, PdfString.FromText("Replaced"));
+        Assert.IsType<PdfStream>(stream.Resolve()).SetData("Q q"u8);
+
+        using var output = new MemoryStream();
+        document.SaveIncremental(output);
+
+        var update = Encoding.Latin1.GetString(output.ToArray()[file.Length..]);
+        Assert.Contains("6 0 obj", update, StringComparison.Ordinal);
+        Assert.Contains("7 0 obj", update, StringComparison.Ordinal);
+        Assert.Contains("8 0 obj", update, StringComparison.Ordinal);
+        Assert.DoesNotContain("4 0 obj", update, StringComparison.Ordinal);
+        var read = PdfDocument.Open(output.ToArray());
+        Assert.True(read.Objects.TryGetReference(6, out var readNested));
+        Assert.HasCount(3, Assert.IsType<PdfArray>(Assert.IsType<PdfDictionary>(readNested.Resolve()).Get<PdfDictionary>(PdfName.Create("Nested"))!.Get<PdfArray>(PdfName.Create("Array"))![1]));
+    }
+
+    [Fact]
+    public void Example_UnencryptedWrapper()
+    {
+        var secret = new PdfDocument();
+        secret.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("Secret", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 24, 60, 700);
+        secret.Encryption = new PdfEncryption("password", "owner");
+        var encryptedPdf = secret.ToByteArray();
+
+        #region Pdf_UnencryptedWrapper
+        // The wrapper is not encrypted: its pages tell a reader without the cryptographic filter how to open the payload
+        var wrapper = new PdfDocument();
+        wrapper.Pages.Add(PdfSize.A4).CreateContentBuilder()
+            .DrawText("This document is encrypted: open it with a PDF 2.0 reader", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 12, 60, 700);
+        wrapper.SetEncryptedPayload("document.pdf", encryptedPdf, cryptographicFilter: "Standard");
+        var file = wrapper.ToByteArray();
+
+        // A reader finds the payload, and opens it with its password
+        var payload = PdfDocument.Open(file).EncryptedPayload;
+        var document = payload?.OpenDocument(new PdfReadOptions { Password = "password" });
+        #endregion
+
+        Assert.NotNull(payload);
+        Assert.Equal("Standard", payload.CryptographicFilter);
+        Assert.Null(payload.Version);
+        Assert.Equal("Secret", document!.Pages[0].ExtractText());
+        var read = PdfDocument.Open(file);
+        Assert.False(read.IsEncrypted);
+        Assert.Equal(PdfVersion.Pdf20, read.Version);
+        Assert.Throws<InvalidOperationException>(() => read.SetEncryptedPayload("other.pdf", encryptedPdf, "Standard"));
+    }
+
+    [Fact]
+    public void HandWrittenUnencryptedWrapperIsRead()
+    {
+        // ISO 32000-2, 7.6.7: the payload named by the collection, among other embedded files
+        var payload = Encoding.Latin1.GetString(HandWrittenPdf.CreateSimple("Payload").ToArray());
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R /Collection << /Type /Collection /D (payload.pdf) /View /H >> /AF [5 0 R] /Names << /EmbeddedFiles << /Names [(notes.txt) 7 0 R (payload.pdf) 5 0 R] >> >> >>")
+            .Add(2, "<< /Type /Pages /Kids [] /Count 0 >>")
+            .Add(5, "<< /Type /Filespec /F (payload.pdf) /UF (payload.pdf) /AFRelationship /EncryptedPayload /EP << /Type /EncryptedPayload /Subtype /ExampleFilter /Version /1.2 >> /EF << /F 6 0 R >> >>")
+            .Add(6, HandWrittenPdf.Stream(payload, " /Type /EmbeddedFile /Subtype /application#2Fpdf"))
+            .Add(7, "<< /Type /Filespec /F (notes.txt) /EF << /F 8 0 R >> >>")
+            .Add(8, HandWrittenPdf.Stream("Notes", " /Type /EmbeddedFile"));
+        file.Header = "%PDF-2.0\n";
+
+        var document = PdfDocument.Open(file.ToArray());
+        var encrypted = document.EncryptedPayload;
+
+        Assert.NotNull(encrypted);
+        Assert.Equal("payload.pdf", encrypted.File.FileName);
+        Assert.Equal("ExampleFilter", encrypted.CryptographicFilter);
+        Assert.Equal("1.2", encrypted.Version);
+        Assert.Equal("Payload", encrypted.OpenDocument().Pages[0].ExtractText());
+        Assert.Null(PdfDocument.Open(HandWrittenPdf.CreateSimple().ToArray()).EncryptedPayload);
+    }
+
+    [Fact]
+    public void EncryptedPayloadIsDecodedWithTheLimitsOfTheWrapper()
+    {
+        var wrapper = new PdfDocument();
+        wrapper.SetEncryptedPayload("document.pdf", new byte[100_000], "Standard");
+        var file = wrapper.ToByteArray();
+
+        var payload = PdfDocument.Open(file, new PdfReadOptions { MaxDecodedStreamLength = 1000 }).EncryptedPayload;
+
+        Assert.NotNull(payload);
+        Assert.Throws<PdfResourceLimitException>(payload.GetData);
+    }
+
+    /// <summary>A stream over bytes, or over segments of a sparse file of NUL bytes, that counts what is read.</summary>
+    private sealed class TestStream : Stream
+    {
+        private readonly (long Offset, byte[] Data)[] _segments;
+        private readonly long _length;
+        private readonly bool _seekable;
+        private long _position;
+
+        public TestStream(byte[] data, bool seekable)
+        {
+            _segments = [(0, data)];
+            _length = data.Length;
+            _seekable = seekable;
+        }
+
+        public TestStream((long Offset, byte[] Data)[] segments, long length)
+        {
+            _segments = segments;
+            _length = length;
+            _seekable = true;
+        }
+
+        public long BytesRead { get; private set; }
+
+        public long Offset => _position;
+
+        public override bool CanRead => true;
+
+        public override bool CanSeek => _seekable;
+
+        public override bool CanWrite => false;
+
+        public override long Length => _seekable ? _length : throw new NotSupportedException();
+
+        public override long Position
+        {
+            get => _seekable ? _position : throw new NotSupportedException();
+            set => _position = value;
+        }
+
+        public override void Flush()
+        {
+        }
+
+        public override int Read(byte[] buffer, int offset, int count) => Read(buffer.AsSpan(offset, count));
+
+        public override int Read(Span<byte> buffer)
+        {
+            var count = (int)Math.Min(buffer.Length, Math.Max(0, _length - _position));
+            buffer = buffer[..count];
+            buffer.Clear();
+            foreach (var (start, data) in _segments)
+            {
+                var from = Math.Max(start, _position);
+                var to = Math.Min(start + data.Length, _position + count);
+                if (from < to)
+                {
+                    data.AsSpan((int)(from - start), (int)(to - from)).CopyTo(buffer[(int)(from - _position)..]);
+                }
+            }
+
+            _position += count;
+            BytesRead += count;
+            return count;
+        }
+
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            if (!_seekable)
+                throw new NotSupportedException();
+
+            _position = origin switch
+            {
+                SeekOrigin.Begin => offset,
+                SeekOrigin.Current => _position + offset,
+                _ => _length + offset,
+            };
+            return _position;
+        }
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
+    }
 }

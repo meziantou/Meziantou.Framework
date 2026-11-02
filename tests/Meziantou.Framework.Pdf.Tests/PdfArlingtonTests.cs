@@ -60,6 +60,16 @@ public sealed class PdfArlingtonTests
         return new Dictionary<string, Func<PdfDocument>>(StringComparer.Ordinal)
         {
             ["empty"] = () => new PdfDocument(),
+            ["unencrypted-wrapper"] = () =>
+            {
+                var payload = new PdfDocument();
+                payload.Pages.Add(PdfSize.A5);
+                payload.Encryption = new PdfEncryption("user", "owner");
+                var document = new PdfDocument();
+                document.Pages.Add(PdfSize.A5);
+                document.SetEncryptedPayload("payload.pdf", payload.ToByteArray(), "Standard", "2", new PdfEmbeddedFileOptions { ModificationDate = new DateTimeOffset(2024, 5, 6, 7, 8, 9, TimeSpan.Zero) });
+                return document;
+            },
             ["rich"] = PdfWriterTests.CreateRichDocument,
             ["xmp"] = () =>
             {

@@ -22,6 +22,9 @@ internal abstract class RenderColorSpace
     /// <summary>Gets whether the color space paints nothing (a <c>Separation</c> named <c>None</c>).</summary>
     public virtual bool PaintsNothing => false;
 
+    /// <summary>Gets whether <see cref="ToRgb(ReadOnlySpan{double}, Span{byte})"/> converts many colors faster than one color at a time (an ICC profile).</summary>
+    public virtual bool ConvertsInBatches => false;
+
     /// <summary>Gets the initial color of the color space (8.6.4, 8.6.5, 8.6.6).</summary>
     public virtual double[] GetInitialColor() => new double[ComponentCount];
 
@@ -295,6 +298,8 @@ internal abstract class RenderColorSpace
 
         public override int ComponentCount => 4;
 
+        public override bool ConvertsInBatches => true;
+
         public override double[] GetInitialColor() => [0, 0, 0, 1];
 
         public override RgbColor ToRgb(ReadOnlySpan<double> components)
@@ -319,6 +324,8 @@ internal abstract class RenderColorSpace
         private readonly bool _isDefaultRange = range.Select((value, index) => value == index % 2).All(value => value);
 
         public override int ComponentCount => transform.SourceChannelCount;
+
+        public override bool ConvertsInBatches => true;
 
         public override double[] GetInitialColor()
         {
@@ -414,6 +421,8 @@ internal abstract class RenderColorSpace
 
         public override bool PaintsNothing => paintsNothing;
 
+        public override bool ConvertsInBatches => alternate.ConvertsInBatches;
+
         public override double[] GetInitialColor()
         {
             var result = new double[count];
@@ -426,6 +435,36 @@ internal abstract class RenderColorSpace
             Span<double> values = stackalloc double[Math.Max(alternate.ComponentCount, tintTransform.OutputCount)];
             tintTransform.Evaluate(components, values);
             return alternate.ToRgb(values[..alternate.ComponentCount]);
+        }
+
+        public override void ToRgb(ReadOnlySpan<double> components, Span<byte> rgb)
+        {
+            var alternateCount = alternate.ComponentCount;
+            if (alternateCount == 0)
+            {
+                base.ToRgb(components, rgb);
+                return;
+            }
+
+            // The tint transform of each color, then the colors of the alternate color space converted together
+            var colors = Math.Min(components.Length / count, rgb.Length / 3);
+            var converted = ArrayPool<double>.Shared.Rent(colors * alternateCount);
+            try
+            {
+                Span<double> values = stackalloc double[Math.Max(alternateCount, tintTransform.OutputCount)];
+                for (var i = 0; i < colors; i++)
+                {
+                    values.Clear();
+                    tintTransform.Evaluate(components.Slice(i * count, count), values);
+                    values[..alternateCount].CopyTo(converted.AsSpan(i * alternateCount));
+                }
+
+                alternate.ToRgb(converted.AsSpan(0, colors * alternateCount), rgb[..(colors * 3)]);
+            }
+            finally
+            {
+                ArrayPool<double>.Shared.Return(converted);
+            }
         }
     }
 

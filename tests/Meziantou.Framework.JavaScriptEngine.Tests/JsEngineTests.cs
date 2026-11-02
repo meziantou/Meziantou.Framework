@@ -764,6 +764,422 @@ public sealed class JsEngineTests
         }
     }
 
+    // The limits apply to the built-ins called by the host as they do when a script calls them
+    [Fact]
+    public void ExecutionLimits_HostCallsOfBuiltins()
+    {
+        using (var engine = new JsEngine(new JsEngineOptions { MemoryLimit = 16 * 1024 * 1024 }))
+        {
+            var realm = engine.CreateRealm();
+            var repeat = realm.Execute("String.prototype.repeat");
+            var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("'abcd'.repeat(1 << 26)"));
+            Assert.Equal(JsTerminationReason.MemoryLimit, exception.Reason);
+            exception = Assert.Throws<JsTerminationException>(() => engine.Call(repeat, "abcd", 1 << 26));
+            Assert.Equal(JsTerminationReason.MemoryLimit, exception.Reason);
+            exception = Assert.Throws<JsTerminationException>(() => engine.Construct(realm.Execute("ArrayBuffer"), [1e9]));
+            Assert.Equal(JsTerminationReason.MemoryLimit, exception.Reason);
+            Assert.Equal("abcdabcd", engine.Call(repeat, "abcd", 2).AsString());
+        }
+
+        using (var engine = new JsEngine(new JsEngineOptions { Timeout = TimeSpan.FromMilliseconds(100) }))
+        {
+            var realm = engine.CreateRealm();
+            var indexOf = realm.Execute("Array.prototype.indexOf");
+            var proxy = realm.Execute("new Proxy({ length: 1e9 }, {})");
+            var exception = Assert.Throws<JsTerminationException>(() => engine.Call(indexOf, proxy, 1));
+            Assert.Equal(JsTerminationReason.Timeout, exception.Reason);
+        }
+    }
+
+    // A long built-in checks the limits while it runs: the timeout of the scope elapses during the operation (nothing
+    // else runs in the scope), and the script stops before the operation completes
+    [Theory]
+    [InlineData("new Uint8Array(1 << 26).sort()")]
+    [InlineData("new Float64Array(1 << 23).sort()")]
+    [InlineData("new Int32Array(1 << 23).toSorted()")]
+    [InlineData("new BigInt64Array(1 << 23).sort()")]
+    [InlineData("text.normalize('NFD')")]
+    [InlineData("text.normalize('NFKC')")]
+    [InlineData("ascii.split('')")]
+    [InlineData("ascii.split('a')")]
+    public void ExecutionLimits_LongBuiltinsCheckTheTimeout(string code)
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        realm.Execute("var text = '\\u00E9'.repeat(1 << 23); var ascii = 'a'.repeat(1 << 22);");
+        var exception = Assert.Throws<JsTerminationException>(() =>
+        {
+            using var scope = engine.EnterExecutionScope(new JsExecutionLimits { Timeout = TimeSpan.FromMilliseconds(1) });
+            realm.Execute(code);
+        });
+        Assert.Equal(JsTerminationReason.Timeout, exception.Reason);
+    }
+
+    // cancel() cancels the token without checking it: the operation that follows notices the cancellation
+    [Theory]
+    [InlineData("new Uint8Array(1 << 24).sort()")]
+    [InlineData("new Float64Array(1 << 22).sort()")]
+    [InlineData("text.normalize('NFD')")]
+    [InlineData("ascii.split('')")]
+    public void ExecutionLimits_LongBuiltinsCheckTheCancellation(string code)
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        realm.Execute("var text = '\u00E9'.repeat(1 << 20); var ascii = 'a'.repeat(1 << 20);");
+        using var cancellation = new CancellationTokenSource();
+        DefineCancel(realm, cancellation);
+        var exception = Assert.Throws<JsTerminationException>(() =>
+        {
+            using var scope = engine.EnterExecutionScope(new JsExecutionLimits { CancellationToken = cancellation.Token });
+            realm.Execute("cancel(); " + code);
+        });
+        Assert.Equal(JsTerminationReason.Canceled, exception.Reason);
+    }
+
+    private static void DefineCancel(JsRealm realm, CancellationTokenSource cancellation)
+    {
+        using (realm.Engine.Enter())
+        {
+            realm.GlobalObject.SetProperty("cancel", realm.CreateFunction("cancel", 0, (_, _) =>
+            {
+                cancellation.Cancel();
+                return JsValue.Undefined;
+            }));
+        }
+    }
+
+    // The sort of the large typed arrays works on runs that it merges: the results are the ones of a single sort
+    [Fact]
+    public void LongBuiltins_SortSameResults()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        Assert.True(realm.Execute("""
+            let seed = 1;
+            const random = () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
+            const values = Array.from({ length: 100000 }, (_, i) => i % 1000 === 0 ? NaN : i % 777 === 0 ? -0 : Math.floor(random() * 2000) - 1000);
+            const expected = values.slice().sort((a, b) => Number.isNaN(a) ? (Number.isNaN(b) ? 0 : 1) : Number.isNaN(b) ? -1 : a - b || (Object.is(a, -0) ? (Object.is(b, -0) ? 0 : -1) : Object.is(b, -0) ? 1 : 0));
+            const same = (actual, expected) => actual.length === expected.length && actual.every((v, i) => Object.is(v, expected[i]));
+            same(Array.from(new Float64Array(values).sort()), expected)
+                && same(Array.from(new Int32Array(values).sort()), expected.map(v => v | 0).sort((a, b) => a - b))
+                && same(Array.from(new Uint8Array(values).sort()), Array.from(new Uint8Array(values)).sort((a, b) => a - b))
+                && same(Array.from(new BigInt64Array(values.map(v => BigInt(v | 0))).toSorted()), values.map(v => BigInt(v | 0)).sort((a, b) => a < b ? -1 : a > b ? 1 : 0))
+            """).AsBoolean());
+    }
+
+    // A long string is normalized in chunks: the result is the one of a single normalization
+    [Fact]
+    public void LongBuiltins_NormalizeSameResults()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        var text = CreateNormalizationText();
+        realm.GlobalObject.SetProperty("text", text);
+        foreach (var form in new[] { NormalizationForm.FormC, NormalizationForm.FormD, NormalizationForm.FormKC, NormalizationForm.FormKD })
+        {
+            var name = form switch { NormalizationForm.FormC => "NFC", NormalizationForm.FormD => "NFD", NormalizationForm.FormKC => "NFKC", _ => "NFKD" };
+            Assert.Equal(UnicodeNormalization.Normalize(text, form), realm.Execute("text.normalize('" + name + "')").AsString());
+        }
+    }
+
+    private static string CreateNormalizationText()
+    {
+        // Starters, combining marks, Hangul jamos and syllables, characters whose decomposition starts with a mark...
+        string[] pieces = ["a", "e", "é", "́", "̣", "ᄀ", "ᅡ", "ᆨ", "가", "각", "ཱི", "ﾞ", "େ", "ା", "ḋ", "ﬁ", "Å", "̈́", "𝐀", "゙", "か"];
+        var builder = new StringBuilder();
+        var seed = 42u;
+        while (builder.Length < 300_000)
+        {
+            seed = (seed * 1103515245) + 12345;
+            builder.Append(pieces[(seed >> 16) % pieces.Length]);
+        }
+
+        return builder.ToString();
+    }
+
+    // The parsing and the compilation of a source are part of the entry that runs it
+    [Fact]
+    public void ExecutionLimits_Compilation()
+    {
+        var code = string.Concat(Enumerable.Repeat("var a = 1 + 2 * 3;\n", 200_000));
+        using (var engine = new JsEngine(new JsEngineOptions { MemoryLimit = 1024 * 1024 }))
+        {
+            var realm = engine.CreateRealm();
+            var exception = Assert.Throws<JsTerminationException>(() => realm.Execute(code));
+            Assert.Equal(JsTerminationReason.MemoryLimit, exception.Reason);
+            exception = Assert.Throws<JsTerminationException>(() => realm.ParseModule(code));
+            Assert.Equal(JsTerminationReason.MemoryLimit, exception.Reason);
+            exception = Assert.Throws<JsTerminationException>(() => realm.Execute("eval(code)".Replace("code", "'" + code.Replace("\n", " ", StringComparison.Ordinal) + "'", StringComparison.Ordinal)));
+            Assert.Equal(JsTerminationReason.MemoryLimit, exception.Reason);
+        }
+
+        // The cancellation is noticed while the code of eval is parsed
+        using var cancellation = new CancellationTokenSource();
+        using (var engine = new JsEngine(new JsEngineOptions { CancellationToken = cancellation.Token }))
+        {
+            var realm = engine.CreateRealm();
+            DefineCancel(realm, cancellation);
+            realm.GlobalObject.SetProperty("code", code);
+            var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("cancel(); eval(code)"));
+            Assert.Equal(JsTerminationReason.Canceled, exception.Reason);
+
+            // A canceled entry does not start
+            exception = Assert.Throws<JsTerminationException>(() => realm.Execute("1"));
+            Assert.Equal(JsTerminationReason.Canceled, exception.Reason);
+        }
+
+        // A prepared script is parsed outside an entry, unless the host parses it in an execution scope
+        using (var engine = new JsEngine())
+        {
+            var exception = Assert.Throws<JsTerminationException>(() =>
+            {
+                using var scope = engine.EnterExecutionScope(new JsExecutionLimits { MemoryLimit = 1024 * 1024 });
+                JsPreparedScript.Parse(code);
+            });
+            Assert.Equal(JsTerminationReason.MemoryLimit, exception.Reason);
+            Assert.NotNull(JsPreparedScript.Parse("var a = 1;"));
+        }
+    }
+
+    [Fact]
+    public void ExecutionLimits_AtomicsWait()
+    {
+        using (var engine = new JsEngine(new JsEngineOptions { Timeout = TimeSpan.FromMilliseconds(500) }))
+        {
+            var realm = engine.CreateRealm();
+            realm.Execute("var i32 = new Int32Array(new SharedArrayBuffer(4));");
+
+            // The timeout of the engine stops the wait, which leaves no waiter
+            var stopwatch = Stopwatch.StartNew();
+            var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("Atomics.wait(i32, 0, 0)"));
+            Assert.Equal(JsTerminationReason.Timeout, exception.Reason);
+            Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(30));
+            Assert.Equal(0, realm.Execute("Atomics.notify(i32, 0)").AsNumber());
+        }
+
+        using (var engine = new JsEngine())
+        {
+            var realm = engine.CreateRealm();
+            realm.Execute("var i32 = new Int32Array(new SharedArrayBuffer(4));");
+            Assert.Equal("timed-out", realm.Execute("Atomics.wait(i32, 0, 0, 10)").AsString());
+            using var cancellation = new CancellationTokenSource();
+            DefineCancel(realm, cancellation);
+            var exception = Assert.Throws<JsTerminationException>(() =>
+            {
+                using var scope = engine.EnterExecutionScope(new JsExecutionLimits { CancellationToken = cancellation.Token });
+                realm.Execute("cancel(); Atomics.wait(i32, 0, 0)");
+            });
+            Assert.Equal(JsTerminationReason.Canceled, exception.Reason);
+            Assert.Equal(0, realm.Execute("Atomics.notify(i32, 0)").AsNumber());
+        }
+
+        using var engineCancellation = new CancellationTokenSource();
+        using (var engine = new JsEngine(new JsEngineOptions { CancellationToken = engineCancellation.Token }))
+        {
+            var realm = engine.CreateRealm();
+            realm.Execute("var i32 = new Int32Array(new SharedArrayBuffer(4));");
+            DefineCancel(realm, engineCancellation);
+            var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("cancel(); Atomics.wait(i32, 0, 0)"));
+            Assert.Equal(JsTerminationReason.Canceled, exception.Reason);
+        }
+
+        using (var engine = new JsEngine(new JsEngineOptions { CanBlock = false }))
+        {
+            Assert.Equal("TypeError", engine.CreateRealm().Execute("try { Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0); } catch (e) { e.name }").AsString());
+        }
+    }
+
+    // A host function that catches the termination of a nested call cannot let the script continue: the termination
+    // stays until the outermost entry returns
+    [Fact]
+    public void ExecutionLimits_TerminationIsSticky()
+    {
+        using var engine = new JsEngine(new JsEngineOptions { MaxStatements = 1000 });
+        var realm = engine.CreateRealm();
+        var caught = 0;
+        using (engine.Enter())
+        {
+            realm.GlobalObject.SetProperty("callAndSwallow", realm.CreateFunction("callAndSwallow", 1, (_, arguments) =>
+            {
+                try
+                {
+                    engine.Call(arguments[0], JsValue.Undefined);
+                }
+                catch (JsTerminationException)
+                {
+                    caught++;
+                }
+
+                return JsValue.Undefined;
+            }));
+        }
+
+        var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("callAndSwallow(() => { while (true) {} }); globalThis.after = 1;"));
+        Assert.Equal(JsTerminationReason.StatementLimit, exception.Reason);
+        Assert.Equal(1, caught);
+        Assert.Equal("undefined", realm.Execute("typeof after").AsString());
+
+        // The same from a nested host entry: the host catches the termination, and its next call is terminated too
+        exception = Assert.Throws<JsTerminationException>(() => realm.Execute("callAndSwallow(() => { while (true) {} }); callAndSwallow(() => { globalThis.after = 1; });"));
+        Assert.Equal(2, caught);
+        Assert.Equal("undefined", realm.Execute("typeof after").AsString());
+
+        // Once the outermost entry has returned, the next entry runs
+        Assert.Equal(2, realm.Execute("1 + 1").AsNumber());
+    }
+
+    [Fact]
+    public void ExecutionLimits_RunJobs()
+    {
+        // Each job is an entry: a self-replenishing queue keeps RunJobs running, unless it runs in an execution scope
+        using (var engine = new JsEngine(new JsEngineOptions { MaxStatements = 1000 }))
+        {
+            var realm = engine.CreateRealm();
+            realm.Execute("var count = 0; function f() { if (++count < 2000) Promise.resolve().then(f); } f()");
+            engine.RunJobs();
+            Assert.Equal(2000, realm.Execute("count").AsNumber());
+
+            realm.Execute("function g() { Promise.resolve().then(g); } g()");
+            var exception = Assert.Throws<JsTerminationException>(() =>
+            {
+                using var scope = engine.EnterExecutionScope();
+                engine.RunJobs();
+            });
+            Assert.Equal(JsTerminationReason.StatementLimit, exception.Reason);
+        }
+
+        using (var engine = new JsEngine())
+        {
+            var realm = engine.CreateRealm();
+            realm.Execute("async function g() { while (true) await null; } g()");
+            var exception = Assert.Throws<JsTerminationException>(() =>
+            {
+                using var scope = engine.EnterExecutionScope(new JsExecutionLimits { Timeout = TimeSpan.FromMilliseconds(50) });
+                engine.RunJobs();
+            });
+            Assert.Equal(JsTerminationReason.Timeout, exception.Reason);
+
+        }
+
+        using (var engine = new JsEngine())
+        {
+            var realm = engine.CreateRealm();
+            using var cancellation = new CancellationTokenSource();
+            DefineCancel(realm, cancellation);
+            realm.Execute("var n = 0; function g() { if (++n === 100) cancel(); Promise.resolve().then(g); } g()");
+            var exception = Assert.Throws<JsTerminationException>(() =>
+            {
+                using var scope = engine.EnterExecutionScope(new JsExecutionLimits { CancellationToken = cancellation.Token });
+                engine.RunJobs();
+            });
+            Assert.Equal(JsTerminationReason.Canceled, exception.Reason);
+            Assert.Equal(100, realm.Execute("n").AsNumber());
+        }
+
+        // Once the token of the engine is canceled, the jobs do not run and stay in the queue
+        using var engineCancellation = new CancellationTokenSource();
+        using (var engine = new JsEngine(new JsEngineOptions { CancellationToken = engineCancellation.Token }))
+        {
+            var realm = engine.CreateRealm();
+            realm.Execute("var ran = false; Promise.resolve().then(() => { ran = true; });");
+            engineCancellation.Cancel();
+            var exception = Assert.Throws<JsTerminationException>(engine.RunJobs);
+            Assert.Equal(JsTerminationReason.Canceled, exception.Reason);
+            Assert.True(engine.HasPendingJobs);
+        }
+    }
+
+    [Fact]
+    public void ExecutionScope()
+    {
+        using var engine = new JsEngine(new JsEngineOptions { MaxStatements = 1500 });
+        var realm = engine.CreateRealm();
+
+        // The limits of the options apply to each entry...
+        Assert.Equal(1000, realm.Execute("var i = 0; while (i < 1000) i++; i").AsNumber());
+        Assert.Equal(1000, realm.Execute("var i = 0; while (i < 1000) i++; i").AsNumber());
+
+        // ... and to a scope as a whole
+        var exception = Assert.Throws<JsTerminationException>(() =>
+        {
+            using var scope = engine.EnterExecutionScope();
+            realm.Execute("var i = 0; while (i < 1000) i++; i");
+            realm.Execute("var i = 0; while (i < 1000) i++; i");
+        });
+        Assert.Equal(JsTerminationReason.StatementLimit, exception.Reason);
+
+        // The limits of a scope add to the ones of the options
+        exception = Assert.Throws<JsTerminationException>(() =>
+        {
+            using var scope = engine.EnterExecutionScope(new JsExecutionLimits { MaxStatements = 100 });
+            realm.Execute("var i = 0; while (i < 1000) i++; i");
+        });
+        Assert.Equal(JsTerminationReason.StatementLimit, exception.Reason);
+
+        // A canceled scope does not start
+        using var cancellation = new CancellationTokenSource();
+        cancellation.Cancel();
+        exception = Assert.Throws<JsTerminationException>(() => engine.EnterExecutionScope(new JsExecutionLimits { CancellationToken = cancellation.Token }));
+        Assert.Equal(JsTerminationReason.Canceled, exception.Reason);
+
+        // The token of a scope stops the JavaScript code and the host functions that check the interrupts
+        using var cancellation2 = new CancellationTokenSource();
+        using (engine.Enter())
+        {
+            realm.GlobalObject.SetProperty("cancel", realm.CreateFunction("cancel", 0, (_, _) =>
+            {
+                cancellation2.Cancel();
+                engine.CheckInterrupt();
+                return JsValue.Undefined;
+            }));
+        }
+
+        exception = Assert.Throws<JsTerminationException>(() =>
+        {
+            using var scope = engine.EnterExecutionScope(new JsExecutionLimits { CancellationToken = cancellation2.Token });
+            realm.Execute("cancel(); globalThis.after = 1;");
+        });
+        Assert.Equal(JsTerminationReason.Canceled, exception.Reason);
+        Assert.Equal("undefined", realm.Execute("typeof after").AsString());
+
+        // The scopes are exited in order
+        var outer = engine.EnterExecutionScope();
+        var inner = engine.EnterExecutionScope();
+        Assert.Throws<InvalidOperationException>(outer.Dispose);
+        inner.Dispose();
+        outer.Dispose();
+        Assert.Equal(3, realm.Execute("1 + 2").AsNumber());
+    }
+
+    // The Promise constructor rejects the promise after its catch block: a deep recursion through the executors throws a
+    // RangeError instead of overflowing the stack of the thread (which would terminate the process)
+    [Theory]
+    [InlineData(10_000)]
+    [InlineData(int.MaxValue)]
+    public void DeepRecursionThroughPromiseExecutors(int recursionLimit)
+    {
+        Exception? error = null;
+        string? result = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                using var engine = new JsEngine(new JsEngineOptions { RecursionLimit = recursionLimit });
+                var realm = engine.CreateRealm();
+                result = realm.Execute("var depth = 0; function f() { depth++; new Promise(f); } f(); typeof depth").AsString();
+                engine.RunJobs();
+            }
+            catch (Exception ex)
+            {
+                error = ex;
+            }
+        }, maxStackSize: 256 * 1024);
+        thread.Start();
+        thread.Join();
+        Assert.Null(error);
+        Assert.Equal("number", result);
+    }
+
     [Fact]
     public void DeepRecursionThroughHostFunctionsThrowsARangeError()
     {
@@ -2184,6 +2600,35 @@ public sealed class JsEngineTests
 
         var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("for (let i = 0; ; i++) processItem(i);"));
         Assert.Equal(JsTerminationReason.Canceled, exception.Reason);
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_ExecutionScope()
+    {
+        #region JavaScriptEngine_ExecutionScope
+        // One engine serves several requests: its options apply to every entry
+        using var engine = new JsEngine(new JsEngineOptions { MaxStatements = 1_000_000 });
+        var realm = engine.CreateRealm();
+
+        // A request gets its own token and budget, shared by the script and by the jobs it enqueues
+        using var requestAborted = new CancellationTokenSource();
+        var exception = Assert.Throws<JsTerminationException>(() =>
+        {
+            using var scope = engine.EnterExecutionScope(new JsExecutionLimits
+            {
+                CancellationToken = requestAborted.Token,
+                Timeout = TimeSpan.FromSeconds(5),
+                MaxStatements = 10_000,
+            });
+
+            realm.Execute("function tick() { Promise.resolve().then(tick); } tick();");
+            engine.RunJobs(); // the jobs keep enqueuing jobs: the limits of the scope stop the drain
+        });
+        Assert.Equal(JsTerminationReason.StatementLimit, exception.Reason);
+
+        // The next request starts with a new budget
+        Assert.Equal(2, realm.Execute("1 + 1").AsNumber());
         #endregion
     }
 

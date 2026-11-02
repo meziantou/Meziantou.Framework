@@ -90,8 +90,21 @@ public sealed partial class JsEngine : IDisposable
     public JsEngineScope Enter()
     {
         var previous = s_current;
-        if (ReferenceEquals(previous, this))
-            return new JsEngineScope(previous, owner: null);
+        var ownsEngine = AcquireOwnership();
+        s_current = this;
+        return new JsEngineScope(previous, ownsEngine ? this : null);
+    }
+
+    /// <summary>
+    /// Makes the current thread the owner of the engine when it is not the engine of the thread yet; returns true when
+    /// the caller took the ownership (it must call <see cref="ReleaseOwnership"/> when it exits).
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Another thread is using the engine.</exception>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal bool AcquireOwnership()
+    {
+        if (ReferenceEquals(s_current, this))
+            return false;
 
         // The first entry of the thread takes the ownership of the engine; a thread that owns it already (it entered
         // another engine in the meantime) keeps it
@@ -100,9 +113,8 @@ public sealed partial class JsEngine : IDisposable
         if (owner != 0 && owner != threadId)
             ThrowConcurrentAccess();
 
-        s_current = this;
         LastEnteredThreadId = threadId;
-        return new JsEngineScope(previous, owner == 0 ? this : null);
+        return owner == 0;
     }
 
     /// <summary>Releases the ownership taken by the outermost <see cref="Enter"/> of the thread.</summary>

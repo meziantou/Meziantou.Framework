@@ -24,7 +24,8 @@ Assert.Equal(["Cache-Control"], headers.Keys);
 ```
 <!-- endref -->
 
-- [Add](cref:Meziantou.Framework.Collections.MultiValueDictionary{TKey,TValue}.Add) adds a value to the values of a key, and [AddRange](cref:Meziantou.Framework.Collections.MultiValueDictionary{TKey,TValue}.AddRange) adds several. A key exists as long as it has values.
+- [Add](cref:Meziantou.Framework.Collections.MultiValueDictionary{TKey,TValue}.Add) adds a value to the values of a key, and [AddRange](cref:Meziantou.Framework.Collections.MultiValueDictionary{TKey,TValue}.AddRange) adds several. A key exists as long as it has values:
+  adding an empty range of values to a missing key does not add the key.
 - The indexer returns the values of a key as an `IReadOnlyCollection<TValue>`. Use [TryGetValue](cref:Meziantou.Framework.Collections.MultiValueDictionary{TKey,TValue}.TryGetValue) when the key may be
   missing.
 - `Remove(key, value)` removes one value, and `Remove(key)` removes the key and all its values.
@@ -51,7 +52,8 @@ Assert.Equal(["stash", "status"], matches);
 <!-- endref -->
 
 Pass `ignoreCase: true` to the constructor to compare keys without case. [StartsWith](cref:Meziantou.Framework.Collections.Trie{TValue}.StartsWith) returns the key-value pairs whose
-key starts with the prefix.
+key starts with the prefix. Enumerating the trie visits a key before the keys that extend it, and uses an explicit stack,
+so it does not allocate per node.
 
 ## Ranked completions
 
@@ -84,7 +86,7 @@ exists, which makes it cheap to build a list of pairs you know are unique, for i
 <!-- ref:../../../tests/Meziantou.Framework.Tests/Collections/UnsafeListDictionaryTests.cs;region=UnsafeListDictionary_Usage;format=md-fenced-code-block;dedent=true -->
 ```csharp
 // Adding does not check whether the key already exists
-var values = new UnsafeListDictionary<string, int>();
+var values = new UnsafeListDictionary<string, int>(StringComparer.Ordinal);
 values.Add("a", 1);
 values.Add("b", 2);
 
@@ -95,3 +97,17 @@ Assert.Equal(["a", "b"], values.Select(item => item.Key));
 
 The items keep the order in which you added them. Looking up a key scans the list, so prefer `Dictionary<TKey, TValue>`
 for large collections that you query.
+
+Pass an `IEqualityComparer<TKey>` to the constructor to change how keys are compared:
+
+<!-- ref:../../../tests/Meziantou.Framework.Tests/Collections/UnsafeListDictionaryTests.cs;region=UnsafeListDictionary_Comparer;format=md-fenced-code-block;dedent=true -->
+```csharp
+var headers = new UnsafeListDictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+headers.Add("Content-Type", "text/plain");
+
+Assert.Equal("text/plain", headers["content-type"]);
+```
+<!-- endref -->
+
+[Keys](cref:Meziantou.Framework.Collections.UnsafeListDictionary{TKey,TValue}.Keys) and [Values](cref:Meziantou.Framework.Collections.UnsafeListDictionary{TKey,TValue}.Values) return read-only views of
+the dictionary: they do not copy the items, and they reflect later changes.

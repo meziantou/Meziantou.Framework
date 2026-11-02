@@ -580,4 +580,54 @@ public class CircularBufferTests
         Assert.Equal([2, 3], buffer);
         #endregion
     }
+
+    [Fact]
+    public void Capacity_SetToZero_Throws()
+    {
+        var buffer = new CircularBuffer<int>(3) { AllowOverwrite = true };
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => buffer.Capacity = 0);
+        Assert.Equal(3, buffer.Capacity);
+    }
+
+    [Fact]
+    public void CopyTo_DestinationTooSmall_DoesNotWrite()
+    {
+        var buffer = new CircularBuffer<int>(3) { AllowOverwrite = true };
+        buffer.AddLast(1);
+        buffer.AddLast(2);
+        buffer.AddLast(3);
+        buffer.AddLast(4); // wrapped: [2, 3, 4]
+
+        var destination = new int[2];
+        Assert.Throws<ArgumentException>("array", () => buffer.CopyTo(destination, 0));
+        Assert.Equal([0, 0], destination);
+    }
+
+    [Fact]
+    public void CopyTo_IndexGreaterThanLength_Throws()
+    {
+        var buffer = new CircularBuffer<int>(3);
+        Assert.Throws<ArgumentOutOfRangeException>("arrayIndex", () => buffer.CopyTo(new int[2], 3));
+    }
+
+    [Fact]
+    public void CopyTo_Empty_AtEndOfArray()
+    {
+        var buffer = new CircularBuffer<int>(3);
+        buffer.CopyTo(new int[2], 2);
+    }
+
+    [Fact]
+    public void CopyTo_Wrapped_WithOffset()
+    {
+        var buffer = new CircularBuffer<int>(3) { AllowOverwrite = true };
+        buffer.AddLast(1);
+        buffer.AddLast(2);
+        buffer.AddLast(3);
+        buffer.AddLast(4);
+
+        var destination = new int[4];
+        buffer.CopyTo(destination, 1);
+        Assert.Equal([0, 2, 3, 4], destination);
+    }
 }

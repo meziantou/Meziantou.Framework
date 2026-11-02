@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 namespace Meziantou.Framework.Pdf.Filters.Jbig2;
 
 /// <summary>
@@ -56,15 +58,29 @@ internal sealed class Jbig2Decoder
     /// Damaged data ends the decoding: the page keeps what the segments before it painted, as viewers show it. Some
     /// files embed a whole JBIG2 file, with its header (D.4): it is read too, in sequential or random-access organization.
     /// </remarks>
-    public void DecodeSegments(byte[] data)
+    /// <param name="memory">
+    /// The data, read only while the method runs. The segments read the array behind it, within its bounds: the data
+    /// of a stream is not copied, and no result keeps a reference to it.
+    /// </param>
+    public void DecodeSegments(ReadOnlyMemory<byte> memory)
     {
-        var position = 0;
-        var randomAccess = false;
-        if (data.AsSpan().StartsWith(FileHeader))
+        // The array is only read: the data stays read-only
+        var isArray = unsafe(MemoryMarshal.TryGetArray(memory, out var segment));
+        if (!isArray)
         {
-            var flags = data.Length > 8 ? data[8] : 1;
+            segment = new ArraySegment<byte>(memory.ToArray());
+        }
+
+        var data = segment.Array!;
+        var start = segment.Offset;
+        var end = start + segment.Count;
+        var position = start;
+        var randomAccess = false;
+        if (segment.AsSpan().StartsWith(FileHeader))
+        {
+            var flags = segment.Count > 8 ? data[start + 8] : 1;
             randomAccess = (flags & 1) == 0;
-            position = (flags & 2) == 0 ? 13 : 9;
+            position = start + ((flags & 2) == 0 ? 13 : 9);
         }
 
         try
@@ -73,10 +89,10 @@ internal sealed class Jbig2Decoder
             {
                 // The headers of all the segments, then their data in the same order
                 var headers = new List<Header>();
-                while (position < data.Length)
+                while (position < end)
                 {
                     CountSegment();
-                    var header = ReadHeader(data, ref position);
+                    var header = ReadHeader(data, ref position, end);
                     headers.Add(header);
                     if (header.Type == 51)
                         break;
@@ -84,7 +100,7 @@ internal sealed class Jbig2Decoder
 
                 foreach (var header in headers)
                 {
-                    var length = (int)Math.Min(header.DataLength, (uint)Math.Max(0, data.Length - position));
+                    var length = (int)Math.Min(header.DataLength, (uint)Math.Max(0, end - position));
                     if (!DecodeSegment(header, data, position, length))
                         break;
 
@@ -94,21 +110,21 @@ internal sealed class Jbig2Decoder
                 return;
             }
 
-            while (position < data.Length)
+            while (position < end)
             {
                 CountSegment();
-                var header = ReadHeader(data, ref position);
+                var header = ReadHeader(data, ref position, end);
                 var length = header.DataLength;
                 if (length == uint.MaxValue)
                 {
                     // The length of an immediate generic region may be unknown: its data ends with a marker and a row count (7.2.7)
-                    length = FindUnknownLength(data, position);
+                    length = FindUnknownLength(data, position, end);
                 }
 
-                if (position + (long)length > data.Length)
+                if (position + (long)length > end)
                 {
                     // A truncated last segment is decoded with what it has
-                    length = (uint)(data.Length - position);
+                    length = (uint)(end - position);
                 }
 
                 if (!DecodeSegment(header, data, position, (int)length))
@@ -142,9 +158,9 @@ internal sealed class Jbig2Decoder
             throw new PdfResourceLimitException("The JBIG2 data has too many segments");
     }
 
-    private static Header ReadHeader(byte[] data, ref int position)
+    private static Header ReadHeader(byte[] data, ref int position, int end)
     {
-        var reader = new Jbig2SegmentDataReader(data, position, data.Length - position);
+        var reader = new Jbig2SegmentDataReader(data, position, end - position);
         var number = reader.ReadUInt32();
         var flags = reader.ReadByte();
         var type = flags & 0x3F;
@@ -186,19 +202,19 @@ internal sealed class Jbig2Decoder
     }
 
     /// <summary>Finds the end of the data of an immediate generic region of unknown length: the end marker and the row count (7.2.7).</summary>
-    private static uint FindUnknownLength(byte[] data, int position)
+    private static uint FindUnknownLength(byte[] data, int position, int end)
     {
-        if (position + 18 > data.Length)
-            return (uint)(data.Length - position);
+        if (position + 18 > end)
+            return (uint)(end - position);
 
         var mmr = (data[position + 17] & 1) != 0;
-        for (var i = position + 18; i + 6 <= data.Length; i++)
+        for (var i = position + 18; i + 6 <= end; i++)
         {
             if ((mmr && data[i] == 0x00 && data[i + 1] == 0x00) || (!mmr && data[i] == 0xFF && data[i + 1] == 0xAC))
                 return (uint)(i + 6 - position);
         }
 
-        return (uint)(data.Length - position);
+        return (uint)(end - position);
     }
 
     /// <summary>Decodes a segment.</summary>

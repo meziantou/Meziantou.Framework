@@ -549,7 +549,7 @@ public sealed class PdfFilterTests
         stream.AddRange(Segment(1, 38, [], [.. region]));
         stream.AddRange(Segment(2, 49, [], []));
 
-        var decoded = Jbig2Filter.Decode([.. stream], parameters: null, Limit);
+        var decoded = Jbig2Filter.Decode((byte[])[.. stream], parameters: null, Limit);
 
         Assert.Equal(bitmap.Select(value => (byte)~value), decoded);
     }
@@ -571,7 +571,7 @@ public sealed class PdfFilterTests
         stream.AddRange(Segment(3, 50, [], [0, 0, 0, 19]));
         stream.AddRange(Segment(4, 49, [], []));
 
-        var decoded = Jbig2Filter.Decode([.. stream], parameters: null, Limit);
+        var decoded = Jbig2Filter.Decode((byte[])[.. stream], parameters: null, Limit);
 
         Assert.HasCount(5 * 20, decoded);
         for (var y = 0; y < 20; y++)
@@ -594,11 +594,11 @@ public sealed class PdfFilterTests
         globals.SetData([.. Segment(0, 48, [], PageInformation(16, 8, flags: 0))]);
         var parameters = new PdfDictionary { [PdfName.Create("JBIG2Globals")] = globals };
 
-        var decoded = Jbig2Filter.Decode([.. Segment(1, 38, [], [.. RegionInfo(16, 8, 0, 0, 0), 1, .. mmr])], parameters, Limit);
+        var decoded = Jbig2Filter.Decode((byte[])[.. Segment(1, 38, [], [.. RegionInfo(16, 8, 0, 0, 0), 1, .. mmr])], parameters, Limit);
 
         Assert.Equal(bitmap.Select(value => (byte)~value), decoded);
-        Assert.Throws<InvalidPdfContentException>(() => Jbig2Filter.Decode([.. Segment(1, 38, [], [.. RegionInfo(16, 8, 0, 0, 0), 1, .. mmr])], parameters: null, Limit));
-        Assert.Throws<PdfResourceLimitException>(() => Jbig2Filter.Decode([.. Segment(0, 48, [], PageInformation(1_000_000, 1_000_000, flags: 0))], parameters: null, Limit));
+        Assert.Throws<InvalidPdfContentException>(() => Jbig2Filter.Decode((byte[])[.. Segment(1, 38, [], [.. RegionInfo(16, 8, 0, 0, 0), 1, .. mmr])], parameters: null, Limit));
+        Assert.Throws<PdfResourceLimitException>(() => Jbig2Filter.Decode((byte[])[.. Segment(0, 48, [], PageInformation(1_000_000, 1_000_000, flags: 0))], parameters: null, Limit));
     }
 
     [Fact]
@@ -612,7 +612,7 @@ public sealed class PdfFilterTests
         // The long form of the referred-to segments: 2^29 - 1 segments in a header of a few bytes
         byte[] referredCount = [0, 0, 0, 1, 38, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0];
 
-        Assert.Throws<InvalidPdfContentException>(() => Jbig2Filter.Decode([], new PdfDictionary { [PdfName.Create("JBIG2Globals")] = globals }, Limit));
+        Assert.Throws<InvalidPdfContentException>(() => Jbig2Filter.Decode((byte[])[], new PdfDictionary { [PdfName.Create("JBIG2Globals")] = globals }, Limit));
         Assert.Throws<InvalidPdfContentException>(() => Jbig2Filter.Decode(referredCount, parameters: null, Limit));
     }
 
@@ -911,8 +911,8 @@ public sealed class PdfFilterTests
 
         // The memory limit is checked before the allocation
         Assert.Throws<PdfResourceLimitException>(() => new Filters.Jbig2.Jbig2Bitmap(int.MaxValue, 1, new Filters.Jbig2.Jbig2Budget(1 << 20)));
-        Assert.Throws<PdfResourceLimitException>(() => Jbig2Filter.Decode([.. Segment(0, 48, [], PageInformation(int.MaxValue, int.MaxValue, flags: 0))], parameters: null, Limit));
-        Assert.Empty(Jbig2Filter.Decode([.. Segment(0, 48, [], PageInformation(int.MaxValue, 0, flags: 0))], parameters: null, Limit));
+        Assert.Throws<PdfResourceLimitException>(() => Jbig2Filter.Decode((byte[])[.. Segment(0, 48, [], PageInformation(int.MaxValue, int.MaxValue, flags: 0))], parameters: null, Limit));
+        Assert.Empty(Jbig2Filter.Decode((byte[])[.. Segment(0, 48, [], PageInformation(int.MaxValue, 0, flags: 0))], parameters: null, Limit));
     }
 
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
@@ -980,7 +980,7 @@ public sealed class PdfFilterTests
     {
         // A white page of 4960 x 7016 pixels: the bits of the page are inverted, not copied
         var decoder = new Filters.Jbig2.Jbig2Decoder(Limit);
-        decoder.DecodeSegments([.. Segment(0, 48, [], PageInformation(4960, 7016, flags: 0))]);
+        decoder.DecodeSegments((byte[])[.. Segment(0, 48, [], PageInformation(4960, 7016, flags: 0))]);
 
         var before = GC.GetAllocatedBytesForCurrentThread();
         var page = decoder.GetPage();
@@ -990,6 +990,25 @@ public sealed class PdfFilterTests
         Assert.False(page.AsSpan().ContainsAnyExcept((byte)0xFF));
         Assert.True(allocated < 1024, $"{allocated} bytes allocated");
         Assert.Throws<InvalidPdfContentException>(() => decoder.GetPage());
+    }
+
+    [Fact]
+    public void Jbig2DecodesTheInputWithoutCopyingIt()
+    {
+        // A page and an extension segment of 16 MiB, in the middle of a larger buffer (as the data of a stream is in its file)
+        byte[] segments = [.. Segment(0, 48, [], PageInformation(64, 64, flags: 0)), .. Segment(1, 62, [], new byte[16 << 20])];
+        byte[] buffer = [0x97, 0x4A, 0x42, .. segments, 0xFF, 0xAC];
+        var data = buffer.AsMemory(3, segments.Length);
+
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var page = Jbig2Filter.Decode(data, parameters: null, Limit);
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        Assert.HasCount(8 * 64, page);
+        Assert.True(allocated < 64 * 1024, $"{allocated} bytes allocated");
+
+        // The decoder reads within the bounds of the data, not to the end of the buffer
+        Assert.Throws<InvalidPdfContentException>(() => Jbig2Filter.Decode(buffer.AsMemory(3, 20), parameters: null, Limit));
     }
 
     [Fact]
@@ -1008,11 +1027,11 @@ public sealed class PdfFilterTests
 
         // Seven regions are seven times the pixels of the page (and 36 MiB, below the limit): more than 3 times the page and 16 million
         var decoder = new Filters.Jbig2.Jbig2Decoder(PdfReadOptions.DefaultMaxDecodedStreamLength);
-        Assert.Throws<PdfResourceLimitException>(() => decoder.DecodeSegments([.. stream]));
+        Assert.Throws<PdfResourceLimitException>(() => decoder.DecodeSegments((byte[])[.. stream]));
         Assert.True(decoder.Budget.Work <= (1 << 24) + (3L * 2048 * 2048) + 2049, $"{decoder.Budget.Work} units of work");
 
         // Two regions are decoded and placed
-        Assert.HasCount(256 * 2048, Jbig2Filter.Decode([.. page, .. Region(1), .. Region(2)], parameters: null, PdfReadOptions.DefaultMaxDecodedStreamLength));
+        Assert.HasCount(256 * 2048, Jbig2Filter.Decode((byte[])[.. page, .. Region(1), .. Region(2)], parameters: null, PdfReadOptions.DefaultMaxDecodedStreamLength));
     }
 
     [Fact]
@@ -1048,7 +1067,7 @@ public sealed class PdfFilterTests
         // Globals that paint a page are not shared: each image paints its own page
         var withPage = new PdfStream();
         withPage.SetData([.. Segment(0, 48, [], PageInformation(16, 8, flags: 0))]);
-        _ = Jbig2Filter.Decode([.. Segment(1, 38, [], [.. RegionInfo(16, 8, 0, 0, 0), 1, .. EncodeCcitt(CreateBitmap(16, 8), 16, 8, 4)])], new PdfDictionary { [PdfName.Create("JBIG2Globals")] = withPage }, Limit);
+        _ = Jbig2Filter.Decode((byte[])[.. Segment(1, 38, [], [.. RegionInfo(16, 8, 0, 0, 0), 1, .. EncodeCcitt(CreateBitmap(16, 8), 16, 8, 4)])], new PdfDictionary { [PdfName.Create("JBIG2Globals")] = withPage }, Limit);
         Assert.False(Jbig2Filter.IsCached(withPage, Limit));
     }
 

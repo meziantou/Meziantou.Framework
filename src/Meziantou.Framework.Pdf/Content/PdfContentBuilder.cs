@@ -17,7 +17,9 @@ namespace Meziantou.Framework.Pdf;
 /// <para>
 /// The builder checks the structure of the content: text operators are only allowed between <see cref="BeginText"/>
 /// and <see cref="EndText"/>, <see cref="RestoreGraphicsState"/> and <see cref="EndMarkedContent"/> need a matching
-/// call before them, and a text is only shown once a font is set.
+/// call before them, and a text is only shown once a font is set. An operator whose arguments are not valid throws
+/// before it writes anything, so the content stays valid. <see cref="Complete"/> checks that the content is balanced:
+/// every <see cref="SaveGraphicsState"/>, <see cref="BeginText"/> and <c>BeginMarkedContent</c> call matched.
 /// </para>
 /// </remarks>
 public sealed class PdfContentBuilder
@@ -37,6 +39,8 @@ public sealed class PdfContentBuilder
     private PdfFont? _font;
     private double _fontSize;
     private double _textRise;
+    private bool _completed;
+    private Dictionary<PdfName, ResourceIndex>? _resourceIndexes;
 
     internal PdfContentBuilder(PdfDocument document, PdfDictionary resources, PdfStream stream, PdfPage? page = null)
     {
@@ -48,6 +52,38 @@ public sealed class PdfContentBuilder
 
     /// <summary>Gets the number of <see cref="SaveGraphicsState"/> calls that are not matched by a <see cref="RestoreGraphicsState"/> call.</summary>
     public int GraphicsStateDepth => _graphicsStateDepth;
+
+    /// <summary>Gets the number of <c>BeginMarkedContent</c>, <see cref="BeginStructureElement"/> and <see cref="BeginArtifact"/> calls that are not matched by an <see cref="EndMarkedContent"/> call.</summary>
+    public int MarkedContentDepth => _markedContentDepth;
+
+    /// <summary>Gets a value indicating whether a text object is open: <see cref="BeginText"/> was called, and <see cref="EndText"/> was not.</summary>
+    public bool IsInTextObject => _inText;
+
+    /// <summary>
+    /// Checks that the content is balanced, and ends it: every <see cref="SaveGraphicsState"/>, <see cref="BeginText"/>
+    /// and <c>BeginMarkedContent</c> call is matched. The builder cannot write anymore.
+    /// </summary>
+    /// <remarks>
+    /// A content stream that leaves a graphics state saved or a marked-content sequence open changes the content that
+    /// follows it: the content of the next builder of the page, or the pages that paint a form.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">A text object, a saved graphics state or a marked-content sequence is still open. The builder can still write to close it.</exception>
+    public void Complete()
+    {
+        if (_completed)
+            return;
+
+        if (_inText)
+            throw new InvalidOperationException("The content is not balanced: a text object is open (call EndText)");
+
+        if (_graphicsStateDepth > 0)
+            throw new InvalidOperationException($"The content is not balanced: {_graphicsStateDepth} graphics state(s) are saved (call RestoreGraphicsState)");
+
+        if (_markedContentDepth > 0)
+            throw new InvalidOperationException($"The content is not balanced: {_markedContentDepth} marked-content sequence(s) are open (call EndMarkedContent)");
+
+        _completed = true;
+    }
 
     /// <summary>Saves the graphics state (<c>q</c>).</summary>
     /// <returns>The builder.</returns>
@@ -133,12 +169,16 @@ public sealed class PdfContentBuilder
     /// <returns>The builder.</returns>
     public PdfContentBuilder SetDashPattern(ReadOnlySpan<double> dashArray, double phase = 0)
     {
+        // Check first: an invalid pattern leaves the content unchanged
+        foreach (var length in dashArray)
+        {
+            if (!(length >= 0))
+                throw new ArgumentOutOfRangeException(nameof(dashArray), "The lengths of a dash pattern must not be negative");
+        }
+
         _buffer.WriteByte((byte)'[');
         for (var i = 0; i < dashArray.Length; i++)
         {
-            if (dashArray[i] < 0)
-                throw new ArgumentOutOfRangeException(nameof(dashArray), "The lengths of a dash pattern must not be negative");
-
             if (i > 0)
             {
                 _buffer.WriteSpace();
@@ -511,19 +551,28 @@ public sealed class PdfContentBuilder
         if (_font is EmbeddedPdfFont)
             return ShowShapedText(segments, nextLine: false);
 
-        _buffer.WriteByte((byte)'[');
-        var first = true;
-        foreach (var segment in segments)
+        // Encode first: a character the font does not have leaves the content unchanged
+        var encoded = new byte[segments.Length][];
+        for (var i = 0; i < segments.Length; i++)
         {
-            if (!first)
+            if (segments[i].Text is { } text)
+            {
+                encoded[i] = _font!.Encode(text);
+            }
+        }
+
+        _buffer.WriteByte((byte)'[');
+        for (var i = 0; i < segments.Length; i++)
+        {
+            var segment = segments[i];
+            if (i > 0)
             {
                 _buffer.WriteSpace();
             }
 
-            first = false;
-            if (segment.Text is { } text)
+            if (segment.Text is not null)
             {
-                PdfObjectSerializer.WriteString(_buffer, _font!.Encode(text), hexadecimal: false);
+                PdfObjectSerializer.WriteString(_buffer, encoded[i], hexadecimal: false);
             }
             else
             {
@@ -616,6 +665,101 @@ public sealed class PdfContentBuilder
         // Encode first: a character the font does not have leaves the content unchanged
         font.Encode(text);
         return BeginText().SetFont(font, fontSize).MoveTextPosition(x, y).ShowText(text).EndText();
+    }
+
+    /// <summary>
+    /// Draws a text in a rectangle, broken into lines that fit its width: at the spaces, inside a word only when the word
+    /// is wider than the rectangle. The line feeds of the text start new paragraphs. The lines that do not fit in the
+    /// height of the rectangle are not drawn.
+    /// </summary>
+    /// <param name="text">The text.</param>
+    /// <param name="font">The font.</param>
+    /// <param name="fontSize">The font size.</param>
+    /// <param name="rectangle">The rectangle: the first baseline is below its top by the ascent of the font.</param>
+    /// <param name="options">The alignment and the line height, or <see langword="null"/> for the defaults.</param>
+    /// <returns>The builder.</returns>
+    /// <exception cref="ArgumentException">A character of the text has no glyph in the font. Nothing is drawn.</exception>
+    public PdfContentBuilder DrawTextBox(string text, PdfFont font, double fontSize, PdfRectangle rectangle, PdfTextBoxOptions? options = null) => DrawTextBox(text, font, fontSize, rectangle, options, out _);
+
+    /// <summary>Draws a text in a rectangle, broken into lines, and returns the text that does not fit, to draw it in another rectangle (the next column or page).</summary>
+    /// <param name="text">The text.</param>
+    /// <param name="font">The font.</param>
+    /// <param name="fontSize">The font size, more than 0.</param>
+    /// <param name="rectangle">The rectangle: the first baseline is below its top by the ascent of the font.</param>
+    /// <param name="options">The alignment and the line height, or <see langword="null"/> for the defaults.</param>
+    /// <param name="remainingText">The text of the lines that do not fit in the height of the rectangle, from the start of the first of them; empty when the whole text is drawn.</param>
+    /// <returns>The builder.</returns>
+    /// <exception cref="ArgumentException">A character of the text has no glyph in the font. Nothing is drawn.</exception>
+    public PdfContentBuilder DrawTextBox(string text, PdfFont font, double fontSize, PdfRectangle rectangle, PdfTextBoxOptions? options, out string remainingText)
+    {
+        ArgumentNullException.ThrowIfNull(text);
+        ArgumentNullException.ThrowIfNull(font);
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(fontSize);
+        options ??= new PdfTextBoxOptions();
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(options.LineHeight, nameof(options));
+        EnsureNotInText();
+
+        // Lay out first: a character the font does not have leaves the content unchanged
+        var lines = PdfTextLayout.Wrap(text, font, fontSize, rectangle.Width);
+        var ascent = font.Ascent * fontSize / 1000;
+        var descent = font.Descent * fontSize / 1000;
+        var lineHeight = options.LineHeight * fontSize;
+        var count = 0;
+        while (count < lines.Count && rectangle.Top - ascent - (count * lineHeight) + descent >= rectangle.Bottom - 1e-9)
+        {
+            count++;
+        }
+
+        remainingText = count < lines.Count ? text[lines[count].Start..] : "";
+        if (count == 0)
+            return this;
+
+        var widths = new double[count];
+        for (var i = 0; i < count; i++)
+        {
+            widths[i] = font.GetTextWidth(lines[i].Text, fontSize);
+        }
+
+        BeginText().SetFont(font, fontSize);
+        for (var i = 0; i < count; i++)
+        {
+            var line = lines[i];
+            if (line.Text.Length == 0)
+                continue;
+
+            var free = rectangle.Width - widths[i];
+            var x = options.Alignment switch
+            {
+                PdfTextAlignment.Center => rectangle.Left + (free / 2),
+                PdfTextAlignment.Right => rectangle.Left + free,
+                _ => rectangle.Left,
+            };
+            SetTextMatrix(PdfMatrix.CreateTranslation(x, rectangle.Top - ascent - (i * lineHeight)));
+
+            var words = line.Text.Split(' ');
+            if (options.Alignment == PdfTextAlignment.Justify && !line.EndsParagraph && words.Length > 1 && free > 0)
+            {
+                // The space left is shared by the gaps between the words: TJ moves the text by minus the adjustment, in thousandths of the font size
+                var adjustment = -free / (words.Length - 1) * 1000 / fontSize;
+                var segments = new List<PdfTextSegment>(words.Length * 2);
+                for (var w = 0; w < words.Length; w++)
+                {
+                    segments.Add(PdfTextSegment.FromText(w < words.Length - 1 ? words[w] + " " : words[w]));
+                    if (w < words.Length - 1)
+                    {
+                        segments.Add(PdfTextSegment.FromAdjustment(adjustment));
+                    }
+                }
+
+                ShowText([.. segments]);
+            }
+            else
+            {
+                ShowText(line.Text);
+            }
+        }
+
+        return EndText();
     }
 
     /// <summary>Draws an image in a rectangle of the user space: <c>q</c>, <c>cm</c>, <c>Do</c>, <c>Q</c>. The image is added to the resources.</summary>
@@ -819,6 +963,7 @@ public sealed class PdfContentBuilder
     /// <returns>The builder.</returns>
     public PdfContentBuilder AppendRawContent(ReadOnlySpan<byte> content)
     {
+        EnsureNotCompleted();
         _stream.AppendData(content);
         if (content.Length > 0 && content[^1] is not ((byte)'\n' or (byte)'\r' or (byte)' '))
         {
@@ -828,28 +973,42 @@ public sealed class PdfContentBuilder
         return this;
     }
 
-    /// <summary>Adds an object to a category of the resources and returns its name; an object already there keeps its name.</summary>
+    /// <summary>
+    /// Adds an object to a category of the resources and returns its name; an object already there keeps its name. The
+    /// names of the objects of a category are indexed, so that a page with many resources does not scan them on each
+    /// call; the index is rebuilt when the dictionary changes outside the builder.
+    /// </summary>
     internal string AddResource(PdfName category, string prefix, PdfObject reference)
     {
+        EnsureNotCompleted();
         if (_resources.Get<PdfDictionary>(category) is not { } dictionary)
         {
             dictionary = new PdfDictionary();
             _resources[category] = dictionary;
         }
 
-        foreach (var entry in dictionary)
+        _resourceIndexes ??= [];
+        if (!_resourceIndexes.TryGetValue(category, out var index) || !ReferenceEquals(index.Dictionary, dictionary) || index.Version != dictionary.Version)
         {
-            if (entry.Value.Equals(reference))
-                return entry.Key.Value;
+            index = new ResourceIndex(dictionary);
+            _resourceIndexes[category] = index;
         }
 
-        for (var i = 1; ; i++)
+        if (index.Names.TryGetValue(reference, out var existing))
+            return existing;
+
+        // The first free name of the prefix: the numbers below the last one given are taken
+        index.NextNumbers.TryGetValue(prefix, out var number);
+        for (number = Math.Max(number, 1); ; number++)
         {
-            var name = prefix + i.ToString(CultureInfo.InvariantCulture);
+            var name = prefix + number.ToString(CultureInfo.InvariantCulture);
             var key = PdfName.Create(name);
             if (!dictionary.ContainsKey(key))
             {
                 dictionary[key] = reference;
+                index.Names[reference] = name;
+                index.NextNumbers[prefix] = number + 1;
+                index.Version = dictionary.Version;
                 return name;
             }
         }
@@ -1073,6 +1232,12 @@ public sealed class PdfContentBuilder
 
     private PdfContentBuilder Operator(string name, params ReadOnlySpan<double> operands)
     {
+        if (_completed)
+        {
+            _buffer.Clear();
+            EnsureNotCompleted();
+        }
+
         foreach (var operand in operands)
         {
             _buffer.WriteNumber(operand);
@@ -1084,6 +1249,12 @@ public sealed class PdfContentBuilder
         _stream.AppendData(_buffer.WrittenSpan);
         _buffer.Clear();
         return this;
+    }
+
+    private void EnsureNotCompleted()
+    {
+        if (_completed)
+            throw new InvalidOperationException("The content is completed: the builder cannot write anymore");
     }
 
     private void EnsureInText()
@@ -1103,5 +1274,27 @@ public sealed class PdfContentBuilder
         EnsureInText();
         if (_font is null)
             throw new InvalidOperationException("No font is set: call SetFont first");
+    }
+
+    /// <summary>The names of the objects of a category of the resources, as of a version of its dictionary.</summary>
+    private sealed class ResourceIndex
+    {
+        public ResourceIndex(PdfDictionary dictionary)
+        {
+            Dictionary = dictionary;
+            Version = dictionary.Version;
+            foreach (var entry in dictionary)
+            {
+                Names.TryAdd(entry.Value, entry.Key.Value);
+            }
+        }
+
+        public PdfDictionary Dictionary { get; }
+
+        public int Version { get; set; }
+
+        public Dictionary<PdfObject, string> Names { get; } = [];
+
+        public Dictionary<string, int> NextNumbers { get; } = new(StringComparer.Ordinal);
     }
 }

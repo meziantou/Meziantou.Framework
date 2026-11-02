@@ -34,6 +34,9 @@ public sealed class PdfDictionary : PdfObject, IEnumerable<KeyValuePair<PdfName,
     /// <summary>Gets the keys, in the order of the entries.</summary>
     public IEnumerable<PdfName> Keys => _entries.Keys;
 
+    /// <summary>Gets a number that changes when the entries change, so that the caches of the library can tell they are stale.</summary>
+    internal int Version { get; private set; }
+
     /// <summary>Gets or sets the value of an entry, as it is stored: it may be a <see cref="PdfReference"/>.</summary>
     /// <param name="key">The key.</param>
     /// <returns>The value, or <see langword="null"/> when there is no entry. Setting <see langword="null"/> removes the entry.</returns>
@@ -48,6 +51,7 @@ public sealed class PdfDictionary : PdfObject, IEnumerable<KeyValuePair<PdfName,
         set
         {
             ArgumentNullException.ThrowIfNull(key);
+            Version++;
             if (value is null)
             {
                 _entries.Remove(key);
@@ -74,11 +78,16 @@ public sealed class PdfDictionary : PdfObject, IEnumerable<KeyValuePair<PdfName,
     public bool Remove(PdfName key)
     {
         ArgumentNullException.ThrowIfNull(key);
+        Version++;
         return _entries.Remove(key);
     }
 
     /// <summary>Removes every entry.</summary>
-    public void Clear() => _entries.Clear();
+    public void Clear()
+    {
+        Version++;
+        _entries.Clear();
+    }
 
     /// <summary>Gets the value of an entry, resolving it when it is a reference.</summary>
     /// <param name="key">The key.</param>
@@ -196,5 +205,9 @@ public sealed class PdfDictionary : PdfObject, IEnumerable<KeyValuePair<PdfName,
     }
 
     /// <summary>Adds an entry while parsing: the last of duplicate keys wins.</summary>
-    internal void SetParsed(PdfName key, PdfObject value) => _entries[key] = value;
+    internal void SetParsed(PdfName key, PdfObject value)
+    {
+        Version++;
+        _entries[key] = value;
+    }
 }

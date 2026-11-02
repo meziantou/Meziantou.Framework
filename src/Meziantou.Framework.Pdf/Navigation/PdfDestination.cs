@@ -113,18 +113,15 @@ public sealed class PdfDestination
 
     /// <summary>
     /// Writes the destination in a dictionary that has one (an outline item, a link): <c>/Dest</c>, or, with a structure
-    /// element, a <c>GoTo</c> action with the page destination and the structure destination (12.6.4.2, Table 202).
+    /// element, a <c>GoTo</c> action with the page destination and the structure destination (12.6.4.2, Table 202). The
+    /// two are exclusive (Tables 151 and 176): the action of another kind the dictionary had, such as a URI, is replaced.
     /// </summary>
     internal void WriteTo(PdfDictionary dictionary)
     {
         if (StructureElement is not { } element)
         {
             dictionary[PdfNames.Dest] = ToArray();
-            if (dictionary.Get<PdfDictionary>(PdfNames.A) is { } existing && existing.GetName(PdfNames.S) == PdfNames.GoTo)
-            {
-                dictionary.Remove(PdfNames.A);
-            }
-
+            dictionary.Remove(PdfNames.A);
             return;
         }
 
@@ -196,10 +193,8 @@ public sealed class PdfDestination
         {
             case PdfArray array:
                 return ReadArray(document, array);
-            case PdfName name:
-                return Read(document, FindNamedDestination(document, name.Value, nameTree: false), depth + 1);
-            case PdfString text:
-                return Read(document, FindNamedDestination(document, text.ToText(), nameTree: true), depth + 1);
+            case PdfObject key when key is PdfName or PdfString:
+                return Read(document, FindNamedDestination(document, key), depth + 1);
             case PdfDictionary dictionary:
                 // An entry of a /Dests dictionary, or a GoTo action, which can have a structure destination (12.6.4.2)
                 var destination = Read(document, dictionary[PdfNames.D], depth + 1);
@@ -213,6 +208,16 @@ public sealed class PdfDestination
             default:
                 return null;
         }
+    }
+
+    /// <summary>Gets the destination a named destination (a name or a string) names, or <see langword="null"/> when the value is not a named destination or the name is unknown.</summary>
+    internal static PdfObject? ResolveNamed(PdfDocument document, PdfObject? value)
+    {
+        if (value is null || PdfReference.ResolveIfReference(value) is not (PdfName or PdfString) || FindNamedDestination(document, PdfReference.ResolveIfReference(value)) is not { } named)
+            return null;
+
+        // An entry of a /Dests dictionary can be a dictionary whose /D is the destination
+        return named is PdfDictionary dictionary ? dictionary.GetResolved(PdfNames.D) : named;
     }
 
     private static PdfDestination? ReadArray(PdfDocument document, PdfArray array)
@@ -234,16 +239,34 @@ public sealed class PdfDestination
         } : null;
     }
 
-    private static PdfObject? FindNamedDestination(PdfDocument document, string name, bool nameTree)
+    /// <summary>
+    /// Finds a named destination (12.3.2.4). PDF 1.1 names the destinations with names, in the <c>/Dests</c> dictionary
+    /// of the catalog; PDF 1.2 with strings, in the <c>/Dests</c> name tree. Producers mix the conventions, so a name
+    /// that is not in the dictionary is looked up in the tree, and a string that is not in the tree in the dictionary:
+    /// one more lookup, made only when the first one fails.
+    /// </summary>
+    private static PdfObject? FindNamedDestination(PdfDocument document, PdfObject name)
     {
-        // PDF 1.1 names the destinations in the /Dests dictionary of the catalog, PDF 1.2 in the /Dests name tree
-        if (!nameTree && document.Catalog.Get<PdfDictionary>(PdfNames.Dests) is { } dests && dests.GetResolved(PdfName.Create(name)) is { } fromDictionary)
-            return fromDictionary;
+        var dests = document.Catalog.Get<PdfDictionary>(PdfNames.Dests);
+        var tree = document.Catalog.Get<PdfDictionary>(PdfNames.Names)?.Get<PdfDictionary>(PdfNames.Dests);
+        switch (name)
+        {
+            case PdfName key:
+                return dests?.GetResolved(key) ?? (tree is null ? null : PdfNameTree.Find(tree, key.Value));
+            case PdfString key:
+                if (tree is not null && PdfNameTree.Find(tree, key) is { } found)
+                    return found;
 
-        if (document.Catalog.Get<PdfDictionary>(PdfNames.Names)?.Get<PdfDictionary>(PdfNames.Dests) is { } tree)
-            return PdfNameTree.Find(tree, name);
+                if (dests is not null)
+                {
+                    var text = key.ToText();
+                    return text.Length > 0 ? dests.GetResolved(PdfName.Create(text)) : null;
+                }
 
-        return null;
+                return null;
+            default:
+                return null;
+        }
     }
 
     private static PdfObject Number(double? value) => value is { } number ? PdfObjectFactory.Number(number) : PdfNull.Instance;

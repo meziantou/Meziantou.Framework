@@ -7,7 +7,7 @@ namespace Meziantou.Framework.Pdf.InteropTests;
 /// <summary>The documents the interop tests give to the external tools: documents the library writes, and the fixtures.</summary>
 internal static class InteropDocuments
 {
-    public static readonly string[] WrittenNames = ["text", "graphics", "images", "navigation", "metadata", "fonts", "advanced-graphics", "attachments"];
+    public static readonly string[] WrittenNames = ["text", "graphics", "images", "navigation", "metadata", "fonts", "advanced-graphics", "attachments", "merged", "markup", "form", "flattened-form"];
 
     /// <summary>The content of the <c>data.csv</c> file of the "attachments" document.</summary>
     public static readonly byte[] AttachedCsv = "a,b\n1,2\n"u8.ToArray();
@@ -162,11 +162,123 @@ internal static class InteropDocuments
                 }
 
                 break;
+            case "merged":
+                {
+                    // The pages of other documents imported, then reordered and duplicated, with page labels
+                    var text = Create("text");
+                    var navigation = Create("navigation");
+                    foreach (var page in text.Pages.Concat(navigation.Pages))
+                    {
+                        document.Pages.Add(page);
+                    }
+
+                    document.Pages.Move(2, 3);
+                    document.Pages.Duplicate(0);
+                    document.Pages.Move(1, 4);
+                    document.PageLabels.Set(0, new PdfPageLabel(PdfPageLabelStyle.LowercaseRoman));
+                    document.PageLabels.Set(2, new PdfPageLabel(PdfPageLabelStyle.Decimal, "P-"));
+                    document.Pages[0].CreateContentBuilder().DrawForm(document.CreateFormFromPage(navigation.Pages[0]));
+                    break;
+                }
+
+            case "markup":
+                {
+                    var page = document.Pages.Add(PdfSize.A4);
+                    page.CreateContentBuilder().DrawTextBox("A paragraph of text that is broken into lines, highlighted and commented.", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 12, new PdfRectangle(72, 600, 300, 760), new PdfTextBoxOptions { Alignment = PdfTextAlignment.Justify });
+                    page.Annotations.AddNote(new PdfPoint(40, 740), "A note").Author = "Reviewer";
+                    page.Annotations.AddTextMarkup(PdfTextMarkupKind.Highlight, [new PdfRectangle(72, 740, 300, 755)]);
+                    page.Annotations.AddTextMarkup(PdfTextMarkupKind.Underline, [new PdfRectangle(72, 725, 300, 740)]);
+                    page.Annotations.AddTextMarkup(PdfTextMarkupKind.Squiggly, [new PdfRectangle(72, 710, 300, 725)]);
+                    page.Annotations.AddTextMarkup(PdfTextMarkupKind.StrikeOut, [new PdfRectangle(72, 695, 300, 710)]);
+                    page.Annotations.AddFreeText(new PdfRectangle(320, 700, 520, 760), "Free text", PdfStandardFont.TimesRoman, 14, PdfColor.FromRgb(0, 0, 0.6));
+                    page.Annotations.AddStamp(new PdfRectangle(320, 600, 520, 660), "Draft");
+                    page.Annotations[0].Flags |= PdfAnnotationFlags.Locked;
+                    break;
+                }
+
+            case "form" or "flattened-form":
+                {
+                    CreateForm(document);
+                    document.Form.FindField("name")!.Value = "Jane Doe";
+                    document.Form.FindField("address.city")!.Value = "Paris";
+                    ((PdfCheckBoxField)document.Form.FindField("agree")!).IsChecked = true;
+                    if (name == "flattened-form")
+                    {
+                        document.Form.Flatten();
+                    }
+
+                    break;
+                }
+
             default:
                 throw new ArgumentOutOfRangeException(nameof(name), name, "Unknown document");
         }
 
         return document;
+    }
+
+    /// <summary>Creates a form with the object model: a text field, a text field in a hierarchy, and a check box with its appearance states.</summary>
+    private static void CreateForm(PdfDocument document)
+    {
+        var page = document.Pages.Add(PdfSize.A5);
+        var helvetica = document.Objects.Add(new Objects.PdfDictionary
+        {
+            [Objects.PdfNames.Type] = Objects.PdfNames.Font,
+            [Objects.PdfNames.Subtype] = Objects.PdfName.Create("Type1"),
+            [Objects.PdfNames.BaseFont] = Objects.PdfName.Create("Helvetica"),
+            [Objects.PdfNames.Encoding] = Objects.PdfNames.WinAnsiEncoding,
+        });
+        Objects.PdfDictionary Widget(string? fieldName, double y, Objects.PdfReference? parent = null)
+        {
+            var widget = new Objects.PdfDictionary
+            {
+                [Objects.PdfNames.Type] = Objects.PdfNames.Annot,
+                [Objects.PdfNames.Subtype] = Objects.PdfName.Create("Widget"),
+                [Objects.PdfNames.Rect] = Objects.PdfArray.FromNumbers(30, y, 230, y + 20),
+                [Objects.PdfNames.P] = page.Reference,
+                [Objects.PdfNames.F] = Objects.PdfInteger.Get(4),
+            };
+            if (fieldName is not null)
+            {
+                widget[Objects.PdfName.Create("T")] = Objects.PdfString.FromText(fieldName);
+            }
+
+            if (parent is not null)
+            {
+                widget[Objects.PdfNames.Parent] = parent;
+            }
+
+            return widget;
+        }
+
+        var name = Widget("name", 500);
+        name[Objects.PdfName.Create("FT")] = Objects.PdfName.Create("Tx");
+        var nameReference = document.Objects.Add(name);
+        var address = new Objects.PdfDictionary { [Objects.PdfName.Create("T")] = Objects.PdfString.FromText("address") };
+        var addressReference = document.Objects.Add(address);
+        var city = Widget("city", 460, addressReference);
+        city[Objects.PdfName.Create("FT")] = Objects.PdfName.Create("Tx");
+        var cityReference = document.Objects.Add(city);
+        address[Objects.PdfNames.Kids] = new Objects.PdfArray(cityReference);
+
+        var on = document.CreateForm(new PdfRectangle(0, 0, 200, 20));
+        on.CreateContentBuilder().SetFillGray(0).Rectangle(2, 2, 16, 16).Fill();
+        var off = document.CreateForm(new PdfRectangle(0, 0, 200, 20));
+        off.CreateContentBuilder().SetStrokeGray(0).Rectangle(2, 2, 16, 16).Stroke();
+        var agree = Widget("agree", 420);
+        agree[Objects.PdfName.Create("FT")] = Objects.PdfName.Create("Btn");
+        agree[Objects.PdfName.Create("V")] = Objects.PdfName.Create("Off");
+        agree[Objects.PdfName.Create("AS")] = Objects.PdfName.Create("Off");
+        agree[Objects.PdfName.Create("AP")] = new Objects.PdfDictionary { [Objects.PdfNames.N] = new Objects.PdfDictionary { [Objects.PdfName.Create("Yes")] = on.Reference, [Objects.PdfName.Create("Off")] = off.Reference } };
+        var agreeReference = document.Objects.Add(agree);
+
+        page.Dictionary[Objects.PdfNames.Annots] = new Objects.PdfArray(nameReference, cityReference, agreeReference);
+        document.Catalog[Objects.PdfName.Create("AcroForm")] = new Objects.PdfDictionary
+        {
+            [Objects.PdfName.Create("Fields")] = new Objects.PdfArray(nameReference, addressReference, agreeReference),
+            [Objects.PdfName.Create("DA")] = Objects.PdfString.FromText("/Helv 0 Tf 0 g"),
+            [Objects.PdfName.Create("DR")] = new Objects.PdfDictionary { [Objects.PdfNames.Font] = new Objects.PdfDictionary { [Objects.PdfName.Create("Helv")] = helvetica } },
+        };
     }
 
     /// <summary>The pages of the "advanced-graphics" document, 200 x 200 points each, and the colors expected at points of each page.</summary>

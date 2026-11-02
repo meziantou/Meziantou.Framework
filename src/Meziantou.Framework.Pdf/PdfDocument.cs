@@ -23,6 +23,8 @@ public sealed partial class PdfDocument
     private PdfOutlineCollection? _outlines;
     private PdfStructureTree? _structureTree;
     private PdfEmbeddedFileCollection? _embeddedFiles;
+    private PdfPageLabelCollection? _pageLabels;
+    private PdfInteractiveForm? _form;
 
     /// <summary>Initializes a new instance of the <see cref="PdfDocument"/> class: an empty PDF 1.7 document without pages.</summary>
     public PdfDocument()
@@ -120,6 +122,12 @@ public sealed partial class PdfDocument
     /// <summary>Gets the pages of the document.</summary>
     public PdfPageCollection Pages => _pages ??= new PdfPageCollection(this);
 
+    /// <summary>Gets the page labels of the document (ISO 32000-2, 12.4.2): the labels viewers show instead of the page numbers, such as <c>i</c>, <c>ii</c> for the front matter.</summary>
+    public PdfPageLabelCollection PageLabels => _pageLabels ??= new PdfPageLabelCollection(this);
+
+    /// <summary>Gets the interactive form of the document (ISO 32000-2, 12.7): its fields, to read, fill or flatten them.</summary>
+    public PdfInteractiveForm Form => _form ??= new PdfInteractiveForm(this);
+
     /// <summary>Gets the files embedded in the document (ISO 32000-2, 7.11.4): the <c>/EmbeddedFiles</c> name tree of the catalog.</summary>
     public PdfEmbeddedFileCollection EmbeddedFiles => _embeddedFiles ??= new PdfEmbeddedFileCollection(this);
 
@@ -132,6 +140,57 @@ public sealed partial class PdfDocument
     /// <param name="group">The attributes of the transparency group of the form; <see langword="null"/> when it is not a group.</param>
     /// <returns>The form.</returns>
     public PdfForm CreateForm(PdfRectangle boundingBox, PdfMatrix? matrix = null, PdfTransparencyGroup? group = null) => new(this, boundingBox, matrix, group);
+
+    /// <summary>
+    /// Creates a form XObject (ISO 32000-2, 8.10) whose content is the content of a page, to stamp it on other pages, as an
+    /// overlay or an underlay (<see cref="PdfContentBuilder.DrawForm"/>). The page can be a page of another document: the
+    /// objects it uses are copied, once per source document.
+    /// </summary>
+    /// <param name="page">The page.</param>
+    /// <returns>
+    /// The form: its bounding box is the visible region of the page (the crop box clipped to the media box), and its
+    /// matrix is <see cref="PdfPage.UserSpaceToDisplay"/>, so that it is painted upright, with its lower-left corner at
+    /// the origin and the size <see cref="PdfPage.DisplaySize"/>, whatever the rotation of the page. The annotations of
+    /// the page are not part of it.
+    /// </returns>
+    /// <exception cref="InvalidPdfContentException">A content stream of the page cannot be decoded.</exception>
+    public PdfForm CreateFormFromPage(PdfPage page)
+    {
+        ArgumentNullException.ThrowIfNull(page);
+        var importer = page.Document == this ? null : PdfObjectImporter.Get(page.Document, this);
+        var resources = new PdfDictionary();
+        if (page.GetInherited(PdfNames.Resources) is PdfDictionary pageResources)
+        {
+            // The categories are copied, so that the content builders of the form and of the page do not change each other
+            foreach (var (key, value) in pageResources)
+            {
+                var copy = importer is null ? value : importer.Copy(value);
+                resources[key] = PdfReference.ResolveIfReference(copy) is PdfDictionary category ? category.CloneShallow() : copy;
+            }
+        }
+
+        var box = page.VisibleBox;
+        var stream = new PdfStream();
+        stream.SetData(page.GetContentData());
+        var matrix = page.UserSpaceToDisplay;
+        var dictionary = stream.Dictionary;
+        dictionary[PdfNames.Type] = PdfNames.XObject;
+        dictionary[PdfNames.Subtype] = PdfNames.Form;
+        dictionary[PdfNames.BBox] = box.ToArray();
+        if (matrix != PdfMatrix.Identity)
+        {
+            dictionary[PdfNames.Matrix] = PdfArray.FromNumbers(matrix.A, matrix.B, matrix.C, matrix.D, matrix.E, matrix.F);
+        }
+
+        // The transparency group of the page is the group of the form (8.10.3, 11.6.6)
+        if (page.Dictionary[PdfNames.Group] is { } group)
+        {
+            dictionary[PdfNames.Group] = importer is null ? group : importer.Copy(group);
+        }
+
+        dictionary[PdfNames.Resources] = resources;
+        return new PdfForm(this, stream, box, resources);
+    }
 
     /// <summary>Creates a tiling pattern (ISO 32000-2, 8.7.3).</summary>
     /// <param name="cell">The bounding box of the cell, in the pattern space: the content of the cell is clipped to it.</param>
@@ -146,6 +205,12 @@ public sealed partial class PdfDocument
     public PdfOutlineCollection Outlines => _outlines ??= PdfOutlineCollection.Load(this);
 
     internal PdfFileReader? Reader { get; }
+
+    /// <summary>Gets the outline when it was read, or <see langword="null"/>.</summary>
+    internal PdfOutlineCollection? LoadedOutlines => _outlines;
+
+    /// <summary>Gets the importers of the pages of other documents into this one, by source document (<see cref="PdfPageCollection.Insert(int, PdfPage)"/>).</summary>
+    internal System.Runtime.CompilerServices.ConditionalWeakTable<PdfDocument, PdfObjectImporter> Importers { get; } = new();
 
     internal Dictionary<object, PdfReference> SharedResources { get; } = [];
 

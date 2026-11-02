@@ -41,6 +41,9 @@ public sealed class PdfArray : PdfObject, IList<PdfObject>, IReadOnlyList<PdfObj
 
     bool ICollection<PdfObject>.IsReadOnly => false;
 
+    /// <summary>Gets a number that changes when the items change, so that the caches of the library can tell they are stale.</summary>
+    internal int Version { get; private set; }
+
     /// <summary>Gets or sets the item at an index. The item is not resolved: it may be a <see cref="PdfReference"/>.</summary>
     /// <param name="index">The index.</param>
     /// <returns>The item.</returns>
@@ -50,6 +53,7 @@ public sealed class PdfArray : PdfObject, IList<PdfObject>, IReadOnlyList<PdfObj
         set
         {
             ArgumentNullException.ThrowIfNull(value);
+            Version++;
             _items[index] = value;
         }
     }
@@ -105,6 +109,7 @@ public sealed class PdfArray : PdfObject, IList<PdfObject>, IReadOnlyList<PdfObj
     public void Add(PdfObject item)
     {
         ArgumentNullException.ThrowIfNull(item);
+        Version++;
         _items.Add(item);
     }
 
@@ -114,11 +119,16 @@ public sealed class PdfArray : PdfObject, IList<PdfObject>, IReadOnlyList<PdfObj
     public void Insert(int index, PdfObject item)
     {
         ArgumentNullException.ThrowIfNull(item);
+        Version++;
         _items.Insert(index, item);
     }
 
     /// <inheritdoc/>
-    public void Clear() => _items.Clear();
+    public void Clear()
+    {
+        Version++;
+        _items.Clear();
+    }
 
     /// <inheritdoc/>
     public bool Contains(PdfObject item) => _items.Contains(item);
@@ -130,10 +140,18 @@ public sealed class PdfArray : PdfObject, IList<PdfObject>, IReadOnlyList<PdfObj
     public int IndexOf(PdfObject item) => _items.IndexOf(item);
 
     /// <inheritdoc/>
-    public bool Remove(PdfObject item) => _items.Remove(item);
+    public bool Remove(PdfObject item)
+    {
+        Version++;
+        return _items.Remove(item);
+    }
 
     /// <inheritdoc/>
-    public void RemoveAt(int index) => _items.RemoveAt(index);
+    public void RemoveAt(int index)
+    {
+        Version++;
+        _items.RemoveAt(index);
+    }
 
     /// <summary>Returns an enumerator over the items, which are not resolved.</summary>
     /// <returns>The enumerator.</returns>

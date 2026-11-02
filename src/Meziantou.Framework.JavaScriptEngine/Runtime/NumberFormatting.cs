@@ -7,7 +7,11 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// <summary>The conversions of numbers to strings (https://tc39.es/ecma262/#sec-numeric-types-number-tostring).</summary>
 internal static class NumberFormatting
 {
+    /// <summary>The maximum length of Number::toString(x, 10): "-1.2345678901234567e-308" or "-0.0000012345678901234567".</summary>
+    public const int MaxLength = 32;
+
     private static readonly string[] SmallIntegers = CreateSmallIntegers();
+    private static readonly JsString[] SmallIntegerStrings = CreateSmallIntegerStrings();
 
     /// <summary>Number::toString(x, 10)</summary>
     public static string ToString(double value)
@@ -28,37 +32,103 @@ internal static class NumberFormatting
         if (double.IsInfinity(value))
             return value > 0 ? "Infinity" : "-Infinity";
 
-        if (value < 0)
-            return "-" + ToString(-value);
+        Span<char> buffer = stackalloc char[MaxLength];
+        var length = FormatShortest(value, buffer);
+        return new string(buffer[..length]);
+    }
 
-        GetShortestDigits(value, out var digits, out var n);
-        var k = digits.Length;
-        var builder = new StringBuilder(k + 8);
+    /// <summary>Number::toString(x, 10) as a string value (the small integers are cached).</summary>
+    public static JsString ToJsString(double value)
+    {
+        // -0 is "0"
+        if (value >= 0 && value < SmallIntegerStrings.Length && value == Math.Floor(value))
+            return SmallIntegerStrings[(int)value];
+
+        return JsString.Create(ToString(value));
+    }
+
+    /// <summary>Writes Number::toString(x, 10); the destination has at least <see cref="MaxLength"/> characters.</summary>
+    public static int Format(double value, Span<char> destination)
+    {
+        if (double.IsNaN(value))
+            return Copy("NaN", destination);
+
+        if (value == 0)
+            return Copy("0", destination);
+
+        if (value is > -9007199254740992 and < 9007199254740992 && value == Math.Truncate(value))
+        {
+            ((long)value).TryFormat(destination, out var written, provider: CultureInfo.InvariantCulture);
+            return written;
+        }
+
+        if (double.IsInfinity(value))
+            return Copy(value > 0 ? "Infinity" : "-Infinity", destination);
+
+        return FormatShortest(value, destination);
+
+        static int Copy(string text, Span<char> destination)
+        {
+            text.CopyTo(destination);
+            return text.Length;
+        }
+    }
+
+    /// <summary>Number::toString(x, 10) of a finite non-zero number, from its shortest round-tripping digits.</summary>
+    private static int FormatShortest(double value, Span<char> destination)
+    {
+        var position = 0;
+        if (value < 0)
+        {
+            destination[position++] = '-';
+            value = -value;
+        }
+
+        Span<char> digits = stackalloc char[MaxLength];
+        var k = GetShortestDigits(value, digits, out var n);
+        digits = digits[..k];
         if (k <= n && n <= 21)
         {
-            builder.Append(digits).Append('0', n - k);
+            digits.CopyTo(destination[position..]);
+            position += k;
+            destination.Slice(position, n - k).Fill('0');
+            position += n - k;
         }
         else if (0 < n && n <= 21)
         {
-            builder.Append(digits, 0, n).Append('.').Append(digits, n, k - n);
+            digits[..n].CopyTo(destination[position..]);
+            position += n;
+            destination[position++] = '.';
+            digits[n..].CopyTo(destination[position..]);
+            position += k - n;
         }
         else if (-6 < n && n <= 0)
         {
-            builder.Append("0.").Append('0', -n).Append(digits);
+            destination[position++] = '0';
+            destination[position++] = '.';
+            destination.Slice(position, -n).Fill('0');
+            position += -n;
+            digits.CopyTo(destination[position..]);
+            position += k;
         }
         else
         {
             var exponent = n - 1;
-            builder.Append(digits[0]);
+            destination[position++] = digits[0];
             if (k > 1)
             {
-                builder.Append('.').Append(digits, 1, k - 1);
+                destination[position++] = '.';
+                digits[1..].CopyTo(destination[position..]);
+                position += k - 1;
             }
 
-            builder.Append('e').Append(exponent < 0 ? '-' : '+').Append(Math.Abs(exponent).ToString(CultureInfo.InvariantCulture));
+            destination[position++] = 'e';
+            destination[position++] = exponent < 0 ? '-' : '+';
+            Math.Abs(exponent).TryFormat(destination[position..], out var written, provider: CultureInfo.InvariantCulture);
+            position += written;
         }
 
-        return builder.ToString();
+        return position;
     }
 
     /// <summary>
@@ -67,34 +137,57 @@ internal static class NumberFormatting
     /// </summary>
     public static void GetShortestDigits(double value, out string digits, out int n)
     {
-        var text = value.ToString(GetShortestRoundTripFormat(value), CultureInfo.InvariantCulture);
+        Span<char> buffer = stackalloc char[MaxLength];
+        var length = GetShortestDigits(value, buffer, out n);
+        digits = new string(buffer[..length]);
+    }
+
+    /// <summary>
+    /// Writes the shortest decimal digits that round-trip a positive finite number (at most 17 digits, the destination
+    /// has at least <see cref="MaxLength"/> characters) and returns their number: value = digits x 10^(n \u2212 length).
+    /// </summary>
+    private static int GetShortestDigits(double value, Span<char> digits, out int n)
+    {
+        Span<char> text = stackalloc char[MaxLength];
+        value.TryFormat(text, out var written, GetShortestRoundTripFormat(value), CultureInfo.InvariantCulture);
+        text = text[..written];
+
         var exponent = 0;
-        var exponentIndex = text.IndexOfAny(['E', 'e']);
+        var exponentIndex = text.IndexOfAny('E', 'e');
         if (exponentIndex >= 0)
         {
-            exponent = int.Parse(text.AsSpan(exponentIndex + 1), NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture);
+            exponent = int.Parse(text[(exponentIndex + 1)..], NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture);
             text = text[..exponentIndex];
         }
 
-        var pointIndex = text.IndexOf('.', StringComparison.Ordinal);
+        var pointIndex = text.IndexOf('.');
         var integerDigits = pointIndex >= 0 ? pointIndex : text.Length;
-        var allDigits = pointIndex >= 0 ? string.Concat(text.AsSpan(0, pointIndex), text.AsSpan(pointIndex + 1)) : text;
 
         // value = 0.allDigits x 10^(integerDigits + exponent)
+        var length = 0;
+        foreach (var c in text)
+        {
+            if (c != '.')
+            {
+                digits[length++] = c;
+            }
+        }
+
         var leadingZeros = 0;
-        while (leadingZeros < allDigits.Length - 1 && allDigits[leadingZeros] == '0')
+        while (leadingZeros < length - 1 && digits[leadingZeros] == '0')
         {
             leadingZeros++;
         }
 
-        allDigits = allDigits[leadingZeros..].TrimEnd('0');
-        if (allDigits.Length == 0)
+        digits[leadingZeros..length].CopyTo(digits);
+        length -= leadingZeros;
+        while (length > 1 && digits[length - 1] == '0')
         {
-            allDigits = "0";
+            length--;
         }
 
-        digits = allDigits;
         n = integerDigits + exponent - leadingZeros;
+        return length;
     }
 
     /// <summary>The format that gives the shortest decimal digits that round-trip a finite number.</summary>
@@ -470,6 +563,17 @@ internal static class NumberFormatting
     private static void AppendExponent(StringBuilder builder, int exponent)
     {
         builder.Append('e').Append(exponent < 0 ? '-' : '+').Append(Math.Abs(exponent).ToString(CultureInfo.InvariantCulture));
+    }
+
+    private static JsString[] CreateSmallIntegerStrings()
+    {
+        var result = new JsString[SmallIntegers.Length];
+        for (var i = 0; i < result.Length; i++)
+        {
+            result[i] = JsString.Create(SmallIntegers[i]);
+        }
+
+        return result;
     }
 
     private static string[] CreateSmallIntegers()

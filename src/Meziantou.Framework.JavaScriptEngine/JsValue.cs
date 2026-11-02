@@ -303,7 +303,7 @@ public readonly struct JsValue : IEquatable<JsValue>
             JsValueKind.Number => NumberFormatting.ToString(_number),
             JsValueKind.String => AsString(),
             JsValueKind.Symbol => AsSymbol().ToString(),
-            JsValueKind.BigInt => AsBigInt().ToString(System.Globalization.CultureInfo.InvariantCulture),
+            JsValueKind.BigInt => BigIntOperations.ToString(AsBigInt(), 10),
             _ => Cell is HoleCell ? "<hole>" : "[object " + AsObject().ClassName + "]",
         };
     }

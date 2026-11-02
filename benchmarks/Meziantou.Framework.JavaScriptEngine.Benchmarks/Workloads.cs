@@ -96,6 +96,22 @@ internal static class Workloads
               return numbers.length + objects.length + numbers.map(x => x + 1).length;
             }
             """,
+        ["NumberToString"] = """
+            function run() {
+              let s = 0;
+              for (let i = 0; i < 20000; i++) { s += String(i * 1.5).length + ('a' + i * 0.1).length + `${i * 1e-9}`.length + String(i % 1000).length; }
+              return s;
+            }
+            """,
+        ["BigIntConversions"] = """
+            const big = (1n << 200000n) - 12345n;
+            const hex = big.toString(16);
+            const decimal = big.toString();
+            function run() {
+              return big.toString(16).length + big.toString(10).length + big.toString(7).length
+                + Number(BigInt('0x' + hex) % 1000n) + Number(BigInt(decimal) % 1000n);
+            }
+            """,
         ["SparseArrayWrites"] = """
             function run() {
               const items = [];

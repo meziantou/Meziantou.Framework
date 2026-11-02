@@ -29,7 +29,7 @@ internal static class NumberParsing
         return ParseDecimal(span);
     }
 
-    /// <summary>Parses the digits of a non-decimal integer literal (no sign, no separator); NaN when a character is not a digit.</summary>
+    /// <summary>Parses the digits of a non-decimal integer literal (radix 2, 8 or 16, no sign, no separator); NaN when a character is not a digit.</summary>
     public static double ParseNonDecimal(ReadOnlySpan<char> digits, int radix)
     {
         if (digits.Length == 0)
@@ -47,15 +47,7 @@ internal static class NumberParsing
 
         // Large values: compute exactly with BigInteger, then round once
         if (result >= 9007199254740992)
-        {
-            var big = System.Numerics.BigInteger.Zero;
-            foreach (var c in digits)
-            {
-                big = (big * radix) + GetDigitValue(c);
-            }
-
-            return (double)big;
-        }
+            return BigIntOperations.ToNumber(BigIntAlgorithms.Parse(digits, radix));
 
         return result;
     }

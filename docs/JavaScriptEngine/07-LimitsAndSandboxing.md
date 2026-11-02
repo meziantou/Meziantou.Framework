@@ -54,6 +54,15 @@ Assert.Equal("RangeError", realm.Execute("function f() { return 1 + f(); } try {
   some strings. The matcher checks the limits and the cancellation while it backtracks and while it scans the string
   for the position where a match can start, so `Timeout`, [RegExpTimeout](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.RegExpTimeout) and the [CancellationToken](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.CancellationToken) stop a long
   match, even one that never backtracks.
+- A BigInt has at most 2^30 bits: a larger result is a `RangeError`. The operations on large BigInt values check the
+  limits too. The multiplications, the exponentiations and the conversions from and to strings are split into parts of
+  about 100 ms, and the limits are checked between the parts. The other operations take a time proportional to the size
+  of the values, except a division or a remainder, which runs at once: a division of two numbers of hundreds of
+  millions of bits can exceed `Timeout` by minutes. A large multiplication allocates temporary values, which count
+  toward `MemoryLimit`. On .NET 11, splitting an operation makes it up to 50% slower, so when no `Timeout`,
+  `MemoryLimit` or cancellation token applies, the engine computes it at once with `BigInteger`. On .NET 10, only the
+  parsing is faster at once: there, the split multiplications, powers and decimal conversions to strings are as fast as
+  `BigInteger` or faster.
 - The interpreter does not use the .NET stack for JavaScript calls, so a deep recursion of JavaScript code never
   overflows the stack of the thread; a recursion through .NET functions throws a `RangeError` before it does.
 

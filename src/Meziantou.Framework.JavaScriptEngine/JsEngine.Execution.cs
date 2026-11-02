@@ -484,6 +484,35 @@ public sealed partial class JsEngine
         CheckLimits();
     }
 
+    /// <summary>
+    /// Gets whether the periodic checks of <see cref="CountCurrentWork"/> can stop the built-in function that runs on the
+    /// current thread: a timeout, a memory limit or a cancellation token applies to it. A long operation without them can
+    /// run at once, without the cost of being split into parts.
+    /// </summary>
+    internal static bool CurrentWorkCanBeInterrupted => s_current is { } engine && engine.WorkCanBeInterrupted();
+
+    private bool WorkCanBeInterrupted()
+    {
+        var options = Options;
+        if (options.CancellationToken.CanBeCanceled)
+            return true;
+
+        if (!IsExecuting)
+            return false;
+
+        if (options.Timeout is not null || options.MemoryLimit is not null)
+            return true;
+
+        foreach (var scope in _executionScopes)
+        {
+            var limits = scope.Limits;
+            if (limits.CancellationToken.CanBeCanceled || limits.Timeout is not null || limits.MemoryLimit is not null)
+                return true;
+        }
+
+        return false;
+    }
+
     internal string? HostGetCodeForEval(JsValue argument) => HostHooks.GetCodeForEval(this, argument);
 
     internal void HostEnsureCanCompileStrings(JsRealm realm, IReadOnlyList<string> parameterStrings, string bodyString, string codeString, JsCompilationType compilationType, IReadOnlyList<JsValue> parameterArgs, JsValue bodyArg)

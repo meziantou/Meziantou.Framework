@@ -1,4 +1,3 @@
-using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 
@@ -292,16 +291,14 @@ internal static class JsOperations
                 return null;
         }
 
-        var result = BigInteger.Zero;
         foreach (var c in span)
         {
             var digit = NumberParsing.GetDigitValue(c);
             if (digit < 0 || digit >= radix)
                 return null;
-
-            result = (result * radix) + digit;
         }
 
+        var result = BigIntAlgorithms.Parse(span, radix);
         return negative ? -result : result;
     }
 
@@ -371,7 +368,7 @@ internal static class JsOperations
     internal static JsString ToJsString(JsValue value)
     {
         if (value.IsNumber)
-            return JsString.Create(NumberFormatting.ToString(value.NumberValue));
+            return NumberFormatting.ToJsString(value.NumberValue);
 
         switch (value.Cell)
         {
@@ -386,7 +383,7 @@ internal static class JsOperations
             case JsSymbol:
                 return ThrowHelper.ThrowTypeError<JsString>("Cannot convert a Symbol value to a string");
             case JsBigInt bigint:
-                return JsString.Create(bigint.Value.ToString(CultureInfo.InvariantCulture));
+                return JsString.Create(BigIntOperations.ToString(bigint.Value, 10));
             default:
                 return ToJsString(ToPrimitive(value, PreferredType.String));
         }

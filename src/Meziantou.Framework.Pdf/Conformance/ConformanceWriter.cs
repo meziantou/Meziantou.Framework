@@ -8,10 +8,10 @@ namespace Meziantou.Framework.Pdf.Conformance;
 /// <summary>
 /// Prepares a document for the conformance levels it claims when it is saved: PDF/A (ISO 19005-2, -3 and -4) and PDF/UA
 /// (ISO 14289-1). The requirements the library can check are checked (encryption, embedded fonts, tagging, title and
-/// language); the entries the levels need are written (output intent, XMP identification, viewer preferences, the
-/// flags of the annotations).
+/// language, actions, annotation appearances, device color spaces); the entries the levels need are written (output
+/// intent, XMP identification, viewer preferences, the flags of the annotations).
 /// </summary>
-internal static class ConformanceWriter
+internal static partial class ConformanceWriter
 {
     private const string PdfAIdNamespace = "http://www.aiim.org/pdfa/ns/id/";
     private const string PdfUAIdNamespace = "http://www.aiim.org/pdfua/ns/id/";
@@ -29,7 +29,7 @@ internal static class ConformanceWriter
     private static readonly PdfName TR2Name = PdfName.Create("TR2");
 
     /// <exception cref="InvalidOperationException">The document does not meet a requirement of its conformance levels.</exception>
-    public static void Apply(PdfDocument document)
+    public static void Apply(PdfDocument document, PdfSaveOptions options)
     {
         var pdfA = document.PdfAConformance;
         var pdfUA = document.PdfUAConformance;
@@ -46,6 +46,19 @@ internal static class ConformanceWriter
         foreach (var font in GetFontsNotEmbedded(document))
         {
             errors.Add($"The font '{font}' is not embedded: PDF/A and PDF/UA need the fonts embedded (use PdfFont.Load)");
+        }
+
+        if (pdfA != PdfAConformance.None)
+        {
+            var outputColorSpace = CheckOutputIntents(document, part, errors);
+            CheckActions(document, part, errors);
+            CheckAnnotations(document, part, outputColorSpace, errors);
+            CheckInteractiveForm(document, part, errors);
+            CheckDeviceColorSpaces(document, part, outputColorSpace, errors);
+            if (part is 1 or 2 or 3)
+            {
+                CheckInformationIsXmlText(document, part, errors);
+            }
         }
 
         if ((PdfALevel.IsTagged(pdfA) || pdfUA != PdfUAConformance.None) && !document.StructureTree.Exists)
@@ -163,7 +176,20 @@ internal static class ConformanceWriter
 
         // PDF/A-1, -2 and -3 only know the schemas of XMP 2004 and 2005: the PDF/UA identification is described by an extension schema
         var describePdfUA = pdfUA != PdfUAConformance.None && part is 1 or 2 or 3;
-        document.SetXmpMetadata(XmpPacketWriter.Write(document.Information, properties, describePdfUA));
+
+        // The other properties of the existing packet, such as the custom schemas of an invoice, are kept
+        var replaced = new List<string>();
+        if (pdfA != PdfAConformance.None)
+        {
+            replaced.Add(PdfAIdNamespace);
+        }
+
+        if (pdfUA != PdfUAConformance.None)
+        {
+            replaced.Add(PdfUAIdNamespace);
+        }
+
+        document.SetXmpMetadata(XmpPacketWriter.Write(document.Information, properties, describePdfUA, document.TryGetXmpMetadata(), replaced, options.XmpPadding));
     }
 
     /// <summary>
@@ -251,11 +277,6 @@ internal static class ConformanceWriter
                 if (dictionary.Get<PdfNumber>(StrokeAlphaName) is { } alpha && alpha.DoubleValue != 1)
                 {
                     errors.Add("PDF/A-1 does not allow transparency: an annotation has a constant alpha other than 1 (CA)");
-                }
-
-                if (dictionary.Get<PdfDictionary>(AppearanceName) is { } appearances && appearances.Any(entry => entry.Key != PdfNames.N))
-                {
-                    errors.Add("PDF/A-1 allows only the normal appearance of the annotations (the N entry of AP, ISO 19005-1, 6.5.3)");
                 }
             }
         }
@@ -549,25 +570,53 @@ internal static class ConformanceWriter
     }
 
     /// <summary>
-    /// The output intent of PDF/A (ISO 19005-1, 6.2.2; ISO 19005-2, 6.2.3): the sRGB profile, which gives the meaning of
-    /// the device color spaces; a profile of version 2 for PDF/A-1, whose PDF 1.4 does not know the later versions.
+    /// The output intent of PDF/A (ISO 19005-1, 6.2.2; ISO 19005-2, 6.2.3), which gives the meaning of the device color
+    /// spaces. The existing output intents, such as the one of PDF/X, are kept: as every output intent of the document
+    /// has the same profile, the PDF/A output intent shares theirs. A document without one gets the sRGB profile, of
+    /// version 2 for PDF/A-1, whose PDF 1.4 does not know the later versions.
     /// </summary>
     private static void AddOutputIntent(PdfDocument document, int part)
     {
-        if (document.Catalog.Get<PdfArray>(OutputIntentsName) is { Count: > 0 } intents && intents.Any(intent => PdfReference.ResolveIfReference(intent) is PdfDictionary dictionary && dictionary.GetName(PdfNames.S)?.Value == "GTS_PDFA1"))
+        var intents = document.Catalog.Get<PdfArray>(OutputIntentsName);
+        if (intents is not null && intents.Any(intent => PdfReference.ResolveIfReference(intent) is PdfDictionary dictionary && IsPdfAOutputIntent(dictionary)))
             return;
 
-        var profile = new PdfStream(new PdfDictionary { [PdfNames.N] = PdfInteger.Get(3) });
-        profile.SetData(part == 1 ? SrgbV2Profile.Data : IccProfile.Srgb.Data.Span);
         var intent = new PdfDictionary
         {
-            [PdfNames.Type] = PdfName.Create("OutputIntent"),
-            [PdfNames.S] = PdfName.Create("GTS_PDFA1"),
-            [PdfName.Create("OutputConditionIdentifier")] = PdfString.FromText("sRGB IEC61966-2.1"),
-            [PdfName.Create("Info")] = PdfString.FromText("sRGB IEC61966-2.1"),
-            [PdfName.Create("DestOutputProfile")] = document.Objects.Add(profile),
+            [PdfNames.Type] = OutputIntentName,
+            [PdfNames.S] = PdfAOutputIntentName,
         };
-        document.Catalog[OutputIntentsName] = new PdfArray(document.Objects.Add(intent));
+        if (FindOutputProfile(document) is { } existing)
+        {
+            foreach (var key in new[] { OutputConditionIdentifierName, OutputConditionName, RegistryNameName, InfoName })
+            {
+                if (existing.Intent.GetResolved(key) is PdfString value)
+                {
+                    intent[key] = value;
+                }
+            }
+
+            intent[OutputConditionIdentifierName] ??= PdfString.FromText("Custom");
+            intent[DestOutputProfileName] = existing.Value;
+        }
+        else
+        {
+            var profile = new PdfStream(new PdfDictionary { [PdfNames.N] = PdfInteger.Get(3) });
+            profile.SetData(part == 1 ? SrgbV2Profile.Data : IccProfile.Srgb.Data.Span);
+            intent[OutputConditionIdentifierName] = PdfString.FromText("sRGB IEC61966-2.1");
+            intent[InfoName] = PdfString.FromText("sRGB IEC61966-2.1");
+            intent[DestOutputProfileName] = document.Objects.Add(profile);
+        }
+
+        var reference = document.Objects.Add(intent);
+        if (intents is null)
+        {
+            document.Catalog[OutputIntentsName] = new PdfArray(reference);
+        }
+        else
+        {
+            intents.Add(reference);
+        }
     }
 
     /// <summary>The annotations of PDF/A are printed and visible (ISO 19005-2, 6.3.2): the Print flag is set, the Hidden, Invisible, NoView and ToggleNoView flags are cleared.</summary>
@@ -597,6 +646,18 @@ internal static class ConformanceWriter
     {
         var result = new List<string>();
         var visited = new HashSet<PdfDictionary>(ReferenceEqualityComparer.Instance);
+        void Check(PdfObject? value)
+        {
+            if (Resolve(value) is PdfDictionary font && visited.Add(font) && !IsEmbedded(font))
+            {
+                var name = font.GetName(PdfNames.BaseFont)?.Value ?? "(unnamed)";
+                if (!result.Contains(name, StringComparer.Ordinal))
+                {
+                    result.Add(name);
+                }
+            }
+        }
+
         ForEachResources(document, resources =>
         {
             if (resources.GetResolved(PdfNames.Font) is not PdfDictionary fonts)
@@ -604,16 +665,16 @@ internal static class ConformanceWriter
 
             foreach (var (_, value) in fonts)
             {
-                if (PdfReference.ResolveIfReference(value) is PdfDictionary font && visited.Add(font) && !IsEmbedded(font))
-                {
-                    var name = font.GetName(PdfNames.BaseFont)?.Value ?? "(unnamed)";
-                    if (!result.Contains(name, StringComparer.Ordinal))
-                    {
-                        result.Add(name);
-                    }
-                }
+                Check(value);
             }
         });
+
+        // The fonts of the form that a viewer renders the fields with: the default resources of the form are not the
+        // resources of a content stream
+        foreach (var font in GetFormFonts(document))
+        {
+            Check(font);
+        }
 
         return result;
     }

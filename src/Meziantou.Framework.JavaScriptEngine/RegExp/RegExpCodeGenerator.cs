@@ -27,9 +27,12 @@ internal sealed class RegExpCodeGenerator
 
         var search = RegExpSearchInfo.Create(parsed.Root, unicode);
         var code = generator._code;
-        if (code[0] == RegExpOpCode.StarPossessive && code[2] == RegExpQuantifierNode.Infinite && (code[4] & 1) == 0 && generator._backreferences.Count == 0)
+        // A leading greedy loop gives characters back, but the positions where it gives them back from a later start in
+        // the run are a subset of the positions tried from the first start: without backreferences, what follows the
+        // loop sees the same state at these positions, so it fails there too (/\s+$/ is linear instead of quadratic)
+        if (code[0] is RegExpOpCode.StarPossessive or RegExpOpCode.StarGreedy && code[2] == RegExpQuantifierNode.Infinite && (code[4] & 1) == 0 && generator._backreferences.Count == 0)
         {
-            search = new RegExpSearchInfo(search.Prefix, search.FirstCharacters, search.AnchoredAtStart) { SkipLeadingRun = true };
+            search = new RegExpSearchInfo(search.Prefix, search.FirstCharacters, search.AnchoredAtStart, search.PrefixIgnoreCase) { SkipLeadingRun = true };
         }
 
         return new RegExpProgram(

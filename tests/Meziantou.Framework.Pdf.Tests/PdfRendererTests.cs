@@ -1,6 +1,8 @@
+using System.Globalization;
 using System.Text;
 using Meziantou.Framework.Fonts;
 using Meziantou.Framework.Imaging;
+using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Pdf.Objects;
 using Meziantou.Framework.Pdf.Rendering;
 using Meziantou.Framework.Pdf.TestHarness;
@@ -9,7 +11,13 @@ namespace Meziantou.Framework.Pdf.Tests;
 
 public sealed class PdfRendererTests
 {
+    // A ToUnicode CMap that maps the code 0001 to H
+    private const string ToUnicodeH = "/CIDInit /ProcSet findresource begin 12 dict begin begincmap /CMapName /Test def 1 begincodespacerange <0000> <FFFF> endcodespacerange 1 beginbfchar <0001> <0048> endbfchar endcmap CMapName currentdict /CMap defineresource pop end end";
+
     private static readonly PdfSize Size = new(100, 100);
+
+    // The glyph procedure of Type3SquareFont: a square of the glyph space, painted with the fill color (d1)
+    private static readonly string Type3SquareProcedure = HandWrittenPdf.Stream("1000 0 0 0 1000 1000 d1 0 0 1000 1000 re f");
 
     [Fact]
     public void Example_RenderPage()
@@ -99,6 +107,11 @@ public sealed class PdfRendererTests
     [InlineData("/CS3 cs 1 sc", 255, 255, 255)]
     [InlineData("/CS4 cs 1 0 0 sc", 255, 0, 0)]
     [InlineData("/CS4 cs 0.5 0.5 0.5 sc", 128, 128, 128)]
+    [InlineData("/CS5 cs 0.5 sc", 128, 128, 128)]
+    [InlineData("/CS6 cs 0.5 sc", 188, 188, 188)]
+    [InlineData("/CS7 cs 1 0 0 sc", 128, 0, 0)]
+    [InlineData("/CS7 cs 2 0 0 sc", 255, 0, 0)]
+    [InlineData("/CS8 cs 0 sc", 255, 255, 255)]
     public void ColorSpaces(string setColor, int r, int g, int b)
     {
         var document = new PdfDocument();
@@ -123,6 +136,16 @@ public sealed class PdfRendererTests
                 [PdfName.Create("Gamma")] = PdfArray.FromNumbers(2.2, 2.2, 2.2),
                 [PdfNames.Matrix] = PdfArray.FromNumbers(0.4124, 0.2126, 0.0193, 0.3576, 0.7152, 0.1192, 0.1805, 0.0722, 0.9505),
             }),
+
+            // CIE-based grays: the gamma of sRGB gives the gray of sRGB; a gamma of 1 is linear light, 0.5 being 188 in sRGB
+            [PdfName.Create("CS5")] = new PdfArray(PdfName.Create("CalGray"), new PdfDictionary { [PdfName.Create("WhitePoint")] = PdfArray.FromNumbers(0.9505, 1, 1.089), [PdfName.Create("Gamma")] = PdfReal.Get(2.2) }),
+            [PdfName.Create("CS6")] = new PdfArray(PdfName.Create("CalGray"), new PdfDictionary { [PdfName.Create("WhitePoint")] = PdfArray.FromNumbers(0.9505, 1, 1.089) }),
+
+            // The sRGB profile with components from 0 to 2: 1 is the middle of the range
+            [PdfName.Create("CS7")] = new PdfArray(PdfName.Create("ICCBased"), document.Objects.Add(CreateIccStream(IccProfile.Srgb, 3, PdfArray.FromNumbers(0, 2, 0, 2, 0, 2)))),
+
+            // An indexed color space whose base has a range: the bytes of the table are scaled to it
+            [PdfName.Create("CS8")] = new PdfArray(PdfName.Create("Indexed"), new PdfArray(PdfName.Create("ICCBased"), document.Objects.Add(CreateIccStream(IccProfile.Srgb, 3, PdfArray.FromNumbers(0, 2, 0, 2, 0, 2)))), PdfInteger.Get(0), PdfString.FromBytes([255, 255, 255])),
         };
 
         using var image = Render(document);
@@ -237,12 +260,44 @@ public sealed class PdfRendererTests
     }
 
     [Theory]
+    [InlineData(1, 255, 0, 0)]
+    [InlineData(0, 76, 85, 255)] // The YCbCr samples of red drawn as RGB
+    public void DctColorTransformIsHonored(int colorTransform, int r, int g, int b)
+    {
+        using var red = Image.ImportPixelData<Rgb24>([.. Enumerable.Repeat(new Rgb24(255, 0, 0), 64)], 8, 8);
+        using var jpeg = new MemoryStream();
+        red.Save(jpeg, new Imaging.Formats.JpegEncoder { Quality = 100, ChromaSubsampling = Imaging.Formats.JpegChromaSubsampling.Ratio444 });
+        var document = new PdfDocument();
+        var page = document.Pages.Add(Size);
+        page.CreateContentBuilder().AppendRawContent("q 100 0 0 100 0 0 cm /Im0 Do Q"u8);
+        var image = new PdfStream(new PdfDictionary
+        {
+            [PdfNames.Type] = PdfNames.XObject,
+            [PdfNames.Subtype] = PdfName.Create("Image"),
+            [PdfNames.Width] = PdfInteger.Get(8),
+            [PdfNames.Height] = PdfInteger.Get(8),
+            [PdfNames.BitsPerComponent] = PdfInteger.Get(8),
+            [PdfNames.ColorSpace] = PdfNames.DeviceRGB,
+        });
+        image.SetEncodedData(jpeg.ToArray(), PdfNames.DCTDecode, new PdfDictionary { [PdfName.Create("ColorTransform")] = PdfInteger.Get(colorTransform) });
+        var resources = page.Dictionary.Get<PdfDictionary>(PdfNames.Resources) ?? new PdfDictionary();
+        page.Dictionary[PdfNames.Resources] = resources;
+        resources[PdfNames.XObject] = new PdfDictionary { [PdfName.Create("Im0")] = document.Objects.Add(image) };
+
+        using var rendered = Render(document);
+
+        AssertColor(Pixel(rendered, 50, 50), r, g, b, tolerance: 4);
+    }
+
+    [Theory]
     [InlineData("/W 2 /H 1 /BPC 1 /IM true", "@", 0, 255, 0, 255, 255, 255)]
     [InlineData("/W 2 /H 1 /BPC 1 /IM true /D [1 0]", "@", 255, 255, 255, 0, 255, 0)]
     [InlineData("/W 2 /H 1 /BPC 8 /CS /G", "\u0000\u00FF", 0, 0, 0, 255, 255, 255)]
     [InlineData("/W 2 /H 1 /BPC 8 /CS /G /D [1 0]", "\u0000\u00FF", 255, 255, 255, 0, 0, 0)]
     [InlineData("/W 2 /H 1 /BPC 4 /CS /RGB", "\u00F0\u0000\u000F", 255, 0, 0, 0, 0, 255)]
     [InlineData("/W 2 /H 1 /BPC 8 /CS /G /F /AHx", "00FF>", 0, 0, 0, 255, 255, 255)]
+    [InlineData("/W 2 /H 1 /BPC 8 /CS /RGB /Mask [0 10 0 0 0 0] /F /AHx", "0A0000C80000>", 255, 255, 255, 200, 0, 0)]
+    [InlineData("/W 2 /H 1 /BPC 4 /CS /G /Mask [0 5]", "\u0038", 255, 255, 255, 136, 136, 136)]
     public void InlineImages(string dictionary, string data, int r1, int g1, int b1, int r2, int g2, int b2)
     {
         var document = new PdfDocument();
@@ -253,6 +308,21 @@ public sealed class PdfRendererTests
 
         AssertColor(Pixel(image, 25, 50), r1, g1, b1);
         AssertColor(Pixel(image, 75, 50), r2, g2, b2);
+    }
+
+    [Fact]
+    public void InlineImagesHaveTheDecodeLimitsOfTheDocument()
+    {
+        // An inline image of 200 samples in 4 bytes of RunLengthDecode (two runs of 100 zeros): within the limit of the
+        // content stream, beyond the limit of the decoded data the document is opened with
+        var document = new PdfDocument();
+        var content = Encoding.Latin1.GetBytes("q 100 0 0 100 0 0 cm BI /W 200 /H 1 /BPC 8 /CS /G /F /RL ID \u009D\u0000\u009D\u0000\u0080 EI Q");
+        document.Pages.Add(Size).CreateContentBuilder().AppendRawContent(content);
+        var data = document.ToByteArray(new PdfSaveOptions { CompressStreams = false });
+
+        using var image = PdfRenderer.RenderPage(PdfDocument.Open(data, new PdfReadOptions { MaxDecodedStreamLength = 1000 }).Pages[0], new PdfRenderOptions { UseSystemFonts = false });
+        AssertColor(Pixel(image, 50, 50), 0, 0, 0);
+        Assert.Throws<PdfResourceLimitException>(() => PdfRenderer.RenderPage(PdfDocument.Open(data, new PdfReadOptions { MaxDecodedStreamLength = 150 }).Pages[0], new PdfRenderOptions { UseSystemFonts = false }));
     }
 
     [Fact]
@@ -578,6 +648,653 @@ public sealed class PdfRendererTests
         AssertColor(Pixel(withoutAnnotations, 25, 50), 255, 255, 255);
     }
 
+    [Theory]
+    [InlineData(0.5, 255, 0, 0)]
+    [InlineData(2, 96, 0, 159)]
+    public void ExponentialFunctionsOfNegativeInputs(double exponent, int r, int g, int b)
+    {
+        // t is -0.8 at the pixel 10: 0.64 for an exponent of 2; an exponent that is not an integer is not defined below 0,
+        // and gives the color of 0, C0, instead of a color that is not a number (black)
+        using var image = RenderHandWritten(
+            "/Sh1 sh",
+            resources: "<< /Shading << /Sh1 5 0 R >> >>",
+            objects: string.Create(CultureInfo.InvariantCulture, $"<< /ShadingType 2 /ColorSpace /DeviceRGB /Coords [0.5 0 100.5 0] /Domain [-1 1] /Function << /FunctionType 2 /Domain [-1 1] /C0 [1 0 0] /C1 [0 0 1] /N {exponent} >> >>"));
+
+        AssertColor(Pixel(image, 10, 50), r, g, b, tolerance: 4);
+        AssertColor(Pixel(image, 99, 50), 0, 0, 255, tolerance: 12);
+    }
+
+    [Fact]
+    public void ADefaultColorSpaceThatIsNotSupportedIsTheDeviceColorSpace()
+    {
+        using var image = RenderHandWritten("1 0 0 rg 0 0 100 100 re f", resources: "<< /ColorSpace << /DefaultRGB [/Unknown] >> >>");
+
+        AssertColor(Pixel(image, 50, 50), 255, 0, 0);
+    }
+
+    [Fact]
+    public void ImagesOfAnIccBasedColorSpaceWithARangeAreDecodedToTheRange()
+    {
+        // The default decode array of the image is the range: 255 is 2, the maximum of the components
+        var document = new PdfDocument();
+        var page = document.Pages.Add(Size);
+        var image = new PdfStream(new PdfDictionary
+        {
+            [PdfNames.Type] = PdfNames.XObject,
+            [PdfNames.Subtype] = PdfName.Create("Image"),
+            [PdfNames.Width] = PdfInteger.Get(2),
+            [PdfNames.Height] = PdfInteger.Get(1),
+            [PdfNames.BitsPerComponent] = PdfInteger.Get(8),
+            [PdfNames.ColorSpace] = new PdfArray(PdfName.Create("ICCBased"), document.Objects.Add(CreateIccStream(IccProfile.Srgb, 3, PdfArray.FromNumbers(0, 2, 0, 2, 0, 2)))),
+        });
+        image.SetData([255, 0, 0, 128, 0, 0]);
+        page.CreateContentBuilder().AppendRawContent("100 0 0 100 0 0 cm /Im1 Do"u8);
+        page.Dictionary[PdfNames.Resources] = new PdfDictionary { [PdfNames.XObject] = new PdfDictionary { [PdfName.Create("Im1")] = document.Objects.Add(image) } };
+
+        using var rendered = Render(document);
+
+        AssertColor(Pixel(rendered, 25, 50), 255, 0, 0);
+        AssertColor(Pixel(rendered, 75, 50), 128, 0, 0);
+    }
+
+    [Fact]
+    public void OptionalContentSequencesDoNotLeaveTheirContentStream()
+    {
+        // A form opens a sequence of a hidden group and does not close it: the page after it is drawn. A form whose EMC
+        // has no BMC does not end the hidden sequence of the page that paints it
+        using var image = RenderHandWritten(
+            "/Fm1 Do 1 0 0 rg 0 0 50 100 re f /OC /G BDC /Fm2 Do 0 0 1 rg 50 0 50 100 re f EMC",
+            resources: "<< /XObject << /Fm1 6 0 R /Fm2 7 0 R >> /Properties << /G 5 0 R >> >>",
+            catalogEntries: "/OCProperties << /OCGs [5 0 R] /D << /OFF [5 0 R] >> >>",
+            objects:
+            [
+                "<< /Type /OCG /Name (Hidden) >>",
+                HandWrittenPdf.Stream("/OC /P BDC", " /Type /XObject /Subtype /Form /BBox [0 0 100 100] /Resources << /Properties << /P 5 0 R >> >>"),
+                HandWrittenPdf.Stream("EMC EMC", " /Type /XObject /Subtype /Form /BBox [0 0 100 100]"),
+            ]);
+
+        AssertColor(Pixel(image, 25, 50), 255, 0, 0);
+        AssertColor(Pixel(image, 75, 50), 255, 255, 255);
+    }
+
+    [Fact]
+    public void ClipsBeyondTheCoordinatesOfTheCanvasClipToTheirBounds()
+    {
+        // The clipping paths are beyond 2^24 pixels: the first covers the page, the second is out of it and hides what follows
+        using var image = RenderHandWritten(
+            "q 100000000 0 0 100000000 0 0 cm -1 -1 2 2 re W n 0.00000001 0 0 0.00000001 0 0 cm 1 0 0 rg 0 0 50 100 re f Q " +
+            "q 100000000 0 0 100000000 0 0 cm 1 1 1 1 re W n 0.00000001 0 0 0.00000001 0 0 cm 0 0 1 rg 50 0 50 100 re f Q");
+
+        AssertColor(Pixel(image, 25, 50), 255, 0, 0);
+        AssertColor(Pixel(image, 75, 50), 255, 255, 255);
+    }
+
+    [Fact]
+    public void AnnotationOpacityAppliesToTheAppearanceAsAGroup()
+    {
+        // /CA 0.5: the red of the appearance is half transparent, where its two rectangles overlap too
+        using var image = RenderHandWritten(
+            "",
+            pageEntries: "/Annots [5 0 R]",
+            objects:
+            [
+                "<< /Type /Annot /Subtype /Square /Rect [0 0 100 100] /CA 0.5 /AP << /N 6 0 R >> >>",
+                HandWrittenPdf.Stream("1 0 0 rg 0 0 10 10 re f 0 0 5 10 re f", " /Type /XObject /Subtype /Form /BBox [0 0 10 10]"),
+            ]);
+
+        AssertColor(Pixel(image, 25, 50), 255, 128, 128);
+        AssertColor(Pixel(image, 75, 50), 255, 128, 128);
+    }
+
+    [Fact]
+    public void AnnotationAppearancesAreTransparencyGroups()
+    {
+        // An isolated group: the green multiplied with nothing is green, not the black of green multiplied with the red page
+        using var image = RenderHandWritten(
+            "1 0 0 rg 0 0 100 100 re f",
+            pageEntries: "/Annots [5 0 R]",
+            objects:
+            [
+                "<< /Type /Annot /Subtype /Square /Rect [0 0 50 100] /AP << /N 6 0 R >> >>",
+                HandWrittenPdf.Stream("/GS0 gs 0 1 0 rg 0 0 10 10 re f", " /Type /XObject /Subtype /Form /BBox [0 0 10 10] /Group << /S /Transparency /I true >> /Resources << /ExtGState << /GS0 << /BM /Multiply >> >> >>"),
+            ]);
+
+        AssertColor(Pixel(image, 25, 50), 0, 255, 0);
+        AssertColor(Pixel(image, 75, 50), 255, 0, 0);
+    }
+
+    [Theory]
+    [InlineData(0, 45, 60, 70, 45)]
+    [InlineData(16, 70, 45, 45, 70)]
+    public void NoRotateAnnotationsAreNotRotatedWithThePage(int flags, int redX, int redY, int whiteX, int whiteY)
+    {
+        // A rectangle 40 x 10 on a page turned by 90 degrees: tall, or wide from its upper-left corner with NoRotate
+        using var image = RenderHandWritten(
+            "",
+            pageEntries: "/Rotate 90 /Annots [5 0 R]",
+            objects:
+            [
+                string.Create(CultureInfo.InvariantCulture, $"<< /Type /Annot /Subtype /Square /Rect [40 40 80 50] /F {flags} /AP << /N 6 0 R >> >>"),
+                HandWrittenPdf.Stream("1 0 0 rg 0 0 40 10 re f", " /Type /XObject /Subtype /Form /BBox [0 0 40 10]"),
+            ]);
+
+        AssertColor(image.Frames[0][redX, redY], 255, 0, 0);
+        AssertColor(image.Frames[0][whiteX, whiteY], 255, 255, 255);
+    }
+
+    [Theory]
+    [InlineData(0, 255, 0, 0)]
+    [InlineData(8, 255, 255, 255)]
+    public void NoZoomAnnotationsKeepTheirSize(int flags, int r, int g, int b)
+    {
+        // At 144 dpi, a rectangle of 20 points is 40 pixels, or 20 with NoZoom, from its upper-left corner
+        var document = OpenHandWritten(
+            "",
+            pageEntries: "/Annots [5 0 R]",
+            objects:
+            [
+                string.Create(CultureInfo.InvariantCulture, $"<< /Type /Annot /Subtype /Square /Rect [0 80 20 100] /F {flags} /AP << /N 6 0 R >> >>"),
+                HandWrittenPdf.Stream("1 0 0 rg 0 0 20 20 re f", " /Type /XObject /Subtype /Form /BBox [0 0 20 20]"),
+            ]);
+
+        using var image = PdfRenderer.RenderPage(document.Pages[0], new PdfRenderOptions { Dpi = 144 });
+
+        AssertColor(image.Frames[0][10, 10], 255, 0, 0);
+        AssertColor(image.Frames[0][30, 30], r, g, b);
+    }
+
+    [Theory]
+    [InlineData(PdfRenderIntent.View, true, true, false, false)]
+    [InlineData(PdfRenderIntent.Export, true, true, false, false)]
+    [InlineData(PdfRenderIntent.Print, true, false, true, false)]
+    public void TheIntentSelectsTheAnnotations(PdfRenderIntent intent, bool print, bool none, bool printNoView, bool printHidden)
+    {
+        // Print; no flag; Print and NoView; Print and Hidden
+        var document = OpenHandWritten(
+            "",
+            pageEntries: "/Annots [5 0 R 6 0 R 7 0 R 8 0 R]",
+            objects:
+            [
+                "<< /Type /Annot /Subtype /Square /Rect [0 0 25 100] /F 4 /AP << /N 9 0 R >> >>",
+                "<< /Type /Annot /Subtype /Square /Rect [25 0 50 100] /AP << /N 9 0 R >> >>",
+                "<< /Type /Annot /Subtype /Square /Rect [50 0 75 100] /F 36 /AP << /N 9 0 R >> >>",
+                "<< /Type /Annot /Subtype /Square /Rect [75 0 100 100] /F 6 /AP << /N 9 0 R >> >>",
+                HandWrittenPdf.Stream("1 0 0 rg 0 0 10 10 re f", " /Type /XObject /Subtype /Form /BBox [0 0 10 10]"),
+            ]);
+
+        using var image = PdfRenderer.RenderPage(document.Pages[0], new PdfRenderOptions { Intent = intent });
+
+        bool[] expected = [print, none, printNoView, printHidden];
+        for (var i = 0; i < 4; i++)
+        {
+            AssertColor(Pixel(image, 12 + (25 * i), 50), 255, expected[i] ? 0 : 255, expected[i] ? 0 : 255);
+        }
+    }
+
+    [Fact]
+    public void AppearancesAreGeneratedForMarkupAnnotations()
+    {
+        // A square without appearance: its border (/C, /BS) and its interior (/IC); a highlight multiplies its color
+        using var image = RenderHandWritten(
+            "0 1 1 rg 50 0 50 100 re f",
+            pageEntries: "/Annots [5 0 R 6 0 R]",
+            objects:
+            [
+                "<< /Type /Annot /Subtype /Square /Rect [0 0 50 100] /C [0 0 1] /IC [1 0 0] /BS << /W 6 >> >>",
+                "<< /Type /Annot /Subtype /Highlight /Rect [50 0 100 50] /C [1 1 0] /QuadPoints [50 50 100 50 50 0 100 0] >>",
+            ]);
+
+        AssertColor(Pixel(image, 2, 50), 0, 0, 255);
+        AssertColor(Pixel(image, 25, 50), 255, 0, 0);
+        AssertColor(Pixel(image, 75, 25), 0, 255, 0);
+        AssertColor(Pixel(image, 75, 75), 0, 255, 255);
+    }
+
+    [Theory]
+    [InlineData("", "")]
+    [InlineData("/AP << /N 7 0 R >>", "/NeedAppearances true")]
+    public void AppearancesAreGeneratedForTextFields(string appearance, string form)
+    {
+        // A text field without appearance, or whose form asks for new appearances: its value in the default appearance
+        using var image = RenderHandWritten(
+            "",
+            pageEntries: "/Annots [5 0 R]",
+            catalogEntries: "/AcroForm << /Fields [5 0 R] /DR << /Font << /Helv 6 0 R >> >> " + form + " >>",
+            objects:
+            [
+                "<< /Type /Annot /Subtype /Widget /FT /Tx /T (Name) /V (HHHH) /DA (/Helv 40 Tf 1 0 0 rg) /Rect [0 0 100 100] " + appearance + " >>",
+                "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>",
+                HandWrittenPdf.Stream("", " /Type /XObject /Subtype /Form /BBox [0 0 100 100]"),
+            ]);
+
+        Assert.True(CountPixels(image, pixel => pixel.R > 200 && pixel.G < 64) > 100);
+    }
+
+    [Fact]
+    public void ShadingPatternsApplyTheirGraphicsState()
+    {
+        using var image = RenderHandWritten(
+            "/Pattern cs /P1 scn 0 0 100 100 re f",
+            resources: "<< /Pattern << /P1 5 0 R >> >>",
+            objects: "<< /PatternType 2 /Shading << /ShadingType 2 /ColorSpace /DeviceRGB /Coords [0 0 100 0] /Function << /FunctionType 2 /Domain [0 1] /C0 [1 0 0] /C1 [1 0 0] /N 1 >> >> /ExtGState << /ca 0.5 >> >>");
+
+        AssertColor(Pixel(image, 50, 50), 255, 128, 128);
+    }
+
+    [Fact]
+    public void TilingPatternCellsWiderThanTwoStepsAreAllPainted()
+    {
+        // A cell 30 wide every 10: its band at 25 to 30 is painted at 5 to 10, 15 to 20, ... three steps to the left
+        using var image = RenderHandWritten(
+            "/Pattern cs /P1 scn 0 0 100 100 re f",
+            resources: "<< /Pattern << /P1 5 0 R >> >>",
+            objects: HandWrittenPdf.Stream("1 0 0 rg 25 0 5 100 re f", " /PatternType 1 /PaintType 1 /TilingType 1 /BBox [0 0 30 100] /XStep 10 /YStep 100 /Resources << >>"));
+
+        AssertColor(Pixel(image, 7, 50), 255, 0, 0);
+        AssertColor(Pixel(image, 2, 50), 255, 255, 255);
+        AssertColor(Pixel(image, 17, 50), 255, 0, 0);
+        AssertColor(Pixel(image, 12, 50), 255, 255, 255);
+    }
+
+    [Theory]
+    [InlineData(7, 255, 255, 255)]
+    [InlineData(4, 0, 0, 255)]
+    public void Type3GlyphsClipInTheClippingModes(int mode, int r, int g, int b)
+    {
+        // The glyph is a square of 40 x 40: the red painted after the text is inside it only; mode 4 also fills it in blue
+        using var image = RenderHandWritten(
+            string.Create(CultureInfo.InvariantCulture, $"0 0 1 rg BT /T3 40 Tf {mode} Tr 10 10 Td (A) Tj ET 1 0 0 rg 0 0 100 30 re f"),
+            resources: "<< /Font << /T3 5 0 R >> >>",
+            objects: [Type3SquareFont(6), Type3SquareProcedure]);
+
+        AssertColor(Pixel(image, 30, 20), 255, 0, 0);
+        AssertColor(Pixel(image, 70, 20), 255, 255, 255);
+        AssertColor(Pixel(image, 30, 40), r, g, b);
+    }
+
+    [Theory]
+    [InlineData("", 255, 128, 128)]
+    [InlineData("/TK false", 255, 64, 64)]
+    public void TheGlyphsOfATextKnockOutOneAnother(string textKnockout, int r, int g, int b)
+    {
+        // Two squares of 40 that overlap by 20, half transparent: their overlap is painted once, unless TK is false
+        using var image = RenderHandWritten(
+            "/GS0 gs 1 0 0 rg BT /T3 40 Tf -20 Tc 10 10 Td (AA) Tj ET",
+            resources: "<< /Font << /T3 5 0 R >> /ExtGState << /GS0 << /ca 0.5 " + textKnockout + " >> >> >>",
+            objects: [Type3SquareFont(6), Type3SquareProcedure]);
+
+        AssertColor(Pixel(image, 20, 30), 255, 128, 128);
+        AssertColor(Pixel(image, 40, 30), r, g, b);
+    }
+
+    [Theory]
+    [InlineData(false, 255, 128, 128)]
+    [InlineData(true, 128, 0, 128)]
+    public void AlphaIsShapeInKnockoutGroups(bool alphaIsShape, int r, int g, int b)
+    {
+        // In a knockout group, a red of alpha 0.5 over blue: as opacity, the red composited with the white backdrop of the
+        // group; as shape, half of the blue knocked out by red
+        using var image = RenderHandWritten(
+            "/Fm1 Do",
+            resources: "<< /XObject << /Fm1 5 0 R >> >>",
+            objects: HandWrittenPdf.Stream(
+                "0 0 1 rg 0 0 100 100 re f /GS0 gs 1 0 0 rg 0 0 50 100 re f",
+                " /Type /XObject /Subtype /Form /BBox [0 0 100 100] /Group << /S /Transparency /K true >> /Resources << /ExtGState << /GS0 << /ca 0.5 /AIS " + (alphaIsShape ? "true" : "false") + " >> >> >>"));
+
+        AssertColor(Pixel(image, 25, 50), r, g, b);
+        AssertColor(Pixel(image, 75, 50), 0, 0, 255);
+    }
+
+    [Fact]
+    public void CompositeFontsWithAType1ProgramAreReplaced()
+    {
+        // A CIDFont cannot have a Type 1 program: the font is replaced, and draws the H of its ToUnicode CMap
+        using var image = RenderHandWritten(
+            "BT /F1 100 Tf 10 20 Td <0001> Tj ET",
+            resources: "<< /Font << /F1 5 0 R >> >>",
+            objects:
+            [
+                "<< /Type /Font /Subtype /Type0 /BaseFont /Test /Encoding /Identity-H /DescendantFonts [6 0 R] /ToUnicode 8 0 R >>",
+                "<< /Type /Font /Subtype /CIDFontType0 /BaseFont /Test /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> /DW 722 /FontDescriptor 7 0 R >>",
+                "<< /Type /FontDescriptor /FontName /Test /Flags 32 /FontBBox [0 0 1000 1000] /ItalicAngle 0 /Ascent 1000 /Descent 0 /CapHeight 700 /StemV 80 /FontFile 9 0 R >>",
+                HandWrittenPdf.Stream(ToUnicodeH),
+                HandWrittenPdf.Stream("%!PS-AdobeFont-1.0: Test\n/FontMatrix [0.001 0 0 0.001 0 0] readonly def\ncurrentfile eexec\n00000000"),
+            ]);
+
+        Assert.True(Pixel(image, 22, 50).R < 64);
+    }
+
+    [Theory]
+    [InlineData(1444, true)]
+    [InlineData(361, false)]
+    public void ReplacedGlyphsAreFittedToTheWidthsOfTheDocument(int width, bool reachesRight)
+    {
+        // The H of the replacement font is 722 wide: twice or half that width in the document stretches or narrows it
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 100] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>")
+            .Add(4, string.Create(CultureInfo.InvariantCulture, $"<< /Type /Font /Subtype /TrueType /BaseFont /Arial /FirstChar 72 /LastChar 72 /Widths [{width}] /Encoding /WinAnsiEncoding >>"))
+            .Add(5, HandWrittenPdf.Stream("BT /F1 100 Tf 10 20 Td (H) Tj ET"))
+            .ToArray();
+
+        using var image = PdfRenderer.RenderPage(PdfDocument.Open(file).Pages[0], new PdfRenderOptions { UseSystemFonts = false });
+
+        var right = Enumerable.Range(0, 200).Where(x => Pixel(image, x, 60).R < 128).DefaultIfEmpty(-1).Max();
+        Assert.Equal(reachesRight, right > 120);
+        Assert.Equal(!reachesRight, right is > 0 and < 50);
+    }
+
+    [Theory]
+    [InlineData("", false)]
+    [InlineData("/W2 [1 [-2000 500 880]]", true)]
+    public void VerticalTextUsesTheVerticalMetricsOfTheCids(string metrics, bool lowered)
+    {
+        // Two H in vertical writing, 20 points: the second is 1 em below the first by default, 2 with a w1y of -2000
+        using var image = RenderHandWritten(
+            "BT /F1 20 Tf 50 90 Td <00010001> Tj ET",
+            resources: "<< /Font << /F1 5 0 R >> >>",
+            objects:
+            [
+                "<< /Type /Font /Subtype /Type0 /BaseFont /Arial /Encoding /Identity-V /DescendantFonts [6 0 R] /ToUnicode 7 0 R >>",
+                "<< /Type /Font /Subtype /CIDFontType2 /BaseFont /Arial /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> " + metrics + " >>",
+                HandWrittenPdf.Stream(ToUnicodeH),
+            ]);
+
+        Assert.Equal(lowered, CountPixels(image, 40, 35, 55, 45, pixel => pixel.R < 128) > 5);
+        Assert.Equal(!lowered, CountPixels(image, 40, 55, 55, 65, pixel => pixel.R < 128) > 5);
+    }
+
+    [Fact]
+    public void TheMatteOfASoftMaskIsRemovedFromTheColors()
+    {
+        // Red at an alpha of 0.5, premultiplied with the black matte: (128, 0, 0) in the image, red at half opacity once drawn
+        var document = new PdfDocument();
+        var page = document.Pages.Add(Size);
+        var mask = new PdfStream(new PdfDictionary
+        {
+            [PdfNames.Type] = PdfNames.XObject,
+            [PdfNames.Subtype] = PdfName.Create("Image"),
+            [PdfNames.Width] = PdfInteger.Get(2),
+            [PdfNames.Height] = PdfInteger.Get(1),
+            [PdfNames.BitsPerComponent] = PdfInteger.Get(8),
+            [PdfNames.ColorSpace] = PdfName.Create("DeviceGray"),
+            [PdfName.Create("Matte")] = PdfArray.FromNumbers(0, 0, 0),
+        });
+        mask.SetData([128, 255]);
+        var image = new PdfStream(new PdfDictionary
+        {
+            [PdfNames.Type] = PdfNames.XObject,
+            [PdfNames.Subtype] = PdfName.Create("Image"),
+            [PdfNames.Width] = PdfInteger.Get(2),
+            [PdfNames.Height] = PdfInteger.Get(1),
+            [PdfNames.BitsPerComponent] = PdfInteger.Get(8),
+            [PdfNames.ColorSpace] = PdfName.Create("DeviceRGB"),
+            [PdfNames.SMask] = document.Objects.Add(mask),
+        });
+        image.SetData([128, 0, 0, 0, 0, 255]);
+        page.CreateContentBuilder().AppendRawContent("100 0 0 100 0 0 cm /Im1 Do"u8);
+        page.Dictionary[PdfNames.Resources] = new PdfDictionary { [PdfNames.XObject] = new PdfDictionary { [PdfName.Create("Im1")] = document.Objects.Add(image) } };
+
+        using var rendered = Render(document);
+
+        AssertColor(Pixel(rendered, 25, 50), 255, 128, 128, tolerance: 3);
+        AssertColor(Pixel(rendered, 75, 50), 0, 0, 255);
+    }
+
+    [Theory]
+    [InlineData(null, 128, 0, 0)]
+    [InlineData(0, 128, 0, 0)]
+    [InlineData(1, 191, 128, 128)]
+    [InlineData(2, 255, 128, 128)]
+    public void TheOpacityOfJpeg2000ImagesFollowsSMaskInData(int? smaskInData, int r, int g, int b)
+    {
+        // A JPEG 2000 image with an opacity channel: (128, 0, 0) at an alpha of 0.5, which is red premultiplied by it
+        using var source = Image.ImportPixelData<Rgba32>([new Rgba32(128, 0, 0, 128), new Rgba32(0, 0, 255, 255)], 2, 1);
+        using var jpx = new MemoryStream();
+        source.Save(jpx, new Imaging.Formats.Jpeg2000Encoder());
+        var entry = smaskInData is { } value ? string.Create(CultureInfo.InvariantCulture, $" /SMaskInData {value}") : "";
+
+        using var rendered = RenderHandWritten(
+            "100 0 0 100 0 0 cm /Im1 Do",
+            resources: "<< /XObject << /Im1 5 0 R >> >>",
+            objects: HandWrittenPdf.Stream(Encoding.Latin1.GetString(jpx.ToArray()), " /Type /XObject /Subtype /Image /Width 2 /Height 1 /Filter /JPXDecode" + entry));
+
+        AssertColor(Pixel(rendered, 25, 50), r, g, b, tolerance: 3);
+        AssertColor(Pixel(rendered, 75, 50), 0, 0, 255);
+    }
+
+    [Fact]
+    public void RenderingCanBeCanceled()
+    {
+        var document = new PdfDocument();
+        document.Pages.Add(Size).CreateContentBuilder().SetFillRgb(1, 0, 0).Rectangle(0, 0, 100, 100).Fill();
+        using var canceled = new CancellationTokenSource();
+        canceled.Cancel();
+
+        Assert.Throws<OperationCanceledException>(() => PdfRenderer.RenderPage(document.Pages[0], options: null, canceled.Token));
+        using var target = new Image<Rgba32>(100, 100);
+        Assert.Throws<OperationCanceledException>(() => PdfRenderer.RenderPage(document.Pages[0], target, options: null, canceled.Token));
+    }
+
+    [Fact]
+    public void RenderingIsCanceledWhileThePageIsDrawn()
+    {
+        // The token is canceled when the font of the second text is resolved: the rendering stops at the next operator
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>")
+            .Add(4, "<< /Type /Font /Subtype /TrueType /BaseFont /Corporate-Sans /FirstChar 72 /LastChar 72 /Widths [722] /Encoding /WinAnsiEncoding >>")
+            .Add(5, HandWrittenPdf.Stream("BT /F1 10 Tf 10 20 Td (H) Tj ET 1 0 0 rg 0 0 100 100 re f"))
+            .ToArray();
+        using var cancellation = new CancellationTokenSource();
+        var options = new PdfRenderOptions
+        {
+            UseSystemFonts = false,
+            FontResolver = _ =>
+            {
+                cancellation.Cancel();
+                return null;
+            },
+        };
+
+        Assert.Throws<OperationCanceledException>(() => PdfRenderer.RenderPage(PdfDocument.Open(file).Pages[0], options, cancellation.Token));
+    }
+
+    [Fact]
+    public void RenderARegionOfAPage()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(new PdfSize(200, 200));
+        page.CreateContentBuilder().SetFillRgb(1, 0, 0).Rectangle(50, 50, 10, 10).Fill();
+
+        #region PdfRendering_RenderRegion
+        // The square of 50 x 50 points at (50, 50) of the page, as an image 100 pixels wide
+        var options = new PdfRenderOptions
+        {
+            Region = new PdfRectangle(50, 50, 100, 100),
+            Width = 100,
+        };
+        using var image = page.Render(options);
+        #endregion
+
+        Assert.Equal(100, image.Width);
+        Assert.Equal(100, image.Height);
+        Assert.Equal(new Size(100, 100), PdfRenderer.GetImageSize(page, options));
+        AssertColor(Pixel(image, 10, 10), 255, 0, 0);
+        AssertColor(Pixel(image, 30, 30), 255, 255, 255);
+    }
+
+    [Theory]
+    [InlineData(0, 50, 50, 50, 25)]
+    [InlineData(90, 50, 50, 25, 50)]
+    [InlineData(0, null, 40, 80, 40)]
+    [InlineData(0, 30, null, 30, 15)]
+    public void RenderAPageToASize(int rotation, int? width, int? height, int expectedWidth, int expectedHeight)
+    {
+        var document = new PdfDocument();
+        document.Pages.Add(new PdfSize(200, 100)).Rotation = rotation;
+
+        using var image = document.Pages[0].Render(new PdfRenderOptions { Width = width, Height = height });
+
+        Assert.Equal(expectedWidth, image.Width);
+        Assert.Equal(expectedHeight, image.Height);
+    }
+
+    [Fact]
+    public void InvalidRegionsAndSizesAreRejected()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(Size);
+
+        Assert.Throws<ArgumentException>(() => PdfRenderer.GetImageSize(page, new PdfRenderOptions { Region = new PdfRectangle(200, 200, 300, 300) }));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PdfRenderOptions { Width = 0 });
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PdfRenderOptions { Height = -1 });
+        Assert.Throws<PdfResourceLimitException>(() => PdfRenderer.GetImageSize(page, new PdfRenderOptions { Width = 1_000_000 }));
+    }
+
+    [Fact]
+    public void RenderToAnImageOfTheApplication()
+    {
+        var document = new PdfDocument();
+        var page = document.Pages.Add(new PdfSize(200, 100));
+        page.CreateContentBuilder().SetFillRgb(1, 0, 0).Rectangle(0, 0, 100, 100).Fill();
+
+        #region PdfRendering_RenderToImage
+        // A grayscale image of the size of the page, allocated by the application
+        var size = PdfRenderer.GetImageSize(page);
+        using var gray = new Image<Gray8>(size.Width, size.Height);
+        PdfRenderer.RenderPage(page, gray);
+        #endregion
+
+        using var rgba = page.Render();
+        using var target = new Image<Rgba32>(200, 100);
+        PdfRenderer.RenderPage(page, target);
+        for (var y = 0; y < 100; y++)
+        {
+            for (var x = 0; x < 200; x++)
+            {
+                Assert.Equal(rgba.Frames[0][x, y], target.Frames[0][x, y]);
+            }
+        }
+
+        Assert.Equal(255, gray.Frames[0][150, 50].Value);
+        Assert.InRange(gray.Frames[0][50, 50].Value, 40, 100);
+
+        // A smaller image receives the part of the page it has room for
+        using var small = new Image<Rgba32>(50, 50);
+        PdfRenderer.RenderPage(page, small);
+        AssertColor(small.Frames[0][25, 25], 255, 0, 0);
+    }
+
+    [Fact]
+    public void AntialiasingCanBeTurnedOff()
+    {
+        var font = PdfFont.Load(RepositoryPaths.Fonts / "noto-sans" / "NotoSans-Regular.subset.ttf");
+        var document = new PdfDocument();
+        document.Pages.Add(Size).CreateContentBuilder()
+            .AppendRawContent("0 g 0 0 50.5 50 re f "u8)
+            .BeginText().SetFont(font, 40).MoveTextPosition(10, 60).ShowText("H").EndText();
+        static bool IsBlended(Rgba32 pixel) => pixel.R is > 0 and < 255;
+
+        using var antialiased = PdfRenderer.RenderPage(document.Pages[0]);
+        using var hardPaths = PdfRenderer.RenderPage(document.Pages[0], new PdfRenderOptions { PathAntialiasing = false });
+        using var hardText = PdfRenderer.RenderPage(document.Pages[0], new PdfRenderOptions { TextAntialiasing = false });
+
+        Assert.True(IsBlended(Pixel(antialiased, 50, 25)));
+        Assert.False(IsBlended(Pixel(hardPaths, 50, 25)));
+        Assert.True(CountPixels(antialiased, 0, 55, 100, 100, IsBlended) > 0);
+        Assert.True(CountPixels(hardPaths, 0, 55, 100, 100, IsBlended) > 0);
+        Assert.Equal(0, CountPixels(hardText, 0, 55, 100, 100, IsBlended));
+        Assert.True(IsBlended(Pixel(hardText, 50, 25)));
+    }
+
+    [Theory]
+    [InlineData(null, PdfRenderIntent.View, null, true, false, true)]
+    [InlineData("Alternate", PdfRenderIntent.View, null, false, true, true)]
+    [InlineData(null, PdfRenderIntent.Print, null, false, true, true)]
+    [InlineData(null, PdfRenderIntent.View, "Right", true, true, true)]
+    public void OptionalContentConfigurationsAndIntents(string? configuration, PdfRenderIntent intent, string? turnedOn, bool left, bool right, bool design)
+    {
+        // Left is on and Right off by default; the alternate configuration exchanges them, and so does the print usage.
+        // The group of the Design intent is off, but the configuration is for viewing: it hides nothing
+        var document = OpenHandWritten(
+            "/OC /L BDC 1 0 0 rg 0 0 30 100 re f EMC /OC /R BDC 1 0 0 rg 30 0 30 100 re f EMC /OC /D BDC 1 0 0 rg 60 0 40 100 re f EMC",
+            resources: "<< /Properties << /L 5 0 R /R 6 0 R /D 7 0 R >> >>",
+            catalogEntries: "/OCProperties << /OCGs [5 0 R 6 0 R 7 0 R] /D << /OFF [6 0 R 7 0 R] /AS [<< /Event /Print /Category [/Print] /OCGs [5 0 R 6 0 R] >>] >> /Configs [<< /Name (Alternate) /BaseState /OFF /ON [6 0 R 7 0 R] >>] >>",
+            objects:
+            [
+                "<< /Type /OCG /Name (Left) /Usage << /Print << /PrintState /OFF >> >> >>",
+                "<< /Type /OCG /Name (Right) /Usage << /Print << /PrintState /ON >> >> >>",
+                "<< /Type /OCG /Name (Design) /Intent /Design >>",
+            ]);
+        var options = new PdfRenderOptions
+        {
+            OptionalContentConfiguration = configuration,
+            Intent = intent,
+            OptionalContentGroupStates = turnedOn is null ? null : new Dictionary<string, bool>(StringComparer.Ordinal) { [turnedOn] = true },
+        };
+
+        using var image = PdfRenderer.RenderPage(document.Pages[0], options);
+
+        AssertColor(Pixel(image, 15, 50), 255, left ? 0 : 255, left ? 0 : 255);
+        AssertColor(Pixel(image, 45, 50), 255, right ? 0 : 255, right ? 0 : 255);
+        AssertColor(Pixel(image, 80, 50), 255, design ? 0 : 255, design ? 0 : 255);
+    }
+
+    [Fact]
+    public void Example_PrintWithoutALayer()
+    {
+        // A layer named Watermark, on in the configuration of the document, and an annotation that is not printed
+        var document = OpenHandWritten(
+            "/OC /W BDC 1 0 0 rg 0 0 50 100 re f EMC",
+            resources: "<< /Properties << /W 5 0 R >> >>",
+            pageEntries: "/Annots [6 0 R]",
+            catalogEntries: "/OCProperties << /OCGs [5 0 R] /D << >> >>",
+            objects:
+            [
+                "<< /Type /OCG /Name (Watermark) >>",
+                "<< /Type /Annot /Subtype /Square /Rect [50 0 100 100] /C [0 0 1] /IC [0 0 1] >>",
+            ]);
+        var page = document.Pages[0];
+
+        #region PdfRendering_Print
+        var options = new PdfRenderOptions
+        {
+            // The annotations and the layers meant for printing
+            Intent = PdfRenderIntent.Print,
+
+            // A layer turned off, whatever the document says
+            OptionalContentGroupStates = new Dictionary<string, bool>(StringComparer.Ordinal) { ["Watermark"] = false },
+            Dpi = 300,
+        };
+        using var image = page.Render(options);
+        #endregion
+
+        using var view = page.Render();
+        AssertColor(Pixel(view, 25, 50), 255, 0, 0);
+        AssertColor(Pixel(view, 75, 50), 0, 0, 255);
+        AssertColor(image.Frames[0][100, 200], 255, 255, 255);
+        AssertColor(image.Frames[0][300, 200], 255, 255, 255);
+    }
+
+    [Fact]
+    public void Example_CancelTheRendering()
+    {
+        var document = new PdfDocument();
+        document.Pages.Add(Size).CreateContentBuilder().SetFillRgb(1, 0, 0).Rectangle(0, 0, 100, 100).Fill();
+        var page = document.Pages[0];
+
+        #region PdfRendering_Cancellation
+        // A page that takes too long is abandoned: OperationCanceledException
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(30));
+        using var image = PdfRenderer.RenderPage(page, new PdfRenderOptions { Dpi = 150 }, timeout.Token);
+        #endregion
+
+        AssertColor(image.Frames[0][100, 100], 255, 0, 0);
+    }
+
     [Fact]
     public void InvalidOperatorsAreSkipped()
     {
@@ -685,7 +1402,335 @@ public sealed class PdfRendererTests
         Assert.Throws<PdfResourceLimitException>(() => PdfRenderer.RenderPage(document.Pages[0], new PdfRenderOptions { Dpi = 100_000 }));
     }
 
+    [Fact]
+    public void Example_RenderSession()
+    {
+        var document = new PdfDocument();
+        for (var i = 0; i < 3; i++)
+        {
+            document.Pages.Add(new PdfSize(200, 100)).CreateContentBuilder().SetFillRgb(0, 0, 1).Rectangle(0, 0, 100, 100).Fill();
+        }
+
+        #region PdfRendering_RenderSession
+        // The pages share the fonts, images and color spaces the session reads
+        using var session = new PdfRenderSession(document, new PdfRenderOptions { Dpi = 144 });
+        foreach (var page in document.Pages)
+        {
+            using var image = session.RenderPage(page);
+            Assert.Equal(400, image.Width);
+        }
+        #endregion
+    }
+
+    [Fact]
+    public void ASessionRendersThePagesAsRenderPageDoes()
+    {
+        // Two pages paint the same image: the session decodes it for the first one and keeps it for the second one
+        var document = new PdfDocument();
+        using var source = Image.ImportPixelData<Rgba32>([new Rgba32(255, 0, 0, 255), new Rgba32(0, 0, 255, 255)], 2, 1);
+        var image = PdfImage.FromImage(source);
+        document.Pages.Add(Size).CreateContentBuilder().DrawImage(image, 0, 0, 100, 100);
+        document.Pages.Add(Size).CreateContentBuilder().DrawImage(image, 0, 0, 50, 50);
+        var reopened = PdfDocument.Open(document.ToByteArray());
+        var options = new PdfRenderOptions { UseSystemFonts = false };
+        var session = new PdfRenderSession(reopened, options);
+        foreach (var page in reopened.Pages)
+        {
+            using var expected = PdfRenderer.RenderPage(page, options);
+            using var actual = session.RenderPage(page);
+            AssertSamePixels(expected, actual);
+        }
+
+        Assert.Throws<ArgumentException>(() => session.RenderPage(new PdfDocument().Pages.Add(Size)));
+        session.Dispose();
+        Assert.Throws<ObjectDisposedException>(() => session.RenderPage(reopened.Pages[0]));
+    }
+
+    [Fact]
+    public void ASessionCountsTheWorkOfEachPage()
+    {
+        var document = new PdfDocument();
+        for (var page = 0; page < 3; page++)
+        {
+            var builder = document.Pages.Add(Size).CreateContentBuilder();
+            for (var i = 0; i < 400; i++)
+            {
+                builder.Rectangle(0, 0, 1, 1).Fill();
+            }
+        }
+
+        // The smallest power of 2 that is enough for one page is less than the work of two pages
+        var limit = 256L;
+        while (!CanRender(document.Pages[0], limit))
+        {
+            limit *= 2;
+        }
+
+        using var session = new PdfRenderSession(document, new PdfRenderOptions { MaxOperations = limit });
+        foreach (var page in document.Pages)
+        {
+            using var image = session.RenderPage(page);
+        }
+
+        static bool CanRender(PdfPage page, long limit)
+        {
+            try
+            {
+                using var image = PdfRenderer.RenderPage(page, new PdfRenderOptions { MaxOperations = limit });
+                return true;
+            }
+            catch (PdfResourceLimitException)
+            {
+                return false;
+            }
+        }
+    }
+
+    [Fact]
+    public void TheDefaultColorSpacesOfTheResourcesOfAFormApplyToTheObjectsItShares()
+    {
+        // Two forms paint the same gray image and fill with the same indexed color space; the resources of the second
+        // one replace DeviceGray with a separation that is red at 0, and DeviceRGB with a DeviceN that swaps red and blue
+        var document = new PdfDocument();
+        var imageStream = new PdfStream(new PdfDictionary
+        {
+            [PdfNames.Type] = PdfNames.XObject,
+            [PdfNames.Subtype] = PdfName.Create("Image"),
+            [PdfNames.Width] = PdfInteger.Get(1),
+            [PdfNames.Height] = PdfInteger.Get(1),
+            [PdfNames.ColorSpace] = PdfName.Create("DeviceGray"),
+            [PdfNames.BitsPerComponent] = PdfInteger.Get(8),
+        });
+        imageStream.SetData([0]);
+        var image = document.Objects.Add(imageStream);
+        var indexed = document.Objects.Add(new PdfArray(PdfName.Create("Indexed"), PdfName.Create("DeviceRGB"), PdfInteger.Get(0), PdfString.FromBytes([255, 0, 0])));
+        var red = new PdfArray(PdfName.Create("Separation"), PdfName.Create("Red"), PdfName.Create("DeviceRGB"), new PdfDictionary
+        {
+            [PdfName.Create("FunctionType")] = PdfInteger.Get(2),
+            [PdfName.Create("Domain")] = PdfArray.FromNumbers(0, 1),
+            [PdfName.Create("C0")] = PdfArray.FromNumbers(1, 0, 0),
+            [PdfName.Create("C1")] = PdfArray.FromNumbers(1, 1, 1),
+            [PdfNames.N] = PdfInteger.Get(1),
+        });
+        var swap = new PdfStream(new PdfDictionary
+        {
+            [PdfName.Create("FunctionType")] = PdfInteger.Get(4),
+            [PdfName.Create("Domain")] = PdfArray.FromNumbers(0, 1, 0, 1, 0, 1),
+            [PdfName.Create("Range")] = PdfArray.FromNumbers(0, 1, 0, 1, 0, 1),
+        });
+        swap.SetData("{ 3 1 roll exch }"u8);
+        var bgr = new PdfArray(PdfName.Create("DeviceN"), new PdfArray(PdfName.Create("B"), PdfName.Create("G"), PdfName.Create("R")), PdfName.Create("DeviceRGB"), document.Objects.Add(swap));
+        PdfReference CreateForm(bool hasDefaults)
+        {
+            var colorSpaces = new PdfDictionary { [PdfName.Create("CS0")] = indexed };
+            if (hasDefaults)
+            {
+                colorSpaces[PdfName.Create("DefaultGray")] = red;
+                colorSpaces[PdfName.Create("DefaultRGB")] = bgr;
+            }
+
+            var form = new PdfStream(new PdfDictionary
+            {
+                [PdfNames.Type] = PdfNames.XObject,
+                [PdfNames.Subtype] = PdfNames.Form,
+                [PdfNames.BBox] = PdfArray.FromNumbers(0, 0, 50, 100),
+                [PdfNames.Resources] = new PdfDictionary
+                {
+                    [PdfNames.XObject] = new PdfDictionary { [PdfName.Create("Im0")] = image },
+                    [PdfNames.ColorSpace] = colorSpaces,
+                },
+            });
+            form.SetData("q 50 0 0 50 0 0 cm /Im0 Do Q /CS0 cs 0 sc 0 50 50 50 re f"u8);
+            return document.Objects.Add(form);
+        }
+
+        var page = document.Pages.Add(Size);
+        page.CreateContentBuilder().AppendRawContent("/Fm0 Do q 1 0 0 1 50 0 cm /Fm1 Do Q"u8);
+        page.Dictionary[PdfNames.Resources] = new PdfDictionary
+        {
+            [PdfNames.XObject] = new PdfDictionary { [PdfName.Create("Fm0")] = CreateForm(hasDefaults: false), [PdfName.Create("Fm1")] = CreateForm(hasDefaults: true) },
+        };
+
+        using var rendered = Render(document);
+
+        AssertColor(Pixel(rendered, 25, 25), 0, 0, 0);
+        AssertColor(Pixel(rendered, 75, 25), 255, 0, 0);
+        AssertColor(Pixel(rendered, 25, 75), 255, 0, 0);
+        AssertColor(Pixel(rendered, 75, 75), 0, 0, 255);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ASoftMaskMasksEachDrawingAsItMasksTheFirstOne(bool alpha)
+    {
+        // The first drawing renders the mask, the next ones the image of the mask the page keeps: the pixels are the
+        // same as those of one drawing
+        PdfDocument Create(params (double X, double Width)[] rectangles)
+        {
+            var document = new PdfDocument();
+            var group = document.CreateForm(new PdfRectangle(0, 0, 100, 100), group: new PdfTransparencyGroup { ColorSpace = PdfDeviceColorSpace.Rgb });
+            var content = group.CreateContentBuilder();
+            if (alpha)
+            {
+                content.SetGraphicsState(new PdfExtGState { FillAlpha = 0.37 }).SetFillRgb(0.2, 0.5, 0.9).Rectangle(10, 10, 60, 60).Fill()
+                    .SetGraphicsState(new PdfExtGState { FillAlpha = 0.8 }).Rectangle(40, 40, 50, 50).Fill();
+            }
+            else
+            {
+                content.PaintShading(PdfShading.Axial(PdfDeviceColorSpace.Rgb, 0, 0, 100, 100, PdfFunction.Exponential([1, 1, 1], [0, 0, 0]), extendStart: true, extendEnd: true));
+            }
+
+            var mask = alpha ? PdfSoftMask.FromAlpha(group) : PdfSoftMask.FromLuminosity(group);
+            var builder = document.Pages.Add(Size).CreateContentBuilder().SetGraphicsState(new PdfExtGState { SoftMask = mask }).SetFillRgb(1, 0, 0);
+            foreach (var (x, width) in rectangles)
+            {
+                builder.Rectangle(x, 0, width, 100).Fill();
+            }
+
+            return document;
+        }
+
+        using var whole = Render(Create((0, 100)));
+        using var parts = Render(Create((0, 25), (25, 25), (50, 50)));
+
+        AssertSamePixels(whole, parts);
+        Assert.NotEqual(Pixel(whole, 5, 5), Pixel(whole, 50, 50));
+    }
+
+    [Fact]
+    public void TheGlyphProceduresOfAType3FontAreChargedEachTimeTheyRun()
+    {
+        var document = new PdfDocument();
+        var procedure = new PdfStream();
+        procedure.SetData(Encoding.ASCII.GetBytes("1000 0 0 0 1000 1000 d1 " + string.Concat(Enumerable.Repeat("0 0 1000 1000 re f ", 25))));
+        var font = new PdfDictionary
+        {
+            [PdfNames.Type] = PdfNames.Font,
+            [PdfNames.Subtype] = PdfNames.Type3,
+            [PdfNames.FontBBox] = PdfArray.FromNumbers(0, 0, 1000, 1000),
+            [PdfNames.FontMatrix] = PdfArray.FromNumbers(0.001, 0, 0, 0.001, 0, 0),
+            [PdfNames.CharProcs] = new PdfDictionary { [PdfName.Create("square")] = document.Objects.Add(procedure) },
+            [PdfNames.Encoding] = new PdfDictionary { [PdfNames.Differences] = new PdfArray(PdfInteger.Get(65), PdfName.Create("square")) },
+            [PdfNames.FirstChar] = PdfInteger.Get(65),
+            [PdfNames.LastChar] = PdfInteger.Get(65),
+            [PdfNames.Widths] = PdfArray.FromNumbers(0),
+        };
+        var page = document.Pages.Add(Size);
+        page.CreateContentBuilder().AppendRawContent(Encoding.ASCII.GetBytes("BT /T3 10 Tf 10 10 Td (" + new string('A', 400) + ") Tj ET"));
+        page.Dictionary[PdfNames.Resources] = new PdfDictionary { [PdfNames.Font] = new PdfDictionary { [PdfName.Create("T3")] = document.Objects.Add(font) } };
+        var reopened = PdfDocument.Open(document.ToByteArray());
+
+        using var image = PdfRenderer.RenderPage(reopened.Pages[0], new PdfRenderOptions { MaxOperations = 100_000 });
+        AssertColor(Pixel(image, 15, 15), 0, 0, 0);
+        Assert.Throws<PdfResourceLimitException>(() => PdfRenderer.RenderPage(reopened.Pages[0], new PdfRenderOptions { MaxOperations = 10_000 }));
+    }
+
+    [Fact]
+    public void AMeshPatternPaintsEachDrawingWithTheMesh()
+    {
+        // The mesh is read once for the rectangles it paints: its left triangle is red, its right one blue
+        var red = PdfColor.FromRgb(1, 0, 0);
+        var blue = PdfColor.FromRgb(0, 0, 1);
+        var document = new PdfDocument();
+        var mesh = PdfShading.TriangleMesh(PdfDeviceColorSpace.Rgb,
+        [
+            (new PdfMeshVertex(0, 0, red), new PdfMeshVertex(0, 100, red), new PdfMeshVertex(100, 100, red)),
+            (new PdfMeshVertex(0, 0, blue), new PdfMeshVertex(100, 0, blue), new PdfMeshVertex(100, 100, blue)),
+        ]);
+        document.Pages.Add(Size).CreateContentBuilder().SetFillPattern(new PdfShadingPattern(mesh))
+            .Rectangle(0, 50, 30, 50).Fill()
+            .Rectangle(70, 0, 30, 50).Fill();
+
+        using var image = Render(document);
+
+        AssertColor(Pixel(image, 10, 90), 255, 0, 0);
+        AssertColor(Pixel(image, 90, 10), 0, 0, 255);
+        AssertColor(Pixel(image, 50, 50), 255, 255, 255);
+    }
+
+    [Fact]
+    public void TheRowsOfALargeCmykImageAreConvertedAsOneColor()
+    {
+        // A row of 300 CMYK pixels is converted with a buffer of the pool, one pixel with a buffer of the stack
+        static Rgba32 RenderCmyk(int width)
+        {
+            var document = new PdfDocument();
+            var pixels = string.Concat(Enumerable.Repeat("33669900", width));
+            document.Pages.Add(Size).CreateContentBuilder().AppendRawContent(Encoding.ASCII.GetBytes($"q 100 0 0 100 0 0 cm BI /W {width} /H 1 /CS /DeviceCMYK /BPC 8 /F /AHx ID {pixels}> EI Q"));
+            using var image = Render(document);
+            return Pixel(image, 50, 50);
+        }
+
+        Assert.Equal(RenderCmyk(1), RenderCmyk(300));
+    }
+
+    private static void AssertSamePixels(Image<Rgba32> expected, Image<Rgba32> actual)
+    {
+        Assert.Equal(expected.Width, actual.Width);
+        Assert.Equal(expected.Height, actual.Height);
+        var expectedPixels = new Rgba32[expected.Width * expected.Height];
+        var actualPixels = new Rgba32[actual.Width * actual.Height];
+        expected.Frames[0].CopyPixelDataTo(expectedPixels);
+        actual.Frames[0].CopyPixelDataTo(actualPixels);
+        Assert.True(expectedPixels.AsSpan().SequenceEqual(actualPixels), "The images are different");
+    }
+
     private static Image<Rgba32> Render(PdfDocument document) => PdfRenderer.RenderPage(PdfDocument.Open(document.ToByteArray()).Pages[0], new PdfRenderOptions { UseSystemFonts = false });
+
+    /// <summary>Gets a Type 3 font whose glyph of A is a square of the glyph space, its procedure being the object <paramref name="procedure"/>.</summary>
+    private static string Type3SquareFont(int procedure) => string.Create(CultureInfo.InvariantCulture, $"<< /Type /Font /Subtype /Type3 /FontBBox [0 0 1000 1000] /FontMatrix [0.001 0 0 0.001 0 0] /CharProcs << /square {procedure} 0 R >> /Encoding << /Differences [65 /square] >> /FirstChar 65 /LastChar 65 /Widths [1000] >>");
+
+    private static int CountPixels(Image<Rgba32> image, Func<Rgba32, bool> predicate) => CountPixels(image, 0, 0, image.Width, image.Height, predicate);
+
+    /// <summary>Counts the pixels of a rectangle of the page (y up, as <see cref="Pixel"/>) that match a predicate.</summary>
+    private static int CountPixels(Image<Rgba32> image, int left, int bottom, int right, int top, Func<Rgba32, bool> predicate)
+    {
+        var count = 0;
+        for (var y = bottom; y < top; y++)
+        {
+            for (var x = left; x < right; x++)
+            {
+                if (predicate(Pixel(image, x, y)))
+                {
+                    count++;
+                }
+            }
+        }
+
+        return count;
+    }
+
+    private static PdfStream CreateIccStream(IccProfile profile, int components, PdfArray? range = null)
+    {
+        var stream = new PdfStream(new PdfDictionary { [PdfNames.N] = PdfInteger.Get(components) });
+        if (range is not null)
+        {
+            stream.Dictionary[PdfName.Create("Range")] = range;
+        }
+
+        stream.SetData(profile.Data.ToArray());
+        return stream;
+    }
+
+    /// <summary>Renders the page of a document written by hand: object 3 is the page (100 x 100), 4 its content, and the objects given are numbered from 5.</summary>
+    private static Image<Rgba32> RenderHandWritten(string content, string resources = "<< >>", string pageEntries = "", string catalogEntries = "", PdfRenderOptions? options = null, params string[] objects)
+        => PdfRenderer.RenderPage(OpenHandWritten(content, resources, pageEntries, catalogEntries, objects).Pages[0], options ?? new PdfRenderOptions { UseSystemFonts = false });
+
+    private static PdfDocument OpenHandWritten(string content, string resources = "<< >>", string pageEntries = "", string catalogEntries = "", params string[] objects)
+    {
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R " + catalogEntries + " >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] /Resources " + resources + " /Contents 4 0 R " + pageEntries + " >>")
+            .Add(4, HandWrittenPdf.Stream(content));
+        for (var i = 0; i < objects.Length; i++)
+        {
+            file.Add(5 + i, objects[i]);
+        }
+
+        return PdfDocument.Open(file.ToArray());
+    }
 
     /// <summary>Gets the pixel at a point of the page at 72 dpi: the y axis of the page goes up.</summary>
     private static Rgba32 Pixel(Image<Rgba32> image, int x, int y) => image.Frames[0][x, image.Height - 1 - y];

@@ -27,6 +27,8 @@ the XML documentation and `readme.md` consistent in the same change.
   this library in its namespace (`MEZIANTOU_FRAMEWORK_PDF`, see the project file): a change to them changes both. JBIG2 follows T.88 with the context bit order of its figures: the typical prediction
   contexts alias the contexts of particular templates, so the order matters. Both were checked pixel by pixel against
   MuPDF, Poppler and PDFium on the corpora (`expectations/bilevel-images.txt` of the corpus tests records the digests).
+  The encoders of `PdfImage.FromBilevel` (`CcittFaxFilter.EncodeGroup4`, `Jbig2Encoder`: one lossless generic region)
+  are checked the same way by `RenderingInteropTests.BilevelImagesAreDecodedByOtherReaders`.
 - **Conformance** (`Conformance/`, `Structure/`): the save checks what it can of the PDF/A and PDF/UA levels and writes
   what they need (output intent, XMP identification with the extension schema of PDF/UA for PDF/A-2 and -3, viewer
   preferences, annotation flags; PDF/A-4 leaves the document information dictionary out of the trailer; PDF/A-1 is
@@ -52,6 +54,13 @@ the XML documentation and `readme.md` consistent in the same change.
   `PdfExtGState`, `PdfShadingPattern`, `PdfSoftMask`) create their objects in each document that uses them, once
   (`PdfDocument.SharedResources`); the objects with content (`PdfForm`, `PdfTilingPattern`) belong to their document and
   are created by it. The meshes are written with 32-bit coordinates and 16-bit components mapped by `/Decode`.
+- **Pages and forms** (`PdfPageCollection.cs`, `PdfObjectImporter.cs`, `PdfPageReferenceRemover.cs`, `Forms/`): a page
+  imported from another document is deep-copied by the importer of that source (one per pair of documents, so that the
+  shared objects are copied once); the copy stops at the page objects, whose references are patched when their page is
+  imported. Removing a page removes the references of the document to it (destinations, named destinations, structure
+  tree, form fields). The caches of the document model (annotations of a page, resource names of a builder) are
+  invalidated by the `Version` of `PdfArray` and `PdfDictionary`, incremented by every change. The appearances the
+  library writes for form fields and markup annotations use the standard 14 fonts.
 - **Embedded fonts** (`Fonts/EmbeddedPdfFont.cs`, `Fonts/EmbeddedFontUsage.cs`): a `Type0` font with `Identity-H`
   codes that are the glyph identifiers (the subset keeps them: CID = GID), a `ToUnicode` CMap of the glyphs that show
   one cluster, and `/ActualText` around the texts whose glyphs cannot give them back. The content builder shapes the
@@ -77,11 +86,15 @@ the XML documentation and `readme.md` consistent in the same change.
   before the damage. A reference to an object that does not exist is the null object (7.3.10).
 - **Bounded work.** Everything a file can make expand is bounded: the decoded length of a stream
   (`MaxDecodedStreamLength`, checked as the output grows), the nesting of objects (`MaxNestingDepth`), the page tree and
-  the outline (depth and visited sets), chains of references and of `/Prev` sections, the `/W` arrays of CID fonts (a
+  the outline (depth and visited sets), chains of references and of `/Prev` sections, the objects of a repaired file (parsed up to the next object or trailer the scan found, `PdfRecoveryScanner.GetBoundary`), the decoded object streams kept (`ObjectStreamCache`), the names shared by a reader (`PdfNameCache`), the `/W` arrays of CID fonts (a
   budget of assignments). A hostile file must take time and memory in proportion to its size.
 - **Objects are loaded lazily** (`PdfIndirectObjectCollection`): an object of the file is parsed when a reference to it
-  is first resolved. When it is loaded, its fingerprint (`PdfObjectFingerprint`) is taken: an incremental save writes
-  the objects whose fingerprint changed, and the new ones. Mutating an object therefore needs no other bookkeeping.
+  is first resolved, and from a seekable stream (`PdfDocument.OpenSeekable`, `StreamPdfInput`) the data of a stream is
+  read when it is first used. When an object is loaded, its fingerprint (`PdfObjectFingerprint`) records the instance and
+  the version of the data of a stream; `PdfDictionary` and `PdfArray` record that a public member modified them after
+  they were parsed. An incremental save writes the objects that were replaced or whose containers were modified, and the
+  new ones: mutating an object through the public API needs no other bookkeeping, but code that loads objects (the
+  parser, the decryption) uses the internal `SetParsed` members, which do not mark them modified.
 - **The high-level API writes the objects.** `PdfPage`, `PdfDocumentInformation`, `PdfAnnotationCollection` read and
   write the dictionaries directly; the outline is the exception (`PdfOutlineCollection` is a model written back by
   `PdfDocument.PrepareForSave`, which only rewrites what changed).
@@ -89,9 +102,14 @@ the XML documentation and `readme.md` consistent in the same change.
   they are reached from the trailer, dictionaries keep the order of their entries, the file identifier is an MD5 of the
   content, numbers are written without exponent with at most six decimals. Never write a date, a random value or the
   version of the library implicitly.
-- A full save writes the objects reachable from `/Root` and `/Info`, with the `/Length` of the streams written direct
-  (the indirect length objects of a file become unreachable). An incremental save keeps the kind of cross-reference of
-  the original file and refuses a repaired file.
+- A full save writes the objects reachable from `/Root`, `/Info` and the private entries of the trailer, with the
+  `/Length` of the streams written direct (the indirect length objects of a file become unreachable). An incremental
+  save keeps the kind of cross-reference of the original file (object streams with cross-reference streams), writes the
+  removed objects as free entries, writes the original file alone when nothing changed, and refuses a repaired file.
+  A reference to an object of another document is an error in both.
+- **Bounded output buffers.** A save streams the file through `PdfByteWriter` with a `PdfOutputSink`: a stream for the
+  synchronous saves, blocks of memory for `SaveAsync` and `ToByteArray`. The file identifier is an incremental MD5 of
+  what is written, so nothing reads the output back; the original file of an incremental save is passed as one block.
 
 ## Renderer (`Rendering/`, namespace `Meziantou.Framework.Pdf.Rendering`)
 
@@ -130,6 +148,12 @@ Signs and verifies the signatures of documents, with `System.Security.Cryptograp
   widths; the writer does not encrypt the `/Contents` of a signature dictionary.
 - PAdES baseline: the signed attributes are content-type, message-digest and ESS signing-certificate-v2; the
   signing-time attribute is not written (the time is `/M`).
+- The CMS signed data is encoded and checked by `CmsSignature`, not by `SignedCms`, so that the digest of the file is
+  computed range by range without a copy of the file; `SignedCms` decodes the signatures and checks the algorithms
+  `CmsSignature` does not know, and the signatures without signed attributes, with a copy of the signed bytes.
+- The verifier reads a signature dictionary from the revision the signature covers (a prefix of the file opened as a
+  document), and `PdfModificationAnalyzer` compares that revision with the document to list and classify the changes
+  made after it, for the DocMDP and FieldMDP permissions.
 - Tests: `PdfSignerTests` (certificates created by the tests and a time stamp authority of the tests, an
   `HttpMessageHandler`, no network); `tests/Meziantou.Framework.Pdf.InteropTests` (`SignatureInteropTests`): Poppler's
   pdfsig checks the signatures (the pinned release has no pdfsig for Windows, so they run on Linux and macOS);

@@ -59,6 +59,10 @@ document.Catalog[PdfName.Create("ViewerPreferences")] = document.Objects.Add(vie
 
 - Set an entry of a dictionary with its indexer, or with [SetName](cref:Meziantou.Framework.Pdf.Objects.PdfDictionary.SetName), [SetText](cref:Meziantou.Framework.Pdf.Objects.PdfDictionary.SetText) and [SetNumber](cref:Meziantou.Framework.Pdf.Objects.PdfDictionary.SetNumber); remove it with [Remove](cref:Meziantou.Framework.Pdf.Objects.PdfDictionary.Remove).
 - `PdfDocument.Objects.Add` makes an object indirect and returns its reference, which other objects can point to.
+  [Remove](cref:Meziantou.Framework.Pdf.Objects.PdfIndirectObjectCollection.Remove) removes an indirect object: the references to it then point to the null object.
+- A document can only refer to its own objects: a save throws `InvalidOperationException` for a reference that belongs
+  to another document. Names cannot contain the null character: `PdfName.Create` throws `ArgumentException`. A name read
+  from a file with `#00` is kept, and written as it was read.
 - [PdfStream.SetData](cref:Meziantou.Framework.Pdf.Objects.PdfStream.SetData) replaces the data of a stream with data without filter, which the save compresses
   ([CompressStreams](cref:Meziantou.Framework.Pdf.PdfSaveOptions.CompressStreams)); [SetEncodedData](cref:Meziantou.Framework.Pdf.Objects.PdfStream.SetEncodedData) sets data that is already encoded, with its filter.
 - The high-level members read and write the same objects: a change made through either is visible through both, and an

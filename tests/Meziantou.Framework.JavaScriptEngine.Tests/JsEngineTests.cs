@@ -655,6 +655,89 @@ public sealed class JsEngineTests
         Assert.Equal(JsTerminationReason.Timeout, exception.Reason);
     }
 
+    // The search of a literal prefix or of the first characters of a pattern has no backtracking step: it counts the
+    // code units it scans, so a long search checks the limits too. The input comes from the host, so the search is the
+    // first code that checks the limits.
+    [Theory]
+    [InlineData("/[ab]/.test(s)")]
+    [InlineData("/[ab]/u.test(s)")]
+    [InlineData("/\\d/.test(s)")]
+    [InlineData("/ab/.test(s)")]
+    [InlineData("/ab/i.test(s)")]
+    [InlineData("/[^x]/.test(s)")]
+    [InlineData("/\\s+$/.test(s)")]
+    public void ExecutionLimits_RegExpSearchChecksTheLimits(string code)
+    {
+        var input = new string('x', 4_000_000);
+        using (var engine = new JsEngine(new JsEngineOptions { RegExpTimeout = TimeSpan.FromTicks(1) }))
+        {
+            var realm = engine.CreateRealm();
+            realm.GlobalObject.SetProperty("s", input);
+            var exception = Assert.Throws<JsTerminationException>(() => realm.Execute(code));
+            Assert.Equal(JsTerminationReason.Timeout, exception.Reason);
+        }
+
+        using (var engine = new JsEngine(new JsEngineOptions { Timeout = TimeSpan.FromTicks(1) }))
+        {
+            var realm = engine.CreateRealm();
+            realm.GlobalObject.SetProperty("s", input);
+            var exception = Assert.Throws<JsTerminationException>(() => realm.Execute(code));
+            Assert.Equal(JsTerminationReason.Timeout, exception.Reason);
+        }
+
+        using var cancellation = new CancellationTokenSource();
+        using (var engine = new JsEngine(new JsEngineOptions { CancellationToken = cancellation.Token }))
+        {
+            var realm = engine.CreateRealm();
+            realm.GlobalObject.SetProperty("s", input);
+            realm.GlobalObject.SetProperty("cancel", realm.CreateFunction("cancel", 0, (_, _) =>
+            {
+                cancellation.Cancel();
+                return default;
+            }));
+            var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("cancel(); " + code));
+            Assert.Equal(JsTerminationReason.Canceled, exception.Reason);
+        }
+
+        using (var engine = new JsEngine(new JsEngineOptions { RegExpTimeout = TimeSpan.FromSeconds(30), Timeout = TimeSpan.FromSeconds(30) }))
+        {
+            var realm = engine.CreateRealm();
+            realm.GlobalObject.SetProperty("s", input);
+            Assert.False(realm.Execute(code).AsBoolean());
+            realm.GlobalObject.SetProperty("s", input + "ab1");
+            Assert.True(realm.Execute(code.Replace("\\s+$", "\\d$", StringComparison.Ordinal)).AsBoolean());
+        }
+    }
+
+    // The backtracking stack of the matcher checks the memory limit before it grows: without the check, the stack
+    // doubles until the next periodic check, and allocates about twice the limit
+    [Fact]
+    public void ExecutionLimits_RegExpBacktrackingStackChecksTheMemoryLimit()
+    {
+        const long MemoryLimit = 16 * 1024 * 1024;
+        var input = new string('a', 1_000_000);
+        using (var engine = new JsEngine(new JsEngineOptions { MemoryLimit = MemoryLimit }))
+        {
+            var realm = engine.CreateRealm();
+            realm.GlobalObject.SetProperty("s", input);
+            var allocatedBefore = GC.GetAllocatedBytesForCurrentThread();
+            var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("/^(?:a|b)*c/.test(s)"));
+            var allocated = GC.GetAllocatedBytesForCurrentThread() - allocatedBefore;
+            Assert.Equal(JsTerminationReason.MemoryLimit, exception.Reason);
+            Assert.True(allocated < MemoryLimit, "allocated: " + allocated.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        }
+
+        // The runner of the thread is reused after the termination, and a deep backtracking within the limit succeeds
+        using (var engine = new JsEngine(new JsEngineOptions { MemoryLimit = 256 * 1024 * 1024 }))
+        {
+            var realm = engine.CreateRealm();
+            realm.GlobalObject.SetProperty("s", input);
+            Assert.False(realm.Execute("/^(?:a|b)*c/.test(s)").AsBoolean());
+            Assert.True(realm.Execute("/^(?:a|b)*$/.test(s)").AsBoolean());
+            Assert.Equal("b,b", realm.Execute("/(a)|(b)/.exec('xb').slice(0, 3).filter(Boolean).join()").ToString());
+        }
+    }
+
     [Fact]
     public void DeepRecursionThroughHostFunctionsThrowsARangeError()
     {
@@ -804,6 +887,238 @@ public sealed class JsEngineTests
 
         Assert.Equal(49, realm.Execute("result").AsNumber());
         #endregion
+    }
+
+    [Fact]
+    public void ModuleLoader_ExceptionFailsStaticImport()
+    {
+        using var engine = new JsEngine(new JsEngineOptions { ModuleLoader = new DelegateModuleLoader(request => throw new FileNotFoundException("Could not find file 'dep.js'")) });
+        var realm = engine.CreateRealm();
+        var module = realm.ParseModule("import './dep.js';", "main.js");
+
+        var loading = module.LoadRequestedModules().AsObject();
+        engine.RunJobs();
+
+        Assert.True(loading.TryGetPromiseState(out var state, out var reason, out _));
+        Assert.Equal(JsPromiseState.Rejected, state);
+        Assert.Equal("TypeError: Cannot load the module './dep.js': Could not find file 'dep.js'", engine.ToString(reason));
+        Assert.Equal(JsModuleStatus.New, module.Status);
+    }
+
+    [Fact]
+    public void ModuleLoader_ExceptionRejectsDynamicImport()
+    {
+        var calls = 0;
+        using var engine = new JsEngine(new JsEngineOptions
+        {
+            ModuleLoader = new DelegateModuleLoader(request =>
+            {
+                calls++;
+                if (request.Specifier == "syntax.js")
+                    throw new JsException(request.Realm.CreateError(JsErrorType.SyntaxError, "Unexpected token"));
+
+                throw new IOException("Disk error");
+            }),
+        });
+        var realm = engine.CreateRealm();
+
+        realm.Execute("globalThis.r = []; for (const s of ['io.js', 'syntax.js', 'io.js']) import(s).then(() => r.push('loaded'), e => r.push(`${e}`));");
+        engine.RunJobs();
+
+        Assert.Equal(3, calls);
+        Assert.Equal("TypeError: Cannot load the module 'io.js': Disk error|SyntaxError: Unexpected token|TypeError: Cannot load the module 'io.js': Disk error", realm.Execute("r.join('|')").AsString());
+    }
+
+    [Fact]
+    public void ModuleLoader_TerminationAndExceptionsAfterCompletionPropagate()
+    {
+        using (var engine = new JsEngine(new JsEngineOptions { ModuleLoader = new DelegateModuleLoader(request => throw new JsTerminationException(JsTerminationReason.Canceled, "Canceled")) }))
+        {
+            var realm = engine.CreateRealm();
+            Assert.Throws<JsTerminationException>(() => realm.ParseModule("import './dep.js';").LoadRequestedModules());
+            Assert.Throws<JsTerminationException>(() => realm.Execute("import('./dep.js')"));
+        }
+
+        using (var engine = new JsEngine(new JsEngineOptions
+        {
+            ModuleLoader = new DelegateModuleLoader(request =>
+            {
+                request.Complete(request.Realm.ParseModule("export default 1;", request.Specifier));
+                throw new InvalidOperationException("After completion");
+            }),
+        }))
+        {
+            var realm = engine.CreateRealm();
+            var module = realm.ParseModule("import './dep.js';");
+            Assert.Throws<InvalidOperationException>(() => module.LoadRequestedModules());
+        }
+    }
+
+    [Fact]
+    public async Task ModuleLoader_CompletionFromAnotherThreadRunsOnTheEngineThread()
+    {
+        var requests = new List<JsModuleLoadRequest>();
+        using var engine = new JsEngine(new JsEngineOptions { ModuleLoader = new DelegateModuleLoader(requests.Add) });
+        var realm = engine.CreateRealm();
+        var a = realm.ParseModule("export default 'a';", "a.js");
+        var b = realm.ParseModule("export default 'b';", "b.js");
+        using (engine.Enter())
+        {
+            // The engine is busy (a script runs) while another thread completes the requests
+            realm.GlobalObject.SetProperty("completeFromThreadPool", realm.CreateFunction("completeFromThreadPool", 0, (_, _) =>
+            {
+                Task.Run(() =>
+                {
+                    requests[1].Complete(b);
+                    requests[0].Complete(a);
+                    Assert.Throws<InvalidOperationException>(() => requests[0].Fail("Too late"));
+                }).GetAwaiter().GetResult();
+                return JsValue.Undefined;
+            }));
+        }
+
+        realm.Execute("globalThis.r = []; import('a.js').then(ns => r.push(ns.default)); import('b.js').then(ns => r.push(ns.default)); completeFromThreadPool(); r.push('sync');");
+        Assert.Equal("sync", realm.Execute("r.join()").AsString());
+
+        // The completions are processed by RunJobs, in the order they were made
+        engine.RunJobs();
+        Assert.Equal("sync,b,a", realm.Execute("r.join()").AsString());
+
+        // A request completed concurrently by several threads is completed once
+        realm.Execute("import('c.js').then(ns => r.push(ns.default), e => r.push(e.message));");
+        var c = realm.ParseModule("export default 'c';", "c.js");
+        var request = requests[2];
+        var successes = 0;
+        await Task.WhenAll(Enumerable.Range(0, 8).Select(i => Task.Run(() =>
+        {
+            try
+            {
+                if (i % 2 == 0)
+                {
+                    request.Complete(c);
+                }
+                else
+                {
+                    request.Fail("Failed " + i.ToString(CultureInfo.InvariantCulture));
+                }
+
+                Interlocked.Increment(ref successes);
+            }
+            catch (InvalidOperationException)
+            {
+            }
+        })));
+
+        Assert.Equal(1, successes);
+        engine.RunJobs();
+        Assert.Equal(4, realm.Execute("r.length").AsNumber());
+    }
+
+    [Fact]
+    public void Module_TerminationDuringEvaluationFailsTheModule()
+    {
+        using var engine = new JsEngine(new JsEngineOptions { MaxStatements = 10_000 });
+        var realm = engine.CreateRealm();
+        var module = realm.ParseModule("globalThis.started = true; while (true) {}", "loop.js");
+        module.LoadRequestedModules();
+        module.Link();
+
+        Assert.Throws<JsTerminationException>(() => module.Evaluate());
+        Assert.Equal(JsModuleStatus.Evaluated, module.Status);
+        Assert.True(module.HasEvaluationError);
+        Assert.Equal("Error: The execution was terminated: The script exceeded its statement limit", engine.ToString(module.EvaluationError));
+
+        // The next evaluation does not run the module again: its promise is rejected
+        var evaluation = module.Evaluate().AsObject();
+        Assert.True(evaluation.TryGetPromiseState(out var state, out var reason, out _));
+        Assert.Equal(JsPromiseState.Rejected, state);
+        Assert.True(JsEngine.SameValue(module.EvaluationError, reason));
+        Assert.True(realm.Execute("started").AsBoolean());
+    }
+
+    [Fact]
+    public void Module_TerminationDuringTopLevelAwaitFailsTheModuleAndItsImporters()
+    {
+        var files = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["main.js"] = "import './tla.js'; globalThis.mainRan = true;",
+            ["tla.js"] = "await 0; while (true) {}",
+        };
+
+        using var engine = new JsEngine(new JsEngineOptions { MaxStatements = 10_000, ModuleLoader = new DictionaryModuleLoader(files) });
+        var realm = engine.CreateRealm();
+        var main = realm.ParseModule(files["main.js"], "main.js");
+        main.LoadRequestedModules();
+        engine.RunJobs();
+        main.Link();
+        var evaluation = main.Evaluate().AsObject();
+        Assert.Equal(JsModuleStatus.EvaluatingAsync, main.Status);
+
+        Assert.Throws<JsTerminationException>(engine.RunJobs);
+        Assert.Equal(JsModuleStatus.Evaluated, main.Status);
+        Assert.True(main.HasEvaluationError);
+        Assert.True(evaluation.TryGetPromiseState(out var state, out var reason, out _));
+        Assert.Equal(JsPromiseState.Rejected, state);
+        Assert.Equal("Error: The execution was terminated: The script exceeded its statement limit", engine.ToString(reason));
+
+        // A later import of the modules is rejected with the same error, and the engine can run code again
+        realm.Execute("import('tla.js').catch(e => globalThis.importError = e.message);");
+        engine.RunJobs();
+        Assert.Equal("The execution was terminated: The script exceeded its statement limit", realm.Execute("importError").AsString());
+        Assert.Equal("undefined", realm.Execute("typeof mainRan").AsString());
+    }
+
+    [Fact]
+    public void HostException_ClosesTheGenerator()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using (engine.Enter())
+        {
+            realm.GlobalObject.SetProperty("boom", realm.CreateFunction("boom", 0, (_, _) => throw new InvalidOperationException("Boom")));
+        }
+
+        realm.Execute("function* g() { try { while (true) yield boom(); } finally { globalThis.cleaned = true; } } globalThis.it = g();");
+        Assert.Throws<InvalidOperationException>(() => realm.Execute("it.next()"));
+
+        // The generator is completed: it is not 'already running', and its finally block did not run
+        Assert.Equal("true,undefined", realm.Execute("var result = it.next(); `${result.done},${result.value}`").AsString());
+        Assert.Equal("undefined", realm.Execute("typeof cleaned").AsString());
+        Assert.Equal("1,2", realm.Execute("function* h() { yield 1; yield 2; } [...h()].join()").AsString());
+    }
+
+    [Fact]
+    public void HostException_RejectsTheAsyncFunctionAndTheAsyncGenerator()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using (engine.Enter())
+        {
+            realm.GlobalObject.SetProperty("boom", realm.CreateFunction("boom", 0, (_, _) => throw new InvalidOperationException("Boom")));
+        }
+
+        realm.Execute("""
+            globalThis.r = [];
+            async function f() { try { await 0; boom(); } finally { r.push('finally'); } }
+            f().catch(e => r.push(e.message));
+            """);
+
+        // The exception of the continuation goes to the caller of RunJobs; the promise of the async function is rejected
+        Assert.Throws<InvalidOperationException>(engine.RunJobs);
+        engine.RunJobs();
+        Assert.Equal("The execution was stopped by a .NET exception: System.InvalidOperationException: Boom", realm.Execute("r.join()").AsString());
+
+        realm.Execute("""
+            globalThis.r = [];
+            async function* g() { yield 1; await 0; boom(); }
+            globalThis.it = g();
+            it.next().then(v => r.push(v.value));
+            it.next().then(v => r.push('fulfilled'), e => r.push(e.message));
+            it.next().then(v => r.push(v.done));
+            """);
+        Assert.Throws<InvalidOperationException>(engine.RunJobs);
+        engine.RunJobs();
+        Assert.Equal("1,The execution was stopped by a .NET exception: System.InvalidOperationException: Boom,true", realm.Execute("r.join()").AsString());
     }
 
     // The examples of the documentation site (docs/JavaScriptEngine)
@@ -1654,6 +1969,31 @@ public sealed class JsEngineTests
         #endregion
     }
 
+    [Fact]
+    public void Documentation_CustomTimeZone()
+    {
+        #region JavaScriptEngine_CustomTimeZone
+        // A time zone that is not in the IANA database: +05:00, and +06:00 from the last Sunday of March to the last Sunday of October
+        var rule = TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(
+            DateTime.MinValue.Date,
+            DateTime.MaxValue.Date,
+            TimeSpan.FromHours(1),
+            TimeZoneInfo.TransitionTime.CreateFloatingDateRule(new DateTime(1, 1, 1, 2, 0, 0), month: 3, week: 5, DayOfWeek.Sunday),
+            TimeZoneInfo.TransitionTime.CreateFloatingDateRule(new DateTime(1, 1, 1, 3, 0, 0), month: 10, week: 5, DayOfWeek.Sunday));
+        var timeZone = TimeZoneInfo.CreateCustomTimeZone("Test/Zone", TimeSpan.FromHours(5), "Test zone", "Test standard time", "Test daylight time", [rule]);
+
+        using var engine = new JsEngine(new JsEngineOptions
+        {
+            TimeProvider = new FixedTimeProvider(new DateTimeOffset(2026, 7, 1, 12, 0, 0, TimeSpan.Zero), timeZone),
+        });
+        var realm = engine.CreateRealm();
+
+        Assert.Equal(18, realm.Execute("new Date().getHours()").AsNumber());
+        Assert.Equal(-300, realm.Execute("new Date(2026, 0, 1).getTimezoneOffset()").AsNumber());
+        Assert.Equal("Test/Zone", realm.Execute("Temporal.Now.timeZoneId()").AsString());
+        #endregion
+    }
+
     /// <summary>Loads the modules from a dictionary: the specifiers are the keys (e.g. <c>./math.js</c> is <c>math.js</c>).</summary>
     private sealed class DictionaryModuleLoader(Dictionary<string, string> files) : JsModuleLoader
     {
@@ -1676,6 +2016,11 @@ public sealed class JsEngineTests
 
             request.Complete(module);
         }
+    }
+
+    private sealed class DelegateModuleLoader(Action<JsModuleLoadRequest> load) : JsModuleLoader
+    {
+        protected internal override void LoadImportedModule(JsModuleLoadRequest request) => load(request);
     }
 
     private sealed class UppercaseHostObject(JsObject prototype, object target) : JsHostObject(prototype, target)

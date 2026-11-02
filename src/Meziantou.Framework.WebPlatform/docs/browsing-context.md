@@ -3334,7 +3334,9 @@ await context.WaitUntilIdleAsync();
   `SaveRegistration`, `DeleteRegistration`) with their installed and activated service workers and the responses of
   their scripts (strings and byte arrays): a browsing context created later with the same backend runs the stored
   scripts, without fetching them again. The methods are called from several threads: an implementation must be
-  thread-safe. The test project has a SQLite backend (`tests/Meziantou.Framework.WebPlatform.Tests/Storage/SqliteServiceWorkerBackend.cs`).
+  thread-safe. A browsing context group writes the registrations one at a time, in the order of their changes (the state
+  is read and written under a lock, `_backendWriteLock`): the algorithms that run in parallel (e.g. the end of the
+  installation and the activation started when the install event ends) never write a stale state last. The test project has a SQLite backend (`tests/Meziantou.Framework.WebPlatform.Tests/Storage/SqliteServiceWorkerBackend.cs`).
 - The browsing contexts that share a backend share the registrations, but each browsing context group runs its own
   instances of the service workers, as several browser sessions of the same profile.
 - A service worker runs on its own thread, with its own event loop and its own script engine, as the dedicated workers

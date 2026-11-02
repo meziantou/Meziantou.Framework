@@ -136,7 +136,7 @@ internal static class ModuleOperations
             return;
         }
 
-        loader.LoadImportedModule(loadRequest);
+        loadRequest.Load(loader);
     }
 
     /// <summary>FinishLoadingImportedModule(referrer, moduleRequest, payload, result)</summary>
@@ -334,16 +334,18 @@ internal static class ModuleOperations
         }
         catch (JsException ex)
         {
-            foreach (var m in stack)
-            {
-                m.Status = JsModuleStatus.Evaluated;
-                m.EvaluationError = ex.Value;
-                m.EvaluationErrorLocation = ex.Location;
-                m.HasEvaluationError = true;
-            }
-
+            SetEvaluationError(stack, ex.Value, ex.Location);
             capability.Reject(ex.Value);
             return capability.Promise;
+        }
+        catch (Exception ex)
+        {
+            // A termination or a .NET exception: the modules being evaluated cannot complete, they are evaluated with an
+            // error that describes it, and the exception goes to the host
+            var error = JsInterpreter.CreateAbortError(cyclic.Realm, ex);
+            SetEvaluationError(stack, error, location: null);
+            capability.Reject(error);
+            throw;
         }
 
         if (!cyclic.IsAsyncEvaluation)
@@ -352,6 +354,20 @@ internal static class ModuleOperations
         }
 
         return capability.Promise;
+    }
+
+    private static void SetEvaluationError(List<JsSourceTextModule> stack, JsValue error, JsSourceLocation? location)
+    {
+        foreach (var m in stack)
+        {
+            m.Status = JsModuleStatus.Evaluated;
+            m.EvaluationError = error;
+            m.EvaluationErrorLocation = location;
+            m.HasEvaluationError = true;
+
+            // An asynchronous dependency of the module that completes later finds the error of its strongly connected component
+            m.CycleRoot ??= m;
+        }
     }
 
     /// <summary>InnerModuleEvaluation(module, stack, index)</summary>
@@ -571,7 +587,7 @@ internal static class ModuleOperations
             Script = module,
         };
 
-        JsInterpreter.StartAsyncBlock(frame, capability);
+        JsInterpreter.StartAsyncBlock(frame, capability, module);
     }
 
     /// <summary>GatherAvailableAncestors(module, execList)</summary>
@@ -607,25 +623,37 @@ internal static class ModuleOperations
         var execList = new List<JsSourceTextModule>();
         GatherAvailableAncestors(module, execList);
         execList.Sort(static (a, b) => a.AsyncEvaluationOrder.CompareTo(b.AsyncEvaluationOrder));
-        foreach (var m in execList)
+        for (var i = 0; i < execList.Count; i++)
         {
+            var m = execList[i];
             if (m.Status == JsModuleStatus.Evaluated)
                 continue;
 
-            if (m.HasTopLevelAwait)
-            {
-                ExecuteAsyncModule(m);
-                continue;
-            }
-
             try
             {
+                if (m.HasTopLevelAwait)
+                {
+                    ExecuteAsyncModule(m);
+                    continue;
+                }
+
                 ExecuteModule(m);
             }
-            catch (JsException ex)
+            catch (JsException ex) when (!m.HasTopLevelAwait)
             {
                 AsyncModuleExecutionRejected(m, ex.Value);
                 continue;
+            }
+            catch (Exception ex) when (ex is not JsException)
+            {
+                // A termination or a .NET exception: the modules that were ready to run will not run
+                var error = JsInterpreter.CreateAbortError(m.Realm, ex);
+                for (var j = i; j < execList.Count; j++)
+                {
+                    AsyncModuleExecutionRejected(execList[j], error);
+                }
+
+                throw;
             }
 
             m.AsyncEvaluationOrder = -1;
@@ -635,7 +663,7 @@ internal static class ModuleOperations
     }
 
     /// <summary>AsyncModuleExecutionRejected(module, error)</summary>
-    private static void AsyncModuleExecutionRejected(JsSourceTextModule module, JsValue error)
+    internal static void AsyncModuleExecutionRejected(JsSourceTextModule module, JsValue error)
     {
         if (module.Status == JsModuleStatus.Evaluated)
             return;

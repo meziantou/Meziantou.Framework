@@ -13,6 +13,9 @@ internal sealed partial class ContentRenderer
     // The side of the image of a cell of a tiling pattern
     private const int MaxTileSide = 2048;
 
+    // The copies of the cell of a tiling pattern painted on its tile, on each axis
+    private const int MaxTileCopies = 16;
+
     /// <summary>Gets or initializes the color every painting operator uses, instead of the colors of the content: the stencil of an uncolored pattern or of a <c>d1</c> glyph.</summary>
     public RgbColor? ForcedColor { get; set; }
 
@@ -35,6 +38,41 @@ internal sealed partial class ContentRenderer
     {
         if (ToPixelBounds(deviceBounds, margin + 1) is not { } bounds)
             return;
+
+        // A shading pattern puts its graphics state into effect while it is painted (8.7.4.4)
+        if (GetShadingPatternGraphicsState(stroke) is { } patternState)
+        {
+            var saved = _state;
+            _state = _state.Clone();
+            try
+            {
+                SetGraphicsState(patternState);
+                PaintWithBrush(canvas, stroke, draw, deviceBounds, margin, bounds);
+            }
+            finally
+            {
+                _state = saved;
+            }
+
+            return;
+        }
+
+        PaintWithBrush(canvas, stroke, draw, deviceBounds, margin, bounds);
+    }
+
+    /// <summary>Gets the graphics state (<c>/ExtGState</c>) of the shading pattern the fill or stroke color is, if it is one and has one.</summary>
+    private PdfDictionary? GetShadingPatternGraphicsState(bool stroke)
+    {
+        if (ForcedColor is not null || (stroke ? _state.StrokeColorSpace : _state.FillColorSpace) is not RenderColorSpace.PatternSpace)
+            return null;
+
+        return (stroke ? _state.StrokePattern : _state.FillPattern) is PdfDictionary pattern && pattern.GetInteger(PdfName.Create("PatternType"), 0) == 2
+            ? pattern.Get<PdfDictionary>(PdfNames.ExtGState)
+            : null;
+    }
+
+    private void PaintWithBrush(DrawingCanvas canvas, bool stroke, Action<DrawingCanvas, Brush> draw, RectangleD deviceBounds, double margin, Rectangle bounds)
+    {
 
         // In a knockout group, the painting is an element of the group, of the pixels it can change
         if (IsKnockoutContext && _element is null)
@@ -104,15 +142,15 @@ internal sealed partial class ContentRenderer
             masked = target => target.Filter(filter, filtered => draw(filtered));
         }
 
-        // The soft mask of an element of a knockout group is the opacity of the element
+        // The soft mask of an element of a knockout group is the opacity of the element, unless it is shape
         var transferred = masked;
-        if (softMask is { } mask && _depth < MaxDepth && _element is null)
+        if (softMask is { } mask && _depth < MaxDepth && (_element is null || _state.AlphaIsShape))
         {
             var isLuminosity = mask.Mask.GetName(PdfNames.S)?.Value != "Alpha";
             var maskMode = isLuminosity ? MaskMode.Luminance : MaskMode.Alpha;
             if (_state.BlendMode == BlendMode.Normal)
             {
-                masked = target => target.Mask(maskCanvas => RenderSoftMask(maskCanvas, mask.Mask, mask.Matrix, isLuminosity), content => transferred(content), maskMode);
+                masked = target => target.Mask(maskCanvas => DrawSoftMask(maskCanvas, mask.Mask, mask.Matrix, isLuminosity), content => transferred(content), maskMode);
             }
             else
             {
@@ -238,12 +276,16 @@ internal sealed partial class ContentRenderer
         _cache.Charge(((long)width * height / 256) + 1);
         var tile = new Image<Rgba32>(width, height, _cache.Options.Configuration);
         _brushImages.Add(tile);
+
+        // The cell is painted at each step whose copy of the bounding box overlaps the tile, so that a cell larger than
+        // the step wraps around; the copies are bounded, the nearest ones first
+        var (iMin, iMax) = GetOverlappingSteps(bbox.Left, bbox.Right, originX, Math.Abs(xStep));
+        var (jMin, jMax) = GetOverlappingSteps(bbox.Bottom, bbox.Top, originY, Math.Abs(yStep));
         tile.Draw(canvas =>
         {
-            // The cell is painted at each step that overlaps the tile, so that a cell larger than the step wraps around
-            for (var i = -1; i <= 1; i++)
+            for (var i = iMin; i <= iMax; i++)
             {
-                for (var j = -1; j <= 1; j++)
+                for (var j = jMin; j <= jMax; j++)
                 {
                     var offset = PdfMatrix.CreateTranslation(i * Math.Abs(xStep), j * Math.Abs(yStep)) * toTile;
                     RenderForm(canvas, cell, offset, bbox, color, offset, (width, height), applyFormMatrix: false);
@@ -256,6 +298,46 @@ internal sealed partial class ContentRenderer
             return null;
 
         return new ImageBrush(tile.Frames[0]) { Transform = transform, WrapMode = ImageWrapMode.Repeat, Opacity = alpha, BlendMode = blend };
+    }
+
+    /// <summary>
+    /// Gets the steps i whose copy of the interval [<paramref name="low"/>, <paramref name="high"/>] moved by i steps
+    /// overlaps the tile, [<paramref name="origin"/>, <paramref name="origin"/> + <paramref name="step"/>]; at most
+    /// <see cref="MaxTileCopies"/> steps on each axis, around the step 0.
+    /// </summary>
+    private static (int Min, int Max) GetOverlappingSteps(double low, double high, double origin, double step)
+    {
+        var min = Math.Floor((origin - high) / step);
+        var max = Math.Ceiling((origin + step - low) / step);
+        if (!double.IsFinite(min) || !double.IsFinite(max) || max < min)
+            return (-1, 1);
+
+        if (max - min >= MaxTileCopies)
+        {
+            // A cell many steps wide: the copies around the cell at its own position
+            var center = Math.Clamp(0, min, max);
+            min = Math.Max(min, center - (MaxTileCopies / 2));
+            max = Math.Min(max, min + MaxTileCopies - 1);
+        }
+
+        return ((int)min, (int)max);
+    }
+
+    /// <summary>
+    /// Draws a soft mask on the layer of a mask: the mask rendered for this drawing, or the image of the mask the page
+    /// rendered once for the drawings it masks, the glyphs of a text for instance. The image is the mask rendered on a
+    /// transparent image of the device, which is what the layer is: the pixels are the same.
+    /// </summary>
+    private void DrawSoftMask(DrawingCanvas canvas, PdfDictionary mask, PdfMatrix matrix, bool isLuminosity)
+    {
+        var key = new RenderCache.SoftMaskKey(mask, matrix, DeviceSize.Width, DeviceSize.Height, _depth);
+        if (_cache.GetSoftMaskImage(key, image => RenderSoftMask(image, mask, matrix, isLuminosity)) is { } cached)
+        {
+            canvas.DrawImage(cached.Frames[0], new PointD(0, 0));
+            return;
+        }
+
+        RenderSoftMask(canvas, mask, matrix, isLuminosity);
     }
 
     /// <summary>
@@ -392,13 +474,13 @@ internal sealed partial class ContentRenderer
     /// <summary>Clips to a rectangle of user space: the bounding box of a form, a pattern cell or a glyph.</summary>
     internal void ClipToRectangle(PdfRectangle rectangle)
     {
-        if (rectangle.Right <= rectangle.Left || rectangle.Top <= rectangle.Bottom || !TryGetDeviceTransform(_state.Ctm, out var transform))
+        if (rectangle.Right <= rectangle.Left || rectangle.Top <= rectangle.Bottom)
             return;
 
         // A rectangle beyond the coordinates of the canvas does not clip
-        if (CreateRectanglePath(rectangle) is { } path && TransformPath(path, transform) is { } devicePath)
+        if (CreateRectanglePath(rectangle) is { } path)
         {
-            AddClip(devicePath, FillRule.NonZero);
+            AddClip(ToDeviceClip(path), FillRule.NonZero);
         }
     }
 

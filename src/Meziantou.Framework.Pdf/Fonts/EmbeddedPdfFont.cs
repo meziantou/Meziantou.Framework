@@ -24,7 +24,14 @@ internal sealed class EmbeddedPdfFont : PdfFont
     // The tag of the OS/2 table (OpenType specification, "OS/2")
     private const uint Os2Tag = ((uint)'O' << 24) | ((uint)'S' << 16) | ((uint)'/' << 8) | '2';
 
+    // The shaped texts the font keeps: measuring the candidate lines of a layout shapes the same words many times, and
+    // a text measured is usually shown next. The font is shared by threads: the cache is behind a lock.
+    private const int MaxCachedShapes = 512;
+    private const int MaxCachedTextLength = 256;
+
     private readonly double _scale;
+    private readonly Lock _shapesLock = new();
+    private readonly Dictionary<string, ShapedText> _shapes = new(StringComparer.Ordinal);
 
     public EmbeddedPdfFont(FontFace face)
     {
@@ -114,8 +121,34 @@ internal sealed class EmbeddedPdfFont : PdfFont
     }
 
     /// <summary>Shapes a text: the glyphs from left to right, with the adjustments of their positions.</summary>
+    /// <remarks>The result is shared by the callers that shape the same text: it must not be modified.</remarks>
     /// <exception cref="ArgumentException">A character of the text has no glyph in the font.</exception>
     internal ShapedText Shape(string text)
+    {
+        if (text.Length > MaxCachedTextLength)
+            return ShapeCore(text);
+
+        lock (_shapesLock)
+        {
+            if (_shapes.TryGetValue(text, out var cached))
+                return cached;
+        }
+
+        var shaped = ShapeCore(text);
+        lock (_shapesLock)
+        {
+            if (_shapes.Count >= MaxCachedShapes)
+            {
+                _shapes.Clear();
+            }
+
+            _shapes[text] = shaped;
+        }
+
+        return shaped;
+    }
+
+    private ShapedText ShapeCore(string text)
     {
         var glyphs = new List<ShapedGlyph>(text.Length);
         var mappings = new List<(int Glyph, string Text)>(text.Length);

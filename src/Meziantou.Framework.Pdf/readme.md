@@ -5,14 +5,19 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
 - **Object model**: `PdfDictionary`, `PdfArray`, `PdfStream`, `PdfName`, `PdfString`, numbers, references
   (`Meziantou.Framework.Pdf.Objects`), with the indirect objects of a document in `PdfDocument.Objects`
 - **Reader**: cross-reference tables and streams, hybrid files, object streams, incremental updates, linearized files;
-  the files whose cross-reference information is wrong are repaired by scanning them (`PdfDocument.IsRepaired`)
+  the files whose cross-reference information is wrong are repaired by scanning them (`PdfDocument.IsRepaired`); a
+  seekable stream is read on demand (`PdfDocument.OpenSeekable`), without copying the file to memory, so that a file
+  can be larger than 2 GB; the encrypted payload of PDF 2.0 unencrypted wrapper documents (`PdfDocument.EncryptedPayload`)
 - **Filters**: `FlateDecode` and `LZWDecode` (with the PNG and TIFF predictors), `ASCIIHexDecode`, `ASCII85Decode`,
   `RunLengthDecode`, `CCITTFaxDecode` (Group 3 and Group 4), `JBIG2Decode` (generic, refinement, text and halftone
   regions, symbol and pattern dictionaries, arithmetic, MMR and Huffman coding); `DCTDecode` and `JPXDecode` through the
-  codecs of `Meziantou.Framework.Imaging`
+  codecs of `Meziantou.Framework.Imaging` (with the `/ColorTransform` of `DCTDecode`); the damaged data of a stream gives
+  the bytes decoded before the damage
 - **Writer**: full saves (the objects reachable from the catalog, renumbered, with object streams and a
-  cross-reference stream, or a cross-reference table) and incremental updates that keep the bytes of the original file;
-  the output depends only on the document and the options, except the random keys and vectors of the encryption
+  cross-reference stream, or a cross-reference table), linearized files for fast web view (`PdfSaveOptions.Linearize`)
+  and incremental updates that keep the bytes of the original file (with object streams for files that have
+  cross-reference streams); the file is streamed to the output through a bounded buffer; the output depends only on the
+  document and the options, except the random keys and vectors of the encryption
 - **Conformance**: PDF/A-1 (b, a), PDF/A-2 (b, u, a), PDF/A-3 (b, u, a) and PDF/A-4 (4, 4e, 4f) output
   (`PdfDocument.PdfAConformance`), PDF/UA-1 and PDF/UA-2 (`PdfDocument.PdfUAConformance`), and Tagged PDF: a structure tree with a role map, alternate descriptions,
   languages and artifacts (`PdfDocument.StructureTree`, `PdfContentBuilder.BeginStructureElement`); the documents are
@@ -22,15 +27,21 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
 - **Document API**: pages (`PdfDocument.Pages`), a content builder for paths, colors, text, images and marked content
   (`PdfPage.CreateContentBuilder`), shadings and functions (`PdfShading`, `PdfFunction`), patterns, form XObjects,
   transparency (`PdfExtGState`: alpha, blend modes, soft masks; transparency groups), the standard 14 fonts and embedded TrueType and OpenType fonts, images (`PdfImage`: JPEG files as they are, other images
-  of `Meziantou.Framework.Imaging` with their alpha channel and ICC profile), the document information and the XMP
-  metadata, the outline (bookmarks), links and annotations, embedded files (`PdfDocument.EmbeddedFiles`, file
-  attachment annotations), text extraction (`PdfPage.ExtractText`)
+  of `Meziantou.Framework.Imaging` with their alpha channel and ICC profile, compressed without loss with the PNG predictors or as JPEG, black and white images compressed with CCITT Group 4 or JBIG2), the document information and the XMP
+  metadata, the outline (bookmarks), links and annotations (notes, text markups, free texts, stamps, flags), page
+  labels, embedded files (`PdfDocument.EmbeddedFiles`, file attachment annotations), text boxes
+  (`PdfContentBuilder.DrawTextBox`), pages moved, duplicated, removed and imported from other documents (merging), a
+  page as a form XObject, the page boxes and display coordinates, text extraction (`PdfPage.ExtractText`), positioned
+  text (`PdfPage.ExtractTextLayout`: lines, words and glyphs with their bounding boxes), image extraction
+  (`PdfPage.GetImages`), interactive forms read, filled and flattened (`PdfDocument.Form`)
 - **Rendering** (`Meziantou.Framework.Pdf.Rendering`): the pages drawn to images on the canvas of
   `Meziantou.Framework.Imaging`: paths, clipping, optional content and annotation appearances; embedded TrueType, CFF,
   Type 1 and Type 3 fonts and substituted fonts; every color space and image filter; functions, the seven shading types
   and tiling patterns; transparency groups, soft masks and blend modes
-- **Signatures** (`Meziantou.Framework.Pdf.Signing`): PAdES baseline B-B and B-T signatures (CAdES detached signatures,
-  RFC 3161 time stamps), appended as incremental updates, and the verification of the signatures of a document
+- **Signatures** (`Meziantou.Framework.Pdf.Signing`): PAdES baseline B-B, B-T, B-LT and B-LTA signatures (CAdES
+  detached signatures, RFC 3161 time stamps, the document security store, document time stamps), certification and
+  field locks, visible signatures, appended as incremental updates, and the verification of the signatures of a
+  document and of the changes made after them
 
 ## Create a document
 
@@ -123,6 +134,18 @@ builder.SetFillPattern(checkerboard).Rectangle(300, 600, 200, 100).Fill();
 ```csharp
 var document = PdfDocument.Open(file);
 var pageCount = document.Pages.Count;
+var text = document.Pages[0].ExtractText();
+```
+<!-- endref -->
+
+`PdfDocument.OpenSeekable` reads the objects of a seekable stream when they are first used: the stream belongs to the
+caller and stays open while the document is used.
+
+<!-- ref:../../tests/Meziantou.Framework.Pdf.Tests/PdfDocumentTests.cs;region=Pdf_OpenSeekable;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The objects are read from the stream when they are first used: it stays open while the document is used
+using var stream = File.OpenRead(path);
+var document = PdfDocument.OpenSeekable(stream);
 var text = document.Pages[0].ExtractText();
 ```
 <!-- endref -->
@@ -280,6 +303,52 @@ cover.Annotations.AddLink(new PdfRectangle(50, 100, 250, 130), new Uri("https://
 ```
 <!-- endref -->
 
+## Merge documents
+
+`PdfDocument.Pages.Add` with a page of another document copies the page and the objects it uses; the objects shared by
+the pages of a document, such as the fonts, are copied once.
+
+<!-- ref:../../tests/Meziantou.Framework.Pdf.Tests/PdfPageTests.cs;region=Pdf_MergeDocuments;format=md-fenced-code-block;dedent=true -->
+```csharp
+public static byte[] Merge(IEnumerable<byte[]> files)
+{
+    var result = new PdfDocument();
+    foreach (var file in files)
+    {
+        // The source documents must stay open until the result is saved
+        var source = PdfDocument.Open(file);
+        foreach (var page in source.Pages)
+        {
+            result.Pages.Add(page);
+        }
+    }
+
+    return result.ToByteArray();
+}
+```
+<!-- endref -->
+
+## Fill a form
+
+`PdfDocument.Form` reads the fields of an interactive form. Setting a value writes the value and the appearance of the
+widgets; `PdfInteractiveForm.Flatten` draws the fields on their pages and removes them.
+
+<!-- ref:../../tests/Meziantou.Framework.Pdf.Tests/PdfInteractiveFormTests.cs;region=Pdf_FillForm;format=md-fenced-code-block;dedent=true -->
+```csharp
+var document = PdfDocument.Open(data);
+var form = document.Form;
+form.FindField("name")!.Value = "Jane Doe";
+((PdfCheckBoxField)form.FindField("agree")!).IsChecked = true;
+form.FindField("size")!.Value = "L";
+form.FindField("country")!.Value = "de";
+((PdfChoiceField)form.FindField("colors")!).SetSelectedValues(["red", "blue"]);
+
+// The values and the appearances of the fields are appended: the signatures stay valid
+using var output = new MemoryStream();
+document.SaveIncremental(output);
+```
+<!-- endref -->
+
 ## Embedded files
 
 `PdfDocument.EmbeddedFiles` holds the files of the document (the `/EmbeddedFiles` name tree), which the save also
@@ -344,10 +413,18 @@ image.Save(png, new Imaging.Formats.PngEncoder());
 <!-- endref -->
 
 The image is the crop box of the page, rotated as the page is shown, on a white background (`PdfRenderOptions.Background`,
-`null` for a transparent one). `PdfRenderOptions.RenderAnnotations` draws the appearances of the annotations.
+`null` for a transparent one). `PdfRenderOptions.RenderAnnotations` draws the appearances of the annotations, and
+generates one for the annotations and the form fields that have none. `PdfRenderOptions.Region` renders part of the
+page, `Width` and `Height` fit it to a size in pixels instead of `Dpi`, and `PathAntialiasing` and `TextAntialiasing`
+turn the antialiasing off. `PdfRenderOptions.Intent` renders for viewing, printing or exporting (the annotations with
+the Print flag, the layers whose usage is for printing), `OptionalContentConfiguration` selects a configuration of the
+layers and `OptionalContentGroupStates` turns layers on or off by their name. An overload of `RenderPage` takes a
+`CancellationToken`, and another draws on an image of the application, of any pixel format (`GetImageSize` gives its
+size).
 
 - **Graphics**: paths, line styles and dashes, clipping (paths and text), the page boxes and rotation, optional content
-  (layers), the appearance streams of the annotations
+  (layers, their configurations, intents and usage), the appearance streams of the annotations (as transparency groups,
+  with their constant opacity and the NoZoom and NoRotate flags)
 - **Text**: embedded TrueType, CFF (`Type1C`, `CIDFontType0C`, OpenType) and Type 1 fonts, Type 3 fonts, the fonts that
   are not embedded replaced by a font of the system or of the application, the text rendering modes
 - **Colors**: the device color spaces, `ICCBased` (through the ICC profiles of Imaging), `CalRGB`, `CalGray`, `Lab`,
@@ -361,8 +438,10 @@ The image is the crop box of the page, rotated as the page is shown, on a white 
   masks and the page group included), soft masks (alpha and luminosity, with their backdrop and transfer function), the
   transfer functions of the graphics state. In a knockout group, each painting operator, image, shading, text-showing
   operator and group is an element; the fill and the stroke of a path are one element, whose stroke composites over its
-  fill, and the alpha of a paint of an element counts as its shape. A transfer function applies to the result of a
-  group
+  fill, and the alpha of a paint of an element counts as its shape; the alpha-is-shape parameter (`AIS`) makes the
+  constant alpha and the soft mask shape. The glyphs of a text-showing operator knock out one another, unless the text
+  knockout parameter (`TK`) is false. A transfer function applies to the result of a group. Overprint and halftones are
+  not simulated
 
 ### Fonts that are not embedded
 
@@ -377,7 +456,8 @@ A font that the document does not embed is replaced, in this order, by:
 
 The bundled fonts (SIL Open Font License 1.1, see `THIRD-PARTY-NOTICES.md`) have the characters of the Latin encodings
 of PDF. With `UseSystemFonts` set to `false`, the rendering does not depend on the fonts of the machine. Symbol and
-ZapfDingbats are only replaced by the resolver or the fonts of the system.
+ZapfDingbats are only replaced by the resolver or the fonts of the system. The glyphs of a replacement font are scaled
+horizontally to the widths of the document.
 
 ### Limits of the rendering
 
@@ -392,11 +472,15 @@ Digital signatures (ISO 32000-2, 12.8): PAdES baseline signatures (ETSI EN 319 1
 signatures of a document.
 
 - **Signing**: B-B, a CAdES detached signature (`ETSI.CAdES.detached`) with the ESS signing certificate, and B-T, its
-  RFC 3161 time stamp; RSA and ECDSA keys, SHA-256, SHA-384 and SHA-512; the signature is appended as an incremental
-  update, so that the signatures of the document stay valid; encrypted documents are signed with their keys
-- **Verification**: the integrity of the bytes each signature covers, the CMS signature, the time stamps, and whether
-  the signature covers the whole file (`adbe.pkcs7.detached`, `ETSI.CAdES.detached`, `adbe.pkcs7.sha1`, document time
-  stamps `ETSI.RFC3161`)
+  RFC 3161 time stamp; RSA (PKCS #1 v1.5 or PSS) and ECDSA keys, SHA-256, SHA-384 and SHA-512; certification
+  signatures (DocMDP) and field locks (FieldMDP); visible signatures (`PdfSignatureAppearance`); the validation data of
+  B-LT (`PdfSigner.AddValidationData`) and the document time stamps of B-LTA (`PdfSigner.TimestampAsync`); every
+  operation is appended as an incremental update, so that the signatures of the document stay valid; encrypted
+  documents are signed with their keys
+- **Verification**: the integrity of the bytes each signature covers, the CMS signature (one signer), the ESS signing
+  certificate, every time stamp, whether the signature covers the whole file, and the changes made after it compared
+  with its certification and its field lock (`adbe.pkcs7.detached`, `ETSI.CAdES.detached`, `adbe.pkcs7.sha1`, document
+  time stamps `ETSI.RFC3161`); the information of a signature is read from the revision it signs
 
 <!-- ref:../../tests/Meziantou.Framework.Pdf.Tests/PdfSignerTests.cs;region=PdfSigning_Sign;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -412,8 +496,11 @@ var isValid = signature.IsValid && signature.CoversWholeDocument;
 ```
 <!-- endref -->
 
-The signature field is invisible, on the first page. `PdfSignatureOptions` sets the information of the signature
-dictionary (reason, location, contact, name, time) and the other certificates of the chain to embed.
+The signature field is invisible, on the first page, unless `PdfSignatureOptions.Appearance` places it. The field name
+is unique: an existing signature field that is not signed yet is signed, another existing name throws.
+`PdfSignatureOptions` also sets the information of the signature dictionary (reason, location, contact, name, time),
+the other certificates of the chain to embed, the certification level and the field lock. A document certified with
+`PdfCertificationLevel.NoChanges` cannot be signed again.
 
 ### Time stamp a signature (PAdES B-T)
 
@@ -434,14 +521,14 @@ var signed = await PdfSigner.SignAsync(document, options, XunitCancellationToken
 `PdfSignatureVerifier` checks that the document was not modified and that the signature matches the certificate it
 embeds; it does not decide whether the signer is trusted. Build the chain of `PdfSignatureInfo.Certificate` with
 `X509Chain`, with the trust anchors and the revocation policy of the application, and check `CoversWholeDocument`:
-a signature that does not cover the whole file was followed by incremental updates.
+a signature that does not cover the whole file was followed by incremental updates, which `Modifications` lists.
 
 ## Errors and limits
 
 | Situation | Exception |
 | --- | --- |
 | The data is not a PDF document, or it is damaged beyond repair | `InvalidPdfContentException` |
-| The document uses a feature the library does not support (a security handler other than the standard one, CMYK JPEG images), or a font cannot be embedded (CFF2 or bitmap outlines, a license that does not allow it) | `UnsupportedPdfFeatureException` |
+| The document uses a feature the library does not support (a security handler other than the standard one, a stream filter it does not know, CMYK JPEG data decoded with `PdfStream.GetDecodedData`), or a font cannot be embedded (CFF2 or bitmap outlines, a license that does not allow it) | `UnsupportedPdfFeatureException` |
 | The document exceeds a limit of `PdfReadOptions` (decoded length of a stream, nesting depth) | `PdfResourceLimitException` |
 | The document is encrypted, and `PdfReadOptions.Password` is neither its user nor its owner password | `PdfPasswordException` |
 
@@ -458,4 +545,8 @@ specification says; a content stream that cannot be decoded throws when its data
   content (the order of the structure, the colors of the annotations of PDF/A-1, the values of the numbers) follows
   the other rules of the level.
 - The text extraction follows the order of the content and joins the glyphs into lines by their positions; it does
-  not detect columns.
+  not detect columns. The predefined CMaps other than `Identity-H` and `Identity-V` split the codes and give their
+  text, but not their CIDs: their glyphs get the default width of the font.
+- The API reads, fills and flattens the fields of interactive forms, but does not create them. The text boxes break the
+  lines at the spaces, without the Unicode line breaking rules nor hyphenation.
+- The renderer composites in sRGB: overprint and halftones are not simulated.

@@ -89,11 +89,19 @@ internal abstract class RenderFunction
 
         outputs.Clear();
         EvaluateCore(clipped[..InputCount], outputs);
-        if (_range is not null)
+        var rangeCount = _range is null ? 0 : Math.Min(outputs.Length, _range.Length / 2);
+        for (var i = 0; i < rangeCount; i++)
         {
-            for (var i = 0; i < Math.Min(outputs.Length, _range.Length / 2); i++)
+            outputs[i] = Math.Clamp(double.IsNaN(outputs[i]) ? _range![2 * i] : outputs[i], Math.Min(_range![2 * i], _range[(2 * i) + 1]), Math.Max(_range[2 * i], _range[(2 * i) + 1]));
+        }
+
+        // An output that is not a number (an input outside the domain of the function, 7.10.1) is 0, and an infinite
+        // output is the largest number: the colors computed from them stay numbers
+        for (var i = rangeCount; i < outputs.Length; i++)
+        {
+            if (!double.IsFinite(outputs[i]))
             {
-                outputs[i] = Math.Clamp(double.IsNaN(outputs[i]) ? _range[2 * i] : outputs[i], Math.Min(_range[2 * i], _range[(2 * i) + 1]), Math.Max(_range[2 * i], _range[(2 * i) + 1]));
+                outputs[i] = double.IsNaN(outputs[i]) ? 0 : Math.Clamp(outputs[i], -double.MaxValue, double.MaxValue);
             }
         }
     }
@@ -301,7 +309,14 @@ internal abstract class RenderFunction
 
         private protected override void EvaluateCore(ReadOnlySpan<double> inputs, Span<double> outputs)
         {
+            // x must not be negative when the exponent is not an integer (7.10.3): such an x is outside the domain of the
+            // function, and is taken as its nearest value inside it, 0
             var x = inputs.Length > 0 ? inputs[0] : 0;
+            if (x < 0 && !double.IsInteger(exponent))
+            {
+                x = 0;
+            }
+
             var power = exponent == 1 ? x : Math.Pow(x, exponent);
             for (var i = 0; i < c0.Length && i < outputs.Length; i++)
             {

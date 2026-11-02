@@ -1,6 +1,6 @@
 ---
 title: Images
-description: Draw JPEG, PNG and other images in a page, keep their aspect ratio and their transparency, and reuse them.
+description: Draw JPEG, PNG, black and white and other images in a page, keep their aspect ratio and their transparency, and reuse them.
 ---
 
 [PdfImage.Load](cref:Meziantou.Framework.Pdf.PdfImage.Load) reads an image file, and [DrawImage](cref:Meziantou.Framework.Pdf.PdfContentBuilder.DrawImage) draws it in a rectangle of the page:
@@ -41,9 +41,11 @@ public static void DrawImage(string imagePath, string outputPath)
 | `PdfImage.Load(path)`, `PdfImage.Load(bytes)` | A JPEG file as it is; any other format `Meziantou.Framework.Imaging` reads (PNG, WebP, GIF, TIFF...) decoded, as with [FromImage](cref:Meziantou.Framework.Pdf.PdfImage.FromImage) |
 | `PdfImage.FromJpeg(bytes)` | A JPEG file as it is (gray, YCbCr or CMYK, 8 bits per sample), without decoding it |
 | `PdfImage.FromImage(image)` | The first frame of an [Image](cref:Meziantou.Framework.Imaging.Image) of `Meziantou.Framework.Imaging`, whose pixels are copied |
+| `PdfImage.FromImageAsJpeg(image, encoder)` | The first frame of an [Image](cref:Meziantou.Framework.Imaging.Image), compressed as JPEG: see [Photos](#photos) |
 
 - A JPEG file is kept as it is: it is not decoded and compressed again, so no quality is lost.
-- The other images are stored as gray or RGB samples of 8 or 16 bits, compressed without loss. Their transparent pixels
+- The other images are stored as gray or RGB samples of 8 or 16 bits, compressed without loss. The save applies the PNG
+  predictors to the samples when they make them smaller, as they do for most photos and gradients. Their transparent pixels
   become a soft mask ([HasSoftMask](cref:Meziantou.Framework.Pdf.PdfImage.HasSoftMask)), so the page shows through them as in the example.
 - The ICC profile of an image is kept, so that its colors are shown as they were meant.
 - [FromImage](cref:Meziantou.Framework.Pdf.PdfImage.FromImage) throws `ArgumentException` for an image with floating-point pixels: convert it to an integer pixel format
@@ -51,3 +53,59 @@ public static void DrawImage(string imagePath, string outputPath)
 
 To resize, crop or convert an image before drawing it, process it with `Meziantou.Framework.Imaging`, then pass it to
 [FromImage](cref:Meziantou.Framework.Pdf.PdfImage.FromImage). A large photo drawn small still stores all its pixels: resize it to the resolution the page needs.
+
+## Photos
+
+The samples of a photo compressed without loss are large. [FromImageAsJpeg](cref:Meziantou.Framework.Pdf.PdfImage.FromImageAsJpeg) compresses the image as JPEG
+instead, with the settings of a [JpegEncoder](cref:Meziantou.Framework.Imaging.Formats.JpegEncoder) (quality, chroma subsampling, progressive coding):
+
+<!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfDocumentTests.cs;region=Pdf_FromImageAsJpeg;format=md-fenced-code-block;dedent=true -->
+```csharp
+private static void DrawPhotoAsJpeg(Image photo, string outputPath)
+{
+    // A photo is much smaller as JPEG than as samples compressed without loss; its transparency stays a soft mask
+    var image = PdfImage.FromImageAsJpeg(photo, new Imaging.Formats.JpegEncoder { Quality = 85 });
+
+    var document = new PdfDocument();
+    document.Pages.Add(new PdfSize(300, 150)).CreateContentBuilder().DrawImage(image, 10, 10, 128, 128);
+    document.Save(outputPath);
+}
+```
+<!-- endref -->
+
+- JPEG loses details, and blurs sharp edges: keep [FromImage](cref:Meziantou.Framework.Pdf.PdfImage.FromImage) for drawings, screenshots and text.
+- The samples of 16 bits are rounded to 8 bits, the precision of JPEG in PDF.
+- The transparent pixels still become a soft mask, compressed without loss, and the ICC profile of the image is kept.
+- A JPEG file you already have is better drawn with [Load](cref:Meziantou.Framework.Pdf.PdfImage.Load) or [FromJpeg](cref:Meziantou.Framework.Pdf.PdfImage.FromJpeg): it is kept as it is, without
+  a second loss.
+
+## Black and white images
+
+A scan, a fax or a line drawing has one bit per pixel. [FromBilevel](cref:Meziantou.Framework.Pdf.PdfImage.FromBilevel) stores it in one bit per pixel with a compression
+made for such images, which is much smaller than the gray samples of [FromImage](cref:Meziantou.Framework.Pdf.PdfImage.FromImage):
+
+<!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfDocumentTests.cs;region=PdfImage_FromBilevel;format=md-fenced-code-block;dedent=true -->
+```csharp
+// A 16 x 2 image, one bit per pixel: a set bit is a black pixel
+byte[] pixels = [0b1111_0000, 0b0000_1111, 0b1010_1010, 0b0101_0101];
+var image = PdfImage.FromBilevel(pixels, width: 16, height: 2, PdfBilevelCompression.CcittGroup4);
+
+var document = new PdfDocument();
+document.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawImage(image, 50, 700, 160, 20);
+var data = document.ToByteArray();
+```
+<!-- endref -->
+
+The pixels are the rows of the image from top to bottom, each of `(width + 7) / 8` bytes, the most significant bit of
+a byte first: a set bit is a black pixel. The bits after the last pixel of a row are ignored.
+
+| [PdfBilevelCompression](cref:Meziantou.Framework.Pdf.PdfBilevelCompression) | Stores |
+| --- | --- |
+| [CcittGroup4](cref:Meziantou.Framework.Pdf.PdfBilevelCompression.CcittGroup4) (default) | The Group 4 coding of fax machines and scanners (`CCITTFaxDecode`), which every reader decodes |
+| [Jbig2](cref:Meziantou.Framework.Pdf.PdfBilevelCompression.Jbig2) | JBIG2 arithmetic coding (`JBIG2Decode`, PDF 1.4): usually smaller, especially for dithered images and halftones |
+| [Flate](cref:Meziantou.Framework.Pdf.PdfBilevelCompression.Flate) | The rows of bits compressed with `FlateDecode` |
+
+- Every compression is lossless: a reader shows the pixels of the image. The JBIG2 image is one generic region; the
+  symbol coding of text, which some encoders use to replace similar glyphs by one another, is not used.
+- The image is compressed when [FromBilevel](cref:Meziantou.Framework.Pdf.PdfImage.FromBilevel) is called. Group 4 coding supports images of up to 1048576 pixels per
+  row.

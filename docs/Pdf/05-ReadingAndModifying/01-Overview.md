@@ -22,8 +22,9 @@ var text = document.Pages[0].ExtractText();
   `ASCII85Decode`, `RunLengthDecode`, `CCITTFaxDecode`, `JBIG2Decode`, and `DCTDecode` and `JPXDecode` through the
   codecs of `Meziantou.Framework.Imaging`.
 - Encrypted documents of the standard security handler, with the user or the owner password.
-- Damaged files: a file whose cross-reference information is wrong is repaired by scanning it, and a stream whose length
-  is wrong ends where its data ends.
+- Damaged files: a file whose cross-reference information is wrong is repaired by scanning it, a stream whose length
+  is wrong ends where its data ends, and the damaged data of a filter (`FlateDecode`, `ASCII85Decode`, `ASCIIHexDecode`,
+  a truncated row of a predictor) gives the bytes decoded before the damage.
 
 The objects of a file are parsed when they are first used, not when the document is opened, and the document keeps the
 data of the file it was read from.
@@ -35,3 +36,7 @@ data of the file it was read from.
 - [Modifying documents](04-ModifyingDocuments.md): stamp the pages, add and remove pages, full and incremental saves.
 - [The object model](05-ObjectModel.md): read and change the objects of a document directly.
 - [Errors and limits](06-ErrorsAndLimits.md): the exceptions, and how to open the files of untrusted users.
+- [Managing pages](07-ManagingPages.md): move, duplicate, remove and merge pages, page boxes, display coordinates, and
+  stamp a page on others.
+- [Extracting images](08-ExtractingImages.md): the images of a page, where they are, and their pixels.
+- [Forms](09-Forms.md): read, fill and flatten the fields of an interactive form.

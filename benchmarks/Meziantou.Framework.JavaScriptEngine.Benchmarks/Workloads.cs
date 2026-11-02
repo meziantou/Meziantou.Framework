@@ -41,6 +41,28 @@ internal static class Workloads
             const lines = Array.from({ length: 1000 }, (_, i) => i % 3 === 0 ? 'user' + i + '@example.com' : 'not an email ' + i);
             function run() { let n = 0; const re = /^[\w.+-]+@[\w-]+\.[\w.]+$/; for (const line of lines) { if (re.test(line)) n++; } return n + 'a-b_c d'.replace(/[-_ ]/g, '').length; }
             """,
+        ["RegExpTrailingAnchor"] = """
+            const spaces = ' '.repeat(20000) + 'x';
+            const words = 'word '.repeat(4000) + '!';
+            function run() { return [/\s+$/.test(spaces), /[a-z]+\d$/.test(words), /\s*;$/m.test(spaces)].join(); }
+            """,
+        ["RegExpSearch"] = """
+            const text = 'lorem ipsum dolor sit amet '.repeat(40000) + 'Needle 42';
+            function run() { return [/[#@]/.test(text), /needle/i.test(text), /Needle \d+/.test(text), /NEEDLE/iu.test(text)].join(); }
+            """,
+        ["RegExpThroughput"] = """
+            const text = 'lorem ipsum dolor sit amet, consectetur 12345 adipiscing; "quoted text" elit. '.repeat(2000);
+            const re = /[0-9]{3}-[0-9]{4}/;
+            const samples = ['call 555-1234 now', 'no number here at all', 'x'];
+            function run() {
+              let n = 0;
+              for (let i = 0; i < 3000; i++) if (re.test(samples[i % 3])) n++;
+              n += text.match(/\w+/g).length + text.match(/"[^"]*"/g).length;
+              n += text.replace(/\s+/g, ' ').length + text.split(/[,;]\s*/).length;
+              for (const m of text.matchAll(/([a-z]+) ([a-z]+)/g)) n += m[1].length;
+              return n;
+            }
+            """,
         ["Closures"] = """
             function counter() { let c = 0; return { inc: () => ++c, get: () => c }; }
             function run() { const counters = []; for (let i = 0; i < 1000; i++) counters.push(counter()); let s = 0; for (const c of counters) { c.inc(); c.inc(); s += c.get(); } return s; }

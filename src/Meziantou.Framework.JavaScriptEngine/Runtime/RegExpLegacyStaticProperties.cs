@@ -12,6 +12,9 @@ internal sealed class RegExpLegacyStaticProperties
     private string? _matchInput = "";
     private int[]? _captures;
 
+    // The array of the last match: the slots are copied, as the matcher can reuse its array
+    private int[]? _buffer;
+
     /// <summary>UpdateLegacyRegExpStaticProperties(%RegExp%, S, startIndex, endIndex, capturedValues)</summary>
     /// <param name="input">S</param>
     /// <param name="captures">The capture slots of the match: the start index, the end index, then the groups.</param>
@@ -19,7 +22,13 @@ internal sealed class RegExpLegacyStaticProperties
     {
         _input = input;
         _matchInput = input;
-        _captures = captures;
+        if (_buffer is null || _buffer.Length != captures.Length)
+        {
+            _buffer = new int[captures.Length];
+        }
+
+        captures.CopyTo(_buffer, 0);
+        _captures = _buffer;
     }
 
     /// <summary>InvalidateLegacyRegExpStaticProperties(%RegExp%)</summary>

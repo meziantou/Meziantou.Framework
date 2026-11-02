@@ -35,6 +35,12 @@ public sealed class QpdfTool
     /// <returns>The result: exit code 0 without warning, 3 with warnings, 2 with errors.</returns>
     public Task<ProcessResult> CheckAsync(string path, CancellationToken cancellationToken) => ProcessRunner.RunAsync(Path, ["--check", path], cancellationToken);
 
+    /// <summary>Checks the linearization of a file and its hint tables (<c>qpdf --check-linearization</c>).</summary>
+    /// <param name="path">The path of the file.</param>
+    /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+    /// <returns>The result of the process: exit code 0 and no warning when the file is linearized correctly.</returns>
+    public Task<ProcessResult> CheckLinearizationAsync(string path, CancellationToken cancellationToken) => ProcessRunner.RunAsync(Path, ["--check-linearization", path], cancellationToken);
+
     /// <summary>Runs <c>qpdf --check</c> on an encrypted file, and <c>--show-encryption</c>.</summary>
     /// <param name="path">The file.</param>
     /// <param name="password">The user or owner password.</param>

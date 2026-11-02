@@ -12,6 +12,14 @@ internal sealed class RegExpRunner
     private const int MaxStackLength = 1 << 25; // 128 MB
     private const int MaxCachedStackLength = 1 << 16;
 
+    // The searches of a literal prefix or of the first characters scan the input in chunks of this length, and count
+    // one step per code unit, so that a long search checks the limits of the engine as backtracking does
+    private const int ScanChunkLength = 1 << 14;
+
+    // The scans check this many code units one at a time before they use a vectorized search, which costs more for a
+    // short run
+    private const int ScalarScanLength = 16;
+
     // The records of the backtracking stack: the values, then the tag on top
     private const int TagGoto = 0; // pc, pos
     private const int TagRestoreCapture = 1; // slot, value
@@ -59,7 +67,7 @@ internal sealed class RegExpRunner
         s_cached = runner;
     }
 
-    public int[]? Exec(RegExpProgram program, string input, int lastIndex, bool sticky, JsEngine? engine)
+    public int[]? Exec(RegExpProgram program, string input, int lastIndex, bool sticky, JsEngine? engine, int[]? destination)
     {
         _program = program;
         _input = input;
@@ -100,25 +108,20 @@ internal sealed class RegExpRunner
                 }
                 else if (search.Prefix is { } prefix)
                 {
-                    var found = input.AsSpan(start).IndexOf(prefix, StringComparison.Ordinal);
+                    var found = FindPrefix(prefix, search.PrefixIgnoreCase ? StringComparison.OrdinalIgnoreCase : StringComparison.Ordinal, start);
                     if (found < 0)
                         return null;
 
-                    if (found > 0)
+                    if (found > start)
                     {
-                        start += found;
+                        start = found;
                         index = start;
                     }
                 }
                 else if (search.FirstCharacters is { } firstCharacters)
                 {
-                    var next = start;
-                    while (next < length && !firstCharacters.Contains(input[next]))
-                    {
-                        next = Advance(input, next, unicode);
-                    }
-
-                    if (next >= length)
+                    var next = FindFirstCharacter(firstCharacters, start, unicode);
+                    if (next < 0)
                         return null; // the pattern cannot match the empty string
 
                     if (next != start)
@@ -134,7 +137,7 @@ internal sealed class RegExpRunner
                 // The start is the index of the first character of the match: when lastIndex is inside a surrogate
                 // pair, it is the index of the pair (as V8 does; the specification would report lastIndex, which
                 // can be after the end of an empty match)
-                var result = new int[slotCount];
+                var result = destination is not null && destination.Length == slotCount ? destination : new int[slotCount];
                 Array.Copy(_captures, result, slotCount);
                 return result;
             }
@@ -145,7 +148,7 @@ internal sealed class RegExpRunner
             if (search.SkipLeadingRun)
             {
                 var end = start;
-                ConsumeGreedy(program.Code, 4, ref end, int.MaxValue, 0, out _);
+                _budget -= ConsumeGreedy(program.Code, 4, ref end, int.MaxValue, 0, out _);
                 if (end > index)
                 {
                     index = end;
@@ -157,6 +160,86 @@ internal sealed class RegExpRunner
         }
 
         return null;
+    }
+
+    /// <summary>Gets the index of the first occurrence of the prefix at or after <paramref name="start"/>, or -1.</summary>
+    private int FindPrefix(string prefix, StringComparison comparison, int start)
+    {
+        var input = _input;
+        var pos = start;
+        while (true)
+        {
+            var remaining = input.Length - pos;
+            if (remaining < prefix.Length)
+                return -1;
+
+            // Consecutive chunks overlap so that an occurrence across two chunks is found
+            var length = Math.Min(remaining, ScanChunkLength + prefix.Length - 1);
+            var found = input.AsSpan(pos, length).IndexOf(prefix, comparison);
+            if (found >= 0)
+            {
+                ChargeScan(found);
+                return pos + found;
+            }
+
+            var scanned = length - prefix.Length + 1;
+            pos += scanned;
+            ChargeScan(scanned);
+        }
+    }
+
+    /// <summary>
+    /// Gets the index of the first code unit of <paramref name="characters"/> at or after <paramref name="start"/> (a
+    /// character boundary), skipping the low surrogates of the pairs under "u" or "v", or -1.
+    /// </summary>
+    private int FindFirstCharacter(RegExpCharClass characters, int start, bool unicode)
+    {
+        var input = _input;
+        var scalarEnd = Math.Min(input.Length, start + ScalarScanLength);
+        for (var i = start; i < scalarEnd; i++)
+        {
+            if (characters.Contains(input[i]) && !(unicode && i > start && char.IsLowSurrogate(input[i]) && char.IsHighSurrogate(input[i - 1])))
+            {
+                ChargeScan(i - start + 1);
+                return i;
+            }
+        }
+
+        ChargeScan(scalarEnd - start);
+        var pos = scalarEnd;
+        while (pos < input.Length)
+        {
+            var length = Math.Min(input.Length - pos, ScanChunkLength);
+            var found = characters.IndexOfAny(input.AsSpan(pos, length));
+            if (found < 0)
+            {
+                pos += length;
+                ChargeScan(length);
+                continue;
+            }
+
+            var index = pos + found;
+            ChargeScan(found + 1);
+            if (unicode && index > start && char.IsLowSurrogate(input[index]) && char.IsHighSurrogate(input[index - 1]))
+            {
+                pos = index + 1;
+                continue;
+            }
+
+            return index;
+        }
+
+        return -1;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void ChargeScan(int length)
+    {
+        _budget -= length;
+        if (_budget <= 0)
+        {
+            CheckBudget();
+        }
     }
 
     /// <summary>AdvanceStringIndex</summary>
@@ -676,10 +759,18 @@ internal sealed class RegExpRunner
                 {
                     var characterClass = _program.Classes[code[pc + 1]];
                     var limit = (int)Math.Min((uint)max, (uint)available);
+                    // Most runs are short: the bitmap first, then a vectorized search for a long run (\w+, [^"]*, ...)
                     count = 0;
-                    while (count < limit && characterClass.Contains(input[pos + count]))
+                    var scalarLimit = Math.Min(limit, ScalarScanLength);
+                    while (count < scalarLimit && characterClass.Contains(input[pos + count]))
                     {
                         count++;
+                    }
+
+                    if (count == ScalarScanLength && limit > ScalarScanLength)
+                    {
+                        var rest = characterClass.IndexOfAnyExcept(input.AsSpan(pos + ScalarScanLength, limit - ScalarScanLength));
+                        count = rest < 0 ? limit : ScalarScanLength + rest;
                     }
 
                     break;
@@ -1094,6 +1185,9 @@ internal sealed class RegExpRunner
             ThrowStackOverflow();
         }
 
+        // The limits are otherwise checked every few tens of thousands of steps: a deep backtracking could allocate a
+        // stack of up to 128 MB beyond the memory limit before the next check
+        _engine?.EnsureCanAllocate((long)length * sizeof(int));
         Array.Resize(ref _stack, length);
         return _stack;
     }

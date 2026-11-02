@@ -69,7 +69,66 @@ internal sealed class FormattedNumberParts
         }
     }
 
-    public override string ToString() => Concat(ToList());
+    /// <summary>Concatenates the parts (merging the literals does not change the text, so the parts are not merged).</summary>
+    public override string ToString()
+    {
+        var length = GetLength(OuterPrefix) + GetLength(OuterSuffix);
+        if (!OmitNumber)
+        {
+            length += GetLength(MiddlePrefix) + GetLength(InnerPrefix) + GetLength(Number) + GetLength(InnerSuffix) + GetLength(MiddleSuffix);
+        }
+
+        return string.Create(length, this, static (span, parts) =>
+        {
+            var position = 0;
+            Append(span, ref position, parts.OuterPrefix);
+            if (!parts.OmitNumber)
+            {
+                Append(span, ref position, parts.MiddlePrefix);
+                Append(span, ref position, parts.InnerPrefix);
+                Append(span, ref position, parts.Number);
+                Append(span, ref position, parts.InnerSuffix);
+                Append(span, ref position, parts.MiddleSuffix);
+            }
+
+            Append(span, ref position, parts.OuterSuffix);
+        });
+
+        static int GetLength(List<NumberPart> parts)
+        {
+            var result = 0;
+            foreach (var part in parts)
+            {
+                result += part.Value.Length;
+            }
+
+            return result;
+        }
+
+        static void Append(Span<char> destination, ref int position, List<NumberPart> parts)
+        {
+            foreach (var part in parts)
+            {
+                part.Value.CopyTo(destination[position..]);
+                position += part.Value.Length;
+            }
+        }
+    }
+
+    /// <summary>Resets the instance, to reuse it for another number.</summary>
+    public void Clear()
+    {
+        OuterPrefix.Clear();
+        MiddlePrefix.Clear();
+        InnerPrefix.Clear();
+        Number.Clear();
+        InnerSuffix.Clear();
+        MiddleSuffix.Clear();
+        OuterSuffix.Clear();
+        OmitNumber = false;
+        PluralCategory = "other";
+        SignIndex = 0;
+    }
 
     public static string Concat(List<NumberPart> parts)
     {
@@ -96,14 +155,40 @@ internal static class NumberFormatter
         Approximately,
     }
 
-    public static string Format(JsNumberFormatObject nf, IntlDecimal x) => PartitionNumberPattern(nf, x).ToString();
+    /// <summary>The parts reused by <see cref="Format"/>: format() needs only the text, not the parts.</summary>
+    [ThreadStatic]
+    private static FormattedNumberParts? s_cachedParts;
+
+    /// <summary>FormatNumeric(numberFormat, x)</summary>
+    public static string Format(JsNumberFormatObject nf, IntlDecimal x)
+    {
+        // Take the cached instance, so that a nested call (none today) would allocate its own
+        var parts = s_cachedParts ?? new FormattedNumberParts();
+        s_cachedParts = null;
+        try
+        {
+            PartitionNumberPattern(nf, x, parts, approximately: false);
+            return parts.ToString();
+        }
+        finally
+        {
+            parts.Clear();
+            s_cachedParts = parts;
+        }
+    }
 
     /// <summary>PartitionNumberPattern(numberFormat, x)</summary>
     public static FormattedNumberParts PartitionNumberPattern(JsNumberFormatObject nf, IntlDecimal x, bool approximately = false)
     {
+        var parts = new FormattedNumberParts();
+        PartitionNumberPattern(nf, x, parts, approximately);
+        return parts;
+    }
+
+    private static void PartitionNumberPattern(JsNumberFormatObject nf, IntlDecimal x, FormattedNumberParts parts, bool approximately)
+    {
         var symbols = nf.Symbols;
         var locale = nf.DataLocale;
-        var parts = new FormattedNumberParts();
         var rounded = x;
         string? compactPattern = null;
         var isCurrency = nf.Style is "currency";
@@ -291,8 +376,6 @@ internal static class NumberFormatter
             parts.OuterPrefix.RemoveAt(parts.OuterPrefix.Count - 1);
             parts.OmitNumber = true;
         }
-
-        return parts;
     }
 
     /// <summary>Adds the parts of the outer pattern: the unit pattern, or the currency name pattern.</summary>
@@ -703,26 +786,26 @@ internal static class NumberFormatter
         }
         else
         {
-            var groups = new List<string>();
-            var end = integer.Length;
-            groups.Add(integer[(end - primary)..end]);
-            end -= primary;
+            // The primary group is the last one, the digits before it are in groups of the secondary size, the first
+            // group can be shorter
+            var primaryStart = integer.Length - primary;
             var size = secondary > 0 ? secondary : primary;
-            while (end > 0)
+            var end = primaryStart % size;
+            if (end == 0)
             {
-                var start = Math.Max(0, end - size);
-                groups.Add(integer[start..end]);
-                end = start;
+                end = size;
             }
 
-            for (var i = groups.Count - 1; i >= 0; i--)
+            var start = 0;
+            while (start < primaryStart)
             {
-                target.Add(new NumberPart("integer", MapDigits(nf, groups[i])));
-                if (i > 0)
-                {
-                    target.Add(new NumberPart("group", groupSymbol));
-                }
+                target.Add(new NumberPart("integer", MapDigits(nf, integer[start..end])));
+                target.Add(new NumberPart("group", groupSymbol));
+                start = end;
+                end += size;
             }
+
+            target.Add(new NumberPart("integer", MapDigits(nf, integer[primaryStart..])));
         }
 
         if (fraction is not null)

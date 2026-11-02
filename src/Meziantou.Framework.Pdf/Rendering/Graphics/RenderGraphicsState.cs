@@ -43,6 +43,12 @@ internal sealed class RenderGraphicsState
 
     public BlendMode BlendMode { get; set; }
 
+    /// <summary>Gets or sets whether the constant alphas and the soft mask are shape instead of opacity (11.3.7.2): in a knockout group, they say how much an element knocks out.</summary>
+    public bool AlphaIsShape { get; set; }
+
+    /// <summary>Gets or sets whether the glyphs of a text knock out one another instead of compositing with one another (9.3.8).</summary>
+    public bool TextKnockout { get; set; } = true;
+
     /// <summary>Gets or sets the soft mask: its dictionary and the matrix that was current when it was set (11.6.5.2).</summary>
     public (PdfDictionary Mask, PdfMatrix Matrix)? SoftMask { get; set; }
 

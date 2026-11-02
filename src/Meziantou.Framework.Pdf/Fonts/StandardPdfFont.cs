@@ -1,6 +1,9 @@
+using System.Buffers;
 using System.Globalization;
+using System.Text;
 using Meziantou.Framework.Fonts;
 using Meziantou.Framework.Pdf.Objects;
+using Meziantou.Framework.Pdf.Writing;
 
 namespace Meziantou.Framework.Pdf.Fonts;
 
@@ -46,25 +49,68 @@ internal sealed class StandardPdfFont : PdfFont
 
     internal override byte[] Encode(string text)
     {
+        // One byte per character: the array is the length of the text, shortened when it has surrogate pairs
+        var result = new byte[text.Length];
+        var length = Encode(text, result);
+        return length == result.Length ? result : result.AsSpan(0, length).ToArray();
+    }
+
+    internal override void WriteString(PdfByteWriter writer, string text)
+    {
+        const int MaxStackLength = 256;
+        byte[]? rented = null;
+        Span<byte> buffer = text.Length <= MaxStackLength ? stackalloc byte[MaxStackLength] : (rented = ArrayPool<byte>.Shared.Rent(text.Length));
+        try
+        {
+            var length = Encode(text, buffer);
+            PdfObjectSerializer.WriteString(writer, buffer[..length], hexadecimal: false);
+        }
+        finally
+        {
+            if (rented is not null)
+            {
+                ArrayPool<byte>.Shared.Return(rented);
+            }
+        }
+    }
+
+    internal override void ValidateText(string text)
+    {
         var codes = _encoding.Value.Codes;
-        var result = new List<byte>(text.Length);
+        foreach (var rune in text.EnumerateRunes())
+        {
+            if (!codes.ContainsKey(rune.Value))
+                throw CreateMissingGlyphException(rune, nameof(text));
+        }
+    }
+
+    /// <summary>Encodes a text into a buffer at least as long as the text; returns the count of bytes.</summary>
+    private int Encode(string text, Span<byte> destination)
+    {
+        var codes = _encoding.Value.Codes;
+        var length = 0;
         foreach (var rune in text.EnumerateRunes())
         {
             if (!codes.TryGetValue(rune.Value, out var code))
-                throw new ArgumentException(string.Create(CultureInfo.InvariantCulture, $"The character U+{rune.Value:X4} has no glyph in the standard font {PostScriptName}"), nameof(text));
+                throw CreateMissingGlyphException(rune, nameof(text));
 
-            result.Add(code);
+            destination[length++] = code;
         }
 
-        return [.. result];
+        return length;
     }
+
+    private ArgumentException CreateMissingGlyphException(Rune rune, string parameterName) => new(string.Create(CultureInfo.InvariantCulture, $"The character U+{rune.Value:X4} has no glyph in the standard font {PostScriptName}"), parameterName);
 
     private protected override double GetTextWidthInGlyphUnits(string text)
     {
-        var widths = _encoding.Value.Widths;
+        var (codes, widths) = _encoding.Value;
         double width = 0;
-        foreach (var code in Encode(text))
+        foreach (var rune in text.EnumerateRunes())
         {
+            if (!codes.TryGetValue(rune.Value, out var code))
+                throw CreateMissingGlyphException(rune, nameof(text));
+
             width += widths[code];
         }
 

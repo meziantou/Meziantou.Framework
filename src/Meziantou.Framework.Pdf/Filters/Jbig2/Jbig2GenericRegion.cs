@@ -26,9 +26,9 @@ internal static class Jbig2GenericRegion
     /// <param name="skip">The pixels that are not coded and are 0, or <see langword="null"/>.</param>
     /// <param name="adaptivePixels">The positions of the adaptive template pixels.</param>
     /// <param name="budget">The budget.</param>
+    /// <remarks>The work is charged as the rows are decoded: a row that repeats the row above is a copy of its bytes.</remarks>
     public static Jbig2Bitmap Decode(Jbig2ArithmeticDecoder decoder, byte[] contexts, int width, int height, int template, bool typicalPrediction, Jbig2Bitmap? skip, (int X, int Y)[] adaptivePixels, Jbig2Budget budget)
     {
-        budget.ChargeWork(width, height);
         var bitmap = new Jbig2Bitmap(width, height, budget);
         var typical = 0;
         for (var y = 0; y < height; y++)
@@ -39,6 +39,7 @@ internal static class Jbig2GenericRegion
                 if (typical != 0)
                 {
                     // The row is the row above, or white for the first row
+                    budget.ChargeWork(1 + (bitmap.Stride >> 3));
                     if (y > 0)
                     {
                         bitmap.CopyRow(y - 1, y);
@@ -48,6 +49,7 @@ internal static class Jbig2GenericRegion
                 }
             }
 
+            budget.ChargeWork(width + 1L);
             DecodeRow(decoder, contexts, bitmap, y, template, skip, adaptivePixels);
         }
 

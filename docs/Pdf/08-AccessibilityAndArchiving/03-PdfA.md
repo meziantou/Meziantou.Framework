@@ -20,8 +20,38 @@ var pdf = document.ToByteArray();
 <!-- endref -->
 
 The save checks what the library can check (no encryption, embedded fonts, a structure tree for the level A, the
-version), adds the sRGB output intent, and writes the XMP metadata from the document information with the
-identification of the level. Set at least a title.
+version, the actions, the annotations, the device color spaces), adds the sRGB output intent, and writes the XMP
+metadata from the document information with the identification of the level. Set at least a title.
+
+The XMP metadata keeps the properties of the existing packet that the information does not set, such as the custom
+schema of an electronic invoice and its PDF/A extension schema: see [Metadata](../04-MetadataAndNavigation/02-Metadata.md).
+A save that changes nothing in the metadata leaves its stream unchanged, so an incremental save does not rewrite it.
+
+## What the save checks
+
+Besides the rules of each level in the table below, the save refuses a document that:
+
+- has actions that the level does not allow: Launch, Sound, Movie, ResetForm, ImportData, Hide, Rendition, Trans,
+  SetOCGState and GoTo3DView; JavaScript before PDF/A-4; the named actions other than NextPage, PrevPage, FirstPage and
+  LastPage. The actions of the document, of the pages, of the annotations, of the outline and of the form are checked.
+- has additional actions (`/AA`) on the document, the pages or the fields (PDF/A-4: on the annotations, only those of
+  the cursor and the focus), or an action on a widget.
+- has an annotation without appearance (from PDF/A-2; the links, the popups and the annotations without size need none),
+  or with an appearance other than the normal one.
+- asks the viewer to generate the appearances of the form (`NeedAppearances`).
+- uses DeviceRGB or DeviceCMYK without an output intent of the same color space or a `DefaultRGB` or `DefaultCMYK`
+  color space. DeviceGray goes with any output intent. With the sRGB output intent, use an ICC-based color space for
+  CMYK colors.
+- uses a font without embedding it, including a font of the form that a viewer renders a field without appearance with.
+
+The save does not generate the missing appearances: it reports them.
+
+## Output intents
+
+A document without output intent gets the sRGB one. A document that already has output intents, such as the one of
+PDF/X with a CMYK profile, keeps them: the PDF/A output intent shares their profile, as PDF/A requires one profile for
+every output intent. The profile is then the color space of the output intent: DeviceCMYK goes with a CMYK profile,
+DeviceRGB does not.
 
 ## Choose the level
 

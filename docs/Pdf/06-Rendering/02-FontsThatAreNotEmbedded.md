@@ -16,6 +16,10 @@ reader to have, such as Arial or a corporate font. The renderer replaces each of
 The bundled fonts have the characters of the Latin encodings of PDF. Symbol and ZapfDingbats are only replaced by the
 resolver or by the fonts of the system.
 
+The document gives the width of each glyph, which places the next one. A glyph of the replacement font is scaled
+horizontally to that width, so that the glyphs of a wider or narrower font neither overlap nor leave gaps (the text of
+vertical writing is not scaled).
+
 ## Give the fonts of the application
 
 <!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfRendererTests.cs;region=PdfRendering_FontResolver;format=md-fenced-code-block;dedent=true -->

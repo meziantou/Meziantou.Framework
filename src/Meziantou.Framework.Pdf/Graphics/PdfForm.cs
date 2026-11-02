@@ -60,6 +60,16 @@ public sealed class PdfForm
         Reference = document.Objects.Add(_stream);
     }
 
+    /// <summary>Creates a form from a stream already filled: the content of a page (<see cref="PdfDocument.CreateFormFromPage"/>).</summary>
+    internal PdfForm(PdfDocument document, PdfStream stream, PdfRectangle boundingBox, PdfDictionary resources)
+    {
+        Document = document;
+        BoundingBox = boundingBox;
+        _stream = stream;
+        Resources = resources;
+        Reference = document.Objects.Add(stream);
+    }
+
     /// <summary>Gets the document of the form.</summary>
     public PdfDocument Document { get; }
 

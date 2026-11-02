@@ -266,6 +266,7 @@ public sealed class JsEngineEmbeddingTests
             MemoryLimit = 4,
             MaxStatements = 5,
             RegExpTimeout = TimeSpan.FromSeconds(6),
+            CanBlock = false,
             CancellationToken = new CancellationToken(canceled: true),
             TimeProvider = new FixedTimeProvider(),
             TimeZone = "Europe/Paris",

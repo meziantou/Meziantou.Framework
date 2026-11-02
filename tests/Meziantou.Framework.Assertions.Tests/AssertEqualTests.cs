@@ -1193,6 +1193,66 @@ public sealed class AssertEqualTests
         AssertionsAssert.NotEqual(1, Status.Active);
     }
 
+    [Fact]
+    public void RefStruct_Success()
+    {
+        var expected = new Temperature(20);
+        var actual = new Temperature(20);
+
+        AssertionsAssert.Equal(expected, actual);
+        AssertionsAssert.Equal(new Temperature(20), new Temperature(20));
+        AssertionsAssert.Equal(in expected, in actual);
+    }
+
+    [Fact]
+    public void RefStruct_Fails()
+    {
+        AssertionTestHelpers.Validate(() => AssertionsAssert.Equal(new Temperature(20), new Temperature(21), "custom message"), """
+            Assert.Equal() assertion failed.
+            Message: custom message
+            Expected expression: new Temperature(20)
+            Actual expression:   new Temperature(21)
+            Type: Meziantou.Framework.Assertions.Tests.Temperature (ref struct values cannot be displayed)
+            """);
+    }
+
+    [Fact]
+    public void RefStruct_DoesNotChangeTheOverloadOfOtherTypes()
+    {
+        var expected = new ImplicitlyConvertibleValue(1);
+        var actual = new ImplicitlyConvertibleValue(2);
+
+        // A struct that implements IEquatable<T> still uses the general overloads, which display the values
+        var exception = AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.Equal(expected, actual));
+        AssertionsAssert.DoesNotContain("ref struct", exception.Message);
+
+        exception = AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotEqual(expected, expected));
+        AssertionsAssert.DoesNotContain("ref struct", exception.Message);
+    }
+
+    [Fact]
+    public void NotEqual_RefStruct_Success()
+    {
+        var expected = new Temperature(20);
+        var actual = new Temperature(21);
+
+        AssertionsAssert.NotEqual(expected, actual);
+        AssertionsAssert.NotEqual(new Temperature(20), new Temperature(21));
+        AssertionsAssert.NotEqual(in expected, in actual);
+    }
+
+    [Fact]
+    public void NotEqual_RefStruct_Fails()
+    {
+        AssertionTestHelpers.Validate(() => AssertionsAssert.NotEqual(new Temperature(20), new Temperature(20), "custom message"), """
+            Assert.NotEqual() assertion failed.
+            Message: custom message
+            Expected expression: new Temperature(20)
+            Actual expression:   new Temperature(20)
+            Type: Meziantou.Framework.Assertions.Tests.Temperature (ref struct values cannot be displayed)
+            """);
+    }
+
     private enum Status
     {
         Active = 1,
@@ -2029,6 +2089,17 @@ public sealed class AssertEqualTests
         var expected = new DateTime(2026, 1, 1, 12, 0, 0, DateTimeKind.Utc);
         var actual = expected.AddMilliseconds(300);
         Assert.Equal(expected, actual, TimeSpan.FromSeconds(1));
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_EqualRefStructs()
+    {
+        #region Assert_EqualRefStructs
+        var expected = new Temperature(20);
+        var actual = new Temperature(20);
+        Assert.Equal(expected, actual);              // compared with IEquatable<Temperature>.Equals
+        Assert.NotEqual(new Temperature(25), actual);
         #endregion
     }
 }

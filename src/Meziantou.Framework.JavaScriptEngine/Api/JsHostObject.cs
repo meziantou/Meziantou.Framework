@@ -138,14 +138,7 @@ public class JsHostObject : JsObject
     /// <summary>OrdinaryOwnPropertyKeys (https://tc39.es/ecma262/#sec-ordinaryownpropertykeys), bypassing the overrides.</summary>
     public new IReadOnlyList<JsPropertyKey> OrdinaryOwnPropertyKeys()
     {
-        var keys = base.OrdinaryOwnPropertyKeys();
-        var result = new JsPropertyKey[keys.Count];
-        for (var i = 0; i < result.Length; i++)
-        {
-            result[i] = new JsPropertyKey(keys[i]);
-        }
-
-        return result;
+        return new JsPropertyKeyList(base.OrdinaryOwnPropertyKeys());
     }
 
     // ------------------------------------------------------------------------------------------------------------------
@@ -193,6 +186,11 @@ public class JsHostObject : JsObject
     internal sealed override List<PropertyKey> OwnPropertyKeys()
     {
         var keys = OwnPropertyKeysCore();
+
+        // The keys of the ordinary properties (the list may be kept by the host: it is copied)
+        if (keys is JsPropertyKeyList list)
+            return [.. list.Keys];
+
         var result = new List<PropertyKey>(keys.Count);
         foreach (var key in keys)
         {

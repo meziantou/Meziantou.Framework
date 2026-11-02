@@ -12,6 +12,9 @@
     <EmbeddedResource Include="Intl/TestData/*.gz" LogicalName="Intl.TestData.%(Filename)%(Extension)" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="../../common/ThreadCpuStopwatch.cs" Link="ThreadCpuStopwatch.cs" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="../../src/Meziantou.Framework.JavaScriptEngine/Meziantou.Framework.JavaScriptEngine.csproj" />
     <!-- The classes of the documentation site (docs/JavaScriptEngine), run by JsEngineTests.cs -->
     <ProjectReference Include="../../samples/Meziantou.Framework.JavaScriptEngine.Samples/Meziantou.Framework.JavaScriptEngine.Samples.csproj" />

@@ -709,4 +709,9 @@ internal enum OpCode
 
     /// <summary>operation ->: throws the resulting exception of the disposal, if any</summary>
     AsyncDisposeFinish,
+
+    // ---- Debugging ------------------------------------------------------------------------------------------------------
+
+    /// <summary>->: the start of a statement, for the debugger of the engine (only in the code compiled for an engine that has one)</summary>
+    DebugStatement,
 }

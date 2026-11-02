@@ -41,6 +41,31 @@ public sealed class JsEngineTests
     }
 
     [Fact]
+    public void GetOwnPropertyKeys_SnapshotInTheOrderOfTheSpecification()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
+
+        // Elements in the dense storage (0, 1, 10) and in the property table (5, 3)
+        var array = realm.Execute("const a = [0, 1]; a[10] = 10; Object.defineProperty(a, 5, { value: 5, enumerable: true }); a[3] = 3; a.x = 'x'; a[Symbol.iterator] = null; a").AsObject();
+        var keys = array.GetOwnPropertyKeys();
+        Assert.Equal(["0", "1", "3", "5", "10", "length", "x"], keys.Where(key => key.IsString).Select(key => key.AsString()));
+        Assert.True(keys[^1].IsSymbol);
+        Assert.True(array.SetProperty("y", 1));
+        Assert.Equal(8, keys.Count);
+
+        var host = new CallableHostObject(realm.ObjectPrototype);
+        Assert.True(host.SetProperty("b", 1));
+        Assert.True(host.SetProperty("0", 2));
+        Assert.True(host.SetProperty("a", 3));
+        Assert.Equal(["0", "b", "a"], host.GetOwnPropertyKeys().Select(key => key.AsString()));
+        Assert.Equal(["0", "b", "a"], host.OrdinaryOwnPropertyKeys().Select(key => key.AsString()));
+        realm.GlobalObject.SetProperty("host", host);
+        Assert.Equal("0,b,a", realm.Execute("Object.keys(host).join()").AsString());
+    }
+
+    [Fact]
     public void LazyProperties()
     {
         using var engine = new JsEngine();
@@ -899,6 +924,242 @@ public sealed class JsEngineTests
 
         Assert.Equal(49, realm.Execute("result").AsNumber());
         #endregion
+    }
+
+    [Fact]
+    public void Documentation_Debugger()
+    {
+        #region JavaScriptEngine_Debugger
+        var pauses = new List<string>();
+        JsEngine? engine = null;
+        var debugger = new BreakpointDebugger(debugEvent =>
+        {
+            // The script waits here: inspect its state, then return to resume it
+            var total = debugEvent.Realm.Execute("total").AsNumber();
+            pauses.Add($"{debugEvent.FunctionName}@{debugEvent.Location.Line} depth={debugEvent.CallDepth} total={total}");
+        });
+        debugger.Breakpoints.Add(("cart.js", 4));
+
+        using (engine = new JsEngine(new JsEngineOptions { Debugger = debugger }))
+        {
+            var realm = engine.CreateRealm();
+            realm.Execute("""
+                var total = 0;
+                function add(price, quantity) {
+                  if (quantity > 0) {
+                    total += price * quantity;
+                  }
+                }
+                add(10, 2);
+                add(5, 0);
+                add(3, 1);
+                debugger;
+                """, "cart.js");
+        }
+
+        Assert.Equal(["add@4 depth=2 total=0", "add@4 depth=2 total=20", "@10 depth=1 total=23"], pauses);
+
+        // Line 4 did not run for add(5, 0), the coverage has it once
+        Assert.Contains(("cart.js", 4), debugger.CoveredLines);
+        Assert.DoesNotContain(("cart.js", 2), debugger.CoveredLines);
+        #endregion
+    }
+
+    [Fact]
+    public void Debugger_StatementEvents()
+    {
+        var events = new List<string>();
+        using var engine = new JsEngine(new JsEngineOptions { Debugger = new DelegateDebugger(e => events.Add($"{e.Location.Line}:{e.Location.Column}:{e.CallDepth}:{e.FunctionName}")) });
+        var realm = engine.CreateRealm();
+        realm.Execute("function f(x) {\n  const y = x + 1;\n  return y;\n}\nlabel: for (let i = 0; i < 2; i++) { f(i); }\n;", "a.js");
+
+        Assert.Equal(["5:8:1:", "5:38:1:", "2:3:2:f", "3:3:2:f", "5:38:1:", "2:3:2:f", "3:3:2:f"], events);
+
+        // eval, new Function and the prepared scripts raise events too
+        events.Clear();
+        realm.Execute(JsPreparedScript.Parse("eval('1;'); new Function('return 2;')();", "p.js"));
+        Assert.Equal(["1:1:1:", "1:1:2:", "1:13:1:", "3:1:2:anonymous"], events);
+    }
+
+    [Fact]
+    public void Debugger_NoEventsWithoutDebuggerOrInCallbacks()
+    {
+        using (var engine = new JsEngine())
+        {
+            Assert.Equal(3, engine.CreateRealm().Execute("debugger; 1 + 2").AsNumber());
+        }
+
+        // The code of the callbacks raises no event and does not count in the limits of the script (7 callbacks x 50 iterations)
+        var count = 0;
+        var debugger = new DelegateDebugger(e =>
+        {
+            count++;
+            Assert.Equal(50, e.Realm.Execute("var n = 0; for (let i = 0; i < 50; i++) n++; n").AsNumber());
+        });
+
+        using (var engine = new JsEngine(new JsEngineOptions { MaxStatements = 100, Debugger = debugger }))
+        {
+            Assert.Equal(6, engine.CreateRealm().Execute("var s = 0; for (let i = 0; i < 4; i++) { s += i; } s").AsNumber());
+            Assert.Equal(7, count);
+        }
+    }
+
+    [Fact]
+    public void Debugger_PausedTimeIsNotCountedAndTerminationStopsTheScript()
+    {
+        using (var engine = new JsEngine(new JsEngineOptions { Timeout = TimeSpan.FromMilliseconds(100), Debugger = new DelegateDebugger(_ => Thread.Sleep(250)) }))
+        {
+            Assert.Equal(2, engine.CreateRealm().Execute("var x = 1;\nx + 1;").AsNumber());
+        }
+
+        using (var engine = new JsEngine(new JsEngineOptions { Debugger = new DelegateDebugger(e => { if (e.Location.Line == 2) throw new JsTerminationException(JsTerminationReason.Canceled, "Stopped by the debugger"); }) }))
+        {
+            var realm = engine.CreateRealm();
+            var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("globalThis.x = 1;\ntry { x = 2; } finally { x = 3; }"));
+            Assert.Equal("Stopped by the debugger", exception.Message);
+            Assert.Equal(1, realm.Execute("x").AsNumber());
+        }
+    }
+
+    [Fact]
+    public void Debugger_AsyncAndGeneratorStatementsRaiseEventsWhenTheyRun()
+    {
+        var events = new List<string>();
+        using var engine = new JsEngine(new JsEngineOptions { Debugger = new DelegateDebugger(e => events.Add($"{e.Location.Line}:{e.CallDepth}")) });
+        var realm = engine.CreateRealm();
+        realm.Execute("async function f() {\n  await 0;\n  globalThis.done = true;\n}\nf();\nfunction* g() {\n  yield 1;\n  yield 2;\n}\nvar it = g(); it.next();", "async.js");
+        Assert.Equal(["5:1", "2:2", "10:1", "10:1", "7:2"], events);
+
+        events.Clear();
+        engine.RunJobs();
+        Assert.Equal(["3:1"], events);
+
+        events.Clear();
+        realm.Execute("it.next();", "next.js");
+        Assert.Equal(["1:1", "8:2"], events);
+    }
+
+    [Fact]
+    public void Documentation_SourceMaps()
+    {
+        #region JavaScriptEngine_SourceMaps
+        // A bundle generated from src/check.ts and src/run.ts, and its source map
+        var bundle = """
+            function check(order) {
+              if (!order.id) throw new RangeError('The order has no id');
+            }
+            function run() { check({}); }
+            run();
+            """;
+        var sourceMap = JsSourceMap.Parse("""
+            {
+              "version": 3,
+              "file": "bundle.js",
+              "sourceRoot": "src",
+              "sources": ["check.ts", "run.ts"],
+              "mappings": "AAAA;AAGA,EAAE;AAEF;ACIA,iBACE;AAEF"
+            }
+            """, "dist/bundle.js.map");
+
+        var mapper = new JsSourceMapper();
+        mapper.Add("bundle.js", sourceMap);
+
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        var exception = Assert.Throws<JsException>(() => realm.Execute(bundle, "bundle.js"));
+
+        // The positions in the original sources
+        Assert.Equal(new JsSourceLocation("bundle.js", 2, 18), exception.Location);
+        Assert.Equal(new JsSourceLocation("dist/src/check.ts", 4, 3), mapper.MapLocation(exception.Location));
+        using (engine.Enter())
+        {
+            var stack = exception.Value.AsObject().GetErrorStack();
+            Assert.Equal("RangeError: The order has no id\n    at check (dist/src/check.ts:4:3)\n    at run (dist/src/run.ts:11:3)\n    at dist/src/run.ts:13:1", mapper.MapStackTrace(stack!));
+        }
+        #endregion
+    }
+
+    [Fact]
+    public void SourceMaps_UnmappedPositionsAreNotChanged()
+    {
+        var calls = new List<string>();
+        var mapper = new JsSourceMapper(url =>
+        {
+            calls.Add(url);
+            return url == "bundle.js" ? JsSourceMap.Parse("""{"version":3,"sources":["a.js"],"mappings":"AAAA;;A;CAAC"}""") : null;
+        });
+
+        // No source map for the URL, no URL, a line without mapping, a segment without source, a line after the mappings
+        Assert.Equal(new JsSourceLocation("other.js", 1, 1), mapper.MapLocation(new JsSourceLocation("other.js", 1, 1)));
+        Assert.Equal(new JsSourceLocation(null, 1, 1), mapper.MapLocation(new JsSourceLocation(null, 1, 1)));
+        Assert.Null(mapper.MapLocation(null));
+        Assert.Equal(new JsSourceLocation("bundle.js", 2, 5), mapper.MapLocation(new JsSourceLocation("bundle.js", 2, 5)));
+        Assert.Equal(new JsSourceLocation("bundle.js", 3, 5), mapper.MapLocation(new JsSourceLocation("bundle.js", 3, 5)));
+        Assert.Equal(new JsSourceLocation("bundle.js", 9, 1), mapper.MapLocation(new JsSourceLocation("bundle.js", 9, 1)));
+
+        // Before the first segment of a line, and after it
+        Assert.Equal(new JsSourceLocation("bundle.js", 4, 1), mapper.MapLocation(new JsSourceLocation("bundle.js", 4, 1)));
+        Assert.Equal(new JsSourceLocation("a.js", 1, 2), mapper.MapLocation(new JsSourceLocation("bundle.js", 4, 7)));
+        Assert.Equal(new JsSourceLocation("a.js", 1, 1), mapper.MapLocation(new JsSourceLocation("bundle.js", 1, 40)));
+
+        // The resolver is called once per URL; the other lines of a stack trace are kept
+        Assert.Equal("Error: x\n    at f (a.js:1:1)\n    at other.js:3:4\n    at <anonymous>:1:1\nnot a frame", mapper.MapStackTrace("Error: x\n    at f (bundle.js:1:3)\n    at other.js:3:4\n    at <anonymous>:1:1\nnot a frame"));
+        Assert.Equal(["other.js", "bundle.js", "<anonymous>"], calls);
+    }
+
+    [Fact]
+    public void SourceMaps_SectionsAndSourceUrls()
+    {
+        var sourceMap = JsSourceMap.Parse("""
+            {
+              "version": 3,
+              "sections": [
+                { "offset": { "line": 0, "column": 0 }, "map": { "version": 3, "sources": ["../lib/a.js"], "mappings": "AAAA" } },
+                { "offset": { "line": 1, "column": 10 }, "map": { "version": 3, "sourceRoot": "https://cdn.example.com/src/", "sources": ["b.js"], "mappings": "AACA" } }
+              ]
+            }
+            """, "https://example.com/dist/app.js.map");
+
+        Assert.Equal(["https://example.com/lib/a.js", "https://cdn.example.com/src/b.js"], sourceMap.Sources);
+        Assert.True(sourceMap.TryGetOriginalLocation(1, 5, out var location));
+        Assert.Equal(new JsSourceLocation("https://example.com/lib/a.js", 1, 1), location);
+        Assert.False(sourceMap.TryGetOriginalLocation(2, 5, out _));
+        Assert.True(sourceMap.TryGetOriginalLocation(2, 11, out location));
+        Assert.Equal(new JsSourceLocation("https://cdn.example.com/src/b.js", 2, 1), location);
+        Assert.False(sourceMap.TryGetOriginalLocation(3, 1, out _));
+        Assert.Equal(["webpack:///src/c.ts"], JsSourceMap.Parse("""{"version":3,"sourceRoot":"ignored","sources":["webpack:///src/c.ts"],"mappings":""}""", "dist/c.js.map").Sources);
+    }
+
+    [Theory]
+    [InlineData("not json")]
+    [InlineData("[]")]
+    [InlineData("""{"version":2,"sources":[],"mappings":""}""")]
+    [InlineData("""{"version":3,"mappings":""}""")]
+    [InlineData("""{"version":3,"sources":["a.js"],"mappings":"AA"}""")]
+    [InlineData("""{"version":3,"sources":["a.js"],"mappings":"AA!A"}""")]
+    [InlineData("""{"version":3,"sources":["a.js"],"mappings":"ACAA"}""")]
+    [InlineData("""{"version":3,"sources":["a.js"],"mappings":"g"}""")]
+    [InlineData("""{"version":3,"sections":[{"offset":{"line":1,"column":0},"map":{"version":3,"sources":[],"mappings":""}},{"offset":{"line":0,"column":0},"map":{"version":3,"sources":[],"mappings":""}}]}""")]
+    public void SourceMaps_InvalidMaps(string json)
+    {
+        Assert.Throws<FormatException>(() => JsSourceMap.Parse(json));
+        Assert.False(JsSourceMap.TryParse(json, url: null, out var sourceMap));
+        Assert.Null(sourceMap);
+    }
+
+    [Fact]
+    public void SourceMaps_ResolverExceptionsPropagate()
+    {
+        var calls = 0;
+        var mapper = new JsSourceMapper(_ =>
+        {
+            calls++;
+            throw new IOException("Cannot read the source map");
+        });
+
+        Assert.Throws<IOException>(() => mapper.MapLocation(new JsSourceLocation("a.js", 1, 1)));
+        Assert.Throws<IOException>(() => mapper.MapStackTrace("Error\n    at a.js:1:1"));
+        Assert.Equal(2, calls);
     }
 
     [Fact]
@@ -2028,6 +2289,11 @@ public sealed class JsEngineTests
 
             request.Complete(module);
         }
+    }
+
+    private sealed class DelegateDebugger(Action<JsDebugEvent> onStatement) : JsDebugger
+    {
+        protected internal override void OnStatement(JsDebugEvent debugEvent) => onStatement(debugEvent);
     }
 
     private sealed class DelegateModuleLoader(Action<JsModuleLoadRequest> load) : JsModuleLoader

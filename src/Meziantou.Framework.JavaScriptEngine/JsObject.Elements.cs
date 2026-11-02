@@ -36,28 +36,27 @@ public partial class JsObject
     private const int PooledStorageMinBytes = 85_000;
     private const int PooledStorageMaxLength = 1 << 24;
 
-    // Elements in which a hole is an absent property: the dense storage of the array indices (attributes: W/E/C)
+    // Elements in which a hole is an absent property: the dense storage of the array indices (attributes: W/E/C). The
+    // element i is at _elementStart + i in the storage: removing the first elements (shift) moves the start instead of the
+    // other elements, and the free slots before the start take the elements inserted at the front (unshift). The slots
+    // before the start are holes.
     private object? _elements;
     private ElementKind _elementKind;
+    private int _elementStart;
+
+    // The number of elements that are not holes
+    private int _denseCount;
+
+    private int StorageLength => _elementKind switch
+    {
+        ElementKind.Number => ((double[])_elements!).Length,
+        ElementKind.Reference => ((CellSlot[])_elements!).Length,
+        ElementKind.Mixed => ((JsValue[])_elements!).Length,
+        _ => 0,
+    };
 
     /// <summary>Gets the number of slots of the dense elements (the holes included).</summary>
-    internal int DenseCapacity
-    {
-        get
-        {
-            switch (_elementKind)
-            {
-                case ElementKind.Number:
-                    return ((double[])_elements!).Length;
-                case ElementKind.Reference:
-                    return ((CellSlot[])_elements!).Length;
-                case ElementKind.Mixed:
-                    return ((JsValue[])_elements!).Length;
-                default:
-                    return 0;
-            }
-        }
-    }
+    internal int DenseCapacity => StorageLength - _elementStart;
 
     /// <summary>Reads a dense element: false when the index is outside the storage or the element is a hole.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -68,9 +67,10 @@ public partial class JsObject
             case ElementKind.Number:
                 {
                     var numbers = ((double[])_elements!);
-                    if (index < (uint)numbers.Length)
+                    var position = (ulong)index + (uint)_elementStart;
+                    if (position < (ulong)numbers.Length)
                     {
-                        var number = numbers[index];
+                        var number = numbers[(int)position];
                         if (BitConverter.DoubleToInt64Bits(number) != NumberHoleBits)
                         {
                             value = new JsValue(number);
@@ -84,9 +84,10 @@ public partial class JsObject
             case ElementKind.Reference:
                 {
                     var cells = ((CellSlot[])_elements!);
-                    if (index < (uint)cells.Length)
+                    var position = (ulong)index + (uint)_elementStart;
+                    if (position < (ulong)cells.Length)
                     {
-                        var cell = cells[index].Cell;
+                        var cell = cells[(int)position].Cell;
                         if (!ReferenceEquals(cell, HoleCell.Instance))
                         {
                             value = new JsValue(cell);
@@ -100,9 +101,10 @@ public partial class JsObject
             case ElementKind.Mixed:
                 {
                     var values = ((JsValue[])_elements!);
-                    if (index < (uint)values.Length)
+                    var position = (ulong)index + (uint)_elementStart;
+                    if (position < (ulong)values.Length)
                     {
-                        value = values[index];
+                        value = values[(int)position];
                         if (!value.IsHole)
                             return true;
                     }
@@ -120,6 +122,7 @@ public partial class JsObject
 
     private bool IsDenseHole(int index)
     {
+        index += _elementStart;
         return _elementKind switch
         {
             ElementKind.Number => BitConverter.DoubleToInt64Bits(((double[])_elements!)[index]) == NumberHoleBits,
@@ -140,9 +143,10 @@ public partial class JsObject
         return true;
     }
 
-    /// <summary>Stores a value in a slot of the storage (the index is in range), moving to a wider kind when needed.</summary>
-    private void StoreDenseElement(int index, JsValue value)
+    /// <summary>Stores a value in a slot of the storage (the index is in range), moving to a wider kind when needed; true when the slot was a hole.</summary>
+    private bool StoreDenseElement(int index, JsValue value)
     {
+        var position = _elementStart + index;
         switch (_elementKind)
         {
             case ElementKind.Number when value.IsNumber:
@@ -153,21 +157,34 @@ public partial class JsObject
                         number = double.NaN;
                     }
 
-                    ((double[])_elements!)[index] = number;
-                    return;
+                    ref var slot = ref ((double[])_elements!)[position];
+                    var wasHole = BitConverter.DoubleToInt64Bits(slot) == NumberHoleBits;
+                    slot = number;
+                    return wasHole;
                 }
 
             case ElementKind.Reference when !value.IsNumber:
-                ((CellSlot[])_elements!)[index] = new CellSlot(value.Cell);
-                return;
+                {
+                    ref var slot = ref ((CellSlot[])_elements!)[position];
+                    var wasHole = ReferenceEquals(slot.Cell, HoleCell.Instance);
+                    slot = new CellSlot(value.Cell);
+                    return wasHole;
+                }
 
             case ElementKind.Mixed:
-                ((JsValue[])_elements!)[index] = value;
-                return;
+                {
+                    ref var slot = ref ((JsValue[])_elements!)[position];
+                    var wasHole = slot.IsHole;
+                    slot = value;
+                    return wasHole;
+                }
         }
 
         ConvertToMixed(DenseCapacity);
-        ((JsValue[])_elements!)[index] = value;
+        ref var mixedSlot = ref ((JsValue[])_elements!)[index];
+        var mixedWasHole = mixedSlot.IsHole;
+        mixedSlot = value;
+        return mixedWasHole;
     }
 
     private static bool IsPooledStorageLength(int length, int elementSize)
@@ -191,28 +208,59 @@ public partial class JsObject
         }
     }
 
-    /// <summary>Copies the storage to a new one of the given length (more than the current capacity): the new elements are holes.</summary>
-    private static T[] GrowStorage<T>(T[] storage, int length, int elementSize, bool hasReferences)
+    /// <summary>
+    /// Copies the elements (from the start) to a new storage, after <paramref name="front"/> free slots, with room for
+    /// <paramref name="capacity"/> elements (at least the current capacity): the other slots are holes.
+    /// </summary>
+    private static T[] CopyStorage<T>(T[] storage, int start, int front, int capacity, int elementSize, bool hasReferences, T hole)
     {
-        var grown = AllocateStorage<T>(length, elementSize);
-        storage.AsSpan().CopyTo(grown);
+        var copy = AllocateStorage<T>(front + capacity, elementSize);
+        var elements = storage.AsSpan(start);
+        copy.AsSpan(0, front).Fill(hole);
+        elements.CopyTo(copy.AsSpan(front));
+        copy.AsSpan(front + elements.Length).Fill(hole);
         ReleaseStorage(storage, elementSize, hasReferences);
-        return grown;
+        return copy;
+    }
+
+    /// <summary>Moves the elements to a new storage of the same kind (see <see cref="CopyStorage"/>).</summary>
+    private void ReallocateStorage(int front, int capacity)
+    {
+        _elements = _elementKind switch
+        {
+            ElementKind.Number => CopyStorage((double[])_elements!, _elementStart, front, capacity, elementSize: 8, hasReferences: false, NumberHole),
+            ElementKind.Reference => CopyStorage((CellSlot[])_elements!, _elementStart, front, capacity, elementSize: 8, hasReferences: true, new CellSlot(HoleCell.Instance)),
+            _ => CopyStorage((JsValue[])_elements!, _elementStart, front, capacity, elementSize: 16, hasReferences: true, JsValue.Hole),
+        };
+
+        _elementStart = front;
+    }
+
+    /// <summary>Moves the elements to the beginning of the storage (the free slots before them go after them).</summary>
+    private void CompactStorage()
+    {
+        var start = _elementStart;
+        var capacity = DenseCapacity;
+        _elementStart = 0;
+        MoveDenseElements(start, 0, capacity);
+        FillDenseHoles(capacity, start);
     }
 
     /// <summary>Moves the elements to a JsValue[] of the given length (at least the current capacity).</summary>
     private void ConvertToMixed(int length)
     {
         var mixed = AllocateStorage<JsValue>(length, elementSize: 16);
+        var start = _elementStart;
         var capacity = DenseCapacity;
         switch (_elementKind)
         {
             case ElementKind.Number:
                 {
                     var numbers = ((double[])_elements!);
-                    for (var i = 0; i < numbers.Length; i++)
+                    for (var i = 0; i < capacity; i++)
                     {
-                        mixed[i] = BitConverter.DoubleToInt64Bits(numbers[i]) == NumberHoleBits ? JsValue.Hole : new JsValue(numbers[i]);
+                        var number = numbers[start + i];
+                        mixed[i] = BitConverter.DoubleToInt64Bits(number) == NumberHoleBits ? JsValue.Hole : new JsValue(number);
                     }
 
                     ReleaseStorage(numbers, elementSize: 8, hasReferences: false);
@@ -222,9 +270,9 @@ public partial class JsObject
             case ElementKind.Reference:
                 {
                     var cells = ((CellSlot[])_elements!);
-                    for (var i = 0; i < cells.Length; i++)
+                    for (var i = 0; i < capacity; i++)
                     {
-                        mixed[i] = new JsValue(cells[i].Cell);
+                        mixed[i] = new JsValue(cells[start + i].Cell);
                     }
 
                     ReleaseStorage(cells, elementSize: 8, hasReferences: true);
@@ -234,7 +282,7 @@ public partial class JsObject
             case ElementKind.Mixed:
                 {
                     var values = ((JsValue[])_elements!);
-                    Array.Copy(values, mixed, capacity);
+                    Array.Copy(values, start, mixed, 0, capacity);
                     ReleaseStorage(values, elementSize: 16, hasReferences: true);
                     break;
                 }
@@ -243,27 +291,94 @@ public partial class JsObject
         mixed.AsSpan(capacity).Fill(JsValue.Hole);
         _elements = mixed;
         _elementKind = ElementKind.Mixed;
+        _elementStart = 0;
+    }
+
+    /// <summary>
+    /// Stores the values (none is a hole) as the dense elements of an object that has none yet, in a storage of the kind
+    /// that holds all of them (no conversion from a narrower kind while the values are added one by one).
+    /// </summary>
+    internal void InitializeDenseElements(ReadOnlySpan<JsValue> values)
+    {
+        if (values.IsEmpty)
+            return;
+
+        var length = values.Length;
+        if (length is >= PooledStorageMinBytes / 16 and < PooledStorageMaxLength)
+        {
+            // The large storages have the sizes of the array pools (as TrySetElement)
+            length = (int)BitOperations.RoundUpToPowerOf2((uint)length);
+        }
+
+        var numberCount = 0;
+        foreach (var value in values)
+        {
+            if (value.IsNumber)
+            {
+                numberCount++;
+            }
+        }
+
+        if (numberCount == values.Length)
+        {
+            var numbers = AllocateStorage<double>(length, elementSize: 8);
+            for (var i = 0; i < values.Length; i++)
+            {
+                var number = values[i].NumberValue;
+                numbers[i] = BitConverter.DoubleToInt64Bits(number) == NumberHoleBits ? double.NaN : number;
+            }
+
+            _elements = numbers;
+            _elementKind = ElementKind.Number;
+        }
+        else if (numberCount == 0)
+        {
+            var cells = AllocateStorage<CellSlot>(length, elementSize: 8);
+            for (var i = 0; i < values.Length; i++)
+            {
+                cells[i] = new CellSlot(values[i].Cell);
+            }
+
+            _elements = cells;
+            _elementKind = ElementKind.Reference;
+        }
+        else
+        {
+            var mixed = AllocateStorage<JsValue>(length, elementSize: 16);
+            values.CopyTo(mixed);
+            _elements = mixed;
+            _elementKind = ElementKind.Mixed;
+        }
+
+        FillDenseHoles(values.Length, length - values.Length);
     }
 
     /// <summary>Makes a hole of an element.</summary>
     private void RemoveDenseElement(int index)
     {
+        if (IsDenseHole(index))
+            return;
+
+        _denseCount--;
+        var position = _elementStart + index;
         switch (_elementKind)
         {
             case ElementKind.Number:
-                ((double[])_elements!)[index] = NumberHole;
+                ((double[])_elements!)[position] = NumberHole;
                 break;
             case ElementKind.Reference:
-                ((CellSlot[])_elements!)[index] = new CellSlot(HoleCell.Instance);
+                ((CellSlot[])_elements!)[position] = new CellSlot(HoleCell.Instance);
                 break;
             case ElementKind.Mixed:
-                ((JsValue[])_elements!)[index] = JsValue.Hole;
+                ((JsValue[])_elements!)[position] = JsValue.Hole;
                 break;
         }
     }
 
+    /// <summary>Sets slots to holes (the count of the elements is not updated).</summary>
     private void FillDenseHoles(int start, int count)
     {
+        start += _elementStart;
         switch (_elementKind)
         {
             case ElementKind.Number:
@@ -278,22 +393,33 @@ public partial class JsObject
         }
     }
 
-    /// <summary>Truncates the dense elements (the length of an array decreased).</summary>
-    internal void TruncateElements(uint length)
+    /// <summary>Truncates the dense elements (the length of an array decreased: the elements are below the previous length).</summary>
+    internal void TruncateElements(uint length, uint previousLength)
     {
-        var capacity = DenseCapacity;
-        if (length < (uint)capacity)
+        var end = (int)Math.Min(previousLength, (uint)DenseCapacity);
+        if (length < (uint)end)
         {
-            FillDenseHoles((int)length, capacity - (int)length);
+            for (var i = (int)length; i < end; i++)
+            {
+                if (!IsDenseHole(i))
+                {
+                    _denseCount--;
+                }
+            }
+
+            FillDenseHoles((int)length, end - (int)length);
         }
     }
 
     /// <summary>Gets whether at least one dense element is not a hole.</summary>
-    internal bool HasAnyDenseElement() => NextDenseElement(0, int.MaxValue) >= 0;
+    internal bool HasAnyDenseElement() => _denseCount > 0;
 
     /// <summary>The first index in [start, end) of a dense element that is not a hole, -1 when there is none.</summary>
     internal long NextDenseElement(long start, long end)
     {
+        if (_denseCount == 0)
+            return -1;
+
         end = Math.Min(end, DenseCapacity);
         for (var i = start; i < end; i++)
         {
@@ -307,6 +433,9 @@ public partial class JsObject
     /// <summary>The last index in [0, start] of a dense element that is not a hole, -1 when there is none.</summary>
     internal long PreviousDenseElement(long start)
     {
+        if (_denseCount == 0)
+            return -1;
+
         for (var i = Math.Min(start, DenseCapacity - 1); i >= 0; i--)
         {
             if (!IsDenseHole((int)i))
@@ -321,6 +450,10 @@ public partial class JsObject
     {
         if (length > DenseCapacity)
             return false;
+
+        // The elements of an array are below its length
+        if (this is JsArray array && length == array.Length)
+            return _denseCount == length;
 
         for (var i = 0; i < length; i++)
         {
@@ -337,20 +470,104 @@ public partial class JsObject
         switch (_elementKind)
         {
             case ElementKind.Number:
-                ((double[])_elements!).AsSpan(0, length).Reverse();
+                ((double[])_elements!).AsSpan(_elementStart, length).Reverse();
                 break;
             case ElementKind.Reference:
-                ((CellSlot[])_elements!).AsSpan(0, length).Reverse();
+                ((CellSlot[])_elements!).AsSpan(_elementStart, length).Reverse();
                 break;
             case ElementKind.Mixed:
-                ((JsValue[])_elements!).AsSpan(0, length).Reverse();
+                ((JsValue[])_elements!).AsSpan(_elementStart, length).Reverse();
                 break;
         }
     }
 
-    /// <summary>Moves a range of the dense storage (the ranges may overlap).</summary>
-    internal void MoveDenseElements(int source, int destination, int count)
+    /// <summary>
+    /// Moves the elements of a packed array (its elements [0, length) are all in the dense storage) for splice: the
+    /// <paramref name="deleteCount"/> elements at <paramref name="start"/> are replaced with <paramref name="itemCount"/>
+    /// slots that the caller overwrites (they are not holes), and the elements after them are moved accordingly. The
+    /// elements before or after the deleted ones move, whichever are fewer: removing or inserting the first elements
+    /// moves the start of the storage.
+    /// </summary>
+    internal void SpliceDenseElements(int length, int start, int deleteCount, int itemCount)
     {
+        var tail = length - start - deleteCount;
+        if (tail == 0)
+        {
+            // Nothing to move: the caller writes the items and truncates the elements after them
+            return;
+        }
+
+        var newLength = length - deleteCount + itemCount;
+        if (itemCount < deleteCount)
+        {
+            var removed = deleteCount - itemCount;
+            if (start < tail)
+            {
+                MoveDenseElements(0, removed, start);
+                FillDenseHoles(0, removed);
+                _elementStart += removed;
+            }
+            else
+            {
+                MoveDenseElements(start + deleteCount, start + itemCount, tail);
+                FillDenseHoles(newLength, removed);
+            }
+        }
+        else
+        {
+            var added = itemCount - deleteCount;
+            if (start < tail)
+            {
+                if (_elementStart < added)
+                {
+                    // Free slots before the elements, for the next insertions at the front
+                    var front = Math.Max(added, newLength / 2);
+                    if ((long)front + Math.Max(DenseCapacity, newLength) > Array.MaxLength)
+                    {
+                        front = added;
+                    }
+
+                    ReallocateStorage(front, Math.Max(DenseCapacity, newLength));
+                }
+
+                _elementStart -= added;
+                MoveDenseElements(added, 0, start);
+                FillDensePlaceholder(start, added);
+            }
+            else
+            {
+                if (newLength > DenseCapacity)
+                {
+                    EnsureDenseCapacity(newLength);
+                }
+
+                MoveDenseElements(start + deleteCount, start + itemCount, tail);
+                FillDensePlaceholder(start + deleteCount, added);
+            }
+        }
+
+        _denseCount = newLength;
+    }
+
+    /// <summary>Makes room for <paramref name="capacity"/> elements (more than the current capacity).</summary>
+    private void EnsureDenseCapacity(int capacity)
+    {
+        var storageLength = StorageLength;
+        if (capacity <= storageLength && _elementStart >= storageLength / 4)
+        {
+            CompactStorage();
+            return;
+        }
+
+        var newCapacity = (int)Math.Min(Math.Max(Math.Max((long)DenseCapacity * 2, capacity), 4), Array.MaxLength);
+        ReallocateStorage(front: 0, newCapacity);
+    }
+
+    /// <summary>Moves a range of the dense storage (the ranges may overlap).</summary>
+    private void MoveDenseElements(int source, int destination, int count)
+    {
+        source += _elementStart;
+        destination += _elementStart;
         switch (_elementKind)
         {
             case ElementKind.Number:
@@ -366,8 +583,9 @@ public partial class JsObject
     }
 
     /// <summary>Sets a range of the dense storage to a placeholder that does not change the kind (the caller overwrites it).</summary>
-    internal void FillDensePlaceholder(int start, int count)
+    private void FillDensePlaceholder(int start, int count)
     {
+        start += _elementStart;
         switch (_elementKind)
         {
             case ElementKind.Number:
@@ -388,6 +606,19 @@ public partial class JsObject
         var currentLength = DenseCapacity;
         if (index < (uint)currentLength)
         {
+            if (StoreDenseElement((int)index, value))
+            {
+                _denseCount++;
+            }
+
+            return true;
+        }
+
+        // The free slots before the elements (after shifts) go after them, when there are enough of them
+        if (_elementStart > 0 && index < (uint)StorageLength && _elementStart >= StorageLength / 4)
+        {
+            CompactStorage();
+            _denseCount++;
             StoreDenseElement((int)index, value);
             return true;
         }
@@ -442,16 +673,10 @@ public partial class JsObject
         }
         else
         {
-            _elements = _elementKind switch
-            {
-                ElementKind.Number => GrowStorage((double[])_elements!, newLength, elementSize: 8, hasReferences: false),
-                ElementKind.Reference => GrowStorage((CellSlot[])_elements!, newLength, elementSize: 8, hasReferences: true),
-                _ => GrowStorage((JsValue[])_elements!, newLength, elementSize: 16, hasReferences: true),
-            };
-
-            FillDenseHoles(currentLength, newLength - currentLength);
+            ReallocateStorage(front: 0, newLength);
         }
 
+        _denseCount++;
         StoreDenseElement((int)index, value);
         return true;
     }
@@ -459,15 +684,7 @@ public partial class JsObject
     private bool IsMostlyFilled()
     {
         var capacity = DenseCapacity;
-        var holes = 0;
-        var maxHoles = capacity / 2;
-        for (var i = 0; i < capacity; i++)
-        {
-            if (IsDenseHole(i) && ++holes > maxHoles)
-                return false;
-        }
-
-        return capacity > 0;
+        return capacity > 0 && capacity - _denseCount <= capacity / 2;
     }
 
     // Whether more than 7/8 of the last 1024 elements of the storage are holes: a bounded check, as each write that stays

@@ -650,6 +650,14 @@ internal static partial class JsInterpreter
 
     private static int ExecuteDebugger(Frame frame, int sp)
     {
+        frame.Realm.Engine.RaiseDebugEvent(frame, isDebuggerStatement: true);
+        frame.Pc++;
+        return sp;
+    }
+
+    private static int ExecuteDebugStatement(Frame frame, int sp)
+    {
+        frame.Realm.Engine.RaiseDebugEvent(frame, isDebuggerStatement: false);
         frame.Pc++;
         return sp;
     }

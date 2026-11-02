@@ -5,7 +5,9 @@ namespace Meziantou.Framework.JavaScriptEngine;
 
 /// <summary>
 /// A JavaScript string: a sequence of UTF-16 code units (lone surrogates allowed). A concatenation creates a rope, which
-/// is flattened the first time its characters are read.
+/// is flattened the first time its characters are read. A rope read by index is flattened in a buffer that has room
+/// after its characters: when the leftmost part of a rope read by index is such a string, its other parts are appended
+/// to the same buffer, so appending a character and reading one in a loop does not copy the string again and again.
 /// </summary>
 [DebuggerDisplay("{ToString()}")]
 internal sealed class JsString : JsCell, IEquatable<JsString>
@@ -23,6 +25,9 @@ internal sealed class JsString : JsCell, IEquatable<JsString>
     private string? _value;
     private JsString? _left;
     private JsString? _right;
+
+    // The characters of the string are the first Length characters of the buffer
+    private StringBuffer? _buffer;
 
     private JsString(string value)
         : base(JsValueKind.String)
@@ -43,7 +48,18 @@ internal sealed class JsString : JsCell, IEquatable<JsString>
 
     public bool IsEmpty => Length == 0;
 
-    public char this[int index] => ToString()[index];
+    public char this[int index]
+    {
+        get
+        {
+            if (_value is { } value)
+                return value[index];
+
+            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual((uint)index, (uint)Length, nameof(index));
+            var buffer = _buffer ?? FlattenToBuffer();
+            return buffer.Chars[index];
+        }
+    }
 
     public static JsString Create(string value)
     {
@@ -92,32 +108,94 @@ internal sealed class JsString : JsCell, IEquatable<JsString>
     {
         // A concatenation allocates nothing: the memory limit of the script is checked when the string is built
         JsEngine.EnsureCurrentCanAllocate((long)Length * sizeof(char));
-
-        // Iterative, so that a deep rope does not overflow the stack
-        var result = string.Create(Length, this, static (span, root) =>
+        if (_buffer is { } buffer)
         {
-            var stack = new Stack<JsString>();
-            stack.Push(root);
-            var position = 0;
-            while (stack.Count > 0)
-            {
-                var node = stack.Pop();
-                if (node._value is { } value)
-                {
-                    value.CopyTo(span[position..]);
-                    position += value.Length;
-                }
-                else
-                {
-                    stack.Push(node._right!);
-                    stack.Push(node._left!);
-                }
-            }
-        });
+            _value = new string(buffer.Chars, 0, Length);
 
-        _value = result;
+            // The buffer is kept while a concatenation can extend it
+            if (buffer.Length != Length)
+            {
+                _buffer = null;
+            }
+
+            return;
+        }
+
+        _value = string.Create(Length, this, static (span, root) => root.CopyTo(span, start: 0));
         _left = null;
         _right = null;
+    }
+
+    /// <summary>Flattens a rope in a buffer: the buffer of its leftmost part when it can be extended, a new one otherwise.</summary>
+    private StringBuffer FlattenToBuffer()
+    {
+        var leftmost = this;
+        while (leftmost._left is { } left)
+        {
+            leftmost = left;
+        }
+
+        StringBuffer buffer;
+        int start;
+        if (leftmost._buffer is { } leftmostBuffer && leftmostBuffer.Chars.Length >= Length && Interlocked.CompareExchange(ref leftmostBuffer.Length, Length, leftmost.Length) == leftmost.Length)
+        {
+            // The characters of the leftmost part are already in the buffer, and no other string uses the characters after them
+            buffer = leftmostBuffer;
+            start = leftmost.Length;
+        }
+        else
+        {
+            // Room for the next concatenations
+            var capacity = (int)Math.Min((long)Length * 2, MaxLength);
+            JsEngine.EnsureCurrentCanAllocate((long)capacity * sizeof(char));
+            buffer = new StringBuffer(new char[capacity], Length);
+            start = 0;
+        }
+
+        CopyTo(buffer.Chars.AsSpan(0, Length), start);
+        _buffer = buffer;
+        _left = null;
+        _right = null;
+        return buffer;
+    }
+
+    /// <summary>Copies the characters [start, Length) of the string to the same positions of the destination.</summary>
+    private void CopyTo(Span<char> destination, int start)
+    {
+        // Iterative, so that a deep rope does not overflow the stack
+        var stack = new Stack<JsString>();
+        stack.Push(this);
+        var position = 0;
+        while (stack.Count > 0)
+        {
+            var node = stack.Pop();
+            var end = position + node.Length;
+            if (end <= start)
+            {
+                position = end;
+                continue;
+            }
+
+            ReadOnlySpan<char> chars;
+            if (node._value is { } value)
+            {
+                chars = value;
+            }
+            else if (node._buffer is { } buffer)
+            {
+                chars = buffer.Chars.AsSpan(0, node.Length);
+            }
+            else
+            {
+                stack.Push(node._right!);
+                stack.Push(node._left!);
+                continue;
+            }
+
+            var skip = Math.Max(start - position, 0);
+            chars[skip..].CopyTo(destination[(position + skip)..]);
+            position = end;
+        }
     }
 
     public bool Equals([NotNullWhen(true)] JsString? other)
@@ -134,6 +212,15 @@ internal sealed class JsString : JsCell, IEquatable<JsString>
     public override bool Equals([NotNullWhen(true)] object? obj) => obj is JsString other && Equals(other);
 
     public override int GetHashCode() => string.GetHashCode(ToString(), StringComparison.Ordinal);
+
+    /// <summary>The characters of strings: each string uses the first characters (its length); a concatenation can append characters after the last ones in use.</summary>
+    private sealed class StringBuffer(char[] chars, int length)
+    {
+        public readonly char[] Chars = chars;
+
+        // The number of characters in use
+        public int Length = length;
+    }
 
     private static JsString[] CreateSingleCharacters()
     {

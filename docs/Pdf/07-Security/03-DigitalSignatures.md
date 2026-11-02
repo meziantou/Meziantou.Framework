@@ -1,6 +1,6 @@
 ---
 title: Digital signatures
-description: Sign a document with a certificate (PAdES B-B), add a time stamp (PAdES B-T), and verify the signatures of a document and whether its signer is trusted.
+description: Sign a document with a certificate (PAdES B-B to B-LTA), certify it or lock fields, show the signature, and verify the signatures and the changes made after them.
 ---
 
 A signature proves that the signed bytes of a document did not change since it was signed, and binds them to the
@@ -36,7 +36,10 @@ var isValid = signature.IsValid && signature.CoversWholeDocument;
 | [SigningTime](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureOptions.SigningTime) | Now | The time the signer claims; only a time stamp proves it |
 | [Certificates](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureOptions.Certificates) | Empty | The other certificates of the chain of the signer, embedded so that the signature can be validated |
 | [HashAlgorithm](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureOptions.HashAlgorithm) | SHA-256 | The digest algorithm: SHA-256, SHA-384 or SHA-512 |
-| [FieldName](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureOptions.FieldName) | `Signature1`, `Signature2`... | The name of the signature field |
+| [RsaSignaturePadding](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureOptions.RsaSignaturePadding) | PKCS #1 v1.5 | `RSASignaturePadding.Pss` for an RSASSA-PSS signature (RSA keys only) |
+| [FieldName](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureOptions.FieldName) | `Signature1`, `Signature2`... | The name of the signature field. An existing signature field that is not signed yet is signed; the name of any other field throws `ArgumentException` |
+| [Appearance](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureOptions.Appearance) | Invisible | The page, the rectangle and the drawing of a visible signature |
+| [Certification](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureOptions.Certification), [FieldLock](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureOptions.FieldLock) | none | The changes a certification signature allows, and the fields the signature locks |
 | [TimestampAuthority](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureOptions.TimestampAuthority), [HttpClient](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureOptions.HttpClient) | none | The time stamp authority of a B-T signature, and the client to call it |
 | [ReservedSize](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureOptions.ReservedSize) | Computed | The bytes reserved for the signature in the file |
 
@@ -58,6 +61,69 @@ var signed = await PdfSigner.SignAsync(document, options, XunitCancellationToken
 <!-- endref -->
 
 [SignAsync](cref:Meziantou.Framework.Pdf.Signing.PdfSigner.SignAsync) throws `HttpRequestException` when the authority cannot be reached.
+
+## Show the signature on a page
+
+By default the signature field is invisible. Set [Appearance](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureOptions.Appearance) to show it in a rectangle of a page; the drawing
+uses the coordinates of the rectangle, from (0, 0) at its bottom left:
+
+<!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfSignerTests.cs;region=PdfSigning_VisibleSignature;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The widget is shown on the first page, at the bottom left; the drawing is in the coordinates of the rectangle
+var options = new PdfSignatureOptions(certificate)
+{
+    Reason = "I approve this contract",
+    Appearance = new PdfSignatureAppearance(pageIndex: 0, PdfRectangle.FromSize(60, 60, 200, 50))
+    {
+        Draw = builder => builder
+            .DrawText("Signed by Alice", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 12, 8, 30)
+            .DrawText("I approve this contract", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 9, 8, 12),
+    },
+};
+var signed = PdfSigner.Sign(document, options);
+```
+<!-- endref -->
+
+## Certify a document or lock fields
+
+A certification signature is the first signature of a document: [Certification](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureOptions.Certification) sets the changes it allows after it
+(DocMDP). [PdfCertificationLevel.NoChanges](cref:Meziantou.Framework.Pdf.Signing.PdfCertificationLevel.NoChanges) forbids any other signature, [FormFilling](cref:Meziantou.Framework.Pdf.Signing.PdfCertificationLevel.FormFilling) allows filling in
+the form and signing, and [FormFillingAndAnnotations](cref:Meziantou.Framework.Pdf.Signing.PdfCertificationLevel.FormFillingAndAnnotations) also allows annotations. Validation data and document time
+stamps are allowed at every level. [Sign](cref:Meziantou.Framework.Pdf.Signing.PdfSigner.Sign) throws `InvalidOperationException` when the certification of the document
+does not allow another signature, or when a certification is requested for a document that is already signed.
+
+[FieldLock](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureOptions.FieldLock) locks fields (FieldMDP): `new PdfFieldLock(PdfFieldLockAction.Include, ["Name"])` locks the field `Name`
+and its descendants; [PdfFieldLockAction.All](cref:Meziantou.Framework.Pdf.Signing.PdfFieldLockAction.All) locks every field. When a signature field that is not signed yet has a
+lock dictionary, its lock is used.
+
+## Long-term validation
+
+A signature can be validated years later only with the certificates and the revocation evidence of the time it was
+made. [PdfSigner.AddValidationData](cref:Meziantou.Framework.Pdf.Signing.PdfSigner.AddValidationData) writes them to the document security store (PAdES B-LT), with the certificates the
+signatures and their time stamps embed; [PdfSigner.TimestampAsync](cref:Meziantou.Framework.Pdf.Signing.PdfSigner.TimestampAsync) then adds a document time stamp that protects them
+(PAdES B-LTA). Repeat both steps before the time stamp authority's certificate expires to extend the validity.
+
+<!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfSignerTests.cs;region=PdfSigning_LongTermValidation;format=md-fenced-code-block;dedent=true -->
+```csharp
+// PAdES B-LT: the certificates and the revocation evidence that validate the signatures, in the document security store
+var validationData = new PdfValidationData();
+validationData.Certificates.Add(authority.Certificate);
+validationData.CertificateRevocationLists.Add(certificateRevocationList);
+var withValidationData = PdfSigner.AddValidationData(PdfDocument.Open(signedFile), validationData);
+
+// PAdES B-LTA: a document time stamp protects the validation data
+var timestamped = await PdfSigner.TimestampAsync(PdfDocument.Open(withValidationData), new PdfTimestampOptions(new Uri("http://timestamp.example.com/"))
+{
+    HttpClient = httpClient,
+}, XunitCancellationToken);
+```
+<!-- endref -->
+
+- The library does not download revocation evidence: get the CRLs (RFC 5280) and the OCSP responses (RFC 6960) of the
+  chains, DER encoded, with the HTTP client and the policy of the application.
+- The data the store already has is not added again. The store has no VRI dictionaries.
+- [PdfSignatureVerifier.GetValidationData](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureVerifier.GetValidationData) reads the store back, for instance to build the chains offline with
+  `X509ChainPolicy.ExtraStore`.
 
 ## Verify the signatures
 
@@ -93,8 +159,10 @@ public static bool IsSignedByTrustedSigner(byte[] file, X509Certificate2 trusted
 
 | [PdfSignatureInfo](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureInfo) | Tells |
 | --- | --- |
-| [IsValid](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureInfo.IsValid) | The signature is intact, cryptographically valid, and its time stamp is valid when it has one |
-| [IsDocumentIntact](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureInfo.IsDocumentIntact), [IsSignatureValid](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureInfo.IsSignatureValid), [IsTimestampValid](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureInfo.IsTimestampValid) | Each of these checks; [IsTimestampValid](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureInfo.IsTimestampValid) is `null` without a time stamp |
+| [IsValid](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureInfo.IsValid) | The signature is intact, cryptographically valid, its time stamps are valid, its ESS signing certificate names the certificate of the signer, and no change after it breaks its certification or its field lock |
+| [IsDocumentIntact](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureInfo.IsDocumentIntact), [IsSignatureValid](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureInfo.IsSignatureValid), [IsTimestampValid](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureInfo.IsTimestampValid), [IsSigningCertificateValid](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureInfo.IsSigningCertificateValid) | Each of these checks; [IsTimestampValid](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureInfo.IsTimestampValid) is `null` without a time stamp, and `false` when any of several time stamps is invalid; [IsSigningCertificateValid](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureInfo.IsSigningCertificateValid) is `null` without the attribute, except for `ETSI.CAdES.detached`, which requires it |
+| [Modifications](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureInfo.Modifications), [AreModificationsPermitted](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureInfo.AreModificationsPermitted) | The objects the revisions appended after the signature added or changed, with what each change is (a signature, validation data, a document time stamp, form filling, an annotation, or another change), and whether the certification and the field lock of the signature allow them |
+| [CertificationLevel](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureInfo.CertificationLevel), [FieldLock](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureInfo.FieldLock) | The certification and the field lock of the signature |
 | [CoversWholeDocument](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureInfo.CoversWholeDocument) | Nothing was appended to the file after the signature. When it is `false`, the document was changed after it was signed: the signature covers an earlier revision only |
 | [Certificate](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureInfo.Certificate), [Certificates](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureInfo.Certificates) | The certificate of the signer, and the certificates the signature embeds |
 | [SigningTime](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureInfo.SigningTime), [TimestampTime](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureInfo.TimestampTime) | The time the signer claims, and the time a time stamp proves |
@@ -102,4 +170,12 @@ public static bool IsSignedByTrustedSigner(byte[] file, X509Certificate2 trusted
 | [SubFilter](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureInfo.SubFilter), [IsDocumentTimestamp](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureInfo.IsDocumentTimestamp) | The format: `ETSI.CAdES.detached`, `adbe.pkcs7.detached`, `adbe.pkcs7.sha1`, or `ETSI.RFC3161` for a document time stamp |
 | [Error](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureInfo.Error) | Why the signature could not be checked |
 
-The signatures of other tools are verified as well, in the formats above.
+- The information of a signature (its name, reason, time and format) is read from the revision it signs: a later
+  change of the signature dictionary is reported in [Modifications](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureInfo.Modifications), not returned as the information.
+- A signature has one signer: CMS signed data with more signers has an [Error](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureInfo.Error).
+- [Modifications](cref:Meziantou.Framework.Pdf.Signing.PdfSignatureInfo.Modifications) is a summary built from the structure of the document (the fields, the annotations of the pages,
+  the document security store), not a proof that the pages look the same: review it, and treat a
+  [PdfModificationKind.Other](cref:Meziantou.Framework.Pdf.Signing.PdfModificationKind.Other) change as a change of the content.
+
+The signatures of other tools are verified as well, in the formats above, with or without signed attributes, and RSA
+signatures with PKCS #1 v1.5 or PSS padding.

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text;
 using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Pdf.Objects;
@@ -219,6 +220,103 @@ public sealed class PdfDocumentTests
     }
 
     [Fact]
+    public void ExplicitCryptFiltersOfStreamsAreHonored()
+    {
+        // An AES-128 file with an empty user password, and an update written by hand with streams that name their crypt
+        // filter (7.4.10, 7.6.6): the Identity filter, explicit or by default, and RC4, a filter of the encryption
+        // dictionary that is not the default. The RC4 stream is encrypted here with the algorithms 1 and 2 of 7.6.3 and
+        // 7.6.4.3, independently of the security handler
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4);
+        document.Encryption = new PdfEncryption("", "owner") { Algorithm = PdfEncryptionAlgorithm.AesWith128BitKey };
+        var original = document.ToByteArray(new PdfSaveOptions { UseObjectStreams = false });
+        var read = PdfDocument.Open(original);
+        var encryption = (PdfDictionary)read.Objects.Resolve((PdfReference)read.Trailer[PdfNames.Encrypt]!);
+        var owner = encryption.Get<PdfString>(PdfName.Create("O"))!.Bytes.ToArray();
+        var user = encryption.Get<PdfString>(PdfName.Create("U"))!.Bytes.ToArray();
+        var permissions = (int)encryption.GetInteger(PdfName.Create("P"));
+        var id = ((PdfString)read.Trailer.Get<PdfArray>(PdfNames.ID)!.GetResolved(0)).Bytes.ToArray();
+        var fileKey = ComputeRevision4FileKey(owner, permissions, id);
+
+        var first = read.Objects.MaxObjectNumber + 1;
+        var rc4Data = Encoding.Latin1.GetString(Rc4(ComputeObjectKey(fileKey, first + 2), "RC4 filter"u8.ToArray()));
+        var encrypt = "<< /Filter /Standard /V 4 /R 4 /Length 128 /CF << /StdCF << /AuthEvent /DocOpen /CFM /AESV2 /Length 16 >> /Second << /CFM /V2 /Length 16 >> >> /StmF /StdCF /StrF /StdCF"
+            + " /O <" + Convert.ToHexString(owner) + "> /U <" + Convert.ToHexString(user) + "> /P " + permissions.ToString(CultureInfo.InvariantCulture) + " >>";
+        var updated = HandWrittenPdf.AppendUpdate(original,
+            [
+                (first, HandWrittenPdf.Stream("Identity", " /Filter /Crypt /DecodeParms << /Type /CryptFilterDecodeParms /Name /Identity >>")),
+                (first + 1, HandWrittenPdf.Stream("Default name", " /Filter /Crypt")),
+                (first + 2, HandWrittenPdf.Stream(rc4Data, " /Filter /Crypt /DecodeParms << /Name /Second >>")),
+                (first + 3, HandWrittenPdf.Stream("48656C6C6F>", " /Filter [/Crypt /ASCIIHexDecode] /DecodeParms [<< /Name /Identity >> null]")),
+                (first + 4, encrypt),
+            ],
+            string.Create(CultureInfo.InvariantCulture, $"<< /Size {first + 5} /Root {((PdfReference)read.Trailer[PdfNames.Root]!).ObjectNumber} 0 R /Encrypt {first + 4} 0 R /ID [<{Convert.ToHexString(id)}> <{Convert.ToHexString(id)}>] /Prev {{prev}} >>"));
+
+        var result = PdfDocument.Open(updated);
+        Assert.True(result.IsEncrypted);
+        var streams = new PdfArray();
+        for (var number = first; number < first + 4; number++)
+        {
+            Assert.True(result.Objects.TryGetReference(number, out var reference));
+            streams.Add(reference);
+        }
+
+        Assert.Equal(["Identity", "Default name", "RC4 filter", "Hello"], GetTexts(streams));
+
+        // A full save with the keys of the file keeps the crypt filters of the streams
+        result.Catalog[PdfName.Create("Streams")] = streams;
+        var saved = PdfDocument.Open(result.ToByteArray());
+        Assert.Equal(["Identity", "Default name", "RC4 filter", "Hello"], GetTexts(saved.Catalog.Get<PdfArray>(PdfName.Create("Streams"))!));
+
+        static string[] GetTexts(PdfArray streams) => [.. streams.Select(item => Encoding.Latin1.GetString(((PdfStream)PdfReference.ResolveIfReference(item)).GetDecodedData()))];
+    }
+
+    /// <summary>Algorithm 2 (7.6.4.3.2) for an empty user password and a 128-bit key of revision 4.</summary>
+    private static byte[] ComputeRevision4FileKey(byte[] owner, int permissions, byte[] id)
+    {
+        byte[] padding = [0x28, 0xBF, 0x4E, 0x5E, 0x4E, 0x75, 0x8A, 0x41, 0x64, 0x00, 0x4E, 0x56, 0xFF, 0xFA, 0x01, 0x08, 0x2E, 0x2E, 0x00, 0xB6, 0xD0, 0x68, 0x3E, 0x80, 0x2F, 0x0C, 0xA9, 0xFE, 0x64, 0x53, 0x69, 0x7A];
+        var input = padding.Concat(owner.Take(32)).Concat(BitConverter.GetBytes(permissions)).Concat(id).ToArray();
+#pragma warning disable CA5351 // The algorithm of the specification
+        var hash = System.Security.Cryptography.MD5.HashData(input);
+        for (var i = 0; i < 50; i++)
+        {
+            hash = System.Security.Cryptography.MD5.HashData(hash.AsSpan(0, 16));
+        }
+#pragma warning restore CA5351
+
+        return hash[..16];
+    }
+
+    /// <summary>Algorithm 1 (7.6.3.3): the RC4 key of an object of generation 0.</summary>
+    private static byte[] ComputeObjectKey(byte[] fileKey, int number)
+    {
+#pragma warning disable CA5351 // The algorithm of the specification
+        return System.Security.Cryptography.MD5.HashData([.. fileKey, (byte)number, (byte)(number >> 8), (byte)(number >> 16), 0, 0]);
+#pragma warning restore CA5351
+    }
+
+    private static byte[] Rc4(byte[] key, byte[] data)
+    {
+        var state = Enumerable.Range(0, 256).Select(i => (byte)i).ToArray();
+        for (int i = 0, j = 0; i < 256; i++)
+        {
+            j = (j + state[i] + key[i % key.Length]) & 0xFF;
+            (state[i], state[j]) = (state[j], state[i]);
+        }
+
+        var result = new byte[data.Length];
+        for (int k = 0, i = 0, j = 0; k < data.Length; k++)
+        {
+            i = (i + 1) & 0xFF;
+            j = (j + state[i]) & 0xFF;
+            (state[i], state[j]) = (state[j], state[i]);
+            result[k] = (byte)(data[k] ^ state[(state[i] + state[j]) & 0xFF]);
+        }
+
+        return result;
+    }
+
+    [Fact]
     public void AnEncryptedDocumentRepairedForItsCatalogIsWrittenWithItsKeys()
     {
         var document = new PdfDocument();
@@ -330,6 +428,22 @@ public sealed class PdfDocumentTests
         var file = document.ToByteArray();
 
         Assert.True(PdfDocument.Open(file, new PdfReadOptions { Password = "file" }).IsEncrypted);
+    }
+
+    [Fact]
+    public void PasswordsOfRevision6AreTruncatedTo127Bytes()
+    {
+        // The 127th byte is the first byte of "é" (C3 A9): it is kept, so "è" (C3 A8) gives the same key and the
+        // password without the character does not
+        var prefix = new string('a', 126);
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4);
+        document.Encryption = new PdfEncryption(prefix + "é", "owner");
+
+        var file = document.ToByteArray();
+
+        Assert.True(PdfDocument.Open(file, new PdfReadOptions { Password = prefix + "è" }).IsEncrypted);
+        Assert.Throws<PdfPasswordException>(() => PdfDocument.Open(file, new PdfReadOptions { Password = prefix }));
     }
 
     [Fact]

@@ -291,6 +291,7 @@ namespace Meziantou.Framework.Pdf
     {
         public Meziantou.Framework.Pdf.Objects.PdfDictionary Catalog { get => throw null; }
         public Meziantou.Framework.Pdf.PdfEmbeddedFileCollection EmbeddedFiles { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfEncryptedPayload? EncryptedPayload { get => throw null; }
         public Meziantou.Framework.Pdf.PdfEncryption? Encryption { get => throw null; set { } }
         public Meziantou.Framework.Pdf.PdfInteractiveForm Form { get => throw null; }
         public Meziantou.Framework.Pdf.PdfDocumentInformation Information { get => throw null; }
@@ -317,12 +318,14 @@ namespace Meziantou.Framework.Pdf
         public static Meziantou.Framework.Pdf.PdfDocument Open(string path, Meziantou.Framework.Pdf.PdfReadOptions? options = null) => throw null;
         public static System.Threading.Tasks.Task<Meziantou.Framework.Pdf.PdfDocument> OpenAsync(System.IO.Stream stream, Meziantou.Framework.Pdf.PdfReadOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static System.Threading.Tasks.Task<Meziantou.Framework.Pdf.PdfDocument> OpenAsync(string path, Meziantou.Framework.Pdf.PdfReadOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static Meziantou.Framework.Pdf.PdfDocument OpenSeekable(System.IO.Stream stream, Meziantou.Framework.Pdf.PdfReadOptions? options = null) => throw null;
         public void RemoveXmpMetadata() { }
         public void Save(System.IO.Stream stream, Meziantou.Framework.Pdf.PdfSaveOptions? options = null) { }
         public void Save(string path, Meziantou.Framework.Pdf.PdfSaveOptions? options = null) { }
         public System.Threading.Tasks.Task SaveAsync(System.IO.Stream stream, Meziantou.Framework.Pdf.PdfSaveOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public void SaveIncremental(System.IO.Stream stream, Meziantou.Framework.Pdf.PdfSaveOptions? options = null) { }
         public System.Threading.Tasks.Task SaveIncrementalAsync(System.IO.Stream stream, Meziantou.Framework.Pdf.PdfSaveOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public Meziantou.Framework.Pdf.PdfEncryptedPayload SetEncryptedPayload(string fileName, System.ReadOnlySpan<byte> data, string cryptographicFilter, string? version = null, Meziantou.Framework.Pdf.PdfEmbeddedFileOptions? options = null) => throw null;
         public void SetXmpMetadata(System.ReadOnlySpan<byte> packet) { }
         public byte[] ToByteArray(Meziantou.Framework.Pdf.PdfSaveOptions? options = null) => throw null;
         public void UpdateXmpMetadata() { }
@@ -376,6 +379,16 @@ namespace Meziantou.Framework.Pdf
         public string? MimeType { get => throw null; init { } }
         public System.DateTimeOffset? ModificationDate { get => throw null; init { } }
         public Meziantou.Framework.Pdf.PdfAssociatedFileRelationship Relationship { get => throw null; init { } }
+    }
+
+    public sealed class PdfEncryptedPayload
+    {
+        public string CryptographicFilter { get => throw null; }
+        public Meziantou.Framework.Pdf.Objects.PdfDictionary Dictionary { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfEmbeddedFile File { get => throw null; }
+        public string? Version { get => throw null; }
+        public byte[] GetData() => throw null;
+        public Meziantou.Framework.Pdf.PdfDocument OpenDocument(Meziantou.Framework.Pdf.PdfReadOptions? options = null) => throw null;
     }
 
     public sealed class PdfEncryption

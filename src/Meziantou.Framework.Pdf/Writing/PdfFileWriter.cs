@@ -228,9 +228,8 @@ internal sealed class PdfFileWriter
             .OrderBy(e => e.Reference.ObjectNumber)
             .ToList();
 
-        var source = reader.Data.Span;
-        _output.Write(source);
-        if (source.Length > 0 && source[^1] is not ((byte)'\n' or (byte)'\r'))
+        reader.Input.CopyTo(_output);
+        if (reader.Input.GetLastByte() is >= 0 and not ('\n' or '\r'))
         {
             _output.WriteNewLine();
         }

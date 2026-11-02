@@ -28,6 +28,9 @@ public sealed class PdfDictionary : PdfObject, IEnumerable<KeyValuePair<PdfName,
     /// <inheritdoc/>
     public override PdfObjectKind Kind => PdfObjectKind.Dictionary;
 
+    /// <summary>Gets a value indicating whether the entries changed after the dictionary was parsed: an incremental save writes the object that contains it.</summary>
+    internal bool IsModified { get; private set; }
+
     /// <summary>Gets the number of entries.</summary>
     public int Count => _entries.Count;
 
@@ -54,11 +57,16 @@ public sealed class PdfDictionary : PdfObject, IEnumerable<KeyValuePair<PdfName,
             Version++;
             if (value is null)
             {
-                _entries.Remove(key);
+                IsModified |= _entries.Remove(key);
             }
-            else
+            else if (_entries.TryAdd(key, value, out var index))
             {
-                _entries[key] = value;
+                IsModified = true;
+            }
+            else if (!ReferenceEquals(_entries.GetAt(index).Value, value))
+            {
+                _entries.SetAt(index, value);
+                IsModified = true;
             }
         }
     }
@@ -79,13 +87,16 @@ public sealed class PdfDictionary : PdfObject, IEnumerable<KeyValuePair<PdfName,
     {
         ArgumentNullException.ThrowIfNull(key);
         Version++;
-        return _entries.Remove(key);
+        var removed = _entries.Remove(key);
+        IsModified |= removed;
+        return removed;
     }
 
     /// <summary>Removes every entry.</summary>
     public void Clear()
     {
         Version++;
+        IsModified |= _entries.Count > 0;
         _entries.Clear();
     }
 

@@ -132,4 +132,118 @@ public sealed class PdfLexerTests
         Assert.Equal("abc", Encoding.ASCII.GetString(lexer.DecodeLiteralString(token)));
         Assert.Equal(PdfTokenKind.EndOfInput, lexer.Next().Kind);
     }
+
+    [Fact]
+    public void LeadingZerosOfALongIntegerAreNotCounted()
+    {
+        var token = new PdfLexer(Encoding.ASCII.GetBytes(new string('0', 2000) + "5")).Next();
+
+        Assert.Equal(PdfTokenKind.Integer, token.Kind);
+        Assert.Equal(5, token.IntegerValue);
+    }
+
+    [Theory]
+    [InlineData(300, false)]
+    [InlineData(400, true)]
+    [InlineData(PdfLexer.MaxSignificantNumberLength, true)]
+    [InlineData(PdfLexer.MaxSignificantNumberLength + 1, true)]
+    [InlineData(5000, true)]
+    public void IntegerBeyondTheRangeOfADoubleSaturates(int digits, bool saturates)
+    {
+        foreach (var sign in new[] { "", "-" })
+        {
+            var token = new PdfLexer(Encoding.ASCII.GetBytes(sign + "1" + new string('0', digits - 1))).Next();
+
+            Assert.Equal(PdfTokenKind.Real, token.Kind);
+            var expected = saturates ? double.MaxValue : double.Parse("1e" + (digits - 1).ToString(System.Globalization.CultureInfo.InvariantCulture), System.Globalization.CultureInfo.InvariantCulture);
+            Assert.Equal(sign.Length == 0 ? expected : -expected, token.RealValue);
+        }
+    }
+
+    [Fact]
+    public void LongRealKeepsItsIntegerPart()
+    {
+        // The integer part is complete; the decimal digits beyond the buffer are far below the precision of a double
+        var text = "000" + "12345" + new string('0', 300) + "." + new string('7', 2000);
+        var token = new PdfLexer(Encoding.ASCII.GetBytes(text)).Next();
+
+        Assert.Equal(PdfTokenKind.Real, token.Kind);
+        Assert.Equal(12345e300, token.RealValue, 1e290);
+    }
+
+    [Fact]
+    public void LongDecimalPartIsParsed()
+    {
+        var token = new PdfLexer(Encoding.ASCII.GetBytes("-0." + new string('0', 100) + "25" + new string('0', 2000))).Next();
+
+        Assert.Equal(PdfTokenKind.Real, token.Kind);
+        Assert.Equal(-2.5e-101, token.RealValue, 1e-110);
+    }
+
+    [Fact]
+    public void LiteralStringWithoutEscapeIsCopiedOnce()
+    {
+        var content = new string('a', 1024 * 1024);
+        var lexer = new PdfLexer(Encoding.ASCII.GetBytes("(" + content + ")"));
+        var token = lexer.Next();
+        lexer.DecodeLiteralString(token);
+
+        var before = GC.GetAllocatedBytesForCurrentThread();
+        var bytes = lexer.DecodeLiteralString(token);
+        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+
+        Assert.Equal(content, Encoding.ASCII.GetString(bytes));
+        Assert.InRange(allocated, content.Length, content.Length + 1024);
+    }
+
+    [Fact]
+    public void RepeatedNamesOfAFileAreOneInstance()
+    {
+        var file = HandWrittenPdf.CreateSimple()
+            .Add(6, "<< /CustomKey /CustomValue >>")
+            .Add(7, "<< /CustomKey /CustomValue >>");
+        var document = PdfDocument.Open(file.ToArray());
+        Assert.True(document.Objects.TryGetReference(6, out var first));
+        Assert.True(document.Objects.TryGetReference(7, out var second));
+
+        var a = Assert.IsType<PdfDictionary>(first.Resolve());
+        var b = Assert.IsType<PdfDictionary>(second.Resolve());
+
+        Assert.Same(a.Keys.Single(), b.Keys.Single());
+        Assert.Same(a.GetName(PdfName.Create("CustomKey")), b.GetName(PdfName.Create("CustomKey")));
+        Assert.Equal("CustomValue", a.GetName(PdfName.Create("CustomKey"))!.Value);
+    }
+
+    [Fact]
+    public void NameCacheIsBounded()
+    {
+        var cache = new PdfNameCache();
+        var names = new HashSet<PdfName>();
+        for (var i = 0; i < 10_000; i++)
+        {
+            var lexer = new PdfLexer(Encoding.ASCII.GetBytes("/N" + i.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+            names.Add(cache.Get(lexer, lexer.Next()));
+        }
+
+        var longName = new PdfLexer(Encoding.ASCII.GetBytes("/" + new string('L', 100)));
+        names.Add(cache.Get(longName, longName.Next()));
+
+        Assert.HasCount(10_001, names);
+        Assert.Equal(4096, cache.Count);
+    }
+
+    [Fact]
+    public void NameCacheDecodesEscapes()
+    {
+        var cache = new PdfNameCache();
+        var lexer = new PdfLexer(Encoding.ASCII.GetBytes("/A#20B /Type /Typ#65"));
+
+        var escaped = cache.Get(lexer, lexer.Next());
+        var type = cache.Get(lexer, lexer.Next());
+        var escapedType = cache.Get(lexer, lexer.Next());
+
+        Assert.Equal("A B", escaped.Value);
+        Assert.Same(PdfNames.Type, type);
+        Assert.Same(PdfNames.Type, escapedType);
+    }
 }

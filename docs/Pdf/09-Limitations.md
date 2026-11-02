@@ -21,6 +21,8 @@ description: What the library does not do, so that you can plan around it.
 - The text extraction follows the order of the content and joins the glyphs into lines by their positions; it does not
   detect columns, and it does not recognize the text of scanned pages.
 - The library reports the permissions of an encrypted document, but does not enforce them.
+- A file larger than 2 GB is read with [OpenSeekable](cref:Meziantou.Framework.Pdf.PdfDocument.OpenSeekable), but a document is saved in memory: a document whose file
+  would be larger than 2 GB cannot be saved, in full or incrementally. One stream cannot be larger than 2 GB.
 
 ## Conformance and signatures
 

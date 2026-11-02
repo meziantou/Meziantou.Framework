@@ -76,4 +76,4 @@ document.SaveIncremental(output);
   [Encryption](../07-Security/02-Encryption.md).
 
 To sign a document, use [PdfSigner](cref:Meziantou.Framework.Pdf.Signing.PdfSigner), which appends the signature as an incremental update itself: see
-[Digital signatures](../07-Security/03-DigitalSignatures.md).
+[Digital signatures](../07-Security/04-DigitalSignatures.md).

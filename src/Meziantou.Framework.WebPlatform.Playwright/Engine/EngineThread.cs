@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using Meziantou.Framework.JavaScriptEngine;
 using Meziantou.Framework.WebPlatform.Dom;
 
 namespace Meziantou.Framework.WebPlatform.Playwright.Engine;
@@ -35,6 +36,12 @@ internal sealed class EngineThread : IDisposable
     }
 
     public bool IsCurrentThread => Environment.CurrentManagedThreadId == _thread.ManagedThreadId;
+
+    /// <summary>
+    /// Gets or sets the script engine of the browser context: the work posted to the thread runs in a scope of the engine,
+    /// so it can use the JavaScript objects.
+    /// </summary>
+    public JsEngine? ScriptEngine { get; set; }
 
     /// <summary>Gets the synchronization context of the thread.</summary>
     public SynchronizationContext SynchronizationContext => _synchronizationContext;
@@ -180,11 +187,21 @@ internal sealed class EngineThread : IDisposable
         }
     }
 
-    private static void Execute(SendOrPostCallback callback, object? state)
+    private void Execute(SendOrPostCallback callback, object? state)
     {
         try
         {
-            callback(state);
+            // The work that runs on another thread once the thread is stopped does not enter the engine: the engine is
+            // used by one thread at a time
+            if (ScriptEngine is { } scriptEngine && IsCurrentThread)
+            {
+                using var scope = scriptEngine.Enter();
+                callback(state);
+            }
+            else
+            {
+                callback(state);
+            }
         }
 #pragma warning disable CA1031 // The continuations report their own exceptions (to their tasks)
         catch (Exception)

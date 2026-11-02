@@ -67,6 +67,49 @@ Assert.Equal([55, 89, 144, 233], results);
 [Parse](cref:Meziantou.Framework.JavaScriptEngine.JsPreparedScript.Parse) reports the syntax errors of the whole script. The body of a nested function is compiled on its first call,
 once for all the engines.
 
+`realm.Execute(string)` parses and compiles its code on every call, and keeps no cache. When the same code runs often,
+parse it once and keep the [JsPreparedScript](cref:Meziantou.Framework.JavaScriptEngine.JsPreparedScript) yourself, for instance in a field or in a dictionary of the scripts of your
+application. Bound the dictionary when the scripts come from your users: the engine does not evict anything.
+
+A prepared script holds code, not state. Each run evaluates it again, in the realm that runs it:
+
+<!-- ref:../../../tests/Meziantou.Framework.JavaScriptEngine.Tests/JsEngineTests.cs;region=JavaScriptEngine_PreparedScriptRuns;format=md-fenced-code-block;dedent=true -->
+```csharp
+var counter = JsPreparedScript.Parse("var count = (count ?? 0) + 1; count", "counter.js");
+
+using var engine = new JsEngine();
+var first = engine.CreateRealm();
+var second = engine.CreateRealm();
+
+// Each run evaluates the script again, in the realm that runs it: its global declarations go to that realm
+Assert.Equal(1, first.Execute(counter).AsNumber());
+Assert.Equal(2, first.Execute(counter).AsNumber());
+Assert.Equal(1, second.Execute(counter).AsNumber());
+
+// A realm cannot declare the same let, const or class twice: run such a script once per realm
+var settings = JsPreparedScript.Parse("const limit = 10; limit", "settings.js");
+Assert.Equal(10, first.Execute(settings).AsNumber());
+var exception = Assert.Throws<JsException>(() => first.Execute(settings));
+Assert.StartsWith("SyntaxError", exception.Message, StringComparison.Ordinal);
+
+// The URL given to Parse is the location of the errors of every run
+var failing = JsPreparedScript.Parse("let total = 0;\nthrow new Error('Invalid total');", "https://example.com/total.js");
+exception = Assert.Throws<JsException>(() => second.Execute(failing));
+Assert.Equal(new JsSourceLocation("https://example.com/total.js", 2, 1), exception.Location);
+```
+<!-- endref -->
+
+- The global declarations of a run go to the realm that runs it, as for `realm.Execute(string)`. Running the script
+  again in the same realm sees the variables of the previous runs.
+- A realm cannot declare the same `let`, `const` or `class` twice: a second run of a script that declares one throws a
+  `SyntaxError`. Wrap the code in a function, or run it in a new realm, to run it several times.
+- The URL given to [Parse](cref:Meziantou.Framework.JavaScriptEngine.JsPreparedScript.Parse) is the location of the errors and of the stack traces of every run; it cannot be changed
+  per run.
+- The script can be shared between threads, but each engine stays on one thread at a time: see
+  [Threads](../03-EnginesAndRealms.md#threads).
+- A prepared script keeps the inline caches of its functions, which can reference the objects of the engines that ran
+  it: keep it only as long as you run it, so the engines it ran in can be collected.
+
 When the script is a part of a larger document, such as an inline script of an HTML page, pass its position in the
 document (`lineOffset` and `columnOffset`): the locations of the errors are then positions in the document.
 

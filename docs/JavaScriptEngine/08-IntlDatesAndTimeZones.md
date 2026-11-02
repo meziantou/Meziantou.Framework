@@ -76,4 +76,5 @@ The engine does not use the globalization of .NET or of the operating system: it
   `Intl.Segmenter` splits the words of Chinese, Japanese, Thai, Lao, Khmer and Burmese with the word lists of ICU.
 
 So the results are the same on Windows, Linux and macOS, and in an application that runs in invariant globalization
-mode. They change only when the data of the library is updated.
+mode. They change only when the data of the library is updated. See
+[Data versions and output differences](11-DataAndOutputDifferences.md) for the versions of the data.

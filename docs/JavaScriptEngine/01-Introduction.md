@@ -55,3 +55,5 @@ Every type is in the [Meziantou.Framework.JavaScriptEngine](cref:Meziantou.Frame
 - [Getting started](02-GettingStarted.md): install the package and run your first script.
 - [Engines and realms](03-EnginesAndRealms.md): the model behind the API.
 - [Limitations](09-Limitations.md): what the engine does not do.
+- [Data versions and output differences](11-DataAndOutputDifferences.md): the embedded data, and the results that can
+  differ from Node.js and the browsers.

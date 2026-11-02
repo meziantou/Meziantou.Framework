@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using System.Security.Cryptography;
+using Meziantou.Framework.Pdf.Filters;
 using Meziantou.Framework.Pdf.Objects;
 using Meziantou.Framework.Pdf.Security;
 
@@ -456,7 +457,7 @@ internal sealed partial class PdfFileWriter : IDisposable
     {
         if (value is PdfStream stream)
         {
-            WriteStreamObject(number, generation, stream.Dictionary, stream.EncodedData, ReadOnlySpan<byte>.Empty, stream.IsCompressible, references, encrypt);
+            WriteStreamObject(number, generation, stream.Dictionary, stream.EncodedData, ReadOnlySpan<byte>.Empty, stream.IsCompressible, references, encrypt, stream.PngPredictor);
             return;
         }
 
@@ -472,14 +473,16 @@ internal sealed partial class PdfFileWriter : IDisposable
     /// <summary>
     /// Writes a stream object whose data is <paramref name="data"/> followed by <paramref name="suffix"/>: compressed when
     /// allowed, then encrypted, with its length direct. The data of a stream of the document is written without a copy
-    /// when the output keeps its blocks; the compressed data is in a buffer reused by the next stream.
+    /// when the output keeps its blocks; the compressed data is in a buffer reused by the next stream. With a PNG
+    /// predictor, the data is also compressed after the predictor, and the smaller output is kept.
     /// </summary>
-    private void WriteStreamObject(int number, int generation, PdfDictionary source, ReadOnlyMemory<byte> data, ReadOnlySpan<byte> suffix, bool compressible, ReferenceWriter references, bool encrypt)
+    private void WriteStreamObject(int number, int generation, PdfDictionary source, ReadOnlyMemory<byte> data, ReadOnlySpan<byte> suffix, bool compressible, ReferenceWriter references, bool encrypt, PdfPngPredictor? predictor = null)
     {
         var dictionary = source.CloneShallow();
         var isShared = false;
         if (_options.CompressStreams && compressible && !dictionary.ContainsKey(PdfNames.Filter) && data.Length + suffix.Length > 0)
         {
+            var raw = data;
             _compressed.SetLength(0);
             using (var zlib = new ZLibStream(_compressed, CompressionLevel.Optimal, leaveOpen: true))
             {
@@ -488,8 +491,20 @@ internal sealed partial class PdfFileWriter : IDisposable
             }
 
             data = _compressed.GetBuffer().AsMemory(0, (int)_compressed.Length);
-            suffix = [];
             isShared = true;
+            if (predictor is not null && suffix.Length == 0)
+            {
+                // The PNG predictors make most photos smaller, and some flat images larger: the smaller data is kept
+                var predicted = FlateFilter.Encode(Predictor.EncodePng(raw.Span, predictor.RowLength, predictor.BytesPerPixel));
+                if (predicted.Length < data.Length)
+                {
+                    data = predicted;
+                    isShared = false;
+                    dictionary[PdfNames.DecodeParms] = predictor.CreateParameters();
+                }
+            }
+
+            suffix = [];
             dictionary[PdfNames.Filter] = PdfNames.FlateDecode;
         }
 

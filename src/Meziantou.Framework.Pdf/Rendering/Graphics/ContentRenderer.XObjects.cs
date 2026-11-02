@@ -1,5 +1,6 @@
 using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Imaging.Drawing;
+using Meziantou.Framework.Pdf.Filters;
 using Meziantou.Framework.Pdf.Objects;
 using Meziantou.Framework.Pdf.Rendering.Images;
 using Meziantou.Framework.Pdf.Rendering.Shadings;
@@ -233,7 +234,7 @@ internal sealed partial class ContentRenderer
         if (!_optionalContent.IsVisible)
             return;
 
-        DrawDecodedImage(canvas, PdfImageDecoder.DecodeInline(dictionary, data, resources, _cache));
+        DrawDecodedImage(canvas, PdfImageDecoder.DecodeInline(dictionary, data, resources, _document.Reader?.DecodeLimits ?? PdfDecodeLimits.Default, _cache));
     }
 
     /// <summary>Draws an image in the unit square of user space (8.9.4); a stencil mask is painted with the fill color.</summary>

@@ -66,6 +66,9 @@ public sealed class PdfStream : PdfObject
     /// <summary>Gets a value indicating whether the writer may compress the data: it was set without filter by the library or its caller.</summary>
     internal bool IsCompressible { get; private set; }
 
+    /// <summary>Gets or sets the PNG predictor the writer applies to the data before it compresses it (the samples of an image), or <see langword="null"/>.</summary>
+    internal PdfPngPredictor? PngPredictor { get; set; }
+
     /// <summary>Gets or sets the limits the decoding applies (the read options of the document the stream was loaded from).</summary>
     internal PdfDecodeLimits DecodeLimits { get; set; } = PdfDecodeLimits.Default;
 
@@ -86,6 +89,7 @@ public sealed class PdfStream : PdfObject
         _appended = null;
         _encoded = data.ToArray();
         IsCompressible = true;
+        PngPredictor = null;
         DataVersion++;
         Dictionary[PdfNames.Length] = PdfInteger.Get(_encoded.Length);
     }
@@ -116,6 +120,7 @@ public sealed class PdfStream : PdfObject
         _appended = null;
         _encoded = data;
         IsCompressible = compressible;
+        PngPredictor = null;
         DataVersion++;
         Dictionary[PdfNames.Length] = PdfInteger.Get(data.Length);
     }

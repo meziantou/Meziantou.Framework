@@ -174,18 +174,6 @@ internal static partial class JsInterpreter
         return sp;
     }
 
-    private static int ExecuteStoreGlobal(Frame frame, int sp)
-    {
-        var values = frame.Values;
-        var code = frame.Code.Code;
-        var pc = frame.Pc + 1;
-        var name = frame.Code.Keys[code[pc++]];
-        var isStrict = code[pc++] != 0;
-        StoreGlobal(frame.Realm, name, values[--sp], isStrict);
-        frame.Pc = pc;
-        return sp;
-    }
-
     private static int ExecuteLoadName(Frame frame, int sp)
     {
         var values = frame.Values;

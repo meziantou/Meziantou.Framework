@@ -582,8 +582,49 @@ internal static partial class JsInterpreter
         return ResolveGlobalBinding(frame.Realm, key);
     }
 
+    /// <summary>PutValue of a global reference (a name that is not declared in the code, or a global declaration).</summary>
+    private static void StoreGlobal(Frame frame, int name, int cache, JsValue value, bool strict)
+    {
+        var entry = frame.Caches[cache];
+        var realm = frame.Realm;
+        if (entry is not null && ReferenceEquals(entry.Realm, realm))
+        {
+            if (entry.Kind == PropertyCacheKind.GlobalLexical)
+            {
+                // An initialized mutable binding (the miss throws for the TDZ and the constants)
+                var binding = entry.Binding!;
+                if (!binding.IsConstant && !binding.Value.IsHole)
+                {
+                    binding.Value = value;
+                    return;
+                }
+            }
+            else if (entry.Epoch == realm.Engine.InlineCacheEpoch && entry.LexicalVersion == realm.GlobalEnvironment.LexicalVersion)
+            {
+                // A writable data property of the global object
+                var global = entry.Holder!;
+                if (ReferenceEquals(global.Map, entry.Map))
+                {
+                    global.SetValueForCache(entry.Position, entry.InTable, value);
+                    return;
+                }
+            }
+        }
+
+        StoreGlobalMiss(frame, name, cache, value, strict);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void StoreGlobalMiss(Frame frame, int name, int cache, JsValue value, bool strict)
+    {
+        ref readonly var key = ref frame.Code.Keys[name];
+        CacheGlobalBinding(frame, key, cache, forStore: true);
+        StoreGlobal(frame.Realm, key, value, strict);
+    }
+
     /// <summary>Remembers the global binding of a name in the cache of an instruction (a global lexical binding, or a data property of the global object).</summary>
-    private static void CacheGlobalBinding(Frame frame, in PropertyKey key, int cache)
+    /// <remarks>The cache of a store only remembers a writable data property of the global object.</remarks>
+    private static void CacheGlobalBinding(Frame frame, in PropertyKey key, int cache, bool forStore = false)
     {
         var realm = frame.Realm;
         if (key.IsString && realm.GlobalEnvironment.LexicalBindings.TryGetValue(key.AsString(), out var binding))
@@ -595,7 +636,8 @@ internal static partial class JsInterpreter
         {
             // A data property of the global object (valid until a script declares global lexical bindings in the realm: they shadow the global object)
             var global = realm.GlobalObject;
-            if (global.GetMapForCache(key) is { } map && global.TryFindOwnForCache(key, out var position, out var flags) && (flags & PropertyFlags.Accessor) == 0)
+            if (global.GetMapForCache(key) is { } map && global.TryFindOwnForCache(key, out var position, out var flags) && (flags & PropertyFlags.Accessor) == 0
+                && (!forStore || (flags & PropertyFlags.Writable) != 0))
             {
                 global.MarkInlineCacheHolder();
                 frame.Caches[cache] = new PropertyCacheEntry

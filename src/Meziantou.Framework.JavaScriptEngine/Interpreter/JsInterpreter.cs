@@ -307,6 +307,10 @@ internal static partial class JsInterpreter
                     values[sp++] = LoadGlobal(frame, code[pc], code[pc + 1]);
                     pc += 2;
                     break;
+                case OpCode.StoreGlobal:
+                    StoreGlobal(frame, code[pc], code[pc + 2], values[--sp], code[pc + 1] != 0);
+                    pc += 3;
+                    break;
                 case OpCode.PushScope:
                     frame.Environment = new DeclarativeEnvironment((ScopeInfo)frame.Code.Objects[code[pc++]], frame.Environment);
                     break;
@@ -970,7 +974,6 @@ internal static partial class JsInterpreter
             OpCode.ThrowConstAssignLocal => ExecuteThrowConstAssignLocal(frame),
             OpCode.ThrowConstAssignContext => ExecuteThrowConstAssignContext(frame),
             OpCode.LoadGlobalOrUndefined => ExecuteLoadGlobalOrUndefined(frame, sp),
-            OpCode.StoreGlobal => ExecuteStoreGlobal(frame, sp),
             OpCode.LoadName => ExecuteLoadName(frame, sp),
             OpCode.LoadNameOrUndefined => ExecuteLoadNameOrUndefined(frame, sp),
             OpCode.LoadNameForCall => ExecuteLoadNameForCall(frame, sp),

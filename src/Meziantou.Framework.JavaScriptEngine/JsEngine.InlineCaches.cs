@@ -17,7 +17,7 @@ public sealed partial class JsEngine
     /// The epoch of the inline caches of the engine: a cache that depends on other objects than the receiver is valid while
     /// it does not change (<see cref="InlineCache"/>). The engine runs on one thread at a time: no other engine changes it.
     /// </summary>
-    internal int InlineCacheEpoch;
+    internal int InlineCacheEpoch { get; set; }
 
     /// <summary>Gets the inline caches of the code of a template for the frames of this engine.</summary>
     internal PropertyCacheEntry?[] GetInlineCaches(FunctionTemplate template)

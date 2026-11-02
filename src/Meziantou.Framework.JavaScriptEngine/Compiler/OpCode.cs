@@ -105,7 +105,7 @@ internal enum OpCode
     /// <summary>(name) -> value: as LoadGlobal, undefined when missing (typeof)</summary>
     LoadGlobalOrUndefined,
 
-    /// <summary>(name, strict) value -></summary>
+    /// <summary>(name, strict, cache) value -></summary>
     StoreGlobal,
 
     /// <summary>(name) -> value: resolved at runtime in the environments (with, eval)</summary>

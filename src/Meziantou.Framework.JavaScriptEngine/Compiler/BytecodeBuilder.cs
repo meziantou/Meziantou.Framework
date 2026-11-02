@@ -293,6 +293,9 @@ internal sealed class BytecodeBuilder
         _code.Add(operand2);
     }
 
+    /// <summary>Emits a StoreGlobal (PutValue of a global reference) with its inline cache.</summary>
+    public void EmitStoreGlobal(int name, bool isStrict) => Emit(OpCode.StoreGlobal, name, isStrict ? 1 : 0, _cacheCount++);
+
     public void Emit(OpCode op, int operand1, int operand2, int operand3)
     {
         Debug.Assert(GetOperandCount(op) == 3, $"{op} does not have 3 operands");
@@ -471,7 +474,7 @@ internal sealed class BytecodeBuilder
     // ------------------------------------------------------------------------------------------------------------------
 
     /// <summary>Gets whether an instruction has an inline cache (its last operand is the index of the cache).</summary>
-    public static bool HasInlineCache(OpCode op) => op is OpCode.GetProperty or OpCode.GetMethod or OpCode.SetProperty or OpCode.DefineField or OpCode.LoadGlobal or OpCode.LoadGlobalOrUndefined or OpCode.ResolveGlobal;
+    public static bool HasInlineCache(OpCode op) => op is OpCode.GetProperty or OpCode.GetMethod or OpCode.SetProperty or OpCode.DefineField or OpCode.LoadGlobal or OpCode.LoadGlobalOrUndefined or OpCode.ResolveGlobal or OpCode.StoreGlobal;
 
     /// <summary>Gets whether an instruction is a conditional jump with a comparison (left right ->).</summary>
     public static bool IsCompareJump(OpCode op) => op is >= OpCode.JumpIfLessThan and <= OpCode.JumpIfStrictNotEqual;
@@ -511,7 +514,7 @@ internal sealed class BytecodeBuilder
                 or OpCode.GetProperty or OpCode.GetMethod or OpCode.SetProperty or OpCode.DefineField or OpCode.LoadGlobal or OpCode.LoadGlobalOrUndefined
                 or OpCode.ResolveGlobal
                 or OpCode.LoadContext or OpCode.StoreContext
-                or OpCode.StoreGlobal or OpCode.StoreName
+                or OpCode.StoreName
                 or OpCode.DeleteProperty
                 or OpCode.DefineMethod
                 or OpCode.GetPrivate or OpCode.SetPrivate or OpCode.PrivateIn
@@ -522,6 +525,7 @@ internal sealed class BytecodeBuilder
                 or OpCode.StoreResolved
                 => 2,
             OpCode.LoadContextChecked or OpCode.StoreContextChecked or OpCode.ThrowConstAssignContext or OpCode.LoadImport
+                or OpCode.StoreGlobal
                 => 3,
             _ => 0,
         };

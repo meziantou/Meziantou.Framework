@@ -1122,6 +1122,29 @@ public sealed class PdfFilterTests
         Assert.HasCount(8 * 8 * 3, ImageFilters.DecodeDct(jpeg, null, Limit));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void JpxDecodesEverySampleWithinTheLimit(bool gray)
+    {
+        // Lossless JPEG 2000: every decoded sample is known, one byte per component
+        const int Width = 13;
+        const int Height = 7;
+        var components = gray ? 1 : 3;
+        var expected = new byte[Width * Height * components];
+        for (var i = 0; i < expected.Length; i++)
+        {
+            expected[i] = (byte)(i * 37);
+        }
+
+        using var image = gray ? (Image)Image.ImportPixelBytes<Gray8>(expected, Width, Height) : Image.ImportPixelBytes<Rgb24>(expected, Width, Height);
+        using var jpx = new MemoryStream();
+        image.Save(jpx, new Imaging.Formats.Jpeg2000Encoder { Compression = Imaging.Formats.Jpeg2000Compression.Lossless });
+
+        Assert.Equal(expected, ImageFilters.DecodeJpx(jpx.ToArray(), expected.Length));
+        Assert.Throws<PdfResourceLimitException>(() => ImageFilters.DecodeJpx(jpx.ToArray(), expected.Length - 1));
+    }
+
     private static byte[] CreateJpeg(byte r, byte g, byte b)
     {
         using var image = Image.ImportPixelData<Rgb24>([.. Enumerable.Repeat(new Rgb24(r, g, b), 64)], 8, 8);

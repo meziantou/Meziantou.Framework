@@ -32,8 +32,12 @@ deconstruction, the variable takes the tag of the part it matches:
 - `var (id, projectId) = (order.Id, order.ProjectId)`: `id` is an OrderId.
 - `var (id, projectId) = order`: `id` is an OrderId when `Order` is a record, or has a `Deconstruct` method with tagged
   `out` parameters.
+- `var (id, projectId) = pair`: `id` is an OrderId when `pair` was created with `(order.Id, order.ProjectId)`.
 
-The element of a tuple, such as `pair.Item1`, takes the tag of the element of the tuple literal it was created with.
+The element of a tuple, such as `pair.Item1`, takes the tag of the element of the tuple literal it was created with. This
+follows copies of the tuple, such as `var copy = pair`, and nested tuples, such as `outer.Item1.Item1`. Each element
+keeps its own tag, so comparing two tuple variables, such as `pair == other`, or deconstructing one into existing
+variables, such as `(orderId, projectId) = pair`, checks each element separately.
 
 ## Tag a local with a comment
 

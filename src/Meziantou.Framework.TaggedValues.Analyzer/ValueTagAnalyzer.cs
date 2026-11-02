@@ -237,26 +237,33 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
     private static void AnalyzeTupleBinary(OperationAnalysisContext context, TagResolver resolver)
     {
         var operation = (ITupleBinaryOperation)context.Operation;
-        CompareTupleElements(context, resolver, operation.LeftOperand, operation.RightOperand);
+        CompareTuples(context, resolver, operation.Syntax, operation.LeftOperand, operation.RightOperand, isElsewhere: false);
 
-        static void CompareTupleElements(OperationAnalysisContext context, TagResolver resolver, IOperation left, IOperation right)
+        // Compares the elements of two tuples, e.g. (orderId, a) == (projectId, a) or orders == projects for tuple locals. The elements of a tuple that is
+        // not a literal are created elsewhere, so the comparison is reported on the element of the other side, or on the whole comparison.
+        static bool CompareTuples(OperationAnalysisContext context, TagResolver resolver, SyntaxNode reportNode, IOperation left, IOperation right, bool isElsewhere)
         {
-            left = left.UnwrapImplicitConversions();
-            right = right.UnwrapImplicitConversions();
-            if (left is ITupleOperation leftTuple && right is ITupleOperation rightTuple && leftTuple.Elements.Length == rightTuple.Elements.Length)
-            {
-                for (var i = 0; i < leftTuple.Elements.Length; i++)
-                {
-                    CompareTupleElements(context, resolver, leftTuple.Elements[i], rightTuple.Elements[i]);
-                }
+            if (left.Type is not INamedTypeSymbol { IsTupleType: true } leftType || right.Type is not INamedTypeSymbol { IsTupleType: true } rightType || leftType.TupleElements.Length != rightType.TupleElements.Length)
+                return false;
 
-                return;
+            var isLeftLiteral = !isElsewhere && left.UnwrapImplicitConversions() is ITupleOperation;
+            var isRightLiteral = !isElsewhere && right.UnwrapImplicitConversions() is ITupleOperation;
+            for (var i = 0; i < leftType.TupleElements.Length; i++)
+            {
+                if (resolver.GetTupleElement(left, i) is not { } leftElement || resolver.GetTupleElement(right, i) is not { } rightElement)
+                    continue;
+
+                var elementReportNode = isLeftLiteral ? leftElement.Syntax : isRightLiteral ? rightElement.Syntax : reportNode;
+                var reported = leftElement.Type is INamedTypeSymbol { IsTupleType: true } && rightElement.Type is INamedTypeSymbol { IsTupleType: true }
+                    ? CompareTuples(context, resolver, elementReportNode, leftElement, rightElement, isElsewhere: !isLeftLiteral || !isRightLiteral)
+                    : ReportComparison(context, resolver, elementReportNode, leftElement, rightElement);
+
+                // Report the comparison once when its elements are created elsewhere
+                if (reported && elementReportNode == reportNode)
+                    return true;
             }
 
-            if (left.Parent is ITupleOperation || right.Parent is ITupleOperation)
-            {
-                ReportComparison(context, resolver, left.Syntax, left, right);
-            }
+            return false;
         }
     }
 
@@ -269,7 +276,11 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
         }
     }
 
-    private static void ReportComparison(OperationAnalysisContext context, TagResolver resolver, SyntaxNode reportNode, IOperation left, IOperation right)
+    /// <summary>
+    /// Reports two compared values that have incompatible tags.
+    /// </summary>
+    /// <returns><see langword="true"/> when a diagnostic is reported.</returns>
+    private static bool ReportComparison(OperationAnalysisContext context, TagResolver resolver, SyntaxNode reportNode, IOperation left, IOperation right)
     {
         var leftTags = resolver.GetTag(left);
         var rightTags = resolver.GetTag(right);
@@ -285,15 +296,17 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
                     ValueTagDescriptions.Describe(tagged) + " is " + tags.ToAttributeString() + " and is compared with " + ValueTagDescriptions.Describe(untagged) + ", which is not tagged",
                     untagged,
                     tags);
+                return true;
             }
 
-            return;
+            return false;
         }
 
         if (leftTags.IsEmpty || TagInfo.AreCompatible(leftTags, rightTags))
-            return;
+            return false;
 
         context.ReportDiagnostic(ComparedValues, reportNode, ValueTagDescriptions.Describe(left), leftTags.ToAttributeString(), ValueTagDescriptions.Describe(right), rightTags.ToAttributeString());
+        return true;
     }
 
     /// <summary>
@@ -595,16 +608,28 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
                 }
                 else if (!elementTags.IsEmpty && !TagInfo.AreCompatible(elementTags, expected))
                 {
-                    ReportDeconstructedValueMismatch(context, resolver, element, local, elementTags, expected);
+                    ReportDeconstructedValueMismatch(context, resolver, element, local, ValueTagTargetKind.Local, elementTags, expected);
                 }
 
                 continue;
             }
 
-            // Only the elements of a tuple literal have an operation to report on
-            if (elementTags is null && elementValue is not null)
+            // Only the elements of a tuple literal have an operation to report on. Otherwise, e.g. (orderId, projectId) = pair, report on the target
+            if (elementTags is null)
             {
-                ReportAssignment(context, resolver, element, elementValue);
+                if (elementValue is not null)
+                {
+                    ReportAssignment(context, resolver, element, elementValue);
+                }
+            }
+            else if (!elementTags.IsEmpty && element is not IDiscardOperation)
+            {
+                var expected = resolver.GetTag(element);
+                if (!expected.IsEmpty && !TagInfo.AreCompatible(elementTags, expected))
+                {
+                    var (symbol, kind) = GetAssignmentTarget(resolver, element);
+                    ReportDeconstructedValueMismatch(context, resolver, element, symbol, kind, elementTags, expected);
+                }
             }
         }
     }
@@ -628,18 +653,19 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
     }
 
     /// <summary>
-    /// Reports a deconstructed value that has no operation to report on, e.g. a key of a dictionary in <c>foreach (var (key /* ValueTag=OrderId */, value) in map)</c>.
+    /// Reports a deconstructed value that has no operation to report on, e.g. a key of a dictionary in <c>foreach (var (key /* ValueTag=OrderId */, value) in map)</c>,
+    /// or an element of a tuple local in <c>(orderId, projectId) = pair</c>.
     /// </summary>
-    private static void ReportDeconstructedValueMismatch(OperationAnalysisContext context, TagResolver resolver, IOperation element, ILocalSymbol local, TagInfo elementTags, TagInfo expected)
+    private static void ReportDeconstructedValueMismatch(OperationAnalysisContext context, TagResolver resolver, IOperation element, ISymbol? target, string? targetKind, TagInfo elementTags, TagInfo expected)
     {
         var properties = ImmutableDictionary<string, string?>.Empty;
         var additionalLocations = new List<Location>();
-        if (elementTags.IsExplicit && resolver.GetLocationInCompilation(local) is { } localLocation)
+        if (targetKind is not null && elementTags.IsExplicit && target is not null && !target.IsImplicitlyDeclared && CanChangeTagOf(target, resolver) && resolver.GetLocationInCompilation(target) is { } targetLocation)
         {
             properties = properties
                 .Add(ValueTagDiagnostics.TagsProperty, elementTags.Serialize())
-                .Add(ValueTagDiagnostics.TargetKindProperty, ValueTagTargetKind.Local);
-            additionalLocations.Add(localLocation);
+                .Add(ValueTagDiagnostics.TargetKindProperty, ValueTagTargetKind.ForSymbol(target, targetKind));
+            additionalLocations.Add(targetLocation);
         }
 
         context.ReportDiagnostic(Diagnostic.Create(
@@ -649,7 +675,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
             properties,
             "the deconstructed value",
             elementTags.ToAttributeString(),
-            ValueTagDescriptions.DescribeSymbol(local),
+            target is null ? ValueTagDescriptions.Describe(element) : ValueTagDescriptions.DescribeSymbol(target) + ValueTagDescriptions.GetSite(target, element.Syntax.SyntaxTree),
             expected.ToAttributeString()));
     }
 

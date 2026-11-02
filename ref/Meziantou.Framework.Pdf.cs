@@ -1034,6 +1034,15 @@ namespace Meziantou.Framework.Pdf.Rendering
         public bool UseSystemFonts { get => throw null; init { } }
     }
 
+    public sealed class PdfRenderSession : System.IDisposable
+    {
+        public Meziantou.Framework.Pdf.PdfDocument Document { get => throw null; }
+        public Meziantou.Framework.Pdf.Rendering.PdfRenderOptions Options { get => throw null; }
+        public PdfRenderSession(Meziantou.Framework.Pdf.PdfDocument document, Meziantou.Framework.Pdf.Rendering.PdfRenderOptions? options = null) { }
+        public void Dispose() { }
+        public Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32> RenderPage(Meziantou.Framework.Pdf.PdfPage page) => throw null;
+    }
+
     public static class PdfRenderer
     {
         public static Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32> Render(this Meziantou.Framework.Pdf.PdfPage page, Meziantou.Framework.Pdf.Rendering.PdfRenderOptions? options = null) => throw null;

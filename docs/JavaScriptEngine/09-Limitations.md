@@ -49,6 +49,10 @@ them with this engine.
 - **No debugger.** There is no debugging protocol and no breakpoints; the errors give their location and their stack.
 - **The memory limit counts allocations**, not the memory that the script keeps. See
   [Limits and sandboxing](07-LimitsAndSandboxing.md).
+- **The nesting of the code is limited.** A source nested deeper than 1,500 levels (parentheses, brackets, blocks,
+  unary operators, nested functions...) is a `SyntaxError` ("the code is nested too deeply"), and so is a shallower one
+  when the stack of the thread is too small to compile it: the engine never overflows the stack. The long chains of
+  generated code are not nested: `else if` chains and chains of operators, member accesses and calls are handled in loops.
 
 ## Platform
 

@@ -25,12 +25,31 @@ public sealed partial class JsEngine
     /// jobs and the timeout jobs whose delay has elapsed, each followed by the promise jobs it enqueued. The timeout jobs
     /// whose delay has not elapsed stay in the queue.
     /// </summary>
+    /// <remarks>
+    /// Each job is an entry into JavaScript: the limits of <see cref="JsEngineOptions"/> apply to each job, not to the
+    /// whole drain, so jobs that keep enqueuing jobs can run forever. Run the jobs in an execution scope
+    /// (<see cref="EnterExecutionScope"/>) to bound the drain as a whole: the jobs are then part of the entry of the scope.
+    /// The jobs do not run once the execution is canceled.
+    /// </remarks>
     /// <exception cref="JsException">A job threw an exception, and the host does not handle the job errors (the other jobs stay in the queue).</exception>
+    /// <exception cref="JsTerminationException">A job was terminated, or the execution is canceled (the other jobs stay in the queue).</exception>
     public void RunJobs()
     {
         using var scope = Enter();
-        while (TryDequeueJob(out var job))
+        while (HasJobToRun())
         {
+            // A job too short to reach an interrupt point still checks the limits of the running entry (an execution
+            // scope). The limits are checked before the job is dequeued: a canceled job stays in the queue
+            if (IsExecuting)
+            {
+                CheckLimits();
+            }
+            else if (Options.CancellationToken.IsCancellationRequested)
+            {
+                throw new JsTerminationException(JsTerminationReason.Canceled, "The script was canceled");
+            }
+
+            TryDequeueJob(out var job);
             RunJob(job);
         }
     }
@@ -125,6 +144,24 @@ public sealed partial class JsEngine
         if (queue.PromiseJobs.TryDequeue(out job))
             return true;
 
+        MoveReadyTasks(queue);
+        return queue.Tasks.TryDequeue(out job);
+    }
+
+    /// <summary>Gets whether a job can run now (<see cref="TryDequeueJob"/> returns it).</summary>
+    private bool HasJobToRun()
+    {
+        var queue = _jobQueue;
+        if (queue.PromiseJobs.Count > 0)
+            return true;
+
+        MoveReadyTasks(queue);
+        return queue.Tasks.Count > 0;
+    }
+
+    /// <summary>Moves the generic jobs and the timeout jobs whose delay has elapsed to the tasks, when no task is ready.</summary>
+    private void MoveReadyTasks(JobQueue queue)
+    {
         if (queue.Tasks.Count == 0)
         {
             if (Volatile.Read(ref _genericJobInbox) is { } inbox)
@@ -137,8 +174,6 @@ public sealed partial class JsEngine
 
             EnqueueDueTimeoutJobs(queue);
         }
-
-        return queue.Tasks.TryDequeue(out job);
     }
 
     private void EnqueueDueTimeoutJobs(JobQueue queue)
@@ -158,6 +193,8 @@ public sealed partial class JsEngine
 
     internal void RunJob(in JsJob job)
     {
+        // A job is an entry into JavaScript, unless it runs in an execution scope or from a running script
+        using var entry = EnterHostEntry();
         var previousRealm = CurrentRealm;
         if (job.Realm is not null)
         {

@@ -41,7 +41,6 @@ internal sealed partial class Intrinsics
 
     private static readonly BuiltinMethodTable GeneratorPrototypeMethods =
     [
-        new("next", 1, static (_, thisValue, arguments, _) => GetGenerator(thisValue).Resume(arguments.Length > 0 ? arguments[0] : default, kind: 0)),
         new("return", 1, static (_, thisValue, arguments, _) => GetGenerator(thisValue).Resume(arguments.Length > 0 ? arguments[0] : default, kind: 2)),
         new("throw", 1, static (_, thisValue, arguments, _) => GetGenerator(thisValue).Resume(arguments.Length > 0 ? arguments[0] : default, kind: 1)),
     ];
@@ -88,6 +87,9 @@ internal sealed partial class Intrinsics
         _generatorFunctionPrototype.DefineBuiltIn("prototype", _generatorPrototype, PropertyFlags.Configurable);
         _generatorFunctionPrototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "GeneratorFunction", PropertyFlags.Configurable);
         _generatorPrototype.DefineBuiltIn("constructor", _generatorFunctionPrototype, PropertyFlags.Configurable);
+        // next is defined first: its step (for-of, spread...) does not create the result objects of the yields
+        realm.DefineEagerMethod(_generatorPrototype, "next", 1, static (_, thisValue, arguments, _) => GetGenerator(thisValue).Resume(arguments.Length > 0 ? arguments[0] : default, kind: 0))
+            .IteratorStep = static (_, thisValue, out value) => GetGenerator(thisValue).Step(out value);
         realm.DefineMethods(_generatorPrototype, GeneratorPrototypeMethods);
         _generatorPrototype.DefineBuiltIn(WellKnownSymbols.ToStringTag, "Generator", PropertyFlags.Configurable);
         _ = generatorFunction;

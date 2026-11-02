@@ -92,6 +92,7 @@ public sealed partial class JsEngine : IDisposable
         var previous = s_current;
         var ownsEngine = AcquireOwnership();
         s_current = this;
+        SyncDetachedInlineCacheInvalidations();
         return new JsEngineScope(previous, ownsEngine ? this : null);
     }
 

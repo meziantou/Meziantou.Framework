@@ -365,6 +365,9 @@ internal sealed partial class ContentRenderer
         _ => null,
     };
 
+    /// <summary>Gets the pixel of the device nearest to a coordinate of device space.</summary>
+    private static int ToDevicePixel(double value) => double.IsFinite(value) ? (int)Math.Clamp(Math.Round(value, MidpointRounding.AwayFromZero), -(1 << 24), 1 << 24) : 0;
+
     /// <summary>Sets the parameters of a graphics state parameter dictionary (8.4.5).</summary>
     private void SetGraphicsState(PdfDictionary? dictionary)
     {
@@ -419,6 +422,14 @@ internal sealed partial class ContentRenderer
                 case "TR2":
                 case "TR" when !dictionary.ContainsKey(PdfName.Create("TR2")):
                     _state.Transfer = ReadTransfer(value);
+                    break;
+
+                // The halftones are device-dependent: they are read only when the options ask for them
+                case "HT" when _cache.Options.UseHalftones:
+                    _state.Halftone = ReadHalftone(value);
+                    break;
+                case "HTO" when value is PdfArray { Count: >= 2 } origin:
+                    _state.HalftoneOrigin = (ToDevicePixel(origin.GetNumber(0)), ToDevicePixel(origin.GetNumber(1)));
                     break;
             }
         }

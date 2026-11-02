@@ -1,6 +1,10 @@
 namespace Meziantou.Framework.Pdf;
 
-/// <summary>Thrown when an encrypted document is opened without its user or owner password (<see cref="PdfReadOptions.Password"/>).</summary>
+/// <summary>
+/// Thrown when an encrypted document is opened without its user or owner password (<see cref="PdfReadOptions.Password"/>),
+/// or, for a document encrypted for certificates, without the certificate of a recipient and its private key
+/// (<see cref="PdfReadOptions.Certificate"/>).
+/// </summary>
 public sealed class PdfPasswordException : PdfException
 {
     /// <summary>Initializes a new instance of the <see cref="PdfPasswordException"/> class.</summary>

@@ -5,11 +5,14 @@ namespace Meziantou.Framework.JavaScriptEngine.Interpreter;
 /// <summary>An ECMAScript function object (https://tc39.es/ecma262/#sec-ecmascript-function-objects): compiled code and its environment.</summary>
 internal sealed class JsClosure : JsFunction
 {
+    private Environment _environment;
+
     public JsClosure(JsRealm realm, FunctionTemplate template, Environment environment, JsObject prototype, IScriptOrModule? script)
         : base(realm, prototype)
     {
         Template = template;
-        Environment = environment;
+        environment.MarkCaptured();
+        _environment = environment;
         Script = script;
         if ((template.Flags & FunctionTemplateFlags.Constructor) != 0)
         {
@@ -32,7 +35,15 @@ internal sealed class JsClosure : JsFunction
     public bool HasLegacyCallerAndArguments => (Template.Flags & (FunctionTemplateFlags.Constructor | FunctionTemplateFlags.Strict | FunctionTemplateFlags.ClassConstructor)) == FunctionTemplateFlags.Constructor;
 
     /// <summary>Gets the [[Environment]] of the function.</summary>
-    public Environment Environment { get; internal set; }
+    public Environment Environment
+    {
+        get => _environment;
+        internal set
+        {
+            value.MarkCaptured();
+            _environment = value;
+        }
+    }
 
     /// <summary>Gets or sets the [[HomeObject]] (methods): the object whose prototype is the target of super.</summary>
     public JsObject? HomeObject { get; set; }

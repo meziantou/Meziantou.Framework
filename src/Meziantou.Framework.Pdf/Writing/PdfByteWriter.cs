@@ -2,6 +2,7 @@ using System.Buffers;
 using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
+using Meziantou.Framework.Pdf.Parsing;
 
 namespace Meziantou.Framework.Pdf.Writing;
 
@@ -12,6 +13,8 @@ namespace Meziantou.Framework.Pdf.Writing;
 /// </summary>
 internal sealed class PdfByteWriter : IBufferWriter<byte>
 {
+    private const int CopyChunkSize = 64 * 1024;
+
     private readonly PdfOutputSink? _sink;
     private byte[] _buffer;
     private int _length;
@@ -101,6 +104,71 @@ internal sealed class PdfByteWriter : IBufferWriter<byte>
         _hash?.AppendData(data.Span);
         _flushed += data.Length;
         _sink.Write(data, isImmutable: true);
+    }
+
+    /// <summary>
+    /// Writes a range of the input of a file (the original file of an incremental update, the data of a stream not read
+    /// yet): a file in memory is written as one block; a file read from a stream is copied in chunks, or kept by a sink
+    /// that writes it later, so that the range is never in memory as a whole. The range can be larger than an array.
+    /// </summary>
+    public void Write(PdfInput input, long offset, long length)
+    {
+        if (input is MemoryPdfInput memory)
+        {
+            Write(memory.Data.Slice((int)offset, (int)length));
+            return;
+        }
+
+        if (_sink is { KeepsInputs: true })
+        {
+            Flush();
+            if (_hash is { } hash)
+            {
+                ForEachChunk(input, offset, length, hash.AppendData);
+            }
+
+            _flushed += length;
+            _sink.Write(input, offset, length);
+            return;
+        }
+
+        while (length > 0)
+        {
+            var span = GetSpan((int)Math.Min(length, CopyChunkSize));
+            var count = ReadExactly(input, offset, span[..(int)Math.Min(span.Length, length)]);
+            _length += count;
+            offset += count;
+            length -= count;
+        }
+    }
+
+    /// <summary>Reads a range of an input in chunks of a buffer reused for each chunk.</summary>
+    public static void ForEachChunk(PdfInput input, long offset, long length, Action<byte[], int, int> action)
+    {
+        var buffer = ArrayPool<byte>.Shared.Rent((int)Math.Min(length, CopyChunkSize));
+        try
+        {
+            while (length > 0)
+            {
+                var count = ReadExactly(input, offset, buffer.AsSpan(0, (int)Math.Min(buffer.Length, length)));
+                action(buffer, 0, count);
+                offset += count;
+                length -= count;
+            }
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+    }
+
+    private static int ReadExactly(PdfInput input, long offset, Span<byte> destination)
+    {
+        var read = input.Read(offset, destination);
+        if (read <= 0)
+            throw new IOException("The stream the document was read from ended before the data to write: it changed after the document was opened");
+
+        return read;
     }
 
     public byte[] ToArray() => WrittenSpan.ToArray();

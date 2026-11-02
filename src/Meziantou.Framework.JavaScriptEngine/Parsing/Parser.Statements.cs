@@ -328,18 +328,42 @@ internal sealed partial class Parser
         return Finish(new WithStatement { Object = obj, Body = body }, start);
     }
 
+    /// <summary>Parses an if statement; an else if chain is parsed in a loop: it is not a nesting level (long chains are common in generated code).</summary>
     private IfStatement ParseIf(int start)
     {
-        Next();
-        var test = ParseParenthesizedExpression();
-        var consequent = ParseStatement(StatementContext.IfBody);
-        Node? alternate = null;
-        if (Eat(TokenKind.Else))
+        var chain = new List<IfStatement>();
+        Node? alternate;
+        while (true)
         {
-            alternate = ParseStatement(StatementContext.IfBody);
+            Next();
+            var test = ParseParenthesizedExpression();
+            var consequent = ParseStatement(StatementContext.IfBody);
+            var node = new IfStatement { Test = test, Consequent = consequent };
+            node.Start = start;
+            chain.Add(node);
+            if (!Eat(TokenKind.Else))
+            {
+                alternate = null;
+                break;
+            }
+
+            if (_token.Kind != TokenKind.If)
+            {
+                alternate = ParseStatement(StatementContext.IfBody);
+                break;
+            }
+
+            start = _token.Start;
         }
 
-        return Finish(new IfStatement { Test = test, Consequent = consequent, Alternate = alternate }, start);
+        // The statements of the chain end with the last one
+        for (var i = chain.Count - 1; i >= 0; i--)
+        {
+            chain[i].Alternate = alternate;
+            alternate = Finish(chain[i], chain[i].Start);
+        }
+
+        return chain[0];
     }
 
     private ReturnStatement ParseReturn(int start)

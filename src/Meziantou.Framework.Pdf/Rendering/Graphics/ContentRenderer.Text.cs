@@ -180,6 +180,7 @@ internal sealed partial class ContentRenderer
         var fill = _state.FillColorSpace.ToRgb(_state.FillColor);
         var renderer = new ContentRenderer(_cache, _document, state, _depth + 1, _optionalContent)
         {
+            SuppressHalftones = SuppressHalftones,
             ForcedColor = ForcedColor,
             BaseMatrix = BaseMatrix,
             DeviceSize = DeviceSize,

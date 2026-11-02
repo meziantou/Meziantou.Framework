@@ -115,6 +115,10 @@ public sealed class PdfRenderSession : IDisposable
         var width = Math.Min(pageWidth, target.Width);
         var height = Math.Min(pageHeight, target.Height);
         _cache.BeginPage(cancellationToken);
+
+        // The resolution of the device: the default user space unit is 1/72 inch times the user unit of the page
+        var pageUserUnit = page.UserUnit is > 0 and var value && double.IsFinite(value) ? value : 1;
+        _cache.DeviceResolution = Math.Sqrt(Math.Abs((matrix.A * matrix.D) - (matrix.B * matrix.C))) * 72 / pageUserUnit;
         try
         {
             target.Draw(canvas => canvas.Clip(new Rectangle(0, 0, width, height), clipped => clipped.Antialiasing(options.PathAntialiasing, content =>

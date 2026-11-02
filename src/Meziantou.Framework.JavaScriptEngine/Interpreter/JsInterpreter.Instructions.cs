@@ -174,18 +174,6 @@ internal static partial class JsInterpreter
         return sp;
     }
 
-    private static int ExecuteStoreGlobal(Frame frame, int sp)
-    {
-        var values = frame.Values;
-        var code = frame.Code.Code;
-        var pc = frame.Pc + 1;
-        var name = frame.Code.Keys[code[pc++]];
-        var isStrict = code[pc++] != 0;
-        StoreGlobal(frame.Realm, name, values[--sp], isStrict);
-        frame.Pc = pc;
-        return sp;
-    }
-
     private static int ExecuteLoadName(Frame frame, int sp)
     {
         var values = frame.Values;
@@ -294,7 +282,13 @@ internal static partial class JsInterpreter
     {
         var values = frame.Values;
         var pc = frame.Pc + 1;
-        values[sp++] = JsArray.Create(frame.Realm, frame.Arguments);
+        var list = new ArgumentList();
+        foreach (var argument in frame.Arguments)
+        {
+            list.Add(argument);
+        }
+
+        values[sp++] = new JsValue(list);
         frame.Pc = pc;
         return sp;
     }
@@ -305,6 +299,16 @@ internal static partial class JsInterpreter
         var code = frame.Code.Code;
         var pc = frame.Pc + 1;
         values[sp++] = CreateArgumentsObject(frame, mapped: code[pc++] != 0);
+        frame.Pc = pc;
+        return sp;
+    }
+
+    private static int ExecuteCreateArgumentsForRead(Frame frame, int sp)
+    {
+        var values = frame.Values;
+        var code = frame.Code.Code;
+        var pc = frame.Pc + 1;
+        values[sp++] = CreateArgumentsForRead(frame, mapped: code[pc++] != 0);
         frame.Pc = pc;
         return sp;
     }
@@ -662,6 +666,17 @@ internal static partial class JsInterpreter
         return sp;
     }
 
+    private static int ExecuteArgumentListAppendSpread(Frame frame, int sp)
+    {
+        var values = frame.Values;
+        var pc = frame.Pc + 1;
+        var iterable = values[--sp];
+        frame.Sp = sp;
+        ((ArgumentList)values[sp - 1].Cell!).AddSpread(frame.Realm, iterable);
+        frame.Pc = pc;
+        return sp;
+    }
+
     private static int ExecuteArrayAppendSpread(Frame frame, int sp)
     {
         var values = frame.Values;
@@ -897,7 +912,7 @@ internal static partial class JsInterpreter
         else
         {
             context = (EvalContext)frame.Code.Objects[code[pc++]];
-            arguments = GetSpreadArguments(values[--sp]);
+            arguments = GetSpreadArguments(values[--sp]).ToArray();
             thisValue = values[--sp];
             function = values[--sp];
         }
@@ -922,7 +937,7 @@ internal static partial class JsInterpreter
         }
         else
         {
-            arguments = GetSpreadArguments(values[--sp]);
+            arguments = GetSpreadArguments(values[--sp]).ToArray();
         }
 
         var newTarget = values[--sp];
@@ -1363,7 +1378,16 @@ internal static partial class JsInterpreter
     {
         var values = frame.Values;
         var pc = frame.Pc + 1;
-        values[sp - 1] = IteratorOperations.CreateIteratorResultObject(frame.Realm, values[sp - 1], done: false);
+        if (frame.YieldsValue)
+        {
+            // The value is yielded to the step of an iteration (JsGenerator.Step): the result object is not observable
+            frame.YieldedValue = true;
+        }
+        else
+        {
+            values[sp - 1] = IteratorOperations.CreateIteratorResultObject(frame.Realm, values[sp - 1], done: false);
+        }
+
         frame.Pc = pc;
         return sp;
     }

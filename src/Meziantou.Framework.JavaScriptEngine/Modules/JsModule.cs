@@ -50,7 +50,7 @@ public abstract class JsModule : JsScriptOrModule
     /// <returns>A promise fulfilled when the whole graph is loaded, rejected when a module cannot be loaded.</returns>
     public JsValue LoadRequestedModules(object? hostDefined = null)
     {
-        using var scope = Realm.Engine.Enter();
+        using var entry = Realm.Engine.EnterHostEntry();
         return ModuleOperations.LoadRequestedModules(this, hostDefined);
     }
 
@@ -58,7 +58,7 @@ public abstract class JsModule : JsScriptOrModule
     /// <exception cref="JsException">An import cannot be resolved (a SyntaxError).</exception>
     public void Link()
     {
-        using var scope = Realm.Engine.Enter();
+        using var entry = Realm.Engine.EnterHostEntry();
         ModuleOperations.Link(this);
     }
 
@@ -66,7 +66,7 @@ public abstract class JsModule : JsScriptOrModule
     /// <returns>A promise fulfilled when the evaluation completes, rejected with the error of the evaluation.</returns>
     public JsValue Evaluate()
     {
-        using var scope = Realm.Engine.Enter();
+        using var entry = Realm.Engine.EnterHostEntry();
         return ModuleOperations.Evaluate(this);
     }
 

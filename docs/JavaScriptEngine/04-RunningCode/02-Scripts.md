@@ -67,6 +67,10 @@ Assert.Equal([55, 89, 144, 233], results);
 [Parse](cref:Meziantou.Framework.JavaScriptEngine.JsPreparedScript.Parse) reports the syntax errors of the whole script. The body of a nested function is compiled on its first call,
 once for all the engines.
 
+A prepared script keeps only the compiled code: each engine keeps what it learns while it runs the script (the inline
+caches of the property accesses). Keeping a prepared script alive does not keep the engines that ran it alive, and the
+engines that run the same script do not slow each other down.
+
 When the script is a part of a larger document, such as an inline script of an HTML page, pass its position in the
 document (`lineOffset` and `columnOffset`): the locations of the errors are then positions in the document.
 

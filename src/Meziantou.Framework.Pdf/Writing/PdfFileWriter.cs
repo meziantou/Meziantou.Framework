@@ -14,6 +14,7 @@ namespace Meziantou.Framework.Pdf.Writing;
 internal sealed partial class PdfFileWriter : IDisposable
 {
     private const int ObjectsPerObjectStream = 100;
+    private const long MaxTableOffset = 9_999_999_999;
 
     // A comment of bytes above 127 after the header tells transfer programs the file is binary (7.5.2)
     private static readonly byte[] BinaryMarker = [(byte)'%', 0xE2, 0xE3, 0xCF, 0xD3, (byte)'\n'];
@@ -32,7 +33,7 @@ internal sealed partial class PdfFileWriter : IDisposable
 
     // The security handler that encrypts the strings and streams of the objects, and the first part of the file
     // identifier its keys depend on (7.6.3.3)
-    private StandardSecurityHandler? _security;
+    private SecurityHandler? _security;
     private byte[]? _firstId;
 
     private PdfFileWriter(PdfDocument document, PdfSaveOptions options, PdfByteWriter output, CancellationToken cancellationToken)
@@ -131,7 +132,7 @@ internal sealed partial class PdfFileWriter : IDisposable
         if (_document.Encryption is { } encryption)
         {
             _firstId = GetOriginalFirstId() ?? RandomNumberGenerator.GetBytes(16);
-            _security = encryption.Handler ?? StandardSecurityHandler.Create(encryption, _firstId);
+            _security = encryption.Handler ?? SecurityHandler.Create(encryption, _firstId);
         }
 
         var references = new RenumberingReferenceWriter(numbers, objects, writerObjects);
@@ -276,7 +277,7 @@ internal sealed partial class PdfFileWriter : IDisposable
         var input = reader.Input;
         if (changed.Count == 0 && removed.Count == 0 && _document.OriginalTrailerFingerprint is { } original && original.Matches(trailer))
         {
-            CopyOriginal(input);
+            _output.Write(input, 0, input.Length);
             return;
         }
 
@@ -287,7 +288,7 @@ internal sealed partial class PdfFileWriter : IDisposable
             changed.Add(rootEntry);
         }
 
-        CopyOriginal(input);
+        _output.Write(input, 0, input.Length);
         if (input.GetLastByte() is >= 0 and not ('\n' or '\r'))
         {
             _output.WriteNewLine();
@@ -398,22 +399,6 @@ internal sealed partial class PdfFileWriter : IDisposable
     }
 
     /// <summary>
-    /// Writes the original file of an incremental update: a file in memory is passed to the output as one block, without
-    /// a copy; a file read from a stream is copied in chunks.
-    /// </summary>
-    private void CopyOriginal(PdfInput input)
-    {
-        if (input is MemoryPdfInput memory)
-        {
-            _output.Write(memory.Data);
-        }
-        else
-        {
-            input.CopyTo(_output);
-        }
-    }
-
-    /// <summary>
     /// Gets a value indicating whether an object of an update can be in an object stream (7.5.7): not a stream, not an
     /// object of a generation other than zero, not the encryption dictionary, and not a signature dictionary, whose byte
     /// ranges are offsets in the file and whose signature is written in place in the file (12.8.1).
@@ -444,13 +429,7 @@ internal sealed partial class PdfFileWriter : IDisposable
         }
 
         // The revisions of the standard security handler: 3 needs PDF 1.4, 4 needs PDF 1.6, 6 needs PDF 2.0
-        var encryptionVersion = _security?.Algorithm switch
-        {
-            PdfEncryptionAlgorithm.Rc4With128BitKey => PdfVersion.Pdf14,
-            PdfEncryptionAlgorithm.AesWith128BitKey => PdfVersion.Pdf16,
-            PdfEncryptionAlgorithm.AesWith256BitKey => PdfVersion.Pdf20,
-            _ => version,
-        };
+        var encryptionVersion = _security?.MinimumVersion ?? version;
         if (encryptionVersion > version)
         {
             if (_options.Version is not null)
@@ -474,6 +453,13 @@ internal sealed partial class PdfFileWriter : IDisposable
     {
         if (value is PdfStream stream)
         {
+            // The data of a stream not read yet is copied from the file the document was read from, unless it is encrypted
+            if (stream.PendingRange is { } range && (!encrypt || _security is null || _security.GetStreamMethod(stream.Dictionary) == CryptMethod.None))
+            {
+                WriteStreamObject(number, generation, stream.Dictionary, range, references, encrypt);
+                return;
+            }
+
             WriteStreamObject(number, generation, stream.Dictionary, stream.EncodedData, ReadOnlySpan<byte>.Empty, stream.IsCompressible, references, encrypt, stream.PngPredictor);
             return;
         }
@@ -557,6 +543,20 @@ internal sealed partial class PdfFileWriter : IDisposable
         }
 
         _output.Write(suffix);
+        _output.WriteAscii("\nendstream\nendobj\n");
+    }
+
+    /// <summary>Writes a stream object whose data is a range of the file the document was read from, without reading it into memory.</summary>
+    private void WriteStreamObject(int number, int generation, PdfDictionary source, PdfInputRange data, ReferenceWriter references, bool encrypt)
+    {
+        var dictionary = source.CloneShallow();
+        dictionary[PdfNames.Length] = PdfInteger.Get(data.Length);
+        WriteObjectHeader(number, generation);
+        var security = encrypt ? _security : null;
+        PdfStringTransform? encryptString = security is null ? null : text => security.EncryptString(text, number, generation);
+        PdfObjectSerializer.Write(_output, dictionary, references, encryptString);
+        _output.WriteAscii("\nstream\n");
+        _output.Write(data.Input, data.Offset, data.Length);
         _output.WriteAscii("\nendstream\nendobj\n");
     }
 
@@ -732,6 +732,10 @@ internal sealed partial class PdfFileWriter : IDisposable
 
     private void WriteTableEntry(long offset, int generation)
     {
+        // The offsets of a cross-reference table have 10 digits (7.5.4): a cross-reference stream has no limit
+        if (offset > MaxTableOffset)
+            throw new PdfResourceLimitException($"An object is at the offset {offset}, after the 10 digits of the offsets of a cross-reference table: save the document with {nameof(PdfSaveOptions)}.{nameof(PdfSaveOptions.UseObjectStreams)}, which writes a cross-reference stream");
+
         _output.WritePaddedInteger(offset, 10);
         _output.WriteSpace();
         _output.WritePaddedInteger(generation, 5);

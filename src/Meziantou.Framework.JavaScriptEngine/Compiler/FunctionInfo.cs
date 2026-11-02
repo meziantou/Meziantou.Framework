@@ -47,6 +47,12 @@ internal sealed class FunctionInfo
 
     public bool UsesMappedArguments { get; set; }
 
+    /// <summary>
+    /// Gets or sets whether the arguments object is only read by <c>arguments.length</c> and <c>arguments[key]</c> in the
+    /// code of the function: the object is not created, these expressions read the arguments of the frame.
+    /// </summary>
+    public bool HasSimpleArguments { get; set; }
+
     /// <summary>Gets the special bindings (this, new.target, home object, active function) declared in the function scope when an arrow function or eval uses them.</summary>
     public Variable? ThisVariable { get; set; }
 

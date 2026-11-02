@@ -9,8 +9,17 @@ public sealed partial class JsEngine
     private readonly object _atomicsSignal = new();
     private int _pendingAtomicsWaitAsyncCount;
 
-    /// <summary>Gets or sets the [[CanBlock]] field of the agent: when false, <c>Atomics.wait</c> throws a TypeError (e.g. the main thread of a browser).</summary>
-    internal bool CanBlock { get; set; } = true;
+    private bool? _canBlock;
+
+    /// <summary>
+    /// Gets or sets the [[CanBlock]] field of the agent: when false, <c>Atomics.wait</c> throws a TypeError (e.g. the main
+    /// thread of a browser). It is <see cref="JsEngineOptions.CanBlock"/> unless it is set.
+    /// </summary>
+    internal bool CanBlock
+    {
+        get => _canBlock ?? Options.CanBlock;
+        set => _canBlock = value;
+    }
 
     /// <summary>Gets the number of the waiters of <c>Atomics.waitAsync</c> whose promise is not resolved yet (the host keeps the agent alive while it is not zero).</summary>
     internal int PendingAtomicsWaitAsyncCount => Volatile.Read(ref _pendingAtomicsWaitAsyncCount);
@@ -50,7 +59,7 @@ public sealed partial class JsEngine
         while (PendingAtomicsWaitAsyncCount > 0)
         {
             if (Options.CancellationToken.IsCancellationRequested)
-                throw new JsTerminationException(JsTerminationReason.Canceled, "The execution was canceled");
+                ThrowTermination(JsTerminationReason.Canceled, "The execution was canceled");
 
             if (!HasPendingJobs)
             {

@@ -149,6 +149,7 @@ internal static partial class JsInterpreter
         var values = frame.Values;
         var pc = frame.Pc;
         var sp = frame.Sp;
+        JsValue error;
 
         while (true)
         {
@@ -307,6 +308,10 @@ internal static partial class JsInterpreter
                     values[sp++] = LoadGlobal(frame, code[pc], code[pc + 1]);
                     pc += 2;
                     break;
+                case OpCode.StoreGlobal:
+                    StoreGlobal(frame, code[pc], code[pc + 2], values[--sp], code[pc + 1] != 0);
+                    pc += 3;
+                    break;
                 case OpCode.PushScope:
                     frame.Environment = new DeclarativeEnvironment((ScopeInfo)frame.Code.Objects[code[pc++]], frame.Environment);
                     break;
@@ -314,13 +319,43 @@ internal static partial class JsInterpreter
                     frame.Environment = frame.Environment.Outer!;
                     break;
                 case OpCode.CopyScope:
-                    frame.Environment = ((DeclarativeEnvironment)frame.Environment).Copy();
-                    break;
+                    {
+                        // CreatePerIterationEnvironment: a copy only when a function object captured the bindings of the
+                        // iteration (otherwise, nothing can observe that the next iteration uses the same environment)
+                        var environment = (DeclarativeEnvironment)frame.Environment;
+                        if (environment.IsCaptured)
+                        {
+                            frame.Environment = environment.Copy();
+                        }
+
+                        break;
+                    }
+
                 case OpCode.LoadArgument:
                     {
                         // The arguments are stored after the registers
                         var index = code[pc++];
                         JsValue.Store(ref values[sp++], (uint)index < (uint)frame.ArgumentCount ? values[frame.Code.RegisterCount + index] : default);
+                        break;
+                    }
+
+                case OpCode.LoadArgumentsLength:
+                    JsValue.StoreNumber(ref values[sp++], frame.ArgumentCount);
+                    break;
+                case OpCode.LoadArgumentsElement:
+                    {
+                        // An index of an argument (the parameters do not change), or the property of an arguments object
+                        var key = values[sp - 1];
+                        if (key.IsNumber && key.NumberValue is var number && (uint)number < (uint)frame.ArgumentCount && (uint)number == number)
+                        {
+                            values[sp - 1] = values[frame.Code.RegisterCount + (int)(uint)number];
+                        }
+                        else
+                        {
+                            JsValue.Store(ref values[sp - 1], GetArgumentsProperty(frame, key, mapped: code[pc] != 0));
+                        }
+
+                        pc++;
                         break;
                     }
 
@@ -731,7 +766,20 @@ internal static partial class JsInterpreter
                     sp--;
                     ArrayAppend(values[sp - 1], values[sp]);
                     break;
+                case OpCode.NewArgumentList:
+                    values[sp++] = new JsValue(new ArgumentList());
+                    break;
+                case OpCode.ArgumentListAppend:
+                    sp--;
+                    ((ArgumentList)values[sp - 1].Cell!).Add(values[sp]);
+                    break;
                 case OpCode.GetProperty:
+                    if (values[sp - 1].IsNullOrUndefined)
+                    {
+                        error = CreateNullishPropertyReadError(frame, code[pc], values[sp - 1]);
+                        goto ThrowError;
+                    }
+
                     JsValue.Store(ref values[sp - 1], GetProperty(frame, code[pc], code[pc + 1], values[sp - 1]));
                     pc += 2;
                     break;
@@ -739,6 +787,12 @@ internal static partial class JsInterpreter
                     {
                         // object -> function object
                         var target = values[sp - 1];
+                        if (target.IsNullOrUndefined)
+                        {
+                            error = CreateNullishPropertyReadError(frame, code[pc], target);
+                            goto ThrowError;
+                        }
+
                         values[sp - 1] = GetProperty(frame, code[pc], code[pc + 1], target);
                         values[sp++] = target;
                         pc += 2;
@@ -797,6 +851,12 @@ internal static partial class JsInterpreter
                         }
 
                         frame.Sp = sp;
+                        if (!values[functionIndex].IsCallable)
+                        {
+                            error = CreateNotCallableError(frame);
+                            goto ThrowError;
+                        }
+
                         values[sp] = CallValue(frame, values[functionIndex], values[functionIndex + 1], values.AsSpan(functionIndex + 2, argumentCount));
                         sp++;
                         break;
@@ -815,7 +875,7 @@ internal static partial class JsInterpreter
                             pc++;
                         }
 
-                        var arguments = GetSpreadArguments(values[--sp]);
+                        var arguments = GetSpreadArguments(values[--sp]).Values;
                         sp -= 2;
                         if (values[sp].Cell is JsClosure closure && CanRunInline(closure))
                         {
@@ -841,7 +901,7 @@ internal static partial class JsInterpreter
                     {
                         int constructorIndex;
                         int argumentCount;
-                        JsValue[]? spreadArguments = null;
+                        ArgumentList? spreadArguments = null;
                         if (op == OpCode.New)
                         {
                             argumentCount = code[pc++];
@@ -851,12 +911,12 @@ internal static partial class JsInterpreter
                         {
                             spreadArguments = GetSpreadArguments(values[--sp]);
                             constructorIndex = sp - 1;
-                            argumentCount = spreadArguments.Length;
+                            argumentCount = spreadArguments.Values.Length;
                         }
 
                         sp = constructorIndex;
                         frame.Sp = sp;
-                        var arguments = spreadArguments ?? values.AsSpan(constructorIndex + 1, argumentCount);
+                        var arguments = spreadArguments is not null ? spreadArguments.Values : values.AsSpan(constructorIndex + 1, argumentCount);
                         var constructor = GetConstructor(frame, values[constructorIndex]);
                         if (constructor is JsClosure closure && CanConstructInline(closure))
                         {
@@ -909,6 +969,24 @@ internal static partial class JsInterpreter
                     sp = ExecuteCold(frame, op, sp);
                     pc = frame.Pc;
                     break;
+            }
+
+            continue;
+
+        // The frequent TypeErrors of the instructions (a property of null, a call of a value that is not callable) are
+        // handled as a throw statement: a handler of the run does not need a .NET exception
+        ThrowError:
+            {
+                frame.Sp = sp;
+                var location = engine.GetCurrentLocation();
+                if (!HandleException(ref current, entry, engine, error, isFaultingFrame: true))
+                    throw new JsException(error, location);
+
+                frame = current;
+                code = frame.Code.Code;
+                values = frame.Values;
+                pc = frame.Pc;
+                sp = frame.Sp;
             }
         }
     }
@@ -970,7 +1048,6 @@ internal static partial class JsInterpreter
             OpCode.ThrowConstAssignLocal => ExecuteThrowConstAssignLocal(frame),
             OpCode.ThrowConstAssignContext => ExecuteThrowConstAssignContext(frame),
             OpCode.LoadGlobalOrUndefined => ExecuteLoadGlobalOrUndefined(frame, sp),
-            OpCode.StoreGlobal => ExecuteStoreGlobal(frame, sp),
             OpCode.LoadName => ExecuteLoadName(frame, sp),
             OpCode.LoadNameOrUndefined => ExecuteLoadNameOrUndefined(frame, sp),
             OpCode.LoadNameForCall => ExecuteLoadNameForCall(frame, sp),
@@ -983,6 +1060,7 @@ internal static partial class JsInterpreter
             OpCode.LoadRestArguments => ExecuteLoadRestArguments(frame, sp),
             OpCode.LoadAllArguments => ExecuteLoadAllArguments(frame, sp),
             OpCode.CreateArguments => ExecuteCreateArguments(frame, sp),
+            OpCode.CreateArgumentsForRead => ExecuteCreateArgumentsForRead(frame, sp),
             OpCode.LoadFunction => ExecuteLoadFunction(frame, sp),
             OpCode.LoadNewTarget => ExecuteLoadNewTarget(frame, sp),
             OpCode.LoadHomeObject => ExecuteLoadHomeObject(frame, sp),
@@ -1023,6 +1101,7 @@ internal static partial class JsInterpreter
             OpCode.Debugger => ExecuteDebugger(frame, sp),
             OpCode.DebugStatement => ExecuteDebugStatement(frame, sp),
             OpCode.ArrayAppendSpread => ExecuteArrayAppendSpread(frame, sp),
+            OpCode.ArgumentListAppendSpread => ExecuteArgumentListAppendSpread(frame, sp),
             OpCode.DeleteProperty => ExecuteDeleteProperty(frame, sp),
             OpCode.DeleteElement => ExecuteDeleteElement(frame, sp),
             OpCode.DefineFieldComputed => ExecuteDefineFieldComputed(frame, sp),

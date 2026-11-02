@@ -15,7 +15,7 @@ internal static partial class JsInterpreter
     /// </summary>
     private static void StoreCacheEntry(Frame frame, int cache, PropertyCacheEntry entry, in PropertyKey key)
     {
-        var caches = frame.Code.Caches;
+        var caches = frame.Caches;
         var previous = caches[cache];
         var misses = previous is not null ? previous.Misses + 1 : 0;
         if (misses > MaxCacheMisses)
@@ -29,7 +29,7 @@ internal static partial class JsInterpreter
         var last = entry;
         for (var current = previous; current is not null; current = current.Next)
         {
-            if (current.IsStale || current.IsReplacedBy(entry))
+            if (current.IsStale(frame.Realm.Engine.InlineCacheEpoch) || current.IsReplacedBy(entry))
                 continue;
 
             if (++count > InlineCache.MaxPolymorphicEntries)
@@ -55,7 +55,7 @@ internal static partial class JsInterpreter
     {
         if (target.Cell is JsObject obj)
         {
-            var entry = frame.Code.Caches[cache];
+            var entry = frame.Caches[cache];
             if (entry is not null)
             {
                 if (ReferenceEquals(obj.Map, entry.Map))
@@ -63,7 +63,7 @@ internal static partial class JsInterpreter
                     if (entry.Kind == PropertyCacheKind.OwnSlot)
                         return obj.Slots![entry.Position];
 
-                    if (entry.Epoch == InlineCache.Epoch)
+                    if (entry.Epoch == frame.Realm.Engine.InlineCacheEpoch)
                     {
                         switch (entry.Kind)
                         {
@@ -86,14 +86,14 @@ internal static partial class JsInterpreter
         }
 
         // A primitive value: the length of a string, or a property of the prototype of the primitive (a method)
-        if (frame.Code.Caches[cache] is { } primitiveEntry && TryGetPrimitiveFromCache(frame.Realm, primitiveEntry, target, out var primitiveValue))
+        if (frame.Caches[cache] is { } primitiveEntry && TryGetPrimitiveFromCache(frame.Realm, primitiveEntry, target, out var primitiveValue))
             return primitiveValue;
 
         return GetPrimitivePropertyMiss(frame, name, cache, target);
     }
 
     /// <summary>Reads a property of an object with an entry of a cache: false when the entry does not apply to the object.</summary>
-    private static bool TryGetFromCache(PropertyCacheEntry entry, JsObject obj, JsValue target, out JsValue value)
+    private static bool TryGetFromCache(PropertyCacheEntry entry, JsObject obj, JsValue target, int epoch, out JsValue value)
     {
         if (ReferenceEquals(obj.Map, entry.Map))
         {
@@ -102,13 +102,13 @@ internal static partial class JsInterpreter
                 case PropertyCacheKind.OwnSlot:
                     value = obj.Slots![entry.Position];
                     return true;
-                case PropertyCacheKind.OwnTable when entry.Epoch == InlineCache.Epoch:
+                case PropertyCacheKind.OwnTable when entry.Epoch == epoch:
                     value = obj.GetValueForCache(entry.Position, inTable: true);
                     return true;
-                case PropertyCacheKind.Prototype when entry.Epoch == InlineCache.Epoch && ReferenceEquals(obj.PrototypeSlot, entry.Prototype):
+                case PropertyCacheKind.Prototype when entry.Epoch == epoch && ReferenceEquals(obj.PrototypeSlot, entry.Prototype):
                     value = entry.Holder!.GetValueForCache(entry.Position, entry.InTable);
                     return true;
-                case PropertyCacheKind.Accessor when entry.Epoch == InlineCache.Epoch && (entry.Prototype is null || ReferenceEquals(obj.PrototypeSlot, entry.Prototype)):
+                case PropertyCacheKind.Accessor when entry.Epoch == epoch && (entry.Prototype is null || ReferenceEquals(obj.PrototypeSlot, entry.Prototype)):
                     value = CallGetter((entry.Holder ?? obj).GetValueForCache(entry.Position, entry.InTable), target);
                     return true;
             }
@@ -134,7 +134,7 @@ internal static partial class JsInterpreter
                 return true;
             }
         }
-        else if (entry.Kind == PropertyCacheKind.PrimitivePrototype && entry.Epoch == InlineCache.Epoch
+        else if (entry.Kind == PropertyCacheKind.PrimitivePrototype && entry.Epoch == realm.Engine.InlineCacheEpoch
             && ReferenceEquals(GetPrimitivePrototypeOrNull(realm, target), entry.Prototype))
         {
             value = entry.Holder!.GetValueForCache(entry.Position, entry.InTable);
@@ -163,7 +163,7 @@ internal static partial class JsInterpreter
     private static JsValue GetPrimitivePropertyMiss(Frame frame, int name, int cache, JsValue target)
     {
         ref readonly var key = ref frame.Code.Keys[name];
-        var head = frame.Code.Caches[cache];
+        var head = frame.Caches[cache];
         if (head is { Kind: PropertyCacheKind.Megamorphic })
         {
             // Not cached
@@ -207,7 +207,7 @@ internal static partial class JsInterpreter
                                 Holder = holder,
                                 Position = position,
                                 InTable = holderMap is PropertyTable,
-                                Epoch = InlineCache.Epoch,
+                                Epoch = frame.Realm.Engine.InlineCacheEpoch,
                             }, key);
                         }
 
@@ -230,18 +230,18 @@ internal static partial class JsInterpreter
     private static JsValue GetPropertyMiss(Frame frame, int name, int cache, JsObject obj, JsValue target)
     {
         ref readonly var key = ref frame.Code.Keys[name];
-        var head = frame.Code.Caches[cache];
+        var head = frame.Caches[cache];
         if (head is { Kind: PropertyCacheKind.Megamorphic })
             return GetPropertyMegamorphic(frame.Realm.Engine, head, obj, key, target);
 
         // The other entries of a polymorphic site (the first one was checked)
         for (var current = head?.Next; current is not null; current = current.Next)
         {
-            if (TryGetFromCache(current, obj, target, out var value))
+            if (TryGetFromCache(current, obj, target, frame.Realm.Engine.InlineCacheEpoch, out var value))
                 return value;
         }
 
-        if (CreateGetEntry(obj, key) is { } entry)
+        if (CreateGetEntry(obj, key, frame.Realm.Engine.InlineCacheEpoch) is { } entry)
         {
             StoreCacheEntry(frame, cache, entry, key);
         }
@@ -253,17 +253,17 @@ internal static partial class JsInterpreter
     private static JsValue GetPropertyMegamorphic(JsEngine engine, PropertyCacheEntry site, JsObject obj, in PropertyKey key, JsValue target)
     {
         var megamorphicCache = engine.MegamorphicCache;
-        if (obj.Map is { } map && megamorphicCache.FindGet(map, obj.PrototypeSlot, key, site.KeyHash) is { } cached && TryGetFromCache(cached, obj, target, out var value))
+        if (obj.Map is { } map && megamorphicCache.FindGet(map, obj.PrototypeSlot, key, site.KeyHash) is { } cached && TryGetFromCache(cached, obj, target, engine.InlineCacheEpoch, out var value))
             return value;
 
         if (obj is JsArray array && key.Equals(LengthKey))
             return array.Length;
 
         // The entry is valid for the object: it gives the value without a second lookup
-        if (CreateGetEntry(obj, key) is { Map: not null } entry)
+        if (CreateGetEntry(obj, key, engine.InlineCacheEpoch) is { Map: not null } entry)
         {
             megamorphicCache.StoreGet(entry, obj.PrototypeSlot, key, site.KeyHash);
-            if (TryGetFromCache(entry, obj, target, out value))
+            if (TryGetFromCache(entry, obj, target, engine.InlineCacheEpoch, out value))
                 return value;
         }
 
@@ -271,7 +271,7 @@ internal static partial class JsInterpreter
     }
 
     /// <summary>Finds a property for a Get with an inline cache; null when the access cannot be cached.</summary>
-    private static PropertyCacheEntry? CreateGetEntry(JsObject obj, in PropertyKey key)
+    private static PropertyCacheEntry? CreateGetEntry(JsObject obj, in PropertyKey key, int epoch)
     {
         if (obj is JsArray && key.Equals(LengthKey))
             return new PropertyCacheEntry { Kind = PropertyCacheKind.ArrayLength };
@@ -291,12 +291,12 @@ internal static partial class JsInterpreter
             }
 
             if ((flags & PropertyFlags.Accessor) != 0)
-                return new PropertyCacheEntry { Map = map, Kind = PropertyCacheKind.Accessor, Position = position, InTable = ownInTable, Epoch = InlineCache.Epoch };
+                return new PropertyCacheEntry { Map = map, Kind = PropertyCacheKind.Accessor, Position = position, InTable = ownInTable, Epoch = epoch };
 
             if (!ownInTable)
                 return new PropertyCacheEntry { Map = map, Kind = PropertyCacheKind.OwnSlot, Position = position };
 
-            return new PropertyCacheEntry { Map = map, Kind = PropertyCacheKind.OwnTable, Position = position, Epoch = InlineCache.Epoch };
+            return new PropertyCacheEntry { Map = map, Kind = PropertyCacheKind.OwnTable, Position = position, Epoch = epoch };
         }
 
         var prototype = obj.PrototypeSlot;
@@ -317,7 +317,7 @@ internal static partial class JsInterpreter
                     Holder = holder,
                     Position = position,
                     InTable = holderMap is PropertyTable,
-                    Epoch = InlineCache.Epoch,
+                    Epoch = epoch,
                 };
             }
         }
@@ -347,17 +347,17 @@ internal static partial class JsInterpreter
 
     private static void SetProperty(Frame frame, int name, int cache, JsValue target, JsValue value)
     {
-        if (target.Cell is JsObject obj && frame.Code.Caches[cache] is { } entry && ReferenceEquals(obj.Map, entry.Map))
+        if (target.Cell is JsObject obj && frame.Caches[cache] is { } entry && ReferenceEquals(obj.Map, entry.Map))
         {
             switch (entry.Kind)
             {
                 case PropertyCacheKind.OwnSlot:
                     obj.Slots![entry.Position] = value;
                     return;
-                case PropertyCacheKind.Add when ReferenceEquals(obj.PrototypeSlot, entry.Prototype) && entry.Epoch == InlineCache.Epoch && obj.IsExtensibleSlot && ReferenceEquals(entry.Engine, frame.Realm.Engine):
+                case PropertyCacheKind.Add when ReferenceEquals(obj.PrototypeSlot, entry.Prototype) && entry.Epoch == frame.Realm.Engine.InlineCacheEpoch && obj.IsExtensibleSlot && ReferenceEquals(entry.Engine, frame.Realm.Engine):
                     obj.AddPropertyForCache(entry.NextShape!, value);
                     return;
-                case PropertyCacheKind.OwnTable when entry.Epoch == InlineCache.Epoch:
+                case PropertyCacheKind.OwnTable when entry.Epoch == frame.Realm.Engine.InlineCacheEpoch:
                     obj.SetValueForCache(entry.Position, inTable: true, value);
                     return;
             }
@@ -377,10 +377,10 @@ internal static partial class JsInterpreter
             case PropertyCacheKind.OwnSlot:
                 obj.Slots![entry.Position] = value;
                 return true;
-            case PropertyCacheKind.Add when ReferenceEquals(obj.PrototypeSlot, entry.Prototype) && entry.Epoch == InlineCache.Epoch && obj.IsExtensibleSlot && ReferenceEquals(entry.Engine, engine):
+            case PropertyCacheKind.Add when ReferenceEquals(obj.PrototypeSlot, entry.Prototype) && entry.Epoch == engine.InlineCacheEpoch && obj.IsExtensibleSlot && ReferenceEquals(entry.Engine, engine):
                 obj.AddPropertyForCache(entry.NextShape!, value);
                 return true;
-            case PropertyCacheKind.OwnTable when entry.Epoch == InlineCache.Epoch:
+            case PropertyCacheKind.OwnTable when entry.Epoch == engine.InlineCacheEpoch:
                 obj.SetValueForCache(entry.Position, inTable: true, value);
                 return true;
         }
@@ -395,14 +395,14 @@ internal static partial class JsInterpreter
         if (target.Cell is JsObject obj)
         {
             var engine = frame.Realm.Engine;
-            var head = frame.Code.Caches[cache];
+            var head = frame.Caches[cache];
             if (head is { Kind: PropertyCacheKind.Megamorphic })
             {
                 var megamorphicCache = engine.MegamorphicCache;
                 if (obj.Map is { } map && megamorphicCache.FindSet(map, obj.PrototypeSlot, key, head.KeyHash) is { } cached && TrySetFromCache(cached, obj, value, engine))
                     return;
 
-                if (CreateSetEntry(obj, key) is { Map: not null } megamorphicEntry)
+                if (CreateSetEntry(obj, key, engine) is { Map: not null } megamorphicEntry)
                 {
                     megamorphicCache.StoreSet(megamorphicEntry, obj.PrototypeSlot, key, head.KeyHash);
                 }
@@ -416,7 +416,7 @@ internal static partial class JsInterpreter
                         return;
                 }
 
-                if (CreateSetEntry(obj, key) is { } entry)
+                if (CreateSetEntry(obj, key, engine) is { } entry)
                 {
                     StoreCacheEntry(frame, cache, entry, key);
                 }
@@ -427,7 +427,7 @@ internal static partial class JsInterpreter
     }
 
     /// <summary>Finds where a Set stores a property, for an inline cache (before the Set); null when the access cannot be cached.</summary>
-    private static PropertyCacheEntry? CreateSetEntry(JsObject obj, in PropertyKey key)
+    private static PropertyCacheEntry? CreateSetEntry(JsObject obj, in PropertyKey key, JsEngine engine)
     {
         var map = obj.GetMapForCache(key);
         if (map is null)
@@ -442,7 +442,7 @@ internal static partial class JsInterpreter
                 return new PropertyCacheEntry { Map = map, Kind = PropertyCacheKind.OwnSlot, Position = position };
 
             obj.MarkInlineCacheHolder();
-            return new PropertyCacheEntry { Map = map, Kind = PropertyCacheKind.OwnTable, Position = position, Epoch = InlineCache.Epoch };
+            return new PropertyCacheEntry { Map = map, Kind = PropertyCacheKind.OwnTable, Position = position, Epoch = engine.InlineCacheEpoch };
         }
 
         // A new property: no setter nor read-only property in the prototypes, then a transition of the shape
@@ -469,7 +469,7 @@ internal static partial class JsInterpreter
             return null;
 
         MarkPrototypes(obj, map, last);
-        return new PropertyCacheEntry { Map = map, Kind = PropertyCacheKind.Add, Prototype = obj.PrototypeSlot, NextShape = next, Epoch = InlineCache.Epoch, Engine = JsEngine.Current };
+        return new PropertyCacheEntry { Map = map, Kind = PropertyCacheKind.Add, Prototype = obj.PrototypeSlot, NextShape = next, Epoch = engine.InlineCacheEpoch, Engine = engine };
     }
 
     // ------------------------------------------------------------------------------------------------------------------
@@ -480,7 +480,7 @@ internal static partial class JsInterpreter
     private static void DefineField(Frame frame, int name, int cache, JsValue target, JsValue value)
     {
         var obj = (JsObject)target.Cell!;
-        if (frame.Code.Caches[cache] is { } entry && ReferenceEquals(obj.Map, entry.Map) && obj.IsExtensibleSlot && ReferenceEquals(entry.Engine, frame.Realm.Engine))
+        if (frame.Caches[cache] is { } entry && ReferenceEquals(obj.Map, entry.Map) && obj.IsExtensibleSlot && ReferenceEquals(entry.Engine, frame.Realm.Engine))
         {
             obj.AddPropertyForCache(entry.NextShape!, value);
             return;
@@ -493,7 +493,7 @@ internal static partial class JsInterpreter
     private static void DefineFieldMiss(Frame frame, int name, int cache, JsObject obj, JsValue value)
     {
         ref readonly var key = ref frame.Code.Keys[name];
-        var head = frame.Code.Caches[cache];
+        var head = frame.Caches[cache];
         if (!obj.IsExotic && head is not { Kind: PropertyCacheKind.Megamorphic })
         {
             // The other entries of a polymorphic site (the first one was checked)
@@ -523,7 +523,7 @@ internal static partial class JsInterpreter
 
     private static JsValue LoadGlobal(Frame frame, int name, int cache)
     {
-        var entry = frame.Code.Caches[cache];
+        var entry = frame.Caches[cache];
         if (entry is not null && ReferenceEquals(entry.Realm, frame.Realm))
         {
             if (entry.Kind == PropertyCacheKind.GlobalLexical)
@@ -532,7 +532,7 @@ internal static partial class JsInterpreter
                 if (!value.IsHole)
                     return value;
             }
-            else if (entry.Epoch == InlineCache.Epoch && entry.LexicalVersion == frame.Realm.GlobalEnvironment.LexicalVersion)
+            else if (entry.Epoch == frame.Realm.Engine.InlineCacheEpoch && entry.LexicalVersion == frame.Realm.GlobalEnvironment.LexicalVersion)
             {
                 var global = entry.Holder!;
                 if (ReferenceEquals(global.Map, entry.Map))
@@ -559,14 +559,14 @@ internal static partial class JsInterpreter
     private static JsValue ResolveGlobal(Frame frame, int name, int cache)
     {
         var realm = frame.Realm;
-        var entry = frame.Code.Caches[cache];
+        var entry = frame.Caches[cache];
         if (entry is not null && ReferenceEquals(entry.Realm, realm))
         {
             // A global lexical binding is never removed (it exists even before its initialization)
             if (entry.Kind == PropertyCacheKind.GlobalLexical)
                 return new JsValue(realm.GlobalEnvironment);
 
-            if (entry.Epoch == InlineCache.Epoch && entry.LexicalVersion == realm.GlobalEnvironment.LexicalVersion && ReferenceEquals(entry.Holder!.Map, entry.Map))
+            if (entry.Epoch == realm.Engine.InlineCacheEpoch && entry.LexicalVersion == realm.GlobalEnvironment.LexicalVersion && ReferenceEquals(entry.Holder!.Map, entry.Map))
                 return new JsValue(realm.GlobalEnvironment);
         }
 
@@ -581,30 +581,72 @@ internal static partial class JsInterpreter
         return ResolveGlobalBinding(frame.Realm, key);
     }
 
+    /// <summary>PutValue of a global reference (a name that is not declared in the code, or a global declaration).</summary>
+    private static void StoreGlobal(Frame frame, int name, int cache, JsValue value, bool strict)
+    {
+        var entry = frame.Caches[cache];
+        var realm = frame.Realm;
+        if (entry is not null && ReferenceEquals(entry.Realm, realm))
+        {
+            if (entry.Kind == PropertyCacheKind.GlobalLexical)
+            {
+                // An initialized mutable binding (the miss throws for the TDZ and the constants)
+                var binding = entry.Binding!;
+                if (!binding.IsConstant && !binding.Value.IsHole)
+                {
+                    binding.Value = value;
+                    return;
+                }
+            }
+            else if (entry.Epoch == realm.Engine.InlineCacheEpoch && entry.LexicalVersion == realm.GlobalEnvironment.LexicalVersion)
+            {
+                // A writable data property of the global object
+                var global = entry.Holder!;
+                if (ReferenceEquals(global.Map, entry.Map))
+                {
+                    global.SetValueForCache(entry.Position, entry.InTable, value);
+                    return;
+                }
+            }
+        }
+
+        StoreGlobalMiss(frame, name, cache, value, strict);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void StoreGlobalMiss(Frame frame, int name, int cache, JsValue value, bool strict)
+    {
+        ref readonly var key = ref frame.Code.Keys[name];
+        CacheGlobalBinding(frame, key, cache, forStore: true);
+        StoreGlobal(frame.Realm, key, value, strict);
+    }
+
     /// <summary>Remembers the global binding of a name in the cache of an instruction (a global lexical binding, or a data property of the global object).</summary>
-    private static void CacheGlobalBinding(Frame frame, in PropertyKey key, int cache)
+    /// <remarks>The cache of a store only remembers a writable data property of the global object.</remarks>
+    private static void CacheGlobalBinding(Frame frame, in PropertyKey key, int cache, bool forStore = false)
     {
         var realm = frame.Realm;
         if (key.IsString && realm.GlobalEnvironment.LexicalBindings.TryGetValue(key.AsString(), out var binding))
         {
             // The bindings of the global lexical declarations are never removed
-            frame.Code.Caches[cache] = new PropertyCacheEntry { Kind = PropertyCacheKind.GlobalLexical, Binding = binding, Realm = realm };
+            frame.Caches[cache] = new PropertyCacheEntry { Kind = PropertyCacheKind.GlobalLexical, Binding = binding, Realm = realm };
         }
         else
         {
             // A data property of the global object (valid until a script declares global lexical bindings in the realm: they shadow the global object)
             var global = realm.GlobalObject;
-            if (global.GetMapForCache(key) is { } map && global.TryFindOwnForCache(key, out var position, out var flags) && (flags & PropertyFlags.Accessor) == 0)
+            if (global.GetMapForCache(key) is { } map && global.TryFindOwnForCache(key, out var position, out var flags) && (flags & PropertyFlags.Accessor) == 0
+                && (!forStore || (flags & PropertyFlags.Writable) != 0))
             {
                 global.MarkInlineCacheHolder();
-                frame.Code.Caches[cache] = new PropertyCacheEntry
+                frame.Caches[cache] = new PropertyCacheEntry
                 {
                     Kind = PropertyCacheKind.OwnTable,
                     Map = map,
                     Holder = global,
                     Position = position,
                     InTable = map is PropertyTable,
-                    Epoch = InlineCache.Epoch,
+                    Epoch = realm.Engine.InlineCacheEpoch,
                     LexicalVersion = realm.GlobalEnvironment.LexicalVersion,
                     Realm = realm,
                 };

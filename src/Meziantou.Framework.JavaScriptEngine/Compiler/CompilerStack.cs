@@ -9,10 +9,29 @@ namespace Meziantou.Framework.JavaScriptEngine.Compiler;
 /// </summary>
 internal static class CompilerStack
 {
+    // The passes check the limits of the running entry every InterruptCheckNodes nodes: the compilation of a long source is
+    // part of the entry that compiles it
+    private const int InterruptCheckNodes = 4096;
+
+    [ThreadStatic]
+    private static int s_nodeCount;
+
     public static void EnsureSufficientStack()
     {
         if (!RuntimeHelpers.TryEnsureSufficientExecutionStack())
             ThrowNestedTooDeeply();
+
+        if (++s_nodeCount >= InterruptCheckNodes)
+        {
+            CheckInterrupt();
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void CheckInterrupt()
+    {
+        s_nodeCount = 0;
+        JsEngine.Current?.CheckCompilationInterrupt();
     }
 
     /// <summary>The start of the message of the syntax errors of the code nested too deeply (the parser uses it too).</summary>

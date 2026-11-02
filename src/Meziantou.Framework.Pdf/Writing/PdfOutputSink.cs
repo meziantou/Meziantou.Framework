@@ -1,3 +1,5 @@
+using Meziantou.Framework.Pdf.Parsing;
+
 namespace Meziantou.Framework.Pdf.Writing;
 
 /// <summary>Where a <see cref="PdfByteWriter"/> sends the bytes of a save when its buffer is full.</summary>
@@ -16,4 +18,10 @@ internal abstract class PdfOutputSink
     /// <param name="data">The bytes.</param>
     /// <param name="isImmutable"><see langword="true"/> when the bytes are not modified until the save completes, so that the sink can keep them without a copy.</param>
     public virtual void Write(ReadOnlyMemory<byte> data, bool isImmutable) => Write(data.Span);
+
+    /// <summary>Gets a value indicating whether the sink keeps the ranges of an input (<see cref="Write(PdfInput, long, long)"/>) to read them when it writes them.</summary>
+    public virtual bool KeepsInputs => false;
+
+    /// <summary>Takes a range of the input of a file, which does not change until the save completes.</summary>
+    public virtual void Write(PdfInput input, long offset, long length) => throw new NotSupportedException();
 }

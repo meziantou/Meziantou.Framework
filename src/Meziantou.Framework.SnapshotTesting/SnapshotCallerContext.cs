@@ -147,6 +147,18 @@ internal sealed partial class SnapshotCallerContext
     /// </summary>
     public void Freeze() => _stackWalk ??= StackWalkResult.Unavailable;
 
+    /// <summary>
+    /// Walks the call stack now when the test framework does not provide the names the walk would look for. An
+    /// asynchronous assertion calls it before its first await: after it, the frames of the test are gone.
+    /// </summary>
+    public void CaptureCallStack()
+    {
+        if (_testContext is { MethodName: not null, ClassName: not null })
+            return;
+
+        ResolveStackWalk();
+    }
+
     private StackWalkResult ResolveStackWalk() => _stackWalk ??= WalkStack(needFileInfo: false);
 
     private static StackWalkResult WalkStack(bool needFileInfo)

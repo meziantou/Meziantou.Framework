@@ -29,6 +29,82 @@ public sealed class PdfRenderOptions
     public bool RenderAnnotations { get; init; } = true;
 
     /// <summary>
+    /// Gets or initializes the purpose of the rendering: it selects the annotations drawn (the Print, NoView and Hidden
+    /// flags) and the optional content that the usage of its groups turns on or off.
+    /// </summary>
+    public PdfRenderIntent Intent
+    {
+        get;
+        init
+        {
+            if (!Enum.IsDefined(value))
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The intent is not defined");
+
+            field = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets or initializes the name (<c>/Name</c>) of the optional content configuration of the document that sets which
+    /// layers are visible (ISO 32000-2, 8.11.4.3); <see langword="null"/>, or a name the document does not have, for the
+    /// default configuration.
+    /// </summary>
+    public string? OptionalContentConfiguration { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the visibility of optional content groups (layers) that replaces the one of the configuration:
+    /// the keys are the names of the groups (<c>/Name</c>), and every group of a name is turned on or off.
+    /// </summary>
+    public IReadOnlyDictionary<string, bool>? OptionalContentGroupStates { get; init; }
+
+    /// <summary>Gets or initializes whether the edges of the paths, the images and the shadings are antialiased; <see langword="false"/> draws them with hard edges.</summary>
+    public bool PathAntialiasing { get; init; } = true;
+
+    /// <summary>Gets or initializes whether the edges of the glyphs of the text are antialiased; <see langword="false"/> draws them with hard edges.</summary>
+    public bool TextAntialiasing { get; init; } = true;
+
+    /// <summary>
+    /// Gets or initializes the region of the page rendered, in the default user space of the page (the coordinates of its
+    /// boxes); <see langword="null"/> for the crop box. The region is intersected with the media box, and the image is
+    /// turned by the <c>/Rotate</c> of the page as the whole page would be.
+    /// </summary>
+    public PdfRectangle? Region { get; init; }
+
+    /// <summary>
+    /// Gets or initializes the width of the image, in pixels: the resolution is the one that gives the region (the crop
+    /// box by default, turned by the rotation of the page) this width, instead of <see cref="Dpi"/>. With
+    /// <see cref="Height"/>, the region is fitted inside both, keeping its proportions.
+    /// </summary>
+    public int? Width
+    {
+        get;
+        init
+        {
+            if (value is <= 0)
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The width must be a positive number");
+
+            field = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets or initializes the height of the image, in pixels: the resolution is the one that gives the region (the crop
+    /// box by default, turned by the rotation of the page) this height, instead of <see cref="Dpi"/>. With
+    /// <see cref="Width"/>, the region is fitted inside both, keeping its proportions.
+    /// </summary>
+    public int? Height
+    {
+        get;
+        init
+        {
+            if (value is <= 0)
+                throw new ArgumentOutOfRangeException(nameof(value), value, "The height must be a positive number");
+
+            field = value;
+        }
+    }
+
+    /// <summary>
     /// Gets or initializes the font that replaces a font the document does not embed. When it is <see langword="null"/>
     /// or returns <see langword="null"/>, a standard font is replaced by a bundled font of the same widths, another font
     /// by a font of the system, else by a bundled font of its kind.

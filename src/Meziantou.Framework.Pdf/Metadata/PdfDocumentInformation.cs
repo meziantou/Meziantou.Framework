@@ -7,7 +7,7 @@ namespace Meziantou.Framework.Pdf;
 /// The document information dictionary (ISO 32000-2, 14.3.3), the <c>/Info</c> entry of the trailer. Setting a value
 /// creates the dictionary; setting <see langword="null"/> removes the entry.
 /// </summary>
-/// <remarks>PDF 2.0 deprecates every entry but the dates in favor of the XMP metadata: <see cref="PdfDocument.UpdateXmpMetadata"/> writes these values to it.</remarks>
+/// <remarks>PDF 2.0 deprecates every entry but the dates in favor of the XMP metadata: <see cref="PdfDocument.UpdateXmpMetadata()"/> writes these values to it.</remarks>
 public sealed class PdfDocumentInformation
 {
     private readonly PdfDocument _document;
@@ -76,6 +76,35 @@ public sealed class PdfDocumentInformation
         set => SetDate(PdfNames.ModDate, value);
     }
 
+    /// <summary>
+    /// Gets or sets whether the document includes the trapping information of prepress workflows (the <c>/Trapped</c>
+    /// entry), or <see langword="null"/> when the entry is missing or not valid. The XMP metadata has it as <c>pdf:Trapped</c>.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is not a member of <see cref="PdfTrapped"/>.</exception>
+    public PdfTrapped? Trapped
+    {
+        get => Dictionary?.GetResolved(PdfNames.Trapped) switch
+        {
+            PdfName { Value: "True" } => PdfTrapped.True,
+            PdfName { Value: "False" } => PdfTrapped.False,
+            PdfName { Value: "Unknown" } => PdfTrapped.Unknown,
+
+            // PDF 1.3 and earlier: a boolean
+            PdfBoolean boolean => boolean.Value ? PdfTrapped.True : PdfTrapped.False,
+            _ => null,
+        };
+        set
+        {
+            if (value is null)
+            {
+                Dictionary?.Remove(PdfNames.Trapped);
+                return;
+            }
+
+            GetOrCreateDictionary()[PdfNames.Trapped] = PdfName.Create(GetTrappedName(value.Value));
+        }
+    }
+
     /// <summary>Gets the value of an entry as a text, such as a custom entry.</summary>
     /// <param name="key">The key.</param>
     /// <returns>The text, or <see langword="null"/>.</returns>
@@ -85,6 +114,15 @@ public sealed class PdfDocumentInformation
     /// <param name="key">The key.</param>
     /// <param name="value">The text, or <see langword="null"/> to remove the entry.</param>
     public void SetText(string key, string? value) => SetText(PdfName.Create(key), value);
+
+    /// <summary>Gets the value of <c>/Trapped</c> and of <c>pdf:Trapped</c>.</summary>
+    internal static string GetTrappedName(PdfTrapped value) => value switch
+    {
+        PdfTrapped.True => "True",
+        PdfTrapped.False => "False",
+        PdfTrapped.Unknown => "Unknown",
+        _ => throw new ArgumentOutOfRangeException(nameof(value), value, "The value is not a member of PdfTrapped"),
+    };
 
     private string? GetText(PdfName key) => Dictionary?.GetText(key);
 

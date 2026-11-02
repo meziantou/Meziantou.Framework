@@ -85,12 +85,15 @@ internal static partial class JsInterpreter
         public Frame Frame { get; } = frame;
 
         public PromiseCapability Capability { get; } = capability;
+
+        /// <summary>Gets the module whose body runs, for a module with a top-level await.</summary>
+        public JsSourceTextModule? Module { get; init; }
     }
 
     /// <summary>AsyncBlockStart: runs a frame as the body of an async function (the body of a module with a top-level await).</summary>
-    internal static void StartAsyncBlock(Frame frame, PromiseCapability capability)
+    internal static void StartAsyncBlock(Frame frame, PromiseCapability capability, JsSourceTextModule? module = null)
     {
-        var driver = new AsyncFunctionDriver(frame, capability);
+        var driver = new AsyncFunctionDriver(frame, capability) { Module = module };
         frame.Owner = driver;
         AsyncFunctionStep(driver, default, isThrow: false, isStart: true);
     }
@@ -108,6 +111,18 @@ internal static partial class JsInterpreter
             driver.Capability.Reject(ex.Value);
             return;
         }
+        catch (Exception ex)
+        {
+            // A termination or a .NET exception: the function cannot complete, its promise is rejected
+            var error = CreateAbortError(frame.Realm, ex);
+            if (driver.Module is { } module)
+            {
+                Modules.ModuleOperations.AsyncModuleExecutionRejected(module, error);
+            }
+
+            driver.Capability.Reject(error);
+            throw;
+        }
 
         if (frame.State == FrameState.SuspendedAwait)
         {
@@ -116,6 +131,19 @@ internal static partial class JsInterpreter
         }
 
         driver.Capability.Resolve(result);
+    }
+
+    /// <summary>
+    /// The error that settles the promise of an async function, an async generator or a module whose code is stopped by an
+    /// exception that is not a JavaScript exception (a <see cref="JsTerminationException"/> or a .NET exception): the
+    /// exception goes to the host, the code that waits for the promise sees this error.
+    /// </summary>
+    internal static JsValue CreateAbortError(JsRealm realm, Exception exception)
+    {
+        var message = exception is JsTerminationException
+            ? "The execution was terminated: " + exception.Message
+            : "The execution was stopped by a .NET exception: " + exception.GetType().FullName + ": " + exception.Message;
+        return realm.CreateError(ErrorType.Error, message);
     }
 
     /// <summary>Await(value): the continuations run in a promise job when the promise settles.</summary>

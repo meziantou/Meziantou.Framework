@@ -9,7 +9,8 @@ namespace Meziantou.Framework.Pdf;
 /// <remarks>
 /// The tree is created in the document when the first element is added. Each page whose content is tagged gets a
 /// <c>/StructParents</c> key, each tagged annotation a <c>/StructParent</c> key; the parent tree, the
-/// <c>/MarkInfo</c> entry of the catalog and the tab order of the pages are written when the document is saved.
+/// <c>/MarkInfo</c> entry of the catalog and the tab order of the pages are written when the document is saved, when
+/// the tree was changed through this class: a tree that is only read is saved as it is.
 /// </remarks>
 public sealed class PdfStructureTree
 {
@@ -47,6 +48,9 @@ public sealed class PdfStructureTree
     private readonly Dictionary<int, PdfObject> _parentTree = [];
     private PdfDictionary? _root;
     private int _nextKey;
+
+    // Whether marked content, annotations or elements were added: reading the tree does not rewrite it
+    private bool _modified;
 
     internal PdfStructureTree(PdfDocument document)
     {
@@ -105,6 +109,7 @@ public sealed class PdfStructureTree
         }
 
         roleMap[PdfName.Create(type)] = PdfName.Create(mappedType);
+        _modified = true;
     }
 
     /// <summary>Adds an element at the top of the tree.</summary>
@@ -117,6 +122,7 @@ public sealed class PdfStructureTree
         if (_root is not null)
             return _root;
 
+        _modified = true;
         _root = new PdfDictionary
         {
             [PdfNames.Type] = StructTreeRootName,
@@ -130,6 +136,7 @@ public sealed class PdfStructureTree
     {
         ArgumentException.ThrowIfNullOrEmpty(type);
         var root = EnsureRoot();
+        _modified = true;
         var dictionary = new PdfDictionary
         {
             [PdfNames.Type] = StructElemName,
@@ -180,6 +187,7 @@ public sealed class PdfStructureTree
     /// <summary>Gets the next marked-content identifier of a page, and records the element its content belongs to (14.7.5.2).</summary>
     internal int AddMarkedContent(PdfStructureElement element, PdfPage page)
     {
+        _modified = true;
         var contents = GetPageContents(page);
         var mcid = contents.Count;
         contents.Add(element.Reference);
@@ -197,6 +205,7 @@ public sealed class PdfStructureTree
         if (annotation.Page.Document != _document || annotation.Reference is not { } reference)
             throw new ArgumentException("The annotation is not an indirect object of a page of the document", nameof(annotation));
 
+        _modified = true;
         var key = _nextKey++;
         annotation.Dictionary[StructParentName] = PdfInteger.Get(key);
         _parentTree[key] = element.Reference;
@@ -211,7 +220,7 @@ public sealed class PdfStructureTree
     /// <summary>Writes the parent tree and the entries of the catalog that a tagged document has (14.7.5.4, 14.8.2.1).</summary>
     internal void Write()
     {
-        if (_root is null)
+        if (_root is null || !_modified)
             return;
 
         var nums = new PdfArray();
@@ -234,7 +243,22 @@ public sealed class PdfStructureTree
         }
 
         _root[ParentTreeNextKeyName] = PdfInteger.Get(_nextKey);
-        _document.Catalog[PdfName.Create("MarkInfo")] = new PdfDictionary { [PdfName.Create("Marked")] = PdfBoolean.True };
+        // The other entries of the mark information dictionary (/Suspects, /UserProperties) are kept
+        var markInfoName = PdfName.Create("MarkInfo");
+        var markedName = PdfName.Create("Marked");
+        if (_document.Catalog.Get<PdfDictionary>(markInfoName) is { } markInfo)
+        {
+            if (!markInfo.GetBoolean(markedName))
+            {
+                markInfo[markedName] = PdfBoolean.True;
+            }
+        }
+        else
+        {
+            _document.Catalog[markInfoName] = new PdfDictionary { [markedName] = PdfBoolean.True };
+        }
+
+        _modified = false;
 
         // The annotations of a tagged page are in the order of the structure (12.5.1)
         foreach (var page in _document.Pages)
@@ -244,6 +268,81 @@ public sealed class PdfStructureTree
                 page.Dictionary[PdfName.Create("Tabs")] = PdfNames.S;
             }
         }
+    }
+
+    /// <summary>
+    /// Removes the content of a page removed from the document (14.7.5): its entries in the parent tree (the marked
+    /// content of the page and its annotations), and the marked-content and object references of the elements whose page
+    /// (<c>/Pg</c> of the reference or of its element) is the page. The elements stay.
+    /// </summary>
+    internal void RemovePage(PdfPage page)
+    {
+        if (_root is null)
+            return;
+
+        _modified = true;
+        if (page.Dictionary.GetResolved(StructParentsName) is PdfInteger key)
+        {
+            _parentTree.Remove((int)key.Value);
+        }
+
+        if (page.Dictionary.Get<PdfArray>(PdfNames.Annots) is { } annotations)
+        {
+            for (var i = 0; i < annotations.Count; i++)
+            {
+                if (annotations.GetResolved(i) is PdfDictionary annotation && annotation.GetResolved(StructParentName) is PdfInteger annotationKey)
+                {
+                    _parentTree.Remove((int)annotationKey.Value);
+                }
+            }
+        }
+
+        var visited = new HashSet<PdfDictionary>(ReferenceEqualityComparer.Instance);
+        void Visit(PdfDictionary element, int depth)
+        {
+            if (depth > 64 || !visited.Add(element))
+                return;
+
+            var elementPage = element[PgName] as PdfReference;
+            bool IsOnPage(PdfObject kid)
+            {
+                return PdfReference.ResolveIfReference(kid) switch
+                {
+                    PdfInteger => page.Reference.Equals(elementPage),
+                    PdfDictionary dictionary when dictionary.IsType(McrName) || dictionary.IsType(ObjrName) || dictionary.ContainsKey(McidName) => page.Reference.Equals(dictionary[PgName] as PdfReference ?? elementPage),
+                    _ => false,
+                };
+            }
+
+            switch (element[PdfNames.K])
+            {
+                case PdfArray kids:
+                    for (var i = kids.Count - 1; i >= 0; i--)
+                    {
+                        if (IsOnPage(kids[i]))
+                        {
+                            kids.RemoveAt(i);
+                        }
+                    }
+
+                    break;
+                case { } kid when IsOnPage(kid):
+                    element.Remove(PdfNames.K);
+                    break;
+            }
+
+            if (page.Reference.Equals(elementPage))
+            {
+                element.Remove(PgName);
+            }
+
+            foreach (var child in GetChildren(element))
+            {
+                Visit(child.Dictionary, depth + 1);
+            }
+        }
+
+        Visit(_root, depth: 0);
     }
 
     /// <summary>

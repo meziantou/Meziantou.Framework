@@ -131,6 +131,37 @@ public sealed class QpdfInteropTests
     }
 
     [Theory]
+    [InlineData("ascii", 130, "")]
+    [InlineData("split-character", 126, "é")]
+    [InlineData("split-emoji", 125, "\U0001F600")]
+    public async Task LongAes256PasswordsAreTruncatedLikeQpdf(string name, int asciiLength, string suffix)
+    {
+        // 7.6.4.3.3: the UTF-8 password is truncated to 127 bytes, even inside a character, as qpdf reads it. The files
+        // qpdf 12 writes with a password longer than 127 bytes cannot be opened by qpdf itself: only the files of the
+        // library are checked
+        // On Windows, a character outside the BMP does not reach qpdf intact through its command line
+        global::Xunit.Assert.SkipWhen(OperatingSystem.IsWindows() && suffix.Any(char.IsSurrogate), "qpdf does not receive the characters outside the BMP of its arguments on Windows");
+        var password = new string('a', asciiLength) + suffix;
+        var qpdf = await QpdfTool.LocateAsync(XunitCancellationToken);
+        var directory = Path.Combine(AppContext.BaseDirectory, "InteropOutput");
+        Directory.CreateDirectory(directory);
+
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4);
+        document.Encryption = new PdfEncryption(password, password);
+        var byLibrary = Path.Combine(directory, "long-password-" + name + ".pdf");
+        await File.WriteAllBytesAsync(byLibrary, document.ToByteArray(), XunitCancellationToken);
+        var result = await qpdf.CheckAsync(byLibrary, password, XunitCancellationToken);
+        Assert.Equal(0, result.ExitCode, result.StandardOutputText + result.StandardError);
+        Assert.DoesNotContain("Incorrect password supplied", result.StandardOutputText, StringComparison.Ordinal);
+        Assert.Contains("R = 6", result.StandardOutputText, StringComparison.Ordinal);
+
+        // The password truncated on a character boundary is not the password
+        var truncated = await qpdf.CheckAsync(byLibrary, new string('a', asciiLength), XunitCancellationToken);
+        Assert.Equal(suffix.Length != 0, truncated.StandardOutputText.Contains("Incorrect password supplied", StringComparison.Ordinal));
+    }
+
+    [Theory]
     [MemberData(nameof(ValidFixtures))]
     public async Task FixturesPassTheCheck(string fixture)
     {

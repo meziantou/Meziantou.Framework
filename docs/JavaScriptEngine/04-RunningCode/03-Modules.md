@@ -85,8 +85,13 @@ public sealed class AppModuleLoader(IReadOnlyDictionary<string, string> files, I
 - [LoadImportedModule](cref:Meziantou.Framework.JavaScriptEngine.JsModuleLoader.LoadImportedModule) receives each request: its [Specifier](cref:Meziantou.Framework.JavaScriptEngine.JsModuleLoadRequest.Specifier) (`'./format.js'`), its [Type](cref:Meziantou.Framework.JavaScriptEngine.JsModuleLoadRequest.Type) (the `type` import
   attribute, or null), its [Realm](cref:Meziantou.Framework.JavaScriptEngine.JsModuleLoadRequest.Realm) (where to create the module), and the module or script that imports it
   ([ReferrerModule](cref:Meziantou.Framework.JavaScriptEngine.JsModuleLoadRequest.ReferrerModule), [ReferrerUrl](cref:Meziantou.Framework.JavaScriptEngine.JsModuleLoadRequest.ReferrerUrl)). Resolve relative specifiers against [ReferrerUrl](cref:Meziantou.Framework.JavaScriptEngine.JsModuleLoadRequest.ReferrerUrl) when your modules are in folders.
-- Complete the request with [Complete](cref:Meziantou.Framework.JavaScriptEngine.JsModuleLoadRequest.Complete), or fail it with [Fail](cref:Meziantou.Framework.JavaScriptEngine.JsModuleLoadRequest.Fail). A loader can complete a request later, for instance
-  once a file is downloaded.
+- Complete the request with [Complete](cref:Meziantou.Framework.JavaScriptEngine.JsModuleLoadRequest.Complete), or fail it with [Fail](cref:Meziantou.Framework.JavaScriptEngine.JsModuleLoadRequest.Fail), once: a second call throws an `InvalidOperationException`. A loader
+  can complete a request later, for instance once a file is downloaded. See [Load modules asynchronously](#load-modules-asynchronously).
+- An exception that [LoadImportedModule](cref:Meziantou.Framework.JavaScriptEngine.JsModuleLoader.LoadImportedModule) throws before it completes the request fails the request: a [JsException](cref:Meziantou.Framework.JavaScriptEngine.JsException) with its
+  value, any other exception (a `FileNotFoundException`...) with a `TypeError` whose message contains the one of the
+  exception, such as `Cannot load the module './format.js': Could not find file 'format.js'`. The `import()` or the
+  loading of the graph is rejected, the exception does not reach your code. A [JsTerminationException](cref:Meziantou.Framework.JavaScriptEngine.JsTerminationException), and an exception
+  thrown after the request is completed, go to the caller.
 - The same specifier from the same module must give the same module object each time: keep the modules you created.
 - `realm.ParseModule` creates a JavaScript module; [CreateJsonModule](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.CreateJsonModule), [CreateTextModule](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.CreateTextModule) and [CreateBytesModule](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.CreateBytesModule)
   create the modules of the `json`, `text` and `bytes` types; [CreateSyntheticModule](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.CreateSyntheticModule) creates a module whose exports
@@ -178,6 +183,28 @@ Assert.Equal("TypeError: Cannot find the module './missing.js'", engine.ToString
 - When the evaluation throws, `module.HasEvaluationError` is true, [EvaluationError](cref:Meziantou.Framework.JavaScriptEngine.JsModule.EvaluationError) is the thrown value and
   [EvaluationErrorLocation](cref:Meziantou.Framework.JavaScriptEngine.JsModule.EvaluationErrorLocation) is where it was thrown.
 - `realm.ParseModule` itself throws a [JsException](cref:Meziantou.Framework.JavaScriptEngine.JsException) (a `SyntaxError`) for a module that is not valid.
+- When a limit stops the evaluation of a module, or a .NET function throws an exception that is not a JavaScript
+  error, the exception goes to the caller of [Evaluate](cref:Meziantou.Framework.JavaScriptEngine.JsModule.Evaluate) (or of [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs) for a module that uses top-level `await`). The
+  module and the modules that import it are [Evaluated](cref:Meziantou.Framework.JavaScriptEngine.JsModuleStatus.Evaluated) with an error such as `Error: The execution was terminated: The
+  script exceeded its time limit`: the next evaluation or `import()` of the module does not run it again, it is
+  rejected with this error.
+
+## Load modules asynchronously
+
+A loader does not have to complete a request before it returns. [Complete](cref:Meziantou.Framework.JavaScriptEngine.JsModuleLoadRequest.Complete) and [Fail](cref:Meziantou.Framework.JavaScriptEngine.JsModuleLoadRequest.Fail) can be called from any
+thread:
+
+- On the thread of the engine, the loading continues immediately: a thread that has entered the engine, such as in
+  [LoadImportedModule](cref:Meziantou.Framework.JavaScriptEngine.JsModuleLoader.LoadImportedModule) or in a callback of a script, or the last thread that entered it, such as the event
+  loop of your application between two scripts.
+- On another thread, such as the continuation of a download, the completion is queued: the engine is not touched from
+  that thread, and the loading continues on the thread of the engine, from the next [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs). The completions run in
+  the order they were made, even when a script runs while they arrive.
+
+The module given to [Complete](cref:Meziantou.Framework.JavaScriptEngine.JsModuleLoadRequest.Complete) is created by `realm.ParseModule` and the other methods of the realm, which must run
+on the thread of the engine: download the source text on any thread, then create the module from the event loop of
+your application. `Fail(string)` creates its `TypeError` on the thread of the engine, so it is safe to call from a
+failed download.
 
 ## Import modules from scripts
 

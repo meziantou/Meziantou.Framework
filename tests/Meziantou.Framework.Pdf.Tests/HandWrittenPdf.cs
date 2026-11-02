@@ -22,6 +22,9 @@ internal sealed class HandWrittenPdf
 
     public bool WriteXref { get; set; } = true;
 
+    /// <summary>Gets or sets a value added to the index of the objects in their object stream in the cross-reference stream, to make it wrong.</summary>
+    public int ContainerIndexError { get; set; }
+
     /// <summary>Gets or sets a value indicating whether the cross-reference information is a stream (7.5.8) instead of a table.</summary>
     public bool UseXrefStream { get; set; }
 
@@ -91,7 +94,7 @@ internal sealed class HandWrittenPdf
                 offsets.Remove(number);
             }
 
-            containers = new SortedDictionary<int, int>(containers.ToDictionary(c => c.Key, c => (containerNumber << 8) | c.Value));
+            containers = new SortedDictionary<int, int>(containers.ToDictionary(c => c.Key, c => (containerNumber << 16) | c.Value));
         }
 
         var xrefOffset = output.Length;
@@ -109,7 +112,7 @@ internal sealed class HandWrittenPdf
                 }
                 else if (containers.TryGetValue(number, out var location))
                 {
-                    WriteEntry(data, 2, location >> 8, location & 0xFF);
+                    WriteEntry(data, 2, location >> 16, (location & 0xFFFF) + ContainerIndexError);
                 }
                 else
                 {

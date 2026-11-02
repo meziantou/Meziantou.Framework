@@ -686,6 +686,184 @@ public sealed partial class SnapshotTests
         }
     }
 
+    [Theory]
+    [InlineData("NUL.report")]
+    [InlineData("nul.report")]
+    [InlineData("CON.details")]
+    [InlineData("COM1.case")]
+    [InlineData("LPT9.a.b")]
+    public void SnapshotPathStrategy_EscapesWindowsDeviceNamesFollowedByADot(string testName)
+    {
+        var settings = new SnapshotSettings { SnapshotNamingStrategy = SnapshotNamingStrategies.TestName };
+        var path = settings.SnapshotPathStrategy(new SnapshotPathContext(
+            SourceFilePath: FullPath.FromPath(Path.Combine(Path.GetTempPath(), "SampleTests.cs")),
+            ClassName: null,
+            MethodName: "MethodName",
+            LineNumber: 42,
+            Type: SnapshotType.Default,
+            Index: 0,
+            Extension: "txt",
+            TestContext: new SnapshotTestContext(testName),
+            Settings: settings));
+
+        // Windows opens the device named by the part before the first dot.
+        var dotIndex = testName.IndexOf('.', StringComparison.Ordinal);
+        Assert.Equal(testName[..dotIndex] + "_" + testName[dotIndex..], path.Name[..(testName.Length + 1)]);
+        Assert.Matches(SnapshotNameWithHashSuffixRegex(), path.Name);
+    }
+
+    [Fact]
+    public void SnapshotPathStrategy_EscapesWindowsDeviceNames_WhenTheClassHasADeviceName()
+    {
+        var settings = new SnapshotSettings { SnapshotNamingStrategy = SnapshotNamingStrategies.FullName };
+        var path = settings.SnapshotPathStrategy(new SnapshotPathContext(
+            SourceFilePath: FullPath.FromPath(Path.Combine(Path.GetTempPath(), "SampleTests.cs")),
+            ClassName: "Aux",
+            MethodName: "MethodName",
+            LineNumber: 42,
+            Type: SnapshotType.Default,
+            Index: 0,
+            Extension: "txt",
+            TestContext: new SnapshotTestContext("MethodName"),
+            Settings: settings));
+
+        Assert.StartsWith("Aux_.MethodName_", path.Name, StringComparison.Ordinal);
+        Assert.Matches(SnapshotNameWithHashSuffixRegex(), path.Name);
+    }
+
+    [Theory]
+    [InlineData(20, 4, 'x', 3, 1)]
+    [InlineData(23, 100, 'x', 3, 1)]
+    [InlineData(26, 100, 'x', 3, 3)]
+    [InlineData(30, 100, 'x', 3, 12)]
+    [InlineData(128, 4, 'e', 1, 1)]
+    [InlineData(128, 200, 'e', 1, 1)]
+    [InlineData(128, 200, 'e', 100, 1)]
+    [InlineData(128, 200, '名', 40, 2)]
+    [InlineData(300, 200, '名', 70, 2)]
+    public void SnapshotPathStrategy_FileNameFitsTheLimits(int maxFileNameLength, int testNameLength, char extensionChar, int extensionLength, int snapshotCount)
+    {
+        var extension = new string(extensionChar, extensionLength);
+        var settings = new SnapshotSettings { SnapshotNamingStrategy = SnapshotNamingStrategies.TestName, MaxSnapshotFileNameLength = maxFileNameLength };
+        for (var index = 0; index < snapshotCount; index++)
+        {
+            var fileName = settings.SnapshotPathStrategy(new SnapshotPathContext(
+                SourceFilePath: FullPath.FromPath(Path.Combine(Path.GetTempPath(), "SampleTests.cs")),
+                ClassName: null,
+                MethodName: "MethodName",
+                LineNumber: 42,
+                Type: SnapshotType.Default,
+                Index: index,
+                Extension: extension,
+                TestContext: new SnapshotTestContext(new string('a', testNameLength)),
+                Settings: settings,
+                SnapshotCount: snapshotCount)).Name;
+
+            Assert.HasCountLessThanOrEqual(maxFileNameLength, fileName);
+            Assert.True(Encoding.UTF8.GetByteCount(fileName) <= 255, fileName);
+            Assert.EndsWith(".verified." + extension, fileName, StringComparison.Ordinal);
+            Assert.StartsWith("a", fileName, StringComparison.Ordinal);
+        }
+    }
+
+    [Theory]
+    [InlineData(20, 100, 3)]
+    [InlineData(22, 100, 3)]
+    [InlineData(128, 4, 300)]
+    [InlineData(128, 200, 120)]
+    public void SnapshotPathStrategy_Throws_WhenTheSuffixLeavesNoRoomForTheName(int maxFileNameLength, int testNameLength, int extensionLength)
+    {
+        var settings = new SnapshotSettings { SnapshotNamingStrategy = SnapshotNamingStrategies.TestName, MaxSnapshotFileNameLength = maxFileNameLength };
+        var context = new SnapshotPathContext(
+            SourceFilePath: FullPath.FromPath(Path.Combine(Path.GetTempPath(), "SampleTests.cs")),
+            ClassName: null,
+            MethodName: "MethodName",
+            LineNumber: 42,
+            Type: SnapshotType.Default,
+            Index: 0,
+            Extension: new string('e', extensionLength),
+            TestContext: new SnapshotTestContext(new string('a', testNameLength)),
+            Settings: settings);
+
+        var exception = Assert.Throws<SnapshotException>(() => settings.SnapshotPathStrategy(context));
+        Assert.Contains(nameof(SnapshotSettings.MaxSnapshotFileNameLength), exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void SnapshotPathStrategy_Throws_WhenAMultibyteExtensionExceedsTheByteLimit()
+    {
+        var settings = new SnapshotSettings { SnapshotNamingStrategy = SnapshotNamingStrategies.TestName, MaxSnapshotFileNameLength = 300 };
+        var context = new SnapshotPathContext(
+            SourceFilePath: FullPath.FromPath(Path.Combine(Path.GetTempPath(), "SampleTests.cs")),
+            ClassName: null,
+            MethodName: "MethodName",
+            LineNumber: 42,
+            Type: SnapshotType.Default,
+            Index: 0,
+            Extension: new string('名', 82),
+            TestContext: new SnapshotTestContext("Test"),
+            Settings: settings);
+
+        // 82 characters fit in MaxSnapshotFileNameLength, but take 246 bytes.
+        Assert.Throws<SnapshotException>(() => settings.SnapshotPathStrategy(context));
+    }
+
+    [Theory]
+    [InlineData(new[] { "txt", "json" }, new[] { "txt", "xml" })]
+    [InlineData(new[] { "txt", "xml" }, new[] { "txt", "json" })]
+    [InlineData(new[] { "txt" }, new[] { "txt", "json" })]
+    [InlineData(new[] { "json" }, new[] { "txt", "txt" })]
+    [InlineData(new[] { "txt", "json", "xml" }, new[] { "txt" })]
+    [InlineData(new[] { "txt", "json", "md" }, new[] { "txt", "json" })]
+    public void Validate_RemovesTheFilesALongNamedAssertionLeftBehind(string[] previousExtensions, string[] extensions)
+    {
+        using var directory = TemporaryDirectory.Create();
+        var sourceFile = CreateSourceFile(directory);
+        var context = CreateDetectedTestContext("C", "M", new string('n', 70));
+
+        ValidateLongNamedFiles(previousExtensions, SnapshotUpdateStrategy.OverwriteWithoutFailure);
+
+        var previousFileNames = GetSnapshotFileNames(directory);
+
+        // The files of the earlier run are reported, not ignored.
+        var exception = Assert.Throws<SnapshotAssertionException>(() => ValidateLongNamedFiles(extensions, SnapshotUpdateStrategy.Disallow));
+
+        ValidateLongNamedFiles(extensions, SnapshotUpdateStrategy.OverwriteWithoutFailure);
+        var fileNames = GetSnapshotFileNames(directory);
+        Assert.HasCount(extensions.Length, fileNames);
+        Assert.Equal(extensions.Order(StringComparer.Ordinal), fileNames.Select(name => name[(name.IndexOf(".verified.", StringComparison.Ordinal) + ".verified.".Length)..]).Order(StringComparer.Ordinal));
+        Assert.All(fileNames, name => Assert.HasCountLessThanOrEqual(50, name));
+
+        var obsoleteFileNames = previousFileNames.Except(fileNames, StringComparer.Ordinal).ToArray();
+        Assert.NotEmpty(obsoleteFileNames);
+        Assert.All(obsoleteFileNames, name => Assert.Contains(name, exception.Message, StringComparison.Ordinal));
+
+        void ValidateLongNamedFiles(string[] fileExtensions, SnapshotUpdateStrategy strategy)
+        {
+            var settings = new SnapshotSettings
+            {
+                AutoDetectContinuousEnvironment = false,
+                SnapshotUpdateStrategy = strategy,
+                SnapshotNamingStrategy = SnapshotNamingStrategies.TestName,
+                MaxSnapshotFileNameLength = 50,
+            };
+            settings.Serializers.Add(new ExtensionsSerializer(fileExtensions));
+            using (new SnapshotTestContextScope(context))
+            {
+                Snapshot.Validate("sample", settings, sourceFile.Value, lineNumber: 10);
+            }
+        }
+    }
+
+    private sealed class ExtensionsSerializer(string[] extensions) : ISnapshotSerializer
+    {
+        public bool TrySerialize(SnapshotType type, object? value, [NotNullWhen(true)] out SerializedSnapshot? result)
+        {
+            result = new SerializedSnapshot([.. extensions.Select(extension => new SnapshotData(extension, Encoding.UTF8.GetBytes("content")))]);
+            return true;
+        }
+    }
+
     [Fact]
     public void Validate_SupportsExtensionsContainingADot()
     {

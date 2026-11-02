@@ -1806,6 +1806,96 @@ public sealed partial class SnapshotTests
         Assert.True(comparer.InvocationCount > 0, "The comparer registered for the requested type was not used.");
     }
 
+    [Fact]
+    public void Validate_StoredBinaryFormat_IsComparedByteForByteWhenTextWasRequested()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var path = directory / "snapshot.verified.bin";
+        var settings = CreateStoredFormatSettings(path, new FixedFormatSerializer("bin", [13, 10]));
+        File.WriteAllBytes(path, [10]);
+
+        Assert.Throws<SnapshotAssertionException>(() => Snapshot.Validate("value", SnapshotType.Default, settings));
+    }
+
+    [Fact]
+    public void Validate_StoredTextFormat_IgnoresLineEndingsWhenABinaryFormatWasRequested()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var path = directory / "snapshot.verified.json";
+        var settings = CreateStoredFormatSettings(path, new FixedFormatSerializer("json", [13, 10]));
+        File.WriteAllBytes(path, [10]);
+
+        Snapshot.Validate("value", SnapshotType.Png, settings);
+
+        Assert.False(File.Exists(directory / "snapshot.actual.json"));
+    }
+
+    [Fact]
+    public void Validate_ComparerRegisteredForTheStoredFormat_WinsOverTheRequestedType()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var path = directory / "snapshot.verified.bin";
+        var settings = CreateStoredFormatSettings(path, new FixedFormatSerializer("bin", [13, 10]));
+        var storedComparer = new RecordingSnapshotComparer();
+        var requestedComparer = new RecordingSnapshotComparer();
+        settings.Comparers.Set(SnapshotType.Create("bin"), storedComparer);
+        settings.Comparers.Set(SnapshotType.Create("custom"), requestedComparer);
+        File.WriteAllBytes(path, [13, 10]);
+
+        Snapshot.Validate("value", SnapshotType.Create("custom"), settings);
+
+        Assert.True(storedComparer.InvocationCount > 0, "The comparer registered for the stored format was not used.");
+        Assert.Equal(0, requestedComparer.InvocationCount);
+    }
+
+    [Fact]
+    public void Validate_CustomComparerRegisteredForTheRequestedType_AppliesToAnotherStoredFormat()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var path = directory / "snapshot.verified.cs";
+        var settings = CreateStoredFormatSettings(path, new FixedFormatSerializer("cs", [13, 10]));
+        var comparer = new RecordingSnapshotComparer();
+        settings.Comparers.Set(SnapshotType.Create("custom"), comparer);
+        File.WriteAllBytes(path, [13, 10]);
+
+        Snapshot.Validate("value", SnapshotType.Create("custom"), settings);
+
+        Assert.True(comparer.InvocationCount > 0, "The comparer registered for the requested type was not used.");
+    }
+
+    [Fact]
+    public void Validate_BuiltInTextComparerRegisteredForTheRequestedType_DoesNotApplyToABinaryStoredFormat()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var path = directory / "snapshot.verified.bin";
+        var settings = CreateStoredFormatSettings(path, new FixedFormatSerializer("bin", [13, 10]));
+        File.WriteAllBytes(path, [10]);
+
+        // SnapshotType.Svg is registered with the built-in text comparer.
+        Assert.Throws<SnapshotAssertionException>(() => Snapshot.Validate("value", SnapshotType.Svg, settings));
+    }
+
+    private static SnapshotSettings CreateStoredFormatSettings(FullPath path, ISnapshotSerializer serializer)
+    {
+        var settings = new SnapshotSettings
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
+            SnapshotPathStrategy = _ => path,
+        };
+        settings.Serializers.Add(serializer);
+        return settings;
+    }
+
+    private sealed class FixedFormatSerializer(string extension, byte[] data) : ISnapshotSerializer
+    {
+        public bool TrySerialize(SnapshotType type, object? value, [NotNullWhen(true)] out SerializedSnapshot? result)
+        {
+            result = new SerializedSnapshot([new SnapshotData(extension, data)]);
+            return true;
+        }
+    }
+
     private sealed class RecordingSnapshotComparer : ISnapshotComparer
     {
         public int InvocationCount { get; private set; }
@@ -4136,6 +4226,10 @@ public sealed partial class SnapshotTests
     [InlineData("md")]
     [InlineData("csv")]
     [InlineData("txt")]
+    [InlineData("g.cs")]
+    [InlineData("d.ts")]
+    [InlineData("G.CS")]
+    [InlineData("generated.d.TS")]
     public void Validate_TextSnapshots_IgnoreLineEndingsAndByteOrderMark(string extension)
     {
         using var directory = TemporaryDirectory.Create();
@@ -4169,6 +4263,36 @@ public sealed partial class SnapshotTests
         File.WriteAllBytes(path, "line1\r\nline2"u8.ToArray());
 
         Assert.Throws<SnapshotAssertionException>(() => Snapshot.Validate("line1\nline2"u8.ToArray(), SnapshotType.Create("bin"), settings));
+    }
+
+    [Theory]
+    [InlineData("tar.gz")]
+    [InlineData("g.png")]
+    [InlineData("TAR.GZ")]
+    public void Validate_CompoundBinarySnapshots_AreComparedByteForByte(string extension)
+    {
+        using var directory = TemporaryDirectory.Create();
+        var path = directory / ("snapshot.verified." + extension);
+        var settings = new SnapshotSettings
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.Disallow,
+            SnapshotPathStrategy = _ => path,
+        };
+
+        File.WriteAllBytes(path, "line1\r\nline2"u8.ToArray());
+
+        Assert.Throws<SnapshotAssertionException>(() => Snapshot.Validate("line1\nline2"u8.ToArray(), SnapshotType.Create(extension), settings));
+    }
+
+    [Theory]
+    [InlineData(".g.cs")]
+    [InlineData(".D.TS")]
+    public void TextComparer_IsUsedForCompoundTextExtensionsWithALeadingDot(string extension)
+    {
+        var comparer = new SnapshotSettings().Comparers.Get(SnapshotType.Create(extension));
+
+        Assert.True(comparer.Equals(new SnapshotData(extension, [0xEF, 0xBB, 0xBF, (byte)'a', 13, 10]), new SnapshotData(extension, [(byte)'a', 10])));
     }
 
     [Theory]

@@ -306,20 +306,37 @@ internal static class SnapshotEngine
     /// <summary>
     /// Resolves the comparer for a snapshot file. A serializer may store a different format than the one that
     /// was requested - an animated GIF becomes PNG frames, a source generator result becomes C# files - and
-    /// the comparison is about the bytes that ended up on disk, so a comparer registered for the stored format
-    /// wins. The requested type stays as the fallback, so an explicit registration for it still applies when
-    /// nothing is registered for the stored format.
+    /// the comparison is about the bytes that ended up on disk:
+    /// <list type="number">
+    /// <item>a comparer registered for the stored format wins;</item>
+    /// <item>a custom comparer registered for the requested type applies next, so an explicit registration for it
+    /// still applies when nothing is registered for the stored format;</item>
+    /// <item>otherwise, the text or binary default is chosen from the stored format. The comparers registered for
+    /// <see cref="SnapshotType.Default" /> and <see cref="SnapshotType.None" />, and the built-in comparers, are
+    /// these defaults: the text comparer must not accept different binary bytes, and the byte comparer must not
+    /// reject text whose line endings changed.</item>
+    /// </list>
     /// </summary>
     private static ISnapshotComparer GetComparer(SnapshotSettings settings, SnapshotType requestedType, SnapshotData data)
     {
-        if (!string.IsNullOrEmpty(data.Extension))
+        if (string.IsNullOrEmpty(data.Extension))
+            return settings.Comparers.Get(requestedType);
+
+        var storedType = SnapshotType.Create(data.Extension);
+        if (storedType == requestedType)
+            return settings.Comparers.Get(requestedType);
+
+        if (settings.Comparers.TryGet(storedType, out var storedComparer))
+            return storedComparer;
+
+        if (requestedType != SnapshotType.Default && requestedType != SnapshotType.None &&
+            settings.Comparers.TryGet(requestedType, out var requestedComparer) &&
+            requestedComparer is not TextSnapshotComparer and not ByteArraySnapshotComparer)
         {
-            var storedType = SnapshotType.Create(data.Extension);
-            if (storedType != requestedType && settings.Comparers.TryGet(storedType, out var storedComparer))
-                return storedComparer;
+            return requestedComparer;
         }
 
-        return settings.Comparers.Get(requestedType);
+        return settings.Comparers.Get(storedType);
     }
 
     private static string BuildMessage(

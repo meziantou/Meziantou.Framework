@@ -1650,6 +1650,58 @@ public sealed class PdfRendererTests
     }
 
     [Fact]
+    public void TheTrianglesOfAMeshArePaintedInOrder()
+    {
+        // The pixels of a mesh are converted in batches: the second triangle, of more pixels than a batch, covers the first
+        var document = new PdfDocument();
+        var mesh = PdfShading.TriangleMesh(PdfDeviceColorSpace.Cmyk,
+        [
+            (new PdfMeshVertex(-10, -10, PdfColor.FromCmyk(1, 0, 0, 0)), new PdfMeshVertex(300, -10, PdfColor.FromCmyk(1, 0, 0, 0)), new PdfMeshVertex(-10, 300, PdfColor.FromCmyk(1, 0, 0, 0))),
+            (new PdfMeshVertex(-10, -10, PdfColor.FromCmyk(0, 1, 0, 0)), new PdfMeshVertex(300, -10, PdfColor.FromCmyk(0, 1, 0, 0)), new PdfMeshVertex(-10, 300, PdfColor.FromCmyk(0, 1, 0, 0))),
+        ]);
+        document.Pages.Add(Size).CreateContentBuilder().PaintShading(mesh).SetFillCmyk(0, 1, 0, 0).Rectangle(0, 0, 10, 10).Fill();
+
+        using var image = Render(document);
+
+        var magenta = Pixel(image, 5, 5);
+        Assert.Equal(0, CountPixels(image, 0, 0, 100, 100, pixel => pixel != magenta));
+    }
+
+    [Fact]
+    public void TheColorsOfAColorSpaceConvertedTogetherAreTheColorsConvertedOneByOne()
+    {
+        // The pixels of a mesh are converted together: each color must be the one it has alone
+        var tint = new PdfStream(new PdfDictionary { [PdfName.Create("FunctionType")] = PdfInteger.Get(4), [PdfName.Create("Domain")] = PdfArray.FromNumbers(0, 1), [PdfName.Create("Range")] = PdfArray.FromNumbers(0, 1, 0, 1, 0, 1, 0, 1) });
+        tint.SetData("{ dup 0.2 mul exch dup 0.9 mul exch dup 0.1 mul exch 0.05 mul }"u8);
+        PdfObject[] colorSpaces =
+        [
+            PdfName.Create("DeviceCMYK"),
+            new PdfArray(PdfName.Create("ICCBased"), CreateIccStream(IccProfile.Cgats001CompatibleCmyk, 4)),
+            new PdfArray(PdfName.Create("ICCBased"), CreateIccStream(IccProfile.Srgb, 3, PdfArray.FromNumbers(0, 2, 0, 2, 0, 2))),
+            new PdfArray(PdfName.Create("Separation"), PdfName.Create("Spot"), PdfName.Create("DeviceCMYK"), tint),
+        ];
+        using var cache = new RenderCache(new PdfRenderOptions { UseSystemFonts = false });
+        foreach (var value in colorSpaces)
+        {
+            var colorSpace = Rendering.Colors.RenderColorSpace.Read(value, resources: null, cache);
+            var count = colorSpace.ComponentCount;
+            var components = new double[2000 * count];
+            for (var i = 0; i < components.Length; i++)
+            {
+                components[i] = (i * 37 % 1001) / 1000.0;
+            }
+
+            var together = new byte[2000 * 3];
+            colorSpace.ToRgb(components, together);
+            for (var i = 0; i < 2000; i++)
+            {
+                var alone = colorSpace.ToRgb(components.AsSpan(i * count, count));
+                Assert.Equal([Rendering.Colors.RenderColorSpace.ToByte(alone.R), Rendering.Colors.RenderColorSpace.ToByte(alone.G), Rendering.Colors.RenderColorSpace.ToByte(alone.B)], together.AsSpan(3 * i, 3).ToArray());
+            }
+        }
+    }
+
+    [Fact]
     public void TheRowsOfALargeCmykImageAreConvertedAsOneColor()
     {
         // A row of 300 CMYK pixels is converted with a buffer of the pool, one pixel with a buffer of the stack

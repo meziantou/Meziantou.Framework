@@ -153,6 +153,7 @@ public sealed class JsEngineEmbeddingTests
             var exception = await Task.Run(() => Assert.Throws<InvalidOperationException>(() => realm.Execute("2")));
             Assert.StartsWith("The engine is used by another thread", exception.Message);
             await Task.Run(() => Assert.Throws<InvalidOperationException>(() => engine.Enter()));
+            await Task.Run(() => Assert.Throws<InvalidOperationException>(() => engine.EnterExecutionScope()));
         }
         finally
         {

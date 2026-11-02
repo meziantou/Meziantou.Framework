@@ -874,7 +874,11 @@ public sealed class JsEngineTests
         using var engine = new JsEngine();
         var realm = engine.CreateRealm();
         var text = CreateNormalizationText();
-        realm.GlobalObject.SetProperty("text", text);
+        using (engine.Enter())
+        {
+            realm.GlobalObject.SetProperty("text", text);
+        }
+
         foreach (var form in new[] { NormalizationForm.FormC, NormalizationForm.FormD, NormalizationForm.FormKC, NormalizationForm.FormKD })
         {
             var name = form switch { NormalizationForm.FormC => "NFC", NormalizationForm.FormD => "NFD", NormalizationForm.FormKC => "NFKC", _ => "NFKD" };
@@ -919,7 +923,11 @@ public sealed class JsEngineTests
         {
             var realm = engine.CreateRealm();
             DefineCancel(realm, cancellation);
-            realm.GlobalObject.SetProperty("code", code);
+            using (engine.Enter())
+            {
+                realm.GlobalObject.SetProperty("code", code);
+            }
+
             var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("cancel(); eval(code)"));
             Assert.Equal(JsTerminationReason.Canceled, exception.Reason);
 

@@ -198,7 +198,8 @@ public sealed class BigIntBuiltinsTests
     public void LargeDecimalStrings()
     {
         using var realm = new TestRealm();
-        foreach (var length in new[] { 65535, 65536, 65537, 131072, 131073, 300001 })
+        // Around the parts that BigInteger parses at once (2^18 digits, 2^20 on .NET 11)
+        foreach (var length in new[] { 262144, 262145, 1048577 })
         {
             var random = new Random(length);
             var digits = string.Concat(Enumerable.Range(0, length).Select(i => (char)('0' + random.Next(i == 0 ? 1 : 0, 10))));
@@ -207,7 +208,12 @@ public sealed class BigIntBuiltinsTests
             Assert.Equal(expected, realm.Call("BigInt", "000" + digits).AsBigInt());
             Assert.Equal(-expected, realm.Call("BigInt", "-" + digits).AsBigInt());
             Assert.Equal(expected, realm.Realm.Execute(digits + "n").AsBigInt());
+            Assert.Equal(digits, realm.Realm.Execute(digits + "n.toString()").AsString());
         }
+
+        // The zeros between the parts formatted by BigInteger
+        var zeros = "1" + new string('0', 1_500_000) + "7" + new string('0', 300_000);
+        Assert.Equal(zeros, realm.Call("String", realm.Call("BigInt", zeros)).AsString());
 
         Assert.Equal("SyntaxError", realm.GetErrorName(() => realm.Call("BigInt", new string('1', 100000) + "a")));
         Assert.Equal("SyntaxError", realm.GetErrorName(() => realm.Call("BigInt", "0x" + new string('f', 100000) + "g")));
@@ -215,16 +221,16 @@ public sealed class BigIntBuiltinsTests
         Assert.Equal("SyntaxError", realm.GetErrorName(() => realm.Call("BigInt", "-0x" + new string('f', 100000))));
     }
 
-    // The products and the powers larger than the parts that BigInteger computes at once (4 million bits)
+    // The products and the powers larger than the parts that BigInteger computes at once (4 million bits, 8 million on .NET 11)
     [Fact]
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Test data")]
     public void LargeArithmetic()
     {
         using var realm = new TestRealm();
         var random = new Random(42);
-        var x = (BigInteger.One << 2_200_000) | RandomBits(random, 2_200_000);
-        var y = (BigInteger.One << 2_000_000) | RandomBits(random, 2_000_000);
-        var large = (BigInteger.One << 4_000_000) | RandomBits(random, 4_000_000);
+        var x = (BigInteger.One << 4_400_000) | RandomBits(random, 4_400_000);
+        var y = (BigInteger.One << 4_000_000) | RandomBits(random, 4_000_000);
+        var large = (BigInteger.One << 8_400_000) | RandomBits(random, 8_400_000);
         var small = (BigInteger.One << 100_000) | RandomBits(random, 100_000);
         Assert.Equal(x * y, BigIntOperations.Multiply(x, y));
         Assert.Equal(-x * y, BigIntOperations.Multiply(-x, y));
@@ -234,8 +240,8 @@ public sealed class BigIntBuiltinsTests
         Assert.Equal(large * 12345, BigIntOperations.Multiply(large, 12345));
 
         // The powers are checked modulo primes: computing them with BigInteger.Pow takes seconds
-        AssertPower(3, 4_200_000);
-        AssertPower(-3, 4_200_001);
+        AssertPower(3, 5_400_000);
+        AssertPower(-3, 5_400_001);
         AssertPower(-12, 1_500_001);
         Assert.Equal(BigInteger.One << 100_000_000, BigIntOperations.Exponentiate(2, 100_000_000));
         Assert.Equal(-(BigInteger.One << 99_999_999), BigIntOperations.Exponentiate(-2, 99_999_999));

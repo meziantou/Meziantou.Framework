@@ -12,18 +12,33 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// </summary>
 internal static class BigIntAlgorithms
 {
-    // A product of at most this number of bits is computed at once by BigInteger (about 100 ms). The work counted for a
-    // part is its number of 32-bit words, so the limits are checked after each part of this size.
+    // A product of at most this number of bits is computed at once by BigInteger (about 100 ms; .NET 11 multiplies about
+    // 3 times faster). The work counted for a part is its number of 32-bit words, so the limits are checked after each
+    // part of this size.
+#if NET11_0_OR_GREATER
+    private const long LeafProductBits = 1 << 23;
+#else
     private const long LeafProductBits = 1 << 22;
+#endif
 
     // A product by a value of at most this number of bits is computed at once whatever the size of the other value
     private const long SmallFactorBits = 128;
 
-    // A decimal string of at most this number of digits is parsed at once by BigInteger
-    private const int LeafParseDigits = 1 << 16;
+    // A decimal string of at most this number of digits is parsed at once by BigInteger (about 40 ms on .NET 10, 100 ms
+    // on .NET 11)
+#if NET11_0_OR_GREATER
+    private const int LeafParseDigits = 1 << 20;
+#else
+    private const int LeafParseDigits = 1 << 18;
+#endif
 
-    // BigInteger formats a number of at most this number of bits to decimal at once (its algorithm is quadratic)
-    private const long SmallDecimalFormatBits = 1 << 14;
+    // BigInteger formats a number of at most this number of bits to decimal at once. Its algorithm is quadratic before
+    // .NET 11 and divide and conquer since (about 35 ms for 2^20 bits).
+#if NET11_0_OR_GREATER
+    private const long LeafDecimalFormatBits = 1 << 20;
+#else
+    private const long LeafDecimalFormatBits = 1 << 14;
+#endif
 
     private const string DigitChars = "0123456789abcdefghijklmnopqrstuvwxyz";
 
@@ -280,7 +295,7 @@ internal static class BigIntAlgorithms
         if (BitOperations.IsPow2(radix))
             return FormatPowerOfTwoRadix(magnitude, bitLength, BitOperations.Log2((uint)radix), negative);
 
-        if (radix == 10 && bitLength <= SmallDecimalFormatBits)
+        if (radix == 10 && bitLength <= LeafDecimalFormatBits)
             return value.ToString(CultureInfo.InvariantCulture);
 
         // An upper bound of the number of digits, and the sign
@@ -343,6 +358,12 @@ internal static class BigIntAlgorithms
             return;
         }
 
+        if (radix == 10 && (long)value.GetBitLength() <= LeafDecimalFormatBits)
+        {
+            WriteDecimalPart(value, padded ? chunkDigits << (level + 1) : 1, buffer, ref position);
+            return;
+        }
+
         var high = BigInteger.DivRem(value, powers[level], out var low);
         if (!padded && high.IsZero)
         {
@@ -352,6 +373,21 @@ internal static class BigIntAlgorithms
 
         WriteDigits(low, level - 1, padded: true, buffer, ref position, radix, chunkDigits, powers);
         WriteDigits(high, level - 1, padded, buffer, ref position, radix, chunkDigits, powers);
+    }
+
+    /// <summary>Writes the decimal digits of a value formatted by BigInteger before position, padded with zeros to minimumLength digits.</summary>
+    private static void WriteDecimalPart(BigInteger value, int minimumLength, char[] buffer, ref int position)
+    {
+        var digits = value.ToString(CultureInfo.InvariantCulture);
+        digits.CopyTo(buffer.AsSpan(position - digits.Length));
+        position -= digits.Length;
+        if (digits.Length < minimumLength)
+        {
+            buffer.AsSpan(position - (minimumLength - digits.Length), minimumLength - digits.Length).Fill('0');
+            position -= minimumLength - digits.Length;
+        }
+
+        JsEngine.CountCurrentWork(digits.Length);
     }
 
     private static void WriteChunk(ulong value, int minimumLength, char[] buffer, ref int position, int radix)

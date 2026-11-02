@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.JavaScriptEngine;
@@ -13,14 +14,22 @@ public sealed partial class JsEngine : IDisposable
 
     private readonly List<JsRealm> _realms = [];
 
+    // The managed thread id of the thread that entered the engine (0: none)
+    private int _ownerThreadId;
+
     /// <summary>Initializes a new instance of the <see cref="JsEngine"/> class.</summary>
     public JsEngine(JsEngineOptions? options = null)
     {
-        Options = options ?? new JsEngineOptions();
+        // The engine uses its own copy: the options given to the constructor can be changed or shared afterwards
+        Options = (options ?? new JsEngineOptions()).CreateEngineCopy();
         HostHooks = Options.Host ?? JsHost.Default;
+        ShapeRoots = new ShapeRoots(this);
     }
 
-    /// <summary>Gets the options of the engine.</summary>
+    /// <summary>
+    /// Gets the options of the engine: a copy of the options given to the constructor. The limits can be changed on the
+    /// thread of the engine; the other options cannot (see <see cref="JsEngineOptions"/>).
+    /// </summary>
     public JsEngineOptions Options { get; }
 
     /// <summary>Gets the engine whose code runs on the current thread, if any.</summary>
@@ -36,7 +45,7 @@ public sealed partial class JsEngine : IDisposable
     internal Interpreter.FramePool FramePool { get; } = new();
 
     /// <summary>Gets the roots of the shapes of the objects of the engine.</summary>
-    internal ShapeRoots ShapeRoots { get; } = new();
+    internal ShapeRoots ShapeRoots { get; }
 
     /// <summary>Gets the inline cache shared by the megamorphic property accesses (created on first use).</summary>
     internal MegamorphicCache MegamorphicCache => field ??= new();
@@ -69,12 +78,35 @@ public sealed partial class JsEngine : IDisposable
     /// Makes the engine the engine of the current thread until the returned scope is disposed. The methods of the objects
     /// (<see cref="JsObject.GetProperty(JsPropertyKey)"/>...) need it when they are not called by the engine (a callback).
     /// </summary>
+    /// <remarks>
+    /// An engine is used by one thread at a time: the thread that enters it owns it until it disposes its outermost scope.
+    /// The owning thread can enter the engine again (nested scopes, callbacks); another thread gets an
+    /// <see cref="InvalidOperationException"/> instead of corrupting the state of the engine.
+    /// </remarks>
+    /// <exception cref="InvalidOperationException">Another thread is using the engine.</exception>
     public JsEngineScope Enter()
     {
         var previous = s_current;
+        if (ReferenceEquals(previous, this))
+            return new JsEngineScope(previous, owner: null);
+
+        // The first entry of the thread takes the ownership of the engine; a thread that owns it already (it entered
+        // another engine in the meantime) keeps it
+        var threadId = Environment.CurrentManagedThreadId;
+        var owner = Interlocked.CompareExchange(ref _ownerThreadId, threadId, 0);
+        if (owner != 0 && owner != threadId)
+            ThrowConcurrentAccess();
+
         s_current = this;
-        return new JsEngineScope(previous);
+        return new JsEngineScope(previous, owner == 0 ? this : null);
     }
+
+    /// <summary>Releases the ownership taken by the outermost <see cref="Enter"/> of the thread.</summary>
+    internal void ReleaseOwnership() => Volatile.Write(ref _ownerThreadId, 0);
+
+    [DoesNotReturn]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static void ThrowConcurrentAccess() => throw new InvalidOperationException("The engine is used by another thread: an engine is used by one thread at a time (create one engine per thread)");
 
     /// <summary>Enters a call: checks the recursion limit and makes the realm of the callee current; returns the previous realm.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

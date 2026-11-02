@@ -51,6 +51,17 @@ Assert.Equal("RangeError", realm.Execute("function f() { return 1 + f(); } try {
 - The interpreter does not use the .NET stack for JavaScript calls, so a deep recursion of JavaScript code never
   overflows the stack of the thread; a recursion through .NET functions throws a `RangeError` before it does.
 
+## Change the limits of an engine
+
+The engine copies its options when it is created: an instance of [JsEngineOptions](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions) can configure several engines,
+and changing it afterwards does not change them. `engine.Options` is the copy of the engine:
+
+- The limits ([Timeout](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.Timeout), [MaxStatements](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.MaxStatements), [MemoryLimit](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.MemoryLimit), [RecursionLimit](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.RecursionLimit), [RegExpTimeout](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.RegExpTimeout) and
+  [CancellationToken](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.CancellationToken)) can be changed on `engine.Options`, between two entries or from a .NET function: the change
+  applies from the next check of the limits.
+- The other options ([Host](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.Host), [ModuleLoader](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.ModuleLoader), [TimeProvider](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.TimeProvider), [TimeZone](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.TimeZone), [DefaultLocale](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.DefaultLocale)...) configure the
+  engine for its whole life: setting them on `engine.Options` throws an `InvalidOperationException`.
+
 ## Cancel a script
 
 The [CancellationToken](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.CancellationToken) of the options stops the running script when it is canceled, from any thread, for instance
@@ -82,8 +93,8 @@ Assert.Equal(JsTerminationReason.Canceled, exception.Reason);
 ```
 <!-- endref -->
 
-The engine checks the token periodically while JavaScript code runs. The token is the one of the engine for its whole
-life: once it is canceled, the engine stops every script at its next check, so create a new engine for the next work.
+The engine checks the token periodically while JavaScript code runs. Once it is canceled, the engine stops every
+script at its next check: set a new token in `engine.Options` before the next work, or create a new engine.
 
 ## Forbid eval
 

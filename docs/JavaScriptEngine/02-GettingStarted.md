@@ -45,14 +45,21 @@ using var engine = new JsEngine(new JsEngineOptions
 
 var realm = engine.CreateRealm();
 
-// Expose a .NET function to the scripts
+// Expose a .NET function to the scripts. They can pass any value, and fewer arguments than expected: convert the
+// arguments explicitly (AsNumber throws when a value is not a number)
 using (engine.Enter())
 {
-    realm.GlobalObject.SetProperty("add", realm.CreateFunction("add", 2, (thisValue, arguments) => arguments[0].AsNumber() + arguments[1].AsNumber()));
+    realm.GlobalObject.SetProperty("add", realm.CreateFunction("add", 2, (thisValue, arguments) =>
+    {
+        var left = arguments.Length > 0 ? engine.ToNumber(arguments[0]) : double.NaN;
+        var right = arguments.Length > 1 ? engine.ToNumber(arguments[1]) : double.NaN;
+        return left + right;
+    }));
 }
 
 var result = realm.Execute("const values = [1, 2, 3].map(x => add(x, 10)); values.join('-')");
 Assert.Equal("11-12-13", result.AsString());
+Assert.Equal("6,NaN", realm.Execute("[add('5', 1), add(1)].join()").AsString());
 
 // The promise jobs run when the host asks for them
 realm.Execute("globalThis.log = []; Promise.resolve().then(() => log.push('job')); log.push('script');");

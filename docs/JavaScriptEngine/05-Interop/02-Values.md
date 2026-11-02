@@ -52,7 +52,9 @@ using (engine.Enter())
 | [Object](cref:Meziantou.Framework.JavaScriptEngine.JsValueKind.Object) | [IsObject](cref:Meziantou.Framework.JavaScriptEngine.JsValue.IsObject) | [AsObject()](cref:Meziantou.Framework.JavaScriptEngine.JsValue.AsObject), or [TryGetObject()](cref:Meziantou.Framework.JavaScriptEngine.JsValue.TryGetObject), which returns null for the other kinds |
 
 - [IsNullOrUndefined](cref:Meziantou.Framework.JavaScriptEngine.JsValue.IsNullOrUndefined) tests both values that mean "no value", and [IsCallable](cref:Meziantou.Framework.JavaScriptEngine.JsValue.IsCallable) tests whether the value is a function.
-- The `As*` methods do not convert: call them only on a value of their kind.
+- The `As*` methods do not convert: they throw an `InvalidOperationException` for a value of another kind, for
+  instance [AsNumber](cref:Meziantou.Framework.JavaScriptEngine.JsValue.AsNumber) on the string `"5"`. [TryGetNumber](cref:Meziantou.Framework.JavaScriptEngine.JsValue.TryGetNumber), [TryGetString](cref:Meziantou.Framework.JavaScriptEngine.JsValue.TryGetString) and [TryGetBoolean](cref:Meziantou.Framework.JavaScriptEngine.JsValue.TryGetBoolean) return false
+  instead. To accept any value, convert it as shown below.
 - `default(JsValue)` is `undefined`.
 - [ToString()](cref:Meziantou.Framework.JavaScriptEngine.JsValue.ToString) of a [JsValue](cref:Meziantou.Framework.JavaScriptEngine.JsValue) is a description for debugging: it never runs code of the script.
 

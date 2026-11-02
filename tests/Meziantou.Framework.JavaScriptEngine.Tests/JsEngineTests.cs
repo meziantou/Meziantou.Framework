@@ -103,8 +103,8 @@ public sealed class JsEngineTests
         realm1.Execute("for (var i = 0; i < 100; i++) Array.prototype['extra' + i] = i;");
         var realm2 = engine.CreateRealm();
         var names2 = realm2.Execute(Names);
-        realm2.GlobalObject.SetProperty("otherMap", realm1.Execute("Array.prototype.map"));
         using var scope = engine.Enter();
+        realm2.GlobalObject.SetProperty("otherMap", realm1.Execute("Array.prototype.map"));
         Assert.Equal(JsOperations.ToString(names1), JsOperations.ToString(names2));
         Assert.Equal("false,2,4,true", JsOperations.ToString(realm2.Execute("[otherMap === Array.prototype.map, [1].map(x => x * 2)[0], otherMap.call([2], x => x * 2)[0], 'extra0' in Array.prototype === false].join()")));
     }
@@ -281,6 +281,7 @@ public sealed class JsEngineTests
         var script = JsPreparedScript.Parse(Code, "handler.js", 0, 0, unboundNameFunctionStart: Prefix.Length);
         using var engine = new JsEngine();
         var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
         realm.GlobalObject.SetProperty("f", realm.Execute(script));
         Assert.Equal("string", realm.Execute("f()").AsString());
         Assert.Equal("onload", realm.Execute("f.name").AsString());
@@ -463,7 +464,11 @@ public sealed class JsEngineTests
         using var engine = new JsEngine(new JsEngineOptions { Host = host });
         var otherRealm = engine.CreateRealm();
         var functionRealm = engine.CreateRealm();
-        functionRealm.GlobalObject.SetProperty("p", otherRealm.Execute("var reject; new Promise((_, r) => reject = r)"));
+        using (engine.Enter())
+        {
+            functionRealm.GlobalObject.SetProperty("p", otherRealm.Execute("var reject; new Promise((_, r) => reject = r)"));
+        }
+
         functionRealm.Execute("(async () => { await p; })();");
         otherRealm.Execute("reject(1);");
         engine.RunJobs();
@@ -738,14 +743,21 @@ public sealed class JsEngineTests
 
         var realm = engine.CreateRealm();
 
-        // Expose a .NET function to the scripts
+        // Expose a .NET function to the scripts. They can pass any value, and fewer arguments than expected: convert the
+        // arguments explicitly (AsNumber throws when a value is not a number)
         using (engine.Enter())
         {
-            realm.GlobalObject.SetProperty("add", realm.CreateFunction("add", 2, (thisValue, arguments) => arguments[0].AsNumber() + arguments[1].AsNumber()));
+            realm.GlobalObject.SetProperty("add", realm.CreateFunction("add", 2, (thisValue, arguments) =>
+            {
+                var left = arguments.Length > 0 ? engine.ToNumber(arguments[0]) : double.NaN;
+                var right = arguments.Length > 1 ? engine.ToNumber(arguments[1]) : double.NaN;
+                return left + right;
+            }));
         }
 
         var result = realm.Execute("const values = [1, 2, 3].map(x => add(x, 10)); values.join('-')");
         Assert.Equal("11-12-13", result.AsString());
+        Assert.Equal("6,NaN", realm.Execute("[add('5', 1), add(1)].join()").AsString());
 
         // The promise jobs run when the host asks for them
         realm.Execute("globalThis.log = []; Promise.resolve().then(() => log.push('job')); log.push('script');");

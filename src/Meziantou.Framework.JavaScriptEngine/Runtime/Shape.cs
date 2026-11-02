@@ -45,14 +45,16 @@ internal sealed class Shape : PropertyMap
     private Shape? _transition;
     private Dictionary<TransitionKey, Shape>? _transitions;
 
-    private Shape(ShapeKind kind)
+    private Shape(ShapeKind kind, JsEngine? owner = null)
     {
         Kind = kind;
+        Owner = owner;
     }
 
     private Shape(Shape parent, ShapeTable table)
     {
         Kind = parent.Kind;
+        Owner = parent.Owner;
         Parent = parent;
         _table = table;
         Count = parent.Count + 1;
@@ -60,6 +62,9 @@ internal sealed class Shape : PropertyMap
 
     /// <summary>Gets the kind of the objects that use the shape (the root of the tree).</summary>
     public ShapeKind Kind { get; }
+
+    /// <summary>Gets the engine whose transition tree contains the shape, or null for the static empty shapes.</summary>
+    public JsEngine? Owner { get; }
 
     /// <summary>Gets the shape without the last property, if any.</summary>
     public Shape? Parent { get; }
@@ -178,7 +183,7 @@ internal sealed class Shape : PropertyMap
     }
 
     /// <summary>Creates the empty shape of an engine for a kind of objects (the parent of its shapes with properties).</summary>
-    internal static Shape CreateRoot(ShapeKind kind) => new(kind);
+    internal static Shape CreateRoot(ShapeKind kind, JsEngine owner) => new(kind, owner);
 
     private static Shape GetStaticRoot(ShapeKind kind)
     {
@@ -275,11 +280,11 @@ internal enum ShapeKind : byte
 }
 
 /// <summary>The empty shapes of an engine: the roots of its transition trees.</summary>
-internal sealed class ShapeRoots
+internal sealed class ShapeRoots(JsEngine owner)
 {
-    private readonly Shape _ordinary = Shape.CreateRoot(ShapeKind.Ordinary);
-    private readonly Shape _array = Shape.CreateRoot(ShapeKind.Array);
-    private readonly Shape _indexedExotic = Shape.CreateRoot(ShapeKind.IndexedExotic);
+    private readonly Shape _ordinary = Shape.CreateRoot(ShapeKind.Ordinary, owner);
+    private readonly Shape _array = Shape.CreateRoot(ShapeKind.Array, owner);
+    private readonly Shape _indexedExotic = Shape.CreateRoot(ShapeKind.IndexedExotic, owner);
 
     public Shape GetRoot(ShapeKind kind)
     {

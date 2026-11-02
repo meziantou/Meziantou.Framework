@@ -1,27 +1,61 @@
+using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
+
 namespace Meziantou.Framework.JavaScriptEngine;
 
-// The public API of the objects. The methods may run JavaScript code (getters, proxies): they must be called on the
-// thread of the engine, from a callback of the engine or in a scope of JsEngine.Enter.
+// The public API of the objects. The methods that implement the internal methods may run JavaScript code (getters,
+// setters, proxies): they must be called on the thread of the engine, from a callback of the engine or in a scope of
+// JsEngine.Enter, and they throw an InvalidOperationException otherwise.
 public partial class JsObject
 {
     /// <summary>[[Get]]: the value of a property (https://tc39.es/ecma262/#sec-get-o-p).</summary>
-    public JsValue GetProperty(JsPropertyKey key) => Get(key.Key, new JsValue(this));
+    /// <exception cref="InvalidOperationException">No engine is entered on the thread, or the object belongs to another engine.</exception>
+    public JsValue GetProperty(JsPropertyKey key)
+    {
+        CheckHostAccess();
+        return Get(key.Key, new JsValue(this));
+    }
 
     /// <summary>[[Get]] with a receiver (the <c>this</c> value of a getter).</summary>
-    public JsValue GetProperty(JsPropertyKey key, JsValue receiver) => Get(key.Key, receiver);
+    /// <exception cref="InvalidOperationException">No engine is entered on the thread, or the object belongs to another engine.</exception>
+    public JsValue GetProperty(JsPropertyKey key, JsValue receiver)
+    {
+        CheckHostAccess(receiver);
+        return Get(key.Key, receiver);
+    }
 
     /// <summary>[[Set]]: assigns a property; returns false when the assignment fails (e.g. a read-only property).</summary>
-    public bool SetProperty(JsPropertyKey key, JsValue value) => Set(key.Key, value, new JsValue(this));
+    /// <exception cref="InvalidOperationException">No engine is entered on the thread, or the object or the value belongs to another engine.</exception>
+    public bool SetProperty(JsPropertyKey key, JsValue value)
+    {
+        CheckHostAccess(value);
+        return Set(key.Key, value, new JsValue(this));
+    }
 
     /// <summary>[[Set]] with a receiver.</summary>
-    public bool SetProperty(JsPropertyKey key, JsValue value, JsValue receiver) => Set(key.Key, value, receiver);
+    /// <exception cref="InvalidOperationException">No engine is entered on the thread, or the object or a value belongs to another engine.</exception>
+    public bool SetProperty(JsPropertyKey key, JsValue value, JsValue receiver)
+    {
+        var engine = CheckHostAccess(value);
+        CheckValueOwner(engine, receiver);
+        return Set(key.Key, value, receiver);
+    }
 
     /// <summary>[[DefineOwnProperty]]: returns false when the property cannot be defined.</summary>
-    public bool DefineProperty(JsPropertyKey key, in JsPropertyDescriptor descriptor) => DefineOwnProperty(key.Key, descriptor.ToInternal());
+    /// <exception cref="InvalidOperationException">No engine is entered on the thread, or the object or a value of the descriptor belongs to another engine.</exception>
+    public bool DefineProperty(JsPropertyKey key, in JsPropertyDescriptor descriptor)
+    {
+        var engine = CheckHostAccess(descriptor.Value);
+        CheckValueOwner(engine, descriptor.Getter);
+        CheckValueOwner(engine, descriptor.Setter);
+        return DefineOwnProperty(key.Key, descriptor.ToInternal());
+    }
 
     /// <summary>[[GetOwnProperty]]: returns false when the object has no such own property.</summary>
+    /// <exception cref="InvalidOperationException">No engine is entered on the thread, or the object belongs to another engine.</exception>
     public bool TryGetOwnProperty(JsPropertyKey key, out JsPropertyDescriptor descriptor)
     {
+        CheckHostAccess();
         if (GetOwnProperty(key.Key, out var internalDescriptor))
         {
             descriptor = JsPropertyDescriptor.FromInternal(internalDescriptor);
@@ -33,14 +67,26 @@ public partial class JsObject
     }
 
     /// <summary>[[HasProperty]]: whether the object or its prototype chain has the property.</summary>
-    public bool ContainsProperty(JsPropertyKey key) => HasProperty(key.Key);
+    /// <exception cref="InvalidOperationException">No engine is entered on the thread, or the object belongs to another engine.</exception>
+    public bool ContainsProperty(JsPropertyKey key)
+    {
+        CheckHostAccess();
+        return HasProperty(key.Key);
+    }
 
     /// <summary>[[Delete]]: returns false when the property cannot be deleted.</summary>
-    public bool DeleteProperty(JsPropertyKey key) => Delete(key.Key);
+    /// <exception cref="InvalidOperationException">No engine is entered on the thread, or the object belongs to another engine.</exception>
+    public bool DeleteProperty(JsPropertyKey key)
+    {
+        CheckHostAccess();
+        return Delete(key.Key);
+    }
 
     /// <summary>[[OwnPropertyKeys]]: the keys of the own properties, in the order of the specification.</summary>
+    /// <exception cref="InvalidOperationException">No engine is entered on the thread, or the object belongs to another engine.</exception>
     public IReadOnlyList<JsPropertyKey> GetOwnPropertyKeys()
     {
+        CheckHostAccess();
         var keys = OwnPropertyKeys();
         var result = new JsPropertyKey[keys.Count];
         for (var i = 0; i < result.Length; i++)
@@ -52,10 +98,20 @@ public partial class JsObject
     }
 
     /// <summary>[[GetPrototypeOf]]</summary>
-    public JsObject? GetPrototype() => GetPrototypeOf();
+    /// <exception cref="InvalidOperationException">No engine is entered on the thread, or the object belongs to another engine.</exception>
+    public JsObject? GetPrototype()
+    {
+        CheckHostAccess();
+        return GetPrototypeOf();
+    }
 
     /// <summary>[[SetPrototypeOf]]: returns false when the prototype cannot be changed.</summary>
-    public bool SetPrototype(JsObject? prototype) => SetPrototypeOf(prototype);
+    /// <exception cref="InvalidOperationException">No engine is entered on the thread, or the object or the prototype belongs to another engine.</exception>
+    public bool SetPrototype(JsObject? prototype)
+    {
+        CheckHostAccess(prototype is null ? default : new JsValue(prototype));
+        return SetPrototypeOf(prototype);
+    }
 
     /// <summary>
     /// Makes the object an immutable prototype exotic object (https://tc39.es/ecma262/#sec-immutable-prototype-exotic-objects):
@@ -72,10 +128,20 @@ public partial class JsObject
     }
 
     /// <summary>[[IsExtensible]]</summary>
-    public bool GetIsExtensible() => IsExtensible();
+    /// <exception cref="InvalidOperationException">No engine is entered on the thread, or the object belongs to another engine.</exception>
+    public bool GetIsExtensible()
+    {
+        CheckHostAccess();
+        return IsExtensible();
+    }
 
     /// <summary>[[PreventExtensions]]</summary>
-    public bool PreventObjectExtensions() => PreventExtensions();
+    /// <exception cref="InvalidOperationException">No engine is entered on the thread, or the object belongs to another engine.</exception>
+    public bool PreventObjectExtensions()
+    {
+        CheckHostAccess();
+        return PreventExtensions();
+    }
 
     /// <summary>Defines a data property whose value is created on first access (e.g. the interfaces of a global object, most of which are never used).</summary>
     public void DefineLazyDataProperty(JsPropertyKey key, Func<JsValue> factory, bool writable, bool enumerable, bool configurable)
@@ -235,6 +301,54 @@ public partial class JsObject
         error.StackTrace = stack;
         return true;
     }
+
+    /// <summary>
+    /// Gets the engine that owns the object, when it is known without running code: the engine of the realm of a function,
+    /// or the engine whose shapes the object uses. It is null for the other objects (e.g. an object without properties).
+    /// </summary>
+    internal JsEngine? KnownOwner => this is JsFunction function ? function.Realm.Engine : (_map as Shape)?.Owner;
+
+    /// <summary>
+    /// Checks that a member of the public API is used in a scope of the engine that owns the object (see
+    /// <see cref="JsEngine.Enter"/>), and returns this engine.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal JsEngine CheckHostAccess()
+    {
+        var engine = JsEngine.Current;
+        if (engine is null)
+            ThrowNoEngine();
+
+        if (KnownOwner is { } owner && !ReferenceEquals(owner, engine))
+            ThrowForeignObject();
+
+        return engine;
+    }
+
+    /// <summary><see cref="CheckHostAccess()"/>, and checks that <paramref name="value"/> does not belong to another engine.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal JsEngine CheckHostAccess(JsValue value)
+    {
+        var engine = CheckHostAccess();
+        CheckValueOwner(engine, value);
+        return engine;
+    }
+
+    /// <summary>Throws an <see cref="InvalidOperationException"/> when the value is an object known to belong to another engine than <paramref name="engine"/>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static void CheckValueOwner(JsEngine engine, JsValue value)
+    {
+        if (value.Cell is JsObject obj && obj.KnownOwner is { } owner && !ReferenceEquals(owner, engine))
+            ThrowForeignObject();
+    }
+
+    [DoesNotReturn]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    internal static void ThrowNoEngine() => throw new InvalidOperationException("No engine is entered on the current thread: use the members of the JavaScript objects in a scope of 'JsEngine.Enter()' (the callbacks of the engine already run in one)");
+
+    [DoesNotReturn]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    internal static void ThrowForeignObject() => throw new InvalidOperationException("The object belongs to another engine: the objects of an engine cannot be used by another engine (the primitive values can)");
 
     /// <summary>Gets the state of a promise ([[PromiseState]], [[PromiseResult]] and [[PromiseIsHandled]]); returns false when the object is not a promise.</summary>
     public bool TryGetPromiseState(out JsPromiseState state, out JsValue result, out bool isHandled)

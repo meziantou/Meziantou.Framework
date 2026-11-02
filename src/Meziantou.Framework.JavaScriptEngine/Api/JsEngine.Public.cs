@@ -11,6 +11,7 @@ public sealed partial class JsEngine
     {
         ArgumentNullException.ThrowIfNull(realm);
         ArgumentNullException.ThrowIfNull(action);
+        CheckRealmOwner(realm);
         using var scope = Enter();
         var previous = CurrentRealm;
         CurrentRealm = realm;
@@ -26,16 +27,20 @@ public sealed partial class JsEngine
 
     /// <summary>Call(F, V, argumentsList) (https://tc39.es/ecma262/#sec-call).</summary>
     /// <exception cref="JsException">The value is not callable (a TypeError), or the function threw an exception.</exception>
+    /// <exception cref="InvalidOperationException">The function, the this value or an argument belongs to another engine.</exception>
     public JsValue Call(JsValue function, JsValue thisValue, params ReadOnlySpan<JsValue> arguments)
     {
+        CheckValuesOwner(function, thisValue, arguments);
         using var scope = Enter();
         return JsOperations.Call(function, thisValue, arguments);
     }
 
     /// <summary>Construct(F, argumentsList, newTarget) (https://tc39.es/ecma262/#sec-construct); <paramref name="newTarget"/> is the constructor when it is undefined.</summary>
     /// <exception cref="JsException">The value is not a constructor (a TypeError), or the constructor threw an exception.</exception>
+    /// <exception cref="InvalidOperationException">The constructor, the new target or an argument belongs to another engine.</exception>
     public JsValue Construct(JsValue constructor, ReadOnlySpan<JsValue> arguments, JsValue newTarget = default)
     {
+        CheckValuesOwner(constructor, newTarget, arguments);
         using var scope = Enter();
         if (constructor.TryGetObject() is not { IsConstructor: true } constructorObject)
             return ThrowHelper.ThrowTypeError<JsValue>(JsOperations.DescribeForError(constructor) + " is not a constructor");
@@ -50,6 +55,24 @@ public sealed partial class JsEngine
         }
 
         return JsOperations.Construct(constructorObject, arguments, target);
+    }
+
+    /// <summary>Throws an <see cref="InvalidOperationException"/> when one of the values is an object of another engine.</summary>
+    private void CheckValuesOwner(JsValue first, JsValue second, ReadOnlySpan<JsValue> others)
+    {
+        JsObject.CheckValueOwner(this, first);
+        JsObject.CheckValueOwner(this, second);
+        foreach (var value in others)
+        {
+            JsObject.CheckValueOwner(this, value);
+        }
+    }
+
+    /// <summary>Throws an <see cref="InvalidOperationException"/> when the realm belongs to another engine.</summary>
+    internal void CheckRealmOwner(JsRealm realm)
+    {
+        if (!ReferenceEquals(realm.Engine, this))
+            throw new InvalidOperationException("The realm belongs to another engine");
     }
 
     /// <summary>ToNumber(value) (https://tc39.es/ecma262/#sec-tonumber); it may run code (valueOf).</summary>

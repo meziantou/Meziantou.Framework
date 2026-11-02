@@ -168,7 +168,7 @@ internal sealed partial class WptTestRunner
                 SpeculativeParsing = true,
                 // The WPT server is reached directly: the tests only check the Sec-Purpose header of the anonymized prefetches
                 SpeculativeLoading = new SpeculativeLoadingOptions { AnonymousClientIpSupported = true },
-                UnhandledScriptError = (_, error) => Log("Uncaught " + GetErrorDescription(error)),
+                UnhandledScriptError = (global, error) => Log("Uncaught " + GetErrorDescription(global, error)),
 
                 // The messages of the console namespace: added to the log, and given to the listeners of test_driver.bidi.log.entry_added
                 ConsoleMessage = OnConsoleMessage,
@@ -1777,7 +1777,7 @@ internal sealed partial class WptTestRunner
     // Errors and results
     // ----------------------------------------------------------------------------------------------------------------
 
-    private string GetErrorDescription(ScriptError error) => _engine.DescribeError(error.Error) ?? error.Message;
+    private string GetErrorDescription(GlobalScope? global, ScriptError error) => _engine.DescribeError(global, error.Error) ?? error.Message;
 
     private void OnConsoleMessage(GlobalScope window, ConsoleMessage message)
     {

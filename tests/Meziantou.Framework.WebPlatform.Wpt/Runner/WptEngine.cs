@@ -24,8 +24,10 @@ internal abstract class WptEngine : IDisposable
     /// <summary>Resets the time limit of the scripts (called before each task).</summary>
     public abstract void ResetConstraints();
 
-    /// <summary>Returns the description of an error value of the engine (its stack), or null.</summary>
-    public abstract string? DescribeError(object? error);
+    /// <summary>Returns the description of an error value (its stack), or null.</summary>
+    /// <param name="global">The global object that reported the error: the error of a worker is a value of the engine of the worker, used on its thread.</param>
+    /// <param name="error">The error value.</param>
+    public abstract string? DescribeError(GlobalScope? global, object? error);
 
     public abstract void Dispose();
 }
@@ -57,7 +59,7 @@ internal sealed class JavaScriptWptEngine : WptEngine
     {
     }
 
-    public override string? DescribeError(object? error)
+    public override string? DescribeError(GlobalScope? global, object? error)
     {
         if (error is not EngineObject value)
             return error?.ToString();
@@ -68,9 +70,12 @@ internal sealed class JavaScriptWptEngine : WptEngine
             if (value is JsHostObject { Target: DomException exception })
                 return exception.Name + ": " + exception.Message;
 
-            using var scope = _engine.Engine.Enter();
+            // The engine of a worker runs on the thread of the worker: entering the engine of the page from there would
+            // conflict with the thread of the page
+            var engine = (global?.ScriptEngine as JavaScriptScriptEngine)?.Engine ?? _engine.Engine;
+            using var scope = engine.Enter();
             var stack = value.GetErrorStack() ?? (value.GetProperty("stack") is { IsString: true } stackValue ? stackValue.AsString() : null);
-            return stack is { Length: > 0 } ? stack : _engine.Engine.ToString(value);
+            return stack is { Length: > 0 } ? stack : engine.ToString(value);
         }
         catch (Exception)
         {

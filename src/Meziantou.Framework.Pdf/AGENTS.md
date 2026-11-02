@@ -114,6 +114,9 @@ the XML documentation and `readme.md` consistent in the same change.
 - **Bounded output buffers.** A save streams the file through `PdfByteWriter` with a `PdfOutputSink`: a stream for the
   synchronous saves, blocks of memory for `SaveAsync` and `ToByteArray`. The file identifier is an incremental MD5 of
   what is written, so nothing reads the output back; the original file of an incremental save is passed as one block.
+  The data of the file a seekable stream is read from (`PdfStream.PendingRange`, the original file of an incremental
+  save) is copied from the input in chunks (`PdfByteWriter.Write(PdfInput, ...)`), or kept as a range by the segments
+  of the asynchronous saves and read when they are written: a save of a file larger than 2 GB never holds it in memory.
 
 ## Renderer (`Rendering/`, namespace `Meziantou.Framework.Pdf.Rendering`)
 

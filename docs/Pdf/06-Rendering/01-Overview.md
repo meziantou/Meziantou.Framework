@@ -88,6 +88,7 @@ the next pages: create a new session after changing the document.
 | [Intent](cref:Meziantou.Framework.Pdf.Rendering.PdfRenderOptions.Intent) | View | Viewing, printing or exporting: selects the annotations and the layers drawn (see [Layers, annotations and printing](04-LayersAndAnnotations.md)) |
 | [OptionalContentConfiguration](cref:Meziantou.Framework.Pdf.Rendering.PdfRenderOptions.OptionalContentConfiguration), [OptionalContentGroupStates](cref:Meziantou.Framework.Pdf.Rendering.PdfRenderOptions.OptionalContentGroupStates) | `null` | The configuration of the layers, and the layers turned on or off |
 | [PathAntialiasing](cref:Meziantou.Framework.Pdf.Rendering.PdfRenderOptions.PathAntialiasing), [TextAntialiasing](cref:Meziantou.Framework.Pdf.Rendering.PdfRenderOptions.TextAntialiasing) | `true` | Antialiased edges, or hard edges |
+| [UseHalftones](cref:Meziantou.Framework.Pdf.Rendering.PdfRenderOptions.UseHalftones) | `false` | Applies the halftones of the document, as a printer would: see [Halftones](05-Halftones.md) |
 | [FontResolver](cref:Meziantou.Framework.Pdf.Rendering.PdfRenderOptions.FontResolver), [UseSystemFonts](cref:Meziantou.Framework.Pdf.Rendering.PdfRenderOptions.UseSystemFonts) | none, `true` | The fonts that replace the fonts the document does not embed: see [Fonts that are not embedded](02-FontsThatAreNotEmbedded.md) |
 | [MaxOperations](cref:Meziantou.Framework.Pdf.Rendering.PdfRenderOptions.MaxOperations) | 50,000,000 | The work a page may do: see below |
 | [Configuration](cref:Meziantou.Framework.Pdf.Rendering.PdfRenderOptions.Configuration) | `null` | The configuration of the image: its limits and allocation scope (see [Resource limits](../../Imaging/05-LoadingAndSaving/07-ResourceLimits.md)) |
@@ -106,8 +107,9 @@ the next pages: create a new session after changing the document.
   masks and soft masks, and the inline images.
 - **Shadings and patterns**: the functions, the seven types of shadings, and the colored and uncolored tiling patterns.
 - **Transparency**: opacity, the blend modes, the transparency groups (isolated and knockout), the soft masks, the
-  transfer functions, the alpha that is shape in knockout groups, and the text knockout. Overprint and halftones are
-  not simulated: the page is composited in sRGB, for a screen.
+  transfer functions, the alpha that is shape in knockout groups, and the text knockout. Overprint is not simulated:
+  the page is composited in sRGB, for a screen.
+- **Halftones**: ignored by default, as viewers do; applied on request (see [Halftones](05-Halftones.md)).
 
 ## Damaged and hostile pages
 
@@ -126,3 +128,4 @@ untrusted users, also bound the read: see [Errors and limits](../05-ReadingAndMo
   application, the antialiasing, and the cancellation.
 - [Layers, annotations and printing](04-LayersAndAnnotations.md): the layers, the annotations, and the rendering for
   printing.
+- [Halftones](05-Halftones.md): the halftone screens of the document, applied as a printer would.

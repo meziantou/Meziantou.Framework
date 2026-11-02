@@ -43,6 +43,10 @@ Assert.Equal(60, result.AsNumber());
 When a job throws, the exception goes to [JsHost.ReportJobException](cref:Meziantou.Framework.JavaScriptEngine.JsHost.ReportJobException). The default implementation rethrows it: it comes
 out of [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs), and the other jobs stay in the queue for the next call.
 
+Each job is an entry into JavaScript, with the full limits of the options: jobs that keep enqueuing jobs keep
+[RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs) running. Run them in an execution scope to bound the whole drain, see
+[Limits and sandboxing](07-LimitsAndSandboxing.md#jobs).
+
 ## Await a .NET task from a script
 
 A .NET function returns a promise to the scripts, and settles it when its `Task` completes. The engine runs on one

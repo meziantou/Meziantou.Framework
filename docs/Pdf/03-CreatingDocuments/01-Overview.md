@@ -127,7 +127,8 @@ var web = document.ToByteArray(new PdfSaveOptions { Linearize = true });
 large document is not held in memory as one array; when the save fails, the stream may contain the beginning of the
 file (`Save(path)` deletes the incomplete file). `SaveAsync` serializes the document on the calling thread into blocks
 of memory, then writes them asynchronously: its cancellation token is observed between the objects and between the
-blocks.
+blocks. The data a document read with [OpenSeekable](cref:Meziantou.Framework.Pdf.PdfDocument.OpenSeekable) has not loaded is not copied into these blocks: it is read
+from the stream of the document when the blocks are written.
 
 The output depends only on the document and the options: the library writes no date, no random value and not its own
 version (`Information.Producer` is empty unless you set it), so a test can compare the files it writes.

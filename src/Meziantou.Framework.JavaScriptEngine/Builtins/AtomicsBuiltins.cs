@@ -536,35 +536,57 @@ internal static class AtomicsBuiltins
         }
     }
 
+    // How often a blocking wait checks the cancellation tokens of the execution scopes
+    private const double ExecutionScopePollIntervalMilliseconds = 20;
+
     private sealed record WaitAsyncTimeout(JsSharedDataBlock Block, int ByteIndex, AtomicsWaiter Waiter);
 
-    /// <summary>SuspendThisAgent(WL, waiterRecord): blocks the thread until the waiter is notified or the timeout elapses.</summary>
+    /// <summary>
+    /// SuspendThisAgent(WL, waiterRecord): blocks the thread until the waiter is notified or the timeout elapses. The wait
+    /// is also bounded by the limits of the running entry: it stops with a <see cref="JsTerminationException"/> when the
+    /// timeout of the engine or of an execution scope elapses, or when the execution is canceled.
+    /// </summary>
     private static string SuspendThisAgent(JsEngine engine, JsSharedDataBlock block, int byteIndex, AtomicsWaiter waiter, double timeout)
     {
         var waitEvent = waiter.Event!;
         var cancellationToken = engine.Options.CancellationToken;
+        JsTerminationException? termination = null;
         var canceled = false;
         try
         {
-            if (double.IsPositiveInfinity(timeout))
+            // The deadline is measured with the high-resolution clock: the waiter never wakes before the timeout
+            var start = System.Diagnostics.Stopwatch.GetTimestamp();
+            while (true)
             {
-                waitEvent.Wait(cancellationToken);
-            }
-            else
-            {
-                // The deadline is measured with the high-resolution clock: the waiter never wakes before the timeout
-                var start = System.Diagnostics.Stopwatch.GetTimestamp();
-                while (true)
+                var remaining = timeout - System.Diagnostics.Stopwatch.GetElapsedTime(start).TotalMilliseconds;
+                if (remaining <= 0)
+                    break;
+
+                if (engine.GetRemainingTime() is { } entryRemaining)
                 {
-                    var remaining = timeout - System.Diagnostics.Stopwatch.GetElapsedTime(start).TotalMilliseconds;
-                    if (remaining <= 0 || waitEvent.Wait((int)Math.Min(Math.Ceiling(remaining), int.MaxValue), cancellationToken))
-                        break;
+                    remaining = Math.Min(remaining, Math.Max(Math.Ceiling(entryRemaining.TotalMilliseconds), 0));
                 }
+
+                // The tokens of the execution scopes are polled
+                if (engine.HasCancelableExecutionScope)
+                {
+                    remaining = Math.Min(remaining, ExecutionScopePollIntervalMilliseconds);
+                }
+
+                var milliseconds = double.IsPositiveInfinity(remaining) ? Timeout.Infinite : (int)Math.Min(Math.Ceiling(remaining), int.MaxValue);
+                if (waitEvent.Wait(milliseconds, cancellationToken))
+                    break;
+
+                engine.CheckInterrupt();
             }
         }
         catch (OperationCanceledException)
         {
             canceled = true;
+        }
+        catch (JsTerminationException exception)
+        {
+            termination = exception;
         }
 
         bool notified;
@@ -578,8 +600,14 @@ internal static class AtomicsBuiltins
         }
 
         waitEvent.Dispose();
-        if (canceled && !notified)
-            throw new JsTerminationException(JsTerminationReason.Canceled, "The execution was canceled");
+        if (!notified)
+        {
+            if (termination is not null)
+                throw termination;
+
+            if (canceled)
+                engine.ThrowTermination(JsTerminationReason.Canceled, "The execution was canceled");
+        }
 
         return notified ? "ok" : "timed-out";
     }

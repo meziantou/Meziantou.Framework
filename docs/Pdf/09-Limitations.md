@@ -22,8 +22,13 @@ description: What the library does not do, so that you can plan around it.
 - The text extraction follows the order of the content and joins the glyphs into lines by their positions; it does not
   detect columns, and it does not recognize the text of scanned pages.
 - The library reports the permissions of an encrypted document, but does not enforce them.
-- A file larger than 2 GB is read with [OpenSeekable](cref:Meziantou.Framework.Pdf.PdfDocument.OpenSeekable), but a document is saved in memory: a document whose file
-  would be larger than 2 GB cannot be saved, in full or incrementally. One stream cannot be larger than 2 GB.
+- A file larger than 2 GB is read with [OpenSeekable](cref:Meziantou.Framework.Pdf.PdfDocument.OpenSeekable): `Open(path)`, `Open(stream)` and `OpenAsync` read the
+  file into one array, which cannot be larger than 2 GB. One stream cannot be larger than 2 GB.
+- A file larger than 2 GB is written by [Save](cref:Meziantou.Framework.Pdf.PdfDocument.Save), [SaveAsync](cref:Meziantou.Framework.Pdf.PdfDocument.SaveAsync), [SaveIncremental](cref:Meziantou.Framework.Pdf.PdfDocument.SaveIncremental) and
+  [SaveIncrementalAsync](cref:Meziantou.Framework.Pdf.PdfDocument.SaveIncrementalAsync). [ToByteArray](cref:Meziantou.Framework.Pdf.PdfDocument.ToByteArray), a linearized file and the signatures are built in one array, so
+  they are limited to 2 GB. The offsets of a cross-reference table have 10 digits: a file whose objects are after
+  9,999,999,999 bytes needs a cross-reference stream ([UseObjectStreams](cref:Meziantou.Framework.Pdf.PdfSaveOptions.UseObjectStreams)), and cannot be updated incrementally if
+  it has a table.
 
 ## Conformance and signatures
 
@@ -41,7 +46,10 @@ description: What the library does not do, so that you can plan around it.
 ## Rendering
 
 - The renderer composites the page in sRGB, for a screen: overprint (`OP`, `op`, `OPM`) is not simulated, and the
-  halftones and the other parameters of the output device (black generation, undercolor removal) are ignored. The
-  colors of prepress documents that rely on them can differ from an overprint preview.
+  other parameters of the output device (black generation, undercolor removal) are ignored. The colors of prepress
+  documents that rely on them can differ from an overprint preview.
+- The halftones are ignored unless the options ask for them. They are then applied to the red, green and blue
+  components of the image, to fully opaque objects only; the screens of the other colorants, `AccurateScreens` and the
+  named device halftones are not used (see [Halftones](06-Rendering/05-Halftones.md)).
 - The appearances generated for the annotations that have none are simple: the line endings, the rich text and the
   comb fields are not drawn.

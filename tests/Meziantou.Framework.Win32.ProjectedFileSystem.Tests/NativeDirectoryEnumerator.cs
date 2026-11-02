@@ -74,8 +74,8 @@ internal sealed class NativeDirectoryEnumerator : IDisposable
                 };
 
                 var status = Windows.Wdk.TestPInvoke.NtQueryDirectoryFile(
-                    (HANDLE)_handle.DangerousGetHandle(),
-                    Event: default,
+                    _handle,
+                    Event: null,
                     ApcRoutine: null,
                     ApcContext: null,
                     IoStatusBlock: out _,

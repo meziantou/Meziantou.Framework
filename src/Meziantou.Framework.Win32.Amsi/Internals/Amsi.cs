@@ -8,9 +8,14 @@ namespace Meziantou.Framework.Win32;
 [SupportedOSPlatform("windows10.0.10240")]
 internal static partial class Amsi
 {
-    internal static HRESULT AmsiInitialize(string appName, out AmsiContextSafeHandle amsiContext)
+    internal static unsafe HRESULT AmsiInitialize(string appName, out AmsiContextSafeHandle amsiContext)
     {
-        var result = PInvoke.AmsiInitialize(appName, out var context);
+        HAMSICONTEXT context;
+        HRESULT result;
+        fixed (char* appNamePointer = appName)
+        {
+            result = PInvoke.AmsiInitialize(appNamePointer, &context);
+        }
 
         // Only take ownership of the handle the call actually produced: on failure the out parameter
         // carries no handle the caller is allowed to pass back to AmsiUninitialize.

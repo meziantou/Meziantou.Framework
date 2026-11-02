@@ -350,6 +350,8 @@ public partial class JsObject
             _elementKind = ElementKind.Mixed;
         }
 
+        _elementStart = 0;
+        _denseCount = values.Length;
         FillDenseHoles(values.Length, length - values.Length);
     }
 

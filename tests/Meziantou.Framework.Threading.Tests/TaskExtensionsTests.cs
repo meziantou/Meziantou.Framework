@@ -70,6 +70,31 @@ public sealed class TaskExtensionsTests
     }
 
     [Fact]
+    [SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly", Justification = "Awaiting the tuple consumes each ValueTask once")]
+    public async Task TaskExtensions_ValueTaskTupleConfigureAwaitExample()
+    {
+        #region TaskExtensions_ValueTaskTupleConfigureAwait
+        static async ValueTask<int> GetCountAsync()
+        {
+            await Task.Yield();
+            return 42;
+        }
+
+        static ValueTask<string> GetNameAsync() => ValueTask.FromResult("value");
+
+        static async ValueTask SaveAsync() => await Task.Yield();
+
+        // Do not resume on the captured SynchronizationContext, as library code usually does
+        var (count, name) = await (GetCountAsync(), GetNameAsync()).ConfigureAwait(false);
+        Assert.Equal(42, count);
+        Assert.Equal("value", name);
+
+        // Tuples of ValueTask (without a result) support it too
+        await (SaveAsync(), SaveAsync()).ConfigureAwait(false);
+        #endregion
+    }
+
+    [Fact]
     public async Task TaskExtensions_WhenAllFailureExample()
     {
         #region TaskExtensions_WhenAllFailure
@@ -422,6 +447,247 @@ public sealed class TaskExtensionsTests
 
         Assert.Equal(1, source1.ConsumedCount);
         Assert.Equal(1, source2.ConsumedCount);
+    }
+
+    [Fact]
+    [SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly", Justification = "For testing purpose")]
+    public async Task WhenAll_ValueTask_ConfigureAwait_AllArities()
+    {
+        var result1 = await new ValueTuple<ValueTask<int>>(ValueTask.FromResult(1)).ConfigureAwait(false);
+        Assert.Equal(new ValueTuple<int>(1), result1);
+        Assert.Equal((1, 2), await (ValueTask.FromResult(1), ValueTask.FromResult(2)).ConfigureAwait(false));
+        Assert.Equal((1, 2, 3), await (ValueTask.FromResult(1), ValueTask.FromResult(2), ValueTask.FromResult(3)).ConfigureAwait(false));
+        Assert.Equal((1, 2, 3, 4), await (ValueTask.FromResult(1), ValueTask.FromResult(2), ValueTask.FromResult(3), ValueTask.FromResult(4)).ConfigureAwait(false));
+        Assert.Equal((1, 2, 3, 4, 5), await (ValueTask.FromResult(1), ValueTask.FromResult(2), ValueTask.FromResult(3), ValueTask.FromResult(4), ValueTask.FromResult(5)).ConfigureAwait(false));
+        Assert.Equal((1, 2, 3, 4, 5, 6), await (ValueTask.FromResult(1), ValueTask.FromResult(2), ValueTask.FromResult(3), ValueTask.FromResult(4), ValueTask.FromResult(5), ValueTask.FromResult(6)).ConfigureAwait(false));
+        Assert.Equal((1, 2, 3, 4, 5, 6, 7), await (ValueTask.FromResult(1), ValueTask.FromResult(2), ValueTask.FromResult(3), ValueTask.FromResult(4), ValueTask.FromResult(5), ValueTask.FromResult(6), ValueTask.FromResult(7)).ConfigureAwait(false));
+        Assert.Equal((1, "2"), await (ValueTask.FromResult(1), ValueTask.FromResult("2")).ConfigureAwait(true));
+    }
+
+    [Fact]
+    [SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly", Justification = "For testing purpose")]
+    public async Task WhenAll_NonGenericValueTask_ConfigureAwait_AllArities()
+    {
+        var completed = ValueTask.CompletedTask;
+        await (completed, completed).ConfigureAwait(false);
+        await (completed, completed, completed).ConfigureAwait(false);
+        await (completed, completed, completed, completed).ConfigureAwait(false);
+        await (completed, completed, completed, completed, completed).ConfigureAwait(false);
+        await (completed, completed, completed, completed, completed, completed).ConfigureAwait(false);
+        await (completed, completed, completed, completed, completed, completed, completed).ConfigureAwait(false);
+        await (completed, completed).ConfigureAwait(true);
+    }
+
+    [Theory]
+    [InlineData(false, 0)]
+    [InlineData(true, 1)]
+    [SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly", Justification = "For testing purpose")]
+    public async Task WhenAll_ValueTask_ConfigureAwait_ResumesOnCapturedContextOnlyWhenRequested(bool continueOnCapturedContext, int expectedPostCount)
+    {
+        var source1 = new TrackingValueTaskSource<int>();
+        var source2 = new TrackingValueTaskSource<string>();
+
+        var postCount = await CountPostsAsync(() =>
+        {
+            var task = AwaitAsync();
+            source1.SetResult(1);
+            source2.SetResult("test");
+            return task;
+        });
+
+        Assert.Equal(expectedPostCount, postCount);
+
+        async Task AwaitAsync()
+        {
+            var (result1, result2) = await (source1.CreateValueTask(), source2.CreateValueTask()).ConfigureAwait(continueOnCapturedContext);
+            Assert.Equal(1, result1);
+            Assert.Equal("test", result2);
+        }
+    }
+
+    [Theory]
+    [InlineData(false, 0)]
+    [InlineData(true, 1)]
+    [SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly", Justification = "For testing purpose")]
+    public async Task WhenAll_NonGenericValueTask_ConfigureAwait_ResumesOnCapturedContextOnlyWhenRequested(bool continueOnCapturedContext, int expectedPostCount)
+    {
+        var source1 = new TrackingValueTaskSource<int>();
+        var source2 = new TrackingValueTaskSource<int>();
+
+        var postCount = await CountPostsAsync(() =>
+        {
+            var task = AwaitAsync();
+            source1.SetResult(1);
+            source2.SetResult(2);
+            return task;
+        });
+
+        Assert.Equal(expectedPostCount, postCount);
+
+        async Task AwaitAsync() => await (source1.CreateNonGenericValueTask(), source2.CreateNonGenericValueTask()).ConfigureAwait(continueOnCapturedContext);
+    }
+
+    [Fact]
+    [SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly", Justification = "For testing purpose")]
+    public async Task WhenAll_ValueTask_ConfigureAwait_CompletesSynchronouslyWhenAllTasksAreAlreadyCompleted()
+    {
+        var awaitable = (ValueTask.FromResult(0), ValueTask.FromResult("test")).ConfigureAwait(false);
+
+        Assert.True(awaitable.GetAwaiter().IsCompleted);
+        Assert.Equal((0, "test"), await awaitable);
+    }
+
+    [Fact]
+    [SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly", Justification = "For testing purpose")]
+    public async Task WhenAll_NonGenericValueTask_ConfigureAwait_CompletesSynchronouslyWhenAllTasksAreAlreadyCompleted()
+    {
+        var source1 = new TrackingValueTaskSource<int>();
+        var source2 = new TrackingValueTaskSource<int>();
+        source1.SetResult(1);
+        source2.SetResult(2);
+
+        var awaitable = (source1.CreateNonGenericValueTask(), source2.CreateNonGenericValueTask()).ConfigureAwait(false);
+
+        Assert.True(awaitable.GetAwaiter().IsCompleted);
+        await awaitable;
+        Assert.Equal(1, source1.ConsumedCount);
+        Assert.Equal(1, source2.ConsumedCount);
+    }
+
+    [Fact]
+    [SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly", Justification = "For testing purpose")]
+    public async Task WhenAll_ValueTask_ConfigureAwait_ExceptionTakesPrecedenceOverCancellation()
+    {
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () => await (ValueTask.FromCanceled<int>(cts.Token), ValueTask.FromException<string>(new InvalidOperationException("test"))).ConfigureAwait(false));
+        Assert.Equal("test", exception.Message);
+    }
+
+    [Fact]
+    [SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly", Justification = "For testing purpose")]
+    public async Task WhenAll_ValueTask_ConfigureAwait_Canceled()
+    {
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        var exception = await Assert.ThrowsAsync<TaskCanceledException>(async () => await (ValueTask.FromResult(0), ValueTask.FromCanceled<string>(cts.Token)).ConfigureAwait(false));
+        Assert.Equal(cts.Token, exception.CancellationToken);
+    }
+
+    [Fact]
+    [SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly", Justification = "For testing purpose")]
+    public async Task WhenAll_NonGenericValueTask_ConfigureAwait_ExceptionTakesPrecedenceOverCancellation()
+    {
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        var exception = await Assert.ThrowsAsync<InvalidOperationException>(async () => await (ValueTask.FromCanceled(cts.Token), ValueTask.FromException(new InvalidOperationException("test"))).ConfigureAwait(false));
+        Assert.Equal("test", exception.Message);
+    }
+
+    [Fact]
+    [SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly", Justification = "For testing purpose")]
+    public async Task WhenAll_NonGenericValueTask_ConfigureAwait_Canceled()
+    {
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        var exception = await Assert.ThrowsAsync<TaskCanceledException>(async () => await (ValueTask.CompletedTask, ValueTask.FromCanceled(cts.Token)).ConfigureAwait(false));
+        Assert.Equal(cts.Token, exception.CancellationToken);
+    }
+
+    [Fact]
+    [SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly", Justification = "For testing purpose")]
+    public async Task WhenAll_ValueTask_ConfigureAwait_ConsumesEachPendingTaskOnceWhenOneFails()
+    {
+        var source1 = new TrackingValueTaskSource<int>();
+        var source2 = new TrackingValueTaskSource<int>();
+        var source3 = new TrackingValueTaskSource<int>();
+        var task = ConsumeAsync();
+
+        source1.SetResult(1);
+        source2.SetException(new InvalidOperationException("test"));
+        source3.SetResult(3);
+
+        await Assert.ThrowsAsync<InvalidOperationException>(() => task);
+        Assert.Equal(1, source1.ConsumedCount);
+        Assert.Equal(1, source2.ConsumedCount);
+        Assert.Equal(1, source3.ConsumedCount);
+
+        async Task ConsumeAsync() => await (source1.CreateValueTask(), source2.CreateValueTask(), source3.CreateValueTask()).ConfigureAwait(false);
+    }
+
+    [Fact]
+    [SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly", Justification = "For testing purpose")]
+    public async Task WhenAll_NonGenericValueTask_ConfigureAwait_ConsumesEachPendingTaskOnceWhenOneIsCanceled()
+    {
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+
+        var source1 = new TrackingValueTaskSource<int>();
+        var source2 = new TrackingValueTaskSource<int>();
+        var task = ConsumeAsync();
+
+        source1.SetCanceled(cts.Token);
+        source2.SetResult(2);
+
+        await Assert.ThrowsAsync<TaskCanceledException>(() => task);
+        Assert.Equal(1, source1.ConsumedCount);
+        Assert.Equal(1, source2.ConsumedCount);
+
+        async Task ConsumeAsync() => await (source1.CreateNonGenericValueTask(), source2.CreateNonGenericValueTask()).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Runs <paramref name="action"/> with a <see cref="RecordingSynchronizationContext"/> as the current context, and returns
+    /// how many continuations were posted to it.
+    /// </summary>
+    private static async Task<int> CountPostsAsync(Func<Task> action)
+    {
+        var context = new RecordingSynchronizationContext();
+        await Task.Run(() =>
+        {
+            SynchronizationContext.SetSynchronizationContext(context);
+            try
+            {
+                return action();
+            }
+            finally
+            {
+                SynchronizationContext.SetSynchronizationContext(null);
+            }
+        });
+
+        return context.PostCount;
+    }
+
+    /// <summary>
+    /// A synchronization context counting the continuations posted to it, and running them on the thread pool.
+    /// </summary>
+    private sealed class RecordingSynchronizationContext : SynchronizationContext
+    {
+        private int _postCount;
+
+        public int PostCount => Volatile.Read(ref _postCount);
+
+        public override void Post(SendOrPostCallback d, object? state)
+        {
+            Interlocked.Increment(ref _postCount);
+            ThreadPool.QueueUserWorkItem(_ =>
+            {
+                SetSynchronizationContext(this);
+                try
+                {
+                    d(state);
+                }
+                finally
+                {
+                    SetSynchronizationContext(null);
+                }
+            });
+        }
     }
 
     /// <summary>

@@ -21,6 +21,7 @@ dotnet add package Meziantou.Framework.Markdown
 - [Security](#security)
 - [Work with the syntax tree](#work-with-the-syntax-tree)
 - [Other output formats](#other-output-formats)
+- [Write Markdown text](#write-markdown-text)
 - [Roundtrip](#roundtrip)
 - [Differences from Markdig](#differences-from-markdig)
 
@@ -206,6 +207,39 @@ Assert.Equal("# Title", normalized);
 
 For other formats, implement `IMarkdownRenderer` (or derive from `TextRendererBase<T>`) and call
 `MarkdownConverter.Convert(markdown, renderer, pipeline)`.
+
+## Write Markdown text
+
+`MarkdownEscaper` escapes text so that the parser reads it back as is: plain text, code spans, fenced code blocks, link
+destinations, titles and labels, and pipe table cells.
+
+<!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/TestCoreApi.cs;region=MarkdownEscaper_Usage;format=md-fenced-code-block;dedent=true -->
+````csharp
+// Escape the text so that Markdown displays it as is: every ASCII punctuation character is escaped
+Assert.Equal(@"\*Note\* \[docs\]\!", MarkdownEscaper.Escape("*Note* [docs]!"));
+
+// The delimiters of code are longer than the runs of backticks of the content
+Assert.Equal("``a`b``", MarkdownEscaper.CreateCodeSpan("a`b"));
+Assert.Equal("`` `code` ``", MarkdownEscaper.CreateCodeSpan("`code`"));
+Assert.Equal("```csharp\nvar a = 1;\n```\n", MarkdownEscaper.CreateFencedCodeBlock("var a = 1;", "csharp"));
+
+// Build a link from untrusted parts
+var text = MarkdownEscaper.Escape("Docs [v2]");
+var destination = MarkdownEscaper.EscapeLinkDestination("https://example.com/a b");
+var title = MarkdownEscaper.EscapeLinkTitle("Say \"hi\"");
+Assert.Equal("<https://example.com/a b>", destination);
+Assert.Equal("\"Say \\\"hi\\\"\"", title);
+
+var html = MarkdownConverter.ToHtml($"[{text}]({destination} {title})");
+Assert.Equal("<p><a href=\"https://example.com/a%20b\" title=\"Say &quot;hi&quot;\">Docs [v2]</a></p>\n", html);
+
+// The label of a reference link
+Assert.Equal(@"see \[1\]", MarkdownEscaper.EscapeLinkLabel("see [1]"));
+
+// A cell of a pipe table cannot contain a pipe or a line ending
+Assert.Equal(@"a \| b c", MarkdownEscaper.EscapeTableCell("a | b\nc"));
+````
+<!-- endref -->
 
 ## Roundtrip
 

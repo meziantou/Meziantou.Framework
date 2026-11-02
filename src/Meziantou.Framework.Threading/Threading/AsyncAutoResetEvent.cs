@@ -146,7 +146,7 @@ public sealed class AsyncAutoResetEvent
 
         public WaiterCompletionSource? Previous { get; set; }
         public WaiterCompletionSource? Next { get; set; }
-        public bool IsQueued { get; set; }
+        public int QueueGeneration { get; set; }
 
         private static TaskCreationOptions GetOptions(bool allowInliningContinuations)
         {

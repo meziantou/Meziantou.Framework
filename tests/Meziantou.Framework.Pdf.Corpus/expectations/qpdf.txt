@@ -23,7 +23,7 @@ qpdf/qpdf/qtest/qpdf/issue-146.pdf: PdfResourceLimitException
 qpdf/qpdf/qtest/qpdf/issue-147.pdf: InvalidPdfContentException
 qpdf/qpdf/qtest/qpdf/issue-148.pdf: InvalidPdfContentException
 qpdf/qpdf/qtest/qpdf/issue-150.pdf: InvalidPdfContentException
-qpdf/qpdf/qtest/qpdf/issue-1503.pdf: InvalidPdfContentException
+qpdf/qpdf/qtest/qpdf/issue-1503.pdf: UnsupportedPdfFeatureException
 qpdf/qpdf/qtest/qpdf/issue-202.pdf: PdfResourceLimitException
 qpdf/qpdf/qtest/qpdf/issue-335a.pdf: InvalidPdfContentException
 qpdf/qpdf/qtest/qpdf/issue-335b.pdf: InvalidPdfContentException
@@ -36,4 +36,4 @@ qpdf/qpdf/qtest/qpdf/shared-images-errors-2-out.pdf: InvalidPdfContentException
 qpdf/qpdf/qtest/qpdf/shared-images-errors.pdf: InvalidPdfContentException
 qpdf/qpdf/qtest/qpdf/short-O-U.pdf: InvalidPdfContentException
 qpdf/qpdf/qtest/qpdf/unfilterable-with-crypt.pdf: PdfPasswordException
-qpdf/qpdf/qtest/qpdf/unfilterable.pdf: InvalidPdfContentException
+qpdf/qpdf/qtest/qpdf/unfilterable.pdf: UnsupportedPdfFeatureException

@@ -476,6 +476,33 @@ public sealed class FlowMismatchRuleTests : TaggedValuesAnalyzerTestBase
     }
 
     [Fact]
+    public async Task ReportDiagnostic_ForDeconstructionAssignmentsOfTupleLocals()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                [ValueTag("OrderId")] Guid _orderId;
+                [ValueTag("ProjectId")] Guid _projectId;
+
+                void M([ValueTag("OrderId")] Guid orderId, [ValueTag("ProjectId")] Guid projectId, int a)
+                {
+                    var projects = (projectId, projectId);
+                    var copy = projects;
+                    var pair = (orderId, projectId);
+                    var nested = (pair, a);
+                    ({|MFTV0002:orderId|}, {|MFTV0002:orderId|}) = projects;
+                    ({|MFTV0002:_orderId|}, _projectId) = copy;
+                    (_orderId, _projectId) = pair;
+                    (_, {|MFTV0002:_orderId|}) = pair;
+                    ((_orderId, _projectId), a) = nested;
+                    (({|MFTV0002:_projectId|}, _), _) = nested;
+                    ({|MFTV0002:_projectId|}, _) = nested.Item1;
+                }
+            }
+            """);
+    }
+
+    [Fact]
     public async Task ReportDiagnostic_ForOutArgumentsToExistingVariables()
     {
         await VerifyAsync("""
@@ -527,6 +554,113 @@ public sealed class FlowMismatchRuleTests : TaggedValuesAnalyzerTestBase
                     _ = _eur < _otherEur;
                     {|MFTV0002:{|MFTV0002:_usd|} += _eur|};
                     _eur += _otherEur;
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task ReportDiagnostic_ForTheOperandsOfUserDefinedUnaryOperators()
+    {
+        await VerifyAsync("""
+            readonly struct Distance
+            {
+                public static Distance operator -([ValueTag("Meters")] Distance value) => value;
+                public static Distance operator +([ValueTag("Meters")] Distance value) => value;
+                public static Distance operator ~(Distance value) => value;
+            }
+
+            class Sample
+            {
+                void M([ValueTag("Seconds")] Distance seconds, [ValueTag("Meters")] Distance meters)
+                {
+                    _ = -{|MFTV0002:seconds|};
+                    _ = +{|MFTV0002:seconds|};
+                    _ = ~seconds;
+                    _ = -meters;
+                    _ = +meters;
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task ReportDiagnostic_ForTheOperandsOfUserDefinedIncrementAndDecrementOperators()
+    {
+        await VerifyAsync("""
+            readonly struct Distance
+            {
+                public static Distance operator ++([ValueTag("Meters")] Distance value) => value;
+
+                [return: ValueTag("Meters")]
+                public static Distance operator --([ValueTag("Meters")] Distance value) => value;
+            }
+
+            class Sample
+            {
+                void M([ValueTag("Seconds")] Distance seconds, [ValueTag("Meters")] Distance meters)
+                {
+                    {|MFTV0002:seconds|}++;
+                    ++{|MFTV0002:seconds|};
+                    {|MFTV0002:{|MFTV0002:seconds|}--|};
+                    {|MFTV0002:--{|MFTV0002:seconds|}|};
+                    meters++;
+                    ++meters;
+                    meters--;
+                    --meters;
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task ReportDiagnostic_ForTheOperandsOfUserDefinedConversions()
+    {
+        await VerifyAsync("""
+            readonly struct Distance
+            {
+                public static explicit operator int([ValueTag("Meters")] Distance value) => 0;
+                public static implicit operator double([ValueTag("Meters")] Distance value) => 0;
+                public static implicit operator long(Distance value) => 0;
+            }
+
+            class Sample
+            {
+                static void Load(double value) { }
+
+                void M([ValueTag("Seconds")] Distance seconds, [ValueTag("Meters")] Distance meters)
+                {
+                    _ = (int){|MFTV0002:seconds|};
+                    double value = {|MFTV0002:seconds|};
+                    Load({|MFTV0002:seconds|});
+                    long other = seconds;
+                    _ = (int)meters;
+                    double meterValue = meters;
+                    Load(meters);
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task BuiltInUnaryIncrementAndConversionOperators_KeepTheTagOfTheirOperand()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                static void Load([ValueTag("Meters")] int meters) { }
+                static void LoadLong([ValueTag("Meters")] long meters) { }
+
+                void M([ValueTag("Seconds")] int seconds, [ValueTag("Meters")] int meters)
+                {
+                    Load({|MFTV0002:-seconds|});
+                    Load(-meters);
+                    meters++;
+                    --meters;
+                    Load({|MFTV0002:seconds++|});
+                    LoadLong({|MFTV0002:seconds|});
+                    LoadLong(meters);
+                    Load((int)(long)meters);
                 }
             }
             """);

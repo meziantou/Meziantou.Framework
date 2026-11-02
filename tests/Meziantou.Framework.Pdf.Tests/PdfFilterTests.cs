@@ -1,5 +1,6 @@
 using System.IO.Compression;
 using System.Text;
+using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Pdf.Filters;
 using Meziantou.Framework.Pdf.Objects;
 
@@ -101,7 +102,7 @@ public sealed class PdfFilterTests
         var encoded = FlateFilter.Encode(data, CompressionLevel.NoCompression);
 
         // Cut the stream in the middle: the first stored blocks are still decoded
-        var decoded = FlateFilter.Decode(encoded.AsSpan(0, encoded.Length / 2), Limit);
+        var decoded = FlateFilter.Decode(encoded.AsMemory(0, encoded.Length / 2), Limit);
 
         Assert.NotEmpty(decoded);
         Assert.Equal(data.AsSpan(0, decoded.Length).ToArray(), decoded);
@@ -110,7 +111,7 @@ public sealed class PdfFilterTests
     [Fact]
     public void FlateThatIsNotDeflateThrows()
     {
-        Assert.Throws<InvalidPdfContentException>(() => FlateFilter.Decode([0x78, 0x9C, 0xFF, 0xFF, 0xFF, 0xFF], Limit));
+        Assert.Throws<InvalidPdfContentException>(() => FlateFilter.Decode(new byte[] { 0x78, 0x9C, 0xFF, 0xFF, 0xFF, 0xFF }, Limit));
     }
 
     [Fact]
@@ -210,6 +211,224 @@ public sealed class PdfFilterTests
         stream.SetEncodedData("414243>"u8);
 
         Assert.Equal("ABC"u8.ToArray(), stream.GetDecodedData());
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(8)]
+    [InlineData(15)]
+    [InlineData(16)]
+    public void SmallDecodedLengthLimits(long limit)
+    {
+        // The limit is the exact length of the data: one more byte exceeds it
+        var data = Enumerable.Range(0, (int)limit).Select(i => (byte)(i + 1)).ToArray();
+        byte[] tooLong = [.. data, 0xFF];
+
+        Assert.Equal(data, FlateFilter.Decode(FlateFilter.Encode(data), limit));
+        Assert.Equal(data, AsciiHexFilter.Decode(AsciiHexFilter.Encode(data), limit));
+        Assert.Equal(data, RunLengthFilter.Decode(RunLengthFilter.Encode(data), limit));
+        Assert.Throws<PdfResourceLimitException>(() => FlateFilter.Decode(FlateFilter.Encode(tooLong), limit));
+        Assert.Throws<PdfResourceLimitException>(() => AsciiHexFilter.Decode(AsciiHexFilter.Encode(tooLong), limit));
+        Assert.Throws<PdfResourceLimitException>(() => RunLengthFilter.Decode(RunLengthFilter.Encode(tooLong), limit));
+    }
+
+    [Fact]
+    public void SmallDecodedLengthLimitOfTheReadOptions()
+    {
+        var pdf = HandWrittenPdf.CreateSimple("A")
+            .Add(6, HandWrittenPdf.Stream("414243>", " /Filter /ASCIIHexDecode"))
+            .Add(7, HandWrittenPdf.Stream("414243444546474849>", " /Filter /ASCIIHexDecode"))
+            .ToArray();
+        var document = PdfDocument.Open(pdf, new PdfReadOptions { MaxDecodedStreamLength = 8 });
+        Assert.True(document.Objects.TryGetReference(6, out var shortStream));
+        Assert.True(document.Objects.TryGetReference(7, out var tooLong));
+
+        Assert.Equal("ABC"u8.ToArray(), Assert.IsType<PdfStream>(document.Objects.Resolve(shortStream)).GetDecodedData());
+        Assert.Throws<PdfResourceLimitException>(Assert.IsType<PdfStream>(document.Objects.Resolve(tooLong)).GetDecodedData);
+    }
+
+    [Fact]
+    public void LargeOutputIsDecodedAcrossChunks()
+    {
+        // Longer than a chunk of the output, with writes that cross the chunks
+        var data = Enumerable.Range(0, 3_000_000).Select(i => (byte)((i * 31) ^ (i >> 9))).ToArray();
+
+        Assert.Equal(data, FlateFilter.Decode(FlateFilter.Encode(data), Limit));
+        Assert.Equal(data, LzwFilter.Decode(LzwFilter.Encode(data), earlyChange: 1, Limit));
+        Assert.Equal(data, RunLengthFilter.Decode(RunLengthFilter.Encode(data), Limit));
+        Assert.Throws<PdfResourceLimitException>(() => FlateFilter.Decode(FlateFilter.Encode(data), data.Length - 1));
+        Assert.Equal(data, FlateFilter.Decode(FlateFilter.Encode(data), data.Length));
+    }
+
+    [Fact]
+    public void FlateDecodesAPartOfAnArray()
+    {
+        // The data of a stream is a slice of the file: the bytes around it are not read
+        var encoded = FlateFilter.Encode("slice"u8);
+        byte[] file = [1, 2, 3, .. encoded, 4, 5];
+
+        Assert.Equal("slice"u8.ToArray(), FlateFilter.Decode(file.AsMemory(3, encoded.Length), Limit));
+    }
+
+    [Theory]
+    [InlineData("9jqo^BlbD-9jz~>", "Man is d")] // 'z' inside a group
+    [InlineData("9jqo^BlbD-B~>", "Man is d")] // A final group of one character
+    [InlineData("9jqo^BlbD-{Ble~>", "Man is d")] // An invalid character
+    [InlineData("9jqo^s8W-\"~>", "Man ")] // A group above 2^32 - 1
+    [InlineData("9jqo^Bl{", "Man ")] // Damage in a group: the group is dropped
+    public void Ascii85KeepsTheDataBeforeDamage(string encoded, string expected) => Assert.Equal(expected, Encoding.Latin1.GetString(Ascii85Filter.Decode(Encoding.ASCII.GetBytes(encoded), Limit)));
+
+    [Theory]
+    [InlineData("4142G43>", "AB")]
+    [InlineData("41424G3>", "AB")] // A digit alone before the damage is dropped
+    [InlineData("41 42\n43 ÿ 44>", "ABC")]
+    public void AsciiHexKeepsTheDataBeforeDamage(string encoded, string expected) => Assert.Equal(expected, Encoding.Latin1.GetString(AsciiHexFilter.Decode(Encoding.Latin1.GetBytes(encoded), Limit)));
+
+    [Fact]
+    public void Ascii85OfOneCharacterThrows() => Assert.Throws<InvalidPdfContentException>(() => Ascii85Filter.Decode("9~>"u8, Limit));
+
+    [Fact]
+    public void Ascii85EncodedLength()
+    {
+        // Five characters per group, 'z' for four zeros, the characters of the last bytes plus one, "~>"
+        Assert.Equal("z!!~>", Encoding.ASCII.GetString(Ascii85Filter.Encode([0, 0, 0, 0, 0])));
+        Assert.Equal("9jqo^~>", Encoding.ASCII.GetString(Ascii85Filter.Encode("Man "u8)));
+        Assert.Equal("9jqo~>", Encoding.ASCII.GetString(Ascii85Filter.Encode("Man"u8)));
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    [InlineData(268_435_449L)] // Rows longer than the largest array with 8 components of 8 bits
+    [InlineData(long.MaxValue)]
+    public void PredictorColumnsOutOfRangeThrow(long columns)
+    {
+        var parameters = new PdfDictionary { [PdfNames.Predictor] = PdfInteger.Get(12), [PdfNames.Colors] = PdfInteger.Get(8), [PdfNames.Columns] = PdfInteger.Get(columns) };
+
+        var exception = Assert.Throws<InvalidPdfContentException>(() => Predictor.Decode([2, 1, 2, 3], parameters, Limit));
+        Assert.Contains("must be from 1 to 268435448 for 8 colors of 8 bits", exception.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void PredictorOfLargeRowsDecodesTheAvailableData()
+    {
+        // The largest row of 32 colors of 16 bits: the empty data and a short row allocate only the data
+        var parameters = new PdfDictionary
+        {
+            [PdfNames.Predictor] = PdfInteger.Get(12),
+            [PdfNames.Colors] = PdfInteger.Get(32),
+            [PdfNames.BitsPerComponent] = PdfInteger.Get(16),
+            [PdfNames.Columns] = PdfInteger.Get(33_554_431),
+        };
+        var before = GC.GetAllocatedBytesForCurrentThread();
+
+        Assert.Empty(Predictor.Decode([], parameters, Limit));
+        Assert.Equal(new byte[] { 1, 2, 3 }, Predictor.Decode([0, 1, 2, 3], parameters, Limit));
+        Assert.True(GC.GetAllocatedBytesForCurrentThread() - before < 1_000_000);
+        Assert.Empty(FlateFilter.Decode(FlateFilter.Encode([]), Limit));
+    }
+
+    [Theory]
+    [InlineData(new byte[] { 0, 10, 20 }, new byte[] { 10, 20 })]
+    [InlineData(new byte[] { 1, 10, 5 }, new byte[] { 10, 15 })]
+    [InlineData(new byte[] { 2, 1, 1 }, new byte[] { 11, 16 })]
+    [InlineData(new byte[] { 3, 2, 2 }, new byte[] { 7, 13 })]
+    [InlineData(new byte[] { 4, 1, 1 }, new byte[] { 11, 16 })]
+    [InlineData(new byte[] { 4 }, new byte[0])]
+    public void PngPredictorTruncatedLastRowKeepsItsData(byte[] lastRow, byte[] expected)
+    {
+        // A first row 10, 15, 20 (Sub), then a last row cut after two of its three bytes: the decoded data is the bytes it has
+        var parameters = new PdfDictionary { [PdfNames.Predictor] = PdfInteger.Get(12), [PdfNames.Columns] = PdfInteger.Get(3) };
+
+        var decoded = Predictor.Decode([1, 10, 5, 5, .. lastRow], parameters, Limit);
+
+        Assert.Equal([10, 15, 20, .. expected], decoded);
+    }
+
+    [Fact]
+    public void PngPredictorOfACrossReferenceStreamWithATruncatedRow()
+    {
+        // Entries of 4 bytes with the Up filter: the last entry is cut, it is not completed with zeros
+        var parameters = new PdfDictionary { [PdfNames.Predictor] = PdfInteger.Get(12), [PdfNames.Columns] = PdfInteger.Get(4) };
+
+        Assert.Equal(new byte[] { 1, 0, 0x10, 0, 1, 0, 0x20 }, Predictor.Decode([2, 1, 0, 0x10, 0, 2, 0, 0, 0x10], parameters, Limit));
+    }
+
+    [Fact]
+    public void PngPredictorsOfSeveralBytesPerPixel()
+    {
+        // Two pixels of 3 components per row: the left byte is the byte of the same component of the previous pixel
+        byte[] filtered =
+        [
+            1, 10, 20, 30, 1, 1, 1, // Sub: 10 20 30 11 21 31
+            4, 1, 1, 1, 1, 1, 1, // Paeth: the left of the first pixel is 0, the upper-left too
+            3, 4, 4, 4, 10, 10, 10, // Average
+        ];
+        var parameters = new PdfDictionary { [PdfNames.Predictor] = PdfInteger.Get(15), [PdfNames.Columns] = PdfInteger.Get(2), [PdfNames.Colors] = PdfInteger.Get(3) };
+
+        // Paeth row: 11 21 31, then left 11 / up 11 / upleft 10 -> estimate 12, nearest is 11 (left): 12 22 32
+        // Average row: (0 + 11) / 2 + 4 = 9, 14, 19; then (9 + 12) / 2 + 10 = 20, (14 + 22) / 2 + 10 = 28, (19 + 32) / 2 + 10 = 35
+        Assert.Equal(new byte[] { 10, 20, 30, 11, 21, 31, 11, 21, 31, 12, 22, 32, 9, 14, 19, 20, 28, 35 }, Predictor.Decode(filtered, parameters, Limit));
+    }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(3)]
+    [InlineData(4)]
+    public void PngEncoderIsTheInverseOfTheDecoder(int colors)
+    {
+        var data = Enumerable.Range(0, 7 * 5 * colors).Select(i => (byte)((i * 37) ^ (i / 5))).ToArray();
+        var predictor = new PdfPngPredictor(colors, 8, 7);
+
+        var encoded = Predictor.EncodePng(data, predictor.RowLength, predictor.BytesPerPixel);
+
+        Assert.HasCount(data.Length + 5, encoded);
+        Assert.Equal(data, Predictor.Decode(encoded, predictor.CreateParameters(), Limit));
+    }
+
+    [Fact]
+    public void TiffPredictorTruncatedLastRowDecodesItsCompleteSamples()
+    {
+        var parameters = new PdfDictionary { [PdfNames.Predictor] = PdfInteger.Get(2), [PdfNames.Columns] = PdfInteger.Get(3) };
+        var packed = new PdfDictionary { [PdfNames.Predictor] = PdfInteger.Get(2), [PdfNames.Columns] = PdfInteger.Get(3), [PdfNames.BitsPerComponent] = PdfInteger.Get(4) };
+        var wide = new PdfDictionary { [PdfNames.Predictor] = PdfInteger.Get(2), [PdfNames.Columns] = PdfInteger.Get(3), [PdfNames.BitsPerComponent] = PdfInteger.Get(16) };
+
+        Assert.Equal(new byte[] { 10, 15, 20, 1, 2 }, Predictor.Decode([10, 5, 5, 1, 1], parameters, Limit));
+
+        // A row of 3 samples of 4 bits and its padding, then the first 2 samples of the next row
+        Assert.Equal(new byte[] { 0x12, 0x30, 0x12 }, Predictor.Decode([0x11, 0x10, 0x11], packed, Limit));
+
+        // A row of 3 samples of 16 bits, then one sample and a half: the incomplete sample is left as it is
+        Assert.Equal(new byte[] { 0, 1, 0, 2, 0, 3, 0, 5, 0, 7, 9 }, Predictor.Decode([0, 1, 0, 1, 0, 1, 0, 5, 0, 2, 9], wide, Limit));
+    }
+
+    [Fact]
+    public void FilterArrayWithAnEntryThatIsNotANameThrows()
+    {
+        // The parameters are paired with the filters by position: skipping the entry would give the predictor of the
+        // second filter to the third
+        var stream = new PdfStream(new PdfDictionary
+        {
+            [PdfNames.Filter] = new PdfArray(PdfNames.ASCIIHexDecode, PdfInteger.Get(1), PdfNames.FlateDecode),
+            [PdfNames.DecodeParms] = new PdfArray(PdfNull.Instance, PdfNull.Instance, new PdfDictionary { [PdfNames.Predictor] = PdfInteger.Get(12), [PdfNames.Columns] = PdfInteger.Get(1) }),
+        });
+        stream.SetEncodedData(AsciiHexFilter.Encode(FlateFilter.Encode([2, 1, 2, 1])));
+
+        Assert.Throws<InvalidPdfContentException>(stream.GetDecodedData);
+        Assert.Equal(["ASCIIHexDecode", "FlateDecode"], stream.Filters.Select(f => f.Value));
+    }
+
+    [Fact]
+    public void FilterParametersArePairedByPosition()
+    {
+        var stream = new PdfStream(new PdfDictionary
+        {
+            [PdfNames.Filter] = new PdfArray(PdfNames.ASCIIHexDecode, PdfNames.FlateDecode),
+            [PdfNames.DecodeParms] = new PdfArray(PdfNull.Instance, new PdfDictionary { [PdfNames.Predictor] = PdfInteger.Get(12), [PdfNames.Columns] = PdfInteger.Get(1) }),
+        });
+        stream.SetEncodedData(AsciiHexFilter.Encode(FlateFilter.Encode([2, 1, 2, 1])));
+
+        Assert.Equal(new byte[] { 1, 2 }, stream.GetDecodedData());
     }
 
     [Theory]
@@ -496,12 +715,66 @@ public sealed class PdfFilterTests
         return output.WrittenMemory.ToArray();
     }
 
-    [Fact]
-    public void UnknownFilterThrows()
+    [Theory]
+    [InlineData(null, 255, 0, 0)]
+    [InlineData(1, 255, 0, 0)]
+    [InlineData(0, 76, 85, 255)] // The YCbCr samples of red (JFIF): Y = 0.299 R, Cb = 128 - 0.1687 R, Cr = 128 + 0.5 R
+    public void DctColorTransformParameter(int? colorTransform, int r, int g, int b)
     {
+        // A JFIF file without Adobe segment: the parameter says whether the samples are YCbCr
+        var parameters = colorTransform is { } value ? new PdfDictionary { [PdfName.Create("ColorTransform")] = PdfInteger.Get(value) } : null;
+        var stream = new PdfStream(new PdfDictionary());
+        stream.SetEncodedData(CreateJpeg(255, 0, 0), PdfNames.DCTDecode, parameters);
+
+        var samples = stream.GetDecodedData();
+
+        Assert.HasCount(8 * 8 * 3, samples);
+        Assert.InRange(samples[0], r - 4, r + 4);
+        Assert.InRange(samples[1], g - 4, g + 4);
+        Assert.InRange(samples[2], b - 4, b + 4);
+    }
+
+    [Fact]
+    public void DctAdobeSegmentWinsOverTheColorTransformParameter()
+    {
+        // The data says its samples are YCbCr (Adobe transform 1): the parameter 0 is ignored (7.4.8)
+        var withSegment = ImageFilters.ApplyColorTransform(CreateJpeg(255, 0, 0), new PdfDictionary { [PdfName.Create("ColorTransform")] = PdfInteger.Get(1) });
+        Assert.NotNull(withSegment);
+        var parameters = new PdfDictionary { [PdfName.Create("ColorTransform")] = PdfInteger.Get(0) };
+
+        Assert.Null(ImageFilters.ApplyColorTransform(withSegment, parameters));
+        Assert.InRange(ImageFilters.DecodeDct(withSegment, parameters, Limit)[0], 251, 255);
+    }
+
+    [Fact]
+    public void ImageFilterDataOfAnotherFormatIsInvalid()
+    {
+        using var image = Image.ImportPixelData<Rgb24>([.. Enumerable.Repeat(new Rgb24(1, 2, 3), 4)], 2, 2);
+        using var png = new MemoryStream();
+        image.Save(png, new Imaging.Formats.PngEncoder());
+        var jpeg = CreateJpeg(1, 2, 3);
+
+        Assert.Throws<InvalidPdfContentException>(() => ImageFilters.DecodeDct(png.ToArray(), null, Limit));
+        Assert.Throws<InvalidPdfContentException>(() => ImageFilters.DecodeJpx(png.ToArray(), Limit));
+        Assert.Throws<InvalidPdfContentException>(() => ImageFilters.DecodeJpx(jpeg, Limit));
+        Assert.HasCount(8 * 8 * 3, ImageFilters.DecodeDct(jpeg, null, Limit));
+    }
+
+    private static byte[] CreateJpeg(byte r, byte g, byte b)
+    {
+        using var image = Image.ImportPixelData<Rgb24>([.. Enumerable.Repeat(new Rgb24(r, g, b), 64)], 8, 8);
+        using var jpeg = new MemoryStream();
+        image.Save(jpeg, new Imaging.Formats.JpegEncoder { Quality = 100, ChromaSubsampling = Imaging.Formats.JpegChromaSubsampling.Ratio444 });
+        return jpeg.ToArray();
+    }
+
+    [Fact]
+    public void UnknownFilterIsNotSupported()
+    {
+        // A filter the library does not know is a feature it does not support, not damaged data
         var stream = new PdfStream(new PdfDictionary { [PdfNames.Filter] = PdfName.Create("Unknown") });
         stream.SetEncodedData("data"u8);
 
-        Assert.Throws<InvalidPdfContentException>(stream.GetDecodedData);
+        Assert.Throws<UnsupportedPdfFeatureException>(stream.GetDecodedData);
     }
 }

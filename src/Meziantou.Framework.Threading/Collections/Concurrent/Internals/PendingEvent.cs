@@ -12,8 +12,6 @@ internal static class PendingEvent
 
     public static PendingEvent<T> InsertRange<T>(int index, ImmutableList<T> items) => new(PendingEventType.InsertRange, items, index);
 
-    public static PendingEvent<T> Remove<T>(T item) => new(PendingEventType.Remove, item);
-
     public static PendingEvent<T> RemoveAt<T>(int index) => new(PendingEventType.RemoveAt, index);
 
     public static PendingEvent<T> Replace<T>(int index, T item) => new(PendingEventType.Replace, item, index);

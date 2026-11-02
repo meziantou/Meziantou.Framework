@@ -33,8 +33,9 @@ The built-in types are [Default](cref:Meziantou.Framework.SnapshotTesting.Snapsh
 - **Text formats** are compared without regard to line endings: `\r\n`, `\r` and `\n` are equivalent, and a leading
   UTF-8 byte order mark is ignored. A verified file whose line endings were changed by an editor, a merge tool or git
   still matches. This applies to every known text format: `txt`, `json`, `yaml`, `xml`, `html`, `svg`, `md`, `csv`,
-  `cs`, `vb`, `razor`, `sql`, and their common variants.
-- **Other formats**, such as `png`, `pdf` or `bin`, are compared byte for byte.
+  `cs`, `vb`, `razor`, `sql`, and their common variants. A compound extension is classified by its last segment, so
+  `g.cs` and `d.ts` are text formats.
+- **Other formats**, such as `png`, `pdf`, `bin` or `tar.gz`, are compared byte for byte.
 
 A comparer registered for a format replaces this behavior. Image formats are compared byte for byte unless you register
 the image comparer of `Meziantou.Framework.SnapshotTesting.Imaging`, which compares their pixels; PDF documents are

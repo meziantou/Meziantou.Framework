@@ -232,6 +232,7 @@ namespace Meziantou.Framework.Pdf
     {
         public Meziantou.Framework.Pdf.Objects.PdfDictionary Catalog { get => throw null; }
         public Meziantou.Framework.Pdf.PdfEmbeddedFileCollection EmbeddedFiles { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfEncryptedPayload? EncryptedPayload { get => throw null; }
         public Meziantou.Framework.Pdf.PdfEncryption? Encryption { get => throw null; set { } }
         public Meziantou.Framework.Pdf.PdfDocumentInformation Information { get => throw null; }
         public bool IsEncrypted { get => throw null; }
@@ -255,15 +256,18 @@ namespace Meziantou.Framework.Pdf
         public static Meziantou.Framework.Pdf.PdfDocument Open(string path, Meziantou.Framework.Pdf.PdfReadOptions? options = null) => throw null;
         public static System.Threading.Tasks.Task<Meziantou.Framework.Pdf.PdfDocument> OpenAsync(System.IO.Stream stream, Meziantou.Framework.Pdf.PdfReadOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static System.Threading.Tasks.Task<Meziantou.Framework.Pdf.PdfDocument> OpenAsync(string path, Meziantou.Framework.Pdf.PdfReadOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static Meziantou.Framework.Pdf.PdfDocument OpenSeekable(System.IO.Stream stream, Meziantou.Framework.Pdf.PdfReadOptions? options = null) => throw null;
         public void RemoveXmpMetadata() { }
         public void Save(System.IO.Stream stream, Meziantou.Framework.Pdf.PdfSaveOptions? options = null) { }
         public void Save(string path, Meziantou.Framework.Pdf.PdfSaveOptions? options = null) { }
         public System.Threading.Tasks.Task SaveAsync(System.IO.Stream stream, Meziantou.Framework.Pdf.PdfSaveOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public void SaveIncremental(System.IO.Stream stream, Meziantou.Framework.Pdf.PdfSaveOptions? options = null) { }
         public System.Threading.Tasks.Task SaveIncrementalAsync(System.IO.Stream stream, Meziantou.Framework.Pdf.PdfSaveOptions? options = null, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public Meziantou.Framework.Pdf.PdfEncryptedPayload SetEncryptedPayload(string fileName, System.ReadOnlySpan<byte> data, string cryptographicFilter, string? version = null, Meziantou.Framework.Pdf.PdfEmbeddedFileOptions? options = null) => throw null;
         public void SetXmpMetadata(System.ReadOnlySpan<byte> packet) { }
         public byte[] ToByteArray(Meziantou.Framework.Pdf.PdfSaveOptions? options = null) => throw null;
         public void UpdateXmpMetadata() { }
+        public void UpdateXmpMetadata(int padding) { }
     }
 
     public sealed class PdfDocumentInformation
@@ -277,6 +281,7 @@ namespace Meziantou.Framework.Pdf
         public string? Producer { get => throw null; set { } }
         public string? Subject { get => throw null; set { } }
         public string? Title { get => throw null; set { } }
+        public Meziantou.Framework.Pdf.PdfTrapped? Trapped { get => throw null; set { } }
         public string? GetText(string key) => throw null;
         public void SetText(string key, string? value) { }
     }
@@ -312,6 +317,16 @@ namespace Meziantou.Framework.Pdf
         public string? MimeType { get => throw null; init { } }
         public System.DateTimeOffset? ModificationDate { get => throw null; init { } }
         public Meziantou.Framework.Pdf.PdfAssociatedFileRelationship Relationship { get => throw null; init { } }
+    }
+
+    public sealed class PdfEncryptedPayload
+    {
+        public string CryptographicFilter { get => throw null; }
+        public Meziantou.Framework.Pdf.Objects.PdfDictionary Dictionary { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfEmbeddedFile File { get => throw null; }
+        public string? Version { get => throw null; }
+        public byte[] GetData() => throw null;
+        public Meziantou.Framework.Pdf.PdfDocument OpenDocument(Meziantou.Framework.Pdf.PdfReadOptions? options = null) => throw null;
     }
 
     public sealed class PdfEncryption
@@ -439,6 +454,7 @@ namespace Meziantou.Framework.Pdf
         public int Height { get => throw null; }
         public int Width { get => throw null; }
         public static Meziantou.Framework.Pdf.PdfImage FromImage(Meziantou.Framework.Imaging.Image image) => throw null;
+        public static Meziantou.Framework.Pdf.PdfImage FromImageAsJpeg(Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Formats.JpegEncoder? encoder = null) => throw null;
         public static Meziantou.Framework.Pdf.PdfImage FromJpeg(System.ReadOnlySpan<byte> data) => throw null;
         public static Meziantou.Framework.Pdf.PdfImage Load(System.ReadOnlySpan<byte> data) => throw null;
         public static Meziantou.Framework.Pdf.PdfImage Load(string path) => throw null;
@@ -658,6 +674,7 @@ namespace Meziantou.Framework.Pdf
         public static Meziantou.Framework.Pdf.PdfSaveOptions Default { get => throw null; }
         public bool UseObjectStreams { get => throw null; init { } }
         public Meziantou.Framework.Pdf.PdfVersion? Version { get => throw null; init { } }
+        public int XmpPadding { get => throw null; init { } }
     }
 
     public abstract class PdfShading
@@ -790,6 +807,13 @@ namespace Meziantou.Framework.Pdf
         public Meziantou.Framework.Pdf.PdfDeviceColorSpace? ColorSpace { get => throw null; init { } }
         public bool Isolated { get => throw null; init { } }
         public bool Knockout { get => throw null; init { } }
+    }
+
+    public enum PdfTrapped
+    {
+        Unknown = 0,
+        True = 1,
+        False = 2,
     }
 
     public enum PdfUAConformance
@@ -1032,6 +1056,15 @@ namespace Meziantou.Framework.Pdf.Rendering
         public long MaxOperations { get => throw null; init { } }
         public bool RenderAnnotations { get => throw null; init { } }
         public bool UseSystemFonts { get => throw null; init { } }
+    }
+
+    public sealed class PdfRenderSession : System.IDisposable
+    {
+        public Meziantou.Framework.Pdf.PdfDocument Document { get => throw null; }
+        public Meziantou.Framework.Pdf.Rendering.PdfRenderOptions Options { get => throw null; }
+        public PdfRenderSession(Meziantou.Framework.Pdf.PdfDocument document, Meziantou.Framework.Pdf.Rendering.PdfRenderOptions? options = null) { }
+        public void Dispose() { }
+        public Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32> RenderPage(Meziantou.Framework.Pdf.PdfPage page) => throw null;
     }
 
     public static class PdfRenderer

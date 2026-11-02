@@ -26,6 +26,7 @@ await Task.Run(() => collection.Add("Item from a background thread"));
   `INotifyCollectionChanged` and `INotifyPropertyChanged`. It reflects the changes made to the collection.
 - The parameterless constructor uses the `SynchronizationContext` of the thread that creates the collection, so create
   it on the UI thread. When that thread has no synchronization context, the notifications are raised on the thread pool.
+  The handlers can read the view while they run, but other threads cannot.
 
 ## Choose the thread of the notifications
 
@@ -68,6 +69,20 @@ Assert.Equal([1, 2, 3], notification.NewItems!.Cast<int>().ToArray());
 
 The collection also provides [Insert](cref:Meziantou.Framework.Collections.Concurrent.ConcurrentObservableCollection{T}.Insert), [Remove](cref:Meziantou.Framework.Collections.Concurrent.ConcurrentObservableCollection{T}.Remove), [RemoveAt](cref:Meziantou.Framework.Collections.Concurrent.ConcurrentObservableCollection{T}.RemoveAt), [Clear](cref:Meziantou.Framework.Collections.Concurrent.ConcurrentObservableCollection{T}.Clear), the indexer, [Sort](cref:Meziantou.Framework.Collections.Concurrent.ConcurrentObservableCollection{T}.Sort) and [StableSort](cref:Meziantou.Framework.Collections.Concurrent.ConcurrentObservableCollection{T}.StableSort).
 
+`AddRange` and `InsertRange` enumerate the items before modifying the collection, so the enumeration can modify the
+collection. A comparer passed to `Sort` or `StableSort`, or an `Equals` method called by `Remove`, must not modify the
+collection: the operation throws an `InvalidOperationException` instead of losing that change.
+
+## Modify the collection through the view
+
+The view returned by [AsObservable](cref:Meziantou.Framework.Collections.Concurrent.ConcurrentObservableCollection{T}.AsObservable) also implements `IList<T>` and `IList`, so a control can modify it from the UI thread.
+The changes are applied to the collection, and the view gets them through the usual notifications.
+
+While notifications are pending, the view is behind the collection, so their indices can differ. The indexer, `Insert`
+and `RemoveAt` of the view use the indices of the view: they modify the item the view shows at that index, wherever it
+is in the collection. When that item was removed, or the collection was cleared or sorted, by a change whose
+notification is still pending, they throw an `InvalidOperationException` and modify nothing.
+
 ## How notifications are raised
 
 - All the notifications of an operation are queued before any of them is raised, and they are never raised recursively.
@@ -75,9 +90,11 @@ The collection also provides [Insert](cref:Meziantou.Framework.Collections.Concu
   [AsObservable](cref:Meziantou.Framework.Collections.Concurrent.ConcurrentObservableCollection{T}.AsObservable) ends up in the same state as the collection.
 - The notifications are raised after the internal lock is released, so a handler can wait for another thread that
   modifies the collection without deadlocking.
-- A handler that throws does not prevent the other notifications from being raised. The exception is rethrown to the code
-  that modified the collection once all the queued notifications are raised, as an `AggregateException` when several
-  handlers threw.
+- A handler that throws does not prevent the other notifications from being raised: the other notifications of the same
+  change (`Count`, `Item[]` and `CollectionChanged`) and the notifications of the next changes are still raised. The
+  handlers subscribed to the same event after the one that threw are not called, as with any .NET event. The exception
+  is rethrown to the code that modified the collection once all the queued notifications are raised, as an
+  `AggregateException` when several handlers threw.
 - When the synchronization context refuses the callback, for instance because its thread is gone, the exception is
   thrown to the code that modified the collection. The change is kept, and its notification is raised after a later
   change succeeds in posting to the context.

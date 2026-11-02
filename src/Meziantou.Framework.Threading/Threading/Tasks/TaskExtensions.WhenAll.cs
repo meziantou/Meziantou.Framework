@@ -144,6 +144,14 @@ public static partial class TaskExtensions
     public static ValueTaskAwaiter<ValueTuple<T1>> GetAwaiter<T1>(this ValueTuple<ValueTask<T1>> tasks) => WhenAll(tasks.Item1).GetAwaiter();
 
     /// <summary>
+    /// Configures how awaiting all the value tasks of the tuple resumes. The tasks are combined the same way as <see cref="WhenAll{T1}(ValueTask{T1})"/>,
+    /// and the result is the tuple of their results.
+    /// </summary>
+    /// <param name="tasks">The value tasks to await. Each of them is consumed once.</param>
+    /// <param name="continueOnCapturedContext"><see langword="true"/> to resume on the captured context; otherwise, <see langword="false"/>.</param>
+    public static ConfiguredValueTaskAwaitable<ValueTuple<T1>> ConfigureAwait<T1>(this ValueTuple<ValueTask<T1>> tasks, bool continueOnCapturedContext) => WhenAll(tasks.Item1).ConfigureAwait(continueOnCapturedContext);
+
+    /// <summary>
     /// Awaits all the specified tasks and returns their results in a tuple.
     /// </summary>
     /// <remarks>
@@ -226,6 +234,14 @@ public static partial class TaskExtensions
     }
 
     public static ValueTaskAwaiter<ValueTuple<T1, T2>> GetAwaiter<T1, T2>(this ValueTuple<ValueTask<T1>, ValueTask<T2>> tasks) => WhenAll(tasks.Item1, tasks.Item2).GetAwaiter();
+
+    /// <summary>
+    /// Configures how awaiting all the value tasks of the tuple resumes. The tasks are combined the same way as <see cref="WhenAll{T1, T2}(ValueTask{T1}, ValueTask{T2})"/>,
+    /// and the result is the tuple of their results.
+    /// </summary>
+    /// <param name="tasks">The value tasks to await. Each of them is consumed once.</param>
+    /// <param name="continueOnCapturedContext"><see langword="true"/> to resume on the captured context; otherwise, <see langword="false"/>.</param>
+    public static ConfiguredValueTaskAwaitable<ValueTuple<T1, T2>> ConfigureAwait<T1, T2>(this ValueTuple<ValueTask<T1>, ValueTask<T2>> tasks, bool continueOnCapturedContext) => WhenAll(tasks.Item1, tasks.Item2).ConfigureAwait(continueOnCapturedContext);
 
     /// <summary>
     /// Awaits all the specified tasks and returns their results in a tuple.
@@ -331,6 +347,14 @@ public static partial class TaskExtensions
     }
 
     public static ValueTaskAwaiter<ValueTuple<T1, T2, T3>> GetAwaiter<T1, T2, T3>(this ValueTuple<ValueTask<T1>, ValueTask<T2>, ValueTask<T3>> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3).GetAwaiter();
+
+    /// <summary>
+    /// Configures how awaiting all the value tasks of the tuple resumes. The tasks are combined the same way as <see cref="WhenAll{T1, T2, T3}(ValueTask{T1}, ValueTask{T2}, ValueTask{T3})"/>,
+    /// and the result is the tuple of their results.
+    /// </summary>
+    /// <param name="tasks">The value tasks to await. Each of them is consumed once.</param>
+    /// <param name="continueOnCapturedContext"><see langword="true"/> to resume on the captured context; otherwise, <see langword="false"/>.</param>
+    public static ConfiguredValueTaskAwaitable<ValueTuple<T1, T2, T3>> ConfigureAwait<T1, T2, T3>(this ValueTuple<ValueTask<T1>, ValueTask<T2>, ValueTask<T3>> tasks, bool continueOnCapturedContext) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3).ConfigureAwait(continueOnCapturedContext);
 
     /// <summary>
     /// Awaits all the specified tasks and returns their results in a tuple.
@@ -457,6 +481,14 @@ public static partial class TaskExtensions
     }
 
     public static ValueTaskAwaiter<ValueTuple<T1, T2, T3, T4>> GetAwaiter<T1, T2, T3, T4>(this ValueTuple<ValueTask<T1>, ValueTask<T2>, ValueTask<T3>, ValueTask<T4>> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4).GetAwaiter();
+
+    /// <summary>
+    /// Configures how awaiting all the value tasks of the tuple resumes. The tasks are combined the same way as <see cref="WhenAll{T1, T2, T3, T4}(ValueTask{T1}, ValueTask{T2}, ValueTask{T3}, ValueTask{T4})"/>,
+    /// and the result is the tuple of their results.
+    /// </summary>
+    /// <param name="tasks">The value tasks to await. Each of them is consumed once.</param>
+    /// <param name="continueOnCapturedContext"><see langword="true"/> to resume on the captured context; otherwise, <see langword="false"/>.</param>
+    public static ConfiguredValueTaskAwaitable<ValueTuple<T1, T2, T3, T4>> ConfigureAwait<T1, T2, T3, T4>(this ValueTuple<ValueTask<T1>, ValueTask<T2>, ValueTask<T3>, ValueTask<T4>> tasks, bool continueOnCapturedContext) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4).ConfigureAwait(continueOnCapturedContext);
 
     /// <summary>
     /// Awaits all the specified tasks and returns their results in a tuple.
@@ -604,6 +636,14 @@ public static partial class TaskExtensions
     }
 
     public static ValueTaskAwaiter<ValueTuple<T1, T2, T3, T4, T5>> GetAwaiter<T1, T2, T3, T4, T5>(this ValueTuple<ValueTask<T1>, ValueTask<T2>, ValueTask<T3>, ValueTask<T4>, ValueTask<T5>> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5).GetAwaiter();
+
+    /// <summary>
+    /// Configures how awaiting all the value tasks of the tuple resumes. The tasks are combined the same way as <see cref="WhenAll{T1, T2, T3, T4, T5}(ValueTask{T1}, ValueTask{T2}, ValueTask{T3}, ValueTask{T4}, ValueTask{T5})"/>,
+    /// and the result is the tuple of their results.
+    /// </summary>
+    /// <param name="tasks">The value tasks to await. Each of them is consumed once.</param>
+    /// <param name="continueOnCapturedContext"><see langword="true"/> to resume on the captured context; otherwise, <see langword="false"/>.</param>
+    public static ConfiguredValueTaskAwaitable<ValueTuple<T1, T2, T3, T4, T5>> ConfigureAwait<T1, T2, T3, T4, T5>(this ValueTuple<ValueTask<T1>, ValueTask<T2>, ValueTask<T3>, ValueTask<T4>, ValueTask<T5>> tasks, bool continueOnCapturedContext) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5).ConfigureAwait(continueOnCapturedContext);
 
     /// <summary>
     /// Awaits all the specified tasks and returns their results in a tuple.
@@ -772,6 +812,14 @@ public static partial class TaskExtensions
     }
 
     public static ValueTaskAwaiter<ValueTuple<T1, T2, T3, T4, T5, T6>> GetAwaiter<T1, T2, T3, T4, T5, T6>(this ValueTuple<ValueTask<T1>, ValueTask<T2>, ValueTask<T3>, ValueTask<T4>, ValueTask<T5>, ValueTask<T6>> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6).GetAwaiter();
+
+    /// <summary>
+    /// Configures how awaiting all the value tasks of the tuple resumes. The tasks are combined the same way as <see cref="WhenAll{T1, T2, T3, T4, T5, T6}(ValueTask{T1}, ValueTask{T2}, ValueTask{T3}, ValueTask{T4}, ValueTask{T5}, ValueTask{T6})"/>,
+    /// and the result is the tuple of their results.
+    /// </summary>
+    /// <param name="tasks">The value tasks to await. Each of them is consumed once.</param>
+    /// <param name="continueOnCapturedContext"><see langword="true"/> to resume on the captured context; otherwise, <see langword="false"/>.</param>
+    public static ConfiguredValueTaskAwaitable<ValueTuple<T1, T2, T3, T4, T5, T6>> ConfigureAwait<T1, T2, T3, T4, T5, T6>(this ValueTuple<ValueTask<T1>, ValueTask<T2>, ValueTask<T3>, ValueTask<T4>, ValueTask<T5>, ValueTask<T6>> tasks, bool continueOnCapturedContext) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6).ConfigureAwait(continueOnCapturedContext);
 
     /// <summary>
     /// Awaits all the specified tasks and returns their results in a tuple.
@@ -961,6 +1009,14 @@ public static partial class TaskExtensions
     }
 
     public static ValueTaskAwaiter<ValueTuple<T1, T2, T3, T4, T5, T6, T7>> GetAwaiter<T1, T2, T3, T4, T5, T6, T7>(this ValueTuple<ValueTask<T1>, ValueTask<T2>, ValueTask<T3>, ValueTask<T4>, ValueTask<T5>, ValueTask<T6>, ValueTask<T7>> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6, tasks.Item7).GetAwaiter();
+
+    /// <summary>
+    /// Configures how awaiting all the value tasks of the tuple resumes. The tasks are combined the same way as <see cref="WhenAll{T1, T2, T3, T4, T5, T6, T7}(ValueTask{T1}, ValueTask{T2}, ValueTask{T3}, ValueTask{T4}, ValueTask{T5}, ValueTask{T6}, ValueTask{T7})"/>,
+    /// and the result is the tuple of their results.
+    /// </summary>
+    /// <param name="tasks">The value tasks to await. Each of them is consumed once.</param>
+    /// <param name="continueOnCapturedContext"><see langword="true"/> to resume on the captured context; otherwise, <see langword="false"/>.</param>
+    public static ConfiguredValueTaskAwaitable<ValueTuple<T1, T2, T3, T4, T5, T6, T7>> ConfigureAwait<T1, T2, T3, T4, T5, T6, T7>(this ValueTuple<ValueTask<T1>, ValueTask<T2>, ValueTask<T3>, ValueTask<T4>, ValueTask<T5>, ValueTask<T6>, ValueTask<T7>> tasks, bool continueOnCapturedContext) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6, tasks.Item7).ConfigureAwait(continueOnCapturedContext);
     private static ValueTask WhenAll(ValueTask task1) => task1;
     private static ValueTask WhenAll(ValueTask task1, ValueTask task2)
     {
@@ -1022,6 +1078,14 @@ public static partial class TaskExtensions
     }
 
     public static ValueTaskAwaiter GetAwaiter(this ValueTuple<ValueTask, ValueTask> tasks) => WhenAll(tasks.Item1, tasks.Item2).GetAwaiter();
+
+    /// <summary>
+    /// Configures how awaiting all the value tasks of the tuple resumes. The tasks are combined the same way as
+    /// <see cref="Task.WhenAll(Task[])"/>.
+    /// </summary>
+    /// <param name="tasks">The value tasks to await. Each of them is consumed once.</param>
+    /// <param name="continueOnCapturedContext"><see langword="true"/> to resume on the captured context; otherwise, <see langword="false"/>.</param>
+    public static ConfiguredValueTaskAwaitable ConfigureAwait(this ValueTuple<ValueTask, ValueTask> tasks, bool continueOnCapturedContext) => WhenAll(tasks.Item1, tasks.Item2).ConfigureAwait(continueOnCapturedContext);
     private static ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3)
     {
         if (task1.IsCompletedSuccessfully && task2.IsCompletedSuccessfully && task3.IsCompletedSuccessfully)
@@ -1096,6 +1160,14 @@ public static partial class TaskExtensions
     }
 
     public static ValueTaskAwaiter GetAwaiter(this ValueTuple<ValueTask, ValueTask, ValueTask> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3).GetAwaiter();
+
+    /// <summary>
+    /// Configures how awaiting all the value tasks of the tuple resumes. The tasks are combined the same way as
+    /// <see cref="Task.WhenAll(Task[])"/>.
+    /// </summary>
+    /// <param name="tasks">The value tasks to await. Each of them is consumed once.</param>
+    /// <param name="continueOnCapturedContext"><see langword="true"/> to resume on the captured context; otherwise, <see langword="false"/>.</param>
+    public static ConfiguredValueTaskAwaitable ConfigureAwait(this ValueTuple<ValueTask, ValueTask, ValueTask> tasks, bool continueOnCapturedContext) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3).ConfigureAwait(continueOnCapturedContext);
     private static ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4)
     {
         if (task1.IsCompletedSuccessfully && task2.IsCompletedSuccessfully && task3.IsCompletedSuccessfully && task4.IsCompletedSuccessfully)
@@ -1184,6 +1256,14 @@ public static partial class TaskExtensions
     }
 
     public static ValueTaskAwaiter GetAwaiter(this ValueTuple<ValueTask, ValueTask, ValueTask, ValueTask> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4).GetAwaiter();
+
+    /// <summary>
+    /// Configures how awaiting all the value tasks of the tuple resumes. The tasks are combined the same way as
+    /// <see cref="Task.WhenAll(Task[])"/>.
+    /// </summary>
+    /// <param name="tasks">The value tasks to await. Each of them is consumed once.</param>
+    /// <param name="continueOnCapturedContext"><see langword="true"/> to resume on the captured context; otherwise, <see langword="false"/>.</param>
+    public static ConfiguredValueTaskAwaitable ConfigureAwait(this ValueTuple<ValueTask, ValueTask, ValueTask, ValueTask> tasks, bool continueOnCapturedContext) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4).ConfigureAwait(continueOnCapturedContext);
     private static ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4, ValueTask task5)
     {
         if (task1.IsCompletedSuccessfully && task2.IsCompletedSuccessfully && task3.IsCompletedSuccessfully && task4.IsCompletedSuccessfully && task5.IsCompletedSuccessfully)
@@ -1286,6 +1366,14 @@ public static partial class TaskExtensions
     }
 
     public static ValueTaskAwaiter GetAwaiter(this ValueTuple<ValueTask, ValueTask, ValueTask, ValueTask, ValueTask> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5).GetAwaiter();
+
+    /// <summary>
+    /// Configures how awaiting all the value tasks of the tuple resumes. The tasks are combined the same way as
+    /// <see cref="Task.WhenAll(Task[])"/>.
+    /// </summary>
+    /// <param name="tasks">The value tasks to await. Each of them is consumed once.</param>
+    /// <param name="continueOnCapturedContext"><see langword="true"/> to resume on the captured context; otherwise, <see langword="false"/>.</param>
+    public static ConfiguredValueTaskAwaitable ConfigureAwait(this ValueTuple<ValueTask, ValueTask, ValueTask, ValueTask, ValueTask> tasks, bool continueOnCapturedContext) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5).ConfigureAwait(continueOnCapturedContext);
     private static ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4, ValueTask task5, ValueTask task6)
     {
         if (task1.IsCompletedSuccessfully && task2.IsCompletedSuccessfully && task3.IsCompletedSuccessfully && task4.IsCompletedSuccessfully && task5.IsCompletedSuccessfully && task6.IsCompletedSuccessfully)
@@ -1402,6 +1490,14 @@ public static partial class TaskExtensions
     }
 
     public static ValueTaskAwaiter GetAwaiter(this ValueTuple<ValueTask, ValueTask, ValueTask, ValueTask, ValueTask, ValueTask> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6).GetAwaiter();
+
+    /// <summary>
+    /// Configures how awaiting all the value tasks of the tuple resumes. The tasks are combined the same way as
+    /// <see cref="Task.WhenAll(Task[])"/>.
+    /// </summary>
+    /// <param name="tasks">The value tasks to await. Each of them is consumed once.</param>
+    /// <param name="continueOnCapturedContext"><see langword="true"/> to resume on the captured context; otherwise, <see langword="false"/>.</param>
+    public static ConfiguredValueTaskAwaitable ConfigureAwait(this ValueTuple<ValueTask, ValueTask, ValueTask, ValueTask, ValueTask, ValueTask> tasks, bool continueOnCapturedContext) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6).ConfigureAwait(continueOnCapturedContext);
     private static ValueTask WhenAll(ValueTask task1, ValueTask task2, ValueTask task3, ValueTask task4, ValueTask task5, ValueTask task6, ValueTask task7)
     {
         if (task1.IsCompletedSuccessfully && task2.IsCompletedSuccessfully && task3.IsCompletedSuccessfully && task4.IsCompletedSuccessfully && task5.IsCompletedSuccessfully && task6.IsCompletedSuccessfully && task7.IsCompletedSuccessfully)
@@ -1532,6 +1628,14 @@ public static partial class TaskExtensions
     }
 
     public static ValueTaskAwaiter GetAwaiter(this ValueTuple<ValueTask, ValueTask, ValueTask, ValueTask, ValueTask, ValueTask, ValueTask> tasks) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6, tasks.Item7).GetAwaiter();
+
+    /// <summary>
+    /// Configures how awaiting all the value tasks of the tuple resumes. The tasks are combined the same way as
+    /// <see cref="Task.WhenAll(Task[])"/>.
+    /// </summary>
+    /// <param name="tasks">The value tasks to await. Each of them is consumed once.</param>
+    /// <param name="continueOnCapturedContext"><see langword="true"/> to resume on the captured context; otherwise, <see langword="false"/>.</param>
+    public static ConfiguredValueTaskAwaitable ConfigureAwait(this ValueTuple<ValueTask, ValueTask, ValueTask, ValueTask, ValueTask, ValueTask, ValueTask> tasks, bool continueOnCapturedContext) => WhenAll(tasks.Item1, tasks.Item2, tasks.Item3, tasks.Item4, tasks.Item5, tasks.Item6, tasks.Item7).ConfigureAwait(continueOnCapturedContext);
 
     public readonly struct TupleTaskAwaiter<T1, T2>(ValueTuple<Task<T1>, Task<T2>> tasks) : ICriticalNotifyCompletion
     {

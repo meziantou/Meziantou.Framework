@@ -1,5 +1,6 @@
 using System.Buffers;
 using Meziantou.Framework.Pdf.Filters;
+using Meziantou.Framework.Pdf.Parsing;
 
 namespace Meziantou.Framework.Pdf.Objects;
 
@@ -17,6 +18,7 @@ public sealed class PdfStream : PdfObject
 {
     private ReadOnlyMemory<byte> _encoded;
     private Func<ReadOnlyMemory<byte>>? _pendingData;
+    private PdfInputRange? _pendingRange;
     private ArrayBufferWriter<byte>? _appended;
 
     /// <summary>Initializes a new instance of the <see cref="PdfStream"/> class with an empty dictionary and no data.</summary>
@@ -68,6 +70,12 @@ public sealed class PdfStream : PdfObject
     /// <summary>Gets a value indicating whether the writer may compress the data: it was set without filter by the library or its caller.</summary>
     internal bool IsCompressible { get; private set; }
 
+    /// <summary>
+    /// Gets the range of the input of the file the data is read from when it is first used, while it is not read and not
+    /// transformed (decrypted): the writer copies it from the input without keeping it in memory.
+    /// </summary>
+    internal PdfInputRange? PendingRange => _pendingRange;
+
     /// <summary>Gets or sets the PNG predictor the writer applies to the data before it compresses it (the samples of an image), or <see langword="null"/>.</summary>
     internal PdfPngPredictor? PngPredictor { get; set; }
 
@@ -90,6 +98,7 @@ public sealed class PdfStream : PdfObject
         Dictionary.Remove(PdfNames.DL);
         _appended = null;
         _pendingData = null;
+        _pendingRange = null;
         _encoded = data.ToArray();
         IsCompressible = true;
         PngPredictor = null;
@@ -122,6 +131,7 @@ public sealed class PdfStream : PdfObject
     {
         _appended = null;
         _pendingData = null;
+        _pendingRange = null;
         _encoded = data;
         IsCompressible = compressible;
         PngPredictor = null;
@@ -134,14 +144,16 @@ public sealed class PdfStream : PdfObject
     {
         _encoded = data;
         _pendingData = null;
+        _pendingRange = null;
         IsCompressible = false;
     }
 
     /// <summary>Sets the data the parser found in a file it reads on demand: the data is read when it is first used.</summary>
-    internal void SetLoadedData(Func<ReadOnlyMemory<byte>> data)
+    internal void SetLoadedData(PdfInputRange data)
     {
         _encoded = default;
-        _pendingData = data;
+        _pendingData = data.Read;
+        _pendingRange = data;
         IsCompressible = false;
     }
 
@@ -151,6 +163,7 @@ public sealed class PdfStream : PdfObject
         if (_pendingData is { } pending)
         {
             _pendingData = () => transform(pending());
+            _pendingRange = null;
         }
         else
         {
@@ -182,6 +195,7 @@ public sealed class PdfStream : PdfObject
         {
             _encoded = pending();
             _pendingData = null;
+            _pendingRange = null;
         }
     }
 

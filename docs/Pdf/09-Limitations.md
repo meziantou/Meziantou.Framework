@@ -21,8 +21,13 @@ description: What the library does not do, so that you can plan around it.
 - The text extraction follows the order of the content and joins the glyphs into lines by their positions; it does not
   detect columns, and it does not recognize the text of scanned pages.
 - The library reports the permissions of an encrypted document, but does not enforce them.
-- A file larger than 2 GB is read with [OpenSeekable](cref:Meziantou.Framework.Pdf.PdfDocument.OpenSeekable), but a document is saved in memory: a document whose file
-  would be larger than 2 GB cannot be saved, in full or incrementally. One stream cannot be larger than 2 GB.
+- A file larger than 2 GB is read with [OpenSeekable](cref:Meziantou.Framework.Pdf.PdfDocument.OpenSeekable): `Open(path)`, `Open(stream)` and `OpenAsync` read the
+  file into one array, which cannot be larger than 2 GB. One stream cannot be larger than 2 GB.
+- A file larger than 2 GB is written by [Save](cref:Meziantou.Framework.Pdf.PdfDocument.Save), [SaveAsync](cref:Meziantou.Framework.Pdf.PdfDocument.SaveAsync), [SaveIncremental](cref:Meziantou.Framework.Pdf.PdfDocument.SaveIncremental) and
+  [SaveIncrementalAsync](cref:Meziantou.Framework.Pdf.PdfDocument.SaveIncrementalAsync). [ToByteArray](cref:Meziantou.Framework.Pdf.PdfDocument.ToByteArray), a linearized file and the signatures are built in one array, so
+  they are limited to 2 GB. The offsets of a cross-reference table have 10 digits: a file whose objects are after
+  9,999,999,999 bytes needs a cross-reference stream ([UseObjectStreams](cref:Meziantou.Framework.Pdf.PdfSaveOptions.UseObjectStreams)), and cannot be updated incrementally if
+  it has a table.
 
 ## Conformance and signatures
 

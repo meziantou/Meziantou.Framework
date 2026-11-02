@@ -2340,6 +2340,37 @@ public sealed class PdfDocumentTests
         Assert.Equal(items, Encoding.ASCII.GetString(Assert.IsType<PdfStream>(stream.Resolve()).GetDecodedData()));
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task StreamsNotReadAreCopiedFromTheSeekableStream(bool encrypt)
+    {
+        var items = string.Join(' ', Enumerable.Range(0, 50_000).Select(i => i.ToString(CultureInfo.InvariantCulture)));
+        var file = HandWrittenPdf.CreateSimple().Add(6, HandWrittenPdf.Stream(items)).ToArray();
+        var document = PdfDocument.OpenSeekable(new MemoryStream(file));
+        Assert.True(document.Objects.TryGetReference(6, out var reference));
+        document.Catalog[PdfName.Create("Big")] = reference;
+        if (encrypt)
+        {
+            document.Encryption = new PdfEncryption("user", "owner");
+        }
+
+        using var output = new MemoryStream();
+        await document.SaveAsync(output);
+        var array = document.ToByteArray(new PdfSaveOptions { UseObjectStreams = false });
+
+        // The data is not kept in memory, unless it had to be read to be encrypted
+        var stream = Assert.IsType<PdfStream>(reference.Resolve());
+        Assert.Equal(encrypt, stream.PendingRange is null);
+        foreach (var saved in new[] { output.ToArray(), array })
+        {
+            var read = PdfDocument.Open(saved, new PdfReadOptions { Password = "user" });
+            Assert.Equal("Hello", read.Pages[0].ExtractText());
+            var big = Assert.IsType<PdfStream>(read.Catalog.GetResolved(PdfName.Create("Big")));
+            Assert.Equal(items, Encoding.ASCII.GetString(big.GetDecodedData()));
+        }
+    }
+
     [Fact]
     public void OpenSeekableRepairsADamagedFile()
     {
@@ -2432,6 +2463,104 @@ public sealed class PdfDocumentTests
 
         Assert.Equal(repair, document.IsRepaired);
         Assert.Equal("Far away", document.Pages[0].ExtractText());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task FilesLargerThan2GBAreSavedWithoutLoadingTheirStreams(bool useObjectStreams)
+    {
+        // Two streams of 1.2 GB: their data is zeros between markers, which the sparse streams do not store
+        const int PaddingLength = 1_200_000_000;
+        var segments = new List<(long Offset, byte[] Data)>();
+        var position = 0L;
+        var offsets = new List<long>();
+        void Append(string text)
+        {
+            var bytes = Encoding.ASCII.GetBytes(text);
+            segments.Add((position, bytes));
+            position += bytes.Length;
+        }
+
+        void AppendObject(string value)
+        {
+            offsets.Add(position);
+            Append(string.Create(CultureInfo.InvariantCulture, $"{offsets.Count} 0 obj\n{value}\nendobj\n"));
+        }
+
+        Append("%PDF-1.7\n");
+        AppendObject("<< /Type /Catalog /Pages 2 0 R /Padding [6 0 R 7 0 R] >>");
+        AppendObject("<< /Type /Pages /Kids [3 0 R] /Count 1 >>");
+        AppendObject("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>");
+        AppendObject("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>");
+        AppendObject(HandWrittenPdf.Stream("BT /F1 12 Tf 72 720 Td (Far away) Tj ET"));
+        for (var i = 6; i <= 7; i++)
+        {
+            offsets.Add(position);
+            Append(string.Create(CultureInfo.InvariantCulture, $"{i} 0 obj\n<< /Length {PaddingLength} >>\nstream\nBEGIN{i}"));
+            position += PaddingLength - "BEGIN6".Length - "END6".Length;
+            Append(string.Create(CultureInfo.InvariantCulture, $"END{i}\nendstream\nendobj\n"));
+        }
+
+        var xref = position;
+        var table = new StringBuilder("xref\n0 8\n0000000000 65535 f \n");
+        foreach (var offset in offsets)
+        {
+            table.Append(CultureInfo.InvariantCulture, $"{offset:D10} 00000 n \n");
+        }
+
+        Append(table.Append(CultureInfo.InvariantCulture, $"trailer\n<< /Size 8 /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n").ToString());
+        var source = new TestStream([.. segments], position);
+
+        // The data of the streams is copied from the source in chunks: the save does not allocate their size
+        var document = PdfDocument.OpenSeekable(source);
+        using var saved = new SparseStream();
+        var allocated = GC.GetAllocatedBytesForCurrentThread();
+        document.Save(saved, new PdfSaveOptions { UseObjectStreams = useObjectStreams });
+        Assert.True(GC.GetAllocatedBytesForCurrentThread() - allocated < 64 * 1024 * 1024);
+        Assert.True(saved.Length > 2L * PaddingLength);
+
+        saved.Position = 0;
+        var read = PdfDocument.OpenSeekable(saved);
+        Assert.False(read.IsRepaired);
+        Assert.True(read.Reader!.LastXrefOffset > int.MaxValue);
+        Assert.Equal("Far away", read.Pages[0].ExtractText());
+        AssertPadding(read, 0, "BEGIN6", "END6");
+        AssertPadding(read, 1, "BEGIN7", "END7");
+
+        // The incremental update of the saved file: the original file is kept as a range of the input, not in memory
+        read.Information.Title = "Updated";
+        using var updated = new SparseStream();
+        allocated = GC.GetAllocatedBytesForCurrentThread();
+        var thread = Environment.CurrentManagedThreadId;
+        await read.SaveIncrementalAsync(updated);
+        Assert.Equal(thread, Environment.CurrentManagedThreadId);
+        Assert.True(GC.GetAllocatedBytesForCurrentThread() - allocated < 64 * 1024 * 1024);
+        Assert.True(updated.Length > saved.Length);
+
+        updated.Position = 0;
+        var reread = PdfDocument.OpenSeekable(updated);
+        Assert.Equal("Updated", reread.Information.Title);
+        var tail = new byte[1024];
+        updated.Position = updated.Length - tail.Length;
+        updated.ReadExactly(tail);
+        Assert.Contains(string.Create(CultureInfo.InvariantCulture, $"/Prev {read.Reader.LastXrefOffset}"), Encoding.ASCII.GetString(tail));
+        Assert.True(reread.Reader!.LastXrefOffset > saved.Length);
+        Assert.Equal("Far away", reread.Pages[0].ExtractText());
+        AssertPadding(reread, 1, "BEGIN7", "END7");
+
+        static void AssertPadding(PdfDocument document, int index, string start, string end)
+        {
+            var stream = Assert.IsType<PdfStream>(Assert.IsType<PdfArray>(document.Catalog.GetResolved(PdfName.Create("Padding"))).GetResolved(index));
+            var range = stream.PendingRange!;
+            Assert.Equal(PaddingLength, range.Length);
+            var bytes = new byte[start.Length];
+            range.Input.Read(range.Offset, bytes);
+            Assert.Equal(start, Encoding.ASCII.GetString(bytes));
+            bytes = new byte[end.Length];
+            range.Input.Read(range.Offset + range.Length - end.Length, bytes);
+            Assert.Equal(end, Encoding.ASCII.GetString(bytes));
+        }
     }
 
     [Fact]
@@ -2579,6 +2708,104 @@ public sealed class PdfDocumentTests
     }
 
     /// <summary>A stream over bytes, or over segments of a sparse file of NUL bytes, that counts what is read.</summary>
+    /// <summary>A readable and writable stream that does not store the pages of zeros, for files larger than the memory.</summary>
+    private sealed class SparseStream : Stream
+    {
+        private const int PageSize = 1024 * 1024;
+        private readonly Dictionary<long, byte[]> _pages = [];
+        private long _length;
+        private long _position;
+
+        public override bool CanRead => true;
+
+        public override bool CanSeek => true;
+
+        public override bool CanWrite => true;
+
+        public override long Length => _length;
+
+        public override long Position
+        {
+            get => _position;
+            set => _position = value;
+        }
+
+        public override void Flush()
+        {
+        }
+
+        public override int Read(byte[] buffer, int offset, int count) => Read(buffer.AsSpan(offset, count));
+
+        public override int Read(Span<byte> buffer)
+        {
+            var count = (int)Math.Min(buffer.Length, Math.Max(0, _length - _position));
+            buffer = buffer[..count];
+            while (!buffer.IsEmpty)
+            {
+                var pageOffset = (int)(_position % PageSize);
+                var chunk = buffer[..Math.Min(buffer.Length, PageSize - pageOffset)];
+                if (_pages.TryGetValue(_position / PageSize, out var page))
+                {
+                    page.AsSpan(pageOffset, chunk.Length).CopyTo(chunk);
+                }
+                else
+                {
+                    chunk.Clear();
+                }
+
+                _position += chunk.Length;
+                buffer = buffer[chunk.Length..];
+            }
+
+            return count;
+        }
+
+        public override void Write(byte[] buffer, int offset, int count) => Write(buffer.AsSpan(offset, count));
+
+        // Completes synchronously, on the calling thread (the base class writes on the thread pool)
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            Write(buffer.Span);
+            return ValueTask.CompletedTask;
+        }
+
+        public override void Write(ReadOnlySpan<byte> buffer)
+        {
+            while (!buffer.IsEmpty)
+            {
+                var pageOffset = (int)(_position % PageSize);
+                var chunk = buffer[..Math.Min(buffer.Length, PageSize - pageOffset)];
+                if (!_pages.TryGetValue(_position / PageSize, out var page) && chunk.ContainsAnyExcept((byte)0))
+                {
+                    page = new byte[PageSize];
+                    _pages.Add(_position / PageSize, page);
+                }
+
+                if (page is not null)
+                {
+                    chunk.CopyTo(page.AsSpan(pageOffset));
+                }
+
+                _position += chunk.Length;
+                _length = Math.Max(_length, _position);
+                buffer = buffer[chunk.Length..];
+            }
+        }
+
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            _position = origin switch
+            {
+                SeekOrigin.Begin => offset,
+                SeekOrigin.Current => _position + offset,
+                _ => _length + offset,
+            };
+            return _position;
+        }
+
+        public override void SetLength(long value) => _length = value;
+    }
+
     private sealed class TestStream : Stream
     {
         private readonly (long Offset, byte[] Data)[] _segments;

@@ -388,7 +388,8 @@ public sealed partial class PdfDocument
     /// The document is serialized synchronously, on the calling thread, into blocks of memory, and the blocks are then
     /// written to the stream asynchronously. Cancellation is observed while the objects are serialized, between the
     /// objects, and while the blocks are written: the stream is untouched when the save is canceled before the first
-    /// block is written, and may contain the beginning of the file otherwise.
+    /// block is written, and may contain the beginning of the file otherwise. The data of the streams of a document read
+    /// with <see cref="OpenSeekable"/> that was not loaded is read from the stream of the document when it is written.
     /// </remarks>
     /// <exception cref="OperationCanceledException">The save was canceled.</exception>
     public async Task SaveAsync(Stream stream, PdfSaveOptions? options = null, CancellationToken cancellationToken = default)

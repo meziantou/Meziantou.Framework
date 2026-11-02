@@ -37,7 +37,7 @@ internal static class PdfImageDecoder
         return DecodeSamples(data, dictionary, resources, cache);
     }
 
-    public static DecodedImage? DecodeInline(PdfDictionary inline, ReadOnlyMemory<byte> encoded, PdfDictionary? resources, RenderCache cache)
+    public static DecodedImage? DecodeInline(PdfDictionary inline, ReadOnlyMemory<byte> encoded, PdfDictionary? resources, PdfDecodeLimits limits, RenderCache cache)
     {
         // The abbreviations of inline images (8.9.7)
         var dictionary = new PdfDictionary();
@@ -60,10 +60,9 @@ internal static class PdfImageDecoder
         }
 
         var filters = PdfFilterPipeline.GetFilterNames(dictionary);
-        var parameters = PdfFilterPipeline.GetParameters(dictionary, filters.Count);
         var last = filters.Count > 0 ? filters[^1].Value : null;
         var stopBeforeImage = last is "DCTDecode" or "JPXDecode";
-        var data = PdfFilterPipeline.Decode(encoded.Span, filters, parameters, PdfDecodeLimits.Default, stopBeforeImage, out _);
+        var data = PdfFilterPipeline.Decode(encoded, dictionary, limits, stopBeforeImage, out _);
         if (stopBeforeImage)
             return DecodeCompressed(data, dictionary, cache);
 

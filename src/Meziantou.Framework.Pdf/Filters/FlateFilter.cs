@@ -9,26 +9,41 @@ namespace Meziantou.Framework.Pdf.Filters;
 /// </remarks>
 internal static class FlateFilter
 {
-    public static byte[] Decode(ReadOnlySpan<byte> input, long limit)
+    public static byte[] Decode(ReadOnlyMemory<byte> input, long limit)
     {
-        var output = new BoundedOutput(limit, Math.Max(256, input.Length * 4));
-        var data = input.ToArray();
+        var output = new BoundedOutput(limit, (int)Math.Min(Math.Max(256L, input.Length * 4L), int.MaxValue));
 
         // A zlib header (RFC 1950, 2.2): compression method 8 and a check value; some producers write raw deflate data
-        var hasZlibHeader = data.Length >= 2 && (data[0] & 0x0F) == 8 && ((data[0] << 8) | data[1]) % 31 == 0;
-        var start = hasZlibHeader ? 2 : 0;
-        using var source = new MemoryStream(data, start, data.Length - start, writable: false);
+        var span = input.Span;
+        var hasZlibHeader = span.Length >= 2 && (span[0] & 0x0F) == 8 && ((span[0] << 8) | span[1]) % 31 == 0;
+        var data = hasZlibHeader ? input[2..] : input;
+
+        // The data is read where it is: the arrays of the parser and of the previous filters
+        using var source = new ReadOnlyMemoryStream(data);
         using var deflate = new DeflateStream(source, CompressionMode.Decompress);
-        var chunk = new byte[16384];
+        Span<byte> probe = stackalloc byte[1];
         try
         {
-            int read;
-            while ((read = deflate.Read(chunk)) > 0)
+            while (true)
             {
-                output.Write(chunk.AsSpan(0, read));
+                var free = output.GetFreeSpan();
+                if (free.IsEmpty)
+                {
+                    // The data has reached the limit: it is exceeded if there is more
+                    if (deflate.Read(probe) == 0)
+                        break;
+
+                    output.Write(probe[0]); // Throws the limit error
+                }
+
+                var read = deflate.Read(free);
+                if (read == 0)
+                    break;
+
+                output.Advance(read);
             }
         }
-        catch (InvalidDataException) when (output.Length > 0 || data.Length == 0)
+        catch (InvalidDataException) when (output.Length > 0 || input.Length == 0)
         {
             // Damaged data: keep what was decoded
         }

@@ -439,6 +439,7 @@ namespace Meziantou.Framework.Pdf
         public int Height { get => throw null; }
         public int Width { get => throw null; }
         public static Meziantou.Framework.Pdf.PdfImage FromImage(Meziantou.Framework.Imaging.Image image) => throw null;
+        public static Meziantou.Framework.Pdf.PdfImage FromImageAsJpeg(Meziantou.Framework.Imaging.Image image, Meziantou.Framework.Imaging.Formats.JpegEncoder? encoder = null) => throw null;
         public static Meziantou.Framework.Pdf.PdfImage FromJpeg(System.ReadOnlySpan<byte> data) => throw null;
         public static Meziantou.Framework.Pdf.PdfImage Load(System.ReadOnlySpan<byte> data) => throw null;
         public static Meziantou.Framework.Pdf.PdfImage Load(string path) => throw null;

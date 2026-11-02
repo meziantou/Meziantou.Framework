@@ -1110,6 +1110,92 @@ public sealed class PdfDocumentTests
     }
 
     [Fact]
+    public void ImageSamplesUseThePngPredictorsWhenTheyAreSmaller()
+    {
+        // A gradient: each row differs from the one above by the same bytes, which the Up filter turns into zeros
+        using var gradient = Image.ImportPixelData<Rgb24>([.. Enumerable.Range(0, 64 * 64).Select(i => new Rgb24((byte)(i % 64 * 4), (byte)(i / 64 * 4), 128))], 64, 64);
+        using var flat = Image.ImportPixelData<Gray8>([.. Enumerable.Repeat(new Gray8(200), 64 * 64)], 64, 64);
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A5).CreateContentBuilder()
+            .DrawImage(PdfImage.FromImage(gradient), 0, 0, 64, 64)
+            .DrawImage(PdfImage.FromImage(flat), 100, 0, 64, 64);
+
+        var read = PdfDocument.Open(document.ToByteArray());
+        var images = read.Objects.GetReferences().Select(r => r.Resolve()).OfType<PdfStream>().Where(s => s.Dictionary.ContainsKey(PdfNames.Width)).ToArray();
+        var predicted = images.Single(s => s.Dictionary.Get<PdfName>(PdfNames.ColorSpace)?.Value == "DeviceRGB");
+        var parameters = predicted.Dictionary.Get<PdfDictionary>(PdfNames.DecodeParms);
+
+        Assert.NotNull(parameters);
+        Assert.Equal(15, parameters.GetInteger(PdfNames.Predictor));
+        Assert.Equal(3, parameters.GetInteger(PdfNames.Colors));
+        Assert.Equal(8, parameters.GetInteger(PdfNames.BitsPerComponent));
+        Assert.Equal(64, parameters.GetInteger(PdfNames.Columns));
+        var expected = new byte[64 * 64 * 3];
+        gradient.Frames[0].CopyPixelBytesTo(expected);
+        Assert.Equal(expected, predicted.GetDecodedData());
+
+        var plain = images.Single(s => s.Dictionary.Get<PdfName>(PdfNames.ColorSpace)?.Value == "DeviceGray");
+        Assert.Equal(Enumerable.Repeat((byte)200, 64 * 64), plain.GetDecodedData());
+
+        // Without compression, the samples are stored as they are
+        var uncompressed = PdfDocument.Open(document.ToByteArray(new PdfSaveOptions { CompressStreams = false }));
+        var stored = uncompressed.Objects.GetReferences().Select(r => r.Resolve()).OfType<PdfStream>().First(s => s.Dictionary.Get<PdfName>(PdfNames.ColorSpace)?.Value == "DeviceRGB");
+        Assert.Empty(stored.Filters);
+        Assert.Equal(expected, stored.GetDecodedData());
+    }
+
+    [Fact]
+    public void ImagesCanBeCompressedAsJpeg()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var path = directory / "photo.pdf";
+        using (var photo = Image.ImportPixelData<Rgba32>([.. Enumerable.Range(0, 32 * 32).Select(i => new Rgba32((byte)(i % 32 * 8), 100, 50, (byte)(i < 512 ? 255 : 0)))], 32, 32))
+        {
+            DrawPhotoAsJpeg(photo, path);
+        }
+
+        var read = PdfDocument.Open(path);
+        var stream = read.Objects.GetReferences().Select(r => r.Resolve()).OfType<PdfStream>().Single(s => s.Dictionary.ContainsKey(PdfNames.SMask));
+        var softMask = Assert.IsType<PdfStream>(stream.Dictionary.GetResolved(PdfNames.SMask));
+
+        Assert.Equal("DCTDecode", stream.Filters.Single().Value);
+        Assert.Equal(8, stream.Dictionary.GetInteger(PdfNames.BitsPerComponent));
+        Assert.Equal(ImageFormat.Jpeg, Image.DetectFormat(stream.EncodedData.Span[..Image.FormatDetectionPrefixLength]));
+        var samples = stream.GetDecodedData();
+        Assert.HasCount(32 * 32 * 3, samples);
+        Assert.InRange(samples[(5 * 32 * 3) + (10 * 3)], 80 - 8, 80 + 8);
+        Assert.InRange(samples[(5 * 32 * 3) + (10 * 3) + 1], 100 - 8, 100 + 8);
+        Assert.Equal([.. Enumerable.Repeat((byte)255, 512), .. Enumerable.Repeat((byte)0, 512)], softMask.GetDecodedData());
+    }
+
+    #region Pdf_FromImageAsJpeg
+    private static void DrawPhotoAsJpeg(Image photo, string outputPath)
+    {
+        // A photo is much smaller as JPEG than as samples compressed without loss; its transparency stays a soft mask
+        var image = PdfImage.FromImageAsJpeg(photo, new Imaging.Formats.JpegEncoder { Quality = 85 });
+
+        var document = new PdfDocument();
+        document.Pages.Add(new PdfSize(300, 150)).CreateContentBuilder().DrawImage(image, 10, 10, 128, 128);
+        document.Save(outputPath);
+    }
+    #endregion
+
+    [Fact]
+    public void ImagesOf16BitsAreRoundedTo8BitsForJpeg()
+    {
+        using var gray = Image.ImportPixelData<Gray16>([.. Enumerable.Repeat(new Gray16(0x8080), 64)], 8, 8);
+
+        var image = PdfImage.FromImageAsJpeg(gray);
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A5).CreateContentBuilder().DrawImage(image, 0, 0, 8, 8);
+        var stream = (PdfStream)document.Objects.GetReferences().Select(r => r.Resolve()).Single(o => o is PdfStream s && s.Dictionary.ContainsKey(PdfNames.Width));
+
+        Assert.False(image.HasSoftMask);
+        Assert.Equal("DeviceGray", stream.Dictionary.Get<PdfName>(PdfNames.ColorSpace)?.Value);
+        Assert.All(stream.GetDecodedData(), sample => Assert.InRange(sample, 0x80 - 1, 0x80 + 1));
+    }
+
+    [Fact]
     public void Example_CreateCard()
     {
         using var directory = TemporaryDirectory.Create();

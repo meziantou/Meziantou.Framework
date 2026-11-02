@@ -111,11 +111,22 @@ public sealed class ImmutableEquatableArrayTests
     }
 
     [Fact]
-    public void GetHashCode_ShouldReturnLength()
+    public void GetHashCode_SameItems_ShouldReturnSameValue()
     {
-        var array = ImmutableEquatableArray.Create(new[] { "a", "b", "c" });
+        var array1 = ImmutableEquatableArray.Create(new[] { "a", "b", "c" });
+        var array2 = new List<string> { "a", "b", "c" }.ToImmutableEquatableArray();
 
-        Assert.Equal(3, array.GetHashCode());
+        Assert.Equal(array1.GetHashCode(), array2.GetHashCode());
+        Assert.Equal(array1.GetHashCode(), array1.GetHashCode());
+    }
+
+    [Fact]
+    public void GetHashCode_SameLengthDifferentItems_ShouldReturnDifferentValues()
+    {
+        var hashCodes = Enumerable.Range(0, 100).Select(i => ImmutableEquatableArray.Create(new[] { i, i + 1 }).GetHashCode()).Distinct().Count();
+
+        Assert.True(hashCodes > 90);
+        Assert.NotEqual(ImmutableEquatableArray.Create(new[] { 1, 2 }).GetHashCode(), ImmutableEquatableArray.Create(new[] { 2, 1 }).GetHashCode());
     }
 
     [Fact]
@@ -247,25 +258,25 @@ public sealed class ImmutableEquatableArrayTests
     }
 
     [Fact]
-    public void MutatingOperations_ShouldThrowInvalidOperationException()
+    public void MutatingOperations_ShouldThrowNotSupportedException()
     {
         var array = ImmutableEquatableArray.Create(new[] { "a", "b" });
         var collection = (ICollection<string>)array;
         var list = (IList<string>)array;
         var nonGenericList = (System.Collections.IList)array;
 
-        Assert.Throws<InvalidOperationException>(() => collection.Add("c"));
-        Assert.Throws<InvalidOperationException>(() => collection.Remove("a"));
-        Assert.Throws<InvalidOperationException>(() => collection.Clear());
-        Assert.Throws<InvalidOperationException>(() => list.Insert(0, "c"));
-        Assert.Throws<InvalidOperationException>(() => list.RemoveAt(0));
-        Assert.Throws<InvalidOperationException>(() => list[0] = "changed");
-        Assert.Throws<InvalidOperationException>(() => nonGenericList.Add("c"));
-        Assert.Throws<InvalidOperationException>(() => nonGenericList.Clear());
-        Assert.Throws<InvalidOperationException>(() => nonGenericList.Insert(0, "c"));
-        Assert.Throws<InvalidOperationException>(() => nonGenericList.Remove("a"));
-        Assert.Throws<InvalidOperationException>(() => nonGenericList.RemoveAt(0));
-        Assert.Throws<InvalidOperationException>(() => nonGenericList[0] = "changed");
+        Assert.Throws<NotSupportedException>(() => collection.Add("c"));
+        Assert.Throws<NotSupportedException>(() => collection.Remove("a"));
+        Assert.Throws<NotSupportedException>(() => collection.Clear());
+        Assert.Throws<NotSupportedException>(() => list.Insert(0, "c"));
+        Assert.Throws<NotSupportedException>(() => list.RemoveAt(0));
+        Assert.Throws<NotSupportedException>(() => list[0] = "changed");
+        Assert.Throws<NotSupportedException>(() => nonGenericList.Add("c"));
+        Assert.Throws<NotSupportedException>(() => nonGenericList.Clear());
+        Assert.Throws<NotSupportedException>(() => nonGenericList.Insert(0, "c"));
+        Assert.Throws<NotSupportedException>(() => nonGenericList.Remove("a"));
+        Assert.Throws<NotSupportedException>(() => nonGenericList.RemoveAt(0));
+        Assert.Throws<NotSupportedException>(() => nonGenericList[0] = "changed");
     }
 
     [Fact]

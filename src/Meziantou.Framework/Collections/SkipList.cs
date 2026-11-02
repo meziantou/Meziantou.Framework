@@ -82,7 +82,8 @@ public sealed class SkipList<T> : ICollection<T>, ICollection, IReadOnlyCollecti
     /// <returns><see langword="true"/> if the element was added; otherwise, <see langword="false"/>.</returns>
     public bool Add(T item)
     {
-        var update = new Node[MaxLevel];
+        var updateBuffer = default(NodeBuffer);
+        Span<Node?> update = updateBuffer;
         var current = FindGreaterOrEqual(item, update);
         if (current is not null && _comparer.Compare(current.Value, item) is 0)
         {
@@ -103,8 +104,9 @@ public sealed class SkipList<T> : ICollection<T>, ICollection, IReadOnlyCollecti
         var newNode = new Node(item, newLevel);
         for (var i = 0; i < newLevel; i++)
         {
-            newNode.Next[i] = update[i].Next[i];
-            update[i].Next[i] = newNode;
+            var previous = update[i]!;
+            newNode.Next[i] = previous.Next[i];
+            previous.Next[i] = newNode;
         }
 
         Count++;
@@ -125,7 +127,8 @@ public sealed class SkipList<T> : ICollection<T>, ICollection, IReadOnlyCollecti
     /// <returns><see langword="true"/> if the element was removed; otherwise, <see langword="false"/>.</returns>
     public bool Remove(T item)
     {
-        var update = new Node[MaxLevel];
+        var updateBuffer = default(NodeBuffer);
+        Span<Node?> update = updateBuffer;
         var current = FindGreaterOrEqual(item, update);
         if (current is null || _comparer.Compare(current.Value, item) is not 0)
         {
@@ -134,9 +137,10 @@ public sealed class SkipList<T> : ICollection<T>, ICollection, IReadOnlyCollecti
 
         for (var i = 0; i < _level; i++)
         {
-            if (ReferenceEquals(update[i].Next[i], current))
+            var previous = update[i]!;
+            if (ReferenceEquals(previous.Next[i], current))
             {
-                update[i].Next[i] = current.Next[i];
+                previous.Next[i] = current.Next[i];
             }
         }
 
@@ -163,7 +167,7 @@ public sealed class SkipList<T> : ICollection<T>, ICollection, IReadOnlyCollecti
     /// <returns><see langword="true"/> if the element is found; otherwise, <see langword="false"/>.</returns>
     public bool Contains(T item)
     {
-        var current = FindGreaterOrEqual(item, update: null);
+        var current = FindGreaterOrEqual(item, update: default);
         return current is not null && _comparer.Compare(current.Value, item) is 0;
     }
 
@@ -175,7 +179,7 @@ public sealed class SkipList<T> : ICollection<T>, ICollection, IReadOnlyCollecti
     /// <returns><see langword="true"/> if a matching element was found; otherwise, <see langword="false"/>.</returns>
     public bool TryGetValue(T equalValue, [MaybeNullWhen(false)] out T actualValue)
     {
-        var current = FindGreaterOrEqual(equalValue, update: null);
+        var current = FindGreaterOrEqual(equalValue, update: default);
         if (current is not null && _comparer.Compare(current.Value, equalValue) is 0)
         {
             actualValue = current.Value;
@@ -279,7 +283,7 @@ public sealed class SkipList<T> : ICollection<T>, ICollection, IReadOnlyCollecti
 
     IEnumerator IEnumerable.GetEnumerator() => new Enumerator(this);
 
-    private Node? FindGreaterOrEqual(T item, Node[]? update)
+    private Node? FindGreaterOrEqual(T item, Span<Node?> update)
     {
         var current = _head;
         for (var level = _level - 1; level >= 0; level--)
@@ -289,7 +293,7 @@ public sealed class SkipList<T> : ICollection<T>, ICollection, IReadOnlyCollecti
                 current = next;
             }
 
-            if (update is not null)
+            if (!update.IsEmpty)
             {
                 update[level] = current;
             }
@@ -309,6 +313,12 @@ public sealed class SkipList<T> : ICollection<T>, ICollection, IReadOnlyCollecti
         }
 
         return level;
+    }
+
+    [InlineArray(MaxLevel)]
+    private struct NodeBuffer
+    {
+        private Node? _element0;
     }
 
     private sealed class Node(T value, int level)

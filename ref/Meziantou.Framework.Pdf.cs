@@ -264,6 +264,7 @@ namespace Meziantou.Framework.Pdf
         public void SetXmpMetadata(System.ReadOnlySpan<byte> packet) { }
         public byte[] ToByteArray(Meziantou.Framework.Pdf.PdfSaveOptions? options = null) => throw null;
         public void UpdateXmpMetadata() { }
+        public void UpdateXmpMetadata(int padding) { }
     }
 
     public sealed class PdfDocumentInformation
@@ -277,6 +278,7 @@ namespace Meziantou.Framework.Pdf
         public string? Producer { get => throw null; set { } }
         public string? Subject { get => throw null; set { } }
         public string? Title { get => throw null; set { } }
+        public Meziantou.Framework.Pdf.PdfTrapped? Trapped { get => throw null; set { } }
         public string? GetText(string key) => throw null;
         public void SetText(string key, string? value) { }
     }
@@ -658,6 +660,7 @@ namespace Meziantou.Framework.Pdf
         public static Meziantou.Framework.Pdf.PdfSaveOptions Default { get => throw null; }
         public bool UseObjectStreams { get => throw null; init { } }
         public Meziantou.Framework.Pdf.PdfVersion? Version { get => throw null; init { } }
+        public int XmpPadding { get => throw null; init { } }
     }
 
     public abstract class PdfShading
@@ -790,6 +793,13 @@ namespace Meziantou.Framework.Pdf
         public Meziantou.Framework.Pdf.PdfDeviceColorSpace? ColorSpace { get => throw null; init { } }
         public bool Isolated { get => throw null; init { } }
         public bool Knockout { get => throw null; init { } }
+    }
+
+    public enum PdfTrapped
+    {
+        Unknown = 0,
+        True = 1,
+        False = 2,
     }
 
     public enum PdfUAConformance

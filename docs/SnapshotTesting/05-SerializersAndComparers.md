@@ -142,9 +142,17 @@ Snapshot.Validate(rows, settings); // __snapshots__/SnapshotTests_DocumentationE
 With this comparer, the verified CSV file may list the rows in any order.
 
 A comparer is chosen for each file. When a serializer stores another format than the requested one (an animated GIF
-stored as PNG frames, a source generator result stored as C# files), the comparer registered for the stored format wins,
-and the comparer of the requested type is the fallback. `Comparers.Get(type)` returns the comparer used for a type, and
-`Comparers.Remove(type)` removes a registration.
+stored as PNG frames, a source generator result stored as C# files):
+
+1. the comparer registered for the stored format wins;
+2. otherwise, a comparer you registered for the requested type applies;
+3. otherwise, the stored format decides between the text and the byte comparison, as in the table above. The comparers
+   registered for [SnapshotType.Default](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Default) and
+   [SnapshotType.None](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.None), and the built-in ones, are these
+   defaults: a `.bin` file is compared byte for byte even when the assertion asked for text, and a `.json` file ignores
+   line endings even when the assertion asked for an image.
+
+`Comparers.Get(type)` returns the comparer used for a type, and `Comparers.Remove(type)` removes a registration.
 
 ## Comparers for images and PDF documents
 

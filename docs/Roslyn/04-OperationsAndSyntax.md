@@ -56,6 +56,7 @@ of a `private readonly` field or a `private` get-only property, which no other c
 | `Ancestors()` | The parents of an operation, from the closest. |
 | `IsInNameofOperation()` | The operation is inside a `nameof(...)`, where nothing is evaluated. |
 | `GetContainingMethod()` | The method that contains the operation. |
+| `InParameterOrder()` | The arguments of an invocation or an object creation sorted by the ordinal of their parameter, as named arguments keep the source order. |
 
 ## Syntax
 

@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Pdf.Objects;
@@ -1575,6 +1576,76 @@ public sealed class PdfDocumentTests
         Assert.False(image.HasSoftMask);
         Assert.Equal("DeviceGray", stream.Dictionary.Get<PdfName>(PdfNames.ColorSpace)?.Value);
         Assert.All(stream.GetDecodedData(), sample => Assert.InRange(sample, 0x80 - 1, 0x80 + 1));
+    }
+
+    [Fact]
+    public void Example_BilevelImage()
+    {
+        #region PdfImage_FromBilevel
+        // A 16 x 2 image, one bit per pixel: a set bit is a black pixel
+        byte[] pixels = [0b1111_0000, 0b0000_1111, 0b1010_1010, 0b0101_0101];
+        var image = PdfImage.FromBilevel(pixels, width: 16, height: 2, PdfBilevelCompression.CcittGroup4);
+
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawImage(image, 50, 700, 160, 20);
+        var data = document.ToByteArray();
+        #endregion
+
+        var xobject = PdfDocument.Open(data).Pages[0].Resources!.Get<PdfDictionary>(PdfName.Create("XObject"))!.Get<PdfStream>(PdfName.Create("Im1"))!;
+        Assert.Equal("CCITTFaxDecode", xobject.Filters.Single().Value);
+        Assert.Equal([0b0000_1111, 0b1111_0000, 0b0101_0101, 0b1010_1010], xobject.GetDecodedData());
+    }
+
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Generating test inputs, and the fixed seed keeps the cases reproducible.")]
+    [Theory]
+    [InlineData(PdfBilevelCompression.CcittGroup4, "CCITTFaxDecode")]
+    [InlineData(PdfBilevelCompression.Jbig2, "JBIG2Decode")]
+    [InlineData(PdfBilevelCompression.Flate, "FlateDecode")]
+    public void BilevelImages(PdfBilevelCompression compression, string filter)
+    {
+        // 101 pixels per row: the bits after the last pixel of a row are random, they are not pixels
+        const int Width = 101;
+        const int Height = 37;
+        const int Stride = 13;
+        var pixels = new byte[Stride * Height];
+        new Random(7).NextBytes(pixels);
+        for (var y = 10; y < 20; y++)
+        {
+            // Runs of white and black rows
+            pixels.AsSpan(y * Stride, Stride).Fill(y < 15 ? (byte)0 : (byte)0xFF);
+        }
+
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A5).CreateContentBuilder().DrawImage(PdfImage.FromBilevel(pixels, Width, Height, compression), 0, 0, Width, Height);
+        var read = PdfDocument.Open(document.ToByteArray());
+        var xobject = read.Pages[0].Resources!.Get<PdfDictionary>(PdfName.Create("XObject"))!.Get<PdfStream>(PdfName.Create("Im1"))!;
+
+        Assert.Equal(filter, xobject.Filters.Single().Value);
+        Assert.Equal(1, xobject.Dictionary.GetInteger(PdfName.Create("BitsPerComponent")));
+        Assert.Equal("DeviceGray", xobject.Dictionary.GetName(PdfName.Create("ColorSpace"))!.Value);
+        var decoded = xobject.GetDecodedData();
+        Assert.HasCount(Stride * Height, decoded);
+        for (var y = 0; y < Height; y++)
+        {
+            for (var x = 0; x < Width; x++)
+            {
+                // DeviceGray: 0 is black
+                var black = (pixels[(y * Stride) + (x / 8)] & (0x80 >> (x % 8))) != 0;
+                var sample = (decoded[(y * Stride) + (x / 8)] & (0x80 >> (x % 8))) != 0;
+                Assert.Equal(black, !sample);
+            }
+        }
+    }
+
+    [Fact]
+    public void BilevelImageArgumentsAreValidated()
+    {
+        Assert.Throws<ArgumentOutOfRangeException>("width", () => PdfImage.FromBilevel([0], 0, 1));
+        Assert.Throws<ArgumentOutOfRangeException>("height", () => PdfImage.FromBilevel([0], 1, -1));
+        Assert.Throws<ArgumentException>("pixels", () => PdfImage.FromBilevel([0, 0, 0], 9, 2));
+        Assert.Throws<ArgumentOutOfRangeException>("width", () => PdfImage.FromBilevel(new byte[131073], 1048577, 1));
+        Assert.Throws<ArgumentOutOfRangeException>("compression", () => PdfImage.FromBilevel([0], 1, 1, (PdfBilevelCompression)42));
+        Assert.Equal(1048577, PdfImage.FromBilevel(new byte[131073], 1048577, 1, PdfBilevelCompression.Jbig2).Width);
     }
 
     [Fact]

@@ -23,6 +23,26 @@ public sealed class PopplerInteropTests
     }
 
     [Theory]
+    [InlineData("merged", new[] { "Hello, World", "\u03B1\u03B2\u03B3", "Hello, World" })]
+    [InlineData("flattened-form", new[] { "Jane Doe", "Paris" })]
+    public async Task TextOfPagesImportedOrFlattenedIsExtractedByPdftotext(string name, string[] expected)
+    {
+        var poppler = await PopplerTool.LocateAsync(XunitCancellationToken);
+        var path = InteropDocuments.Write(name, objectStreams: false);
+
+        var text = Normalize(await poppler.ExtractTextAsync(path, XunitCancellationToken));
+
+        // The texts, in the order of the pages
+        var position = 0;
+        foreach (var part in expected)
+        {
+            var index = text.IndexOf(part, position, StringComparison.Ordinal);
+            Assert.True(index >= 0, $"'{part}' is not in '{text}' after {position}");
+            position = index + part.Length;
+        }
+    }
+
+    [Theory]
     [InlineData(false)]
     [InlineData(true)]
     public async Task EmbeddedFontsAreReadByPoppler(bool objectStreams)

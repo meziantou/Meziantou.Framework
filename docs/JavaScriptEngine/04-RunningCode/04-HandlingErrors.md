@@ -108,3 +108,14 @@ Assert.Throws<InvalidOperationException>(() => realm.Execute("try { fail(); } ca
 
 Convert the failures that a script should handle, such as invalid input, to JavaScript errors. Let the other ones
 propagate: they are bugs or failures of your application.
+
+Like a [JsTerminationException](cref:Meziantou.Framework.JavaScriptEngine.JsTerminationException), such an exception leaves the code it goes through, without running its `catch`
+and `finally` blocks, and the engine can run code afterwards:
+
+- A generator that it stops is completed: its next `next()` call returns `{ done: true }`.
+- An async function or an async generator that it stops is completed, and its promise (the promise of the current
+  request for an async generator) is rejected with an error such as `Error: The execution was stopped by a .NET
+  exception: System.InvalidOperationException: Unexpected state`, so the code that awaits it does not wait forever.
+  When the exception is thrown by the continuation of an `await`, it goes to the caller of [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs); the other
+  jobs stay in the queue.
+- A module that it stops is evaluated with this error. See [Modules](03-Modules.md#handle-the-errors-of-a-module).

@@ -31,6 +31,18 @@ internal class RenderFont
 
     public bool IsVertical => Decoder.IsVertical;
 
+    /// <summary>Gets or sets the vertical metrics of the CIDs of a composite font of vertical writing (9.7.4.3), or <see langword="null"/> for the defaults.</summary>
+    public VerticalMetrics? VerticalMetrics { get; set; }
+
+    /// <summary>Gets the vertical displacement (w1y) and the position vector (vx, vy) of the glyph of a code, in text space units, for vertical writing.</summary>
+    public (double W1, double Vx, double Vy) GetVerticalMetrics(uint code, double width)
+    {
+        if (VerticalMetrics is { } metrics && Decoder is CompositeFontDecoder composite)
+            return metrics.Get(composite.GetCid(code), width);
+
+        return (-1, width / 2, 0.88);
+    }
+
     /// <summary>Gets the glyph procedures of a Type 3 font, or <see langword="null"/>.</summary>
     public virtual Type3Glyphs? Type3 => null;
 

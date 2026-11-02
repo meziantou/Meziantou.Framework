@@ -14,6 +14,9 @@ public sealed partial class SignatureInteropTests
     [InlineData("ecdsa")]
     [InlineData("encrypted")]
     [InlineData("two-signatures")]
+    [InlineData("rsa-pss")]
+    [InlineData("visible")]
+    [InlineData("certified")]
     public async Task SignaturesAreValidForPdfsig(string name)
     {
         global::Xunit.Assert.SkipUnless(PdfSigTool.IsSupported, "The release of meziantou/prebuilt has no pdfsig for this platform");
@@ -27,9 +30,15 @@ public sealed partial class SignatureInteropTests
             document.Encryption = new PdfEncryption("", "owner");
         }
 
-        var signed = PdfSigner.Sign(document, new PdfSignatureOptions(certificate) { Reason = "Interop" });
+        var signed = PdfSigner.Sign(document, new PdfSignatureOptions(certificate)
+        {
+            Reason = "Interop",
+            RsaSignaturePadding = name == "rsa-pss" ? RSASignaturePadding.Pss : null,
+            Certification = name == "certified" ? PdfCertificationLevel.FormFilling : null,
+            Appearance = name == "visible" ? new PdfSignatureAppearance(0, PdfRectangle.FromSize(60, 60, 200, 50)) { Draw = builder => builder.DrawText("Signed", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 12, 8, 20) } : null,
+        });
         var expectedSignatures = 1;
-        if (name == "two-signatures")
+        if (name is "two-signatures" or "certified")
         {
             signed = PdfSigner.Sign(PdfDocument.Open(signed), new PdfSignatureOptions(certificate) { Reason = "Second" });
             expectedSignatures = 2;

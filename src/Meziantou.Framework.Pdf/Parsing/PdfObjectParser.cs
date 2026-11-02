@@ -6,6 +6,8 @@ namespace Meziantou.Framework.Pdf.Parsing;
 /// <summary>Parses objects (ISO 32000-2, 7.3) and indirect objects (7.3.10) from tokens.</summary>
 internal sealed class PdfObjectParser
 {
+    private const int MaxWhitespaceAfterStream = 256;
+
     private readonly PdfIndirectObjectCollection? _objects;
     private readonly int _maxDepth;
 
@@ -20,6 +22,15 @@ internal sealed class PdfObjectParser
 
     /// <summary>Gets or sets the limits given to the streams the parser reads.</summary>
     public PdfDecodeLimits DecodeLimits { get; set; } = PdfDecodeLimits.Default;
+
+    /// <summary>Gets or sets the names the reader already parsed, shared by the objects of a file.</summary>
+    public PdfNameCache? NameCache { get; set; }
+
+    /// <summary>Gets or sets where the data of the lexer is in the input of the file, when the parser reads a file.</summary>
+    public PdfInputWindow? Window { get; set; }
+
+    /// <summary>Gets a value indicating whether the data of the last stream ends after the window: the stream is complete, the bytes after it are not read.</summary>
+    public bool StreamEndsAfterWindow { get; private set; }
 
     /// <summary>Parses the next object.</summary>
     /// <exception cref="InvalidPdfContentException">There is no object at the position.</exception>
@@ -45,7 +56,7 @@ internal sealed class PdfObjectParser
             case PdfTokenKind.Real:
                 return PdfReal.Get(token.RealValue);
             case PdfTokenKind.Name:
-                return PdfName.FromBytes(Lexer.DecodeName(token));
+                return ParseName(token);
             case PdfTokenKind.LiteralString:
                 return new PdfString(Lexer.DecodeLiteralString(token), isHexadecimal: false);
             case PdfTokenKind.HexString:
@@ -114,8 +125,11 @@ internal sealed class PdfObjectParser
         if (value is PdfDictionary dictionary && Lexer.IsKeyword(next, "stream"u8))
         {
             var stream = new PdfStream(dictionary) { DecodeLimits = DecodeLimits };
-            stream.SetLoadedData(ReadStreamData(dictionary));
+            ReadStreamData(stream, dictionary);
             value = stream;
+            if (StreamEndsAfterWindow)
+                return value;
+
             position = Lexer.Position;
             next = Lexer.Next();
         }
@@ -128,46 +142,75 @@ internal sealed class PdfObjectParser
         return value;
     }
 
-    private ReadOnlyMemory<byte> ReadStreamData(PdfDictionary dictionary)
+    /// <summary>Gets the offset of the data of a stream: the <c>stream</c> keyword is followed by CRLF or LF (7.3.8.1); a CR alone and spaces before the end of line are accepted.</summary>
+    internal static int GetStreamDataStart(ReadOnlySpan<byte> span, int position)
+    {
+        while (position < span.Length && span[position] is (byte)' ' or (byte)'\t')
+        {
+            position++;
+        }
+
+        if (position < span.Length && span[position] == '\r')
+        {
+            position++;
+        }
+
+        if (position < span.Length && span[position] == '\n')
+        {
+            position++;
+        }
+
+        return position;
+    }
+
+    private void ReadStreamData(PdfStream stream, PdfDictionary dictionary)
     {
         var span = Lexer.Span;
-        var start = Lexer.Position;
-
-        // The keyword is followed by CRLF or LF (7.3.8.1); a CR alone and spaces before the end of line are accepted
-        while (start < span.Length && span[start] is (byte)' ' or (byte)'\t')
+        var start = GetStreamDataStart(span, Lexer.Position);
+        if (start >= span.Length)
         {
-            start++;
-        }
-
-        if (start < span.Length && span[start] == '\r')
-        {
-            start++;
-        }
-
-        if (start < span.Length && span[start] == '\n')
-        {
-            start++;
+            Lexer.ReachedEnd = true;
         }
 
         var declaredLength = dictionary.GetInteger(PdfNames.Length, -1);
-        if (declaredLength >= 0 && declaredLength <= span.Length - start)
+        var available = Window is { } window ? window.Limit - (window.Offset + start) : span.Length - start;
+        if (declaredLength >= 0 && declaredLength <= available)
         {
-            var end = start + (int)declaredLength;
-            var check = end;
-            while (check < span.Length && PdfLexer.IsWhitespace(span[check]))
+            if (declaredLength > Array.MaxLength)
+                throw new UnsupportedPdfFeatureException("A stream larger than 2 GB is not supported");
+
+            // The keyword that follows the data, after an optional end of line (7.3.8.1)
+            var end = start + declaredLength;
+            var after = GetBytesAfter(end, MaxWhitespaceAfterStream + 16);
+            var whitespace = 0;
+            while (whitespace < after.Length && PdfLexer.IsWhitespace(after[whitespace]))
             {
-                check++;
+                whitespace++;
             }
 
-            if (span[check..].StartsWith("endstream"u8))
+            after = after[whitespace..];
+            if (after.StartsWith("endstream"u8))
             {
-                Lexer.Position = check + "endstream".Length;
-                return Lexer.Data[start..end];
+                SetStreamData(stream, start, (int)declaredLength);
+                MoveTo(end + whitespace + "endstream".Length);
+                return;
+            }
+
+            // The endstream keyword is missing, but the data ends where the object or the next object starts: the length
+            // is right, and the search of a keyword below would read the objects that follow
+            if (after.StartsWith("endobj"u8) || IsObjectHeader(after))
+            {
+                SetStreamData(stream, start, (int)declaredLength);
+                MoveTo(end + whitespace);
+                return;
             }
         }
 
-        // The length is missing or wrong: the data ends at the "endstream" keyword, without the end of line before it
-        var endstream = span[start..].IndexOf("endstream"u8);
+        // The length is missing or wrong: the data ends at the "endstream" keyword, without the end of line before it. In a
+        // recovered file, the data of the lexer ends at the next object, so that the search does not read the file again for
+        // each damaged object
+        var data = span[start..];
+        var endstream = data.IndexOf("endstream"u8);
         int dataEnd;
         if (endstream >= 0)
         {
@@ -176,9 +219,10 @@ internal sealed class PdfObjectParser
         }
         else
         {
-            var endobj = span[start..].IndexOf("endobj"u8);
+            var endobj = data.IndexOf("endobj"u8);
             dataEnd = endobj >= 0 ? start + endobj : span.Length;
             Lexer.Position = dataEnd;
+            Lexer.ReachedEnd = true;
         }
 
         if (dataEnd > start && span[dataEnd - 1] == '\n')
@@ -191,7 +235,72 @@ internal sealed class PdfObjectParser
             dataEnd--;
         }
 
-        return Lexer.Data[start..dataEnd];
+        SetStreamData(stream, start, dataEnd - start);
+    }
+
+    /// <summary>Gets the bytes at a position relative to the data of the lexer, which may be after the window of the input.</summary>
+    private ReadOnlySpan<byte> GetBytesAfter(long position, int count)
+    {
+        var span = Lexer.Span;
+        if (position + count <= span.Length || Window is null)
+            return position >= span.Length ? [] : span[(int)position..(int)Math.Min(span.Length, position + count)];
+
+        var buffer = new byte[count];
+        return buffer.AsSpan(0, Window.Input.Read(Window.Offset + position, buffer));
+    }
+
+    private void SetStreamData(PdfStream stream, int start, int length)
+    {
+        var span = Lexer.Span;
+        if ((long)start + length <= span.Length || Window is null)
+        {
+            // The window of a stream input is reused: the data is copied
+            stream.SetLoadedData(Window is null || Window.Input.IsInMemory ? Lexer.Data.Slice(start, length) : span.Slice(start, length).ToArray());
+            return;
+        }
+
+        // The data is after the window: it is read from the input when it is first used
+        var input = Window.Input;
+        var offset = Window.Offset + start;
+        stream.SetLoadedData(() => input.GetMemory(offset, length));
+    }
+
+    /// <summary>Moves after the data of a stream; a position after the window of the input ends the parsing of the object.</summary>
+    private void MoveTo(long position)
+    {
+        if (position <= Lexer.Span.Length)
+        {
+            Lexer.Position = (int)position;
+            return;
+        }
+
+        Lexer.Position = Lexer.Span.Length;
+        StreamEndsAfterWindow = true;
+    }
+
+    /// <summary>Indicates whether the bytes start with an object header (<c>12 0 obj</c>).</summary>
+    private static bool IsObjectHeader(ReadOnlySpan<byte> span)
+    {
+        var position = 0;
+        for (var part = 0; part < 2; part++)
+        {
+            var digits = 0;
+            while (position < span.Length && span[position] is >= (byte)'0' and <= (byte)'9')
+            {
+                position++;
+                digits++;
+            }
+
+            if (digits == 0 || position >= span.Length || !PdfLexer.IsWhitespace(span[position]))
+                return false;
+
+            while (position < span.Length && PdfLexer.IsWhitespace(span[position]))
+            {
+                position++;
+            }
+        }
+
+        return span[position..].StartsWith("obj"u8) && (position + 3 >= span.Length || !PdfLexer.IsRegular(span[position + 3]));
     }
 
     private bool TryParseReference(PdfToken numberToken, out PdfReference? reference)
@@ -226,6 +335,8 @@ internal sealed class PdfObjectParser
             {
                 case PdfTokenKind.ArrayEnd:
                     return PdfArray.Wrap(items);
+                case PdfTokenKind.EndOfInput when IsAtRecoveryBoundary():
+                    return PdfArray.Wrap(items);
                 case PdfTokenKind.EndOfInput:
                     throw new InvalidPdfContentException($"The array that starts before offset {token.Start} is not closed");
                 case PdfTokenKind.DictionaryEnd:
@@ -257,6 +368,8 @@ internal sealed class PdfObjectParser
             {
                 case PdfTokenKind.DictionaryEnd:
                     return dictionary;
+                case PdfTokenKind.EndOfInput when IsAtRecoveryBoundary():
+                    return dictionary;
                 case PdfTokenKind.EndOfInput:
                     throw new InvalidPdfContentException($"The dictionary that starts before offset {token.Start} is not closed");
                 case PdfTokenKind.Name:
@@ -274,7 +387,7 @@ internal sealed class PdfObjectParser
                     continue;
             }
 
-            var key = PdfName.FromBytes(Lexer.DecodeName(token));
+            var key = ParseName(token);
             var valueToken = Lexer.Next();
             if (valueToken.Kind == PdfTokenKind.DictionaryEnd)
             {
@@ -295,6 +408,14 @@ internal sealed class PdfObjectParser
             dictionary.SetParsed(key, value);
         }
     }
+
+    /// <summary>
+    /// Indicates whether the data ends at the next object or trailer the recovery found: a container that is not closed
+    /// there ends with the data, as it would end at the header of the next object if the data went on.
+    /// </summary>
+    private bool IsAtRecoveryBoundary() => Window is { } window && window.Limit < window.Input.Length && window.Offset + Lexer.Length >= window.Limit;
+
+    private PdfName ParseName(PdfToken token) => NameCache is { } cache ? cache.Get(Lexer, token) : PdfName.FromBytes(Lexer.DecodeName(token));
 
     private static bool IsStructureKeyword(ReadOnlySpan<byte> bytes)
     {

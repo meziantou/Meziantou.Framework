@@ -22,7 +22,7 @@ public enum PdfSnapshotMetadata
     /// </summary>
     Dates = 1 << 1,
 
-    /// <summary>The text of every page, one entry per line, as extracted by <see cref="Meziantou.Framework.Pdf.PdfPage.ExtractText"/>.</summary>
+    /// <summary>The text of every page, one entry per line, as extracted by <see cref="Meziantou.Framework.Pdf.PdfPage.ExtractText()"/>.</summary>
     Text = 1 << 2,
 
     /// <summary>The outlines (bookmarks) of the document: the title of every item, nested as in the document.</summary>

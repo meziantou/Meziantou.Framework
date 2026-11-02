@@ -26,6 +26,9 @@ internal sealed class TextExtractor
     private const long MaxTextLength = 32_000_000;
 
     private readonly List<TextGlyph> _glyphs = [];
+
+    // The boxes of the glyphs, when the positions are extracted
+    private readonly List<PdfRectangle>? _bounds;
     private readonly Dictionary<PdfStream, byte[]?> _formData = new(ReferenceEqualityComparer.Instance);
     private long _operations;
     private long _textLength;
@@ -34,37 +37,81 @@ internal sealed class TextExtractor
     // The replacement text of the marked-content sequence being read (14.9.4): its glyphs are replaced by it
     private string? _actualText;
     private int _actualTextStart;
-    private readonly Dictionary<PdfDictionary, PdfFontDecoder> _decoders = new(ReferenceEqualityComparer.Instance);
+    private readonly TextDecoderCache _decoders;
+    private readonly bool _expandLigatures;
     private readonly HashSet<PdfStream> _activeForms = new(ReferenceEqualityComparer.Instance);
 
-    private TextExtractor()
+    private TextExtractor(TextDecoderCache decoders, PdfTextExtractionOptions options, bool withBounds)
     {
+        _decoders = decoders;
+        _expandLigatures = options.ExpandLigatures;
+        _bounds = withBounds ? [] : null;
     }
 
-    public static string Extract(PdfPage page)
+    public static string Extract(PdfPage page, PdfTextExtractionOptions options)
     {
-        // The content streams of a page are one content: an operator and its operands may be in two streams (7.8.2)
-        var content = new MemoryStream();
+        var extractor = new TextExtractor(page.Document.TextDecoders, options, withBounds: false);
+        extractor.RunPage(page);
+        return extractor.BuildText(layout: false).Text;
+    }
+
+    public static PdfTextLayout ExtractLayout(PdfPage page, PdfTextExtractionOptions options)
+    {
+        var extractor = new TextExtractor(page.Document.TextDecoders, options, withBounds: true);
+        extractor.RunPage(page);
+        var (text, lines) = extractor.BuildText(layout: true);
+        return new PdfTextLayout(text, lines!);
+    }
+
+    private void RunPage(PdfPage page)
+    {
+        // The content streams of a page are one content: an operator and its operands may be in two streams (7.8.2).
+        // One stream is read in place; several are copied once, with a line feed between them.
+        var streams = new List<byte[]>();
         foreach (var stream in page.GetContentStreams())
         {
             try
             {
-                var data = stream.GetDecodedData();
-                content.Write(data);
-                content.WriteByte((byte)'\n');
+                streams.Add(stream.GetDecodedData());
             }
             catch (Exception ex) when (ex is InvalidPdfContentException or UnsupportedPdfFeatureException)
             {
             }
         }
 
-        var extractor = new TextExtractor();
+        ReadOnlyMemory<byte> content;
+        if (streams.Count == 1)
+        {
+            content = streams[0];
+        }
+        else
+        {
+            var length = 0L;
+            foreach (var data in streams)
+            {
+                length += data.Length + 1;
+            }
+
+            if (length > Array.MaxLength)
+                throw new PdfResourceLimitException("The content streams of the page are too long");
+
+            var buffer = new byte[length];
+            var position = 0;
+            foreach (var data in streams)
+            {
+                data.CopyTo(buffer, position);
+                position += data.Length;
+                buffer[position++] = (byte)'\n';
+            }
+
+            content = buffer;
+        }
+
         var state = new TextGraphicsState();
-        extractor.Run(content.ToArray(), page.Resources, ref state, depth: 0);
-        return extractor.BuildText();
+        Run(content, page.Resources, ref state, depth: 0);
     }
 
-    private void Run(byte[] content, PdfDictionary? resources, ref TextGraphicsState state, int depth)
+    private void Run(ReadOnlyMemory<byte> content, PdfDictionary? resources, ref TextGraphicsState state, int depth)
     {
         Charge((content.Length / 4) + 1);
         var reader = new ContentStreamReader(content);
@@ -152,6 +199,7 @@ internal sealed class TextExtractor
                                 ShowText(ref state, segment.Span);
                                 break;
                             case PdfNumber adjustment:
+                                // A number moves the next glyph by thousandths of the font size, against the writing direction (9.4.3)
                                 var offset = -adjustment.DoubleValue / 1000 * state.FontSize;
                                 Advance(ref state, (state.Font?.IsVertical ?? false) ? 0 : offset * state.HorizontalScaling, (state.Font?.IsVertical ?? false) ? offset : 0);
                                 break;
@@ -209,7 +257,7 @@ internal sealed class TextExtractor
         // A form painted several times decodes its replacement texts once
         if (!_actualTexts.TryGetValue(text, out var value))
         {
-            value = text.ToText();
+            value = ExpandLigatures(text.ToText())!;
             _actualTexts[text] = value;
         }
 
@@ -225,17 +273,20 @@ internal sealed class TextExtractor
         {
             var first = _glyphs[_actualTextStart];
             var last = _glyphs[^1];
-            _glyphs.RemoveRange(_actualTextStart, _glyphs.Count - _actualTextStart);
-            AddGlyph(first with { Text = text, EndX = last.EndX, EndY = last.EndY });
+            var count = _glyphs.Count - _actualTextStart;
+            var bounds = _bounds is null ? default : Union(CollectionsMarshal.AsSpan(_bounds).Slice(_actualTextStart, count));
+            _glyphs.RemoveRange(_actualTextStart, count);
+            _bounds?.RemoveRange(_actualTextStart, count);
+            AddGlyph(first with { Text = text, EndX = last.EndX, EndY = last.EndY }, bounds);
             return;
         }
 
         // No glyph: the text is at the current point
-        var matrix = new PdfMatrix(state.FontSize * state.HorizontalScaling, 0, 0, state.FontSize, 0, state.Rise) * state.TextMatrix * state.Ctm;
-        var (x, y) = matrix.Transform(0, 0);
-        var (sizeX, sizeY) = matrix.TransformVector(0, 1);
-        var (directionX, directionY) = (state.TextMatrix * state.Ctm).TransformVector(1, 0);
-        AddGlyph(new TextGlyph(text, x, y, x, y, Math.Sqrt((sizeX * sizeX) + (sizeY * sizeY)), Math.Atan2(directionY, directionX)));
+        var matrix = state.TextMatrix * state.Ctm;
+        var (x, y) = matrix.Transform(0, state.Rise);
+        var (sizeX, sizeY) = matrix.TransformVector(0, state.FontSize);
+        var (directionX, directionY) = matrix.TransformVector(1, 0);
+        AddGlyph(new TextGlyph(text, x, y, x, y, Math.Sqrt((sizeX * sizeX) + (sizeY * sizeY)), Math.Atan2(directionY, directionX), state.Font), new PdfRectangle(x, y, x, y));
     }
 
     private void RunForm(PdfDictionary? resources, PdfName name, TextGraphicsState state, int depth)
@@ -280,56 +331,136 @@ internal sealed class TextExtractor
         if (resources?.Get<PdfDictionary>(PdfNames.Font)?.Get<PdfDictionary>(name) is not { } font)
             return null;
 
-        if (!_decoders.TryGetValue(font, out var decoder))
-        {
-            decoder = PdfFontDecoder.Create(font);
-            _decoders[font] = decoder;
-        }
-
-        return decoder;
+        return _decoders.Get(font);
     }
 
+    /// <summary>
+    /// Shows the glyphs of a string (9.4.4): each glyph is painted at the origin of text space transformed by the text
+    /// rendering matrix, then the text matrix moves by its displacement. The matrix from text space to user space and the
+    /// vectors of the text state do not change within a string: they are computed once, and the displacements are added
+    /// up in text space.
+    /// </summary>
     private void ShowText(ref TextGraphicsState state, ReadOnlySpan<byte> bytes)
     {
         var font = state.Font;
         if (font is null)
             return;
 
+        var matrix = state.TextMatrix * state.Ctm;
+        var vertical = font.IsVertical;
+        var (upX, upY) = matrix.TransformVector(0, state.FontSize);
+        var size = Math.Sqrt((upX * upX) + (upY * upY));
+        var (directionX, directionY) = vertical ? matrix.TransformVector(0, -1) : matrix.TransformVector(1, 0);
+        var angle = Math.Atan2(directionY, directionX);
+
+        // The vector across the writing direction the box of a glyph spans: up for horizontal writing, right for vertical writing
+        var (acrossX, acrossY) = vertical ? matrix.TransformVector(state.FontSize * state.HorizontalScaling, 0) : (upX, upY);
+        var x = 0d;
+        var y = 0d;
         while (bytes.Length > 0)
         {
             Charge(1);
             var (code, length) = font.ReadCode(bytes);
-            bytes = bytes[length..];
+            bytes = bytes[Math.Max(1, length)..];
 
-            // The glyph is drawn at the origin of the text space, transformed by the text rendering matrix (9.4.4)
-            var renderingMatrix = new PdfMatrix(state.FontSize * state.HorizontalScaling, 0, 0, state.FontSize, 0, state.Rise) * state.TextMatrix * state.Ctm;
-            var (x, y) = renderingMatrix.Transform(0, 0);
-            var width = font.GetWidth(code);
-            var isSpace = length == 1 && code == 32;
-            var text = font.GetText(code);
+            // The word spacing applies to the single-byte code 32 (9.3.3)
+            var spacing = state.CharacterSpacing + (length == 1 && code == 32 ? state.WordSpacing : 0);
             double advanceX;
             double advanceY;
-            if (font.IsVertical)
+            double low;
+            double high;
+            if (vertical)
             {
+                // The vertical displacement (negative downward) and the position vector of the CIDFont (9.7.4.3): the
+                // glyph is centered on the vertical origin, the spacing is added to the vertical displacement (9.4.4)
+                var (verticalAdvance, originX, _) = font.GetVerticalMetrics(code);
                 advanceX = 0;
-                advanceY = -((width * state.FontSize) + state.CharacterSpacing + (isSpace ? state.WordSpacing : 0));
+                advanceY = (verticalAdvance * state.FontSize) + spacing;
+                low = -originX;
+                high = font.GetWidth(code) - originX;
             }
             else
             {
-                advanceX = ((width * state.FontSize) + state.CharacterSpacing + (isSpace ? state.WordSpacing : 0)) * state.HorizontalScaling;
+                advanceX = ((font.GetWidth(code) * state.FontSize) + spacing) * state.HorizontalScaling;
                 advanceY = 0;
+                low = font.Descent;
+                high = font.Ascent;
             }
 
-            var (endX, endY) = (state.TextMatrix * state.Ctm).Transform(advanceX, advanceY);
-            var (sizeX, sizeY) = renderingMatrix.TransformVector(0, 1);
-            var size = Math.Sqrt((sizeX * sizeX) + (sizeY * sizeY));
-            var (directionX, directionY) = (state.TextMatrix * state.Ctm).TransformVector(1, 0);
-            AddGlyph(new TextGlyph(text, x, y, endX, endY, size, Math.Atan2(directionY, directionX)));
-            Advance(ref state, advanceX, advanceY);
+            var (startX, startY) = matrix.Transform(x, y + state.Rise);
+            var (endX, endY) = matrix.Transform(x + advanceX, y + advanceY);
+            var glyph = new TextGlyph(ExpandLigatures(font.GetText(code)), startX, startY, endX, endY, size, angle, font);
+            if (_bounds is null)
+            {
+                AddGlyph(glyph, default);
+            }
+            else
+            {
+                // The box: from the origin to the end of the glyph, raised by the text rise, and across the writing direction
+                var (advanceVectorX, advanceVectorY) = matrix.TransformVector(advanceX, advanceY);
+                AddGlyph(glyph, GetBounds(startX, startY, advanceVectorX, advanceVectorY, acrossX, acrossY, low, high));
+            }
+
+            x += advanceX;
+            y += advanceY;
         }
+
+        state.TextMatrix = PdfMatrix.CreateTranslation(x, y) * state.TextMatrix;
     }
 
-    private void AddGlyph(TextGlyph glyph)
+    private static PdfRectangle GetBounds(double x, double y, double advanceX, double advanceY, double acrossX, double acrossY, double low, double high)
+    {
+        var x1 = x + (acrossX * low);
+        var y1 = y + (acrossY * low);
+        var x2 = x + (acrossX * high);
+        var y2 = y + (acrossY * high);
+        var left = Math.Min(Math.Min(x1, x2), Math.Min(x1, x2) + advanceX);
+        var right = Math.Max(Math.Max(x1, x2), Math.Max(x1, x2) + advanceX);
+        var bottom = Math.Min(Math.Min(y1, y2), Math.Min(y1, y2) + advanceY);
+        var top = Math.Max(Math.Max(y1, y2), Math.Max(y1, y2) + advanceY);
+        return new PdfRectangle(left, bottom, right, top);
+    }
+
+    private static PdfRectangle Union(ReadOnlySpan<PdfRectangle> rectangles)
+    {
+        var (left, bottom, right, top) = (rectangles[0].Left, rectangles[0].Bottom, rectangles[0].Right, rectangles[0].Top);
+        foreach (var rectangle in rectangles[1..])
+        {
+            left = Math.Min(left, rectangle.Left);
+            bottom = Math.Min(bottom, rectangle.Bottom);
+            right = Math.Max(right, rectangle.Right);
+            top = Math.Max(top, rectangle.Top);
+        }
+
+        return new PdfRectangle(left, bottom, right, top);
+    }
+
+    /// <summary>Replaces the Latin ligatures of the Alphabetic Presentation Forms block by their letters, when the options ask for it.</summary>
+    private string? ExpandLigatures(string? text)
+    {
+        if (!_expandLigatures || text is null || text.AsSpan().IndexOfAnyInRange('ﬀ', 'ﬆ') < 0)
+            return text;
+
+        var builder = new StringBuilder(text.Length + 4);
+        foreach (var c in text)
+        {
+            builder.Append(c switch
+            {
+                'ﬀ' => "ff",
+                'ﬁ' => "fi",
+                'ﬂ' => "fl",
+                'ﬃ' => "ffi",
+                'ﬄ' => "ffl",
+                'ﬅ' => "ſt",
+                'ﬆ' => "st",
+                _ => null,
+            } ?? c.ToString());
+        }
+
+        return builder.ToString();
+    }
+
+    private void AddGlyph(TextGlyph glyph, PdfRectangle bounds)
     {
         if (_glyphs.Count >= MaxGlyphs)
             throw new PdfResourceLimitException($"The content of the page shows more than {MaxGlyphs} glyphs");
@@ -339,6 +470,7 @@ internal sealed class TextExtractor
             throw new PdfResourceLimitException($"The text of the page is longer than {MaxTextLength} characters");
 
         _glyphs.Add(glyph);
+        _bounds?.Add(bounds);
     }
 
     private void Charge(long count)
@@ -364,13 +496,44 @@ internal sealed class TextExtractor
 
     private static double Number(List<PdfObject> operands, int index) => index >= 0 && index < operands.Count && operands[index] is PdfNumber number ? number.DoubleValue : 0;
 
-    /// <summary>Joins the glyphs: a new line when a glyph leaves the baseline or goes back, a space when a gap is wider than a fraction of the font size.</summary>
-    private string BuildText()
+    /// <summary>
+    /// Joins the glyphs: a new line when a glyph leaves the baseline, goes back or changes direction, a space when a gap
+    /// is wider than a fraction of the font size. The lines, the words (the glyphs between spaces) and the boxes of the
+    /// glyphs are made when the positions are extracted.
+    /// </summary>
+    private (string Text, List<PdfTextLine>? Lines) BuildText(bool layout)
     {
         var builder = new StringBuilder();
-        TextGlyph? previous = null;
-        foreach (var glyph in _glyphs)
+        var lines = layout ? new List<PdfTextLine>() : null;
+        var lineGlyphs = new List<PdfTextGlyph>();
+        var words = new List<PdfTextWord>();
+        var wordGlyphs = new List<PdfTextGlyph>();
+        var lineStart = 0;
+
+        void EndWord()
         {
+            if (wordGlyphs.Count > 0)
+            {
+                words.Add(new PdfTextWord(string.Concat(wordGlyphs.Select(glyph => glyph.Text)), [.. wordGlyphs]));
+                wordGlyphs.Clear();
+            }
+        }
+
+        void EndLine()
+        {
+            EndWord();
+            if (lineGlyphs.Count > 0)
+            {
+                lines!.Add(new PdfTextLine(builder.ToString(lineStart, builder.Length - lineStart), [.. words], [.. lineGlyphs]));
+                lineGlyphs.Clear();
+                words.Clear();
+            }
+        }
+
+        TextGlyph? previous = null;
+        for (var i = 0; i < _glyphs.Count; i++)
+        {
+            var glyph = _glyphs[i];
             if (glyph.Text is null)
                 continue;
 
@@ -387,23 +550,52 @@ internal sealed class TextExtractor
                 var size = Math.Max(Math.Max(last.Size, glyph.Size), 0.001);
                 if (Math.Abs(across) > size * 0.5 || along < -size * 2 || Math.Abs(glyph.Angle - last.Angle) > 0.01)
                 {
+                    if (layout)
+                    {
+                        EndLine();
+                    }
+
                     builder.Append('\n');
+                    lineStart = builder.Length;
                 }
                 else if (along > size * 0.15 && !EndsWithSpace(builder) && glyph.Text is not [' ', ..])
                 {
+                    if (layout)
+                    {
+                        EndWord();
+                    }
+
                     builder.Append(' ');
                 }
             }
 
             builder.Append(glyph.Text);
             previous = glyph;
+            if (layout)
+            {
+                var item = new PdfTextGlyph(glyph.Text, new PdfPoint(glyph.X, glyph.Y), new PdfPoint(glyph.EndX, glyph.EndY), _bounds![i], glyph.Size, glyph.Font?.FontName, glyph.Angle * 180 / Math.PI, glyph.Font?.IsVertical ?? false);
+                lineGlyphs.Add(item);
+                if (string.IsNullOrWhiteSpace(glyph.Text))
+                {
+                    EndWord();
+                }
+                else
+                {
+                    wordGlyphs.Add(item);
+                }
+            }
         }
 
-        return builder.ToString();
+        if (layout)
+        {
+            EndLine();
+        }
+
+        return (builder.ToString(), lines);
     }
 
     private static bool EndsWithSpace(StringBuilder builder) => builder.Length > 0 && char.IsWhiteSpace(builder[^1]);
 
     [StructLayout(LayoutKind.Auto)]
-    private readonly record struct TextGlyph(string? Text, double X, double Y, double EndX, double EndY, double Size, double Angle);
+    private readonly record struct TextGlyph(string? Text, double X, double Y, double EndX, double EndY, double Size, double Angle, PdfFontDecoder? Font);
 }

@@ -65,6 +65,44 @@ public sealed class PdfFontTests
         Assert.False(times.CanEncode("\u0100"));
         Assert.Equal([0x43, 0x80, 0x97, 0xA0], times.Encode("C\u20AC\u2014\u00A0"));
         Assert.Throws<ArgumentException>(() => times.Encode("\u4E2D"));
+        Assert.Throws<ArgumentException>(() => times.Encode("A\U0001F600"));
+        Assert.Throws<ArgumentException>(() => times.GetTextWidth("A\u4E2D", 10));
+    }
+
+    [Theory]
+    [InlineData(10)]
+    [InlineData(256)]
+    [InlineData(257)]
+    [InlineData(5000)]
+    public void StandardFontTextIsWrittenWithoutIntermediateBuffers(int length)
+    {
+        // Short texts are encoded on the stack, long ones in a rented buffer: both give the same content
+        var text = string.Concat(Enumerable.Repeat("Caf\u00E9 ", length / 5 + 1))[..length];
+        var font = PdfFont.GetStandardFont(PdfStandardFont.Helvetica);
+        var document = new PdfDocument();
+        document.Pages.Add(new PdfSize(14_000, 800)).CreateContentBuilder().DrawText(text, font, 2, 0, 400);
+
+        Assert.Equal(text, PdfDocument.Open(document.ToByteArray()).Pages[0].ExtractText());
+        Assert.Throws<ArgumentException>(() => document.Pages[0].CreateContentBuilder().DrawText(new string('a', length) + "\u4E2D", font, 10, 0, 0));
+    }
+
+    [Fact]
+    public void EmbeddedFontReusesTheShapingOfATextMeasuredBefore()
+    {
+        var font = (EmbeddedPdfFont)PdfFont.Load(RepositoryPaths.Fonts / "noto-sans/NotoSans-Regular.subset.ttf");
+
+        var first = font.Shape("Office");
+        var width = font.GetTextWidth("Office", 12);
+
+        Assert.Same(first, font.Shape("Office"));
+        Assert.Equal(width, font.GetTextWidth("Office", 12));
+        Assert.NotSame(first, font.Shape("Offices"));
+        Assert.Throws<ArgumentException>(() => font.Shape("\u4E2D"));
+        Assert.Throws<ArgumentException>(() => font.Shape("\u4E2D"));
+
+        // Long texts are not kept
+        var text = new string('a', 300);
+        Assert.NotSame(font.Shape(text), font.Shape(text));
     }
 
     [Fact]

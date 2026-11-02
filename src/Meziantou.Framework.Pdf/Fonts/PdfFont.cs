@@ -1,6 +1,7 @@
 using Meziantou.Framework.Fonts;
 using Meziantou.Framework.Pdf.Fonts;
 using Meziantou.Framework.Pdf.Objects;
+using Meziantou.Framework.Pdf.Writing;
 
 namespace Meziantou.Framework.Pdf;
 
@@ -109,6 +110,14 @@ public abstract class PdfFont
     /// <summary>Encodes a text into the bytes of a string of a content stream.</summary>
     /// <exception cref="ArgumentException">A character of the text has no glyph in the font.</exception>
     internal abstract byte[] Encode(string text);
+
+    /// <summary>Writes a text as a string of a content stream, encoded with the font.</summary>
+    /// <exception cref="ArgumentException">A character of the text has no glyph in the font.</exception>
+    internal virtual void WriteString(PdfByteWriter writer, string text) => PdfObjectSerializer.WriteString(writer, Encode(text), hexadecimal: false);
+
+    /// <summary>Checks that the font has a glyph for every character of a text.</summary>
+    /// <exception cref="ArgumentException">A character of the text has no glyph in the font.</exception>
+    internal virtual void ValidateText(string text) => Encode(text);
 
     /// <summary>Gets the reference to the font dictionary of the font in a document, creating it on first use.</summary>
     internal abstract PdfReference GetReference(PdfDocument document);

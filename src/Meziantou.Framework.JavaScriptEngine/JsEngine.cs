@@ -35,6 +35,9 @@ public sealed partial class JsEngine : IDisposable
     /// <summary>Gets the engine whose code runs on the current thread, if any.</summary>
     internal static JsEngine? Current => s_current;
 
+    /// <summary>Gets the managed thread id of the last thread that entered the engine (the thread of the engine).</summary>
+    internal int LastEnteredThreadId { get; private set; }
+
     /// <summary>Gets the realm of the running execution context (the current realm).</summary>
     public JsRealm? CurrentRealm { get; internal set; }
 
@@ -98,6 +101,7 @@ public sealed partial class JsEngine : IDisposable
             ThrowConcurrentAccess();
 
         s_current = this;
+        LastEnteredThreadId = threadId;
         return new JsEngineScope(previous, owner == 0 ? this : null);
     }
 

@@ -1,3 +1,4 @@
+using System.Runtime.ExceptionServices;
 using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Pdf.Content;
 using Meziantou.Framework.Pdf.Objects;
@@ -39,7 +40,7 @@ internal sealed partial class ContentRenderer
         _document = document;
         _state = state;
         _depth = depth;
-        _optionalContent = optionalContent ?? new OptionalContent(document);
+        _optionalContent = optionalContent ?? new OptionalContent(document, cache.Options);
         if (depth > MaxDepth)
             throw new InvalidPdfContentException("The content paints forms, patterns or glyphs nested too deeply");
     }
@@ -51,35 +52,78 @@ internal sealed partial class ContentRenderer
         var reader = new ContentStreamReader(content);
         var operands = new List<PdfObject>();
         var savedDepth = _savedStates.Count;
+        var optionalContentStream = _optionalContent.BeginStream();
         try
         {
             while (reader.TryRead(operands, out var name))
             {
-                _cache.Charge(1);
-                try
-                {
-                    Execute(canvas, name, operands, resources);
-                }
-                catch (Exception ex) when (RenderCache.IsContentError(ex))
-                {
-                    // An operator whose operands or resources are invalid is skipped (8.1 does not say more)
-                }
+                ExecuteOperation(canvas, name, operands, resources);
             }
         }
         finally
         {
-            // The content ends with the state it started with: the q that are not matched are restored
-            while (_savedStates.Count > savedDepth)
+            EndContent(savedDepth, optionalContentStream);
+        }
+    }
+
+    /// <summary>Runs the operations of a content stream read before, as <see cref="Run(DrawingCanvas, ReadOnlyMemory{byte}, PdfDictionary?)"/> runs the stream.</summary>
+    public void Run(DrawingCanvas canvas, ParsedContent content, PdfDictionary? resources)
+    {
+        _cache.Charge((content.Length / 16) + 1);
+        var operands = new List<PdfObject>();
+        var savedDepth = _savedStates.Count;
+        var optionalContentStream = _optionalContent.BeginStream();
+        try
+        {
+            foreach (var (name, values) in content.Operations)
             {
-                _state = _savedStates.Pop();
+                operands.Clear();
+                operands.AddRange(values);
+                ExecuteOperation(canvas, name, operands, resources);
             }
 
-            EndText();
+            if (content.Error is { } error)
+            {
+                ExceptionDispatchInfo.Throw(error);
+            }
         }
+        finally
+        {
+            EndContent(savedDepth, optionalContentStream);
+        }
+    }
+
+    private void ExecuteOperation(DrawingCanvas canvas, string name, List<PdfObject> operands, PdfDictionary? resources)
+    {
+        _cache.Charge(1);
+        try
+        {
+            Execute(canvas, name, operands, resources);
+        }
+        catch (Exception ex) when (RenderCache.IsContentError(ex))
+        {
+            // An operator whose operands or resources are invalid is skipped (8.1 does not say more)
+        }
+    }
+
+    /// <summary>Ends a content: the q that are not matched are restored, then the text object.</summary>
+    private void EndContent(int savedDepth, int optionalContentStream)
+    {
+        while (_savedStates.Count > savedDepth)
+        {
+            _state = _savedStates.Pop();
+        }
+
+        EndText();
+        _optionalContent.EndStream(optionalContentStream);
     }
 
     private void Execute(DrawingCanvas canvas, string name, List<PdfObject> operands, PdfDictionary? resources)
     {
+        // The glyph of a Type 3 font in a clipping mode is the paths it paints: its images, shadings and texts are left out
+        if (ClipCollector is not null && name is "sh" or "BI" or "Do" or "Tj" or "TJ" or "'" or "\"")
+            return;
+
         switch (name)
         {
             // General graphics state (8.4.4)
@@ -270,20 +314,20 @@ internal sealed partial class ContentRenderer
                 MoveText(0, -_state.Leading);
                 break;
             case "Tj" when operands.Count >= 1 && operands[^1] is PdfString text:
-                PaintTextElement(canvas, target => ShowText(target, text.Span, resources));
+                PaintTextElement(canvas, target => ShowText(target, text.Span, resources), text);
                 break;
             case "'" when operands.Count >= 1 && operands[^1] is PdfString text:
                 MoveText(0, -_state.Leading);
-                PaintTextElement(canvas, target => ShowText(target, text.Span, resources));
+                PaintTextElement(canvas, target => ShowText(target, text.Span, resources), text);
                 break;
             case "\"" when operands.Count >= 3 && operands[^1] is PdfString text:
                 _state.WordSpacing = Number(operands, 0);
                 _state.CharacterSpacing = Number(operands, 1);
                 MoveText(0, -_state.Leading);
-                PaintTextElement(canvas, target => ShowText(target, text.Span, resources));
+                PaintTextElement(canvas, target => ShowText(target, text.Span, resources), text);
                 break;
             case "TJ" when operands.Count >= 1 && operands[^1] is PdfArray array:
-                PaintTextElement(canvas, target => ShowTextArray(target, array, resources));
+                PaintTextElement(canvas, target => ShowTextArray(target, array, resources), array);
                 break;
             case "d1" when StencilColor is { } stencil:
                 // A Type 3 glyph that is a stencil (9.6.4): its colors are the fill color of the text
@@ -361,6 +405,12 @@ internal sealed partial class ContentRenderer
                 case "BM":
                     _state.BlendMode = ReadBlendMode(value);
                     break;
+                case "AIS" when value is PdfBoolean alphaIsShape:
+                    _state.AlphaIsShape = alphaIsShape.Value;
+                    break;
+                case "TK" when value is PdfBoolean textKnockout:
+                    _state.TextKnockout = textKnockout.Value;
+                    break;
                 case "SMask":
                     _state.SoftMask = value is PdfDictionary mask ? (mask, _state.Ctm) : null;
                     break;
@@ -415,8 +465,7 @@ internal sealed partial class ContentRenderer
     private void SetDeviceColor(RenderColorSpace space, List<PdfObject> operands, bool stroke, PdfDictionary? resources)
     {
         // The device color spaces may be replaced by the default color spaces of the resources
-        var name = space.ComponentCount switch { 1 => "DeviceGray", 3 => "DeviceRGB", _ => "DeviceCMYK" };
-        var resolved = RenderColorSpace.Read(PdfName.Create(name), resources, _cache);
+        var resolved = RenderColorSpace.ResolveDevice(space, resources, _cache);
         var components = ReadComponents(operands, space.ComponentCount);
         if (stroke)
         {
@@ -468,10 +517,16 @@ internal sealed partial class ContentRenderer
     private static double[] ReadComponents(List<PdfObject> operands, int count)
     {
         var result = new double[count];
-        var numbers = operands.OfType<PdfNumber>().ToList();
-        for (var i = 0; i < count && i < numbers.Count; i++)
+        var index = 0;
+        foreach (var operand in operands)
         {
-            result[i] = numbers[i].DoubleValue;
+            if (index >= count)
+                break;
+
+            if (operand is PdfNumber number)
+            {
+                result[index++] = number.DoubleValue;
+            }
         }
 
         return result;

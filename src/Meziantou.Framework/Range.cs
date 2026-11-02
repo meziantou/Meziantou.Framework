@@ -24,11 +24,17 @@ public static class Range
 public readonly struct Range<T> : IEquatable<Range<T>>
     where T : IComparable<T>
 {
+    /// <summary>Initializes a new instance of the <see cref="Range{T}"/> struct.</summary>
+    /// <exception cref="ArgumentException"><paramref name="from"/> is greater than <paramref name="to"/>.</exception>
     public Range(T from, T to)
     {
         From = from;
         To = to;
+        if (IsGreaterThan(from, to))
+            throw new ArgumentException($"'{nameof(from)}' must be less than or equal to '{nameof(to)}'.", nameof(from));
     }
+
+    private static bool IsGreaterThan(T left, T right) => left is not null && right is not null && left.CompareTo(right) > 0;
 
     /// <summary>Gets the start value of the range.</summary>
     public T From { get; }
@@ -106,6 +112,32 @@ public readonly struct Range<T> : IEquatable<Range<T>>
     public bool IsInRangeUpperInclusive(Range<T> range)
     {
         return IsInRangeUpperInclusive(range.From) && IsInRangeUpperInclusive(range.To);
+    }
+
+    /// <summary>Determines whether this range and the specified range have at least one value in common, inclusive of boundaries.</summary>
+    /// <remarks>A <see langword="null"/> bound is open: it is lower or greater than any value.</remarks>
+    public bool Overlaps(Range<T> range)
+    {
+        if (From is not null && range.To is not null && From.CompareTo(range.To) > 0)
+            return false;
+
+        if (range.From is not null && To is not null && range.From.CompareTo(To) > 0)
+            return false;
+
+        return true;
+    }
+
+    /// <summary>Returns the values that are in both this range and the specified range, inclusive of boundaries.</summary>
+    /// <returns>The intersection of both ranges, or <see langword="null"/> when they do not overlap.</returns>
+    /// <remarks>A <see langword="null"/> bound is open: it is lower or greater than any value.</remarks>
+    public Range<T>? Intersect(Range<T> range)
+    {
+        if (!Overlaps(range))
+            return null;
+
+        var from = From is null || (range.From is not null && range.From.CompareTo(From) > 0) ? range.From : From;
+        var to = To is null || (range.To is not null && range.To.CompareTo(To) < 0) ? range.To : To;
+        return new Range<T>(from, to);
     }
 
     public bool Equals(Range<T> other)

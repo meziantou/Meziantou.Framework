@@ -171,9 +171,9 @@ Assert.Throws<InvalidOperationException>(() => Environment.GetRequiredEnvironmen
 
 ## Exceptions with their inner exceptions
 
-`exception.ToString(includeInnerException: true)` returns the `ToString` of the exception followed by the `ToString` of
-each inner exception, one per line, so the stack trace of each one is written in full. With `false`, it returns
-`exception.ToString()`.
+`exception.ToString(includeInnerException: true)` returns `exception.ToString()`, which already includes the inner
+exceptions (all of them for an `AggregateException`). With `false`, it returns only the type, the message and the stack
+trace of the exception, without its inner exceptions.
 
 ## Hash codes of collections
 

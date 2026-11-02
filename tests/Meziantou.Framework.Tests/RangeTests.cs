@@ -193,4 +193,75 @@ public class RangeTests
         Assert.Equal(1, dictionary[new Range<string>(from: null!, to: "b")]);
         Assert.Equal(2, dictionary[new Range<string>("a", "b")]);
     }
+
+    [Fact]
+    public void Documentation_OverlapsAndIntersect()
+    {
+        #region Range_OverlapsAndIntersect
+        var range = Range.Create(1, 10);
+
+        Assert.True(range.Overlaps(Range.Create(5, 15)));
+        Assert.True(range.Overlaps(Range.Create(10, 20))); // The bounds are inclusive
+        Assert.False(range.Overlaps(Range.Create(11, 20)));
+
+        Assert.Equal(Range.Create(5, 10), range.Intersect(Range.Create(5, 15)));
+        Assert.Null(range.Intersect(Range.Create(11, 20)));
+        #endregion
+    }
+
+    [Fact]
+    public void Constructor_FromGreaterThanTo_Throws()
+    {
+        Assert.Throws<ArgumentException>("from", () => Range.Create(10, 1));
+        Assert.Throws<ArgumentException>("from", () => new Range<string>("b", "a"));
+    }
+
+    [Fact]
+    public void Constructor_FromEqualToTo()
+    {
+        var range = Range.Create(1, 1);
+        Assert.True(range.IsInRangeInclusive(1));
+    }
+
+    [Theory]
+    [InlineData(0, 10, 5, 8, true)]
+    [InlineData(0, 10, -5, 0, true)]
+    [InlineData(0, 10, 10, 15, true)]
+    [InlineData(0, 10, -5, 15, true)]
+    [InlineData(0, 10, -5, -1, false)]
+    [InlineData(0, 10, 11, 15, false)]
+    public void Overlaps(int from1, int to1, int from2, int to2, bool expected)
+    {
+        var range1 = Range.Create(from1, to1);
+        var range2 = Range.Create(from2, to2);
+        Assert.Equal(expected, range1.Overlaps(range2));
+        Assert.Equal(expected, range2.Overlaps(range1));
+    }
+
+    [Theory]
+    [InlineData(0, 10, 5, 8, 5, 8)]
+    [InlineData(0, 10, -5, 0, 0, 0)]
+    [InlineData(0, 10, 5, 15, 5, 10)]
+    [InlineData(0, 10, -5, 15, 0, 10)]
+    public void Intersect(int from1, int to1, int from2, int to2, int expectedFrom, int expectedTo)
+    {
+        var range1 = Range.Create(from1, to1);
+        var range2 = Range.Create(from2, to2);
+        Assert.Equal(Range.Create(expectedFrom, expectedTo), range1.Intersect(range2));
+        Assert.Equal(Range.Create(expectedFrom, expectedTo), range2.Intersect(range1));
+    }
+
+    [Fact]
+    public void OverlapsAndIntersect_NullBoundsAreOpen()
+    {
+        var unboundedLower = new Range<string>(from: null!, to: "m");
+        var unboundedUpper = new Range<string>("f", to: null!);
+
+        Assert.True(unboundedLower.Overlaps(unboundedUpper));
+        Assert.Equal(new Range<string>("f", "m"), unboundedLower.Intersect(unboundedUpper));
+        Assert.Equal(new Range<string>("f", "m"), unboundedUpper.Intersect(unboundedLower));
+
+        Assert.False(unboundedLower.Overlaps(new Range<string>("n", null!)));
+        Assert.Null(unboundedLower.Intersect(new Range<string>("n", null!)));
+    }
 }

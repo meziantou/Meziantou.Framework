@@ -44,6 +44,9 @@ public sealed class PdfArray : PdfObject, IList<PdfObject>, IReadOnlyList<PdfObj
 
     bool ICollection<PdfObject>.IsReadOnly => false;
 
+    /// <summary>Gets a number that changes when the items change, so that the caches of the library can tell they are stale.</summary>
+    internal int Version { get; private set; }
+
     /// <summary>Gets or sets the item at an index. The item is not resolved: it may be a <see cref="PdfReference"/>.</summary>
     /// <param name="index">The index.</param>
     /// <returns>The item.</returns>
@@ -55,6 +58,7 @@ public sealed class PdfArray : PdfObject, IList<PdfObject>, IReadOnlyList<PdfObj
             ArgumentNullException.ThrowIfNull(value);
             if (!ReferenceEquals(_items[index], value))
             {
+                Version++;
                 _items[index] = value;
                 IsModified = true;
             }
@@ -112,6 +116,7 @@ public sealed class PdfArray : PdfObject, IList<PdfObject>, IReadOnlyList<PdfObj
     public void Add(PdfObject item)
     {
         ArgumentNullException.ThrowIfNull(item);
+        Version++;
         _items.Add(item);
         IsModified = true;
     }
@@ -122,6 +127,7 @@ public sealed class PdfArray : PdfObject, IList<PdfObject>, IReadOnlyList<PdfObj
     public void Insert(int index, PdfObject item)
     {
         ArgumentNullException.ThrowIfNull(item);
+        Version++;
         _items.Insert(index, item);
         IsModified = true;
     }
@@ -129,6 +135,7 @@ public sealed class PdfArray : PdfObject, IList<PdfObject>, IReadOnlyList<PdfObj
     /// <inheritdoc/>
     public void Clear()
     {
+        Version++;
         IsModified |= _items.Count > 0;
         _items.Clear();
     }
@@ -145,6 +152,7 @@ public sealed class PdfArray : PdfObject, IList<PdfObject>, IReadOnlyList<PdfObj
     /// <inheritdoc/>
     public bool Remove(PdfObject item)
     {
+        Version++;
         var removed = _items.Remove(item);
         IsModified |= removed;
         return removed;
@@ -153,6 +161,7 @@ public sealed class PdfArray : PdfObject, IList<PdfObject>, IReadOnlyList<PdfObj
     /// <inheritdoc/>
     public void RemoveAt(int index)
     {
+        Version++;
         _items.RemoveAt(index);
         IsModified = true;
     }

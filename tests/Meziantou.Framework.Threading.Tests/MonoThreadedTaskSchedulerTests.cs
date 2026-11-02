@@ -365,6 +365,31 @@ public sealed class MonoThreadedTaskSchedulerTests : IDisposable
         Assert.Equal(Timeout.InfiniteTimeSpan, _taskScheduler.WaitTimeout);
     }
 
+    // Ticks are used so the values are exact: TimeSpan.FromMilliseconds rounds fractional milliseconds.
+    public static TheoryData<long> InvalidTimeoutTicks =>
+    [
+        -1,
+        -TimeSpan.TicksPerMillisecond / 2,
+        -TimeSpan.TicksPerMillisecond + 1,
+        -TimeSpan.TicksPerMillisecond - 1,
+        -2 * TimeSpan.TicksPerMillisecond,
+        (int.MaxValue * TimeSpan.TicksPerMillisecond) + 1,
+        (int.MaxValue * TimeSpan.TicksPerMillisecond) + (TimeSpan.TicksPerMillisecond / 2),
+        ((long)int.MaxValue + 1) * TimeSpan.TicksPerMillisecond,
+        TimeSpan.MaxValue.Ticks,
+        TimeSpan.MinValue.Ticks,
+    ];
+
+    public static TheoryData<long, long> ValidTimeoutTicks => new()
+    {
+        { Timeout.InfiniteTimeSpan.Ticks, Timeout.InfiniteTimeSpan.Ticks },
+        { 0, 0 },
+        { 1, 0 },
+        { TimeSpan.TicksPerMillisecond / 2, 0 },
+        { (2 * TimeSpan.TicksPerMillisecond) + (TimeSpan.TicksPerMillisecond / 2), 2 * TimeSpan.TicksPerMillisecond },
+        { int.MaxValue * TimeSpan.TicksPerMillisecond, int.MaxValue * TimeSpan.TicksPerMillisecond },
+    };
+
     [Theory]
     [InlineData(-2)]
     [InlineData((double)int.MaxValue + 1)]
@@ -377,6 +402,26 @@ public sealed class MonoThreadedTaskSchedulerTests : IDisposable
     }
 
     [Theory]
+    [MemberData(nameof(InvalidTimeoutTicks))]
+    public void WaitTimeout_InvalidTicks_ThrowsAndKeepsThePreviousValue(long ticks)
+    {
+        _taskScheduler.WaitTimeout = TimeSpan.FromMilliseconds(250);
+
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => _taskScheduler.WaitTimeout = TimeSpan.FromTicks(ticks));
+        Assert.Equal("value", exception.ParamName);
+        Assert.Equal(TimeSpan.FromMilliseconds(250), _taskScheduler.WaitTimeout);
+    }
+
+    [Theory]
+    [MemberData(nameof(ValidTimeoutTicks))]
+    public void WaitTimeout_ValidTicks_AreAccepted(long ticks, long expectedTicks)
+    {
+        _taskScheduler.WaitTimeout = TimeSpan.FromTicks(ticks);
+
+        Assert.Equal(TimeSpan.FromTicks(expectedTicks), _taskScheduler.WaitTimeout);
+    }
+
+    [Theory]
     [InlineData(-2)]
     [InlineData((double)int.MaxValue + 1)]
     public void DisposeThreadJoinTimeout_InvalidValue_Throws(double milliseconds)
@@ -384,6 +429,26 @@ public sealed class MonoThreadedTaskSchedulerTests : IDisposable
         var exception = Assert.Throws<ArgumentOutOfRangeException>(() => _taskScheduler.DisposeThreadJoinTimeout = TimeSpan.FromMilliseconds(milliseconds));
         Assert.Equal("value", exception.ParamName);
         Assert.Equal(TimeSpan.FromSeconds(1), _taskScheduler.DisposeThreadJoinTimeout);
+    }
+
+    [Theory]
+    [MemberData(nameof(InvalidTimeoutTicks))]
+    public void DisposeThreadJoinTimeout_InvalidTicks_ThrowsAndKeepsThePreviousValue(long ticks)
+    {
+        _taskScheduler.DisposeThreadJoinTimeout = TimeSpan.FromMilliseconds(250);
+
+        var exception = Assert.Throws<ArgumentOutOfRangeException>(() => _taskScheduler.DisposeThreadJoinTimeout = TimeSpan.FromTicks(ticks));
+        Assert.Equal("value", exception.ParamName);
+        Assert.Equal(TimeSpan.FromMilliseconds(250), _taskScheduler.DisposeThreadJoinTimeout);
+    }
+
+    [Theory]
+    [MemberData(nameof(ValidTimeoutTicks))]
+    public void DisposeThreadJoinTimeout_ValidTicks_AreAccepted(long ticks, long expectedTicks)
+    {
+        _taskScheduler.DisposeThreadJoinTimeout = TimeSpan.FromTicks(ticks);
+
+        Assert.Equal(TimeSpan.FromTicks(expectedTicks), _taskScheduler.DisposeThreadJoinTimeout);
     }
 
     [Fact]

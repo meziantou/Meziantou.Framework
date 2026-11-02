@@ -1,5 +1,6 @@
 namespace Meziantou.Framework;
 
+[Obsolete("Use Meziantou.Framework.Markdown.MarkdownEscaper from the Meziantou.Framework.Markdown package.")]
 #if PUBLIC_MARKDOWN_BUILDER
 public
 #else

@@ -1002,6 +1002,388 @@ public sealed class PdfDocumentTests
     }
 
     [Fact]
+    public void XmpMetadataReplacesTheCharactersXmlDoesNotAllow()
+    {
+        var document = new PdfDocument();
+        document.Information.Title = "A\u0001B";
+        document.Information.Author = "C\uD800D";
+        document.Information.Subject = "\U0001F600";
+        document.UpdateXmpMetadata();
+
+        var xmp = Encoding.UTF8.GetString(document.GetXmpMetadata()!);
+        Assert.Contains("<rdf:li xml:lang=\"x-default\">A�B</rdf:li>", xmp, StringComparison.Ordinal);
+        Assert.Contains("<rdf:li>C�D</rdf:li>", xmp, StringComparison.Ordinal);
+        Assert.Contains("\U0001F600", xmp, StringComparison.Ordinal);
+
+        // PDF/A-4 has no information dictionary: the packet has the replacement character
+        var pdfA4 = new PdfDocument { PdfAConformance = PdfAConformance.PdfA4 };
+        pdfA4.Information.Title = "A\u0001B";
+        pdfA4.Pages.Add(PdfSize.A4);
+        Assert.Contains("A�B", Encoding.UTF8.GetString(PdfDocument.Open(pdfA4.ToByteArray()).GetXmpMetadata()!), StringComparison.Ordinal);
+
+        // PDF/A-2 needs the information dictionary and the packet to agree: the save is refused
+        var pdfA2 = new PdfDocument { PdfAConformance = PdfAConformance.PdfA2B };
+        pdfA2.Information.Title = "A\u0001B";
+        pdfA2.Pages.Add(PdfSize.A4);
+        Assert.Contains("the Title has a character that XML does not allow", Assert.Throws<InvalidOperationException>(() => pdfA2.ToByteArray()).Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ConformanceSavesKeepTheXmpStreamWhenTheMetadataDoesNotChange()
+    {
+        var document = new PdfDocument { PdfAConformance = PdfAConformance.PdfA2B };
+        document.Information.Title = "Archived";
+        document.Pages.Add(PdfSize.A4);
+        var original = document.ToByteArray();
+        Assert.Equal(original, document.ToByteArray());
+
+        var read = PdfDocument.Open(original);
+        read.PdfAConformance = PdfAConformance.PdfA2B;
+        var metadata = Assert.IsType<PdfReference>(read.Catalog[PdfNames.Metadata]);
+        using var unchanged = new MemoryStream();
+        read.SaveIncremental(unchanged);
+        Assert.DoesNotContain("xmpmeta", Encoding.Latin1.GetString(unchanged.ToArray().AsSpan(original.Length)), StringComparison.Ordinal);
+
+        // A change updates the existing stream: the incremental update has no new object for it
+        read.Information.Title = "Changed";
+        using var changed = new MemoryStream();
+        read.SaveIncremental(changed);
+        var updated = PdfDocument.Open(changed.ToArray());
+        Assert.Equal(metadata.ObjectNumber, Assert.IsType<PdfReference>(updated.Catalog[PdfNames.Metadata]).ObjectNumber);
+        Assert.Contains("Changed", Encoding.UTF8.GetString(updated.GetXmpMetadata()!), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ConformanceSavesKeepTheCustomXmpSchemas()
+    {
+        const string Packet = """
+            <?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?>
+            <x:xmpmeta xmlns:x="adobe:ns:meta/">
+             <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+              <rdf:Description rdf:about="" xmlns:fx="urn:factur-x:pdfa:CrossIndustryDocument:invoice:1p0#" xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/" xmlns:dc="http://purl.org/dc/elements/1.1/" pdfaid:part="2" fx:Version="1.0">
+               <dc:title><rdf:Alt><rdf:li xml:lang="x-default">Old title</rdf:li></rdf:Alt></dc:title>
+               <fx:DocumentType>INVOICE</fx:DocumentType>
+              </rdf:Description>
+              <rdf:Description rdf:about="" xmlns:pdfaExtension="http://www.aiim.org/pdfa/ns/extension/" xmlns:pdfaSchema="http://www.aiim.org/pdfa/ns/schema#" xmlns:pdfaProperty="http://www.aiim.org/pdfa/ns/property#">
+               <pdfaExtension:schemas>
+                <rdf:Bag>
+                 <rdf:li rdf:parseType="Resource">
+                  <pdfaSchema:schema>Factur-X PDFA Extension Schema</pdfaSchema:schema>
+                  <pdfaSchema:namespaceURI>urn:factur-x:pdfa:CrossIndustryDocument:invoice:1p0#</pdfaSchema:namespaceURI>
+                  <pdfaSchema:prefix>fx</pdfaSchema:prefix>
+                 </rdf:li>
+                </rdf:Bag>
+               </pdfaExtension:schemas>
+              </rdf:Description>
+             </rdf:RDF>
+            </x:xmpmeta>
+            <?xpacket end="w"?>
+            """;
+        var document = new PdfDocument { PdfAConformance = PdfAConformance.PdfA3B };
+        document.Information.Title = "Invoice";
+        document.Pages.Add(PdfSize.A4);
+        document.SetXmpMetadata(Encoding.UTF8.GetBytes(Packet));
+
+        var xmp = System.Xml.Linq.XDocument.Parse(Encoding.UTF8.GetString(PdfDocument.Open(document.ToByteArray()).GetXmpMetadata()!));
+
+        System.Xml.Linq.XNamespace fx = "urn:factur-x:pdfa:CrossIndustryDocument:invoice:1p0#";
+        System.Xml.Linq.XNamespace pdfaid = "http://www.aiim.org/pdfa/ns/id/";
+        System.Xml.Linq.XNamespace pdfaSchema = "http://www.aiim.org/pdfa/ns/schema#";
+        System.Xml.Linq.XNamespace dc = "http://purl.org/dc/elements/1.1/";
+        Assert.Equal("INVOICE", xmp.Descendants(fx + "DocumentType").Single().Value);
+        Assert.Equal("1.0", xmp.Descendants(fx + "Version").Single().Value);
+        Assert.Equal("3", xmp.Descendants(pdfaid + "part").Single().Value);
+        Assert.Equal("Invoice", xmp.Descendants(dc + "title").Single().Value);
+        Assert.Equal("fx", xmp.Descendants(pdfaSchema + "prefix").Single().Value);
+        Assert.Equal("pdfaSchema", xmp.Descendants(pdfaSchema + "prefix").Single().GetPrefixOfNamespace(pdfaSchema));
+    }
+
+    [Fact]
+    public void TheTrappedEntryIsInTheInformationAndTheXmpMetadata()
+    {
+        var document = new PdfDocument();
+        Assert.Null(document.Information.Trapped);
+        document.Information.Trapped = PdfTrapped.True;
+        document.UpdateXmpMetadata();
+
+        var read = PdfDocument.Open(document.ToByteArray());
+        Assert.Equal(PdfTrapped.True, read.Information.Trapped);
+        Assert.Equal("True", read.Information.Dictionary!.GetName(PdfNames.Trapped)!.Value);
+        Assert.Contains("<pdf:Trapped>True</pdf:Trapped>", Encoding.UTF8.GetString(read.GetXmpMetadata()!), StringComparison.Ordinal);
+
+        // A packet that has the property keeps it when the information does not have the entry
+        read.Information.Trapped = null;
+        Assert.Null(read.Information.Trapped);
+        read.UpdateXmpMetadata();
+        Assert.Contains("<pdf:Trapped>True</pdf:Trapped>", Encoding.UTF8.GetString(read.GetXmpMetadata()!), StringComparison.Ordinal);
+
+        read.Information.Trapped = PdfTrapped.False;
+        read.UpdateXmpMetadata();
+        Assert.Contains("<pdf:Trapped>False</pdf:Trapped>", Encoding.UTF8.GetString(read.GetXmpMetadata()!), StringComparison.Ordinal);
+        Assert.Throws<ArgumentOutOfRangeException>(() => read.Information.Trapped = (PdfTrapped)42);
+    }
+
+    [Fact]
+    public void XmpMetadataWithPadding()
+    {
+        var document = new PdfDocument();
+        document.Information.Title = "Padded";
+        document.UpdateXmpMetadata();
+        var length = document.GetXmpMetadata()!.Length;
+
+        #region Pdf_XmpPadding
+        // Reserve 2 KB of whitespace in the packet, so that an editor can update it in place
+        document.UpdateXmpMetadata(padding: 2048);
+
+        // The packet a PDF/A or PDF/UA save writes
+        var options = new PdfSaveOptions { XmpPadding = 2048 };
+        #endregion
+
+        var padded = document.GetXmpMetadata()!;
+        Assert.HasCount(length + 2048 + 1, padded);
+        Assert.EndsWith("\n<?xpacket end=\"w\"?>", Encoding.UTF8.GetString(padded), StringComparison.Ordinal);
+        Assert.NotNull(System.Xml.Linq.XDocument.Parse(Encoding.UTF8.GetString(padded)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => document.UpdateXmpMetadata(-1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PdfSaveOptions { XmpPadding = -1 });
+
+        var archived = new PdfDocument { PdfAConformance = PdfAConformance.PdfA2B };
+        archived.Information.Title = "Padded";
+        archived.Pages.Add(PdfSize.A4);
+        var withoutPadding = archived.GetXmpMetadata();
+        Assert.Null(withoutPadding);
+        var unpadded = PdfDocument.Open(archived.ToByteArray()).GetXmpMetadata()!.Length;
+        Assert.HasCount(unpadded + 2048 + 1, PdfDocument.Open(archived.ToByteArray(options)).GetXmpMetadata()!);
+    }
+
+    [Fact]
+    public void PdfAKeepsTheExistingOutputIntents()
+    {
+        var document = new PdfDocument { PdfAConformance = PdfAConformance.PdfA2B };
+        document.Information.Title = "Printed";
+        // The CMYK profile of Imaging is an input profile: PDF/A needs an output profile
+        var data = Imaging.Metadata.IccProfile.Cgats001CompatibleCmyk.Data.ToArray();
+        var profile = new PdfStream(new PdfDictionary { [PdfNames.N] = PdfInteger.Get(4) });
+        profile.SetData(data);
+        var profileReference = document.Objects.Add(profile);
+        document.Catalog[PdfName.Create("OutputIntents")] = new PdfArray(document.Objects.Add(new PdfDictionary
+        {
+            [PdfNames.Type] = PdfName.Create("OutputIntent"),
+            [PdfNames.S] = PdfName.Create("GTS_PDFX"),
+            [PdfName.Create("OutputConditionIdentifier")] = PdfString.FromText("CGATS TR 001"),
+            [PdfName.Create("DestOutputProfile")] = profileReference,
+        }));
+        document.Pages.Add(PdfSize.A4).CreateContentBuilder().SetFillCmyk(0, 1, 1, 0).Rectangle(10, 10, 100, 100).Fill();
+        Assert.Contains("needs an output profile of a printer or a monitor", Assert.Throws<InvalidOperationException>(() => document.ToByteArray()).Message, StringComparison.Ordinal);
+
+        "prtr"u8.CopyTo(data.AsSpan(12));
+        profile.SetData(data);
+        var read = PdfDocument.Open(document.ToByteArray());
+
+        var intents = read.Catalog.Get<PdfArray>(PdfName.Create("OutputIntents"))!.Select(intent => (PdfDictionary)PdfReference.ResolveIfReference(intent)).ToList();
+        Assert.Equal(["GTS_PDFX", "GTS_PDFA1"], intents.Select(intent => intent.GetName(PdfNames.S)!.Value));
+        var profiles = intents.Select(intent => Assert.IsType<PdfReference>(intent[PdfName.Create("DestOutputProfile")]).ObjectNumber).Distinct();
+        Assert.Single(profiles);
+        Assert.Equal("CGATS TR 001", intents[1].GetText(PdfName.Create("OutputConditionIdentifier")));
+
+        // DeviceRGB needs an RGB output intent
+        document.Pages[0].CreateContentBuilder().SetFillRgb(1, 0, 0).Rectangle(10, 10, 100, 100).Fill();
+        Assert.Contains("page 1 uses DeviceRGB", Assert.Throws<InvalidOperationException>(() => document.ToByteArray()).Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void PdfANeedsTheSameProfileForEveryOutputIntent()
+    {
+        var document = new PdfDocument { PdfAConformance = PdfAConformance.PdfA2B };
+        document.Pages.Add(PdfSize.A4);
+        PdfReference AddIntent(string type, Imaging.Metadata.IccProfile iccProfile)
+        {
+            var profile = new PdfStream(new PdfDictionary());
+            profile.SetData(iccProfile.Data.Span);
+            return document.Objects.Add(new PdfDictionary
+            {
+                [PdfNames.S] = PdfName.Create(type),
+                [PdfName.Create("DestOutputProfile")] = document.Objects.Add(profile),
+            });
+        }
+
+        document.Catalog[PdfName.Create("OutputIntents")] = new PdfArray(AddIntent("GTS_PDFX", Imaging.Metadata.IccProfile.Cgats001CompatibleCmyk), AddIntent("GTS_PDFA1", Imaging.Metadata.IccProfile.Srgb));
+
+        Assert.Contains("the same profile for every output intent", Assert.Throws<InvalidOperationException>(() => document.ToByteArray()).Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void PdfANeedsAnOutputIntentForTheDeviceColorSpaces()
+    {
+        var document = new PdfDocument { PdfAConformance = PdfAConformance.PdfA2B };
+        var page = document.Pages.Add(PdfSize.A4);
+        page.CreateContentBuilder().SetFillRgb(1, 0, 0).SetFillGray(0.5).Rectangle(10, 10, 100, 100).Fill();
+        _ = document.ToByteArray();
+
+        // The output intent is sRGB: DeviceCMYK needs a DefaultCMYK color space
+        page.CreateContentBuilder().SetStrokeCmyk(0, 0, 0, 1).Rectangle(10, 10, 100, 100).Stroke();
+        Assert.Contains("PDF/A-2 allows DeviceCMYK only with an output intent of the same color space or a DefaultCMYK color space (ISO 19005-2, 6.2.4.3): page 1 uses DeviceCMYK", Assert.Throws<InvalidOperationException>(() => document.ToByteArray()).Message, StringComparison.Ordinal);
+
+        var colorSpaces = new PdfDictionary();
+        page.Resources![PdfNames.ColorSpace] = colorSpaces;
+        colorSpaces[PdfName.Create("DefaultCMYK")] = new PdfArray(PdfName.Create("ICCBased"), PdfNull.Instance);
+        _ = document.ToByteArray();
+
+        // The color spaces of the forms are checked too
+        var form = document.CreateForm(new PdfRectangle(0, 0, 10, 10));
+        form.CreateContentBuilder().SetFillCmyk(0, 0, 0, 1).Rectangle(0, 0, 10, 10).Fill();
+        var other = document.Pages.Add(PdfSize.A4);
+        other.CreateContentBuilder().DrawForm(form);
+        Assert.Contains("page 2 uses DeviceCMYK", Assert.Throws<InvalidOperationException>(() => document.ToByteArray()).Message, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(PdfAConformance.PdfA2B, "JavaScript", null, "PDF/A-2 does not allow the JavaScript actions: the document (OpenAction) has one")]
+    [InlineData(PdfAConformance.PdfA1B, "Launch", null, "PDF/A-1 does not allow the Launch actions: the document (OpenAction) has one")]
+    [InlineData(PdfAConformance.PdfA3B, "Named", "Print", "allows the NextPage, PrevPage, FirstPage and LastPage named actions only: the document (OpenAction) has the Print named action")]
+    [InlineData(PdfAConformance.PdfA4, "Launch", null, "PDF/A-4 does not allow the Launch actions")]
+    [InlineData(PdfAConformance.PdfA4, "JavaScript", null, null)]
+    [InlineData(PdfAConformance.PdfA2B, "Named", "NextPage", null)]
+    public void PdfAChecksTheActions(PdfAConformance conformance, string type, string? named, string? message)
+    {
+        var document = new PdfDocument { PdfAConformance = conformance };
+        document.Pages.Add(PdfSize.A4);
+        var action = new PdfDictionary { [PdfNames.S] = PdfName.Create(type) };
+        if (named is not null)
+        {
+            action[PdfNames.N] = PdfName.Create(named);
+        }
+
+        if (type == "JavaScript")
+        {
+            action[PdfName.Create("JS")] = PdfString.FromText("app.alert('Hello');");
+        }
+
+        document.Catalog[PdfName.Create("OpenAction")] = document.Objects.Add(action);
+
+        if (message is null)
+        {
+            _ = document.ToByteArray();
+        }
+        else
+        {
+            Assert.Contains(message, Assert.Throws<InvalidOperationException>(() => document.ToByteArray()).Message, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public void PdfAChecksTheActionsOfTheAnnotationsAndThePages()
+    {
+        var document = new PdfDocument { PdfAConformance = PdfAConformance.PdfA2B };
+        var page = document.Pages.Add(PdfSize.A4);
+        var link = page.Annotations.AddLink(new PdfRectangle(10, 10, 100, 20), new Uri("https://www.meziantou.net/"));
+        _ = document.ToByteArray();
+
+        link.Dictionary[PdfNames.A] = new PdfDictionary
+        {
+            [PdfNames.S] = PdfName.Create("URI"),
+            [PdfName.Create("URI")] = PdfString.FromText("https://www.meziantou.net/"),
+            [PdfNames.Next] = new PdfDictionary { [PdfNames.S] = PdfName.Create("Launch") },
+        };
+        page.Dictionary[PdfName.Create("AA")] = new PdfDictionary { [PdfName.Create("O")] = new PdfDictionary { [PdfNames.S] = PdfName.Create("GoTo"), [PdfName.Create("D")] = new PdfArray(page.Reference, PdfName.Create("Fit")) } };
+
+        var message = Assert.Throws<InvalidOperationException>(() => document.ToByteArray()).Message;
+        Assert.Contains("PDF/A-2 does not allow the Launch actions: a Link annotation of page 1 has one", message, StringComparison.Ordinal);
+        Assert.Contains("PDF/A-2 does not allow additional actions: page 1 has some (AA)", message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void PdfAChecksTheAppearancesOfTheAnnotations()
+    {
+        var document = new PdfDocument { PdfAConformance = PdfAConformance.PdfA2B };
+        var page = document.Pages.Add(PdfSize.A4);
+        var text = document.Objects.Add(new PdfDictionary
+        {
+            [PdfNames.Type] = PdfName.Create("Annot"),
+            [PdfNames.Subtype] = PdfName.Create("Text"),
+            [PdfNames.Rect] = new PdfArray(PdfInteger.Get(10), PdfInteger.Get(10), PdfInteger.Get(30), PdfInteger.Get(30)),
+            [PdfNames.Contents] = PdfString.FromText("Note"),
+        });
+        page.Dictionary[PdfNames.Annots] = new PdfArray(text);
+
+        Assert.Contains("PDF/A-2 needs the appearance of the annotations (AP, ISO 19005-2, 6.3.3): the Text annotation of page 1 has none", Assert.Throws<InvalidOperationException>(() => document.ToByteArray()).Message, StringComparison.Ordinal);
+
+        // PDF/A-1 does not need appearances, but allows the normal one only
+        document.PdfAConformance = PdfAConformance.PdfA1B;
+        _ = document.ToByteArray();
+
+        var appearance = document.Objects.Add(new PdfStream(new PdfDictionary { [PdfNames.Subtype] = PdfNames.Form, [PdfName.Create("BBox")] = new PdfArray(PdfInteger.Get(0), PdfInteger.Get(0), PdfInteger.Get(20), PdfInteger.Get(20)) }));
+        ((PdfDictionary)PdfReference.ResolveIfReference(text)!)[PdfName.Create("AP")] = new PdfDictionary { [PdfNames.N] = appearance, [PdfName.Create("R")] = appearance };
+        document.PdfAConformance = PdfAConformance.PdfA2B;
+        Assert.Contains("PDF/A-2 allows only the normal appearance of the annotations", Assert.Throws<InvalidOperationException>(() => document.ToByteArray()).Message, StringComparison.Ordinal);
+
+        ((PdfDictionary)PdfReference.ResolveIfReference(text)!)[PdfName.Create("AP")] = new PdfDictionary { [PdfNames.N] = appearance };
+        _ = document.ToByteArray();
+    }
+
+    [Theory]
+    [InlineData(false, false, true)]
+    [InlineData(true, false, false)]
+    [InlineData(true, true, true)]
+    public void ConformanceChecksTheFontsOfTheInteractiveForm(bool hasAppearance, bool needAppearances, bool fails)
+    {
+        var document = new PdfDocument { PdfUAConformance = PdfUAConformance.PdfUA1, Language = "en" };
+        document.Information.Title = "Form";
+        document.StructureTree.AddElement("Document");
+        var page = document.Pages.Add(PdfSize.A4);
+        var helvetica = document.Objects.Add(new PdfDictionary
+        {
+            [PdfNames.Type] = PdfNames.Font,
+            [PdfNames.Subtype] = PdfName.Create("Type1"),
+            [PdfNames.BaseFont] = PdfName.Create("Helvetica"),
+        });
+        var widget = new PdfDictionary
+        {
+            [PdfNames.Type] = PdfName.Create("Annot"),
+            [PdfNames.Subtype] = PdfName.Create("Widget"),
+            [PdfName.Create("FT")] = PdfName.Create("Tx"),
+            [PdfName.Create("T")] = PdfString.FromText("Name"),
+            [PdfName.Create("DA")] = PdfString.FromText("/Helv 12 Tf 0 g"),
+            [PdfNames.Rect] = new PdfArray(PdfInteger.Get(10), PdfInteger.Get(10), PdfInteger.Get(200), PdfInteger.Get(30)),
+        };
+        if (hasAppearance)
+        {
+            widget[PdfName.Create("AP")] = new PdfDictionary { [PdfNames.N] = document.Objects.Add(new PdfStream(new PdfDictionary { [PdfNames.Subtype] = PdfNames.Form, [PdfName.Create("BBox")] = new PdfArray(PdfInteger.Get(0), PdfInteger.Get(0), PdfInteger.Get(190), PdfInteger.Get(20)) })) };
+        }
+
+        var widgetReference = document.Objects.Add(widget);
+        page.Dictionary[PdfNames.Annots] = new PdfArray(widgetReference);
+        document.Catalog[PdfNames.AcroForm] = new PdfDictionary
+        {
+            [PdfName.Create("Fields")] = new PdfArray(widgetReference),
+            [PdfName.Create("DR")] = new PdfDictionary { [PdfNames.Font] = new PdfDictionary { [PdfName.Create("Helv")] = helvetica } },
+            [PdfName.Create("NeedAppearances")] = needAppearances ? PdfBoolean.True : PdfBoolean.False,
+        };
+
+        if (fails)
+        {
+            Assert.Contains("The font 'Helvetica' is not embedded", Assert.Throws<InvalidOperationException>(() => document.ToByteArray()).Message, StringComparison.Ordinal);
+        }
+        else
+        {
+            _ = document.ToByteArray();
+        }
+    }
+
+    [Fact]
+    public void PdfARefusesTheNeedAppearancesFlag()
+    {
+        var document = new PdfDocument { PdfAConformance = PdfAConformance.PdfA2B };
+        document.Pages.Add(PdfSize.A4);
+        document.Catalog[PdfNames.AcroForm] = new PdfDictionary
+        {
+            [PdfName.Create("Fields")] = new PdfArray(),
+            [PdfName.Create("NeedAppearances")] = PdfBoolean.True,
+        };
+
+        Assert.Contains("PDF/A-2 does not allow the NeedAppearances flag", Assert.Throws<InvalidOperationException>(() => document.ToByteArray()).Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ImagesFromImaging()
     {
         using var image = Image.ImportPixelData<Rgba32>([new Rgba32(255, 0, 0, 255), new Rgba32(0, 255, 0, 128), new Rgba32(0, 0, 255, 0), new Rgba32(255, 255, 255, 255)], 2, 2);
@@ -1107,6 +1489,92 @@ public sealed class PdfDocumentTests
         Assert.Equal("DCTDecode", stream.Filters.Single().Value);
         Assert.Equal(jpeg.ToArray(), stream.EncodedData.ToArray());
         Assert.HasCount(8 * 8 * 3, stream.GetDecodedData());
+    }
+
+    [Fact]
+    public void ImageSamplesUseThePngPredictorsWhenTheyAreSmaller()
+    {
+        // A gradient: each row differs from the one above by the same bytes, which the Up filter turns into zeros
+        using var gradient = Image.ImportPixelData<Rgb24>([.. Enumerable.Range(0, 64 * 64).Select(i => new Rgb24((byte)(i % 64 * 4), (byte)(i / 64 * 4), 128))], 64, 64);
+        using var flat = Image.ImportPixelData<Gray8>([.. Enumerable.Repeat(new Gray8(200), 64 * 64)], 64, 64);
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A5).CreateContentBuilder()
+            .DrawImage(PdfImage.FromImage(gradient), 0, 0, 64, 64)
+            .DrawImage(PdfImage.FromImage(flat), 100, 0, 64, 64);
+
+        var read = PdfDocument.Open(document.ToByteArray());
+        var images = read.Objects.GetReferences().Select(r => r.Resolve()).OfType<PdfStream>().Where(s => s.Dictionary.ContainsKey(PdfNames.Width)).ToArray();
+        var predicted = images.Single(s => s.Dictionary.Get<PdfName>(PdfNames.ColorSpace)?.Value == "DeviceRGB");
+        var parameters = predicted.Dictionary.Get<PdfDictionary>(PdfNames.DecodeParms);
+
+        Assert.NotNull(parameters);
+        Assert.Equal(15, parameters.GetInteger(PdfNames.Predictor));
+        Assert.Equal(3, parameters.GetInteger(PdfNames.Colors));
+        Assert.Equal(8, parameters.GetInteger(PdfNames.BitsPerComponent));
+        Assert.Equal(64, parameters.GetInteger(PdfNames.Columns));
+        var expected = new byte[64 * 64 * 3];
+        gradient.Frames[0].CopyPixelBytesTo(expected);
+        Assert.Equal(expected, predicted.GetDecodedData());
+
+        var plain = images.Single(s => s.Dictionary.Get<PdfName>(PdfNames.ColorSpace)?.Value == "DeviceGray");
+        Assert.Equal(Enumerable.Repeat((byte)200, 64 * 64), plain.GetDecodedData());
+
+        // Without compression, the samples are stored as they are
+        var uncompressed = PdfDocument.Open(document.ToByteArray(new PdfSaveOptions { CompressStreams = false }));
+        var stored = uncompressed.Objects.GetReferences().Select(r => r.Resolve()).OfType<PdfStream>().First(s => s.Dictionary.Get<PdfName>(PdfNames.ColorSpace)?.Value == "DeviceRGB");
+        Assert.Empty(stored.Filters);
+        Assert.Equal(expected, stored.GetDecodedData());
+    }
+
+    [Fact]
+    public void ImagesCanBeCompressedAsJpeg()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var path = directory / "photo.pdf";
+        using (var photo = Image.ImportPixelData<Rgba32>([.. Enumerable.Range(0, 32 * 32).Select(i => new Rgba32((byte)(i % 32 * 8), 100, 50, (byte)(i < 512 ? 255 : 0)))], 32, 32))
+        {
+            DrawPhotoAsJpeg(photo, path);
+        }
+
+        var read = PdfDocument.Open(path);
+        var stream = read.Objects.GetReferences().Select(r => r.Resolve()).OfType<PdfStream>().Single(s => s.Dictionary.ContainsKey(PdfNames.SMask));
+        var softMask = Assert.IsType<PdfStream>(stream.Dictionary.GetResolved(PdfNames.SMask));
+
+        Assert.Equal("DCTDecode", stream.Filters.Single().Value);
+        Assert.Equal(8, stream.Dictionary.GetInteger(PdfNames.BitsPerComponent));
+        Assert.Equal(ImageFormat.Jpeg, Image.DetectFormat(stream.EncodedData.Span[..Image.FormatDetectionPrefixLength]));
+        var samples = stream.GetDecodedData();
+        Assert.HasCount(32 * 32 * 3, samples);
+        Assert.InRange(samples[(5 * 32 * 3) + (10 * 3)], 80 - 8, 80 + 8);
+        Assert.InRange(samples[(5 * 32 * 3) + (10 * 3) + 1], 100 - 8, 100 + 8);
+        Assert.Equal([.. Enumerable.Repeat((byte)255, 512), .. Enumerable.Repeat((byte)0, 512)], softMask.GetDecodedData());
+    }
+
+    #region Pdf_FromImageAsJpeg
+    private static void DrawPhotoAsJpeg(Image photo, string outputPath)
+    {
+        // A photo is much smaller as JPEG than as samples compressed without loss; its transparency stays a soft mask
+        var image = PdfImage.FromImageAsJpeg(photo, new Imaging.Formats.JpegEncoder { Quality = 85 });
+
+        var document = new PdfDocument();
+        document.Pages.Add(new PdfSize(300, 150)).CreateContentBuilder().DrawImage(image, 10, 10, 128, 128);
+        document.Save(outputPath);
+    }
+    #endregion
+
+    [Fact]
+    public void ImagesOf16BitsAreRoundedTo8BitsForJpeg()
+    {
+        using var gray = Image.ImportPixelData<Gray16>([.. Enumerable.Repeat(new Gray16(0x8080), 64)], 8, 8);
+
+        var image = PdfImage.FromImageAsJpeg(gray);
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A5).CreateContentBuilder().DrawImage(image, 0, 0, 8, 8);
+        var stream = (PdfStream)document.Objects.GetReferences().Select(r => r.Resolve()).Single(o => o is PdfStream s && s.Dictionary.ContainsKey(PdfNames.Width));
+
+        Assert.False(image.HasSoftMask);
+        Assert.Equal("DeviceGray", stream.Dictionary.Get<PdfName>(PdfNames.ColorSpace)?.Value);
+        Assert.All(stream.GetDecodedData(), sample => Assert.InRange(sample, 0x80 - 1, 0x80 + 1));
     }
 
     [Fact]
@@ -1592,5 +2060,417 @@ public sealed class PdfDocumentTests
         Assert.Equal("P", read.StructureTree.RoleMap["Lead"]);
         Assert.Equal(["Lead", "Link"], Assert.Single(read.StructureTree.Elements).Children.Select(child => child.Type));
         Assert.Equal("The website of the author", Assert.Single(read.Pages[0].Annotations).Contents);
+    }
+
+    [Fact]
+    public void Example_OpenSeekable()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var path = directory.GetFullPath("document.pdf");
+        File.WriteAllBytes(path, HandWrittenPdf.CreateSimple("Some text").ToArray());
+
+        #region Pdf_OpenSeekable
+        // The objects are read from the stream when they are first used: it stays open while the document is used
+        using var stream = File.OpenRead(path);
+        var document = PdfDocument.OpenSeekable(stream);
+        var text = document.Pages[0].ExtractText();
+        #endregion
+
+        Assert.Equal("Some text", text);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task OpenStreamReadsFromItsPosition(bool seekable)
+    {
+        var file = HandWrittenPdf.CreateSimple().ToArray();
+        var content = Encoding.ASCII.GetBytes("prefix").Concat(file).ToArray();
+
+        var sync = new TestStream(content, seekable) { Position = 6 };
+        var asynchronous = new TestStream(content, seekable) { Position = 6 };
+
+        Assert.Equal("Hello", PdfDocument.Open(sync).Pages[0].ExtractText());
+        Assert.Equal("Hello", (await PdfDocument.OpenAsync(asynchronous)).Pages[0].ExtractText());
+        Assert.Equal(content.Length, sync.Offset);
+        Assert.Equal(content.Length, asynchronous.Offset);
+    }
+
+    [Fact]
+    public void OpenStreamCopiesTheBufferOfAMemoryStream()
+    {
+        var file = HandWrittenPdf.CreateSimple().ToArray();
+        var buffer = file.ToArray();
+        var stream = new MemoryStream(buffer, 0, buffer.Length, writable: true, publiclyVisible: true);
+
+        var document = PdfDocument.Open(stream);
+        Array.Clear(buffer);
+
+        Assert.Equal("Hello", document.Pages[0].ExtractText());
+    }
+
+    [Fact]
+    public void OpenStreamReadsALargeNonSeekableStreamInChunks()
+    {
+        var file = HandWrittenPdf.CreateSimple().Add(6, HandWrittenPdf.Stream(new string('x', 3 * 1024 * 1024))).ToArray();
+
+        var document = PdfDocument.Open(new TestStream(file, seekable: false));
+
+        Assert.True(document.Objects.TryGetReference(6, out var reference));
+        Assert.HasCount(3 * 1024 * 1024, Assert.IsType<PdfStream>(reference.Resolve()).GetDecodedData());
+    }
+
+    [Fact]
+    public void OpenSeekableReadsTheObjectsItUses()
+    {
+        var large = new string('x', 8 * 1024 * 1024);
+        var file = HandWrittenPdf.CreateSimple().Add(6, HandWrittenPdf.Stream(large)).ToArray();
+        var stream = new TestStream(file, seekable: true);
+
+        var document = PdfDocument.OpenSeekable(stream);
+        Assert.Equal("Hello", document.Pages[0].ExtractText());
+        Assert.True(document.Objects.TryGetReference(6, out var reference));
+        var data = Assert.IsType<PdfStream>(reference.Resolve());
+
+        Assert.InRange(stream.BytesRead, 1, 256 * 1024);
+        Assert.Equal(large, Encoding.Latin1.GetString(data.GetDecodedData()));
+        Assert.InRange(stream.BytesRead, large.Length, large.Length + (256 * 1024));
+    }
+
+    [Fact]
+    public void OpenSeekableReadsObjectsLargerThanTheWindow()
+    {
+        var items = string.Join(' ', Enumerable.Range(0, 50_000).Select(i => i.ToString(System.Globalization.CultureInfo.InvariantCulture)));
+        var file = HandWrittenPdf.CreateSimple().Add(6, "[" + items + "]").Add(7, "<< /Length 8 0 R >>\nstream\n" + items + "\nendstream").Add(8, Encoding.ASCII.GetByteCount(items).ToString(System.Globalization.CultureInfo.InvariantCulture)).ToArray();
+
+        var document = PdfDocument.OpenSeekable(new MemoryStream(file));
+
+        Assert.True(document.Objects.TryGetReference(6, out var array));
+        Assert.HasCount(50_000, Assert.IsType<PdfArray>(array.Resolve()));
+        Assert.True(document.Objects.TryGetReference(7, out var stream));
+        Assert.Equal(items, Encoding.ASCII.GetString(Assert.IsType<PdfStream>(stream.Resolve()).GetDecodedData()));
+    }
+
+    [Fact]
+    public void OpenSeekableRepairsADamagedFile()
+    {
+        var file = HandWrittenPdf.CreateSimple().Compress(1, 2, 3, 4);
+        file.UseXrefStream = true;
+        var text = Encoding.Latin1.GetString(file.ToArray()).Replace("startxref", "startxreX", StringComparison.Ordinal);
+
+        var document = PdfDocument.OpenSeekable(new MemoryStream(Encoding.Latin1.GetBytes(text)));
+
+        Assert.True(document.IsRepaired);
+        Assert.Equal("Hello", document.Pages[0].ExtractText());
+    }
+
+    [Fact]
+    public void OpenSeekableReadsEncryptedDocuments()
+    {
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("Text", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 24, 60, 700);
+        document.Information.Title = "Title";
+        document.Encryption = new PdfEncryption("user", "owner");
+        var file = document.ToByteArray(new PdfSaveOptions { UseObjectStreams = false });
+
+        var read = PdfDocument.OpenSeekable(new MemoryStream(file), new PdfReadOptions { Password = "user" });
+
+        Assert.Equal("Title", read.Information.Title);
+        Assert.Equal("Text", read.Pages[0].ExtractText());
+    }
+
+    [Fact]
+    public void OpenSeekableDocumentIsSavedIncrementally()
+    {
+        var file = HandWrittenPdf.CreateSimple().ToArray();
+        var document = PdfDocument.OpenSeekable(new MemoryStream(file));
+        document.Information.Title = "Updated";
+
+        using var output = new MemoryStream();
+        document.SaveIncremental(output);
+
+        Assert.Equal(file, output.ToArray().AsSpan(0, file.Length).ToArray());
+        var read = PdfDocument.Open(output.ToArray());
+        Assert.Equal("Updated", read.Information.Title);
+        Assert.Equal("Hello", read.Pages[0].ExtractText());
+        Assert.Equal("Hello", PdfDocument.Open(document.ToByteArray()).Pages[0].ExtractText());
+    }
+
+    [Fact]
+    public void OpenSeekableRequiresASeekableStream()
+    {
+        Assert.Throws<ArgumentException>(() => PdfDocument.OpenSeekable(new TestStream([], seekable: false)));
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void OpenSeekableReadsFilesLargerThan2GB(bool repair)
+    {
+        // A file of 3 GB whose objects are after 2.5 GB, and NUL bytes (whitespace) before them: the stream generates it
+        const long Start = 2_500_000_000L;
+        var header = Encoding.ASCII.GetBytes("%PDF-1.7\n");
+        var body = new StringBuilder();
+        var offsets = new List<long>();
+        foreach (var obj in new[]
+        {
+            "<< /Type /Catalog /Pages 2 0 R >>",
+            "<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>",
+            HandWrittenPdf.Stream("BT /F1 12 Tf 72 720 Td (Far away) Tj ET"),
+        })
+        {
+            offsets.Add(Start + body.Length);
+            body.Append(System.Globalization.CultureInfo.InvariantCulture, $"{offsets.Count} 0 obj\n{obj}\nendobj\n");
+        }
+
+        var xref = Start + body.Length;
+        if (!repair)
+        {
+            body.Append("xref\n0 6\n0000000000 65535 f \n");
+            foreach (var offset in offsets)
+            {
+                body.Append(System.Globalization.CultureInfo.InvariantCulture, $"{offset:D10} 00000 n \n");
+            }
+
+            body.Append(System.Globalization.CultureInfo.InvariantCulture, $"trailer\n<< /Size 6 /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n");
+        }
+
+        var stream = new TestStream([(0, header), (Start, Encoding.ASCII.GetBytes(body.ToString()))], Start + body.Length);
+
+        var document = PdfDocument.OpenSeekable(stream);
+
+        Assert.Equal(repair, document.IsRepaired);
+        Assert.Equal("Far away", document.Pages[0].ExtractText());
+    }
+
+    [Fact]
+    public void RecoveryScanOfAStreamFindsWhatTheScanOfMemoryFinds()
+    {
+        // The stream is scanned in chunks of 4 MiB: objects and trailers are placed around the end of the first chunk
+        var file = new StringBuilder("%PDF-1.7\n");
+        file.Append('%', (4 * 1024 * 1024) - 300).Append('\n');
+        for (var i = 0; i < 40; i++)
+        {
+            file.Append(System.Globalization.CultureInfo.InvariantCulture, $"{i + 1} 0 obj\n(x)\nendobj\n");
+            if (i % 5 == 0)
+            {
+                file.Append("trailer\n<< /Root 1 0 R >>\n");
+            }
+        }
+
+        for (var shift = 0; shift < 12; shift++)
+        {
+            var bytes = Encoding.Latin1.GetBytes(new string(' ', shift) + file);
+            var memory = Parsing.PdfRecoveryScanner.Scan(new Parsing.MemoryPdfInput(bytes), maxDepth: 64);
+            var stream = Parsing.PdfRecoveryScanner.Scan(new Parsing.StreamPdfInput(new MemoryStream(bytes)), maxDepth: 64);
+
+            Assert.HasCount(40, memory.Offsets);
+            Assert.Equal(memory.Offsets.OrderBy(o => o.Key), stream.Offsets.OrderBy(o => o.Key));
+            Assert.Equal(memory.TrailerOffsets, stream.TrailerOffsets);
+        }
+    }
+
+    [Fact]
+    public void ReadingADocumentDoesNotChangeItsObjects()
+    {
+        var file = HandWrittenPdf.CreateSimple().Add(6, "<< /Title (T) /Nested << /Array [1 [2 3] << /A 1 >>] >> >>").ToArray();
+        var document = PdfDocument.Open(file);
+        document.Pages[0].ExtractText();
+        foreach (var reference in document.Objects.GetReferences())
+        {
+            reference.Resolve();
+        }
+
+        using var output = new MemoryStream();
+        document.SaveIncremental(output);
+
+        var update = Encoding.Latin1.GetString(output.ToArray()[file.Length..]);
+        Assert.DoesNotContain(" obj", update, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void IncrementalSaveWritesTheObjectsWhoseNestedObjectsChanged()
+    {
+        var file = HandWrittenPdf.CreateSimple().Add(6, "<< /Nested << /Array [1 [2 3]] >> >>").Add(7, "(Seven)").Add(8, HandWrittenPdf.Stream("q Q")).ToArray();
+        var document = PdfDocument.Open(file);
+        var objects = document.Objects;
+        Assert.True(objects.TryGetReference(6, out var nested));
+        Assert.True(objects.TryGetReference(7, out var replaced));
+        Assert.True(objects.TryGetReference(8, out var stream));
+        Assert.True(objects.TryGetReference(4, out var font));
+        font.Resolve();
+
+        var array = Assert.IsType<PdfArray>(Assert.IsType<PdfDictionary>(nested.Resolve()).Get<PdfDictionary>(PdfName.Create("Nested"))!.Get<PdfArray>(PdfName.Create("Array"))!);
+        Assert.IsType<PdfArray>(array[1]).Add(PdfInteger.Get(4));
+        objects.Set(replaced, PdfString.FromText("Replaced"));
+        Assert.IsType<PdfStream>(stream.Resolve()).SetData("Q q"u8);
+
+        using var output = new MemoryStream();
+        document.SaveIncremental(output);
+
+        var update = Encoding.Latin1.GetString(output.ToArray()[file.Length..]);
+        Assert.Contains("6 0 obj", update, StringComparison.Ordinal);
+        Assert.Contains("7 0 obj", update, StringComparison.Ordinal);
+        Assert.Contains("8 0 obj", update, StringComparison.Ordinal);
+        Assert.DoesNotContain("4 0 obj", update, StringComparison.Ordinal);
+        var read = PdfDocument.Open(output.ToArray());
+        Assert.True(read.Objects.TryGetReference(6, out var readNested));
+        Assert.HasCount(3, Assert.IsType<PdfArray>(Assert.IsType<PdfDictionary>(readNested.Resolve()).Get<PdfDictionary>(PdfName.Create("Nested"))!.Get<PdfArray>(PdfName.Create("Array"))![1]));
+    }
+
+    [Fact]
+    public void Example_UnencryptedWrapper()
+    {
+        var secret = new PdfDocument();
+        secret.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("Secret", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 24, 60, 700);
+        secret.Encryption = new PdfEncryption("password", "owner");
+        var encryptedPdf = secret.ToByteArray();
+
+        #region Pdf_UnencryptedWrapper
+        // The wrapper is not encrypted: its pages tell a reader without the cryptographic filter how to open the payload
+        var wrapper = new PdfDocument();
+        wrapper.Pages.Add(PdfSize.A4).CreateContentBuilder()
+            .DrawText("This document is encrypted: open it with a PDF 2.0 reader", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 12, 60, 700);
+        wrapper.SetEncryptedPayload("document.pdf", encryptedPdf, cryptographicFilter: "Standard");
+        var file = wrapper.ToByteArray();
+
+        // A reader finds the payload, and opens it with its password
+        var payload = PdfDocument.Open(file).EncryptedPayload;
+        var document = payload?.OpenDocument(new PdfReadOptions { Password = "password" });
+        #endregion
+
+        Assert.NotNull(payload);
+        Assert.Equal("Standard", payload.CryptographicFilter);
+        Assert.Null(payload.Version);
+        Assert.Equal("Secret", document!.Pages[0].ExtractText());
+        var read = PdfDocument.Open(file);
+        Assert.False(read.IsEncrypted);
+        Assert.Equal(PdfVersion.Pdf20, read.Version);
+        Assert.Throws<InvalidOperationException>(() => read.SetEncryptedPayload("other.pdf", encryptedPdf, "Standard"));
+    }
+
+    [Fact]
+    public void HandWrittenUnencryptedWrapperIsRead()
+    {
+        // ISO 32000-2, 7.6.7: the payload named by the collection, among other embedded files
+        var payload = Encoding.Latin1.GetString(HandWrittenPdf.CreateSimple("Payload").ToArray());
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R /Collection << /Type /Collection /D (payload.pdf) /View /H >> /AF [5 0 R] /Names << /EmbeddedFiles << /Names [(notes.txt) 7 0 R (payload.pdf) 5 0 R] >> >> >>")
+            .Add(2, "<< /Type /Pages /Kids [] /Count 0 >>")
+            .Add(5, "<< /Type /Filespec /F (payload.pdf) /UF (payload.pdf) /AFRelationship /EncryptedPayload /EP << /Type /EncryptedPayload /Subtype /ExampleFilter /Version /1.2 >> /EF << /F 6 0 R >> >>")
+            .Add(6, HandWrittenPdf.Stream(payload, " /Type /EmbeddedFile /Subtype /application#2Fpdf"))
+            .Add(7, "<< /Type /Filespec /F (notes.txt) /EF << /F 8 0 R >> >>")
+            .Add(8, HandWrittenPdf.Stream("Notes", " /Type /EmbeddedFile"));
+        file.Header = "%PDF-2.0\n";
+
+        var document = PdfDocument.Open(file.ToArray());
+        var encrypted = document.EncryptedPayload;
+
+        Assert.NotNull(encrypted);
+        Assert.Equal("payload.pdf", encrypted.File.FileName);
+        Assert.Equal("ExampleFilter", encrypted.CryptographicFilter);
+        Assert.Equal("1.2", encrypted.Version);
+        Assert.Equal("Payload", encrypted.OpenDocument().Pages[0].ExtractText());
+        Assert.Null(PdfDocument.Open(HandWrittenPdf.CreateSimple().ToArray()).EncryptedPayload);
+    }
+
+    [Fact]
+    public void EncryptedPayloadIsDecodedWithTheLimitsOfTheWrapper()
+    {
+        var wrapper = new PdfDocument();
+        wrapper.SetEncryptedPayload("document.pdf", new byte[100_000], "Standard");
+        var file = wrapper.ToByteArray();
+
+        var payload = PdfDocument.Open(file, new PdfReadOptions { MaxDecodedStreamLength = 1000 }).EncryptedPayload;
+
+        Assert.NotNull(payload);
+        Assert.Throws<PdfResourceLimitException>(payload.GetData);
+    }
+
+    /// <summary>A stream over bytes, or over segments of a sparse file of NUL bytes, that counts what is read.</summary>
+    private sealed class TestStream : Stream
+    {
+        private readonly (long Offset, byte[] Data)[] _segments;
+        private readonly long _length;
+        private readonly bool _seekable;
+        private long _position;
+
+        public TestStream(byte[] data, bool seekable)
+        {
+            _segments = [(0, data)];
+            _length = data.Length;
+            _seekable = seekable;
+        }
+
+        public TestStream((long Offset, byte[] Data)[] segments, long length)
+        {
+            _segments = segments;
+            _length = length;
+            _seekable = true;
+        }
+
+        public long BytesRead { get; private set; }
+
+        public long Offset => _position;
+
+        public override bool CanRead => true;
+
+        public override bool CanSeek => _seekable;
+
+        public override bool CanWrite => false;
+
+        public override long Length => _seekable ? _length : throw new NotSupportedException();
+
+        public override long Position
+        {
+            get => _seekable ? _position : throw new NotSupportedException();
+            set => _position = value;
+        }
+
+        public override void Flush()
+        {
+        }
+
+        public override int Read(byte[] buffer, int offset, int count) => Read(buffer.AsSpan(offset, count));
+
+        public override int Read(Span<byte> buffer)
+        {
+            var count = (int)Math.Min(buffer.Length, Math.Max(0, _length - _position));
+            buffer = buffer[..count];
+            buffer.Clear();
+            foreach (var (start, data) in _segments)
+            {
+                var from = Math.Max(start, _position);
+                var to = Math.Min(start + data.Length, _position + count);
+                if (from < to)
+                {
+                    data.AsSpan((int)(from - start), (int)(to - from)).CopyTo(buffer[(int)(from - _position)..]);
+                }
+            }
+
+            _position += count;
+            BytesRead += count;
+            return count;
+        }
+
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            if (!_seekable)
+                throw new NotSupportedException();
+
+            _position = origin switch
+            {
+                SeekOrigin.Begin => offset,
+                SeekOrigin.Current => _position + offset,
+                _ => _length + offset,
+            };
+            return _position;
+        }
+
+        public override void SetLength(long value) => throw new NotSupportedException();
+
+        public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
     }
 }

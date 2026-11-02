@@ -66,7 +66,12 @@ Notes:
   `MaxSnapshotFileNameLength` characters, or more than the 255 UTF-8 bytes most file systems accept), when it
   ends with `.verified` / `.actual`, and when the part before its first `.` is a Windows device name (`CON`, `PRN`,
   `AUX`, `NUL`, `COM0`-`COM9`, `LPT0`-`LPT9`, in any case): `NUL.verified.txt` cannot be created on the Windows versions
-  that map a device name followed by an extension. The hash does not depend on where the repository is checked out.
+  that map a device name followed by an extension. A device name followed by a dot also gets a `_`, as Windows only
+  looks at the part before the first dot (`NUL.report` is stored as `NUL_.report_<hash>.verified.txt`). The hash does
+  not depend on where the repository is checked out.
+- A long name is shortened so the whole file name, with its hash, index and extension, stays within these limits. When
+  the hash, index and extension alone leave no room for the name, the assertion throws a `SnapshotException` instead
+  of creating a longer file.
 - A name never contains `.verified.` or `.actual.`, in any case: the dot that starts such a sequence is replaced with
   `_` and a hash is added (a test called `Parse.actual.value` is stored as `Parse_actual.value_<hash>.verified.txt`).
   Otherwise the approval tool would take its verified file for an actual file.
@@ -349,6 +354,8 @@ Snapshot.Validate(value, SnapshotType.Default, settings);
 <!-- endref -->
 
 The default serializers handle human-readable objects, `byte[]`, and `Stream`.
+`Snapshot.ValidateAsync` reads a `Stream` or enumerates an `IAsyncEnumerable<T>` asynchronously, with a
+`CancellationToken`, so these values can be validated without blocking the test.
 Image snapshots (`SnapshotType.Png`, `SnapshotType.Jpeg`, ...) are compared byte for byte unless a comparer is
 registered for their type. A custom `ISnapshotComparer` can explain a mismatch, shown under the changed file in the
 assertion message, by implementing `Equals(SnapshotData expected, SnapshotData actual, out string? mismatchReason)`.

@@ -19,6 +19,8 @@ description: What the library does not do, so that you can plan around it.
 - The text extraction follows the order of the content and joins the glyphs into lines by their positions; it does not
   detect columns, and it does not recognize the text of scanned pages.
 - The library reports the permissions of an encrypted document, but does not enforce them.
+- A file larger than 2 GB is read with [OpenSeekable](cref:Meziantou.Framework.Pdf.PdfDocument.OpenSeekable), but a document is saved in memory: a document whose file
+  would be larger than 2 GB cannot be saved, in full or incrementally. One stream cannot be larger than 2 GB.
 
 ## Conformance and signatures
 
@@ -30,3 +32,11 @@ description: What the library does not do, so that you can plan around it.
 - The verification of a signature does not decide whether the signer is trusted: the application builds the certificate
   chain.
 - The writer encrypts the embedded files with the method of the other streams.
+
+## Rendering
+
+- The renderer composites the page in sRGB, for a screen: overprint (`OP`, `op`, `OPM`) is not simulated, and the
+  halftones and the other parameters of the output device (black generation, undercolor removal) are ignored. The
+  colors of prepress documents that rely on them can differ from an overprint preview.
+- The appearances generated for the annotations that have none are simple: the line endings, the rich text and the
+  comb fields are not drawn.

@@ -39,6 +39,17 @@ internal static class RenderFontFactory
         if (font.Get<PdfArray>(PdfNames.DescendantFonts) is not { } descendants || !descendants.TryGetResolved<PdfDictionary>(0, out var descendant))
             return null;
 
+        var result = CreateComposite(font, descendant, decoder, cache);
+        if (result is not null && decoder.IsVertical)
+        {
+            result.VerticalMetrics = new VerticalMetrics(descendant);
+        }
+
+        return result;
+    }
+
+    private static RenderFont? CreateComposite(PdfDictionary font, PdfDictionary descendant, CompositeFontDecoder decoder, RenderCache cache)
+    {
         var descriptor = descendant.Get<PdfDictionary>(PdfNames.FontDescriptor);
         var program = LoadProgram(descriptor, cache);
         switch (program)
@@ -57,11 +68,10 @@ internal static class RenderFontFactory
 
             case CffFontProgram cff:
                 return new RenderFont(decoder, cff.FontMatrix, code => cff.GetPath(cff.GetGlyphByCid(decoder.GetCid(code))));
-            case Type1FontProgram:
-                return null;
         }
 
-        // Not embedded: the text of the codes in a font of the system
+        // Not embedded, or a program a CIDFont cannot have (a Type 1 font, 9.7.4.1: its glyphs have names, not CIDs): the
+        // text of the codes in a font of the system
         var face = FontSubstitution.Resolve(CreateRequest(font, descriptor), cache);
         if (face is null)
             return null;
@@ -267,7 +277,11 @@ internal static class RenderFontFactory
         return new PdfFontRequest(name, standardName, isBold, isItalic, isFixedPitch, isSerif, isSymbolic);
     }
 
-    /// <summary>A font that draws the characters of the codes with the glyphs of a font of the system, through its character map.</summary>
+    /// <summary>
+    /// A font that draws the characters of the codes with the glyphs of a font of the system, through its character map.
+    /// The glyphs are scaled horizontally to the widths of the document, so that a replacement font of other metrics
+    /// neither overlaps the glyphs nor leaves gaps between them (the widths place the glyphs, 9.2.4).
+    /// </summary>
     private static RenderFont CreateSubstitute(PdfFontDecoder decoder, FontFace face, Func<uint, string?> text, RenderCache cache)
     {
         var scale = 1.0 / face.UnitsPerEm;
@@ -284,7 +298,22 @@ internal static class RenderFontFactory
             var sink = new GlyphPathSink();
             var budget = new GlyphBudget(face.Data.Environment.Limits);
             face.DecodeOutline(glyph, sink, scratch, ref budget);
-            return sink.ToPath();
+            var path = sink.ToPath();
+            if (path is null || decoder.IsVertical)
+                return path;
+
+            var fit = GetWidthFit(decoder.GetWidth(code), face.GetAdvanceWidth(glyph) * scale);
+            return fit == 1 ? path : path.Transform(Meziantou.Framework.Imaging.AffineTransform.CreateScale(fit, 1));
         });
+    }
+
+    /// <summary>Gets the horizontal scale that gives a glyph of a replacement font the width of the document; 1 when one of the widths is unknown or they are too far apart to be the same glyph.</summary>
+    internal static double GetWidthFit(double documentWidth, double glyphWidth)
+    {
+        if (!(documentWidth > 0) || !(glyphWidth > 0) || !double.IsFinite(documentWidth) || !double.IsFinite(glyphWidth))
+            return 1;
+
+        var fit = documentWidth / glyphWidth;
+        return Math.Abs(fit - 1) < 0.01 || fit is < 0.25 or > 4 ? 1 : fit;
     }
 }

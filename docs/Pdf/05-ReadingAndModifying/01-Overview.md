@@ -22,8 +22,9 @@ var text = document.Pages[0].ExtractText();
   `ASCII85Decode`, `RunLengthDecode`, `CCITTFaxDecode`, `JBIG2Decode`, and `DCTDecode` and `JPXDecode` through the
   codecs of `Meziantou.Framework.Imaging`.
 - Encrypted documents of the standard security handler, with the user or the owner password.
-- Damaged files: a file whose cross-reference information is wrong is repaired by scanning it, and a stream whose length
-  is wrong ends where its data ends.
+- Damaged files: a file whose cross-reference information is wrong is repaired by scanning it, a stream whose length
+  is wrong ends where its data ends, and the damaged data of a filter (`FlateDecode`, `ASCII85Decode`, `ASCIIHexDecode`,
+  a truncated row of a predictor) gives the bytes decoded before the damage.
 
 The objects of a file are parsed when they are first used, not when the document is opened, and the document keeps the
 data of the file it was read from.

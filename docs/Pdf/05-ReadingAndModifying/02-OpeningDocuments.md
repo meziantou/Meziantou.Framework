@@ -18,9 +18,31 @@ var text = document.Pages[0].ExtractText();
 | `PdfDocument.Open(path)`, `OpenAsync(path)` | A file, read in full: the file is not kept open |
 | `PdfDocument.Open(stream)`, `OpenAsync(stream)` | A stream, read to its end; it is not closed |
 | `PdfDocument.Open(byte[])`, `Open(ReadOnlyMemory<byte>)` | Bytes in memory, which the document keeps: they must not change while the document is used |
+| [PdfDocument.OpenSeekable](cref:Meziantou.Framework.Pdf.PdfDocument.OpenSeekable) | A seekable stream, read when the objects are first used: the stream stays open while the document is used |
 
 Every method takes [PdfReadOptions](cref:Meziantou.Framework.Pdf.PdfReadOptions). A document supports one operation at a time: do not use it from several threads at
 once.
+
+## Large files
+
+[OpenSeekable](cref:Meziantou.Framework.Pdf.PdfDocument.OpenSeekable) reads a document without copying the file to memory: the objects are read from the stream
+when they are first used, and the data of a stream when it is decoded. The memory then grows with what the application
+reads, not with the size of the file, and a file can be larger than 2 GB.
+
+<!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfDocumentTests.cs;region=Pdf_OpenSeekable;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The objects are read from the stream when they are first used: it stays open while the document is used
+using var stream = File.OpenRead(path);
+var document = PdfDocument.OpenSeekable(stream);
+var text = document.Pages[0].ExtractText();
+```
+<!-- endref -->
+
+- The stream belongs to the application: the document does not close it. Keep it open and unchanged while the document
+  is used, and do not use it for anything else meanwhile, since the document moves its position.
+- The errors of the stream, such as `IOException` or `ObjectDisposedException`, are not caught: they can occur
+  whenever an object is first used.
+- `Open(stream)` and `OpenAsync(stream)` read the stream once, into an array of its length, and do not need it after.
 
 ## Encrypted documents
 
@@ -73,6 +95,12 @@ the file. [IsRepaired](cref:Meziantou.Framework.Pdf.PdfDocument.IsRepaired) is t
 
 - A repaired document is read and saved in full like any other, but it cannot be saved incrementally.
 - A reference to an object that does not exist is the null object, as the specification says.
+- In a repaired file, a reference whose generation is not the generation of the object resolves to the object when
+  the file defines one generation of it only; when it defines several, the reference is the null object.
+- The bytes of a stream whose length is right, such as an uncompressed embedded PDF document, are not taken for objects
+  of the file.
+- The objects are not read while the file is repaired, except the object streams, the trailers and the catalogs: the
+  others are read when they are first used, as in a file that is not damaged.
 - A damaged compressed stream gives the data before the damage. A stream that cannot be decoded at all throws when its
   data is read.
 

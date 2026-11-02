@@ -228,9 +228,8 @@ internal sealed class PdfFileWriter
             .OrderBy(e => e.Reference.ObjectNumber)
             .ToList();
 
-        var source = reader.Data.Span;
-        _output.Write(source);
-        if (source.Length > 0 && source[^1] is not ((byte)'\n' or (byte)'\r'))
+        reader.Input.CopyTo(_output);
+        if (reader.Input.GetLastByte() is >= 0 and not ('\n' or '\r'))
         {
             _output.WriteNewLine();
         }
@@ -376,7 +375,20 @@ internal sealed class PdfFileWriter
         var data = stream.EncodedData;
         if (_options.CompressStreams && stream.IsCompressible && !dictionary.ContainsKey(PdfNames.Filter) && data.Length > 0)
         {
-            data = FlateFilter.Encode(data.Span);
+            var compressed = FlateFilter.Encode(data.Span);
+            if (stream.PngPredictor is { } predictor)
+            {
+                // The PNG predictors make most photos smaller, and some flat images larger: the smaller data is kept
+                var predicted = FlateFilter.Encode(Predictor.EncodePng(data.Span, predictor.RowLength, predictor.BytesPerPixel));
+                if (predicted.Length < compressed.Length)
+                {
+                    compressed = predicted;
+                    dictionary[PdfNames.DecodeParms] = predictor.CreateParameters();
+                }
+            }
+
+            data = compressed;
+
             dictionary[PdfNames.Filter] = PdfNames.FlateDecode;
         }
 

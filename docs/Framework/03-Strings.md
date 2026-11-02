@@ -158,21 +158,6 @@ see [Formatting and cultures](04-FormattingAndCultures.md#append-invariant-value
 
 ## Escape Markdown
 
-<!-- ref:../../tests/Meziantou.Framework.Tests/MarkdownBuilderTests.cs;region=MarkdownBuilder_Escape;format=md-fenced-code-block;dedent=true -->
-```csharp
-// Escape the text so that Markdown renders it as is
-// Every ASCII punctuation character is escaped
-Assert.Equal(@"\*Note\* \[docs\]\!", MarkdownBuilder.Escape("*Note* [docs]!"));
-
-// Create a code span that can contain backticks
-Assert.Equal("`dotnet build`", MarkdownBuilder.CreateCodeSpan("dotnet build"));
-Assert.Equal("``a`b``", MarkdownBuilder.CreateCodeSpan("a`b"));
-Assert.Equal("`` `code` ``", MarkdownBuilder.CreateCodeSpan("`code`"));
-```
-<!-- endref -->
-
-- [MarkdownBuilder.Escape](cref:Meziantou.Framework.MarkdownBuilder.Escape) adds a backslash before every ASCII punctuation character, so the text is displayed as is
-  instead of being interpreted as Markdown.
-- [MarkdownBuilder.CreateCodeSpan](cref:Meziantou.Framework.MarkdownBuilder.CreateCodeSpan) creates an inline code span. It uses more backticks than the longest run of backticks
-  in the content, and adds spaces when the content starts or ends with a backtick, or starts and ends with a space (Markdown would remove these spaces otherwise).
-  Markdown has no empty code span, so an empty content returns an empty string.
+[MarkdownBuilder](cref:Meziantou.Framework.MarkdownBuilder) is obsolete. Use [MarkdownEscaper](cref:Meziantou.Framework.Markdown.MarkdownEscaper) from the `Meziantou.Framework.Markdown` package instead: it
+escapes text, code, links and table cells, and its output is checked against the Markdown parser. See
+[Write Markdown text](../Markdown/08-PlainTextAndOtherFormats.md#write-markdown-text).

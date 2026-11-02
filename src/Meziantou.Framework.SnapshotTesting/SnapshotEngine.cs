@@ -19,9 +19,62 @@ internal static class SnapshotEngine
     {
         ArgumentNullException.ThrowIfNull(settings);
 
-        type ??= SnapshotType.Default;
         testContext ??= SnapshotTestContext.Get();
         var callerContext = SnapshotCallerContext.Create(filePath, lineNumber, memberName, testContext);
+        Validate(type, value, settings, callerContext, testContext);
+    }
+
+    /// <summary>
+    /// Reads <paramref name="stream" /> asynchronously, from its current position, and validates its content like
+    /// <see cref="Validate(SnapshotType?, object?, SnapshotSettings, string?, int, string?, SnapshotTestContext?)" />
+    /// validates a stream. The stream is neither rewound nor disposed.
+    /// </summary>
+    /// <remarks>
+    /// Everything that identifies the caller is captured before the first await: the continuation no longer has the
+    /// frames of the test on its call stack. No file is read or written until the stream is fully read, so a canceled
+    /// or failed read leaves the snapshots untouched.
+    /// </remarks>
+    public static async Task ValidateAsync(SnapshotType? type, Stream stream, SnapshotSettings settings, string? filePath, int lineNumber, string? memberName, SnapshotTestContext? testContext, CancellationToken cancellationToken)
+    {
+        testContext ??= SnapshotTestContext.Get();
+        var callerContext = SnapshotCallerContext.Create(filePath, lineNumber, memberName, testContext);
+        callerContext.CaptureCallStack();
+
+        using var buffer = new MemoryStream();
+        await stream.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
+        buffer.Position = 0;
+
+        // The buffered content goes through the serializers as a stream, so a serializer registered for streams
+        // applies as it does for the synchronous overloads.
+        Validate(type, buffer, settings, callerContext, testContext);
+    }
+
+    /// <summary>
+    /// Enumerates <paramref name="values" /> asynchronously and validates the items as a list. The serializers see a
+    /// <see cref="List{T}" />, which the human-readable serializer writes as it writes the asynchronous sequence.
+    /// </summary>
+    /// <remarks>
+    /// As for streams, the caller is captured before the first await, and no file is read or written until the
+    /// sequence is fully enumerated.
+    /// </remarks>
+    public static async Task ValidateAsync<T>(SnapshotType? type, IAsyncEnumerable<T> values, SnapshotSettings settings, string? filePath, int lineNumber, string? memberName, SnapshotTestContext? testContext, CancellationToken cancellationToken)
+    {
+        testContext ??= SnapshotTestContext.Get();
+        var callerContext = SnapshotCallerContext.Create(filePath, lineNumber, memberName, testContext);
+        callerContext.CaptureCallStack();
+
+        var items = new List<T>();
+        await foreach (var item in values.WithCancellation(cancellationToken).ConfigureAwait(false))
+        {
+            items.Add(item);
+        }
+
+        Validate(type, items, settings, callerContext, testContext);
+    }
+
+    private static void Validate(SnapshotType? type, object? value, SnapshotSettings settings, SnapshotCallerContext callerContext, SnapshotTestContext testContext)
+    {
+        type ??= SnapshotType.Default;
         var serialized = Serialize(settings, type, value);
 
         if (serialized is null || serialized.Count == 0)
@@ -29,9 +82,10 @@ internal static class SnapshotEngine
 
         List<SnapshotFile> actualFiles;
         SnapshotNameOwner? owner;
+        SnapshotHashedName? hashedName;
         try
         {
-            actualFiles = BuildActualFiles(settings, callerContext, type, serialized, testContext, out owner);
+            actualFiles = BuildActualFiles(settings, callerContext, type, serialized, testContext, out owner, out hashedName);
         }
         finally
         {
@@ -39,7 +93,7 @@ internal static class SnapshotEngine
             callerContext.Freeze();
         }
 
-        var expectedFilePaths = DiscoverExpectedFilePaths(actualFiles, owner, out var ambiguousFilePaths, out var filesWithADifferentCase);
+        var expectedFilePaths = DiscoverExpectedFilePaths(actualFiles, owner, hashedName, out var ambiguousFilePaths, out var filesWithADifferentCase);
         var caseReport = RenameFilesWithADifferentCase(settings, callerContext, filesWithADifferentCase);
         var expectedFiles = LoadSnapshotFiles(expectedFilePaths);
 
@@ -306,20 +360,37 @@ internal static class SnapshotEngine
     /// <summary>
     /// Resolves the comparer for a snapshot file. A serializer may store a different format than the one that
     /// was requested - an animated GIF becomes PNG frames, a source generator result becomes C# files - and
-    /// the comparison is about the bytes that ended up on disk, so a comparer registered for the stored format
-    /// wins. The requested type stays as the fallback, so an explicit registration for it still applies when
-    /// nothing is registered for the stored format.
+    /// the comparison is about the bytes that ended up on disk:
+    /// <list type="number">
+    /// <item>a comparer registered for the stored format wins;</item>
+    /// <item>a custom comparer registered for the requested type applies next, so an explicit registration for it
+    /// still applies when nothing is registered for the stored format;</item>
+    /// <item>otherwise, the text or binary default is chosen from the stored format. The comparers registered for
+    /// <see cref="SnapshotType.Default" /> and <see cref="SnapshotType.None" />, and the built-in comparers, are
+    /// these defaults: the text comparer must not accept different binary bytes, and the byte comparer must not
+    /// reject text whose line endings changed.</item>
+    /// </list>
     /// </summary>
     private static ISnapshotComparer GetComparer(SnapshotSettings settings, SnapshotType requestedType, SnapshotData data)
     {
-        if (!string.IsNullOrEmpty(data.Extension))
+        if (string.IsNullOrEmpty(data.Extension))
+            return settings.Comparers.Get(requestedType);
+
+        var storedType = SnapshotType.Create(data.Extension);
+        if (storedType == requestedType)
+            return settings.Comparers.Get(requestedType);
+
+        if (settings.Comparers.TryGet(storedType, out var storedComparer))
+            return storedComparer;
+
+        if (requestedType != SnapshotType.Default && requestedType != SnapshotType.None &&
+            settings.Comparers.TryGet(requestedType, out var requestedComparer) &&
+            requestedComparer is not TextSnapshotComparer and not ByteArraySnapshotComparer)
         {
-            var storedType = SnapshotType.Create(data.Extension);
-            if (storedType != requestedType && settings.Comparers.TryGet(storedType, out var storedComparer))
-                return storedComparer;
+            return requestedComparer;
         }
 
-        return settings.Comparers.Get(requestedType);
+        return settings.Comparers.Get(storedType);
     }
 
     private static string BuildMessage(
@@ -465,9 +536,11 @@ internal static class SnapshotEngine
         SnapshotType type,
         IReadOnlyList<SnapshotData> serialized,
         SnapshotTestContext? testContext,
-        out SnapshotNameOwner? owner)
+        out SnapshotNameOwner? owner,
+        out SnapshotHashedName? hashedName)
     {
         var result = BuildActualFilesForTestContext(settings, callerContext, type, serialized, testContext);
+        var resultTestContext = testContext;
         var usesBuiltInNames = SnapshotSettings.UsesBuiltInSnapshotNames(settings);
         owner = usesBuiltInNames ? callerContext.GetNameOwner() : null;
         var isLegacyName = false;
@@ -483,9 +556,12 @@ internal static class SnapshotEngine
                 (owner is null || GetSnapshotName(legacyResult) is not { } legacySnapshotName || !SnapshotNameRegistry.IsClaimedByAnotherTest(legacyResult[0].FilePath.Parent, legacySnapshotName, owner)))
             {
                 result = legacyResult;
+                resultTestContext = testContext with { TestName = legacyTestName, LegacyTestName = null };
                 isLegacyName = true;
             }
         }
+
+        hashedName = usesBuiltInNames ? GetHashedSnapshotName(settings, callerContext, type, result, resultTestContext) : null;
 
         if (owner is not null && GetSnapshotName(result) is { } snapshotName)
         {
@@ -507,6 +583,29 @@ internal static class SnapshotEngine
         }
 
         return result;
+    }
+
+    /// <summary>
+    /// Returns the identity of the snapshots of the assertion when the default path strategy added a hash to the name of
+    /// one of its files, or <see langword="null" /> otherwise. See <see cref="SnapshotHashedName" />.
+    /// </summary>
+    private static SnapshotHashedName? GetHashedSnapshotName(SnapshotSettings settings, SnapshotCallerContext callerContext, SnapshotType type, List<SnapshotFile> files, SnapshotTestContext? testContext)
+    {
+        // Parsing the names first avoids computing the hash, which may walk the call stack, for the names without one.
+        var fileNames = new List<SnapshotHashedName>();
+        foreach (var file in files)
+        {
+            if (GetVerifiedBaseName(file.FilePath) is { } baseName)
+            {
+                SnapshotHashedName.Parse(baseName, fileNames);
+            }
+        }
+
+        if (fileNames.Count == 0)
+            return null;
+
+        var hashedName = SnapshotSettings.GetHashedSnapshotName(new SnapshotPathContext(callerContext, type, index: 0, files[0].Data.Extension, testContext, settings, files.Count));
+        return fileNames.Exists(hashedName.Matches) ? hashedName : null;
     }
 
     private static string? GetSnapshotName(List<SnapshotFile> files)
@@ -595,6 +694,7 @@ internal static class SnapshotEngine
     private static IReadOnlyCollection<FullPath> DiscoverExpectedFilePaths(
         List<SnapshotFile> actualFiles,
         SnapshotNameOwner? owner,
+        SnapshotHashedName? hashedName,
         out IReadOnlyCollection<FullPath> ambiguousPaths,
         out IReadOnlyList<SnapshotFileRename> filesWithADifferentCase)
     {
@@ -649,6 +749,7 @@ internal static class SnapshotEngine
         }
 
         var expected = new HashSet<FullPath>(actualPaths);
+        HashSet<FullPath>? ambiguous = null;
         var hasFileWithoutIndex = false;
         if (verifiedFiles.FilesByName.TryGetValue(GetNameWithoutIndex(snapshotName), out var namedCandidates))
         {
@@ -694,13 +795,57 @@ internal static class SnapshotEngine
 
             if (indexedCandidates is not null)
             {
-                var ambiguous = new HashSet<FullPath>();
+                ambiguous = [];
                 AddIndexedFilesOfThisAssertion(actualFiles, directory, owner, indexedPrefix, hasFileWithoutIndex, indexedCandidates, expected, ambiguous);
                 ambiguousPaths = ambiguous;
             }
         }
 
+        if (hashedName is not null)
+        {
+            AddHashedFilesOfThisAssertion(verifiedFiles, directory, hashedName, actualFileNames, actualExtensions, expected, ambiguous);
+        }
+
         return expected;
+    }
+
+    /// <summary>
+    /// Adds the files of the assertion whose name ends with its hash, whatever the length of their stem: a long stem is
+    /// shortened by the length of the rest of the file name, so a file with another extension or another number of
+    /// snapshots has a stem of another length, and is not found by its name. See <see cref="SnapshotHashedName" />.
+    /// </summary>
+    /// <remarks>
+    /// The hash is computed from the identity of the test, so another test does not produce it: a file found by its index
+    /// that has the hash is not ambiguous. As for the files found by their name, a file with another extension is left
+    /// alone when the test has several assertions, as it may be the snapshot of another assertion of the test.
+    /// </remarks>
+    private static void AddHashedFilesOfThisAssertion(
+        VerifiedSnapshotFileCache verifiedFiles,
+        FullPath directory,
+        SnapshotHashedName hashedName,
+        HashSet<string> actualFileNames,
+        HashSet<string> actualExtensions,
+        HashSet<FullPath> expected,
+        HashSet<FullPath>? ambiguous)
+    {
+        if (!verifiedFiles.FilesByHash.TryGetValue(hashedName.Hash, out var candidates))
+            return;
+
+        var hasOtherAssertions = hashedName.OrdinalPart.Length > 0 ||
+            candidates.Exists(candidate => !string.Equals(candidate.Name.OrdinalPart, hashedName.OrdinalPart, StringComparison.Ordinal) && hashedName.Stem.StartsWith(candidate.Name.Stem, StringComparison.Ordinal));
+
+        foreach (var candidate in candidates)
+        {
+            if (!hashedName.Matches(candidate.Name) || actualFileNames.Contains(candidate.File.FileName))
+                continue;
+
+            if (hasOtherAssertions && !actualExtensions.Contains(candidate.File.Extension))
+                continue;
+
+            var path = directory / candidate.File.FileName;
+            expected.Add(path);
+            ambiguous?.Remove(path);
+        }
     }
 
     /// <summary>
@@ -859,6 +1004,8 @@ internal static class SnapshotEngine
             return cache;
 
         var filesByName = new Dictionary<string, List<VerifiedSnapshotFile>>(StringComparer.OrdinalIgnoreCase);
+        var filesByHash = new Dictionary<string, List<HashedSnapshotFile>>(StringComparer.Ordinal);
+        var hashedNames = new List<SnapshotHashedName>();
         var namesWithCallOrdinals = new HashSet<string>(StringComparer.Ordinal);
         foreach (var path in Directory.EnumerateFiles(directory))
         {
@@ -874,7 +1021,21 @@ internal static class SnapshotEngine
                 filesByName[nameWithoutIndex] = files;
             }
 
-            files.Add(new VerifiedSnapshotFile(fileName.ToString(), baseName, extension.ToString()));
+            var file = new VerifiedSnapshotFile(fileName.ToString(), baseName, extension.ToString());
+            files.Add(file);
+
+            hashedNames.Clear();
+            SnapshotHashedName.Parse(baseName, hashedNames);
+            foreach (var hashedName in hashedNames)
+            {
+                if (!filesByHash.TryGetValue(hashedName.Hash, out var hashedFiles))
+                {
+                    hashedFiles = [];
+                    filesByHash[hashedName.Hash] = hashedFiles;
+                }
+
+                hashedFiles.Add(new HashedSnapshotFile(file, hashedName));
+            }
 
             // The call ordinal comes before the index: 'Name~2' or 'Name~2_0'.
             var ordinalIndex = GetCallOrdinalSeparatorIndex(baseName);
@@ -889,7 +1050,7 @@ internal static class SnapshotEngine
             }
         }
 
-        var result = new VerifiedSnapshotFileCache(lastWriteTimeUtc, filesByName, namesWithCallOrdinals);
+        var result = new VerifiedSnapshotFileCache(lastWriteTimeUtc, filesByName, filesByHash, namesWithCallOrdinals);
         VerifiedSnapshotFiles[directory] = result;
         return result;
     }
@@ -1217,6 +1378,13 @@ internal static class SnapshotEngine
 
     /// <param name="LastWriteTimeUtc">Timestamp of the directory when it was listed.</param>
     /// <param name="FilesByName">Verified files, by name without the <c>_&lt;index&gt;</c> suffix, whatever its case.</param>
+    /// <param name="FilesByHash">Verified files whose name may end with a hash, by hash. See <see cref="SnapshotHashedName" />.</param>
     /// <param name="NamesWithCallOrdinals">Names that have files with a <c>~&lt;ordinal&gt;</c> suffix, without the suffix.</param>
-    private readonly record struct VerifiedSnapshotFileCache(DateTime LastWriteTimeUtc, Dictionary<string, List<VerifiedSnapshotFile>> FilesByName, HashSet<string> NamesWithCallOrdinals);
+    private readonly record struct VerifiedSnapshotFileCache(
+        DateTime LastWriteTimeUtc,
+        Dictionary<string, List<VerifiedSnapshotFile>> FilesByName,
+        Dictionary<string, List<HashedSnapshotFile>> FilesByHash,
+        HashSet<string> NamesWithCallOrdinals);
+
+    private readonly record struct HashedSnapshotFile(VerifiedSnapshotFile File, SnapshotHashedName Name);
 }

@@ -16,6 +16,7 @@ namespace Meziantou.Framework.Pdf.Objects;
 public sealed class PdfStream : PdfObject
 {
     private ReadOnlyMemory<byte> _encoded;
+    private Func<ReadOnlyMemory<byte>>? _pendingData;
     private ArrayBufferWriter<byte>? _appended;
 
     /// <summary>Initializes a new instance of the <see cref="PdfStream"/> class with an empty dictionary and no data.</summary>
@@ -52,6 +53,7 @@ public sealed class PdfStream : PdfObject
     {
         get
         {
+            LoadPendingData();
             Flush();
             return _encoded;
         }
@@ -65,6 +67,9 @@ public sealed class PdfStream : PdfObject
 
     /// <summary>Gets a value indicating whether the writer may compress the data: it was set without filter by the library or its caller.</summary>
     internal bool IsCompressible { get; private set; }
+
+    /// <summary>Gets or sets the PNG predictor the writer applies to the data before it compresses it (the samples of an image), or <see langword="null"/>.</summary>
+    internal PdfPngPredictor? PngPredictor { get; set; }
 
     /// <summary>Gets or sets the limits the decoding applies (the read options of the document the stream was loaded from).</summary>
     internal PdfDecodeLimits DecodeLimits { get; set; } = PdfDecodeLimits.Default;
@@ -84,8 +89,10 @@ public sealed class PdfStream : PdfObject
         Dictionary.Remove(PdfNames.DecodeParms);
         Dictionary.Remove(PdfNames.DL);
         _appended = null;
+        _pendingData = null;
         _encoded = data.ToArray();
         IsCompressible = true;
+        PngPredictor = null;
         DataVersion++;
         Dictionary[PdfNames.Length] = PdfInteger.Get(_encoded.Length);
     }
@@ -114,8 +121,10 @@ public sealed class PdfStream : PdfObject
     internal void SetData(ReadOnlyMemory<byte> data, bool compressible)
     {
         _appended = null;
+        _pendingData = null;
         _encoded = data;
         IsCompressible = compressible;
+        PngPredictor = null;
         DataVersion++;
         Dictionary[PdfNames.Length] = PdfInteger.Get(data.Length);
     }
@@ -124,7 +133,29 @@ public sealed class PdfStream : PdfObject
     internal void SetLoadedData(ReadOnlyMemory<byte> data)
     {
         _encoded = data;
+        _pendingData = null;
         IsCompressible = false;
+    }
+
+    /// <summary>Sets the data the parser found in a file it reads on demand: the data is read when it is first used.</summary>
+    internal void SetLoadedData(Func<ReadOnlyMemory<byte>> data)
+    {
+        _encoded = default;
+        _pendingData = data;
+        IsCompressible = false;
+    }
+
+    /// <summary>Transforms the data the parser read (the decryption), when it is first used if it is not read yet.</summary>
+    internal void TransformLoadedData(Func<ReadOnlyMemory<byte>, ReadOnlyMemory<byte>> transform)
+    {
+        if (_pendingData is { } pending)
+        {
+            _pendingData = () => transform(pending());
+        }
+        else
+        {
+            SetLoadedData(transform(EncodedData));
+        }
     }
 
     /// <summary>Appends data to a stream without filter (content builders).</summary>
@@ -132,6 +163,7 @@ public sealed class PdfStream : PdfObject
     {
         if (_appended is null)
         {
+            LoadPendingData();
             if (Dictionary.ContainsKey(PdfNames.Filter))
                 throw new InvalidOperationException("Data cannot be appended to an encoded stream");
 
@@ -142,6 +174,15 @@ public sealed class PdfStream : PdfObject
 
         _appended.Write(data);
         DataVersion++;
+    }
+
+    private void LoadPendingData()
+    {
+        if (_pendingData is { } pending)
+        {
+            _encoded = pending();
+            _pendingData = null;
+        }
     }
 
     private void Flush()

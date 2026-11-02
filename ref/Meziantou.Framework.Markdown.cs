@@ -26,6 +26,17 @@ namespace Meziantou.Framework.Markdown
         public static Meziantou.Framework.Markdown.Syntax.MarkdownDocument ToPlainText([System.Diagnostics.CodeAnalysis.StringSyntax("Markdown")] string markdown, System.IO.TextWriter writer, Meziantou.Framework.Markdown.MarkdownPipeline? pipeline = null, Meziantou.Framework.Markdown.MarkdownParserContext? context = null) => throw null;
     }
 
+    public static class MarkdownEscaper
+    {
+        public static string CreateCodeSpan(string content) => throw null;
+        public static string CreateFencedCodeBlock(string code, string? infoString = null) => throw null;
+        public static string Escape(string text) => throw null;
+        public static string EscapeLinkDestination(string url) => throw null;
+        public static string EscapeLinkLabel(string label) => throw null;
+        public static string EscapeLinkTitle(string title) => throw null;
+        public static string EscapeTableCell(string text) => throw null;
+    }
+
     public static class MarkdownExtensions
     {
         public static Meziantou.Framework.Markdown.MarkdownPipelineBuilder Configure(this Meziantou.Framework.Markdown.MarkdownPipelineBuilder pipeline, string? extensions) => throw null;

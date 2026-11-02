@@ -176,59 +176,116 @@ public sealed record SnapshotSettings
             }
         }
 
-        var rawStartPart = context.Settings.SnapshotNamingStrategy(context) ?? "";
-        var startPart = RemoveSnapshotFileMarkers(SanitizeFragment(rawStartPart));
+        var name = GetSnapshotNameParts(context);
+
+        // The '_<index>' suffix tells apart the files of an assertion that produces several snapshots.
+        var indexPart = context.SnapshotCount > 1 ? "_" + context.Index.ToString(CultureInfo.InvariantCulture) : "";
+        var extensionPart = ".verified." + extension;
+        var maxLength = context.Settings.MaxSnapshotFileNameLength;
+        var fileName = name.Stem + name.OrdinalPart + indexPart + extensionPart;
+        var shouldAddHashSuffix =
+            name.RequiresHash ||
+            fileName.Length > maxLength ||
+            Encoding.UTF8.GetByteCount(fileName) > MaxFileNameByteCount ||
+            IsWindowsReservedDeviceName(name.Stem + name.OrdinalPart + indexPart);
+
+        if (!shouldAddHashSuffix)
+            return fileName;
+
+        var suffix = "_" + ComputeNameHash(context, name.RawName) + name.OrdinalPart + indexPart + extensionPart;
+
+        // The stem keeps at least one character, so the file name never starts with the '_' of the hash. A suffix too
+        // long to leave room for it cannot be shortened without losing the format or the index of the snapshot.
+        var maxStemLength = maxLength - suffix.Length;
+        var maxStemByteCount = MaxFileNameByteCount - Encoding.UTF8.GetByteCount(suffix);
+        var stem = name.Stem;
+        if (stem.Length > maxStemLength)
+        {
+            stem = TruncateToLength(stem, maxStemLength);
+        }
+
+        stem = TruncateToByteCount(stem, maxStemByteCount);
+        if (stem.Length == 0)
+        {
+            throw new SnapshotException(
+                $"Cannot name the snapshot '{name.RawName}': its suffix '{suffix}' leaves no room for the name within {maxLength.ToString(CultureInfo.InvariantCulture)} characters " +
+                $"(MaxSnapshotFileNameLength) and {MaxFileNameByteCount.ToString(CultureInfo.InvariantCulture)} UTF-8 bytes. Increase MaxSnapshotFileNameLength or use a shorter extension.");
+        }
+
+        return stem + suffix;
+    }
+
+    /// <summary>
+    /// Returns the identity the default path strategy gives the snapshots of an assertion when it adds a hash to their
+    /// names, whether or not it does for this context. See <see cref="SnapshotHashedName" />.
+    /// </summary>
+    internal static SnapshotHashedName GetHashedSnapshotName(SnapshotPathContext context)
+    {
+        var name = GetSnapshotNameParts(context);
+        return new SnapshotHashedName(name.Stem, ComputeNameHash(context, name.RawName), name.OrdinalPart);
+    }
+
+    /// <summary>
+    /// Computes the part of the default file name that depends neither on the extension nor on the index of the snapshot.
+    /// </summary>
+    private static SnapshotNameParts GetSnapshotNameParts(SnapshotPathContext context)
+    {
+        var rawName = context.Settings.SnapshotNamingStrategy(context) ?? "";
+        var stem = RemoveSnapshotFileMarkers(SanitizeFragment(rawName));
 
         // Sanitizing loses information - 'Case_a/b' and 'Case_a?b' both become 'Case_a_b' - so a name it
         // changed only stays distinct once the hash of the original name is part of the file name.
-        var isNameSanitized = !string.Equals(startPart, rawStartPart, StringComparison.Ordinal);
-        if (startPart.Length == 0)
+        var requiresHash = !string.Equals(stem, rawName, StringComparison.Ordinal);
+        if (stem.Length == 0)
         {
-            startPart = "snapshot";
+            stem = "snapshot";
         }
 
-        // The '_<index>' suffix tells apart the files of an assertion that produces several snapshots, and the
-        // '~<ordinal>' suffix tells apart the assertions of a test that would otherwise share a name. '~' is never
+        requiresHash |= IsReservedSnapshotName(stem);
+
+        // Windows only looks at the part before the first dot: 'NUL.report.verified.txt' is the 'NUL' device too. The
+        // hash added after the name does not change that part, so it is escaped. A name without a dot is followed by the
+        // hash, which makes it safe already, and keeps the name it always had.
+        var dotIndex = stem.IndexOf('.', StringComparison.Ordinal);
+        if (dotIndex >= 0 && IsWindowsReservedDeviceName(stem))
+        {
+            stem = stem.Insert(dotIndex, "_");
+            requiresHash = true;
+        }
+
+        // The '~<ordinal>' suffix tells apart the assertions of a test that would otherwise share a name. '~' is never
         // produced by the sanitization, so the second assertion of a test cannot take the name of another test.
         // The naming of a custom strategy is left alone: it may already tell the assertions apart.
         var callOrdinal = IsBuiltInNamingStrategy(context.Settings.SnapshotNamingStrategy) ? context.CallOrdinal : 1;
         var ordinalPart = callOrdinal > 1 ? "~" + callOrdinal.ToString(CultureInfo.InvariantCulture) : "";
-        var indexPart = context.SnapshotCount > 1 ? "_" + context.Index.ToString(CultureInfo.InvariantCulture) : "";
-        var extensionPart = ".verified." + extension;
-        var suffixWithoutHash = ordinalPart + indexPart + extensionPart;
-        var shouldAddHashSuffix =
-            isNameSanitized ||
-            startPart.Length > context.Settings.MaxSnapshotFileNameLength - suffixWithoutHash.Length ||
-            Encoding.UTF8.GetByteCount(startPart) + Encoding.UTF8.GetByteCount(suffixWithoutHash) > MaxFileNameByteCount ||
-            IsReservedSnapshotName(startPart) ||
-            IsWindowsReservedDeviceName(startPart + ordinalPart + indexPart);
+        return new SnapshotNameParts(rawName, stem, ordinalPart, requiresHash);
+    }
 
-        var suffix = suffixWithoutHash;
-        if (shouldAddHashSuffix)
+    private static string ComputeNameHash(SnapshotPathContext context, string rawName)
+    {
+        // The line number is deliberately not part of the hash: it would rename the snapshot whenever
+        // anything above the assertion moves. Two assertions of one test are told apart by the ordinal
+        // suffix instead.
+        // The source file name is used rather than its full path: the snapshot is stored next to the
+        // source file, so the name is enough to tell two files of that directory apart, while the
+        // absolute path would tie the file name to where the repository happens to be checked out.
+        // The index and the extension are not part of it either: the hash identifies the files of an assertion.
+        var hashInput = $"{context.SourceFilePath.Name}|{context.MethodName}|{context.ClassName}|{context.Type.Type}|{rawName}|{context.TestContext?.TestName}|{FormatMetadata(context.TestContext?.Metadata)}";
+        return ToHexSha256(hashInput, length: SnapshotHashedName.HashLength);
+    }
+
+    /// <summary>Shortens a name to the given number of UTF-16 code units, without splitting a surrogate pair.</summary>
+    private static string TruncateToLength(string value, int maxLength)
+    {
+        if (maxLength <= 0)
+            return "";
+
+        if (char.IsHighSurrogate(value[maxLength - 1]))
         {
-            // The line number is deliberately not part of the hash: it would rename the snapshot whenever
-            // anything above the assertion moves. Two assertions of one test are told apart by the ordinal
-            // suffix instead.
-            // The source file name is used rather than its full path: the snapshot is stored next to the
-            // source file, so the name is enough to tell two files of that directory apart, while the
-            // absolute path would tie the file name to where the repository happens to be checked out.
-            var hashInput = $"{context.SourceFilePath.Name}|{context.MethodName}|{context.ClassName}|{context.Type.Type}|{rawStartPart}|{context.TestContext?.TestName}|{FormatMetadata(context.TestContext?.Metadata)}";
-            var hash = ToHexSha256(hashInput, length: 8);
-            suffix = "_" + hash + ordinalPart + indexPart + extensionPart;
+            maxLength--;
         }
 
-        var maxStartLength = context.Settings.MaxSnapshotFileNameLength - suffix.Length;
-        if (maxStartLength <= 0)
-        {
-            startPart = "s";
-        }
-        else if (startPart.Length > maxStartLength)
-        {
-            startPart = startPart[..maxStartLength];
-        }
-
-        startPart = TruncateToByteCount(startPart, MaxFileNameByteCount - Encoding.UTF8.GetByteCount(suffix));
-        return startPart + suffix;
+        return value[..maxLength];
     }
 
     /// <summary>
@@ -250,7 +307,7 @@ public sealed record SnapshotSettings
             length += rune.Utf16SequenceLength;
         }
 
-        return length == 0 ? "s" : value[..length];
+        return value[..length];
     }
 
     private static bool IsReservedSnapshotName(string value)
@@ -340,4 +397,6 @@ public sealed record SnapshotSettings
 
         return buffer.ToString().Trim('_');
     }
+
+    private readonly record struct SnapshotNameParts(string RawName, string Stem, string OrdinalPart, bool RequiresHash);
 }

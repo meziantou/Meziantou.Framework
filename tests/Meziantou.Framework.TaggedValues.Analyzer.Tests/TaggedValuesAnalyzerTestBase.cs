@@ -65,6 +65,46 @@ public abstract class TaggedValuesAnalyzerTestBase
         return test.RunAsync(XunitCancellationToken);
     }
 
+    /// <summary>
+    /// Verifies a code fix on several files. <paramref name="batchFixedSources"/> is the result of Fix All, when it differs from the
+    /// result of the fixes applied one by one. <paramref name="fixOne"/> applies a single fix instead of fixing until no diagnostic remains.
+    /// </summary>
+    protected static Task VerifyCodeFixAsync<TCodeFixProvider>(string[] sources, string[] fixedSources, string[]? batchFixedSources = null, bool fixOne = false, bool strict = false)
+        where TCodeFixProvider : CodeFixProvider, new()
+    {
+        var test = new CSharpCodeFixTest<ValueTagAnalyzerType, TCodeFixProvider, DefaultVerifier>
+        {
+            ReferenceAssemblies = Net11,
+        };
+
+        if (fixOne)
+        {
+            test.CodeFixTestBehaviors |= CodeFixTestBehaviors.FixOne;
+        }
+
+        foreach (var source in sources)
+        {
+            test.TestState.Sources.Add(Usings + source);
+        }
+
+        foreach (var source in fixedSources)
+        {
+            test.FixedState.Sources.Add(Usings + source);
+        }
+
+        foreach (var source in batchFixedSources ?? [])
+        {
+            test.BatchFixedState.Sources.Add(Usings + source);
+        }
+
+        // The diagnostics that remain after the fixes are declared by the markup of the fixed sources
+        test.FixedState.MarkupHandling = MarkupMode.Allow;
+        test.BatchFixedState.MarkupHandling = MarkupMode.Allow;
+
+        Configure(test, inferTagsFromNames: false, strict);
+        return test.RunAsync(XunitCancellationToken);
+    }
+
     protected static DiagnosticResult Diagnostic(string id)
     {
         return new DiagnosticResult(id, DiagnosticSeverity.Warning);

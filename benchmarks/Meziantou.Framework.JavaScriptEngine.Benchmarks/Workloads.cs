@@ -88,6 +88,47 @@ internal static class Workloads
               return numbers.length + objects.length + numbers.map(x => x + 1).length;
             }
             """,
+        ["NumberFormat"] = """
+            const nf = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 });
+            const currency = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
+            function run() { let n = 0; for (let i = 0; i < 5000; i++) { n += nf.format(i * 1.37).length + currency.format(i * 1000.5).length; } return n; }
+            """,
+        ["DateTimeFormat"] = """
+            const df = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Paris' });
+            const parts = new Intl.DateTimeFormat('fr-FR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            function run() { let n = 0; for (let i = 0; i < 5000; i++) { const t = 1704067200000 + i * 3600000; n += df.format(t).length + parts.format(t).length; } return n; }
+            """,
+        ["LocaleCompare"] = """
+            const words = Array.from({ length: 5000 }, (_, i) => 'item' + ((i * 7919) % 5000) + (i % 2 ? 'é' : 'e'));
+            function run() { return words.slice().sort((a, b) => a.localeCompare(b)).length + words.slice().sort((a, b) => a.localeCompare(b, 'fr')).length; }
+            """,
+        ["LocalDate"] = """
+            function run() {
+              let s = 0;
+              for (let i = 0; i < 10000; i++) { const d = new Date(2024, i % 12, 1 + (i % 28), i % 24); s += d.getHours() + d.getDate() + d.getTimezoneOffset(); }
+              return s;
+            }
+            """,
+    };
+
+    /// <summary>The scripts of the cold start measurements (the cold command): the first use of the Intl data.</summary>
+    public static IReadOnlyDictionary<string, string> ColdStart { get; } = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        ["CollatorZh"] = "new Intl.Collator('zh').compare('\u4E2D', '\u6587')",
+        ["CollatorDe"] = "new Intl.Collator('de').compare('a', '\u00E4')",
+        ["NumberFormat"] = "new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(1234.5)",
+        ["DateTimeFormat"] = "new Intl.DateTimeFormat('ja-JP', { dateStyle: 'full', timeStyle: 'long', timeZone: 'Asia/Tokyo' }).format(0)",
+        ["ManyLocales"] = """
+            for (const locale of Intl.DateTimeFormat.supportedLocalesOf(['af', 'am', 'ar', 'az', 'be', 'bg', 'bn', 'bs', 'ca', 'cs', 'cy', 'da', 'de', 'el', 'en', 'en-GB', 'es', 'es-MX', 'et', 'eu', 'fa', 'fi', 'fil', 'fr', 'fr-CA', 'ga', 'gl', 'gu', 'he', 'hi', 'hr', 'hu', 'hy', 'id', 'is', 'it', 'ja', 'ka', 'kk', 'km', 'kn', 'ko', 'ky', 'lo', 'lt', 'lv', 'mk', 'ml', 'mn', 'mr', 'ms', 'my', 'nb', 'ne', 'nl', 'or', 'pa', 'pl', 'ps', 'pt', 'pt-PT', 'ro', 'ru', 'si', 'sk', 'sl', 'sq', 'sr', 'sv', 'sw', 'ta', 'te', 'th', 'tr', 'uk', 'ur', 'uz', 'vi', 'zh', 'zh-TW', 'zu'])) {
+              new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR' }).format(1234.5);
+              new Intl.DateTimeFormat(locale, { dateStyle: 'long', timeStyle: 'short' }).format(0);
+              new Intl.PluralRules(locale).select(1);
+              new Intl.RelativeTimeFormat(locale).format(-1, 'day');
+              new Intl.ListFormat(locale).format(['a', 'b', 'c']);
+              new Intl.DisplayNames(locale, { type: 'language' }).of('en');
+              ['b', 'a', 'c'].sort(new Intl.Collator(locale).compare);
+            }
+            """,
     };
 
     /// <summary>A test file of the web-platform-tests style, run after testharness.js (the harness command).</summary>

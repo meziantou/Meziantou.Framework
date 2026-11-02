@@ -30,6 +30,9 @@ internal static partial class TemporalOperations
     public static TemporalTimeZone SystemTimeZoneIdentifier(JsEngine engine)
     {
         var record = engine.SystemTimeZone;
+        if (TimeZoneInfoConverter.IsOffsetIdentifier(record.Identifier))
+            return TemporalTimeZone.FromOffset(record.Zone.GetOffsetSeconds(0) / 60);
+
         if (record.Identifier != record.PrimaryIdentifier && TimeZoneDatabase.Default.TryGetTimeZone(record.PrimaryIdentifier, out var primary))
         {
             record = primary;

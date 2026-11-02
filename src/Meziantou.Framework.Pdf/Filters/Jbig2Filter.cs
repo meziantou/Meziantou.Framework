@@ -19,7 +19,7 @@ internal static class Jbig2Filter
 
     private static readonly ConditionalWeakTable<PdfStream, CachedGlobals> GlobalsCache = [];
 
-    public static byte[] Decode(ReadOnlySpan<byte> data, PdfDictionary? parameters, long limit)
+    public static byte[] Decode(ReadOnlyMemory<byte> data, PdfDictionary? parameters, long limit)
     {
         Jbig2Decoder decoder;
         if (parameters?.GetResolved(Jbig2GlobalsName) is PdfStream globals)
@@ -49,7 +49,7 @@ internal static class Jbig2Filter
             decoder = new Jbig2Decoder(limit);
         }
 
-        decoder.DecodeSegments(data.ToArray());
+        decoder.DecodeSegments(data);
         return decoder.GetPage();
     }
 

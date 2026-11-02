@@ -78,58 +78,52 @@ internal static class PdfImageDecoder
             CmykConversion = GetCmykConversion(dictionary),
         };
 
-        using var image = Image.Load<Rgba32>(data, options);
-        var pixels = new Rgba32[image.Width * image.Height];
-        image.Frames[0].CopyPixelDataTo(pixels);
-        cache.Charge(pixels.Length / 1024);
+        // The image Imaging decodes is the image drawn: its pixels are not copied
+        var image = Image.Load<Rgba32>(data, options);
+        try
+        {
+            cache.Charge(image.Width * image.Height / 1024);
+            ApplyEmbeddedOpacity(image, dictionary, isJpx);
+            ApplyMasks(image, dictionary, cache, RemoveMatte(image, dictionary, resources, cache));
+        }
+        catch
+        {
+            image.Dispose();
+            throw;
+        }
 
-        // The opacity of a JPEG 2000 image (8.9.5): ignored, unless /SMaskInData is 1 or 2 (the colors premultiplied by
-        // it) and the image has no /SMask, which replaces it
+        return Finish(image, dictionary, cache);
+    }
+
+    /// <summary>
+    /// Applies the opacity of a JPEG 2000 image (8.9.5): ignored, unless <c>/SMaskInData</c> is 1, or 2 for colors
+    /// premultiplied by it, and the image has no <c>/SMask</c>, which replaces it.
+    /// </summary>
+    private static void ApplyEmbeddedOpacity(Image<Rgba32> image, PdfDictionary dictionary, bool isJpx)
+    {
         var smaskInData = isJpx && dictionary.GetResolved(PdfNames.SMask) is null ? dictionary.GetInteger(PdfName.Create("SMaskInData"), 0) : 0;
-        if (smaskInData is 0)
-        {
-            for (var i = 0; i < pixels.Length; i++)
-            {
-                pixels[i].A = 255;
-            }
-        }
-        else if (smaskInData is 2)
-        {
-            for (var i = 0; i < pixels.Length; i++)
-            {
-                ref var pixel = ref pixels[i];
-                if (pixel.A is > 0 and < 255)
-                {
-                    pixel.R = Unpremultiply(pixel.R, pixel.A);
-                    pixel.G = Unpremultiply(pixel.G, pixel.A);
-                    pixel.B = Unpremultiply(pixel.B, pixel.A);
-                }
-            }
-        }
+        if (smaskInData is not (0 or 2))
+            return;
 
-        // The matte color of the soft mask, in sRGB: the samples of the image were mixed with it (11.6.5.3)
-        byte[]? alpha = null;
-        if (GetMatte(dictionary, out var softMask) is { } matte)
+        image.Frames[0].ProcessPixelRows(rows =>
         {
-            try
+            for (var y = 0; y < rows.Height; y++)
             {
-                var colorSpace = dictionary.GetResolved(PdfNames.ColorSpace) is { } colorSpaceObject ? RenderColorSpace.Read(colorSpaceObject, resources, cache) : null;
-                if (colorSpace is not null && colorSpace.ComponentCount == matte.Length)
+                foreach (ref var pixel in rows.GetRowSpan(y))
                 {
-                    alpha = DecodeMaskSamples(softMask!, cache, image.Width, image.Height, stencil: false);
-                    if (alpha is not null)
+                    if (smaskInData is 0)
                     {
-                        var color = colorSpace.ToRgb(matte);
-                        RemoveMatte(pixels, alpha, color);
+                        pixel.A = 255;
+                    }
+                    else if (pixel.A is > 0 and < 255)
+                    {
+                        pixel.R = Unpremultiply(pixel.R, pixel.A);
+                        pixel.G = Unpremultiply(pixel.G, pixel.A);
+                        pixel.B = Unpremultiply(pixel.B, pixel.A);
                     }
                 }
             }
-            catch (Exception ex) when (ex is InvalidPdfContentException or UnsupportedPdfFeatureException)
-            {
-            }
-        }
-
-        return Finish(pixels, image.Width, image.Height, dictionary, cache, colorKey: null, samples: null, alpha);
+        });
     }
 
     private static byte Unpremultiply(byte value, byte alpha) => (byte)Math.Min(255, ((value * 255) + (alpha / 2)) / alpha);
@@ -141,21 +135,52 @@ internal static class PdfImageDecoder
         return RenderFunction.ReadNumbers(softMask?.Dictionary.Get<PdfArray>(PdfName.Create("Matte"))) is { Length: > 0 } matte && matte.All(double.IsFinite) ? matte : null;
     }
 
-    /// <summary>Removes the matte color from 8-bit colors: c = m + (c' - m) / alpha.</summary>
-    private static void RemoveMatte(Rgba32[] pixels, byte[] alpha, RgbColor matte)
+    /// <summary>
+    /// Removes the matte color of the soft mask from the 8-bit colors of a compressed image, in sRGB: c = m + (c' - m) / alpha
+    /// (11.6.5.3). Returns the alpha of the soft mask when it was decoded, <see langword="null"/> otherwise.
+    /// </summary>
+    private static byte[]? RemoveMatte(Image<Rgba32> image, PdfDictionary dictionary, PdfDictionary? resources, RenderCache cache)
     {
-        var (r, g, b) = (matte.R * 255, matte.G * 255, matte.B * 255);
-        for (var i = 0; i < pixels.Length; i++)
-        {
-            if (alpha[i] is 0 or 255)
-                continue;
+        if (GetMatte(dictionary, out var softMask) is not { } matte)
+            return null;
 
-            var a = alpha[i] / 255.0;
-            ref var pixel = ref pixels[i];
-            pixel.R = ToByte(r + ((pixel.R - r) / a));
-            pixel.G = ToByte(g + ((pixel.G - g) / a));
-            pixel.B = ToByte(b + ((pixel.B - b) / a));
+        RgbColor color;
+        try
+        {
+            if (dictionary.GetResolved(PdfNames.ColorSpace) is not { } colorSpaceObject || RenderColorSpace.Read(colorSpaceObject, resources, cache) is not { } colorSpace || colorSpace.ComponentCount != matte.Length)
+                return null;
+
+            color = colorSpace.ToRgb(matte);
         }
+        catch (Exception ex) when (ex is InvalidPdfContentException or UnsupportedPdfFeatureException)
+        {
+            return null;
+        }
+
+        if (DecodeMaskSamples(softMask!, cache, image.Width, image.Height, stencil: false) is not { } alpha)
+            return null;
+
+        var (r, g, b) = (color.R * 255, color.G * 255, color.B * 255);
+        image.Frames[0].ProcessPixelRows(rows =>
+        {
+            for (var y = 0; y < rows.Height; y++)
+            {
+                var row = rows.GetRowSpan(y);
+                for (var x = 0; x < row.Length; x++)
+                {
+                    var value = alpha[(y * rows.Width) + x];
+                    if (value is 0 or 255)
+                        continue;
+
+                    var a = value / 255.0;
+                    ref var pixel = ref row[x];
+                    pixel.R = ToByte(r + ((pixel.R - r) / a));
+                    pixel.G = ToByte(g + ((pixel.G - g) / a));
+                    pixel.B = ToByte(b + ((pixel.B - b) / a));
+                }
+            }
+        });
+        return alpha;
 
         static byte ToByte(double value) => (byte)Math.Clamp(Math.Round(value, MidpointRounding.AwayFromZero), 0, 255);
     }
@@ -208,79 +233,132 @@ internal static class PdfImageDecoder
             decodeArray = colorSpace.GetDefaultDecode(bitsPerComponent);
         }
 
-        // The samples, unpacked: one per component, rows on whole bytes
+        // The samples are decoded row by row to the pixels of the image: an image of 8-bit samples does not need more
+        // memory than its pixels
         var sampleCount = (long)width * height * components;
         if (sampleCount > MaxSamples)
             throw new PdfResourceLimitException($"The image has {sampleCount} samples");
 
         cache.Charge(sampleCount / 256);
         var rowBytes = (((long)width * components * bitsPerComponent) + 7) / 8;
-        var samples = new int[sampleCount];
         var maxValue = (1 << bitsPerComponent) - 1;
-        for (var y = 0; y < height; y++)
-        {
-            var rowStart = y * rowBytes;
-            for (var i = 0; i < width * components; i++)
-            {
-                samples[(y * width * components) + i] = ReadSample(data, rowStart, i, bitsPerComponent);
-            }
-        }
+        var colorKey = ReadColorKey(dictionary, components);
 
         // The matte color of the soft mask: the samples were mixed with it, c' = m + alpha (c - m), and are restored
         // before they are converted (11.6.5.3)
-        byte[]? alpha = null;
         var matte = GetMatte(dictionary, out var softMask);
-        if (matte is not null && matte.Length == components)
+        var alpha = matte is not null && matte.Length == components ? DecodeMaskSamples(softMask!, cache, width, height, stencil: false) : null;
+        var image = new Image<Rgba32>(width, height, cache.Options.Configuration);
+        try
         {
-            alpha = DecodeMaskSamples(softMask!, cache, width, height, stencil: false);
-        }
-
-        // The colors: a lookup per component value for the bit depths up to 8, a conversion per pixel otherwise
-        var pixels = new Rgba32[width * height];
-        if (bitsPerComponent <= 8 && components == 1 && alpha is null)
-        {
-            var lookup = new Rgba32[maxValue + 1];
-            for (var value = 0; value <= maxValue; value++)
+            image.Frames[0].ProcessPixelRows(rows =>
             {
-                lookup[value] = ToPixel(colorSpace.ToRgb([Decode(value, maxValue, decodeArray[0], decodeArray[1])]));
-            }
-
-            for (var i = 0; i < pixels.Length; i++)
-            {
-                pixels[i] = lookup[samples[i]];
-            }
-        }
-        else
-        {
-            const int RowsPerBatch = 16;
-            var batch = new double[width * components * RowsPerBatch];
-            var batchRgb = new byte[width * 3 * RowsPerBatch];
-            for (var y = 0; y < height; y += RowsPerBatch)
-            {
-                var rows = Math.Min(RowsPerBatch, height - y);
-                var count = width * rows;
-                for (var i = 0; i < count * components; i++)
+                if (bitsPerComponent <= 8 && components == 1 && alpha is null)
                 {
-                    var component = i % components;
-                    batch[i] = Decode(samples[(y * width * components) + i], maxValue, decodeArray[2 * component], decodeArray[(2 * component) + 1]);
-                    if (alpha is not null && alpha[(y * width) + (i / components)] is > 0 and var pixelAlpha)
+                    // The colors: a lookup per sample value for the bit depths up to 8
+                    var lookup = new Rgba32[maxValue + 1];
+                    for (var value = 0; value <= maxValue; value++)
                     {
-                        batch[i] = matte![component] + ((batch[i] - matte[component]) * 255 / pixelAlpha);
+                        lookup[value] = ToPixel(colorSpace.ToRgb([Decode(value, maxValue, decodeArray[0], decodeArray[1])]));
                     }
+
+                    for (var y = 0; y < height; y++)
+                    {
+                        var row = rows.GetRowSpan(y);
+                        var rowStart = y * rowBytes;
+                        for (var x = 0; x < width; x++)
+                        {
+                            var sample = ReadSample(data, rowStart, x, bitsPerComponent);
+                            row[x] = lookup[sample];
+                            if (colorKey is not null && sample >= colorKey[0] && sample <= colorKey[1])
+                            {
+                                row[x].A = 0;
+                            }
+                        }
+                    }
+
+                    return;
                 }
 
-                colorSpace.ToRgb(batch.AsSpan(0, count * components), batchRgb.AsSpan(0, count * 3));
-                for (var i = 0; i < count; i++)
+                // A conversion per pixel otherwise, a few rows at a time
+                const int RowsPerBatch = 16;
+                var rowSamples = width * components;
+                var batch = new double[rowSamples * RowsPerBatch];
+                var batchRgb = new byte[width * 3 * RowsPerBatch];
+                var keyed = colorKey is null ? null : new bool[width * RowsPerBatch];
+                for (var y = 0; y < height; y += RowsPerBatch)
                 {
-                    pixels[(y * width) + i] = new Rgba32(batchRgb[3 * i], batchRgb[(3 * i) + 1], batchRgb[(3 * i) + 2], 255);
-                }
+                    var rowCount = Math.Min(RowsPerBatch, height - y);
+                    var count = width * rowCount;
+                    for (var r = 0; r < rowCount; r++)
+                    {
+                        var rowStart = (y + r) * rowBytes;
+                        for (var i = 0; i < rowSamples; i++)
+                        {
+                            var component = i % components;
+                            var sample = ReadSample(data, rowStart, i, bitsPerComponent);
+                            var decoded = Decode(sample, maxValue, decodeArray[2 * component], decodeArray[(2 * component) + 1]);
+                            if (alpha is not null && alpha[((y + r) * width) + (i / components)] is > 0 and var pixelAlpha)
+                            {
+                                decoded = matte![component] + ((decoded - matte[component]) * 255 / pixelAlpha);
+                            }
 
-                cache.Charge(count / 1024);
-            }
+                            batch[(r * rowSamples) + i] = decoded;
+                            if (keyed is not null)
+                            {
+                                // A color key mask: the pixels whose samples are all in the ranges are not painted (8.9.6.4)
+                                var pixel = (r * width) + (i / components);
+                                var inRange = sample >= colorKey![2 * component] && sample <= colorKey[(2 * component) + 1];
+                                keyed[pixel] = component == 0 ? inRange : keyed[pixel] && inRange;
+                            }
+                        }
+                    }
+
+                    colorSpace.ToRgb(batch.AsSpan(0, count * components), batchRgb.AsSpan(0, count * 3));
+                    for (var r = 0; r < rowCount; r++)
+                    {
+                        var row = rows.GetRowSpan(y + r);
+                        for (var x = 0; x < width; x++)
+                        {
+                            var i = (r * width) + x;
+                            row[x] = new Rgba32(batchRgb[3 * i], batchRgb[(3 * i) + 1], batchRgb[(3 * i) + 2], keyed is not null && keyed[i] ? (byte)0 : (byte)255);
+                        }
+                    }
+
+                    cache.Charge(count / 1024);
+                }
+            });
+
+            ApplyMasks(image, dictionary, cache, alpha);
+        }
+        catch
+        {
+            image.Dispose();
+            throw;
         }
 
-        var colorKey = dictionary.Get<PdfArray>(PdfNames.Mask);
-        return Finish(pixels, width, height, dictionary, cache, colorKey, samples, alpha);
+        return Finish(image, dictionary, cache);
+    }
+
+    /// <summary>
+    /// Reads the ranges of a color key mask (8.9.6.4), once for the pixels of the image; <see langword="null"/> when the
+    /// image has none, or a soft mask or an explicit mask, which replace it.
+    /// </summary>
+    private static double[]? ReadColorKey(PdfDictionary dictionary, int components)
+    {
+        if (dictionary.GetResolved(PdfNames.SMask) is PdfStream || dictionary.GetResolved(PdfNames.Mask) is PdfStream)
+            return null;
+
+        if (dictionary.Get<PdfArray>(PdfNames.Mask) is not { } colorKey || colorKey.Count < components * 2)
+            return null;
+
+        var ranges = new double[components * 2];
+        for (var i = 0; i < ranges.Length; i++)
+        {
+            ranges[i] = colorKey.GetNumber(i);
+        }
+
+        return ranges;
     }
 
     /// <summary>
@@ -307,56 +385,33 @@ internal static class PdfImageDecoder
         return CmykConversionOptions.Default;
     }
 
-    /// <summary>Applies the masks of an image (8.9.6): a soft mask, an explicit mask or a color key mask.</summary>
-    private static DecodedImage Finish(Rgba32[] pixels, int width, int height, PdfDictionary dictionary, RenderCache cache, PdfArray? colorKey, int[]? samples, byte[]? softMaskAlpha = null)
+    /// <summary>Applies the soft mask or the explicit mask of an image (8.9.6) to the alpha of its pixels; the alpha of the soft mask when it was decoded already.</summary>
+    private static void ApplyMasks(Image<Rgba32> image, PdfDictionary dictionary, RenderCache cache, byte[]? softMaskAlpha)
     {
-        if (dictionary.GetResolved(PdfNames.SMask) is PdfStream softMask)
-        {
-            var alpha = softMaskAlpha ?? DecodeMaskSamples(softMask, cache, width, height, stencil: false);
-            if (alpha is not null)
-            {
-                for (var i = 0; i < pixels.Length; i++)
-                {
-                    pixels[i].A = (byte)((pixels[i].A * alpha[i]) / 255);
-                }
-            }
-        }
-        else if (dictionary.GetResolved(PdfNames.Mask) is PdfStream explicitMask)
-        {
-            var alpha = DecodeMaskSamples(explicitMask, cache, width, height, stencil: true);
-            if (alpha is not null)
-            {
-                for (var i = 0; i < pixels.Length; i++)
-                {
-                    pixels[i].A = (byte)((pixels[i].A * alpha[i]) / 255);
-                }
-            }
-        }
-        else if (colorKey is not null && samples is not null)
-        {
-            // A color key mask: the pixels whose samples are all in the ranges are not painted (8.9.6.4)
-            var components = samples.Length / pixels.Length;
-            if (colorKey.Count >= components * 2)
-            {
-                for (var i = 0; i < pixels.Length; i++)
-                {
-                    var masked = true;
-                    for (var c = 0; c < components && masked; c++)
-                    {
-                        var value = samples[(i * components) + c];
-                        masked = value >= colorKey.GetNumber(2 * c) && value <= colorKey.GetNumber((2 * c) + 1);
-                    }
+        var alpha = softMaskAlpha ?? (dictionary.GetResolved(PdfNames.SMask) is PdfStream softMask
+            ? DecodeMaskSamples(softMask, cache, image.Width, image.Height, stencil: false)
+            : dictionary.GetResolved(PdfNames.Mask) is PdfStream explicitMask ? DecodeMaskSamples(explicitMask, cache, image.Width, image.Height, stencil: true) : null);
+        if (alpha is null)
+            return;
 
-                    if (masked)
-                    {
-                        pixels[i].A = 0;
-                    }
+        image.Frames[0].ProcessPixelRows(rows =>
+        {
+            for (var y = 0; y < rows.Height; y++)
+            {
+                var row = rows.GetRowSpan(y);
+                var offset = y * rows.Width;
+                for (var x = 0; x < row.Length; x++)
+                {
+                    row[x].A = (byte)((row[x].A * alpha[offset + x]) / 255);
                 }
             }
-        }
+        });
+    }
 
+    private static DecodedImage Finish(Image<Rgba32> image, PdfDictionary dictionary, RenderCache cache)
+    {
         var interpolate = dictionary.GetBoolean(PdfName.Create("Interpolate"));
-        return new DecodedImage(Track(cache, Image.ImportPixelData<Rgba32>(pixels, width, height, configuration: cache.Options.Configuration)), isStencil: false, interpolate);
+        return new DecodedImage(Track(cache, image), isStencil: false, interpolate);
     }
 
     /// <summary>Decodes a soft mask (its gray values) or an explicit mask (a stencil: 0 shows the image) to alpha values at the size of the image.</summary>

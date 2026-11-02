@@ -117,6 +117,220 @@ public sealed class CrossAssemblyTests : TaggedValuesAnalyzerTestBase
     }
 
     [Fact]
+    public async Task AssemblyAttributeDoesNotTagAHidingMember()
+    {
+        await VerifyAsync("""
+            [assembly: ValueTag(typeof(Base), nameof(Base.Id), "OrderId")]
+
+            class Base
+            {
+                public Guid Id { get; set; }
+            }
+
+            class Derived : Base
+            {
+                public new Guid Id { get; set; }
+            }
+
+            class Sample
+            {
+                void M(Derived derived, Base value, [ValueTag("ProjectId")] Guid projectId)
+                {
+                    derived.Id = projectId;
+                    ((Base)derived).Id = {|MFTV0002:projectId|};
+                    value.Id = {|MFTV0002:projectId|};
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task AssemblyAttributeDoesNotTagAHidingField()
+    {
+        await VerifyAsync("""
+            [assembly: ValueTag(typeof(Base), nameof(Base.Id), "OrderId")]
+
+            class Base
+            {
+                public Guid Id;
+            }
+
+            class Derived : Base
+            {
+                public new Guid Id;
+            }
+
+            class Sample
+            {
+                void M(Derived derived, [ValueTag("ProjectId")] Guid projectId)
+                {
+                    derived.Id = projectId;
+                    ((Base)derived).Id = {|MFTV0002:projectId|};
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task AssemblyAttributeDoesNotReplaceTheTagsOfAHidingMember()
+    {
+        await VerifyAsync("""
+            [assembly: ValueTag(typeof(Base), nameof(Base.Id), "OrderId")]
+
+            class Base
+            {
+                public Guid Id { get; set; }
+            }
+
+            class Derived : Base
+            {
+                [ValueTag("ProjectId")] public new Guid Id { get; set; }
+            }
+
+            class Sample
+            {
+                void M(Derived derived, [ValueTag("ProjectId")] Guid projectId, [ValueTag("OrderId")] Guid orderId)
+                {
+                    derived.Id = projectId;
+                    derived.Id = {|MFTV0002:orderId|};
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task AssemblyAttributeOnADerivedType_DoesNotTagTheHiddenMember()
+    {
+        await VerifyAsync("""
+            [assembly: ValueTag(typeof(Derived), nameof(Derived.Id), "OrderId")]
+
+            class Base
+            {
+                public Guid Id { get; set; }
+            }
+
+            class Derived : Base
+            {
+                public new Guid Id { get; set; }
+            }
+
+            class Sample
+            {
+                void M(Derived derived, [ValueTag("ProjectId")] Guid projectId)
+                {
+                    derived.Id = {|MFTV0002:projectId|};
+                    ((Base)derived).Id = projectId;
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task AssemblyAttributeOnADerivedType_TagsTheInheritedMember()
+    {
+        await VerifyAsync("""
+            [assembly: ValueTag(typeof(Derived), nameof(Derived.Id), "OrderId")]
+
+            class Base
+            {
+                public Guid Id { get; set; }
+            }
+
+            class Derived : Base { }
+
+            class MoreDerived : Derived { }
+
+            class Sample
+            {
+                void M(Base value, Derived derived, MoreDerived moreDerived, [ValueTag("ProjectId")] Guid projectId)
+                {
+                    value.Id = projectId;
+                    derived.Id = {|MFTV0002:projectId|};
+                    moreDerived.Id = {|MFTV0002:projectId|};
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task AssemblyAttribute_TagsOverrides()
+    {
+        await VerifyAsync("""
+            [assembly: ValueTag(typeof(Base), nameof(Base.Id), "OrderId")]
+            [assembly: ValueTag(typeof(Other), nameof(Other.Id), "OtherId")]
+
+            class Base
+            {
+                public virtual Guid Id { get; set; }
+            }
+
+            class Derived : Base
+            {
+                public override Guid Id { get; set; }
+            }
+
+            class Other
+            {
+                public virtual Guid Id { get; set; }
+            }
+
+            class OtherDerived : Other
+            {
+                public override Guid Id { get; set; }
+            }
+
+            class Sample
+            {
+                void M(Derived derived, OtherDerived otherDerived, [ValueTag("ProjectId")] Guid projectId)
+                {
+                    derived.Id = {|MFTV0002:projectId|};
+                    otherDerived.Id = {|MFTV0002:projectId|};
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task AssemblyAttributeOnAnInterfaceMember_DoesNotTagAHidingMember()
+    {
+        await VerifyAsync("""
+            [assembly: ValueTag(typeof(IEntity), nameof(IEntity.Id), "EntityId")]
+
+            interface IEntity
+            {
+                Guid Id { get; }
+            }
+
+            class Entity : IEntity
+            {
+                public Guid Id { get; set; }
+            }
+
+            class User : Entity
+            {
+                public new Guid Id { get; set; }
+            }
+
+            class ExplicitEntity : IEntity
+            {
+                Guid IEntity.Id => Guid.Empty;
+
+                public Guid Id { get; set; }
+            }
+
+            class Sample
+            {
+                void M(User user, Entity entity, ExplicitEntity explicitEntity, [ValueTag("ProjectId")] Guid projectId)
+                {
+                    user.Id = projectId;
+                    explicitEntity.Id = projectId;
+                    entity.Id = {|MFTV0002:projectId|};
+                }
+            }
+            """);
+    }
+
+    [Fact]
     public async Task TagsAreReadFromReferencedProjects()
     {
         var test = CreateAnalyzerTest("""

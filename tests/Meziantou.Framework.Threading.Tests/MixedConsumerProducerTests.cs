@@ -399,6 +399,313 @@ public sealed class MixedConsumerProducerTests
     }
 
     [Fact]
+    public async Task Process_SchedulerRejectsConsumer_CompletesStartedConsumersAndThrows()
+    {
+        var scheduler = new RejectingTaskScheduler(acceptedTaskCount: 1);
+        var options = new ParallelOptions() { MaxDegreeOfParallelism = 2, TaskScheduler = scheduler };
+        var enumerated = false;
+
+        var exception = await Assert.ThrowsAsync<TaskSchedulerException>(() => MixedConsumerProducer.Process(GetItems(), options, (context, item, cancellationToken) => ValueTask.CompletedTask));
+        Assert.IsType<InvalidOperationException>(exception.InnerException);
+
+        var startedConsumer = Assert.Single(scheduler.AcceptedTasks);
+        var consumer = ((Task<Task>)startedConsumer).Unwrap();
+        Assert.True(consumer.IsCompletedSuccessfully);
+        Assert.False(enumerated);
+
+        IEnumerable<int> GetItems()
+        {
+            enumerated = true;
+            yield return 1;
+        }
+    }
+
+    [Fact]
+    public async Task Process_MaxPendingItems_Example()
+    {
+        #region MixedConsumerProducer_MaxPendingItems
+        var processedItems = new ConcurrentBag<int>();
+        var options = new MixedConsumerProducerOptions
+        {
+            // Up to 4 items are processed at the same time...
+            MaxDegreeOfParallelism = 4,
+            // ...and up to 100 items wait to be processed
+            MaxPendingItems = 100,
+        };
+
+        await MixedConsumerProducer.Process(
+            Enumerable.Range(0, 1000),
+            options,
+            async (context, item, ct) =>
+            {
+                processedItems.Add(item);
+                if (item < 1000)
+                {
+                    // Waits while 100 items are pending, so the backlog stays bounded
+                    await context.EnqueueAsync(item + 1000, ct);
+                }
+            });
+
+        Assert.HasCount(2000, processedItems);
+        #endregion
+    }
+
+    [Fact]
+    public void MixedConsumerProducerOptions_MaxPendingItems_Validation()
+    {
+        var options = new MixedConsumerProducerOptions();
+        Assert.Equal(-1, options.MaxPendingItems);
+
+        options.MaxPendingItems = 1;
+        Assert.Equal(1, options.MaxPendingItems);
+        options.MaxPendingItems = -1;
+        Assert.Equal(-1, options.MaxPendingItems);
+
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => options.MaxPendingItems = 0);
+        Assert.Throws<ArgumentOutOfRangeException>("value", () => options.MaxPendingItems = -2);
+    }
+
+    [Fact]
+    public async Task Process_MaxPendingItems_BoundsInitialEnumeration()
+    {
+        var gate = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var yielded = 0;
+        var processed = 0;
+        var maxQueued = 0;
+        var options = new MixedConsumerProducerOptions() { MaxDegreeOfParallelism = 1, MaxPendingItems = 2 };
+
+        var processing = MixedConsumerProducer.Process(GetItems(), options, async (context, item, cancellationToken) =>
+        {
+            InterlockedMax(ref maxQueued, context.QueuedItemCount);
+            if (item is 0)
+            {
+                await gate.Task;
+            }
+
+            Interlocked.Increment(ref processed);
+        });
+
+        // Item 0 is being processed, items 1 and 2 are pending, and item 3 waits for room
+        while (Volatile.Read(ref yielded) < 4)
+        {
+            await Task.Delay(10);
+        }
+
+        await Task.Delay(100);
+        Assert.Equal(4, Volatile.Read(ref yielded));
+        Assert.Equal(0, Volatile.Read(ref processed));
+
+        gate.SetResult();
+        await processing.WaitAsync(TimeSpan.FromSeconds(60));
+
+        Assert.Equal(100, processed);
+        Assert.Equal(100, yielded);
+        Assert.True(maxQueued <= 2, $"Queued {maxQueued} items");
+
+        IEnumerable<int> GetItems()
+        {
+            for (var i = 0; i < 100; i++)
+            {
+                Interlocked.Increment(ref yielded);
+                yield return i;
+            }
+        }
+    }
+
+    [Fact]
+    public async Task Process_MaxPendingItems_HighFanOutWithSlowConsumers()
+    {
+        const int MaxPendingItems = 5;
+        var processed = 0;
+        var maxQueued = 0;
+        var options = new MixedConsumerProducerOptions() { MaxDegreeOfParallelism = 3, MaxPendingItems = MaxPendingItems };
+
+        // Items are depths in a tree: the items of depth 0 and 1 have 10 children, so 10 + 100 + 1000 items are processed
+        await MixedConsumerProducer.Process(Enumerable.Repeat(0, 10), options, async (context, depth, cancellationToken) =>
+        {
+            Interlocked.Increment(ref processed);
+            InterlockedMax(ref maxQueued, context.QueuedItemCount);
+            await Task.Delay(1, cancellationToken);
+
+            if (depth < 2)
+            {
+                for (var i = 0; i < 10; i++)
+                {
+                    await context.EnqueueAsync(depth + 1, cancellationToken);
+                    InterlockedMax(ref maxQueued, context.QueuedItemCount);
+                }
+            }
+        }).WaitAsync(TimeSpan.FromSeconds(120));
+
+        Assert.Equal(1110, processed);
+        Assert.True(maxQueued <= MaxPendingItems, $"Queued {maxQueued} items");
+    }
+
+    [Fact]
+    public async Task Process_MaxPendingItems_AllConsumersEnqueueIntoFullQueue()
+    {
+        var parentsStarted = 0;
+        var parentsReady = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var processed = new ConcurrentBag<int>();
+        var maxQueued = 0;
+        var options = new MixedConsumerProducerOptions() { MaxDegreeOfParallelism = 2, MaxPendingItems = 1 };
+
+        await MixedConsumerProducer.Process([0, 1, 2], options, async (context, item, cancellationToken) =>
+        {
+            processed.Add(item);
+            InterlockedMax(ref maxQueued, context.QueuedItemCount);
+            if (item is 0 or 1)
+            {
+                // Both consumers process an item while item 2 fills the queue, then both enqueue children
+                if (Interlocked.Increment(ref parentsStarted) == 2)
+                {
+                    parentsReady.SetResult();
+                }
+
+                await parentsReady.Task;
+                while (context.QueuedItemCount < 1)
+                {
+                    await Task.Delay(1, cancellationToken);
+                }
+
+                for (var i = 0; i < 5; i++)
+                {
+                    await context.EnqueueAsync(10 + (item * 10) + i, cancellationToken);
+                }
+            }
+        }).WaitAsync(TimeSpan.FromSeconds(60));
+
+        Assert.Equal([0, 1, 2, 10, 11, 12, 13, 14, 20, 21, 22, 23, 24], processed.Order());
+        Assert.Equal(1, maxQueued);
+    }
+
+    [Fact]
+    public async Task Process_MaxPendingItems_ExceptionOfItemProcessedByEnqueueAsyncIsAggregated()
+    {
+        var options = new MixedConsumerProducerOptions() { MaxDegreeOfParallelism = 1, MaxPendingItems = 1 };
+
+        var exception = await Assert.ThrowsAsync<AggregateException>(() => MixedConsumerProducer.Process([0], options, async (context, item, cancellationToken) =>
+        {
+            if (item is 0)
+            {
+                // With a single consumer, the second item cannot wait for room and is processed by this call
+                await context.EnqueueAsync(1, cancellationToken);
+                await context.EnqueueAsync(2, cancellationToken);
+                return;
+            }
+
+            throw new InvalidOperationException("boom " + item);
+        }));
+
+        Assert.Equal(["boom 1", "boom 2"], exception.InnerExceptions.Select(e => e.Message).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public async Task Process_MaxPendingItems_EnqueueRejectsItemsWhenFull()
+    {
+        var options = new MixedConsumerProducerOptions() { MaxDegreeOfParallelism = 1, MaxPendingItems = 1 };
+        var processed = new ConcurrentBag<int>();
+
+        await MixedConsumerProducer.Process([0], options, (context, item, cancellationToken) =>
+        {
+            processed.Add(item);
+            if (item is 0)
+            {
+                Assert.True(context.TryEnqueue(1));
+                Assert.False(context.TryEnqueue(2));
+                Assert.Throws<InvalidOperationException>(() => context.Enqueue(2));
+            }
+
+            return ValueTask.CompletedTask;
+        });
+
+        Assert.Equal([0, 1], processed.Order());
+    }
+
+    [Fact]
+    public async Task Process_MaxPendingItems_CancellationWhileEnumerationWaits()
+    {
+        using var cts = new CancellationTokenSource();
+        var yielded = 0;
+        var options = new MixedConsumerProducerOptions() { MaxDegreeOfParallelism = 1, MaxPendingItems = 1, CancellationToken = cts.Token };
+
+        var processing = MixedConsumerProducer.Process(GetItems(), options, async (context, item, cancellationToken) =>
+        {
+            await Task.Delay(Timeout.Infinite, cancellationToken);
+        });
+
+        // Item 0 is being processed, item 1 is pending, and item 2 waits for room
+        while (Volatile.Read(ref yielded) < 3)
+        {
+            await Task.Delay(10);
+        }
+
+        await cts.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => processing.WaitAsync(TimeSpan.FromSeconds(60)));
+        Assert.Equal(3, yielded);
+
+        IEnumerable<int> GetItems()
+        {
+            while (true)
+            {
+                Interlocked.Increment(ref yielded);
+                yield return 0;
+            }
+        }
+    }
+
+    [Fact]
+    public async Task Process_MaxPendingItems_CancellationWhileEnqueueAsyncWaits()
+    {
+        using var cts = new CancellationTokenSource();
+        var enqueueWaiting = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        var options = new MixedConsumerProducerOptions() { MaxDegreeOfParallelism = 2, MaxPendingItems = 1, CancellationToken = cts.Token };
+
+        var processing = MixedConsumerProducer.Process([0, 1], options, async (context, item, cancellationToken) =>
+        {
+            if (item is 0)
+            {
+                // The other consumer is busy, so this call waits for room instead of processing the item itself
+                await context.EnqueueAsync(10, cancellationToken);
+                var pending = context.EnqueueAsync(11, cancellationToken);
+                enqueueWaiting.SetResult();
+                await pending;
+            }
+            else if (item is 1)
+            {
+                await Task.Delay(Timeout.Infinite, cancellationToken);
+            }
+        });
+
+        await enqueueWaiting.Task.WaitAsync(TimeSpan.FromSeconds(60));
+        await cts.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => processing.WaitAsync(TimeSpan.FromSeconds(60)));
+    }
+
+    [Fact]
+    public async Task Process_MixedConsumerProducerOptions_DefaultIsUnbounded()
+    {
+        var options = new MixedConsumerProducerOptions() { MaxDegreeOfParallelism = 1 };
+        var processed = 0;
+
+        await MixedConsumerProducer.Process([0], options, (context, item, cancellationToken) =>
+        {
+            if (item is 0)
+            {
+                for (var i = 1; i <= 1000; i++)
+                {
+                    context.Enqueue(i);
+                }
+            }
+
+            Interlocked.Increment(ref processed);
+            return ValueTask.CompletedTask;
+        });
+
+        Assert.Equal(1001, processed);
+    }
+
+    [Fact]
     public async Task Process_NullArguments()
     {
         var options = new ParallelOptions();
@@ -411,6 +718,41 @@ public sealed class MixedConsumerProducerTests
 
         exception = await Assert.ThrowsAsync<ArgumentNullException>(() => MixedConsumerProducer.Process([1], options, action: null!));
         Assert.Equal("action", exception.ParamName);
+    }
+
+    private static void InterlockedMax(ref int location, int value)
+    {
+        var current = Volatile.Read(ref location);
+        while (value > current)
+        {
+            var previous = Interlocked.CompareExchange(ref location, value, current);
+            if (previous == current)
+                return;
+
+            current = previous;
+        }
+    }
+
+    // Runs the first tasks on the thread pool and rejects the next ones, like a scheduler that is shutting down
+    private sealed class RejectingTaskScheduler(int acceptedTaskCount) : TaskScheduler
+    {
+        private readonly ConcurrentQueue<Task> _acceptedTasks = new();
+        private int _queuedTaskCount;
+
+        public IReadOnlyCollection<Task> AcceptedTasks => _acceptedTasks;
+
+        protected override IEnumerable<Task> GetScheduledTasks() => [];
+
+        protected override void QueueTask(Task task)
+        {
+            if (Interlocked.Increment(ref _queuedTaskCount) > acceptedTaskCount)
+                throw new InvalidOperationException("The scheduler is shutting down");
+
+            _acceptedTasks.Enqueue(task);
+            _ = Task.Run(() => TryExecuteTask(task));
+        }
+
+        protected override bool TryExecuteTaskInline(Task task, bool taskWasPreviouslyQueued) => false;
     }
 
     private sealed class CountingTaskScheduler : TaskScheduler

@@ -102,10 +102,37 @@ public abstract class SnapshotUpdateStrategy
             UpdateFile(settings, fileToUpdate.VerifiedFilePath, fileToUpdate.ActualFilePath);
         }
 
+        List<(string Path, Exception Exception)>? deletionErrors = null;
         foreach (var fileToDelete in filesToDelete)
         {
-            TryDeleteFile(fileToDelete);
+            try
+            {
+                DeleteFileWithRetry(fileToDelete);
+            }
+            catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+            {
+                deletionErrors ??= [];
+                deletionErrors.Add((fileToDelete, ex));
+            }
         }
+
+        if (deletionErrors is not null)
+            throw CreateCannotDeleteFilesException(deletionErrors);
+    }
+
+    private static SnapshotException CreateCannotDeleteFilesException(List<(string Path, Exception Exception)> errors)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("The verified snapshot files that the assertion no longer produces cannot be deleted:");
+        foreach (var (path, exception) in errors)
+        {
+            sb.Append("  - ").Append(path).Append(": ").AppendLine(exception.Message);
+        }
+
+        sb.Append("Delete these files, or fix the permissions of their directory, so that the next run does not report them as unexpected snapshot files.");
+        return errors.Count is 1
+            ? new SnapshotException(sb.ToString(), errors[0].Exception)
+            : new SnapshotException(sb.ToString(), new AggregateException(errors.Select(error => error.Exception)));
     }
 
     public abstract void UpdateFile(SnapshotSettings settings, string verifiedFilePath, string actualFilePath);
@@ -278,10 +305,9 @@ public abstract class SnapshotUpdateStrategy
         {
             try
             {
-                using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
-                using var memoryStream = new MemoryStream();
-                stream.CopyTo(memoryStream);
-                return memoryStream.ToArray();
+                // The file is read directly into the final array, so the FileStream does not need a buffer of its own
+                using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete, bufferSize: 1);
+                return ReadToEnd(stream, stream.Length);
             }
             catch (IOException ex) when (ex is not FileNotFoundException and not DirectoryNotFoundException && attempt < MaxFileOperationAttemptCount)
             {
@@ -294,6 +320,37 @@ public abstract class SnapshotUpdateStrategy
         }
     }
 
+    /// <summary>
+    /// Reads a stream to its end into an array allocated from <paramref name="expectedLength" />, the number of bytes
+    /// the stream is expected to contain. The stream may still contain fewer or more bytes, as a file being written by
+    /// another process does: the content read is returned in both cases. A negative <paramref name="expectedLength" />
+    /// means that the length is unknown.
+    /// </summary>
+    internal static byte[] ReadToEnd(Stream stream, long expectedLength)
+    {
+        if (expectedLength < 0 || expectedLength > Array.MaxLength)
+            return CopyToEnd(stream, prefix: []);
+
+        var buffer = expectedLength is 0 ? [] : GC.AllocateUninitializedArray<byte>((int)expectedLength);
+        var length = stream.ReadAtLeast(buffer, buffer.Length, throwOnEndOfStream: false);
+        if (length < buffer.Length)
+            return buffer.AsSpan(0, length).ToArray();
+
+        Span<byte> nextByte = stackalloc byte[1];
+        if (stream.Read(nextByte) is 0)
+            return buffer;
+
+        return CopyToEnd(stream, [.. buffer, nextByte[0]]);
+
+        static byte[] CopyToEnd(Stream stream, byte[] prefix)
+        {
+            using var memoryStream = new MemoryStream();
+            memoryStream.Write(prefix);
+            stream.CopyTo(memoryStream);
+            return memoryStream.ToArray();
+        }
+    }
+
     /// <summary>Called with the number of the failed attempt before a file operation is retried. Only meant for tests.</summary>
     internal static Action<int>? RetryingFileOperation { get; set; }
 
@@ -303,6 +360,47 @@ public abstract class SnapshotUpdateStrategy
         Thread.Sleep(TimeSpan.FromMilliseconds(30 * attempt));
     }
 
+    /// <summary>
+    /// Deletes a file that must not remain. Sharing violations and access errors are retried, then reported. A file that
+    /// does not exist, or that another process deleted first, is not an error.
+    /// </summary>
+    internal static void DeleteFileWithRetry(string path)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                var fileInfo = new FileInfo(path);
+                if (!fileInfo.Exists)
+                    return;
+
+                fileInfo.TrySetReadOnly(false);
+                fileInfo.Delete();
+                return;
+            }
+            catch (DirectoryNotFoundException)
+            {
+                return;
+            }
+            catch (FileNotFoundException)
+            {
+                return;
+            }
+            catch (IOException) when (attempt < MaxFileOperationAttemptCount)
+            {
+                WaitBeforeRetry(attempt);
+            }
+            catch (UnauthorizedAccessException) when (attempt < MaxFileOperationAttemptCount)
+            {
+                WaitBeforeRetry(attempt);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Deletes a file when possible and ignores any error. Only meant for files whose removal is a clean-up, such as
+    /// temporary files and stale actual files; use <see cref="DeleteFileWithRetry" /> for verified files.
+    /// </summary>
     internal static void TryDeleteFile(string path)
     {
         try

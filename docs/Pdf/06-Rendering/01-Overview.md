@@ -52,6 +52,30 @@ public static void RenderThumbnails(string pdfPath, string outputDirectory)
 
 ![A thumbnail 200 pixels wide of the welcome card: a blue band with the word Welcome, a line of text and a blue rule](images/RenderThumbnails.png)
 
+## Render many pages of a document
+
+[PdfRenderSession](cref:Meziantou.Framework.Pdf.Rendering.PdfRenderSession) renders the pages of one document with caches
+they share: the fonts, images, color spaces and functions a page reads are kept for the next pages, so that a logo or a
+font used on every page is decoded once. `PdfRenderer.RenderPage` reads them again for each page.
+
+<!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfRendererTests.cs;region=PdfRendering_RenderSession;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The pages share the fonts, images and color spaces the session reads
+using var session = new PdfRenderSession(document, new PdfRenderOptions { Dpi = 144 });
+foreach (var page in document.Pages)
+{
+    using var image = session.RenderPage(page);
+    Assert.Equal(400, image.Width);
+}
+```
+<!-- endref -->
+
+The work of each page is counted alone against [MaxOperations](cref:Meziantou.Framework.Pdf.Rendering.PdfRenderOptions.MaxOperations).
+The caches are emptied between two pages when they hold more than about 256 MB, and when the session is disposed of:
+dispose of it once the pages are rendered. A session renders one page at a time, from one thread. It finds the cached
+objects by the objects of the document, so a change made to the document after a page is rendered may not be seen by
+the next pages: create a new session after changing the document.
+
 ## Options
 
 | Option | Default | Effect |

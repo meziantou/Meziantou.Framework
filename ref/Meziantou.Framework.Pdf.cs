@@ -1049,6 +1049,17 @@ namespace Meziantou.Framework.Pdf.Rendering
         public int? Width { get => throw null; init { } }
     }
 
+    public sealed class PdfRenderSession : System.IDisposable
+    {
+        public Meziantou.Framework.Pdf.PdfDocument Document { get => throw null; }
+        public Meziantou.Framework.Pdf.Rendering.PdfRenderOptions Options { get => throw null; }
+        public PdfRenderSession(Meziantou.Framework.Pdf.PdfDocument document, Meziantou.Framework.Pdf.Rendering.PdfRenderOptions? options = null) { }
+        public void Dispose() { }
+        public Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32> RenderPage(Meziantou.Framework.Pdf.PdfPage page) => throw null;
+        public Meziantou.Framework.Imaging.Image<Meziantou.Framework.Imaging.Rgba32> RenderPage(Meziantou.Framework.Pdf.PdfPage page, System.Threading.CancellationToken cancellationToken) => throw null;
+        public void RenderPage(Meziantou.Framework.Pdf.PdfPage page, Meziantou.Framework.Imaging.Image target, System.Threading.CancellationToken cancellationToken = default) { }
+    }
+
     public static class PdfRenderer
     {
         public static Meziantou.Framework.Imaging.Size GetImageSize(Meziantou.Framework.Pdf.PdfPage page, Meziantou.Framework.Pdf.Rendering.PdfRenderOptions? options = null) => throw null;

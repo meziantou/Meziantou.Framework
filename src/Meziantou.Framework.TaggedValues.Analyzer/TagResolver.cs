@@ -613,28 +613,104 @@ internal sealed class TagResolver
         var startType = receiverType as INamedTypeSymbol ?? member.ContainingType;
         for (var type = startType; type is not null; type = type.BaseType)
         {
-            result = TagInfo.Union(result, GetExternalTags(externalTags, type, member.Name));
+            result = TagInfo.Union(result, GetExternalTags(externalTags, type, member, startType));
         }
 
         if (startType is not null)
         {
             foreach (var @interface in startType.AllInterfaces)
             {
-                result = TagInfo.Union(result, GetExternalTags(externalTags, @interface, member.Name));
+                result = TagInfo.Union(result, GetExternalTags(externalTags, @interface, member, startType));
             }
         }
 
         return result;
 
-        static TagInfo GetExternalTags(ExternalTags externalTags, INamedTypeSymbol type, string memberName)
+        static TagInfo GetExternalTags(ExternalTags externalTags, INamedTypeSymbol type, ISymbol member, INamedTypeSymbol? startType)
         {
-            var result = externalTags.Tags.TryGetValue((type.OriginalDefinition, memberName), out var tags) ? tags : TagInfo.None;
-            if (type.IsGenericType && !SymbolEqualityComparer.Default.Equals(type, type.OriginalDefinition) && externalTags.Tags.TryGetValue((type, memberName), out var constructedTags))
+            var result = externalTags.Tags.TryGetValue((type.OriginalDefinition, member.Name), out var tags) ? tags : TagInfo.None;
+            if (type.IsGenericType && !SymbolEqualityComparer.Default.Equals(type, type.OriginalDefinition) && externalTags.Tags.TryGetValue((type, member.Name), out var constructedTags))
             {
                 result = TagInfo.Union(result, constructedTags);
             }
 
+            // The attribute names a member of 'type', which is not the accessed member when the accessed member hides it, or is hidden by it
+            if (!result.IsEmpty && !IsSameOrRelatedMember(member, FindExternalMember(type, member.Name), startType))
+                return TagInfo.None;
+
             return result;
+        }
+    }
+
+    /// <summary>
+    /// Returns the field or property that <c>[assembly: ValueTag(typeof(Type), "Member", ...)]</c> names: the member of the type,
+    /// or the inherited member when the type does not declare it.
+    /// </summary>
+    private static ISymbol? FindExternalMember(INamedTypeSymbol type, string memberName)
+    {
+        for (var current = type; current is not null; current = current.BaseType)
+        {
+            var member = FindFieldOrProperty(current, memberName);
+            if (member is not null)
+                return member;
+        }
+
+        if (type.TypeKind is TypeKind.Interface)
+        {
+            foreach (var @interface in type.AllInterfaces)
+            {
+                var member = FindFieldOrProperty(@interface, memberName);
+                if (member is not null)
+                    return member;
+            }
+        }
+
+        return null;
+
+        static ISymbol? FindFieldOrProperty(INamedTypeSymbol type, string memberName)
+        {
+            foreach (var member in type.GetMembers(memberName))
+            {
+                if (member is IFieldSymbol or IPropertySymbol { IsIndexer: false })
+                    return member;
+            }
+
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Returns whether the accessed member is the annotated member, overrides it, is overridden by it, or implements it.
+    /// </summary>
+    private static bool IsSameOrRelatedMember(ISymbol accessedMember, ISymbol? annotatedMember, INamedTypeSymbol? receiverType)
+    {
+        if (annotatedMember is null)
+            return false;
+
+        if (IsInOverrideChain(accessedMember, annotatedMember) || IsInOverrideChain(annotatedMember, accessedMember))
+            return true;
+
+        // An interface member is implemented by the member the receiver uses, which can be declared in a base type
+        if (annotatedMember.ContainingType is { TypeKind: TypeKind.Interface } && receiverType is not null)
+        {
+            var implementation = receiverType.FindImplementationForInterfaceMember(annotatedMember);
+            if (implementation is not null && (IsInOverrideChain(implementation, accessedMember) || IsInOverrideChain(accessedMember, implementation)))
+                return true;
+
+            return accessedMember.ContainingType is not null && SymbolEqualityComparer.Default.Equals(accessedMember.ContainingType.FindImplementationForInterfaceMember(annotatedMember)?.OriginalDefinition, accessedMember.OriginalDefinition);
+        }
+
+        return false;
+
+        static bool IsInOverrideChain(ISymbol member, ISymbol baseMember)
+        {
+            for (ISymbol? current = member; current is not null; current = (current as IPropertySymbol)?.OverriddenProperty)
+            {
+                if (SymbolEqualityComparer.Default.Equals(current.OriginalDefinition, baseMember.OriginalDefinition))
+                    return true;
+            }
+
+            return false;
         }
     }
 
@@ -929,12 +1005,20 @@ internal sealed class TagResolver
             }
         }
 
+        // The elements of a tuple that is not a literal, e.g. var (a, b) = pair, are created elsewhere: return their tags rather than the operations
+        var isElsewhere = false;
         for (var i = path.Count - 1; i >= 0; i--)
         {
+            if (tags is null && value is not null && value.UnwrapImplicitConversions() is not ITupleOperation && GetTupleElement(value, path[i].Index, depth + 1) is { } element)
+            {
+                (value, type, isElsewhere) = (element, element.Type, true);
+                continue;
+            }
+
             (value, tags, type) = GetDeconstructedElement(value, tags, type, path[i].Index, path[i].Arity, deconstructMethod: null, depth + 1);
         }
 
-        return (value, tags);
+        return isElsewhere && tags is null ? (null, GetTag(value, depth + 1)) : (value, tags);
     }
 
     /// <summary>
@@ -1005,29 +1089,66 @@ internal sealed class TagResolver
     /// </summary>
     private TagInfo GetTupleElementTags(IFieldReferenceOperation fieldReference, int depth)
     {
-        var field = fieldReference.Field;
+        var index = GetTupleElementIndex(fieldReference.Field);
+        if (index < 0 || fieldReference.Instance is null)
+            return TagInfo.None;
+
+        var element = GetTupleElement(fieldReference.Instance, index, depth + 1);
+        return element is null ? TagInfo.None : GetTag(element, depth + 1);
+    }
+
+    private static int GetTupleElementIndex(IFieldSymbol field)
+    {
         var index = field.ContainingType.TupleElements.IndexOf(field.CorrespondingTupleField ?? field, SymbolEqualityComparer.Default);
         if (index < 0)
         {
             index = field.ContainingType.TupleElements.Select(element => element.CorrespondingTupleField).ToList().FindIndex(element => SymbolEqualityComparer.Default.Equals(element, field.CorrespondingTupleField));
         }
 
-        if (index < 0 || fieldReference.Instance is null)
-            return TagInfo.None;
+        return index;
+    }
 
-        var instance = fieldReference.Instance.UnwrapImplicitConversions();
-        if (instance is ILocalReferenceOperation && fieldReference.SemanticModel is { } semanticModel)
+    /// <summary>
+    /// Returns the operation that creates the element at <paramref name="index"/> of a tuple: an element of a tuple literal, of the tuple literal a local is
+    /// initialized with, e.g. <c>orderId</c> for <c>pair</c> in <c>var pair = (orderId, projectId)</c>, or of a nested tuple, e.g. <c>outer.Item1</c>.
+    /// The element is not necessarily part of <paramref name="tuple"/>, so diagnostics must not be reported on it unless <paramref name="tuple"/> is a tuple literal.
+    /// </summary>
+    /// <returns>The operation, or <see langword="null"/> when the element cannot be found.</returns>
+    public IOperation? GetTupleElement(IOperation tuple, int index)
+    {
+        return GetTupleElement(tuple, index, depth: 0);
+    }
+
+    private IOperation? GetTupleElement(IOperation tuple, int index, int depth)
+    {
+        if (depth > MaxDepth)
         {
-            instance = SkipLocalCopies(instance, semanticModel)?.UnwrapImplicitConversions() ?? instance;
-            if (instance is ILocalReferenceOperation { Local: var local } && local.DeclaringSyntaxReferences is [var reference] &&
-                reference.SyntaxTree == semanticModel.SyntaxTree && semanticModel.GetOperation(reference.GetSyntax()) is IVariableDeclaratorOperation declarator &&
-                declarator.GetVariableInitializer()?.Value is { } initializer)
-            {
-                instance = initializer.UnwrapImplicitConversions();
-            }
+            s_truncated = true;
+            return null;
         }
 
-        return instance is ITupleOperation tuple && index < tuple.Elements.Length ? GetTag(tuple.Elements[index], depth + 1) : TagInfo.None;
+        switch (tuple.UnwrapImplicitConversions())
+        {
+            case ITupleOperation literal:
+                return index >= 0 && index < literal.Elements.Length ? literal.Elements[index] : null;
+
+            case ILocalReferenceOperation localReference when localReference.SemanticModel is { } semanticModel:
+                var source = SkipLocalCopies(localReference, semanticModel)?.UnwrapImplicitConversions();
+                if (source is ILocalReferenceOperation { Local: var local } && local.DeclaringSyntaxReferences is [var reference] &&
+                    reference.SyntaxTree == semanticModel.SyntaxTree && semanticModel.GetOperation(reference.GetSyntax()) is IVariableDeclaratorOperation declarator)
+                {
+                    source = declarator.GetVariableInitializer()?.Value;
+                }
+
+                return source is null or ILocalReferenceOperation ? null : GetTupleElement(source, index, depth + 1);
+
+            case IFieldReferenceOperation { Field.ContainingType.IsTupleType: true, Instance: { } instance } fieldReference:
+                var outer = GetTupleElement(instance, GetTupleElementIndex(fieldReference.Field), depth + 1);
+                return outer is null ? null : GetTupleElement(outer, index, depth + 1);
+
+            default:
+                return null;
+        }
     }
 
     /// <summary>

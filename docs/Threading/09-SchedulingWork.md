@@ -109,3 +109,55 @@ Assert.Equal(["https://example.com/", "https://example.com/a", "https://example.
 - Items are not deduplicated: an item enqueued twice is processed twice. Track the processed items yourself, for instance
   with a [`ConcurrentHashSet<T>`](06-ConcurrentCollections.md#a-thread-safe-set-with-concurrenthashset), when the same
   item can be found several times.
+- A `TaskScheduler` that rejects a consumer, for instance because it is shutting down, makes [Process](cref:Meziantou.Framework.Threading.MixedConsumerProducer.Process) throw the
+  `TaskSchedulerException` once the consumers that did start are stopped. No item is processed.
+
+### Limit the pending items
+
+`MaxDegreeOfParallelism` limits the number of items processed at the same time, not the number of items waiting to be
+processed: by default, a fast enumeration of the initial items or actions that enqueue many items can accumulate a
+large backlog in memory. To limit it, pass a [MixedConsumerProducerOptions](cref:Meziantou.Framework.Threading.MixedConsumerProducerOptions) and set its
+[MaxPendingItems](cref:Meziantou.Framework.Threading.MixedConsumerProducerOptions.MaxPendingItems), then enqueue the items with
+[EnqueueAsync](cref:Meziantou.Framework.Threading.MixedConsumerProducerContext{T}.EnqueueAsync):
+
+<!-- ref:../../tests/Meziantou.Framework.Threading.Tests/MixedConsumerProducerTests.cs;region=MixedConsumerProducer_MaxPendingItems;format=md-fenced-code-block;dedent=true -->
+```csharp
+var processedItems = new ConcurrentBag<int>();
+var options = new MixedConsumerProducerOptions
+{
+    // Up to 4 items are processed at the same time...
+    MaxDegreeOfParallelism = 4,
+    // ...and up to 100 items wait to be processed
+    MaxPendingItems = 100,
+};
+
+await MixedConsumerProducer.Process(
+    Enumerable.Range(0, 1000),
+    options,
+    async (context, item, ct) =>
+    {
+        processedItems.Add(item);
+        if (item < 1000)
+        {
+            // Waits while 100 items are pending, so the backlog stays bounded
+            await context.EnqueueAsync(item + 1000, ct);
+        }
+    });
+
+Assert.HasCount(2000, processedItems);
+```
+<!-- endref -->
+
+The two limits are distinct: here up to 4 items are processed and up to 100 other items wait at the same time.
+When [MaxPendingItems](cref:Meziantou.Framework.Threading.MixedConsumerProducerOptions.MaxPendingItems) items are waiting:
+
+- The enumeration of the initial items waits until an item is dequeued, so it does not run ahead of the consumers.
+- [EnqueueAsync](cref:Meziantou.Framework.Threading.MixedConsumerProducerContext{T}.EnqueueAsync) waits as well. When every consumer would wait, no consumer would be left to dequeue an item, so
+  the last one processes its item itself before [EnqueueAsync](cref:Meziantou.Framework.Threading.MixedConsumerProducerContext{T}.EnqueueAsync) returns. The processing never deadlocks, and an
+  exception thrown by that item is reported by [Process](cref:Meziantou.Framework.Threading.MixedConsumerProducer.Process) with the others.
+- [Enqueue](cref:Meziantou.Framework.Threading.MixedConsumerProducerContext{T}.Enqueue) cannot wait: it throws an `InvalidOperationException`.
+  [TryEnqueue](cref:Meziantou.Framework.Threading.MixedConsumerProducerContext{T}.TryEnqueue) returns `false` instead, to let you decide what to do with the item. No item is
+  dropped silently.
+- Canceling `CancellationToken` stops the waits, and [Process](cref:Meziantou.Framework.Threading.MixedConsumerProducer.Process) throws an `OperationCanceledException`.
+
+The default value of [MaxPendingItems](cref:Meziantou.Framework.Threading.MixedConsumerProducerOptions.MaxPendingItems), -1, does not limit the pending items.

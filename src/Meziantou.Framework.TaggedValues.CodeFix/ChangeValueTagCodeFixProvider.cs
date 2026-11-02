@@ -7,6 +7,7 @@ using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.CodeAnalysis.Editing;
 using Microsoft.CodeAnalysis.Simplification;
+using Microsoft.CodeAnalysis.Text;
 
 namespace Meziantou.Framework.TaggedValues.CodeFix;
 
@@ -16,71 +17,340 @@ namespace Meziantou.Framework.TaggedValues.CodeFix;
 [ExportCodeFixProvider(LanguageNames.CSharp, Name = nameof(ChangeValueTagCodeFixProvider))]
 public sealed class ChangeValueTagCodeFixProvider : CodeFixProvider
 {
+    // The actions share one key, so Fix All applies the change and add actions of every diagnostic of the scope
+    private const string EquivalenceKey = nameof(ChangeValueTagCodeFixProvider);
+
     public override ImmutableArray<string> FixableDiagnosticIds => [ValueTagDiagnostics.FlowMismatchDiagnosticId, ValueTagDiagnostics.InheritedTagMismatchDiagnosticId, ValueTagDiagnostics.MissingReturnTagDiagnosticId, ValueTagDiagnostics.UntaggedValueDiagnosticId];
 
-    public override FixAllProvider? GetFixAllProvider()
+    public override FixAllProvider GetFixAllProvider()
     {
-        return null;
+        return ChangeValueTagFixAllProvider.Instance;
     }
 
     public override async Task RegisterCodeFixesAsync(CodeFixContext context)
     {
+        var models = new SemanticModelCache(context.Document.Project.Solution);
         foreach (var diagnostic in context.Diagnostics)
         {
-            if (diagnostic.AdditionalLocations.Count is 0 ||
-                !diagnostic.Properties.TryGetValue(ValueTagDiagnostics.TagsProperty, out var serializedTags) || serializedTags is null ||
-                !diagnostic.Properties.TryGetValue(ValueTagDiagnostics.TargetKindProperty, out var targetKind) || targetKind is null)
+            if (await CreateEditAsync(models, diagnostic, context.CancellationToken).ConfigureAwait(false) is not { } edit)
+                continue;
+
+            context.RegisterCodeFix(
+                CodeAction.Create(edit.Title, cancellationToken => ApplyAsync(models, [edit], cancellationToken), equivalenceKey: EquivalenceKey),
+                diagnostic);
+        }
+    }
+
+    /// <summary>
+    /// Computes the edit that fixes a diagnostic, from the original syntax of the solution.
+    /// </summary>
+    private static async Task<Edit?> CreateEditAsync(SemanticModelCache models, Diagnostic diagnostic, CancellationToken cancellationToken)
+    {
+        if (diagnostic.AdditionalLocations.Count is 0 ||
+            !diagnostic.Properties.TryGetValue(ValueTagDiagnostics.TagsProperty, out var serializedTags) || serializedTags is null ||
+            !diagnostic.Properties.TryGetValue(ValueTagDiagnostics.TargetKindProperty, out var targetKind) || targetKind is null)
+        {
+            return null;
+        }
+
+        var tags = TagInfo.Deserialize(serializedTags);
+        var targetLocation = diagnostic.AdditionalLocations[0];
+        var document = models.Solution.GetDocument(targetLocation.SourceTree);
+        if (tags.IsEmpty || document is null)
+            return null;
+
+        var semanticModel = await models.GetAsync(document, cancellationToken).ConfigureAwait(false);
+        if (semanticModel is null)
+            return null;
+
+        var root = await semanticModel.SyntaxTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
+        var token = root.FindToken(targetLocation.SourceSpan.Start);
+        if (targetKind is ValueTagTargetKind.Local)
+            return CreateLocalEdit(document, token, tags);
+
+        return await CreateAttributeEditAsync(models, document, semanticModel, token, tags, targetKind, diagnostic.Id, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static LocalEdit? CreateLocalEdit(Document document, SyntaxToken identifier, TagInfo tags)
+    {
+        if (FindLocalComment(identifier) is not { } comment)
+            return null;
+
+        // Guid /* ValueTag=OrderId */ a, b: changing the shared comment would also change b, so a comment is added next to a instead
+        var isShared = IsSharedComment(comment, identifier);
+        var isLineComment = !isShared && comment.IsKind(SyntaxKind.SingleLineCommentTrivia);
+
+        // A comment cannot declare every tag an attribute can, e.g. a tag that contains a space
+        if (!ValueTagComment.CanFormat(tags, isLineComment))
+            return null;
+
+        var newComment = ValueTagComment.Format(tags, isLineComment);
+        var title = "Change the tag of '" + identifier.ValueText + "' to " + newComment;
+        var key = new EditKey(document.Id, isShared ? identifier.Span : comment.Span, TargetKeyword: null, IsLocal: true);
+        return new LocalEdit(document, title, tags, key, identifier, comment, isShared, newComment);
+    }
+
+    private static async Task<AttributeEdit?> CreateAttributeEditAsync(SemanticModelCache models, Document document, SemanticModel semanticModel, SyntaxToken identifier, TagInfo tags, string targetKind, string diagnosticId, CancellationToken cancellationToken)
+    {
+        var declaration = GetDeclaration(identifier);
+        if (declaration is null)
+            return null;
+
+        // The attributes of a record primary constructor parameter tag its property, unless the property has its own [property: ValueTag]
+        SyntaxKind? targetKeyword = targetKind switch
+        {
+            ValueTagTargetKind.ReturnValue => SyntaxKind.ReturnKeyword,
+            ValueTagTargetKind.RecordProperty when GetAttributeLists(declaration).Any(list => list.Target?.Identifier.IsKind(SyntaxKind.PropertyKeyword) is true && list.Attributes.Any(attribute => IsValueTagAttribute(semanticModel, attribute, cancellationToken))) => SyntaxKind.PropertyKeyword,
+            _ => null,
+        };
+
+        // The attributes of the parts of a partial member are merged, so the tags of the other parts are removed too
+        var otherParts = new List<DeclarationPart>();
+        foreach (var otherPart in GetOtherPartialDeclarations(semanticModel, declaration, cancellationToken))
+        {
+            if (models.Solution.GetDocument(otherPart.SyntaxTree) is not { } otherDocument ||
+                await models.GetAsync(otherDocument, cancellationToken).ConfigureAwait(false) is not { } otherSemanticModel ||
+                otherSemanticModel.SyntaxTree != otherPart.SyntaxTree)
             {
                 continue;
             }
 
-            var tags = TagInfo.Deserialize(serializedTags);
-            var targetLocation = diagnostic.AdditionalLocations[0];
-            var document = context.Document.Project.Solution.GetDocument(targetLocation.SourceTree);
-            if (tags.IsEmpty || document is null)
-                continue;
+            var otherDeclaration = await otherPart.GetSyntaxAsync(cancellationToken).ConfigureAwait(false);
+            otherParts.Add(new DeclarationPart(otherDocument, otherDeclaration, GetValueTagAttributes(otherSemanticModel, otherDeclaration, targetKeyword, cancellationToken)));
+        }
 
-            var root = await document.GetSyntaxRootAsync(context.CancellationToken).ConfigureAwait(false);
-            if (root is null)
-                continue;
+        var part = new DeclarationPart(document, declaration, GetValueTagAttributes(semanticModel, declaration, targetKeyword, cancellationToken));
 
-            var token = root.FindToken(targetLocation.SourceSpan.Start);
-            if (targetKind is ValueTagTargetKind.Local)
+        // Every part of a partial member has the same key, so that the diagnostics that target different parts are grouped
+        var canonicalPart = otherParts.Prepend(part)
+            .OrderBy(declarationPart => declarationPart.Document.FilePath ?? declarationPart.Document.Name, StringComparer.Ordinal)
+            .ThenBy(declarationPart => declarationPart.Declaration.SpanStart)
+            .First();
+        var key = new EditKey(canonicalPart.Document.Id, canonicalPart.Declaration.Span, targetKeyword, IsLocal: false);
+
+        var isReturnValue = targetKind is ValueTagTargetKind.ReturnValue;
+        var title = diagnosticId is ValueTagDiagnostics.MissingReturnTagDiagnosticId or ValueTagDiagnostics.UntaggedValueDiagnosticId
+            ? "Add " + tags.ToAttributeString(isReturnValue) + " to '" + identifier.ValueText + "'"
+            : "Change the tag of '" + identifier.ValueText + "' to " + tags.ToAttributeString();
+        return new AttributeEdit(document, title, tags, key, part, targetKeyword, otherParts);
+    }
+
+    private static ImmutableArray<AttributeSyntax> GetValueTagAttributes(SemanticModel semanticModel, SyntaxNode declaration, SyntaxKind? targetKeyword, CancellationToken cancellationToken)
+    {
+        return [.. GetAttributeLists(declaration)
+            .Where(attributeList => IsTargetList(attributeList, targetKeyword))
+            .SelectMany(attributeList => attributeList.Attributes)
+            .Where(attribute => IsValueTagAttribute(semanticModel, attribute, cancellationToken))];
+    }
+
+    /// <summary>
+    /// Applies the edits to the solution. The edits of a document are applied one after the other to the same root,
+    /// in which annotations locate the nodes, tokens and comments of the original root.
+    /// </summary>
+    private static async Task<Solution> ApplyAsync(SemanticModelCache models, IReadOnlyList<Edit> edits, CancellationToken cancellationToken)
+    {
+        var documentEdits = new Dictionary<DocumentId, DocumentEdits>();
+        var documentIds = new List<DocumentId>();
+        foreach (var edit in edits)
+        {
+            switch (edit)
             {
-                if (FindLocalComment(token) is not { } comment)
-                    continue;
+                case LocalEdit localEdit:
+                    GetDocumentEdits(localEdit.Document).LocalEdits.Add(localEdit);
+                    break;
 
-                // Guid /* ValueTag=OrderId */ a, b: changing the shared comment would also change b, so a comment is added next to a instead
-                var isShared = IsSharedComment(comment, token);
-                var isLineComment = !isShared && comment.IsKind(SyntaxKind.SingleLineCommentTrivia);
+                case AttributeEdit attributeEdit:
+                    GetDocumentEdits(attributeEdit.Document).AttributeEdits.Add(attributeEdit);
+                    foreach (var otherPart in attributeEdit.OtherParts)
+                    {
+                        GetDocumentEdits(otherPart.Document).RemovedAttributes.AddRange(otherPart.ValueTagAttributes);
+                    }
 
-                // A comment cannot declare every tag an attribute can, e.g. a tag that contains a space
-                if (!ValueTagComment.CanFormat(tags, isLineComment))
-                    continue;
+                    break;
+            }
+        }
 
-                var newComment = ValueTagComment.Format(tags, isLineComment);
-                var title = "Change the tag of '" + token.ValueText + "' to " + newComment;
-                var newRoot = isShared
-                    ? root.ReplaceToken(token, token.WithTrailingTrivia(token.TrailingTrivia.InsertRange(0, [SyntaxFactory.Space, SyntaxFactory.Comment(newComment)])))
-                    : root.ReplaceTrivia(comment, SyntaxFactory.Comment(newComment));
-                context.RegisterCodeFix(
-                    CodeAction.Create(title, _ => Task.FromResult(document.WithSyntaxRoot(newRoot)), equivalenceKey: title),
-                    diagnostic);
+        var solution = models.Solution;
+        foreach (var documentId in documentIds)
+        {
+            var document = solution.GetDocument(documentId);
+            if (document is null || await models.GetAsync(document, cancellationToken).ConfigureAwait(false) is not { } semanticModel)
+                continue;
+
+            var root = await semanticModel.SyntaxTree.GetRootAsync(cancellationToken).ConfigureAwait(false);
+            solution = solution.WithDocumentSyntaxRoot(documentId, ApplyEdits(document, root, documentEdits[documentId]));
+        }
+
+        return solution;
+
+        DocumentEdits GetDocumentEdits(Document document)
+        {
+            if (!documentEdits.TryGetValue(document.Id, out var result))
+            {
+                result = new DocumentEdits();
+                documentEdits.Add(document.Id, result);
+                documentIds.Add(document.Id);
+            }
+
+            return result;
+        }
+    }
+
+    private static SyntaxNode ApplyEdits(Document document, SyntaxNode root, DocumentEdits edits)
+    {
+        var nodeAnnotations = new Dictionary<SyntaxNode, List<SyntaxAnnotation>>();
+        var tokenAnnotations = new Dictionary<SyntaxToken, SyntaxAnnotation>();
+        var triviaAnnotations = new Dictionary<SyntaxTrivia, SyntaxAnnotation>();
+        var replacedAttributeAnnotation = new SyntaxAnnotation();
+        var removedAttributeAnnotation = new SyntaxAnnotation();
+
+        foreach (var edit in edits.LocalEdits)
+        {
+            if (edit.IsShared)
+            {
+                tokenAnnotations[edit.Identifier] = new SyntaxAnnotation();
             }
             else
             {
-                if (GetDeclaration(token) is null)
-                    continue;
-
-                var isReturnValue = targetKind is ValueTagTargetKind.ReturnValue;
-                var title = diagnostic.Id is ValueTagDiagnostics.MissingReturnTagDiagnosticId or ValueTagDiagnostics.UntaggedValueDiagnosticId
-                    ? "Add " + tags.ToAttributeString(isReturnValue) + " to '" + token.ValueText + "'"
-                    : "Change the tag of '" + token.ValueText + "' to " + tags.ToAttributeString();
-                context.RegisterCodeFix(
-                    CodeAction.Create(title, cancellationToken => ChangeAttributeAsync(document, targetLocation.SourceSpan.Start, tags, targetKind, cancellationToken), equivalenceKey: title),
-                    diagnostic);
+                triviaAnnotations[edit.Comment] = new SyntaxAnnotation();
             }
         }
+
+        var declarationAnnotations = new Dictionary<SyntaxNode, SyntaxAnnotation>();
+        foreach (var edit in edits.AttributeEdits)
+        {
+            if (!declarationAnnotations.ContainsKey(edit.Part.Declaration))
+            {
+                var annotation = new SyntaxAnnotation();
+                declarationAnnotations.Add(edit.Part.Declaration, annotation);
+                AddNodeAnnotation(edit.Part.Declaration, annotation);
+            }
+
+            foreach (var attribute in edit.Part.ValueTagAttributes)
+            {
+                AddNodeAnnotation(attribute, replacedAttributeAnnotation);
+            }
+        }
+
+        foreach (var attribute in edits.RemovedAttributes)
+        {
+            AddNodeAnnotation(attribute, removedAttributeAnnotation);
+        }
+
+        root = root.ReplaceSyntax(
+            nodeAnnotations.Keys,
+            (original, rewritten) => rewritten.WithAdditionalAnnotations(nodeAnnotations[original]),
+            tokenAnnotations.Keys,
+            (original, rewritten) => rewritten.WithAdditionalAnnotations(tokenAnnotations[original]),
+            triviaAnnotations.Keys,
+            (original, rewritten) => rewritten.WithAdditionalAnnotations(triviaAnnotations[original]));
+
+        foreach (var edit in edits.LocalEdits)
+        {
+            if (edit.IsShared)
+            {
+                var token = root.GetAnnotatedTokens(tokenAnnotations[edit.Identifier]).Single();
+                root = root.ReplaceToken(token, token.WithTrailingTrivia(token.TrailingTrivia.InsertRange(0, [SyntaxFactory.Space, SyntaxFactory.Comment(edit.NewComment)])));
+            }
+            else
+            {
+                var comment = root.GetAnnotatedTrivia(triviaAnnotations[edit.Comment]).Single();
+                root = root.ReplaceTrivia(comment, SyntaxFactory.Comment(edit.NewComment));
+            }
+        }
+
+        var generator = SyntaxGenerator.GetGenerator(document);
+        foreach (var edit in edits.AttributeEdits)
+        {
+            var declaration = root.GetAnnotatedNodes(declarationAnnotations[edit.Part.Declaration]).Single();
+            root = root.ReplaceNode(declaration, ChangeAttribute(generator, declaration, edit.Tags, edit.TargetKeyword, replacedAttributeAnnotation));
+        }
+
+        var removedAttributes = root.GetAnnotatedNodes(removedAttributeAnnotation).ToList();
+        if (removedAttributes.Count > 0)
+        {
+            var editor = new SyntaxEditor(root, document.Project.Solution.Services);
+            foreach (var attribute in removedAttributes)
+            {
+                editor.RemoveNode(attribute);
+            }
+
+            root = editor.GetChangedRoot();
+        }
+
+        return root;
+
+        void AddNodeAnnotation(SyntaxNode node, SyntaxAnnotation annotation)
+        {
+            if (!nodeAnnotations.TryGetValue(node, out var annotations))
+            {
+                annotations = [];
+                nodeAnnotations.Add(node, annotations);
+            }
+
+            annotations.Add(annotation);
+        }
+    }
+
+    /// <summary>
+    /// Replaces the value tags of the target attribute lists of <paramref name="declaration"/>, located by <paramref name="replacedAttributeAnnotation"/>, with a new attribute.
+    /// </summary>
+    private static SyntaxNode ChangeAttribute(SyntaxGenerator generator, SyntaxNode declaration, TagInfo tags, SyntaxKind? targetKeyword, SyntaxAnnotation replacedAttributeAnnotation)
+    {
+        var arguments = new List<SyntaxNode>();
+        foreach (var tag in tags.Tags)
+        {
+            arguments.Add(generator.AttributeArgument(generator.LiteralExpression(tag)));
+        }
+
+        foreach (var key in tags.Key)
+        {
+            arguments.Add(generator.AttributeArgument("Key", generator.LiteralExpression(key)));
+        }
+
+        foreach (var value in tags.Value)
+        {
+            arguments.Add(generator.AttributeArgument("Value", generator.LiteralExpression(value)));
+        }
+
+        var attributeName = SyntaxFactory.ParseName("Meziantou.Framework.TaggedValues.ValueTag").WithAdditionalAnnotations(Simplifier.Annotation);
+        // Without elastic trivia, so the formatter does not reindent the code around the attribute
+        var newAttributeList = ((AttributeListSyntax)generator.Attribute(attributeName, arguments)).NormalizeWhitespace();
+        if (targetKeyword is { } keyword)
+        {
+            newAttributeList = newAttributeList.WithTarget(SyntaxFactory.AttributeTargetSpecifier(SyntaxFactory.Token(keyword)));
+        }
+
+        var lists = new List<AttributeListSyntax>();
+        var replaced = false;
+        foreach (var attributeList in GetAttributeLists(declaration))
+        {
+            var attributes = attributeList.Attributes
+                .Where(attribute => !IsTargetList(attributeList, targetKeyword) || !attribute.HasAnnotation(replacedAttributeAnnotation))
+                .ToList();
+
+            if (attributes.Count == attributeList.Attributes.Count)
+            {
+                lists.Add(attributeList);
+            }
+            else if (attributes.Count > 0)
+            {
+                lists.Add(attributeList.WithAttributes(SyntaxFactory.SeparatedList(attributes)));
+            }
+            else if (!replaced)
+            {
+                // The new attribute replaces the first list that only contained value tags, and keeps its comments and its layout
+                lists.Add(newAttributeList.WithTriviaFrom(attributeList));
+                replaced = true;
+            }
+        }
+
+        return replaced ? WithAttributeLists(declaration, lists) : InsertAttributeList(declaration, lists, newAttributeList);
+    }
+
+    private static bool IsTargetList(AttributeListSyntax attributeList, SyntaxKind? targetKeyword)
+    {
+        return targetKeyword is { } targetListKeyword ? attributeList.Target?.Identifier.IsKind(targetListKeyword) is true : attributeList.Target is null;
     }
 
     /// <summary>
@@ -136,113 +406,11 @@ public sealed class ChangeValueTagCodeFixProvider : CodeFixProvider
         return null;
     }
 
-    private static async Task<Solution> ChangeAttributeAsync(Document document, int position, TagInfo tags, string targetKind, CancellationToken cancellationToken)
-    {
-        var solutionEditor = new SolutionEditor(document.Project.Solution);
-        var editor = await solutionEditor.GetDocumentEditorAsync(document.Id, cancellationToken).ConfigureAwait(false);
-        var declaration = GetDeclaration(editor.OriginalRoot.FindToken(position));
-        if (declaration is null)
-            return document.Project.Solution;
-
-        // The attributes of a record primary constructor parameter tag its property, unless the property has its own [property: ValueTag]
-        SyntaxKind? targetKeyword = targetKind switch
-        {
-            ValueTagTargetKind.ReturnValue => SyntaxKind.ReturnKeyword,
-            ValueTagTargetKind.RecordProperty when GetAttributeLists(declaration).Any(list => list.Target?.Identifier.IsKind(SyntaxKind.PropertyKeyword) is true && list.Attributes.Any(attribute => IsValueTagAttribute(editor.SemanticModel, attribute, cancellationToken))) => SyntaxKind.PropertyKeyword,
-            _ => null,
-        };
-
-        var generator = editor.Generator;
-        var arguments = new List<SyntaxNode>();
-        foreach (var tag in tags.Tags)
-        {
-            arguments.Add(generator.AttributeArgument(generator.LiteralExpression(tag)));
-        }
-
-        foreach (var key in tags.Key)
-        {
-            arguments.Add(generator.AttributeArgument("Key", generator.LiteralExpression(key)));
-        }
-
-        foreach (var value in tags.Value)
-        {
-            arguments.Add(generator.AttributeArgument("Value", generator.LiteralExpression(value)));
-        }
-
-        var attributeName = SyntaxFactory.ParseName("Meziantou.Framework.TaggedValues.ValueTag").WithAdditionalAnnotations(Simplifier.Annotation);
-        // Without elastic trivia, so the formatter does not reindent the code around the attribute
-        var newAttributeList = ((AttributeListSyntax)generator.Attribute(attributeName, arguments)).NormalizeWhitespace();
-        if (targetKeyword is { } keyword)
-        {
-            newAttributeList = newAttributeList.WithTarget(SyntaxFactory.AttributeTargetSpecifier(SyntaxFactory.Token(keyword)));
-        }
-
-        var lists = new List<AttributeListSyntax>();
-        var replaced = false;
-        foreach (var attributeList in GetAttributeLists(declaration))
-        {
-            var attributes = attributeList.Attributes
-                .Where(attribute => !IsTargetList(attributeList, targetKeyword) || !IsValueTagAttribute(editor.SemanticModel, attribute, cancellationToken))
-                .ToList();
-
-            if (attributes.Count == attributeList.Attributes.Count)
-            {
-                lists.Add(attributeList);
-            }
-            else if (attributes.Count > 0)
-            {
-                lists.Add(attributeList.WithAttributes(SyntaxFactory.SeparatedList(attributes)));
-            }
-            else if (!replaced)
-            {
-                // The new attribute replaces the first list that only contained value tags, and keeps its comments and its layout
-                lists.Add(newAttributeList.WithTriviaFrom(attributeList));
-                replaced = true;
-            }
-        }
-
-        editor.ReplaceNode(declaration, replaced ? WithAttributeLists(declaration, lists) : InsertAttributeList(declaration, lists, newAttributeList));
-
-        // The attributes of the parts of a partial member are merged, so the tags of the other part are removed too
-        foreach (var otherPart in await GetOtherPartialDeclarationsAsync(document, declaration, cancellationToken).ConfigureAwait(false))
-        {
-            if (document.Project.Solution.GetDocument(otherPart.SyntaxTree) is not { } otherDocument)
-                continue;
-
-            var otherEditor = await solutionEditor.GetDocumentEditorAsync(otherDocument.Id, cancellationToken).ConfigureAwait(false);
-            var otherDeclaration = otherPart.GetSyntax(cancellationToken);
-            foreach (var attributeList in GetAttributeLists(otherDeclaration))
-            {
-                if (!IsTargetList(attributeList, targetKeyword))
-                    continue;
-
-                foreach (var attribute in attributeList.Attributes)
-                {
-                    if (IsValueTagAttribute(otherEditor.SemanticModel, attribute, cancellationToken))
-                    {
-                        otherEditor.RemoveNode(attribute);
-                    }
-                }
-            }
-        }
-
-        return solutionEditor.GetChangedSolution();
-
-        static bool IsTargetList(AttributeListSyntax attributeList, SyntaxKind? targetKeyword)
-        {
-            return targetKeyword is { } targetListKeyword ? attributeList.Target?.Identifier.IsKind(targetListKeyword) is true : attributeList.Target is null;
-        }
-    }
-
     /// <summary>
     /// Returns the declarations of the other part of a partial method or property, or of the parameter at the same position.
     /// </summary>
-    private static async Task<IEnumerable<SyntaxReference>> GetOtherPartialDeclarationsAsync(Document document, SyntaxNode declaration, CancellationToken cancellationToken)
+    private static ImmutableArray<SyntaxReference> GetOtherPartialDeclarations(SemanticModel semanticModel, SyntaxNode declaration, CancellationToken cancellationToken)
     {
-        var semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
-        if (semanticModel is null)
-            return [];
-
         var symbol = semanticModel.GetDeclaredSymbol(declaration, cancellationToken);
         var otherPart = symbol switch
         {
@@ -343,5 +511,136 @@ public sealed class ChangeValueTagCodeFixProvider : CodeFixProvider
             LocalFunctionStatementSyntax localFunction => localFunction.AttributeLists,
             _ => default,
         };
+    }
+
+    /// <summary>
+    /// Identifies what an edit changes: the comment of a local, the name of a local next to which a comment is added,
+    /// or the attribute lists of a declaration with a given target. Two edits with the same key change the same code.
+    /// </summary>
+    private readonly record struct EditKey(DocumentId DocumentId, TextSpan Span, SyntaxKind? TargetKeyword, bool IsLocal);
+
+    private abstract record Edit(Document Document, string Title, TagInfo Tags, EditKey Key);
+
+    private sealed record LocalEdit(Document Document, string Title, TagInfo Tags, EditKey Key, SyntaxToken Identifier, SyntaxTrivia Comment, bool IsShared, string NewComment)
+        : Edit(Document, Title, Tags, Key);
+
+    private sealed record AttributeEdit(Document Document, string Title, TagInfo Tags, EditKey Key, DeclarationPart Part, SyntaxKind? TargetKeyword, IReadOnlyList<DeclarationPart> OtherParts)
+        : Edit(Document, Title, Tags, Key);
+
+    /// <summary>
+    /// A declaration, or a part of a partial member, and its <c>[ValueTag]</c> attributes in the attribute lists of the target of the edit.
+    /// </summary>
+    private sealed record DeclarationPart(Document Document, SyntaxNode Declaration, ImmutableArray<AttributeSyntax> ValueTagAttributes);
+
+    private sealed class DocumentEdits
+    {
+        public List<LocalEdit> LocalEdits { get; } = [];
+
+        public List<AttributeEdit> AttributeEdits { get; } = [];
+
+        public List<AttributeSyntax> RemovedAttributes { get; } = [];
+    }
+
+    /// <summary>
+    /// Shares the semantic models of the documents, so that every edit locates the nodes of the same syntax roots.
+    /// </summary>
+    private sealed class SemanticModelCache(Solution solution)
+    {
+        private readonly Dictionary<DocumentId, SemanticModel?> _semanticModels = [];
+
+        public Solution Solution => solution;
+
+        public async Task<SemanticModel?> GetAsync(Document document, CancellationToken cancellationToken)
+        {
+            if (!_semanticModels.TryGetValue(document.Id, out var semanticModel))
+            {
+                semanticModel = await document.GetSemanticModelAsync(cancellationToken).ConfigureAwait(false);
+                _semanticModels[document.Id] = semanticModel;
+            }
+
+            return semanticModel;
+        }
+    }
+
+    /// <summary>
+    /// Applies the fixes of every diagnostic of the scope at once.
+    /// </summary>
+    /// <remarks>
+    /// The edits are grouped by what they change: a declaration and its target (every part of a partial member being the same declaration),
+    /// the comment of a local, or the name of a local next to which a comment is added. The edits of a group that suggest the same tags
+    /// are applied once. When they suggest different tags, the group is left unchanged, and its diagnostics remain to be fixed one by one.
+    /// </remarks>
+    private sealed class ChangeValueTagFixAllProvider : FixAllProvider
+    {
+        public static ChangeValueTagFixAllProvider Instance { get; } = new();
+
+        public override async Task<CodeAction?> GetFixAsync(FixAllContext fixAllContext)
+        {
+            var diagnostics = new List<Diagnostic>();
+            switch (fixAllContext.Scope)
+            {
+                case FixAllScope.Document when fixAllContext.Document is not null:
+                    diagnostics.AddRange(await fixAllContext.GetDocumentDiagnosticsAsync(fixAllContext.Document).ConfigureAwait(false));
+                    break;
+
+                case FixAllScope.Project:
+                    diagnostics.AddRange(await fixAllContext.GetAllDiagnosticsAsync(fixAllContext.Project).ConfigureAwait(false));
+                    break;
+
+                case FixAllScope.Solution:
+                    foreach (var project in fixAllContext.Solution.Projects)
+                    {
+                        diagnostics.AddRange(await fixAllContext.GetAllDiagnosticsAsync(project).ConfigureAwait(false));
+                    }
+
+                    break;
+            }
+
+            if (diagnostics.Count is 0)
+                return null;
+
+            return CodeAction.Create(
+                "Change the value tags",
+                cancellationToken => FixAllAsync(fixAllContext.Solution, diagnostics, cancellationToken),
+                equivalenceKey: EquivalenceKey);
+        }
+
+        private static async Task<Solution> FixAllAsync(Solution solution, List<Diagnostic> diagnostics, CancellationToken cancellationToken)
+        {
+            var models = new SemanticModelCache(solution);
+            var groups = new Dictionary<EditKey, List<Edit>>();
+            var keys = new List<EditKey>();
+            var orderedDiagnostics = diagnostics
+                .OrderBy(diagnostic => diagnostic.Location.SourceTree?.FilePath, StringComparer.Ordinal)
+                .ThenBy(diagnostic => diagnostic.Location.SourceSpan.Start)
+                .ThenBy(diagnostic => diagnostic.Id, StringComparer.Ordinal);
+            foreach (var diagnostic in orderedDiagnostics)
+            {
+                if (await CreateEditAsync(models, diagnostic, cancellationToken).ConfigureAwait(false) is not { } edit)
+                    continue;
+
+                if (!groups.TryGetValue(edit.Key, out var group))
+                {
+                    group = [];
+                    groups.Add(edit.Key, group);
+                    keys.Add(edit.Key);
+                }
+
+                group.Add(edit);
+            }
+
+            var edits = new List<Edit>();
+            foreach (var key in keys)
+            {
+                var group = groups[key];
+                var tags = group[0].Tags.Serialize();
+                if (group.TrueForAll(edit => edit.Tags.Serialize() == tags))
+                {
+                    edits.Add(group[0]);
+                }
+            }
+
+            return await ApplyAsync(models, edits, cancellationToken).ConfigureAwait(false);
+        }
     }
 }

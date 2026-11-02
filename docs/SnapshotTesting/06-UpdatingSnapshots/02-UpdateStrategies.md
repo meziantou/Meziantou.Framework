@@ -17,6 +17,10 @@ In every case, the actual files are written first. [Overwrite](cref:Meziantou.Fr
 files, delete the verified files the assertion no longer produces, and delete the actual files. The merge tool
 strategies never delete verified files: the failure message lists the ones that are no longer produced.
 
+A file that cannot be written or deleted, because it is locked or its directory is read-only, is retried a few times.
+If it still fails, the assertion throws a [SnapshotException](cref:Meziantou.Framework.SnapshotTesting.SnapshotException) that lists the files, even with
+[OverwriteWithoutFailure](cref:Meziantou.Framework.SnapshotTesting.SnapshotUpdateStrategy.OverwriteWithoutFailure): this strategy hides snapshot differences, not a failed update.
+
 ## Choose a strategy for a run
 
 The strategy usually depends on who runs the tests rather than on the test. Set the `SNAPSHOTTESTING_STRATEGY`

@@ -104,16 +104,22 @@ public sealed class SnapshotType : IEquatable<SnapshotType>
         return new SnapshotType(name ?? nameSpan.ToString());
     }
 
-    /// <summary>Indicates whether a snapshot stored with this extension is text, such as <c>txt</c>, <c>json</c> or <c>cs</c>.</summary>
-    internal static bool IsKnownTextType(string? extension) => ContainsExtension(KnownTextTypes, extension);
+    /// <summary>
+    /// Indicates whether a snapshot stored with this extension is text, such as <c>txt</c>, <c>json</c> or <c>cs</c>.
+    /// A compound extension, such as <c>g.cs</c> or <c>d.ts</c>, is classified by its last segment.
+    /// </summary>
+    internal static bool IsKnownTextType(string? extension) => GetKnownFormat(extension) is KnownFormat.Text;
 
-    /// <summary>Indicates whether a snapshot stored with this extension is binary, such as <c>png</c> or <c>bin</c>.</summary>
-    internal static bool IsKnownBinaryType(string? extension) => ContainsExtension(KnownBinaryTypes, extension);
+    /// <summary>
+    /// Indicates whether a snapshot stored with this extension is binary, such as <c>png</c> or <c>bin</c>.
+    /// A compound extension, such as <c>tar.gz</c>, is classified by its last segment.
+    /// </summary>
+    internal static bool IsKnownBinaryType(string? extension) => GetKnownFormat(extension) is KnownFormat.Binary;
 
-    private static bool ContainsExtension(HashSet<string> extensions, string? extension)
+    private static KnownFormat GetKnownFormat(string? extension)
     {
         if (string.IsNullOrEmpty(extension))
-            return false;
+            return KnownFormat.Unknown;
 
         var span = extension.AsSpan();
         if (span[0] == '.')
@@ -121,7 +127,36 @@ public sealed class SnapshotType : IEquatable<SnapshotType>
             span = span[1..];
         }
 
-        return extensions.GetAlternateLookup<ReadOnlySpan<char>>().Contains(span);
+        // The whole extension is looked up first, so a compound extension listed in a set keeps its classification.
+        var format = GetExactKnownFormat(span);
+        if (format is KnownFormat.Unknown)
+        {
+            var lastDot = span.LastIndexOf('.');
+            if (lastDot >= 0)
+            {
+                format = GetExactKnownFormat(span[(lastDot + 1)..]);
+            }
+        }
+
+        return format;
+    }
+
+    private static KnownFormat GetExactKnownFormat(ReadOnlySpan<char> extension)
+    {
+        if (KnownTextTypes.GetAlternateLookup<ReadOnlySpan<char>>().Contains(extension))
+            return KnownFormat.Text;
+
+        if (KnownBinaryTypes.GetAlternateLookup<ReadOnlySpan<char>>().Contains(extension))
+            return KnownFormat.Binary;
+
+        return KnownFormat.Unknown;
+    }
+
+    private enum KnownFormat
+    {
+        Unknown,
+        Text,
+        Binary,
     }
 
     // A type names a file extension, and "JSON" and "json" name the same format: a comparer registered for one

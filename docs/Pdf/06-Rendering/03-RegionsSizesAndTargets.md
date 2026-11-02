@@ -55,6 +55,9 @@ PdfRenderer.RenderPage(page, gray);
 ```
 <!-- endref -->
 
+[PdfRenderSession.RenderPage](cref:Meziantou.Framework.Pdf.Rendering.PdfRenderSession.RenderPage) has the same
+overloads, to render the pages of a document with shared caches.
+
 The page is drawn from the top left corner of the image, at the size `GetImageSize` gives; what exceeds the image is not
 drawn. The background of the options is painted first, over the pixels of the image, then the page: set
 [Background](cref:Meziantou.Framework.Pdf.Rendering.PdfRenderOptions.Background) to `null` to draw the page over what the

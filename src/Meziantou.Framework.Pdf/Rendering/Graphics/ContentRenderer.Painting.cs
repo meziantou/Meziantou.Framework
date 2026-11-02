@@ -150,7 +150,7 @@ internal sealed partial class ContentRenderer
             var maskMode = isLuminosity ? MaskMode.Luminance : MaskMode.Alpha;
             if (_state.BlendMode == BlendMode.Normal)
             {
-                masked = target => target.Mask(maskCanvas => RenderSoftMask(maskCanvas, mask.Mask, mask.Matrix, isLuminosity), content => transferred(content), maskMode);
+                masked = target => target.Mask(maskCanvas => DrawSoftMask(maskCanvas, mask.Mask, mask.Matrix, isLuminosity), content => transferred(content), maskMode);
             }
             else
             {
@@ -276,6 +276,7 @@ internal sealed partial class ContentRenderer
         _cache.Charge(((long)width * height / 256) + 1);
         var tile = new Image<Rgba32>(width, height, _cache.Options.Configuration);
         _brushImages.Add(tile);
+
         // The cell is painted at each step whose copy of the bounding box overlaps the tile, so that a cell larger than
         // the step wraps around; the copies are bounded, the nearest ones first
         var (iMin, iMax) = GetOverlappingSteps(bbox.Left, bbox.Right, originX, Math.Abs(xStep));
@@ -320,6 +321,23 @@ internal sealed partial class ContentRenderer
         }
 
         return ((int)min, (int)max);
+    }
+
+    /// <summary>
+    /// Draws a soft mask on the layer of a mask: the mask rendered for this drawing, or the image of the mask the page
+    /// rendered once for the drawings it masks, the glyphs of a text for instance. The image is the mask rendered on a
+    /// transparent image of the device, which is what the layer is: the pixels are the same.
+    /// </summary>
+    private void DrawSoftMask(DrawingCanvas canvas, PdfDictionary mask, PdfMatrix matrix, bool isLuminosity)
+    {
+        var key = new RenderCache.SoftMaskKey(mask, matrix, DeviceSize.Width, DeviceSize.Height, _depth);
+        if (_cache.GetSoftMaskImage(key, image => RenderSoftMask(image, mask, matrix, isLuminosity)) is { } cached)
+        {
+            canvas.DrawImage(cached.Frames[0], new PointD(0, 0));
+            return;
+        }
+
+        RenderSoftMask(canvas, mask, matrix, isLuminosity);
     }
 
     /// <summary>

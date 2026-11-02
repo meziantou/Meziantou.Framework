@@ -1,3 +1,4 @@
+using System.Buffers;
 using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Imaging.Metadata;
 using Meziantou.Framework.Pdf.Objects;
@@ -82,10 +83,47 @@ internal abstract class RenderColorSpace
                 throw new InvalidPdfContentException($"Unknown color space '{name.Value}'");
 
             case PdfArray { Count: > 0 } array:
-                return cache.GetColorSpace(array, () => ReadArray(array, resources, cache, depth));
+                return cache.GetColorSpace(array, resources, () => ReadArray(array, resources, cache, depth));
 
             default:
                 throw new InvalidPdfContentException("A color space is not a name or an array");
+        }
+    }
+
+    /// <summary>Gets the color space a device color space is in resources: itself, or the default color space that replaces it (8.6.5.6).</summary>
+    public static RenderColorSpace ResolveDevice(RenderColorSpace device, PdfDictionary? resources, RenderCache cache)
+    {
+        if (resources?.Get<PdfDictionary>(PdfNames.ColorSpace) is null)
+            return device;
+
+        var defaultName = device.ComponentCount switch { 1 => "DefaultGray", 3 => "DefaultRGB", _ => "DefaultCMYK" };
+        return GetDefault(resources, defaultName, device, cache, depth: 0);
+    }
+
+    /// <summary>Converts components to bytes and converts the bytes through an ICC transform, without a temporary array for the colors of a row.</summary>
+    private static void ConvertBytes(IccColorTransform transform, int channels, ReadOnlySpan<double> components, Span<byte> rgb)
+    {
+        const int MaxStackBytes = 1024;
+        var count = Math.Min(components.Length / channels, rgb.Length / 3);
+        var length = count * channels;
+        byte[]? rented = null;
+        var source = length <= MaxStackBytes ? stackalloc byte[MaxStackBytes] : (rented = ArrayPool<byte>.Shared.Rent(length));
+        try
+        {
+            source = source[..length];
+            for (var i = 0; i < source.Length; i++)
+            {
+                source[i] = ToByte(components[i]);
+            }
+
+            transform.Convert(source, rgb[..(count * 3)]);
+        }
+        finally
+        {
+            if (rented is not null)
+            {
+                ArrayPool<byte>.Shared.Return(rented);
+            }
         }
     }
 
@@ -267,17 +305,7 @@ internal abstract class RenderColorSpace
             return Colors.Value.ToRgb(components);
         }
 
-        public override void ToRgb(ReadOnlySpan<double> components, Span<byte> rgb)
-        {
-            var count = Math.Min(components.Length / 4, rgb.Length / 3);
-            var cmyk = new byte[count * 4];
-            for (var i = 0; i < cmyk.Length; i++)
-            {
-                cmyk[i] = ToByte(components[i]);
-            }
-
-            Transform.Value.Convert(cmyk, rgb[..(count * 3)]);
-        }
+        public override void ToRgb(ReadOnlySpan<double> components, Span<byte> rgb) => ConvertBytes(Transform.Value, 4, components, rgb);
     }
 
     /// <summary>
@@ -318,16 +346,28 @@ internal abstract class RenderColorSpace
 
         public override void ToRgb(ReadOnlySpan<double> components, Span<byte> rgb)
         {
-            var channels = ComponentCount;
-            var count = Math.Min(components.Length / channels, rgb.Length / 3);
-            var source = new byte[count * channels];
-            for (var i = 0; i < source.Length; i++)
+            if (_isDefaultRange)
             {
-                var component = i % channels;
-                source[i] = ToByte(_isDefaultRange ? components[i] : Normalize(components[i], component));
+                ConvertBytes(transform, ComponentCount, components, rgb);
+                return;
             }
 
-            transform.Convert(source, rgb[..(count * 3)]);
+            // The components mapped to the 0 to 1 of the profile first
+            var normalized = ArrayPool<double>.Shared.Rent(components.Length);
+            try
+            {
+                var channels = ComponentCount;
+                for (var i = 0; i < components.Length; i++)
+                {
+                    normalized[i] = Normalize(components[i], i % channels);
+                }
+
+                ConvertBytes(transform, channels, normalized.AsSpan(0, components.Length), rgb);
+            }
+            finally
+            {
+                ArrayPool<double>.Shared.Return(normalized);
+            }
         }
 
         private void Normalize(ReadOnlySpan<double> components, Span<double> normalized)

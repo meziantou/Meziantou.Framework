@@ -22,3 +22,5 @@ In both cases, an uncaught error is thrown to .NET as a [JsException](cref:Mezia
   original sources with source maps, throw JavaScript errors from .NET.
 - [Debugging and inspecting scripts](05-Debugging.md): stop at breakpoints, step through the statements, measure the
   code coverage.
+- [CommonJS modules](06-CommonJsModules.md): run code that uses `require` and `module.exports`, with a loader that you
+  control.

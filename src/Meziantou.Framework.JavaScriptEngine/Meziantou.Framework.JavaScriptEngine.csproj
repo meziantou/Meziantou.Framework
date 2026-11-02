@@ -29,8 +29,4 @@
     <EmbeddedResource Include="Intl/Data/supplemental.bin" LogicalName="Meziantou.Framework.JavaScriptEngine.Intl.Data.supplemental.bin" />
     <EmbeddedResource Include="Intl/Data/collation.bin" LogicalName="Meziantou.Framework.JavaScriptEngine.Intl.Data.collation.bin" />
   </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="../Meziantou.Framework.Language.Regex/Meziantou.Framework.Language.Regex.csproj" />
-    <ProjectReference Include="../Meziantou.Framework.Unicode/Meziantou.Framework.Unicode.csproj" />
-  </ItemGroup>
 </Project>

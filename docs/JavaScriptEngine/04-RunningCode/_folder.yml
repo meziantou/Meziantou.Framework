@@ -1,2 +1,2 @@
 title: Running code
-description: Run scripts and ES modules, reuse compiled scripts, and handle the errors they throw.
+description: Run scripts, ES modules and CommonJS modules, reuse compiled scripts, and handle the errors they throw.

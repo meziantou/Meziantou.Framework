@@ -96,6 +96,61 @@ internal static class Workloads
               return numbers.length + objects.length + numbers.map(x => x + 1).length;
             }
             """,
+        ["SparseArrayWrites"] = """
+            function run() {
+              const items = [];
+              items[200000] = 0;
+              let s = 0;
+              for (let i = 0; i < 20000; i++) { items[(i * 7919) % 200000] = i; }
+              for (let i = 0; i < 200000; i += 97) { s += items[i] ?? 1; }
+              return s + Object.keys(items).length;
+            }
+            """,
+        ["DictionarySlidingWindow"] = """
+            function run() {
+              const cache = {};
+              let s = 0;
+              for (let i = 0; i < 20000; i++) {
+                cache['k' + i] = i;
+                if (i >= 64) { delete cache['k' + (i - 64)]; }
+                s += cache['k' + (i >> 1)] ?? 0;
+              }
+              return s + Object.keys(cache).length;
+            }
+            """,
+        ["SpreadRest"] = """
+            const values = Array.from({ length: 64 }, (_, i) => i);
+            function sum(...items) { let s = 0; for (const v of items) s += v; return s; }
+            function run() { let s = 0; for (let i = 0; i < 2000; i++) { s += Math.max(...values) + sum(...values, i); } return s; }
+            """,
+        ["ArgumentsApply"] = """
+            function total() { let s = 0; for (let i = 0; i < arguments.length; i++) s += arguments[i]; return s; }
+            function forward() { return total.apply(null, arguments); }
+            function run() { let s = 0; for (let i = 0; i < 20000; i++) { s += forward(i, 1, 2, 3); } return s; }
+            """,
+        ["ErrorsWithMessages"] = """
+            function parse(value) { if (value % 3 === 0) throw new TypeError('Invalid value ' + value); return value; }
+            function run() { let s = 0; for (let i = 0; i < 5000; i++) { try { s += parse(i); } catch (e) { s += e.message.length; } } return s; }
+            """,
+        ["StringAppendIndex"] = """
+            function run() {
+              let text = '';
+              for (let i = 0; i < 20000; i++) { text += String.fromCharCode(97 + (i % 26)); }
+              let s = 0;
+              for (let i = 0; i < text.length; i++) { s += text.charCodeAt(i) + (text[i] === 'z' ? 1 : 0); }
+              return s;
+            }
+            """,
+        ["RegExpExec"] = """
+            const text = Array.from({ length: 2000 }, (_, i) => `line ${i}: status=${i % 5 === 0 ? 'error' : 'ok'} id=${i * 31}`).join('\n');
+            function run() {
+              let s = 0;
+              const re = /status=error id=(\d+)/g;
+              let match;
+              while ((match = re.exec(text)) !== null) { s += match[1].length; }
+              return s + text.search(/id=6199\b/) + text.replace(/ok/g, 'OK').length;
+            }
+            """,
         ["LoopCapture"] = """
             function run() { let sum = 0; for (let i = 0; i < 100000; i++) { if (i < 0) { let f = () => i; sum += f(); } else { sum += i; } } return sum; }
             """,

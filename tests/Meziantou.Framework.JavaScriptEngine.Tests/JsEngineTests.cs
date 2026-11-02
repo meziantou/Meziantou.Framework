@@ -1947,6 +1947,34 @@ public sealed class JsEngineTests
     }
 
     [Fact]
+    public void Documentation_PreparedScriptRuns()
+    {
+        #region JavaScriptEngine_PreparedScriptRuns
+        var counter = JsPreparedScript.Parse("var count = (count ?? 0) + 1; count", "counter.js");
+
+        using var engine = new JsEngine();
+        var first = engine.CreateRealm();
+        var second = engine.CreateRealm();
+
+        // Each run evaluates the script again, in the realm that runs it: its global declarations go to that realm
+        Assert.Equal(1, first.Execute(counter).AsNumber());
+        Assert.Equal(2, first.Execute(counter).AsNumber());
+        Assert.Equal(1, second.Execute(counter).AsNumber());
+
+        // A realm cannot declare the same let, const or class twice: run such a script once per realm
+        var settings = JsPreparedScript.Parse("const limit = 10; limit", "settings.js");
+        Assert.Equal(10, first.Execute(settings).AsNumber());
+        var exception = Assert.Throws<JsException>(() => first.Execute(settings));
+        Assert.StartsWith("SyntaxError", exception.Message, StringComparison.Ordinal);
+
+        // The URL given to Parse is the location of the errors of every run
+        var failing = JsPreparedScript.Parse("let total = 0;\nthrow new Error('Invalid total');", "https://example.com/total.js");
+        exception = Assert.Throws<JsException>(() => second.Execute(failing));
+        Assert.Equal(new JsSourceLocation("https://example.com/total.js", 2, 1), exception.Location);
+        #endregion
+    }
+
+    [Fact]
     public void Documentation_ValidateScript()
     {
         #region JavaScriptEngine_ValidateScript
@@ -2025,6 +2053,72 @@ public sealed class JsEngineTests
         Assert.Equal(JsPromiseState.Rejected, state);
         Assert.Equal("TypeError: Cannot find the module './missing.js'", engine.ToString(reason));
         #endregion
+    }
+
+    [Fact]
+    public void Documentation_CommonJs()
+    {
+        #region JavaScriptEngine_CommonJs
+        var files = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["/app/index.js"] = """
+                const { greet } = require('./greeting');
+                const config = require('../config.json');
+                module.exports = greet(config.name);
+                """,
+            ["/app/greeting/index.js"] = """
+                const a = require('./a');
+                exports.greet = name => `${a.prefix} ${name} (${a.seenB})`;
+                """,
+            ["/app/greeting/a.js"] = """
+                exports.prefix = 'Hello';
+                // A circular require gets the exports defined so far
+                exports.seenB = require('./b').seenPrefix;
+                """,
+            ["/app/greeting/b.js"] = "exports.seenPrefix = require('./a').prefix;",
+            ["/config.json"] = """{ "name": "world" }""",
+        };
+
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using (engine.Enter())
+        {
+            var loader = new CommonJsLoader(realm, files);
+            Assert.Equal("Hello world (Hello)", loader.Require("/app/index.js").AsString());
+
+            // A module runs once: the next require returns the same exports
+            Assert.Same(loader.Require("/app/greeting/a.js").AsObject(), loader.Require("/app/greeting/a.js").AsObject());
+        }
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_CommonJs_Errors()
+    {
+        var files = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["/index.js"] = "require('lodash');",
+            ["/data.json"] = "42",
+            ["/lib/escape.js"] = "module.exports = require('../../../data.json');",
+            ["/fail.js"] = "globalThis.failures = (globalThis.failures ?? 0) + 1;\nthrow new Error('boom');",
+        };
+
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using (engine.Enter())
+        {
+            var loader = new CommonJsLoader(realm, files);
+            Assert.Equal("Error: Cannot find module 'lodash'", Assert.Throws<JsException>(() => loader.Require("/index.js")).Message);
+
+            // ".." stops at the root of the files
+            Assert.Equal(42, loader.Require("/lib/escape.js").AsNumber());
+
+            // A module that throws is not cached, and its errors have the lines of the file
+            var exception = Assert.Throws<JsException>(() => loader.Require("/fail.js"));
+            Assert.Equal(new JsSourceLocation("/fail.js", 2, 1), exception.Location);
+            Assert.Throws<JsException>(() => loader.Require("/fail.js"));
+            Assert.Equal(2, realm.GlobalObject.GetProperty("failures").AsNumber());
+        }
     }
 
     [Fact]
@@ -2585,6 +2679,72 @@ public sealed class JsEngineTests
         Assert.True(promise.TryGetPromiseState(out _, out var reason, out _));
         Assert.Equal("Error: forgotten", engine.ToString(reason));
         #endregion
+    }
+
+    [Fact]
+    public void Documentation_HostConsole()
+    {
+        #region JavaScriptEngine_Console
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using var output = new StringWriter();
+        using (engine.Enter())
+        {
+            HostConsole.Install(realm, output);
+        }
+
+        realm.Execute("console.log('total:', 42, [1, 2], { toString() { throw new Error('not called'); } }); console.error('failed');");
+        Assert.Equal("[log] total: 42 [object Array] [object Object]\n[error] failed\n", output.ToString().ReplaceLineEndings("\n"));
+        #endregion
+    }
+
+    [Fact]
+    public async Task Documentation_HostEventLoop()
+    {
+        #region JavaScriptEngine_EventLoop
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        var eventLoop = new HostEventLoop(engine, TimeProvider.System);
+        using (engine.Enter())
+        {
+            eventLoop.Install(realm);
+        }
+
+        realm.Execute("""
+            globalThis.log = [];
+            setTimeout(name => log.push(name), 20, 'timer 20 ms');
+            const canceled = setTimeout(() => log.push('canceled'), 10);
+            setTimeout(() => {
+              log.push('timer 0 ms');
+              Promise.resolve().then(() => log.push('promise of the timer'));
+            }, 0);
+            queueMicrotask(() => log.push('microtask'));
+            clearTimeout(canceled);
+            log.push('script');
+            """);
+
+        // The jobs run after the script, and after each timer
+        await eventLoop.RunAsync();
+        Assert.Equal("script,microtask,timer 0 ms,promise of the timer,timer 20 ms", realm.Execute("log.join()").AsString());
+        #endregion
+    }
+
+    [Fact]
+    public void Documentation_DataVersionsAreUpToDate()
+    {
+        // docs/JavaScriptEngine/11-DataAndOutputDifferences.md lists the versions of the embedded data
+        var directory = new DirectoryInfo(AppContext.BaseDirectory);
+        while (directory is not null && !Directory.Exists(Path.Combine(directory.FullName, "docs", "JavaScriptEngine")))
+        {
+            directory = directory.Parent;
+        }
+
+        Assert.NotNull(directory);
+        var page = File.ReadAllText(Path.Combine(directory.FullName, "docs", "JavaScriptEngine", "11-DataAndOutputDifferences.md"));
+        Assert.Contains("| Unicode | " + UnicodeProperties.UnicodeVersion.ToString(3) + " |", page, StringComparison.Ordinal);
+        Assert.Contains("| CLDR | " + Meziantou.Framework.JavaScriptEngine.Intl.Data.CldrData.EmbeddedCldrJsonVersion + " |", page, StringComparison.Ordinal);
+        Assert.Contains("| Unicode Collation Algorithm | " + Meziantou.Framework.JavaScriptEngine.Intl.Data.CldrData.EmbeddedUcaVersion + " |", page, StringComparison.Ordinal);
+        Assert.Contains("| IANA time zone database | " + Meziantou.Framework.JavaScriptEngine.TimeZones.TimeZoneDatabase.EmbeddedTzdataVersion + " |", page, StringComparison.Ordinal);
     }
 
     [Fact]

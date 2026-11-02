@@ -124,7 +124,8 @@ static async Task<string> ReadTextAsync(string name)
 - Reject a promise with an error object (`realm.CreateError`), so that the script gets a `message` and a `stack`.
 
 The engine has no timers: to provide `setTimeout`, keep the callbacks and their due times in your event loop, and call
-them with `engine.Call` when they are due, followed by [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs).
+them with `engine.Call` when they are due, followed by [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs). See
+[Provide timers and microtasks](05-Interop/07-HostApis.md#provide-timers-and-microtasks).
 
 ## Report unhandled rejections
 

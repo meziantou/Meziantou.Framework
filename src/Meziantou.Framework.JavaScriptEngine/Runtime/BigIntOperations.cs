@@ -1,6 +1,4 @@
-using System.Globalization;
 using System.Numerics;
-using System.Text;
 
 namespace Meziantou.Framework.JavaScriptEngine;
 
@@ -9,8 +7,6 @@ internal static class BigIntOperations
 {
     /// <summary>The maximum number of bits of a BigInt value (the limit of V8): larger results throw a RangeError.</summary>
     public const long MaxBitLength = 1L << 30;
-
-    private const string Digits = "0123456789abcdefghijklmnopqrstuvwxyz";
 
     // ------------------------------------------------------------------------------------------------------------------
     // Conversions
@@ -104,61 +100,7 @@ internal static class BigIntOperations
     public static ulong ToBigUint64(JsValue value) => (ulong)(ToBigInt(value) & ulong.MaxValue);
 
     /// <summary>BigInt::toString(x, radix)</summary>
-    public static string ToString(BigInteger value, int radix)
-    {
-        if (radix == 10)
-            return value.ToString(CultureInfo.InvariantCulture);
-
-        if (value.IsZero)
-            return "0";
-
-        var negative = value.Sign < 0;
-        var magnitude = negative ? BigInteger.Negate(value) : value;
-
-        // Convert by chunks of digits that fit in a ulong
-        var digitsPerChunk = 1;
-        ulong divisor = (ulong)radix;
-        while (divisor <= ulong.MaxValue / (ulong)radix / (ulong)radix)
-        {
-            divisor *= (ulong)radix;
-            digitsPerChunk++;
-        }
-
-        var chunks = new List<ulong>();
-        var bigDivisor = new BigInteger(divisor);
-        while (magnitude >= bigDivisor)
-        {
-            magnitude = BigInteger.DivRem(magnitude, bigDivisor, out var remainder);
-            chunks.Add((ulong)remainder);
-        }
-
-        var builder = new StringBuilder((chunks.Count + 1) * digitsPerChunk + 1);
-        if (negative)
-        {
-            builder.Append('-');
-        }
-
-        AppendDigits(builder, (ulong)magnitude, radix, minimumLength: 1);
-        for (var i = chunks.Count - 1; i >= 0; i--)
-        {
-            AppendDigits(builder, chunks[i], radix, digitsPerChunk);
-        }
-
-        return builder.ToString();
-    }
-
-    private static void AppendDigits(StringBuilder builder, ulong value, int radix, int minimumLength)
-    {
-        Span<char> buffer = stackalloc char[64];
-        var position = buffer.Length;
-        while (value != 0 || buffer.Length - position < minimumLength)
-        {
-            buffer[--position] = Digits[(int)(value % (ulong)radix)];
-            value /= (ulong)radix;
-        }
-
-        builder.Append(buffer[position..]);
-    }
+    public static string ToString(BigInteger value, int radix) => BigIntAlgorithms.ToString(value, radix);
 
     /// <summary>BigInt.asIntN(bits, bigint) once the arguments are converted.</summary>
     public static BigInteger AsIntN(double bits, BigInteger value)
@@ -216,11 +158,11 @@ internal static class BigIntOperations
         if (@base == BigInteger.MinusOne)
             return exponent.IsEven ? BigInteger.One : BigInteger.MinusOne;
 
-        // |base| >= 2: the result has at least exponent + 1 bits
-        if (exponent > MaxBitLength || ((long)BigInteger.Abs(@base).GetBitLength() - 1) * (long)exponent > MaxBitLength)
+        // |base| >= 2: the result has at least (bitLength(|base|) - 1) \u00D7 exponent + 1 bits
+        if (exponent >= MaxBitLength || (((long)BigInteger.Abs(@base).GetBitLength() - 1) * (long)exponent) + 1 > MaxBitLength)
             return ThrowHelper.ThrowRangeError<BigInteger>("Maximum BigInt size exceeded");
 
-        return BigInteger.Pow(@base, (int)exponent);
+        return BigIntAlgorithms.Pow(@base, (int)exponent);
     }
 
     /// <summary>BigInt::multiply(x, y)</summary>
@@ -229,7 +171,7 @@ internal static class BigIntOperations
         if ((long)x.GetBitLength() + (long)y.GetBitLength() > MaxBitLength)
             return ThrowHelper.ThrowRangeError<BigInteger>("Maximum BigInt size exceeded");
 
-        return x * y;
+        return BigIntAlgorithms.Multiply(x, y);
     }
 
     /// <summary>BigInt::divide(x, y): truncated toward zero.</summary>
@@ -274,6 +216,7 @@ internal static class BigIntOperations
         if (y > MaxBitLength || (long)x.GetBitLength() + (long)y > MaxBitLength)
             return ThrowHelper.ThrowRangeError<BigInteger>("Maximum BigInt size exceeded");
 
+        JsEngine.EnsureCurrentCanAllocate(((long)x.GetBitLength() + (long)y) / 8);
         return x << (int)y;
     }
 

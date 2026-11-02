@@ -1078,7 +1078,7 @@ internal sealed class Lexer
 
                 CheckAfterNumber(start);
                 token.Kind = TokenKind.NumericLiteral;
-                token.Number = (double)ParseRadixBigInteger(text.AsSpan(digitsStart, digitsEnd - digitsStart), radix);
+                token.Number = BigIntOperations.ToNumber(ParseRadixBigInteger(text.AsSpan(digitsStart, digitsEnd - digitsStart), radix));
                 token.End = _pos;
                 return token;
             }
@@ -1117,7 +1117,7 @@ internal sealed class Lexer
 
                     CheckAfterNumber(start);
                     token.Kind = TokenKind.NumericLiteral;
-                    token.Number = (double)ParseRadixBigInteger(text.AsSpan(start + 1, pos - start - 1), 8);
+                    token.Number = BigIntOperations.ToNumber(ParseRadixBigInteger(text.AsSpan(start + 1, pos - start - 1), 8));
                     token.End = _pos;
                     return token;
                 }
@@ -1171,7 +1171,7 @@ internal sealed class Lexer
             _pos++;
             CheckAfterNumber(start);
             token.Kind = TokenKind.BigIntLiteral;
-            token.BigInt = BigInteger.Parse(RemoveSeparators(text.AsSpan(start, end - start), stackalloc char[64]), NumberStyles.None, CultureInfo.InvariantCulture);
+            token.BigInt = BigIntAlgorithms.Parse(RemoveSeparators(text.AsSpan(start, end - start), stackalloc char[64]), 10);
             token.End = _pos;
             return token;
         }
@@ -1247,16 +1247,7 @@ internal sealed class Lexer
             return small;
         }
 
-        BigInteger value = BigInteger.Zero;
-        foreach (var c in digits)
-        {
-            if (c != '_')
-            {
-                value = (value * radix) + HexValue(c);
-            }
-        }
-
-        return value;
+        return BigIntAlgorithms.Parse(RemoveSeparators(digits, stackalloc char[64]), radix);
     }
 
     /// <summary>Scans digits of the radix with the numeric separators; returns whether there is at least one digit.</summary>

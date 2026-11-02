@@ -106,6 +106,79 @@ public sealed class NumberBuiltinsTests
         }
     }
 
+    // Number::toString(x, 10) through each path: String(x), the concatenations and the template literals
+    [Theory]
+    [InlineData(0.0, "0")]
+    [InlineData(double.NaN, "NaN")]
+    [InlineData(double.PositiveInfinity, "Infinity")]
+    [InlineData(double.NegativeInfinity, "-Infinity")]
+    [InlineData(1.0, "1")]
+    [InlineData(1023.0, "1023")]
+    [InlineData(1024.0, "1024")]
+    [InlineData(-1.0, "-1")]
+    [InlineData(1.5, "1.5")]
+    [InlineData(-1.5, "-1.5")]
+    [InlineData(0.1 + 0.2, "0.30000000000000004")]
+    [InlineData(123.456, "123.456")]
+    [InlineData(9007199254740991.0, "9007199254740991")]
+    [InlineData(9007199254740992.0, "9007199254740992")]
+    [InlineData(-9007199254740994.0, "-9007199254740994")]
+    [InlineData(1e20, "100000000000000000000")]
+    [InlineData(123456789012345680000.0, "123456789012345680000")]
+    [InlineData(1e21, "1e+21")]
+    [InlineData(-1.5e21, "-1.5e+21")]
+    [InlineData(0.000001, "0.000001")]
+    [InlineData(0.0000012345, "0.0000012345")]
+    [InlineData(-0.0000012345678901234567, "-0.0000012345678901234567")]
+    [InlineData(1e-7, "1e-7")]
+    [InlineData(1.2345e-7, "1.2345e-7")]
+    [InlineData(5e-324, "5e-324")]
+    [InlineData(-2.2250738585072014e-308, "-2.2250738585072014e-308")]
+    [InlineData(1.7976931348623157e308, "1.7976931348623157e+308")]
+    [InlineData(2.9802322387695312e-8, "2.9802322387695312e-8")]
+    [InlineData(4.1045368012983762e-289, "4.1045368012983762e-289")]
+    public void ToStringDecimal(double value, string expected)
+    {
+        using var realm = new TestRealm();
+        Assert.Equal(expected, NumberFormatting.ToString(value));
+        Assert.Equal(expected, NumberFormatting.ToJsString(value).ToString());
+        Span<char> buffer = stackalloc char[NumberFormatting.MaxLength];
+        Assert.Equal(expected, buffer[..NumberFormatting.Format(value, buffer)].ToString());
+
+        realm.Realm.GlobalObject.SetProperty("x", value);
+        Assert.Equal(expected, realm.Call("String", value).AsString());
+        Assert.Equal("a" + expected, realm.Realm.Execute("'a' + x").AsString());
+        Assert.Equal(expected + "a", realm.Realm.Execute("x + 'a'").AsString());
+        Assert.Equal("(" + expected + ")", realm.Realm.Execute("`(${x})`").AsString());
+        Assert.Equal(new string('a', 40) + expected, realm.Realm.Execute("'a'.repeat(40) + x").AsString());
+    }
+
+    [Fact]
+    public void LongNonDecimalStrings()
+    {
+        using var realm = new TestRealm();
+        Assert.Equal(Math.ScaleB(1, 800), realm.Call("Number", "0x" + new string('f', 200)).AsNumber());
+        Assert.Equal(Math.ScaleB(1, 800), realm.Realm.Execute("0x" + new string('f', 200)).AsNumber());
+        Assert.Equal(Math.ScaleB(1, 54), realm.Realm.Execute("0b1" + new string('0', 53) + "1").AsNumber());
+        Assert.Equal(Math.ScaleB(1, 54), realm.Call("Number", "0b1" + new string('0', 53) + "1").AsNumber());
+        Assert.Equal(Math.ScaleB(1, 53) + 4, realm.Call("Number", "0b1" + new string('0', 51) + "11").AsNumber());
+        Assert.Equal(double.PositiveInfinity, realm.Call("Number", "0o" + new string('7', 400000)).AsNumber());
+        Assert.True(double.IsNaN(realm.Call("Number", "0x" + new string('f', 100000) + "g").AsNumber()));
+    }
+
+    [Fact]
+    public void ToStringSmallIntegersAreCached()
+    {
+        Assert.Same(NumberFormatting.ToJsString(5), NumberFormatting.ToJsString(5));
+        Assert.Same(NumberFormatting.ToJsString(0), NumberFormatting.ToJsString(-0.0));
+
+        // xunit cannot pass -0 to a theory: it is equal to 0
+        using var realm = new TestRealm();
+        Assert.Equal("0", NumberFormatting.ToString(-0.0));
+        Assert.Equal("0,0,a0,0a,0", realm.Realm.Execute("[String(-0), -0 + '', 'a' + -0, -0 + 'a', `${-0}`].join()").AsString());
+        Assert.Equal("1023", NumberFormatting.ToJsString(1023).ToString());
+    }
+
     [Fact]
     public void ToStringRadix2Subnormal()
     {

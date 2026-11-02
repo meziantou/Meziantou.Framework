@@ -602,6 +602,11 @@ public sealed class JsEngineTests
     [InlineData("new ArrayBuffer(2e9)")]
     [InlineData("new Float64Array(2.5e8)")]
     [InlineData("Object.keys('a'.repeat(1 << 22))")]
+    [InlineData("1n << 200000000n")]
+    [InlineData("3n ** 200000000n")]
+    [InlineData("let a = 1n << 100000000n; a * (a - 1n)")]
+    [InlineData("(1n << 50000000n).toString()")]
+    [InlineData("(1n << 100000000n).toString(16)")]
     public void ExecutionLimits_MemoryLimitStopsBuiltins(string code)
     {
         using var engine = new JsEngine(new JsEngineOptions { MemoryLimit = 16 * 1024 * 1024 });
@@ -620,6 +625,38 @@ public sealed class JsEngineTests
         Assert.Equal((1 << 20) * 2, realm.Execute("'a'.repeat(1 << 20).replaceAll('a', 'bc').length").AsNumber());
         Assert.Equal(((1 << 18) * 5) - 2, realm.Execute("Array(1 << 18).fill('abc').join(', ').length").AsNumber());
         Assert.Equal(1 << 20, realm.Execute("let s = 'a'; for (let i = 0; i < 20; i++) s += s; s.length").AsNumber());
+        Assert.Equal(1_000_000, realm.Execute("BigInt('7'.repeat(1_000_000)).toString().length").AsNumber());
+        Assert.Equal(3_000_000, realm.Execute("((1n << 3_000_000n) - 1n).toString(2).length").AsNumber());
+        Assert.Equal(3_169_926, realm.Execute("let n = 3n ** 1_000_000n; (n * (n + 1n)).toString(2).length").AsNumber());
+    }
+
+    // The large BigInt operations are split into parts, and the limits are checked between the parts: a single operation
+    // could otherwise run for hours (3n ** 600000000n has 950 million bits).
+    [Theory]
+    [InlineData("3n ** 600000000n")]
+    [InlineData("let a = (1n << 500000000n) - 1n; a * (a - 2n)")]
+    [InlineData("let b = (1n << 500000000n) - 1n; b * b")]
+    [InlineData("BigInt('1'.repeat(30000000))")]
+    [InlineData("((1n << 300000000n) - 1n).toString()")]
+    [InlineData("((1n << 300000000n) - 1n).toString(36)")]
+    public void ExecutionLimits_TimeoutStopsBigIntOperations(string code)
+    {
+        using (var engine = new JsEngine(new JsEngineOptions { Timeout = TimeSpan.FromMilliseconds(200) }))
+        {
+            var stopwatch = Stopwatch.StartNew();
+            var exception = Assert.Throws<JsTerminationException>(() => engine.CreateRealm().Execute(code));
+            Assert.Equal(JsTerminationReason.Timeout, exception.Reason);
+            Assert.True(stopwatch.Elapsed < TimeSpan.FromMinutes(1), $"Elapsed: {stopwatch.Elapsed}");
+        }
+
+        using var cancellation = new CancellationTokenSource(TimeSpan.FromMilliseconds(200));
+        using (var engine = new JsEngine(new JsEngineOptions { CancellationToken = cancellation.Token }))
+        {
+            var stopwatch = Stopwatch.StartNew();
+            var exception = Assert.Throws<JsTerminationException>(() => engine.CreateRealm().Execute(code));
+            Assert.Equal(JsTerminationReason.Canceled, exception.Reason);
+            Assert.True(stopwatch.Elapsed < TimeSpan.FromMinutes(1), $"Elapsed: {stopwatch.Elapsed}");
+        }
     }
 
     [Fact]

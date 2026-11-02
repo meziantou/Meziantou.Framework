@@ -44,10 +44,10 @@ internal static class Operators
             if (right.Cell is JsString rightString)
                 return Concat(leftString, rightString);
 
-            if (right.IsNumber && TryConcatInteger(leftString, right.NumberValue, integerFirst: false, out var result))
+            if (right.IsNumber && TryConcatNumber(leftString, right.NumberValue, numberFirst: false, out var result))
                 return result;
         }
-        else if (right.Cell is JsString rightString && left.IsNumber && TryConcatInteger(rightString, left.NumberValue, integerFirst: true, out var result))
+        else if (right.Cell is JsString rightString && left.IsNumber && TryConcatNumber(rightString, left.NumberValue, numberFirst: true, out var result))
         {
             return result;
         }
@@ -69,22 +69,21 @@ internal static class Operators
     }
 
     /// <summary>
-    /// A short string concatenated with an integer ('item' + i): the digits are written in the result (no string for the
-    /// number, no intermediate string value). ToString of an integer is its decimal digits (-0 is "0").
+    /// A short string concatenated with a number ('item' + i): the digits are written in the result (no string for the
+    /// number, no intermediate string value).
     /// </summary>
-    private static bool TryConcatInteger(JsString str, double number, bool integerFirst, out JsValue result)
+    private static bool TryConcatNumber(JsString str, double number, bool numberFirst, out JsValue result)
     {
-        if (str.Length > 32 || number is < int.MinValue or > int.MaxValue || number != Math.Floor(number))
+        if (str.Length > 32)
         {
             result = default;
             return false;
         }
 
-        var integer = (int)number;
-        Span<char> digits = stackalloc char[11];
-        integer.TryFormat(digits, out var digitCount, provider: System.Globalization.CultureInfo.InvariantCulture);
+        Span<char> digits = stackalloc char[NumberFormatting.MaxLength];
+        var digitCount = NumberFormatting.Format(number, digits);
         var text = str.ToString();
-        var concatenated = integerFirst ? string.Concat(digits[..digitCount], text) : string.Concat(text, digits[..digitCount]);
+        var concatenated = numberFirst ? string.Concat(digits[..digitCount], text) : string.Concat(text, digits[..digitCount]);
         result = JsValue.FromJsString(JsString.Create(concatenated));
         return true;
     }
@@ -153,71 +152,21 @@ internal static class Operators
 
     private static BigInteger BigIntOperation(OpCode op, BigInteger left, BigInteger right)
     {
-        switch (op)
+        return op switch
         {
-            case OpCode.Subtract:
-                return left - right;
-            case OpCode.Multiply:
-                return left * right;
-            case OpCode.Divide:
-                if (right.IsZero)
-                    return ThrowHelper.ThrowRangeError<BigInteger>("Division by zero");
-
-                return BigInteger.Divide(left, right);
-            case OpCode.Modulo:
-                if (right.IsZero)
-                    return ThrowHelper.ThrowRangeError<BigInteger>("Division by zero");
-
-                return BigInteger.Remainder(left, right);
-            case OpCode.Exponentiate:
-                if (right.Sign < 0)
-                    return ThrowHelper.ThrowRangeError<BigInteger>("Exponent must be non-negative");
-
-                if (right > int.MaxValue)
-                {
-                    if (left.IsZero || left.IsOne)
-                        return left;
-
-                    if (left == BigInteger.MinusOne)
-                        return right.IsEven ? BigInteger.One : BigInteger.MinusOne;
-
-                    return ThrowHelper.ThrowRangeError<BigInteger>("Maximum BigInt size exceeded");
-                }
-
-                return BigInteger.Pow(left, (int)right);
-            case OpCode.LeftShift:
-                return ShiftLeft(left, right);
-            case OpCode.RightShift:
-                return ShiftLeft(left, -right);
-            case OpCode.UnsignedRightShift:
-                return ThrowHelper.ThrowTypeError<BigInteger>("BigInts have no unsigned right shift, use >> instead");
-            case OpCode.BitwiseAnd:
-                return left & right;
-            case OpCode.BitwiseOr:
-                return left | right;
-            case OpCode.BitwiseXor:
-                return left ^ right;
-            default:
-                throw new ArgumentOutOfRangeException(nameof(op), op, "Not a numeric operator");
-        }
-    }
-
-    private static BigInteger ShiftLeft(BigInteger value, BigInteger shift)
-    {
-        if (shift.Sign >= 0)
-        {
-            if (shift > 1 << 30)
-                return value.IsZero ? value : ThrowHelper.ThrowRangeError<BigInteger>("Maximum BigInt size exceeded");
-
-            return value << (int)shift;
-        }
-
-        var right = BigInteger.Negate(shift);
-        if (right > int.MaxValue)
-            return value.Sign < 0 ? BigInteger.MinusOne : BigInteger.Zero;
-
-        // >> rounds towards negative infinity (BigInteger >> does it for the negative values)
-        return value >> (int)right;
+            OpCode.Subtract => left - right,
+            OpCode.Multiply => BigIntOperations.Multiply(left, right),
+            OpCode.Divide => BigIntOperations.Divide(left, right),
+            OpCode.Modulo => BigIntOperations.Remainder(left, right),
+            OpCode.Exponentiate => BigIntOperations.Exponentiate(left, right),
+            OpCode.LeftShift => BigIntOperations.LeftShift(left, right),
+            OpCode.RightShift => BigIntOperations.SignedRightShift(left, right),
+            OpCode.UnsignedRightShift => BigIntOperations.UnsignedRightShift(),
+            OpCode.BitwiseAnd => left & right,
+            OpCode.BitwiseOr => left | right,
+            OpCode.BitwiseXor => left ^ right,
+            _ => throw new ArgumentOutOfRangeException(nameof(op), op, "Not a numeric operator"),
+        };
     }
 
     /// <summary>The remainder of two numbers (the integer remainder when both are positive 32-bit integers: the floating-point one is a call to fmod).</summary>

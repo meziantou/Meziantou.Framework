@@ -48,6 +48,12 @@ Assert.Equal("RangeError", realm.Execute("function f() { return 1 + f(); } try {
 - `MemoryLimit` counts what the thread allocates, not the memory that the script keeps: a script that allocates and
   drops many objects reaches it too, and so does the allocation of your .NET functions. The built-ins check it before
   they create a large string or array.
+- A BigInt has at most 2^30 bits: a larger result is a `RangeError`. The operations on large BigInt values check the
+  limits too. The multiplications, the exponentiations and the conversions from and to strings are split into parts of
+  about 100 ms, and the limits are checked between the parts. The other operations take a time proportional to the size
+  of the values, except a division or a remainder, which runs at once: a division of two numbers of hundreds of
+  millions of bits can exceed `Timeout` by minutes. A large multiplication allocates temporary values, which count
+  toward `MemoryLimit`.
 - The interpreter does not use the .NET stack for JavaScript calls, so a deep recursion of JavaScript code never
   overflows the stack of the thread; a recursion through .NET functions throws a `RangeError` before it does.
 

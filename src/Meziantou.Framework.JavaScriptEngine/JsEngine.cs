@@ -159,10 +159,8 @@ public sealed partial class JsEngine : IDisposable
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static void ThrowStackOverflow() => ThrowHelper.ThrowRangeError("Maximum call stack size exceeded");
 
-    /// <summary>Releases the resources of the engine.</summary>
-    public void Dispose()
-    {
-    }
+    /// <summary>Releases the resources of the engine: the work posted afterwards does not run (<see cref="Post"/>), and the pending tasks of <see cref="ToTask"/> are canceled.</summary>
+    public void Dispose() => DisposeAsyncState();
 
     internal static void RestoreCurrent(JsEngine? previous) => s_current = previous;
 }

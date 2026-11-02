@@ -17,6 +17,19 @@ public sealed partial class JsEngine
         return symbol;
     }
 
+    /// <summary>
+    /// Gets the symbol of the global symbol registry of the engine whose key is <paramref name="key"/>, creating it when
+    /// needed: the symbol that <c>Symbol.for(key)</c> returns in all the realms of the engine. Another engine has its own
+    /// registry, so the same key gives another symbol there.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">Another thread is using the engine.</exception>
+    public JsSymbol GetRegisteredSymbol(string key)
+    {
+        ArgumentNullException.ThrowIfNull(key);
+        using var scope = Enter();
+        return GetOrCreateRegisteredSymbol(key);
+    }
+
     /// <summary>Increments the depth of the running calls after checking the recursion limit, for the internal methods that recurse without a call (proxies, bound functions).</summary>
     internal void EnterRecursion()
     {

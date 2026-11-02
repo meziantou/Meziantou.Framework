@@ -5,7 +5,8 @@ description: Pass values, objects, functions and binary data between .NET and Ja
 
 The pages of this group cover what crosses the boundary between .NET and JavaScript. Nothing is converted
 automatically: the engine uses no reflection, so a .NET object becomes visible to the scripts only through the
-objects and functions you create for it.
+objects and functions you create for it. Helpers convert the common types, such as collections and JSON: see
+[Converting .NET values](08-DotNetValues.md).
 
 A few rules hold for all of them:
 
@@ -30,3 +31,4 @@ A few rules hold for all of them:
   engines.
 - [Console, timers and other host APIs](07-HostApis.md): give the scripts `console`, `setTimeout`, `queueMicrotask`
   and the other globals of the browsers and of Node.js.
+- [Converting .NET values](08-DotNetValues.md): convert .NET values, collections and JSON, and expose typed delegates.

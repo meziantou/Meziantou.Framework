@@ -16,6 +16,59 @@ public sealed class JsArray : JsObject
     /// <summary>Gets the value of the <c>length</c> property.</summary>
     public uint Length => _length;
 
+    /// <summary>
+    /// Gets or sets an element of the array, as <c>array[index]</c> does: the getter is [[Get]] (a hole, or an index beyond
+    /// the length, reads the prototype chain: usually undefined) and the setter is [[Set]] in strict mode (it can extend the
+    /// array). Both run the accessors and the proxies they meet, so they are used in a scope of the engine
+    /// (<see cref="JsEngine.Enter"/>).
+    /// </summary>
+    /// <param name="index">The index: from 0 to 4,294,967,294 (2³² - 2), the largest array index.</param>
+    /// <exception cref="ArgumentOutOfRangeException"><paramref name="index"/> is not an array index.</exception>
+    /// <exception cref="JsException">The element cannot be assigned (a TypeError: e.g. a frozen array), or an accessor threw an exception.</exception>
+    /// <exception cref="InvalidOperationException">No engine is entered on the thread, or the array or the value belongs to another engine.</exception>
+    public JsValue this[uint index]
+    {
+        get
+        {
+            ArgumentOutOfRangeException.ThrowIfEqual(index, uint.MaxValue);
+            CheckHostAccess();
+            return Get(new PropertyKey(index), new JsValue(this));
+        }
+        set
+        {
+            ArgumentOutOfRangeException.ThrowIfEqual(index, uint.MaxValue);
+            CheckHostAccess(value);
+            if (!Set(new PropertyKey(index), value, new JsValue(this)))
+                ThrowHelper.ThrowTypeError("Cannot assign to element " + index.ToString(System.Globalization.CultureInfo.InvariantCulture) + " of the array");
+        }
+    }
+
+    /// <summary>
+    /// Copies the elements of the array (CreateListFromArrayLike): the length is read once, then each element is read as
+    /// the indexer does. The holes are read from the prototype chain (usually undefined), and the accessors run, so a
+    /// change of the array during the copy (e.g. by a getter) is visible to the next elements, but not to the length.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">No engine is entered on the thread, the array belongs to another engine, or its length is larger than <see cref="Array.MaxLength"/>.</exception>
+    public JsValue[] ToArray()
+    {
+        CheckHostAccess();
+        var length = _length;
+        if (length == 0)
+            return [];
+
+        if (length > Array.MaxLength)
+            throw new InvalidOperationException("The array is too long to be copied to a .NET array");
+
+        var result = new JsValue[length];
+        var receiver = new JsValue(this);
+        for (var i = 0u; i < length; i++)
+        {
+            result[i] = Get(new PropertyKey(i), receiver);
+        }
+
+        return result;
+    }
+
     internal bool IsLengthWritable => _lengthWritable;
 
     private static readonly PropertyKey LengthKey = new("length");

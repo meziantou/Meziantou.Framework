@@ -123,6 +123,43 @@ Assert.Equal("number,number,string,boolean,object,bigint", realm.Execute("[count
 
 For objects and arrays, see [Objects and arrays](03-ObjectsAndArrays.md).
 
+## Symbols
+
+A [JsSymbol](cref:Meziantou.Framework.JavaScriptEngine.JsSymbol) is a property key that cannot collide with a string. [JsSymbol.Create](cref:Meziantou.Framework.JavaScriptEngine.JsSymbol.Create) creates a new symbol, as
+`Symbol(description)` does, and `engine.GetRegisteredSymbol` returns the symbol of `Symbol.for(key)`:
+
+<!-- ref:../../../tests/Meziantou.Framework.JavaScriptEngine.Tests/JsEngineEmbeddingTests.cs;region=JavaScriptEngine_Symbols;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var engine = new JsEngine();
+var realm = engine.CreateRealm();
+
+// A new symbol is a unique property key
+var secret = JsSymbol.Create("secret");
+using (engine.Enter())
+{
+    realm.GlobalObject.SetProperty(secret, 42);
+    realm.GlobalObject.SetProperty("secretKey", secret);
+}
+
+Assert.Equal(42, realm.Execute("globalThis[secretKey]").AsNumber());
+Assert.Equal("undefined", realm.Execute("typeof globalThis[Symbol('secret')]").AsString());
+
+// The symbols of the registry are the ones of Symbol.for, in all the realms of the engine
+var shared = engine.GetRegisteredSymbol("app.id");
+Assert.True(shared.IsRegistered);
+Assert.Same(shared, realm.Execute("Symbol.for('app.id')").AsSymbol());
+Assert.Same(shared, engine.CreateRealm().Execute("Symbol.for('app.id')").AsSymbol());
+```
+<!-- endref -->
+
+- A symbol converts implicitly to a [JsPropertyKey](cref:Meziantou.Framework.JavaScriptEngine.JsPropertyKey) and to a [JsValue](cref:Meziantou.Framework.JavaScriptEngine.JsValue).
+- Two symbols are the same only when they are the same instance, even with the same description.
+- The registry belongs to the engine: all its realms share it, and another engine returns another symbol for the same
+  key. [IsRegistered](cref:Meziantou.Framework.JavaScriptEngine.JsSymbol.IsRegistered) tells whether a symbol comes from a registry; its [Description](cref:Meziantou.Framework.JavaScriptEngine.JsSymbol.Description) is then its key.
+- The static properties of [JsSymbol](cref:Meziantou.Framework.JavaScriptEngine.JsSymbol) are the well-known symbols ([Iterator](cref:Meziantou.Framework.JavaScriptEngine.JsSymbol.Iterator), [ToPrimitive](cref:Meziantou.Framework.JavaScriptEngine.JsSymbol.ToPrimitive), [Species](cref:Meziantou.Framework.JavaScriptEngine.JsSymbol.Species)...), shared by all the
+  engines.
+- Unlike the objects, a symbol can be used by several engines.
+
 ## Exchange dates
 
 A JavaScript `Date` is a number of milliseconds since 1970-01-01T00:00:00Z. Create one with `realm.CreateDate`, and

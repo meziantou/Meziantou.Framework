@@ -36,10 +36,10 @@ them with this engine.
 - No automatic binding: .NET objects, methods, properties, events and enumerables are not exposed by reflection. You
   create the JavaScript objects and functions that represent them. See
   [Exposing .NET objects](05-Interop/05-ExposingDotNetObjects.md).
-- No conversion of `Task` to promises or of promises to `Task`: settle the promises from your event loop, and read
-  their state with [TryGetPromiseState](cref:Meziantou.Framework.JavaScriptEngine.JsObject.TryGetPromiseState). See [Async code and promises](06-AsyncAndPromises.md).
-- No conversion of .NET collections: build arrays with [CreateArray](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.CreateArray), or exchange JSON. See
-  [Objects and arrays](05-Interop/03-ObjectsAndArrays.md).
+- The conversions of [Converting .NET values](05-Interop/08-DotNetValues.md) cover the primitives, the dates, the
+  collections, the dictionaries and JSON, not the other classes.
+- The promises of tasks settle while the host runs the jobs of the engine. See
+  [Async code and promises](06-AsyncAndPromises.md).
 
 ## Execution
 

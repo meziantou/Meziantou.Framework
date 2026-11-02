@@ -38,7 +38,8 @@ Assert.Equal(60, result.AsNumber());
   rejection reason, and whether a handler is attached. It returns false when the object is not a promise.
 - A promise that stays [Pending](cref:Meziantou.Framework.JavaScriptEngine.JsPromiseState.Pending) after [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs) waits for something outside of the engine, such as the .NET task
   below.
-- `engine.EnqueueJob` adds a .NET action to the queue, after the jobs already in it.
+- `engine.EnqueueJob` adds a .NET action to the queue, after the jobs already in it. Call it on the thread of the
+  engine; from another thread, use [Post](#post-work-from-other-threads).
 
 When a job throws, the exception goes to [JsHost.ReportJobException](cref:Meziantou.Framework.JavaScriptEngine.JsHost.ReportJobException). The default implementation rethrows it: it comes
 out of [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs), and the other jobs stay in the queue for the next call.
@@ -49,9 +50,62 @@ Each job is an entry into JavaScript, with the full limits of the options: jobs 
 
 ## Await a .NET task from a script
 
-A .NET function returns a promise to the scripts, and settles it when its `Task` completes. The engine runs on one
-thread at a time, so the host waits for the tasks itself, then settles the promises and runs the jobs, in its own
-event loop:
+`realm.CreatePromise` turns a `Task` into a promise, and `engine.RunUntilSettledAsync` runs the event loop of the
+engine until a promise settles:
+
+<!-- ref:../../tests/Meziantou.Framework.JavaScriptEngine.Tests/JsEngineEmbeddingTests.cs;region=JavaScriptEngine_TaskPromises;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var engine = new JsEngine();
+var realm = engine.CreateRealm();
+using (engine.Enter())
+{
+    // A .NET function returns a promise of a task: the engine settles it on its own thread when the task completes
+    realm.GlobalObject.SetProperty("readText", realm.CreateFunction("readText", 1, (_, arguments) =>
+    {
+        var name = engine.ToDotNet<string>(arguments.Length > 0 ? arguments[0] : JsValue.Undefined);
+        return realm.CreatePromise(ReadTextAsync(name), text => text);
+    }));
+}
+
+var promise = realm.Execute("""
+    (async () => {
+      const text = await readText('a.txt');
+      try {
+        await readText('missing.txt');
+      } catch (e) {
+        return `${text} | ${e.message}`;
+      }
+    })()
+    """);
+
+// Run the jobs and wait for the tasks until the promise settles
+var result = await engine.RunUntilSettledAsync(promise);
+Assert.Equal("content of a.txt | missing.txt not found", result.AsString());
+
+static async Task<string> ReadTextAsync(string name)
+{
+    await Task.Delay(10);
+    return name is "missing.txt" ? throw new FileNotFoundException(name + " not found") : "content of " + name;
+}
+```
+<!-- endref -->
+
+- The task can complete on any thread. The engine settles the promise on its own thread: the settlement is posted to
+  the engine (see [Post work from other threads](#post-work-from-other-threads)), and runs the next time the host
+  runs the jobs.
+- The converter of the result runs on the thread of the engine, when the promise settles: it can create objects.
+- A task that fails rejects the promise: with the value of a [JsException](cref:Meziantou.Framework.JavaScriptEngine.JsException), or with an `Error` whose message is the message of
+  the exception (also for a canceled task). Do not put secrets in the messages of the exceptions.
+- [RunUntilSettledAsync](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunUntilSettledAsync) returns the value of the fulfilled promise, or throws the [JsException](cref:Meziantou.Framework.JavaScriptEngine.JsException) of its rejection. Between two runs
+  of the jobs it waits for posted work and timeout jobs, without holding the engine.
+- `engine.ToTask` is the lower-level part: a `Task<JsValue>` that completes when a promise settles. The promise
+  settles only while the jobs run, so call [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs) (or [RunUntilSettledAsync](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunUntilSettledAsync)) before awaiting it. Its continuations run on
+  the thread pool, after the job.
+- When the engine is disposed, the posted settlements no longer run, and the tasks of [ToTask](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.ToTask) are canceled.
+
+The same plumbing can be written by hand: a .NET function returns a promise to the scripts, and settles it when its
+`Task` completes. The engine runs on one thread at a time, so the host waits for the tasks itself, then settles the
+promises and runs the jobs, in its own event loop:
 
 <!-- ref:../../tests/Meziantou.Framework.JavaScriptEngine.Tests/JsEngineTests.cs;region=JavaScriptEngine_AwaitDotNetTasks;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -127,7 +181,54 @@ The engine has no timers: to provide `setTimeout`, keep the callbacks and their 
 them with `engine.Call` when they are due, followed by [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs). See
 [Provide timers and microtasks](05-Interop/07-HostApis.md#provide-timers-and-microtasks).
 
+## Post work from other threads
+
+`engine.Post` queues a .NET action from any thread, such as the continuation of an I/O operation. The action runs on
+the thread of the engine, from [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs):
+
+- It runs after the promise jobs already in the queue, in the order the actions were posted, and each action is
+  followed by the promise jobs it enqueues.
+- A [JsException](cref:Meziantou.Framework.JavaScriptEngine.JsException) thrown by the action goes to [JsHost.ReportJobException](cref:Meziantou.Framework.JavaScriptEngine.JsHost.ReportJobException), which rethrows it by default; another
+  exception comes out of [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs).
+- [Post](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.Post) returns false once the engine is disposed: the action does not run.
+- `engine.WaitForJobsAsync` waits until a job is ready (a posted action, a promise job, a timeout job whose delay has
+  elapsed). An event loop alternates the two: `RunJobs()`, then `await WaitForJobsAsync()`.
+
+A host that overrides [JsHost.EnqueueGenericJob](cref:Meziantou.Framework.JavaScriptEngine.JsHost.EnqueueGenericJob) receives the posted actions, and runs them in its own event loop.
+
 ## Report unhandled rejections
+
+`engine.UnhandledRejection` is raised for the promises that are rejected and still have no handler once the jobs have
+run, at the end of [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs). `engine.RejectionHandled` is raised when a handler is attached to one of them later:
+
+<!-- ref:../../tests/Meziantou.Framework.JavaScriptEngine.Tests/JsEngineEmbeddingTests.cs;region=JavaScriptEngine_UnhandledRejectionEvent;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var engine = new JsEngine();
+var realm = engine.CreateRealm();
+var unhandled = new List<string>();
+var handledLater = new List<string>();
+engine.UnhandledRejection += (_, e) => unhandled.Add(engine.ToString(e.Reason));
+engine.RejectionHandled += (_, e) => handledLater.Add(engine.ToString(e.Reason));
+
+realm.Execute("""
+    Promise.reject(new Error('caught')).catch(() => {});
+    Promise.resolve().then(() => { globalThis.forgotten = Promise.reject(new Error('forgotten')); });
+    """);
+
+// The rejections are reported once the jobs have run: a handler attached by a job in the meantime prevents it
+engine.RunJobs();
+Assert.Equal(["Error: forgotten"], unhandled);
+
+// A handler attached later is reported too
+realm.Execute("forgotten.catch(() => {})");
+engine.RunJobs();
+Assert.Equal(["Error: forgotten"], handledLater);
+```
+<!-- endref -->
+
+- A rejection is reported at the end of the [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs) call that follows it, once the queue is empty. A handler
+  attached in the meantime, by the script or by a job, prevents the report, as in the browsers.
+- The events are raised on the thread of the engine. An exception of a handler comes out of [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs).
 
 A [JsHost](cref:Meziantou.Framework.JavaScriptEngine.JsHost) receives the events of the engine that the specification leaves to the host. [PromiseRejectionTracker](cref:Meziantou.Framework.JavaScriptEngine.JsHost.PromiseRejectionTracker) is
 called when a promise is rejected without a handler, and when a handler is attached to it later:

@@ -153,7 +153,7 @@ internal static class Jbig2Halftone
 
                 var (x, y) = CellPosition(m, n);
                 var value = Math.Min(values[(m * gridWidth) + n], patterns.Count - 1);
-                budget.ChargeWork(patternWidth, patternHeight);
+                budget.ChargePlacement(patterns[value]);
                 region.Combine(patterns[value], x, y, combinationOperator);
             }
         }

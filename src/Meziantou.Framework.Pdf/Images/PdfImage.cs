@@ -10,10 +10,11 @@ namespace Meziantou.Framework.Pdf;
 /// An image that <see cref="PdfContentBuilder.DrawImage"/> draws: an image XObject (ISO 32000-2, 8.9.5). A JPEG file is
 /// kept as it is (<c>DCTDecode</c>); another image is stored as samples compressed with <c>FlateDecode</c>, or as JPEG
 /// data with <see cref="FromImageAsJpeg"/>, its alpha channel as a soft mask (11.6.5.3). An ICC profile of the image
-/// becomes an <c>ICCBased</c> color space.
+/// becomes an <c>ICCBased</c> color space. A bilevel image (<see cref="FromBilevel"/>) is compressed with
+/// <c>CCITTFaxDecode</c>, <c>JBIG2Decode</c> or <c>FlateDecode</c>.
 /// </summary>
 /// <remarks>An image does not belong to a document: each document that uses it gets its own objects. Instances are immutable and thread-safe.</remarks>
-public sealed class PdfImage
+public sealed partial class PdfImage
 {
     private readonly ReadOnlyMemory<byte> _data;
     private readonly PdfName? _filter;
@@ -272,6 +273,7 @@ public sealed class PdfImage
         if (_filter is not null)
         {
             dictionary[PdfNames.Filter] = _filter;
+            AddDecodeParameters(dictionary);
             stream.SetData(_data, compressible: false);
         }
         else

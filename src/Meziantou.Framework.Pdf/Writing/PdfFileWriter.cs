@@ -9,7 +9,7 @@ namespace Meziantou.Framework.Pdf.Writing;
 /// Writes a document (ISO 32000-2, 7.5): a full save writes the objects reachable from the trailer, numbered in the
 /// order they are reached; an incremental save (7.5.6) appends the objects that changed to the original file.
 /// </summary>
-internal sealed class PdfFileWriter : IDisposable
+internal sealed partial class PdfFileWriter : IDisposable
 {
     private const int ObjectsPerObjectStream = 100;
 
@@ -20,7 +20,7 @@ internal sealed class PdfFileWriter : IDisposable
 
     private readonly PdfDocument _document;
     private readonly PdfSaveOptions _options;
-    private readonly PdfByteWriter _output;
+    private PdfByteWriter _output;
     private readonly CancellationToken _cancellationToken;
 
     // The buffers reused by every stream of the save: the compressed data, and the parts of an object stream
@@ -59,6 +59,12 @@ internal sealed class PdfFileWriter : IDisposable
 
     private void WriteFull()
     {
+        if (_options.Linearize)
+        {
+            WriteLinearized();
+            return;
+        }
+
         var objects = _document.Objects;
         var trailer = _document.Trailer;
 
@@ -230,6 +236,9 @@ internal sealed class PdfFileWriter : IDisposable
     private void WriteIncremental()
     {
         var reader = _document.Reader ?? throw new InvalidOperationException("Only a document read from a file can be saved incrementally");
+        if (_options.Linearize)
+            throw new InvalidOperationException("An incremental update cannot be linearized: save the document in full");
+
         if (reader.IsRepaired || reader.LastXrefOffset < 0)
             throw new InvalidOperationException("The cross-reference information of the file was rebuilt: the document must be saved in full");
 

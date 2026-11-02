@@ -26,6 +26,55 @@ public sealed class QpdfInteropTests
         Assert.Contains("No syntax or stream encoding errors found", result.StandardOutputText, StringComparison.Ordinal);
     }
 
+    public static TheoryData<string> WrittenNames => new(InteropDocuments.WrittenNames);
+
+    [Theory]
+    [MemberData(nameof(WrittenNames))]
+    public async Task LinearizedDocumentsPassTheLinearizationCheck(string name)
+    {
+        var qpdf = await QpdfTool.LocateAsync(XunitCancellationToken);
+        var path = InteropDocuments.Write(name, objectStreams: false, linearize: true);
+
+        var linearization = await qpdf.CheckLinearizationAsync(path, XunitCancellationToken);
+        var check = await qpdf.CheckAsync(path, XunitCancellationToken);
+
+        Assert.Equal(0, linearization.ExitCode, linearization.StandardOutputText + linearization.StandardError);
+        Assert.Contains("no linearization errors", linearization.StandardOutputText, StringComparison.Ordinal);
+        Assert.Equal("", linearization.StandardError.Trim());
+        Assert.Equal(0, check.ExitCode, check.StandardOutputText + check.StandardError);
+        Assert.Contains("File is linearized", check.StandardOutputText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task LinearizedDocumentWithSharedObjectsPassesTheLinearizationCheck()
+    {
+        var qpdf = await QpdfTool.LocateAsync(XunitCancellationToken);
+        var document = new PdfDocument();
+        var helvetica = PdfFont.GetStandardFont(PdfStandardFont.Helvetica);
+        var courier = PdfFont.GetStandardFont(PdfStandardFont.Courier);
+        for (var i = 0; i < 6; i++)
+        {
+            document.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("Page " + i, helvetica, 12, 72, 700).DrawText("Shared", i == 0 ? helvetica : courier, 12, 72, 600);
+        }
+
+        for (var i = 0; i < 6; i++)
+        {
+            document.Pages[i].Annotations.AddLink(new PdfRectangle(10, 10, 50, 50), PdfDestination.Fit(document.Pages[(i + 1) % 6]));
+        }
+
+        document.Outlines.Add("Chapter", PdfDestination.Fit(document.Pages[3])).Children.Add("Section", PdfDestination.Fit(document.Pages[4]));
+        document.Catalog[PdfName.Create("OpenAction")] = new PdfArray(document.Pages[0].Reference, PdfName.Create("Fit"));
+        var path = Path.Combine(AppContext.BaseDirectory, "InteropOutput", "linearized-shared.pdf");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        document.Save(path, new PdfSaveOptions { Linearize = true });
+
+        var result = await qpdf.CheckLinearizationAsync(path, XunitCancellationToken);
+
+        Assert.Equal(0, result.ExitCode, result.StandardOutputText + result.StandardError);
+        Assert.Contains("no linearization errors", result.StandardOutputText, StringComparison.Ordinal);
+        Assert.Equal("", result.StandardError.Trim());
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]

@@ -117,6 +117,7 @@ var readable = document.ToByteArray(new PdfSaveOptions { CompressStreams = false
 | --- | --- | --- |
 | [CompressStreams](cref:Meziantou.Framework.Pdf.PdfSaveOptions.CompressStreams) | `true` | Compresses the streams that have no filter with `FlateDecode` |
 | [UseObjectStreams](cref:Meziantou.Framework.Pdf.PdfSaveOptions.UseObjectStreams) | `true` | Writes the objects in object streams with a cross-reference stream (PDF 1.5); `false` writes a cross-reference table |
+| [Linearize](cref:Meziantou.Framework.Pdf.PdfSaveOptions.Linearize) | `false` | Writes a linearized file for fast web view: the first page comes first, with hint tables, so that a viewer shows each page before the file is downloaded. It uses cross-reference tables, writes the inherited attributes of the page tree on the pages, and cannot be encrypted or written incrementally |
 | [Version](cref:Meziantou.Framework.Pdf.PdfSaveOptions.Version) | `null` | The version of the header; `null` for the version of the document, raised to what the options need |
 
 `Save` writes the file to the stream or the file as it is serialized, through a buffer of bounded size, so that a

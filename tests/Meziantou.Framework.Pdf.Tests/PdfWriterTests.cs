@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Security.Cryptography;
 using System.Text;
 using Meziantou.Framework.Pdf.Objects;
@@ -596,6 +597,78 @@ public sealed class PdfWriterTests
         Assert.Equal("Hello", read.Pages[0].ExtractText());
     }
 
+    [Fact]
+    public void LinearizedFilesStartWithTheFirstPage()
+    {
+        var document = CreateRichDocument();
+
+        var bytes = document.ToByteArray(new PdfSaveOptions { Linearize = true });
+        var text = Encoding.Latin1.GetString(bytes);
+        var read = PdfDocument.Open(bytes);
+
+        Assert.False(read.IsRepaired);
+        Assert.Equal(3, read.Pages.Count);
+        Assert.Equal("Page 1\nSecond line", read.Pages[0].ExtractText());
+        Assert.Equal("Page 2", read.Pages[1].ExtractText());
+        Assert.HasCount(2, read.Outlines);
+
+        // The linearization parameter dictionary is the first object (F.3.3): /L is the length of the file, /O the
+        // first page, /N the number of pages, and the first page object follows the hint stream
+        var dictionary = text[(text.IndexOf("obj\n", StringComparison.Ordinal) + 4)..text.IndexOf("endobj", StringComparison.Ordinal)];
+        Assert.StartsWith("<< /Linearized 1 /L " + bytes.Length.ToString(CultureInfo.InvariantCulture) + " ", dictionary, StringComparison.Ordinal);
+        Assert.Contains(" /N 3 ", dictionary, StringComparison.Ordinal);
+        Assert.True(read.Objects.TryGetReference((int)GetNumber(dictionary, "/O "), out var firstPage));
+        Assert.Equal(read.Pages[0].Reference.ObjectNumber, firstPage.ObjectNumber);
+        var end = GetNumber(dictionary, "/E ");
+        Assert.True(text.IndexOf("/Contents", StringComparison.Ordinal) < end);
+        Assert.HasCount(3, text.Split("\nxref\n"));
+        Assert.DoesNotContain("/ObjStm", text, StringComparison.Ordinal);
+
+        Assert.Equal(bytes, document.ToByteArray(new PdfSaveOptions { Linearize = true }));
+    }
+
+    [Fact]
+    public void LinearizedFilesHaveThePageAttributesOnThePages()
+    {
+        var source = new PdfDocument();
+        for (var i = 0; i < 2; i++)
+        {
+            source.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("P" + i, PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 12, 72, 700);
+        }
+
+        var tree = source.Catalog.Get<PdfDictionary>(PdfName.Create("Pages"))!;
+        tree[PdfName.Create("Resources")] = source.Pages[0].Dictionary[PdfName.Create("Resources")];
+        tree[PdfName.Create("MediaBox")] = PdfArray.FromNumbers(0, 0, 300, 300);
+        foreach (var page in source.Pages)
+        {
+            page.Dictionary.Remove(PdfName.Create("Resources"));
+            page.Dictionary.Remove(PdfName.Create("MediaBox"));
+        }
+
+        var read = PdfDocument.Open(source.ToByteArray(new PdfSaveOptions { Linearize = true }));
+
+        Assert.False(read.Catalog.Get<PdfDictionary>(PdfName.Create("Pages"))!.ContainsKey(PdfName.Create("MediaBox")));
+        Assert.True(read.Pages[1].Dictionary.ContainsKey(PdfName.Create("MediaBox")));
+        Assert.Equal(300, read.Pages[1].MediaBox.Width);
+        Assert.Equal("P1", read.Pages[1].ExtractText());
+
+        // The document itself is not changed
+        Assert.True(tree.ContainsKey(PdfName.Create("MediaBox")));
+    }
+
+    [Fact]
+    public void LinearizationIsRefusedWhenItCannotApply()
+    {
+        var encrypted = CreateRichDocument();
+        encrypted.Encryption = new PdfEncryption("user", "owner");
+        var opened = PdfDocument.Open(CreateRichDocument().ToByteArray());
+        using var output = new MemoryStream();
+
+        Assert.Throws<InvalidOperationException>(() => encrypted.ToByteArray(new PdfSaveOptions { Linearize = true }));
+        Assert.Throws<InvalidOperationException>(() => new PdfDocument().ToByteArray(new PdfSaveOptions { Linearize = true }));
+        Assert.Throws<InvalidOperationException>(() => opened.SaveIncremental(output, new PdfSaveOptions { Linearize = true }));
+    }
+
     internal static PdfDocument CreateRichDocument()
     {
         var document = new PdfDocument();
@@ -655,6 +728,13 @@ public sealed class PdfWriterTests
             Write(buffer.Span);
             return ValueTask.CompletedTask;
         }
+    }
+
+    private static long GetNumber(string dictionary, string key)
+    {
+        var start = dictionary.IndexOf(key, StringComparison.Ordinal) + key.Length;
+        var end = dictionary.IndexOf(' ', start, StringComparison.Ordinal);
+        return long.Parse(dictionary[start..end], CultureInfo.InvariantCulture);
     }
 
     private static string RemoveId(byte[] file)

@@ -30,3 +30,5 @@ description: What the library does not do, so that you can plan around it.
 - The verification of a signature does not decide whether the signer is trusted: the application builds the certificate
   chain.
 - The writer encrypts the embedded files with the method of the other streams.
+- A linearized file cannot be encrypted, has no object streams, and is built in memory before it is written. It has no
+  thumbnail hint table: the thumbnails of the pages, if any, are counted with the objects of their pages.

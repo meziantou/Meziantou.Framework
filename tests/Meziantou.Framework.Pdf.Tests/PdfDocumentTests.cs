@@ -1188,6 +1188,9 @@ public sealed class PdfDocumentTests
 
         // Content streams left as text, to read them in an editor
         var readable = document.ToByteArray(new PdfSaveOptions { CompressStreams = false });
+
+        // Linearized for fast web view: a viewer shows the first page before the file is downloaded
+        var web = document.ToByteArray(new PdfSaveOptions { Linearize = true });
         #endregion
 
         Assert.Equal("Hello", PdfDocument.Open(compact).Pages[0].ExtractText());
@@ -1195,6 +1198,7 @@ public sealed class PdfDocumentTests
         Assert.Contains("xref", Encoding.ASCII.GetString(compatible), StringComparison.Ordinal);
         Assert.Contains("(Hello) Tj", Encoding.ASCII.GetString(readable), StringComparison.Ordinal);
         Assert.Equal("Hello", PdfDocument.Open(compatible).Pages[0].ExtractText());
+        Assert.Contains("/Linearized 1", Encoding.ASCII.GetString(web), StringComparison.Ordinal);
     }
 
     [Fact]

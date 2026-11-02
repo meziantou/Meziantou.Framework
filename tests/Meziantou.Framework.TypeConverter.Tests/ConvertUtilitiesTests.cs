@@ -94,7 +94,7 @@ public sealed class ConvertUtilitiesTests
     {
         public double Value { get; } = value;
 
-        // DefaultConverter uses the implicit operators declared by the type of the value to convert
+        // DefaultConverter uses the implicit operators declared by the type of the value or by the target type
         public static implicit operator double(Percentage percentage) => percentage.Value / 100;
     }
     #endregion

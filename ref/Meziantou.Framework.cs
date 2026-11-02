@@ -116,24 +116,34 @@ namespace Meziantou.Framework
     {
         public static System.Action Debounce(this System.Action action, System.TimeSpan interval) => throw null;
         public static System.Action Debounce(this System.Action action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action Debounce(this System.Action action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0> Debounce<T0>(this System.Action<T0> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0> Debounce<T0>(this System.Action<T0> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0> Debounce<T0>(this System.Action<T0> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0, T1> Debounce<T0, T1>(this System.Action<T0, T1> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0, T1> Debounce<T0, T1>(this System.Action<T0, T1> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1> Debounce<T0, T1>(this System.Action<T0, T1> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0, T1, T2> Debounce<T0, T1, T2>(this System.Action<T0, T1, T2> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0, T1, T2> Debounce<T0, T1, T2>(this System.Action<T0, T1, T2> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2> Debounce<T0, T1, T2>(this System.Action<T0, T1, T2> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0, T1, T2, T3> Debounce<T0, T1, T2, T3>(this System.Action<T0, T1, T2, T3> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0, T1, T2, T3> Debounce<T0, T1, T2, T3>(this System.Action<T0, T1, T2, T3> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3> Debounce<T0, T1, T2, T3>(this System.Action<T0, T1, T2, T3> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0, T1, T2, T3, T4> Debounce<T0, T1, T2, T3, T4>(this System.Action<T0, T1, T2, T3, T4> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0, T1, T2, T3, T4> Debounce<T0, T1, T2, T3, T4>(this System.Action<T0, T1, T2, T3, T4> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4> Debounce<T0, T1, T2, T3, T4>(this System.Action<T0, T1, T2, T3, T4> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5> Debounce<T0, T1, T2, T3, T4, T5>(this System.Action<T0, T1, T2, T3, T4, T5> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5> Debounce<T0, T1, T2, T3, T4, T5>(this System.Action<T0, T1, T2, T3, T4, T5> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5> Debounce<T0, T1, T2, T3, T4, T5>(this System.Action<T0, T1, T2, T3, T4, T5> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5, T6> Debounce<T0, T1, T2, T3, T4, T5, T6>(this System.Action<T0, T1, T2, T3, T4, T5, T6> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5, T6> Debounce<T0, T1, T2, T3, T4, T5, T6>(this System.Action<T0, T1, T2, T3, T4, T5, T6> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5, T6> Debounce<T0, T1, T2, T3, T4, T5, T6>(this System.Action<T0, T1, T2, T3, T4, T5, T6> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7> Debounce<T0, T1, T2, T3, T4, T5, T6, T7>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7> Debounce<T0, T1, T2, T3, T4, T5, T6, T7>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7> Debounce<T0, T1, T2, T3, T4, T5, T6, T7>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> Debounce<T0, T1, T2, T3, T4, T5, T6, T7, T8>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> Debounce<T0, T1, T2, T3, T4, T5, T6, T7, T8>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> Debounce<T0, T1, T2, T3, T4, T5, T6, T7, T8>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
     }
 
     public static class DeterministicGuid
@@ -207,7 +217,8 @@ namespace Meziantou.Framework
         public static void Replace<T>(this System.Collections.Generic.IList<T> list, T oldItem, T newItem) { }
         public static System.TimeSpan Sum(this System.Collections.Generic.IEnumerable<System.TimeSpan> enumerable) => throw null;
         public static System.Threading.Tasks.Task<T[]> ToArrayAsync<T>(this System.Threading.Tasks.Task<System.Collections.Generic.IEnumerable<T>> task) => throw null;
-        public static System.Collections.Generic.IAsyncEnumerable<T> ToAsyncEnumerable<T>(this System.Collections.Generic.IEnumerable<T> source) => throw null;
+        [System.Obsolete("Use System.Linq.AsyncEnumerable.ToAsyncEnumerable instead.")]
+        public static System.Collections.Generic.IAsyncEnumerable<T> ToAsyncEnumerable<T>(System.Collections.Generic.IEnumerable<T> source) => throw null;
         public static System.Collections.Generic.IAsyncEnumerator<T> ToAsyncEnumerator<T>(this System.Collections.Generic.IEnumerator<T> source) => throw null;
         public static System.Collections.Generic.ICollection<T> ToCollection<T>(this System.Collections.Generic.IEnumerable<T> sequence) => throw null;
         public static System.Threading.Tasks.Task<System.Collections.Generic.List<T>> ToListAsync<T>(this System.Threading.Tasks.Task<System.Collections.Generic.IEnumerable<T>> task) => throw null;
@@ -506,6 +517,12 @@ namespace Meziantou.Framework
     public static class RegexExtensions
     {
         public static System.Threading.Tasks.Task<string> ReplaceAsync(this System.Text.RegularExpressions.Regex regex, string input, System.Func<System.Text.RegularExpressions.Match, System.Threading.Tasks.Task<string>> replacementFn) => throw null;
+        public static System.Threading.Tasks.ValueTask<string> ReplaceAsync(this System.Text.RegularExpressions.Regex regex, string input, System.Func<System.Text.RegularExpressions.Match, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<string>> replacementFn, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<string> ReplaceAsync(this System.Text.RegularExpressions.Regex regex, string input, System.Func<System.Text.RegularExpressions.Match, System.Threading.Tasks.Task<string>> replacementFn, System.Threading.CancellationToken cancellationToken) => throw null;
+        public static System.Threading.Tasks.ValueTask<string> ReplaceAsync(this System.Text.RegularExpressions.Regex regex, string input, System.Func<System.Text.RegularExpressions.Match, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<string>> replacementFn, int count, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<string> ReplaceAsync(this System.Text.RegularExpressions.Regex regex, string input, System.Func<System.Text.RegularExpressions.Match, System.Threading.Tasks.Task<string>> replacementFn, int count, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.ValueTask<string> ReplaceAsync(this System.Text.RegularExpressions.Regex regex, string input, System.Func<System.Text.RegularExpressions.Match, System.Threading.CancellationToken, System.Threading.Tasks.ValueTask<string>> replacementFn, int count, int startat, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public static System.Threading.Tasks.Task<string> ReplaceAsync(this System.Text.RegularExpressions.Regex regex, string input, System.Func<System.Text.RegularExpressions.Match, System.Threading.Tasks.Task<string>> replacementFn, int count, int startat, System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 
     public sealed class RestrictedStream : System.IO.Stream
@@ -714,26 +731,37 @@ namespace Meziantou.Framework
     {
         public static System.Action Throttle(this System.Action action, System.TimeSpan interval) => throw null;
         public static System.Action Throttle(this System.Action action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action Throttle(this System.Action action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0> Throttle<T0>(this System.Action<T0> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0> Throttle<T0>(this System.Action<T0> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0> Throttle<T0>(this System.Action<T0> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0, T1> Throttle<T0, T1>(this System.Action<T0, T1> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0, T1> Throttle<T0, T1>(this System.Action<T0, T1> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1> Throttle<T0, T1>(this System.Action<T0, T1> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0, T1, T2> Throttle<T0, T1, T2>(this System.Action<T0, T1, T2> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0, T1, T2> Throttle<T0, T1, T2>(this System.Action<T0, T1, T2> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2> Throttle<T0, T1, T2>(this System.Action<T0, T1, T2> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0, T1, T2, T3> Throttle<T0, T1, T2, T3>(this System.Action<T0, T1, T2, T3> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0, T1, T2, T3> Throttle<T0, T1, T2, T3>(this System.Action<T0, T1, T2, T3> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3> Throttle<T0, T1, T2, T3>(this System.Action<T0, T1, T2, T3> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0, T1, T2, T3, T4> Throttle<T0, T1, T2, T3, T4>(this System.Action<T0, T1, T2, T3, T4> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0, T1, T2, T3, T4> Throttle<T0, T1, T2, T3, T4>(this System.Action<T0, T1, T2, T3, T4> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4> Throttle<T0, T1, T2, T3, T4>(this System.Action<T0, T1, T2, T3, T4> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5> Throttle<T0, T1, T2, T3, T4, T5>(this System.Action<T0, T1, T2, T3, T4, T5> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5> Throttle<T0, T1, T2, T3, T4, T5>(this System.Action<T0, T1, T2, T3, T4, T5> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5> Throttle<T0, T1, T2, T3, T4, T5>(this System.Action<T0, T1, T2, T3, T4, T5> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5, T6> Throttle<T0, T1, T2, T3, T4, T5, T6>(this System.Action<T0, T1, T2, T3, T4, T5, T6> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5, T6> Throttle<T0, T1, T2, T3, T4, T5, T6>(this System.Action<T0, T1, T2, T3, T4, T5, T6> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5, T6> Throttle<T0, T1, T2, T3, T4, T5, T6>(this System.Action<T0, T1, T2, T3, T4, T5, T6> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7> Throttle<T0, T1, T2, T3, T4, T5, T6, T7>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7> Throttle<T0, T1, T2, T3, T4, T5, T6, T7>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7> Throttle<T0, T1, T2, T3, T4, T5, T6, T7>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> action, System.TimeSpan interval) => throw null;
         public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> action, System.TimeSpan interval, System.TimeProvider timeProvider) => throw null;
+        public static System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>(this System.Action<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> action, System.TimeSpan interval, System.TimeProvider timeProvider, System.Action<System.Exception>? onError) => throw null;
     }
 
     public static class TupleExtensions
@@ -793,10 +821,12 @@ namespace Meziantou.Framework.Collections
         public int Count { get => throw null; }
         public BTree(System.Collections.Generic.IComparer<T>? comparer = null) { }
         public bool Add(T item) => throw null;
+        public void Clear() { }
         public bool Contains(T item) => throw null;
         public Meziantou.Framework.Collections.BTree<T>.Enumerator GetEnumerator() => throw null;
         System.Collections.Generic.IEnumerator<T> System.Collections.Generic.IEnumerable<T>.GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        public bool Remove(T item) => throw null;
         public struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
         {
             public readonly T Current { get => throw null; }
@@ -990,7 +1020,7 @@ namespace Meziantou.Framework.Collections
     [System.Diagnostics.DebuggerDisplay("Count = {Count}")]
     [System.Diagnostics.DebuggerTypeProxy(typeof(Meziantou.Framework.Collections.ImmutableEquatableSet<>.DebugView))]
     [System.Runtime.CompilerServices.CollectionBuilder(typeof(Meziantou.Framework.Collections.ImmutableEquatableSet), "Create")]
-    public sealed class ImmutableEquatableSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.ISet<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.IEquatable<Meziantou.Framework.Collections.ImmutableEquatableSet<T>> where T : System.IEquatable<T>
+    public sealed class ImmutableEquatableSet<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlySet<T>, System.Collections.Generic.ISet<T>, System.Collections.ICollection, System.Collections.IEnumerable, System.IEquatable<Meziantou.Framework.Collections.ImmutableEquatableSet<T>> where T : System.IEquatable<T>
     {
         public int Count { get => throw null; }
         public static Meziantou.Framework.Collections.ImmutableEquatableSet<T> Empty { get => throw null; }
@@ -1011,12 +1041,18 @@ namespace Meziantou.Framework.Collections
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public override int GetHashCode() => throw null;
         void System.Collections.Generic.ISet<T>.IntersectWith(System.Collections.Generic.IEnumerable<T> other) { }
+        bool System.Collections.Generic.IReadOnlySet<T>.IsProperSubsetOf(System.Collections.Generic.IEnumerable<T> other) => throw null;
         bool System.Collections.Generic.ISet<T>.IsProperSubsetOf(System.Collections.Generic.IEnumerable<T> other) => throw null;
+        bool System.Collections.Generic.IReadOnlySet<T>.IsProperSupersetOf(System.Collections.Generic.IEnumerable<T> other) => throw null;
         bool System.Collections.Generic.ISet<T>.IsProperSupersetOf(System.Collections.Generic.IEnumerable<T> other) => throw null;
+        bool System.Collections.Generic.IReadOnlySet<T>.IsSubsetOf(System.Collections.Generic.IEnumerable<T> other) => throw null;
         bool System.Collections.Generic.ISet<T>.IsSubsetOf(System.Collections.Generic.IEnumerable<T> other) => throw null;
+        bool System.Collections.Generic.IReadOnlySet<T>.IsSupersetOf(System.Collections.Generic.IEnumerable<T> other) => throw null;
         bool System.Collections.Generic.ISet<T>.IsSupersetOf(System.Collections.Generic.IEnumerable<T> other) => throw null;
+        bool System.Collections.Generic.IReadOnlySet<T>.Overlaps(System.Collections.Generic.IEnumerable<T> other) => throw null;
         bool System.Collections.Generic.ISet<T>.Overlaps(System.Collections.Generic.IEnumerable<T> other) => throw null;
         bool System.Collections.Generic.ICollection<T>.Remove(T item) => throw null;
+        bool System.Collections.Generic.IReadOnlySet<T>.SetEquals(System.Collections.Generic.IEnumerable<T> other) => throw null;
         bool System.Collections.Generic.ISet<T>.SetEquals(System.Collections.Generic.IEnumerable<T> other) => throw null;
         void System.Collections.Generic.ISet<T>.SymmetricExceptWith(System.Collections.Generic.IEnumerable<T> other) { }
         void System.Collections.Generic.ISet<T>.UnionWith(System.Collections.Generic.IEnumerable<T> other) { }
@@ -1024,7 +1060,7 @@ namespace Meziantou.Framework.Collections
         public static bool operator !=(Meziantou.Framework.Collections.ImmutableEquatableSet<T>? left, Meziantou.Framework.Collections.ImmutableEquatableSet<T>? right) => throw null;
     }
 
-    public sealed class LimitList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.IEnumerable
+    public sealed class LimitList<T> : System.Collections.Generic.ICollection<T>, System.Collections.Generic.IEnumerable<T>, System.Collections.Generic.IList<T>, System.Collections.Generic.IReadOnlyCollection<T>, System.Collections.Generic.IReadOnlyList<T>, System.Collections.IEnumerable
     {
         public int Capacity { get => throw null; }
         public int Count { get => throw null; }
@@ -1037,13 +1073,23 @@ namespace Meziantou.Framework.Collections
         public void Clear() { }
         public bool Contains(T item) => throw null;
         public void CopyTo(T[] array, int arrayIndex) { }
-        public System.Collections.Generic.IEnumerator<T> GetEnumerator() => throw null;
+        public Meziantou.Framework.Collections.LimitList<T>.Enumerator GetEnumerator() => throw null;
+        System.Collections.Generic.IEnumerator<T> System.Collections.Generic.IEnumerable<T>.GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public int IndexOf(T item) => throw null;
+        public void Insert(int index, T item) { }
         public bool Remove(T item) => throw null;
         public void RemoveAt(int index) { }
         public void RemoveFirst() { }
         public void RemoveLast() { }
+        public struct Enumerator : System.Collections.Generic.IEnumerator<T>, System.Collections.IEnumerator, System.IDisposable
+        {
+            public readonly T Current { get => throw null; }
+            readonly object? System.Collections.IEnumerator.Current { get => throw null; }
+            public readonly void Dispose() { }
+            public bool MoveNext() => throw null;
+            void System.Collections.IEnumerator.Reset() { }
+        }
     }
 
     public sealed class MultiValueDictionary<TKey, TValue> : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, System.Collections.Generic.IReadOnlyCollection<TValue>>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, System.Collections.Generic.IReadOnlyCollection<TValue>>>, System.Collections.Generic.IReadOnlyDictionary<TKey, System.Collections.Generic.IReadOnlyCollection<TValue>>, System.Collections.IEnumerable where TKey : notnull
@@ -1063,12 +1109,20 @@ namespace Meziantou.Framework.Collections
         public bool Contains(TKey key, TValue value) => throw null;
         public bool ContainsKey(TKey key) => throw null;
         public bool ContainsValue(TValue value) => throw null;
-        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, System.Collections.Generic.IReadOnlyCollection<TValue>>> GetEnumerator() => throw null;
+        public Meziantou.Framework.Collections.MultiValueDictionary<TKey, TValue>.Enumerator GetEnumerator() => throw null;
         System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, System.Collections.Generic.IReadOnlyCollection<TValue>>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey,System.Collections.Generic.IReadOnlyCollection<TValue>>>.GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public bool Remove(TKey key) => throw null;
         public bool Remove(TKey key, TValue value) => throw null;
         public bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out System.Collections.Generic.IReadOnlyCollection<TValue> value) => throw null;
+        public struct Enumerator : System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<TKey, System.Collections.Generic.IReadOnlyCollection<TValue>>>, System.Collections.IEnumerator, System.IDisposable
+        {
+            public readonly System.Collections.Generic.KeyValuePair<TKey, System.Collections.Generic.IReadOnlyCollection<TValue>> Current { get => throw null; }
+            readonly object System.Collections.IEnumerator.Current { get => throw null; }
+            public void Dispose() { }
+            public bool MoveNext() => throw null;
+            void System.Collections.IEnumerator.Reset() { }
+        }
     }
 
     public sealed class PruningRadixTree : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, long>>, System.Collections.IEnumerable
@@ -1127,6 +1181,7 @@ namespace Meziantou.Framework.Collections
         public SortedList(int capacity) { }
         public SortedList(int capacity, System.Collections.Generic.IComparer<T>? comparer) { }
         public void Add(T item) { }
+        public void AddRange(System.Collections.Generic.IEnumerable<T> items) { }
         public int BinarySearch(T item) => throw null;
         public void Clear() { }
         public bool Contains(T item) => throw null;
@@ -1164,24 +1219,39 @@ namespace Meziantou.Framework.Collections
         public Trie(bool ignoreCase) { }
         public void Add(string key, TValue value) { }
         public bool ContainsKey(string key) => throw null;
-        public System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, TValue>> GetEnumerator() => throw null;
+        public Meziantou.Framework.Collections.Trie<TValue>.Enumerator GetEnumerator() => throw null;
+        System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, TValue>> System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<System.String,TValue>>.GetEnumerator() => throw null;
         System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
         public bool Remove(string key) => throw null;
         public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, TValue>> StartsWith(string prefix) => throw null;
         public bool TryGetValue(string key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TValue value) => throw null;
+        public struct Enumerator : System.Collections.Generic.IEnumerator<System.Collections.Generic.KeyValuePair<string, TValue>>, System.Collections.IEnumerator, System.IDisposable
+        {
+            public readonly System.Collections.Generic.KeyValuePair<string, TValue> Current { get => throw null; }
+            readonly object System.Collections.IEnumerator.Current { get => throw null; }
+            public readonly void Dispose() { }
+            public bool MoveNext() => throw null;
+            void System.Collections.IEnumerator.Reset() { }
+        }
     }
 
     public sealed class UnsafeListDictionary<TKey, TValue> : System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IDictionary<TKey, TValue>, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>, System.Collections.IEnumerable where TKey : notnull
     {
+        public System.Collections.Generic.IEqualityComparer<TKey> Comparer { get => throw null; }
         public int Count { get => throw null; }
         bool System.Collections.Generic.ICollection<System.Collections.Generic.KeyValuePair<TKey,TValue>>.IsReadOnly { get => throw null; }
         public TValue this[TKey key] { get => throw null; set { } }
-        public System.Collections.Generic.ICollection<TKey> Keys { get => throw null; }
+        public Meziantou.Framework.Collections.UnsafeListDictionary<TKey, TValue>.KeyCollection Keys { get => throw null; }
+        System.Collections.Generic.ICollection<TKey> System.Collections.Generic.IDictionary<TKey,TValue>.Keys { get => throw null; }
         System.Collections.Generic.IEnumerable<TKey> System.Collections.Generic.IReadOnlyDictionary<TKey,TValue>.Keys { get => throw null; }
-        public System.Collections.Generic.ICollection<TValue> Values { get => throw null; }
+        public Meziantou.Framework.Collections.UnsafeListDictionary<TKey, TValue>.ValueCollection Values { get => throw null; }
+        System.Collections.Generic.ICollection<TValue> System.Collections.Generic.IDictionary<TKey,TValue>.Values { get => throw null; }
         System.Collections.Generic.IEnumerable<TValue> System.Collections.Generic.IReadOnlyDictionary<TKey,TValue>.Values { get => throw null; }
         public UnsafeListDictionary(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>> items) { }
+        public UnsafeListDictionary(System.Collections.Generic.IEqualityComparer<TKey>? comparer) { }
         public UnsafeListDictionary(int capacity) { }
+        public UnsafeListDictionary(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>> items, System.Collections.Generic.IEqualityComparer<TKey>? comparer) { }
+        public UnsafeListDictionary(int capacity, System.Collections.Generic.IEqualityComparer<TKey>? comparer) { }
         public void Add(System.Collections.Generic.KeyValuePair<TKey, TValue> item) { }
         public void Add(TKey key, TValue value) { }
         public void AddRange(System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>> items) { }
@@ -1195,6 +1265,48 @@ namespace Meziantou.Framework.Collections
         public bool Remove(System.Collections.Generic.KeyValuePair<TKey, TValue> item) => throw null;
         public bool Remove(TKey key) => throw null;
         public bool TryGetValue(TKey key, [System.Diagnostics.CodeAnalysis.MaybeNullWhen(false)] out TValue value) => throw null;
+        public sealed class KeyCollection : System.Collections.Generic.ICollection<TKey>, System.Collections.Generic.IEnumerable<TKey>, System.Collections.Generic.IReadOnlyCollection<TKey>, System.Collections.IEnumerable
+        {
+            public int Count { get => throw null; }
+            bool System.Collections.Generic.ICollection<TKey>.IsReadOnly { get => throw null; }
+            void System.Collections.Generic.ICollection<TKey>.Add(TKey item) { }
+            void System.Collections.Generic.ICollection<TKey>.Clear() { }
+            public bool Contains(TKey item) => throw null;
+            public void CopyTo(TKey[] array, int arrayIndex) { }
+            public Meziantou.Framework.Collections.UnsafeListDictionary<TKey, TValue>.KeyCollection.Enumerator GetEnumerator() => throw null;
+            System.Collections.Generic.IEnumerator<TKey> System.Collections.Generic.IEnumerable<TKey>.GetEnumerator() => throw null;
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+            bool System.Collections.Generic.ICollection<TKey>.Remove(TKey item) => throw null;
+            public struct Enumerator : System.Collections.Generic.IEnumerator<TKey>, System.Collections.IEnumerator, System.IDisposable
+            {
+                public readonly TKey Current { get => throw null; }
+                readonly object System.Collections.IEnumerator.Current { get => throw null; }
+                public void Dispose() { }
+                public bool MoveNext() => throw null;
+                void System.Collections.IEnumerator.Reset() { }
+            }
+        }
+        public sealed class ValueCollection : System.Collections.Generic.ICollection<TValue>, System.Collections.Generic.IEnumerable<TValue>, System.Collections.Generic.IReadOnlyCollection<TValue>, System.Collections.IEnumerable
+        {
+            public int Count { get => throw null; }
+            bool System.Collections.Generic.ICollection<TValue>.IsReadOnly { get => throw null; }
+            void System.Collections.Generic.ICollection<TValue>.Add(TValue item) { }
+            void System.Collections.Generic.ICollection<TValue>.Clear() { }
+            public bool Contains(TValue item) => throw null;
+            public void CopyTo(TValue[] array, int arrayIndex) { }
+            public Meziantou.Framework.Collections.UnsafeListDictionary<TKey, TValue>.ValueCollection.Enumerator GetEnumerator() => throw null;
+            System.Collections.Generic.IEnumerator<TValue> System.Collections.Generic.IEnumerable<TValue>.GetEnumerator() => throw null;
+            System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+            bool System.Collections.Generic.ICollection<TValue>.Remove(TValue item) => throw null;
+            public struct Enumerator : System.Collections.Generic.IEnumerator<TValue>, System.Collections.IEnumerator, System.IDisposable
+            {
+                public readonly TValue Current { get => throw null; }
+                readonly object? System.Collections.IEnumerator.Current { get => throw null; }
+                public void Dispose() { }
+                public bool MoveNext() => throw null;
+                void System.Collections.IEnumerator.Reset() { }
+            }
+        }
     }
 }
 namespace Meziantou.Framework.DataAnnotations

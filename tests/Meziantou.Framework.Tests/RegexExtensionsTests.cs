@@ -83,6 +83,82 @@ public sealed partial class RegexExtensionsTests
         await Assert.ThrowsAsync<ArgumentNullException>("replacementFn", () => regex.ReplaceAsync("a", replacementFn: null!));
     }
 
+    [Fact]
+    public async Task Documentation_ReplaceAsync_CountAndCancellation()
+    {
+        #region RegexExtensions_ReplaceAsync_Count
+        var regex = new Regex(@"[0-9]+", RegexOptions.None, TimeSpan.FromSeconds(1));
+        using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(1));
+
+        // Replace the first 2 matches, searching from the 2nd character. The callback receives the token.
+        var result = await regex.ReplaceAsync("1 22 333 4444", async (match, cancellationToken) =>
+        {
+            await Task.Delay(1, cancellationToken); // For instance, call a service
+            return $"<{match.Value}>";
+        }, count: 2, startat: 1, cts.Token);
+
+        Assert.Equal("1 <22> <333> 4444", result);
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("[0-9]+", RegexOptions.None, "a1b22c333d", -1, 0)]
+    [InlineData("[0-9]+", RegexOptions.None, "a1b22c333d", 0, 0)]
+    [InlineData("[0-9]+", RegexOptions.None, "a1b22c333d", 1, 0)]
+    [InlineData("[0-9]+", RegexOptions.None, "a1b22c333d", 2, 3)]
+    [InlineData("[0-9]+", RegexOptions.None, "a1b22c333d", -1, 10)]
+    [InlineData("[0-9]+", RegexOptions.RightToLeft, "a1b22c333d", -1, 10)]
+    [InlineData("[0-9]+", RegexOptions.RightToLeft, "a1b22c333d", 2, 10)]
+    [InlineData("[0-9]+", RegexOptions.RightToLeft, "a1b22c333d", 1, 5)]
+    [InlineData("[0-9]+", RegexOptions.RightToLeft, "a1b22c333d", -1, 0)]
+    [InlineData("", RegexOptions.None, "abc", 2, 1)]
+    [InlineData("^", RegexOptions.None, "abc", -1, 1)]
+    public async Task ReplaceAsync_CountAndStartAt_MatchesRegexReplace(string pattern, RegexOptions options, string input, int count, int startat)
+    {
+        var regex = new Regex(pattern, options, TimeSpan.FromSeconds(1));
+        var expected = regex.Replace(input, match => "[" + match.Value + "]", count, startat);
+
+        var actualTask = await regex.ReplaceAsync(input, match => Task.FromResult("[" + match.Value + "]"), count, startat);
+        var actualValueTask = await regex.ReplaceAsync(input, (match, _) => ValueTask.FromResult("[" + match.Value + "]"), count, startat);
+
+        Assert.Equal(expected, actualTask);
+        Assert.Equal(expected, actualValueTask);
+        if (startat == (regex.RightToLeft ? input.Length : 0))
+        {
+            Assert.Equal(expected, await regex.ReplaceAsync(input, match => Task.FromResult("[" + match.Value + "]"), count));
+            Assert.Equal(expected, await regex.ReplaceAsync(input, (match, _) => ValueTask.FromResult("[" + match.Value + "]"), count));
+        }
+    }
+
+    [Fact]
+    public async Task ReplaceAsync_Cancellation()
+    {
+        var regex = DigitRegex();
+        using var cts = new CancellationTokenSource();
+        var calls = 0;
+
+        await Assert.ThrowsAny<OperationCanceledException>(async () =>
+        {
+            await regex.ReplaceAsync("123", match =>
+            {
+                calls++;
+                cts.Cancel();
+                return Task.FromResult("x");
+            }, cts.Token);
+        });
+
+        Assert.Equal(1, calls);
+    }
+
+    [Fact]
+    public async Task ReplaceAsync_InvalidCountOrStartAt()
+    {
+        var regex = DigitRegex();
+        await Assert.Throws<ArgumentOutOfRangeException>("count", async () => { await regex.ReplaceAsync("a", match => Task.FromResult("x"), count: -2); });
+        await Assert.Throws<ArgumentOutOfRangeException>("startat", async () => { await regex.ReplaceAsync("a", match => Task.FromResult("x"), count: -1, startat: -1); });
+        await Assert.Throws<ArgumentOutOfRangeException>("startat", async () => { await regex.ReplaceAsync("a", match => Task.FromResult("x"), count: -1, startat: 2); });
+    }
+
     [GeneratedRegex("[0-9]", RegexOptions.None, matchTimeoutMilliseconds: 1000)]
     private static partial Regex DigitRegex();
 }

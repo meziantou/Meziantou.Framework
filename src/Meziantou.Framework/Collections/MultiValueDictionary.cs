@@ -38,7 +38,19 @@ public sealed class MultiValueDictionary<TKey, TValue> : IReadOnlyDictionary<TKe
     {
         ArgumentNullException.ThrowIfNull(values);
 
-        GetOrAddCollection(key).AddRange(values);
+        if (_dictionary.TryGetValue(key, out var existing))
+        {
+            existing.AddRange(values);
+            return;
+        }
+
+        // Do not add the key when there is no value, so a key never maps to an empty collection
+        var collection = new ValueCollection();
+        collection.AddRange(values);
+        if (collection.Count > 0)
+        {
+            _dictionary.Add(key, collection);
+        }
     }
 
     public bool Remove(TKey key) => _dictionary.Remove(key);
@@ -89,13 +101,7 @@ public sealed class MultiValueDictionary<TKey, TValue> : IReadOnlyDictionary<TKe
     public IReadOnlyCollection<TValue> this[TKey key] => _dictionary[key];
     public int Count => _dictionary.Count;
 
-    public IEnumerator<KeyValuePair<TKey, IReadOnlyCollection<TValue>>> GetEnumerator()
-    {
-        foreach (var pair in _dictionary)
-        {
-            yield return new(pair.Key, pair.Value);
-        }
-    }
+    public Enumerator GetEnumerator() => new(this);
 
     IEnumerator<KeyValuePair<TKey, IReadOnlyCollection<TValue>>> IEnumerable<KeyValuePair<TKey, IReadOnlyCollection<TValue>>>.GetEnumerator() => GetEnumerator();
 
@@ -119,5 +125,34 @@ public sealed class MultiValueDictionary<TKey, TValue> : IReadOnlyDictionary<TKe
         public List<TValue>.Enumerator GetEnumerator() => _values.GetEnumerator();
         IEnumerator<TValue> IEnumerable<TValue>.GetEnumerator() => _values.GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => _values.GetEnumerator();
+    }
+
+    public struct Enumerator : IEnumerator<KeyValuePair<TKey, IReadOnlyCollection<TValue>>>
+    {
+        private readonly Dictionary<TKey, ValueCollection> _dictionary;
+        private Dictionary<TKey, ValueCollection>.Enumerator _enumerator;
+
+        internal Enumerator(MultiValueDictionary<TKey, TValue> dictionary)
+        {
+            _dictionary = dictionary._dictionary;
+            _enumerator = _dictionary.GetEnumerator();
+        }
+
+        public readonly KeyValuePair<TKey, IReadOnlyCollection<TValue>> Current
+        {
+            get
+            {
+                var current = _enumerator.Current;
+                return new(current.Key, current.Value);
+            }
+        }
+
+        readonly object IEnumerator.Current => Current;
+
+        public bool MoveNext() => _enumerator.MoveNext();
+
+        void IEnumerator.Reset() => _enumerator = _dictionary.GetEnumerator();
+
+        public void Dispose() => _enumerator.Dispose();
     }
 }

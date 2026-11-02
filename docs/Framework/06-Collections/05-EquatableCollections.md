@@ -47,7 +47,9 @@ Creating a collection from an empty collection returns the shared `Empty` instan
 - The array is equal to another array with the same items in the same order.
 - The set and the dictionary are equal to another set or dictionary with the same items, whatever their order.
 - A `null` value of the dictionary is equal to another `null` value.
-- `==`, `!=`, `Equals` and `GetHashCode` all follow these rules.
+- `==`, `!=`, `Equals` and `GetHashCode` all follow these rules. The hash code combines the hash codes of the items,
+  so collections with different items rarely share one, and is computed once.
 
-They implement the read-only collection interfaces (`IReadOnlyList<T>`, `ISet<T>`, `IReadOnlyDictionary<TKey, TValue>`
-and the others). The methods of the mutable interfaces throw an `InvalidOperationException`.
+They implement the read-only collection interfaces (`IReadOnlyList<T>`, `IReadOnlySet<T>`,
+`IReadOnlyDictionary<TKey, TValue>` and the others) and the mutable ones (`IList<T>`, `ISet<T>`,
+`IDictionary<TKey, TValue>`), whose methods that change the collection throw a `NotSupportedException`.

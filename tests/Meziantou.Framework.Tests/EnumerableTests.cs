@@ -438,6 +438,31 @@ public class EnumerableTests
         Assert.Throws<ArgumentNullException>(() => values.ParallelStableSort());
     }
 
+    [Fact]
+    public async Task ToAsyncEnumerable_BindsToSystemLinq()
+    {
+        // Not ambiguous with System.Linq.AsyncEnumerable.ToAsyncEnumerable while Meziantou.Framework is in scope
+        var actual = new[] { 1, 2 }.ToAsyncEnumerable();
+
+        await Assert.Equal([1, 2], actual);
+    }
+
+    [Fact]
+    public async Task ToAsyncEnumerable_HonorsCancellation()
+    {
+        using var cts = new CancellationTokenSource();
+#pragma warning disable CS0618 // Type or member is obsolete
+        var enumerable = EnumerableExtensions.ToAsyncEnumerable(new[] { 1, 2, 3 });
+#pragma warning restore CS0618
+
+        await using var enumerator = enumerable.GetAsyncEnumerator(cts.Token);
+        Assert.True(await enumerator.MoveNextAsync());
+        Assert.Equal(1, enumerator.Current);
+
+        await cts.CancelAsync();
+        await Assert.ThrowsAny<OperationCanceledException>(async () => { await enumerator.MoveNextAsync(); });
+    }
+
     [StructLayout(LayoutKind.Auto)]
     private readonly record struct StableSortableValue(int Key, int Order);
 

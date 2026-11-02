@@ -205,4 +205,94 @@ public sealed class PruningRadixTreeTests
         Assert.Equal(0, prefixFrequency);
         Assert.Equal(["cart"], results.Select(result => result.Key).ToArray());
     }
+
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(3)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic test data")]
+    public void RandomOperations_MatchesReference(int seed)
+    {
+        var random = new Random(seed);
+        var tree = new PruningRadixTree();
+        var expected = new Dictionary<string, long>(StringComparer.Ordinal);
+        for (var i = 0; i < 3000; i++)
+        {
+            var term = CreateRandomTerm(random);
+            switch (random.Next(4))
+            {
+                case 0:
+                    Assert.Equal(expected.Remove(term), tree.Remove(term));
+                    break;
+
+                case 1:
+                    // Small batch: the terms are added one by one
+                    var batch = Enumerable.Range(0, random.Next(1, 4)).Select(_ => KeyValuePair.Create(CreateRandomTerm(random), (long)random.Next(1, 100))).ToArray();
+                    tree.AddRange(batch);
+                    foreach (var item in batch)
+                    {
+                        expected[item.Key] = expected.GetValueOrDefault(item.Key) + item.Value;
+                    }
+
+                    break;
+
+                default:
+                    var frequency = random.Next(1, 100);
+                    tree.Add(term, frequency);
+                    expected[term] = expected.GetValueOrDefault(term) + frequency;
+                    break;
+            }
+
+            Assert.Equal(expected.Count, tree.Count);
+            if (i % 50 is 0)
+            {
+                AssertTreeMatches(expected, tree);
+            }
+        }
+
+        AssertTreeMatches(expected, tree);
+
+        // A large batch rebuilds the tree
+        var largeBatch = Enumerable.Range(0, tree.Count + 10).Select(_ => KeyValuePair.Create(CreateRandomTerm(random), (long)random.Next(1, 100))).ToArray();
+        tree.AddRange(largeBatch);
+        foreach (var item in largeBatch)
+        {
+            expected[item.Key] = expected.GetValueOrDefault(item.Key) + item.Value;
+        }
+
+        AssertTreeMatches(expected, tree);
+
+        static string CreateRandomTerm(Random random)
+        {
+            var length = random.Next(0, 6);
+            var chars = new char[length];
+            for (var i = 0; i < length; i++)
+            {
+                chars[i] = (char)('a' + random.Next(3));
+            }
+
+            return new string(chars);
+        }
+
+        static void AssertTreeMatches(Dictionary<string, long> expected, PruningRadixTree tree)
+        {
+            Assert.Equal(expected.OrderBy(item => item.Key, StringComparer.Ordinal), tree.OrderBy(item => item.Key, StringComparer.Ordinal));
+            foreach (var prefix in new[] { "", "a", "b", "ab", "abc", "ca", "cc" })
+            {
+                foreach (var topK in new[] { 1, 3, 10 })
+                {
+                    var expectedTop = expected
+                        .Where(item => item.Key.StartsWith(prefix, StringComparison.Ordinal))
+                        .OrderByDescending(item => item.Value)
+                        .ThenBy(item => item.Key, StringComparer.Ordinal)
+                        .Take(topK)
+                        .ToArray();
+
+                    Assert.Equal(expectedTop, tree.GetTopTermsByPrefix(prefix, topK, out var prefixFrequency));
+                    Assert.Equal(expectedTop, tree.GetTopTermsByPrefix(prefix, topK, out _, pruning: false));
+                    Assert.Equal(expected.GetValueOrDefault(prefix), prefixFrequency);
+                }
+            }
+        }
+    }
 }

@@ -8,7 +8,7 @@
 //------------------------------------------------------------------------------
 #nullable enable
 using System;
-using System.Threading.Tasks;
+using System.Threading;
 
 namespace Meziantou.Framework;
 
@@ -23,13 +23,30 @@ public static class ThrottleExtensions
     /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
     /// an invocation is pending are ignored except for updating the arguments.
     /// </summary>
+    /// <remarks>An exception thrown by <paramref name="action"/> is unhandled and terminates the process, as for any timer callback. Use the overload that takes an error handler to handle it.</remarks>
     /// <param name="action">The action to throttle.</param>
     /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
     /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
     public static Action Throttle(this Action action, TimeSpan interval)
     {
-        return Throttle(action, interval, TimeProvider.System);
+        return Throttle(action, interval, TimeProvider.System, onError: null);
+    }
+
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+    /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+    /// an invocation is pending are ignored except for updating the arguments.
+    /// </summary>
+    /// <remarks>An exception thrown by <paramref name="action"/> is unhandled and terminates the process, as for any timer callback. Use the overload that takes an error handler to handle it.</remarks>
+    /// <param name="action">The action to throttle.</param>
+    /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+    /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+    /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
+    public static Action Throttle(this Action action, TimeSpan interval, TimeProvider timeProvider)
+    {
+        return Throttle(action, interval, timeProvider, onError: null);
     }
 
     /// <summary>
@@ -40,39 +57,53 @@ public static class ThrottleExtensions
     /// <param name="action">The action to throttle.</param>
     /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
     /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+    /// <param name="onError">
+    /// Called with the exception thrown by <paramref name="action"/>. When <see langword="null"/>, the exception is unhandled and
+    /// terminates the process, as for any timer callback. The throttle keeps working after the action throws.
+    /// </param>
     /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
-    public static Action Throttle(this Action action, TimeSpan interval, TimeProvider timeProvider)
+    public static Action Throttle(this Action action, TimeSpan interval, TimeProvider timeProvider, Action<Exception>? onError)
     {
         ArgumentNullException.ThrowIfNull(action);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        Task? task = null;
         var l = new object();
+        ITimer? timer = null;
+        var pending = false;
         return () =>
         {
             lock (l)
             {
-                // task is only ever read and written under the lock, so the scheduling decision
+                // pending is only ever read and written under the lock, so the scheduling decision
                 // cannot be made against a stale value.
-                if (task is not null)
+                if (pending)
                     return;
 
-                task = Task.Delay(interval, timeProvider).ContinueWith(_ =>
+                pending = true;
+
+                // A single timer is reused for every interval, instead of allocating a delay and a continuation each time
+                timer ??= timeProvider.CreateTimer(_ =>
                 {
                     try
                     {
                         action();
+                    }
+                    catch (Exception ex) when (onError is not null)
+                    {
+                        onError(ex);
                     }
                     finally
                     {
                         // Reset in a finally so an action that throws does not stall the throttle forever
                         lock (l)
                         {
-                            task = null;
+                            pending = false;
                         }
                     }
-                }, TaskScheduler.Default);
+                }, state: null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+
+                timer.Change(interval, Timeout.InfiniteTimeSpan);
             }
         };
     }
@@ -82,6 +113,7 @@ public static class ThrottleExtensions
     /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
     /// an invocation is pending are ignored except for updating the arguments.
     /// </summary>
+    /// <remarks>An exception thrown by <paramref name="action"/> is unhandled and terminates the process, as for any timer callback. Use the overload that takes an error handler to handle it.</remarks>
     /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
     /// <param name="action">The action to throttle.</param>
     /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
@@ -89,7 +121,24 @@ public static class ThrottleExtensions
     /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
     public static Action<T0> Throttle<T0>(this Action<T0> action, TimeSpan interval)
     {
-        return Throttle(action, interval, TimeProvider.System);
+        return Throttle(action, interval, TimeProvider.System, onError: null);
+    }
+
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+    /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+    /// an invocation is pending are ignored except for updating the arguments.
+    /// </summary>
+    /// <remarks>An exception thrown by <paramref name="action"/> is unhandled and terminates the process, as for any timer callback. Use the overload that takes an error handler to handle it.</remarks>
+    /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+    /// <param name="action">The action to throttle.</param>
+    /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+    /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+    /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
+    public static Action<T0> Throttle<T0>(this Action<T0> action, TimeSpan interval, TimeProvider timeProvider)
+    {
+        return Throttle(action, interval, timeProvider, onError: null);
     }
 
     /// <summary>
@@ -101,15 +150,20 @@ public static class ThrottleExtensions
     /// <param name="action">The action to throttle.</param>
     /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
     /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+    /// <param name="onError">
+    /// Called with the exception thrown by <paramref name="action"/>. When <see langword="null"/>, the exception is unhandled and
+    /// terminates the process, as for any timer callback. The throttle keeps working after the action throws.
+    /// </param>
     /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
-    public static Action<T0> Throttle<T0>(this Action<T0> action, TimeSpan interval, TimeProvider timeProvider)
+    public static Action<T0> Throttle<T0>(this Action<T0> action, TimeSpan interval, TimeProvider timeProvider, Action<Exception>? onError)
     {
         ArgumentNullException.ThrowIfNull(action);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        Task? task = null;
         var l = new object();
+        ITimer? timer = null;
+        var pending = false;
         T0 args = default!;
         return (T0 arg0) =>
         {
@@ -120,12 +174,15 @@ public static class ThrottleExtensions
                 // arguments coming from different calls.
                 args = arg0;
 
-                // task is only ever read and written under the lock, so the scheduling decision
+                // pending is only ever read and written under the lock, so the scheduling decision
                 // cannot be made against a stale value.
-                if (task is not null)
+                if (pending)
                     return;
 
-                task = Task.Delay(interval, timeProvider).ContinueWith(_ =>
+                pending = true;
+
+                // A single timer is reused for every interval, instead of allocating a delay and a continuation each time
+                timer ??= timeProvider.CreateTimer(_ =>
                 {
                     T0 pendingArgs;
                     lock (l)
@@ -137,15 +194,21 @@ public static class ThrottleExtensions
                     {
                         action(pendingArgs);
                     }
+                    catch (Exception ex) when (onError is not null)
+                    {
+                        onError(ex);
+                    }
                     finally
                     {
                         // Reset in a finally so an action that throws does not stall the throttle forever
                         lock (l)
                         {
-                            task = null;
+                            pending = false;
                         }
                     }
-                }, TaskScheduler.Default);
+                }, state: null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+
+                timer.Change(interval, Timeout.InfiniteTimeSpan);
             }
         };
     }
@@ -155,6 +218,7 @@ public static class ThrottleExtensions
     /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
     /// an invocation is pending are ignored except for updating the arguments.
     /// </summary>
+    /// <remarks>An exception thrown by <paramref name="action"/> is unhandled and terminates the process, as for any timer callback. Use the overload that takes an error handler to handle it.</remarks>
     /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
     /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
     /// <param name="action">The action to throttle.</param>
@@ -163,7 +227,25 @@ public static class ThrottleExtensions
     /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
     public static Action<T0, T1> Throttle<T0, T1>(this Action<T0, T1> action, TimeSpan interval)
     {
-        return Throttle(action, interval, TimeProvider.System);
+        return Throttle(action, interval, TimeProvider.System, onError: null);
+    }
+
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+    /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+    /// an invocation is pending are ignored except for updating the arguments.
+    /// </summary>
+    /// <remarks>An exception thrown by <paramref name="action"/> is unhandled and terminates the process, as for any timer callback. Use the overload that takes an error handler to handle it.</remarks>
+    /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+    /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+    /// <param name="action">The action to throttle.</param>
+    /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+    /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+    /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
+    public static Action<T0, T1> Throttle<T0, T1>(this Action<T0, T1> action, TimeSpan interval, TimeProvider timeProvider)
+    {
+        return Throttle(action, interval, timeProvider, onError: null);
     }
 
     /// <summary>
@@ -176,15 +258,20 @@ public static class ThrottleExtensions
     /// <param name="action">The action to throttle.</param>
     /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
     /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+    /// <param name="onError">
+    /// Called with the exception thrown by <paramref name="action"/>. When <see langword="null"/>, the exception is unhandled and
+    /// terminates the process, as for any timer callback. The throttle keeps working after the action throws.
+    /// </param>
     /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
-    public static Action<T0, T1> Throttle<T0, T1>(this Action<T0, T1> action, TimeSpan interval, TimeProvider timeProvider)
+    public static Action<T0, T1> Throttle<T0, T1>(this Action<T0, T1> action, TimeSpan interval, TimeProvider timeProvider, Action<Exception>? onError)
     {
         ArgumentNullException.ThrowIfNull(action);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        Task? task = null;
         var l = new object();
+        ITimer? timer = null;
+        var pending = false;
         (T0, T1) args = default;
         return (T0 arg0, T1 arg1) =>
         {
@@ -195,12 +282,15 @@ public static class ThrottleExtensions
                 // arguments coming from different calls.
                 args = (arg0, arg1);
 
-                // task is only ever read and written under the lock, so the scheduling decision
+                // pending is only ever read and written under the lock, so the scheduling decision
                 // cannot be made against a stale value.
-                if (task is not null)
+                if (pending)
                     return;
 
-                task = Task.Delay(interval, timeProvider).ContinueWith(_ =>
+                pending = true;
+
+                // A single timer is reused for every interval, instead of allocating a delay and a continuation each time
+                timer ??= timeProvider.CreateTimer(_ =>
                 {
                     (T0, T1) pendingArgs;
                     lock (l)
@@ -212,15 +302,21 @@ public static class ThrottleExtensions
                     {
                         action(pendingArgs.Item1, pendingArgs.Item2);
                     }
+                    catch (Exception ex) when (onError is not null)
+                    {
+                        onError(ex);
+                    }
                     finally
                     {
                         // Reset in a finally so an action that throws does not stall the throttle forever
                         lock (l)
                         {
-                            task = null;
+                            pending = false;
                         }
                     }
-                }, TaskScheduler.Default);
+                }, state: null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+
+                timer.Change(interval, Timeout.InfiniteTimeSpan);
             }
         };
     }
@@ -230,6 +326,7 @@ public static class ThrottleExtensions
     /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
     /// an invocation is pending are ignored except for updating the arguments.
     /// </summary>
+    /// <remarks>An exception thrown by <paramref name="action"/> is unhandled and terminates the process, as for any timer callback. Use the overload that takes an error handler to handle it.</remarks>
     /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
     /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
     /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
@@ -239,7 +336,26 @@ public static class ThrottleExtensions
     /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
     public static Action<T0, T1, T2> Throttle<T0, T1, T2>(this Action<T0, T1, T2> action, TimeSpan interval)
     {
-        return Throttle(action, interval, TimeProvider.System);
+        return Throttle(action, interval, TimeProvider.System, onError: null);
+    }
+
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+    /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+    /// an invocation is pending are ignored except for updating the arguments.
+    /// </summary>
+    /// <remarks>An exception thrown by <paramref name="action"/> is unhandled and terminates the process, as for any timer callback. Use the overload that takes an error handler to handle it.</remarks>
+    /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+    /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+    /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+    /// <param name="action">The action to throttle.</param>
+    /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+    /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+    /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
+    public static Action<T0, T1, T2> Throttle<T0, T1, T2>(this Action<T0, T1, T2> action, TimeSpan interval, TimeProvider timeProvider)
+    {
+        return Throttle(action, interval, timeProvider, onError: null);
     }
 
     /// <summary>
@@ -253,15 +369,20 @@ public static class ThrottleExtensions
     /// <param name="action">The action to throttle.</param>
     /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
     /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+    /// <param name="onError">
+    /// Called with the exception thrown by <paramref name="action"/>. When <see langword="null"/>, the exception is unhandled and
+    /// terminates the process, as for any timer callback. The throttle keeps working after the action throws.
+    /// </param>
     /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
-    public static Action<T0, T1, T2> Throttle<T0, T1, T2>(this Action<T0, T1, T2> action, TimeSpan interval, TimeProvider timeProvider)
+    public static Action<T0, T1, T2> Throttle<T0, T1, T2>(this Action<T0, T1, T2> action, TimeSpan interval, TimeProvider timeProvider, Action<Exception>? onError)
     {
         ArgumentNullException.ThrowIfNull(action);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        Task? task = null;
         var l = new object();
+        ITimer? timer = null;
+        var pending = false;
         (T0, T1, T2) args = default;
         return (T0 arg0, T1 arg1, T2 arg2) =>
         {
@@ -272,12 +393,15 @@ public static class ThrottleExtensions
                 // arguments coming from different calls.
                 args = (arg0, arg1, arg2);
 
-                // task is only ever read and written under the lock, so the scheduling decision
+                // pending is only ever read and written under the lock, so the scheduling decision
                 // cannot be made against a stale value.
-                if (task is not null)
+                if (pending)
                     return;
 
-                task = Task.Delay(interval, timeProvider).ContinueWith(_ =>
+                pending = true;
+
+                // A single timer is reused for every interval, instead of allocating a delay and a continuation each time
+                timer ??= timeProvider.CreateTimer(_ =>
                 {
                     (T0, T1, T2) pendingArgs;
                     lock (l)
@@ -289,15 +413,21 @@ public static class ThrottleExtensions
                     {
                         action(pendingArgs.Item1, pendingArgs.Item2, pendingArgs.Item3);
                     }
+                    catch (Exception ex) when (onError is not null)
+                    {
+                        onError(ex);
+                    }
                     finally
                     {
                         // Reset in a finally so an action that throws does not stall the throttle forever
                         lock (l)
                         {
-                            task = null;
+                            pending = false;
                         }
                     }
-                }, TaskScheduler.Default);
+                }, state: null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+
+                timer.Change(interval, Timeout.InfiniteTimeSpan);
             }
         };
     }
@@ -307,6 +437,7 @@ public static class ThrottleExtensions
     /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
     /// an invocation is pending are ignored except for updating the arguments.
     /// </summary>
+    /// <remarks>An exception thrown by <paramref name="action"/> is unhandled and terminates the process, as for any timer callback. Use the overload that takes an error handler to handle it.</remarks>
     /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
     /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
     /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
@@ -317,7 +448,27 @@ public static class ThrottleExtensions
     /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
     public static Action<T0, T1, T2, T3> Throttle<T0, T1, T2, T3>(this Action<T0, T1, T2, T3> action, TimeSpan interval)
     {
-        return Throttle(action, interval, TimeProvider.System);
+        return Throttle(action, interval, TimeProvider.System, onError: null);
+    }
+
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+    /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+    /// an invocation is pending are ignored except for updating the arguments.
+    /// </summary>
+    /// <remarks>An exception thrown by <paramref name="action"/> is unhandled and terminates the process, as for any timer callback. Use the overload that takes an error handler to handle it.</remarks>
+    /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+    /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+    /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+    /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
+    /// <param name="action">The action to throttle.</param>
+    /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+    /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+    /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
+    public static Action<T0, T1, T2, T3> Throttle<T0, T1, T2, T3>(this Action<T0, T1, T2, T3> action, TimeSpan interval, TimeProvider timeProvider)
+    {
+        return Throttle(action, interval, timeProvider, onError: null);
     }
 
     /// <summary>
@@ -332,15 +483,20 @@ public static class ThrottleExtensions
     /// <param name="action">The action to throttle.</param>
     /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
     /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+    /// <param name="onError">
+    /// Called with the exception thrown by <paramref name="action"/>. When <see langword="null"/>, the exception is unhandled and
+    /// terminates the process, as for any timer callback. The throttle keeps working after the action throws.
+    /// </param>
     /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
     /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
-    public static Action<T0, T1, T2, T3> Throttle<T0, T1, T2, T3>(this Action<T0, T1, T2, T3> action, TimeSpan interval, TimeProvider timeProvider)
+    public static Action<T0, T1, T2, T3> Throttle<T0, T1, T2, T3>(this Action<T0, T1, T2, T3> action, TimeSpan interval, TimeProvider timeProvider, Action<Exception>? onError)
     {
         ArgumentNullException.ThrowIfNull(action);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        Task? task = null;
         var l = new object();
+        ITimer? timer = null;
+        var pending = false;
         (T0, T1, T2, T3) args = default;
         return (T0 arg0, T1 arg1, T2 arg2, T3 arg3) =>
         {
@@ -351,12 +507,15 @@ public static class ThrottleExtensions
                 // arguments coming from different calls.
                 args = (arg0, arg1, arg2, arg3);
 
-                // task is only ever read and written under the lock, so the scheduling decision
+                // pending is only ever read and written under the lock, so the scheduling decision
                 // cannot be made against a stale value.
-                if (task is not null)
+                if (pending)
                     return;
 
-                task = Task.Delay(interval, timeProvider).ContinueWith(_ =>
+                pending = true;
+
+                // A single timer is reused for every interval, instead of allocating a delay and a continuation each time
+                timer ??= timeProvider.CreateTimer(_ =>
                 {
                     (T0, T1, T2, T3) pendingArgs;
                     lock (l)
@@ -368,15 +527,21 @@ public static class ThrottleExtensions
                     {
                         action(pendingArgs.Item1, pendingArgs.Item2, pendingArgs.Item3, pendingArgs.Item4);
                     }
+                    catch (Exception ex) when (onError is not null)
+                    {
+                        onError(ex);
+                    }
                     finally
                     {
                         // Reset in a finally so an action that throws does not stall the throttle forever
                         lock (l)
                         {
-                            task = null;
+                            pending = false;
                         }
                     }
-                }, TaskScheduler.Default);
+                }, state: null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+
+                timer.Change(interval, Timeout.InfiniteTimeSpan);
             }
         };
     }
@@ -386,6 +551,7 @@ public static class ThrottleExtensions
     /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
     /// an invocation is pending are ignored except for updating the arguments.
     /// </summary>
+    /// <remarks>An exception thrown by <paramref name="action"/> is unhandled and terminates the process, as for any timer callback. Use the overload that takes an error handler to handle it.</remarks>
     /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
     /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
     /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
@@ -397,7 +563,7 @@ public static class ThrottleExtensions
     /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
     public static Action<T0, T1, T2, T3, T4> Throttle<T0, T1, T2, T3, T4>(this Action<T0, T1, T2, T3, T4> action, TimeSpan interval)
     {
-        return Throttle(action, interval, TimeProvider.System);
+        return Throttle(action, interval, TimeProvider.System, onError: null);
     }
 
     /// <summary>
@@ -405,6 +571,7 @@ public static class ThrottleExtensions
     /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
     /// an invocation is pending are ignored except for updating the arguments.
     /// </summary>
+    /// <remarks>An exception thrown by <paramref name="action"/> is unhandled and terminates the process, as for any timer callback. Use the overload that takes an error handler to handle it.</remarks>
     /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
     /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
     /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
@@ -417,49 +584,7 @@ public static class ThrottleExtensions
     /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
     public static Action<T0, T1, T2, T3, T4> Throttle<T0, T1, T2, T3, T4>(this Action<T0, T1, T2, T3, T4> action, TimeSpan interval, TimeProvider timeProvider)
     {
-        ArgumentNullException.ThrowIfNull(action);
-        ArgumentNullException.ThrowIfNull(timeProvider);
-
-        Task? task = null;
-        var l = new object();
-        (T0, T1, T2, T3, T4) args = default;
-        return (T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4) =>
-        {
-            lock (l)
-            {
-                // Published under the lock: writing a multi-field tuple is not atomic, so an
-                // unsynchronized write let the scheduled invocation observe a torn combination of
-                // arguments coming from different calls.
-                args = (arg0, arg1, arg2, arg3, arg4);
-
-                // task is only ever read and written under the lock, so the scheduling decision
-                // cannot be made against a stale value.
-                if (task is not null)
-                    return;
-
-                task = Task.Delay(interval, timeProvider).ContinueWith(_ =>
-                {
-                    (T0, T1, T2, T3, T4) pendingArgs;
-                    lock (l)
-                    {
-                        pendingArgs = args;
-                    }
-
-                    try
-                    {
-                        action(pendingArgs.Item1, pendingArgs.Item2, pendingArgs.Item3, pendingArgs.Item4, pendingArgs.Item5);
-                    }
-                    finally
-                    {
-                        // Reset in a finally so an action that throws does not stall the throttle forever
-                        lock (l)
-                        {
-                            task = null;
-                        }
-                    }
-                }, TaskScheduler.Default);
-            }
-        };
+        return Throttle(action, interval, timeProvider, onError: null);
     }
 
     /// <summary>
@@ -472,14 +597,70 @@ public static class ThrottleExtensions
     /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
     /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
     /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
-    /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
     /// <param name="action">The action to throttle.</param>
     /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+    /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+    /// <param name="onError">
+    /// Called with the exception thrown by <paramref name="action"/>. When <see langword="null"/>, the exception is unhandled and
+    /// terminates the process, as for any timer callback. The throttle keeps working after the action throws.
+    /// </param>
     /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
-    public static Action<T0, T1, T2, T3, T4, T5> Throttle<T0, T1, T2, T3, T4, T5>(this Action<T0, T1, T2, T3, T4, T5> action, TimeSpan interval)
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
+    public static Action<T0, T1, T2, T3, T4> Throttle<T0, T1, T2, T3, T4>(this Action<T0, T1, T2, T3, T4> action, TimeSpan interval, TimeProvider timeProvider, Action<Exception>? onError)
     {
-        return Throttle(action, interval, TimeProvider.System);
+        ArgumentNullException.ThrowIfNull(action);
+        ArgumentNullException.ThrowIfNull(timeProvider);
+
+        var l = new object();
+        ITimer? timer = null;
+        var pending = false;
+        (T0, T1, T2, T3, T4) args = default;
+        return (T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4) =>
+        {
+            lock (l)
+            {
+                // Published under the lock: writing a multi-field tuple is not atomic, so an
+                // unsynchronized write let the scheduled invocation observe a torn combination of
+                // arguments coming from different calls.
+                args = (arg0, arg1, arg2, arg3, arg4);
+
+                // pending is only ever read and written under the lock, so the scheduling decision
+                // cannot be made against a stale value.
+                if (pending)
+                    return;
+
+                pending = true;
+
+                // A single timer is reused for every interval, instead of allocating a delay and a continuation each time
+                timer ??= timeProvider.CreateTimer(_ =>
+                {
+                    (T0, T1, T2, T3, T4) pendingArgs;
+                    lock (l)
+                    {
+                        pendingArgs = args;
+                    }
+
+                    try
+                    {
+                        action(pendingArgs.Item1, pendingArgs.Item2, pendingArgs.Item3, pendingArgs.Item4, pendingArgs.Item5);
+                    }
+                    catch (Exception ex) when (onError is not null)
+                    {
+                        onError(ex);
+                    }
+                    finally
+                    {
+                        // Reset in a finally so an action that throws does not stall the throttle forever
+                        lock (l)
+                        {
+                            pending = false;
+                        }
+                    }
+                }, state: null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+
+                timer.Change(interval, Timeout.InfiniteTimeSpan);
+            }
+        };
     }
 
     /// <summary>
@@ -487,6 +668,28 @@ public static class ThrottleExtensions
     /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
     /// an invocation is pending are ignored except for updating the arguments.
     /// </summary>
+    /// <remarks>An exception thrown by <paramref name="action"/> is unhandled and terminates the process, as for any timer callback. Use the overload that takes an error handler to handle it.</remarks>
+    /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+    /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+    /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+    /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
+    /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
+    /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
+    /// <param name="action">The action to throttle.</param>
+    /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+    /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    public static Action<T0, T1, T2, T3, T4, T5> Throttle<T0, T1, T2, T3, T4, T5>(this Action<T0, T1, T2, T3, T4, T5> action, TimeSpan interval)
+    {
+        return Throttle(action, interval, TimeProvider.System, onError: null);
+    }
+
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+    /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+    /// an invocation is pending are ignored except for updating the arguments.
+    /// </summary>
+    /// <remarks>An exception thrown by <paramref name="action"/> is unhandled and terminates the process, as for any timer callback. Use the overload that takes an error handler to handle it.</remarks>
     /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
     /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
     /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
@@ -500,49 +703,7 @@ public static class ThrottleExtensions
     /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
     public static Action<T0, T1, T2, T3, T4, T5> Throttle<T0, T1, T2, T3, T4, T5>(this Action<T0, T1, T2, T3, T4, T5> action, TimeSpan interval, TimeProvider timeProvider)
     {
-        ArgumentNullException.ThrowIfNull(action);
-        ArgumentNullException.ThrowIfNull(timeProvider);
-
-        Task? task = null;
-        var l = new object();
-        (T0, T1, T2, T3, T4, T5) args = default;
-        return (T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5) =>
-        {
-            lock (l)
-            {
-                // Published under the lock: writing a multi-field tuple is not atomic, so an
-                // unsynchronized write let the scheduled invocation observe a torn combination of
-                // arguments coming from different calls.
-                args = (arg0, arg1, arg2, arg3, arg4, arg5);
-
-                // task is only ever read and written under the lock, so the scheduling decision
-                // cannot be made against a stale value.
-                if (task is not null)
-                    return;
-
-                task = Task.Delay(interval, timeProvider).ContinueWith(_ =>
-                {
-                    (T0, T1, T2, T3, T4, T5) pendingArgs;
-                    lock (l)
-                    {
-                        pendingArgs = args;
-                    }
-
-                    try
-                    {
-                        action(pendingArgs.Item1, pendingArgs.Item2, pendingArgs.Item3, pendingArgs.Item4, pendingArgs.Item5, pendingArgs.Item6);
-                    }
-                    finally
-                    {
-                        // Reset in a finally so an action that throws does not stall the throttle forever
-                        lock (l)
-                        {
-                            task = null;
-                        }
-                    }
-                }, TaskScheduler.Default);
-            }
-        };
+        return Throttle(action, interval, timeProvider, onError: null);
     }
 
     /// <summary>
@@ -556,14 +717,70 @@ public static class ThrottleExtensions
     /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
     /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
     /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
-    /// <typeparam name="T6">The type of the parameter 6 of the action.</typeparam>
     /// <param name="action">The action to throttle.</param>
     /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+    /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+    /// <param name="onError">
+    /// Called with the exception thrown by <paramref name="action"/>. When <see langword="null"/>, the exception is unhandled and
+    /// terminates the process, as for any timer callback. The throttle keeps working after the action throws.
+    /// </param>
     /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
-    public static Action<T0, T1, T2, T3, T4, T5, T6> Throttle<T0, T1, T2, T3, T4, T5, T6>(this Action<T0, T1, T2, T3, T4, T5, T6> action, TimeSpan interval)
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
+    public static Action<T0, T1, T2, T3, T4, T5> Throttle<T0, T1, T2, T3, T4, T5>(this Action<T0, T1, T2, T3, T4, T5> action, TimeSpan interval, TimeProvider timeProvider, Action<Exception>? onError)
     {
-        return Throttle(action, interval, TimeProvider.System);
+        ArgumentNullException.ThrowIfNull(action);
+        ArgumentNullException.ThrowIfNull(timeProvider);
+
+        var l = new object();
+        ITimer? timer = null;
+        var pending = false;
+        (T0, T1, T2, T3, T4, T5) args = default;
+        return (T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5) =>
+        {
+            lock (l)
+            {
+                // Published under the lock: writing a multi-field tuple is not atomic, so an
+                // unsynchronized write let the scheduled invocation observe a torn combination of
+                // arguments coming from different calls.
+                args = (arg0, arg1, arg2, arg3, arg4, arg5);
+
+                // pending is only ever read and written under the lock, so the scheduling decision
+                // cannot be made against a stale value.
+                if (pending)
+                    return;
+
+                pending = true;
+
+                // A single timer is reused for every interval, instead of allocating a delay and a continuation each time
+                timer ??= timeProvider.CreateTimer(_ =>
+                {
+                    (T0, T1, T2, T3, T4, T5) pendingArgs;
+                    lock (l)
+                    {
+                        pendingArgs = args;
+                    }
+
+                    try
+                    {
+                        action(pendingArgs.Item1, pendingArgs.Item2, pendingArgs.Item3, pendingArgs.Item4, pendingArgs.Item5, pendingArgs.Item6);
+                    }
+                    catch (Exception ex) when (onError is not null)
+                    {
+                        onError(ex);
+                    }
+                    finally
+                    {
+                        // Reset in a finally so an action that throws does not stall the throttle forever
+                        lock (l)
+                        {
+                            pending = false;
+                        }
+                    }
+                }, state: null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+
+                timer.Change(interval, Timeout.InfiniteTimeSpan);
+            }
+        };
     }
 
     /// <summary>
@@ -571,6 +788,29 @@ public static class ThrottleExtensions
     /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
     /// an invocation is pending are ignored except for updating the arguments.
     /// </summary>
+    /// <remarks>An exception thrown by <paramref name="action"/> is unhandled and terminates the process, as for any timer callback. Use the overload that takes an error handler to handle it.</remarks>
+    /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+    /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+    /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+    /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
+    /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
+    /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
+    /// <typeparam name="T6">The type of the parameter 6 of the action.</typeparam>
+    /// <param name="action">The action to throttle.</param>
+    /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+    /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    public static Action<T0, T1, T2, T3, T4, T5, T6> Throttle<T0, T1, T2, T3, T4, T5, T6>(this Action<T0, T1, T2, T3, T4, T5, T6> action, TimeSpan interval)
+    {
+        return Throttle(action, interval, TimeProvider.System, onError: null);
+    }
+
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+    /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+    /// an invocation is pending are ignored except for updating the arguments.
+    /// </summary>
+    /// <remarks>An exception thrown by <paramref name="action"/> is unhandled and terminates the process, as for any timer callback. Use the overload that takes an error handler to handle it.</remarks>
     /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
     /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
     /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
@@ -585,49 +825,7 @@ public static class ThrottleExtensions
     /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
     public static Action<T0, T1, T2, T3, T4, T5, T6> Throttle<T0, T1, T2, T3, T4, T5, T6>(this Action<T0, T1, T2, T3, T4, T5, T6> action, TimeSpan interval, TimeProvider timeProvider)
     {
-        ArgumentNullException.ThrowIfNull(action);
-        ArgumentNullException.ThrowIfNull(timeProvider);
-
-        Task? task = null;
-        var l = new object();
-        (T0, T1, T2, T3, T4, T5, T6) args = default;
-        return (T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6) =>
-        {
-            lock (l)
-            {
-                // Published under the lock: writing a multi-field tuple is not atomic, so an
-                // unsynchronized write let the scheduled invocation observe a torn combination of
-                // arguments coming from different calls.
-                args = (arg0, arg1, arg2, arg3, arg4, arg5, arg6);
-
-                // task is only ever read and written under the lock, so the scheduling decision
-                // cannot be made against a stale value.
-                if (task is not null)
-                    return;
-
-                task = Task.Delay(interval, timeProvider).ContinueWith(_ =>
-                {
-                    (T0, T1, T2, T3, T4, T5, T6) pendingArgs;
-                    lock (l)
-                    {
-                        pendingArgs = args;
-                    }
-
-                    try
-                    {
-                        action(pendingArgs.Item1, pendingArgs.Item2, pendingArgs.Item3, pendingArgs.Item4, pendingArgs.Item5, pendingArgs.Item6, pendingArgs.Item7);
-                    }
-                    finally
-                    {
-                        // Reset in a finally so an action that throws does not stall the throttle forever
-                        lock (l)
-                        {
-                            task = null;
-                        }
-                    }
-                }, TaskScheduler.Default);
-            }
-        };
+        return Throttle(action, interval, timeProvider, onError: null);
     }
 
     /// <summary>
@@ -642,14 +840,70 @@ public static class ThrottleExtensions
     /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
     /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
     /// <typeparam name="T6">The type of the parameter 6 of the action.</typeparam>
-    /// <typeparam name="T7">The type of the parameter 7 of the action.</typeparam>
     /// <param name="action">The action to throttle.</param>
     /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+    /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+    /// <param name="onError">
+    /// Called with the exception thrown by <paramref name="action"/>. When <see langword="null"/>, the exception is unhandled and
+    /// terminates the process, as for any timer callback. The throttle keeps working after the action throws.
+    /// </param>
     /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
-    public static Action<T0, T1, T2, T3, T4, T5, T6, T7> Throttle<T0, T1, T2, T3, T4, T5, T6, T7>(this Action<T0, T1, T2, T3, T4, T5, T6, T7> action, TimeSpan interval)
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
+    public static Action<T0, T1, T2, T3, T4, T5, T6> Throttle<T0, T1, T2, T3, T4, T5, T6>(this Action<T0, T1, T2, T3, T4, T5, T6> action, TimeSpan interval, TimeProvider timeProvider, Action<Exception>? onError)
     {
-        return Throttle(action, interval, TimeProvider.System);
+        ArgumentNullException.ThrowIfNull(action);
+        ArgumentNullException.ThrowIfNull(timeProvider);
+
+        var l = new object();
+        ITimer? timer = null;
+        var pending = false;
+        (T0, T1, T2, T3, T4, T5, T6) args = default;
+        return (T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6) =>
+        {
+            lock (l)
+            {
+                // Published under the lock: writing a multi-field tuple is not atomic, so an
+                // unsynchronized write let the scheduled invocation observe a torn combination of
+                // arguments coming from different calls.
+                args = (arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+
+                // pending is only ever read and written under the lock, so the scheduling decision
+                // cannot be made against a stale value.
+                if (pending)
+                    return;
+
+                pending = true;
+
+                // A single timer is reused for every interval, instead of allocating a delay and a continuation each time
+                timer ??= timeProvider.CreateTimer(_ =>
+                {
+                    (T0, T1, T2, T3, T4, T5, T6) pendingArgs;
+                    lock (l)
+                    {
+                        pendingArgs = args;
+                    }
+
+                    try
+                    {
+                        action(pendingArgs.Item1, pendingArgs.Item2, pendingArgs.Item3, pendingArgs.Item4, pendingArgs.Item5, pendingArgs.Item6, pendingArgs.Item7);
+                    }
+                    catch (Exception ex) when (onError is not null)
+                    {
+                        onError(ex);
+                    }
+                    finally
+                    {
+                        // Reset in a finally so an action that throws does not stall the throttle forever
+                        lock (l)
+                        {
+                            pending = false;
+                        }
+                    }
+                }, state: null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+
+                timer.Change(interval, Timeout.InfiniteTimeSpan);
+            }
+        };
     }
 
     /// <summary>
@@ -657,6 +911,30 @@ public static class ThrottleExtensions
     /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
     /// an invocation is pending are ignored except for updating the arguments.
     /// </summary>
+    /// <remarks>An exception thrown by <paramref name="action"/> is unhandled and terminates the process, as for any timer callback. Use the overload that takes an error handler to handle it.</remarks>
+    /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+    /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+    /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+    /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
+    /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
+    /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
+    /// <typeparam name="T6">The type of the parameter 6 of the action.</typeparam>
+    /// <typeparam name="T7">The type of the parameter 7 of the action.</typeparam>
+    /// <param name="action">The action to throttle.</param>
+    /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+    /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    public static Action<T0, T1, T2, T3, T4, T5, T6, T7> Throttle<T0, T1, T2, T3, T4, T5, T6, T7>(this Action<T0, T1, T2, T3, T4, T5, T6, T7> action, TimeSpan interval)
+    {
+        return Throttle(action, interval, TimeProvider.System, onError: null);
+    }
+
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+    /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+    /// an invocation is pending are ignored except for updating the arguments.
+    /// </summary>
+    /// <remarks>An exception thrown by <paramref name="action"/> is unhandled and terminates the process, as for any timer callback. Use the overload that takes an error handler to handle it.</remarks>
     /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
     /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
     /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
@@ -672,49 +950,7 @@ public static class ThrottleExtensions
     /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
     public static Action<T0, T1, T2, T3, T4, T5, T6, T7> Throttle<T0, T1, T2, T3, T4, T5, T6, T7>(this Action<T0, T1, T2, T3, T4, T5, T6, T7> action, TimeSpan interval, TimeProvider timeProvider)
     {
-        ArgumentNullException.ThrowIfNull(action);
-        ArgumentNullException.ThrowIfNull(timeProvider);
-
-        Task? task = null;
-        var l = new object();
-        (T0, T1, T2, T3, T4, T5, T6, T7) args = default;
-        return (T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7) =>
-        {
-            lock (l)
-            {
-                // Published under the lock: writing a multi-field tuple is not atomic, so an
-                // unsynchronized write let the scheduled invocation observe a torn combination of
-                // arguments coming from different calls.
-                args = (arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
-
-                // task is only ever read and written under the lock, so the scheduling decision
-                // cannot be made against a stale value.
-                if (task is not null)
-                    return;
-
-                task = Task.Delay(interval, timeProvider).ContinueWith(_ =>
-                {
-                    (T0, T1, T2, T3, T4, T5, T6, T7) pendingArgs;
-                    lock (l)
-                    {
-                        pendingArgs = args;
-                    }
-
-                    try
-                    {
-                        action(pendingArgs.Item1, pendingArgs.Item2, pendingArgs.Item3, pendingArgs.Item4, pendingArgs.Item5, pendingArgs.Item6, pendingArgs.Item7, pendingArgs.Item8);
-                    }
-                    finally
-                    {
-                        // Reset in a finally so an action that throws does not stall the throttle forever
-                        lock (l)
-                        {
-                            task = null;
-                        }
-                    }
-                }, TaskScheduler.Default);
-            }
-        };
+        return Throttle(action, interval, timeProvider, onError: null);
     }
 
     /// <summary>
@@ -730,14 +966,70 @@ public static class ThrottleExtensions
     /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
     /// <typeparam name="T6">The type of the parameter 6 of the action.</typeparam>
     /// <typeparam name="T7">The type of the parameter 7 of the action.</typeparam>
-    /// <typeparam name="T8">The type of the parameter 8 of the action.</typeparam>
     /// <param name="action">The action to throttle.</param>
     /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+    /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+    /// <param name="onError">
+    /// Called with the exception thrown by <paramref name="action"/>. When <see langword="null"/>, the exception is unhandled and
+    /// terminates the process, as for any timer callback. The throttle keeps working after the action throws.
+    /// </param>
     /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
-    public static Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8>(this Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> action, TimeSpan interval)
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
+    public static Action<T0, T1, T2, T3, T4, T5, T6, T7> Throttle<T0, T1, T2, T3, T4, T5, T6, T7>(this Action<T0, T1, T2, T3, T4, T5, T6, T7> action, TimeSpan interval, TimeProvider timeProvider, Action<Exception>? onError)
     {
-        return Throttle(action, interval, TimeProvider.System);
+        ArgumentNullException.ThrowIfNull(action);
+        ArgumentNullException.ThrowIfNull(timeProvider);
+
+        var l = new object();
+        ITimer? timer = null;
+        var pending = false;
+        (T0, T1, T2, T3, T4, T5, T6, T7) args = default;
+        return (T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7) =>
+        {
+            lock (l)
+            {
+                // Published under the lock: writing a multi-field tuple is not atomic, so an
+                // unsynchronized write let the scheduled invocation observe a torn combination of
+                // arguments coming from different calls.
+                args = (arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7);
+
+                // pending is only ever read and written under the lock, so the scheduling decision
+                // cannot be made against a stale value.
+                if (pending)
+                    return;
+
+                pending = true;
+
+                // A single timer is reused for every interval, instead of allocating a delay and a continuation each time
+                timer ??= timeProvider.CreateTimer(_ =>
+                {
+                    (T0, T1, T2, T3, T4, T5, T6, T7) pendingArgs;
+                    lock (l)
+                    {
+                        pendingArgs = args;
+                    }
+
+                    try
+                    {
+                        action(pendingArgs.Item1, pendingArgs.Item2, pendingArgs.Item3, pendingArgs.Item4, pendingArgs.Item5, pendingArgs.Item6, pendingArgs.Item7, pendingArgs.Item8);
+                    }
+                    catch (Exception ex) when (onError is not null)
+                    {
+                        onError(ex);
+                    }
+                    finally
+                    {
+                        // Reset in a finally so an action that throws does not stall the throttle forever
+                        lock (l)
+                        {
+                            pending = false;
+                        }
+                    }
+                }, state: null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+
+                timer.Change(interval, Timeout.InfiniteTimeSpan);
+            }
+        };
     }
 
     /// <summary>
@@ -745,6 +1037,31 @@ public static class ThrottleExtensions
     /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
     /// an invocation is pending are ignored except for updating the arguments.
     /// </summary>
+    /// <remarks>An exception thrown by <paramref name="action"/> is unhandled and terminates the process, as for any timer callback. Use the overload that takes an error handler to handle it.</remarks>
+    /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+    /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+    /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+    /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
+    /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
+    /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
+    /// <typeparam name="T6">The type of the parameter 6 of the action.</typeparam>
+    /// <typeparam name="T7">The type of the parameter 7 of the action.</typeparam>
+    /// <typeparam name="T8">The type of the parameter 8 of the action.</typeparam>
+    /// <param name="action">The action to throttle.</param>
+    /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+    /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    public static Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8>(this Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> action, TimeSpan interval)
+    {
+        return Throttle(action, interval, TimeProvider.System, onError: null);
+    }
+
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+    /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+    /// an invocation is pending are ignored except for updating the arguments.
+    /// </summary>
+    /// <remarks>An exception thrown by <paramref name="action"/> is unhandled and terminates the process, as for any timer callback. Use the overload that takes an error handler to handle it.</remarks>
     /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
     /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
     /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
@@ -761,49 +1078,7 @@ public static class ThrottleExtensions
     /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
     public static Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8>(this Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> action, TimeSpan interval, TimeProvider timeProvider)
     {
-        ArgumentNullException.ThrowIfNull(action);
-        ArgumentNullException.ThrowIfNull(timeProvider);
-
-        Task? task = null;
-        var l = new object();
-        (T0, T1, T2, T3, T4, T5, T6, T7, T8) args = default;
-        return (T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8) =>
-        {
-            lock (l)
-            {
-                // Published under the lock: writing a multi-field tuple is not atomic, so an
-                // unsynchronized write let the scheduled invocation observe a torn combination of
-                // arguments coming from different calls.
-                args = (arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
-
-                // task is only ever read and written under the lock, so the scheduling decision
-                // cannot be made against a stale value.
-                if (task is not null)
-                    return;
-
-                task = Task.Delay(interval, timeProvider).ContinueWith(_ =>
-                {
-                    (T0, T1, T2, T3, T4, T5, T6, T7, T8) pendingArgs;
-                    lock (l)
-                    {
-                        pendingArgs = args;
-                    }
-
-                    try
-                    {
-                        action(pendingArgs.Item1, pendingArgs.Item2, pendingArgs.Item3, pendingArgs.Item4, pendingArgs.Item5, pendingArgs.Item6, pendingArgs.Item7, pendingArgs.Item8, pendingArgs.Item9);
-                    }
-                    finally
-                    {
-                        // Reset in a finally so an action that throws does not stall the throttle forever
-                        lock (l)
-                        {
-                            task = null;
-                        }
-                    }
-                }, TaskScheduler.Default);
-            }
-        };
+        return Throttle(action, interval, timeProvider, onError: null);
     }
 
     /// <summary>
@@ -820,14 +1095,70 @@ public static class ThrottleExtensions
     /// <typeparam name="T6">The type of the parameter 6 of the action.</typeparam>
     /// <typeparam name="T7">The type of the parameter 7 of the action.</typeparam>
     /// <typeparam name="T8">The type of the parameter 8 of the action.</typeparam>
-    /// <typeparam name="T9">The type of the parameter 9 of the action.</typeparam>
     /// <param name="action">The action to throttle.</param>
     /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+    /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+    /// <param name="onError">
+    /// Called with the exception thrown by <paramref name="action"/>. When <see langword="null"/>, the exception is unhandled and
+    /// terminates the process, as for any timer callback. The throttle keeps working after the action throws.
+    /// </param>
     /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
-    public static Action<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>(this Action<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> action, TimeSpan interval)
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
+    public static Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8>(this Action<T0, T1, T2, T3, T4, T5, T6, T7, T8> action, TimeSpan interval, TimeProvider timeProvider, Action<Exception>? onError)
     {
-        return Throttle(action, interval, TimeProvider.System);
+        ArgumentNullException.ThrowIfNull(action);
+        ArgumentNullException.ThrowIfNull(timeProvider);
+
+        var l = new object();
+        ITimer? timer = null;
+        var pending = false;
+        (T0, T1, T2, T3, T4, T5, T6, T7, T8) args = default;
+        return (T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8) =>
+        {
+            lock (l)
+            {
+                // Published under the lock: writing a multi-field tuple is not atomic, so an
+                // unsynchronized write let the scheduled invocation observe a torn combination of
+                // arguments coming from different calls.
+                args = (arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8);
+
+                // pending is only ever read and written under the lock, so the scheduling decision
+                // cannot be made against a stale value.
+                if (pending)
+                    return;
+
+                pending = true;
+
+                // A single timer is reused for every interval, instead of allocating a delay and a continuation each time
+                timer ??= timeProvider.CreateTimer(_ =>
+                {
+                    (T0, T1, T2, T3, T4, T5, T6, T7, T8) pendingArgs;
+                    lock (l)
+                    {
+                        pendingArgs = args;
+                    }
+
+                    try
+                    {
+                        action(pendingArgs.Item1, pendingArgs.Item2, pendingArgs.Item3, pendingArgs.Item4, pendingArgs.Item5, pendingArgs.Item6, pendingArgs.Item7, pendingArgs.Item8, pendingArgs.Item9);
+                    }
+                    catch (Exception ex) when (onError is not null)
+                    {
+                        onError(ex);
+                    }
+                    finally
+                    {
+                        // Reset in a finally so an action that throws does not stall the throttle forever
+                        lock (l)
+                        {
+                            pending = false;
+                        }
+                    }
+                }, state: null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+
+                timer.Change(interval, Timeout.InfiniteTimeSpan);
+            }
+        };
     }
 
     /// <summary>
@@ -835,6 +1166,32 @@ public static class ThrottleExtensions
     /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
     /// an invocation is pending are ignored except for updating the arguments.
     /// </summary>
+    /// <remarks>An exception thrown by <paramref name="action"/> is unhandled and terminates the process, as for any timer callback. Use the overload that takes an error handler to handle it.</remarks>
+    /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+    /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+    /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+    /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
+    /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
+    /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
+    /// <typeparam name="T6">The type of the parameter 6 of the action.</typeparam>
+    /// <typeparam name="T7">The type of the parameter 7 of the action.</typeparam>
+    /// <typeparam name="T8">The type of the parameter 8 of the action.</typeparam>
+    /// <typeparam name="T9">The type of the parameter 9 of the action.</typeparam>
+    /// <param name="action">The action to throttle.</param>
+    /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+    /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> is <see langword="null"/>.</exception>
+    public static Action<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>(this Action<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> action, TimeSpan interval)
+    {
+        return Throttle(action, interval, TimeProvider.System, onError: null);
+    }
+
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+    /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+    /// an invocation is pending are ignored except for updating the arguments.
+    /// </summary>
+    /// <remarks>An exception thrown by <paramref name="action"/> is unhandled and terminates the process, as for any timer callback. Use the overload that takes an error handler to handle it.</remarks>
     /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
     /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
     /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
@@ -852,11 +1209,41 @@ public static class ThrottleExtensions
     /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
     public static Action<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>(this Action<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> action, TimeSpan interval, TimeProvider timeProvider)
     {
+        return Throttle(action, interval, timeProvider, onError: null);
+    }
+
+    /// <summary>
+    /// Wraps the specified <paramref name="action"/> so that it is invoked at most once per <paramref name="interval"/>.
+    /// The first call schedules an invocation after the interval using the most recent arguments; calls made while
+    /// an invocation is pending are ignored except for updating the arguments.
+    /// </summary>
+    /// <typeparam name="T0">The type of the parameter 0 of the action.</typeparam>
+    /// <typeparam name="T1">The type of the parameter 1 of the action.</typeparam>
+    /// <typeparam name="T2">The type of the parameter 2 of the action.</typeparam>
+    /// <typeparam name="T3">The type of the parameter 3 of the action.</typeparam>
+    /// <typeparam name="T4">The type of the parameter 4 of the action.</typeparam>
+    /// <typeparam name="T5">The type of the parameter 5 of the action.</typeparam>
+    /// <typeparam name="T6">The type of the parameter 6 of the action.</typeparam>
+    /// <typeparam name="T7">The type of the parameter 7 of the action.</typeparam>
+    /// <typeparam name="T8">The type of the parameter 8 of the action.</typeparam>
+    /// <typeparam name="T9">The type of the parameter 9 of the action.</typeparam>
+    /// <param name="action">The action to throttle.</param>
+    /// <param name="interval">The minimum amount of time between invocations of <paramref name="action"/>.</param>
+    /// <param name="timeProvider">The <see cref="TimeProvider"/> used to measure the <paramref name="interval"/>.</param>
+    /// <param name="onError">
+    /// Called with the exception thrown by <paramref name="action"/>. When <see langword="null"/>, the exception is unhandled and
+    /// terminates the process, as for any timer callback. The throttle keeps working after the action throws.
+    /// </param>
+    /// <returns>A throttled delegate that wraps <paramref name="action"/>.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="action"/> or <paramref name="timeProvider"/> is <see langword="null"/>.</exception>
+    public static Action<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> Throttle<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>(this Action<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9> action, TimeSpan interval, TimeProvider timeProvider, Action<Exception>? onError)
+    {
         ArgumentNullException.ThrowIfNull(action);
         ArgumentNullException.ThrowIfNull(timeProvider);
 
-        Task? task = null;
         var l = new object();
+        ITimer? timer = null;
+        var pending = false;
         (T0, T1, T2, T3, T4, T5, T6, T7, T8, T9) args = default;
         return (T0 arg0, T1 arg1, T2 arg2, T3 arg3, T4 arg4, T5 arg5, T6 arg6, T7 arg7, T8 arg8, T9 arg9) =>
         {
@@ -867,12 +1254,15 @@ public static class ThrottleExtensions
                 // arguments coming from different calls.
                 args = (arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9);
 
-                // task is only ever read and written under the lock, so the scheduling decision
+                // pending is only ever read and written under the lock, so the scheduling decision
                 // cannot be made against a stale value.
-                if (task is not null)
+                if (pending)
                     return;
 
-                task = Task.Delay(interval, timeProvider).ContinueWith(_ =>
+                pending = true;
+
+                // A single timer is reused for every interval, instead of allocating a delay and a continuation each time
+                timer ??= timeProvider.CreateTimer(_ =>
                 {
                     (T0, T1, T2, T3, T4, T5, T6, T7, T8, T9) pendingArgs;
                     lock (l)
@@ -884,15 +1274,21 @@ public static class ThrottleExtensions
                     {
                         action(pendingArgs.Item1, pendingArgs.Item2, pendingArgs.Item3, pendingArgs.Item4, pendingArgs.Item5, pendingArgs.Item6, pendingArgs.Item7, pendingArgs.Item8, pendingArgs.Item9, pendingArgs.Item10);
                     }
+                    catch (Exception ex) when (onError is not null)
+                    {
+                        onError(ex);
+                    }
                     finally
                     {
                         // Reset in a finally so an action that throws does not stall the throttle forever
                         lock (l)
                         {
-                            task = null;
+                            pending = false;
                         }
                     }
-                }, TaskScheduler.Default);
+                }, state: null, Timeout.InfiniteTimeSpan, Timeout.InfiniteTimeSpan);
+
+                timer.Change(interval, Timeout.InfiniteTimeSpan);
             }
         };
     }

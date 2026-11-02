@@ -118,7 +118,10 @@ Assert.Equal([1, 2, 3, 4, 5, 6], processed.Order());
   (the number of processors by default). The items are not processed in order.
 - [ForEach](cref:Meziantou.Framework.EnumerableExtensions.ForEach) is the synchronous loop, with or without the index.
 
-[ToAsyncEnumerable](cref:Meziantou.Framework.EnumerableExtensions.ToAsyncEnumerable) turns an `IEnumerable<T>` into an `IAsyncEnumerable<T>`, for an API that only accepts the latter.
+To turn an `IEnumerable<T>` into an `IAsyncEnumerable<T>`, for an API that only accepts the latter, use
+`ToAsyncEnumerable` from `System.Linq.AsyncEnumerable`, included in .NET 10. `EnumerableExtensions.ToAsyncEnumerable` is
+obsolete and is not an extension method anymore, so it does not make `source.ToAsyncEnumerable()` ambiguous.
+[ToAsyncEnumerator](cref:Meziantou.Framework.EnumerableExtensions.ToAsyncEnumerator) turns an `IEnumerator<T>` into an `IAsyncEnumerator<T>`.
 
 ## Enumerate once
 
@@ -144,8 +147,14 @@ Assert.Equal(1, enumerationCount);
 
 - The cache is thread-safe by default. Pass `threadSafe: false` when only one thread enumerates it.
 - The source is read lazily: an enumeration that stops early reads only the items it needs.
-- Dispose the cached sequence to dispose the enumerator of the source. There is also an overload for
-  `IAsyncEnumerable<T>`, which returns an `IAsyncDisposable`.
+- Dispose the cached sequence to dispose the enumerator of the source. Enumerating it after that throws an
+  `ObjectDisposedException`. There is also an overload for `IAsyncEnumerable<T>`, which returns an `IAsyncDisposable`.
+- When the source throws, the enumeration that reads it gets the exception, and so do the next enumerations once they
+  have replayed the items read before the failure. The source is not enumerated again.
+- For an `IAsyncEnumerable<T>`, the source is shared by all the enumerations, so it does not receive the
+  `CancellationToken` of the enumeration that starts it: it receives a token cancelled when the cached sequence is
+  disposed. Cancelling an enumeration stops it from waiting for the source, and the next enumeration gets the item the
+  source was reading.
 
 To find code that enumerates a sequence twice, wrap it with [AsEnumerableOnce](cref:Meziantou.Framework.EnumerableExtensions.AsEnumerableOnce). A second enumeration throws:
 

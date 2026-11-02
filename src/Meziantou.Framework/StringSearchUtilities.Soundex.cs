@@ -265,19 +265,10 @@ public static partial class StringSearchUtilities
 
     private static void ChangePrefix(StringBuilder sb, string prefix, string replace)
     {
-        var i = 0;
-        while (i < sb.Length && i < prefix.Length)
+        if (sb.StartsWith(prefix))
         {
-            if (sb[i] != prefix[i])
-                return;
-
-            i++;
+            sb.Replace(prefix, replace, 0, prefix.Length);
         }
-
-        if (!sb.StartsWith(prefix))
-            return;
-
-        sb.Replace(prefix, replace, 0, 1);
     }
 
     private static string SoundexStringPrep(string s, IReadOnlyDictionary<string, char>? replace = null)

@@ -39,6 +39,7 @@ public sealed class BTree<T> : IReadOnlyCollection<T>
             newRoot.ChildCount = 1;
             SplitChild(newRoot, childIndex: 0);
             _root = newRoot;
+            _version++; // The tree changed even if the item already exists
         }
 
         if (!InsertNonFull(_root, item))
@@ -47,6 +48,35 @@ public sealed class BTree<T> : IReadOnlyCollection<T>
         Count++;
         _version++;
         return true;
+    }
+
+    public bool Remove(T item)
+    {
+        if (_root is null)
+            return false;
+
+        // Removing rebalances the nodes on the path to the item, even when the item does not exist
+        var removed = RemoveCore(_root, item);
+        if (_root.KeyCount is 0)
+        {
+            _root = _root.IsLeaf ? null : _root.GetChild(0);
+            _version++;
+        }
+
+        if (removed)
+        {
+            Count--;
+            _version++;
+        }
+
+        return removed;
+    }
+
+    public void Clear()
+    {
+        _root = null;
+        Count = 0;
+        _version++;
     }
 
     public bool Contains(T item)
@@ -96,6 +126,7 @@ public sealed class BTree<T> : IReadOnlyCollection<T>
         if (child.KeyCount == MaxKeysPerNode)
         {
             SplitChild(node, keyIndex);
+            _version++; // The tree changed even if the item already exists
             var compareResult = _comparer.Compare(item, node.GetKey(keyIndex));
             if (compareResult is 0)
                 return false;
@@ -111,6 +142,224 @@ public sealed class BTree<T> : IReadOnlyCollection<T>
             throw new InvalidOperationException("Invalid B-tree state");
 
         return InsertNonFull(nextChild, item);
+    }
+
+    private bool RemoveCore(Node node, T item)
+    {
+        while (true)
+        {
+            var keyIndex = FindKeyIndex(node, item, _comparer, out var found);
+            if (node.IsLeaf)
+            {
+                if (!found)
+                    return false;
+
+                RemoveKeyAt(node, keyIndex);
+                return true;
+            }
+
+            if (found)
+            {
+                var leftChild = GetRequiredChild(node, keyIndex);
+                var rightChild = GetRequiredChild(node, keyIndex + 1);
+                if (leftChild.KeyCount > MinKeysPerNode)
+                {
+                    // Replace the item with its predecessor, then remove the predecessor from the left subtree
+                    var predecessor = GetMaxKey(leftChild);
+                    node.SetKey(keyIndex, predecessor);
+                    item = predecessor;
+                    node = leftChild;
+                }
+                else if (rightChild.KeyCount > MinKeysPerNode)
+                {
+                    // Replace the item with its successor, then remove the successor from the right subtree
+                    var successor = GetMinKey(rightChild);
+                    node.SetKey(keyIndex, successor);
+                    item = successor;
+                    node = rightChild;
+                }
+                else
+                {
+                    // Both children have the minimum number of keys: merge them around the item, and remove it from the merged node
+                    MergeChildren(node, keyIndex);
+                    node = leftChild;
+                }
+
+                continue;
+            }
+
+            // Make sure the child has more than the minimum number of keys before going down, so removing a key from it is always possible
+            var child = GetRequiredChild(node, keyIndex);
+            if (child.KeyCount <= MinKeysPerNode)
+            {
+                if (keyIndex > 0 && GetRequiredChild(node, keyIndex - 1).KeyCount > MinKeysPerNode)
+                {
+                    BorrowFromLeftSibling(node, keyIndex);
+                }
+                else if (keyIndex < node.KeyCount && GetRequiredChild(node, keyIndex + 1).KeyCount > MinKeysPerNode)
+                {
+                    BorrowFromRightSibling(node, keyIndex);
+                }
+                else
+                {
+                    if (keyIndex == node.KeyCount)
+                    {
+                        keyIndex--;
+                    }
+
+                    MergeChildren(node, keyIndex);
+                }
+
+                child = GetRequiredChild(node, keyIndex);
+            }
+
+            node = child;
+        }
+    }
+
+    private static T GetMaxKey(Node node)
+    {
+        while (!node.IsLeaf)
+        {
+            node = GetRequiredChild(node, node.ChildCount - 1);
+        }
+
+        return node.GetKey(node.KeyCount - 1);
+    }
+
+    private static T GetMinKey(Node node)
+    {
+        while (!node.IsLeaf)
+        {
+            node = GetRequiredChild(node, 0);
+        }
+
+        return node.GetKey(0);
+    }
+
+    private void MergeChildren(Node parent, int keyIndex)
+    {
+        // Move the key of the parent and all the content of the right child into the left child
+        var leftChild = GetRequiredChild(parent, keyIndex);
+        var rightChild = GetRequiredChild(parent, keyIndex + 1);
+
+        var leftKeyCount = leftChild.KeyCount;
+        leftChild.SetKey(leftKeyCount, parent.GetKey(keyIndex));
+        for (var i = 0; i < rightChild.KeyCount; i++)
+        {
+            leftChild.SetKey(leftKeyCount + 1 + i, rightChild.GetKey(i));
+        }
+
+        if (!leftChild.IsLeaf)
+        {
+            var leftChildCount = leftChild.ChildCount;
+            for (var i = 0; i < rightChild.ChildCount; i++)
+            {
+                leftChild.SetChild(leftChildCount + i, rightChild.GetChild(i));
+            }
+
+            leftChild.ChildCount += rightChild.ChildCount;
+        }
+
+        leftChild.KeyCount += rightChild.KeyCount + 1;
+
+        RemoveKeyAt(parent, keyIndex);
+        RemoveChildAt(parent, keyIndex + 1);
+        _version++;
+    }
+
+    private void BorrowFromLeftSibling(Node parent, int childIndex)
+    {
+        // Rotate right: the last key of the left sibling goes to the parent, and the key of the parent goes to the child
+        var child = GetRequiredChild(parent, childIndex);
+        var sibling = GetRequiredChild(parent, childIndex - 1);
+
+        InsertKeyAt(child, 0, parent.GetKey(childIndex - 1));
+        parent.SetKey(childIndex - 1, sibling.GetKey(sibling.KeyCount - 1));
+        RemoveKeyAt(sibling, sibling.KeyCount - 1);
+
+        if (!child.IsLeaf)
+        {
+            InsertChildAt(child, 0, GetRequiredChild(sibling, sibling.ChildCount - 1));
+            RemoveChildAt(sibling, sibling.ChildCount - 1);
+        }
+
+        _version++;
+    }
+
+    private void BorrowFromRightSibling(Node parent, int childIndex)
+    {
+        // Rotate left: the first key of the right sibling goes to the parent, and the key of the parent goes to the child
+        var child = GetRequiredChild(parent, childIndex);
+        var sibling = GetRequiredChild(parent, childIndex + 1);
+
+        InsertKeyAt(child, child.KeyCount, parent.GetKey(childIndex));
+        parent.SetKey(childIndex, sibling.GetKey(0));
+        RemoveKeyAt(sibling, 0);
+
+        if (!child.IsLeaf)
+        {
+            InsertChildAt(child, child.ChildCount, GetRequiredChild(sibling, 0));
+            RemoveChildAt(sibling, 0);
+        }
+
+        _version++;
+    }
+
+    private static void InsertKeyAt(Node node, int index, T key)
+    {
+        for (var i = node.KeyCount; i > index; i--)
+        {
+            node.SetKey(i, node.GetKey(i - 1));
+        }
+
+        node.SetKey(index, key);
+        node.KeyCount++;
+    }
+
+    private static void RemoveKeyAt(Node node, int index)
+    {
+        for (var i = index; i < node.KeyCount - 1; i++)
+        {
+            node.SetKey(i, node.GetKey(i + 1));
+        }
+
+        node.KeyCount--;
+        if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+        {
+            node.SetKey(node.KeyCount, default!);
+        }
+    }
+
+    private static void InsertChildAt(Node node, int index, Node child)
+    {
+        for (var i = node.ChildCount; i > index; i--)
+        {
+            node.SetChild(i, node.GetChild(i - 1));
+        }
+
+        node.SetChild(index, child);
+        node.ChildCount++;
+    }
+
+    private static void RemoveChildAt(Node node, int index)
+    {
+        for (var i = index; i < node.ChildCount - 1; i++)
+        {
+            node.SetChild(i, node.GetChild(i + 1));
+        }
+
+        node.ChildCount--;
+        node.SetChild(node.ChildCount, null);
+    }
+
+    private static Node GetRequiredChild(Node node, int index)
+    {
+        var child = node.GetChild(index);
+        if (child is null)
+            throw new InvalidOperationException("Invalid B-tree state");
+
+        return child;
     }
 
     private static void SplitChild(Node parent, int childIndex)

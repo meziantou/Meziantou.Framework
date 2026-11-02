@@ -1,15 +1,15 @@
 using System.Collections;
-using System.Diagnostics;
 
 namespace Meziantou.Framework.Collections;
 
-public sealed class LimitList<T> : ICollection<T>, IReadOnlyList<T>
+/// <summary>A list that holds at most <see cref="Capacity"/> items, and drops the item at the other end when an item is added to a full list.</summary>
+public sealed class LimitList<T> : IList<T>, IReadOnlyList<T>
 {
-    private readonly LinkedList<T> _list = new();
+    private readonly CircularBuffer<T> _buffer;
 
-    public int Capacity { get; }
+    public int Capacity => _buffer.Capacity;
 
-    public int Count => _list.Count;
+    public int Count => _buffer.Count;
 
     bool ICollection<T>.IsReadOnly => false;
 
@@ -18,57 +18,23 @@ public sealed class LimitList<T> : ICollection<T>, IReadOnlyList<T>
         if (maximumCount <= 0)
             throw new ArgumentException("Maximum count must be greater than 0.", nameof(maximumCount));
 
-        Capacity = maximumCount;
+        _buffer = new CircularBuffer<T>(maximumCount) { AllowOverwrite = true };
     }
 
-    public void AddFirst(T value)
-    {
-        if (_list.Count == Capacity)
-        {
-            _list.RemoveLast();
-        }
+    /// <summary>Adds an item at the beginning of the list. When the list is full, the last item is removed.</summary>
+    public void AddFirst(T value) => _buffer.AddFirst(value);
 
-        _list.AddFirst(value);
-    }
+    /// <summary>Adds an item at the end of the list. When the list is full, the first item is removed.</summary>
+    public void AddLast(T value) => _buffer.AddLast(value);
 
-    public void AddLast(T value)
-    {
-        if (_list.Count == Capacity)
-        {
-            _list.RemoveFirst();
-        }
+    public void RemoveFirst() => _buffer.RemoveFirst();
 
-        _list.AddLast(value);
-    }
+    public void RemoveLast() => _buffer.RemoveLast();
 
-    public void RemoveFirst()
-    {
-        _list.RemoveFirst();
-    }
-
-    public void RemoveLast()
-    {
-        _list.RemoveLast();
-    }
-
+    /// <summary>Gets or sets the item at the specified index. Setting the item at index <see cref="Count"/> adds the item at the end of the list.</summary>
     public T this[int index]
     {
-        get
-        {
-            ArgumentOutOfRangeException.ThrowIfNegative(index);
-            ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, Count);
-
-            var i = 0;
-            foreach (var item in _list)
-            {
-                if (i == index)
-                    return item;
-
-                i++;
-            }
-
-            throw new UnreachableException();
-        }
+        get => _buffer[index];
         set
         {
             ArgumentOutOfRangeException.ThrowIfNegative(index);
@@ -81,93 +47,77 @@ public sealed class LimitList<T> : ICollection<T>, IReadOnlyList<T>
                 return;
             }
 
-            var i = 0;
-            var node = _list.First;
-            while (node is not null)
-            {
-                if (i == index)
-                {
-                    node.Value = value;
-                    return;
-                }
-
-                node = node.Next;
-                i++;
-            }
-
-            throw new UnreachableException();
+            _buffer.SetItem(index, value);
         }
     }
 
-    public void Clear()
-    {
-        _list.Clear();
-    }
+    public void Clear() => _buffer.Clear();
 
-    public bool Contains(T item)
-    {
-        return _list.Contains(item);
-    }
+    public bool Contains(T item) => _buffer.Contains(item);
 
-    public void CopyTo(T[] array, int arrayIndex)
-    {
-        _list.CopyTo(array, arrayIndex);
-    }
+    public void CopyTo(T[] array, int arrayIndex) => _buffer.CopyTo(array, arrayIndex);
 
     public bool Remove(T item)
     {
-        return _list.Remove(item);
+        var index = IndexOf(item);
+        if (index < 0)
+            return false;
+
+        _buffer.RemoveAt(index);
+        return true;
     }
 
-    public int IndexOf(T item)
-    {
-        var equalityComparer = EqualityComparer<T>.Default;
-        var index = 0;
-        foreach (var listItem in _list)
-        {
-            if (equalityComparer.Equals(listItem, item))
-                return index;
+    public int IndexOf(T item) => _buffer.IndexOf(item);
 
-            index++;
-        }
-
-        return -1;
-    }
-
-    public void RemoveAt(int index)
+    /// <summary>Inserts an item at the specified index. When the list is full, inserting at index <see cref="Count"/> removes the first item, and inserting at any other index removes the last item.</summary>
+    public void Insert(int index, T item)
     {
         ArgumentOutOfRangeException.ThrowIfNegative(index);
-        ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(index, Count);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(index, Count);
 
-        var node = _list.First;
-        var i = 0;
-        while (node is not null)
+        if (index == Count)
         {
-            if (i == index)
-            {
-                _list.Remove(node);
-                return;
-            }
-
-            node = node.Next;
-            i++;
+            AddLast(item);
+            return;
         }
 
-        throw new UnreachableException();
+        if (Count == Capacity)
+        {
+            _buffer.RemoveLast();
+        }
+
+        _buffer.Insert(index, item);
     }
 
-    void ICollection<T>.Add(T item)
-    {
-        AddLast(item);
-    }
+    public void RemoveAt(int index) => _buffer.RemoveAt(index);
 
-    public IEnumerator<T> GetEnumerator()
-    {
-        return _list.GetEnumerator();
-    }
+    void ICollection<T>.Add(T item) => AddLast(item);
 
-    IEnumerator IEnumerable.GetEnumerator()
+    public Enumerator GetEnumerator() => new(_buffer.GetEnumerator());
+
+    IEnumerator<T> IEnumerable<T>.GetEnumerator() => GetEnumerator();
+
+    IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
+
+    public struct Enumerator : IEnumerator<T>
     {
-        return GetEnumerator();
+        private CircularBuffer<T>.Enumerator _enumerator;
+
+        internal Enumerator(CircularBuffer<T>.Enumerator enumerator)
+        {
+            _enumerator = enumerator;
+        }
+
+        public readonly T Current => _enumerator.Current;
+
+        readonly object? IEnumerator.Current => ((IEnumerator)_enumerator).Current;
+
+        public bool MoveNext() => _enumerator.MoveNext();
+
+        void IEnumerator.Reset() => _enumerator.Reset();
+
+        public readonly void Dispose()
+        {
+        }
     }
 }

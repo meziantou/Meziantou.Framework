@@ -225,6 +225,26 @@ The function is called for each match, one after the other: the next match waits
 The matches are processed in the order the regex finds them, like `Regex.Replace`: from right to left when the regex uses
 `RegexOptions.RightToLeft`.
 
+Like `Regex.Replace`, overloads limit the number of replacements (`count`, -1 for all of them) and set the position
+where the search starts (`startat`). They also take a `CancellationToken`, checked before each match. The overloads
+whose function returns a `ValueTask<string>` pass the token to the function:
+
+<!-- ref:../../tests/Meziantou.Framework.Tests/RegexExtensionsTests.cs;region=RegexExtensions_ReplaceAsync_Count;format=md-fenced-code-block;dedent=true -->
+```csharp
+var regex = new Regex(@"[0-9]+", RegexOptions.None, TimeSpan.FromSeconds(1));
+using var cts = new CancellationTokenSource(TimeSpan.FromMinutes(1));
+
+// Replace the first 2 matches, searching from the 2nd character. The callback receives the token.
+var result = await regex.ReplaceAsync("1 22 333 4444", async (match, cancellationToken) =>
+{
+    await Task.Delay(1, cancellationToken); // For instance, call a service
+    return $"<{match.Value}>";
+}, count: 2, startat: 1, cts.Token);
+
+Assert.Equal("1 <22> <333> 4444", result);
+```
+<!-- endref -->
+
 ## Runes of UTF-8 bytes
 
 [EnumerateRunesFromUtf8](cref:Meziantou.Framework.Text.Utf8Extensions.EnumerateRunesFromUtf8), in the [Meziantou.Framework.Text](cref:Meziantou.Framework.Text) namespace, decodes UTF-8 bytes into `Rune` values without

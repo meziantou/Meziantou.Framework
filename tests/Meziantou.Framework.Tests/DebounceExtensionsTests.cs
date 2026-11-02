@@ -89,6 +89,41 @@ public sealed class DebounceExtensionsTests
         Assert.Equal(2, Volatile.Read(ref callCount));
     }
 
+    [Fact]
+    public void Debounce_ErrorHandlerReceivesTheException()
+    {
+        var timeProvider = new FakeTimeProvider();
+        var callCount = 0;
+        var errors = new List<Exception>();
+        var debounced = ((Action)(() =>
+        {
+            callCount++;
+            throw new InvalidOperationException("boom");
+        })).Debounce(TimeSpan.FromSeconds(1), timeProvider, errors.Add);
+
+        // FakeTimeProvider invokes the timer callback synchronously from Advance
+        debounced();
+        timeProvider.Advance(TimeSpan.FromSeconds(1));
+        debounced();
+        timeProvider.Advance(TimeSpan.FromSeconds(1));
+
+        Assert.Equal(2, callCount);
+        Assert.HasCount(2, errors);
+        Assert.All(errors, error => Assert.Equal("boom", error.Message));
+    }
+
+    [Fact]
+    public void Debounce_WithoutErrorHandler_ExceptionIsUnhandled()
+    {
+        var timeProvider = new FakeTimeProvider();
+        var debounced = ((Action)(() => throw new InvalidOperationException("boom"))).Debounce(TimeSpan.FromSeconds(1), timeProvider);
+
+        debounced();
+
+        // The exception propagates to the timer callback: with FakeTimeProvider, to Advance
+        Assert.Equal("boom", Assert.Throws<InvalidOperationException>(() => timeProvider.Advance(TimeSpan.FromSeconds(1))).Message);
+    }
+
     private sealed class CountingTimeProvider(TimeProvider inner) : TimeProvider
     {
         private int _timersCreated;

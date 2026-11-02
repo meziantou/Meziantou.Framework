@@ -49,6 +49,52 @@ public class ExecutableFinderTests
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetFullExecutablePathTests_Windows_QuotedPathEntry()
+    {
+        var root = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));
+        var dir = Path.Combine(root, "a;b");
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var fileName = $"meziantou_{Guid.NewGuid():N}";
+            var filePath = Path.Combine(dir, fileName + ".cmd");
+            File.WriteAllBytes(filePath, []);
+
+            var result = ExecutableFinder.GetFullExecutablePath(fileName, workingDirectory: null, pathVariable: $";;\"{dir}\";", DefaultPathExt);
+
+            Assert.Equal(filePath, result, ignoreCase: true);
+        }
+        finally
+        {
+            Directory.Delete(root, recursive: true);
+        }
+    }
+
+    [Theory]
+    [InlineData(null, new string[0])]
+    [InlineData("", new string[0])]
+    [InlineData(@"C:\Tools;C:\Bin", new[] { @"C:\Tools", @"C:\Bin" })]
+    [InlineData(@";C:\Tools;;C:\Bin;", new[] { @"C:\Tools", @"C:\Bin" })]
+    [InlineData(@"""C:\Program Files\Foo"";C:\Bin", new[] { @"C:\Program Files\Foo", @"C:\Bin" })]
+    [InlineData(@"""C:\Tools;Bin"";C:\Other", new[] { @"C:\Tools;Bin", @"C:\Other" })]
+    [InlineData(@"C:\""Program Files""\Foo", new[] { @"C:\Program Files\Foo" })]
+    [InlineData(@""""";C:\Tools", new[] { @"C:\Tools" })]
+    public void SplitPathVariable_Windows(string? pathVariable, string[] expected)
+    {
+        Assert.Equal(expected, ExecutableFinder.SplitPathVariable(pathVariable, isWindows: true));
+    }
+
+    [Theory]
+    [InlineData(null, new string[0])]
+    [InlineData("/usr/bin:/bin", new[] { "/usr/bin", "/bin" })]
+    [InlineData("/usr/bin::/bin", new[] { "/usr/bin", "", "/bin" })]
+    [InlineData("\"/usr/bin\"", new[] { "\"/usr/bin\"" })]
+    public void SplitPathVariable_Unix(string? pathVariable, string[] expected)
+    {
+        Assert.Equal(expected, ExecutableFinder.SplitPathVariable(pathVariable, isWindows: false));
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void GetFullExecutablePathTests_Windows_ExtensionlessFileOnly_ReturnsNull()
     {
         var dir = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N"));

@@ -66,10 +66,21 @@ public sealed class RestrictedStreamTests
     public void Length_ReturnsUnderlyingStreamLength()
     {
         using var baseStream = new MemoryStream([1, 2, 3, 4, 5]);
-        var options = new RestrictedStreamOptions();
+        var options = new RestrictedStreamOptions { AllowSeeking = true };
         using var restrictedStream = new RestrictedStream(baseStream, options);
 
         Assert.Equal(5, restrictedStream.Length);
+    }
+
+    [Fact]
+    public void Length_WhenSeekingNotAllowed_ThrowsNotSupportedException()
+    {
+        using var baseStream = new MemoryStream([1, 2, 3, 4, 5]);
+        var options = new RestrictedStreamOptions { AllowSeeking = false };
+        using var restrictedStream = new RestrictedStream(baseStream, options);
+
+        var exception = Assert.Throws<NotSupportedException>(() => restrictedStream.Length);
+        Assert.Equal("Seeking is not allowed on this stream.", exception.Message);
     }
 
     [Fact]
@@ -77,10 +88,21 @@ public sealed class RestrictedStreamTests
     {
         using var baseStream = new MemoryStream([1, 2, 3, 4, 5]);
         baseStream.Position = 3;
-        var options = new RestrictedStreamOptions();
+        var options = new RestrictedStreamOptions { AllowSeeking = true };
         using var restrictedStream = new RestrictedStream(baseStream, options);
 
         Assert.Equal(3, restrictedStream.Position);
+    }
+
+    [Fact]
+    public void Position_Get_WhenSeekingNotAllowed_ThrowsNotSupportedException()
+    {
+        using var baseStream = new MemoryStream([1, 2, 3, 4, 5]);
+        var options = new RestrictedStreamOptions { AllowSeeking = false };
+        using var restrictedStream = new RestrictedStream(baseStream, options);
+
+        var exception = Assert.Throws<NotSupportedException>(() => restrictedStream.Position);
+        Assert.Equal("Seeking is not allowed on this stream.", exception.Message);
     }
 
     [Fact]
@@ -129,14 +151,26 @@ public sealed class RestrictedStreamTests
     }
 
     [Fact]
-    public void Flush_WhenWritingNotAllowed_ThrowsNotSupportedException()
+    public void Flush_WhenWritingNotAllowed_DoesNothing()
     {
         using var baseStream = new MemoryStream();
         var options = new RestrictedStreamOptions { AllowSynchronousCalls = true, AllowWriting = false };
         using var restrictedStream = new RestrictedStream(baseStream, options);
 
-        var exception = Assert.Throws<NotSupportedException>(() => restrictedStream.Flush());
-        Assert.Equal("Writing is not allowed on this stream.", exception.Message);
+        restrictedStream.Flush();
+    }
+
+    [Fact]
+    public void Flush_WhenWrappedInBufferedStreamAndWritingNotAllowed_ReadsData()
+    {
+        using var baseStream = new MemoryStream([1, 2, 3, 4, 5]);
+        var options = new RestrictedStreamOptions { AllowSynchronousCalls = true, AllowReading = true };
+        using var bufferedStream = new BufferedStream(new RestrictedStream(baseStream, options));
+        var buffer = new byte[5];
+
+        Assert.Equal(5, bufferedStream.TryReadAll(buffer));
+        bufferedStream.Flush();
+        Assert.Equal([1, 2, 3, 4, 5], buffer);
     }
 
     [Fact]
@@ -441,7 +475,7 @@ public sealed class RestrictedStreamTests
     public void SetLength_WhenWritingAllowed_SetsLength()
     {
         using var baseStream = new MemoryStream();
-        var options = new RestrictedStreamOptions { AllowWriting = true };
+        var options = new RestrictedStreamOptions { AllowSynchronousCalls = true, AllowWriting = true, AllowSeeking = true };
         using var restrictedStream = new RestrictedStream(baseStream, options);
 
         restrictedStream.SetLength(10);
@@ -454,11 +488,34 @@ public sealed class RestrictedStreamTests
     public void SetLength_WhenWritingNotAllowed_ThrowsNotSupportedException()
     {
         using var baseStream = new MemoryStream();
-        var options = new RestrictedStreamOptions { AllowWriting = false };
+        var options = new RestrictedStreamOptions { AllowSynchronousCalls = true, AllowWriting = false, AllowSeeking = true };
         using var restrictedStream = new RestrictedStream(baseStream, options);
 
         var exception = Assert.Throws<NotSupportedException>(() => restrictedStream.SetLength(10));
         Assert.Equal("Writing is not allowed on this stream.", exception.Message);
+    }
+
+    [Fact]
+    public void SetLength_WhenSeekingNotAllowed_ThrowsNotSupportedException()
+    {
+        using var baseStream = new MemoryStream();
+        var options = new RestrictedStreamOptions { AllowSynchronousCalls = true, AllowWriting = true, AllowSeeking = false };
+        using var restrictedStream = new RestrictedStream(baseStream, options);
+
+        var exception = Assert.Throws<NotSupportedException>(() => restrictedStream.SetLength(10));
+        Assert.Equal("Seeking is not allowed on this stream.", exception.Message);
+        Assert.Equal(0, baseStream.Length);
+    }
+
+    [Fact]
+    public void SetLength_WhenSynchronousNotAllowed_ThrowsNotSupportedException()
+    {
+        using var baseStream = new MemoryStream();
+        var options = new RestrictedStreamOptions { AllowAsynchronousCalls = true, AllowWriting = true, AllowSeeking = true };
+        using var restrictedStream = new RestrictedStream(baseStream, options);
+
+        var exception = Assert.Throws<NotSupportedException>(() => restrictedStream.SetLength(10));
+        Assert.Equal("Synchronous operations are not allowed on this stream.", exception.Message);
     }
 
     [Fact]
@@ -542,6 +599,16 @@ public sealed class RestrictedStreamTests
 
         var exception = await Assert.ThrowsAsync<NotSupportedException>(() => restrictedStream.FlushAsync());
         Assert.Equal("Asynchronous operations are not allowed on this stream.", exception.Message);
+    }
+
+    [Fact]
+    public async Task FlushAsync_WhenWritingNotAllowed_DoesNothing()
+    {
+        using var baseStream = new MemoryStream();
+        var options = new RestrictedStreamOptions { AllowAsynchronousCalls = true, AllowWriting = false };
+        using var restrictedStream = new RestrictedStream(baseStream, options);
+
+        await restrictedStream.FlushAsync();
     }
 
     [Fact]

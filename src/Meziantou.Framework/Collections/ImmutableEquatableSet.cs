@@ -7,13 +7,14 @@ namespace Meziantou.Framework.Collections;
 [DebuggerDisplay("Count = {Count}")]
 [DebuggerTypeProxy(typeof(ImmutableEquatableSet<>.DebugView))]
 [CollectionBuilder(typeof(ImmutableEquatableSet), nameof(ImmutableEquatableSet.Create))]
-public sealed class ImmutableEquatableSet<T> : IEquatable<ImmutableEquatableSet<T>>, ISet<T>, IReadOnlyCollection<T>, ICollection
+public sealed class ImmutableEquatableSet<T> : IEquatable<ImmutableEquatableSet<T>>, ISet<T>, IReadOnlySet<T>, IReadOnlyCollection<T>, ICollection
     where T : IEquatable<T>
 {
     [SuppressMessage("Design", "CA1000:Do not declare static members on generic types")]
     public static ImmutableEquatableSet<T> Empty { get; } = new([]);
 
     private readonly HashSet<T> _values;
+    private int _hashCode;
 
     internal ImmutableEquatableSet(HashSet<T> values)
     {
@@ -49,7 +50,31 @@ public sealed class ImmutableEquatableSet<T> : IEquatable<ImmutableEquatableSet<
     }
 
     public override bool Equals([NotNullWhen(true)] object? obj) => obj is ImmutableEquatableSet<T> other && Equals(other);
-    public override int GetHashCode() => _values.Count;
+
+    public override int GetHashCode()
+    {
+        // The instance is immutable, so the hash code is computed once. 0 means "not computed yet".
+        var hashCode = _hashCode;
+        if (hashCode is 0)
+        {
+            // Sum the hash codes of the items, so the result does not depend on the enumeration order
+            var sum = 0;
+            foreach (var value in _values)
+            {
+                sum = unchecked(sum + EqualityComparer<T>.Default.GetHashCode(value!));
+            }
+
+            hashCode = HashCode.Combine(_values.Count, sum);
+            if (hashCode is 0)
+            {
+                hashCode = 1;
+            }
+
+            _hashCode = hashCode;
+        }
+
+        return hashCode;
+    }
 
     public static bool operator ==(ImmutableEquatableSet<T>? left, ImmutableEquatableSet<T>? right)
     {
@@ -85,15 +110,21 @@ public sealed class ImmutableEquatableSet<T> : IEquatable<ImmutableEquatableSet<
     bool ISet<T>.IsProperSupersetOf(IEnumerable<T> other) => _values.IsProperSupersetOf(other);
     bool ISet<T>.Overlaps(IEnumerable<T> other) => _values.Overlaps(other);
     bool ISet<T>.SetEquals(IEnumerable<T> other) => _values.SetEquals(other);
+    bool IReadOnlySet<T>.IsSubsetOf(IEnumerable<T> other) => _values.IsSubsetOf(other);
+    bool IReadOnlySet<T>.IsSupersetOf(IEnumerable<T> other) => _values.IsSupersetOf(other);
+    bool IReadOnlySet<T>.IsProperSubsetOf(IEnumerable<T> other) => _values.IsProperSubsetOf(other);
+    bool IReadOnlySet<T>.IsProperSupersetOf(IEnumerable<T> other) => _values.IsProperSupersetOf(other);
+    bool IReadOnlySet<T>.Overlaps(IEnumerable<T> other) => _values.Overlaps(other);
+    bool IReadOnlySet<T>.SetEquals(IEnumerable<T> other) => _values.SetEquals(other);
 
-    void ICollection<T>.Add(T item) => throw new InvalidOperationException();
-    bool ISet<T>.Add(T item) => throw new InvalidOperationException();
-    void ISet<T>.UnionWith(IEnumerable<T> other) => throw new InvalidOperationException();
-    void ISet<T>.IntersectWith(IEnumerable<T> other) => throw new InvalidOperationException();
-    void ISet<T>.ExceptWith(IEnumerable<T> other) => throw new InvalidOperationException();
-    void ISet<T>.SymmetricExceptWith(IEnumerable<T> other) => throw new InvalidOperationException();
-    bool ICollection<T>.Remove(T item) => throw new InvalidOperationException();
-    void ICollection<T>.Clear() => throw new InvalidOperationException();
+    void ICollection<T>.Add(T item) => throw new NotSupportedException();
+    bool ISet<T>.Add(T item) => throw new NotSupportedException();
+    void ISet<T>.UnionWith(IEnumerable<T> other) => throw new NotSupportedException();
+    void ISet<T>.IntersectWith(IEnumerable<T> other) => throw new NotSupportedException();
+    void ISet<T>.ExceptWith(IEnumerable<T> other) => throw new NotSupportedException();
+    void ISet<T>.SymmetricExceptWith(IEnumerable<T> other) => throw new NotSupportedException();
+    bool ICollection<T>.Remove(T item) => throw new NotSupportedException();
+    void ICollection<T>.Clear() => throw new NotSupportedException();
 
     private sealed class DebugView(ImmutableEquatableSet<T> set)
     {

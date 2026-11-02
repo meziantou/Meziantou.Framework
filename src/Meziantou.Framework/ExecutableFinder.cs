@@ -26,9 +26,8 @@ static class ExecutableFinder
 
     internal static string? GetFullExecutablePath(string executableName, string? workingDirectory, string? pathVariable, string? pathExtVariable)
     {
-        var separator = Path.PathSeparator;
         var extensions = OperatingSystem.IsWindows() ? GetWindowsExecutableExtensions(pathExtVariable) : [];
-        var path = (pathVariable ?? "").Split(separator);
+        var path = SplitPathVariable(pathVariable, OperatingSystem.IsWindows());
 
         IEnumerable<string> searchPaths = path;
         if (workingDirectory is not null)
@@ -83,6 +82,51 @@ static class ExecutableFinder
 
             var mode = File.GetUnixFileMode(path);
             return (mode & (UnixFileMode.UserExecute | UnixFileMode.GroupExecute | UnixFileMode.OtherExecute)) != UnixFileMode.None;
+        }
+    }
+
+    internal static List<string> SplitPathVariable(string? pathVariable, bool isWindows)
+    {
+        var result = new List<string>();
+        if (string.IsNullOrEmpty(pathVariable))
+            return result;
+
+        if (!isWindows)
+        {
+            // POSIX treats an empty entry as the current directory, which Path.Combine resolves the same way
+            result.AddRange(pathVariable.Split(':'));
+            return result;
+        }
+
+        // cmd.exe removes the quotes around an entry, and a quoted entry can contain ';'. Empty entries are ignored.
+        var entry = new StringBuilder();
+        var inQuotes = false;
+        foreach (var c in pathVariable)
+        {
+            if (c is '"')
+            {
+                inQuotes = !inQuotes;
+            }
+            else if (c is ';' && !inQuotes)
+            {
+                AddEntry(result, entry);
+            }
+            else
+            {
+                entry.Append(c);
+            }
+        }
+
+        AddEntry(result, entry);
+        return result;
+
+        static void AddEntry(List<string> result, StringBuilder entry)
+        {
+            if (entry.Length > 0)
+            {
+                result.Add(entry.ToString());
+                entry.Clear();
+            }
         }
     }
 }

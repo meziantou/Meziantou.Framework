@@ -67,6 +67,7 @@ namespace Meziantou.Framework.JavaScriptEngine
         public void EnqueueJob(System.Action job, Meziantou.Framework.JavaScriptEngine.JsRealm? realm = null) { }
         public Meziantou.Framework.JavaScriptEngine.JsEngineScope Enter() => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsScriptContextScope EnterActiveScriptOrModule(Meziantou.Framework.JavaScriptEngine.JsScriptOrModule? scriptOrModule) => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsExecutionScope EnterExecutionScope(Meziantou.Framework.JavaScriptEngine.JsExecutionLimits? limits = null) => throw null;
         public System.IDisposable EnterNestedJobQueue() => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsScriptOrModule? GetActiveScriptOrModule() => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsSourceLocation? GetCurrentLocation() => throw null;
@@ -84,6 +85,7 @@ namespace Meziantou.Framework.JavaScriptEngine
 
     public sealed class JsEngineOptions
     {
+        public bool CanBlock { get => throw null; set { } }
         public System.Threading.CancellationToken CancellationToken { get => throw null; set { } }
         public string DefaultLocale { get => throw null; set { } }
         public Meziantou.Framework.JavaScriptEngine.JsHost? Host { get => throw null; set { } }
@@ -126,6 +128,20 @@ namespace Meziantou.Framework.JavaScriptEngine
         public JsException(string message) { }
         public JsException(Meziantou.Framework.JavaScriptEngine.JsValue value, Meziantou.Framework.JavaScriptEngine.JsSourceLocation? location) { }
         public JsException(string message, System.Exception innerException) { }
+    }
+
+    public sealed class JsExecutionLimits
+    {
+        public System.Threading.CancellationToken CancellationToken { get => throw null; init { } }
+        public long? MaxStatements { get => throw null; init { } }
+        public long? MemoryLimit { get => throw null; init { } }
+        public System.TimeSpan? Timeout { get => throw null; init { } }
+    }
+
+    public sealed class JsExecutionScope : System.IDisposable
+    {
+        public Meziantou.Framework.JavaScriptEngine.JsExecutionLimits Limits { get => throw null; }
+        public void Dispose() { }
     }
 
     public abstract class JsFunction : Meziantou.Framework.JavaScriptEngine.JsObject

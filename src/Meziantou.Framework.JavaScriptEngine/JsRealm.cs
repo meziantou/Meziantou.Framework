@@ -68,7 +68,8 @@ public sealed partial class JsRealm
     /// <exception cref="JsException">The script threw an exception (a SyntaxError for an invalid script).</exception>
     public JsValue Execute(string code, string? url = null)
     {
-        using var scope = Engine.Enter();
+        // The parsing and the compilation are part of the entry: the limits apply to them
+        using var entry = Engine.EnterHostEntry();
         var source = new Text.SourceText(code, url);
         return Run(source, Compile(source), hostDefined: null, mutedErrors: false);
     }
@@ -81,7 +82,7 @@ public sealed partial class JsRealm
     public JsValue Execute(JsPreparedScript script, object? hostDefined = null, bool mutedErrors = false)
     {
         ArgumentNullException.ThrowIfNull(script);
-        using var scope = Engine.Enter();
+        using var entry = Engine.EnterHostEntry();
         return Run(script.Source, script.Template, hostDefined, mutedErrors);
     }
 
@@ -136,7 +137,7 @@ public sealed partial class JsRealm
     public JsSourceTextModule ParseModule(string code, string? url, object? hostDefined, int lineOffset, int columnOffset)
     {
         ArgumentNullException.ThrowIfNull(code);
-        using var scope = Engine.Enter();
+        using var entry = Engine.EnterHostEntry();
         var previousRealm = Engine.CurrentRealm;
         Engine.CurrentRealm = this;
         try

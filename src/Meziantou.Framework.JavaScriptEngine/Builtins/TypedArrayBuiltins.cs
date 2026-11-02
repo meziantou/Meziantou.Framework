@@ -1183,11 +1183,18 @@ internal static class TypedArrayBuiltins
         var elementSize = BinaryDataOperations.GetElementSize(type);
         var count = bytes.Length / elementSize;
         var littleEndian = BinaryDataOperations.IsLittleEndian;
+        if (elementSize > 1)
+        {
+            // The values are sorted in an array of 8-byte values, read and written back in two passes
+            JsEngine.EnsureCurrentCanAllocate((long)count * sizeof(long));
+            JsEngine.CountCurrentWork(2L * count);
+        }
+
         switch (type)
         {
             case TypedArrayElementType.Uint8:
             case TypedArrayElementType.Uint8Clamped:
-                bytes.Sort();
+                CountingSort(bytes);
                 break;
             case TypedArrayElementType.BigUint64:
                 {
@@ -1197,7 +1204,7 @@ internal static class TypedArrayBuiltins
                         values[i] = littleEndian ? BinaryPrimitives.ReadUInt64LittleEndian(bytes[(i * 8)..]) : BinaryPrimitives.ReadUInt64BigEndian(bytes[(i * 8)..]);
                     }
 
-                    Array.Sort(values);
+                    SortInterruptibly(values, Comparer<ulong>.Default);
                     for (var i = 0; i < count; i++)
                     {
                         if (littleEndian)
@@ -1223,7 +1230,7 @@ internal static class TypedArrayBuiltins
                         values[i] = BinaryDataOperations.RawBytesToNumeric(type, bytes[(i * elementSize)..], littleEndian).NumberValue;
                     }
 
-                    Array.Sort(values, CompareNumbers);
+                    SortInterruptibly(values, new NumberComparer());
                     for (var i = 0; i < count; i++)
                     {
                         BinaryDataOperations.NumberToRawBytes(type, values[i], bytes[(i * elementSize)..], littleEndian);
@@ -1243,7 +1250,7 @@ internal static class TypedArrayBuiltins
                             : (long)BinaryDataOperations.RawBytesToNumeric(type, bytes[(i * elementSize)..], littleEndian).NumberValue;
                     }
 
-                    Array.Sort(values);
+                    SortInterruptibly(values, Comparer<long>.Default);
                     for (var i = 0; i < count; i++)
                     {
                         if (type == TypedArrayElementType.BigInt64)
@@ -1266,6 +1273,87 @@ internal static class TypedArrayBuiltins
                     break;
                 }
         }
+    }
+
+    // The default sort works on runs of SortRunLength elements, so that the limits are checked while a large array is sorted
+    private const int SortRunLength = 1 << 14;
+
+    /// <summary>Sorts bytes by counting them: linear, and the limits are checked while a large array is counted.</summary>
+    private static void CountingSort(Span<byte> bytes)
+    {
+        Span<int> counts = stackalloc int[256];
+        counts.Clear();
+        for (var start = 0; start < bytes.Length; start += SortRunLength)
+        {
+            foreach (var value in bytes.Slice(start, Math.Min(SortRunLength, bytes.Length - start)))
+            {
+                counts[value]++;
+            }
+
+            JsEngine.CountCurrentWork(SortRunLength);
+        }
+
+        var index = 0;
+        for (var value = 0; value < counts.Length; value++)
+        {
+            bytes.Slice(index, counts[value]).Fill((byte)value);
+            index += counts[value];
+        }
+    }
+
+    /// <summary>
+    /// Sorts the values: the runs of <see cref="SortRunLength"/> elements are sorted, then merged, so that the limits of
+    /// the running entry are checked while a large array is sorted.
+    /// </summary>
+    private static void SortInterruptibly<T, TComparer>(T[] values, TComparer comparer)
+        where TComparer : IComparer<T>
+    {
+        if (values.Length <= SortRunLength)
+        {
+            values.AsSpan().Sort(comparer);
+            return;
+        }
+
+        for (var start = 0; start < values.Length; start += SortRunLength)
+        {
+            var length = Math.Min(SortRunLength, values.Length - start);
+            values.AsSpan(start, length).Sort(comparer);
+            JsEngine.CountCurrentWork(length * 14L);
+        }
+
+        JsEngine.EnsureCurrentCanAllocate((long)values.Length * System.Runtime.CompilerServices.Unsafe.SizeOf<T>());
+        var source = values;
+        var buffer = new T[values.Length];
+        for (var width = SortRunLength; width < values.Length; width *= 2)
+        {
+            for (var start = 0; start < values.Length; start += 2 * width)
+            {
+                var middle = Math.Min(start + width, values.Length);
+                var end = Math.Min(start + (2 * width), values.Length);
+                int left = start, right = middle, output = start;
+                while (left < middle && right < end)
+                {
+                    buffer[output++] = comparer.Compare(source[right], source[left]) < 0 ? source[right++] : source[left++];
+                }
+
+                Array.Copy(source, left, buffer, output, middle - left);
+                output += middle - left;
+                Array.Copy(source, right, buffer, output, end - right);
+                JsEngine.CountCurrentWork(end - start);
+            }
+
+            (source, buffer) = (buffer, source);
+        }
+
+        if (!ReferenceEquals(source, values))
+        {
+            source.CopyTo(values, 0);
+        }
+    }
+
+    private readonly struct NumberComparer : IComparer<double>
+    {
+        public int Compare(double x, double y) => CompareNumbers(x, y);
     }
 
     /// <summary>The order of the numbers of CompareTypedArrayElements: -0 before +0, NaN last.</summary>

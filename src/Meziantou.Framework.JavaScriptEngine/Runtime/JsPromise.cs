@@ -314,14 +314,19 @@ internal sealed class JsPromise : JsObject
         var resolvingFunctions = new PromiseResolvingFunctions(jobState.Promise, engine.CurrentRealm!);
         var resolve = resolvingFunctions.ResolveFunction;
         var reject = resolvingFunctions.RejectFunction;
+        // The promise is rejected after the catch block (see the Promise constructor)
+        JsValue error;
         try
         {
             engine.CallJobCallback(jobState.Then, thenable, [resolve, reject]);
+            return;
         }
         catch (JsException exception)
         {
-            reject.Call(JsValue.Undefined, [exception.Value]);
+            error = exception.Value;
         }
+
+        reject.Call(JsValue.Undefined, [error]);
     }
 
     private sealed class ResolveThenableJobState(JsPromise promise, JsJobCallback then)

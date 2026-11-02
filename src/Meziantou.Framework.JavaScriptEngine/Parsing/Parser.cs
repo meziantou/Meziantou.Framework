@@ -166,6 +166,22 @@ internal sealed partial class Parser
     {
         _prevEnd = _token.End;
         _token = _lexer.NextToken();
+        if (++_tokenCount >= _nextInterruptCheck)
+        {
+            CheckInterrupt();
+        }
+    }
+
+    // The parsing of a long source checks the limits of the running entry every InterruptCheckTokens tokens
+    private const int InterruptCheckTokens = 4096;
+    private long _tokenCount;
+    private long _nextInterruptCheck = InterruptCheckTokens;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private void CheckInterrupt()
+    {
+        _nextInterruptCheck = _tokenCount + InterruptCheckTokens;
+        JsEngine.Current?.CheckCompilationInterrupt();
     }
 
     private Token PeekToken() => _lexer.Peek(_token.End);

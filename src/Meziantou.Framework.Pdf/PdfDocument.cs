@@ -93,8 +93,9 @@ public sealed partial class PdfDocument
 
     /// <summary>
     /// Gets or sets the PDF/A conformance level the document is saved with. The save checks what it can (no encryption,
-    /// embedded fonts, a structure tree for the level A) and writes the output intent (sRGB) and the XMP identification;
-    /// the content must follow the other rules of the level.
+    /// embedded fonts, a structure tree for the level A, the actions, the annotation appearances, the device color
+    /// spaces) and writes the output intent (sRGB, unless the document has one) and the XMP identification; the content
+    /// must follow the other rules of the level.
     /// </summary>
     public PdfAConformance PdfAConformance { get; set; }
 
@@ -361,7 +362,7 @@ public sealed partial class PdfDocument
         PrepareForSave();
         cancellationToken.ThrowIfCancellationRequested();
         _structureTree?.Write();
-        Conformance.ConformanceWriter.Apply(this);
+        Conformance.ConformanceWriter.Apply(this, options);
         return options;
     }
 

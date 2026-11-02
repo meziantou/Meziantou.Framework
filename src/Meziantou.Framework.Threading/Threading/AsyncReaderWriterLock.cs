@@ -144,7 +144,7 @@ public sealed class AsyncReaderWriterLock
 
     private void ReaderRelease()
     {
-        GrantedWaiters toWake;
+        Waiter? toWake;
         lock (_lock)
         {
             _status -= 1;
@@ -156,7 +156,7 @@ public sealed class AsyncReaderWriterLock
 
     private void WriterRelease()
     {
-        GrantedWaiters toWake;
+        Waiter? toWake;
         lock (_lock)
         {
             _status = 0;
@@ -167,21 +167,23 @@ public sealed class AsyncReaderWriterLock
     }
 
     /// <summary>Hands the free lock to the next waiters. Must be called while holding <see cref="_lock"/>; the
-    /// returned waiters are completed outside it.</summary>
-    private GrantedWaiters GrantOwnership()
+    /// returned waiters are completed outside it, by <see cref="CompleteWaiters"/>.</summary>
+    /// <returns>The first granted waiter of a chain linked by <see cref="Waiter.Next"/>, or <see langword="null"/> when
+    /// nothing is granted. The granted waiters are no longer queued, so a cancellation can no longer remove them.</returns>
+    private Waiter? GrantOwnership()
     {
         // A writer holds the lock, nothing can be granted until it releases.
         if (_status < 0)
-            return default;
+            return null;
 
         if (_waitingWriters.Count > 0)
         {
             // Writers still have priority over the queued readers, so nothing is granted until the lock is free.
             if (_status > 0)
-                return default;
+                return null;
 
             _status = -1;
-            return new GrantedWaiters(_waitingWriters.Dequeue()!);
+            return _waitingWriters.Dequeue();
         }
 
         var readerCount = _waitingReaders.Count;
@@ -191,34 +193,26 @@ public sealed class AsyncReaderWriterLock
             // is left they can join the readers already holding the lock instead of waiting for those to release.
             // This also covers the case where the writers that were blocking them have all been canceled, which
             // would otherwise leave the readers queued forever.
+            // The readers are already linked together, so the whole queue is handed over as is, in constant time,
+            // rather than copied into a list while holding the lock.
             _status += readerCount;
-            if (readerCount == 1)
-                return new GrantedWaiters(_waitingReaders.Dequeue()!);
-
-            var readers = new List<Waiter>(readerCount);
-            while (_waitingReaders.Dequeue() is { } reader)
-            {
-                readers.Add(reader);
-            }
-
-            return new GrantedWaiters(readers);
+            return _waitingReaders.DetachAll();
         }
 
-        return default;
+        return null;
     }
 
-    private void CompleteWaiters(GrantedWaiters granted)
+    private void CompleteWaiters(Waiter? granted)
     {
-        if (granted.Waiter is { } single)
+        while (granted is not null)
         {
-            CompleteWaiter(single);
-        }
-        else if (granted.Waiters is { } waiters)
-        {
-            foreach (var waiter in waiters)
-            {
-                CompleteWaiter(waiter);
-            }
+            // The links are cleared as the chain is walked, so a completed waiter that outlives the grant does not
+            // keep the other granted waiters alive.
+            var next = granted.Next;
+            granted.Next = null;
+            granted.Previous = null;
+            CompleteWaiter(granted);
+            granted = next;
         }
     }
 
@@ -234,14 +228,14 @@ public sealed class AsyncReaderWriterLock
     {
         var waiter = (Waiter)state!;
         bool removed;
-        GrantedWaiters toWake;
+        Waiter? toWake;
         lock (_lock)
         {
             removed = (waiter.IsWriter ? _waitingWriters : _waitingReaders).Remove(waiter);
 
             // Removing a waiter can unblock the ones queued behind it: the lock may now be free, or the canceled
             // writer may have been the last one holding back readers that are compatible with the current owners.
-            toWake = removed ? GrantOwnership() : default;
+            toWake = removed ? GrantOwnership() : null;
         }
 
         // Both of these must run outside the lock: Registration.Dispose blocks until a callback running on
@@ -302,30 +296,6 @@ public sealed class AsyncReaderWriterLock
         }
     }
 
-    /// <summary>The waiters a grant handed the lock to. A single waiter is held inline, so the writer handoffs and
-    /// the lone-reader grants that make up the common case cost no list allocation.</summary>
-    [StructLayout(LayoutKind.Auto)]
-    private readonly struct GrantedWaiters
-    {
-        public GrantedWaiters(Waiter waiter)
-        {
-            Waiter = waiter;
-            Waiters = null;
-        }
-
-        public GrantedWaiters(List<Waiter> waiters)
-        {
-            Waiter = null;
-            Waiters = waiters;
-        }
-
-        /// <summary>The only granted waiter, or <see langword="null"/> when <see cref="Waiters"/> holds them.</summary>
-        public Waiter? Waiter { get; }
-
-        /// <summary>The granted waiters when there is more than one, otherwise <see langword="null"/>.</summary>
-        public List<Waiter>? Waiters { get; }
-    }
-
     private sealed class Waiter : TaskCompletionSource<Releaser>, IWaiterQueueNode<Waiter>
     {
         internal Waiter(AsyncReaderWriterLock owner, bool writer, CancellationToken cancellationToken)
@@ -342,6 +312,6 @@ public sealed class AsyncReaderWriterLock
 
         public Waiter? Previous { get; set; }
         public Waiter? Next { get; set; }
-        public bool IsQueued { get; set; }
+        public int QueueGeneration { get; set; }
     }
 }

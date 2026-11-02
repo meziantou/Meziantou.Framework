@@ -1,6 +1,6 @@
 ---
 title: Plain text and other formats
-description: Convert Markdown to plain text for search indexes and previews, normalize Markdown, or write a renderer for another format.
+description: Convert Markdown to plain text for search indexes and previews, normalize Markdown, escape text to write Markdown, or write a renderer for another format.
 ---
 
 ## Plain text
@@ -53,6 +53,57 @@ Assert.Equal("# Title\n- First\n- Second", MarkdownConverter.Normalize(markdown,
 To normalize a document after changing its tree, see
 [Normalize the document](07-EditingDocuments.md#normalize-the-document). To write it back without changing its
 formatting, see [Keep the formatting](07-EditingDocuments.md#keep-the-formatting-roundtrip).
+
+## Write Markdown text
+
+To generate Markdown from text that is not Markdown, such as user input, file names or command lines, escape each part
+with [MarkdownEscaper](cref:Meziantou.Framework.Markdown.MarkdownEscaper), so that the parser reads it back as the same text instead of interpreting it:
+
+<!-- ref:../../tests/Meziantou.Framework.Markdown.Tests/TestCoreApi.cs;region=MarkdownEscaper_Usage;format=md-fenced-code-block;dedent=true -->
+````csharp
+// Escape the text so that Markdown displays it as is: every ASCII punctuation character is escaped
+Assert.Equal(@"\*Note\* \[docs\]\!", MarkdownEscaper.Escape("*Note* [docs]!"));
+
+// The delimiters of code are longer than the runs of backticks of the content
+Assert.Equal("``a`b``", MarkdownEscaper.CreateCodeSpan("a`b"));
+Assert.Equal("`` `code` ``", MarkdownEscaper.CreateCodeSpan("`code`"));
+Assert.Equal("```csharp\nvar a = 1;\n```\n", MarkdownEscaper.CreateFencedCodeBlock("var a = 1;", "csharp"));
+
+// Build a link from untrusted parts
+var text = MarkdownEscaper.Escape("Docs [v2]");
+var destination = MarkdownEscaper.EscapeLinkDestination("https://example.com/a b");
+var title = MarkdownEscaper.EscapeLinkTitle("Say \"hi\"");
+Assert.Equal("<https://example.com/a b>", destination);
+Assert.Equal("\"Say \\\"hi\\\"\"", title);
+
+var html = MarkdownConverter.ToHtml($"[{text}]({destination} {title})");
+Assert.Equal("<p><a href=\"https://example.com/a%20b\" title=\"Say &quot;hi&quot;\">Docs [v2]</a></p>\n", html);
+
+// The label of a reference link
+Assert.Equal(@"see \[1\]", MarkdownEscaper.EscapeLinkLabel("see [1]"));
+
+// A cell of a pipe table cannot contain a pipe or a line ending
+Assert.Equal(@"a \| b c", MarkdownEscaper.EscapeTableCell("a | b\nc"));
+````
+<!-- endref -->
+
+| Method | Use it for |
+|---|---|
+| [Escape](cref:Meziantou.Framework.Markdown.MarkdownEscaper.Escape) | Text in a paragraph, a heading, a list item, or the text of a link. Every ASCII punctuation character gets a backslash |
+| [CreateCodeSpan](cref:Meziantou.Framework.Markdown.MarkdownEscaper.CreateCodeSpan) | Inline code. The delimiters are longer than the runs of backticks of the content |
+| [CreateFencedCodeBlock](cref:Meziantou.Framework.Markdown.MarkdownEscaper.CreateFencedCodeBlock) | A code block with an optional info string, such as the language. The fence is longer than the lines that would close it |
+| [EscapeLinkDestination](cref:Meziantou.Framework.Markdown.MarkdownEscaper.EscapeLinkDestination) | The URL of a link or an image. A URL with spaces, or an empty one, is enclosed in angle brackets |
+| [EscapeLinkTitle](cref:Meziantou.Framework.Markdown.MarkdownEscaper.EscapeLinkTitle) | The title of a link or an image. The result includes the double quotes |
+| [EscapeLinkLabel](cref:Meziantou.Framework.Markdown.MarkdownEscaper.EscapeLinkLabel) | The label of a reference link and of its definition, without the brackets |
+| [EscapeTableCell](cref:Meziantou.Framework.Markdown.MarkdownEscaper.EscapeTableCell) | The text of a cell of a pipe table. The line endings become spaces |
+
+Pitfalls:
+
+- Whitespace is not escaped: the spaces at the start and at the end of a line are dropped, four leading spaces start an
+  indented code block, and a blank line starts a new paragraph.
+- The parser converts the line endings of a code span to spaces, and a code span cannot be empty.
+- A code span in a table cell must also escape its pipes: replace `|` with `\|` in the result of `CreateCodeSpan`.
+- A link label is at most 999 characters, and the parser matches labels case-insensitively.
 
 ## Other formats
 

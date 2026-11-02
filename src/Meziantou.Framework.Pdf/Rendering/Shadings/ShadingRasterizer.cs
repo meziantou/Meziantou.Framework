@@ -82,17 +82,8 @@ internal static class ShadingRasterizer
         if (!matrix.TryInvert(out var inverse))
             return;
 
-        context.ForEachPixel((x, y) =>
-        {
-            var (u, v) = inverse.Transform(x, y);
-            if (u < Math.Min(domain[0], domain[1]) || u > Math.Max(domain[0], domain[1]) || v < Math.Min(domain[2], domain[3]) || v > Math.Max(domain[2], domain[3]))
-                return null;
-
-            Span<double> inputs = [u, v];
-            Span<double> outputs = stackalloc double[Math.Max(function.OutputCount, context.ColorSpace.ComponentCount)];
-            function.Evaluate(inputs, outputs);
-            return ToPixel(context.ColorSpace.ToRgb(outputs[..context.ColorSpace.ComponentCount]));
-        });
+        var shader = new FunctionShader(function, context.ColorSpace, inverse, domain);
+        context.ForEachPixel(ref shader);
     }
 
     private static void RasterizeAxial(Context context, PdfDictionary dictionary, RenderCache cache)
@@ -110,26 +101,8 @@ internal static class ShadingRasterizer
         if (length == 0)
             return;
 
-        context.ForEachPixel((x, y) =>
-        {
-            var s = (((x - x0) * dx) + ((y - y0) * dy)) / length;
-            if (s < 0)
-            {
-                if (!extendStart)
-                    return null;
-
-                s = 0;
-            }
-            else if (s > 1)
-            {
-                if (!extendEnd)
-                    return null;
-
-                s = 1;
-            }
-
-            return lookup[(int)Math.Round(s * (LookupSize - 1), MidpointRounding.AwayFromZero)];
-        });
+        var shader = new AxialShader(x0, y0, dx, dy, length, extendStart, extendEnd, lookup);
+        context.ForEachPixel(ref shader);
     }
 
     private static void RasterizeRadial(Context context, PdfDictionary dictionary, RenderCache cache)
@@ -145,51 +118,8 @@ internal static class ShadingRasterizer
         var cdy = y1 - y0;
         var dr = r1 - r0;
         var a = (cdx * cdx) + (cdy * cdy) - (dr * dr);
-        context.ForEachPixel((x, y) =>
-        {
-            // The largest s whose circle, of a radius that is not negative, goes through the point (8.7.4.5.4)
-            var px = x - x0;
-            var py = y - y0;
-            var b = -2 * ((px * cdx) + (py * cdy) + (r0 * dr));
-            var c = (px * px) + (py * py) - (r0 * r0);
-            double? best = null;
-            void Consider(double s)
-            {
-                if (!double.IsFinite(s) || r0 + (s * dr) < 0)
-                    return;
-
-                if ((s < 0 && !extendStart) || (s > 1 && !extendEnd))
-                    return;
-
-                if (best is null || s > best)
-                {
-                    best = s;
-                }
-            }
-
-            if (Math.Abs(a) < 1e-12)
-            {
-                if (b != 0)
-                {
-                    Consider(-c / b);
-                }
-            }
-            else
-            {
-                var discriminant = (b * b) - (4 * a * c);
-                if (discriminant >= 0)
-                {
-                    var root = Math.Sqrt(discriminant);
-                    Consider((-b + root) / (2 * a));
-                    Consider((-b - root) / (2 * a));
-                }
-            }
-
-            if (best is not { } value)
-                return null;
-
-            return lookup[(int)Math.Round(Math.Clamp(value, 0, 1) * (LookupSize - 1), MidpointRounding.AwayFromZero)];
-        });
+        var shader = new RadialShader(x0, y0, r0, cdx, cdy, dr, a, extendStart, extendEnd, lookup);
+        context.ForEachPixel(ref shader);
     }
 
     /// <summary>The colors of the positions from 0 to 1 of an axial or radial shading: the function at the matching value of the domain.</summary>
@@ -222,23 +152,15 @@ internal static class ShadingRasterizer
     /// <summary>Renders a mesh shading (types 4 to 7): its triangles, or its patches divided into triangles.</summary>
     private static void RasterizeMesh(Context context, PdfStream stream, RenderCache cache)
     {
-        var mesh = MeshReader.Read(stream, context.ColorSpace.ComponentCount, context.Function is not null, MaxMeshItems);
+        var mesh = cache.GetMesh(stream, () => MeshReader.Read(stream, context.ColorSpace.ComponentCount, context.Function is not null, MaxMeshItems));
         var colorCount = context.Function is not null ? 1 : context.ColorSpace.ComponentCount;
-        var lookup = context.Function is not null ? CreateMeshLookup(context, mesh.Domain) : null;
+        var lookup = context.Function is not null ? cache.GetShadingColors(stream.Dictionary, () => CreateMeshLookup(context, mesh.Domain)) : null;
+        var shader = new MeshShader(context.ColorSpace, lookup, mesh.Domain, colorCount);
         foreach (var triangle in mesh.Triangles)
         {
             // A triangle costs the pixels of its bounds, which the next triangle pays for
             cache.Charge(4);
-            var pixels = context.FillTriangle(triangle, colorCount, values =>
-            {
-                if (lookup is not null)
-                {
-                    var t = (values[0] - mesh.Domain[0]) / (mesh.Domain[1] - mesh.Domain[0]);
-                    return lookup[(int)Math.Round(Math.Clamp(double.IsFinite(t) ? t : 0, 0, 1) * (LookupSize - 1), MidpointRounding.AwayFromZero)];
-                }
-
-                return ToPixel(context.ColorSpace.ToRgb(values));
-            });
+            var pixels = context.FillTriangle(triangle, colorCount, in shader);
             cache.Charge(pixels / 64);
         }
     }
@@ -266,7 +188,8 @@ internal static class ShadingRasterizer
         public RenderFunction? Function { get; } = function;
 
         /// <summary>Sets each pixel whose center is in the bounding box to the color computed at its center in shading space; <see langword="null"/> leaves the pixel.</summary>
-        public void ForEachPixel(Func<double, double, Rgba32?> color)
+        public void ForEachPixel<TShader>(ref TShader shader)
+            where TShader : struct, IPixelShader
         {
             for (var y = 0; y < height; y++)
             {
@@ -276,7 +199,7 @@ internal static class ShadingRasterizer
                     if (bbox is { } box && (sx < box.Left || sx > box.Right || sy < box.Bottom || sy > box.Top))
                         continue;
 
-                    if (color(sx, sy) is { } value)
+                    if (shader.TryGetColor(sx, sy, out var value))
                     {
                         pixels[(y * width) + x] = value;
                     }
@@ -286,7 +209,7 @@ internal static class ShadingRasterizer
 
         /// <summary>Fills a triangle of shading space with the colors interpolated between its vertices (Gouraud shading).</summary>
         /// <returns>The pixels of the bounds of the triangle, which were tested.</returns>
-        public long FillTriangle(MeshTriangle triangle, int colorCount, Func<double[], Rgba32> color)
+        public long FillTriangle(MeshTriangle triangle, int colorCount, in MeshShader shader)
         {
             var (ax, ay) = shadingToDevice.Transform(triangle.A.X, triangle.A.Y);
             var (bx, by) = shadingToDevice.Transform(triangle.B.X, triangle.B.Y);
@@ -305,7 +228,7 @@ internal static class ShadingRasterizer
             var maxX = Math.Min(width - 1, (int)Math.Ceiling(Math.Max(ax, Math.Max(bx, cx))));
             var minY = Math.Max(0, (int)Math.Floor(Math.Min(ay, Math.Min(by, cy))));
             var maxY = Math.Min(height - 1, (int)Math.Ceiling(Math.Max(ay, Math.Max(by, cy))));
-            var values = new double[colorCount];
+            var values = shader.Values;
             for (var y = minY; y <= maxY; y++)
             {
                 for (var x = minX; x <= maxX; x++)
@@ -333,11 +256,147 @@ internal static class ShadingRasterizer
                         values[i] = (wa * triangle.A.Color[i]) + (wb * triangle.B.Color[i]) + (wc * triangle.C.Color[i]);
                     }
 
-                    pixels[(y * width) + x] = color(values);
+                    pixels[(y * width) + x] = shader.GetColor();
                 }
             }
 
             return maxX < minX || maxY < minY ? 0 : (long)(maxX - minX + 1) * (maxY - minY + 1);
+        }
+    }
+
+    /// <summary>Computes the color of a pixel at a point of shading space; called for each pixel, without a delegate.</summary>
+    private interface IPixelShader
+    {
+        /// <summary>Gets the color at a point of shading space; <see langword="false"/> leaves the pixel.</summary>
+        bool TryGetColor(double x, double y, out Rgba32 color);
+    }
+
+    /// <summary>A function-based shading (8.7.4.5.2): the function of the coordinates mapped to its domain by the inverse of its matrix.</summary>
+    private readonly struct FunctionShader(RenderFunction function, RenderColorSpace colorSpace, PdfMatrix inverse, double[] domain) : IPixelShader
+    {
+        private readonly double _uMin = Math.Min(domain[0], domain[1]);
+        private readonly double _uMax = Math.Max(domain[0], domain[1]);
+        private readonly double _vMin = Math.Min(domain[2], domain[3]);
+        private readonly double _vMax = Math.Max(domain[2], domain[3]);
+        private readonly double[] _inputs = new double[2];
+        private readonly double[] _outputs = new double[Math.Max(function.OutputCount, colorSpace.ComponentCount)];
+
+        public bool TryGetColor(double x, double y, out Rgba32 color)
+        {
+            var (u, v) = inverse.Transform(x, y);
+            if (u < _uMin || u > _uMax || v < _vMin || v > _vMax)
+            {
+                color = default;
+                return false;
+            }
+
+            _inputs[0] = u;
+            _inputs[1] = v;
+            function.Evaluate(_inputs, _outputs);
+            color = ToPixel(colorSpace.ToRgb(_outputs.AsSpan(0, colorSpace.ComponentCount)));
+            return true;
+        }
+    }
+
+    /// <summary>An axial shading (8.7.4.5.3): the color of the projection of the point on the axis.</summary>
+    private readonly struct AxialShader(double x0, double y0, double dx, double dy, double length, bool extendStart, bool extendEnd, Rgba32[] lookup) : IPixelShader
+    {
+        public bool TryGetColor(double x, double y, out Rgba32 color)
+        {
+            var s = (((x - x0) * dx) + ((y - y0) * dy)) / length;
+            if (s < 0)
+            {
+                if (!extendStart)
+                {
+                    color = default;
+                    return false;
+                }
+
+                s = 0;
+            }
+            else if (s > 1)
+            {
+                if (!extendEnd)
+                {
+                    color = default;
+                    return false;
+                }
+
+                s = 1;
+            }
+
+            color = lookup[(int)Math.Round(s * (LookupSize - 1), MidpointRounding.AwayFromZero)];
+            return true;
+        }
+    }
+
+    /// <summary>A radial shading (8.7.4.5.4): the color of the largest s whose circle, of a radius that is not negative, goes through the point.</summary>
+    private readonly struct RadialShader(double x0, double y0, double r0, double cdx, double cdy, double dr, double a, bool extendStart, bool extendEnd, Rgba32[] lookup) : IPixelShader
+    {
+        public bool TryGetColor(double x, double y, out Rgba32 color)
+        {
+            var px = x - x0;
+            var py = y - y0;
+            var b = -2 * ((px * cdx) + (py * cdy) + (r0 * dr));
+            var c = (px * px) + (py * py) - (r0 * r0);
+            var best = double.NaN;
+            if (Math.Abs(a) < 1e-12)
+            {
+                if (b != 0)
+                {
+                    Consider(-c / b, ref best);
+                }
+            }
+            else
+            {
+                var discriminant = (b * b) - (4 * a * c);
+                if (discriminant >= 0)
+                {
+                    var root = Math.Sqrt(discriminant);
+                    Consider((-b + root) / (2 * a), ref best);
+                    Consider((-b - root) / (2 * a), ref best);
+                }
+            }
+
+            if (double.IsNaN(best))
+            {
+                color = default;
+                return false;
+            }
+
+            color = lookup[(int)Math.Round(Math.Clamp(best, 0, 1) * (LookupSize - 1), MidpointRounding.AwayFromZero)];
+            return true;
+        }
+
+        private void Consider(double s, ref double best)
+        {
+            if (!double.IsFinite(s) || r0 + (s * dr) < 0)
+                return;
+
+            if ((s < 0 && !extendStart) || (s > 1 && !extendEnd))
+                return;
+
+            if (double.IsNaN(best) || s > best)
+            {
+                best = s;
+            }
+        }
+    }
+
+    /// <summary>The colors of the pixels of a mesh: the interpolated values (<see cref="Values"/>) converted by the color space, or by the table of the function.</summary>
+    private readonly struct MeshShader(RenderColorSpace colorSpace, Rgba32[]? lookup, double[] domain, int colorCount)
+    {
+        public double[] Values { get; } = new double[colorCount];
+
+        public Rgba32 GetColor()
+        {
+            if (lookup is not null)
+            {
+                var t = (Values[0] - domain[0]) / (domain[1] - domain[0]);
+                return lookup[(int)Math.Round(Math.Clamp(double.IsFinite(t) ? t : 0, 0, 1) * (LookupSize - 1), MidpointRounding.AwayFromZero)];
+            }
+
+            return ToPixel(colorSpace.ToRgb(Values));
         }
     }
 }

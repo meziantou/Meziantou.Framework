@@ -178,11 +178,29 @@ public sealed class ConcurrentHashSet<T> : ISet<T>, IReadOnlySet<T>
     /// <summary>Determines whether the current <see cref="ConcurrentHashSet{T}"/> is a proper superset of a specified collection.</summary>
     /// <param name="other">The collection to compare to the current <see cref="ConcurrentHashSet{T}"/>.</param>
     /// <returns><see langword="true"/> if the current <see cref="ConcurrentHashSet{T}"/> is a proper superset of <paramref name="other"/>; otherwise, <see langword="false"/>.</returns>
+    /// <remarks><paramref name="other"/> is enumerated only until an element that is not in the set is found, so the elements after it are never looked up. The set itself is never copied: only the distinct elements of <paramref name="other"/> are tracked.</remarks>
     public bool IsProperSupersetOf(IEnumerable<T> other)
     {
         ArgumentNullException.ThrowIfNull(other);
 
-        return CreateSet(this).IsProperSupersetOf(other);
+        if (ReferenceEquals(other, this) || IsEmpty)
+            return false;
+
+        // A set using the same comparer has no duplicates, so its count is the number of distinct elements.
+        if (IsSetWithSameComparer(other, out var otherCount))
+            return otherCount < Count && IsSupersetOf(other);
+
+        HashSet<T>? distinctItems = null;
+        foreach (var item in other)
+        {
+            if (!Contains(item))
+                return false;
+
+            distinctItems ??= new HashSet<T>(other.TryGetNonEnumeratedCount(out var capacity) ? capacity : 0, _dictionary.Comparer);
+            distinctItems.Add(item);
+        }
+
+        return (distinctItems?.Count ?? 0) < Count;
     }
 
     /// <summary>Determines whether the current <see cref="ConcurrentHashSet{T}"/> overlaps with the specified collection.</summary>
@@ -301,4 +319,16 @@ public sealed class ConcurrentHashSet<T> : ISet<T>, IReadOnlySet<T>
     }
 
     private HashSet<T> CreateSet(IEnumerable<T> values) => new(values, _dictionary.Comparer);
+
+    private bool IsSetWithSameComparer(IEnumerable<T> other, out int count)
+    {
+        (var comparer, count) = other switch
+        {
+            HashSet<T> set => (set.Comparer, set.Count),
+            ConcurrentHashSet<T> set => (set._dictionary.Comparer, set.Count),
+            _ => (null, 0),
+        };
+
+        return comparer is not null && comparer.Equals(_dictionary.Comparer);
+    }
 }

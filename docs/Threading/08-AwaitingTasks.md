@@ -60,7 +60,36 @@ Assert.Equal((42, "value"), results);
   [Meziantou.Framework.Threading.Tasks.TaskExtensions](cref:Meziantou.Framework.Threading.Tasks.TaskExtensions) when both namespaces are imported.
 - The CA2012 analyzer ("Use ValueTasks correctly") reports the value tasks of an awaited tuple, even though awaiting the
   tuple consumes each of them once. Suppress it where you await such a tuple.
-- Tuples of value tasks have no `ConfigureAwait` method.
+
+Call `ConfigureAwait(false)` on a tuple of value tasks to resume without the captured `SynchronizationContext`, as
+library code usually does:
+
+<!-- ref:../../tests/Meziantou.Framework.Threading.Tests/TaskExtensionsTests.cs;region=TaskExtensions_ValueTaskTupleConfigureAwait;format=md-fenced-code-block;dedent=true -->
+```csharp
+static async ValueTask<int> GetCountAsync()
+{
+    await Task.Yield();
+    return 42;
+}
+
+static ValueTask<string> GetNameAsync() => ValueTask.FromResult("value");
+
+static async ValueTask SaveAsync() => await Task.Yield();
+
+// Do not resume on the captured SynchronizationContext, as library code usually does
+var (count, name) = await (GetCountAsync(), GetNameAsync()).ConfigureAwait(false);
+Assert.Equal(42, count);
+Assert.Equal("value", name);
+
+// Tuples of ValueTask (without a result) support it too
+await (SaveAsync(), SaveAsync()).ConfigureAwait(false);
+```
+<!-- endref -->
+
+- The tasks are combined the same way as without `ConfigureAwait`: each value task is consumed once, and the await
+  completes synchronously when all of them have already completed successfully.
+- Unlike tuples of `Task`, tuples of value tasks have no `ConfigureAwait(ConfigureAwaitOptions)` overload, as
+  `ValueTask` has none.
 
 ## When a task fails
 

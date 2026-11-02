@@ -9,11 +9,12 @@ public static class MixedConsumerProducer
     /// <summary>Processes items in parallel, where each processing action can enqueue additional items to be processed.</summary>
     /// <typeparam name="T">The type of items to process.</typeparam>
     /// <param name="initialItems">The initial collection of items to process.</param>
-    /// <param name="options">Options that configure the parallel processing. <see cref="ParallelOptions.MaxDegreeOfParallelism"/>, <see cref="ParallelOptions.CancellationToken"/>, and <see cref="ParallelOptions.TaskScheduler"/> are honored.</param>
+    /// <param name="options">Options that configure the parallel processing. <see cref="ParallelOptions.MaxDegreeOfParallelism"/>, <see cref="ParallelOptions.CancellationToken"/>, and <see cref="ParallelOptions.TaskScheduler"/> are honored. Pass a <see cref="MixedConsumerProducerOptions"/> to also limit the number of pending items with <see cref="MixedConsumerProducerOptions.MaxPendingItems"/>.</param>
     /// <param name="action">The action to perform on each item. The action receives a context to enqueue new items, the current item, and a cancellation token.</param>
     /// <returns>A task that represents the asynchronous operation.</returns>
     /// <exception cref="AggregateException">One or more invocations of <paramref name="action"/> threw an exception. Remaining items are still processed, and all exceptions are reported once processing completes.</exception>
     /// <exception cref="OperationCanceledException"><see cref="ParallelOptions.CancellationToken"/> was canceled.</exception>
+    /// <exception cref="TaskSchedulerException"><see cref="ParallelOptions.TaskScheduler"/> rejected a consumer. The consumers that did start are completed before the exception is thrown.</exception>
     /// <example>
     /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../../tests/Meziantou.Framework.Threading.Tests/MixedConsumerProducerTests.cs" ref:region="MixedConsumerProducer_Process" ref:dedent="true">
     /// // A fake website where each page links to other pages
@@ -77,25 +78,44 @@ public static class MixedConsumerProducer
             degreeOfParallelism = maximumConcurrencyLevel;
         }
 
-        var pendingItems = Channel.CreateUnbounded<T>();
-        var context = new MixedConsumerProducerContext<T>(pendingItems.Writer);
+        var maxPendingItems = options is MixedConsumerProducerOptions { MaxPendingItems: > 0 } producerOptions ? producerOptions.MaxPendingItems : -1;
+        var pendingItems = maxPendingItems > 0
+            ? Channel.CreateBounded<T>(new BoundedChannelOptions(maxPendingItems) { FullMode = BoundedChannelFullMode.Wait })
+            : Channel.CreateUnbounded<T>();
+
+        var exceptionsLock = new Lock();
+        List<Exception>? exceptions = null;
+        var context = new MixedConsumerProducerContext<T>(pendingItems, isBounded: maxPendingItems > 0, ProcessItemAsync, cancellationToken);
 
         // The initial items are streamed to the consumers while they run, so the enumeration itself
         // is a producer and must be accounted for until it completes.
         context.ReserveProducer();
-
-        var exceptionsLock = new Lock();
-        List<Exception>? exceptions = null;
 
         // Consumers are long-lived: each one drains the channel until it is completed, which happens
         // once no item is pending. This bounds the concurrency to degreeOfParallelism without having
         // to throttle the loop that dispatches the items.
         var consume = ConsumeAsync;
         var consumers = new Task[degreeOfParallelism];
-        for (var i = 0; i < consumers.Length; i++)
+        var startedConsumers = 0;
+        try
         {
-            consumers[i] = Task.Factory.StartNew(consume, cancellationToken, TaskCreationOptions.DenyChildAttach, scheduler).Unwrap();
+            for (; startedConsumers < consumers.Length; startedConsumers++)
+            {
+                consumers[startedConsumers] = Task.Factory.StartNew(consume, cancellationToken, TaskCreationOptions.DenyChildAttach, scheduler).Unwrap();
+            }
         }
+        catch (Exception ex)
+        {
+            // The scheduler rejected a consumer. Nothing is enqueued yet, so releasing the reservation
+            // completes the channel and lets the consumers that did start stop. Wait for them so they
+            // do not outlive the call, then report the scheduling failure.
+            var schedulingFailure = ExceptionDispatchInfo.Capture(ex);
+            context.ReleaseProducer();
+            await Task.WhenAll(consumers.AsSpan(0, startedConsumers)).ConfigureAwait(ConfigureAwaitOptions.SuppressThrowing);
+            schedulingFailure.Throw();
+        }
+
+        context.ConsumerCount = consumers.Length;
 
         ExceptionDispatchInfo? enumerationFailure = null;
         try
@@ -103,7 +123,7 @@ public static class MixedConsumerProducer
             foreach (var item in initialItems)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                context.Enqueue(item);
+                await context.EnqueueFromProducerAsync(item).ConfigureAwait(false);
             }
         }
         catch (Exception ex)
@@ -141,26 +161,31 @@ public static class MixedConsumerProducer
             {
                 while (!cancellationToken.IsCancellationRequested && reader.TryRead(out var item))
                 {
-                    try
-                    {
-                        await InvokeAsync(item).ConfigureAwait(false);
-                    }
-                    catch (Exception ex)
-                    {
-                        // Record the exception and keep processing the remaining items. Letting it
-                        // escape would take a consumer down and leave the item accounted for as
-                        // pending, which would prevent the channel from ever being completed.
-                        lock (exceptionsLock)
-                        {
-                            exceptions ??= [];
-                            exceptions.Add(ex);
-                        }
-                    }
-                    finally
-                    {
-                        context.OnItemProcessed();
-                    }
+                    await ProcessItemAsync(context, item).ConfigureAwait(false);
                 }
+            }
+        }
+
+        async ValueTask ProcessItemAsync(MixedConsumerProducerContext<T> context, T item)
+        {
+            try
+            {
+                await InvokeAsync(context, item).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                // Record the exception and keep processing the remaining items. Letting it
+                // escape would take a consumer down and leave the item accounted for as
+                // pending, which would prevent the channel from ever being completed.
+                lock (exceptionsLock)
+                {
+                    exceptions ??= [];
+                    exceptions.Add(ex);
+                }
+            }
+            finally
+            {
+                context.OnItemProcessed();
             }
         }
 
@@ -168,7 +193,7 @@ public static class MixedConsumerProducer
         // soon as it actually suspends, be it on an empty channel or on the action itself. Starting every
         // action explicitly keeps the requested scheduler honored for all the items, and not only for the
         // ones processed before the first suspension.
-        ValueTask InvokeAsync(T item)
+        ValueTask InvokeAsync(MixedConsumerProducerContext<T> context, T item)
         {
             if (isDefaultScheduler)
                 return action(context, item, cancellationToken);

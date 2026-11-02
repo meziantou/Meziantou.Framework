@@ -246,6 +246,106 @@ public class ConcurrentHashSetTests
         Assert.False(set.IsSupersetOf([1]));
     }
 
+#pragma warning disable MFAS0043, MFAS0044 // The tests validate the set comparison methods themselves
+    [Fact]
+    public void IsProperSupersetOf_StopsEnumeratingOtherAtTheFirstMissingElement()
+    {
+        var set = new ConcurrentHashSet<int>();
+        set.AddRange(1, 2, 3);
+        List<int> enumerated = [];
+
+        Assert.False(set.IsProperSupersetOf(Record([1, 9, 2], enumerated)));
+        Assert.Equal([1, 9], enumerated);
+    }
+
+    [Fact]
+    public void IsProperSupersetOf_IgnoresDuplicatesInOther()
+    {
+        var set = new ConcurrentHashSet<int>();
+        set.AddRange(1, 2, 3);
+
+        Assert.True(set.IsProperSupersetOf([1, 1, 2, 2, 1]));
+        Assert.False(set.IsProperSupersetOf([1, 2, 3, 3, 2, 1]));
+        Assert.False(set.IsProperSupersetOf([1, 1, 4]));
+    }
+
+    [Fact]
+    public void IsProperSupersetOf_UsesTheEqualityComparerToCountDistinctElements()
+    {
+        var set = new ConcurrentHashSet<string>(StringComparer.OrdinalIgnoreCase);
+        set.AddRange("a", "b");
+
+        Assert.True(set.IsProperSupersetOf(["A", "a"]));
+        Assert.False(set.IsProperSupersetOf(["A", "b", "B"]));
+        Assert.False(set.IsProperSupersetOf(["c"]));
+    }
+
+    [Fact]
+    public void IsProperSupersetOf_EmptyOther()
+    {
+        var set = new ConcurrentHashSet<int>();
+
+        Assert.False(set.IsProperSupersetOf([]));
+        Assert.False(set.IsProperSupersetOf(Enumerable.Empty<int>()));
+
+        set.Add(1);
+        Assert.True(set.IsProperSupersetOf([]));
+        Assert.True(set.IsProperSupersetOf(Enumerable.Empty<int>()));
+        Assert.True(set.IsProperSupersetOf(new HashSet<int>()));
+    }
+
+    [Fact]
+    public void IsProperSupersetOf_Self_ReturnsFalse()
+    {
+        var set = new ConcurrentHashSet<int>();
+        Assert.False(set.IsProperSupersetOf(set));
+
+        set.AddRange(1, 2, 3);
+        Assert.False(set.IsProperSupersetOf(set));
+    }
+
+    [Fact]
+    public void IsProperSupersetOf_EqualSets_ReturnFalse()
+    {
+        var set = new ConcurrentHashSet<int>();
+        set.AddRange(1, 2, 3);
+
+        Assert.False(set.IsProperSupersetOf([3, 2, 1]));
+        Assert.False(set.IsProperSupersetOf(new HashSet<int>([1, 2, 3])));
+
+        var other = new ConcurrentHashSet<int>();
+        other.AddRange(1, 2, 3);
+        Assert.False(set.IsProperSupersetOf(other));
+    }
+
+    [Fact]
+    public void IsProperSupersetOf_ProperSubsets_ReturnTrue()
+    {
+        var set = new ConcurrentHashSet<int>();
+        set.AddRange(1, 2, 3);
+
+        Assert.True(set.IsProperSupersetOf([2]));
+        Assert.True(set.IsProperSupersetOf(Record([1, 3], [])));
+        Assert.True(set.IsProperSupersetOf(new HashSet<int>([1, 2])));
+        Assert.False(set.IsProperSupersetOf(new HashSet<int>([1, 4])));
+
+        var other = new ConcurrentHashSet<int>();
+        other.AddRange(1, 2);
+        Assert.True(set.IsProperSupersetOf(other));
+    }
+
+    [Fact]
+    public void IsProperSupersetOf_SetWithADifferentComparer_CountsDistinctElementsWithTheSetComparer()
+    {
+        var set = new ConcurrentHashSet<string>(StringComparer.OrdinalIgnoreCase);
+        set.AddRange("a", "b", "c");
+
+        // Distinct for the ordinal comparer, but a single element for the set.
+        Assert.True(set.IsProperSupersetOf(new HashSet<string>(["a", "A"], StringComparer.Ordinal)));
+        Assert.False(set.IsProperSupersetOf(new HashSet<string>(["a", "B", "c", "C"], StringComparer.Ordinal)));
+    }
+#pragma warning restore MFAS0043, MFAS0044
+
     private static IEnumerable<T> Record<T>(IEnumerable<T> source, List<T> enumerated)
     {
         foreach (var item in source)

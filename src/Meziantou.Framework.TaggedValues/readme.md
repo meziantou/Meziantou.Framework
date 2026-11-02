@@ -174,7 +174,7 @@ Built-in arithmetic on numbers, including the numbers of the framework such as `
 - Unary `+` and `-`, `++`, `--`, `+=`, and `-=` keep the tag.
 - `%`, bitwise operators, shifts, and string concatenations create another kind of value, so the result is not tagged.
 
-A user-defined operator or conversion creates a new value, so it does not keep the tag of its operands: `dueDate - startDate` is a `TimeSpan`, not a due date. Tag the return value of the operator to tag its result, and its parameters to check its operands, including the operands of a comparison operator and the target of a compound assignment such as `+=`:
+A user-defined operator or conversion creates a new value, so it does not keep the tag of its operands: `dueDate - startDate` is a `TimeSpan`, not a due date. Tag the return value of the operator to tag its result, and its parameters to check its operands, including the operands of a comparison operator or a unary operator, the target of `++`, `--`, and of a compound assignment such as `+=`, and the operand of a conversion such as `(int)meters`:
 
 <!-- ref:../../samples/Meziantou.Framework.TaggedValues.Samples/Distance.cs;region=TaggedValues_Operator;format=md-fenced-code-block;dedent=true -->
 ```csharp

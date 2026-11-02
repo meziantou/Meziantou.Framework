@@ -31,6 +31,22 @@ public sealed class PdfSaveOptions
     /// </remarks>
     public bool Linearize { get; init; }
 
+    /// <summary>
+    /// Gets the number of whitespace bytes the XMP packet the save writes for <see cref="PdfDocument.PdfAConformance"/>
+    /// and <see cref="PdfDocument.PdfUAConformance"/> reserves before its end, so that an editor can update the packet in
+    /// place. The default is 0.
+    /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">The value is negative.</exception>
+    public int XmpPadding
+    {
+        get;
+        init
+        {
+            ArgumentOutOfRangeException.ThrowIfNegative(value);
+            field = value;
+        }
+    }
+
     /// <summary>Gets the version written in the header, or <see langword="null"/> (the default) for the version of the document, raised to what the options need.</summary>
     public PdfVersion? Version { get; init; }
 }

@@ -1,4 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using Meziantou.Framework.JavaScriptEngine.Compiler;
 
 namespace Meziantou.Framework.JavaScriptEngine.Interpreter;
@@ -214,6 +215,14 @@ internal static partial class JsInterpreter
         _ = value;
     }
 
+    /// <summary>The TypeError of the call of a value that is not callable, thrown by the running instruction without a .NET exception (see ThrowNotCallable).</summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static JsValue CreateNotCallableError(Frame frame) => new(frame.Realm.Engine.CurrentRealm!.CreateError(ErrorType.TypeError, $"{DescribeCallee(frame)} is not a function"));
+
+    /// <summary>The TypeError of a property of null or undefined, thrown by the running instruction without a .NET exception (see GetPrimitivePrototype).</summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static JsValue CreateNullishPropertyReadError(Frame frame, int name, JsValue target) => new(frame.Realm.Engine.CurrentRealm!.CreateError(ErrorType.TypeError, $"Cannot read properties of {target} (reading '{frame.Code.Keys[name]}')"));
+
     /// <summary>Describes the callee of the current call for the error messages (the source text of the call, e.g. "obj.method").</summary>
     private static string DescribeCallee(Frame frame)
     {
@@ -333,17 +342,8 @@ internal static partial class JsInterpreter
         }
     }
 
-    private static JsValue[] GetSpreadArguments(JsValue array)
-    {
-        var jsArray = (JsArray)array.Cell!;
-        var result = new JsValue[jsArray.Length];
-        for (var i = 0u; i < jsArray.Length; i++)
-        {
-            result[i] = jsArray.Get(new PropertyKey(i));
-        }
-
-        return result;
-    }
+    /// <summary>Gets the argument list of a call with a spread argument (NewArgumentList).</summary>
+    private static ArgumentList GetSpreadArguments(JsValue list) => (ArgumentList)list.Cell!;
 
     private static void AppendSpread(JsArray array, JsValue iterable)
     {
@@ -417,30 +417,37 @@ internal static partial class JsInterpreter
         }
 
         var closure = new JsClosure(realm, template, environment, prototype, script);
-        closure.SetFunctionLength(template.Length);
-        closure.SetFunctionName(template.NameValue);
         nameEnvironment?.Slots[0] = closure;
 
+        // SetFunctionLength, SetFunctionName, then the prototype property: the properties get their final shape at once
+        var shapes = realm.Engine.ClosureShapes;
+        var name = template.NameValue;
+        closure.InitialName = name.ToString();
         if (template.IsGenerator)
         {
             // The prototype of the generator objects (not a constructor: no constructor property)
             var generatorPrototype = new JsObject(template.IsAsync ? intrinsics.AsyncGeneratorPrototype : intrinsics.GeneratorPrototype);
-            closure.DefineBuiltIn("prototype", generatorPrototype, PropertyFlags.Writable);
+            closure.InitializeProperties(shapes.LengthNamePrototype, [template.Length, JsValue.FromJsString(name), generatorPrototype]);
         }
         else if ((template.Flags & FunctionTemplateFlags.Constructor) != 0 && !template.IsClassConstructor)
         {
-            // Non-strict functions have caller and arguments own properties, accessors that read the running frames: an
-            // extension the spec allows, that the browsers implement
-            if (!template.IsStrict)
-            {
-                closure.DefineBuiltInAccessor("arguments", intrinsics.FunctionArgumentsProperty, PropertyFlags.None);
-                closure.DefineBuiltInAccessor("caller", intrinsics.FunctionCallerProperty, PropertyFlags.None);
-            }
-
             // MakeConstructor
             var functionPrototype = new JsObject(intrinsics.ObjectPrototype);
-            functionPrototype.DefineBuiltIn("constructor", closure);
-            closure.DefineBuiltIn("prototype", functionPrototype, PropertyFlags.Writable);
+            functionPrototype.InitializeProperties(shapes.Constructor, [closure]);
+            if (template.IsStrict)
+            {
+                closure.InitializeProperties(shapes.LengthNamePrototype, [template.Length, JsValue.FromJsString(name), functionPrototype]);
+            }
+            else
+            {
+                // Non-strict functions have caller and arguments own properties, accessors that read the running frames:
+                // an extension the spec allows, that the browsers implement
+                closure.InitializeProperties(shapes.LengthNameLegacyPrototype, [template.Length, JsValue.FromJsString(name), new JsValue(intrinsics.FunctionArgumentsProperty), new JsValue(intrinsics.FunctionCallerProperty), functionPrototype]);
+            }
+        }
+        else
+        {
+            closure.InitializeProperties(shapes.LengthName, [template.Length, JsValue.FromJsString(name)]);
         }
 
         return closure;

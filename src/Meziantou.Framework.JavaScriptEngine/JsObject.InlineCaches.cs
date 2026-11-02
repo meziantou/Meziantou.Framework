@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.JavaScriptEngine;
@@ -144,6 +145,15 @@ public partial class JsObject
     internal void UsePropertyTable(int capacity)
     {
         GetPropertyTable(capacity).EnsureCapacity(capacity);
+    }
+
+    /// <summary>Gives the properties of <paramref name="shape"/> to an object that has no property yet: <paramref name="slots"/> has their values, in order.</summary>
+    internal void InitializeProperties(Shape shape, JsValue[] slots)
+    {
+        Debug.Assert(_slots is null && _map is null or Shape { Count: 0 }, "The object has properties");
+        Debug.Assert(slots.Length >= shape.Count, "The slots are too short");
+        _map = shape;
+        _slots = slots;
     }
 
     /// <summary>Allocates the slots of an object that has no property yet and will get <paramref name="count"/> properties (e.g. the length and the name of a built-in function).</summary>

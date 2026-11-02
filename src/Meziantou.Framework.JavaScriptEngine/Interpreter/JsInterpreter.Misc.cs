@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace Meziantou.Framework.JavaScriptEngine.Interpreter;
 
 internal static partial class JsInterpreter
@@ -41,6 +43,17 @@ internal static partial class JsInterpreter
         DefineArgumentsProperties(obj, frame, arguments.Length, mapped);
         return obj;
     }
+
+    /// <summary>
+    /// A new arguments object of a function whose arguments object is only read (FunctionInfo.HasSimpleArguments): it is
+    /// not observable, and the parameters do not change, so the indices need not be mapped (callee is the function when
+    /// the object would be mapped).
+    /// </summary>
+    private static JsValue CreateArgumentsForRead(Frame frame, bool mapped) => mapped ? CreateArgumentsCopy(frame) : CreateArgumentsObject(frame, mapped: false);
+
+    /// <summary>arguments[key] that is not an index of an argument, in a function whose arguments object is not created.</summary>
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static JsValue GetArgumentsProperty(Frame frame, JsValue key, bool mapped) => GetElement(frame.Realm, CreateArgumentsForRead(frame, mapped), key);
 
     /// <summary>The value of the arguments own property of a sloppy function: a new arguments object of a running call (its indices are not mapped).</summary>
     internal static JsValue CreateArgumentsCopy(Frame frame)

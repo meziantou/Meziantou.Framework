@@ -105,7 +105,7 @@ internal enum OpCode
     /// <summary>(name) -> value: as LoadGlobal, undefined when missing (typeof)</summary>
     LoadGlobalOrUndefined,
 
-    /// <summary>(name, strict) value -></summary>
+    /// <summary>(name, strict, cache) value -></summary>
     StoreGlobal,
 
     /// <summary>(name) -> value: resolved at runtime in the environments (with, eval)</summary>
@@ -146,6 +146,15 @@ internal enum OpCode
 
     /// <summary>(mapped) -> object: the arguments object</summary>
     CreateArguments,
+
+    /// <summary>-> number: arguments.length in a function whose arguments object is not created (FunctionInfo.HasSimpleArguments)</summary>
+    LoadArgumentsLength,
+
+    /// <summary>(mapped) key -> value: arguments[key] in a function whose arguments object is not created (FunctionInfo.HasSimpleArguments)</summary>
+    LoadArgumentsElement,
+
+    /// <summary>(mapped) -> object: a new arguments object for a read, in a function whose arguments object is not created (FunctionInfo.HasSimpleArguments)</summary>
+    CreateArgumentsForRead,
 
     /// <summary>-> this; ReferenceError when this is not initialized (derived constructor before super())</summary>
     LoadThis,
@@ -395,6 +404,15 @@ internal enum OpCode
     /// <summary>array iterable -> array</summary>
     ArrayAppendSpread,
 
+    /// <summary>-> list: the argument list of a call with a spread argument (Interpreter.ArgumentList)</summary>
+    NewArgumentList,
+
+    /// <summary>list value -> list</summary>
+    ArgumentListAppend,
+
+    /// <summary>list iterable -> list</summary>
+    ArgumentListAppendSpread,
+
     /// <summary>(key) object -> value</summary>
     GetProperty,
 
@@ -497,7 +515,7 @@ internal enum OpCode
     /// <summary>superConstructor newTarget argumentsArray -> this</summary>
     SuperCallSpread,
 
-    /// <summary>-> array: the arguments of a derived default constructor (forwarded to super)</summary>
+    /// <summary>-> list: the arguments of a derived default constructor (forwarded to super, see <see cref="NewArgumentList"/>)</summary>
     LoadAllArguments,
 
     /// <summary>specifier options -> promise: import()</summary>

@@ -337,7 +337,7 @@ internal sealed partial class CodeGenerator
         }
 
         // The arguments object
-        if (info.ArgumentsVariable is { } arguments && (arguments.IsReferenced || info.HasDirectEval))
+        if (info.ArgumentsVariable is { } arguments && (arguments.IsReferenced || info.HasDirectEval) && !info.HasSimpleArguments)
         {
             _builder.Emit(OpCode.CreateArguments, info.UsesMappedArguments ? 1 : 0);
             EmitInitializeVariable(arguments);
@@ -670,7 +670,7 @@ internal sealed partial class CodeGenerator
                 _builder.Emit(OpCode.InitializeGlobalLexical, GetNameKey(variable.Name));
                 break;
             case VariableLocation.GlobalObject:
-                _builder.Emit(OpCode.StoreGlobal, GetNameKey(variable.Name), IsStrict ? 1 : 0);
+                _builder.EmitStoreGlobal(GetNameKey(variable.Name), IsStrict);
                 break;
             default:
                 _builder.Emit(OpCode.InitializeName, GetNameKey(variable.Name));
@@ -681,6 +681,13 @@ internal sealed partial class CodeGenerator
     /// <summary>Loads the value of an identifier reference.</summary>
     private void EmitLoadIdentifier(Identifier identifier, bool forTypeOf = false)
     {
+        if (_analysis.SimpleArgumentsReferences.Contains(identifier))
+        {
+            // The arguments object is not created (FunctionInfo.HasSimpleArguments): a new one cannot be observed
+            _builder.Emit(OpCode.CreateArgumentsForRead, _function.UsesMappedArguments ? 1 : 0);
+            return;
+        }
+
         var reference = _analysis.References[identifier];
         if (reference.IsDynamic)
         {
@@ -710,7 +717,7 @@ internal sealed partial class CodeGenerator
         var variable = reference.Variable;
         if (variable is null)
         {
-            _builder.Emit(OpCode.StoreGlobal, GetNameKey(reference.Name), IsStrict ? 1 : 0);
+            _builder.EmitStoreGlobal(GetNameKey(reference.Name), IsStrict);
             return;
         }
 
@@ -759,7 +766,7 @@ internal sealed partial class CodeGenerator
                 break;
             case VariableLocation.GlobalObject:
             case VariableLocation.GlobalLexical:
-                _builder.Emit(OpCode.StoreGlobal, GetNameKey(variable.Name), IsStrict ? 1 : 0);
+                _builder.EmitStoreGlobal(GetNameKey(variable.Name), IsStrict);
                 break;
             default:
                 _builder.Emit(OpCode.StoreName, GetNameKey(variable.Name), IsStrict ? 1 : 0);

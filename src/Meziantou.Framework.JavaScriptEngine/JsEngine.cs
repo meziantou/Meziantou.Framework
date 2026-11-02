@@ -76,6 +76,7 @@ public sealed partial class JsEngine : IDisposable
     {
         var previous = s_current;
         s_current = this;
+        SyncDetachedInlineCacheInvalidations();
         LastEnteredThreadId = Environment.CurrentManagedThreadId;
         return new JsEngineScope(previous);
     }

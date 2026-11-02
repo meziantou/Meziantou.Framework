@@ -72,6 +72,43 @@ internal sealed class JsGenerator(JsObject prototype, Frame frame) : JsObject(pr
     }
 
     /// <summary>
+    /// The step of an iteration (IteratorStepValue with the built-in next method): Resume(undefined, next), then the done and
+    /// value of the result. A yield of the generator does not create its result object, which the step would not expose;
+    /// the result of a yield* (the result object of the inner iterator) and the final result are read as usual.
+    /// </summary>
+    public bool Step(out JsValue value)
+    {
+        JsValue result;
+        Frame.YieldedValue = false;
+        Frame.YieldsValue = true;
+        try
+        {
+            result = Resume(default, kind: 0);
+        }
+        finally
+        {
+            Frame.YieldsValue = false;
+        }
+
+        if (Frame.YieldedValue)
+        {
+            Frame.YieldedValue = false;
+            value = result;
+            return true;
+        }
+
+        var resultObject = (JsObject)result.Cell!;
+        if (IteratorOperations.IteratorComplete(resultObject))
+        {
+            value = default;
+            return false;
+        }
+
+        value = IteratorOperations.IteratorValue(resultObject);
+        return true;
+    }
+
+    /// <summary>
     /// An exception filter that completes the generator when its code throws (a JavaScript exception, a termination or a
     /// .NET exception of a host function), and does not catch the exception: a catch
     /// block that rethrows nests the exception dispatch in each .NET level of a deep recursion through generators, which

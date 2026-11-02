@@ -54,7 +54,8 @@ Assert.Equal("3.5", ConvertUtilities.ChangeType<string?>(3.5, defaultValue: null
    `TypeConverter` of the value converts to the target type, then the `TypeConverter` of the target type converts from
    the value written as a string. This handles `Uri`, `Version`, and your types that have a `[TypeConverter]`
    attribute.
-6. An implicit conversion operator declared by the type of the value, to the target type.
+6. An implicit conversion operator from the type of the value to the target type, declared by the type of the value or
+   by the target type.
 
 | Target type | Accepted values |
 | --- | --- |
@@ -113,7 +114,7 @@ Assert.Equal([1, 2, 3, 4], result2);
 
 ## Implicit conversion operators
 
-When no other rule applies, [DefaultConverter](cref:Meziantou.Framework.DefaultConverter) looks for an implicit operator declared by the type of the value:
+When no other rule applies, [DefaultConverter](cref:Meziantou.Framework.DefaultConverter) looks for an implicit operator declared by the type of the value, then by the target type:
 
 <!-- ref:../../tests/Meziantou.Framework.TypeConverter.Tests/ConvertUtilitiesTests.cs;region=TypeConverter_ImplicitOperatorType;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -121,7 +122,7 @@ private sealed class Percentage(double value)
 {
     public double Value { get; } = value;
 
-    // DefaultConverter uses the implicit operators declared by the type of the value to convert
+    // DefaultConverter uses the implicit operators declared by the type of the value or by the target type
     public static implicit operator double(Percentage percentage) => percentage.Value / 100;
 }
 ```
@@ -134,7 +135,7 @@ Assert.Equal(0.25, value);
 ```
 <!-- endref -->
 
-Explicit operators, and implicit operators declared by the target type, are not used.
+Explicit operators are not used.
 
 ## Trimming
 

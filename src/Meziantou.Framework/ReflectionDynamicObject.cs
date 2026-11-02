@@ -1,6 +1,7 @@
-using System.Collections.Concurrent;
 using System.Dynamic;
 using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
 
 namespace Meziantou.Framework;
 
@@ -10,7 +11,8 @@ public sealed class ReflectionDynamicObject : DynamicObject
     private const BindingFlags InstanceDefaultBindingFlags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
     private const BindingFlags StaticDefaultBindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
 
-    private static readonly ConcurrentDictionary<Type, TypeCache> Cache = new();
+    // A weak table does not keep the types alive, so collectible AssemblyLoadContexts can be unloaded
+    private static readonly ConditionalWeakTable<Type, TypeCache> Cache = new();
 
     private readonly object? _originalObject;
     private readonly TypeCache _typeCache;
@@ -24,7 +26,7 @@ public sealed class ReflectionDynamicObject : DynamicObject
         _originalObject = obj;
 
         var type = obj.GetType();
-        _typeCache = Cache.GetOrAdd(type, TypeCache.Create);
+        _typeCache = Cache.GetValue(type, TypeCache.Create);
     }
 
     [RequiresUnreferencedCode("Use reflection")]
@@ -33,7 +35,7 @@ public sealed class ReflectionDynamicObject : DynamicObject
     {
         ArgumentNullException.ThrowIfNull(type);
 
-        _typeCache = Cache.GetOrAdd(type, TypeCache.Create);
+        _typeCache = Cache.GetValue(type, TypeCache.Create);
     }
 
     [RequiresUnreferencedCode("Use reflection")]
@@ -42,10 +44,9 @@ public sealed class ReflectionDynamicObject : DynamicObject
     {
         var exceptions = new List<Exception>();
 
-        foreach (var constructor in _typeCache.Constructors)
+        foreach (var (constructor, parameterCount) in _typeCache.Constructors)
         {
-            var ctorParameters = constructor.GetParameters();
-            if (ctorParameters.Length != parameters.Length)
+            if (parameterCount != parameters.Length)
                 continue;
 
             try
@@ -74,21 +75,10 @@ public sealed class ReflectionDynamicObject : DynamicObject
 
     public override bool TryGetIndex(GetIndexBinder binder, object[] indexes, out object? result)
     {
-        if (_originalObject is null)
+        foreach (var indexer in GetIndexerCandidates(indexes, setter: false))
         {
-            foreach (var indexer in _typeCache.StaticIndexers)
-            {
-                if (TryGetIndex(indexer, _originalObject, indexes, out result))
-                    return true;
-            }
-        }
-        else
-        {
-            foreach (var indexer in _typeCache.InstanceIndexers)
-            {
-                if (TryGetIndex(indexer, _originalObject, indexes, out result))
-                    return true;
-            }
+            if (TryGetIndex(indexer, _originalObject, indexes, out result))
+                return true;
         }
 
         result = null;
@@ -97,24 +87,41 @@ public sealed class ReflectionDynamicObject : DynamicObject
 
     public override bool TrySetIndex(SetIndexBinder binder, object[] indexes, object? value)
     {
-        if (_originalObject is null)
+        foreach (var indexer in GetIndexerCandidates(indexes, setter: true))
         {
-            foreach (var indexer in _typeCache.StaticIndexers)
-            {
-                if (TrySetIndex(indexer, instance: null, indexes, value))
-                    return true;
-            }
-        }
-        else
-        {
-            foreach (var indexer in _typeCache.InstanceIndexers)
-            {
-                if (TrySetIndex(indexer, _originalObject, indexes, value))
-                    return true;
-            }
+            if (TrySetIndex(indexer, _originalObject, indexes, value))
+                return true;
         }
 
         return false;
+    }
+
+    // The indexers that have as many parameters as the indexes, in the order to try them: the ones whose parameter types
+    // accept the indexes without a conversion first, then the public ones, which hide the explicit interface implementations.
+    private IEnumerable<PropertyInfo> GetIndexerCandidates(object[] indexes, bool setter)
+    {
+        var indexers = _originalObject is null ? _typeCache.StaticIndexers : _typeCache.InstanceIndexers;
+        return indexers
+            .Where(indexer => indexer.ParameterTypes.Length == indexes.Length && (setter ? indexer.Property.CanWrite : indexer.Property.CanRead))
+            .OrderByDescending(indexer => AcceptsWithoutConversion(indexer.ParameterTypes, indexes))
+            .ThenByDescending(indexer => setter ? indexer.IsPublicSetter : indexer.IsPublicGetter)
+            .Select(indexer => indexer.Property);
+
+        static bool AcceptsWithoutConversion(Type[] parameterTypes, object[] indexes)
+        {
+            for (var i = 0; i < parameterTypes.Length; i++)
+            {
+                var parameterType = parameterTypes[i];
+                var index = indexes[i];
+                var accepted = index is null
+                    ? !parameterType.IsValueType || Nullable.GetUnderlyingType(parameterType) is not null
+                    : parameterType.IsInstanceOfType(index);
+                if (!accepted)
+                    return false;
+            }
+
+            return true;
+        }
     }
 
     public override bool TryInvokeMember(InvokeMemberBinder binder, object?[]? args, out object? result)
@@ -142,46 +149,48 @@ public sealed class ReflectionDynamicObject : DynamicObject
 
     public override IEnumerable<string> GetDynamicMemberNames()
     {
-        return GetAllMembers().Distinct(StringComparer.Ordinal);
+        // Only the members that TryGetMember can read: the static ones for a type, the instance ones for an object.
+        // Indexers have no name to use, and the compiler-generated fields, such as backing fields, are not members of the source code.
+        var (properties, fields) = _originalObject is null
+            ? (_typeCache.StaticProperties, _typeCache.StaticFields)
+            : (_typeCache.InstanceProperties, _typeCache.InstanceFields);
 
-        IEnumerable<string> GetAllMembers()
-        {
-            foreach (var propertyInfo in _typeCache.InstanceProperties)
-            {
-                yield return propertyInfo.Key;
-            }
-
-            foreach (var field in _typeCache.InstanceIndexers)
-            {
-                yield return field.Name;
-            }
-
-            foreach (var field in _typeCache.InstanceFields)
-            {
-                yield return field.Key;
-            }
-
-            foreach (var propertyInfo in _typeCache.StaticProperties)
-            {
-                yield return propertyInfo.Key;
-            }
-
-            foreach (var field in _typeCache.StaticIndexers)
-            {
-                yield return field.Name;
-            }
-
-            foreach (var field in _typeCache.StaticFields)
-            {
-                yield return field.Key;
-            }
-        }
+        return properties.Keys
+            .Concat(fields.Where(field => !field.Value.IsDefined(typeof(CompilerGeneratedAttribute), inherit: false)).Select(field => field.Key))
+            .Distinct(StringComparer.Ordinal);
     }
 
     public override bool TryConvert(ConvertBinder binder, out object? result)
     {
-        result = Convert.ChangeType(_originalObject, binder.Type, provider: null);
-        return true;
+        var targetType = binder.Type;
+        if (_originalObject is null)
+        {
+            // A wrapped type has no value: it converts to null, when the target type accepts it
+            result = null;
+            return !targetType.IsValueType || Nullable.GetUnderlyingType(targetType) is not null;
+        }
+
+        if (targetType.IsInstanceOfType(_originalObject))
+        {
+            result = _originalObject;
+            return true;
+        }
+
+        var conversionType = Nullable.GetUnderlyingType(targetType) ?? targetType;
+        if (_originalObject is IConvertible)
+        {
+            try
+            {
+                result = Convert.ChangeType(_originalObject, conversionType, provider: null);
+                return true;
+            }
+            catch (InvalidCastException)
+            {
+            }
+        }
+
+        result = null;
+        return false;
     }
 
     public override string? ToString()
@@ -261,6 +270,8 @@ public sealed class ReflectionDynamicObject : DynamicObject
         return false;
     }
 
+    // An ArgumentException means the indexes do not match the parameters, so the next indexer can be tried.
+    // An exception thrown by the indexer itself, such as a KeyNotFoundException, is rethrown as is.
     private static bool TryGetIndex(PropertyInfo indexer, object? instance, object[] indexes, out object? result)
     {
         try
@@ -271,11 +282,9 @@ public sealed class ReflectionDynamicObject : DynamicObject
         catch (ArgumentException)
         {
         }
-        catch (TargetParameterCountException)
+        catch (TargetInvocationException ex) when (ex.InnerException is not null)
         {
-        }
-        catch (TargetInvocationException)
-        {
+            ExceptionDispatchInfo.Throw(ex.InnerException);
         }
 
         result = null;
@@ -292,11 +301,9 @@ public sealed class ReflectionDynamicObject : DynamicObject
         catch (ArgumentException)
         {
         }
-        catch (TargetParameterCountException)
+        catch (TargetInvocationException ex) when (ex.InnerException is not null)
         {
-        }
-        catch (TargetInvocationException)
-        {
+            ExceptionDispatchInfo.Throw(ex.InnerException);
         }
 
         return false;
@@ -323,20 +330,23 @@ public sealed class ReflectionDynamicObject : DynamicObject
         [DynamicallyAccessedMembers(CacheMembers)]
         public Type Type { get; }
 
-        public List<ConstructorInfo> Constructors { get; } = [];
+        public List<(ConstructorInfo Constructor, int ParameterCount)> Constructors { get; } = [];
 
         public Dictionary<string, PropertyInfo> InstanceProperties { get; } = new Dictionary<string, PropertyInfo>(StringComparer.Ordinal);
         public Dictionary<string, FieldInfo> InstanceFields { get; } = new Dictionary<string, FieldInfo>(StringComparer.Ordinal);
-        public List<PropertyInfo> InstanceIndexers { get; } = [];
+        public List<IndexerInfo> InstanceIndexers { get; } = [];
 
         public Dictionary<string, PropertyInfo> StaticProperties { get; } = new Dictionary<string, PropertyInfo>(StringComparer.Ordinal);
         public Dictionary<string, FieldInfo> StaticFields { get; } = new Dictionary<string, FieldInfo>(StringComparer.Ordinal);
-        public List<PropertyInfo> StaticIndexers { get; } = [];
+        public List<IndexerInfo> StaticIndexers { get; } = [];
 
         public static TypeCache Create([DynamicallyAccessedMembers(CacheMembers)] Type type)
         {
             var typeCache = new TypeCache(type);
-            typeCache.Constructors.AddRange(type.GetConstructors());
+            foreach (var constructor in type.GetConstructors())
+            {
+                typeCache.Constructors.Add((constructor, constructor.GetParameters().Length));
+            }
 
             var currentType = type;
             while (currentType != null)
@@ -344,9 +354,10 @@ public sealed class ReflectionDynamicObject : DynamicObject
                 // Instances
                 foreach (var propertyInfo in currentType.GetProperties(InstanceDefaultBindingFlags))
                 {
-                    if (propertyInfo.GetIndexParameters().Length != 0)
+                    var indexParameters = propertyInfo.GetIndexParameters();
+                    if (indexParameters.Length != 0)
                     {
-                        typeCache.InstanceIndexers.Add(propertyInfo);
+                        typeCache.InstanceIndexers.Add(new IndexerInfo(propertyInfo, indexParameters));
                     }
                     else
                     {
@@ -362,9 +373,10 @@ public sealed class ReflectionDynamicObject : DynamicObject
                 // Static
                 foreach (var propertyInfo in currentType.GetProperties(StaticDefaultBindingFlags))
                 {
-                    if (propertyInfo.GetIndexParameters().Length != 0)
+                    var indexParameters = propertyInfo.GetIndexParameters();
+                    if (indexParameters.Length != 0)
                     {
-                        typeCache.StaticIndexers.Add(propertyInfo);
+                        typeCache.StaticIndexers.Add(new IndexerInfo(propertyInfo, indexParameters));
                     }
                     else
                     {
@@ -382,5 +394,16 @@ public sealed class ReflectionDynamicObject : DynamicObject
 
             return typeCache;
         }
+    }
+
+    private sealed class IndexerInfo(PropertyInfo property, ParameterInfo[] parameters)
+    {
+        public PropertyInfo Property { get; } = property;
+
+        public Type[] ParameterTypes { get; } = Array.ConvertAll(parameters, parameter => parameter.ParameterType);
+
+        public bool IsPublicGetter { get; } = property.GetMethod?.IsPublic is true;
+
+        public bool IsPublicSetter { get; } = property.SetMethod?.IsPublic is true;
     }
 }

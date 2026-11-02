@@ -92,4 +92,38 @@ public class ReflectionUtilitiesTests
     private static class MyNullable<T>
     {
     }
+
+    [Fact]
+    public void GetImplicitConversion_OperatorDeclaredByTargetType()
+    {
+        var conversion = ReflectionUtilities.GetImplicitConversion(42, typeof(Wrapper));
+        Assert.NotNull(conversion);
+        Assert.Equal(typeof(Wrapper), conversion.DeclaringType);
+
+        var wrapper = (Wrapper)conversion.Invoke(obj: null, [42])!;
+        Assert.Equal(42, wrapper.Value);
+    }
+
+    [Fact]
+    public void GetImplicitConversion_OperatorDeclaredBySourceType()
+    {
+        var conversion = ReflectionUtilities.GetImplicitConversion(new Wrapper(1), typeof(int));
+        Assert.NotNull(conversion);
+        Assert.Equal(typeof(Wrapper), conversion.DeclaringType);
+    }
+
+    [Fact]
+    public void GetImplicitConversion_NoOperator()
+    {
+        Assert.Null(ReflectionUtilities.GetImplicitConversion("text", typeof(Wrapper)));
+    }
+
+    private sealed class Wrapper(int value)
+    {
+        public int Value { get; } = value;
+
+        public static implicit operator Wrapper(int value) => new(value);
+
+        public static implicit operator int(Wrapper wrapper) => wrapper.Value;
+    }
 }

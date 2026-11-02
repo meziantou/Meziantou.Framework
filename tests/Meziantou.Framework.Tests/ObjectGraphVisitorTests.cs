@@ -149,4 +149,48 @@ public sealed class ObjectGraphVisitorTests
     {
         public Node? Self { get; set; }
     }
+
+    [Fact]
+    public void VisitDateTimeProperties()
+    {
+        var visitor = new TestObjectGraphVisitor();
+        var when = new DateTime(2024, 1, 2, 3, 4, 5, DateTimeKind.Utc);
+        visitor.Visit(new DateHolder { When = when, Offset = new DateTimeOffset(when), Duration = TimeSpan.FromMinutes(1), Id = Guid.NewGuid() });
+
+        Assert.Contains(when, visitor.VisitedValues);
+        Assert.Equal(["Duration", "Id", "Offset", "When"], visitor.VisitedProperties.Select(p => p.Name).Order(StringComparer.Ordinal));
+    }
+
+    [Fact]
+    public void VisitValueTypeReturningItself()
+    {
+        var visitor = new TestObjectGraphVisitor();
+        visitor.Visit(new SelfReturning(1));
+
+        Assert.HasCount(2, visitor.VisitedValues);
+        Assert.Contains(new SelfReturning(1), visitor.VisitedValues);
+        Assert.Contains(1, visitor.VisitedValues);
+    }
+
+    [Fact]
+    public void VisitEqualValueTypesInDifferentBranches()
+    {
+        var visitor = new TestObjectGraphVisitor();
+        visitor.Visit(new { A = 1, B = 1 });
+
+        Assert.Equal(2, visitor.VisitedValues.Count(value => value is 1));
+    }
+
+    private sealed class DateHolder
+    {
+        public DateTime When { get; set; }
+        public DateTimeOffset Offset { get; set; }
+        public TimeSpan Duration { get; set; }
+        public Guid Id { get; set; }
+    }
+
+    private readonly record struct SelfReturning(int Value)
+    {
+        public SelfReturning Self => this;
+    }
 }

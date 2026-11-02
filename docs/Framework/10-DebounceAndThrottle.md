@@ -65,5 +65,25 @@ it has run, the next call schedules it again. Use it to refresh a progress displ
   UI application, dispatch to the UI thread inside the action.
 - The overloads that take a `TimeProvider` let tests control time, with `FakeTimeProvider` from the
   `Microsoft.Extensions.TimeProvider.Testing` package, as in the examples. The others use `TimeProvider.System`.
+- An exception thrown by the action is unhandled, as in any timer callback: it terminates the process. To handle it,
+  use the overload that takes an `onError` callback, which receives the exception. A throttled action keeps running after
+  it throws.
+
+<!-- ref:../../tests/Meziantou.Framework.Tests/ThrottleExtensionsTests.cs;region=ThrottleExtensions_OnError;format=md-fenced-code-block;dedent=true -->
+```csharp
+var timeProvider = new FakeTimeProvider();
+var errors = new List<Exception>();
+var refresh = ThrottleExtensions.Throttle(
+    () => throw new InvalidOperationException("The server is unavailable"),
+    TimeSpan.FromSeconds(1),
+    timeProvider,
+    onError: errors.Add); // For instance, log the exception
+
+refresh();
+timeProvider.Advance(TimeSpan.FromSeconds(1));
+Assert.Equal("The server is unavailable", Assert.Single(errors).Message);
+```
+<!-- endref -->
+
 - Keep a reference to the returned delegate and call it each time: calling [Debounce](cref:Meziantou.Framework.DebounceExtensions.Debounce) or [Throttle](cref:Meziantou.Framework.ThrottleExtensions.Throttle) again creates an
   independent delegate.

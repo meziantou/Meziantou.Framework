@@ -476,6 +476,33 @@ public sealed class FlowMismatchRuleTests : TaggedValuesAnalyzerTestBase
     }
 
     [Fact]
+    public async Task ReportDiagnostic_ForDeconstructionAssignmentsOfTupleLocals()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                [ValueTag("OrderId")] Guid _orderId;
+                [ValueTag("ProjectId")] Guid _projectId;
+
+                void M([ValueTag("OrderId")] Guid orderId, [ValueTag("ProjectId")] Guid projectId, int a)
+                {
+                    var projects = (projectId, projectId);
+                    var copy = projects;
+                    var pair = (orderId, projectId);
+                    var nested = (pair, a);
+                    ({|MFTV0002:orderId|}, {|MFTV0002:orderId|}) = projects;
+                    ({|MFTV0002:_orderId|}, _projectId) = copy;
+                    (_orderId, _projectId) = pair;
+                    (_, {|MFTV0002:_orderId|}) = pair;
+                    ((_orderId, _projectId), a) = nested;
+                    (({|MFTV0002:_projectId|}, _), _) = nested;
+                    ({|MFTV0002:_projectId|}, _) = nested.Item1;
+                }
+            }
+            """);
+    }
+
+    [Fact]
     public async Task ReportDiagnostic_ForOutArgumentsToExistingVariables()
     {
         await VerifyAsync("""

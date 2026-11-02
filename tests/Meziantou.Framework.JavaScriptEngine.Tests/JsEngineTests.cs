@@ -781,6 +781,119 @@ public sealed class JsEngineTests
         #endregion
     }
 
+    [Fact]
+    public void Documentation_Debugger()
+    {
+        #region JavaScriptEngine_Debugger
+        var pauses = new List<string>();
+        JsEngine? engine = null;
+        var debugger = new BreakpointDebugger(debugEvent =>
+        {
+            // The script waits here: inspect its state, then return to resume it
+            var total = debugEvent.Realm.Execute("total").AsNumber();
+            pauses.Add($"{debugEvent.FunctionName}@{debugEvent.Location.Line} depth={debugEvent.CallDepth} total={total}");
+        });
+        debugger.Breakpoints.Add(("cart.js", 4));
+
+        using (engine = new JsEngine(new JsEngineOptions { Debugger = debugger }))
+        {
+            var realm = engine.CreateRealm();
+            realm.Execute("""
+                var total = 0;
+                function add(price, quantity) {
+                  if (quantity > 0) {
+                    total += price * quantity;
+                  }
+                }
+                add(10, 2);
+                add(5, 0);
+                add(3, 1);
+                debugger;
+                """, "cart.js");
+        }
+
+        Assert.Equal(["add@4 depth=2 total=0", "add@4 depth=2 total=20", "@10 depth=1 total=23"], pauses);
+
+        // Line 4 did not run for add(5, 0), the coverage has it once
+        Assert.Contains(("cart.js", 4), debugger.CoveredLines);
+        Assert.DoesNotContain(("cart.js", 2), debugger.CoveredLines);
+        #endregion
+    }
+
+    [Fact]
+    public void Debugger_StatementEvents()
+    {
+        var events = new List<string>();
+        using var engine = new JsEngine(new JsEngineOptions { Debugger = new DelegateDebugger(e => events.Add($"{e.Location.Line}:{e.Location.Column}:{e.CallDepth}:{e.FunctionName}")) });
+        var realm = engine.CreateRealm();
+        realm.Execute("function f(x) {\n  const y = x + 1;\n  return y;\n}\nlabel: for (let i = 0; i < 2; i++) { f(i); }\n;", "a.js");
+
+        Assert.Equal(["5:8:1:", "5:38:1:", "2:3:2:f", "3:3:2:f", "5:38:1:", "2:3:2:f", "3:3:2:f"], events);
+
+        // eval, new Function and the prepared scripts raise events too
+        events.Clear();
+        realm.Execute(JsPreparedScript.Parse("eval('1;'); new Function('return 2;')();", "p.js"));
+        Assert.Equal(["1:1:1:", "1:1:2:", "1:13:1:", "3:1:2:anonymous"], events);
+    }
+
+    [Fact]
+    public void Debugger_NoEventsWithoutDebuggerOrInCallbacks()
+    {
+        using (var engine = new JsEngine())
+        {
+            Assert.Equal(3, engine.CreateRealm().Execute("debugger; 1 + 2").AsNumber());
+        }
+
+        // The code of the callbacks raises no event and does not count in the limits of the script (7 callbacks x 50 iterations)
+        var count = 0;
+        var debugger = new DelegateDebugger(e =>
+        {
+            count++;
+            Assert.Equal(50, e.Realm.Execute("var n = 0; for (let i = 0; i < 50; i++) n++; n").AsNumber());
+        });
+
+        using (var engine = new JsEngine(new JsEngineOptions { MaxStatements = 100, Debugger = debugger }))
+        {
+            Assert.Equal(6, engine.CreateRealm().Execute("var s = 0; for (let i = 0; i < 4; i++) { s += i; } s").AsNumber());
+            Assert.Equal(7, count);
+        }
+    }
+
+    [Fact]
+    public void Debugger_PausedTimeIsNotCountedAndTerminationStopsTheScript()
+    {
+        using (var engine = new JsEngine(new JsEngineOptions { Timeout = TimeSpan.FromMilliseconds(100), Debugger = new DelegateDebugger(_ => Thread.Sleep(250)) }))
+        {
+            Assert.Equal(2, engine.CreateRealm().Execute("var x = 1;\nx + 1;").AsNumber());
+        }
+
+        using (var engine = new JsEngine(new JsEngineOptions { Debugger = new DelegateDebugger(e => { if (e.Location.Line == 2) throw new JsTerminationException(JsTerminationReason.Canceled, "Stopped by the debugger"); }) }))
+        {
+            var realm = engine.CreateRealm();
+            var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("globalThis.x = 1;\ntry { x = 2; } finally { x = 3; }"));
+            Assert.Equal("Stopped by the debugger", exception.Message);
+            Assert.Equal(1, realm.Execute("x").AsNumber());
+        }
+    }
+
+    [Fact]
+    public void Debugger_AsyncAndGeneratorStatementsRaiseEventsWhenTheyRun()
+    {
+        var events = new List<string>();
+        using var engine = new JsEngine(new JsEngineOptions { Debugger = new DelegateDebugger(e => events.Add($"{e.Location.Line}:{e.CallDepth}")) });
+        var realm = engine.CreateRealm();
+        realm.Execute("async function f() {\n  await 0;\n  globalThis.done = true;\n}\nf();\nfunction* g() {\n  yield 1;\n  yield 2;\n}\nvar it = g(); it.next();", "async.js");
+        Assert.Equal(["5:1", "2:2", "10:1", "10:1", "7:2"], events);
+
+        events.Clear();
+        engine.RunJobs();
+        Assert.Equal(["3:1"], events);
+
+        events.Clear();
+        realm.Execute("it.next();", "next.js");
+        Assert.Equal(["1:1", "8:2"], events);
+    }
+
     // The examples of the documentation site (docs/JavaScriptEngine)
     [Fact]
     public void Documentation_HelloWorld()
@@ -1651,6 +1764,11 @@ public sealed class JsEngineTests
 
             request.Complete(module);
         }
+    }
+
+    private sealed class DelegateDebugger(Action<JsDebugEvent> onStatement) : JsDebugger
+    {
+        protected internal override void OnStatement(JsDebugEvent debugEvent) => onStatement(debugEvent);
     }
 
     private sealed class UppercaseHostObject(JsObject prototype, object target) : JsHostObject(prototype, target)

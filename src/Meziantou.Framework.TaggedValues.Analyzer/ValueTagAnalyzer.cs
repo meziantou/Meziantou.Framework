@@ -595,7 +595,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
                 }
                 else if (!elementTags.IsEmpty && !TagInfo.AreCompatible(elementTags, expected))
                 {
-                    ReportDeconstructedValueMismatch(context, resolver, element, local, elementTags, expected);
+                    ReportDeconstructedValueMismatch(context, resolver, element.Syntax.GetLocation(), local, elementTags, expected);
                 }
 
                 continue;
@@ -628,9 +628,10 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
     }
 
     /// <summary>
-    /// Reports a deconstructed value that has no operation to report on, e.g. a key of a dictionary in <c>foreach (var (key /* ValueTag=OrderId */, value) in map)</c>.
+    /// Reports a deconstructed value that has no operation to report on, e.g. a key of a dictionary in <c>foreach (var (key /* ValueTag=OrderId */, value) in map)</c>
+    /// or in <c>pair is (var key /* ValueTag=OrderId */, var value)</c>.
     /// </summary>
-    private static void ReportDeconstructedValueMismatch(OperationAnalysisContext context, TagResolver resolver, IOperation element, ILocalSymbol local, TagInfo elementTags, TagInfo expected)
+    private static void ReportDeconstructedValueMismatch(OperationAnalysisContext context, TagResolver resolver, Location location, ILocalSymbol local, TagInfo elementTags, TagInfo expected)
     {
         var properties = ImmutableDictionary<string, string?>.Empty;
         var additionalLocations = new List<Location>();
@@ -644,7 +645,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
 
         context.ReportDiagnostic(Diagnostic.Create(
             FlowMismatch,
-            element.Syntax.GetLocation(),
+            location,
             additionalLocations,
             properties,
             "the deconstructed value",
@@ -690,12 +691,19 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
         if (expected.IsEmpty)
             return;
 
-        // The tags of a key or a value of a deconstructed KeyValuePair have no operation to report on
         var (value, tags) = resolver.GetPatternInput(pattern);
-        if (value is null || tags is not null)
-            return;
-
-        ReportFlow(context, resolver, value, local, expected, ValueTagTargetKind.Local);
+        if (tags is null)
+        {
+            if (value is not null)
+            {
+                ReportFlow(context, resolver, value, local, expected, ValueTagTargetKind.Local);
+            }
+        }
+        else if (!tags.IsEmpty && !TagInfo.AreCompatible(tags, expected) && local.Locations is [var localLocation, ..])
+        {
+            // The key or the value of a KeyValuePair, or the out parameter of a Deconstruct method, have no operation to report on
+            ReportDeconstructedValueMismatch(context, resolver, localLocation, local, tags, expected);
+        }
     }
 
     private static void AnalyzeMemberInitializer(OperationAnalysisContext context, TagResolver resolver)

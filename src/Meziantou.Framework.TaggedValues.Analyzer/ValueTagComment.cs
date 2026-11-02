@@ -15,28 +15,43 @@ internal static class ValueTagComment
     public static ValueTagCommentKind Parse(string commentText, out TagInfo tagInfo)
     {
         tagInfo = TagInfo.None;
-        string content;
-        if (commentText.StartsWith("/*", StringComparison.Ordinal) && commentText.EndsWith("*/", StringComparison.Ordinal) && commentText.Length >= 4)
+
+        // Most comments are not annotations: find the content and check the keyword by index, so they allocate nothing
+        int start;
+        int end;
+        if (commentText.Length >= 4 && commentText.StartsWith("/*", StringComparison.Ordinal) && commentText.EndsWith("*/", StringComparison.Ordinal))
         {
-            content = commentText.Substring(2, commentText.Length - 4).Trim();
+            start = 2;
+            end = commentText.Length - 2;
         }
         else if (commentText.StartsWith("//", StringComparison.Ordinal))
         {
-            content = commentText.Substring(2).Trim();
+            start = 2;
+            end = commentText.Length;
         }
         else
         {
             return ValueTagCommentKind.NotValueTag;
         }
 
-        if (!content.StartsWith(Keyword, StringComparison.Ordinal))
+        while (start < end && char.IsWhiteSpace(commentText[start]))
+        {
+            start++;
+        }
+
+        while (end > start && char.IsWhiteSpace(commentText[end - 1]))
+        {
+            end--;
+        }
+
+        if (end - start < Keyword.Length || string.CompareOrdinal(commentText, start, Keyword, 0, Keyword.Length) is not 0)
             return ValueTagCommentKind.NotValueTag;
 
-        var rest = content.Substring(Keyword.Length);
-        if (rest.Length > 0 && (char.IsLetterOrDigit(rest[0]) || rest[0] is '_'))
+        start += Keyword.Length;
+        if (start < end && (char.IsLetterOrDigit(commentText[start]) || commentText[start] is '_'))
             return ValueTagCommentKind.NotValueTag;
 
-        rest = rest.Trim();
+        var rest = commentText.Substring(start, end - start).Trim();
 
         // Prose such as "// ValueTag is not used here" is not an annotation, but "/* ValueTag OrderId */" is a malformed one
         if (rest.IndexOf("=", StringComparison.Ordinal) < 0 && rest.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries).Length > 1)

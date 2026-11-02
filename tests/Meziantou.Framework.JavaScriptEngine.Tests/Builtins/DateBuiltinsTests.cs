@@ -236,6 +236,15 @@ public sealed class DateBuiltinsTests
     [InlineData("Jan 1 1970 12:00:00 am GMT", 0)]
     [InlineData("Jan 1 1970 12:30 pm GMT", 45000000)]
     [InlineData("1970-01-01 01:00:00 +01:00", 0)]
+    [InlineData("2021-03-07T10:00:00.000+0100", 1615107600000)]
+    [InlineData("2021-03-07T10:00:00z", 1615111200000)]
+    [InlineData("2021-03-07t10:00:00Z", 1615111200000)]
+    [InlineData("2021-03-07t10:00z", 1615111200000)]
+    [InlineData("1970-01-01T00:00:00-0230", 9000000)]
+    [InlineData("1970-01-01T00:00+0000", 0)]
+    [InlineData("2021-03-07T10:00:00-2359", 1615197540000)]
+    [InlineData("2021-03-07 10:00:00 z", 1615111200000)]
+    [InlineData("2021-03-07 10:00:00+0100", 1615107600000)]
     public void Parse_Utc(string value, double expected)
     {
         using var context = CreateContext();
@@ -265,6 +274,18 @@ public sealed class DateBuiltinsTests
     [InlineData("may 1999 1999")]
     [InlineData("may 0 0")]
     [InlineData("Jan 1 1970 25:00")]
+    [InlineData("2021-03-07T10:00:00+01")]
+    [InlineData("2021-03-07T10:00:00+010")]
+    [InlineData("2021-03-07T10:00:00+01000")]
+    [InlineData("2021-03-07T10:00:00+2400")]
+    [InlineData("2021-03-07T10:00:00+0160")]
+    [InlineData("2021-03-07T10:00:00+01:0")]
+    [InlineData("2021-03-07T10:00:00+01:00:00")]
+    [InlineData("2021-03-07T10:00:00+0100Z")]
+    [InlineData("2021-03-07T10:00:00zz")]
+    [InlineData("2021-03-07t")]
+    [InlineData("2021-03-07T10:00:00 +0100")]
+    [InlineData("2021-03-07T10:00:00 z")]
     public void Parse_Invalid(string value)
     {
         using var context = CreateContext();
@@ -275,6 +296,7 @@ public sealed class DateBuiltinsTests
     [InlineData("1970-01-01T00:00:00", 1970, 1, 1, 0, 0, 0, 0)]
     [InlineData("1970-01-01T00:00", 1970, 1, 1, 0, 0, 0, 0)]
     [InlineData("1997-03-08T11:19:20", 1997, 3, 8, 11, 19, 20, 0)]
+    [InlineData("1997-03-08t11:19:20", 1997, 3, 8, 11, 19, 20, 0)]
     [InlineData("1997-03-08 11:19:20", 1997, 3, 8, 11, 19, 20, 0)]
     [InlineData("1997-3-8 11:19:20", 1997, 3, 8, 11, 19, 20, 0)]
     [InlineData("+001997-3-8 11:19:20", 1997, 3, 8, 11, 19, 20, 0)]
@@ -476,6 +498,11 @@ public sealed class DateBuiltinsTests
         var unknownZone = TimeZoneInfo.CreateCustomTimeZone("My zone", TimeSpan.FromHours(9), "Mine", "Mine");
         using (var context = new FundamentalsTestContext(new JsEngineOptions { TimeProvider = new FixedTimeProvider(FixedNow, unknownZone) }))
         {
+            Assert.Equal("+09:00", context.Engine.SystemTimeZone.PrimaryIdentifier);
+        }
+
+        using (var context = new FundamentalsTestContext(new JsEngineOptions { TimeZone = "UTC", TimeProvider = new FixedTimeProvider(FixedNow, unknownZone) }))
+        {
             Assert.Equal("UTC", context.Engine.SystemTimeZone.PrimaryIdentifier);
         }
 
@@ -488,6 +515,90 @@ public sealed class DateBuiltinsTests
         using (var context = new FundamentalsTestContext(new JsEngineOptions { TimeZone = "Invalid/Zone" }))
         {
             Assert.Throws<InvalidOperationException>(() => context.Engine.SystemTimeZone);
+        }
+    }
+
+    [Fact]
+    public void TimeZone_CustomFixedOffset()
+    {
+        var zone = TimeZoneInfo.CreateCustomTimeZone("Custom", TimeSpan.FromHours(5), "Custom", "Custom");
+        using var context = new FundamentalsTestContext(new JsEngineOptions { TimeProvider = new FixedTimeProvider(FixedNow, zone) });
+        Assert.Equal(-300, Number(context.Realm.Evaluate("new Date(2024, 0, 1).getTimezoneOffset()")));
+        Assert.Equal(Ms(2024, 6, 30, 19), Number(context.Realm.Evaluate("new Date(2024, 6, 1).getTime()")));
+        Assert.Equal("Mon Jul 15 2024 15:20:30 GMT+0500 (+05:00)", Text(context.Realm.Evaluate("new Date().toString()")));
+        Assert.Equal("+05:00", Text(context.Realm.Evaluate("Temporal.Now.timeZoneId()")));
+        Assert.Equal("2024-07-15T15:20:30.456+05:00[+05:00]", Text(context.Realm.Evaluate("Temporal.Now.zonedDateTimeISO().toString()")));
+        Assert.Equal("+05:00", Text(context.Realm.Evaluate("new Intl.DateTimeFormat().resolvedOptions().timeZone")));
+        Assert.Equal("15:20", Text(context.Realm.Evaluate("new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })")));
+    }
+
+    [Fact]
+    public void TimeZone_CustomDaylightSavingTime()
+    {
+        // Central European Time: the last Sunday of March at 02:00 to the last Sunday of October at 03:00
+        var rule = TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(
+            DateTime.MinValue.Date,
+            DateTime.MaxValue.Date,
+            TimeSpan.FromHours(1),
+            TimeZoneInfo.TransitionTime.CreateFloatingDateRule(new DateTime(1, 1, 1, 2, 0, 0), 3, 5, DayOfWeek.Sunday),
+            TimeZoneInfo.TransitionTime.CreateFloatingDateRule(new DateTime(1, 1, 1, 3, 0, 0), 10, 5, DayOfWeek.Sunday));
+        var zone = TimeZoneInfo.CreateCustomTimeZone("Custom", TimeSpan.FromHours(1), "Custom", "Custom Standard", "Custom Daylight", [rule]);
+        using var context = new FundamentalsTestContext(new JsEngineOptions { TimeProvider = new FixedTimeProvider(FixedNow, zone) });
+        Assert.Equal(-60, Number(context.Realm.Evaluate("new Date(2024, 0, 1).getTimezoneOffset()")));
+        Assert.Equal(-120, Number(context.Realm.Evaluate("new Date(2024, 6, 1).getTimezoneOffset()")));
+        Assert.Equal(-120, Number(context.Realm.Evaluate("new Date(250000, 6, 1).getTimezoneOffset()")));
+
+        // 02:30 on 2024-03-31 is skipped, 02:30 on 2024-10-27 is repeated (the earlier instant)
+        Assert.Equal(Ms(2024, 3, 31, 1, 30), Number(context.Realm.Evaluate("new Date(2024, 2, 31, 2, 30).getTime()")));
+        Assert.Equal(Ms(2024, 10, 27, 0, 30), Number(context.Realm.Evaluate("new Date(2024, 9, 27, 2, 30).getTime()")));
+        Assert.Equal("Mon Jul 15 2024 12:20:30 GMT+0200 (Custom)", Text(context.Realm.Evaluate("new Date().toString()")));
+        Assert.Equal("Custom", Text(context.Realm.Evaluate("Temporal.Now.timeZoneId()")));
+        Assert.Equal("2024-07-15T12:20:30.456+02:00[Custom]", Text(context.Realm.Evaluate("Temporal.Now.zonedDateTimeISO().toString()")));
+        Assert.Equal("2024-10-27T02:00:00+01:00[Custom]", Text(context.Realm.Evaluate("Temporal.Now.zonedDateTimeISO().getTimeZoneTransition('next').toString()")));
+        Assert.Equal("Custom", Text(context.Realm.Evaluate("new Intl.DateTimeFormat().resolvedOptions().timeZone")));
+        Assert.Equal("12:20", Text(context.Realm.Evaluate("new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })")));
+        Assert.NotNull(context.Engine.SystemTimeZone.Zone.RecurringRule);
+        AssertSameOffsets(zone, context.Engine);
+    }
+
+    [Fact]
+    public void TimeZone_CustomRulesMatchTheTimeZoneInfo()
+    {
+        // Several rules, a southern hemisphere rule that never ends, fixed dates and a transition at the end of the day
+        var rules = new[]
+        {
+            TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(
+                new DateTime(1990, 1, 1),
+                new DateTime(1999, 12, 31),
+                TimeSpan.FromMinutes(30),
+                TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, 0, 0, 0), 4, 15),
+                TimeZoneInfo.TransitionTime.CreateFixedDateRule(new DateTime(1, 1, 1, 23, 59, 59, 999), 9, 30)),
+            TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(
+                new DateTime(2005, 1, 1),
+                DateTime.MaxValue.Date,
+                TimeSpan.FromHours(1),
+                TimeZoneInfo.TransitionTime.CreateFloatingDateRule(new DateTime(1, 1, 1, 2, 0, 0), 10, 1, DayOfWeek.Sunday),
+                TimeZoneInfo.TransitionTime.CreateFloatingDateRule(new DateTime(1, 1, 1, 3, 0, 0), 4, 1, DayOfWeek.Sunday)),
+        };
+        var zone = TimeZoneInfo.CreateCustomTimeZone("Southern", TimeSpan.FromHours(-3), "Southern", "Southern Standard", "Southern Daylight", rules);
+        using var context = new FundamentalsTestContext(new JsEngineOptions { TimeProvider = new FixedTimeProvider(FixedNow, zone) });
+        Assert.NotNull(context.Engine.SystemTimeZone.Zone.RecurringRule);
+        AssertSameOffsets(zone, context.Engine);
+
+        // The zone is converted once per TimeZoneInfo
+        using var other = new FundamentalsTestContext(new JsEngineOptions { TimeProvider = new FixedTimeProvider(FixedNow, zone) });
+        Assert.Same(context.Engine.SystemTimeZone.Zone, other.Engine.SystemTimeZone.Zone);
+    }
+
+    private static void AssertSameOffsets(TimeZoneInfo zone, JsEngine engine)
+    {
+        var namedZone = engine.SystemTimeZone.Zone;
+        var start = new DateTimeOffset(1985, 1, 1, 0, 0, 0, TimeSpan.Zero).ToUnixTimeSeconds();
+        var end = new DateTimeOffset(2060, 1, 1, 0, 0, 0, TimeSpan.Zero).ToUnixTimeSeconds();
+        for (var time = start; time < end; time += 1800)
+        {
+            var expected = (int)zone.GetUtcOffset(DateTimeOffset.FromUnixTimeSeconds(time)).TotalSeconds;
+            Assert.Equal(expected, namedZone.GetOffsetSeconds(time));
         }
     }
 

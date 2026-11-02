@@ -87,14 +87,9 @@ public partial class JsObject
     public IReadOnlyList<JsPropertyKey> GetOwnPropertyKeys()
     {
         CheckHostAccess();
-        var keys = OwnPropertyKeys();
-        var result = new JsPropertyKey[keys.Count];
-        for (var i = 0; i < result.Length; i++)
-        {
-            result[i] = new JsPropertyKey(keys[i]);
-        }
 
-        return result;
+        // The list is a new one: no copy
+        return new JsPropertyKeyList(OwnPropertyKeys());
     }
 
     /// <summary>[[GetPrototypeOf]]</summary>

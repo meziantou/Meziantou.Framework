@@ -160,6 +160,20 @@ public sealed class FunctionBuiltinsTests
     }
 
     [Fact]
+    public void Bind_Rebinding_ScalesLinearly()
+    {
+        // Each name used to be a copy of the previous name with the prefix
+        var result = BuiltinsTestContext.ExecuteWithinBudget("""
+            let f = function target() {};
+            for (let i = 0; i < 200000; i++) f = f.bind(null);
+            const name = f.name;
+            const descriptor = Object.getOwnPropertyDescriptor(f, 'name');
+            [name.length, name.startsWith('bound bound '), name.endsWith(' target'), name.lastIndexOf('bound '), descriptor.writable, descriptor.enumerable, descriptor.configurable].join()
+            """);
+        Assert.Equal("1200006,true,true,1199994,false,false,true", result);
+    }
+
+    [Fact]
     public void Bind_DeepChainThrowsRangeError()
     {
         using var context = new FundamentalsTestContext();

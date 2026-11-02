@@ -17,6 +17,28 @@ internal static class DateTimeFormatter
     private static readonly ConcurrentDictionary<string, DayPeriodRule[]> DayPeriodRules = new(StringComparer.Ordinal);
     private static readonly TemporalTimeZone PlainTimeZone = TemporalTimeZone.FromOffset(0);
 
+    // The layout of DateTimeLocaleData.NameCache: the months (2 contexts, 3 widths, 14 values), the weekdays (2 contexts,
+    // 4 widths, 7 values), then the day periods (3 widths, am and pm)
+    private const int MonthCacheStart = 0;
+    private const int WeekdayCacheStart = MonthCacheStart + (2 * 3 * 14);
+    private const int AmPmCacheStart = WeekdayCacheStart + (2 * 4 * 7);
+    internal const int NameCacheLength = AmPmCacheStart + (3 * 2);
+
+    // The numbers from 0 to 99 without padding, then with two digits
+    private static readonly string[] SmallNumbers = CreateSmallNumbers();
+
+    private static string[] CreateSmallNumbers()
+    {
+        var result = new string[200];
+        for (var i = 0; i < 100; i++)
+        {
+            result[i] = i.ToString(CultureInfo.InvariantCulture);
+            result[100 + i] = i.ToString("00", CultureInfo.InvariantCulture);
+        }
+
+        return result;
+    }
+
     /// <summary>Gets the digits of a numbering system as strings (a digit can be a surrogate pair), or null.</summary>
     public static string[]? GetDigitStrings(string? digits)
     {
@@ -71,6 +93,15 @@ internal static class DateTimeFormatter
 
     private static string FormatNumber(long value, int minimumDigits, string[]? digits)
     {
+        if (digits is null && value >= 0)
+        {
+            if (value < 100 && minimumDigits <= 2)
+                return SmallNumbers[minimumDigits == 2 ? 100 + value : value];
+
+            var text = value.ToString(CultureInfo.InvariantCulture);
+            return text.Length >= minimumDigits ? text : text.PadLeft(minimumDigits, '0');
+        }
+
         var builder = new StringBuilder();
         AppendNumber(builder, value, minimumDigits, digits);
         return builder.ToString();
@@ -364,10 +395,22 @@ internal static class DateTimeFormatter
                     return FormatNumber(time.Weekday, count, digits);
 
                 {
+                    var widthIndex = count switch
+                    {
+                        4 => 1,
+                        5 => 2,
+                        6 => 3,
+                        _ => 0,
+                    };
+                    var cacheIndex = WeekdayCacheStart + (((((symbol == 'c' ? 1 : 0) * 4) + widthIndex) * 7) + time.Weekday - 1);
+                    var cache = data.NameCache;
+                    if (cache[cacheIndex] is { } cachedName)
+                        return cachedName;
+
                     var context = symbol == 'c' ? "stand-alone" : "format";
                     var key = WeekdayKeys[time.Weekday - 1];
                     var width = count < 3 ? "abbreviated" : GetWidth(count);
-                    return data.GetStringOrGregorian("days/" + context + "/" + width + "/" + key)
+                    return cache[cacheIndex] = data.GetStringOrGregorian("days/" + context + "/" + width + "/" + key)
                         ?? data.GetStringOrGregorian("days/format/" + width + "/" + key)
                         ?? key;
                 }
@@ -456,17 +499,35 @@ internal static class DateTimeFormatter
         else
         {
             var width = GetWidth(Math.Min(count, 5));
-            var month = time.Month.ToString(CultureInfo.InvariantCulture);
-            string? name = null;
-            if (time.IsLeapYear && time.Month == 7 && data.Calendar is "hebrew")
+            var isHebrewLeap = time.IsLeapYear && time.Month == 7 && data.Calendar is "hebrew";
+            var cacheIndex = MonthCacheStart + (((((context is "format" ? 0 : 1) * 3) + Math.Min(count, 5) - 3) * 14) + time.Month);
+            var cache = data.NameCache;
+            if (!isHebrewLeap && time.Month is >= 0 and < 14 && cache[cacheIndex] is { } cachedName)
             {
-                name = data.GetString("months/" + context + "/" + width + "/7-yeartype-leap");
+                value = cachedName;
+            }
+            else
+            {
+                var month = time.Month.ToString(CultureInfo.InvariantCulture);
+                string? name = null;
+                if (isHebrewLeap)
+                {
+                    name = data.GetString("months/" + context + "/" + width + "/7-yeartype-leap");
+                }
+
+                name ??= data.GetString("months/" + context + "/" + width + "/" + month)
+                    ?? data.GetString("months/format/" + width + "/" + month)
+                    ?? data.GetStringOrGregorian("months/" + context + "/" + width + "/" + month);
+                value = name ?? month;
+                if (!isHebrewLeap && time.Month is >= 0 and < 14)
+                {
+                    cache[cacheIndex] = value;
+                }
             }
 
-            name ??= data.GetString("months/" + context + "/" + width + "/" + month)
-                ?? data.GetString("months/format/" + width + "/" + month)
-                ?? data.GetStringOrGregorian("months/" + context + "/" + width + "/" + month);
-            value = name ?? month;
+            if (!time.IsLeapMonth)
+                return value;
+
             leapPatternPath = "monthPatterns/" + context + "/" + width + "/leap";
         }
 
@@ -481,9 +542,19 @@ internal static class DateTimeFormatter
 
     private static string FormatAmPm(DateTimeLocaleData data, int count, int hour)
     {
+        var cacheIndex = AmPmCacheStart + ((count switch
+        {
+            4 => 1,
+            >= 5 => 2,
+            _ => 0,
+        } * 2) + (hour < 12 ? 0 : 1));
+        var cache = data.NameCache;
+        if (cache[cacheIndex] is { } cachedName)
+            return cachedName;
+
         var width = GetWidth(Math.Min(count, 5));
         var key = hour < 12 ? "am" : "pm";
-        return data.GetStringOrGregorian("dayPeriods/format/" + width + "/" + key)
+        return cache[cacheIndex] = data.GetStringOrGregorian("dayPeriods/format/" + width + "/" + key)
             ?? data.GetStringOrGregorian("dayPeriods/format/abbreviated/" + key)
             ?? key.ToUpperInvariant();
     }

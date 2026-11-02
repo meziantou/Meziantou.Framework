@@ -4,7 +4,8 @@ using Meziantou.Framework.JavaScriptEngine.TimeZones;
 namespace Meziantou.Framework.JavaScriptEngine;
 
 /// <summary>
-/// Date.parse: the Date Time String Format (https://tc39.es/ecma262/#sec-date-time-string-format), then the formats of
+/// Date.parse: the Date Time String Format (https://tc39.es/ecma262/#sec-date-time-string-format) with the extensions
+/// of V8 (a lowercase "t" or "z", an offset without colon such as "+0100"), then the formats of
 /// toString and toUTCString and the usual legacy formats, with the heuristics of V8 ("Jan 1 2000 10:00 GMT+0100",
 /// "1/2/2000", "2000-1-2 10:00:00"...). It never uses the culture-dependent parsing of .NET.
 /// </summary>
@@ -71,7 +72,8 @@ internal static class DateParser
             return true;
         }
 
-        if (value[position] != 'T')
+        // Like V8, the separator and the UTC designator can be lowercase
+        if (value[position] is not ('T' or 't'))
             return false;
 
         position++;
@@ -109,7 +111,7 @@ internal static class DateParser
         var offsetMinutes = 0;
         if (position < value.Length)
         {
-            if (value[position] == 'Z')
+            if (value[position] is 'Z' or 'z')
             {
                 position++;
                 hasOffset = true;
@@ -118,7 +120,12 @@ internal static class DateParser
             {
                 var sign = value[position] == '-' ? -1 : 1;
                 position++;
-                if (!TryReadDigits(value, ref position, 2, out var offsetHours) || !TryReadChar(value, ref position, ':') || !TryReadDigits(value, ref position, 2, out var offsetMinute))
+                // Like V8, the offset can be "hh:mm" or "hhmm"
+                if (!TryReadDigits(value, ref position, 2, out var offsetHours))
+                    return false;
+
+                _ = TryReadChar(value, ref position, ':');
+                if (!TryReadDigits(value, ref position, 2, out var offsetMinute))
                     return false;
 
                 if (offsetHours > 23 || offsetMinute > 59)

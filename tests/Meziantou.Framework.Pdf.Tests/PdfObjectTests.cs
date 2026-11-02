@@ -82,6 +82,14 @@ public sealed class PdfObjectTests
     [InlineData(0.1234567, "0.123457")]
     [InlineData(1e15, "1000000000000000")]
     [InlineData(612, "612")]
+    [InlineData(9007199254740992d, "9007199254740992")]
+    [InlineData(-9007199254740992d, "-9007199254740992")]
+    [InlineData(1e20, "100000000000000000000")]
+    [InlineData(123456789012.5, "123456789012.5")]
+    [InlineData(-0.0000004, "0")]
+    [InlineData(2.0000005, "2.000001")]
+    [InlineData(-2.0000005, "-2.000001")]
+    [InlineData(0.1, "0.1")]
     public void NumbersAreWrittenWithoutExponent(double value, string expected) => Assert.Equal(expected, PdfNumberFormatter.Format(value));
 
     [Fact]

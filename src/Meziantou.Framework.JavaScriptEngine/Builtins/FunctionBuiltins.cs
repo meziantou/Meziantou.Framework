@@ -96,9 +96,10 @@ internal static class FunctionBuiltins
 
         function.DefineBuiltIn(LengthKey, length, PropertyFlags.Configurable);
 
+        // The name is a concatenation (a rope): binding a bound function again and again does not copy the longer and longer names
         var targetName = target.Get(NameKey);
-        var name = targetName.Cell is JsString nameString ? nameString.ToString() : "";
-        function.DefineBuiltIn(NameKey, prefix + name, PropertyFlags.Configurable);
+        var name = targetName.Cell as JsString ?? JsString.Empty;
+        function.DefineBuiltIn(NameKey, JsValue.FromJsString(StringOperations.Concat(JsString.Create(prefix), name)), PropertyFlags.Configurable);
     }
 
     /// <summary>Function.prototype.call(thisArg, ...args)</summary>

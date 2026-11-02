@@ -30,6 +30,40 @@ Assert.NotEqual("Goodbye", greeting);
 To choose how two values are compared, pass an `IEqualityComparer<T>`:
 `Assert.Equal("abc", code, StringComparer.OrdinalIgnoreCase)`.
 
+## Compare ref structs
+
+[Equal](cref:Meziantou.Framework.Assertions.Assert.Equal) and [NotEqual](cref:Meziantou.Framework.Assertions.Assert.NotEqual) compare two values of a `ref struct` type that implements `IEquatable<T>`:
+
+<!-- ref:../../tests/Meziantou.Framework.Assertions.Tests/Temperature.cs;region=Assert_RefStructType;format=md-fenced-code-block;dedent=true -->
+```csharp
+internal readonly ref struct Temperature(int degrees) : IEquatable<Temperature>, IComparable<Temperature>
+{
+    public int Degrees { get; } = degrees;
+
+    public bool Equals(Temperature other) => Degrees == other.Degrees;
+
+    public int CompareTo(Temperature other) => Degrees.CompareTo(other.Degrees);
+}
+```
+<!-- endref -->
+
+<!-- ref:../../tests/Meziantou.Framework.Assertions.Tests/AssertEqualTests.cs;region=Assert_EqualRefStructs;format=md-fenced-code-block;dedent=true -->
+```csharp
+var expected = new Temperature(20);
+var actual = new Temperature(20);
+Assert.Equal(expected, actual);              // compared with IEquatable<Temperature>.Equals
+Assert.NotEqual(new Temperature(25), actual);
+```
+<!-- endref -->
+
+- The values are compared with `IEquatable<T>.Equals`. A `ref struct` that does not implement `IEquatable<T>` is not
+  accepted.
+- A `ref struct` value cannot be converted to `object`, so the failure message shows the type of the values, not the
+  values. To see a value in the message, assert on one of its members: `Assert.Equal(20, temperature.Degrees)`.
+- `Span<T>` and `ReadOnlySpan<T>` are compared item by item instead. See [Compare collections](#compare-collections).
+- [Equal](cref:Meziantou.Framework.Assertions.Assert.Equal), [NotEqual](cref:Meziantou.Framework.Assertions.Assert.NotEqual), [InRange](cref:Meziantou.Framework.Assertions.Assert.InRange) and [NotInRange](cref:Meziantou.Framework.Assertions.Assert.NotInRange) (see [Ranges](07-NullsTypesAndRanges.md#ranges)) are
+  the only assertions that support `ref struct` values for now.
+
 ## Compare collections
 
 <!-- ref:../../tests/Meziantou.Framework.Assertions.Tests/AssertEqualTests.cs;region=Assert_EqualCollections;format=md-fenced-code-block;dedent=true -->

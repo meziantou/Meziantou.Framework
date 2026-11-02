@@ -108,7 +108,7 @@ signatures and their time stamps embed; [PdfSigner.TimestampAsync](cref:Mezianto
 // PAdES B-LT: the certificates and the revocation evidence that validate the signatures, in the document security store
 var validationData = new PdfValidationData();
 validationData.Certificates.Add(authority.Certificate);
-validationData.CertificateRevocationLists.Add(certificateRevocationList);
+validationData.CertificateRevocationLists.Add(CertificateRevocationList);
 var withValidationData = PdfSigner.AddValidationData(PdfDocument.Open(signedFile), validationData);
 
 // PAdES B-LTA: a document time stamp protects the validation data

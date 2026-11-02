@@ -560,7 +560,7 @@ public sealed class PdfSignerTests
         // PAdES B-LT: the certificates and the revocation evidence that validate the signatures, in the document security store
         var validationData = new PdfValidationData();
         validationData.Certificates.Add(authority.Certificate);
-        validationData.CertificateRevocationLists.Add(certificateRevocationList);
+        validationData.CertificateRevocationLists.Add(CertificateRevocationList);
         var withValidationData = PdfSigner.AddValidationData(PdfDocument.Open(signedFile), validationData);
 
         // PAdES B-LTA: a document time stamp protects the validation data
@@ -584,7 +584,7 @@ public sealed class PdfSignerTests
         var data = PdfSignatureVerifier.GetValidationData(timestamped);
         Assert.Contains(authority.Certificate.Thumbprint, data.Certificates.Select(item => item.Thumbprint));
         Assert.Contains(certificate.Thumbprint, data.Certificates.Select(item => item.Thumbprint));
-        Assert.Equal([certificateRevocationList], data.CertificateRevocationLists);
+        Assert.Equal([CertificateRevocationList], data.CertificateRevocationLists);
 
         // The data the store has is not added again
         var again = PdfSigner.AddValidationData(PdfDocument.Open(timestamped), validationData);
@@ -592,7 +592,7 @@ public sealed class PdfSignerTests
         Assert.Single(PdfSignatureVerifier.GetValidationData(again).CertificateRevocationLists);
     }
 
-    private static readonly byte[] certificateRevocationList = CreateCertificateRevocationList();
+    private static readonly byte[] CertificateRevocationList = CreateCertificateRevocationList();
 
     private static byte[] CreateCertificateRevocationList()
     {

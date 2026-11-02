@@ -139,6 +139,8 @@ public sealed class QpdfInteropTests
         // 7.6.4.3.3: the UTF-8 password is truncated to 127 bytes, even inside a character, as qpdf reads it. The files
         // qpdf 12 writes with a password longer than 127 bytes cannot be opened by qpdf itself: only the files of the
         // library are checked
+        // On Windows, a character outside the BMP does not reach qpdf intact through its command line
+        global::Xunit.Assert.SkipWhen(OperatingSystem.IsWindows() && suffix.Any(char.IsSurrogate), "qpdf does not receive the characters outside the BMP of its arguments on Windows");
         var password = new string('a', asciiLength) + suffix;
         var qpdf = await QpdfTool.LocateAsync(XunitCancellationToken);
         var directory = Path.Combine(AppContext.BaseDirectory, "InteropOutput");

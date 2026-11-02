@@ -1526,12 +1526,34 @@ public sealed class JsEngineTests
     [InlineData("""{"version":3,"sources":["a.js"],"mappings":"AA!A"}""")]
     [InlineData("""{"version":3,"sources":["a.js"],"mappings":"ACAA"}""")]
     [InlineData("""{"version":3,"sources":["a.js"],"mappings":"g"}""")]
+    [InlineData("""{"version":3,"sources":["a.js"],"mappings":"AA+/////DA"}""")]
+    [InlineData("""{"version":3,"sources":["a.js"],"mappings":"AAA+/////D"}""")]
     [InlineData("""{"version":3,"sections":[{"offset":{"line":1,"column":0},"map":{"version":3,"sources":[],"mappings":""}},{"offset":{"line":0,"column":0},"map":{"version":3,"sources":[],"mappings":""}}]}""")]
     public void SourceMaps_InvalidMaps(string json)
     {
         Assert.Throws<FormatException>(() => JsSourceMap.Parse(json));
         Assert.False(JsSourceMap.TryParse(json, url: null, out var sourceMap));
         Assert.Null(sourceMap);
+    }
+
+    [Fact]
+    public void SourceMaps_UnpairedSurrogateIsNotValid()
+    {
+        const string Json = "{\"version\":3,\"sources\":[\"\uD800\"],\"mappings\":\"\"}";
+
+        Assert.Throws<FormatException>(() => JsSourceMap.Parse(Json));
+        Assert.False(JsSourceMap.TryParse(Json, url: null, out _));
+    }
+
+    [Fact]
+    public void SourceMaps_PositionsThatAreNotOneBasedAreNotMapped()
+    {
+        var sourceMap = JsSourceMap.Parse("""{"version":3,"sources":["a.js"],"mappings":"AAAA"}""");
+
+        Assert.True(sourceMap.TryGetOriginalLocation(1, 1, out _));
+        Assert.False(sourceMap.TryGetOriginalLocation(1, 0, out _));
+        Assert.False(sourceMap.TryGetOriginalLocation(1, int.MinValue, out _));
+        Assert.False(sourceMap.TryGetOriginalLocation(int.MinValue, 1, out _));
     }
 
     [Fact]

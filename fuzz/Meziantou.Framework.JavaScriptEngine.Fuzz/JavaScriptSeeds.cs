@@ -38,6 +38,23 @@ internal static class JavaScriptSeeds
         ("html-comments", "var x = 1; <!-- comment\n--> also a comment\nx"),
     ];
 
+    /// <summary>The scripts of the debugger target, in addition to <see cref="Scripts"/>: the code that raises events from other places than the script.</summary>
+    public static IReadOnlyList<(string Name, string Code)> DebuggerScripts { get; } =
+    [
+        ("debugger-statement", "let a = 1;\ndebugger;\nfunction f() { debugger; return a; }\nf();"),
+        ("nested-calls", "function a(x) { return b(x) + 1; }\nfunction b(x) { if (x > 0) { return a(x - 1); } return 0; }\na(5)"),
+        ("eval-and-function", "eval('var e = 1;\\ndebugger;\\ne + 1');\nnew Function('x', 'debugger; return x * 2')(3);\n(0, eval)('1; 2')"),
+        ("source-url", "eval('debugger;\\n1 + 1\\n//# sourceURL=other.js');\nlet x = 1;"),
+        ("generator-async", "function* g() { yield 1; debugger; yield 2; }\nconst it = g(); it.next(); it.next();\nasync function f() { await null; debugger; return 1; }\nf().then(v => { v; });"),
+        ("host-callbacks", "[3, 1, 2].sort((a, b) => { return a - b; });\n[1, 2].map(x => { return x * 2; });\nJSON.parse('[1,2]', (k, v) => { return v; });\nJSON.stringify({ toJSON() { return 1; } });\n'abc'.replace(/b/, () => { return 'x'; });"),
+        ("getters-proxies", "const o = { get v() { return 1; } };\no.v;\nconst p = new Proxy({}, { get() { return 2; } });\np.x;\nclass C { static #s = 1; static { C.t = C.#s; } }"),
+        ("try-finally", "let log = [];\ntry { try { throw 1; } finally { log.push(1); } } catch (e) { log.push(e); }\nlog"),
+        ("loop-limit", "let i = 0;\nwhile (true) {\n  i++;\n}"),
+        ("deep-recursion", "function r(n) { return n === 0 ? 0 : r(n - 1) + 1; }\nr(990)"),
+        ("line-terminators", "let a = 1;\r\nlet b = 2;\rlet c = 3;\u2028let d = 4;\u2029a + b + c + d"),
+        ("iterators", "for (const x of [1, 2]) { x; }\nfor (const k in { a: 1 }) { k; }\nconst [y, ...z] = new Set([1, 2, 3]);\n[...'ab']"),
+    ];
+
     public static IReadOnlyList<(string Name, string Code)> Modules { get; } =
     [
         ("named-import", "import { x } from './a.js'; globalThis.r = x;"),

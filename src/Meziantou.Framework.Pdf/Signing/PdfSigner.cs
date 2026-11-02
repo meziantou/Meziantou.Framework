@@ -290,8 +290,10 @@ public static class PdfSigner
 
         // The buffer of the stream is read in place: the file is not copied
         var password = document.Reader?.Options.Password ?? document.Encryption?.OwnerPassword ?? document.Encryption?.UserPassword;
+        // A new encryption for certificates is opened with a recipient that has its private key
+        var certificate = document.Encryption?.Recipients.FirstOrDefault(recipient => recipient.Certificate.HasPrivateKey)?.Certificate ?? document.Reader?.Options.Certificate;
         var basis = stream.GetBuffer().AsMemory(0, (int)stream.Length);
-        return (basis.Length, PdfDocument.Open(basis, new PdfReadOptions { Password = password }));
+        return (basis.Length, PdfDocument.Open(basis, new PdfReadOptions { Password = password, Certificate = certificate }));
     }
 
     private static byte[] SaveUpdate(PdfDocument document, int basisLength, int reserved)

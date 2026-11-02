@@ -180,6 +180,10 @@ public sealed class PdfReaderTests
 
     [Theory]
     [InlineData("<< /Filter /Adobe.PubSec /V 4 /R 4 >>", typeof(UnsupportedPdfFeatureException))]
+    [InlineData("<< /Filter /Adobe.PubSec /SubFilter /adbe.pkcs7.s5 /V 3 >>", typeof(UnsupportedPdfFeatureException))]
+    [InlineData("<< /Filter /Adobe.PubSec /SubFilter /adbe.pkcs7.s5 /V 5 /CF << /DefaultCryptFilter << /CFM /AESV3 >> >> /StmF /DefaultCryptFilter /StrF /DefaultCryptFilter >>", typeof(InvalidPdfContentException))]
+    [InlineData("<< /Filter /Adobe.PubSec /SubFilter /adbe.pkcs7.s5 /V 5 /CF << /DefaultCryptFilter << /CFM /AESV3 /Recipients [<0102>] >> >> /StmF /DefaultCryptFilter /StrF /DefaultCryptFilter >>", typeof(PdfPasswordException))]
+    [InlineData("<< /Filter /Unknown >>", typeof(UnsupportedPdfFeatureException))]
     [InlineData("<< /Filter /Standard /V 3 /R 3 >>", typeof(UnsupportedPdfFeatureException))]
     [InlineData("<< /Filter /Standard /V 1 /R 2 >>", typeof(InvalidPdfContentException))]
     [InlineData("<< /Filter /Standard /V 1 /R 2 /O <00> /U <00> /P -4 >>", typeof(InvalidPdfContentException))]

@@ -1,5 +1,7 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Pdf.Objects;
@@ -182,6 +184,200 @@ public sealed class PdfDocumentTests
         Assert.Throws<PdfPasswordException>(() => PdfDocument.Open(file));
         Assert.Throws<PdfPasswordException>(() => PdfDocument.Open(file, new PdfReadOptions { Password = "wrong" }));
     }
+
+    [Fact]
+    public void Example_CertificateEncryption()
+    {
+        #region Pdf_CertificateEncryption
+        // The certificate of the recipient: its public key encrypts the document, its private key opens it
+        using var key = RSA.Create(2048);
+        using var certificate = new CertificateRequest("CN=Recipient", key, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1)
+            .CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddYears(1));
+
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4).CreateContentBuilder()
+            .DrawText("Confidential", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 24, 60, 700);
+        document.Encryption = new PdfEncryption(new PdfEncryptionRecipient(certificate));
+        var file = document.ToByteArray();
+
+        var read = PdfDocument.Open(file, new PdfReadOptions { Certificate = certificate });
+        var text = read.Pages[0].ExtractText();
+        #endregion
+
+        Assert.True(read.IsEncrypted);
+        Assert.True(read.Encryption!.UsesCertificates);
+        Assert.Equal("Confidential", text);
+        Assert.Throws<PdfPasswordException>(() => PdfDocument.Open(file));
+    }
+
+    [Fact]
+    public void Example_CertificateEncryptionRecipients()
+    {
+        using var managerKey = RSA.Create(2048);
+        using var managerCertificate = new CertificateRequest("CN=Manager", managerKey, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1).CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddYears(1));
+        using var reviewerKey = RSA.Create(2048);
+        using var reviewerCertificate = new CertificateRequest("CN=Reviewer", reviewerKey, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1).CreateSelfSigned(DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddYears(1));
+        var managerFile = Path.Combine(AppContext.BaseDirectory, "manager-" + Guid.NewGuid().ToString("N") + ".cer");
+        var reviewerFile = Path.Combine(AppContext.BaseDirectory, "reviewer-" + Guid.NewGuid().ToString("N") + ".cer");
+        File.WriteAllBytes(managerFile, managerCertificate.Export(X509ContentType.Cert));
+        File.WriteAllBytes(reviewerFile, reviewerCertificate.Export(X509ContentType.Cert));
+        try
+        {
+            var document = new PdfDocument();
+            document.Pages.Add(PdfSize.A4);
+
+            #region Pdf_CertificateEncryptionRecipients
+            // The certificates, without their private keys, are enough to encrypt the document
+            using var manager = X509CertificateLoader.LoadCertificateFromFile(managerFile);
+            using var reviewer = X509CertificateLoader.LoadCertificateFromFile(reviewerFile);
+
+            // Each recipient has its own permissions; those of the encryption apply to the others
+            document.Encryption = new PdfEncryption(
+                new PdfEncryptionRecipient(manager),
+                new PdfEncryptionRecipient(reviewer) { Permissions = PdfPermissions.Print })
+            {
+                Algorithm = PdfEncryptionAlgorithm.AesWith256BitKey,
+            };
+            var file = document.ToByteArray();
+            #endregion
+
+            Assert.Equal(PdfPermissions.All, PdfDocument.Open(file, new PdfReadOptions { Certificate = managerCertificate }).Permissions);
+            Assert.Equal(PdfPermissions.Print, PdfDocument.Open(file, new PdfReadOptions { Certificate = reviewerCertificate }).Permissions);
+            Assert.Throws<PdfPasswordException>(() => PdfDocument.Open(file, new PdfReadOptions { Certificate = manager }));
+        }
+        finally
+        {
+            File.Delete(managerFile);
+            File.Delete(reviewerFile);
+        }
+    }
+
+    [Theory]
+    [InlineData(PdfEncryptionAlgorithm.Rc4With40BitKey, false, true)]
+    [InlineData(PdfEncryptionAlgorithm.Rc4With128BitKey, false, true)]
+    [InlineData(PdfEncryptionAlgorithm.AesWith128BitKey, false, true)]
+    [InlineData(PdfEncryptionAlgorithm.AesWith128BitKey, true, false)]
+    [InlineData(PdfEncryptionAlgorithm.AesWith256BitKey, false, false)]
+    [InlineData(PdfEncryptionAlgorithm.AesWith256BitKey, true, true)]
+    public void CertificateEncryptedDocumentsAreReadWithTheirCertificates(PdfEncryptionAlgorithm algorithm, bool objectStreams, bool encryptMetadata)
+    {
+        using var recipient1 = LoadPubSecCertificate("recipient1");
+        using var recipient2 = LoadPubSecCertificate("recipient2");
+        using var other = LoadPubSecCertificate("other");
+        var document = new PdfDocument();
+        document.Information.Title = "Secret title";
+        document.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("Secret text", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 24, 60, 700);
+        document.Encryption = new PdfEncryption(new PdfEncryptionRecipient(recipient1), new PdfEncryptionRecipient(recipient2) { Permissions = PdfPermissions.Print | PdfPermissions.Annotate })
+        {
+            Algorithm = algorithm,
+            EncryptMetadata = encryptMetadata,
+        };
+        var file = document.ToByteArray(new PdfSaveOptions { UseObjectStreams = objectStreams, CompressStreams = false });
+
+        var text = Encoding.Latin1.GetString(file);
+        Assert.DoesNotContain("Secret", text, StringComparison.Ordinal);
+        Assert.Contains("/Adobe.PubSec", text, StringComparison.Ordinal);
+
+        var first = PdfDocument.Open(file, new PdfReadOptions { Certificate = recipient1 });
+        Assert.True(first.IsEncrypted);
+        Assert.Equal("Secret title", first.Information.Title);
+        Assert.Equal("Secret text", first.Pages[0].ExtractText());
+        Assert.Equal(PdfPermissions.All, first.Permissions);
+        Assert.Equal(algorithm, first.Encryption!.Algorithm);
+        Assert.Equal(encryptMetadata, first.Encryption.EncryptMetadata);
+        Assert.True(first.Encryption.UsesCertificates);
+
+        var second = PdfDocument.Open(file, new PdfReadOptions { Certificate = recipient2 });
+        Assert.Equal("Secret text", second.Pages[0].ExtractText());
+        Assert.Equal(PdfPermissions.Print | PdfPermissions.Annotate, second.Permissions);
+
+        Assert.Throws<PdfPasswordException>(() => PdfDocument.Open(file));
+        Assert.Throws<PdfPasswordException>(() => PdfDocument.Open(file, new PdfReadOptions { Certificate = other }));
+        Assert.Throws<PdfPasswordException>(() => PdfDocument.Open(file, new PdfReadOptions { Password = "owner" }));
+
+        // A full and an incremental save keep the keys of the file
+        var saved = PdfDocument.Open(first.ToByteArray(), new PdfReadOptions { Certificate = recipient2 });
+        Assert.Equal("Secret text", saved.Pages[0].ExtractText());
+        Assert.Equal(PdfPermissions.Print | PdfPermissions.Annotate, saved.Permissions);
+        first.Information.Title = "Updated title";
+        using var update = new MemoryStream();
+        first.SaveIncremental(update);
+        var updated = PdfDocument.Open(update.ToArray(), new PdfReadOptions { Certificate = recipient2 });
+        Assert.Equal("Updated title", updated.Information.Title);
+    }
+
+    [Theory]
+    [InlineData("pyhanko-aes256.pdf", PdfEncryptionAlgorithm.AesWith256BitKey)]
+    [InlineData("pyhanko-aes256-nomac.pdf", PdfEncryptionAlgorithm.AesWith256BitKey)]
+    [InlineData("pyhanko-aes128.pdf", PdfEncryptionAlgorithm.AesWith128BitKey)]
+    [InlineData("pyhanko-rc4-128.pdf", PdfEncryptionAlgorithm.Rc4With128BitKey)]
+    [InlineData("pyhanko-rc4-40-legacy.pdf", PdfEncryptionAlgorithm.Rc4With40BitKey)]
+    [InlineData("pyhanko-two-recipients.pdf", PdfEncryptionAlgorithm.AesWith256BitKey)]
+    public void CertificateEncryptedDocumentsOfOtherWritersAreDecrypted(string name, PdfEncryptionAlgorithm algorithm)
+    {
+        using var recipient1 = LoadPubSecCertificate("recipient1");
+        using var other = LoadPubSecCertificate("other");
+        using var withoutPrivateKey = X509CertificateLoader.LoadCertificate(recipient1.Export(X509ContentType.Cert));
+        var file = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "TestData", "PubSec", name));
+
+        var document = PdfDocument.Open(file, new PdfReadOptions { Certificate = recipient1 });
+        Assert.True(document.IsEncrypted);
+        Assert.True(document.Encryption!.UsesCertificates);
+        Assert.Equal(algorithm, document.Encryption.Algorithm);
+        Assert.Equal(PdfPermissions.All, document.Permissions);
+        Assert.Equal("Hello, World", document.Pages[0].ExtractText());
+
+        Assert.Throws<PdfPasswordException>(() => PdfDocument.Open(file));
+        Assert.Throws<PdfPasswordException>(() => PdfDocument.Open(file, new PdfReadOptions { Certificate = other }));
+        Assert.Throws<PdfPasswordException>(() => PdfDocument.Open(file, new PdfReadOptions { Certificate = withoutPrivateKey }));
+
+        // The document is saved again with the keys of the file
+        Assert.Equal("Hello, World", PdfDocument.Open(document.ToByteArray(), new PdfReadOptions { Certificate = recipient1 }).Pages[0].ExtractText());
+    }
+
+    [Fact]
+    public void TheRecipientsOfOtherWritersHaveTheirPermissions()
+    {
+        using var recipient2 = LoadPubSecCertificate("recipient2");
+        var file = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "TestData", "PubSec", "pyhanko-two-recipients.pdf"));
+
+        var document = PdfDocument.Open(file, new PdfReadOptions { Certificate = recipient2 });
+        Assert.Equal("Hello, World", document.Pages[0].ExtractText());
+        Assert.Equal(PdfPermissions.Print, document.Permissions);
+    }
+
+    [Fact]
+    public void TheMetadataOfOtherWritersCanBeInClear()
+    {
+        using var recipient1 = LoadPubSecCertificate("recipient1");
+        var file = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "TestData", "PubSec", "pyhanko-metadata-in-clear.pdf"));
+        Assert.Contains("<x:xmpmeta", Encoding.Latin1.GetString(file), StringComparison.Ordinal);
+
+        var document = PdfDocument.Open(file, new PdfReadOptions { Certificate = recipient1 });
+        Assert.False(document.Encryption!.EncryptMetadata);
+        Assert.Equal("Hello, World", document.Pages[0].ExtractText());
+        Assert.Contains("<x:xmpmeta", Encoding.UTF8.GetString(document.GetXmpMetadata()!), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void KeyAgreementRecipientsAreNotSupported()
+    {
+        using var certificate = X509CertificateLoader.LoadPkcs12FromFile(Path.Combine(AppContext.BaseDirectory, "TestData", "PubSec", "ec.pfx"), "test");
+        var file = File.ReadAllBytes(Path.Combine(AppContext.BaseDirectory, "TestData", "PubSec", "pyhanko-ec.pdf"));
+
+        var exception = Assert.Throws<UnsupportedPdfFeatureException>(() => PdfDocument.Open(file, new PdfReadOptions { Certificate = certificate }));
+        Assert.Contains("RSA key transport", exception.Message, StringComparison.Ordinal);
+        Assert.Throws<ArgumentException>("certificate", () => new PdfEncryptionRecipient(certificate));
+    }
+
+    [Fact]
+    public void TheEncryptionNeedsARecipient()
+    {
+        Assert.Throws<ArgumentException>("recipients", () => new PdfEncryption(Array.Empty<PdfEncryptionRecipient>()));
+        Assert.Throws<ArgumentException>("recipients", () => new PdfEncryption([null!]));
+    }
+
+    private static X509Certificate2 LoadPubSecCertificate(string name) => X509CertificateLoader.LoadPkcs12FromFile(Path.Combine(AppContext.BaseDirectory, "TestData", "PubSec", name + ".pfx"), "test");
 
     [Fact]
     public void TheEncryptionOfADocumentReadIsKeptReplacedOrRemoved()

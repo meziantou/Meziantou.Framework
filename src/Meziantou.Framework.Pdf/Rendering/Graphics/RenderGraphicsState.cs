@@ -55,6 +55,12 @@ internal sealed class RenderGraphicsState
     /// <summary>Gets or sets the transfer functions of the color components, applied to the colors painted (10.5); <see langword="null"/> for none.</summary>
     public ComponentTransferPrimitive? Transfer { get; set; }
 
+    /// <summary>Gets or sets the halftone (10.6.5), read when <see cref="PdfRenderOptions.UseHalftones"/> is set; <see langword="null"/> for the default halftone, which leaves the colors as they are.</summary>
+    public RenderHalftone? Halftone { get; set; }
+
+    /// <summary>Gets or sets the halftone origin (<c>/HTO</c>), in pixels of the device: where the cells of the halftone start.</summary>
+    public (int X, int Y) HalftoneOrigin { get; set; }
+
     public RenderFont? Font { get; set; }
 
     public double FontSize { get; set; }

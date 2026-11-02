@@ -440,8 +440,11 @@ size).
   operator and group is an element; the fill and the stroke of a path are one element, whose stroke composites over its
   fill, and the alpha of a paint of an element counts as its shape; the alpha-is-shape parameter (`AIS`) makes the
   constant alpha and the soft mask shape. The glyphs of a text-showing operator knock out one another, unless the text
-  knockout parameter (`TK`) is false. A transfer function applies to the result of a group. Overprint and halftones are
-  not simulated
+  knockout parameter (`TK`) is false. A transfer function applies to the result of a group. Overprint is not
+  simulated
+- **Halftones**: ignored by default, as viewers do. With `PdfRenderOptions.UseHalftones`, the halftones of the graphics
+  states (`HT`: types 1, 5, 6, 10 and 16, the predefined spot functions; `HTO`) turn the red, green and blue components
+  of the fully opaque objects on or off, in the pixels of the image; the default halftone leaves the colors as they are
 
 ### Fonts that are not embedded
 
@@ -549,4 +552,5 @@ specification says; a content stream that cannot be decoded throws when its data
   text, but not their CIDs: their glyphs get the default width of the font.
 - The API reads, fills and flattens the fields of interactive forms, but does not create them. The text boxes break the
   lines at the spaces, without the Unicode line breaking rules nor hyphenation.
-- The renderer composites in sRGB: overprint and halftones are not simulated.
+- The renderer composites in sRGB: overprint is not simulated, and the halftones are applied to the red, green and blue
+  components only, when `PdfRenderOptions.UseHalftones` asks for them.

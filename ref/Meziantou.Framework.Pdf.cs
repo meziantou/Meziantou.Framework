@@ -1340,6 +1340,7 @@ namespace Meziantou.Framework.Pdf.Rendering
         public Meziantou.Framework.Pdf.PdfRectangle? Region { get => throw null; init { } }
         public bool RenderAnnotations { get => throw null; init { } }
         public bool TextAntialiasing { get => throw null; init { } }
+        public bool UseHalftones { get => throw null; init { } }
         public bool UseSystemFonts { get => throw null; init { } }
         public int? Width { get => throw null; init { } }
     }

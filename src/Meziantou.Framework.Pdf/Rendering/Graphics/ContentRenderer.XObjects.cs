@@ -223,7 +223,8 @@ internal sealed partial class ContentRenderer
 
     private void DrawImage(DrawingCanvas canvas, PdfStream stream, PdfDictionary? resources)
     {
-        var image = _cache.GetOrCreate(stream, () => PdfImageDecoder.Decode(stream, resources, _cache));
+        // The color space of the image may be a default color space of the resources (8.6.5.6)
+        var image = _cache.GetOrCreate(stream, resources, () => PdfImageDecoder.Decode(stream, resources, _cache));
         DrawDecodedImage(canvas, image);
     }
 

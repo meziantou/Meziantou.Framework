@@ -1,3 +1,4 @@
+using System.Runtime.ExceptionServices;
 using Meziantou.Framework.Imaging.Drawing;
 using Meziantou.Framework.Pdf.Content;
 using Meziantou.Framework.Pdf.Objects;
@@ -55,27 +56,63 @@ internal sealed partial class ContentRenderer
         {
             while (reader.TryRead(operands, out var name))
             {
-                _cache.Charge(1);
-                try
-                {
-                    Execute(canvas, name, operands, resources);
-                }
-                catch (Exception ex) when (RenderCache.IsContentError(ex))
-                {
-                    // An operator whose operands or resources are invalid is skipped (8.1 does not say more)
-                }
+                ExecuteOperation(canvas, name, operands, resources);
             }
         }
         finally
         {
-            // The content ends with the state it started with: the q that are not matched are restored
-            while (_savedStates.Count > savedDepth)
+            EndContent(savedDepth);
+        }
+    }
+
+    /// <summary>Runs the operations of a content stream read before, as <see cref="Run(DrawingCanvas, ReadOnlyMemory{byte}, PdfDictionary?)"/> runs the stream.</summary>
+    public void Run(DrawingCanvas canvas, ParsedContent content, PdfDictionary? resources)
+    {
+        _cache.Charge((content.Length / 16) + 1);
+        var operands = new List<PdfObject>();
+        var savedDepth = _savedStates.Count;
+        try
+        {
+            foreach (var (name, values) in content.Operations)
             {
-                _state = _savedStates.Pop();
+                operands.Clear();
+                operands.AddRange(values);
+                ExecuteOperation(canvas, name, operands, resources);
             }
 
-            EndText();
+            if (content.Error is { } error)
+            {
+                ExceptionDispatchInfo.Throw(error);
+            }
         }
+        finally
+        {
+            EndContent(savedDepth);
+        }
+    }
+
+    private void ExecuteOperation(DrawingCanvas canvas, string name, List<PdfObject> operands, PdfDictionary? resources)
+    {
+        _cache.Charge(1);
+        try
+        {
+            Execute(canvas, name, operands, resources);
+        }
+        catch (Exception ex) when (RenderCache.IsContentError(ex))
+        {
+            // An operator whose operands or resources are invalid is skipped (8.1 does not say more)
+        }
+    }
+
+    /// <summary>Ends a content: the q that are not matched are restored, then the text object.</summary>
+    private void EndContent(int savedDepth)
+    {
+        while (_savedStates.Count > savedDepth)
+        {
+            _state = _savedStates.Pop();
+        }
+
+        EndText();
     }
 
     private void Execute(DrawingCanvas canvas, string name, List<PdfObject> operands, PdfDictionary? resources)
@@ -415,8 +452,7 @@ internal sealed partial class ContentRenderer
     private void SetDeviceColor(RenderColorSpace space, List<PdfObject> operands, bool stroke, PdfDictionary? resources)
     {
         // The device color spaces may be replaced by the default color spaces of the resources
-        var name = space.ComponentCount switch { 1 => "DeviceGray", 3 => "DeviceRGB", _ => "DeviceCMYK" };
-        var resolved = RenderColorSpace.Read(PdfName.Create(name), resources, _cache);
+        var resolved = RenderColorSpace.ResolveDevice(space, resources, _cache);
         var components = ReadComponents(operands, space.ComponentCount);
         if (stroke)
         {
@@ -468,10 +504,16 @@ internal sealed partial class ContentRenderer
     private static double[] ReadComponents(List<PdfObject> operands, int count)
     {
         var result = new double[count];
-        var numbers = operands.OfType<PdfNumber>().ToList();
-        for (var i = 0; i < count && i < numbers.Count; i++)
+        var index = 0;
+        foreach (var operand in operands)
         {
-            result[i] = numbers[i].DoubleValue;
+            if (index >= count)
+                break;
+
+            if (operand is PdfNumber number)
+            {
+                result[index++] = number.DoubleValue;
+            }
         }
 
         return result;

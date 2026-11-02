@@ -23,6 +23,13 @@ internal sealed class NamedTimeZone
     private readonly TimeZoneRecurringRule? _rule;
     private readonly bool _ruleChangesOffset;
 
+    /// <summary>
+    /// The transitions computed from the rule for the last years used, indexed by the last two bits of the year: the
+    /// local times of a script are usually close to each other, so the transitions are computed once for many lookups.
+    /// The entries are immutable, so the engines can share them without locks.
+    /// </summary>
+    private readonly RuleTransitions?[] _ruleTransitions = new RuleTransitions?[4];
+
     internal NamedTimeZone(string id, TimeZoneLocalTimeType[] types, int initialType, long[] transitionTimes, byte[] transitionTypes, TimeZoneRecurringRule? rule)
     {
         Id = id;
@@ -86,33 +93,58 @@ internal sealed class NamedTimeZone
 
     private int GetTypeIndexFromRule(long epochSeconds, int lastExplicitType)
     {
-        var rule = _rule;
-        if (rule is null)
+        if (_rule is null)
             return lastExplicitType;
 
-        var lastExplicitTime = _transitionTimes.Length == 0 ? long.MinValue : _transitionTimes[^1];
-        var year = CalendarMath.YearFromDays(CalendarMath.FloorDivide(epochSeconds, CalendarMath.SecondsPerDay));
-        var count = rule.Entries.Length;
-        Span<long> times = stackalloc long[count];
-        Span<int> types = stackalloc int[count];
-
         // A rule of the next year can apply before the end of the UTC year (and one of the year before the year after it)
+        var transitions = GetRuleTransitions(CalendarMath.YearFromDays(CalendarMath.FloorDivide(epochSeconds, CalendarMath.SecondsPerDay)));
         var result = lastExplicitType;
-        var resultTime = long.MinValue;
+        var times = transitions.Times;
+        for (var i = 0; i < times.Length && times[i] <= epochSeconds; i++)
+        {
+            result = transitions.Types[i];
+        }
+
+        return result;
+    }
+
+    /// <summary>Gets the transitions of the rule in the year before a year, the year and the year after it, after the explicit transitions.</summary>
+    private RuleTransitions GetRuleTransitions(long year)
+    {
+        var slot = (int)(year & 3);
+        var cached = Volatile.Read(ref _ruleTransitions[slot]);
+        if (cached is not null && cached.Year == year)
+            return cached;
+
+        var rule = _rule!;
+        var lastExplicitTime = _transitionTimes.Length == 0 ? long.MinValue : _transitionTimes[^1];
+        var count = rule.Entries.Length;
+        Span<long> yearTimes = stackalloc long[count];
+        Span<int> yearTypes = stackalloc int[count];
+        var times = new List<long>(count * 3);
+        var types = new List<int>(count * 3);
         for (var y = Math.Max(year - 1, rule.FirstYear); y <= year + 1; y++)
         {
-            var transitionCount = rule.GetTransitions(y, times, types);
+            var transitionCount = rule.GetTransitions(y, yearTimes, yearTypes);
             for (var i = 0; i < transitionCount; i++)
             {
-                var time = times[i];
-                if (time <= epochSeconds && time > lastExplicitTime && time >= resultTime)
+                if (yearTimes[i] <= lastExplicitTime)
+                    continue;
+
+                // Sorted by time; for equal times, the transition computed last wins (it is after the others)
+                var index = times.Count;
+                while (index > 0 && times[index - 1] > yearTimes[i])
                 {
-                    resultTime = time;
-                    result = types[i];
+                    index--;
                 }
+
+                times.Insert(index, yearTimes[i]);
+                types.Insert(index, yearTypes[i]);
             }
         }
 
+        var result = new RuleTransitions(year, [.. times], [.. types]);
+        Volatile.Write(ref _ruleTransitions[slot], result);
         return result;
     }
 
@@ -278,19 +310,18 @@ internal sealed class NamedTimeZone
         {
             var lastExplicitTime = times.Length == 0 ? long.MinValue : times[^1];
             var after = Math.Max(epochSeconds, lastExplicitTime);
-            var year = Math.Max(rule.FirstYear, CalendarMath.YearFromDays(CalendarMath.FloorDivide(after, CalendarMath.SecondsPerDay)) - 1);
-            var count = rule.Entries.Length;
-            Span<long> yearTimes = stackalloc long[count];
-            Span<int> yearTypes = stackalloc int[count];
-            for (; year <= MaxSearchYear; year++)
+
+            // Each entry has the transitions of three years, the first year of the search is the one before the instant
+            var year = Math.Max(rule.FirstYear, CalendarMath.YearFromDays(CalendarMath.FloorDivide(after, CalendarMath.SecondsPerDay)) - 1) + 1;
+            for (; year - 1 <= MaxSearchYear; year += 3)
             {
-                var transitionCount = rule.GetTransitions(year, yearTimes, yearTypes);
-                for (var i = 0; i < transitionCount; i++)
+                var transitions = GetRuleTransitions(year);
+                for (var i = 0; i < transitions.Times.Length; i++)
                 {
-                    if (yearTimes[i] > after)
+                    if (transitions.Times[i] > after)
                     {
-                        time = yearTimes[i];
-                        typeIndex = yearTypes[i];
+                        time = transitions.Times[i];
+                        typeIndex = transitions.Types[i];
                         return true;
                     }
                 }
@@ -363,4 +394,14 @@ internal sealed class NamedTimeZone
 
     /// <inheritdoc/>
     public override string ToString() => Id;
+
+    /// <summary>The transitions computed from the rule around a year, sorted by time.</summary>
+    private sealed class RuleTransitions(long year, long[] times, int[] types)
+    {
+        public long Year { get; } = year;
+
+        public long[] Times { get; } = times;
+
+        public int[] Types { get; } = types;
+    }
 }

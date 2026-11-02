@@ -8,6 +8,8 @@ internal sealed partial class Intrinsics
     private JsFunction? _intlCollator;
     private JsCollatorObject? _defaultCollator;
     private Dictionary<string, JsCollatorObject>? _localeCompareCollators;
+    private string? _lastLocaleCompareLocales;
+    private JsCollatorObject? _lastLocaleCompareCollator;
 
     /// <summary>%Intl.Collator.prototype%</summary>
     public JsObject IntlCollatorPrototype => EnsureIntl()._intlCollatorPrototype!;
@@ -21,6 +23,10 @@ internal sealed partial class Intrinsics
     /// <summary>Gets the Collator of a locale with the default options, used by String.prototype.localeCompare(that, locales).</summary>
     public JsCollatorObject GetLocaleCompareCollator(string locales)
     {
+        // A loop or a sort usually compares with the same locales: skip the hashing of the dictionary
+        if (_lastLocaleCompareCollator is not null && string.Equals(_lastLocaleCompareLocales, locales, StringComparison.Ordinal))
+            return _lastLocaleCompareCollator;
+
         var cache = _localeCompareCollators ??= new Dictionary<string, JsCollatorObject>(StringComparer.Ordinal);
         if (!cache.TryGetValue(locales, out var collator))
         {
@@ -34,6 +40,8 @@ internal sealed partial class Intrinsics
             cache.Add(locales, collator);
         }
 
+        _lastLocaleCompareLocales = locales;
+        _lastLocaleCompareCollator = collator;
         return collator;
     }
 

@@ -1629,6 +1629,31 @@ public sealed class JsEngineTests
         #endregion
     }
 
+    [Fact]
+    public void Documentation_CustomTimeZone()
+    {
+        #region JavaScriptEngine_CustomTimeZone
+        // A time zone that is not in the IANA database: +05:00, and +06:00 from the last Sunday of March to the last Sunday of October
+        var rule = TimeZoneInfo.AdjustmentRule.CreateAdjustmentRule(
+            DateTime.MinValue.Date,
+            DateTime.MaxValue.Date,
+            TimeSpan.FromHours(1),
+            TimeZoneInfo.TransitionTime.CreateFloatingDateRule(new DateTime(1, 1, 1, 2, 0, 0), month: 3, week: 5, DayOfWeek.Sunday),
+            TimeZoneInfo.TransitionTime.CreateFloatingDateRule(new DateTime(1, 1, 1, 3, 0, 0), month: 10, week: 5, DayOfWeek.Sunday));
+        var timeZone = TimeZoneInfo.CreateCustomTimeZone("Test/Zone", TimeSpan.FromHours(5), "Test zone", "Test standard time", "Test daylight time", [rule]);
+
+        using var engine = new JsEngine(new JsEngineOptions
+        {
+            TimeProvider = new FixedTimeProvider(new DateTimeOffset(2026, 7, 1, 12, 0, 0, TimeSpan.Zero), timeZone),
+        });
+        var realm = engine.CreateRealm();
+
+        Assert.Equal(18, realm.Execute("new Date().getHours()").AsNumber());
+        Assert.Equal(-300, realm.Execute("new Date(2026, 0, 1).getTimezoneOffset()").AsNumber());
+        Assert.Equal("Test/Zone", realm.Execute("Temporal.Now.timeZoneId()").AsString());
+        #endregion
+    }
+
     /// <summary>Loads the modules from a dictionary: the specifiers are the keys (e.g. <c>./math.js</c> is <c>math.js</c>).</summary>
     private sealed class DictionaryModuleLoader(Dictionary<string, string> files) : JsModuleLoader
     {

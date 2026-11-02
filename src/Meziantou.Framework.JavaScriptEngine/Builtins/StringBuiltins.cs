@@ -94,6 +94,19 @@ internal static class StringBuiltins
     }
 
     /// <summary>ThisStringValue(value)</summary>
+    private static JsString ThisToJsString(JsValue thisValue, string methodName)
+    {
+        if (thisValue.Cell is JsString str)
+            return str;
+
+        if (thisValue.IsNullOrUndefined)
+        {
+            ThrowHelper.ThrowTypeError("String.prototype." + methodName + " called on null or undefined");
+        }
+
+        return JsOperations.ToJsString(thisValue);
+    }
+
     private static JsString ThisStringValue(JsValue value, string methodName)
     {
         if (value.Cell is JsString str)
@@ -191,7 +204,7 @@ internal static class StringBuiltins
     /// <summary>String.prototype.at(index)</summary>
     private static JsValue At(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
     {
-        var s = ThisToString(thisValue, "at");
+        var s = ThisToJsString(thisValue, "at");
         var length = s.Length;
         var relativeIndex = JsOperations.ToIntegerOrInfinity(Arg(arguments, 0));
         var k = relativeIndex >= 0 ? relativeIndex : length + relativeIndex;
@@ -204,7 +217,7 @@ internal static class StringBuiltins
     /// <summary>String.prototype.charAt(pos)</summary>
     private static JsValue CharAt(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
     {
-        var s = ThisToString(thisValue, "charAt");
+        var s = ThisToJsString(thisValue, "charAt");
         var position = JsOperations.ToIntegerOrInfinity(Arg(arguments, 0));
         if (position < 0 || position >= s.Length)
             return JsValue.FromJsString(JsString.Empty);
@@ -215,7 +228,7 @@ internal static class StringBuiltins
     /// <summary>String.prototype.charCodeAt(pos)</summary>
     private static JsValue CharCodeAt(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
     {
-        var s = ThisToString(thisValue, "charCodeAt");
+        var s = ThisToJsString(thisValue, "charCodeAt");
         var position = JsOperations.ToIntegerOrInfinity(Arg(arguments, 0));
         if (position < 0 || position >= s.Length)
             return double.NaN;
@@ -226,12 +239,16 @@ internal static class StringBuiltins
     /// <summary>String.prototype.codePointAt(pos)</summary>
     private static JsValue CodePointAt(JsBuiltinFunction function, JsValue thisValue, ReadOnlySpan<JsValue> arguments, JsObject? newTarget)
     {
-        var s = ThisToString(thisValue, "codePointAt");
+        var s = ThisToJsString(thisValue, "codePointAt");
         var position = JsOperations.ToIntegerOrInfinity(Arg(arguments, 0));
         if (position < 0 || position >= s.Length)
             return JsValue.Undefined;
 
-        return StringOperations.CodePointAt(s, (int)position, out _);
+        var first = s[(int)position];
+        if (char.IsHighSurrogate(first) && position + 1 < s.Length && char.IsLowSurrogate(s[(int)position + 1]))
+            return char.ConvertToUtf32(first, s[(int)position + 1]);
+
+        return (int)first;
     }
 
     /// <summary>String.prototype.concat(...args)</summary>

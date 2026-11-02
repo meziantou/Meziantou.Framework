@@ -386,6 +386,116 @@ public sealed class ArrayBuiltinsTests
     }
 
     [Fact]
+    public void Sparse_Iteration_ScalesLinearly()
+    {
+        // Each step used to scan all the indices of the property table
+        var result = BuiltinsTestContext.ExecuteWithinBudget("""
+            const a = [];
+            for (let i = 0; i < 50000; i++) a[i * 100] = 1;
+            let count = 0;
+            a.forEach(() => count++);
+            const sum = a.reduce((s, v) => s + v, 0);
+            const right = a.reduceRight((s, v) => s + v, 0);
+            const mapped = a.map(v => v * 2);
+            [count, sum, right, mapped[4999900], a.indexOf(2), a.lastIndexOf(1), Object.keys(a).length].join()
+            """);
+        Assert.Equal("50000,50000,50000,2,-1,4999900,50000", result);
+    }
+
+    [Fact]
+    public void Sparse_Iteration_SeesTheMutationsOfTheCallback()
+    {
+        using var engine = new JsEngine();
+        var result = engine.CreateRealm().Execute("""
+            const a = [];
+            for (let i = 0; i < 10; i++) a[i * 1000] = i;
+            const visited = [];
+            a.forEach((v, i) => {
+              visited.push(i);
+              if (i === 2000) { delete a[3000]; a[2500] = 'added'; a[100000] = 'after'; }
+              if (i === 5000) a[4000] = 'behind';
+            });
+            const backward = [];
+            a.reduceRight((acc, v, i) => { backward.push(i); if (i === 8000) delete a[7000]; if (i === 6000) a[6500] = 'x'; return acc; }, 0);
+            visited.join() + ' / ' + backward.join()
+            """);
+        Assert.Equal(
+            "0,1000,2000,2500,4000,5000,6000,7000,8000,9000 / 100000,9000,8000,6000,5000,4000,2500,2000,1000,0",
+            engine.ToString(result));
+    }
+
+    [Fact]
+    public void Sparse_HugeLength_ReverseAndJoin()
+    {
+        // The pairs whose elements are both holes are skipped (the length is 2^32 - 1)
+        var result = BuiltinsTestContext.ExecuteWithinBudget("""
+            const a = [];
+            a[4294967294] = 'last';
+            a[3] = 'three';
+            const joined = a.join('');
+            a.reverse();
+            const b = [];
+            b[4294967294] = 1;
+            Object.defineProperty(b, 5, { get() { b[10] = 'added'; return 'getter'; }, configurable: true });
+            b.reverse();
+            [joined, a[0], a[4294967291], 3 in a, 4294967294 in a, Object.keys(a).length, b[4294967289], b[4294967284], b[0], Object.keys(b).length].join()
+            """);
+        Assert.Equal("threelast,last,three,false,false,2,getter,added,1,3", result);
+    }
+
+    [Fact]
+    public void Packed_ShiftUnshiftSplice_ScaleLinearly()
+    {
+        // Each operation used to check every element and move all of them
+        var result = BuiltinsTestContext.ExecuteWithinBudget("""
+            const queue = [];
+            for (let i = 0; i < 100000; i++) queue.push(i);
+            let sum = 0;
+            while (queue.length) sum += queue.shift();
+            const front = [];
+            for (let i = 0; i < 50000; i++) front.unshift(i);
+            const spliced = [];
+            for (let i = 0; i < 50000; i++) spliced.push(i);
+            for (let i = 0; i < 25000; i++) spliced.splice(0, 1);
+            for (let i = 0; i < 25000; i++) spliced.splice(1, 0, -i);
+            [sum, front.length, front[0], front[49999], spliced.length, spliced[0], spliced[1], spliced[25000], spliced[49999]].join()
+            """);
+        Assert.Equal("4999950000,50000,49999,0,50000,25000,-24999,0,49999", result);
+    }
+
+    [Fact]
+    public void Packed_SpliceMatchesTheGenericAlgorithm()
+    {
+        // The same operations on a packed array (the fast path moves the elements before or after the deleted ones) and
+        // on an array-like object (the generic algorithm)
+        using var engine = new JsEngine();
+        var result = engine.CreateRealm().Execute("""
+            let seed = 1;
+            const random = n => (seed = (seed * 1103515245 + 12345) % 2147483648) % n;
+            const array = [];
+            const arrayLike = { length: 0 };
+            const errors = [];
+            for (let step = 0; step < 5000; step++) {
+              const length = array.length;
+              const operation = random(6);
+              let args;
+              if (operation === 0) args = ['push', random(1000)];
+              else if (operation === 1) args = ['pop'];
+              else if (operation === 2) args = ['shift'];
+              else if (operation === 3) args = ['unshift', random(1000), 'u'];
+              else args = ['splice', random(length + 1), random(4), ...Array.from({ length: random(4) }, (_, i) => i % 2 ? 's' : { o: i })];
+              const r1 = Array.prototype[args[0]].apply(array, args.slice(1));
+              const r2 = Array.prototype[args[0]].apply(arrayLike, args.slice(1));
+              const s1 = JSON.stringify([r1, array]);
+              const s2 = JSON.stringify([r2, Array.from(arrayLike)]);
+              if (s1 !== s2) { errors.push(step + ': ' + args.join() + ' ' + s1 + ' ' + s2); break; }
+            }
+            errors.join(' / ')
+            """);
+        Assert.Equal("", engine.ToString(result));
+    }
+
+    [Fact]
     public void Sparse_HugeIndices()
     {
         using var context = new BuiltinsTestContext();

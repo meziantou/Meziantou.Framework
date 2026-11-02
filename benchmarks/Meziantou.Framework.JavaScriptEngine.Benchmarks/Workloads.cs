@@ -98,7 +98,7 @@ internal static class Workloads
             """,
         // A loop on global variables (var declarations of the script), not on the locals of a function
         ["GlobalVariables"] = "var total = 0; var index = 0; function run() { total = 0; for (index = 0; index < 100000; index++) { total += index % 7; } return total; }",
-        ["SparseArrays"] = """
+        ["SparseArrayWrites"] = """
             function run() {
               const items = [];
               items[200000] = 0;
@@ -108,7 +108,7 @@ internal static class Workloads
               return s + Object.keys(items).length;
             }
             """,
-        ["DictionaryAddDelete"] = """
+        ["DictionarySlidingWindow"] = """
             function run() {
               const cache = {};
               let s = 0;
@@ -152,6 +152,33 @@ internal static class Workloads
               while ((match = re.exec(text)) !== null) { s += match[1].length; }
               return s + text.search(/id=6199\b/) + text.replace(/ok/g, 'OK').length;
             }
+            """,
+        ["SparseArrays"] = """
+            function run() {
+              const a = []; for (let i = 0; i < 10000; i++) a[i * 100] = 1;
+              const huge = []; huge[4294967294] = 1;
+              huge.reverse();
+              return a.reduce((s, v) => s + v, 0) + a.indexOf(2) + a.lastIndexOf(1) + huge.join('').length;
+            }
+            """,
+        ["ArrayQueue"] = """
+            function run() {
+              const queue = []; for (let i = 0; i < 20000; i++) queue.push(i);
+              let s = 0; while (queue.length) s += queue.shift();
+              const front = []; for (let i = 0; i < 10000; i++) front.unshift(i);
+              for (let i = 0; i < 5000; i++) front.splice(0, 1);
+              return s + front.length;
+            }
+            """,
+        ["DictionaryAddDelete"] = """
+            const o = {}; for (let i = 0; i < 100; i++) o['p' + i] = i;
+            function run() { for (let i = 0; i < 20000; i++) { o.tmp = i; delete o.tmp; } return Object.keys(o).length; }
+            """,
+        ["RopeIndex"] = """
+            function run() { let s = ''; let c = 0; for (let i = 0; i < 20000; i++) { s += 'a'; c += s.charCodeAt(i >> 1); } return c; }
+            """,
+        ["Bind"] = """
+            function run() { let f = function () {}; for (let i = 0; i < 5000; i++) f = f.bind(null); return f.name.length; }
             """,
         ["NumberFormat"] = """
             const nf = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 });

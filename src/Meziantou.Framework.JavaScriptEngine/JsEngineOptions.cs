@@ -19,6 +19,8 @@ public sealed class JsEngineOptions
 {
     // The copy of an engine: the options that configure the engine cannot change
     private bool _isEngineCopy;
+    private bool _enableV8StackTraceApi;
+    private bool _allowStringCompilation = true;
     private JsHost? _host;
     private JsModuleLoader? _moduleLoader;
     private string _defaultLocale = "en-US";
@@ -55,6 +57,39 @@ public sealed class JsEngineOptions
     /// works. A blocking wait is bounded by <see cref="Timeout"/> and <see cref="CancellationToken"/> either way.
     /// </summary>
     public bool CanBlock { get; set; } = true;
+
+    /// <summary>
+    /// Gets or sets whether the realms have the stack trace API of V8 (https://v8.dev/docs/stack-trace-api), used by some
+    /// npm packages: <c>Error.captureStackTrace(object, constructorOpt)</c> defines the <c>stack</c> property of an object,
+    /// and <c>Error.stackTraceLimit</c> (10 by default) sets the number of frames of the stack traces. They are not part of
+    /// ECMAScript, so they are disabled by default. <c>Error.prepareStackTrace</c> is not supported.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The options are the ones of an engine (<see cref="JsEngine.Options"/>).</exception>
+    public bool EnableV8StackTraceApi
+    {
+        get => _enableV8StackTraceApi;
+        set
+        {
+            EnsureNotEngineCopy();
+            _enableV8StackTraceApi = value;
+        }
+    }
+
+    /// <summary>
+    /// Gets or sets whether the scripts can compile code given as a string: <c>eval</c>, <c>new Function(...)</c>, the
+    /// constructors of the generator and async functions, and <c>ShadowRealm.prototype.evaluate</c>. When it is false, they
+    /// throw an EvalError, before <see cref="JsHost.EnsureCanCompileStrings"/> is called. The default is true.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">The options are the ones of an engine (<see cref="JsEngine.Options"/>).</exception>
+    public bool AllowStringCompilation
+    {
+        get => _allowStringCompilation;
+        set
+        {
+            EnsureNotEngineCopy();
+            _allowStringCompilation = value;
+        }
+    }
 
     /// <summary>Gets or sets the token that stops the running script when it is canceled.</summary>
     public CancellationToken CancellationToken { get; set; }
@@ -155,6 +190,8 @@ public sealed class JsEngineOptions
             DefaultLocale = DefaultLocale,
             ModuleLoader = ModuleLoader,
             Host = Host,
+            EnableV8StackTraceApi = EnableV8StackTraceApi,
+            AllowStringCompilation = AllowStringCompilation,
             Debugger = Debugger,
             _isEngineCopy = true,
         };

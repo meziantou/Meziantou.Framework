@@ -80,6 +80,41 @@ using (engine.Enter())
 - [DeleteProperty](cref:Meziantou.Framework.JavaScriptEngine.JsObject.DeleteProperty), [GetPrototype](cref:Meziantou.Framework.JavaScriptEngine.JsObject.GetPrototype), [SetPrototype](cref:Meziantou.Framework.JavaScriptEngine.JsObject.SetPrototype) and [PreventObjectExtensions](cref:Meziantou.Framework.JavaScriptEngine.JsObject.PreventObjectExtensions) do what `delete`,
   `Object.getPrototypeOf`, `Object.setPrototypeOf` and `Object.preventExtensions` do.
 
+## Read and write the elements of an array
+
+The indexer of [JsArray](cref:Meziantou.Framework.JavaScriptEngine.JsArray) reads and writes an element as `array[index]` does, and [ToArray](cref:Meziantou.Framework.JavaScriptEngine.JsArray.ToArray) copies the elements:
+
+<!-- ref:../../../tests/Meziantou.Framework.JavaScriptEngine.Tests/JsEngineEmbeddingTests.cs;region=JavaScriptEngine_ArrayIndexer;format=md-fenced-code-block;dedent=true -->
+```csharp
+using var engine = new JsEngine();
+var realm = engine.CreateRealm();
+var array = (JsArray)realm.Execute("const a = [10, , 30]; Object.defineProperty(a, 3, { get() { return this[0] * 4; }, enumerable: true }); a").AsObject();
+
+using (engine.Enter())
+{
+    // The indexer reads and writes the elements as array[index] does: a hole reads the prototype chain, a getter runs
+    Assert.Equal(10, array[0].AsNumber());
+    Assert.True(array[1].IsUndefined);
+    Assert.Equal(40, array[3].AsNumber());
+
+    // Writing past the end extends the array
+    array[5] = "six";
+    Assert.Equal(6u, array.Length);
+
+    // ToArray copies the elements: the holes are undefined
+    var elements = array.ToArray();
+    Assert.Equal("10,undefined,30,40,undefined,six", string.Join(',', elements.Select(element => element.ToString())));
+}
+```
+<!-- endref -->
+
+- The getter is [[Get]]: a hole, or an index past the end, reads the prototype chain, which usually gives `undefined`.
+  Getters and proxies run, so the indexer is used inside the scope of the engine.
+- The setter assigns as strict code does: it extends the array, and throws a `TypeError` ([JsException](cref:Meziantou.Framework.JavaScriptEngine.JsException)) when the
+  element cannot be written, for instance in a frozen array. The largest index is 4,294,967,294.
+- [ToArray](cref:Meziantou.Framework.JavaScriptEngine.JsArray.ToArray) reads the length once, then each element in order. A getter that changes the array during the copy
+  changes the elements that are read next, not the number of elements.
+
 ## Create properties on first use
 
 A host that exposes many objects, few of which a script uses, can create them on first access:

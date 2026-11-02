@@ -75,4 +75,33 @@ public sealed class JsException : Exception
 
     /// <summary>Gets the position of the code that threw the exception, when it was thrown by JavaScript code.</summary>
     public JsSourceLocation? Location { get; }
+
+    /// <summary>
+    /// Gets the JavaScript frames of the stack trace of the thrown error, one per line (<c>    at f (file.js:1:2)</c>), the
+    /// innermost first: the <c>stack</c> of the error without its first line (see <see cref="JsObject.GetErrorStack"/>).
+    /// The frames are the ones of the code that created the error, which can differ from the code that threw it. It is
+    /// null when the thrown value is not an error object with a stack trace (e.g. <c>throw 42</c>), and empty when the error
+    /// was created without JavaScript code on the stack.
+    /// </summary>
+    public string? JavaScriptStackTrace
+    {
+        get
+        {
+            if (Value.Cell is not JsObject obj || obj.GetErrorStack() is not { } stack)
+                return null;
+
+            var index = stack.IndexOf("\n    at ", StringComparison.Ordinal);
+            return index < 0 ? "" : stack[(index + 1)..];
+        }
+    }
+
+    /// <summary>Returns the description of the exception, followed by its JavaScript stack trace when it has one.</summary>
+    public override string ToString()
+    {
+        var text = base.ToString();
+        if (string.IsNullOrEmpty(JavaScriptStackTrace))
+            return text;
+
+        return text + Environment.NewLine + "JavaScript stack trace:" + Environment.NewLine + JavaScriptStackTrace;
+    }
 }

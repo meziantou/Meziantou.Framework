@@ -6,7 +6,9 @@ namespace Meziantou.Framework.JavaScriptEngine
 {
     public sealed class JsArray : Meziantou.Framework.JavaScriptEngine.JsObject
     {
+        public Meziantou.Framework.JavaScriptEngine.JsValue this[uint index] { get => throw null; set { } }
         public uint Length { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsValue[] ToArray() => throw null;
     }
 
     public static class JsBinaryData
@@ -73,6 +75,8 @@ namespace Meziantou.Framework.JavaScriptEngine
         public bool IsScriptRunning { get => throw null; }
         public Meziantou.Framework.JavaScriptEngine.JsEngineOptions Options { get => throw null; }
         public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.JavaScriptEngine.JsRealm> Realms { get => throw null; }
+        public event System.EventHandler<Meziantou.Framework.JavaScriptEngine.JsPromiseRejectionEventArgs>? RejectionHandled;
+        public event System.EventHandler<Meziantou.Framework.JavaScriptEngine.JsPromiseRejectionEventArgs>? UnhandledRejection;
         public JsEngine(Meziantou.Framework.JavaScriptEngine.JsEngineOptions? options = null) { }
         public Meziantou.Framework.JavaScriptEngine.JsValue Call(Meziantou.Framework.JavaScriptEngine.JsValue function, Meziantou.Framework.JavaScriptEngine.JsValue thisValue, params System.ReadOnlySpan<Meziantou.Framework.JavaScriptEngine.JsValue> arguments) => throw null;
         public string CaptureStackTrace() => throw null;
@@ -87,24 +91,33 @@ namespace Meziantou.Framework.JavaScriptEngine
         public System.IDisposable EnterNestedJobQueue() => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsScriptOrModule? GetActiveScriptOrModule() => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsSourceLocation? GetCurrentLocation() => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsSymbol GetRegisteredSymbol(string key) => throw null;
         public bool IsArray(Meziantou.Framework.JavaScriptEngine.JsValue value) => throw null;
+        public bool Post(System.Action action, Meziantou.Framework.JavaScriptEngine.JsRealm? realm = null) => throw null;
         public T RunInRealm<T>(Meziantou.Framework.JavaScriptEngine.JsRealm realm, System.Func<T> action) => throw null;
         public void RunJobs() { }
+        public System.Threading.Tasks.Task<Meziantou.Framework.JavaScriptEngine.JsValue> RunUntilSettledAsync(Meziantou.Framework.JavaScriptEngine.JsValue promise, System.Threading.CancellationToken cancellationToken = default) => throw null;
         public static bool SameValue(Meziantou.Framework.JavaScriptEngine.JsValue x, Meziantou.Framework.JavaScriptEngine.JsValue y) => throw null;
         public System.Numerics.BigInteger ToBigInt(Meziantou.Framework.JavaScriptEngine.JsValue value) => throw null;
         public static bool ToBoolean(Meziantou.Framework.JavaScriptEngine.JsValue value) => throw null;
+        public object? ToDotNet(Meziantou.Framework.JavaScriptEngine.JsValue value) => throw null;
+        public T ToDotNet<T>(Meziantou.Framework.JavaScriptEngine.JsValue value) => throw null;
         public double ToNumber(Meziantou.Framework.JavaScriptEngine.JsValue value) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsObject ToObject(Meziantou.Framework.JavaScriptEngine.JsValue value) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsPropertyKey ToPropertyKey(Meziantou.Framework.JavaScriptEngine.JsValue value) => throw null;
         public string ToString(Meziantou.Framework.JavaScriptEngine.JsValue value) => throw null;
+        public System.Threading.Tasks.Task<Meziantou.Framework.JavaScriptEngine.JsValue> ToTask(Meziantou.Framework.JavaScriptEngine.JsValue promise) => throw null;
+        public System.Threading.Tasks.Task WaitForJobsAsync(System.Threading.CancellationToken cancellationToken = default) => throw null;
     }
 
     public sealed class JsEngineOptions
     {
+        public bool AllowStringCompilation { get => throw null; set { } }
         public bool CanBlock { get => throw null; set { } }
         public System.Threading.CancellationToken CancellationToken { get => throw null; set { } }
         public Meziantou.Framework.JavaScriptEngine.JsDebugger? Debugger { get => throw null; set { } }
         public string DefaultLocale { get => throw null; set { } }
+        public bool EnableV8StackTraceApi { get => throw null; set { } }
         public Meziantou.Framework.JavaScriptEngine.JsHost? Host { get => throw null; set { } }
         public long? MaxStatements { get => throw null; set { } }
         public long? MemoryLimit { get => throw null; set { } }
@@ -139,12 +152,14 @@ namespace Meziantou.Framework.JavaScriptEngine
 
     public sealed class JsException : System.Exception
     {
+        public string? JavaScriptStackTrace { get => throw null; }
         public Meziantou.Framework.JavaScriptEngine.JsSourceLocation? Location { get => throw null; }
         public Meziantou.Framework.JavaScriptEngine.JsValue Value { get => throw null; }
         public JsException(Meziantou.Framework.JavaScriptEngine.JsValue value) { }
         public JsException(string message) { }
         public JsException(Meziantou.Framework.JavaScriptEngine.JsValue value, Meziantou.Framework.JavaScriptEngine.JsSourceLocation? location) { }
         public JsException(string message, System.Exception innerException) { }
+        public override string ToString() => throw null;
     }
 
     public sealed class JsExecutionLimits
@@ -340,6 +355,12 @@ namespace Meziantou.Framework.JavaScriptEngine
         public static bool TryParse(string code, string? url, int lineOffset, int columnOffset, int unboundNameFunctionStart, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.JavaScriptEngine.JsPreparedScript? script, [System.Diagnostics.CodeAnalysis.NotNullWhen(false)] out Meziantou.Framework.JavaScriptEngine.JsSyntaxErrorException? error) => throw null;
     }
 
+    public sealed class JsPromiseRejectionEventArgs : System.EventArgs
+    {
+        public Meziantou.Framework.JavaScriptEngine.JsObject Promise { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsValue Reason { get => throw null; }
+    }
+
     public enum JsPromiseRejectionOperation
     {
         Reject = 0,
@@ -430,17 +451,29 @@ namespace Meziantou.Framework.JavaScriptEngine
         public Meziantou.Framework.JavaScriptEngine.JsObject CreateDate(double timeValue) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsObject CreateError(Meziantou.Framework.JavaScriptEngine.JsErrorType type, string message) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsException CreateException(Meziantou.Framework.JavaScriptEngine.JsErrorType type, string message) => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsFunction CreateFunction(string name, System.Action action) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsFunction CreateFunction(string name, int length, Meziantou.Framework.JavaScriptEngine.JsNativeFunction function) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsFunction CreateFunction(string name, int length, Meziantou.Framework.JavaScriptEngine.JsNativeFunction function, bool runInCallerRealm) => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsFunction CreateFunction<T1>(string name, System.Action<T1> action) => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsFunction CreateFunction<TResult>(string name, System.Func<TResult> function) => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsFunction CreateFunction<T1, T2>(string name, System.Action<T1, T2> action) => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsFunction CreateFunction<T1, TResult>(string name, System.Func<T1, TResult> function) => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsFunction CreateFunction<T1, T2, TResult>(string name, System.Func<T1, T2, TResult> function) => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsFunction CreateFunction<T1, T2, T3, TResult>(string name, System.Func<T1, T2, T3, TResult> function) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsSyntheticModule CreateJsonModule(string json, string? url = null, object? hostDefined = null) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsObject CreateObject() => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsObject CreateObject(Meziantou.Framework.JavaScriptEngine.JsObject? prototype) => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsObject CreatePromise(System.Threading.Tasks.Task task) => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsObject CreatePromise(System.Threading.Tasks.Task<Meziantou.Framework.JavaScriptEngine.JsValue> task) => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsObject CreatePromise<T>(System.Threading.Tasks.Task<T> task, System.Func<T, Meziantou.Framework.JavaScriptEngine.JsValue> convertResult) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsObject CreateSharedArrayBuffer(Meziantou.Framework.JavaScriptEngine.JsSharedDataBlock block) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsSyntheticModule CreateSyntheticModule(System.Collections.Generic.IEnumerable<string> exportNames, System.Action<Meziantou.Framework.JavaScriptEngine.JsSyntheticModule> evaluate, string? url = null, object? hostDefined = null) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsSyntheticModule CreateTextModule(string text, string? url = null, object? hostDefined = null) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsValue Evaluate(string code) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsValue Execute(string code, string? url = null) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsValue Execute(Meziantou.Framework.JavaScriptEngine.JsPreparedScript script, object? hostDefined = null, bool mutedErrors = false) => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsValue FromDotNet(object? value) => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsValue FromDotNet<T>(T value) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsSourceTextModule ParseModule(string code, string? url = null, object? hostDefined = null) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsSourceTextModule ParseModule(string code, string? url, object? hostDefined, int lineOffset, int columnOffset) => throw null;
         public void SetGlobalThis(Meziantou.Framework.JavaScriptEngine.JsObject thisValue) { }
@@ -523,13 +556,25 @@ namespace Meziantou.Framework.JavaScriptEngine
 
     public sealed class JsSymbol : Meziantou.Framework.JavaScriptEngine.JsCell
     {
+        public static Meziantou.Framework.JavaScriptEngine.JsSymbol AsyncDispose { get => throw null; }
         public static Meziantou.Framework.JavaScriptEngine.JsSymbol AsyncIterator { get => throw null; }
         public string? Description { get => throw null; }
+        public static Meziantou.Framework.JavaScriptEngine.JsSymbol Dispose { get => throw null; }
         public static Meziantou.Framework.JavaScriptEngine.JsSymbol HasInstance { get => throw null; }
+        public static Meziantou.Framework.JavaScriptEngine.JsSymbol IsConcatSpreadable { get => throw null; }
+        public bool IsRegistered { get => throw null; }
         public static Meziantou.Framework.JavaScriptEngine.JsSymbol Iterator { get => throw null; }
+        public static Meziantou.Framework.JavaScriptEngine.JsSymbol Match { get => throw null; }
+        public static Meziantou.Framework.JavaScriptEngine.JsSymbol MatchAll { get => throw null; }
+        public static Meziantou.Framework.JavaScriptEngine.JsSymbol Metadata { get => throw null; }
+        public static Meziantou.Framework.JavaScriptEngine.JsSymbol Replace { get => throw null; }
+        public static Meziantou.Framework.JavaScriptEngine.JsSymbol Search { get => throw null; }
+        public static Meziantou.Framework.JavaScriptEngine.JsSymbol Species { get => throw null; }
+        public static Meziantou.Framework.JavaScriptEngine.JsSymbol Split { get => throw null; }
         public static Meziantou.Framework.JavaScriptEngine.JsSymbol ToPrimitive { get => throw null; }
         public static Meziantou.Framework.JavaScriptEngine.JsSymbol ToStringTag { get => throw null; }
         public static Meziantou.Framework.JavaScriptEngine.JsSymbol Unscopables { get => throw null; }
+        public static Meziantou.Framework.JavaScriptEngine.JsSymbol Create(string? description = null) => throw null;
         public override string ToString() => throw null;
     }
 

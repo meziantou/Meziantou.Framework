@@ -46,6 +46,9 @@ Assert.Equal("TypeError: The amount must be a number", realm.Execute("try { form
 - The function runs inside the scope of the engine, in its realm: it can read and write properties and create objects
   directly.
 
+`realm.CreateFunction` also accepts a typed `Func<...>` or `Action<...>`, whose arguments and result are converted for
+you. See [Typed functions](08-DotNetValues.md#typed-functions).
+
 A function created by [CreateFunction](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.CreateFunction) cannot be called with `new`. To create a constructor, see
 [Exposing .NET objects](05-ExposingDotNetObjects.md).
 

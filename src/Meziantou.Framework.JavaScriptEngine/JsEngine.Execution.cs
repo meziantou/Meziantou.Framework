@@ -487,5 +487,10 @@ public sealed partial class JsEngine
     internal string? HostGetCodeForEval(JsValue argument) => HostHooks.GetCodeForEval(this, argument);
 
     internal void HostEnsureCanCompileStrings(JsRealm realm, IReadOnlyList<string> parameterStrings, string bodyString, string codeString, JsCompilationType compilationType, IReadOnlyList<JsValue> parameterArgs, JsValue bodyArg)
-        => HostHooks.EnsureCanCompileStrings(this, realm, parameterStrings, bodyString, codeString, compilationType, parameterArgs, bodyArg);
+    {
+        if (!Options.AllowStringCompilation)
+            throw new JsException(new JsValue(realm.CreateError(ErrorType.EvalError, "Code generation from strings is disabled")));
+
+        HostHooks.EnsureCanCompileStrings(this, realm, parameterStrings, bodyString, codeString, compilationType, parameterArgs, bodyArg);
+    }
 }

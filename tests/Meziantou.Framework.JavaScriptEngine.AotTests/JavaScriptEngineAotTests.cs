@@ -113,6 +113,43 @@ public sealed class JavaScriptEngineAotTests
         Assert.Equal(49, realm.Execute("result").AsNumber());
     }
 
+    // The conversions between .NET and JavaScript values test the types: they work without reflection
+    [Fact]
+    public void Marshalling()
+    {
+        using var engine = new JsEngine(new JsEngineOptions { Timeout = TimeSpan.FromSeconds(10) });
+        var realm = engine.CreateRealm();
+        using (engine.Enter())
+        {
+            var order = new Dictionary<string, object?> { ["id"] = "A-12", ["lines"] = new List<object?> { 1, 2.5, null }, ["date"] = DateTimeOffset.UnixEpoch };
+            realm.GlobalObject.SetProperty("order", realm.FromDotNet(order));
+            realm.GlobalObject.SetProperty("json", realm.FromDotNet(System.Text.Json.JsonDocument.Parse("""{ "a": [true, "x"] }""").RootElement));
+            realm.GlobalObject.SetProperty("add", realm.CreateFunction("add", (int a, long? b) => a + (b ?? 1)));
+            realm.GlobalObject.SetProperty(JsSymbol.Create("hidden"), 1);
+        }
+
+        Assert.Equal("A-12|1,2.5,|1970|true,x|8|5", realm.Execute("[order.id, order.lines.join(), order.date.getUTCFullYear(), json.a.join(), add(3, 5), add('4')].join('|')").AsString());
+
+        var result = (Dictionary<string, object?>)engine.ToDotNet(realm.Execute("({ a: [1, 'b'], c: { d: 10n } })"))!;
+        Assert.Equal("b", ((List<object?>)result["a"]!)[1]);
+        Assert.Equal(new System.Numerics.BigInteger(10), ((Dictionary<string, object?>)result["c"]!)["d"]);
+        Assert.Equal(42, engine.ToDotNet<int>(realm.Execute("'42'")));
+    }
+
+    [Fact]
+    public async Task TasksAndPromises()
+    {
+        using var engine = new JsEngine(new JsEngineOptions { Timeout = TimeSpan.FromSeconds(10) });
+        var realm = engine.CreateRealm();
+        using (engine.Enter())
+        {
+            realm.GlobalObject.SetProperty("delay", realm.CreateFunction("delay", 1, (_, arguments) => realm.CreatePromise(Task.Delay(10).ContinueWith(_ => 7, TaskScheduler.Default), value => value)));
+        }
+
+        var result = await engine.RunUntilSettledAsync(realm.Execute("(async () => (await delay()) * 6)()"));
+        Assert.Equal(42, result.AsNumber());
+    }
+
     private sealed class SingleModuleLoader(string specifier, string code) : JsModuleLoader
     {
         protected override void LoadImportedModule(JsModuleLoadRequest request)

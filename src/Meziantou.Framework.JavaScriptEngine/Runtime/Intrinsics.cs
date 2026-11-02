@@ -91,6 +91,11 @@ internal sealed partial class Intrinsics
         _globalObject = globalObject;
         ThrowTypeError = CreateThrowTypeError();
         ErrorBuiltins.Initialize(this, _errorPrototypes, _errorConstructors);
+        if (Realm.Engine.Options.EnableV8StackTraceApi)
+        {
+            ErrorStackTraceApi.Initialize(Realm, _errorConstructors[(int)ErrorType.Error]);
+        }
+
         InitializeBuiltins();
         _globalObject = null;
         s_globalCount = Math.Max(s_globalCount, globalObject.GetOwnPropertyCount());

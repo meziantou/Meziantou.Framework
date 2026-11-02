@@ -30,6 +30,7 @@ public sealed partial class JsEngine
     /// whole drain, so jobs that keep enqueuing jobs can run forever. Run the jobs in an execution scope
     /// (<see cref="EnterExecutionScope"/>) to bound the drain as a whole: the jobs are then part of the entry of the scope.
     /// The jobs do not run once the execution is canceled.
+    /// Once the queue is empty, it raises <see cref="UnhandledRejection"/> for the promises still rejected without a handler.
     /// </remarks>
     /// <exception cref="JsException">A job threw an exception, and the host does not handle the job errors (the other jobs stay in the queue).</exception>
     /// <exception cref="JsTerminationException">A job was terminated, or the execution is canceled (the other jobs stay in the queue).</exception>
@@ -52,6 +53,8 @@ public sealed partial class JsEngine
             TryDequeueJob(out var job);
             RunJob(job);
         }
+
+        NotifyUnhandledRejections();
     }
 
     /// <summary>Gets the delay until the next timeout job can run (zero when one is due), or null when there is no timeout job.</summary>
@@ -105,6 +108,7 @@ public sealed partial class JsEngine
         }
 
         inbox.Enqueue(job);
+        SignalJobs();
     }
 
     /// <summary>The default implementation of HostEnqueueTimeoutJob: the job runs from <see cref="RunJobs"/> once the delay has elapsed.</summary>
@@ -118,6 +122,8 @@ public sealed partial class JsEngine
             _timeoutJobs ??= new PriorityQueue<JsJob, (long, long)>();
             _timeoutJobs.Enqueue(job, (due, _timeoutJobSequence++));
         }
+
+        SignalJobs();
     }
 
     /// <summary>HostMakeJobCallback(callback)</summary>
@@ -130,7 +136,11 @@ public sealed partial class JsEngine
     internal object? MakeContinuationHostDefined() => HostHooks.MakeContinuationHostDefined(this);
 
     /// <summary>HostPromiseRejectionTracker(promise, operation)</summary>
-    internal void TrackPromiseRejection(JsPromise promise, JsPromiseRejectionOperation operation) => HostHooks.PromiseRejectionTracker(this, promise, operation);
+    internal void TrackPromiseRejection(JsPromise promise, JsPromiseRejectionOperation operation)
+    {
+        TrackUnhandledRejection(promise, operation);
+        HostHooks.PromiseRejectionTracker(this, promise, operation);
+    }
 
     /// <summary>AddToKeptObjects(value): keeps the target of a WeakRef alive until <see cref="ClearKeptObjects"/>.</summary>
     internal void AddToKeptObjects(JsCell value) => (_keptAlive ??= []).Add(value);

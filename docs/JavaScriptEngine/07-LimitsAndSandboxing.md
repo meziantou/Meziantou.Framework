@@ -183,8 +183,10 @@ with an execution scope ([Limit a request](#limit-a-request)).
 
 ## Forbid eval
 
-`eval`, `new Function(...)` and the constructors of the generator and async functions compile code given as a string.
-To forbid them, throw from [JsHost.EnsureCanCompileStrings](cref:Meziantou.Framework.JavaScriptEngine.JsHost.EnsureCanCompileStrings):
+`eval`, `new Function(...)`, the constructors of the generator and async functions and `ShadowRealm.prototype.evaluate`
+compile code given as a string. Set [AllowStringCompilation](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.AllowStringCompilation) to false to forbid them all: they throw an `EvalError`.
+
+To decide case by case, throw from [JsHost.EnsureCanCompileStrings](cref:Meziantou.Framework.JavaScriptEngine.JsHost.EnsureCanCompileStrings) instead:
 
 <!-- ref:../../samples/Meziantou.Framework.JavaScriptEngine.Samples/NoStringCompilationHost.cs;region=JavaScriptEngine_NoStringCompilationHost;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -220,9 +222,52 @@ content security policy does.
 
 A realm has only the built-ins of ECMAScript. A script has no access to the files, the network, the environment
 variables, the processes or the .NET types: it reaches your application only through the objects and functions you
-add. To run code you do not trust:
+add. The defaults of [JsEngineOptions](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions) set no limit except the recursion: a script that never ends, or a catastrophic
+regular expression, runs until you stop it. For code you do not trust, set every limit:
 
-- Set [Timeout](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.Timeout), [MaxStatements](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.MaxStatements) and [MemoryLimit](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.MemoryLimit), and a [CancellationToken](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.CancellationToken) tied to the request.
+<!-- ref:../../tests/Meziantou.Framework.JavaScriptEngine.Tests/JsEngineEmbeddingTests.cs;region=JavaScriptEngine_UntrustedCode;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The budget of the whole work (the script and its jobs): the limits of the options apply to each entry
+using var cancellation = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+using var engine = new JsEngine(new JsEngineOptions
+{
+    Timeout = TimeSpan.FromMilliseconds(500),
+    MaxStatements = 10_000_000,
+    MemoryLimit = 64 * 1024 * 1024,
+    RegExpTimeout = TimeSpan.FromMilliseconds(100),
+    RecursionLimit = 1_000,
+    CancellationToken = cancellation.Token,
+    AllowStringCompilation = false,
+});
+var realm = engine.CreateRealm();
+
+// A catastrophic regular expression is stopped by RegExpTimeout
+var exception = Assert.Throws<JsTerminationException>(() => realm.Execute("/^(a+)+$/.test('a'.repeat(40) + '!')"));
+Assert.Equal(JsTerminationReason.Timeout, exception.Reason);
+
+// Each job is short, but the chain of jobs never ends: only the cancellation of the whole work stops it
+realm.Execute("(function spin() { Promise.resolve().then(spin); })()");
+exception = Assert.Throws<JsTerminationException>(engine.RunJobs);
+Assert.Equal(JsTerminationReason.Canceled, exception.Reason);
+```
+<!-- endref -->
+
+The limits are cooperative, not an isolation of the process:
+
+- The engine checks them while JavaScript code runs and while the built-ins work. Your .NET functions are not
+  interrupted: call `engine.CheckInterrupt()` in the long ones, and bound the work they do for a script.
+- They apply to each entry into JavaScript. [RunJobs](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunJobs) runs each job as an entry, so a script that keeps enqueuing
+  short jobs never exceeds them: bound the whole work with the cancellation token, and bound the number of times
+  your event loop runs the jobs.
+- The memory limit counts the allocations of the thread; it does not protect the process from a script that keeps a
+  lot of memory alive in the realm between two entries. Discard the realm, or the engine, once the work is done.
+- A stack overflow or an out-of-memory condition of the process cannot be caught: to contain a script completely,
+  run it in another process.
+
+To run code you do not trust:
+
+- Set [Timeout](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.Timeout), [MaxStatements](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.MaxStatements), [MemoryLimit](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.MemoryLimit) and [RegExpTimeout](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.RegExpTimeout), and a [CancellationToken](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.CancellationToken) tied to the request.
+- Set [AllowStringCompilation](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.AllowStringCompilation) to false, unless the scripts need `eval`.
 - Expose the smallest API you can, and validate every argument of your .NET functions as you would validate the input
   of a web API.
 - Give each user or tenant its own realm, or its own engine, so that a script cannot see or change what another one

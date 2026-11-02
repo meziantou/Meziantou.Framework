@@ -541,4 +541,232 @@ public sealed class ChangeValueTagCodeFixTests : TaggedValuesAnalyzerTestBase
             }
             """);
     }
+
+    [Fact]
+    public async Task FixAll_ChangesIndependentDeclarations()
+    {
+        await VerifyCodeFixAsync<ChangeValueTagCodeFixProviderType>(
+            """
+            class Sample
+            {
+                static void Load([ValueTag("OrderId")] Guid id) { }
+
+                static void Save([ValueTag("OrderId")] Guid id) { }
+
+                void M([ValueTag("ProjectId")] Guid projectId, [ValueTag("CustomerId")] Guid customerId)
+                {
+                    Guid /* ValueTag=OrderId */ local = {|MFTV0002:projectId|};
+                    Load({|MFTV0002:projectId|});
+                    Save({|MFTV0002:customerId|});
+                }
+            }
+            """,
+            """
+            class Sample
+            {
+                static void Load([ValueTag("ProjectId")] Guid id) { }
+
+                static void Save([ValueTag("CustomerId")] Guid id) { }
+
+                void M([ValueTag("ProjectId")] Guid projectId, [ValueTag("CustomerId")] Guid customerId)
+                {
+                    Guid /* ValueTag=ProjectId */ local = projectId;
+                    Load(projectId);
+                    Save(customerId);
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task FixAll_AddsOneAttribute_WhenSeveralDiagnosticsTargetTheSameDeclaration()
+    {
+        await VerifyCodeFixAsync<ChangeValueTagCodeFixProviderType>(
+            """
+            class Sample
+            {
+                static void Load(Guid id) { }
+
+                static void Save([ValueTag("ProjectId")] Guid id) { }
+
+                void M([ValueTag("OrderId")] Guid orderId, [ValueTag("OrderId")] Guid otherId)
+                {
+                    Load({|MFTV0009:orderId|});
+                    Load({|MFTV0009:otherId|});
+                    Save({|MFTV0002:orderId|});
+                    Save({|MFTV0002:otherId|});
+                }
+            }
+            """,
+            """
+            class Sample
+            {
+                static void Load([ValueTag("OrderId")] Guid id) { }
+
+                static void Save([ValueTag("OrderId")] Guid id) { }
+
+                void M([ValueTag("OrderId")] Guid orderId, [ValueTag("OrderId")] Guid otherId)
+                {
+                    Load(orderId);
+                    Load(otherId);
+                    Save(orderId);
+                    Save(otherId);
+                }
+            }
+            """,
+            strict: true);
+    }
+
+    [Fact]
+    public async Task FixAll_DoesNotChangeADeclaration_WhenTheSuggestedTagsConflict()
+    {
+        await VerifyCodeFixAsync<ChangeValueTagCodeFixProviderType>(
+            [
+                """
+                class Sample
+                {
+                    static void Load([ValueTag("OrderId")] Guid id) { }
+
+                    static void Save([ValueTag("OrderId")] Guid id) { }
+
+                    void M([ValueTag("ProjectId")] Guid projectId, [ValueTag("CustomerId")] Guid customerId)
+                    {
+                        Load({|MFTV0002:projectId|});
+                        Load({|MFTV0002:customerId|});
+                        Save({|MFTV0002:projectId|});
+                        Guid /* ValueTag=OrderId */ local = {|MFTV0002:projectId|};
+                        local = {|MFTV0002:customerId|};
+                    }
+                }
+                """,
+            ],
+            [
+                """
+                class Sample
+                {
+                    static void Load([ValueTag("ProjectId")] Guid id) { }
+
+                    static void Save([ValueTag("OrderId")] Guid id) { }
+
+                    void M([ValueTag("ProjectId")] Guid projectId, [ValueTag("CustomerId")] Guid customerId)
+                    {
+                        Load(projectId);
+                        Load({|MFTV0002:customerId|});
+                        Save({|MFTV0002:projectId|});
+                        Guid /* ValueTag=OrderId */ local = {|MFTV0002:projectId|};
+                        local = {|MFTV0002:customerId|};
+                    }
+                }
+                """,
+            ],
+            batchFixedSources:
+            [
+                """
+                class Sample
+                {
+                    static void Load([ValueTag("OrderId")] Guid id) { }
+
+                    static void Save([ValueTag("ProjectId")] Guid id) { }
+
+                    void M([ValueTag("ProjectId")] Guid projectId, [ValueTag("CustomerId")] Guid customerId)
+                    {
+                        Load({|MFTV0002:projectId|});
+                        Load({|MFTV0002:customerId|});
+                        Save(projectId);
+                        Guid /* ValueTag=OrderId */ local = {|MFTV0002:projectId|};
+                        local = {|MFTV0002:customerId|};
+                    }
+                }
+                """,
+            ],
+            fixOne: true);
+    }
+
+    [Fact]
+    public async Task FixAll_AddsACommentToEachVariable_WhenTheCommentIsShared()
+    {
+        await VerifyCodeFixAsync<ChangeValueTagCodeFixProviderType>(
+            """
+            class Sample
+            {
+                static void Load([ValueTag("OrderId")] Guid id) { }
+
+                void M([ValueTag("ProjectId")] Guid projectId)
+                {
+                    Guid /* ValueTag=OrderId */ a = Guid.Empty, b = Guid.Empty, c = Guid.Empty;
+                    a = {|MFTV0002:projectId|};
+                    a = {|MFTV0002:projectId|};
+                    b = {|MFTV0002:projectId|};
+                    Load(c);
+                }
+            }
+            """,
+            """
+            class Sample
+            {
+                static void Load([ValueTag("OrderId")] Guid id) { }
+
+                void M([ValueTag("ProjectId")] Guid projectId)
+                {
+                    Guid /* ValueTag=OrderId */ a /* ValueTag=ProjectId */ = Guid.Empty, b /* ValueTag=ProjectId */ = Guid.Empty, c = Guid.Empty;
+                    a = projectId;
+                    a = projectId;
+                    b = projectId;
+                    Load(c);
+                }
+            }
+            """);
+    }
+
+    [Fact]
+    public async Task FixAll_ChangesEveryPartOfAPartialMember_InSeveralFiles()
+    {
+        await VerifyCodeFixAsync<ChangeValueTagCodeFixProviderType>(
+            [
+                """
+                partial class Sample
+                {
+                    static partial void Load(Guid id);
+
+                    public static partial Guid Create([ValueTag("ProjectId")] Guid projectId);
+
+                    void M([ValueTag("ProjectId")] Guid projectId) => Load({|MFTV0002:projectId|});
+                }
+                """,
+                """
+                partial class Sample
+                {
+                    static partial void Load([ValueTag("OrderId")] Guid id) { }
+
+                    [return: ValueTag("OrderId")]
+                    public static partial Guid Create(Guid projectId) => {|MFTV0002:projectId|};
+
+                    void O([ValueTag("ProjectId")] Guid projectId) => Load({|MFTV0002:projectId|});
+                }
+                """,
+            ],
+            [
+                """
+                partial class Sample
+                {
+                    static partial void Load([ValueTag("ProjectId")] Guid id);
+
+                    public static partial Guid Create([ValueTag("ProjectId")] Guid projectId);
+
+                    void M([ValueTag("ProjectId")] Guid projectId) => Load(projectId);
+                }
+                """,
+                """
+                partial class Sample
+                {
+                    static partial void Load(Guid id) { }
+
+                    [return: ValueTag("ProjectId")]
+                    public static partial Guid Create(Guid projectId) => projectId;
+
+                    void O([ValueTag("ProjectId")] Guid projectId) => Load(projectId);
+                }
+                """,
+            ]);
+    }
 }

@@ -57,6 +57,9 @@ an untagged declaration, and remove invalid or redundant annotations.
   fix the base member or the assembly attribute yourself.
 - On a local variable, the code fix changes the `ValueTag` comment. When the comment also tags other variables of the
   declaration, it adds a comment next to the name of the variable instead.
+- The code fixes that change or add a tag support Fix All, in a document, a project, or a solution. When several
+  diagnostics target the same declaration, or the same local variable, Fix All writes the tag once. When they suggest
+  different tags, Fix All leaves the declaration unchanged: fix these diagnostics one by one.
 
 ## Configure the analyzer
 

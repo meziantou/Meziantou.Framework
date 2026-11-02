@@ -133,7 +133,7 @@ public sealed class JsArray : JsObject
 
     internal override List<PropertyKey> OwnPropertyKeys()
     {
-        var keys = OrdinaryOwnPropertyKeys();
+        var keys = OrdinaryOwnPropertyKeys(extraCapacity: 1);
         var position = 0;
         while (position < keys.Count && keys[position].IsArrayIndex)
         {
@@ -171,7 +171,7 @@ public sealed class JsArray : JsObject
         // Delete the elements from the end; stop at a non-configurable element. The dense elements are all configurable.
         if (HasOnlyDenseElements)
         {
-            TruncateElements(newLength);
+            TruncateElements(newLength, _length);
             _length = newLength;
             if (!newWritable)
             {
@@ -200,7 +200,7 @@ public sealed class JsArray : JsObject
             }
         }
 
-        TruncateElements(newLength);
+        TruncateElements(newLength, _length);
         _length = newLength;
         if (!newWritable)
         {

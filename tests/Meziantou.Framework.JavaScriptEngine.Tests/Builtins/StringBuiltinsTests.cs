@@ -59,6 +59,48 @@ public sealed class StringBuiltinsTests
     }
 
     [Fact]
+    public void Rope_AppendAndIndex_ScalesLinearly()
+    {
+        // Each read used to flatten the rope: a copy of the whole string at each step
+        var result = BuiltinsTestContext.ExecuteWithinBudget("""
+            const chunk = 'abcdefgh'.repeat(8);
+            let s = '';
+            let sum = 0;
+            for (let i = 0; i < 64000; i++) {
+              s += chunk;
+              sum += s.charCodeAt(i * 64 + (i & 63)) + s[i].length;
+            }
+            [s.length, sum, s.slice(-3)].join()
+            """);
+        Assert.Equal("4096000,6496000,fgh", result);
+    }
+
+    [Fact]
+    public void Rope_ReadByIndex()
+    {
+        using var engine = new JsEngine();
+        var result = engine.CreateRealm().Execute("""
+            const t = 'x'.repeat(100) + '\uD83D';
+            const u = t + '\uDE00';
+            const c1 = t.charCodeAt(100);
+
+            // u extends the buffer of t; v cannot (u uses the characters after t), it gets its own buffer
+            const cp = u.codePointAt(100);
+            const v = t + 'y';
+            const c2 = v.charCodeAt(101);
+            const c3 = u.charCodeAt(101);
+
+            // Deep ropes, never flattened before the first read
+            let left = '';
+            for (let i = 0; i < 100000; i++) left += String.fromCharCode(48 + i % 10);
+            let right = '';
+            for (let i = 0; i < 100000; i++) right = String.fromCharCode(48 + i % 10) + right;
+            [c1, cp, c2, c3, left[99999], left.charCodeAt(12345), right[0], right.at(-1), left === right.split('').reverse().join(''), t + u === t + t + '\uDE00', u === t + '\uDE00', v.length, u.charAt(101) === '\uDE00'].join()
+            """);
+        Assert.Equal("55357,128512,121,56832,9,53,9,0,true,true,true,102,true", engine.ToString(result));
+    }
+
+    [Fact]
     public void CodePoints()
     {
         using var context = new BuiltinsTestContext();

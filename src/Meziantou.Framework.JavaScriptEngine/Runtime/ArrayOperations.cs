@@ -181,14 +181,18 @@ internal static class ArrayOperations
             next = nextDense;
         }
 
-        if (!obj.HasOnlyDenseElements)
+        if (!obj.HasOnlyDenseElements && k < next)
         {
-            foreach (var key in obj.GetIndexedTableKeys())
+            var indices = obj.GetIndexedTableKeys();
+            var position = indices.BinarySearch((uint)k);
+            if (position < 0)
             {
-                if (key.ArrayIndex >= k && key.ArrayIndex < next)
-                {
-                    next = key.ArrayIndex;
-                }
+                position = ~position;
+            }
+
+            if (position < indices.Length && indices[position] < next)
+            {
+                next = indices[position];
             }
         }
 
@@ -208,12 +212,17 @@ internal static class ArrayOperations
 
         if (!obj.HasOnlyDenseElements)
         {
-            foreach (var key in obj.GetIndexedTableKeys())
+            // The last index of the table that is less than or equal to k
+            var indices = obj.GetIndexedTableKeys();
+            var position = indices.BinarySearch((uint)k);
+            if (position < 0)
             {
-                if (key.ArrayIndex <= k && key.ArrayIndex > previous)
-                {
-                    previous = key.ArrayIndex;
-                }
+                position = ~position - 1;
+            }
+
+            if (position >= 0 && indices[position] > previous)
+            {
+                previous = indices[position];
             }
         }
 

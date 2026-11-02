@@ -846,9 +846,22 @@ internal static class ArrayBuiltins
         }
 
         var middle = length / 2;
-        for (long lower = 0; lower != middle; lower++)
+        for (long lower = 0; lower < middle; lower++)
         {
             var upper = length - lower - 1;
+            if (!ArrayOperations.TryGetDenseElement(obj, lower, out _) && !ArrayOperations.TryGetDenseElement(obj, upper, out _))
+            {
+                // Skip the pairs whose elements are both holes (when reading a hole is not observable): the next pair has
+                // an element at its lower index, or at its upper index
+                var nextLower = ArrayOperations.SkipHoles(obj, lower, middle);
+                var previousUpper = ArrayOperations.SkipHolesBackward(obj, upper);
+                lower = Math.Min(nextLower, length - 1 - previousUpper);
+                if (lower >= middle)
+                    break;
+
+                upper = length - lower - 1;
+            }
+
             var lowerExists = ArrayOperations.TryGetElement(obj, lower, out var lowerValue);
             var upperExists = ArrayOperations.TryGetElement(obj, upper, out var upperValue);
             if (lowerExists && upperExists)
@@ -1013,23 +1026,10 @@ internal static class ArrayBuiltins
             return;
 
         // Fast path: an array without holes, extensible, whose prototypes have no elements
-        if (length + itemCount < int.MaxValue && ArrayOperations.IsPackedArray(obj, length, out var packed))
+        if (length + itemCount < Array.MaxLength / 2 && ArrayOperations.IsPackedArray(obj, length, out var packed))
         {
-            var newLength = length - actualDeleteCount + itemCount;
-            if (itemCount > actualDeleteCount)
-            {
-                // Grow the storage, then move the tail to the right
-                packed.SetOwnSlot(new PropertyKey((uint)(newLength - 1)), JsValue.Undefined, PropertyFlags.Default);
-                ArrayOperations.SetLength(packed, newLength);
-                packed.MoveDenseElements((int)(actualStart + actualDeleteCount), (int)(actualStart + itemCount), (int)(length - actualStart - actualDeleteCount));
-                packed.FillDensePlaceholder((int)actualStart, (int)itemCount);
-            }
-            else
-            {
-                packed.MoveDenseElements((int)(actualStart + actualDeleteCount), (int)(actualStart + itemCount), (int)(length - actualStart - actualDeleteCount));
-                ArrayOperations.SetLength(packed, newLength);
-            }
-
+            packed.SpliceDenseElements((int)length, (int)actualStart, (int)actualDeleteCount, (int)itemCount);
+            ArrayOperations.SetLength(packed, length - actualDeleteCount + itemCount);
             return;
         }
 

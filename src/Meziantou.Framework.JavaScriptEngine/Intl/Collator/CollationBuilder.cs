@@ -29,6 +29,11 @@ internal sealed class CollationBuilder
     private readonly ulong[] _ces = new ulong[MaxExpansionLength + 1];
     private int _cesLength;
     private ulong[] _buffer = new ulong[64];
+
+    // The buffers of SetCaseBits, reused for every relation of the tailoring
+    private readonly CollationTable _rootTable = new(tailored: null, suppressedContractions: null);
+    private ulong[] _baseCEs = new ulong[64];
+    private int[] _caseCodePoints = new int[16];
     private CollationTable _table = null!;
 
     [StructLayout(LayoutKind.Auto)]
@@ -478,9 +483,16 @@ internal sealed class CollationBuilder
         ulong cases = 0;
         if (numTailoredPrimaries > 0)
         {
-            var rootTable = new CollationTable(tailored: null, suppressedContractions: null);
-            var baseCEs = new ulong[16];
-            var baseCEsLength = rootTable.GetElements(nfdString.AsSpan().ToArray(), ref baseCEs, 0, numeric: false);
+            // GetElements modifies the code points (discontiguous contractions): work on a copy
+            if (_caseCodePoints.Length < nfdString.Length)
+            {
+                _caseCodePoints = new int[Math.Max(_caseCodePoints.Length * 2, nfdString.Length)];
+            }
+
+            var codePoints = _caseCodePoints.AsSpan(0, nfdString.Length);
+            nfdString.CopyTo(codePoints);
+            var baseCEsLength = _rootTable.GetElements(codePoints, ref _baseCEs, 0, numeric: false);
+            var baseCEs = _baseCEs;
             ulong lastCase = 0;
             var numBasePrimaries = 0;
             for (var i = 0; i < baseCEsLength; i++)

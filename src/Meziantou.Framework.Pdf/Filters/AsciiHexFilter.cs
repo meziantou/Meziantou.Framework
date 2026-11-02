@@ -3,6 +3,10 @@ using Meziantou.Framework.Pdf.Parsing;
 namespace Meziantou.Framework.Pdf.Filters;
 
 /// <summary>The <c>ASCIIHexDecode</c> filter (ISO 32000-2, 7.4.2): pairs of hexadecimal digits, whitespace ignored, <c>&gt;</c> at the end.</summary>
+/// <remarks>
+/// A character that is not a hexadecimal digit is damage, which ends the data like <c>&gt;</c>: the bytes before it are
+/// kept and a digit alone before it is dropped. The data is invalid only when no byte comes before the damage.
+/// </remarks>
 internal static class AsciiHexFilter
 {
     public static byte[] Decode(ReadOnlySpan<byte> input, long limit)
@@ -18,7 +22,12 @@ internal static class AsciiHexFilter
                 continue;
 
             if (!PdfLexer.TryHexValue(c, out var digit))
-                throw new InvalidPdfContentException($"The ASCIIHexDecode data has a character that is not a hexadecimal digit (0x{c:X2})");
+            {
+                if (output.Length == 0)
+                    throw new InvalidPdfContentException($"The ASCIIHexDecode data has a character that is not a hexadecimal digit (0x{c:X2})");
+
+                return output.ToArray();
+            }
 
             if (high < 0)
             {

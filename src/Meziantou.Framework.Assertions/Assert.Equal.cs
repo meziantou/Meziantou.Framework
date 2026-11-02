@@ -171,6 +171,21 @@ public partial class Assert
         }
     }
 
+    /// <summary>Verifies that two values of a <see langword="ref struct"/> type are equal according to <see cref="IEquatable{T}.Equals(T)"/>.</summary>
+    /// <remarks>
+    /// This overload is used only when no other overload applies, such as for a <see langword="ref struct"/> that implements <see cref="IEquatable{T}"/>.
+    /// A <see langword="ref struct"/> value cannot be boxed, so the failure message shows the type of the values instead of the values.
+    /// </remarks>
+    [OverloadResolutionPriority(-3)]
+    public static void Equal<T>(scoped in T expected, scoped in T actual, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)
+        where T : IEquatable<T>, allows ref struct
+    {
+        if (expected.Equals(actual))
+            return;
+
+        throw new AssertionException(ErrorFormatter.Format(new RefStructEqualAssertionError(isNegative: false, typeof(T), message, actualExpression, expectedExpression)));
+    }
+
     /// <summary>Verifies that two values are equal according to <paramref name="comparer"/>.</summary>
     /// <remarks>When <paramref name="comparer"/> is <see langword="null"/>, the values are compared the way <c>Assert.Equal(expected, actual)</c> compares them.</remarks>
     public static void Equal<T>(T expected, [NotNullIfNotNull(nameof(expected))] T actual, IEqualityComparer<T>? comparer, string? message = null, [CallerArgumentExpression(nameof(actual))] string? actualExpression = null, [CallerArgumentExpression(nameof(expected))] string? expectedExpression = null)

@@ -22,8 +22,20 @@ internal static class PdfNumberFormatter
             return 1;
         }
 
-        if (!rounded.TryFormat(destination, out var written, "0.######", CultureInfo.InvariantCulture))
+        // "F6" writes every digit of the integer part, where a custom format such as "0.######" keeps 15 significant
+        // digits only (9007199254740992 would be written 9007199254740990); the zeros of the decimals are then removed
+        if (!rounded.TryFormat(destination, out var written, "F6", CultureInfo.InvariantCulture))
             throw new InvalidOperationException("The destination is too small");
+
+        while (destination[written - 1] == (byte)'0')
+        {
+            written--;
+        }
+
+        if (destination[written - 1] == (byte)'.')
+        {
+            written--;
+        }
 
         return written;
     }

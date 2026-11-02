@@ -1,5 +1,6 @@
 using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Imaging.Drawing;
+using Meziantou.Framework.Pdf.Filters;
 using Meziantou.Framework.Pdf.Objects;
 using Meziantou.Framework.Pdf.Rendering.Images;
 using Meziantou.Framework.Pdf.Rendering.Shadings;
@@ -30,6 +31,9 @@ internal sealed partial class ContentRenderer
                 break;
         }
     }
+
+    /// <summary>Paints the appearance of an annotation (12.5.5): a form, painted as a transparency group when it is one.</summary>
+    public void PaintAppearance(DrawingCanvas canvas, PdfStream appearance) => PaintForm(canvas, appearance);
 
     private void PaintForm(DrawingCanvas canvas, PdfStream form)
     {
@@ -77,7 +81,7 @@ internal sealed partial class ContentRenderer
         // In an element of a knockout group, the element applies the alpha and the soft mask
         var alpha = ElementAlpha(_state.FillAlpha);
         var blend = _state.BlendMode;
-        var softMask = _element is null && _depth < MaxDepth ? _state.SoftMask : null;
+        var softMask = (_element is null || _state.AlphaIsShape) && _depth < MaxDepth ? _state.SoftMask : null;
         var ctm = formMatrix * _state.Ctm;
 
         // The content starts with the graphics state of the Do operator, with the alpha, the blend mode and the soft
@@ -223,7 +227,8 @@ internal sealed partial class ContentRenderer
 
     private void DrawImage(DrawingCanvas canvas, PdfStream stream, PdfDictionary? resources)
     {
-        var image = _cache.GetOrCreate(stream, () => PdfImageDecoder.Decode(stream, resources, _cache));
+        // The color space of the image may be a default color space of the resources (8.6.5.6)
+        var image = _cache.GetOrCreate(stream, resources, () => PdfImageDecoder.Decode(stream, resources, _cache));
         DrawDecodedImage(canvas, image);
     }
 
@@ -232,7 +237,7 @@ internal sealed partial class ContentRenderer
         if (!_optionalContent.IsVisible)
             return;
 
-        DrawDecodedImage(canvas, PdfImageDecoder.DecodeInline(dictionary, data, resources, _cache));
+        DrawDecodedImage(canvas, PdfImageDecoder.DecodeInline(dictionary, data, resources, _document.Reader?.DecodeLimits ?? PdfDecodeLimits.Default, _cache));
     }
 
     /// <summary>Draws an image in the unit square of user space (8.9.4); a stencil mask is painted with the fill color.</summary>

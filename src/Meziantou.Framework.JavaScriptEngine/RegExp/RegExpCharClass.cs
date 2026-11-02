@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.JavaScriptEngine;
@@ -10,6 +11,9 @@ internal sealed class RegExpCharClass
 
     // The ranges of the non-ASCII values, as pairs of inclusive bounds
     private readonly int[] _ranges;
+
+    // How to search the code units of the class in a span, created on first use
+    private CodeUnitSearch? _search;
 
     public RegExpCharClass(CodePointSet set)
     {
@@ -60,6 +64,56 @@ internal sealed class RegExpCharClass
         return ContainsNonAscii(value);
     }
 
+    /// <summary>Gets the index of the first code unit of <paramref name="span"/> in the class, or -1.</summary>
+    public int IndexOfAny(ReadOnlySpan<char> span)
+    {
+        var search = _search ??= new CodeUnitSearch(Set);
+        return search.Kind switch
+        {
+            CodeUnitSearchKind.Range => span.IndexOfAnyInRange(search.Low, search.High),
+            CodeUnitSearchKind.ExceptRange => span.IndexOfAnyExceptInRange(search.Low, search.High),
+            CodeUnitSearchKind.Values => span.IndexOfAny(search.Values!),
+            CodeUnitSearchKind.ExceptValues => span.IndexOfAnyExcept(search.Values!),
+            _ => IndexOfAnySlow(span),
+        };
+    }
+
+    /// <summary>Gets the index of the first code unit of <paramref name="span"/> not in the class, or -1.</summary>
+    public int IndexOfAnyExcept(ReadOnlySpan<char> span)
+    {
+        var search = _search ??= new CodeUnitSearch(Set);
+        return search.Kind switch
+        {
+            CodeUnitSearchKind.Range => span.IndexOfAnyExceptInRange(search.Low, search.High),
+            CodeUnitSearchKind.ExceptRange => span.IndexOfAnyInRange(search.Low, search.High),
+            CodeUnitSearchKind.Values => span.IndexOfAnyExcept(search.Values!),
+            CodeUnitSearchKind.ExceptValues => span.IndexOfAny(search.Values!),
+            _ => IndexOfAnyExceptSlow(span),
+        };
+    }
+
+    private int IndexOfAnySlow(ReadOnlySpan<char> span)
+    {
+        for (var i = 0; i < span.Length; i++)
+        {
+            if (Contains(span[i]))
+                return i;
+        }
+
+        return -1;
+    }
+
+    private int IndexOfAnyExceptSlow(ReadOnlySpan<char> span)
+    {
+        for (var i = 0; i < span.Length; i++)
+        {
+            if (!Contains(span[i]))
+                return i;
+        }
+
+        return -1;
+    }
+
     public bool ContainsAscii(int value)
     {
         return value < 64 ? (_ascii0 & (1UL << value)) != 0 : (_ascii1 & (1UL << (value - 64))) != 0;
@@ -88,5 +142,74 @@ internal sealed class RegExpCharClass
         }
 
         return false;
+    }
+
+    private enum CodeUnitSearchKind
+    {
+        Loop,
+        Range,
+        ExceptRange,
+        Values,
+        ExceptValues,
+    }
+
+    /// <summary>
+    /// A vectorized search of the code units of a class: one range, the complement of one range, or a few values (or
+    /// the complement of a few values). The other classes are searched one code unit at a time.
+    /// </summary>
+    private sealed class CodeUnitSearch
+    {
+        private const int MaxValues = 512;
+
+        public CodeUnitSearch(CodePointSet set)
+        {
+            var codeUnits = CodePointSet.Intersect(set, CodePointSet.Range(0, 0xFFFF));
+            if (TryInitialize(codeUnits, CodeUnitSearchKind.Range, CodeUnitSearchKind.Values))
+                return;
+
+            TryInitialize(codeUnits.Complement(0xFFFF), CodeUnitSearchKind.ExceptRange, CodeUnitSearchKind.ExceptValues);
+        }
+
+        public CodeUnitSearchKind Kind { get; private set; }
+
+        public char Low { get; private set; }
+
+        public char High { get; private set; }
+
+        public SearchValues<char>? Values { get; private set; }
+
+        private bool TryInitialize(CodePointSet set, CodeUnitSearchKind rangeKind, CodeUnitSearchKind valuesKind)
+        {
+            var rangeCount = set.RangeCount;
+            if (rangeCount == 1)
+            {
+                Kind = rangeKind;
+                Low = (char)set.GetRangeStart(0);
+                High = (char)set.GetRangeEnd(0);
+                return true;
+            }
+
+            var count = 0;
+            for (var i = 0; i < rangeCount; i++)
+            {
+                count += set.GetRangeEnd(i) - set.GetRangeStart(i) + 1;
+                if (count > MaxValues)
+                    return false;
+            }
+
+            var values = new char[count];
+            var index = 0;
+            for (var i = 0; i < rangeCount; i++)
+            {
+                for (var c = set.GetRangeStart(i); c <= set.GetRangeEnd(i); c++)
+                {
+                    values[index++] = (char)c;
+                }
+            }
+
+            Kind = valuesKind;
+            Values = SearchValues.Create(values);
+            return true;
+        }
     }
 }

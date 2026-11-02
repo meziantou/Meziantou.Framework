@@ -24,13 +24,15 @@ public sealed partial class JsEngine
             throw new InvalidOperationException($"The time zone '{identifier}' of {nameof(JsEngineOptions)}.{nameof(JsEngineOptions.TimeZone)} is not a time zone of the IANA time zone database");
         }
 
-        var localId = Options.TimeProvider.LocalTimeZone.Id;
+        var localTimeZone = Options.TimeProvider.LocalTimeZone;
+        var localId = localTimeZone.Id;
         if (database.TryGetTimeZone(localId, out result))
             return result;
 
         if (database.TryGetIanaIdFromWindowsId(localId, out var ianaId) && database.TryGetTimeZone(ianaId, out result))
             return result;
 
-        return database.TryGetTimeZone("UTC", out result) ? result : throw new InvalidOperationException("The time zone database does not contain UTC");
+        // A zone that is not in the database, such as a custom zone of a test: use its own rules
+        return TimeZoneInfoConverter.Convert(localTimeZone);
     }
 }

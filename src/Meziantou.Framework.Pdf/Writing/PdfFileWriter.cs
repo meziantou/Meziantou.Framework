@@ -1,6 +1,8 @@
+using System.IO.Compression;
 using System.Security.Cryptography;
 using Meziantou.Framework.Pdf.Filters;
 using Meziantou.Framework.Pdf.Objects;
+using Meziantou.Framework.Pdf.Parsing;
 using Meziantou.Framework.Pdf.Security;
 
 namespace Meziantou.Framework.Pdf.Writing;
@@ -9,35 +11,62 @@ namespace Meziantou.Framework.Pdf.Writing;
 /// Writes a document (ISO 32000-2, 7.5): a full save writes the objects reachable from the trailer, numbered in the
 /// order they are reached; an incremental save (7.5.6) appends the objects that changed to the original file.
 /// </summary>
-internal sealed class PdfFileWriter
+internal sealed partial class PdfFileWriter : IDisposable
 {
     private const int ObjectsPerObjectStream = 100;
 
     // A comment of bytes above 127 after the header tells transfer programs the file is binary (7.5.2)
     private static readonly byte[] BinaryMarker = [(byte)'%', 0xE2, 0xE3, 0xCF, 0xD3, (byte)'\n'];
 
+    private static readonly PdfName ByteRangeName = PdfName.Create("ByteRange");
+
     private readonly PdfDocument _document;
     private readonly PdfSaveOptions _options;
-    private readonly PdfByteWriter _output;
+    private PdfByteWriter _output;
+    private readonly CancellationToken _cancellationToken;
+
+    // The buffers reused by every stream of the save: the compressed data, and the parts of an object stream
+    private readonly MemoryStream _compressed = new();
+    private PdfByteWriter? _objectStreamHeader;
+    private PdfByteWriter? _objectStreamBody;
 
     // The security handler that encrypts the strings and streams of the objects, and the first part of the file
     // identifier its keys depend on (7.6.3.3)
     private StandardSecurityHandler? _security;
     private byte[]? _firstId;
 
-    private PdfFileWriter(PdfDocument document, PdfSaveOptions options, PdfByteWriter output)
+    private PdfFileWriter(PdfDocument document, PdfSaveOptions options, PdfByteWriter output, CancellationToken cancellationToken)
     {
         _document = document;
         _options = options;
         _output = output;
+        _cancellationToken = cancellationToken;
     }
 
-    public static void WriteFull(PdfDocument document, PdfSaveOptions options, PdfByteWriter output) => new PdfFileWriter(document, options, output).WriteFull();
+    public static void WriteFull(PdfDocument document, PdfSaveOptions options, PdfByteWriter output, CancellationToken cancellationToken = default)
+    {
+        using var writer = new PdfFileWriter(document, options, output, cancellationToken);
+        writer.WriteFull();
+        output.Flush();
+    }
 
-    public static void WriteIncremental(PdfDocument document, PdfSaveOptions options, PdfByteWriter output) => new PdfFileWriter(document, options, output).WriteIncremental();
+    public static void WriteIncremental(PdfDocument document, PdfSaveOptions options, PdfByteWriter output, CancellationToken cancellationToken = default)
+    {
+        using var writer = new PdfFileWriter(document, options, output, cancellationToken);
+        writer.WriteIncremental();
+        output.Flush();
+    }
+
+    public void Dispose() => _compressed.Dispose();
 
     private void WriteFull()
     {
+        if (_options.Linearize)
+        {
+            WriteLinearized();
+            return;
+        }
+
         var objects = _document.Objects;
         var trailer = _document.Trailer;
 
@@ -79,9 +108,12 @@ internal sealed class PdfFileWriter
             }
         }
 
-        foreach (var key in OmitsInformation() ? new[] { PdfNames.Root } : [PdfNames.Root, PdfNames.Info])
+        var root = trailer[PdfNames.Root];
+        var info = OmitsInformation() ? null : trailer[PdfNames.Info];
+        var others = GetOtherTrailerEntries(trailer);
+        foreach (var value in new[] { root, info }.Concat(others.Select(e => e.Value)))
         {
-            if (trailer[key] is { } value)
+            if (value is not null)
             {
                 Visit(value);
             }
@@ -89,6 +121,7 @@ internal sealed class PdfFileWriter
 
         while (queue.Count > 0)
         {
+            _cancellationToken.ThrowIfCancellationRequested();
             Visit(queue.Dequeue().Value!);
         }
 
@@ -109,12 +142,14 @@ internal sealed class PdfFileWriter
 
         var useObjectStreams = _options.UseObjectStreams && !isPdfA1;
         var version = GetVersion(useObjectStreams);
+        _output.BeginHash();
         WriteHeader(version);
 
         var offsets = new long[ordered.Count + 1];
         var compressed = new List<(int Number, PdfObject Value)>();
         for (var i = 0; i < ordered.Count; i++)
         {
+            _cancellationToken.ThrowIfCancellationRequested();
             var number = i + 1;
             var value = ordered[i].Value!;
             if (useObjectStreams && value is not PdfStream)
@@ -123,24 +158,22 @@ internal sealed class PdfFileWriter
                 continue;
             }
 
-            offsets[number] = _output.Length;
+            offsets[number] = _output.Position;
             WriteIndirectObject(number, 0, value, references);
         }
 
         var nextNumber = ordered.Count + 1;
-        var containers = new List<(int Number, int Index)>(new (int, int)[ordered.Count + 1]);
+        var containers = new (int Number, int Index)[ordered.Count + 1];
         var objectStreamOffsets = new List<(int Number, long Offset)>();
-        for (var start = 0; start < compressed.Count; start += ObjectsPerObjectStream)
+        foreach (var (containerNumber, batch, offset) in WriteObjectStreams(compressed, nextNumber, references))
         {
-            var batch = compressed.GetRange(start, Math.Min(ObjectsPerObjectStream, compressed.Count - start));
-            var containerNumber = nextNumber++;
+            nextNumber++;
             for (var i = 0; i < batch.Count; i++)
             {
                 containers[batch[i].Number] = (containerNumber, i);
             }
 
-            objectStreamOffsets.Add((containerNumber, _output.Length));
-            WriteObjectStream(containerNumber, batch, references);
+            objectStreamOffsets.Add((containerNumber, offset));
         }
 
         // The encryption dictionary is not encrypted, and not in an object stream (7.5.7)
@@ -149,18 +182,16 @@ internal sealed class PdfFileWriter
         if (_security is not null)
         {
             encryptReference = new PdfReference(writerObjects, nextNumber++, 0);
-            encryptOffset = _output.Length;
+            encryptOffset = _output.Position;
             WriteIndirectObject(encryptReference.ObjectNumber, 0, _security.Dictionary, references, encrypt: false);
         }
 
-        var root = trailer[PdfNames.Root];
-        var info = OmitsInformation() ? null : trailer[PdfNames.Info];
-        var id = ComputeId(_output.WrittenSpan, isUpdate: false);
+        var id = ComputeId(_output.EndHash(), isUpdate: false);
         if (useObjectStreams)
         {
             var xrefNumber = nextNumber;
             var size = xrefNumber + 1;
-            var xrefOffset = _output.Length;
+            var xrefOffset = _output.Position;
             var entries = new (int Type, long Field2, long Field3)[size];
             entries[0] = (0, 0, 65535);
             for (var number = 1; number <= ordered.Count; number++)
@@ -179,15 +210,14 @@ internal sealed class PdfFileWriter
                 entries[encryptReference.ObjectNumber] = (1, encryptOffset, 0);
             }
 
-            var dictionary = CreateTrailer(size, root, info, id);
-            dictionary[PdfNames.Encrypt] = encryptReference;
+            var dictionary = CreateTrailer(size, root, info, id, others, encryptReference, prev: null);
             WriteXrefStream(xrefNumber, dictionary, [(0, size)], entries, references);
             WriteStartXref(xrefOffset);
         }
         else
         {
             var size = nextNumber;
-            var xrefOffset = _output.Length;
+            var xrefOffset = _output.Position;
             _output.WriteAscii("xref\n0 ");
             _output.WriteInteger(size);
             _output.WriteNewLine();
@@ -197,8 +227,7 @@ internal sealed class PdfFileWriter
                 WriteTableEntry(number == encryptReference?.ObjectNumber ? encryptOffset : offsets[number], 0);
             }
 
-            var dictionary = CreateTrailer(size, root, info, id);
-            dictionary[PdfNames.Encrypt] = encryptReference;
+            var dictionary = CreateTrailer(size, root, info, id, others, encryptReference, prev: null);
             _output.WriteAscii("trailer\n");
             PdfObjectSerializer.Write(_output, dictionary, references);
             _output.WriteNewLine();
@@ -209,6 +238,9 @@ internal sealed class PdfFileWriter
     private void WriteIncremental()
     {
         var reader = _document.Reader ?? throw new InvalidOperationException("Only a document read from a file can be saved incrementally");
+        if (_options.Linearize)
+            throw new InvalidOperationException("An incremental update cannot be linearized: save the document in full");
+
         if (reader.IsRepaired || reader.LastXrefOffset < 0)
             throw new InvalidOperationException("The cross-reference information of the file was rebuilt: the document must be saved in full");
 
@@ -223,55 +255,121 @@ internal sealed class PdfFileWriter
             throw new InvalidOperationException("The encryption of a document cannot change in an incremental update: the document must be saved in full");
 
         var objects = _document.Objects;
-        var changed = objects.Entries
-            .Where(e => e.State == IndirectObjectState.Loaded && (e.IsNew || e.OriginalFingerprint is null || !e.OriginalFingerprint.Matches(e.Value!)))
-            .OrderBy(e => e.Reference.ObjectNumber)
-            .ToList();
+        var trailer = _document.Trailer;
+        var changed = new List<IndirectObjectEntry>();
+        var removed = new List<IndirectObjectEntry>();
+        foreach (var entry in objects.Entries.OrderBy(e => e.Reference.ObjectNumber))
+        {
+            _cancellationToken.ThrowIfCancellationRequested();
+            if (entry.State == IndirectObjectState.Free)
+            {
+                removed.Add(entry);
+            }
+            else if (entry.State == IndirectObjectState.Loaded && (entry.IsNew || entry.OriginalFingerprint is null || !entry.OriginalFingerprint.Matches(entry.Value!)))
+            {
+                changed.Add(entry);
+            }
+        }
 
-        var source = reader.Data.Span;
-        _output.Write(source);
-        if (source.Length > 0 && source[^1] is not ((byte)'\n' or (byte)'\r'))
+        // Nothing changed: the file is written as it is, rather than with an update without objects, whose
+        // cross-reference section would have no subsection
+        var input = reader.Input;
+        if (changed.Count == 0 && removed.Count == 0 && _document.OriginalTrailerFingerprint is { } original && original.Matches(trailer))
+        {
+            CopyOriginal(input);
+            return;
+        }
+
+        // A cross-reference table has at least one subsection (7.5.4): an update of the trailer alone writes the catalog
+        // again (a cross-reference stream is an entry of its own section)
+        if (changed.Count == 0 && removed.Count == 0 && !reader.LastXrefIsStream && trailer[PdfNames.Root] is PdfReference root && objects.GetEntry(root) is { } rootEntry && objects.Load(rootEntry) is not PdfNull)
+        {
+            changed.Add(rootEntry);
+        }
+
+        CopyOriginal(input);
+        if (input.GetLastByte() is >= 0 and not ('\n' or '\r'))
         {
             _output.WriteNewLine();
         }
 
-        var updateStart = _output.Length;
-        var references = ReferenceWriter.Identity;
-        var offsets = new List<(int Number, int Generation, long Offset)>();
+        // The objects of the update are written in object streams when the file has cross-reference streams, except
+        // those an object stream cannot contain (7.5.7)
+        var useObjectStreams = reader.LastXrefIsStream && _options.UseObjectStreams;
+        var encrypt = trailer[PdfNames.Encrypt] as PdfReference;
+        var compressed = new List<(int Number, PdfObject Value)>();
+        if (useObjectStreams)
+        {
+            foreach (var entry in changed)
+            {
+                if (CanBeInObjectStream(entry, encrypt))
+                {
+                    compressed.Add((entry.Reference.ObjectNumber, entry.Value!));
+                }
+            }
+        }
+
+        var objectStreamCount = (compressed.Count + ObjectsPerObjectStream - 1) / ObjectsPerObjectStream;
+        var newNumbers = objectStreamCount + (reader.LastXrefIsStream ? 1 : 0);
+        if ((long)objects.MaxObjectNumber + newNumbers + 1 > int.MaxValue)
+            throw new InvalidOperationException($"No object number is left for the update: the document uses the object number {objects.MaxObjectNumber}. Save it in full.");
+
+        _output.BeginHash();
+        var references = new IncrementalReferenceWriter(objects);
+        var entries = new List<(int Number, (int Type, long Field2, long Field3) Entry)>();
+        var compressedNumbers = compressed.Select(c => c.Number).ToHashSet();
         foreach (var entry in changed)
         {
-            offsets.Add((entry.Reference.ObjectNumber, entry.Reference.Generation, _output.Length));
+            _cancellationToken.ThrowIfCancellationRequested();
+            if (compressedNumbers.Contains(entry.Reference.ObjectNumber))
+                continue;
+
+            entries.Add((entry.Reference.ObjectNumber, (1, _output.Position, entry.Reference.Generation)));
             WriteIndirectObject(entry.Reference.ObjectNumber, entry.Reference.Generation, entry.Value!, references);
         }
 
-        var trailer = _document.Trailer;
-        var id = ComputeId(_output.WrittenSpan[updateStart..], isUpdate: true);
+        var nextNumber = objects.MaxObjectNumber + 1;
+        foreach (var (containerNumber, batch, offset) in WriteObjectStreams(compressed, nextNumber, references))
+        {
+            nextNumber++;
+            entries.Add((containerNumber, (1, offset, 0)));
+            for (var i = 0; i < batch.Count; i++)
+            {
+                entries.Add((batch[i].Number, (2, containerNumber, i)));
+            }
+        }
+
+        // A removed object is a free entry with the next generation, so that a later object with this number does not
+        // resolve the references to the removed one (7.5.4); a generation that reached 65535 is not used again
+        foreach (var entry in removed)
+        {
+            entries.Add((entry.Reference.ObjectNumber, (0, 0, Math.Min(entry.Reference.Generation + 1, 65535))));
+        }
+
+        var info = OmitsInformation() ? null : trailer[PdfNames.Info];
+        var others = GetOtherTrailerEntries(trailer);
+        var id = ComputeId(_output.EndHash(), isUpdate: true);
+        var prev = PdfInteger.Get(reader.LastXrefOffset);
         if (reader.LastXrefIsStream)
         {
-            var xrefNumber = objects.MaxObjectNumber + 1;
+            var xrefNumber = nextNumber;
             var size = xrefNumber + 1;
-            var xrefOffset = _output.Length;
-            offsets.Add((xrefNumber, 0, xrefOffset));
-            var ranges = GetRanges(offsets.Select(o => o.Number));
-            var entries = new (int Type, long Field2, long Field3)[offsets.Count];
-            for (var i = 0; i < offsets.Count; i++)
-            {
-                entries[i] = (1, offsets[i].Offset, offsets[i].Generation);
-            }
-
-            var dictionary = CreateTrailer(size, trailer[PdfNames.Root], OmitsInformation() ? null : trailer[PdfNames.Info], id);
-            CopyEncrypt(trailer, dictionary);
-            dictionary[PdfNames.Prev] = PdfInteger.Get(reader.LastXrefOffset);
-            WriteXrefStream(xrefNumber, dictionary, ranges, entries, references);
+            var xrefOffset = _output.Position;
+            entries.Add((xrefNumber, (1, xrefOffset, 0)));
+            entries.Sort((a, b) => a.Number.CompareTo(b.Number));
+            var ranges = GetRanges(entries.Select(e => e.Number));
+            var dictionary = CreateTrailer(size, trailer[PdfNames.Root], info, id, others, encrypt: trailer[PdfNames.Encrypt], prev);
+            WriteXrefStream(xrefNumber, dictionary, ranges, entries.Select(e => e.Entry).ToArray(), references);
             WriteStartXref(xrefOffset);
         }
         else
         {
-            var size = objects.MaxObjectNumber + 1;
-            var xrefOffset = _output.Length;
+            var size = nextNumber;
+            var xrefOffset = _output.Position;
+            entries.Sort((a, b) => a.Number.CompareTo(b.Number));
             _output.WriteAscii("xref\n");
             var index = 0;
-            foreach (var (start, count) in GetRanges(offsets.Select(o => o.Number)))
+            foreach (var (start, count) in GetRanges(entries.Select(e => e.Number)))
             {
                 _output.WriteInteger(start);
                 _output.WriteSpace();
@@ -279,18 +377,53 @@ internal sealed class PdfFileWriter
                 _output.WriteNewLine();
                 for (var i = 0; i < count; i++, index++)
                 {
-                    WriteTableEntry(offsets[index].Offset, offsets[index].Generation);
+                    var (type, field2, field3) = entries[index].Entry;
+                    if (type == 0)
+                    {
+                        WriteFreeTableEntry((int)field3);
+                    }
+                    else
+                    {
+                        WriteTableEntry(field2, (int)field3);
+                    }
                 }
             }
 
-            var dictionary = CreateTrailer(size, trailer[PdfNames.Root], OmitsInformation() ? null : trailer[PdfNames.Info], id);
-            CopyEncrypt(trailer, dictionary);
-            dictionary[PdfNames.Prev] = PdfInteger.Get(reader.LastXrefOffset);
+            var dictionary = CreateTrailer(size, trailer[PdfNames.Root], info, id, others, encrypt: trailer[PdfNames.Encrypt], prev);
             _output.WriteAscii("trailer\n");
             PdfObjectSerializer.Write(_output, dictionary, references);
             _output.WriteNewLine();
             WriteStartXref(xrefOffset);
         }
+    }
+
+    /// <summary>
+    /// Writes the original file of an incremental update: a file in memory is passed to the output as one block, without
+    /// a copy; a file read from a stream is copied in chunks.
+    /// </summary>
+    private void CopyOriginal(PdfInput input)
+    {
+        if (input is MemoryPdfInput memory)
+        {
+            _output.Write(memory.Data);
+        }
+        else
+        {
+            input.CopyTo(_output);
+        }
+    }
+
+    /// <summary>
+    /// Gets a value indicating whether an object of an update can be in an object stream (7.5.7): not a stream, not an
+    /// object of a generation other than zero, not the encryption dictionary, and not a signature dictionary, whose byte
+    /// ranges are offsets in the file and whose signature is written in place in the file (12.8.1).
+    /// </summary>
+    private static bool CanBeInObjectStream(IndirectObjectEntry entry, PdfReference? encrypt)
+    {
+        if (entry.Reference.Generation != 0 || entry.Value is PdfStream || (encrypt is not null && encrypt.ObjectNumber == entry.Reference.ObjectNumber))
+            return false;
+
+        return entry.Value is not PdfDictionary dictionary || !dictionary.ContainsKey(ByteRangeName);
     }
 
     /// <summary>
@@ -339,55 +472,129 @@ internal sealed class PdfFileWriter
 
     private void WriteIndirectObject(int number, int generation, PdfObject value, ReferenceWriter references, bool encrypt = true)
     {
+        if (value is PdfStream stream)
+        {
+            WriteStreamObject(number, generation, stream.Dictionary, stream.EncodedData, ReadOnlySpan<byte>.Empty, stream.IsCompressible, references, encrypt, stream.PngPredictor);
+            return;
+        }
+
+        WriteObjectHeader(number, generation);
+
+        // The strings of an object are encrypted with the key of its number and generation (7.6.2)
+        var security = encrypt ? _security : null;
+        PdfStringTransform? encryptString = security is null ? null : text => security.EncryptString(text, number, generation);
+        PdfObjectSerializer.Write(_output, value, references, encryptString);
+        _output.WriteAscii("\nendobj\n");
+    }
+
+    /// <summary>
+    /// Writes a stream object whose data is <paramref name="data"/> followed by <paramref name="suffix"/>: compressed when
+    /// allowed, then encrypted, with its length direct. The data of a stream of the document is written without a copy
+    /// when the output keeps its blocks; the compressed data is in a buffer reused by the next stream. With a PNG
+    /// predictor, the data is also compressed after the predictor, and the smaller output is kept.
+    /// </summary>
+    private void WriteStreamObject(int number, int generation, PdfDictionary source, ReadOnlyMemory<byte> data, ReadOnlySpan<byte> suffix, bool compressible, ReferenceWriter references, bool encrypt, PdfPngPredictor? predictor = null)
+    {
+        var dictionary = source.CloneShallow();
+        var isShared = false;
+        if (_options.CompressStreams && compressible && !dictionary.ContainsKey(PdfNames.Filter) && data.Length + suffix.Length > 0)
+        {
+            var raw = data;
+            _compressed.SetLength(0);
+            using (var zlib = new ZLibStream(_compressed, CompressionLevel.Optimal, leaveOpen: true))
+            {
+                zlib.Write(data.Span);
+                zlib.Write(suffix);
+            }
+
+            data = _compressed.GetBuffer().AsMemory(0, (int)_compressed.Length);
+            isShared = true;
+            if (predictor is not null && suffix.Length == 0)
+            {
+                // The PNG predictors make most photos smaller, and some flat images larger: the smaller data is kept
+                var predicted = FlateFilter.Encode(Predictor.EncodePng(raw.Span, predictor.RowLength, predictor.BytesPerPixel));
+                if (predicted.Length < data.Length)
+                {
+                    data = predicted;
+                    isShared = false;
+                    dictionary[PdfNames.DecodeParms] = predictor.CreateParameters();
+                }
+            }
+
+            suffix = [];
+            dictionary[PdfNames.Filter] = PdfNames.FlateDecode;
+        }
+
+        // The data of a stream is encrypted after it is compressed, with the key of its number and generation (7.6.2)
+        var security = encrypt ? _security : null;
+        if (security is not null && security.GetStreamMethod(dictionary) is var method and not CryptMethod.None)
+        {
+            if (suffix.Length > 0)
+            {
+                var joined = new byte[data.Length + suffix.Length];
+                data.Span.CopyTo(joined);
+                suffix.CopyTo(joined.AsSpan(data.Length));
+                data = joined;
+                suffix = [];
+            }
+
+            data = security.EncryptStream(data.Span, method, number, generation);
+            isShared = false;
+        }
+
+        dictionary[PdfNames.Length] = PdfInteger.Get(data.Length + suffix.Length);
+        WriteObjectHeader(number, generation);
+        PdfStringTransform? encryptString = security is null ? null : text => security.EncryptString(text, number, generation);
+        PdfObjectSerializer.Write(_output, dictionary, references, encryptString);
+        _output.WriteAscii("\nstream\n");
+        if (isShared)
+        {
+            _output.Write(data.Span);
+        }
+        else
+        {
+            _output.Write(data);
+        }
+
+        _output.Write(suffix);
+        _output.WriteAscii("\nendstream\nendobj\n");
+    }
+
+    private void WriteObjectHeader(int number, int generation)
+    {
         _output.WriteInteger(number);
         _output.WriteSpace();
         _output.WriteInteger(generation);
         _output.WriteAscii(" obj\n");
-
-        // The strings and streams of an object are encrypted with the key of its number and generation (7.6.2)
-        var security = encrypt ? _security : null;
-        PdfStringTransform? encryptString = security is null ? null : text => security.EncryptString(text, number, generation);
-        if (value is PdfStream stream)
-        {
-            var (dictionary, data) = PrepareStream(stream);
-            if (security is not null && security.GetStreamMethod(dictionary) is var method and not CryptMethod.None)
-            {
-                data = security.EncryptStream(data.Span, method, number, generation);
-                dictionary[PdfNames.Length] = PdfInteger.Get(data.Length);
-            }
-
-            PdfObjectSerializer.Write(_output, dictionary, references, encryptString);
-            _output.WriteAscii("\nstream\n");
-            _output.Write(data.Span);
-            _output.WriteAscii("\nendstream");
-        }
-        else
-        {
-            PdfObjectSerializer.Write(_output, value, references, encryptString);
-        }
-
-        _output.WriteAscii("\nendobj\n");
     }
 
-    /// <summary>Gets the dictionary and the data to write: the data compressed when allowed, the length direct.</summary>
-    private (PdfDictionary Dictionary, ReadOnlyMemory<byte> Data) PrepareStream(PdfStream stream)
+    /// <summary>Writes the objects in object streams of <see cref="ObjectsPerObjectStream"/> objects, numbered from <paramref name="firstNumber"/>.</summary>
+    /// <returns>The number, the objects and the offset of each object stream, as it is written.</returns>
+    private IEnumerable<(int Number, List<(int Number, PdfObject Value)> Batch, long Offset)> WriteObjectStreams(List<(int Number, PdfObject Value)> objects, int firstNumber, ReferenceWriter references)
     {
-        var dictionary = stream.Dictionary.CloneShallow();
-        var data = stream.EncodedData;
-        if (_options.CompressStreams && stream.IsCompressible && !dictionary.ContainsKey(PdfNames.Filter) && data.Length > 0)
+        var containerNumber = firstNumber;
+        for (var start = 0; start < objects.Count; start += ObjectsPerObjectStream)
         {
-            data = FlateFilter.Encode(data.Span);
-            dictionary[PdfNames.Filter] = PdfNames.FlateDecode;
+            _cancellationToken.ThrowIfCancellationRequested();
+            var batch = objects.GetRange(start, Math.Min(ObjectsPerObjectStream, objects.Count - start));
+            var offset = _output.Position;
+            WriteObjectStream(containerNumber, batch, references);
+            yield return (containerNumber, batch, offset);
+            containerNumber++;
         }
-
-        dictionary[PdfNames.Length] = PdfInteger.Get(data.Length);
-        return (dictionary, data);
     }
 
+    /// <summary>
+    /// Writes an object stream (7.5.7): the pairs of numbers and offsets, then the objects. The two parts are written in
+    /// buffers reused by every object stream of the save, and compressed or written one after the other, without
+    /// joining them, except to encrypt them uncompressed.
+    /// </summary>
     private void WriteObjectStream(int number, List<(int Number, PdfObject Value)> batch, ReferenceWriter references)
     {
-        var body = new PdfByteWriter();
-        var header = new PdfByteWriter();
+        var header = _objectStreamHeader ??= new PdfByteWriter(1024);
+        var body = _objectStreamBody ??= new PdfByteWriter(16 * 1024);
+        header.Clear();
+        body.Clear();
         foreach (var (objectNumber, value) in batch)
         {
             if (header.Length > 0)
@@ -403,18 +610,15 @@ internal sealed class PdfFileWriter
         }
 
         header.WriteNewLine();
-        var data = new byte[header.Length + body.Length];
-        header.WrittenSpan.CopyTo(data);
-        body.WrittenSpan.CopyTo(data.AsSpan(header.Length));
-
         var dictionary = new PdfDictionary
         {
             [PdfNames.Type] = PdfNames.ObjStm,
             [PdfNames.N] = PdfInteger.Get(batch.Count),
             [PdfNames.First] = PdfInteger.Get(header.Length),
         };
-        var stream = new PdfStream(dictionary, data);
-        WriteIndirectObject(number, 0, stream, references);
+
+        // The header is a small buffer: it is copied so that the body, the large part, is not
+        WriteStreamObject(number, 0, dictionary, header.WrittenSpan.ToArray(), body.WrittenSpan, compressible: true, references, encrypt: true);
     }
 
     private void WriteXrefStream(int number, PdfDictionary dictionary, List<(int Start, int Count)> ranges, (int Type, long Field2, long Field3)[] entries, ReferenceWriter references)
@@ -445,11 +649,15 @@ internal sealed class PdfFileWriter
             dictionary[PdfNames.Index] = index;
         }
 
-        var stream = new PdfStream(dictionary, data);
-        WriteIndirectObject(number, 0, stream, references, encrypt: false);
+        // The cross-reference stream is not encrypted (7.6.2)
+        WriteStreamObject(number, 0, dictionary, data, [], compressible: true, references, encrypt: false);
     }
 
-    private static PdfDictionary CreateTrailer(int size, PdfObject? root, PdfObject? info, PdfArray id)
+    /// <summary>
+    /// Creates the trailer: <c>/Size</c>, <c>/Root</c>, <c>/Info</c> and <c>/ID</c>, the other entries of the trailer of
+    /// the document (private ones included, 7.5.6), then <c>/Encrypt</c> and <c>/Prev</c>.
+    /// </summary>
+    private static PdfDictionary CreateTrailer(int size, PdfObject? root, PdfObject? info, PdfArray id, List<KeyValuePair<PdfName, PdfObject>> others, PdfObject? encrypt, PdfObject? prev)
     {
         var dictionary = new PdfDictionary
         {
@@ -458,21 +666,45 @@ internal sealed class PdfFileWriter
             [PdfNames.Info] = info,
             [PdfNames.ID] = id,
         };
+        foreach (var (key, value) in others)
+        {
+            dictionary[key] = value;
+        }
+
+        dictionary[PdfNames.Encrypt] = encrypt;
+        dictionary[PdfNames.Prev] = prev;
         return dictionary;
     }
 
-    private static void CopyEncrypt(PdfDictionary trailer, PdfDictionary dictionary)
+    /// <summary>Gets the entries of the trailer the writer does not compute: the private ones, and the standard ones it has no rule for.</summary>
+    private static List<KeyValuePair<PdfName, PdfObject>> GetOtherTrailerEntries(PdfDictionary trailer)
     {
-        if (trailer[PdfNames.Encrypt] is { } encrypt)
+        var result = new List<KeyValuePair<PdfName, PdfObject>>();
+        foreach (var entry in trailer)
         {
-            dictionary[PdfNames.Encrypt] = encrypt;
+            var key = entry.Key;
+            if (key == PdfNames.Size || key == PdfNames.Root || key == PdfNames.Info || key == PdfNames.ID || key == PdfNames.Encrypt || IsCrossReferenceKey(key))
+                continue;
+
+            result.Add(entry);
         }
+
+        return result;
     }
 
+    /// <summary>
+    /// Gets a value indicating whether an entry of a trailer describes its cross-reference section rather than the
+    /// document: <c>/Prev</c>, <c>/XRefStm</c> and the entries of a cross-reference stream (7.5.8.2). They are not
+    /// kept, even when the <c>/Type</c> of a damaged cross-reference stream is missing.
+    /// </summary>
+    public static bool IsCrossReferenceKey(PdfName key) => key == PdfNames.Prev || key == PdfNames.XRefStm || key == PdfNames.Type || key == PdfNames.W || key == PdfNames.Index || key == PdfNames.Length || key == PdfNames.Filter || key == PdfNames.DecodeParms || key == PdfNames.F || key == PdfNames.FFilter || key == PdfNames.FDecodeParms || key == PdfNames.DL;
+
     /// <summary>The file identifier (14.4): the first part is kept from the original file, the second part changes with each save.</summary>
-    private PdfArray ComputeId(ReadOnlySpan<byte> content, bool isUpdate)
+    /// <param name="contentHash">The MD5 hash of the content written: the whole file, or the update.</param>
+    /// <param name="isUpdate"><see langword="true"/> for an incremental update.</param>
+    private PdfArray ComputeId(byte[] contentHash, bool isUpdate)
     {
-        var hash = PdfString.FromBytes(MD5.HashData(content), hexadecimal: true);
+        var hash = PdfString.FromBytes(contentHash, hexadecimal: true);
         var first = hash;
         if (_firstId is not null)
         {
@@ -504,6 +736,14 @@ internal sealed class PdfFileWriter
         _output.WriteSpace();
         _output.WritePaddedInteger(generation, 5);
         _output.WriteAscii(" n \n");
+    }
+
+    /// <summary>Writes a free entry (7.5.4), with no next free object: the free list of the earlier sections is not rewritten.</summary>
+    private void WriteFreeTableEntry(int nextGeneration)
+    {
+        _output.WriteAscii("0000000000 ");
+        _output.WritePaddedInteger(nextGeneration, 5);
+        _output.WriteAscii(" f \n");
     }
 
     private void WriteStartXref(long offset)

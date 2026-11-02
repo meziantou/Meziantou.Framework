@@ -22,9 +22,13 @@ public sealed class PdfName : PdfObject, IEquatable<PdfName>
 
     /// <summary>Initializes a new instance of the <see cref="PdfName"/> class.</summary>
     /// <param name="value">The name, without the leading slash. It is encoded as UTF-8.</param>
+    /// <exception cref="ArgumentException"><paramref name="value"/> contains the null character, which a name cannot contain (7.3.5).</exception>
     public PdfName(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
+        if (value.Contains('\0', StringComparison.Ordinal))
+            throw new ArgumentException("A PDF name cannot contain the null character (ISO 32000-2, 7.3.5)", nameof(value));
+
         Key = Encoding.Latin1.GetString(Encoding.UTF8.GetBytes(value));
         _value = value;
     }
@@ -57,6 +61,7 @@ public sealed class PdfName : PdfObject, IEquatable<PdfName>
     /// <summary>Creates a name, or gets the shared instance of a name the library knows.</summary>
     /// <param name="value">The name, without the leading slash.</param>
     /// <returns>The name.</returns>
+    /// <exception cref="ArgumentException"><paramref name="value"/> contains the null character, which a name cannot contain (7.3.5).</exception>
     public static PdfName Create(string value)
     {
         ArgumentNullException.ThrowIfNull(value);

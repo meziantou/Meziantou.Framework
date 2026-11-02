@@ -189,6 +189,81 @@ public sealed class AssertInRangeTests
     }
 
     [Fact]
+    public void RefStruct_Success()
+    {
+        var actual = new Temperature(20);
+        var low = new Temperature(0);
+        var high = new Temperature(25);
+
+        AssertionsAssert.InRange(actual, low, high);
+        AssertionsAssert.InRange(new Temperature(0), new Temperature(0), new Temperature(25));
+        AssertionsAssert.InRange(new Temperature(25), new Temperature(0), new Temperature(25));
+        AssertionsAssert.InRange(in actual, in low, in high);
+    }
+
+    [Fact]
+    public void RefStruct_FailsWhenValueIsBelowRange()
+    {
+        AssertionTestHelpers.Validate(() => AssertionsAssert.InRange(new Temperature(-1), new Temperature(0), new Temperature(25), "custom message"), """
+            Assert.InRange() assertion failed.
+            Message: custom message
+            Expression: new Temperature(-1)
+            Expected: in range [new Temperature(0), new Temperature(25)]
+            Type: Meziantou.Framework.Assertions.Tests.Temperature (ref struct values cannot be displayed)
+            """);
+    }
+
+    [Fact]
+    public void RefStruct_FailsWhenValueIsAboveRange()
+    {
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.InRange(new Temperature(26), new Temperature(0), new Temperature(25)));
+    }
+
+    [Fact]
+    public void NotInRange_RefStruct_Success()
+    {
+        var actual = new Temperature(30);
+        var low = new Temperature(0);
+        var high = new Temperature(25);
+
+        AssertionsAssert.NotInRange(actual, low, high);
+        AssertionsAssert.NotInRange(new Temperature(-1), new Temperature(0), new Temperature(25));
+        AssertionsAssert.NotInRange(in actual, in low, in high);
+    }
+
+    [Theory]
+    [InlineData(0)]
+    [InlineData(20)]
+    [InlineData(25)]
+    public void NotInRange_RefStruct_FailsWhenValueIsInRange(int degrees)
+    {
+        AssertionsAssert.InRange(new Temperature(degrees), new Temperature(0), new Temperature(25));
+        AssertionsAssert.Throws<AssertionException>(() => AssertionsAssert.NotInRange(new Temperature(degrees), new Temperature(0), new Temperature(25)));
+    }
+
+    [Fact]
+    public void NotInRange_RefStruct_Fails()
+    {
+        AssertionTestHelpers.Validate(() => AssertionsAssert.NotInRange(new Temperature(20), new Temperature(0), new Temperature(25), "custom message"), """
+            Assert.NotInRange() assertion failed.
+            Message: custom message
+            Expression: new Temperature(20)
+            Not expected: in range [new Temperature(0), new Temperature(25)]
+            Type: Meziantou.Framework.Assertions.Tests.Temperature (ref struct values cannot be displayed)
+            """);
+    }
+
+    [Fact]
+    public void Documentation_InRangeRefStruct()
+    {
+        #region Assert_InRangeRefStruct
+        var temperature = new Temperature(20);
+        Assert.InRange(temperature, new Temperature(0), new Temperature(25));   // compared with IComparable<Temperature>.CompareTo
+        Assert.NotInRange(temperature, new Temperature(21), new Temperature(25));
+        #endregion
+    }
+
+    [Fact]
     public void Documentation_InRange()
     {
         #region Assert_InRange

@@ -42,10 +42,13 @@ public sealed class JsEngineOptions
 
     /// <summary>
     /// Gets or sets the identifier of the IANA time zone of the local time of the scripts (e.g. "Europe/Paris"), or null to
-    /// use the local time zone of <see cref="TimeProvider"/> (a Windows identifier is mapped to its IANA identifier, and an
-    /// unknown time zone is UTC). The engine uses its own copy of the IANA time zone database, so the local times do not
-    /// depend on the operating system. An identifier that is not a time zone of the database (such as an offset) throws an
-    /// <see cref="InvalidOperationException"/> when the scripts first use the local time zone.
+    /// use the local time zone of <see cref="TimeProvider"/> (a Windows identifier is mapped to its IANA identifier). The
+    /// engine uses its own copy of the IANA time zone database, so the local times do not depend on the operating system.
+    /// A local time zone that is not in the database, such as a zone created by <see cref="TimeZoneInfo.CreateCustomTimeZone(string, TimeSpan, string, string)"/>,
+    /// uses its own rules: a zone without daylight saving time is an offset time zone ("+05:00"), and a zone with daylight
+    /// saving time keeps its identifier. Set this property to "UTC" to use UTC instead. An identifier that is not a time
+    /// zone of the database (such as an offset) throws an <see cref="InvalidOperationException"/> when the scripts first
+    /// use the local time zone.
     /// </summary>
     public string? TimeZone { get; set; }
 

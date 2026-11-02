@@ -361,7 +361,7 @@ public sealed class ValueTagAnalyzer : DiagnosticAnalyzer
         if (method.Name is not ("Equals" or "ReferenceEquals" or "Compare" or "CompareTo") || method.ReturnType.SpecialType is not (SpecialType.System_Boolean or SpecialType.System_Int32))
             return false;
 
-        var arguments = invocation.Arguments;
+        var arguments = invocation.Arguments.InParameterOrder();
         if (arguments.Length >= 2 && (method.IsStatic || invocation.Instance is not null) &&
             arguments[0].Parameter is { } firstParameter && arguments[1].Parameter is { } secondParameter &&
             SymbolEqualityComparer.Default.Equals(firstParameter.OriginalDefinition.Type, secondParameter.OriginalDefinition.Type))

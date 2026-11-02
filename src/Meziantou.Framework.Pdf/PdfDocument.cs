@@ -23,6 +23,8 @@ public sealed partial class PdfDocument
     private PdfOutlineCollection? _outlines;
     private PdfStructureTree? _structureTree;
     private PdfEmbeddedFileCollection? _embeddedFiles;
+    private PdfPageLabelCollection? _pageLabels;
+    private PdfInteractiveForm? _form;
 
     /// <summary>Initializes a new instance of the <see cref="PdfDocument"/> class: an empty PDF 1.7 document without pages.</summary>
     public PdfDocument()
@@ -49,6 +51,7 @@ public sealed partial class PdfDocument
         Reader = reader;
         Objects = reader.Objects;
         Trailer = reader.Trailer;
+        OriginalTrailerFingerprint = PdfObjectFingerprint.Compute(Trailer);
         var version = reader.HeaderVersion;
         if (Catalog.GetName(PdfNames.Version) is { } catalogVersion && PdfVersion.TryParse(catalogVersion.Value, out var parsed) && parsed > version)
         {
@@ -64,6 +67,9 @@ public sealed partial class PdfDocument
 
     /// <summary>Gets the indirect objects of the document.</summary>
     public PdfIndirectObjectCollection Objects { get; }
+
+    /// <summary>Gets the fingerprint of the trailer of the file the document was read from: an incremental save of a document whose objects and trailer did not change writes the file as it is.</summary>
+    internal PdfObjectFingerprint? OriginalTrailerFingerprint { get; }
 
     /// <summary>Gets the trailer dictionary (ISO 32000-2, 7.5.5): <c>/Root</c>, <c>/Info</c> and <c>/ID</c>. The writer computes the other entries.</summary>
     public PdfDictionary Trailer { get; }
@@ -89,8 +95,9 @@ public sealed partial class PdfDocument
 
     /// <summary>
     /// Gets or sets the PDF/A conformance level the document is saved with. The save checks what it can (no encryption,
-    /// embedded fonts, a structure tree for the level A) and writes the output intent (sRGB) and the XMP identification;
-    /// the content must follow the other rules of the level.
+    /// embedded fonts, a structure tree for the level A, the actions, the annotation appearances, the device color
+    /// spaces) and writes the output intent (sRGB, unless the document has one) and the XMP identification; the content
+    /// must follow the other rules of the level.
     /// </summary>
     public PdfAConformance PdfAConformance { get; set; }
 
@@ -120,6 +127,12 @@ public sealed partial class PdfDocument
     /// <summary>Gets the pages of the document.</summary>
     public PdfPageCollection Pages => _pages ??= new PdfPageCollection(this);
 
+    /// <summary>Gets the page labels of the document (ISO 32000-2, 12.4.2): the labels viewers show instead of the page numbers, such as <c>i</c>, <c>ii</c> for the front matter.</summary>
+    public PdfPageLabelCollection PageLabels => _pageLabels ??= new PdfPageLabelCollection(this);
+
+    /// <summary>Gets the interactive form of the document (ISO 32000-2, 12.7): its fields, to read, fill or flatten them.</summary>
+    public PdfInteractiveForm Form => _form ??= new PdfInteractiveForm(this);
+
     /// <summary>Gets the files embedded in the document (ISO 32000-2, 7.11.4): the <c>/EmbeddedFiles</c> name tree of the catalog.</summary>
     public PdfEmbeddedFileCollection EmbeddedFiles => _embeddedFiles ??= new PdfEmbeddedFileCollection(this);
 
@@ -132,6 +145,57 @@ public sealed partial class PdfDocument
     /// <param name="group">The attributes of the transparency group of the form; <see langword="null"/> when it is not a group.</param>
     /// <returns>The form.</returns>
     public PdfForm CreateForm(PdfRectangle boundingBox, PdfMatrix? matrix = null, PdfTransparencyGroup? group = null) => new(this, boundingBox, matrix, group);
+
+    /// <summary>
+    /// Creates a form XObject (ISO 32000-2, 8.10) whose content is the content of a page, to stamp it on other pages, as an
+    /// overlay or an underlay (<see cref="PdfContentBuilder.DrawForm"/>). The page can be a page of another document: the
+    /// objects it uses are copied, once per source document.
+    /// </summary>
+    /// <param name="page">The page.</param>
+    /// <returns>
+    /// The form: its bounding box is the visible region of the page (the crop box clipped to the media box), and its
+    /// matrix is <see cref="PdfPage.UserSpaceToDisplay"/>, so that it is painted upright, with its lower-left corner at
+    /// the origin and the size <see cref="PdfPage.DisplaySize"/>, whatever the rotation of the page. The annotations of
+    /// the page are not part of it.
+    /// </returns>
+    /// <exception cref="InvalidPdfContentException">A content stream of the page cannot be decoded.</exception>
+    public PdfForm CreateFormFromPage(PdfPage page)
+    {
+        ArgumentNullException.ThrowIfNull(page);
+        var importer = page.Document == this ? null : PdfObjectImporter.Get(page.Document, this);
+        var resources = new PdfDictionary();
+        if (page.GetInherited(PdfNames.Resources) is PdfDictionary pageResources)
+        {
+            // The categories are copied, so that the content builders of the form and of the page do not change each other
+            foreach (var (key, value) in pageResources)
+            {
+                var copy = importer is null ? value : importer.Copy(value);
+                resources[key] = PdfReference.ResolveIfReference(copy) is PdfDictionary category ? category.CloneShallow() : copy;
+            }
+        }
+
+        var box = page.VisibleBox;
+        var stream = new PdfStream();
+        stream.SetData(page.GetContentData());
+        var matrix = page.UserSpaceToDisplay;
+        var dictionary = stream.Dictionary;
+        dictionary[PdfNames.Type] = PdfNames.XObject;
+        dictionary[PdfNames.Subtype] = PdfNames.Form;
+        dictionary[PdfNames.BBox] = box.ToArray();
+        if (matrix != PdfMatrix.Identity)
+        {
+            dictionary[PdfNames.Matrix] = PdfArray.FromNumbers(matrix.A, matrix.B, matrix.C, matrix.D, matrix.E, matrix.F);
+        }
+
+        // The transparency group of the page is the group of the form (8.10.3, 11.6.6)
+        if (page.Dictionary[PdfNames.Group] is { } group)
+        {
+            dictionary[PdfNames.Group] = importer is null ? group : importer.Copy(group);
+        }
+
+        dictionary[PdfNames.Resources] = resources;
+        return new PdfForm(this, stream, box, resources);
+    }
 
     /// <summary>Creates a tiling pattern (ISO 32000-2, 8.7.3).</summary>
     /// <param name="cell">The bounding box of the cell, in the pattern space: the content of the cell is clipped to it.</param>
@@ -147,10 +211,19 @@ public sealed partial class PdfDocument
 
     internal PdfFileReader? Reader { get; }
 
+    /// <summary>Gets the outline when it was read, or <see langword="null"/>.</summary>
+    internal PdfOutlineCollection? LoadedOutlines => _outlines;
+
+    /// <summary>Gets the importers of the pages of other documents into this one, by source document (<see cref="PdfPageCollection.Insert(int, PdfPage)"/>).</summary>
+    internal System.Runtime.CompilerServices.ConditionalWeakTable<PdfDocument, PdfObjectImporter> Importers { get; } = new();
+
     internal Dictionary<object, PdfReference> SharedResources { get; } = [];
 
     /// <summary>Gets the embedded fonts the content of the document uses, whose objects are written when it is saved.</summary>
     internal Dictionary<EmbeddedPdfFont, EmbeddedFontUsage> EmbeddedFonts { get; } = [];
+
+    /// <summary>Gets the decoders of the fonts the text extraction read, shared by the pages of the document.</summary>
+    internal Text.TextDecoderCache TextDecoders => field ??= new();
 
     /// <summary>Reads a document.</summary>
     /// <param name="data">The content of the file.</param>
@@ -192,9 +265,43 @@ public sealed partial class PdfDocument
     public static PdfDocument Open(Stream stream, PdfReadOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(stream);
-        using var buffer = new MemoryStream();
-        stream.CopyTo(buffer);
-        return Open(buffer.ToArray(), options);
+        return Open(PdfStreamReader.ReadToEnd(stream), options);
+    }
+
+    /// <summary>
+    /// Reads a document from a seekable stream without copying it to memory: the objects are read from the stream when
+    /// they are first used, so that the memory does not grow with the size of the file, and a file can be larger than 2 GB.
+    /// </summary>
+    /// <param name="stream">
+    /// The stream, positioned at the start of the file. It belongs to the caller: the document does not close it. It must
+    /// stay open and unchanged while the document is used, and it must not be used by anything else meanwhile: the document
+    /// moves its position.
+    /// </param>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="PdfReadOptions.Default"/>.</param>
+    /// <returns>The document.</returns>
+    /// <exception cref="ArgumentException">The stream cannot seek or cannot be read.</exception>
+    /// <exception cref="InvalidPdfContentException">The data is not a PDF document, or it cannot be recovered.</exception>
+    /// <exception cref="UnsupportedPdfFeatureException">The document uses a feature the library does not support.</exception>
+    /// <exception cref="PdfResourceLimitException">The document exceeds a limit of the options.</exception>
+    /// <exception cref="PdfPasswordException">The document is encrypted, and <see cref="PdfReadOptions.Password"/> is neither its user nor its owner password.</exception>
+    /// <remarks>The errors of the stream (<see cref="IOException"/>, <see cref="ObjectDisposedException"/>) are not caught: they can occur whenever an object is first used.</remarks>
+    /// <example>
+    /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Pdf.Tests/PdfDocumentTests.cs" ref:region="Pdf_OpenSeekable" ref:dedent="true">
+    /// // The objects are read from the stream when they are first used: it stays open while the document is used
+    /// using var stream = File.OpenRead(path);
+    /// var document = PdfDocument.OpenSeekable(stream);
+    /// var text = document.Pages[0].ExtractText();
+    /// </code>
+    /// </example>
+    public static PdfDocument OpenSeekable(Stream stream, PdfReadOptions? options = null)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+        if (!stream.CanSeek || !stream.CanRead)
+            throw new ArgumentException("The stream must be readable and seekable", nameof(stream));
+
+        options ??= PdfReadOptions.Default;
+        var reader = PdfFileReader.Open(new StreamPdfInput(stream), options);
+        return new PdfDocument(reader);
     }
 
     /// <summary>Reads a document from a file.</summary>
@@ -223,9 +330,7 @@ public sealed partial class PdfDocument
     public static async Task<PdfDocument> OpenAsync(Stream stream, PdfReadOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(stream);
-        using var buffer = new MemoryStream();
-        await stream.CopyToAsync(buffer, cancellationToken).ConfigureAwait(false);
-        return Open(buffer.ToArray(), options);
+        return Open(await PdfStreamReader.ReadToEndAsync(stream, cancellationToken).ConfigureAwait(false), options);
     }
 
     /// <summary>Reads a document from a file.</summary>
@@ -246,21 +351,32 @@ public sealed partial class PdfDocument
     /// <summary>Writes the whole document: the objects reachable from the catalog, renumbered in the order they are reached.</summary>
     /// <param name="stream">The stream to write to. It is not closed.</param>
     /// <param name="options">The options, or <see langword="null"/> for <see cref="PdfSaveOptions.Default"/>.</param>
+    /// <remarks>The file is written to the stream as it is serialized, through a buffer of bounded size: when the save fails, the stream may contain the beginning of the file.</remarks>
     public void Save(Stream stream, PdfSaveOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(stream);
-        stream.Write(SaveCore(options, incremental: false).WrittenSpan);
+        options = PrepareSave(options, incremental: false);
+        WriteSave(new PdfByteWriter(new StreamOutputSink(stream)), options, incremental: false, CancellationToken.None);
     }
 
     /// <summary>Writes the whole document to a file.</summary>
     /// <param name="path">The path of the file. An existing file is replaced.</param>
     /// <param name="options">The options, or <see langword="null"/> for <see cref="PdfSaveOptions.Default"/>.</param>
+    /// <remarks>The file is written as the document is serialized; when the save fails, the incomplete file is deleted.</remarks>
     public void Save(string path, PdfSaveOptions? options = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
-        var output = SaveCore(options, incremental: false);
-        using var stream = File.Create(path);
-        stream.Write(output.WrittenSpan);
+        options = PrepareSave(options, incremental: false);
+        try
+        {
+            using var stream = File.Create(path);
+            WriteSave(new PdfByteWriter(new StreamOutputSink(stream)), options, incremental: false, CancellationToken.None);
+        }
+        catch
+        {
+            File.Delete(path);
+            throw;
+        }
     }
 
     /// <summary>Writes the whole document to a stream.</summary>
@@ -268,30 +384,44 @@ public sealed partial class PdfDocument
     /// <param name="options">The options, or <see langword="null"/> for <see cref="PdfSaveOptions.Default"/>.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <returns>A task that completes when the document is written.</returns>
+    /// <remarks>
+    /// The document is serialized synchronously, on the calling thread, into blocks of memory, and the blocks are then
+    /// written to the stream asynchronously. Cancellation is observed while the objects are serialized, between the
+    /// objects, and while the blocks are written: the stream is untouched when the save is canceled before the first
+    /// block is written, and may contain the beginning of the file otherwise.
+    /// </remarks>
+    /// <exception cref="OperationCanceledException">The save was canceled.</exception>
     public async Task SaveAsync(Stream stream, PdfSaveOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(stream);
-        var output = SaveCore(options, incremental: false);
-        await stream.WriteAsync(output.WrittenMemory, cancellationToken).ConfigureAwait(false);
+        var output = SaveToSegments(options, incremental: false, cancellationToken);
+        await output.WriteToAsync(stream, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>Writes the whole document to an array.</summary>
     /// <param name="options">The options, or <see langword="null"/> for <see cref="PdfSaveOptions.Default"/>.</param>
     /// <returns>The content of the file.</returns>
-    public byte[] ToByteArray(PdfSaveOptions? options = null) => SaveCore(options, incremental: false).ToArray();
+    public byte[] ToByteArray(PdfSaveOptions? options = null) => SaveToSegments(options, incremental: false, CancellationToken.None).ToArray();
 
     /// <summary>
     /// Writes the original file followed by an incremental update (ISO 32000-2, 7.5.6): the objects that were added or
-    /// changed, a cross-reference section of the kind of the original file, and a trailer that points to the original one.
-    /// The bytes of the original file are kept, so its signatures stay valid.
+    /// changed, the free entries of the removed objects, a cross-reference section of the kind of the original file, and
+    /// a trailer that points to the original one. The bytes of the original file are kept, so its signatures stay valid.
+    /// When nothing changed, the original file is written as it is.
     /// </summary>
     /// <param name="stream">The stream to write to. It is not closed.</param>
-    /// <param name="options">The options, or <see langword="null"/> for <see cref="PdfSaveOptions.Default"/>. Object streams are not used.</param>
+    /// <param name="options">
+    /// The options, or <see langword="null"/> for <see cref="PdfSaveOptions.Default"/>. With
+    /// <see cref="PdfSaveOptions.UseObjectStreams"/>, the objects of the update are written in object streams when the
+    /// original file has cross-reference streams.
+    /// </param>
+    /// <remarks>The original file is copied to the stream without being buffered again, and the update is written through a buffer of bounded size: when the save fails, the stream may contain the beginning of the file.</remarks>
     /// <exception cref="InvalidOperationException">The document was not read from a file, or its cross-reference information was rebuilt (<see cref="IsRepaired"/>).</exception>
     public void SaveIncremental(Stream stream, PdfSaveOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(stream);
-        stream.Write(SaveCore(options, incremental: true).WrittenSpan);
+        options = PrepareSave(options, incremental: true);
+        WriteSave(new PdfByteWriter(new StreamOutputSink(stream)), options, incremental: true, CancellationToken.None);
     }
 
     /// <summary>Writes the original file followed by an incremental update (ISO 32000-2, 7.5.6).</summary>
@@ -299,34 +429,53 @@ public sealed partial class PdfDocument
     /// <param name="options">The options, or <see langword="null"/> for <see cref="PdfSaveOptions.Default"/>.</param>
     /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
     /// <returns>A task that completes when the document is written.</returns>
+    /// <remarks>
+    /// The update is serialized synchronously, on the calling thread, and the original file and the update are then
+    /// written to the stream asynchronously; the original file is not copied in memory. Cancellation is observed as for
+    /// <see cref="SaveAsync(Stream, PdfSaveOptions?, CancellationToken)"/>.
+    /// </remarks>
     /// <exception cref="InvalidOperationException">The document was not read from a file, or its cross-reference information was rebuilt (<see cref="IsRepaired"/>).</exception>
+    /// <exception cref="OperationCanceledException">The save was canceled.</exception>
     public async Task SaveIncrementalAsync(Stream stream, PdfSaveOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(stream);
-        var output = SaveCore(options, incremental: true);
-        await stream.WriteAsync(output.WrittenMemory, cancellationToken).ConfigureAwait(false);
+        var output = SaveToSegments(options, incremental: true, cancellationToken);
+        await output.WriteToAsync(stream, cancellationToken).ConfigureAwait(false);
     }
 
-    private PdfByteWriter SaveCore(PdfSaveOptions? options, bool incremental)
+    private SegmentedOutputSink SaveToSegments(PdfSaveOptions? options, bool incremental, CancellationToken cancellationToken)
+    {
+        options = PrepareSave(options, incremental, cancellationToken);
+        var sink = new SegmentedOutputSink();
+        WriteSave(new PdfByteWriter(sink), options, incremental, cancellationToken);
+        return sink;
+    }
+
+    /// <summary>Writes into the objects what the save needs, before the file is written.</summary>
+    private PdfSaveOptions PrepareSave(PdfSaveOptions? options, bool incremental, CancellationToken cancellationToken = default)
     {
         options ??= PdfSaveOptions.Default;
         if (incremental && Reader is null)
             throw new InvalidOperationException("Only a document read from a file can be saved incrementally");
 
+        cancellationToken.ThrowIfCancellationRequested();
         PrepareForSave();
+        cancellationToken.ThrowIfCancellationRequested();
         _structureTree?.Write();
-        Conformance.ConformanceWriter.Apply(this);
-        var output = new PdfByteWriter(64 * 1024);
+        Conformance.ConformanceWriter.Apply(this, options);
+        return options;
+    }
+
+    private void WriteSave(PdfByteWriter output, PdfSaveOptions options, bool incremental, CancellationToken cancellationToken)
+    {
         if (incremental)
         {
-            PdfFileWriter.WriteIncremental(this, options, output);
+            PdfFileWriter.WriteIncremental(this, options, output, cancellationToken);
         }
         else
         {
-            PdfFileWriter.WriteFull(this, options, output);
+            PdfFileWriter.WriteFull(this, options, output, cancellationToken);
         }
-
-        return output;
     }
 
     /// <summary>Writes what the high-level members keep apart from the objects: the outline and the subsets of the embedded fonts.</summary>

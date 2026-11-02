@@ -365,7 +365,7 @@ internal sealed class StandardSecurityHandler
                 {
                     if (array[i] is PdfString or PdfArray or PdfDictionary)
                     {
-                        array[i] = Transform(array[i], number, generation, encrypt, depth + 1);
+                        array.SetParsed(i, Transform(array[i], number, generation, encrypt, depth + 1));
                     }
                 }
 
@@ -380,7 +380,8 @@ internal sealed class StandardSecurityHandler
                 var method = GetStreamMethod(stream.Dictionary);
                 if (method != CryptMethod.None)
                 {
-                    stream.SetLoadedData(Apply(method, stream.EncodedData.Span, number, generation, encrypt));
+                    // The data of a file read on demand is decrypted when it is read
+                    stream.TransformLoadedData(data => Apply(method, data.Span, number, generation, encrypt));
                 }
 
                 return stream;

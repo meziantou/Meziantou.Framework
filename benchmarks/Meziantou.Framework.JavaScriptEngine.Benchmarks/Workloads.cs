@@ -41,6 +41,28 @@ internal static class Workloads
             const lines = Array.from({ length: 1000 }, (_, i) => i % 3 === 0 ? 'user' + i + '@example.com' : 'not an email ' + i);
             function run() { let n = 0; const re = /^[\w.+-]+@[\w-]+\.[\w.]+$/; for (const line of lines) { if (re.test(line)) n++; } return n + 'a-b_c d'.replace(/[-_ ]/g, '').length; }
             """,
+        ["RegExpTrailingAnchor"] = """
+            const spaces = ' '.repeat(20000) + 'x';
+            const words = 'word '.repeat(4000) + '!';
+            function run() { return [/\s+$/.test(spaces), /[a-z]+\d$/.test(words), /\s*;$/m.test(spaces)].join(); }
+            """,
+        ["RegExpSearch"] = """
+            const text = 'lorem ipsum dolor sit amet '.repeat(40000) + 'Needle 42';
+            function run() { return [/[#@]/.test(text), /needle/i.test(text), /Needle \d+/.test(text), /NEEDLE/iu.test(text)].join(); }
+            """,
+        ["RegExpThroughput"] = """
+            const text = 'lorem ipsum dolor sit amet, consectetur 12345 adipiscing; "quoted text" elit. '.repeat(2000);
+            const re = /[0-9]{3}-[0-9]{4}/;
+            const samples = ['call 555-1234 now', 'no number here at all', 'x'];
+            function run() {
+              let n = 0;
+              for (let i = 0; i < 3000; i++) if (re.test(samples[i % 3])) n++;
+              n += text.match(/\w+/g).length + text.match(/"[^"]*"/g).length;
+              n += text.replace(/\s+/g, ' ').length + text.split(/[,;]\s*/).length;
+              for (const m of text.matchAll(/([a-z]+) ([a-z]+)/g)) n += m[1].length;
+              return n;
+            }
+            """,
         ["Closures"] = """
             function counter() { let c = 0; return { inc: () => ++c, get: () => c }; }
             function run() { const counters = []; for (let i = 0; i < 1000; i++) counters.push(counter()); let s = 0; for (const c of counters) { c.inc(); c.inc(); s += c.get(); } return s; }
@@ -64,6 +86,47 @@ internal static class Workloads
               const numbers = []; for (let i = 0; i < 200000; i++) numbers.push(i);
               const objects = []; for (let i = 0; i < 50000; i++) objects.push({ i });
               return numbers.length + objects.length + numbers.map(x => x + 1).length;
+            }
+            """,
+        ["NumberFormat"] = """
+            const nf = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 });
+            const currency = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });
+            function run() { let n = 0; for (let i = 0; i < 5000; i++) { n += nf.format(i * 1.37).length + currency.format(i * 1000.5).length; } return n; }
+            """,
+        ["DateTimeFormat"] = """
+            const df = new Intl.DateTimeFormat('en-US', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Europe/Paris' });
+            const parts = new Intl.DateTimeFormat('fr-FR', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            function run() { let n = 0; for (let i = 0; i < 5000; i++) { const t = 1704067200000 + i * 3600000; n += df.format(t).length + parts.format(t).length; } return n; }
+            """,
+        ["LocaleCompare"] = """
+            const words = Array.from({ length: 5000 }, (_, i) => 'item' + ((i * 7919) % 5000) + (i % 2 ? 'é' : 'e'));
+            function run() { return words.slice().sort((a, b) => a.localeCompare(b)).length + words.slice().sort((a, b) => a.localeCompare(b, 'fr')).length; }
+            """,
+        ["LocalDate"] = """
+            function run() {
+              let s = 0;
+              for (let i = 0; i < 10000; i++) { const d = new Date(2024, i % 12, 1 + (i % 28), i % 24); s += d.getHours() + d.getDate() + d.getTimezoneOffset(); }
+              return s;
+            }
+            """,
+    };
+
+    /// <summary>The scripts of the cold start measurements (the cold command): the first use of the Intl data.</summary>
+    public static IReadOnlyDictionary<string, string> ColdStart { get; } = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        ["CollatorZh"] = "new Intl.Collator('zh').compare('\u4E2D', '\u6587')",
+        ["CollatorDe"] = "new Intl.Collator('de').compare('a', '\u00E4')",
+        ["NumberFormat"] = "new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(1234.5)",
+        ["DateTimeFormat"] = "new Intl.DateTimeFormat('ja-JP', { dateStyle: 'full', timeStyle: 'long', timeZone: 'Asia/Tokyo' }).format(0)",
+        ["ManyLocales"] = """
+            for (const locale of Intl.DateTimeFormat.supportedLocalesOf(['af', 'am', 'ar', 'az', 'be', 'bg', 'bn', 'bs', 'ca', 'cs', 'cy', 'da', 'de', 'el', 'en', 'en-GB', 'es', 'es-MX', 'et', 'eu', 'fa', 'fi', 'fil', 'fr', 'fr-CA', 'ga', 'gl', 'gu', 'he', 'hi', 'hr', 'hu', 'hy', 'id', 'is', 'it', 'ja', 'ka', 'kk', 'km', 'kn', 'ko', 'ky', 'lo', 'lt', 'lv', 'mk', 'ml', 'mn', 'mr', 'ms', 'my', 'nb', 'ne', 'nl', 'or', 'pa', 'pl', 'ps', 'pt', 'pt-PT', 'ro', 'ru', 'si', 'sk', 'sl', 'sq', 'sr', 'sv', 'sw', 'ta', 'te', 'th', 'tr', 'uk', 'ur', 'uz', 'vi', 'zh', 'zh-TW', 'zu'])) {
+              new Intl.NumberFormat(locale, { style: 'currency', currency: 'EUR' }).format(1234.5);
+              new Intl.DateTimeFormat(locale, { dateStyle: 'long', timeStyle: 'short' }).format(0);
+              new Intl.PluralRules(locale).select(1);
+              new Intl.RelativeTimeFormat(locale).format(-1, 'day');
+              new Intl.ListFormat(locale).format(['a', 'b', 'c']);
+              new Intl.DisplayNames(locale, { type: 'language' }).of('en');
+              ['b', 'a', 'c'].sort(new Intl.Collator(locale).compare);
             }
             """,
     };

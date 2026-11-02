@@ -110,6 +110,9 @@ var compatible = document.ToByteArray(new PdfSaveOptions { UseObjectStreams = fa
 
 // Content streams left as text, to read them in an editor
 var readable = document.ToByteArray(new PdfSaveOptions { CompressStreams = false });
+
+// Linearized for fast web view: a viewer shows the first page before the file is downloaded
+var web = document.ToByteArray(new PdfSaveOptions { Linearize = true });
 ```
 <!-- endref -->
 
@@ -117,7 +120,14 @@ var readable = document.ToByteArray(new PdfSaveOptions { CompressStreams = false
 | --- | --- | --- |
 | [CompressStreams](cref:Meziantou.Framework.Pdf.PdfSaveOptions.CompressStreams) | `true` | Compresses the streams that have no filter with `FlateDecode` |
 | [UseObjectStreams](cref:Meziantou.Framework.Pdf.PdfSaveOptions.UseObjectStreams) | `true` | Writes the objects in object streams with a cross-reference stream (PDF 1.5); `false` writes a cross-reference table |
+| [Linearize](cref:Meziantou.Framework.Pdf.PdfSaveOptions.Linearize) | `false` | Writes a linearized file for fast web view: the first page comes first, with hint tables, so that a viewer shows each page before the file is downloaded. It uses cross-reference tables, writes the inherited attributes of the page tree on the pages, and cannot be encrypted or written incrementally |
 | [Version](cref:Meziantou.Framework.Pdf.PdfSaveOptions.Version) | `null` | The version of the header; `null` for the version of the document, raised to what the options need |
+
+`Save` writes the file to the stream or the file as it is serialized, through a buffer of bounded size, so that a
+large document is not held in memory as one array; when the save fails, the stream may contain the beginning of the
+file (`Save(path)` deletes the incomplete file). `SaveAsync` serializes the document on the calling thread into blocks
+of memory, then writes them asynchronously: its cancellation token is observed between the objects and between the
+blocks.
 
 The output depends only on the document and the options: the library writes no date, no random value and not its own
 version (`Information.Producer` is empty unless you set it), so a test can compare the files it writes.

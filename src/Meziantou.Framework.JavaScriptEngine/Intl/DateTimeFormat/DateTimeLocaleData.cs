@@ -34,6 +34,12 @@ internal sealed class DateTimeLocaleData
         }
     }
 
+    /// <summary>
+    /// Gets the names of the months, weekdays and day periods already formatted, by context, width and value (see
+    /// DateTimeFormatter). The names depend only on the data, so concurrent writes store the same values.
+    /// </summary>
+    internal string?[] NameCache { get; } = new string?[DateTimeFormatter.NameCacheLength];
+
     /// <summary>Gets the locale of the data.</summary>
     public CldrLocale Locale { get; }
 

@@ -1,3 +1,5 @@
+using System.Buffers;
+
 namespace Meziantou.Framework.Pdf.Filters;
 
 /// <summary>The <c>LZWDecode</c> filter (ISO 32000-2, 7.4.4): codes of 9 to 12 bits, most significant bit first, a clear-table code (256) and an end-of-data code (257).</summary>
@@ -107,11 +109,15 @@ internal static class LzwFilter
 
     public static byte[] Encode(ReadOnlySpan<byte> input)
     {
-        var output = new List<byte>(input.Length);
+        // A code of at most 12 bits per byte, and the clear-table and end-of-data codes, in a rented buffer: the result has
+        // the exact length
+        var buffer = ArrayPool<byte>.Shared.Rent((int)Math.Min((((input.Length + (input.Length / 2048) + 4L) * 12) + 7) / 8, Array.MaxLength));
+        var output = buffer;
+        var length = 0;
         var bitBuffer = 0L;
         var bitCount = 0;
         var width = 9;
-        var table = new Dictionary<(int Prefix, byte Value), int>();
+        var table = new LzwEncoderTable();
         var next = 258;
 
         void WriteCode(int code)
@@ -120,7 +126,7 @@ internal static class LzwFilter
             bitCount += width;
             while (bitCount >= 8)
             {
-                output.Add((byte)(bitBuffer >> (bitCount - 8)));
+                output[length++] = (byte)(bitBuffer >> (bitCount - 8));
                 bitCount -= 8;
             }
         }
@@ -135,14 +141,15 @@ internal static class LzwFilter
                 continue;
             }
 
-            if (table.TryGetValue((current, value), out var code))
+            var code = table.Find(current, value);
+            if (code >= 0)
             {
                 current = code;
                 continue;
             }
 
             WriteCode(current);
-            table[(current, value)] = next++;
+            table.Add(current, value, next++);
             current = value;
 
             // The decoder grows the width when the next code reaches the limit, one code early (EarlyChange 1)
@@ -175,10 +182,12 @@ internal static class LzwFilter
         WriteCode(EndOfData);
         if (bitCount > 0)
         {
-            output.Add((byte)(bitBuffer << (8 - bitCount)));
+            output[length++] = (byte)(bitBuffer << (8 - bitCount));
         }
 
-        return [.. output];
+        var result = output.AsSpan(0, length).ToArray();
+        ArrayPool<byte>.Shared.Return(buffer);
+        return result;
     }
 
     private static byte WriteEntry(BoundedOutput output, int code, int[] prefix, byte[] suffix, int[] lengths, byte[] entry)
@@ -192,5 +201,48 @@ internal static class LzwFilter
 
         output.Write(entry.AsSpan(0, length));
         return entry[0];
+    }
+
+    /// <summary>The entries of the encoder: a hash table from a prefix code and a byte to the code of the entry, with open addressing.</summary>
+    private sealed class LzwEncoderTable
+    {
+        // Twice the number of codes, so that the probes stay short
+        private const int Size = MaxCodes * 2;
+
+        private readonly int[] _keys = new int[Size];
+        private readonly short[] _codes = new short[Size];
+
+        public LzwEncoderTable() => Clear();
+
+        public void Clear() => _keys.AsSpan().Fill(-1);
+
+        public int Find(int prefix, byte value)
+        {
+            var key = (prefix << 8) | value;
+            for (var index = Hash(key); ; index = (index + 1) & (Size - 1))
+            {
+                var stored = _keys[index];
+                if (stored == key)
+                    return _codes[index];
+
+                if (stored < 0)
+                    return -1;
+            }
+        }
+
+        public void Add(int prefix, byte value, int code)
+        {
+            var key = (prefix << 8) | value;
+            var index = Hash(key);
+            while (_keys[index] >= 0)
+            {
+                index = (index + 1) & (Size - 1);
+            }
+
+            _keys[index] = key;
+            _codes[index] = (short)code;
+        }
+
+        private static int Hash(int key) => (int)(((uint)key * 2654435769u) >> 19);
     }
 }

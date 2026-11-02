@@ -64,7 +64,7 @@ public sealed class PdfMutationFuzzTests
             // The seeds are valid: the mutations start from data that decodes
             foreach (var (encoded, parameters) in seeds)
             {
-                Assert.NotEmpty(PdfFilterPipeline.Decode(encoded, [PdfName.Create(filter)], [parameters], new PdfDecodeLimits(1 << 20), stopBeforeImageFilters: false, out _));
+                Assert.NotEmpty(DecodeFilter(encoded, filter, parameters));
             }
         }
 
@@ -86,7 +86,7 @@ public sealed class PdfMutationFuzzTests
             };
             try
             {
-                PdfFilterPipeline.Decode(data, [PdfName.Create(filter)], [parameters], new PdfDecodeLimits(1 << 20), stopBeforeImageFilters: false, out _);
+                DecodeFilter(data, filter, parameters);
             }
             catch (Exception ex) when (ex is InvalidPdfContentException or UnsupportedPdfFeatureException or PdfResourceLimitException)
             {
@@ -137,6 +137,12 @@ public sealed class PdfMutationFuzzTests
                 };
                 return [(encoded, null)];
         }
+    }
+
+    private static byte[] DecodeFilter(byte[] data, string filter, PdfDictionary? parameters)
+    {
+        var dictionary = new PdfDictionary { [PdfNames.Filter] = PdfName.Create(filter), [PdfNames.DecodeParms] = parameters };
+        return PdfFilterPipeline.Decode(data, dictionary, new PdfDecodeLimits(1 << 20), stopBeforeImageFilters: false, out _);
     }
 
     /// <summary>The parameters of the seed, no parameters, or the parameters of the seed with random values: other kinds of coding, sizes and alignments.</summary>

@@ -78,3 +78,16 @@ Assert.NotInRange(double.NaN, double.MinValue, double.MaxValue);
 - Without a comparer, `NaN` and a `null` `Nullable<T>`, as the value or as a bound, are never in range, like
   `low <= value && value <= high`.
 - [NotInRange](cref:Meziantou.Framework.Assertions.Assert.NotInRange) passes when the value is outside the range.
+
+[InRange](cref:Meziantou.Framework.Assertions.Assert.InRange) and [NotInRange](cref:Meziantou.Framework.Assertions.Assert.NotInRange) also accept a `ref struct` type that implements `IComparable<T>`:
+
+<!-- ref:../../tests/Meziantou.Framework.Assertions.Tests/AssertInRangeTests.cs;region=Assert_InRangeRefStruct;format=md-fenced-code-block;dedent=true -->
+```csharp
+var temperature = new Temperature(20);
+Assert.InRange(temperature, new Temperature(0), new Temperature(25));   // compared with IComparable<Temperature>.CompareTo
+Assert.NotInRange(temperature, new Temperature(21), new Temperature(25));
+```
+<!-- endref -->
+
+The failure message shows the expressions of the bounds and the type of the values, as a `ref struct` value cannot be
+displayed. See [Compare ref structs](03-Equality.md#compare-ref-structs) for the `Temperature` type.

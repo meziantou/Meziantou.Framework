@@ -72,6 +72,11 @@ internal static class AsyncGeneratorOperations
             Complete(generator, ex.Value, isThrow: true);
             return;
         }
+        catch (Exception ex)
+        {
+            Abort(generator, ex);
+            throw;
+        }
 
         HandleFrameOutcome(generator, result);
     }
@@ -106,6 +111,11 @@ internal static class AsyncGeneratorOperations
             Complete(generator, ex.Value, isThrow: true);
             return;
         }
+        catch (Exception ex)
+        {
+            Abort(generator, ex);
+            throw;
+        }
 
         HandleFrameOutcome(generator, result);
     }
@@ -124,6 +134,9 @@ internal static class AsyncGeneratorOperations
 
         generator.State = GeneratorState.SuspendedYield;
     }
+
+    /// <summary>A termination or a .NET exception stopped the body: the generator is completed, the current request is rejected.</summary>
+    private static void Abort(JsAsyncGenerator generator, Exception exception) => Complete(generator, JsInterpreter.CreateAbortError(generator.Frame.Realm, exception), isThrow: true);
 
     /// <summary>The body completed (return or throw): the current request settles, then the queue drains.</summary>
     private static void Complete(JsAsyncGenerator generator, JsValue value, bool isThrow)

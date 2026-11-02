@@ -94,7 +94,24 @@ internal sealed class ContentStreamReader
                 continue;
 
             var key = PdfName.FromBytes(_lexer.DecodeName(token));
-            var value = _parser.ParseValue(_lexer.Next(), depth: 0);
+            var position = _lexer.Position;
+            var valueToken = _lexer.Next();
+            if (valueToken.Kind == PdfTokenKind.Keyword && _lexer.GetBytes(valueToken).SequenceEqual("ID"u8))
+                break;
+
+            PdfObject? value;
+            try
+            {
+                value = _parser.ParseValue(valueToken, depth: 0);
+            }
+            catch (Exception ex) when (ex is InvalidPdfContentException or PdfResourceLimitException)
+            {
+                // A value that is not closed or nested too deep: the key has no value, and the tokens after it are read
+                // again one at a time until the ID operator, so that the content after the image is still read
+                _lexer.Position = position;
+                value = null;
+            }
+
             if (value is not null)
             {
                 dictionary.SetParsed(key, value);

@@ -54,7 +54,13 @@ Names are made safe for every file system:
 - A hash is also added when the name is too long (more than [SnapshotSettings.MaxSnapshotFileNameLength](cref:Meziantou.Framework.SnapshotTesting.SnapshotSettings.MaxSnapshotFileNameLength) characters, 128
   by default, or more than the 255 UTF-8 bytes most file systems accept), when it ends with `.verified` or `.actual`,
   and when the part before its first `.` is a Windows device name (`CON`, `PRN`, `AUX`, `NUL`, `COM0`-`COM9`,
-  `LPT0`-`LPT9`, in any case).
+  `LPT0`-`LPT9`, in any case). A device name followed by a dot also gets a `_`, as Windows only looks at the part
+  before the first dot: a test called `NUL.report` is stored as `NUL_.report_<hash>.verified.txt`.
+- A long name is shortened to keep the whole file name, with its hash, index and extension, within these limits. When
+  the hash, index and extension alone leave no room for the name (a very long extension, or a very small
+  `MaxSnapshotFileNameLength`), the assertion throws a [SnapshotException](cref:Meziantou.Framework.SnapshotTesting.SnapshotException) instead of creating a longer file.
+  The files of one assertion may then have names of different lengths, as their extensions differ: they share the
+  hash, which is how the files left behind by an earlier run are found when the extensions or the number of files change.
 - A name never contains `.verified.` or `.actual.`, in any case: a test called `Parse.actual.value` is stored as
   `Parse_actual.value_<hash>.verified.txt`, so the approval tool cannot take its verified file for an actual file.
 

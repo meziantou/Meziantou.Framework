@@ -40,7 +40,7 @@ public static async Task<string> DescribeUploadAsync(Stream upload, Cancellation
 | Exception | Thrown when |
 | --- | --- |
 | [InvalidPdfContentException](cref:Meziantou.Framework.Pdf.InvalidPdfContentException) | The data is not a PDF document, or it is damaged beyond repair |
-| [UnsupportedPdfFeatureException](cref:Meziantou.Framework.Pdf.UnsupportedPdfFeatureException) | The document uses a feature the library does not support, such as a security handler other than the standard one; or a font cannot be embedded |
+| [UnsupportedPdfFeatureException](cref:Meziantou.Framework.Pdf.UnsupportedPdfFeatureException) | The document uses a feature the library does not support, such as a security handler other than the standard one or a stream filter the library does not know; or a font cannot be embedded |
 | [PdfResourceLimitException](cref:Meziantou.Framework.Pdf.PdfResourceLimitException) | The document exceeds a limit of [PdfReadOptions](cref:Meziantou.Framework.Pdf.PdfReadOptions), or a page exceeds a limit of the rendering |
 | [PdfPasswordException](cref:Meziantou.Framework.Pdf.PdfPasswordException) | The document is encrypted, and the password of the options is neither its user nor its owner password |
 

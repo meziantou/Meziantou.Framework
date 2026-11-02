@@ -1003,6 +1003,388 @@ public sealed class PdfDocumentTests
     }
 
     [Fact]
+    public void XmpMetadataReplacesTheCharactersXmlDoesNotAllow()
+    {
+        var document = new PdfDocument();
+        document.Information.Title = "A\u0001B";
+        document.Information.Author = "C\uD800D";
+        document.Information.Subject = "\U0001F600";
+        document.UpdateXmpMetadata();
+
+        var xmp = Encoding.UTF8.GetString(document.GetXmpMetadata()!);
+        Assert.Contains("<rdf:li xml:lang=\"x-default\">A�B</rdf:li>", xmp, StringComparison.Ordinal);
+        Assert.Contains("<rdf:li>C�D</rdf:li>", xmp, StringComparison.Ordinal);
+        Assert.Contains("\U0001F600", xmp, StringComparison.Ordinal);
+
+        // PDF/A-4 has no information dictionary: the packet has the replacement character
+        var pdfA4 = new PdfDocument { PdfAConformance = PdfAConformance.PdfA4 };
+        pdfA4.Information.Title = "A\u0001B";
+        pdfA4.Pages.Add(PdfSize.A4);
+        Assert.Contains("A�B", Encoding.UTF8.GetString(PdfDocument.Open(pdfA4.ToByteArray()).GetXmpMetadata()!), StringComparison.Ordinal);
+
+        // PDF/A-2 needs the information dictionary and the packet to agree: the save is refused
+        var pdfA2 = new PdfDocument { PdfAConformance = PdfAConformance.PdfA2B };
+        pdfA2.Information.Title = "A\u0001B";
+        pdfA2.Pages.Add(PdfSize.A4);
+        Assert.Contains("the Title has a character that XML does not allow", Assert.Throws<InvalidOperationException>(() => pdfA2.ToByteArray()).Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ConformanceSavesKeepTheXmpStreamWhenTheMetadataDoesNotChange()
+    {
+        var document = new PdfDocument { PdfAConformance = PdfAConformance.PdfA2B };
+        document.Information.Title = "Archived";
+        document.Pages.Add(PdfSize.A4);
+        var original = document.ToByteArray();
+        Assert.Equal(original, document.ToByteArray());
+
+        var read = PdfDocument.Open(original);
+        read.PdfAConformance = PdfAConformance.PdfA2B;
+        var metadata = Assert.IsType<PdfReference>(read.Catalog[PdfNames.Metadata]);
+        using var unchanged = new MemoryStream();
+        read.SaveIncremental(unchanged);
+        Assert.DoesNotContain("xmpmeta", Encoding.Latin1.GetString(unchanged.ToArray().AsSpan(original.Length)), StringComparison.Ordinal);
+
+        // A change updates the existing stream: the incremental update has no new object for it
+        read.Information.Title = "Changed";
+        using var changed = new MemoryStream();
+        read.SaveIncremental(changed);
+        var updated = PdfDocument.Open(changed.ToArray());
+        Assert.Equal(metadata.ObjectNumber, Assert.IsType<PdfReference>(updated.Catalog[PdfNames.Metadata]).ObjectNumber);
+        Assert.Contains("Changed", Encoding.UTF8.GetString(updated.GetXmpMetadata()!), StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void ConformanceSavesKeepTheCustomXmpSchemas()
+    {
+        const string Packet = """
+            <?xpacket begin="" id="W5M0MpCehiHzreSzNTczkc9d"?>
+            <x:xmpmeta xmlns:x="adobe:ns:meta/">
+             <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+              <rdf:Description rdf:about="" xmlns:fx="urn:factur-x:pdfa:CrossIndustryDocument:invoice:1p0#" xmlns:pdfaid="http://www.aiim.org/pdfa/ns/id/" xmlns:dc="http://purl.org/dc/elements/1.1/" pdfaid:part="2" fx:Version="1.0">
+               <dc:title><rdf:Alt><rdf:li xml:lang="x-default">Old title</rdf:li></rdf:Alt></dc:title>
+               <fx:DocumentType>INVOICE</fx:DocumentType>
+              </rdf:Description>
+              <rdf:Description rdf:about="" xmlns:pdfaExtension="http://www.aiim.org/pdfa/ns/extension/" xmlns:pdfaSchema="http://www.aiim.org/pdfa/ns/schema#" xmlns:pdfaProperty="http://www.aiim.org/pdfa/ns/property#">
+               <pdfaExtension:schemas>
+                <rdf:Bag>
+                 <rdf:li rdf:parseType="Resource">
+                  <pdfaSchema:schema>Factur-X PDFA Extension Schema</pdfaSchema:schema>
+                  <pdfaSchema:namespaceURI>urn:factur-x:pdfa:CrossIndustryDocument:invoice:1p0#</pdfaSchema:namespaceURI>
+                  <pdfaSchema:prefix>fx</pdfaSchema:prefix>
+                 </rdf:li>
+                </rdf:Bag>
+               </pdfaExtension:schemas>
+              </rdf:Description>
+             </rdf:RDF>
+            </x:xmpmeta>
+            <?xpacket end="w"?>
+            """;
+        var document = new PdfDocument { PdfAConformance = PdfAConformance.PdfA3B };
+        document.Information.Title = "Invoice";
+        document.Pages.Add(PdfSize.A4);
+        document.SetXmpMetadata(Encoding.UTF8.GetBytes(Packet));
+
+        var xmp = System.Xml.Linq.XDocument.Parse(Encoding.UTF8.GetString(PdfDocument.Open(document.ToByteArray()).GetXmpMetadata()!));
+
+        System.Xml.Linq.XNamespace fx = "urn:factur-x:pdfa:CrossIndustryDocument:invoice:1p0#";
+        System.Xml.Linq.XNamespace pdfaid = "http://www.aiim.org/pdfa/ns/id/";
+        System.Xml.Linq.XNamespace pdfaSchema = "http://www.aiim.org/pdfa/ns/schema#";
+        System.Xml.Linq.XNamespace dc = "http://purl.org/dc/elements/1.1/";
+        Assert.Equal("INVOICE", xmp.Descendants(fx + "DocumentType").Single().Value);
+        Assert.Equal("1.0", xmp.Descendants(fx + "Version").Single().Value);
+        Assert.Equal("3", xmp.Descendants(pdfaid + "part").Single().Value);
+        Assert.Equal("Invoice", xmp.Descendants(dc + "title").Single().Value);
+        Assert.Equal("fx", xmp.Descendants(pdfaSchema + "prefix").Single().Value);
+        Assert.Equal("pdfaSchema", xmp.Descendants(pdfaSchema + "prefix").Single().GetPrefixOfNamespace(pdfaSchema));
+    }
+
+    [Fact]
+    public void TheTrappedEntryIsInTheInformationAndTheXmpMetadata()
+    {
+        var document = new PdfDocument();
+        Assert.Null(document.Information.Trapped);
+        document.Information.Trapped = PdfTrapped.True;
+        document.UpdateXmpMetadata();
+
+        var read = PdfDocument.Open(document.ToByteArray());
+        Assert.Equal(PdfTrapped.True, read.Information.Trapped);
+        Assert.Equal("True", read.Information.Dictionary!.GetName(PdfNames.Trapped)!.Value);
+        Assert.Contains("<pdf:Trapped>True</pdf:Trapped>", Encoding.UTF8.GetString(read.GetXmpMetadata()!), StringComparison.Ordinal);
+
+        // A packet that has the property keeps it when the information does not have the entry
+        read.Information.Trapped = null;
+        Assert.Null(read.Information.Trapped);
+        read.UpdateXmpMetadata();
+        Assert.Contains("<pdf:Trapped>True</pdf:Trapped>", Encoding.UTF8.GetString(read.GetXmpMetadata()!), StringComparison.Ordinal);
+
+        read.Information.Trapped = PdfTrapped.False;
+        read.UpdateXmpMetadata();
+        Assert.Contains("<pdf:Trapped>False</pdf:Trapped>", Encoding.UTF8.GetString(read.GetXmpMetadata()!), StringComparison.Ordinal);
+        Assert.Throws<ArgumentOutOfRangeException>(() => read.Information.Trapped = (PdfTrapped)42);
+    }
+
+    [Fact]
+    public void XmpMetadataWithPadding()
+    {
+        var document = new PdfDocument();
+        document.Information.Title = "Padded";
+        document.UpdateXmpMetadata();
+        var length = document.GetXmpMetadata()!.Length;
+
+        #region Pdf_XmpPadding
+        // Reserve 2 KB of whitespace in the packet, so that an editor can update it in place
+        document.UpdateXmpMetadata(padding: 2048);
+
+        // The packet a PDF/A or PDF/UA save writes
+        var options = new PdfSaveOptions { XmpPadding = 2048 };
+        #endregion
+
+        var padded = document.GetXmpMetadata()!;
+        Assert.HasCount(length + 2048 + 1, padded);
+        Assert.EndsWith("\n<?xpacket end=\"w\"?>", Encoding.UTF8.GetString(padded), StringComparison.Ordinal);
+        Assert.NotNull(System.Xml.Linq.XDocument.Parse(Encoding.UTF8.GetString(padded)));
+        Assert.Throws<ArgumentOutOfRangeException>(() => document.UpdateXmpMetadata(-1));
+        Assert.Throws<ArgumentOutOfRangeException>(() => new PdfSaveOptions { XmpPadding = -1 });
+
+        var archived = new PdfDocument { PdfAConformance = PdfAConformance.PdfA2B };
+        archived.Information.Title = "Padded";
+        archived.Pages.Add(PdfSize.A4);
+        var withoutPadding = archived.GetXmpMetadata();
+        Assert.Null(withoutPadding);
+        var unpadded = PdfDocument.Open(archived.ToByteArray()).GetXmpMetadata()!.Length;
+        Assert.HasCount(unpadded + 2048 + 1, PdfDocument.Open(archived.ToByteArray(options)).GetXmpMetadata()!);
+    }
+
+    [Fact]
+    public void PdfAKeepsTheExistingOutputIntents()
+    {
+        var document = new PdfDocument { PdfAConformance = PdfAConformance.PdfA2B };
+        document.Information.Title = "Printed";
+        // The CMYK profile of Imaging is an input profile: PDF/A needs an output profile
+        var data = Imaging.Metadata.IccProfile.Cgats001CompatibleCmyk.Data.ToArray();
+        var profile = new PdfStream(new PdfDictionary { [PdfNames.N] = PdfInteger.Get(4) });
+        profile.SetData(data);
+        var profileReference = document.Objects.Add(profile);
+        document.Catalog[PdfName.Create("OutputIntents")] = new PdfArray(document.Objects.Add(new PdfDictionary
+        {
+            [PdfNames.Type] = PdfName.Create("OutputIntent"),
+            [PdfNames.S] = PdfName.Create("GTS_PDFX"),
+            [PdfName.Create("OutputConditionIdentifier")] = PdfString.FromText("CGATS TR 001"),
+            [PdfName.Create("DestOutputProfile")] = profileReference,
+        }));
+        document.Pages.Add(PdfSize.A4).CreateContentBuilder().SetFillCmyk(0, 1, 1, 0).Rectangle(10, 10, 100, 100).Fill();
+        Assert.Contains("needs an output profile of a printer or a monitor", Assert.Throws<InvalidOperationException>(() => document.ToByteArray()).Message, StringComparison.Ordinal);
+
+        "prtr"u8.CopyTo(data.AsSpan(12));
+        profile.SetData(data);
+        var read = PdfDocument.Open(document.ToByteArray());
+
+        var intents = read.Catalog.Get<PdfArray>(PdfName.Create("OutputIntents"))!.Select(intent => (PdfDictionary)PdfReference.ResolveIfReference(intent)).ToList();
+        Assert.Equal(["GTS_PDFX", "GTS_PDFA1"], intents.Select(intent => intent.GetName(PdfNames.S)!.Value));
+        var profiles = intents.Select(intent => Assert.IsType<PdfReference>(intent[PdfName.Create("DestOutputProfile")]).ObjectNumber).Distinct();
+        Assert.Single(profiles);
+        Assert.Equal("CGATS TR 001", intents[1].GetText(PdfName.Create("OutputConditionIdentifier")));
+
+        // DeviceRGB needs an RGB output intent
+        document.Pages[0].CreateContentBuilder().SetFillRgb(1, 0, 0).Rectangle(10, 10, 100, 100).Fill();
+        Assert.Contains("page 1 uses DeviceRGB", Assert.Throws<InvalidOperationException>(() => document.ToByteArray()).Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void PdfANeedsTheSameProfileForEveryOutputIntent()
+    {
+        var document = new PdfDocument { PdfAConformance = PdfAConformance.PdfA2B };
+        document.Pages.Add(PdfSize.A4);
+        PdfReference AddIntent(string type, Imaging.Metadata.IccProfile iccProfile)
+        {
+            var profile = new PdfStream(new PdfDictionary());
+            profile.SetData(iccProfile.Data.Span);
+            return document.Objects.Add(new PdfDictionary
+            {
+                [PdfNames.S] = PdfName.Create(type),
+                [PdfName.Create("DestOutputProfile")] = document.Objects.Add(profile),
+            });
+        }
+
+        document.Catalog[PdfName.Create("OutputIntents")] = new PdfArray(AddIntent("GTS_PDFX", Imaging.Metadata.IccProfile.Cgats001CompatibleCmyk), AddIntent("GTS_PDFA1", Imaging.Metadata.IccProfile.Srgb));
+
+        Assert.Contains("the same profile for every output intent", Assert.Throws<InvalidOperationException>(() => document.ToByteArray()).Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void PdfANeedsAnOutputIntentForTheDeviceColorSpaces()
+    {
+        var document = new PdfDocument { PdfAConformance = PdfAConformance.PdfA2B };
+        var page = document.Pages.Add(PdfSize.A4);
+        page.CreateContentBuilder().SetFillRgb(1, 0, 0).SetFillGray(0.5).Rectangle(10, 10, 100, 100).Fill();
+        _ = document.ToByteArray();
+
+        // The output intent is sRGB: DeviceCMYK needs a DefaultCMYK color space
+        page.CreateContentBuilder().SetStrokeCmyk(0, 0, 0, 1).Rectangle(10, 10, 100, 100).Stroke();
+        Assert.Contains("PDF/A-2 allows DeviceCMYK only with an output intent of the same color space or a DefaultCMYK color space (ISO 19005-2, 6.2.4.3): page 1 uses DeviceCMYK", Assert.Throws<InvalidOperationException>(() => document.ToByteArray()).Message, StringComparison.Ordinal);
+
+        var colorSpaces = new PdfDictionary();
+        page.Resources![PdfNames.ColorSpace] = colorSpaces;
+        colorSpaces[PdfName.Create("DefaultCMYK")] = new PdfArray(PdfName.Create("ICCBased"), PdfNull.Instance);
+        _ = document.ToByteArray();
+
+        // The color spaces of the forms are checked too
+        var form = document.CreateForm(new PdfRectangle(0, 0, 10, 10));
+        form.CreateContentBuilder().SetFillCmyk(0, 0, 0, 1).Rectangle(0, 0, 10, 10).Fill();
+        var other = document.Pages.Add(PdfSize.A4);
+        other.CreateContentBuilder().DrawForm(form);
+        Assert.Contains("page 2 uses DeviceCMYK", Assert.Throws<InvalidOperationException>(() => document.ToByteArray()).Message, StringComparison.Ordinal);
+    }
+
+    [Theory]
+    [InlineData(PdfAConformance.PdfA2B, "JavaScript", null, "PDF/A-2 does not allow the JavaScript actions: the document (OpenAction) has one")]
+    [InlineData(PdfAConformance.PdfA1B, "Launch", null, "PDF/A-1 does not allow the Launch actions: the document (OpenAction) has one")]
+    [InlineData(PdfAConformance.PdfA3B, "Named", "Print", "allows the NextPage, PrevPage, FirstPage and LastPage named actions only: the document (OpenAction) has the Print named action")]
+    [InlineData(PdfAConformance.PdfA4, "Launch", null, "PDF/A-4 does not allow the Launch actions")]
+    [InlineData(PdfAConformance.PdfA4, "JavaScript", null, null)]
+    [InlineData(PdfAConformance.PdfA2B, "Named", "NextPage", null)]
+    public void PdfAChecksTheActions(PdfAConformance conformance, string type, string? named, string? message)
+    {
+        var document = new PdfDocument { PdfAConformance = conformance };
+        document.Pages.Add(PdfSize.A4);
+        var action = new PdfDictionary { [PdfNames.S] = PdfName.Create(type) };
+        if (named is not null)
+        {
+            action[PdfNames.N] = PdfName.Create(named);
+        }
+
+        if (type == "JavaScript")
+        {
+            action[PdfName.Create("JS")] = PdfString.FromText("app.alert('Hello');");
+        }
+
+        document.Catalog[PdfName.Create("OpenAction")] = document.Objects.Add(action);
+
+        if (message is null)
+        {
+            _ = document.ToByteArray();
+        }
+        else
+        {
+            Assert.Contains(message, Assert.Throws<InvalidOperationException>(() => document.ToByteArray()).Message, StringComparison.Ordinal);
+        }
+    }
+
+    [Fact]
+    public void PdfAChecksTheActionsOfTheAnnotationsAndThePages()
+    {
+        var document = new PdfDocument { PdfAConformance = PdfAConformance.PdfA2B };
+        var page = document.Pages.Add(PdfSize.A4);
+        var link = page.Annotations.AddLink(new PdfRectangle(10, 10, 100, 20), new Uri("https://www.meziantou.net/"));
+        _ = document.ToByteArray();
+
+        link.Dictionary[PdfNames.A] = new PdfDictionary
+        {
+            [PdfNames.S] = PdfName.Create("URI"),
+            [PdfName.Create("URI")] = PdfString.FromText("https://www.meziantou.net/"),
+            [PdfNames.Next] = new PdfDictionary { [PdfNames.S] = PdfName.Create("Launch") },
+        };
+        page.Dictionary[PdfName.Create("AA")] = new PdfDictionary { [PdfName.Create("O")] = new PdfDictionary { [PdfNames.S] = PdfName.Create("GoTo"), [PdfName.Create("D")] = new PdfArray(page.Reference, PdfName.Create("Fit")) } };
+
+        var message = Assert.Throws<InvalidOperationException>(() => document.ToByteArray()).Message;
+        Assert.Contains("PDF/A-2 does not allow the Launch actions: a Link annotation of page 1 has one", message, StringComparison.Ordinal);
+        Assert.Contains("PDF/A-2 does not allow additional actions: page 1 has some (AA)", message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void PdfAChecksTheAppearancesOfTheAnnotations()
+    {
+        var document = new PdfDocument { PdfAConformance = PdfAConformance.PdfA2B };
+        var page = document.Pages.Add(PdfSize.A4);
+        var text = document.Objects.Add(new PdfDictionary
+        {
+            [PdfNames.Type] = PdfName.Create("Annot"),
+            [PdfNames.Subtype] = PdfName.Create("Text"),
+            [PdfNames.Rect] = new PdfArray(PdfInteger.Get(10), PdfInteger.Get(10), PdfInteger.Get(30), PdfInteger.Get(30)),
+            [PdfNames.Contents] = PdfString.FromText("Note"),
+        });
+        page.Dictionary[PdfNames.Annots] = new PdfArray(text);
+
+        Assert.Contains("PDF/A-2 needs the appearance of the annotations (AP, ISO 19005-2, 6.3.3): the Text annotation of page 1 has none", Assert.Throws<InvalidOperationException>(() => document.ToByteArray()).Message, StringComparison.Ordinal);
+
+        // PDF/A-1 does not need appearances, but allows the normal one only
+        document.PdfAConformance = PdfAConformance.PdfA1B;
+        _ = document.ToByteArray();
+
+        var appearance = document.Objects.Add(new PdfStream(new PdfDictionary { [PdfNames.Subtype] = PdfNames.Form, [PdfName.Create("BBox")] = new PdfArray(PdfInteger.Get(0), PdfInteger.Get(0), PdfInteger.Get(20), PdfInteger.Get(20)) }));
+        ((PdfDictionary)PdfReference.ResolveIfReference(text)!)[PdfName.Create("AP")] = new PdfDictionary { [PdfNames.N] = appearance, [PdfName.Create("R")] = appearance };
+        document.PdfAConformance = PdfAConformance.PdfA2B;
+        Assert.Contains("PDF/A-2 allows only the normal appearance of the annotations", Assert.Throws<InvalidOperationException>(() => document.ToByteArray()).Message, StringComparison.Ordinal);
+
+        ((PdfDictionary)PdfReference.ResolveIfReference(text)!)[PdfName.Create("AP")] = new PdfDictionary { [PdfNames.N] = appearance };
+        _ = document.ToByteArray();
+    }
+
+    [Theory]
+    [InlineData(false, false, true)]
+    [InlineData(true, false, false)]
+    [InlineData(true, true, true)]
+    public void ConformanceChecksTheFontsOfTheInteractiveForm(bool hasAppearance, bool needAppearances, bool fails)
+    {
+        var document = new PdfDocument { PdfUAConformance = PdfUAConformance.PdfUA1, Language = "en" };
+        document.Information.Title = "Form";
+        document.StructureTree.AddElement("Document");
+        var page = document.Pages.Add(PdfSize.A4);
+        var helvetica = document.Objects.Add(new PdfDictionary
+        {
+            [PdfNames.Type] = PdfNames.Font,
+            [PdfNames.Subtype] = PdfName.Create("Type1"),
+            [PdfNames.BaseFont] = PdfName.Create("Helvetica"),
+        });
+        var widget = new PdfDictionary
+        {
+            [PdfNames.Type] = PdfName.Create("Annot"),
+            [PdfNames.Subtype] = PdfName.Create("Widget"),
+            [PdfName.Create("FT")] = PdfName.Create("Tx"),
+            [PdfName.Create("T")] = PdfString.FromText("Name"),
+            [PdfName.Create("DA")] = PdfString.FromText("/Helv 12 Tf 0 g"),
+            [PdfNames.Rect] = new PdfArray(PdfInteger.Get(10), PdfInteger.Get(10), PdfInteger.Get(200), PdfInteger.Get(30)),
+        };
+        if (hasAppearance)
+        {
+            widget[PdfName.Create("AP")] = new PdfDictionary { [PdfNames.N] = document.Objects.Add(new PdfStream(new PdfDictionary { [PdfNames.Subtype] = PdfNames.Form, [PdfName.Create("BBox")] = new PdfArray(PdfInteger.Get(0), PdfInteger.Get(0), PdfInteger.Get(190), PdfInteger.Get(20)) })) };
+        }
+
+        var widgetReference = document.Objects.Add(widget);
+        page.Dictionary[PdfNames.Annots] = new PdfArray(widgetReference);
+        document.Catalog[PdfNames.AcroForm] = new PdfDictionary
+        {
+            [PdfName.Create("Fields")] = new PdfArray(widgetReference),
+            [PdfName.Create("DR")] = new PdfDictionary { [PdfNames.Font] = new PdfDictionary { [PdfName.Create("Helv")] = helvetica } },
+            [PdfName.Create("NeedAppearances")] = needAppearances ? PdfBoolean.True : PdfBoolean.False,
+        };
+
+        if (fails)
+        {
+            Assert.Contains("The font 'Helvetica' is not embedded", Assert.Throws<InvalidOperationException>(() => document.ToByteArray()).Message, StringComparison.Ordinal);
+        }
+        else
+        {
+            _ = document.ToByteArray();
+        }
+    }
+
+    [Fact]
+    public void PdfARefusesTheNeedAppearancesFlag()
+    {
+        var document = new PdfDocument { PdfAConformance = PdfAConformance.PdfA2B };
+        document.Pages.Add(PdfSize.A4);
+        document.Catalog[PdfNames.AcroForm] = new PdfDictionary
+        {
+            [PdfName.Create("Fields")] = new PdfArray(),
+            [PdfName.Create("NeedAppearances")] = PdfBoolean.True,
+        };
+
+        Assert.Contains("PDF/A-2 does not allow the NeedAppearances flag", Assert.Throws<InvalidOperationException>(() => document.ToByteArray()).Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
     public void ImagesFromImaging()
     {
         using var image = Image.ImportPixelData<Rgba32>([new Rgba32(255, 0, 0, 255), new Rgba32(0, 255, 0, 128), new Rgba32(0, 0, 255, 0), new Rgba32(255, 255, 255, 255)], 2, 2);
@@ -1108,6 +1490,92 @@ public sealed class PdfDocumentTests
         Assert.Equal("DCTDecode", stream.Filters.Single().Value);
         Assert.Equal(jpeg.ToArray(), stream.EncodedData.ToArray());
         Assert.HasCount(8 * 8 * 3, stream.GetDecodedData());
+    }
+
+    [Fact]
+    public void ImageSamplesUseThePngPredictorsWhenTheyAreSmaller()
+    {
+        // A gradient: each row differs from the one above by the same bytes, which the Up filter turns into zeros
+        using var gradient = Image.ImportPixelData<Rgb24>([.. Enumerable.Range(0, 64 * 64).Select(i => new Rgb24((byte)(i % 64 * 4), (byte)(i / 64 * 4), 128))], 64, 64);
+        using var flat = Image.ImportPixelData<Gray8>([.. Enumerable.Repeat(new Gray8(200), 64 * 64)], 64, 64);
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A5).CreateContentBuilder()
+            .DrawImage(PdfImage.FromImage(gradient), 0, 0, 64, 64)
+            .DrawImage(PdfImage.FromImage(flat), 100, 0, 64, 64);
+
+        var read = PdfDocument.Open(document.ToByteArray());
+        var images = read.Objects.GetReferences().Select(r => r.Resolve()).OfType<PdfStream>().Where(s => s.Dictionary.ContainsKey(PdfNames.Width)).ToArray();
+        var predicted = images.Single(s => s.Dictionary.Get<PdfName>(PdfNames.ColorSpace)?.Value == "DeviceRGB");
+        var parameters = predicted.Dictionary.Get<PdfDictionary>(PdfNames.DecodeParms);
+
+        Assert.NotNull(parameters);
+        Assert.Equal(15, parameters.GetInteger(PdfNames.Predictor));
+        Assert.Equal(3, parameters.GetInteger(PdfNames.Colors));
+        Assert.Equal(8, parameters.GetInteger(PdfNames.BitsPerComponent));
+        Assert.Equal(64, parameters.GetInteger(PdfNames.Columns));
+        var expected = new byte[64 * 64 * 3];
+        gradient.Frames[0].CopyPixelBytesTo(expected);
+        Assert.Equal(expected, predicted.GetDecodedData());
+
+        var plain = images.Single(s => s.Dictionary.Get<PdfName>(PdfNames.ColorSpace)?.Value == "DeviceGray");
+        Assert.Equal(Enumerable.Repeat((byte)200, 64 * 64), plain.GetDecodedData());
+
+        // Without compression, the samples are stored as they are
+        var uncompressed = PdfDocument.Open(document.ToByteArray(new PdfSaveOptions { CompressStreams = false }));
+        var stored = uncompressed.Objects.GetReferences().Select(r => r.Resolve()).OfType<PdfStream>().First(s => s.Dictionary.Get<PdfName>(PdfNames.ColorSpace)?.Value == "DeviceRGB");
+        Assert.Empty(stored.Filters);
+        Assert.Equal(expected, stored.GetDecodedData());
+    }
+
+    [Fact]
+    public void ImagesCanBeCompressedAsJpeg()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var path = directory / "photo.pdf";
+        using (var photo = Image.ImportPixelData<Rgba32>([.. Enumerable.Range(0, 32 * 32).Select(i => new Rgba32((byte)(i % 32 * 8), 100, 50, (byte)(i < 512 ? 255 : 0)))], 32, 32))
+        {
+            DrawPhotoAsJpeg(photo, path);
+        }
+
+        var read = PdfDocument.Open(path);
+        var stream = read.Objects.GetReferences().Select(r => r.Resolve()).OfType<PdfStream>().Single(s => s.Dictionary.ContainsKey(PdfNames.SMask));
+        var softMask = Assert.IsType<PdfStream>(stream.Dictionary.GetResolved(PdfNames.SMask));
+
+        Assert.Equal("DCTDecode", stream.Filters.Single().Value);
+        Assert.Equal(8, stream.Dictionary.GetInteger(PdfNames.BitsPerComponent));
+        Assert.Equal(ImageFormat.Jpeg, Image.DetectFormat(stream.EncodedData.Span[..Image.FormatDetectionPrefixLength]));
+        var samples = stream.GetDecodedData();
+        Assert.HasCount(32 * 32 * 3, samples);
+        Assert.InRange(samples[(5 * 32 * 3) + (10 * 3)], 80 - 8, 80 + 8);
+        Assert.InRange(samples[(5 * 32 * 3) + (10 * 3) + 1], 100 - 8, 100 + 8);
+        Assert.Equal([.. Enumerable.Repeat((byte)255, 512), .. Enumerable.Repeat((byte)0, 512)], softMask.GetDecodedData());
+    }
+
+    #region Pdf_FromImageAsJpeg
+    private static void DrawPhotoAsJpeg(Image photo, string outputPath)
+    {
+        // A photo is much smaller as JPEG than as samples compressed without loss; its transparency stays a soft mask
+        var image = PdfImage.FromImageAsJpeg(photo, new Imaging.Formats.JpegEncoder { Quality = 85 });
+
+        var document = new PdfDocument();
+        document.Pages.Add(new PdfSize(300, 150)).CreateContentBuilder().DrawImage(image, 10, 10, 128, 128);
+        document.Save(outputPath);
+    }
+    #endregion
+
+    [Fact]
+    public void ImagesOf16BitsAreRoundedTo8BitsForJpeg()
+    {
+        using var gray = Image.ImportPixelData<Gray16>([.. Enumerable.Repeat(new Gray16(0x8080), 64)], 8, 8);
+
+        var image = PdfImage.FromImageAsJpeg(gray);
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A5).CreateContentBuilder().DrawImage(image, 0, 0, 8, 8);
+        var stream = (PdfStream)document.Objects.GetReferences().Select(r => r.Resolve()).Single(o => o is PdfStream s && s.Dictionary.ContainsKey(PdfNames.Width));
+
+        Assert.False(image.HasSoftMask);
+        Assert.Equal("DeviceGray", stream.Dictionary.Get<PdfName>(PdfNames.ColorSpace)?.Value);
+        Assert.All(stream.GetDecodedData(), sample => Assert.InRange(sample, 0x80 - 1, 0x80 + 1));
     }
 
     [Fact]

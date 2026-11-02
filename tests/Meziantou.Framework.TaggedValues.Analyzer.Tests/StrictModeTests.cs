@@ -159,6 +159,35 @@ public sealed class StrictModeTests : TaggedValuesAnalyzerTestBase
     }
 
     [Fact]
+    public async Task OperandsOfUnaryOperatorsAndConversions_AreReportedOnlyForTaggedParameters()
+    {
+        await VerifyStrictAsync("""
+            readonly struct Distance
+            {
+                public static Distance operator -([ValueTag("Meters")] Distance value) => value;
+                public static Distance operator ++([ValueTag("Meters")] Distance value) => value;
+                public static explicit operator int([ValueTag("Meters")] Distance value) => 0;
+                public static Distance operator +(Distance value) => value;
+                public static explicit operator long(Distance value) => 0;
+            }
+
+            class Sample
+            {
+                void M(Distance untagged, [ValueTag("Seconds")] Distance seconds, [ValueTag("Duration")] TimeSpan duration, [ValueTag("Date")] DateTime date)
+                {
+                    _ = -{|MFTV0009:untagged|};
+                    {|MFTV0009:untagged|}++;
+                    _ = (int){|MFTV0009:untagged|};
+                    _ = +seconds;
+                    _ = (long)seconds;
+                    _ = -duration;
+                    _ = (DateTimeOffset)date;
+                }
+            }
+            """);
+    }
+
+    [Fact]
     public async Task TaggedValue_AssignedToAnUntaggedField_IsReported()
     {
         await VerifyStrictAsync("""

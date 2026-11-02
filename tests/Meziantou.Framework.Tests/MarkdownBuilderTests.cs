@@ -1,3 +1,4 @@
+#pragma warning disable CS0618 // MarkdownBuilder is obsolete
 using System.Text.Encodings.Web;
 using Meziantou.Framework.Markdown;
 
@@ -70,20 +71,5 @@ public sealed class MarkdownBuilderTests
     public void CreateInlineCode_Empty()
     {
         Assert.Equal("", MarkdownBuilder.CreateCodeSpan(""));
-    }
-
-    [Fact]
-    public void Documentation_Escape()
-    {
-        #region MarkdownBuilder_Escape
-        // Escape the text so that Markdown renders it as is
-        // Every ASCII punctuation character is escaped
-        Assert.Equal(@"\*Note\* \[docs\]\!", MarkdownBuilder.Escape("*Note* [docs]!"));
-
-        // Create a code span that can contain backticks
-        Assert.Equal("`dotnet build`", MarkdownBuilder.CreateCodeSpan("dotnet build"));
-        Assert.Equal("``a`b``", MarkdownBuilder.CreateCodeSpan("a`b"));
-        Assert.Equal("`` `code` ``", MarkdownBuilder.CreateCodeSpan("`code`"));
-        #endregion
     }
 }

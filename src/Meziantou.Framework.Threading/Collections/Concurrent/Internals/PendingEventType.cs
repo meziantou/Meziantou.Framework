@@ -6,7 +6,6 @@ internal enum PendingEventType
     AddRange,
     Insert,
     InsertRange,
-    Remove,
     RemoveAt,
     Replace,
     Clear,

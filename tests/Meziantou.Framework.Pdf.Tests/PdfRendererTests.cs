@@ -237,12 +237,44 @@ public sealed class PdfRendererTests
     }
 
     [Theory]
+    [InlineData(1, 255, 0, 0)]
+    [InlineData(0, 76, 85, 255)] // The YCbCr samples of red drawn as RGB
+    public void DctColorTransformIsHonored(int colorTransform, int r, int g, int b)
+    {
+        using var red = Image.ImportPixelData<Rgb24>([.. Enumerable.Repeat(new Rgb24(255, 0, 0), 64)], 8, 8);
+        using var jpeg = new MemoryStream();
+        red.Save(jpeg, new Imaging.Formats.JpegEncoder { Quality = 100, ChromaSubsampling = Imaging.Formats.JpegChromaSubsampling.Ratio444 });
+        var document = new PdfDocument();
+        var page = document.Pages.Add(Size);
+        page.CreateContentBuilder().AppendRawContent("q 100 0 0 100 0 0 cm /Im0 Do Q"u8);
+        var image = new PdfStream(new PdfDictionary
+        {
+            [PdfNames.Type] = PdfNames.XObject,
+            [PdfNames.Subtype] = PdfName.Create("Image"),
+            [PdfNames.Width] = PdfInteger.Get(8),
+            [PdfNames.Height] = PdfInteger.Get(8),
+            [PdfNames.BitsPerComponent] = PdfInteger.Get(8),
+            [PdfNames.ColorSpace] = PdfNames.DeviceRGB,
+        });
+        image.SetEncodedData(jpeg.ToArray(), PdfNames.DCTDecode, new PdfDictionary { [PdfName.Create("ColorTransform")] = PdfInteger.Get(colorTransform) });
+        var resources = page.Dictionary.Get<PdfDictionary>(PdfNames.Resources) ?? new PdfDictionary();
+        page.Dictionary[PdfNames.Resources] = resources;
+        resources[PdfNames.XObject] = new PdfDictionary { [PdfName.Create("Im0")] = document.Objects.Add(image) };
+
+        using var rendered = Render(document);
+
+        AssertColor(Pixel(rendered, 50, 50), r, g, b, tolerance: 4);
+    }
+
+    [Theory]
     [InlineData("/W 2 /H 1 /BPC 1 /IM true", "@", 0, 255, 0, 255, 255, 255)]
     [InlineData("/W 2 /H 1 /BPC 1 /IM true /D [1 0]", "@", 255, 255, 255, 0, 255, 0)]
     [InlineData("/W 2 /H 1 /BPC 8 /CS /G", "\u0000\u00FF", 0, 0, 0, 255, 255, 255)]
     [InlineData("/W 2 /H 1 /BPC 8 /CS /G /D [1 0]", "\u0000\u00FF", 255, 255, 255, 0, 0, 0)]
     [InlineData("/W 2 /H 1 /BPC 4 /CS /RGB", "\u00F0\u0000\u000F", 255, 0, 0, 0, 0, 255)]
     [InlineData("/W 2 /H 1 /BPC 8 /CS /G /F /AHx", "00FF>", 0, 0, 0, 255, 255, 255)]
+    [InlineData("/W 2 /H 1 /BPC 8 /CS /RGB /Mask [0 10 0 0 0 0] /F /AHx", "0A0000C80000>", 255, 255, 255, 200, 0, 0)]
+    [InlineData("/W 2 /H 1 /BPC 4 /CS /G /Mask [0 5]", "\u0038", 255, 255, 255, 136, 136, 136)]
     public void InlineImages(string dictionary, string data, int r1, int g1, int b1, int r2, int g2, int b2)
     {
         var document = new PdfDocument();
@@ -253,6 +285,21 @@ public sealed class PdfRendererTests
 
         AssertColor(Pixel(image, 25, 50), r1, g1, b1);
         AssertColor(Pixel(image, 75, 50), r2, g2, b2);
+    }
+
+    [Fact]
+    public void InlineImagesHaveTheDecodeLimitsOfTheDocument()
+    {
+        // An inline image of 200 samples in 4 bytes of RunLengthDecode (two runs of 100 zeros): within the limit of the
+        // content stream, beyond the limit of the decoded data the document is opened with
+        var document = new PdfDocument();
+        var content = Encoding.Latin1.GetBytes("q 100 0 0 100 0 0 cm BI /W 200 /H 1 /BPC 8 /CS /G /F /RL ID \u009D\u0000\u009D\u0000\u0080 EI Q");
+        document.Pages.Add(Size).CreateContentBuilder().AppendRawContent(content);
+        var data = document.ToByteArray(new PdfSaveOptions { CompressStreams = false });
+
+        using var image = PdfRenderer.RenderPage(PdfDocument.Open(data, new PdfReadOptions { MaxDecodedStreamLength = 1000 }).Pages[0], new PdfRenderOptions { UseSystemFonts = false });
+        AssertColor(Pixel(image, 50, 50), 0, 0, 0);
+        Assert.Throws<PdfResourceLimitException>(() => PdfRenderer.RenderPage(PdfDocument.Open(data, new PdfReadOptions { MaxDecodedStreamLength = 150 }).Pages[0], new PdfRenderOptions { UseSystemFonts = false }));
     }
 
     [Fact]
@@ -683,6 +730,280 @@ public sealed class PdfRendererTests
 
         Assert.Throws<PdfResourceLimitException>(() => PdfRenderer.RenderPage(document.Pages[0], new PdfRenderOptions { MaxOperations = 1_000_000 }));
         Assert.Throws<PdfResourceLimitException>(() => PdfRenderer.RenderPage(document.Pages[0], new PdfRenderOptions { Dpi = 100_000 }));
+    }
+
+    [Fact]
+    public void Example_RenderSession()
+    {
+        var document = new PdfDocument();
+        for (var i = 0; i < 3; i++)
+        {
+            document.Pages.Add(new PdfSize(200, 100)).CreateContentBuilder().SetFillRgb(0, 0, 1).Rectangle(0, 0, 100, 100).Fill();
+        }
+
+        #region PdfRendering_RenderSession
+        // The pages share the fonts, images and color spaces the session reads
+        using var session = new PdfRenderSession(document, new PdfRenderOptions { Dpi = 144 });
+        foreach (var page in document.Pages)
+        {
+            using var image = session.RenderPage(page);
+            Assert.Equal(400, image.Width);
+        }
+        #endregion
+    }
+
+    [Fact]
+    public void ASessionRendersThePagesAsRenderPageDoes()
+    {
+        // Two pages paint the same image: the session decodes it for the first one and keeps it for the second one
+        var document = new PdfDocument();
+        using var source = Image.ImportPixelData<Rgba32>([new Rgba32(255, 0, 0, 255), new Rgba32(0, 0, 255, 255)], 2, 1);
+        var image = PdfImage.FromImage(source);
+        document.Pages.Add(Size).CreateContentBuilder().DrawImage(image, 0, 0, 100, 100);
+        document.Pages.Add(Size).CreateContentBuilder().DrawImage(image, 0, 0, 50, 50);
+        var reopened = PdfDocument.Open(document.ToByteArray());
+        var options = new PdfRenderOptions { UseSystemFonts = false };
+        var session = new PdfRenderSession(reopened, options);
+        foreach (var page in reopened.Pages)
+        {
+            using var expected = PdfRenderer.RenderPage(page, options);
+            using var actual = session.RenderPage(page);
+            AssertSamePixels(expected, actual);
+        }
+
+        Assert.Throws<ArgumentException>(() => session.RenderPage(new PdfDocument().Pages.Add(Size)));
+        session.Dispose();
+        Assert.Throws<ObjectDisposedException>(() => session.RenderPage(reopened.Pages[0]));
+    }
+
+    [Fact]
+    public void ASessionCountsTheWorkOfEachPage()
+    {
+        var document = new PdfDocument();
+        for (var page = 0; page < 3; page++)
+        {
+            var builder = document.Pages.Add(Size).CreateContentBuilder();
+            for (var i = 0; i < 400; i++)
+            {
+                builder.Rectangle(0, 0, 1, 1).Fill();
+            }
+        }
+
+        // The smallest power of 2 that is enough for one page is less than the work of two pages
+        var limit = 256L;
+        while (!CanRender(document.Pages[0], limit))
+        {
+            limit *= 2;
+        }
+
+        using var session = new PdfRenderSession(document, new PdfRenderOptions { MaxOperations = limit });
+        foreach (var page in document.Pages)
+        {
+            using var image = session.RenderPage(page);
+        }
+
+        static bool CanRender(PdfPage page, long limit)
+        {
+            try
+            {
+                using var image = PdfRenderer.RenderPage(page, new PdfRenderOptions { MaxOperations = limit });
+                return true;
+            }
+            catch (PdfResourceLimitException)
+            {
+                return false;
+            }
+        }
+    }
+
+    [Fact]
+    public void TheDefaultColorSpacesOfTheResourcesOfAFormApplyToTheObjectsItShares()
+    {
+        // Two forms paint the same gray image and fill with the same indexed color space; the resources of the second
+        // one replace DeviceGray with a separation that is red at 0, and DeviceRGB with a DeviceN that swaps red and blue
+        var document = new PdfDocument();
+        var imageStream = new PdfStream(new PdfDictionary
+        {
+            [PdfNames.Type] = PdfNames.XObject,
+            [PdfNames.Subtype] = PdfName.Create("Image"),
+            [PdfNames.Width] = PdfInteger.Get(1),
+            [PdfNames.Height] = PdfInteger.Get(1),
+            [PdfNames.ColorSpace] = PdfName.Create("DeviceGray"),
+            [PdfNames.BitsPerComponent] = PdfInteger.Get(8),
+        });
+        imageStream.SetData([0]);
+        var image = document.Objects.Add(imageStream);
+        var indexed = document.Objects.Add(new PdfArray(PdfName.Create("Indexed"), PdfName.Create("DeviceRGB"), PdfInteger.Get(0), PdfString.FromBytes([255, 0, 0])));
+        var red = new PdfArray(PdfName.Create("Separation"), PdfName.Create("Red"), PdfName.Create("DeviceRGB"), new PdfDictionary
+        {
+            [PdfName.Create("FunctionType")] = PdfInteger.Get(2),
+            [PdfName.Create("Domain")] = PdfArray.FromNumbers(0, 1),
+            [PdfName.Create("C0")] = PdfArray.FromNumbers(1, 0, 0),
+            [PdfName.Create("C1")] = PdfArray.FromNumbers(1, 1, 1),
+            [PdfNames.N] = PdfInteger.Get(1),
+        });
+        var swap = new PdfStream(new PdfDictionary
+        {
+            [PdfName.Create("FunctionType")] = PdfInteger.Get(4),
+            [PdfName.Create("Domain")] = PdfArray.FromNumbers(0, 1, 0, 1, 0, 1),
+            [PdfName.Create("Range")] = PdfArray.FromNumbers(0, 1, 0, 1, 0, 1),
+        });
+        swap.SetData("{ 3 1 roll exch }"u8);
+        var bgr = new PdfArray(PdfName.Create("DeviceN"), new PdfArray(PdfName.Create("B"), PdfName.Create("G"), PdfName.Create("R")), PdfName.Create("DeviceRGB"), document.Objects.Add(swap));
+        PdfReference CreateForm(bool hasDefaults)
+        {
+            var colorSpaces = new PdfDictionary { [PdfName.Create("CS0")] = indexed };
+            if (hasDefaults)
+            {
+                colorSpaces[PdfName.Create("DefaultGray")] = red;
+                colorSpaces[PdfName.Create("DefaultRGB")] = bgr;
+            }
+
+            var form = new PdfStream(new PdfDictionary
+            {
+                [PdfNames.Type] = PdfNames.XObject,
+                [PdfNames.Subtype] = PdfNames.Form,
+                [PdfNames.BBox] = PdfArray.FromNumbers(0, 0, 50, 100),
+                [PdfNames.Resources] = new PdfDictionary
+                {
+                    [PdfNames.XObject] = new PdfDictionary { [PdfName.Create("Im0")] = image },
+                    [PdfNames.ColorSpace] = colorSpaces,
+                },
+            });
+            form.SetData("q 50 0 0 50 0 0 cm /Im0 Do Q /CS0 cs 0 sc 0 50 50 50 re f"u8);
+            return document.Objects.Add(form);
+        }
+
+        var page = document.Pages.Add(Size);
+        page.CreateContentBuilder().AppendRawContent("/Fm0 Do q 1 0 0 1 50 0 cm /Fm1 Do Q"u8);
+        page.Dictionary[PdfNames.Resources] = new PdfDictionary
+        {
+            [PdfNames.XObject] = new PdfDictionary { [PdfName.Create("Fm0")] = CreateForm(hasDefaults: false), [PdfName.Create("Fm1")] = CreateForm(hasDefaults: true) },
+        };
+
+        using var rendered = Render(document);
+
+        AssertColor(Pixel(rendered, 25, 25), 0, 0, 0);
+        AssertColor(Pixel(rendered, 75, 25), 255, 0, 0);
+        AssertColor(Pixel(rendered, 25, 75), 255, 0, 0);
+        AssertColor(Pixel(rendered, 75, 75), 0, 0, 255);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void ASoftMaskMasksEachDrawingAsItMasksTheFirstOne(bool alpha)
+    {
+        // The first drawing renders the mask, the next ones the image of the mask the page keeps: the pixels are the
+        // same as those of one drawing
+        PdfDocument Create(params (double X, double Width)[] rectangles)
+        {
+            var document = new PdfDocument();
+            var group = document.CreateForm(new PdfRectangle(0, 0, 100, 100), group: new PdfTransparencyGroup { ColorSpace = PdfDeviceColorSpace.Rgb });
+            var content = group.CreateContentBuilder();
+            if (alpha)
+            {
+                content.SetGraphicsState(new PdfExtGState { FillAlpha = 0.37 }).SetFillRgb(0.2, 0.5, 0.9).Rectangle(10, 10, 60, 60).Fill()
+                    .SetGraphicsState(new PdfExtGState { FillAlpha = 0.8 }).Rectangle(40, 40, 50, 50).Fill();
+            }
+            else
+            {
+                content.PaintShading(PdfShading.Axial(PdfDeviceColorSpace.Rgb, 0, 0, 100, 100, PdfFunction.Exponential([1, 1, 1], [0, 0, 0]), extendStart: true, extendEnd: true));
+            }
+
+            var mask = alpha ? PdfSoftMask.FromAlpha(group) : PdfSoftMask.FromLuminosity(group);
+            var builder = document.Pages.Add(Size).CreateContentBuilder().SetGraphicsState(new PdfExtGState { SoftMask = mask }).SetFillRgb(1, 0, 0);
+            foreach (var (x, width) in rectangles)
+            {
+                builder.Rectangle(x, 0, width, 100).Fill();
+            }
+
+            return document;
+        }
+
+        using var whole = Render(Create((0, 100)));
+        using var parts = Render(Create((0, 25), (25, 25), (50, 50)));
+
+        AssertSamePixels(whole, parts);
+        Assert.NotEqual(Pixel(whole, 5, 5), Pixel(whole, 50, 50));
+    }
+
+    [Fact]
+    public void TheGlyphProceduresOfAType3FontAreChargedEachTimeTheyRun()
+    {
+        var document = new PdfDocument();
+        var procedure = new PdfStream();
+        procedure.SetData(Encoding.ASCII.GetBytes("1000 0 0 0 1000 1000 d1 " + string.Concat(Enumerable.Repeat("0 0 1000 1000 re f ", 25))));
+        var font = new PdfDictionary
+        {
+            [PdfNames.Type] = PdfNames.Font,
+            [PdfNames.Subtype] = PdfNames.Type3,
+            [PdfNames.FontBBox] = PdfArray.FromNumbers(0, 0, 1000, 1000),
+            [PdfNames.FontMatrix] = PdfArray.FromNumbers(0.001, 0, 0, 0.001, 0, 0),
+            [PdfNames.CharProcs] = new PdfDictionary { [PdfName.Create("square")] = document.Objects.Add(procedure) },
+            [PdfNames.Encoding] = new PdfDictionary { [PdfNames.Differences] = new PdfArray(PdfInteger.Get(65), PdfName.Create("square")) },
+            [PdfNames.FirstChar] = PdfInteger.Get(65),
+            [PdfNames.LastChar] = PdfInteger.Get(65),
+            [PdfNames.Widths] = PdfArray.FromNumbers(0),
+        };
+        var page = document.Pages.Add(Size);
+        page.CreateContentBuilder().AppendRawContent(Encoding.ASCII.GetBytes("BT /T3 10 Tf 10 10 Td (" + new string('A', 400) + ") Tj ET"));
+        page.Dictionary[PdfNames.Resources] = new PdfDictionary { [PdfNames.Font] = new PdfDictionary { [PdfName.Create("T3")] = document.Objects.Add(font) } };
+        var reopened = PdfDocument.Open(document.ToByteArray());
+
+        using var image = PdfRenderer.RenderPage(reopened.Pages[0], new PdfRenderOptions { MaxOperations = 100_000 });
+        AssertColor(Pixel(image, 15, 15), 0, 0, 0);
+        Assert.Throws<PdfResourceLimitException>(() => PdfRenderer.RenderPage(reopened.Pages[0], new PdfRenderOptions { MaxOperations = 10_000 }));
+    }
+
+    [Fact]
+    public void AMeshPatternPaintsEachDrawingWithTheMesh()
+    {
+        // The mesh is read once for the rectangles it paints: its left triangle is red, its right one blue
+        var red = PdfColor.FromRgb(1, 0, 0);
+        var blue = PdfColor.FromRgb(0, 0, 1);
+        var document = new PdfDocument();
+        var mesh = PdfShading.TriangleMesh(PdfDeviceColorSpace.Rgb,
+        [
+            (new PdfMeshVertex(0, 0, red), new PdfMeshVertex(0, 100, red), new PdfMeshVertex(100, 100, red)),
+            (new PdfMeshVertex(0, 0, blue), new PdfMeshVertex(100, 0, blue), new PdfMeshVertex(100, 100, blue)),
+        ]);
+        document.Pages.Add(Size).CreateContentBuilder().SetFillPattern(new PdfShadingPattern(mesh))
+            .Rectangle(0, 50, 30, 50).Fill()
+            .Rectangle(70, 0, 30, 50).Fill();
+
+        using var image = Render(document);
+
+        AssertColor(Pixel(image, 10, 90), 255, 0, 0);
+        AssertColor(Pixel(image, 90, 10), 0, 0, 255);
+        AssertColor(Pixel(image, 50, 50), 255, 255, 255);
+    }
+
+    [Fact]
+    public void TheRowsOfALargeCmykImageAreConvertedAsOneColor()
+    {
+        // A row of 300 CMYK pixels is converted with a buffer of the pool, one pixel with a buffer of the stack
+        static Rgba32 RenderCmyk(int width)
+        {
+            var document = new PdfDocument();
+            var pixels = string.Concat(Enumerable.Repeat("33669900", width));
+            document.Pages.Add(Size).CreateContentBuilder().AppendRawContent(Encoding.ASCII.GetBytes($"q 100 0 0 100 0 0 cm BI /W {width} /H 1 /CS /DeviceCMYK /BPC 8 /F /AHx ID {pixels}> EI Q"));
+            using var image = Render(document);
+            return Pixel(image, 50, 50);
+        }
+
+        Assert.Equal(RenderCmyk(1), RenderCmyk(300));
+    }
+
+    private static void AssertSamePixels(Image<Rgba32> expected, Image<Rgba32> actual)
+    {
+        Assert.Equal(expected.Width, actual.Width);
+        Assert.Equal(expected.Height, actual.Height);
+        var expectedPixels = new Rgba32[expected.Width * expected.Height];
+        var actualPixels = new Rgba32[actual.Width * actual.Height];
+        expected.Frames[0].CopyPixelDataTo(expectedPixels);
+        actual.Frames[0].CopyPixelDataTo(actualPixels);
+        Assert.True(expectedPixels.AsSpan().SequenceEqual(actualPixels), "The images are different");
     }
 
     private static Image<Rgba32> Render(PdfDocument document) => PdfRenderer.RenderPage(PdfDocument.Open(document.ToByteArray()).Pages[0], new PdfRenderOptions { UseSystemFonts = false });

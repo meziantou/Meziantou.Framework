@@ -1,6 +1,7 @@
 using Meziantou.Framework.Markdown.Extensions.AutoIdentifiers;
 using Meziantou.Framework.Markdown.Extensions.GenericAttributes;
 using Meziantou.Framework.Markdown.Extensions.JiraLinks;
+using Meziantou.Framework.Markdown.Extensions.Tables;
 using Meziantou.Framework.Markdown.Helpers;
 using Meziantou.Framework.Markdown.Renderers;
 using Meziantou.Framework.Markdown.Renderers.Html;
@@ -1003,5 +1004,249 @@ public class TestCoreApi
         Assert.StartsWith("  -> EmphasisInline", lines[2]);
         Assert.Equal("    -> LiteralInline = text", lines[3]);
         #endregion
+    }
+
+    [Fact]
+    public void DocumentationExample_MarkdownEscaper()
+    {
+        #region MarkdownEscaper_Usage
+        // Escape the text so that Markdown displays it as is: every ASCII punctuation character is escaped
+        Assert.Equal(@"\*Note\* \[docs\]\!", MarkdownEscaper.Escape("*Note* [docs]!"));
+
+        // The delimiters of code are longer than the runs of backticks of the content
+        Assert.Equal("``a`b``", MarkdownEscaper.CreateCodeSpan("a`b"));
+        Assert.Equal("`` `code` ``", MarkdownEscaper.CreateCodeSpan("`code`"));
+        Assert.Equal("```csharp\nvar a = 1;\n```\n", MarkdownEscaper.CreateFencedCodeBlock("var a = 1;", "csharp"));
+
+        // Build a link from untrusted parts
+        var text = MarkdownEscaper.Escape("Docs [v2]");
+        var destination = MarkdownEscaper.EscapeLinkDestination("https://example.com/a b");
+        var title = MarkdownEscaper.EscapeLinkTitle("Say \"hi\"");
+        Assert.Equal("<https://example.com/a b>", destination);
+        Assert.Equal("\"Say \\\"hi\\\"\"", title);
+
+        var html = MarkdownConverter.ToHtml($"[{text}]({destination} {title})");
+        Assert.Equal("<p><a href=\"https://example.com/a%20b\" title=\"Say &quot;hi&quot;\">Docs [v2]</a></p>\n", html);
+
+        // The label of a reference link
+        Assert.Equal(@"see \[1\]", MarkdownEscaper.EscapeLinkLabel("see [1]"));
+
+        // A cell of a pipe table cannot contain a pipe or a line ending
+        Assert.Equal(@"a \| b c", MarkdownEscaper.EscapeTableCell("a | b\nc"));
+        #endregion
+    }
+
+    [Theory]
+    [InlineData("plain text")]
+    [InlineData("*test* **test** ***test*** _test_ ~test~")]
+    [InlineData("1. test")]
+    [InlineData("- test")]
+    [InlineData("> test")]
+    [InlineData("# header")]
+    [InlineData("---")]
+    [InlineData("===")]
+    [InlineData("[test](url) ![test](url)")]
+    [InlineData("&quot; &#35; &amp")]
+    [InlineData("<div> <https://example.com> <a@b.c>")]
+    [InlineData("`code` ``code``")]
+    [InlineData(@"C:\path\file.txt \\ \")]
+    [InlineData("a | b")]
+    [InlineData("https://example.com www.example.com")]
+    [InlineData("a\n# b\n- c\n> d")]
+    [InlineData("é ✓ 😀")]
+    public void MarkdownEscaper_Escape_RoundTrips(string text)
+    {
+        var escaped = MarkdownEscaper.Escape(text);
+
+        Assert.Equal(text + "\n", MarkdownConverter.ToPlainText(escaped).ReplaceLineEndings("\n"));
+        Assert.Equal(text + "\n", MarkdownConverter.ToPlainText(escaped, new MarkdownPipelineBuilder().UseAdvancedExtensions().Build()).ReplaceLineEndings("\n"));
+    }
+
+    [Fact]
+    public void MarkdownEscaper_Escape_ReturnsSameInstanceWhenNothingToEscape()
+    {
+        var text = "plain text";
+        Assert.Same(text, MarkdownEscaper.Escape(text));
+    }
+
+    [Theory]
+    [InlineData("test")]
+    [InlineData("te`st")]
+    [InlineData("`test")]
+    [InlineData("test`")]
+    [InlineData("`")]
+    [InlineData("```")]
+    [InlineData("` ` `")]
+    [InlineData("`teste```testr`")]
+    [InlineData("`tes````te```testr`")]
+    [InlineData(" a ")]
+    [InlineData(" a")]
+    [InlineData("a ")]
+    [InlineData(" ")]
+    [InlineData("  ")]
+    [InlineData("a | b")]
+    [InlineData(@"a\b\`")]
+    [InlineData("*a* <b> &amp;")]
+    public void MarkdownEscaper_CreateCodeSpan_RoundTrips(string content)
+    {
+        var document = MarkdownConverter.Parse(MarkdownEscaper.CreateCodeSpan(content));
+
+        var code = Assert.Single(document.Descendants<CodeInline>());
+        Assert.Equal(content, code.Content);
+        Assert.Single(document.Descendants<Inline>());
+    }
+
+    [Fact]
+    public void MarkdownEscaper_CreateCodeSpan_ConvertsLineEndingsToSpaces()
+    {
+        var document = MarkdownConverter.Parse(MarkdownEscaper.CreateCodeSpan("a\nb\r\nc"));
+
+        var code = Assert.Single(document.Descendants<CodeInline>());
+        Assert.Equal("a b c", code.Content);
+    }
+
+    [Fact]
+    public void MarkdownEscaper_CreateCodeSpan_EmptyThrows()
+    {
+        Assert.Throws<ArgumentException>("content", () => MarkdownEscaper.CreateCodeSpan(""));
+    }
+
+    [Theory]
+    [InlineData("", null)]
+    [InlineData("var a = 1;", null)]
+    [InlineData("var a = 1;", "csharp")]
+    [InlineData("var a = 1;\n", "csharp")]
+    [InlineData("a\n\nb", "csharp")]
+    [InlineData("```\ncode\n```", "md")]
+    [InlineData("````\n  ```  \n```````", "md")]
+    [InlineData("~~~\n    ```", null)]
+    [InlineData("a\r\nb", null)]
+    [InlineData("  indented\n\ttab", null)]
+    [InlineData("x", "c`s")]
+    [InlineData("x", "a&amp;b")]
+    [InlineData("x", @"a\*b\")]
+    [InlineData("x", "js title=\"a b\"")]
+    [InlineData("x", "`js")]
+    public void MarkdownEscaper_CreateFencedCodeBlock_RoundTrips(string code, string? infoString)
+    {
+        var markdown = MarkdownEscaper.CreateFencedCodeBlock(code, infoString);
+        var document = MarkdownConverter.Parse(markdown + "after");
+
+        var block = Assert.IsType<FencedCodeBlock>(document[0]);
+        var expectedCode = code.ReplaceLineEndings("\n");
+        if (expectedCode.Length > 0 && expectedCode[^1] == '\n')
+        {
+            expectedCode = expectedCode[..^1];
+        }
+
+        Assert.Equal(expectedCode, block.Lines.ToString().ReplaceLineEndings("\n"));
+
+        var info = infoString?.Trim() ?? "";
+        var separator = info.IndexOf(' ', StringComparison.Ordinal);
+        Assert.Equal(separator < 0 ? info : info[..separator], block.Info ?? "");
+        Assert.Equal(separator < 0 ? "" : info[(separator + 1)..], block.Arguments ?? "");
+
+        var paragraph = Assert.IsType<ParagraphBlock>(document[1]);
+        Assert.Equal("after", paragraph.Inline!.FirstChild!.ToString());
+    }
+
+    [Fact]
+    public void MarkdownEscaper_CreateFencedCodeBlock_InfoStringWithLineEndingThrows()
+    {
+        Assert.Throws<ArgumentException>("infoString", () => MarkdownEscaper.CreateFencedCodeBlock("x", "a\nb"));
+    }
+
+    [Theory]
+    [InlineData("https://example.com")]
+    [InlineData("https://example.com/a b")]
+    [InlineData("")]
+    [InlineData("test)test")]
+    [InlineData("a(b)c")]
+    [InlineData("a(b")]
+    [InlineData("<a>")]
+    [InlineData("a<b>c")]
+    [InlineData(@"a\b\)")]
+    [InlineData("a&amp;b")]
+    [InlineData("a\"b'c")]
+    [InlineData("a\nb")]
+    [InlineData("é ✓")]
+    public void MarkdownEscaper_EscapeLinkDestination_RoundTrips(string url)
+    {
+        var document = MarkdownConverter.Parse($"[x]({MarkdownEscaper.EscapeLinkDestination(url)})");
+
+        var link = Assert.Single(document.Descendants<LinkInline>());
+        Assert.Equal(url, link.Url);
+    }
+
+    [Theory]
+    [InlineData("title")]
+    [InlineData("")]
+    [InlineData("Say \"hi\"")]
+    [InlineData("it's (here)")]
+    [InlineData("a&amp;b")]
+    [InlineData(@"a\b\")]
+    [InlineData("a\nb")]
+    [InlineData("a\n\nb")]
+    [InlineData("a\n \nb")]
+    public void MarkdownEscaper_EscapeLinkTitle_RoundTrips(string title)
+    {
+        var document = MarkdownConverter.Parse($"[x](/url {MarkdownEscaper.EscapeLinkTitle(title)})");
+
+        var link = Assert.Single(document.Descendants<LinkInline>());
+        Assert.Equal(title, link.Title);
+    }
+
+    [Theory]
+    [InlineData("label")]
+    [InlineData("see [1]")]
+    [InlineData(@"a\b")]
+    [InlineData(@"a\")]
+    [InlineData("]")]
+    [InlineData("*a* `b`")]
+    [InlineData("a&amp;b")]
+    public void MarkdownEscaper_EscapeLinkLabel_RoundTrips(string label)
+    {
+        var escaped = MarkdownEscaper.EscapeLinkLabel(label);
+        var document = MarkdownConverter.Parse($"[x][{escaped}]\n\n[{escaped}]: /url");
+
+        var link = Assert.Single(document.Descendants<LinkInline>());
+        Assert.Equal("/url", link.Url);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("  \n")]
+    public void MarkdownEscaper_EscapeLinkLabel_BlankThrows(string label)
+    {
+        Assert.Throws<ArgumentException>(nameof(label), () => MarkdownEscaper.EscapeLinkLabel(label));
+    }
+
+    [Fact]
+    public void MarkdownEscaper_EscapeLinkLabel_TooLongThrows()
+    {
+        Assert.HasCount(999, MarkdownEscaper.EscapeLinkLabel(new string('a', 999)));
+        Assert.Throws<ArgumentException>("label", () => MarkdownEscaper.EscapeLinkLabel(new string('a', 1000)));
+        Assert.Throws<ArgumentException>("label", () => MarkdownEscaper.EscapeLinkLabel(new string('[', 500)));
+    }
+
+    [Theory]
+    [InlineData("text", "text")]
+    [InlineData("a | b", "a | b")]
+    [InlineData("a\nb", "a b")]
+    [InlineData("a\r\nb\rc", "a b c")]
+    [InlineData(@"a\|b", @"a\|b")]
+    [InlineData("*a* `b` [c](d)", "*a* `b` [c](d)")]
+    [InlineData("---", "---")]
+    public void MarkdownEscaper_EscapeTableCell_RoundTrips(string text, string expected)
+    {
+        var pipeline = new MarkdownPipelineBuilder().UsePipeTables().Build();
+        var document = MarkdownConverter.Parse($"| a | b |\n|---|---|\n| {MarkdownEscaper.EscapeTableCell(text)} | z |", pipeline);
+
+        var table = Assert.IsType<Table>(document[0]);
+        Assert.HasCount(2, table);
+        var row = (TableRow)table[1];
+        Assert.HasCount(2, row);
+        var cell = (TableCell)row[0];
+        Assert.Equal(expected, string.Concat(cell.Descendants<LiteralInline>().Select(literal => literal.Content.ToString())));
     }
 }

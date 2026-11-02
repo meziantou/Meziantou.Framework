@@ -46,6 +46,10 @@ jobs:
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
+          # Third-party code copied unchanged from upstream packages (not edited in this repository)
+          config: |
+            paths-ignore:
+              - src/Meziantou.Framework.WebPlatform.Playwright/Scripts
 
       - name: Build
         if: matrix.build-mode == 'manual'

@@ -17,6 +17,7 @@ namespace Meziantou.Framework.Threading;
 public sealed class MonoThreadedTaskScheduler : TaskScheduler, IDisposable
 {
     private const int DefaultDisposeThreadJoinTimeoutInMilliseconds = 1000;
+    private static readonly TimeSpan MaxTimeout = TimeSpan.FromMilliseconds(int.MaxValue);
 
     private readonly ConcurrentQueue<Task> _tasks = new();
     private readonly AutoResetEvent _stop = new(initialState: false);
@@ -151,10 +152,11 @@ public sealed class MonoThreadedTaskScheduler : TaskScheduler, IDisposable
         if (value == Timeout.InfiniteTimeSpan)
             return Timeout.Infinite;
 
-        var milliseconds = (long)value.TotalMilliseconds;
-        ArgumentOutOfRangeException.ThrowIfLessThan(milliseconds, 0, paramName);
-        ArgumentOutOfRangeException.ThrowIfGreaterThan(milliseconds, int.MaxValue, paramName);
-        return (int)milliseconds;
+        // Validate the TimeSpan itself: converting first truncates toward zero, which would accept values between
+        // -1 ms and zero, and values just above int.MaxValue milliseconds.
+        ArgumentOutOfRangeException.ThrowIfLessThan(value, TimeSpan.Zero, paramName);
+        ArgumentOutOfRangeException.ThrowIfGreaterThan(value, MaxTimeout, paramName);
+        return (int)value.TotalMilliseconds;
     }
 
     private static TimeSpan ToTimeSpan(int milliseconds)

@@ -1,3 +1,5 @@
+using Meziantou.Framework.TaggedValues.Analyzer;
+
 namespace Meziantou.Framework.Tests;
 
 public sealed class LocalTagTests : TaggedValuesAnalyzerTestBase
@@ -658,6 +660,41 @@ public sealed class LocalTagTests : TaggedValuesAnalyzerTestBase
     }
 
     [Fact]
+    public async Task VariablesDeconstructedFromTupleLocals_TakeTheTagsOfTheElements()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                static void LoadOrder([ValueTag("OrderId")] Guid orderId) { }
+
+                void M([ValueTag("OrderId")] Guid orderId, [ValueTag("ProjectId")] Guid projectId, int a)
+                {
+                    var projects = (projectId, projectId);
+                    var (first, second) = projects;
+                    LoadOrder({|MFTV0002:first|});
+                    LoadOrder({|MFTV0002:second|});
+                    LoadOrder({|MFTV0002:projects.Item1|});
+
+                    var copy = (orderId, projectId);
+                    var copy2 = copy;
+                    var (c, d) = copy2;
+                    LoadOrder(c);
+                    LoadOrder({|MFTV0002:d|});
+
+                    var nested = ((projectId, orderId), a);
+                    var ((e, f), g) = nested;
+                    LoadOrder({|MFTV0002:e|});
+                    LoadOrder(f);
+                    LoadOrder({|MFTV0002:nested.Item1.Item1|});
+                    LoadOrder(nested.Item1.Item2);
+
+                    var ({|MFTV0002:h|} /* ValueTag=OrderId */, i) = projects;
+                }
+            }
+            """);
+    }
+
+    [Fact]
     public async Task CommentAfterTheCommaTagsTheNextVariable()
     {
         await VerifyAsync("""
@@ -695,6 +732,43 @@ public sealed class LocalTagTests : TaggedValuesAnalyzerTestBase
     }
 
     [Fact]
+    public async Task ReportDiagnostic_WhenTheCommentOfAPositionalPatternVariableDisagreesWithTheDeconstructedValue()
+    {
+        await VerifyAsync("""
+            record Order([ValueTag("OrderId")] Guid Id, [ValueTag("ProjectId")] Guid ProjectId);
+
+            record Line(Order Order, int Quantity);
+
+            class Pair
+            {
+                public void Deconstruct([ValueTag("OrderId")] out Guid orderId, [ValueTag("ProjectId")] out Guid projectId)
+                {
+                    orderId = Guid.Empty;
+                    projectId = Guid.Empty;
+                }
+            }
+
+            class Sample
+            {
+                void M([ValueTag(Key = "OrderId", Value = "ProjectId")] KeyValuePair<Guid, Guid> pair, Order order, Pair custom, Line line, [ValueTag("ProjectId")] Guid[] ids)
+                {
+                    if (pair is (var {|MFTV0002:a|} /* ValueTag=ProjectId */, var {|MFTV0002:b|} /* ValueTag=OrderId */)) { }
+                    if (pair is (var c /* ValueTag=OrderId */, var d /* ValueTag=ProjectId */)) { }
+                    if (pair is (Guid {|MFTV0002:e|} /* ValueTag=ProjectId */, _)) { }
+                    if (order is (var {|MFTV0002:f|} /* ValueTag=ProjectId */, var g /* ValueTag=ProjectId */)) { }
+                    if (custom is (var h /* ValueTag=OrderId */, var {|MFTV0002:i|} /* ValueTag=OrderId */)) { }
+                    if (line is ((var {|MFTV0002:j|} /* ValueTag=ProjectId */, _), _)) { }
+                    if (line is ({ {|MFTV0002:Id|}: var k /* ValueTag=ProjectId */ }, _)) { }
+                    if (pair is (var {|MFTV0002:l|} /* ValueTag=ProjectId */, _) and (_, _)) { }
+                    _ = pair switch { (var {|MFTV0002:m|} /* ValueTag=ProjectId */, _) => 0 };
+                    if ({|MFTV0002:ids|} is [var n /* ValueTag=OrderId */]) { }
+                    if (ids is [var o /* ValueTag=ProjectId */]) { }
+                }
+            }
+            """);
+    }
+
+    [Fact]
     public async Task LongChainsOfCopiesKeepTheTags()
     {
         var statements = new System.Text.StringBuilder();
@@ -716,5 +790,102 @@ public sealed class LocalTagTests : TaggedValuesAnalyzerTestBase
                 }
             }
             """);
+    }
+
+    [Fact]
+    public async Task OrdinaryCommentsAmongAnnotationsAreIgnored()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                static void LoadOrder([ValueTag("OrderId")] Guid orderId) { }
+
+                void M()
+                {
+                    // Loads the order
+                    /* ValueTagged ids come from another system */
+                    // ValueTag_Id is a constant name, not an annotation
+                    //ValueTag=OrderId
+                    Guid a = Guid.Empty;
+                    /**/ Guid /*   ValueTag = ProjectId   */ b = Guid.Empty;
+                    // ValueTag is not used here because the id comes from another system
+                    Guid c = Guid.Empty;
+                    LoadOrder(a);
+                    LoadOrder({|MFTV0002:b|});
+                    LoadOrder(c);
+                }
+            }
+            """);
+    }
+
+    [Theory]
+    [InlineData("// This is an ordinary comment", "NotValueTag", "")]
+    [InlineData("/**/", "NotValueTag", "")]
+    [InlineData("/*/", "NotValueTag", "")]
+    [InlineData("//", "NotValueTag", "")]
+    [InlineData("// Value", "NotValueTag", "")]
+    [InlineData("/// ValueTag=OrderId", "NotValueTag", "")]
+    [InlineData("// ValueTagged=OrderId", "NotValueTag", "")]
+    [InlineData("// ValueTag1=OrderId", "NotValueTag", "")]
+    [InlineData("// ValueTag_=OrderId", "NotValueTag", "")]
+    [InlineData("// valuetag=OrderId", "NotValueTag", "")]
+    [InlineData("// ValueTag is not used here", "NotValueTag", "")]
+    [InlineData("/* ValueTag attributes cannot be applied to locals */", "NotValueTag", "")]
+    [InlineData("// ValueTag=OrderId", "Valid", "OrderId")]
+    [InlineData("//ValueTag=OrderId", "Valid", "OrderId")]
+    [InlineData("// \t ValueTag = OrderId \t", "Valid", "OrderId")]
+    [InlineData("/*ValueTag=OrderId*/", "Valid", "OrderId")]
+    [InlineData("/*  ValueTag=OrderId, ProjectId  */", "Valid", "OrderId|ProjectId")]
+    [InlineData("/* ValueTag Key=OrderId Value=ProjectId */", "Valid", "Key=OrderId;Value=ProjectId")]
+    [InlineData("// ValueTag Value=ProjectId", "Valid", "Key=;Value=ProjectId")]
+    [InlineData("/* ValueTag */", "Invalid", "")]
+    [InlineData("// ValueTag", "Invalid", "")]
+    [InlineData("/* ValueTag OrderId */", "Invalid", "")]
+    [InlineData("/* ValueTag=OrderId, */", "Invalid", "")]
+    [InlineData("/* ValueTag Key=OrderId Key=ProjectId */", "Invalid", "")]
+    public void ParseComment(string comment, string expectedKind, string expectedTags)
+    {
+        var kind = ValueTagComment.Parse(comment, out var tags);
+
+        Assert.Equal(expectedKind, kind.ToString());
+        var actualTags = tags.HasKeyOrValue ? "Key=" + string.Join("|", tags.Key) + ";Value=" + string.Join("|", tags.Value) : string.Join("|", tags.Tags);
+        Assert.Equal(expectedTags, actualTags);
+    }
+
+    [Fact]
+    public void ParseOrdinaryCommentsDoesNotAllocate()
+    {
+        string[] comments =
+        [
+            "// This is an ordinary explanatory comment which does not declare a value tag.",
+            "/* An ordinary block comment */",
+            "//   ",
+            "/**/",
+            "// ValueTagged ids come from another system",
+            "// TODO: ValueTag=OrderId once the id is typed",
+        ];
+
+        foreach (var comment in comments)
+        {
+            Assert.Equal(ValueTagCommentKind.NotValueTag, ValueTagComment.Parse(comment, out _));
+        }
+
+        // The smallest of a few rounds ignores allocations unrelated to the parser, such as a JIT or GC on this thread
+        var minimum = long.MaxValue;
+        for (var round = 0; round < 5; round++)
+        {
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            for (var i = 0; i < 1000; i++)
+            {
+                foreach (var comment in comments)
+                {
+                    _ = ValueTagComment.Parse(comment, out _);
+                }
+            }
+
+            minimum = Math.Min(minimum, GC.GetAllocatedBytesForCurrentThread() - before);
+        }
+
+        Assert.Equal(0L, minimum);
     }
 }

@@ -40,14 +40,14 @@ internal static class InteropDocuments
     public static TheoryData<string> ValidFixtures => new(PdfFixtureManifest.Load().Fixtures.Where(f => f.Kind == "valid").Select(f => f.Path));
 
     /// <summary>Writes a document to the artifacts directory of a test and returns its path.</summary>
-    public static string Write(string name, bool objectStreams)
+    public static string Write(string name, bool objectStreams, bool linearize = false)
     {
         var document = Create(name);
         var directory = Path.Combine(AppContext.BaseDirectory, "InteropOutput");
         Directory.CreateDirectory(directory);
         // Each call writes its own file: the tests of several tools write the same documents in parallel
-        var path = Path.Combine(directory, $"{name}{(objectStreams ? ".objstm" : "")}-{Guid.NewGuid():N}.pdf");
-        document.Save(path, new PdfSaveOptions { UseObjectStreams = objectStreams });
+        var path = Path.Combine(directory, $"{name}{(objectStreams ? ".objstm" : "")}{(linearize ? ".linearized" : "")}-{Guid.NewGuid():N}.pdf");
+        document.Save(path, new PdfSaveOptions { UseObjectStreams = objectStreams, Linearize = linearize });
         return path;
     }
 

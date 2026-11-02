@@ -32,6 +32,7 @@ internal static class PdfObjectSerializer
     /// <param name="encryptString">The encryption of the strings of the object, or <see langword="null"/>.</param>
     public static void Write(PdfByteWriter writer, PdfObject value, ReferenceWriter references, PdfStringTransform? encryptString = null) => Write(writer, value, references, encryptString, depth: 0);
 
+    /// <summary>Writes a name (7.3.5). A name cannot contain the null character: <see cref="PdfName.Create(string)"/> rejects it, and a name read from a file with <c>#00</c> is written as it was read.</summary>
     public static void WriteName(PdfByteWriter writer, PdfName name)
     {
         writer.WriteByte((byte)'/');

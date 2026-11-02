@@ -90,7 +90,8 @@ public static void M(Process process, [ValueTag("ThreadId")] int threadId)
 
 - Use `nameof` to name the member. A name that matches no property or field of the type or its base types is reported
   ([MFTV0005](09-Rules/06-MFTV0005.md)).
-- The tags also apply when the member is accessed through a derived type.
+- The tags also apply when the member is accessed through a derived type, to its overrides, and to the implementations of
+  an interface member. They do not apply to a member that hides it with `new`.
 - Assembly attributes are read from referenced assemblies too, so a shared project can declare them once for the whole
   solution.
 - On a generic type, `typeof(Box<>)` tags the member of every `Box<T>`, while `typeof(Box<int>)` only tags the member of

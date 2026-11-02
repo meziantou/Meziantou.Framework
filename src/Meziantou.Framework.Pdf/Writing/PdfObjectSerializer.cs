@@ -15,7 +15,7 @@ internal static class PdfObjectSerializer
         var writer = new PdfByteWriter(64);
         try
         {
-            Write(writer, value, ReferenceWriter.Identity, encryptString: null, depth: 0, lenient: true);
+            Write(writer, value, ReferenceWriter.Identity);
         }
         catch (InvalidOperationException)
         {
@@ -30,21 +30,11 @@ internal static class PdfObjectSerializer
     /// <param name="value">The object.</param>
     /// <param name="references">The writer of the references.</param>
     /// <param name="encryptString">The encryption of the strings of the object, or <see langword="null"/>.</param>
-    /// <exception cref="InvalidOperationException">The object is nested too deeply, or a name contains the null character.</exception>
-    public static void Write(PdfByteWriter writer, PdfObject value, ReferenceWriter references, PdfStringTransform? encryptString = null) => Write(writer, value, references, encryptString, depth: 0, lenient: false);
+    public static void Write(PdfByteWriter writer, PdfObject value, ReferenceWriter references, PdfStringTransform? encryptString = null) => Write(writer, value, references, encryptString, depth: 0);
 
-    /// <summary>Writes an object as <see cref="Write(PdfByteWriter, PdfObject, ReferenceWriter, PdfStringTransform?)"/>, but writes the null character of a name read from a file as <c>#00</c>: the text compares objects, it is not a file.</summary>
-    public static void WriteLenient(PdfByteWriter writer, PdfObject value) => Write(writer, value, ReferenceWriter.Identity, encryptString: null, depth: 0, lenient: true);
-
-    /// <summary>Writes a name (7.3.5).</summary>
-    /// <exception cref="InvalidOperationException">The name contains the null character, which a name cannot contain: only a name read from a file can.</exception>
-    public static void WriteName(PdfByteWriter writer, PdfName name) => WriteName(writer, name, lenient: false);
-
-    private static void WriteName(PdfByteWriter writer, PdfName name, bool lenient)
+    /// <summary>Writes a name (7.3.5). A name cannot contain the null character: <see cref="PdfName.Create(string)"/> rejects it, and a name read from a file with <c>#00</c> is written as it was read.</summary>
+    public static void WriteName(PdfByteWriter writer, PdfName name)
     {
-        if (!lenient && name.Key.Contains('\0', StringComparison.Ordinal))
-            throw new InvalidOperationException($"The name /{name.Key.Replace("\0", "#00", StringComparison.Ordinal)} contains the null character, which a PDF name cannot contain (ISO 32000-2, 7.3.5)");
-
         writer.WriteByte((byte)'/');
         foreach (var c in name.Key)
         {
@@ -130,7 +120,7 @@ internal static class PdfObjectSerializer
         writer.WriteByte((byte)')');
     }
 
-    private static void Write(PdfByteWriter writer, PdfObject value, ReferenceWriter references, PdfStringTransform? encryptString, int depth, bool lenient)
+    private static void Write(PdfByteWriter writer, PdfObject value, ReferenceWriter references, PdfStringTransform? encryptString, int depth)
     {
         if (depth > MaxDepth)
             throw new InvalidOperationException("The object is nested too deeply to be written");
@@ -150,7 +140,7 @@ internal static class PdfObjectSerializer
                 writer.WriteNumber(real.Value);
                 break;
             case PdfName name:
-                WriteName(writer, name, lenient);
+                WriteName(writer, name);
                 break;
             case PdfString text when encryptString is not null:
                 WriteString(writer, encryptString(text.Span), hexadecimal: true);
@@ -170,16 +160,16 @@ internal static class PdfObjectSerializer
                         writer.WriteSpace();
                     }
 
-                    Write(writer, array[i], references, encryptString, depth + 1, lenient);
+                    Write(writer, array[i], references, encryptString, depth + 1);
                 }
 
                 writer.WriteByte((byte)']');
                 break;
             case PdfDictionary dictionary:
-                WriteDictionary(writer, dictionary, references, encryptString, depth, lenient);
+                WriteDictionary(writer, dictionary, references, encryptString, depth);
                 break;
             case PdfStream stream:
-                WriteDictionary(writer, stream.Dictionary, references, encryptString, depth, lenient);
+                WriteDictionary(writer, stream.Dictionary, references, encryptString, depth);
                 writer.WriteAscii(" stream");
                 break;
             default:
@@ -187,7 +177,7 @@ internal static class PdfObjectSerializer
         }
     }
 
-    private static void WriteDictionary(PdfByteWriter writer, PdfDictionary dictionary, ReferenceWriter references, PdfStringTransform? encryptString, int depth, bool lenient)
+    private static void WriteDictionary(PdfByteWriter writer, PdfDictionary dictionary, ReferenceWriter references, PdfStringTransform? encryptString, int depth)
     {
         writer.WriteAscii("<<");
         var first = true;
@@ -199,12 +189,12 @@ internal static class PdfObjectSerializer
             }
 
             first = false;
-            WriteName(writer, entry.Key, lenient);
+            WriteName(writer, entry.Key);
             writer.WriteSpace();
 
             // The signature of a signature dictionary is not encrypted (7.6.2)
             var encrypt = encryptString is not null && !StandardSecurityHandler.IsSignatureContents(dictionary, entry.Key) ? encryptString : null;
-            Write(writer, entry.Value, references, encrypt, depth + 1, lenient);
+            Write(writer, entry.Value, references, encrypt, depth + 1);
         }
 
         writer.WriteAscii(">>");

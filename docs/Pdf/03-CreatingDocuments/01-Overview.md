@@ -110,6 +110,9 @@ var compatible = document.ToByteArray(new PdfSaveOptions { UseObjectStreams = fa
 
 // Content streams left as text, to read them in an editor
 var readable = document.ToByteArray(new PdfSaveOptions { CompressStreams = false });
+
+// Linearized for fast web view: a viewer shows the first page before the file is downloaded
+var web = document.ToByteArray(new PdfSaveOptions { Linearize = true });
 ```
 <!-- endref -->
 

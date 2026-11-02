@@ -2,6 +2,7 @@ using System.Text;
 using Meziantou.Framework.Pdf.Filters;
 using Meziantou.Framework.Pdf.Objects;
 using Meziantou.Framework.Pdf.Security;
+using Meziantou.Framework.Pdf.Writing;
 
 namespace Meziantou.Framework.Pdf.Parsing;
 
@@ -536,17 +537,13 @@ internal sealed class PdfFileReader : IPdfObjectLoader
     /// </summary>
     private static PdfDictionary StripXrefKeys(PdfDictionary trailer)
     {
-        var isStream = trailer[PdfNames.Type] is PdfName type && type == PdfNames.XRef;
         var result = new PdfDictionary();
         foreach (var (key, value) in trailer)
         {
-            if (key == PdfNames.Prev || key == PdfNames.XRefStm)
-                continue;
-
-            if (isStream && (key == PdfNames.Type || key == PdfNames.W || key == PdfNames.Index || key == PdfNames.Length || key == PdfNames.Filter || key == PdfNames.DecodeParms || key == PdfNames.F || key == PdfNames.FFilter || key == PdfNames.FDecodeParms || key == PdfNames.DL))
-                continue;
-
-            result[key] = value;
+            if (!PdfFileWriter.IsCrossReferenceKey(key))
+            {
+                result[key] = value;
+            }
         }
 
         return result;

@@ -23,7 +23,7 @@ internal sealed class PdfObjectFingerprint
         var writer = new PdfByteWriter(256);
         try
         {
-            PdfObjectSerializer.WriteLenient(writer, value);
+            PdfObjectSerializer.Write(writer, value, ReferenceWriter.Identity);
         }
         catch (InvalidOperationException)
         {

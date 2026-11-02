@@ -651,7 +651,7 @@ internal sealed partial class PdfFileWriter : IDisposable
         foreach (var entry in trailer)
         {
             var key = entry.Key;
-            if (key == PdfNames.Size || key == PdfNames.Root || key == PdfNames.Info || key == PdfNames.ID || key == PdfNames.Encrypt || key == PdfNames.Prev || key == PdfNames.XRefStm)
+            if (key == PdfNames.Size || key == PdfNames.Root || key == PdfNames.Info || key == PdfNames.ID || key == PdfNames.Encrypt || IsCrossReferenceKey(key))
                 continue;
 
             result.Add(entry);
@@ -659,6 +659,13 @@ internal sealed partial class PdfFileWriter : IDisposable
 
         return result;
     }
+
+    /// <summary>
+    /// Gets a value indicating whether an entry of a trailer describes its cross-reference section rather than the
+    /// document: <c>/Prev</c>, <c>/XRefStm</c> and the entries of a cross-reference stream (7.5.8.2). They are not
+    /// kept, even when the <c>/Type</c> of a damaged cross-reference stream is missing.
+    /// </summary>
+    public static bool IsCrossReferenceKey(PdfName key) => key == PdfNames.Prev || key == PdfNames.XRefStm || key == PdfNames.Type || key == PdfNames.W || key == PdfNames.Index || key == PdfNames.Length || key == PdfNames.Filter || key == PdfNames.DecodeParms || key == PdfNames.F || key == PdfNames.FFilter || key == PdfNames.FDecodeParms || key == PdfNames.DL;
 
     /// <summary>The file identifier (14.4): the first part is kept from the original file, the second part changes with each save.</summary>
     /// <param name="contentHash">The MD5 hash of the content written: the whole file, or the update.</param>

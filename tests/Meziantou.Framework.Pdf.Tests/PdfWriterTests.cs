@@ -418,6 +418,23 @@ public sealed class PdfWriterTests
         }
     }
 
+    [Fact]
+    public void CrossReferenceEntriesOfADamagedTrailerAreNotKept()
+    {
+        var file = HandWrittenPdf.CreateSimple();
+        file.Trailer = "<< /Size {size} /Root 1 0 R /W [1 2 1] /Index [5 1] /Filter /FlateDecode /DecodeParms << /Predictor 12 >> /Private 1 >>";
+        var document = PdfDocument.Open(file.ToArray());
+
+        Assert.False(document.Trailer.ContainsKey(PdfName.Create("W")));
+        Assert.False(document.Trailer.ContainsKey(PdfName.Create("Filter")));
+        foreach (var options in new[] { PdfSaveOptions.Default, Uncompressed })
+        {
+            var read = PdfDocument.Open(document.ToByteArray(options));
+            Assert.False(read.IsRepaired);
+            Assert.Equal(1, read.Trailer.GetInteger(PdfName.Create("Private"), 0));
+        }
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -498,18 +515,22 @@ public sealed class PdfWriterTests
     {
         Assert.Throws<ArgumentException>(() => PdfName.Create("A\0B"));
         Assert.Throws<ArgumentException>(() => new PdfName("A\0B"));
+        Assert.Throws<ArgumentException>(() => new PdfDictionary { ["A\0B"] = PdfBoolean.True });
+    }
 
+    [Fact]
+    public void NamesReadFromAFileAreWrittenAsTheyWereRead()
+    {
         var file = HandWrittenPdf.CreateSimple();
-        file.Trailer = "<< /Size {size} /Root 1 0 R /Private /A#00B /Escaped /A#20B >>";
+        file.Trailer = "<< /Size {size} /Root 1 0 R /Private /A#00B /Escaped /A#20B#23 >>";
         var document = PdfDocument.Open(file.ToArray());
         Assert.Equal("A\0B", document.Trailer.GetName(PdfName.Create("Private"))!.Value);
 
-        var exception = Assert.Throws<InvalidOperationException>(() => document.ToByteArray(Uncompressed));
-        Assert.Contains("/A#00B", exception.Message, StringComparison.Ordinal);
-
-        document.Trailer.Remove(PdfName.Create("Private"));
+        // The library does not create such a name, but a file it reads keeps its names: the save writes what it read
         var text = Encoding.Latin1.GetString(document.ToByteArray(Uncompressed));
-        Assert.Contains("/Escaped /A#20B", text, StringComparison.Ordinal);
+
+        Assert.Contains("/Private /A#00B", text, StringComparison.Ordinal);
+        Assert.Contains("/Escaped /A#20B#23", text, StringComparison.Ordinal);
     }
 
     [Fact]

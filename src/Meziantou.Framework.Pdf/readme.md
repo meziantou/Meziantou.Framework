@@ -11,8 +11,10 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
   regions, symbol and pattern dictionaries, arithmetic, MMR and Huffman coding); `DCTDecode` and `JPXDecode` through the
   codecs of `Meziantou.Framework.Imaging`
 - **Writer**: full saves (the objects reachable from the catalog, renumbered, with object streams and a
-  cross-reference stream, or a cross-reference table) and incremental updates that keep the bytes of the original file;
-  the output depends only on the document and the options, except the random keys and vectors of the encryption
+  cross-reference stream, or a cross-reference table), linearized files for fast web view (`PdfSaveOptions.Linearize`)
+  and incremental updates that keep the bytes of the original file (with object streams for files that have
+  cross-reference streams); the file is streamed to the output through a bounded buffer; the output depends only on the
+  document and the options, except the random keys and vectors of the encryption
 - **Conformance**: PDF/A-1 (b, a), PDF/A-2 (b, u, a), PDF/A-3 (b, u, a) and PDF/A-4 (4, 4e, 4f) output
   (`PdfDocument.PdfAConformance`), PDF/UA-1 and PDF/UA-2 (`PdfDocument.PdfUAConformance`), and Tagged PDF: a structure tree with a role map, alternate descriptions,
   languages and artifacts (`PdfDocument.StructureTree`, `PdfContentBuilder.BeginStructureElement`); the documents are

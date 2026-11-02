@@ -73,7 +73,8 @@ using (engine.Enter())
   a `Proxy`. A missing property is `undefined`.
 - [TryGetOwnProperty](cref:Meziantou.Framework.JavaScriptEngine.JsObject.TryGetOwnProperty) reads the descriptor of an own property without calling its getter.
 - [GetOwnPropertyKeys](cref:Meziantou.Framework.JavaScriptEngine.JsObject.GetOwnPropertyKeys) returns the keys of the own properties in the order of JavaScript: the array indexes, then the
-  strings in creation order, then the symbols. It includes the properties that are not enumerable.
+  strings in creation order, then the symbols. It includes the properties that are not enumerable. The list is a
+  snapshot: adding or deleting properties later does not change it.
 - [ContainsProperty](cref:Meziantou.Framework.JavaScriptEngine.JsObject.ContainsProperty) tests a property of the object or of its prototypes, as `key in obj` does.
 - An array is a [JsArray](cref:Meziantou.Framework.JavaScriptEngine.JsArray): [Length](cref:Meziantou.Framework.JavaScriptEngine.JsArray.Length) is its length, and its elements are the properties `"0"`, `"1"`...
 - [DeleteProperty](cref:Meziantou.Framework.JavaScriptEngine.JsObject.DeleteProperty), [GetPrototype](cref:Meziantou.Framework.JavaScriptEngine.JsObject.GetPrototype), [SetPrototype](cref:Meziantou.Framework.JavaScriptEngine.JsObject.SetPrototype) and [PreventObjectExtensions](cref:Meziantou.Framework.JavaScriptEngine.JsObject.PreventObjectExtensions) do what `delete`,

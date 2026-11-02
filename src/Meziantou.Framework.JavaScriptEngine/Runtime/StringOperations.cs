@@ -24,6 +24,9 @@ internal static class StringOperations
     public static void Append(StringBuilder builder, ReadOnlySpan<char> value, long repeatCount)
     {
         CheckLength(builder.Length + (repeatCount * value.Length));
+        if (value.IsEmpty)
+            return;
+
         if (value.Length == 1)
         {
             // A single allocation: the string builder can grow to the maximum length of a string

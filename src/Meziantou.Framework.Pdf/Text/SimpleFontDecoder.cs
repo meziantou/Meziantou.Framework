@@ -12,14 +12,22 @@ internal sealed class SimpleFontDecoder : PdfFontDecoder
     private readonly bool _isZapfDingbats;
     private readonly bool _isSymbolicWithoutEncoding;
 
+    // The text of each code, found when the code is first shown: the glyph names are converted once per font
+    private readonly string?[] _texts = new string?[256];
+    private readonly bool[] _hasText = new bool[256];
+
     public SimpleFontDecoder(PdfDictionary font, CMap? toUnicode)
-        : base(toUnicode)
+        : this(font, font.Get<PdfDictionary>(PdfNames.FontDescriptor), toUnicode)
+    {
+    }
+
+    private SimpleFontDecoder(PdfDictionary font, PdfDictionary? descriptor, CMap? toUnicode)
+        : base(font, descriptor, toUnicode)
     {
         var subtype = font.GetName(PdfNames.Subtype);
         var baseFont = font.GetName(PdfNames.BaseFont)?.Value ?? "";
         var standardName = StandardFontMetrics.GetStandardName(baseFont);
         _isZapfDingbats = standardName == "ZapfDingbats";
-        var descriptor = font.Get<PdfDictionary>(PdfNames.FontDescriptor);
         var flags = descriptor?.GetInteger(PdfNames.Flags, 0) ?? 0;
         var isSymbolic = (flags & 4) != 0 && (flags & 32) == 0;
 
@@ -119,11 +127,22 @@ internal sealed class SimpleFontDecoder : PdfFontDecoder
 
     public override string? GetText(uint code)
     {
-        if (ToUnicode?.GetUnicode(code) is { } text)
-            return text;
-
         if (code >= 256)
-            return null;
+            return ToUnicode?.GetUnicode(code, 1);
+
+        if (!_hasText[code])
+        {
+            _texts[code] = ComputeText(code);
+            _hasText[code] = true;
+        }
+
+        return _texts[code];
+    }
+
+    private string? ComputeText(uint code)
+    {
+        if (ToUnicode?.GetUnicode(code, 1) is { } text)
+            return text;
 
         if (_glyphNames[code] is { } name)
         {

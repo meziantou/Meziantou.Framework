@@ -1366,6 +1366,60 @@ public sealed class PdfDocumentTests
     }
 
     [Fact]
+    public void Example_FindTextPositions()
+    {
+        var source = new PdfDocument();
+        source.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("Revenue grew by 12%", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 12, 50, 800);
+        var file = source.ToByteArray();
+
+        #region Pdf_FindTextPositions
+        var document = PdfDocument.Open(file);
+        var layout = document.Pages[0].ExtractTextLayout();
+
+        // The boxes of a word, in the coordinates of the page (points, from its bottom left corner)
+        var boxes = new List<PdfRectangle>();
+        foreach (var line in layout.Lines)
+        {
+            foreach (var word in line.Words)
+            {
+                if (word.Text.Equals("grew", StringComparison.OrdinalIgnoreCase))
+                {
+                    boxes.Add(word.Bounds);
+                }
+            }
+        }
+        #endregion
+
+        var box = Assert.Single(boxes);
+        Assert.Equal("Revenue grew by 12%", layout.Text);
+        Assert.Equal(797.6, box.Bottom, 6);
+        Assert.Equal(809.6, box.Top, 6);
+        Assert.True(box.Left > 50 && box.Right > box.Left);
+    }
+
+    [Fact]
+    public void Example_ExpandLigatures()
+    {
+        // A font whose glyph "fi" is the ligature U+FB01
+        var file = new HandWrittenPdf()
+            .Add(1, "<< /Type /Catalog /Pages 2 0 R >>")
+            .Add(2, "<< /Type /Pages /Kids [3 0 R] /Count 1 >>")
+            .Add(3, "<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>")
+            .Add(4, "<< /Type /Font /Subtype /Type1 /BaseFont /Times-Roman /Encoding << /Differences [1 /fi] >> >>")
+            .Add(5, HandWrittenPdf.Stream("BT /F1 12 Tf 72 720 Td (\\001nancial) Tj ET"))
+            .ToArray();
+
+        #region Pdf_ExpandLigatures
+        var document = PdfDocument.Open(file);
+        var options = new PdfTextExtractionOptions { ExpandLigatures = true };
+        var text = document.Pages[0].ExtractText(options);
+        #endregion
+
+        Assert.Equal("financial", text);
+        Assert.Equal("ﬁnancial", document.Pages[0].ExtractText());
+    }
+
+    [Fact]
     public void Example_InspectFonts()
     {
         var source = new PdfDocument();

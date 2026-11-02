@@ -14,14 +14,11 @@ internal sealed class TrueTypeFontProgram
 {
     private const int MaxGlyphs = 65536;
 
-    // The codes a cmap subtable maps: overlapping segments or groups cannot make the reading longer
-    private const int MaxCmapCodes = 1 << 20;
-
     private readonly byte[] _loca;
     private readonly byte[] _glyf;
     private readonly byte[] _hmtx;
     private readonly bool _longLocations;
-    private readonly Dictionary<(int Platform, int Encoding), Dictionary<int, int>> _cmaps = [];
+    private readonly Dictionary<(int Platform, int Encoding), TrueTypeCmapSubtable> _cmaps = [];
     private readonly Dictionary<string, int> _postNames = new(StringComparer.Ordinal);
     private readonly RenderCache _cache;
     private readonly GlyphScratch _scratch;
@@ -123,7 +120,7 @@ internal sealed class TrueTypeFontProgram
     }
 
     /// <summary>Gets the glyph of a character in a subtable of the <c>cmap</c> table; 0 when there is none.</summary>
-    public int MapCharacter(int platform, int encoding, int character) => _cmaps.TryGetValue((platform, encoding), out var map) ? map.GetValueOrDefault(character) : 0;
+    public int MapCharacter(int platform, int encoding, int character) => _cmaps.TryGetValue((platform, encoding), out var map) ? map.Map(character) : 0;
 
     public bool HasCmap(int platform, int encoding) => _cmaps.ContainsKey((platform, encoding));
 
@@ -158,7 +155,7 @@ internal sealed class TrueTypeFontProgram
         return start <= end && end <= _glyf.Length ? (start, end) : (0, 0);
     }
 
-    /// <summary>Reads the subtables of the <c>cmap</c> table of the formats 0, 4, 6 and 12.</summary>
+    /// <summary>Reads the subtables of the <c>cmap</c> table (see <see cref="TrueTypeCmapSubtable"/>): the first one of each platform and encoding.</summary>
     private void ReadCmap(byte[] cmap)
     {
         if (cmap.Length < 4)
@@ -177,125 +174,10 @@ internal sealed class TrueTypeFontProgram
             if (offset + 4 > cmap.Length || _cmaps.ContainsKey((platform, encoding)))
                 continue;
 
-            try
+            if (TrueTypeCmapSubtable.Read(cmap, (int)offset) is { } subtable)
             {
-                var map = ReadSubtable(cmap, (int)offset);
-                if (map is not null)
-                {
-                    _cmaps[(platform, encoding)] = map;
-                }
+                _cmaps[(platform, encoding)] = subtable;
             }
-            catch (ArgumentOutOfRangeException)
-            {
-                // A subtable that passes the end of the table is not used
-            }
-        }
-    }
-
-    private static Dictionary<int, int>? ReadSubtable(byte[] cmap, int offset)
-    {
-        var span = cmap.AsSpan();
-        var map = new Dictionary<int, int>();
-        var work = 0;
-        switch (BinaryPrimitives.ReadUInt16BigEndian(span[offset..]))
-        {
-            case 0:
-                for (var code = 0; code < 256 && offset + 6 + code < cmap.Length; code++)
-                {
-                    if (cmap[offset + 6 + code] != 0)
-                    {
-                        map[code] = cmap[offset + 6 + code];
-                    }
-                }
-
-                return map;
-
-            case 4:
-                {
-                    var segments = BinaryPrimitives.ReadUInt16BigEndian(span[(offset + 6)..]) / 2;
-                    var ends = offset + 14;
-                    var starts = ends + (segments * 2) + 2;
-                    var deltas = starts + (segments * 2);
-                    var rangeOffsets = deltas + (segments * 2);
-                    for (var s = 0; s < segments; s++)
-                    {
-                        var end = BinaryPrimitives.ReadUInt16BigEndian(span[(ends + (s * 2))..]);
-                        var start = BinaryPrimitives.ReadUInt16BigEndian(span[(starts + (s * 2))..]);
-                        var delta = BinaryPrimitives.ReadInt16BigEndian(span[(deltas + (s * 2))..]);
-                        var rangeOffsetPosition = rangeOffsets + (s * 2);
-                        var rangeOffset = BinaryPrimitives.ReadUInt16BigEndian(span[rangeOffsetPosition..]);
-                        for (var code = start; code <= end && code != 0xFFFF; code++)
-                        {
-                            if (++work > MaxCmapCodes)
-                                return map;
-
-                            int glyph;
-                            if (rangeOffset == 0)
-                            {
-                                glyph = (code + delta) & 0xFFFF;
-                            }
-                            else
-                            {
-                                var position = rangeOffsetPosition + rangeOffset + ((code - start) * 2);
-                                if (position + 2 > cmap.Length)
-                                    break;
-
-                                glyph = BinaryPrimitives.ReadUInt16BigEndian(span[position..]);
-                                if (glyph != 0)
-                                {
-                                    glyph = (glyph + delta) & 0xFFFF;
-                                }
-                            }
-
-                            if (glyph != 0)
-                            {
-                                map.TryAdd(code, glyph);
-                            }
-                        }
-                    }
-
-                    return map;
-                }
-
-            case 6:
-                {
-                    var first = BinaryPrimitives.ReadUInt16BigEndian(span[(offset + 6)..]);
-                    var count = BinaryPrimitives.ReadUInt16BigEndian(span[(offset + 8)..]);
-                    for (var i = 0; i < count; i++)
-                    {
-                        var glyph = BinaryPrimitives.ReadUInt16BigEndian(span[(offset + 10 + (i * 2))..]);
-                        if (glyph != 0)
-                        {
-                            map[first + i] = glyph;
-                        }
-                    }
-
-                    return map;
-                }
-
-            case 12:
-                {
-                    var groups = BinaryPrimitives.ReadUInt32BigEndian(span[(offset + 12)..]);
-                    for (var g = 0; g < groups && g < 65536; g++)
-                    {
-                        var group = offset + 16 + (g * 12);
-                        var start = BinaryPrimitives.ReadUInt32BigEndian(span[group..]);
-                        var end = BinaryPrimitives.ReadUInt32BigEndian(span[(group + 4)..]);
-                        var startGlyph = BinaryPrimitives.ReadUInt32BigEndian(span[(group + 8)..]);
-                        for (var code = start; code <= end && code - start < MaxGlyphs && code <= 0x10FFFF; code++)
-                        {
-                            if (++work > MaxCmapCodes)
-                                return map;
-
-                            map.TryAdd((int)code, (int)(startGlyph + (code - start)));
-                        }
-                    }
-
-                    return map;
-                }
-
-            default:
-                return null;
         }
     }
 

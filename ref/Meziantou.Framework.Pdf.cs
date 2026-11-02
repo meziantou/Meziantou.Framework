@@ -552,6 +552,8 @@ namespace Meziantou.Framework.Pdf
         public double UserUnit { get => throw null; }
         public Meziantou.Framework.Pdf.PdfContentBuilder CreateContentBuilder() => throw null;
         public string ExtractText() => throw null;
+        public string ExtractText(Meziantou.Framework.Pdf.PdfTextExtractionOptions? options) => throw null;
+        public Meziantou.Framework.Pdf.PdfTextLayout ExtractTextLayout(Meziantou.Framework.Pdf.PdfTextExtractionOptions? options = null) => throw null;
         public byte[] GetContentData() => throw null;
     }
 
@@ -750,6 +752,41 @@ namespace Meziantou.Framework.Pdf
         public void MapRole(string type, string mappedType) { }
     }
 
+    public sealed class PdfTextExtractionOptions
+    {
+        public static Meziantou.Framework.Pdf.PdfTextExtractionOptions Default { get => throw null; }
+        public bool ExpandLigatures { get => throw null; init { } }
+    }
+
+    public sealed class PdfTextGlyph
+    {
+        public double Angle { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfRectangle Bounds { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfPoint End { get => throw null; }
+        public string? FontName { get => throw null; }
+        public double FontSize { get => throw null; }
+        public bool IsVertical { get => throw null; }
+        public Meziantou.Framework.Pdf.PdfPoint Origin { get => throw null; }
+        public string Text { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public sealed class PdfTextLayout
+    {
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfTextLine> Lines { get => throw null; }
+        public string Text { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
+    public sealed class PdfTextLine
+    {
+        public Meziantou.Framework.Pdf.PdfRectangle Bounds { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfTextGlyph> Glyphs { get => throw null; }
+        public string Text { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfTextWord> Words { get => throw null; }
+        public override string ToString() => throw null;
+    }
+
     public enum PdfTextRenderingMode
     {
         Fill = 0,
@@ -775,6 +812,14 @@ namespace Meziantou.Framework.Pdf
         public static bool operator !=(Meziantou.Framework.Pdf.PdfTextSegment left, Meziantou.Framework.Pdf.PdfTextSegment right) => throw null;
         public static implicit operator Meziantou.Framework.Pdf.PdfTextSegment(double adjustment) => throw null;
         public static implicit operator Meziantou.Framework.Pdf.PdfTextSegment(string text) => throw null;
+    }
+
+    public sealed class PdfTextWord
+    {
+        public Meziantou.Framework.Pdf.PdfRectangle Bounds { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<Meziantou.Framework.Pdf.PdfTextGlyph> Glyphs { get => throw null; }
+        public string Text { get => throw null; }
+        public override string ToString() => throw null;
     }
 
     public sealed class PdfTilingPattern : Meziantou.Framework.Pdf.PdfPattern

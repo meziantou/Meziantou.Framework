@@ -24,7 +24,8 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
   transparency (`PdfExtGState`: alpha, blend modes, soft masks; transparency groups), the standard 14 fonts and embedded TrueType and OpenType fonts, images (`PdfImage`: JPEG files as they are, other images
   of `Meziantou.Framework.Imaging` with their alpha channel and ICC profile), the document information and the XMP
   metadata, the outline (bookmarks), links and annotations, embedded files (`PdfDocument.EmbeddedFiles`, file
-  attachment annotations), text extraction (`PdfPage.ExtractText`)
+  attachment annotations), text extraction (`PdfPage.ExtractText`) and positioned text (`PdfPage.ExtractTextLayout`: lines,
+  words and glyphs with their bounding boxes)
 - **Rendering** (`Meziantou.Framework.Pdf.Rendering`): the pages drawn to images on the canvas of
   `Meziantou.Framework.Imaging`: paths, clipping, optional content and annotation appearances; embedded TrueType, CFF,
   Type 1 and Type 3 fonts and substituted fonts; every color space and image filter; functions, the seven shading types
@@ -458,4 +459,5 @@ specification says; a content stream that cannot be decoded throws when its data
   content (the order of the structure, the colors of the annotations of PDF/A-1, the values of the numbers) follows
   the other rules of the level.
 - The text extraction follows the order of the content and joins the glyphs into lines by their positions; it does
-  not detect columns.
+  not detect columns. The predefined CMaps other than `Identity-H` and `Identity-V` split the codes and give their
+  text, but not their CIDs: their glyphs get the default width of the font.

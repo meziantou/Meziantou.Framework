@@ -523,7 +523,7 @@ public sealed class PdfContentBuilder
             first = false;
             if (segment.Text is { } text)
             {
-                PdfObjectSerializer.WriteString(_buffer, _font!.Encode(text), hexadecimal: false);
+                _font!.WriteString(_buffer, text);
             }
             else
             {
@@ -613,8 +613,8 @@ public sealed class PdfContentBuilder
         ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(font);
 
-        // Encode first: a character the font does not have leaves the content unchanged
-        font.Encode(text);
+        // Check first: a character the font does not have leaves the content unchanged
+        font.ValidateText(text);
         return BeginText().SetFont(font, fontSize).MoveTextPosition(x, y).ShowText(text).EndText();
     }
 
@@ -1044,7 +1044,7 @@ public sealed class PdfContentBuilder
     private void WriteText(string text)
     {
         EnsureFont();
-        PdfObjectSerializer.WriteString(_buffer, _font!.Encode(text), hexadecimal: false);
+        _font!.WriteString(_buffer, text);
         _buffer.WriteSpace();
     }
 

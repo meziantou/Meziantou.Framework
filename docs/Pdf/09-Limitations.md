@@ -16,8 +16,9 @@ description: What the library does not do, so that you can plan around it.
 
 ## Reading and extracting
 
-- The public-key security handlers (documents encrypted for certificates) are not supported; only the standard security
-  handler (passwords) is.
+- The documents encrypted for certificates (the public-key security handler) need RSA certificates: the elliptic-curve
+  recipients (key agreement) are not supported. Their crypt filters share one key: when the recipients are in several
+  crypt filters, those of the streams are used.
 - The text extraction follows the order of the content and joins the glyphs into lines by their positions; it does not
   detect columns, and it does not recognize the text of scanned pages.
 - The library reports the permissions of an encrypted document, but does not enforce them.

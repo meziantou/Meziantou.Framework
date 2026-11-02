@@ -23,7 +23,9 @@ A fully managed PDF library for .NET, written from ISO 32000-2 (PDF 2.0): read, 
   languages and artifacts (`PdfDocument.StructureTree`, `PdfContentBuilder.BeginStructureElement`); the documents are
   validated by veraPDF in the tests
 - **Encryption**: the standard security handler, revisions 2 to 6 (RC4 with 40-bit and 128-bit keys, AES-128,
-  AES-256), with crypt filters, for reading (`PdfReadOptions.Password`) and writing (`PdfDocument.Encryption`)
+  AES-256), with crypt filters, for reading (`PdfReadOptions.Password`) and writing (`PdfDocument.Encryption`), and the
+  public-key security handler for the RSA certificates of recipients (`PdfEncryptionRecipient`,
+  `PdfReadOptions.Certificate`)
 - **Document API**: pages (`PdfDocument.Pages`), a content builder for paths, colors, text, images and marked content
   (`PdfPage.CreateContentBuilder`), shadings and functions (`PdfShading`, `PdfFunction`), patterns, form XObjects,
   transparency (`PdfExtGState`: alpha, blend modes, soft masks; transparency groups), the standard 14 fonts and embedded TrueType and OpenType fonts, images (`PdfImage`: JPEG files as they are, other images
@@ -251,7 +253,9 @@ var pdf = document.ToByteArray();
 `PdfDocument.Encryption` encrypts the strings and streams of the document when it is saved, with AES-256 by default.
 A document read from an encrypted file keeps its encryption: set the property to `null` to save it in clear, or to
 another `PdfEncryption` to change its passwords. `PdfDocument.Permissions` gives the operations the password the
-document was opened with allows; the library does not enforce them.
+document was opened with allows; the library does not enforce them. `new PdfEncryption(new PdfEncryptionRecipient(certificate))`
+encrypts the document for certificates instead of passwords, and `PdfReadOptions.Certificate` opens it with the private
+key of a recipient.
 
 <!-- ref:../../tests/Meziantou.Framework.Pdf.Tests/PdfDocumentTests.cs;region=Pdf_Encryption;format=md-fenced-code-block;dedent=true -->
 ```csharp
@@ -537,8 +541,8 @@ specification says; a content stream that cannot be decoded throws when its data
 
 ## Limitations
 
-- The public-key security handlers (certificates) are not supported; the writer encrypts the embedded files with the
-  method of the other streams.
+- The public-key security handler needs RSA certificates (no key agreement); the writer encrypts the embedded files with
+  the method of the other streams.
 - The standard 14 fonts show the text of `WinAnsiEncoding` (or the encodings of Symbol and ZapfDingbats); an embedded
   font shows any text it has the glyphs of. The fonts with CFF2 outlines, and the instances of variable fonts, are not
   embedded. The save checks what the conformance levels require of the document as a whole; the

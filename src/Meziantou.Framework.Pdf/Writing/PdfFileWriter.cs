@@ -32,7 +32,7 @@ internal sealed partial class PdfFileWriter : IDisposable
 
     // The security handler that encrypts the strings and streams of the objects, and the first part of the file
     // identifier its keys depend on (7.6.3.3)
-    private StandardSecurityHandler? _security;
+    private SecurityHandler? _security;
     private byte[]? _firstId;
 
     private PdfFileWriter(PdfDocument document, PdfSaveOptions options, PdfByteWriter output, CancellationToken cancellationToken)
@@ -131,7 +131,7 @@ internal sealed partial class PdfFileWriter : IDisposable
         if (_document.Encryption is { } encryption)
         {
             _firstId = GetOriginalFirstId() ?? RandomNumberGenerator.GetBytes(16);
-            _security = encryption.Handler ?? StandardSecurityHandler.Create(encryption, _firstId);
+            _security = encryption.Handler ?? SecurityHandler.Create(encryption, _firstId);
         }
 
         var references = new RenumberingReferenceWriter(numbers, objects, writerObjects);
@@ -444,13 +444,7 @@ internal sealed partial class PdfFileWriter : IDisposable
         }
 
         // The revisions of the standard security handler: 3 needs PDF 1.4, 4 needs PDF 1.6, 6 needs PDF 2.0
-        var encryptionVersion = _security?.Algorithm switch
-        {
-            PdfEncryptionAlgorithm.Rc4With128BitKey => PdfVersion.Pdf14,
-            PdfEncryptionAlgorithm.AesWith128BitKey => PdfVersion.Pdf16,
-            PdfEncryptionAlgorithm.AesWith256BitKey => PdfVersion.Pdf20,
-            _ => version,
-        };
+        var encryptionVersion = _security?.MinimumVersion ?? version;
         if (encryptionVersion > version)
         {
             if (_options.Version is not null)

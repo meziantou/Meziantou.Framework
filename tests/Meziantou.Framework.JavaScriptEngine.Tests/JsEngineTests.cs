@@ -41,6 +41,31 @@ public sealed class JsEngineTests
     }
 
     [Fact]
+    public void GetOwnPropertyKeys_SnapshotInTheOrderOfTheSpecification()
+    {
+        using var engine = new JsEngine();
+        var realm = engine.CreateRealm();
+        using var scope = engine.Enter();
+
+        // Elements in the dense storage (0, 1, 10) and in the property table (5, 3)
+        var array = realm.Execute("const a = [0, 1]; a[10] = 10; Object.defineProperty(a, 5, { value: 5, enumerable: true }); a[3] = 3; a.x = 'x'; a[Symbol.iterator] = null; a").AsObject();
+        var keys = array.GetOwnPropertyKeys();
+        Assert.Equal(["0", "1", "3", "5", "10", "length", "x"], keys.Where(key => key.IsString).Select(key => key.AsString()));
+        Assert.True(keys[^1].IsSymbol);
+        Assert.True(array.SetProperty("y", 1));
+        Assert.Equal(8, keys.Count);
+
+        var host = new CallableHostObject(realm.ObjectPrototype);
+        Assert.True(host.SetProperty("b", 1));
+        Assert.True(host.SetProperty("0", 2));
+        Assert.True(host.SetProperty("a", 3));
+        Assert.Equal(["0", "b", "a"], host.GetOwnPropertyKeys().Select(key => key.AsString()));
+        Assert.Equal(["0", "b", "a"], host.OrdinaryOwnPropertyKeys().Select(key => key.AsString()));
+        realm.GlobalObject.SetProperty("host", host);
+        Assert.Equal("0,b,a", realm.Execute("Object.keys(host).join()").AsString());
+    }
+
+    [Fact]
     public void LazyProperties()
     {
         using var engine = new JsEngine();

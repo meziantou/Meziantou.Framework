@@ -132,6 +132,33 @@ internal static class Workloads
         ["Errors"] = """
             function run() { let n = 0; for (let i = 0; i < 2000; i++) { try { null.x; } catch { n++; } try { undefined(); } catch { n++; } } return n; }
             """,
+        ["SparseArrays"] = """
+            function run() {
+              const a = []; for (let i = 0; i < 10000; i++) a[i * 100] = 1;
+              const huge = []; huge[4294967294] = 1;
+              huge.reverse();
+              return a.reduce((s, v) => s + v, 0) + a.indexOf(2) + a.lastIndexOf(1) + huge.join('').length;
+            }
+            """,
+        ["ArrayQueue"] = """
+            function run() {
+              const queue = []; for (let i = 0; i < 20000; i++) queue.push(i);
+              let s = 0; while (queue.length) s += queue.shift();
+              const front = []; for (let i = 0; i < 10000; i++) front.unshift(i);
+              for (let i = 0; i < 5000; i++) front.splice(0, 1);
+              return s + front.length;
+            }
+            """,
+        ["DictionaryAddDelete"] = """
+            const o = {}; for (let i = 0; i < 100; i++) o['p' + i] = i;
+            function run() { for (let i = 0; i < 20000; i++) { o.tmp = i; delete o.tmp; } return Object.keys(o).length; }
+            """,
+        ["RopeIndex"] = """
+            function run() { let s = ''; let c = 0; for (let i = 0; i < 20000; i++) { s += 'a'; c += s.charCodeAt(i >> 1); } return c; }
+            """,
+        ["Bind"] = """
+            function run() { let f = function () {}; for (let i = 0; i < 5000; i++) f = f.bind(null); return f.name.length; }
+            """,
         ["NumberFormat"] = """
             const nf = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 });
             const currency = new Intl.NumberFormat('de-DE', { style: 'currency', currency: 'EUR' });

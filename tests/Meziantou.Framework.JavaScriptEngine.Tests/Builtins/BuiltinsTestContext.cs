@@ -84,6 +84,21 @@ internal sealed class BuiltinsTestContext : IDisposable
         return string.Join(',', parts);
     }
 
+    /// <summary>
+    /// Runs a script that took quadratic time and returns its result as a string: the CPU time of the thread must stay
+    /// under a budget that the quadratic code exceeded (the timeout of the engine stops it when it does not).
+    /// </summary>
+    public static string ExecuteWithinBudget(string script)
+    {
+        using var engine = new JsEngine(new JsEngineOptions { Timeout = TimeSpan.FromMinutes(2) });
+        var realm = engine.CreateRealm();
+        var stopwatch = ThreadCpuStopwatch.StartNew();
+        var result = realm.Execute(script);
+        stopwatch.Stop();
+        Assert.True(stopwatch.Elapsed < TimeSpan.FromSeconds(10), $"CPU time: {stopwatch.Elapsed}");
+        return engine.ToString(result);
+    }
+
     /// <summary>Collects the values of an iterator.</summary>
     public static List<JsValue> Iterate(JsValue iterator)
     {

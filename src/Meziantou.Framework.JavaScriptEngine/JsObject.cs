@@ -754,9 +754,12 @@ public partial class JsObject : JsCell
         return false;
     }
 
-    internal List<PropertyKey> OrdinaryOwnPropertyKeys()
+    internal List<PropertyKey> OrdinaryOwnPropertyKeys() => OrdinaryOwnPropertyKeys(extraCapacity: 0);
+
+    /// <summary>OrdinaryOwnPropertyKeys, in a list that has room for <paramref name="extraCapacity"/> more keys.</summary>
+    internal List<PropertyKey> OrdinaryOwnPropertyKeys(int extraCapacity)
     {
-        var keys = new List<PropertyKey>();
+        var keys = new List<PropertyKey>(_denseCount + GetOwnPropertyCount() + extraCapacity);
         for (var i = NextDenseElement(0, int.MaxValue); i >= 0; i = NextDenseElement(i + 1, int.MaxValue))
         {
             keys.Add(new PropertyKey((uint)i));
@@ -795,18 +798,34 @@ public partial class JsObject : JsCell
         {
             if ((Flags & ObjectFlags.IndexedProperties) != 0)
             {
-                var start = keys.Count;
-                for (var i = 0; i < properties.Capacity; i++)
+                var indices = properties.GetSortedIndices();
+                if (keys.Count == 0)
                 {
-                    if (!properties.IsDeleted(i) && properties.GetKey(i).IsArrayIndex)
+                    foreach (var index in indices)
                     {
-                        keys.Add(properties.GetKey(i));
+                        keys.Add(new PropertyKey(index));
                     }
                 }
-
-                if (keys.Count > start)
+                else
                 {
-                    keys.Sort(static (a, b) => a.ArrayIndex.CompareTo(b.ArrayIndex));
+                    // The dense elements and the indices of the table are merged
+                    var denseKeys = keys.ToArray();
+                    keys.Clear();
+                    var d = 0;
+                    foreach (var index in indices)
+                    {
+                        while (d < denseKeys.Length && denseKeys[d].ArrayIndex < index)
+                        {
+                            keys.Add(denseKeys[d++]);
+                        }
+
+                        keys.Add(new PropertyKey(index));
+                    }
+
+                    for (; d < denseKeys.Length; d++)
+                    {
+                        keys.Add(denseKeys[d]);
+                    }
                 }
             }
 
@@ -979,16 +998,12 @@ public partial class JsObject : JsCell
     /// <summary>Gets whether the array indices of the object are all in the dense elements.</summary>
     internal bool HasOnlyDenseElements => (Flags & ObjectFlags.IndexedProperties) == 0;
 
-    /// <summary>Gets the own property keys that are array indices and are in the property table.</summary>
-    internal IEnumerable<PropertyKey> GetIndexedTableKeys()
+    /// <summary>Gets the own property keys that are array indices and are in the property table, in ascending order.</summary>
+    internal ReadOnlySpan<uint> GetIndexedTableKeys()
     {
         if (_map is not PropertyTable properties || (Flags & ObjectFlags.IndexedProperties) == 0)
-            yield break;
+            return [];
 
-        for (var i = 0; i < properties.Capacity; i++)
-        {
-            if (!properties.IsDeleted(i) && properties.GetKey(i).IsArrayIndex)
-                yield return properties.GetKey(i);
-        }
+        return properties.GetSortedIndices();
     }
 }

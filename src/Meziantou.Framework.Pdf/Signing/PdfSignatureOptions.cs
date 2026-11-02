@@ -23,8 +23,34 @@ public sealed class PdfSignatureOptions
     /// <summary>Gets the digest algorithm. The default is SHA-256.</summary>
     public HashAlgorithmName HashAlgorithm { get; init; } = HashAlgorithmName.SHA256;
 
-    /// <summary>Gets the name of the signature field. The default is <c>Signature</c> followed by the first number not used.</summary>
+    /// <summary>
+    /// Gets the padding of an RSA signature: <see cref="RSASignaturePadding.Pkcs1"/> or <see cref="RSASignaturePadding.Pss"/>
+    /// (RSASSA-PSS with MGF1 and a salt of the length of the digest, RFC 4055). <see langword="null"/> (the default) is
+    /// PKCS #1 v1.5; it must be <see langword="null"/> for an ECDSA key.
+    /// </summary>
+    public RSASignaturePadding? RsaSignaturePadding { get; init; }
+
+    /// <summary>
+    /// Gets the name of the signature field. The default is <c>Signature</c> followed by the first number not used. An
+    /// existing signature field that is not signed yet is signed; the name of any other field cannot be used.
+    /// </summary>
     public string? FieldName { get; init; }
+
+    /// <summary>
+    /// Gets the changes the signature allows after it, for a certification signature (ISO 32000-2, 12.8.2.2, DocMDP);
+    /// <see langword="null"/> (the default) for an approval signature. A certification signature is the first signature
+    /// of a document.
+    /// </summary>
+    public PdfCertificationLevel? Certification { get; init; }
+
+    /// <summary>
+    /// Gets the fields the signature locks (ISO 32000-2, 12.8.2.4, FieldMDP); <see langword="null"/> (the default) for
+    /// the lock of the signature field when it has one, or no lock.
+    /// </summary>
+    public PdfFieldLock? FieldLock { get; init; }
+
+    /// <summary>Gets the widget of a visible signature; <see langword="null"/> (the default) for an invisible signature on the first page.</summary>
+    public PdfSignatureAppearance? Appearance { get; init; }
 
     /// <summary>Gets the name of the signer (<c>/Name</c>), when it is not the name of the certificate.</summary>
     public string? SignerName { get; init; }

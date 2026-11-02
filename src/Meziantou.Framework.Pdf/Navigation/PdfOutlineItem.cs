@@ -20,7 +20,7 @@ public sealed class PdfOutlineItem
         ArgumentNullException.ThrowIfNull(title);
         _title = title;
         _destination = destination;
-        Children = new PdfOutlineCollection();
+        Children = new PdfOutlineCollection(this);
         Changes = OutlineItemChanges.All;
     }
 
@@ -34,7 +34,7 @@ public sealed class PdfOutlineItem
         _isItalic = isItalic;
         Dictionary = dictionary;
         Reference = reference;
-        Children = new PdfOutlineCollection();
+        Children = new PdfOutlineCollection(this);
     }
 
     /// <summary>Gets or sets the text of the item.</summary>
@@ -117,4 +117,7 @@ public sealed class PdfOutlineItem
     internal PdfReference? Reference { get; set; }
 
     internal OutlineItemChanges Changes { get; set; }
+
+    /// <summary>Gets or sets the collection the item is in.</summary>
+    internal PdfOutlineCollection? Collection { get; set; }
 }

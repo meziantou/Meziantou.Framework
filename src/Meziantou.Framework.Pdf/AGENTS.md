@@ -27,6 +27,8 @@ the XML documentation and `readme.md` consistent in the same change.
   this library in its namespace (`MEZIANTOU_FRAMEWORK_PDF`, see the project file): a change to them changes both. JBIG2 follows T.88 with the context bit order of its figures: the typical prediction
   contexts alias the contexts of particular templates, so the order matters. Both were checked pixel by pixel against
   MuPDF, Poppler and PDFium on the corpora (`expectations/bilevel-images.txt` of the corpus tests records the digests).
+  The encoders of `PdfImage.FromBilevel` (`CcittFaxFilter.EncodeGroup4`, `Jbig2Encoder`: one lossless generic region)
+  are checked the same way by `RenderingInteropTests.BilevelImagesAreDecodedByOtherReaders`.
 - **Conformance** (`Conformance/`, `Structure/`): the save checks what it can of the PDF/A and PDF/UA levels and writes
   what they need (output intent, XMP identification with the extension schema of PDF/UA for PDF/A-2 and -3, viewer
   preferences, annotation flags; PDF/A-4 leaves the document information dictionary out of the trailer; PDF/A-1 is
@@ -52,6 +54,13 @@ the XML documentation and `readme.md` consistent in the same change.
   `PdfExtGState`, `PdfShadingPattern`, `PdfSoftMask`) create their objects in each document that uses them, once
   (`PdfDocument.SharedResources`); the objects with content (`PdfForm`, `PdfTilingPattern`) belong to their document and
   are created by it. The meshes are written with 32-bit coordinates and 16-bit components mapped by `/Decode`.
+- **Pages and forms** (`PdfPageCollection.cs`, `PdfObjectImporter.cs`, `PdfPageReferenceRemover.cs`, `Forms/`): a page
+  imported from another document is deep-copied by the importer of that source (one per pair of documents, so that the
+  shared objects are copied once); the copy stops at the page objects, whose references are patched when their page is
+  imported. Removing a page removes the references of the document to it (destinations, named destinations, structure
+  tree, form fields). The caches of the document model (annotations of a page, resource names of a builder) are
+  invalidated by the `Version` of `PdfArray` and `PdfDictionary`, incremented by every change. The appearances the
+  library writes for form fields and markup annotations use the standard 14 fonts.
 - **Embedded fonts** (`Fonts/EmbeddedPdfFont.cs`, `Fonts/EmbeddedFontUsage.cs`): a `Type0` font with `Identity-H`
   codes that are the glyph identifiers (the subset keeps them: CID = GID), a `ToUnicode` CMap of the glyphs that show
   one cluster, and `/ActualText` around the texts whose glyphs cannot give them back. The content builder shapes the
@@ -134,6 +143,12 @@ Signs and verifies the signatures of documents, with `System.Security.Cryptograp
   widths; the writer does not encrypt the `/Contents` of a signature dictionary.
 - PAdES baseline: the signed attributes are content-type, message-digest and ESS signing-certificate-v2; the
   signing-time attribute is not written (the time is `/M`).
+- The CMS signed data is encoded and checked by `CmsSignature`, not by `SignedCms`, so that the digest of the file is
+  computed range by range without a copy of the file; `SignedCms` decodes the signatures and checks the algorithms
+  `CmsSignature` does not know, and the signatures without signed attributes, with a copy of the signed bytes.
+- The verifier reads a signature dictionary from the revision the signature covers (a prefix of the file opened as a
+  document), and `PdfModificationAnalyzer` compares that revision with the document to list and classify the changes
+  made after it, for the DocMDP and FieldMDP permissions.
 - Tests: `PdfSignerTests` (certificates created by the tests and a time stamp authority of the tests, an
   `HttpMessageHandler`, no network); `tests/Meziantou.Framework.Pdf.InteropTests` (`SignatureInteropTests`): Poppler's
   pdfsig checks the signatures (the pinned release has no pdfsig for Windows, so they run on Linux and macOS);

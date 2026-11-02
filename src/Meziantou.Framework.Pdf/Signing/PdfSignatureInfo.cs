@@ -25,7 +25,7 @@ public sealed class PdfSignatureInfo
     /// <summary>Gets a value indicating whether the signature is a document time stamp (<c>ETSI.RFC3161</c>), not the signature of a person.</summary>
     public bool IsDocumentTimestamp => SubFilter == "ETSI.RFC3161";
 
-    /// <summary>Gets the name of the signer (<c>/Name</c>).</summary>
+    /// <summary>Gets the name of the signer (<c>/Name</c>), as it was signed.</summary>
     public string? SignerName { get; internal set; }
 
     /// <summary>Gets the reason of the signature (<c>/Reason</c>).</summary>
@@ -58,15 +58,45 @@ public sealed class PdfSignatureInfo
     /// <summary>Gets a value indicating whether the cryptographic signature is valid for the certificate of the signer.</summary>
     public bool IsSignatureValid { get; internal set; }
 
-    /// <summary>Gets the time of the time stamp of the signature (PAdES B-T), or of a document time stamp.</summary>
+    /// <summary>Gets the time of the time stamp of the signature (PAdES B-T), the earliest valid one when it has several, or of a document time stamp.</summary>
     public DateTimeOffset? TimestampTime { get; internal set; }
 
-    /// <summary>Gets a value indicating whether the time stamp is valid: <see langword="null"/> for a signature without time stamp.</summary>
+    /// <summary>Gets a value indicating whether the time stamps are valid, all of them: <see langword="null"/> for a signature without time stamp.</summary>
     public bool? IsTimestampValid { get; internal set; }
+
+    /// <summary>
+    /// Gets a value indicating whether the ESS signing certificate attribute (RFC 5035) identifies <see cref="Certificate"/>:
+    /// <see langword="null"/> when the signature has no such attribute and its format does not require it. A PAdES
+    /// signature (<c>ETSI.CAdES.detached</c>) requires it.
+    /// </summary>
+    public bool? IsSigningCertificateValid { get; internal set; }
+
+    /// <summary>Gets the changes the signature allows after it when it is a certification signature (DocMDP), or <see langword="null"/>.</summary>
+    public PdfCertificationLevel? CertificationLevel { get; internal set; }
+
+    /// <summary>Gets the fields the signature locks (FieldMDP), or <see langword="null"/>.</summary>
+    public PdfFieldLock? FieldLock { get; internal set; }
+
+    /// <summary>
+    /// Gets the objects the revisions appended after the signature added or changed; empty when the signature covers the
+    /// whole document. It is a summary of the changes for the application to review, built from the structure of the
+    /// document, not a proof that the document shows the same content.
+    /// </summary>
+    public IReadOnlyList<PdfModification> Modifications { get; internal set; } = [];
+
+    /// <summary>
+    /// Gets a value indicating whether the <see cref="Modifications"/> are allowed by the certification level and the
+    /// field lock of the signature. Without certification and lock, every change is allowed: check <see cref="CoversWholeDocument"/>.
+    /// </summary>
+    public bool AreModificationsPermitted { get; internal set; } = true;
 
     /// <summary>Gets the reason the signature could not be checked, or <see langword="null"/>.</summary>
     public string? Error { get; internal set; }
 
-    /// <summary>Gets a value indicating whether the signature is valid: intact, cryptographically valid, and with a valid time stamp when it has one.</summary>
-    public bool IsValid => Error is null && IsDocumentIntact && IsSignatureValid && IsTimestampValid is null or true;
+    /// <summary>
+    /// Gets a value indicating whether the signature is valid: intact, cryptographically valid, with a valid time stamp
+    /// when it has one, an ESS signing certificate that identifies the certificate of the signer when it has one, and no
+    /// change after it that its certification or its field lock forbids.
+    /// </summary>
+    public bool IsValid => Error is null && IsDocumentIntact && IsSignatureValid && IsTimestampValid is null or true && IsSigningCertificateValid is null or true && AreModificationsPermitted;
 }

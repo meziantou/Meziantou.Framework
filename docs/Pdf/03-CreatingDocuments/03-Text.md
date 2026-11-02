@@ -54,8 +54,31 @@ public static void DrawReceipt(string outputPath)
 
 ## Wrap a paragraph
 
-The builder does not break lines. To fill a column, measure the words, and start a new line before the word that does
-not fit:
+[DrawTextBox](cref:Meziantou.Framework.Pdf.PdfContentBuilder.DrawTextBox) draws a text in a rectangle, broken into lines that fit its width:
+
+<!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfContentBuilderTests.cs;region=Pdf_TextBox;format=md-fenced-code-block;dedent=true -->
+```csharp
+// The text is broken into lines that fit the width of the box; what does not fit in its height is returned
+builder.DrawTextBox(text, font, 10, new PdfRectangle(50, 400, 250, 550), new PdfTextBoxOptions { Alignment = PdfTextAlignment.Justify }, out var remaining);
+if (remaining.Length > 0)
+{
+    builder.DrawTextBox(remaining, font, 10, new PdfRectangle(50, 100, 250, 380));
+}
+```
+<!-- endref -->
+
+- The lines break at the spaces; a word wider than the rectangle is broken between its characters. A line feed of the
+  text starts a new paragraph.
+- [PdfTextBoxOptions](cref:Meziantou.Framework.Pdf.PdfTextBoxOptions) sets the alignment (left, centered, right or justified: the spaces of a justified line are
+  stretched, except on the last line of a paragraph) and the line height, a multiple of the font size (1.2 by default).
+- The first baseline is below the top of the rectangle by the ascent of the font. The lines that do not fit in the
+  height of the rectangle are not drawn: the overload with `out remainingText` returns their text, to continue in
+  another rectangle or on the next page.
+- The text is laid out before anything is written: a character the font cannot show throws `ArgumentException` and
+  leaves the content unchanged.
+
+For full control of the lines (other break rules, a line height per line), measure the words with
+[GetTextWidth](cref:Meziantou.Framework.Pdf.PdfFont.GetTextWidth) and start a new line before the word that does not fit:
 
 <!-- ref:../../../tests/Meziantou.Framework.Pdf.Tests/PdfFontTests.cs;region=Pdf_DrawParagraph;format=md-fenced-code-block;dedent=true -->
 ```csharp

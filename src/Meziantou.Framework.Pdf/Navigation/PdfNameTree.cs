@@ -1,4 +1,5 @@
 using Meziantou.Framework.Pdf.Objects;
+using Meziantou.Framework.Pdf.Text;
 
 namespace Meziantou.Framework.Pdf;
 
@@ -7,7 +8,26 @@ internal static class PdfNameTree
 {
     private const int MaxDepth = 32;
 
+    /// <summary>
+    /// Finds the value of a text key. The keys are byte strings (7.9.6): the text is looked up in each of its encodings as
+    /// a text string (7.9.2.2), PDFDocEncoding, UTF-16BE and UTF-8, since the tree is sorted by the bytes of its keys.
+    /// </summary>
     public static PdfObject? Find(PdfDictionary root, string key)
+    {
+        foreach (var candidate in GetEncodings(key))
+        {
+            if (Find(root, candidate) is { } found)
+                return found;
+        }
+
+        return null;
+    }
+
+    /// <summary>Finds the value of a string key: the key with the same bytes, or, when there is none, the key with the same text in another encoding.</summary>
+    public static PdfObject? Find(PdfDictionary root, PdfString key) => Find(root, key.Span) ?? Find(root, key.ToText());
+
+    /// <summary>Finds the value of the key that has these bytes. The limits of the nodes and the keys of the leaves are compared as bytes (7.9.6).</summary>
+    public static PdfObject? Find(PdfDictionary root, ReadOnlySpan<byte> key)
     {
         var visited = new HashSet<PdfDictionary>(ReferenceEqualityComparer.Instance);
         return Find(root, key, visited, depth: 0);
@@ -68,16 +88,39 @@ internal static class PdfNameTree
         }
     }
 
-    private static PdfObject? Find(PdfDictionary node, string key, HashSet<PdfDictionary> visited, int depth)
+    private static PdfObject? Find(PdfDictionary node, ReadOnlySpan<byte> key, HashSet<PdfDictionary> visited, int depth)
     {
         if (depth > MaxDepth || !visited.Add(node))
             return null;
 
         if (node.Get<PdfArray>(PdfNames.Names) is { } names)
         {
+            // The keys are sorted (7.9.6): a binary search finds them; a tree that is not sorted is searched linearly
+            var low = 0;
+            var high = (names.Count / 2) - 1;
+            while (low <= high)
+            {
+                var middle = low + ((high - low) / 2);
+                if (!names.TryGetResolved<PdfString>(middle * 2, out var name))
+                    break;
+
+                var comparison = name.Span.SequenceCompareTo(key);
+                if (comparison == 0)
+                    return names.GetResolved((middle * 2) + 1);
+
+                if (comparison < 0)
+                {
+                    low = middle + 1;
+                }
+                else
+                {
+                    high = middle - 1;
+                }
+            }
+
             for (var i = 0; i + 1 < names.Count; i += 2)
             {
-                if (names.TryGetResolved<PdfString>(i, out var name) && string.Equals(name.ToText(), key, StringComparison.Ordinal))
+                if (names.TryGetResolved<PdfString>(i, out var name) && name.Span.SequenceEqual(key))
                     return names.GetResolved(i + 1);
             }
         }
@@ -88,9 +131,9 @@ internal static class PdfNameTree
             {
                 if (PdfReference.ResolveIfReference(kid) is PdfDictionary child)
                 {
-                    // The limits of a node bound its keys; a node without limits is searched
-                    if (child.Get<PdfArray>(PdfNames.Limits) is { Count: 2 } limits && limits.TryGetResolved<PdfString>(0, out var low) && limits.TryGetResolved<PdfString>(1, out var high)
-                        && (string.CompareOrdinal(key, low.ToText()) < 0 || string.CompareOrdinal(key, high.ToText()) > 0))
+                    // The limits of a node bound its keys, as bytes; a node without limits is searched
+                    if (child.Get<PdfArray>(PdfNames.Limits) is { Count: 2 } limits && limits.TryGetResolved<PdfString>(0, out var lowest) && limits.TryGetResolved<PdfString>(1, out var highest)
+                        && (key.SequenceCompareTo(lowest.Span) < 0 || key.SequenceCompareTo(highest.Span) > 0))
                     {
                         continue;
                     }
@@ -102,6 +145,33 @@ internal static class PdfNameTree
         }
 
         return null;
+    }
+
+    /// <summary>Gets the encodings of a text string (7.9.2.2): PDFDocEncoding when the text can be, UTF-16BE and UTF-8 with their byte order marks.</summary>
+    private static IEnumerable<byte[]> GetEncodings(string text)
+    {
+        var pdfDoc = new byte[text.Length];
+        var encodable = true;
+        for (var i = 0; i < text.Length; i++)
+        {
+            if (!PdfTextStringEncoding.TryEncodePdfDocEncoding(text[i], out pdfDoc[i]))
+            {
+                encodable = false;
+                break;
+            }
+        }
+
+        if (encodable)
+            yield return pdfDoc;
+
+        var utf16 = new byte[2 + (text.Length * 2)];
+        utf16[0] = 0xFE;
+        utf16[1] = 0xFF;
+        System.Text.Encoding.BigEndianUnicode.GetBytes(text, utf16.AsSpan(2));
+        yield return utf16;
+
+        byte[] utf8 = [0xEF, 0xBB, 0xBF, .. System.Text.Encoding.UTF8.GetBytes(text)];
+        yield return utf8;
     }
 
     private sealed class ByteOrderComparer : IComparer<ReadOnlyMemory<byte>>

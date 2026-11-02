@@ -61,6 +61,12 @@ document.Outlines.Insert(0, new PdfOutlineItem("Cover", PdfDestination.Fit(page)
 - [IsBold](cref:Meziantou.Framework.Pdf.PdfOutlineItem.IsBold), [IsItalic](cref:Meziantou.Framework.Pdf.PdfOutlineItem.IsItalic) and [Color](cref:Meziantou.Framework.Pdf.PdfOutlineItem.Color) (an RGB color, `null` for black) style the title.
 - [IsOpen](cref:Meziantou.Framework.Pdf.PdfOutlineItem.IsOpen) shows the children of the item when the document is opened.
 - [Outlines](cref:Meziantou.Framework.Pdf.PdfDocument.Outlines) and [Children](cref:Meziantou.Framework.Pdf.PdfOutlineItem.Children) are lists: [Insert](cref:Meziantou.Framework.Pdf.PdfOutlineCollection.Insert), `Remove`, [RemoveAt](cref:Meziantou.Framework.Pdf.PdfOutlineCollection.RemoveAt), [Clear](cref:Meziantou.Framework.Pdf.PdfOutlineCollection.Clear) and the indexer change them.
+  An item is in one list at most, once: adding an item that is already in a list, or to its own descendants, throws
+  `InvalidOperationException`. Remove it first to move it.
+- Setting the destination of an item or a link read from a file replaces its action, whatever its kind: an item has a
+  destination or an action, not both.
+- A link to a web address is written in ASCII: an internationalized host in its `xn--` form, the other non-ASCII
+  characters percent-encoded.
 
 ## Read the bookmarks and links
 

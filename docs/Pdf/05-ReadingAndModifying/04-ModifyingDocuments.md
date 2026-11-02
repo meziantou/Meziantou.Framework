@@ -35,13 +35,18 @@ public static void StampPages(string inputPath, string outputPath)
 
 ![The welcome card with the word APPROVED in translucent red, turned across its center](images/StampPages.png)
 
-- The new content is painted after the content of the page, so over it. The existing content is wrapped between a save
-  and a restore of the graphics state first, so that the new content starts with the default graphics state, whatever
-  the existing content left.
+- The new content is painted after the content of the page, so over it. The existing content, the content of the
+  builders created before included, is wrapped between a save and a restore of the graphics state first, so that the
+  new content starts with the default graphics state, whatever the existing content left. This relies on the content
+  of each builder being balanced: [Complete](cref:Meziantou.Framework.Pdf.PdfContentBuilder.Complete) checks that every save of the graphics state, text object and marked-content
+  sequence is closed.
+- The fonts and images a builder adds go to the resources of the page: the resources it shares with other pages are
+  copied first, so that the other pages do not change.
 - Use the crop box, not the media box, to place content in the visible area. The coordinates of a page whose [Rotation](cref:Meziantou.Framework.Pdf.PdfPage.Rotation)
   is set are those of the page before it is turned.
-- Add pages with `Pages.Add` and `Pages.Insert`, and remove them with `Pages.RemoveAt`. The page tree of the file is
-  kept.
+- Use [DisplayToUserSpace](cref:Meziantou.Framework.Pdf.PdfPage.DisplayToUserSpace) to draw on a rotated or cropped page as on an upright page: see
+  [Managing pages](07-ManagingPages.md#draw-on-a-rotated-or-cropped-page).
+- Add, remove, move, duplicate and import pages with [Pages](cref:Meziantou.Framework.Pdf.PdfDocument.Pages): see [Managing pages](07-ManagingPages.md).
 
 ## Full and incremental saves
 

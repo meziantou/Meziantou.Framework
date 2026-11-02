@@ -1,3 +1,5 @@
+using System.Buffers;
+
 namespace Meziantou.Framework.Pdf.Filters;
 
 /// <summary>
@@ -36,7 +38,10 @@ internal static class RunLengthFilter
 
     public static byte[] Encode(ReadOnlySpan<byte> input)
     {
-        var output = new List<byte>(input.Length + (input.Length / 128) + 2);
+        // At most a length byte per 128 bytes and the end-of-data byte, in a rented buffer: the result has the exact length
+        var buffer = ArrayPool<byte>.Shared.Rent(input.Length + ((input.Length + 127) / 128) + 1);
+        var output = buffer.AsSpan();
+        var length = 0;
         var position = 0;
         while (position < input.Length)
         {
@@ -48,8 +53,8 @@ internal static class RunLengthFilter
 
             if (run >= 2)
             {
-                output.Add((byte)(257 - run));
-                output.Add(input[position]);
+                output[length++] = (byte)(257 - run);
+                output[length++] = input[position];
                 position += run;
                 continue;
             }
@@ -61,16 +66,15 @@ internal static class RunLengthFilter
                 literal++;
             }
 
-            output.Add((byte)(literal - 1));
-            for (var i = 0; i < literal; i++)
-            {
-                output.Add(input[position + i]);
-            }
-
+            output[length++] = (byte)(literal - 1);
+            input.Slice(position, literal).CopyTo(output[length..]);
+            length += literal;
             position += literal;
         }
 
-        output.Add(128);
-        return [.. output];
+        output[length++] = 128;
+        var result = output[..length].ToArray();
+        ArrayPool<byte>.Shared.Return(buffer);
+        return result;
     }
 }

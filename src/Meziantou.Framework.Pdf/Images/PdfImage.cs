@@ -1,16 +1,20 @@
 using System.Buffers.Binary;
 using Meziantou.Framework.Imaging;
+using Meziantou.Framework.Imaging.Formats;
+using Meziantou.Framework.Pdf.Filters;
 using Meziantou.Framework.Pdf.Objects;
 
 namespace Meziantou.Framework.Pdf;
 
 /// <summary>
 /// An image that <see cref="PdfContentBuilder.DrawImage"/> draws: an image XObject (ISO 32000-2, 8.9.5). A JPEG file is
-/// kept as it is (<c>DCTDecode</c>); another image is stored as samples compressed with <c>FlateDecode</c>, its alpha
-/// channel as a soft mask (11.6.5.3). An ICC profile of the image becomes an <c>ICCBased</c> color space.
+/// kept as it is (<c>DCTDecode</c>); another image is stored as samples compressed with <c>FlateDecode</c>, or as JPEG
+/// data with <see cref="FromImageAsJpeg"/>, its alpha channel as a soft mask (11.6.5.3). An ICC profile of the image
+/// becomes an <c>ICCBased</c> color space. A bilevel image (<see cref="FromBilevel"/>) is compressed with
+/// <c>CCITTFaxDecode</c>, <c>JBIG2Decode</c> or <c>FlateDecode</c>.
 /// </summary>
 /// <remarks>An image does not belong to a document: each document that uses it gets its own objects. Instances are immutable and thread-safe.</remarks>
-public sealed class PdfImage
+public sealed partial class PdfImage
 {
     private readonly ReadOnlyMemory<byte> _data;
     private readonly PdfName? _filter;
@@ -76,18 +80,109 @@ public sealed class PdfImage
         return new PdfImage(info.Width, info.Height, colorSpace, 8, data.ToArray(), PdfNames.DCTDecode, GetIccProfile(info.Metadata.IccProfile, colorSpace), softMask: null, inverted);
     }
 
-    /// <summary>Creates an image from the first frame of an image of <c>Meziantou.Framework.Imaging</c>.</summary>
+    /// <summary>Creates an image from the first frame of an image of <c>Meziantou.Framework.Imaging</c>, compressed without loss.</summary>
     /// <param name="image">The image. Its pixels are copied.</param>
     /// <returns>
     /// The image: 8 or 16 bits per component, gray or RGB, with a soft mask when the image has transparent pixels. The
     /// packed pixel formats get the precision of their widening: 8 bits for <see cref="PixelFormat.Bgr565"/>, 16 bits for
-    /// <see cref="PixelFormat.Rgba1010102"/>.
+    /// <see cref="PixelFormat.Rgba1010102"/>. The samples are compressed with <c>FlateDecode</c> and a PNG predictor when
+    /// the document is saved with <see cref="PdfSaveOptions.CompressStreams"/>.
     /// </returns>
     /// <exception cref="ArgumentException">The image has floating-point pixels, which PDF samples cannot store: convert it to an integer pixel format first.</exception>
     public static PdfImage FromImage(Image image)
     {
         ArgumentNullException.ThrowIfNull(image);
 
+        var samples = GetSamples(image);
+        return new PdfImage(samples.Width, samples.Height, samples.ColorSpace, samples.BitsPerComponent, samples.Data, filter: null, samples.IccProfile, samples.SoftMask);
+    }
+
+    /// <summary>
+    /// Creates an image from the first frame of an image of <c>Meziantou.Framework.Imaging</c>, compressed as JPEG
+    /// (<c>DCTDecode</c>): much smaller than the samples <see cref="FromImage"/> stores for photos, at the cost of the
+    /// losses of JPEG.
+    /// </summary>
+    /// <param name="image">The image. Its pixels are copied.</param>
+    /// <param name="encoder">
+    /// The settings of the compression (<see cref="JpegEncoder.Quality"/>, <see cref="JpegEncoder.ChromaSubsampling"/>,
+    /// <see cref="JpegEncoder.Process"/>...), or <see langword="null"/> for the default settings of <see cref="JpegEncoder"/>.
+    /// </param>
+    /// <returns>
+    /// The image: gray or RGB (YCbCr in the JPEG data), 8 bits per component; the samples of 16 bits are rounded to 8 bits.
+    /// The transparent pixels give a soft mask compressed without loss, as with <see cref="FromImage"/>, and the ICC
+    /// profile of the image becomes the color space of the image.
+    /// </returns>
+    /// <exception cref="ArgumentException">The image has floating-point pixels: convert it to an integer pixel format first.</exception>
+    public static PdfImage FromImageAsJpeg(Image image, JpegEncoder? encoder = null)
+    {
+        ArgumentNullException.ThrowIfNull(image);
+
+        var samples = GetSamples(image);
+        var data = samples.Data;
+        if (samples.BitsPerComponent == 16)
+        {
+            // The samples are big-endian: rounded to the nearest value of 8 bits
+            var reduced = new byte[data.Length / 2];
+            for (var i = 0; i < reduced.Length; i++)
+            {
+                var value = (data[2 * i] << 8) | data[(2 * i) + 1];
+                reduced[i] = (byte)(((value * 255) + 32767) / 65535);
+            }
+
+            data = reduced;
+        }
+
+        // An image without metadata: the ICC profile is the color space of the image object
+        using var pixels = samples.ColorSpace == PdfDeviceColorSpace.Gray
+            ? (Image)Image.ImportPixelBytes<Gray8>(data, samples.Width, samples.Height)
+            : Image.ImportPixelBytes<Rgb24>(data, samples.Width, samples.Height);
+        using var jpeg = new MemoryStream();
+        pixels.Save(jpeg, encoder ?? new JpegEncoder());
+        return new PdfImage(samples.Width, samples.Height, samples.ColorSpace, 8, jpeg.ToArray(), PdfNames.DCTDecode, samples.IccProfile, samples.SoftMask);
+    }
+
+    /// <summary>Creates an image from an image file: a JPEG file is kept as it is, another format is decoded by <c>Meziantou.Framework.Imaging</c>.</summary>
+    /// <param name="data">The content of the file.</param>
+    /// <returns>The image.</returns>
+    /// <exception cref="ArgumentException">The data is not an image the library can read.</exception>
+    public static PdfImage Load(ReadOnlySpan<byte> data)
+    {
+        if (data.Length >= Image.FormatDetectionPrefixLength && Image.DetectFormat(data[..Image.FormatDetectionPrefixLength]) == ImageFormat.Jpeg)
+        {
+            try
+            {
+                return FromJpeg(data);
+            }
+            catch (ArgumentException)
+            {
+                // A JPEG file DCTDecode does not support (12 bits per sample): decode it
+            }
+        }
+
+        try
+        {
+            using var image = Image.Load(data);
+            return FromImage(image);
+        }
+        catch (ImageException ex)
+        {
+            throw new ArgumentException("The data is not an image the library can read: " + ex.Message, nameof(data), ex);
+        }
+    }
+
+    /// <summary>Creates an image from an image file.</summary>
+    /// <param name="path">The path of the file.</param>
+    /// <returns>The image.</returns>
+    /// <exception cref="ArgumentException">The file is not an image the library can read.</exception>
+    public static PdfImage Load(string path)
+    {
+        ArgumentException.ThrowIfNullOrEmpty(path);
+        return Load(File.ReadAllBytes(path));
+    }
+
+    /// <summary>Gets the samples of the first frame of an image, as PDF stores them: gray or RGB, 8 or 16 bits big-endian, and the alpha channel as a soft mask.</summary>
+    private static ImageSamples GetSamples(Image image)
+    {
         // The formats whose samples are not whole bytes in RGB order are written from their lossless widening
         Image? widened = image.PixelFormat switch
         {
@@ -101,7 +196,7 @@ public sealed class PdfImage
         {
             using (widened)
             {
-                return FromImage(widened);
+                return GetSamples(widened);
             }
         }
 
@@ -147,46 +242,7 @@ public sealed class PdfImage
         }
 
         var softMask = alpha is not null && !opaque ? new PdfImage(width, height, PdfDeviceColorSpace.Gray, bitsPerComponent, alpha, filter: null, iccProfile: null, softMask: null) : null;
-        return new PdfImage(width, height, colorSpace, bitsPerComponent, samples, filter: null, GetIccProfile(image.Metadata.IccProfile, colorSpace), softMask);
-    }
-
-    /// <summary>Creates an image from an image file: a JPEG file is kept as it is, another format is decoded by <c>Meziantou.Framework.Imaging</c>.</summary>
-    /// <param name="data">The content of the file.</param>
-    /// <returns>The image.</returns>
-    /// <exception cref="ArgumentException">The data is not an image the library can read.</exception>
-    public static PdfImage Load(ReadOnlySpan<byte> data)
-    {
-        if (data.Length >= Image.FormatDetectionPrefixLength && Image.DetectFormat(data[..Image.FormatDetectionPrefixLength]) == ImageFormat.Jpeg)
-        {
-            try
-            {
-                return FromJpeg(data);
-            }
-            catch (ArgumentException)
-            {
-                // A JPEG file DCTDecode does not support (12 bits per sample): decode it
-            }
-        }
-
-        try
-        {
-            using var image = Image.Load(data);
-            return FromImage(image);
-        }
-        catch (ImageException ex)
-        {
-            throw new ArgumentException("The data is not an image the library can read: " + ex.Message, nameof(data), ex);
-        }
-    }
-
-    /// <summary>Creates an image from an image file.</summary>
-    /// <param name="path">The path of the file.</param>
-    /// <returns>The image.</returns>
-    /// <exception cref="ArgumentException">The file is not an image the library can read.</exception>
-    public static PdfImage Load(string path)
-    {
-        ArgumentException.ThrowIfNullOrEmpty(path);
-        return Load(File.ReadAllBytes(path));
+        return new ImageSamples(width, height, colorSpace, bitsPerComponent, samples, GetIccProfile(image.Metadata.IccProfile, colorSpace), softMask);
     }
 
     internal PdfReference GetReference(PdfDocument document)
@@ -217,11 +273,14 @@ public sealed class PdfImage
         if (_filter is not null)
         {
             dictionary[PdfNames.Filter] = _filter;
+            AddDecodeParameters(dictionary);
             stream.SetData(_data, compressible: false);
         }
         else
         {
+            // The samples are compressed with the PNG predictors (7.4.4.4), which make them smaller for most images
             stream.SetData(_data, compressible: true);
+            stream.PngPredictor = new PdfPngPredictor(_colorSpace == PdfDeviceColorSpace.Gray ? 1 : 3, _bitsPerComponent, Width);
         }
 
         reference = document.Objects.Add(stream);
@@ -296,4 +355,6 @@ public sealed class PdfImage
 
         return false;
     }
+
+    private sealed record ImageSamples(int Width, int Height, PdfDeviceColorSpace ColorSpace, int BitsPerComponent, byte[] Data, byte[]? IccProfile, PdfImage? SoftMask);
 }

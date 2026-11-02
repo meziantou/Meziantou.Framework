@@ -2,7 +2,9 @@
 #pragma warning disable
 #endif
 #nullable enable
+using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -76,6 +78,39 @@ internal static partial class OperationExtensions
         }
 
         return operation;
+    }
+
+    /// <summary>
+    /// Returns the arguments sorted by the ordinal of their parameter. <see cref="IInvocationOperation.Arguments"/> keeps the source order, so named
+    /// arguments such as <c>string.Equals(comparisonType: StringComparison.Ordinal, a: x, b: y)</c> are not in the order of the parameters.
+    /// The arguments are returned unchanged when they are already in order, or when one of them has no parameter.
+    /// </summary>
+    public static ImmutableArray<IArgumentOperation> InParameterOrder(this ImmutableArray<IArgumentOperation> arguments)
+    {
+        if (arguments.IsDefault)
+            return arguments;
+
+        var isOrdered = true;
+        for (var i = 0; i < arguments.Length; i++)
+        {
+            var parameter = arguments[i].Parameter;
+            if (parameter is null)
+                return arguments;
+
+            if (parameter.Ordinal != i)
+            {
+                isOrdered = false;
+            }
+        }
+
+        if (isOrdered)
+            return arguments;
+
+        var result = new IArgumentOperation[arguments.Length];
+        arguments.CopyTo(result);
+        Array.Sort(result, (x, y) => x.Parameter!.Ordinal.CompareTo(y.Parameter!.Ordinal));
+
+        return ImmutableArray.Create(result);
     }
 
     public static IMethodSymbol? GetContainingMethod(this IOperation operation, CancellationToken cancellationToken)

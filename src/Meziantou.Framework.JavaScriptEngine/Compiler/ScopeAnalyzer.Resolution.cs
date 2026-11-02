@@ -44,6 +44,12 @@ internal sealed partial class ScopeAnalyzer
                         GetOrDeclareSpecialVariable(owner, kind).IsCaptured = true;
                     }
                 }
+
+                // An arrow function has no arguments object: the eval code can read the one of the enclosing function
+                if (owner != scope.Function && owner.ArgumentsVariable is { } arguments)
+                {
+                    arguments.IsReferenced = true;
+                }
             }
         }
 

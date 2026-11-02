@@ -43,6 +43,16 @@ internal partial class AssertionFormatter
             .ToString();
     }
 
+    public virtual string Format(RefStructEqualAssertionError error)
+    {
+        return CreateMessage(error.IsNegative ? "Assert.NotEqual() assertion failed." : "Assert.Equal() assertion failed.", error.Message)
+            .AppendGroup(
+                ("Expected expression", error.ExpectedExpression),
+                ("Actual expression", error.ActualExpression))
+            .Append("Type", FormatType(error.ValueType) + " (ref struct values cannot be displayed)")
+            .ToString();
+    }
+
     public virtual string Format(ArrayDimensionsEqualAssertionError error)
     {
         return CreateMessage("Assert.Equal() assertion failed: Dimensions differ.", error.Message)

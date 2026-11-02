@@ -76,6 +76,7 @@ internal static class PdfNames
     public static readonly PdfName DL = Add("DL");
     public static readonly PdfName DP = Add("DP");
     public static readonly PdfName DW = Add("DW");
+    public static readonly PdfName DW2 = Add("DW2");
     public static readonly PdfName EarlyChange = Add("EarlyChange");
     public static readonly PdfName Encoding = Add("Encoding");
     public static readonly PdfName Encrypt = Add("Encrypt");

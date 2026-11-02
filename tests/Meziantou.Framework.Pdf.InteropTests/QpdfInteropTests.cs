@@ -26,6 +26,55 @@ public sealed class QpdfInteropTests
         Assert.Contains("No syntax or stream encoding errors found", result.StandardOutputText, StringComparison.Ordinal);
     }
 
+    public static TheoryData<string> WrittenNames => new(InteropDocuments.WrittenNames);
+
+    [Theory]
+    [MemberData(nameof(WrittenNames))]
+    public async Task LinearizedDocumentsPassTheLinearizationCheck(string name)
+    {
+        var qpdf = await QpdfTool.LocateAsync(XunitCancellationToken);
+        var path = InteropDocuments.Write(name, objectStreams: false, linearize: true);
+
+        var linearization = await qpdf.CheckLinearizationAsync(path, XunitCancellationToken);
+        var check = await qpdf.CheckAsync(path, XunitCancellationToken);
+
+        Assert.Equal(0, linearization.ExitCode, linearization.StandardOutputText + linearization.StandardError);
+        Assert.Contains("no linearization errors", linearization.StandardOutputText, StringComparison.Ordinal);
+        Assert.Equal("", linearization.StandardError.Trim());
+        Assert.Equal(0, check.ExitCode, check.StandardOutputText + check.StandardError);
+        Assert.Contains("File is linearized", check.StandardOutputText, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task LinearizedDocumentWithSharedObjectsPassesTheLinearizationCheck()
+    {
+        var qpdf = await QpdfTool.LocateAsync(XunitCancellationToken);
+        var document = new PdfDocument();
+        var helvetica = PdfFont.GetStandardFont(PdfStandardFont.Helvetica);
+        var courier = PdfFont.GetStandardFont(PdfStandardFont.Courier);
+        for (var i = 0; i < 6; i++)
+        {
+            document.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("Page " + i, helvetica, 12, 72, 700).DrawText("Shared", i == 0 ? helvetica : courier, 12, 72, 600);
+        }
+
+        for (var i = 0; i < 6; i++)
+        {
+            document.Pages[i].Annotations.AddLink(new PdfRectangle(10, 10, 50, 50), PdfDestination.Fit(document.Pages[(i + 1) % 6]));
+        }
+
+        document.Outlines.Add("Chapter", PdfDestination.Fit(document.Pages[3])).Children.Add("Section", PdfDestination.Fit(document.Pages[4]));
+        document.Catalog[PdfName.Create("OpenAction")] = new PdfArray(document.Pages[0].Reference, PdfName.Create("Fit"));
+        var path = Path.Combine(AppContext.BaseDirectory, "InteropOutput", "linearized-shared.pdf");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        document.Save(path, new PdfSaveOptions { Linearize = true });
+
+        var result = await qpdf.CheckLinearizationAsync(path, XunitCancellationToken);
+
+        Assert.Equal(0, result.ExitCode, result.StandardOutputText + result.StandardError);
+        Assert.Contains("no linearization errors", result.StandardOutputText, StringComparison.Ordinal);
+        Assert.Equal("", result.StandardError.Trim());
+    }
+
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
@@ -61,6 +110,39 @@ public sealed class QpdfInteropTests
 
             Assert.Equal(0, result.ExitCode, fixture + ": " + result.StandardOutputText + result.StandardError);
         }
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task IncrementalUpdatesWithRemovedObjectsPassTheCheck(bool objectStreams)
+    {
+        var qpdf = await QpdfTool.LocateAsync(XunitCancellationToken);
+        var source = new PdfDocument();
+        source.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("Original", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 12, 72, 700);
+        source.Catalog[PdfName.Create("PrivateData")] = source.Objects.Add(new PdfDictionary { [PdfName.Create("Value")] = PdfInteger.Get(1) });
+        source.Trailer[PdfName.Create("PrivateKey")] = PdfString.FromText("kept");
+        var document = PdfDocument.Open(source.ToByteArray(new PdfSaveOptions { UseObjectStreams = objectStreams }));
+
+        var removed = (PdfReference)document.Catalog[PdfName.Create("PrivateData")]!;
+        document.Catalog.Remove(PdfName.Create("PrivateData"));
+        document.Objects.Remove(removed);
+        document.Information.Title = "Updated";
+        document.Pages[0].CreateContentBuilder().DrawText("Added", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 10, 10, 10);
+        var path = Path.Combine(AppContext.BaseDirectory, "InteropOutput", "incremental-removed-" + objectStreams + ".pdf");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        await using (var stream = File.Create(path))
+        {
+            await document.SaveIncrementalAsync(stream, cancellationToken: XunitCancellationToken);
+        }
+
+        var result = await qpdf.CheckAsync(path, XunitCancellationToken);
+
+        Assert.Equal(0, result.ExitCode, result.StandardOutputText + result.StandardError);
+        Assert.Contains("No syntax or stream encoding errors found", result.StandardOutputText, StringComparison.Ordinal);
+        var read = PdfDocument.Open(await File.ReadAllBytesAsync(path, XunitCancellationToken));
+        Assert.False(read.Objects.TryGetReference(removed.ObjectNumber, out _));
+        Assert.Equal("kept", read.Trailer.Get<PdfString>(PdfName.Create("PrivateKey"))!.ToText());
     }
 
     [Theory]
@@ -128,6 +210,37 @@ public sealed class QpdfInteropTests
         }
 
         Assert.Throws<PdfPasswordException>(() => PdfDocument.Open(File.ReadAllBytes(path)));
+    }
+
+    [Theory]
+    [InlineData("ascii", 130, "")]
+    [InlineData("split-character", 126, "é")]
+    [InlineData("split-emoji", 125, "\U0001F600")]
+    public async Task LongAes256PasswordsAreTruncatedLikeQpdf(string name, int asciiLength, string suffix)
+    {
+        // 7.6.4.3.3: the UTF-8 password is truncated to 127 bytes, even inside a character, as qpdf reads it. The files
+        // qpdf 12 writes with a password longer than 127 bytes cannot be opened by qpdf itself: only the files of the
+        // library are checked
+        // On Windows, a character outside the BMP does not reach qpdf intact through its command line
+        global::Xunit.Assert.SkipWhen(OperatingSystem.IsWindows() && suffix.Any(char.IsSurrogate), "qpdf does not receive the characters outside the BMP of its arguments on Windows");
+        var password = new string('a', asciiLength) + suffix;
+        var qpdf = await QpdfTool.LocateAsync(XunitCancellationToken);
+        var directory = Path.Combine(AppContext.BaseDirectory, "InteropOutput");
+        Directory.CreateDirectory(directory);
+
+        var document = new PdfDocument();
+        document.Pages.Add(PdfSize.A4);
+        document.Encryption = new PdfEncryption(password, password);
+        var byLibrary = Path.Combine(directory, "long-password-" + name + ".pdf");
+        await File.WriteAllBytesAsync(byLibrary, document.ToByteArray(), XunitCancellationToken);
+        var result = await qpdf.CheckAsync(byLibrary, password, XunitCancellationToken);
+        Assert.Equal(0, result.ExitCode, result.StandardOutputText + result.StandardError);
+        Assert.DoesNotContain("Incorrect password supplied", result.StandardOutputText, StringComparison.Ordinal);
+        Assert.Contains("R = 6", result.StandardOutputText, StringComparison.Ordinal);
+
+        // The password truncated on a character boundary is not the password
+        var truncated = await qpdf.CheckAsync(byLibrary, new string('a', asciiLength), XunitCancellationToken);
+        Assert.Equal(suffix.Length != 0, truncated.StandardOutputText.Contains("Incorrect password supplied", StringComparison.Ordinal));
     }
 
     [Theory]

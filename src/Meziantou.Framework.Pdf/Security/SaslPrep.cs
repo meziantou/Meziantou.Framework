@@ -4,7 +4,7 @@ namespace Meziantou.Framework.Pdf.Security;
 
 /// <summary>
 /// The preparation of the passwords of revision 6 (ISO 32000-2, 7.6.4.3.3): the SASLprep profile of stringprep
-/// (RFC 4013), then UTF-8, truncated to 127 bytes. The normalization is the managed one of Meziantou.Framework.Unicode,
+/// (RFC 4013), then UTF-8, truncated to 127 bytes (even inside a character). The normalization is the managed one of Meziantou.Framework.Unicode,
 /// so that it does not depend on ICU.
 /// </summary>
 internal static class SaslPrep
@@ -30,17 +30,10 @@ internal static class SaslPrep
 
         var normalized = UnicodeNormalization.Normalize(mapped.ToString(), NormalizationForm.FormKC);
         var bytes = Encoding.UTF8.GetBytes(normalized);
-        if (bytes.Length <= MaxLength)
-            return bytes;
 
-        // Truncated on a character boundary
-        var length = MaxLength;
-        while (length > 0 && (bytes[length] & 0xC0) == 0x80)
-        {
-            length--;
-        }
-
-        return bytes[..length];
+        // 7.6.4.3.3: the UTF-8 string is truncated to 127 bytes, even in the middle of a character, as the other readers
+        // and writers do (qpdf, Acrobat): cutting on a character boundary would derive another key
+        return bytes.Length <= MaxLength ? bytes : bytes[..MaxLength];
     }
 
     private static bool IsNonAsciiSpace(char c) => c is '\u00A0' or '\u1680' or (>= '\u2000' and <= '\u200A') or '\u202F' or '\u205F' or '\u3000';

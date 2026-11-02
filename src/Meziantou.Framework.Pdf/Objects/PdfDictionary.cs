@@ -28,11 +28,17 @@ public sealed class PdfDictionary : PdfObject, IEnumerable<KeyValuePair<PdfName,
     /// <inheritdoc/>
     public override PdfObjectKind Kind => PdfObjectKind.Dictionary;
 
+    /// <summary>Gets a value indicating whether the entries changed after the dictionary was parsed: an incremental save writes the object that contains it.</summary>
+    internal bool IsModified { get; private set; }
+
     /// <summary>Gets the number of entries.</summary>
     public int Count => _entries.Count;
 
     /// <summary>Gets the keys, in the order of the entries.</summary>
     public IEnumerable<PdfName> Keys => _entries.Keys;
+
+    /// <summary>Gets a number that changes when the entries change, so that the caches of the library can tell they are stale.</summary>
+    internal int Version { get; private set; }
 
     /// <summary>Gets or sets the value of an entry, as it is stored: it may be a <see cref="PdfReference"/>.</summary>
     /// <param name="key">The key.</param>
@@ -48,13 +54,19 @@ public sealed class PdfDictionary : PdfObject, IEnumerable<KeyValuePair<PdfName,
         set
         {
             ArgumentNullException.ThrowIfNull(key);
+            Version++;
             if (value is null)
             {
-                _entries.Remove(key);
+                IsModified |= _entries.Remove(key);
             }
-            else
+            else if (_entries.TryAdd(key, value, out var index))
             {
-                _entries[key] = value;
+                IsModified = true;
+            }
+            else if (!ReferenceEquals(_entries.GetAt(index).Value, value))
+            {
+                _entries.SetAt(index, value);
+                IsModified = true;
             }
         }
     }
@@ -74,11 +86,19 @@ public sealed class PdfDictionary : PdfObject, IEnumerable<KeyValuePair<PdfName,
     public bool Remove(PdfName key)
     {
         ArgumentNullException.ThrowIfNull(key);
-        return _entries.Remove(key);
+        Version++;
+        var removed = _entries.Remove(key);
+        IsModified |= removed;
+        return removed;
     }
 
     /// <summary>Removes every entry.</summary>
-    public void Clear() => _entries.Clear();
+    public void Clear()
+    {
+        Version++;
+        IsModified |= _entries.Count > 0;
+        _entries.Clear();
+    }
 
     /// <summary>Gets the value of an entry, resolving it when it is a reference.</summary>
     /// <param name="key">The key.</param>
@@ -196,5 +216,9 @@ public sealed class PdfDictionary : PdfObject, IEnumerable<KeyValuePair<PdfName,
     }
 
     /// <summary>Adds an entry while parsing: the last of duplicate keys wins.</summary>
-    internal void SetParsed(PdfName key, PdfObject value) => _entries[key] = value;
+    internal void SetParsed(PdfName key, PdfObject value)
+    {
+        Version++;
+        _entries[key] = value;
+    }
 }

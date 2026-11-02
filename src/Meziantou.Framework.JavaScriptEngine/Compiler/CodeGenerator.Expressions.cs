@@ -881,6 +881,22 @@ internal sealed partial class CodeGenerator
             return;
         }
 
+        // arguments.length and arguments[key] when the arguments object is not created (FunctionInfo.HasSimpleArguments)
+        if (member.Object is Identifier arguments && _analysis.SimpleArgumentsReferences.Contains(arguments))
+        {
+            if (member.Computed)
+            {
+                EmitExpression(member.Property);
+                _builder.Emit(OpCode.LoadArgumentsElement, _function.UsesMappedArguments ? 1 : 0);
+            }
+            else
+            {
+                _builder.Emit(OpCode.LoadArgumentsLength);
+            }
+
+            return;
+        }
+
         EmitExpression(member.Object);
         EmitMemberAfterObject(member);
     }

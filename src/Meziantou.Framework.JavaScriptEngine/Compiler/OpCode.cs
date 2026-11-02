@@ -147,6 +147,15 @@ internal enum OpCode
     /// <summary>(mapped) -> object: the arguments object</summary>
     CreateArguments,
 
+    /// <summary>-> number: arguments.length in a function whose arguments object is not created (FunctionInfo.HasSimpleArguments)</summary>
+    LoadArgumentsLength,
+
+    /// <summary>(mapped) key -> value: arguments[key] in a function whose arguments object is not created (FunctionInfo.HasSimpleArguments)</summary>
+    LoadArgumentsElement,
+
+    /// <summary>(mapped) -> object: a new arguments object for a read, in a function whose arguments object is not created (FunctionInfo.HasSimpleArguments)</summary>
+    CreateArgumentsForRead,
+
     /// <summary>-> this; ReferenceError when this is not initialized (derived constructor before super())</summary>
     LoadThis,
 

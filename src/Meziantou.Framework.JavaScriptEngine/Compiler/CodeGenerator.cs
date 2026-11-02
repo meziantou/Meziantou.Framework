@@ -337,7 +337,7 @@ internal sealed partial class CodeGenerator
         }
 
         // The arguments object
-        if (info.ArgumentsVariable is { } arguments && (arguments.IsReferenced || info.HasDirectEval))
+        if (info.ArgumentsVariable is { } arguments && (arguments.IsReferenced || info.HasDirectEval) && !info.HasSimpleArguments)
         {
             _builder.Emit(OpCode.CreateArguments, info.UsesMappedArguments ? 1 : 0);
             EmitInitializeVariable(arguments);
@@ -681,6 +681,13 @@ internal sealed partial class CodeGenerator
     /// <summary>Loads the value of an identifier reference.</summary>
     private void EmitLoadIdentifier(Identifier identifier, bool forTypeOf = false)
     {
+        if (_analysis.SimpleArgumentsReferences.Contains(identifier))
+        {
+            // The arguments object is not created (FunctionInfo.HasSimpleArguments): a new one cannot be observed
+            _builder.Emit(OpCode.CreateArgumentsForRead, _function.UsesMappedArguments ? 1 : 0);
+            return;
+        }
+
         var reference = _analysis.References[identifier];
         if (reference.IsDynamic)
         {

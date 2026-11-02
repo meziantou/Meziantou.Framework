@@ -297,6 +297,16 @@ internal static partial class JsInterpreter
         return sp;
     }
 
+    private static int ExecuteCreateArgumentsForRead(Frame frame, int sp)
+    {
+        var values = frame.Values;
+        var code = frame.Code.Code;
+        var pc = frame.Pc + 1;
+        values[sp++] = CreateArgumentsForRead(frame, mapped: code[pc++] != 0);
+        frame.Pc = pc;
+        return sp;
+    }
+
     private static int ExecuteLoadFunction(Frame frame, int sp)
     {
         var values = frame.Values;

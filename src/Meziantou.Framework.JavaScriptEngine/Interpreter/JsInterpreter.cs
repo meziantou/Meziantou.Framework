@@ -338,6 +338,26 @@ internal static partial class JsInterpreter
                         break;
                     }
 
+                case OpCode.LoadArgumentsLength:
+                    JsValue.StoreNumber(ref values[sp++], frame.ArgumentCount);
+                    break;
+                case OpCode.LoadArgumentsElement:
+                    {
+                        // An index of an argument (the parameters do not change), or the property of an arguments object
+                        var key = values[sp - 1];
+                        if (key.IsNumber && key.NumberValue is var number && (uint)number < (uint)frame.ArgumentCount && (uint)number == number)
+                        {
+                            values[sp - 1] = values[frame.Code.RegisterCount + (int)(uint)number];
+                        }
+                        else
+                        {
+                            JsValue.Store(ref values[sp - 1], GetArgumentsProperty(frame, key, mapped: code[pc] != 0));
+                        }
+
+                        pc++;
+                        break;
+                    }
+
                 case OpCode.LoadThis:
                     {
                         var thisValue = frame.This;
@@ -996,6 +1016,7 @@ internal static partial class JsInterpreter
             OpCode.LoadRestArguments => ExecuteLoadRestArguments(frame, sp),
             OpCode.LoadAllArguments => ExecuteLoadAllArguments(frame, sp),
             OpCode.CreateArguments => ExecuteCreateArguments(frame, sp),
+            OpCode.CreateArgumentsForRead => ExecuteCreateArgumentsForRead(frame, sp),
             OpCode.LoadFunction => ExecuteLoadFunction(frame, sp),
             OpCode.LoadNewTarget => ExecuteLoadNewTarget(frame, sp),
             OpCode.LoadHomeObject => ExecuteLoadHomeObject(frame, sp),

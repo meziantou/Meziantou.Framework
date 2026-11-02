@@ -70,12 +70,13 @@ internal sealed partial class ScopeAnalyzer
         }
 
         ResolveLazyReferences();
+        FindSimpleArguments();
 
         // A mapped arguments object aliases the parameters: they are stored in the environment
         foreach (var scope in _allScopes)
         {
             var function = scope.Function;
-            if (scope == function.Scope && function.ArgumentsVariable is { } arguments && (arguments.IsReferenced || function.HasDirectEval) && function.UsesMappedArguments)
+            if (scope == function.Scope && function.ArgumentsVariable is { } arguments && (arguments.IsReferenced || function.HasDirectEval) && function.UsesMappedArguments && !function.HasSimpleArguments)
             {
                 foreach (var variable in scope.OrderedVariables)
                 {
@@ -100,6 +101,78 @@ internal sealed partial class ScopeAnalyzer
         }
 
         Allocate();
+    }
+
+    /// <summary>
+    /// Finds the functions whose arguments object is only read by <c>arguments.length</c> and <c>arguments[key]</c> in
+    /// their own code (no other reference, no direct eval, not referenced by a nested function): the object cannot be
+    /// observed, so it is not created and these expressions read the arguments of the frame
+    /// (<see cref="FunctionInfo.HasSimpleArguments"/>). A mapped arguments object aliases the parameters: the parameters
+    /// must not change either (no assignment, not referenced by a nested function).
+    /// </summary>
+    private void FindSimpleArguments()
+    {
+        Dictionary<Variable, bool>? candidates = null;
+        HashSet<Variable>? changedParameters = null;
+        foreach (var pending in _pending)
+        {
+            if (References[pending.Node] is not { Variable: { } variable } reference)
+                continue;
+
+            if (variable.Kind == VariableKind.Arguments)
+            {
+                var isSimple = !reference.IsDynamic
+                    && pending.Kind == ReferenceKind.Read
+                    && pending.Scope.Function == variable.Scope.Function
+                    && _argumentsReads.Contains(pending.Node)
+                    && !_argumentsNotOnlyRead.Contains(pending.Node);
+                candidates ??= [];
+                candidates[variable] = isSimple && candidates.GetValueOrDefault(variable, true);
+            }
+            else if (variable.Kind == VariableKind.Parameter && pending.Kind != ReferenceKind.Read && !IsParameterDeclaration(variable, pending.Node))
+            {
+                (changedParameters ??= []).Add(variable);
+            }
+        }
+
+        if (candidates is null)
+            return;
+
+        foreach (var (variable, isSimple) in candidates)
+        {
+            var function = variable.Scope.Function;
+            if (!isSimple || variable.IsCaptured || function.ArgumentsVariable != variable || function.HasDirectEval || function.Scope.ContainsDirectEval)
+                continue;
+
+            if (function.UsesMappedArguments && ParametersMayChange(function, changedParameters))
+                continue;
+
+            function.HasSimpleArguments = true;
+        }
+
+        foreach (var pending in _pending)
+        {
+            if (References[pending.Node].Variable is { Kind: VariableKind.Arguments } variable && variable.Scope.Function.HasSimpleArguments)
+            {
+                SimpleArgumentsReferences.Add(pending.Node);
+            }
+        }
+
+        static bool IsParameterDeclaration(Variable parameter, Node node)
+        {
+            return parameter.Scope.Function.FunctionNode?.Params.Contains(node) == true;
+        }
+
+        static bool ParametersMayChange(FunctionInfo function, HashSet<Variable>? changedParameters)
+        {
+            foreach (var variable in function.Scope.OrderedVariables)
+            {
+                if (variable.Kind == VariableKind.Parameter && (variable.IsCaptured || (changedParameters?.Contains(variable) ?? false)))
+                    return true;
+            }
+
+            return false;
+        }
     }
 
     /// <summary>The function whose this binding is used by the code of a function (an arrow function uses the one of its enclosing function).</summary>

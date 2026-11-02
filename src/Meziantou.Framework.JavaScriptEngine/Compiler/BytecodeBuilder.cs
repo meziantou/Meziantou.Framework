@@ -487,7 +487,7 @@ internal sealed class BytecodeBuilder
                 or OpCode.LoadLocal or OpCode.StoreLocal
                 or OpCode.LoadName or OpCode.LoadNameOrUndefined or OpCode.LoadNameForCall or OpCode.DeleteName or OpCode.InitializeName
                 or OpCode.PushScope
-                or OpCode.LoadArgument or OpCode.LoadRestArguments or OpCode.CreateArguments
+                or OpCode.LoadArgument or OpCode.LoadRestArguments or OpCode.CreateArguments or OpCode.LoadArgumentsElement or OpCode.CreateArgumentsForRead
                 or OpCode.IncrementLocal or OpCode.DecrementLocal
                 or OpCode.JumpIfLessThan or OpCode.JumpIfNotLessThan or OpCode.JumpIfLessThanOrEqual or OpCode.JumpIfNotLessThanOrEqual
                 or OpCode.JumpIfGreaterThan or OpCode.JumpIfNotGreaterThan or OpCode.JumpIfGreaterThanOrEqual or OpCode.JumpIfNotGreaterThanOrEqual
@@ -552,7 +552,8 @@ internal sealed class BytecodeBuilder
             OpCode.DeleteName => 1,
             OpCode.PushScope or OpCode.PopScope or OpCode.CopyScope => 0,
             OpCode.PushWith => -1,
-            OpCode.LoadArgument or OpCode.LoadRestArguments or OpCode.CreateArguments => 1,
+            OpCode.LoadArgument or OpCode.LoadRestArguments or OpCode.CreateArguments or OpCode.LoadArgumentsLength or OpCode.CreateArgumentsForRead => 1,
+            OpCode.LoadArgumentsElement => 0,
             OpCode.LoadThis or OpCode.LoadFunction or OpCode.LoadNewTarget or OpCode.LoadHomeObject or OpCode.LoadImportMeta or OpCode.LoadGlobalThis => 1,
             OpCode.Add or OpCode.Subtract or OpCode.Multiply or OpCode.Divide or OpCode.Modulo or OpCode.Exponentiate
                 or OpCode.LeftShift or OpCode.RightShift or OpCode.UnsignedRightShift

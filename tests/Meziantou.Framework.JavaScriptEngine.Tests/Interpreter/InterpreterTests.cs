@@ -15,6 +15,33 @@ public sealed class InterpreterTests
     }
 
     [Theory]
+    [InlineData("function f() { var s = 0; for (var i = 0; i < arguments.length; i++) s += arguments[i]; return s; } f(1, 2, 3) + f()", "6")]
+    [InlineData("function f(a) { a = 5; return arguments[0]; } f(1)", "5")]
+    [InlineData("function f(a) { 'use strict'; a = 5; return arguments[0]; } f(1)", "1")]
+    [InlineData("function f(a) { var a = 7; return arguments[0]; } f(1)", "7")]
+    [InlineData("function f(a) { (() => { a = 9; })(); return arguments[0]; } f(1)", "9")]
+    [InlineData("function f(a) { eval('a = 3'); return arguments[0]; } f(1)", "3")]
+    [InlineData("function f(a) { return [arguments[1], arguments[-0], arguments[1.5], arguments['0'], arguments.length].join(); } f(1, 2)", "2,1,,1,2")]
+    [InlineData("Object.prototype[3] = 'p'; function f() { return arguments[3] + arguments[0]; } var r = f(1); delete Object.prototype[3]; r", "p1")]
+    [InlineData("function f() { return arguments['callee'] === f; } f()", "true")]
+    [InlineData("function f() { 'use strict'; try { return arguments['callee']; } catch (e) { return e.constructor.name; } } f()", "TypeError")]
+    [InlineData("function f() { return typeof arguments[Symbol.iterator] + Object.prototype.toString.call(arguments); } f()", "function[object Arguments]")]
+    [InlineData("function f() { return arguments[0](); } f(function () { return this.length; }, 1)", "2")]
+    [InlineData("function f() { arguments[0] = 4; return arguments[0]; } f(1)", "4")]
+    [InlineData("function f() { arguments.length = 4; return arguments.length; } f(1)", "4")]
+    [InlineData("function f() { return (() => arguments[0])(); } f(8)", "8")]
+    [InlineData("function f() { var g = () => arguments; return arguments[0] + g()[0]; } f(4)", "8")]
+    [InlineData("function f(a) { delete arguments[0]; return arguments[0] + ',' + a; } f(1)", "undefined,1")]
+    [InlineData("function f() { return arguments.length + [...arguments].join(); } f(1, 2)", "21,2")]
+    [InlineData("function* g() { yield arguments.length; yield arguments[1]; } [...g(5, 6)].join()", "2,6")]
+    [InlineData("function f() { return arguments[arguments.length - 1]; } f(1, 2, 3)", "3")]
+    [InlineData("function f() { var o = { arguments: [7] }; with (o) { return arguments[0]; } } f(1)", "7")]
+    public void Evaluate_ArgumentsAccess(string code, string expected)
+    {
+        Assert.Equal(expected, Run(code));
+    }
+
+    [Theory]
     [InlineData("var fs = []; for (let i = 0; i < 6; i++) { if (i % 2 === 0) fs.push(() => i); } fs.map(f => f()).join()", "0,2,4")]
     [InlineData("var fs = []; for (let i = 0; i < 6; i++) { if (i === 1) continue; if (i === 3) { fs.push(() => i); continue; } if (i === 5) break; fs.push(() => i++); } fs.map(f => f()).join() + ';' + fs.map(f => f()).join()", "0,2,3,4;1,3,3,5")]
     [InlineData("var fs = []; for (let i = 0, f = () => i; i < 3; i++) { fs.push(f, () => i); } fs.map(f => f()).join()", "0,0,0,1,0,2")]

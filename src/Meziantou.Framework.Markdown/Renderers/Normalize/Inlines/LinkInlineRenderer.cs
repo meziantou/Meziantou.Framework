@@ -215,6 +215,17 @@ public class LinkInlineRenderer : NormalizeObjectRenderer<LinkInline>
     /// <param name="decodedEntities">Whether the parser decoded the entities of the title, so that ampersands must be encoded.</param>
     internal static void WriteTitle(NormalizeRenderer renderer, string title, bool decodedEntities = true)
     {
+        var escaped = EscapeTitle(title, decodedEntities);
+        renderer.Write(renderer.EscapeTablePipes ? escaped.Replace("|", "\\|", StringComparison.Ordinal) : escaped);
+    }
+
+    /// <summary>
+    /// Escapes a link title and wraps it in double quotes, so that it is parsed back to the same text.
+    /// </summary>
+    /// <param name="title">The title.</param>
+    /// <param name="decodedEntities">Whether the parser decodes the entities of the title, so that ampersands must be encoded.</param>
+    internal static string EscapeTitle(string title, bool decodedEntities = true)
+    {
         var inner = Escape(title, "\"", decodedEntities);
 
         // A blank line would end the paragraph, so the line endings of a title with one are written as entities
@@ -242,8 +253,7 @@ public class LinkInlineRenderer : NormalizeObjectRenderer<LinkInline>
             inner = builder.ToString();
         }
 
-        var escaped = "\"" + inner + "\"";
-        renderer.Write(renderer.EscapeTablePipes ? escaped.Replace("|", "\\|", StringComparison.Ordinal) : escaped);
+        return "\"" + inner + "\"";
     }
 
     private static bool HasBlankLine(string text)

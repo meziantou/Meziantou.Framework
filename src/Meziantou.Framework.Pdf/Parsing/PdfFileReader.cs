@@ -82,7 +82,7 @@ internal sealed class PdfFileReader : IPdfObjectLoader
     public PdfReadOptions Options => _options;
 
     /// <summary>Gets the security handler of an encrypted file, which decrypts the objects when they are loaded.</summary>
-    public StandardSecurityHandler? Security { get; private set; }
+    public SecurityHandler? Security { get; private set; }
 
     public static PdfFileReader Open(ReadOnlyMemory<byte> data, PdfReadOptions options) => Open(new MemoryPdfInput(data), options);
 
@@ -164,7 +164,7 @@ internal sealed class PdfFileReader : IPdfObjectLoader
             throw new InvalidPdfContentException("The /Encrypt entry of the trailer is not a dictionary");
 
         var id = Trailer.GetResolved(PdfNames.ID) is PdfArray ids && ids.TryGetResolved<PdfString>(0, out var first) ? first.Span : [];
-        Security = StandardSecurityHandler.Open(dictionary, id, _options.Password);
+        Security = SecurityHandler.Open(dictionary, id, _options);
     }
 
     private void ReadHeader()

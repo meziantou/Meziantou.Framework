@@ -57,6 +57,19 @@ public sealed class PdfRenderOptions
     /// </summary>
     public IReadOnlyDictionary<string, bool>? OptionalContentGroupStates { get; init; }
 
+    /// <summary>
+    /// Gets or initializes whether the halftones of the document (<c>/HT</c> and <c>/HTO</c> of the graphics states, ISO
+    /// 32000-2, 10.6) are applied, as a printer that turns each color component fully on or off would apply them: the
+    /// red, green and blue components of the colors an opaque object paints are compared with the thresholds of the
+    /// screen of the halftone, in the pixels of the image. The default halftone leaves the colors as they are. When
+    /// <see langword="false"/> (the default), the halftones are ignored, as viewers do for a screen.
+    /// </summary>
+    /// <remarks>
+    /// The screens are in the pixels of the image, so the result depends on the resolution. Turn
+    /// <see cref="PathAntialiasing"/> and <see cref="TextAntialiasing"/> off to get only fully on or off components.
+    /// </remarks>
+    public bool UseHalftones { get; init; }
+
     /// <summary>Gets or initializes whether the edges of the paths, the images and the shadings are antialiased; <see langword="false"/> draws them with hard edges.</summary>
     public bool PathAntialiasing { get; init; } = true;
 

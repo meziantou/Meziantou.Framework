@@ -82,7 +82,8 @@ public sealed partial class PdfDocument
 
     /// <summary>
     /// Gets the operations the password the document was opened with allows: every operation for the owner password or
-    /// a file that is not encrypted, the permissions of the file for the user password. The library does not enforce them.
+    /// a file that is not encrypted, the permissions of the file for the user password, and those of the recipient for a
+    /// document encrypted for certificates. The library does not enforce them.
     /// </summary>
     public PdfPermissions Permissions => Reader?.Security is { IsOwner: false } security ? security.Permissions : PdfPermissions.All;
 
@@ -232,7 +233,7 @@ public sealed partial class PdfDocument
     /// <exception cref="InvalidPdfContentException">The data is not a PDF document, or it cannot be recovered.</exception>
     /// <exception cref="UnsupportedPdfFeatureException">The document uses a feature the library does not support.</exception>
     /// <exception cref="PdfResourceLimitException">The document exceeds a limit of the options.</exception>
-    /// <exception cref="PdfPasswordException">The document is encrypted, and <see cref="PdfReadOptions.Password"/> is neither its user nor its owner password.</exception>
+    /// <exception cref="PdfPasswordException">The document is encrypted, and <see cref="PdfReadOptions.Password"/> is neither its user nor its owner password, or <see cref="PdfReadOptions.Certificate"/> is not a recipient.</exception>
     public static PdfDocument Open(byte[] data, PdfReadOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(data);
@@ -246,7 +247,7 @@ public sealed partial class PdfDocument
     /// <exception cref="InvalidPdfContentException">The data is not a PDF document, or it cannot be recovered.</exception>
     /// <exception cref="UnsupportedPdfFeatureException">The document uses a feature the library does not support.</exception>
     /// <exception cref="PdfResourceLimitException">The document exceeds a limit of the options.</exception>
-    /// <exception cref="PdfPasswordException">The document is encrypted, and <see cref="PdfReadOptions.Password"/> is neither its user nor its owner password.</exception>
+    /// <exception cref="PdfPasswordException">The document is encrypted, and <see cref="PdfReadOptions.Password"/> is neither its user nor its owner password, or <see cref="PdfReadOptions.Certificate"/> is not a recipient.</exception>
     public static PdfDocument Open(ReadOnlyMemory<byte> data, PdfReadOptions? options = null)
     {
         options ??= PdfReadOptions.Default;
@@ -261,7 +262,7 @@ public sealed partial class PdfDocument
     /// <exception cref="InvalidPdfContentException">The data is not a PDF document, or it cannot be recovered.</exception>
     /// <exception cref="UnsupportedPdfFeatureException">The document uses a feature the library does not support.</exception>
     /// <exception cref="PdfResourceLimitException">The document exceeds a limit of the options.</exception>
-    /// <exception cref="PdfPasswordException">The document is encrypted, and <see cref="PdfReadOptions.Password"/> is neither its user nor its owner password.</exception>
+    /// <exception cref="PdfPasswordException">The document is encrypted, and <see cref="PdfReadOptions.Password"/> is neither its user nor its owner password, or <see cref="PdfReadOptions.Certificate"/> is not a recipient.</exception>
     public static PdfDocument Open(Stream stream, PdfReadOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(stream);
@@ -283,7 +284,7 @@ public sealed partial class PdfDocument
     /// <exception cref="InvalidPdfContentException">The data is not a PDF document, or it cannot be recovered.</exception>
     /// <exception cref="UnsupportedPdfFeatureException">The document uses a feature the library does not support.</exception>
     /// <exception cref="PdfResourceLimitException">The document exceeds a limit of the options.</exception>
-    /// <exception cref="PdfPasswordException">The document is encrypted, and <see cref="PdfReadOptions.Password"/> is neither its user nor its owner password.</exception>
+    /// <exception cref="PdfPasswordException">The document is encrypted, and <see cref="PdfReadOptions.Password"/> is neither its user nor its owner password, or <see cref="PdfReadOptions.Certificate"/> is not a recipient.</exception>
     /// <remarks>The errors of the stream (<see cref="IOException"/>, <see cref="ObjectDisposedException"/>) are not caught: they can occur whenever an object is first used.</remarks>
     /// <example>
     /// <code xmlns:ref="urn:meziantou:file-referencer" ref:source="../../tests/Meziantou.Framework.Pdf.Tests/PdfDocumentTests.cs" ref:region="Pdf_OpenSeekable" ref:dedent="true">
@@ -311,7 +312,7 @@ public sealed partial class PdfDocument
     /// <exception cref="InvalidPdfContentException">The data is not a PDF document, or it cannot be recovered.</exception>
     /// <exception cref="UnsupportedPdfFeatureException">The document uses a feature the library does not support.</exception>
     /// <exception cref="PdfResourceLimitException">The document exceeds a limit of the options.</exception>
-    /// <exception cref="PdfPasswordException">The document is encrypted, and <see cref="PdfReadOptions.Password"/> is neither its user nor its owner password.</exception>
+    /// <exception cref="PdfPasswordException">The document is encrypted, and <see cref="PdfReadOptions.Password"/> is neither its user nor its owner password, or <see cref="PdfReadOptions.Certificate"/> is not a recipient.</exception>
     public static PdfDocument Open(string path, PdfReadOptions? options = null)
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
@@ -326,7 +327,7 @@ public sealed partial class PdfDocument
     /// <exception cref="InvalidPdfContentException">The data is not a PDF document, or it cannot be recovered.</exception>
     /// <exception cref="UnsupportedPdfFeatureException">The document uses a feature the library does not support.</exception>
     /// <exception cref="PdfResourceLimitException">The document exceeds a limit of the options.</exception>
-    /// <exception cref="PdfPasswordException">The document is encrypted, and <see cref="PdfReadOptions.Password"/> is neither its user nor its owner password.</exception>
+    /// <exception cref="PdfPasswordException">The document is encrypted, and <see cref="PdfReadOptions.Password"/> is neither its user nor its owner password, or <see cref="PdfReadOptions.Certificate"/> is not a recipient.</exception>
     public static async Task<PdfDocument> OpenAsync(Stream stream, PdfReadOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(stream);
@@ -341,7 +342,7 @@ public sealed partial class PdfDocument
     /// <exception cref="InvalidPdfContentException">The data is not a PDF document, or it cannot be recovered.</exception>
     /// <exception cref="UnsupportedPdfFeatureException">The document uses a feature the library does not support.</exception>
     /// <exception cref="PdfResourceLimitException">The document exceeds a limit of the options.</exception>
-    /// <exception cref="PdfPasswordException">The document is encrypted, and <see cref="PdfReadOptions.Password"/> is neither its user nor its owner password.</exception>
+    /// <exception cref="PdfPasswordException">The document is encrypted, and <see cref="PdfReadOptions.Password"/> is neither its user nor its owner password, or <see cref="PdfReadOptions.Certificate"/> is not a recipient.</exception>
     public static async Task<PdfDocument> OpenAsync(string path, PdfReadOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrEmpty(path);
@@ -388,7 +389,8 @@ public sealed partial class PdfDocument
     /// The document is serialized synchronously, on the calling thread, into blocks of memory, and the blocks are then
     /// written to the stream asynchronously. Cancellation is observed while the objects are serialized, between the
     /// objects, and while the blocks are written: the stream is untouched when the save is canceled before the first
-    /// block is written, and may contain the beginning of the file otherwise.
+    /// block is written, and may contain the beginning of the file otherwise. The data of the streams of a document read
+    /// with <see cref="OpenSeekable"/> that was not loaded is read from the stream of the document when it is written.
     /// </remarks>
     /// <exception cref="OperationCanceledException">The save was canceled.</exception>
     public async Task SaveAsync(Stream stream, PdfSaveOptions? options = null, CancellationToken cancellationToken = default)

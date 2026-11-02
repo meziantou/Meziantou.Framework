@@ -1,3 +1,5 @@
+using System.Security.Cryptography.X509Certificates;
+
 namespace Meziantou.Framework.Pdf;
 
 /// <summary>The options of <see cref="PdfDocument.Open(byte[], PdfReadOptions?)"/>. The limits bound the memory and the work of hostile files.</summary>
@@ -35,4 +37,10 @@ public sealed class PdfReadOptions
 
     /// <summary>Gets the password of an encrypted document: the user or the owner password. The default is the empty password.</summary>
     public string? Password { get; init; }
+
+    /// <summary>
+    /// Gets the certificate, with its private key, of a recipient of a document encrypted for certificates (the public-key
+    /// security handler, <c>/Adobe.PubSec</c>). The default is <see langword="null"/>.
+    /// </summary>
+    public X509Certificate2? Certificate { get; init; }
 }

@@ -118,6 +118,15 @@ internal sealed class Frame
 
     /// <summary>Gets or sets whether the frame resumes by throwing <see cref="ResumeValue"/> at its suspension point (await).</summary>
     public bool PendingThrow { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether a yield of the generator gives its value instead of an iterator result object: the generator is
+    /// resumed by the step of an iteration (<see cref="JsGenerator.Step"/>), which never exposes the object.
+    /// </summary>
+    public bool YieldsValue { get; set; }
+
+    /// <summary>Gets or sets whether the last yield gave its value instead of an iterator result object (<see cref="YieldsValue"/>).</summary>
+    public bool YieldedValue { get; set; }
 }
 
 /// <summary>

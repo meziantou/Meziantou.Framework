@@ -15,6 +15,25 @@ public sealed class InterpreterTests
     }
 
     [Theory]
+    [InlineData("function* g() { var r = []; r.push(yield 1); r.push(yield 2); return r; } var out = []; for (var v of g()) out.push(v); out.join() + ';' + [...g()].join()", "1,2;1,2")]
+    [InlineData("function* g() { yield 1; } var it = g(); var a = it.next(); var b = it.next(); [a.value, a.done, b.done, a !== b, Object.keys(a).join()].join()", "1,false,true,true,value,done")]
+    [InlineData("var log = []; function* g() { try { yield 1; yield 2; } finally { log.push('finally'); } } for (var v of g()) { log.push(v); break; } log.join()", "1,finally")]
+    [InlineData("function* g() { yield 1; throw new RangeError('x'); } var r = []; try { for (var v of g()) r.push(v); } catch (e) { r.push(e.constructor.name); } r.join()", "1,RangeError")]
+    [InlineData("var inner = { [Symbol.iterator]() { return this; }, i: 0, next() { var self = this; return { get done() { return self.i > 2; }, get value() { return 'v' + self.i++; } }; } }; function* g() { yield 0; yield* inner; yield 9; } [...g()].join()", "0,v0,v1,v2,9")]
+    [InlineData("function* g() { yield 1; yield 2; } var it = g(); it.next = function () { return { done: this.n++ > 0, value: 'o' }; }; it.n = 0; [...it].join()", "o")]
+    [InlineData("var proto = Object.getPrototypeOf(function* () { }).prototype; var saved = proto.next; proto.next = function () { var r = saved.call(this); if (!r.done) r.value *= 10; return r; }; function* g() { yield 1; yield 2; } var r = [...g()].join(); proto.next = saved; r", "10,20")]
+    [InlineData("function* g() { yield 1; yield 2; yield 3; } var [a, , c] = g(); a + c", "4")]
+    [InlineData("function* g() { var x = yield 1; yield x; } var it = g(); it.next(); it.next(5).value + ',' + [...g()].join()", "5,1,")]
+    [InlineData("function* g() { yield* [1, 2]; return 3; } var it = g(); [it.next().value, it.next().value, JSON.stringify(it.next()), [...g()].join()].join(';')", "1;2;{\"value\":3,\"done\":true};1,2")]
+    [InlineData("function* g() { for (var i = 0; i < 3; i++) yield i; } var it = g(); var first = it.next().value; var rest = [...it]; first + ';' + rest.join() + ';' + JSON.stringify(it.next())", "0;1,2;{\"done\":true}")]
+    [InlineData("function* g() { yield 1; } var it = g(); var r; try { for (var v of it) { for (var w of it) { } } } catch (e) { r = e.constructor.name; } r ?? 'none'", "none")]
+    [InlineData("function* g() { yield 1; yield 2; } var it = g(); var r = []; for (var v of it) { try { it.next(); } catch (e) { r.push(e.constructor.name); } r.push(v); } r.join()", "1")]
+    public void Evaluate_GeneratorIteration(string code, string expected)
+    {
+        Assert.Equal(expected, Run(code));
+    }
+
+    [Theory]
     [InlineData("function f() { return [...arguments].join(); } var a = [1, 2, 3]; f(...a) + ';' + f(0, ...a, 4, ...'xy')", "1,2,3;0,1,2,3,4,x,y")]
     [InlineData("function f() { return arguments.length + ':' + [...arguments].join(); } f(...[1, , 3])", "3:1,,3")]
     [InlineData("Array.prototype[1] = 'p'; function f(a, b, c) { return a + b + c; } var r = f(...[1, , 3]); delete Array.prototype[1]; r", "1p3")]

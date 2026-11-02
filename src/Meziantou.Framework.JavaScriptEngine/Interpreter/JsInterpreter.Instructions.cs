@@ -1370,7 +1370,16 @@ internal static partial class JsInterpreter
     {
         var values = frame.Values;
         var pc = frame.Pc + 1;
-        values[sp - 1] = IteratorOperations.CreateIteratorResultObject(frame.Realm, values[sp - 1], done: false);
+        if (frame.YieldsValue)
+        {
+            // The value is yielded to the step of an iteration (JsGenerator.Step): the result object is not observable
+            frame.YieldedValue = true;
+        }
+        else
+        {
+            values[sp - 1] = IteratorOperations.CreateIteratorResultObject(frame.Realm, values[sp - 1], done: false);
+        }
+
         frame.Pc = pc;
         return sp;
     }

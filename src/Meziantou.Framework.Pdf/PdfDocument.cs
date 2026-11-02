@@ -218,6 +218,9 @@ public sealed partial class PdfDocument
     /// <summary>Gets the embedded fonts the content of the document uses, whose objects are written when it is saved.</summary>
     internal Dictionary<EmbeddedPdfFont, EmbeddedFontUsage> EmbeddedFonts { get; } = [];
 
+    /// <summary>Gets the decoders of the fonts the text extraction read, shared by the pages of the document.</summary>
+    internal Text.TextDecoderCache TextDecoders => field ??= new();
+
     /// <summary>Reads a document.</summary>
     /// <param name="data">The content of the file.</param>
     /// <param name="options">The options, or <see langword="null"/> for <see cref="PdfReadOptions.Default"/>.</param>

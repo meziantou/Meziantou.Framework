@@ -6,7 +6,7 @@ namespace Meziantou.Framework.Pdf;
 /// Breaks a text into lines that fit a width: at the spaces, and inside a word only when the word alone is wider than
 /// the width. The line feeds of the text end the paragraphs.
 /// </summary>
-internal static class PdfTextLayout
+internal static class PdfTextWrapper
 {
     /// <summary>A line: its text, without the spaces around it, the position of its first character in the text, and whether it ends a paragraph.</summary>
     internal readonly record struct Line(string Text, int Start, bool EndsParagraph);

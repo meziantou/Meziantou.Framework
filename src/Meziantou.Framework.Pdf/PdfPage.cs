@@ -253,7 +253,19 @@ public sealed class PdfPage
     /// <summary>Extracts the text of the page, in the order of the content, with a line break between the lines.</summary>
     /// <returns>The text.</returns>
     /// <exception cref="PdfResourceLimitException">The content runs more operators and glyphs than the limit (forms that paint forms).</exception>
-    public string ExtractText() => TextExtractor.Extract(this);
+    public string ExtractText() => TextExtractor.Extract(this, PdfTextExtractionOptions.Default);
+
+    /// <summary>Extracts the text of the page, in the order of the content, with a line break between the lines.</summary>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="PdfTextExtractionOptions.Default"/>.</param>
+    /// <returns>The text.</returns>
+    /// <exception cref="PdfResourceLimitException">The content runs more operators and glyphs than the limit (forms that paint forms).</exception>
+    public string ExtractText(PdfTextExtractionOptions? options) => TextExtractor.Extract(this, options ?? PdfTextExtractionOptions.Default);
+
+    /// <summary>Extracts the text of the page with the position of its lines, words and glyphs, in the default user space of the page.</summary>
+    /// <param name="options">The options, or <see langword="null"/> for <see cref="PdfTextExtractionOptions.Default"/>.</param>
+    /// <returns>The lines of the page; its <see cref="PdfTextLayout.Text"/> is the result of <see cref="ExtractText(PdfTextExtractionOptions?)"/>.</returns>
+    /// <exception cref="PdfResourceLimitException">The content runs more operators and glyphs than the limit (forms that paint forms).</exception>
+    public PdfTextLayout ExtractTextLayout(PdfTextExtractionOptions? options = null) => TextExtractor.ExtractLayout(this, options ?? PdfTextExtractionOptions.Default);
 
     internal IEnumerable<PdfStream> GetContentStreams()
     {

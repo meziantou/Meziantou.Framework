@@ -662,8 +662,8 @@ public sealed class PdfContentBuilder
         ArgumentNullException.ThrowIfNull(text);
         ArgumentNullException.ThrowIfNull(font);
 
-        // Encode first: a character the font does not have leaves the content unchanged
-        font.Encode(text);
+        // Check first: a character the font does not have leaves the content unchanged
+        font.ValidateText(text);
         return BeginText().SetFont(font, fontSize).MoveTextPosition(x, y).ShowText(text).EndText();
     }
 
@@ -700,7 +700,7 @@ public sealed class PdfContentBuilder
         EnsureNotInText();
 
         // Lay out first: a character the font does not have leaves the content unchanged
-        var lines = PdfTextLayout.Wrap(text, font, fontSize, rectangle.Width);
+        var lines = PdfTextWrapper.Wrap(text, font, fontSize, rectangle.Width);
         var ascent = font.Ascent * fontSize / 1000;
         var descent = font.Descent * fontSize / 1000;
         var lineHeight = options.LineHeight * fontSize;
@@ -1203,7 +1203,7 @@ public sealed class PdfContentBuilder
     private void WriteText(string text)
     {
         EnsureFont();
-        PdfObjectSerializer.WriteString(_buffer, _font!.Encode(text), hexadecimal: false);
+        _font!.WriteString(_buffer, text);
         _buffer.WriteSpace();
     }
 

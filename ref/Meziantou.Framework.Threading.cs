@@ -174,6 +174,13 @@ namespace Meziantou.Framework.Threading
     public sealed class MixedConsumerProducerContext<T>
     {
         public void Enqueue(T item) { }
+        public System.Threading.Tasks.ValueTask EnqueueAsync(T item, System.Threading.CancellationToken cancellationToken = default) => throw null;
+        public bool TryEnqueue(T item) => throw null;
+    }
+
+    public sealed class MixedConsumerProducerOptions : System.Threading.Tasks.ParallelOptions
+    {
+        public int MaxPendingItems { get => throw null; set { } }
     }
 
     public sealed class MonoThreadedTaskScheduler : System.Threading.Tasks.TaskScheduler, System.IDisposable

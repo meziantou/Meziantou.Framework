@@ -39,7 +39,7 @@ internal sealed partial class ContentRenderer
         _document = document;
         _state = state;
         _depth = depth;
-        _optionalContent = optionalContent ?? new OptionalContent(document);
+        _optionalContent = optionalContent ?? new OptionalContent(document, cache.Options);
         if (depth > MaxDepth)
             throw new InvalidPdfContentException("The content paints forms, patterns or glyphs nested too deeply");
     }
@@ -51,6 +51,7 @@ internal sealed partial class ContentRenderer
         var reader = new ContentStreamReader(content);
         var operands = new List<PdfObject>();
         var savedDepth = _savedStates.Count;
+        var optionalContentStream = _optionalContent.BeginStream();
         try
         {
             while (reader.TryRead(operands, out var name))
@@ -75,11 +76,16 @@ internal sealed partial class ContentRenderer
             }
 
             EndText();
+            _optionalContent.EndStream(optionalContentStream);
         }
     }
 
     private void Execute(DrawingCanvas canvas, string name, List<PdfObject> operands, PdfDictionary? resources)
     {
+        // The glyph of a Type 3 font in a clipping mode is the paths it paints: its images, shadings and texts are left out
+        if (ClipCollector is not null && name is "sh" or "BI" or "Do" or "Tj" or "TJ" or "'" or "\"")
+            return;
+
         switch (name)
         {
             // General graphics state (8.4.4)
@@ -270,20 +276,20 @@ internal sealed partial class ContentRenderer
                 MoveText(0, -_state.Leading);
                 break;
             case "Tj" when operands.Count >= 1 && operands[^1] is PdfString text:
-                PaintTextElement(canvas, target => ShowText(target, text.Span, resources));
+                PaintTextElement(canvas, target => ShowText(target, text.Span, resources), text);
                 break;
             case "'" when operands.Count >= 1 && operands[^1] is PdfString text:
                 MoveText(0, -_state.Leading);
-                PaintTextElement(canvas, target => ShowText(target, text.Span, resources));
+                PaintTextElement(canvas, target => ShowText(target, text.Span, resources), text);
                 break;
             case "\"" when operands.Count >= 3 && operands[^1] is PdfString text:
                 _state.WordSpacing = Number(operands, 0);
                 _state.CharacterSpacing = Number(operands, 1);
                 MoveText(0, -_state.Leading);
-                PaintTextElement(canvas, target => ShowText(target, text.Span, resources));
+                PaintTextElement(canvas, target => ShowText(target, text.Span, resources), text);
                 break;
             case "TJ" when operands.Count >= 1 && operands[^1] is PdfArray array:
-                PaintTextElement(canvas, target => ShowTextArray(target, array, resources));
+                PaintTextElement(canvas, target => ShowTextArray(target, array, resources), array);
                 break;
             case "d1" when StencilColor is { } stencil:
                 // A Type 3 glyph that is a stencil (9.6.4): its colors are the fill color of the text
@@ -360,6 +366,12 @@ internal sealed partial class ContentRenderer
                     break;
                 case "BM":
                     _state.BlendMode = ReadBlendMode(value);
+                    break;
+                case "AIS" when value is PdfBoolean alphaIsShape:
+                    _state.AlphaIsShape = alphaIsShape.Value;
+                    break;
+                case "TK" when value is PdfBoolean textKnockout:
+                    _state.TextKnockout = textKnockout.Value;
                     break;
                 case "SMask":
                     _state.SoftMask = value is PdfDictionary mask ? (mask, _state.Ctm) : null;

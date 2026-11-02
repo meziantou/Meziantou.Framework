@@ -30,7 +30,7 @@ internal static class PdfImageDecoder
         {
             // The compressed image: decoded by Imaging, with its own color management
             data = PdfFilterPipeline.Decode(stream, stopBeforeImageFilters: true, out _);
-            return DecodeCompressed(data, dictionary, cache);
+            return DecodeCompressed(data, dictionary, resources, cache, isJpx: last == "JPXDecode");
         }
 
         data = stream.GetDecodedData();
@@ -65,12 +65,12 @@ internal static class PdfImageDecoder
         var stopBeforeImage = last is "DCTDecode" or "JPXDecode";
         var data = PdfFilterPipeline.Decode(encoded.Span, filters, parameters, PdfDecodeLimits.Default, stopBeforeImage, out _);
         if (stopBeforeImage)
-            return DecodeCompressed(data, dictionary, cache);
+            return DecodeCompressed(data, dictionary, resources, cache, isJpx: last == "JPXDecode");
 
         return DecodeSamples(data, dictionary, resources, cache);
     }
 
-    private static DecodedImage? DecodeCompressed(byte[] data, PdfDictionary dictionary, RenderCache cache)
+    private static DecodedImage? DecodeCompressed(byte[] data, PdfDictionary dictionary, PdfDictionary? resources, RenderCache cache, bool isJpx)
     {
         var options = new ImageDecodeOptions
         {
@@ -82,7 +82,82 @@ internal static class PdfImageDecoder
         var pixels = new Rgba32[image.Width * image.Height];
         image.Frames[0].CopyPixelDataTo(pixels);
         cache.Charge(pixels.Length / 1024);
-        return Finish(pixels, image.Width, image.Height, dictionary, cache, colorKey: null, samples: null);
+
+        // The opacity of a JPEG 2000 image (8.9.5): ignored, unless /SMaskInData is 1 or 2 (the colors premultiplied by
+        // it) and the image has no /SMask, which replaces it
+        var smaskInData = isJpx && dictionary.GetResolved(PdfNames.SMask) is null ? dictionary.GetInteger(PdfName.Create("SMaskInData"), 0) : 0;
+        if (smaskInData is 0)
+        {
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                pixels[i].A = 255;
+            }
+        }
+        else if (smaskInData is 2)
+        {
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                ref var pixel = ref pixels[i];
+                if (pixel.A is > 0 and < 255)
+                {
+                    pixel.R = Unpremultiply(pixel.R, pixel.A);
+                    pixel.G = Unpremultiply(pixel.G, pixel.A);
+                    pixel.B = Unpremultiply(pixel.B, pixel.A);
+                }
+            }
+        }
+
+        // The matte color of the soft mask, in sRGB: the samples of the image were mixed with it (11.6.5.3)
+        byte[]? alpha = null;
+        if (GetMatte(dictionary, out var softMask) is { } matte)
+        {
+            try
+            {
+                var colorSpace = dictionary.GetResolved(PdfNames.ColorSpace) is { } colorSpaceObject ? RenderColorSpace.Read(colorSpaceObject, resources, cache) : null;
+                if (colorSpace is not null && colorSpace.ComponentCount == matte.Length)
+                {
+                    alpha = DecodeMaskSamples(softMask!, cache, image.Width, image.Height, stencil: false);
+                    if (alpha is not null)
+                    {
+                        var color = colorSpace.ToRgb(matte);
+                        RemoveMatte(pixels, alpha, color);
+                    }
+                }
+            }
+            catch (Exception ex) when (ex is InvalidPdfContentException or UnsupportedPdfFeatureException)
+            {
+            }
+        }
+
+        return Finish(pixels, image.Width, image.Height, dictionary, cache, colorKey: null, samples: null, alpha);
+    }
+
+    private static byte Unpremultiply(byte value, byte alpha) => (byte)Math.Min(255, ((value * 255) + (alpha / 2)) / alpha);
+
+    /// <summary>Gets the matte color of the soft mask of an image (11.6.5.3): the color its samples were premultiplied with, in the color space of the image.</summary>
+    private static double[]? GetMatte(PdfDictionary dictionary, out PdfStream? softMask)
+    {
+        softMask = dictionary.GetResolved(PdfNames.SMask) as PdfStream;
+        return RenderFunction.ReadNumbers(softMask?.Dictionary.Get<PdfArray>(PdfName.Create("Matte"))) is { Length: > 0 } matte && matte.All(double.IsFinite) ? matte : null;
+    }
+
+    /// <summary>Removes the matte color from 8-bit colors: c = m + (c' - m) / alpha.</summary>
+    private static void RemoveMatte(Rgba32[] pixels, byte[] alpha, RgbColor matte)
+    {
+        var (r, g, b) = (matte.R * 255, matte.G * 255, matte.B * 255);
+        for (var i = 0; i < pixels.Length; i++)
+        {
+            if (alpha[i] is 0 or 255)
+                continue;
+
+            var a = alpha[i] / 255.0;
+            ref var pixel = ref pixels[i];
+            pixel.R = ToByte(r + ((pixel.R - r) / a));
+            pixel.G = ToByte(g + ((pixel.G - g) / a));
+            pixel.B = ToByte(b + ((pixel.B - b) / a));
+        }
+
+        static byte ToByte(double value) => (byte)Math.Clamp(Math.Round(value, MidpointRounding.AwayFromZero), 0, 255);
     }
 
     private static DecodedImage? DecodeSamples(byte[] data, PdfDictionary dictionary, PdfDictionary? resources, RenderCache cache)
@@ -151,9 +226,18 @@ internal static class PdfImageDecoder
             }
         }
 
+        // The matte color of the soft mask: the samples were mixed with it, c' = m + alpha (c - m), and are restored
+        // before they are converted (11.6.5.3)
+        byte[]? alpha = null;
+        var matte = GetMatte(dictionary, out var softMask);
+        if (matte is not null && matte.Length == components)
+        {
+            alpha = DecodeMaskSamples(softMask!, cache, width, height, stencil: false);
+        }
+
         // The colors: a lookup per component value for the bit depths up to 8, a conversion per pixel otherwise
         var pixels = new Rgba32[width * height];
-        if (bitsPerComponent <= 8 && components == 1)
+        if (bitsPerComponent <= 8 && components == 1 && alpha is null)
         {
             var lookup = new Rgba32[maxValue + 1];
             for (var value = 0; value <= maxValue; value++)
@@ -179,6 +263,10 @@ internal static class PdfImageDecoder
                 {
                     var component = i % components;
                     batch[i] = Decode(samples[(y * width * components) + i], maxValue, decodeArray[2 * component], decodeArray[(2 * component) + 1]);
+                    if (alpha is not null && alpha[(y * width) + (i / components)] is > 0 and var pixelAlpha)
+                    {
+                        batch[i] = matte![component] + ((batch[i] - matte[component]) * 255 / pixelAlpha);
+                    }
                 }
 
                 colorSpace.ToRgb(batch.AsSpan(0, count * components), batchRgb.AsSpan(0, count * 3));
@@ -192,7 +280,7 @@ internal static class PdfImageDecoder
         }
 
         var colorKey = dictionary.Get<PdfArray>(PdfNames.Mask);
-        return Finish(pixels, width, height, dictionary, cache, colorKey, samples);
+        return Finish(pixels, width, height, dictionary, cache, colorKey, samples, alpha);
     }
 
     /// <summary>
@@ -220,11 +308,11 @@ internal static class PdfImageDecoder
     }
 
     /// <summary>Applies the masks of an image (8.9.6): a soft mask, an explicit mask or a color key mask.</summary>
-    private static DecodedImage Finish(Rgba32[] pixels, int width, int height, PdfDictionary dictionary, RenderCache cache, PdfArray? colorKey, int[]? samples)
+    private static DecodedImage Finish(Rgba32[] pixels, int width, int height, PdfDictionary dictionary, RenderCache cache, PdfArray? colorKey, int[]? samples, byte[]? softMaskAlpha = null)
     {
         if (dictionary.GetResolved(PdfNames.SMask) is PdfStream softMask)
         {
-            var alpha = DecodeMaskSamples(softMask, cache, width, height, stencil: false);
+            var alpha = softMaskAlpha ?? DecodeMaskSamples(softMask, cache, width, height, stencil: false);
             if (alpha is not null)
             {
                 for (var i = 0; i < pixels.Length; i++)

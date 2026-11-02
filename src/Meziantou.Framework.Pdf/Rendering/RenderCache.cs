@@ -10,7 +10,7 @@ namespace Meziantou.Framework.Pdf.Rendering;
 /// What the rendering of a page reads once and uses many times: the color spaces, functions, fonts and images of the
 /// document, and the budget of the work of the page.
 /// </summary>
-internal sealed class RenderCache(PdfRenderOptions options) : IDisposable
+internal sealed class RenderCache(PdfRenderOptions options, CancellationToken cancellationToken = default) : IDisposable
 {
     // The temporary buffers of the font code
     private const long MaxFontAllocationBytes = 64L * 1024 * 1024;
@@ -167,8 +167,10 @@ internal sealed class RenderCache(PdfRenderOptions options) : IDisposable
 
     /// <summary>Charges the work of the page.</summary>
     /// <exception cref="PdfResourceLimitException">The page does more work than <see cref="PdfRenderOptions.MaxOperations"/>.</exception>
+    /// <exception cref="OperationCanceledException">The rendering was canceled.</exception>
     public void Charge(long count)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         _operations += Math.Max(count, 1);
         if (_operations > Options.MaxOperations)
             throw new PdfResourceLimitException($"The page does more than {Options.MaxOperations} operations");

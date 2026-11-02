@@ -16,16 +16,17 @@ A realm has the built-ins of ECMAScript only. These are not provided:
 - Node.js: `require`, `process`, `Buffer`, and the built-in modules (`fs`, `path`...);
 - `WebAssembly`.
 
-Add what your scripts need with .NET functions and objects: see [Functions](05-Interop/04-Functions.md),
-[Exposing .NET objects](05-Interop/05-ExposingDotNetObjects.md) and, for timers,
-[Async code and promises](06-AsyncAndPromises.md#await-a-net-task-from-a-script). To run scripts in HTML documents
+Add what your scripts need with .NET functions and objects: see
+[Console, timers and other host APIs](05-Interop/07-HostApis.md), [Functions](05-Interop/04-Functions.md) and
+[Exposing .NET objects](05-Interop/05-ExposingDotNetObjects.md). To run scripts in HTML documents
 with the DOM API, use `Meziantou.Framework.WebPlatform` with `Meziantou.Framework.WebPlatform.JavaScript`, which runs
 them with this engine.
 
 ## Modules
 
 - Only ES modules are supported. A CommonJS package (`require`, `module.exports`) must be bundled or converted to an
-  ES module first.
+  ES module first, or run by a `require` that your application provides: see
+  [CommonJS modules](04-RunningCode/06-CommonJsModules.md).
 - The engine resolves and reads no file: your module loader resolves each specifier and gives its source. There is no
   `node_modules` resolution and no import map. See [Modules](04-RunningCode/03-Modules.md).
 - The `export defer` proposal is not implemented (`import defer` is).
@@ -54,5 +55,9 @@ them with this engine.
   when the stack of the thread is too small to compile it: the engine never overflows the stack. The long chains of
   generated code are not nested: `else if` chains and chains of operators, member accesses and calls are handled in loops.
 
-## Platform
+## Results
 
+- Some results are left to the implementation by the specification (the time zone names of `Date.prototype.toString`,
+  the error messages, the precision of `Math.sin`...), and the Unicode, locale and time zone data have their own
+  versions: they can differ from Node.js and the browsers. See
+  [Data versions and output differences](11-DataAndOutputDifferences.md).

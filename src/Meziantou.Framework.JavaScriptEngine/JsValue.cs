@@ -95,11 +95,69 @@ public readonly struct JsValue : IEquatable<JsValue>
     internal bool IsHole => ReferenceEquals(Cell, HoleCell.Instance);
 
     /// <summary>Gets the number of a number value.</summary>
+    /// <exception cref="InvalidOperationException">The value is not a number (use <see cref="TryGetNumber"/>, or <see cref="JsEngine.ToNumber"/> to convert it).</exception>
     public double AsNumber()
     {
-        Debug.Assert(IsNumber);
+        if (!IsNumber)
+            ThrowWrongKind<double>("a number");
+
         return _number;
     }
+
+    /// <summary>Gets the number of the value; returns false when the value is not a number (no conversion).</summary>
+    public bool TryGetNumber(out double value)
+    {
+        if (IsNumber)
+        {
+            value = _number;
+            return true;
+        }
+
+        value = 0;
+        return false;
+    }
+
+    /// <summary>Gets the boolean of the value; returns false when the value is not a boolean (no conversion).</summary>
+    public bool TryGetBoolean(out bool value)
+    {
+        if (Cell is BooleanCell cell)
+        {
+            value = cell.Value;
+            return true;
+        }
+
+        value = false;
+        return false;
+    }
+
+    /// <summary>Gets the string of the value; returns false when the value is not a string (no conversion).</summary>
+    public bool TryGetString([NotNullWhen(true)] out string? value)
+    {
+        if (Cell is JsString cell)
+        {
+            value = cell.ToString();
+            return true;
+        }
+
+        value = null;
+        return false;
+    }
+
+    [DoesNotReturn]
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private T ThrowWrongKind<T>(string expected) => throw new InvalidOperationException($"The value is not {expected}: it is {DescribeKind(Kind)}");
+
+    private static string DescribeKind(JsValueKind kind) => kind switch
+    {
+        JsValueKind.Undefined => "undefined",
+        JsValueKind.Null => "null",
+        JsValueKind.Boolean => "a boolean",
+        JsValueKind.Number => "a number",
+        JsValueKind.String => "a string",
+        JsValueKind.Symbol => "a symbol",
+        JsValueKind.BigInt => "a BigInt",
+        _ => "an object",
+    };
 
     /// <summary>Gets the number of a value that is known to be a number (no check).</summary>
     internal double NumberValue => _number;
@@ -148,23 +206,28 @@ public readonly struct JsValue : IEquatable<JsValue>
     }
 
     /// <summary>Gets the boolean of a boolean value.</summary>
-    public bool AsBoolean() => ((BooleanCell)Cell!).Value;
+    /// <exception cref="InvalidOperationException">The value is not a boolean (use <see cref="TryGetBoolean"/>, or <see cref="JsEngine.ToBoolean"/> to convert it).</exception>
+    public bool AsBoolean() => Cell is BooleanCell cell ? cell.Value : ThrowWrongKind<bool>("a boolean");
 
     /// <summary>Gets the string of a string value.</summary>
-    public string AsString() => ((JsString)Cell!).ToString();
+    /// <exception cref="InvalidOperationException">The value is not a string (use <see cref="TryGetString"/>, or <see cref="JsEngine.ToString(JsValue)"/> to convert it).</exception>
+    public string AsString() => Cell is JsString cell ? cell.ToString() : ThrowWrongKind<string>("a string");
 
     internal JsString AsJsString() => (JsString)Cell!;
 
     /// <summary>Gets the symbol of a symbol value.</summary>
-    public JsSymbol AsSymbol() => (JsSymbol)Cell!;
+    /// <exception cref="InvalidOperationException">The value is not a symbol.</exception>
+    public JsSymbol AsSymbol() => Cell is JsSymbol cell ? cell : ThrowWrongKind<JsSymbol>("a symbol");
 
     /// <summary>Gets the integer of a BigInt value.</summary>
-    public BigInteger AsBigInt() => ((JsBigInt)Cell!).Value;
+    /// <exception cref="InvalidOperationException">The value is not a BigInt (use <see cref="JsEngine.ToBigInt"/> to convert it).</exception>
+    public BigInteger AsBigInt() => Cell is JsBigInt cell ? cell.Value : ThrowWrongKind<BigInteger>("a BigInt");
 
     internal JsBigInt AsJsBigInt() => (JsBigInt)Cell!;
 
     /// <summary>Gets the object of an object value.</summary>
-    public JsObject AsObject() => (JsObject)Cell!;
+    /// <exception cref="InvalidOperationException">The value is not an object (use <see cref="TryGetObject"/>, or <see cref="JsEngine.ToObject"/> to convert it).</exception>
+    public JsObject AsObject() => Cell is JsObject cell ? cell : ThrowWrongKind<JsObject>("an object");
 
     /// <summary>Gets the object of the value, or null when the value is not an object.</summary>
     public JsObject? TryGetObject() => Cell as JsObject;

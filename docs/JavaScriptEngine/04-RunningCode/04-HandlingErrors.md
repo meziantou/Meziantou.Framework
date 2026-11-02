@@ -139,6 +139,8 @@ Assert.Equal("TypeError: Invalid age: abc", realm.Execute("try { parseAge('abc')
   type, [RangeError](cref:Meziantou.Framework.JavaScriptEngine.JsErrorType.RangeError) for a value out of range.
 - `realm.CreateError` creates the error object without throwing it, for instance to reject a promise.
 - To throw any other value, throw `new JsException(value)`.
+- `new JsException("message")` throws an `Error` whose `message` is the message of the exception. The error is
+  created in the current realm when the script catches it. Use `realm.CreateException` for the other error types.
 
 ## Exceptions that are not JavaScript errors
 

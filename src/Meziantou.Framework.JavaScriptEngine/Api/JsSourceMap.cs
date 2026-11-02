@@ -50,6 +50,11 @@ public sealed class JsSourceMap
         {
             throw new FormatException("The source map is not valid JSON: " + ex.Message, ex);
         }
+        catch (ArgumentException ex)
+        {
+            // The text has an unpaired surrogate: it cannot be transcoded to UTF-8 JSON
+            throw new FormatException("The source map is not valid JSON: " + ex.Message, ex);
+        }
         catch (InvalidOperationException ex)
         {
             throw new FormatException("The source map is not valid: " + ex.Message, ex);
@@ -79,7 +84,17 @@ public sealed class JsSourceMap
     /// <param name="column">The 1-based column (in UTF-16 code units) in the generated code.</param>
     /// <param name="location">The original position: the URL of the original source, and the 1-based line and column of the mapping that contains the position.</param>
     /// <returns>false when no mapping contains the position, or when its mapping has no original source.</returns>
-    public bool TryGetOriginalLocation(int line, int column, out JsSourceLocation location) => TryGetOriginalLocationCore(line - 1, column - 1, out location);
+    public bool TryGetOriginalLocation(int line, int column, out JsSourceLocation location)
+    {
+        // Checked before the conversion to 0-based positions: int.MinValue - 1 would be int.MaxValue
+        if (line < 1 || column < 1)
+        {
+            location = default;
+            return false;
+        }
+
+        return TryGetOriginalLocationCore(line - 1, column - 1, out location);
+    }
 
     private bool TryGetOriginalLocationCore(int line, int column, out JsSourceLocation location)
     {
@@ -232,7 +247,8 @@ public sealed class JsSourceMap
                 source += fields[1];
                 originalLine += fields[2];
                 originalColumn += fields[3];
-                if (source < 0 || source >= sourceCount || originalLine < 0 || originalColumn < 0)
+                // The original positions are returned 1-based: int.MaxValue has no 1-based position
+                if (source < 0 || source >= sourceCount || originalLine is < 0 or int.MaxValue || originalColumn is < 0 or int.MaxValue)
                     throw new FormatException("A segment of the mappings refers to an invalid source position");
 
                 segments.Add(new Segment(generatedColumn, source, originalLine, originalColumn));

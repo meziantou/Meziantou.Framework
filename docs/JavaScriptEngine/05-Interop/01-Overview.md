@@ -28,3 +28,5 @@ A few rules hold for all of them:
   implement an object whose properties come from .NET.
 - [Binary data](06-BinaryData.md): share a .NET buffer with the scripts, read their typed arrays, share memory between
   engines.
+- [Console, timers and other host APIs](07-HostApis.md): give the scripts `console`, `setTimeout`, `queueMicrotask`
+  and the other globals of the browsers and of Node.js.

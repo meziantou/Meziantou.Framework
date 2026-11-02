@@ -67,6 +67,9 @@ public static partial class JavaScriptEngineFuzzTargets
         new("javascript-json-module", JsonModule) { Seeds = GetJsonSeeds, Dictionary = JsonTokens },
         new("javascript-engine-options", EngineOptions) { Seeds = GetEngineOptionsSeeds, Dictionary = EngineOptionsTokens },
         new("javascript-string-parsers", StringParsers) { Seeds = GetStringParserSeeds, Dictionary = StringParserTokens },
+        new("javascript-debugger", Debugger) { Seeds = GetDebuggerSeeds, Dictionary = Tokens },
+        new("javascript-source-map", SourceMap) { Seeds = GetSourceMapSeeds, Dictionary = SourceMapTokens },
+        new("javascript-source-map-mappings", SourceMapMappings) { Seeds = GetSourceMapMappingsSeeds },
     ];
 
     private static void Parse(ReadOnlySpan<byte> data)
@@ -174,13 +177,7 @@ public static partial class JavaScriptEngineFuzzTargets
     private static ScriptOutcome RunScript(Func<JsRealm, JsValue> run)
     {
         using var engine = CreateEngine(loader: null, FixedTimeProvider.Instance);
-        var realm = engine.CreateRealm();
-        using (engine.Enter())
-        {
-            var math = realm.GlobalObject.GetProperty("Math").AsObject();
-            math.SetProperty("random", realm.CreateFunction("random", 0, (_, _) => 0.5));
-        }
-
+        var realm = CreateDeterministicRealm(engine);
         ScriptOutcome outcome;
         try
         {
@@ -198,6 +195,19 @@ public static partial class JavaScriptEngineFuzzTargets
 
         Run(engine.RunJobs);
         return outcome;
+    }
+
+    // A realm whose Math.random is fixed: with FixedTimeProvider, a script gives the same result twice
+    private static JsRealm CreateDeterministicRealm(JsEngine engine)
+    {
+        var realm = engine.CreateRealm();
+        using (engine.Enter())
+        {
+            var math = realm.GlobalObject.GetProperty("Math").AsObject();
+            math.SetProperty("random", realm.CreateFunction("random", 0, (_, _) => 0.5));
+        }
+
+        return realm;
     }
 
     private static void CheckSameOutcome(ScriptOutcome expected, ScriptOutcome actual, string message)
@@ -470,7 +480,7 @@ public static partial class JavaScriptEngineFuzzTargets
         return result.IsBoolean && result.AsBoolean();
     }
 
-    private static JsEngine CreateEngine(JsModuleLoader? loader, TimeProvider? timeProvider = null)
+    private static JsEngine CreateEngine(JsModuleLoader? loader, TimeProvider? timeProvider = null, JsDebugger? debugger = null)
     {
         return new JsEngine(new JsEngineOptions
         {
@@ -483,6 +493,7 @@ public static partial class JavaScriptEngineFuzzTargets
             TimeZone = "UTC",
             ModuleLoader = loader,
             TimeProvider = timeProvider ?? TimeProvider.System,
+            Debugger = debugger,
         });
     }
 

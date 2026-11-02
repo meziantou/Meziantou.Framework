@@ -107,8 +107,10 @@ Assert.Equal(new JsSourceLocation("https://example.com/total.js", 2, 1), excepti
   per run.
 - The script can be shared between threads, but each engine stays on one thread at a time: see
   [Threads](../03-EnginesAndRealms.md#threads).
-- A prepared script keeps the inline caches of its functions, which can reference the objects of the engines that ran
-  it: keep it only as long as you run it, so the engines it ran in can be collected.
+
+A prepared script keeps only the compiled code: each engine keeps what it learns while it runs the script (the inline
+caches of the property accesses). Keeping a prepared script alive does not keep the engines that ran it alive, and the
+engines that run the same script do not slow each other down.
 
 When the script is a part of a larger document, such as an inline script of an HTML page, pass its position in the
 document (`lineOffset` and `columnOffset`): the locations of the errors are then positions in the document.

@@ -293,6 +293,9 @@ internal sealed class BytecodeBuilder
         _code.Add(operand2);
     }
 
+    /// <summary>Emits a StoreGlobal (PutValue of a global reference) with its inline cache.</summary>
+    public void EmitStoreGlobal(int name, bool isStrict) => Emit(OpCode.StoreGlobal, name, isStrict ? 1 : 0, _cacheCount++);
+
     public void Emit(OpCode op, int operand1, int operand2, int operand3)
     {
         Debug.Assert(GetOperandCount(op) == 3, $"{op} does not have 3 operands");
@@ -471,7 +474,7 @@ internal sealed class BytecodeBuilder
     // ------------------------------------------------------------------------------------------------------------------
 
     /// <summary>Gets whether an instruction has an inline cache (its last operand is the index of the cache).</summary>
-    public static bool HasInlineCache(OpCode op) => op is OpCode.GetProperty or OpCode.GetMethod or OpCode.SetProperty or OpCode.DefineField or OpCode.LoadGlobal or OpCode.LoadGlobalOrUndefined or OpCode.ResolveGlobal;
+    public static bool HasInlineCache(OpCode op) => op is OpCode.GetProperty or OpCode.GetMethod or OpCode.SetProperty or OpCode.DefineField or OpCode.LoadGlobal or OpCode.LoadGlobalOrUndefined or OpCode.ResolveGlobal or OpCode.StoreGlobal;
 
     /// <summary>Gets whether an instruction is a conditional jump with a comparison (left right ->).</summary>
     public static bool IsCompareJump(OpCode op) => op is >= OpCode.JumpIfLessThan and <= OpCode.JumpIfStrictNotEqual;
@@ -484,7 +487,7 @@ internal sealed class BytecodeBuilder
                 or OpCode.LoadLocal or OpCode.StoreLocal
                 or OpCode.LoadName or OpCode.LoadNameOrUndefined or OpCode.LoadNameForCall or OpCode.DeleteName or OpCode.InitializeName
                 or OpCode.PushScope
-                or OpCode.LoadArgument or OpCode.LoadRestArguments or OpCode.CreateArguments
+                or OpCode.LoadArgument or OpCode.LoadRestArguments or OpCode.CreateArguments or OpCode.LoadArgumentsElement or OpCode.CreateArgumentsForRead
                 or OpCode.IncrementLocal or OpCode.DecrementLocal
                 or OpCode.JumpIfLessThan or OpCode.JumpIfNotLessThan or OpCode.JumpIfLessThanOrEqual or OpCode.JumpIfNotLessThanOrEqual
                 or OpCode.JumpIfGreaterThan or OpCode.JumpIfNotGreaterThan or OpCode.JumpIfGreaterThanOrEqual or OpCode.JumpIfNotGreaterThanOrEqual
@@ -511,7 +514,7 @@ internal sealed class BytecodeBuilder
                 or OpCode.GetProperty or OpCode.GetMethod or OpCode.SetProperty or OpCode.DefineField or OpCode.LoadGlobal or OpCode.LoadGlobalOrUndefined
                 or OpCode.ResolveGlobal
                 or OpCode.LoadContext or OpCode.StoreContext
-                or OpCode.StoreGlobal or OpCode.StoreName
+                or OpCode.StoreName
                 or OpCode.DeleteProperty
                 or OpCode.DefineMethod
                 or OpCode.GetPrivate or OpCode.SetPrivate or OpCode.PrivateIn
@@ -522,6 +525,7 @@ internal sealed class BytecodeBuilder
                 or OpCode.StoreResolved
                 => 2,
             OpCode.LoadContextChecked or OpCode.StoreContextChecked or OpCode.ThrowConstAssignContext or OpCode.LoadImport
+                or OpCode.StoreGlobal
                 => 3,
             _ => 0,
         };
@@ -548,7 +552,8 @@ internal sealed class BytecodeBuilder
             OpCode.DeleteName => 1,
             OpCode.PushScope or OpCode.PopScope or OpCode.CopyScope => 0,
             OpCode.PushWith => -1,
-            OpCode.LoadArgument or OpCode.LoadRestArguments or OpCode.CreateArguments => 1,
+            OpCode.LoadArgument or OpCode.LoadRestArguments or OpCode.CreateArguments or OpCode.LoadArgumentsLength or OpCode.CreateArgumentsForRead => 1,
+            OpCode.LoadArgumentsElement => 0,
             OpCode.LoadThis or OpCode.LoadFunction or OpCode.LoadNewTarget or OpCode.LoadHomeObject or OpCode.LoadImportMeta or OpCode.LoadGlobalThis => 1,
             OpCode.Add or OpCode.Subtract or OpCode.Multiply or OpCode.Divide or OpCode.Modulo or OpCode.Exponentiate
                 or OpCode.LeftShift or OpCode.RightShift or OpCode.UnsignedRightShift
@@ -565,8 +570,8 @@ internal sealed class BytecodeBuilder
             OpCode.JumpIfTrueKeep or OpCode.JumpIfFalseKeep or OpCode.JumpIfNullishKeep or OpCode.JumpIfNotNullishKeep or OpCode.JumpIfNotUndefinedKeep => 0,
             OpCode.Throw or OpCode.Return => -1,
             OpCode.ThrowError or OpCode.Debugger or OpCode.DebugStatement => 0,
-            OpCode.NewObject or OpCode.NewArray => 1,
-            OpCode.ArrayAppend or OpCode.ArrayAppendSpread => -1,
+            OpCode.NewObject or OpCode.NewArray or OpCode.NewArgumentList => 1,
+            OpCode.ArrayAppend or OpCode.ArrayAppendSpread or OpCode.ArgumentListAppend or OpCode.ArgumentListAppendSpread => -1,
             OpCode.GetProperty => 0,
             OpCode.GetMethod => 1,
             OpCode.SetProperty => -1,

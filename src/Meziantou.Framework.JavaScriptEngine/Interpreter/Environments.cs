@@ -6,6 +6,22 @@ namespace Meziantou.Framework.JavaScriptEngine.Interpreter;
 internal abstract class Environment(Environment? outer) : JsCell(JsValueKind.Undefined)
 {
     public Environment? Outer { get; } = outer;
+
+    /// <summary>
+    /// Gets whether a function object references the environment (its [[Environment]], or an outer environment of it):
+    /// the environment can be read after the frame left it. A per-iteration environment that is not captured can be reused
+    /// by the next iteration: nothing can observe that it is not a copy.
+    /// </summary>
+    public bool IsCaptured { get; private set; }
+
+    /// <summary>Marks the environment and its outer environments as captured (the outer environments of a captured environment are captured).</summary>
+    public void MarkCaptured()
+    {
+        for (var environment = this; environment is not null && !environment.IsCaptured; environment = environment.Outer)
+        {
+            environment.IsCaptured = true;
+        }
+    }
 }
 
 /// <summary>A declarative environment: the slots of the bindings of a scope, and the vars added by sloppy eval code.</summary>
@@ -42,7 +58,7 @@ internal sealed class DeclarativeEnvironment : Environment
     /// <summary>Gets the vars created by sloppy eval code in this variable environment (they can be deleted).</summary>
     public Dictionary<string, JsValue>? EvalVars { get; private set; }
 
-    /// <summary>CreatePerIterationEnvironment: a copy of the environment with the same values.</summary>
+    /// <summary>CreatePerIterationEnvironment: a copy of the environment with the same values (not captured).</summary>
     public DeclarativeEnvironment Copy() => new(this);
 
     public bool HasEvalVar(string name) => EvalVars is not null && EvalVars.ContainsKey(name);

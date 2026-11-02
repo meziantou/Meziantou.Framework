@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Globalization;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
 using Meziantou.Framework.Imaging;
 using Meziantou.Framework.Pdf.Objects;
@@ -109,6 +110,49 @@ public sealed class PdfCorpusTests
     [Theory(SkipTestWithoutData = true)]
     [MemberData(nameof(VeraPdf), DisableDiscoveryEnumeration = true)]
     public void VeraPdfFiles(string id) => Run(id);
+
+    /// <summary>Gets the documents PDFBox encrypted for the certificate of its keystore <c>PDFBOX-5249.p12</c> (no password), with their algorithm.</summary>
+    public static TheoryData<string, PdfEncryptionAlgorithm> PdfBoxPublicKeyFiles
+    {
+        get
+        {
+            var data = new TheoryData<string, PdfEncryptionAlgorithm>();
+            foreach (var (name, algorithm) in new[] { ("AES128ExposedMeta.pdf", PdfEncryptionAlgorithm.AesWith128BitKey), ("AES256ExposedMeta.pdf", PdfEncryptionAlgorithm.AesWith256BitKey) })
+            {
+                var id = "pdfbox/pdfbox/src/test/resources/org/apache/pdfbox/encryption/" + name;
+                if (File.Exists(RepositoryPaths.External / id))
+                {
+                    data.Add(id, algorithm);
+                }
+            }
+
+            return data;
+        }
+    }
+
+    /// <summary>The documents of another writer encrypted for certificates (the public-key security handler) are decrypted with the private key of the recipient.</summary>
+    [Theory(SkipTestWithoutData = true)]
+    [MemberData(nameof(PdfBoxPublicKeyFiles), DisableDiscoveryEnumeration = true)]
+    public void PdfBoxPublicKeyEncryptedFilesAreDecrypted(string id, PdfEncryptionAlgorithm algorithm)
+    {
+        var certificates = X509CertificateLoader.LoadPkcs12CollectionFromFile(RepositoryPaths.External / "pdfbox/pdfbox/src/test/resources/org/apache/pdfbox/encryption/PDFBOX-5249.p12", password: null);
+        try
+        {
+            var certificate = certificates.Single(certificate => certificate.HasPrivateKey);
+            var document = PdfDocument.Open(CorpusFiles.Read(id), new PdfReadOptions { Certificate = certificate });
+            Assert.True(document.Encryption!.UsesCertificates);
+            Assert.Equal(algorithm, document.Encryption.Algorithm);
+            Assert.False(document.Encryption.EncryptMetadata);
+            Assert.StartsWith("AES key length: " + (algorithm == PdfEncryptionAlgorithm.AesWith256BitKey ? "256" : "128"), document.Pages[0].ExtractText());
+        }
+        finally
+        {
+            foreach (var certificate in certificates)
+            {
+                certificate.Dispose();
+            }
+        }
+    }
 
     /// <summary>
     /// The images of the <c>CCITTFaxDecode</c> and <c>JBIG2Decode</c> filters decode to the data recorded in

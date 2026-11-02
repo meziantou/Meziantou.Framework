@@ -14,6 +14,11 @@ internal sealed partial class ScopeAnalyzer
 
     // The expressions of the left-nested chains being visited (VisitLeftNestedExpression)
     private readonly List<Node> _leftNestedExpressions = [];
+
+    // The arguments identifiers of the member expressions arguments.length and arguments[key], and the ones of these
+    // expressions that are not only read (a call that passes the arguments object as this, an assignment target, delete)
+    private readonly HashSet<Node> _argumentsReads = [];
+    private readonly HashSet<Node> _argumentsNotOnlyRead = [];
     private readonly ProgramKind _programKind;
 
     private ScopeAnalyzer(ProgramKind programKind)
@@ -31,6 +36,12 @@ internal sealed partial class ScopeAnalyzer
 
     /// <summary>Gets the resolution of the identifiers (and of this, new.target, super, private names).</summary>
     public Dictionary<Node, Reference> References { get; } = [];
+
+    /// <summary>
+    /// Gets the arguments identifiers of the expressions <c>arguments.length</c> and <c>arguments[key]</c> of the functions
+    /// whose arguments object is never created (<see cref="FunctionInfo.HasSimpleArguments"/>).
+    /// </summary>
+    public HashSet<Node> SimpleArgumentsReferences { get; } = [];
 
     public FunctionInfo Root { get; private set; } = null!;
 
@@ -141,8 +152,16 @@ internal sealed partial class ScopeAnalyzer
 
                 break;
             case IfStatement ifStatement:
-                DeclareVarScoped(ifStatement.Consequent, varScope, isTopLevel: false);
-                DeclareVarScoped(ifStatement.Alternate, varScope, isTopLevel: false);
+                // An else if chain is walked in a loop: a long chain (generated code) does not recurse
+                for (var current = ifStatement; current is not null; current = current.Alternate as IfStatement)
+                {
+                    DeclareVarScoped(current.Consequent, varScope, isTopLevel: false);
+                    if (current.Alternate is not IfStatement)
+                    {
+                        DeclareVarScoped(current.Alternate, varScope, isTopLevel: false);
+                    }
+                }
+
                 break;
             case WhileStatement whileStatement:
                 DeclareVarScoped(whileStatement.Body, varScope, isTopLevel: false);
@@ -749,9 +768,16 @@ internal sealed partial class ScopeAnalyzer
                 }
 
             case IfStatement ifStatement:
-                VisitExpression(ifStatement.Test, scope);
-                VisitSubStatement(ifStatement.Consequent, scope);
-                VisitSubStatement(ifStatement.Alternate, scope);
+                for (var current = ifStatement; current is not null; current = current.Alternate as IfStatement)
+                {
+                    VisitExpression(current.Test, scope);
+                    VisitSubStatement(current.Consequent, scope);
+                    if (current.Alternate is not IfStatement)
+                    {
+                        VisitSubStatement(current.Alternate, scope);
+                    }
+                }
+
                 return;
             case LabeledStatement labeled:
                 // A labelled function declaration belongs to the enclosing statement list
@@ -1041,6 +1067,7 @@ internal sealed partial class ScopeAnalyzer
                 return;
             default:
                 // A member expression in an assignment pattern
+                MarkArgumentsNotOnlyRead(target);
                 VisitExpression(target, scope);
                 return;
         }
@@ -1083,6 +1110,7 @@ internal sealed partial class ScopeAnalyzer
 
                 return;
             case TaggedTemplateExpression tagged:
+                MarkArgumentsNotOnlyRead(tagged.Tag);
                 VisitExpression(tagged.Tag, scope);
                 VisitExpression(tagged.Quasi, scope);
                 return;
@@ -1133,6 +1161,11 @@ internal sealed partial class ScopeAnalyzer
                 VisitClass(classExpression.Class, scope);
                 return;
             case UnaryExpression unary:
+                if (unary.Operator == UnaryOperator.Delete)
+                {
+                    MarkArgumentsNotOnlyRead(unary.Argument);
+                }
+
                 VisitExpression(unary.Argument, scope);
                 return;
             case UpdateExpression update:
@@ -1271,6 +1304,11 @@ internal sealed partial class ScopeAnalyzer
                 }
                 else
                 {
+                    if (member is { Object: Identifier { Name: "arguments" } arguments, Optional: false } && (member.Computed || member.Property is Identifier { Name: "length" }))
+                    {
+                        _argumentsReads.Add(arguments);
+                    }
+
                     VisitExpression(member.Object, scope);
                 }
 
@@ -1289,6 +1327,8 @@ internal sealed partial class ScopeAnalyzer
                 VisitExpression(logical.Right, scope);
                 break;
             case CallExpression call:
+                // arguments[i](): the arguments object is the this value of the call
+                MarkArgumentsNotOnlyRead(call.Callee);
                 foreach (var argument in call.Arguments)
                 {
                     VisitExpression(argument, scope);
@@ -1311,6 +1351,7 @@ internal sealed partial class ScopeAnalyzer
 
     private void VisitAssignmentTarget(Node target, Scope scope, bool isReadWrite)
     {
+        MarkArgumentsNotOnlyRead(target);
         if (target is Identifier identifier)
         {
             RecordReference(identifier, identifier.Name, scope, isReadWrite ? ReferenceKind.ReadWrite : ReferenceKind.Write);
@@ -1353,6 +1394,15 @@ internal sealed partial class ScopeAnalyzer
             }
 
             return false;
+        }
+    }
+
+    /// <summary>Records that the arguments object of a member expression (<c>arguments[i]</c>) is not only read: the object is needed.</summary>
+    private void MarkArgumentsNotOnlyRead(Node node)
+    {
+        if (node is MemberExpression { Object: Identifier { Name: "arguments" } arguments })
+        {
+            _argumentsNotOnlyRead.Add(arguments);
         }
     }
 

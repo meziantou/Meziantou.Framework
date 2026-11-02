@@ -23,6 +23,7 @@ internal sealed class Frame
     internal void Initialize(FunctionTemplate code, JsRealm realm, Environment environment, ReadOnlySpan<JsValue> arguments)
     {
         Code = code;
+        Caches = realm.Engine.GetInlineCaches(code);
         IsStrict = code.IsStrict;
         Realm = realm;
         Environment = environment;
@@ -36,6 +37,7 @@ internal sealed class Frame
     {
         Values.AsSpan(0, Code.RegisterCount + ArgumentCount + Code.MaxStack).Clear();
         Code = null!;
+        Caches = null!;
         Realm = null!;
         Environment = null!;
         Function = null;
@@ -52,6 +54,9 @@ internal sealed class Frame
     internal static int GetValueCount(FunctionTemplate code, int argumentCount) => code.RegisterCount + argumentCount + code.MaxStack;
 
     public FunctionTemplate Code { get; private set; } = null!;
+
+    /// <summary>Gets the inline caches of the code for the engine of the frame (<see cref="JsEngine.GetInlineCaches"/>).</summary>
+    public PropertyCacheEntry?[] Caches { get; private set; } = null!;
 
     /// <summary>
     /// Gets or sets whether the running code is strict: the code of the template, or a class definition (its heritage and
@@ -113,6 +118,15 @@ internal sealed class Frame
 
     /// <summary>Gets or sets whether the frame resumes by throwing <see cref="ResumeValue"/> at its suspension point (await).</summary>
     public bool PendingThrow { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether a yield of the generator gives its value instead of an iterator result object: the generator is
+    /// resumed by the step of an iteration (<see cref="JsGenerator.Step"/>), which never exposes the object.
+    /// </summary>
+    public bool YieldsValue { get; set; }
+
+    /// <summary>Gets or sets whether the last yield gave its value instead of an iterator result object (<see cref="YieldsValue"/>).</summary>
+    public bool YieldedValue { get; set; }
 }
 
 /// <summary>

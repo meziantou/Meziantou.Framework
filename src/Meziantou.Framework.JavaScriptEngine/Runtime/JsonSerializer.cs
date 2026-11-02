@@ -152,7 +152,7 @@ internal sealed class JsonSerializer
             if (prototype is null)
                 return JsValue.Undefined;
 
-            var epoch = InlineCache.Epoch;
+            var epoch = _engine.InlineCacheEpoch;
             if (epoch == _prototypesWithoutToJsonEpoch && (ReferenceEquals(prototype, _prototypeWithoutToJson1) || ReferenceEquals(prototype, _prototypeWithoutToJson2)))
                 return JsValue.Undefined;
 

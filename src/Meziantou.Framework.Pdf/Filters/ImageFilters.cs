@@ -100,23 +100,16 @@ internal static class ImageFilters
 
             var gray = info.ColorModel is ImageColorModel.Grayscale or ImageColorModel.GrayscaleAlpha;
             var components = gray ? 1 : 3;
-            if ((long)info.Width * info.Height * components > limit)
+            var length = (long)info.Width * info.Height * components;
+            if (length > limit)
                 throw new PdfResourceLimitException(string.Create(CultureInfo.InvariantCulture, $"The decoded data of a stream exceeds {limit} bytes ({nameof(PdfReadOptions)}.{nameof(PdfReadOptions.MaxDecodedStreamLength)})"));
 
-            if (gray)
-            {
-                using var image = Image.Load<Gray8>(input);
-                var result = new byte[image.Width * image.Height];
-                image.Frames[0].CopyPixelBytesTo(result);
-                return result;
-            }
-            else
-            {
-                using var image = Image.Load<Rgb24>(input);
-                var result = new byte[image.Width * image.Height * 3];
-                image.Frames[0].CopyPixelBytesTo(result);
-                return result;
-            }
+            if (length > Array.MaxLength)
+                throw new PdfResourceLimitException(string.Create(CultureInfo.InvariantCulture, $"The decoded data of the {filter} image ({length} bytes) exceeds the maximum length of an array"));
+
+            return gray
+                ? Load<Gray8>(input, info, (int)length, filter)
+                : Load<Rgb24>(input, info, (int)length, filter);
         }
         catch (ImageException ex) when (ex is not ImageResourceLimitException)
         {
@@ -126,5 +119,21 @@ internal static class ImageFilters
         {
             throw new PdfResourceLimitException($"The {filter} image exceeds a limit: {ex.Message}", ex);
         }
+    }
+
+    /// <summary>
+    /// Decodes the pixels into an array of the size checked against the limit. The decoder keeps its pixels in pooled
+    /// memory, so this array is the only large allocation: it is not zeroed, because the copy writes every byte of it.
+    /// </summary>
+    private static byte[] Load<TPixel>(ReadOnlySpan<byte> input, ImageInfo info, int length, string filter)
+        where TPixel : unmanaged
+    {
+        using var image = Image.Load<TPixel>(input);
+        if (image.Width != info.Width || image.Height != info.Height)
+            throw new InvalidPdfContentException($"The {filter} data decodes to {image.Width}x{image.Height} pixels, not the {info.Width}x{info.Height} pixels of its header");
+
+        var result = unsafe(GC.AllocateUninitializedArray<byte>(length));
+        image.Frames[0].CopyPixelBytesTo(result);
+        return result;
     }
 }

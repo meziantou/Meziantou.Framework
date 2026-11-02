@@ -157,6 +157,22 @@ public sealed class PdfSignerTests
     }
 
     [Fact]
+    public void CertificateEncryptedDocumentsAreSigned()
+    {
+        using var certificate = CreateCertificate("rsa");
+        var document = CreateDocument();
+        document.Encryption = new PdfEncryption(new PdfEncryptionRecipient(certificate)) { Algorithm = PdfEncryptionAlgorithm.AesWith128BitKey };
+
+        // The new encryption is reopened with the certificate of the recipient, which has its private key
+        var signed = PdfSigner.Sign(document, new PdfSignatureOptions(certificate) { Reason = "Encrypted" });
+
+        var signature = PdfSignatureVerifier.Verify(signed, new PdfReadOptions { Certificate = certificate }).Single();
+        Assert.True(signature.IsValid, signature.Error);
+        Assert.Equal("Encrypted", signature.Reason);
+        Assert.Throws<PdfPasswordException>(() => PdfSignatureVerifier.Verify(signed));
+    }
+
+    [Fact]
     public void TheCertificateAndTheReservedSpaceAreChecked()
     {
         using var certificate = CreateCertificate("rsa");

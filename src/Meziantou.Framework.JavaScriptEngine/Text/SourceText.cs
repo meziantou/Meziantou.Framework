@@ -35,6 +35,12 @@ internal sealed class SourceText
     public int UnboundNameFunctionStart { get; init; } = -1;
 
     /// <summary>
+    /// Gets whether the code compiled from the source can run in several engines (a <see cref="JsPreparedScript"/>): the
+    /// engines keep the inline caches of its templates (<see cref="JsEngine.GetInlineCaches"/>).
+    /// </summary>
+    public bool IsShared { get; init; }
+
+    /// <summary>
     /// Gets or sets whether the code is compiled for a debugger: an instruction at the start of each statement raises the
     /// events of <see cref="JsDebugger"/>. The nested functions are compiled from the same source text, so they are too.
     /// </summary>

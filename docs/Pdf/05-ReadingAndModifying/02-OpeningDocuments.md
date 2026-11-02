@@ -43,6 +43,10 @@ var text = document.Pages[0].ExtractText();
 - The errors of the stream, such as `IOException` or `ObjectDisposedException`, are not caught: they can occur
   whenever an object is first used.
 - `Open(stream)` and `OpenAsync(stream)` read the stream once, into an array of its length, and do not need it after.
+- The saves read the stream too: the data of the streams the application did not read, and the original file of an
+  incremental update, are copied from it in chunks, without being kept in memory. A file larger than 2 GB can then be
+  saved in full or incrementally, and the memory a save takes does not grow with the size of the file. Keep the stream
+  open until the save completes, including the asynchronous saves, which read it when they write.
 
 ## Encrypted documents
 

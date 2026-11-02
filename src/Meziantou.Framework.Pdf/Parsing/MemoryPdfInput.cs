@@ -1,5 +1,3 @@
-using System.Buffers;
-
 namespace Meziantou.Framework.Pdf.Parsing;
 
 /// <summary>A file in memory.</summary>
@@ -23,6 +21,4 @@ internal sealed class MemoryPdfInput(ReadOnlyMemory<byte> data) : PdfInput
     }
 
     public override ReadOnlyMemory<byte> GetMemory(long offset, int length) => data.Slice((int)offset, length);
-
-    public override void CopyTo(IBufferWriter<byte> output) => output.Write(data.Span);
 }

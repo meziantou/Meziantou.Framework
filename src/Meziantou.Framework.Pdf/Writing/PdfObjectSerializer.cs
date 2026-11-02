@@ -193,7 +193,7 @@ internal static class PdfObjectSerializer
             writer.WriteSpace();
 
             // The signature of a signature dictionary is not encrypted (7.6.2)
-            var encrypt = encryptString is not null && !StandardSecurityHandler.IsSignatureContents(dictionary, entry.Key) ? encryptString : null;
+            var encrypt = encryptString is not null && !SecurityHandler.IsSignatureContents(dictionary, entry.Key) ? encryptString : null;
             Write(writer, entry.Value, references, encrypt, depth + 1);
         }
 

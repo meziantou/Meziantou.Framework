@@ -122,7 +122,7 @@ internal static class PdfFilterPipeline
                 "DCTDecode" => ImageFilters.DecodeDct(input.Span, filterParameters, limit),
                 "JPXDecode" => ImageFilters.DecodeJpx(input.Span, limit),
                 "CCITTFaxDecode" => CcittFaxFilter.Decode(input.Span, filterParameters, limit),
-                "JBIG2Decode" => Jbig2Filter.Decode(input.Span, filterParameters, limit),
+                "JBIG2Decode" => Jbig2Filter.Decode(input, filterParameters, limit),
                 _ => throw new UnsupportedPdfFeatureException($"The filter '{filter.Value}' is not supported"),
             };
         }

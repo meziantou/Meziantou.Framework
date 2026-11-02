@@ -14,15 +14,19 @@ namespace Meziantou.Framework.JavaScriptEngine;
 /// </para>
 /// <para>
 /// A cache that depends on other objects than the receiver (a property found on a prototype, or in the property table of
-/// a receiver in dictionary mode) remembers the epoch: the objects it depends on are flagged
-/// (<see cref="ObjectFlags.InlineCacheHolder"/>: the positions of its properties are remembered,
-/// <see cref="ObjectFlags.InlineCachePrototype"/>: the absence of a property is remembered), and a change of their properties or of their prototype increments the
-/// epoch, which invalidates all these caches at once. Such changes are rare once the prototypes are set up.
+/// a receiver in dictionary mode) remembers the epoch of its engine (<see cref="JsEngine.InlineCacheEpoch"/>): the objects
+/// it depends on are flagged (<see cref="ObjectFlags.InlineCacheHolder"/>: the positions of its properties are remembered,
+/// <see cref="ObjectFlags.InlineCachePrototype"/>: the absence of a property is remembered), and a change of their
+/// properties or of their prototype increments the epoch of the current engine (the engine of the object), which
+/// invalidates all these caches of the engine at once. Such changes are rare once the prototypes are set up, and they do
+/// not invalidate the caches of the other engines.
 /// </para>
 /// <para>
-/// The caches are in the <see cref="Compiler.FunctionTemplate"/>, which the engines of several threads can share: an entry
-/// is immutable and replaced as a whole, and it only matches the objects of the engine that created it (the shapes with
-/// properties belong to an engine, the static empty shapes are checked with the prototype).
+/// The caches are in the <see cref="Compiler.FunctionTemplate"/>, which belongs to the engine that compiled it, except the
+/// templates of a <see cref="JsPreparedScript"/>, which the engines of several threads share: each engine has its own
+/// caches for them (<see cref="JsEngine.GetInlineCaches"/>), so that a template does not keep the objects of an engine
+/// alive and the engines do not replace the entries of each other. A frame uses the caches of its engine
+/// (<see cref="Interpreter.Frame.Caches"/>).
 /// </para>
 /// </remarks>
 internal static class InlineCache
@@ -30,13 +34,24 @@ internal static class InlineCache
     /// <summary>The number of entries of a polymorphic site, above which it becomes megamorphic.</summary>
     public const int MaxPolymorphicEntries = 4;
 
-    private static int s_epoch;
+    // Incremented when a flagged object changes while no engine is current: the engines invalidate their caches when they are entered
+    private static int s_detachedEpoch;
 
-    /// <summary>Gets the current epoch: a cache that depends on other objects is valid while the epoch does not change.</summary>
-    public static int Epoch => Volatile.Read(ref s_epoch);
+    /// <summary>Gets the number of changes of flagged objects made while no engine was current.</summary>
+    public static int DetachedEpoch => Volatile.Read(ref s_detachedEpoch);
 
-    /// <summary>Invalidates the caches that depend on other objects than the receiver.</summary>
-    public static void Invalidate() => Interlocked.Increment(ref s_epoch);
+    /// <summary>Invalidates the caches of the current engine that depend on other objects than the receiver.</summary>
+    public static void Invalidate()
+    {
+        if (JsEngine.Current is { } engine)
+        {
+            engine.InlineCacheEpoch++;
+        }
+        else
+        {
+            Interlocked.Increment(ref s_detachedEpoch);
+        }
+    }
 }
 
 /// <summary>What a <see cref="PropertyCacheEntry"/> remembers.</summary>
@@ -111,7 +126,7 @@ internal sealed class PropertyCacheEntry
     /// <summary>Gets or initializes whether the position is in the property table of the holder.</summary>
     public bool InTable { get; init; }
 
-    /// <summary>Gets or initializes the epoch of <see cref="InlineCache"/> when the entry was created (the entries that depend on other objects).</summary>
+    /// <summary>Gets or initializes the epoch of the engine (<see cref="JsEngine.InlineCacheEpoch"/>) when the entry was created (the entries that depend on other objects).</summary>
     public int Epoch { get; init; }
 
     /// <summary>Gets or initializes the shape after the transition (<see cref="PropertyCacheKind.Add"/>).</summary>
@@ -133,9 +148,9 @@ internal sealed class PropertyCacheEntry
     /// <summary>Creates the entry of a site that became megamorphic.</summary>
     public static PropertyCacheEntry CreateMegamorphic(in PropertyKey key) => new() { Kind = PropertyCacheKind.Megamorphic, Map = MegamorphicMap, KeyHash = key.GetHashCode() };
 
-    /// <summary>Gets whether the entry depends on the epoch of <see cref="InlineCache"/> and the epoch changed (it never matches again).</summary>
-    public bool IsStale => Kind is PropertyCacheKind.OwnTable or PropertyCacheKind.Prototype or PropertyCacheKind.Accessor or PropertyCacheKind.Add or PropertyCacheKind.PrimitivePrototype
-        && Epoch != InlineCache.Epoch;
+    /// <summary>Gets whether the entry depends on the epoch of its engine and the epoch changed to <paramref name="epoch"/> (it never matches again).</summary>
+    public bool IsStale(int epoch) => Kind is PropertyCacheKind.OwnTable or PropertyCacheKind.Prototype or PropertyCacheKind.Accessor or PropertyCacheKind.Add or PropertyCacheKind.PrimitivePrototype
+        && Epoch != epoch;
 
     /// <summary>Gets whether a new entry of the site applies to the receivers of this entry (it replaces this entry).</summary>
     public bool IsReplacedBy(PropertyCacheEntry entry) => ReferenceEquals(Map, entry.Map) && ReferenceEquals(Prototype, entry.Prototype) && (Map is not null || Kind == entry.Kind);

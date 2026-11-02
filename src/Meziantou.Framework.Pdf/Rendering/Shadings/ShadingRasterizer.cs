@@ -155,14 +155,16 @@ internal static class ShadingRasterizer
         var mesh = cache.GetMesh(stream, () => MeshReader.Read(stream, context.ColorSpace.ComponentCount, context.Function is not null, MaxMeshItems));
         var colorCount = context.Function is not null ? 1 : context.ColorSpace.ComponentCount;
         var lookup = context.Function is not null ? cache.GetShadingColors(stream.Dictionary, () => CreateMeshLookup(context, mesh.Domain)) : null;
-        var shader = new MeshShader(context.ColorSpace, lookup, mesh.Domain, colorCount);
+        var painter = new MeshPainter(context.ColorSpace, lookup, mesh.Domain, colorCount);
         foreach (var triangle in mesh.Triangles)
         {
             // A triangle costs the pixels of its bounds, which the next triangle pays for
             cache.Charge(4);
-            var pixels = context.FillTriangle(triangle, colorCount, in shader);
+            var pixels = context.FillTriangle(triangle, painter);
             cache.Charge(pixels / 64);
         }
+
+        context.Paint(painter);
     }
 
     private static Rgba32[] CreateMeshLookup(Context context, double[] domain)
@@ -209,7 +211,7 @@ internal static class ShadingRasterizer
 
         /// <summary>Fills a triangle of shading space with the colors interpolated between its vertices (Gouraud shading).</summary>
         /// <returns>The pixels of the bounds of the triangle, which were tested.</returns>
-        public long FillTriangle(MeshTriangle triangle, int colorCount, in MeshShader shader)
+        public long FillTriangle(MeshTriangle triangle, MeshPainter painter)
         {
             var (ax, ay) = shadingToDevice.Transform(triangle.A.X, triangle.A.Y);
             var (bx, by) = shadingToDevice.Transform(triangle.B.X, triangle.B.Y);
@@ -228,7 +230,9 @@ internal static class ShadingRasterizer
             var maxX = Math.Min(width - 1, (int)Math.Ceiling(Math.Max(ax, Math.Max(bx, cx))));
             var minY = Math.Max(0, (int)Math.Floor(Math.Min(ay, Math.Min(by, cy))));
             var maxY = Math.Min(height - 1, (int)Math.Ceiling(Math.Max(ay, Math.Max(by, cy))));
-            var values = shader.Values;
+            var colorCount = painter.ColorCount;
+            var isBatched = painter.IsBatched;
+            var singleValues = painter.GetNextValues();
             for (var y = minY; y <= maxY; y++)
             {
                 for (var x = minX; x <= maxX; x++)
@@ -251,17 +255,28 @@ internal static class ShadingRasterizer
                             continue;
                     }
 
+                    var values = isBatched ? painter.GetNextValues() : singleValues;
                     for (var i = 0; i < colorCount; i++)
                     {
                         values[i] = (wa * triangle.A.Color[i]) + (wb * triangle.B.Color[i]) + (wc * triangle.C.Color[i]);
                     }
 
-                    pixels[(y * width) + x] = shader.GetColor();
+                    if (isBatched)
+                    {
+                        painter.Add(pixels, (y * width) + x);
+                    }
+                    else
+                    {
+                        pixels[(y * width) + x] = painter.GetColor();
+                    }
                 }
             }
 
             return maxX < minX || maxY < minY ? 0 : (long)(maxX - minX + 1) * (maxY - minY + 1);
         }
+
+        /// <summary>Paints the pixels of the triangles that the painter has not painted yet.</summary>
+        public void Paint(MeshPainter painter) => painter.Flush(pixels);
     }
 
     /// <summary>Computes the color of a pixel at a point of shading space; called for each pixel, without a delegate.</summary>
@@ -383,20 +398,83 @@ internal static class ShadingRasterizer
         }
     }
 
-    /// <summary>The colors of the pixels of a mesh: the interpolated values (<see cref="Values"/>) converted by the color space, or by the table of the function.</summary>
-    private readonly struct MeshShader(RenderColorSpace colorSpace, Rgba32[]? lookup, double[] domain, int colorCount)
+    /// <summary>
+    /// The colors of the pixels of a mesh: the interpolated values converted by the color space, or by the table of the
+    /// function. The pixels of a color space that converts colors in batches are converted together, up to
+    /// <see cref="BatchSize"/> at a time: a conversion through an ICC profile (CMYK, for instance) has a cost for each
+    /// call that one color at a time would pay for each pixel. The colors are the ones of a conversion of each pixel,
+    /// the conversion of a color not depending on the others.
+    /// </summary>
+    private sealed class MeshPainter
     {
-        public double[] Values { get; } = new double[colorCount];
+        private const int BatchSize = 1024;
 
+        private readonly RenderColorSpace _colorSpace;
+        private readonly Rgba32[]? _lookup;
+        private readonly double[] _domain;
+        private readonly int _colorCount;
+        private readonly bool _isBatched;
+        private readonly double[] _components;
+        private readonly int[] _positions;
+        private readonly byte[] _rgb;
+        private int _count;
+
+        public MeshPainter(RenderColorSpace colorSpace, Rgba32[]? lookup, double[] domain, int colorCount)
+        {
+            _colorSpace = colorSpace;
+            _lookup = lookup;
+            _domain = domain;
+            _colorCount = colorCount;
+            _isBatched = lookup is null && colorSpace.ConvertsInBatches;
+            var capacity = _isBatched ? BatchSize : 0;
+            _components = new double[Math.Max(capacity, 1) * colorCount];
+            _positions = new int[capacity];
+            _rgb = new byte[capacity * 3];
+        }
+
+        public int ColorCount => _colorCount;
+
+        /// <summary>Gets whether the pixels are converted in batches (<see cref="Add"/>), or one at a time (<see cref="GetColor"/>).</summary>
+        public bool IsBatched => _isBatched;
+
+        /// <summary>Gets the components of the color of the next pixel, to set before <see cref="Add"/> or <see cref="GetColor"/>.</summary>
+        public Span<double> GetNextValues() => _components.AsSpan(_count * _colorCount, _colorCount);
+
+        /// <summary>Adds the next pixel, of the values set, to the batch; the batch is painted when it is full.</summary>
+        public void Add(Rgba32[] pixels, int position)
+        {
+            _positions[_count++] = position;
+            if (_count == BatchSize)
+            {
+                Flush(pixels);
+            }
+        }
+
+        /// <summary>Gets the color of the values set, without a batch.</summary>
         public Rgba32 GetColor()
         {
-            if (lookup is not null)
+            if (_lookup is not null)
             {
-                var t = (Values[0] - domain[0]) / (domain[1] - domain[0]);
-                return lookup[(int)Math.Round(Math.Clamp(double.IsFinite(t) ? t : 0, 0, 1) * (LookupSize - 1), MidpointRounding.AwayFromZero)];
+                var t = (_components[0] - _domain[0]) / (_domain[1] - _domain[0]);
+                return _lookup[(int)Math.Round(Math.Clamp(double.IsFinite(t) ? t : 0, 0, 1) * (LookupSize - 1), MidpointRounding.AwayFromZero)];
             }
 
-            return ToPixel(colorSpace.ToRgb(Values));
+            return ToPixel(_colorSpace.ToRgb(_components));
+        }
+
+        /// <summary>Paints the pixels of the batch, in the order they were added: a pixel of a later triangle covers the one of an earlier triangle.</summary>
+        public void Flush(Rgba32[] pixels)
+        {
+            if (_count == 0)
+                return;
+
+            _colorSpace.ToRgb(_components.AsSpan(0, _count * _colorCount), _rgb.AsSpan(0, _count * 3));
+            for (var i = 0; i < _count; i++)
+            {
+                pixels[_positions[i]] = new Rgba32(_rgb[3 * i], _rgb[(3 * i) + 1], _rgb[(3 * i) + 2], 255);
+            }
+
+            _count = 0;
         }
     }
 }

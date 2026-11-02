@@ -41,5 +41,8 @@ public static Distance operator +([ValueTag("Meters")] Distance left, [ValueTag(
 ```
 <!-- endref -->
 
-The parameters of an operator check the operands of a comparison operator, and the target of a compound assignment such
-as `+=`, like any other argument.
+The parameters of an operator check the operands of a comparison operator, the operand of a unary operator such as `-`,
+the target of `++`, `--`, and of a compound assignment such as `+=`, and the operand of a conversion such as `(int)meters`,
+like any other argument. The tagged result of `++`, `--`, and of a compound assignment also flows back to its target, so
+it must have the tag of the target. Untagged parameters, such as the parameters of the operators of the framework, are
+not reported in strict mode.

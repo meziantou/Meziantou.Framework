@@ -131,6 +131,20 @@ Assert.Equal(2, realm.Execute("1 + 1").AsNumber());
   that entered them.
 - A scope also makes the engine the engine of the thread, as [Enter](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.Enter) does.
 
+## Change the limits of an engine
+
+The engine copies its options when it is created: an instance of [JsEngineOptions](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions) can configure several engines,
+and changing it afterwards does not change them. `engine.Options` is the copy of the engine:
+
+- The limits ([Timeout](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.Timeout), [MaxStatements](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.MaxStatements), [MemoryLimit](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.MemoryLimit), [RecursionLimit](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.RecursionLimit), [RegExpTimeout](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.RegExpTimeout) and
+  [CancellationToken](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.CancellationToken)) can be changed on `engine.Options`, between two entries or from a .NET function: the change
+  applies from the next check of the limits.
+- [CanBlock](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.CanBlock) can be changed on `engine.Options` too: it applies to the next `Atomics.wait`.
+- The [Debugger](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.Debugger) can be changed on `engine.Options` too: the code compiled
+  afterwards uses the new debugger (see [Debugging](04-RunningCode/05-Debugging.md)).
+- The other options ([Host](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.Host), [ModuleLoader](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.ModuleLoader), [TimeProvider](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.TimeProvider), [TimeZone](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.TimeZone), [DefaultLocale](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.DefaultLocale)...) configure the
+  engine for its whole life: setting them on `engine.Options` throws an `InvalidOperationException`.
+
 ## Cancel a script
 
 The [CancellationToken](cref:Meziantou.Framework.JavaScriptEngine.JsEngineOptions.CancellationToken) of the options stops the running script when it is canceled, from any thread, for instance
@@ -162,10 +176,10 @@ Assert.Equal(JsTerminationReason.Canceled, exception.Reason);
 ```
 <!-- endref -->
 
-The engine checks the token periodically while JavaScript code runs. The token is the one of the engine for its whole
-life: once it is canceled, the engine stops every script at its next check and does not start new entries, so create a
-new engine for the next work. To cancel one request of an engine that serves several of them, give the request its own
-token with an execution scope ([Limit a request](#limit-a-request)).
+The engine checks the token periodically while JavaScript code runs. Once it is canceled, the engine stops every
+script at its next check and does not start new entries: set a new token in `engine.Options` before the next work, or
+create a new engine. To cancel one request of an engine that serves several of them, give the request its own token
+with an execution scope ([Limit a request](#limit-a-request)).
 
 ## Forbid eval
 

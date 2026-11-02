@@ -73,6 +73,10 @@ Assert.Equal("1,2,3", realm.Execute("Object.values(point).join()").AsString());
 
 A .NET function called by a script already runs inside the scope: it does not need to enter the engine again.
 
+Without a scope, the members of the objects throw an `InvalidOperationException`, even when they would not run code
+of the script: reading a data property needs a scope as reading a getter does. The scopes can be nested, and a
+callback can enter the engine again.
+
 ## The current realm
 
 `engine.CurrentRealm` is the realm of the running code. A function created by `realm.CreateFunction` runs in its own
@@ -85,8 +89,22 @@ An engine is used by one thread at a time, and its objects belong to it. To run 
 per thread. A script compiled once with [JsPreparedScript](cref:Meziantou.Framework.JavaScriptEngine.JsPreparedScript) can run in all of them: see
 [Reuse a compiled script](04-RunningCode/02-Scripts.md#reuse-a-compiled-script).
 
-Do not give the objects of an engine to another engine. Engines share memory through `SharedArrayBuffer`: see
-[Binary data](05-Interop/06-BinaryData.md).
+The thread that enters an engine owns it until it disposes its outermost scope. Another thread that enters the engine
+in the meantime, or calls [Execute](cref:Meziantou.Framework.JavaScriptEngine.JsRealm.Execute), [Call](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.Call)..., gets an `InvalidOperationException`: the engine detects the
+mistake instead of corrupting its state. An engine can move to another thread between two entries, for instance after
+an `await`.
+
+The objects of an engine cannot be given to another engine, even on the same thread:
+
+- [Call](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.Call), [Construct](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.Construct), [RunInRealm](cref:Meziantou.Framework.JavaScriptEngine.JsEngine.RunInRealm) and the members of the objects throw an `InvalidOperationException` for a function,
+  a realm or an object of another engine. The engine knows the owner of the functions and of the objects that have
+  properties: an empty object of another engine is not detected, so do not rely on the check.
+- The primitive values (numbers, strings, booleans, BigInts) can be given to any engine, and so can the symbols. A
+  symbol of the registry (`Symbol.for`) belongs to the registry of one engine: the same key gives another symbol in
+  another engine.
+- The realms of one engine share their objects freely.
+
+Engines share memory through `SharedArrayBuffer`: see [Binary data](05-Interop/06-BinaryData.md).
 
 ## Lifetime
 

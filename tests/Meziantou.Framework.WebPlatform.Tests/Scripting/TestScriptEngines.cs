@@ -45,7 +45,12 @@ internal static class TestScriptEngines
     public static double EvaluateNumber(ScriptEngine engine, Window window, string code) => ((JavaScriptScriptEngine)engine).Evaluate(window, code).AsNumber();
 
     /// <summary>Gets the <c>name</c> of the exception value of a script error (<c>SyntaxError</c>, <c>TypeError</c>...).</summary>
-    public static string GetErrorName(ScriptError error) => ((JsObject)error.Error!).GetProperty("name").ToString();
+    public static string GetErrorName(ScriptError error)
+    {
+        // The first line of the stack trace starts with the name of the error (reading it does not need a scope of the engine)
+        var stack = ((JsObject)error.Error!).GetErrorStack()!;
+        return stack[..stack.IndexOf(':', StringComparison.Ordinal)];
+    }
 
     private static JavaScriptScriptEngineOptions ToJavaScriptOptions(TestScriptEngineOptions? options)
     {

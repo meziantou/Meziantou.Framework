@@ -73,22 +73,36 @@ public sealed partial class JsEngine
     /// <exception cref="JsTerminationException">The running entry was terminated, or the execution is canceled.</exception>
     internal HostEntryScope EnterHostEntry()
     {
-        if (IsExecuting)
+        // Another thread must not change the state of the engine: the ownership is checked first
+        var ownsEngine = AcquireOwnership();
+        try
         {
-            ThrowIfTerminationPending();
+            if (IsExecuting)
+            {
+                ThrowIfTerminationPending();
+            }
+            else
+            {
+                StartExecution();
+            }
         }
-        else
+        catch
         {
-            StartExecution();
+            if (ownsEngine)
+            {
+                ReleaseOwnership();
+            }
+
+            throw;
         }
 
         var previous = s_current;
         s_current = this;
         _hostEntryDepth++;
-        return new HostEntryScope(this, previous);
+        return new HostEntryScope(this, previous, ownsEngine);
     }
 
-    internal void ExitHostEntry(JsEngine? previous)
+    internal void ExitHostEntry(JsEngine? previous, bool ownsEngine)
     {
         _hostEntryDepth--;
         s_current = previous;
@@ -96,15 +110,23 @@ public sealed partial class JsEngine
         {
             EndExecution();
         }
+
+        if (ownsEngine)
+        {
+            ReleaseOwnership();
+        }
     }
 
     /// <summary>The scope returned by <see cref="EnterHostEntry"/>.</summary>
-    internal readonly ref struct HostEntryScope(JsEngine engine, JsEngine? previous)
+    internal readonly ref struct HostEntryScope(JsEngine engine, JsEngine? previous, bool ownsEngine)
     {
         /// <summary>Gets the engine of the thread before the entry.</summary>
         public JsEngine? Previous => previous;
 
-        public void Dispose() => engine.ExitHostEntry(previous);
+        /// <summary>Gets a value indicating whether the entry took the ownership of the engine.</summary>
+        public bool OwnsEngine => ownsEngine;
+
+        public void Dispose() => engine.ExitHostEntry(previous, ownsEngine);
     }
 
     /// <summary>Gets the frame of the running code, if any.</summary>
@@ -386,7 +408,7 @@ public sealed partial class JsEngine
             throw new JsTerminationException(JsTerminationReason.Canceled, "The script was canceled");
 
         var entry = EnterHostEntry();
-        var scope = new JsExecutionScope(this, entry.Previous, limits, Stopwatch.GetTimestamp(), _interruptCounter, limits.MemoryLimit is null ? 0 : GC.GetAllocatedBytesForCurrentThread());
+        var scope = new JsExecutionScope(this, entry.Previous, entry.OwnsEngine, limits, Stopwatch.GetTimestamp(), _interruptCounter, limits.MemoryLimit is null ? 0 : GC.GetAllocatedBytesForCurrentThread());
         _executionScopes.Add(scope);
         _nextInterruptCheck = GetNextInterruptCheck(Options);
         return scope;
@@ -398,7 +420,7 @@ public sealed partial class JsEngine
             throw new InvalidOperationException("The execution scopes must be exited in the reverse order they were entered");
 
         _executionScopes.RemoveAt(_executionScopes.Count - 1);
-        ExitHostEntry(scope.PreviousEngine);
+        ExitHostEntry(scope.PreviousEngine, scope.OwnsEngine);
     }
 
     /// <summary>

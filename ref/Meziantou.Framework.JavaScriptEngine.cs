@@ -600,7 +600,10 @@ namespace Meziantou.Framework.JavaScriptEngine
         public static Meziantou.Framework.JavaScriptEngine.JsValue FromString(string value) => throw null;
         public override int GetHashCode() => throw null;
         public override string ToString() => throw null;
+        public bool TryGetBoolean(out bool value) => throw null;
+        public bool TryGetNumber(out double value) => throw null;
         public Meziantou.Framework.JavaScriptEngine.JsObject? TryGetObject() => throw null;
+        public bool TryGetString([System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out string? value) => throw null;
         public static bool operator ==(Meziantou.Framework.JavaScriptEngine.JsValue left, Meziantou.Framework.JavaScriptEngine.JsValue right) => throw null;
         public static bool operator !=(Meziantou.Framework.JavaScriptEngine.JsValue left, Meziantou.Framework.JavaScriptEngine.JsValue right) => throw null;
         public static implicit operator Meziantou.Framework.JavaScriptEngine.JsValue(Meziantou.Framework.JavaScriptEngine.JsObject? value) => throw null;

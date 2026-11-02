@@ -98,6 +98,7 @@ internal sealed partial class BrowserContextDispatcher : Dispatcher
     {
         var serverOptions = Connection.Options;
         _scriptEngine = new PlaywrightScriptEngine(this, CreateScriptEngineOptions(serverOptions.ScriptEngineOptions));
+        Engine.ScriptEngine = _scriptEngine.Engine;
         _browsingContextOptions = new BrowsingContextOptions
         {
             ScriptEngine = _scriptEngine,

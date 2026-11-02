@@ -79,6 +79,9 @@ public partial class JavaScriptScriptEngine : ScriptEngine, IDisposable
             {
                 _eventLoops.AddOrUpdate((JsRealm)realm.EngineRealm, realm.GlobalScope.EventLoop);
                 InitializeRealm(realm);
+
+                // The host uses the objects of the realm: it runs in a scope of the engine
+                using var scope = Engine.Enter();
                 OnRealmCreated(realm.GlobalScope, (JsObject)realm.Global);
             },
         };

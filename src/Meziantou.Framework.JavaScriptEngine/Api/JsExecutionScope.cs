@@ -10,10 +10,11 @@ public sealed class JsExecutionScope : IDisposable
     private readonly JsEngine _engine;
     private bool _disposed;
 
-    internal JsExecutionScope(JsEngine engine, JsEngine? previousEngine, JsExecutionLimits limits, long startTimestamp, long startCounter, long startAllocatedBytes)
+    internal JsExecutionScope(JsEngine engine, JsEngine? previousEngine, bool ownsEngine, JsExecutionLimits limits, long startTimestamp, long startCounter, long startAllocatedBytes)
     {
         _engine = engine;
         PreviousEngine = previousEngine;
+        OwnsEngine = ownsEngine;
         Limits = limits;
         StartTimestamp = startTimestamp;
         StartCounter = startCounter;
@@ -24,6 +25,9 @@ public sealed class JsExecutionScope : IDisposable
     public JsExecutionLimits Limits { get; }
 
     internal JsEngine? PreviousEngine { get; }
+
+    // True when the scope took the ownership of the engine (the outermost entry of the thread)
+    internal bool OwnsEngine { get; }
 
     internal long StartTimestamp { get; }
 

@@ -51,6 +51,22 @@ namespace Meziantou.Framework.JavaScriptEngine
         public void Invoke() { }
     }
 
+    public readonly struct JsDebugEvent
+    {
+        public int CallDepth { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsEngine Engine { get => throw null; }
+        public string? FunctionName { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsSourceLocation Location { get => throw null; }
+        public Meziantou.Framework.JavaScriptEngine.JsRealm Realm { get => throw null; }
+        public string CaptureStackTrace() => throw null;
+    }
+
+    public abstract class JsDebugger
+    {
+        protected internal virtual void OnDebuggerStatement(Meziantou.Framework.JavaScriptEngine.JsDebugEvent debugEvent) { }
+        protected internal virtual void OnStatement(Meziantou.Framework.JavaScriptEngine.JsDebugEvent debugEvent) { }
+    }
+
     public sealed class JsEngine : System.IDisposable
     {
         public Meziantou.Framework.JavaScriptEngine.JsRealm? CurrentRealm { get => throw null; }
@@ -87,6 +103,7 @@ namespace Meziantou.Framework.JavaScriptEngine
     {
         public bool CanBlock { get => throw null; set { } }
         public System.Threading.CancellationToken CancellationToken { get => throw null; set { } }
+        public Meziantou.Framework.JavaScriptEngine.JsDebugger? Debugger { get => throw null; set { } }
         public string DefaultLocale { get => throw null; set { } }
         public Meziantou.Framework.JavaScriptEngine.JsHost? Host { get => throw null; set { } }
         public long? MaxStatements { get => throw null; set { } }
@@ -480,6 +497,24 @@ namespace Meziantou.Framework.JavaScriptEngine
         #nullable restore
         public static bool operator ==(Meziantou.Framework.JavaScriptEngine.JsSourceLocation left, Meziantou.Framework.JavaScriptEngine.JsSourceLocation right) => throw null;
         public static bool operator !=(Meziantou.Framework.JavaScriptEngine.JsSourceLocation left, Meziantou.Framework.JavaScriptEngine.JsSourceLocation right) => throw null;
+    }
+
+    public sealed class JsSourceMap
+    {
+        public string? File { get => throw null; }
+        public System.Collections.Generic.IReadOnlyList<string> Sources { get => throw null; }
+        public static Meziantou.Framework.JavaScriptEngine.JsSourceMap Parse(string json, string? url = null) => throw null;
+        public bool TryGetOriginalLocation(int line, int column, out Meziantou.Framework.JavaScriptEngine.JsSourceLocation location) => throw null;
+        public static bool TryParse(string json, string? url, [System.Diagnostics.CodeAnalysis.NotNullWhen(true)] out Meziantou.Framework.JavaScriptEngine.JsSourceMap? sourceMap) => throw null;
+    }
+
+    public sealed class JsSourceMapper
+    {
+        public JsSourceMapper(System.Func<string, Meziantou.Framework.JavaScriptEngine.JsSourceMap?> resolver) { }
+        public void Add(string url, Meziantou.Framework.JavaScriptEngine.JsSourceMap sourceMap) { }
+        public Meziantou.Framework.JavaScriptEngine.JsSourceLocation MapLocation(Meziantou.Framework.JavaScriptEngine.JsSourceLocation location) => throw null;
+        public Meziantou.Framework.JavaScriptEngine.JsSourceLocation? MapLocation(Meziantou.Framework.JavaScriptEngine.JsSourceLocation? location) => throw null;
+        public string MapStackTrace(string stackTrace) => throw null;
     }
 
     public sealed class JsSourceTextModule : Meziantou.Framework.JavaScriptEngine.JsModule

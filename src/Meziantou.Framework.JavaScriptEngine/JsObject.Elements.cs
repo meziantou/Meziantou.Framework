@@ -245,6 +245,65 @@ public partial class JsObject
         _elementKind = ElementKind.Mixed;
     }
 
+    /// <summary>
+    /// Stores the values (none is a hole) as the dense elements of an object that has none yet, in a storage of the kind
+    /// that holds all of them (no conversion from a narrower kind while the values are added one by one).
+    /// </summary>
+    internal void InitializeDenseElements(ReadOnlySpan<JsValue> values)
+    {
+        if (values.IsEmpty)
+            return;
+
+        var length = values.Length;
+        if (length is >= PooledStorageMinBytes / 16 and < PooledStorageMaxLength)
+        {
+            // The large storages have the sizes of the array pools (as TrySetElement)
+            length = (int)BitOperations.RoundUpToPowerOf2((uint)length);
+        }
+
+        var numberCount = 0;
+        foreach (var value in values)
+        {
+            if (value.IsNumber)
+            {
+                numberCount++;
+            }
+        }
+
+        if (numberCount == values.Length)
+        {
+            var numbers = AllocateStorage<double>(length, elementSize: 8);
+            for (var i = 0; i < values.Length; i++)
+            {
+                var number = values[i].NumberValue;
+                numbers[i] = BitConverter.DoubleToInt64Bits(number) == NumberHoleBits ? double.NaN : number;
+            }
+
+            _elements = numbers;
+            _elementKind = ElementKind.Number;
+        }
+        else if (numberCount == 0)
+        {
+            var cells = AllocateStorage<CellSlot>(length, elementSize: 8);
+            for (var i = 0; i < values.Length; i++)
+            {
+                cells[i] = new CellSlot(values[i].Cell);
+            }
+
+            _elements = cells;
+            _elementKind = ElementKind.Reference;
+        }
+        else
+        {
+            var mixed = AllocateStorage<JsValue>(length, elementSize: 16);
+            values.CopyTo(mixed);
+            _elements = mixed;
+            _elementKind = ElementKind.Mixed;
+        }
+
+        FillDenseHoles(values.Length, length - values.Length);
+    }
+
     /// <summary>Makes a hole of an element.</summary>
     private void RemoveDenseElement(int index)
     {

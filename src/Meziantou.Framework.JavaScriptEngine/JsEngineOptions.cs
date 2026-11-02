@@ -62,6 +62,12 @@ public sealed class JsEngineOptions
     /// <summary>Gets or sets the loader of the modules imported by the scripts and the modules, or null when the scripts cannot import modules.</summary>
     public JsModuleLoader? ModuleLoader { get; set; }
 
+    /// <summary>
+    /// Gets or sets the debugger that receives the execution events of the scripts (a statement runs, a <c>debugger</c>
+    /// statement), or null. The code compiled while it is null raises no event and does not pay for it.
+    /// </summary>
+    public JsDebugger? Debugger { get; set; }
+
     /// <summary>Gets or sets the host-defined operations (promise rejection tracking, job callbacks, compilation of strings...), or null for the default ones.</summary>
     public JsHost? Host { get; set; }
 }

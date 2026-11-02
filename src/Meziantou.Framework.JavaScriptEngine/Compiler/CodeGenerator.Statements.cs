@@ -324,6 +324,11 @@ internal sealed partial class CodeGenerator
     {
         CompilerStack.EnsureSufficientStack();
         _builder.SetPosition(node.Start);
+        if (_source.IsInstrumented && node is not (EmptyStatement or DebuggerStatement or BlockStatement or LabeledStatement or FunctionDeclaration))
+        {
+            _builder.Emit(OpCode.DebugStatement);
+        }
+
         switch (node)
         {
             case EmptyStatement:

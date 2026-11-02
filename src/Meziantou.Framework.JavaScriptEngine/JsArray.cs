@@ -24,11 +24,7 @@ public sealed class JsArray : JsObject
     internal static JsArray Create(JsRealm realm, ReadOnlySpan<JsValue> values)
     {
         var array = new JsArray(realm.Intrinsics.ArrayPrototype);
-        for (var i = 0; i < values.Length; i++)
-        {
-            array.SetOwnSlot(new PropertyKey((uint)i), values[i], PropertyFlags.Default);
-        }
-
+        array.InitializeDenseElements(values);
         array._length = (uint)values.Length;
         return array;
     }

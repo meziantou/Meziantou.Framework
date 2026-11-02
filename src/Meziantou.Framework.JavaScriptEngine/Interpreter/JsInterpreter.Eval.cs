@@ -47,7 +47,7 @@ internal static partial class JsInterpreter
                 PrivateNames = context.PrivateNames,
             };
 
-        var source = new SourceText(code, GetEvalUrl(code));
+        var source = new SourceText(code, GetEvalUrl(code)) { IsInstrumented = realm.Engine.Options.Debugger is not null };
         Ast.Program program;
         FunctionTemplate template;
         try
@@ -81,7 +81,7 @@ internal static partial class JsInterpreter
         var code = sourceText.AsString();
         engine.HostEnsureCanCompileStrings(evalRealm, [], code, code, JsCompilationType.IndirectEval, [], sourceText);
 
-        var source = new SourceText(code, GetEvalUrl(code));
+        var source = new SourceText(code, GetEvalUrl(code)) { IsInstrumented = engine.Options.Debugger is not null };
         FunctionTemplate template;
         try
         {
@@ -145,6 +145,7 @@ internal static partial class JsInterpreter
         try
         {
             (function, sourceText) = JsParser.ParseDynamicFunction(source.Parameters, source.Body, isAsync, isGenerator);
+            sourceText.IsInstrumented = realm.Engine.Options.Debugger is not null;
             template = CodeGenerator.CompileDynamicFunction(function, sourceText);
         }
         catch (JsSyntaxErrorException ex)

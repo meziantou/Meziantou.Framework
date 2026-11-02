@@ -86,4 +86,4 @@ The images of this documentation are pages rendered this way. See [Rendering](06
 - [Creating documents](03-CreatingDocuments/01-Overview.md): pages, shapes, text, fonts and images.
 - [Modifying documents](05-ReadingAndModifying/04-ModifyingDocuments.md): add content to existing pages and save the
   changes.
-- [Encryption](07-Security/02-Encryption.md) and [Digital signatures](07-Security/03-DigitalSignatures.md).
+- [Encryption](07-Security/02-Encryption.md) and [Digital signatures](07-Security/04-DigitalSignatures.md).

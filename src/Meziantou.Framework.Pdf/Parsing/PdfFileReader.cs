@@ -1,3 +1,4 @@
+using System.Buffers;
 using System.Text;
 using Meziantou.Framework.Pdf.Filters;
 using Meziantou.Framework.Pdf.Objects;
@@ -11,23 +12,47 @@ namespace Meziantou.Framework.Pdf.Parsing;
 /// hybrid files, incremental updates), and the indirect objects when they are first resolved. When the cross-reference
 /// information is missing or wrong, the objects are found by scanning the file (<see cref="PdfRecoveryScanner"/>).
 /// </summary>
+/// <remarks>
+/// The file is an array in memory or a seekable stream read on demand (<see cref="PdfInput"/>). The objects of a stream
+/// are parsed in a window of the file, made larger when an object does not fit in it; the data of a stream after the
+/// window is read when it is first used.
+/// </remarks>
 internal sealed class PdfFileReader : IPdfObjectLoader
 {
     private const int MaxXrefSections = 4096;
     private const int MaxCachedObjectStreams = 64;
+    private const long MaxCachedObjectStreamBytes = 64L * 1024 * 1024;
+    private const int InitialWindowSize = 4096;
+    private const int StartXrefSearchChunk = 64 * 1024;
+    private const int MaxCandidateLength = 64 * 1024;
 
-    private readonly ReadOnlyMemory<byte> _data;
+    private static readonly PdfName[] TrailerKeys = [PdfNames.Size, PdfNames.Root, PdfNames.Info, PdfNames.ID, PdfNames.Encrypt];
+
+    private readonly PdfInput _input;
     private readonly PdfReadOptions _options;
-    private readonly Dictionary<int, ObjectStreamData> _objectStreams = [];
+    private readonly ObjectStreamCache _objectStreams = new(MaxCachedObjectStreams, MaxCachedObjectStreamBytes);
+    private readonly PdfNameCache _names = new();
     private PdfRecoveryScanner? _scanner;
     private int _encryptObjectNumber = -1;
 
-    private PdfFileReader(ReadOnlyMemory<byte> data, PdfReadOptions options, PdfIndirectObjectCollection objects)
+    private PdfFileReader(PdfInput input, PdfReadOptions options, PdfIndirectObjectCollection objects)
     {
-        _data = data;
+        _input = input;
         _options = options;
         Objects = objects;
         DecodeLimits = new PdfDecodeLimits(options.MaxDecodedStreamLength);
+    }
+
+    private delegate T ParseFunc<out T>(PdfObjectParser parser);
+
+    [Flags]
+    private enum CandidateKind
+    {
+        None = 0,
+        ObjectStream = 1,
+        CrossReferenceStream = 2,
+        Catalog = 4,
+        All = ObjectStream | CrossReferenceStream | Catalog,
     }
 
     public PdfIndirectObjectCollection Objects { get; }
@@ -37,7 +62,7 @@ internal sealed class PdfFileReader : IPdfObjectLoader
     public PdfVersion HeaderVersion { get; private set; } = PdfVersion.Pdf14;
 
     /// <summary>Gets the offset of the header: the offsets of some files count from it, not from the start of the file.</summary>
-    public int HeaderOffset { get; private set; }
+    public long HeaderOffset { get; private set; }
 
     public PdfDictionary Trailer { get; private set; } = new();
 
@@ -50,7 +75,8 @@ internal sealed class PdfFileReader : IPdfObjectLoader
     /// <summary>Gets a value indicating whether the last cross-reference section is a stream.</summary>
     public bool LastXrefIsStream { get; private set; }
 
-    public ReadOnlyMemory<byte> Data => _data;
+    /// <summary>Gets the bytes of the file.</summary>
+    public PdfInput Input => _input;
 
     /// <summary>Gets the options the file was read with, among them the password of an encrypted file.</summary>
     public PdfReadOptions Options => _options;
@@ -58,32 +84,26 @@ internal sealed class PdfFileReader : IPdfObjectLoader
     /// <summary>Gets the security handler of an encrypted file, which decrypts the objects when they are loaded.</summary>
     public StandardSecurityHandler? Security { get; private set; }
 
-    public static PdfFileReader Open(ReadOnlyMemory<byte> data, PdfReadOptions options)
+    public static PdfFileReader Open(ReadOnlyMemory<byte> data, PdfReadOptions options) => Open(new MemoryPdfInput(data), options);
+
+    public static PdfFileReader Open(PdfInput input, PdfReadOptions options)
     {
         var objects = new PdfIndirectObjectCollection();
-        var reader = new PdfFileReader(data, options, objects);
+        var reader = new PdfFileReader(input, options, objects);
         objects.Loader = reader;
         reader.ReadHeader();
-        if (!reader.TryReadCrossReferences())
+        if (reader.TryReadCrossReferences())
         {
-            reader.Repair();
-        }
-
-        // The objects are decrypted from the first one that is loaded after the encryption dictionary
-        reader.InitializeSecurity();
-        if (reader.Trailer.GetResolved(PdfNames.Root) is not PdfDictionary && !reader.IsRepaired)
-        {
-            var trailer = reader.Trailer;
-            reader.Repair();
-            if (reader.Security is not null)
-            {
-                // The objects are decrypted with the /Encrypt and the /ID of the trailer of the cross-reference sections,
-                // which the trailer the repair finds may not have: the document is written with the same keys
-                reader.Trailer[PdfNames.Encrypt] = trailer[PdfNames.Encrypt];
-                reader.Trailer[PdfNames.ID] = trailer[PdfNames.ID];
-            }
-
+            // The objects are decrypted from the first one that is loaded after the encryption dictionary
             reader.InitializeSecurity();
+            if (reader.Trailer.GetResolved(PdfNames.Root) is not PdfDictionary)
+            {
+                reader.Repair(reader.Trailer);
+            }
+        }
+        else
+        {
+            reader.Repair(previousTrailer: null);
         }
 
         if (reader.Trailer.GetResolved(PdfNames.Root) is not PdfDictionary)
@@ -114,8 +134,8 @@ internal sealed class PdfFileReader : IPdfObjectLoader
         }
 
         // The cross-reference entry is wrong: look for the object in the file
-        _scanner ??= PdfRecoveryScanner.Scan(_data);
-        if (_scanner.Offsets.TryGetValue(number, out var found) && found.Offset != entry.Offset)
+        var scanner = GetScanner();
+        if (scanner.Offsets.TryGetValue(number, out var found) && found.Offset != entry.Offset)
         {
             var value = TryLoadAt(found.Offset, number, generation: null);
             if (value is not null)
@@ -125,10 +145,14 @@ internal sealed class PdfFileReader : IPdfObjectLoader
         return PdfNull.Instance;
     }
 
+    public bool AcceptsOtherGeneration(int objectNumber) => IsRepaired && _scanner is not null && _scanner.HasSingleGeneration(objectNumber);
+
+    private PdfRecoveryScanner GetScanner() => _scanner ??= PdfRecoveryScanner.Scan(_input, _options.MaxNestingDepth);
+
     /// <summary>Authenticates the password of an encrypted file (7.6): the encryption dictionary is not encrypted itself.</summary>
     private void InitializeSecurity()
     {
-        if (Security is not null || Trailer[PdfNames.Encrypt] is not { } encrypt)
+        if (Security is not null || Trailer[PdfNames.Encrypt] is not { } encrypt || encrypt is PdfNull)
             return;
 
         if (encrypt is PdfReference reference)
@@ -145,35 +169,34 @@ internal sealed class PdfFileReader : IPdfObjectLoader
 
     private void ReadHeader()
     {
-        var span = _data.Span;
-        var searchLength = Math.Min(span.Length, 1024);
-        var index = span[..searchLength].IndexOf("%PDF-"u8);
+        Span<byte> start = stackalloc byte[1024];
+        start = start[.._input.Read(0, start)];
+        long index = start.IndexOf("%PDF-"u8);
         if (index < 0)
         {
             // Some producers prepend garbage beyond 1 KiB, and some files have no header at all: like other readers, the
             // file is read anyway, and it is rejected when no catalog can be found
-            index = span.IndexOf("%PDF-"u8);
+            index = IndexOf(_input, "%PDF-"u8);
             if (index < 0)
                 return;
         }
 
         HeaderOffset = index;
-        if (index + 8 <= span.Length && PdfVersion.TryParse(Encoding.ASCII.GetString(span.Slice(index + 5, 3)), out var version))
+        Span<byte> version = stackalloc byte[3];
+        if (_input.Read(index + 5, version) == 3 && PdfVersion.TryParse(Encoding.ASCII.GetString(version), out var parsed))
         {
-            HeaderVersion = version;
+            HeaderVersion = parsed;
         }
     }
 
     private bool TryReadCrossReferences()
     {
-        var span = _data.Span;
-        var startxref = LastIndexOfKeyword(span, "startxref"u8);
+        var startxref = LastIndexOfKeyword(_input, "startxref"u8);
         if (startxref < 0)
             return false;
 
-        var lexer = new PdfLexer(_data, startxref + "startxref".Length);
-        var offsetToken = lexer.Next();
-        if (offsetToken.Kind != PdfTokenKind.Integer || offsetToken.IntegerValue < 0 || offsetToken.IntegerValue >= span.Length)
+        var offsetToken = Parse(startxref + "startxref".Length, _input.Length, static parser => parser.Lexer.Next());
+        if (offsetToken.Kind != PdfTokenKind.Integer || offsetToken.IntegerValue < 0 || offsetToken.IntegerValue >= _input.Length)
             return false;
 
         var entries = new Dictionary<int, XrefEntry>();
@@ -205,10 +228,11 @@ internal sealed class PdfFileReader : IPdfObjectLoader
                 }
                 else
                 {
-                    // The newest trailer wins; an update that omits an entry inherits it
-                    foreach (var key in new[] { PdfNames.Root, PdfNames.Info, PdfNames.ID, PdfNames.Encrypt })
+                    // The newest trailer wins; an update that omits an entry inherits it. An entry whose value is null is
+                    // equivalent to an absent entry (ISO 32000-2, 7.3.7): it inherits the entry of the older trailer too
+                    foreach (var key in TrailerKeys)
                     {
-                        if (!trailer.ContainsKey(key) && section.Trailer[key] is { } value)
+                        if (trailer[key] is null or PdfNull && section.Trailer[key] is { } value and not PdfNull)
                         {
                             trailer[key] = value;
                         }
@@ -238,14 +262,14 @@ internal sealed class PdfFileReader : IPdfObjectLoader
         // The numbers below /Size are not given to new objects, even when the file does not use them. A bogus /Size
         // (2147483647) would leave no number to give: the numbers the file uses are registered, so the numbers that
         // are not are kept below the length of the file
-        Objects.Reserve((int)Math.Clamp(Trailer.GetInteger(PdfNames.Size, 0) - 1, 0, Math.Min(_data.Length, PdfIndirectObjectCollection.MaxAllocatableObjectNumber)));
+        Objects.Reserve((int)Math.Clamp(Trailer.GetInteger(PdfNames.Size, 0) - 1, 0, Math.Min(_input.Length, PdfIndirectObjectCollection.MaxAllocatableObjectNumber)));
         return true;
     }
 
     private XrefSection? ReadSection(long offset)
     {
         var section = TryReadSection(offset);
-        if (section is null && HeaderOffset > 0 && offset + HeaderOffset < _data.Length)
+        if (section is null && HeaderOffset > 0 && offset + HeaderOffset < _input.Length)
         {
             section = TryReadSection(offset + HeaderOffset);
         }
@@ -255,27 +279,29 @@ internal sealed class PdfFileReader : IPdfObjectLoader
 
     private XrefSection? TryReadSection(long offset)
     {
-        if (offset < 0 || offset >= _data.Length)
+        if (offset < 0 || offset >= _input.Length)
             return null;
 
-        var lexer = new PdfLexer(_data, (int)offset);
-        var token = lexer.Peek();
-        if (lexer.IsKeyword(token, "xref"u8))
+        var (kind, isXref) = Parse(offset, _input.Length, static parser =>
         {
-            lexer.Next();
-            return ReadTable(lexer);
-        }
+            var token = parser.Lexer.Peek();
+            return (token.Kind, parser.Lexer.IsKeyword(token, "xref"u8));
+        });
+        if (isXref)
+            return Parse(offset, _input.Length, ReadTable);
 
-        if (token.Kind == PdfTokenKind.Integer)
+        if (kind == PdfTokenKind.Integer)
             return ReadStreamSection(offset);
 
         return null;
     }
 
-    private XrefSection? ReadTable(PdfLexer lexer)
+    private XrefSection? ReadTable(PdfObjectParser parser)
     {
+        var lexer = parser.Lexer;
+        lexer.Next();
         var entries = new Dictionary<int, XrefEntry>();
-        var maxEntries = _data.Length / 10;
+        var maxEntries = Math.Min(_input.Length / 10, int.MaxValue);
         while (true)
         {
             var token = lexer.Next();
@@ -318,12 +344,11 @@ internal sealed class PdfFileReader : IPdfObjectLoader
             }
         }
 
-        var parser = new PdfObjectParser(lexer, Objects, _options.MaxNestingDepth) { DecodeLimits = DecodeLimits };
         if (parser.ParseObject() is not PdfDictionary trailer)
             return null;
 
         // A hybrid file (7.5.8.4): the objects of the cross-reference stream are free or absent in the table
-        if (trailer.GetResolved(PdfNames.XRefStm) is PdfInteger xrefStm && xrefStm.Value >= 0 && xrefStm.Value < _data.Length)
+        if (trailer.GetResolved(PdfNames.XRefStm) is PdfInteger xrefStm && xrefStm.Value >= 0 && xrefStm.Value < _input.Length)
         {
             var streamSection = ReadStreamSection(xrefStm.Value);
             if (streamSection is not null)
@@ -343,9 +368,7 @@ internal sealed class PdfFileReader : IPdfObjectLoader
 
     private XrefSection? ReadStreamSection(long offset)
     {
-        var lexer = new PdfLexer(_data, (int)offset);
-        var parser = new PdfObjectParser(lexer, Objects, _options.MaxNestingDepth) { DecodeLimits = DecodeLimits };
-        if (parser.ParseIndirectObject(out _, out _) is not PdfStream stream)
+        if (Parse(offset, _input.Length, static parser => parser.ParseIndirectObject(out _, out _)) is not PdfStream stream)
             return null;
 
         var dictionary = stream.Dictionary;
@@ -439,12 +462,18 @@ internal sealed class PdfFileReader : IPdfObjectLoader
     }
 
     /// <summary>Rebuilds the cross-reference information by scanning the file for objects and trailers.</summary>
-    private void Repair()
+    /// <param name="previousTrailer">The trailer of the cross-reference sections, when they were read but have no catalog: its <c>/Encrypt</c> and <c>/ID</c> are the keys of the objects.</param>
+    /// <remarks>
+    /// The objects are not loaded, except the object streams (to register their objects), the trailers and the catalogs:
+    /// the type of an object is found in its bytes first. The encryption dictionary is found before any of them is
+    /// loaded, so that every object is decrypted once, when it is loaded.
+    /// </remarks>
+    private void Repair(PdfDictionary? previousTrailer)
     {
         IsRepaired = true;
         LastXrefOffset = -1;
-        _scanner ??= PdfRecoveryScanner.Scan(_data);
-        foreach (var (number, location) in _scanner.Offsets)
+        var scanner = GetScanner();
+        foreach (var (number, location) in scanner.Offsets)
         {
             if (number == 0)
                 continue;
@@ -457,45 +486,81 @@ internal sealed class PdfFileReader : IPdfObjectLoader
             registered.Offset = location.Offset;
         }
 
-        // The objects of the object streams that are not also stored uncompressed
-        foreach (var (number, _) in _scanner.Offsets.ToArray())
+        // The objects in the order of the file, and what each one may be
+        var objects = scanner.Offsets.Where(o => o.Key > 0).OrderBy(o => o.Value.Offset).Select(o => (Number: o.Key, o.Value.Offset)).ToArray();
+        var kinds = new CandidateKind[objects.Length];
+        for (var i = 0; i < objects.Length; i++)
         {
-            if (Objects.GetEntry(number) is { } entry && Load(entry, Objects) is PdfStream stream && stream.Dictionary.IsType(PdfNames.ObjStm))
-            {
-                var objectStream = TryGetObjectStream(number);
-                if (objectStream is null)
-                    continue;
+            kinds[i] = GetCandidateKind(objects[i].Offset, scanner.GetBoundary(objects[i].Offset));
+        }
 
-                for (var i = 0; i < objectStream.Objects.Length; i++)
+        var (candidates, keywordCandidates) = FindTrailerCandidates(objects, kinds);
+        if (Security is null)
+        {
+            var encrypted = previousTrailer?[PdfNames.Encrypt] is { } and not PdfNull ? previousTrailer : candidates.LastOrDefault(c => c[PdfNames.Encrypt] is { } and not PdfNull);
+            if (encrypted is not null)
+            {
+                Trailer = StripXrefKeys(encrypted);
+                InitializeSecurity();
+
+                // The objects loaded before the keys were known are not decrypted: they are loaded again
+                foreach (var entry in Objects.Entries)
                 {
-                    var contained = objectStream.Objects[i].Number;
-                    if (contained > 0 && !_scanner.Offsets.ContainsKey(contained) && Objects.GetEntry(contained) is null)
+                    if (entry.Reference.ObjectNumber != _encryptObjectNumber)
                     {
-                        var registered = Objects.Register(contained, 0);
-                        registered.ContainerNumber = number;
-                        registered.IndexInContainer = i;
+                        PdfIndirectObjectCollection.Unload(entry);
                     }
+                }
+
+                _objectStreams.Clear();
+            }
+        }
+
+        // The objects of the object streams that are not also stored uncompressed
+        for (var i = 0; i < objects.Length; i++)
+        {
+            var number = objects[i].Number;
+            if ((kinds[i] & CandidateKind.ObjectStream) == CandidateKind.None || Objects.GetEntry(number) is not { } entry || Objects.Load(entry) is not PdfStream stream || !stream.Dictionary.IsType(PdfNames.ObjStm))
+                continue;
+
+            var objectStream = TryGetObjectStream(number);
+            if (objectStream is null)
+                continue;
+
+            for (var j = 0; j < objectStream.Objects.Length; j++)
+            {
+                var contained = objectStream.Objects[j].Number;
+                if (contained > 0 && !scanner.Offsets.ContainsKey(contained) && Objects.GetEntry(contained) is null)
+                {
+                    var registered = Objects.Register(contained, 0);
+                    registered.ContainerNumber = number;
+                    registered.IndexInContainer = j;
                 }
             }
         }
 
-        Trailer = StripXrefKeys(FindTrailer());
+        var keys = Trailer;
+        Trailer = StripXrefKeys(FindTrailer(candidates, keywordCandidates, objects, kinds));
+        if (Security is not null)
+        {
+            // The document is written with the keys the objects were decrypted with, which the trailer found may not have
+            Trailer[PdfNames.Encrypt] = keys[PdfNames.Encrypt];
+            Trailer[PdfNames.ID] = keys[PdfNames.ID];
+        }
     }
 
-    private static PdfObject Load(IndirectObjectEntry entry, PdfIndirectObjectCollection objects) => objects.Load(entry);
-
-    private PdfDictionary FindTrailer()
+    /// <summary>Gets the trailers of the file: the dictionaries after the <c>trailer</c> keywords, then the dictionaries of the cross-reference streams, each in the order of the file.</summary>
+    private (List<PdfDictionary> Candidates, int KeywordCandidates) FindTrailerCandidates((int Number, long Offset)[] objects, CandidateKind[] kinds)
     {
-        PdfDictionary? best = null;
-        foreach (var offset in _scanner!.TrailerOffsets)
+        var scanner = _scanner!;
+        var candidates = new List<PdfDictionary>();
+        foreach (var offset in scanner.TrailerOffsets)
         {
-            var lexer = new PdfLexer(_data, offset);
-            var parser = new PdfObjectParser(lexer, Objects, _options.MaxNestingDepth) { DecodeLimits = DecodeLimits };
             try
             {
-                if (parser.ParseObject() is PdfDictionary trailer && trailer.GetResolved(PdfNames.Root) is PdfDictionary)
+                if (Parse(offset, scanner.GetBoundary(offset), static parser => parser.ParseObject()) is PdfDictionary trailer)
                 {
-                    best = trailer;
+                    candidates.Add(trailer);
                 }
             }
             catch (InvalidPdfContentException)
@@ -503,32 +568,122 @@ internal sealed class PdfFileReader : IPdfObjectLoader
             }
         }
 
-        if (best is not null)
-            return best;
-
-        // The dictionaries of the cross-reference streams are trailers too
-        foreach (var entry in Objects.Entries.OrderBy(e => e.Offset).ToArray())
+        var keywordCandidates = candidates.Count;
+        for (var i = 0; i < objects.Length; i++)
         {
-            if (Objects.Load(entry) is PdfStream stream && stream.Dictionary.IsType(PdfNames.XRef) && stream.Dictionary.GetResolved(PdfNames.Root) is PdfDictionary)
+            if ((kinds[i] & CandidateKind.CrossReferenceStream) == CandidateKind.None)
+                continue;
+
+            // The dictionary of a cross-reference stream is read as it is in the file: it is never encrypted (7.6.2)
+            var offset = objects[i].Offset;
+            try
             {
-                best = stream.Dictionary;
+                if (Parse(offset, scanner.GetBoundary(offset), static parser => parser.ParseIndirectObject(out _, out _)) is PdfStream stream && stream.Dictionary.IsType(PdfNames.XRef))
+                {
+                    candidates.Add(stream.Dictionary);
+                }
+            }
+            catch (InvalidPdfContentException)
+            {
             }
         }
 
-        if (best is not null)
-            return best;
+        return (candidates, keywordCandidates);
+    }
+
+    private PdfDictionary FindTrailer(List<PdfDictionary> candidates, int keywordCandidates, (int Number, long Offset)[] objects, CandidateKind[] kinds)
+    {
+        // The last trailer with a catalog, the trailer keywords before the cross-reference streams
+        for (var i = keywordCandidates - 1; i >= 0; i--)
+        {
+            if (candidates[i].GetResolved(PdfNames.Root) is PdfDictionary)
+                return candidates[i];
+        }
+
+        for (var i = candidates.Count - 1; i >= keywordCandidates; i--)
+        {
+            if (candidates[i].GetResolved(PdfNames.Root) is PdfDictionary)
+                return candidates[i];
+        }
 
         // No trailer: the last catalog of the file is the root
-        var trailerDictionary = new PdfDictionary();
-        foreach (var entry in Objects.Entries.OrderBy(e => e.Offset).ToArray())
+        var trailer = new PdfDictionary();
+        for (var i = objects.Length - 1; i >= 0; i--)
+        {
+            if ((kinds[i] & CandidateKind.Catalog) != CandidateKind.None && Objects.GetEntry(objects[i].Number) is { } entry && Objects.Load(entry) is PdfDictionary dictionary && dictionary.IsType(PdfNames.Catalog))
+            {
+                trailer[PdfNames.Root] = entry.Reference;
+                return trailer;
+            }
+        }
+
+        // The catalogs in the object streams, which the scan does not see
+        foreach (var entry in Objects.Entries.Where(e => e.ContainerNumber > 0).OrderBy(e => e.Reference.ObjectNumber).ToArray())
         {
             if (Objects.Load(entry) is PdfDictionary dictionary && dictionary.IsType(PdfNames.Catalog))
             {
-                trailerDictionary[PdfNames.Root] = entry.Reference;
+                trailer[PdfNames.Root] = entry.Reference;
             }
         }
 
-        return trailerDictionary;
+        return trailer;
+    }
+
+    /// <summary>
+    /// Finds from the bytes of an object what it may be: the names of the types its dictionary contains. The object is not
+    /// parsed; an object whose dictionary is too long or has escaped names may be anything.
+    /// </summary>
+    private CandidateKind GetCandidateKind(long offset, long boundary)
+    {
+        var length = (int)Math.Min(boundary - offset, MaxCandidateLength);
+        if (length <= 0)
+            return CandidateKind.None;
+
+        byte[]? rented = null;
+        try
+        {
+            ReadOnlySpan<byte> span;
+            if (_input.IsInMemory)
+            {
+                span = _input.GetMemory(offset, length).Span;
+            }
+            else
+            {
+                rented = ArrayPool<byte>.Shared.Rent(length);
+                span = rented.AsSpan(0, _input.Read(offset, rented.AsSpan(0, length)));
+            }
+
+            // The dictionary ends before the data of a stream
+            var stream = span.IndexOf("stream"u8);
+            var dictionary = stream >= 0 ? span[..stream] : span;
+            if (dictionary.Length == MaxCandidateLength || dictionary.Contains((byte)'#'))
+                return CandidateKind.All;
+
+            var kind = CandidateKind.None;
+            if (stream >= 0 && dictionary.IndexOf("/ObjStm"u8) >= 0)
+            {
+                kind |= CandidateKind.ObjectStream;
+            }
+
+            if (stream >= 0 && dictionary.IndexOf("/XRef"u8) >= 0)
+            {
+                kind |= CandidateKind.CrossReferenceStream;
+            }
+
+            if (dictionary.IndexOf("/Catalog"u8) >= 0)
+            {
+                kind |= CandidateKind.Catalog;
+            }
+
+            return kind;
+        }
+        finally
+        {
+            if (rented is not null)
+            {
+                ArrayPool<byte>.Shared.Return(rented);
+            }
+        }
     }
 
     /// <summary>
@@ -541,9 +696,10 @@ internal sealed class PdfFileReader : IPdfObjectLoader
         var result = new PdfDictionary();
         foreach (var (key, value) in trailer)
         {
-            if (!PdfFileWriter.IsCrossReferenceKey(key))
+            // The entries are set as parsed: an incremental save compares the trailer with what was read
+            if (value is not PdfNull && !PdfFileWriter.IsCrossReferenceKey(key))
             {
-                result[key] = value;
+                result.SetParsed(key, value);
             }
         }
 
@@ -552,14 +708,18 @@ internal sealed class PdfFileReader : IPdfObjectLoader
 
     private PdfObject? TryLoadAt(long offset, int number, int? generation)
     {
-        if (offset < 0 || offset >= _data.Length)
+        if (offset < 0 || offset >= _input.Length)
             return null;
 
-        var lexer = new PdfLexer(_data, (int)offset);
-        var parser = new PdfObjectParser(lexer, Objects, _options.MaxNestingDepth) { DecodeLimits = DecodeLimits };
+        // An object the scan found ends before the next object or trailer at the latest
+        var limit = _scanner is not null && _scanner.Offsets.TryGetValue(number, out var found) && found.Offset == offset ? _scanner.GetBoundary(offset) : _input.Length;
         try
         {
-            var value = parser.ParseIndirectObject(out var foundNumber, out var foundGeneration);
+            var (value, foundNumber, foundGeneration) = Parse(offset, limit, static parser =>
+            {
+                var value = parser.ParseIndirectObject(out var foundNumber, out var foundGeneration);
+                return (value, foundNumber, foundGeneration);
+            });
             if (value is null || foundNumber != number || (generation is { } expected && foundGeneration != expected))
                 return null;
 
@@ -585,7 +745,7 @@ internal sealed class PdfFileReader : IPdfObjectLoader
         var objects = objectStream.Objects;
         if ((uint)index >= (uint)objects.Length || objects[index].Number != number)
         {
-            index = Array.FindIndex(objects, o => o.Number == number);
+            index = objectStream.IndexOf(number);
             if (index < 0)
                 return null;
         }
@@ -595,7 +755,7 @@ internal sealed class PdfFileReader : IPdfObjectLoader
             return null;
 
         var lexer = new PdfLexer(objectStream.Data, (int)start);
-        var parser = new PdfObjectParser(lexer, Objects, _options.MaxNestingDepth) { DecodeLimits = DecodeLimits };
+        var parser = new PdfObjectParser(lexer, Objects, _options.MaxNestingDepth) { DecodeLimits = DecodeLimits, NameCache = _names };
         try
         {
             return parser.ParseObject();
@@ -647,22 +807,116 @@ internal sealed class PdfFileReader : IPdfObjectLoader
         }
 
         var result = new ObjectStreamData(data, (int)first, [.. objects]);
-        if (_objectStreams.Count >= MaxCachedObjectStreams)
-        {
-            _objectStreams.Clear();
-        }
-
-        _objectStreams[number] = result;
+        _objectStreams.Add(number, result);
         return result;
     }
 
-    private static int LastIndexOfKeyword(ReadOnlySpan<byte> span, ReadOnlySpan<byte> keyword)
+    /// <summary>
+    /// Parses at an offset of the file. In memory, the lexer reads the file up to <paramref name="limit"/>; from a stream,
+    /// it reads a window that grows until the object fits in it (the lexer did not reach the end of the window) or the
+    /// window reaches <paramref name="limit"/>.
+    /// </summary>
+    private T Parse<T>(long offset, long limit, ParseFunc<T> parse)
     {
-        var end = span.Length;
+        if (_input is MemoryPdfInput memory)
+        {
+            var lexer = new PdfLexer(memory.Data[..(int)limit], (int)offset);
+            return parse(CreateParser(lexer, new PdfInputWindow(_input, 0, limit)));
+        }
+
+        var size = (int)Math.Min(limit - offset, InitialWindowSize);
+        while (true)
+        {
+            var buffer = ArrayPool<byte>.Shared.Rent(Math.Max(size, 1));
+            try
+            {
+                var read = _input.Read(offset, buffer.AsSpan(0, size));
+                var canGrow = offset + read < limit && size < Array.MaxLength;
+                var lexer = new PdfLexer(buffer.AsMemory(0, read));
+                var parser = CreateParser(lexer, new PdfInputWindow(_input, offset, limit));
+                try
+                {
+                    var result = parse(parser);
+                    if (!canGrow || !lexer.ReachedEnd)
+                        return result;
+                }
+                catch (InvalidPdfContentException) when (canGrow && lexer.ReachedEnd)
+                {
+                }
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
+
+            size = (int)Math.Min(Math.Min(limit - offset, (long)size * 4), Array.MaxLength);
+        }
+    }
+
+    private PdfObjectParser CreateParser(PdfLexer lexer, PdfInputWindow window) => new(lexer, Objects, _options.MaxNestingDepth) { DecodeLimits = DecodeLimits, Window = window, NameCache = _names };
+
+    private static long IndexOf(PdfInput input, ReadOnlySpan<byte> value)
+    {
+        if (input is MemoryPdfInput memory)
+            return memory.Data.Span.IndexOf(value);
+
+        const int ChunkSize = 1024 * 1024;
+        var buffer = ArrayPool<byte>.Shared.Rent(ChunkSize + value.Length);
+        try
+        {
+            for (long offset = 0; offset < input.Length; offset += ChunkSize)
+            {
+                var read = input.Read(offset, buffer.AsSpan(0, ChunkSize + value.Length - 1));
+                var index = buffer.AsSpan(0, read).IndexOf(value);
+                if (index >= 0)
+                    return offset + index;
+            }
+
+            return -1;
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+    }
+
+    /// <summary>Finds the last occurrence of a keyword delimited by non-regular characters, reading the input backwards.</summary>
+    private static long LastIndexOfKeyword(PdfInput input, ReadOnlySpan<byte> keyword)
+    {
+        if (input is MemoryPdfInput memory)
+            return LastIndexOfKeyword(memory.Data.Span, keyword, memory.Data.Length, minIndex: 0);
+
+        var buffer = ArrayPool<byte>.Shared.Rent(StartXrefSearchChunk + keyword.Length + 2);
+        try
+        {
+            // Each chunk [start, end) is read with the byte before it and the bytes of a keyword that starts at its end
+            for (var end = input.Length; end > 0; end -= StartXrefSearchChunk)
+            {
+                var start = Math.Max(0, end - StartXrefSearchChunk);
+                var readStart = Math.Max(0, start - 1);
+                var readEnd = Math.Min(input.Length, end + keyword.Length + 1);
+                var read = input.Read(readStart, buffer.AsSpan(0, (int)(readEnd - readStart)));
+                var span = buffer.AsSpan(0, read);
+                var searchEnd = (int)Math.Min(span.Length, end - readStart + keyword.Length - 1);
+                var index = LastIndexOfKeyword(span, keyword, searchEnd, minIndex: (int)(start - readStart));
+                if (index >= 0)
+                    return readStart + index;
+            }
+
+            return -1;
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+    }
+
+    private static int LastIndexOfKeyword(ReadOnlySpan<byte> span, ReadOnlySpan<byte> keyword, int end, int minIndex)
+    {
         while (end > 0)
         {
             var index = span[..end].LastIndexOf(keyword);
-            if (index < 0)
+            if (index < minIndex)
                 return -1;
 
             var after = index + keyword.Length;

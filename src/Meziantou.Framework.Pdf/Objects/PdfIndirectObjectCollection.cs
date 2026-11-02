@@ -179,10 +179,26 @@ public sealed class PdfIndirectObjectCollection
 
     internal IndirectObjectEntry? GetEntry(PdfReference reference)
     {
-        if (_entries.TryGetValue(reference.ObjectNumber, out var entry) && entry.Reference.Generation == reference.Generation && entry.State is not IndirectObjectState.Free)
-            return entry;
+        if (_entries.TryGetValue(reference.ObjectNumber, out var entry) && entry.State is not IndirectObjectState.Free)
+        {
+            // A reference with another generation is the null object (7.3.10), except in a repaired file that defines one
+            // generation of the object only: the generation of the reference or of the definition is wrong
+            if (entry.Reference.Generation == reference.Generation || Loader?.AcceptsOtherGeneration(reference.ObjectNumber) is true)
+                return entry;
+        }
 
         return null;
+    }
+
+    /// <summary>Forgets the value of an object loaded from the file, which is loaded again when it is next resolved.</summary>
+    internal static void Unload(IndirectObjectEntry entry)
+    {
+        if (entry.State == IndirectObjectState.Loaded && !entry.IsNew)
+        {
+            entry.Value = null;
+            entry.OriginalFingerprint = null;
+            entry.State = IndirectObjectState.Unloaded;
+        }
     }
 
     internal IndirectObjectEntry? GetEntry(int objectNumber) => _entries.GetValueOrDefault(objectNumber);

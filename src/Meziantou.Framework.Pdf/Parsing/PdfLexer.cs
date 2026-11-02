@@ -13,6 +13,9 @@ internal sealed class PdfLexer
     private const byte Whitespace = 1;
     private const byte Delimiter = 2;
 
+    /// <summary>The number of significant characters of a number that are parsed: more is beyond the precision or the range of a <see cref="double"/>.</summary>
+    internal const int MaxSignificantNumberLength = 512;
+
     private static readonly byte[] CharacterClasses = CreateCharacterClasses();
 
     private readonly ReadOnlyMemory<byte> _data;
@@ -31,6 +34,12 @@ internal sealed class PdfLexer
 
     public int Position { get; set; }
 
+    /// <summary>
+    /// Gets or sets a value indicating whether a token reached the end of the data: when the data is a window of a larger
+    /// input, the token may continue after it, and the object must be parsed again with a larger window.
+    /// </summary>
+    public bool ReachedEnd { get; set; }
+
     public static bool IsWhitespace(byte value) => CharacterClasses[value] == Whitespace;
 
     public static bool IsDelimiter(byte value) => CharacterClasses[value] == Delimiter;
@@ -46,6 +55,17 @@ internal sealed class PdfLexer
     }
 
     public PdfToken Next()
+    {
+        var token = NextCore();
+        if (Position >= _data.Length)
+        {
+            ReachedEnd = true;
+        }
+
+        return token;
+    }
+
+    private PdfToken NextCore()
     {
         SkipWhitespaceAndComments();
         var span = Span;
@@ -169,21 +189,33 @@ internal sealed class PdfLexer
             return raw.ToArray();
 
         var result = new byte[raw.Length];
+        return result.AsSpan(0, DecodeName(raw, result)).ToArray();
+    }
+
+    /// <summary>Gets the length of the bytes of a name token once decoded: at most the length of the token without the slash.</summary>
+    public static int GetNameLength(PdfToken token) => token.Length - 1;
+
+    /// <summary>Decodes the bytes of a name token (without the slash) to a buffer as long as <see cref="GetNameLength"/> at least.</summary>
+    /// <returns>The number of bytes written.</returns>
+    public int DecodeName(PdfToken token, Span<byte> destination) => DecodeName(Span[(token.Start + 1)..token.End], destination);
+
+    private static int DecodeName(ReadOnlySpan<byte> raw, Span<byte> destination)
+    {
         var length = 0;
         for (var i = 0; i < raw.Length; i++)
         {
             if (raw[i] == '#' && i + 2 < raw.Length && TryHexValue(raw[i + 1], out var high) && TryHexValue(raw[i + 2], out var low))
             {
-                result[length++] = (byte)((high << 4) | low);
+                destination[length++] = (byte)((high << 4) | low);
                 i += 2;
             }
             else
             {
-                result[length++] = raw[i];
+                destination[length++] = raw[i];
             }
         }
 
-        return result.AsSpan(0, length).ToArray();
+        return length;
     }
 
     /// <summary>Decodes a literal string token (7.3.4.2).</summary>
@@ -194,6 +226,10 @@ internal sealed class PdfLexer
         {
             raw = raw[..^1];
         }
+
+        // Most strings have no escape and no end of line to normalize: their bytes are the string
+        if (raw.IndexOfAny((byte)'\\', (byte)'\r') < 0)
+            return raw.ToArray();
 
         var output = new ArrayBufferWriter<byte>(Math.Max(1, raw.Length));
         for (var i = 0; i < raw.Length; i++)
@@ -315,6 +351,13 @@ internal sealed class PdfLexer
     }
 
     /// <summary>Parses a number leniently: several leading signs, several points, or no digit at all (0), as readers do.</summary>
+    /// <remarks>
+    /// A token of any length is parsed in time proportional to its length, and its value is the value it represents
+    /// within the precision of a <see cref="double"/>: the leading zeros are skipped, an integer that does not fit in a
+    /// <see cref="long"/> is a real, a real beyond the range of a <see cref="double"/> saturates to
+    /// <see cref="double.MaxValue"/> (or its opposite), and the decimal digits beyond <see cref="MaxSignificantNumberLength"/>
+    /// characters, far below the precision of a <see cref="double"/>, are ignored.
+    /// </remarks>
     public static bool TryParseNumber(ReadOnlySpan<byte> text, out bool isInteger, out long integer, out double real)
     {
         isInteger = true;
@@ -331,7 +374,8 @@ internal sealed class PdfLexer
         var digitsStart = i;
         var hasDigit = false;
         var pointSeen = false;
-        Span<byte> clean = stackalloc byte[Math.Min(text.Length + 2, 512)];
+        var integerDigits = 0;
+        Span<byte> clean = stackalloc byte[Math.Min(text.Length + 2, MaxSignificantNumberLength + 2)];
         var cleanLength = 0;
         if (negative)
         {
@@ -344,6 +388,15 @@ internal sealed class PdfLexer
             if (c is >= (byte)'0' and <= (byte)'9')
             {
                 hasDigit = true;
+                if (!pointSeen)
+                {
+                    // The leading zeros of the integer part do not change the value
+                    if (c == '0' && integerDigits == 0)
+                        continue;
+
+                    integerDigits++;
+                }
+
                 if (cleanLength < clean.Length)
                 {
                     clean[cleanLength++] = c;
@@ -388,9 +441,20 @@ internal sealed class PdfLexer
             return false;
         }
 
+        // An integer part longer than the buffer is beyond the range of a double: it saturates, whatever its digits
+        if (integerDigits > MaxSignificantNumberLength)
+        {
+            isInteger = false;
+            real = negative ? double.MinValue : double.MaxValue;
+            return true;
+        }
+
         var cleanSpan = clean[..cleanLength];
         if (isInteger)
         {
+            if (cleanSpan.Length == 0 || (cleanSpan.Length == 1 && cleanSpan[0] == '-'))
+                return true;
+
             if (long.TryParse(cleanSpan, NumberStyles.AllowLeadingSign, CultureInfo.InvariantCulture, out integer))
                 return true;
 

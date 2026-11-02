@@ -2,6 +2,7 @@ using System.IO.Compression;
 using System.Security.Cryptography;
 using Meziantou.Framework.Pdf.Filters;
 using Meziantou.Framework.Pdf.Objects;
+using Meziantou.Framework.Pdf.Parsing;
 using Meziantou.Framework.Pdf.Security;
 
 namespace Meziantou.Framework.Pdf.Writing;
@@ -272,10 +273,10 @@ internal sealed partial class PdfFileWriter : IDisposable
 
         // Nothing changed: the file is written as it is, rather than with an update without objects, whose
         // cross-reference section would have no subsection
-        var source = reader.Data;
+        var input = reader.Input;
         if (changed.Count == 0 && removed.Count == 0 && _document.OriginalTrailerFingerprint is { } original && original.Matches(trailer))
         {
-            _output.Write(source);
+            CopyOriginal(input);
             return;
         }
 
@@ -286,8 +287,8 @@ internal sealed partial class PdfFileWriter : IDisposable
             changed.Add(rootEntry);
         }
 
-        _output.Write(source);
-        if (source.Length > 0 && source.Span[^1] is not ((byte)'\n' or (byte)'\r'))
+        CopyOriginal(input);
+        if (input.GetLastByte() is >= 0 and not ('\n' or '\r'))
         {
             _output.WriteNewLine();
         }
@@ -393,6 +394,22 @@ internal sealed partial class PdfFileWriter : IDisposable
             PdfObjectSerializer.Write(_output, dictionary, references);
             _output.WriteNewLine();
             WriteStartXref(xrefOffset);
+        }
+    }
+
+    /// <summary>
+    /// Writes the original file of an incremental update: a file in memory is passed to the output as one block, without
+    /// a copy; a file read from a stream is copied in chunks.
+    /// </summary>
+    private void CopyOriginal(PdfInput input)
+    {
+        if (input is MemoryPdfInput memory)
+        {
+            _output.Write(memory.Data);
+        }
+        else
+        {
+            input.CopyTo(_output);
         }
     }
 

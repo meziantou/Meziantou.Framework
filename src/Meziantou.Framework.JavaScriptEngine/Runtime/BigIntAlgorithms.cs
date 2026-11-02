@@ -6,9 +6,11 @@ namespace Meziantou.Framework.JavaScriptEngine;
 
 /// <summary>
 /// The algorithms on large BigInt values whose cost grows faster than their size: multiplication, exponentiation and
-/// the conversions from and to strings. A large operation is split into parts of a few milliseconds, and the limits of
-/// the engine (<see cref="JsEngineOptions.Timeout"/>, <see cref="JsEngineOptions.MemoryLimit"/>, the cancellation) are
-/// checked between the parts.
+/// the conversions from and to strings. A large operation is split into parts of about 100 ms, and the limits of the
+/// engine (<see cref="JsEngineOptions.Timeout"/>, <see cref="JsEngineOptions.MemoryLimit"/>, the cancellation) are
+/// checked between the parts. When none of these limits applies, the operation is computed at once by BigInteger when
+/// that is faster: on .NET 11, splitting costs up to 50% on the largest values; on .NET 10, only the parsing is faster at
+/// once (its squares are slower than the split ones, and its decimal formatting is quadratic).
 /// </summary>
 internal static class BigIntAlgorithms
 {
@@ -51,6 +53,11 @@ internal static class BigIntAlgorithms
     {
         if ((long)x.GetBitLength() + (long)y.GetBitLength() <= LeafProductBits)
             return x * y;
+
+#if NET11_0_OR_GREATER
+        if (!JsEngine.CurrentWorkCanBeInterrupted)
+            return x * y;
+#endif
 
         var negative = (x.Sign < 0) != (y.Sign < 0);
         var magnitudeX = BigInteger.Abs(x);
@@ -140,9 +147,21 @@ internal static class BigIntAlgorithms
         var minimumBits = (((long)odd.GetBitLength() - 1) * exponent) + shift;
         JsEngine.EnsureCurrentCanAllocate(minimumBits / 8);
 
-        var result = odd;
-        if (!odd.IsOne)
+        BigInteger result;
+        if (odd.IsOne)
         {
+            result = odd;
+        }
+#if NET11_0_OR_GREATER
+        else if (!JsEngine.CurrentWorkCanBeInterrupted)
+        {
+            result = BigInteger.Pow(odd, exponent);
+        }
+#endif
+        else
+        {
+            result = odd;
+
             // Left-to-right binary exponentiation
             for (var bit = 30 - BitOperations.LeadingZeroCount((uint)exponent); bit >= 0; bit--)
             {
@@ -185,7 +204,7 @@ internal static class BigIntAlgorithms
         if (digits.Length <= 18)
             return ulong.Parse(digits, NumberStyles.None, CultureInfo.InvariantCulture);
 
-        if (digits.Length <= LeafParseDigits)
+        if (digits.Length <= LeafParseDigits || !JsEngine.CurrentWorkCanBeInterrupted)
             return ParseDecimalPart(digits);
 
         // A decimal digit is log2(10) bits
@@ -297,6 +316,11 @@ internal static class BigIntAlgorithms
 
         if (radix == 10 && bitLength <= LeafDecimalFormatBits)
             return value.ToString(CultureInfo.InvariantCulture);
+
+#if NET11_0_OR_GREATER
+        if (radix == 10 && !JsEngine.CurrentWorkCanBeInterrupted)
+            return value.ToString(CultureInfo.InvariantCulture);
+#endif
 
         // An upper bound of the number of digits, and the sign
         var maximumLength = (int)(bitLength / Math.Log2(radix)) + 2;

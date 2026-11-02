@@ -193,11 +193,14 @@ public sealed class BigIntBuiltinsTests
         }
     }
 
-    [Fact]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Test data")]
-    public void LargeDecimalStrings()
+    public void LargeDecimalStrings(bool interruptible)
     {
-        using var realm = new TestRealm();
+        using var cancellation = new CancellationTokenSource();
+        using var realm = CreateRealm(interruptible, cancellation);
         // Around the parts that BigInteger parses at once (2^18 digits, 2^20 on .NET 11)
         foreach (var length in new[] { 262144, 262145, 1048577 })
         {
@@ -222,11 +225,14 @@ public sealed class BigIntBuiltinsTests
     }
 
     // The products and the powers larger than the parts that BigInteger computes at once (4 million bits, 8 million on .NET 11)
-    [Fact]
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Test data")]
-    public void LargeArithmetic()
+    public void LargeArithmetic(bool interruptible)
     {
-        using var realm = new TestRealm();
+        using var cancellation = new CancellationTokenSource();
+        using var realm = CreateRealm(interruptible, cancellation);
         var random = new Random(42);
         var x = (BigInteger.One << 4_400_000) | RandomBits(random, 4_400_000);
         var y = (BigInteger.One << 4_000_000) | RandomBits(random, 4_000_000);
@@ -261,6 +267,14 @@ public sealed class BigIntBuiltinsTests
                 Assert.Equal(expected, actual);
             }
         }
+    }
+
+    // Without a limit, the large operations are computed at once by BigInteger; a cancellation token splits them into parts
+    private static TestRealm CreateRealm(bool interruptible, CancellationTokenSource cancellation)
+    {
+        var realm = new TestRealm(interruptible ? new JsEngineOptions { CancellationToken = cancellation.Token } : null);
+        Assert.Equal(interruptible, JsEngine.CurrentWorkCanBeInterrupted);
+        return realm;
     }
 
     [System.Diagnostics.CodeAnalysis.SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Test data")]

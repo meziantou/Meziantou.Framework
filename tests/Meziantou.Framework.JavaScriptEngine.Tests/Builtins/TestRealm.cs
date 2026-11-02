@@ -5,9 +5,9 @@ internal sealed class TestRealm : IDisposable
 {
     private readonly JsEngineScope _scope;
 
-    public TestRealm()
+    public TestRealm(JsEngineOptions? options = null)
     {
-        Engine = new JsEngine();
+        Engine = options is null ? new JsEngine() : new JsEngine(options);
         Realm = Engine.CreateRealm();
         _scope = Engine.Enter();
         Engine.CurrentRealm = Realm;

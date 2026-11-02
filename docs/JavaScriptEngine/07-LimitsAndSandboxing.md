@@ -59,7 +59,10 @@ Assert.Equal("RangeError", realm.Execute("function f() { return 1 + f(); } try {
   about 100 ms, and the limits are checked between the parts. The other operations take a time proportional to the size
   of the values, except a division or a remainder, which runs at once: a division of two numbers of hundreds of
   millions of bits can exceed `Timeout` by minutes. A large multiplication allocates temporary values, which count
-  toward `MemoryLimit`.
+  toward `MemoryLimit`. On .NET 11, splitting an operation makes it up to 50% slower, so when no `Timeout`,
+  `MemoryLimit` or cancellation token applies, the engine computes it at once with `BigInteger`. On .NET 10, only the
+  parsing is faster at once: there, the split multiplications, powers and decimal conversions to strings are as fast as
+  `BigInteger` or faster.
 - The interpreter does not use the .NET stack for JavaScript calls, so a deep recursion of JavaScript code never
   overflows the stack of the thread; a recursion through .NET functions throws a `RangeError` before it does.
 

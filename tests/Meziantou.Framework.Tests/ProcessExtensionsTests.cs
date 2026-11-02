@@ -201,6 +201,76 @@ public class ProcessExtensionsTests
     }
 
     [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetAncestorProcesses_StartsWithTheParent()
+    {
+        using var current = Process.GetCurrentProcess();
+        var ancestors = current.GetAncestorProcesses().ToList();
+        try
+        {
+            Assert.NotEmpty(ancestors);
+            Assert.Equal(current.GetParentProcessId(), ancestors[0].Id);
+            Assert.DoesNotContain(ancestors, p => p.Id == current.Id);
+            for (var i = 1; i < ancestors.Count; i++)
+            {
+                Assert.True(ancestors[i].StartTime <= ancestors[i - 1].StartTime);
+            }
+        }
+        finally
+        {
+            foreach (var ancestor in ancestors)
+            {
+                ancestor.Dispose();
+            }
+        }
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
+    public void GetParentProcess_ParentExited_ReturnsNull()
+    {
+        // cmd.exe starts a long-running ping in the background, then exits, leaving the ping with the id of an exited parent
+        using var process = Process.Start(new ProcessStartInfo("cmd.exe", "/C start /B ping 127.0.0.1 -n 30 >NUL & ping 127.0.0.1 -n 3 >NUL") { UseShellExecute = false, CreateNoWindow = true });
+        Assert.NotNull(process);
+        IReadOnlyList<Process> descendants = [];
+        try
+        {
+            while (true)
+            {
+                descendants = process.GetDescendantProcesses();
+                if (descendants.Count(p => p.ProcessName.EqualsIgnoreCase("PING")) is 2 || process.HasExited)
+                    break;
+
+                foreach (var descendant in descendants)
+                {
+                    descendant.Dispose();
+                }
+
+                Thread.Sleep(50);
+            }
+
+            process.WaitForExit();
+
+            var orphan = Assert.Single(descendants, p => p.ProcessName.EqualsIgnoreCase("PING") && !p.HasExited);
+            Assert.Equal(process.Id, orphan.GetParentProcessId());
+            Assert.Null(orphan.GetParentProcess());
+        }
+        finally
+        {
+            foreach (var descendant in descendants)
+            {
+                try
+                {
+                    descendant.Kill();
+                }
+                catch (InvalidOperationException)
+                {
+                }
+
+                descendant.Dispose();
+            }
+        }
+    }
+
+    [Fact, RunIf(TestOperatingSystems.Windows)]
     public void GetChildProcessesDoesNotReturnGrandChildren()
     {
         using var process = Process.Start("cmd.exe", "/C ping 127.0.0.1 -n 10");

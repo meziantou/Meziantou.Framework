@@ -56,9 +56,12 @@ Assert.False(Directory.Exists(destination));
 
 - [PathCreateDirectory](cref:Meziantou.Framework.IOUtilities.PathCreateDirectory) creates the folder that contains a file, and its parents, when they do not exist.
 - [CopyDirectory](cref:Meziantou.Framework.IOUtilities.CopyDirectory) copies the files and subfolders of a folder. It throws a `DirectoryNotFoundException` when the source
-  does not exist, and an `IOException` when a file already exists in the destination.
+  does not exist, and an `IOException` when a file already exists in the destination. A symbolic link to a folder is
+  copied as a link, as `cp -R` does, instead of copying the content of its target. A link to a parent folder therefore
+  does not make the copy recurse forever.
 - [Delete](cref:Meziantou.Framework.IOUtilities.Delete) deletes a file, or a folder and its content, and does nothing when the path does not exist. It removes the
-  read-only attribute that prevents deleting a file, and retries when a file is temporarily locked by another process,
+  read-only attribute that prevents deleting a file, makes read-only folders writable (on Linux and macOS, deleting a
+  file requires write permission on its folder, as in the Go module cache), and retries when a file is temporarily locked by another process,
   such as an antivirus. Symbolic links and junctions are deleted as links: the content of their target is kept.
 - [DeleteAsync](cref:Meziantou.Framework.IOUtilities.DeleteAsync) does the same and waits asynchronously between the retries.
 - [PathUnprotect](cref:Meziantou.Framework.IOUtilities.PathUnprotect) removes the read-only attribute of a file, and [IsSharingViolation](cref:Meziantou.Framework.IOUtilities.IsSharingViolation) tells whether an `IOException` was
@@ -85,7 +88,9 @@ Assert.Equal([3, 4, 5], rest);
 
 - [TryReadAll](cref:Meziantou.Framework.StreamExtensions.TryReadAll) fills the buffer, and returns the number of bytes read: fewer than the length of the buffer only when the
   end of the stream is reached first.
-- [ReadToEnd](cref:Meziantou.Framework.StreamExtensions.ReadToEnd) and [ReadToEndAsync](cref:Meziantou.Framework.StreamExtensions.ReadToEndAsync) return the remaining bytes of the stream as an array.
+- [ReadToEnd](cref:Meziantou.Framework.StreamExtensions.ReadToEnd) and [ReadToEndAsync](cref:Meziantou.Framework.StreamExtensions.ReadToEndAsync) return the remaining bytes of the stream as an array. They read until the end of
+  the stream, even when it grows while it is read, such as a log file being written. They return an empty array when
+  the position is past the end.
 - [ToMemoryStreamAsync](cref:Meziantou.Framework.StreamExtensions.ToMemoryStreamAsync) copies the remaining bytes to a new `MemoryStream`, positioned at its beginning.
 
 ## Restrict a stream
@@ -117,10 +122,12 @@ Assert.Throws<NotSupportedException>(() => stream.Write([5]));
 | --- | --- |
 | [AllowReading](cref:Meziantou.Framework.RestrictedStreamOptions.AllowReading) | Reading |
 | [AllowWriting](cref:Meziantou.Framework.RestrictedStreamOptions.AllowWriting) | Writing |
-| [AllowSeeking](cref:Meziantou.Framework.RestrictedStreamOptions.AllowSeeking) | Seeking and setting the position |
+| [AllowSeeking](cref:Meziantou.Framework.RestrictedStreamOptions.AllowSeeking) | Seeking, and getting or setting the position and the length |
 | [AllowSynchronousCalls](cref:Meziantou.Framework.RestrictedStreamOptions.AllowSynchronousCalls) | The synchronous methods |
 | [AllowAsynchronousCalls](cref:Meziantou.Framework.RestrictedStreamOptions.AllowAsynchronousCalls) | The asynchronous methods |
 | [MaxReadLength](cref:Meziantou.Framework.RestrictedStreamOptions.MaxReadLength) | At most this number of bytes per read; 0 or less means no limit |
 
 Every option is `false` by default. A forbidden operation throws a `NotSupportedException`, and `CanRead`, `CanWrite`
-and `CanSeek` reflect the options and the wrapped stream.
+and `CanSeek` reflect the options and the wrapped stream. Changing the length requires both seeking and writing.
+`Flush` and `FlushAsync` do nothing when writing is not allowed, as with a read-only `FileStream`, so wrappers such as
+`BufferedStream` can flush the stream.

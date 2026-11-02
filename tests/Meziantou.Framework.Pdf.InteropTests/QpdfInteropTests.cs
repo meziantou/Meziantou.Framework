@@ -64,6 +64,39 @@ public sealed class QpdfInteropTests
     }
 
     [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task IncrementalUpdatesWithRemovedObjectsPassTheCheck(bool objectStreams)
+    {
+        var qpdf = await QpdfTool.LocateAsync(XunitCancellationToken);
+        var source = new PdfDocument();
+        source.Pages.Add(PdfSize.A4).CreateContentBuilder().DrawText("Original", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 12, 72, 700);
+        source.Catalog[PdfName.Create("PrivateData")] = source.Objects.Add(new PdfDictionary { [PdfName.Create("Value")] = PdfInteger.Get(1) });
+        source.Trailer[PdfName.Create("PrivateKey")] = PdfString.FromText("kept");
+        var document = PdfDocument.Open(source.ToByteArray(new PdfSaveOptions { UseObjectStreams = objectStreams }));
+
+        var removed = (PdfReference)document.Catalog[PdfName.Create("PrivateData")]!;
+        document.Catalog.Remove(PdfName.Create("PrivateData"));
+        document.Objects.Remove(removed);
+        document.Information.Title = "Updated";
+        document.Pages[0].CreateContentBuilder().DrawText("Added", PdfFont.GetStandardFont(PdfStandardFont.Helvetica), 10, 10, 10);
+        var path = Path.Combine(AppContext.BaseDirectory, "InteropOutput", "incremental-removed-" + objectStreams + ".pdf");
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        await using (var stream = File.Create(path))
+        {
+            await document.SaveIncrementalAsync(stream, cancellationToken: XunitCancellationToken);
+        }
+
+        var result = await qpdf.CheckAsync(path, XunitCancellationToken);
+
+        Assert.Equal(0, result.ExitCode, result.StandardOutputText + result.StandardError);
+        Assert.Contains("No syntax or stream encoding errors found", result.StandardOutputText, StringComparison.Ordinal);
+        var read = PdfDocument.Open(await File.ReadAllBytesAsync(path, XunitCancellationToken));
+        Assert.False(read.Objects.TryGetReference(removed.ObjectNumber, out _));
+        Assert.Equal("kept", read.Trailer.Get<PdfString>(PdfName.Create("PrivateKey"))!.ToText());
+    }
+
+    [Theory]
     [InlineData(PdfEncryptionAlgorithm.Rc4With40BitKey, "R = 2")]
     [InlineData(PdfEncryptionAlgorithm.Rc4With128BitKey, "R = 3")]
     [InlineData(PdfEncryptionAlgorithm.AesWith128BitKey, "R = 4")]

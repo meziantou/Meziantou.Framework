@@ -64,7 +64,15 @@ document.SaveIncremental(output);
 
 - The incremental update holds the objects that were added or changed: the library notices the changes, whether they are
   made through the high-level API or the object model.
-- It keeps the kind of cross-reference of the original file (a table or a stream), and writes no object stream.
+- It keeps the kind of cross-reference of the original file (a table or a stream). When the file has cross-reference
+  streams, the objects of the update are written in object streams, which makes the update smaller; set
+  [UseObjectStreams](cref:Meziantou.Framework.Pdf.PdfSaveOptions.UseObjectStreams) to `false` to write them one by one.
+  Streams, signature dictionaries and the objects of a generation other than 0 are never in an object stream.
+- An object removed with `Objects.Remove` is written as a free entry of the update: the object no longer exists in the
+  new revision, while the earlier revisions keep it. Its number is not given to a new object.
+- The private entries of the trailer are kept, by incremental and full saves.
+- When nothing changed, the original file is written as it is, without an empty update.
+- The original file is copied to the output as it is, without being buffered again.
 - It throws `InvalidOperationException` for a document that was not read from a file, or that was repaired
   ([IsRepaired](cref:Meziantou.Framework.Pdf.PdfDocument.IsRepaired)). It cannot change the encryption of the document either: use a full save.
 - A full save of a document read from an encrypted file keeps its encryption: see

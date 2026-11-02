@@ -119,6 +119,12 @@ var readable = document.ToByteArray(new PdfSaveOptions { CompressStreams = false
 | [UseObjectStreams](cref:Meziantou.Framework.Pdf.PdfSaveOptions.UseObjectStreams) | `true` | Writes the objects in object streams with a cross-reference stream (PDF 1.5); `false` writes a cross-reference table |
 | [Version](cref:Meziantou.Framework.Pdf.PdfSaveOptions.Version) | `null` | The version of the header; `null` for the version of the document, raised to what the options need |
 
+`Save` writes the file to the stream or the file as it is serialized, through a buffer of bounded size, so that a
+large document is not held in memory as one array; when the save fails, the stream may contain the beginning of the
+file (`Save(path)` deletes the incomplete file). `SaveAsync` serializes the document on the calling thread into blocks
+of memory, then writes them asynchronously: its cancellation token is observed between the objects and between the
+blocks.
+
 The output depends only on the document and the options: the library writes no date, no random value and not its own
 version (`Information.Producer` is empty unless you set it), so a test can compare the files it writes.
 

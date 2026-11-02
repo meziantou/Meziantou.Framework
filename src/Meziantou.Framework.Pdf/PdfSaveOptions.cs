@@ -13,7 +13,8 @@ public sealed class PdfSaveOptions
     /// <summary>
     /// Gets a value indicating whether the objects that are not streams are written in object streams, with a
     /// cross-reference stream (PDF 1.5, ISO 32000-2, 7.5.7 and 7.5.8). The default is <see langword="true"/>. An
-    /// incremental save keeps the kind of cross-reference of the original file and writes no object stream.
+    /// incremental save keeps the kind of cross-reference of the original file: it writes the objects of the update in
+    /// object streams when the file has cross-reference streams.
     /// </summary>
     public bool UseObjectStreams { get; init; } = true;
 

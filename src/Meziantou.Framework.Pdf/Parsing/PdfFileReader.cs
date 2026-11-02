@@ -233,7 +233,10 @@ internal sealed class PdfFileReader : IPdfObjectLoader
 
         Trailer = StripXrefKeys(trailer);
         RegisterEntries(entries);
-        Objects.Reserve((int)Math.Clamp(Trailer.GetInteger(PdfNames.Size, 0) - 1, 0, int.MaxValue - 1));
+        // The numbers below /Size are not given to new objects, even when the file does not use them. A bogus /Size
+        // (2147483647) would leave no number to give: the numbers the file uses are registered, so the numbers that
+        // are not are kept below the length of the file
+        Objects.Reserve((int)Math.Clamp(Trailer.GetInteger(PdfNames.Size, 0) - 1, 0, Math.Min(_data.Length, PdfIndirectObjectCollection.MaxAllocatableObjectNumber)));
         return true;
     }
 
@@ -526,15 +529,24 @@ internal sealed class PdfFileReader : IPdfObjectLoader
         return trailerDictionary;
     }
 
+    /// <summary>
+    /// Gets the entries of the trailer that are not about its cross-reference section (<c>/Prev</c>, <c>/XRefStm</c>,
+    /// and the entries of a cross-reference stream, 7.5.8.2): the writer writes them again, and keeps the others,
+    /// including the private ones (7.5.6: an update contains the entries of the previous trailer).
+    /// </summary>
     private static PdfDictionary StripXrefKeys(PdfDictionary trailer)
     {
+        var isStream = trailer[PdfNames.Type] is PdfName type && type == PdfNames.XRef;
         var result = new PdfDictionary();
-        foreach (var key in new[] { PdfNames.Size, PdfNames.Root, PdfNames.Info, PdfNames.ID, PdfNames.Encrypt })
+        foreach (var (key, value) in trailer)
         {
-            if (trailer[key] is { } value)
-            {
-                result[key] = value;
-            }
+            if (key == PdfNames.Prev || key == PdfNames.XRefStm)
+                continue;
+
+            if (isStream && (key == PdfNames.Type || key == PdfNames.W || key == PdfNames.Index || key == PdfNames.Length || key == PdfNames.Filter || key == PdfNames.DecodeParms || key == PdfNames.F || key == PdfNames.FFilter || key == PdfNames.FDecodeParms || key == PdfNames.DL))
+                continue;
+
+            result[key] = value;
         }
 
         return result;

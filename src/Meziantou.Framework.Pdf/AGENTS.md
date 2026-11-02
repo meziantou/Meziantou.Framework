@@ -89,9 +89,14 @@ the XML documentation and `readme.md` consistent in the same change.
   they are reached from the trailer, dictionaries keep the order of their entries, the file identifier is an MD5 of the
   content, numbers are written without exponent with at most six decimals. Never write a date, a random value or the
   version of the library implicitly.
-- A full save writes the objects reachable from `/Root` and `/Info`, with the `/Length` of the streams written direct
-  (the indirect length objects of a file become unreachable). An incremental save keeps the kind of cross-reference of
-  the original file and refuses a repaired file.
+- A full save writes the objects reachable from `/Root`, `/Info` and the private entries of the trailer, with the
+  `/Length` of the streams written direct (the indirect length objects of a file become unreachable). An incremental
+  save keeps the kind of cross-reference of the original file (object streams with cross-reference streams), writes the
+  removed objects as free entries, writes the original file alone when nothing changed, and refuses a repaired file.
+  A reference to an object of another document is an error in both.
+- **Bounded output buffers.** A save streams the file through `PdfByteWriter` with a `PdfOutputSink`: a stream for the
+  synchronous saves, blocks of memory for `SaveAsync` and `ToByteArray`. The file identifier is an incremental MD5 of
+  what is written, so nothing reads the output back; the original file of an incremental save is passed as one block.
 
 ## Renderer (`Rendering/`, namespace `Meziantou.Framework.Pdf.Rendering`)
 

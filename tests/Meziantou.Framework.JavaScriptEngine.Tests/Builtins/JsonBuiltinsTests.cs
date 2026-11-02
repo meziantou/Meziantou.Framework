@@ -530,6 +530,174 @@ public sealed class JsonBuiltinsTests
         Assert.Empty(failures);
     }
 
+    [Theory]
+    [InlineData("const o = { a: 1, get b() { delete this.c; this.d = 4; return 2; }, c: 3 }; JSON.stringify(o)", "{\"a\":1,\"b\":2}")]
+    [InlineData("const o = { get a() { this.b = 5; return 1; }, b: 2 }; JSON.stringify(o)", "{\"a\":1,\"b\":5}")]
+    [InlineData("const o = { get a() { Object.defineProperty(this, 'b', { get() { return 'g'; } }); return 1; }, b: 2 }; JSON.stringify(o)", "{\"a\":1,\"b\":\"g\"}")]
+    [InlineData("const o = { a: 1, b: 2 }; Object.defineProperty(o, 'h', { value: 3, enumerable: false }); o[Symbol('s')] = 4; JSON.stringify(o)", "{\"a\":1,\"b\":2}")]
+    [InlineData("JSON.stringify({ b: 1, 2: 2, a: 3, 1: 4 })", "{\"1\":4,\"2\":2,\"b\":1,\"a\":3}")]
+    [InlineData("JSON.stringify([1, , 3, undefined, () => 1, Symbol()])", "[1,null,3,null,null,null]")]
+    [InlineData("const a = [1, 2, 3]; Object.defineProperty(a, 1, { get() { a.length = 1; return 'g'; } }); JSON.stringify(a)", "[1,\"g\",null]")]
+    [InlineData("const a = [1, 2]; a.toJSON = () => 'own'; JSON.stringify([a, [3]])", "[\"own\",[3]]")]
+    [InlineData("class P { constructor(x) { this.x = x; } toJSON(key) { return key + ':' + this.x; } } JSON.stringify({ a: new P(1), b: [new P(2)], c: { x: 3 } })", "{\"a\":\"a:1\",\"b\":[\"0:2\"],\"c\":{\"x\":3}}")]
+    [InlineData("const o = Object.create(null); o.a = 1; JSON.stringify([o, Object.create(o)])", "[{\"a\":1},{}]")]
+    [InlineData("JSON.stringify(Array.from({ length: 3 }, (_, i) => ({ a: i, b: 'x' + i })), (k, v) => k === 'b' ? undefined : v)", "[{\"a\":0},{\"a\":1},{\"a\":2}]")]
+    [InlineData("JSON.stringify([{ a: 1, b: 2 }, { a: 3, b: 4 }], ['b'])", "[{\"b\":2},{\"b\":4}]")]
+    [InlineData("JSON.stringify([{ a: [1, { b: 2 }] }], null, 2)", "[\n  {\n    \"a\": [\n      1,\n      {\n        \"b\": 2\n      }\n    ]\n  }\n]")]
+    [InlineData("JSON.stringify({ a: { toJSON() { return JSON.stringify({ inner: [1, 'x'] }); } }, b: 2 })", "{\"a\":\"{\\\"inner\\\":[1,\\\"x\\\"]}\",\"b\":2}")]
+    public void StringifyFastPathEdgeCases(string script, string expected)
+    {
+        using var realm = new TestRealm();
+        Assert.Equal(expected, realm.Realm.Execute(script).AsString());
+    }
+
+    [Fact]
+    public void StringifyToJsonAddedDuringSerialization()
+    {
+        using var realm = new TestRealm();
+
+        // A getter adds toJSON to the prototypes after the objects and arrays before it were serialized without one
+        Assert.Equal("[[0],{\"y\":1},\"array\",\"object\",\"array\",\"object\"]", realm.Realm.Execute("""
+            const data = [
+              [0],
+              { get y() { Object.prototype.toJSON = () => 'object'; Array.prototype.toJSON = () => 'array'; return 1; } },
+              [2],
+              { z: 3 },
+              [4],
+              { z: 5 },
+            ];
+            let result;
+            try {
+              result = JSON.stringify(data);
+            } finally {
+              delete Object.prototype.toJSON;
+              delete Array.prototype.toJSON;
+            }
+
+            result;
+            """).AsString());
+
+        // The prototype of an object changes during the serialization
+        Assert.Equal("[{},{\"a\":1},\"proto\"]", realm.Realm.Execute("""
+            const items = [{}, { get a() { Object.setPrototypeOf(items[2], { toJSON: () => 'proto' }); return 1; } }, {}];
+            JSON.stringify(items);
+            """).AsString());
+
+        // After the first serialization, the next one sees a toJSON added to a prototype between them
+        Assert.Equal("[{\"a\":1}] \"t\" [{\"a\":1}]", realm.Realm.Execute("""
+            const values = [{ a: 1 }];
+            const first = JSON.stringify(values);
+            Object.prototype.toJSON = () => 't';
+            const second = JSON.stringify(values);
+            delete Object.prototype.toJSON;
+            first + ' ' + second + ' ' + JSON.stringify(values);
+            """).AsString());
+    }
+
+    [Fact]
+    public void StringifyProxies()
+    {
+        using var realm = new TestRealm();
+        Assert.Equal("[{\"a\":\"A\",\"b\":\"B\"},[\"0!\",\"1!\"]] get:toJSON,ownKeys,get:a,get:b,get:toJSON,get:length,get:0,get:1", realm.Realm.Execute("""
+            const log = [];
+            const target = { a: 1, b: 2 };
+            const proxy = new Proxy(target, {
+              get(t, key) { log.push('get:' + String(key)); return key === 'toJSON' ? undefined : String(key).toUpperCase(); },
+              ownKeys(t) { log.push('ownKeys'); return Reflect.ownKeys(t); },
+            });
+            const arrayProxy = new Proxy([1, 2], {
+              get(t, key) { log.push('get:' + String(key)); return key === 'length' ? 2 : key === 'toJSON' ? undefined : key + '!'; },
+            });
+            JSON.stringify([proxy, arrayProxy]) + ' ' + log.join(',');
+            """).AsString());
+    }
+
+    [Fact]
+    public void StringifyEscapingAndLongText()
+    {
+        using var realm = new TestRealm();
+        Assert.Equal("\"\\ud800a\ud83d\ude00\\udc00\\u0001\\b\\t\\n\\f\\r\\\"\\\\\u2028\"", realm.Realm.Execute("JSON.stringify('\\ud800a\\ud83d\\ude00\\udc00\\u0001\\b\\t\\n\\f\\r\"\\\\\\u2028')").AsString());
+
+        // A text longer than the initial buffer, with escapes at the boundaries of the copied runs
+        var text = realm.Realm.Execute("""
+            const long = 'a'.repeat(1000) + '"' + 'b'.repeat(300) + '\n';
+            JSON.stringify(Array.from({ length: 50 }, (_, i) => ({ i, long })));
+            """).AsString();
+        var expectedItem = "\"long\":\"" + new string('a', 1000) + "\\\"" + new string('b', 300) + "\\n\"}";
+        Assert.Equal(50, CountOccurrences(text, expectedItem));
+        Assert.StartsWith("[{\"i\":0,\"long\":\"aaa", text, StringComparison.Ordinal);
+        Assert.EndsWith(expectedItem + "]", text, StringComparison.Ordinal);
+
+        static int CountOccurrences(string text, string value)
+        {
+            var count = 0;
+            for (var index = text.IndexOf(value, StringComparison.Ordinal); index >= 0; index = text.IndexOf(value, index + value.Length, StringComparison.Ordinal))
+            {
+                count++;
+            }
+
+            return count;
+        }
+    }
+
+    [Theory]
+    [InlineData("""[{"a":1,"b":2},{"b":3,"a":4},{"a":5,"a":6,"b":7},{"a":8,"b":9,"c":10},{"a":11},{"a":12,"b":13}]""", """[{"a":1,"b":2},{"b":3,"a":4},{"a":6,"b":7},{"a":8,"b":9,"c":10},{"a":11},{"a":12,"b":13}]""")]
+    [InlineData("""[{"id":1,"child":{"id":2,"name":"x"}},{"id":3,"child":{"name":"y","id":4}},{"id":5,"child":{"id":6,"name":"z"}}]""", """[{"id":1,"child":{"id":2,"name":"x"}},{"id":3,"child":{"name":"y","id":4}},{"id":5,"child":{"id":6,"name":"z"}}]""")]
+    [InlineData("""[{"a":1,"0":2},{"a":3,"0":4,"1":5}]""", """[{"0":2,"a":1},{"0":4,"1":5,"a":3}]""")]
+    [InlineData("""[{"ab":0},{"a\u0062":1,"ab":2},{"ab":3,"ab":4}]""", """[{"ab":0},{"ab":2},{"ab":4}]""")]
+    [InlineData("""[[1,2.5],[true,"s",null],[1,"a"],[],[{}],[-0]]""", """[[1,2.5],[true,"s",null],[1,"a"],[],[{}],[0]]""")]
+    public void ParseRepeatedShapes(string json, string expected)
+    {
+        using var realm = new TestRealm();
+        Assert.Equal(expected, Stringify(realm, Parse(realm, json)));
+    }
+
+    [Fact]
+    public void ParseRepeatedShapesAreIndependentObjects()
+    {
+        using var realm = new TestRealm();
+        Assert.Equal("""[{"a":1,"b":2,"c":3},{"a":4},{"b":6,"a":5}] a,b,c|a|b,a [1,2,"x"] true""", realm.Realm.Execute("""
+            const items = JSON.parse('[{"a":1,"b":2},{"a":4,"b":5},{"a":5,"b":6}]');
+            items[0].c = 3;
+            delete items[1].b;
+            delete items[2].a;
+            items[2].a = 5;
+            const numbers = JSON.parse('[1,2]');
+            numbers.push('x');
+            JSON.stringify(items) + ' ' + items.map(o => Object.keys(o).join()).join('|') + ' ' + JSON.stringify(numbers) + ' ' + Array.isArray(numbers);
+            """).AsString());
+    }
+
+    [Fact]
+    public void ParseAfterError()
+    {
+        using var realm = new TestRealm();
+        Assert.Equal("SyntaxError", realm.GetErrorName(() => Parse(realm, "[1,[2,[3,{\"a\":[4,")));
+        Assert.Equal("[5,[6]]", Stringify(realm, Parse(realm, "[5,[6]]")));
+    }
+
+    [Fact]
+    public void ParseLargeArraysOfEachKind()
+    {
+        using var realm = new TestRealm();
+
+        // Above 5312 elements, the storage is rounded to a power of two (the size of the pooled storages)
+        Assert.Equal("6000 5999 s 6001 true|6000 5999 5999 6001 x|6000 s0 s5999 6001 1", realm.Realm.Execute("""
+            const n = 6000;
+            const mixed = JSON.parse('[' + Array.from({ length: n }, (_, i) => i % 2 ? i : '"s"').join() + ']');
+            const numbers = JSON.parse('[' + Array.from({ length: n }, (_, i) => i).join() + ']');
+            const strings = JSON.parse('[' + Array.from({ length: n }, (_, i) => '"s' + i + '"').join() + ']');
+            mixed.push(true);
+            numbers.push('x');
+            strings.push(1);
+            [
+              [mixed.length - 1, mixed[n - 1], mixed[n - 2], mixed.length, mixed[n]].join(' '),
+              [numbers.length - 1, numbers[n - 1], numbers.lastIndexOf(n - 1), numbers.length, numbers[n]].join(' '),
+              [strings.length - 1, strings[0], strings[n - 1], strings.length, strings[n]].join(' '),
+            ].join('|');
+            """).AsString());
+    }
+
     [Fact]
     public void JsonObject()
     {

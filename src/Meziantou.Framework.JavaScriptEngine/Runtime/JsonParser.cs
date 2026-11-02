@@ -39,10 +39,17 @@ internal sealed class JsonParser
     private readonly JsObject _objectPrototype;
     private readonly JsRealm _realm;
     private readonly bool _trackSource;
-    private readonly List<JsValue> _elements = [];
+    // The pending elements of the arrays being parsed, reused by the next parse of the thread: a large array would otherwise
+    // grow a new list in the large object heap at each parse. A nested parse (none runs user code today) gets a new one.
+    [ThreadStatic]
+    private static List<JsValue>? s_cachedElements;
+
+    private const int MaxCachedElementsCapacity = 1024 * 1024;
+
+    private readonly List<JsValue> _elements = Interlocked.Exchange(ref s_cachedElements, null) ?? [];
     private readonly List<JsonParseRecord> _elementRecords = [];
     private readonly List<Frame> _stack = [];
-    private Dictionary<string, PropertyKey>? _keyCache;
+    private Dictionary<string, CachedKey>? _keyCache;
     private StringBuilder? _builder;
     private int _position;
 
@@ -58,20 +65,44 @@ internal sealed class JsonParser
     public static JsValue Parse(JsRealm realm, string text, bool trackSource, out JsonParseRecord? record)
     {
         var parser = new JsonParser(realm, text, trackSource);
-        return parser.ParseText(out record);
+        try
+        {
+            return parser.ParseText(out record);
+        }
+        finally
+        {
+            parser.ReleaseElements();
+        }
     }
 
     /// <summary>Gets whether the text is a JSON text whose value is not an object nor an array (JSON.rawJSON); throws a SyntaxError otherwise.</summary>
     public static void ValidatePrimitive(JsRealm realm, string text)
     {
         var parser = new JsonParser(realm, text, trackSource: false);
-        parser.SkipWhiteSpace();
-        if (parser._position < text.Length && text[parser._position] is '{' or '[')
+        try
         {
-            parser.ThrowUnexpectedToken();
-        }
+            parser.SkipWhiteSpace();
+            if (parser._position < text.Length && text[parser._position] is '{' or '[')
+            {
+                parser.ThrowUnexpectedToken();
+            }
 
-        parser.ParseText(out _);
+            parser.ParseText(out _);
+        }
+        finally
+        {
+            parser.ReleaseElements();
+        }
+    }
+
+    private void ReleaseElements()
+    {
+        if (_elements.Capacity <= MaxCachedElementsCapacity)
+        {
+            // An error leaves the elements of the unclosed arrays
+            _elements.Clear();
+            s_cachedElements = _elements;
+        }
     }
 
     private JsValue ParseText(out JsonParseRecord? record)
@@ -120,7 +151,8 @@ internal sealed class JsonParser
                     }
 
                     var obj = new JsObject(_objectPrototype);
-                    _stack.Add(new Frame(obj, ParsePropertyName(), _trackSource ? [] : null));
+                    var firstKey = ParsePropertyName(out var firstCachedKey);
+                    _stack.Add(new Frame(obj, firstKey, firstCachedKey, _trackSource ? [] : null));
                     continue;
 
                 case '[':
@@ -191,8 +223,7 @@ internal sealed class JsonParser
                 SkipWhiteSpace();
                 if (frame.Object is { } container)
                 {
-                    // Duplicate keys: the last value wins, at the position of the first one
-                    container.SetOwnSlot(frame.Key, value, PropertyFlags.Default);
+                    AddProperty(container, frame.Key, frame.CachedKey, value);
                     if (frame.Entries is { } entries)
                     {
                         entries[frame.Key] = record!;
@@ -202,7 +233,7 @@ internal sealed class JsonParser
                     {
                         _position++;
                         SkipWhiteSpace();
-                        frame.Key = ParsePropertyName();
+                        frame.Key = ParsePropertyName(out frame.CachedKey);
                         _stack[frameIndex] = frame;
                         break;
                     }
@@ -260,15 +291,36 @@ internal sealed class JsonParser
         }
     }
 
+    /// <summary>Adds a property to an object being parsed (CreateDataProperty).</summary>
+    private static void AddProperty(JsObject obj, in PropertyKey key, CachedKey? cachedKey, JsValue value)
+    {
+        // The objects of an array often have the same keys in the same order: the shapes they go through are the same
+        var map = obj.Map;
+        if (cachedKey is not null && cachedKey.TransitionFrom is { } from && ReferenceEquals(map, from))
+        {
+            // The key is not in the shape (its child by the key has one more property): not a duplicate key
+            obj.AddPropertyForCache(cachedKey.TransitionTo!, value);
+            return;
+        }
+
+        // Duplicate keys: the last value wins, at the position of the first one
+        obj.SetOwnSlot(key, value, PropertyFlags.Default);
+        if (cachedKey is not null && map is Shape shape && obj.Map is Shape next && ReferenceEquals(next.Parent, shape) && next.Count == shape.Count + 1)
+        {
+            cachedKey.TransitionFrom = shape;
+            cachedKey.TransitionTo = next;
+        }
+    }
+
     /// <summary>Parses a property name and the colon that follows it.</summary>
-    private PropertyKey ParsePropertyName()
+    private PropertyKey ParsePropertyName(out CachedKey? cachedKey)
     {
         if (_position >= _text.Length || _text[_position] != '"')
         {
             ThrowExpected("property name or '}'");
         }
 
-        var key = ParseKey();
+        var key = ParseKey(out cachedKey);
         SkipWhiteSpace();
         if (_position >= _text.Length || _text[_position] != ':')
         {
@@ -279,7 +331,7 @@ internal sealed class JsonParser
         return key;
     }
 
-    private PropertyKey ParseKey()
+    private PropertyKey ParseKey(out CachedKey? cachedKey)
     {
         // Short keys without escapes are cached: the objects of an array often have the same keys
         var start = _position + 1;
@@ -287,22 +339,23 @@ internal sealed class JsonParser
         if (end >= 0 && end <= MaxCachedKeyLength && _text[start + end] == '"')
         {
             var span = _text.AsSpan(start, end);
-            _keyCache ??= new Dictionary<string, PropertyKey>(StringComparer.Ordinal);
+            _keyCache ??= new Dictionary<string, CachedKey>(StringComparer.Ordinal);
             var lookup = _keyCache.GetAlternateLookup<ReadOnlySpan<char>>();
-            if (!lookup.TryGetValue(span, out var cached))
+            if (!lookup.TryGetValue(span, out cachedKey))
             {
                 var name = span.ToString();
-                cached = new PropertyKey(name);
+                cachedKey = new CachedKey(new PropertyKey(name));
                 if (_keyCache.Count < MaxCachedKeys)
                 {
-                    _keyCache.Add(name, cached);
+                    _keyCache.Add(name, cachedKey);
                 }
             }
 
             _position = start + end + 1;
-            return cached;
+            return cachedKey.Key;
         }
 
+        cachedKey = null;
         return new PropertyKey(ParseString());
     }
 
@@ -606,13 +659,24 @@ internal sealed class JsonParser
         ThrowHelper.ThrowSyntaxError(string.Create(CultureInfo.InvariantCulture, $"{message}{(inJson ? " in JSON" : "")} at position {position} (line {line} column {position - lineStart + 1})"));
     }
 
+    /// <summary>A key of the cache of the keys, and the last shape transition that added it to an object.</summary>
+    private sealed class CachedKey(PropertyKey key)
+    {
+        public PropertyKey Key { get; } = key;
+
+        public Shape? TransitionFrom { get; set; }
+
+        public Shape? TransitionTo { get; set; }
+    }
+
     /// <summary>An array or an object being parsed.</summary>
     private struct Frame
     {
-        public Frame(JsObject obj, PropertyKey key, Dictionary<PropertyKey, JsonParseRecord>? entries)
+        public Frame(JsObject obj, PropertyKey key, CachedKey? cachedKey, Dictionary<PropertyKey, JsonParseRecord>? entries)
         {
             Object = obj;
             Key = key;
+            CachedKey = cachedKey;
             Entries = entries;
         }
 
@@ -627,6 +691,9 @@ internal sealed class JsonParser
 
         /// <summary>The key of the property whose value is being parsed.</summary>
         public PropertyKey Key;
+
+        /// <summary>The entry of the key in the cache of the keys, if any.</summary>
+        public CachedKey? CachedKey;
 
         public Dictionary<PropertyKey, JsonParseRecord>? Entries;
 

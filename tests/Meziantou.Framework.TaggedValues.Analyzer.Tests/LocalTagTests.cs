@@ -658,6 +658,41 @@ public sealed class LocalTagTests : TaggedValuesAnalyzerTestBase
     }
 
     [Fact]
+    public async Task VariablesDeconstructedFromTupleLocals_TakeTheTagsOfTheElements()
+    {
+        await VerifyAsync("""
+            class Sample
+            {
+                static void LoadOrder([ValueTag("OrderId")] Guid orderId) { }
+
+                void M([ValueTag("OrderId")] Guid orderId, [ValueTag("ProjectId")] Guid projectId, int a)
+                {
+                    var projects = (projectId, projectId);
+                    var (first, second) = projects;
+                    LoadOrder({|MFTV0002:first|});
+                    LoadOrder({|MFTV0002:second|});
+                    LoadOrder({|MFTV0002:projects.Item1|});
+
+                    var copy = (orderId, projectId);
+                    var copy2 = copy;
+                    var (c, d) = copy2;
+                    LoadOrder(c);
+                    LoadOrder({|MFTV0002:d|});
+
+                    var nested = ((projectId, orderId), a);
+                    var ((e, f), g) = nested;
+                    LoadOrder({|MFTV0002:e|});
+                    LoadOrder(f);
+                    LoadOrder({|MFTV0002:nested.Item1.Item1|});
+                    LoadOrder(nested.Item1.Item2);
+
+                    var ({|MFTV0002:h|} /* ValueTag=OrderId */, i) = projects;
+                }
+            }
+            """);
+    }
+
+    [Fact]
     public async Task CommentAfterTheCommaTagsTheNextVariable()
     {
         await VerifyAsync("""

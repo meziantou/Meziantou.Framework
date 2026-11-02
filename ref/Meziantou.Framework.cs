@@ -308,6 +308,7 @@ namespace Meziantou.Framework
         public static string Sentence(int wordCount) => throw null;
     }
 
+    [System.Obsolete("Use Meziantou.Framework.Markdown.MarkdownEscaper from the Meziantou.Framework.Markdown package.")]
     public static class MarkdownBuilder
     {
         public static string CreateCodeSpan(string content) => throw null;

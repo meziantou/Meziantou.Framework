@@ -292,6 +292,24 @@ public sealed partial class SnapshotTests
     }
 
     [Fact]
+    public async Task DocumentationExample_ValidateAsyncEnumerable()
+    {
+        #region Snapshot_ValidateAsyncEnumerable
+        static async IAsyncEnumerable<string> GetNamesAsync()
+        {
+            foreach (var name in new[] { "John", "Jane" })
+            {
+                await Task.Yield(); // For instance, a page of results from a database or a web API
+                yield return name;
+            }
+        }
+
+        // The sequence is enumerated with await foreach instead of blocking the test
+        await Snapshot.ValidateAsync(GetNamesAsync(), TestContext.Current.CancellationToken); // __snapshots__/SnapshotTests_DocumentationExample_ValidateAsyncEnumerable.verified.txt
+        #endregion
+    }
+
+    [Fact]
     public void Validate_CreateSnapshotFile()
     {
         using var directory = TemporaryDirectory.Create();
@@ -1238,13 +1256,112 @@ public sealed partial class SnapshotTests
         Assert.Equal(nameof(SnapshotTests) + "_" + nameof(ValidateAsync_CapturesTheTestMethodBeforeReadingTheStream) + ".verified.txt", Path.GetFileName(files[0]));
     }
 
-    private static SnapshotSettings CreateOverwriteSettings(TemporaryDirectory directory)
+    [Fact]
+    public async Task ValidateAsync_AsyncEnumerable_WritesTheSameSnapshotAsValidate()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var items = new[] { new { Name = "John", Age = 42 }, new { Name = "Jane", Age = 36 } };
+
+        Snapshot.Validate(ToAsyncEnumerable(items), CreateOverwriteSettings(directory, "sync"));
+        await Snapshot.ValidateAsync(ToAsyncEnumerable(items), CreateOverwriteSettings(directory, "async"), TestContext.Current.CancellationToken);
+
+        var expected = await File.ReadAllTextAsync(directory / "sync.verified.txt", TestContext.Current.CancellationToken);
+        Assert.Equal(expected, await File.ReadAllTextAsync(directory / "async.verified.txt", TestContext.Current.CancellationToken));
+        Assert.Contains("Jane", expected, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_AsyncEnumerableOfKeyValuePairs_WritesTheSameSnapshotAsValidate()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var items = new[] { KeyValuePair.Create("John", 42), KeyValuePair.Create("Jane", 36) };
+
+        Snapshot.Validate(ToAsyncEnumerable(items), CreateOverwriteSettings(directory, "sync"));
+        await Snapshot.ValidateAsync(ToAsyncEnumerable(items), CreateOverwriteSettings(directory, "async"), TestContext.Current.CancellationToken);
+
+        var expected = await File.ReadAllTextAsync(directory / "sync.verified.txt", TestContext.Current.CancellationToken);
+        Assert.Equal(expected, await File.ReadAllTextAsync(directory / "async.verified.txt", TestContext.Current.CancellationToken));
+        Assert.Contains("Jane", expected, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task ValidateAsync_AsyncEnumerable_DoesNotWriteSnapshots_WhenTheEnumerationIsCanceled()
+    {
+        using var directory = TemporaryDirectory.Create();
+        var settings = CreateOverwriteSettings(directory);
+        using var cts = new CancellationTokenSource();
+        var blocked = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(async () =>
+        {
+            var validation = Snapshot.ValidateAsync(BlockAfterFirstItem(blocked), settings, cts.Token);
+            await blocked.Task.WaitAsync(TestContext.Current.CancellationToken);
+            await cts.CancelAsync();
+            await validation;
+        });
+
+        Assert.Empty(Directory.GetFiles(directory.FullPath));
+
+        static async IAsyncEnumerable<int> BlockAfterFirstItem(TaskCompletionSource blocked, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+        {
+            yield return 1;
+            blocked.TrySetResult();
+            await Task.Delay(Timeout.Infinite, cancellationToken);
+            yield return 2;
+        }
+    }
+
+    [Fact]
+    public async Task ValidateAsync_AsyncEnumerable_ThrowsWhenTheSequenceIsNull()
+    {
+        await Assert.ThrowsAsync<ArgumentNullException>(() => Snapshot.ValidateAsync((IAsyncEnumerable<int>)null!, TestContext.Current.CancellationToken));
+    }
+
+    [Fact]
+    public async Task ValidateAsync_AsyncEnumerable_CapturesTheTestMethodBeforeEnumerating()
+    {
+        using var directory = TemporaryDirectory.Create();
+        SnapshotPathContext? capturedContext = null;
+        var settings = new SnapshotSettings()
+        {
+            AutoDetectContinuousEnvironment = false,
+            SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
+            SnapshotPathStrategy = context =>
+            {
+                capturedContext = context;
+                return directory / (context.ClassName + "_" + context.MethodName + ".verified.txt");
+            },
+        };
+
+        // The explicit context carries no names, so they come from the call stack. The sequence yields, so the call
+        // stack no longer has the test method when the snapshot is named.
+        using (new SnapshotTestContextScope(new SnapshotTestContext(TestName: "custom")))
+        {
+            await Snapshot.ValidateAsync(ToAsyncEnumerable(["sample"]), settings, TestContext.Current.CancellationToken);
+        }
+
+        Assert.NotNull(capturedContext);
+        Assert.Equal(nameof(ValidateAsync_AsyncEnumerable_CapturesTheTestMethodBeforeEnumerating), capturedContext.MethodName);
+        Assert.Equal(nameof(SnapshotTests), capturedContext.ClassName);
+    }
+
+    private static async IAsyncEnumerable<T> ToAsyncEnumerable<T>(IEnumerable<T> items, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        foreach (var item in items)
+        {
+            await Task.Yield();
+            cancellationToken.ThrowIfCancellationRequested();
+            yield return item;
+        }
+    }
+
+    private static SnapshotSettings CreateOverwriteSettings(TemporaryDirectory directory, string name = "snapshot")
     {
         return new SnapshotSettings()
         {
             AutoDetectContinuousEnvironment = false,
             SnapshotUpdateStrategy = SnapshotUpdateStrategy.OverwriteWithoutFailure,
-            SnapshotPathStrategy = context => directory / ("snapshot.verified." + context.Extension),
+            SnapshotPathStrategy = context => directory / (name + ".verified." + context.Extension),
         };
     }
 

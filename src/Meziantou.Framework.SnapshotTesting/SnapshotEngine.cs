@@ -49,6 +49,29 @@ internal static class SnapshotEngine
         Validate(type, buffer, settings, callerContext, testContext);
     }
 
+    /// <summary>
+    /// Enumerates <paramref name="values" /> asynchronously and validates the items as a list. The serializers see a
+    /// <see cref="List{T}" />, which the human-readable serializer writes as it writes the asynchronous sequence.
+    /// </summary>
+    /// <remarks>
+    /// As for streams, the caller is captured before the first await, and no file is read or written until the
+    /// sequence is fully enumerated.
+    /// </remarks>
+    public static async Task ValidateAsync<T>(SnapshotType? type, IAsyncEnumerable<T> values, SnapshotSettings settings, string? filePath, int lineNumber, string? memberName, SnapshotTestContext? testContext, CancellationToken cancellationToken)
+    {
+        testContext ??= SnapshotTestContext.Get();
+        var callerContext = SnapshotCallerContext.Create(filePath, lineNumber, memberName, testContext);
+        callerContext.CaptureCallStack();
+
+        var items = new List<T>();
+        await foreach (var item in values.WithCancellation(cancellationToken).ConfigureAwait(false))
+        {
+            items.Add(item);
+        }
+
+        Validate(type, items, settings, callerContext, testContext);
+    }
+
     private static void Validate(SnapshotType? type, object? value, SnapshotSettings settings, SnapshotCallerContext callerContext, SnapshotTestContext testContext)
     {
         type ??= SnapshotType.Default;

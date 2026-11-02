@@ -15,3 +15,5 @@ the snapshots are stored and how to keep them stable from one run to the next.
 - [Helper methods](05-HelperMethods.md): wrap [Snapshot.Validate](cref:Meziantou.Framework.SnapshotTesting.Snapshot.Validate) in your own assertion methods.
 - [Deterministic snapshots](06-DeterministicSnapshots.md): scrub GUIDs, dates, user and machine names, and control line
   endings and invisible characters.
+- [Asynchronous values](07-AsynchronousValues.md): validate a stream or an asynchronous sequence without blocking the
+  test, and cancel the read.

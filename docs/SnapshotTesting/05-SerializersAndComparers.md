@@ -18,7 +18,7 @@ the *comparers* decide whether each file matches its verified file. Both are con
 - **`byte[]`** values are stored as their bytes.
 - **`Stream`** values are stored as their bytes, read from the current position of the stream to its end. Use
   [Snapshot.ValidateAsync](cref:Meziantou.Framework.SnapshotTesting.Snapshot.ValidateAsync) to read the stream asynchronously (see
-  [Snapshot types](03-WritingTests/02-SnapshotTypes.md#validate-a-stream-asynchronously)).
+  [Asynchronous values](03-WritingTests/07-AsynchronousValues.md)).
 
 ## Configure how objects are written
 

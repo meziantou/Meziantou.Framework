@@ -20,6 +20,9 @@ Snapshot.Validate(svgText, SnapshotType.Svg);
 ```
 <!-- endref -->
 
+To read a `Stream` asynchronously, use [Snapshot.ValidateAsync](cref:Meziantou.Framework.SnapshotTesting.Snapshot.ValidateAsync), see
+[Asynchronous values](07-AsynchronousValues.md).
+
 A type also converts from a string, which is the extension of the file: `Snapshot.Validate(spec, "yaml")` stores a
 `.yaml` file. `SnapshotType.Create("cs")` does the same, and `SnapshotType.Create(type, mimeType, displayName)` also
 sets the [MimeType](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.MimeType) and [DisplayName](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.DisplayName) of the type. A leading dot is ignored, and `jpg` and `tif` are the same types as
@@ -27,32 +30,6 @@ sets the [MimeType](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.MimeTy
 
 The built-in types are [Default](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Default) (`txt`), [Svg](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Svg), [Png](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Png), [Bmp](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Bmp), [Jpeg](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Jpeg), [Tiff](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Tiff), [Webp](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Webp), [Gif](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Gif), [Ico](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Ico), [Avif](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Avif), [Heic](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Heic),
 [JpegXl](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.JpegXl) (`jxl`), [Jpeg2000](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Jpeg2000) (`jp2`), [Pdf](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.Pdf), and [None](cref:Meziantou.Framework.SnapshotTesting.SnapshotType.None), a snapshot without a format, stored as a `.bin` file.
-
-## Validate a stream asynchronously
-
-[Snapshot.Validate](cref:Meziantou.Framework.SnapshotTesting.Snapshot.Validate) reads a `Stream` synchronously, so it fails on a stream that only supports
-asynchronous reads, and blocks the test while a slow stream is read. [Snapshot.ValidateAsync](cref:Meziantou.Framework.SnapshotTesting.Snapshot.ValidateAsync) reads it with
-`CopyToAsync` instead, and accepts a `CancellationToken`:
-
-<!-- ref:../../../tests/Meziantou.Framework.SnapshotTesting.Tests/SnapshotTests.cs;region=Snapshot_ValidateAsync;format=md-fenced-code-block;dedent=true -->
-```csharp
-await using var stream = new MemoryStream("Hello, world!"u8.ToArray());
-
-// The stream is read with CopyToAsync, from its current position, and is neither rewound nor disposed
-await Snapshot.ValidateAsync(stream, TestContext.Current.CancellationToken); // __snapshots__/SnapshotTests_DocumentationExample_ValidateAsync.verified.txt
-```
-<!-- endref -->
-
-It takes the same type and settings as [Snapshot.Validate](cref:Meziantou.Framework.SnapshotTesting.Snapshot.Validate), and the snapshot gets the same name.
-
-- The stream is read from its current position to its end. It is neither rewound nor disposed: a stream you have
-  just written to must be rewound first, or the snapshot is empty.
-- The content is read into memory before anything else happens. Once read, it is validated like a `Stream` passed to
-  [Snapshot.Validate](cref:Meziantou.Framework.SnapshotTesting.Snapshot.Validate), so a serializer registered for streams still applies.
-- The task completes after the comparison and the update of the snapshot files, and fails with the same exception as
-  [Snapshot.Validate](cref:Meziantou.Framework.SnapshotTesting.Snapshot.Validate) when the snapshot differs.
-- Canceling the token while the stream is read throws an `OperationCanceledException` and leaves the snapshot files
-  untouched.
 
 ## How each format is compared
 

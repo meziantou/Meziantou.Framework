@@ -524,6 +524,78 @@ public sealed class WebPEncoderTests
     }
 
     [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void BooleanEncoderMatchesTheBitByBitEncoder()
+    {
+        // Runs of extreme probabilities make long carry chains (0xFF bytes) and shift the range by up to 7 bits at once
+        var random = new Random(6386);
+        for (var round = 0; round < 200; round++)
+        {
+            var scope = new AllocationScope(ImageResourceLimits.Default);
+            using var encoder = new Vp8BoolEncoder(scope);
+            var reference = new List<byte>();
+            uint range = 255, bottom = 0;
+            var bitCount = 24;
+            var count = random.Next(1, 5000);
+            for (var i = 0; i < count; i++)
+            {
+                var probability = (round % 3) switch
+                {
+                    0 => random.Next(1, 256),
+                    1 => random.Next(2) == 0 ? 1 : 255,
+                    _ => random.Next(250, 256),
+                };
+                var value = (round % 3) switch
+                {
+                    1 => random.Next(8) != 0,
+                    _ => random.Next(256) >= probability,
+                };
+                encoder.WriteBool(probability, value);
+
+                var split = 1 + (((range - 1) * (uint)probability) >> 8);
+                if (value)
+                {
+                    bottom += split;
+                    range -= split;
+                }
+                else
+                {
+                    range = split;
+                }
+
+                while (range < 128)
+                {
+                    range <<= 1;
+                    if ((bottom & (1u << 31)) != 0)
+                    {
+                        var index = reference.Count - 1;
+                        while (index >= 0 && reference[index] == byte.MaxValue)
+                        {
+                            reference[index--] = 0;
+                        }
+
+                        if (index >= 0)
+                        {
+                            reference[index]++;
+                        }
+                    }
+
+                    bottom <<= 1;
+                    if (--bitCount == 0)
+                    {
+                        reference.Add((byte)(bottom >> 24));
+                        bottom &= (1u << 24) - 1;
+                        bitCount = 8;
+                    }
+                }
+            }
+
+            Assert.Equal(reference.Count, encoder.Length);
+            Assert.Equal([.. reference], encoder.WrittenMemory.ToArray());
+        }
+    }
+
+    [Fact]
     public void ModeBudgetFitsEveryLossySize()
     {
         Assert.True(Vp8Encoder.TryGetModeBitBudget(Macroblocks(4096, 4096), Vp8Encoder.MaxFirstPartitionSize, out var budget, out var skipFlag));

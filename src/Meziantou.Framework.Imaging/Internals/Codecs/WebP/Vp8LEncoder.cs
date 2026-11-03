@@ -653,8 +653,7 @@ internal sealed partial class Vp8LEncoder : IDisposable
         var green = new int[tileSize];
         var red = new int[tileSize];
         var blue = new int[tileSize];
-        var movingValues = new int[tileSize];
-        var movingMultipliers = new int[tileSize];
+        var search = new ElementSearchState(tileSize);
         for (var ty = 0; ty < tilesY; ty++)
         {
             _cancellationToken.ThrowIfCancellationRequested();
@@ -678,15 +677,15 @@ internal sealed partial class Vp8LEncoder : IDisposable
                 }
 
                 // Green to red first (red only depends on it), then green to blue, then red to blue on the result
-                var greenToRed = SearchColorElement(red.AsSpan(0, count), green.AsSpan(0, count), histogram, fixedHistogram, movingValues, movingMultipliers);
-                var greenToBlue = SearchColorElement(blue.AsSpan(0, count), green.AsSpan(0, count), histogram, fixedHistogram, movingValues, movingMultipliers);
+                var greenToRed = SearchColorElement(red.AsSpan(0, count), green.AsSpan(0, count), histogram, fixedHistogram, search);
+                var greenToBlue = SearchColorElement(blue.AsSpan(0, count), green.AsSpan(0, count), histogram, fixedHistogram, search);
                 for (var i = 0; i < count; i++)
                 {
                     blue[i] = (blue[i] - Vp8LTransforms.ColorTransformDelta(greenToBlue, (sbyte)green[i])) & 0xFF;
                     red[i] = (sbyte)red[i];
                 }
 
-                var redToBlue = SearchColorElement(blue.AsSpan(0, count), red.AsSpan(0, count), histogram, fixedHistogram, movingValues, movingMultipliers);
+                var redToBlue = SearchColorElement(blue.AsSpan(0, count), red.AsSpan(0, count), histogram, fixedHistogram, search);
                 elements[(ty * tilesX) + tx] = 0xFF000000u | ((uint)(byte)redToBlue << 16) | ((uint)(byte)greenToBlue << 8) | (byte)greenToRed;
                 for (var y = y0; y < y1; y++)
                 {
@@ -709,28 +708,49 @@ internal sealed partial class Vp8LEncoder : IDisposable
     /// (the color transform of one channel by one signed channel): a coarse search, then a refinement around the best value;
     /// ties keep the value searched first (zero first).
     /// </summary>
-    private static sbyte SearchColorElement(ReadOnlySpan<int> values, ReadOnlySpan<int> multipliers, int[] histogram, int[] fixedHistogram, int[] movingValues, int[] movingMultipliers)
+    private static sbyte SearchColorElement(ReadOnlySpan<int> values, ReadOnlySpan<int> multipliers, int[] histogram, int[] fixedHistogram, ElementSearchState state)
     {
         // The values whose multiplier is zero fall in the same bin whatever t: they are counted once, and every candidate
-        // starts from their histogram (the counts, hence the costs, are the ones of counting every value)
+        // starts from their histogram. The others are counted once per distinct (value, multiplier) pair, with its number of
+        // occurrences (the counts, hence the costs, are the ones of counting every value)
         Array.Clear(fixedHistogram);
         multipliers = multipliers[..values.Length];
+        var movingValues = state.Values;
+        var movingMultipliers = state.Multipliers;
+        var movingCounts = state.Counts;
+        var slots = state.Slots;
         var moving = 0;
         for (var i = 0; i < values.Length; i++)
         {
-            if (multipliers[i] == 0)
+            var value = values[i] & 0xFF;
+            var multiplier = multipliers[i];
+            if (multiplier == 0)
             {
-                fixedHistogram[values[i] & 0xFF]++;
+                fixedHistogram[value]++;
+                continue;
+            }
+
+            var key = value | ((multiplier & 0xFF) << 8);
+            var slot = slots[key];
+            if (slot == 0)
+            {
+                movingValues[moving] = value;
+                movingMultipliers[moving] = multiplier;
+                movingCounts[moving] = 1;
+                slots[key] = (ushort)++moving;
             }
             else
             {
-                movingValues[moving] = values[i];
-                movingMultipliers[moving] = multipliers[i];
-                moving++;
+                movingCounts[slot - 1]++;
             }
         }
 
-        var search = new ElementSearch(movingValues.AsSpan(0, moving), movingMultipliers.AsSpan(0, moving), fixedHistogram, histogram, values.Length);
+        for (var i = 0; i < moving; i++)
+        {
+            slots[movingValues[i] | ((movingMultipliers[i] & 0xFF) << 8)] = 0;
+        }
+
+        var search = new ElementSearch(movingValues.AsSpan(0, moving), movingMultipliers.AsSpan(0, moving), movingCounts.AsSpan(0, moving), fixedHistogram, histogram, values.Length);
         var best = 0;
         var bestCost = search.Cost(0);
         for (var t = -96; t <= 96; t += 8)
@@ -763,24 +783,38 @@ internal sealed partial class Vp8LEncoder : IDisposable
         return (sbyte)best;
     }
 
+    /// <summary>The distinct (value, multiplier) pairs of a channel of a tile, with their number of occurrences.</summary>
+    private sealed class ElementSearchState(int tileSize)
+    {
+        public int[] Values { get; } = new int[tileSize];
+
+        public int[] Multipliers { get; } = new int[tileSize];
+
+        public int[] Counts { get; } = new int[tileSize];
+
+        /// <summary>Gets the index plus one of each pair (the value in the low byte, the multiplier in the high byte), zero when absent; left zero.</summary>
+        public ushort[] Slots { get; } = new ushort[1 << 16];
+    }
+
     /// <summary>The cost of the values of a channel transformed by <c>t</c>: the zero-multiplier histogram plus the other values.</summary>
     /// <remarks>
-    /// The values are counted in <see cref="Lanes"/> interleaved histograms (consecutive values often fall in the same bin:
-    /// one histogram would make every increment wait for the previous one), added bin by bin for the entropy.
+    /// The distinct values are counted in <see cref="Lanes"/> interleaved histograms (consecutive values often fall in the same
+    /// bin: one histogram would make every increment wait for the previous one), added bin by bin for the entropy.
     /// </remarks>
-    private readonly ref struct ElementSearch(ReadOnlySpan<int> values, ReadOnlySpan<int> multipliers, int[] fixedHistogram, int[] histograms, int count)
+    private readonly ref struct ElementSearch(ReadOnlySpan<int> values, ReadOnlySpan<int> multipliers, ReadOnlySpan<int> counts, int[] fixedHistogram, int[] histograms, int count)
     {
         public const int Lanes = 4;
 
         private readonly ReadOnlySpan<int> _values = values;
         private readonly ReadOnlySpan<int> _multipliers = multipliers;
+        private readonly ReadOnlySpan<int> _counts = counts;
 
         public double Cost(int t)
         {
-            fixedHistogram.CopyTo(histograms, 0);
-            histograms.AsSpan(256).Clear();
+            // The histograms are zero on entry, and left zero
             var samples = _values;
             var factors = _multipliers[..samples.Length];
+            var weights = _counts[..samples.Length];
             var h1 = histograms.AsSpan(256, 256);
             var h2 = histograms.AsSpan(512, 256);
             var h3 = histograms.AsSpan(768, 256);
@@ -788,22 +822,27 @@ internal sealed partial class Vp8LEncoder : IDisposable
             var i = 0;
             for (; i <= samples.Length - Lanes; i += Lanes)
             {
-                h0[(samples[i] - ((t * factors[i]) >> 5)) & 0xFF]++;
-                h1[(samples[i + 1] - ((t * factors[i + 1]) >> 5)) & 0xFF]++;
-                h2[(samples[i + 2] - ((t * factors[i + 2]) >> 5)) & 0xFF]++;
-                h3[(samples[i + 3] - ((t * factors[i + 3]) >> 5)) & 0xFF]++;
+                h0[(samples[i] - ((t * factors[i]) >> 5)) & 0xFF] += weights[i];
+                h1[(samples[i + 1] - ((t * factors[i + 1]) >> 5)) & 0xFF] += weights[i + 1];
+                h2[(samples[i + 2] - ((t * factors[i + 2]) >> 5)) & 0xFF] += weights[i + 2];
+                h3[(samples[i + 3] - ((t * factors[i + 3]) >> 5)) & 0xFF] += weights[i + 3];
             }
 
             for (; i < samples.Length; i++)
             {
-                h0[(samples[i] - ((t * factors[i]) >> 5)) & 0xFF]++;
+                h0[(samples[i] - ((t * factors[i]) >> 5)) & 0xFF] += weights[i];
             }
 
             // The entropy of the summed histogram, bin by bin in order (as Entropy)
             var cost = count * Log2Count(count);
+            var fixedCounts = fixedHistogram.AsSpan(0, 256);
             for (var bin = 0; bin < 256; bin++)
             {
-                var value = h0[bin] + h1[bin] + h2[bin] + h3[bin];
+                var value = fixedCounts[bin] + h0[bin] + h1[bin] + h2[bin] + h3[bin];
+                h0[bin] = 0;
+                h1[bin] = 0;
+                h2[bin] = 0;
+                h3[bin] = 0;
                 if (value > 1)
                 {
                     cost -= value * Log2Count(value);
@@ -886,7 +925,15 @@ internal sealed partial class Vp8LEncoder : IDisposable
 
             var head = chains[..(1 << hashBits)];
             var previous = chains[(1 << hashBits)..];
-            tokenCount = new Matcher(this, pixels, width, hashBits, head, previous).Parse(tokens);
+
+            // The second parse searches the chains at almost every pixel: they are linked by triples of pixels first
+            var linkTriples = isMainImage && CostModelRounds > 0;
+            if (linkTriples)
+            {
+                LinkTriples(pixels, hashBits, head, previous, Math.Max(MatcherChainDepth, CostModelChainDepth));
+            }
+
+            tokenCount = new Matcher(this, pixels, width, hashBits, head, previous, linkTriples).Parse(tokens);
             var collector = new StatisticsSink(statistics);
             Replay(pixels, tokens, tokenCount, ref collector);
             chosen = statistics[0];
@@ -1468,6 +1515,155 @@ internal sealed partial class Vp8LEncoder : IDisposable
         }
     }
 
+    /// <summary>Gets the number of hash chain entries the first parse searches at a pixel.</summary>
+    private int MatcherChainDepth => _effort switch
+    {
+        0 => 4,
+        <= 2 => 8,
+        <= 4 => 16,
+        <= 6 => 32,
+        <= 8 => 128,
+        _ => 512,
+    };
+
+    // A triple link (LinkTriples): the distance to the previous pixel that starts the same three pixels in the low 20 bits,
+    // and the number of hash chain entries it is from the pixel in the high bits; zero when there is none in the window
+    private const int TripleLinkDistanceBits = 20;
+    private const uint TripleLinkDistanceMask = (1u << TripleLinkDistanceBits) - 1;
+
+    /// <summary>
+    /// Inserts every pixel in the hash chains, then replaces the chain of each pixel by its triple link: the closest previous
+    /// pixel of its chain that starts the same three pixels, within the first <paramref name="depth"/> entries of the chain
+    /// and the distance range, or zero.
+    /// </summary>
+    /// <remarks>
+    /// A reference of 3 pixels or more only comes from such a pixel, and the chain of a pixel lists the pixels of its pair of
+    /// pixels, which mostly repeat their third one in a photograph, an entry in 20 or more. Following the triple links, and
+    /// adding up their entry counts against the depth, finds the matches of 3 pixels or more of a chain search, in the same
+    /// order, in a few steps. The links are computed from the last pixel to the first, so that the chain of the pixel being
+    /// linked (its previous pixels) is still intact.
+    /// </remarks>
+    internal static void LinkTriples(ReadOnlySpan<uint> pixels, int hashBits, Span<uint> head, Span<uint> previous, int depth)
+    {
+        var count = pixels.Length;
+        head.Fill(uint.MaxValue);
+        for (var i = 0; i < count; i++)
+        {
+            if (i + 1 >= count)
+            {
+                previous[i] = uint.MaxValue;
+                continue;
+            }
+
+            var hash = (int)(((pixels[i] * 0x9E3779B1u) ^ (pixels[i + 1] * 0x85EBCA77u)) >> (32 - hashBits));
+            previous[i] = head[hash];
+            head[hash] = (uint)i;
+        }
+
+        var position = count - 1;
+        for (; position >= 0 && position + 2 >= count; position--)
+        {
+            previous[position] = 0;
+        }
+
+        // Eight pixels at a time, their walks interleaved so that their memory accesses overlap: a walk only reads the chains
+        // of the pixels before its own, which are replaced after the eight links are found
+        for (; position >= 7; position -= 8)
+        {
+            var walk0 = new TripleWalk(pixels, previous, position);
+            var walk1 = new TripleWalk(pixels, previous, position - 1);
+            var walk2 = new TripleWalk(pixels, previous, position - 2);
+            var walk3 = new TripleWalk(pixels, previous, position - 3);
+            var walk4 = new TripleWalk(pixels, previous, position - 4);
+            var walk5 = new TripleWalk(pixels, previous, position - 5);
+            var walk6 = new TripleWalk(pixels, previous, position - 6);
+            var walk7 = new TripleWalk(pixels, previous, position - 7);
+            for (var entries = 1; entries <= depth; entries++)
+            {
+                var active = walk0.Step(pixels, previous, entries);
+                active |= walk1.Step(pixels, previous, entries);
+                active |= walk2.Step(pixels, previous, entries);
+                active |= walk3.Step(pixels, previous, entries);
+                active |= walk4.Step(pixels, previous, entries);
+                active |= walk5.Step(pixels, previous, entries);
+                active |= walk6.Step(pixels, previous, entries);
+                active |= walk7.Step(pixels, previous, entries);
+                if (!active)
+                    break;
+            }
+
+            previous[position] = walk0.Link;
+            previous[position - 1] = walk1.Link;
+            previous[position - 2] = walk2.Link;
+            previous[position - 3] = walk3.Link;
+            previous[position - 4] = walk4.Link;
+            previous[position - 5] = walk5.Link;
+            previous[position - 6] = walk6.Link;
+            previous[position - 7] = walk7.Link;
+        }
+
+        for (; position >= 0; position--)
+        {
+            var walk = new TripleWalk(pixels, previous, position);
+            for (var entries = 1; entries <= depth && walk.Step(pixels, previous, entries); entries++)
+            {
+            }
+
+            previous[position] = walk.Link;
+        }
+    }
+
+    /// <summary>The search of the triple link of a pixel along its hash chain (<see cref="LinkTriples"/>), one entry at a time.</summary>
+    [StructLayout(LayoutKind.Auto)]
+    private struct TripleWalk
+    {
+        private readonly int _position;
+        private readonly uint _first;
+        private readonly uint _second;
+        private readonly uint _third;
+        private uint _candidate;
+
+        public TripleWalk(ReadOnlySpan<uint> pixels, ReadOnlySpan<uint> previous, int position)
+        {
+            _position = position;
+            _first = pixels[position];
+            _second = pixels[position + 1];
+            _third = pixels[position + 2];
+            _candidate = previous[position];
+        }
+
+        /// <summary>Gets the triple link found, or zero.</summary>
+        public uint Link { get; private set; }
+
+        /// <summary>Compares the entry <paramref name="entries"/> of the chain and moves to the next one.</summary>
+        /// <returns><see langword="false"/> when the walk is over.</returns>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool Step(ReadOnlySpan<uint> pixels, ReadOnlySpan<uint> previous, int entries)
+        {
+            var candidate = _candidate;
+            if (candidate == uint.MaxValue)
+                return false;
+
+            var distance = _position - (int)candidate;
+            if (distance > MaxDistance)
+            {
+                _candidate = uint.MaxValue;
+                return false;
+            }
+
+            if (pixels[(int)candidate + 2] == _third && pixels[(int)candidate] == _first && pixels[(int)candidate + 1] == _second)
+            {
+                Link = ((uint)entries << TripleLinkDistanceBits) | (uint)distance;
+                _candidate = uint.MaxValue;
+                return false;
+            }
+
+            candidate = previous[(int)candidate];
+            _candidate = candidate;
+            return candidate != uint.MaxValue;
+        }
+    }
+
     /// <summary>The LZ77 parser: hash chains over pairs of pixels, greedy with one step of lazy evaluation.</summary>
     private readonly ref struct Matcher
     {
@@ -1477,8 +1673,10 @@ internal sealed partial class Vp8LEncoder : IDisposable
         private readonly int _hashBits;
         private readonly Span<uint> _head;
         private readonly Span<uint> _previous;
+        private readonly bool _linkedTriples;
 
-        public Matcher(Vp8LEncoder encoder, ReadOnlySpan<uint> pixels, int width, int hashBits, Span<uint> head, Span<uint> previous)
+        /// <summary>Creates a parser; with <paramref name="linkedTriples"/>, <paramref name="previous"/> holds the triple links of every pixel (<see cref="LinkTriples"/>) instead of the hash chains the parser builds.</summary>
+        public Matcher(Vp8LEncoder encoder, ReadOnlySpan<uint> pixels, int width, int hashBits, Span<uint> head, Span<uint> previous, bool linkedTriples)
         {
             _encoder = encoder;
             _pixels = pixels;
@@ -1486,6 +1684,7 @@ internal sealed partial class Vp8LEncoder : IDisposable
             _hashBits = hashBits;
             _head = head;
             _previous = previous;
+            _linkedTriples = linkedTriples;
         }
 
         /// <summary>Parses the pixels into <paramref name="tokens"/> (backward references and runs of literals, see <see cref="GetTokenCapacity"/>).</summary>
@@ -1495,17 +1694,12 @@ internal sealed partial class Vp8LEncoder : IDisposable
             var pixels = _pixels;
             var count = pixels.Length;
             var effort = _encoder._effort;
-            var chainDepth = effort switch
-            {
-                0 => 4,
-                <= 2 => 8,
-                <= 4 => 16,
-                <= 6 => 32,
-                <= 8 => 128,
-                _ => 512,
-            };
+            var chainDepth = _encoder.MatcherChainDepth;
             var lazy = effort >= 3;
-            _head.Fill(uint.MaxValue);
+            if (!_linkedTriples)
+            {
+                _head.Fill(uint.MaxValue);
+            }
             var neighborCodes = NeighborCodes;
             var position = 0;
             var tokenCount = 0;
@@ -1586,6 +1780,9 @@ internal sealed partial class Vp8LEncoder : IDisposable
 
         private void Insert(int position)
         {
+            if (_linkedTriples)
+                return;
+
             if (position + 1 >= _pixels.Length)
             {
                 _previous[position] = uint.MaxValue;
@@ -1615,6 +1812,26 @@ internal sealed partial class Vp8LEncoder : IDisposable
             }
 
             var previous = _previous;
+            if (_linkedTriples)
+            {
+                // Only the matches of 3 pixels or more count, and they are those of the triple links (in the same order)
+                var link = previous[position];
+                var entries = 0;
+                var linkDistance = 0;
+                while (link != 0 && bestLength < maxLength)
+                {
+                    entries += (int)(link >> TripleLinkDistanceBits);
+                    linkDistance += (int)(link & TripleLinkDistanceMask);
+                    if (entries > chainDepth || linkDistance > MaxDistance)
+                        break;
+
+                    Try(pixels, position, linkDistance, maxLength, ref bestLength, ref bestDistance);
+                    link = previous[position - linkDistance];
+                }
+
+                return (bestLength, bestDistance);
+            }
+
             var candidate = _head[Hash(position)];
             while (candidate != uint.MaxValue && chainDepth-- > 0 && bestLength < maxLength)
             {

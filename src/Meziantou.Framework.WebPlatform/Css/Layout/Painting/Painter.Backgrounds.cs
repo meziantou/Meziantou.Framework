@@ -224,8 +224,60 @@ internal sealed partial class Painter
         PhysicalRect? paintingBox = fragment.Box.PseudoElement == Cascade.StyleEngine.PageContextPseudoElement && fragment.Parent is BoxFragment sheet
             ? new PhysicalRect(offset - fragment.Offset, sheet.Size)
             : null;
-        PaintBackground(fragment, style, GetSnappedBorderBox(fragment, offset), fragment.Border, fragment.Padding, GetDecorationBox(fragment).Translate(offset), GetBackgroundBleedInset(fragment), paintingBox);
+        PaintBackground(fragment, style, GetSnappedBorderBox(fragment, offset), fragment.Border, fragment.Padding, GetDecorationBox(fragment).Translate(offset), GetCollapsedTableCellInset(fragment) ?? GetBackgroundBleedInset(fragment), paintingBox);
     }
+
+    /// <summary>
+    /// Returns how much the background of a cell of a table in the collapsing border model is moved inside of its border box at the
+    /// inline-start and inline-end edges of the table, or null when the box is not such a cell. The border box of a cell ends at
+    /// the middle of the grid lines, and the outer half of the widest collapsed border of the edge of the table is the border of
+    /// the table: the border box of a cell of the first or of the last column whose collapsed border is narrower than the widest
+    /// one covers the inner half of the wider border of another cell of the column. As in the browsers (WebKit 308969@main,
+    /// WPT css/css-tables/collapsed-border-background-inset.html), its background is inset by the difference, so it does not
+    /// extend into the border space of the other cells; the edges between the columns are not inset (the backgrounds of a
+    /// row stay continuous).
+    /// </summary>
+    private Sides<double>? GetCollapsedTableCellInset(BoxFragment fragment)
+    {
+        var box = fragment.Box;
+        if (box.Display.Internal != DisplayInternal.TableCell)
+            return null;
+
+        var grid = box.Parent;
+        while (grid is not null && grid.Kind != ContainerBoxKind.TableGrid)
+        {
+            grid = grid.Parent;
+        }
+
+        if (grid?.LayoutState is not TableState { CollapsedBorders: { } borders, Model: var model })
+            return null;
+
+        _collapsedTableCells ??= new(ReferenceEqualityComparer.Instance);
+        if (!_collapsedTableCells.TryGetValue(model, out var cells))
+        {
+            cells = new Dictionary<ContainerBox, TableCell>(model.Cells.Count, ReferenceEqualityComparer.Instance);
+            foreach (var modelCell in model.Cells)
+            {
+                cells[modelCell.Box] = modelCell;
+            }
+
+            _collapsedTableCells[model] = cells;
+        }
+
+        if (!cells.TryGetValue(box, out var cell))
+            return null;
+
+        var tableBorder = borders.TableBorder;
+        var inlineStart = cell.Column == 0 ? Math.Max(0, tableBorder.InlineStart - cell.Border.InlineStart) : 0;
+        var inlineEnd = cell.EndColumn >= model.Columns.Count - 1 ? Math.Max(0, tableBorder.InlineEnd - cell.Border.InlineEnd) : 0;
+        if (inlineStart == 0 && inlineEnd == 0)
+            return null;
+
+        return WritingDirection.FromStyle(grid.Style.Layout).ToPhysical(new LogicalSides<double>(0, inlineEnd, 0, inlineStart));
+    }
+
+    /// <summary>The cells of the tables in the collapsing border model by their boxes (see <see cref="GetCollapsedTableCellInset"/>).</summary>
+    private Dictionary<TableGridModel, Dictionary<ContainerBox, TableCell>>? _collapsedTableCells;
 
     /// <summary>
     /// Returns how much the background of a box painted in its border box is moved inside of its borders, to avoid the bleeding

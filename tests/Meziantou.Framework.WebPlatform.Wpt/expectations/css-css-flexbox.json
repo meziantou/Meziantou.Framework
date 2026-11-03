@@ -3531,10 +3531,7 @@
     "reftest": "PASS"
   },
   "css/css-flexbox/intrinsic-size/col-wrap-baseline-001.html": {
-    "total": 4,
-    "failures": {
-      ".flex 4": "FAIL"
-    }
+    "total": 4
   },
   "css/css-flexbox/intrinsic-size/col-wrap-calc-size-001.html": {
     "total": 2

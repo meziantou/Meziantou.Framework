@@ -1176,7 +1176,7 @@ internal sealed partial class InlineLayoutAlgorithm
         // The marker is next to the line box: a line box shortened by a float on its start side moves it beside the float (as in
         // the browsers, WPT css/CSS2/lists/list-style-applies-to-017.html for a list item without content)
         start += Math.Max(0, lineOffset.Inline - content.Offset.Inline);
-        var inlineOffset = start - margin.InlineEnd - size.Inline;
+        var inlineOffset = start - margin.InlineEnd - marker.Gap - size.Inline;
         builder.AddChild(fragment, new LogicalOffset(inlineOffset, lineOffset.Block + lineBaseline - baseline));
         marker.IsPlaced = true;
     }

@@ -25,6 +25,16 @@ internal sealed class PendingOutsideMarker(ContainerBox marker, ContainerBox lis
     public bool IsPlaced { get; set; }
 
     /// <summary>
+    /// The space between the marker and the content of the list item, in addition to the inline-end margin of the marker: as in
+    /// the browsers (Blink's <c>kCMarkerPaddingPx</c>, Gecko, WebKit), an image marker (<c>list-style-image</c>, the
+    /// <c>content</c> of the marker being <c>normal</c>) is 7px away from it (WPT css/css-lists/outside-marker-taller-than-content.html).
+    /// The text markers end with their suffix (a space for the bullets).
+    /// </summary>
+    public double Gap => Marker.FirstChild is ContainerBox { Kind: ContainerBoxKind.Replaced, GeneratedImage: not null } && Marker.Style.GetComputedValue("content") is "normal" or "" ? ImageMarkerGap : 0;
+
+    private const double ImageMarkerGap = 7;
+
+    /// <summary>
     /// Places the marker in a descendant block container of the list item that has no line box but has a first baseline (e.g.
     /// its first child is a flex container): the marker is next to the content box of the block container, its baseline on
     /// the first baseline, like a marker placed by a line box of the block container.
@@ -37,7 +47,7 @@ internal sealed class PendingOutsideMarker(ContainerBox marker, ContainerBox lis
         var margin = writingDirection.ToLogical(fragment.Margin);
         var size = writingDirection.ToLogical(fragment.Size);
         var baseline = fragment.FirstBaseline ?? size.Block;
-        builder.AddChild(fragment, new LogicalOffset(content.Offset.Inline - margin.InlineEnd - size.Inline, content.Offset.Block + firstBaseline - baseline));
+        builder.AddChild(fragment, new LogicalOffset(content.Offset.Inline - margin.InlineEnd - Gap - size.Inline, content.Offset.Block + firstBaseline - baseline));
         IsPlaced = true;
     }
 
@@ -72,7 +82,7 @@ internal sealed class PendingOutsideMarker(ContainerBox marker, ContainerBox lis
         }
 
         // Outside of the border box of the list item (see InlineLayoutAlgorithm.PlaceOutsideMarker)
-        builder.AddChild(fragment, new LogicalOffset(floatIntrusion - margin.InlineEnd - size.Inline, content.Offset.Block + blockOffset));
+        builder.AddChild(fragment, new LogicalOffset(floatIntrusion - margin.InlineEnd - Gap - size.Inline, content.Offset.Block + blockOffset));
         IsPlaced = true;
         return Math.Max(0, blockOffset + size.Block + margin.BlockEnd);
     }

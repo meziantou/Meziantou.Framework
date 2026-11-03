@@ -33,11 +33,38 @@ internal static partial class Av1InverseTransform
     /// <param name="bitDepth">The bit depth of the samples.</param>
     public static void Transform(ReadOnlySpan<int> dequant, Span<int> residual, int txSz, int txType, bool lossless, int bitDepth)
     {
-        // The 32-bit products of the vector rows need coefficients of the dequantization range (section 7.12.3)
+        var tw = Math.Min(32, (int)Av1Tables.TxWidth[txSz]);
+        var th = Math.Min(32, (int)Av1Tables.TxHeight[txSz]);
+        var rows = 0;
+        var columns = 0;
+        for (var i = 0; i < th; i++)
+        {
+            var last = dequant.Slice(i * tw, tw).LastIndexOfAnyExcept(0);
+            if (last >= 0)
+            {
+                rows = i + 1;
+                columns = Math.Max(columns, last + 1);
+            }
+        }
+
         var limit = 1 << (7 + bitDepth);
+        Transform(dequant, residual, txSz, txType, lossless, bitDepth, rows, columns, !dequant.ContainsAnyExceptInRange(-limit, limit - 1));
+    }
+
+    /// <summary>
+    /// <see cref="Transform(ReadOnlySpan{int}, Span{int}, int, int, bool, int)"/> for coefficients of the dequantization range
+    /// (-2^(7 + <paramref name="bitDepth"/>) to 2^(7 + <paramref name="bitDepth"/>) - 1, section 7.12.3) that are zero outside
+    /// their first <paramref name="rows"/> rows and first <paramref name="columns"/> columns.
+    /// </summary>
+    public static void Transform(ReadOnlySpan<int> dequant, Span<int> residual, int txSz, int txType, bool lossless, int bitDepth, int rows, int columns)
+        => Transform(dequant, residual, txSz, txType, lossless, bitDepth, rows, columns, inRange: true);
+
+    // inRange: whether the coefficients are in the dequantization range, which the 32-bit products of the vector rows need
+    private static void Transform(ReadOnlySpan<int> dequant, Span<int> residual, int txSz, int txType, bool lossless, int bitDepth, int rows, int columns, bool inRange)
+    {
         if (Av1Simd.IsSupported && !lossless)
         {
-            TransformVector(dequant, residual, txSz, txType, bitDepth, inRange: !dequant.ContainsAnyExceptInRange(-limit, limit - 1));
+            TransformVector(dequant, residual, txSz, txType, bitDepth, rows, columns, inRange);
         }
         else
         {
@@ -45,7 +72,7 @@ internal static partial class Av1InverseTransform
         }
     }
 
-    /// <summary>The scalar reference of <see cref="Transform"/>.</summary>
+    /// <summary>The scalar reference of <see cref="Transform(ReadOnlySpan{int}, Span{int}, int, int, bool, int)"/>.</summary>
     internal static void TransformScalar(ReadOnlySpan<int> dequant, Span<int> residual, int txSz, int txType, bool lossless, int bitDepth)
     {
         var log2W = Av1Tables.TxWidthLog2[txSz];

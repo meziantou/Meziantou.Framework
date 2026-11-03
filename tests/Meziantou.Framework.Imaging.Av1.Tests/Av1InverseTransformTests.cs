@@ -373,20 +373,31 @@ public sealed class Av1InverseTransformTests
                 {
                     var max = (1 << (7 + bitDepth)) - 1;
                     var min = -(1 << (7 + bitDepth));
-                    for (var pattern = 0; pattern < 8; pattern++)
+                    for (var pattern = 0; pattern < 13; pattern++)
                     {
+                        // The last patterns only have coefficients in the first rows or columns: the rows and the columns of
+                        // the DCT whose inputs 4 and above are zero take a kernel of their own
                         var dequant = new int[tw * th];
                         for (var i = 0; i < dequant.Length; i++)
                         {
+                            var row = i / tw;
+                            var column = i % tw;
+                            var extreme = random.Next(2) is 0 ? max : min;
                             dequant[i] = pattern switch
                             {
                                 0 => max,
                                 1 => min,
-                                2 => ((i / tw) + (i % tw)) % 2 is 0 ? max : min,
-                                3 => (i / tw) % 2 is 0 ? max : min,
-                                4 => (i % tw) % 2 is 0 ? max : min,
-                                5 => random.Next(2) is 0 ? max : min,
-                                _ => random.Next(min, max + 1),
+                                2 => (row + column) % 2 is 0 ? max : min,
+                                3 => row % 2 is 0 ? max : min,
+                                4 => column % 2 is 0 ? max : min,
+                                5 => extreme,
+                                6 => random.Next(min, max + 1),
+                                7 => row < 4 && column < 4 ? extreme : 0,
+                                8 => row < 2 && column < 3 ? random.Next(min, max + 1) : 0,
+                                9 => row < 4 ? extreme : 0,
+                                10 => column < 4 ? extreme : 0,
+                                11 => row < 8 && column < 6 ? extreme : 0,
+                                _ => row < 4 && column < 4 && random.Next(3) is 0 ? random.Next(min, max + 1) : 0,
                             };
                         }
 
@@ -395,6 +406,11 @@ public sealed class Av1InverseTransformTests
                         Av1InverseTransform.TransformScalar(dequant, expected, txSz, txType, lossless: false, bitDepth);
                         Av1InverseTransform.Transform(dequant, actual, txSz, txType, lossless: false, bitDepth);
                         Assert.True(expected.AsSpan().SequenceEqual(actual), $"Transform size {txSz}, type {txType}, {bitDepth}-bit, pattern {pattern}.");
+
+                        // Bounds of the coefficients larger than their extent, as the reconstruction gives them
+                        Array.Fill(actual, int.MinValue);
+                        Av1InverseTransform.Transform(dequant, actual, txSz, txType, lossless: false, bitDepth, rows: th, columns: tw);
+                        Assert.True(expected.AsSpan().SequenceEqual(actual), $"Transform size {txSz}, type {txType}, {bitDepth}-bit, pattern {pattern}, whole bounds.");
                     }
                 }
             }

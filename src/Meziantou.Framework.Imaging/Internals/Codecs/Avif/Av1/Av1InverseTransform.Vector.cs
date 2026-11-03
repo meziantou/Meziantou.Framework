@@ -23,19 +23,19 @@ internal static partial class Av1InverseTransform
     // of NarrowLanes128 and NarrowLanes256 when no product of the kernels can exceed 32 bits (IsNarrowExact, for inputs of
     // the dequantization range: inRange for the rows), the 64-bit products of Lanes128 and Lanes256 otherwise. The inputs of
     // the columns are clamped to the column range, which is 16 bits for a bit depth of at most 10
-    private static void TransformVector(ReadOnlySpan<int> dequant, Span<int> residual, int txSz, int txType, int bitDepth, bool inRange)
+    private static void TransformVector(ReadOnlySpan<int> dequant, Span<int> residual, int txSz, int txType, int bitDepth, int rows, int columns, bool inRange)
     {
         if (bitDepth > 10)
         {
-            TransformVector<Lanes128, Lanes128, Lanes256>(dequant, residual, txSz, txType, bitDepth);
+            TransformVector<Lanes128, Lanes128, Lanes256>(dequant, residual, txSz, txType, bitDepth, rows, columns);
         }
         else if (inRange && IsNarrowExact(bitDepth + 8, GetRowKind(txType), Av1Tables.TxWidthLog2[txSz]))
         {
-            TransformVector<NarrowLanes128, NarrowLanes128, NarrowLanes256>(dequant, residual, txSz, txType, bitDepth);
+            TransformVector<NarrowLanes128, NarrowLanes128, NarrowLanes256>(dequant, residual, txSz, txType, bitDepth, rows, columns);
         }
         else
         {
-            TransformVector<Lanes128, NarrowLanes128, NarrowLanes256>(dequant, residual, txSz, txType, bitDepth);
+            TransformVector<Lanes128, NarrowLanes128, NarrowLanes256>(dequant, residual, txSz, txType, bitDepth, rows, columns);
         }
     }
 
@@ -51,9 +51,11 @@ internal static partial class Av1InverseTransform
     internal static bool IsNarrowExact(int r, Kind kind, int n) => r <= 16 || (r <= 18 && !(kind is Kind.Adst && n is 2));
 
     // The 2D transform of TransformScalar: the rows by groups of 4 (transposed into the lanes of the vectors), then the
-    // columns by groups of 4 (whose samples are the lanes of consecutive rows), or by groups of 8 with AVX2
+    // columns by groups of 4 (whose samples are the lanes of consecutive rows), or by groups of 8 with AVX2. Only the first
+    // rows rows and columns columns of coefficients may not be zero: the other rows transform to zeros, and the DCT of rows
+    // or columns whose last inputs are zero is InverseDctSparse, which does not read them
     [SkipLocalsInit]
-    private static void TransformVector<TRows, TColumns, TColumns256>(ReadOnlySpan<int> dequant, Span<int> residual, int txSz, int txType, int bitDepth)
+    private static void TransformVector<TRows, TColumns, TColumns256>(ReadOnlySpan<int> dequant, Span<int> residual, int txSz, int txType, int bitDepth, int rows, int columns)
         where TRows : struct, ILanes<Vector128<int>>
         where TColumns : struct, ILanes<Vector128<int>>
         where TColumns256 : struct, ILanes<Vector256<int>>
@@ -74,17 +76,19 @@ internal static partial class Av1InverseTransform
         var colKind = GetColumnKind(txType);
         dequant = dequant[..(tw * th)];
         residual = residual[..(w * h)];
+        var sparseRowInputs = GetSparseInputs(rowKind, log2W, columns);
 
         // Every element is written before it is read: the kernels read the first 2^n elements, which are loaded first
         Span<Vector128<int>> t = unsafe(stackalloc Vector128<int>[64]);
         var lastRow = -1;
-        for (var i = 0; i < h; i += 4)
+        var rowGroups = Math.Min(h, (rows + 3) & ~3);
+        for (var i = 0; i < rowGroups; i += 4)
         {
-            var rows = residual.Slice(i * w, 4 * w);
+            var rowSamples = residual.Slice(i * w, 4 * w);
             var any = false;
-            for (var r = 0; r < 4 && i + r < th; r++)
+            for (var r = 0; r < 4 && i + r < rows; r++)
             {
-                if (dequant.Slice((i + r) * tw, tw).ContainsAnyExcept(0))
+                if (dequant.Slice((i + r) * tw, columns).ContainsAnyExcept(0))
                 {
                     any = true;
                     lastRow = i + r;
@@ -94,11 +98,12 @@ internal static partial class Av1InverseTransform
             if (!any)
             {
                 // A row of zero coefficients transforms to zeros
-                rows.Clear();
+                rowSamples.Clear();
                 continue;
             }
 
-            for (var k = 0; k < tw; k += 4)
+            var loaded = sparseRowInputs is 0 ? tw : sparseRowInputs;
+            for (var k = 0; k < loaded; k += 4)
             {
                 Av1Simd.Transpose(
                     Vector128.Create(dequant.Slice((i * tw) + k, 4)),
@@ -111,16 +116,27 @@ internal static partial class Av1InverseTransform
                     out t[k + 3]);
             }
 
-            t[tw..w].Clear();
+            if (sparseRowInputs is 0)
+                t[tw..w].Clear();
+
             if (isRectangular2To1)
             {
-                for (var k = 0; k < w; k++)
+                // The zeros after the coefficients stay zeros
+                for (var k = 0; k < loaded; k++)
                 {
                     t[k] = TRows.MultiplyRound12(t[k], 2896);
                 }
             }
 
-            Apply<TRows, Vector128<int>>(rowKind, t[..w], log2W, rowClampRange);
+            if (sparseRowInputs is not 0)
+            {
+                InverseDctSparse<TRows, Vector128<int>>(t, log2W, rowClampRange, sparseRowInputs);
+            }
+            else
+            {
+                Apply<TRows, Vector128<int>>(rowKind, t[..w], log2W, rowClampRange);
+            }
+
             for (var k = 0; k < w; k += 4)
             {
                 Av1Simd.Transpose(
@@ -132,15 +148,18 @@ internal static partial class Av1InverseTransform
                     out var row1,
                     out var row2,
                     out var row3);
-                row0.CopyTo(rows[k..]);
-                row1.CopyTo(rows[(w + k)..]);
-                row2.CopyTo(rows[((2 * w) + k)..]);
-                row3.CopyTo(rows[((3 * w) + k)..]);
+                row0.CopyTo(rowSamples[k..]);
+                row1.CopyTo(rowSamples[(w + k)..]);
+                row2.CopyTo(rowSamples[((2 * w) + k)..]);
+                row3.CopyTo(rowSamples[((3 * w) + k)..]);
             }
         }
 
         if (lastRow < 0)
+        {
+            residual[(rowGroups * w)..].Clear();
             return;
+        }
 
         if (lastRow is 0 && !residual[..w].ContainsAnyExcept(residual[0]))
         {
@@ -148,21 +167,35 @@ internal static partial class Av1InverseTransform
             return;
         }
 
+        // The rows after the last group of coefficients are zeros, which the sparse columns do not read
+        var sparseColumnInputs = GetSparseInputs(colKind, log2H, lastRow + 1);
+        if (sparseColumnInputs is 0)
+            residual[(rowGroups * w)..].Clear();
+
         if (Avx2.IsSupported && w >= 8)
         {
-            TransformColumns256<TColumns256>(residual, w, h, log2H, colKind, colClampRange);
+            TransformColumns256<TColumns256>(residual, w, h, log2H, colKind, colClampRange, sparseColumnInputs);
             return;
         }
 
+        var columnLength = sparseColumnInputs is 0 ? h : sparseColumnInputs;
         for (var j = 0; j < w; j += 4)
         {
             var column = t[..h];
-            for (var i = 0; i < h; i++)
+            for (var i = 0; i < columnLength; i++)
             {
                 column[i] = Vector128.Create(residual.Slice((i * w) + j, 4));
             }
 
-            Apply<TColumns, Vector128<int>>(colKind, column, log2H, colClampRange);
+            if (sparseColumnInputs is not 0)
+            {
+                InverseDctSparse<TColumns, Vector128<int>>(column, log2H, colClampRange, sparseColumnInputs);
+            }
+            else
+            {
+                Apply<TColumns, Vector128<int>>(colKind, column, log2H, colClampRange);
+            }
+
             for (var i = 0; i < h; i++)
             {
                 Av1Simd.ShiftRightArithmeticRounded(column[i], ColumnShift).CopyTo(residual.Slice((i * w) + j, 4));
@@ -180,19 +213,28 @@ internal static partial class Av1InverseTransform
 
     // The columns of TransformVector by groups of 8, for a block at least 8 samples wide
     [SkipLocalsInit]
-    private static void TransformColumns256<TLanes>(Span<int> residual, int w, int h, int log2H, Kind colKind, int colClampRange)
+    private static void TransformColumns256<TLanes>(Span<int> residual, int w, int h, int log2H, Kind colKind, int colClampRange, int sparseInputs)
         where TLanes : struct, ILanes<Vector256<int>>
     {
         // Every element is written before it is read
         Span<Vector256<int>> column = unsafe(stackalloc Vector256<int>[64])[..h];
+        var columnLength = sparseInputs is 0 ? h : sparseInputs;
         for (var j = 0; j < w; j += 8)
         {
-            for (var i = 0; i < h; i++)
+            for (var i = 0; i < columnLength; i++)
             {
                 column[i] = Vector256.Create(residual.Slice((i * w) + j, 8));
             }
 
-            Apply<TLanes, Vector256<int>>(colKind, column, log2H, colClampRange);
+            if (sparseInputs is not 0)
+            {
+                InverseDctSparse<TLanes, Vector256<int>>(column, log2H, colClampRange, sparseInputs);
+            }
+            else
+            {
+                Apply<TLanes, Vector256<int>>(colKind, column, log2H, colClampRange);
+            }
+
             for (var i = 0; i < h; i++)
             {
                 Lanes256.ShiftRightArithmeticRounded(column[i], ColumnShift).CopyTo(residual.Slice((i * w) + j, 8));
@@ -713,6 +755,416 @@ internal static partial class Av1InverseTransform
         TLanes.H(t, 14, 17, flip: false, min, max);
         TLanes.H(t, 15, 16, flip: false, min, max);
     }
+    // The number of inputs of a DCT of 2^n points that InverseDctSparse reads, when the inputs from count are zero: 4 for 8 to 32
+    // points, 8 for 16 and 32 points, 0 when no kernel applies
+    private static int GetSparseInputs(Kind kind, int n, int count)
+    {
+        if (kind is not Kind.Dct || n is < 3 or > 5)
+            return 0;
+
+        if (count <= 4)
+            return 4;
+
+        return count <= 8 && n >= 4 ? 8 : 0;
+    }
+
+    // InverseDct of 2^n points whose inputs from the given number (GetSparseInputs) are zero, which it does not read: the
+    // steps of InverseDct without the rotations of zeros, a rotation of one zero as two products (B( a, 0 ) is
+    // Round2( a * cos ), Round2( a * sin )) and a Hadamard rotation of one zero as clamps (H( a, 0 ) is Clamp( a ) twice,
+    // H( 0, b ) is Clamp( b ) and Clamp( -b ), the values staying far from the limits of 32 bits), without the clamps of the
+    // outputs of a Hadamard rotation. The values are those of InverseDct for every input
+    private static void InverseDctSparse<TLanes, TVector>(Span<TVector> t, int n, int r, int inputs)
+        where TLanes : struct, ILanes<TVector>
+        where TVector : unmanaged
+    {
+        var min = TLanes.Create(-(1 << (r - 1)));
+        var max = TLanes.Create((1 << (r - 1)) - 1);
+        switch (n)
+        {
+            case 3:
+                InverseDct8Sparse4<TLanes, TVector>(t, min, max);
+                break;
+            case 4 when inputs is 4:
+                InverseDct16Sparse4<TLanes, TVector>(t, min, max);
+                break;
+            case 4:
+                InverseDct16Sparse8<TLanes, TVector>(t, min, max);
+                break;
+            case 5 when inputs is 4:
+                InverseDct32Sparse4<TLanes, TVector>(t, min, max);
+                break;
+            default:
+                InverseDct32Sparse8<TLanes, TVector>(t, min, max);
+                break;
+        }
+    }
+
+    private static void InverseDct8Sparse4<TLanes, TVector>(Span<TVector> t, TVector min, TVector max)
+        where TLanes : struct, ILanes<TVector>
+        where TVector : unmanaged
+    {
+        t = t[..8];
+        t[4] = t[1];
+        t[6] = t[3];
+        t[7] = TLanes.MultiplyRound12(t[4], 4017);
+        t[4] = TLanes.MultiplyRound12(t[4], 799);
+        t[5] = TLanes.MultiplyRound12(t[6], -2276);
+        t[6] = TLanes.MultiplyRound12(t[6], 3406);
+        t[1] = TLanes.MultiplyRound12(t[0], 2896);
+        t[0] = TLanes.MultiplyRound12(t[0], 2896);
+        t[3] = TLanes.MultiplyRound12(t[2], 3784);
+        t[2] = TLanes.MultiplyRound12(t[2], 1567);
+        TLanes.H(t, 4, 5, flip: false, min, max);
+        TLanes.H(t, 7, 6, flip: false, min, max);
+        TLanes.H(t, 0, 3, flip: false, min, max);
+        TLanes.H(t, 1, 2, flip: false, min, max);
+        TLanes.B(t, 6, 5, 32, flip: true);
+        TLanes.H(t, 0, 7, flip: false, min, max);
+        TLanes.H(t, 1, 6, flip: false, min, max);
+        TLanes.H(t, 2, 5, flip: false, min, max);
+        TLanes.H(t, 3, 4, flip: false, min, max);
+    }
+
+    private static void InverseDct16Sparse4<TLanes, TVector>(Span<TVector> t, TVector min, TVector max)
+        where TLanes : struct, ILanes<TVector>
+        where TVector : unmanaged
+    {
+        t = t[..16];
+        t[8] = t[1];
+        t[4] = t[2];
+        t[12] = t[3];
+        t[15] = TLanes.MultiplyRound12(t[8], 4076);
+        t[8] = TLanes.MultiplyRound12(t[8], 401);
+        t[11] = TLanes.MultiplyRound12(t[12], -1189);
+        t[12] = TLanes.MultiplyRound12(t[12], 3920);
+        t[7] = TLanes.MultiplyRound12(t[4], 4017);
+        t[4] = TLanes.MultiplyRound12(t[4], 799);
+        t[8] = TLanes.Clamp(t[8], min, max);
+        t[9] = t[8];
+        t[11] = TLanes.Clamp(t[11], min, max);
+        t[10] = t[11];
+        t[12] = TLanes.Clamp(t[12], min, max);
+        t[13] = t[12];
+        t[15] = TLanes.Clamp(t[15], min, max);
+        t[14] = t[15];
+        t[1] = TLanes.MultiplyRound12(t[0], 2896);
+        t[0] = TLanes.MultiplyRound12(t[0], 2896);
+        t[4] = TLanes.Clamp(t[4], min, max);
+        t[5] = t[4];
+        t[7] = TLanes.Clamp(t[7], min, max);
+        t[6] = t[7];
+        TLanes.B(t, 14, 9, 48, flip: true);
+        TLanes.B(t, 13, 10, 112, flip: true);
+        t[0] = TLanes.Clamp(t[0], min, max);
+        t[3] = t[0];
+        t[1] = TLanes.Clamp(t[1], min, max);
+        t[2] = t[1];
+        TLanes.B(t, 6, 5, 32, flip: true);
+        TLanes.H(t, 8, 11, flip: false, min, max);
+        TLanes.H(t, 9, 10, flip: false, min, max);
+        TLanes.H(t, 15, 12, flip: false, min, max);
+        TLanes.H(t, 14, 13, flip: false, min, max);
+        TLanes.H(t, 0, 7, flip: false, min, max);
+        TLanes.H(t, 1, 6, flip: false, min, max);
+        TLanes.H(t, 2, 5, flip: false, min, max);
+        TLanes.H(t, 3, 4, flip: false, min, max);
+        TLanes.B(t, 13, 10, 32, flip: true);
+        TLanes.B(t, 12, 11, 32, flip: true);
+        TLanes.H(t, 0, 15, flip: false, min, max);
+        TLanes.H(t, 1, 14, flip: false, min, max);
+        TLanes.H(t, 2, 13, flip: false, min, max);
+        TLanes.H(t, 3, 12, flip: false, min, max);
+        TLanes.H(t, 4, 11, flip: false, min, max);
+        TLanes.H(t, 5, 10, flip: false, min, max);
+        TLanes.H(t, 6, 9, flip: false, min, max);
+        TLanes.H(t, 7, 8, flip: false, min, max);
+    }
+
+    private static void InverseDct32Sparse4<TLanes, TVector>(Span<TVector> t, TVector min, TVector max)
+        where TLanes : struct, ILanes<TVector>
+        where TVector : unmanaged
+    {
+        t = t[..32];
+        t[16] = t[1];
+        t[8] = t[2];
+        t[24] = t[3];
+        t[31] = TLanes.MultiplyRound12(t[16], 4091);
+        t[16] = TLanes.MultiplyRound12(t[16], 201);
+        t[23] = TLanes.MultiplyRound12(t[24], -601);
+        t[24] = TLanes.MultiplyRound12(t[24], 4052);
+        t[15] = TLanes.MultiplyRound12(t[8], 4076);
+        t[8] = TLanes.MultiplyRound12(t[8], 401);
+        t[16] = TLanes.Clamp(t[16], min, max);
+        t[17] = t[16];
+        t[23] = TLanes.Clamp(t[23], min, max);
+        t[22] = t[23];
+        t[24] = TLanes.Clamp(t[24], min, max);
+        t[25] = t[24];
+        t[31] = TLanes.Clamp(t[31], min, max);
+        t[30] = t[31];
+        t[8] = TLanes.Clamp(t[8], min, max);
+        t[9] = t[8];
+        t[15] = TLanes.Clamp(t[15], min, max);
+        t[14] = t[15];
+        TLanes.B(t, 30, 17, 56, flip: true);
+        TLanes.B(t, 25, 22, 88, flip: true);
+        t[1] = TLanes.MultiplyRound12(t[0], 2896);
+        t[0] = TLanes.MultiplyRound12(t[0], 2896);
+        TLanes.B(t, 14, 9, 48, flip: true);
+        t[19] = t[16];
+        t[17] = TLanes.Clamp(t[17], min, max);
+        t[18] = t[17];
+        t[20] = t[23];
+        t[22] = TLanes.Clamp(t[22], min, max);
+        t[21] = t[22];
+        t[27] = t[24];
+        t[25] = TLanes.Clamp(t[25], min, max);
+        t[26] = t[25];
+        t[28] = t[31];
+        t[30] = TLanes.Clamp(t[30], min, max);
+        t[29] = t[30];
+        t[0] = TLanes.Clamp(t[0], min, max);
+        t[3] = t[0];
+        t[1] = TLanes.Clamp(t[1], min, max);
+        t[2] = t[1];
+        t[11] = t[8];
+        t[9] = TLanes.Clamp(t[9], min, max);
+        t[10] = t[9];
+        t[12] = t[15];
+        t[14] = TLanes.Clamp(t[14], min, max);
+        t[13] = t[14];
+        TLanes.B(t, 29, 18, 48, flip: true);
+        TLanes.B(t, 28, 19, 48, flip: true);
+        TLanes.B(t, 27, 20, 112, flip: true);
+        TLanes.B(t, 26, 21, 112, flip: true);
+        t[7] = t[0];
+        t[6] = t[1];
+        t[5] = t[2];
+        t[4] = t[3];
+        TLanes.B(t, 13, 10, 32, flip: true);
+        TLanes.B(t, 12, 11, 32, flip: true);
+        TLanes.H(t, 16, 23, flip: false, min, max);
+        TLanes.H(t, 17, 22, flip: false, min, max);
+        TLanes.H(t, 18, 21, flip: false, min, max);
+        TLanes.H(t, 19, 20, flip: false, min, max);
+        TLanes.H(t, 31, 24, flip: false, min, max);
+        TLanes.H(t, 30, 25, flip: false, min, max);
+        TLanes.H(t, 29, 26, flip: false, min, max);
+        TLanes.H(t, 28, 27, flip: false, min, max);
+        TLanes.H(t, 0, 15, flip: false, min, max);
+        TLanes.H(t, 1, 14, flip: false, min, max);
+        TLanes.H(t, 2, 13, flip: false, min, max);
+        TLanes.H(t, 3, 12, flip: false, min, max);
+        TLanes.H(t, 4, 11, flip: false, min, max);
+        TLanes.H(t, 5, 10, flip: false, min, max);
+        TLanes.H(t, 6, 9, flip: false, min, max);
+        TLanes.H(t, 7, 8, flip: false, min, max);
+        TLanes.B(t, 27, 20, 32, flip: true);
+        TLanes.B(t, 26, 21, 32, flip: true);
+        TLanes.B(t, 25, 22, 32, flip: true);
+        TLanes.B(t, 24, 23, 32, flip: true);
+        TLanes.H(t, 0, 31, flip: false, min, max);
+        TLanes.H(t, 1, 30, flip: false, min, max);
+        TLanes.H(t, 2, 29, flip: false, min, max);
+        TLanes.H(t, 3, 28, flip: false, min, max);
+        TLanes.H(t, 4, 27, flip: false, min, max);
+        TLanes.H(t, 5, 26, flip: false, min, max);
+        TLanes.H(t, 6, 25, flip: false, min, max);
+        TLanes.H(t, 7, 24, flip: false, min, max);
+        TLanes.H(t, 8, 23, flip: false, min, max);
+        TLanes.H(t, 9, 22, flip: false, min, max);
+        TLanes.H(t, 10, 21, flip: false, min, max);
+        TLanes.H(t, 11, 20, flip: false, min, max);
+        TLanes.H(t, 12, 19, flip: false, min, max);
+        TLanes.H(t, 13, 18, flip: false, min, max);
+        TLanes.H(t, 14, 17, flip: false, min, max);
+        TLanes.H(t, 15, 16, flip: false, min, max);
+    }
+
+    private static void InverseDct16Sparse8<TLanes, TVector>(Span<TVector> t, TVector min, TVector max)
+        where TLanes : struct, ILanes<TVector>
+        where TVector : unmanaged
+    {
+        t = t[..16];
+        t[8] = t[1];
+        (t[2], t[4]) = (t[4], t[2]);
+        t[12] = t[3];
+        t[10] = t[5];
+        t[14] = t[7];
+        t[15] = TLanes.MultiplyRound12(t[8], 4076);
+        t[8] = TLanes.MultiplyRound12(t[8], 401);
+        t[9] = TLanes.MultiplyRound12(t[14], -2598);
+        t[14] = TLanes.MultiplyRound12(t[14], 3166);
+        t[13] = TLanes.MultiplyRound12(t[10], 3612);
+        t[10] = TLanes.MultiplyRound12(t[10], 1931);
+        t[11] = TLanes.MultiplyRound12(t[12], -1189);
+        t[12] = TLanes.MultiplyRound12(t[12], 3920);
+        t[7] = TLanes.MultiplyRound12(t[4], 4017);
+        t[4] = TLanes.MultiplyRound12(t[4], 799);
+        t[5] = TLanes.MultiplyRound12(t[6], -2276);
+        t[6] = TLanes.MultiplyRound12(t[6], 3406);
+        TLanes.H(t, 8, 9, flip: false, min, max);
+        TLanes.H(t, 11, 10, flip: false, min, max);
+        TLanes.H(t, 12, 13, flip: false, min, max);
+        TLanes.H(t, 15, 14, flip: false, min, max);
+        t[1] = TLanes.MultiplyRound12(t[0], 2896);
+        t[0] = TLanes.MultiplyRound12(t[0], 2896);
+        t[3] = TLanes.MultiplyRound12(t[2], 3784);
+        t[2] = TLanes.MultiplyRound12(t[2], 1567);
+        TLanes.H(t, 4, 5, flip: false, min, max);
+        TLanes.H(t, 7, 6, flip: false, min, max);
+        TLanes.B(t, 14, 9, 48, flip: true);
+        TLanes.B(t, 13, 10, 112, flip: true);
+        TLanes.H(t, 0, 3, flip: false, min, max);
+        TLanes.H(t, 1, 2, flip: false, min, max);
+        TLanes.B(t, 6, 5, 32, flip: true);
+        TLanes.H(t, 8, 11, flip: false, min, max);
+        TLanes.H(t, 9, 10, flip: false, min, max);
+        TLanes.H(t, 15, 12, flip: false, min, max);
+        TLanes.H(t, 14, 13, flip: false, min, max);
+        TLanes.H(t, 0, 7, flip: false, min, max);
+        TLanes.H(t, 1, 6, flip: false, min, max);
+        TLanes.H(t, 2, 5, flip: false, min, max);
+        TLanes.H(t, 3, 4, flip: false, min, max);
+        TLanes.B(t, 13, 10, 32, flip: true);
+        TLanes.B(t, 12, 11, 32, flip: true);
+        TLanes.H(t, 0, 15, flip: false, min, max);
+        TLanes.H(t, 1, 14, flip: false, min, max);
+        TLanes.H(t, 2, 13, flip: false, min, max);
+        TLanes.H(t, 3, 12, flip: false, min, max);
+        TLanes.H(t, 4, 11, flip: false, min, max);
+        TLanes.H(t, 5, 10, flip: false, min, max);
+        TLanes.H(t, 6, 9, flip: false, min, max);
+        TLanes.H(t, 7, 8, flip: false, min, max);
+    }
+
+    private static void InverseDct32Sparse8<TLanes, TVector>(Span<TVector> t, TVector min, TVector max)
+        where TLanes : struct, ILanes<TVector>
+        where TVector : unmanaged
+    {
+        t = t[..32];
+        t[16] = t[1];
+        t[8] = t[2];
+        t[24] = t[3];
+        t[20] = t[5];
+        t[12] = t[6];
+        t[28] = t[7];
+        t[31] = TLanes.MultiplyRound12(t[16], 4091);
+        t[16] = TLanes.MultiplyRound12(t[16], 201);
+        t[19] = TLanes.MultiplyRound12(t[28], -1380);
+        t[28] = TLanes.MultiplyRound12(t[28], 3857);
+        t[27] = TLanes.MultiplyRound12(t[20], 3973);
+        t[20] = TLanes.MultiplyRound12(t[20], 995);
+        t[23] = TLanes.MultiplyRound12(t[24], -601);
+        t[24] = TLanes.MultiplyRound12(t[24], 4052);
+        t[15] = TLanes.MultiplyRound12(t[8], 4076);
+        t[8] = TLanes.MultiplyRound12(t[8], 401);
+        t[11] = TLanes.MultiplyRound12(t[12], -1189);
+        t[12] = TLanes.MultiplyRound12(t[12], 3920);
+        t[16] = TLanes.Clamp(t[16], min, max);
+        t[17] = t[16];
+        t[19] = TLanes.Clamp(t[19], min, max);
+        t[18] = t[19];
+        t[20] = TLanes.Clamp(t[20], min, max);
+        t[21] = t[20];
+        t[23] = TLanes.Clamp(t[23], min, max);
+        t[22] = t[23];
+        t[24] = TLanes.Clamp(t[24], min, max);
+        t[25] = t[24];
+        t[27] = TLanes.Clamp(t[27], min, max);
+        t[26] = t[27];
+        t[28] = TLanes.Clamp(t[28], min, max);
+        t[29] = t[28];
+        t[31] = TLanes.Clamp(t[31], min, max);
+        t[30] = t[31];
+        t[7] = TLanes.MultiplyRound12(t[4], 4017);
+        t[4] = TLanes.MultiplyRound12(t[4], 799);
+        t[8] = TLanes.Clamp(t[8], min, max);
+        t[9] = t[8];
+        t[11] = TLanes.Clamp(t[11], min, max);
+        t[10] = t[11];
+        t[12] = TLanes.Clamp(t[12], min, max);
+        t[13] = t[12];
+        t[15] = TLanes.Clamp(t[15], min, max);
+        t[14] = t[15];
+        TLanes.B(t, 30, 17, 56, flip: true);
+        TLanes.B(t, 29, 18, 120, flip: true);
+        TLanes.B(t, 26, 21, 24, flip: true);
+        TLanes.B(t, 25, 22, 88, flip: true);
+        t[1] = TLanes.MultiplyRound12(t[0], 2896);
+        t[0] = TLanes.MultiplyRound12(t[0], 2896);
+        t[4] = TLanes.Clamp(t[4], min, max);
+        t[5] = t[4];
+        t[7] = TLanes.Clamp(t[7], min, max);
+        t[6] = t[7];
+        TLanes.B(t, 14, 9, 48, flip: true);
+        TLanes.B(t, 13, 10, 112, flip: true);
+        TLanes.H(t, 16, 19, flip: false, min, max);
+        TLanes.H(t, 17, 18, flip: false, min, max);
+        TLanes.H(t, 23, 20, flip: false, min, max);
+        TLanes.H(t, 22, 21, flip: false, min, max);
+        TLanes.H(t, 24, 27, flip: false, min, max);
+        TLanes.H(t, 25, 26, flip: false, min, max);
+        TLanes.H(t, 31, 28, flip: false, min, max);
+        TLanes.H(t, 30, 29, flip: false, min, max);
+        t[0] = TLanes.Clamp(t[0], min, max);
+        t[3] = t[0];
+        t[1] = TLanes.Clamp(t[1], min, max);
+        t[2] = t[1];
+        TLanes.B(t, 6, 5, 32, flip: true);
+        TLanes.H(t, 8, 11, flip: false, min, max);
+        TLanes.H(t, 9, 10, flip: false, min, max);
+        TLanes.H(t, 15, 12, flip: false, min, max);
+        TLanes.H(t, 14, 13, flip: false, min, max);
+        TLanes.B(t, 29, 18, 48, flip: true);
+        TLanes.B(t, 28, 19, 48, flip: true);
+        TLanes.B(t, 27, 20, 112, flip: true);
+        TLanes.B(t, 26, 21, 112, flip: true);
+        TLanes.H(t, 0, 7, flip: false, min, max);
+        TLanes.H(t, 1, 6, flip: false, min, max);
+        TLanes.H(t, 2, 5, flip: false, min, max);
+        TLanes.H(t, 3, 4, flip: false, min, max);
+        TLanes.B(t, 13, 10, 32, flip: true);
+        TLanes.B(t, 12, 11, 32, flip: true);
+        TLanes.H(t, 16, 23, flip: false, min, max);
+        TLanes.H(t, 17, 22, flip: false, min, max);
+        TLanes.H(t, 18, 21, flip: false, min, max);
+        TLanes.H(t, 19, 20, flip: false, min, max);
+        TLanes.H(t, 31, 24, flip: false, min, max);
+        TLanes.H(t, 30, 25, flip: false, min, max);
+        TLanes.H(t, 29, 26, flip: false, min, max);
+        TLanes.H(t, 28, 27, flip: false, min, max);
+        TLanes.H(t, 0, 15, flip: false, min, max);
+        TLanes.H(t, 1, 14, flip: false, min, max);
+        TLanes.H(t, 2, 13, flip: false, min, max);
+        TLanes.H(t, 3, 12, flip: false, min, max);
+        TLanes.H(t, 4, 11, flip: false, min, max);
+        TLanes.H(t, 5, 10, flip: false, min, max);
+        TLanes.H(t, 6, 9, flip: false, min, max);
+        TLanes.H(t, 7, 8, flip: false, min, max);
+        TLanes.B(t, 27, 20, 32, flip: true);
+        TLanes.B(t, 26, 21, 32, flip: true);
+        TLanes.B(t, 25, 22, 32, flip: true);
+        TLanes.B(t, 24, 23, 32, flip: true);
+        TLanes.H(t, 0, 31, flip: false, min, max);
+        TLanes.H(t, 1, 30, flip: false, min, max);
+        TLanes.H(t, 2, 29, flip: false, min, max);
+        TLanes.H(t, 3, 28, flip: false, min, max);
+        TLanes.H(t, 4, 27, flip: false, min, max);
+        TLanes.H(t, 5, 26, flip: false, min, max);
+        TLanes.H(t, 6, 25, flip: false, min, max);
+        TLanes.H(t, 7, 24, flip: false, min, max);
+        TLanes.H(t, 8, 23, flip: false, min, max);
+        TLanes.H(t, 9, 22, flip: false, min, max);
+        TLanes.H(t, 10, 21, flip: false, min, max);
+        TLanes.H(t, 11, 20, flip: false, min, max);
+        TLanes.H(t, 12, 19, flip: false, min, max);
+        TLanes.H(t, 13, 18, flip: false, min, max);
+        TLanes.H(t, 14, 17, flip: false, min, max);
+        TLanes.H(t, 15, 16, flip: false, min, max);
+    }
+
+
     // InverseAdst8 and InverseAdst16 on vectors: the same steps, written out with constant indices and angles
     private static void InverseAdst8<TLanes, TVector>(Span<TVector> t, int r)
         where TLanes : struct, ILanes<TVector>
@@ -855,6 +1307,9 @@ internal static partial class Av1InverseTransform
         /// <summary>The negation of the lanes.</summary>
         static abstract TVector Negate(TVector value);
 
+        /// <summary>The lanes clamped to [<paramref name="min"/>, <paramref name="max"/>].</summary>
+        static abstract TVector Clamp(TVector value, TVector min, TVector max);
+
         /// <summary>The lanes shifted left by <paramref name="count"/> bits.</summary>
         static abstract TVector ShiftLeft(TVector value, int count);
 
@@ -880,6 +1335,9 @@ internal static partial class Av1InverseTransform
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<int> Negate(Vector128<int> value) => -value;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<int> Clamp(Vector128<int> value, Vector128<int> min, Vector128<int> max) => Vector128.Min(Vector128.Max(value, min), max);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<int> ShiftLeft(Vector128<int> value, int count) => value << count;
@@ -988,6 +1446,9 @@ internal static partial class Av1InverseTransform
         public static Vector128<int> Negate(Vector128<int> value) => -value;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<int> Clamp(Vector128<int> value, Vector128<int> min, Vector128<int> max) => Vector128.Min(Vector128.Max(value, min), max);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector128<int> ShiftLeft(Vector128<int> value, int count) => value << count;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1063,6 +1524,9 @@ internal static partial class Av1InverseTransform
         public static Vector256<int> Negate(Vector256<int> value) => -value;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<int> Clamp(Vector256<int> value, Vector256<int> min, Vector256<int> max) => Vector256.Min(Vector256.Max(value, min), max);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<int> ShiftLeft(Vector256<int> value, int count) => value << count;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1131,6 +1595,9 @@ internal static partial class Av1InverseTransform
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<int> Negate(Vector256<int> value) => -value;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector256<int> Clamp(Vector256<int> value, Vector256<int> min, Vector256<int> max) => Vector256.Min(Vector256.Max(value, min), max);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static Vector256<int> ShiftLeft(Vector256<int> value, int count) => value << count;

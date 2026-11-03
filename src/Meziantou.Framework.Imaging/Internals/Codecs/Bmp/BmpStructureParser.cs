@@ -301,7 +301,7 @@ internal sealed class BmpStructureParser : ImageParser<ImageInfo>
 
         // A run-length stream only writes the pixels it encodes: the others must read as zero
         _rowBuffer = _context.Scope.Rent((int)_rowLength, AllocationKind.DecoderState, clear: Layout.Header.IsRunLength);
-        _expandedRow = _context.Scope.Rent(Layout.Header.Width * PixelFormats.GetBytesPerPixel(Layout.SourcePixelFormat), AllocationKind.DecoderState, clear: false);
+        _expandedRow = _context.Scope.Rent(Layout.Header.Width * GetExpandedPixelSize(), AllocationKind.DecoderState, clear: false);
         return !_context.TryConsumeYield();
     }
 
@@ -591,19 +591,32 @@ internal sealed class BmpStructureParser : ImageParser<ImageInfo>
             var destination = decoder.GetDirectRow(lease, y);
             if (!destination.IsEmpty)
             {
-                Layout.ExpandRow(stored, destination);
+                ExpandRow(stored, destination);
                 return;
             }
         }
 
-        var expanded = _expandedRow!.Span[..(header.Width * PixelFormats.GetBytesPerPixel(Layout.SourcePixelFormat))];
-        Layout.ExpandRow(stored, expanded);
+        var expanded = _expandedRow!.Span[..(header.Width * GetExpandedPixelSize())];
+        ExpandRow(stored, expanded);
         if (!lease.IsActive)
         {
             lease = decoder.LeaseRows();
         }
 
         decoder.WriteRow(lease, y, expanded);
+    }
+
+    private int GetExpandedPixelSize() => _decoder!.OpaqueRgbaRows ? 4 : PixelFormats.GetBytesPerPixel(Layout.SourcePixelFormat);
+
+    private void ExpandRow(ReadOnlySpan<byte> stored, Span<byte> destination)
+    {
+        if (_decoder!.OpaqueRgbaRows)
+        {
+            PixelConverter.SwapRedAndBlue24ToOpaque32(stored[..(Layout.Header.Width * 3)], destination);
+            return;
+        }
+
+        Layout.ExpandRow(stored, destination);
     }
 
     private ImageInfo CreateInfo(ImageIdentifyMode mode)

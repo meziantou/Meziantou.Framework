@@ -3240,6 +3240,33 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void SwapRedAndBlue24ToOpaque32MatchesThePixelDefinition()
+    {
+        // Lengths around the 16-byte loads (4 pixels per step), and a longer destination that keeps its other bytes
+        var random = new Random(2405);
+        for (var pixels = 0; pixels <= 40; pixels++)
+        {
+            var source = new byte[pixels * 3];
+            random.NextBytes(source);
+            var expected = new byte[pixels * 4];
+            for (var x = 0; x < pixels; x++)
+            {
+                expected[4 * x] = source[(3 * x) + 2];
+                expected[(4 * x) + 1] = source[(3 * x) + 1];
+                expected[(4 * x) + 2] = source[3 * x];
+                expected[(4 * x) + 3] = 0xFF;
+            }
+
+            var actual = new byte[expected.Length + 5];
+            Array.Fill(actual, (byte)0xA5);
+            PixelConverter.SwapRedAndBlue24ToOpaque32(source, actual);
+            Assert.Equal(expected, actual[..expected.Length]);
+            Assert.All(actual[expected.Length..], value => Assert.Equal(0xA5, value));
+        }
+    }
+
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     private static void CheckConversion<TSource, TDestination>()
         where TSource : unmanaged

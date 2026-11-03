@@ -5221,6 +5221,51 @@ public sealed class VectorizedKernelTests
 
     [Theory]
     [InlineData(8)]
+    [InlineData(12)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Av1DirectionalPredictionOfSmallBlocksMatchesTheScalarReference(int bitDepth)
+    {
+        // Every directional mode and angle delta of the block sizes whose edges are upsampled, with every edge availability,
+        // with and without the edge filter and a smooth neighbor, inside the plane and at its right and bottom limits
+        var random = new Random(bitDepth * 17);
+        var maxSample = (1 << bitDepth) - 1;
+        const int Stride = 64;
+        const int Height = 64;
+        (int Log2W, int Log2H)[] sizes = [(2, 2), (2, 3), (3, 2), (3, 3), (2, 4), (4, 2), (4, 4)];
+        foreach (var (log2W, log2H) in sizes)
+        {
+            for (var mode = Av1Constants.VPred; mode <= Av1Constants.D67Pred; mode++)
+            {
+                for (var angleDelta = -3; angleDelta <= 3; angleDelta++)
+                {
+                    for (var flags = 0; flags < 64; flags++)
+                    {
+                        var expected = new ushort[Stride * Height];
+                        for (var i = 0; i < expected.Length; i++)
+                        {
+                            expected[i] = (ushort)random.Next(maxSample + 1);
+                        }
+
+                        var (x, y) = (flags & 32) is 0 ? (16, 16) : (32, 32);
+                        var maxX = (flags & 32) is 0 ? Stride - 1 : x + (1 << log2W) - 1;
+                        var maxY = (flags & 32) is 0 ? Height - 1 : y + (1 << log2H) - 1;
+                        var parameters = new Av1IntraPredictor.Parameters(bitDepth, mode, angleDelta, -1, (flags & 1) is not 0, (flags & 2) is not 0);
+                        var haveLeft = (flags & 4) is not 0;
+                        var haveAbove = (flags & 8) is not 0;
+                        var haveAboveRight = haveAbove && (flags & 16) is not 0;
+                        var haveBelowLeft = haveLeft && (flags & 16) is not 0;
+                        var actual = expected.ToArray();
+                        Av1IntraPredictor.PredictScalar(expected, Stride, x, y, haveLeft, haveAbove, haveAboveRight, haveBelowLeft, log2W, log2H, maxX, maxY, parameters);
+                        Av1IntraPredictor.Predict(actual, Stride, x, y, haveLeft, haveAbove, haveAboveRight, haveBelowLeft, log2W, log2H, maxX, maxY, parameters);
+                        Assert.True(expected.AsSpan().SequenceEqual(actual), $"{1 << log2W}x{1 << log2H}, {parameters}, flags {flags}.");
+                    }
+                }
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(8)]
     [InlineData(10)]
     [InlineData(12)]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
@@ -5263,9 +5308,23 @@ public sealed class VectorizedKernelTests
             var haveAboveRight = haveAbove && random.Next(2) == 0;
             var haveBelowLeft = haveLeft && random.Next(2) == 0;
             var actual = expected.ToArray();
+            var fromEdges = expected.ToArray();
             Av1IntraPredictor.PredictScalar(expected, Stride, x, y, haveLeft, haveAbove, haveAboveRight, haveBelowLeft, log2W, log2H, maxX, maxY, parameters);
             Av1IntraPredictor.Predict(actual, Stride, x, y, haveLeft, haveAbove, haveAboveRight, haveBelowLeft, log2W, log2H, maxX, maxY, parameters);
             Assert.True(expected.AsSpan().SequenceEqual(actual), $"Round {round}: {w}x{h} at ({x}, {y}), {parameters}, left {haveLeft}, above {haveAbove}, limits ({maxX}, {maxY}).");
+
+            // The edges written once, then predicted from: the modes that are not directional leave them as they are
+            var aboveEdge = new int[Av1IntraPredictor.GetEdgeStorageLength(log2W, log2H)];
+            var leftEdge = new int[aboveEdge.Length];
+            Av1IntraPredictor.PrepareEdges(fromEdges, Stride, x, y, haveLeft, haveAbove, haveAboveRight, haveBelowLeft, log2W, log2H, maxX, maxY, bitDepth, aboveEdge, leftEdge);
+            var (preparedAbove, preparedLeft) = (aboveEdge.ToArray(), leftEdge.ToArray());
+            Av1IntraPredictor.PredictFromEdges(fromEdges, Stride, x, y, haveLeft, haveAbove, log2W, log2H, maxX, maxY, parameters, aboveEdge, leftEdge);
+            Assert.True(expected.AsSpan().SequenceEqual(fromEdges), $"Round {round}: {w}x{h} from the edges, {parameters}.");
+            if (filterIntraMode >= 0 || mode is < Av1Constants.VPred or > Av1Constants.D67Pred)
+            {
+                Assert.Equal(preparedAbove, aboveEdge);
+                Assert.Equal(preparedLeft, leftEdge);
+            }
         }
     }
 

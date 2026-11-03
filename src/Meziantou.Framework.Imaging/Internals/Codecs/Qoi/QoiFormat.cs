@@ -63,9 +63,19 @@ internal static class QoiFormat
     public static ReadOnlySpan<byte> EndMarker => [0, 0, 0, 0, 0, 0, 0, 1];
 
     /// <summary>The running index position of a pixel: <c>(r * 3 + g * 5 + b * 7 + a * 11) % 64</c>.</summary>
+    /// <summary>Computes <c>(r * 3 + g * 5 + b * 7 + a * 11) % 64</c> with one multiplication.</summary>
+    /// <remarks>
+    /// The four bytes are spread into 16-bit lanes (R at bit 0, B at 16, G at 32, A at 48) and multiplied by a constant whose
+    /// lanes hold the weights in reverse order, so that bits 48-63 of the product receive the weighted sum. Each lane product is
+    /// below 2^16 (at most 255 * 26), so no carry crosses a lane.
+    /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int Hash(uint pixel)
-        => (int)(((pixel & 0xFF) * 3 + ((pixel >> 8) & 0xFF) * 5 + ((pixel >> 16) & 0xFF) * 7 + (pixel >> 24) * 11) & (IndexLength - 1));
+    {
+        ulong value = pixel;
+        var lanes = (value & 0x00FF00FF) | ((value & 0xFF00FF00) << 24);
+        return (int)((lanes * 0x0003_0007_0005_000BUL) >> 48) & (IndexLength - 1);
+    }
 
     /// <summary>Gets the number of bytes of the chunk starting with <paramref name="tag"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

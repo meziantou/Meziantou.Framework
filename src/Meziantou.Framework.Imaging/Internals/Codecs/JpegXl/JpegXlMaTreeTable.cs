@@ -5,9 +5,9 @@ using System.Runtime.InteropServices;
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
-/// A meta-adaptive tree (ISO/IEC 18181-1, section H.4.2) evaluated without walking it, when its decisions test the properties
-/// that the position of a sample and its neighbors give (2 to 15, but the property 8, which depends on the previous sample)
-/// and it has at most 256 leaves. The leaves are numbered from left to right. A decision whose test is false for a sample
+/// A meta-adaptive tree (ISO/IEC 18181-1, section H.4.2) evaluated without walking it, when it has at most 256 leaves and its
+/// decisions test at most 16 properties: those that the position of a sample and its neighbors give (2 to 15, but the
+/// property 8, which depends on the previous sample), or any property when the caller computes them all. The leaves are numbered from left to right. A decision whose test is false for a sample
 /// rules out the leaves of its left child (those of the values above the split value), and the leaf of the sample is the
 /// first leaf that no false decision rules out: on the path to it, the sample goes right exactly at its false decisions, and
 /// every leaf before it is in the left child of one of them.
@@ -28,10 +28,11 @@ internal readonly ref struct JpegXlMaTreeTable
     /// <summary>The number of values of the memory of the properties of a table.</summary>
     public const int SlotBufferLength = MaxPropertyCount;
 
-    private const int MaxPropertyCount = 8;
+    private const int MaxPropertyCount = 16;
+    private const int MaxPropertyIndex = 256;
     private const int MaxLeafCount = 256;
     private const int MaxNodeCount = (2 * MaxLeafCount) - 1;
-    private const int MaxPropertyTableLength = 2048;
+    private const int MaxPropertyTableLength = 4096;
     private const int MaxWordCount = MaxLeafCount / 64;
 
     private readonly ReadOnlySpan<ulong> _buffer;
@@ -52,19 +53,23 @@ internal readonly ref struct JpegXlMaTreeTable
     /// decisions allow it, with the cluster of the context of each leaf.
     /// </summary>
     /// <param name="nodes">The nodes of the tree, each child after its parent.</param>
-    /// <param name="decoder">The decoder of the samples, which gives the cluster of each context.</param>
+    /// <param name="decoder">The decoder of the samples, which gives the cluster of each context; <see langword="null"/> for a cluster 0.</param>
     /// <param name="buffer">The memory of the table: <see cref="BufferLength"/> values.</param>
     /// <param name="slotBuffer">The memory of the properties of the table: <see cref="SlotBufferLength"/> values.</param>
+    /// <param name="anyProperty">
+    /// Whether the decisions may test any property, for a caller that reads the cells with all the properties
+    /// (<see cref="GetCell(ReadOnlySpan{int})"/>); otherwise they test properties of the neighbors only.
+    /// </param>
     /// <param name="table">Receives the table.</param>
     /// <returns><see langword="false"/> when the tree cannot be a table: it tests other properties, more of them, or is too large.</returns>
-    public static bool TryCreate(ReadOnlySpan<JpegXlMaTreeNode> nodes, JpegXlEntropyDecoder decoder, Span<ulong> buffer, Span<Slot> slotBuffer, out JpegXlMaTreeTable table)
+    public static bool TryCreate(ReadOnlySpan<JpegXlMaTreeNode> nodes, JpegXlEntropyDecoder? decoder, Span<ulong> buffer, Span<Slot> slotBuffer, bool anyProperty, out JpegXlMaTreeTable table)
     {
         table = default;
-        if (!IsCandidate(nodes))
+        if (!IsCandidate(nodes, anyProperty))
             return false;
 
         // The properties, the slot of each one, and the range of their split values
-        Span<int> slotOfProperty = stackalloc int[JpegXlMaTree.WeightedProperty + 1];
+        Span<int> slotOfProperty = stackalloc int[MaxPropertyIndex];
         slotOfProperty.Fill(-1);
         Span<int> properties = stackalloc int[MaxPropertyCount];
         Span<int> smallest = stackalloc int[MaxPropertyCount];
@@ -175,7 +180,7 @@ internal readonly ref struct JpegXlMaTreeTable
         {
             if (nodes[i].IsLeaf)
             {
-                leaves[firstLeaves[i]] = (uint)(i | (decoder.GetCluster(nodes[i].LeftOrContext) << 24));
+                leaves[firstLeaves[i]] = (uint)(i | ((decoder?.GetCluster(nodes[i].LeftOrContext) ?? 0) << 24));
             }
         }
 
@@ -185,27 +190,34 @@ internal readonly ref struct JpegXlMaTreeTable
 
     /// <summary>
     /// Returns whether a tree may be a table: a decision at its root, few nodes, and decisions on at most
-    /// <see cref="MaxPropertyCount"/> properties of the sample and its neighbors. The leaves and the split values are
-    /// counted when the table is built.
+    /// <see cref="MaxPropertyCount"/> properties (of the sample and its neighbors unless <paramref name="anyProperty"/>). The
+    /// leaves and the split values are counted when the table is built.
     /// </summary>
-    public static bool IsCandidate(ReadOnlySpan<JpegXlMaTreeNode> nodes)
+    public static bool IsCandidate(ReadOnlySpan<JpegXlMaTreeNode> nodes, bool anyProperty)
     {
         if (nodes.Length > MaxNodeCount || nodes[0].IsLeaf)
             return false;
 
-        var used = 0;
+        Span<bool> used = stackalloc bool[MaxPropertyIndex];
+        used.Clear();
+        var count = 0;
         foreach (ref readonly var node in nodes)
         {
             if (node.IsLeaf)
                 continue;
 
-            if (node.Property is < 2 or > JpegXlMaTree.WeightedProperty or 8)
+            var property = node.Property;
+            if (anyProperty ? (uint)property >= MaxPropertyIndex : property is < 2 or > JpegXlMaTree.WeightedProperty or 8)
                 return false;
 
-            used |= 1 << node.Property;
+            if (!used[property])
+            {
+                used[property] = true;
+                count++;
+            }
         }
 
-        return BitOperations.PopCount((uint)used) <= MaxPropertyCount;
+        return count <= MaxPropertyCount;
     }
 
     /// <summary>Returns the leaf of a sample, with the cluster of the context of the leaf in the high byte.</summary>
@@ -261,13 +273,63 @@ internal readonly ref struct JpegXlMaTreeTable
             }
         }
 
+        return GetFirstLeaf(mask0, mask1, mask2, mask3);
+    }
+
+    /// <summary>Returns the leaf of a sample from all its properties, with the cluster of the context of the leaf in the high byte.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public int GetCell(ReadOnlySpan<int> properties)
+    {
+        var buffer = _buffer;
+        var mask0 = ulong.MaxValue;
+        var mask1 = ulong.MaxValue;
+        var mask2 = ulong.MaxValue;
+        var mask3 = ulong.MaxValue;
+        if (_isWide)
+        {
+            foreach (ref readonly var slot in _slots)
+            {
+                var mask = slot.TableOffset + (GetPosition(properties[slot.Property], in slot) * 4);
+                mask0 &= buffer[mask];
+                mask1 &= buffer[mask + 1];
+                mask2 &= buffer[mask + 2];
+                mask3 &= buffer[mask + 3];
+            }
+        }
+        else
+        {
+            foreach (ref readonly var slot in _slots)
+            {
+                var mask = slot.TableOffset + (GetPosition(properties[slot.Property], in slot) * 2);
+                mask0 &= buffer[mask];
+                mask1 &= buffer[mask + 1];
+            }
+        }
+
+        return GetFirstLeaf(mask0, mask1, mask2, mask3);
+    }
+
+    /// <summary>Returns the position of a value in the table of a property, clamped to its first and its last entry without a branch: the values are not predictable.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int GetPosition(int value, in Slot slot)
+    {
+        var position = (long)value - slot.Low;
+        position &= ~(position >> 63);
+        var beyond = slot.Last - position;
+        position += beyond & (beyond >> 63);
+        return (int)position;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int GetFirstLeaf(ulong mask0, ulong mask1, ulong mask2, ulong mask3)
+    {
         // The first leaf left: the zeros of the first word that is not zero, plus 64 for each zero word before it
         var zeros = BitOperations.TrailingZeroCount(mask0);
         var count = zeros;
         var isZero = -(zeros >> 6);
         zeros = BitOperations.TrailingZeroCount(mask1);
         count += zeros & isZero;
-        if (isWide)
+        if (_isWide)
         {
             isZero &= -(zeros >> 6);
             zeros = BitOperations.TrailingZeroCount(mask2);
@@ -276,7 +338,7 @@ internal readonly ref struct JpegXlMaTreeTable
             count += BitOperations.TrailingZeroCount(mask3) & isZero;
         }
 
-        return (int)buffer[_leafOffset + count];
+        return (int)_buffer[_leafOffset + count];
     }
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]

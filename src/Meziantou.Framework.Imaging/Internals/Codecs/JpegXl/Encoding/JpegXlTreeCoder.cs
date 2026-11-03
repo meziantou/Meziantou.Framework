@@ -139,8 +139,9 @@ internal static class JpegXlTreeCoder
     /// <param name="work">Scratch memory of the length of the tree.</param>
     /// <param name="pending">Scratch memory of the length of the tree.</param>
     /// <param name="residuals">Scratch memory of the length of the channel.</param>
+    /// <param name="tableBuffer">Scratch memory of the table of the tree: <see cref="JpegXlMaTreeTable.BufferLength"/> values.</param>
     /// <param name="scope">The scope of the working memory.</param>
-    public static void Collect(JpegXlModularImage image, int channelIndex, int streamIndex, ReadOnlySpan<JpegXlMaTreeNode> tree, Span<ulong> output, Span<JpegXlMaTreeNode> work, Span<int> pending, Span<uint> residuals, AllocationScope scope)
+    public static void Collect(JpegXlModularImage image, int channelIndex, int streamIndex, ReadOnlySpan<JpegXlMaTreeNode> tree, Span<ulong> output, Span<JpegXlMaTreeNode> work, Span<int> pending, Span<uint> residuals, Span<ulong> tableBuffer, AllocationScope scope)
     {
         var nodeCount = JpegXlModularDecoder.Specialize(tree, work, pending, channelIndex, streamIndex);
         var nodes = work[..nodeCount];
@@ -185,6 +186,12 @@ internal static class JpegXlTreeCoder
         properties[0] = channelIndex;
         properties[1] = streamIndex;
         var isSingleLeaf = nodes[0].IsLeaf;
+
+        // The tree is evaluated without a branch per decision when it can be a table: the decisions on the samples are not
+        // predictable
+        Span<JpegXlMaTreeTable.Slot> slots = stackalloc JpegXlMaTreeTable.Slot[JpegXlMaTreeTable.SlotBufferLength];
+        scoped JpegXlMaTreeTable table = default;
+        var hasTable = !isSingleLeaf && JpegXlMaTreeTable.TryCreate(nodes, decoder: null, tableBuffer, slots, anyProperty: true, out table);
         for (var y = 0; y < height; y++)
         {
             var row = samples.Slice(y * width, width);
@@ -259,10 +266,17 @@ internal static class JpegXlTreeCoder
                         referenceProperties.Span.Slice(x * referenceStride, referenceStride).CopyTo(properties[FirstReferenceProperty..]);
                     }
 
-                    while (!nodes[leafIndex].IsLeaf)
+                    if (hasTable)
                     {
-                        ref readonly var decision = ref nodes[leafIndex];
-                        leafIndex = properties[decision.Property] > decision.ValueOrOffset ? decision.LeftOrContext : decision.RightOrPredictor;
+                        leafIndex = table.GetCell(properties) & 0xFFFFFF;
+                    }
+                    else
+                    {
+                        while (!nodes[leafIndex].IsLeaf)
+                        {
+                            ref readonly var decision = ref nodes[leafIndex];
+                            leafIndex = properties[decision.Property] > decision.ValueOrOffset ? decision.LeftOrContext : decision.RightOrPredictor;
+                        }
                     }
                 }
 

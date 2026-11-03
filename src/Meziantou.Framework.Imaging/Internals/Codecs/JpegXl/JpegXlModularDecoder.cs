@@ -387,12 +387,12 @@ internal static class JpegXlModularDecoder
         }
 
         // A learned tree, which tests a few properties of the neighbors with a few split values each, is a table
-        if (!JpegXlMaTreeTable.IsCandidate(nodes))
+        if (!JpegXlMaTreeTable.IsCandidate(nodes, anyProperty: false))
             return false;
 
         using var tableBuffer = Av1PooledArray<ulong>.Rent(scope, JpegXlMaTreeTable.BufferLength, clear: false);
         Span<JpegXlMaTreeTable.Slot> slots = stackalloc JpegXlMaTreeTable.Slot[JpegXlMaTreeTable.SlotBufferLength];
-        if (!JpegXlMaTreeTable.TryCreate(nodes, decoder, tableBuffer.Span, slots, out var table))
+        if (!JpegXlMaTreeTable.TryCreate(nodes, decoder, tableBuffer.Span, slots, anyProperty: false, out var table))
             return false;
 
         var treeSelector = new TreeTableSelector(table);

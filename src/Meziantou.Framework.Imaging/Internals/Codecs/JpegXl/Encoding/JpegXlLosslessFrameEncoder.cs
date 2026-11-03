@@ -314,21 +314,10 @@ internal sealed class JpegXlLosslessFrameEncoder
         }
 
         var span = values.Span[..offset];
-        if (literalWorker is not null)
-        {
-            foreach (var value in span)
-            {
-                literalWorker.AddValue((int)(value >> 32), (uint)value);
-            }
-        }
-
+        literalWorker?.AddValues(span);
         if (worker.Parser is null)
         {
-            foreach (var value in span)
-            {
-                worker.AddValue((int)(value >> 32), (uint)value);
-            }
-
+            worker.AddValues(span);
             return;
         }
 
@@ -899,15 +888,15 @@ internal sealed class JpegXlLosslessFrameEncoder
 
         public ParserSink Sink;
 
-        public void AddValue(int context, uint value)
+        public void AddValues(ReadOnlySpan<ulong> values)
         {
             if (_counter is not null)
             {
-                _counter.Add(context, value);
+                _counter.AddRange(values);
             }
             else
             {
-                _code.Add(Stream!, context, value);
+                _code.AddRange(Stream!, values);
             }
         }
 

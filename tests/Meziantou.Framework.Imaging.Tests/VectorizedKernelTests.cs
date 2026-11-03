@@ -4482,6 +4482,66 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void WebPRowConversionMatchesTheScalarSteps()
+    {
+        // Odd and even widths around the groups of 32 pixels, random and extreme samples, RGBA with and without alpha, RGB
+        var random = new Random(603);
+        for (var width = 1; width <= 140; width++)
+        {
+            var chromaWidth = (width + 1) / 2;
+            for (var round = 0; round < 12; round++)
+            {
+                var luma = new byte[width];
+                var alpha = new byte[width];
+                var rows = new byte[4][];
+                random.NextBytes(luma);
+                random.NextBytes(alpha);
+                for (var i = 0; i < rows.Length; i++)
+                {
+                    rows[i] = new byte[chromaWidth];
+                    random.NextBytes(rows[i]);
+                    if (round % 4 == 1)
+                    {
+                        for (var x = 0; x < chromaWidth; x++)
+                        {
+                            rows[i][x] = (byte)(random.Next(2) * 255);
+                        }
+                    }
+                }
+
+                if (round % 4 == 1)
+                {
+                    for (var x = 0; x < width; x++)
+                    {
+                        luma[x] = (byte)(random.Next(2) * 255);
+                    }
+                }
+
+                var upBlue = new byte[width];
+                var upRed = new byte[width];
+                WebPYuvConverter.UpsampleSamplesScalar(rows[0], rows[1], upBlue, 0, chromaWidth);
+                WebPYuvConverter.UpsampleSamplesScalar(rows[2], rows[3], upRed, 0, chromaWidth);
+                var scratch = new byte[2 * width];
+                foreach (var withAlpha in new[] { false, true })
+                {
+                    var expected = new byte[width * 4];
+                    var actual = new byte[width * 4];
+                    WebPYuvConverter.ConvertSamplesScalar(luma, upBlue, upRed, withAlpha ? alpha : [], expected);
+                    WebPYuvConverter.ConvertRowSamples(luma, rows[0], rows[1], rows[2], rows[3], withAlpha ? alpha : [], actual, scratch, bytesPerPixel: 4);
+                    Assert.Equal(expected, actual);
+                }
+
+                var expectedRgb = new byte[width * 3];
+                var actualRgb = new byte[width * 3];
+                WebPYuvConverter.ConvertSamplesRgbScalar(luma, upBlue, upRed, expectedRgb);
+                WebPYuvConverter.ConvertRowSamples(luma, rows[0], rows[1], rows[2], rows[3], [], actualRgb, scratch, bytesPerPixel: 3);
+                Assert.Equal(expectedRgb, actualRgb);
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void WebPBoolDecoderMatchesTheByteAtATimeReference()
     {
         // Partitions of every short length (refills near and past the end, buffers shorter than 8 bytes), at the start, in
@@ -6585,6 +6645,68 @@ public sealed class VectorizedKernelTests
             Vp8LTransforms.AddGreenScalar(expected);
             Vp8LTransforms.AddGreen(actual);
             Assert.Equal(expected, actual);
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void WebPLosslessColorCacheUpdatesMatchAddingEveryPixel()
+    {
+        // Backward references (overlapping or not) and spans of pixels, with values that hash to few entries (runs of the
+        // same values, as in alpha planes) or to many, at lengths around the groups of 4 and 16 pixels
+        var random = new Random(4057);
+        for (var round = 0; round < 3000; round++)
+        {
+            var cacheBits = 1 + (round % 4);
+            var palette = new uint[1 + random.Next(round % 3 == 0 ? 3 : 64)];
+            for (var i = 0; i < palette.Length; i++)
+            {
+                palette[i] = random.Next(4) == 0 ? (uint)random.Next(256) << 8 : (uint)random.Next() ^ ((uint)random.Next() << 16);
+            }
+
+            var pixels = new uint[random.Next(1, 120)];
+            for (var i = 0; i < pixels.Length; i++)
+            {
+                pixels[i] = palette[random.Next(palette.Length)];
+            }
+
+            var initial = new uint[1 << cacheBits];
+            for (var i = 0; i < initial.Length; i++)
+            {
+                initial[i] = (uint)random.Next();
+            }
+
+            // A copy of length pixels at distance, after the first pixels
+            var position = random.Next(1, pixels.Length + 1);
+            var distance = random.Next(1, position + 1);
+            var length = random.Next(0, pixels.Length - position + 1);
+            for (var i = 0; i < length; i++)
+            {
+                pixels[position + i] = pixels[position + i - distance];
+            }
+
+            var expected = initial.ToArray();
+            foreach (var argb in pixels.AsSpan(position, length))
+            {
+                expected[Vp8LDecoder.ColorCacheHash(argb, cacheBits)] = argb;
+            }
+
+            var actual = initial.ToArray();
+            Vp8LDecoder.InsertCopyIntoCache(pixels.AsSpan(position, length), distance, actual, cacheBits);
+            Assert.Equal(expected, actual);
+
+            if (cacheBits == 1)
+            {
+                expected = initial.ToArray();
+                foreach (var argb in pixels)
+                {
+                    expected[Vp8LDecoder.ColorCacheHash(argb, cacheBits)] = argb;
+                }
+
+                actual = initial.ToArray();
+                Vp8LDecoder.InsertIntoTwoEntryCache(pixels, actual);
+                Assert.Equal(expected, actual);
+            }
         }
     }
 

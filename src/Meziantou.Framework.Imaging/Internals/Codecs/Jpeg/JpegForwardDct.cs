@@ -300,15 +300,13 @@ internal static class JpegForwardDct
         unsafe { Unsafe.Add(ref destination, positions) = (int)converted64.ToScalar(); }
         unsafe { Unsafe.Add(ref destination, Unsafe.Add(ref positions, 1)) = (int)converted64.GetElement(1); }
 
-        // trunc(q) plus or minus 1 when the exact fraction reaches one half
+        // trunc(q) plus or minus 1 when the exact fraction reaches one half: the fraction and its double are exact, and
+        // the truncation of the double is 1 or -1 exactly then
         static Vector128<double> RoundAwayFromZero(Vector128<double> value)
         {
-            var half = Vector128.Create(0.5);
             var truncated = Vector128.Truncate(value);
             var fraction = value - truncated;
-            return truncated
-                + Vector128.ConditionalSelect(Vector128.GreaterThanOrEqual(fraction, half), Vector128<double>.One, Vector128<double>.Zero)
-                - Vector128.ConditionalSelect(Vector128.LessThanOrEqual(fraction, -half), Vector128<double>.One, Vector128<double>.Zero);
+            return truncated + Vector128.Truncate(fraction + fraction);
         }
     }
 
@@ -443,13 +441,10 @@ internal static class JpegForwardDct
         var maximum = index == 0 ? Vector256.Create((double)MaxDc, MaxAcMagnitude, MaxAcMagnitude, MaxAcMagnitude) : Vector256.Create((double)MaxAcMagnitude);
         var clamped = Vector256.MinNative(Vector256.MaxNative(quotient, minimum), maximum);
 
-        // trunc(q) plus or minus 1 when the exact fraction reaches one half
-        var half = Vector256.Create(0.5);
+        // trunc(q) plus or minus 1 when the exact fraction reaches one half (see Quantize)
         var truncated = Avx.RoundToZero(clamped);
         var fraction = clamped - truncated;
-        var rounded = truncated
-            + (Vector256.GreaterThanOrEqual(fraction, half) & Vector256<double>.One)
-            - (Vector256.LessThanOrEqual(fraction, -half) & Vector256<double>.One);
+        var rounded = truncated + Avx.RoundToZero(fraction + fraction);
         var integers = Avx.ConvertToVector128Int32WithTruncation(rounded);
         ref var positions = ref unsafe(Unsafe.Add(ref MemoryMarshal.GetReference(TransposedZigZagPositions), index));
         unsafe { Unsafe.Add(ref destination, positions) = integers.ToScalar(); }
@@ -553,13 +548,11 @@ internal static class JpegForwardDct
         var maximum = index == 0 ? Vector512.Create((double)MaxDc, MaxAcMagnitude, MaxAcMagnitude, MaxAcMagnitude, MaxAcMagnitude, MaxAcMagnitude, MaxAcMagnitude, MaxAcMagnitude) : Vector512.Create((double)MaxAcMagnitude);
         var clamped = Vector512.MinNative(Vector512.MaxNative(quotient, minimum), maximum);
 
-        // trunc(q) plus or minus 1 when the exact fraction reaches one half (VRNDSCALEPD with the truncation mode, no exception)
-        var half = Vector512.Create(0.5);
+        // trunc(q) plus or minus 1 when the exact fraction reaches one half (see Quantize); VRNDSCALEPD with the truncation
+        // mode, without exception
         var truncated = Avx512F.RoundScale(clamped, 0x0B);
         var fraction = clamped - truncated;
-        var rounded = truncated
-            + (Vector512.GreaterThanOrEqual(fraction, half) & Vector512<double>.One)
-            - (Vector512.LessThanOrEqual(fraction, -half) & Vector512<double>.One);
+        var rounded = truncated + Avx512F.RoundScale(fraction + fraction, 0x0B);
         return Avx512F.ConvertToVector256Int32WithTruncation(rounded);
     }
 }

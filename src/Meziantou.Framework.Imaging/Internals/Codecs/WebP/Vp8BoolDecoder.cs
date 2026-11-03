@@ -144,6 +144,38 @@ internal struct Vp8BoolDecoder
         return result;
     }
 
+    /// <summary>
+    /// Decodes a sign (a boolean with probability 1/2) with the arithmetic decoder state held by the caller and returns
+    /// <paramref name="magnitude"/> negated when it is set: the same operations as
+    /// <see cref="ReadBool(ref Vp8BoolDecoder, ref ulong, ref uint, ref int, int)"/>, with selects instead of a branch, a sign
+    /// being unpredictable.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static int ReadSigned(ref Vp8BoolDecoder decoder, ref ulong value, ref uint range, ref int bits, int magnitude)
+    {
+        var currentBits = bits;
+        var currentValue = value;
+        if (currentBits < 0)
+        {
+            currentValue |= decoder.NextBytes() << -currentBits;
+            currentBits += WindowShift;
+        }
+
+        // split - 1 = ((range - 1) * 128) >> 8; mask is all ones when the window is at least the split (the bit is set)
+        var rangeMinusOne = range;
+        var splitMinusOne = rangeMinusOne >> 1;
+        var mask = (int)((long)(splitMinusOne - (currentValue >> WindowShift)) >> 63);
+        currentValue -= (ulong)((splitMinusOne + 1) & (uint)mask) << WindowShift;
+
+        // The new range: split, or range - split
+        var newRange = splitMinusOne + 1 + ((rangeMinusOne - (2 * splitMinusOne) - 1) & (uint)mask);
+        var shift = BitOperations.LeadingZeroCount(newRange) - 24;
+        range = (newRange << shift) - 1;
+        value = currentValue << shift;
+        bits = currentBits - shift;
+        return (magnitude ^ mask) - mask;
+    }
+
     /// <summary>Decodes a boolean with probability 1/2 (<c>B(128)</c>).</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int ReadBit() => ReadBool(128) ? 1 : 0;

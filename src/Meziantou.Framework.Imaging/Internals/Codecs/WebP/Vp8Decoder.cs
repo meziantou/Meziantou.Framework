@@ -804,11 +804,7 @@ internal sealed class Vp8Decoder : IDisposable
                 nextContext = 2;
             }
 
-            if (Vp8BoolDecoder.ReadBool(ref decoder, ref value, ref range, ref bits, 128))
-            {
-                coefficient = -coefficient;
-            }
-
+            coefficient = Vp8BoolDecoder.ReadSigned(ref decoder, ref value, ref range, ref bits, coefficient);
             unsafe
             {
                 Unsafe.Add(ref coefficients, Unsafe.Add(ref zigzag, i)) = (short)(coefficient * (i > 0 ? acFactor : dcFactor));

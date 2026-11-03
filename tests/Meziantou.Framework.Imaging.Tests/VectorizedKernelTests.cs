@@ -3594,7 +3594,16 @@ public sealed class VectorizedKernelTests
                     };
                     var expected = reference.ReadBool(probability);
                     bool value;
-                    if (useLocals)
+                    if (useLocals && probability == 128 && i % 2 == 0)
+                    {
+                        // A sign: the magnitude negated when the bit is set
+                        actual.Load(out var window, out var range, out var bits);
+                        var signed = Vp8BoolDecoder.ReadSigned(ref actual, ref window, ref range, ref bits, 1 + (i % 2047));
+                        actual.Store(window, range, bits);
+                        Assert.Equal(1 + (i % 2047), Math.Abs(signed));
+                        value = signed < 0;
+                    }
+                    else if (useLocals)
                     {
                         actual.Load(out var window, out var range, out var bits);
                         value = Vp8BoolDecoder.ReadBool(ref actual, ref window, ref range, ref bits, probability);

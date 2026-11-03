@@ -235,6 +235,11 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
         var isFirstLine = true;
         var previousLine = ReadOnlySpan<char>.Empty;
         var newLine = NewLine.LineFeed;
+
+        // A GFM table is tried once per paragraph, at the first line that is a delimiter row. A lazy line of the source is not
+        // tried, but the same line written in the container is, and the table written right after the paragraph would become
+        // part of its text. A line indented by 4 spaces is never tried.
+        var isBeforeGfmTable = GetNextSibling(leafBlock) is Table { Parser: GfmPipeTableParser };
         while (true)
         {
             // The text of a setext heading keeps the carriage returns of the source, which end its lines too
@@ -285,7 +290,7 @@ public class NormalizeRenderer : TextRendererBase<NormalizeRenderer>
                     WriteLine(newLine);
                 }
 
-                if (CanInterruptParagraph(previousLine, line))
+                if (CanInterruptParagraph(previousLine, line) || (isBeforeGfmTable && GfmPipeTableParser.IsDelimiterRow(line.ToString())))
                 {
                     Write("    ");
                 }

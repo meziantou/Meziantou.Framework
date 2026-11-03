@@ -1125,6 +1125,17 @@ Text following the table.");
         AssertNormalizePreservesHtml("0. a | b\n-- | -\n0 | 1", "0. a \\| b\n   -- \\| -\n   0 \\| 1", pipeline);
     }
 
+    [Theory]
+    [InlineData("- T\n  a | b\n:---\n  | H1 | H2 |\n  |---|---|", "- T\n  a | b\n      :---\n  | H1 | H2 |\n  | --- | --- |")]
+    [InlineData("2. T\n   a\n:-|\n   | H |\n   |---|", "2. T\n   a\n   :-\\|\n   | H |\n   | --- |")]
+    public void LazyDelimiterRowBeforeAGfmTable(string markdown, string expected)
+    {
+        // A GFM table is tried once per paragraph, and a lazy line is not tried: the delimiter row written in the list item was
+        // tried, which made the table after it part of the paragraph
+        var pipeline = new MarkdownPipelineBuilder().Configure("gfm-pipetables").Build();
+        AssertNormalizePreservesHtml(markdown, expected, pipeline);
+    }
+
     [Fact]
     public void DefinitionsAreWrittenBeforeAParagraphThatContinuesThem()
     {

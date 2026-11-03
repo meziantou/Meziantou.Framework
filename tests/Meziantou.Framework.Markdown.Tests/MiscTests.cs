@@ -1440,6 +1440,17 @@ $$
         TestParser.TestSpec(input, expected, new MarkdownPipelineBuilder().UseDefinitionLists().Build());
     }
 
+    [Theory]
+    [InlineData("Term\n:   a\n:-: 1\n", "<dl>\n<dt>Term</dt>\n<dd>a\n:-: 1</dd>\n</dl>\n")]
+    [InlineData("Term\n:   a\n: b\n", "<dl>\n<dt>Term</dt>\n<dd>a\n: b</dd>\n</dl>\n")]
+    [InlineData("Term\n:   a\n~x\n", "<dl>\n<dt>Term</dt>\n<dd>a\n~x</dd>\n</dl>\n")]
+    public void TestDefinitionContinuationLineStartingWithOpeningCharacter(string input, string expected)
+    {
+        // A line that starts with ':' or '~' without enough spaces after it is not a definition, and its first character was lost
+        TestParser.TestSpec(input, expected, new MarkdownPipelineBuilder().UseDefinitionLists().Build());
+        TestRoundtrip.RoundTrip(input, new MarkdownPipelineBuilder().UseDefinitionLists());
+    }
+
     [Fact]
     public void TestAlertWithinAlertOrNestedBlock()
     {

@@ -816,13 +816,14 @@ public class PipeTableParser : InlineParser, IPostInlineProcessor
             }
 
             // The paragraph ends with the line break of its last line, without the whitespace before it, and without the line
-            // breaks of the lines that the table took
+            // breaks of the lines that the table took. With trivia, the last line of a paragraph keeps its whitespace, which is
+            // written back.
             while (leadingInline.LastChild is LineBreakInline { PreviousSibling: LineBreakInline } extraLineBreak)
             {
                 extraLineBreak.Remove();
             }
 
-            if (leadingInline.LastChild is LineBreakInline lineBreak)
+            if (!trackTrivia && leadingInline.LastChild is LineBreakInline lineBreak)
             {
                 var before = lineBreak.PreviousSibling;
                 while (before is ContainerInline { LastChild: { } beforeChild } and not LinkInline)

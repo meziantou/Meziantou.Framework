@@ -342,6 +342,12 @@ internal static class Vp8LTransforms
         _ = above[end];
         ref var current = ref unsafe(MemoryMarshal.GetReference(row));
         ref var top = ref unsafe(MemoryMarshal.GetReference(above));
+        if (!AdvSimd.IsSupported && mode is 5 or 6 or 7 or 10)
+        {
+            PredictAveragesComplemented(ref current, ref top, start, end, mode);
+            return;
+        }
+
         var left = Load(ref current, start - 1);
         switch (mode)
         {
@@ -431,6 +437,68 @@ internal static class Vp8LTransforms
 
         // The 4 bytes as 16-bit lanes
         static Vector128<short> Widen(Vector128<byte> pixel) => Vector128.WidenLower(pixel).AsInt16();
+    }
+
+    /// <summary>
+    /// The modes 5, 6, 7 and 10 (averages of the left pixel) on x64, where the floor of a mean is a rounded mean (PAVGB) and a
+    /// correction: the chain goes through the complements of the pixels, whose rounded means are the complements of the
+    /// floors of the means (<c>~avg(a, b) = pavgb(~a, ~b)</c>), so that each step is one or two PAVGB and a subtraction:
+    /// <c>~(residual + ~p) = p - residual</c>.
+    /// </summary>
+    private static void PredictAveragesComplemented(ref uint current, ref uint top, int start, int end, int mode)
+    {
+        var ones = Vector128<byte>.AllBitsSet;
+        var complemented = Load(ref current, start - 1) ^ ones;
+        switch (mode)
+        {
+            case 5:
+                // avg(avg(L, TR), T)
+                for (var x = start; x < end; x++)
+                {
+                    complemented = Sse2.Average(Sse2.Average(complemented, Load(ref top, x + 1) ^ ones), Load(ref top, x) ^ ones) - Load(ref current, x);
+                    Store(ref current, x, complemented ^ ones);
+                }
+
+                break;
+
+            case 6:
+                // avg(L, TL)
+                for (var x = start; x < end; x++)
+                {
+                    complemented = Sse2.Average(complemented, Load(ref top, x - 1) ^ ones) - Load(ref current, x);
+                    Store(ref current, x, complemented ^ ones);
+                }
+
+                break;
+
+            case 7:
+                // avg(L, T)
+                for (var x = start; x < end; x++)
+                {
+                    complemented = Sse2.Average(complemented, Load(ref top, x) ^ ones) - Load(ref current, x);
+                    Store(ref current, x, complemented ^ ones);
+                }
+
+                break;
+
+            default:
+                // avg(avg(L, TL), avg(T, TR))
+                for (var x = start; x < end; x++)
+                {
+                    var right = Sse2.Average(Load(ref top, x) ^ ones, Load(ref top, x + 1) ^ ones);
+                    complemented = Sse2.Average(Sse2.Average(complemented, Load(ref top, x - 1) ^ ones), right) - Load(ref current, x);
+                    Store(ref current, x, complemented ^ ones);
+                }
+
+                break;
+        }
+
+        static Vector128<byte> Load(ref uint pixels, int x) => Vector128.CreateScalar(unsafe(Unsafe.Add(ref pixels, x))).AsByte();
+
+        static void Store(ref uint pixels, int x, Vector128<byte> pixel)
+        {
+            unsafe { Unsafe.Add(ref pixels, x) = pixel.AsUInt32().ToScalar(); }
+        }
     }
 
     /// <summary>The floor of the mean of each byte.</summary>

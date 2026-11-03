@@ -38,6 +38,8 @@ internal struct Vp8BoolDecoder
     private const int WindowShift = 40;
 
     private ulong _value;
+
+    // The range minus one (127 to 254)
     private uint _range;
     private int _bits;
 
@@ -61,7 +63,7 @@ internal struct Vp8BoolDecoder
         _start = offset;
         _position = offset;
         _end = offset + length;
-        _range = 255;
+        _range = 254;
         _value = NextBytes() << 8;
         _bits = WindowShift - 8;
     }
@@ -116,25 +118,27 @@ internal struct Vp8BoolDecoder
             currentBits += WindowShift;
         }
 
-        var currentRange = range;
-        var split = 1 + (((currentRange - 1) * (uint)probability) >> 8);
-        var bigSplit = (ulong)split << WindowShift;
+        // The range is held minus one: split - 1 = ((range - 1) * probability) >> 8 is one multiplication and one shift, and the
+        // decision compares the window with it (window >= split), without waiting for the split itself
+        var rangeMinusOne = range;
+        var splitMinusOne = (rangeMinusOne * (uint)probability) >> 8;
+        uint newRange;
         bool result;
-        if (currentValue >= bigSplit)
+        if ((currentValue >> WindowShift) > splitMinusOne)
         {
-            currentRange -= split;
-            currentValue -= bigSplit;
+            newRange = rangeMinusOne - splitMinusOne;
+            currentValue -= (ulong)(splitMinusOne + 1) << WindowShift;
             result = true;
         }
         else
         {
-            currentRange = split;
+            newRange = splitMinusOne + 1;
             result = false;
         }
 
         // Normalize: shift the range back to [128, 255], and the value by as many bits
-        var shift = BitOperations.LeadingZeroCount(currentRange) - 24;
-        range = currentRange << shift;
+        var shift = BitOperations.LeadingZeroCount(newRange) - 24;
+        range = (newRange << shift) - 1;
         value = currentValue << shift;
         bits = currentBits - shift;
         return result;

@@ -896,7 +896,7 @@ public sealed class VectorizedKernelTests
                     var expected = new byte[outputLength];
                     var actual = new byte[outputLength];
                     JpegRowWriter.UpsampleBothScalar(near, far, expected);
-                    JpegRowWriter.UpsampleBoth(near, far, actual);
+                    JpegRowWriter.UpsampleBoth(near, far, actual, new ushort[length + round]);
                     Assert.Equal(expected, actual);
 
                     JpegRowWriter.UpsampleHorizontalScalar(near, expected);

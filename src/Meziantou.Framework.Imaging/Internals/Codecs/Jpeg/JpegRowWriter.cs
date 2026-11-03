@@ -51,8 +51,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </para>
 /// <para>
 /// With 128-bit hardware vector support (and little-endian byte order), the triangle filters and the color conversion process
-/// 16 samples at a time in 16-bit lanes (the color conversion 32 with 256-bit vectors); the edges and the remainders use
-/// the scalar code. The output is identical to the scalar reference: the filters use the same integer arithmetic, and the
+/// 16 samples at a time in 16-bit lanes (the color conversion 32 with 256-bit vectors; the filter of both factors computes
+/// the column sums of a row once, then filters 8 or 16 of them at a time); the edges and the remainders use the scalar code. The output is identical to the scalar reference: the filters use the same integer arithmetic, and the
 /// conversion an exact rewriting of it whose intermediate values fit in 16 bits (see <see cref="ConvertYCbCrVector"/>).
 /// </para>
 /// </remarks>
@@ -78,6 +78,9 @@ internal sealed class JpegRowWriter : JpegBandWriter
     // Whether the rows of a three-component frame are written as opaque RGBA (the source layout of the sink) instead of RGB
     private readonly bool _opaqueRgba;
     private readonly PooledBuffer?[] _upsampled;
+
+    // The column sums of the components upsampled by 2 in both directions (UpsampleBoth)
+    private readonly PooledBuffer?[] _columnSums;
     private PooledBuffer? _sourceRow;
     private PooledBuffer? _inkRow;
 
@@ -108,6 +111,7 @@ internal sealed class JpegRowWriter : JpegBandWriter
             throw new ArgumentException("Only the rows of a three-component frame are written as RGBA.", nameof(sink));
 
         _upsampled = new PooledBuffer?[components.Length];
+        _columnSums = new PooledBuffer?[components.Length];
         try
         {
             foreach (var component in components)
@@ -115,6 +119,10 @@ internal sealed class JpegRowWriter : JpegBandWriter
                 if (component.HorizontalRatio != 1 || component.VerticalRatio != 1)
                 {
                     _upsampled[component.Index] = scope.Rent(width, AllocationKind.DecoderState, clear: false);
+                    if (component.HorizontalRatio == 2 && component.VerticalRatio == 2)
+                    {
+                        _columnSums[component.Index] = scope.Rent(component.Width * sizeof(ushort), AllocationKind.DecoderState, clear: false);
+                    }
                 }
             }
 
@@ -168,6 +176,8 @@ internal sealed class JpegRowWriter : JpegBandWriter
         {
             _upsampled[i]?.Dispose();
             _upsampled[i] = null;
+            _columnSums[i]?.Dispose();
+            _columnSums[i] = null;
         }
 
         _sourceRow?.Dispose();
@@ -718,7 +728,7 @@ internal sealed class JpegRowWriter : JpegBandWriter
             var far = component.GetRow(other);
             if (horizontal == 2)
             {
-                UpsampleBoth(near, far, output);
+                UpsampleBoth(near, far, output, unsafe(MemoryMarshal.Cast<byte, ushort>(_columnSums[component.Index]!.RawBuffer.AsSpan())));
             }
             else
             {
@@ -756,7 +766,7 @@ internal sealed class JpegRowWriter : JpegBandWriter
         }
 
         // Inner samples by groups of 16 (their neighbors exist); the edges and the remainder use the scalar formula
-        var end = UpsampleInner(samples, samples, output, horizontalOnly: true);
+        var end = UpsampleHorizontalInner(samples, output);
         UpsampleHorizontalRange(samples, output, 0, 1);
         UpsampleHorizontalRange(samples, output, end, samples.Length);
     }
@@ -814,7 +824,11 @@ internal sealed class JpegRowWriter : JpegBandWriter
     }
 
     /// <summary>Both factors 2: column sums <c>c = 3 near + far</c>, then the horizontal triangle filter of the sums.</summary>
-    internal static void UpsampleBoth(ReadOnlySpan<byte> near, ReadOnlySpan<byte> far, Span<byte> output)
+    /// <param name="near">The nearer sample row.</param>
+    /// <param name="far">The other neighbor row, as long as <paramref name="near"/>.</param>
+    /// <param name="output">The upsampled row: <c>2 near.Length</c> or <c>2 near.Length - 1</c> samples.</param>
+    /// <param name="sums">A buffer of at least <c>near.Length</c> values, which receives the column sums.</param>
+    internal static void UpsampleBoth(ReadOnlySpan<byte> near, ReadOnlySpan<byte> far, Span<byte> output, Span<ushort> sums)
     {
         if (!UseVectors)
         {
@@ -822,9 +836,80 @@ internal sealed class JpegRowWriter : JpegBandWriter
             return;
         }
 
-        var end = UpsampleInner(near, far, output, horizontalOnly: false);
-        UpsampleBothRange(near, far, output, 0, 1);
-        UpsampleBothRange(near, far, output, end, near.Length);
+        // The sums are computed once, then the filter reads each of them three times (as the current, previous and next sum)
+        sums = sums[..near.Length];
+        ColumnSums(near, far[..near.Length], sums);
+        var end = UpsampleSums(sums, output);
+        UpsampleSumsRange(sums, output, 0, 1);
+        UpsampleSumsRange(sums, output, end, sums.Length);
+    }
+
+    /// <summary>Computes <c>sums[j] = 3 near[j] + far[j]</c>.</summary>
+    private static void ColumnSums(ReadOnlySpan<byte> near, ReadOnlySpan<byte> far, Span<ushort> sums)
+    {
+        ref var nearStart = ref unsafe(MemoryMarshal.GetReference(near));
+        ref var farStart = ref unsafe(MemoryMarshal.GetReference(far));
+        ref var sumsStart = ref unsafe(MemoryMarshal.GetReference(sums));
+        var length = Math.Min(sums.Length, Math.Min(near.Length, far.Length));
+        var j = 0;
+        if (UseVectors256)
+        {
+            for (; j + 32 <= length; j += 32)
+            {
+                var (n0, n1) = Vector256.Widen(unsafe(Vector256.LoadUnsafe(ref nearStart, (nuint)j)));
+                var (f0, f1) = Vector256.Widen(unsafe(Vector256.LoadUnsafe(ref farStart, (nuint)j)));
+                unsafe { ((n0 * 3) + f0).StoreUnsafe(ref sumsStart, (nuint)j); }
+                unsafe { ((n1 * 3) + f1).StoreUnsafe(ref sumsStart, (nuint)(j + 16)); }
+            }
+        }
+
+        for (; j + 16 <= length; j += 16)
+        {
+            var (n0, n1) = Vector128.Widen(unsafe(Vector128.LoadUnsafe(ref nearStart, (nuint)j)));
+            var (f0, f1) = Vector128.Widen(unsafe(Vector128.LoadUnsafe(ref farStart, (nuint)j)));
+            unsafe { ((n0 * 3) + f0).StoreUnsafe(ref sumsStart, (nuint)j); }
+            unsafe { ((n1 * 3) + f1).StoreUnsafe(ref sumsStart, (nuint)(j + 8)); }
+        }
+
+        for (; j < length; j++)
+        {
+            sums[j] = (ushort)((3 * near[j]) + far[j]);
+        }
+    }
+
+    /// <summary>
+    /// The horizontal triangle filter of the column sums for the inner samples <c>j</c> (from 1, by groups whose right
+    /// neighbors exist and whose outputs fit): <c>(3 c[j] + c[j - 1] + 8) &gt;&gt; 4</c> and <c>(3 c[j] + c[j + 1] + 7) &gt;&gt; 4</c>.
+    /// Each output pair is formed as <c>even | odd &lt;&lt; 8</c> in a 16-bit lane, which is the interleaved byte order in
+    /// little-endian memory.
+    /// </summary>
+    /// <returns>The first sample not processed (at least 1).</returns>
+    private static int UpsampleSums(ReadOnlySpan<ushort> sums, Span<byte> output)
+    {
+        ref var sumsStart = ref unsafe(MemoryMarshal.GetReference(sums));
+        ref var outputStart = ref unsafe(MemoryMarshal.GetReference(output));
+        var length = sums.Length;
+        var j = 1;
+        if (UseVectors256)
+        {
+            for (; j + 17 <= length && (2 * j) + 32 <= output.Length; j += 16)
+            {
+                var current = unsafe(Vector256.LoadUnsafe(ref sumsStart, (nuint)j)) * 3;
+                var even = Vector256.ShiftRightLogical(current + unsafe(Vector256.LoadUnsafe(ref sumsStart, (nuint)(j - 1))) + Vector256.Create((ushort)8), 4);
+                var odd = Vector256.ShiftRightLogical(current + unsafe(Vector256.LoadUnsafe(ref sumsStart, (nuint)(j + 1))) + Vector256.Create((ushort)7), 4);
+                unsafe { (even | Vector256.ShiftLeft(odd, 8)).AsByte().StoreUnsafe(ref outputStart, (nuint)(2 * j)); }
+            }
+        }
+
+        for (; j + 9 <= length && (2 * j) + 16 <= output.Length; j += 8)
+        {
+            var current = unsafe(Vector128.LoadUnsafe(ref sumsStart, (nuint)j)) * 3;
+            var even = Vector128.ShiftRightLogical(current + unsafe(Vector128.LoadUnsafe(ref sumsStart, (nuint)(j - 1))) + Vector128.Create((ushort)8), 4);
+            var odd = Vector128.ShiftRightLogical(current + unsafe(Vector128.LoadUnsafe(ref sumsStart, (nuint)(j + 1))) + Vector128.Create((ushort)7), 4);
+            unsafe { (even | Vector128.ShiftLeft(odd, 8)).AsByte().StoreUnsafe(ref outputStart, (nuint)(2 * j)); }
+        }
+
+        return j;
     }
 
     /// <summary>The scalar reference of <see cref="UpsampleBoth"/>.</summary>
@@ -848,14 +933,14 @@ internal sealed class JpegRowWriter : JpegBandWriter
         }
     }
 
-    private static void UpsampleBothRange(ReadOnlySpan<byte> near, ReadOnlySpan<byte> far, Span<byte> output, int start, int end)
+    private static void UpsampleSumsRange(ReadOnlySpan<ushort> sums, Span<byte> output, int start, int end)
     {
-        var last = near.Length - 1;
+        var last = sums.Length - 1;
         for (var j = start; j < end; j++)
         {
-            var current = (3 * near[j]) + far[j];
-            var previous = (3 * near[Math.Max(j - 1, 0)]) + far[Math.Max(j - 1, 0)];
-            var next = (3 * near[Math.Min(j + 1, last)]) + far[Math.Min(j + 1, last)];
+            int current = sums[j];
+            int previous = sums[Math.Max(j - 1, 0)];
+            int next = sums[Math.Min(j + 1, last)];
             var x = 2 * j;
             output[x] = (byte)(((3 * current) + previous + 8) >> 4);
             if (x + 1 < output.Length)
@@ -866,48 +951,33 @@ internal sealed class JpegRowWriter : JpegBandWriter
     }
 
     /// <summary>
-    /// Filters the inner samples <c>j</c> (from 1, by groups of 16 whose right neighbors exist and whose 32 outputs fit) in
-    /// 16-bit lanes. Each output pair is formed as <c>even | odd &lt;&lt; 8</c> in a 16-bit lane, which is the interleaved byte
-    /// order in little-endian memory. Horizontal only: <c>(3 s + left + 1) &gt;&gt; 2</c> and <c>(3 s + right + 2) &gt;&gt; 2</c>; both
-    /// factors: the same on column sums <c>c = 3 near + far</c> with <c>(... + 8) &gt;&gt; 4</c> and <c>(... + 7) &gt;&gt; 4</c>.
+    /// The horizontal triangle filter of the inner samples <c>j</c> (from 1, by groups of 16 whose right neighbors exist and
+    /// whose 32 outputs fit) in 16-bit lanes: <c>(3 s + left + 1) &gt;&gt; 2</c> and <c>(3 s + right + 2) &gt;&gt; 2</c>. Each output
+    /// pair is formed as <c>even | odd &lt;&lt; 8</c> in a 16-bit lane, which is the interleaved byte order in little-endian memory.
     /// </summary>
     /// <returns>The first sample not processed (at least 1).</returns>
-    private static int UpsampleInner(ReadOnlySpan<byte> near, ReadOnlySpan<byte> far, Span<byte> output, bool horizontalOnly)
+    private static int UpsampleHorizontalInner(ReadOnlySpan<byte> samples, Span<byte> output)
     {
-        ref var nearStart = ref unsafe(MemoryMarshal.GetReference(near));
-        ref var farStart = ref unsafe(MemoryMarshal.GetReference(far));
+        ref var samplesStart = ref unsafe(MemoryMarshal.GetReference(samples));
         ref var outputStart = ref unsafe(MemoryMarshal.GetReference(output));
         var three = Vector128.Create((ushort)3);
-        var evenBias = Vector128.Create((ushort)(horizontalOnly ? 1 : 8));
-        var oddBias = Vector128.Create((ushort)(horizontalOnly ? 2 : 7));
-        var shift = horizontalOnly ? 2 : 4;
-        // Every load is in bounds: 16 samples from j - 1 to j + 1 of both rows
-        var length = horizontalOnly ? near.Length : Math.Min(near.Length, far.Length);
+
+        // Every load is in bounds: 16 samples from j - 1 to j + 1
         var j = 1;
-        for (; j + 17 <= length && (2 * j) + 32 <= output.Length; j += 16)
+        for (; j + 17 <= samples.Length && (2 * j) + 32 <= output.Length; j += 16)
         {
-            var (current0, current1) = Sums(ref nearStart, ref farStart, j - 0, horizontalOnly, three);
-            var (previous0, previous1) = Sums(ref nearStart, ref farStart, j - 1, horizontalOnly, three);
-            var (next0, next1) = Sums(ref nearStart, ref farStart, j + 1, horizontalOnly, three);
-            var even0 = Vector128.ShiftRightLogical((three * current0) + previous0 + evenBias, shift);
-            var odd0 = Vector128.ShiftRightLogical((three * current0) + next0 + oddBias, shift);
-            var even1 = Vector128.ShiftRightLogical((three * current1) + previous1 + evenBias, shift);
-            var odd1 = Vector128.ShiftRightLogical((three * current1) + next1 + oddBias, shift);
+            var (current0, current1) = Vector128.Widen(unsafe(Vector128.LoadUnsafe(ref samplesStart, (nuint)j)));
+            var (previous0, previous1) = Vector128.Widen(unsafe(Vector128.LoadUnsafe(ref samplesStart, (nuint)(j - 1))));
+            var (next0, next1) = Vector128.Widen(unsafe(Vector128.LoadUnsafe(ref samplesStart, (nuint)(j + 1))));
+            var even0 = Vector128.ShiftRightLogical((three * current0) + previous0 + Vector128.Create((ushort)1), 2);
+            var odd0 = Vector128.ShiftRightLogical((three * current0) + next0 + Vector128.Create((ushort)2), 2);
+            var even1 = Vector128.ShiftRightLogical((three * current1) + previous1 + Vector128.Create((ushort)1), 2);
+            var odd1 = Vector128.ShiftRightLogical((three * current1) + next1 + Vector128.Create((ushort)2), 2);
             ref var destination = ref unsafe(Unsafe.Add(ref outputStart, 2 * j));
             unsafe { (even0 | Vector128.ShiftLeft(odd0, 8)).AsByte().StoreUnsafe(ref destination); }
             unsafe { (even1 | Vector128.ShiftLeft(odd1, 8)).AsByte().StoreUnsafe(ref Unsafe.Add(ref destination, 16)); }
         }
 
         return j;
-
-        static (Vector128<ushort> Low, Vector128<ushort> High) Sums(ref byte near, ref byte far, int offset, bool horizontalOnly, Vector128<ushort> three)
-        {
-            var (n0, n1) = Vector128.Widen(unsafe(Vector128.LoadUnsafe(ref near, (nuint)offset)));
-            if (horizontalOnly)
-                return (n0, n1);
-
-            var (f0, f1) = Vector128.Widen(unsafe(Vector128.LoadUnsafe(ref far, (nuint)offset)));
-            return ((three * n0) + f0, (three * n1) + f1);
-        }
     }
 }

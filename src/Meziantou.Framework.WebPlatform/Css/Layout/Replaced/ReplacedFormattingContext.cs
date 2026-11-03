@@ -101,14 +101,15 @@ internal sealed class ReplacedFormattingContext : FormattingContext
         // missing, by transferring the existing size through the preferred aspect ratio."
         var natural = content.NaturalSize;
         var (width, height) = (natural.Width, natural.Height);
-        var ratio = GetPreferredContentAspectRatio(layout, natural);
+        var ignoresAspectRatio = !HasPreferredAspectRatio(box);
+        var ratio = ignoresAspectRatio ? natural.AspectRatio : GetPreferredContentAspectRatio(layout, natural);
         if ((width is null) != (height is null) && ratio is { } preferredRatio)
         {
             width ??= height * preferredRatio;
             height ??= width / preferredRatio;
         }
 
-        var hasPreferredRatio = natural.AspectRatio is not null || layout.Box.AspectRatio.HasRatio;
+        var hasPreferredRatio = natural.AspectRatio is not null || (!ignoresAspectRatio && layout.Box.AspectRatio.HasRatio);
         double? inlineOverBlock = ratio is { } contentRatio ? (horizontal ? contentRatio : 1 / contentRatio) : null;
         var (naturalInline, naturalBlock) = horizontal ? (width, height) : (height, width);
 
@@ -194,7 +195,9 @@ internal sealed class ReplacedFormattingContext : FormattingContext
         if (state.NaturalInlineSize is { } naturalInline)
             return naturalInline - GetDisplayedScrollbarSpace(context, box, state).Inline + paddingAndBorder;
 
-        if (state.NaturalBlockSize is null && state.HasPreferredAspectRatio)
+        // A percentage inline size that behaves as auto (its basis is indefinite: the intrinsic contributions) is the default
+        // object size, as in the browsers (WPT css/css-sizing/svg-intrinsic-size-006.html)
+        if (state.NaturalBlockSize is null && state.HasPreferredAspectRatio && !IntrinsicSizing.HasPercentageSize(box, box.Style.Layout.IsHorizontalWritingMode))
             return Math.Max(availableSize, paddingAndBorder);
 
         var defaultSize = state.Content.DefaultObjectSize;

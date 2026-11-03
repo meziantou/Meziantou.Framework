@@ -1583,8 +1583,12 @@ internal abstract class FormattingContext
         return GetPreferredAspectRatio(box, inlineIsHorizontal, paddingAndBorder, property.IsAuto || !property.HasRatio ? GetNaturalAspectRatio(context, box) : null);
     }
 
-    /// <summary>Returns whether a box may have a preferred aspect ratio: the inline boxes and the internal table boxes have none.</summary>
-    private static bool HasPreferredAspectRatio(ContainerBox box) => !box.IsInlineBox && box.Kind is not (ContainerBoxKind.Viewport or ContainerBoxKind.TableGrid) && box.Display.Internal == DisplayInternal.None;
+    /// <summary>
+    /// Returns whether a box may have a preferred aspect ratio: the inline boxes and the internal table boxes have none, nor an
+    /// <c>audio</c> element, whose size is the one of its controls (as in the browsers: WPT css/css-sizing/aspect-ratio/replaced-element-035.html).
+    /// </summary>
+    internal static bool HasPreferredAspectRatio(ContainerBox box) => !box.IsInlineBox && box.Kind is not (ContainerBoxKind.Viewport or ContainerBoxKind.TableGrid)
+        && box.Display.Internal == DisplayInternal.None && (box.PseudoElement is not null || box.Element is not HtmlAudioElement);
 
     /// <summary>
     /// Returns the preferred aspect ratio of a box (see <see cref="GetPreferredAspectRatio(LayoutContext, ContainerBox, bool, LogicalSides{double})"/>)
@@ -1653,14 +1657,17 @@ internal abstract class FormattingContext
     /// <summary>
     /// Returns whether the automatic minimum size of a box in the ratio-dependent axis is its min-content size
     /// (https://drafts.csswg.org/css-sizing-4/#aspect-ratio-minimum): its minimum size is <c>auto</c>, and it is neither a
-    /// replaced element nor a scroll container.
+    /// replaced element nor a scroll container. A <c>select</c> is not a replaced element in the browsers: its automatic minimum
+    /// size is the size of its selected option (WPT css/css-sizing/aspect-ratio/select-element-001.html).
     /// </summary>
     private static bool UsesAspectRatioAutomaticMinimum(ContainerBox box, LayoutStyle style, bool horizontal)
-        => box.Kind != ContainerBoxKind.Replaced && style.Box.GetMinSize(horizontal).IsAuto && (horizontal ? style.OverflowX : style.OverflowY) is OverflowKind.Visible or OverflowKind.Clip;
+        => IsNonReplacedForAspectRatioMinimum(box) && style.Box.GetMinSize(horizontal).IsAuto && (horizontal ? style.OverflowX : style.OverflowY) is OverflowKind.Visible or OverflowKind.Clip;
 
     /// <summary>Whether the minimum size of a box is a <c>calc-size()</c> of the automatic minimum size of its aspect ratio (see <see cref="UsesAspectRatioAutomaticMinimum"/>).</summary>
     private static bool UsesAspectRatioCalcSizeMinimum(ContainerBox box, LayoutStyle style, bool horizontal)
-        => box.Kind != ContainerBoxKind.Replaced && style.Box.GetMinSize(horizontal) is { Kind: SizeKind.CalcSize, BehavesAs: SizeKind.Auto } && (horizontal ? style.OverflowX : style.OverflowY) is OverflowKind.Visible or OverflowKind.Clip;
+        => IsNonReplacedForAspectRatioMinimum(box) && style.Box.GetMinSize(horizontal) is { Kind: SizeKind.CalcSize, BehavesAs: SizeKind.Auto } && (horizontal ? style.OverflowX : style.OverflowY) is OverflowKind.Visible or OverflowKind.Clip;
+
+    private static bool IsNonReplacedForAspectRatioMinimum(ContainerBox box) => box.Kind != ContainerBoxKind.Replaced || (box.PseudoElement is null && box.Element is HtmlSelectElement);
 
     /// <summary>
     /// Returns the offset of the contents of a block container aligned by <c>align-content</c> in its content box

@@ -11,8 +11,8 @@ description: "The results of the web-platform-tests of css/css-flexbox, and why 
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 367 | 376 | 0 | 98% |
 | [Tentative](#tentative-tests) | 6 | 6 | 0 | 100% |
-| [Reftests](#reftests) | 1,015 | 1,023 | 0 | 99% |
-| **All** | **1,388** | **1,405** | **0** | **99%** |
+| [Reftests](#reftests) | 1,016 | 1,023 | 0 | 99% |
+| **All** | **1,389** | **1,405** | **0** | **99%** |
 
 ## Stable tests
 
@@ -1390,7 +1390,7 @@ description: "The results of the web-platform-tests of css/css-flexbox, and why 
 | [`stretched-child-in-nested-flexbox-002.html`](https://wpt.fyi/results/css/css-flexbox/stretched-child-in-nested-flexbox-002.html) | Pass | 1 / 1 |  |  |
 | [`stretched-child-in-nested-flexbox-003.html`](https://wpt.fyi/results/css/css-flexbox/stretched-child-in-nested-flexbox-003.html) | Pass | 1 / 1 |  |  |
 | [`stretching-orthogonal-flows.html`](https://wpt.fyi/results/css/css-flexbox/stretching-orthogonal-flows.html) | Pass | 1 / 1 |  |  |
-| [`svg-no-natural-size-grandchild.html`](https://wpt.fyi/results/css/css-flexbox/svg-no-natural-size-grandchild.html) | Fail | 0 / 1 | BUG | the max-content contribution of a replaced element that only has an aspect ratio (an `svg` with a `viewBox`, `width="100%"` and `height="100%"`) is zero (as WPT css/css-sizing/svg-intrinsic-size-009.html expects for an `auto` width): the flex item that contains it has a flex base size of zero and stays empty, where the browsers give the element a non-zero contribution when its width is a percentage |
+| [`svg-no-natural-size-grandchild.html`](https://wpt.fyi/results/css/css-flexbox/svg-no-natural-size-grandchild.html) | Pass | 1 / 1 |  |  |
 | [`svg-root-as-flex-item-001.html`](https://wpt.fyi/results/css/css-flexbox/svg-root-as-flex-item-001.html) | Pass | 1 / 1 |  |  |
 | [`svg-root-as-flex-item-002.html`](https://wpt.fyi/results/css/css-flexbox/svg-root-as-flex-item-002.html) | Pass | 1 / 1 |  |  |
 | [`svg-root-as-flex-item-003.html`](https://wpt.fyi/results/css/css-flexbox/svg-root-as-flex-item-003.html) | Pass | 1 / 1 |  |  |

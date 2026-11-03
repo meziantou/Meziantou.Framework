@@ -184,6 +184,12 @@ internal static class CssInterpolation
 
         using var scope = CssColor.KeepOutOfRangeRgb();
         var kind = GetKind(property, context.Style);
+
+        // The ratios are not additive (https://drafts.csswg.org/css-values-4/#combine-ratio): the addition of a value type that
+        // is not additive (and its accumulation) is Vresult = Va (https://drafts.csswg.org/css-values-4/#not-additive), the underlying value
+        if (kind == CssInterpolationKind.AspectRatio)
+            return underlying;
+
         var result = kind switch
         {
             CssInterpolationKind.NotAnimatable or CssInterpolationKind.Discrete or CssInterpolationKind.Visibility

@@ -652,6 +652,14 @@ internal sealed partial class LayoutEngine
         // https://drafts.csswg.org/css-display/#initial-containing-block: the root element is laid out in the initial
         // containing block, which has the size of the viewport (without its scrollbars) and the writing mode of the root element
         var size = new PhysicalSize(Math.Max(0, context.ViewportSize.Width - scrollbarSides.HorizontalSum()), Math.Max(0, context.ViewportSize.Height - scrollbarSides.VerticalSum()));
+
+        // https://drafts.csswg.org/css-sizing-4/#responsive-iframes: a document that opted into responsive embedded sizing
+        // records the size of its initial containing block at its first layout, and uses it for the next layouts
+        if (context.Document.ResponsiveEmbeddedSizingFlag == true && context.Document.BrowsingContext is { Parent: not null } && _printSession is null)
+        {
+            size = context.Document.LockedEmbeddedIcbSize ??= size;
+        }
+
         context.InitialContainingBlockSize = size;
         var writingDirection = WritingDirection.FromStyle(viewport.Style.Layout);
         var logicalSize = writingDirection.ToLogical(size);

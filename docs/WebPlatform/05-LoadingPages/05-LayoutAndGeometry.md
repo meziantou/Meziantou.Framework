@@ -52,6 +52,13 @@ Assert.Equal(300, sidebar.GetBoundingClientRect().Width);
 The geometry is in CSS pixels. Changing the document, its styles or the viewport invalidates the layout, which runs again
 the next time a geometry API is called: read the geometry after a batch of changes, not between each change.
 
+An `iframe` keeps its default size (300x150) whatever its document contains, unless both documents opt into
+[responsive sizing](https://drafts.csswg.org/css-sizing-4/#responsive-iframes): the `iframe` has `frame-sizing:
+content-height` (or another `content-*` value), and the embedded document has
+`<meta name="responsive-embedded-sizing" content="allow-origins=*">` in its `head` (the list of the origins allowed to
+embed it). The `iframe` then takes the size of the contents of its document once the document is loaded, and again
+when its scripts call `window.requestResize()`.
+
 ## Scrolling
 
 [Window.ScrollTo](cref:Meziantou.Framework.WebPlatform.Dom.Window.ScrollTo), [Element.ScrollTo](cref:Meziantou.Framework.WebPlatform.Dom.Element.ScrollTo), [Element.ScrollIntoView](cref:Meziantou.Framework.WebPlatform.Dom.Element.ScrollIntoView), [ScrollTop](cref:Meziantou.Framework.WebPlatform.Dom.Element.ScrollTop) and [ScrollLeft](cref:Meziantou.Framework.WebPlatform.Dom.Element.ScrollLeft) scroll the viewport and the

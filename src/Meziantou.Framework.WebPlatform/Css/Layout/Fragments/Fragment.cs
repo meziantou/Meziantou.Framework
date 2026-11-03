@@ -1111,6 +1111,9 @@ internal sealed class BoxFragment : Fragment
     }
 
     /// <summary>Returns the scrollable overflow of the contents (the union of the contributions of the children, without the border box), and the ink overflow of the box.</summary>
+    /// <summary>Returns the scrollable overflow of the contents of the fragment (its children and their overflow), without its padding box.</summary>
+    internal PhysicalRect GetContentsOverflow() => ComputeOverflow(out _);
+
     private PhysicalRect ComputeOverflow(out PhysicalRect inkOverflow)
     {
         var contents = PhysicalRect.Empty;

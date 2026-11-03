@@ -49,10 +49,10 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 25,610 | 29,691 | 2,570 | 94% |
+| [Stable](#stable-tests) | 25,618 | 29,691 | 2,570 | 94% |
 | [Tentative](#tentative-tests) | 1,175 | 3,074 | 847 | 53% |
-| [Reftests](#reftests) | 27,798 | 29,220 | 180 | 96% |
-| **All** | **54,583** | **61,985** | **3,597** | **93%** |
+| [Reftests](#reftests) | 27,816 | 29,220 | 180 | 96% |
+| **All** | **54,609** | **61,985** | **3,597** | **94%** |
 
 ## Stable tests
 
@@ -151,9 +151,9 @@ The features of `REQUIRES`:
 | [`css/css-shadow`](css/css-shadow.md) | 86 | 87 | 0 | 99% |
 | [`css/css-shapes`](css/css-shapes.md) | 145 | 147 | 0 | 99% |
 | [`css/css-size-adjust`](css/css-size-adjust.md) | 4 | 5 | 0 | 80% |
-| [`css/css-sizing`](css/css-sizing.md) | 192 | 201 | 0 | 96% |
+| [`css/css-sizing`](css/css-sizing.md) | 199 | 201 | 0 | 99% |
 | [`css/css-syntax`](css/css-syntax.md) | 47 | 48 | 0 | 98% |
-| [`css/css-tables`](css/css-tables.md) | 106 | 113 | 0 | 94% |
+| [`css/css-tables`](css/css-tables.md) | 107 | 113 | 0 | 95% |
 | [`css/css-text`](css/css-text.md) | 340 | 349 | 0 | 97% |
 | [`css/css-text-decor`](css/css-text-decor.md) | 48 | 48 | 0 | 100% |
 | [`css/css-transforms`](css/css-transforms.md) | 101 | 105 | 0 | 96% |
@@ -401,7 +401,7 @@ The features of `REQUIRES`:
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 317 | 330 | 0 | 96% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **25,610** | **29,691** | **2,570** | **94%** |
+| **Total (343 sections)** | **25,618** | **29,691** | **2,570** | **94%** |
 
 ## Tentative tests
 
@@ -597,12 +597,12 @@ The features of `REQUIRES`:
 | [`css/css-color`](css/css-color.md#reftests) | 301 | 308 | 1 | 98% |
 | [`css/css-color-adjust`](css/css-color-adjust.md#reftests) | 23 | 25 | 0 | 92% |
 | [`css/css-conditional`](css/css-conditional.md#reftests) | 168 | 173 | 0 | 97% |
-| [`css/css-contain`](css/css-contain.md#reftests) | 429 | 432 | 0 | 99% |
+| [`css/css-contain`](css/css-contain.md#reftests) | 431 | 432 | 0 | 99.7% |
 | [`css/css-content`](css/css-content.md#reftests) | 61 | 65 | 0 | 94% |
 | [`css/css-counter-styles`](css/css-counter-styles.md#reftests) | 253 | 259 | 0 | 98% |
 | [`css/css-display`](css/css-display.md#reftests) | 164 | 218 | 0 | 75% |
 | [`css/css-exclusions`](css/css-exclusions.md#reftests) | 0 | 4 | 4 | – |
-| [`css/css-flexbox`](css/css-flexbox.md#reftests) | 1,015 | 1,023 | 0 | 99% |
+| [`css/css-flexbox`](css/css-flexbox.md#reftests) | 1,016 | 1,023 | 0 | 99% |
 | [`css/css-font-loading`](css/css-font-loading.md#reftests) | 6 | 7 | 0 | 86% |
 | [`css/css-fonts`](css/css-fonts.md#reftests) | 359 | 385 | 1 | 93% |
 | [`css/css-forms`](css/css-forms.md#reftests) | 6 | 17 | 0 | 35% |
@@ -634,10 +634,10 @@ The features of `REQUIRES`:
 | [`css/css-scrollbars`](css/css-scrollbars.md#reftests) | 31 | 31 | 0 | 100% |
 | [`css/css-shadow`](css/css-shadow.md#reftests) | 106 | 114 | 0 | 93% |
 | [`css/css-shapes`](css/css-shapes.md#reftests) | 237 | 238 | 0 | 99.5% |
-| [`css/css-sizing`](css/css-sizing.md#reftests) | 552 | 569 | 0 | 97% |
+| [`css/css-sizing`](css/css-sizing.md#reftests) | 564 | 569 | 0 | 99% |
 | [`css/css-style-attr`](css/css-style-attr.md#reftests) | 16 | 16 | 0 | 100% |
 | [`css/css-syntax`](css/css-syntax.md#reftests) | 1 | 1 | 0 | 100% |
-| [`css/css-tables`](css/css-tables.md#reftests) | 167 | 173 | 0 | 97% |
+| [`css/css-tables`](css/css-tables.md#reftests) | 170 | 173 | 0 | 98% |
 | [`css/css-text`](css/css-text.md#reftests) | 1,497 | 1,559 | 0 | 96% |
 | [`css/css-text-decor`](css/css-text-decor.md#reftests) | 309 | 318 | 0 | 97% |
 | [`css/css-transforms`](css/css-transforms.md#reftests) | 791 | 797 | 0 | 99% |
@@ -707,4 +707,4 @@ The features of `REQUIRES`:
 | [`webgl`](webgl.md#reftests) | 0 | 2 | 2 | – |
 | [`webvtt`](webvtt.md#reftests) | 182 | 251 | 0 | 73% |
 | [`xml`](xml.md#reftests) | 0 | 3 | 3 | – |
-| **Total (130 sections)** | **27,798** | **29,220** | **180** | **96%** |
+| **Total (130 sections)** | **27,816** | **29,220** | **180** | **96%** |

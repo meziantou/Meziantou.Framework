@@ -789,10 +789,10 @@
     "reftest": "PASS"
   },
   "css/css-contain/contain-size-multicol-002.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-contain/contain-size-multicol-003.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-contain/contain-size-multicol-004.html": {
     "reftest": "PASS"

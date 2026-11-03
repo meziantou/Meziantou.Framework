@@ -4095,7 +4095,7 @@
     "reftest": "PASS"
   },
   "css/css-flexbox/svg-no-natural-size-grandchild.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-flexbox/svg-root-as-flex-item-001.html": {
     "reftest": "PASS"

@@ -653,8 +653,7 @@ internal sealed partial class Vp8LEncoder : IDisposable
         var green = new int[tileSize];
         var red = new int[tileSize];
         var blue = new int[tileSize];
-        var movingValues = new int[tileSize];
-        var movingMultipliers = new int[tileSize];
+        var search = new ElementSearchState(tileSize);
         for (var ty = 0; ty < tilesY; ty++)
         {
             _cancellationToken.ThrowIfCancellationRequested();
@@ -678,15 +677,15 @@ internal sealed partial class Vp8LEncoder : IDisposable
                 }
 
                 // Green to red first (red only depends on it), then green to blue, then red to blue on the result
-                var greenToRed = SearchColorElement(red.AsSpan(0, count), green.AsSpan(0, count), histogram, fixedHistogram, movingValues, movingMultipliers);
-                var greenToBlue = SearchColorElement(blue.AsSpan(0, count), green.AsSpan(0, count), histogram, fixedHistogram, movingValues, movingMultipliers);
+                var greenToRed = SearchColorElement(red.AsSpan(0, count), green.AsSpan(0, count), histogram, fixedHistogram, search);
+                var greenToBlue = SearchColorElement(blue.AsSpan(0, count), green.AsSpan(0, count), histogram, fixedHistogram, search);
                 for (var i = 0; i < count; i++)
                 {
                     blue[i] = (blue[i] - Vp8LTransforms.ColorTransformDelta(greenToBlue, (sbyte)green[i])) & 0xFF;
                     red[i] = (sbyte)red[i];
                 }
 
-                var redToBlue = SearchColorElement(blue.AsSpan(0, count), red.AsSpan(0, count), histogram, fixedHistogram, movingValues, movingMultipliers);
+                var redToBlue = SearchColorElement(blue.AsSpan(0, count), red.AsSpan(0, count), histogram, fixedHistogram, search);
                 elements[(ty * tilesX) + tx] = 0xFF000000u | ((uint)(byte)redToBlue << 16) | ((uint)(byte)greenToBlue << 8) | (byte)greenToRed;
                 for (var y = y0; y < y1; y++)
                 {
@@ -709,28 +708,49 @@ internal sealed partial class Vp8LEncoder : IDisposable
     /// (the color transform of one channel by one signed channel): a coarse search, then a refinement around the best value;
     /// ties keep the value searched first (zero first).
     /// </summary>
-    private static sbyte SearchColorElement(ReadOnlySpan<int> values, ReadOnlySpan<int> multipliers, int[] histogram, int[] fixedHistogram, int[] movingValues, int[] movingMultipliers)
+    private static sbyte SearchColorElement(ReadOnlySpan<int> values, ReadOnlySpan<int> multipliers, int[] histogram, int[] fixedHistogram, ElementSearchState state)
     {
         // The values whose multiplier is zero fall in the same bin whatever t: they are counted once, and every candidate
-        // starts from their histogram (the counts, hence the costs, are the ones of counting every value)
+        // starts from their histogram. The others are counted once per distinct (value, multiplier) pair, with its number of
+        // occurrences (the counts, hence the costs, are the ones of counting every value)
         Array.Clear(fixedHistogram);
         multipliers = multipliers[..values.Length];
+        var movingValues = state.Values;
+        var movingMultipliers = state.Multipliers;
+        var movingCounts = state.Counts;
+        var slots = state.Slots;
         var moving = 0;
         for (var i = 0; i < values.Length; i++)
         {
-            if (multipliers[i] == 0)
+            var value = values[i] & 0xFF;
+            var multiplier = multipliers[i];
+            if (multiplier == 0)
             {
-                fixedHistogram[values[i] & 0xFF]++;
+                fixedHistogram[value]++;
+                continue;
+            }
+
+            var key = value | ((multiplier & 0xFF) << 8);
+            var slot = slots[key];
+            if (slot == 0)
+            {
+                movingValues[moving] = value;
+                movingMultipliers[moving] = multiplier;
+                movingCounts[moving] = 1;
+                slots[key] = (ushort)++moving;
             }
             else
             {
-                movingValues[moving] = values[i];
-                movingMultipliers[moving] = multipliers[i];
-                moving++;
+                movingCounts[slot - 1]++;
             }
         }
 
-        var search = new ElementSearch(movingValues.AsSpan(0, moving), movingMultipliers.AsSpan(0, moving), fixedHistogram, histogram, values.Length);
+        for (var i = 0; i < moving; i++)
+        {
+            slots[movingValues[i] | ((movingMultipliers[i] & 0xFF) << 8)] = 0;
+        }
+
+        var search = new ElementSearch(movingValues.AsSpan(0, moving), movingMultipliers.AsSpan(0, moving), movingCounts.AsSpan(0, moving), fixedHistogram, histogram, values.Length);
         var best = 0;
         var bestCost = search.Cost(0);
         for (var t = -96; t <= 96; t += 8)
@@ -763,24 +783,38 @@ internal sealed partial class Vp8LEncoder : IDisposable
         return (sbyte)best;
     }
 
+    /// <summary>The distinct (value, multiplier) pairs of a channel of a tile, with their number of occurrences.</summary>
+    private sealed class ElementSearchState(int tileSize)
+    {
+        public int[] Values { get; } = new int[tileSize];
+
+        public int[] Multipliers { get; } = new int[tileSize];
+
+        public int[] Counts { get; } = new int[tileSize];
+
+        /// <summary>Gets the index plus one of each pair (the value in the low byte, the multiplier in the high byte), zero when absent; left zero.</summary>
+        public ushort[] Slots { get; } = new ushort[1 << 16];
+    }
+
     /// <summary>The cost of the values of a channel transformed by <c>t</c>: the zero-multiplier histogram plus the other values.</summary>
     /// <remarks>
-    /// The values are counted in <see cref="Lanes"/> interleaved histograms (consecutive values often fall in the same bin:
-    /// one histogram would make every increment wait for the previous one), added bin by bin for the entropy.
+    /// The distinct values are counted in <see cref="Lanes"/> interleaved histograms (consecutive values often fall in the same
+    /// bin: one histogram would make every increment wait for the previous one), added bin by bin for the entropy.
     /// </remarks>
-    private readonly ref struct ElementSearch(ReadOnlySpan<int> values, ReadOnlySpan<int> multipliers, int[] fixedHistogram, int[] histograms, int count)
+    private readonly ref struct ElementSearch(ReadOnlySpan<int> values, ReadOnlySpan<int> multipliers, ReadOnlySpan<int> counts, int[] fixedHistogram, int[] histograms, int count)
     {
         public const int Lanes = 4;
 
         private readonly ReadOnlySpan<int> _values = values;
         private readonly ReadOnlySpan<int> _multipliers = multipliers;
+        private readonly ReadOnlySpan<int> _counts = counts;
 
         public double Cost(int t)
         {
-            fixedHistogram.CopyTo(histograms, 0);
-            histograms.AsSpan(256).Clear();
+            // The histograms are zero on entry, and left zero
             var samples = _values;
             var factors = _multipliers[..samples.Length];
+            var weights = _counts[..samples.Length];
             var h1 = histograms.AsSpan(256, 256);
             var h2 = histograms.AsSpan(512, 256);
             var h3 = histograms.AsSpan(768, 256);
@@ -788,22 +822,27 @@ internal sealed partial class Vp8LEncoder : IDisposable
             var i = 0;
             for (; i <= samples.Length - Lanes; i += Lanes)
             {
-                h0[(samples[i] - ((t * factors[i]) >> 5)) & 0xFF]++;
-                h1[(samples[i + 1] - ((t * factors[i + 1]) >> 5)) & 0xFF]++;
-                h2[(samples[i + 2] - ((t * factors[i + 2]) >> 5)) & 0xFF]++;
-                h3[(samples[i + 3] - ((t * factors[i + 3]) >> 5)) & 0xFF]++;
+                h0[(samples[i] - ((t * factors[i]) >> 5)) & 0xFF] += weights[i];
+                h1[(samples[i + 1] - ((t * factors[i + 1]) >> 5)) & 0xFF] += weights[i + 1];
+                h2[(samples[i + 2] - ((t * factors[i + 2]) >> 5)) & 0xFF] += weights[i + 2];
+                h3[(samples[i + 3] - ((t * factors[i + 3]) >> 5)) & 0xFF] += weights[i + 3];
             }
 
             for (; i < samples.Length; i++)
             {
-                h0[(samples[i] - ((t * factors[i]) >> 5)) & 0xFF]++;
+                h0[(samples[i] - ((t * factors[i]) >> 5)) & 0xFF] += weights[i];
             }
 
             // The entropy of the summed histogram, bin by bin in order (as Entropy)
             var cost = count * Log2Count(count);
+            var fixedCounts = fixedHistogram.AsSpan(0, 256);
             for (var bin = 0; bin < 256; bin++)
             {
-                var value = h0[bin] + h1[bin] + h2[bin] + h3[bin];
+                var value = fixedCounts[bin] + h0[bin] + h1[bin] + h2[bin] + h3[bin];
+                h0[bin] = 0;
+                h1[bin] = 0;
+                h2[bin] = 0;
+                h3[bin] = 0;
                 if (value > 1)
                 {
                     cost -= value * Log2Count(value);

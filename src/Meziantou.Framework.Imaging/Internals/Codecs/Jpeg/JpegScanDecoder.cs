@@ -538,6 +538,15 @@ internal abstract class JpegScanDecoder
         /// <summary>Gets the quantization values in natural order.</summary>
         public ushort[] Quantization { get; } = quantization;
 
+        /// <summary>Gets the <see cref="JpegHuffmanTable.FastLookup"/> of the DC table, or an empty array without DC table.</summary>
+        public int[] DcLookup { get; } = dcTable?.FastLookup ?? [];
+
+        /// <summary>Gets the <see cref="JpegHuffmanTable.FastLookup"/> of the AC table, or an empty array without AC table.</summary>
+        public int[] AcLookup { get; } = acTable?.FastLookup ?? [];
+
+        /// <summary>Gets a value indicating whether the component has 8-bit samples at full scale (the first case of <see cref="TransformBlock(ScanComponent, int, double[], int, bool, bool)"/>).</summary>
+        public bool IsFullScale8Bit { get; } = !component.IsReduced && !component.HasDeepSamples;
+
         /// <summary>
         /// Gets, for each zig-zag position, <c>(quantization value &lt;&lt; 6) | natural index</c>: the two lookups of a
         /// coefficient in one (empty for the samples of a lossless frame, which have no quantization).

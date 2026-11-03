@@ -113,7 +113,7 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
         reader.Commit();
 
         // The DC coefficient is read back from the predictor: one value less to keep alive in the loop
-        TransformBlock(scanComponent, offset, _block, scanComponent.Predictor, naturalIndexes != 0, JpegIdct.IsSparse(naturalIndexes));
+        Transform(scanComponent, offset, scanComponent.Predictor, naturalIndexes);
     }
 
     /// <summary>
@@ -173,8 +173,8 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
         var offset = scanComponent.GetBlockOffset(blockRow, blockColumn);
         var dcTable = scanComponent.DcTable!;
         var acTable = scanComponent.AcTable!;
-        var dcLookup = dcTable.FastLookup;
-        var acLookup = acTable.FastLookup;
+        var dcLookup = scanComponent.DcLookup;
+        var acLookup = scanComponent.AcLookup;
 
         // DC: difference from the prediction (T.81 F.2.2.1)
         cursor.Refill();
@@ -276,7 +276,38 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
         }
         while (k < 64);
 
-        TransformBlock(scanComponent, offset, _block, dc, naturalIndexes != 0, JpegIdct.IsSparse(naturalIndexes));
+        Transform(scanComponent, offset, dc, naturalIndexes);
+    }
+
+    /// <summary>
+    /// Writes the samples of a decoded block (<see cref="JpegScanDecoder.TransformBlock(ScanComponent, int, double[], int, bool, bool)"/>),
+    /// with the case of 8-bit samples at full scale inline.
+    /// </summary>
+    /// <param name="scanComponent">The component of the block.</param>
+    /// <param name="offset">The offset of the first sample of the block in the plane of the component.</param>
+    /// <param name="dc">The quantized DC coefficient.</param>
+    /// <param name="naturalIndexes">The natural indexes of the non-zero AC coefficients ORed together, with bit 6 set when there is one.</param>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void Transform(ScanComponent scanComponent, int offset, int dc, int naturalIndexes)
+    {
+        if (!scanComponent.IsFullScale8Bit)
+        {
+            TransformBlock(scanComponent, offset, _block, dc, naturalIndexes != 0, JpegIdct.IsSparse(naturalIndexes));
+            return;
+        }
+
+        var samples = scanComponent.Samples.AsSpan(offset);
+        var stride = scanComponent.Component.Stride;
+        if (naturalIndexes != 0)
+        {
+            _block[0] = dc * (double)scanComponent.Quantization[0];
+            JpegIdct.Transform(_block, samples, stride, JpegIdct.IsSparse(naturalIndexes));
+            JpegIdct.ClearBlock(_block);
+        }
+        else
+        {
+            JpegIdct.TransformDcOnly((long)dc * scanComponent.Quantization[0], samples, stride);
+        }
     }
 
     /// <summary>

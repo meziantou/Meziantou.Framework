@@ -275,6 +275,10 @@ internal sealed class ExrHuffman : IDisposable
         var output = 0;
         while (output < destination.Length)
         {
+            reader.Position = DecodeTableCodes(data, reader.Position, runSymbol, destination, ref output);
+            if (output == destination.Length)
+                break;
+
             var peek = reader.Peek(LookupBits);
             var entry = lookup[(int)peek];
             int symbol;
@@ -331,6 +335,69 @@ internal sealed class ExrHuffman : IDisposable
 
         if (reader.Position != bitCount)
             throw ExrFormat.Invalid("the Huffman data of a PIZ chunk have codes after the last value.");
+    }
+
+    /// <summary>
+    /// Decodes the codes of the lookup table from <paramref name="position"/> while at least 8 bytes of data are left after
+    /// those of a 64-bit buffer refilled 32 bits at a time: every bit read is then before the bit count (at most 7 bits before
+    /// the end of the data). Stops at the end of the data or before a code longer than <see cref="LookupBits"/>, which
+    /// <see cref="DecodeSymbols"/> decodes.
+    /// </summary>
+    /// <returns>The position after the last code decoded.</returns>
+    private long DecodeTableCodes(ReadOnlySpan<byte> data, long position, int runSymbol, Span<ushort> destination, ref int output)
+    {
+        var lookup = Lookup;
+        var next = (int)(position >> 3);
+        var skip = (int)(position & 7);
+        if (next > data.Length - (2 * sizeof(uint)) - sizeof(ulong))
+            return position;
+
+        // The buffer holds its valid bits from the most significant one
+        var buffer = (ulong)BinaryPrimitives.ReadUInt32BigEndian(data[next..]) << (32 + skip);
+        var bits = 32 - skip;
+        next += sizeof(uint);
+        var written = output;
+        while (written < destination.Length)
+        {
+            if (bits < 32)
+            {
+                if (next > data.Length - sizeof(uint) - sizeof(ulong))
+                    break;
+
+                buffer |= (ulong)BinaryPrimitives.ReadUInt32BigEndian(data[next..]) << (32 - bits);
+                next += sizeof(uint);
+                bits += 32;
+            }
+
+            var entry = lookup[(int)(buffer >> (64 - LookupBits))];
+            if (entry == 0)
+                break;
+
+            var length = entry & 0xFF;
+            var symbol = (entry >> 8) - 1;
+            if (symbol != runSymbol)
+            {
+                destination[written++] = (ushort)symbol;
+                buffer <<= length;
+                bits -= length;
+                continue;
+            }
+
+            if (written == 0)
+                throw ExrFormat.Invalid("the Huffman data of a PIZ chunk start with a repetition.");
+
+            var count = (int)((buffer << length) >> 56);
+            if (count > destination.Length - written)
+                throw ExrFormat.Invalid("a repetition of the Huffman data of a PIZ chunk extends past the end of the chunk.");
+
+            destination.Slice(written, count).Fill(destination[written - 1]);
+            written += count;
+            buffer <<= length + 8;
+            bits -= length + 8;
+        }
+
+        output = written;
+        return ((long)next * 8) - bits;
     }
 
     /// <summary>
@@ -497,7 +564,7 @@ internal sealed class ExrHuffman : IDisposable
         private readonly ReadOnlySpan<byte> _data = data;
         private readonly long _bitCount = bitCount;
 
-        public long Position { get; private set; }
+        public long Position { get; set; }
 
         /// <summary>Gets the next 1 to 57 bits without consuming them; the bits past the end read as zeros.</summary>
         public readonly ulong Peek(int count)

@@ -909,6 +909,17 @@ public sealed class PosixParserTests
         Assert.Equal(statementCount, tree.GetRoot().Statements.Statements.Count);
     }
 
+    [Theory]
+    [InlineData("{ echo {$(echo a}) }")]
+    [InlineData("{ echo {$(( $(echo a}) )) }")]
+    [InlineData("{ echo {`echo a}` }")]
+    public void ZshClosingBraceInsideACommandNestedInABracedWord_IsParsed(string text)
+    {
+        // The brace the outer word opened must not hide the `}` from the nested command (#4507)
+        var tree = ParseDialect(text, "zsh");
+        Assert.Equal(text, tree.GetRoot().ToFullString());
+    }
+
     [Fact]
     public void ZshClosingBraceInsideAWord_ClosesTheGroupBeforeABlank()
     {

@@ -30,7 +30,7 @@
     "reftest": "PASS"
   },
   "css/filter-effects/animation/css-backdrop-filters-animation-displacement.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/filter-effects/animation/css-backdrop-filters-animation-drop-shadow.html": {
     "reftest": "PASS"
@@ -288,7 +288,7 @@
     "reftest": "FAIL"
   },
   "css/filter-effects/backdrop-filter-svg-displacement.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/filter-effects/backdrop-filter-svg-foreignObject.html": {
     "reftest": "PASS"
@@ -597,7 +597,7 @@
     "reftest": "PASS"
   },
   "css/filter-effects/feTile-01.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/filter-effects/fecolormatrix-display-p3.html": {
     "reftest": "FAIL"

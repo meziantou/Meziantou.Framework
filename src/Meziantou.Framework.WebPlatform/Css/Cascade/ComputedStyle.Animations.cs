@@ -273,6 +273,32 @@ internal sealed partial class ComputedStyle
     }
 
     /// <summary>
+    /// Returns the tree of the declaration of the animated value of a property: the tree of the @keyframes rule of the top
+    /// effect that animates it (its tree-scoped references, e.g. a counter style name, are resolved in this tree,
+    /// https://drafts.csswg.org/css-scoping/#shadow-names). Returns false when no effect animates the property.
+    /// </summary>
+    internal bool TryGetAnimatedTreeScope(string property, out Dom.Node? treeScope)
+    {
+        treeScope = null;
+        if (_effects is not { Count: > 0 } || !MayBeAnimated(property) || GetEffectStack(property) is not { } effects)
+            return false;
+
+        for (var i = effects.Count - 1; i >= 0; i--)
+        {
+            foreach (var keyframe in effects[i].Keyframes)
+            {
+                if (keyframe.Longhands.ContainsKey(property) && keyframe.Source is { } source)
+                {
+                    treeScope = source.TreeScope;
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
     /// Returns the effects in effect that animate a property (a physical longhand or a custom property), sorted by the
     /// composite order of their animations, or null when there is none.
     /// </summary>

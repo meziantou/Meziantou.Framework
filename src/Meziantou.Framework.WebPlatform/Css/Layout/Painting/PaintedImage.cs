@@ -88,7 +88,7 @@ internal abstract class PaintedImage
                     return option.Resolution == 1 || selected.NaturalWidth is null ? selected : new ScaledImage(selected, 1 / option.Resolution);
                 }
 
-                if (name == "cross-fade")
+                if (name is "cross-fade" or "-webkit-cross-fade")
                     return CrossFadeImage.Create(document, style, function, painter) is { } crossFade ? (crossFade.GetColor() is { } mixed ? new ColorImage(mixed) : crossFade) : null;
 
                 if (name == "filter")
@@ -320,7 +320,17 @@ internal abstract class PaintedImage
             var images = new List<(PaintedImage? Image, double? Weight)>();
             double specified = 0;
             var omitted = 0;
-            foreach (var argument in ValueMatcher.SplitAtCommas(function.Value))
+            var arguments = ValueMatcher.SplitAtCommas(function.Value);
+
+            // The legacy syntax: cross-fade(A, B, p) is cross-fade(A (1 - p), B p), p being a number or a percentage
+            double? legacyAmount = null;
+            if (arguments.Count == 3 && ValueMatcher.RemoveWhitespace(arguments[2]) is [CssPreservedToken { Type: CssTokenType.Number or CssTokenType.Percentage } amount])
+            {
+                legacyAmount = Math.Clamp(amount.Token.Type == CssTokenType.Percentage ? amount.Token.NumericValue : amount.Token.NumericValue * 100, 0, 100);
+                arguments.RemoveAt(2);
+            }
+
+            foreach (var argument in arguments)
             {
                 CssComponentValue? value = null;
                 double? percentage = null;
@@ -338,6 +348,11 @@ internal abstract class PaintedImage
 
                 if (value is null)
                     return null;
+
+                if (legacyAmount is { } legacy)
+                {
+                    percentage = images.Count == 0 ? 100 - legacy : legacy;
+                }
 
                 // An image that cannot be drawn (e.g. it is not loaded) keeps its share of the result, which stays transparent
                 PaintedImage? image = ValueMatcher.IsColor(value)

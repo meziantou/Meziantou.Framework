@@ -1403,7 +1403,8 @@ formatting context (`ExclusionSpace`, owned by `BlockFormattingContextState`).
   of a taller line is laid out again in its own band, once. The float area of a box value of a box whose corners are shaped
   by `corner-shape` is the polygon of its flattened contour (`CornerContour.GetShape` for the reference box; the margin box is
   shaped as a box of its own with the outset-adjusted radii, not as the border contour offset by the margin; the corners
-  stay elliptical when the corner areas of the contour overlap). Not done: the rounding of `polygon()`.
+  stay elliptical when the corner areas of the contour overlap). The rounded corners of `polygon(round <length>, ...)` are
+  flattened arcs tangent to the edges (see [Rendering](rendering.md)).
 - In the columns of a multi-column container, a float that does not fit in what remains of a column is pushed to the next one
   (see [Multi-column layout and fragmentation](#multi-column-layout-and-fragmentation-csslayoutmulticol-csslayoutfragmentation)):
   `LayoutContext.FloatPushes` gives the floats a position they are placed at or below, and the exclusions of these floats
@@ -5045,8 +5046,7 @@ something asks for the display list (`LayoutEngine.PaintCount` for the tests).
   stroke is the union of the quadrilaterals of its flattened segments and of its joins, and the unions and the differences
   of the areas are computed in horizontal slabs between the vertices and the intersections of the edges (the result is
   a path of trapezoids, so the backends only fill and clip paths). Not done: the shaped borders of the fragments of a box
-  split by a fragmentation break or over several lines (each fragment has the whole shape), `polygon()` with `round`,
-  and the shapes in the backdrop of `backdrop-filter` and in the box values of `clip-path`.
+  split by a fragmentation break or over several lines (each fragment has the whole shape), and the shapes in the backdrop of `backdrop-filter` and in the box values of `clip-path`.
 - **Shadows** (`Painter.Shadows.cs`): the outer `box-shadow`s below the background (the border box offset and spread, the
   radii grown by the spread as the [outset-adjusted border radius](https://drafts.csswg.org/css-borders-4/#outset-adjusted-border-radius):
   a radius smaller than the spread grows by less, unless the corner covers the box (`coverage`: a circle stays a circle), a

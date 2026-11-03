@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of css/css-color-hdr, and wh
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 2 | 4 | 0 | 50% |
+| [Stable](#stable-tests) | 3 | 4 | 0 | 75% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **2** | **4** | **0** | **50%** |
+| **All** | **3** | **4** | **0** | **75%** |
 
 ## Stable tests
 
@@ -20,5 +20,5 @@ description: "The results of the web-platform-tests of css/css-color-hdr, and wh
 |---|---|--:|---|---|
 | [`computed.html`](https://wpt.fyi/results/css/css-color-hdr/computed.html) | Pass | 21 / 21 |  |  |
 | [`inheritance.html`](https://wpt.fyi/results/css/css-color-hdr/inheritance.html) | Pass | 2 / 2 |  |  |
-| [`interpolation.html`](https://wpt.fyi/results/css/css-color-hdr/interpolation.html) | Fail | 30 / 64 | NOT IMPLEMENTED | the interpolation of `dynamic-range-limit` (`dynamic-range-limit-mix()`) |
+| [`interpolation.html`](https://wpt.fyi/results/css/css-color-hdr/interpolation.html) | Pass | 64 / 64 |  |  |
 | [`parsing.html`](https://wpt.fyi/results/css/css-color-hdr/parsing.html) | Fail | 26 / 29 | TEST BUG | expects `dynamic-range-limit-mix()` with a single parameter or with percentages that sum to zero to be invalid, but the spec now takes one or more parameters, like `color-mix()` (w3c/csswg-drafts#14454), and a zero sum computes to the initial value (w3c/csswg-drafts#11678) |

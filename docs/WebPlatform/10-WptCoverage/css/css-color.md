@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of css/css-color, and why th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 66 | 69 | 0 | 96% |
+| [Stable](#stable-tests) | 67 | 69 | 0 | 97% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 301 | 308 | 1 | 98% |
-| **All** | **367** | **377** | **1** | **98%** |
+| **All** | **368** | **377** | **1** | **98%** |
 
 ## Stable tests
 
@@ -32,7 +32,7 @@ description: "The results of the web-platform-tests of css/css-color, and why th
 | [`inheritance.html`](https://wpt.fyi/results/css/css-color/inheritance.html) | Pass | 4 / 4 |  |  |
 | [`light-dark-basic.html`](https://wpt.fyi/results/css/css-color/light-dark-basic.html) | Pass | 2 / 2 |  |  |
 | [`light-dark-currentcolor-in-color.html`](https://wpt.fyi/results/css/css-color/light-dark-currentcolor-in-color.html) | Pass | 1 / 1 |  |  |
-| [`light-dark-image.html`](https://wpt.fyi/results/css/css-color/light-dark-image.html) | Fail | 33 / 35 | NOT IMPLEMENTED | `-webkit-cross-fade()` in property values (the nested `image-set(-webkit-cross-fade(...))` does not parse) |
+| [`light-dark-image.html`](https://wpt.fyi/results/css/css-color/light-dark-image.html) | Pass | 35 / 35 |  |  |
 | [`nested-color-mix-with-currentcolor.html`](https://wpt.fyi/results/css/css-color/nested-color-mix-with-currentcolor.html) | Pass | 2 / 2 |  |  |
 | [`none-components-treated-as-zero.html`](https://wpt.fyi/results/css/css-color/none-components-treated-as-zero.html) | Pass | 18 / 18 |  |  |
 | [`parsing/alpha-color-computed.html`](https://wpt.fyi/results/css/css-color/parsing/alpha-color-computed.html) | Pass | 33 / 33 |  |  |

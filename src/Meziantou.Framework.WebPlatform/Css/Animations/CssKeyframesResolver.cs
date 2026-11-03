@@ -19,7 +19,8 @@ internal static class CssKeyframesResolver
     public static List<ProcessedKeyframe> Resolve(CssKeyframesRule rule, string defaultEasing, CompositeOperationOrAuto defaultComposite, string? baseUrl)
     {
         var (defaultEasingFunction, defaultEasingText) = ParseEasing(defaultEasing) ?? (CssEasing.Linear, "linear");
-        var source = CascadedValueSource.Create(rule.ParentStyleSheet?.BaseUrl ?? baseUrl, treeScope: null, mixin: null);
+        // The values are declared in the tree of the style sheet (https://drafts.csswg.org/css-scoping/#shadow-names)
+        var source = CascadedValueSource.Create(rule.ParentStyleSheet?.BaseUrl ?? baseUrl, treeScope: rule.ParentStyleSheet?.OwnerNode?.GetRootNode(), mixin: null);
         var keyframes = new List<ProcessedKeyframe>();
         foreach (var child in rule.ChildRules)
         {

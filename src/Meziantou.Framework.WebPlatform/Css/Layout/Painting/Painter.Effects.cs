@@ -372,14 +372,24 @@ internal sealed partial class Painter
     /// </summary>
     private bool HasSvgMaskLayers(Element element, ComputedStyle style)
     {
-        foreach (var layer in GetMaskLayers(style))
+        var layers = GetMaskLayers(style);
+        foreach (var layer in layers)
         {
-            if (layer.Layer.Image is { } image && (SvgResources.GetReferencedElement(element, image) is SvgMaskElement || PaintedImage.Resolve(_document, style, image, this) is not null))
+            if (layer.Layer.Image is { } image && (SvgResources.GetReferencedElement(element, image) is SvgMaskElement || IsTransparentImageLayer(image, layers) || PaintedImage.Resolve(_document, style, image, this) is not null))
                 return true;
         }
 
         return false;
     }
+
+    /// <summary>
+    /// Whether a mask image of an SVG element that cannot be painted (e.g. it failed to load) is a transparent black layer
+    /// (https://drafts.fxtf.org/css-masking/#the-mask-image): the <c>url()</c> of an image (a URL without fragment: the layers
+    /// that reference no mask element are ignored) in a mask of several layers. As in Chrome, a mask of a single layer that
+    /// cannot be painted is ignored (WPT css/css-masking/mask-image/bad-mask-image-svg.html and bad-mask-image-svg-2.html).
+    /// </summary>
+    private static bool IsTransparentImageLayer(CssComponentValue image, MaskLayer[] layers)
+        => layers.Length > 1 && CssUrlModifiers.TryGetUrl(image, out var url, out _) && !url.Contains('#', StringComparison.Ordinal);
 
     /// <summary>
     /// Paints the mask layers of an SVG element (https://drafts.fxtf.org/css-masking/#the-mask-image) in its user space: the mask
@@ -405,7 +415,16 @@ internal sealed partial class Painter
 
             var maskElement = SvgResources.GetReferencedElement(element, image) as SvgMaskElement;
             if (maskElement is null && PaintedImage.Resolve(_document, style, image, this) is null)
+            {
+                if (IsTransparentImageLayer(image, layers))
+                {
+                    _builder.SaveLayer(new SaveLayerItem(1, bottom ? BlendMode.Normal : mask.Composite, Filters: null) { Source = element });
+                    _builder.Restore();
+                    bottom = false;
+                }
+
                 continue;
+            }
 
             var luminance = mask.Mode switch
             {

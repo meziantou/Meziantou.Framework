@@ -49,10 +49,10 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 25,610 | 29,691 | 2,570 | 94% |
+| [Stable](#stable-tests) | 25,619 | 29,691 | 2,570 | 94% |
 | [Tentative](#tentative-tests) | 1,175 | 3,074 | 847 | 53% |
-| [Reftests](#reftests) | 27,798 | 29,220 | 180 | 96% |
-| **All** | **54,583** | **61,985** | **3,597** | **93%** |
+| [Reftests](#reftests) | 27,812 | 29,220 | 180 | 96% |
+| **All** | **54,606** | **61,985** | **3,597** | **94%** |
 
 ## Stable tests
 
@@ -99,14 +99,14 @@ The features of `REQUIRES`:
 | [`css/css-align`](css/css-align.md) | 211 | 241 | 0 | 88% |
 | [`css/css-anchor-position`](css/css-anchor-position.md) | 259 | 262 | 0 | 99% |
 | [`css/css-animations`](css/css-animations.md) | 94 | 98 | 0 | 96% |
-| [`css/css-backgrounds`](css/css-backgrounds.md) | 127 | 132 | 0 | 96% |
+| [`css/css-backgrounds`](css/css-backgrounds.md) | 128 | 132 | 0 | 97% |
 | [`css/css-borders`](css/css-borders.md) | 35 | 37 | 0 | 95% |
 | [`css/css-box`](css/css-box.md) | 53 | 79 | 0 | 67% |
 | [`css/css-break`](css/css-break.md) | 42 | 42 | 0 | 100% |
 | [`css/css-cascade`](css/css-cascade.md) | 86 | 92 | 0 | 93% |
-| [`css/css-color`](css/css-color.md) | 66 | 69 | 0 | 96% |
+| [`css/css-color`](css/css-color.md) | 67 | 69 | 0 | 97% |
 | [`css/css-color-adjust`](css/css-color-adjust.md) | 14 | 15 | 0 | 93% |
-| [`css/css-color-hdr`](css/css-color-hdr.md) | 2 | 4 | 0 | 50% |
+| [`css/css-color-hdr`](css/css-color-hdr.md) | 3 | 4 | 0 | 75% |
 | [`css/css-conditional`](css/css-conditional.md) | 216 | 226 | 0 | 96% |
 | [`css/css-contain`](css/css-contain.md) | 94 | 97 | 0 | 97% |
 | [`css/css-content`](css/css-content.md) | 9 | 9 | 0 | 100% |
@@ -131,7 +131,7 @@ The features of `REQUIRES`:
 | [`css/css-link-params`](css/css-link-params.md) | 4 | 9 | 0 | 44% |
 | [`css/css-lists`](css/css-lists.md) | 38 | 38 | 0 | 100% |
 | [`css/css-logical`](css/css-logical.md) | 82 | 84 | 0 | 98% |
-| [`css/css-masking`](css/css-masking.md) | 62 | 64 | 0 | 97% |
+| [`css/css-masking`](css/css-masking.md) | 63 | 64 | 0 | 98% |
 | [`css/css-mixins`](css/css-mixins.md) | 46 | 49 | 0 | 94% |
 | [`css/css-multicol`](css/css-multicol.md) | 89 | 91 | 0 | 98% |
 | [`css/css-nesting`](css/css-nesting.md) | 24 | 24 | 0 | 100% |
@@ -148,8 +148,8 @@ The features of `REQUIRES`:
 | [`css/css-scroll-anchoring`](css/css-scroll-anchoring.md) | 69 | 70 | 0 | 99% |
 | [`css/css-scroll-snap`](css/css-scroll-snap.md) | 145 | 157 | 0 | 92% |
 | [`css/css-scrollbars`](css/css-scrollbars.md) | 25 | 25 | 0 | 100% |
-| [`css/css-shadow`](css/css-shadow.md) | 86 | 87 | 0 | 99% |
-| [`css/css-shapes`](css/css-shapes.md) | 145 | 147 | 0 | 99% |
+| [`css/css-shadow`](css/css-shadow.md) | 87 | 87 | 0 | 100% |
+| [`css/css-shapes`](css/css-shapes.md) | 146 | 147 | 0 | 99% |
 | [`css/css-size-adjust`](css/css-size-adjust.md) | 4 | 5 | 0 | 80% |
 | [`css/css-sizing`](css/css-sizing.md) | 192 | 201 | 0 | 96% |
 | [`css/css-syntax`](css/css-syntax.md) | 47 | 48 | 0 | 98% |
@@ -170,11 +170,11 @@ The features of `REQUIRES`:
 | [`css/cssom`](css/cssom.md) | 258 | 263 | 0 | 98% |
 | [`css/cssom-view`](css/cssom-view.md) | 214 | 231 | 0 | 93% |
 | [`css/fetching`](css/fetching.md) | 1 | 2 | 0 | 50% |
-| [`css/fill-stroke`](css/fill-stroke.md) | 3 | 8 | 0 | 38% |
+| [`css/fill-stroke`](css/fill-stroke.md) | 4 | 8 | 0 | 50% |
 | [`css/filter-effects`](css/filter-effects.md) | 37 | 37 | 0 | 100% |
 | [`css/geometry`](css/geometry.md) | 30 | 30 | 0 | 100% |
 | [`css/mediaqueries`](css/mediaqueries.md) | 26 | 26 | 0 | 100% |
-| [`css/motion`](css/motion.md) | 44 | 46 | 0 | 96% |
+| [`css/motion`](css/motion.md) | 45 | 46 | 0 | 98% |
 | [`css/selectors`](css/selectors.md) | 453 | 457 | 0 | 99% |
 | [`custom-elements`](custom-elements.md) | 178 | 189 | 0 | 94% |
 | [`delegated-ink`](delegated-ink.md) | 0 | 1 | 1 | – |
@@ -222,7 +222,7 @@ The features of `REQUIRES`:
 | [`html-aam`](html-aam.md) | 24 | 26 | 0 | 92% |
 | [`html-media-capture`](html-media-capture.md) | 0 | 2 | 2 | – |
 | [`html/browsers`](html/browsers.md) | 693 | 746 | 0 | 93% |
-| [`html/canvas`](html/canvas.md) | 3,071 | 3,165 | 0 | 97% |
+| [`html/canvas`](html/canvas.md) | 3,072 | 3,165 | 0 | 97% |
 | [`html/cross-origin-embedder-policy`](html/cross-origin-embedder-policy.md) | 53 | 73 | 0 | 73% |
 | [`html/cross-origin-opener-policy`](html/cross-origin-opener-policy.md) | 67 | 114 | 0 | 59% |
 | [`html/dom`](html/dom.md) | 210 | 216 | 0 | 97% |
@@ -401,7 +401,7 @@ The features of `REQUIRES`:
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 317 | 330 | 0 | 96% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **25,610** | **29,691** | **2,570** | **94%** |
+| **Total (343 sections)** | **25,619** | **29,691** | **2,570** | **94%** |
 
 ## Tentative tests
 
@@ -589,7 +589,7 @@ The features of `REQUIRES`:
 | [`css/css-align`](css/css-align.md#reftests) | 58 | 64 | 0 | 91% |
 | [`css/css-anchor-position`](css/css-anchor-position.md#reftests) | 236 | 241 | 0 | 98% |
 | [`css/css-animations`](css/css-animations.md#reftests) | 36 | 36 | 0 | 100% |
-| [`css/css-backgrounds`](css/css-backgrounds.md#reftests) | 701 | 719 | 1 | 98% |
+| [`css/css-backgrounds`](css/css-backgrounds.md#reftests) | 705 | 719 | 1 | 98% |
 | [`css/css-borders`](css/css-borders.md#reftests) | 101 | 114 | 0 | 89% |
 | [`css/css-box`](css/css-box.md#reftests) | 42 | 72 | 0 | 58% |
 | [`css/css-break`](css/css-break.md#reftests) | 1,131 | 1,145 | 0 | 99% |
@@ -610,12 +610,12 @@ The features of `REQUIRES`:
 | [`css/css-grid`](css/css-grid.md#reftests) | 1,731 | 1,767 | 0 | 98% |
 | [`css/css-highlight-api`](css/css-highlight-api.md#reftests) | 112 | 118 | 0 | 95% |
 | [`css/css-image-animation`](css/css-image-animation.md#reftests) | 0 | 22 | 22 | – |
-| [`css/css-images`](css/css-images.md#reftests) | 463 | 476 | 0 | 97% |
+| [`css/css-images`](css/css-images.md#reftests) | 465 | 476 | 0 | 98% |
 | [`css/css-inline`](css/css-inline.md#reftests) | 184 | 199 | 0 | 92% |
 | [`css/css-layout-api`](css/css-layout-api.md#reftests) | 128 | 135 | 0 | 95% |
 | [`css/css-lists`](css/css-lists.md#reftests) | 161 | 182 | 0 | 88% |
 | [`css/css-logical`](css/css-logical.md#reftests) | 6 | 6 | 0 | 100% |
-| [`css/css-masking`](css/css-masking.md#reftests) | 484 | 500 | 1 | 97% |
+| [`css/css-masking`](css/css-masking.md#reftests) | 488 | 500 | 1 | 98% |
 | [`css/css-multicol`](css/css-multicol.md#reftests) | 459 | 467 | 0 | 98% |
 | [`css/css-namespaces`](css/css-namespaces.md#reftests) | 23 | 23 | 0 | 100% |
 | [`css/css-navigation`](css/css-navigation.md#reftests) | 0 | 3 | 3 | – |
@@ -632,7 +632,7 @@ The features of `REQUIRES`:
 | [`css/css-scroll-anchoring`](css/css-scroll-anchoring.md#reftests) | 4 | 4 | 0 | 100% |
 | [`css/css-scroll-snap`](css/css-scroll-snap.md#reftests) | 24 | 26 | 0 | 92% |
 | [`css/css-scrollbars`](css/css-scrollbars.md#reftests) | 31 | 31 | 0 | 100% |
-| [`css/css-shadow`](css/css-shadow.md#reftests) | 106 | 114 | 0 | 93% |
+| [`css/css-shadow`](css/css-shadow.md#reftests) | 107 | 114 | 0 | 94% |
 | [`css/css-shapes`](css/css-shapes.md#reftests) | 237 | 238 | 0 | 99.5% |
 | [`css/css-sizing`](css/css-sizing.md#reftests) | 552 | 569 | 0 | 97% |
 | [`css/css-style-attr`](css/css-style-attr.md#reftests) | 16 | 16 | 0 | 100% |
@@ -654,7 +654,7 @@ The features of `REQUIRES`:
 | [`css/cssom`](css/cssom.md#reftests) | 9 | 12 | 0 | 75% |
 | [`css/cssom-view`](css/cssom-view.md#reftests) | 11 | 11 | 0 | 100% |
 | [`css/fill-stroke`](css/fill-stroke.md#reftests) | 1 | 1 | 0 | 100% |
-| [`css/filter-effects`](css/filter-effects.md#reftests) | 379 | 394 | 0 | 96% |
+| [`css/filter-effects`](css/filter-effects.md#reftests) | 382 | 394 | 0 | 97% |
 | [`css/mediaqueries`](css/mediaqueries.md#reftests) | 56 | 58 | 0 | 97% |
 | [`css/motion`](css/motion.md#reftests) | 98 | 98 | 0 | 100% |
 | [`css/printing`](css/printing.md#reftests) | 36 | 39 | 0 | 92% |
@@ -707,4 +707,4 @@ The features of `REQUIRES`:
 | [`webgl`](webgl.md#reftests) | 0 | 2 | 2 | – |
 | [`webvtt`](webvtt.md#reftests) | 182 | 251 | 0 | 73% |
 | [`xml`](xml.md#reftests) | 0 | 3 | 3 | – |
-| **Total (130 sections)** | **27,798** | **29,220** | **180** | **96%** |
+| **Total (130 sections)** | **27,812** | **29,220** | **180** | **96%** |

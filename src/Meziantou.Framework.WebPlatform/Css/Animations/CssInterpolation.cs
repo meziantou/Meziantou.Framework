@@ -119,6 +119,7 @@ internal static class CssInterpolation
             CssInterpolationKind.Display => CssKeywordInterpolation.PrepareDisplay(from, to, "none"),
             CssInterpolationKind.ContentVisibility => CssKeywordInterpolation.PrepareDisplay(from, to, "hidden"),
             CssInterpolationKind.Path => CssPathInterpolation.Prepare(from, to),
+            CssInterpolationKind.DynamicRangeLimit => PrepareDynamicRangeLimit(from, to),
             CssInterpolationKind.TransformList => CssTransformInterpolation.Prepare(context, from, to),
             CssInterpolationKind.Translate or CssInterpolationKind.Rotate or CssInterpolationKind.Scale => CssIndividualTransformInterpolation.Prepare(kind, from, to),
             CssInterpolationKind.Image => progress => progress < 0.5 ? from : to,
@@ -126,6 +127,7 @@ internal static class CssInterpolation
             CssInterpolationKind.ShadowList => CssShadowInterpolation.Prepare(context, property, from, to),
             CssInterpolationKind.FilterList => CssFilterInterpolation.Prepare(context, property, from, to),
             CssInterpolationKind.BasicShape when IsPath(from) && IsPath(to) => CssPathInterpolation.Prepare(from, to),
+            CssInterpolationKind.BasicShape when CssShapeInterpolation.Applies(from, to) => PrepareShapes(context, property, kind, from, to),
             CssInterpolationKind.BasicShape when UsesRadialExtent(from) || UsesRadialExtent(to) => null,
             _ => PrepareValues(context, property, kind, from, to),
         };
@@ -189,12 +191,14 @@ internal static class CssInterpolation
             CssInterpolationKind.NotAnimatable or CssInterpolationKind.Discrete or CssInterpolationKind.Visibility
                 or CssInterpolationKind.Display or CssInterpolationKind.ContentVisibility => null,
             CssInterpolationKind.Path => CssPathInterpolation.Combine(underlying, value),
+            CssInterpolationKind.DynamicRangeLimit => null,
             CssInterpolationKind.TransformList => operation == CssCombineOperation.Add ? CssTransformInterpolation.Add(underlying, value) : CssTransformInterpolation.Accumulate(context, underlying, value),
             CssInterpolationKind.Translate or CssInterpolationKind.Rotate or CssInterpolationKind.Scale => CssIndividualTransformInterpolation.Combine(kind, underlying, value, operation, 1),
             CssInterpolationKind.Image or CssInterpolationKind.FontPalette => null,
             CssInterpolationKind.ShadowList => CssShadowInterpolation.Combine(context, property, underlying, value, operation),
             CssInterpolationKind.FilterList => CssFilterInterpolation.Combine(context, property, underlying, value, operation),
             CssInterpolationKind.BasicShape when IsPath(underlying) && IsPath(value) => CssPathInterpolation.Combine(underlying, value),
+            CssInterpolationKind.BasicShape when CssShapeInterpolation.Applies(underlying, value) => CombineShapes(context, property, kind, underlying, value, operation),
             CssInterpolationKind.BasicShape when UsesRadialExtent(underlying) || UsesRadialExtent(value) => null,
             _ => CombineValues(context, property, kind, underlying, value, operation),
         };
@@ -304,6 +308,50 @@ internal static class CssInterpolation
 
         var length = CssGenericInterpolation.FormatNumber(inset) + "px";
         return (first == "auto" ? length : first, second == "auto" ? length : second);
+    }
+
+    /// <summary>
+    /// https://drafts.csswg.org/css-color-hdr-1/#the-dynamic-range-limit-property: the animation type is "by
+    /// dynamic-range-limit-mix()": the interpolated value is the mix of the two values, whose fractions of standard,
+    /// constrained and no-limit are interpolated.
+    /// </summary>
+    private static Func<double, string?>? PrepareDynamicRangeLimit(string from, string to)
+    {
+        if (CssPropertyRules.GetDynamicRangeLimitWeights(from) is not { } a || CssPropertyRules.GetDynamicRangeLimitWeights(to) is not { } b)
+            return null;
+
+        return progress =>
+        {
+            var weights = new double[a.Length];
+            for (var i = 0; i < weights.Length; i++)
+            {
+                weights[i] = Math.Clamp(CssGenericInterpolation.Lerp(a[i], b[i], progress), 0, 1);
+            }
+
+            return CssPropertyRules.SerializeDynamicRangeLimit(weights);
+        };
+    }
+
+    /// <summary>Prepares the interpolation of a shape() with a path() or of two shape() with arcs (see <see cref="CssShapeInterpolation"/>).</summary>
+    private static Func<double, string?>? PrepareShapes(CssInterpolationContext context, string property, CssInterpolationKind kind, string from, string to)
+    {
+        if (CssShapeInterpolation.Normalize(from) is not { } a || CssShapeInterpolation.Normalize(to) is not { } b)
+            return null;
+
+        (a, b) = CssShapeInterpolation.MatchRadii(a, b);
+        if (PrepareValues(context, property, kind, a, b) is not { } interpolate)
+            return null;
+
+        return progress => interpolate(progress) is { } result ? CssShapeInterpolation.Restore(property, result) : null;
+    }
+
+    private static string? CombineShapes(CssInterpolationContext context, string property, CssInterpolationKind kind, string underlying, string value, CssCombineOperation operation)
+    {
+        if (CssShapeInterpolation.Normalize(underlying) is not { } a || CssShapeInterpolation.Normalize(value) is not { } b)
+            return null;
+
+        (a, b) = CssShapeInterpolation.MatchRadii(a, b);
+        return CombineValues(context, property, kind, a, b, operation) is { } result ? CssShapeInterpolation.Restore(property, result) : null;
     }
 
     private static bool IsPath(string value) => value.StartsWith("path(", StringComparison.OrdinalIgnoreCase);

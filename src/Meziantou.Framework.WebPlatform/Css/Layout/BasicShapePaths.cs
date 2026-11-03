@@ -428,14 +428,34 @@ internal static class BasicShapePaths
     private static BasicShapeGeometry? CreatePolygon(List<CssComponentValue> values, PhysicalRect box, double zoom)
     {
         var fillRule = FillRule.NonZero;
+        double rounding = 0;
         var vertices = new List<PhysicalOffset>();
+        var first = true;
         foreach (var arguments in CssValueComputer.SplitArguments(values))
         {
             var group = ValueMatcher.RemoveWhitespace(arguments);
-            if (vertices.Count == 0 && group is [CssPreservedToken { Type: CssTokenType.Ident } rule])
+            if (first)
             {
-                fillRule = InfraAscii.EqualsIgnoreAsciiCase(rule.Token.Value, "evenodd") ? FillRule.EvenOdd : FillRule.NonZero;
-                continue;
+                first = false;
+
+                // <'fill-rule'>? [ round <length> ]?
+                if (group is [CssPreservedToken { Type: CssTokenType.Ident } rule, ..] && !IsIdent(rule, "round"))
+                {
+                    fillRule = InfraAscii.EqualsIgnoreAsciiCase(rule.Token.Value, "evenodd") ? FillRule.EvenOdd : FillRule.NonZero;
+                    group = group[1..];
+                }
+
+                if (group is [var round, var radius] && IsIdent(round, "round"))
+                {
+                    if (!LengthPercentage.TryParse(radius, zoom, nonNegative: true, out var radiusValue))
+                        return null;
+
+                    rounding = radiusValue.Resolve(0);
+                    continue;
+                }
+
+                if (group.Count == 0)
+                    continue;
             }
 
             if (group.Count != 2 || !LengthPercentage.TryParse(group[0], zoom, nonNegative: false, out var xValue) || !LengthPercentage.TryParse(group[1], zoom, nonNegative: false, out var yValue))
@@ -444,7 +464,66 @@ internal static class BasicShapePaths
             vertices.Add(new PhysicalOffset(box.Left + xValue.Resolve(box.Width), box.Top + yValue.Resolve(box.Height)));
         }
 
-        return vertices.Count == 0 ? null : new BasicShapeGeometry(Rectangle: null, [.. vertices], fillRule, Path: null);
+        if (vertices.Count == 0)
+            return null;
+
+        return rounding > 0 && vertices.Count > 2
+            ? new BasicShapeGeometry(Rectangle: null, Polygon: null, fillRule, CreateRoundedPolygon(vertices, rounding, fillRule))
+            : new BasicShapeGeometry(Rectangle: null, [.. vertices], fillRule, Path: null);
+    }
+
+    /// <summary>
+    /// The path of a polygon whose corners are rounded (https://drafts.csswg.org/css-shapes/#funcdef-basic-shape-polygon:
+    /// <c>round &lt;length&gt;</c>): each vertex is replaced by a circular arc of the radius, tangent to its two edges; the
+    /// radius is reduced so that the arc fits in the half of each edge.
+    /// </summary>
+    private static DisplayPath CreateRoundedPolygon(List<PhysicalOffset> vertices, double radius, FillRule fillRule)
+    {
+        var count = vertices.Count;
+        var corners = new (PhysicalOffset Start, PhysicalOffset Control1, PhysicalOffset Control2, PhysicalOffset End)[count];
+        for (var i = 0; i < count; i++)
+        {
+            var vertex = vertices[i];
+            var previous = vertices[(i + count - 1) % count];
+            var next = vertices[(i + 1) % count];
+            var (ux, uy, previousLength) = Normalize(previous.X - vertex.X, previous.Y - vertex.Y);
+            var (wx, wy, nextLength) = Normalize(next.X - vertex.X, next.Y - vertex.Y);
+            var angle = Math.Acos(Math.Clamp((ux * wx) + (uy * wy), -1, 1));
+            if (previousLength == 0 || nextLength == 0 || angle < 1e-6 || Math.PI - angle < 1e-6)
+            {
+                corners[i] = (vertex, vertex, vertex, vertex);
+                continue;
+            }
+
+            // The distance from the vertex to the tangent points, at most half of each edge
+            var tangent = Math.Tan(angle / 2);
+            var distance = Math.Min(radius / tangent, Math.Min(previousLength, nextLength) / 2);
+            var arcRadius = distance * tangent;
+
+            // A cubic Bézier curve of the arc, whose sweep is the exterior angle
+            var handle = 4d / 3 * Math.Tan((Math.PI - angle) / 4) * arcRadius;
+            var start = new PhysicalOffset(vertex.X + (ux * distance), vertex.Y + (uy * distance));
+            var end = new PhysicalOffset(vertex.X + (wx * distance), vertex.Y + (wy * distance));
+            corners[i] = (start, new PhysicalOffset(start.X - (ux * handle), start.Y - (uy * handle)), new PhysicalOffset(end.X - (wx * handle), end.Y - (wy * handle)), end);
+        }
+
+        var path = new DisplayPath { FillRule = fillRule };
+        path.MoveTo(corners[0].End.X, corners[0].End.Y);
+        for (var i = 1; i <= count; i++)
+        {
+            var corner = corners[i % count];
+            path.LineTo(corner.Start.X, corner.Start.Y);
+            path.CubicTo(corner.Control1.X, corner.Control1.Y, corner.Control2.X, corner.Control2.Y, corner.End.X, corner.End.Y);
+        }
+
+        path.Close();
+        return path;
+
+        static (double X, double Y, double Length) Normalize(double x, double y)
+        {
+            var length = Math.Sqrt((x * x) + (y * y));
+            return length == 0 ? (0, 0, 0) : (x / length, y / length, length);
+        }
     }
 
     /// <summary>https://drafts.csswg.org/css-shapes/#funcdef-basic-shape-path: SVG path data in px from the origin of the reference box.</summary>

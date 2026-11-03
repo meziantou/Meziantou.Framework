@@ -845,7 +845,8 @@ public abstract partial class CanvasRenderingContext2DBase
     /// <summary>
     /// Gets or sets the filter of the drawing operations (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-filter):
     /// <c>none</c> or a list of CSS filter functions (the lengths are resolved against the current font); the other values are
-    /// ignored. The references to SVG filter elements are not supported (the drawing is not filtered).
+    /// ignored. The references to SVG filter elements (<c>url()</c>) are resolved in the document of the canvas element (an
+    /// <see cref="OffscreenCanvas"/> does not filter its drawings with them).
     /// </summary>
     /// <seealso href="https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-filter"/>
     [IdlMember("filter", "https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-filter")]
@@ -878,6 +879,29 @@ public abstract partial class CanvasRenderingContext2DBase
             return null;
 
         var components = ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(_state.Filter));
-        return FilterEffects.Get(components, GetFont().Style, space: null);
+        if (!components.Exists(IsUrl))
+            return FilterEffects.Get(components, GetFont().Style, space: null);
+
+        // The references to SVG filter elements of the document of the canvas element: the user space of the filter is the
+        // coordinate space of the canvas (its bitmap), which is also the object bounding box and the viewport of the percentages
+        if (CanvasElement is not { } canvas || canvas.NodeDocument.GetStyleEngine().GetStyle(canvas) is not { } canvasStyle)
+            return null;
+
+        var size = new PhysicalSize(Bitmap.Width, Bitmap.Height);
+        var space = new SvgResourceSpace(new PhysicalRect(PhysicalOffset.Zero, size), size, PhysicalOffset.Zero, 1);
+        var filters = new List<DisplayFilter>();
+        foreach (var component in components)
+        {
+            // The drawings of a canvas that is not origin-clean taint the source graphic (https://drafts.fxtf.org/filter-effects/#tainted-filter-primitives)
+            if ((IsUrl(component) ? FilterEffects.Get([component], canvasStyle, space, taintedSource: !Bitmap.IsOriginClean) : FilterEffects.Get([component], GetFont().Style, space: null)) is not { } filter)
+                return null;
+
+            filters.AddRange(filter);
+        }
+
+        return [.. filters];
+
+        static bool IsUrl(CssComponentValue component)
+            => component is CssPreservedToken { Type: CssTokenType.Url } || (component is CssFunction function && InfraAscii.ToAsciiLowercase(function.Name) is "url" or "src");
     }
 }

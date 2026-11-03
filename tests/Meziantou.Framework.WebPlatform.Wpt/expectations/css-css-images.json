@@ -78,10 +78,10 @@
     "reftest": "PASS"
   },
   "css/css-images/css-image-fallbacks-and-annotations.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-images/css-image-fallbacks-and-annotations002.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-images/css-image-fallbacks-and-annotations003.html": {
     "reftest": "FAIL"

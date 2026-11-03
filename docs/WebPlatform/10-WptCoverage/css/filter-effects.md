@@ -11,8 +11,8 @@ description: "The results of the web-platform-tests of css/filter-effects, and w
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 37 | 37 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 379 | 394 | 0 | 96% |
-| **All** | **416** | **431** | **0** | **97%** |
+| [Reftests](#reftests) | 382 | 394 | 0 | 97% |
+| **All** | **419** | **431** | **0** | **97%** |
 
 ## Stable tests
 
@@ -64,7 +64,7 @@ description: "The results of the web-platform-tests of css/filter-effects, and w
 | [`animation/css-backdrop-filters-animation-brightness.html`](https://wpt.fyi/results/css/filter-effects/animation/css-backdrop-filters-animation-brightness.html) | Pass | 1 / 1 |  |  |
 | [`animation/css-backdrop-filters-animation-combined.html`](https://wpt.fyi/results/css/filter-effects/animation/css-backdrop-filters-animation-combined.html) | Pass | 1 / 1 |  |  |
 | [`animation/css-backdrop-filters-animation-contrast.html`](https://wpt.fyi/results/css/filter-effects/animation/css-backdrop-filters-animation-contrast.html) | Pass | 1 / 1 |  |  |
-| [`animation/css-backdrop-filters-animation-displacement.html`](https://wpt.fyi/results/css/filter-effects/animation/css-backdrop-filters-animation-displacement.html) | Fail | 0 / 1 | BUG | the backdrop (the `SourceGraphic` of a `backdrop-filter`) is not tainted: an `feDisplacementMap` whose displacement map is the backdrop displaces its input instead of passing it through (https://drafts.csswg.org/filter-effects-1/#tainted-filter-primitives) |
+| [`animation/css-backdrop-filters-animation-displacement.html`](https://wpt.fyi/results/css/filter-effects/animation/css-backdrop-filters-animation-displacement.html) | Pass | 1 / 1 |  |  |
 | [`animation/css-backdrop-filters-animation-drop-shadow.html`](https://wpt.fyi/results/css/filter-effects/animation/css-backdrop-filters-animation-drop-shadow.html) | Pass | 1 / 1 |  |  |
 | [`animation/css-backdrop-filters-animation-grayscale.html`](https://wpt.fyi/results/css/filter-effects/animation/css-backdrop-filters-animation-grayscale.html) | Pass | 1 / 1 |  |  |
 | [`animation/css-backdrop-filters-animation-hue-rotate.html`](https://wpt.fyi/results/css/filter-effects/animation/css-backdrop-filters-animation-hue-rotate.html) | Pass | 1 / 1 |  |  |
@@ -143,7 +143,7 @@ description: "The results of the web-platform-tests of css/filter-effects, and w
 | [`backdrop-filter-scale-transform.html`](https://wpt.fyi/results/css/filter-effects/backdrop-filter-scale-transform.html) | Pass | 1 / 1 |  |  |
 | [`backdrop-filter-svg-background-image-blur.html`](https://wpt.fyi/results/css/filter-effects/backdrop-filter-svg-background-image-blur.html) | Pass | 1 / 1 |  |  |
 | [`backdrop-filter-svg-blur.html`](https://wpt.fyi/results/css/filter-effects/backdrop-filter-svg-blur.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `backdrop-filter` on the SVG elements (`<rect style="backdrop-filter: blur(10px)">`): the backdrop of the rect is not blurred (2387 pixels differ, maximum difference 46; the test allows `maxDifference=0-20`); fails in every browser |
-| [`backdrop-filter-svg-displacement.html`](https://wpt.fyi/results/css/filter-effects/backdrop-filter-svg-displacement.html) | Fail | 0 / 1 | BUG | the backdrop (the `SourceGraphic` of a `backdrop-filter`) is not tainted: an `feDisplacementMap` whose displacement map is the backdrop displaces its input instead of passing it through (https://drafts.csswg.org/filter-effects-1/#tainted-filter-primitives) |
+| [`backdrop-filter-svg-displacement.html`](https://wpt.fyi/results/css/filter-effects/backdrop-filter-svg-displacement.html) | Pass | 1 / 1 |  |  |
 | [`backdrop-filter-svg-foreignObject.html`](https://wpt.fyi/results/css/filter-effects/backdrop-filter-svg-foreignObject.html) | Pass | 1 / 1 |  |  |
 | [`backdrop-filter-svg.html`](https://wpt.fyi/results/css/filter-effects/backdrop-filter-svg.html) | Pass | 1 / 1 |  |  |
 | [`backdrop-filter-transform.html`](https://wpt.fyi/results/css/filter-effects/backdrop-filter-transform.html) | Pass | 1 / 1 |  |  |
@@ -244,7 +244,7 @@ description: "The results of the web-platform-tests of css/filter-effects, and w
 | [`feImage-with-hidden-container-pattern.html`](https://wpt.fyi/results/css/filter-effects/feImage-with-hidden-container-pattern.html) | Pass | 1 / 1 |  |  |
 | [`feImage-with-hidden-container-radialGradient.html`](https://wpt.fyi/results/css/filter-effects/feImage-with-hidden-container-radialGradient.html) | Pass | 1 / 1 |  |  |
 | [`feImage-with-text-viewport-dependence.html`](https://wpt.fyi/results/css/filter-effects/feImage-with-text-viewport-dependence.html) | Pass | 1 / 1 |  |  |
-| [`feTile-01.html`](https://wpt.fyi/results/css/filter-effects/feTile-01.html) | Fail | 0 / 1 | BUG | `feTile` does not tile the result of `feFlood` as the reference |
+| [`feTile-01.html`](https://wpt.fyi/results/css/filter-effects/feTile-01.html) | Pass | 1 / 1 |  |  |
 | [`fecolormatrix-display-p3.html`](https://wpt.fyi/results/css/filter-effects/fecolormatrix-display-p3.html) | Fail | 0 / 1 | BUG | an SVG image with a filter (`color-interpolation-filters="sRGB"`) drawn with `drawImage()` into a canvas with `colorSpace: 'display-p3'`: the filter primitives are applied to the display-p3 encoded values of the canvas instead of the sRGB values: the `feColorMatrix` gives rgb(205, 237, 90) instead of #ffff89 in the third square (the inline svg and the img are right); Chrome fails too |
 | [`fecolormatrix-negative.html`](https://wpt.fyi/results/css/filter-effects/fecolormatrix-negative.html) | Pass | 1 / 1 |  |  |
 | [`fecolormatrix-special-value.html`](https://wpt.fyi/results/css/filter-effects/fecolormatrix-special-value.html) | Pass | 1 / 1 |  |  |

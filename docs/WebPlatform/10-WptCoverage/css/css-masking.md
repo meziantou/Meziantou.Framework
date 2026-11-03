@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of css/css-masking, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 62 | 64 | 0 | 97% |
+| [Stable](#stable-tests) | 63 | 64 | 0 | 98% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 484 | 500 | 1 | 97% |
-| **All** | **546** | **564** | **1** | **97%** |
+| [Reftests](#reftests) | 488 | 500 | 1 | 98% |
+| **All** | **551** | **564** | **1** | **98%** |
 
 ## Stable tests
 
@@ -25,7 +25,7 @@ description: "The results of the web-platform-tests of css/css-masking, and why 
 | [`animations/clip-path-interpolation-001.html`](https://wpt.fyi/results/css/css-masking/animations/clip-path-interpolation-001.html) | Pass | 414 / 414 |  |  |
 | [`animations/clip-path-interpolation-002.html`](https://wpt.fyi/results/css/css-masking/animations/clip-path-interpolation-002.html) | Pass | 720 / 720 |  |  |
 | [`animations/clip-path-interpolation-shape-control-points.html`](https://wpt.fyi/results/css/css-masking/animations/clip-path-interpolation-shape-control-points.html) | Pass | 306 / 306 |  |  |
-| [`animations/clip-path-interpolation-shape.html`](https://wpt.fyi/results/css/css-masking/animations/clip-path-interpolation-shape.html) | Fail | 522 / 692 | NOT IMPLEMENTED | the interpolation of `shape()` with a `path()` (the path is not converted to the equivalent `shape()`, https://drafts.csswg.org/css-shapes-2/#interpolating-shape: the values are not interpolated) and of the `arc` commands whose `cw`/`ccw` or `large`/`small` options differ |
+| [`animations/clip-path-interpolation-shape.html`](https://wpt.fyi/results/css/css-masking/animations/clip-path-interpolation-shape.html) | Pass | 692 / 692 |  |  |
 | [`animations/clip-path-interpolation-xywh-rect.html`](https://wpt.fyi/results/css/css-masking/animations/clip-path-interpolation-xywh-rect.html) | Pass | 360 / 360 |  |  |
 | [`animations/mask-border-outset-composition.html`](https://wpt.fyi/results/css/css-masking/animations/mask-border-outset-composition.html) | Pass | 112 / 112 |  |  |
 | [`animations/mask-border-outset-interpolation.html`](https://wpt.fyi/results/css/css-masking/animations/mask-border-outset-interpolation.html) | Pass | 168 / 168 |  |  |
@@ -253,8 +253,8 @@ description: "The results of the web-platform-tests of css/css-masking, and why 
 | [`clip-path/animations/clip-path-shape-arc-interpolation.html`](https://wpt.fyi/results/css/css-masking/clip-path/animations/clip-path-shape-arc-interpolation.html) | Pass | 1 / 1 |  |  |
 | [`clip-path/animations/clip-path-shape-interpolation-001.html`](https://wpt.fyi/results/css/css-masking/clip-path/animations/clip-path-shape-interpolation-001.html) | Pass | 1 / 1 |  |  |
 | [`clip-path/animations/clip-path-shape-interpolation-002.html`](https://wpt.fyi/results/css/css-masking/clip-path/animations/clip-path-shape-interpolation-002.html) | Pass | 1 / 1 |  |  |
-| [`clip-path/animations/clip-path-shape-interpolation-003.html`](https://wpt.fyi/results/css/css-masking/clip-path/animations/clip-path-shape-interpolation-003.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the interpolation of `clip-path` between a `shape()` and a `path()` (the path is not converted to the equivalent `shape()`, https://drafts.csswg.org/css-shapes-2/#interpolating-shape): the animation is discrete and paints the end value at 50% instead of the interpolated shape |
-| [`clip-path/animations/clip-path-shape-interpolation-004.html`](https://wpt.fyi/results/css/css-masking/clip-path/animations/clip-path-shape-interpolation-004.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the interpolation of `clip-path` between a `shape()` and a `path()` (the path is not converted to the equivalent `shape()`, https://drafts.csswg.org/css-shapes-2/#interpolating-shape): the animation is discrete and paints the end value at 50% instead of the interpolated shape |
+| [`clip-path/animations/clip-path-shape-interpolation-003.html`](https://wpt.fyi/results/css/css-masking/clip-path/animations/clip-path-shape-interpolation-003.html) | Pass | 1 / 1 |  |  |
+| [`clip-path/animations/clip-path-shape-interpolation-004.html`](https://wpt.fyi/results/css/css-masking/clip-path/animations/clip-path-shape-interpolation-004.html) | Pass | 1 / 1 |  |  |
 | [`clip-path/animations/clip-path-shape-interpolation-with-zoom.html`](https://wpt.fyi/results/css/css-masking/clip-path/animations/clip-path-shape-interpolation-with-zoom.html) | Pass | 1 / 1 |  |  |
 | [`clip-path/animations/clip-path-shape-transition-with-zoom.html`](https://wpt.fyi/results/css/css-masking/clip-path/animations/clip-path-shape-transition-with-zoom.html) | Pass | 1 / 1 |  |  |
 | [`clip-path/animations/clip-path-transition-allow-discrete-shape.html`](https://wpt.fyi/results/css/css-masking/clip-path/animations/clip-path-transition-allow-discrete-shape.html) | Pass | 1 / 1 |  |  |
@@ -359,7 +359,7 @@ description: "The results of the web-platform-tests of css/css-masking, and why 
 | [`clip-path/clip-path-polygon-011.html`](https://wpt.fyi/results/css/css-masking/clip-path/clip-path-polygon-011.html) | Pass | 1 / 1 |  |  |
 | [`clip-path/clip-path-polygon-012.html`](https://wpt.fyi/results/css/css-masking/clip-path/clip-path-polygon-012.html) | Pass | 1 / 1 |  |  |
 | [`clip-path/clip-path-polygon-013.html`](https://wpt.fyi/results/css/css-masking/clip-path/clip-path-polygon-013.html) | Pass | 1 / 1 |  |  |
-| [`clip-path/clip-path-polygon-014.html`](https://wpt.fyi/results/css/css-masking/clip-path/clip-path-polygon-014.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `round` argument of `polygon()` (`polygon(round 40px, ...)`, css-shapes-2): the declaration is invalid and the box is not clipped; fails in every browser |
+| [`clip-path/clip-path-polygon-014.html`](https://wpt.fyi/results/css/css-masking/clip-path/clip-path-polygon-014.html) | Pass | 1 / 1 |  |  |
 | [`clip-path/clip-path-rect-001.html`](https://wpt.fyi/results/css/css-masking/clip-path/clip-path-rect-001.html) | Pass | 1 / 1 |  |  |
 | [`clip-path/clip-path-rect-002.html`](https://wpt.fyi/results/css/css-masking/clip-path/clip-path-rect-002.html) | Pass | 1 / 1 |  |  |
 | [`clip-path/clip-path-rect-003.html`](https://wpt.fyi/results/css/css-masking/clip-path/clip-path-rect-003.html) | Pass | 1 / 1 |  |  |
@@ -463,7 +463,7 @@ description: "The results of the web-platform-tests of css/css-masking, and why 
 | [`mask-image/backdrop-filter-mask-image-while-loading.html`](https://wpt.fyi/results/css/css-masking/mask-image/backdrop-filter-mask-image-while-loading.html) | Pass | 1 / 1 |  |  |
 | [`mask-image/bad-mask-image-svg-2.html`](https://wpt.fyi/results/css/css-masking/mask-image/bad-mask-image-svg-2.html) | Pass | 1 / 1 |  |  |
 | [`mask-image/bad-mask-image-svg-3.html`](https://wpt.fyi/results/css/css-masking/mask-image/bad-mask-image-svg-3.html) | Pass | 1 / 1 |  |  |
-| [`mask-image/bad-mask-image-svg.html`](https://wpt.fyi/results/css/css-masking/mask-image/bad-mask-image-svg.html) | Fail | 0 / 1 | BUG | an SVG shape whose `mask-image` layers are all images that cannot be loaded (`url("invalid://nonexistent")`) is painted unmasked: the mask layers of an SVG element that reference neither a mask element nor a paintable image are ignored instead of being transparent black layers that mask the whole element; only Chrome passes |
+| [`mask-image/bad-mask-image-svg.html`](https://wpt.fyi/results/css/css-masking/mask-image/bad-mask-image-svg.html) | Pass | 1 / 1 |  |  |
 | [`mask-image/bad-mask-image.html`](https://wpt.fyi/results/css/css-masking/mask-image/bad-mask-image.html) | Pass | 1 / 1 |  |  |
 | [`mask-image/mask-clip-1.html`](https://wpt.fyi/results/css/css-masking/mask-image/mask-clip-1.html) | Pass | 1 / 1 |  |  |
 | [`mask-image/mask-clip-2.html`](https://wpt.fyi/results/css/css-masking/mask-image/mask-clip-2.html) | Pass | 1 / 1 |  |  |

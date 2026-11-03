@@ -483,7 +483,7 @@
     "reftest": "PASS"
   },
   "css/css-shadow/scoped-reference-animation-002.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-shadow/shadow-assign-dynamic-001.html": {
     "reftest": "PASS"
@@ -591,12 +591,7 @@
     "total": 2
   },
   "css/css-shadow/slotted-parsing.html": {
-    "total": 39,
-    "failures": {
-      "\"::slotted(*)::scroll-button(up)\" should be a valid selector": "FAIL",
-      "\"::slotted(*)::scroll-marker\" should be a valid selector": "FAIL",
-      "\"::slotted(*)::scroll-marker-group\" should be a valid selector": "FAIL"
-    }
+    "total": 39
   },
   "css/css-shadow/slotted-placeholder.html": {
     "reftest": "PASS"

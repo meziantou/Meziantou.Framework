@@ -499,13 +499,34 @@ internal sealed class ExrHuffman : IDisposable
 
         public long Position { get; private set; }
 
-        /// <summary>Gets the next bits without consuming them; the bits past the end read as zeros.</summary>
+        /// <summary>Gets the next 1 to 57 bits without consuming them; the bits past the end read as zeros.</summary>
         public readonly ulong Peek(int count)
         {
-            ulong value = 0;
-            for (var i = 0; i < count; i++)
+            var position = Position;
+            var available = _bitCount - position;
+            if (available <= 0)
+                return 0;
+
+            // The 8 bytes from the byte of the position (zeros past the data): at least 57 bits after the position
+            var index = (int)(position >> 3);
+            ulong word;
+            if (index + sizeof(ulong) <= _data.Length)
             {
-                value = (value << 1) | PeekBit(i);
+                word = BinaryPrimitives.ReadUInt64BigEndian(_data[index..]);
+            }
+            else
+            {
+                word = 0;
+                for (var i = 0; index + i < _data.Length; i++)
+                {
+                    word |= (ulong)_data[index + i] << (56 - (8 * i));
+                }
+            }
+
+            var value = (word << (int)(position & 7)) >> (64 - count);
+            if (available < count)
+            {
+                value &= ~((1UL << (count - (int)available)) - 1);
             }
 
             return value;
@@ -557,22 +578,34 @@ internal sealed class ExrHuffman : IDisposable
 
         public readonly int ByteLength => byteStart + (int)((_position + 7) / 8);
 
+        /// <summary>Writes the <paramref name="count"/> (0 to 64) low bits of a value, the most significant first.</summary>
+        /// <returns><see langword="false"/> when the bits do not fit the destination (some of them may be written).</returns>
         public bool TryWrite(ulong value, int count)
         {
-            for (var i = count - 1; i >= 0; i--)
+            if (count == 0)
+                return true;
+
+            if (byteStart + ((_position + count - 1) >> 3) >= _destination.Length)
+                return false;
+
+            // The bits are written byte by byte: a byte gets its bits from the most significant, cleared by its first one
+            while (count > 0)
             {
                 var byteIndex = byteStart + (int)(_position >> 3);
-                if (byteIndex >= _destination.Length)
-                    return false;
-
                 var bit = (int)(_position & 7);
+                var take = Math.Min(8 - bit, count);
+                var bits = (byte)((value >> (count - take)) & ((1u << take) - 1));
                 if (bit == 0)
                 {
-                    _destination[byteIndex] = 0;
+                    _destination[byteIndex] = (byte)(bits << (8 - take));
+                }
+                else
+                {
+                    _destination[byteIndex] |= (byte)(bits << (8 - bit - take));
                 }
 
-                _destination[byteIndex] |= (byte)(((value >> i) & 1) << (7 - bit));
-                _position++;
+                count -= take;
+                _position += take;
             }
 
             return true;

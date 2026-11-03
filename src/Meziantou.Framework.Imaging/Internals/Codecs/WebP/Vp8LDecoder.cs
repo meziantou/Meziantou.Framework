@@ -544,8 +544,18 @@ internal sealed class Vp8LDecoder : IDisposable
                 x += length;
                 if (x >= width)
                 {
-                    y += x / width;
-                    x %= width;
+                    // Most copies end on the next row: no division
+                    if (x < 2 * width)
+                    {
+                        x -= width;
+                        y++;
+                    }
+                    else
+                    {
+                        y += x / width;
+                        x %= width;
+                    }
+
                     _cancellationToken.ThrowIfCancellationRequested();
                 }
 
@@ -597,14 +607,32 @@ internal sealed class Vp8LDecoder : IDisposable
         if (length > pixels.Length - position)
             throw Invalid(string.Create(CultureInfo.InvariantCulture, $"A WebP lossless backward reference at pixel {position} copies {length} pixels, past the last pixel."));
 
-        // Overlapping copies repeat the pattern: copy forward, one pixel at a time when they overlap
+        // Overlapping copies repeat the pattern: copy forward, a run of one pixel as a fill, 4 pixels at a time when each
+        // group reads pixels written before it (distance of 4 or more), otherwise one pixel at a time
+        var target = pixels.Slice(position, length);
         if (distance >= length)
         {
-            pixels.Slice(position - distance, length).CopyTo(pixels.Slice(position, length));
+            pixels.Slice(position - distance, length).CopyTo(target);
+        }
+        else if (distance == 1)
+        {
+            target.Fill(pixels[position - 1]);
         }
         else
         {
-            for (var i = 0; i < length; i++)
+            var i = 0;
+            if (Vector128.IsHardwareAccelerated && distance >= Vector128<uint>.Count)
+            {
+                // The pixels read: position - distance to position + length - distance - 1
+                ref var source = ref unsafe(Unsafe.Add(ref MemoryMarshal.GetReference(pixels), position - distance));
+                ref var destination = ref unsafe(MemoryMarshal.GetReference(target));
+                for (; i <= length - Vector128<uint>.Count; i += Vector128<uint>.Count)
+                {
+                    unsafe { Vector128.LoadUnsafe(ref source, (nuint)i).StoreUnsafe(ref destination, (nuint)i); }
+                }
+            }
+
+            for (; i < length; i++)
             {
                 pixels[position + i] = pixels[position + i - distance];
             }

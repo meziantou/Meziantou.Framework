@@ -19,12 +19,31 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
 
     public static JpegEncoderCodec Instance { get; } = new();
 
+    /// <summary>
+    /// For a value <c>v</c> from -2048 to 2047, at the index <c>v + 2048</c>: its size category SSSS (the number of bits of
+    /// its magnitude, T.81 F.1.2.1.1) in the high 16 bits, and its SSSS additional bits (<c>v</c>, or <c>v - 1</c> for a
+    /// negative value) in the low 16 bits.
+    /// </summary>
+    private static readonly uint[] ValueBits = CreateValueBits();
+
     public override ImageFormat Format => ImageFormat.Jpeg;
 
     public override ImageEncoderSession CreateSession(ImageEncoderSessionOptions options)
     {
         ArgumentNullException.ThrowIfNull(options);
         return new Session(options);
+    }
+
+    private static uint[] CreateValueBits()
+    {
+        var table = new uint[4096];
+        for (var value = -2048; value < 2048; value++)
+        {
+            var size = 32 - BitOperations.LeadingZeroCount((uint)Math.Abs(value));
+            table[value + 2048] = ((uint)size << 16) | ((uint)(value < 0 ? value - 1 : value) & ((1u << size) - 1));
+        }
+
+        return table;
     }
 
     /// <summary>Gets the luma sampling factors of an output (chroma components are always 1x1), or (1, 1) for grayscale output.</summary>
@@ -1670,30 +1689,36 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             position = bits.Complete(ref _bits);
         }
 
-        /// <summary>Writes the symbol <c>(symbolHigh &lt;&lt; 4) | SSSS</c> for a value, then its SSSS additional bits (negative values as <c>value - 1</c>), as one write.</summary>
+        /// <summary>
+        /// Writes the symbol <c>(symbolHigh &lt;&lt; 4) | SSSS</c> for a value, then its SSSS additional bits (negative values as
+        /// <c>value - 1</c>), as one write: the size category and the additional bits come from <see cref="ValueBits"/>.
+        /// </summary>
+        /// <param name="writer">The writer.</param>
+        /// <param name="table">The table.</param>
+        /// <param name="symbolHigh">The high 4 bits of the symbol.</param>
+        /// <param name="value">The value, -2047 to 2047.</param>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void WriteValue(ref JpegBlockBitWriter writer, JpegHuffmanEncoder table, int symbolHigh, int value)
         {
-            var magnitude = (uint)Math.Abs(value);
-            var size = 32 - BitOperations.LeadingZeroCount(magnitude);
-            var bits = (uint)(value - (value >>> 31)) & ((1u << size) - 1);
+            var valueBits = ValueBits[value + 2048];
+            var size = (int)(valueBits >> 16);
             var symbol = (symbolHigh << 4) | size;
-            var length = table.GetLength(symbol);
-            if (length == 0)
+            var code = table.GetPackedCode(symbol);
+            if (code == 0)
                 ThrowMissingCode(symbol);
 
             // At most 16 + 16 bits
-            writer.Write((table.GetCode(symbol) << size) | bits, length + size);
+            writer.Write(((code >> 5) << size) | (valueBits & 0xFFFF), (int)(code & 31) + size);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static void WriteSymbol(ref JpegBlockBitWriter writer, JpegHuffmanEncoder table, int symbol)
         {
-            var length = table.GetLength(symbol);
-            if (length == 0)
+            var code = table.GetPackedCode(symbol);
+            if (code == 0)
                 ThrowMissingCode(symbol);
 
-            writer.Write(table.GetCode(symbol), length);
+            writer.Write(code >> 5, (int)(code & 31));
         }
 
         private static void ThrowMissingCode(int symbol) => throw new InvalidOperationException(string.Create(CultureInfo.InvariantCulture, $"The Huffman table has no code for the symbol 0x{symbol:X2}."));

@@ -781,6 +781,76 @@ public sealed class VectorizedKernelTests
     }
 
     [Fact]
+    public void JpegColorConversionToRgbaMatchesTheScalarReferenceExhaustively()
+    {
+        // The RGB reference with an opaque alpha, for every (Y, Cb, Cr) triple and odd row lengths for the remainders
+        var luma = new byte[256];
+        for (var i = 0; i < 256; i++)
+        {
+            luma[i] = (byte)i;
+        }
+
+        var blue = new byte[256];
+        var red = new byte[256];
+        var rgb = new byte[768];
+        var expected = new byte[1024];
+        var scalar = new byte[1024];
+        var actual = new byte[1024];
+        for (var cb = 0; cb < 256; cb++)
+        {
+            for (var cr = 0; cr < 256; cr++)
+            {
+                Array.Fill(blue, (byte)cb);
+                Array.Fill(red, (byte)cr);
+                var length = 256 - ((cb + cr) % 23);
+                JpegRowWriter.ConvertYCbCrScalar(luma.AsSpan(0, length), blue.AsSpan(0, length), red.AsSpan(0, length), rgb.AsSpan(0, 3 * length));
+                for (var x = 0; x < length; x++)
+                {
+                    expected[4 * x] = rgb[3 * x];
+                    expected[(4 * x) + 1] = rgb[(3 * x) + 1];
+                    expected[(4 * x) + 2] = rgb[(3 * x) + 2];
+                    expected[(4 * x) + 3] = 255;
+                }
+
+                JpegRowWriter.ConvertYCbCrToRgbaScalar(luma.AsSpan(0, length), blue.AsSpan(0, length), red.AsSpan(0, length), scalar.AsSpan(0, 4 * length));
+                JpegRowWriter.ConvertYCbCrToRgba(luma.AsSpan(0, length), blue.AsSpan(0, length), red.AsSpan(0, length), actual.AsSpan(0, 4 * length));
+                Assert.True(expected.AsSpan(0, 4 * length).SequenceEqual(scalar.AsSpan(0, 4 * length)), $"Scalar, Cb = {cb}, Cr = {cr}");
+                Assert.True(expected.AsSpan(0, 4 * length).SequenceEqual(actual.AsSpan(0, 4 * length)), $"Cb = {cb}, Cr = {cr}");
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegOpaquePlaneInterleavingMatchesTheScalarReference()
+    {
+        var random = new Random(423);
+        for (var length = 0; length < 100; length++)
+        {
+            var first = new byte[length];
+            var second = new byte[length];
+            var third = new byte[length];
+            random.NextBytes(first);
+            random.NextBytes(second);
+            random.NextBytes(third);
+            var expected = new byte[4 * length];
+            var actual = new byte[4 * length];
+            for (var x = 0; x < length; x++)
+            {
+                expected[4 * x] = first[x];
+                expected[(4 * x) + 1] = second[x];
+                expected[(4 * x) + 2] = third[x];
+                expected[(4 * x) + 3] = 255;
+            }
+
+            JpegRowWriter.InterleaveOpaque(first, second, third, actual);
+            Assert.Equal(expected, actual);
+            JpegRowWriter.InterleaveOpaqueScalar(first, second, third, actual);
+            Assert.Equal(expected, actual);
+        }
+    }
+
+    [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void JpegPlaneInterleavingMatchesTheScalarReference()
     {

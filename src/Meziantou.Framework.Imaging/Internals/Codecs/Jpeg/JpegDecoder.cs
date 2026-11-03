@@ -270,6 +270,11 @@ internal sealed class JpegDecoder : JpegDecodeObserver, IPartialFrameRenderer
             _inkConversion = transform.Pipeline;
             profile = conversion.DestinationProfile;
         }
+        else if (source == PixelFormat.Rgb24 && request.PixelFormat == PixelFormat.Rgba32)
+        {
+            // The writer produces the requested opaque RGBA pixels itself: no conversion of the rows by the sink
+            source = PixelFormat.Rgba32;
+        }
 
         if (_scaleDenominator > 1)
         {

@@ -51,8 +51,8 @@ The features of `REQUIRES`:
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 25,648 | 29,691 | 2,570 | 95% |
 | [Tentative](#tentative-tests) | 1,175 | 3,074 | 847 | 53% |
-| [Reftests](#reftests) | 27,818 | 29,220 | 180 | 96% |
-| **All** | **54,641** | **61,985** | **3,597** | **94%** |
+| [Reftests](#reftests) | 27,819 | 29,220 | 180 | 96% |
+| **All** | **54,642** | **61,985** | **3,597** | **94%** |
 
 ## Stable tests
 
@@ -634,7 +634,7 @@ The features of `REQUIRES`:
 | [`css/css-scrollbars`](css/css-scrollbars.md#reftests) | 31 | 31 | 0 | 100% |
 | [`css/css-shadow`](css/css-shadow.md#reftests) | 106 | 114 | 0 | 93% |
 | [`css/css-shapes`](css/css-shapes.md#reftests) | 237 | 238 | 0 | 99.5% |
-| [`css/css-sizing`](css/css-sizing.md#reftests) | 552 | 569 | 0 | 97% |
+| [`css/css-sizing`](css/css-sizing.md#reftests) | 553 | 569 | 0 | 97% |
 | [`css/css-style-attr`](css/css-style-attr.md#reftests) | 16 | 16 | 0 | 100% |
 | [`css/css-syntax`](css/css-syntax.md#reftests) | 1 | 1 | 0 | 100% |
 | [`css/css-tables`](css/css-tables.md#reftests) | 167 | 173 | 0 | 97% |
@@ -707,4 +707,4 @@ The features of `REQUIRES`:
 | [`webgl`](webgl.md#reftests) | 0 | 2 | 2 | – |
 | [`webvtt`](webvtt.md#reftests) | 182 | 251 | 0 | 73% |
 | [`xml`](xml.md#reftests) | 0 | 3 | 3 | – |
-| **Total (130 sections)** | **27,818** | **29,220** | **180** | **96%** |
+| **Total (130 sections)** | **27,819** | **29,220** | **180** | **96%** |

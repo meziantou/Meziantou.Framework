@@ -419,10 +419,18 @@ internal sealed class JpegXlLosslessFrameEncoder
         {
             _cancellationToken.ThrowIfCancellationRequested();
             using var image = LoadRaw(group);
+            var colorReader = new ColorReader(image, _channelCount);
             var length = image.Channels[0].Samples.Length;
+            var previous = 0UL;
             for (var i = 0; i < length && colors.Count <= limit; i++)
             {
-                colors.Add(GetColor(image, i));
+                // A color is often the one of the previous pixel, already in the set
+                var color = colorReader.Get(i);
+                if (i == 0 || color != previous)
+                {
+                    colors.Add(color);
+                    previous = color;
+                }
             }
         }
 
@@ -498,15 +506,44 @@ internal sealed class JpegXlLosslessFrameEncoder
         _colorTransform = candidates[best];
     }
 
-    private ulong GetColor(JpegXlModularImage image, int index)
+    /// <summary>Reads the color of a pixel of the channels of a group: each sample, 16 bits, in the order of the channels.</summary>
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
+    private readonly ref struct ColorReader
     {
-        ulong color = 0;
-        for (var c = 0; c < _channelCount; c++)
+        private readonly int _channelCount;
+        private readonly Span<int> _channel0;
+        private readonly Span<int> _channel1;
+        private readonly Span<int> _channel2;
+        private readonly Span<int> _channel3;
+
+        public ColorReader(JpegXlModularImage image, int channelCount)
         {
-            color |= (ulong)(uint)image.Channels[c].Samples[index] << (16 * c);
+            _channelCount = channelCount;
+            _channel0 = image.Channels[0].Samples;
+            _channel1 = channelCount > 1 ? image.Channels[1].Samples : default;
+            _channel2 = channelCount > 2 ? image.Channels[2].Samples : default;
+            _channel3 = channelCount > 3 ? image.Channels[3].Samples : default;
         }
 
-        return color;
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+        public ulong Get(int index)
+        {
+            ulong color = (uint)_channel0[index];
+            if (_channelCount > 1)
+            {
+                color |= (ulong)(uint)_channel1[index] << 16;
+                if (_channelCount > 2)
+                {
+                    color |= (ulong)(uint)_channel2[index] << 32;
+                    if (_channelCount > 3)
+                    {
+                        color |= (ulong)(uint)_channel3[index] << 48;
+                    }
+                }
+            }
+
+            return color;
+        }
     }
 
     private long GetLuma(ulong color)
@@ -818,10 +855,22 @@ internal sealed class JpegXlLosslessFrameEncoder
             if (_palette is not null)
             {
                 // The colors become indexes; the alpha channel is in the palette
+                // A color is often the one of the previous pixel: its index is not looked up again. The index of a pixel
+                // replaces its first sample once its color is read
+                var colorReader = new ColorReader(image, _channelCount);
                 var indexes = image.Channels[0].Samples;
+                var previous = 0UL;
+                var index = 0;
                 for (var i = 0; i < indexes.Length; i++)
                 {
-                    indexes[i] = _paletteIndexes![GetColor(image, i)];
+                    var color = colorReader.Get(i);
+                    if (i == 0 || color != previous)
+                    {
+                        index = _paletteIndexes![color];
+                        previous = color;
+                    }
+
+                    indexes[i] = index;
                 }
 
                 for (var c = _channelCount - 1; c >= 1; c--)

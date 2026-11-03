@@ -1,3 +1,5 @@
+using System.Runtime.Intrinsics;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -204,6 +206,12 @@ internal static class JpegXlModularDecoder
         Span<int> leafTable = isSingleLeaf ? default : stackalloc int[MaxLeafTableLength];
         var leaves = leafTable[..FillLeafTable(nodes, leafTable, out var tableProperty, out var tableLow)];
         var samples = channel.Samples;
+        if (weighted is not null && tableProperty == JpegXlMaTree.WeightedProperty && !leaves.IsEmpty && AllUseWeightedPredictor(nodes, leaves))
+        {
+            DecodeWeightedLeafTable(reader, decoder, weighted, nodes, leaves, tableLow, channel, distanceMultiplier, cancellationToken);
+            return;
+        }
+
         for (var y = 0; y < height; y++)
         {
             if ((y & 63) == 0)
@@ -343,6 +351,208 @@ internal static class JpegXlModularDecoder
                 row[x] = sample;
                 weighted?.Update(sample, x, y);
             }
+        }
+    }
+
+    private static bool AllUseWeightedPredictor(ReadOnlySpan<JpegXlMaTreeNode> nodes, ReadOnlySpan<int> leaves)
+    {
+        foreach (var leaf in leaves)
+        {
+            if (nodes[leaf].RightOrPredictor != 6)
+                return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Decodes a channel whose leaf is selected by the property of the weighted predictor through a table and whose leaves
+    /// all use that predictor, the most common tree of lossless files: the predictor runs a row at a time and no other
+    /// property is computed. The samples, and the values read from the stream, are those of the general loop.
+    /// </summary>
+    private static void DecodeWeightedLeafTable(
+        JpegXlBitReader reader,
+        JpegXlEntropyDecoder decoder,
+        JpegXlWeightedPredictor weighted,
+        ReadOnlySpan<JpegXlMaTreeNode> nodes,
+        ReadOnlySpan<int> leaves,
+        int tableLow,
+        JpegXlModularChannel channel,
+        uint distanceMultiplier,
+        CancellationToken cancellationToken)
+    {
+        var width = channel.Width;
+        var height = channel.Height;
+        var samples = channel.Samples;
+        var inline = decoder.CanReadInline && width >= 3;
+
+        // For each value of the property: its leaf, with the cluster of the context of the leaf in the high byte (a tree has
+        // fewer than 2^24 nodes, and a stream fewer than 256 clusters)
+        Span<int> entries = inline ? stackalloc int[leaves.Length] : default;
+        for (var i = 0; i < entries.Length; i++)
+        {
+            entries[i] = leaves[i] | (decoder.GetCluster(nodes[leaves[i]].LeftOrContext) << 24);
+        }
+
+        for (var y = 0; y < height; y++)
+        {
+            if ((y & 63) == 0)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                reader.EnsureNotOverrun();
+            }
+
+            var row = samples.Slice(y * width, width);
+            var above = y > 0 ? samples.Slice((y - 1) * width, width) : default;
+            var twoAbove = y > 1 ? samples.Slice((y - 2) * width, width) : above;
+            var sink = new WeightedLeafTableSink(reader, decoder, nodes, leaves, tableLow, row, distanceMultiplier);
+            if (inline && y > 0)
+            {
+                DecodeWeightedRowInline(reader, decoder, weighted, nodes, entries, tableLow, y, row, above, twoAbove, ref sink);
+            }
+            else
+            {
+                weighted.PredictRow(y, above, twoAbove, ref sink);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Decodes a row below the first one for <see cref="DecodeWeightedLeafTable"/> when the stream uses ANS without LZ77: the
+    /// operations of <see cref="JpegXlWeightedPredictor.PredictRow"/>, with the state of the entropy decoder and of the bit
+    /// reader in locals for the samples between the first and the last one.
+    /// </summary>
+    private static void DecodeWeightedRowInline(
+        JpegXlBitReader reader,
+        JpegXlEntropyDecoder decoder,
+        JpegXlWeightedPredictor weighted,
+        ReadOnlySpan<JpegXlMaTreeNode> nodes,
+        scoped ReadOnlySpan<int> entries,
+        int low,
+        int y,
+        Span<int> row,
+        ReadOnlySpan<int> above,
+        ReadOnlySpan<int> twoAbove,
+        ref WeightedLeafTableSink sink)
+    {
+        var width = row.Length;
+        var errors = weighted.GetRowErrors(y);
+        var parameters = weighted.GetParameters();
+        var state = default(JpegXlWeightedPredictor.RowState);
+        JpegXlWeightedPredictor.PredictEdge(ref sink, in parameters, ref state, 0, y, above, twoAbove, errors);
+
+        var last = width - 1;
+        var aboveRow = above[..width];
+        var topTopRow = twoAbove[..width];
+        var previousErrors = errors.Previous;
+        var currentErrors = errors.Current;
+        var currentSubErrors = errors.CurrentSub;
+        ref var previousSubErrors = ref unsafe(System.Runtime.InteropServices.MemoryMarshal.GetReference(errors.PreviousSub));
+        Vector128<uint> subN;
+        Vector128<uint> subNE;
+        unsafe
+        {
+            // The rows of sub-errors hold four values per column: the reads stay below the last column
+            subN = Vector128.LoadUnsafe(ref previousSubErrors, 0);
+            subNE = Vector128.LoadUnsafe(ref previousSubErrors, 4);
+        }
+
+        var errorW = state.ErrorW;
+        var west = state.West;
+        var w0 = state.W0;
+        var w1 = state.W1;
+        var w2 = state.W2;
+        var w3 = state.W3;
+        var ww0 = state.WW0;
+        var ww1 = state.WW1;
+        var ww2 = state.WW2;
+        var ww3 = state.WW3;
+        var maxEntry = (long)low + entries.Length - 1;
+        var tables = new JpegXlEntropyDecoder.InlineTables(decoder, reader);
+        var ansState = decoder.AnsState;
+        reader.GetState(out var bits, out var bitCount, out var position);
+        for (var x = 1; x < last; x++)
+        {
+            var subNW = subN;
+            subN = subNE;
+            unsafe
+            {
+                subNE = Vector128.LoadUnsafe(ref previousSubErrors, (nuint)((x + 1) * 4));
+            }
+
+            // The errors above and those of the sample two on the left are known before the sample on the left
+            var above3 = subNW + subN + subNE;
+            long errorN = previousErrors[x];
+            long errorNW = previousErrors[x - 1];
+            long errorNE = previousErrors[x + 1];
+            var prediction = JpegXlWeightedPredictor.PredictSample(
+                in parameters,
+                above3.GetElement(0) + ww0 + w0,
+                above3.GetElement(1) + ww1 + w1,
+                above3.GetElement(2) + ww2 + w2,
+                above3.GetElement(3) + ww3 + w3,
+                aboveRow[x],
+                west,
+                aboveRow[x + 1],
+                aboveRow[x - 1],
+                topTopRow[x],
+                errorW,
+                errorN,
+                errorNW,
+                errorNE,
+                out var prediction0,
+                out var prediction1,
+                out var prediction2,
+                out var prediction3);
+            var maxError = JpegXlWeightedPredictor.GetMaxError(errorW, errorN, errorNW, errorNE);
+            var entry = entries[(int)(Math.Min(Math.Max(maxError, low), maxEntry) - low)];
+            var token = tables.Read((int)((uint)entry >> 24), ref ansState, ref bits, ref bitCount, ref position);
+            ref readonly var leaf = ref nodes[entry & 0xFFFFFF];
+            var sample = Sample(token, leaf.Multiplier, leaf.ValueOrOffset + JpegXlWeightedPredictor.Round(prediction));
+            row[x] = sample;
+            ww0 = w0;
+            ww1 = w1;
+            ww2 = w2;
+            ww3 = w3;
+            errorW = JpegXlWeightedPredictor.Record(prediction, prediction0, prediction1, prediction2, prediction3, sample, x, currentErrors, currentSubErrors, out w0, out w1, out w2, out w3);
+            west = sample;
+        }
+
+        decoder.AnsState = ansState;
+        reader.SetState(bits, bitCount, position);
+        state = new JpegXlWeightedPredictor.RowState(w0, w1, w2, w3, ww0, ww1, ww2, ww3, errorW, west);
+        JpegXlWeightedPredictor.PredictEdge(ref sink, in parameters, ref state, last, y, above, twoAbove, errors);
+    }
+
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
+    private readonly ref struct WeightedLeafTableSink : JpegXlWeightedPredictor.IRowSink
+    {
+        private readonly JpegXlBitReader _reader;
+        private readonly JpegXlEntropyDecoder _decoder;
+        private readonly ReadOnlySpan<JpegXlMaTreeNode> _nodes;
+        private readonly ReadOnlySpan<int> _leaves;
+        private readonly int _low;
+        private readonly Span<int> _row;
+        private readonly uint _distanceMultiplier;
+
+        public WeightedLeafTableSink(JpegXlBitReader reader, JpegXlEntropyDecoder decoder, ReadOnlySpan<JpegXlMaTreeNode> nodes, ReadOnlySpan<int> leaves, int low, Span<int> row, uint distanceMultiplier)
+        {
+            _reader = reader;
+            _decoder = decoder;
+            _nodes = nodes;
+            _leaves = leaves;
+            _low = low;
+            _row = row;
+            _distanceMultiplier = distanceMultiplier;
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+        public int Next(int x, long prediction, int maxError)
+        {
+            ref readonly var leaf = ref _nodes[_leaves[(int)(Math.Clamp(maxError, _low, (long)_low + _leaves.Length - 1) - _low)]];
+            var sample = Sample(_decoder.Read(_reader, leaf.LeftOrContext, _distanceMultiplier), leaf.Multiplier, leaf.ValueOrOffset + prediction);
+            _row[x] = sample;
+            return sample;
         }
     }
 

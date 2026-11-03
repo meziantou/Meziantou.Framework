@@ -11,8 +11,8 @@ description: "The results of the web-platform-tests of css/css-grid, and why the
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 730 | 731 | 0 | 99.8% |
 | [Tentative](#tentative-tests) | 32 | 36 | 0 | 89% |
-| [Reftests](#reftests) | 1,722 | 1,767 | 0 | 97% |
-| **All** | **2,484** | **2,534** | **0** | **98%** |
+| [Reftests](#reftests) | 1,723 | 1,767 | 0 | 98% |
+| **All** | **2,485** | **2,534** | **0** | **98%** |
 
 ## Stable tests
 
@@ -831,7 +831,7 @@ description: "The results of the web-platform-tests of css/css-grid, and why the
 | [`abspos/grid-abspos-staticpos-align-self-rtl-last-baseline-002.html`](https://wpt.fyi/results/css/css-grid/abspos/grid-abspos-staticpos-align-self-rtl-last-baseline-002.html) | Pass | 1 / 1 |  |  |
 | [`abspos/grid-abspos-staticpos-align-self-rtl-last-baseline-003.html`](https://wpt.fyi/results/css/css-grid/abspos/grid-abspos-staticpos-align-self-rtl-last-baseline-003.html) | Pass | 1 / 1 |  |  |
 | [`abspos/grid-abspos-staticpos-align-self-rtl-last-baseline-004.html`](https://wpt.fyi/results/css/css-grid/abspos/grid-abspos-staticpos-align-self-rtl-last-baseline-004.html) | Pass | 1 / 1 |  |  |
-| [`abspos/grid-abspos-staticpos-align-self-safe-001.html`](https://wpt.fyi/results/css/css-grid/abspos/grid-abspos-staticpos-align-self-safe-001.html) | Fail | 0 / 1 | BUG | a `safe` self-alignment of an absolutely positioned grid child whose margin box overflows its grid area falls back to the start edge of the grid area, where the test expects the overflow to be limited by the containing block: the 21px items that fit in the padding box keep their `end`/`center` alignment, and the 33x35px items are placed at the start edge of the padding box |
+| [`abspos/grid-abspos-staticpos-align-self-safe-001.html`](https://wpt.fyi/results/css/css-grid/abspos/grid-abspos-staticpos-align-self-safe-001.html) | Pass | 1 / 1 |  |  |
 | [`abspos/grid-abspos-staticpos-align-self-safe-outer-cb-001.tentative.html`](https://wpt.fyi/results/css/css-grid/abspos/grid-abspos-staticpos-align-self-safe-outer-cb-001.tentative.html) | Pass | 1 / 1 |  |  |
 | [`abspos/grid-abspos-staticpos-align-self-safe-outer-cb-002.tentative.html`](https://wpt.fyi/results/css/css-grid/abspos/grid-abspos-staticpos-align-self-safe-outer-cb-002.tentative.html) | Pass | 1 / 1 |  |  |
 | [`abspos/grid-abspos-staticpos-align-self-safe-outer-cb-003.tentative.html`](https://wpt.fyi/results/css/css-grid/abspos/grid-abspos-staticpos-align-self-safe-outer-cb-003.tentative.html) | Pass | 1 / 1 |  |  |

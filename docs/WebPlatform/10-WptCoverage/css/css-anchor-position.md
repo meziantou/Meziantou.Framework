@@ -11,8 +11,8 @@ description: "The results of the web-platform-tests of css/css-anchor-position, 
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 259 | 262 | 0 | 99% |
 | [Tentative](#tentative-tests) | 3 | 4 | 0 | 75% |
-| [Reftests](#reftests) | 232 | 241 | 0 | 96% |
-| **All** | **494** | **507** | **0** | **97%** |
+| [Reftests](#reftests) | 236 | 241 | 0 | 98% |
+| **All** | **498** | **507** | **0** | **98%** |
 
 ## Stable tests
 
@@ -451,10 +451,10 @@ description: "The results of the web-platform-tests of css/css-anchor-position, 
 | [`position-area-overflow-icb-004-ltr.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-overflow-icb-004-ltr.html) | Pass | 1 / 1 |  |  |
 | [`position-area-overflow-icb-004-rtl.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-overflow-icb-004-rtl.html) | Pass | 1 / 1 |  |  |
 | [`position-area-overflow-icb-004.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-overflow-icb-004.html) | Pass | 1 / 1 |  |  |
-| [`position-area-overflow-icb-005-ltr.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-overflow-icb-005-ltr.html) | Fail | 0 / 1 | BUG | a `safe` self-alignment (`place-self: safe normal`) of a fixed-position box with `position-area` whose margin box overflows its area aligns it with the start edge of the area, so the boxes below and after the anchor overflow the viewport, where the test expects the overflow to be limited by the containing block (the boxes are shifted back into the viewport) |
-| [`position-area-overflow-icb-005-rtl.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-overflow-icb-005-rtl.html) | Fail | 0 / 1 | BUG | a `safe` self-alignment (`place-self: safe normal`) of a fixed-position box with `position-area` whose margin box overflows its area aligns it with the start edge of the area, so the boxes below and after the anchor overflow the viewport, where the test expects the overflow to be limited by the containing block (the boxes are shifted back into the viewport) |
-| [`position-area-overflow-icb-006-ltr.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-overflow-icb-006-ltr.html) | Fail | 0 / 1 | BUG | a `safe` self-alignment (`place-self: safe normal`) of a fixed-position box with `position-area` whose margin box overflows its area aligns it with the start edge of the area, so the boxes below and after the anchor overflow the viewport, where the test expects the overflow to be limited by the containing block (the boxes are shifted back into the viewport) |
-| [`position-area-overflow-icb-006-rtl.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-overflow-icb-006-rtl.html) | Fail | 0 / 1 | BUG | a `safe` self-alignment (`place-self: safe normal`) of a fixed-position box with `position-area` whose margin box overflows its area aligns it with the start edge of the area, so the boxes below and after the anchor overflow the viewport, where the test expects the overflow to be limited by the containing block (the boxes are shifted back into the viewport) |
+| [`position-area-overflow-icb-005-ltr.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-overflow-icb-005-ltr.html) | Pass | 1 / 1 |  |  |
+| [`position-area-overflow-icb-005-rtl.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-overflow-icb-005-rtl.html) | Pass | 1 / 1 |  |  |
+| [`position-area-overflow-icb-006-ltr.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-overflow-icb-006-ltr.html) | Pass | 1 / 1 |  |  |
+| [`position-area-overflow-icb-006-rtl.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-overflow-icb-006-rtl.html) | Pass | 1 / 1 |  |  |
 | [`position-area-overflow-icb-007-ltr.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-overflow-icb-007-ltr.html) | Pass | 1 / 1 |  |  |
 | [`position-area-overflow-icb-007-rtl.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-overflow-icb-007-rtl.html) | Pass | 1 / 1 |  |  |
 | [`position-area-overflow-icb-008-ltr.html`](https://wpt.fyi/results/css/css-anchor-position/position-area-overflow-icb-008-ltr.html) | Pass | 1 / 1 |  |  |

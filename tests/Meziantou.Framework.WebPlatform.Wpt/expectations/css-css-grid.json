@@ -120,7 +120,7 @@
     "reftest": "PASS"
   },
   "css/css-grid/abspos/grid-abspos-staticpos-align-self-safe-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-grid/abspos/grid-abspos-staticpos-align-self-safe-outer-cb-001.tentative.html": {
     "reftest": "PASS"

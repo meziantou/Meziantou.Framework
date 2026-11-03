@@ -743,10 +743,24 @@ internal static class AnchorPositioning
             // (only) because a fixed-positioned box with a default anchor box that scrolls with the content can be scrolled into view
             // when outside the scrollport, in such cases the overflow limit rect is extended to the scroll container's entire
             // scrollable overflow area" (the scrolling area of the viewport, moved by the scroll offset the anchor is measured with)
+            var layout = optionStyle.Layout;
+            var horizontalAlignment = containingBlock.IsHorizontal ? layout.Alignment.JustifySelf : layout.Alignment.AlignSelf;
+            var verticalAlignment = containingBlock.IsHorizontal ? layout.Alignment.AlignSelf : layout.Alignment.JustifySelf;
+            var horizontalLimitRect = limitRect;
+            var verticalLimitRect = limitRect;
             if (defaultAnchor is { IncludesViewportScroll: true } && hostFragment.Box.Kind == ContainerBoxKind.Viewport && scrollOffsets.TryGetValue(defaultAnchor.Key, out var usedOffset))
             {
                 var viewportOffset = engine.ViewportScrollState.Offset - (defaultAnchor.GetScrollOffset(engine) - usedOffset);
-                limitRect = limitRect.Union(hostFragment.GetScrollingArea().Translate(-viewportOffset));
+                var extendedLimitRect = limitRect.Union(hostFragment.GetScrollingArea().Translate(-viewportOffset));
+                if (horizontalAlignment.Overflow == OverflowAlignment.Default)
+                {
+                    horizontalLimitRect = extendedLimitRect;
+                }
+
+                if (verticalAlignment.Overflow == OverflowAlignment.Default)
+                {
+                    verticalLimitRect = extendedLimitRect;
+                }
             }
 
             // https://drafts.csswg.org/css-anchor-position-1/#position-area: the containing block is the selected area of the grid
@@ -758,26 +772,23 @@ internal static class AnchorPositioning
                 var (left, right) = GetArea(horizontalTracks, cbRect.Left, cbRect.Right, anchorRect.Left, anchorRect.Right);
                 var (top, bottom) = GetArea(verticalTracks, cbRect.Top, cbRect.Bottom, anchorRect.Top, anchorRect.Bottom);
                 cbRect = new PhysicalRect(left, top, Math.Max(0, right - left), Math.Max(0, bottom - top));
-                horizontal = GetAreaParameters(horizontalTracks, PhysicalSide.Left, PhysicalSide.Right, anchorRect.Left, anchorRect.Right, limitRect.Left, limitRect.Right);
-                vertical = GetAreaParameters(verticalTracks, PhysicalSide.Top, PhysicalSide.Bottom, anchorRect.Top, anchorRect.Bottom, limitRect.Top, limitRect.Bottom);
+                horizontal = GetAreaParameters(horizontalTracks, PhysicalSide.Left, PhysicalSide.Right, anchorRect.Left, anchorRect.Right, horizontalLimitRect.Left, horizontalLimitRect.Right);
+                vertical = GetAreaParameters(verticalTracks, PhysicalSide.Top, PhysicalSide.Bottom, anchorRect.Top, anchorRect.Bottom, verticalLimitRect.Top, verticalLimitRect.Bottom);
             }
 
             // https://drafts.csswg.org/css-anchor-position-1/#anchor-center: centered on the default anchor box
-            var layout = optionStyle.Layout;
-            var horizontalAlignment = containingBlock.IsHorizontal ? layout.Alignment.JustifySelf : layout.Alignment.AlignSelf;
-            var verticalAlignment = containingBlock.IsHorizontal ? layout.Alignment.AlignSelf : layout.Alignment.JustifySelf;
             if (defaultRect is { } centerRect)
             {
                 horizontal = horizontal with { AnchorCenter = centerRect.Left + (centerRect.Width / 2) };
                 vertical = vertical with { AnchorCenter = centerRect.Top + (centerRect.Height / 2) };
                 if (horizontalAlignment.Keyword == AlignmentKeyword.AnchorCenter)
                 {
-                    horizontal = horizontal with { ZeroAutoInsets = true, LimitLow = horizontal.LimitLow ?? limitRect.Left, LimitHigh = horizontal.LimitHigh ?? limitRect.Right };
+                    horizontal = horizontal with { ZeroAutoInsets = true, LimitLow = horizontal.LimitLow ?? horizontalLimitRect.Left, LimitHigh = horizontal.LimitHigh ?? horizontalLimitRect.Right };
                 }
 
                 if (verticalAlignment.Keyword == AlignmentKeyword.AnchorCenter)
                 {
-                    vertical = vertical with { ZeroAutoInsets = true, LimitLow = vertical.LimitLow ?? limitRect.Top, LimitHigh = vertical.LimitHigh ?? limitRect.Bottom };
+                    vertical = vertical with { ZeroAutoInsets = true, LimitLow = vertical.LimitLow ?? verticalLimitRect.Top, LimitHigh = vertical.LimitHigh ?? verticalLimitRect.Bottom };
                 }
             }
 

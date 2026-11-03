@@ -228,106 +228,22 @@
     "total": 20
   },
   "css/css-align/abspos/safe-align-self-htb.html": {
-    "total": 24,
-    "failures": {
-      ".item 1": "FAIL",
-      ".item 13": "FAIL",
-      ".item 14": "FAIL",
-      ".item 15": "FAIL",
-      ".item 16": "FAIL",
-      ".item 17": "FAIL",
-      ".item 18": "FAIL",
-      ".item 2": "FAIL",
-      ".item 3": "FAIL",
-      ".item 4": "FAIL",
-      ".item 5": "FAIL",
-      ".item 6": "FAIL"
-    }
+    "total": 24
   },
   "css/css-align/abspos/safe-align-self-vlr.html": {
-    "total": 24,
-    "failures": {
-      ".item 1": "FAIL",
-      ".item 13": "FAIL",
-      ".item 14": "FAIL",
-      ".item 15": "FAIL",
-      ".item 16": "FAIL",
-      ".item 17": "FAIL",
-      ".item 18": "FAIL",
-      ".item 2": "FAIL",
-      ".item 3": "FAIL",
-      ".item 4": "FAIL",
-      ".item 5": "FAIL",
-      ".item 6": "FAIL"
-    }
+    "total": 24
   },
   "css/css-align/abspos/safe-align-self-vrl.html": {
-    "total": 24,
-    "failures": {
-      ".item 1": "FAIL",
-      ".item 13": "FAIL",
-      ".item 14": "FAIL",
-      ".item 15": "FAIL",
-      ".item 16": "FAIL",
-      ".item 17": "FAIL",
-      ".item 18": "FAIL",
-      ".item 2": "FAIL",
-      ".item 3": "FAIL",
-      ".item 4": "FAIL",
-      ".item 5": "FAIL",
-      ".item 6": "FAIL"
-    }
+    "total": 24
   },
   "css/css-align/abspos/safe-justify-self-htb.html": {
-    "total": 24,
-    "failures": {
-      ".item 1": "FAIL",
-      ".item 13": "FAIL",
-      ".item 14": "FAIL",
-      ".item 15": "FAIL",
-      ".item 16": "FAIL",
-      ".item 17": "FAIL",
-      ".item 18": "FAIL",
-      ".item 2": "FAIL",
-      ".item 3": "FAIL",
-      ".item 4": "FAIL",
-      ".item 5": "FAIL",
-      ".item 6": "FAIL"
-    }
+    "total": 24
   },
   "css/css-align/abspos/safe-justify-self-vlr.html": {
-    "total": 24,
-    "failures": {
-      ".item 1": "FAIL",
-      ".item 13": "FAIL",
-      ".item 14": "FAIL",
-      ".item 15": "FAIL",
-      ".item 16": "FAIL",
-      ".item 17": "FAIL",
-      ".item 18": "FAIL",
-      ".item 2": "FAIL",
-      ".item 3": "FAIL",
-      ".item 4": "FAIL",
-      ".item 5": "FAIL",
-      ".item 6": "FAIL"
-    }
+    "total": 24
   },
   "css/css-align/abspos/safe-justify-self-vrl.html": {
-    "total": 24,
-    "failures": {
-      ".item 1": "FAIL",
-      ".item 13": "FAIL",
-      ".item 14": "FAIL",
-      ".item 15": "FAIL",
-      ".item 16": "FAIL",
-      ".item 17": "FAIL",
-      ".item 18": "FAIL",
-      ".item 2": "FAIL",
-      ".item 3": "FAIL",
-      ".item 4": "FAIL",
-      ".item 5": "FAIL",
-      ".item 6": "FAIL"
-    }
+    "total": 24
   },
   "css/css-align/abspos/stretch-intrinsic-size-htb-htb.html": {
     "total": 12

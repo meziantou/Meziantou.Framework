@@ -49,10 +49,10 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 25,579 | 29,691 | 2,570 | 94% |
+| [Stable](#stable-tests) | 25,585 | 29,691 | 2,570 | 94% |
 | [Tentative](#tentative-tests) | 1,173 | 3,074 | 847 | 53% |
-| [Reftests](#reftests) | 27,768 | 29,220 | 180 | 96% |
-| **All** | **54,520** | **61,985** | **3,597** | **93%** |
+| [Reftests](#reftests) | 27,773 | 29,220 | 180 | 96% |
+| **All** | **54,531** | **61,985** | **3,597** | **93%** |
 
 ## Stable tests
 
@@ -96,7 +96,7 @@ The features of `REQUIRES`:
 | [`cpu-performance`](cpu-performance.md) | 0 | 1 | 1 | – |
 | [`credential-management`](credential-management.md) | 0 | 16 | 16 | – |
 | [`css/compositing`](css/compositing.md) | 13 | 15 | 0 | 87% |
-| [`css/css-align`](css/css-align.md) | 205 | 241 | 0 | 85% |
+| [`css/css-align`](css/css-align.md) | 211 | 241 | 0 | 88% |
 | [`css/css-anchor-position`](css/css-anchor-position.md) | 259 | 262 | 0 | 99% |
 | [`css/css-animations`](css/css-animations.md) | 94 | 98 | 0 | 96% |
 | [`css/css-backgrounds`](css/css-backgrounds.md) | 126 | 132 | 0 | 95% |
@@ -401,7 +401,7 @@ The features of `REQUIRES`:
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 317 | 330 | 0 | 96% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **25,579** | **29,691** | **2,570** | **94%** |
+| **Total (343 sections)** | **25,585** | **29,691** | **2,570** | **94%** |
 
 ## Tentative tests
 
@@ -587,7 +587,7 @@ The features of `REQUIRES`:
 | [`contenteditable`](contenteditable.md#reftests) | 0 | 1 | 1 | – |
 | [`css/compositing`](css/compositing.md#reftests) | 55 | 60 | 0 | 92% |
 | [`css/css-align`](css/css-align.md#reftests) | 58 | 64 | 0 | 91% |
-| [`css/css-anchor-position`](css/css-anchor-position.md#reftests) | 232 | 241 | 0 | 96% |
+| [`css/css-anchor-position`](css/css-anchor-position.md#reftests) | 236 | 241 | 0 | 98% |
 | [`css/css-animations`](css/css-animations.md#reftests) | 36 | 36 | 0 | 100% |
 | [`css/css-backgrounds`](css/css-backgrounds.md#reftests) | 701 | 719 | 1 | 98% |
 | [`css/css-borders`](css/css-borders.md#reftests) | 101 | 114 | 0 | 89% |
@@ -607,7 +607,7 @@ The features of `REQUIRES`:
 | [`css/css-fonts`](css/css-fonts.md#reftests) | 359 | 385 | 1 | 93% |
 | [`css/css-forms`](css/css-forms.md#reftests) | 6 | 17 | 0 | 35% |
 | [`css/css-gaps`](css/css-gaps.md#reftests) | 526 | 544 | 0 | 97% |
-| [`css/css-grid`](css/css-grid.md#reftests) | 1,722 | 1,767 | 0 | 97% |
+| [`css/css-grid`](css/css-grid.md#reftests) | 1,723 | 1,767 | 0 | 98% |
 | [`css/css-highlight-api`](css/css-highlight-api.md#reftests) | 112 | 118 | 0 | 95% |
 | [`css/css-image-animation`](css/css-image-animation.md#reftests) | 0 | 22 | 22 | – |
 | [`css/css-images`](css/css-images.md#reftests) | 463 | 476 | 0 | 97% |
@@ -707,4 +707,4 @@ The features of `REQUIRES`:
 | [`webgl`](webgl.md#reftests) | 0 | 2 | 2 | – |
 | [`webvtt`](webvtt.md#reftests) | 182 | 251 | 0 | 73% |
 | [`xml`](xml.md#reftests) | 0 | 3 | 3 | – |
-| **Total (130 sections)** | **27,768** | **29,220** | **180** | **96%** |
+| **Total (130 sections)** | **27,773** | **29,220** | **180** | **96%** |

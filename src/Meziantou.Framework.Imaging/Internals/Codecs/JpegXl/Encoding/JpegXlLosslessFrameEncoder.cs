@@ -212,8 +212,7 @@ internal sealed class JpegXlLosslessFrameEncoder
     /// <summary>
     /// Whether copies are likely to make the frame smaller: the groups of a trial (one in <see cref="Lz77TrialStep"/>, on
     /// diagonals) are counted with and without copies, the copies found with the token costs of the whole frame and a short
-    /// search (<see cref="Lz77TrialChain"/>), and the two codes are compared. A frame of one group, or an effort without a
-    /// trial, is always parsed.
+    /// search (<see cref="Lz77TrialChain"/>), and the two codes are compared. A frame of one group is always parsed.
     /// </summary>
     /// <remarks>
     /// The parse was 44 % of the time of an encoding at the effort 5, and on photographs the code with copies was always the
@@ -223,7 +222,7 @@ internal sealed class JpegXlLosslessFrameEncoder
     /// </remarks>
     private bool IsLz77Worthwhile(float[] tokenCosts)
     {
-        if (IsSingleGroup || !_settings.Lz77Trial)
+        if (IsSingleGroup)
             return true;
 
         var groups = new List<int>();
@@ -972,7 +971,7 @@ internal sealed class JpegXlLosslessFrameEncoder
     }
 
     /// <summary>What an effort searches.</summary>
-    internal sealed record Settings(int SamplesPerChannel, int[] Properties, int[] Predictors, int MaxLeavesPerChannel, int MaxBuckets, double SplitCost, int MaxClusters, bool SearchConfigs, int Lz77Chain, int MaxPaletteColors, int SplitPredictors = 1, bool Lz77Trial = true)
+    internal sealed record Settings(int SamplesPerChannel, int[] Properties, int[] Predictors, int MaxLeavesPerChannel, int MaxBuckets, double SplitCost, int MaxClusters, bool SearchConfigs, int Lz77Chain, int MaxPaletteColors, int SplitPredictors = 1)
     {
         /// <summary>Gets a value indicating whether copies of previous values are searched.</summary>
         public bool UseLz77 => Lz77Chain > 0;
@@ -981,8 +980,8 @@ internal sealed class JpegXlLosslessFrameEncoder
         {
             <= 3 => new(16 * 1024, [6, 7, 9, 10, 11, 12], [GradientPredictor, 0, 1, 2], 32, 16, 48, 32, false, 0, 1024),
             4 => new(32 * 1024, [4, 5, 6, 7, 9, 10, 11, 12, 16, 17, 18, 19], [GradientPredictor, 0, 1, 2, 4], 64, 32, 40, 64, true, 0, 2048),
-            5 => new(64 * 1024, [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18, 19], [GradientPredictor, 0, 1, 2, 4, 13], 128, 32, 40, 128, true, 8, 4096),
-            6 => new(96 * 1024, [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18, 19], [GradientPredictor, 0, 1, 2, 4, 13], 192, 48, 36, 256, true, 16, 4096),
+            5 => new(64 * 1024, [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18, 19], [GradientPredictor, 0, 1, 2, 4], 128, 32, 40, 128, true, 8, 4096),
+            6 => new(96 * 1024, [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17, 18, 19], [GradientPredictor, 0, 1, 2, 4], 192, 48, 36, 256, true, 16, 4096),
             7 => new(128 * 1024, [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19], [GradientPredictor, 0, 1, 2, 4, 13, 6], 160, 48, 32, 256, true, 32, 4096, 2),
             8 => new(256 * 1024, [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23], [GradientPredictor, 0, 1, 2, 4, 13, 6], 192, 64, 32, 256, true, 64, 8192, 2),
             _ => new(512 * 1024, [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23], [GradientPredictor, 0, 1, 2, 3, 4, 13, 6], 256, 64, 28, 256, true, 128, 8192, 3),

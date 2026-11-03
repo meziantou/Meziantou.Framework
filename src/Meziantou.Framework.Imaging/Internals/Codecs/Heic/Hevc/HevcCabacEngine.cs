@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
@@ -28,7 +29,11 @@ internal struct HevcCabacEngine
     /// <summary>The number of bits of <see cref="Offset"/> that the specification has not read yet.</summary>
     public int ExtraBits;
 
-    /// <summary>Decodes a bin with a context variable (clause 9.3.4.3.2 "Arithmetic decoding process for a binary decision").</summary>
+    /// <summary>
+    /// Decodes a bin with a context variable (clause 9.3.4.3.2 "Arithmetic decoding process for a binary decision"), with
+    /// masks instead of branches: the value of many bins, such as <c>sig_coeff_flag</c>, is hard to predict, and a
+    /// mispredicted branch costs more than the work of both paths.
+    /// </summary>
     /// <param name="contexts">The context variables, in the layout of <see cref="HevcContextLayout"/>.</param>
     /// <param name="ctxIdx">The index of the context variable.</param>
     /// <param name="source">The decoder that reads the data.</param>
@@ -36,50 +41,32 @@ internal struct HevcCabacEngine
     public int DecodeDecision(Span<byte> contexts, int ctxIdx, HevcCabacDecoder source)
     {
         ref var context = ref contexts[ctxIdx];
-        var state = (int)context;
-        var pStateIdx = state >> 1;
-        var valMps = state & 1;
-        var qRangeIdx = (int)(Range >> 6) & 3;
-        var ivlLpsRange = (uint)HevcCabacTables.RangeTabLps[(pStateIdx << 2) + qRangeIdx];
-        Range -= ivlLpsRange;
-        var scaledRange = (ulong)Range << ExtraBits;
-        int binVal;
-        if (Offset < scaledRange)
-        {
-            // Clause 9.3.4.3.2.2 "State transition process", then the renormalization: the range is at least 256 - 2 = 254
-            context = (byte)((HevcCabacTables.TransIdxMps[pStateIdx] << 1) | valMps);
-            if (Range >= 256)
-                return valMps;
+        var state = (uint)context;
 
-            binVal = valMps;
-            Range <<= 1;
-            ExtraBits--;
-        }
-        else
-        {
-            Offset -= scaledRange;
-            Range = ivlLpsRange;
-            binVal = 1 - valMps;
-            if (pStateIdx is 0)
-            {
-                valMps = 1 - valMps;
-            }
+        // rangeTabLps[ pStateIdx ][ qRangeIdx ]: pStateIdx is in the bits 1 to 6 of the context variable
+        var ivlLpsRange = (uint)HevcCabacTables.RangeTabLps[(byte)(((state & 0x7E) << 1) | ((Range >> 6) & 3))];
+        var range = Range - ivlLpsRange;
+        var scaledRange = (ulong)range << ExtraBits;
 
-            context = (byte)((HevcCabacTables.TransIdxLps[pStateIdx] << 1) | valMps);
+        // All the bits are set when the bin is the least probable symbol: ivlOffset >= ivlCurrRange. Both values are less
+        // than 2^50, so that the difference does not overflow
+        var lps = (long)(scaledRange - Offset - 1) >> 63;
+        Offset -= scaledRange & (ulong)lps;
+        range ^= (range ^ ivlLpsRange) & (uint)lps;
 
-            // Clause 9.3.4.3.3 "Renormalization process in the arithmetic decoding engine": the range is at least 2
-            var shift = int.LeadingZeroCount((int)Range) - 23;
-            Range <<= shift;
-            ExtraBits -= shift;
-        }
+        // Clause 9.3.4.3.2.2 "State transition process"
+        context = HevcCabacTables.NextContextState[(byte)(state | (uint)(lps & 128))];
 
-        // A single call, which keeps the method small where it is inlined
+        // Clause 9.3.4.3.3 "Renormalization process in the arithmetic decoding engine": the range is at least 2
+        var shift = BitOperations.LeadingZeroCount(range) - 23;
+        Range = range << shift;
+        ExtraBits -= shift;
         if (ExtraBits < 0)
         {
             (Offset, ExtraBits) = source.Refill(Offset, ExtraBits);
         }
 
-        return binVal;
+        return (int)((state ^ (uint)lps) & 1);
     }
 
     /// <summary>Decodes a bin without context (clause 9.3.4.3.4 "Bypass decoding process for binary decisions").</summary>

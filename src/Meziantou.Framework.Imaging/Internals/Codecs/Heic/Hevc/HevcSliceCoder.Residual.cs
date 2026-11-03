@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -413,19 +414,26 @@ internal ref partial struct HevcSliceCoder
     {
         var contexts = cabac.Contexts;
         var engine = cabac.Engine;
-        for (; n >= 0; n--)
+        var first = numSig;
+
+        // The position is written in any case and kept when the flag is 1: the flags are hard to predict
+        for (; n > 0; n--)
         {
-            if (n is 0 && inferSbDcSigCoeffFlag)
+            significant[numSig] = (byte)n;
+            numSig += engine.DecodeDecision(contexts, contextBase + sigCtxs[n], cabac);
+        }
+
+        if (n is 0)
+        {
+            significant[numSig] = 0;
+            if (inferSbDcSigCoeffFlag && numSig == first)
             {
                 // The sub-block is coded and none of its other coefficients is significant
-                significant[numSig++] = 0;
-                break;
+                numSig++;
             }
-
-            if (engine.DecodeDecision(contexts, contextBase + sigCtxs[n], cabac) is not 0)
+            else
             {
-                significant[numSig++] = (byte)n;
-                inferSbDcSigCoeffFlag = false;
+                numSig += engine.DecodeDecision(contexts, contextBase + sigCtxs[0], cabac);
             }
         }
 
@@ -440,28 +448,21 @@ internal ref partial struct HevcSliceCoder
     {
         var contexts = cabac.Contexts;
         var engine = cabac.Engine;
-        var greater1Ctx = 1;
-        lastGreater1Index = -1;
+
+        // greater1Ctx is 0 after a flag equal to 1, otherwise 1 + the number of flags already read: the bit k of flags is
+        // the flag k
+        var flags = 0;
         for (var k = 0; k < greater1Flag.Length; k++)
         {
-            var flag = engine.DecodeDecision(contexts, contextBase + Math.Min(3, greater1Ctx), cabac);
+            var greater1Ctx = flags is 0 ? Math.Min(3, k + 1) : 0;
+            var flag = engine.DecodeDecision(contexts, contextBase + greater1Ctx, cabac);
             greater1Flag[k] = (byte)flag;
-            if (flag is not 0)
-            {
-                greater1Ctx = 0;
-                if (lastGreater1Index < 0)
-                {
-                    lastGreater1Index = k;
-                }
-            }
-            else if (greater1Ctx > 0)
-            {
-                greater1Ctx++;
-            }
+            flags |= flag << k;
         }
 
         cabac.Engine = engine;
-        return greater1Ctx;
+        lastGreater1Index = flags is 0 ? -1 : BitOperations.TrailingZeroCount(flags);
+        return flags is 0 ? greater1Flag.Length + 1 : 0;
     }
 
     // The binarization of coeff_abs_level_remaining (clause 9.3.3.11): a prefix of at most 4 bins and a suffix of

@@ -141,7 +141,10 @@ reference white, values outside [0, 1] are meaningful (highlights, negative out-
   (`FloatSampleConversion.Strict`, `floats: null`) rejects every sample that is not a number or that the destination
   cannot store: internal code that reads floating-point pixels as `Rgba64` (`ReadRgba64`, `ReadDrawingColors`, filters)
   therefore throws on HDR samples instead of clipping them. Keep it so: a path that cannot carry values outside [0, 1]
-  rejects them. Integer to `RgbaFloat` and back must stay exact for every sample.
+  rejects them. Integer to `RgbaFloat` and back must stay exact for every sample. Without tone mapping, the blocks of
+  pixels that every policy keeps as they are (samples in [0, 1] to `Rgba32` or `Rgba64`, finite floats that round to
+  finite halves to `RgbaHalf`) are validated and converted in vectors with the same results; `ConvertRowScalar` stays
+  scalar and is their reference.
 - Conversions validate every frame and the poster before allocating (`Image.PrepareConversion`), which also gives the
   tone mapping its peak (`PixelConversionPlan.RequiresPeak`, the largest finite color of all the frames).
 - Codecs only see floating-point pixels when their encoder says it stores them (`ImageEncoder.StoresFloatingPointSamples`:
@@ -756,6 +759,11 @@ All entry points (`Identify`, `Load`, readers; span, stream and path; sync and a
   included (their loss happens when the file is written). The B44 table of pLinear channels is computed from
   `Math.Log` in single precision and pinned by a hash (`ExrCompressionTests`). The encoder writes scan lines, and patches
   the offset table once the chunks are written (seekable destination) unless the chunks are not compressed.
+  The common layouts (one HALF channel per color, a HALF alpha or none, no sub-sampled channel) are written to the
+  pixels and read from them by `ExrLineKernels` in vectors (exact half conversions; the division by alpha and the
+  product by the stored alpha give the bits of the scalar double-precision forms); `ExrPredictor` and the first level of
+  `ExrWavelet` have vector paths, and the PIZ Huffman decoder reads the codes of its lookup table from a 64-bit bit
+  buffer (`DecodeTableCodes`). Each vector path keeps its scalar reference (`VectorizedKernelTests`).
   `MetadataWritePlan` treats OpenEXR as linear light only (`FormatCapabilities.LinearOnly`): an sRGB label is metadata
   the format cannot store.
 - `ZLibStream` reports truncation as a clean end: check that the expected number of bytes was produced.

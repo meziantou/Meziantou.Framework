@@ -1057,6 +1057,10 @@ public sealed class VectorizedKernelTests
             for (var shift = 0; shift < 16; shift++)
             {
                 Assert.Equal(JpegProgressiveScanEncoder.GetSignificantMaskScalar(block, shift), JpegProgressiveScanEncoder.GetSignificantMask(block, shift));
+                if (shift < 15)
+                {
+                    Assert.Equal((JpegProgressiveScanEncoder.GetSignificantMaskScalar(block, shift), JpegProgressiveScanEncoder.GetSignificantMaskScalar(block, shift + 1)), JpegProgressiveScanEncoder.GetSignificantMasks(block, shift));
+                }
             }
         }
     }

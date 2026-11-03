@@ -242,6 +242,37 @@ internal sealed class JpegProgressiveScanEncoder
         static Vector128<short> Load(ref short start, int index) => unsafe(Vector128.LoadUnsafe(ref start, (nuint)index));
     }
 
+    /// <summary>
+    /// Gets the masks of <see cref="GetSignificantMask"/> for the shifts <paramref name="shift"/> and
+    /// <paramref name="shift"/> + 1 at once: the coefficients nonzero at bit <c>shift</c>, and those already nonzero above it.
+    /// </summary>
+    /// <param name="block">The 64 coefficients.</param>
+    /// <param name="shift">The shift, 0 to 14.</param>
+    internal static (ulong Shifted, ulong ShiftedOnceMore) GetSignificantMasks(ReadOnlySpan<short> block, int shift)
+    {
+        block = block[..64];
+        if (!Vector128.IsHardwareAccelerated)
+            return (GetSignificantMaskScalar(block, shift), GetSignificantMaskScalar(block, shift + 1));
+
+        ref var start = ref unsafe(MemoryMarshal.GetReference(block));
+        var zeros = 0UL;
+        var zerosOnceMore = 0UL;
+        for (var i = 0; i < 64; i += 16)
+        {
+            var first = Vector128.ShiftRightLogical(Vector128.Abs(Load(ref start, i)).AsUInt16(), shift);
+            var second = Vector128.ShiftRightLogical(Vector128.Abs(Load(ref start, i + 8)).AsUInt16(), shift);
+            zeros |= (ulong)Vector128.Narrow(Vector128.Equals(first, Vector128<ushort>.Zero), Vector128.Equals(second, Vector128<ushort>.Zero)).ExtractMostSignificantBits() << i;
+
+            // The values above 1 are those nonzero once shifted once more
+            var one = Vector128<ushort>.One;
+            zerosOnceMore |= (ulong)Vector128.Narrow(Vector128.LessThanOrEqual(first, one), Vector128.LessThanOrEqual(second, one)).ExtractMostSignificantBits() << i;
+        }
+
+        return (~zeros, ~zerosOnceMore);
+
+        static Vector128<short> Load(ref short start, int index) => unsafe(Vector128.LoadUnsafe(ref start, (nuint)index));
+    }
+
     /// <summary>The scalar reference of <see cref="GetSignificantMask"/>.</summary>
     internal static ulong GetSignificantMaskScalar(ReadOnlySpan<short> block, int shift)
     {
@@ -384,22 +415,60 @@ internal sealed class JpegProgressiveScanEncoder
     /// passed over follow the code that passes over them: a ZRL code, a coefficient that becomes nonzero, or the end of the
     /// band, whose correction bits wait until the run of blocks is written.
     /// </summary>
+    /// <remarks>
+    /// The counting pass only visits the coefficients that become nonzero: a ZRL code is written at a nonzero coefficient
+    /// reached with a run of more than 15 zeros since the last code, and takes 16 of them, so the codes before a
+    /// coefficient that becomes nonzero are as many ZRL codes as the 16s among the zeros since the previous one, and the
+    /// rest of the zeros is the run of its code, wherever the already nonzero coefficients are in between.
+    /// </remarks>
     private void CodeAcRefinement<TPass>(int table, ReadOnlySpan<short> block, ref JpegBlockBitWriter writer)
         where TPass : struct, IPass
     {
         // Nonzero at bit Al, already nonzero before it, and the last coefficient that becomes nonzero: zeros after it
         // belong to the end of the band
         int al = _scan.Al;
-        var nonZero = GetSignificantMask(block, al) & _band;
-        var previouslyNonZero = GetSignificantMask(block, al + 1) & _band;
+        var (nonZero, previouslyNonZero) = GetSignificantMasks(block, al);
+        nonZero &= _band;
+        previouslyNonZero &= _band;
         var newlyNonZero = nonZero & ~previouslyNonZero;
+        var previous = _scan.Ss - 1;
+        if (TPass.Counting)
+        {
+            var zeros = _band & ~nonZero;
+            var codes = newlyNonZero;
+            while (codes != 0)
+            {
+                var k = BitOperations.TrailingZeroCount(codes);
+                codes &= codes - 1;
+                var zeroRun = BitOperations.PopCount(zeros & ((1UL << k) - 1) & ~((2UL << previous) - 1));
+                FlushEndOfBandRun<TPass>(table, ref writer);
+                _histograms[table][0xF0] += (uint)(zeroRun >> 4);
+                EmitSymbol<TPass>(table, ((zeroRun & 15) << 4) | 1, 0, 0, ref writer);
+                previous = k;
+            }
+
+            // The zeros and the already nonzero coefficients after the last code belong to the end of the band
+            var rest = _band & ~((2UL << previous) - 1);
+            var restBits = BitOperations.PopCount(previouslyNonZero & rest);
+            if ((zeros & rest) != 0 || restBits > 0)
+            {
+                _endOfBandRun++;
+                _pendingBitCount += restBits;
+                if (_endOfBandRun == MaxEndOfBandRun || _pendingBitCount > MaxPendingCorrectionBits)
+                {
+                    FlushEndOfBandRun<TPass>(table, ref writer);
+                }
+            }
+
+            return;
+        }
+
         var lastNew = newlyNonZero == 0 ? -1 : 63 - BitOperations.LeadingZeroCount(newlyNonZero);
 
         // The correction bits since the last code, the first one in the most significant position
         var blockBits = 0UL;
         var blockBitCount = 0;
         var run = 0;
-        var previous = _scan.Ss - 1;
         var mask = nonZero;
         while (mask != 0)
         {
@@ -438,11 +507,7 @@ internal sealed class JpegProgressiveScanEncoder
         if (previous < _scan.Se || blockBitCount > 0)
         {
             _endOfBandRun++;
-            if (!TPass.Counting)
-            {
-                AppendPendingBits(blockBits, blockBitCount);
-            }
-
+            AppendPendingBits(blockBits, blockBitCount);
             _pendingBitCount += blockBitCount;
             if (_endOfBandRun == MaxEndOfBandRun || _pendingBitCount > MaxPendingCorrectionBits)
             {

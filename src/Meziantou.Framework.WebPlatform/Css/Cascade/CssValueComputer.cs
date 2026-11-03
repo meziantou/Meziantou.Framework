@@ -316,6 +316,10 @@ internal static partial class CssValueComputer
                 // https://github.com/w3c/csswg-drafts/issues/8407: content-visibility: auto makes contain-intrinsic-size gain the
                 // auto keyword, so that the element remembers its size (as in the browsers)
                 return "auto " + ComputeGeneric(style, property, value, baseUrl);
+            // https://drafts.csswg.org/css-size-adjust/#propdef-text-size-adjust: none disables the inflation, as 100% does
+            // (WPT css/css-size-adjust/parsing/text-size-adjust-computed.html)
+            case "text-size-adjust" when value == "none":
+                return "100%";
             case "hyphenate-limit-chars":
                 return ComputeHyphenateLimitChars(style, property, value, baseUrl);
             case "dynamic-range-limit" when value.Contains('(', StringComparison.Ordinal):
@@ -2028,7 +2032,10 @@ internal static partial class CssValueComputer
         var computed = ComputeGeneric(style, property, value, baseUrl);
         if (SplitComponents(computed) is ["oblique", var angle] && angle.EndsWith("deg", StringComparison.Ordinal) && TryParseNumber(angle[..^3], out var degrees))
         {
-            degrees = Math.Clamp(degrees, -90, 90);
+            // The angle is a single-precision float in the browsers, serialized with 6 significant digits: the specified value
+            // keeps 6 decimals of the number of its unit, so oblique 0.785398165rad is 45deg, not 44.999991deg
+            // (WPT css/css-fonts/font-style-angle.html)
+            degrees = Math.Clamp(double.Parse(degrees.ToString("G6", CultureInfo.InvariantCulture), CultureInfo.InvariantCulture), -90, 90);
             return degrees == 0 ? "normal" : "oblique " + SerializeNumber(degrees) + "deg";
         }
 
@@ -2052,7 +2059,12 @@ internal static partial class CssValueComputer
             if (!setting.StartsWith('"', StringComparison.Ordinal) || tagEnd < 0)
                 return computed;
 
-            settings[setting[..(tagEnd + 1)]] = setting;
+            // The axis values are single-precision floats in the browsers: an extrapolated value is clamped to the largest one,
+            // serialized with 6 significant digits (WPT css/css-fonts/animations/font-variation-settings-interpolation.html)
+            var tag = setting[..(tagEnd + 1)];
+            settings[tag] = property.Name == "font-variation-settings" && TryParseNumber(setting[(tagEnd + 1)..].Trim(), out var axisValue) && Math.Abs(axisValue) > float.MaxValue
+                ? tag + " " + SerializeNumber(Math.CopySign(3.40282e38, axisValue))
+                : setting;
         }
 
         return string.Join(", ", settings.Values);

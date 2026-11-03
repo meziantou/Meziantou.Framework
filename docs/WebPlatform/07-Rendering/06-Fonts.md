@@ -18,7 +18,8 @@ every machine.
 
 The bundled fonts cover the Latin, Greek and Cyrillic scripts, in regular, bold, italic and bold italic. A page that
 names `Arial`, `Helvetica`, `Times New Roman`, `Times`, `Courier New` or `Courier` gets the metric-compatible bundled
-font: its text has the same size as with the original font. `cursive`, `fantasy` and `emoji` have no bundled font.
+font: its text has the same size as with the original font. `cursive` and `fantasy` use the serif font, as on a system
+that has no such font. `emoji` has no bundled font.
 
 ## Web fonts
 

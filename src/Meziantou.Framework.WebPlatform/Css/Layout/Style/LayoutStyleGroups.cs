@@ -233,7 +233,7 @@ internal sealed record TextLayoutStyle
         {
             // https://drafts.csswg.org/css-text-decor-4/#text-emphasis-position-property: over/under in horizontal writing modes,
             // right (the line-over side)/left in vertical writing modes
-            var position = style.GetComputedValue("text-emphasis-position");
+            var position = CssPropertyRules.GetUsedTextEmphasisPosition(style.GetComputedValue("text-emphasis-position"), style.Element);
             var under = style.Layout.IsHorizontalWritingMode ? position.Contains("under", StringComparison.Ordinal) : position.Contains("left", StringComparison.Ordinal);
             EmphasisMarks = under ? EmphasisMarksSide.Under : EmphasisMarksSide.Over;
         }

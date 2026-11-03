@@ -550,6 +550,7 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         r.SetMember(result, "display", r.FromString(value.Display));
         r.SetMember(result, "featureSettings", r.FromString(value.FeatureSettings));
         r.SetMember(result, "lineGapOverride", r.FromString(value.LineGapOverride));
+        r.SetMember(result, "sizeAdjust", r.FromString(value.SizeAdjust));
         r.SetMember(result, "stretch", r.FromString(value.Stretch));
         r.SetMember(result, "style", r.FromString(value.Style));
         r.SetMember(result, "unicodeRange", r.FromString(value.UnicodeRange));
@@ -3921,19 +3922,21 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
         var m3 = r.Adapter.IsUndefined(m3_value) ? (string)"normal" : r.ToDomString(m3_value);
         var m4_value = r.GetDictionaryMember(value, "lineGapOverride");
         var m4 = r.Adapter.IsUndefined(m4_value) ? (string)"normal" : r.ToDomString(m4_value);
-        var m5_value = r.GetDictionaryMember(value, "stretch");
-        var m5 = r.Adapter.IsUndefined(m5_value) ? (string)"normal" : r.ToDomString(m5_value);
-        var m6_value = r.GetDictionaryMember(value, "style");
+        var m5_value = r.GetDictionaryMember(value, "sizeAdjust");
+        var m5 = r.Adapter.IsUndefined(m5_value) ? (string)"100%" : r.ToDomString(m5_value);
+        var m6_value = r.GetDictionaryMember(value, "stretch");
         var m6 = r.Adapter.IsUndefined(m6_value) ? (string)"normal" : r.ToDomString(m6_value);
-        var m7_value = r.GetDictionaryMember(value, "unicodeRange");
-        var m7 = r.Adapter.IsUndefined(m7_value) ? (string)"U+0-10FFFF" : r.ToDomString(m7_value);
-        var m8_value = r.GetDictionaryMember(value, "variationSettings");
-        var m8 = r.Adapter.IsUndefined(m8_value) ? (string)"normal" : r.ToDomString(m8_value);
-        var m9_value = r.GetDictionaryMember(value, "weight");
+        var m7_value = r.GetDictionaryMember(value, "style");
+        var m7 = r.Adapter.IsUndefined(m7_value) ? (string)"normal" : r.ToDomString(m7_value);
+        var m8_value = r.GetDictionaryMember(value, "unicodeRange");
+        var m8 = r.Adapter.IsUndefined(m8_value) ? (string)"U+0-10FFFF" : r.ToDomString(m8_value);
+        var m9_value = r.GetDictionaryMember(value, "variationSettings");
         var m9 = r.Adapter.IsUndefined(m9_value) ? (string)"normal" : r.ToDomString(m9_value);
-        var m10_value = r.GetDictionaryMember(value, "width");
-        var m10_present = !r.Adapter.IsUndefined(m10_value);
-        var m10 = m10_present ? (string?)r.ToDomString(m10_value) : default;
+        var m10_value = r.GetDictionaryMember(value, "weight");
+        var m10 = r.Adapter.IsUndefined(m10_value) ? (string)"normal" : r.ToDomString(m10_value);
+        var m11_value = r.GetDictionaryMember(value, "width");
+        var m11_present = !r.Adapter.IsUndefined(m11_value);
+        var m11 = m11_present ? (string?)r.ToDomString(m11_value) : default;
         return new global::Meziantou.Framework.WebPlatform.Css.Om.FontFaceDescriptors
         {
             AscentOverride = m0,
@@ -3941,12 +3944,13 @@ internal static class WebIdlHelpers<TAdapter, TValue> where TAdapter : struct, g
             Display = m2,
             FeatureSettings = m3,
             LineGapOverride = m4,
-            Stretch = m5,
-            Style = m6,
-            UnicodeRange = m7,
-            VariationSettings = m8,
-            Weight = m9,
-            Width = m10_present ? m10 : Defaults_Css_Om_FontFaceDescriptors.Width,
+            SizeAdjust = m5,
+            Stretch = m6,
+            Style = m7,
+            UnicodeRange = m8,
+            VariationSettings = m9,
+            Weight = m10,
+            Width = m11_present ? m11 : Defaults_Css_Om_FontFaceDescriptors.Width,
         };
     }
 

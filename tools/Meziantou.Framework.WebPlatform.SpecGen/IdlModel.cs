@@ -381,6 +381,7 @@ internal sealed partial class IdlModel
         AddShadowRootElementFromPoint(model);
         AddTrustedHtmlParserOptions(model);
         AddFontFaceStretch(model);
+        AddFontFaceDescriptorsSizeAdjust(model);
         AddUIEventPseudoTarget(model);
         AddElementMatchContainer(model);
         AddPaintWorkletExtensions(model);
@@ -1002,6 +1003,29 @@ internal sealed partial class IdlModel
                 Type = new IdlType { Name = "CSSOMString" },
                 Source = "css-font-loading-3",
                 DeclaringDefinition = fontFace.Name,
+            });
+        }
+    }
+
+    /// <summary>
+    /// The sizeAdjust member of FontFaceDescriptors: the FontFace interface has the sizeAdjust attribute of the size-adjust
+    /// descriptor (https://drafts.csswg.org/css-fonts-5/#size-adjust-desc), but the dictionary of the constructor does not
+    /// declare it, unlike the other descriptors (WPT css/css-font-loading/fontface-size-adjust-descriptor.html sets it, and the
+    /// browsers support it): <c>partial dictionary FontFaceDescriptors { CSSOMString sizeAdjust = "100%"; };</c>
+    /// </summary>
+    private static void AddFontFaceDescriptorsSizeAdjust(IdlModel model)
+    {
+        if (model.Definitions.TryGetValue("FontFaceDescriptors", out var descriptors) && !descriptors.Members.Exists(m => m.Name == "sizeAdjust"))
+        {
+            using var defaultValue = JsonDocument.Parse("""{"type":"string","value":"100%"}""");
+            descriptors.Members.Add(new IdlMember
+            {
+                Kind = IdlMemberKind.Field,
+                Name = "sizeAdjust",
+                Type = new IdlType { Name = "CSSOMString" },
+                Default = defaultValue.RootElement.Clone(),
+                Source = "css-font-loading-3",
+                DeclaringDefinition = descriptors.Name,
             });
         }
     }

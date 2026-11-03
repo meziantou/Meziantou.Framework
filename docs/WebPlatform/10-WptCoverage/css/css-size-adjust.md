@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of css/css-size-adjust, and 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 4 | 5 | 0 | 80% |
+| [Stable](#stable-tests) | 5 | 5 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **4** | **5** | **0** | **80%** |
+| **All** | **5** | **5** | **0** | **100%** |
 
 ## Stable tests
 
@@ -20,6 +20,6 @@ description: "The results of the web-platform-tests of css/css-size-adjust, and 
 |---|---|--:|---|---|
 | [`animations/text-size-adjust-interpolation.html`](https://wpt.fyi/results/css/css-size-adjust/animations/text-size-adjust-interpolation.html) | Pass | 196 / 196 |  |  |
 | [`inheritance.html`](https://wpt.fyi/results/css/css-size-adjust/inheritance.html) | Pass | 2 / 2 |  |  |
-| [`parsing/text-size-adjust-computed.html`](https://wpt.fyi/results/css/css-size-adjust/parsing/text-size-adjust-computed.html) | Fail | 5 / 6 | BUG | `text-size-adjust: none` is not computed to `100%` |
+| [`parsing/text-size-adjust-computed.html`](https://wpt.fyi/results/css/css-size-adjust/parsing/text-size-adjust-computed.html) | Pass | 6 / 6 |  |  |
 | [`parsing/text-size-adjust-invalid.html`](https://wpt.fyi/results/css/css-size-adjust/parsing/text-size-adjust-invalid.html) | Pass | 4 / 4 |  |  |
 | [`parsing/text-size-adjust-valid.html`](https://wpt.fyi/results/css/css-size-adjust/parsing/text-size-adjust-valid.html) | Pass | 7 / 7 |  |  |

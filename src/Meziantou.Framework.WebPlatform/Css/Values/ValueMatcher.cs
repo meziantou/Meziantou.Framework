@@ -474,6 +474,41 @@ internal static class ValueMatcher
 
                 yield break;
 
+            case "font-family-name":
+            {
+                // https://drafts.csswg.org/css-fonts-4/#family-name-syntax: <string> | <custom-ident>+. As in the browsers, the
+                // CSS-wide keywords and default are only excluded from a family name of one identifier (e.g. "simple default" and
+                // "inherit simple" are family names, WPT css/css-fonts/test_font_family_parsing.html); the generic family keywords
+                // are excluded from every identifier ("cursive serif" is invalid, WPT css/css-fonts/parsing/font-family-invalid.html)
+                if (position >= values.Count)
+                    yield break;
+
+                if (values[position] is CssPreservedToken { Type: CssTokenType.String })
+                {
+                    yield return position + 1;
+                    yield break;
+                }
+
+                var last = position;
+                while (last < values.Count && values[last] is CssPreservedToken { Type: CssTokenType.Ident } familyIdent && !CustomIdentExclusions["font-family-name"].Contains(InfraAscii.ToAsciiLowercase(familyIdent.Token.Value)))
+                {
+                    last++;
+                }
+
+                for (var end = last; end > position + 1; end--)
+                {
+                    yield return end;
+                }
+
+                if (last > position && values[position] is CssPreservedToken single && InfraAscii.ToAsciiLowercase(single.Token.Value) is not "default" and var singleName
+                    && !CssWideKeywords.Contains(singleName))
+                {
+                    yield return position + 1;
+                }
+
+                yield break;
+            }
+
             case "declaration-value" or "any-value":
                 // Any non-empty sequence
                 for (var end = values.Count; end > position; end--)

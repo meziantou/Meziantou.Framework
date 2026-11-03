@@ -908,7 +908,10 @@ rejected, even when it starts with a font signature. The request URL modifiers o
 [Bundled fonts](layout.md#bundled-fonts)), matched by their full name or PostScript name (e.g. `local(Ahem)`,
 `local("Tinos Bold")`), else the fonts installed by the host, and the fonts installed on the machine when
 `BrowsingContextOptions.UseSystemFonts` is set (see [System fonts](layout.md#system-fonts)). A font face created from binary data is
-loaded when its data is a valid font file.
+loaded when its data is a valid font file. The `sizeAdjust` member of the descriptors of the constructor sets the
+`size-adjust` descriptor (the IDL of webref omits it, see `AddFontFaceDescriptorsSizeAdjust` of SpecGen). `FontFace.Variations`
+is the set of the variation axes of the `fvar` table of the font once it is loaded (empty before); `Features` has no member
+and `Palettes` is empty (the `CPAL` table is not exposed).
 
 ```csharp
 var face = new FontFace("My Font", "url(my-font.woff2) format(woff2)");

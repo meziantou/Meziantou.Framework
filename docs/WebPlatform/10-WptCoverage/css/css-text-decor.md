@@ -11,8 +11,8 @@ description: "The results of the web-platform-tests of css/css-text-decor, and w
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 48 | 48 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 309 | 318 | 0 | 97% |
-| **All** | **357** | **366** | **0** | **98%** |
+| [Reftests](#reftests) | 311 | 318 | 0 | 98% |
+| **All** | **359** | **366** | **0** | **98%** |
 
 ## Stable tests
 
@@ -205,7 +205,7 @@ description: "The results of the web-platform-tests of css/css-text-decor, and w
 | [`text-decoration-thickness-vertical-001.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-thickness-vertical-001.html) | Pass | 1 / 1 |  |  |
 | [`text-decoration-thickness-vertical-002.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-thickness-vertical-002.html) | Pass | 1 / 1 |  |  |
 | [`text-decoration-underline-wavy-covers-whole-line-length-001.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-underline-wavy-covers-whole-line-length-001.html) | Pass | 1 / 1 |  |  |
-| [`text-decoration-wavy-phase-across-elements-001.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-wavy-phase-across-elements-001.html) | Fail | 0 / 1 | BUG | the phase of a wavy underline restarts at the boundaries of the descendant elements |
+| [`text-decoration-wavy-phase-across-elements-001.html`](https://wpt.fyi/results/css/css-text-decor/text-decoration-wavy-phase-across-elements-001.html) | Fail | 0 / 1 | BUG | the wave is continuous across the descendant elements (its phase is anchored to the coordinates), but each fragment paints its part as a separate path: 8 antialiased pixels at the joins differ by at most 9 from the single path of the reference |
 | [`text-emphasis-color-001.xht`](https://wpt.fyi/results/css/css-text-decor/text-emphasis-color-001.xht) | Pass | 1 / 1 |  |  |
 | [`text-emphasis-color-property-001.html`](https://wpt.fyi/results/css/css-text-decor/text-emphasis-color-property-001.html) | Pass | 1 / 1 |  |  |
 | [`text-emphasis-color-property-001a.html`](https://wpt.fyi/results/css/css-text-decor/text-emphasis-color-property-001a.html) | Pass | 1 / 1 |  |  |
@@ -224,8 +224,8 @@ description: "The results of the web-platform-tests of css/css-text-decor, and w
 | [`text-emphasis-line-height-004b.html`](https://wpt.fyi/results/css/css-text-decor/text-emphasis-line-height-004b.html) | Pass | 1 / 1 |  |  |
 | [`text-emphasis-line-height-004c.html`](https://wpt.fyi/results/css/css-text-decor/text-emphasis-line-height-004c.html) | Pass | 1 / 1 |  |  |
 | [`text-emphasis-line-height-004d.html`](https://wpt.fyi/results/css/css-text-decor/text-emphasis-line-height-004d.html) | Pass | 1 / 1 |  |  |
-| [`text-emphasis-position-auto-001.html`](https://wpt.fyi/results/css/css-text-decor/text-emphasis-position-auto-001.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `auto` value of `text-emphasis-position` (not parsed: the webref grammar is `[ over \| under ] && [ right \| left ]?`) |
-| [`text-emphasis-position-auto-002.html`](https://wpt.fyi/results/css/css-text-decor/text-emphasis-position-auto-002.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `auto` value of `text-emphasis-position` (not parsed: the webref grammar is `[ over \| under ] && [ right \| left ]?`) |
+| [`text-emphasis-position-auto-001.html`](https://wpt.fyi/results/css/css-text-decor/text-emphasis-position-auto-001.html) | Pass | 1 / 1 |  |  |
+| [`text-emphasis-position-auto-002.html`](https://wpt.fyi/results/css/css-text-decor/text-emphasis-position-auto-002.html) | Pass | 1 / 1 |  |  |
 | [`text-emphasis-position-default-001.html`](https://wpt.fyi/results/css/css-text-decor/text-emphasis-position-default-001.html) | Pass | 1 / 1 |  |  |
 | [`text-emphasis-position-over-left-001.xht`](https://wpt.fyi/results/css/css-text-decor/text-emphasis-position-over-left-001.xht) | Pass | 1 / 1 |  |  |
 | [`text-emphasis-position-over-left-002.xht`](https://wpt.fyi/results/css/css-text-decor/text-emphasis-position-over-left-002.xht) | Pass | 1 / 1 |  |  |

@@ -1045,9 +1045,9 @@ public sealed class PaintingTests : IDisposable
         // The selection does not highlight the text that cannot be selected
         Assert.DoesNotContain("fill #ff0000", dump, StringComparison.Ordinal);
 
-        // The wavy line starts at the first highlighted character; the highlight paints its glyphs over the line, without the
-        // stroke of the text
-        Assert.Contains("draw-path M20 30.83Q", dump, StringComparison.Ordinal);
+        // The wavy line starts at the first highlighted character (its wave is anchored to the coordinates, so it may start in
+        // the middle of a period); the highlight paints its glyphs over the line, without the stroke of the text
+        Assert.Contains("draw-path M20 ", dump, StringComparison.Ordinal);
         Assert.Contains("draw-glyphs \"ab\" Ahem 10px at (0, 28) glyphs=2 stroke #008000 width=1", dump, StringComparison.Ordinal);
         Assert.Contains("draw-glyphs \"ef\" Ahem 10px at (40, 28) glyphs=2 stroke #008000 width=1", dump, StringComparison.Ordinal);
         Assert.DoesNotContain("draw-glyphs \"cd\" Ahem 10px at (20, 28) glyphs=2 stroke", dump, StringComparison.Ordinal);

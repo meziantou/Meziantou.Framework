@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of css/css-fonts, and why th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 153 | 167 | 0 | 92% |
+| [Stable](#stable-tests) | 157 | 167 | 0 | 94% |
 | [Tentative](#tentative-tests) | 6 | 6 | 0 | 100% |
-| [Reftests](#reftests) | 359 | 385 | 1 | 93% |
-| **All** | **518** | **558** | **1** | **93%** |
+| [Reftests](#reftests) | 360 | 385 | 1 | 94% |
+| **All** | **523** | **558** | **1** | **94%** |
 
 ## Stable tests
 
@@ -29,7 +29,7 @@ description: "The results of the web-platform-tests of css/css-fonts, and why th
 | [`animations/font-stretch-interpolation.html`](https://wpt.fyi/results/css/css-fonts/animations/font-stretch-interpolation.html) | Pass | 185 / 185 |  |  |
 | [`animations/font-style-interpolation.html`](https://wpt.fyi/results/css/css-fonts/animations/font-style-interpolation.html) | Pass | 129 / 129 |  |  |
 | [`animations/font-variation-settings-composition.html`](https://wpt.fyi/results/css/css-fonts/animations/font-variation-settings-composition.html) | Pass | 60 / 60 |  |  |
-| [`animations/font-variation-settings-interpolation.html`](https://wpt.fyi/results/css/css-fonts/animations/font-variation-settings-interpolation.html) | Fail | 354 / 358 | BUG | the extrapolated axis values are not clamped to the largest single-precision float |
+| [`animations/font-variation-settings-interpolation.html`](https://wpt.fyi/results/css/css-fonts/animations/font-variation-settings-interpolation.html) | Pass | 358 / 358 |  |  |
 | [`animations/font-weight-composition.html`](https://wpt.fyi/results/css/css-fonts/animations/font-weight-composition.html) | Fail | 18 / 20 | BUG | the sum of the added font weights is rounded |
 | [`animations/multiple-elements-font-palette-animation.html`](https://wpt.fyi/results/css/css-fonts/animations/multiple-elements-font-palette-animation.html) | Pass | 2 / 2 |  |  |
 | [`animations/system-fonts.html`](https://wpt.fyi/results/css/css-fonts/animations/system-fonts.html) | Pass | 588 / 588 |  |  |
@@ -61,7 +61,7 @@ description: "The results of the web-platform-tests of css/css-fonts, and why th
 | [`font-size-sign-function.html`](https://wpt.fyi/results/css/css-fonts/font-size-sign-function.html) | Pass | 1 / 1 |  |  |
 | [`font-size-zero-ligatures.html`](https://wpt.fyi/results/css/css-fonts/font-size-zero-ligatures.html) | Pass | 4 / 4 |  |  |
 | [`font-stretch-interpolation-math-functions.html`](https://wpt.fyi/results/css/css-fonts/font-stretch-interpolation-math-functions.html) | Pass | 48 / 48 |  |  |
-| [`font-style-angle.html`](https://wpt.fyi/results/css/css-fonts/font-style-angle.html) | Fail | 0 / 1 | BUG | the specified values are kept as their serialization, whose numbers have 6 decimals (`oblique 0.785398165rad` is `oblique 0.785398rad`), and the computed value is computed from it: `44.999991deg` instead of `45deg` |
+| [`font-style-angle.html`](https://wpt.fyi/results/css/css-fonts/font-style-angle.html) | Pass | 1 / 1 |  |  |
 | [`font-style-sign-function.html`](https://wpt.fyi/results/css/css-fonts/font-style-sign-function.html) | Pass | 1 / 1 |  |  |
 | [`font-variant-alternates-parsing.html`](https://wpt.fyi/results/css/css-fonts/font-variant-alternates-parsing.html) | Pass | 1 / 1 |  |  |
 | [`font-variation-settings-calc.html`](https://wpt.fyi/results/css/css-fonts/font-variation-settings-calc.html) | Pass | 8 / 8 |  |  |
@@ -151,7 +151,7 @@ description: "The results of the web-platform-tests of css/css-fonts, and why th
 | [`parsing/font-variant-position-computed.html`](https://wpt.fyi/results/css/css-fonts/parsing/font-variant-position-computed.html) | Pass | 3 / 3 |  |  |
 | [`parsing/font-variant-position-invalid.html`](https://wpt.fyi/results/css/css-fonts/parsing/font-variant-position-invalid.html) | Pass | 2 / 2 |  |  |
 | [`parsing/font-variant-position-valid.html`](https://wpt.fyi/results/css/css-fonts/parsing/font-variant-position-valid.html) | Pass | 3 / 3 |  |  |
-| [`parsing/font-variant-serialization.html`](https://wpt.fyi/results/css/css-fonts/parsing/font-variant-serialization.html) | Fail | 0 / 1 | BUG | `font-variant` serializes to the empty string after `font: menu` (system font) when a `font-variant-*` longhand is set |
+| [`parsing/font-variant-serialization.html`](https://wpt.fyi/results/css/css-fonts/parsing/font-variant-serialization.html) | Pass | 1 / 1 |  |  |
 | [`parsing/font-variant-valid.html`](https://wpt.fyi/results/css/css-fonts/parsing/font-variant-valid.html) | Pass | 46 / 46 |  |  |
 | [`parsing/font-variation-settings-computed.html`](https://wpt.fyi/results/css/css-fonts/parsing/font-variation-settings-computed.html) | Pass | 8 / 8 |  |  |
 | [`parsing/font-variation-settings-invalid.html`](https://wpt.fyi/results/css/css-fonts/parsing/font-variation-settings-invalid.html) | Pass | 18 / 18 |  |  |
@@ -168,7 +168,7 @@ description: "The results of the web-platform-tests of css/css-fonts, and why th
 | [`synthetic-bold-does-not-widen-advances.html`](https://wpt.fyi/results/css/css-fonts/synthetic-bold-does-not-widen-advances.html) | Pass | 3 / 3 |  |  |
 | [`synthetic-bold-zero-advance-glyph.html`](https://wpt.fyi/results/css/css-fonts/synthetic-bold-zero-advance-glyph.html) | Pass | 1 / 1 |  |  |
 | [`test_datafont_same_origin.html`](https://wpt.fyi/results/css/css-fonts/test_datafont_same_origin.html) | Pass | 1 / 1 |  |  |
-| [`test_font_family_parsing.html`](https://wpt.fyi/results/css/css-fonts/test_font_family_parsing.html) | Fail | 1,784 / 2,232 | BUG | family names of several identifiers that contain a CSS-wide keyword or `default` (e.g. `simple default`, `inherit simple`) are rejected in `font-family` and `font` |
+| [`test_font_family_parsing.html`](https://wpt.fyi/results/css/css-fonts/test_font_family_parsing.html) | Pass | 2,232 / 2,232 |  |  |
 | [`test_font_feature_values_parsing.html`](https://wpt.fyi/results/css/css-fonts/test_font_feature_values_parsing.html) | Fail | 299 / 302 | TEST BUG | `@font-feature-values bongo { @blah } @styleset {...} }` is a syntax error for `insertRule()` (the `}` closes the rule), and the duplicate declarations of a feature value block are expected in the serialization although the block is a map (fails in every browser) |
 | [`variable-in-font-variation-settings.html`](https://wpt.fyi/results/css/css-fonts/variable-in-font-variation-settings.html) | Pass | 1 / 1 |  |  |
 | [`variations/at-font-face-descriptors.html`](https://wpt.fyi/results/css/css-fonts/variations/at-font-face-descriptors.html) | Fail | 87 / 88 | TEST BUG | the test contradicts itself: an `oblique` range with equal bounds is collapsed (`oblique 10deg 10deg` is `oblique 10deg`, as the `font-weight` and `font-width` ranges), but `oblique 20deg 20deg` (the former default angle) is expected as written; Chrome fails the first subtest, Safari the second |
@@ -176,7 +176,7 @@ description: "The results of the web-platform-tests of css/css-fonts, and why th
 | [`variations/font-opentype-collections.html`](https://wpt.fyi/results/css/css-fonts/variations/font-opentype-collections.html) | Pass | 1 / 1 |  |  |
 | [`variations/font-parse-numeric-stretch-style-weight.html`](https://wpt.fyi/results/css/css-fonts/variations/font-parse-numeric-stretch-style-weight.html) | Pass | 81 / 81 |  |  |
 | [`variations/font-shorthand.html`](https://wpt.fyi/results/css/css-fonts/variations/font-shorthand.html) | Pass | 22 / 22 |  |  |
-| [`variations/font-stretch.html`](https://wpt.fyi/results/css/css-fonts/variations/font-stretch.html) | Fail | 50 / 51 | BUG | the test expects the huge computed percentage `1e9%` in exponent form (`1e+009%`); `1000000000%` is returned |
+| [`variations/font-stretch.html`](https://wpt.fyi/results/css/css-fonts/variations/font-stretch.html) | Fail | 50 / 51 | TEST BUG | the test expects the huge computed percentage `1e9%` in the exponent form of the C runtime of Windows (`1e+009%`), which no browser returns (Chrome returns `1e+09%`); `1000000000%` is returned |
 | [`variations/font-style-interpolation.html`](https://wpt.fyi/results/css/css-fonts/variations/font-style-interpolation.html) | Pass | 2 / 2 |  |  |
 | [`variations/font-style-parsing.html`](https://wpt.fyi/results/css/css-fonts/variations/font-style-parsing.html) | Pass | 43 / 43 |  |  |
 | [`variations/font-variation-settings-inherit.html`](https://wpt.fyi/results/css/css-fonts/variations/font-variation-settings-inherit.html) | Pass | 3 / 3 |  |  |
@@ -481,7 +481,7 @@ description: "The results of the web-platform-tests of css/css-fonts, and why th
 | [`font-weight-lighter-001.xht`](https://wpt.fyi/results/css/css-fonts/font-weight-lighter-001.xht) | Pass | 1 / 1 |  |  |
 | [`font-weight-normal-001.xht`](https://wpt.fyi/results/css/css-fonts/font-weight-normal-001.xht) | Pass | 1 / 1 |  |  |
 | [`font-weight-normal-variable.html`](https://wpt.fyi/results/css/css-fonts/font-weight-normal-variable.html) | Pass | 1 / 1 |  |  |
-| [`generic-family-lang-attr-cascade.html`](https://wpt.fyi/results/css/css-fonts/generic-family-lang-attr-cascade.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the generic families `cursive` and `fantasy` map to no font (there is no bundled font for them, `BundledFonts.GetGenericFamily` returns null), so `font-family: cursive, ahem` and `fantasy, ahem` fall back to Ahem instead of a default font as in the reference |
+| [`generic-family-lang-attr-cascade.html`](https://wpt.fyi/results/css/css-fonts/generic-family-lang-attr-cascade.html) | Pass | 1 / 1 |  |  |
 | [`hiragana-katakana-kerning.html`](https://wpt.fyi/results/css/css-fonts/hiragana-katakana-kerning.html) | Pass | 1 / 1 |  |  |
 | [`italic-oblique-fallback.html`](https://wpt.fyi/results/css/css-fonts/italic-oblique-fallback.html) | Pass | 1 / 1 |  |  |
 | [`lang-attribute-affects-rendering-of-second-text-run.html`](https://wpt.fyi/results/css/css-fonts/lang-attribute-affects-rendering-of-second-text-run.html) | Pass | 1 / 1 |  |  |
@@ -518,7 +518,7 @@ description: "The results of the web-platform-tests of css/css-fonts, and why th
 | [`ric-in-monospace.html`](https://wpt.fyi/results/css/css-fonts/ric-in-monospace.html) | Pass | 1 / 1 |  |  |
 | [`rlh-in-monospace.html`](https://wpt.fyi/results/css/css-fonts/rlh-in-monospace.html) | Pass | 1 / 1 |  |  |
 | [`rtl-glyph-extents.html`](https://wpt.fyi/results/css/css-fonts/rtl-glyph-extents.html) | Pass | 1 / 1 |  |  |
-| [`separators.html`](https://wpt.fyi/results/css/css-fonts/separators.html) | Fail | 0 / 1 | BUG | U+2028 LINE SEPARATOR and U+2029 PARAGRAPH SEPARATOR force a line break and are painted with their glyph (the `L` and `P` boxes of the test font): the test expects them to be rendered as a space, without line break (only Chrome passes) |
+| [`separators.html`](https://wpt.fyi/results/css/css-fonts/separators.html) | Fail | 0 / 1 | BUG | U+2028 LINE SEPARATOR and U+2029 PARAGRAPH SEPARATOR force a line break and are painted with their glyph (the `L` and `P` boxes of the test font): the test expects them to be rendered as a space, without line break (only Chrome passes), where `css/css-text/line-breaking/line-breaking-022.html` expects the forced line break of UAX #14 (class BK) |
 | [`size-adjust-01.html`](https://wpt.fyi/results/css/css-fonts/size-adjust-01.html) | Pass | 1 / 1 |  |  |
 | [`size-adjust-02.html`](https://wpt.fyi/results/css/css-fonts/size-adjust-02.html) | Pass | 1 / 1 |  |  |
 | [`size-adjust-03.html`](https://wpt.fyi/results/css/css-fonts/size-adjust-03.html) | Pass | 1 / 1 |  |  |

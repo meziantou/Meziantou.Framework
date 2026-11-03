@@ -1,3 +1,4 @@
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 
@@ -93,7 +94,48 @@ internal static class Av1Reconstruction
         }
 
         Av1InverseTransform.Transform(dequant, residual, txSz, txType, lossless, bitDepth, lastRow + 1, lastColumn + 1);
+        AddResidualBlock(plane, stride, x, y, residual, w, h, txType, maxSample);
+    }
 
+    /// <summary>
+    /// The end of <see cref="Reconstruct"/> for coefficients that are already dequantized: applies the inverse transform and
+    /// adds the residual to the predicted samples.
+    /// </summary>
+    /// <param name="plane">The samples of the plane.</param>
+    /// <param name="stride">The number of samples of a row of <paramref name="plane"/>.</param>
+    /// <param name="x">The column of the top left sample of the transform block.</param>
+    /// <param name="y">The row of the top left sample of the transform block.</param>
+    /// <param name="dequant"><c>Dequant</c>: Min(32, width) coefficients per row, in the dequantization range.</param>
+    /// <param name="eob">The number of coefficients of the scan order that may not be zero.</param>
+    /// <param name="scratch">Scratch for the residual (from entry 1024, 4096 entries).</param>
+    /// <param name="txSz">The transform size.</param>
+    /// <param name="txType">The transform type (<c>PlaneTxType</c>).</param>
+    /// <param name="lossless">Whether the block is lossless.</param>
+    /// <param name="bitDepth">The bit depth of the samples.</param>
+    /// <param name="rows">A bound of the rows of the coefficients that are not zero.</param>
+    /// <param name="columns">A bound of the columns of the coefficients that are not zero.</param>
+    public static void ReconstructDequantized(Span<ushort> plane, int stride, int x, int y, ReadOnlySpan<int> dequant, int eob, Span<int> scratch, int txSz, int txType, bool lossless, int bitDepth, int rows, int columns)
+    {
+        var log2W = Av1Tables.TxWidthLog2[txSz];
+        var log2H = Av1Tables.TxHeightLog2[txSz];
+        var w = 1 << log2W;
+        var h = 1 << log2H;
+        var maxSample = (1 << bitDepth) - 1;
+        if (eob is 1 && rows is 1 && columns is 1 && txType is Av1Constants.DctDct && !lossless)
+        {
+            // Only the DC coefficient may not be zero: the residual is one value
+            AddConstant(plane, stride, x, y, w, h, GetDcOnlyResidual(dequant[0], txSz, bitDepth), maxSample);
+            return;
+        }
+
+        var residual = scratch.Slice(1024, w * h);
+        Av1InverseTransform.Transform(dequant[..(Math.Min(32, w) * Math.Min(32, h))], residual, txSz, txType, lossless, bitDepth, rows, columns);
+        AddResidualBlock(plane, stride, x, y, residual, w, h, txType, maxSample);
+    }
+
+    // Adds the residual of a transform block to its predicted samples, flipped as the transform type says
+    private static void AddResidualBlock(Span<ushort> plane, int stride, int x, int y, ReadOnlySpan<int> residual, int w, int h, int txType, int maxSample)
+    {
         var flipUD = txType is Av1Constants.FlipadstDct or Av1Constants.FlipadstAdst or Av1Constants.VFlipadst or Av1Constants.FlipadstFlipadst;
         var flipLR = txType is Av1Constants.DctFlipadst or Av1Constants.AdstFlipadst or Av1Constants.HFlipadst or Av1Constants.FlipadstFlipadst;
         for (var i = 0; i < h; i++)
@@ -146,7 +188,8 @@ internal static class Av1Reconstruction
     private static int Dequantize(int coefficient, long q, int dqDenom, int min, int max)
     {
         var dq = coefficient * q;
-        var dq2 = (Math.Abs(dq) & 0xFFFFFF) / dqDenom;
+        // dqDenom is 1, 2 or 4, and the masked value is not negative
+        var dq2 = (Math.Abs(dq) & 0xFFFFFF) >> BitOperations.Log2((uint)dqDenom);
         if (dq < 0)
             dq2 = -dq2;
 

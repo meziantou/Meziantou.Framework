@@ -213,6 +213,7 @@ internal ref partial struct Av1TileCoder
         _currentQIndex = _header.BaseQIdx;
 
         ClearAboveContext();
+        _scratch.ClearDequant();
         _deltaLf = default;
         ResetLoopRestorationReferences();
 

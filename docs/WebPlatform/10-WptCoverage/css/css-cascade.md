@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of css/css-cascade, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 86 | 92 | 0 | 93% |
+| [Stable](#stable-tests) | 87 | 92 | 0 | 95% |
 | [Tentative](#tentative-tests) | 1 | 1 | 0 | 100% |
 | [Reftests](#reftests) | 50 | 50 | 0 | 100% |
-| **All** | **137** | **143** | **0** | **96%** |
+| **All** | **138** | **143** | **0** | **97%** |
 
 ## Stable tests
 
@@ -24,7 +24,7 @@ description: "The results of the web-platform-tests of css/css-cascade, and why 
 | [`all-prop-revert-noop.html`](https://wpt.fyi/results/css/css-cascade/all-prop-revert-noop.html) | Pass | 114 / 114 |  |  |
 | [`at-scope-parsing.html`](https://wpt.fyi/results/css/css-cascade/at-scope-parsing.html) | Pass | 43 / 43 |  |  |
 | [`at-scope-relative-syntax.html`](https://wpt.fyi/results/css/css-cascade/at-scope-relative-syntax.html) | Pass | 8 / 8 |  |  |
-| [`declaration-context.html`](https://wpt.fyi/results/css/css-cascade/declaration-context.html) | Fail | 8 / 28 | BUG | the at-rules nested in `@scope` (`@keyframes`, `@page`, `@position-try`) are not parsed as in a style sheet: their declarations are dropped, or the rule cannot be inserted with `insertRule()` |
+| [`declaration-context.html`](https://wpt.fyi/results/css/css-cascade/declaration-context.html) | Fail | 27 / 28 | BUG | the `@page` rules accept all the properties (e.g. `display`), as Blink does for the margin properties of css/css-page/cssom/margin-001.html; the test expects the properties that do not apply to pages to be rejected |
 | [`duplicate-stylesheets.html`](https://wpt.fyi/results/css/css-cascade/duplicate-stylesheets.html) | Pass | 17 / 17 |  |  |
 | [`idlharness.html`](https://wpt.fyi/results/css/css-cascade/idlharness.html) | Pass | 34 / 34 |  |  |
 | [`import-conditions.html`](https://wpt.fyi/results/css/css-cascade/import-conditions.html) | Pass | 29 / 29 |  |  |
@@ -97,7 +97,7 @@ description: "The results of the web-platform-tests of css/css-cascade, and why 
 | [`scope-invalidation.html`](https://wpt.fyi/results/css/css-cascade/scope-invalidation.html) | Pass | 31 / 31 |  |  |
 | [`scope-layer.html`](https://wpt.fyi/results/css/css-cascade/scope-layer.html) | Pass | 1 / 1 |  |  |
 | [`scope-media.html`](https://wpt.fyi/results/css/css-cascade/scope-media.html) | Pass | 1 / 1 |  |  |
-| [`scope-name-defining-rules.html`](https://wpt.fyi/results/css/css-cascade/scope-name-defining-rules.html) | Fail | 2 / 4 | BUG | the `@keyframes` rules nested in `@scope` are ignored |
+| [`scope-name-defining-rules.html`](https://wpt.fyi/results/css/css-cascade/scope-name-defining-rules.html) | Pass | 4 / 4 |  |  |
 | [`scope-nesting.html`](https://wpt.fyi/results/css/css-cascade/scope-nesting.html) | Pass | 24 / 24 |  |  |
 | [`scope-overlapping-has.html`](https://wpt.fyi/results/css/css-cascade/scope-overlapping-has.html) | Pass | 1 / 1 |  |  |
 | [`scope-proximity.html`](https://wpt.fyi/results/css/css-cascade/scope-proximity.html) | Pass | 5 / 5 |  |  |

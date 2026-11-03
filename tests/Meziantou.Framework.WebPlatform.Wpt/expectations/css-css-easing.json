@@ -6,12 +6,7 @@
     "total": 5
   },
   "css/css-easing/linear-timing-functions-syntax-percentage-first.html": {
-    "total": 11,
-    "failures": {
-      "e.style['animation-timing-function'] = \"linear(0 0%, 100% 1)\" should set the property value": "FAIL",
-      "e.style['animation-timing-function'] = \"linear(0% 0, 1 100%)\" should set the property value": "FAIL",
-      "e.style['animation-timing-function'] = \"linear(0% 0, 100% 1)\" should set the property value": "FAIL"
-    }
+    "total": 11
   },
   "css/css-easing/linear-timing-functions-syntax.html": {
     "total": 35,

@@ -48,7 +48,7 @@ description: "The results of the web-platform-tests of css/css-animations, and w
 | [`animationevent-marker-pseudoelement.html`](https://wpt.fyi/results/css/css-animations/animationevent-marker-pseudoelement.html) | Pass | 1 / 1 |  |  |
 | [`animationevent-pseudoelement.html`](https://wpt.fyi/results/css/css-animations/animationevent-pseudoelement.html) | Pass | 1 / 1 |  |  |
 | [`animationevent-types.html`](https://wpt.fyi/results/css/css-animations/animationevent-types.html) | Pass | 3 / 3 |  |  |
-| [`cancel-events-on-remove.html`](https://wpt.fyi/results/css/css-animations/cancel-events-on-remove.html) | Timeout | 3 / 5 | BUG | re-parenting or removing an element does not cancel its transitions and animations |
+| [`cancel-events-on-remove.html`](https://wpt.fyi/results/css/css-animations/cancel-events-on-remove.html) | Fail | 4 / 5 | BUG | a re-parented element: the `animationcancel` event of its canceled CSS animation is dispatched after the `animationstart` event of the new one (the start event of a paused animation has no scheduled event time, and is sorted first) |
 | [`computed-style-animation-parsing.html`](https://wpt.fyi/results/css/css-animations/computed-style-animation-parsing.html) | Pass | 7 / 7 |  |  |
 | [`dialog-animation.html`](https://wpt.fyi/results/css/css-animations/dialog-animation.html) | Pass | 1 / 1 |  |  |
 | [`dialog-backdrop-animation.html`](https://wpt.fyi/results/css/css-animations/dialog-backdrop-animation.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the animations of `::backdrop` (only `::before`, `::after` and `::marker` have CSS animations and transitions) |

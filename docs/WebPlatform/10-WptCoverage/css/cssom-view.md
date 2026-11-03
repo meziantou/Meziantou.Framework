@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of css/cssom-view, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 214 | 231 | 0 | 93% |
+| [Stable](#stable-tests) | 215 | 231 | 0 | 93% |
 | [Tentative](#tentative-tests) | 2 | 4 | 0 | 50% |
 | [Reftests](#reftests) | 11 | 11 | 0 | 100% |
-| **All** | **227** | **246** | **0** | **92%** |
+| **All** | **228** | **246** | **0** | **93%** |
 
 ## Stable tests
 
@@ -32,7 +32,7 @@ description: "The results of the web-platform-tests of css/cssom-view, and why t
 | [`MediaQueryListEvent.html`](https://wpt.fyi/results/css/cssom-view/MediaQueryListEvent.html) | Pass | 6 / 6 |  |  |
 | [`Screen-pixelDepth-Screen-colorDepth001.html`](https://wpt.fyi/results/css/cssom-view/Screen-pixelDepth-Screen-colorDepth001.html) | Pass | 2 / 2 |  |  |
 | [`background-change-during-smooth-scroll.html`](https://wpt.fyi/results/css/cssom-view/background-change-during-smooth-scroll.html) | Pass | 1 / 1 |  |  |
-| [`checkVisibility.html`](https://wpt.fyi/results/css/cssom-view/checkVisibility.html) | Fail | 19 / 21 | BUG | `checkVisibility()` returns true for the content of a closed `details` element: it walks the flat tree ancestors that are elements, so it misses the `content-visibility: hidden` of the `::details-content` pseudo-element |
+| [`checkVisibility.html`](https://wpt.fyi/results/css/cssom-view/checkVisibility.html) | Pass | 21 / 21 |  |  |
 | [`client-props-inline-list-item.html`](https://wpt.fyi/results/css/cssom-view/client-props-inline-list-item.html) | Pass | 1 / 1 |  |  |
 | [`client-props-input.html`](https://wpt.fyi/results/css/cssom-view/client-props-input.html) | Pass | 1 / 1 |  |  |
 | [`client-props-root.html`](https://wpt.fyi/results/css/cssom-view/client-props-root.html) | Pass | 1 / 1 |  |  |

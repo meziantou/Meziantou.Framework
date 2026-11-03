@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of css/css-conditional, and 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 216 | 226 | 0 | 96% |
+| [Stable](#stable-tests) | 218 | 226 | 0 | 96% |
 | [Tentative](#tentative-tests) | 5 | 6 | 0 | 83% |
 | [Reftests](#reftests) | 168 | 173 | 0 | 97% |
-| **All** | **389** | **405** | **0** | **96%** |
+| **All** | **391** | **405** | **0** | **97%** |
 
 ## Stable tests
 
@@ -72,7 +72,7 @@ description: "The results of the web-platform-tests of css/css-conditional, and 
 | [`container-queries/container-units-animation.html`](https://wpt.fyi/results/css/css-conditional/container-queries/container-units-animation.html) | Pass | 24 / 24 |  |  |
 | [`container-queries/container-units-auto.html`](https://wpt.fyi/results/css/css-conditional/container-queries/container-units-auto.html) | Pass | 1 / 1 |  |  |
 | [`container-queries/container-units-basic.html`](https://wpt.fyi/results/css/css-conditional/container-queries/container-units-basic.html) | Pass | 2 / 2 |  |  |
-| [`container-queries/container-units-computational-independence.html`](https://wpt.fyi/results/css/css-conditional/container-queries/container-units-computational-independence.html) | Fail | 0 / 6 | BUG | `CSS.registerProperty()` accepts container query units (`cqw`...) in `initialValue`, although they are not computationally independent (it must throw SyntaxError) |
+| [`container-queries/container-units-computational-independence.html`](https://wpt.fyi/results/css/css-conditional/container-queries/container-units-computational-independence.html) | Pass | 6 / 6 |  |  |
 | [`container-queries/container-units-content-box.html`](https://wpt.fyi/results/css/css-conditional/container-queries/container-units-content-box.html) | Pass | 2 / 2 |  |  |
 | [`container-queries/container-units-in-at-container-dynamic.html`](https://wpt.fyi/results/css/css-conditional/container-queries/container-units-in-at-container-dynamic.html) | Pass | 1 / 1 |  |  |
 | [`container-queries/container-units-in-at-container-fallback.html`](https://wpt.fyi/results/css/css-conditional/container-queries/container-units-in-at-container-fallback.html) | Pass | 1 / 1 |  |  |
@@ -237,7 +237,7 @@ description: "The results of the web-platform-tests of css/css-conditional, and 
 | [`js/CSS-supports-L3.html`](https://wpt.fyi/results/css/css-conditional/js/CSS-supports-L3.html) | Pass | 17 / 17 |  |  |
 | [`js/CSS-supports-L4.html`](https://wpt.fyi/results/css/css-conditional/js/CSS-supports-L4.html) | Pass | 18 / 18 |  |  |
 | [`js/CSS-supports-L5.html`](https://wpt.fyi/results/css/css-conditional/js/CSS-supports-L5.html) | Pass | 9 / 9 |  |  |
-| [`js/CSS-supports-details-content-pseudo-parsing.html`](https://wpt.fyi/results/css/css-conditional/js/CSS-supports-details-content-pseudo-parsing.html) | Fail | 7 / 8 | BUG | `::details-content` cannot be followed by `::before`, `::first-line` or `:lang()` in a selector (`CSS.supports("selector(...)")` is false) |
+| [`js/CSS-supports-details-content-pseudo-parsing.html`](https://wpt.fyi/results/css/css-conditional/js/CSS-supports-details-content-pseudo-parsing.html) | Pass | 8 / 8 |  |  |
 | [`js/CSS-supports-selector-detecting-invalid-in-logical-combinations.html`](https://wpt.fyi/results/css/css-conditional/js/CSS-supports-selector-detecting-invalid-in-logical-combinations.html) | Pass | 5 / 5 |  |  |
 | [`js/CSS-supports-selector-picker.html`](https://wpt.fyi/results/css/css-conditional/js/CSS-supports-selector-picker.html) | Pass | 6 / 6 |  |  |
 | [`js/conditional-CSSGroupingRule.html`](https://wpt.fyi/results/css/css-conditional/js/conditional-CSSGroupingRule.html) | Pass | 34 / 34 |  |  |

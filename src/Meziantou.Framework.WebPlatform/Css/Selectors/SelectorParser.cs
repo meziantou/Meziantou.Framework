@@ -788,8 +788,9 @@ internal sealed class SelectorParser
             return true;
 
         // ::part() can be followed by the pseudo-classes that do not match based on tree information
-        // (https://drafts.csswg.org/css-shadow-1/#part); the argument of :not() is restricted the same way
-        if (pseudoElement.Name == "part")
+        // (https://drafts.csswg.org/css-shadow-1/#part); the argument of :not() is restricted the same way. So can the
+        // element-backed ::details-content (https://drafts.csswg.org/css-pseudo-4/#element-backed, e.g. :lang())
+        if (pseudoElement.Name is "part" or "details-content")
         {
             return pseudoClass.Kind is not (PseudoClass.Root or PseudoClass.Empty or PseudoClass.FirstChild or PseudoClass.LastChild or PseudoClass.OnlyChild
                 or PseudoClass.FirstOfType or PseudoClass.LastOfType or PseudoClass.OnlyOfType or PseudoClass.NthChild or PseudoClass.NthLastChild

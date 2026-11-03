@@ -1121,6 +1121,12 @@ internal sealed partial class StyleEngine
         if (mayHaveTransitions && (beforeChange is null || beforeChange.IsDisplayNoneForAnimations()))
         {
             beforeChange = TreeHasStartingStyleRules(element) ? ComputeStartingStyle(element, pseudoElement, parent, highlightParent) : null;
+
+            // A starting style that is not rendered (display: none in @starting-style) does not start transitions
+            if (beforeChange is not null && beforeChange.IsDisplayNoneForAnimations())
+            {
+                beforeChange = null;
+            }
         }
 
         var mayHaveAnimations = _environmentOverride is null && CssAnimationUpdater.MayHaveAnimations(style);
@@ -2549,7 +2555,8 @@ internal sealed partial class StyleEngine
 
         sheets ??= GetStyleSheets(root);
 
-        var collector = new CascadeRuleCollector(_environment!, CascadeOrigin.Author, root);
+        var environment = WithCustomMedia(_environment!, sheets);
+        var collector = new CascadeRuleCollector(environment, CascadeOrigin.Author, root);
         var baseUrl = _document.DocumentBaseUrl.Serialize();
         foreach (var sheet in sheets)
         {
@@ -2564,7 +2571,7 @@ internal sealed partial class StyleEngine
         if (collector.HasApplyRules)
         {
             outerMixinRules = root is ShadowRoot ? GetOuterMixinRules(root) : null;
-            collector = CreateCollectorWithMixins(root, collector.MixinRules);
+            collector = CreateCollectorWithMixins(environment, root, collector.MixinRules);
             foreach (var sheet in sheets)
             {
                 collector.AddStyleSheet(sheet, sheet.BaseUrl ?? baseUrl);
@@ -2613,8 +2620,43 @@ internal sealed partial class StyleEngine
     }
 
     // The closure is created in its own method: it would otherwise be allocated on each call of GetTreeStyles (for each element)
-    private CascadeRuleCollector CreateCollectorWithMixins(Node root, Dictionary<string, CssMixinRule> mixins)
-        => new(_environment!, CascadeOrigin.Author, root) { MixinResolver = (name, scope) => FindMixin(name, scope ?? root, root, mixins) };
+    private CascadeRuleCollector CreateCollectorWithMixins(MediaEnvironment environment, Node root, Dictionary<string, CssMixinRule> mixins)
+        => new(environment, CascadeOrigin.Author, root) { MixinResolver = (name, scope) => FindMixin(name, scope ?? root, root, mixins) };
+
+    /// <summary>
+    /// Returns the environment in which the media queries of the style sheets are evaluated: the custom media queries of their
+    /// @custom-media rules (https://drafts.csswg.org/mediaqueries-5/#custom-mq) are resolved by the references to them. The
+    /// last rule of a name wins, whatever its conditions.
+    /// </summary>
+    private static MediaEnvironment WithCustomMedia(MediaEnvironment environment, List<CssStyleSheet> sheets)
+    {
+        Dictionary<string, CssCustomMediaRule>? customMedia = null;
+        foreach (var sheet in sheets)
+        {
+            Collect(sheet.RuleList, ref customMedia, depth: 0);
+        }
+
+        return customMedia is null ? environment : environment with { CustomMedia = customMedia };
+
+        static void Collect(List<CssRule> rules, ref Dictionary<string, CssCustomMediaRule>? customMedia, int depth)
+        {
+            foreach (var rule in rules)
+            {
+                switch (rule)
+                {
+                    case CssCustomMediaRule customMediaRule:
+                        (customMedia ??= new(StringComparer.Ordinal))[customMediaRule.Name] = customMediaRule;
+                        break;
+                    case CssImportRule { StyleSheet: { } imported } when depth < 32:
+                        Collect(imported.RuleList, ref customMedia, depth + 1);
+                        break;
+                    case CssGroupingRule grouping when depth < 32:
+                        Collect(grouping.ChildRules, ref customMedia, depth + 1);
+                        break;
+                }
+            }
+        }
+    }
 
     /// <summary>Returns the mixins of the trees of the shadow hosts of the shadow tree, from the closest one to the document.</summary>
     private List<Dictionary<string, CssMixinRule>> GetOuterMixinRules(Node root)

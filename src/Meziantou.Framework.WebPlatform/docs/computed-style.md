@@ -61,7 +61,10 @@ value (e.g. `(color: 1.0)`, `(resolution: -1dpi)`) or a function is a `<general-
 specified (e.g. `(--foo: bar)`), but evaluates to unknown (it never matches, and neither does its negation). The `scan`
 feature only applies to the `tv` devices: it never matches. The environment variables (`env()`) can be used in the values
 of the media features (e.g. `(width > env(safe-area-inset-left))`). The `@custom-media` rules are parsed and exposed in the
-CSSOM (`CSSCustomMediaRule`), but the custom media queries (`(--name)`) are not resolved: they evaluate to unknown. `window.screen` is the viewport of the top-level
+CSSOM (`CSSCustomMediaRule`), and the references to the custom media queries (`(--name)`) in the media queries of the
+style sheets (`@media`, `@import`) evaluate to the query of the last `@custom-media` rule with that name (in any style
+sheet of the tree, whatever its conditions); they are false when the name is not defined or is in a cycle, and in the
+other media queries (`matchMedia()`, the `media` attributes). `window.screen` is the viewport of the top-level
 browsing context (with a color depth of 24), and `window.devicePixelRatio` is `ViewportOptions.DevicePixelRatio` (multiplied by the effective `zoom` of the
 `iframe` of a nested browsing context).
 
@@ -131,7 +134,8 @@ browsing context (with a color depth of 24), and `window.devicePixelRatio` is `V
   the technologies of the browsers: `features-opentype`, `color-COLRv0`, `color-COLRv1`, `color-sbix`, `color-CBDT`,
   `variations` and `palettes`), `@container` (see [Container queries](#container-queries)).
 - **Scoping and nesting**: `@scope` (with or without prelude, scoping limits, `:scope` and `&`, nested `@scope` rules,
-  the shadow host as scoping root in a shadow tree), `@import ... scope()` (the rules of the imported style sheet are
+  the shadow host as scoping root in a shadow tree; the `@keyframes`, `@page`, `@position-try` and `@property` rules in a
+  `@scope` rule are parsed as in the style sheet, and are not scoped), `@import ... scope()` (the rules of the imported style sheet are
   scoped like a `@scope` rule), nested style rules and
   nested declarations (`&`), `@starting-style` (the starting style of the transitions, see
   [Animations and transitions](#animations-and-transitions)).
@@ -1467,15 +1471,19 @@ The computed values include the effects of the CSS animations, the CSS transitio
   declarations, the implicit keyframes at `0%` and `100%` (the underlying value), the animation properties (the matching
   of the running animations by name, `animation-play-state`, the values overridden by script are kept), the
   `CSSAnimation` objects and the `animationstart`, `animationiteration`, `animationend` and `animationcancel` events. An
-  element that is not rendered (`display: none` on it or an ancestor) has no animations; an animation of `display` does
-  not cancel itself.
+  element that is not rendered (`display: none` on it or an ancestor, or a `::before`/`::after` whose `content` is `none`)
+  has no animations; an animation of `display` does not cancel itself. The CSS animations and transitions of an element
+  are canceled when it is removed from the document, even when it is inserted again before the next style update
+  (re-parented).
 - **CSS transitions** ([CSS Transitions](https://drafts.csswg.org/css-transitions-1/)): a transition starts when the
   computed value of a property changes between the before-change style and the after-change style, with reversing and
   shortening, `transition-behavior: allow-discrete`, the starting style of `@starting-style` (when the element had no
   style, or was not rendered), the `CSSTransition` objects and the `transitionrun`, `transitionstart`, `transitionend`
   and `transitioncancel` events. A transition of `display` to `none` keeps the element rendered until it ends. The starting
-  style inherits from the after-change style of the parent. A value inherited from a transitioning ancestor does not start a
+  style inherits from the after-change style of the parent; a starting style that is not rendered (`display: none` in
+  `@starting-style`) starts no transition. A value inherited from a transitioning ancestor does not start a
   transition, unless the element did not inherit it before the change (its declaration changed to `inherit`).
+  `transition-property: all` includes the registered custom properties (except the ones of the universal syntax `*`).
 - **Before-change styles**: the styles are computed lazily, so when the document declares transitions or animations, the
   styles of the elements are kept when they are invalidated (they are the before-change styles), and the styles of all the
   elements are computed at the next style read or animation frame (the ones that were not invalidated are reused, see

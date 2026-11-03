@@ -36,13 +36,7 @@
     "total": 502
   },
   "css/motion/animation/offset-path-interpolation-006.html": {
-    "total": 510,
-    "failures": {
-      "CSS Animations: property <offset-path> from [inherit] to [ellipse(40% 50% at 25% 25%)] at (-0.3) should be [ellipse(1% 0% at 57.5% 57.5%)]": "FAIL",
-      "CSS Transitions with transition: all: property <offset-path> from [inherit] to [ellipse(40% 50% at 25% 25%)] at (-0.3) should be [ellipse(1% 0% at 57.5% 57.5%)]": "FAIL",
-      "CSS Transitions: property <offset-path> from [inherit] to [ellipse(40% 50% at 25% 25%)] at (-0.3) should be [ellipse(1% 0% at 57.5% 57.5%)]": "FAIL",
-      "Web Animations: property <offset-path> from [inherit] to [ellipse(40% 50% at 25% 25%)] at (-0.3) should be [ellipse(1% 0% at 57.5% 57.5%)]": "FAIL"
-    }
+    "total": 510
   },
   "css/motion/animation/offset-path-interpolation-007.html": {
     "total": 168

@@ -18,9 +18,12 @@ internal static partial class CssPropertyRules
         ? "0px"
         : SerializeShapeComponent(value, property);
 
-    /// <summary>A radius, which is not negative: the result of a math function is clamped to 0 in the computed value.</summary>
+    /// <summary>
+    /// A radius, which is not negative: the result of a math function (or of an extrapolation) is clamped to 0 in the computed
+    /// value, keeping its type (0% for a percentage).
+    /// </summary>
     private static string SerializeRadius(CssComponentValue value, CssPropertyDefinition? property, bool computed) => computed && value is CssPreservedToken { Type: CssTokenType.Dimension or CssTokenType.Percentage } numeric && numeric.Token.NumericValue < 0
-        ? "0px"
+        ? numeric.Type == CssTokenType.Percentage ? "0%" : "0px"
         : SerializeLengthPercentage(value, property);
 
     private static bool IsZero(string value) => value is "0px" or "0%" or "0";

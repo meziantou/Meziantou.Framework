@@ -525,10 +525,7 @@
     "total": 51
   },
   "css/css-variables/variable-substitution-variable-declaration.html": {
-    "total": 31,
-    "failures": {
-      "target5 --varC": "FAIL"
-    }
+    "total": 31
   },
   "css/css-variables/variable-supports-01.html": {
     "reftest": "PASS"

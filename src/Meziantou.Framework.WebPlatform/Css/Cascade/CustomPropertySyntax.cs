@@ -31,9 +31,12 @@ internal sealed class CustomPropertySyntax
     private static readonly FrozenSet<string> SupportedNames = FrozenSet.Create(StringComparer.Ordinal,
         "length", "number", "percentage", "length-percentage", "string", "color", "image", "url", "integer", "angle", "time", "resolution", "transform-function", "custom-ident", "transform-list");
 
-    /// <summary>The font-relative length units, whose values are not computationally independent.</summary>
-    private static readonly FrozenSet<string> FontRelativeUnits = FrozenSet.Create(StringComparer.Ordinal,
-        "em", "rem", "ex", "rex", "cap", "rcap", "ch", "rch", "ic", "ric", "lh", "rlh");
+    /// <summary>
+    /// The font-relative and the container-relative length units, whose values are not computationally independent
+    /// (https://drafts.csswg.org/css-conditional-5/#container-lengths).
+    /// </summary>
+    private static readonly FrozenSet<string> DependentUnits = FrozenSet.Create(StringComparer.Ordinal,
+        "em", "rem", "ex", "rex", "cap", "rcap", "ch", "rch", "ic", "ric", "lh", "rlh", "cqw", "cqh", "cqi", "cqb", "cqmin", "cqmax");
 
     private CustomPropertySyntax(List<CustomPropertySyntaxComponent> components)
     {
@@ -287,7 +290,7 @@ internal sealed class CustomPropertySyntax
         {
             switch (value)
             {
-                case CssPreservedToken { Type: CssTokenType.Dimension } dimension when checkUnits && FontRelativeUnits.Contains(InfraAscii.ToAsciiLowercase(dimension.Token.Value)):
+                case CssPreservedToken { Type: CssTokenType.Dimension } dimension when checkUnits && DependentUnits.Contains(InfraAscii.ToAsciiLowercase(dimension.Token.Value)):
                     return false;
                 case CssFunction function:
                     if (InfraAscii.ToAsciiLowercase(function.Name) is "var" or "attr" || !IsComputationallyIndependent(function.Value, checkUnits))

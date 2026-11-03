@@ -100,6 +100,9 @@ internal sealed record MediaEnvironment
     /// rules of all the media (e.g. to know the styles an element may have in any environment).
     /// </summary>
     public bool MatchAllMediaQueries { get; init; }
+
+    /// <summary>The custom media queries (https://drafts.csswg.org/mediaqueries-5/#custom-mq) by name, or null when there is none.</summary>
+    public IReadOnlyDictionary<string, CssCustomMediaRule>? CustomMedia { get; init; }
 }
 
 /// <summary>
@@ -368,6 +371,10 @@ internal static class MediaQueryEvaluator
                 var inner = ValueMatcher.RemoveWhitespace(block.Value);
                 if (ParseCondition(inner, 0, allowOr: true, out var end) is { } condition && end == inner.Count)
                     return condition;
+
+                // A reference to a custom media query (https://drafts.csswg.org/mediaqueries-5/#typedef-extension-name)
+                if (inner is [CssPreservedToken { Type: CssTokenType.Ident } name] && name.Token.Value.StartsWith("--", StringComparison.Ordinal))
+                    return new CustomMediaCondition(name.Token.Value);
 
                 // A block that is not a valid <media-feature> is a <general-enclosed>: it evaluates to unknown
                 return ParseFeature(inner);
@@ -894,6 +901,38 @@ internal static class MediaQueryEvaluator
         public static UnknownCondition Instance { get; } = new();
 
         public override bool? Evaluate(MediaEnvironment environment) => null;
+    }
+
+    /// <summary>
+    /// A reference to a custom media query (https://drafts.csswg.org/mediaqueries-5/#custom-mq): the value of its @custom-media
+    /// rule; false when it is not defined or when it references itself.
+    /// </summary>
+    private sealed class CustomMediaCondition(string name) : Condition
+    {
+        [ThreadStatic]
+        private static HashSet<string>? s_evaluating;
+
+        public override bool? Evaluate(MediaEnvironment environment)
+        {
+            if (environment.CustomMedia?.GetValueOrDefault(name) is not { } rule)
+                return false;
+
+            if (rule.Query.BooleanValue is { } value)
+                return value;
+
+            var evaluating = s_evaluating ??= new(StringComparer.Ordinal);
+            if (rule.Query.MediaList is not { } list || !evaluating.Add(name))
+                return false;
+
+            try
+            {
+                return Matches(list.MediaText, environment);
+            }
+            finally
+            {
+                evaluating.Remove(name);
+            }
+        }
     }
 
     private sealed class NotCondition(Condition condition) : Condition

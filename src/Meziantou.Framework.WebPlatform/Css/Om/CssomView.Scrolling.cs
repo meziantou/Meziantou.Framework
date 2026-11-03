@@ -342,8 +342,14 @@ public partial class Element
         if (!ComputedStyleDeclarations.IsBeingRendered(this))
             return false;
 
-        for (var ancestor = CssomViewHelpers.GetFlatTreeParentElement(this); ancestor is not null; ancestor = CssomViewHelpers.GetFlatTreeParentElement(ancestor))
+        Element child = this;
+        for (var ancestor = CssomViewHelpers.GetFlatTreeParentElement(this); ancestor is not null; child = ancestor, ancestor = CssomViewHelpers.GetFlatTreeParentElement(ancestor))
         {
+            // The contents of a details element (except its summary) are in its ::details-content pseudo-element, which is
+            // hidden (content-visibility: hidden) when the details element is closed
+            if (StyleEngine.IsInDetailsContent(child) && ancestor.NodeDocument.GetStyleEngine().GetStyle(ancestor, StyleEngine.DetailsContent).GetComputedValue("content-visibility") == "hidden")
+                return false;
+
             var contentVisibility = CssomViewHelpers.GetStyle(ancestor).GetComputedValue("content-visibility");
             if (contentVisibility == "hidden")
                 return false;

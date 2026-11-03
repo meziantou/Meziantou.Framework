@@ -156,6 +156,10 @@ internal sealed partial class ComputedStyle
         if (GetUnanimatedComputedValue("display") == "none")
             return true;
 
+        // A ::before or ::after pseudo-element whose content is none (or normal) does not exist
+        if (PseudoElement is "before" or "after" && GetUnanimatedComputedValue("content") is "none" or "normal")
+            return true;
+
         for (var style = Parent; style is not null; style = style.Parent)
         {
             if (style.GetComputedValue("display") == "none")

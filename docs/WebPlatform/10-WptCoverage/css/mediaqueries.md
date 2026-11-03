@@ -11,8 +11,8 @@ description: "The results of the web-platform-tests of css/mediaqueries, and why
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 26 | 26 | 0 | 100% |
 | [Tentative](#tentative-tests) | 3 | 10 | 0 | 30% |
-| [Reftests](#reftests) | 56 | 58 | 0 | 97% |
-| **All** | **85** | **94** | **0** | **90%** |
+| [Reftests](#reftests) | 57 | 58 | 0 | 98% |
+| **All** | **86** | **94** | **0** | **91%** |
 
 ## Stable tests
 
@@ -70,7 +70,7 @@ description: "The results of the web-platform-tests of css/mediaqueries, and why
 | [`aspect-ratio-004.html`](https://wpt.fyi/results/css/mediaqueries/aspect-ratio-004.html) | Pass | 1 / 1 |  |  |
 | [`aspect-ratio-005.html`](https://wpt.fyi/results/css/mediaqueries/aspect-ratio-005.html) | Pass | 1 / 1 |  |  |
 | [`aspect-ratio-006.html`](https://wpt.fyi/results/css/mediaqueries/aspect-ratio-006.html) | Pass | 1 / 1 |  |  |
-| [`at-custom-media-basic.html`](https://wpt.fyi/results/css/mediaqueries/at-custom-media-basic.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `@custom-media` rules are parsed (CSSOM) but the custom media queries are not evaluated: `@media (--foo)` is false; fails in every browser |
+| [`at-custom-media-basic.html`](https://wpt.fyi/results/css/mediaqueries/at-custom-media-basic.html) | Pass | 1 / 1 |  |  |
 | [`device-aspect-ratio-002.html`](https://wpt.fyi/results/css/mediaqueries/device-aspect-ratio-002.html) | Pass | 1 / 1 |  |  |
 | [`device-aspect-ratio-003.html`](https://wpt.fyi/results/css/mediaqueries/device-aspect-ratio-003.html) | Pass | 1 / 1 |  |  |
 | [`device-aspect-ratio-004.html`](https://wpt.fyi/results/css/mediaqueries/device-aspect-ratio-004.html) | Pass | 1 / 1 |  |  |

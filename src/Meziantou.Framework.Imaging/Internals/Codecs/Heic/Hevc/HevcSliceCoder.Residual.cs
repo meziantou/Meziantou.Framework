@@ -275,18 +275,19 @@ internal ref partial struct HevcSliceCoder
                     _tools |= HevcTools.EscapeCoefficients;
                 }
 
-                var negative = (signs & (0x8000 >> k)) is not 0;
+                // The signs are hard to predict: 1 when the level is negative
+                var negative = (signs >> (15 - k)) & 1;
                 if (signHidden)
                 {
                     sumAbsLevel += absLevel;
-                    if (k == numSig - 1 && (sumAbsLevel & 1) is 1)
+                    if (k == numSig - 1)
                     {
-                        negative = true;
+                        negative |= sumAbsLevel & 1;
                     }
                 }
 
                 // Clause 7.4.9.11: a transform coefficient level is in the range of CoeffMinY to CoeffMaxY
-                var level = negative ? -absLevel : absLevel;
+                var level = (absLevel ^ -negative) + negative;
                 if (level is < HevcInverseTransform.CoeffMin or > HevcInverseTransform.CoeffMax)
                     throw HevcErrors.Invalid("a transform coefficient level is out of range.");
 

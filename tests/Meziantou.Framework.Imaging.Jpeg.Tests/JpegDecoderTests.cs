@@ -882,7 +882,7 @@ public sealed class JpegDecoderTests
             : JpegHuffmanTable.TryCreate([0, 1, 5, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], out _)!;
         const int Bits = JpegHuffmanTable.FastLookupBits;
         var lookup = table.FastLookup;
-        Assert.Equal(1 << Bits, lookup.Length);
+        Assert.HasCount(1 << Bits, lookup);
         var complete = 0;
         for (var bits = 0; bits < 1 << Bits; bits++)
         {

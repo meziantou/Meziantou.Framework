@@ -5474,6 +5474,14 @@ public sealed class VectorizedKernelTests
                 Av1RestorationSearch.AccumulateVerticalScalar(rows, stride, target, expected);
                 Av1RestorationSearch.AccumulateVertical(rows, stride, target, actual);
                 Assert.Equal(expected, actual);
+
+                // The horizontal filter of the rows of the vertical pass, with coefficients of the range of the syntax
+                var (h0, h1, h2) = (random.Next(-5, 11), random.Next(-23, 9), random.Next(-17, 47));
+                var expectedRow = new int[length];
+                var actualRow = new int[length];
+                Av1RestorationSearch.FilterHorizontalScalar(row, expectedRow, h0, h1, h2);
+                Av1RestorationSearch.FilterHorizontal(row, actualRow, h0, h1, h2);
+                Assert.Equal(expectedRow, actualRow);
             }
         }
     }

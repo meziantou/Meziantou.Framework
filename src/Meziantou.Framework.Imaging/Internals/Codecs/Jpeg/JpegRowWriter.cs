@@ -514,6 +514,9 @@ internal sealed class JpegRowWriter : JpegBandWriter
     /// <summary>Gets a value indicating whether the color conversion processes 32 pixels at a time (256-bit hardware vectors, x64 with AVX2).</summary>
     private static bool UseVectors256 => Vector256.IsHardwareAccelerated && BitConverter.IsLittleEndian;
 
+    /// <summary>Gets a value indicating whether the RGBA conversion and the upsampling process 64 samples at a time (x64 with AVX-512).</summary>
+    private static bool UseVectors512 => Vector512.IsHardwareAccelerated && Avx512BW.IsSupported;
+
     /// <summary>Converts the pixels of whole 16-pixel groups.</summary>
     /// <returns>The number of pixels converted.</returns>
     /// <remarks>
@@ -642,6 +645,66 @@ internal sealed class JpegRowWriter : JpegBandWriter
         static Vector256<ushort> Clamp(Vector256<short> value) => Vector256.Min(Vector256.Max(value, Vector256<short>.Zero), Vector256.Create((short)255)).AsUInt16();
     }
 
+    /// <summary>Converts 64 pixels with the arithmetic of <see cref="ConvertYCbCrVector"/> in 512-bit vectors: the R, G and B samples.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void ConvertYCbCr64(Vector512<byte> luma, Vector512<byte> blue, Vector512<byte> red, out Vector512<byte> r, out Vector512<byte> g, out Vector512<byte> b)
+    {
+        var (y0, y1) = Vector512.Widen(luma);
+        var (b0, b1) = Vector512.Widen(blue);
+        var (r0, r1) = Vector512.Widen(red);
+        Convert32(y0.AsInt16(), b0.AsInt16() - Vector512.Create((short)128), r0.AsInt16() - Vector512.Create((short)128), out var red0, out var green0, out var blue0);
+        Convert32(y1.AsInt16(), b1.AsInt16() - Vector512.Create((short)128), r1.AsInt16() - Vector512.Create((short)128), out var red1, out var green1, out var blue1);
+        r = Vector512.Narrow(red0, red1);
+        g = Vector512.Narrow(green0, green1);
+        b = Vector512.Narrow(blue0, blue1);
+    }
+
+    /// <summary>Thirty-two pixels of <see cref="ConvertYCbCr64"/>: R, G and B clamped to 0..255, in 16-bit lanes.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Convert32(Vector512<short> luma, Vector512<short> cb, Vector512<short> cr, out Vector512<ushort> red, out Vector512<ushort> green, out Vector512<ushort> blue)
+    {
+        var rounding = Vector512.Create((short)128);
+        var redTerm = Vector512.ShiftRightArithmetic((Vector512.Create((short)103) * cr) + Vector512.ShiftRightArithmetic(Vector512.Create((short)-23) * cr, 8) + rounding, 8);
+        var blueTerm = Vector512.ShiftRightArithmetic((Vector512.Create((short)-58) * cb) + Vector512.ShiftRightArithmetic(Vector512.Create((short)-94) * cb, 8) + rounding, 8);
+        var greenHigh = (Vector512.Create((short)-88) * cb) + (Vector512.Create((short)73) * cr);
+        var greenLow = (Vector512.Create((short)-26) * cb) + (Vector512.Create((short)46) * cr);
+        var greenTerm = Vector512.ShiftRightArithmetic(greenHigh + Vector512.ShiftRightArithmetic(greenLow, 8) + rounding, 8);
+        red = Clamp(luma + cr + redTerm);
+        green = Clamp(luma - cr + greenTerm);
+        blue = Clamp(luma + cb + cb + blueTerm);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Vector512<ushort> Clamp(Vector512<short> value) => Vector512.Min(Vector512.Max(value, Vector512<short>.Zero), Vector512.Create((short)255)).AsUInt16();
+    }
+
+    /// <summary>
+    /// Writes 64 opaque RGBA pixels (256 bytes) from 64 red, green and blue values: byte interleaving within each 128-bit
+    /// block (the pixels 16 i + 4 j to 16 i + 4 j + 3 in the block i of the vector j), then a transposition of the blocks.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void StoreOpaqueRgba64(Vector512<byte> r, Vector512<byte> g, Vector512<byte> b, ref byte output)
+    {
+        var a = Vector512<byte>.AllBitsSet;
+        var redGreenLow = Avx512BW.UnpackLow(r, g).AsUInt16();
+        var redGreenHigh = Avx512BW.UnpackHigh(r, g).AsUInt16();
+        var blueAlphaLow = Avx512BW.UnpackLow(b, a).AsUInt16();
+        var blueAlphaHigh = Avx512BW.UnpackHigh(b, a).AsUInt16();
+        var pixels0 = Avx512BW.UnpackLow(redGreenLow, blueAlphaLow).AsDouble();
+        var pixels1 = Avx512BW.UnpackHigh(redGreenLow, blueAlphaLow).AsDouble();
+        var pixels2 = Avx512BW.UnpackLow(redGreenHigh, blueAlphaHigh).AsDouble();
+        var pixels3 = Avx512BW.UnpackHigh(redGreenHigh, blueAlphaHigh).AsDouble();
+
+        // Output vector i is the block i of pixels0 to pixels3
+        var low01 = Avx512F.Shuffle4x128(pixels0, pixels1, 0b01_00_01_00);
+        var high01 = Avx512F.Shuffle4x128(pixels0, pixels1, 0b11_10_11_10);
+        var low23 = Avx512F.Shuffle4x128(pixels2, pixels3, 0b01_00_01_00);
+        var high23 = Avx512F.Shuffle4x128(pixels2, pixels3, 0b11_10_11_10);
+        unsafe { Avx512F.Shuffle4x128(low01, low23, 0b10_00_10_00).AsByte().StoreUnsafe(ref output); }
+        unsafe { Avx512F.Shuffle4x128(low01, low23, 0b11_01_11_01).AsByte().StoreUnsafe(ref output, 64); }
+        unsafe { Avx512F.Shuffle4x128(high01, high23, 0b10_00_10_00).AsByte().StoreUnsafe(ref output, 128); }
+        unsafe { Avx512F.Shuffle4x128(high01, high23, 0b11_01_11_01).AsByte().StoreUnsafe(ref output, 192); }
+    }
+
     /// <summary>Converts full-range YCbCr samples to opaque RGBA pixels, with the arithmetic of <see cref="ConvertYCbCr"/>.</summary>
     internal static void ConvertYCbCrToRgba(ReadOnlySpan<byte> luma, ReadOnlySpan<byte> blue, ReadOnlySpan<byte> red, Span<byte> destination)
     {
@@ -653,6 +716,19 @@ internal sealed class JpegRowWriter : JpegBandWriter
             ref var redStart = ref unsafe(MemoryMarshal.GetReference(red));
             ref var destinationStart = ref unsafe(MemoryMarshal.GetReference(destination));
             var length = Math.Min(Math.Min(luma.Length, Math.Min(blue.Length, red.Length)), destination.Length / 4);
+            if (UseVectors512)
+            {
+                for (; done + 64 <= length; done += 64)
+                {
+                    ConvertYCbCr64(
+                        unsafe(Vector512.LoadUnsafe(ref lumaStart, (nuint)done)),
+                        unsafe(Vector512.LoadUnsafe(ref blueStart, (nuint)done)),
+                        unsafe(Vector512.LoadUnsafe(ref redStart, (nuint)done)),
+                        out var r, out var g, out var b);
+                    StoreOpaqueRgba64(r, g, b, ref unsafe(Unsafe.Add(ref destinationStart, 4 * done)));
+                }
+            }
+
             if (UseVectors256)
             {
                 for (; done + 32 <= length; done += 32)
@@ -852,6 +928,17 @@ internal sealed class JpegRowWriter : JpegBandWriter
         ref var sumsStart = ref unsafe(MemoryMarshal.GetReference(sums));
         var length = Math.Min(sums.Length, Math.Min(near.Length, far.Length));
         var j = 0;
+        if (UseVectors512)
+        {
+            for (; j + 64 <= length; j += 64)
+            {
+                var (n0, n1) = Vector512.Widen(unsafe(Vector512.LoadUnsafe(ref nearStart, (nuint)j)));
+                var (f0, f1) = Vector512.Widen(unsafe(Vector512.LoadUnsafe(ref farStart, (nuint)j)));
+                unsafe { ((n0 * 3) + f0).StoreUnsafe(ref sumsStart, (nuint)j); }
+                unsafe { ((n1 * 3) + f1).StoreUnsafe(ref sumsStart, (nuint)(j + 32)); }
+            }
+        }
+
         if (UseVectors256)
         {
             for (; j + 32 <= length; j += 32)
@@ -890,6 +977,17 @@ internal sealed class JpegRowWriter : JpegBandWriter
         ref var outputStart = ref unsafe(MemoryMarshal.GetReference(output));
         var length = sums.Length;
         var j = 1;
+        if (UseVectors512)
+        {
+            for (; j + 33 <= length && (2 * j) + 64 <= output.Length; j += 32)
+            {
+                var current = unsafe(Vector512.LoadUnsafe(ref sumsStart, (nuint)j)) * 3;
+                var even = Vector512.ShiftRightLogical(current + unsafe(Vector512.LoadUnsafe(ref sumsStart, (nuint)(j - 1))) + Vector512.Create((ushort)8), 4);
+                var odd = Vector512.ShiftRightLogical(current + unsafe(Vector512.LoadUnsafe(ref sumsStart, (nuint)(j + 1))) + Vector512.Create((ushort)7), 4);
+                unsafe { (even | Vector512.ShiftLeft(odd, 8)).AsByte().StoreUnsafe(ref outputStart, (nuint)(2 * j)); }
+            }
+        }
+
         if (UseVectors256)
         {
             for (; j + 17 <= length && (2 * j) + 32 <= output.Length; j += 16)

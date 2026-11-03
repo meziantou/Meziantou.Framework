@@ -33,49 +33,10 @@ internal sealed class GfmPipeTableParser : BlockParser
             return BlockState.None;
         }
 
-        for (int i = processor.Line.Start; i <= processor.Line.End; i++)
-        {
-            if (processor.Line.Text[i] is not ('|' or '-' or ':' or ' ' or '\t' or '\v' or '\f'))
-            {
-                return BlockState.None;
-            }
-        }
-        // A bare run of dashes belongs to the setext heading parser. Colons or
-        // pipes disambiguate a one-column table with optional outer pipes.
-        // Vertical tabs/form feeds are allowed by the table scanner, but not setext.
-        if (processor.Line.IndexOf('|') < 0 && processor.Line.IndexOf(':') < 0
-            && processor.Line.IndexOf('\v') < 0 && processor.Line.IndexOf('\f') < 0)
+        var definitions = ParseDelimiterRow(processor.Line, out var totalDashes);
+        if (definitions is null)
         {
             return BlockState.None;
-        }
-        var separators = SplitRow(processor.Line);
-        if (separators.Count == 0) return BlockState.None;
-        var definitions = new List<TableColumnDefinition>(separators.Count);
-        int totalDashes = 0;
-        foreach (var separator in separators)
-        {
-            var cell = separator;
-            while (!cell.IsEmpty && IsScannerSpace(cell.CurrentChar)) cell.SkipChar();
-            while (!cell.IsEmpty && IsScannerSpace(cell.Text[cell.End])) cell.End--;
-            bool left = cell.CurrentChar == ':';
-            if (left) cell.SkipChar();
-            int dashes = cell.CountAndSkipChar('-');
-            bool right = cell.CurrentChar == ':';
-            if (right) cell.SkipChar();
-            if (dashes == 0 || !cell.IsEmpty)
-            {
-                return BlockState.None;
-            }
-            definitions.Add(new TableColumnDefinition
-            {
-                // The native scanner accepts VT/FF around markers, but its cell
-                // trimmer does not remove them when determining alignment.
-                Alignment = separator.CurrentChar == ':'
-                    ? (separator.Text[separator.End] == ':' ? TableColumnAlign.Center : TableColumnAlign.Left)
-                    : separator.Text[separator.End] == ':' ? TableColumnAlign.Right : null,
-                SeparatorDashCount = dashes
-            });
-            totalDashes += dashes;
         }
 
         var header = paragraph.Lines.Lines[paragraph.Lines.Count - 1];
@@ -160,6 +121,62 @@ internal sealed class GfmPipeTableParser : BlockParser
         // Replace it on close, before the document's inline parsing pass.
         processor.NewBlocks.Push(new TableBlock(this, table));
         return BlockState.ContinueDiscard;
+    }
+
+    /// <summary>
+    /// Whether the line is a delimiter row, which the parser tries as the delimiter row of the paragraph before it. It is tried
+    /// once per paragraph, so such a line that does not match its header row prevents the tables after it in the paragraph.
+    /// </summary>
+    internal static bool IsDelimiterRow(string line) => ParseDelimiterRow(new StringSlice(line), out _) is not null;
+
+    private static List<TableColumnDefinition>? ParseDelimiterRow(StringSlice line, out int totalDashes)
+    {
+        totalDashes = 0;
+        for (int i = line.Start; i <= line.End; i++)
+        {
+            if (line.Text[i] is not ('|' or '-' or ':' or ' ' or '\t' or '\v' or '\f'))
+            {
+                return null;
+            }
+        }
+        // A bare run of dashes belongs to the setext heading parser. Colons or
+        // pipes disambiguate a one-column table with optional outer pipes.
+        // Vertical tabs/form feeds are allowed by the table scanner, but not setext.
+        if (line.IndexOf('|') < 0 && line.IndexOf(':') < 0
+            && line.IndexOf('\v') < 0 && line.IndexOf('\f') < 0)
+        {
+            return null;
+        }
+        var separators = SplitRow(line);
+        if (separators.Count == 0) return null;
+        var definitions = new List<TableColumnDefinition>(separators.Count);
+        foreach (var separator in separators)
+        {
+            var cell = separator;
+            while (!cell.IsEmpty && IsScannerSpace(cell.CurrentChar)) cell.SkipChar();
+            while (!cell.IsEmpty && IsScannerSpace(cell.Text[cell.End])) cell.End--;
+            bool left = cell.CurrentChar == ':';
+            if (left) cell.SkipChar();
+            int dashes = cell.CountAndSkipChar('-');
+            bool right = cell.CurrentChar == ':';
+            if (right) cell.SkipChar();
+            if (dashes == 0 || !cell.IsEmpty)
+            {
+                return null;
+            }
+            definitions.Add(new TableColumnDefinition
+            {
+                // The native scanner accepts VT/FF around markers, but its cell
+                // trimmer does not remove them when determining alignment.
+                Alignment = separator.CurrentChar == ':'
+                    ? (separator.Text[separator.End] == ':' ? TableColumnAlign.Center : TableColumnAlign.Left)
+                    : separator.Text[separator.End] == ':' ? TableColumnAlign.Right : null,
+                SeparatorDashCount = dashes
+            });
+            totalDashes += dashes;
+        }
+
+        return definitions;
     }
 
     public override bool Close(BlockProcessor processor, Block block)

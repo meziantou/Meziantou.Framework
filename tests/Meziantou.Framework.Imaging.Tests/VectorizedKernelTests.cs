@@ -1311,6 +1311,39 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegForwardDctRoundingBiasRoundsHalfAwayFromZero()
+    {
+        // The truncation of the value plus the bias is the rounding of Math.Round: halves, the doubles next to them, the
+        // largest double below one half, integers, and random values up to the 16-bit range
+        var values = new List<double> { 0, -0.0, 0.49999999999999994, -0.49999999999999994, 2047.5, -2047.5, 1024, -1024 };
+        for (var k = -2048; k <= 2048; k++)
+        {
+            var half = k + 0.5;
+            values.Add(half);
+            values.Add(Math.BitDecrement(half));
+            values.Add(Math.BitIncrement(half));
+            values.Add(k);
+            values.Add(Math.BitDecrement((double)k));
+            values.Add(Math.BitIncrement((double)k));
+        }
+
+        var random = new Random(86);
+        for (var i = 0; i < 100_000; i++)
+        {
+            values.Add((random.NextDouble() - 0.5) * (i % 2 == 0 ? 4 : 65536));
+        }
+
+        foreach (var value in values)
+        {
+            var expected = (long)Math.Round(value, MidpointRounding.AwayFromZero);
+            Assert.Equal(expected, (long)Math.Truncate(JpegForwardDct.AddRoundingBias(Vector128.Create(value)).ToScalar()));
+            Assert.Equal(expected, (long)Math.Truncate(JpegForwardDct.AddRoundingBias(Vector256.Create(value)).ToScalar()));
+            Assert.Equal(expected, (long)Math.Truncate(JpegForwardDct.AddRoundingBias(Vector512.Create(value)).ToScalar()));
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void JpegEncoderColorConversionMatchesTheScalarReference()
     {
         var random = new Random(601);

@@ -23,8 +23,8 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// column, then a row, with the operations of the scalar reference (<see cref="TransformAndQuantizeScalar"/>) in the same
 /// order and without fused multiply-adds (with AVX-512, the eight columns then the eight rows at once, transposed in
 /// registers, and the zig-zag reordering done by permutations); the quantization divides and rounds exactly like
-/// <see cref="Math.Round(double, MidpointRounding)"/> (the fraction <c>x - trunc(x)</c> is exact, or the conversion of Arm64
-/// that rounds ties away from zero), so the coefficients are identical. The columns are stored transposed, so that the row
+/// <see cref="Math.Round(double, MidpointRounding)"/> (the conversion of Arm64 that rounds ties away from zero, or the
+/// truncation of <see cref="AddRoundingBias(Vector128{double})"/>), so the coefficients are identical. The columns are stored transposed, so that the row
 /// pass reads its lanes contiguously too, and the divisors are in the transposed order of <see cref="CreateDivisors"/>.
 /// </remarks>
 internal static class JpegForwardDct
@@ -72,6 +72,9 @@ internal static class JpegForwardDct
         23, 31, 38, 45, 52, 59, 60, 53,
         46, 39, 47, 54, 61, 62, 55, 63,
     ];
+
+    /// <summary>Gets the largest double below one half, <c>0.5 - 2^-54</c>.</summary>
+    private const double RoundingBias = 0.49999999999999994;
 
     /// <summary>Gets a value indicating whether <see cref="TransformAndQuantize"/> uses the AVX-512 transform, which can also store 16-bit coefficients (<see cref="TransformAndQuantizeAvx512"/>).</summary>
     public static bool UsesAvx512 => Vector512.IsHardwareAccelerated && Avx512F.IsSupported;
@@ -290,10 +293,10 @@ internal static class JpegForwardDct
             return;
         }
 
-        var rounded = RoundAwayFromZero(clamped);
+        var rounded = AddRoundingBias(clamped);
         if (Sse2.IsSupported)
         {
-            // x64 has no 64-bit integer conversion before AVX-512: CVTTPD2DQ, exact on the clamped integral values
+            // x64 has no 64-bit integer conversion before AVX-512: CVTTPD2DQ of the value plus the rounding bias, to nearest, ties away from zero
             var converted = Sse2.ConvertToVector128Int32WithTruncation(rounded);
             unsafe { Unsafe.Add(ref destination, positions) = converted.ToScalar(); }
             unsafe { Unsafe.Add(ref destination, Unsafe.Add(ref positions, 1)) = converted.GetElement(1); }
@@ -303,16 +306,31 @@ internal static class JpegForwardDct
         var converted64 = Vector128.ConvertToInt64(rounded);
         unsafe { Unsafe.Add(ref destination, positions) = (int)converted64.ToScalar(); }
         unsafe { Unsafe.Add(ref destination, Unsafe.Add(ref positions, 1)) = (int)converted64.GetElement(1); }
-
-        // trunc(q) plus or minus 1 when the exact fraction reaches one half: the fraction and its double are exact, and
-        // the truncation of the double is 1 or -1 exactly then
-        static Vector128<double> RoundAwayFromZero(Vector128<double> value)
-        {
-            var truncated = Vector128.Truncate(value);
-            var fraction = value - truncated;
-            return truncated + Vector128.Truncate(fraction + fraction);
-        }
     }
+
+    /// <summary>
+    /// Adds <see cref="RoundingBias"/> with the sign of each value, so that the truncation of the sum (CVTTPD2DQ) is the value
+    /// rounded to the nearest integer, ties away from zero, for a magnitude below 2^52.
+    /// </summary>
+    /// <remarks>
+    /// For <c>x = k + f</c> (<c>k = trunc(x)</c>, positive here, the negative values are symmetric): when <c>f</c> is at
+    /// least one half, the exact sum is at least <c>k + 1 - 2^-54</c>, which rounds to <c>k + 1</c> or more (when
+    /// <c>f = 0.5</c> and <c>k = 0</c>, <c>1 - 2^-54</c> is the midpoint of <c>1 - 2^-53</c> and 1, and ties to the even 1);
+    /// otherwise <c>f &lt;= 0.5 - ulp(x)</c>, and the sum is below <c>k + 1 - ulp(x)</c>, the double that precedes
+    /// <c>k + 1</c> (<c>1 - 2^-53</c> for <c>k = 0</c>), so it rounds below <c>k + 1</c>. Adding one half instead would
+    /// round <c>0.5 - 2^-54</c> up to 1. Three operations (a bitwise selection, an addition and the truncating
+    /// conversion) instead of two truncations, a subtraction and two additions.
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static Vector128<double> AddRoundingBias(Vector128<double> value) => value + ((value & Vector128.Create(-0.0)) | Vector128.Create(RoundingBias));
+
+    /// <inheritdoc cref="AddRoundingBias(Vector128{double})"/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static Vector256<double> AddRoundingBias(Vector256<double> value) => value + ((value & Vector256.Create(-0.0)) | Vector256.Create(RoundingBias));
+
+    /// <inheritdoc cref="AddRoundingBias(Vector128{double})"/>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static Vector512<double> AddRoundingBias(Vector512<double> value) => value + ((value & Vector512.Create(-0.0)) | Vector512.Create(RoundingBias));
 
     /// <summary>(a0, b0).</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -445,11 +463,8 @@ internal static class JpegForwardDct
         var maximum = index == 0 ? Vector256.Create((double)MaxDc, MaxAcMagnitude, MaxAcMagnitude, MaxAcMagnitude) : Vector256.Create((double)MaxAcMagnitude);
         var clamped = Vector256.MinNative(Vector256.MaxNative(quotient, minimum), maximum);
 
-        // trunc(q) plus or minus 1 when the exact fraction reaches one half (see Quantize)
-        var truncated = Avx.RoundToZero(clamped);
-        var fraction = clamped - truncated;
-        var rounded = truncated + Avx.RoundToZero(fraction + fraction);
-        var integers = Avx.ConvertToVector128Int32WithTruncation(rounded);
+        // CVTTPD2DQ of the value plus the rounding bias: to nearest, ties away from zero
+        var integers = Avx.ConvertToVector128Int32WithTruncation(AddRoundingBias(clamped));
         ref var positions = ref unsafe(Unsafe.Add(ref MemoryMarshal.GetReference(TransposedZigZagPositions), index));
         unsafe { Unsafe.Add(ref destination, positions) = integers.ToScalar(); }
         unsafe { Unsafe.Add(ref destination, Unsafe.Add(ref positions, 1)) = integers.GetElement(1); }
@@ -563,11 +578,7 @@ internal static class JpegForwardDct
         var maximum = index == 0 ? Vector512.Create((double)MaxDc, MaxAcMagnitude, MaxAcMagnitude, MaxAcMagnitude, MaxAcMagnitude, MaxAcMagnitude, MaxAcMagnitude, MaxAcMagnitude) : Vector512.Create((double)MaxAcMagnitude);
         var clamped = Vector512.MinNative(Vector512.MaxNative(quotient, minimum), maximum);
 
-        // trunc(q) plus or minus 1 when the exact fraction reaches one half (see Quantize); VRNDSCALEPD with the truncation
-        // mode, without exception
-        var truncated = Avx512F.RoundScale(clamped, 0x0B);
-        var fraction = clamped - truncated;
-        var rounded = truncated + Avx512F.RoundScale(fraction + fraction, 0x0B);
-        return Avx512F.ConvertToVector256Int32WithTruncation(rounded);
+        // VCVTTPD2DQ of the value plus the rounding bias: to nearest, ties away from zero
+        return Avx512F.ConvertToVector256Int32WithTruncation(AddRoundingBias(clamped));
     }
 }

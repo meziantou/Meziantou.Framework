@@ -34,6 +34,12 @@ internal sealed class PnmRowExpander
         }
     }
 
+    /// <summary>
+    /// Gets a value indicating whether the stored rows are already the decoded layout (8-bit gray, RGB and RGBA tuples of
+    /// <c>MAXVAL</c> 255): <see cref="ExpandRow"/> only copies them, so they can be written without expansion.
+    /// </summary>
+    public bool IsIdentity => !_header.IsBitmap && !_header.Is16Bit && _header.MaxValue == 255 && _header.TupleType is not (PnmTupleType.BlackAndWhiteAlpha or PnmTupleType.GrayscaleAlpha);
+
     /// <summary>Expands one stored row.</summary>
     /// <param name="stored">Exactly <see cref="PnmImageHeader.StoredRowLength"/> bytes.</param>
     /// <param name="destination">Exactly one row of <see cref="PnmImageHeader.SourcePixelFormat"/> pixels.</param>

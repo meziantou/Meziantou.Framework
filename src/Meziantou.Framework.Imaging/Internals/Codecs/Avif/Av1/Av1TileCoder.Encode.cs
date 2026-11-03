@@ -1580,13 +1580,22 @@ internal ref partial struct Av1TileCoder
         var scan = GetScan(txSz, planeTxType);
         workspace.EnsureRecords(_recordPosition, 2 + count);
         var record = workspace.Records.Slice(_recordPosition, 2 + count);
+
+        // The last level that is not zero, from the end of the scan order (most blocks have no level or a few at its start),
+        // then the levels up to it
         var eob = 0;
-        for (var i = 0; i < count; i++)
+        if (coefficients.ContainsAnyExcept(0))
         {
-            var level = coefficients[scan[i]];
-            record[2 + i] = level;
-            if (level is not 0)
-                eob = i + 1;
+            eob = count;
+            while (coefficients[scan[eob - 1]] is 0)
+            {
+                eob--;
+            }
+
+            for (var i = 0; i < eob; i++)
+            {
+                record[2 + i] = coefficients[scan[i]];
+            }
         }
 
         record[0] = lumaTxType;

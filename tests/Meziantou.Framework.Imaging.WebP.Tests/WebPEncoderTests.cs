@@ -524,6 +524,78 @@ public sealed class WebPEncoderTests
     }
 
     [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void BooleanEncoderMatchesTheBitByBitEncoder()
+    {
+        // Runs of extreme probabilities make long carry chains (0xFF bytes) and shift the range by up to 7 bits at once
+        var random = new Random(6386);
+        for (var round = 0; round < 200; round++)
+        {
+            var scope = new AllocationScope(ImageResourceLimits.Default);
+            using var encoder = new Vp8BoolEncoder(scope);
+            var reference = new List<byte>();
+            uint range = 255, bottom = 0;
+            var bitCount = 24;
+            var count = random.Next(1, 5000);
+            for (var i = 0; i < count; i++)
+            {
+                var probability = (round % 3) switch
+                {
+                    0 => random.Next(1, 256),
+                    1 => random.Next(2) == 0 ? 1 : 255,
+                    _ => random.Next(250, 256),
+                };
+                var value = (round % 3) switch
+                {
+                    1 => random.Next(8) != 0,
+                    _ => random.Next(256) >= probability,
+                };
+                encoder.WriteBool(probability, value);
+
+                var split = 1 + (((range - 1) * (uint)probability) >> 8);
+                if (value)
+                {
+                    bottom += split;
+                    range -= split;
+                }
+                else
+                {
+                    range = split;
+                }
+
+                while (range < 128)
+                {
+                    range <<= 1;
+                    if ((bottom & (1u << 31)) != 0)
+                    {
+                        var index = reference.Count - 1;
+                        while (index >= 0 && reference[index] == byte.MaxValue)
+                        {
+                            reference[index--] = 0;
+                        }
+
+                        if (index >= 0)
+                        {
+                            reference[index]++;
+                        }
+                    }
+
+                    bottom <<= 1;
+                    if (--bitCount == 0)
+                    {
+                        reference.Add((byte)(bottom >> 24));
+                        bottom &= (1u << 24) - 1;
+                        bitCount = 8;
+                    }
+                }
+            }
+
+            Assert.Equal(reference.Count, encoder.Length);
+            Assert.Equal([.. reference], encoder.WrittenMemory.ToArray());
+        }
+    }
+
+    [Fact]
     public void ModeBudgetFitsEveryLossySize()
     {
         Assert.True(Vp8Encoder.TryGetModeBitBudget(Macroblocks(4096, 4096), Vp8Encoder.MaxFirstPartitionSize, out var budget, out var skipFlag));
@@ -580,6 +652,84 @@ public sealed class WebPEncoderTests
         // At most 2 bytes per pixel: the parse of a 16,384 x 16,384 image fits in one buffer
         Assert.Equal(536_871_936L, Vp8LEncoder.GetTokenCapacity(16_384 * 16_384) * sizeof(uint));
         Assert.True(Vp8LEncoder.GetTokenCapacity(16_384 * 16_384) * sizeof(uint) <= Array.MaxLength);
+    }
+
+    [Theory]
+    [InlineData(2, 8, 64, 1)]
+    [InlineData(3, 8, 64, 7)]
+    [InlineData(3, 10, 512, 64)]
+    [InlineData(5, 8, 32, 33)]
+    [InlineData(40, 12, 128, 100)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void LosslessTripleLinksFindTheMatchesOfTheHashChains(int colors, int hashBits, int depth, int width)
+    {
+        // Few colors and a small table: long chains, hash collisions, pairs whose third pixel differs. The matches of 3
+        // pixels or more found through the triple links are those of the hash chain search, for every minimum length
+        const int Count = 20_000;
+        var random = new Random(colors * 7919 + hashBits);
+        var pixels = new uint[Count];
+        for (var i = 0; i < Count; i++)
+        {
+            pixels[i] = i > 64 && random.Next(4) == 0 ? pixels[i - 1 - random.Next(64)] : (uint)random.Next(colors) * 0x01010101u;
+        }
+
+        var head = new uint[1 << hashBits];
+        var chains = new uint[Count];
+        head.AsSpan().Fill(uint.MaxValue);
+        for (var i = 0; i < Count; i++)
+        {
+            if (i + 1 >= Count)
+            {
+                chains[i] = uint.MaxValue;
+                continue;
+            }
+
+            var hash = (int)(((pixels[i] * 0x9E3779B1u) ^ (pixels[i + 1] * 0x85EBCA77u)) >> (32 - hashBits));
+            chains[i] = head[hash];
+            head[hash] = (uint)i;
+        }
+
+        var links = new uint[Count];
+        Vp8LEncoder.LinkTriples(pixels, hashBits, new uint[1 << hashBits], links, depth);
+        for (var position = 0; position < Count - 3; position++)
+        {
+            var maxLength = Math.Min(4096, Count - position);
+            foreach (var minimum in (ReadOnlySpan<int>)[0, 1, 2, 3, 6])
+            {
+                var expected = SearchHashChain(pixels, chains, position, width, maxLength, depth, minimum);
+                if (expected.Length < 3)
+                {
+                    expected = (0, 0);
+                }
+
+                Assert.Equal(expected, Vp8LEncoder.SearchChain(pixels, links, position, width, maxLength, depth, minimum));
+            }
+        }
+
+        // The longest match of the first entries of the hash chain of a position that is longer than the minimum
+        static (int Distance, int Length) SearchHashChain(uint[] pixels, uint[] chains, int position, int width, int maxLength, int depth, int minimum)
+        {
+            var bestLength = minimum;
+            var bestDistance = 0;
+            var candidate = chains[position];
+            while (candidate != uint.MaxValue && depth-- > 0 && bestLength < maxLength)
+            {
+                var distance = position - (int)candidate;
+                if (distance != 1 && distance != width)
+                {
+                    var length = pixels.AsSpan((int)candidate, maxLength).CommonPrefixLength(pixels.AsSpan(position, maxLength));
+                    if (length > bestLength)
+                    {
+                        bestLength = length;
+                        bestDistance = distance;
+                    }
+                }
+
+                candidate = chains[(int)candidate];
+            }
+
+            return bestDistance == 0 ? (0, 0) : (bestDistance, bestLength);
+        }
     }
 
     [Theory]

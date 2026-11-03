@@ -9,6 +9,7 @@ internal sealed class JpegHuffmanEncoder
 {
     private readonly ushort[] _codes = new ushort[256];
     private readonly byte[] _lengths = new byte[256];
+    private readonly uint[] _packed = new uint[256];
 
     /// <summary>Builds the table.</summary>
     /// <param name="bits">The number of codes of each length 1-16.</param>
@@ -42,6 +43,7 @@ internal sealed class JpegHuffmanEncoder
 
                 _codes[symbol] = (ushort)code;
                 _lengths[symbol] = (byte)length;
+                _packed[symbol] = ((uint)code << 5) | (uint)length;
                 code++;
             }
 
@@ -63,6 +65,11 @@ internal sealed class JpegHuffmanEncoder
     /// <param name="symbol">The symbol.</param>
     /// <returns>The code.</returns>
     public uint GetCode(int symbol) => _codes[symbol];
+
+    /// <summary>Gets the code of a symbol shifted left by 5 bits, with its length in the low 5 bits, or 0 when the table does not define it.</summary>
+    /// <param name="symbol">The symbol, 0 to 255.</param>
+    /// <returns>The packed code and length.</returns>
+    public uint GetPackedCode(int symbol) => _packed[symbol];
 
     /// <summary>Gets the code length of a symbol, or 0 when the table does not define it.</summary>
     /// <param name="symbol">The symbol.</param>

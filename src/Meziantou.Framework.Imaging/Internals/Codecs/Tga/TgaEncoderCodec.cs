@@ -1,4 +1,6 @@
 using System.Buffers.Binary;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Meziantou.Framework.Imaging.Formats;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -157,40 +159,78 @@ internal sealed class TgaEncoderCodec : ImageEncoderCodec
             {
                 CancellationToken.ThrowIfCancellationRequested();
                 var source = lease.GetRowBytes(_height - 1 - _rowsWritten)[..(_width * bytesPerPixel)];
-                var stored = _band!.Span[..storedRowLength];
-                PixelConverter.ConvertRow(_sourceFormat, source, _workFormat, stored, background: null, ImageFormat.Tga);
-                if (_workFormat == PixelFormat.Rgb24)
-                {
-                    // TGA stores blue, green and red: the conversion produced RGB, so red and blue are swapped in place
-                    PixelConverter.SwapRedAndBlue24(stored, stored);
-                }
-
                 if (_runLength)
                 {
                     // At most one packet header per 128 pixels, plus the samples
+                    var stored = ConvertRow(source, _band!.Span[..storedRowLength]);
                     var destination = output.GetSpan(storedRowLength + (((_width + TgaFormat.MaxPacketLength - 1) / TgaFormat.MaxPacketLength) * 2));
                     output.Advance(EncodeRunLengthRow(stored, destination));
                 }
                 else
                 {
-                    output.Write(stored);
+                    // Raw rows are stored straight into the output
+                    ConvertRow(source, output.GetSpan(storedRowLength)[..storedRowLength]);
+                    output.Advance(storedRowLength);
                 }
 
                 _rowsWritten++;
             }
         }
 
-        /// <summary>Encodes one row as run-length and raw packets; packets never cross the scan line.</summary>
-        private int EncodeRunLengthRow(ReadOnlySpan<byte> stored, Span<byte> destination)
+        /// <summary>Converts one source row to the stored samples (blue, green and red for 24-bit pixels) in <paramref name="stored"/>.</summary>
+        private ReadOnlySpan<byte> ConvertRow(ReadOnlySpan<byte> source, Span<byte> stored)
         {
-            var bytes = _bytesPerStoredPixel;
+            if (_workFormat == PixelFormat.Bgra32 && _sourceFormat == PixelFormat.Rgba32)
+            {
+                PixelConverter.SwapRedAndBlue32(source, stored);
+                return stored;
+            }
+
+            if (_workFormat != PixelFormat.Rgb24)
+            {
+                PixelConverter.ConvertRow(_sourceFormat, source, _workFormat, stored, background: null, ImageFormat.Tga);
+                return stored;
+            }
+
+            // TGA stores blue, green and red: RGB rows are swapped while they are copied (never in place, which stalls the
+            // overlapping vector loads on the stores before them)
+            if (_sourceFormat != PixelFormat.Rgb24)
+            {
+                var band = _band!.Span[..stored.Length];
+                PixelConverter.ConvertRow(_sourceFormat, source, PixelFormat.Rgb24, band, background: null, ImageFormat.Tga);
+                source = band;
+                if (source.Overlaps(stored))
+                {
+                    PixelConverter.SwapRedAndBlue24(band, band);
+                    return band;
+                }
+            }
+
+            PixelConverter.SwapRedAndBlue24(source, stored);
+            return stored;
+        }
+
+        /// <summary>Encodes one row as run-length and raw packets; packets never cross the scan line.</summary>
+        private int EncodeRunLengthRow(ReadOnlySpan<byte> stored, Span<byte> destination) => _bytesPerStoredPixel switch
+        {
+            1 => EncodeRunLengthRow<byte>(stored, destination),
+            3 => EncodeRunLengthRow(unsafe(MemoryMarshal.Cast<byte, StoredPixel24>(stored)), destination),
+            _ => EncodeRunLengthRow(unsafe(MemoryMarshal.Cast<byte, uint>(stored)), destination),
+        };
+
+        /// <summary>Encodes one row of pixels (compared as values) as run-length and raw packets.</summary>
+        private static int EncodeRunLengthRow<TPixel>(ReadOnlySpan<TPixel> pixels, Span<byte> destination)
+            where TPixel : unmanaged, IEquatable<TPixel>
+        {
+            var bytes = Unsafe.SizeOf<TPixel>();
+            var width = pixels.Length;
             var written = 0;
             var x = 0;
-            while (x < _width)
+            while (x < width)
             {
-                var pixel = stored.Slice(x * bytes, bytes);
+                var pixel = pixels[x];
                 var run = 1;
-                while (x + run < _width && run < TgaFormat.MaxPacketLength && stored.Slice((x + run) * bytes, bytes).SequenceEqual(pixel))
+                while (x + run < width && run < TgaFormat.MaxPacketLength && pixels[x + run].Equals(pixel))
                 {
                     run++;
                 }
@@ -198,7 +238,7 @@ internal sealed class TgaEncoderCodec : ImageEncoderCodec
                 if (run >= 2)
                 {
                     destination[written++] = (byte)(TgaFormat.RunLengthPacketFlag | (run - 1));
-                    pixel.CopyTo(destination[written..]);
+                    unsafe { MemoryMarshal.AsBytes(pixels.Slice(x, 1)).CopyTo(destination[written..]); }
                     written += bytes;
                     x += run;
                     continue;
@@ -206,21 +246,36 @@ internal sealed class TgaEncoderCodec : ImageEncoderCodec
 
                 // Raw packet: stop before the next run of two or more identical pixels
                 var count = 1;
-                while (x + count < _width && count < TgaFormat.MaxPacketLength)
+                while (x + count < width && count < TgaFormat.MaxPacketLength)
                 {
-                    if (x + count + 1 < _width && stored.Slice((x + count) * bytes, bytes).SequenceEqual(stored.Slice((x + count + 1) * bytes, bytes)))
+                    if (x + count + 1 < width && pixels[x + count].Equals(pixels[x + count + 1]))
                         break;
 
                     count++;
                 }
 
                 destination[written++] = (byte)(count - 1);
-                stored.Slice(x * bytes, count * bytes).CopyTo(destination[written..]);
+                unsafe { MemoryMarshal.AsBytes(pixels.Slice(x, count)).CopyTo(destination[written..]); }
                 written += count * bytes;
                 x += count;
             }
 
             return written;
+        }
+
+        /// <summary>A stored 24-bit pixel, compared as a value.</summary>
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        private readonly struct StoredPixel24 : IEquatable<StoredPixel24>
+        {
+            private readonly byte _first;
+            private readonly byte _second;
+            private readonly byte _third;
+
+            public bool Equals(StoredPixel24 other) => _first == other._first && _second == other._second && _third == other._third;
+
+            public override bool Equals([NotNullWhen(true)] object? obj) => obj is StoredPixel24 other && Equals(other);
+
+            public override int GetHashCode() => _first | (_second << 8) | (_third << 16);
         }
     }
 }

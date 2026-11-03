@@ -346,6 +346,78 @@ public sealed class Av1InverseTransformTests
     }
 
     [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void TransformMatchesTheScalarReferenceOnExtremeCoefficients()
+    {
+        // The vector transform uses 32-bit products for the kernels whose values cannot exceed 32 bits at a bit depth of 8 or
+        // 10 (Av1InverseTransform.IsNarrowExact), 64-bit ones otherwise: the coefficients of the whole dequantization range,
+        // with the signs that make the sums of the rotations largest, must give the results of the scalar reference
+        var random = new Random(52817);
+        for (var txSz = 0; txSz < Av1Constants.TxSizesAll; txSz++)
+        {
+            var log2W = Av1Tables.TxWidthLog2[txSz];
+            var log2H = Av1Tables.TxHeightLog2[txSz];
+            var tw = Math.Min(32, 1 << log2W);
+            var th = Math.Min(32, 1 << log2H);
+            for (var txType = 0; txType < Av1Constants.TxTypes; txType++)
+            {
+                var rowKind = Av1InverseTransform.GetRowKind(txType);
+                var colKind = Av1InverseTransform.GetColumnKind(txType);
+                if ((rowKind is Av1InverseTransform.Kind.Adst && log2W > 4) || (rowKind is Av1InverseTransform.Kind.Identity && log2W > 5) ||
+                    (colKind is Av1InverseTransform.Kind.Adst && log2H > 4) || (colKind is Av1InverseTransform.Kind.Identity && log2H > 5))
+                {
+                    continue;
+                }
+
+                foreach (var bitDepth in new[] { 8, 10, 12 })
+                {
+                    var max = (1 << (7 + bitDepth)) - 1;
+                    var min = -(1 << (7 + bitDepth));
+                    for (var pattern = 0; pattern < 13; pattern++)
+                    {
+                        // The last patterns only have coefficients in the first rows or columns: the rows and the columns of
+                        // the DCT whose inputs 4 and above are zero take a kernel of their own
+                        var dequant = new int[tw * th];
+                        for (var i = 0; i < dequant.Length; i++)
+                        {
+                            var row = i / tw;
+                            var column = i % tw;
+                            var extreme = random.Next(2) is 0 ? max : min;
+                            dequant[i] = pattern switch
+                            {
+                                0 => max,
+                                1 => min,
+                                2 => (row + column) % 2 is 0 ? max : min,
+                                3 => row % 2 is 0 ? max : min,
+                                4 => column % 2 is 0 ? max : min,
+                                5 => extreme,
+                                6 => random.Next(min, max + 1),
+                                7 => row < 4 && column < 4 ? extreme : 0,
+                                8 => row < 2 && column < 3 ? random.Next(min, max + 1) : 0,
+                                9 => row < 4 ? extreme : 0,
+                                10 => column < 4 ? extreme : 0,
+                                11 => row < 8 && column < 6 ? extreme : 0,
+                                _ => row < 4 && column < 4 && random.Next(3) is 0 ? random.Next(min, max + 1) : 0,
+                            };
+                        }
+
+                        var expected = new int[(1 << log2W) << log2H];
+                        var actual = new int[expected.Length];
+                        Av1InverseTransform.TransformScalar(dequant, expected, txSz, txType, lossless: false, bitDepth);
+                        Av1InverseTransform.Transform(dequant, actual, txSz, txType, lossless: false, bitDepth);
+                        Assert.True(expected.AsSpan().SequenceEqual(actual), $"Transform size {txSz}, type {txType}, {bitDepth}-bit, pattern {pattern}.");
+
+                        // Bounds of the coefficients larger than their extent, as the reconstruction gives them
+                        Array.Fill(actual, int.MinValue);
+                        Av1InverseTransform.Transform(dequant, actual, txSz, txType, lossless: false, bitDepth, rows: th, columns: tw);
+                        Assert.True(expected.AsSpan().SequenceEqual(actual), $"Transform size {txSz}, type {txType}, {bitDepth}-bit, pattern {pattern}, whole bounds.");
+                    }
+                }
+            }
+        }
+    }
+
+    [Fact]
     public void FourPointDctMatchesItsDefinition()
     {
         // x[n] = sum over k of c(k) * T[k] * cos(pi * (2n + 1) * k / 8), with c(0) = 1 / sqrt(2) and c(k) = 1 otherwise.

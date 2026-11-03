@@ -1,3 +1,7 @@
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -53,9 +57,14 @@ internal abstract class JpegScanDecoder
     private readonly int _totalMcus;
     private readonly int _restartInterval;
     private readonly int _safeBytes;
+    private readonly int _uncheckedBytes;
     private readonly Action<int>? _mcuRowDecoded;
     private readonly CancellationToken _cancellationToken;
     private int _mcu;
+
+    // The position of _mcu in the MCU grid of the scan
+    private int _mcuX;
+    private int _mcuY;
     private int _intervalRemaining;
     private int _expectedRestart;
     private bool _pendingMarkerByte;
@@ -95,6 +104,9 @@ internal abstract class JpegScanDecoder
 
         var precision = components[0].Component.Precision;
         _safeBytes = GetRequiredBufferCapacity(blocksPerMcu, precision, arithmetic, lossless);
+
+        // A Huffman-coded MCU decoded from buffered bytes reads at most its own bytes and 16 more (UncheckedCursor)
+        _uncheckedBytes = arithmetic || lossless ? int.MaxValue : _safeBytes - 8;
         MaxDcCategory = precision > 8 ? 15 : 11;
         MaxAcCategory = precision > 8 ? 14 : 10;
         _restartInterval = restartInterval;
@@ -110,7 +122,7 @@ internal abstract class JpegScanDecoder
     /// <param name="arithmetic">Whether the scans are arithmetic coded.</param>
     /// <param name="lossless">Whether the scans code the samples of a lossless frame.</param>
     public static int GetRequiredBufferCapacity(int blocksPerMcu, int precision, bool arithmetic, bool lossless = false)
-        => (blocksPerMcu * (lossless ? MaxBytesPerLosslessSample : arithmetic ? MaxBytesPerArithmeticBlock : precision > 8 ? MaxBytesPerDeepBlock : MaxBytesPerBlock)) + 8;
+        => (blocksPerMcu * (lossless ? MaxBytesPerLosslessSample : arithmetic ? MaxBytesPerArithmeticBlock : precision > 8 ? MaxBytesPerDeepBlock : MaxBytesPerBlock)) + 24;
 
     /// <summary>Gets a value indicating whether every MCU of the scan was decoded.</summary>
     public bool IsComplete => _mcu >= _totalMcus;
@@ -120,6 +132,20 @@ internal abstract class JpegScanDecoder
     /// expected marker (lenient decoding) instead of being an error.
     /// </summary>
     public bool AcceptsGarbledRestartNumbers { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether the MCU being decoded is in the buffer with 16 more bytes, before the end of its
+    /// segment: its blocks can be read with <see cref="JpegEntropyReader.UncheckedCursor"/>. Always <see langword="false"/>
+    /// for arithmetic-coded and lossless scans.
+    /// </summary>
+    protected bool UncheckedReads { get; private set; }
+
+    /// <summary>
+    /// Gets or sets the number of the next MCUs that code nothing (the rest of an EOB run of a progressive AC first scan,
+    /// whose MCU is one block): they are counted as decoded without <see cref="DecodeBlock"/>, up to the end of their MCU row
+    /// or restart interval. Reset at each restart marker.
+    /// </summary>
+    protected int SkippableMcus { get; set; }
 
     /// <summary>Gets the entropy reader of the scan.</summary>
     protected JpegEntropyReader Reader => _reader;
@@ -210,7 +236,7 @@ internal abstract class JpegScanDecoder
     /// <param name="hasAc">Whether an AC coefficient is not zero.</param>
     /// <param name="sparse">Whether every coefficient outside the top-left 4x4 corner is zero (<see cref="JpegIdct.IsSparse(int)"/>).</param>
     protected static void TransformBlock(ScanComponent scanComponent, int blockRow, int blockColumn, double[] block, int dc, bool hasAc, bool sparse)
-        => TransformBlock(scanComponent, scanComponent.Component.GetBlockOffset(blockRow, blockColumn), block, dc, hasAc, sparse);
+        => TransformBlock(scanComponent, scanComponent.GetBlockOffset(blockRow, blockColumn), block, dc, hasAc, sparse);
 
     /// <summary>Writes the samples of a block of a sequential scan at an offset of the sample plane.</summary>
     /// <param name="scanComponent">The component of the block.</param>
@@ -223,13 +249,31 @@ internal abstract class JpegScanDecoder
     {
         var component = scanComponent.Component;
         var quantization = scanComponent.Quantization;
+        if (!component.IsReduced && !component.HasDeepSamples)
+        {
+            // 8-bit samples at full scale
+            var samples = scanComponent.Samples.AsSpan(offset);
+            if (hasAc)
+            {
+                block[0] = dc * (double)quantization[0];
+                JpegIdct.Transform(block, samples, component.Stride, sparse);
+                JpegIdct.ClearBlock(block);
+            }
+            else
+            {
+                JpegIdct.TransformDcOnly((long)dc * quantization[0], samples, component.Stride);
+            }
+
+            return;
+        }
+
         if (component.IsReduced)
         {
             if (hasAc)
             {
                 block[0] = dc * (double)quantization[0];
                 TransformScaledBlock(component, offset, block, (long)dc * quantization[0], hasAc: true, sparse);
-                Array.Clear(block);
+                JpegIdct.ClearBlock(block);
             }
             else
             {
@@ -251,7 +295,7 @@ internal abstract class JpegScanDecoder
                 JpegIdct.Transform(block, component.Samples.AsSpan(offset), component.Stride, sparse);
             }
 
-            Array.Clear(block);
+            JpegIdct.ClearBlock(block);
         }
         else if (component.Precision > 8)
         {
@@ -308,6 +352,7 @@ internal abstract class JpegScanDecoder
     /// <summary>Resets the decoding state at a restart marker (T.81 F.2.1.3.1, G.1.2.2): the DC predictions.</summary>
     protected virtual void OnRestart()
     {
+        SkippableMcus = 0;
         foreach (var component in _components)
         {
             component.Predictor = 0;
@@ -369,31 +414,54 @@ internal abstract class JpegScanDecoder
 
     private void DecodeAvailable(bool endOfSegment)
     {
+        // Before the end of the segment, an MCU is only decoded when _safeBytes are available: its bytes and 16 more are
+        // then buffered (the accumulator holds at most 7 whole bytes)
+        UncheckedReads = !endOfSegment && _uncheckedBytes != int.MaxValue;
         while (_mcu < _totalMcus)
         {
             if (_restartInterval > 0 && _intervalRemaining == 0)
                 return;
 
-            if (!endOfSegment && _reader.AvailableBytes < _safeBytes)
-                return;
-
-            DecodeMcu(_mcu);
-            _mcu++;
-            _intervalRemaining--;
-            if (_mcu % _mcusPerLine == 0)
+            var count = 1;
+            if (SkippableMcus > 0)
             {
+                // MCUs that consume no data: as many as the row and the interval have at once
+                count = Math.Min(SkippableMcus, _mcusPerLine - _mcuX);
+                if (_restartInterval > 0)
+                {
+                    count = Math.Min(count, _intervalRemaining);
+                }
+
+                SkippableMcus -= count;
+            }
+            else
+            {
+                if (!endOfSegment && _reader.AvailableBytes < _safeBytes)
+                    return;
+
+                Debug.Assert(!UncheckedReads || _reader.BufferedBytes >= _uncheckedBytes);
+                DecodeMcu(_mcuX, _mcuY);
+            }
+
+            _mcu += count;
+            _intervalRemaining -= count;
+            _mcuX += count;
+            if (_mcuX == _mcusPerLine)
+            {
+                _mcuX = 0;
+                var row = _mcuY++;
                 _cancellationToken.ThrowIfCancellationRequested();
-                var row = (_mcu / _mcusPerLine) - 1;
                 OnMcuRowDecoded(row);
                 _mcuRowDecoded?.Invoke(row);
             }
         }
     }
 
-    private void DecodeMcu(int mcu)
+    /// <summary>Decodes the blocks of an MCU, in scan order (<see cref="DecodeBlock"/>).</summary>
+    /// <param name="mcuX">The column of the MCU.</param>
+    /// <param name="mcuY">The row of the MCU.</param>
+    protected virtual void DecodeMcu(int mcuX, int mcuY)
     {
-        var mcuX = mcu % _mcusPerLine;
-        var mcuY = mcu / _mcusPerLine;
         if (!_interleaved)
         {
             DecodeBlock(_components[0], mcuY, mcuX);
@@ -433,11 +501,66 @@ internal abstract class JpegScanDecoder
 
         /// <summary>
         /// Gets, for each zig-zag position, <c>(quantization value &lt;&lt; 6) | natural index</c>: the two lookups of a
-        /// coefficient in one (created on first use).
+        /// coefficient in one (empty for the samples of a lossless frame, which have no quantization).
         /// </summary>
-        public int[] ZigZagQuantization => field ??= CreateZigZagQuantization(Quantization);
+        public int[] ZigZagQuantization { get; } = quantization.Length == 64 ? CreateZigZagQuantization(quantization) : [];
 
         public int Predictor { get; set; }
+
+        /// <summary>
+        /// Gets the coefficients of a block of the coefficient grid, like <see cref="JpegFrameComponent.GetCoefficients"/>
+        /// with the buffer of the grid read once: it is not reallocated while a scan decodes.
+        /// </summary>
+        /// <param name="blockRow">The block row in the coefficient grid.</param>
+        /// <param name="blockColumn">The block column in the coefficient grid.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Span<short> GetCoefficients(int blockRow, int blockColumn)
+        {
+            var buffer = _coefficientBuffer ??= Component.CoefficientBuffer;
+            var offset = ((blockRow * Component.CoefficientBlocksPerLine) + blockColumn) * 64 * sizeof(short);
+            return unsafe(MemoryMarshal.Cast<byte, short>(buffer.AsSpan(offset, 64 * sizeof(short))));
+        }
+
+        private byte[]? _coefficientBuffer;
+
+        // The first block row of the band whose offset is cached (none at first), and the offset of that row
+        private int _bandFirstBlockRow = int.MinValue / 2;
+        private int _bandOffset;
+
+        /// <summary>
+        /// Gets the 8-bit samples of the plane of the component (<see cref="JpegFrameComponent.Samples"/>), read once: the plane
+        /// is not reallocated while a scan decodes.
+        /// </summary>
+        public byte[] Samples => field ??= Component.Samples;
+
+        /// <summary>
+        /// Gets the offset of the first sample of a block in the plane, like <see cref="JpegFrameComponent.GetBlockOffset"/>,
+        /// with the offset of the first block row of its band cached: the rows of a band are contiguous in the plane, so that
+        /// the other blocks of the band need no division.
+        /// </summary>
+        /// <param name="blockRow">The block row in the component's block grid.</param>
+        /// <param name="blockColumn">The block column in the component's block grid.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int GetBlockOffset(int blockRow, int blockColumn)
+        {
+            var plane = Component;
+            var rowInBand = blockRow - _bandFirstBlockRow;
+            if ((uint)rowInBand >= (uint)plane.VerticalSampling)
+            {
+                rowInBand = LoadBand(blockRow);
+            }
+
+            return _bandOffset + (rowInBand * plane.BlockHeight * plane.Stride) + (blockColumn * plane.BlockWidth);
+        }
+
+        private int LoadBand(int blockRow)
+        {
+            // A band is the rows of one MCU row: VerticalSampling block rows (1 for the only component of a grayscale frame)
+            var first = blockRow - (blockRow % Component.VerticalSampling);
+            _bandFirstBlockRow = first;
+            _bandOffset = Component.GetBlockOffset(first, 0);
+            return blockRow - first;
+        }
 
         /// <summary>Gets the statistics and the conditioning of the component in an arithmetic-coded scan, or <see langword="null"/>.</summary>
         public JpegArithmeticConditioning? Arithmetic { get; init; }

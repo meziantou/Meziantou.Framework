@@ -16,7 +16,7 @@ internal sealed class Vp8Planes : IDisposable
         Width = width;
         Height = height;
         Rows = rows;
-        YStride = ((width + 15) >> 4) * 16;
+        YStride = GetLumaStride(width);
         UVStride = YStride / 2;
         _y = y;
         _u = u;
@@ -29,7 +29,7 @@ internal sealed class Vp8Planes : IDisposable
     /// <summary>Gets the visible height.</summary>
     public int Height { get; }
 
-    /// <summary>Gets the luma row length (the width padded to a multiple of 16).</summary>
+    /// <summary>Gets the luma row length: the width padded to a multiple of 16, plus 16 bytes when that is a multiple of 32.</summary>
     public int YStride { get; }
 
     /// <summary>Gets the chroma row length (<see cref="YStride"/> / 2).</summary>
@@ -58,7 +58,7 @@ internal sealed class Vp8Planes : IDisposable
     public static Vp8Planes Create(AllocationScope scope, int width, int height, int rows)
     {
         ArgumentNullException.ThrowIfNull(scope);
-        var stride = (long)((width + 15) >> 4) * 16;
+        var stride = (long)GetLumaStride(width);
         var lumaLength = stride * rows;
         if (lumaLength > CheckedSizes.MaxBufferLength)
             throw CheckedSizes.CreateOverflowException(scope.Limits);
@@ -87,6 +87,14 @@ internal sealed class Vp8Planes : IDisposable
         _u?.Dispose();
         _v?.Dispose();
         _y = _u = _v = null;
+    }
+
+    // The width padded to whole macroblocks, plus 16 bytes when that is a multiple of 32: rows 2^k bytes apart map to the same
+    // cache sets, and the window of Vp8Decoder.DecodeRows moves its rows by a multiple of 4096 bytes
+    private static int GetLumaStride(int width)
+    {
+        var padded = ((width + 15) >> 4) * 16;
+        return (padded & 31) == 0 ? padded + 16 : padded;
     }
 
     private static byte[] Get(PooledBuffer? buffer) => buffer?.RawBuffer ?? throw new ObjectDisposedException(nameof(Vp8Planes));

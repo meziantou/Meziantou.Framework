@@ -136,9 +136,9 @@ internal static class Vp8Transforms
         var r1 = Vector128.WidenUpper(low);
         var r2 = Vector128.WidenLower(high);
         var r3 = Vector128.WidenUpper(high);
-        Pass(ref r0, ref r1, ref r2, ref r3);
+        InverseDctPass(ref r0, ref r1, ref r2, ref r3);
         Transpose4x4(ref r0, ref r1, ref r2, ref r3);
-        Pass(ref r0, ref r1, ref r2, ref r3);
+        InverseDctPass(ref r0, ref r1, ref r2, ref r3);
 
         // Columns 0 to 3 of the rows, rounded: back to rows
         var four = Vector128.Create(4);
@@ -173,18 +173,55 @@ internal static class Vp8Transforms
         // The lane holds the bytes in memory order: on a big-endian machine, written back in that order
         static uint Little(uint value) => BitConverter.IsLittleEndian ? value : BinaryPrimitives.ReverseEndianness(value);
 
-        // One pass on 4 vectors (the inputs 0 to 3 of the 4 lanes): a1, b1, c1, d1 and the outputs in place
-        static void Pass(ref Vector128<int> i0, ref Vector128<int> i1, ref Vector128<int> i2, ref Vector128<int> i3)
-        {
-            var a1 = i0 + i2;
-            var b1 = i0 - i2;
-            var c1 = Vector128.ShiftRightArithmetic(i1 * SinPi8Sqrt2, 16) - (i3 + Vector128.ShiftRightArithmetic(i3 * CosPi8Sqrt2Minus1, 16));
-            var d1 = (i1 + Vector128.ShiftRightArithmetic(i1 * CosPi8Sqrt2Minus1, 16)) + Vector128.ShiftRightArithmetic(i3 * SinPi8Sqrt2, 16);
-            i0 = a1 + d1;
-            i1 = b1 + c1;
-            i2 = b1 - c1;
-            i3 = a1 - d1;
-        }
+    }
+
+    /// <summary>
+    /// Adds the inverse DCT of a block to a 4x4 prediction held in a vector (row <c>r</c> in the bytes <c>4 r</c> to
+    /// <c>4 r + 3</c>), clamping to 0-255: the operations of the vector path of <see cref="InverseDctAddFull"/> (little-endian
+    /// machines with hardware vectors).
+    /// </summary>
+    internal static Vector128<byte> InverseDctAdd(ReadOnlySpan<short> block, Vector128<byte> prediction)
+    {
+        block = block[..16];
+        var low = Vector128.Create(block[..8]);
+        var high = Vector128.Create(block.Slice(8, 8));
+        var r0 = Vector128.WidenLower(low);
+        var r1 = Vector128.WidenUpper(low);
+        var r2 = Vector128.WidenLower(high);
+        var r3 = Vector128.WidenUpper(high);
+        InverseDctPass(ref r0, ref r1, ref r2, ref r3);
+        Transpose4x4(ref r0, ref r1, ref r2, ref r3);
+        InverseDctPass(ref r0, ref r1, ref r2, ref r3);
+        var four = Vector128.Create(4);
+        r0 = Vector128.ShiftRightArithmetic(r0 + four, 3);
+        r1 = Vector128.ShiftRightArithmetic(r1 + four, 3);
+        r2 = Vector128.ShiftRightArithmetic(r2 + four, 3);
+        r3 = Vector128.ShiftRightArithmetic(r3 + four, 3);
+        Transpose4x4(ref r0, ref r1, ref r2, ref r3);
+
+        // Clamped in 32-bit lanes (the sums can exceed 16 bits), then narrowed
+        var (rows01, rows23) = Vector128.Widen(prediction);
+        var (p0, p1) = Vector128.Widen(rows01);
+        var (p2, p3) = Vector128.Widen(rows23);
+        var sum01 = Vector128.Narrow(ClampToByte(r0 + p0.AsInt32()), ClampToByte(r1 + p1.AsInt32()));
+        var sum23 = Vector128.Narrow(ClampToByte(r2 + p2.AsInt32()), ClampToByte(r3 + p3.AsInt32()));
+        return Vector128.Narrow(sum01.AsUInt16(), sum23.AsUInt16());
+
+        static Vector128<int> ClampToByte(Vector128<int> value) => Vector128.Min(Vector128.Max(value, Vector128<int>.Zero), Vector128.Create(255));
+    }
+
+    /// <summary>One pass of the vector inverse DCT on 4 vectors (the inputs 0 to 3 of the 4 lanes): a1, b1, c1, d1 and the outputs in place.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void InverseDctPass(ref Vector128<int> i0, ref Vector128<int> i1, ref Vector128<int> i2, ref Vector128<int> i3)
+    {
+        var a1 = i0 + i2;
+        var b1 = i0 - i2;
+        var c1 = Vector128.ShiftRightArithmetic(i1 * SinPi8Sqrt2, 16) - (i3 + Vector128.ShiftRightArithmetic(i3 * CosPi8Sqrt2Minus1, 16));
+        var d1 = (i1 + Vector128.ShiftRightArithmetic(i1 * CosPi8Sqrt2Minus1, 16)) + Vector128.ShiftRightArithmetic(i3 * SinPi8Sqrt2, 16);
+        i0 = a1 + d1;
+        i1 = b1 + c1;
+        i2 = b1 - c1;
+        i3 = a1 - d1;
     }
 
     /// <summary>Transposes a 4x4 matrix of rows: 2x2 blocks of lanes are exchanged, then 2x2 blocks of 64-bit halves.</summary>

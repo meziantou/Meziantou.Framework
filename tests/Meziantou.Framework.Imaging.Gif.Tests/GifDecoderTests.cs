@@ -259,13 +259,18 @@ public sealed class GifDecoderTests
     }
 
     [Theory]
-    [InlineData(1)]
-    [InlineData(3)]
-    [InlineData(4096)]
+    [InlineData(1, 1)]
+    [InlineData(3, 1)]
+    [InlineData(4096, 1)]
+    [InlineData(3, 9)]
+    [InlineData(4096, 13)]
+    [InlineData(1, 64)]
+    [InlineData(4096, 100_000)]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
-    public void LzwDecoderResumesStringsAcrossOutputBuffersAndInputPieces(int outputChunk)
+    public void LzwDecoderResumesStringsAcrossOutputBuffersAndInputPieces(int outputChunk, int pieceLength)
     {
-        // Long KwKwK strings (constant runs) cross output buffers; the input arrives one byte at a time
+        // Long KwKwK strings (constant runs) cross output buffers; the input arrives in pieces (one byte at a time, or pieces
+        // long enough to be read 8 bytes at a time)
         var random = new Random(outputChunk);
         var indices = Enumerable.Range(0, 20000).Select(i => i < 9000 ? (byte)0 : (byte)random.Next(4)).ToArray();
         var encoded = GifLzwTestEncoder.Encode(indices, 2, new GifLzwTestOptions { ClearWhenFull = false });
@@ -273,9 +278,10 @@ public sealed class GifDecoderTests
         decoder.Reset(2);
         var output = new byte[indices.Length];
         var written = 0;
-        for (var i = 0; i < encoded.Length; i++)
+        for (var i = 0; i < encoded.Length; i += pieceLength)
         {
-            ReadOnlySpan<byte> piece = encoded.AsSpan(i, 1);
+            var length = Math.Min(pieceLength, encoded.Length - i);
+            ReadOnlySpan<byte> piece = encoded.AsSpan(i, length);
             while (written < output.Length)
             {
                 var count = decoder.Decode(ref piece, output.AsSpan(written, Math.Min(outputChunk, output.Length - written)));
@@ -287,7 +293,7 @@ public sealed class GifDecoderTests
             if (written == output.Length)
             {
                 // The rest of the stream (from the first unconsumed byte) holds only the end code
-                ReadOnlySpan<byte> rest = encoded.AsSpan(i + 1 - piece.Length);
+                ReadOnlySpan<byte> rest = encoded.AsSpan(i + length - piece.Length);
                 decoder.ReadTrailer(ref rest);
                 break;
             }

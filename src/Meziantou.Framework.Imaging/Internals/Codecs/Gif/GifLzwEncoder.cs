@@ -26,8 +26,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// with the code of the pending string, the end code, the padding bits of the last byte, and the block terminator.
 /// </description></item>
 /// <item><description>
-/// The string table is a hash table of (prefix code, index) keys with linear probing (8192 slots, at most half full), rented
-/// once from the writer scope as <see cref="AllocationKind.Temporary"/> and reused by every image.
+/// The string table is a hash table of (prefix code, index) keys with linear probing (8192 slots, at most half full), each
+/// slot holding the key and its code in 32 bits, rented once from the writer scope as <see cref="AllocationKind.Temporary"/>
+/// and reused by every image.
 /// </description></item>
 /// </list>
 /// </remarks>
@@ -42,12 +43,19 @@ internal sealed class GifLzwEncoder : IDisposable
     private const int MaxCodeSize = 12;
     private const int HashBits = 13;
     private const int HashSlots = 1 << HashBits;
-    private const int KeysOffset = 0;
-    private const int CodesOffset = HashSlots * sizeof(int);
-    private const int SubBlockOffset = CodesOffset + (HashSlots * sizeof(ushort));
+    private const int TableOffset = 0;
+    private const int SubBlockOffset = TableOffset + (HashSlots * sizeof(uint));
     private const int StateLength = SubBlockOffset + MaxSubBlockLength;
 
+    // A slot holds (key << 12) | code. The key of a string is (prefix code << 8) | index and its code is greater than its
+    // prefix code, so no string has the key 0xFFFFF and the code 0xFFF: all ones marks an empty slot
+    private const int CodeBits = 12;
+    private const uint EmptySlot = uint.MaxValue;
+
     private PooledBuffer? _state;
+
+    // The array of the state, for the bytes of the sub-block being filled
+    private byte[]? _subBlock;
     private int _clearCode;
     private int _minimumCodeSize;
     private int _codeSize;
@@ -65,6 +73,7 @@ internal sealed class GifLzwEncoder : IDisposable
     {
         ArgumentNullException.ThrowIfNull(scope);
         _state = scope.Rent(StateLength, AllocationKind.Temporary, clear: false);
+        _subBlock = _state.RawBuffer;
     }
 
     /// <summary>Gets the minimum code size used for a color table of <paramref name="colorTableEntries"/> entries (a power of two, 2 to 256).</summary>
@@ -103,20 +112,19 @@ internal sealed class GifLzwEncoder : IDisposable
     public void Write(ReadOnlySpan<byte> indices, ImageOutputBuffer output)
     {
         ArgumentNullException.ThrowIfNull(output);
-        var state = GetState();
-        var keys = unsafe(MemoryMarshal.Cast<byte, int>(state.Slice(KeysOffset, HashSlots * sizeof(int))));
-        var codes = unsafe(MemoryMarshal.Cast<byte, ushort>(state.Slice(CodesOffset, HashSlots * sizeof(ushort))));
+        var table = GetTable();
         if (!_started)
         {
             _started = true;
-            ClearTable(keys);
+            ClearTable(table);
             EmitCode(_clearCode, output);
         }
 
+        var clearCode = _clearCode;
         var prefix = _prefix;
         foreach (var index in indices)
         {
-            if (index >= _clearCode)
+            if (index >= clearCode)
                 throw new ArgumentOutOfRangeException(nameof(indices), index, "The color index is outside the code space.");
 
             if (prefix < 0)
@@ -126,23 +134,20 @@ internal sealed class GifLzwEncoder : IDisposable
             }
 
             // Look up the string "prefix + index"
-            var key = (prefix << 8) | index;
+            var key = (uint)((prefix << 8) | index);
             var slot = Hash(key);
-            var found = false;
-            while (keys[slot] >= 0)
+            uint entry;
+            while ((entry = table[slot]) != EmptySlot)
             {
-                if (keys[slot] == key)
-                {
-                    found = true;
+                if (entry >> CodeBits == key)
                     break;
-                }
 
                 slot = (slot + 1) & (HashSlots - 1);
             }
 
-            if (found)
+            if (entry != EmptySlot)
             {
-                prefix = codes[slot];
+                prefix = (int)(entry & ((1u << CodeBits) - 1));
                 continue;
             }
 
@@ -150,14 +155,13 @@ internal sealed class GifLzwEncoder : IDisposable
             EmitDataCode(prefix, output);
             if (_nextCode < MaxCodes)
             {
-                keys[slot] = key;
-                codes[slot] = (ushort)_nextCode;
+                table[slot] = (key << CodeBits) | (uint)_nextCode;
                 _nextCode++;
             }
             else
             {
-                EmitCode(_clearCode, output);
-                ClearTable(keys);
+                EmitCode(clearCode, output);
+                ClearTable(table);
             }
 
             prefix = index;
@@ -175,7 +179,7 @@ internal sealed class GifLzwEncoder : IDisposable
         {
             // An image always has at least one pixel; an empty datastream still starts with a clear code
             _started = true;
-            ClearTable(unsafe(MemoryMarshal.Cast<byte, int>(GetState().Slice(KeysOffset, HashSlots * sizeof(int)))));
+            ClearTable(GetTable());
             EmitCode(_clearCode, output);
         }
 
@@ -201,13 +205,14 @@ internal sealed class GifLzwEncoder : IDisposable
     {
         _state?.Dispose();
         _state = null;
+        _subBlock = null;
     }
 
-    private static int Hash(int key) => (int)(((uint)key * 0x9E3779B1u) >> (32 - HashBits));
+    private static int Hash(uint key) => (int)((key * 0x9E3779B1u) >> (32 - HashBits));
 
-    private void ClearTable(Span<int> keys)
+    private void ClearTable(Span<uint> table)
     {
-        keys.Fill(-1);
+        table.Fill(EmptySlot);
         _codeSize = _minimumCodeSize + 1;
         _nextCode = _clearCode + 2;
     }
@@ -236,9 +241,8 @@ internal sealed class GifLzwEncoder : IDisposable
 
     private void AppendByte(byte value, ImageOutputBuffer output)
     {
-        var subBlock = GetState().Slice(SubBlockOffset, MaxSubBlockLength);
-        subBlock[_subBlockLength++] = value;
-        if (_subBlockLength == MaxSubBlockLength)
+        _subBlock![SubBlockOffset + _subBlockLength] = value;
+        if (++_subBlockLength == MaxSubBlockLength)
         {
             FlushSubBlock(output);
         }
@@ -257,4 +261,6 @@ internal sealed class GifLzwEncoder : IDisposable
     }
 
     private Span<byte> GetState() => (_state ?? throw new ObjectDisposedException(nameof(GifLzwEncoder))).RawBuffer.AsSpan(0, StateLength);
+
+    private Span<uint> GetTable() => unsafe(MemoryMarshal.Cast<byte, uint>(GetState().Slice(TableOffset, HashSlots * sizeof(uint))));
 }

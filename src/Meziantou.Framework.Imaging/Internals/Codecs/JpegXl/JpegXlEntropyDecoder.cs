@@ -106,6 +106,133 @@ internal sealed class JpegXlEntropyDecoder : IDisposable
         _window = null;
     }
 
+    /// <summary>Gets a value indicating whether the values can be read with <see cref="InlineTables"/>: the stream uses ANS without LZ77.</summary>
+    public bool CanReadInline => !_isLz77Enabled && !_usesPrefixCodes;
+
+    /// <summary>Gets or sets the state of the ANS decoder, for a loop that reads the values with <see cref="InlineTables"/>.</summary>
+    internal uint AnsState
+    {
+        get => _state;
+        set => _state = value;
+    }
+
+    /// <summary>Gets the cluster of a context.</summary>
+    public int GetCluster(int context) => _contextMap.AsSpan(0, _contextMapLength)[context];
+
+    /// <summary>
+    /// The tables that read the values of an ANS stream without LZ77 (<see cref="CanReadInline"/>) in a loop that keeps the
+    /// state of the decoder (<see cref="AnsState"/>) and of the bit reader (<see cref="JpegXlBitReader.GetState"/>) in locals,
+    /// and gives them back once it is done: the values, and the bits they consume, are those of <see cref="Read"/>.
+    /// </summary>
+    internal readonly ref struct InlineTables
+    {
+        private readonly JpegXlBitReader _reader;
+        private readonly ReadOnlySpan<byte> _data;
+        private readonly ReadOnlySpan<JpegXlAnsDistribution.AliasEntry> _aliasTables;
+        private readonly ReadOnlySpan<JpegXlHybridUintConfig> _configs;
+        private readonly int _logAlphabetSize;
+        private readonly int _logBucketSize;
+
+        public InlineTables(JpegXlEntropyDecoder decoder, JpegXlBitReader reader)
+        {
+            _reader = reader;
+            _data = reader.DataToEnd;
+            _aliasTables = JpegXlEntropyCode.GetAliasTables(decoder._aliasTables!, decoder._aliasTableLength);
+            _configs = decoder._configs;
+            _logAlphabetSize = decoder._logAlphabetSize;
+            _logBucketSize = decoder._logBucketSize;
+        }
+
+        /// <summary>Reads the next value, coded with the distribution of <paramref name="cluster"/>.</summary>
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+        public uint Read(int cluster, ref uint state, ref ulong bits, ref int bitCount, ref int position)
+        {
+            // The operations of ReadAnsToken and of JpegXlHybridUintConfig.ReadValue. The bits are refilled first: a value
+            // reads at most 16 bits for the state and 31 raw bits, fewer than the 48 bits a refill leaves
+            Refill(ref bits, ref bitCount, ref position);
+            var index = state & (JpegXlAnsDistribution.TableSize - 1);
+            var bucket = (int)(index >> _logBucketSize);
+            var offsetInBucket = index & ((1u << _logBucketSize) - 1);
+            ref readonly var entry = ref _aliasTables[(cluster << _logAlphabetSize) + bucket];
+            uint token;
+            uint frequency;
+            uint offset;
+            if (offsetInBucket < entry.Cutoff)
+            {
+                token = (uint)bucket;
+                frequency = entry.Frequency;
+                offset = offsetInBucket;
+            }
+            else
+            {
+                token = entry.Symbol;
+                frequency = entry.SymbolFrequency;
+                offset = entry.Offset + offsetInBucket;
+            }
+
+            state = (frequency * (state >> JpegXlAnsDistribution.LogTableSize)) + offset;
+            if (state < 1u << 16)
+            {
+                state = (state << 16) | Take(16, ref bits, ref bitCount);
+            }
+
+            var config = _configs[cluster];
+            var split = 1u << config.SplitExponent;
+            if (token < split)
+                return token;
+
+            var bitsInToken = config.MsbInToken + config.LsbInToken;
+            var count = (int)(((uint)(config.SplitExponent - bitsInToken) + ((token - split) >> bitsInToken)) & 31);
+            var low = token & ((1u << config.LsbInToken) - 1);
+            token >>= config.LsbInToken;
+            var raw = Take(count, ref bits, ref bitCount);
+            return (((((1u << config.MsbInToken) | (token & ((1u << config.MsbInToken) - 1))) << count) | raw) << config.LsbInToken) | low;
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+        private static uint Take(int count, ref ulong bits, ref int bitCount)
+        {
+            var value = (uint)(bits & ((1UL << count) - 1));
+            bits >>= count;
+            bitCount -= count;
+            return value;
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+        private void Refill(ref ulong bits, ref int bitCount, ref int position)
+        {
+            // The operations of JpegXlBitReader.Refill, whatever the number of bits left: the bits above the count are those
+            // of the next bytes, which are set again with the same values. The bytes near the end are read by the bit reader
+            if (position <= _data.Length - 8)
+            {
+                bits |= System.Buffers.Binary.BinaryPrimitives.ReadUInt64LittleEndian(_data.Slice(position, 8)) << bitCount;
+                var whole = (63 - bitCount) >> 3;
+                position += whole;
+                bitCount += whole << 3;
+            }
+            else if (bitCount < 48)
+            {
+                // The state goes through values: a reference to the locals of the loop would keep them in memory
+                var refilled = RefillNearEnd(_reader, bits, bitCount, position);
+                bits = refilled.Bits;
+                bitCount = refilled.BitCount;
+                position = refilled.Position;
+            }
+        }
+
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static BitState RefillNearEnd(JpegXlBitReader reader, ulong bits, int bitCount, int position)
+        {
+            reader.SetState(bits, bitCount, position);
+            reader.Refill();
+            reader.GetState(out bits, out bitCount, out position);
+            return new BitState(bits, bitCount, position);
+        }
+
+        [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
+        private readonly record struct BitState(ulong Bits, int BitCount, int Position);
+    }
+
     private uint ReadWithLz77(JpegXlBitReader reader, int context, uint distanceMultiplier)
     {
         var window = _window!.Span;

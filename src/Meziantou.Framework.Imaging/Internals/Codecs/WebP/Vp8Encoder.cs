@@ -86,6 +86,11 @@ internal sealed class Vp8Encoder : IDisposable
     private static readonly double[] UVModeCosts = CreateModeCosts(UVModeTree, Vp8Tables.KeyFrameUVModeProbabilities, 4, contexts: 1);
     private static readonly double[] BModeCosts = CreateModeCosts(BModeTree, Vp8Tables.KeyFrameBModeProbabilities, 10, contexts: 100);
 
+    // The paths of the modes in their trees (Vp8BoolEncoder.GetTreePath)
+    private static readonly int[] YModePaths = CreateTreePaths(KeyFrameYModeTree, 5);
+    private static readonly int[] UVModePaths = CreateTreePaths(UVModeTree, 4);
+    private static readonly int[] BModePaths = CreateTreePaths(BModeTree, 10);
+
     /// <summary>The bits of the cheapest 16x16 luma mode: modes cost the same in every context.</summary>
     private static readonly double MinLumaModeBits = Math.Min(Math.Min(YModeCosts[Vp8Tables.DcPred], YModeCosts[Vp8Tables.VPred]), Math.Min(YModeCosts[Vp8Tables.HPred], YModeCosts[Vp8Tables.TmPred]));
 
@@ -102,6 +107,8 @@ internal sealed class Vp8Encoder : IDisposable
     private readonly int _maxFirstPartitionSize;
     private readonly int _quantizerIndex;
     private readonly Quantizer _q;
+    private readonly Vp8EncoderKernels.BlockQuantizer _lumaQuantizer;
+    private readonly Vp8EncoderKernels.BlockQuantizer _chromaQuantizer;
     private readonly double _lambda;
     private readonly byte[] _probabilities = new byte[4 * 8 * 3 * Vp8Tables.TokenNodes];
     private readonly List<PooledBuffer> _buffers = [];
@@ -134,6 +141,8 @@ internal sealed class Vp8Encoder : IDisposable
         _cancellationToken = cancellationToken;
         _quantizerIndex = (int)Math.Round((100 - quality) * 127 / 100.0, MidpointRounding.AwayFromZero);
         _q = Quantizer.Create(_quantizerIndex);
+        _lumaQuantizer = new(_q.YDc, _q.YAc);
+        _chromaQuantizer = new(_q.UVDc, _q.UVAc);
         _lambda = 0.12 * _q.YAc * _q.YAc;
         Vp8Tables.DefaultTokenProbabilities.CopyTo(_probabilities);
         _source = Vp8Planes.Create(scope, width, height);
@@ -235,67 +244,50 @@ internal sealed class Vp8Encoder : IDisposable
         var paddedHeight = _mbHeight * 16;
         for (var row = 0; row < _height; row++)
         {
-            var pixels = rgba.Slice(row * _width * 4, _width * 4);
-            var luma = y.Slice(row * yStride, yStride);
-            for (var x = 0; x < _width; x++)
-            {
-                int r = pixels[x * 4], g = pixels[(x * 4) + 1], b = pixels[(x * 4) + 2];
-                luma[x] = (byte)(((16829 * r) + (33039 * g) + (6416 * b) + (16 << 16) + 32768) >> 16);
-            }
+            Vp8EncoderKernels.ConvertLumaRow(rgba.Slice(row * _width * 4, _width * 4), y.Slice(row * yStride, _width));
         }
 
-        FlattenTransparentLuma(rgba, y, yStride);
+        // Without fully transparent pixels, the luma and the runs of transparent blocks are left as they are
+        var hasTransparentPixels = Vp8EncoderKernels.HasTransparentPixel(rgba[..(_width * _height * 4)]);
+        if (hasTransparentPixels)
+        {
+            FlattenTransparentLuma(rgba, y, yStride);
+        }
+
         var chromaWidth = (_width + 1) >> 1;
         var chromaHeight = (_height + 1) >> 1;
         for (var cy = 0; cy < chromaHeight; cy++)
         {
-            for (var cx = 0; cx < chromaWidth; cx++)
+            var cx = 0;
+            if (Vp8EncoderKernels.IsSupported && (2 * cy) + 1 < _height)
             {
-                // Alpha-weighted average of the 2x2 block (plain average when every pixel is transparent)
-                long sumU = 0, sumV = 0, weight = 0, plainU = 0, plainV = 0, count = 0;
-                for (var dy = 0; dy < 2; dy++)
+                // 4 samples at a time from whole 2x2 blocks of a uniform alpha, the others one at a time
+                var top = rgba.Slice(2 * cy * _width * 4, _width * 4);
+                var bottom = rgba.Slice(((2 * cy) + 1) * _width * 4, _width * 4);
+                for (; (2 * cx) + 8 <= _width; cx += 4)
                 {
-                    var py = (2 * cy) + dy;
-                    if (py >= _height)
-                        continue;
-
-                    for (var dx = 0; dx < 2; dx++)
+                    var offset = (cy * uvStride) + cx;
+                    if (!Vp8EncoderKernels.TryConvertChroma(top[(cx * 8)..], bottom[(cx * 8)..], u.Slice(offset, 4), v.Slice(offset, 4)))
                     {
-                        var px = (2 * cx) + dx;
-                        if (px >= _width)
-                            continue;
-
-                        var pixel = rgba.Slice(((py * _width) + px) * 4, 4);
-                        int r = pixel[0], g = pixel[1], b = pixel[2], a = pixel[3];
-                        var pu = (-9714 * r) - (19070 * g) + (28784 * b);
-                        var pv = (28784 * r) - (24103 * g) - (4681 * b);
-                        sumU += (long)pu * a;
-                        sumV += (long)pv * a;
-                        weight += a;
-                        plainU += pu;
-                        plainV += pv;
-                        count++;
+                        for (var i = 0; i < 4; i++)
+                        {
+                            ConvertChroma(rgba, _width, _height, cx + i, cy, out u[offset + i], out v[offset + i]);
+                        }
                     }
                 }
+            }
 
-                double cu, cv;
-                if (weight > 0)
-                {
-                    cu = (double)sumU / weight;
-                    cv = (double)sumV / weight;
-                }
-                else
-                {
-                    cu = (double)plainU / count;
-                    cv = (double)plainV / count;
-                }
-
-                u[(cy * uvStride) + cx] = ClampByte(128 + (int)Math.Floor((cu / 65536.0) + 0.5));
-                v[(cy * uvStride) + cx] = ClampByte(128 + (int)Math.Floor((cv / 65536.0) + 0.5));
+            for (; cx < chromaWidth; cx++)
+            {
+                ConvertChroma(rgba, _width, _height, cx, cy, out u[(cy * uvStride) + cx], out v[(cy * uvStride) + cx]);
             }
         }
 
-        FlattenTransparentRuns(rgba);
+        if (hasTransparentPixels)
+        {
+            FlattenTransparentRuns(rgba);
+        }
+
         for (var row = 0; row < _height; row++)
         {
             var luma = y.Slice(row * yStride, yStride);
@@ -318,6 +310,54 @@ internal sealed class Vp8Encoder : IDisposable
             u.Slice((chromaHeight - 1) * uvStride, uvStride).CopyTo(u.Slice(cy * uvStride, uvStride));
             v.Slice((chromaHeight - 1) * uvStride, uvStride).CopyTo(v.Slice(cy * uvStride, uvStride));
         }
+    }
+
+    /// <summary>
+    /// Computes the chroma of the 2x2 block <paramref name="cx"/>, <paramref name="cy"/>: the alpha-weighted average of its
+    /// visible pixels (the plain average when every pixel is transparent).
+    /// </summary>
+    internal static void ConvertChroma(ReadOnlySpan<byte> rgba, int width, int height, int cx, int cy, out byte u, out byte v)
+    {
+        long sumU = 0, sumV = 0, weight = 0, plainU = 0, plainV = 0, count = 0;
+        for (var dy = 0; dy < 2; dy++)
+        {
+            var py = (2 * cy) + dy;
+            if (py >= height)
+                continue;
+
+            for (var dx = 0; dx < 2; dx++)
+            {
+                var px = (2 * cx) + dx;
+                if (px >= width)
+                    continue;
+
+                var pixel = rgba.Slice(((py * width) + px) * 4, 4);
+                int r = pixel[0], g = pixel[1], b = pixel[2], a = pixel[3];
+                var pu = (-9714 * r) - (19070 * g) + (28784 * b);
+                var pv = (28784 * r) - (24103 * g) - (4681 * b);
+                sumU += (long)pu * a;
+                sumV += (long)pv * a;
+                weight += a;
+                plainU += pu;
+                plainV += pv;
+                count++;
+            }
+        }
+
+        double cu, cv;
+        if (weight > 0)
+        {
+            cu = (double)sumU / weight;
+            cv = (double)sumV / weight;
+        }
+        else
+        {
+            cu = (double)plainU / count;
+            cv = (double)plainV / count;
+        }
+
+        u = ClampByte(128 + (int)Math.Floor((cu / 65536.0) + 0.5));
+        v = ClampByte(128 + (int)Math.Floor((cv / 65536.0) + 0.5));
     }
 
     /// <summary>
@@ -496,8 +536,23 @@ internal sealed class Vp8Encoder : IDisposable
             if (YModeCosts[mode] > MinLumaModeBits && YModeCosts[mode] + MinChromaModeBits > modeBitLimit)
                 continue;
 
-            Vp8Reconstruction.PredictBlock(recon, stride, offset, 16, mbX, mbY, mode);
-            var cost = EncodeLuma16(offset, trialLevels, aboveNonZero, leftNonZero) + (modeLambda * YModeCosts[mode]);
+            double cost;
+            var modeCost = modeLambda * YModeCosts[mode];
+            if (Vp8EncoderKernels.IsSupported)
+            {
+                // The costs are not negative and their sums are monotonic: a mode whose bits alone cost the best cost cannot be chosen
+                if (modeCost >= bestCost)
+                    continue;
+
+                Vp8Reconstruction.PredictBlock(recon, stride, offset, 16, mbX, mbY, mode);
+                cost = EncodeLuma16Vector(offset, trialLevels, aboveNonZero, leftNonZero, modeCost, bestCost);
+            }
+            else
+            {
+                Vp8Reconstruction.PredictBlock(recon, stride, offset, 16, mbX, mbY, mode);
+                cost = EncodeLuma16(offset, trialLevels, aboveNonZero, leftNonZero) + modeCost;
+            }
+
             if (cost < bestCost)
             {
                 bestCost = cost;
@@ -513,7 +568,10 @@ internal sealed class Vp8Encoder : IDisposable
         if (_effort >= 2 && YModeCosts[Vp8Tables.BPred] + MinChromaModeBits <= modeBitLimit)
         {
             Span<short> subLevels = stackalloc short[16 * 16];
-            var subCost = EncodeSubBlocks(mbX, mbY, offset, subModes, subLevels, aboveModes, leftModes, aboveNonZero, leftNonZero, out var subModeBits) + (modeLambda * YModeCosts[Vp8Tables.BPred]);
+            var subModeCost = modeLambda * YModeCosts[Vp8Tables.BPred];
+            var subCost = Vp8EncoderKernels.IsSupported
+                ? EncodeSubBlocksVector(mbX, mbY, offset, subModes, subLevels, aboveModes, leftModes, aboveNonZero, leftNonZero, subModeCost, bestCost, out var subModeBits)
+                : EncodeSubBlocks(mbX, mbY, offset, subModes, subLevels, aboveModes, leftModes, aboveNonZero, leftNonZero, out subModeBits) + subModeCost;
             subModeBits += YModeCosts[Vp8Tables.BPred];
             if (subCost < bestCost && subModeBits + MinChromaModeBits <= modeBitLimit)
             {
@@ -559,9 +617,15 @@ internal sealed class Vp8Encoder : IDisposable
             if (UVModeCosts[mode] > MinChromaModeBits && lumaModeBits + UVModeCosts[mode] > modeBitLimit)
                 continue;
 
+            var modeCost = modeLambda * UVModeCosts[mode];
+            if (Vp8EncoderKernels.IsSupported && modeCost >= bestCost)
+                continue;
+
             Vp8Reconstruction.PredictBlock(_reconstruction.U, uvStride, uvOffset, 8, mbX, mbY, mode);
             Vp8Reconstruction.PredictBlock(_reconstruction.V, uvStride, uvOffset, 8, mbX, mbY, mode);
-            var cost = EncodeChroma(uvOffset, uvLevels, aboveNonZero, leftNonZero) + (modeLambda * UVModeCosts[mode]);
+            var cost = Vp8EncoderKernels.IsSupported
+                ? EncodeChromaVector(uvOffset, uvLevels, aboveNonZero, leftNonZero, modeCost, bestCost)
+                : EncodeChroma(uvOffset, uvLevels, aboveNonZero, leftNonZero) + modeCost;
             if (cost < bestCost)
             {
                 bestCost = cost;
@@ -737,6 +801,113 @@ internal sealed class Vp8Encoder : IDisposable
         return total;
     }
 
+    /// <summary>
+    /// <see cref="EncodeSubBlocks"/> plus <paramref name="modeCost"/> with the vector kernels: the source and the predictions of a
+    /// sub-block are column-major vectors, and each mode is transformed, quantized, reconstructed and measured in registers
+    /// (the same values and costs, in the same order).
+    /// </summary>
+    /// <remarks>
+    /// The costs are not negative and their sums are monotonic: a mode is skipped as soon as a lower bound of its cost (its mode
+    /// bits and the cheaper value of the first boolean of its tokens, then its distortion too) is not below the best cost of its
+    /// sub-block, or would bring the cost of the macroblock to <paramref name="limit"/>; the search stops when the macroblock
+    /// cannot cost less than <paramref name="limit"/>. The modes that are skipped could not be chosen: the result is the same.
+    /// </remarks>
+    /// <returns>The rate-distortion cost of the sub-blocks and <paramref name="modeCost"/>, or infinity when it is not below <paramref name="limit"/>.</returns>
+    private double EncodeSubBlocksVector(int mbX, int mbY, int offset, Span<byte> subModes, Span<short> levels, Span<byte> aboveModes, Span<byte> leftModes, ReadOnlySpan<byte> aboveNonZero, ReadOnlySpan<byte> leftNonZero, double modeCost, double limit, out double modeBits)
+    {
+        modeBits = 0;
+        var modeWeight = _modeBitWeight;
+        var lambda = _lambda;
+        var recon = _reconstruction.Y;
+        var source = _source.Y;
+        var stride = _reconstruction.YStride;
+        Span<byte> aboveRight = stackalloc byte[4];
+        Vp8Reconstruction.GetMacroblockAboveRight(recon, stride, mbX, mbY, _mbWidth, aboveRight);
+        Span<byte> modesAbove = stackalloc byte[4];
+        Span<byte> modesLeft = stackalloc byte[4];
+        aboveModes.CopyTo(modesAbove);
+        leftModes.CopyTo(modesLeft);
+        Span<byte> nzAbove = stackalloc byte[4];
+        Span<byte> nzLeft = stackalloc byte[4];
+        aboveNonZero[..4].CopyTo(nzAbove);
+        leftNonZero[..4].CopyTo(nzLeft);
+        Span<short> trial = stackalloc short[16];
+        Span<byte> edge = stackalloc byte[Vp8Reconstruction.SubBlockEdgeLength];
+        var modeCount = _effort >= 4 ? 10 : 6;
+        var allModeCosts = BModeCosts;
+        var total = 0.0;
+        for (var block = 0; block < 16; block++)
+        {
+            var bx = block & 3;
+            var by = block >> 2;
+            var blockOffset = offset + (by * 4 * stride) + (bx * 4);
+            var context = nzAbove[bx] + nzLeft[by];
+            var modeCosts = allModeCosts.AsSpan(((modesAbove[bx] * 10) + modesLeft[by]) * 10, 10);
+            var firstNode = _probabilities[(3 * 8 * 3 * Vp8Tables.TokenNodes) + (context * Vp8Tables.TokenNodes)];
+            var firstBit = Math.Min(BitCosts[firstNode], BitCosts[256 - firstNode]);
+            var bestCost = double.MaxValue;
+            var bestMode = 0;
+            var bestLow = Vector128<short>.Zero;
+            var bestHigh = Vector128<short>.Zero;
+            var bestPixels = Vector128<byte>.Zero;
+            Vp8Reconstruction.GetSubBlockEdge(recon, stride, blockOffset, (mbX * 16) + (bx * 4), (mbY * 16) + (by * 4), bx == 3 ? aboveRight : default, edge);
+            var predictor = new Vp8EncoderKernels.SubBlockPredictor(edge);
+            var sourcePixels = Vp8EncoderKernels.LoadColumns(source, blockOffset, stride);
+            for (var mode = 0; mode < modeCount; mode++)
+            {
+                // Lower bounds of the cost: the mode bits and the first boolean of the tokens (enough for flat blocks, whose best
+                // cost is small), then the distortion too
+                var bits = lambda * (firstBit + (modeWeight * modeCosts[mode]));
+                if (bits >= bestCost || total + bits + modeCost >= limit)
+                    continue;
+
+                var prediction = predictor.Predict(mode);
+                if (!Vp8EncoderKernels.TryEncodeBlock(sourcePixels, prediction, _lumaQuantizer, out var low, out var high, out var pixels))
+                {
+                    Vp8EncoderKernels.EncodeBlockReference(sourcePixels, prediction, _q.YDc, _q.YAc, out low, out high, out pixels);
+                }
+
+                double distortion = Vp8EncoderKernels.SquaredError(sourcePixels, pixels);
+
+                var bound = distortion + bits;
+                if (bound >= bestCost || total + bound + modeCost >= limit)
+                    continue;
+
+                low.CopyTo(trial);
+                high.CopyTo(trial[8..]);
+                var cost = distortion + (lambda * (TokenBits(trial, 0, 3, context) + (modeWeight * modeCosts[mode])));
+                if (cost < bestCost)
+                {
+                    bestCost = cost;
+                    bestMode = mode;
+                    bestLow = low;
+                    bestHigh = high;
+                    bestPixels = pixels;
+                }
+            }
+
+            // Every mode makes the macroblock cost at least the limit
+            if (bestCost == double.MaxValue)
+                return double.PositiveInfinity;
+
+            Vp8EncoderKernels.StoreColumns(recon, blockOffset, stride, bestPixels);
+            var blockLevels = levels.Slice(block * 16, 16);
+            bestLow.CopyTo(blockLevels);
+            bestHigh.CopyTo(blockLevels[8..]);
+            subModes[block] = (byte)bestMode;
+            modeBits += modeCosts[bestMode];
+            modesAbove[bx] = modesLeft[by] = (byte)bestMode;
+            nzAbove[bx] = nzLeft[by] = (bestLow | bestHigh) != Vector128<short>.Zero ? (byte)1 : (byte)0;
+            total += bestCost;
+            if (total + modeCost >= limit)
+                return double.PositiveInfinity;
+        }
+
+        modesAbove.CopyTo(aboveModes);
+        modesLeft.CopyTo(leftModes);
+        return total + modeCost;
+    }
+
     private double EncodeChroma(int offset, Span<short> levels, ReadOnlySpan<byte> aboveNonZero, ReadOnlySpan<byte> leftNonZero)
     {
         var stride = _reconstruction.UVStride;
@@ -771,6 +942,150 @@ internal sealed class Vp8Encoder : IDisposable
         }
 
         return distortion + (_lambda * bits);
+    }
+
+    /// <summary>
+    /// <see cref="EncodeLuma16"/> plus <paramref name="modeCost"/> with the vector kernels (the same levels, pixels and costs, in the
+    /// same order). The search stops as soon as the distortion and <paramref name="modeCost"/> are not below <paramref name="limit"/>.
+    /// </summary>
+    /// <returns>The rate-distortion cost of the mode, or infinity when it is not below <paramref name="limit"/>.</returns>
+    private double EncodeLuma16Vector(int offset, Span<short> levels, ReadOnlySpan<byte> aboveNonZero, ReadOnlySpan<byte> leftNonZero, double modeCost, double limit)
+    {
+        var recon = _reconstruction.Y;
+        var source = _source.Y;
+        var stride = _reconstruction.YStride;
+        Span<int> coefficients = stackalloc int[16 * 16];
+        Span<int> dc = stackalloc int[16];
+        for (var block = 0; block < 16; block++)
+        {
+            var blockOffset = offset + ((block >> 2) * 4 * stride) + ((block & 3) * 4);
+            Vp8EncoderKernels.ForwardDct(Vp8EncoderKernels.LoadColumns(source, blockOffset, stride), Vp8EncoderKernels.LoadColumns(recon, blockOffset, stride), out var c0, out var c1, out var c2, out var c3);
+            var blockCoefficients = coefficients.Slice(block * 16, 16);
+            c0.CopyTo(blockCoefficients);
+            c1.CopyTo(blockCoefficients[4..]);
+            c2.CopyTo(blockCoefficients[8..]);
+            c3.CopyTo(blockCoefficients[12..]);
+            dc[block] = c0.ToScalar();
+        }
+
+        // Y2: the Walsh-Hadamard transform of the DC coefficients
+        Span<int> y2 = stackalloc int[16];
+        Vp8EncoderKernels.ForwardWalshHadamard(Vector128.Create((ReadOnlySpan<int>)dc[..4]), Vector128.Create((ReadOnlySpan<int>)dc[4..8]), Vector128.Create((ReadOnlySpan<int>)dc[8..12]), Vector128.Create((ReadOnlySpan<int>)dc[12..]), out var w0, out var w1, out var w2, out var w3);
+        w0.CopyTo(y2);
+        w1.CopyTo(y2[4..]);
+        w2.CopyTo(y2[8..]);
+        w3.CopyTo(y2[12..]);
+        var y2Levels = levels.Slice(16 * 16, 16);
+        Quantize(y2, y2Levels, _q.Y2Dc, _q.Y2Ac, first: 0);
+        var y2Low = Vector128.WidenLower(Vector128.Create((ReadOnlySpan<short>)y2Levels[..8]));
+        var y2High = Vector128.WidenUpper(Vector128.Create((ReadOnlySpan<short>)y2Levels[..8]));
+        var y2Steps = Vector128.Create((int)_q.Y2Ac);
+        Vp8EncoderKernels.InverseWalshHadamard(
+            Vp8EncoderKernels.Dequantize(y2Low, Vector128.Create(_q.Y2Dc, _q.Y2Ac, _q.Y2Ac, _q.Y2Ac)),
+            Vp8EncoderKernels.Dequantize(y2High, y2Steps),
+            Vp8EncoderKernels.Dequantize(Vector128.WidenLower(Vector128.Create((ReadOnlySpan<short>)y2Levels[8..])), y2Steps),
+            Vp8EncoderKernels.Dequantize(Vector128.WidenUpper(Vector128.Create((ReadOnlySpan<short>)y2Levels[8..])), y2Steps),
+            out w0,
+            out w1,
+            out w2,
+            out w3);
+        w0.CopyTo(dc);
+        w1.CopyTo(dc[4..]);
+        w2.CopyTo(dc[8..]);
+        w3.CopyTo(dc[12..]);
+
+        var bits = TokenBits(y2Levels, 0, 1, aboveNonZero[8] + leftNonZero[8]);
+        Span<byte> above = stackalloc byte[4];
+        Span<byte> left = stackalloc byte[4];
+        aboveNonZero[..4].CopyTo(above);
+        leftNonZero[..4].CopyTo(left);
+        var step = _lumaQuantizer.Step;
+        long distortion = 0;
+        for (var block = 0; block < 16; block++)
+        {
+            var blockLevels = levels.Slice(block * 16, 16);
+            var blockCoefficients = coefficients.Slice(block * 16, 16);
+            if (!Vp8EncoderKernels.TryQuantize(_lumaQuantizer, Vector128.Create((ReadOnlySpan<int>)blockCoefficients[..4]), Vector128.Create((ReadOnlySpan<int>)blockCoefficients[4..8]), Vector128.Create((ReadOnlySpan<int>)blockCoefficients[8..12]), Vector128.Create((ReadOnlySpan<int>)blockCoefficients[12..]), out var l0, out var l1, out var l2, out var l3))
+            {
+                QuantizeScalar(blockCoefficients, blockLevels, _q.YDc, _q.YAc, first: 1);
+                var low = Vector128.Create((ReadOnlySpan<short>)blockLevels[..8]);
+                var high = Vector128.Create((ReadOnlySpan<short>)blockLevels[8..]);
+                l0 = Vector128.WidenLower(low);
+                l1 = Vector128.WidenUpper(low);
+                l2 = Vector128.WidenLower(high);
+                l3 = Vector128.WidenUpper(high);
+            }
+
+            l0 = l0.WithElement(0, 0);
+            var levelsLow = Vector128.Narrow(l0, l1);
+            var levelsHigh = Vector128.Narrow(l2, l3);
+            levelsLow.CopyTo(blockLevels);
+            levelsHigh.CopyTo(blockLevels[8..]);
+            var context = above[block & 3] + left[block >> 2];
+            bits += TokenBits(blockLevels, 1, 0, context);
+            above[block & 3] = left[block >> 2] = (levelsLow | levelsHigh) != Vector128<short>.Zero ? (byte)1 : (byte)0;
+
+            var blockOffset = offset + ((block >> 2) * 4 * stride) + ((block & 3) * 4);
+            var pixels = Vp8EncoderKernels.InverseDctAdd(
+                Vp8EncoderKernels.LoadColumns(recon, blockOffset, stride),
+                Vp8EncoderKernels.Dequantize(l0, step).WithElement(0, dc[block]),
+                Vp8EncoderKernels.Dequantize(l1, step),
+                Vp8EncoderKernels.Dequantize(l2, step),
+                Vp8EncoderKernels.Dequantize(l3, step));
+            Vp8EncoderKernels.StoreColumns(recon, blockOffset, stride, pixels);
+            distortion += Vp8EncoderKernels.SquaredError(Vp8EncoderKernels.LoadColumns(source, blockOffset, stride), pixels);
+            if (distortion + modeCost >= limit)
+                return double.PositiveInfinity;
+        }
+
+        return distortion + (_lambda * bits) + modeCost;
+    }
+
+    /// <summary>
+    /// <see cref="EncodeChroma"/> plus <paramref name="modeCost"/> with the vector kernels (the same levels, pixels and costs, in the
+    /// same order). The search stops as soon as the distortion and <paramref name="modeCost"/> are not below <paramref name="limit"/>.
+    /// </summary>
+    /// <returns>The rate-distortion cost of the mode, or infinity when it is not below <paramref name="limit"/>.</returns>
+    private double EncodeChromaVector(int offset, Span<short> levels, ReadOnlySpan<byte> aboveNonZero, ReadOnlySpan<byte> leftNonZero, double modeCost, double limit)
+    {
+        var stride = _reconstruction.UVStride;
+        var bits = 0.0;
+        var distortion = 0.0;
+        Span<byte> above = stackalloc byte[2];
+        Span<byte> left = stackalloc byte[2];
+        for (var plane = 0; plane < 2; plane++)
+        {
+            var source = plane == 0 ? _source.U : _source.V;
+            var recon = plane == 0 ? _reconstruction.U : _reconstruction.V;
+            var context = 4 + (plane * 2);
+            aboveNonZero.Slice(context, 2).CopyTo(above);
+            leftNonZero.Slice(context, 2).CopyTo(left);
+            long planeDistortion = 0;
+            for (var block = 0; block < 4; block++)
+            {
+                var blockOffset = offset + ((block >> 1) * 4 * stride) + ((block & 1) * 4);
+                var blockLevels = levels.Slice(((plane * 4) + block) * 16, 16);
+                var sourcePixels = Vp8EncoderKernels.LoadColumns(source, blockOffset, stride);
+                var prediction = Vp8EncoderKernels.LoadColumns(recon, blockOffset, stride);
+                if (!Vp8EncoderKernels.TryEncodeBlock(sourcePixels, prediction, _chromaQuantizer, out var low, out var high, out var pixels))
+                {
+                    Vp8EncoderKernels.EncodeBlockReference(sourcePixels, prediction, _q.UVDc, _q.UVAc, out low, out high, out pixels);
+                }
+
+                low.CopyTo(blockLevels);
+                high.CopyTo(blockLevels[8..]);
+                bits += TokenBits(blockLevels, 0, 2, above[block & 1] + left[block >> 1]);
+                above[block & 1] = left[block >> 1] = (low | high) != Vector128<short>.Zero ? (byte)1 : (byte)0;
+                Vp8EncoderKernels.StoreColumns(recon, blockOffset, stride, pixels);
+                planeDistortion += Vp8EncoderKernels.SquaredError(sourcePixels, pixels);
+            }
+
+            distortion += planeDistortion;
+            if (distortion + modeCost >= limit)
+                return double.PositiveInfinity;
+        }
+
+        return distortion + (_lambda * bits) + modeCost;
     }
 
     private static void GetResidual(ReadOnlySpan<byte> source, ReadOnlySpan<byte> prediction, int stride, int offset, Span<int> residual)
@@ -811,46 +1126,18 @@ internal sealed class Vp8Encoder : IDisposable
     {
         coefficients = coefficients[..16];
         levels = levels[..16];
-
-        // Lane 0 of the first vector is the DC (rounded to nearest), the other lanes AC coefficients (2/3 of a step dead zone)
-        var multiplierFirst = Vector128.Create(1, 3, 3, 3);
-        var offsetFirst = Vector128.Create(dcStep >> 1, acStep, acStep, acStep);
-        var divisorFirst = Vector128.Create((float)dcStep, 3 * acStep, 3 * acStep, 3 * acStep);
-        var multiplier = Vector128.Create(3);
-        var offset = Vector128.Create(acStep);
-        var divisor = Vector128.Create((float)(3 * acStep));
-        var limit = Vector128.Create(1u << 24);
-        var c0 = Vector128.Create(coefficients[..4]);
-        var c1 = Vector128.Create(coefficients.Slice(4, 4));
-        var c2 = Vector128.Create(coefficients.Slice(8, 4));
-        var c3 = Vector128.Create(coefficients.Slice(12, 4));
-        var n0 = (Vector128.Abs(c0) * multiplierFirst) + offsetFirst;
-        var n1 = (Vector128.Abs(c1) * multiplier) + offset;
-        var n2 = (Vector128.Abs(c2) * multiplier) + offset;
-        var n3 = (Vector128.Abs(c3) * multiplier) + offset;
-
-        // Numerators from 2^24 (or wrapped to negative values, compared as unsigned) take the scalar path
-        var tooLarge = Vector128.GreaterThanOrEqual(n0.AsUInt32(), limit) | Vector128.GreaterThanOrEqual(n1.AsUInt32(), limit)
-            | Vector128.GreaterThanOrEqual(n2.AsUInt32(), limit) | Vector128.GreaterThanOrEqual(n3.AsUInt32(), limit);
-        if (tooLarge != Vector128<uint>.Zero)
+        var quantizer = new Vp8EncoderKernels.BlockQuantizer(dcStep, acStep);
+        if (!Vp8EncoderKernels.TryQuantize(quantizer, Vector128.Create(coefficients[..4]), Vector128.Create(coefficients.Slice(4, 4)), Vector128.Create(coefficients.Slice(8, 4)), Vector128.Create(coefficients.Slice(12, 4)), out var l0, out var l1, out var l2, out var l3))
             return false;
 
-        var l0 = Level(c0, n0, divisorFirst);
         if (first > 0)
         {
             l0 = l0.WithElement(0, 0);
         }
 
-        Vector128.Narrow(l0, Level(c1, n1, divisor)).CopyTo(levels[..8]);
-        Vector128.Narrow(Level(c2, n2, divisor), Level(c3, n3, divisor)).CopyTo(levels.Slice(8, 8));
+        Vector128.Narrow(l0, l1).CopyTo(levels[..8]);
+        Vector128.Narrow(l2, l3).CopyTo(levels.Slice(8, 8));
         return true;
-
-        static Vector128<int> Level(Vector128<int> coefficient, Vector128<int> numerator, Vector128<float> divisor)
-        {
-            var quotient = Vector128.ConvertToInt32(Vector128.Floor(Vector128.ConvertToSingle(numerator) / divisor));
-            var level = Vector128.Min(quotient, Vector128.Create(MaxLevel));
-            return Vector128.ConditionalSelect(Vector128.LessThan(coefficient, Vector128<int>.Zero), -level, level);
-        }
     }
 
     /// <summary>The scalar version of <see cref="Quantize"/>, for any coefficient.</summary>
@@ -973,6 +1260,17 @@ internal sealed class Vp8Encoder : IDisposable
         }
     }
 
+    private static int[] CreateTreePaths(ReadOnlySpan<sbyte> tree, int modes)
+    {
+        var paths = new int[modes];
+        for (var mode = 0; mode < modes; mode++)
+        {
+            paths[mode] = Vp8BoolEncoder.GetTreePath(tree, mode);
+        }
+
+        return paths;
+    }
+
     /// <summary>Tabulates <see cref="ModeBits"/> for <paramref name="contexts"/> consecutive probability sets of a tree.</summary>
     private static double[] CreateModeCosts(ReadOnlySpan<sbyte> tree, ReadOnlySpan<byte> probabilities, int modes, int contexts)
     {
@@ -1070,7 +1368,7 @@ internal sealed class Vp8Encoder : IDisposable
             {
                 bits += Cost(ref costs, unsafe(Unsafe.Add(ref p, 2)), true);
                 var sink = new CostSink(bits);
-                WriteLargeValue(unsafe(MemoryMarshal.CreateReadOnlySpan(ref p, Vp8Tables.TokenNodes)), value, ref sink);
+                WriteLargeValue(unsafe(MemoryMarshal.CreateReadOnlySpan(ref p, Vp8Tables.TokenNodes)), -1, value, ref sink);
                 bits = sink.Bits;
                 context = 2;
             }
@@ -1099,12 +1397,14 @@ internal sealed class Vp8Encoder : IDisposable
 
     /// <summary>
     /// Walks the token tree of a block exactly as it is written (RFC 6386 section 13), reporting every boolean with its
-    /// probability: end of block, zero runs, values with their extra bits, signs.
+    /// probability and the index of that probability in the table (-1 for the fixed probabilities): end of block, zero runs,
+    /// values with their extra bits, signs.
     /// </summary>
     private void WalkTokens<TSink>(ReadOnlySpan<short> levels, int first, int type, int context, ref TSink write)
         where TSink : struct, IBoolSink
     {
-        var probabilities = _probabilities.AsSpan(type * 8 * 3 * Vp8Tables.TokenNodes, 8 * 3 * Vp8Tables.TokenNodes);
+        var typeOffset = type * 8 * 3 * Vp8Tables.TokenNodes;
+        var probabilities = _probabilities.AsSpan(typeOffset, 8 * 3 * Vp8Tables.TokenNodes);
         var bands = Vp8Tables.Bands;
         var zigzag = Vp8Tables.Zigzag;
         var last = -1;
@@ -1120,86 +1420,88 @@ internal sealed class Vp8Encoder : IDisposable
         var previousWasZero = false;
         for (var i = first; i < 16; i++)
         {
-            var p = probabilities.Slice(((bands[i] * 3) + context) * Vp8Tables.TokenNodes, Vp8Tables.TokenNodes);
+            var offset = ((bands[i] * 3) + context) * Vp8Tables.TokenNodes;
+            var p = probabilities.Slice(offset, Vp8Tables.TokenNodes);
+            var node = typeOffset + offset;
             if (!previousWasZero)
             {
                 if (i > last)
                 {
-                    write.Write(p[0], false); // end of block
+                    write.Write(node, p[0], false); // end of block
                     return;
                 }
 
-                write.Write(p[0], true);
+                write.Write(node, p[0], true);
             }
 
             var level = (int)levels[zigzag[i]];
             var value = Math.Abs(level);
             if (value == 0)
             {
-                write.Write(p[1], false);
+                write.Write(node + 1, p[1], false);
                 previousWasZero = true;
                 context = 0;
                 continue;
             }
 
-            write.Write(p[1], true);
+            write.Write(node + 1, p[1], true);
             previousWasZero = false;
             if (value == 1)
             {
-                write.Write(p[2], false);
+                write.Write(node + 2, p[2], false);
                 context = 1;
             }
             else
             {
-                write.Write(p[2], true);
-                WriteLargeValue(p, value, ref write);
+                write.Write(node + 2, p[2], true);
+                WriteLargeValue(p, node, value, ref write);
                 context = 2;
             }
 
-            write.Write(128, level < 0);
+            write.Write(-1, 128, level < 0);
         }
     }
 
-    private static void WriteLargeValue<TSink>(ReadOnlySpan<byte> p, int value, ref TSink write)
+    private static void WriteLargeValue<TSink>(ReadOnlySpan<byte> p, int node, int value, ref TSink write)
         where TSink : struct, IBoolSink
     {
         if (value <= 4)
         {
-            write.Write(p[3], false);
+            write.Write(node + 3, p[3], false);
             if (value == 2)
             {
-                write.Write(p[4], false);
+                write.Write(node + 4, p[4], false);
             }
             else
             {
-                write.Write(p[4], true);
-                write.Write(p[5], value == 4);
+                write.Write(node + 4, p[4], true);
+                write.Write(node + 5, p[5], value == 4);
             }
 
             return;
         }
 
-        write.Write(p[3], true);
+        write.Write(node + 3, p[3], true);
         if (value <= 10)
         {
-            write.Write(p[6], false);
+            write.Write(node + 6, p[6], false);
             if (value <= 6)
             {
-                write.Write(p[7], false);
-                write.Write(159, value == 6);
+                write.Write(node + 7, p[7], false);
+                write.Write(-1, 159, value == 6);
             }
             else
             {
-                write.Write(p[7], true);
+                write.Write(node + 7, p[7], true);
                 var extra = value - 7;
-                write.Write(165, (extra & 2) != 0);
-                write.Write(145, (extra & 1) != 0);
+                write.Write(-1, 165, (extra & 2) != 0);
+                write.Write(-1, 145, (extra & 1) != 0);
             }
 
             return;
         }
 
-        write.Write(p[6], true);
+        write.Write(node + 6, p[6], true);
         int category;
         ReadOnlySpan<byte> extraProbabilities;
         if (value <= 18)
@@ -1225,12 +1527,12 @@ internal sealed class Vp8Encoder : IDisposable
 
         var b1 = category >> 1;
         var b0 = category & 1;
-        write.Write(p[8], b1 != 0);
-        write.Write(p[9 + b1], b0 != 0);
+        write.Write(node + 8, p[8], b1 != 0);
+        write.Write(node + 9 + b1, p[9 + b1], b0 != 0);
         var extraValue = value - (3 + (8 << category));
         for (var i = 0; i < extraProbabilities.Length; i++)
         {
-            write.Write(extraProbabilities[i], ((extraValue >> (extraProbabilities.Length - 1 - i)) & 1) != 0);
+            write.Write(-1, extraProbabilities[i], ((extraValue >> (extraProbabilities.Length - 1 - i)) & 1) != 0);
         }
     }
 
@@ -1272,15 +1574,17 @@ internal sealed class Vp8Encoder : IDisposable
             return;
         }
 
+        // Level 0 is the reconstruction itself; each other level filters a copy of it
         var bestLevel = 0;
-        var bestDistortion = FilteredDistortion(0);
+        var bestDistortion = Distortion(_reconstruction);
+        using var copy = Vp8Planes.Create(_scope, _width, _height);
         foreach (var candidate in new[] { baseLevel / 2, baseLevel, Math.Min(63, (baseLevel * 3) / 2) })
         {
             _cancellationToken.ThrowIfCancellationRequested();
             if (candidate == 0)
                 continue;
 
-            var distortion = FilteredDistortion(candidate);
+            var distortion = FilteredDistortion(candidate, copy);
             if (distortion < bestDistortion)
             {
                 bestDistortion = distortion;
@@ -1291,45 +1595,31 @@ internal sealed class Vp8Encoder : IDisposable
         _filterLevel = bestLevel;
     }
 
-    private long FilteredDistortion(int level)
+    private long FilteredDistortion(int level, Vp8Planes copy)
     {
-        using var copy = Vp8Planes.Create(_scope, _width, _height);
         _reconstruction.Y.CopyTo(copy.Y);
         _reconstruction.U.CopyTo(copy.U);
         _reconstruction.V.CopyTo(copy.V);
-        if (level > 0)
+        var info = new byte[_macroblocks.Length];
+        for (var i = 0; i < info.Length; i++)
         {
-            var info = new byte[_macroblocks.Length];
-            for (var i = 0; i < info.Length; i++)
-            {
-                var mb = _macroblocks[i];
-                var inner = mb.YMode == Vp8Tables.BPred || mb.HasCoefficients;
-                info[i] = (byte)(level | (inner ? 0x80 : 0));
-            }
-
-            Vp8LoopFilter.Apply(copy, info, _mbWidth, _mbHeight, simple: false, sharpness: 0);
+            var mb = _macroblocks[i];
+            var inner = mb.YMode == Vp8Tables.BPred || mb.HasCoefficients;
+            info[i] = (byte)(level | (inner ? 0x80 : 0));
         }
 
-        long sum = 0;
-        sum += PlaneDistortion(_source.Y, copy.Y, _source.YStride, _width, _height);
-        sum += PlaneDistortion(_source.U, copy.U, _source.UVStride, (_width + 1) >> 1, (_height + 1) >> 1);
-        sum += PlaneDistortion(_source.V, copy.V, _source.UVStride, (_width + 1) >> 1, (_height + 1) >> 1);
-        return sum;
+        Vp8LoopFilter.Apply(copy, info, _mbWidth, _mbHeight, simple: false, sharpness: 0);
+        return Distortion(copy);
     }
 
-    private static long PlaneDistortion(ReadOnlySpan<byte> source, ReadOnlySpan<byte> plane, int stride, int width, int height)
+    /// <summary>Computes the sum of the squared differences of the visible samples of <paramref name="planes"/> and the source.</summary>
+    private long Distortion(Vp8Planes planes)
     {
-        long sum = 0;
-        for (var y = 0; y < height; y++)
-        {
-            for (var x = 0; x < width; x++)
-            {
-                var difference = source[(y * stride) + x] - plane[(y * stride) + x];
-                sum += difference * difference;
-            }
-        }
-
-        return sum;
+        var chromaWidth = (_width + 1) >> 1;
+        var chromaHeight = (_height + 1) >> 1;
+        return Vp8EncoderKernels.PlaneSquaredError(_source.Y, planes.Y, _source.YStride, _width, _height)
+            + Vp8EncoderKernels.PlaneSquaredError(_source.U, planes.U, _source.UVStride, chromaWidth, chromaHeight)
+            + Vp8EncoderKernels.PlaneSquaredError(_source.V, planes.V, _source.UVStride, chromaWidth, chromaHeight);
     }
 
     /// <summary>Counts the token statistics with the decoder's contexts and updates the probabilities that save bits.</summary>
@@ -1340,7 +1630,8 @@ internal sealed class Vp8Encoder : IDisposable
             return;
 
         var counts = new int[_probabilities.Length * 2];
-        WalkFrameTokens((type, band, context, node, value) => counts[((((((type * 8) + band) * 3) + context) * Vp8Tables.TokenNodes) + node) * 2 + (value ? 1 : 0)]++);
+        var sink = new CountSink(counts);
+        WalkFrameTokens(ref sink);
         var update = Vp8Tables.TokenUpdateProbabilities;
         for (var i = 0; i < _probabilities.Length; i++)
         {
@@ -1364,8 +1655,9 @@ internal sealed class Vp8Encoder : IDisposable
         }
     }
 
-    /// <summary>Walks the tokens of every macroblock with the decoder's contexts, reporting (type, band, context, node, value) for the tree nodes.</summary>
-    private void WalkFrameTokens(Action<int, int, int, int, bool> visit)
+    /// <summary>Walks the tokens of every macroblock with the decoder's contexts.</summary>
+    private void WalkFrameTokens<TSink>(ref TSink sink)
+        where TSink : struct, IBoolSink
     {
         var aboveNonZero = new byte[_mbWidth * 9];
         var leftNonZero = new byte[9];
@@ -1392,20 +1684,21 @@ internal sealed class Vp8Encoder : IDisposable
                     continue;
                 }
 
-                ForEachBlock(levels, hasY2, above, leftNonZero, (blockLevels, first, type, context) => WalkTokensWithNodes(blockLevels, first, type, context, visit));
+                WalkMacroblockTokens(levels, hasY2, above, leftNonZero, ref sink);
             }
         }
     }
 
-    /// <summary>Calls <paramref name="action"/> for every coded block of a macroblock in bitstream order, with its context, and updates the contexts.</summary>
-    private static void ForEachBlock(ReadOnlySpan<short> levels, bool hasY2, Span<byte> above, Span<byte> left, BlockAction action)
+    /// <summary>Walks the tokens of every coded block of a macroblock in bitstream order, with its context, and updates the contexts.</summary>
+    private void WalkMacroblockTokens<TSink>(ReadOnlySpan<short> levels, bool hasY2, Span<byte> above, Span<byte> left, ref TSink sink)
+        where TSink : struct, IBoolSink
     {
         var first = 0;
         var yType = 3;
         if (hasY2)
         {
             var y2 = levels.Slice(24 * 16, 16);
-            action(y2, 0, 1, above[8] + left[8]);
+            WalkTokens(y2, 0, 1, above[8] + left[8], ref sink);
             above[8] = left[8] = HasLevels(y2, 0) ? (byte)1 : (byte)0;
             first = 1;
             yType = 0;
@@ -1414,7 +1707,7 @@ internal sealed class Vp8Encoder : IDisposable
         for (var block = 0; block < 16; block++)
         {
             var blockLevels = levels.Slice(block * 16, 16);
-            action(blockLevels, first, yType, above[block & 3] + left[block >> 2]);
+            WalkTokens(blockLevels, first, yType, above[block & 3] + left[block >> 2], ref sink);
             above[block & 3] = left[block >> 2] = HasLevels(blockLevels, first) ? (byte)1 : (byte)0;
         }
 
@@ -1424,89 +1717,9 @@ internal sealed class Vp8Encoder : IDisposable
             for (var block = 0; block < 4; block++)
             {
                 var blockLevels = levels.Slice((16 + (plane * 4) + block) * 16, 16);
-                action(blockLevels, 0, 2, above[context + (block & 1)] + left[context + (block >> 1)]);
+                WalkTokens(blockLevels, 0, 2, above[context + (block & 1)] + left[context + (block >> 1)], ref sink);
                 above[context + (block & 1)] = left[context + (block >> 1)] = HasLevels(blockLevels, 0) ? (byte)1 : (byte)0;
             }
-        }
-    }
-
-    private delegate void BlockAction(ReadOnlySpan<short> levels, int first, int type, int context);
-
-    private static void WalkTokensWithNodes(ReadOnlySpan<short> levels, int first, int type, int context, Action<int, int, int, int, bool> visit)
-    {
-        // Same walk as WalkTokens, reporting the probability index instead of the probability
-        var bands = Vp8Tables.Bands;
-        var zigzag = Vp8Tables.Zigzag;
-        var last = -1;
-        for (var i = 15; i >= first; i--)
-        {
-            if (levels[zigzag[i]] != 0)
-            {
-                last = i;
-                break;
-            }
-        }
-
-        var previousWasZero = false;
-        for (var i = first; i < 16; i++)
-        {
-            var band = bands[i];
-            if (!previousWasZero)
-            {
-                if (i > last)
-                {
-                    visit(type, band, context, 0, false);
-                    return;
-                }
-
-                visit(type, band, context, 0, true);
-            }
-
-            var value = Math.Abs((int)levels[zigzag[i]]);
-            if (value == 0)
-            {
-                visit(type, band, context, 1, false);
-                previousWasZero = true;
-                context = 0;
-                continue;
-            }
-
-            visit(type, band, context, 1, true);
-            previousWasZero = false;
-            if (value == 1)
-            {
-                visit(type, band, context, 2, false);
-                context = 1;
-                continue;
-            }
-
-            visit(type, band, context, 2, true);
-            if (value <= 4)
-            {
-                visit(type, band, context, 3, false);
-                visit(type, band, context, 4, value != 2);
-                if (value != 2)
-                {
-                    visit(type, band, context, 5, value == 4);
-                }
-            }
-            else
-            {
-                visit(type, band, context, 3, true);
-                visit(type, band, context, 6, value > 10);
-                if (value <= 10)
-                {
-                    visit(type, band, context, 7, value > 6);
-                }
-                else
-                {
-                    var category = value <= 18 ? 0 : value <= 34 ? 1 : value <= 66 ? 2 : 3;
-                    visit(type, band, context, 8, category >= 2);
-                    visit(type, band, context, 9 + (category >> 1), (category & 1) != 0);
-                }
-            }
-
-            context = 2;
         }
     }
 
@@ -1546,7 +1759,7 @@ internal sealed class Vp8Encoder : IDisposable
                     header.WriteBool(_skipProbability, !mb.HasCoefficients);
                 }
 
-                header.WriteTree(KeyFrameYModeTree, Vp8Tables.KeyFrameYModeProbabilities, mb.YMode);
+                header.WriteTreePath(KeyFrameYModeTree, Vp8Tables.KeyFrameYModeProbabilities, YModePaths[mb.YMode]);
                 var above = aboveModes.AsSpan(mbX * 4, 4);
                 if (!hasY2)
                 {
@@ -1556,7 +1769,7 @@ internal sealed class Vp8Encoder : IDisposable
                         {
                             var mode = mb.GetSubMode((by * 4) + bx);
                             var probabilities = Vp8Tables.KeyFrameBModeProbabilities.Slice(((above[bx] * 10) + leftModes[by]) * 9, 9);
-                            header.WriteTree(BModeTree, probabilities, mode);
+                            header.WriteTreePath(BModeTree, probabilities, BModePaths[mode]);
                             above[bx] = leftModes[by] = mode;
                         }
                     }
@@ -1574,7 +1787,7 @@ internal sealed class Vp8Encoder : IDisposable
                     leftModes.AsSpan().Fill((byte)implied);
                 }
 
-                header.WriteTree(UVModeTree, Vp8Tables.KeyFrameUVModeProbabilities, mb.UVMode);
+                header.WriteTreePath(UVModeTree, Vp8Tables.KeyFrameUVModeProbabilities, UVModePaths[mb.UVMode]);
 
                 // Tokens
                 var nonZeroAbove = aboveNonZero.AsSpan(mbX * 9, 9);
@@ -1591,11 +1804,8 @@ internal sealed class Vp8Encoder : IDisposable
                 }
 
                 var levels = Levels.Slice(index * 25 * 16, 25 * 16);
-                ForEachBlock(levels, hasY2, nonZeroAbove, leftNonZero, (blockLevels, first, type, context) =>
-                {
-                    var sink = new EncoderSink(tokens);
-                    WalkTokens(blockLevels, first, type, context, ref sink);
-                });
+                var sink = new EncoderSink(tokens);
+                WalkMacroblockTokens(levels, hasY2, nonZeroAbove, leftNonZero, ref sink);
             }
         }
 
@@ -1685,10 +1895,10 @@ internal sealed class Vp8Encoder : IDisposable
 
     private static byte ClampByte(int value) => (byte)Math.Clamp(value, 0, 255);
 
-    /// <summary>Receives the booleans of a token walk.</summary>
+    /// <summary>Receives the booleans of a token walk: the index of their probability in the token table (-1 for a fixed probability), the probability and the value.</summary>
     private interface IBoolSink
     {
-        void Write(int probability, bool value);
+        void Write(int node, int probability, bool value);
     }
 
     /// <summary>Sums the estimated cost in bits of the booleans.</summary>
@@ -1698,14 +1908,27 @@ internal sealed class Vp8Encoder : IDisposable
         public double Bits { get; private set; } = bits;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public void Write(int probability, bool value) => Bits += BoolBits(probability, value);
+        public void Write(int node, int probability, bool value) => Bits += BoolBits(probability, value);
     }
 
     /// <summary>Writes the booleans to a boolean encoder.</summary>
     [StructLayout(LayoutKind.Auto)]
     private readonly struct EncoderSink(Vp8BoolEncoder encoder) : IBoolSink
     {
-        public void Write(int probability, bool value) => encoder.WriteBool(probability, value);
+        public void Write(int node, int probability, bool value) => encoder.WriteBool(probability, value);
+    }
+
+    /// <summary>Counts the booleans of each probability of the token table (false at <c>2 * node</c>, true at <c>2 * node + 1</c>).</summary>
+    [StructLayout(LayoutKind.Auto)]
+    private readonly struct CountSink(int[] counts) : IBoolSink
+    {
+        public void Write(int node, int probability, bool value)
+        {
+            if (node >= 0)
+            {
+                counts[(2 * node) + (value ? 1 : 0)]++;
+            }
+        }
     }
 
     [StructLayout(LayoutKind.Auto)]

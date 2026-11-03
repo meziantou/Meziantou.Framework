@@ -73,6 +73,9 @@ internal static class Av1Reconstruction
         }
 
         dequant.Clear();
+        var log2Tw = Math.Min(5, (int)log2W);
+        var lastRow = 0;
+        var lastColumn = 0;
         for (var c = 0; c < eob; c++)
         {
             var i = scan[c];
@@ -85,9 +88,11 @@ internal static class Av1Reconstruction
                 q = ((q * quantizerMatrix[i]) + 16) >> 5;
 
             dequant[i] = Dequantize(coefficient, q, dqDenom, min, max);
+            lastRow = Math.Max(lastRow, i >> log2Tw);
+            lastColumn = Math.Max(lastColumn, i & (tw - 1));
         }
 
-        Av1InverseTransform.Transform(dequant, residual, txSz, txType, lossless, bitDepth);
+        Av1InverseTransform.Transform(dequant, residual, txSz, txType, lossless, bitDepth, lastRow + 1, lastColumn + 1);
 
         var flipUD = txType is Av1Constants.FlipadstDct or Av1Constants.FlipadstAdst or Av1Constants.VFlipadst or Av1Constants.FlipadstFlipadst;
         var flipLR = txType is Av1Constants.DctFlipadst or Av1Constants.AdstFlipadst or Av1Constants.HFlipadst or Av1Constants.FlipadstFlipadst;
@@ -112,7 +117,7 @@ internal static class Av1Reconstruction
 
     /// <summary>
     /// Returns the residual of a DCT_DCT transform block whose only coefficient that is not zero is the DC coefficient:
-    /// every sample of the residual of <see cref="Av1InverseTransform.Transform"/> is this value.
+    /// every sample of the residual of <see cref="Av1InverseTransform.Transform(ReadOnlySpan{int}, Span{int}, int, int, bool, int)"/> is this value.
     /// </summary>
     /// <param name="dc">The dequantized DC coefficient.</param>
     /// <param name="txSz">The transform size.</param>

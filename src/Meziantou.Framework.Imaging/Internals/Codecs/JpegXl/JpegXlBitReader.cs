@@ -210,7 +210,27 @@ internal sealed class JpegXlBitReader
             throw JpegXlFormat.Invalid("the padding bits of the codestream are not zero.");
     }
 
-    private void Refill()
+    /// <summary>Gets the data from its start to its end, for a reader that keeps the state of this one in locals (<see cref="GetState"/>).</summary>
+    internal ReadOnlySpan<byte> DataToEnd => _data.AsSpan(0, _end);
+
+    /// <summary>Gets the state of the reader: the bits read ahead, their number, and the position of the next byte.</summary>
+    internal void GetState(out ulong bits, out int bitCount, out int position)
+    {
+        bits = _bits;
+        bitCount = _bitCount;
+        position = (int)_position;
+    }
+
+    /// <summary>Sets the state of the reader, as <see cref="GetState"/> returned it once the bits were consumed the same way.</summary>
+    internal void SetState(ulong bits, int bitCount, int position)
+    {
+        _bits = bits;
+        _bitCount = bitCount;
+        _position = position;
+    }
+
+    /// <summary>Refills the bits read ahead: they then hold at least 56 bits.</summary>
+    internal void Refill()
     {
         // Eight bytes at once when they are all in the data: the whole bytes that fit are counted, and the bits above them
         // are those of the next byte, which the next refill sets again with the same values

@@ -1,3 +1,5 @@
+using System.Numerics;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -37,16 +39,37 @@ internal sealed class Vp8BoolEncoder : IDisposable
             _range = split;
         }
 
-        while (_range < 128)
+        if (_range < 128)
         {
-            _range <<= 1;
-            if ((_bottom & (1u << 31)) != 0)
+            Normalize();
+        }
+    }
+
+    /// <summary>
+    /// Doubles the range until it is at least 128, shifting the bottom with it: the bits shifted out of the top of the bottom
+    /// are carries into the bytes already written, and a byte is written after every 8 bits.
+    /// </summary>
+    /// <remarks>
+    /// The shifts are done by runs that end at the next byte (at most two runs, the range being at least 1): one carry per set
+    /// bit shifted out, as when shifting one bit at a time.
+    /// </remarks>
+    private void Normalize()
+    {
+        var shift = BitOperations.LeadingZeroCount(_range) - 24;
+        _range <<= shift;
+        while (shift > 0)
+        {
+            var run = Math.Min(shift, _bitCount);
+            var carries = BitOperations.PopCount(_bottom >> (32 - run));
+            for (var i = 0; i < carries; i++)
             {
                 _output.PropagateCarry(_output.Length - 1);
             }
 
-            _bottom <<= 1;
-            if (--_bitCount == 0)
+            _bottom <<= run;
+            _bitCount -= run;
+            shift -= run;
+            if (_bitCount == 0)
             {
                 _output.Write((byte)(_bottom >> 24));
                 _bottom &= (1u << 24) - 1;
@@ -79,20 +102,36 @@ internal sealed class Vp8BoolEncoder : IDisposable
     }
 
     /// <summary>Encodes a tree-coded value (the inverse of <see cref="Vp8BoolDecoder.ReadTree"/>).</summary>
-    public void WriteTree(ReadOnlySpan<sbyte> tree, ReadOnlySpan<byte> probabilities, int value)
+    public void WriteTree(ReadOnlySpan<sbyte> tree, ReadOnlySpan<byte> probabilities, int value) => WriteTreePath(tree, probabilities, GetTreePath(tree, value));
+
+    /// <summary>Encodes a tree-coded value from its path (<see cref="GetTreePath"/>).</summary>
+    public void WriteTreePath(ReadOnlySpan<sbyte> tree, ReadOnlySpan<byte> probabilities, int path)
+    {
+        var bits = path >> 8;
+        var node = 0;
+        for (var i = (path & 0xFF) - 1; i >= 0; i--)
+        {
+            var bit = (bits >> i) & 1;
+            WriteBool(probabilities[node >> 1], bit != 0);
+            node = tree[node + bit];
+        }
+    }
+
+    /// <summary>Gets the branches from the root of a tree to a leaf: the branches (the first one in the highest bit) shifted by 8, and their count.</summary>
+    public static int GetTreePath(ReadOnlySpan<sbyte> tree, int value)
     {
         Span<int> path = stackalloc int[16];
         var length = FindPath(tree, 0, -value, path, 0);
         if (length < 0)
             throw new ArgumentOutOfRangeException(nameof(value), value, "The value is not a leaf of the tree.");
 
-        var node = 0;
+        var bits = 0;
         for (var i = 0; i < length; i++)
         {
-            var bit = path[i];
-            WriteBool(probabilities[node >> 1], bit != 0);
-            node = tree[node + bit];
+            bits = (bits << 1) | path[i];
         }
+
+        return (bits << 8) | length;
     }
 
     /// <summary>Flushes the remaining bits (four bytes).</summary>

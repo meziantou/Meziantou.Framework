@@ -750,11 +750,7 @@ internal sealed class GifEncoderCodec : ImageEncoderCodec
             }
             else
             {
-                for (var x = 0; x < _width; x++)
-                {
-                    var pixel = source.Slice(3 * x, 3);
-                    keys[x] = (pixel[0] << 16) | (pixel[1] << 8) | pixel[2];
-                }
+                PixelConverter.Rgb24ToColorKeys(source[..(3 * _width)], keys);
             }
         }
 

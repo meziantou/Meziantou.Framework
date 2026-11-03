@@ -555,13 +555,31 @@ public sealed class TgaCodecTests
     }
 
     [Fact]
-    public void EncodedFilesRoundTripThroughTheLibrary()
+    public async Task EncodedFilesRoundTripThroughTheLibrary()
     {
         using var source = CreateImage(17, 9, seed: 2);
         foreach (var compression in new[] { TgaCompression.None, TgaCompression.RunLength })
         {
             using var decoded = Image.Load<Rgba32>(Save(source, new TgaEncoder { Compression = compression }));
             Assert.Equal(GetPixels(source.Frames[0]), GetPixels(decoded.Frames[0]));
+        }
+
+        // Every stored layout, with packets of up to 128 pixels, read whole and in reads that split packets and rows
+        using var wide = CreateImage(300, 7, seed: 3);
+        foreach (var format in new[] { PixelFormat.Rgba32, PixelFormat.Rgb24, PixelFormat.Gray8 })
+        {
+            using var converted = ConvertTo(wide, format);
+            using var expected = converted.CloneAs<Rgba32>();
+            foreach (var compression in new[] { TgaCompression.None, TgaCompression.RunLength })
+            {
+                var data = Save(converted, new TgaEncoder { Compression = compression });
+                using var decoded = Image.Load<Rgba32>(data);
+                Assert.Equal(GetPixels(expected.Frames[0]), GetPixels(decoded.Frames[0]));
+
+                await using var stream = new TestInputStream(data) { Seekable = false, MaxBytesPerRead = 7 };
+                using var streamed = await Image.LoadAsync<Rgba32>(stream, cancellationToken: XunitCancellationToken);
+                Assert.Equal(GetPixels(expected.Frames[0]), GetPixels(streamed.Frames[0]));
+            }
         }
     }
 

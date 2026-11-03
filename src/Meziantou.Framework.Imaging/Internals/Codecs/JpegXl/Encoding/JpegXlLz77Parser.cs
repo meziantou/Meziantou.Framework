@@ -43,8 +43,16 @@ internal sealed class JpegXlLz77Parser
         0xe5, 0x05, 0xf4, 0xd7, 0x17, 0xe6, 0x06, 0xf5, 0xe7, 0x07, 0xf6, 0xf7,
     ];
 
+    /// <summary>The distances whose short distance code is read from a table; the larger ones are decomposed into rows and columns.</summary>
+    private const int DirectDistanceCount = 129;
+
     private readonly float[] _tokenCosts;
     private readonly int _maxChain;
+
+    // The code of the short distances (-1 for the others): every distance up to 128, then the larger ones by row and column
+    private readonly int[] _directCodes = new int[DirectDistanceCount];
+    private readonly int[] _rowCodes = new int[8 * 16];
+    private int _codesMultiplier = -1;
     private int[] _heads = [];
     private int[] _previous = [];
     private float[] _prefix = [];
@@ -125,17 +133,8 @@ internal sealed class JpegXlLz77Parser
             prefix[i + 1] = prefix[i] + GetValueCost(values[i]);
         }
 
-        // The codes of the short distances, the shortest code first
-        var specials = new Dictionary<int, int>();
-        for (var code = SpecialDistanceCount - 1; code >= 0; code--)
-        {
-            var special = SpecialDistances[code];
-            var offset = Math.Max(1, (long)((special >> 4) - 7) + ((long)distanceMultiplier * (special & 7)));
-            if (offset <= int.MaxValue)
-            {
-                specials[(int)offset] = code;
-            }
-        }
+        var specials = new DistanceCodes(_directCodes, _rowCodes, distanceMultiplier);
+        PrepareDistanceCodes(distanceMultiplier);
 
         var position = 0;
         var searchFrom = 0;
@@ -149,10 +148,10 @@ internal sealed class JpegXlLz77Parser
             if (position >= searchFrom && position + JpegXlModularEntropyCode.Lz77MinLength <= count && prefix[reach] - prefix[position] > MinCopyCost)
             {
                 // The value on the left and the one above, then the previous positions of the same three values
-                best = Try(values, prefix, position, 1, specials, best, ref longest);
+                best = Try(values, prefix, position, 1, in specials, best, ref longest);
                 if (distanceMultiplier > 1)
                 {
-                    best = Try(values, prefix, position, distanceMultiplier, specials, best, ref longest);
+                    best = Try(values, prefix, position, distanceMultiplier, in specials, best, ref longest);
                 }
 
                 var candidate = _heads[Hash(values, position)];
@@ -164,7 +163,7 @@ internal sealed class JpegXlLz77Parser
 
                     if (distance != 1 && distance != distanceMultiplier)
                     {
-                        best = Try(values, prefix, position, distance, specials, best, ref longest);
+                        best = Try(values, prefix, position, distance, in specials, best, ref longest);
                     }
 
                     candidate = _previous[candidate];
@@ -173,7 +172,7 @@ internal sealed class JpegXlLz77Parser
 
             if (best.Length >= JpegXlModularEntropyCode.Lz77MinLength)
             {
-                sink.AddCopy((int)(values[position] >> 32), best.Length, GetDistanceCode(best.Distance, specials));
+                sink.AddCopy((int)(values[position] >> 32), best.Length, specials.Get(best.Distance));
                 var end = position + best.Length;
                 for (; position < end; position++)
                 {
@@ -197,7 +196,8 @@ internal sealed class JpegXlLz77Parser
     }
 
     /// <summary>The copy of the values at <paramref name="distance"/> when it saves more bits than <paramref name="best"/>.</summary>
-    private static Match Try(ReadOnlySpan<ulong> values, ReadOnlySpan<float> prefix, int position, int distance, Dictionary<int, int> specials, Match best, ref int longest)
+    [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
+    private static Match Try(ReadOnlySpan<ulong> values, ReadOnlySpan<float> prefix, int position, int distance, in DistanceCodes specials, Match best, ref int longest)
     {
         if (distance > position)
             return best;
@@ -205,6 +205,13 @@ internal sealed class JpegXlLz77Parser
         // The values of a copy are those of the stream: the contexts do not matter
         var source = position - distance;
         var limit = Math.Min(values.Length - position, MaxLength);
+
+        // Once a copy is found, a candidate is kept only when it is longer, so the value after the length of the copy must
+        // match; the longest match no longer matters then, since a copy is written
+        var bestLength = best.Length;
+        if (bestLength >= JpegXlModularEntropyCode.Lz77MinLength && (bestLength >= limit || (uint)values[source + bestLength] != (uint)values[position + bestLength]))
+            return best;
+
         var length = 0;
         while (length < limit && (uint)values[source + length] == (uint)values[position + length])
         {
@@ -215,11 +222,55 @@ internal sealed class JpegXlLz77Parser
         if (length < JpegXlModularEntropyCode.Lz77MinLength || length <= best.Length)
             return best;
 
-        var gain = prefix[position + length] - prefix[position] - GetCopyCost(length, GetDistanceCode(distance, specials));
+        var gain = prefix[position + length] - prefix[position] - GetCopyCost(length, specials.Get(distance));
         return gain > best.Gain ? new Match(length, distance, gain) : best;
     }
 
-    private static uint GetDistanceCode(int distance, Dictionary<int, int> specials) => specials.TryGetValue(distance, out var code) ? (uint)code : (uint)(distance + SpecialDistanceCount - 1);
+    /// <summary>
+    /// Fills the tables of the short distance codes of a row length: a distance that several short distances give (or that
+    /// a short distance on the left of the first column clamps to 1) takes the smallest code.
+    /// </summary>
+    private void PrepareDistanceCodes(int distanceMultiplier)
+    {
+        if (_codesMultiplier == distanceMultiplier)
+            return;
+
+        FillDistanceCodes(_directCodes, _rowCodes, distanceMultiplier);
+        _codesMultiplier = distanceMultiplier;
+    }
+
+    /// <summary>Returns the code of a distance in a stream whose rows are <paramref name="distanceMultiplier"/> values long.</summary>
+    internal static uint GetDistanceCode(int distance, int distanceMultiplier)
+    {
+        Span<int> directCodes = stackalloc int[DirectDistanceCount];
+        Span<int> rowCodes = stackalloc int[8 * 16];
+        FillDistanceCodes(directCodes, rowCodes, distanceMultiplier);
+        return new DistanceCodes(directCodes, rowCodes, distanceMultiplier).Get(distance);
+    }
+
+    private static void FillDistanceCodes(Span<int> directCodes, Span<int> rowCodes, int distanceMultiplier)
+    {
+        directCodes.Fill(-1);
+        rowCodes.Fill(-1);
+        for (var code = SpecialDistanceCount - 1; code >= 0; code--)
+        {
+            var special = SpecialDistances[code];
+            var column = (special >> 4) - 7;
+            var row = special & 7;
+            var offset = column + ((long)distanceMultiplier * row);
+            var clamped = Math.Max(1, offset);
+            if (clamped < DirectDistanceCount)
+            {
+                directCodes[(int)clamped] = code;
+            }
+
+            // A larger distance is not clamped
+            if (offset >= DirectDistanceCount && offset <= int.MaxValue)
+            {
+                rowCodes[(row * 16) + column + 7] = code;
+            }
+        }
+    }
 
     private void Insert(ReadOnlySpan<ulong> values, int index)
     {
@@ -254,4 +305,36 @@ internal sealed class JpegXlLz77Parser
 
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
     private readonly record struct Match(int Length, int Distance, double Gain);
+
+    /// <summary>The code of a distance: one of the 120 short distances, otherwise the distance plus 119.</summary>
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
+    private readonly ref struct DistanceCodes(ReadOnlySpan<int> directCodes, ReadOnlySpan<int> rowCodes, int distanceMultiplier)
+    {
+        private readonly ReadOnlySpan<int> _directCodes = directCodes;
+        private readonly ReadOnlySpan<int> _rowCodes = rowCodes;
+        private readonly int _distanceMultiplier = distanceMultiplier;
+
+        public uint Get(int distance)
+        {
+            int code;
+            if (distance < DirectDistanceCount)
+            {
+                code = _directCodes[distance];
+            }
+            else if (_distanceMultiplier >= 16)
+            {
+                // A row is longer than the 16 columns of the short distances: a distance is one row and one column at most
+                var row = (int)(((long)distance + 7) / _distanceMultiplier);
+                var column = (int)(distance - ((long)row * _distanceMultiplier));
+                code = row <= 7 && column <= 8 ? _rowCodes[(row * 16) + column + 7] : -1;
+            }
+            else
+            {
+                // The short distances of a shorter row are all below 129
+                code = -1;
+            }
+
+            return code >= 0 ? (uint)code : (uint)(distance + SpecialDistanceCount - 1);
+        }
+    }
 }

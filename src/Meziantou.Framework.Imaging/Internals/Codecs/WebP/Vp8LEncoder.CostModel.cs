@@ -38,12 +38,20 @@ internal sealed partial class Vp8LEncoder
         _ => 2,
     };
 
+    /// <summary>Gets the number of hash chain entries the second parse searches at a pixel.</summary>
+    private int CostModelChainDepth => _effort switch
+    {
+        <= 6 => 64,
+        <= 8 => 128,
+        _ => 512,
+    };
+
     /// <summary>
     /// Parses the pixels again with the costs of <paramref name="statistics"/>, and keeps the parse when it is estimated smaller.
-    /// <paramref name="previous"/> holds the hash chains of the first parse (every position inserted).
+    /// <paramref name="links"/> holds the triple links of every position (<see cref="LinkTriples"/>).
     /// </summary>
     /// <returns>The number of tokens of the kept parse.</returns>
-    private int ParseWithCostModel(ReadOnlySpan<uint> pixels, int width, ReadOnlySpan<uint> previous, Span<uint> tokens, int tokenCount, ref Statistics statistics)
+    private int ParseWithCostModel(ReadOnlySpan<uint> pixels, int width, ReadOnlySpan<uint> links, Span<uint> tokens, int tokenCount, ref Statistics statistics)
     {
         var count = pixels.Length;
         if (count < MinLength)
@@ -54,7 +62,7 @@ internal sealed partial class Vp8LEncoder
         for (var round = 0; round < CostModelRounds; round++)
         {
             var model = new CostModel(statistics);
-            FindShortestPath(pixels, width, previous, model, statistics.CacheBits, arrivals);
+            FindShortestPath(pixels, width, links, model, statistics.CacheBits, arrivals);
             var candidates = TraceArrivals(arrivals);
             var candidateCount = candidates.Length;
             var candidateStatistics = new Statistics(statistics.CacheBits);
@@ -73,7 +81,7 @@ internal sealed partial class Vp8LEncoder
         return tokenCount;
     }
 
-    private void FindShortestPath(ReadOnlySpan<uint> pixels, int width, ReadOnlySpan<uint> previous, CostModel model, int cacheBits, Span<uint> arrivals)
+    private void FindShortestPath(ReadOnlySpan<uint> pixels, int width, ReadOnlySpan<uint> links, CostModel model, int cacheBits, Span<uint> arrivals)
     {
         var count = pixels.Length;
         var ring = new double[CostRingSize];
@@ -81,12 +89,7 @@ internal sealed partial class Vp8LEncoder
         ring[0] = 0;
         var cache = new uint[cacheBits == 0 ? 0 : 1 << cacheBits];
         var neighborCodes = NeighborCodes;
-        var chainDepth = _effort switch
-        {
-            <= 6 => 64,
-            <= 8 => 128,
-            _ => 512,
-        };
+        var chainDepth = CostModelChainDepth;
 
         var commitLength = _effort >= 9 ? int.MaxValue : CommitLength;
         Span<(int Distance, int Length, double Cost, int Code)> matches = stackalloc (int, int, double, int)[3];
@@ -140,7 +143,7 @@ internal sealed partial class Vp8LEncoder
             }
             else
             {
-                (chainDistance, chainLength) = SearchChain(pixels, previous, position, width, maxLength, chainDepth, Math.Max(leftLength, topLength));
+                (chainDistance, chainLength) = SearchChain(pixels, links, position, width, maxLength, chainDepth, Math.Max(leftLength, topLength));
             }
 
             // The candidates by increasing distance cost; each covers the lengths beyond those of the cheaper ones
@@ -236,21 +239,29 @@ internal sealed partial class Vp8LEncoder
         return length;
     }
 
-    /// <summary>The longest match of the hash chain of a position that is longer than <paramref name="minimum"/>, or (0, 0).</summary>
-    private static (int Distance, int Length) SearchChain(ReadOnlySpan<uint> pixels, ReadOnlySpan<uint> previous, int position, int width, int maxLength, int depth, int minimum)
+    /// <summary>
+    /// The longest match of the first <paramref name="depth"/> entries of the hash chain of a position that is longer than
+    /// <paramref name="minimum"/> and at least 3 pixels long, or (0, 0); <paramref name="links"/> holds the triple links
+    /// (<see cref="LinkTriples"/>).
+    /// </summary>
+    internal static (int Distance, int Length) SearchChain(ReadOnlySpan<uint> pixels, ReadOnlySpan<uint> links, int position, int width, int maxLength, int depth, int minimum)
     {
         var bestLength = minimum;
         var bestDistance = 0;
-        var candidate = previous[position];
-        while (candidate != uint.MaxValue && depth-- > 0 && bestLength < maxLength)
+        var link = links[position];
+        var entries = 0;
+        var distance = 0;
+        while (link != 0 && bestLength < maxLength)
         {
-            var distance = position - (int)candidate;
-            if (distance > MaxDistance)
+            entries += (int)(link >> TripleLinkDistanceBits);
+            distance += (int)(link & TripleLinkDistanceMask);
+            if (entries > depth || distance > MaxDistance)
                 break;
 
-            if (distance != 1 && distance != width && pixels[(int)candidate + bestLength] == pixels[position + bestLength])
+            var candidate = position - distance;
+            if (distance != 1 && distance != width && pixels[candidate + bestLength] == pixels[position + bestLength])
             {
-                var length = pixels.Slice((int)candidate, maxLength).CommonPrefixLength(pixels.Slice(position, maxLength));
+                var length = pixels.Slice(candidate, maxLength).CommonPrefixLength(pixels.Slice(position, maxLength));
                 if (length > bestLength)
                 {
                     bestLength = length;
@@ -258,7 +269,7 @@ internal sealed partial class Vp8LEncoder
                 }
             }
 
-            candidate = previous[(int)candidate];
+            link = links[candidate];
         }
 
         return bestDistance == 0 ? (0, 0) : (bestDistance, bestLength);

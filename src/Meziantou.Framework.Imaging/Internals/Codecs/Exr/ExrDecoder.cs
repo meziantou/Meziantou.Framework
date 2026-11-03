@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using System.Runtime.ExceptionServices;
 using Meziantou.Framework.Imaging.Metadata;
 
@@ -50,6 +51,7 @@ internal sealed class ExrDecoder : IImageDecodeObserver
     private PooledBuffer? _data;
     private Image? _staging;
     private bool _frameStarted;
+    private LinePlanes _planes;
 
     public ExrDecoder(ImageDecodeRequest request, ImageCodecContext context)
     {
@@ -73,6 +75,7 @@ internal sealed class ExrDecoder : IImageDecodeObserver
         ArgumentNullException.ThrowIfNull(structure);
         _structure = structure;
         _header = structure.Header;
+        _planes = LinePlanes.Create(_header);
         var format = structure.DefaultPixelFormat;
         _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.OpenExr, structure.Size, format, format, structure.Metadata.IccProfile);
         _workers = GetWorkerCount(_context.Configuration.MaxDegreeOfParallelism, _header);
@@ -266,7 +269,7 @@ internal sealed class ExrDecoder : IImageDecodeObserver
     /// Writes the uncompressed data of a chunk to the pixels of the image it covers: the lines and the columns of the chunk
     /// outside the image window are not written.
     /// </summary>
-    private static void WriteChunk(ExrHeader header, PixelStorage target, in ExrChunkLayout layout, int x0, int y0, ReadOnlySpan<byte> uncompressed)
+    private static void WriteChunk(ExrHeader header, in LinePlanes planes, PixelStorage target, in ExrChunkLayout layout, int x0, int y0, ReadOnlySpan<byte> uncompressed)
     {
         var image = header.ImageWindow;
         var first = Math.Max(x0, image.MinX);
@@ -279,6 +282,12 @@ internal sealed class ExrDecoder : IImageDecodeObserver
         var count = (int)(last - first + 1);
         var channels = header.Channels;
         var position = 0;
+        if (planes.IsSupported)
+        {
+            WriteChunkPlanes(header, planes, target, layout, y0, uncompressed, first - x0, column, count);
+            return;
+        }
+
         for (var line = 0; line < layout.Lines; line++)
         {
             // The samples of the line start where those of the line before end: a channel that is ignored may be sub-sampled
@@ -297,6 +306,37 @@ internal sealed class ExrDecoder : IImageDecodeObserver
 
             var row = target.GetRowSpanCore((int)(y - image.MinY));
             WriteLine(header, layout, line, uncompressed[start..position], first - x0, row.Slice(column, count * bytesPerPixel), count);
+        }
+    }
+
+    /// <summary>
+    /// Writes the lines of a chunk whose channels are those of <paramref name="planes"/>: each line holds a plane of samples per
+    /// channel, of the width of the chunk.
+    /// </summary>
+    private static void WriteChunkPlanes(ExrHeader header, in LinePlanes planes, PixelStorage target, in ExrChunkLayout layout, int y0, ReadOnlySpan<byte> uncompressed, int firstColumn, int column, int count)
+    {
+        var image = header.ImageWindow;
+        var lineLength = planes.LineBytes * layout.Width;
+        for (var line = 0; line < layout.Lines; line++)
+        {
+            var y = (long)y0 + line;
+            if (y < image.MinY || y > image.MaxY)
+                continue;
+
+            var samples = uncompressed.Slice(line * lineLength, lineLength);
+            var red = unsafe(MemoryMarshal.Cast<byte, ushort>(samples.Slice((planes.Red * layout.Width) + (firstColumn * 2), count * 2)));
+            var green = unsafe(MemoryMarshal.Cast<byte, ushort>(samples.Slice((planes.Green * layout.Width) + (firstColumn * 2), count * 2)));
+            var blue = unsafe(MemoryMarshal.Cast<byte, ushort>(samples.Slice((planes.Blue * layout.Width) + (firstColumn * 2), count * 2)));
+            var row = target.GetRowSpanCore((int)(y - image.MinY));
+            if (planes.Alpha >= 0)
+            {
+                var alpha = unsafe(MemoryMarshal.Cast<byte, ushort>(samples.Slice((planes.Alpha * layout.Width) + (firstColumn * 2), count * 2)));
+                ExrLineKernels.WriteFloatPixels(red, green, blue, alpha, unsafe(MemoryMarshal.Cast<byte, float>(row.Slice(column, count * 16))));
+            }
+            else
+            {
+                ExrLineKernels.WriteHalfPixels(red, green, blue, unsafe(MemoryMarshal.Cast<byte, ushort>(row.Slice(column, count * 8))));
+            }
         }
     }
 
@@ -419,7 +459,7 @@ internal sealed class ExrDecoder : IImageDecodeObserver
         _decompressor!.Decompress(stored, uncompressed, layout);
         using (var lease = AcquireTarget())
         {
-            WriteChunk(header, lease.Storage, layout, x0, y0, uncompressed);
+            WriteChunk(header, _planes, lease.Storage, layout, x0, y0, uncompressed);
         }
 
         _context.CancellationToken.ThrowIfCancellationRequested();
@@ -432,7 +472,7 @@ internal sealed class ExrDecoder : IImageDecodeObserver
         var layout = GetChunk(header, index, out var x0, out var y0);
         var uncompressed = buffer.Span[..layout.GetDataLength()];
         decompressor.Decompress(stored, uncompressed, layout);
-        WriteChunk(header, target, layout, x0, y0, uncompressed);
+        WriteChunk(header, _planes, target, layout, x0, y0, uncompressed);
     }
 
     private void RentFirstWorker(ExrHeader header)
@@ -529,6 +569,47 @@ internal sealed class ExrDecoder : IImageDecodeObserver
         return _header!.UsesHalfPixels
             ? new Image<RgbaHalf>(_context.Configuration, size, _context.Scope, layoutOptions: null)
             : new Image<RgbaFloat>(_context.Configuration, size, _context.Scope, layoutOptions: null);
+    }
+
+    /// <summary>
+    /// The position of the red, green, blue and alpha samples in a line of the common layouts that <see cref="ExrLineKernels"/>
+    /// writes: one HALF channel of each color, a HALF alpha channel or none, no luminance, and no sub-sampled channel (an
+    /// ignored channel included), on a little-endian processor. The positions are in bytes per pixel of the chunk width.
+    /// </summary>
+    [StructLayout(LayoutKind.Auto)]
+    private readonly record struct LinePlanes(bool IsSupported, int Red, int Green, int Blue, int Alpha, int LineBytes)
+    {
+        public static LinePlanes Create(ExrHeader header)
+        {
+            if (!BitConverter.IsLittleEndian || header.IsLuminance)
+                return default;
+
+            Span<int> positions = [-1, -1, -1, -1];
+            var offset = 0;
+            var channels = header.Channels;
+            for (var c = 0; c < channels.Count; c++)
+            {
+                var channel = channels[c];
+                if (channel.XSampling != 1 || channel.YSampling != 1)
+                    return default;
+
+                var role = header.Roles[c];
+                if (role != ExrChannelRole.Ignored)
+                {
+                    if (role is not (ExrChannelRole.Red or ExrChannelRole.Green or ExrChannelRole.Blue or ExrChannelRole.Alpha) || channel.PixelType != ExrPixelType.Half || positions[(int)role] >= 0)
+                        return default;
+
+                    positions[(int)role] = offset;
+                }
+
+                offset += channel.BytesPerSample;
+            }
+
+            if (positions[0] < 0 || positions[1] < 0 || positions[2] < 0)
+                return default;
+
+            return new LinePlanes(IsSupported: true, positions[0], positions[1], positions[2], positions[3], offset);
+        }
     }
 
     /// <summary>The chunks the workers decode at once, and the state of the workers other than the first one.</summary>

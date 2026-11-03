@@ -230,6 +230,7 @@ internal sealed class JpegXlLosslessFrameEncoder
         using var work = Av1PooledArray<JpegXlMaTreeNode>.Rent(_scope, _tree.Length, clear: false);
         using var pending = Av1PooledArray<int>.Rent(_scope, _tree.Length, clear: false);
         using var residuals = Av1PooledArray<uint>.Rent(_scope, Math.Max(1, largest), clear: false);
+        using var tableBuffer = Av1PooledArray<ulong>.Rent(_scope, JpegXlMaTreeTable.BufferLength, clear: false);
         var offset = 0;
         for (var c = 0; c < image.Channels.Count; c++)
         {
@@ -237,7 +238,7 @@ internal sealed class JpegXlLosslessFrameEncoder
             if (samples == 0)
                 continue;
 
-            JpegXlTreeCoder.Collect(image, c, streamIndex, _tree, values.Span.Slice(offset, samples), work.Span, pending.Span, residuals.Span, _scope);
+            JpegXlTreeCoder.Collect(image, c, streamIndex, _tree, values.Span.Slice(offset, samples), work.Span, pending.Span, residuals.Span, tableBuffer.Span, _scope);
             offset += samples;
         }
 

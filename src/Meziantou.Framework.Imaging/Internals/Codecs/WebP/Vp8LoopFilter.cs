@@ -126,30 +126,30 @@ internal static class Vp8LoopFilter
                 // Each plane gets its edges in the order of the scalar filter; Cb and Cr share the vectors (8 lanes each)
                 if (mbX > 0)
                 {
-                    LumaEdge(y, yOffset, yStride, vertical: true, edgeLimit, interior, hevThreshold, macroblock: true);
-                    ChromaEdge(u, v, uvOffset, uvStride, vertical: true, edgeLimit, interior, hevThreshold, macroblock: true);
+                    LumaVerticalEdge<MacroblockEdgeKind>(y, yOffset, yStride, edgeLimit, interior, hevThreshold);
+                    ChromaVerticalEdge<MacroblockEdgeKind>(u, v, uvOffset, uvStride, edgeLimit, interior, hevThreshold);
                 }
 
                 if (inner)
                 {
-                    LumaEdge(y, yOffset + 4, yStride, vertical: true, subLimit, interior, hevThreshold, macroblock: false);
-                    LumaEdge(y, yOffset + 8, yStride, vertical: true, subLimit, interior, hevThreshold, macroblock: false);
-                    LumaEdge(y, yOffset + 12, yStride, vertical: true, subLimit, interior, hevThreshold, macroblock: false);
-                    ChromaEdge(u, v, uvOffset + 4, uvStride, vertical: true, subLimit, interior, hevThreshold, macroblock: false);
+                    LumaVerticalEdge<InnerEdgeKind>(y, yOffset + 4, yStride, subLimit, interior, hevThreshold);
+                    LumaVerticalEdge<InnerEdgeKind>(y, yOffset + 8, yStride, subLimit, interior, hevThreshold);
+                    LumaVerticalEdge<InnerEdgeKind>(y, yOffset + 12, yStride, subLimit, interior, hevThreshold);
+                    ChromaVerticalEdge<InnerEdgeKind>(u, v, uvOffset + 4, uvStride, subLimit, interior, hevThreshold);
                 }
 
                 if (mbY > 0)
                 {
-                    LumaEdge(y, yOffset, yStride, vertical: false, edgeLimit, interior, hevThreshold, macroblock: true);
-                    ChromaEdge(u, v, uvOffset, uvStride, vertical: false, edgeLimit, interior, hevThreshold, macroblock: true);
+                    LumaHorizontalEdge<MacroblockEdgeKind>(y, yOffset, yStride, edgeLimit, interior, hevThreshold);
+                    ChromaHorizontalEdge<MacroblockEdgeKind>(u, v, uvOffset, uvStride, edgeLimit, interior, hevThreshold);
                 }
 
                 if (inner)
                 {
-                    LumaEdge(y, yOffset + (4 * yStride), yStride, vertical: false, subLimit, interior, hevThreshold, macroblock: false);
-                    LumaEdge(y, yOffset + (8 * yStride), yStride, vertical: false, subLimit, interior, hevThreshold, macroblock: false);
-                    LumaEdge(y, yOffset + (12 * yStride), yStride, vertical: false, subLimit, interior, hevThreshold, macroblock: false);
-                    ChromaEdge(u, v, uvOffset + (4 * uvStride), uvStride, vertical: false, subLimit, interior, hevThreshold, macroblock: false);
+                    LumaHorizontalEdge<InnerEdgeKind>(y, yOffset + (4 * yStride), yStride, subLimit, interior, hevThreshold);
+                    LumaHorizontalEdge<InnerEdgeKind>(y, yOffset + (8 * yStride), yStride, subLimit, interior, hevThreshold);
+                    LumaHorizontalEdge<InnerEdgeKind>(y, yOffset + (12 * yStride), yStride, subLimit, interior, hevThreshold);
+                    ChromaHorizontalEdge<InnerEdgeKind>(u, v, uvOffset + (4 * uvStride), uvStride, subLimit, interior, hevThreshold);
                 }
 
                 continue;
@@ -234,108 +234,101 @@ internal static class Vp8LoopFilter
         }
     }
 
-    /// <summary>Filters a luma edge of the normal filter: 16 positions, one per byte lane.</summary>
-    private static void LumaEdge(Span<byte> plane, int offset, int stride, bool vertical, int edgeLimit, int interior, int hevThreshold, bool macroblock)
+    /// <summary>Filters a horizontal luma edge of the normal filter: 16 positions, one per byte lane.</summary>
+    /// <remarks>Each kind of edge has its own copy, so that the filter, the loads and the stores are inlined in it.</remarks>
+    private static void LumaHorizontalEdge<TKind>(Span<byte> plane, int offset, int stride, int edgeLimit, int interior, int hevThreshold)
+        where TKind : struct, IEdgeKind
     {
-        Vector128<byte> p3, p2, p1, p0, q0, q1, q2, q3;
-        if (!vertical)
-        {
-            ref var origin = ref GetEdgeOrigin(plane, offset, stride, 1, 16, 4);
-            p3 = LoadRow(ref origin, -4 * stride);
-            p2 = LoadRow(ref origin, -3 * stride);
-            p1 = LoadRow(ref origin, -2 * stride);
-            p0 = LoadRow(ref origin, -stride);
-            q0 = LoadRow(ref origin, 0);
-            q1 = LoadRow(ref origin, stride);
-            q2 = LoadRow(ref origin, 2 * stride);
-            q3 = LoadRow(ref origin, 3 * stride);
-            if (!FilterLanes(p3, ref p2, ref p1, ref p0, ref q0, ref q1, ref q2, q3, edgeLimit, interior, hevThreshold, macroblock))
-                return;
-
-            StoreRow(p2, ref origin, -3 * stride);
-            StoreRow(p1, ref origin, -2 * stride);
-            StoreRow(p0, ref origin, -stride);
-            StoreRow(q0, ref origin, 0);
-            StoreRow(q1, ref origin, stride);
-            StoreRow(q2, ref origin, 2 * stride);
+        ref var origin = ref GetEdgeOrigin(plane, offset, stride, 1, 16, 4);
+        var p3 = LoadRow(ref origin, -4 * stride);
+        var p2 = LoadRow(ref origin, -3 * stride);
+        var p1 = LoadRow(ref origin, -2 * stride);
+        var p0 = LoadRow(ref origin, -stride);
+        var q0 = LoadRow(ref origin, 0);
+        var q1 = LoadRow(ref origin, stride);
+        var q2 = LoadRow(ref origin, 2 * stride);
+        var q3 = LoadRow(ref origin, 3 * stride);
+        if (!FilterLanes(p3, ref p2, ref p1, ref p0, ref q0, ref q1, ref q2, q3, edgeLimit, interior, hevThreshold, TKind.IsMacroblock))
             return;
+
+        // An inner edge changes p1 to q1 only
+        if (TKind.IsMacroblock)
+        {
+            StoreRow(p2, ref origin, -3 * stride);
+            StoreRow(q2, ref origin, 2 * stride);
         }
 
+        StoreRow(p1, ref origin, -2 * stride);
+        StoreRow(p0, ref origin, -stride);
+        StoreRow(q0, ref origin, 0);
+        StoreRow(q1, ref origin, stride);
+    }
+
+    /// <summary>Filters a vertical luma edge of the normal filter: 16 positions (rows), one per byte lane.</summary>
+    private static void LumaVerticalEdge<TKind>(Span<byte> plane, int offset, int stride, int edgeLimit, int interior, int hevThreshold)
+        where TKind : struct, IEdgeKind
+    {
         // Rows 0-7 of the edge in the low halves, rows 8-15 in the high halves
         ref var left = ref unsafe(Unsafe.Add(ref GetEdgeOrigin(plane, offset, 1, stride, 16, 4), -4));
-        ref var lower = ref unsafe(Unsafe.Add(ref left, 8 * stride));
-        LoadColumns(ref left, ref lower, stride, out p3, out p2, out p1, out p0, out q0, out q1, out q2, out q3);
-        if (FilterLanes(p3, ref p2, ref p1, ref p0, ref q0, ref q1, ref q2, q3, edgeLimit, interior, hevThreshold, macroblock))
-        {
-            StoreColumns(ref left, ref lower, stride, p3, p2, p1, p0, q0, q1, q2, q3);
-        }
+        VerticalEdge<TKind>(ref left, ref unsafe(Unsafe.Add(ref left, 8 * stride)), stride, edgeLimit, interior, hevThreshold);
     }
 
-    /// <summary>Filters the same edge of the Cb and Cr planes with the normal filter: 8 positions each, Cb in the low byte lanes and Cr in the high ones.</summary>
-    private static void ChromaEdge(Span<byte> u, Span<byte> v, int offset, int stride, bool vertical, int edgeLimit, int interior, int hevThreshold, bool macroblock)
+    /// <summary>Filters the same horizontal edge of the Cb and Cr planes with the normal filter: 8 positions each, Cb in the low byte lanes and Cr in the high ones.</summary>
+    private static void ChromaHorizontalEdge<TKind>(Span<byte> u, Span<byte> v, int offset, int stride, int edgeLimit, int interior, int hevThreshold)
+        where TKind : struct, IEdgeKind
     {
-        Vector128<byte> p3, p2, p1, p0, q0, q1, q2, q3;
-        if (!vertical)
-        {
-            ref var uOrigin = ref GetEdgeOrigin(u, offset, stride, 1, 8, 4);
-            ref var vOrigin = ref GetEdgeOrigin(v, offset, stride, 1, 8, 4);
-            p3 = LoadPair(ref uOrigin, ref vOrigin, -4 * stride);
-            p2 = LoadPair(ref uOrigin, ref vOrigin, -3 * stride);
-            p1 = LoadPair(ref uOrigin, ref vOrigin, -2 * stride);
-            p0 = LoadPair(ref uOrigin, ref vOrigin, -stride);
-            q0 = LoadPair(ref uOrigin, ref vOrigin, 0);
-            q1 = LoadPair(ref uOrigin, ref vOrigin, stride);
-            q2 = LoadPair(ref uOrigin, ref vOrigin, 2 * stride);
-            q3 = LoadPair(ref uOrigin, ref vOrigin, 3 * stride);
-            if (!FilterLanes(p3, ref p2, ref p1, ref p0, ref q0, ref q1, ref q2, q3, edgeLimit, interior, hevThreshold, macroblock))
-                return;
-
-            StorePair(p2, ref uOrigin, ref vOrigin, -3 * stride);
-            StorePair(p1, ref uOrigin, ref vOrigin, -2 * stride);
-            StorePair(p0, ref uOrigin, ref vOrigin, -stride);
-            StorePair(q0, ref uOrigin, ref vOrigin, 0);
-            StorePair(q1, ref uOrigin, ref vOrigin, stride);
-            StorePair(q2, ref uOrigin, ref vOrigin, 2 * stride);
+        ref var uOrigin = ref GetEdgeOrigin(u, offset, stride, 1, 8, 4);
+        ref var vOrigin = ref GetEdgeOrigin(v, offset, stride, 1, 8, 4);
+        var p3 = LoadPair(ref uOrigin, ref vOrigin, -4 * stride);
+        var p2 = LoadPair(ref uOrigin, ref vOrigin, -3 * stride);
+        var p1 = LoadPair(ref uOrigin, ref vOrigin, -2 * stride);
+        var p0 = LoadPair(ref uOrigin, ref vOrigin, -stride);
+        var q0 = LoadPair(ref uOrigin, ref vOrigin, 0);
+        var q1 = LoadPair(ref uOrigin, ref vOrigin, stride);
+        var q2 = LoadPair(ref uOrigin, ref vOrigin, 2 * stride);
+        var q3 = LoadPair(ref uOrigin, ref vOrigin, 3 * stride);
+        if (!FilterLanes(p3, ref p2, ref p1, ref p0, ref q0, ref q1, ref q2, q3, edgeLimit, interior, hevThreshold, TKind.IsMacroblock))
             return;
+
+        if (TKind.IsMacroblock)
+        {
+            StorePair(p2, ref uOrigin, ref vOrigin, -3 * stride);
+            StorePair(q2, ref uOrigin, ref vOrigin, 2 * stride);
         }
 
+        StorePair(p1, ref uOrigin, ref vOrigin, -2 * stride);
+        StorePair(p0, ref uOrigin, ref vOrigin, -stride);
+        StorePair(q0, ref uOrigin, ref vOrigin, 0);
+        StorePair(q1, ref uOrigin, ref vOrigin, stride);
+    }
+
+    /// <summary>Filters the same vertical edge of the Cb and Cr planes with the normal filter: 8 rows each, Cb in the low byte lanes and Cr in the high ones.</summary>
+    private static void ChromaVerticalEdge<TKind>(Span<byte> u, Span<byte> v, int offset, int stride, int edgeLimit, int interior, int hevThreshold)
+        where TKind : struct, IEdgeKind
+    {
         ref var uLeft = ref unsafe(Unsafe.Add(ref GetEdgeOrigin(u, offset, 1, stride, 8, 4), -4));
         ref var vLeft = ref unsafe(Unsafe.Add(ref GetEdgeOrigin(v, offset, 1, stride, 8, 4), -4));
-        LoadColumns(ref uLeft, ref vLeft, stride, out p3, out p2, out p1, out p0, out q0, out q1, out q2, out q3);
-        if (FilterLanes(p3, ref p2, ref p1, ref p0, ref q0, ref q1, ref q2, q3, edgeLimit, interior, hevThreshold, macroblock))
-        {
-            StoreColumns(ref uLeft, ref vLeft, stride, p3, p2, p1, p0, q0, q1, q2, q3);
-        }
-    }
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Vector128<byte> LoadRow(ref byte origin, int offset) => unsafe(Vector128.LoadUnsafe(ref Unsafe.Add(ref origin, offset)));
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void StoreRow(Vector128<byte> value, ref byte origin, int offset)
-    {
-        unsafe { value.StoreUnsafe(ref Unsafe.Add(ref origin, offset)); }
-    }
-
-    // The 8 bytes at offset of the first plane (low half) and of the second one (high half)
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static Vector128<byte> LoadPair(ref byte first, ref byte second, int offset)
-        => Vector128.Create(unsafe(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref first, offset))), unsafe(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref second, offset)))).AsByte();
-
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void StorePair(Vector128<byte> value, ref byte first, ref byte second, int offset)
-    {
-        unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref first, offset), value.AsUInt64().ToScalar()); }
-        unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref second, offset), value.AsUInt64().GetElement(1)); }
+        VerticalEdge<TKind>(ref uLeft, ref vLeft, stride, edgeLimit, interior, hevThreshold);
     }
 
     /// <summary>
-    /// Loads 8 rows of 8 bytes at <paramref name="first"/> and 8 rows at <paramref name="second"/> and transposes them: column
-    /// k of the 16 rows is vector k (the rows of <paramref name="first"/> in the low byte lanes).
+    /// Filters a vertical edge of 16 rows: 8 rows of 8 bytes at <paramref name="first"/> (the low byte lanes) and 8 at
+    /// <paramref name="second"/>, the edge between their bytes 3 and 4.
     /// </summary>
-    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-    private static void LoadColumns(ref byte first, ref byte second, int stride, out Vector128<byte> c0, out Vector128<byte> c1, out Vector128<byte> c2, out Vector128<byte> c3, out Vector128<byte> c4, out Vector128<byte> c5, out Vector128<byte> c6, out Vector128<byte> c7)
+    /// <remarks>
+    /// The transposes are written in the method rather than in helpers, so that the inlining budget of the JIT covers the
+    /// filter: the 8 rows of a column are gathered by interleaving the bytes of the rows (0, 1), (2, 3), ..., then pairs of
+    /// bytes, then groups of 4, then halves.
+    /// </remarks>
+    private static void VerticalEdge<TKind>(ref byte first, ref byte second, int stride, int edgeLimit, int interior, int hevThreshold)
+        where TKind : struct, IEdgeKind
     {
+        if (!CanInterleave)
+        {
+            VerticalEdgeTranspose(ref first, ref second, stride, edgeLimit, interior, hevThreshold, TKind.IsMacroblock);
+            return;
+        }
+
         var r0 = LoadPair(ref first, ref second, 0);
         var r1 = LoadPair(ref first, ref second, stride);
         var r2 = LoadPair(ref first, ref second, 2 * stride);
@@ -344,23 +337,6 @@ internal static class Vp8LoopFilter
         var r5 = LoadPair(ref first, ref second, 5 * stride);
         var r6 = LoadPair(ref first, ref second, 6 * stride);
         var r7 = LoadPair(ref first, ref second, 7 * stride);
-        if (!CanInterleave)
-        {
-            var w0 = r0.AsUInt64();
-            var w1 = r1.AsUInt64();
-            var w2 = r2.AsUInt64();
-            var w3 = r3.AsUInt64();
-            var w4 = r4.AsUInt64();
-            var w5 = r5.AsUInt64();
-            var w6 = r6.AsUInt64();
-            var w7 = r7.AsUInt64();
-            Transpose8x8(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7);
-            (c0, c1, c2, c3, c4, c5, c6, c7) = (w0.AsByte(), w1.AsByte(), w2.AsByte(), w3.AsByte(), w4.AsByte(), w5.AsByte(), w6.AsByte(), w7.AsByte());
-            return;
-        }
-
-        // Bytes of the rows (0, 1), (2, 3), ... interleaved, then pairs of bytes, then groups of 4: the 8 rows of a column in
-        // each 64-bit half (the two halves of each row vector stay apart: rows of the first block and of the second)
         var t0 = Interleave8Low(r0, r1);
         var t1 = Interleave8High(r0, r1);
         var t2 = Interleave8Low(r2, r3);
@@ -385,81 +361,177 @@ internal static class Vp8LoopFilter
         var v5 = Interleave32High(u4, u6);
         var v6 = Interleave32Low(u5, u7);
         var v7 = Interleave32High(u5, u7);
-        c0 = Interleave64Low(v0, v4);
-        c1 = Interleave64High(v0, v4);
-        c2 = Interleave64Low(v1, v5);
-        c3 = Interleave64High(v1, v5);
-        c4 = Interleave64Low(v2, v6);
-        c5 = Interleave64High(v2, v6);
-        c6 = Interleave64Low(v3, v7);
-        c7 = Interleave64High(v3, v7);
+        var p3 = Interleave64Low(v0, v4);
+        var p2 = Interleave64High(v0, v4);
+        var p1 = Interleave64Low(v1, v5);
+        var p0 = Interleave64High(v1, v5);
+        var q0 = Interleave64Low(v2, v6);
+        var q1 = Interleave64High(v2, v6);
+        var q2 = Interleave64Low(v3, v7);
+        var q3 = Interleave64High(v3, v7);
+        if (!FilterLanes(p3, ref p2, ref p1, ref p0, ref q0, ref q1, ref q2, q3, edgeLimit, interior, hevThreshold, TKind.IsMacroblock))
+            return;
+
+        if (!TKind.IsMacroblock)
+        {
+            // An inner edge changes p1 to q1 only: 4 bytes per row, rows 0-3, 4-7, 8-11 and 12-15 in 32-bit lanes
+            var c0 = Interleave8Low(p1, p0);
+            var c1 = Interleave8High(p1, p0);
+            var c2 = Interleave8Low(q0, q1);
+            var c3 = Interleave8High(q0, q1);
+            ref var firstInner = ref unsafe(Unsafe.Add(ref first, 2));
+            ref var secondInner = ref unsafe(Unsafe.Add(ref second, 2));
+            StoreRows4(Interleave16Low(c0, c2).AsUInt32(), ref firstInner, stride);
+            StoreRows4(Interleave16High(c0, c2).AsUInt32(), ref unsafe(Unsafe.Add(ref firstInner, 4 * stride)), stride);
+            StoreRows4(Interleave16Low(c1, c3).AsUInt32(), ref secondInner, stride);
+            StoreRows4(Interleave16High(c1, c3).AsUInt32(), ref unsafe(Unsafe.Add(ref secondInner, 4 * stride)), stride);
+            return;
+        }
+
+        // Columns (0, 1), (2, 3), ... interleaved, then pairs, then groups of 4 bytes: rows (r, r + 8) in the 64-bit halves
+        t0 = Interleave8Low(p3, p2);
+        t1 = Interleave8High(p3, p2);
+        t2 = Interleave8Low(p1, p0);
+        t3 = Interleave8High(p1, p0);
+        t4 = Interleave8Low(q0, q1);
+        t5 = Interleave8High(q0, q1);
+        t6 = Interleave8Low(q2, q3);
+        t7 = Interleave8High(q2, q3);
+        u0 = Interleave16Low(t0, t2);
+        u1 = Interleave16High(t0, t2);
+        u2 = Interleave16Low(t4, t6);
+        u3 = Interleave16High(t4, t6);
+        u4 = Interleave16Low(t1, t3);
+        u5 = Interleave16High(t1, t3);
+        u6 = Interleave16Low(t5, t7);
+        u7 = Interleave16High(t5, t7);
+
+        // Rows (0, 1), (2, 3), (4, 5), (6, 7) of the first block, then of the second, in the 64-bit halves
+        var rows01 = Interleave32Low(u0, u2);
+        var rows23 = Interleave32High(u0, u2);
+        var rows45 = Interleave32Low(u1, u3);
+        var rows67 = Interleave32High(u1, u3);
+        var rows89 = Interleave32Low(u4, u6);
+        var rows1011 = Interleave32High(u4, u6);
+        var rows1213 = Interleave32Low(u5, u7);
+        var rows1415 = Interleave32High(u5, u7);
+        StorePair(Interleave64Low(rows01, rows89), ref first, ref second, 0);
+        StorePair(Interleave64High(rows01, rows89), ref first, ref second, stride);
+        StorePair(Interleave64Low(rows23, rows1011), ref first, ref second, 2 * stride);
+        StorePair(Interleave64High(rows23, rows1011), ref first, ref second, 3 * stride);
+        StorePair(Interleave64Low(rows45, rows1213), ref first, ref second, 4 * stride);
+        StorePair(Interleave64High(rows45, rows1213), ref first, ref second, 5 * stride);
+        StorePair(Interleave64Low(rows67, rows1415), ref first, ref second, 6 * stride);
+        StorePair(Interleave64High(rows67, rows1415), ref first, ref second, 7 * stride);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void StoreRows4(Vector128<uint> rows, ref byte destination, int stride)
+        {
+            unsafe
+            {
+                Unsafe.WriteUnaligned(ref destination, rows.ToScalar());
+                Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, stride), rows.GetElement(1));
+                Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 2 * stride), rows.GetElement(2));
+                Unsafe.WriteUnaligned(ref Unsafe.Add(ref destination, 3 * stride), rows.GetElement(3));
+            }
+        }
+    }
+
+    /// <summary><see cref="VerticalEdge"/> without two-input interleaves: the rows are transposed with masks and shifts.</summary>
+    private static void VerticalEdgeTranspose(ref byte first, ref byte second, int stride, int edgeLimit, int interior, int hevThreshold, bool macroblock)
+    {
+        LoadColumns(ref first, ref second, stride, out var p3, out var p2, out var p1, out var p0, out var q0, out var q1, out var q2, out var q3);
+        if (FilterLanes(p3, ref p2, ref p1, ref p0, ref q0, ref q1, ref q2, q3, edgeLimit, interior, hevThreshold, macroblock))
+        {
+            StoreColumns(ref first, ref second, stride, p3, p2, p1, p0, q0, q1, q2, q3);
+        }
+    }
+
+    /// <summary>The kind of an edge of the normal filter, as a type argument: each kind gets its own specialized code.</summary>
+    private interface IEdgeKind
+    {
+        static abstract bool IsMacroblock { get; }
+    }
+
+    private readonly struct MacroblockEdgeKind : IEdgeKind
+    {
+        public static bool IsMacroblock => true;
+    }
+
+    private readonly struct InnerEdgeKind : IEdgeKind
+    {
+        public static bool IsMacroblock => false;
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<byte> LoadRow(ref byte origin, int offset) => unsafe(Vector128.LoadUnsafe(ref Unsafe.Add(ref origin, offset)));
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void StoreRow(Vector128<byte> value, ref byte origin, int offset)
+    {
+        unsafe { value.StoreUnsafe(ref Unsafe.Add(ref origin, offset)); }
+    }
+
+    // The 8 bytes at offset of the first plane (low half) and of the second one (high half)
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<byte> LoadPair(ref byte first, ref byte second, int offset)
+        => Vector128.Create(unsafe(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref first, offset))), unsafe(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref second, offset)))).AsByte();
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void StorePair(Vector128<byte> value, ref byte first, ref byte second, int offset)
+    {
+        unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref first, offset), value.AsUInt64().ToScalar()); }
+        unsafe { Unsafe.WriteUnaligned(ref Unsafe.Add(ref second, offset), value.AsUInt64().GetElement(1)); }
+    }
+
+    /// <summary>
+    /// Loads 8 rows of 8 bytes at <paramref name="first"/> and 8 rows at <paramref name="second"/> and transposes them with
+    /// masks and shifts: column k of the 16 rows is vector k (the rows of <paramref name="first"/> in the low byte lanes).
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void LoadColumns(ref byte first, ref byte second, int stride, out Vector128<byte> c0, out Vector128<byte> c1, out Vector128<byte> c2, out Vector128<byte> c3, out Vector128<byte> c4, out Vector128<byte> c5, out Vector128<byte> c6, out Vector128<byte> c7)
+    {
+        var r0 = LoadPair(ref first, ref second, 0);
+        var r1 = LoadPair(ref first, ref second, stride);
+        var r2 = LoadPair(ref first, ref second, 2 * stride);
+        var r3 = LoadPair(ref first, ref second, 3 * stride);
+        var r4 = LoadPair(ref first, ref second, 4 * stride);
+        var r5 = LoadPair(ref first, ref second, 5 * stride);
+        var r6 = LoadPair(ref first, ref second, 6 * stride);
+        var r7 = LoadPair(ref first, ref second, 7 * stride);
+        var w0 = r0.AsUInt64();
+        var w1 = r1.AsUInt64();
+        var w2 = r2.AsUInt64();
+        var w3 = r3.AsUInt64();
+        var w4 = r4.AsUInt64();
+        var w5 = r5.AsUInt64();
+        var w6 = r6.AsUInt64();
+        var w7 = r7.AsUInt64();
+        Transpose8x8(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7);
+        (c0, c1, c2, c3, c4, c5, c6, c7) = (w0.AsByte(), w1.AsByte(), w2.AsByte(), w3.AsByte(), w4.AsByte(), w5.AsByte(), w6.AsByte(), w7.AsByte());
     }
 
     /// <summary>The inverse of <see cref="LoadColumns"/>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void StoreColumns(ref byte first, ref byte second, int stride, Vector128<byte> c0, Vector128<byte> c1, Vector128<byte> c2, Vector128<byte> c3, Vector128<byte> c4, Vector128<byte> c5, Vector128<byte> c6, Vector128<byte> c7)
     {
-        Vector128<byte> r0, r1, r2, r3, r4, r5, r6, r7;
-        if (!CanInterleave)
-        {
-            var w0 = c0.AsUInt64();
-            var w1 = c1.AsUInt64();
-            var w2 = c2.AsUInt64();
-            var w3 = c3.AsUInt64();
-            var w4 = c4.AsUInt64();
-            var w5 = c5.AsUInt64();
-            var w6 = c6.AsUInt64();
-            var w7 = c7.AsUInt64();
-            Transpose8x8(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7);
-            (r0, r1, r2, r3, r4, r5, r6, r7) = (w0.AsByte(), w1.AsByte(), w2.AsByte(), w3.AsByte(), w4.AsByte(), w5.AsByte(), w6.AsByte(), w7.AsByte());
-        }
-        else
-        {
-            // Columns (0, 1), (2, 3), ... interleaved, then pairs, then groups of 4 bytes: rows (r, r + 8) in the 64-bit halves
-            var t0 = Interleave8Low(c0, c1);
-            var t1 = Interleave8High(c0, c1);
-            var t2 = Interleave8Low(c2, c3);
-            var t3 = Interleave8High(c2, c3);
-            var t4 = Interleave8Low(c4, c5);
-            var t5 = Interleave8High(c4, c5);
-            var t6 = Interleave8Low(c6, c7);
-            var t7 = Interleave8High(c6, c7);
-            var u0 = Interleave16Low(t0, t2);
-            var u1 = Interleave16High(t0, t2);
-            var u2 = Interleave16Low(t4, t6);
-            var u3 = Interleave16High(t4, t6);
-            var u4 = Interleave16Low(t1, t3);
-            var u5 = Interleave16High(t1, t3);
-            var u6 = Interleave16Low(t5, t7);
-            var u7 = Interleave16High(t5, t7);
-
-            // Rows (0, 1), (2, 3), (4, 5), (6, 7) of the first block, then of the second, in the 64-bit halves
-            var rows01 = Interleave32Low(u0, u2);
-            var rows23 = Interleave32High(u0, u2);
-            var rows45 = Interleave32Low(u1, u3);
-            var rows67 = Interleave32High(u1, u3);
-            var rows89 = Interleave32Low(u4, u6);
-            var rows1011 = Interleave32High(u4, u6);
-            var rows1213 = Interleave32Low(u5, u7);
-            var rows1415 = Interleave32High(u5, u7);
-            r0 = Interleave64Low(rows01, rows89);
-            r1 = Interleave64High(rows01, rows89);
-            r2 = Interleave64Low(rows23, rows1011);
-            r3 = Interleave64High(rows23, rows1011);
-            r4 = Interleave64Low(rows45, rows1213);
-            r5 = Interleave64High(rows45, rows1213);
-            r6 = Interleave64Low(rows67, rows1415);
-            r7 = Interleave64High(rows67, rows1415);
-        }
-
-        StorePair(r0, ref first, ref second, 0);
-        StorePair(r1, ref first, ref second, stride);
-        StorePair(r2, ref first, ref second, 2 * stride);
-        StorePair(r3, ref first, ref second, 3 * stride);
-        StorePair(r4, ref first, ref second, 4 * stride);
-        StorePair(r5, ref first, ref second, 5 * stride);
-        StorePair(r6, ref first, ref second, 6 * stride);
-        StorePair(r7, ref first, ref second, 7 * stride);
+        var w0 = c0.AsUInt64();
+        var w1 = c1.AsUInt64();
+        var w2 = c2.AsUInt64();
+        var w3 = c3.AsUInt64();
+        var w4 = c4.AsUInt64();
+        var w5 = c5.AsUInt64();
+        var w6 = c6.AsUInt64();
+        var w7 = c7.AsUInt64();
+        Transpose8x8(ref w0, ref w1, ref w2, ref w3, ref w4, ref w5, ref w6, ref w7);
+        StorePair(w0.AsByte(), ref first, ref second, 0);
+        StorePair(w1.AsByte(), ref first, ref second, stride);
+        StorePair(w2.AsByte(), ref first, ref second, 2 * stride);
+        StorePair(w3.AsByte(), ref first, ref second, 3 * stride);
+        StorePair(w4.AsByte(), ref first, ref second, 4 * stride);
+        StorePair(w5.AsByte(), ref first, ref second, 5 * stride);
+        StorePair(w6.AsByte(), ref first, ref second, 6 * stride);
+        StorePair(w7.AsByte(), ref first, ref second, 7 * stride);
     }
 
     // Two-input element interleaves (x64 PUNPCKL/PUNPCKH, Arm64 ZIP1/ZIP2); the transposes fall back to Transpose8x8 elsewhere
@@ -545,24 +617,24 @@ internal static class Vp8LoopFilter
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static bool FilterLanes(Vector128<byte> p3, ref Vector128<byte> p2, ref Vector128<byte> p1, ref Vector128<byte> p0, ref Vector128<byte> q0, ref Vector128<byte> q1, ref Vector128<byte> q2, Vector128<byte> q3, int edgeLimit, int interior, int hevThreshold, bool macroblock)
     {
-        var interiorLimit = Vector128.Create((byte)interior);
-        var edgeSum = Vector128.AddSaturate(Vector128.AddSaturate(Difference(p0, q0), Difference(p0, q0)), Vector128.ShiftRightLogical(Difference(p1, q1), 1));
-        var filter = Vector128.LessThanOrEqual(edgeSum, Vector128.Create((byte)edgeLimit))
-            & Vector128.LessThanOrEqual(Difference(p3, p2), interiorLimit) & Vector128.LessThanOrEqual(Difference(p2, p1), interiorLimit)
-            & Vector128.LessThanOrEqual(Difference(p1, p0), interiorLimit) & Vector128.LessThanOrEqual(Difference(q3, q2), interiorLimit)
-            & Vector128.LessThanOrEqual(Difference(q2, q1), interiorLimit) & Vector128.LessThanOrEqual(Difference(q1, q0), interiorLimit);
+        // Every interior difference is at most the limit when their maximum is
+        var p1p0 = Difference(p1, p0);
+        var q1q0 = Difference(q1, q0);
+        var interiorMax = Vector128.Max(Vector128.Max(Vector128.Max(Difference(p3, p2), Difference(p2, p1)), p1p0), Vector128.Max(Vector128.Max(Difference(q3, q2), Difference(q2, q1)), q1q0));
+        var p0q0 = Difference(p0, q0);
+        var edgeSum = Vector128.AddSaturate(Vector128.AddSaturate(p0q0, p0q0), Vector128.ShiftRightLogical(Difference(p1, q1), 1));
+        var filter = Vector128.LessThanOrEqual(edgeSum, Vector128.Create((byte)edgeLimit)) & Vector128.LessThanOrEqual(interiorMax, Vector128.Create((byte)interior));
         if (filter == Vector128<byte>.Zero)
             return false;
 
-        var threshold = Vector128.Create((byte)hevThreshold);
-        var hev = Vector128.GreaterThan(Difference(p1, p0), threshold) | Vector128.GreaterThan(Difference(q1, q0), threshold);
+        // The adjustments of the lanes left unfiltered (or filtered the other way) are masked to zero: adding or subtracting
+        // zero with saturation leaves a value unchanged
+        var hev = Vector128.GreaterThan(Vector128.Max(p1p0, q1q0), Vector128.Create((byte)hevThreshold));
         var sign = Vector128.Create((byte)0x80);
-        var sp2 = (p2 ^ sign).AsSByte();
         var sp1 = (p1 ^ sign).AsSByte();
         var sp0 = (p0 ^ sign).AsSByte();
         var sq0 = (q0 ^ sign).AsSByte();
         var sq1 = (q1 ^ sign).AsSByte();
-        var sq2 = (q2 ^ sign).AsSByte();
         var step = Vector128.SubtractSaturate(sq0, sp0);
         var three = Vector128.Create((sbyte)3);
         var four = Vector128.Create((sbyte)4);
@@ -570,45 +642,43 @@ internal static class Vp8LoopFilter
         {
             // The filter value of CommonAdjust with the outer taps, which is also w of the 3 taps of a flat edge
             var w = Vector128.AddSaturate(Vector128.AddSaturate(Vector128.AddSaturate(Vector128.SubtractSaturate(sp1, sq1), step), step), step);
-            var b = Vector128.ShiftRightArithmetic(Vector128.AddSaturate(w, three), 3);
-            var a = Vector128.ShiftRightArithmetic(Vector128.AddSaturate(w, four), 3);
-            var q0Hev = Vector128.SubtractSaturate(sq0, a);
-            var p0Hev = Vector128.AddSaturate(sp0, b);
-            var wLow = Vector128.WidenLower(w);
-            var wHigh = Vector128.WidenUpper(w);
+            var hevW = w & (filter & hev).AsSByte();
+            var flatW = w & Vector128.AndNot(filter, hev).AsSByte();
+            var b = Vector128.ShiftRightArithmetic(Vector128.AddSaturate(hevW, three), 3);
+            var a = Vector128.ShiftRightArithmetic(Vector128.AddSaturate(hevW, four), 3);
+            var wLow = Vector128.WidenLower(flatW);
+            var wHigh = Vector128.WidenUpper(flatW);
             var a27 = Taps(wLow, wHigh, 27);
             var a18 = Taps(wLow, wHigh, 18);
             var a9 = Taps(wLow, wHigh, 9);
-            var flat = filter & ~hev;
-            q0 = Vector128.ConditionalSelect(filter, Vector128.ConditionalSelect(hev.AsSByte(), q0Hev, Vector128.SubtractSaturate(sq0, a27)).AsByte() ^ sign, q0);
-            p0 = Vector128.ConditionalSelect(filter, Vector128.ConditionalSelect(hev.AsSByte(), p0Hev, Vector128.AddSaturate(sp0, a27)).AsByte() ^ sign, p0);
-            q1 = Vector128.ConditionalSelect(flat, Vector128.SubtractSaturate(sq1, a18).AsByte() ^ sign, q1);
-            p1 = Vector128.ConditionalSelect(flat, Vector128.AddSaturate(sp1, a18).AsByte() ^ sign, p1);
-            q2 = Vector128.ConditionalSelect(flat, Vector128.SubtractSaturate(sq2, a9).AsByte() ^ sign, q2);
-            p2 = Vector128.ConditionalSelect(flat, Vector128.AddSaturate(sp2, a9).AsByte() ^ sign, p2);
+            q0 = Vector128.SubtractSaturate(Vector128.SubtractSaturate(sq0, a), a27).AsByte() ^ sign;
+            p0 = Vector128.AddSaturate(Vector128.AddSaturate(sp0, b), a27).AsByte() ^ sign;
+            q1 = Vector128.SubtractSaturate(sq1, a18).AsByte() ^ sign;
+            p1 = Vector128.AddSaturate(sp1, a18).AsByte() ^ sign;
+            q2 = (Vector128.SubtractSaturate((q2 ^ sign).AsSByte(), a9).AsByte() ^ sign);
+            p2 = (Vector128.AddSaturate((p2 ^ sign).AsSByte(), a9).AsByte() ^ sign);
         }
         else
         {
             // CommonAdjust with the outer taps where the edge variance is high, then the adjustment of p1 and q1 elsewhere
             var outerTaps = Vector128.SubtractSaturate(sp1, sq1) & hev.AsSByte();
-            var value = Vector128.AddSaturate(Vector128.AddSaturate(Vector128.AddSaturate(outerTaps, step), step), step);
+            var value = Vector128.AddSaturate(Vector128.AddSaturate(Vector128.AddSaturate(outerTaps, step), step), step) & filter.AsSByte();
             var b = Vector128.ShiftRightArithmetic(Vector128.AddSaturate(value, three), 3);
             var a = Vector128.ShiftRightArithmetic(Vector128.AddSaturate(value, four), 3);
-            q0 = Vector128.ConditionalSelect(filter, Vector128.SubtractSaturate(sq0, a).AsByte() ^ sign, q0);
-            p0 = Vector128.ConditionalSelect(filter, Vector128.AddSaturate(sp0, b).AsByte() ^ sign, p0);
+            q0 = Vector128.SubtractSaturate(sq0, a).AsByte() ^ sign;
+            p0 = Vector128.AddSaturate(sp0, b).AsByte() ^ sign;
 
-            // a is between -16 and 15: (a + 1) >> 1 does not saturate
-            a = Vector128.ShiftRightArithmetic(a + Vector128<sbyte>.One, 1);
-            var outer = filter & ~hev;
-            q1 = Vector128.ConditionalSelect(outer, Vector128.SubtractSaturate(sq1, a).AsByte() ^ sign, q1);
-            p1 = Vector128.ConditionalSelect(outer, Vector128.AddSaturate(sp1, a).AsByte() ^ sign, p1);
+            // a is between -16 and 15: (a + 1) >> 1 does not saturate (and is 0 where a is 0)
+            a = Vector128.AndNot(Vector128.ShiftRightArithmetic(a + Vector128<sbyte>.One, 1), hev.AsSByte());
+            q1 = Vector128.SubtractSaturate(sq1, a).AsByte() ^ sign;
+            p1 = Vector128.AddSaturate(sp1, a).AsByte() ^ sign;
         }
 
         return true;
 
         static Vector128<byte> Difference(Vector128<byte> a, Vector128<byte> b) => Vector128.SubtractSaturate(a, b) | Vector128.SubtractSaturate(b, a);
 
-        // (k w + 63) >> 7 for the 16 lanes, between -27 and 27
+        // (k w + 63) >> 7 for the 16 lanes, between -27 and 27 (0 where w is 0)
         static Vector128<sbyte> Taps(Vector128<short> low, Vector128<short> high, short k)
         {
             var round = Vector128.Create((short)63);

@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -30,6 +31,7 @@ internal sealed class ExrHuffman : IDisposable
     private readonly long[] _start = new long[MaxCodeLength + 2];
     private readonly int[] _count = new int[MaxCodeLength + 2];
     private readonly int[] _firstSymbol = new int[MaxCodeLength + 2];
+    private Range _usedFrequencies = ..0;
 
     public ExrHuffman(AllocationScope scope, bool encoder)
     {
@@ -80,8 +82,9 @@ internal sealed class ExrHuffman : IDisposable
         if (min >= SymbolCount || max >= SymbolCount || min > max)
             throw ExrFormat.Invalid(string.Create(CultureInfo.InvariantCulture, $"the Huffman symbols of a PIZ chunk range from {min} to {max}."));
 
+        // The code lengths are read and used from min to max only
         var lengths = Lengths;
-        lengths.Clear();
+        lengths[(int)min..((int)max + 1)].Clear();
         var tableEnd = ReadTable(stream[HeaderLength..], (int)min, (int)max, lengths) + HeaderLength;
         var dataLength = (bitCount + 7L) / 8;
         if (dataLength > stream.Length - tableEnd)
@@ -101,8 +104,9 @@ internal sealed class ExrHuffman : IDisposable
         if (source.IsEmpty)
             return 0;
 
+        // The frequencies are zero but from the symbols of the previous stream (the buffer is rented cleared)
         var frequencies = unsafe(MemoryMarshal.Cast<byte, long>(_frequencies!.Span));
-        frequencies.Clear();
+        frequencies[_usedFrequencies].Clear();
         var min = int.MaxValue;
         var maxValue = 0;
         foreach (var value in source)
@@ -114,9 +118,10 @@ internal sealed class ExrHuffman : IDisposable
 
         // The run symbol is the largest coded symbol, always present (section 5.4.1)
         var runSymbol = maxValue + 1;
+        _usedFrequencies = min..(runSymbol + 1);
         frequencies[runSymbol] = 1;
         var lengths = Lengths;
-        lengths.Clear();
+        lengths[min..(runSymbol + 1)].Clear();
         BuildLengths(frequencies, min, runSymbol, lengths);
         var codes = unsafe(MemoryMarshal.Cast<byte, ulong>(_codes!.Span));
         BuildCanonicalCodes(lengths, min, runSymbol, codes);
@@ -198,10 +203,21 @@ internal sealed class ExrHuffman : IDisposable
     /// </summary>
     private void BuildCanonicalCodes(ReadOnlySpan<byte> lengths, int min, int max, Span<ulong> codes)
     {
+        // The symbols without code are skipped by runs: most of the 65,537 are unused
         Array.Clear(_count);
-        for (var symbol = min; symbol <= max; symbol++)
+        var range = lengths[min..(max + 1)];
+        for (var i = 0; i < range.Length; i++)
         {
-            _count[lengths[symbol]]++;
+            if (range[i] == 0)
+            {
+                var used = range[i..].IndexOfAnyExcept((byte)0);
+                if (used < 0)
+                    break;
+
+                i += used;
+            }
+
+            _count[range[i]]++;
         }
 
         _count[0] = 0;
@@ -235,12 +251,19 @@ internal sealed class ExrHuffman : IDisposable
         _firstSymbol.CopyTo(next);
         _start.CopyTo(nextCode);
         var symbols = Symbols;
-        for (var symbol = min; symbol <= max; symbol++)
+        for (var i = 0; i < range.Length; i++)
         {
-            var length = lengths[symbol];
-            if (length == 0)
-                continue;
+            if (range[i] == 0)
+            {
+                var used = range[i..].IndexOfAnyExcept((byte)0);
+                if (used < 0)
+                    break;
 
+                i += used;
+            }
+
+            var symbol = min + i;
+            var length = range[i];
             symbols[next[length]++] = symbol;
             if (!codes.IsEmpty)
             {
@@ -275,6 +298,10 @@ internal sealed class ExrHuffman : IDisposable
         var output = 0;
         while (output < destination.Length)
         {
+            reader.Position = DecodeTableCodes(data, reader.Position, runSymbol, destination, ref output);
+            if (output == destination.Length)
+                break;
+
             var peek = reader.Peek(LookupBits);
             var entry = lookup[(int)peek];
             int symbol;
@@ -334,6 +361,69 @@ internal sealed class ExrHuffman : IDisposable
     }
 
     /// <summary>
+    /// Decodes the codes of the lookup table from <paramref name="position"/> while at least 8 bytes of data are left after
+    /// those of a 64-bit buffer refilled 32 bits at a time: every bit read is then before the bit count (at most 7 bits before
+    /// the end of the data). Stops at the end of the data or before a code longer than <see cref="LookupBits"/>, which
+    /// <see cref="DecodeSymbols"/> decodes.
+    /// </summary>
+    /// <returns>The position after the last code decoded.</returns>
+    private long DecodeTableCodes(ReadOnlySpan<byte> data, long position, int runSymbol, Span<ushort> destination, ref int output)
+    {
+        var lookup = Lookup;
+        var next = (int)(position >> 3);
+        var skip = (int)(position & 7);
+        if (next > data.Length - (2 * sizeof(uint)) - sizeof(ulong))
+            return position;
+
+        // The buffer holds its valid bits from the most significant one
+        var buffer = (ulong)BinaryPrimitives.ReadUInt32BigEndian(data[next..]) << (32 + skip);
+        var bits = 32 - skip;
+        next += sizeof(uint);
+        var written = output;
+        while (written < destination.Length)
+        {
+            if (bits < 32)
+            {
+                if (next > data.Length - sizeof(uint) - sizeof(ulong))
+                    break;
+
+                buffer |= (ulong)BinaryPrimitives.ReadUInt32BigEndian(data[next..]) << (32 - bits);
+                next += sizeof(uint);
+                bits += 32;
+            }
+
+            var entry = lookup[(int)(buffer >> (64 - LookupBits))];
+            if (entry == 0)
+                break;
+
+            var length = entry & 0xFF;
+            var symbol = (entry >> 8) - 1;
+            if (symbol != runSymbol)
+            {
+                destination[written++] = (ushort)symbol;
+                buffer <<= length;
+                bits -= length;
+                continue;
+            }
+
+            if (written == 0)
+                throw ExrFormat.Invalid("the Huffman data of a PIZ chunk start with a repetition.");
+
+            var count = (int)((buffer << length) >> 56);
+            if (count > destination.Length - written)
+                throw ExrFormat.Invalid("a repetition of the Huffman data of a PIZ chunk extends past the end of the chunk.");
+
+            destination.Slice(written, count).Fill(destination[written - 1]);
+            written += count;
+            buffer <<= length + 8;
+            bits -= length + 8;
+        }
+
+        output = written;
+        return ((long)next * 8) - bits;
+    }
+
+    /// <summary>
     /// Computes Huffman code lengths with the two-queue construction over the symbols sorted by frequency (ties by symbol).
     /// Frequencies below 2^31 never give a code longer than 45 bits, so no limit has to be enforced.
     /// </summary>
@@ -346,14 +436,22 @@ internal sealed class ExrHuffman : IDisposable
 
         // Leaves sorted by (frequency, symbol): the frequency in the high bits of the key
         var leafCount = 0;
-        for (var symbol = min; symbol <= max; symbol++)
+        var range = frequencies[min..(max + 1)];
+        for (var i = 0; i < range.Length; i++)
         {
-            if (frequencies[symbol] != 0)
+            if (range[i] == 0)
             {
-                weights[leafCount] = (frequencies[symbol] << 17) | (long)symbol;
-                symbols[leafCount] = symbol;
-                leafCount++;
+                var used = range[i..].IndexOfAnyExcept(0L);
+                if (used < 0)
+                    break;
+
+                i += used;
             }
+
+            var symbol = min + i;
+            weights[leafCount] = (range[i] << 17) | (long)symbol;
+            symbols[leafCount] = symbol;
+            leafCount++;
         }
 
         weights[..leafCount].Sort(symbols[..leafCount]);
@@ -497,15 +595,36 @@ internal sealed class ExrHuffman : IDisposable
         private readonly ReadOnlySpan<byte> _data = data;
         private readonly long _bitCount = bitCount;
 
-        public long Position { get; private set; }
+        public long Position { get; set; }
 
-        /// <summary>Gets the next bits without consuming them; the bits past the end read as zeros.</summary>
+        /// <summary>Gets the next 1 to 57 bits without consuming them; the bits past the end read as zeros.</summary>
         public readonly ulong Peek(int count)
         {
-            ulong value = 0;
-            for (var i = 0; i < count; i++)
+            var position = Position;
+            var available = _bitCount - position;
+            if (available <= 0)
+                return 0;
+
+            // The 8 bytes from the byte of the position (zeros past the data): at least 57 bits after the position
+            var index = (int)(position >> 3);
+            ulong word;
+            if (index + sizeof(ulong) <= _data.Length)
             {
-                value = (value << 1) | PeekBit(i);
+                word = BinaryPrimitives.ReadUInt64BigEndian(_data[index..]);
+            }
+            else
+            {
+                word = 0;
+                for (var i = 0; index + i < _data.Length; i++)
+                {
+                    word |= (ulong)_data[index + i] << (56 - (8 * i));
+                }
+            }
+
+            var value = (word << (int)(position & 7)) >> (64 - count);
+            if (available < count)
+            {
+                value &= ~((1UL << (count - (int)available)) - 1);
             }
 
             return value;
@@ -551,30 +670,54 @@ internal sealed class ExrHuffman : IDisposable
         private readonly Span<byte> _destination = destination;
         private long _position;
 
+        // The last bits written, the bits of the current byte (_position & 7 of them) the lowest
+        private ulong _bits;
+
         public readonly int ByteStart => byteStart;
 
         public readonly long BitLength => _position;
 
         public readonly int ByteLength => byteStart + (int)((_position + 7) / 8);
 
+        /// <summary>Writes the <paramref name="count"/> (0 to 57) low bits of a value, the most significant first.</summary>
+        /// <returns><see langword="false"/> when the bits do not fit the destination (nothing is written).</returns>
+        /// <remarks>
+        /// The bytes completed are stored, and the current byte too, its bits after those written zero: the destination
+        /// always holds the bits written so far, padded. Away from the end of the destination, the bytes are stored as 8
+        /// bytes at once, which also clears bytes after the current one (they are not written yet, and each byte is
+        /// stored whole when its first bit is written).
+        /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryWrite(ulong value, int count)
         {
-            for (var i = count - 1; i >= 0; i--)
+            if (count == 0)
+                return true;
+
+            if (byteStart + ((_position + count - 1) >> 3) >= _destination.Length)
+                return false;
+
+            var pending = (int)(_position & 7) + count;
+            _bits = (_bits << count) | (value & (ulong.MaxValue >> (64 - count)));
+            var byteIndex = byteStart + (int)(_position >> 3);
+            if (byteIndex <= _destination.Length - sizeof(ulong))
             {
-                var byteIndex = byteStart + (int)(_position >> 3);
-                if (byteIndex >= _destination.Length)
-                    return false;
-
-                var bit = (int)(_position & 7);
-                if (bit == 0)
-                {
-                    _destination[byteIndex] = 0;
-                }
-
-                _destination[byteIndex] |= (byte)(((value >> i) & 1) << (7 - bit));
-                _position++;
+                BinaryPrimitives.WriteUInt64BigEndian(_destination[byteIndex..], _bits << (64 - pending));
+                _position += count;
+                return true;
             }
 
+            while (pending >= 8)
+            {
+                pending -= 8;
+                _destination[byteIndex++] = (byte)(_bits >> pending);
+            }
+
+            if (pending > 0)
+            {
+                _destination[byteIndex] = (byte)(_bits << (8 - pending));
+            }
+
+            _position += count;
             return true;
         }
 

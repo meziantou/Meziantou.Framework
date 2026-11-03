@@ -1086,6 +1086,67 @@ public sealed class JpegXlEncoderTests
     }
 
     /// <summary>Counts what the LZ77 parser finds.</summary>
+    /// <summary>
+    /// The distance codes of the parser are those of a map of the 120 short distances (ISO/IEC 18181-1, section D.3.7)
+    /// built as the decoder resolves them, the smallest code first when several give the same distance, for rows shorter
+    /// and longer than the 16 columns of the short distances.
+    /// </summary>
+    [Theory]
+    [InlineData(1)]
+    [InlineData(2)]
+    [InlineData(7)]
+    [InlineData(15)]
+    [InlineData(16)]
+    [InlineData(17)]
+    [InlineData(100)]
+    [InlineData(256)]
+    [InlineData(2048)]
+    [InlineData(1 << 20)]
+    public void Lz77DistanceCodesFollowTheShortDistances(int distanceMultiplier)
+    {
+        ReadOnlySpan<byte> specials =
+        [
+            0x71, 0x80, 0x81, 0x61, 0x72, 0x90, 0x82, 0x62, 0x91, 0x51, 0x92, 0x52,
+            0x73, 0xa0, 0x83, 0x63, 0xa1, 0x41, 0x93, 0x53, 0xa2, 0x42, 0x74, 0xb0,
+            0x84, 0x64, 0xb1, 0x31, 0xa3, 0x43, 0x94, 0x54, 0xb2, 0x32, 0x75, 0xa4,
+            0x44, 0xb3, 0x33, 0xc0, 0x85, 0x65, 0xc1, 0x21, 0x95, 0x55, 0xc2, 0x22,
+            0xb4, 0x34, 0xa5, 0x45, 0xc3, 0x23, 0x76, 0xd0, 0x86, 0x66, 0xd1, 0x11,
+            0x96, 0x56, 0xd2, 0x12, 0xb5, 0x35, 0xc4, 0x24, 0xa6, 0x46, 0xd3, 0x13,
+            0x77, 0xe0, 0x87, 0x67, 0xc5, 0x25, 0xe1, 0x01, 0xb6, 0x36, 0xd4, 0x14,
+            0x97, 0x57, 0xe2, 0x02, 0xa7, 0x47, 0xe3, 0x03, 0xc6, 0x26, 0xd5, 0x15,
+            0xf0, 0xb7, 0x37, 0xe4, 0x04, 0xf1, 0xf2, 0xd6, 0x16, 0xf3, 0xc7, 0x27,
+            0xe5, 0x05, 0xf4, 0xd7, 0x17, 0xe6, 0x06, 0xf5, 0xe7, 0x07, 0xf6, 0xf7,
+        ];
+        var expected = new Dictionary<long, int>();
+        for (var code = specials.Length - 1; code >= 0; code--)
+        {
+            expected[Math.Max(1, ((specials[code] >> 4) - 7) + ((long)distanceMultiplier * (specials[code] & 7)))] = code;
+        }
+
+        var distances = new HashSet<int>();
+        for (var distance = 1; distance <= 2000; distance++)
+        {
+            distances.Add(distance);
+        }
+
+        foreach (var offset in expected.Keys)
+        {
+            for (var delta = -1; delta <= 1; delta++)
+            {
+                if (offset + delta is >= 1 and <= int.MaxValue)
+                {
+                    distances.Add((int)(offset + delta));
+                }
+            }
+        }
+
+        foreach (var distance in distances)
+        {
+            var code = expected.TryGetValue(distance, out var special) ? (uint)special : (uint)(distance + 119);
+            Assert.Equal(code, JpegXlLz77Parser.GetDistanceCode(distance, distanceMultiplier));
+        }
+    }
+
     private struct CountingSink(JpegXlModularEntropyCode.Counter counter) : JpegXlLz77Parser.IStreamSink
     {
         public int CopyCount { get; private set; }

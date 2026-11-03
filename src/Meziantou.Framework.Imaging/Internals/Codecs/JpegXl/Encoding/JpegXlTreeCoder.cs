@@ -1,3 +1,5 @@
+using System.Numerics;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -11,6 +13,10 @@ internal static class JpegXlTreeCoder
     private const int FirstReferenceProperty = 16;
     private const int PropertiesPerReference = 4;
     private const int WeightedPredictor = 6;
+
+    // The predictors whose predictions are all computed then selected: none, left, top, select, gradient and the weighted
+    // average of the neighbors (13)
+    private const int SelectablePredictors = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 4) | (1 << 5) | (1 << 13);
 
     /// <summary>
     /// Adds the samples of some rows of a channel to a set: the values of the properties of the set and the tokens of the
@@ -139,8 +145,9 @@ internal static class JpegXlTreeCoder
     /// <param name="work">Scratch memory of the length of the tree.</param>
     /// <param name="pending">Scratch memory of the length of the tree.</param>
     /// <param name="residuals">Scratch memory of the length of the channel.</param>
+    /// <param name="tableBuffer">Scratch memory of the table of the tree: <see cref="JpegXlMaTreeTable.BufferLength"/> values.</param>
     /// <param name="scope">The scope of the working memory.</param>
-    public static void Collect(JpegXlModularImage image, int channelIndex, int streamIndex, ReadOnlySpan<JpegXlMaTreeNode> tree, Span<ulong> output, Span<JpegXlMaTreeNode> work, Span<int> pending, Span<uint> residuals, AllocationScope scope)
+    public static void Collect(JpegXlModularImage image, int channelIndex, int streamIndex, ReadOnlySpan<JpegXlMaTreeNode> tree, Span<ulong> output, Span<JpegXlMaTreeNode> work, Span<int> pending, Span<uint> residuals, Span<ulong> tableBuffer, AllocationScope scope)
     {
         var nodeCount = JpegXlModularDecoder.Specialize(tree, work, pending, channelIndex, streamIndex);
         var nodes = work[..nodeCount];
@@ -185,6 +192,28 @@ internal static class JpegXlTreeCoder
         properties[0] = channelIndex;
         properties[1] = streamIndex;
         var isSingleLeaf = nodes[0].IsLeaf;
+
+        // The tree is evaluated without a branch per decision when it can be a table: the decisions on the samples are not
+        // predictable
+        Span<JpegXlMaTreeTable.Slot> slots = stackalloc JpegXlMaTreeTable.Slot[JpegXlMaTreeTable.SlotBufferLength];
+        scoped JpegXlMaTreeTable table = default;
+        var hasTable = !isSingleLeaf && JpegXlMaTreeTable.TryCreate(nodes, decoder: null, tableBuffer, slots, anyProperty: true, out table);
+
+        // When the leaves use only the predictors of the efforts below 7 (none, left, top, select, gradient and the weighted
+        // average of the neighbors), all of them are computed and the prediction is read by the predictor of the leaf: the
+        // predictors of the leaves of successive samples are not predictable
+        var usedPredictors = 0;
+        foreach (ref readonly var node in nodes)
+        {
+            if (node.IsLeaf)
+            {
+                usedPredictors |= 1 << node.RightOrPredictor;
+            }
+        }
+
+        var selectsPrediction = (usedPredictors & ~SelectablePredictors) == 0 && BitOperations.PopCount((uint)usedPredictors) > 1;
+        Span<long> predictions = stackalloc long[JpegXlMaTree.PredictorCount];
+        predictions.Clear();
         for (var y = 0; y < height; y++)
         {
             var row = samples.Slice(y * width, width);
@@ -259,22 +288,42 @@ internal static class JpegXlTreeCoder
                         referenceProperties.Span.Slice(x * referenceStride, referenceStride).CopyTo(properties[FirstReferenceProperty..]);
                     }
 
-                    while (!nodes[leafIndex].IsLeaf)
+                    if (hasTable)
                     {
-                        ref readonly var decision = ref nodes[leafIndex];
-                        leafIndex = properties[decision.Property] > decision.ValueOrOffset ? decision.LeftOrContext : decision.RightOrPredictor;
+                        leafIndex = table.GetCellVector(properties) & 0xFFFFFF;
+                    }
+                    else
+                    {
+                        while (!nodes[leafIndex].IsLeaf)
+                        {
+                            ref readonly var decision = ref nodes[leafIndex];
+                            leafIndex = properties[decision.Property] > decision.ValueOrOffset ? decision.LeftOrContext : decision.RightOrPredictor;
+                        }
                     }
                 }
 
                 ref readonly var leaf = ref nodes[leafIndex];
                 var predictor = leaf.RightOrPredictor;
-                var prediction = predictor switch
+                long prediction;
+                if (selectsPrediction)
                 {
-                    0 => 0,
-                    5 => JpegXlModularTransform.ClampedGradient((int)left, (int)top, (int)topLeft),
-                    WeightedPredictor => weightedPrediction,
-                    _ => JpegXlModularTransform.Predict(predictor, left, top, topTop, topLeft, topRight, leftLeft, topRightRight, weightedPrediction),
-                };
+                    predictions[1] = left;
+                    predictions[2] = top;
+                    predictions[4] = JpegXlModularTransform.SelectWithoutBranch(left, top, topLeft);
+                    predictions[5] = JpegXlModularTransform.ClampedGradientWithoutBranch(left, top, topLeft);
+                    predictions[13] = ((6 * top) - (2 * topTop) + (7 * left) + leftLeft + topRightRight + (3 * topRight) + 8) / 16;
+                    prediction = predictions[predictor];
+                }
+                else
+                {
+                    prediction = predictor switch
+                    {
+                        0 => 0,
+                        5 => JpegXlModularTransform.ClampedGradient((int)left, (int)top, (int)topLeft),
+                        WeightedPredictor => weightedPrediction,
+                        _ => JpegXlModularTransform.Predict(predictor, left, top, topTop, topLeft, topRight, leftLeft, topRightRight, weightedPrediction),
+                    };
+                }
                 var residual = row[x] - (leaf.ValueOrOffset + prediction);
                 outputRow[x] = ((ulong)leaf.LeftOrContext << 32) | PackSigned(residual);
                 weighted?.Update(row[x], x, y);

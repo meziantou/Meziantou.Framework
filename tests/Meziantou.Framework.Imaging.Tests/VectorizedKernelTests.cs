@@ -616,6 +616,11 @@ public sealed class VectorizedKernelTests
             {
                 AssertTransform(block, expected, (coefficients, destination) => JpegIdct.TransformAvx2(coefficients, destination, Stride, sparse));
             }
+
+            if (Avx512F.IsSupported)
+            {
+                AssertTransform(block, expected, (coefficients, destination) => JpegIdct.TransformAvx512(coefficients, destination, Stride, sparse));
+            }
         }
 
         static void AssertTransform(double[] block, byte[] expected, Action<double[], byte[]> transform)

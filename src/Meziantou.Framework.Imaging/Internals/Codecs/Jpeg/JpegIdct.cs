@@ -20,7 +20,7 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <remarks>
 /// <para>
 /// With hardware vector support, <see cref="Transform(Span{double}, Span{byte}, int, bool)"/> runs each pass on two
-/// columns (then rows) at once, four with AVX2, or on <see cref="Vector{T}.Count"/> of them with other wider vectors: every lane performs exactly
+/// columns (then rows) at once, four with AVX2, eight with AVX-512, or on <see cref="Vector{T}.Count"/> of them with other wider vectors: every lane performs exactly
 /// the operations of the scalar reference (<see cref="TransformScalar"/>) in the same order, without fused multiply-adds,
 /// so the samples are bit-identical. The scalar shortcut for columns without AC coefficients is skipped there; it is
 /// itself exact (the full formula reduces to <c>x0 * C0</c> when the other inputs are zero). The transform of 12-bit
@@ -505,7 +505,11 @@ internal static class JpegIdct
     /// <param name="sparse">Whether every coefficient outside the top-left 4x4 corner is zero (see <see cref="IsSparse(int)"/>).</param>
     public static void Transform(Span<double> coefficients, Span<byte> destination, int stride, bool sparse)
     {
-        if (Avx2.IsSupported)
+        if (Vector512.IsHardwareAccelerated && Avx512F.IsSupported)
+        {
+            TransformAvx512(coefficients, destination, stride, sparse);
+        }
+        else if (Avx2.IsSupported)
         {
             TransformAvx2(coefficients, destination, stride, sparse);
         }
@@ -935,6 +939,103 @@ internal static class JpegIdct
         static Vector256<double> Load256(ref double block, int index) => unsafe(Vector256.LoadUnsafe(ref block, (nuint)index));
     }
 
+    /// <summary>
+    /// The transform with AVX-512: the eight columns, then the eight rows at once. The column pass reads the rows of the block
+    /// (lane <c>u</c> is column <c>u</c>) and its outputs stay in registers; they are transposed so that lane <c>y</c> is row
+    /// <c>y</c> for the row pass, and the samples of the rows 0 to 3, then 4 to 7, are written as <see cref="TransformAvx2"/> writes them.
+    /// </summary>
+    internal static void TransformAvx512(Span<double> coefficients, Span<byte> destination, int stride, bool sparse)
+    {
+        // Bounds are checked once here; the loads below use unchecked references
+        ArgumentOutOfRangeException.ThrowIfLessThan(coefficients.Length, 64);
+        ArgumentOutOfRangeException.ThrowIfLessThan(destination.Length, (7 * stride) + 8);
+        ref var block = ref unsafe(MemoryMarshal.GetReference(coefficients));
+        ref var output = ref unsafe(MemoryMarshal.GetReference(destination));
+        Vector512<double> o0, o1, o2, o3, o4, o5, o6, o7;
+        if (sparse)
+        {
+            // Rows 4 to 7 are zero; so are the columns 4 to 7 of the column pass, hence the samples 4 to 7 of the row inputs
+            Transform1D(Load512(ref block, 0), Load512(ref block, 8), Load512(ref block, 16), Load512(ref block, 24), out var c0, out var c1, out var c2, out var c3, out var c4, out var c5, out var c6, out var c7);
+            TransposeFirstColumns(c0, c1, c2, c3, c4, c5, c6, c7, out var x0, out var x1, out var x2, out var x3);
+            Transform1D(x0, x1, x2, x3, out o0, out o1, out o2, out o3, out o4, out o5, out o6, out o7);
+        }
+        else
+        {
+            Transform1D(
+                Load512(ref block, 0), Load512(ref block, 8), Load512(ref block, 16), Load512(ref block, 24),
+                Load512(ref block, 32), Load512(ref block, 40), Load512(ref block, 48), Load512(ref block, 56),
+                out var c0, out var c1, out var c2, out var c3, out var c4, out var c5, out var c6, out var c7);
+            Transpose(c0, c1, c2, c3, c4, c5, c6, c7, out var x0, out var x1, out var x2, out var x3, out var x4, out var x5, out var x6, out var x7);
+            Transform1D(x0, x1, x2, x3, x4, x5, x6, x7, out o0, out o1, out o2, out o3, out o4, out o5, out o6, out o7);
+        }
+
+        StoreSamplesAvx2(o0.GetLower(), o1.GetLower(), o2.GetLower(), o3.GetLower(), o4.GetLower(), o5.GetLower(), o6.GetLower(), o7.GetLower(), ref output, stride);
+        StoreSamplesAvx2(o0.GetUpper(), o1.GetUpper(), o2.GetUpper(), o3.GetUpper(), o4.GetUpper(), o5.GetUpper(), o6.GetUpper(), o7.GetUpper(), ref unsafe(Unsafe.Add(ref output, 4 * stride)), stride);
+
+        static Vector512<double> Load512(ref double block, int index) => unsafe(Vector512.LoadUnsafe(ref block, (nuint)index));
+    }
+
+    /// <summary>Transposes an 8x8 matrix of doubles: <c>t[j][k] = r[k][j]</c>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static void Transpose(Vector512<double> r0, Vector512<double> r1, Vector512<double> r2, Vector512<double> r3, Vector512<double> r4, Vector512<double> r5, Vector512<double> r6, Vector512<double> r7,
+        out Vector512<double> t0, out Vector512<double> t1, out Vector512<double> t2, out Vector512<double> t3, out Vector512<double> t4, out Vector512<double> t5, out Vector512<double> t6, out Vector512<double> t7)
+    {
+        // Pairs of rows: the 128-bit block i of low01 is (r0[2i], r1[2i]), of high01 (r0[2i + 1], r1[2i + 1])
+        var low01 = Avx512F.UnpackLow(r0, r1);
+        var high01 = Avx512F.UnpackHigh(r0, r1);
+        var low23 = Avx512F.UnpackLow(r2, r3);
+        var high23 = Avx512F.UnpackHigh(r2, r3);
+        var low45 = Avx512F.UnpackLow(r4, r5);
+        var high45 = Avx512F.UnpackHigh(r4, r5);
+        var low67 = Avx512F.UnpackLow(r6, r7);
+        var high67 = Avx512F.UnpackHigh(r6, r7);
+
+        // The blocks 0 and 2, then 1 and 3, of two pairs of rows
+        var lowBlocks02 = Avx512F.Shuffle4x128(low01, low23, 0b10_00_10_00);
+        var lowBlocks13 = Avx512F.Shuffle4x128(low01, low23, 0b11_01_11_01);
+        var highBlocks02 = Avx512F.Shuffle4x128(high01, high23, 0b10_00_10_00);
+        var highBlocks13 = Avx512F.Shuffle4x128(high01, high23, 0b11_01_11_01);
+        var lowBlocks46 = Avx512F.Shuffle4x128(low45, low67, 0b10_00_10_00);
+        var lowBlocks57 = Avx512F.Shuffle4x128(low45, low67, 0b11_01_11_01);
+        var highBlocks46 = Avx512F.Shuffle4x128(high45, high67, 0b10_00_10_00);
+        var highBlocks57 = Avx512F.Shuffle4x128(high45, high67, 0b11_01_11_01);
+
+        t0 = Avx512F.Shuffle4x128(lowBlocks02, lowBlocks46, 0b10_00_10_00);
+        t4 = Avx512F.Shuffle4x128(lowBlocks02, lowBlocks46, 0b11_01_11_01);
+        t2 = Avx512F.Shuffle4x128(lowBlocks13, lowBlocks57, 0b10_00_10_00);
+        t6 = Avx512F.Shuffle4x128(lowBlocks13, lowBlocks57, 0b11_01_11_01);
+        t1 = Avx512F.Shuffle4x128(highBlocks02, highBlocks46, 0b10_00_10_00);
+        t5 = Avx512F.Shuffle4x128(highBlocks02, highBlocks46, 0b11_01_11_01);
+        t3 = Avx512F.Shuffle4x128(highBlocks13, highBlocks57, 0b10_00_10_00);
+        t7 = Avx512F.Shuffle4x128(highBlocks13, highBlocks57, 0b11_01_11_01);
+    }
+
+    /// <summary>The first four rows of the transpose of an 8x8 matrix of doubles: <c>t[j][k] = r[k][j]</c> for <c>j</c> = 0..3.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static void TransposeFirstColumns(Vector512<double> r0, Vector512<double> r1, Vector512<double> r2, Vector512<double> r3, Vector512<double> r4, Vector512<double> r5, Vector512<double> r6, Vector512<double> r7,
+        out Vector512<double> t0, out Vector512<double> t1, out Vector512<double> t2, out Vector512<double> t3)
+    {
+        var low01 = Avx512F.UnpackLow(r0, r1);
+        var high01 = Avx512F.UnpackHigh(r0, r1);
+        var low23 = Avx512F.UnpackLow(r2, r3);
+        var high23 = Avx512F.UnpackHigh(r2, r3);
+        var low45 = Avx512F.UnpackLow(r4, r5);
+        var high45 = Avx512F.UnpackHigh(r4, r5);
+        var low67 = Avx512F.UnpackLow(r6, r7);
+        var high67 = Avx512F.UnpackHigh(r6, r7);
+
+        // The blocks 0 and 1 (the columns 0 to 3) of two pairs of rows
+        var lowBlocks01 = Avx512F.Shuffle4x128(low01, low23, 0b01_00_01_00);
+        var highBlocks01 = Avx512F.Shuffle4x128(high01, high23, 0b01_00_01_00);
+        var lowBlocks45 = Avx512F.Shuffle4x128(low45, low67, 0b01_00_01_00);
+        var highBlocks45 = Avx512F.Shuffle4x128(high45, high67, 0b01_00_01_00);
+
+        t0 = Avx512F.Shuffle4x128(lowBlocks01, lowBlocks45, 0b10_00_10_00);
+        t2 = Avx512F.Shuffle4x128(lowBlocks01, lowBlocks45, 0b11_01_11_01);
+        t1 = Avx512F.Shuffle4x128(highBlocks01, highBlocks45, 0b10_00_10_00);
+        t3 = Avx512F.Shuffle4x128(highBlocks01, highBlocks45, 0b11_01_11_01);
+    }
+
     /// <summary>Stores the outputs of a column pass: <c>o[y]</c> at <c>block[y * 8 + u]</c>.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void Store256(Vector256<double> o0, Vector256<double> o1, Vector256<double> o2, Vector256<double> o3, Vector256<double> o4, Vector256<double> o5, Vector256<double> o6, Vector256<double> o7, ref double block, int u)
@@ -1235,6 +1336,59 @@ internal static class JpegIdct
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void Transform1D(Vector256<double> x0, Vector256<double> x1, Vector256<double> x2, Vector256<double> x3,
         out Vector256<double> o0, out Vector256<double> o1, out Vector256<double> o2, out Vector256<double> o3, out Vector256<double> o4, out Vector256<double> o5, out Vector256<double> o6, out Vector256<double> o7)
+    {
+        var a = C0 * x0;
+        var p = C2 * x2;
+        var q = C6 * x2;
+        var e0 = a + p;
+        var e1 = a + q;
+        var e2 = a - q;
+        var e3 = a - p;
+        var d0 = (C1 * x1) + (C3 * x3);
+        var d1 = (C3 * x1) - (C7 * x3);
+        var d2 = (C5 * x1) - (C1 * x3);
+        var d3 = (C7 * x1) - (C5 * x3);
+        o0 = e0 + d0;
+        o7 = e0 - d0;
+        o1 = e1 + d1;
+        o6 = e1 - d1;
+        o2 = e2 + d2;
+        o5 = e2 - d2;
+        o3 = e3 + d3;
+        o4 = e3 - d3;
+    }
+
+    /// <summary>The <see cref="Vector512{T}"/> form of the eight-input <c>Transform1D</c>: the same expressions, lane by lane.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Transform1D(Vector512<double> x0, Vector512<double> x1, Vector512<double> x2, Vector512<double> x3, Vector512<double> x4, Vector512<double> x5, Vector512<double> x6, Vector512<double> x7,
+        out Vector512<double> o0, out Vector512<double> o1, out Vector512<double> o2, out Vector512<double> o3, out Vector512<double> o4, out Vector512<double> o5, out Vector512<double> o6, out Vector512<double> o7)
+    {
+        var a = C0 * (x0 + x4);
+        var b = C0 * (x0 - x4);
+        var p = (C2 * x2) + (C6 * x6);
+        var q = (C6 * x2) - (C2 * x6);
+        var e0 = a + p;
+        var e1 = b + q;
+        var e2 = b - q;
+        var e3 = a - p;
+        var d0 = (C1 * x1) + (C3 * x3) + (C5 * x5) + (C7 * x7);
+        var d1 = (C3 * x1) - (C7 * x3) - (C1 * x5) - (C5 * x7);
+        var d2 = (C5 * x1) - (C1 * x3) + (C7 * x5) + (C3 * x7);
+        var d3 = (C7 * x1) - (C5 * x3) + (C3 * x5) - (C1 * x7);
+        o0 = e0 + d0;
+        o7 = e0 - d0;
+        o1 = e1 + d1;
+        o6 = e1 - d1;
+        o2 = e2 + d2;
+        o5 = e2 - d2;
+        o3 = e3 + d3;
+        o4 = e3 - d3;
+    }
+
+    /// <summary>The <see cref="Vector512{T}"/> form of the four-input <c>Transform1D</c>.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void Transform1D(Vector512<double> x0, Vector512<double> x1, Vector512<double> x2, Vector512<double> x3,
+        out Vector512<double> o0, out Vector512<double> o1, out Vector512<double> o2, out Vector512<double> o3, out Vector512<double> o4, out Vector512<double> o5, out Vector512<double> o6, out Vector512<double> o7)
     {
         var a = C0 * x0;
         var p = C2 * x2;

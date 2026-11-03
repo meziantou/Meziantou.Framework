@@ -90,6 +90,32 @@ internal static class JpegForwardDct
         15, 31, 42, 57, 44, 55, 60, 45, 58, 43, 59, 46, 61, 62, 47, 63,
     ];
 
+    /// <summary>
+    /// Gets, for each group of 8 zig-zag positions, the byte indexes of their 16-bit values in the 64 bytes of the pairs
+    /// of rows for u = 0 to 3 (<see cref="TransformAndQuantizeArm64"/>), then in those for u = 4 to 7 (0xFF where the
+    /// value is in the other half). A pair of rows <c>j</c> holds the transposed indexes <c>u * 8 + 2j</c> and
+    /// <c>u * 8 + 2j + 1</c> at the 16-bit positions <c>2u</c> and <c>2u + 1</c> (u modulo 4).
+    /// </summary>
+    private static ReadOnlySpan<byte> ZigZagLookupIndexes =>
+    [
+        0, 1, 4, 5, 2, 3, 16, 17, 6, 7, 8, 9, 12, 13, 10, 11,
+        255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+        20, 21, 18, 19, 32, 33, 22, 23, 24, 25, 14, 15, 255, 255, 255, 255,
+        255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 0, 1, 4, 5,
+        255, 255, 28, 29, 26, 27, 36, 37, 34, 35, 48, 49, 38, 39, 40, 41,
+        2, 3, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+        30, 31, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+        255, 255, 16, 17, 6, 7, 8, 9, 12, 13, 10, 11, 20, 21, 18, 19,
+        44, 45, 42, 43, 52, 53, 50, 51, 54, 55, 56, 57, 46, 47, 255, 255,
+        255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 32, 33,
+        255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 60, 61,
+        22, 23, 24, 25, 14, 15, 28, 29, 26, 27, 36, 37, 34, 35, 255, 255,
+        58, 59, 62, 63, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+        255, 255, 255, 255, 48, 49, 38, 39, 40, 41, 30, 31, 44, 45, 42, 43,
+        255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+        52, 53, 50, 51, 54, 55, 56, 57, 46, 47, 60, 61, 58, 59, 62, 63,
+    ];
+
     /// <summary>Gets a value indicating whether <see cref="TransformAndQuantize"/> uses the AVX-512 transform, which can also store 16-bit coefficients (<see cref="TransformAndQuantizeAvx512"/>).</summary>
     public static bool UsesAvx512 => Vector512.IsHardwareAccelerated && Avx512F.IsSupported;
 
@@ -198,11 +224,112 @@ internal static class JpegForwardDct
         samples = samples[..((7 * stride) + 8)];
         divisors = divisors[..64];
         coefficients = coefficients[..64];
-        ref var source = ref unsafe(MemoryMarshal.GetReference(samples));
         ref var columns = ref unsafe(MemoryMarshal.GetReference(scratch[..64]));
+        TransformColumnsVector128(ref unsafe(MemoryMarshal.GetReference(samples)), stride, ref columns);
 
-        // Columns x to x + 3 of the rows (4 floats), transformed two columns at a time and stored transposed: the outputs v
-        // and v + 1 of a column pair are exchanged as a 2 x 2 block
+        // Rows v and v + 1, then quantization: the lanes of output u are the transposed indexes u * 8 + v and u * 8 + v + 1
+        ref var divisor = ref unsafe(MemoryMarshal.GetReference(divisors));
+        ref var destination = ref unsafe(MemoryMarshal.GetReference(coefficients));
+        for (var v = 0; v < 8; v += 2)
+        {
+            Transform(
+                LoadColumns(ref columns, v), LoadColumns(ref columns, 8 + v), LoadColumns(ref columns, 16 + v), LoadColumns(ref columns, 24 + v),
+                LoadColumns(ref columns, 32 + v), LoadColumns(ref columns, 40 + v), LoadColumns(ref columns, 48 + v), LoadColumns(ref columns, 56 + v),
+                out var f0, out var f1, out var f2, out var f3, out var f4, out var f5, out var f6, out var f7);
+            Quantize(f0, ref divisor, ref destination, v);
+            Quantize(f1, ref divisor, ref destination, 8 + v);
+            Quantize(f2, ref divisor, ref destination, 16 + v);
+            Quantize(f3, ref divisor, ref destination, 24 + v);
+            Quantize(f4, ref divisor, ref destination, 32 + v);
+            Quantize(f5, ref divisor, ref destination, 40 + v);
+            Quantize(f6, ref divisor, ref destination, 48 + v);
+            Quantize(f7, ref divisor, ref destination, 56 + v);
+        }
+    }
+
+    /// <summary>
+    /// The transform with Arm64 for 16-bit coefficients: the columns and rows of <see cref="TransformAndQuantizeVector128"/>,
+    /// then the quantized values of each pair of rows narrowed to 16 bits by unzips (UZP1), and reordered to the zig-zag
+    /// order by table lookups of 64 bytes (TBL and TBX, <see cref="ZigZagLookupIndexes"/>).
+    /// </summary>
+    internal static void TransformAndQuantizeArm64(ReadOnlySpan<float> samples, int stride, ReadOnlySpan<double> divisors, Span<double> scratch, Span<short> coefficients)
+    {
+        samples = samples[..((7 * stride) + 8)];
+        divisors = divisors[..64];
+        coefficients = coefficients[..64];
+        ref var columns = ref unsafe(MemoryMarshal.GetReference(scratch[..64]));
+        TransformColumnsVector128(ref unsafe(MemoryMarshal.GetReference(samples)), stride, ref columns);
+
+        // The pairs of rows (v, v + 1): the 16-bit values of the transposed indexes u * 8 + v and u * 8 + v + 1 for u = 0 to 3,
+        // then for u = 4 to 7
+        ref var divisor = ref unsafe(MemoryMarshal.GetReference(divisors));
+        QuantizeRowsArm64(ref columns, ref divisor, 0, out var low0, out var high0);
+        QuantizeRowsArm64(ref columns, ref divisor, 2, out var low1, out var high1);
+        QuantizeRowsArm64(ref columns, ref divisor, 4, out var low2, out var high2);
+        QuantizeRowsArm64(ref columns, ref divisor, 6, out var low3, out var high3);
+        var lower = (low0, low1, low2, low3);
+        var upper = (high0, high1, high2, high3);
+        ref var indexes = ref unsafe(MemoryMarshal.GetReference(ZigZagLookupIndexes));
+        ref var output = ref unsafe(MemoryMarshal.GetReference(coefficients));
+        for (var i = 0; i < 8; i++)
+        {
+            // The bytes of the values for u = 0 to 3, then those for u = 4 to 7 (an index of 0xFF keeps the byte of the first lookup)
+            var values = AdvSimd.Arm64.VectorTableLookup(lower, unsafe(Vector128.LoadUnsafe(ref indexes, (nuint)(32 * i))));
+            values = AdvSimd.Arm64.VectorTableLookupExtension(values, upper, unsafe(Vector128.LoadUnsafe(ref indexes, (nuint)((32 * i) + 16))));
+            unsafe { values.AsInt16().StoreUnsafe(ref output, (nuint)(8 * i)); }
+        }
+    }
+
+    /// <summary>
+    /// Transforms the rows <paramref name="v"/> and <paramref name="v"/> + 1 of the transposed columns, quantizes them like
+    /// <see cref="Quantize"/>, and narrows the values to 16 bits: those of the transposed indexes <c>u * 8 + v</c> and
+    /// <c>u * 8 + v + 1</c> in pairs, for u = 0 to 3 in <paramref name="low"/> and 4 to 7 in <paramref name="high"/>.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void QuantizeRowsArm64(ref double columns, ref double divisors, int v, out Vector128<byte> low, out Vector128<byte> high)
+    {
+        Transform(
+            LoadColumns(ref columns, v), LoadColumns(ref columns, 8 + v), LoadColumns(ref columns, 16 + v), LoadColumns(ref columns, 24 + v),
+            LoadColumns(ref columns, 32 + v), LoadColumns(ref columns, 40 + v), LoadColumns(ref columns, 48 + v), LoadColumns(ref columns, 56 + v),
+            out var f0, out var f1, out var f2, out var f3, out var f4, out var f5, out var f6, out var f7);
+        var q0 = QuantizeArm64(f0, ref divisors, v);
+        var q1 = QuantizeArm64(f1, ref divisors, 8 + v);
+        var q2 = QuantizeArm64(f2, ref divisors, 16 + v);
+        var q3 = QuantizeArm64(f3, ref divisors, 24 + v);
+        var q4 = QuantizeArm64(f4, ref divisors, 32 + v);
+        var q5 = QuantizeArm64(f5, ref divisors, 40 + v);
+        var q6 = QuantizeArm64(f6, ref divisors, 48 + v);
+        var q7 = QuantizeArm64(f7, ref divisors, 56 + v);
+
+        // UZP1 keeps the low halves: of the 64-bit integers, then of the 32-bit ones (the clamped values fit in 16 bits)
+        low = AdvSimd.Arm64.UnzipEven(AdvSimd.Arm64.UnzipEven(q0, q1).AsInt16(), AdvSimd.Arm64.UnzipEven(q2, q3).AsInt16()).AsByte();
+        high = AdvSimd.Arm64.UnzipEven(AdvSimd.Arm64.UnzipEven(q4, q5).AsInt16(), AdvSimd.Arm64.UnzipEven(q6, q7).AsInt16()).AsByte();
+    }
+
+    /// <summary>Quantizes the coefficients of the transposed indexes <paramref name="index"/> and <paramref name="index"/> + 1 like <see cref="Quantize"/>, as the low halves of two 64-bit integers.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<int> QuantizeArm64(Vector128<double> coefficient, ref double divisors, int index)
+    {
+        var quotient = coefficient / unsafe(Vector128.LoadUnsafe(ref divisors, (nuint)index));
+        var minimum = index == 0 ? Vector128.Create((double)MinDc, -MaxAcMagnitude) : Vector128.Create((double)-MaxAcMagnitude);
+        var maximum = index == 0 ? Vector128.Create((double)MaxDc, MaxAcMagnitude) : Vector128.Create((double)MaxAcMagnitude);
+        var clamped = Vector128.MinNative(Vector128.MaxNative(quotient, minimum), maximum);
+
+        // FCVTAS: to nearest, ties away from zero
+        return AdvSimd.Arm64.ConvertToInt64RoundAwayFromZero(clamped).AsInt32();
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<double> LoadColumns(ref double columns, int index) => unsafe(Vector128.LoadUnsafe(ref columns, (nuint)index));
+
+    /// <summary>
+    /// The column pass of <see cref="TransformAndQuantizeVector128"/>: columns x to x + 3 of the rows (4 floats), transformed
+    /// two columns at a time and stored transposed (<c>columns[x * 8 + v]</c>): the outputs v and v + 1 of a column pair are
+    /// exchanged as a 2 x 2 block.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void TransformColumnsVector128(ref float source, int stride, ref double columns)
+    {
         for (var x = 0; x < 8; x += 4)
         {
             var r0 = LoadSamples(ref source, x);
@@ -217,28 +344,7 @@ internal static class JpegForwardDct
             TransformColumns(Vector128.WidenUpper(r0), Vector128.WidenUpper(r1), Vector128.WidenUpper(r2), Vector128.WidenUpper(r3), Vector128.WidenUpper(r4), Vector128.WidenUpper(r5), Vector128.WidenUpper(r6), Vector128.WidenUpper(r7), ref unsafe(Unsafe.Add(ref columns, (x + 2) * 8)));
         }
 
-        // Rows v and v + 1, then quantization: the lanes of output u are the transposed indexes u * 8 + v and u * 8 + v + 1
-        ref var divisor = ref unsafe(MemoryMarshal.GetReference(divisors));
-        ref var destination = ref unsafe(MemoryMarshal.GetReference(coefficients));
-        for (var v = 0; v < 8; v += 2)
-        {
-            Transform(
-                Load(ref columns, v), Load(ref columns, 8 + v), Load(ref columns, 16 + v), Load(ref columns, 24 + v),
-                Load(ref columns, 32 + v), Load(ref columns, 40 + v), Load(ref columns, 48 + v), Load(ref columns, 56 + v),
-                out var f0, out var f1, out var f2, out var f3, out var f4, out var f5, out var f6, out var f7);
-            Quantize(f0, ref divisor, ref destination, v);
-            Quantize(f1, ref divisor, ref destination, 8 + v);
-            Quantize(f2, ref divisor, ref destination, 16 + v);
-            Quantize(f3, ref divisor, ref destination, 24 + v);
-            Quantize(f4, ref divisor, ref destination, 32 + v);
-            Quantize(f5, ref divisor, ref destination, 40 + v);
-            Quantize(f6, ref divisor, ref destination, 48 + v);
-            Quantize(f7, ref divisor, ref destination, 56 + v);
-        }
-
         static Vector128<float> LoadSamples(ref float source, int index) => unsafe(Vector128.LoadUnsafe(ref source, (nuint)index));
-
-        static Vector128<double> Load(ref double source, int index) => unsafe(Vector128.LoadUnsafe(ref source, (nuint)index));
 
         // Transforms the columns of two lanes and stores them transposed at destination (the first column) and destination + 8
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

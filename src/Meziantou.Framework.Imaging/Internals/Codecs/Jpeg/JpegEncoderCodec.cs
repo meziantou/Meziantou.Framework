@@ -1473,6 +1473,12 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                 return;
             }
 
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                JpegForwardDct.TransformAndQuantizeArm64(samples, 8, divisors, worker.Scratch, destination);
+                return;
+            }
+
             JpegForwardDct.TransformAndQuantize(samples, 8, divisors, worker.Scratch, coefficients);
             NarrowCoefficients(coefficients, destination);
         }
@@ -1873,6 +1879,15 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
 
         private void TransformAndEncodeBlock(TransformWorker worker, ReadOnlySpan<float> samples, int stride, ref JpegBlockBitWriter writer, int component, ReadOnlySpan<double> divisors, JpegHuffmanEncoder dc, JpegHuffmanEncoder ac)
         {
+            if (AdvSimd.Arm64.IsSupported)
+            {
+                // The 16-bit coefficients in zig-zag order from table lookups, whose non-zero mask is cheaper
+                var stored = worker.StoredCoefficients.AsSpan();
+                JpegForwardDct.TransformAndQuantizeArm64(samples, stride, divisors, worker.Scratch, stored);
+                EncodeBlock<short>(ref writer, stored, component, dc, ac);
+                return;
+            }
+
             var coefficients = worker.Coefficients.AsSpan();
             JpegForwardDct.TransformAndQuantize(samples, stride, divisors, worker.Scratch, coefficients);
             EncodeBlock<int>(ref writer, coefficients, component, dc, ac);
@@ -2146,6 +2161,8 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             public double[] Scratch { get; } = new double[64];
 
             public int[] Coefficients { get; } = new int[64];
+
+            public short[] StoredCoefficients { get; } = new short[64];
 
             /// <summary>Gets the coefficients of a run of blocks, transformed before they are coded (see <see cref="TransformAndEncodeMcus"/>).</summary>
             /// <param name="blocks">The number of blocks.</param>

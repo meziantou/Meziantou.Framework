@@ -1285,6 +1285,17 @@ public sealed class VectorizedKernelTests
                 AssertPath((samples, stride, coefficients) => JpegForwardDct.TransformAndQuantizeAvx2(samples, stride, divisors, scratch, coefficients));
             }
 
+            if (System.Runtime.Intrinsics.Arm.AdvSimd.Arm64.IsSupported)
+            {
+                // The 16-bit coefficients reordered by table lookups, from contiguous rows and from the rows of a plane
+                var stored = new short[64];
+                JpegForwardDct.TransformAndQuantizeArm64(samples, 8, divisors, scratch, stored);
+                Assert.Equal(expected, Array.ConvertAll(stored, value => (int)value));
+                Array.Clear(stored);
+                JpegForwardDct.TransformAndQuantizeArm64(plane, Stride, divisors, scratch, stored);
+                Assert.Equal(expected, Array.ConvertAll(stored, value => (int)value));
+            }
+
             if (Avx512F.IsSupported)
             {
                 AssertPath((samples, stride, coefficients) => JpegForwardDct.TransformAndQuantizeAvx512(samples, stride, divisors, coefficients));

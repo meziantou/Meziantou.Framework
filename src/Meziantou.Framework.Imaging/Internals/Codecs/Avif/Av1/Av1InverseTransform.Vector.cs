@@ -1304,35 +1304,127 @@ internal static partial class Av1InverseTransform
         PermuteAdstOutput<TLanes, TVector>(t, 4);
     }
 
+    // The input permutation of InverseAdst8 and InverseAdst16 (t[ i ] = copy[ i odd ? i - 1 : n0 - i - 1 ]), written out
     private static void PermuteAdstInput<TVector>(Span<TVector> t, int n)
         where TVector : unmanaged
     {
-        var n0 = 1 << n;
-        Span<TVector> copy = unsafe(stackalloc TVector[16]);
-        t[..n0].CopyTo(copy);
-        for (var i = 0; i < n0; i++)
+        if (n is 3)
         {
-            var idx = (i & 1) is not 0 ? i - 1 : n0 - i - 1;
-            t[i] = copy[idx];
+            t = t[..8];
+            var e0 = t[0];
+            var e1 = t[1];
+            var e2 = t[2];
+            var e3 = t[3];
+            var e4 = t[4];
+            var e5 = t[5];
+            var e6 = t[6];
+            var e7 = t[7];
+            t[0] = e7;
+            t[1] = e0;
+            t[2] = e5;
+            t[3] = e2;
+            t[4] = e3;
+            t[5] = e4;
+            t[6] = e1;
+            t[7] = e6;
+            return;
         }
+
+        t = t[..16];
+        var c0 = t[0];
+        var c1 = t[1];
+        var c2 = t[2];
+        var c3 = t[3];
+        var c4 = t[4];
+        var c5 = t[5];
+        var c6 = t[6];
+        var c7 = t[7];
+        var c8 = t[8];
+        var c9 = t[9];
+        var c10 = t[10];
+        var c11 = t[11];
+        var c12 = t[12];
+        var c13 = t[13];
+        var c14 = t[14];
+        var c15 = t[15];
+        t[0] = c15;
+        t[1] = c0;
+        t[2] = c13;
+        t[3] = c2;
+        t[4] = c11;
+        t[5] = c4;
+        t[6] = c9;
+        t[7] = c6;
+        t[8] = c7;
+        t[9] = c8;
+        t[10] = c5;
+        t[11] = c10;
+        t[12] = c3;
+        t[13] = c12;
+        t[14] = c1;
+        t[15] = c14;
     }
 
+    // The output permutation of InverseAdst8 and InverseAdst16, with the negations of the odd outputs, written out
     private static void PermuteAdstOutput<TLanes, TVector>(Span<TVector> t, int n)
         where TLanes : struct, ILanes<TVector>
         where TVector : unmanaged
     {
-        var n0 = 1 << n;
-        Span<TVector> copy = unsafe(stackalloc TVector[16]);
-        t[..n0].CopyTo(copy);
-        for (var i = 0; i < n0; i++)
+        if (n is 3)
         {
-            var a = (i >> 3) & 1;
-            var b = ((i >> 2) & 1) ^ ((i >> 3) & 1);
-            var c = ((i >> 1) & 1) ^ ((i >> 2) & 1);
-            var d = (i & 1) ^ ((i >> 1) & 1);
-            var idx = ((d << 3) | (c << 2) | (b << 1) | a) >> (4 - n);
-            t[i] = (i & 1) is not 0 ? TLanes.Negate(copy[idx]) : copy[idx];
+            t = t[..8];
+            var e0 = t[0];
+            var e1 = t[1];
+            var e2 = t[2];
+            var e3 = t[3];
+            var e4 = t[4];
+            var e5 = t[5];
+            var e6 = t[6];
+            var e7 = t[7];
+            t[0] = e0;
+            t[1] = TLanes.Negate(e4);
+            t[2] = e6;
+            t[3] = TLanes.Negate(e2);
+            t[4] = e3;
+            t[5] = TLanes.Negate(e7);
+            t[6] = e5;
+            t[7] = TLanes.Negate(e1);
+            return;
         }
+
+        t = t[..16];
+        var c0 = t[0];
+        var c1 = t[1];
+        var c2 = t[2];
+        var c3 = t[3];
+        var c4 = t[4];
+        var c5 = t[5];
+        var c6 = t[6];
+        var c7 = t[7];
+        var c8 = t[8];
+        var c9 = t[9];
+        var c10 = t[10];
+        var c11 = t[11];
+        var c12 = t[12];
+        var c13 = t[13];
+        var c14 = t[14];
+        var c15 = t[15];
+        t[0] = c0;
+        t[1] = TLanes.Negate(c8);
+        t[2] = c12;
+        t[3] = TLanes.Negate(c4);
+        t[4] = c6;
+        t[5] = TLanes.Negate(c14);
+        t[6] = c10;
+        t[7] = TLanes.Negate(c2);
+        t[8] = c3;
+        t[9] = TLanes.Negate(c11);
+        t[10] = c15;
+        t[11] = TLanes.Negate(c7);
+        t[12] = c5;
+        t[13] = TLanes.Negate(c13);
+        t[14] = c9;
+        t[15] = TLanes.Negate(c1);
     }
 
     private static void InverseIdentity<TLanes, TVector>(Span<TVector> t, int n)

@@ -3453,6 +3453,196 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void WebPEncoderBlockKernelsMatchTheScalarReference()
+    {
+        // Sources and predictions of every kind (random, close, extremes, flat) with the steps of every quantizer index and
+        // random steps: the levels, the reconstruction and the squared error of the column-major kernels are the scalar ones
+        var random = new Random(607);
+        var source = new byte[16];
+        var prediction = new byte[16];
+        for (var round = 0; round < 100_000; round++)
+        {
+            random.NextBytes(source);
+            for (var i = 0; i < 16; i++)
+            {
+                if (round % 4 == 2)
+                {
+                    source[i] = (byte)(random.Next(2) * 255);
+                }
+
+                prediction[i] = (round % 4) switch
+                {
+                    0 => (byte)random.Next(256),
+                    1 => (byte)Math.Clamp(source[i] + random.Next(-6, 7), 0, 255),
+                    2 => (byte)(random.Next(2) * 255),
+                    _ => (byte)(round & 255),
+                };
+            }
+
+            var index = random.Next(128);
+            var (dcStep, acStep) = (round % 3) switch
+            {
+                0 => ((int)Vp8Tables.DcQuantizer[index], (int)Vp8Tables.AcQuantizer[index]),
+                1 => (Math.Min(132, (int)Vp8Tables.DcQuantizer[index]), (int)Vp8Tables.AcQuantizer[index]),
+                _ => (random.Next(1, 300), random.Next(1, 300)),
+            };
+            var sourceColumns = Vp8EncoderKernels.Transpose(Vector128.Create(source));
+            var predictionColumns = Vp8EncoderKernels.Transpose(Vector128.Create(prediction));
+            Vp8EncoderKernels.EncodeBlockReference(sourceColumns, predictionColumns, dcStep, acStep, out var expectedLow, out var expectedHigh, out var expectedPixels);
+            Assert.True(Vp8EncoderKernels.TryEncodeBlock(sourceColumns, predictionColumns, new Vp8EncoderKernels.BlockQuantizer(dcStep, acStep), out var low, out var high, out var pixels));
+            Assert.Equal(expectedLow, low);
+            Assert.Equal(expectedHigh, high);
+            Assert.Equal(expectedPixels, pixels);
+
+            var expectedError = 0;
+            for (var i = 0; i < 16; i++)
+            {
+                var difference = sourceColumns[i] - pixels[i];
+                expectedError += difference * difference;
+            }
+
+            Assert.Equal(expectedError, Vp8EncoderKernels.SquaredError(sourceColumns, pixels));
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void WebPEncoderColumnKernelsMatchTheScalarReference()
+    {
+        // Column-major loads and stores of blocks of planes of several strides, sub-block predictions of every mode
+        var random = new Random(608);
+        var edge = new byte[Vp8Reconstruction.SubBlockEdgeLength];
+        var expected = new byte[16];
+        var blockValues = new byte[16];
+        for (var round = 0; round < 20_000; round++)
+        {
+            var stride = random.Next(4, 40);
+            var plane = new byte[(3 * stride) + 4 + random.Next(0, 8)];
+            random.NextBytes(plane);
+            var offset = random.Next(0, plane.Length - (3 * stride) - 3);
+            var columns = Vp8EncoderKernels.LoadColumns(plane, offset, stride);
+            for (var i = 0; i < 16; i++)
+            {
+                Assert.Equal(plane[offset + ((i & 3) * stride) + (i >> 2)], columns[i]);
+            }
+
+            random.NextBytes(blockValues);
+            var copy = plane.ToArray();
+            Vp8EncoderKernels.StoreColumns(copy, offset, stride, Vector128.Create(blockValues));
+            for (var i = 0; i < 16; i++)
+            {
+                plane[offset + ((i & 3) * stride) + (i >> 2)] = blockValues[i];
+            }
+
+            Assert.Equal(plane, copy);
+
+            random.NextBytes(edge);
+            if (round % 3 == 0)
+            {
+                for (var i = 0; i < 13; i++)
+                {
+                    edge[i] = (byte)(random.Next(2) * 255);
+                }
+            }
+
+            var predictor = new Vp8EncoderKernels.SubBlockPredictor(edge);
+            for (var mode = 0; mode < 10; mode++)
+            {
+                Vp8Reconstruction.PredictSubBlockScalar(edge, mode, expected);
+                Assert.Equal(Vector128.Create(expected), Vp8EncoderKernels.Transpose(predictor.Predict(mode)));
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void WebPEncoderWalshHadamardKernelsMatchTheScalarReference()
+    {
+        // DC coefficients of 8-bit residuals (and beyond), and dequantized Y2 coefficients of every 16-bit value (the inverse
+        // wraps to 16 bits)
+        var random = new Random(609);
+        var dc = new int[16];
+        var expectedY2 = new int[16];
+        var y2 = new short[16];
+        var expectedDc = new short[16 * 16];
+        for (var round = 0; round < 100_000; round++)
+        {
+            for (var i = 0; i < 16; i++)
+            {
+                dc[i] = (round % 3) switch
+                {
+                    0 => random.Next(-2100, 2101),
+                    1 => random.Next(2) == 0 ? -2040 : 2040,
+                    _ => random.Next(-5, 6),
+                };
+                y2[i] = (round % 3) switch
+                {
+                    0 => (short)random.Next(short.MinValue, short.MaxValue + 1),
+                    1 => random.Next(2) == 0 ? short.MinValue : short.MaxValue,
+                    _ => (short)random.Next(-300, 301),
+                };
+            }
+
+            Vp8ForwardTransforms.ForwardWalshHadamard(dc, expectedY2);
+            Vp8EncoderKernels.ForwardWalshHadamard(Vector128.Create(dc.AsSpan(0, 4)), Vector128.Create(dc.AsSpan(4, 4)), Vector128.Create(dc.AsSpan(8, 4)), Vector128.Create(dc.AsSpan(12, 4)), out var w0, out var w1, out var w2, out var w3);
+            Assert.Equal(expectedY2, Concatenate(w0, w1, w2, w3));
+
+            Vp8Transforms.InverseWalshHadamard(y2, expectedDc);
+            Vp8EncoderKernels.InverseWalshHadamard(Widen(y2, 0), Widen(y2, 4), Widen(y2, 8), Widen(y2, 12), out var o0, out var o1, out var o2, out var o3);
+            var actualDc = Concatenate(o0, o1, o2, o3);
+            for (var block = 0; block < 16; block++)
+            {
+                Assert.Equal(expectedDc[16 * block], actualDc[block]);
+            }
+        }
+
+        static Vector128<int> Widen(short[] values, int start) => Vector128.Create(values[start], values[start + 1], values[start + 2], (int)values[start + 3]);
+
+        static int[] Concatenate(Vector128<int> r0, Vector128<int> r1, Vector128<int> r2, Vector128<int> r3)
+        {
+            var values = new int[16];
+            r0.CopyTo(values);
+            r1.CopyTo(values, 4);
+            r2.CopyTo(values, 8);
+            r3.CopyTo(values, 12);
+            return values;
+        }
+    }
+
+    [Theory]
+    [InlineData(75, 5, "CBFF4C59433F923F07B866DCE314ECC508C614F946ED99398B4CCFF1BC889E9E")]
+    [InlineData(30, 2, "3F3AD9A3201EAD6C422D7F35D844AA92888F2ED292C77448C4719087688AECAC")]
+    [InlineData(95, 9, "98E7C1610D9D6D894D44BEE9CDE49718659EB59C4EFF5379111CAD8D056374D0")]
+    [InlineData(60, 0, "F50DE7068B6A6B8224C2B3C0160E7F296A712A70CE4B735CE4D6EA88AAC19160")]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void WebPLossyEncoderGivesTheSameBytesOnEveryPath(int quality, int effort, string expectedHash)
+    {
+        // VectorizedKernelFallbackTests runs this again without vectors: a smooth gradient, noise, sharp edges, fully
+        // transparent areas and partial alpha, in an odd size
+        const int Width = 83;
+        const int Height = 61;
+        var random = new Random(611);
+        var rgba = new byte[Width * Height * 4];
+        for (var y = 0; y < Height; y++)
+        {
+            for (var x = 0; x < Width; x++)
+            {
+                var i = ((y * Width) + x) * 4;
+                var edge = ((x / 9) + (y / 7)) % 2 == 0 ? 60 : 0;
+                rgba[i] = (byte)Math.Clamp((x * 3) + edge + random.Next(-8, 9), 0, 255);
+                rgba[i + 1] = (byte)Math.Clamp((y * 4) - edge + random.Next(-20, 21), 0, 255);
+                rgba[i + 2] = (byte)(((x * x) + (3 * y * y)) % 200);
+                rgba[i + 3] = x > 60 && y < 30 ? (byte)0 : y > 50 ? (byte)(x * 3) : (byte)255;
+            }
+        }
+
+        var scope = new AllocationScope(ImageResourceLimits.Default);
+        using var payload = Vp8Encoder.Encode(scope, rgba, Width, Height, quality, effort, CancellationToken.None);
+        Assert.Equal(expectedHash, Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(payload.WrittenMemory.Span)));
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void WebPColorConversionMatchesTheScalarReference()
     {
         var random = new Random(601);

@@ -27,24 +27,21 @@ internal static class Vp8ForwardTransforms
 
     private static ReadOnlySpan<sbyte> Hadamard => [1, 1, 1, 1, 1, 1, -1, -1, 1, -1, -1, 1, 1, -1, 1, -1];
 
-    // Whether ForwardDctColumns can use its vector path: a symmetric basis whose first coefficient is 2^11
-    private static readonly bool CanVectorize = IsBasisSymmetric && DctBasis[0] == 1 << (BasisBits - 1);
+    // The basis values of the vector path (the fixed-point basis has the symmetries of the DCT and a = 2^11): the
+    // WebPForwardDctMatchesTheMatrixProducts test compares it with the reference products of DctBasis
+    private const int BasisA = 1 << (BasisBits - 1);
+    private const int BasisB = 2676;
+    private const int BasisC = 1108;
 
     /// <summary>Computes the VP8 DCT coefficients (raster order) of a 4x4 residual block given in column-major order.</summary>
     /// <param name="residualColumns">The 16 residuals, column by column: <c>residualColumns[(x * 4) + y]</c> is the residual of row <c>y</c>, column <c>x</c>.</param>
     /// <param name="coefficients">The 16 coefficients, raster order.</param>
-    /// <remarks>
-    /// The coefficients are the ones of <see cref="ForwardDct"/> (integer sums are exact, whatever their order). The vector
-    /// path computes the transform of the rows on the columns (4 rows per vector), transposes once, then the transform of the
-    /// columns 4 coefficients at a time. Its 64-bit products are avoided: <c>a = 2^11</c>, and <c>b x + c y</c> is split into
-    /// <c>(b x_h + c y_h) 2^12 + (b x_l + c y_l)</c> with <c>x_h = x &gt;&gt; 12</c>, <c>x_l = x &amp; 4095</c>, whose rounding
-    /// is computed with floor shifts (<c>floor((h 2^12 + m) / 2^23) = (h + (m &gt;&gt; 12)) &gt;&gt; 11</c> for any integers).
-    /// </remarks>
+    /// <remarks>The coefficients are the ones of <see cref="ForwardDct"/> (integer sums are exact, whatever their order); see <see cref="ForwardDctVector"/>.</remarks>
     public static void ForwardDctColumns(ReadOnlySpan<int> residualColumns, Span<int> coefficients)
     {
         residualColumns = residualColumns[..16];
         coefficients = coefficients[..16];
-        if (!CanVectorize || !Vector128.IsHardwareAccelerated)
+        if (!Vector128.IsHardwareAccelerated)
         {
             Span<int> residual = stackalloc int[16];
             for (var i = 0; i < 16; i++)
@@ -56,23 +53,40 @@ internal static class Vp8ForwardTransforms
             return;
         }
 
-        var a = DctBasis[0];
-        var b = DctBasis[4];
-        var c = DctBasis[5];
+        ForwardDctVector(
+            Vector128.Create(residualColumns[..4]),
+            Vector128.Create(residualColumns.Slice(4, 4)),
+            Vector128.Create(residualColumns.Slice(8, 4)),
+            Vector128.Create(residualColumns.Slice(12, 4)),
+            out var c0,
+            out var c1,
+            out var c2,
+            out var c3);
+        c0.CopyTo(coefficients[..4]);
+        c1.CopyTo(coefficients.Slice(4, 4));
+        c2.CopyTo(coefficients.Slice(8, 4));
+        c3.CopyTo(coefficients.Slice(12, 4));
+    }
 
+    /// <summary>Computes the VP8 DCT coefficient rows (raster order) of a 4x4 residual block given as its 4 columns.</summary>
+    /// <remarks>
+    /// The transform of the rows is computed on the columns (4 rows per vector), transposed once, then the transform of the
+    /// columns 4 coefficients at a time. Its 64-bit products are avoided: <c>a = 2^11</c>, and <c>b x + c y</c> is split into
+    /// <c>(b x_h + c y_h) 2^12 + (b x_l + c y_l)</c> with <c>x_h = x &gt;&gt; 12</c>, <c>x_l = x &amp; 4095</c>, whose rounding
+    /// is computed with floor shifts (<c>floor((h 2^12 + m) / 2^23) = (h + (m &gt;&gt; 12)) &gt;&gt; 11</c> for any integers).
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static void ForwardDctVector(Vector128<int> column0, Vector128<int> column1, Vector128<int> column2, Vector128<int> column3, out Vector128<int> c0, out Vector128<int> c1, out Vector128<int> c2, out Vector128<int> c3)
+    {
         // Rows: the transform of every row at once, column vectors in, one vector per output index u (over the rows)
-        var column0 = Vector128.Create(residualColumns[..4]);
-        var column1 = Vector128.Create(residualColumns.Slice(4, 4));
-        var column2 = Vector128.Create(residualColumns.Slice(8, 4));
-        var column3 = Vector128.Create(residualColumns.Slice(12, 4));
         var outerSum = column0 + column3;
         var innerSum = column1 + column2;
         var outerDifference = column0 - column3;
         var innerDifference = column1 - column2;
-        var t0 = (outerSum + innerSum) * a;
-        var t1 = (outerDifference * b) + (innerDifference * c);
-        var t2 = (outerSum - innerSum) * a;
-        var t3 = (outerDifference * c) - (innerDifference * b);
+        var t0 = (outerSum + innerSum) * BasisA;
+        var t1 = (outerDifference * BasisB) + (innerDifference * BasisC);
+        var t2 = (outerSum - innerSum) * BasisA;
+        var t3 = (outerDifference * BasisC) - (innerDifference * BasisB);
 
         // Transposed: one vector per row y (over u), the temp rows of ForwardDct
         Vp8Transforms.Transpose4x4(ref t0, ref t1, ref t2, ref t3);
@@ -82,12 +96,13 @@ internal static class Vp8ForwardTransforms
         innerSum = t1 + t2;
         outerDifference = t0 - t3;
         innerDifference = t1 - t2;
-        RoundTimesA(outerSum + innerSum).CopyTo(coefficients[..4]);
-        RoundSum(outerDifference, innerDifference, b, c).CopyTo(coefficients.Slice(4, 4));
-        RoundTimesA(outerSum - innerSum).CopyTo(coefficients.Slice(8, 4));
-        RoundSum(outerDifference, innerDifference, c, -b).CopyTo(coefficients.Slice(12, 4));
+        c0 = RoundTimesA(outerSum + innerSum);
+        c1 = RoundSum(outerDifference, innerDifference, BasisB, BasisC);
+        c2 = RoundTimesA(outerSum - innerSum);
+        c3 = RoundSum(outerDifference, innerDifference, BasisC, -BasisB);
 
         // Round(2^11 z): (|z| 2^11 + 2^22) >> 23 = (|z| + 2^11) >> 12, with the sign of z
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static Vector128<int> RoundTimesA(Vector128<int> z)
         {
             var magnitude = Vector128.ShiftRightLogical(Vector128.Abs(z) + Vector128.Create(1 << 11), 12);
@@ -95,6 +110,7 @@ internal static class Vp8ForwardTransforms
         }
 
         // Round(p x + q y) for |x|, |y| < 2^22 and |p|, |q| < 2^12 (see the remarks)
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static Vector128<int> RoundSum(Vector128<int> x, Vector128<int> y, int p, int q)
         {
             var mask = Vector128.Create(4095);

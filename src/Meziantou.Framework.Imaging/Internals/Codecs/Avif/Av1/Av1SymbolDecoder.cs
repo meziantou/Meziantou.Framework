@@ -123,8 +123,8 @@ internal sealed class Av1SymbolDecoder
     /// a branch predictor cannot guess.
     /// </summary>
     // The values cur( 0 ) > cur( 1 ) > cur( 2 ) > cur( 3 ) = 0 decrease: the symbol is the number of them above the value,
-    // and symbol i is coded when value < cur( j ) for every j < i. prev - cur and cur are selected with the masks of these
-    // comparisons, and the adaptation of each value of the distribution with the mask of its own comparison
+    // and symbol i is coded when value < cur( j ) for every j < i. prev and cur are read at the index of the symbol in the
+    // sequence range, cur( 0 ) to cur( 3 ), and value i of the distribution decreases when i < symbol
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int ReadSymbol4Branchless(ref State state, Span<ushort> cdf)
     {
@@ -138,21 +138,15 @@ internal sealed class Av1SymbolDecoder
         var cur0 = ((scale * (((1u << 15) - c0) >> Av1Constants.EcProbShift)) >> (7 - Av1Constants.EcProbShift)) + (3 * Av1Constants.EcMinProb);
         var cur1 = ((scale * (((1u << 15) - c1) >> Av1Constants.EcProbShift)) >> (7 - Av1Constants.EcProbShift)) + (2 * Av1Constants.EcMinProb);
         var cur2 = ((scale * (((1u << 15) - c2) >> Av1Constants.EcProbShift)) >> (7 - Av1Constants.EcProbShift)) + Av1Constants.EcMinProb;
-        var below0 = value < cur0 ? 1 : 0;
-        var below1 = value < cur1 ? 1 : 0;
-        var below2 = value < cur2 ? 1 : 0;
-        var mask0 = (uint)-below0;
-        var mask1 = (uint)-below1;
-        var mask2 = (uint)-below2;
-
-        // symbol 0: range - cur0 and cur0; 1: cur0 - cur1 and cur1; 2: cur1 - cur2 and cur2; 3: cur2 and 0
-        var d0 = range - cur0;
-        var d1 = cur0 - cur1;
-        var d2 = cur1 - cur2;
-        var newRange = d0 + (mask0 & (d1 - d0));
-        newRange += mask1 & (d2 - d1);
-        newRange += mask2 & (cur2 - d2);
-        var subtracted = cur0 - (mask0 & d1) - (mask1 & d2) - (mask2 & cur2);
+        var symbol = (value < cur0 ? 1 : 0) + (value < cur1 ? 1 : 0) + (value < cur2 ? 1 : 0);
+        var bounds = default(SymbolBounds);
+        bounds[0] = range;
+        bounds[1] = cur0;
+        bounds[2] = cur1;
+        bounds[3] = cur2;
+        bounds[4] = 0;
+        var subtracted = bounds[symbol + 1];
+        var newRange = bounds[symbol] - subtracted;
 
         // The adaptation of Av1Cdf.Update with the rate of 4 symbols, before the renormalization: the values of the
         // distribution are not live across the refill
@@ -166,7 +160,7 @@ internal sealed class Av1SymbolDecoder
                 // decreased when i < symbol
                 ref var values = ref unsafe(Unsafe.As<ushort, byte>(ref cdf[0]));
                 var current = Vector128.CreateScalar(unsafe(Unsafe.ReadUnaligned<ulong>(ref values))).AsUInt16();
-                var decreased = Vector128.LessThan(Vector128.Create((short)0, 1, 2, 3, 4, 5, 6, 7), Vector128.Create((short)(below0 + below1 + below2))).AsUInt16();
+                var decreased = Vector128.LessThan(Vector128.Create((short)0, 1, 2, 3, 4, 5, 6, 7), Vector128.Create((short)symbol)).AsUInt16();
                 var up = current + Vector128.ShiftRightLogical(Vector128.Create((ushort)(1 << 15)) - current, rate);
                 var down = current - Vector128.ShiftRightLogical(current, rate);
                 var updated = Vector128.ConditionalSelect(decreased, down, up).AsUInt64().ToScalar();
@@ -177,6 +171,9 @@ internal sealed class Av1SymbolDecoder
             }
             else
             {
+                var mask0 = (uint)-(symbol > 0 ? 1 : 0);
+                var mask1 = (uint)-(symbol > 1 ? 1 : 0);
+                var mask2 = (uint)-(symbol > 2 ? 1 : 0);
                 cdf[0] = (ushort)(c0 + (((((1u << 15) - c0) >> rate) & ~mask0) - ((c0 >> rate) & mask0)));
                 cdf[1] = (ushort)(c1 + (((((1u << 15) - c1) >> rate) & ~mask1) - ((c1 >> rate) & mask1)));
                 cdf[2] = (ushort)(c2 + (((((1u << 15) - c2) >> rate) & ~mask2) - ((c2 >> rate) & mask2)));
@@ -186,7 +183,7 @@ internal sealed class Av1SymbolDecoder
         }
 
         Renormalize(ref state, newRange, subtracted);
-        return below0 + below1 + below2;
+        return symbol;
     }
 
     /// <summary><see cref="ReadBool"/> on a state copied by <see cref="Save"/>, without a branch on the decoded bit.</summary>
@@ -302,6 +299,13 @@ internal sealed class Av1SymbolDecoder
             _window = (_window << 8) | (byte)~next;
             _count += 8;
         }
+    }
+
+    // The range and the values cur( 0 ) to cur( 3 ) of a symbol of 4
+    [InlineArray(5)]
+    private struct SymbolBounds
+    {
+        private uint _element;
     }
 
     /// <summary>The state of the range decoder: the window of bits, its count and the range.</summary>

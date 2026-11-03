@@ -49,10 +49,10 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 25,648 | 29,691 | 2,570 | 95% |
+| [Stable](#stable-tests) | 25,650 | 29,691 | 2,570 | 95% |
 | [Tentative](#tentative-tests) | 1,175 | 3,074 | 847 | 53% |
 | [Reftests](#reftests) | 27,819 | 29,220 | 180 | 96% |
-| **All** | **54,642** | **61,985** | **3,597** | **94%** |
+| **All** | **54,644** | **61,985** | **3,597** | **94%** |
 
 ## Stable tests
 
@@ -363,7 +363,7 @@ The features of `REQUIRES`:
 | [`visual-viewport`](visual-viewport.md) | 16 | 19 | 0 | 84% |
 | [`wai-aria`](wai-aria.md) | 20 | 21 | 0 | 95% |
 | [`wasm`](wasm.md) | 324 | 342 | 0 | 95% |
-| [`web-animations`](web-animations.md) | 115 | 136 | 0 | 85% |
+| [`web-animations`](web-animations.md) | 117 | 136 | 0 | 86% |
 | [`web-based-payment-handler`](web-based-payment-handler.md) | 0 | 10 | 10 | – |
 | [`web-extensions`](web-extensions.md) | 0 | 6 | 6 | – |
 | [`web-locks`](web-locks.md) | 22 | 23 | 0 | 96% |
@@ -401,7 +401,7 @@ The features of `REQUIRES`:
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 317 | 330 | 0 | 96% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **25,648** | **29,691** | **2,570** | **95%** |
+| **Total (343 sections)** | **25,650** | **29,691** | **2,570** | **95%** |
 
 ## Tentative tests
 

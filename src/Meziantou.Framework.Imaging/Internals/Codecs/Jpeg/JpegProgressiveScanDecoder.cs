@@ -140,10 +140,120 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
         if (_start == 0)
             return DecodeDcMcus(mcuX, mcuY, count);
 
-        if (_refinement && !_referenceRefinement)
+        if (!_refinement)
+            return DecodeAcFirstBlocks(mcuX, mcuY, count);
+
+        if (!_referenceRefinement)
             return DecodeAcRefinementBlocks(mcuX, mcuY, count);
 
         return base.DecodeMcus(mcuX, mcuY, count);
+    }
+
+    /// <summary>
+    /// The blocks of an AC first scan whose bytes are buffered, like <see cref="DecodeAcFirst"/>: one lookup of
+    /// <see cref="JpegHuffmanTable.FastLookup"/> per symbol, which also gives the coefficient when its magnitude bits fit,
+    /// and the same checks in the same order. The blocks of an EOB run that the row has are counted as decoded; the rest
+    /// of the run is left to the scan (<see cref="JpegScanDecoder.SkippableMcus"/>).
+    /// </summary>
+    private int DecodeAcFirstBlocks(int mcuX, int mcuY, int count)
+    {
+        Debug.Assert(SkippableMcus == 0);
+        var scanComponent = Components[0];
+        var table = scanComponent.AcTable!;
+        var lookup = table.FastLookup;
+        var reader = Reader;
+        var cursor = reader.GetUncheckedCursor();
+        ref var zigZag = ref unsafe(MemoryMarshal.GetReference(JpegIdct.ZigZag));
+        var start = _start;
+        var end = _end;
+        var low = _low;
+        var skippable = 0;
+        var decoded = 0;
+        do
+        {
+            ref var coefficients = ref unsafe(MemoryMarshal.GetReference(scanComponent.GetCoefficients(mcuY, mcuX + decoded)));
+            var k = start;
+            do
+            {
+                cursor.Refill();
+                var entry = cursor.Lookup(lookup);
+                int symbol;
+                var coefficient = 0;
+                if ((entry & JpegHuffmanTable.FastLookupComplete) != 0)
+                {
+                    cursor.Consume(entry);
+                    symbol = (entry >> JpegHuffmanTable.FastLookupSymbolShift) & 0xFF;
+                    coefficient = entry >> JpegHuffmanTable.FastLookupValueShift;
+                }
+                else
+                {
+                    if (entry != 0)
+                    {
+                        cursor.Consume(entry);
+                        symbol = (entry >> JpegHuffmanTable.FastLookupSymbolShift) & 0xFF;
+                    }
+                    else
+                    {
+                        symbol = cursor.DecodeLongCode(table);
+                    }
+
+                    var size = symbol & 0x0F;
+                    if (size != 0)
+                    {
+                        if (k + (symbol >> 4) > end)
+                            throw Invalid("The JPEG AC coefficients run past the end of the spectral band.");
+
+                        if (size > MaxAcCategory)
+                            throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG AC coefficient magnitude category is greater than {MaxAcCategory}."));
+
+                        coefficient = cursor.ReceiveExtend(size);
+                    }
+                }
+
+                var run = symbol >> 4;
+                if ((symbol & 0x0F) == 0)
+                {
+                    if (run != 15)
+                    {
+                        // EOBn: this block and the next 2^n - 1 + (n extra bits) blocks end here
+                        skippable = (1 << run) - 1 + (run == 0 ? 0 : cursor.ReadBits(run));
+                        break;
+                    }
+
+                    k += 16; // ZRL
+                    continue;
+                }
+
+                k += run;
+                if (k > end)
+                    throw Invalid("The JPEG AC coefficients run past the end of the spectral band.");
+
+                var shifted = (long)coefficient << low;
+                if (Math.Abs(shifted) > short.MaxValue)
+                    throw Invalid("The JPEG AC coefficient is out of range.");
+
+                // The zig-zag position is at most 63 and the block has 64 coefficients
+                unsafe { Unsafe.Add(ref coefficients, Unsafe.Add(ref zigZag, k)) = (short)shifted; }
+                k++;
+            }
+            while (k <= end);
+
+            decoded++;
+            if (skippable > 0)
+            {
+                // The blocks of the run code nothing: as many as the row has are decoded
+                var skipped = Math.Min(skippable, count - decoded);
+                decoded += skipped;
+                skippable -= skipped;
+                if (skippable > 0)
+                    break;
+            }
+        }
+        while (decoded < count && HasUncheckedBytes(cursor));
+
+        cursor.Commit(reader);
+        SkippableMcus = skippable;
+        return decoded;
     }
 
     private int DecodeDcMcus(int mcuX, int mcuY, int count)

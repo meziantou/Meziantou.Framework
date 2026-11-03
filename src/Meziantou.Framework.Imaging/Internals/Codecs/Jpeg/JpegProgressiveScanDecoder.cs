@@ -677,8 +677,16 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
         var end = _end;
         var endOfBandRun = _endOfBandRun;
         var k = _start;
-        var nonzero = GetNonzeroMask(block);
-        var reversedNonzero = ReverseBits(nonzero);
+
+        // Only the coefficients of the band are refined: often none of them is nonzero yet
+        var natural = JpegIdct.GetNonzeroMask(block) & _naturalBand;
+        ulong nonzero = 0;
+        ulong reversedNonzero = 0;
+        if (natural != 0)
+        {
+            nonzero = ToZigZagMask(natural);
+            reversedNonzero = ReverseBits(nonzero);
+        }
 
         // The zero coefficients of the band up to its end (the positions from k are taken at each symbol)
         var zeroMask = ~nonzero & (ulong.MaxValue >> (63 - end));

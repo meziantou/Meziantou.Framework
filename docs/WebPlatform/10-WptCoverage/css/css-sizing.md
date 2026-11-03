@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of css/css-sizing, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 190 | 201 | 0 | 95% |
-| [Tentative](#tentative-tests) | 6 | 7 | 0 | 86% |
+| [Stable](#stable-tests) | 192 | 201 | 0 | 96% |
+| [Tentative](#tentative-tests) | 7 | 7 | 0 | 100% |
 | [Reftests](#reftests) | 552 | 569 | 0 | 97% |
-| **All** | **748** | **777** | **0** | **96%** |
+| **All** | **751** | **777** | **0** | **97%** |
 
 ## Stable tests
 
@@ -128,7 +128,7 @@ description: "The results of the web-platform-tests of css/css-sizing, and why t
 | [`parsing/max-height-valid.html`](https://wpt.fyi/results/css/css-sizing/parsing/max-height-valid.html) | Pass | 10 / 10 |  |  |
 | [`parsing/max-size-invalid.html`](https://wpt.fyi/results/css/css-sizing/parsing/max-size-invalid.html) | Pass | 10 / 10 |  |  |
 | [`parsing/max-size-shorthand.html`](https://wpt.fyi/results/css/css-sizing/parsing/max-size-shorthand.html) | Pass | 15 / 15 |  |  |
-| [`parsing/max-size-valid.html`](https://wpt.fyi/results/css/css-sizing/parsing/max-size-valid.html) | Fail | 11 / 14 | BUG | the `max-size` shorthand of css-sizing-4 does not have the serialization of `size` (`SerializePair` in `CssPropertyRules`): two equal components are not collapsed (`0px 0px` instead of `0px`, `100px 100px` instead of `100px`) |
+| [`parsing/max-size-valid.html`](https://wpt.fyi/results/css/css-sizing/parsing/max-size-valid.html) | Pass | 14 / 14 |  |  |
 | [`parsing/max-width-computed.html`](https://wpt.fyi/results/css/css-sizing/parsing/max-width-computed.html) | Pass | 12 / 12 |  |  |
 | [`parsing/max-width-invalid.html`](https://wpt.fyi/results/css/css-sizing/parsing/max-width-invalid.html) | Pass | 4 / 4 |  |  |
 | [`parsing/max-width-valid.html`](https://wpt.fyi/results/css/css-sizing/parsing/max-width-valid.html) | Pass | 10 / 10 |  |  |
@@ -137,7 +137,7 @@ description: "The results of the web-platform-tests of css/css-sizing, and why t
 | [`parsing/min-height-valid.html`](https://wpt.fyi/results/css/css-sizing/parsing/min-height-valid.html) | Pass | 10 / 10 |  |  |
 | [`parsing/min-size-invalid.html`](https://wpt.fyi/results/css/css-sizing/parsing/min-size-invalid.html) | Pass | 10 / 10 |  |  |
 | [`parsing/min-size-shorthand.html`](https://wpt.fyi/results/css/css-sizing/parsing/min-size-shorthand.html) | Pass | 15 / 15 |  |  |
-| [`parsing/min-size-valid.html`](https://wpt.fyi/results/css/css-sizing/parsing/min-size-valid.html) | Fail | 11 / 14 | BUG | the `min-size` shorthand of css-sizing-4 does not have the serialization of `size` (`SerializePair` in `CssPropertyRules`): two equal components are not collapsed (`0px 0px` instead of `0px`, `100px 100px` instead of `100px`) |
+| [`parsing/min-size-valid.html`](https://wpt.fyi/results/css/css-sizing/parsing/min-size-valid.html) | Pass | 14 / 14 |  |  |
 | [`parsing/min-width-computed.html`](https://wpt.fyi/results/css/css-sizing/parsing/min-width-computed.html) | Pass | 11 / 11 |  |  |
 | [`parsing/min-width-invalid.html`](https://wpt.fyi/results/css/css-sizing/parsing/min-width-invalid.html) | Pass | 11 / 11 |  |  |
 | [`parsing/min-width-valid.html`](https://wpt.fyi/results/css/css-sizing/parsing/min-width-valid.html) | Pass | 10 / 10 |  |  |
@@ -224,7 +224,7 @@ description: "The results of the web-platform-tests of css/css-sizing, and why t
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`size-shorthand-serialization.tentative.html`](https://wpt.fyi/results/css/css-sizing/size-shorthand-serialization.tentative.html) | Fail | 9 / 15 | BUG | only the `size` shorthand is excluded from the shorthands that `cssText` collapses the declarations into (`CssStyleDeclaration`): `min-width`/`min-height` and `max-width`/`max-height` serialize as `min-size: 100px 200px;` and `max-size: 100px 200px;` instead of the longhands |
+| [`size-shorthand-serialization.tentative.html`](https://wpt.fyi/results/css/css-sizing/size-shorthand-serialization.tentative.html) | Pass | 15 / 15 |  |  |
 | [`stretch/stretch-alias-block-size-001.tentative.html`](https://wpt.fyi/results/css/css-sizing/stretch/stretch-alias-block-size-001.tentative.html) | Pass | 46 / 46 |  |  |
 | [`stretch/stretch-alias-inline-size-001.tentative.html`](https://wpt.fyi/results/css/css-sizing/stretch/stretch-alias-inline-size-001.tentative.html) | Pass | 46 / 46 |  |  |
 | [`stretch/stretch-alias-max-block-size-001.tentative.html`](https://wpt.fyi/results/css/css-sizing/stretch/stretch-alias-max-block-size-001.tentative.html) | Pass | 45 / 45 |  |  |

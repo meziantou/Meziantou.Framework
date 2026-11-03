@@ -10,9 +10,9 @@ description: "The results of the web-platform-tests of css/css-values, and why t
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 255 | 264 | 0 | 97% |
-| [Tentative](#tentative-tests) | 20 | 22 | 0 | 91% |
-| [Reftests](#reftests) | 210 | 214 | 0 | 98% |
-| **All** | **485** | **500** | **0** | **97%** |
+| [Tentative](#tentative-tests) | 21 | 22 | 0 | 95% |
+| [Reftests](#reftests) | 211 | 214 | 0 | 99% |
+| **All** | **487** | **500** | **0** | **97%** |
 
 ## Stable tests
 
@@ -295,7 +295,7 @@ description: "The results of the web-platform-tests of css/css-values, and why t
 | [`position/position-invalid.tentative.html`](https://wpt.fyi/results/css/css-values/position/position-invalid.tentative.html) | Pass | 21 / 21 |  |  |
 | [`position/position-valid.tentative.html`](https://wpt.fyi/results/css/css-values/position/position-valid.tentative.html) | Pass | 34 / 34 |  |  |
 | [`random-alias-property.tentative.html`](https://wpt.fyi/results/css/css-values/random-alias-property.tentative.html) | Pass | 1 / 1 |  |  |
-| [`random-computed.tentative.html`](https://wpt.fyi/results/css/css-values/random-computed.tentative.html) | Fail | 169 / 172 | BUG | the computed values of `random()` in three contexts: in `border-image-slice` (a `<number> \| <percentage>`), `random(10%, 30%)` is kept as `random(fixed 0.22, 10%, 30%)` instead of being resolved to a percentage (`parseFloat()` returns NaN); in a custom property registered as `<transform-function>`, `translate(random(30%, 10%))` keeps no random base value (`random(fixed <base>, 30%, 10%)` is expected); in the color stops of a `radial-gradient()` (a `<length-percentage>`), `random(30%, 10%, 1%)` is resolved to `30%`, while the `random()` of the position of the same gradient is kept as `random(fixed <base>, ...)` as expected |
+| [`random-computed.tentative.html`](https://wpt.fyi/results/css/css-values/random-computed.tentative.html) | Pass | 172 / 172 |  |  |
 | [`random-in-animations.tentative.html`](https://wpt.fyi/results/css/css-values/random-in-animations.tentative.html) | Pass | 37 / 37 |  |  |
 | [`random-in-container-query.tentative.html`](https://wpt.fyi/results/css/css-values/random-in-container-query.tentative.html) | Pass | 9 / 9 |  |  |
 | [`random-in-custom-function.tentative.html`](https://wpt.fyi/results/css/css-values/random-in-custom-function.tentative.html) | Pass | 63 / 63 |  |  |
@@ -346,7 +346,7 @@ description: "The results of the web-platform-tests of css/css-values, and why t
 | [`calc-background-linear-gradient-1.html`](https://wpt.fyi/results/css/css-values/calc-background-linear-gradient-1.html) | Pass | 1 / 1 |  |  |
 | [`calc-background-position-1.html`](https://wpt.fyi/results/css/css-values/calc-background-position-1.html) | Pass | 1 / 1 |  |  |
 | [`calc-background-size-1.html`](https://wpt.fyi/results/css/css-values/calc-background-size-1.html) | Pass | 1 / 1 |  |  |
-| [`calc-background-size-round-percentage.html`](https://wpt.fyi/results/css/css-values/calc-background-size-round-percentage.html) | Fail | 0 / 1 | BUG | the computed value of `background-size` splits the commas of a math function that keeps a percentage (`round()` of a percentage): `100% calc(100% / round(up, 100% / 110px))` computes to `100% calc(100% / round(up)), 100% / 110px, 1 RightParenthesis RightParenthesis`, so the gradient fills the whole 100x400 box instead of a 100x100 tile |
+| [`calc-background-size-round-percentage.html`](https://wpt.fyi/results/css/css-values/calc-background-size-round-percentage.html) | Pass | 1 / 1 |  |  |
 | [`calc-border-radius-1.html`](https://wpt.fyi/results/css/css-values/calc-border-radius-1.html) | Pass | 1 / 1 |  |  |
 | [`calc-ch-ex-lang.html`](https://wpt.fyi/results/css/css-values/calc-ch-ex-lang.html) | Pass | 1 / 1 |  |  |
 | [`calc-height-block-1.html`](https://wpt.fyi/results/css/css-values/calc-height-block-1.html) | Pass | 1 / 1 |  |  |

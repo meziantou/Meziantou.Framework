@@ -686,7 +686,7 @@ internal static class CssShorthands
             if (value.ShorthandName is not null)
                 return false;
 
-            if (!lookup.TryGetValue(value.Name, out var expected) || expected != value.Value)
+            if (!lookup.TryGetValue(value.Name, out var expected) || (expected != value.Value && !CssBackgrounds.AreEquivalentPositions(value.Name, expected, value.Value)))
                 return false;
         }
 

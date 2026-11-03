@@ -304,7 +304,7 @@ internal static class CssBackgrounds
             if (xs.Count != ys.Count)
                 return null;
 
-            return string.Join(", ", xs.Zip(ys, (x, y) => x + " " + y));
+            return string.Join(", ", xs.Zip(ys, CombinePosition));
         }
 
         var lists = LayerLonghands.ToDictionary(l => l, l => SplitList(lookup[l]), StringComparer.Ordinal);
@@ -326,7 +326,7 @@ internal static class CssBackgrounds
 
             if (!IsInitial("background-position-x") || !IsInitial("background-position-y") || !IsInitial("background-size"))
             {
-                var position = Get("background-position-x") + " " + Get("background-position-y");
+                var position = CombinePosition(Get("background-position-x"), Get("background-position-y"));
                 parts.Add(IsInitial("background-size") ? position : position + " / " + Get("background-size"));
             }
 
@@ -364,6 +364,70 @@ internal static class CssBackgrounds
         }
 
         return string.Join(", ", layers);
+    }
+
+    /// <summary>
+    /// Joins the horizontal and vertical components into a &lt;bg-position&gt;. An offset from an edge ("right 10px") does not
+    /// combine with a bare &lt;length-percentage&gt; on the other axis, so the bare one is anchored to its default edge:
+    /// "right 10px top 0%" (https://drafts.csswg.org/css-backgrounds/#typedef-bg-position).
+    /// </summary>
+    private static string CombinePosition(string x, string y)
+    {
+        var xKind = GetComponentKind(x);
+        var yKind = GetComponentKind(y);
+        if (xKind == PositionComponentKind.EdgeOffset && yKind == PositionComponentKind.Offset)
+            return x + " top " + y;
+
+        if (yKind == PositionComponentKind.EdgeOffset && xKind == PositionComponentKind.Offset)
+            return "left " + x + " " + y;
+
+        return x + " " + y;
+
+        static PositionComponentKind GetComponentKind(string value)
+        {
+            var space = value.IndexOf(' ', StringComparison.Ordinal);
+            var first = space < 0 ? value : value[..space];
+            if (first is not ("left" or "right" or "top" or "bottom" or "center" or "x-start" or "x-end" or "y-start" or "y-end"))
+                return PositionComponentKind.Offset;
+
+            return space < 0 ? PositionComponentKind.Keyword : PositionComponentKind.EdgeOffset;
+        }
+    }
+
+    /// <summary>
+    /// Returns whether the components of background-position-x or background-position-y are the same offsets, the ones of
+    /// <paramref name="actual"/> being possibly anchored to their default edge (see <see cref="CombinePosition"/>): "top 0%" is "0%".
+    /// </summary>
+    internal static bool AreEquivalentPositions(string longhand, string expected, string actual)
+    {
+        var edge = longhand switch
+        {
+            "background-position-x" => "left ",
+            "background-position-y" => "top ",
+            _ => null,
+        };
+        if (edge is null)
+            return false;
+
+        var expectedLayers = SplitList(expected);
+        var actualLayers = SplitList(actual);
+        if (expectedLayers.Count != actualLayers.Count)
+            return false;
+
+        for (var i = 0; i < expectedLayers.Count; i++)
+        {
+            if (expectedLayers[i] != actualLayers[i] && actualLayers[i] != edge + expectedLayers[i])
+                return false;
+        }
+
+        return true;
+    }
+
+    private enum PositionComponentKind
+    {
+        Offset,
+        Keyword,
+        EdgeOffset,
     }
 
     /// <summary>Splits a serialized list at the top-level commas.</summary>

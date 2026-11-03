@@ -43,7 +43,7 @@ internal static partial class CssPropertyRules
     }
 
     /// <summary>Computes background-size or mask-size from its generic computed value (see <see cref="CanonicalizeBgSizeLayer"/>).</summary>
-    public static string ComputeBgSize(string value) => string.Join(", ", value.Split(", ").Select(layer => CanonicalizeBgSizeLayer(layer, computed: true)));
+    public static string ComputeBgSize(string value) => string.Join(", ", CssBackgrounds.SplitList(value).Select(layer => CanonicalizeBgSizeLayer(layer, computed: true)));
 
     /// <summary>
     /// https://drafts.fxtf.org/css-masking/#the-mask: the omitted components of a layer are set to their initial value, a

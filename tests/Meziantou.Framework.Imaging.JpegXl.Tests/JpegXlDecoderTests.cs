@@ -638,12 +638,18 @@ public sealed class JpegXlDecoderTests
         }
     }
 
+    // The properties that the learned trees of libjxl test most, and the predictors of their leaves
+    private const int LearnedTreeProperties = -2;
+    private const int GradientOrWeighted = -2;
+
+    private static readonly int[] LearnedProperties = [2, 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 14, 15];
+
     public static TheoryData<int> ModularTreeSeeds
     {
         get
         {
             var data = new TheoryData<int>();
-            for (var seed = 0; seed < 84; seed++)
+            for (var seed = 0; seed < 120; seed++)
             {
                 data.Add(seed);
             }
@@ -655,10 +661,11 @@ public sealed class JpegXlDecoderTests
     /// <summary>
     /// A Modular sub-bitstream whose tree is drawn at random (the first 14 seeds: one leaf with each predictor; the next 14:
     /// decisions on one property, 2 to 15; from 60: decisions on the property of the weighted predictor and leaves that all
-    /// use it, the tree of most lossless files, with ANS for the even seeds) is decoded like a transcription of the section
-    /// H.3 of the standard does: every sample computes the properties, walks the tree and predicts from its neighbors, at
-    /// the edges of channels of 1 to 40 samples, with the previous channels of the same size as the source of the
-    /// properties from 16 on.
+    /// use it, the tree of most lossless files; from 84: decisions on the properties of the neighbors and of the weighted
+    /// predictor, as in learned trees, with leaves that use the gradient or the weighted predictor from 102; ANS for the
+    /// even seeds) is decoded like a transcription of the section H.3 of the standard does: every sample computes the
+    /// properties, walks the tree and predicts from its neighbors, at the edges of channels of 1 to 40 samples, with the
+    /// previous channels of the same size as the source of the properties from 16 on.
     /// </summary>
     [Theory]
     [MemberData(nameof(ModularTreeSeeds))]
@@ -685,8 +692,11 @@ public sealed class JpegXlDecoderTests
         else
         {
             // Then trees whose decisions all test the same property, of the sample and its neighbors, then any
-            var isWeightedTable = seed >= 60;
-            BuildTree(random, nodes, sizes.Length, isWeightedTable ? JpegXlMaTree.WeightedProperty : seed < JpegXlMaTree.PredictorCount + 14 ? seed - JpegXlMaTree.PredictorCount + 2 : -1, isWeightedTable ? 6 : -1);
+            var isWeightedTable = seed is >= 60 and < 84;
+            var isLearnedTree = seed >= 84;
+            var onlyProperty = isWeightedTable ? JpegXlMaTree.WeightedProperty : isLearnedTree ? LearnedTreeProperties : seed < JpegXlMaTree.PredictorCount + 14 ? seed - JpegXlMaTree.PredictorCount + 2 : -1;
+            var onlyPredictor = isWeightedTable ? 6 : seed >= 102 ? GradientOrWeighted : -1;
+            BuildTree(random, nodes, sizes.Length, onlyProperty, onlyPredictor);
         }
 
         var leafCount = 0;
@@ -847,7 +857,7 @@ public sealed class JpegXlDecoderTests
             queue.Enqueue((0, 0, []));
             while (queue.TryDequeue(out var item))
             {
-                var property = onlyProperty >= 0 ? onlyProperty : random.Next(4) switch
+                var property = onlyProperty >= 0 ? onlyProperty : onlyProperty == LearnedTreeProperties ? LearnedProperties[random.Next(LearnedProperties.Length)] : random.Next(4) switch
                 {
                     0 => random.Next(16),
                     1 => 16 + random.Next(4 * channelCount),
@@ -858,7 +868,7 @@ public sealed class JpegXlDecoderTests
                 {
                     var multiplierLog = random.Next(3) == 0 ? random.Next(3) : 0;
                     var multiplier = random.Next(3) == 0 ? (random.Next(3) + 1) << multiplierLog : 1;
-                    nodes[item.Index] = new JpegXlMaTreeNode { Property = -1, ValueOrOffset = random.Next(-5, 6), RightOrPredictor = onlyPredictor >= 0 ? onlyPredictor : random.Next(JpegXlMaTree.PredictorCount), Multiplier = multiplier };
+                    nodes[item.Index] = new JpegXlMaTreeNode { Property = -1, ValueOrOffset = random.Next(-5, 6), RightOrPredictor = onlyPredictor >= 0 ? onlyPredictor : onlyPredictor == GradientOrWeighted ? 5 + random.Next(2) : random.Next(JpegXlMaTree.PredictorCount), Multiplier = multiplier };
                     continue;
                 }
 

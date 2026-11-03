@@ -322,8 +322,10 @@ internal sealed partial class Painter
         }
 
         // The overflow of an SVG viewport is clipped to the viewport (in the coordinate system of the element, before its viewBox)
+        var viewportClipSaveCount = -1;
         if (viewportRect is { } clipRect && ClipsSvgViewport(style))
         {
+            viewportClipSaveCount = _builder.SaveCount;
             _builder.Save();
             AddSvgClipRect(GetSvgViewportClip(style, clipRect), frameToRoot);
         }
@@ -350,6 +352,12 @@ internal sealed partial class Painter
             case "image":
                 PaintSvgImage((SvgImageElement)element, style, toGroup, context, source);
                 break;
+        }
+
+        // The clip of the viewport applies to the content of the element, not to its outline, which is around the viewport
+        if (viewportClipSaveCount >= 0)
+        {
+            _builder.RestoreTo(viewportClipSaveCount);
         }
 
         if (HasOutline(style))

@@ -964,6 +964,11 @@ public sealed class VectorizedKernelTests
             {
                 AssertPath(source, expected, (source, luma, blue, red) => Complete(source, luma, blue, red, JpegEncoderCodec.ConvertRgbToYCbCrAvx2(source, luma, blue, red)));
             }
+
+            if (Avx512F.IsSupported)
+            {
+                AssertPath(source, expected, (source, luma, blue, red) => Complete(source, luma, blue, red, JpegEncoderCodec.ConvertRgbToYCbCrAvx512(source, luma, blue, red)));
+            }
         }
 
         static void AssertPath(byte[] source, float[][] expected, ConvertRgbToYCbCr convert)

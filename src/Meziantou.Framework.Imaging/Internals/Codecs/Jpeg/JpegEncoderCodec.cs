@@ -65,11 +65,12 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
     /// <remarks>
     /// With 128-bit hardware vectors, 16 pixels are deinterleaved by byte shuffles and converted two at a time with the same
     /// operations in the same order (separate multiplications and additions), so the samples are identical;
-    /// with AVX2, four at a time.
+    /// with AVX2, four at a time, and with AVX-512, eight at a time.
     /// </remarks>
     internal static void ConvertRgbToYCbCr(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red)
     {
-        var done = Avx2.IsSupported ? ConvertRgbToYCbCrAvx2(source, luma, blue, red)
+        var done = Vector512.IsHardwareAccelerated && Avx512F.IsSupported ? ConvertRgbToYCbCrAvx512(source, luma, blue, red)
+            : Avx2.IsSupported ? ConvertRgbToYCbCrAvx2(source, luma, blue, red)
             : Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian ? ConvertRgbToYCbCrVector(source, luma, blue, red)
             : 0;
         ConvertRgbToYCbCrScalar(source[(3 * done)..], luma[done..], blue[done..], red[done..]);
@@ -204,6 +205,41 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             unsafe { Avx.ConvertToVector128Single(y - Vector256.Create(128.0)).StoreUnsafe(ref luma); }
             unsafe { Avx.ConvertToVector128Single((b - y) * Vector256.Create(BlueScale)).StoreUnsafe(ref blue); }
             unsafe { Avx.ConvertToVector128Single((r - y) * Vector256.Create(RedScale)).StoreUnsafe(ref red); }
+        }
+    }
+
+    /// <summary>Converts the pixels of whole 16-pixel groups with AVX-512, eight at a time.</summary>
+    /// <returns>The number of pixels converted.</returns>
+    internal static int ConvertRgbToYCbCrAvx512(ReadOnlySpan<byte> source, Span<float> luma, Span<float> blue, Span<float> red)
+    {
+        var count = Math.Min(Math.Min(luma.Length, Math.Min(blue.Length, red.Length)), source.Length / 3);
+        ref var sourceStart = ref unsafe(MemoryMarshal.GetReference(source));
+        ref var lumaStart = ref unsafe(MemoryMarshal.GetReference(luma));
+        ref var blueStart = ref unsafe(MemoryMarshal.GetReference(blue));
+        ref var redStart = ref unsafe(MemoryMarshal.GetReference(red));
+        var x = 0;
+        for (; x + 16 <= count; x += 16)
+        {
+            var (r, g, b) = Deinterleave(ref unsafe(Unsafe.Add(ref sourceStart, 3 * x)));
+            var r32 = Avx512F.ConvertToVector512Int32(r);
+            var g32 = Avx512F.ConvertToVector512Int32(g);
+            var b32 = Avx512F.ConvertToVector512Int32(b);
+            Convert8(r32.GetLower(), g32.GetLower(), b32.GetLower(), ref unsafe(Unsafe.Add(ref lumaStart, x)), ref unsafe(Unsafe.Add(ref blueStart, x)), ref unsafe(Unsafe.Add(ref redStart, x)));
+            Convert8(r32.GetUpper(), g32.GetUpper(), b32.GetUpper(), ref unsafe(Unsafe.Add(ref lumaStart, x + 8)), ref unsafe(Unsafe.Add(ref blueStart, x + 8)), ref unsafe(Unsafe.Add(ref redStart, x + 8)));
+        }
+
+        return x;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static void Convert8(Vector256<int> red8, Vector256<int> green8, Vector256<int> blue8, ref float luma, ref float blue, ref float red)
+        {
+            var r = Avx512F.ConvertToVector512Double(red8);
+            var g = Avx512F.ConvertToVector512Double(green8);
+            var b = Avx512F.ConvertToVector512Double(blue8);
+            var y = (0.299 * r) + (0.587 * g) + (0.114 * b);
+            unsafe { Avx512F.ConvertToVector256Single(y - Vector512.Create(128.0)).StoreUnsafe(ref luma); }
+            unsafe { Avx512F.ConvertToVector256Single((b - y) * Vector512.Create(BlueScale)).StoreUnsafe(ref blue); }
+            unsafe { Avx512F.ConvertToVector256Single((r - y) * Vector512.Create(RedScale)).StoreUnsafe(ref red); }
         }
     }
 

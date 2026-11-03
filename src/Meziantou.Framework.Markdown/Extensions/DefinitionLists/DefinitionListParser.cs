@@ -173,6 +173,7 @@ public class DefinitionListParser : BlockParser
         {
             var startPosition = processor.Start;
             var column = processor.ColumnBeforeIndent;
+            var markerColumn = processor.Column;
             processor.NextChar();
             processor.ParseIndent();
             var delta = processor.Column - column;
@@ -180,6 +181,9 @@ public class DefinitionListParser : BlockParser
             // We expect to have a least
             if (delta < 4)
             {
+                // The opening character is the text of the line (e.g. `:-:`), which continues the paragraph lazily
+                processor.GoToColumn(markerColumn);
+
                 // Remove the blankline before breaking this definition item
                 if (lastBlankLine != null)
                 {

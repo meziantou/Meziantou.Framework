@@ -996,6 +996,16 @@ public sealed class TestPipeTable
         Assert.Equal(expectedHtml, MarkdownConverter.ToHtml(markdown, new MarkdownPipelineBuilder().UsePipeTables().Build()));
     }
 
+    [Theory]
+    [InlineData("x \na | b\n---|---\n")]
+    [InlineData("x \ny\t\n--|a | b\n---|---\n")]
+    [InlineData("*x*  \na | b\n---|---\n")]
+    public void ParagraphBeforeTableKeepsItsTrailingWhitespaceWithTrivia(string markdown)
+    {
+        // The whitespace at the end of the paragraph was removed, as without trivia
+        TestRoundtrip.RoundTrip(markdown, new MarkdownPipelineBuilder().UsePipeTables());
+    }
+
     [Fact]
     public void CodeSpanAcrossRowsWithTrivia()
     {

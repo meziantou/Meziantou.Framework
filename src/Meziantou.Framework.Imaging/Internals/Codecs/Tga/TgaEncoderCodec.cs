@@ -157,27 +157,49 @@ internal sealed class TgaEncoderCodec : ImageEncoderCodec
             {
                 CancellationToken.ThrowIfCancellationRequested();
                 var source = lease.GetRowBytes(_height - 1 - _rowsWritten)[..(_width * bytesPerPixel)];
-                var stored = _band!.Span[..storedRowLength];
-                PixelConverter.ConvertRow(_sourceFormat, source, _workFormat, stored, background: null, ImageFormat.Tga);
-                if (_workFormat == PixelFormat.Rgb24)
-                {
-                    // TGA stores blue, green and red: the conversion produced RGB, so red and blue are swapped in place
-                    PixelConverter.SwapRedAndBlue24(stored, stored);
-                }
-
                 if (_runLength)
                 {
                     // At most one packet header per 128 pixels, plus the samples
+                    var stored = ConvertRow(source, _band!.Span[..storedRowLength]);
                     var destination = output.GetSpan(storedRowLength + (((_width + TgaFormat.MaxPacketLength - 1) / TgaFormat.MaxPacketLength) * 2));
                     output.Advance(EncodeRunLengthRow(stored, destination));
                 }
                 else
                 {
-                    output.Write(stored);
+                    // Raw rows are stored straight into the output
+                    ConvertRow(source, output.GetSpan(storedRowLength)[..storedRowLength]);
+                    output.Advance(storedRowLength);
                 }
 
                 _rowsWritten++;
             }
+        }
+
+        /// <summary>Converts one source row to the stored samples (blue, green and red for 24-bit pixels) in <paramref name="stored"/>.</summary>
+        private ReadOnlySpan<byte> ConvertRow(ReadOnlySpan<byte> source, Span<byte> stored)
+        {
+            if (_workFormat != PixelFormat.Rgb24)
+            {
+                PixelConverter.ConvertRow(_sourceFormat, source, _workFormat, stored, background: null, ImageFormat.Tga);
+                return stored;
+            }
+
+            // TGA stores blue, green and red: RGB rows are swapped while they are copied (never in place, which stalls the
+            // overlapping vector loads on the stores before them)
+            if (_sourceFormat != PixelFormat.Rgb24)
+            {
+                var band = _band!.Span[..stored.Length];
+                PixelConverter.ConvertRow(_sourceFormat, source, PixelFormat.Rgb24, band, background: null, ImageFormat.Tga);
+                source = band;
+                if (source.Overlaps(stored))
+                {
+                    PixelConverter.SwapRedAndBlue24(band, band);
+                    return band;
+                }
+            }
+
+            PixelConverter.SwapRedAndBlue24(source, stored);
+            return stored;
         }
 
         /// <summary>Encodes one row as run-length and raw packets; packets never cross the scan line.</summary>

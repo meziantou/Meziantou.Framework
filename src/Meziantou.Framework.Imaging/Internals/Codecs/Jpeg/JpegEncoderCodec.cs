@@ -672,6 +672,9 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         // The number of MCU rows that each worker transforms in a batch
         private const int RowsPerWorker = 4;
 
+        // The worst-case output of the MCUs of a baseline scan coded through one block writer
+        private const int BaselineRunBytes = 16 * 1024;
+
         // The worst-case output of the blocks of a progressive scan coded by one call
         private const int ProgressiveRunBytes = 32 * 1024;
 
@@ -1399,13 +1402,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                         if (coded > 0 && output.ShouldFlush)
                             return false;
 
-                        var span = output.GetSpan((blocksPerMcu * MaxBlockBytes) + (_restartInterval > 0 ? MaxRestartBytes : 0) + JpegBlockBitWriter.SpeculativeBytes);
-                        var length = 0;
-                        WriteRestartIfDue((_mcuRow * _mcusX) + _mcuX, span, ref length);
-                        length += batched ? EncodeStoredMcu(_mcuRow, _mcuX, span[length..]) : EncodeMcu(_mcuX, span[length..]);
-                        output.Advance(length);
-                        _mcuX++;
-                        coded++;
+                        coded += EncodeMcuRun(output, stored: batched);
                     }
 
                     _mcuX = 0;
@@ -1481,10 +1478,47 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             red[_width..].Fill(red[_width - 1]);
         }
 
-        /// <summary>Transforms and codes an MCU of the loaded row of the only worker.</summary>
-        private int EncodeMcu(int mcuX, Span<byte> destination)
+        /// <summary>
+        /// Codes consecutive MCUs of the current row from <see cref="_mcuX"/>, through one <see cref="JpegBlockBitWriter"/>
+        /// (one byte stuffing pass): at most the MCUs whose worst-case output fits in <see cref="BaselineRunBytes"/>, and the
+        /// MCUs before the next restart marker, which is written first when it is due.
+        /// </summary>
+        /// <param name="output">The output.</param>
+        /// <param name="stored"><see langword="true"/> to code stored coefficients; <see langword="false"/> to transform the loaded row of the only worker.</param>
+        /// <returns>The number of MCUs coded.</returns>
+        private int EncodeMcuRun(ImageOutputBuffer output, bool stored)
         {
+            var index = (_mcuRow * _mcusX) + _mcuX;
+            var count = Math.Min(_mcusX - _mcuX, Math.Max(1, BaselineRunBytes / (_blocksPerMcu * MaxBlockBytes)));
+            if (_restartInterval > 0)
+            {
+                count = Math.Min(count, _restartInterval - (index % _restartInterval));
+            }
+
+            var span = output.GetSpan((count * _blocksPerMcu * MaxBlockBytes) + MaxRestartBytes + JpegBlockBitWriter.SpeculativeBytes);
             var position = 0;
+            WriteRestartIfDue(index, span, ref position);
+            var writer = new JpegBlockBitWriter(span, position, _bits);
+            for (var mcuX = _mcuX; mcuX < _mcuX + count; mcuX++)
+            {
+                if (stored)
+                {
+                    EncodeStoredMcu(_mcuRow, mcuX, ref writer);
+                }
+                else
+                {
+                    EncodeMcu(mcuX, ref writer);
+                }
+            }
+
+            output.Advance(writer.Complete(ref _bits));
+            _mcuX += count;
+            return count;
+        }
+
+        /// <summary>Transforms and codes an MCU of the loaded row of the only worker.</summary>
+        private void EncodeMcu(int mcuX, ref JpegBlockBitWriter writer)
+        {
             var worker = _transformWorkers[0];
             var lumaBlocks = _h * _v;
             for (var block = 0; block < _blocksPerMcu; block++)
@@ -1492,38 +1526,33 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                 var samples = GetBlockSamples(worker, mcuX, block, out var stride);
                 if (block < lumaBlocks)
                 {
-                    TransformAndEncodeBlock(worker, samples, stride, destination, ref position, component: 0, _luminanceDivisors, _luminanceDc, _luminanceAc);
+                    TransformAndEncodeBlock(worker, samples, stride, ref writer, component: 0, _luminanceDivisors, _luminanceDc, _luminanceAc);
                 }
                 else
                 {
-                    TransformAndEncodeBlock(worker, samples, stride, destination, ref position, component: block - lumaBlocks + 1, _chrominanceDivisors, _chrominanceDc!, _chrominanceAc!);
+                    TransformAndEncodeBlock(worker, samples, stride, ref writer, component: block - lumaBlocks + 1, _chrominanceDivisors, _chrominanceDc!, _chrominanceAc!);
                 }
             }
-
-            return position;
         }
 
-        private void TransformAndEncodeBlock(TransformWorker worker, ReadOnlySpan<float> samples, int stride, Span<byte> destination, ref int position, int component, ReadOnlySpan<double> divisors, JpegHuffmanEncoder dc, JpegHuffmanEncoder ac)
+        private void TransformAndEncodeBlock(TransformWorker worker, ReadOnlySpan<float> samples, int stride, ref JpegBlockBitWriter writer, int component, ReadOnlySpan<double> divisors, JpegHuffmanEncoder dc, JpegHuffmanEncoder ac)
         {
             var coefficients = worker.Coefficients.AsSpan();
             JpegForwardDct.TransformAndQuantize(samples, stride, divisors, worker.Scratch, coefficients);
-            EncodeBlock(destination, ref position, coefficients, component, dc, ac);
+            EncodeBlock(ref writer, coefficients, component, dc, ac);
         }
 
         /// <summary>Codes an MCU from its stored coefficients: those of the baseline batch, or of the whole image with optimized tables.</summary>
-        private int EncodeStoredMcu(int row, int mcuX, Span<byte> destination)
+        private void EncodeStoredMcu(int row, int mcuX, ref JpegBlockBitWriter writer)
         {
-            var position = 0;
             var coefficients = _blockCoefficients.AsSpan();
             for (var block = 0; block < _blocksPerMcu; block++)
             {
                 LoadStoredBlock(row, mcuX, block, coefficients);
 
                 var component = block < _h * _v ? 0 : block - (_h * _v) + 1;
-                EncodeBlock(destination, ref position, coefficients, component, component == 0 ? _luminanceDc : _chrominanceDc!, component == 0 ? _luminanceAc : _chrominanceAc!);
+                EncodeBlock(ref writer, coefficients, component, component == 0 ? _luminanceDc : _chrominanceDc!, component == 0 ? _luminanceAc : _chrominanceAc!);
             }
-
-            return position;
         }
 
         /// <summary>Copies the stored coefficients of a block of an MCU: those of the baseline batch, or of the whole image with optimized tables.</summary>
@@ -1599,13 +1628,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                     if (coded > 0 && output.ShouldFlush)
                         return false;
 
-                    var span = output.GetSpan((_blocksPerMcu * MaxBlockBytes) + MaxRestartBytes + JpegBlockBitWriter.SpeculativeBytes);
-                    var length = 0;
-                    WriteRestartIfDue((_mcuRow * _mcusX) + _mcuX, span, ref length);
-                    length += EncodeStoredMcu(_mcuRow, _mcuX, span[length..]);
-                    output.Advance(length);
-                    _mcuX++;
-                    coded++;
+                    coded += EncodeMcuRun(output, stored: true);
                 }
 
                 _mcuX = 0;
@@ -1657,13 +1680,11 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
 
         /// <summary>Codes the quantized coefficients (zig-zag order) of a block of a component.</summary>
         /// <remarks>
-        /// The bits go through a <see cref="JpegBlockBitWriter"/>, which stuffs the block once it is coded: the destination
-        /// has <see cref="MaxBlockBytes"/> and <see cref="JpegBlockBitWriter.SpeculativeBytes"/> bytes.
+        /// The bits go through a <see cref="JpegBlockBitWriter"/>, which stuffs the run of MCUs once it is coded: the
+        /// destination has <see cref="MaxBlockBytes"/> per block and <see cref="JpegBlockBitWriter.SpeculativeBytes"/> bytes.
         /// </remarks>
-        private void EncodeBlock(Span<byte> destination, ref int position, Span<int> coefficients, int component, JpegHuffmanEncoder dc, JpegHuffmanEncoder ac)
+        private void EncodeBlock(ref JpegBlockBitWriter bits, Span<int> coefficients, int component, JpegHuffmanEncoder dc, JpegHuffmanEncoder ac)
         {
-            var bits = new JpegBlockBitWriter(destination, position, _bits);
-
             // DC: difference with the previous block of the component, size category then the additional bits (T.81 F.1.2.1)
             var difference = coefficients[0] - _predictions[component];
             _predictions[component] = coefficients[0];
@@ -1693,7 +1714,6 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                 WriteSymbol(ref bits, ac, 0x00);
             }
 
-            position = bits.Complete(ref _bits);
         }
 
         /// <summary>

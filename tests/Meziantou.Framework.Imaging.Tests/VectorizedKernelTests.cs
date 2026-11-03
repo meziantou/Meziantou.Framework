@@ -3509,7 +3509,8 @@ public sealed class VectorizedKernelTests
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void WebPEncoderColumnKernelsMatchTheScalarReference()
     {
-        // Column-major loads and stores of blocks of planes of several strides, sub-block predictions of every mode
+        // Column-major loads and stores of blocks of planes of several strides, sub-block predictions of every mode, the
+        // squared error of whole planes
         var random = new Random(608);
         var edge = new byte[Vp8Reconstruction.SubBlockEdgeLength];
         var expected = new byte[16];
@@ -3551,6 +3552,28 @@ public sealed class VectorizedKernelTests
                 Vp8Reconstruction.PredictSubBlockScalar(edge, mode, expected);
                 Assert.Equal(Vector128.Create(expected), Vp8EncoderKernels.Transpose(predictor.Predict(mode)));
             }
+        }
+
+        for (var round = 0; round < 200; round++)
+        {
+            var width = random.Next(1, 100);
+            var height = random.Next(1, 6);
+            var stride = width + random.Next(0, 20);
+            var a = new byte[stride * height];
+            var b = new byte[stride * height];
+            random.NextBytes(a);
+            random.NextBytes(b);
+            long expectedError = 0;
+            for (var y = 0; y < height; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    var difference = a[(y * stride) + x] - b[(y * stride) + x];
+                    expectedError += difference * difference;
+                }
+            }
+
+            Assert.Equal(expectedError, Vp8EncoderKernels.PlaneSquaredError(a, b, stride, width, height));
         }
     }
 
@@ -3606,6 +3629,77 @@ public sealed class VectorizedKernelTests
             r2.CopyTo(values, 8);
             r3.CopyTo(values, 12);
             return values;
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void WebPEncoderSourceConversionMatchesTheScalarReference()
+    {
+        // Two rows of every length whose 2x2 blocks have one alpha value (opaque, transparent, partial) or mixed values
+        var random = new Random(610);
+        var u = new byte[4];
+        var v = new byte[4];
+        for (var round = 0; round < 3_000; round++)
+        {
+            var width = random.Next(1, 70);
+            var rgba = new byte[width * 2 * 4];
+            random.NextBytes(rgba);
+            var alphaKind = round % 5;
+            for (var x = 0; x < width; x += 2)
+            {
+                var alpha = alphaKind switch
+                {
+                    0 => 255,
+                    1 => 0,
+                    _ => random.Next(256),
+                };
+                for (var dy = 0; dy < 2; dy++)
+                {
+                    for (var dx = 0; dx < 2 && x + dx < width; dx++)
+                    {
+                        rgba[((((dy * width) + x + dx) * 4) + 3)] = (byte)(alphaKind == 4 && random.Next(4) == 0 ? random.Next(256) : alpha);
+                    }
+                }
+            }
+
+            var luma = new byte[width];
+            Vp8EncoderKernels.ConvertLumaRow(rgba.AsSpan(0, width * 4), luma);
+            for (var x = 0; x < width; x++)
+            {
+                int r = rgba[x * 4], g = rgba[(x * 4) + 1], b = rgba[(x * 4) + 2];
+                Assert.Equal((byte)(((16829 * r) + (33039 * g) + (6416 * b) + (16 << 16) + 32768) >> 16), luma[x]);
+            }
+
+            var hasTransparent = false;
+            for (var i = 3; i < rgba.Length; i += 4)
+            {
+                hasTransparent |= rgba[i] == 0;
+            }
+
+            Assert.Equal(hasTransparent, Vp8EncoderKernels.HasTransparentPixel(rgba));
+
+            for (var cx = 0; (2 * cx) + 8 <= width; cx++)
+            {
+                var uniform = true;
+                for (var i = 0; i < 4; i++)
+                {
+                    var x = 2 * (cx + i) * 4;
+                    var a = rgba[x + 3];
+                    uniform &= rgba[x + 7] == a && rgba[(width * 4) + x + 3] == a && rgba[(width * 4) + x + 7] == a;
+                }
+
+                Assert.Equal(uniform, Vp8EncoderKernels.TryConvertChroma(rgba.AsSpan(cx * 8), rgba.AsSpan((width * 4) + (cx * 8)), u, v));
+                if (!uniform)
+                    continue;
+
+                for (var i = 0; i < 4; i++)
+                {
+                    Vp8Encoder.ConvertChroma(rgba, width, 2, cx + i, 0, out var expectedU, out var expectedV);
+                    Assert.Equal(expectedU, u[i]);
+                    Assert.Equal(expectedV, v[i]);
+                }
+            }
         }
     }
 

@@ -239,67 +239,50 @@ internal sealed class Vp8Encoder : IDisposable
         var paddedHeight = _mbHeight * 16;
         for (var row = 0; row < _height; row++)
         {
-            var pixels = rgba.Slice(row * _width * 4, _width * 4);
-            var luma = y.Slice(row * yStride, yStride);
-            for (var x = 0; x < _width; x++)
-            {
-                int r = pixels[x * 4], g = pixels[(x * 4) + 1], b = pixels[(x * 4) + 2];
-                luma[x] = (byte)(((16829 * r) + (33039 * g) + (6416 * b) + (16 << 16) + 32768) >> 16);
-            }
+            Vp8EncoderKernels.ConvertLumaRow(rgba.Slice(row * _width * 4, _width * 4), y.Slice(row * yStride, _width));
         }
 
-        FlattenTransparentLuma(rgba, y, yStride);
+        // Without fully transparent pixels, the luma and the runs of transparent blocks are left as they are
+        var hasTransparentPixels = Vp8EncoderKernels.HasTransparentPixel(rgba[..(_width * _height * 4)]);
+        if (hasTransparentPixels)
+        {
+            FlattenTransparentLuma(rgba, y, yStride);
+        }
+
         var chromaWidth = (_width + 1) >> 1;
         var chromaHeight = (_height + 1) >> 1;
         for (var cy = 0; cy < chromaHeight; cy++)
         {
-            for (var cx = 0; cx < chromaWidth; cx++)
+            var cx = 0;
+            if (Vp8EncoderKernels.IsSupported && (2 * cy) + 1 < _height)
             {
-                // Alpha-weighted average of the 2x2 block (plain average when every pixel is transparent)
-                long sumU = 0, sumV = 0, weight = 0, plainU = 0, plainV = 0, count = 0;
-                for (var dy = 0; dy < 2; dy++)
+                // 4 samples at a time from whole 2x2 blocks of a uniform alpha, the others one at a time
+                var top = rgba.Slice(2 * cy * _width * 4, _width * 4);
+                var bottom = rgba.Slice(((2 * cy) + 1) * _width * 4, _width * 4);
+                for (; (2 * cx) + 8 <= _width; cx += 4)
                 {
-                    var py = (2 * cy) + dy;
-                    if (py >= _height)
-                        continue;
-
-                    for (var dx = 0; dx < 2; dx++)
+                    var offset = (cy * uvStride) + cx;
+                    if (!Vp8EncoderKernels.TryConvertChroma(top[(cx * 8)..], bottom[(cx * 8)..], u.Slice(offset, 4), v.Slice(offset, 4)))
                     {
-                        var px = (2 * cx) + dx;
-                        if (px >= _width)
-                            continue;
-
-                        var pixel = rgba.Slice(((py * _width) + px) * 4, 4);
-                        int r = pixel[0], g = pixel[1], b = pixel[2], a = pixel[3];
-                        var pu = (-9714 * r) - (19070 * g) + (28784 * b);
-                        var pv = (28784 * r) - (24103 * g) - (4681 * b);
-                        sumU += (long)pu * a;
-                        sumV += (long)pv * a;
-                        weight += a;
-                        plainU += pu;
-                        plainV += pv;
-                        count++;
+                        for (var i = 0; i < 4; i++)
+                        {
+                            ConvertChroma(rgba, _width, _height, cx + i, cy, out u[offset + i], out v[offset + i]);
+                        }
                     }
                 }
+            }
 
-                double cu, cv;
-                if (weight > 0)
-                {
-                    cu = (double)sumU / weight;
-                    cv = (double)sumV / weight;
-                }
-                else
-                {
-                    cu = (double)plainU / count;
-                    cv = (double)plainV / count;
-                }
-
-                u[(cy * uvStride) + cx] = ClampByte(128 + (int)Math.Floor((cu / 65536.0) + 0.5));
-                v[(cy * uvStride) + cx] = ClampByte(128 + (int)Math.Floor((cv / 65536.0) + 0.5));
+            for (; cx < chromaWidth; cx++)
+            {
+                ConvertChroma(rgba, _width, _height, cx, cy, out u[(cy * uvStride) + cx], out v[(cy * uvStride) + cx]);
             }
         }
 
-        FlattenTransparentRuns(rgba);
+        if (hasTransparentPixels)
+        {
+            FlattenTransparentRuns(rgba);
+        }
+
         for (var row = 0; row < _height; row++)
         {
             var luma = y.Slice(row * yStride, yStride);
@@ -322,6 +305,54 @@ internal sealed class Vp8Encoder : IDisposable
             u.Slice((chromaHeight - 1) * uvStride, uvStride).CopyTo(u.Slice(cy * uvStride, uvStride));
             v.Slice((chromaHeight - 1) * uvStride, uvStride).CopyTo(v.Slice(cy * uvStride, uvStride));
         }
+    }
+
+    /// <summary>
+    /// Computes the chroma of the 2x2 block <paramref name="cx"/>, <paramref name="cy"/>: the alpha-weighted average of its
+    /// visible pixels (the plain average when every pixel is transparent).
+    /// </summary>
+    internal static void ConvertChroma(ReadOnlySpan<byte> rgba, int width, int height, int cx, int cy, out byte u, out byte v)
+    {
+        long sumU = 0, sumV = 0, weight = 0, plainU = 0, plainV = 0, count = 0;
+        for (var dy = 0; dy < 2; dy++)
+        {
+            var py = (2 * cy) + dy;
+            if (py >= height)
+                continue;
+
+            for (var dx = 0; dx < 2; dx++)
+            {
+                var px = (2 * cx) + dx;
+                if (px >= width)
+                    continue;
+
+                var pixel = rgba.Slice(((py * width) + px) * 4, 4);
+                int r = pixel[0], g = pixel[1], b = pixel[2], a = pixel[3];
+                var pu = (-9714 * r) - (19070 * g) + (28784 * b);
+                var pv = (28784 * r) - (24103 * g) - (4681 * b);
+                sumU += (long)pu * a;
+                sumV += (long)pv * a;
+                weight += a;
+                plainU += pu;
+                plainV += pv;
+                count++;
+            }
+        }
+
+        double cu, cv;
+        if (weight > 0)
+        {
+            cu = (double)sumU / weight;
+            cv = (double)sumV / weight;
+        }
+        else
+        {
+            cu = (double)plainU / count;
+            cv = (double)plainV / count;
+        }
+
+        u = ClampByte(128 + (int)Math.Floor((cu / 65536.0) + 0.5));
+        v = ClampByte(128 + (int)Math.Floor((cv / 65536.0) + 0.5));
     }
 
     /// <summary>
@@ -1476,15 +1507,17 @@ internal sealed class Vp8Encoder : IDisposable
             return;
         }
 
+        // Level 0 is the reconstruction itself; each other level filters a copy of it
         var bestLevel = 0;
-        var bestDistortion = FilteredDistortion(0);
+        var bestDistortion = Distortion(_reconstruction);
+        using var copy = Vp8Planes.Create(_scope, _width, _height);
         foreach (var candidate in new[] { baseLevel / 2, baseLevel, Math.Min(63, (baseLevel * 3) / 2) })
         {
             _cancellationToken.ThrowIfCancellationRequested();
             if (candidate == 0)
                 continue;
 
-            var distortion = FilteredDistortion(candidate);
+            var distortion = FilteredDistortion(candidate, copy);
             if (distortion < bestDistortion)
             {
                 bestDistortion = distortion;
@@ -1495,45 +1528,31 @@ internal sealed class Vp8Encoder : IDisposable
         _filterLevel = bestLevel;
     }
 
-    private long FilteredDistortion(int level)
+    private long FilteredDistortion(int level, Vp8Planes copy)
     {
-        using var copy = Vp8Planes.Create(_scope, _width, _height);
         _reconstruction.Y.CopyTo(copy.Y);
         _reconstruction.U.CopyTo(copy.U);
         _reconstruction.V.CopyTo(copy.V);
-        if (level > 0)
+        var info = new byte[_macroblocks.Length];
+        for (var i = 0; i < info.Length; i++)
         {
-            var info = new byte[_macroblocks.Length];
-            for (var i = 0; i < info.Length; i++)
-            {
-                var mb = _macroblocks[i];
-                var inner = mb.YMode == Vp8Tables.BPred || mb.HasCoefficients;
-                info[i] = (byte)(level | (inner ? 0x80 : 0));
-            }
-
-            Vp8LoopFilter.Apply(copy, info, _mbWidth, _mbHeight, simple: false, sharpness: 0);
+            var mb = _macroblocks[i];
+            var inner = mb.YMode == Vp8Tables.BPred || mb.HasCoefficients;
+            info[i] = (byte)(level | (inner ? 0x80 : 0));
         }
 
-        long sum = 0;
-        sum += PlaneDistortion(_source.Y, copy.Y, _source.YStride, _width, _height);
-        sum += PlaneDistortion(_source.U, copy.U, _source.UVStride, (_width + 1) >> 1, (_height + 1) >> 1);
-        sum += PlaneDistortion(_source.V, copy.V, _source.UVStride, (_width + 1) >> 1, (_height + 1) >> 1);
-        return sum;
+        Vp8LoopFilter.Apply(copy, info, _mbWidth, _mbHeight, simple: false, sharpness: 0);
+        return Distortion(copy);
     }
 
-    private static long PlaneDistortion(ReadOnlySpan<byte> source, ReadOnlySpan<byte> plane, int stride, int width, int height)
+    /// <summary>Computes the sum of the squared differences of the visible samples of <paramref name="planes"/> and the source.</summary>
+    private long Distortion(Vp8Planes planes)
     {
-        long sum = 0;
-        for (var y = 0; y < height; y++)
-        {
-            for (var x = 0; x < width; x++)
-            {
-                var difference = source[(y * stride) + x] - plane[(y * stride) + x];
-                sum += difference * difference;
-            }
-        }
-
-        return sum;
+        var chromaWidth = (_width + 1) >> 1;
+        var chromaHeight = (_height + 1) >> 1;
+        return Vp8EncoderKernels.PlaneSquaredError(_source.Y, planes.Y, _source.YStride, _width, _height)
+            + Vp8EncoderKernels.PlaneSquaredError(_source.U, planes.U, _source.UVStride, chromaWidth, chromaHeight)
+            + Vp8EncoderKernels.PlaneSquaredError(_source.V, planes.V, _source.UVStride, chromaWidth, chromaHeight);
     }
 
     /// <summary>Counts the token statistics with the decoder's contexts and updates the probabilities that save bits.</summary>

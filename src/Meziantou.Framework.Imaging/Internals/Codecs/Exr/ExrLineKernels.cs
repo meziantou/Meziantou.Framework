@@ -181,8 +181,9 @@ internal static class ExrLineKernels
     /// <param name="components">The component of each channel.</param>
     /// <param name="hasAlpha">Whether the colors are premultiplied by alpha.</param>
     /// <remarks>
-    /// Blocks of 8 pixels whose samples are finite, and whose alpha is 1 with <paramref name="hasAlpha"/>, are rounded to
-    /// halves 8 at a time (the products by an alpha of 1 are the colors); the other blocks take the scalar path.
+    /// Blocks of 8 pixels whose samples are finite (and whose alphas round to finite halves) are rounded to halves 8 at a
+    /// time: the samples themselves when the alphas are 1 or without alpha, otherwise the products of the colors by the
+    /// stored alphas, exact in double precision, rounded once. The other blocks take the scalar path.
     /// </remarks>
     public static void WriteHalfSamples(ReadOnlySpan<float> pixels, Span<ushort> line, ReadOnlySpan<int> components, bool hasAlpha)
     {
@@ -195,6 +196,7 @@ internal static class ExrLineKernels
             ref var l = ref unsafe(MemoryMarshal.GetReference(line));
             var largest = Vector128.Create(float.MaxValue);
             var one = Vector128.Create(1f);
+            var halfInfinity = Vector128.Create((uint)HalfInfinity);
             for (; x + 8 <= width; x += 8)
             {
                 var offset = (nuint)x * 4;
@@ -203,25 +205,50 @@ internal static class ExrLineKernels
                 var finite = Vector128.LessThanOrEqual(Vector128.Abs(r0), largest) & Vector128.LessThanOrEqual(Vector128.Abs(r1), largest)
                     & Vector128.LessThanOrEqual(Vector128.Abs(g0), largest) & Vector128.LessThanOrEqual(Vector128.Abs(g1), largest)
                     & Vector128.LessThanOrEqual(Vector128.Abs(b0), largest) & Vector128.LessThanOrEqual(Vector128.Abs(b1), largest);
-                finite &= hasAlpha
-                    ? Vector128.Equals(a0, one) & Vector128.Equals(a1, one)
-                    : Vector128.LessThanOrEqual(Vector128.Abs(a0), largest) & Vector128.LessThanOrEqual(Vector128.Abs(a1), largest);
+                finite &= Vector128.LessThanOrEqual(Vector128.Abs(a0), largest) & Vector128.LessThanOrEqual(Vector128.Abs(a1), largest);
                 if (finite.AsUInt32() != Vector128<uint>.AllBitsSet)
                 {
                     WriteHalfSamplesScalar(pixels, line, components, hasAlpha, x, x + 8);
                     continue;
                 }
 
+                var alpha0 = PixelConverter.SingleToHalf(a0);
+                var alpha1 = PixelConverter.SingleToHalf(a1);
+                Vector128<ushort> red, green, blue;
+                if (!hasAlpha || (Vector128.EqualsAll(a0, one) && Vector128.EqualsAll(a1, one)))
+                {
+                    red = Vector128.Narrow(PixelConverter.SingleToHalf(r0), PixelConverter.SingleToHalf(r1));
+                    green = Vector128.Narrow(PixelConverter.SingleToHalf(g0), PixelConverter.SingleToHalf(g1));
+                    blue = Vector128.Narrow(PixelConverter.SingleToHalf(b0), PixelConverter.SingleToHalf(b1));
+                }
+                else
+                {
+                    // The colors are multiplied by the stored alphas, but by 1 where they are 0
+                    if (Vector128.GreaterThanOrEqualAny(alpha0 & Vector128.Create(0x7FFFu), halfInfinity) || Vector128.GreaterThanOrEqualAny(alpha1 & Vector128.Create(0x7FFFu), halfInfinity))
+                    {
+                        WriteHalfSamplesScalar(pixels, line, components, hasAlpha, x, x + 8);
+                        continue;
+                    }
+
+                    var stored0 = PixelConverter.HalfToSingle(alpha0);
+                    var stored1 = PixelConverter.HalfToSingle(alpha1);
+                    var factor0 = Vector128.ConditionalSelect(Vector128.Equals(stored0, Vector128<float>.Zero), one, stored0);
+                    var factor1 = Vector128.ConditionalSelect(Vector128.Equals(stored1, Vector128<float>.Zero), one, stored1);
+                    red = Vector128.Narrow(MultiplyToHalf(r0, factor0), MultiplyToHalf(r1, factor1));
+                    green = Vector128.Narrow(MultiplyToHalf(g0, factor0), MultiplyToHalf(g1, factor1));
+                    blue = Vector128.Narrow(MultiplyToHalf(b0, factor0), MultiplyToHalf(b1, factor1));
+                }
+
                 for (var c = 0; c < components.Length; c++)
                 {
-                    var (low, high) = components[c] switch
+                    var samples = components[c] switch
                     {
-                        0 => (r0, r1),
-                        1 => (g0, g1),
-                        2 => (b0, b1),
-                        _ => (a0, a1),
+                        0 => red,
+                        1 => green,
+                        2 => blue,
+                        _ => Vector128.Narrow(alpha0, alpha1),
                     };
-                    unsafe { Vector128.Narrow(PixelConverter.SingleToHalf(low), PixelConverter.SingleToHalf(high)).StoreUnsafe(ref l, (nuint)((c * width) + x)); }
+                    unsafe { samples.StoreUnsafe(ref l, (nuint)((c * width) + x)); }
                 }
             }
         }
@@ -254,6 +281,35 @@ internal static class ExrLineKernels
 
                 line[(c * width) + x] = BitConverter.HalfToUInt16Bits((Half)value);
             }
+        }
+    }
+
+    /// <summary>
+    /// Rounds the products of finite floats by finite halves (as floats) to halves (bit patterns): the products are exact in
+    /// double precision, and are rounded to nearest, ties to even, beyond the largest half to an infinity. A normal half gets
+    /// the rounded fraction, carried into the exponent; a subnormal half is the product added to 2^28, which rounds it to a
+    /// multiple of 2^-24.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static Vector128<uint> MultiplyToHalf(Vector128<float> value, Vector128<float> factor)
+    {
+        var low = RoundToHalf(Vector128.WidenLower(value) * Vector128.WidenLower(factor), out var lowSign);
+        var high = RoundToHalf(Vector128.WidenUpper(value) * Vector128.WidenUpper(factor), out var highSign);
+        return Vector128.Min(Vector128.Narrow(low, high), Vector128.Create((uint)HalfInfinity)) | Vector128.Narrow(lowSign, highSign);
+
+        static Vector128<ulong> RoundToHalf(Vector128<double> product, out Vector128<ulong> sign)
+        {
+            var bits = product.AsUInt64();
+            sign = Vector128.ShiftRightLogical(bits, 48) & Vector128.Create(0x8000ul);
+            var magnitude = bits & Vector128.Create(0x7FFFFFFFFFFFFFFFul);
+            var rebased = magnitude - Vector128.Create((1023ul - 15) << 52);
+            var rounded = rebased + Vector128.Create((1ul << 41) - 1) + (Vector128.ShiftRightLogical(rebased, 42) & Vector128.Create(1ul));
+
+            // At most 2^22 for a finite product: the clamp to an infinity is done on 32 bits
+            var normal = Vector128.ShiftRightLogical(rounded, 42);
+            var subnormal = (magnitude.AsDouble() + Vector128.Create(268435456d)).AsUInt64() - Vector128.Create(BitConverter.DoubleToUInt64Bits(268435456d));
+            var isSubnormal = Vector128.LessThan(magnitude, Vector128.Create((1023ul - 14) << 52));
+            return Vector128.ConditionalSelect(isSubnormal, subnormal, normal);
         }
     }
 

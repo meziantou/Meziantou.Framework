@@ -798,9 +798,19 @@ public sealed class VectorizedKernelTests
                         _ => (float)random.NextDouble(),
                     };
 
-                    if ((i & 3) == 3 && round % 2 == 0)
+                    if ((i & 3) == 3)
                     {
-                        pixels[i] = random.Next(20) == 0 ? 0.5f : 1f;
+                        // Alphas of 1, alphas whose half is 0, alphas beyond the largest half, translucent alphas
+                        pixels[i] = (round % 2, random.Next(20)) switch
+                        {
+                            (0, 0) => 0.5f,
+                            (0, _) => 1f,
+                            (_, 0) => 0f,
+                            (_, 1) => 1e-8f,
+                            (_, 2) => 70000f,
+                            (_, 3) => -0.25f,
+                            _ => (float)random.NextDouble(),
+                        };
                     }
                 }
 

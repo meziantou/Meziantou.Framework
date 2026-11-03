@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -778,11 +779,22 @@ internal ref partial struct HevcSliceCoder
         var scanIdx = GetScanIdx(log2TrafoSize, cIdx, predModeIntra);
         var subBlockScan = HevcScanOrder.Get(log2TrafoSize - 2, scanIdx);
         var positionScan = HevcScanOrder.Get(2, scanIdx);
+        var nTbS = 1 << log2TrafoSize;
         var lastSubBlock = -1;
         var lastScanPos = -1;
         for (var i = subBlockScan.Length - 1; i >= 0 && lastSubBlock < 0; i--)
         {
             var origin = (HevcScanOrder.Y(subBlockScan[i]) << (2 + log2TrafoSize)) + (HevcScanOrder.X(subBlockScan[i]) << 2);
+
+            // Most sub-blocks of a large block are zero: their 4 rows are checked at once
+            if (Vector128.IsHardwareAccelerated)
+            {
+                var rows = Vector128.Create(levels.Slice(origin, 4)) | Vector128.Create(levels.Slice(origin + nTbS, 4))
+                    | Vector128.Create(levels.Slice(origin + (2 * nTbS), 4)) | Vector128.Create(levels.Slice(origin + (3 * nTbS), 4));
+                if (rows == Vector128<int>.Zero)
+                    continue;
+            }
+
             for (var n = 15; n >= 0; n--)
             {
                 if (levels[origin + (HevcScanOrder.Y(positionScan[n]) << log2TrafoSize) + HevcScanOrder.X(positionScan[n])] is not 0)

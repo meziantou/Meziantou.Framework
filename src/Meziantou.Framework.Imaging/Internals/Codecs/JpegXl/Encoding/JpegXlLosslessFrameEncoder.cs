@@ -249,7 +249,7 @@ internal sealed class JpegXlLosslessFrameEncoder
         JpegXlGroupWorkers.Run(
             workers,
             groups.Count,
-            () => new TrialWorker(new StreamWorker(literal, tokenCosts: null, 0, counting: true, _scope), new StreamWorker(lz77, tokenCosts, Math.Min(Lz77TrialChain, _settings.Lz77Chain), counting: true, _scope)),
+            () => TrialWorker.Create(() => new StreamWorker(literal, tokenCosts: null, 0, counting: true, _scope), () => new StreamWorker(lz77, tokenCosts, Math.Min(Lz77TrialChain, _settings.Lz77Chain), counting: true, _scope)),
             (worker, index) =>
             {
                 _cancellationToken.ThrowIfCancellationRequested();
@@ -1009,11 +1009,32 @@ internal sealed class JpegXlLosslessFrameEncoder
     }
 
     /// <summary>The state of a worker of the trial of copies: the counts without copies and with them.</summary>
-    private sealed class TrialWorker(StreamWorker literal, StreamWorker lz77) : IDisposable
+    private sealed class TrialWorker : IDisposable
     {
-        public StreamWorker Literal { get; } = literal;
+        private TrialWorker(StreamWorker literal, StreamWorker lz77)
+        {
+            Literal = literal;
+            Lz77 = lz77;
+        }
 
-        public StreamWorker Lz77 { get; } = lz77;
+        public StreamWorker Literal { get; }
+
+        public StreamWorker Lz77 { get; }
+
+        /// <summary>Creates the two workers; the first one is released when the second one cannot be created.</summary>
+        public static TrialWorker Create(Func<StreamWorker> createLiteral, Func<StreamWorker> createLz77)
+        {
+            var literal = createLiteral();
+            try
+            {
+                return new TrialWorker(literal, createLz77());
+            }
+            catch
+            {
+                literal.Dispose();
+                throw;
+            }
+        }
 
         public void Dispose()
         {

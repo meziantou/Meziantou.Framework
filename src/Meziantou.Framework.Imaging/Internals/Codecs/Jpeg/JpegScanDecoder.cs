@@ -1,3 +1,5 @@
+using System.Diagnostics;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -53,6 +55,7 @@ internal abstract class JpegScanDecoder
     private readonly int _totalMcus;
     private readonly int _restartInterval;
     private readonly int _safeBytes;
+    private readonly int _uncheckedBytes;
     private readonly Action<int>? _mcuRowDecoded;
     private readonly CancellationToken _cancellationToken;
     private int _mcu;
@@ -95,6 +98,9 @@ internal abstract class JpegScanDecoder
 
         var precision = components[0].Component.Precision;
         _safeBytes = GetRequiredBufferCapacity(blocksPerMcu, precision, arithmetic, lossless);
+
+        // A Huffman-coded MCU decoded from buffered bytes reads at most its own bytes and 16 more (UncheckedCursor)
+        _uncheckedBytes = arithmetic || lossless ? int.MaxValue : _safeBytes - 8;
         MaxDcCategory = precision > 8 ? 15 : 11;
         MaxAcCategory = precision > 8 ? 14 : 10;
         _restartInterval = restartInterval;
@@ -110,7 +116,7 @@ internal abstract class JpegScanDecoder
     /// <param name="arithmetic">Whether the scans are arithmetic coded.</param>
     /// <param name="lossless">Whether the scans code the samples of a lossless frame.</param>
     public static int GetRequiredBufferCapacity(int blocksPerMcu, int precision, bool arithmetic, bool lossless = false)
-        => (blocksPerMcu * (lossless ? MaxBytesPerLosslessSample : arithmetic ? MaxBytesPerArithmeticBlock : precision > 8 ? MaxBytesPerDeepBlock : MaxBytesPerBlock)) + 8;
+        => (blocksPerMcu * (lossless ? MaxBytesPerLosslessSample : arithmetic ? MaxBytesPerArithmeticBlock : precision > 8 ? MaxBytesPerDeepBlock : MaxBytesPerBlock)) + 24;
 
     /// <summary>Gets a value indicating whether every MCU of the scan was decoded.</summary>
     public bool IsComplete => _mcu >= _totalMcus;
@@ -120,6 +126,13 @@ internal abstract class JpegScanDecoder
     /// expected marker (lenient decoding) instead of being an error.
     /// </summary>
     public bool AcceptsGarbledRestartNumbers { get; init; }
+
+    /// <summary>
+    /// Gets a value indicating whether the MCU being decoded is in the buffer with 16 more bytes, before the end of its
+    /// segment: its blocks can be read with <see cref="JpegEntropyReader.UncheckedCursor"/>. Always <see langword="false"/>
+    /// for arithmetic-coded and lossless scans.
+    /// </summary>
+    protected bool UncheckedReads { get; private set; }
 
     /// <summary>Gets the entropy reader of the scan.</summary>
     protected JpegEntropyReader Reader => _reader;
@@ -369,6 +382,9 @@ internal abstract class JpegScanDecoder
 
     private void DecodeAvailable(bool endOfSegment)
     {
+        // Before the end of the segment, an MCU is only decoded when _safeBytes are available: its bytes and 16 more are
+        // then buffered (the accumulator holds at most 7 whole bytes)
+        UncheckedReads = !endOfSegment && _uncheckedBytes != int.MaxValue;
         while (_mcu < _totalMcus)
         {
             if (_restartInterval > 0 && _intervalRemaining == 0)
@@ -377,6 +393,7 @@ internal abstract class JpegScanDecoder
             if (!endOfSegment && _reader.AvailableBytes < _safeBytes)
                 return;
 
+            Debug.Assert(!UncheckedReads || _reader.BufferedBytes >= _uncheckedBytes);
             DecodeMcu(_mcu);
             _mcu++;
             _intervalRemaining--;
@@ -433,9 +450,9 @@ internal abstract class JpegScanDecoder
 
         /// <summary>
         /// Gets, for each zig-zag position, <c>(quantization value &lt;&lt; 6) | natural index</c>: the two lookups of a
-        /// coefficient in one (created on first use).
+        /// coefficient in one (empty for the samples of a lossless frame, which have no quantization).
         /// </summary>
-        public int[] ZigZagQuantization => field ??= CreateZigZagQuantization(Quantization);
+        public int[] ZigZagQuantization { get; } = quantization.Length == 64 ? CreateZigZagQuantization(quantization) : [];
 
         public int Predictor { get; set; }
 

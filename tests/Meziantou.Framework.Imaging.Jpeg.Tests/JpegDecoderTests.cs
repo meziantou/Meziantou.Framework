@@ -869,6 +869,75 @@ public sealed class JpegDecoderTests
         Assert.True(fastEntries > 100);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FastLookupMatchesTheSymbolAndTheMagnitudeBits(bool ac)
+    {
+        // Every pattern of the lookup bits against the canonical decoding of the table; the magnitude size of a DC symbol is
+        // the symbol, of an AC symbol its low nibble. Codes of every length from 2 to 16 bits (the skewed AC table) and DC
+        // categories up to 11
+        var table = ac
+            ? JpegHuffmanTable.TryCreate(JpegEncodingTables.LuminanceAcBits, JpegEncodingTables.LuminanceAcValues, out _, ac: true)!
+            : JpegHuffmanTable.TryCreate([0, 1, 5, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0], [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], out _)!;
+        const int Bits = JpegHuffmanTable.FastLookupBits;
+        var lookup = table.FastLookup;
+        Assert.Equal(1 << Bits, lookup.Length);
+        var complete = 0;
+        for (var bits = 0; bits < 1 << Bits; bits++)
+        {
+            var entry = lookup[bits];
+            var shortEntry = table.Lookup(bits >> (Bits - JpegHuffmanTable.LookupBits));
+            int symbol;
+            int length;
+            if (shortEntry != 0)
+            {
+                symbol = shortEntry & 0xFF;
+                length = shortEntry >> 8;
+            }
+            else
+            {
+                symbol = table.DecodeLong(bits << (16 - Bits), out length);
+            }
+
+            if (symbol < 0 || length > Bits)
+            {
+                Assert.Equal(0, entry);
+                continue;
+            }
+
+            Assert.Equal(symbol, (entry >> JpegHuffmanTable.FastLookupSymbolShift) & 0xFF);
+            Assert.Equal(0, entry & 0b10_0000);
+            var size = ac ? symbol & 0x0F : symbol;
+            if (length + size > Bits)
+            {
+                Assert.Equal(0, entry & JpegHuffmanTable.FastLookupComplete);
+                Assert.Equal(length, entry & 31);
+                continue;
+            }
+
+            // T.81 F.2.2.1 (EXTEND), written independently of the decoder
+            var magnitude = (bits >> (Bits - length - size)) & ((1 << size) - 1);
+            var coefficient = size == 0 ? 0 : magnitude >= 1 << (size - 1) ? magnitude : magnitude - ((1 << size) - 1);
+            Assert.NotEqual(0, entry & JpegHuffmanTable.FastLookupComplete);
+            Assert.Equal(length + size, entry & 31);
+            Assert.Equal(coefficient, entry >> JpegHuffmanTable.FastLookupValueShift);
+            complete++;
+        }
+
+        Assert.True(complete > 300, $"{complete} complete entries");
+
+        // The inline decoding of the codes the lookup does not resolve (longer or invalid) is the regular one
+        for (var bits16 = 0; bits16 < 1 << 16; bits16++)
+        {
+            if (lookup[bits16 >> (16 - Bits)] != 0)
+                continue;
+
+            var symbol = table.DecodeLong(bits16, out var length);
+            Assert.Equal(symbol < 0 ? -1 : (length << 8) | symbol, table.DecodeLongInline(bits16));
+        }
+    }
+
     public static TheoryData<string, byte[]> TableAndScanDefects
     {
         get

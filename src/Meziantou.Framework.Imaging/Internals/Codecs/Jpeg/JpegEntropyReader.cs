@@ -1,6 +1,8 @@
 using System.Buffers.Binary;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -37,6 +39,9 @@ internal sealed class JpegEntropyReader : IDisposable
 
     /// <summary>Gets the number of unread bytes, including the whole bytes held in the bit accumulator.</summary>
     public int AvailableBytes => _end - _start + ((_bitCount - _paddingBits) >> 3);
+
+    /// <summary>Gets the number of buffered bytes that are not in the bit accumulator.</summary>
+    public int BufferedBytes => _end - _start;
 
     /// <summary>Gets the number of bytes that <see cref="Append"/> can accept without <see cref="Compact"/>.</summary>
     public int FreeSpace => _data.Length - _end;
@@ -148,6 +153,14 @@ internal sealed class JpegEntropyReader : IDisposable
         _data = [];
     }
 
+    /// <summary>
+    /// Copies the bit state into an <see cref="UncheckedCursor"/>, for a decoder that knows that the buffered bytes cover
+    /// every byte it may read (see <see cref="UncheckedCursor"/>).
+    /// </summary>
+    /// <returns>The cursor; <see cref="UncheckedCursor.Commit"/> writes its state back.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public UncheckedCursor GetUncheckedCursor() => new(this);
+
     /// <summary>Copies the bit state into a <see cref="Cursor"/>, which keeps it in locals while the blocks of an MCU are decoded.</summary>
     /// <returns>The cursor; <see cref="Cursor.Commit"/> writes its state back.</returns>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -161,7 +174,7 @@ internal sealed class JpegEntropyReader : IDisposable
             if (_bitCount - _paddingBits < 16 && _endOfSegment)
                 throw CreateTruncatedException();
 
-            throw new InvalidImageContentException("The JPEG entropy-coded data contains an invalid Huffman code.", ImageFormat.Jpeg);
+            throw CreateInvalidCodeException();
         }
 
         Skip(length);
@@ -216,6 +229,102 @@ internal sealed class JpegEntropyReader : IDisposable
     }
 
     private static InvalidImageContentException CreateTruncatedException() => new("The JPEG entropy-coded data is truncated.", ImageFormat.Jpeg);
+
+    private static InvalidImageContentException CreateInvalidCodeException() => new("The JPEG entropy-coded data contains an invalid Huffman code.", ImageFormat.Jpeg);
+
+    [DoesNotReturn]
+    private static void ThrowInvalidCode() => throw CreateInvalidCodeException();
+
+    /// <summary>
+    /// The bit state of the reader in locals, for the decoding of data whose bytes are all buffered: the caller guarantees
+    /// that the end of the segment is not reached and that at least 16 bytes more than it consumes are buffered
+    /// (<see cref="BufferedBytes"/>), so that the accumulator is refilled with one unchecked 8-byte load and never meets
+    /// fill bits. A refill keeps at least 32 valid bits: a code and its magnitude bits (at most 31) need no other check.
+    /// </summary>
+    [StructLayout(LayoutKind.Auto)]
+    internal ref struct UncheckedCursor
+    {
+        private readonly ref byte _data;
+        private int _position;
+        private ulong _bits;
+        private int _count;
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public UncheckedCursor(JpegEntropyReader reader)
+        {
+            Debug.Assert(!reader._endOfSegment && reader._paddingBits == 0);
+            _data = ref unsafe(MemoryMarshal.GetArrayDataReference(reader._data));
+            _position = reader._start;
+            _bits = reader._bits;
+            _count = reader._bitCount;
+        }
+
+        /// <summary>Writes the state back to the reader.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly void Commit(JpegEntropyReader reader)
+        {
+            reader._start = _position;
+            reader._bits = _bits;
+            reader._bitCount = _count;
+        }
+
+        /// <summary>Loads bytes until the accumulator holds at least 56 bits, when it holds fewer than 32.</summary>
+        /// <remarks>See <see cref="JpegEntropyReader.Fill"/> for the bits loaded below the valid ones.</remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Refill()
+        {
+            if (_count < 32)
+            {
+                _bits |= BinaryPrimitives.ReverseEndianness(unsafe(Unsafe.ReadUnaligned<ulong>(ref Unsafe.Add(ref _data, _position)))) >> _count;
+                _position += (63 - _count) >> 3;
+
+                // count + 8 * ((63 - count) >> 3) for count below 64
+                _count |= 56;
+            }
+        }
+
+        /// <summary>Gets the <see cref="JpegHuffmanTable.FastLookup"/> entry of the next bits.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly int Lookup(int[] fastLookup)
+        {
+            Debug.Assert(fastLookup.Length == 1 << JpegHuffmanTable.FastLookupBits);
+            return unsafe(Unsafe.Add(ref MemoryMarshal.GetArrayDataReference(fastLookup), (nint)(_bits >> (64 - JpegHuffmanTable.FastLookupBits))));
+        }
+
+        /// <summary>Consumes the bits of a <see cref="JpegHuffmanTable.FastLookup"/> entry (its bits 0 to 4).</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void Consume(int entry)
+        {
+            // A shift count is taken modulo 64: bit 5 of the entry is 0
+            _bits <<= entry;
+            _count -= entry & 31;
+        }
+
+        /// <inheritdoc cref="JpegEntropyReader.ReceiveExtend"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int ReceiveExtend(int size)
+        {
+            Debug.Assert(size is > 0 and <= 16 && _count >= size);
+            var value = (int)(_bits >> (64 - size));
+            _bits <<= size;
+            _count -= size;
+            return value + (((value - (1 << (size - 1))) >> 31) & ((-1 << size) + 1));
+        }
+
+        /// <summary>Decodes a code longer than <see cref="JpegHuffmanTable.FastLookupBits"/>, without a call.</summary>
+        /// <exception cref="InvalidImageContentException">The bits are not a code of the table.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int DecodeLongCode(JpegHuffmanTable table)
+        {
+            // The data does not end before the bits of the MCU: an unknown code is invalid, never truncated
+            var packed = table.DecodeLongInline((int)(_bits >> 48));
+            if (packed < 0)
+                ThrowInvalidCode();
+
+            Consume(packed >> 8);
+            return packed & 0xFF;
+        }
+    }
 
     /// <summary>
     /// The bit state of the reader copied into locals: the methods of the reader, with the accumulator kept in registers

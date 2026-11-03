@@ -41,6 +41,12 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
             return;
         }
 
+        if (UncheckedReads)
+        {
+            DecodeBlockUnchecked(scanComponent, blockRow, blockColumn);
+            return;
+        }
+
         // The destination is computed first: one value instead of two to keep alive through the loop
         var offset = scanComponent.Component.GetBlockOffset(blockRow, blockColumn);
         var reader = Reader.GetCursor();
@@ -114,6 +120,127 @@ internal sealed class JpegSequentialScanDecoder : JpegScanDecoder
 
         // The DC coefficient is read back from the predictor: one value less to keep alive in the loop
         TransformBlock(scanComponent, offset, _block, scanComponent.Predictor, naturalIndexes != 0, JpegIdct.IsSparse(naturalIndexes));
+    }
+
+    /// <summary>
+    /// Decodes the next block like <see cref="DecodeBlock"/> when its bytes are buffered (<see cref="JpegScanDecoder.UncheckedReads"/>):
+    /// one lookup of <see cref="JpegHuffmanTable.FastLookup"/> per symbol, which also gives the coefficient when its
+    /// magnitude bits fit, and no check of the end of the data. The other symbols are validated in the order of the
+    /// regular path.
+    /// </summary>
+    private void DecodeBlockUnchecked(ScanComponent scanComponent, int blockRow, int blockColumn)
+    {
+        // Everything the loops need is loaded first: they make no call, so that the state stays in registers
+        var offset = scanComponent.Component.GetBlockOffset(blockRow, blockColumn);
+        var dcTable = scanComponent.DcTable!;
+        var acTable = scanComponent.AcTable!;
+        var dcLookup = dcTable.FastLookup;
+        var acLookup = acTable.FastLookup;
+        var reader = Reader;
+        var cursor = reader.GetUncheckedCursor();
+
+        // DC: difference from the prediction (T.81 F.2.2.1)
+        cursor.Refill();
+        var entry = cursor.Lookup(dcLookup);
+        int difference;
+        if ((entry & JpegHuffmanTable.FastLookupComplete) != 0)
+        {
+            cursor.Consume(entry);
+            difference = entry >> JpegHuffmanTable.FastLookupValueShift;
+        }
+        else
+        {
+            int category;
+            if (entry != 0)
+            {
+                cursor.Consume(entry);
+                category = (entry >> JpegHuffmanTable.FastLookupSymbolShift) & 0xFF;
+            }
+            else
+            {
+                category = cursor.DecodeLongCode(dcTable);
+            }
+
+            if (category > MaxDcCategory)
+                throw CreateDcCategoryException();
+
+            difference = category == 0 ? 0 : cursor.ReceiveExtend(category);
+        }
+
+        var dc = scanComponent.Predictor + difference;
+        if (dc is < short.MinValue or > short.MaxValue)
+            throw Invalid("The JPEG DC coefficient is out of range.");
+
+        scanComponent.Predictor = dc;
+
+        // AC: run-length/size symbols in zig-zag order (T.81 F.2.2.2)
+        ref var block = ref unsafe(MemoryMarshal.GetArrayDataReference(_block));
+        ref var zigZagQuantization = ref unsafe(MemoryMarshal.GetArrayDataReference(scanComponent.ZigZagQuantization));
+
+        // The natural indexes of the non-zero AC coefficients ORed together, with bit 6 set when there is one
+        var naturalIndexes = 0;
+        var k = 1;
+        do
+        {
+            cursor.Refill();
+            entry = cursor.Lookup(acLookup);
+            int symbol;
+            var coefficient = 0;
+            if ((entry & JpegHuffmanTable.FastLookupComplete) != 0)
+            {
+                cursor.Consume(entry);
+                symbol = (entry >> JpegHuffmanTable.FastLookupSymbolShift) & 0xFF;
+                coefficient = entry >> JpegHuffmanTable.FastLookupValueShift;
+            }
+            else
+            {
+                if (entry != 0)
+                {
+                    cursor.Consume(entry);
+                    symbol = (entry >> JpegHuffmanTable.FastLookupSymbolShift) & 0xFF;
+                }
+                else
+                {
+                    symbol = cursor.DecodeLongCode(acTable);
+                }
+
+                var size = symbol & 0x0F;
+                if (size != 0)
+                {
+                    if (k + (symbol >> 4) > 63)
+                        throw CreateRunException();
+
+                    if (size > MaxAcCategory)
+                        throw CreateAcCategoryException();
+
+                    coefficient = cursor.ReceiveExtend(size);
+                }
+            }
+
+            if ((symbol & 0x0F) == 0)
+            {
+                if (symbol != 0xF0)
+                    break; // EOB
+
+                k += 16; // ZRL
+                continue;
+            }
+
+            k += symbol >> 4;
+            if (k > 63)
+                throw CreateRunException();
+
+            // The natural index is at most 63 and the block has 64 coefficients
+            var zigZagEntry = unsafe(Unsafe.Add(ref zigZagQuantization, k));
+            var natural = zigZagEntry & 63;
+            unsafe { Unsafe.Add(ref block, natural) = coefficient * (double)(zigZagEntry >> 6); }
+            naturalIndexes |= natural | 64;
+            k++;
+        }
+        while (k < 64);
+
+        cursor.Commit(reader);
+        TransformBlock(scanComponent, offset, _block, dc, naturalIndexes != 0, JpegIdct.IsSparse(naturalIndexes));
     }
 
     /// <summary>

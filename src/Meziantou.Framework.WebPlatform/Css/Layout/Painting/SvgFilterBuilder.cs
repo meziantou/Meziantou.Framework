@@ -305,28 +305,12 @@ internal static class SvgFilterBuilder
             if (SvgImage.Get(image, document) is not { } svgImage)
                 return null;
 
-            // https://svgwg.org/svg2-draft/embedded.html#ImageElement, used by feImage ("the image resource is rendered according
-            // to the behavior of the image element"): the natural size of the image (or its natural aspect ratio) is fitted to the
-            // subregion with the preserveAspectRatio of feImage, and the image is laid out in the resulting rectangle with the
-            // preserveAspectRatio of its root element treated as none
-            var destination = fitRegion;
-            var naturalSize = svgImage.NaturalSize;
-            var (naturalWidth, naturalHeight) = naturalSize switch
-            {
-                { Width: > 0 and var width, Height: > 0 and var height } => (width, height),
-                { AspectRatio: > 0 and var ratio } => (ratio, 1d),
-                _ => (0d, 0d),
-            };
-
-            if (naturalWidth > 0 && naturalHeight > 0)
-            {
-                var fit = Painter.GetPreserveAspectRatioTransform(preserveAspectRatio, naturalWidth, naturalHeight, fitRegion.Width, fitRegion.Height);
-                destination = new PhysicalRect(fitRegion.X + fit.E, fitRegion.Y + fit.F, naturalWidth * fit.A, naturalHeight * fit.D);
-            }
-
+            // https://drafts.fxtf.org/filter-effects/#feImageElement: "the image resource is rendered according to the behavior of
+            // the image element": fitted to the subregion like the image of an image element
+            var (destination, rootPreserveAspectRatio) = Painter.GetSvgImageDestination(preserveAspectRatio, svgImage, fitRegion);
             builder.Save();
             builder.Add(new ClipRectItem(subregion));
-            new PaintedImage.SvgPaintedImage(svgImage, 1, colorScheme: null, "none").Draw(builder, destination, element);
+            new PaintedImage.SvgPaintedImage(svgImage, 1, colorScheme: null, rootPreserveAspectRatio).Draw(builder, destination, element);
             builder.Restore();
         }
         else

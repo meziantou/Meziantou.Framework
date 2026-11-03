@@ -568,6 +568,14 @@ internal sealed class ExrEncoderCodec : ImageEncoderCodec
             for (var line = 0; line < lines; line++)
             {
                 var pixels = GetRow(storage.GetRowSpanCore(y0 + line), floats);
+                if (_pixelType == ExrPixelType.Half && BitConverter.IsLittleEndian)
+                {
+                    var samples = unsafe(MemoryMarshal.Cast<byte, ushort>(data.Slice(position, _width * _channels.Length * sampleSize)));
+                    ExrLineKernels.WriteHalfSamples(pixels, samples, _components, _hasAlpha);
+                    position += samples.Length * sampleSize;
+                    continue;
+                }
+
                 for (var c = 0; c < _channels.Length; c++)
                 {
                     var component = _components[c];

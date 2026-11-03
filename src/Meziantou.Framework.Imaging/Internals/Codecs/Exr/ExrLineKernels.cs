@@ -171,6 +171,110 @@ internal static class ExrLineKernels
         }
     }
 
+    /// <summary>
+    /// Writes a row of <see cref="RgbaFloat"/> pixels as the HALF sample lines of the channels of an encoded line: the line
+    /// holds, for each channel, the samples of its component (0 to 3) for the width of the row. With alpha, a color is
+    /// multiplied by the alpha the file stores (the alpha rounded to a half) unless that alpha is 0.
+    /// </summary>
+    /// <param name="pixels">The pixels, four floats each.</param>
+    /// <param name="line">Receives the samples, channel after channel.</param>
+    /// <param name="components">The component of each channel.</param>
+    /// <param name="hasAlpha">Whether the colors are premultiplied by alpha.</param>
+    /// <remarks>
+    /// Blocks of 8 pixels whose samples are finite, and whose alpha is 1 with <paramref name="hasAlpha"/>, are rounded to
+    /// halves 8 at a time (the products by an alpha of 1 are the colors); the other blocks take the scalar path.
+    /// </remarks>
+    public static void WriteHalfSamples(ReadOnlySpan<float> pixels, Span<ushort> line, ReadOnlySpan<int> components, bool hasAlpha)
+    {
+        var width = pixels.Length / 4;
+        _ = line[..(components.Length * width)];
+        var x = 0;
+        if (UseVectors && components.Length <= 4)
+        {
+            ref var p = ref unsafe(MemoryMarshal.GetReference(pixels));
+            ref var l = ref unsafe(MemoryMarshal.GetReference(line));
+            var largest = Vector128.Create(float.MaxValue);
+            var one = Vector128.Create(1f);
+            for (; x + 8 <= width; x += 8)
+            {
+                var offset = (nuint)x * 4;
+                LoadComponents(ref p, offset, out var r0, out var g0, out var b0, out var a0);
+                LoadComponents(ref p, offset + 16, out var r1, out var g1, out var b1, out var a1);
+                var finite = Vector128.LessThanOrEqual(Vector128.Abs(r0), largest) & Vector128.LessThanOrEqual(Vector128.Abs(r1), largest)
+                    & Vector128.LessThanOrEqual(Vector128.Abs(g0), largest) & Vector128.LessThanOrEqual(Vector128.Abs(g1), largest)
+                    & Vector128.LessThanOrEqual(Vector128.Abs(b0), largest) & Vector128.LessThanOrEqual(Vector128.Abs(b1), largest);
+                finite &= hasAlpha
+                    ? Vector128.Equals(a0, one) & Vector128.Equals(a1, one)
+                    : Vector128.LessThanOrEqual(Vector128.Abs(a0), largest) & Vector128.LessThanOrEqual(Vector128.Abs(a1), largest);
+                if (finite.AsUInt32() != Vector128<uint>.AllBitsSet)
+                {
+                    WriteHalfSamplesScalar(pixels, line, components, hasAlpha, x, x + 8);
+                    continue;
+                }
+
+                for (var c = 0; c < components.Length; c++)
+                {
+                    var (low, high) = components[c] switch
+                    {
+                        0 => (r0, r1),
+                        1 => (g0, g1),
+                        2 => (b0, b1),
+                        _ => (a0, a1),
+                    };
+                    unsafe { Vector128.Narrow(PixelConverter.SingleToHalf(low), PixelConverter.SingleToHalf(high)).StoreUnsafe(ref l, (nuint)((c * width) + x)); }
+                }
+            }
+        }
+
+        WriteHalfSamplesScalar(pixels, line, components, hasAlpha, x, width);
+    }
+
+    /// <summary>The scalar reference of <see cref="WriteHalfSamples"/>, for the pixels <paramref name="start"/> to <paramref name="end"/> - 1.</summary>
+    /// <param name="pixels">The pixels, four floats each.</param>
+    /// <param name="line">Receives the samples, channel after channel.</param>
+    /// <param name="components">The component of each channel.</param>
+    /// <param name="hasAlpha">Whether the colors are premultiplied by alpha.</param>
+    /// <param name="start">The first pixel.</param>
+    /// <param name="end">The pixel after the last one.</param>
+    internal static void WriteHalfSamplesScalar(ReadOnlySpan<float> pixels, Span<ushort> line, ReadOnlySpan<int> components, bool hasAlpha, int start, int end)
+    {
+        var width = pixels.Length / 4;
+        for (var c = 0; c < components.Length; c++)
+        {
+            var component = components[c];
+            for (var x = start; x < end; x++)
+            {
+                var index = (4 * x) + component;
+                double value = pixels[index];
+                var alpha = (double)(Half)pixels[index | 3];
+                if (hasAlpha && component != 3 && alpha != 0)
+                {
+                    value *= alpha;
+                }
+
+                line[(c * width) + x] = BitConverter.HalfToUInt16Bits((Half)value);
+            }
+        }
+    }
+
+    /// <summary>Loads four pixels and transposes them to their components.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void LoadComponents(ref float source, nuint offset, out Vector128<float> r, out Vector128<float> g, out Vector128<float> b, out Vector128<float> a)
+    {
+        var p0 = unsafe(Vector128.LoadUnsafe(ref source, offset)).AsUInt32();
+        var p1 = unsafe(Vector128.LoadUnsafe(ref source, offset + 4)).AsUInt32();
+        var p2 = unsafe(Vector128.LoadUnsafe(ref source, offset + 8)).AsUInt32();
+        var p3 = unsafe(Vector128.LoadUnsafe(ref source, offset + 12)).AsUInt32();
+        var t0 = ZipLow(p0, p1).AsUInt64();
+        var t1 = ZipHigh(p0, p1).AsUInt64();
+        var t2 = ZipLow(p2, p3).AsUInt64();
+        var t3 = ZipHigh(p2, p3).AsUInt64();
+        r = ZipLow(t0, t2).AsSingle();
+        g = ZipHigh(t0, t2).AsSingle();
+        b = ZipLow(t1, t3).AsSingle();
+        a = ZipHigh(t1, t3).AsSingle();
+    }
+
     /// <summary>Stores four pixels given by component: a 4 x 4 transposition.</summary>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static void StorePixels(Vector128<float> r, Vector128<float> g, Vector128<float> b, Vector128<float> a, ref float destination, nuint offset)

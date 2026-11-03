@@ -771,6 +771,56 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void ExrHalfSampleWriterMatchesTheScalarReference()
+    {
+        var random = new Random(4129);
+        int[][] layouts = [[3, 2, 1, 0], [2, 1, 0], [0]];
+        for (var width = 0; width <= 40; width++)
+        {
+            for (var round = 0; round < 8; round++)
+            {
+                // Integer fractions, floats of every magnitude around the subnormal and the largest halves (their ties
+                // included), samples that are not finite; alpha 1 or not
+                var pixels = new float[width * 4];
+                for (var i = 0; i < pixels.Length; i++)
+                {
+                    pixels[i] = (round, random.Next(16)) switch
+                    {
+                        (0, _) => random.Next(256) / 255f,
+                        (1, _) => random.Next(65536) / 65535f,
+                        (2, _) => (float)((random.NextDouble() - 0.5) * Math.Pow(2, random.Next(-30, 18))),
+                        (3, _) => BitConverter.Int32BitsToSingle(BitConverter.SingleToInt32Bits((random.Next(2048) + 0.5f) * MathF.Pow(2, random.Next(-25, 6))) + random.Next(-1, 2)),
+                        (_, 0) => float.NaN,
+                        (_, 1) => float.NegativeInfinity,
+                        (_, 2) => 65519.996f,
+                        (_, 3) => -65520f,
+                        (_, 4) => -0f,
+                        _ => (float)random.NextDouble(),
+                    };
+
+                    if ((i & 3) == 3 && round % 2 == 0)
+                    {
+                        pixels[i] = random.Next(20) == 0 ? 0.5f : 1f;
+                    }
+                }
+
+                foreach (var components in layouts)
+                {
+                    foreach (var hasAlpha in new[] { true, false })
+                    {
+                        var expected = Enumerable.Repeat((ushort)0xA5A5, (components.Length * width) + 3).ToArray();
+                        var actual = (ushort[])expected.Clone();
+                        ExrLineKernels.WriteHalfSamplesScalar(pixels, expected, components, hasAlpha, 0, width);
+                        ExrLineKernels.WriteHalfSamples(pixels, actual, components, hasAlpha);
+                        Assert.Equal(expected, actual);
+                    }
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void JpegInverseDctMatchesTheScalarReferenceBitForBit()
     {
         var random = new Random(20);

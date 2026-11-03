@@ -507,6 +507,25 @@ internal static partial class PixelConverter
         return Vector128.ConditionalSelect(isSubnormal.AsSingle(), subnormal, normal.AsSingle()) | sign.AsSingle();
     }
 
+    /// <summary>
+    /// Rounds finite floats to halves (bit patterns, to nearest, ties to even, beyond the largest half to an infinity): a
+    /// normal half gets the rounded fraction, carried into the exponent; a subnormal half is the float added to 1/2, which
+    /// rounds it to a multiple of 2^-24.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    internal static Vector128<uint> SingleToHalf(Vector128<float> value)
+    {
+        var bits = value.AsUInt32();
+        var sign = Vector128.ShiftRightLogical(bits, 16) & Vector128.Create(0x8000u);
+        var magnitude = bits & Vector128.Create(0x7FFFFFFFu);
+        var rebased = magnitude - Vector128.Create((127u - 15u) << 23);
+        var rounded = rebased + Vector128.Create(0x0FFFu) + (Vector128.ShiftRightLogical(rebased, 13) & Vector128.Create(1u));
+        var normal = Vector128.Min(Vector128.ShiftRightLogical(rounded, 13), Vector128.Create(0x7C00u));
+        var subnormal = (magnitude.AsSingle() + Vector128.Create(0.5f)).AsUInt32() - Vector128.Create(0x3F000000u);
+        var isSubnormal = Vector128.LessThan(magnitude, Vector128.Create((127u - 14u) << 23));
+        return Vector128.ConditionalSelect(isSubnormal, subnormal, normal) | sign;
+    }
+
     /// <summary>Brings the components of a floating-point pixel into [0, 1]: tone mapping, then clipping when the policy allows it.</summary>
     private static FloatSampleStatus PrepareInteger(ref double r, ref double g, ref double b, ref double a, FloatSampleConversion floats)
     {

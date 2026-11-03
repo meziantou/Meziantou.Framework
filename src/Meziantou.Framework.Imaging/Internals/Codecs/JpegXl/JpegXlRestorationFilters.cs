@@ -309,7 +309,7 @@ internal static class JpegXlRestorationFilters
     }
 
     /// <summary>
-    /// Filters one row with the Gabor-like filter, four samples at a time: each lane performs the operations of
+    /// Filters one row with the Gabor-like filter, four or eight samples at a time: each lane performs the operations of
     /// <see cref="GaborishRowScalar"/> in the same order.
     /// </summary>
     /// <param name="top">The row above, with one sample of border on each side.</param>
@@ -322,6 +322,19 @@ internal static class JpegXlRestorationFilters
     internal static void GaborishRow(ReadOnlySpan<float> top, ReadOnlySpan<float> middle, ReadOnlySpan<float> bottom, float centerWeight, float sideWeight, float cornerWeight, Span<float> output)
     {
         var x = 0;
+        if (Vector256.IsHardwareAccelerated)
+        {
+            var center = Vector256.Create(centerWeight);
+            var side = Vector256.Create(sideWeight);
+            var corner = Vector256.Create(cornerWeight);
+            for (; x <= output.Length - 8; x += 8)
+            {
+                var sides = (Vector256.Create(middle.Slice(x, 8)) + Vector256.Create(middle.Slice(x + 2, 8))) + (Vector256.Create(top.Slice(x + 1, 8)) + Vector256.Create(bottom.Slice(x + 1, 8)));
+                var corners = (Vector256.Create(top.Slice(x, 8)) + Vector256.Create(top.Slice(x + 2, 8))) + (Vector256.Create(bottom.Slice(x, 8)) + Vector256.Create(bottom.Slice(x + 2, 8)));
+                ((corners * corner) + ((sides * side) + (Vector256.Create(middle.Slice(x + 1, 8)) * center))).CopyTo(output.Slice(x, 8));
+            }
+        }
+
         if (Vector128.IsHardwareAccelerated)
         {
             var center = Vector128.Create(centerWeight);

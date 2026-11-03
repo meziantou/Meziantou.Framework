@@ -3,6 +3,8 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+using System.Runtime.Intrinsics.X86;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -605,7 +607,11 @@ internal static class Av1Cdef
     /// </remarks>
     internal static void FilterInteriorRows(Span<ushort> destination, ReadOnlySpan<ushort> window, int stride, int w, int h, ReadOnlySpan<int> offsets, int priStr, int secStr, int priShift, int secShift, int priTap0, int priTap1, int secTap0, int secTap1)
     {
-        if (Vector128.IsHardwareAccelerated && w is 8 or 4 && AreTapsInside(destination, window, stride, w, h, offsets))
+        if (Vector128.IsHardwareAccelerated && w is 8 && AreTapsInside(destination, window, stride, w, h, offsets))
+        {
+            FilterInteriorRows8Vector(destination, window, stride, h, offsets, priStr, secStr, priShift, secShift, priTap0, priTap1, secTap0, secTap1);
+        }
+        else if (Vector128.IsHardwareAccelerated && w is 4 && AreTapsInside(destination, window, stride, w, h, offsets))
         {
             FilterInteriorRowsVector(destination, window, stride, w, h, offsets, priStr, secStr, priShift, secShift, priTap0, priTap1, secTap0, secTap1);
         }
@@ -736,6 +742,112 @@ internal static class Av1Cdef
                 return lower.ToVector128().AsInt16();
 
             return Vector128.Create(lower, unsafe(Vector64.LoadUnsafe(ref Unsafe.Add(ref first, secondRow)))).AsInt16();
+        }
+    }
+
+    // FilterInteriorRowsVector for rows of 8 samples, the rows of the 8x8 blocks: the 12 taps written out, the loop-invariant
+    // values (the offsets, the thresholds, the weights and the damping shifts) out of the loop, and the constrained taps of
+    // a weight summed before they are weighted. The sums of 16-bit lanes are those of the scalar sums, which do not overflow
+    private static void FilterInteriorRows8Vector(Span<ushort> destination, ReadOnlySpan<ushort> window, int stride, int h, ReadOnlySpan<int> offsets, int priStr, int secStr, int priShift, int secShift, int priTap0, int priTap1, int secTap0, int secTap1)
+    {
+        ref var source = ref unsafe(MemoryMarshal.GetReference(window));
+        ref var output = ref unsafe(MemoryMarshal.GetReference(destination));
+        offsets = offsets[..TapCount];
+        var o0 = offsets[0];
+        var o1 = offsets[1];
+        var o2 = offsets[2];
+        var o3 = offsets[3];
+        var o4 = offsets[4];
+        var o5 = offsets[5];
+        var o6 = offsets[6];
+        var o7 = offsets[7];
+        var o8 = offsets[8];
+        var o9 = offsets[9];
+        var o10 = offsets[10];
+        var o11 = offsets[11];
+        var priThreshold = Vector128.Create((short)priStr);
+        var secThreshold = Vector128.Create((short)secStr);
+        var priShiftCount = DampingShift.Create(priShift);
+        var secShiftCount = DampingShift.Create(secShift);
+        var priWeight0 = Vector128.Create((short)priTap0);
+        var priWeight1 = Vector128.Create((short)priTap1);
+        var secWeight0 = Vector128.Create((short)secTap0);
+        var secWeight1 = Vector128.Create((short)secTap1);
+        var eight = Vector128.Create((short)8);
+        for (var i = 0; i < h; i++)
+        {
+            ref var center = ref unsafe(Unsafe.Add(ref source, ((i + 2) * stride) + 2));
+            var x = Load(ref center, 0);
+            var p0 = Load(ref center, o0);
+            var p1 = Load(ref center, o1);
+            var p2 = Load(ref center, o2);
+            var p3 = Load(ref center, o3);
+            var p4 = Load(ref center, o4);
+            var p5 = Load(ref center, o5);
+            var p6 = Load(ref center, o6);
+            var p7 = Load(ref center, o7);
+            var p8 = Load(ref center, o8);
+            var p9 = Load(ref center, o9);
+            var p10 = Load(ref center, o10);
+            var p11 = Load(ref center, o11);
+            var max = Vector128.Max(Vector128.Max(Vector128.Max(Vector128.Max(x, p0), Vector128.Max(p1, p2)), Vector128.Max(Vector128.Max(p3, p4), Vector128.Max(p5, p6))), Vector128.Max(Vector128.Max(p7, p8), Vector128.Max(Vector128.Max(p9, p10), p11)));
+            var min = Vector128.Min(Vector128.Min(Vector128.Min(Vector128.Min(x, p0), Vector128.Min(p1, p2)), Vector128.Min(Vector128.Min(p3, p4), Vector128.Min(p5, p6))), Vector128.Min(Vector128.Min(p7, p8), Vector128.Min(Vector128.Min(p9, p10), p11)));
+            var sum = Vector128<short>.Zero;
+            if (priStr is not 0)
+            {
+                sum = ((Constrain(p0 - x, priThreshold, priShiftCount) + Constrain(p1 - x, priThreshold, priShiftCount)) * priWeight0)
+                    + ((Constrain(p2 - x, priThreshold, priShiftCount) + Constrain(p3 - x, priThreshold, priShiftCount)) * priWeight1);
+            }
+
+            if (secStr is not 0)
+            {
+                sum += ((Constrain(p4 - x, secThreshold, secShiftCount) + Constrain(p5 - x, secThreshold, secShiftCount) + Constrain(p6 - x, secThreshold, secShiftCount) + Constrain(p7 - x, secThreshold, secShiftCount)) * secWeight0)
+                    + ((Constrain(p8 - x, secThreshold, secShiftCount) + Constrain(p9 - x, secThreshold, secShiftCount) + Constrain(p10 - x, secThreshold, secShiftCount) + Constrain(p11 - x, secThreshold, secShiftCount)) * secWeight1);
+            }
+
+            // (8 + sum - (sum < 0 ? 1 : 0)) >> 4: the sign of the sum is -1 or 0
+            var filtered = x + ((eight + sum + (sum >> 15)) >> 4);
+            var result = Vector128.Min(Vector128.Max(filtered, min), max).AsUInt16();
+            unsafe { result.StoreUnsafe(ref Unsafe.Add(ref output, i * stride)); }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Vector128<short> Load(ref ushort center, int offset) => unsafe(Vector128.LoadUnsafe(ref Unsafe.Add(ref center, offset))).AsInt16();
+
+        // ConstrainVector with the shift of DampingShift
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Vector128<short> Constrain(Vector128<short> diff, Vector128<short> threshold, Vector128<short> shift)
+        {
+            var absolute = Vector128.Abs(diff);
+            var magnitude = Vector128.Max(Vector128<short>.Zero, Vector128.Min(absolute, threshold - DampingShift.Apply(absolute, shift)));
+            var sign = diff >> 15;
+            return (magnitude ^ sign) - sign;
+        }
+    }
+
+    // A right shift of non-negative 16-bit lanes by a count that a loop does not change, prepared out of the loop: AdvSimd
+    // shifts each lane by the negated count of its lane, SSE2 shifts every lane by the count of the low 64 bits
+    private static class DampingShift
+    {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<short> Create(int count)
+        {
+            if (AdvSimd.IsSupported)
+                return Vector128.Create((short)-count);
+
+            return Vector128.CreateScalar((short)count);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector128<short> Apply(Vector128<short> value, Vector128<short> count)
+        {
+            if (AdvSimd.IsSupported)
+                return AdvSimd.ShiftLogical(value, count);
+
+            if (Sse2.IsSupported)
+                return Sse2.ShiftRightLogical(value, count);
+
+            return Vector128.ShiftRightLogical(value, count.ToScalar());
         }
     }
 

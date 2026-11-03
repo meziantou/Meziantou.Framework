@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -139,8 +140,20 @@ internal static class HevcQuantizer
     /// <returns><see langword="true"/> when a level was changed.</returns>
     public static bool HideSign(ReadOnlySpan<int> coefficients, Span<int> levels, int log2TrafoSize, int scanIdx, int xS, int yS, int qP, int bitDepth, ReadOnlySpan<byte> scalingFactors)
     {
-        // The position in the block of the coefficient of each scan position of the sub-block, and the magnitude of its level
+        // A sign is only hidden in a sub-block that has two significant coefficients at least: most sub-blocks have fewer
         var nTbS = 1 << log2TrafoSize;
+        var origin = (yS << (log2TrafoSize + 2)) + (xS << 2);
+        var significantCount = 0;
+        for (var y = 0; y < 4; y++)
+        {
+            var row = Vector128.Create(levels.Slice(origin + (y << log2TrafoSize), 4));
+            significantCount += BitOperations.PopCount(Vector128.ExtractMostSignificantBits(~Vector128.Equals(row, Vector128<int>.Zero)));
+        }
+
+        if (significantCount < 2)
+            return false;
+
+        // The position in the block of the coefficient of each scan position of the sub-block, and the magnitude of its level
         var scan = HevcScanOrder.Get(2, scanIdx);
         Span<int> positions = stackalloc int[16];
         Span<long> magnitudes = stackalloc long[16];

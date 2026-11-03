@@ -197,6 +197,12 @@ internal static partial class Av1InverseTransform
         var maxSamples = Vector128.Create((1 << bitDepth) - 1);
 
         var columnLength = sparseColumnInputs is 0 ? h : sparseColumnInputs;
+        if (add && AdvSimd.Arm64.IsSupported && w >= 8)
+        {
+            TransformColumnPairsAdd<TColumns>(residual, t, w, h, log2H, colKind, colClampRange, sparseColumnInputs, destination, destinationStride, flipUD, (1 << bitDepth) - 1);
+            return;
+        }
+
         for (var j = 0; j < w; j += 4)
         {
             var column = t[..h];
@@ -280,6 +286,48 @@ internal static partial class Av1InverseTransform
             for (var i = 0; i < h; i++)
             {
                 Lanes256.ShiftRightArithmeticRounded(column[i], ColumnShift).CopyTo(residual.Slice((i * w) + j, 8));
+            }
+        }
+    }
+
+    // The columns of TransformVector with AdvSimd, by pairs of groups of 4 that the residual adds to 8 predicted samples at once:
+    // the residual narrowed with saturation to 16 bits and added with saturation, then clamped, which is the clamp of the
+    // 32-bit sum (a residual outside 16 bits gives the bound that its sign gives anyway)
+    [SkipLocalsInit]
+    private static void TransformColumnPairsAdd<TLanes>(Span<int> residual, Span<Vector128<int>> first, int w, int h, int log2H, Kind colKind, int colClampRange, int sparseInputs, Span<ushort> destination, int destinationStride, bool flipUD, int maxSample)
+        where TLanes : struct, ILanes<Vector128<int>>
+    {
+        // Every element is written before it is read
+        Span<Vector128<int>> second = unsafe(stackalloc Vector128<int>[64])[..h];
+        first = first[..h];
+        var maxSamples = Vector128.Create((short)maxSample);
+        var columnLength = sparseInputs is 0 ? h : sparseInputs;
+        for (var j = 0; j < w; j += 8)
+        {
+            for (var i = 0; i < columnLength; i++)
+            {
+                first[i] = Vector128.Create(residual.Slice((i * w) + j, 4));
+                second[i] = Vector128.Create(residual.Slice((i * w) + j + 4, 4));
+            }
+
+            if (sparseInputs is not 0)
+            {
+                InverseDctSparse<TLanes, Vector128<int>>(first, log2H, colClampRange, sparseInputs);
+                InverseDctSparse<TLanes, Vector128<int>>(second, log2H, colClampRange, sparseInputs);
+            }
+            else
+            {
+                Apply<TLanes, Vector128<int>>(colKind, first, log2H, colClampRange);
+                Apply<TLanes, Vector128<int>>(colKind, second, log2H, colClampRange);
+            }
+
+            for (var i = 0; i < h; i++)
+            {
+                var samples = destination.Slice(((flipUD ? h - 1 - i : i) * destinationStride) + j, 8);
+                var low = AdvSimd.ShiftRightArithmeticRounded(first[i], ColumnShift);
+                var high = AdvSimd.ShiftRightArithmeticRounded(second[i], ColumnShift);
+                var sum = AdvSimd.AddSaturate(Vector128.Create(samples).AsInt16(), AdvSimd.ExtractNarrowingSaturateUpper(AdvSimd.ExtractNarrowingSaturateLower(low), high));
+                Vector128.Min(Vector128.Max(sum, Vector128<short>.Zero), maxSamples).AsUInt16().CopyTo(samples);
             }
         }
     }

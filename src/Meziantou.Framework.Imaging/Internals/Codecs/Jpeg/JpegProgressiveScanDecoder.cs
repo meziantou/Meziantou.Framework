@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -80,13 +81,6 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
 
     protected override void DecodeBlock(ScanComponent scanComponent, int blockRow, int blockColumn)
     {
-        if (_endOfBandRun > 0 && !_refinement)
-        {
-            // An AC first scan: the block is in an EOB run (T.81 G.1.2.2), it codes nothing
-            _endOfBandRun--;
-            return;
-        }
-
         var block = scanComponent.GetCoefficients(blockRow, blockColumn);
         if (_start == 0)
         {
@@ -144,11 +138,8 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
     /// </remarks>
     private void DecodeAcFirst(JpegHuffmanTable table, Span<short> block)
     {
-        if (_endOfBandRun > 0)
-        {
-            _endOfBandRun--;
-            return;
-        }
+        // The blocks of an EOB run code nothing: the scan skips them (SkippableMcus)
+        Debug.Assert(SkippableMcus == 0);
 
         var reader = Reader.GetCursor();
         var zigZag = JpegIdct.ZigZag;
@@ -181,7 +172,7 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
                 if (run != 15)
                 {
                     // EOBn: this block and the next 2^n - 1 + (n extra bits) blocks end here
-                    _endOfBandRun = (1 << run) - 1 + (run == 0 ? 0 : reader.ReadBits(run));
+                    SkippableMcus = (1 << run) - 1 + (run == 0 ? 0 : reader.ReadBits(run));
                     break;
                 }
 

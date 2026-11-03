@@ -140,6 +140,13 @@ internal abstract class JpegScanDecoder
     /// </summary>
     protected bool UncheckedReads { get; private set; }
 
+    /// <summary>
+    /// Gets or sets the number of the next MCUs that code nothing (the rest of an EOB run of a progressive AC first scan,
+    /// whose MCU is one block): they are counted as decoded without <see cref="DecodeBlock"/>, up to the end of their MCU row
+    /// or restart interval. Reset at each restart marker.
+    /// </summary>
+    protected int SkippableMcus { get; set; }
+
     /// <summary>Gets the entropy reader of the scan.</summary>
     protected JpegEntropyReader Reader => _reader;
 
@@ -345,6 +352,7 @@ internal abstract class JpegScanDecoder
     /// <summary>Resets the decoding state at a restart marker (T.81 F.2.1.3.1, G.1.2.2): the DC predictions.</summary>
     protected virtual void OnRestart()
     {
+        SkippableMcus = 0;
         foreach (var component in _components)
         {
             component.Predictor = 0;
@@ -414,14 +422,31 @@ internal abstract class JpegScanDecoder
             if (_restartInterval > 0 && _intervalRemaining == 0)
                 return;
 
-            if (!endOfSegment && _reader.AvailableBytes < _safeBytes)
-                return;
+            var count = 1;
+            if (SkippableMcus > 0)
+            {
+                // MCUs that consume no data: as many as the row and the interval have at once
+                count = Math.Min(SkippableMcus, _mcusPerLine - _mcuX);
+                if (_restartInterval > 0)
+                {
+                    count = Math.Min(count, _intervalRemaining);
+                }
 
-            Debug.Assert(!UncheckedReads || _reader.BufferedBytes >= _uncheckedBytes);
-            DecodeMcu(_mcuX, _mcuY);
-            _mcu++;
-            _intervalRemaining--;
-            if (++_mcuX == _mcusPerLine)
+                SkippableMcus -= count;
+            }
+            else
+            {
+                if (!endOfSegment && _reader.AvailableBytes < _safeBytes)
+                    return;
+
+                Debug.Assert(!UncheckedReads || _reader.BufferedBytes >= _uncheckedBytes);
+                DecodeMcu(_mcuX, _mcuY);
+            }
+
+            _mcu += count;
+            _intervalRemaining -= count;
+            _mcuX += count;
+            if (_mcuX == _mcusPerLine)
             {
                 _mcuX = 0;
                 var row = _mcuY++;

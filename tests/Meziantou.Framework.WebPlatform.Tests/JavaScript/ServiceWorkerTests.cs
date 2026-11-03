@@ -668,6 +668,20 @@ public sealed class ServiceWorkerTests : IDisposable
     }
 
     [Fact]
+    public async Task Register_RejectsAScriptBlockedByTheContentSecurityPolicy()
+    {
+        AddScript("https://example.com/dir/sw.js", "");
+        var document = Load("""
+            <meta http-equiv="Content-Security-Policy" content="worker-src 'none'">
+            <script>
+              navigator.serviceWorker.register('sw.js').then(() => document.title = 'resolved', e => document.title = e.name);
+            </script>
+            """);
+
+        Assert.Equal("SecurityError", await WaitForTitleAsync(document));
+    }
+
+    [Fact]
     public async Task SkipWaiting_PromiseIsResolvedAfterTheActivateEventAndBeforeTheActivatedState()
     {
         AddScript("https://example.com/dir/sw1.js", "");

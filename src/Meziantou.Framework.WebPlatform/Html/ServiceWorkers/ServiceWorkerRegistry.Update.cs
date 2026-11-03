@@ -52,7 +52,18 @@ internal sealed partial class ServiceWorkerRegistry
                 RejectJobPromise(job, static () => SecurityError("The script of a service worker must not be redirected"));
             }
         }
-        else if (!response.IsNetworkError)
+        else if (response.IsNetworkError)
+        {
+            // The specification fetches the script and gets a network error (a TypeError) when the worker-src directive blocks
+            // it; the browsers check the policy when the service worker is registered and reject with a SecurityError. The
+            // fetch already reported the violation, so the policy is checked again without reporting it.
+            if (job.Type == ServiceWorkerJobType.Register && request.Client is { ContentSecurityPoliciesOrNull: { } policies } policyClient
+                && ContentSecurityPolicy.ShouldBlockRequest(policies, policyClient.ContentSecurityPolicySelfOrigin, scriptUrl, RequestDestination.ServiceWorker))
+            {
+                RejectJobPromise(job, static () => SecurityError("The script of the service worker is blocked by the content security policy"));
+            }
+        }
+        else
         {
             if (HeaderList.ExtractMimeType(response.HeaderList) is not { IsJavaScript: true })
             {

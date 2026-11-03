@@ -61,6 +61,10 @@ internal sealed partial class PosixParser
 
     private ShellStatementListSyntax ParseStatementList(ParseContext context)
     {
+        // The braces of a word, as in `{$(cmd)}`, do not extend into a command nested in it: there a `}` is read
+        // as if no word were open.
+        var enclosingWordBraceDepth = _wordBraceDepth;
+        _wordBraceDepth = 0;
         _contexts.Add(context);
         try
         {
@@ -69,6 +73,7 @@ internal sealed partial class PosixParser
         finally
         {
             _contexts.RemoveAt(_contexts.Count - 1);
+            _wordBraceDepth = enclosingWordBraceDepth;
         }
     }
 

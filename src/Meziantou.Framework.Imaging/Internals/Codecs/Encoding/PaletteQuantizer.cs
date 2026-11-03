@@ -58,7 +58,9 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// <b>Mapping speed.</b> The entries that can be the nearest one of some color of a 5-bit cell of the color cube are found
 /// once per cell and palette, when the first color of the cell is mapped (<see cref="BuildCell"/>); the colors of the cell
 /// are then only compared with these few candidates. The candidates are a superset of the possible results, so the mapping
-/// is exactly the one of the linear search (<see cref="FindNearestScalar"/>).
+/// is exactly the one of the linear search (<see cref="FindNearestScalar"/>). The last color mapped at each of 65,536 slots
+/// (chosen by a hash of the key) is remembered with its entry, in the memory of the histogram sums: a photograph meets
+/// most of its colors again, which then take no search.
 /// </description></item>
 /// </list>
 /// Working memory (about 1.3 MiB, 2.6 MiB with translucent colors, fixed) is rented once from the scope as <see cref="AllocationKind.Temporary"/>.
@@ -90,6 +92,12 @@ internal sealed class PaletteQuantizer : IDisposable
     // is not a key (alpha 255 is never stored in the high byte)
     private const int RgbaCacheLength = 4096;
     private const int NoKey = unchecked((int)0xFF00_0000);
+
+    // The colors mapped last (key and palette index, at the slot of the key): it takes the memory of the histogram sums once
+    // the palette is built. An empty slot reads as the key 0xFFFFFF, which is never taken from the cache
+    private const int MapCacheBits = 16;
+    private const int MapCacheLength = 1 << MapCacheBits;
+    private const int EmptyMapCacheKey = 0xFF_FFFF;
 
     // The largest number of k-means passes that refine the palette of the median cut
     private const int RefinementPasses = 8;
@@ -628,7 +636,20 @@ internal sealed class PaletteQuantizer : IDisposable
         if (_opaqueCount == 0)
             return FindNearestRgba(key);
 
-        var cells = GetState().Slice(CellsOffset, Buckets * CellStride);
+        // The colors mapped last, by key: a photograph has few distinct colors compared with its pixels
+        var state = GetState();
+        ref var cached = ref unsafe(MemoryMarshal.Cast<byte, uint>(state.Slice(_sumsOffset, MapCacheLength * sizeof(uint)))[GetMapCacheSlot(key)]);
+        if (cached >> 8 == (uint)key && key != EmptyMapCacheKey)
+            return _lastIndex = (int)(cached & 0xFF);
+
+        var index = MapUncached(key, state);
+        cached = ((uint)key << 8) | (uint)index;
+        return index;
+    }
+
+    private int MapUncached(int key, Span<byte> state)
+    {
+        var cells = state.Slice(CellsOffset, Buckets * CellStride);
         var offset = GetBucket(key) * CellStride;
         ref var cell = ref cells[offset];
         int count = cell;
@@ -1390,6 +1411,9 @@ internal sealed class PaletteQuantizer : IDisposable
         }
     }
 
+    /// <summary>Gets the slot of a color in the mapping cache.</summary>
+    private static int GetMapCacheSlot(int key) => (int)(((uint)key * 0x9E3779B1u) >> (32 - MapCacheBits));
+
     private void SetPalette(int count)
     {
         // Sorted as unsigned keys: the opaque entries (high byte 0), the translucent ones, then the transparent entry (all ones)
@@ -1464,9 +1488,10 @@ internal sealed class PaletteQuantizer : IDisposable
         _useSortedSearch = unique <= 4 * distinctReds;
         _lastIndex = 0;
 
-        // The cells of the new palette take the memory of the histogram, which is complete
+        // The cells and the cache of the new palette take the memory of the histogram, which is complete
         _hasHistogram = false;
         GetState().Slice(CellsOffset, Buckets * CellStride).Clear();
+        unsafe { MemoryMarshal.Cast<byte, uint>(GetState().Slice(_sumsOffset, MapCacheLength * sizeof(uint))).Fill(uint.MaxValue); }
         var planes = GetVectorPalette();
         for (var plane = 0; plane < 3; plane++)
         {

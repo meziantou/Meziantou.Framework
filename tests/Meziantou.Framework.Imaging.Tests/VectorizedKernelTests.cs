@@ -289,11 +289,30 @@ public sealed class VectorizedKernelTests
             Assert.Equal(expected, quantizer.Map((r << 16) | (g << 8) | b));
             Assert.Equal(expected, quantizer.FindNearest(r, g, b, random.Next(colors)));
             Assert.Equal(expected, quantizer.FindNearestSorted(r, g, b, random.Next(colors)));
+
+            // Mapped again: from the cache of the mapped colors
+            Assert.Equal(expected, quantizer.Map((r << 16) | (g << 8) | b));
         }
 
         foreach (var key in quantizer.Palette.ToArray())
         {
             Assert.Equal(key, quantizer.Palette[quantizer.Map(key)]);
+        }
+
+        // White is the key an empty slot of the mapping cache reads as; a new palette empties the cache
+        int[] mapped = [0xFF_FFFF, 0, 0x80_8080, 0x01_0203];
+        for (var palette = 0; palette < 2; palette++)
+        {
+            foreach (var key in mapped)
+            {
+                var expected = quantizer.FindNearestScalar(key >> 16, (key >> 8) & 0xFF, key & 0xFF);
+                Assert.Equal(expected, quantizer.Map(key));
+                Assert.Equal(expected, quantizer.Map(key));
+            }
+
+            quantizer.Begin(256);
+            quantizer.Add([.. keys.Take(Math.Max(1, colors / 2))]);
+            quantizer.BuildPalette(256);
         }
     }
 

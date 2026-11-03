@@ -3219,8 +3219,9 @@ public sealed class VectorizedKernelTests
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void RedBlueExchangeMatchesTheScalarReference()
     {
+        // Lengths around the 16-, 32- and 64-byte steps (4, 8 and 16 pixels)
         var random = new Random(605);
-        for (var pixels = 0; pixels <= 40; pixels++)
+        for (var pixels = 0; pixels <= 80; pixels++)
         {
             var source = new byte[pixels * 3];
             random.NextBytes(source);
@@ -3244,9 +3245,9 @@ public sealed class VectorizedKernelTests
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void SwapRedAndBlue24ToOpaque32MatchesThePixelDefinition()
     {
-        // Lengths around the 16-byte loads (4 pixels per step), and a longer destination that keeps its other bytes
+        // Lengths around the 16-, 32- and 64-byte loads (4, 8 and 16 pixels per step), and a longer destination that keeps its other bytes
         var random = new Random(2405);
-        for (var pixels = 0; pixels <= 40; pixels++)
+        for (var pixels = 0; pixels <= 80; pixels++)
         {
             var source = new byte[pixels * 3];
             random.NextBytes(source);

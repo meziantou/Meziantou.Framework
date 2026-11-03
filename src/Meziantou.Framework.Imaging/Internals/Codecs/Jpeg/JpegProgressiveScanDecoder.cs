@@ -204,7 +204,7 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
                             throw Invalid("The JPEG AC coefficients run past the end of the spectral band.");
 
                         if (size > MaxAcCategory)
-                            throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG AC coefficient magnitude category is greater than {MaxAcCategory}."));
+                            throw CreateAcCategoryException();
 
                         coefficient = cursor.ReceiveExtend(size);
                     }
@@ -348,21 +348,16 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private void DecodeDcUnchecked(ref JpegEntropyReader.UncheckedCursor cursor, ScanComponent scanComponent, int blockRow, int blockColumn)
     {
-        var block = scanComponent.GetCoefficients(blockRow, blockColumn);
+        ref var coefficient = ref unsafe(MemoryMarshal.GetReference(scanComponent.GetCoefficients(blockRow, blockColumn)));
         cursor.Refill();
         if (_refinement)
         {
             // T.81 G.1.2.1: the next bit of the DC value
-            if (cursor.ReadBits(1) != 0)
-            {
-                block[0] |= (short)(1 << _low);
-            }
-
+            coefficient |= (short)(cursor.ReadBits(1) << _low);
             return;
         }
 
-        var table = scanComponent.DcTable!;
-        var entry = cursor.Lookup(table.FastLookup);
+        var entry = cursor.Lookup(scanComponent.DcLookup);
         int difference;
         if ((entry & JpegHuffmanTable.FastLookupComplete) != 0)
         {
@@ -379,11 +374,11 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
             }
             else
             {
-                category = cursor.DecodeLongCode(table);
+                category = cursor.DecodeLongCode(scanComponent.DcTable!);
             }
 
             if (category > MaxDcCategory)
-                throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG DC coefficient category is greater than {MaxDcCategory}."));
+                throw CreateDcCategoryException();
 
             difference = category == 0 ? 0 : cursor.ReceiveExtend(category);
         }
@@ -391,11 +386,18 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
         var dc = scanComponent.Predictor + difference;
         var value = (long)dc << _low;
         if (value is < short.MinValue or > short.MaxValue)
-            throw Invalid("The JPEG DC coefficient is out of range.");
+            throw CreateDcRangeException();
 
         scanComponent.Predictor = dc;
-        block[0] = (short)value;
+        coefficient = (short)value;
     }
+
+    // The exceptions are created out of line, which keeps their message formatting out of the inlined loops
+    private InvalidImageContentException CreateDcCategoryException() => Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG DC coefficient category is greater than {MaxDcCategory}."));
+
+    private static InvalidImageContentException CreateDcRangeException() => Invalid("The JPEG DC coefficient is out of range.");
+
+    private InvalidImageContentException CreateAcCategoryException() => Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG AC coefficient magnitude category is greater than {MaxAcCategory}."));
 
     /// <summary>T.81 G.1.2.1: the DC difference from the prediction, in the point-transformed domain.</summary>
     private void DecodeDcFirst(ScanComponent scanComponent, Span<short> block)
@@ -403,7 +405,7 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
         var reader = Reader;
         var category = reader.DecodeHuffman(scanComponent.DcTable!);
         if (category > MaxDcCategory)
-            throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG DC coefficient category is greater than {MaxDcCategory}."));
+            throw CreateDcCategoryException();
 
         var dc = scanComponent.Predictor + (category == 0 ? 0 : reader.ReceiveExtend(category));
         var value = (long)dc << _low;
@@ -468,7 +470,7 @@ internal sealed class JpegProgressiveScanDecoder : JpegScanDecoder
                 throw Invalid("The JPEG AC coefficients run past the end of the spectral band.");
 
             if (size > MaxAcCategory)
-                throw Invalid(string.Create(CultureInfo.InvariantCulture, $"The JPEG AC coefficient magnitude category is greater than {MaxAcCategory}."));
+                throw CreateAcCategoryException();
 
             var value = (long)reader.ReceiveExtend(size) << low;
             if (Math.Abs(value) > short.MaxValue)

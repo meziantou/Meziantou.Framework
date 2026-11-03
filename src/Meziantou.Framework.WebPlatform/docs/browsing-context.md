@@ -3356,8 +3356,9 @@ await context.WaitUntilIdleAsync();
   compares them byte for byte. A script that the update check fails to fetch (e.g. a 404) is not a change, but the new
   worker installed because another script changed fails to import it. A module service worker whose evaluation throws,
   or that is an asynchronous module (a top-level `await`), cannot be registered, and `import()` is rejected with a
-  `TypeError` in a service worker. The registration of a script that is redirected is rejected with a `SecurityError`
-  (as in the browsers; the specification makes it a network error, so a `TypeError`, which an update still gets).
+  `TypeError` in a service worker. The registration of a script that is redirected, or that the `worker-src` directive
+  of the content security policy blocks, is rejected with a `SecurityError` (as in the browsers; the specification makes
+  it a network error, so a `TypeError`, which an update still gets).
 - The algorithms of a registration run in parallel with its clients and its workers: the steps that clear an
   unregistered registration or activate its waiting worker run again each time an event of a worker ends (an extended
   event, or an event that is not dispatched yet), as one atomic step. The objects of the clients (`ServiceWorker`,

@@ -245,7 +245,12 @@ internal sealed class Vp8LPrefixCodes : IDisposable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public static int ReadSymbol(ref uint entries, in Vp8LPrefixCode code, ref byte data, int end, ref ulong value, ref int bits, ref int position)
     {
-        Vp8LBitReader.Refill(ref data, end, ref value, ref bits, ref position);
+        // A code is at most 15 bits long: the buffer is topped up only below that (a refill then adds 5 bytes or more)
+        if (bits < MaxCodeLength)
+        {
+            Vp8LBitReader.Refill(ref data, end, ref value, ref bits, ref position);
+        }
+
         var rootBits = code.RootBits;
         var peek = (uint)value;
 

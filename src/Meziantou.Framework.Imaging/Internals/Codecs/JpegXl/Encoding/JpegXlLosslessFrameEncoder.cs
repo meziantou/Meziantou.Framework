@@ -57,6 +57,10 @@ internal sealed class JpegXlLosslessFrameEncoder
     private JpegXlMaTreeNode[] _tree = [];
     private int _leafCount;
 
+    // The copies found in each stream (the global data, then the groups) when the values are counted, which are written
+    // without parsing the stream again; null for a stream that has too many of them
+    private Lz77Copy[]?[]? _copies;
+
     /// <param name="width">The width of the frame.</param>
     /// <param name="height">The height of the frame.</param>
     /// <param name="colorChannelCount">The number of color channels: 1 or 3.</param>
@@ -116,6 +120,7 @@ internal sealed class JpegXlLosslessFrameEncoder
                 if (IsLz77Worthwhile(tokenCosts))
                 {
                     lz77Code = new JpegXlModularEntropyCode(_leafCount, _settings.MaxClusters, _settings.SearchConfigs, useLz77: true, _scope);
+                    _copies = new Lz77Copy[]?[GroupCount + 1];
                     CountStreams(lz77Code, global, tokenCosts);
                 }
                 else
@@ -136,9 +141,9 @@ internal sealed class JpegXlLosslessFrameEncoder
                 else
                 {
                     tokenCosts = null;
+                    _copies = null;
                 }
             }
-
 
             // LfGlobal: the tree and its code, then the global Modular data: its header, then its samples
             writer.WriteBool(true);
@@ -150,7 +155,7 @@ internal sealed class JpegXlLosslessFrameEncoder
             if (global is not null)
             {
                 using var worker = new StreamWorker(code, tokenCosts, _settings.Lz77Chain, counting: false, _scope);
-                ProcessStream(global, 0, worker);
+                ProcessStream(global, 0, worker, copySlot: 0);
                 code.WriteStream(worker.Stream!, writer);
             }
             else if (code.UsesAns)
@@ -177,6 +182,7 @@ internal sealed class JpegXlLosslessFrameEncoder
         finally
         {
             lz77Code?.Dispose();
+            _copies = null;
         }
     }
 
@@ -189,7 +195,7 @@ internal sealed class JpegXlLosslessFrameEncoder
         if (global is not null)
         {
             using var worker = new StreamWorker(code, tokenCosts, _settings.Lz77Chain, counting: true, _scope);
-            ProcessStream(global, 0, worker);
+            ProcessStream(global, 0, worker, copySlot: 0);
         }
 
         if (IsSingleGroup)
@@ -205,7 +211,7 @@ internal sealed class JpegXlLosslessFrameEncoder
             {
                 _cancellationToken.ThrowIfCancellationRequested();
                 using var image = LoadGroup(group, includeMeta: false);
-                ProcessStream(image, GetStreamIndex(group, lfGroupCount), worker);
+                ProcessStream(image, GetStreamIndex(group, lfGroupCount), worker, copySlot: group + 1);
             });
     }
 
@@ -275,9 +281,10 @@ internal sealed class JpegXlLosslessFrameEncoder
     /// <summary>
     /// Computes the values of a sub-bitstream, every channel in order, and counts them or adds them to the stream of the
     /// worker, after finding the copies when the worker has a parser. <paramref name="literalWorker"/>, when set, also
-    /// receives the values, without copies.
+    /// receives the values, without copies. The copies of the stream <paramref name="copySlot"/> (0 for the global data,
+    /// then the groups from 1) are kept when they are counted, and written without a second parse: it would find the same.
     /// </summary>
-    private void ProcessStream(JpegXlModularImage image, int streamIndex, StreamWorker worker, StreamWorker? literalWorker = null)
+    private void ProcessStream(JpegXlModularImage image, int streamIndex, StreamWorker worker, StreamWorker? literalWorker = null, int copySlot = -1)
     {
         long length = 0;
         var distanceMultiplier = 0;
@@ -321,8 +328,41 @@ internal sealed class JpegXlLosslessFrameEncoder
             return;
         }
 
-        worker.Parser.Parse(span, distanceMultiplier, ref worker.Sink);
+        var copies = copySlot >= 0 ? _copies : null;
+        if (copies is null)
+        {
+            worker.Parser.Parse(span, distanceMultiplier, ref worker.Sink);
+            return;
+        }
+
+        if (worker.Stream is not null && copies[copySlot] is { } found)
+        {
+            var position = 0;
+            foreach (var copy in found)
+            {
+                worker.AddValues(span[position..copy.Position]);
+                worker.Sink.AddCopy((int)(span[copy.Position] >> 32), copy.Length, copy.Distance);
+                position = copy.Position + copy.Length;
+            }
+
+            worker.AddValues(span[position..]);
+            return;
+        }
+
+        var recorder = new RecordingSink(worker.Sink, worker.Copies);
+        worker.Parser.Parse(span, distanceMultiplier, ref recorder);
+
+        // A copy takes 12 bytes: a stream with many short ones is parsed again rather than kept
+        if (worker.Stream is null && worker.Copies.Count <= span.Length / ValuesPerKeptCopy)
+        {
+            copies[copySlot] = [.. worker.Copies];
+        }
+
+        worker.Copies.Clear();
     }
+
+    /// <summary>The fewest values per copy of a stream whose copies are kept.</summary>
+    private const int ValuesPerKeptCopy = 16;
 
     /// <summary>Gets the stream index of a group of the first pass.</summary>
     private static int GetStreamIndex(int group, int lfGroupCount) => 1 + (3 * lfGroupCount) + JpegXlVarDctTables.QuantTableCount + group;
@@ -786,7 +826,7 @@ internal sealed class JpegXlLosslessFrameEncoder
         writer.WriteBool(true);
         writer.WriteBool(true);
         writer.WriteU32(0, 0, 0, 1, 0, 2, 4, 18, 8);
-        ProcessStream(image, GetStreamIndex(group, lfGroupCount), worker);
+        ProcessStream(image, GetStreamIndex(group, lfGroupCount), worker, copySlot: group + 1);
         code.WriteStream(worker.Stream!, writer);
     }
 
@@ -937,6 +977,9 @@ internal sealed class JpegXlLosslessFrameEncoder
 
         public ParserSink Sink;
 
+        /// <summary>The copies found in the stream that is parsed.</summary>
+        public List<Lz77Copy> Copies { get; } = [];
+
         public void AddValues(ReadOnlySpan<ulong> values)
         {
             if (_counter is not null)
@@ -976,6 +1019,30 @@ internal sealed class JpegXlLosslessFrameEncoder
         {
             Literal.Dispose();
             Lz77.Dispose();
+        }
+    }
+
+    /// <summary>A copy of a stream: the position of its first value, its length and the code of its distance.</summary>
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
+    internal readonly record struct Lz77Copy(int Position, int Length, uint Distance);
+
+    /// <summary>Receives what the parser finds, as <see cref="ParserSink"/> does, and records the copies with their positions.</summary>
+    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
+    private struct RecordingSink(ParserSink sink, List<Lz77Copy> copies) : JpegXlLz77Parser.IStreamSink
+    {
+        private int _position;
+
+        public void AddValue(int context, uint value)
+        {
+            sink.AddValue(context, value);
+            _position++;
+        }
+
+        public void AddCopy(int context, int length, uint distance)
+        {
+            sink.AddCopy(context, length, distance);
+            copies.Add(new Lz77Copy(_position, length, distance));
+            _position += length;
         }
     }
 

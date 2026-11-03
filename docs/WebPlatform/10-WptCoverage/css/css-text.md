@@ -11,8 +11,8 @@ description: "The results of the web-platform-tests of css/css-text, and why the
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 340 | 349 | 0 | 97% |
 | [Tentative](#tentative-tests) | 18 | 18 | 0 | 100% |
-| [Reftests](#reftests) | 1,497 | 1,559 | 0 | 96% |
-| **All** | **1,855** | **1,926** | **0** | **96%** |
+| [Reftests](#reftests) | 1,514 | 1,559 | 0 | 97% |
+| **All** | **1,872** | **1,926** | **0** | **97%** |
 
 ## Stable tests
 
@@ -1757,8 +1757,8 @@ description: "The results of the web-platform-tests of css/css-text, and why the
 | [`white-space/white-space-trim-discard-inner.html`](https://wpt.fyi/results/css/css-text/white-space/white-space-trim-discard-inner.html) | Pass | 1 / 1 |  |  |
 | [`white-space/white-space-trim-dynamic.html`](https://wpt.fyi/results/css/css-text/white-space/white-space-trim-dynamic.html) | Pass | 1 / 1 |  |  |
 | [`white-space/white-space-trim-generated-content.html`](https://wpt.fyi/results/css/css-text/white-space/white-space-trim-generated-content.html) | Pass | 1 / 1 |  |  |
-| [`white-space/white-space-trim-inline-block-dynamic.html`](https://wpt.fyi/results/css/css-text/white-space/white-space-trim-inline-block-dynamic.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `white-space-trim: discard-before` and `discard-after` on an atomic `inline-block` (a block container): only the start and the end of inline boxes trim the white space around them, so the spaces next to the inline-block are kept (`a b` instead of `ab`) |
-| [`white-space/white-space-trim-inline-block.html`](https://wpt.fyi/results/css/css-text/white-space/white-space-trim-inline-block.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `white-space-trim: discard-before` and `discard-after` on an atomic `inline-block` (a block container): only the start and the end of inline boxes trim the white space around them, so the spaces next to the inline-block are kept (`a b` instead of `ab`) |
+| [`white-space/white-space-trim-inline-block-dynamic.html`](https://wpt.fyi/results/css/css-text/white-space/white-space-trim-inline-block-dynamic.html) | Pass | 1 / 1 |  |  |
+| [`white-space/white-space-trim-inline-block.html`](https://wpt.fyi/results/css/css-text/white-space/white-space-trim-inline-block.html) | Pass | 1 / 1 |  |  |
 | [`white-space/white-space-trim-interaction.html`](https://wpt.fyi/results/css/css-text/white-space/white-space-trim-interaction.html) | Pass | 1 / 1 |  |  |
 | [`white-space/white-space-trim-nested.html`](https://wpt.fyi/results/css/css-text/white-space/white-space-trim-nested.html) | Pass | 1 / 1 |  |  |
 | [`white-space/white-space-trim-rtl.html`](https://wpt.fyi/results/css/css-text/white-space/white-space-trim-rtl.html) | Pass | 1 / 1 |  |  |
@@ -1926,27 +1926,27 @@ description: "The results of the web-platform-tests of css/css-text, and why the
 | [`word-spacing/word-spacing-negative-value-001.html`](https://wpt.fyi/results/css/css-text/word-spacing/word-spacing-negative-value-001.html) | Pass | 1 / 1 |  |  |
 | [`word-spacing/word-spacing-percent-001.html`](https://wpt.fyi/results/css/css-text/word-spacing/word-spacing-percent-001.html) | Pass | 1 / 1 |  |  |
 | [`wrap-inside/wrap-inside-auto.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-auto.html) | Pass | 1 / 1 |  |  |
-| [`wrap-inside/wrap-inside-avoid-block-child.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-block-child.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `wrap-inside: avoid` is parsed but not used by the line breaking: the lines break inside the boxes where the reference breaks before them to keep them together |
-| [`wrap-inside/wrap-inside-avoid-break-all.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-break-all.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `wrap-inside: avoid` is parsed but not used by the line breaking: the lines break inside the boxes where the reference breaks before them to keep them together |
-| [`wrap-inside/wrap-inside-avoid-break-before-then-inside.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-break-before-then-inside.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `wrap-inside: avoid` is parsed but not used by the line breaking: the lines break inside the boxes where the reference breaks before them to keep them together |
-| [`wrap-inside/wrap-inside-avoid-dynamic.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-dynamic.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `wrap-inside: avoid` is parsed but not used by the line breaking: the lines break inside the boxes where the reference breaks before them to keep them together |
+| [`wrap-inside/wrap-inside-avoid-block-child.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-block-child.html) | Pass | 1 / 1 |  |  |
+| [`wrap-inside/wrap-inside-avoid-break-all.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-break-all.html) | Pass | 1 / 1 |  |  |
+| [`wrap-inside/wrap-inside-avoid-break-before-then-inside.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-break-before-then-inside.html) | Pass | 1 / 1 |  |  |
+| [`wrap-inside/wrap-inside-avoid-dynamic.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-dynamic.html) | Pass | 1 / 1 |  |  |
 | [`wrap-inside/wrap-inside-avoid-forced-break.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-forced-break.html) | Pass | 1 / 1 |  |  |
-| [`wrap-inside/wrap-inside-avoid-inline-block-child.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-inline-block-child.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `wrap-inside: avoid` is parsed but not used by the line breaking: the lines break inside the boxes where the reference breaks before them to keep them together |
-| [`wrap-inside/wrap-inside-avoid-inline-flex-child.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-inline-flex-child.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `wrap-inside: avoid` is parsed but not used by the line breaking: the lines break inside the boxes where the reference breaks before them to keep them together |
-| [`wrap-inside/wrap-inside-avoid-inline-grid-child.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-inline-grid-child.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `wrap-inside: avoid` is parsed but not used by the line breaking: the lines break inside the boxes where the reference breaks before them to keep them together |
-| [`wrap-inside/wrap-inside-avoid-inline-table-child.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-inline-table-child.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `wrap-inside: avoid` is parsed but not used by the line breaking: the lines break inside the boxes where the reference breaks before them to keep them together |
-| [`wrap-inside/wrap-inside-avoid-keeps-box-together.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-keeps-box-together.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `wrap-inside: avoid` is parsed but not used by the line breaking: the lines break inside the boxes where the reference breaks before them to keep them together |
+| [`wrap-inside/wrap-inside-avoid-inline-block-child.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-inline-block-child.html) | Pass | 1 / 1 |  |  |
+| [`wrap-inside/wrap-inside-avoid-inline-flex-child.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-inline-flex-child.html) | Pass | 1 / 1 |  |  |
+| [`wrap-inside/wrap-inside-avoid-inline-grid-child.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-inline-grid-child.html) | Pass | 1 / 1 |  |  |
+| [`wrap-inside/wrap-inside-avoid-inline-table-child.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-inline-table-child.html) | Pass | 1 / 1 |  |  |
+| [`wrap-inside/wrap-inside-avoid-keeps-box-together.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-keeps-box-together.html) | Pass | 1 / 1 |  |  |
 | [`wrap-inside/wrap-inside-avoid-last-resort.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-last-resort.html) | Pass | 1 / 1 |  |  |
-| [`wrap-inside/wrap-inside-avoid-line-break-anywhere.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-line-break-anywhere.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `wrap-inside: avoid` is parsed but not used by the line breaking: the lines break inside the boxes where the reference breaks before them to keep them together |
-| [`wrap-inside/wrap-inside-avoid-nested-auto.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-nested-auto.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `wrap-inside: avoid` is parsed but not used by the line breaking: the lines break inside the boxes where the reference breaks before them to keep them together |
-| [`wrap-inside/wrap-inside-avoid-nested-deep.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-nested-deep.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `wrap-inside: avoid` is parsed but not used by the line breaking: the lines break inside the boxes where the reference breaks before them to keep them together |
-| [`wrap-inside/wrap-inside-avoid-nested-only.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-nested-only.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `wrap-inside: avoid` is parsed but not used by the line breaking: the lines break inside the boxes where the reference breaks before them to keep them together |
-| [`wrap-inside/wrap-inside-avoid-nested.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-nested.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `wrap-inside: avoid` is parsed but not used by the line breaking: the lines break inside the boxes where the reference breaks before them to keep them together |
+| [`wrap-inside/wrap-inside-avoid-line-break-anywhere.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-line-break-anywhere.html) | Pass | 1 / 1 |  |  |
+| [`wrap-inside/wrap-inside-avoid-nested-auto.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-nested-auto.html) | Pass | 1 / 1 |  |  |
+| [`wrap-inside/wrap-inside-avoid-nested-deep.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-nested-deep.html) | Pass | 1 / 1 |  |  |
+| [`wrap-inside/wrap-inside-avoid-nested-only.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-nested-only.html) | Pass | 1 / 1 |  |  |
+| [`wrap-inside/wrap-inside-avoid-nested.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-nested.html) | Pass | 1 / 1 |  |  |
 | [`wrap-inside/wrap-inside-avoid-nowrap-child.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-nowrap-child.html) | Pass | 1 / 1 |  |  |
 | [`wrap-inside/wrap-inside-avoid-nowrap.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-nowrap.html) | Pass | 1 / 1 |  |  |
 | [`wrap-inside/wrap-inside-avoid-overflow-wrap.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-overflow-wrap.html) | Pass | 1 / 1 |  |  |
 | [`wrap-inside/wrap-inside-avoid-removed-dynamic.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-removed-dynamic.html) | Pass | 1 / 1 |  |  |
-| [`wrap-inside/wrap-inside-avoid-siblings.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-siblings.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `wrap-inside: avoid` is parsed but not used by the line breaking: the lines break inside the boxes where the reference breaks before them to keep them together |
+| [`wrap-inside/wrap-inside-avoid-siblings.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-siblings.html) | Pass | 1 / 1 |  |  |
 | [`wrap-inside/wrap-inside-avoid-single-word.html`](https://wpt.fyi/results/css/css-text/wrap-inside/wrap-inside-avoid-single-word.html) | Pass | 1 / 1 |  |  |
 | [`writing-system/writing-system-font-001.html`](https://wpt.fyi/results/css/css-text/writing-system/writing-system-font-001.html) | Pass | 1 / 1 |  |  |
 | [`writing-system/writing-system-line-break-001.html`](https://wpt.fyi/results/css/css-text/writing-system/writing-system-line-break-001.html) | Pass | 1 / 1 |  |  |

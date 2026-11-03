@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of css/css-easing, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 11 | 13 | 0 | 85% |
+| [Stable](#stable-tests) | 12 | 13 | 0 | 92% |
 | Tentative | 0 | 0 | 0 | – |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **11** | **13** | **0** | **85%** |
+| **All** | **12** | **13** | **0** | **92%** |
 
 ## Stable tests
 
@@ -20,7 +20,7 @@ description: "The results of the web-platform-tests of css/css-easing, and why t
 |---|---|--:|---|---|
 | [`cubic-bezier-timing-functions-output.html`](https://wpt.fyi/results/css/css-easing/cubic-bezier-timing-functions-output.html) | Pass | 4 / 4 |  |  |
 | [`linear-timing-functions-output.html`](https://wpt.fyi/results/css/css-easing/linear-timing-functions-output.html) | Pass | 5 / 5 |  |  |
-| [`linear-timing-functions-syntax-percentage-first.html`](https://wpt.fyi/results/css/css-easing/linear-timing-functions-syntax-percentage-first.html) | Fail | 8 / 11 | BUG | the specified value of a `linear()` stop whose input progress percentage comes before its output number (`linear(0% 0, 100% 1)`) keeps the authored order instead of the canonical order (`linear(0 0%, 1 100%)`); only the computed value is canonicalized |
+| [`linear-timing-functions-syntax-percentage-first.html`](https://wpt.fyi/results/css/css-easing/linear-timing-functions-syntax-percentage-first.html) | Pass | 11 / 11 |  |  |
 | [`linear-timing-functions-syntax.html`](https://wpt.fyi/results/css/css-easing/linear-timing-functions-syntax.html) | Fail | 34 / 35 | TEST BUG | the specified value of `linear(calc(0/0), 1)` is expected in its computed form (`linear(0 0%, 1 100%)`) while the other specified values keep their authored form (`linear(0, 1)`): Chrome and Firefox fail the authored forms, Safari fails this one |
 | [`step-jump-both.html`](https://wpt.fyi/results/css/css-easing/step-jump-both.html) | Pass | 7 / 7 |  |  |
 | [`step-jump-end.html`](https://wpt.fyi/results/css/css-easing/step-jump-end.html) | Pass | 7 / 7 |  |  |

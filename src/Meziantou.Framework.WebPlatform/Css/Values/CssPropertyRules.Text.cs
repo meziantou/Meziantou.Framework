@@ -223,8 +223,24 @@ internal static partial class CssPropertyRules
     }
 
     /// <summary>text-emphasis-position: over or under first, and the default right side is omitted (https://drafts.csswg.org/css-text-decor-4/#text-emphasis-position-property).</summary>
+    /// <summary>
+    /// The used value of text-emphasis-position (https://drafts.csswg.org/css-text-decor-4/#valdef-text-emphasis-position-auto):
+    /// auto is under right for Chinese, over right otherwise.
+    /// </summary>
+    public static string GetUsedTextEmphasisPosition(string value, Dom.Element element)
+    {
+        if (value != "auto")
+            return value;
+
+        return Selectors.HtmlElementStates.GetLanguage(element) is { Length: >= 2 } language && (language.Length == 2 || language[2] == '-')
+            && language.AsSpan(0, 2).Equals("zh", StringComparison.OrdinalIgnoreCase) ? "under" : "over";
+    }
+
     public static string CanonicalizeTextEmphasisPosition(string value)
     {
+        if (value == "auto")
+            return value;
+
         var parts = value.Split(' ', StringSplitOptions.RemoveEmptyEntries);
         if (parts.Length != 2)
             return value;

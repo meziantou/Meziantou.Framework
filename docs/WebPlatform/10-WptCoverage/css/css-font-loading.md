@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of css/css-font-loading, and
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 22 | 23 | 0 | 96% |
+| [Stable](#stable-tests) | 23 | 23 | 0 | 100% |
 | [Tentative](#tentative-tests) | 1 | 1 | 0 | 100% |
-| [Reftests](#reftests) | 6 | 7 | 0 | 86% |
-| **All** | **29** | **31** | **0** | **94%** |
+| [Reftests](#reftests) | 7 | 7 | 0 | 100% |
+| **All** | **31** | **31** | **0** | **100%** |
 
 ## Stable tests
 
@@ -39,7 +39,7 @@ description: "The results of the web-platform-tests of css/css-font-loading, and
 | [`fontfaceset-update-after-stylesheet-change.html`](https://wpt.fyi/results/css/css-font-loading/fontfaceset-update-after-stylesheet-change.html) | Pass | 1 / 1 |  |  |
 | [`fontfacesetloadevent-constructor.html`](https://wpt.fyi/results/css/css-font-loading/fontfacesetloadevent-constructor.html) | Pass | 2 / 2 |  |  |
 | [`historical.html`](https://wpt.fyi/results/css/css-font-loading/historical.html) | Pass | 1 / 1 |  |  |
-| [`idlharness.https.html`](https://wpt.fyi/results/css/css-font-loading/idlharness.https.html) | Fail | 95 / 143 | NOT IMPLEMENTED | `FontFace.features`/`variations`/`palettes` and the `FontFaceFeatures`, `FontFaceVariations`, `FontFaceVariationAxis`, `FontFacePalette(s)` interfaces |
+| [`idlharness.https.html`](https://wpt.fyi/results/css/css-font-loading/idlharness.https.html) | Pass | 143 / 143 |  |  |
 | [`nonexistent-file-url.html`](https://wpt.fyi/results/css/css-font-loading/nonexistent-file-url.html) | Pass | 1 / 1 |  |  |
 
 ## Tentative tests
@@ -56,6 +56,6 @@ description: "The results of the web-platform-tests of css/css-font-loading, and
 | [`fontface-descriptor-updates.html`](https://wpt.fyi/results/css/css-font-loading/fontface-descriptor-updates.html) | Pass | 1 / 1 |  |  |
 | [`fontface-from-arraybuffer.html`](https://wpt.fyi/results/css/css-font-loading/fontface-from-arraybuffer.html) | Pass | 1 / 1 |  |  |
 | [`fontface-override-descriptors.html`](https://wpt.fyi/results/css/css-font-loading/fontface-override-descriptors.html) | Pass | 1 / 1 |  |  |
-| [`fontface-size-adjust-descriptor.html`](https://wpt.fyi/results/css/css-font-loading/fontface-size-adjust-descriptor.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `sizeAdjust` member of `FontFaceDescriptors` and the `FontFace.sizeAdjust` attribute (css-fonts-5): the glyphs of the `Ahem-large` face created by the script are not scaled by 200% |
+| [`fontface-size-adjust-descriptor.html`](https://wpt.fyi/results/css/css-font-loading/fontface-size-adjust-descriptor.html) | Pass | 1 / 1 |  |  |
 | [`fontfaceset-clear-css-connected-2.html`](https://wpt.fyi/results/css/css-font-loading/fontfaceset-clear-css-connected-2.html) | Pass | 1 / 1 |  |  |
 | [`fontfaceset-delete-css-connected-2.html`](https://wpt.fyi/results/css/css-font-loading/fontfaceset-delete-css-connected-2.html) | Pass | 1 / 1 |  |  |

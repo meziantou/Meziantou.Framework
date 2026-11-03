@@ -592,6 +592,10 @@ public partial class Document
                 MarkDomContentLoadedEventEnd();
             }
 
+            // https://drafts.csswg.org/css-sizing-4/#responsive-iframes: "The internal layout intrinsic size is first set by
+            // the results of the embedded document's first layout after it fires its DOMContentLoaded event"
+            UpdateInternalLayoutIntrinsicSize();
+
             // https://html.spec.whatwg.org/multipage/parsing.html#the-end: the client message queue of the
             // ServiceWorkerContainer of the document is enabled
             IsDomContentLoadedFired = true;
@@ -786,6 +790,9 @@ public partial class Document
             {
                 MarkLoadEventEnd();
             }
+
+            // https://drafts.csswg.org/css-sizing-4/#responsive-iframes: "and again when the load event is fired at the Window"
+            UpdateInternalLayoutIntrinsicSize();
 
             OnLoadEventFired();
 

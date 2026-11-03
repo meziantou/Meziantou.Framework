@@ -115,7 +115,7 @@ description: "The results of the web-platform-tests of css/cssom, and why the te
 | [`cssom-cssstyledeclaration-set.html`](https://wpt.fyi/results/css/cssom/cssom-cssstyledeclaration-set.html) | Pass | 1 / 1 |  |  |
 | [`cssom-fontfacerule-constructors.html`](https://wpt.fyi/results/css/cssom/cssom-fontfacerule-constructors.html) | Pass | 2 / 2 |  |  |
 | [`cssom-fontfacerule.html`](https://wpt.fyi/results/css/cssom/cssom-fontfacerule.html) | Pass | 1 / 1 |  |  |
-| [`cssom-getPropertyValue-common-checks.html`](https://wpt.fyi/results/css/cssom/cssom-getPropertyValue-common-checks.html) | Fail | 9 / 11 | BUG | the initial values of the `corner-*`, `scroll-timeline`, `view-timeline`, `pointer-timeline`, `timeline-trigger*` shorthands and `font` serialize as "" |
+| [`cssom-getPropertyValue-common-checks.html`](https://wpt.fyi/results/css/cssom/cssom-getPropertyValue-common-checks.html) | Fail | 9 / 11 | BUG | the initial values of the `border-block-clip`, `border-inline-clip` and `timeline-trigger*` shorthands serialize as "" |
 | [`cssom-pagerule.html`](https://wpt.fyi/results/css/cssom/cssom-pagerule.html) | Pass | 22 / 22 |  |  |
 | [`cssom-ruleTypeAndOrder.html`](https://wpt.fyi/results/css/cssom/cssom-ruleTypeAndOrder.html) | Pass | 7 / 7 |  |  |
 | [`cssom-setProperty-shorthand.html`](https://wpt.fyi/results/css/cssom/cssom-setProperty-shorthand.html) | Pass | 76 / 76 |  |  |

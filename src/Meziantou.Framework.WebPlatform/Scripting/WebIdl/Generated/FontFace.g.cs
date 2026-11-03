@@ -45,6 +45,9 @@ internal static class Binding_FontFace<TAdapter, TValue> where TAdapter : struct
     private static void Set_sizeAdjust(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.Om.FontFace>(t, Binding); var x = r.ToDomString(v); o.SizeAdjust = x; }
     private static TValue Get_status(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.Om.FontFace>(t, Binding); return r.Adapter.FromString(WebIdlHelpers<TAdapter, TValue>.FromEnum_Css_Om_FontFaceLoadStatus(o.Status)); }
     private static TValue Get_loaded(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.Om.FontFace>(t, Binding); return r.ToPromise(o.Loaded, static (r, value) => r.Wrap(value)); }
+    private static TValue Get_features(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.Om.FontFace>(t, Binding); return r.Wrap(o.Features); }
+    private static TValue Get_variations(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.Om.FontFace>(t, Binding); return r.Wrap(o.Variations); }
+    private static TValue Get_palettes(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.Om.FontFace>(t, Binding); return r.Wrap(o.Palettes); }
     private static TValue Get_stretch(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.Om.FontFace>(t, Binding); return r.FromString(o.Stretch); }
     private static void Set_stretch(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, TValue v) { var o = r.This<global::Meziantou.Framework.WebPlatform.Css.Om.FontFace>(t, Binding); var x = r.ToDomString(v); o.Stretch = x; }
     private static TValue Op_load(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
@@ -68,6 +71,9 @@ internal static class Binding_FontFace<TAdapter, TValue> where TAdapter : struct
         r.DefineAttribute(instanceTarget, "sizeAdjust", Get_sizeAdjust, Set_sizeAdjust);
         r.DefineAttribute(instanceTarget, "status", Get_status, null);
         r.DefineAttribute(instanceTarget, "loaded", Get_loaded, null, returnsPromise: true);
+        r.DefineAttribute(instanceTarget, "features", Get_features, null);
+        r.DefineAttribute(instanceTarget, "variations", Get_variations, null);
+        r.DefineAttribute(instanceTarget, "palettes", Get_palettes, null);
         r.DefineAttribute(instanceTarget, "stretch", Get_stretch, Set_stretch);
         r.DefineOperation(instanceTarget, "load", 0, Op_load, returnsPromise: true);
     }

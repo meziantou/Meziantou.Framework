@@ -515,6 +515,25 @@ internal sealed partial class StyleEngine
     /// </summary>
     public ComputedStyle CreateAnonymousStyle(ComputedStyle parent) => new(this, parent.Element, AnonymousBoxPseudoElement, parent, EmptyCascadedValues, cascadedShared: true) { IncludeTransitions = false };
 
+    /// <summary>
+    /// Creates the style of the image of a pseudo-element whose content is a single image (see
+    /// <see cref="Layout.BoxTreeBuilder"/>): an anonymous style whose width and height are 100% when the ones of the
+    /// pseudo-element are not auto.
+    /// </summary>
+    internal ComputedStyle CreateGeneratedImageStyle(ComputedStyle parent)
+    {
+        var cascaded = new Dictionary<string, CascadedValue>(2, StringComparer.Ordinal);
+        foreach (var name in (ReadOnlySpan<string>)["width", "height"])
+        {
+            if (parent.GetComputedValue(name) != "auto")
+            {
+                cascaded[name] = new CascadedValue(new CssLonghandValue(name, "100%"), 0, source: null);
+            }
+        }
+
+        return new ComputedStyle(this, parent.Element, AnonymousBoxPseudoElement, parent, cascaded) { IncludeTransitions = false };
+    }
+
     /// <summary>The name of the pseudo-element of the styles of the anonymous boxes (no rule matches it).</summary>
     internal const string AnonymousBoxPseudoElement = "-internal-anonymous-box";
 
@@ -1121,6 +1140,12 @@ internal sealed partial class StyleEngine
         if (mayHaveTransitions && (beforeChange is null || beforeChange.IsDisplayNoneForAnimations()))
         {
             beforeChange = TreeHasStartingStyleRules(element) ? ComputeStartingStyle(element, pseudoElement, parent, highlightParent) : null;
+
+            // A starting style that is not rendered (display: none in @starting-style) does not start transitions
+            if (beforeChange is not null && beforeChange.IsDisplayNoneForAnimations())
+            {
+                beforeChange = null;
+            }
         }
 
         var mayHaveAnimations = _environmentOverride is null && CssAnimationUpdater.MayHaveAnimations(style);
@@ -2549,7 +2574,8 @@ internal sealed partial class StyleEngine
 
         sheets ??= GetStyleSheets(root);
 
-        var collector = new CascadeRuleCollector(_environment!, CascadeOrigin.Author, root);
+        var environment = WithCustomMedia(_environment!, sheets);
+        var collector = new CascadeRuleCollector(environment, CascadeOrigin.Author, root);
         var baseUrl = _document.DocumentBaseUrl.Serialize();
         foreach (var sheet in sheets)
         {
@@ -2564,7 +2590,7 @@ internal sealed partial class StyleEngine
         if (collector.HasApplyRules)
         {
             outerMixinRules = root is ShadowRoot ? GetOuterMixinRules(root) : null;
-            collector = CreateCollectorWithMixins(root, collector.MixinRules);
+            collector = CreateCollectorWithMixins(environment, root, collector.MixinRules);
             foreach (var sheet in sheets)
             {
                 collector.AddStyleSheet(sheet, sheet.BaseUrl ?? baseUrl);
@@ -2613,8 +2639,43 @@ internal sealed partial class StyleEngine
     }
 
     // The closure is created in its own method: it would otherwise be allocated on each call of GetTreeStyles (for each element)
-    private CascadeRuleCollector CreateCollectorWithMixins(Node root, Dictionary<string, CssMixinRule> mixins)
-        => new(_environment!, CascadeOrigin.Author, root) { MixinResolver = (name, scope) => FindMixin(name, scope ?? root, root, mixins) };
+    private CascadeRuleCollector CreateCollectorWithMixins(MediaEnvironment environment, Node root, Dictionary<string, CssMixinRule> mixins)
+        => new(environment, CascadeOrigin.Author, root) { MixinResolver = (name, scope) => FindMixin(name, scope ?? root, root, mixins) };
+
+    /// <summary>
+    /// Returns the environment in which the media queries of the style sheets are evaluated: the custom media queries of their
+    /// @custom-media rules (https://drafts.csswg.org/mediaqueries-5/#custom-mq) are resolved by the references to them. The
+    /// last rule of a name wins, whatever its conditions.
+    /// </summary>
+    private static MediaEnvironment WithCustomMedia(MediaEnvironment environment, List<CssStyleSheet> sheets)
+    {
+        Dictionary<string, CssCustomMediaRule>? customMedia = null;
+        foreach (var sheet in sheets)
+        {
+            Collect(sheet.RuleList, ref customMedia, depth: 0);
+        }
+
+        return customMedia is null ? environment : environment with { CustomMedia = customMedia };
+
+        static void Collect(List<CssRule> rules, ref Dictionary<string, CssCustomMediaRule>? customMedia, int depth)
+        {
+            foreach (var rule in rules)
+            {
+                switch (rule)
+                {
+                    case CssCustomMediaRule customMediaRule:
+                        (customMedia ??= new(StringComparer.Ordinal))[customMediaRule.Name] = customMediaRule;
+                        break;
+                    case CssImportRule { StyleSheet: { } imported } when depth < 32:
+                        Collect(imported.RuleList, ref customMedia, depth + 1);
+                        break;
+                    case CssGroupingRule grouping when depth < 32:
+                        Collect(grouping.ChildRules, ref customMedia, depth + 1);
+                        break;
+                }
+            }
+        }
+    }
 
     /// <summary>Returns the mixins of the trees of the shadow hosts of the shadow tree, from the closest one to the document.</summary>
     private List<Dictionary<string, CssMixinRule>> GetOuterMixinRules(Node root)
@@ -2797,7 +2858,9 @@ internal sealed partial class StyleEngine
     /// the form controls (see <see cref="Layout.FormControlContents"/>) are blocks, and the button of a file upload control an
     /// inline-block that does not wrap. The summary that the user agent provides for a details element without summary child,
     /// in its user agent shadow tree (see <see cref="HtmlDetailsElement.ImplicitSummary"/>), has the style of the summary of a
-    /// details element ("details &gt; summary:first-of-type").
+    /// details element ("details &gt; summary:first-of-type"). The inert elements and the modal dialogs have the
+    /// <c>interactivity</c> of CSS UI (https://drafts.csswg.org/css-ui-4/#inertness: "[inert] { interactivity: inert !important }"
+    /// and "dialog:modal { interactivity: auto }"), which the pinned HTML Standard does not have.
     /// </summary>
     private const string SupplementalStyleSheet = """
         textarea { display: inline-block; overflow-wrap: break-word; }
@@ -2888,12 +2951,15 @@ internal sealed partial class StyleEngine
         rtc:lang(zh-TW), :not(rtc) > rt:lang(zh-TW) { font-size: 30%; }
         rtc:lang(zh), rt:lang(zh) { ruby-align: center; }
         ruby { text-indent: 0; }
+        [inert] { interactivity: inert !important; }
+        dialog:modal { interactivity: auto; }
         """;
 
     /// <summary>
     /// The user agent style sheet of the Fullscreen API (https://fullscreen.spec.whatwg.org/#user-agent-level-style-sheet-defaults):
     /// the elements of any namespace that are displayed fullscreen fill the viewport. The <c>:fullscreen</c> pseudo-class is
-    /// written first in the compound selectors: it does not match in most documents.
+    /// written first in the compound selectors: it does not match in most documents. A fullscreen element escapes the
+    /// inertness of its ancestors (<c>interactivity: auto</c>, https://drafts.csswg.org/css-ui-4/#inertness).
     /// </summary>
     private const string FullscreenStyleSheet = """
         *|*:fullscreen:not(:root) {
@@ -2917,6 +2983,9 @@ internal sealed partial class StyleEngine
         }
         *|*:fullscreen:not(:root)::backdrop {
           background: black;
+        }
+        *|*:fullscreen {
+          interactivity: auto;
         }
         """;
 

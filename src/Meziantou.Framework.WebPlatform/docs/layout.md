@@ -803,7 +803,24 @@ the fragment. The contents of the box (the `foreignObject` boxes of an `svg`) ar
     of a document embedded by reference only give the natural dimensions,
     [SVG](https://www.w3.org/TR/SVG11/coords.html#ViewportSpace)); `iframe`, `frame`, the other `embed`/`object`: none
     (a `frame` that is not a child of a `frameset`: 0x0, its content navigable has an empty viewport and is not painted,
-    see Framesets in [Block formatting context](#block-formatting-context-csslayoutblock)).
+    see Framesets in [Block formatting context](#block-formatting-context-csslayoutblock)), except the responsively-sized
+    `iframe` (see below).
+  - Responsively-sized iframes ([css-sizing-4](https://drafts.csswg.org/css-sizing-4/#responsive-iframes),
+    `Html/Elements/ResponsiveEmbeddedSizing.cs`): an `iframe` whose `frame-sizing` is not `auto` has the natural width or
+    height (the logical values resolve against the writing mode of the `iframe`) of its internal layout intrinsic size; the
+    other dimension has no natural size (the default object size). The embedded document opts in with
+    `<meta name=responsive-embedded-sizing content="allow-origins=…">`: the responsive embedded sizing flag of the
+    document is set when such a meta element is inserted in the document or renamed (by the parser, a script or
+    `document.write()`) before the parser opens the body element, which sets it to false; it does not change afterwards.
+    As in Chrome, the `allow-origins=` list (`*`, `'self'`, a scheme such as `https:`, an origin, or `scheme://*.host:port` for
+    the subdomains) must match the origin of the embedding document: a meta element without it does not resize the
+    `iframe`. The internal layout intrinsic size is the size of the contents of the embedded document (the extent of the
+    root element and its scrollable overflow from the start of the initial containing block, without the initial containing
+    block itself), measured after the `DOMContentLoaded` event, after the `load` event of the window and by
+    `window.requestResize()` (a `NotAllowedError` when the window is not the one of an `iframe` or its document did not opt
+    in). The document locks the size of its initial containing block at its first layout once the flag is set (the locked
+    embedded ICB size: the percentages of the root resolve against it, the viewport units against the viewport). A new
+    document forgets the size of the `iframe` when its flag is set.
   - The outermost `svg` element: its `width`/`height` attributes when they are absolute lengths and the ratio of
     width/height, else of the `viewBox` (`ImageHeaders.GetSvgNaturalSize`, also used for the SVG images and documents);
     the attributes are also presentation attributes of `width`/`height`, which may override them. A natural block size of
@@ -814,7 +831,10 @@ the fragment. The contents of the box (the `foreignObject` boxes of an `svg`) ar
     `CssImageFetching` (recorded per URL in `Document.CssImageNaturalSizes`, 0 until it is fetched), none for a gradient; the
     image of an `image-set()` has the natural resolution of its option (an image of 100x50 image pixels at `0.5x` is
     200x100px), and a `cross-fade()` the weighted average of the natural dimensions of its images. The
-    default object size of a list marker image is 1em square.
+    default object size of a list marker image is 1em square. As in Blink, the image without natural dimensions (no URL, e.g. a gradient) of a pseudo-element whose content is a
+    single image fills the pseudo-element in the dimensions it sets (`width` and `height` other than `auto`, the
+    pseudo-element not being `inline`): its anonymous replaced box is `100%` in these dimensions (a gradient has the size
+    of the pseudo-element instead of the default object size).
   - `object-view-box` ([CSS Images 5](https://drafts.csswg.org/css-images-5/#the-object-view-box), `ReplacedContent.ViewBox`):
     the `inset()`, `rect()` or `xywh()` rectangle, resolved against the rectangle of the natural dimensions, is the contents
     of the element for its sizing and for `object-fit`/`object-position` (the natural size and ratio are the ones of the
@@ -1404,7 +1424,8 @@ formatting context (`ExclusionSpace`, owned by `BlockFormattingContextState`).
   of a taller line is laid out again in its own band, once. The float area of a box value of a box whose corners are shaped
   by `corner-shape` is the polygon of its flattened contour (`CornerContour.GetShape` for the reference box; the margin box is
   shaped as a box of its own with the outset-adjusted radii, not as the border contour offset by the margin; the corners
-  stay elliptical when the corner areas of the contour overlap). Not done: the rounding of `polygon()`.
+  stay elliptical when the corner areas of the contour overlap). The rounded corners of `polygon(round <length>, ...)` are
+  flattened arcs tangent to the edges (see [Rendering](rendering.md)).
 - In the columns of a multi-column container, a float that does not fit in what remains of a column is pushed to the next one
   (see [Multi-column layout and fragmentation](#multi-column-layout-and-fragmentation-csslayoutmulticol-csslayoutfragmentation)):
   `LayoutContext.FloatPushes` gives the floats a position they are placed at or below, and the exclusions of these floats
@@ -1448,7 +1469,8 @@ an atomic inline laid out while its parent collects its items rents another inst
   content edge of the block container (the indentation and the floats included). `white-space-trim`
   ([§4.2](https://drafts.csswg.org/css-text-4/#white-space-trim)) is applied while the text is collected: `discard-inner`
   discards the white space (and the preserved segment breaks) at the start and the end of a box, `discard-before`/`discard-after`
-  the collapsible spaces before/after it (no browser implements it).
+  the collapsible spaces before/after it, also for an atomic inline that is a block container (an `inline-block`, not a
+  replaced element nor an `inline-flex`) (no browser implements it).
 - **Text transformation**: `text-transform` (`TextTransformer`, shared with `innerText`) is applied to the collapsed text,
   before the line breaking and the shaping, character by character with the characters around it in its text node (a
   character may be transformed with the ones that follow it: a surrogate pair, a Greek letter with its combining accents):
@@ -1536,7 +1558,10 @@ an atomic inline laid out while its parent collects its items rents another inst
   the hyphen of a soft hyphen). The content fits with a tolerance of 1/64px, the layout unit of the browsers (the used sizes
   are rounded: six inline-blocks of 16.66666667% fit in their container); the flex items are collected into flex lines
   with the same tolerance. When nothing fits, the line breaks at the first opportunity (the content overflows), or at
-  the last emergency opportunity that fits with `overflow-wrap: anywhere | break-word`. The starts of the inline boxes at a
+  the last emergency opportunity that fits with `overflow-wrap: anywhere | break-word`. `wrap-inside: avoid`
+  ([§5.4](https://drafts.csswg.org/css-text-4/#wrap-inside), `GetWrapAvoidDepths`): an opportunity inside an inline box
+  with `avoid` (not at its start nor at its end) is taken only when no opportunity outside of it fits, and one inside nested
+  `avoid` boxes only when none of an outer box fits (the min-content size is not affected). The starts of the inline boxes at a
   break go to the next line (with the out-of-flow boxes after them), and so do the out-of-flow boxes after collapsible spaces
   (the opportunity is after the spaces), unless a collapsed space follows them; the other out-of-flow boxes at a break and the ends of
   the inline boxes (also after a forced break) stay on the line, as in the browsers; an empty inline box (its content collapsed
@@ -1738,7 +1763,8 @@ an atomic inline laid out while its parent collects its items rents another inst
   As in the browsers, the lines of a list item do not use these quirks ([whatwg/quirks#38](https://github.com/whatwg/quirks/issues/38)). The emphasis marks ([CSS Text Decoration §3](https://drafts.csswg.org/css-text-decor-4/#emphasis-marks),
   `TextLayoutStyle.EmphasisMarks`) extend the layout bounds of the boxes with text directly in them by half their font size
   outside of their content area, on the side of `text-emphasis-position` (as in the browsers: the line is taller when the
-  half-leading does not leave room for them).
+  half-leading does not leave room for them); `auto` is `under right` for Chinese (the content language `zh`) and `over right`
+  otherwise (`CssPropertyRules.GetUsedTextEmphasisPosition`).
 - **Ruby** ([CSS Ruby 1](https://drafts.csswg.org/css-ruby-1/#ruby-layout), `InlineLayoutAlgorithm.Ruby.cs`, as Blink does with its
   "ruby columns"):
   - *Collection*: the children of a ruby container are split in ruby segments (a base container, or a sequence of bases with
@@ -1954,7 +1980,10 @@ an atomic inline laid out while its parent collects its items rents another inst
   baseline on the baseline of the line. A line of an anonymous block box of the list item (e.g. the one of a block-in-inline
   split) places it as a line of the list item: outside of the border box of the list item, as in Blink and Gecko
   (`PendingOutsideMarker.ListItemContentInlineOffset`). A line box shortened by a float on its start side moves the marker beside the float
-  (also the marker of a list item without content, which is where its line box would be). As in the browsers, the marker of a list item with inline content is part of its
+  (also the marker of a list item without content, which is where its line box would be), unless a float of the content of
+  the list item shortens it (a float placed after the list item started, `PendingOutsideMarker.ExclusionCount`). The
+  `text-indent` of the list item does not move the marker; the one of a descendant block container moves it by how much it
+  exceeds the one of the list item (an inherited or smaller `text-indent` does not move it), as in the browsers. As in the browsers, the marker of a list item with inline content is part of its
   first line: its margin box makes the line taller (a marker image, a marker with a larger font; `AlignVertically`), also
   the line of a list item without content (`PlaceWithoutLine`); the marker placed next to a line of a descendant block
   container does not change this line. The outside marker is painted before the content of its list item (it precedes it
@@ -4357,8 +4386,7 @@ only implementation) where the specification is silent or differs. The selectors
     an element that is not a scroll container are disabled.
 - **Hit testing**: the boxes are hit like the other pseudo-element boxes (`elementFromPoint()` and the target of the events
   are the originating element). Their inertness is the one of their scroll container, or `interactivity: inert` on the
-  group (its markers are then inert whatever the inertness of their originating element) or on the pseudo-element itself;
-  `interactivity` has no other effect yet.
+  group (its markers are then inert whatever the inertness of their originating element) or on the pseudo-element itself.
 - Not done: `::scroll-button(prev | next)`; the accessibility roles of the modes
   (the `tabs` mode does not hide the inactive panels); the `::column` pseudo-element only gives the `scroll-snap-align` of
   the scroll targets of the column markers and of the column snap areas (no box, no `getComputedStyle(element, "::column")` of a column,
@@ -5021,7 +5049,8 @@ something asks for the display list (`LayoutEngine.PaintCount` for the tests).
   is inside of the border box; a negative offset does not shrink the outline of a fragment below twice its width in each
   axis; `auto` is the focus ring of Blink: 3px whatever `outline-width` is, two rings of a 2:1 ratio with corners rounded to
   at least 3px, the inner one in the color of the outline (the accent color when `outline-color` is `auto`), the outer one
-  white, or #101010 in a dark color scheme; it does not enclose the overflowing descendants), not for the columns; the gap decorations
+  white, or #101010 in a dark color scheme; as in Blink, the focus ring of a block container that does not clip its overflow
+  encloses its scrollable overflow, e.g. an overflowing line), not for the columns; the gap decorations
   (the column and row rules of the grid, flex and multi-column containers, see [Gap decorations](#gap-decorations-csslayoutgaps);
   `inset`/`outset` as `ridge`/`groove`); the MathML rules and glyphs (`MathFragmentData.PaintItems`).
 - **Shaped borders** (`border-shape`, [CSS Borders 4](https://drafts.csswg.org/css-borders-4/#border-shape);
@@ -5055,8 +5084,7 @@ something asks for the display list (`LayoutEngine.PaintCount` for the tests).
   stroke is the union of the quadrilaterals of its flattened segments and of its joins, and the unions and the differences
   of the areas are computed in horizontal slabs between the vertices and the intersections of the edges (the result is
   a path of trapezoids, so the backends only fill and clip paths). Not done: the shaped borders of the fragments of a box
-  split by a fragmentation break or over several lines (each fragment has the whole shape), `polygon()` with `round`,
-  and the shapes in the backdrop of `backdrop-filter` and in the box values of `clip-path`.
+  split by a fragmentation break or over several lines (each fragment has the whole shape), and the shapes in the backdrop of `backdrop-filter` and in the box values of `clip-path`.
 - **Shadows** (`Painter.Shadows.cs`): the outer `box-shadow`s below the background (the border box offset and spread, the
   radii grown by the spread as the [outset-adjusted border radius](https://drafts.csswg.org/css-borders-4/#outset-adjusted-border-radius):
   a radius smaller than the spread grows by less, unless the corner covers the box (`coverage`: a circle stays a circle), a
@@ -5103,7 +5131,7 @@ something asks for the display list (`LayoutEngine.PaintCount` for the tests).
   (the offset is added to the alphabetic baseline, to the underline position of the font for `from-font`, or to the edge of
   the text for `under`, `left` and `right`), `text-decoration-thickness`
   (floored to device pixels as in Blink; the overline is outside of the ascent: a thick overline grows away from the text),
-  the styles (dashes anchored to the coordinates so the fragments are continuous,
+  the styles (dashes and waves anchored to the coordinates so the fragments are continuous,
   wavy as quadratic curves), `text-decoration-skip-ink` (the glyph bounding boxes that cross the line, extended by its
   thickness, at most 13px as in Chrome, are clipped out, their union snapped to the device pixels; also for the sideways
   glyphs of vertical text, not for the upright ones, as in the browsers; the value of the element of the text applies, not
@@ -5545,8 +5573,9 @@ folder for their sources and licenses), loaded on first use and shared by all th
   installed font fallback (for the mathematical symbols and the combining marks that the other bundled fonts do not have).
 
 `BundledFonts.GetGenericFamily` maps the generic families to the bundled families (`ui-serif`, `system-ui`,
-`ui-sans-serif`, `ui-rounded` and `ui-monospace` included) and `math` to STIX Two Math; `cursive`, `fantasy`, `emoji` and
-`fangsong` have no bundled font. As the metric aliases of fontconfig (which the browsers use on Linux), a family that is
+`ui-sans-serif`, `ui-rounded` and `ui-monospace` included) and `math` to STIX Two Math; `cursive` and `fantasy` are mapped
+to the serif family (as fontconfig on a system without cursive and fantasy fonts: they are not skipped for the next families
+of the list); `emoji` and `fangsong` have no bundled font. As the metric aliases of fontconfig (which the browsers use on Linux), a family that is
 neither bundled nor installed by the host and that a bundled family is metric-compatible with uses it
 (`BundledFonts.GetMetricCompatibleFamily`): Arimo for `Arial` and `Helvetica`, Tinos for `Times New Roman` and `Times`,
 Cousine for `Courier New` and `Courier`, so that a page that names these fonts is laid out with their metrics (an

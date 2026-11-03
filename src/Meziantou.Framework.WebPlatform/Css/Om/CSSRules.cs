@@ -446,8 +446,9 @@ public sealed class CssMediaRule : CssConditionRule
 
 /// <summary>
 /// https://drafts.csswg.org/mediaqueries-5/#csscustommediarule: a custom media query (<c>@custom-media --name query;</c>).
-/// The rule is exposed in the CSSOM, but the references to custom media queries (<c>(--name)</c>) are not resolved: they are
-/// &lt;general-enclosed&gt; and evaluate to unknown.
+/// The references to the custom media queries (<c>(--name)</c>) in the media queries of the style sheets of the document
+/// (<c>@media</c>, <c>@import</c>...) evaluate to the query of the last rule with that name; they are false when there is no
+/// such rule, in a cycle, and in the other media queries (e.g. <c>matchMedia()</c>).
 /// </summary>
 /// <seealso href="https://drafts.csswg.org/mediaqueries-5/#csscustommediarule"/>
 [IdlInterface("CSSCustomMediaRule", "https://drafts.csswg.org/mediaqueries-5/#csscustommediarule")]

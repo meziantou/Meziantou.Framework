@@ -409,6 +409,14 @@ internal sealed class MultiColumnFormattingContext : FormattingContext
     }
 
     /// <summary>
+    /// The block size of the content box of a container with size containment whose block size is not definite (see
+    /// <see cref="ContentArea.ContainedBlockSize"/>), which its columns fill. A contained block size of 0 does not give a column
+    /// height: as in the browsers, the columns are balanced (they overflow the container) instead of slicing the content in
+    /// columns of 1px (WPT css/css-contain/contain-size-multicol-002.html).
+    /// </summary>
+    private static double? GetContainedBlockSize(in ContentArea content) => content.ContainedBlockSize is > 0 ? content.ContainedBlockSize : null;
+
+    /// <summary>
     /// Lays out the content of a multi-column container nested in another fragmentation context in a new strip, for the
     /// fragmentation of the outer context (see <see cref="NestedColumns"/>).
     /// </summary>
@@ -440,8 +448,8 @@ internal sealed class MultiColumnFormattingContext : FormattingContext
             FillsSequentially = fragmentation.ColumnFill == ColumnFill.Auto,
             Wraps = wraps,
             RowBlockSize = fragmentation.ColumnHeight,
-            BlockSize = content.BlockSize ?? content.ContainedBlockSize,
-            MaxBlockSize = content.BlockSize is null && content.ContainedBlockSize is null ? content.MaxBlockSize : null,
+            BlockSize = content.BlockSize ?? GetContainedBlockSize(content),
+            MaxBlockSize = content.BlockSize is null && GetContainedBlockSize(content) is null ? content.MaxBlockSize : null,
             ContentOffset = content.Offset,
             ContentInlineSize = content.InlineSize,
             CreateTrialFlow = () => LayoutStrip(context, box, content, columnWidth, separatesOutOfFlow: true).Flow,
@@ -478,7 +486,7 @@ internal sealed class MultiColumnFormattingContext : FormattingContext
         // The multicol rows (https://drafts.csswg.org/css-multicol-2/#multicol-row) between the column spanners
         var wraps = fragmentation.ColumnWrap == ColumnWrap.Wrap;
         var rowGap = wraps ? Math.Max(0, layout.Alignment.RowGap.Resolve(content.PercentageBlockSize ?? 0)) : 0;
-        var limit = content.BlockSize ?? content.ContainedBlockSize ?? content.MaxBlockSize;
+        var limit = content.BlockSize ?? GetContainedBlockSize(content) ?? content.MaxBlockSize;
 
         // (a container without block size in the strip of another fragmentation context is laid out there as if its columns were
         // balanced: the outer context fragments it, see NestedColumns)
@@ -731,7 +739,7 @@ internal sealed class MultiColumnFormattingContext : FormattingContext
 
                     // The columns filled sequentially in a container whose block size is only limited (max-height) are as tall as their
                     // content; the available block size that is used up has no column
-                    if (!balances && isLastRow && content.BlockSize is null && content.ContainedBlockSize is null && columns == 1)
+                    if (!balances && isLastRow && content.BlockSize is null && GetContainedBlockSize(content) is null && columns == 1)
                     {
                         columnHeight = Math.Min(columnHeight, Math.Max(0, extentEnd - segmentStart));
                     }
@@ -746,7 +754,7 @@ internal sealed class MultiColumnFormattingContext : FormattingContext
                     {
                         // (the column boxes of the last row of a container with a definite block size are as tall as what remains of
                         // its content box, also when their content is balanced)
-                        var rowEnd = isLastSet && isLastRow && (content.BlockSize ?? content.ContainedBlockSize) is { } definite ? Math.Max(blockOffset + columnHeight, definite) : blockOffset + columnHeight;
+                        var rowEnd = isLastSet && isLastRow && (content.BlockSize ?? GetContainedBlockSize(content)) is { } definite ? Math.Max(blockOffset + columnHeight, definite) : blockOffset + columnHeight;
                         gapRows.Add(new GapRow(columns, blockOffset, rowEnd));
                     }
 

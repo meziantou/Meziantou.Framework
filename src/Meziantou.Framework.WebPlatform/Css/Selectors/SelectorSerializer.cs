@@ -201,7 +201,7 @@ internal static class SelectorSerializer
                 break;
 
             case PseudoElementSelector pseudoElement:
-                builder.Append("::").Append(pseudoElement.Name);
+                builder.Append("::").Append(CssSerializer.SerializeIdentifier(pseudoElement.Name));
                 if (pseudoElement.IsFunction)
                 {
                     builder.Append('(');

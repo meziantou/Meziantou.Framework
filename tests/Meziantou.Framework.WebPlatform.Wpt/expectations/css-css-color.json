@@ -444,11 +444,7 @@
     "reftest": "PASS"
   },
   "css/css-color/light-dark-image.html": {
-    "total": 35,
-    "failures": {
-      "background-image: light-dark() inside -webkit-cross-fade()": "FAIL",
-      "background-image: light-dark() inside -webkit-cross-fade() inside image-set()": "FAIL"
-    }
+    "total": 35
   },
   "css/css-color/light-dark-inheritance.html": {
     "reftest": "PASS"

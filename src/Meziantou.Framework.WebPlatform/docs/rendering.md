@@ -407,7 +407,10 @@ operations (see [Paint worklet images](#paint-worklet-images)).
   list: the clip region (the paths of `clip()`, in the coordinates of the canvas), the shadow (a layer filtered by a
   shadow-only drop shadow, in the coordinates of the canvas: its offset and its blur are not transformed), the shape in a
   layer composited with `globalCompositeOperation` (the operators that are not `source-over` composite the whole clip
-  region) and filtered by `filter` (the CSS filter functions; `url()` references are not supported), and the shape itself
+  region) and filtered by `filter` (the CSS filter functions, and the SVG filter elements of the document of the canvas element
+  referenced by `url()`, applied in the coordinates of the bitmap: an `OffscreenCanvas` ignores them; the drawings of a canvas
+  that is not origin-clean are a [tainted](https://drafts.fxtf.org/filter-effects/#tainted-filter-primitives) source graphic),
+  and the shape itself
   in the coordinates of the current transformation matrix. `globalAlpha` multiplies the alpha of the paint. As in the
   browsers, nothing is drawn with a non-invertible transformation matrix.
 - **Paths** (`CanvasPath`): the current default path is stored in the coordinates of the canvas (its points are transformed
@@ -605,7 +608,9 @@ The effects: the 2D and 3D transforms (`perspective`, `perspective-origin`, `tra
 and the SVG filter elements: `feFlood`, `feGaussianBlur`, `feOffset`, `feDropShadow`, `feColorMatrix`,
 `feComponentTransfer`, `feComposite`, `feBlend`, `feMerge`, `feMorphology`, `feTurbulence`, `feTile`, `feConvolveMatrix`,
 `feDisplacementMap`, `feDiffuseLighting`, `feSpecularLighting`, in sRGB or linearRGB), `backdrop-filter`, the `filter()` image
-function, `clip`, `clip-path` (the basic shapes `inset()`, `rect()`, `xywh()`, `circle()`, `ellipse()`, `polygon()`, `path()`,
+function, `clip`, `clip-path` (the basic shapes `inset()`, `rect()`, `xywh()`, `circle()`, `ellipse()`, `polygon()` (with
+`round <length>`: each vertex is a circular arc tangent to its edges, whose radius is reduced to fit in the half of each
+edge), `path()`,
 `shape()`, the geometry boxes and the `clipPath` elements), the masks (`mask-image` with images, gradients and `mask`
 elements, `mask-mode`, `mask-repeat`, `mask-position`, `mask-size`, `mask-origin`, `mask-clip`, `mask-composite`,
 `mask-border`, `mask-type`), also on the SVG elements, and the effects of the root element on the background of the canvas.

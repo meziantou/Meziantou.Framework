@@ -599,6 +599,8 @@ internal static class CssShorthands
     /// The shorthand is valid but cannot be expanded: the longhands keep a reference to the value of the shorthand, like
     /// pending-substitution values.
     /// </summary>
+    private static bool IsPendingSystemFont(CssLonghandValue value) => value is { ShorthandName: "font", ShorthandValue: "caption" or "icon" or "menu" or "message-box" or "small-caption" or "status-bar" };
+
     private static List<CssLonghandValue> Opaque(CssPropertyDefinition shorthand, List<CssComponentValue> values)
     {
         var text = CssSerializer.SerializeValue(values, shorthand);
@@ -627,6 +629,17 @@ internal static class CssShorthands
 
         if (values.Count == 0)
             return "";
+
+        // The longhands reset by a system font (e.g. font: menu) are pending until one of them is set: as in Firefox, the
+        // others are then serialized as their initial values (WPT css/css-fonts/parsing/font-variant-serialization.html)
+        if (shorthand.Name != "font" && values.Exists(v => v.ShorthandName is null) && values.Exists(IsPendingSystemFont))
+        {
+            for (var i = 0; i < values.Count; i++)
+            {
+                if (IsPendingSystemFont(values[i]) && GetInitialValue(values[i].Name) is { } initialValue)
+                    values[i] = new CssLonghandValue(values[i].Name, initialValue);
+            }
+        }
 
         // Pending-substitution values: only the shorthand that set them can be serialized
         if (values[0].ShorthandName is { } pendingShorthand)

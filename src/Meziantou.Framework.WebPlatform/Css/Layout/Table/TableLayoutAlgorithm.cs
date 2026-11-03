@@ -445,6 +445,26 @@ internal sealed partial class TableLayoutAlgorithm
     }
 
     /// <summary>
+    /// The definite width that a column box gives to its column: its length width limited by its length max-width, at least
+    /// its length min-width (the percentages and the mixes of a length and a percentage are ignored).
+    /// </summary>
+    private static double GetDefiniteColumnWidth(BoxModelStyle boxModel, bool horizontal)
+    {
+        var width = Classify(boxModel.GetSize(horizontal), out var value) == TableSizeKind.Fixed ? value : 0;
+        if (Classify(boxModel.GetMaxSize(horizontal), out var maxValue) == TableSizeKind.Fixed)
+        {
+            width = Math.Min(width, maxValue);
+        }
+
+        if (Classify(boxModel.GetMinSize(horizontal), out var minValue) == TableSizeKind.Fixed)
+        {
+            width = Math.Max(width, minValue);
+        }
+
+        return width;
+    }
+
+    /// <summary>
     /// Adds the measures of a cell (or of the share of a spanning cell) to the measures of a column, as the browsers: the
     /// max-content width of a constrained column is given by its constrained cells only.
     /// </summary>
@@ -490,12 +510,13 @@ internal sealed partial class TableLayoutAlgorithm
             columns[i].Max = Math.Max(columns[i].Max, columns[i].Min);
 
             // https://drafts.csswg.org/css-tables-3/#dimensioning-the-row-column-grid--step2: the columns where no cell
-            // originates are merged, unless a column box gives them a width (as in the browsers)
+            // originates are merged, unless a column box gives them a width that is not 0: its length width limited by its
+            // length max-width, at least its length min-width (a mix of a length and a percentage is ignored: WPT
+            // css/css-tables/col-definite-size-001.html, col-definite-min-size-001.html, col-definite-max-size-001.html), or a
+            // percentage (see below)
             if (!columns[i].HasOriginatingCell)
             {
-                var width = 0d;
-                var kind = GetColumnSizingBox(i) is { } box ? Classify(box.Style.Layout.Box.GetSize(horizontal), out width) : TableSizeKind.Auto;
-                columns[i].IsMergeable = kind == TableSizeKind.Auto || (kind == TableSizeKind.Fixed && width == 0);
+                columns[i].IsMergeable = GetColumnSizingBox(i) is not { } box || GetDefiniteColumnWidth(box.Style.Layout.Box, horizontal) == 0;
             }
         }
 
@@ -529,6 +550,14 @@ internal sealed partial class TableLayoutAlgorithm
             {
                 columns[i].Percent = Math.Max(0, Math.Min(columns[i].Percent, 100 - totalPercent));
                 totalPercent += columns[i].Percent;
+            }
+
+            // A column without cell whose column box has a percentage width is kept when that percentage is not 0 once limited
+            // (the columns after 100% are merged: WPT css/css-tables/column-track-merging.html, col-definite-size-001.html)
+            if (columns[i].IsMergeable && columns[i].Percent > 0 && GetColumnSizingBox(i) is { } box
+                && Classify(box.Style.Layout.Box.GetSize(horizontal), out var boxPercent) == TableSizeKind.Percent && boxPercent > 0)
+            {
+                columns[i].IsMergeable = false;
             }
         }
     }

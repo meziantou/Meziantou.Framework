@@ -7,8 +7,8 @@ namespace Meziantou.Framework.WebPlatform.Css.Animations;
 /// <summary>
 /// The interpolation of the d property (https://svgwg.org/svg2-draft/paths.html#PathElementDAttribute,
 /// https://svgwg.org/specs/animations/#AnimationTypes): two path() functions whose path data have the same number and types of
-/// segments are interpolated segment by segment (the computed values are absolute commands, so relative and absolute
-/// commands can be interpolated); the arc flags are booleans (a value greater than 0 is 1). Anything else is discrete.
+/// segments are interpolated segment by segment as absolute commands (so relative and absolute commands can be
+/// interpolated); the arc flags are booleans (a value greater than 0 is 1). Anything else is discrete.
 /// </summary>
 internal static class CssPathInterpolation
 {
@@ -17,7 +17,8 @@ internal static class CssPathInterpolation
         if (Parse(from) is not { } a || Parse(to) is not { } b || !AreCompatible(a, b))
             return null;
 
-        return progress => progress == 0 ? from : Combine(a, b, (x, y) => (float)CssGenericInterpolation.Lerp(x, y, progress));
+        // The result has absolute commands, also at 0 (the computed path() of clip-path and offset-path keeps its relative commands)
+        return progress => Combine(a, b, (x, y) => (float)CssGenericInterpolation.Lerp(x, y, progress));
     }
 
     public static string? Combine(string underlying, string value)

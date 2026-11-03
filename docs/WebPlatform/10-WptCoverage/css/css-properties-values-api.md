@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of css/css-properties-values
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 95 | 105 | 0 | 90% |
+| [Stable](#stable-tests) | 96 | 105 | 0 | 91% |
 | [Tentative](#tentative-tests) | 3 | 6 | 0 | 50% |
 | [Reftests](#reftests) | 7 | 7 | 0 | 100% |
-| **All** | **105** | **118** | **0** | **89%** |
+| **All** | **106** | **118** | **0** | **90%** |
 
 ## Stable tests
 
@@ -72,7 +72,7 @@ description: "The results of the web-platform-tests of css/css-properties-values
 | [`animation/custom-property-transition-number-percentage.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-transition-number-percentage.html) | Pass | 1 / 1 |  |  |
 | [`animation/custom-property-transition-number.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-transition-number.html) | Pass | 2 / 2 |  |  |
 | [`animation/custom-property-transition-percentage.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-transition-percentage.html) | Pass | 1 / 1 |  |  |
-| [`animation/custom-property-transition-property-all.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-transition-property-all.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `transition-property: all` does not include the registered custom properties |
+| [`animation/custom-property-transition-property-all.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-transition-property-all.html) | Pass | 1 / 1 |  |  |
 | [`animation/custom-property-transition-resolution.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-transition-resolution.html) | Pass | 1 / 1 |  |  |
 | [`animation/custom-property-transition-time.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-transition-time.html) | Pass | 1 / 1 |  |  |
 | [`animation/custom-property-transition-transform-function-matrix.html`](https://wpt.fyi/results/css/css-properties-values-api/animation/custom-property-transition-transform-function-matrix.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the interpolation of the `<transform-function>` and `<transform-list>` registered custom properties with a matrix fallback (`mix()`) |

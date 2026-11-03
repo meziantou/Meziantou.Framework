@@ -1833,14 +1833,17 @@ namespace Meziantou.Framework.WebPlatform.Css.Om
         public string Display { get => throw null; set { } }
         public string Family { get => throw null; set { } }
         public string FeatureSettings { get => throw null; set { } }
+        public Meziantou.Framework.WebPlatform.Css.Om.FontFaceFeatures Features { get => throw null; }
         public string LineGapOverride { get => throw null; set { } }
         public System.Threading.Tasks.Task<Meziantou.Framework.WebPlatform.Css.Om.FontFace> Loaded { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Css.Om.FontFacePalettes Palettes { get => throw null; }
         public string SizeAdjust { get => throw null; set { } }
         public Meziantou.Framework.WebPlatform.Css.Om.FontFaceLoadStatus Status { get => throw null; }
         public string Stretch { get => throw null; set { } }
         public string Style { get => throw null; set { } }
         public string UnicodeRange { get => throw null; set { } }
         public string VariationSettings { get => throw null; set { } }
+        public Meziantou.Framework.WebPlatform.Css.Om.FontFaceVariations Variations { get => throw null; }
         public string Weight { get => throw null; set { } }
         public string Width { get => throw null; set { } }
         public FontFace(string family, System.ReadOnlySpan<byte> source, Meziantou.Framework.WebPlatform.Css.Om.FontFaceDescriptors? descriptors = null) { }
@@ -1855,6 +1858,7 @@ namespace Meziantou.Framework.WebPlatform.Css.Om
         public string Display { get => throw null; init { } }
         public string FeatureSettings { get => throw null; init { } }
         public string LineGapOverride { get => throw null; init { } }
+        public string SizeAdjust { get => throw null; init { } }
         public string Stretch { get => throw null; init { } }
         public string Style { get => throw null; init { } }
         public string UnicodeRange { get => throw null; init { } }
@@ -1863,12 +1867,40 @@ namespace Meziantou.Framework.WebPlatform.Css.Om
         public string? Width { get => throw null; init { } }
     }
 
+    public sealed class FontFaceFeatures
+    {
+    }
+
     public enum FontFaceLoadStatus
     {
         Unloaded = 0,
         Loading = 1,
         Loaded = 2,
         Error = 3,
+    }
+
+    public sealed class FontFacePalette : System.Collections.Generic.IEnumerable<string>, System.Collections.Generic.IReadOnlyCollection<string>, System.Collections.Generic.IReadOnlyList<string>, System.Collections.IEnumerable
+    {
+        public int Count { get => throw null; }
+        public string this[int index] { get => throw null; }
+        public string this[uint index] { get => throw null; }
+        public uint Length { get => throw null; }
+        public bool UsableWithDarkBackground { get => throw null; }
+        public bool UsableWithLightBackground { get => throw null; }
+        public System.Collections.Generic.IEnumerator<string> GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        string System.Collections.Generic.IReadOnlyList<System.String>.get_Item(int index) => throw null;
+    }
+
+    public sealed class FontFacePalettes : System.Collections.Generic.IEnumerable<Meziantou.Framework.WebPlatform.Css.Om.FontFacePalette>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.WebPlatform.Css.Om.FontFacePalette>, System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Css.Om.FontFacePalette>, System.Collections.IEnumerable
+    {
+        public int Count { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Css.Om.FontFacePalette this[int index] { get => throw null; }
+        public Meziantou.Framework.WebPlatform.Css.Om.FontFacePalette this[uint index] { get => throw null; }
+        public uint Length { get => throw null; }
+        public System.Collections.Generic.IEnumerator<Meziantou.Framework.WebPlatform.Css.Om.FontFacePalette> GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        Meziantou.Framework.WebPlatform.Css.Om.FontFacePalette System.Collections.Generic.IReadOnlyList<Meziantou.Framework.WebPlatform.Css.Om.FontFacePalette>.get_Item(int index) => throw null;
     }
 
     public sealed class FontFaceSet : Meziantou.Framework.WebPlatform.Dom.EventTarget, System.Collections.Generic.IEnumerable<Meziantou.Framework.WebPlatform.Css.Om.FontFace>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.WebPlatform.Css.Om.FontFace>, System.Collections.IEnumerable
@@ -1904,6 +1936,23 @@ namespace Meziantou.Framework.WebPlatform.Css.Om
     {
         Loading = 0,
         Loaded = 1,
+    }
+
+    public sealed class FontFaceVariationAxis
+    {
+        public string AxisTag { get => throw null; }
+        public double DefaultValue { get => throw null; }
+        public double MaximumValue { get => throw null; }
+        public double MinimumValue { get => throw null; }
+        public string Name { get => throw null; }
+    }
+
+    public sealed class FontFaceVariations : System.Collections.Generic.IEnumerable<Meziantou.Framework.WebPlatform.Css.Om.FontFaceVariationAxis>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.WebPlatform.Css.Om.FontFaceVariationAxis>, System.Collections.IEnumerable
+    {
+        public int Count { get => throw null; }
+        public System.Collections.Generic.IEnumerator<Meziantou.Framework.WebPlatform.Css.Om.FontFaceVariationAxis> GetEnumerator() => throw null;
+        System.Collections.IEnumerator System.Collections.IEnumerable.GetEnumerator() => throw null;
+        public bool Has(Meziantou.Framework.WebPlatform.Css.Om.FontFaceVariationAxis value) => throw null;
     }
 
     public sealed class Highlight : System.Collections.Generic.IEnumerable<Meziantou.Framework.WebPlatform.Dom.AbstractRange>, System.Collections.Generic.IReadOnlyCollection<Meziantou.Framework.WebPlatform.Dom.AbstractRange>, System.Collections.IEnumerable
@@ -12342,6 +12391,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void ReleaseEvents() { }
         public uint RequestAnimationFrame(Meziantou.Framework.WebPlatform.Dom.FrameRequestCallback callback) => throw null;
         public uint RequestIdleCallback(Meziantou.Framework.WebPlatform.Dom.IdleRequestCallback callback, Meziantou.Framework.WebPlatform.Dom.IdleRequestOptions? options = null) => throw null;
+        public void RequestResize() { }
         public void ResizeBy(int x, int y) { }
         public void ResizeTo(int width, int height) { }
         public System.Threading.Tasks.Task Scroll(Meziantou.Framework.WebPlatform.Dom.ScrollToOptions? options = null) => throw null;

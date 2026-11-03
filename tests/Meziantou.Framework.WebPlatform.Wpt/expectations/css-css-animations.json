@@ -233,11 +233,9 @@
     "reftest": "PASS"
   },
   "css/css-animations/cancel-events-on-remove.html": {
-    "harness": "TIMEOUT",
     "total": 5,
     "failures": {
-      "Re-parenting: animationcancel is fired asynchronously": "TIMEOUT",
-      "Web Animations: cancel event on Animation object is fired asynchronously on element remove": "NOTRUN"
+      "Re-parenting: animationcancel is fired asynchronously": "FAIL"
     }
   },
   "css/css-animations/computed-style-animation-parsing.html": {

@@ -365,6 +365,13 @@ internal sealed partial class CssRuleParser
     }
 
     /// <summary>Parses the selector of a style rule; the nested style rules have relative selectors. The source is the preprocessed text of the prelude (the text of the style sheet by default).</summary>
+    /// <summary>
+    /// Returns whether the at-rules that are only valid at the top level of a style sheet (or in a conditional group rule) are
+    /// valid in the context: the rules of a @scope rule are parsed as in the style sheet
+    /// (https://drafts.csswg.org/css-cascade-6/#scope-syntax).
+    /// </summary>
+    private bool IsTopLevelContext(CssRuleContext context) => context is CssRuleContext.TopLevel or CssRuleContext.Grouping || (context == CssRuleContext.Nested && _inScopeRule);
+
     public SelectorList? ParseStyleRuleSelector(List<CssComponentValue> prelude, bool nested, bool scoped = false, string? source = null)
     {
         // An empty selector or a selector containing a {} block is invalid
@@ -684,7 +691,7 @@ internal sealed partial class CssRuleParser
             case "font-face" when rule.Block is not null && prelude.Count == 0 && context is CssRuleContext.TopLevel or CssRuleContext.Grouping:
                 return new CssFontFaceRule(ParseDescriptors(rule.Block, "@font-face"));
 
-            case "keyframes" or "-webkit-keyframes" when rule.Block is not null && context is CssRuleContext.TopLevel or CssRuleContext.Grouping:
+            case "keyframes" or "-webkit-keyframes" when rule.Block is not null && IsTopLevelContext(context):
             {
                 var keyframesName = ParseKeyframesName(prelude);
                 if (keyframesName is null)
@@ -702,7 +709,7 @@ internal sealed partial class CssRuleParser
                 return keyframesRule;
             }
 
-            case "page" when rule.Block is not null && context is CssRuleContext.TopLevel or CssRuleContext.Grouping:
+            case "page" when rule.Block is not null && IsTopLevelContext(context):
             {
                 var selector = ParsePageSelector(rule.Prelude);
                 if (selector is null)
@@ -824,7 +831,7 @@ internal sealed partial class CssRuleParser
 
             // https://drafts.csswg.org/css-anchor-position-1/#fallback-rule: @position-try <dashed-ident> { <declaration-list> }; the
             // other contents of the block (rules, at-rules) are ignored
-            case "position-try" when rule.Block is not null && context is CssRuleContext.TopLevel or CssRuleContext.Grouping:
+            case "position-try" when rule.Block is not null && IsTopLevelContext(context):
             {
                 if (prelude is not [CssPreservedToken { Type: CssTokenType.Ident } positionTryName] || !positionTryName.Token.Value.StartsWith("--", StringComparison.Ordinal))
                     return null;

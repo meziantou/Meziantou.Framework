@@ -16,7 +16,8 @@ internal static partial class CanvasColors
 
     /// <summary>
     /// Parses a CSS color (https://drafts.csswg.org/css-color/#parse-a-css-color-value), or returns null when the string is not a
-    /// color. <c>currentcolor</c> is the computed color of the canvas element when it is connected, else opaque black. The
+    /// color. <c>currentcolor</c> is the computed color of the canvas element when it is connected, else opaque black, and
+    /// <c>AccentColor</c> and <c>AccentColorText</c> follow its <c>accent-color</c> (https://drafts.csswg.org/css-ui-4/#widget-accent). The
     /// color to paint is CSS gamut mapped to the color space of the canvas (https://drafts.csswg.org/css-color-4/#css-gamut-mapping).
     /// </summary>
     public static ParsedColor? Parse(string value, Element? element, RenderingColorSpace gamut = RenderingColorSpace.Srgb, bool preserveRange = false)
@@ -25,6 +26,12 @@ internal static partial class CanvasColors
         {
             var currentColor = element is { IsConnected: true } ? element.NodeDocument.GetStyleEngine().GetStyle(element).GetComputedValue("color") : "black";
             value = CurrentColorRegex().Replace(value, currentColor);
+        }
+
+        if (element is { IsConnected: true } && value.Contains("accentcolor", StringComparison.OrdinalIgnoreCase)
+            && element.NodeDocument.GetStyleEngine().GetStyle(element) is var style && style.Environment.ForcedColorsPalette is null && CssValueComputer.GetAccentColor(style) is { } accentColor)
+        {
+            value = AccentColorRegex().Replace(value, match => (match.Groups["text"].Success ? CssValueComputer.ComputeContrastColor(accentColor) ?? accentColor : accentColor).Serialize());
         }
 
         if (CssValueComputer.ParseCssColorValue(value) is not { } color || (preserveRange ? DisplayColor.FromCssUnmapped(color) : DisplayColor.FromCss(color, gamut)) is not { } displayColor)
@@ -71,4 +78,7 @@ internal static partial class CanvasColors
 
     [GeneratedRegex(@"(?<![\w-])currentcolor(?![\w-])", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
     private static partial Regex CurrentColorRegex();
+
+    [GeneratedRegex(@"(?<![\w-])accentcolor(?<text>text)?(?![\w-])", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant, matchTimeoutMilliseconds: 1000)]
+    private static partial Regex AccentColorRegex();
 }

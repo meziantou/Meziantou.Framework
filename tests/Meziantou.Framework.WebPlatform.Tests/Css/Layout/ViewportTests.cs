@@ -222,6 +222,33 @@ public sealed class ViewportTests : IDisposable
     }
 
     [Fact]
+    public void NestedViewport_ResponsiveIFrameTakesTheHeightOfItsContents()
+    {
+        // https://drafts.csswg.org/css-sizing-4/#responsive-iframes: the document opts in before its body, the iframe takes
+        // the height of its contents after the load, and again when the document calls requestResize()
+        var document = Parse("""
+            <iframe id=responsive style="frame-sizing: content-height; border: 0" srcdoc="<meta name=responsive-embedded-sizing content='allow-origins=*'><style>body { margin: 0 }</style><div id=target style='height: 400px'></div>"></iframe>
+            <iframe id=missing style="frame-sizing: content-height; border: 0" srcdoc="<meta name=responsive-embedded-sizing><div style='height: 400px'></div>"></iframe>
+            <iframe id=late style="frame-sizing: content-height; border: 0" srcdoc="<body><meta name=responsive-embedded-sizing content='allow-origins=*'><div style='height: 400px'></div>"></iframe>
+            """);
+        _contexts.EventLoop.RunUntilIdle();
+        var responsive = (HtmlIFrameElement)document.GetElementById("responsive")!;
+        Assert.Equal((300, 400), (responsive.OffsetWidth, responsive.OffsetHeight));
+        Assert.Equal(150, ((HtmlIFrameElement)document.GetElementById("missing")!).OffsetHeight);
+        Assert.Equal(150, ((HtmlIFrameElement)document.GetElementById("late")!).OffsetHeight);
+
+        // The contents do not resize the iframe until the document requests it
+        var target = (HtmlElement)responsive.ContentDocument!.GetElementById("target")!;
+        target.Style.SetProperty("height", "250px");
+        Assert.Equal(400, responsive.OffsetHeight);
+        responsive.ContentWindow!.RequestResize();
+        Assert.Equal(250, responsive.OffsetHeight);
+
+        var exception = Assert.Throws<DomException>(() => document.DefaultView!.RequestResize());
+        Assert.Equal("NotAllowedError", exception.Name);
+    }
+
+    [Fact]
     public void Viewport_SingleSegment()
     {
         var document = Parse("<div style='height: 2000px'></div>");

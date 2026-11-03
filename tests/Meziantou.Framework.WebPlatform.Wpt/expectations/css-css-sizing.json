@@ -48,13 +48,7 @@
     "total": 40
   },
   "css/css-sizing/animation/aspect-ratio-interpolation.html": {
-    "total": 249,
-    "failures": {
-      "Compositing CSS Animations: property <aspect-ratio> underlying [2 / 1] from replace [0.5 / 1] to add [1 / 1] at (0.5) should be [1 / 1]": "FAIL",
-      "Compositing CSS Animations: property <aspect-ratio> underlying [2 / 1] from replace [0.5 / 1] to add [1 / 1] at (1) should be [2 / 1]": "FAIL",
-      "Compositing Web Animations: property <aspect-ratio> underlying [2 / 1] from replace [0.5 / 1] to add [1 / 1] at (0.5) should be [1 / 1]": "FAIL",
-      "Compositing Web Animations: property <aspect-ratio> underlying [2 / 1] from replace [0.5 / 1] to add [1 / 1] at (1) should be [2 / 1]": "FAIL"
-    }
+    "total": 249
   },
   "css/css-sizing/animation/box-sizing-no-interpolation.html": {
     "total": 42
@@ -906,7 +900,7 @@
     "reftest": "PASS"
   },
   "css/css-sizing/aspect-ratio/replaced-element-035.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-sizing/aspect-ratio/replaced-element-036.html": {
     "total": 2
@@ -951,7 +945,7 @@
     "reftest": "PASS"
   },
   "css/css-sizing/aspect-ratio/select-element-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-sizing/aspect-ratio/sign-function-aspect-ratio.html": {
     "total": 1
@@ -1950,16 +1944,10 @@
     "total": 5
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-allow-origins.html?container=subdomain,origin=cross,allow=wildcard,expect=400": {
-    "total": 1,
-    "failures": {
-      "Allow origins check: container=subdomain, origin=cross, allow=wildcard": "FAIL"
-    }
+    "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-allow-origins.html?container=subdomain,origin=same,allow=wildcard,expect=400": {
-    "total": 1,
-    "failures": {
-      "Allow origins check: container=subdomain, origin=same, allow=wildcard": "FAIL"
-    }
+    "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-allow-origins.html?origin=cross,allow=child,expect=150": {
     "total": 1
@@ -1968,28 +1956,19 @@
     "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-allow-origins.html?origin=cross,allow=parent,expect=400": {
-    "total": 1,
-    "failures": {
-      "Allow origins check: container=parent, origin=cross, allow=parent": "FAIL"
-    }
+    "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-allow-origins.html?origin=cross,allow=self,expect=150": {
     "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-allow-origins.html?origin=cross,allow=star,expect=400": {
-    "total": 1,
-    "failures": {
-      "Allow origins check: container=parent, origin=cross, allow=star": "FAIL"
-    }
+    "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-allow-origins.html?origin=same,allow=empty,expect=150": {
     "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-allow-origins.html?origin=same,allow=http,expect=400": {
-    "total": 1,
-    "failures": {
-      "Allow origins check: container=parent, origin=same, allow=http": "FAIL"
-    }
+    "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-allow-origins.html?origin=same,allow=https,expect=150": {
     "total": 1
@@ -2001,10 +1980,7 @@
     "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-allow-origins.html?origin=same,allow=multiple,expect=400": {
-    "total": 1,
-    "failures": {
-      "Allow origins check: container=parent, origin=same, allow=multiple": "FAIL"
-    }
+    "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-allow-origins.html?origin=same,allow=no-prefix,expect=150": {
     "total": 1
@@ -2016,25 +1992,16 @@
     "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-allow-origins.html?origin=same,allow=parent,expect=400": {
-    "total": 1,
-    "failures": {
-      "Allow origins check: container=parent, origin=same, allow=parent": "FAIL"
-    }
+    "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-allow-origins.html?origin=same,allow=self,expect=400": {
-    "total": 1,
-    "failures": {
-      "Allow origins check: container=parent, origin=same, allow=self": "FAIL"
-    }
+    "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-allow-origins.html?origin=same,allow=space,expect=150": {
     "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-allow-origins.html?origin=same,allow=star,expect=400": {
-    "total": 1,
-    "failures": {
-      "Allow origins check: container=parent, origin=same, allow=star": "FAIL"
-    }
+    "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-allow-origins.html?origin=same,allow=uppercase-prefix,expect=150": {
     "total": 1
@@ -2046,16 +2013,10 @@
     "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-allow-origins.html?origin=subdomain,allow=parent,expect=400": {
-    "total": 1,
-    "failures": {
-      "Allow origins check: container=parent, origin=subdomain, allow=parent": "FAIL"
-    }
+    "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-allow-origins.html?origin=subdomain,allow=star,expect=400": {
-    "total": 1,
-    "failures": {
-      "Allow origins check: container=parent, origin=subdomain, allow=star": "FAIL"
-    }
+    "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-cross-origin-no-match-element.sub.html": {
     "reftest": "PASS"
@@ -2064,59 +2025,46 @@
     "reftest": "PASS"
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-cross-origin.sub.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-dom-content-loaded.html": {
-    "harness": "ERROR",
-    "total": 1,
-    "failures": {
-      "`DOMContentLoaded` triggers resizing": "TIMEOUT"
-    }
+    "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-icb.html": {
-    "total": 1,
-    "failures": {
-      "IFRAME content should use the initial ICB to measure the natural size": "FAIL"
-    }
+    "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-meta-after-head.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-meta-dynamic-append-after-body.html": {
     "reftest": "PASS"
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-meta-dynamic-append-to-doc.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-meta-dynamic-append.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-meta-dynamic-name-change-after-body.html": {
     "reftest": "PASS"
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-meta-dynamic-name-change.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-meta-dynamic-remove.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-meta-dynamic-write.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-meta-in-body.html": {
     "reftest": "PASS"
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-navigation-unsized.html?origin=cross": {
-    "total": 1,
-    "failures": {
-      "Responsive iframe clears size during navigation to non-responsive page": "FAIL"
-    }
+    "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-navigation-unsized.html?origin=same": {
-    "total": 1,
-    "failures": {
-      "Responsive iframe clears size during navigation to non-responsive page": "FAIL"
-    }
+    "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-navigation.html?origin=cross": {
     "harness": "ERROR",
@@ -2126,11 +2074,7 @@
     }
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-navigation.html?origin=same": {
-    "harness": "ERROR",
-    "total": 1,
-    "failures": {
-      "Responsive iframe preserves size during navigation": "TIMEOUT"
-    }
+    "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-no-match-element.html": {
     "reftest": "PASS"
@@ -2139,98 +2083,55 @@
     "reftest": "PASS"
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-request-resize-error.html": {
-    "total": 2,
-    "failures": {
-      "`window.requestResize()` from iframe without `responsive-embedded-sizing` meta tag throws DOM NotAllowedError": "FAIL",
-      "`window.requestResize()` from the parent frame throws DOM NotAllowedError": "FAIL"
-    }
+    "total": 2
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-request-resize.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-value.html?value=,300,150": {
     "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-value.html?value=content-block-size,200,150,vertical-rl": {
-    "total": 1,
-    "failures": {
-      "Measure target with value=content-block-size and wm=vertical-rl": "FAIL"
-    }
+    "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-value.html?value=content-block-size,300,100": {
-    "total": 1,
-    "failures": {
-      "Measure target with value=content-block-size and wm=undefined": "FAIL"
-    }
+    "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-value.html?value=content-block-size,300,200": {
-    "total": 1,
-    "failures": {
-      "Measure target with value=content-block-size and wm=undefined": "FAIL"
-    }
+    "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-value.html?value=content-block-size,400,150,vertical-rl": {
-    "total": 1,
-    "failures": {
-      "Measure target with value=content-block-size and wm=vertical-rl": "FAIL"
-    }
+    "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-value.html?value=content-height,300,100": {
-    "total": 1,
-    "failures": {
-      "Measure target with value=content-height and wm=undefined": "FAIL"
-    }
+    "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-value.html?value=content-height,300,200": {
-    "total": 1,
-    "failures": {
-      "Measure target with value=content-height and wm=undefined": "FAIL"
-    }
+    "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-value.html?value=content-inline-size,200,150": {
-    "total": 1,
-    "failures": {
-      "Measure target with value=content-inline-size and wm=undefined": "FAIL"
-    }
+    "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-value.html?value=content-inline-size,300,100,vertical-rl": {
-    "total": 1,
-    "failures": {
-      "Measure target with value=content-inline-size and wm=vertical-rl": "FAIL"
-    }
+    "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-value.html?value=content-inline-size,300,200,vertical-rl": {
-    "total": 1,
-    "failures": {
-      "Measure target with value=content-inline-size and wm=vertical-rl": "FAIL"
-    }
+    "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-value.html?value=content-inline-size,400,150": {
-    "total": 1,
-    "failures": {
-      "Measure target with value=content-inline-size and wm=undefined": "FAIL"
-    }
+    "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-value.html?value=content-width,200,150": {
-    "total": 1,
-    "failures": {
-      "Measure target with value=content-width and wm=undefined": "FAIL"
-    }
+    "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-value.html?value=content-width,200,150,,vertical-rl": {
-    "total": 1,
-    "failures": {
-      "Measure target with value=content-width and wm=": "FAIL"
-    }
+    "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe-value.html?value=content-width,400,150": {
-    "total": 1,
-    "failures": {
-      "Measure target with value=content-width and wm=undefined": "FAIL"
-    }
+    "total": 1
   },
   "css/css-sizing/responsive-iframe/responsive-iframe.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-sizing/shrink-to-fit-sizing-max-width-min-content.html": {
     "reftest": "PASS"

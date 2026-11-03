@@ -251,6 +251,9 @@ internal sealed class ReplacedContent
                 // expected to have a viewport with zero width and zero height"
                 return new ImageNaturalSize(0, 0, null);
 
+            case HtmlIFrameElement { InternalLayoutIntrinsicSize: { } internalSize }:
+                return GetResponsiveIFrameNaturalSize(internalSize, layout);
+
             case HtmlObjectElement or HtmlEmbedElement:
                 // The natural size of the SVG document of the content navigable (https://svgwg.org/svg2-draft/coords.html#SizingSVGInCSS)
                 return GetContentDocumentNaturalSize(element);
@@ -265,6 +268,25 @@ internal sealed class ReplacedContent
                 // An iframe, a frame, an embed or an object without SVG document: no natural dimensions
                 return default;
         }
+    }
+
+    /// <summary>
+    /// The natural dimensions of an iframe whose embedded document opted into responsive embedded sizing
+    /// (https://drafts.csswg.org/css-sizing-4/#propdef-frame-sizing): the dimension of its internal layout intrinsic size given
+    /// by <c>frame-sizing</c> (the logical values resolve against the writing mode of the iframe); the other dimension is
+    /// determined normally (no natural dimension: the default object size).
+    /// </summary>
+    private static ImageNaturalSize GetResponsiveIFrameNaturalSize(PhysicalSize internalSize, LayoutStyle layout)
+    {
+        var horizontal = layout.IsHorizontalWritingMode;
+        return layout.Style.GetComputedValue("frame-sizing") switch
+        {
+            "content-width" => new ImageNaturalSize(internalSize.Width, null, null),
+            "content-height" => new ImageNaturalSize(null, internalSize.Height, null),
+            "content-inline-size" => horizontal ? new ImageNaturalSize(internalSize.Width, null, null) : new ImageNaturalSize(null, internalSize.Height, null),
+            "content-block-size" => horizontal ? new ImageNaturalSize(null, internalSize.Height, null) : new ImageNaturalSize(internalSize.Width, null, null),
+            _ => default,
+        };
     }
 
     /// <summary>Returns the natural dimensions of the document displayed by an embed or an object element when its root is an svg element.</summary>

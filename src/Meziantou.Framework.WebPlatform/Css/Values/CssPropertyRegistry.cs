@@ -106,8 +106,9 @@ internal static partial class CssPropertyRegistry
         ["text-emphasis-position"] = "auto | [ over | under ] && [ right | left ]?",
 
         // https://drafts.csswg.org/css-backgrounds-3/#box-shadow: a longhand, as in the browsers (css-borders-4 turns it into a
-        // shorthand of box-shadow-color, box-shadow-offset...)
-        ["box-shadow"] = "none | <spread-shadow>#",
+        // shorthand of box-shadow-color, box-shadow-offset...), whose <shadow> has no none offset: none is only allowed alone
+        // (WPT css/css-backgrounds/box-shadow-invalid-001.html)
+        ["box-shadow"] = "none | [ <color>? && [ <length>{2} [ <length [0,\u221E]> <length>? ]? ] && inset? ]#",
 
         // https://drafts.csswg.org/css-text-3/#valdef-text-justify-distribute: distribute is a legacy alias of inter-character
         ["text-justify"] = "[ auto | none | inter-word | inter-character | ruby | distribute ] || no-compress",
@@ -572,13 +573,24 @@ internal static partial class CssPropertyRegistry
         // https://drafts.fxtf.org/filter-effects/#FilterCSSImageValue: "the filter() function [...] is an <image>"
         // https://drafts.css-houdini.org/css-paint-api-1/#paint-notation: "the paint() function is an additional notation to be
         // supported by the <image> type"; its comma is only required before the arguments (paint(name) is valid)
-        ["<image>"] = "<url> | <image()> | <image-set()> | <-webkit-image-set()> | <cross-fade()> | <element()> | <gradient> | <light-dark-image> | <filter()> | <paint()>",
+        ["<image>"] = "<url> | <image()> | <image-set()> | <-webkit-image-set()> | <cross-fade()> | <-webkit-cross-fade()> | <element()> | <gradient> | <light-dark-image> | <filter()> | <paint()>",
+
+        // The legacy syntax of cross-fade() of WebKit and Blink, also unprefixed in Blink: the two images and the amount of the
+        // second one (WPT css/css-backgrounds/animations/background-image-interpolation.html, css/css-color/light-dark-image.html)
+        ["cross-fade()"] = "cross-fade( <cf-image># ) | cross-fade( <image> , <image> , [ <percentage [0,100]> | <number [0,1]> ] )",
+        ["-webkit-cross-fade()"] = "-webkit-cross-fade( <image> , <image> , [ <percentage [0,100]> | <number [0,1]> ] )",
         ["paint()"] = "paint( <ident> [ , <declaration-value>? ]? )",
+
+        // https://drafts.csswg.org/css-images-5/#image-notation: image( <image-tags>? [ <image-src>? , <color>? ]! ), whose image
+        // source CSS Images 4 moved to Level 5 (WPT css/css-images/css-image-fallbacks-and-annotations.html); the source is a
+        // string only, as in the tests of CSS Images 4 (WPT css/css-images/parsing/image-function-invalid.html: image(url(foo.png))
+        // is invalid)
+        ["image()"] = "image( [ ltr | rtl ]? [ <string> [ , <color> ]? | <color> ] )",
 
         // https://drafts.csswg.org/css-images-4/#image-set-notation: "the image-set() function can not be nested inside of itself,
         // either directly or indirectly", and the resolutions are not negative; -webkit-image-set() is a parse-time alias
         // (https://drafts.csswg.org/css-images-4/#deprecated)
-        ["<image-set-option>"] = "[ <url> | <image()> | <cross-fade()> | <element()> | <gradient> | <light-dark-image> | <filter()> | <string> ] [ <resolution [0,\u221E]> || type(<string>) ]?",
+        ["<image-set-option>"] = "[ <url> | <image()> | <cross-fade()> | <-webkit-cross-fade()> | <element()> | <gradient> | <light-dark-image> | <filter()> | <string> ] [ <resolution [0,\u221E]> || type(<string>) ]?",
         ["-webkit-image-set()"] = "-webkit-image-set( <image-set-option># )",
 
         // https://compat.spec.whatwg.org/#css-gradient-functions: the -webkit- prefixed gradients, and -webkit-gradient()

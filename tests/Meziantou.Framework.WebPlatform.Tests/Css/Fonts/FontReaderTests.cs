@@ -156,7 +156,8 @@ public sealed class FontReaderTests
         Assert.Equal("Cousine", BundledFonts.GetGenericFamily("monospace"));
         Assert.Equal("STIX Two Math", BundledFonts.GetGenericFamily("math"));
         Assert.NotNull(BundledFonts.GetFamilyFonts("STIX Two Math")[0].Font.MathTable);
-        Assert.Null(BundledFonts.GetGenericFamily("fantasy"));
+        Assert.Equal("Tinos", BundledFonts.GetGenericFamily("fantasy"));
+        Assert.Null(BundledFonts.GetGenericFamily("emoji"));
     }
 
     [Fact]

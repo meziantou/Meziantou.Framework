@@ -250,6 +250,11 @@ internal static partial class CssValueComputer
                 // The logical keywords of the positions and of the lines of shape() are the physical ones of the writing mode
                 // of the element (the points of the computed value are offsets from the top left corner)
                 var generic = ComputeGeneric(style, property, value, baseUrl);
+                if (name is "clip-path" or "offset-path" && generic.StartsWith("path(", StringComparison.Ordinal))
+                {
+                    generic = KeepRelativePathCommands(value, generic);
+                }
+
                 return CssPropertyRules.ComputeShapeProperty(name, generic.StartsWith("shape(", StringComparison.Ordinal) ? ResolveLogicalShapeKeywords(style, generic) : generic);
             }
             case "border-shape" when value != "none":
@@ -316,6 +321,10 @@ internal static partial class CssValueComputer
                 // https://github.com/w3c/csswg-drafts/issues/8407: content-visibility: auto makes contain-intrinsic-size gain the
                 // auto keyword, so that the element remembers its size (as in the browsers)
                 return "auto " + ComputeGeneric(style, property, value, baseUrl);
+            // https://drafts.csswg.org/css-size-adjust/#propdef-text-size-adjust: none disables the inflation, as 100% does
+            // (WPT css/css-size-adjust/parsing/text-size-adjust-computed.html)
+            case "text-size-adjust" when value == "none":
+                return "100%";
             case "hyphenate-limit-chars":
                 return ComputeHyphenateLimitChars(style, property, value, baseUrl);
             case "dynamic-range-limit" when value.Contains('(', StringComparison.Ordinal):
@@ -348,6 +357,26 @@ internal static partial class CssValueComputer
     }
 
     /// <summary>Computes a value of a property that has no specific computation: the generic computation, clamped to the range of the property.</summary>
+    /// <summary>
+    /// The path() of clip-path and offset-path keeps its relative commands, as in the browsers (WPT
+    /// css/css-shapes/shape-functions/path-function-computed.html; the path data of the d property is converted to absolute
+    /// commands, https://svgwg.org/svg2-draft/paths.html#TheDProperty, and so is the one of shape-outside, WPT
+    /// css/css-shapes/parsing/shape-outside-computed.html). The relative commands are needed by the interpolation of a path()
+    /// with a shape(), whose <c>by</c> commands are not interpolated with the <c>to</c> commands
+    /// (https://drafts.csswg.org/css-shapes-2/#interpolating-shape).
+    /// </summary>
+    private static string KeepRelativePathCommands(string specified, string computed)
+    {
+        var function = CssParser.ParseListOfComponentValues(specified).OfType<CssFunction>().FirstOrDefault(candidate => InfraAscii.EqualsIgnoreAsciiCase(candidate.Name, "path"));
+        if (function is null || CssPath.Serialize(function, absolute: false) is not { } path
+            || CssParser.ParseListOfComponentValues(computed) is not [CssFunction computedFunction, .. var rest] || !InfraAscii.EqualsIgnoreAsciiCase(computedFunction.Name, "path"))
+        {
+            return computed;
+        }
+
+        return path + CssSerializer.SerializeValue(rest, property: null);
+    }
+
     private static string ComputeGenericProperty(ComputedStyle style, CssPropertyDefinition property, string value, string? baseUrl)
     {
         var name = property.Name;
@@ -380,36 +409,48 @@ internal static partial class CssValueComputer
 
     /// <summary>
     /// The result of a math function is clamped to the range allowed by the property (https://drafts.csswg.org/css-values-4/#calc-range),
-    /// e.g. flex-shrink: calc(-1) computes to 0 and column-count: calc(0) to 1. Only a value that is a single number,
-    /// percentage or dimension is clamped.
+    /// e.g. flex-shrink: calc(-1) computes to 0 and column-count: calc(0) to 1. Only a value whose components are single numbers,
+    /// percentages or dimensions is clamped (each math function separately, e.g. the two lengths of border-spacing).
     /// </summary>
     private static string ClampMathFunctionResult(CssPropertyDefinition property, string value, string computed)
     {
         if (!value.Contains('(', StringComparison.Ordinal) || CssPropertyRegistry.GetGrammar(property) is not { } grammar)
             return computed;
 
-        if (ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(value)) is not [CssFunction function] || !CssCalc.IsMathFunction(function.Name))
+        var specified = ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(value));
+        var components = ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(computed));
+        var parts = SplitComponents(computed);
+        if (specified.Count == 0 || specified.Count != components.Count || parts.Length != components.Count)
             return computed;
 
-        if (ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(computed)) is not [CssPreservedToken { Type: CssTokenType.Number or CssTokenType.Percentage or CssTokenType.Dimension } token])
-            return computed;
-
-        if (FindRange(grammar, token.Token, depth: 0) is not { } range)
-            return computed;
-
-        var clamped = Math.Clamp(token.Token.NumericValue, range.Min ?? double.NegativeInfinity, range.Max ?? double.PositiveInfinity);
-        if (clamped == token.Token.NumericValue)
-            return computed;
-
-        return SerializeNumber(clamped) + token.Token.Type switch
+        var changed = false;
+        for (var i = 0; i < components.Count; i++)
         {
-            CssTokenType.Percentage => "%",
-            CssTokenType.Dimension => token.Token.Value,
-            _ => "",
-        };
+            if (components[i] is not CssPreservedToken { Type: CssTokenType.Number or CssTokenType.Percentage or CssTokenType.Dimension } token)
+                return computed;
+
+            if (specified[i] is not CssFunction function || !CssCalc.IsMathFunction(function.Name) || FindRange(grammar, token.Token, depth: 0) is not { } range)
+                continue;
+
+            var clamped = Math.Clamp(token.Token.NumericValue, range.Min ?? double.NegativeInfinity, range.Max ?? double.PositiveInfinity);
+            if (clamped == token.Token.NumericValue)
+                continue;
+
+            changed = true;
+            parts[i] = SerializeNumber(clamped) + token.Token.Type switch
+            {
+                CssTokenType.Percentage => "%",
+                CssTokenType.Dimension => token.Token.Value,
+                _ => "",
+            };
+        }
+
+        if (!changed)
+            return computed;
+
+        return parts.Length == 1 ? parts[0] : string.Join(' ', parts);
     }
 
-    /// <summary>Returns the range of the type of the grammar that accepts a numeric token (e.g. [0,∞] for &lt;length [0,∞]&gt;), or null.</summary>
     private static (double? Min, double? Max)? FindRange(GrammarNode node, CssToken token, int depth)
     {
         if (depth > 16)
@@ -630,6 +671,18 @@ internal static partial class CssValueComputer
                     return Raw(imageSet);
                 }
 
+                else if (name == "image" && function.Value.Exists(argument => argument is CssPreservedToken { Type: CssTokenType.String }))
+                {
+                    // https://drafts.csswg.org/css-images-5/#image-notation: the string of image() is a URL, resolved as the one of
+                    // url() (WPT css/css-values/attr-security.html)
+                    var image = new CssFunction(function.Name);
+                    foreach (var argument in function.Value)
+                    {
+                        image.Value.Add(argument is CssPreservedToken { Type: CssTokenType.String } source ? Raw(CssSerializer.SerializeUrl(ResolveUrl(source.Token.Value, context))) : Transform(argument, context));
+                    }
+
+                    return image;
+                }
                 else if (name == "cross-fade" && ComputeCrossFade(function, context) is { } crossFade)
                 {
                     return Raw(crossFade);
@@ -808,8 +861,13 @@ internal static partial class CssValueComputer
     /// </summary>
     private static string? ComputeCrossFade(CssFunction function, ComputationContext context)
     {
+        // The legacy syntax (two images and the amount of the second one) is computed as is
+        var arguments = SplitArguments(function.Value);
+        if (arguments is [_, _, [CssPreservedToken { Type: CssTokenType.Number or CssTokenType.Percentage }]])
+            return null;
+
         var images = new List<string>();
-        foreach (var argument in SplitArguments(function.Value))
+        foreach (var argument in arguments)
         {
             string? image = null;
             string? percentage = null;
@@ -2016,7 +2074,10 @@ internal static partial class CssValueComputer
         var computed = ComputeGeneric(style, property, value, baseUrl);
         if (SplitComponents(computed) is ["oblique", var angle] && angle.EndsWith("deg", StringComparison.Ordinal) && TryParseNumber(angle[..^3], out var degrees))
         {
-            degrees = Math.Clamp(degrees, -90, 90);
+            // The angle is a single-precision float in the browsers, serialized with 6 significant digits: the specified value
+            // keeps 6 decimals of the number of its unit, so oblique 0.785398165rad is 45deg, not 44.999991deg
+            // (WPT css/css-fonts/font-style-angle.html)
+            degrees = Math.Clamp(double.Parse(degrees.ToString("G6", CultureInfo.InvariantCulture), CultureInfo.InvariantCulture), -90, 90);
             return degrees == 0 ? "normal" : "oblique " + SerializeNumber(degrees) + "deg";
         }
 
@@ -2040,7 +2101,12 @@ internal static partial class CssValueComputer
             if (!setting.StartsWith('"', StringComparison.Ordinal) || tagEnd < 0)
                 return computed;
 
-            settings[setting[..(tagEnd + 1)]] = setting;
+            // The axis values are single-precision floats in the browsers: an extrapolated value is clamped to the largest one,
+            // serialized with 6 significant digits (WPT css/css-fonts/animations/font-variation-settings-interpolation.html)
+            var tag = setting[..(tagEnd + 1)];
+            settings[tag] = property.Name == "font-variation-settings" && TryParseNumber(setting[(tagEnd + 1)..].Trim(), out var axisValue) && Math.Abs(axisValue) > float.MaxValue
+                ? tag + " " + SerializeNumber(Math.CopySign(3.40282e38, axisValue))
+                : setting;
         }
 
         return string.Join(", ", settings.Values);
@@ -2326,7 +2392,9 @@ internal static partial class CssValueComputer
             return CssHdrColor.Serialize(computed);
         }
 
-        return ResolveColor(value, style, isColorProperty)?.Serialize();
+        // The color of a highlight pseudo-element that depends on currentcolor (e.g. a color-mix()) is not resolved either: it
+        // is inherited down the highlight chain as specified, and resolved against the color of each originating element
+        return ResolveColor(value, style, isColorProperty && !style.IsHighlight)?.Serialize();
     }
 
     /// <summary>Resolves a color (https://drafts.csswg.org/css-color-4/#resolving-color-values), or returns null when it is not a color or depends on currentcolor (outside the color property).</summary>
@@ -2344,6 +2412,9 @@ internal static partial class CssValueComputer
                     return CssColor.Parse(value);
 
                 name = DeprecatedSystemColors.GetValueOrDefault(name, name);
+                if (name is "accentcolor" or "accentcolortext" && style.Environment.ForcedColorsPalette is null && GetAccentColor(style) is { } accentColor)
+                    return name == "accentcolor" ? accentColor : ComputeContrastColor(accentColor);
+
                 return GetSystemColors(style).TryGetValue(name, out var systemColor) ? ParseColor(systemColor) : null;
             }
 
@@ -2493,7 +2564,7 @@ internal static partial class CssValueComputer
     /// The contrast is the WCAG 2.1 contrast ratio (https://www.w3.org/TR/WCAG21/#dfn-contrast-ratio) of the relative
     /// luminance of the opaque color in sRGB; white wins a tie.
     /// </summary>
-    private static CssColor? ComputeContrastColor(CssColor color)
+    internal static CssColor? ComputeContrastColor(CssColor color)
     {
         if (CssColorConversion.FromColor(color) is not { } components)
             return null;
@@ -2532,6 +2603,34 @@ internal static partial class CssValueComputer
 
     /// <summary>Parses a computed color (e.g. the computed value of the color property).</summary>
     private static CssColor? ParseColor(string value) => ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(value)) is [var single] ? CssColor.Parse(single) : null;
+
+    /// <summary>
+    /// Returns the accent color of an element (https://drafts.csswg.org/css-ui-4/#widget-accent), which the AccentColor and
+    /// AccentColorText system colors follow, or null when its accent-color is auto (the default accent color). A cycle uses
+    /// the value of the parent: accent-color: AccentColor is the accent color of the parent, and the currentcolor of an
+    /// accent-color in the color property of the same element (color: AccentColor; accent-color: currentcolor) is the color
+    /// of the parent.
+    /// </summary>
+    internal static CssColor? GetAccentColor(ComputedStyle style)
+    {
+        var computing = style.Engine.ComputingProperties;
+        for (var current = style; current is not null; current = current.Parent)
+        {
+            if (computing.Contains(current, "accent-color"))
+                continue;
+
+            var value = current.GetComputedValue("accent-color");
+            if (value is "auto" or "")
+                return null;
+
+            if (value == "currentcolor")
+                return ParseColor(computing.Contains(current, "color") ? GetInheritedColor(current) : current.GetComputedValue("color"));
+
+            return ParseColor(value);
+        }
+
+        return null;
+    }
 
     private static string GetInheritedColor(ComputedStyle style) => style.Parent?.GetComputedValue("color") ?? LightSystemColors["canvastext"];
 

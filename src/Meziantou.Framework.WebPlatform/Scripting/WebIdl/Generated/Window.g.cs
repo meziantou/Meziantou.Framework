@@ -403,6 +403,11 @@ internal static class Binding_Window<TAdapter, TValue> where TAdapter : struct, 
                 throw new global::System.InvalidOperationException("Unexpected overload");
         }
     }
+    private static TValue Op_requestResize(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
+    {
+        var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Window>(t, Binding);
+        o.RequestResize(); return r.Adapter.Undefined;
+    }
     private static TValue Op_getComputedStyle(global::Meziantou.Framework.WebPlatform.Scripting.WebIdlRealm<TAdapter, TValue> r, TValue t, global::System.ReadOnlySpan<TValue> a)
     {
         var o = r.This<global::Meziantou.Framework.WebPlatform.Dom.Window>(t, Binding);
@@ -838,6 +843,7 @@ internal static class Binding_Window<TAdapter, TValue> where TAdapter : struct, 
         r.DefineOperation(instanceTarget, "prompt", 0, Op_prompt);
         r.DefineOperation(instanceTarget, "print", 0, Op_print);
         r.DefineOperation(instanceTarget, "postMessage", 1, Op_postMessage);
+        r.DefineOperation(instanceTarget, "requestResize", 0, Op_requestResize);
         r.DefineOperation(instanceTarget, "getComputedStyle", 1, Op_getComputedStyle);
         r.DefineOperation(instanceTarget, "matchMedia", 1, Op_matchMedia);
         r.DefineOperation(instanceTarget, "moveTo", 2, Op_moveTo);

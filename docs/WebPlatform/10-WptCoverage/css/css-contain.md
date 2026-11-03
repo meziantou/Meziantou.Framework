@@ -11,8 +11,8 @@ description: "The results of the web-platform-tests of css/css-contain, and why 
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 94 | 97 | 0 | 97% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 429 | 432 | 0 | 99% |
-| **All** | **523** | **529** | **0** | **99%** |
+| [Reftests](#reftests) | 431 | 432 | 0 | 99.7% |
+| **All** | **525** | **529** | **0** | **99%** |
 
 ## Stable tests
 
@@ -373,8 +373,8 @@ description: "The results of the web-platform-tests of css/css-contain, and why 
 | [`contain-size-monolithic-001.html`](https://wpt.fyi/results/css/css-contain/contain-size-monolithic-001.html) | Pass | 1 / 1 |  |  |
 | [`contain-size-monolithic-002.html`](https://wpt.fyi/results/css/css-contain/contain-size-monolithic-002.html) | Pass | 1 / 1 |  |  |
 | [`contain-size-multicol-001.html`](https://wpt.fyi/results/css/css-contain/contain-size-multicol-001.html) | Pass | 1 / 1 |  |  |
-| [`contain-size-multicol-002.html`](https://wpt.fyi/results/css/css-contain/contain-size-multicol-002.html) | Fail | 0 / 1 | BUG | the child (50px tall) of a size-contained multi-column container without block size (`contain: size; column-count: 3`: columns of 0px) is cut in slices of 1px in overflow columns, which extend the scrollable overflow of the viewport horizontally (a horizontal scrollbar that the reference does not have); the browsers leave the child in the first column, which it overflows (the difference was not visible before the scrollbars were painted) |
-| [`contain-size-multicol-003.html`](https://wpt.fyi/results/css/css-contain/contain-size-multicol-003.html) | Fail | 0 / 1 | BUG | the child (50px tall) of a size-contained multi-column container without block size (`contain: size; column-count: 3`: columns of 0px) is cut in slices of 1px in overflow columns, which extend the scrollable overflow of the viewport horizontally (a horizontal scrollbar that the reference does not have); the browsers leave the child in the first column, which it overflows (the difference was not visible before the scrollbars were painted) |
+| [`contain-size-multicol-002.html`](https://wpt.fyi/results/css/css-contain/contain-size-multicol-002.html) | Pass | 1 / 1 |  |  |
+| [`contain-size-multicol-003.html`](https://wpt.fyi/results/css/css-contain/contain-size-multicol-003.html) | Pass | 1 / 1 |  |  |
 | [`contain-size-multicol-004.html`](https://wpt.fyi/results/css/css-contain/contain-size-multicol-004.html) | Pass | 1 / 1 |  |  |
 | [`contain-size-removed.html`](https://wpt.fyi/results/css/css-contain/contain-size-removed.html) | Pass | 1 / 1 |  |  |
 | [`contain-size-replaced-001.html`](https://wpt.fyi/results/css/css-contain/contain-size-replaced-001.html) | Pass | 1 / 1 |  |  |

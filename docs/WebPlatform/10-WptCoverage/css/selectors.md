@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of css/selectors, and why th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 453 | 457 | 0 | 99% |
+| [Stable](#stable-tests) | 455 | 457 | 0 | 99.5% |
 | [Tentative](#tentative-tests) | 15 | 17 | 0 | 88% |
 | [Reftests](#reftests) | 341 | 342 | 0 | 99.7% |
-| **All** | **809** | **816** | **0** | **99%** |
+| **All** | **811** | **816** | **0** | **99%** |
 
 ## Stable tests
 
@@ -39,7 +39,7 @@ description: "The results of the web-platform-tests of css/selectors, and why th
 | [`dir-selector-auto.html`](https://wpt.fyi/results/css/selectors/dir-selector-auto.html) | Pass | 22 / 22 |  |  |
 | [`dir-selector-querySelector.html`](https://wpt.fyi/results/css/selectors/dir-selector-querySelector.html) | Pass | 4 / 4 |  |  |
 | [`featureless-006.html`](https://wpt.fyi/results/css/selectors/featureless-006.html) | Pass | 46 / 46 |  |  |
-| [`featureless-007.html`](https://wpt.fyi/results/css/selectors/featureless-007.html) | Fail | 18 / 24 | BUG | `:is(:host)`, `:where(:host)` and `:not(:not(:host))` match the shadow host when a default namespace is declared (the featureless host does not match the namespace of the compound selector) |
+| [`featureless-007.html`](https://wpt.fyi/results/css/selectors/featureless-007.html) | Pass | 24 / 24 |  |  |
 | [`first-child.html`](https://wpt.fyi/results/css/selectors/first-child.html) | Pass | 5 / 5 |  |  |
 | [`first-of-type.html`](https://wpt.fyi/results/css/selectors/first-of-type.html) | Pass | 9 / 9 |  |  |
 | [`focus-display-none-001.html`](https://wpt.fyi/results/css/selectors/focus-display-none-001.html) | Pass | 2 / 2 |  |  |
@@ -472,7 +472,7 @@ description: "The results of the web-platform-tests of css/selectors, and why th
 | [`user-valid.html`](https://wpt.fyi/results/css/selectors/user-valid.html) | Fail | 4 / 5 | NOT IMPLEMENTED | typing in the fields of `<input type=date/time/datetime-local>`: `test_driver.send_keys()` does not edit their date and time segments |
 | [`valid-invalid-form-fieldset.html`](https://wpt.fyi/results/css/selectors/valid-invalid-form-fieldset.html) | Pass | 1 / 1 |  |  |
 | [`valid-invalid-pseudo.html`](https://wpt.fyi/results/css/selectors/valid-invalid-pseudo.html) | Pass | 4 / 4 |  |  |
-| [`webkit-pseudo-element.html`](https://wpt.fyi/results/css/selectors/webkit-pseudo-element.html) | Fail | 5 / 6 | BUG | `selectorText` loses the escape of a `::-webkit-\ escaped` pseudo-element name (serialized as `::-webkit- escaped`) |
+| [`webkit-pseudo-element.html`](https://wpt.fyi/results/css/selectors/webkit-pseudo-element.html) | Pass | 6 / 6 |  |  |
 | [`x-pseudo-element.html`](https://wpt.fyi/results/css/selectors/x-pseudo-element.html) | Pass | 1 / 1 |  |  |
 | [`xml-class-selector-combinators.xml`](https://wpt.fyi/results/css/selectors/xml-class-selector-combinators.xml) | Pass | 4 / 4 |  |  |
 

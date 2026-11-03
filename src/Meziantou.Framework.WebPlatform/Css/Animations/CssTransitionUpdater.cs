@@ -315,6 +315,16 @@ internal static class CssTransitionUpdater
                 {
                     result[longhand] = parameters;
                 }
+
+                // The registered custom properties are animatable, except the ones of the universal syntax, which are
+                // discrete (https://drafts.css-houdini.org/css-properties-values-api/#animation-behavior-of-custom-properties)
+                foreach (var (customProperty, registration) in style.Engine.RegisteredProperties)
+                {
+                    if (!registration.Syntax.IsUniversal)
+                    {
+                        result[customProperty] = parameters;
+                    }
+                }
             }
             else if (CssPropertyRegistry.IsCustomProperty(name))
             {

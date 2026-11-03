@@ -5464,10 +5464,10 @@
     "reftest": "PASS"
   },
   "css/css-text/white-space/white-space-trim-inline-block-dynamic.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/white-space/white-space-trim-inline-block.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/white-space/white-space-trim-interaction.html": {
     "reftest": "PASS"
@@ -5980,52 +5980,52 @@
     "reftest": "PASS"
   },
   "css/css-text/wrap-inside/wrap-inside-avoid-block-child.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/wrap-inside/wrap-inside-avoid-break-all.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/wrap-inside/wrap-inside-avoid-break-before-then-inside.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/wrap-inside/wrap-inside-avoid-dynamic.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/wrap-inside/wrap-inside-avoid-forced-break.html": {
     "reftest": "PASS"
   },
   "css/css-text/wrap-inside/wrap-inside-avoid-inline-block-child.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/wrap-inside/wrap-inside-avoid-inline-flex-child.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/wrap-inside/wrap-inside-avoid-inline-grid-child.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/wrap-inside/wrap-inside-avoid-inline-table-child.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/wrap-inside/wrap-inside-avoid-keeps-box-together.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/wrap-inside/wrap-inside-avoid-last-resort.html": {
     "reftest": "PASS"
   },
   "css/css-text/wrap-inside/wrap-inside-avoid-line-break-anywhere.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/wrap-inside/wrap-inside-avoid-nested-auto.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/wrap-inside/wrap-inside-avoid-nested-deep.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/wrap-inside/wrap-inside-avoid-nested-only.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/wrap-inside/wrap-inside-avoid-nested.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/wrap-inside/wrap-inside-avoid-nowrap-child.html": {
     "reftest": "PASS"
@@ -6040,7 +6040,7 @@
     "reftest": "PASS"
   },
   "css/css-text/wrap-inside/wrap-inside-avoid-siblings.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/wrap-inside/wrap-inside-avoid-single-word.html": {
     "reftest": "PASS"

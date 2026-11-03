@@ -556,6 +556,22 @@ internal static class CssImageFetching
 
                     break;
 
+                case CssFunction imageFunction when InfraAscii.EqualsIgnoreAsciiCase(imageFunction.Name, "image"):
+                    // https://drafts.csswg.org/css-images-5/#image-notation: the source of image() is a URL or a string
+                    foreach (var argument in imageFunction.Value)
+                    {
+                        if (argument is CssPreservedToken { Type: CssTokenType.String } source)
+                        {
+                            urls.Add((source.Token.Value, CssRequestModifiers.None));
+                        }
+                        else
+                        {
+                            CollectUrls([argument], urls, devicePixelRatio);
+                        }
+                    }
+
+                    break;
+
                 case CssFunction function:
                     CollectUrls(function.Value, urls, devicePixelRatio);
                     break;

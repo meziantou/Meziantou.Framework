@@ -9,21 +9,21 @@ description: "The results of the web-platform-tests of css/css-ui, and why the t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 85 | 101 | 0 | 84% |
+| [Stable](#stable-tests) | 94 | 101 | 0 | 93% |
 | [Tentative](#tentative-tests) | 11 | 16 | 0 | 69% |
 | [Reftests](#reftests) | 959 | 964 | 0 | 99% |
-| **All** | **1,055** | **1,081** | **0** | **98%** |
+| **All** | **1,064** | **1,081** | **0** | **98%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
 | [`accent-color-computed.html`](https://wpt.fyi/results/css/css-ui/accent-color-computed.html) | Pass | 7 / 7 |  |  |
-| [`accent-color-keyword-animation.html`](https://wpt.fyi/results/css/css-ui/accent-color-keyword-animation.html) | Fail | 0 / 3 | NOT IMPLEMENTED | the `AccentColor` and `AccentColorText` system colors do not follow the `accent-color` of the element (they are the default accent colors) |
-| [`accent-color-keyword-cyclic.html`](https://wpt.fyi/results/css/css-ui/accent-color-keyword-cyclic.html) | Fail | 0 / 4 | NOT IMPLEMENTED | the `AccentColor` and `AccentColorText` system colors do not follow the `accent-color` of the element (they are the default accent colors) |
-| [`accent-color-keyword-resolution.html`](https://wpt.fyi/results/css/css-ui/accent-color-keyword-resolution.html) | Fail | 0 / 6 | NOT IMPLEMENTED | the `AccentColor` and `AccentColorText` system colors do not follow the `accent-color` of the element (they are the default accent colors) |
+| [`accent-color-keyword-animation.html`](https://wpt.fyi/results/css/css-ui/accent-color-keyword-animation.html) | Pass | 3 / 3 |  |  |
+| [`accent-color-keyword-cyclic.html`](https://wpt.fyi/results/css/css-ui/accent-color-keyword-cyclic.html) | Pass | 4 / 4 |  |  |
+| [`accent-color-keyword-resolution.html`](https://wpt.fyi/results/css/css-ui/accent-color-keyword-resolution.html) | Pass | 6 / 6 |  |  |
 | [`accent-color-parsing.html`](https://wpt.fyi/results/css/css-ui/accent-color-parsing.html) | Pass | 10 / 10 |  |  |
-| [`accent-color-text-keyword-resolution.html`](https://wpt.fyi/results/css/css-ui/accent-color-text-keyword-resolution.html) | Fail | 1 / 3 | NOT IMPLEMENTED | the `AccentColor` and `AccentColorText` system colors do not follow the `accent-color` of the element (they are the default accent colors) |
+| [`accent-color-text-keyword-resolution.html`](https://wpt.fyi/results/css/css-ui/accent-color-text-keyword-resolution.html) | Pass | 3 / 3 |  |  |
 | [`animation/accent-color-interpolation.html`](https://wpt.fyi/results/css/css-ui/animation/accent-color-interpolation.html) | Pass | 204 / 204 |  |  |
 | [`animation/appearance-no-interpolation.html`](https://wpt.fyi/results/css/css-ui/animation/appearance-no-interpolation.html) | Pass | 42 / 42 |  |  |
 | [`animation/caret-animation-parsing.html`](https://wpt.fyi/results/css/css-ui/animation/caret-animation-parsing.html) | Pass | 10 / 10 |  |  |
@@ -58,12 +58,12 @@ description: "The results of the web-platform-tests of css/css-ui, and why the t
 | [`input-security-parsing.html`](https://wpt.fyi/results/css/css-ui/input-security-parsing.html) | Pass | 10 / 10 |  |  |
 | [`interactivity-inert-all.html`](https://wpt.fyi/results/css/css-ui/interactivity-inert-all.html) | Pass | 1 / 1 |  |  |
 | [`interactivity-inert-animated.html`](https://wpt.fyi/results/css/css-ui/interactivity-inert-animated.html) | Pass | 1 / 1 |  |  |
-| [`interactivity-inert-click.html`](https://wpt.fyi/results/css/css-ui/interactivity-inert-click.html) | Fail | 1 / 2 | NOT IMPLEMENTED, TEST RUNNER | the `interactivity` property has no effect (it does not make elements inert); `test_driver.click()` does not refuse to click an inert element |
-| [`interactivity-inert-find.html`](https://wpt.fyi/results/css/css-ui/interactivity-inert-find.html) | Fail | 0 / 3 | NOT IMPLEMENTED | `window.find()`; the `interactivity` property has no effect (it does not make elements inert) |
-| [`interactivity-inert-focus.html`](https://wpt.fyi/results/css/css-ui/interactivity-inert-focus.html) | Fail | 2 / 3 | NOT IMPLEMENTED | the `interactivity` property has no effect (it does not make elements inert) (`focus()` succeeds on an inert input) |
-| [`interactivity-inert-fullscreen-ua.html`](https://wpt.fyi/results/css/css-ui/interactivity-inert-fullscreen-ua.html) | Fail | 2 / 5 | NOT IMPLEMENTED | the UA style sheet has no `[inert] { interactivity: inert }` rule (the inertness does not use the `interactivity` property), so the computed value of an inert element is `auto` |
-| [`interactivity-inert-html-attribute-ua.html`](https://wpt.fyi/results/css/css-ui/interactivity-inert-html-attribute-ua.html) | Fail | 1 / 4 | NOT IMPLEMENTED | the UA style sheet rule `[inert] { interactivity: inert }` |
-| [`interactivity-inert-modal-dialog-ua.html`](https://wpt.fyi/results/css/css-ui/interactivity-inert-modal-dialog-ua.html) | Fail | 2 / 5 | NOT IMPLEMENTED | the UA style sheet rules setting `interactivity: inert` for `[inert]` and outside a modal dialog |
+| [`interactivity-inert-click.html`](https://wpt.fyi/results/css/css-ui/interactivity-inert-click.html) | Pass | 2 / 2 |  |  |
+| [`interactivity-inert-find.html`](https://wpt.fyi/results/css/css-ui/interactivity-inert-find.html) | Fail | 0 / 3 | NOT IMPLEMENTED | `window.find()` |
+| [`interactivity-inert-focus.html`](https://wpt.fyi/results/css/css-ui/interactivity-inert-focus.html) | Pass | 3 / 3 |  |  |
+| [`interactivity-inert-fullscreen-ua.html`](https://wpt.fyi/results/css/css-ui/interactivity-inert-fullscreen-ua.html) | Pass | 5 / 5 |  |  |
+| [`interactivity-inert-html-attribute-ua.html`](https://wpt.fyi/results/css/css-ui/interactivity-inert-html-attribute-ua.html) | Pass | 4 / 4 |  |  |
+| [`interactivity-inert-modal-dialog-ua.html`](https://wpt.fyi/results/css/css-ui/interactivity-inert-modal-dialog-ua.html) | Pass | 5 / 5 |  |  |
 | [`outline-017.html`](https://wpt.fyi/results/css/css-ui/outline-017.html) | Pass | 3 / 3 |  |  |
 | [`outline-018.html`](https://wpt.fyi/results/css/css-ui/outline-018.html) | Pass | 1 / 1 |  |  |
 | [`parsing/box-sizing-computed.html`](https://wpt.fyi/results/css/css-ui/parsing/box-sizing-computed.html) | Pass | 2 / 2 |  |  |
@@ -73,7 +73,7 @@ description: "The results of the web-platform-tests of css/css-ui, and why the t
 | [`parsing/caret-color-computed.html`](https://wpt.fyi/results/css/css-ui/parsing/caret-color-computed.html) | Pass | 9 / 9 |  |  |
 | [`parsing/caret-color-invalid.html`](https://wpt.fyi/results/css/css-ui/parsing/caret-color-invalid.html) | Pass | 17 / 17 |  |  |
 | [`parsing/caret-color-valid.html`](https://wpt.fyi/results/css/css-ui/parsing/caret-color-valid.html) | Pass | 12 / 12 |  |  |
-| [`parsing/cursor-computed.html`](https://wpt.fyi/results/css/css-ui/parsing/cursor-computed.html) | Fail | 36 / 39 | BUG | gradients are rejected as `cursor` images (the webref grammar only accepts `<url>`/`<url-set>`, the test expects any `<image>`) |
+| [`parsing/cursor-computed.html`](https://wpt.fyi/results/css/css-ui/parsing/cursor-computed.html) | Fail | 36 / 39 | TEST BUG | expects gradients to be valid `cursor` images, which css/css-ui/parsing/cursor-invalid.html rejects (the grammar only accepts `<url>`/`<url-set>`), and two of its expected values are malformed (a missing parenthesis, `pointer` instead of `crosshair`) |
 | [`parsing/cursor-invalid.html`](https://wpt.fyi/results/css/css-ui/parsing/cursor-invalid.html) | Pass | 10 / 10 |  |  |
 | [`parsing/cursor-valid.html`](https://wpt.fyi/results/css/css-ui/parsing/cursor-valid.html) | Pass | 46 / 46 |  |  |
 | [`parsing/field-sizing-computed.html`](https://wpt.fyi/results/css/css-ui/parsing/field-sizing-computed.html) | Pass | 2 / 2 |  |  |
@@ -1082,7 +1082,7 @@ description: "The results of the web-platform-tests of css/css-ui, and why the t
 | [`outline-svg-g-001.html`](https://wpt.fyi/results/css/css-ui/outline-svg-g-001.html) | Pass | 1 / 1 |  |  |
 | [`outline-svg-g-auto-001.html`](https://wpt.fyi/results/css/css-ui/outline-svg-g-auto-001.html) | Pass | 1 / 1 |  |  |
 | [`outline-svg-nested-svg-001.html`](https://wpt.fyi/results/css/css-ui/outline-svg-nested-svg-001.html) | Pass | 1 / 1 |  |  |
-| [`outline-with-padding-001.html`](https://wpt.fyi/results/css/css-ui/outline-with-padding-001.html) | Fail | 0 / 1 | BUG | the `outline: auto` of a block container is painted around its border box only: it does not enclose the inline content that overflows the box (a 65px inline-block in a content box of 50px), where the reference (and Chrome) has the outline around the box and its overflowing line (15px wider) |
+| [`outline-with-padding-001.html`](https://wpt.fyi/results/css/css-ui/outline-with-padding-001.html) | Fail | 0 / 1 | BUG | the focus ring of the block container encloses its overflowing line as in the reference, but the block is 3px lower than the inline-block of the reference: the corners of the two rings that touch differ (20 pixels) |
 | [`pointer-events-no-scrollbars-001.html`](https://wpt.fyi/results/css/css-ui/pointer-events-no-scrollbars-001.html) | Pass | 1 / 1 |  |  |
 | [`pointer-events-no-scrollbars-002.html`](https://wpt.fyi/results/css/css-ui/pointer-events-no-scrollbars-002.html) | Pass | 1 / 1 |  |  |
 | [`resize-change-margin.html`](https://wpt.fyi/results/css/css-ui/resize-change-margin.html) | Pass | 1 / 1 |  |  |

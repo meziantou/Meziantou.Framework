@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of css/fill-stroke, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 3 | 8 | 0 | 38% |
+| [Stable](#stable-tests) | 4 | 8 | 0 | 50% |
 | [Tentative](#tentative-tests) | 0 | 2 | 0 | 0% |
 | [Reftests](#reftests) | 1 | 1 | 0 | 100% |
-| **All** | **4** | **11** | **0** | **36%** |
+| **All** | **5** | **11** | **0** | **45%** |
 
 ## Stable tests
 
@@ -25,7 +25,7 @@ description: "The results of the web-platform-tests of css/fill-stroke, and why 
 | [`text-decoration-fill/text-decoration-fill-valid.svg`](https://wpt.fyi/results/css/fill-stroke/text-decoration-fill/text-decoration-fill-valid.svg) | Fail | 0 / 7 | NOT IMPLEMENTED | the `text-decoration-fill` property |
 | [`text-decoration-stroke/text-decoration-stroke-invalid.svg`](https://wpt.fyi/results/css/fill-stroke/text-decoration-stroke/text-decoration-stroke-invalid.svg) | Pass | 5 / 5 |  |  |
 | [`text-decoration-stroke/text-decoration-stroke-valid.svg`](https://wpt.fyi/results/css/fill-stroke/text-decoration-stroke/text-decoration-stroke-valid.svg) | Fail | 0 / 7 | NOT IMPLEMENTED | the `text-decoration-stroke` property |
-| [`webkit-text-stroke-computed.html`](https://wpt.fyi/results/css/fill-stroke/webkit-text-stroke-computed.html) | Fail | 2 / 3 | BUG | the computed `-webkit-text-stroke` shorthand omits the default `0px` width |
+| [`webkit-text-stroke-computed.html`](https://wpt.fyi/results/css/fill-stroke/webkit-text-stroke-computed.html) | Pass | 3 / 3 |  |  |
 
 ## Tentative tests
 

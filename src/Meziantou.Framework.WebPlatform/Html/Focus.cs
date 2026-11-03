@@ -514,12 +514,16 @@ internal static class FocusModel
     /// subtree of the dialog (the dialog escapes the inertness of its ancestors). As in the browsers, the nodes of the
     /// document of an inert navigable container are not inert: the hit testing and the sequential focus navigation do not
     /// enter the container, but the scripts of the document can focus its elements, and the sequential focus navigation
-    /// moves within the document and leaves it.
+    /// moves within the document and leaves it. An element whose <c>interactivity</c> is <c>inert</c>
+    /// (https://drafts.csswg.org/css-ui-4/#inertness) is inert too, as the nodes it contains.
     /// </summary>
     public static bool IsInert(Node node)
     {
         if (node is Document)
             return false;
+
+        if (node.IsConnected && (node as Element ?? HtmlElement.GetFlatTreeParent(node) as Element) is { } styled && styled.NodeDocument.GetStyleEngine().GetStyle(styled).GetComputedValue("interactivity") == "inert")
+            return true;
 
         var modalDialog = node.IsConnected ? node.NodeDocument.GetBlockingModalDialog() : null;
         for (Node? current = node; current is not null; current = HtmlElement.GetFlatTreeParent(current))

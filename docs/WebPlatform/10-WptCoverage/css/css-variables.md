@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of css/css-variables, and wh
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 60 | 63 | 0 | 95% |
+| [Stable](#stable-tests) | 61 | 63 | 0 | 97% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 183 | 183 | 0 | 100% |
-| **All** | **243** | **246** | **0** | **99%** |
+| **All** | **244** | **246** | **0** | **99%** |
 
 ## Stable tests
 
@@ -75,7 +75,7 @@ description: "The results of the web-platform-tests of css/css-variables, and wh
 | [`variable-substitution-replaced-size.html`](https://wpt.fyi/results/css/css-variables/variable-substitution-replaced-size.html) | Pass | 6 / 6 |  |  |
 | [`variable-substitution-shadow-properties.html`](https://wpt.fyi/results/css/css-variables/variable-substitution-shadow-properties.html) | Pass | 3 / 3 |  |  |
 | [`variable-substitution-shorthands.html`](https://wpt.fyi/results/css/css-variables/variable-substitution-shorthands.html) | Pass | 51 / 51 |  |  |
-| [`variable-substitution-variable-declaration.html`](https://wpt.fyi/results/css/css-variables/variable-substitution-variable-declaration.html) | Fail | 30 / 31 | BUG | a custom property in a dependency cycle through a `var()` with fallback (`--varC: var(--varB, 13px)`) is not made invalid |
+| [`variable-substitution-variable-declaration.html`](https://wpt.fyi/results/css/css-variables/variable-substitution-variable-declaration.html) | Pass | 31 / 31 |  |  |
 | [`variable-transitions-transition-property-all-before-value.html`](https://wpt.fyi/results/css/css-variables/variable-transitions-transition-property-all-before-value.html) | Pass | 4 / 4 |  |  |
 | [`variable-transitions-value-before-transition-property-all.html`](https://wpt.fyi/results/css/css-variables/variable-transitions-value-before-transition-property-all.html) | Pass | 4 / 4 |  |  |
 | [`variables-animation-math-functions.html`](https://wpt.fyi/results/css/css-variables/variables-animation-math-functions.html) | Pass | 36 / 36 |  |  |

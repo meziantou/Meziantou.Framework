@@ -92,6 +92,11 @@ public sealed class FontFaceDescriptors
     /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontfacedescriptors-linegapoverride"/>
     [IdlMember("lineGapOverride", "https://drafts.csswg.org/css-font-loading/#dom-fontfacedescriptors-linegapoverride")]
     public string LineGapOverride { get; init; } = "normal";
+
+    /// <summary>Gets the value of the <c>size-adjust</c> descriptor of the font face.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-fonts-5/#size-adjust-desc"/>
+    [IdlMember("sizeAdjust", "https://drafts.csswg.org/css-fonts-5/#size-adjust-desc")]
+    public string SizeAdjust { get; init; } = "100%";
 }
 
 /// <summary>
@@ -253,6 +258,21 @@ public sealed class FontFace
 
         return "";
     }
+
+    /// <summary>Gets the features of the font face.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontface-features"/>
+    [IdlMember("features", "https://drafts.csswg.org/css-font-loading/#dom-fontface-features")]
+    public FontFaceFeatures Features { get; } = new();
+
+    /// <summary>Gets the variation axes of the font face: the axes of the font once it is loaded.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontface-variations"/>
+    [IdlMember("variations", "https://drafts.csswg.org/css-font-loading/#dom-fontface-variations")]
+    public FontFaceVariations Variations { get; } = new();
+
+    /// <summary>Gets the color palettes of the font face.</summary>
+    /// <seealso href="https://drafts.csswg.org/css-font-loading/#dom-fontface-palettes"/>
+    [IdlMember("palettes", "https://drafts.csswg.org/css-font-loading/#dom-fontface-palettes")]
+    public FontFacePalettes Palettes { get; } = new();
 
     /// <summary>The font file of the font face when it is loaded (decoded and validated by the managed font reader), else null.</summary>
     internal FontFile? FontFile { get; private set; }
@@ -465,7 +485,7 @@ public sealed class FontFace
             ("ascentOverride", descriptors.AscentOverride),
             ("descentOverride", descriptors.DescentOverride),
             ("lineGapOverride", descriptors.LineGapOverride),
-            ("sizeAdjust", "100%"),
+            ("sizeAdjust", descriptors.SizeAdjust),
         };
 
         _values["family"] = ParseFamily(family);
@@ -628,6 +648,7 @@ public sealed class FontFace
     private void SetLoaded(FontFile file)
     {
         FontFile = file;
+        Variations.SetAxes(file);
         Status = FontFaceLoadStatus.Loaded;
         InvalidateFontSelectors();
         _fontStatusPromise.TrySetResult(this);

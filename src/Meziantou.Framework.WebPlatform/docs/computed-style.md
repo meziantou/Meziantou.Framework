@@ -61,7 +61,10 @@ value (e.g. `(color: 1.0)`, `(resolution: -1dpi)`) or a function is a `<general-
 specified (e.g. `(--foo: bar)`), but evaluates to unknown (it never matches, and neither does its negation). The `scan`
 feature only applies to the `tv` devices: it never matches. The environment variables (`env()`) can be used in the values
 of the media features (e.g. `(width > env(safe-area-inset-left))`). The `@custom-media` rules are parsed and exposed in the
-CSSOM (`CSSCustomMediaRule`), but the custom media queries (`(--name)`) are not resolved: they evaluate to unknown. `window.screen` is the viewport of the top-level
+CSSOM (`CSSCustomMediaRule`), and the references to the custom media queries (`(--name)`) in the media queries of the
+style sheets (`@media`, `@import`) evaluate to the query of the last `@custom-media` rule with that name (in any style
+sheet of the tree, whatever its conditions); they are false when the name is not defined or is in a cycle, and in the
+other media queries (`matchMedia()`, the `media` attributes). `window.screen` is the viewport of the top-level
 browsing context (with a color depth of 24), and `window.devicePixelRatio` is `ViewportOptions.DevicePixelRatio` (multiplied by the effective `zoom` of the
 `iframe` of a nested browsing context).
 
@@ -131,7 +134,8 @@ browsing context (with a color depth of 24), and `window.devicePixelRatio` is `V
   the technologies of the browsers: `features-opentype`, `color-COLRv0`, `color-COLRv1`, `color-sbix`, `color-CBDT`,
   `variations` and `palettes`), `@container` (see [Container queries](#container-queries)).
 - **Scoping and nesting**: `@scope` (with or without prelude, scoping limits, `:scope` and `&`, nested `@scope` rules,
-  the shadow host as scoping root in a shadow tree), `@import ... scope()` (the rules of the imported style sheet are
+  the shadow host as scoping root in a shadow tree; the `@keyframes`, `@page`, `@position-try` and `@property` rules in a
+  `@scope` rule are parsed as in the style sheet, and are not scoped), `@import ... scope()` (the rules of the imported style sheet are
   scoped like a `@scope` rule), nested style rules and
   nested declarations (`&`), `@starting-style` (the starting style of the transitions, see
   [Animations and transitions](#animations-and-transitions)).
@@ -506,7 +510,10 @@ like the imported style sheets (`DocumentRequest.Initiator` is null), when the d
 - `zoom` computes to a number: a percentage is converted, and the legacy `normal` keyword and `0` compute to `1` (as in the
   browsers).
 - Colors are computed (named colors, system colors in light and dark color schemes or of the palette of the
-  [forced colors mode](#forced-colors-mode), `light-dark()`, `color-mix()` in the
+  [forced colors mode](#forced-colors-mode); outside of the forced colors mode, `AccentColor` is the `accent-color` of the
+  element and `AccentColorText` the contrast color of it, when it is not `auto`: https://drafts.csswg.org/css-ui-4/#widget-accent,
+  `accent-color: AccentColor` is the accent color of the parent and the `currentcolor` of `accent-color` in the `color` of
+  the same element is the color of the parent, also for the colors of a canvas; `light-dark()`, `color-mix()` in the
   sRGB, linear sRGB, XYZ, Lab, LCH, Oklab and Oklch color spaces, `contrast-color()`, which is white or black, whichever has
   the higher WCAG 2.1 contrast ratio); the resolved value of a color is its used value (`currentcolor` is resolved). The
   relative color syntax is kept as specified. `light-dark()` of images computes to the image of the used color scheme
@@ -908,7 +915,10 @@ rejected, even when it starts with a font signature. The request URL modifiers o
 [Bundled fonts](layout.md#bundled-fonts)), matched by their full name or PostScript name (e.g. `local(Ahem)`,
 `local("Tinos Bold")`), else the fonts installed by the host, and the fonts installed on the machine when
 `BrowsingContextOptions.UseSystemFonts` is set (see [System fonts](layout.md#system-fonts)). A font face created from binary data is
-loaded when its data is a valid font file.
+loaded when its data is a valid font file. The `sizeAdjust` member of the descriptors of the constructor sets the
+`size-adjust` descriptor (the IDL of webref omits it, see `AddFontFaceDescriptorsSizeAdjust` of SpecGen). `FontFace.Variations`
+is the set of the variation axes of the `fvar` table of the font once it is loaded (empty before); `Features` has no member
+and `Palettes` is empty (the `CPAL` table is not exposed).
 
 ```csharp
 var face = new FontFace("My Font", "url(my-font.woff2) format(woff2)");
@@ -999,7 +1009,9 @@ the search, the target element and the restrictions). The highlight pseudo-eleme
 - The applicable properties without a cascaded value (or with `inherit` or `unset`) inherit from the same highlight
   pseudo-element of the parent element in the flat tree, whether they are inherited properties or not. The highlight
   pseudo-elements of the root element inherit `currentcolor` as `color`, and the initial values. The custom properties
-  inherit from the originating element.
+  inherit from the originating element. A `color` that depends on `currentcolor` (e.g. a `color-mix()`) is kept unresolved
+  in the computed value, as a bare `currentcolor`: it is inherited as specified and resolved against the color of each
+  originating element.
 - `currentcolor` is the computed value of `color` when it is specified or inherited, and its used value is the color of
   the originating element (there are no highlight overlays below it).
 - `::highlight(*)` matches every custom highlight, with a zero specificity (`::highlight(\*)` is the highlight named `*`).
@@ -1271,7 +1283,7 @@ contents of a replaced element or a form control, and it is not a never-rendered
 - `UIEvent.pseudoTarget` (https://github.com/w3c/uievents/pull/413, implemented by Blink): the pointer events, the
   compatibility mouse events, `click`, `auxclick`, `dblclick` and `contextmenu` of a pointer that hits the box of a
   pseudo-element represented by a `CSSPseudoElement` have it as their `pseudoTarget` (their target is its originating
-  element), except the boundary events (`*over`, `*out`, `*enter`, `*leave`). The `pseudoTarget` of a mouse event and of a
+  element; the `::marker` of a `::before` or `::after` is a sub-pseudo-element of it), except the boundary events (`*over`, `*out`, `*enter`, `*leave`). The `pseudoTarget` of a mouse event and of a
   click is null when the pseudo-element has no box in the box tree when it is fired (e.g. a listener of the press hid it and a
   layout was computed), and the one of a click is the nearest common ancestor of the pseudo-elements of the press and of the
   release. As specified, `pseudoTarget` is null outside of the dispatch and for the listeners the originating element is
@@ -1439,7 +1451,10 @@ The computed values include the effects of the CSS animations, the CSS transitio
   round-trip the matrices that have a skew); `translate`, `rotate` (the rotations around different axes by their
   quaternions, a rotation of more than half a turn being the equivalent rotation in the other direction, like the
   quaternion of its matrix) and `scale`, the shadow lists, the filter lists,
-  `d` and `path()` (with the same reference box), the basic shapes with the same function (the omitted offsets and radii of
+  `d` and `path()` (with the same reference box), a `path()` with a `shape()` (the path is converted to the equivalent
+  `shape()`, its relative commands being `by` commands: the computed `path()` of `clip-path` and `offset-path` keeps its
+  relative commands; the `cw` and `large` options of the arcs are set when their interpolated value is greater than 0),
+  `dynamic-range-limit` (by `dynamic-range-limit-mix()`), the basic shapes with the same function (the omitted offsets and radii of
   `inset()` and the rounding of `polygon()` are restored before, `CssValueNormalizer`; a `circle()` or an `ellipse()` with a
   keyword radius is discrete), `aspect-ratio` (by logarithm), the `corner-*-shape` properties (the superellipse parameters by their
   normalized superellipse half corner, [CSS Borders 4](https://drafts.csswg.org/css-borders-4/#corner-shape-interpolation):
@@ -1467,15 +1482,19 @@ The computed values include the effects of the CSS animations, the CSS transitio
   declarations, the implicit keyframes at `0%` and `100%` (the underlying value), the animation properties (the matching
   of the running animations by name, `animation-play-state`, the values overridden by script are kept), the
   `CSSAnimation` objects and the `animationstart`, `animationiteration`, `animationend` and `animationcancel` events. An
-  element that is not rendered (`display: none` on it or an ancestor) has no animations; an animation of `display` does
-  not cancel itself.
+  element that is not rendered (`display: none` on it or an ancestor, or a `::before`/`::after` whose `content` is `none`)
+  has no animations; an animation of `display` does not cancel itself. The CSS animations and transitions of an element
+  are canceled when it is removed from the document, even when it is inserted again before the next style update
+  (re-parented).
 - **CSS transitions** ([CSS Transitions](https://drafts.csswg.org/css-transitions-1/)): a transition starts when the
   computed value of a property changes between the before-change style and the after-change style, with reversing and
   shortening, `transition-behavior: allow-discrete`, the starting style of `@starting-style` (when the element had no
   style, or was not rendered), the `CSSTransition` objects and the `transitionrun`, `transitionstart`, `transitionend`
   and `transitioncancel` events. A transition of `display` to `none` keeps the element rendered until it ends. The starting
-  style inherits from the after-change style of the parent. A value inherited from a transitioning ancestor does not start a
+  style inherits from the after-change style of the parent; a starting style that is not rendered (`display: none` in
+  `@starting-style`) starts no transition. A value inherited from a transitioning ancestor does not start a
   transition, unless the element did not inherit it before the change (its declaration changed to `inherit`).
+  `transition-property: all` includes the registered custom properties (except the ones of the universal syntax `*`).
 - **Before-change styles**: the styles are computed lazily, so when the document declares transitions or animations, the
   styles of the elements are kept when they are invalidated (they are the before-change styles), and the styles of all the
   elements are computed at the next style read or animation frame (the ones that were not invalidated are reused, see

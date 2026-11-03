@@ -150,13 +150,13 @@
     "total": 1
   },
   "css/css-tables/col-definite-max-size-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-tables/col-definite-min-size-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-tables/col-definite-size-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-tables/col_removal.html": {
     "total": 1
@@ -443,11 +443,7 @@
     "total": 2
   },
   "css/css-tables/parsing/border-spacing-computed.html": {
-    "total": 4,
-    "failures": {
-      "Property border-spacing value 'calc(10px + 0.5em) calc(10px - 0.5em)'": "FAIL",
-      "Property border-spacing value 'calc(10px - 0.5em) calc(10px + 0.5em)'": "FAIL"
-    }
+    "total": 4
   },
   "css/css-tables/parsing/border-spacing-invalid.html": {
     "total": 4

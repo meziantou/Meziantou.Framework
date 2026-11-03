@@ -87,6 +87,7 @@ internal sealed partial class InlineLayoutAlgorithm
         _hasClonedEdges = false;
         _hasPercentageEdges = false;
         _opportunitiesComputed = false;
+        _wrapAvoidDepthsComputed = false;
         if (TryRestoreItemsData())
             return;
 
@@ -193,6 +194,15 @@ internal sealed partial class InlineLayoutAlgorithm
             return;
         }
 
+        // https://drafts.csswg.org/css-text-4/#white-space-trim: white-space-trim applies to the inline boxes and to the block
+        // containers: discard-before and discard-after of an inline-block trim the white space around it (not the ones of the
+        // replaced elements nor of the other atomic inlines, WPT css/css-text/white-space/white-space-trim-inline-block.html)
+        var atomicWhiteSpaceTrim = box.IsBlockContainer ? box.Style.Layout.Text.WhiteSpaceTrim : WhiteSpaceTrim.None;
+        if ((atomicWhiteSpaceTrim & WhiteSpaceTrim.DiscardBefore) != WhiteSpaceTrim.None)
+        {
+            DiscardTrailingWhiteSpace(collapsibleOnly: true);
+        }
+
         // An atomic inline (https://drafts.csswg.org/css-display/#atomic-inline) is laid out as a unit, before the line breaking
         var (fragment, minContentInlineSize, inlineSize) = LayoutAtomicOrFloat(box);
         var start = _length;
@@ -214,7 +224,7 @@ internal sealed partial class InlineLayoutAlgorithm
         _hasLetterSpacedAtomics |= container.Style.Layout.Text.LetterSpacing != 0;
         _afterCollapsibleSpace = false;
         _inWord = false;
-        _discardLeadingWhiteSpace = WhiteSpaceDiscard.None;
+        _discardLeadingWhiteSpace = (atomicWhiteSpaceTrim & WhiteSpaceTrim.DiscardAfter) != WhiteSpaceTrim.None ? WhiteSpaceDiscard.Collapsible : WhiteSpaceDiscard.None;
     }
 
     /// <summary>

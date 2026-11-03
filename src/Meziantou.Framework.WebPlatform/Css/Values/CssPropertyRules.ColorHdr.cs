@@ -25,6 +25,16 @@ internal static partial class CssPropertyRules
         if (EvaluateDynamicRangeLimit(component) is not { } weights)
             return "no-limit";
 
+        return SerializeDynamicRangeLimit(weights);
+    }
+
+    /// <summary>Returns the fractions of standard, constrained and no-limit of a computed dynamic-range-limit, or null when the value is not valid.</summary>
+    public static double[]? GetDynamicRangeLimitWeights(string value)
+        => ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(value)) is [var component] ? EvaluateDynamicRangeLimit(component) : null;
+
+    /// <summary>Serializes the fractions of standard, constrained and no-limit as a computed dynamic-range-limit (see <see cref="ComputeDynamicRangeLimit"/>).</summary>
+    public static string SerializeDynamicRangeLimit(double[] weights)
+    {
         var parameters = new List<string>(DynamicRangeLimitKeywords.Length);
         for (var i = 0; i < DynamicRangeLimitKeywords.Length; i++)
         {

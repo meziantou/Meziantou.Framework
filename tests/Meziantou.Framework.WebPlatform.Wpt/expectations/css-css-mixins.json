@@ -69,12 +69,7 @@
     "total": 8
   },
   "css/css-mixins/functions/function-shadow-animations.html": {
-    "total": 3,
-    "failures": {
-      "Can animate standard property in shadow": "FAIL",
-      "Can animate typed custom property in shadow": "FAIL",
-      "Can animate untyped custom property in shadow": "FAIL"
-    }
+    "total": 3
   },
   "css/css-mixins/functions/function-shadow-cache.html": {
     "total": 1

@@ -845,7 +845,10 @@ internal sealed partial class ComputedStyle
             if (Environment.ForcedColors && IsForcedColorsAdjusted)
                 return GetForcedHighlightColor(color, originating);
 
-            return color == "currentcolor" ? originating.GetUsedColor() : color;
+            if (color == "currentcolor")
+                return originating.GetUsedColor();
+
+            return color.Contains("currentcolor", StringComparison.Ordinal) ? CssValueComputer.ResolveCurrentColor(this, "color", color, originating.GetUsedColor()) : color;
         }
 
         // https://drafts.csswg.org/css-color-adjust-1/#forced-colors-properties: the color is forced at used-value time
@@ -863,6 +866,10 @@ internal sealed partial class ComputedStyle
         {
             value = string.Join(' ', CssValueComputer.SplitComponents(value).Select(part => part == "auto" ? "currentcolor" : part));
         }
+
+        // The currentcolor of the color of a highlight pseudo-element is the color of its originating element
+        if (physical == "color" && IsHighlight)
+            return GetUsedColor();
 
         return value.Contains("currentcolor", StringComparison.Ordinal) ? CssValueComputer.ResolveCurrentColor(this, physical, value, GetUsedColor()) : value;
     }

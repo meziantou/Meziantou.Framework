@@ -205,13 +205,33 @@ public sealed partial class UserInput
         {
             if (hit.Target is null)
             {
-                pseudoElement = hit.Fragment.Box?.PseudoElement;
+                pseudoElement = GetHitPseudoElement(hit.Fragment.Box);
             }
 
             return hit.Element;
         }
 
         return document.DocumentElement;
+    }
+
+    /// <summary>
+    /// Returns the name of the pseudo-element of a hit box: the boxes of the <c>::marker</c> of a <c>::before</c> or
+    /// <c>::after</c> pseudo-element have the name of their pseudo-element, and the style of the marker
+    /// (<c>before::marker</c>), which is the name of the hit sub-pseudo-element.
+    /// </summary>
+    private static string? GetHitPseudoElement(Css.Layout.LayoutBox? box)
+    {
+        var name = box?.PseudoElement;
+        if (name is not ("before" or "after"))
+            return name;
+
+        for (var current = box; current is not null && current.PseudoElement == name; current = current.Parent)
+        {
+            if (current.Style.PseudoElement is { } stylePseudoElement && stylePseudoElement.Length == name.Length + "::marker".Length && stylePseudoElement.StartsWith(name, StringComparison.Ordinal) && stylePseudoElement.EndsWith("::marker", StringComparison.Ordinal))
+                return stylePseudoElement;
+        }
+
+        return name;
     }
 
     /// <summary>Whether a point of the viewport of the top-level browsing context is on a scrollbar of the scroll container <paramref name="element"/> (between its border and its padding box).</summary>

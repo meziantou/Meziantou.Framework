@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of css/css-sizing, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 192 | 201 | 0 | 96% |
+| [Stable](#stable-tests) | 199 | 201 | 0 | 99% |
 | [Tentative](#tentative-tests) | 7 | 7 | 0 | 100% |
-| [Reftests](#reftests) | 553 | 569 | 0 | 97% |
-| **All** | **752** | **777** | **0** | **97%** |
+| [Reftests](#reftests) | 564 | 569 | 0 | 99% |
+| **All** | **770** | **777** | **0** | **99%** |
 
 ## Stable tests
 
@@ -24,7 +24,7 @@ description: "The results of the web-platform-tests of css/css-sizing, and why t
 | [`animation/aspect-ratio-interpolation-sideways-rl.html`](https://wpt.fyi/results/css/css-sizing/animation/aspect-ratio-interpolation-sideways-rl.html) | Pass | 40 / 40 |  |  |
 | [`animation/aspect-ratio-interpolation-vertical-lr.html`](https://wpt.fyi/results/css/css-sizing/animation/aspect-ratio-interpolation-vertical-lr.html) | Pass | 40 / 40 |  |  |
 | [`animation/aspect-ratio-interpolation-vertical-rl.html`](https://wpt.fyi/results/css/css-sizing/animation/aspect-ratio-interpolation-vertical-rl.html) | Pass | 40 / 40 |  |  |
-| [`animation/aspect-ratio-interpolation.html`](https://wpt.fyi/results/css/css-sizing/animation/aspect-ratio-interpolation.html) | Fail | 245 / 249 | BUG | the composition of `aspect-ratio` (which is not additive) with `add` keyframes gives wrong values |
+| [`animation/aspect-ratio-interpolation.html`](https://wpt.fyi/results/css/css-sizing/animation/aspect-ratio-interpolation.html) | Pass | 249 / 249 |  |  |
 | [`animation/box-sizing-no-interpolation.html`](https://wpt.fyi/results/css/css-sizing/animation/box-sizing-no-interpolation.html) | Pass | 42 / 42 |  |  |
 | [`animation/height-composition.html`](https://wpt.fyi/results/css/css-sizing/animation/height-composition.html) | Pass | 60 / 60 |  |  |
 | [`animation/height-interpolation.html`](https://wpt.fyi/results/css/css-sizing/animation/height-interpolation.html) | Pass | 438 / 438 |  |  |
@@ -156,13 +156,13 @@ description: "The results of the web-platform-tests of css/css-sizing, and why t
 | [`replaced-min-width-greater-than-max-width.html`](https://wpt.fyi/results/css/css-sizing/replaced-min-width-greater-than-max-width.html) | Pass | 1 / 1 |  |  |
 | [`responsive-iframe/parsing/frame-sizing-computed.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/parsing/frame-sizing-computed.html) | Pass | 5 / 5 |  |  |
 | [`responsive-iframe/parsing/frame-sizing-valid.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/parsing/frame-sizing-valid.html) | Pass | 5 / 5 |  |  |
-| [`responsive-iframe/responsive-iframe-allow-origins.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-allow-origins.html) | Fail | 14 / 25 | NOT IMPLEMENTED | responsive iframes (`frame-sizing`, `requestResize()`) |
-| [`responsive-iframe/responsive-iframe-dom-content-loaded.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-dom-content-loaded.html) | Error | 0 / 1 | NOT IMPLEMENTED | responsive iframes (`frame-sizing`, `requestResize()`) |
-| [`responsive-iframe/responsive-iframe-icb.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-icb.html) | Fail | 0 / 1 | NOT IMPLEMENTED | responsive iframes (`frame-sizing`, `requestResize()`) |
-| [`responsive-iframe/responsive-iframe-navigation-unsized.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-navigation-unsized.html) | Fail | 0 / 2 | NOT IMPLEMENTED | responsive iframes (`frame-sizing`, `requestResize()`) |
-| [`responsive-iframe/responsive-iframe-navigation.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-navigation.html) | Error | 0 / 2 | NOT IMPLEMENTED | responsive iframes (`frame-sizing`, `requestResize()`) |
-| [`responsive-iframe/responsive-iframe-request-resize-error.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-request-resize-error.html) | Fail | 0 / 2 | NOT IMPLEMENTED | responsive iframes (`frame-sizing`, `requestResize()`) |
-| [`responsive-iframe/responsive-iframe-value.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-value.html) | Fail | 1 / 14 | NOT IMPLEMENTED | responsive iframes (`frame-sizing`, `requestResize()`) |
+| [`responsive-iframe/responsive-iframe-allow-origins.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-allow-origins.html) | Pass | 25 / 25 |  |  |
+| [`responsive-iframe/responsive-iframe-dom-content-loaded.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-dom-content-loaded.html) | Pass | 1 / 1 |  |  |
+| [`responsive-iframe/responsive-iframe-icb.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-icb.html) | Pass | 1 / 1 |  |  |
+| [`responsive-iframe/responsive-iframe-navigation-unsized.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-navigation-unsized.html) | Pass | 2 / 2 |  |  |
+| [`responsive-iframe/responsive-iframe-navigation.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-navigation.html) | Error | 1 / 2 | BUG | the cross-origin variant: the iframe forgets the size of its contents when it navigates to another origin (150px), but the parser does not yield to a rendering update after the script of the new document that blocks for 0.5 s (`slow.js`), so the `ResizeObserver` never observes the 150px before the new document is measured (400px): the heights are `[200, 400]` instead of `[200, 150, 400]` |
+| [`responsive-iframe/responsive-iframe-request-resize-error.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-request-resize-error.html) | Pass | 2 / 2 |  |  |
+| [`responsive-iframe/responsive-iframe-value.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-value.html) | Pass | 14 / 14 |  |  |
 | [`stretch/aspect-ratio-1.html`](https://wpt.fyi/results/css/css-sizing/stretch/aspect-ratio-1.html) | Pass | 4 / 4 |  |  |
 | [`stretch/aspect-ratio-2.html`](https://wpt.fyi/results/css/css-sizing/stretch/aspect-ratio-2.html) | Pass | 18 / 18 |  |  |
 | [`stretch/auto-margins-1.html`](https://wpt.fyi/results/css/css-sizing/stretch/auto-margins-1.html) | Pass | 2 / 2 |  |  |
@@ -493,7 +493,7 @@ description: "The results of the web-platform-tests of css/css-sizing, and why t
 | [`aspect-ratio/replaced-element-032.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/replaced-element-032.html) | Pass | 1 / 1 |  |  |
 | [`aspect-ratio/replaced-element-033.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/replaced-element-033.html) | Pass | 1 / 1 |  |  |
 | [`aspect-ratio/replaced-element-034.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/replaced-element-034.html) | Pass | 1 / 1 |  |  |
-| [`aspect-ratio/replaced-element-035.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/replaced-element-035.html) | Fail | 0 / 1 | BUG | the preferred `aspect-ratio` changes the size of the `audio` elements with `controls` (300x300 instead of 300x54 for the first one), which the test expects to keep the size of their controls, as in its reference without `aspect-ratio` |
+| [`aspect-ratio/replaced-element-035.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/replaced-element-035.html) | Pass | 1 / 1 |  |  |
 | [`aspect-ratio/replaced-element-037.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/replaced-element-037.html) | Pass | 1 / 1 |  |  |
 | [`aspect-ratio/replaced-element-039.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/replaced-element-039.html) | Pass | 1 / 1 |  |  |
 | [`aspect-ratio/replaced-element-040.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/replaced-element-040.html) | Pass | 1 / 1 |  |  |
@@ -504,7 +504,7 @@ description: "The results of the web-platform-tests of css/css-sizing, and why t
 | [`aspect-ratio/replaced-element-048.tentative.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/replaced-element-048.tentative.html) | Pass | 1 / 1 |  |  |
 | [`aspect-ratio/replaced-element-049.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/replaced-element-049.html) | Pass | 1 / 1 |  |  |
 | [`aspect-ratio/replaced-element-dynamic-aspect-ratio.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/replaced-element-dynamic-aspect-ratio.html) | Pass | 1 / 1 |  |  |
-| [`aspect-ratio/select-element-001.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/select-element-001.html) | Fail | 0 / 1 | BUG | the automatic minimum size (`min-width: auto`) of a `<select>` with `aspect-ratio: 1/1` and `height: 50px` is not its content size: it stays 50px wide instead of growing to the width of its selected option (171px); the rule is only applied to the non-replaced boxes |
+| [`aspect-ratio/select-element-001.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/select-element-001.html) | Pass | 1 / 1 |  |  |
 | [`aspect-ratio/table-element-001.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/table-element-001.html) | Pass | 1 / 1 |  |  |
 | [`aspect-ratio/zero-or-infinity-001.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/zero-or-infinity-001.html) | Pass | 1 / 1 |  |  |
 | [`aspect-ratio/zero-or-infinity-002.html`](https://wpt.fyi/results/css/css-sizing/aspect-ratio/zero-or-infinity-002.html) | Pass | 1 / 1 |  |  |
@@ -747,20 +747,20 @@ description: "The results of the web-platform-tests of css/css-sizing, and why t
 | [`replaced-percent-min-width-max-content.html`](https://wpt.fyi/results/css/css-sizing/replaced-percent-min-width-max-content.html) | Pass | 1 / 1 |  |  |
 | [`responsive-iframe/responsive-iframe-cross-origin-no-match-element.sub.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-cross-origin-no-match-element.sub.html) | Pass | 1 / 1 |  |  |
 | [`responsive-iframe/responsive-iframe-cross-origin-not-embedded-sized.sub.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-cross-origin-not-embedded-sized.sub.html) | Pass | 1 / 1 |  |  |
-| [`responsive-iframe/responsive-iframe-cross-origin.sub.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-cross-origin.sub.html) | Fail | 0 / 1 | NOT IMPLEMENTED | responsive iframes (`frame-sizing: content-height` with `<meta name="responsive-embedded-sizing">` in the embedded document; tentative, only Chrome passes): the property is parsed but not used by the layout, the iframe keeps its default 150px height instead of the 400px of its document |
-| [`responsive-iframe/responsive-iframe-meta-after-head.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-meta-after-head.html) | Fail | 0 / 1 | NOT IMPLEMENTED | responsive iframes (`frame-sizing: content-height` with `<meta name="responsive-embedded-sizing">` in the embedded document; tentative, only Chrome passes): the property is parsed but not used by the layout, the iframe keeps its default 150px height instead of the 400px of its document |
+| [`responsive-iframe/responsive-iframe-cross-origin.sub.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-cross-origin.sub.html) | Pass | 1 / 1 |  |  |
+| [`responsive-iframe/responsive-iframe-meta-after-head.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-meta-after-head.html) | Pass | 1 / 1 |  |  |
 | [`responsive-iframe/responsive-iframe-meta-dynamic-append-after-body.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-meta-dynamic-append-after-body.html) | Pass | 1 / 1 |  |  |
-| [`responsive-iframe/responsive-iframe-meta-dynamic-append-to-doc.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-meta-dynamic-append-to-doc.html) | Fail | 0 / 1 | NOT IMPLEMENTED | responsive iframes (`frame-sizing: content-height` with `<meta name="responsive-embedded-sizing">` in the embedded document; tentative, only Chrome passes): the property is parsed but not used by the layout, the iframe keeps its default 150px height instead of the 400px of its document |
-| [`responsive-iframe/responsive-iframe-meta-dynamic-append.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-meta-dynamic-append.html) | Fail | 0 / 1 | NOT IMPLEMENTED | responsive iframes (`frame-sizing: content-height` with `<meta name="responsive-embedded-sizing">` in the embedded document; tentative, only Chrome passes): the property is parsed but not used by the layout, the iframe keeps its default 150px height instead of the 400px of its document |
+| [`responsive-iframe/responsive-iframe-meta-dynamic-append-to-doc.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-meta-dynamic-append-to-doc.html) | Pass | 1 / 1 |  |  |
+| [`responsive-iframe/responsive-iframe-meta-dynamic-append.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-meta-dynamic-append.html) | Pass | 1 / 1 |  |  |
 | [`responsive-iframe/responsive-iframe-meta-dynamic-name-change-after-body.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-meta-dynamic-name-change-after-body.html) | Pass | 1 / 1 |  |  |
-| [`responsive-iframe/responsive-iframe-meta-dynamic-name-change.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-meta-dynamic-name-change.html) | Fail | 0 / 1 | NOT IMPLEMENTED | responsive iframes (`frame-sizing: content-height` with `<meta name="responsive-embedded-sizing">` in the embedded document; tentative, only Chrome passes): the property is parsed but not used by the layout, the iframe keeps its default 150px height instead of the 400px of its document |
-| [`responsive-iframe/responsive-iframe-meta-dynamic-remove.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-meta-dynamic-remove.html) | Fail | 0 / 1 | NOT IMPLEMENTED | responsive iframes (`frame-sizing: content-height` with `<meta name="responsive-embedded-sizing">` in the embedded document; tentative, only Chrome passes): the property is parsed but not used by the layout, the iframe keeps its default 150px height instead of the 400px of its document |
-| [`responsive-iframe/responsive-iframe-meta-dynamic-write.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-meta-dynamic-write.html) | Fail | 0 / 1 | NOT IMPLEMENTED | responsive iframes (`frame-sizing: content-height` with `<meta name="responsive-embedded-sizing">` in the embedded document; tentative, only Chrome passes): the property is parsed but not used by the layout, the iframe keeps its default 150px height instead of the 400px of its document |
+| [`responsive-iframe/responsive-iframe-meta-dynamic-name-change.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-meta-dynamic-name-change.html) | Pass | 1 / 1 |  |  |
+| [`responsive-iframe/responsive-iframe-meta-dynamic-remove.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-meta-dynamic-remove.html) | Pass | 1 / 1 |  |  |
+| [`responsive-iframe/responsive-iframe-meta-dynamic-write.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-meta-dynamic-write.html) | Pass | 1 / 1 |  |  |
 | [`responsive-iframe/responsive-iframe-meta-in-body.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-meta-in-body.html) | Pass | 1 / 1 |  |  |
 | [`responsive-iframe/responsive-iframe-no-match-element.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-no-match-element.html) | Pass | 1 / 1 |  |  |
 | [`responsive-iframe/responsive-iframe-not-embedded-sized.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-not-embedded-sized.html) | Pass | 1 / 1 |  |  |
-| [`responsive-iframe/responsive-iframe-request-resize.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-request-resize.html) | Fail | 0 / 1 | NOT IMPLEMENTED | responsive iframes (`frame-sizing: content-height` with `<meta name="responsive-embedded-sizing">` and `window.requestResize()`, which throws: it is not defined; tentative, only Chrome passes): the iframe keeps its default 150px height instead of the 400px of its document |
-| [`responsive-iframe/responsive-iframe.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe.html) | Fail | 0 / 1 | NOT IMPLEMENTED | responsive iframes (`frame-sizing: content-height` with `<meta name="responsive-embedded-sizing">` in the embedded document; tentative, only Chrome passes): the property is parsed but not used by the layout, the iframe keeps its default 150px height instead of the 400px of its document |
+| [`responsive-iframe/responsive-iframe-request-resize.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe-request-resize.html) | Pass | 1 / 1 |  |  |
+| [`responsive-iframe/responsive-iframe.html`](https://wpt.fyi/results/css/css-sizing/responsive-iframe/responsive-iframe.html) | Pass | 1 / 1 |  |  |
 | [`shrink-to-fit-sizing-max-width-min-content.html`](https://wpt.fyi/results/css/css-sizing/shrink-to-fit-sizing-max-width-min-content.html) | Pass | 1 / 1 |  |  |
 | [`slice-intrinsic-size.html`](https://wpt.fyi/results/css/css-sizing/slice-intrinsic-size.html) | Pass | 1 / 1 |  |  |
 | [`slice-nowrap-intrinsic-size-bidi.html`](https://wpt.fyi/results/css/css-sizing/slice-nowrap-intrinsic-size-bidi.html) | Pass | 1 / 1 |  |  |

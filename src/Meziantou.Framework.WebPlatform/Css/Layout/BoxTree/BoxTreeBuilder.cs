@@ -1545,6 +1545,7 @@ internal sealed partial class BoxTreeBuilder
     {
         _text.Clear();
         var values = CssParser.ParseListOfComponentValues(content, out var input);
+        var soleImage = GetReplacementImage(style) is not null;
         foreach (var value in values)
         {
             switch (value)
@@ -1573,7 +1574,7 @@ internal sealed partial class BoxTreeBuilder
                     // An <image>: url(), image-set(), the gradients...
                     FlushContentText(parent, style, element, pseudoElement);
                     var image = input[value.Start..value.End];
-                    parent.AppendChild(new ContainerBox(ContainerBoxKind.Replaced, GetAnonymousStyle(style), Display.Inline, element, pseudoElement) { GeneratedImage = image });
+                    parent.AppendChild(new ContainerBox(ContainerBoxKind.Replaced, soleImage && !HasNaturalDimensions(image) ? GetGeneratedImageStyle(style) : GetAnonymousStyle(style), Display.Inline, element, pseudoElement) { GeneratedImage = image });
                     break;
             }
         }
@@ -2064,6 +2065,32 @@ internal sealed partial class BoxTreeBuilder
 
     /// <summary>The key of the style of the symbol of a list marker (a bullet), which letter-spacing and word-spacing do not space.</summary>
     private static readonly object MarkerSymbolStyleKey = new();
+
+    /// <summary>The key of the style of the image of a pseudo-element whose content is a single image (see <see cref="GetGeneratedImageStyle"/>).</summary>
+    private static readonly object GeneratedImageStyleKey = new();
+
+    /// <summary>
+    /// Whether an image of the generated content may have natural dimensions: it references a URL (e.g. url(), or an
+    /// image-set() of URLs), unlike a gradient.
+    /// </summary>
+    private static bool HasNaturalDimensions(string image) => image.Contains("url(", StringComparison.OrdinalIgnoreCase) || image.Contains('"', StringComparison.Ordinal) || image.Contains('\'', StringComparison.Ordinal);
+
+    /// <summary>
+    /// Returns the style of the image without natural dimensions (e.g. a gradient) of a pseudo-element whose content is a single
+    /// image. As in Blink, the image fills the pseudo-element in the dimensions that it sets, instead of having the default
+    /// object size: the image is the content of the pseudo-element (https://drafts.csswg.org/css-content-3/#valdef-content-image:
+    /// it "makes the element or pseudo-element a replaced element"). The images with natural dimensions keep them (WPT
+    /// css/css-pseudo/marker-content-012-ref.html: the image of a ::before of width 0 is painted).
+    /// </summary>
+    private ComputedStyle GetGeneratedImageStyle(ComputedStyle pseudoElementStyle)
+    {
+        // (the images of the markers have their own default object size, 1em square)
+        if (pseudoElementStyle.IsRoot || pseudoElementStyle.PseudoElement is "marker" || pseudoElementStyle.PseudoElement?.EndsWith("::marker", StringComparison.Ordinal) == true
+            || pseudoElementStyle.GetComputedValue("display") == "inline" || (pseudoElementStyle.GetComputedValue("width") == "auto" && pseudoElementStyle.GetComputedValue("height") == "auto"))
+            return GetAnonymousStyle(pseudoElementStyle);
+
+        return pseudoElementStyle.GetDerivedStyle(GeneratedImageStyleKey, _engine, static (style, engine) => engine.CreateGeneratedImageStyle(style));
+    }
 
     private ComputedStyle GetAnonymousStyle(ComputedStyle parent)
     {

@@ -256,6 +256,7 @@ internal static partial class CssPropertyRules
         ["animation"] = (ExpandAnimation, SerializeAnimation),
         ["animation-range"] = (ExpandAnimationRange, SerializeAnimationRange),
         ["scroll-timeline"] = (ExpandScrollTimeline, SerializeScrollTimeline),
+        ["pointer-timeline"] = (ExpandScrollTimeline, SerializeScrollTimeline),
         ["view-timeline"] = (ExpandViewTimeline, SerializeViewTimeline),
         ["transition"] = (ExpandTransition, SerializeTransition),
         ["mask"] = (ExpandMask, SerializeMask),

@@ -29,7 +29,9 @@ internal static class FilterEffects
         if (value is "none" or "")
             return null;
 
-        return Get(ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(value)), style, space, renderElement);
+        // https://drafts.fxtf.org/filter-effects-2/#BackdropFilterProperty: the backdrop (the source graphic of the filters) is
+        // tainted: it is what is painted below the element, e.g. cross-origin content
+        return Get(ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(value)), style, space, renderElement, taintedSource: property == "backdrop-filter");
     }
 
     /// <summary>
@@ -37,11 +39,16 @@ internal static class FilterEffects
     /// https://drafts.fxtf.org/filter-effects/#FilterCSSImageValue), or null when it is invalid or references something that is not
     /// a filter element. Without <paramref name="space"/>, the references to SVG filter elements are not supported.
     /// </summary>
-    public static DisplayFilter[]? Get(List<CssComponentValue> components, ComputedStyle style, SvgResourceSpace? space, Func<Element, Svg.SvgAffine, DisplayList?>? renderElement = null)
+    /// <param name="components">The filter functions.</param>
+    /// <param name="style">The style.</param>
+    /// <param name="space">The resource space of the element, or null.</param>
+    /// <param name="renderElement">Paints an element referenced by a feImage primitive, or null.</param>
+    /// <param name="taintedSource">Whether the source graphic is tainted (e.g. the drawing of a canvas that is not origin-clean).</param>
+    public static DisplayFilter[]? Get(List<CssComponentValue> components, ComputedStyle style, SvgResourceSpace? space, Func<Element, Svg.SvgAffine, DisplayList?>? renderElement = null, bool taintedSource = false)
     {
         var zoom = style.Layout.EffectiveZoom;
         var filters = new List<DisplayFilter>();
-        var tainted = false;
+        var tainted = taintedSource;
         foreach (var component in components)
         {
             if (component is CssPreservedToken { Type: CssTokenType.Url } || (component is CssFunction urlFunction && Infra.InfraAscii.ToAsciiLowercase(urlFunction.Name) is "url" or "src"))

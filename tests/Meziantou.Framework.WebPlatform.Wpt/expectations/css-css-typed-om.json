@@ -1533,7 +1533,8 @@
   "css/css-typed-om/the-stylepropertymap/properties/text-size-adjust.html": {
     "total": 33,
     "failures": {
-      "Can set 'text-size-adjust' to a percent: -3.14%": "FAIL"
+      "Can set 'text-size-adjust' to a percent: -3.14%": "FAIL",
+      "Can set 'text-size-adjust' to the 'none' keyword: none": "FAIL"
     }
   },
   "css/css-typed-om/the-stylepropertymap/properties/text-transform.html": {

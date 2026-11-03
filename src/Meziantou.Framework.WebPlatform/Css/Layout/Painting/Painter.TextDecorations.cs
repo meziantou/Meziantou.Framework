@@ -1180,14 +1180,40 @@ internal sealed partial class Painter
                 var center = top + amplitude;
                 var path = new DisplayPath();
                 var length = line.InlineEnd - line.InlineStart;
-                var (start, _) = GetDecorationAxis(line, center);
-                path.MoveTo(start.X, start.Y);
-                var sign = -1;
-                for (var x = 0d; x < length; x += step)
+
+                // The wave is anchored to the coordinates of the group (as the dotted and dashed lines), so the fragments of a
+                // decorating box split by its descendant inline boxes have a continuous wave (WPT
+                // css/css-text-decor/text-decoration-wavy-phase-across-elements-001.html): its first half-period may be partial
+                var period = step * 2;
+                var phase = line.InlineStart % period;
+                if (phase < 0)
                 {
-                    var control = Point(line, x + (step / 2), center + (sign * amplitude * 2));
-                    var next = Point(line, Math.Min(length, x + step), center);
-                    path.QuadTo(control.X, control.Y, next.X, next.Y);
+                    phase += period;
+                }
+
+                var first = true;
+                var sign = -1;
+                for (var x = -phase; x < length; x += step)
+                {
+                    // The half-period [x, x + step] is a quadratic curve whose inline coordinate is linear in its parameter: its
+                    // part in [0, length] is the sub-curve between the parameters of the bounds
+                    var t0 = Math.Max(0, -x / step);
+                    var t1 = Math.Min(1, (length - x) / step);
+                    if (t1 > t0)
+                    {
+                        var peak = sign * amplitude * 2;
+                        var startPoint = Point(line, x + (t0 * step), center + (2 * (1 - t0) * t0 * peak));
+                        if (first)
+                        {
+                            path.MoveTo(startPoint.X, startPoint.Y);
+                            first = false;
+                        }
+
+                        var control = Point(line, x + ((t0 + t1) / 2 * step), center + (((1 - t0) * t1 + (t0 * (1 - t1))) * peak));
+                        var next = Point(line, x + (t1 * step), center + (2 * (1 - t1) * t1 * peak));
+                        path.QuadTo(control.X, control.Y, next.X, next.Y);
+                    }
+
                     sign = -sign;
                 }
 
@@ -1594,7 +1620,7 @@ internal sealed partial class Painter
         // the font of the glyph of the mark
         var markMetrics = style.Fonts.PrimaryFont.GetMetrics(line.FontSize / 2);
         var glyphMetrics = markRun.Font.GetMetricsForEmSize(markRun.EmSize);
-        var position = style.GetComputedValue("text-emphasis-position");
+        var position = CssPropertyRules.GetUsedTextEmphasisPosition(style.GetComputedValue("text-emphasis-position"), style.Element);
         var writingDirection = fragment.WritingDirection;
         var upright = !line.Horizontal && style.Layout.HasCentralDominantBaseline;
 

@@ -156,6 +156,10 @@ internal sealed partial class ComputedStyle
         if (GetUnanimatedComputedValue("display") == "none")
             return true;
 
+        // A ::before or ::after pseudo-element whose content is none (or normal) does not exist
+        if (PseudoElement is "before" or "after" && GetUnanimatedComputedValue("content") is "none" or "normal")
+            return true;
+
         for (var style = Parent; style is not null; style = style.Parent)
         {
             if (style.GetComputedValue("display") == "none")
@@ -270,6 +274,32 @@ internal sealed partial class ComputedStyle
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Returns the tree of the declaration of the animated value of a property: the tree of the @keyframes rule of the top
+    /// effect that animates it (its tree-scoped references, e.g. a counter style name, are resolved in this tree,
+    /// https://drafts.csswg.org/css-scoping/#shadow-names). Returns false when no effect animates the property.
+    /// </summary>
+    internal bool TryGetAnimatedTreeScope(string property, out Dom.Node? treeScope)
+    {
+        treeScope = null;
+        if (_effects is not { Count: > 0 } || !MayBeAnimated(property) || GetEffectStack(property) is not { } effects)
+            return false;
+
+        for (var i = effects.Count - 1; i >= 0; i--)
+        {
+            foreach (var keyframe in effects[i].Keyframes)
+            {
+                if (keyframe.Longhands.ContainsKey(property) && keyframe.Source is { } source)
+                {
+                    treeScope = source.TreeScope;
+                    return true;
+                }
+            }
+        }
+
+        return false;
     }
 
     /// <summary>

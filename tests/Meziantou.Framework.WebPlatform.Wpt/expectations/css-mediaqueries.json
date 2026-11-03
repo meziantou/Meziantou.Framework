@@ -21,7 +21,7 @@
     "total": 1
   },
   "css/mediaqueries/at-custom-media-basic.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/mediaqueries/at-custom-media-cssom.html": {
     "total": 10

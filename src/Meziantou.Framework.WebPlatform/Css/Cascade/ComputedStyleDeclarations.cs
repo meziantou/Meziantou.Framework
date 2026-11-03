@@ -263,6 +263,10 @@ internal sealed class ComputedStyleDeclarations
         if (definition.Name == "outline")
             return style.GetResolvedValue("outline-width") + " " + style.GetResolvedValue("outline-style") + " " + style.GetResolvedValue("outline-color");
 
+        // -webkit-text-stroke is serialized with its width and its color, as in the browsers (WPT css/fill-stroke/webkit-text-stroke-computed.html)
+        if (definition.Name == "-webkit-text-stroke")
+            return style.GetResolvedValue("-webkit-text-stroke-width") + " " + style.GetResolvedValue("-webkit-text-stroke-color");
+
         // text-emphasis is serialized with its style and its color (https://drafts.csswg.org/css-text-decor-4/#text-emphasis-property)
         if (definition.Name == "text-emphasis")
             return style.GetResolvedValue("text-emphasis-style") + " " + style.GetResolvedValue("text-emphasis-color");

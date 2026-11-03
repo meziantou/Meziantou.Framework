@@ -49,10 +49,10 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 25,650 | 29,691 | 2,570 | 95% |
+| [Stable](#stable-tests) | 25,699 | 29,691 | 2,570 | 95% |
 | [Tentative](#tentative-tests) | 1,175 | 3,074 | 847 | 53% |
-| [Reftests](#reftests) | 27,819 | 29,220 | 180 | 96% |
-| **All** | **54,644** | **61,985** | **3,597** | **94%** |
+| [Reftests](#reftests) | 27,875 | 29,220 | 180 | 96% |
+| **All** | **54,749** | **61,985** | **3,597** | **94%** |
 
 ## Stable tests
 
@@ -99,26 +99,26 @@ The features of `REQUIRES`:
 | [`css/css-align`](css/css-align.md) | 241 | 241 | 0 | 100% |
 | [`css/css-anchor-position`](css/css-anchor-position.md) | 259 | 262 | 0 | 99% |
 | [`css/css-animations`](css/css-animations.md) | 94 | 98 | 0 | 96% |
-| [`css/css-backgrounds`](css/css-backgrounds.md) | 127 | 132 | 0 | 96% |
+| [`css/css-backgrounds`](css/css-backgrounds.md) | 128 | 132 | 0 | 97% |
 | [`css/css-borders`](css/css-borders.md) | 35 | 37 | 0 | 95% |
 | [`css/css-box`](css/css-box.md) | 53 | 79 | 0 | 67% |
 | [`css/css-break`](css/css-break.md) | 42 | 42 | 0 | 100% |
-| [`css/css-cascade`](css/css-cascade.md) | 86 | 92 | 0 | 93% |
-| [`css/css-color`](css/css-color.md) | 66 | 69 | 0 | 96% |
+| [`css/css-cascade`](css/css-cascade.md) | 87 | 92 | 0 | 95% |
+| [`css/css-color`](css/css-color.md) | 67 | 69 | 0 | 97% |
 | [`css/css-color-adjust`](css/css-color-adjust.md) | 14 | 15 | 0 | 93% |
-| [`css/css-color-hdr`](css/css-color-hdr.md) | 2 | 4 | 0 | 50% |
-| [`css/css-conditional`](css/css-conditional.md) | 216 | 226 | 0 | 96% |
+| [`css/css-color-hdr`](css/css-color-hdr.md) | 3 | 4 | 0 | 75% |
+| [`css/css-conditional`](css/css-conditional.md) | 218 | 226 | 0 | 96% |
 | [`css/css-contain`](css/css-contain.md) | 94 | 97 | 0 | 97% |
 | [`css/css-content`](css/css-content.md) | 9 | 9 | 0 | 100% |
 | [`css/css-counter-styles`](css/css-counter-styles.md) | 12 | 12 | 0 | 100% |
 | [`css/css-device-adapt`](css/css-device-adapt.md) | 0 | 1 | 1 | – |
 | [`css/css-display`](css/css-display.md) | 36 | 36 | 0 | 100% |
-| [`css/css-easing`](css/css-easing.md) | 11 | 13 | 0 | 85% |
+| [`css/css-easing`](css/css-easing.md) | 12 | 13 | 0 | 92% |
 | [`css/css-env`](css/css-env.md) | 3 | 3 | 0 | 100% |
 | [`css/css-exclusions`](css/css-exclusions.md) | 0 | 8 | 8 | – |
 | [`css/css-flexbox`](css/css-flexbox.md) | 375 | 376 | 0 | 99.7% |
-| [`css/css-font-loading`](css/css-font-loading.md) | 22 | 23 | 0 | 96% |
-| [`css/css-fonts`](css/css-fonts.md) | 153 | 167 | 0 | 92% |
+| [`css/css-font-loading`](css/css-font-loading.md) | 23 | 23 | 0 | 100% |
+| [`css/css-fonts`](css/css-fonts.md) | 157 | 167 | 0 | 94% |
 | [`css/css-forced-color-adjust`](css/css-forced-color-adjust.md) | 4 | 4 | 0 | 100% |
 | [`css/css-forms`](css/css-forms.md) | 6 | 9 | 0 | 67% |
 | [`css/css-gaps`](css/css-gaps.md) | 75 | 75 | 0 | 100% |
@@ -131,8 +131,8 @@ The features of `REQUIRES`:
 | [`css/css-link-params`](css/css-link-params.md) | 4 | 9 | 0 | 44% |
 | [`css/css-lists`](css/css-lists.md) | 38 | 38 | 0 | 100% |
 | [`css/css-logical`](css/css-logical.md) | 82 | 84 | 0 | 98% |
-| [`css/css-masking`](css/css-masking.md) | 62 | 64 | 0 | 97% |
-| [`css/css-mixins`](css/css-mixins.md) | 46 | 49 | 0 | 94% |
+| [`css/css-masking`](css/css-masking.md) | 63 | 64 | 0 | 98% |
+| [`css/css-mixins`](css/css-mixins.md) | 47 | 49 | 0 | 96% |
 | [`css/css-multicol`](css/css-multicol.md) | 89 | 91 | 0 | 98% |
 | [`css/css-nesting`](css/css-nesting.md) | 24 | 24 | 0 | 100% |
 | [`css/css-overflow`](css/css-overflow.md) | 214 | 217 | 0 | 99% |
@@ -141,41 +141,41 @@ The features of `REQUIRES`:
 | [`css/css-paint-api`](css/css-paint-api.md) | 1 | 2 | 0 | 50% |
 | [`css/css-parser-api`](css/css-parser-api.md) | 1 | 1 | 0 | 100% |
 | [`css/css-position`](css/css-position.md) | 110 | 114 | 0 | 96% |
-| [`css/css-properties-values-api`](css/css-properties-values-api.md) | 95 | 105 | 0 | 90% |
-| [`css/css-pseudo`](css/css-pseudo.md) | 43 | 49 | 0 | 88% |
+| [`css/css-properties-values-api`](css/css-properties-values-api.md) | 96 | 105 | 0 | 91% |
+| [`css/css-pseudo`](css/css-pseudo.md) | 45 | 49 | 0 | 92% |
 | [`css/css-rhythm`](css/css-rhythm.md) | 16 | 17 | 0 | 94% |
 | [`css/css-ruby`](css/css-ruby.md) | 20 | 20 | 0 | 100% |
 | [`css/css-scroll-anchoring`](css/css-scroll-anchoring.md) | 69 | 70 | 0 | 99% |
 | [`css/css-scroll-snap`](css/css-scroll-snap.md) | 145 | 157 | 0 | 92% |
 | [`css/css-scrollbars`](css/css-scrollbars.md) | 25 | 25 | 0 | 100% |
-| [`css/css-shadow`](css/css-shadow.md) | 86 | 87 | 0 | 99% |
-| [`css/css-shapes`](css/css-shapes.md) | 145 | 147 | 0 | 99% |
-| [`css/css-size-adjust`](css/css-size-adjust.md) | 4 | 5 | 0 | 80% |
-| [`css/css-sizing`](css/css-sizing.md) | 192 | 201 | 0 | 96% |
+| [`css/css-shadow`](css/css-shadow.md) | 87 | 87 | 0 | 100% |
+| [`css/css-shapes`](css/css-shapes.md) | 146 | 147 | 0 | 99% |
+| [`css/css-size-adjust`](css/css-size-adjust.md) | 5 | 5 | 0 | 100% |
+| [`css/css-sizing`](css/css-sizing.md) | 199 | 201 | 0 | 99% |
 | [`css/css-syntax`](css/css-syntax.md) | 47 | 48 | 0 | 98% |
-| [`css/css-tables`](css/css-tables.md) | 106 | 113 | 0 | 94% |
+| [`css/css-tables`](css/css-tables.md) | 107 | 113 | 0 | 95% |
 | [`css/css-text`](css/css-text.md) | 340 | 349 | 0 | 97% |
 | [`css/css-text-decor`](css/css-text-decor.md) | 48 | 48 | 0 | 100% |
 | [`css/css-transforms`](css/css-transforms.md) | 101 | 105 | 0 | 96% |
-| [`css/css-transitions`](css/css-transitions.md) | 94 | 107 | 0 | 88% |
+| [`css/css-transitions`](css/css-transitions.md) | 98 | 107 | 0 | 92% |
 | [`css/css-typed-om`](css/css-typed-om.md) | 290 | 319 | 0 | 91% |
-| [`css/css-ui`](css/css-ui.md) | 85 | 101 | 0 | 84% |
+| [`css/css-ui`](css/css-ui.md) | 94 | 101 | 0 | 93% |
 | [`css/css-values`](css/css-values.md) | 255 | 264 | 0 | 97% |
-| [`css/css-variables`](css/css-variables.md) | 60 | 63 | 0 | 95% |
+| [`css/css-variables`](css/css-variables.md) | 61 | 63 | 0 | 97% |
 | [`css/css-view-transitions`](css/css-view-transitions.md) | 152 | 164 | 0 | 93% |
 | [`css/css-viewport`](css/css-viewport.md) | 28 | 28 | 0 | 100% |
 | [`css/css-will-change`](css/css-will-change.md) | 5 | 5 | 0 | 100% |
 | [`css/css-writing-modes`](css/css-writing-modes.md) | 82 | 85 | 0 | 96% |
 | [`css/CSS2`](css/CSS2.md) | 73 | 73 | 0 | 100% |
 | [`css/cssom`](css/cssom.md) | 258 | 263 | 0 | 98% |
-| [`css/cssom-view`](css/cssom-view.md) | 214 | 231 | 0 | 93% |
+| [`css/cssom-view`](css/cssom-view.md) | 215 | 231 | 0 | 93% |
 | [`css/fetching`](css/fetching.md) | 1 | 2 | 0 | 50% |
-| [`css/fill-stroke`](css/fill-stroke.md) | 3 | 8 | 0 | 38% |
+| [`css/fill-stroke`](css/fill-stroke.md) | 4 | 8 | 0 | 50% |
 | [`css/filter-effects`](css/filter-effects.md) | 37 | 37 | 0 | 100% |
 | [`css/geometry`](css/geometry.md) | 30 | 30 | 0 | 100% |
 | [`css/mediaqueries`](css/mediaqueries.md) | 26 | 26 | 0 | 100% |
-| [`css/motion`](css/motion.md) | 44 | 46 | 0 | 96% |
-| [`css/selectors`](css/selectors.md) | 453 | 457 | 0 | 99% |
+| [`css/motion`](css/motion.md) | 46 | 46 | 0 | 100% |
+| [`css/selectors`](css/selectors.md) | 455 | 457 | 0 | 99.5% |
 | [`custom-elements`](custom-elements.md) | 178 | 189 | 0 | 94% |
 | [`delegated-ink`](delegated-ink.md) | 0 | 1 | 1 | – |
 | [`density-size-correction`](density-size-correction.md) | 1 | 2 | 0 | 50% |
@@ -222,7 +222,7 @@ The features of `REQUIRES`:
 | [`html-aam`](html-aam.md) | 24 | 26 | 0 | 92% |
 | [`html-media-capture`](html-media-capture.md) | 0 | 2 | 2 | – |
 | [`html/browsers`](html/browsers.md) | 693 | 746 | 0 | 93% |
-| [`html/canvas`](html/canvas.md) | 3,071 | 3,165 | 0 | 97% |
+| [`html/canvas`](html/canvas.md) | 3,072 | 3,165 | 0 | 97% |
 | [`html/cross-origin-embedder-policy`](html/cross-origin-embedder-policy.md) | 53 | 73 | 0 | 73% |
 | [`html/cross-origin-opener-policy`](html/cross-origin-opener-policy.md) | 67 | 114 | 0 | 59% |
 | [`html/dom`](html/dom.md) | 210 | 216 | 0 | 97% |
@@ -401,7 +401,7 @@ The features of `REQUIRES`:
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 317 | 330 | 0 | 96% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **25,650** | **29,691** | **2,570** | **95%** |
+| **Total (343 sections)** | **25,699** | **29,691** | **2,570** | **95%** |
 
 ## Tentative tests
 
@@ -589,7 +589,7 @@ The features of `REQUIRES`:
 | [`css/css-align`](css/css-align.md#reftests) | 62 | 64 | 0 | 97% |
 | [`css/css-anchor-position`](css/css-anchor-position.md#reftests) | 236 | 241 | 0 | 98% |
 | [`css/css-animations`](css/css-animations.md#reftests) | 36 | 36 | 0 | 100% |
-| [`css/css-backgrounds`](css/css-backgrounds.md#reftests) | 701 | 719 | 1 | 98% |
+| [`css/css-backgrounds`](css/css-backgrounds.md#reftests) | 705 | 719 | 1 | 98% |
 | [`css/css-borders`](css/css-borders.md#reftests) | 101 | 114 | 0 | 89% |
 | [`css/css-box`](css/css-box.md#reftests) | 42 | 72 | 0 | 58% |
 | [`css/css-break`](css/css-break.md#reftests) | 1,131 | 1,145 | 0 | 99% |
@@ -597,25 +597,25 @@ The features of `REQUIRES`:
 | [`css/css-color`](css/css-color.md#reftests) | 301 | 308 | 1 | 98% |
 | [`css/css-color-adjust`](css/css-color-adjust.md#reftests) | 23 | 25 | 0 | 92% |
 | [`css/css-conditional`](css/css-conditional.md#reftests) | 168 | 173 | 0 | 97% |
-| [`css/css-contain`](css/css-contain.md#reftests) | 429 | 432 | 0 | 99% |
-| [`css/css-content`](css/css-content.md#reftests) | 61 | 65 | 0 | 94% |
+| [`css/css-contain`](css/css-contain.md#reftests) | 431 | 432 | 0 | 99.7% |
+| [`css/css-content`](css/css-content.md#reftests) | 63 | 65 | 0 | 97% |
 | [`css/css-counter-styles`](css/css-counter-styles.md#reftests) | 253 | 259 | 0 | 98% |
 | [`css/css-display`](css/css-display.md#reftests) | 164 | 218 | 0 | 75% |
 | [`css/css-exclusions`](css/css-exclusions.md#reftests) | 0 | 4 | 4 | – |
 | [`css/css-flexbox`](css/css-flexbox.md#reftests) | 1,018 | 1,023 | 0 | 99.5% |
-| [`css/css-font-loading`](css/css-font-loading.md#reftests) | 6 | 7 | 0 | 86% |
-| [`css/css-fonts`](css/css-fonts.md#reftests) | 359 | 385 | 1 | 93% |
+| [`css/css-font-loading`](css/css-font-loading.md#reftests) | 7 | 7 | 0 | 100% |
+| [`css/css-fonts`](css/css-fonts.md#reftests) | 360 | 385 | 1 | 94% |
 | [`css/css-forms`](css/css-forms.md#reftests) | 6 | 17 | 0 | 35% |
 | [`css/css-gaps`](css/css-gaps.md#reftests) | 539 | 544 | 0 | 99% |
 | [`css/css-grid`](css/css-grid.md#reftests) | 1,731 | 1,767 | 0 | 98% |
 | [`css/css-highlight-api`](css/css-highlight-api.md#reftests) | 112 | 118 | 0 | 95% |
 | [`css/css-image-animation`](css/css-image-animation.md#reftests) | 0 | 22 | 22 | – |
-| [`css/css-images`](css/css-images.md#reftests) | 463 | 476 | 0 | 97% |
+| [`css/css-images`](css/css-images.md#reftests) | 465 | 476 | 0 | 98% |
 | [`css/css-inline`](css/css-inline.md#reftests) | 184 | 199 | 0 | 92% |
 | [`css/css-layout-api`](css/css-layout-api.md#reftests) | 128 | 135 | 0 | 95% |
-| [`css/css-lists`](css/css-lists.md#reftests) | 161 | 182 | 0 | 88% |
+| [`css/css-lists`](css/css-lists.md#reftests) | 163 | 182 | 0 | 90% |
 | [`css/css-logical`](css/css-logical.md#reftests) | 6 | 6 | 0 | 100% |
-| [`css/css-masking`](css/css-masking.md#reftests) | 484 | 500 | 1 | 97% |
+| [`css/css-masking`](css/css-masking.md#reftests) | 488 | 500 | 1 | 98% |
 | [`css/css-multicol`](css/css-multicol.md#reftests) | 459 | 467 | 0 | 98% |
 | [`css/css-namespaces`](css/css-namespaces.md#reftests) | 23 | 23 | 0 | 100% |
 | [`css/css-navigation`](css/css-navigation.md#reftests) | 0 | 3 | 3 | – |
@@ -632,14 +632,14 @@ The features of `REQUIRES`:
 | [`css/css-scroll-anchoring`](css/css-scroll-anchoring.md#reftests) | 4 | 4 | 0 | 100% |
 | [`css/css-scroll-snap`](css/css-scroll-snap.md#reftests) | 24 | 26 | 0 | 92% |
 | [`css/css-scrollbars`](css/css-scrollbars.md#reftests) | 31 | 31 | 0 | 100% |
-| [`css/css-shadow`](css/css-shadow.md#reftests) | 106 | 114 | 0 | 93% |
+| [`css/css-shadow`](css/css-shadow.md#reftests) | 107 | 114 | 0 | 94% |
 | [`css/css-shapes`](css/css-shapes.md#reftests) | 237 | 238 | 0 | 99.5% |
-| [`css/css-sizing`](css/css-sizing.md#reftests) | 553 | 569 | 0 | 97% |
+| [`css/css-sizing`](css/css-sizing.md#reftests) | 564 | 569 | 0 | 99% |
 | [`css/css-style-attr`](css/css-style-attr.md#reftests) | 16 | 16 | 0 | 100% |
 | [`css/css-syntax`](css/css-syntax.md#reftests) | 1 | 1 | 0 | 100% |
-| [`css/css-tables`](css/css-tables.md#reftests) | 167 | 173 | 0 | 97% |
-| [`css/css-text`](css/css-text.md#reftests) | 1,497 | 1,559 | 0 | 96% |
-| [`css/css-text-decor`](css/css-text-decor.md#reftests) | 309 | 318 | 0 | 97% |
+| [`css/css-tables`](css/css-tables.md#reftests) | 170 | 173 | 0 | 98% |
+| [`css/css-text`](css/css-text.md#reftests) | 1,514 | 1,559 | 0 | 97% |
+| [`css/css-text-decor`](css/css-text-decor.md#reftests) | 311 | 318 | 0 | 98% |
 | [`css/css-transforms`](css/css-transforms.md#reftests) | 791 | 797 | 0 | 99% |
 | [`css/css-transitions`](css/css-transitions.md#reftests) | 6 | 6 | 0 | 100% |
 | [`css/css-typed-om`](css/css-typed-om.md#reftests) | 5 | 5 | 0 | 100% |
@@ -654,8 +654,8 @@ The features of `REQUIRES`:
 | [`css/cssom`](css/cssom.md#reftests) | 9 | 12 | 0 | 75% |
 | [`css/cssom-view`](css/cssom-view.md#reftests) | 11 | 11 | 0 | 100% |
 | [`css/fill-stroke`](css/fill-stroke.md#reftests) | 1 | 1 | 0 | 100% |
-| [`css/filter-effects`](css/filter-effects.md#reftests) | 379 | 394 | 0 | 96% |
-| [`css/mediaqueries`](css/mediaqueries.md#reftests) | 56 | 58 | 0 | 97% |
+| [`css/filter-effects`](css/filter-effects.md#reftests) | 382 | 394 | 0 | 97% |
+| [`css/mediaqueries`](css/mediaqueries.md#reftests) | 57 | 58 | 0 | 98% |
 | [`css/motion`](css/motion.md#reftests) | 98 | 98 | 0 | 100% |
 | [`css/printing`](css/printing.md#reftests) | 36 | 39 | 0 | 92% |
 | [`css/reference`](css/reference.md#reftests) | 3 | 3 | 0 | 100% |
@@ -707,4 +707,4 @@ The features of `REQUIRES`:
 | [`webgl`](webgl.md#reftests) | 0 | 2 | 2 | – |
 | [`webvtt`](webvtt.md#reftests) | 182 | 251 | 0 | 73% |
 | [`xml`](xml.md#reftests) | 0 | 3 | 3 | – |
-| **Total (130 sections)** | **27,819** | **29,220** | **180** | **96%** |
+| **Total (130 sections)** | **27,875** | **29,220** | **180** | **96%** |

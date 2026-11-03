@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -375,22 +377,38 @@ internal ref partial struct HevcSliceCoder
     /// The derivation process for z-scan order block availability (clause 6.4.1) for a current block of the coding tree
     /// block being decoded.
     /// </summary>
-    private readonly bool IsAvailable(int xCurr, int yCurr, int xNbY, int yNbY)
+    private readonly bool IsAvailable(int xCurr, int yCurr, int xNbY, int yNbY) => IsAvailable(GetZScanIndexInCtb(xCurr, yCurr), xNbY, yNbY);
+
+    /// <summary>
+    /// <see cref="IsAvailable(int, int, int, int)"/> for a current block whose z-scan order in the coding tree block is
+    /// <paramref name="zCurr"/> (<see cref="GetZScanIndexInCtb"/>): for the loops over the neighbours of a block.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private readonly bool IsAvailable(int zCurr, int xNbY, int yNbY)
     {
         if (xNbY < 0 || yNbY < 0 || xNbY >= _sps.PicWidthInLumaSamples || yNbY >= _sps.PicHeightInLumaSamples)
             return false;
 
         var ctbAddrNbRs = ((yNbY >> _ctbLog2SizeY) * _picWidthInCtbsY) + (xNbY >> _ctbLog2SizeY);
-        if (ctbAddrNbRs == _ctbAddrInRs)
-        {
-            // In the coding tree block of the current block: the same slice and the same tile, and the order of the
-            // blocks is the z-scan order inside the coding tree block. MinTbAddrZs (Equation 6-10) of two minimum
-            // transform blocks of one coding tree block differ by their positions in it
-            var mask = (1 << (_ctbLog2SizeY - _minTbLog2SizeY)) - 1;
-            return HevcPictureLayout.GetZScanIndex((xNbY >> _minTbLog2SizeY) & mask, (yNbY >> _minTbLog2SizeY) & mask) <= HevcPictureLayout.GetZScanIndex((xCurr >> _minTbLog2SizeY) & mask, (yCurr >> _minTbLog2SizeY) & mask);
-        }
 
-        // In another coding tree block: it precedes the current one in tile scan, and is in its slice and in its tile
+        // In the coding tree block of the current block: the same slice and the same tile, and the order of the blocks is the
+        // z-scan order inside the coding tree block. MinTbAddrZs (Equation 6-10) of two minimum transform blocks of one coding
+        // tree block differ by their positions in it
+        return ctbAddrNbRs == _ctbAddrInRs ? GetZScanIndexInCtb(xNbY, yNbY) <= zCurr : IsAvailableCtb(ctbAddrNbRs);
+    }
+
+    // The z-scan order of the minimum transform block of a luma sample inside its coding tree block
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private readonly int GetZScanIndexInCtb(int x, int y)
+    {
+        var mask = (1 << (_ctbLog2SizeY - _minTbLog2SizeY)) - 1;
+        return HevcPictureLayout.GetZScanIndex((x >> _minTbLog2SizeY) & mask, (y >> _minTbLog2SizeY) & mask);
+    }
+
+    // The availability of the blocks of another coding tree block: it precedes the current one in tile scan, and is in its
+    // slice and in its tile
+    private readonly bool IsAvailableCtb(int ctbAddrNbRs)
+    {
         var ctbAddrNbTs = _ctbAddrRsToTs[ctbAddrNbRs];
         // The slice of a block of another tile is not read: the workers write the blocks of other tiles at the same time
         return ctbAddrNbTs < _ctbAddrInTs && _tileId[ctbAddrNbTs] == _tileId[_ctbAddrInTs] && _sliceIndex[ctbAddrNbRs] == _sliceIdx;

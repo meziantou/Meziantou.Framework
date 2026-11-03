@@ -3289,6 +3289,30 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Rgb24ColorKeysMatchTheKeyDefinition()
+    {
+        // Lengths around the 16-, 32- and 64-byte loads (4, 8 and 16 pixels per step), and a longer destination that keeps its other keys
+        var random = new Random(2406);
+        for (var pixels = 0; pixels <= 80; pixels++)
+        {
+            var source = new byte[pixels * 3];
+            random.NextBytes(source);
+            var expected = new int[pixels];
+            for (var x = 0; x < pixels; x++)
+            {
+                expected[x] = (source[3 * x] << 16) | (source[(3 * x) + 1] << 8) | source[(3 * x) + 2];
+            }
+
+            var actual = new int[pixels + 3];
+            Array.Fill(actual, -5);
+            PixelConverter.Rgb24ToColorKeys(source, actual);
+            Assert.Equal(expected, actual[..pixels]);
+            Assert.All(actual[pixels..], value => Assert.Equal(-5, value));
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void SwapRedAndBlue24ToOpaque32MatchesThePixelDefinition()
     {
         // Lengths around the 16-, 32- and 64-byte loads (4, 8 and 16 pixels per step), and a longer destination that keeps its other bytes

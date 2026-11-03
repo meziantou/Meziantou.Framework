@@ -83,7 +83,7 @@ internal sealed class JpegFrameComponent : IDisposable
     public int BlockHeight { get; private set; }
 
     /// <summary>Gets a value indicating whether the blocks are transformed into fewer samples than they code (scaled decoding).</summary>
-    public bool IsReduced => BlockWidth != DataUnitSize || BlockHeight != DataUnitSize;
+    public bool IsReduced { get; private set; }
 
     /// <summary>Gets the number of samples per row of the plane: <c>ceil(X * H / Hmax)</c>, divided by the horizontal reduction when the frame is scaled.</summary>
     public int Width { get; private set; }
@@ -157,6 +157,7 @@ internal sealed class JpegFrameComponent : IDisposable
         var verticalReduction = scaleDenominator / verticalShared;
         BlockWidth = DataUnitSize / horizontalReduction;
         BlockHeight = DataUnitSize / verticalReduction;
+        IsReduced = BlockWidth != DataUnitSize || BlockHeight != DataUnitSize;
 
         // The plane of the reduced blocks: ceil(ceil(X * H / Hmax) / d) samples, which the remaining factor upsamples to at
         // least ceil(X / s) samples

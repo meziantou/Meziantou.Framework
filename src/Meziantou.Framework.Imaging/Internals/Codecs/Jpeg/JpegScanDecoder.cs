@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -223,7 +224,7 @@ internal abstract class JpegScanDecoder
     /// <param name="hasAc">Whether an AC coefficient is not zero.</param>
     /// <param name="sparse">Whether every coefficient outside the top-left 4x4 corner is zero (<see cref="JpegIdct.IsSparse(int)"/>).</param>
     protected static void TransformBlock(ScanComponent scanComponent, int blockRow, int blockColumn, double[] block, int dc, bool hasAc, bool sparse)
-        => TransformBlock(scanComponent, scanComponent.Component.GetBlockOffset(blockRow, blockColumn), block, dc, hasAc, sparse);
+        => TransformBlock(scanComponent, scanComponent.GetBlockOffset(blockRow, blockColumn), block, dc, hasAc, sparse);
 
     /// <summary>Writes the samples of a block of a sequential scan at an offset of the sample plane.</summary>
     /// <param name="scanComponent">The component of the block.</param>
@@ -236,6 +237,24 @@ internal abstract class JpegScanDecoder
     {
         var component = scanComponent.Component;
         var quantization = scanComponent.Quantization;
+        if (!component.IsReduced && !component.HasDeepSamples)
+        {
+            // 8-bit samples at full scale
+            var samples = scanComponent.Samples.AsSpan(offset);
+            if (hasAc)
+            {
+                block[0] = dc * (double)quantization[0];
+                JpegIdct.Transform(block, samples, component.Stride, sparse);
+                JpegIdct.ClearBlock(block);
+            }
+            else
+            {
+                JpegIdct.TransformDcOnly((long)dc * quantization[0], samples, component.Stride);
+            }
+
+            return;
+        }
+
         if (component.IsReduced)
         {
             if (hasAc)
@@ -455,6 +474,45 @@ internal abstract class JpegScanDecoder
         public int[] ZigZagQuantization { get; } = quantization.Length == 64 ? CreateZigZagQuantization(quantization) : [];
 
         public int Predictor { get; set; }
+
+        // The first block row of the band whose offset is cached (none at first), and the offset of that row
+        private int _bandFirstBlockRow = int.MinValue / 2;
+        private int _bandOffset;
+
+        /// <summary>
+        /// Gets the 8-bit samples of the plane of the component (<see cref="JpegFrameComponent.Samples"/>), read once: the plane
+        /// is not reallocated while a scan decodes.
+        /// </summary>
+        public byte[] Samples => field ??= Component.Samples;
+
+        /// <summary>
+        /// Gets the offset of the first sample of a block in the plane, like <see cref="JpegFrameComponent.GetBlockOffset"/>,
+        /// with the offset of the first block row of its band cached: the rows of a band are contiguous in the plane, so that
+        /// the other blocks of the band need no division.
+        /// </summary>
+        /// <param name="blockRow">The block row in the component's block grid.</param>
+        /// <param name="blockColumn">The block column in the component's block grid.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int GetBlockOffset(int blockRow, int blockColumn)
+        {
+            var plane = Component;
+            var rowInBand = blockRow - _bandFirstBlockRow;
+            if ((uint)rowInBand >= (uint)plane.VerticalSampling)
+            {
+                rowInBand = LoadBand(blockRow);
+            }
+
+            return _bandOffset + (rowInBand * plane.BlockHeight * plane.Stride) + (blockColumn * plane.BlockWidth);
+        }
+
+        private int LoadBand(int blockRow)
+        {
+            // A band is the rows of one MCU row: VerticalSampling block rows (1 for the only component of a grayscale frame)
+            var first = blockRow - (blockRow % Component.VerticalSampling);
+            _bandFirstBlockRow = first;
+            _bandOffset = Component.GetBlockOffset(first, 0);
+            return blockRow - first;
+        }
 
         /// <summary>Gets the statistics and the conditioning of the component in an arithmetic-coded scan, or <see langword="null"/>.</summary>
         public JpegArithmeticConditioning? Arithmetic { get; init; }

@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of pointerevents, and why th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 166 | 179 | 0 | 93% |
+| [Stable](#stable-tests) | 167 | 179 | 0 | 93% |
 | [Tentative](#tentative-tests) | 5 | 9 | 0 | 56% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **171** | **188** | **0** | **91%** |
+| **All** | **172** | **188** | **0** | **91%** |
 
 ## Stable tests
 
@@ -61,7 +61,7 @@ description: "The results of the web-platform-tests of pointerevents, and why th
 | [`pointerevent_boundary_events_at_implicit_release_hoverable_pointers.html`](https://wpt.fyi/results/pointerevents/pointerevent_boundary_events_at_implicit_release_hoverable_pointers.html) | Pass | 1 / 1 |  |  |
 | [`pointerevent_boundary_events_attributes_during_drag.html`](https://wpt.fyi/results/pointerevents/pointerevent_boundary_events_attributes_during_drag.html) | Pass | 2 / 2 |  |  |
 | [`pointerevent_boundary_events_before_pointerrawupdate.https.html`](https://wpt.fyi/results/pointerevents/pointerevent_boundary_events_before_pointerrawupdate.https.html) | Pass | 1 / 1 |  |  |
-| [`pointerevent_boundary_events_cross_origin.html`](https://wpt.fyi/results/pointerevents/pointerevent_boundary_events_cross_origin.html) | Fail | 4 / 5 | BUG | when the iframe that holds the touch pointer is removed, the document of the previous target has no browsing context anymore, so its frame chain no longer reaches the parent document: the boundary events are handled as within the same document and the `pointerover`/`pointerenter` events in the parent document get the element of the removed child document as `relatedTarget` instead of null |
+| [`pointerevent_boundary_events_cross_origin.html`](https://wpt.fyi/results/pointerevents/pointerevent_boundary_events_cross_origin.html) | Pass | 5 / 5 |  |  |
 | [`pointerevent_boundary_events_in_capturing.html`](https://wpt.fyi/results/pointerevents/pointerevent_boundary_events_in_capturing.html) | Pass | 3 / 3 |  |  |
 | [`pointerevent_boundary_events_modifier_no_pointer_movement.html`](https://wpt.fyi/results/pointerevents/pointerevent_boundary_events_modifier_no_pointer_movement.html) | Pass | 24 / 24 |  |  |
 | [`pointerevent_boundary_events_on_image_map.html`](https://wpt.fyi/results/pointerevents/pointerevent_boundary_events_on_image_map.html) | Pass | 8 / 8 |  |  |
@@ -208,6 +208,6 @@ description: "The results of the web-platform-tests of pointerevents, and why th
 | [`persistentDeviceId/pointer-event-has-persistentdeviceid-from-pointer-event-init.tentative.html`](https://wpt.fyi/results/pointerevents/persistentDeviceId/pointer-event-has-persistentdeviceid-from-pointer-event-init.tentative.html) | Pass | 2 / 2 |  |  |
 | [`pointerevent_after_target_appended_interleaved.tentative.html`](https://wpt.fyi/results/pointerevents/pointerevent_after_target_appended_interleaved.tentative.html) | Fail | 0 / 12 | TEST BUG | the expected lists of the tentative test contain `click` events, but the test only logs the events whose type starts with the tested prefix (`mouse`): Chrome, Firefox and Safari fail every subtest too |
 | [`pointerevent_after_target_removed_interleaved.tentative.html`](https://wpt.fyi/results/pointerevents/pointerevent_after_target_removed_interleaved.tentative.html) | Fail | 0 / 6 | TEST BUG | the expected lists of the tentative test contain `click` events, but the test only logs the events whose type starts with the tested prefix (`mouse`): Chrome, Firefox and Safari fail every subtest too |
-| [`pointerevent_boundary_events_cross_document_same_origin.tentative.html`](https://wpt.fyi/results/pointerevents/pointerevent_boundary_events_cross_document_same_origin.tentative.html) | Fail | 0 / 5 | NOT IMPLEMENTED | the tentative exposure of the `relatedTarget` of the pointer boundary events across same-origin documents (w3c/pointerevents#656): every document boundary is handled as a cross-origin one, as `pointerevent_boundary_events_cross_origin.html` expects |
+| [`pointerevent_boundary_events_cross_document_same_origin.tentative.html`](https://wpt.fyi/results/pointerevents/pointerevent_boundary_events_cross_document_same_origin.tentative.html) | Fail | 1 / 5 | NOT IMPLEMENTED | the tentative exposure of the `relatedTarget` of the pointer boundary events across same-origin documents (w3c/pointerevents#656): every document boundary is handled as a cross-origin one, as `pointerevent_boundary_events_cross_origin.html` expects |
 | [`pointerevent_click_on_chorded_mouse_button.tentative.html`](https://wpt.fyi/results/pointerevents/pointerevent_click_on_chorded_mouse_button.tentative.html) | Pass | 2 / 2 |  |  |
 | [`pointermove_after_pointerover_target_removed.tentative.html`](https://wpt.fyi/results/pointerevents/pointermove_after_pointerover_target_removed.tentative.html) | Fail | 3 / 4 | NOT IMPLEMENTED | the tentative rule that `pointermove` is not fired when a listener of the preceding `pointerover` removed its target: the library fires it at the parent of the removed target |

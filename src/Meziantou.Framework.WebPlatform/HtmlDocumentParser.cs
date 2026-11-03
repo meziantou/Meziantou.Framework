@@ -612,6 +612,7 @@ public sealed class HtmlDocumentParser
         document.Mode = contextDocument.Mode;
         document.OriginDocument = Document.GetOriginDocument(contextDocument);
         document.RealmDocument = contextDocument;
+        document.FragmentParsingDestination = context is HtmlTemplateElement template ? template.TemplateContents.NodeDocument : target.NodeDocument;
         // The template contents are parsed with the scripting of the template contents owner document (disabled), as in
         // the browsers (tested by WPT html/syntax/serializing-html-fragments/escaping.html), rather than the scripting of
         // the node document of the template

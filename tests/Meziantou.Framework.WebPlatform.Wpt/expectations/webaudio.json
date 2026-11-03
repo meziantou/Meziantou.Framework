@@ -1274,10 +1274,7 @@
     "total": 1
   },
   "webaudio/the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-incremental-rendering.html": {
-    "total": 8,
-    "failures": {
-      "startRendering called synchronously from AudioBuffer.prototype.then": "FAIL"
-    }
+    "total": 8
   },
   "webaudio/the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-rendersizehint.html": {
     "total": 17

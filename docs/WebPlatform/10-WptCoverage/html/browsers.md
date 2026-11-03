@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of html/browsers, and why th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 692 | 746 | 0 | 93% |
+| [Stable](#stable-tests) | 693 | 746 | 0 | 93% |
 | [Tentative](#tentative-tests) | 11 | 15 | 0 | 73% |
 | [Reftests](#reftests) | 4 | 4 | 0 | 100% |
-| **All** | **707** | **765** | **0** | **92%** |
+| **All** | **708** | **765** | **0** | **93%** |
 
 ## Stable tests
 
@@ -576,7 +576,7 @@ description: "The results of the web-platform-tests of html/browsers, and why th
 | [`origin/origin-keyed-agent-clusters/insecure-http-parent-https-children.sub.html`](https://wpt.fyi/results/html/browsers/origin/origin-keyed-agent-clusters/insecure-http-parent-https-children.sub.html) | Pass | 3 / 3 |  |  |
 | [`origin/origin-keyed-agent-clusters/insecure-http.sub.html`](https://wpt.fyi/results/html/browsers/origin/origin-keyed-agent-clusters/insecure-http.sub.html) | Pass | 3 / 3 |  |  |
 | [`origin/origin-keyed-agent-clusters/no-content-response.sub.https.html`](https://wpt.fyi/results/html/browsers/origin/origin-keyed-agent-clusters/no-content-response.sub.https.html) | Pass | 1 / 1 |  |  |
-| [`origin/origin-keyed-agent-clusters/popups/noopener-opener-no-openee-yes-same.https.html`](https://wpt.fyi/results/html/browsers/origin/origin-keyed-agent-clusters/popups/noopener-opener-no-openee-yes-same.https.html) | Fail | 1 / 2 | BUG | the agent cluster map and the historical agent cluster key map are kept by the browsing context that owns the popups (`BrowsingContext.AgentClusters` of `GroupOwner`), not by the browsing context group: a popup opened with `noopener` (in a new group) inherits the site-keyed decision of its opener for the origin, so its `Origin-Agent-Cluster: ?1` is ignored and `originAgentCluster` is false |
+| [`origin/origin-keyed-agent-clusters/popups/noopener-opener-no-openee-yes-same.https.html`](https://wpt.fyi/results/html/browsers/origin/origin-keyed-agent-clusters/popups/noopener-opener-no-openee-yes-same.https.html) | Pass | 2 / 2 |  |  |
 | [`origin/origin-keyed-agent-clusters/popups/opener-no-openee-yes-port.sub.https.html`](https://wpt.fyi/results/html/browsers/origin/origin-keyed-agent-clusters/popups/opener-no-openee-yes-port.sub.https.html) | Pass | 4 / 4 |  |  |
 | [`origin/origin-keyed-agent-clusters/popups/opener-no-openee-yes-same.sub.https.html`](https://wpt.fyi/results/html/browsers/origin/origin-keyed-agent-clusters/popups/opener-no-openee-yes-same.sub.https.html) | Pass | 4 / 4 |  |  |
 | [`origin/origin-keyed-agent-clusters/popups/opener-no-openee-yes-subdomain.sub.https.html`](https://wpt.fyi/results/html/browsers/origin/origin-keyed-agent-clusters/popups/opener-no-openee-yes-subdomain.sub.https.html) | Pass | 4 / 4 |  |  |

@@ -978,25 +978,33 @@ public sealed partial class UserInput
             Leave(previousChain[k], null, k == 0 && previousRemoved);
         }
 
-        if (i >= 0 && j >= 0)
+        // The nodes where the chains diverge are in the same document, unless the document of the previous target lost its
+        // browsing context (its iframe was removed): its chain does not reach the document of the target anymore, so the
+        // events have no related target
+        if (i >= 0 && j >= 0 && ReferenceEquals(GetDocument(previousChain[i]), GetDocument(targetChain[j])))
         {
-            // In the same document
             Leave(previousChain[i], targetChain[j], i == 0 && previousRemoved);
             Enter(targetChain[j], previousChain[i]);
         }
-        else if (i >= 0)
-        {
-            Leave(previousChain[i], null, i == 0 && previousRemoved);
-        }
         else
         {
-            Enter(targetChain[j], null);
+            if (i >= 0)
+            {
+                Leave(previousChain[i], null, i == 0 && previousRemoved);
+            }
+
+            if (j >= 0)
+            {
+                Enter(targetChain[j], null);
+            }
         }
 
         for (var k = j - 1; k >= 0; k--)
         {
             Enter(targetChain[k], null);
         }
+
+        static Document GetDocument(Node node) => node as Document ?? node.NodeDocument;
 
         void Leave(Node from, Node? to, bool removed)
         {

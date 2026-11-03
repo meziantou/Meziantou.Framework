@@ -1188,13 +1188,7 @@
     "total": 4
   },
   "css/css-view-transitions/scoped/hit-test-overflow-clipped-scope.html": {
-    "total": 8,
-    "failures": {
-      "overflow: hidden; ancestor overflow: hidden; transform: none": "FAIL",
-      "overflow: hidden; ancestor overflow: hidden; transform: translateX(0)": "FAIL",
-      "overflow: hidden; ancestor overflow: visible; transform: none": "FAIL",
-      "overflow: hidden; ancestor overflow: visible; transform: translateX(0)": "FAIL"
-    }
+    "total": 8
   },
   "css/css-view-transitions/scoped/hit-test-vt-overlay.html": {
     "total": 1

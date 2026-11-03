@@ -305,6 +305,11 @@ public sealed partial class UserInput
     /// </summary>
     private static bool ScrollBox(Document document, ScrollState state, ref double deltaX, ref double deltaY, UserScrollUnit unit, UserScrollKind kind)
     {
+        if (kind == UserScrollKind.Directional)
+        {
+            document.GetLayoutEngine().AbortSmoothScrollForUser(state);
+        }
+
         var min = state.MinOffset;
         var max = state.MaxOffset;
         var offset = kind == UserScrollKind.DirectManipulation ? state.Offset : LayoutEngine.GetTargetScrollPosition(state);

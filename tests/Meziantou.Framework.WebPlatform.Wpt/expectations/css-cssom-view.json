@@ -806,11 +806,7 @@
     "total": 3
   },
   "css/cssom-view/user-scroll-interrupts-smooth-scroll.html": {
-    "total": 3,
-    "failures": {
-      "Aborting a smooth scroll with a keyboard event that causes another scroll": "FAIL",
-      "Aborting a smooth scroll with a keyboard event that does not cause another scroll": "FAIL"
-    }
+    "total": 3
   },
   "css/cssom-view/visual-scrollIntoView-001.html": {
     "total": 1,

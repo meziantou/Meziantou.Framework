@@ -1988,10 +1988,7 @@
     "total": 2
   },
   "dom/nodes/moveBefore/select-option-optgroup.html": {
-    "total": 2,
-    "failures": {
-      "Option selectedness is updated on option and optgroup DOM moves": "FAIL"
-    }
+    "total": 2
   },
   "dom/nodes/moveBefore/selection-preserve.html": {
     "total": 6,

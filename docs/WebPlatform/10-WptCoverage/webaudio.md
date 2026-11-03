@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of webaudio, and why the tes
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 277 | 298 | 0 | 93% |
+| [Stable](#stable-tests) | 278 | 298 | 0 | 93% |
 | [Tentative](#tentative-tests) | 2 | 5 | 0 | 40% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **279** | **303** | **0** | **92%** |
+| **All** | **280** | **303** | **0** | **92%** |
 
 ## Stable tests
 
@@ -272,7 +272,7 @@ description: "The results of the web-platform-tests of webaudio, and why the tes
 | [`the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-close.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-close.html) | Pass | 5 / 5 |  |  |
 | [`the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-detached-execution-context.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-detached-execution-context.html) | Pass | 7 / 7 |  |  |
 | [`the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-incremental-rendering-data-integrity.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-incremental-rendering-data-integrity.html) | Pass | 1 / 1 |  |  |
-| [`the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-incremental-rendering.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-incremental-rendering.html) | Fail | 7 / 8 | BUG | when the final chunk of an incremental rendering (`startRendering(frames)`) completes, the state of the context is `closed` before the chunk promise is resolved, where the test expects it to stay `running` while the promise is resolved (the close is queued afterwards) |
+| [`the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-incremental-rendering.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-incremental-rendering.html) | Pass | 8 / 8 |  |  |
 | [`the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-rendersizehint.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-rendersizehint.html) | Pass | 17 / 17 |  |  |
 | [`the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-suspend-rendersizehint.https.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-offlineaudiocontext-interface/offlineaudiocontext-suspend-rendersizehint.https.html) | Pass | 1 / 1 |  |  |
 | [`the-audio-api/the-offlineaudiocontext-interface/startrendering-after-discard.html`](https://wpt.fyi/results/webaudio/the-audio-api/the-offlineaudiocontext-interface/startrendering-after-discard.html) | Pass | 1 / 1 |  |  |

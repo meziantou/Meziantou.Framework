@@ -87,10 +87,7 @@
     "total": 12
   },
   "encoding/json-document-utf8.html": {
-    "total": 5,
-    "failures": {
-      "application/json;charset=windows-1251 is decoded as UTF-8": "FAIL"
-    }
+    "total": 5
   },
   "encoding/legacy-mb-japanese/euc-jp/eucjp-decode-cseucpkdfmtjapanese.html?1-1000": {
     "total": 1000

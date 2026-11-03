@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of css/css-images, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 41 | 45 | 0 | 91% |
+| [Stable](#stable-tests) | 44 | 45 | 0 | 98% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 463 | 476 | 0 | 97% |
-| **All** | **504** | **521** | **0** | **97%** |
+| **All** | **507** | **521** | **0** | **97%** |
 
 ## Stable tests
 
@@ -33,9 +33,9 @@ description: "The results of the web-platform-tests of css/css-images, and why t
 | [`image-set/image-set-computed.sub.html`](https://wpt.fyi/results/css/css-images/image-set/image-set-computed.sub.html) | Pass | 36 / 36 |  |  |
 | [`image-set/image-set-parsing.html`](https://wpt.fyi/results/css/css-images/image-set/image-set-parsing.html) | Pass | 144 / 144 |  |  |
 | [`inheritance.html`](https://wpt.fyi/results/css/css-images/inheritance.html) | Pass | 8 / 8 |  |  |
-| [`object-fit-svg-intersection-observer.sub.html`](https://wpt.fyi/results/css/css-images/object-fit-svg-intersection-observer.sub.html) | Fail | 0 / 3 | BUG | the nested document of an `object` element is mapped to the coordinates of its container at the content box (`IntersectionGeometry` translates by `ContentBoxRect.Offset`), not at the rectangle where `object-fit` places the SVG document (`ReplacedContentRect`), nor clipped by the content box: the visible top is 0 instead of 45, and the cross-origin ratios are 0 and 1 instead of 0.1 and 0.5 |
-| [`object-fit-svg-pointer-events.html`](https://wpt.fyi/results/css/css-images/object-fit-svg-pointer-events.html) | Fail | 0 / 2 | BUG | the hit testing of the nested document of an `object` element starts at its content box, not at the rectangle where `object-fit: contain` places the SVG document (`ReplacedContentRect`): a click at y=60 hits the root `svg` element instead of the bottom-left `rect`, and a click at y=10, above the fitted document, hits its top-left `rect` instead of the `object` |
-| [`object-fit-svg-scroll-into-view.html`](https://wpt.fyi/results/css/css-images/object-fit-svg-scroll-into-view.html) | Fail | 0 / 1 | BUG | `scrollIntoView()` on an element of the SVG document of an `object` element maps it to the content box of the container, not to the rectangle where `object-fit` places the document (`ReplacedContentRect`): the scroll position is 1025 instead of 1050 |
+| [`object-fit-svg-intersection-observer.sub.html`](https://wpt.fyi/results/css/css-images/object-fit-svg-intersection-observer.sub.html) | Pass | 3 / 3 |  |  |
+| [`object-fit-svg-pointer-events.html`](https://wpt.fyi/results/css/css-images/object-fit-svg-pointer-events.html) | Pass | 2 / 2 |  |  |
+| [`object-fit-svg-scroll-into-view.html`](https://wpt.fyi/results/css/css-images/object-fit-svg-scroll-into-view.html) | Pass | 1 / 1 |  |  |
 | [`object-view-box-parsing.html`](https://wpt.fyi/results/css/css-images/object-view-box-parsing.html) | Pass | 12 / 12 |  |  |
 | [`object-view-box-transition-mutation.html`](https://wpt.fyi/results/css/css-images/object-view-box-transition-mutation.html) | Pass | 1 / 1 |  |  |
 | [`parsing/conic-gradient-calc-angle-percentage-invalid.html`](https://wpt.fyi/results/css/css-images/parsing/conic-gradient-calc-angle-percentage-invalid.html) | Pass | 4 / 4 |  |  |

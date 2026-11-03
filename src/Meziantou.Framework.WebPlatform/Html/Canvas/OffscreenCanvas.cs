@@ -24,6 +24,13 @@ public sealed class OffscreenCanvas : EventTarget, IStructuredTransferable, ICan
     {
         _width = width;
         _height = height;
+
+        // The inherited language of an OffscreenCanvas created in a window is the language of the document element when it is
+        // created (https://html.spec.whatwg.org/multipage/canvas.html#offscreencanvas-inherited-language)
+        if (GlobalScope.Current is Window { Document.DocumentElement: { } root })
+        {
+            InheritedLanguage = Css.Selectors.HtmlElementStates.GetLanguage(root) ?? "";
+        }
     }
 
     /// <summary>The rendering context (https://html.spec.whatwg.org/multipage/canvas.html#offscreencanvas-context-mode): null, an <see cref="OffscreenCanvasRenderingContext2D"/> or an <see cref="ImageBitmapRenderingContext"/>.</summary>
@@ -40,8 +47,8 @@ public sealed class OffscreenCanvas : EventTarget, IStructuredTransferable, ICan
 
     /// <summary>
     /// The language of the placeholder canvas element when its control was transferred (the <c>inherit</c> language of the
-    /// texts, https://html.spec.whatwg.org/multipage/canvas.html#dom-canvas-transfercontroltooffscreen): an empty string when it
-    /// is unknown, null when the canvas was not created by <see cref="HtmlCanvasElement.TransferControlToOffscreen"/>.
+    /// texts, https://html.spec.whatwg.org/multipage/canvas.html#dom-canvas-transfercontroltooffscreen), or of the document
+    /// element of the window that created the canvas: an empty string when it is unknown, null when there is none.
     /// </summary>
     internal string? InheritedLanguage { get; init; }
 

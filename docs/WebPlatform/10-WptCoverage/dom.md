@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of dom, and why the tests th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 660 | 684 | 6 | 97% |
+| [Stable](#stable-tests) | 661 | 684 | 6 | 97% |
 | [Tentative](#tentative-tests) | 30 | 55 | 2 | 57% |
 | [Reftests](#reftests) | 4 | 4 | 0 | 100% |
-| **All** | **694** | **743** | **8** | **94%** |
+| **All** | **695** | **743** | **8** | **95%** |
 
 ## Stable tests
 
@@ -610,7 +610,7 @@ description: "The results of the web-platform-tests of dom, and why the tests th
 | [`nodes/moveBefore/relevant-mutations.html`](https://wpt.fyi/results/dom/nodes/moveBefore/relevant-mutations.html) | Pass | 2 / 2 |  |  |
 | [`nodes/moveBefore/role-updates-after-move.html`](https://wpt.fyi/results/dom/nodes/moveBefore/role-updates-after-move.html) | Pass | 1 / 1 |  |  |
 | [`nodes/moveBefore/script-move-before.html`](https://wpt.fyi/results/dom/nodes/moveBefore/script-move-before.html) | Pass | 2 / 2 |  |  |
-| [`nodes/moveBefore/select-option-optgroup.html`](https://wpt.fyi/results/dom/nodes/moveBefore/select-option-optgroup.html) | Fail | 1 / 2 | TEST BUG | 1 subtest contradicts the selectedness setting algorithm of the HTML Standard (the last selected option in tree order stays selected), while the test expects the selected option inserted before it to stay selected, as the browsers do (whatwg/html#7395) |
+| [`nodes/moveBefore/select-option-optgroup.html`](https://wpt.fyi/results/dom/nodes/moveBefore/select-option-optgroup.html) | Pass | 2 / 2 |  |  |
 | [`nodes/moveBefore/selection-preserve.html`](https://wpt.fyi/results/dom/nodes/moveBefore/selection-preserve.html) | Fail | 1 / 6 | TEST BUG | 5 of 6 subtests: the test selects with a drag of the pointer and, as its own comment says, relies on an internal of Chromium: `getSelection()` is recomputed from the visible selection after `moveBefore()`, so it expects the boundary points to have moved to the closest text that did not move (`notMove.firstChild`). The library keeps the live range of the selection, which the DOM specification updates when a node is moved: its boundary points are in the old parent (`<div id=old_parent>`). |
 | [`nodes/moveBefore/slotchange-events.html`](https://wpt.fyi/results/dom/nodes/moveBefore/slotchange-events.html) | Pass | 4 / 4 |  |  |
 | [`nodes/moveBefore/style-applies.html`](https://wpt.fyi/results/dom/nodes/moveBefore/style-applies.html) | Pass | 1 / 1 |  |  |

@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of html/semantics, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 2,104 | 2,192 | 31 | 97% |
+| [Stable](#stable-tests) | 2,106 | 2,192 | 31 | 97% |
 | [Tentative](#tentative-tests) | 65 | 203 | 32 | 38% |
 | [Reftests](#reftests) | 327 | 431 | 66 | 90% |
-| **All** | **2,496** | **2,826** | **129** | **93%** |
+| **All** | **2,498** | **2,826** | **129** | **93%** |
 
 ## Stable tests
 
@@ -1196,7 +1196,7 @@ description: "The results of the web-platform-tests of html/semantics, and why t
 | [`forms/the-select-element/customizable-select/option-form-ancestor-select.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/option-form-ancestor-select.html) | Pass | 2 / 2 |  |  |
 | [`forms/the-select-element/customizable-select/option-list-wrapped-optgroup.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/option-list-wrapped-optgroup.html) | Pass | 2 / 2 |  |  |
 | [`forms/the-select-element/customizable-select/option-list.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/option-list.html) | Pass | 1 / 1 |  |  |
-| [`forms/the-select-element/customizable-select/option-selectedness-wrapper.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/option-selectedness-wrapper.html) | Fail | 30 / 32 | BUG | the moving steps of `option` (`moveBefore()` of a wrapper containing a selected option into the select) run the selectedness setting algorithm, which keeps the last selected option in tree order (`Three`), instead of making the moved selected option the selected one as the insertion steps do (`Two`) |
+| [`forms/the-select-element/customizable-select/option-selectedness-wrapper.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/option-selectedness-wrapper.html) | Pass | 32 / 32 |  |  |
 | [`forms/the-select-element/customizable-select/picker-icon-animation.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/picker-icon-animation.html) | Pass | 1 / 1 |  |  |
 | [`forms/the-select-element/customizable-select/placeholder-label-option-wrapper.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/placeholder-label-option-wrapper.html) | Pass | 5 / 5 |  |  |
 | [`forms/the-select-element/customizable-select/select-accessibility-minimum-target-size.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/select-accessibility-minimum-target-size.html) | Pass | 6 / 6 |  |  |
@@ -1259,7 +1259,7 @@ description: "The results of the web-platform-tests of html/semantics, and why t
 | [`forms/the-select-element/customizable-select/selectedcontent-option-insertion.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-option-insertion.html) | Pass | 8 / 8 |  |  |
 | [`forms/the-select-element/customizable-select/selectedcontent-parser-script-csp-strict-dynamic.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-parser-script-csp-strict-dynamic.html) | Pass | 1 / 1 |  |  |
 | [`forms/the-select-element/customizable-select/selectedcontent-parser-script-runs-once.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-parser-script-runs-once.html) | Pass | 1 / 1 |  |  |
-| [`forms/the-select-element/customizable-select/selectedcontent-queued-update.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-queued-update.html) | Fail | 8 / 10 | BUG | the moving steps of `selectedcontent` queue a microtask that updates only the moved element, instead of queueing the update of all the `selectedcontent` elements of its select shared with the removal of an option: moving it and removing the selected option updates it twice, and the `selectedcontent` already in the target select is not updated |
+| [`forms/the-select-element/customizable-select/selectedcontent-queued-update.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-queued-update.html) | Pass | 10 / 10 |  |  |
 | [`forms/the-select-element/customizable-select/selectedcontent-restore.optional.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-restore.optional.html) | Pass | 2 / 2 |  |  |
 | [`forms/the-select-element/customizable-select/selectedcontent-subtree-mutations.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent-subtree-mutations.html) | Pass | 3 / 3 |  |  |
 | [`forms/the-select-element/customizable-select/selectedcontent.html`](https://wpt.fyi/results/html/semantics/forms/the-select-element/customizable-select/selectedcontent.html) | Pass | 11 / 11 |  |  |

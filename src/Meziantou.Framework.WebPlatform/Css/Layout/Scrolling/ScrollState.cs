@@ -207,6 +207,12 @@ internal sealed class SmoothScroll
     /// <summary>The timestamp (<see cref="TimeProvider.GetTimestamp"/>) of the first frame of the animation, or 0 before it.</summary>
     public long StartTimestamp { get; set; }
 
+    /// <summary>
+    /// Whether the smooth scroll is a scroll of the user (a key, a press on the track of a scrollbar): the next scrolls of the
+    /// user add up from its destination, whereas they abort the other smooth scrolls (see <see cref="LayoutEngine.AbortSmoothScrollForUser"/>).
+    /// </summary>
+    public bool IsUserScroll { get; set; }
+
     /// <summary>Returns the scroll position at a time: an ease-in-out curve from <see cref="Start"/> to <see cref="Target"/>.</summary>
     public PhysicalOffset GetPosition(double progress)
     {

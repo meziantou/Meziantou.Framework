@@ -22,13 +22,17 @@ internal static class SvgBoundingBox
 
     /// <summary>
     /// https://svgwg.org/svg2-draft/types.html#__svg__SVGGraphicsElement__getBBox: the bounding box in the user space of the
-    /// element. An element that is not rendered (it is not connected, it or one of its ancestors has display: none, or it is
-    /// in a non-rendered element such as defs) or whose geometry is empty has a zero bounding box
-    /// (https://github.com/w3c/svgwg/issues/1018).
+    /// element. An element whose geometry is empty has a zero bounding box (https://github.com/w3c/svgwg/issues/1018). An
+    /// element that is not rendered has the bounding box it would have if it were rendered
+    /// (https://svgwg.org/svg2-draft/coords.html#BoundingBoxes) when it is a shape, a text or a use element in a non-rendered
+    /// element (e.g. defs, symbol, clipPath, mask, or a group with display: none); as in all the browsers, an element that is
+    /// not connected, that has display: none itself, or a container element that is not rendered has a zero bounding box.
+    /// The other uses (e.g. the object bounding box units, ResizeObserver) set <paramref name="notRenderedGeometry"/> to false:
+    /// an element that is not rendered has a zero bounding box.
     /// </summary>
-    public static DomRect Compute(SvgElement element, bool fill, bool stroke, SvgOutermostViewport? viewport = null)
+    public static DomRect Compute(SvgElement element, bool fill, bool stroke, SvgOutermostViewport? viewport = null, bool notRenderedGeometry = false)
     {
-        if (!IsRendered(element))
+        if (!IsRendered(element) && !(notRenderedGeometry && HasGeometryWhenNotRendered(element)))
             return new DomRect();
 
         var box = GetBox(element, fill, stroke, depth: 0, viewport);
@@ -45,6 +49,15 @@ internal static class SvgBoundingBox
     /// is in an svg element, and its conditional processing attributes do not prevent its rendering).
     /// </summary>
     private static bool IsRendered(SvgElement element) => SvgUserSpace.GetStyle(element) is { } style && BoxGeneration.Get(style).IsBeingRendered && SvgConditionalProcessing.IsRendered(element);
+
+    /// <summary>Whether an element that is not rendered has the bounding box it would have if it were rendered (see <see cref="Compute"/>).</summary>
+    private static bool HasGeometryWhenNotRendered(SvgElement element)
+    {
+        if (!element.IsConnected || SvgUserSpace.GetOutermostSvgElement(element) is null || GetComputedValue(element, "display") == "none")
+            return false;
+
+        return element.LocalName is "rect" or "image" or "circle" or "ellipse" or "line" or "polyline" or "polygon" or "path" or "use" or "text" or "tspan" or "textPath";
+    }
 
     private static string? GetComputedValue(Element element, string property) => SvgUserSpace.GetComputedValue(element, property);
 

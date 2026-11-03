@@ -4069,11 +4069,7 @@
     "total": 3
   },
   "svg/types/scripted/SVGAngle-valueAsString.html": {
-    "total": 4,
-    "failures": {
-      "Reflected marker orient attribute clamps overflowing unit conversions and round-trips": "FAIL",
-      "SVGAngle clamps overflowing unit conversions and round-trips valueAsString": "FAIL"
-    }
+    "total": 4
   },
   "svg/types/scripted/SVGAnimatedAngle-initial-values.html": {
     "total": 2
@@ -4250,21 +4246,10 @@
     }
   },
   "svg/types/scripted/SVGGraphicsElement.getBBox-06.html": {
-    "total": 5,
-    "failures": {
-      "display:none <g>: the rect child reports the geometry it would have if rendered": "FAIL",
-      "symbol: the rect child reports the geometry it would have if rendered": "FAIL"
-    }
+    "total": 5
   },
   "svg/types/scripted/SVGGraphicsElement.getBBox-07.html": {
-    "total": 49,
-    "failures": {
-      "getBBox on circle inside defs returns the circle it would have if rendered": "FAIL",
-      "getBBox on rect inside clipPath returns the rect it would have if rendered": "FAIL",
-      "getBBox on rect inside defs returns the rect it would have if rendered": "FAIL",
-      "getBBox on rect inside group inside defs returns the rect it would have if rendered": "FAIL",
-      "getBBox on rect inside mask returns the rect it would have if rendered": "FAIL"
-    }
+    "total": 49
   },
   "svg/types/scripted/SVGGraphicsElement.getBBox-08.html": {
     "total": 20

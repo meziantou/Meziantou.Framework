@@ -250,6 +250,11 @@ internal static partial class CssValueComputer
                 // The logical keywords of the positions and of the lines of shape() are the physical ones of the writing mode
                 // of the element (the points of the computed value are offsets from the top left corner)
                 var generic = ComputeGeneric(style, property, value, baseUrl);
+                if (name is "clip-path" or "offset-path" && generic.StartsWith("path(", StringComparison.Ordinal))
+                {
+                    generic = KeepRelativePathCommands(value, generic);
+                }
+
                 return CssPropertyRules.ComputeShapeProperty(name, generic.StartsWith("shape(", StringComparison.Ordinal) ? ResolveLogicalShapeKeywords(style, generic) : generic);
             }
             case "border-shape" when value != "none":
@@ -352,6 +357,26 @@ internal static partial class CssValueComputer
     }
 
     /// <summary>Computes a value of a property that has no specific computation: the generic computation, clamped to the range of the property.</summary>
+    /// <summary>
+    /// The path() of clip-path and offset-path keeps its relative commands, as in the browsers (WPT
+    /// css/css-shapes/shape-functions/path-function-computed.html; the path data of the d property is converted to absolute
+    /// commands, https://svgwg.org/svg2-draft/paths.html#TheDProperty, and so is the one of shape-outside, WPT
+    /// css/css-shapes/parsing/shape-outside-computed.html). The relative commands are needed by the interpolation of a path()
+    /// with a shape(), whose <c>by</c> commands are not interpolated with the <c>to</c> commands
+    /// (https://drafts.csswg.org/css-shapes-2/#interpolating-shape).
+    /// </summary>
+    private static string KeepRelativePathCommands(string specified, string computed)
+    {
+        var function = CssParser.ParseListOfComponentValues(specified).OfType<CssFunction>().FirstOrDefault(candidate => InfraAscii.EqualsIgnoreAsciiCase(candidate.Name, "path"));
+        if (function is null || CssPath.Serialize(function, absolute: false) is not { } path
+            || CssParser.ParseListOfComponentValues(computed) is not [CssFunction computedFunction, .. var rest] || !InfraAscii.EqualsIgnoreAsciiCase(computedFunction.Name, "path"))
+        {
+            return computed;
+        }
+
+        return path + CssSerializer.SerializeValue(rest, property: null);
+    }
+
     private static string ComputeGenericProperty(ComputedStyle style, CssPropertyDefinition property, string value, string? baseUrl)
     {
         var name = property.Name;
@@ -646,6 +671,18 @@ internal static partial class CssValueComputer
                     return Raw(imageSet);
                 }
 
+                else if (name == "image" && function.Value.Exists(argument => argument is CssPreservedToken { Type: CssTokenType.String }))
+                {
+                    // https://drafts.csswg.org/css-images-5/#image-notation: the string of image() is a URL, resolved as the one of
+                    // url() (WPT css/css-values/attr-security.html)
+                    var image = new CssFunction(function.Name);
+                    foreach (var argument in function.Value)
+                    {
+                        image.Value.Add(argument is CssPreservedToken { Type: CssTokenType.String } source ? Raw(CssSerializer.SerializeUrl(ResolveUrl(source.Token.Value, context))) : Transform(argument, context));
+                    }
+
+                    return image;
+                }
                 else if (name == "cross-fade" && ComputeCrossFade(function, context) is { } crossFade)
                 {
                     return Raw(crossFade);
@@ -824,8 +861,13 @@ internal static partial class CssValueComputer
     /// </summary>
     private static string? ComputeCrossFade(CssFunction function, ComputationContext context)
     {
+        // The legacy syntax (two images and the amount of the second one) is computed as is
+        var arguments = SplitArguments(function.Value);
+        if (arguments is [_, _, [CssPreservedToken { Type: CssTokenType.Number or CssTokenType.Percentage }]])
+            return null;
+
         var images = new List<string>();
-        foreach (var argument in SplitArguments(function.Value))
+        foreach (var argument in arguments)
         {
             string? image = null;
             string? percentage = null;

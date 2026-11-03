@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of css/motion, and why the t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 44 | 46 | 0 | 96% |
+| [Stable](#stable-tests) | 45 | 46 | 0 | 98% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 98 | 98 | 0 | 100% |
-| **All** | **142** | **144** | **0** | **99%** |
+| **All** | **143** | **144** | **0** | **99%** |
 
 ## Stable tests
 
@@ -32,7 +32,7 @@ description: "The results of the web-platform-tests of css/motion, and why the t
 | [`animation/offset-path-interpolation-005.html`](https://wpt.fyi/results/css/motion/animation/offset-path-interpolation-005.html) | Pass | 502 / 502 |  |  |
 | [`animation/offset-path-interpolation-006.html`](https://wpt.fyi/results/css/motion/animation/offset-path-interpolation-006.html) | Fail | 506 / 510 | BUG | the radius of an `ellipse()` extrapolated below zero is clamped to `0px` instead of `0%` (the unit of the percentage radius is lost when it is clamped) |
 | [`animation/offset-path-interpolation-007.html`](https://wpt.fyi/results/css/motion/animation/offset-path-interpolation-007.html) | Pass | 168 / 168 |  |  |
-| [`animation/offset-path-interpolation-008.html`](https://wpt.fyi/results/css/motion/animation/offset-path-interpolation-008.html) | Fail | 468 / 614 | NOT IMPLEMENTED | the interpolation of `shape()` with a `path()` (the path is not converted to the equivalent `shape()`, https://drafts.csswg.org/css-shapes-2/#interpolating-shape: the values are not interpolated) and of the `arc` commands whose `cw`/`ccw` or `large`/`small` options differ |
+| [`animation/offset-path-interpolation-008.html`](https://wpt.fyi/results/css/motion/animation/offset-path-interpolation-008.html) | Pass | 614 / 614 |  |  |
 | [`animation/offset-path-interpolation-009.html`](https://wpt.fyi/results/css/motion/animation/offset-path-interpolation-009.html) | Pass | 36 / 36 |  |  |
 | [`animation/offset-position-composition.html`](https://wpt.fyi/results/css/motion/animation/offset-position-composition.html) | Pass | 56 / 56 |  |  |
 | [`animation/offset-position-interpolation.html`](https://wpt.fyi/results/css/motion/animation/offset-position-interpolation.html) | Pass | 312 / 312 |  |  |

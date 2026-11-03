@@ -114,33 +114,7 @@
     "reftest": "PASS"
   },
   "css/css-backgrounds/animations/background-image-interpolation.html": {
-    "total": 288,
-    "failures": {
-      "CSS Animations: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (-0.3) should be [url(../resources/blue-100.png)]": "FAIL",
-      "CSS Animations: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (0) should be [url(../resources/blue-100.png)]": "FAIL",
-      "CSS Animations: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (0.3) should be [url(../resources/blue-100.png)]": "FAIL",
-      "CSS Animations: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (0.6) should be [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)]": "FAIL",
-      "CSS Animations: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (1) should be [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)]": "FAIL",
-      "CSS Animations: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (1.5) should be [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)]": "FAIL",
-      "CSS Transitions with transition: all: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (-0.3) should be [url(../resources/blue-100.png)]": "FAIL",
-      "CSS Transitions with transition: all: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (0) should be [url(../resources/blue-100.png)]": "FAIL",
-      "CSS Transitions with transition: all: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (0.3) should be [url(../resources/blue-100.png)]": "FAIL",
-      "CSS Transitions with transition: all: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (0.6) should be [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)]": "FAIL",
-      "CSS Transitions with transition: all: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (1) should be [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)]": "FAIL",
-      "CSS Transitions with transition: all: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (1.5) should be [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)]": "FAIL",
-      "CSS Transitions: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (-0.3) should be [url(../resources/blue-100.png)]": "FAIL",
-      "CSS Transitions: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (0) should be [url(../resources/blue-100.png)]": "FAIL",
-      "CSS Transitions: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (0.3) should be [url(../resources/blue-100.png)]": "FAIL",
-      "CSS Transitions: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (0.6) should be [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)]": "FAIL",
-      "CSS Transitions: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (1) should be [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)]": "FAIL",
-      "CSS Transitions: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (1.5) should be [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)]": "FAIL",
-      "Web Animations: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (-0.3) should be [url(../resources/blue-100.png)]": "FAIL",
-      "Web Animations: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (0) should be [url(../resources/blue-100.png)]": "FAIL",
-      "Web Animations: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (0.3) should be [url(../resources/blue-100.png)]": "FAIL",
-      "Web Animations: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (0.6) should be [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)]": "FAIL",
-      "Web Animations: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (1) should be [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)]": "FAIL",
-      "Web Animations: property <background-image> from [url(../resources/blue-100.png)] to [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)] at (1.5) should be [cross-fade(url(../resources/green-100.png), url(../resources/stripes-100.png), 0.5)]": "FAIL"
-    }
+    "total": 288
   },
   "css/css-backgrounds/animations/background-position-composition.html": {
     "total": 70
@@ -449,13 +423,13 @@
     "reftest": "PASS"
   },
   "css/css-backgrounds/background-clip/clip-border-area-complex.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-backgrounds/background-clip/clip-border-area-corner-shape.html": {
     "reftest": "PASS"
   },
   "css/css-backgrounds/background-clip/clip-border-area-double.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-backgrounds/background-clip/clip-border-area-inset.html": {
     "reftest": "PASS"
@@ -464,7 +438,7 @@
     "reftest": "PASS"
   },
   "css/css-backgrounds/background-clip/clip-border-area-multiple-backgrounds.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-backgrounds/background-clip/clip-border-area-on-body-not-propagated-to-root.html": {
     "reftest": "PASS"
@@ -2147,7 +2121,7 @@
     "reftest": "PASS"
   },
   "css/css-backgrounds/box-shadow-invalid-001.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-backgrounds/box-shadow-multiple-001.html": {
     "reftest": "FAIL"

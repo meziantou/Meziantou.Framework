@@ -78,9 +78,6 @@
     }
   },
   "css/fill-stroke/webkit-text-stroke-computed.html": {
-    "total": 3,
-    "failures": {
-      "Property -webkit-text-stroke value 'green'": "FAIL"
-    }
+    "total": 3
   }
 }

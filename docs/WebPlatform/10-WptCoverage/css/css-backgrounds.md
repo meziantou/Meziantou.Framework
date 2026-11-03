@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of css/css-backgrounds, and 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 127 | 132 | 0 | 96% |
+| [Stable](#stable-tests) | 128 | 132 | 0 | 97% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 701 | 719 | 1 | 98% |
-| **All** | **828** | **851** | **1** | **97%** |
+| [Reftests](#reftests) | 705 | 719 | 1 | 98% |
+| **All** | **833** | **851** | **1** | **98%** |
 
 ## Stable tests
 
@@ -20,7 +20,7 @@ description: "The results of the web-platform-tests of css/css-backgrounds, and 
 |---|---|--:|---|---|
 | [`animations/background-color-interpolation.html`](https://wpt.fyi/results/css/css-backgrounds/animations/background-color-interpolation.html) | Fail | 168 / 172 | BUG | the interpolation from `currentcolor` to a translucent color is off by one unit (`rgba(0, 209, 46, 0.69)` instead of `rgba(0, 208, 47, 0.69)`) |
 | [`animations/background-color-transition-colormix.html`](https://wpt.fyi/results/css/css-backgrounds/animations/background-color-transition-colormix.html) | Pass | 1 / 1 |  |  |
-| [`animations/background-image-interpolation.html`](https://wpt.fyi/results/css/css-backgrounds/animations/background-image-interpolation.html) | Fail | 264 / 288 | NOT IMPLEMENTED | the `cross-fade()` values of the test are not supported |
+| [`animations/background-image-interpolation.html`](https://wpt.fyi/results/css/css-backgrounds/animations/background-image-interpolation.html) | Pass | 288 / 288 |  |  |
 | [`animations/background-position-composition.html`](https://wpt.fyi/results/css/css-backgrounds/animations/background-position-composition.html) | Pass | 70 / 70 |  |  |
 | [`animations/background-position-interpolation.html`](https://wpt.fyi/results/css/css-backgrounds/animations/background-position-interpolation.html) | Pass | 196 / 196 |  |  |
 | [`animations/background-position-origin-interpolation.html`](https://wpt.fyi/results/css/css-backgrounds/animations/background-position-origin-interpolation.html) | Pass | 280 / 280 |  |  |
@@ -254,12 +254,12 @@ description: "The results of the web-platform-tests of css/css-backgrounds, and 
 | [`background-clip/clip-border-area-border-shape-overflow.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-border-area-border-shape-overflow.html) | Pass | 1 / 1 |  |  |
 | [`background-clip/clip-border-area-border-shape.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-border-area-border-shape.html) | Pass | 1 / 1 |  |  |
 | [`background-clip/clip-border-area-box-decoration-break.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-border-area-box-decoration-break.html) | Pass | 1 / 1 |  |  |
-| [`background-clip/clip-border-area-complex.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-border-area-complex.html) | Fail | 0 / 1 | BUG | `background-clip: border-area` clips the image to the whole ring between the border edge and the padding edge instead of the area painted by the strokes of the border (`border-style: double`, `dashed`, `dotted`): the gaps of the border are filled; only Safari passes |
+| [`background-clip/clip-border-area-complex.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-border-area-complex.html) | Pass | 1 / 1 |  |  |
 | [`background-clip/clip-border-area-corner-shape.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-border-area-corner-shape.html) | Pass | 1 / 1 |  |  |
-| [`background-clip/clip-border-area-double.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-border-area-double.html) | Fail | 0 / 1 | BUG | `background-clip: border-area` clips the image to the whole ring between the border edge and the padding edge instead of the area painted by the strokes of the border (`border-style: double`): the gaps of the border are filled; Firefox fails too |
+| [`background-clip/clip-border-area-double.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-border-area-double.html) | Pass | 1 / 1 |  |  |
 | [`background-clip/clip-border-area-inset.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-border-area-inset.html) | Pass | 1 / 1 |  |  |
 | [`background-clip/clip-border-area-missing-border.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-border-area-missing-border.html) | Pass | 1 / 1 |  |  |
-| [`background-clip/clip-border-area-multiple-backgrounds.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-border-area-multiple-backgrounds.html) | Fail | 0 / 1 | BUG | `background-clip: border-area` clips the image to the whole ring between the border edge and the padding edge instead of the area painted by the strokes of the border (`border-style: dotted`): the gaps of the border are filled and hide the green layer below; Firefox fails too |
+| [`background-clip/clip-border-area-multiple-backgrounds.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-border-area-multiple-backgrounds.html) | Pass | 1 / 1 |  |  |
 | [`background-clip/clip-border-area-on-body-not-propagated-to-root.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-border-area-on-body-not-propagated-to-root.html) | Pass | 1 / 1 |  |  |
 | [`background-clip/clip-border-area-on-body-propagated-to-root.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-border-area-on-body-propagated-to-root.html) | Pass | 1 / 1 |  |  |
 | [`background-clip/clip-border-area-on-root.html`](https://wpt.fyi/results/css/css-backgrounds/background-clip/clip-border-area-on-root.html) | Pass | 1 / 1 |  |  |
@@ -804,7 +804,7 @@ description: "The results of the web-platform-tests of css/css-backgrounds, and 
 | [`box-shadow-calc.html`](https://wpt.fyi/results/css/css-backgrounds/box-shadow-calc.html) | Pass | 1 / 1 |  |  |
 | [`box-shadow-currentcolor.html`](https://wpt.fyi/results/css/css-backgrounds/box-shadow-currentcolor.html) | Pass | 1 / 1 |  |  |
 | [`box-shadow-inset-without-border-radius.html`](https://wpt.fyi/results/css/css-backgrounds/box-shadow-inset-without-border-radius.html) | Pass | 1 / 1 |  |  |
-| [`box-shadow-invalid-001.html`](https://wpt.fyi/results/css/css-backgrounds/box-shadow-invalid-001.html) | Fail | 0 / 1 | BUG | `none` is accepted as an item of a list of shadows (`box-shadow: none, red 0px -100px, ...`): `box-shadow` is parsed as the shorthand of css-borders-4 (`<spread-shadow>#`, where `none` is a value of `box-shadow-offset`), while the test, as the browsers, expects the grammar of css-backgrounds-3 (`none \| <shadow>#`) to make these declarations invalid: the red shadows are painted instead of the green inset shadow of the first declaration |
+| [`box-shadow-invalid-001.html`](https://wpt.fyi/results/css/css-backgrounds/box-shadow-invalid-001.html) | Pass | 1 / 1 |  |  |
 | [`box-shadow-multiple-001.html`](https://wpt.fyi/results/css/css-backgrounds/box-shadow-multiple-001.html) | Fail | 0 / 1 | BUG | the reference gives the colors of the translucent shadows that overlap as the browsers compute them with 8 bits per component (e.g. `#7F7FBF`); the components that are exactly between two levels (127.5) are rounded up by the 16-bit compositing of the page: 10000 pixels differ by 1 (no fuzziness is allowed) |
 | [`box-shadow-outset-without-border-radius-001.html`](https://wpt.fyi/results/css/css-backgrounds/box-shadow-outset-without-border-radius-001.html) | Pass | 1 / 1 |  |  |
 | [`box-shadow-overlapping-001.html`](https://wpt.fyi/results/css/css-backgrounds/box-shadow-overlapping-001.html) | Pass | 1 / 1 |  |  |

@@ -104,6 +104,13 @@ internal sealed class CssCounters
         Node? treeScope = null;
         for (var current = style; current is not null; current = current.Parent)
         {
+            // An animated value is declared in the tree of its @keyframes rule
+            if (current.TryGetAnimatedTreeScope(property, out var animatedTreeScope))
+            {
+                treeScope = animatedTreeScope;
+                break;
+            }
+
             if (current.TryGetCascadedValue(property, out var cascaded) && cascaded.Value.Value.Trim() is not ("inherit" or "unset"))
             {
                 treeScope = cascaded.TreeScope;

@@ -11,8 +11,8 @@ description: "The results of the web-platform-tests of css/css-images, and why t
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 44 | 45 | 0 | 98% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 463 | 476 | 0 | 97% |
-| **All** | **507** | **521** | **0** | **97%** |
+| [Reftests](#reftests) | 465 | 476 | 0 | 98% |
+| **All** | **509** | **521** | **0** | **98%** |
 
 ## Stable tests
 
@@ -88,8 +88,8 @@ description: "The results of the web-platform-tests of css/css-images, and why t
 | [`cross-fade-natural-size.html`](https://wpt.fyi/results/css/css-images/cross-fade-natural-size.html) | Fail | 0 / 1 | BUG | the SVG images of the `cross-fade()` have no `viewBox`: drawn at the size of the cross-fade (375x350, which is right), they keep their aspect ratio (a synthesized `viewBox` with the default `preserveAspectRatio`, as Blink does for the SVG images), where the reference expects them stretched to the size (the `preserveAspectRatio="none"` that Gecko uses for a synthesized `viewBox`); `cross-fade()` fails in every browser |
 | [`cross-fade-premultiplied-alpha.html`](https://wpt.fyi/results/css/css-images/cross-fade-premultiplied-alpha.html) | Fail | 0 / 1 | BUG | the mixed color is exact (`color(srgb 0.0099 0.990 0 / 0.505)`), but the fuzziness of the test requires a difference of exactly 1 with its reference on every pixel, and the difference is 2 for a channel; `cross-fade()` fails in every browser |
 | [`cross-fade-target-alpha.html`](https://wpt.fyi/results/css/css-images/cross-fade-target-alpha.html) | Pass | 1 / 1 |  |  |
-| [`css-image-fallbacks-and-annotations.html`](https://wpt.fyi/results/css/css-images/css-image-fallbacks-and-annotations.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `image()` function with an image source and a fallback color (`image("green.png", green)`), which CSS Images 4 moved to Level 5: only `image(<color>)` is parsed (the grammar of CSS Images 4); no browser implements it |
-| [`css-image-fallbacks-and-annotations002.html`](https://wpt.fyi/results/css/css-images/css-image-fallbacks-and-annotations002.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the `image()` function with an image source (`image("support/1x1-green.png")`), which CSS Images 4 moved to Level 5: only `image(<color>)` is parsed (the grammar of CSS Images 4); no browser implements it |
+| [`css-image-fallbacks-and-annotations.html`](https://wpt.fyi/results/css/css-images/css-image-fallbacks-and-annotations.html) | Pass | 1 / 1 |  |  |
+| [`css-image-fallbacks-and-annotations002.html`](https://wpt.fyi/results/css/css-images/css-image-fallbacks-and-annotations002.html) | Pass | 1 / 1 |  |  |
 | [`css-image-fallbacks-and-annotations003.html`](https://wpt.fyi/results/css/css-images/css-image-fallbacks-and-annotations003.html) | Fail | 0 / 1 | TEST BUG | the test uses a list of fallback images (`image("a.svg", "b.png", "c.gif")`) of an old draft of CSS Images 4: `image()` takes one source and one color in Level 5, and one color in Level 4; fails in every browser |
 | [`css-image-fallbacks-and-annotations004.html`](https://wpt.fyi/results/css/css-images/css-image-fallbacks-and-annotations004.html) | Fail | 0 / 1 | TEST BUG | the test uses a list of fallback images (`image("a.svg", "b.png", "c.gif")`) of an old draft of CSS Images 4: `image()` takes one source and one color in Level 5, and one color in Level 4; fails in every browser |
 | [`css-image-fallbacks-and-annotations005.html`](https://wpt.fyi/results/css/css-images/css-image-fallbacks-and-annotations005.html) | Fail | 0 / 1 | TEST BUG | `image(rgba(0,0,255,0.5)), url(1x1-green.png)` is painted as the test describes (a translucent blue over the green tiles, "pale green"), but its reference is a plain green square; fails in every browser |

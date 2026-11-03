@@ -723,8 +723,9 @@ internal sealed class SelectorParser
         if (previous.Name == "picker")
             return element.Name is "first-line" or "first-letter" or "backdrop" || IsHighlightPseudoElement(element) || SubPseudoElements.Contains(element.Name);
 
+        // (and the scroll markers and buttons of a scroll container, which are tree-abiding, https://drafts.csswg.org/css-overflow-5/#scroll-marker-pseudo)
         if (previous.Name == "slotted")
-            return SubPseudoElements.Contains(element.Name);
+            return SubPseudoElements.Contains(element.Name) || element.Name is "scroll-marker" or "scroll-marker-group" or "scroll-button";
 
         // ::part() is a fully styleable pseudo-element (https://drafts.csswg.org/css-shadow-1/#part): it can be followed by
         // the pseudo-elements of the elements, except the ones that select elements of a shadow tree

@@ -3616,11 +3616,7 @@
     "total": 1
   },
   "html/canvas/element/manual/filters/2d.filter.function-then-svg-reference.html": {
-    "total": 2,
-    "failures": {
-      "brightness() chained before url() renders correctly": "FAIL",
-      "url() alone renders correctly": "FAIL"
-    }
+    "total": 2
   },
   "html/canvas/element/manual/filters/canvas-fillStyle-opacity.html": {
     "reftest": "PASS"
@@ -3684,9 +3680,9 @@
       "Dynamically turning an ancestor <a> into a visited link taints immediate canvas draw": "FAIL",
       "Dynamically turning an ancestor <a> into an unvisited link causes feDiffuseLighting to taint 2D canvas": "FAIL",
       "Dynamically turning an ancestor <a> into an unvisited link causes feFlood to taint 2D canvas": "FAIL",
-      "Filters inside a link whose :visited color matches unvisited do not taint": "FAIL",
       "feDiffuseLighting with :visited color taints 2D canvas": "FAIL",
       "feDropShadow with :visited color taints 2D canvas": "FAIL",
+      "feFlood inside a display:none <svg> after getComputedStyle does not leak :visited color to canvas": "FAIL",
       "feFlood with :visited color taints 2D canvas": "FAIL",
       "feSpecularLighting with :visited color taints 2D canvas": "FAIL"
     }

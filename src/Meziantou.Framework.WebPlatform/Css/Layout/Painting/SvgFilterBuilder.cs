@@ -89,6 +89,7 @@ internal static class SvgFilterBuilder
         public bool IsTainted(int input) => input switch
         {
             FilterInput.SourceGraphic or FilterInput.SourceAlpha => TaintedSource,
+            FilterInput.Paint => true,
             >= 0 => Tainted[input],
             _ => false,
         };
@@ -199,8 +200,11 @@ internal static class SvgFilterBuilder
             case "SourceAlpha":
                 return FilterInput.SourceAlpha;
 
-            case "BackgroundImage" or "BackgroundAlpha" or "FillPaint" or "StrokePaint":
+            case "BackgroundImage" or "BackgroundAlpha":
                 return FilterInput.Transparent;
+
+            case "FillPaint" or "StrokePaint":
+                return FilterInput.Paint;
 
             case { Length: > 0 } reference when context.Results.TryGetValue(reference, out var index):
                 return index;

@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of css/css-shadow, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 86 | 87 | 0 | 99% |
+| [Stable](#stable-tests) | 87 | 87 | 0 | 100% |
 | [Tentative](#tentative-tests) | 0 | 4 | 0 | 0% |
-| [Reftests](#reftests) | 106 | 114 | 0 | 93% |
-| **All** | **192** | **205** | **0** | **94%** |
+| [Reftests](#reftests) | 107 | 114 | 0 | 94% |
+| **All** | **194** | **205** | **0** | **95%** |
 
 ## Stable tests
 
@@ -101,7 +101,7 @@ description: "The results of the web-platform-tests of css/css-shadow, and why t
 | [`slotted-link.html`](https://wpt.fyi/results/css/css-shadow/slotted-link.html) | Pass | 1 / 1 |  |  |
 | [`slotted-matches.html`](https://wpt.fyi/results/css/css-shadow/slotted-matches.html) | Pass | 1 / 1 |  |  |
 | [`slotted-nested.html`](https://wpt.fyi/results/css/css-shadow/slotted-nested.html) | Pass | 2 / 2 |  |  |
-| [`slotted-parsing.html`](https://wpt.fyi/results/css/css-shadow/slotted-parsing.html) | Fail | 36 / 39 | NOT IMPLEMENTED | the `::scroll-marker`, `::scroll-marker-group` and `::scroll-button()` pseudo-elements after `::slotted()` |
+| [`slotted-parsing.html`](https://wpt.fyi/results/css/css-shadow/slotted-parsing.html) | Pass | 39 / 39 |  |  |
 | [`slotted-slot.html`](https://wpt.fyi/results/css/css-shadow/slotted-slot.html) | Pass | 1 / 1 |  |  |
 | [`slotted-user-agent-part-invalidation.html`](https://wpt.fyi/results/css/css-shadow/slotted-user-agent-part-invalidation.html) | Pass | 1 / 1 |  |  |
 | [`stylesheet-title-002.html`](https://wpt.fyi/results/css/css-shadow/stylesheet-title-002.html) | Pass | 1 / 1 |  |  |
@@ -200,7 +200,7 @@ description: "The results of the web-platform-tests of css/css-shadow, and why t
 | [`reslot-text-inheritance.html`](https://wpt.fyi/results/css/css-shadow/reslot-text-inheritance.html) | Pass | 1 / 1 |  |  |
 | [`same-rules-bug-2044746.html`](https://wpt.fyi/results/css/css-shadow/same-rules-bug-2044746.html) | Pass | 1 / 1 |  |  |
 | [`scoped-reference-animation-001.html`](https://wpt.fyi/results/css/css-shadow/scoped-reference-animation-001.html) | Pass | 1 / 1 |  |  |
-| [`scoped-reference-animation-002.html`](https://wpt.fyi/results/css/css-shadow/scoped-reference-animation-002.html) | Fail | 0 / 1 | BUG | the `list-style-type` of the keyframes of a shadow tree style sheet is not resolved against the `@counter-style` rules of the shadow tree (https://drafts.csswg.org/css-scoping/#shadow-names): the marker is the one of the counter style of the document tree; only Chrome passes |
+| [`scoped-reference-animation-002.html`](https://wpt.fyi/results/css/css-shadow/scoped-reference-animation-002.html) | Pass | 1 / 1 |  |  |
 | [`shadow-assign-dynamic-001.html`](https://wpt.fyi/results/css/css-shadow/shadow-assign-dynamic-001.html) | Pass | 1 / 1 |  |  |
 | [`shadow-at-import.html`](https://wpt.fyi/results/css/css-shadow/shadow-at-import.html) | Pass | 1 / 1 |  |  |
 | [`shadow-directionality-001.tentative.html`](https://wpt.fyi/results/css/css-shadow/shadow-directionality-001.tentative.html) | Pass | 1 / 1 |  |  |

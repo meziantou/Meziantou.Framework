@@ -394,7 +394,9 @@ internal sealed partial class Painter
             else if (bottomClip == BackgroundBox.BorderArea)
             {
                 // https://drafts.csswg.org/css-backgrounds-4/#valdef-background-clip-border-area: the area of the borders only
+                var masked = PushBorderStrokesMask(style, border);
                 _builder.Add(new DrawPathItem(GetBorderAreaPath(borderShape, border), new DisplayPaint(color)) { Source = style.Element });
+                PopBorderStrokesMask(masked, style, borderShape, border);
             }
             else
             {
@@ -489,7 +491,9 @@ internal sealed partial class Painter
             }
 
             ClipToScrolledArea(scrolledClip);
-            PaintBackgroundLayer(fragment, style, layer, borderBox, border, padding, paintingArea, blends, layoutBorderBox, shapedBackground);
+            var maskedLayer = layer.Clip == BackgroundBox.BorderArea && PushBorderStrokesMask(style, border, blends ? layer.BlendMode : BlendMode.Normal);
+            PaintBackgroundLayer(fragment, style, layer, borderBox, border, padding, paintingArea, blends && !maskedLayer, layoutBorderBox, shapedBackground);
+            PopBorderStrokesMask(maskedLayer, style, borderShape, border);
             if (scrolledClip is not null)
             {
                 _builder.Restore();
@@ -521,6 +525,37 @@ internal sealed partial class Painter
         ring.AddRoundedRect(borderShape);
         ring.AddRoundedRect(borderShape.Inset(border));
         return ring;
+    }
+
+    /// <summary>
+    /// Starts the group of a background painted in the area of the borders (<c>background-clip: border-area</c>) when the
+    /// strokes of the borders do not cover it (<c>dotted</c>, <c>dashed</c> or <c>double</c> borders): "the area painted by
+    /// the borders, taking border-width and border-style into account" (https://drafts.csswg.org/css-backgrounds-4/#valdef-background-clip-border-area),
+    /// so the gaps of the borders are not painted. <see cref="PopBorderStrokesMask"/> masks the group with the strokes.
+    /// </summary>
+    private bool PushBorderStrokesMask(ComputedStyle style, Sides<double> border, BlendMode blendMode = BlendMode.Normal)
+    {
+        var styles = style.Layout.Box.BorderStyle;
+        if (!HasGaps(styles.Top, border.Top) && !HasGaps(styles.Right, border.Right) && !HasGaps(styles.Bottom, border.Bottom) && !HasGaps(styles.Left, border.Left))
+            return false;
+
+        _builder.SaveLayer(new SaveLayerItem(1, blendMode, Filters: null) { Source = style.Element });
+        return true;
+
+        static bool HasGaps(BorderStyle borderStyle, double width) => width > 0 && borderStyle is BorderStyle.Dotted or BorderStyle.Dashed or BorderStyle.Double;
+    }
+
+    /// <summary>Masks the group started by <see cref="PushBorderStrokesMask"/> with the strokes of the borders.</summary>
+    private void PopBorderStrokesMask(bool masked, ComputedStyle style, RoundedRect borderShape, Sides<double> border)
+    {
+        if (!masked)
+            return;
+
+        var black = DisplayColor.Black;
+        _builder.SaveLayer(new SaveLayerItem(1, BlendMode.DestinationIn, Filters: null) { Source = style.Element });
+        BorderPainter.Paint(_builder, borderShape, border, style.Layout.Box.BorderStyle, new Sides<DisplayColor>(black, black, black, black), style.Element, _devicePixelRatio);
+        _builder.Restore();
+        _builder.Restore();
     }
 
     private static bool HasBlendModes(BackgroundLayer[] layers)

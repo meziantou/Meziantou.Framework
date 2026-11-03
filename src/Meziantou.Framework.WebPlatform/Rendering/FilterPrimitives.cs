@@ -29,8 +29,14 @@ internal static class FilterInput
     /// <summary>The alpha of the graphic the filter is applied to (black).</summary>
     public const int SourceAlpha = -2;
 
-    /// <summary>A transparent black image (BackgroundImage, FillPaint and StrokePaint are not supported).</summary>
+    /// <summary>A transparent black image (BackgroundImage is not supported).</summary>
     public const int Transparent = -3;
+
+    /// <summary>
+    /// FillPaint or StrokePaint: a transparent black image (they are not supported), which is tainted
+    /// (https://drafts.fxtf.org/filter-effects/#tainted-filter-primitives).
+    /// </summary>
+    public const int Paint = -4;
 }
 
 /// <summary>The edge modes of the convolutions (https://drafts.fxtf.org/filter-effects/#element-attrdef-fegaussianblur-edgemode).</summary>

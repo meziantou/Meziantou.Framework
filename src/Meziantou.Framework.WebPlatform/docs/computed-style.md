@@ -1447,7 +1447,10 @@ The computed values include the effects of the CSS animations, the CSS transitio
   round-trip the matrices that have a skew); `translate`, `rotate` (the rotations around different axes by their
   quaternions, a rotation of more than half a turn being the equivalent rotation in the other direction, like the
   quaternion of its matrix) and `scale`, the shadow lists, the filter lists,
-  `d` and `path()` (with the same reference box), the basic shapes with the same function (the omitted offsets and radii of
+  `d` and `path()` (with the same reference box), a `path()` with a `shape()` (the path is converted to the equivalent
+  `shape()`, its relative commands being `by` commands: the computed `path()` of `clip-path` and `offset-path` keeps its
+  relative commands; the `cw` and `large` options of the arcs are set when their interpolated value is greater than 0),
+  `dynamic-range-limit` (by `dynamic-range-limit-mix()`), the basic shapes with the same function (the omitted offsets and radii of
   `inset()` and the rounding of `polygon()` are restored before, `CssValueNormalizer`; a `circle()` or an `ellipse()` with a
   keyword radius is discrete), `aspect-ratio` (by logarithm), the `corner-*-shape` properties (the superellipse parameters by their
   normalized superellipse half corner, [CSS Borders 4](https://drafts.csswg.org/css-borders-4/#corner-shape-interpolation):

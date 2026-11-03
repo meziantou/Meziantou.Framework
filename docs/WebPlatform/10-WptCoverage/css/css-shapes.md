@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of css/css-shapes, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 145 | 147 | 0 | 99% |
+| [Stable](#stable-tests) | 146 | 147 | 0 | 99% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 237 | 238 | 0 | 99.5% |
-| **All** | **382** | **385** | **0** | **99%** |
+| **All** | **383** | **385** | **0** | **99%** |
 
 ## Stable tests
 
@@ -24,7 +24,7 @@ description: "The results of the web-platform-tests of css/css-shapes, and why t
 | [`animation/shape-outside-composition.html`](https://wpt.fyi/results/css/css-shapes/animation/shape-outside-composition.html) | Pass | 140 / 140 |  |  |
 | [`animation/shape-outside-interpolation.html`](https://wpt.fyi/results/css/css-shapes/animation/shape-outside-interpolation.html) | Pass | 780 / 780 |  |  |
 | [`animation/shape-outside-path-interpolation.html`](https://wpt.fyi/results/css/css-shapes/animation/shape-outside-path-interpolation.html) | Pass | 478 / 478 |  |  |
-| [`animation/shape-outside-shape-interpolation.html`](https://wpt.fyi/results/css/css-shapes/animation/shape-outside-shape-interpolation.html) | Fail | 512 / 546 | NOT IMPLEMENTED | the interpolation of `shape()` with a `path()` (the path is not converted to the equivalent `shape()`, https://drafts.csswg.org/css-shapes-2/#interpolating-shape: the values are not interpolated) and of the `arc` commands whose `cw`/`ccw` or `large`/`small` options differ |
+| [`animation/shape-outside-shape-interpolation.html`](https://wpt.fyi/results/css/css-shapes/animation/shape-outside-shape-interpolation.html) | Fail | 538 / 546 | BUG | a `path()` with relative commands is not interpolated with the `by` commands of a `shape()`: the computed `path()` of `shape-outside` has absolute commands (as css/css-shapes/parsing/shape-outside-computed.html requires, unlike `clip-path` and `offset-path`), so the relative commands are lost before the `path()` is converted to the equivalent `shape()` (https://drafts.csswg.org/css-shapes-2/#interpolating-shape) |
 | [`basic-shape-circle-ellipse-serialization.html`](https://wpt.fyi/results/css/css-shapes/basic-shape-circle-ellipse-serialization.html) | Pass | 27 / 27 |  |  |
 | [`basic-shape-interpolation.html`](https://wpt.fyi/results/css/css-shapes/basic-shape-interpolation.html) | Pass | 3 / 3 |  |  |
 | [`inheritance.html`](https://wpt.fyi/results/css/css-shapes/inheritance.html) | Pass | 6 / 6 |  |  |
@@ -51,7 +51,7 @@ description: "The results of the web-platform-tests of css/css-shapes, and why t
 | [`shape-functions/inset-function-invalid.html`](https://wpt.fyi/results/css/css-shapes/shape-functions/inset-function-invalid.html) | Pass | 12 / 12 |  |  |
 | [`shape-functions/inset-function-valid.html`](https://wpt.fyi/results/css/css-shapes/shape-functions/inset-function-valid.html) | Pass | 11 / 11 |  |  |
 | [`shape-functions/path-function-computed-collision.html`](https://wpt.fyi/results/css/css-shapes/shape-functions/path-function-computed-collision.html) | Pass | 1 / 1 |  |  |
-| [`shape-functions/path-function-computed.html`](https://wpt.fyi/results/css/css-shapes/shape-functions/path-function-computed.html) | Fail | 0 / 3 | TEST BUG | the test expects the computed `path()` to keep its relative commands (as Gecko and WebKit), while css/css-shapes/parsing/shape-outside-computed.html and the interpolation tests expect them converted to absolute commands (as Blink, and as this library does); the normalization of the computed path data is not specified (https://github.com/w3c/svgwg/issues/321) |
+| [`shape-functions/path-function-computed.html`](https://wpt.fyi/results/css/css-shapes/shape-functions/path-function-computed.html) | Pass | 3 / 3 |  |  |
 | [`shape-functions/path-function-invalid.html`](https://wpt.fyi/results/css/css-shapes/shape-functions/path-function-invalid.html) | Pass | 2 / 2 |  |  |
 | [`shape-functions/path-function-valid.html`](https://wpt.fyi/results/css/css-shapes/shape-functions/path-function-valid.html) | Pass | 2 / 2 |  |  |
 | [`shape-functions/polygon-function-computed.html`](https://wpt.fyi/results/css/css-shapes/shape-functions/polygon-function-computed.html) | Pass | 4 / 4 |  |  |

@@ -45,6 +45,9 @@ internal enum CssInterpolationKind : byte
     /// <summary>https://drafts.csswg.org/web-animations-1/#animating-visibility</summary>
     Visibility,
 
+    /// <summary>https://drafts.csswg.org/css-color-hdr-1/#the-dynamic-range-limit-property: by dynamic-range-limit-mix().</summary>
+    DynamicRangeLimit,
+
     /// <summary>https://drafts.csswg.org/css-display-4/#display-animation: none is used only at the ends of the interval.</summary>
     Display,
 
@@ -143,7 +146,7 @@ internal static class CssAnimationTypes
         ["corner-start-end-shape"] = CssInterpolationKind.CornerShape,
         ["corner-end-start-shape"] = CssInterpolationKind.CornerShape,
         ["corner-end-end-shape"] = CssInterpolationKind.CornerShape,
-        ["dynamic-range-limit"] = CssInterpolationKind.Discrete,
+        ["dynamic-range-limit"] = CssInterpolationKind.DynamicRangeLimit,
 
         // The images are transitionable but interpolated discretely, like in browsers
         ["background-image"] = CssInterpolationKind.Image,

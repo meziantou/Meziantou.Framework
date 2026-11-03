@@ -1,4 +1,6 @@
 using System.Buffers.Binary;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using Meziantou.Framework.Imaging.Formats;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -203,16 +205,26 @@ internal sealed class TgaEncoderCodec : ImageEncoderCodec
         }
 
         /// <summary>Encodes one row as run-length and raw packets; packets never cross the scan line.</summary>
-        private int EncodeRunLengthRow(ReadOnlySpan<byte> stored, Span<byte> destination)
+        private int EncodeRunLengthRow(ReadOnlySpan<byte> stored, Span<byte> destination) => _bytesPerStoredPixel switch
         {
-            var bytes = _bytesPerStoredPixel;
+            1 => EncodeRunLengthRow<byte>(stored, destination),
+            3 => EncodeRunLengthRow(unsafe(MemoryMarshal.Cast<byte, StoredPixel24>(stored)), destination),
+            _ => EncodeRunLengthRow(unsafe(MemoryMarshal.Cast<byte, uint>(stored)), destination),
+        };
+
+        /// <summary>Encodes one row of pixels (compared as values) as run-length and raw packets.</summary>
+        private static int EncodeRunLengthRow<TPixel>(ReadOnlySpan<TPixel> pixels, Span<byte> destination)
+            where TPixel : unmanaged, IEquatable<TPixel>
+        {
+            var bytes = Unsafe.SizeOf<TPixel>();
+            var width = pixels.Length;
             var written = 0;
             var x = 0;
-            while (x < _width)
+            while (x < width)
             {
-                var pixel = stored.Slice(x * bytes, bytes);
+                var pixel = pixels[x];
                 var run = 1;
-                while (x + run < _width && run < TgaFormat.MaxPacketLength && stored.Slice((x + run) * bytes, bytes).SequenceEqual(pixel))
+                while (x + run < width && run < TgaFormat.MaxPacketLength && pixels[x + run].Equals(pixel))
                 {
                     run++;
                 }
@@ -220,7 +232,7 @@ internal sealed class TgaEncoderCodec : ImageEncoderCodec
                 if (run >= 2)
                 {
                     destination[written++] = (byte)(TgaFormat.RunLengthPacketFlag | (run - 1));
-                    pixel.CopyTo(destination[written..]);
+                    unsafe { MemoryMarshal.AsBytes(pixels.Slice(x, 1)).CopyTo(destination[written..]); }
                     written += bytes;
                     x += run;
                     continue;
@@ -228,21 +240,36 @@ internal sealed class TgaEncoderCodec : ImageEncoderCodec
 
                 // Raw packet: stop before the next run of two or more identical pixels
                 var count = 1;
-                while (x + count < _width && count < TgaFormat.MaxPacketLength)
+                while (x + count < width && count < TgaFormat.MaxPacketLength)
                 {
-                    if (x + count + 1 < _width && stored.Slice((x + count) * bytes, bytes).SequenceEqual(stored.Slice((x + count + 1) * bytes, bytes)))
+                    if (x + count + 1 < width && pixels[x + count].Equals(pixels[x + count + 1]))
                         break;
 
                     count++;
                 }
 
                 destination[written++] = (byte)(count - 1);
-                stored.Slice(x * bytes, count * bytes).CopyTo(destination[written..]);
+                unsafe { MemoryMarshal.AsBytes(pixels.Slice(x, count)).CopyTo(destination[written..]); }
                 written += count * bytes;
                 x += count;
             }
 
             return written;
+        }
+
+        /// <summary>A stored 24-bit pixel, compared as a value.</summary>
+        [StructLayout(LayoutKind.Sequential, Pack = 1)]
+        private readonly struct StoredPixel24 : IEquatable<StoredPixel24>
+        {
+            private readonly byte _first;
+            private readonly byte _second;
+            private readonly byte _third;
+
+            public bool Equals(StoredPixel24 other) => _first == other._first && _second == other._second && _third == other._third;
+
+            public override bool Equals([NotNullWhen(true)] object? obj) => obj is StoredPixel24 other && Equals(other);
+
+            public override int GetHashCode() => _first | (_second << 8) | (_third << 16);
         }
     }
 }

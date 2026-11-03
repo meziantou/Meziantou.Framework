@@ -4404,6 +4404,66 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void WebPRowConversionMatchesTheScalarSteps()
+    {
+        // Odd and even widths around the groups of 32 pixels, random and extreme samples, RGBA with and without alpha, RGB
+        var random = new Random(603);
+        for (var width = 1; width <= 140; width++)
+        {
+            var chromaWidth = (width + 1) / 2;
+            for (var round = 0; round < 12; round++)
+            {
+                var luma = new byte[width];
+                var alpha = new byte[width];
+                var rows = new byte[4][];
+                random.NextBytes(luma);
+                random.NextBytes(alpha);
+                for (var i = 0; i < rows.Length; i++)
+                {
+                    rows[i] = new byte[chromaWidth];
+                    random.NextBytes(rows[i]);
+                    if (round % 4 == 1)
+                    {
+                        for (var x = 0; x < chromaWidth; x++)
+                        {
+                            rows[i][x] = (byte)(random.Next(2) * 255);
+                        }
+                    }
+                }
+
+                if (round % 4 == 1)
+                {
+                    for (var x = 0; x < width; x++)
+                    {
+                        luma[x] = (byte)(random.Next(2) * 255);
+                    }
+                }
+
+                var upBlue = new byte[width];
+                var upRed = new byte[width];
+                WebPYuvConverter.UpsampleSamplesScalar(rows[0], rows[1], upBlue, 0, chromaWidth);
+                WebPYuvConverter.UpsampleSamplesScalar(rows[2], rows[3], upRed, 0, chromaWidth);
+                var scratch = new byte[2 * width];
+                foreach (var withAlpha in new[] { false, true })
+                {
+                    var expected = new byte[width * 4];
+                    var actual = new byte[width * 4];
+                    WebPYuvConverter.ConvertSamplesScalar(luma, upBlue, upRed, withAlpha ? alpha : [], expected);
+                    WebPYuvConverter.ConvertRowSamples(luma, rows[0], rows[1], rows[2], rows[3], withAlpha ? alpha : [], actual, scratch, bytesPerPixel: 4);
+                    Assert.Equal(expected, actual);
+                }
+
+                var expectedRgb = new byte[width * 3];
+                var actualRgb = new byte[width * 3];
+                WebPYuvConverter.ConvertSamplesRgbScalar(luma, upBlue, upRed, expectedRgb);
+                WebPYuvConverter.ConvertRowSamples(luma, rows[0], rows[1], rows[2], rows[3], [], actualRgb, scratch, bytesPerPixel: 3);
+                Assert.Equal(expectedRgb, actualRgb);
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void WebPBoolDecoderMatchesTheByteAtATimeReference()
     {
         // Partitions of every short length (refills near and past the end, buffers shorter than 8 bytes), at the start, in

@@ -53,18 +53,162 @@ internal static class WebPYuvConverter
     public static void ConvertRow(Vp8Planes planes, int lumaOrigin, int y, ReadOnlySpan<byte> alpha, Span<byte> destination, Span<byte> scratch, int bytesPerPixel)
     {
         var width = planes.Width;
-        var upU = scratch[..width];
-        var upV = scratch.Slice(width, width);
-        UpsampleRow(planes.U, planes.UVStride, planes.Width, planes.Height, lumaOrigin / 2, y, upU);
-        UpsampleRow(planes.V, planes.UVStride, planes.Width, planes.Height, lumaOrigin / 2, y, upV);
-        var luma = planes.Y.Slice((y - lumaOrigin) * planes.YStride, width);
-        if (bytesPerPixel == 3)
+        var chromaWidth = (width + 1) >> 1;
+        var chromaHeight = (planes.Height + 1) >> 1;
+        var near = y >> 1;
+        var far = (y & 1) == 0 ? Math.Max(near - 1, 0) : Math.Min(near + 1, chromaHeight - 1);
+        var stride = planes.UVStride;
+        var chromaOrigin = lumaOrigin / 2;
+        ConvertRowSamples(
+            planes.Y.Slice((y - lumaOrigin) * planes.YStride, width),
+            planes.U.Slice((near - chromaOrigin) * stride, chromaWidth),
+            planes.U.Slice((far - chromaOrigin) * stride, chromaWidth),
+            planes.V.Slice((near - chromaOrigin) * stride, chromaWidth),
+            planes.V.Slice((far - chromaOrigin) * stride, chromaWidth),
+            alpha,
+            destination[..(width * bytesPerPixel)],
+            scratch,
+            bytesPerPixel);
+    }
+
+    // The chroma samples upsampled and converted at a time by the one-pass row conversion (32 pixels)
+    private const int FusedGroup = 16;
+
+    private static bool UseFusedVectors => Vector256.IsHardwareAccelerated && Avx2.IsSupported;
+
+    /// <summary>
+    /// Upsamples the chroma rows of a luma row (<see cref="UpsampleSamples"/>) and converts the pixels
+    /// (<see cref="ConvertSamples"/> or <see cref="ConvertSamplesRgb"/>).
+    /// </summary>
+    /// <param name="luma">The luma row (<c>width</c> samples).</param>
+    /// <param name="blueNear">The nearest Cb row.</param>
+    /// <param name="blueFar">The other Cb row of the bilinear upsampling.</param>
+    /// <param name="redNear">The nearest Cr row.</param>
+    /// <param name="redFar">The other Cr row of the bilinear upsampling.</param>
+    /// <param name="alpha">The alpha values, or empty for opaque pixels (always empty for RGB pixels).</param>
+    /// <param name="destination"><c>bytesPerPixel * width</c> bytes.</param>
+    /// <param name="scratch">At least <c>2 * width</c> bytes of scratch space.</param>
+    /// <param name="bytesPerPixel">4 for RGBA pixels, 3 for RGB pixels.</param>
+    /// <remarks>
+    /// The two steps run one after the other, the upsampled rows in <paramref name="scratch"/>, except with 256-bit vectors
+    /// (AVX2) and at least 18 chroma samples, where they run in one pass with the same results: the chroma samples that have both neighbors give 32 pixels at a time: the upsampled
+    /// even and odd samples stay in 16-bit lanes, the luma samples are split into the even and the odd ones, the two halves
+    /// are converted with the arithmetic of <see cref="ConvertSamplesScalar"/>, then interleaved back while they are narrowed.
+    /// The first and the last chroma samples (2 to 4 pixels) go through the scalar steps.
+    /// </remarks>
+    internal static void ConvertRowSamples(ReadOnlySpan<byte> luma, ReadOnlySpan<byte> blueNear, ReadOnlySpan<byte> blueFar, ReadOnlySpan<byte> redNear, ReadOnlySpan<byte> redFar, ReadOnlySpan<byte> alpha, Span<byte> destination, Span<byte> scratch, int bytesPerPixel)
+    {
+        var width = luma.Length;
+        var chromaWidth = blueNear.Length;
+        if (chromaWidth != (width + 1) >> 1 || blueFar.Length < chromaWidth || redNear.Length < chromaWidth || redFar.Length < chromaWidth || destination.Length < width * bytesPerPixel || (!alpha.IsEmpty && alpha.Length < width) || scratch.Length < 2 * width)
+            throw new ArgumentException("The chroma rows, the alpha values, the destination or the scratch space do not match the luma row.", nameof(luma));
+
+        if (!UseFusedVectors || chromaWidth < FusedGroup + 2)
         {
-            ConvertSamplesRgb(luma, upU, upV, destination[..(width * 3)]);
+            var upU = scratch[..width];
+            var upV = scratch.Slice(width, width);
+            UpsampleSamples(blueNear, blueFar, upU);
+            UpsampleSamples(redNear, redFar, upV);
+            if (bytesPerPixel == 3)
+            {
+                ConvertSamplesRgb(luma, upU, upV, destination[..(width * 3)]);
+            }
+            else
+            {
+                ConvertSamples(luma, upU, upV, alpha, destination[..(width * 4)]);
+            }
+
+            return;
         }
-        else
+
+        // The pixels of the first and of the last chroma sample
+        ConvertEdges(luma, blueNear, blueFar, redNear, redFar, alpha, destination, scratch, bytesPerPixel);
+
+        // The groups of samples i to i + 15 read the samples i - 1 to i + 16 and give the pixels 2 i to 2 i + 31: the last
+        // group overlaps the previous one
+        ref var lumaStart = ref unsafe(MemoryMarshal.GetReference(luma));
+        ref var blueNearStart = ref unsafe(MemoryMarshal.GetReference(blueNear));
+        ref var blueFarStart = ref unsafe(MemoryMarshal.GetReference(blueFar));
+        ref var redNearStart = ref unsafe(MemoryMarshal.GetReference(redNear));
+        ref var redFarStart = ref unsafe(MemoryMarshal.GetReference(redFar));
+        ref var alphaStart = ref unsafe(MemoryMarshal.GetReference(alpha));
+        ref var output = ref unsafe(MemoryMarshal.GetReference(destination));
+        var hasAlpha = !alpha.IsEmpty;
+        var lowBytes = Vector256.Create((ushort)0xFF);
+        var interleave = Vector256.Create((byte)0, 8, 1, 9, 2, 10, 3, 11, 4, 12, 5, 13, 6, 14, 7, 15, 0, 8, 1, 9, 2, 10, 3, 11, 4, 12, 5, 13, 6, 14, 7, 15);
+        var last = chromaWidth - 1 - FusedGroup;
+        for (var i = 1; ; i += FusedGroup)
         {
-            ConvertSamples(luma, upU, upV, alpha, destination[..(width * 4)]);
+            i = Math.Min(i, last);
+            var (blueEven, blueOdd) = Upsample(ref blueNearStart, ref blueFarStart, i);
+            var (redEven, redOdd) = Upsample(ref redNearStart, ref redFarStart, i);
+            var x = 2 * i;
+            var lumaValues = unsafe(Vector256.LoadUnsafe(ref lumaStart, (nuint)x)).AsUInt16();
+            var (redOfEven, greenOfEven, blueOfEven) = ConvertMultiplyAdd((lumaValues & lowBytes).AsInt16(), blueEven, redEven);
+            var (redOfOdd, greenOfOdd, blueOfOdd) = ConvertMultiplyAdd(Vector256.ShiftRightLogical(lumaValues, 8).AsInt16(), blueOdd, redOdd);
+
+            // Narrowed with unsigned saturation (the clamp): each 128-bit lane holds 8 even then 8 odd values, put back in order
+            var r = Avx2.Shuffle(Avx2.PackUnsignedSaturate(redOfEven, redOfOdd), interleave);
+            var g = Avx2.Shuffle(Avx2.PackUnsignedSaturate(greenOfEven, greenOfOdd), interleave);
+            var b = Avx2.Shuffle(Avx2.PackUnsignedSaturate(blueOfEven, blueOfOdd), interleave);
+            if (bytesPerPixel == 3)
+            {
+                StoreRgb(r.GetLower(), g.GetLower(), b.GetLower(), ref unsafe(Unsafe.Add(ref output, 3 * x)));
+                StoreRgb(r.GetUpper(), g.GetUpper(), b.GetUpper(), ref unsafe(Unsafe.Add(ref output, (3 * x) + 48)));
+            }
+            else
+            {
+                var a = hasAlpha ? unsafe(Vector256.LoadUnsafe(ref alphaStart, (nuint)x)) : Vector256<byte>.AllBitsSet;
+                StoreRgba(r, g, b, a, ref unsafe(Unsafe.Add(ref output, 4 * x)));
+            }
+
+            if (i == last)
+                break;
+        }
+
+        // The upsampled chroma of the pixels 2 i (even) and 2 i + 1 (odd) for 16 samples, in 16-bit lanes
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static (Vector256<short> Even, Vector256<short> Odd) Upsample(ref byte near, ref byte far, int i)
+        {
+            var before = Blend(ref near, ref far, i - 1);
+            var center = Blend(ref near, ref far, i);
+            var after = Blend(ref near, ref far, i + 1);
+            var weighted = center + center + center + Vector256.Create((short)8);
+            return (Vector256.ShiftRightLogical(weighted + before, 4), Vector256.ShiftRightLogical(weighted + after, 4));
+        }
+
+        // 3 near + far for 16 samples
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Vector256<short> Blend(ref byte near, ref byte far, int index)
+        {
+            var nearSamples = Avx2.ConvertToVector256Int16(unsafe(Vector128.LoadUnsafe(ref near, (nuint)index)));
+            var farSamples = Avx2.ConvertToVector256Int16(unsafe(Vector128.LoadUnsafe(ref far, (nuint)index)));
+            return nearSamples + nearSamples + nearSamples + farSamples;
+        }
+
+        // The pixels of the first and of the last chroma sample (2 i and 2 i + 1, if any), through the scalar steps
+        static void ConvertEdges(ReadOnlySpan<byte> luma, ReadOnlySpan<byte> blueNear, ReadOnlySpan<byte> blueFar, ReadOnlySpan<byte> redNear, ReadOnlySpan<byte> redFar, ReadOnlySpan<byte> alpha, Span<byte> destination, Span<byte> scratch, int bytesPerPixel)
+        {
+            var upU = scratch[..2];
+            var upV = scratch.Slice(2, 2);
+            for (var i = 0; i < blueNear.Length; i += blueNear.Length - 1)
+            {
+                var x = 2 * i;
+                var count = Math.Min(2, luma.Length - x);
+                UpsampleSample(blueNear, blueFar, i, upU);
+                UpsampleSample(redNear, redFar, i, upV);
+                ConvertSamplesCore(luma.Slice(x, count), upU[..count], upV[..count], alpha.IsEmpty ? alpha : alpha.Slice(x, count), destination.Slice(x * bytesPerPixel, count * bytesPerPixel), bytesPerPixel);
+            }
+        }
+
+        // The samples 2 i and 2 i + 1 of UpsampleSamplesScalar
+        static void UpsampleSample(ReadOnlySpan<byte> nearRow, ReadOnlySpan<byte> farRow, int i, Span<byte> destination)
+        {
+            var center = (3 * nearRow[i]) + farRow[i];
+            var left = i > 0 ? (3 * nearRow[i - 1]) + farRow[i - 1] : center;
+            var right = i + 1 < nearRow.Length ? (3 * nearRow[i + 1]) + farRow[i + 1] : center;
+            destination[0] = (byte)(((3 * center) + left + 8) >> 4);
+            destination[1] = (byte)(((3 * center) + right + 8) >> 4);
         }
     }
 
@@ -127,16 +271,6 @@ internal static class WebPYuvConverter
             pixel[1] = Clamp((c - greenCb[cb] - greenCr[cr]) >> 16);
             pixel[0] = Clamp((c + redCr[cr]) >> 16);
         }
-    }
-
-    /// <summary>Upsamples one chroma plane, which holds the frame rows from <paramref name="chromaOrigin"/>, to the luma row <paramref name="y"/> (centered bilinear 9-3-3-1 weights).</summary>
-    public static void UpsampleRow(ReadOnlySpan<byte> plane, int stride, int width, int height, int chromaOrigin, int y, Span<byte> destination)
-    {
-        var chromaWidth = (width + 1) >> 1;
-        var chromaHeight = (height + 1) >> 1;
-        var near = y >> 1;
-        var far = (y & 1) == 0 ? Math.Max(near - 1, 0) : Math.Min(near + 1, chromaHeight - 1);
-        UpsampleSamples(plane.Slice((near - chromaOrigin) * stride, chromaWidth), plane.Slice((far - chromaOrigin) * stride, chromaWidth), destination[..width]);
     }
 
     /// <summary>
@@ -393,10 +527,19 @@ internal static class WebPYuvConverter
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static (Vector128<byte> Red, Vector128<byte> Green, Vector128<byte> Blue) Convert16MultiplyAdd(Vector128<byte> luma, Vector128<byte> blue, Vector128<byte> red)
     {
-        var y = Avx2.ConvertToVector256Int16(luma);
-        var cb = Avx2.ConvertToVector256Int16(blue);
-        var cr = Avx2.ConvertToVector256Int16(red);
+        var (r, g, b) = ConvertMultiplyAdd(Avx2.ConvertToVector256Int16(luma), Avx2.ConvertToVector256Int16(blue), Avx2.ConvertToVector256Int16(red));
 
+        // 16 values to bytes: the pack works per 128-bit lane, its 64-bit groups hold the values 0-7 of the first vector, 0-7 of
+        // the second one, 8-15 of the first one and 8-15 of the second one
+        var redGreen = Avx2.Permute4x64(Avx2.PackUnsignedSaturate(r, g).AsInt64(), 0b11_01_10_00).AsByte();
+        var blueBlue = Avx2.Permute4x64(Avx2.PackUnsignedSaturate(b, b).AsInt64(), 0b11_01_10_00).AsByte();
+        return (redGreen.GetLower(), redGreen.GetUpper(), blueBlue.GetLower());
+    }
+
+    /// <summary>The red, green and blue values (16-bit, before the clamp) of the 16 pixels of <see cref="Convert16MultiplyAdd"/>, from 16-bit samples.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static (Vector256<short> Red, Vector256<short> Green, Vector256<short> Blue) ConvertMultiplyAdd(Vector256<short> y, Vector256<short> cb, Vector256<short> cr)
+    {
         // Pixels 0-3 and 8-11 (low), 4-7 and 12-15 (high) as (Y, Cr) and (Y, Cb) pairs
         var lumaRedLow = Avx2.UnpackLow(y, cr);
         var lumaRedHigh = Avx2.UnpackHigh(y, cr);
@@ -414,15 +557,7 @@ internal static class WebPYuvConverter
             Avx2.MultiplyAddAdjacent(lumaBlueLow, greenFactors) + Avx2.MultiplyAddAdjacent(lumaRedLow, greenRedFactors) + greenOffset,
             Avx2.MultiplyAddAdjacent(lumaBlueHigh, greenFactors) + Avx2.MultiplyAddAdjacent(lumaRedHigh, greenRedFactors) + greenOffset);
         var blueRest = High(Avx2.MultiplyAddAdjacent(lumaBlueLow, blueFactors) + blueOffset, Avx2.MultiplyAddAdjacent(lumaBlueHigh, blueFactors) + blueOffset);
-        var r = y + cr + cr + redRest;
-        var g = y - cr + greenRest;
-        var b = y + cb + cb + blueRest;
-
-        // 16 values to bytes: the pack works per 128-bit lane, its 64-bit groups hold the values 0-7 of the first vector, 0-7 of
-        // the second one, 8-15 of the first one and 8-15 of the second one
-        var redGreen = Avx2.Permute4x64(Avx2.PackUnsignedSaturate(r, g).AsInt64(), 0b11_01_10_00).AsByte();
-        var blueBlue = Avx2.Permute4x64(Avx2.PackUnsignedSaturate(b, b).AsInt64(), 0b11_01_10_00).AsByte();
-        return (redGreen.GetLower(), redGreen.GetUpper(), blueBlue.GetLower());
+        return (y + cr + cr + redRest, y - cr + greenRest, y + cb + cb + blueRest);
 
         // The high halves of the 32-bit sums (arithmetic shift), packed to 16 bits in the pixel order
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -517,6 +652,28 @@ internal static class WebPYuvConverter
             second.StoreUnsafe(ref destination, 16);
             third.StoreUnsafe(ref destination, 32);
             fourth.StoreUnsafe(ref destination, 48);
+        }
+    }
+
+    /// <summary>Interleaves 32 red, green, blue and alpha values into 128 bytes (AVX2).</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static void StoreRgba(Vector256<byte> r, Vector256<byte> g, Vector256<byte> b, Vector256<byte> a, ref byte destination)
+    {
+        // The interleaves work per 128-bit lane: pixels 0-3 and 16-19, 4-7 and 20-23, 8-11 and 24-27, 12-15 and 28-31
+        var redGreenLow = Avx2.UnpackLow(r, g).AsUInt16();
+        var redGreenHigh = Avx2.UnpackHigh(r, g).AsUInt16();
+        var blueAlphaLow = Avx2.UnpackLow(b, a).AsUInt16();
+        var blueAlphaHigh = Avx2.UnpackHigh(b, a).AsUInt16();
+        var pixels0 = Avx2.UnpackLow(redGreenLow, blueAlphaLow).AsByte();
+        var pixels4 = Avx2.UnpackHigh(redGreenLow, blueAlphaLow).AsByte();
+        var pixels8 = Avx2.UnpackLow(redGreenHigh, blueAlphaHigh).AsByte();
+        var pixels12 = Avx2.UnpackHigh(redGreenHigh, blueAlphaHigh).AsByte();
+        unsafe
+        {
+            Avx2.Permute2x128(pixels0, pixels4, 0x20).StoreUnsafe(ref destination);
+            Avx2.Permute2x128(pixels8, pixels12, 0x20).StoreUnsafe(ref destination, 32);
+            Avx2.Permute2x128(pixels0, pixels4, 0x31).StoreUnsafe(ref destination, 64);
+            Avx2.Permute2x128(pixels8, pixels12, 0x31).StoreUnsafe(ref destination, 96);
         }
     }
 

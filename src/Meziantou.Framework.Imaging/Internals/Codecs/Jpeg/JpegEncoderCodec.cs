@@ -379,15 +379,32 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             return ~zeros;
         }
 
+        if (AdvSimd.Arm64.IsSupported)
+        {
+            // The comparison results narrowed to 64 bytes, each one weighted by its bit (1 to 128) and summed by groups of 8
+            // with three pairwise additions: the 8 bytes of the mask
+            var weights = Vector128.Create((byte)1, 2, 4, 8, 16, 32, 64, 128, 1, 2, 4, 8, 16, 32, 64, 128);
+            var low = AdvSimd.Arm64.AddPairwise(EqualsZero(ref start, 0) & weights, EqualsZero(ref start, 16) & weights);
+            var high = AdvSimd.Arm64.AddPairwise(EqualsZero(ref start, 32) & weights, EqualsZero(ref start, 48) & weights);
+            var quarters = AdvSimd.Arm64.AddPairwise(low, high);
+            return ~AdvSimd.Arm64.AddPairwise(quarters, quarters).AsUInt64().ToScalar();
+        }
+
         // The comparison results (all ones or zero) of 16 coefficients narrowed to 16 bytes, one mask bit each
         for (var i = 0; i < 64; i += 16)
         {
-            var first = Vector128.Narrow(Vector128.Equals(Load(ref start, i), Vector128<int>.Zero), Vector128.Equals(Load(ref start, i + 4), Vector128<int>.Zero));
-            var second = Vector128.Narrow(Vector128.Equals(Load(ref start, i + 8), Vector128<int>.Zero), Vector128.Equals(Load(ref start, i + 12), Vector128<int>.Zero));
-            zeros |= (ulong)Vector128.Narrow(first, second).ExtractMostSignificantBits() << i;
+            zeros |= (ulong)EqualsZero(ref start, i).ExtractMostSignificantBits() << i;
         }
 
         return ~zeros;
+
+        // The comparison results (all ones or zero) of 16 coefficients narrowed to 16 bytes
+        static Vector128<byte> EqualsZero(ref int start, int index)
+        {
+            var first = Vector128.Narrow(Vector128.Equals(Load(ref start, index), Vector128<int>.Zero), Vector128.Equals(Load(ref start, index + 4), Vector128<int>.Zero));
+            var second = Vector128.Narrow(Vector128.Equals(Load(ref start, index + 8), Vector128<int>.Zero), Vector128.Equals(Load(ref start, index + 12), Vector128<int>.Zero));
+            return Vector128.Narrow(first, second).AsByte();
+        }
 
         static Vector128<int> Load(ref int start, int index) => unsafe(Vector128.LoadUnsafe(ref start, (nuint)index));
     }

@@ -5413,6 +5413,90 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void WebPMacroblockReconstructionWithoutAcMatchesTheScalarReference()
+    {
+        // Macroblocks whose blocks have no AC coefficient: the whole-block prediction and the DC residuals written in one pass
+        // give the scalar prediction followed by the DC addition of each block, at the frame edges too, with every clamp
+        var random = new Random(6387);
+        var scope = new AllocationScope(ImageResourceLimits.Default);
+        using var expected = Vp8Planes.Create(scope, 48, 48);
+        using var actual = Vp8Planes.Create(scope, 48, 48);
+        var coefficients = new short[25 * 16];
+        for (var round = 0; round < 600; round++)
+        {
+            for (var plane = 0; plane < 3; plane++)
+            {
+                var samples = plane switch
+                {
+                    0 => expected.Y,
+                    1 => expected.U,
+                    _ => expected.V,
+                };
+                random.NextBytes(samples);
+                if (round % 3 == 1)
+                {
+                    for (var i = 0; i < samples.Length; i++)
+                    {
+                        samples[i] = (byte)(random.Next(2) * 255);
+                    }
+                }
+            }
+
+            expected.Y.CopyTo(actual.Y);
+            expected.U.CopyTo(actual.U);
+            expected.V.CopyTo(actual.V);
+            Array.Clear(coefficients);
+            var blocksWithCoefficients = 0u;
+            for (var block = 0; block < 24; block++)
+            {
+                if (random.Next(3) != 0)
+                {
+                    coefficients[block * 16] = (short)(round % 4 == 2 ? random.Next(-32768, 32768) : random.Next(-2100, 2100));
+                    blocksWithCoefficients |= 1u << block;
+                }
+            }
+
+            var mbX = random.Next(3);
+            var mbY = random.Next(3);
+            var yMode = random.Next(4);
+            var uvMode = random.Next(4);
+            Vp8Reconstruction.ReconstructMacroblock(actual, mbX, mbY, 3, yMode, new byte[16], uvMode, coefficients, blocksWithCoefficients, blocksWithAc: 0, lumaOrigin: 0);
+            Vp8Reconstruction.PredictBlockScalar(expected.Y, expected.YStride, (mbY * 16 * expected.YStride) + (mbX * 16), 16, mbX, mbY, yMode);
+            for (var block = 0; block < 16; block++)
+            {
+                AddDc(coefficients[block * 16], expected.Y[((((mbY * 16) + ((block >> 2) * 4)) * expected.YStride) + (mbX * 16) + ((block & 3) * 4))..], expected.YStride);
+            }
+
+            for (var plane = 0; plane < 2; plane++)
+            {
+                var samples = plane == 0 ? expected.U : expected.V;
+                Vp8Reconstruction.PredictBlockScalar(samples, expected.UVStride, (mbY * 8 * expected.UVStride) + (mbX * 8), 8, mbX, mbY, uvMode);
+                for (var block = 0; block < 4; block++)
+                {
+                    AddDc(coefficients[(16 + (plane * 4) + block) * 16], samples[((((mbY * 8) + ((block >> 1) * 4)) * expected.UVStride) + (mbX * 8) + ((block & 1) * 4))..], expected.UVStride);
+                }
+            }
+
+            Assert.True(expected.Y.SequenceEqual(actual.Y), $"Luma mode {yMode} at ({mbX}, {mbY}), round {round}.");
+            Assert.True(expected.U.SequenceEqual(actual.U), $"Cb mode {uvMode} at ({mbX}, {mbY}), round {round}.");
+            Assert.True(expected.V.SequenceEqual(actual.V), $"Cr mode {uvMode} at ({mbX}, {mbY}), round {round}.");
+        }
+
+        // The inverse DCT of a block whose only coefficient is the DC, added with clamping
+        static void AddDc(short dc, Span<byte> destination, int stride)
+        {
+            for (var y = 0; y < 4; y++)
+            {
+                for (var x = 0; x < 4; x++)
+                {
+                    destination[(y * stride) + x] = (byte)Math.Clamp(destination[(y * stride) + x] + ((dc + 4) >> 3), 0, 255);
+                }
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void WebPLosslessTransformsMatchTheScalarReferences()
     {
         // Every predictor mode (14 and 15 included) on tiles of every size, with random, extreme and nearly flat pixels so that

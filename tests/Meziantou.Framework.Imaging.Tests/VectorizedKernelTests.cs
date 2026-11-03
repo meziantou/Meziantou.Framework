@@ -5646,6 +5646,77 @@ public sealed class VectorizedKernelTests
         }
     }
 
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Av1EncoderBlockKernelsMatchTheScalarReferences()
+    {
+        // Blocks of the transform sizes and of visible parts of them (odd heights, widths below 4), of random and extreme
+        // 12-bit samples, in planes whose stride is not the width
+        var random = new Random(11);
+        int[] sizes = [1, 2, 3, 4, 5, 7, 8, 16, 32, 64];
+        foreach (var width in sizes)
+        {
+            foreach (var height in sizes)
+            {
+                for (var round = 0; round < 4; round++)
+                {
+                    var leftStride = width + random.Next(0, 9);
+                    var rightStride = width + random.Next(0, 9);
+                    var left = new ushort[leftStride * height];
+                    var right = new ushort[rightStride * height];
+                    for (var i = 0; i < left.Length; i++)
+                    {
+                        left[i] = round switch
+                        {
+                            0 => (ushort)random.Next(4096),
+                            1 => 4095,
+                            2 => 0,
+                            _ => (ushort)random.Next(256),
+                        };
+                    }
+
+                    for (var i = 0; i < right.Length; i++)
+                    {
+                        right[i] = round switch
+                        {
+                            0 => (ushort)random.Next(4096),
+                            1 => 0,
+                            2 => 4095,
+                            _ => (ushort)random.Next(256),
+                        };
+                    }
+
+                    Assert.Equal(
+                        Av1EncoderKernels.SumOfSquaredDifferencesScalar(left, leftStride, right, rightStride, width, height),
+                        Av1EncoderKernels.SumOfSquaredDifferences(left, leftStride, right, rightStride, width, height));
+
+                    var expected = new int[width * height];
+                    var actual = new int[width * height];
+                    for (var i = 0; i < height; i++)
+                    {
+                        Av1EncoderKernels.SubtractScalar(left.AsSpan(i * leftStride, width), right.AsSpan(i * rightStride, width), expected.AsSpan(i * width, width));
+                    }
+
+                    Av1EncoderKernels.Subtract(left, leftStride, right, rightStride, width, height, actual);
+                    Assert.Equal(expected, actual);
+
+                    var unchanged = right.ToArray();
+                    Assert.Equal(
+                        Av1EncoderKernels.SumOfAbsoluteDifferencesAndCopyScalar(left, leftStride, right.ToArray(), rightStride, width, height),
+                        Av1EncoderKernels.SumOfAbsoluteDifferences(left, leftStride, unchanged, rightStride, width, height));
+                    Assert.Equal(right, unchanged);
+
+                    var expectedCopy = right.ToArray();
+                    var actualCopy = right.ToArray();
+                    Assert.Equal(
+                        Av1EncoderKernels.SumOfAbsoluteDifferencesAndCopyScalar(left, leftStride, expectedCopy, rightStride, width, height),
+                        Av1EncoderKernels.SumOfAbsoluteDifferencesAndCopy(left, leftStride, actualCopy, rightStride, width, height));
+                    Assert.Equal(expectedCopy, actualCopy);
+                }
+            }
+        }
+    }
+
     [Theory]
     [InlineData(PixelFormat.Rgb24, false, false)]
     [InlineData(PixelFormat.Rgba32, false, false)]

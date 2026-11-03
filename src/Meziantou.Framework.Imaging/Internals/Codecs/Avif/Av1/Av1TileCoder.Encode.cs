@@ -1525,27 +1525,13 @@ internal ref partial struct Av1TileCoder
             if (_capturesCfl)
                 CaptureCfl(plane, txSz, startX, startY);
 
-            long error = 0;
-            for (var i = 0; i < h; i++)
-            {
-                var predicted = samples.Slice(((startY + i) * stride) + startX, w);
-                var original = source.Slice(((startY + i) * sourceStride) + startX, w);
-                error += Av1EncoderKernels.SumOfAbsoluteDifferences(original, predicted);
-                original.CopyTo(predicted);
-            }
-
-            _estimate += error;
+            _estimate += Av1EncoderKernels.SumOfAbsoluteDifferencesAndCopy(source[((startY * sourceStride) + startX)..], sourceStride, samples[((startY * stride) + startX)..], stride, w, h);
             FinishTransformBlock(plane, txSz, startX, startY);
             return;
         }
 
         var residual = workspace.Residual[..(w * h)];
-        for (var i = 0; i < h; i++)
-        {
-            var predicted = samples.Slice(((startY + i) * stride) + startX, w);
-            var original = source.Slice(((startY + i) * sourceStride) + startX, w);
-            Av1EncoderKernels.Subtract(original, predicted, residual.Slice(i * w, w));
-        }
+        Av1EncoderKernels.Subtract(source[((startY * sourceStride) + startX)..], sourceStride, samples[((startY * stride) + startX)..], stride, w, h, residual);
 
         // The transform type of a luma block is searched; the type of a chroma block follows from its mode, or from the
         // type of the luma block for an inter block
@@ -1613,15 +1599,8 @@ internal ref partial struct Av1TileCoder
             // The squared error of the samples of the transform block that are part of the frame
             var visibleWidth = Math.Max(0, Math.Min(w, planeBuffer.Width - startX));
             var visibleHeight = Math.Max(0, Math.Min(h, planeBuffer.Height - startY));
-            long error = 0;
-            for (var i = 0; i < visibleHeight; i++)
-            {
-                var reconstructed = samples.Slice(((startY + i) * stride) + startX, visibleWidth);
-                var original = source.Slice(((startY + i) * sourceStride) + startX, visibleWidth);
-                error += Av1EncoderKernels.SumOfSquaredDifferences(original, reconstructed);
-            }
-
-            _distortion += error;
+            if (visibleWidth > 0 && visibleHeight > 0)
+                _distortion += Av1EncoderKernels.SumOfSquaredDifferences(source[((startY * sourceStride) + startX)..], sourceStride, samples[((startY * stride) + startX)..], stride, visibleWidth, visibleHeight);
         }
 
         FinishTransformBlock(plane, txSz, startX, startY);

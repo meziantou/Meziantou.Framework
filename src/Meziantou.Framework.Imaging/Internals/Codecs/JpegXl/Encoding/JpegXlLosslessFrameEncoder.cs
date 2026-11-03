@@ -113,8 +113,15 @@ internal sealed class JpegXlLosslessFrameEncoder
             if (_settings.UseLz77)
             {
                 tokenCosts = literalCode.GetTokenCosts();
-                lz77Code = new JpegXlModularEntropyCode(_leafCount, _settings.MaxClusters, _settings.SearchConfigs, useLz77: true, _scope);
-                CountStreams(lz77Code, global, tokenCosts);
+                if (IsLz77Worthwhile(tokenCosts))
+                {
+                    lz77Code = new JpegXlModularEntropyCode(_leafCount, _settings.MaxClusters, _settings.SearchConfigs, useLz77: true, _scope);
+                    CountStreams(lz77Code, global, tokenCosts);
+                }
+                else
+                {
+                    tokenCosts = null;
+                }
             }
 
             literalCode.Build();
@@ -203,10 +210,66 @@ internal sealed class JpegXlLosslessFrameEncoder
     }
 
     /// <summary>
-    /// Computes the values of a sub-bitstream, every channel in order, and counts them or adds them to the stream of the
-    /// worker, after finding the copies when the worker has a parser.
+    /// Whether copies are likely to make the frame smaller: the groups of a trial (one in <see cref="Lz77TrialStep"/>, on
+    /// diagonals) are counted with and without copies, the copies found with the token costs of the whole frame, and the two
+    /// codes are compared. A frame of one group, or an effort without a trial, is always parsed.
     /// </summary>
-    private void ProcessStream(JpegXlModularImage image, int streamIndex, StreamWorker worker)
+    /// <remarks>
+    /// The parse was 44 % of the time of an encoding at the effort 5, and on photographs the code with copies was always the
+    /// larger one (1.5 to 9 %); the trial (group 0 is always one of its groups) costs a quarter of a parse.
+    /// </remarks>
+    private bool IsLz77Worthwhile(float[] tokenCosts)
+    {
+        if (IsSingleGroup || !_settings.Lz77Trial)
+            return true;
+
+        var groups = new List<int>();
+        long trialPixels = 0;
+        for (var group = 0; group < GroupCount; group++)
+        {
+            if (group % Lz77TrialStep == group / _columns % Lz77TrialStep)
+            {
+                groups.Add(group);
+                trialPixels += (long)Math.Min(GroupDimension, _width - (group % _columns * GroupDimension)) * Math.Min(GroupDimension, _height - (group / _columns * GroupDimension));
+            }
+        }
+
+        var lfGroupCount = GetLfGroupCount();
+        using var literal = new JpegXlModularEntropyCode(_leafCount, _settings.MaxClusters, _settings.SearchConfigs, useLz77: false, _scope);
+        using var lz77 = new JpegXlModularEntropyCode(_leafCount, _settings.MaxClusters, _settings.SearchConfigs, useLz77: true, _scope);
+        var workers = JpegXlGroupWorkers.GetWorkerCount(_maxDegreeOfParallelism, groups.Count, (long)_width * _height * groups.Count / GroupCount);
+        JpegXlGroupWorkers.Run(
+            workers,
+            groups.Count,
+            () => new TrialWorker(new StreamWorker(literal, tokenCosts: null, 0, counting: true, _scope), new StreamWorker(lz77, tokenCosts, _settings.Lz77Chain, counting: true, _scope)),
+            (worker, index) =>
+            {
+                _cancellationToken.ThrowIfCancellationRequested();
+                var group = groups[index];
+                using var image = LoadGroup(group, includeMeta: false);
+                ProcessStream(image, GetStreamIndex(group, lfGroupCount), worker.Lz77, worker.Literal);
+            });
+
+        literal.Build();
+        lz77.Build();
+
+        // The values of the frame are those of the trial scaled to its pixels; the distributions are described once (the code
+        // with copies has more tokens, and a larger description)
+        var scale = (double)_width * _height / trialPixels;
+        return Extrapolate(lz77) < Extrapolate(literal);
+
+        double Extrapolate(JpegXlModularEntropyCode code) => ((code.EstimatedBits - code.EstimatedDescriptionBits) * scale) + code.EstimatedDescriptionBits;
+    }
+
+    /// <summary>The groups of the trial of copies: one in this many.</summary>
+    private const int Lz77TrialStep = 4;
+
+    /// <summary>
+    /// Computes the values of a sub-bitstream, every channel in order, and counts them or adds them to the stream of the
+    /// worker, after finding the copies when the worker has a parser. <paramref name="literalWorker"/>, when set, also
+    /// receives the values, without copies.
+    /// </summary>
+    private void ProcessStream(JpegXlModularImage image, int streamIndex, StreamWorker worker, StreamWorker? literalWorker = null)
     {
         long length = 0;
         var distanceMultiplier = 0;
@@ -243,6 +306,14 @@ internal sealed class JpegXlLosslessFrameEncoder
         }
 
         var span = values.Span[..offset];
+        if (literalWorker is not null)
+        {
+            foreach (var value in span)
+            {
+                literalWorker.AddValue((int)(value >> 32), (uint)value);
+            }
+        }
+
         if (worker.Parser is null)
         {
             foreach (var value in span)
@@ -848,6 +919,20 @@ internal sealed class JpegXlLosslessFrameEncoder
         }
     }
 
+    /// <summary>The state of a worker of the trial of copies: the counts without copies and with them.</summary>
+    private sealed class TrialWorker(StreamWorker literal, StreamWorker lz77) : IDisposable
+    {
+        public StreamWorker Literal { get; } = literal;
+
+        public StreamWorker Lz77 { get; } = lz77;
+
+        public void Dispose()
+        {
+            Literal.Dispose();
+            Lz77.Dispose();
+        }
+    }
+
     /// <summary>Receives what the parser finds: counts it, or adds it to a stream.</summary>
     [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Auto)]
     private readonly struct ParserSink(JpegXlModularEntropyCode code, JpegXlModularEntropyCode.Counter? counter, JpegXlEntropyCodeBuilder.StreamBuffer? stream) : JpegXlLz77Parser.IStreamSink
@@ -878,7 +963,7 @@ internal sealed class JpegXlLosslessFrameEncoder
     }
 
     /// <summary>What an effort searches.</summary>
-    internal sealed record Settings(int SamplesPerChannel, int[] Properties, int[] Predictors, int MaxLeavesPerChannel, int MaxBuckets, double SplitCost, int MaxClusters, bool SearchConfigs, int Lz77Chain, int MaxPaletteColors, int SplitPredictors = 1)
+    internal sealed record Settings(int SamplesPerChannel, int[] Properties, int[] Predictors, int MaxLeavesPerChannel, int MaxBuckets, double SplitCost, int MaxClusters, bool SearchConfigs, int Lz77Chain, int MaxPaletteColors, int SplitPredictors = 1, bool Lz77Trial = true)
     {
         /// <summary>Gets a value indicating whether copies of previous values are searched.</summary>
         public bool UseLz77 => Lz77Chain > 0;

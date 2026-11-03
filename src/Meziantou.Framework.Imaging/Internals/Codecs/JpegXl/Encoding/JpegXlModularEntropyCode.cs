@@ -120,6 +120,9 @@ internal sealed class JpegXlModularEntropyCode : IDisposable
     /// <summary>Gets the estimated size in bits of the code and of the values it codes, once the code is built.</summary>
     public long EstimatedBits { get; private set; }
 
+    /// <summary>Gets the part of <see cref="EstimatedBits"/> that describes the distributions of the clusters, once the code is built.</summary>
+    public long EstimatedDescriptionBits { get; private set; }
+
     /// <summary>Gets the fine token of a value.</summary>
     [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.AggressiveInlining)]
     internal static int GetFineToken(uint value)
@@ -225,20 +228,25 @@ internal sealed class JpegXlModularEntropyCode : IDisposable
         var prefix = ChooseConfigs(fineClusters, lengthClusters, ans: false)!;
         var ans = ChooseConfigs(fineClusters, lengthClusters, ans: true);
         long prefixBits;
+        long prefixDescriptionBits;
         using (var description = new LsbBitWriter(_scope))
         {
             prefixBits = MeasurePrefix(description, fineClusters, lengthClusters, prefix);
+            prefixDescriptionBits = description.BitCount;
         }
 
         var ansBits = long.MaxValue;
+        long ansDescriptionBits = 0;
         if (ans is not null)
         {
             using var description = new LsbBitWriter(_scope);
             ansBits = MeasureAns(description, fineClusters, lengthClusters, ans);
+            ansDescriptionBits = description.BitCount;
         }
 
         _useAns = ansBits < prefixBits;
         EstimatedBits = Math.Min(ansBits, prefixBits);
+        EstimatedDescriptionBits = _useAns ? ansDescriptionBits : prefixDescriptionBits;
         _configIndexes = _useAns ? ans! : prefix;
         _clusterTokens = new (ushort, byte)[clusters][];
         _tokenHistograms = new uint[clusters][];

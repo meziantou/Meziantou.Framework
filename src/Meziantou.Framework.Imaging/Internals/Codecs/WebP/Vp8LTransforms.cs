@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
@@ -131,16 +132,62 @@ internal static class Vp8LTransforms
         }
     }
 
+    /// <remarks>
+    /// The pixels are a running sum of the residuals, per byte: with 128-bit vectors, 4 pixels at a time are the prefix sums
+    /// of their residuals (each lane plus the lanes shifted by one, then by two pixels) plus the previous pixel in every lane,
+    /// so that only the last addition and the broadcast of the last pixel depend on the previous group.
+    /// </remarks>
     private static void AddLeft(Span<uint> row, int start, int end)
     {
         if (start >= end)
             return;
 
-        var left = row[start - 1];
-        foreach (ref var pixel in row[start..end])
+        var x = start;
+        if (Vector128.IsHardwareAccelerated && BitConverter.IsLittleEndian && (Sse2.IsSupported || AdvSimd.Arm64.IsSupported) && end - start >= Vector128<uint>.Count)
         {
-            left = Vp8LDecoder.AddPixels(pixel, left);
-            pixel = left;
+            // The pixels read and written: start - 1 to end - 1
+            _ = row[start - 1];
+            _ = row[end - 1];
+            ref var pixels = ref unsafe(MemoryMarshal.GetReference(row));
+            var left = Vector128.Create(row[start - 1]).AsByte();
+            for (; x <= end - Vector128<uint>.Count; x += Vector128<uint>.Count)
+            {
+                var sums = unsafe(Vector128.LoadUnsafe(ref pixels, (nuint)x)).AsByte();
+                sums += ShiftPixelsUp(sums, 1);
+                sums += ShiftPixelsUp(sums, 2);
+                sums += left;
+                unsafe { sums.AsUInt32().StoreUnsafe(ref pixels, (nuint)x); }
+                left = BroadcastLastPixel(sums);
+            }
+        }
+
+        if (x < end)
+        {
+            var left = row[x - 1];
+            foreach (ref var pixel in row[x..end])
+            {
+                left = Vp8LDecoder.AddPixels(pixel, left);
+                pixel = left;
+            }
+        }
+
+        // The pixels moved to the lanes count pixels higher, zeros in the first count lanes
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Vector128<byte> ShiftPixelsUp(Vector128<byte> value, [ConstantExpected(Min = 1, Max = 2)] byte count)
+        {
+            if (AdvSimd.Arm64.IsSupported)
+                return count == 1 ? AdvSimd.ExtractVector128(Vector128<byte>.Zero, value, 12) : AdvSimd.ExtractVector128(Vector128<byte>.Zero, value, 8);
+
+            return count == 1 ? Sse2.ShiftLeftLogical128BitLane(value, 4) : Sse2.ShiftLeftLogical128BitLane(value, 8);
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        static Vector128<byte> BroadcastLastPixel(Vector128<byte> value)
+        {
+            if (AdvSimd.Arm64.IsSupported)
+                return AdvSimd.DuplicateSelectedScalarToVector128(value.AsUInt32(), 3).AsByte();
+
+            return Sse2.Shuffle(value.AsUInt32(), 0b11_11_11_11).AsByte();
         }
     }
 

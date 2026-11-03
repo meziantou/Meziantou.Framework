@@ -94,7 +94,6 @@ public sealed partial class BrowsingContext : IDisposable
     private DocumentParameters? _pendingDocumentParameters;
     private BlobUrlStore? _blobUrls;
     private List<BroadcastChannel>? _broadcastChannels;
-    private AgentClusterMap? _agentClusters;
     private StorageShed? _localStorageShed;
     private IndexedDBBackend? _indexedDBBackend;
     private CacheStorageBackend? _cacheStorageBackend;
@@ -222,9 +221,10 @@ public sealed partial class BrowsingContext : IDisposable
         document.AppendNode(html);
 
         // https://html.spec.whatwg.org/multipage/document-sequences.html#creating-a-new-browsing-context: the agent of the creator's origin.
-        // The group of an auxiliary browsing context (the group of its opener) is set after the constructor.
+        // The group of an auxiliary browsing context with an opener (the group of its opener) is set after the constructor; a
+        // top-level browsing context without opener is in a new group.
         var group = parent is not null ? Group : groupOwner is not null ? creator?.BrowsingContext?.Group : null;
-        var window = new Window(document, options, EventLoop) { AgentCluster = AgentClusters.Obtain(document.Origin, requestsOriginKeyed: false, group is not null && group.CrossOriginIsolationMode != CrossOriginIsolationMode.None) };
+        var window = new Window(document, options, EventLoop) { AgentCluster = (group ?? Group).AgentClusters.Obtain(document.Origin, requestsOriginKeyed: false, group is not null && group.CrossOriginIsolationMode != CrossOriginIsolationMode.None) };
         CreateNavigationTimingEntry(document, window, DocumentLoadTimingInfo.CreateImmediate(window.TimeOriginTimestamp), bodySize: 0, status: 200, headers: []);
         Activate(document, window, NavigationHistoryBehavior.Push, srcdoc: null);
 
@@ -254,8 +254,11 @@ public sealed partial class BrowsingContext : IDisposable
     /// <summary>The blob URL store of the browsing context group (used by the group owner).</summary>
     internal BlobUrlStore BlobUrls => ReferenceEquals(GroupOwner, this) ? LazyInitializer.EnsureInitialized(ref _blobUrls) : GroupOwner.BlobUrls;
 
-    /// <summary>The agent clusters of the browsing context group (used by the group owner).</summary>
-    internal AgentClusterMap AgentClusters => ReferenceEquals(GroupOwner, this) ? _agentClusters ??= new AgentClusterMap() : GroupOwner.AgentClusters;
+    /// <summary>
+    /// The agent clusters of the browsing context group: a popup opened with <c>noopener</c> is in a new group, so it does not
+    /// share the agent clusters of its opener, even if the same group owner keeps both alive.
+    /// </summary>
+    internal AgentClusterMap AgentClusters => Group.AgentClusters;
 
     /// <summary>
     /// The storage shed of the local storage areas (https://storage.spec.whatwg.org/#user-agent-storage-shed):
@@ -584,11 +587,15 @@ public sealed partial class BrowsingContext : IDisposable
         {
             Opener = opener?.BrowsingContext,
             CreatorBrowsingContext = creator ?? opener?.BrowsingContext,
-
-            // https://html.spec.whatwg.org/multipage/document-sequences.html#creating-a-new-auxiliary-browsing-context: the
-            // group of the opener (a browsing context without opener is in a new group)
-            _group = opener is null ? new BrowsingContextGroup() : Group,
         };
+
+        // https://html.spec.whatwg.org/multipage/document-sequences.html#creating-a-new-auxiliary-browsing-context: the group
+        // of the opener (a browsing context without opener is in the new group created by the constructor)
+        if (opener is not null)
+        {
+            context._group = Group;
+        }
+
         (owner._auxiliaryBrowsingContexts ??= []).Add(context);
 
         // https://html.spec.whatwg.org/multipage/document-sequences.html#creating-a-new-top-level-traversable: the session
@@ -2433,14 +2440,15 @@ public sealed partial class BrowsingContext : IDisposable
             {
                 parser.Parse(resource.Content!);
             }
-            else if (contentType is "text/plain" or "text/css" or "text/vtt" || mimeType is { IsJavaScript: true } || (mimeType is not null && (mimeType.Subtype.EndsWith("+json", StringComparison.Ordinal) || mimeType.Essence is "application/json" or "text/json")))
+            else if (contentType is "text/plain" or "text/css" or "text/vtt" || mimeType is { IsJavaScript: true } || IsJson(mimeType))
             {
                 // https://html.spec.whatwg.org/multipage/browsing-the-web.html#loading-a-document: the text documents (plain text,
                 // style sheets, scripts, JSON, WebVTT).
                 // https://html.spec.whatwg.org/multipage/document-lifecycle.html#read-text: the text is in a pre element, and the
                 // encoding of the document is the one of the bytes. As in the browsers, the lines wrap.
                 var encoding = WebEncodingId.Utf8;
-                var text = resource.Content ?? Decode(resource.ContentBytes!.Value.Span, charset, out encoding);
+                // JSON is always UTF-8 (https://www.rfc-editor.org/rfc/rfc8259#section-8.1): the charset parameter is ignored
+                var text = resource.Content ?? Decode(resource.ContentBytes!.Value.Span, IsJson(mimeType) ? null : charset, out encoding);
                 parameters.ContentType = contentType;
                 parameters.IsTextDocument = true;
                 var textDocument = parser.Parse("<pre style=\"word-wrap: break-word; white-space: pre-wrap;\">\n" + WebUtility.HtmlEncode(text));
@@ -2495,6 +2503,8 @@ public sealed partial class BrowsingContext : IDisposable
         var document = XmlDocumentParser.CreateDocument(new XmlParserOptions { Url = url.Serialize(), ContentType = contentType, BrowsingContext = this });
         new Html.Parsing.XmlScriptingParser(document, content, runTheEnd: ReferenceEquals(document.BrowsingContext, this)).Start();
     }
+
+    private static bool IsJson(Infra.MimeType? mimeType) => mimeType is not null && (mimeType.Subtype.EndsWith("+json", StringComparison.Ordinal) || mimeType.Essence is "application/json" or "text/json");
 
     /// <summary>Decodes a resource that is not HTML: the byte order mark, then the charset parameter, then UTF-8.</summary>
     private static string Decode(ReadOnlySpan<byte> bytes, string? charset) => Decode(bytes, charset, out _);

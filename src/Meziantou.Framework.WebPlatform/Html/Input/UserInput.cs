@@ -249,11 +249,15 @@ public sealed partial class UserInput
         if (!LayoutEngine.TryMapFromRoot(fragment, engine.FromViewport(new PhysicalOffset(x, y)), out var local))
             return false;
 
+        // The nested document is in its viewport (the rectangle given by object-fit for an SVG document), clipped by the content box
         var contentBox = fragment.ContentBoxRect;
-        inContentBox = local.X >= contentBox.Left && local.X < contentBox.Right && local.Y >= contentBox.Top && local.Y < contentBox.Bottom;
-        frameX = local.X - contentBox.Offset.X;
-        frameY = local.Y - contentBox.Offset.Y;
+        var viewport = LayoutEngine.GetNestedViewportRect(fragment);
+        inContentBox = IsInRect(local, contentBox) && IsInRect(local, viewport);
+        frameX = local.X - viewport.Offset.X;
+        frameY = local.Y - viewport.Offset.Y;
         return true;
+
+        static bool IsInRect(PhysicalOffset point, PhysicalRect rect) => point.X >= rect.Left && point.X < rect.Right && point.Y >= rect.Top && point.Y < rect.Bottom;
     }
 
     /// <summary>
@@ -302,7 +306,7 @@ public sealed partial class UserInput
             if (CssomViewGeometry.GetLayoutEngine(container) is not { } engine || engine.GetFragments(container) is not [var fragment, ..])
                 break;
 
-            point = engine.ToViewport(LayoutEngine.MapToRoot(fragment, fragment.ContentBoxRect.Offset + point));
+            point = engine.ToViewport(LayoutEngine.MapToRoot(fragment, LayoutEngine.GetNestedViewportRect(fragment).Offset + point));
         }
 
         return (point.X, point.Y);

@@ -68,6 +68,11 @@ internal sealed partial class LayoutEngine
                 }
 
                 _ = PerformScroll(state, position, SmoothUserScrolling ? ScrollBehavior.Smooth : ScrollBehavior.Instant, associatedElement: null);
+                if (state.SmoothScroll is { } userScroll)
+                {
+                    userScroll.IsUserScroll = true;
+                }
+
                 return;
             }
 
@@ -121,6 +126,23 @@ internal sealed partial class LayoutEngine
                 return;
             }
         }
+    }
+
+    /// <summary>
+    /// Aborts the smooth scroll in progress of a scrolling box that is not a scroll of the user (e.g. started by
+    /// <c>scrollTo()</c>) before a key or a press on the track of a scrollbar scrolls it, even when the scroll of the user does
+    /// not move it (https://drafts.csswg.org/cssom-view/#concept-smooth-scroll: a smooth scroll is aborted "if the user
+    /// [...] initiates a scroll"). The scroll of the user then starts from the current scroll position.
+    /// </summary>
+    public void AbortSmoothScrollForUser(ScrollState state)
+    {
+        if (state.SmoothScroll is not { IsUserScroll: false })
+            return;
+
+        state.SmoothScroll = null;
+        UpdateScrollSnapChangeTargets(state);
+        QueueScrollEndEvent(state);
+        ResolvePendingPromises(state);
     }
 
     /// <summary>

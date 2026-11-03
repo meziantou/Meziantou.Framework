@@ -1927,10 +1927,7 @@
     "total": 1
   },
   "html/browsers/origin/origin-keyed-agent-clusters/popups/noopener-opener-no-openee-yes-same.https.html": {
-    "total": 2,
-    "failures": {
-      "openee: originAgentCluster must equal true": "FAIL"
-    }
+    "total": 2
   },
   "html/browsers/origin/origin-keyed-agent-clusters/popups/opener-no-openee-yes-port.sub.https.html": {
     "total": 4

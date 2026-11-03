@@ -413,7 +413,7 @@ internal static class GeometryUtils
         // Through the iframes, to the viewport of the target document
         while (!ReferenceEquals(document, target) && document.BrowsingContext?.Container is { } container && GetContainerFragment(container) is var (engine, fragment))
         {
-            viewportPoint = engine.ToViewport(LayoutEngine.MapToRoot(fragment, fragment.ContentBoxRect.Offset + viewportPoint));
+            viewportPoint = engine.ToViewport(LayoutEngine.MapToRoot(fragment, LayoutEngine.GetNestedViewportRect(fragment).Offset + viewportPoint));
             document = container.NodeDocument;
         }
 
@@ -436,7 +436,7 @@ internal static class GeometryUtils
             if (GetContainerFragment(containers[i]) is not var (engine, fragment) || !LayoutEngine.TryMapFromRoot(fragment, engine.FromViewport(point), out var local))
                 return point;
 
-            point = local - fragment.ContentBoxRect.Offset;
+            point = local - LayoutEngine.GetNestedViewportRect(fragment).Offset;
         }
 
         switch (GetSpace(node))

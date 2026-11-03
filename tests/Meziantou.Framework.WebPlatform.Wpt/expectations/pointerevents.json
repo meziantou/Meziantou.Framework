@@ -446,16 +446,12 @@
     "failures": {
       "Nested same-origin iframes: relatedTarget is exposed across documents": "FAIL",
       "Parent to same-origin iframe: relatedTarget is exposed across documents": "FAIL",
-      "Same-origin iframe to parent with iframe removed: relatedTarget is null": "FAIL",
       "Same-origin iframe to parent: relatedTarget is exposed across documents": "FAIL",
       "Sibling same-origin iframes: relatedTarget is exposed across documents": "FAIL"
     }
   },
   "pointerevents/pointerevent_boundary_events_cross_origin.html": {
-    "total": 5,
-    "failures": {
-      "Iframe to parent with iframe removed: relatedTarget in outer document is null": "FAIL"
-    }
+    "total": 5
   },
   "pointerevents/pointerevent_boundary_events_in_capturing.html?mouse": {
     "total": 1

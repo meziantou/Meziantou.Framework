@@ -564,21 +564,7 @@ public partial class HtmlOptionElement
     internal override void InsertionSteps()
     {
         base.InsertionSteps();
-
-        // As in browsers, an inserted option whose selectedness is true is the selected option of its select (the selectedness
-        // setting algorithm would keep the last selected option in tree order)
-        if (Selectedness && GetNearestAncestorSelect() is { IsMultiple: false } select && !ReferenceEquals(select, CachedNearestAncestorSelect))
-        {
-            // The options inserted with this one (e.g. in the same optgroup) have not run their insertion steps yet: the
-            // last one of them that is selected wins
-            foreach (var option in select.GetListOfOptions())
-            {
-                if (!ReferenceEquals(option, this) && ReferenceEquals(option.CachedNearestAncestorSelect, select))
-                {
-                    option.Selectedness = false;
-                }
-            }
-        }
+        DeselectOtherOptionsOfNewSelect();
 
         // The update of the selectedcontent elements is left to the post-connection steps, which run once the tree is in a
         // consistent state (they do not run in a disconnected tree)
@@ -605,10 +591,31 @@ public partial class HtmlOptionElement
         }
     }
 
+    /// <summary>
+    /// As in browsers, an option whose selectedness is true that is inserted or moved into a select is its selected option (the
+    /// selectedness setting algorithm would keep the last selected option in tree order).
+    /// </summary>
+    private void DeselectOtherOptionsOfNewSelect()
+    {
+        if (!Selectedness || GetNearestAncestorSelect() is not { IsMultiple: false } select || ReferenceEquals(select, CachedNearestAncestorSelect))
+            return;
+
+        // The options inserted or moved with this one (e.g. in the same optgroup) have not run their steps yet: the last one
+        // of them that is selected wins
+        foreach (var option in select.GetListOfOptions())
+        {
+            if (!ReferenceEquals(option, this) && ReferenceEquals(option.CachedNearestAncestorSelect, select))
+            {
+                option.Selectedness = false;
+            }
+        }
+    }
+
     /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#the-option-element (moving steps)</summary>
     internal override void MovingSteps(bool isSubtreeRoot, Node oldAncestor)
     {
         base.MovingSteps(isSubtreeRoot, oldAncestor);
+        DeselectOtherOptionsOfNewSelect();
         QueueSelectedContentUpdates(UpdateNearestAncestorSelect());
     }
 
@@ -681,9 +688,6 @@ public partial class HtmlSelectedContentElement
     // select made in between (e.g. by the post-connection steps of an option inserted before it) leaves nothing to do
     private bool _postConnectionUpdatePending;
 
-    // Whether the moving steps queued an update that has not run yet
-    private bool _moveUpdateQueued;
-
     /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#recalculate-a-selectedcontent-element's-disabledness</summary>
     private HtmlSelectElement? RecalculateDisabledness()
     {
@@ -745,9 +749,9 @@ public partial class HtmlSelectedContentElement
     }
 
     /// <summary>
-    /// The moving steps (https://github.com/whatwg/html/pull/12263): a selectedcontent element moved to another select is updated
-    /// in a microtask, which finds the select of the element when it runs. Moving it again before the microtask runs queues no
-    /// other update.
+    /// The moving steps (https://github.com/whatwg/html/pull/12263): moving a selectedcontent element to another select queues
+    /// the update of the descendant selectedcontent elements of that select, shared with the removal of its options: the
+    /// selectedcontent elements already in the select are updated too, and each element is updated once.
     /// </summary>
     internal override void MovingSteps(bool isSubtreeRoot, Node oldAncestor)
     {
@@ -762,34 +766,13 @@ public partial class HtmlSelectedContentElement
         if (!wasDisabled && ReferenceEquals(select, oldSelect))
             return;
 
-        if (NodeDocument.EventLoop is not { } eventLoop)
-        {
-            Update(select);
-            return;
-        }
-
-        if (_moveUpdateQueued)
-            return;
-
-        _moveUpdateQueued = true;
-        eventLoop.QueueMicrotask(() =>
-        {
-            if (!_moveUpdateQueued)
-                return;
-
-            _moveUpdateQueued = false;
-            if (RecalculateDisabledness() is { IsMultiple: false } currentSelect && !Disabled)
-            {
-                Update(currentSelect);
-            }
-        });
+        select.QueueSelectedContentUpdate();
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/form-elements.html#update-a-selectedcontent</summary>
     internal void Update(HtmlSelectElement select)
     {
         _postConnectionUpdatePending = false;
-        _moveUpdateQueued = false;
         if (Disabled)
             return;
 

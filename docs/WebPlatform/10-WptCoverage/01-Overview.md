@@ -49,10 +49,10 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 25,591 | 29,691 | 2,570 | 94% |
+| [Stable](#stable-tests) | 25,610 | 29,691 | 2,570 | 94% |
 | [Tentative](#tentative-tests) | 1,175 | 3,074 | 847 | 53% |
 | [Reftests](#reftests) | 27,798 | 29,220 | 180 | 96% |
-| **All** | **54,564** | **61,985** | **3,597** | **93%** |
+| **All** | **54,583** | **61,985** | **3,597** | **93%** |
 
 ## Stable tests
 
@@ -87,7 +87,7 @@ The features of `REQUIRES`:
 | [`contacts`](contacts.md) | 0 | 1 | 1 | – |
 | [`content-dpr`](content-dpr.md) | 0 | 1 | 1 | – |
 | [`content-index`](content-index.md) | 0 | 2 | 2 | – |
-| [`content-security-policy`](content-security-policy.md) | 856 | 893 | 0 | 96% |
+| [`content-security-policy`](content-security-policy.md) | 857 | 893 | 0 | 96% |
 | [`contenteditable`](contenteditable.md) | 0 | 2 | 2 | – |
 | [`cookies`](cookies.md) | 71 | 76 | 0 | 93% |
 | [`cookiestore`](cookiestore.md) | 39 | 47 | 0 | 83% |
@@ -125,7 +125,7 @@ The features of `REQUIRES`:
 | [`css/css-grid`](css/css-grid.md) | 730 | 731 | 0 | 99.8% |
 | [`css/css-highlight-api`](css/css-highlight-api.md) | 19 | 19 | 0 | 100% |
 | [`css/css-image-animation`](css/css-image-animation.md) | 0 | 1 | 1 | – |
-| [`css/css-images`](css/css-images.md) | 41 | 45 | 0 | 91% |
+| [`css/css-images`](css/css-images.md) | 44 | 45 | 0 | 98% |
 | [`css/css-inline`](css/css-inline.md) | 52 | 53 | 0 | 98% |
 | [`css/css-layout-api`](css/css-layout-api.md) | 7 | 7 | 0 | 100% |
 | [`css/css-link-params`](css/css-link-params.md) | 4 | 9 | 0 | 44% |
@@ -162,13 +162,13 @@ The features of `REQUIRES`:
 | [`css/css-ui`](css/css-ui.md) | 85 | 101 | 0 | 84% |
 | [`css/css-values`](css/css-values.md) | 255 | 264 | 0 | 97% |
 | [`css/css-variables`](css/css-variables.md) | 60 | 63 | 0 | 95% |
-| [`css/css-view-transitions`](css/css-view-transitions.md) | 151 | 164 | 0 | 92% |
+| [`css/css-view-transitions`](css/css-view-transitions.md) | 152 | 164 | 0 | 93% |
 | [`css/css-viewport`](css/css-viewport.md) | 28 | 28 | 0 | 100% |
 | [`css/css-will-change`](css/css-will-change.md) | 5 | 5 | 0 | 100% |
 | [`css/css-writing-modes`](css/css-writing-modes.md) | 82 | 85 | 0 | 96% |
 | [`css/CSS2`](css/CSS2.md) | 73 | 73 | 0 | 100% |
 | [`css/cssom`](css/cssom.md) | 258 | 263 | 0 | 98% |
-| [`css/cssom-view`](css/cssom-view.md) | 213 | 231 | 0 | 92% |
+| [`css/cssom-view`](css/cssom-view.md) | 214 | 231 | 0 | 93% |
 | [`css/fetching`](css/fetching.md) | 1 | 2 | 0 | 50% |
 | [`css/fill-stroke`](css/fill-stroke.md) | 3 | 8 | 0 | 38% |
 | [`css/filter-effects`](css/filter-effects.md) | 37 | 37 | 0 | 100% |
@@ -187,14 +187,14 @@ The features of `REQUIRES`:
 | [`direct-sockets`](direct-sockets.md) | 0 | 4 | 4 | – |
 | [`document-picture-in-picture`](document-picture-in-picture.md) | 0 | 22 | 22 | – |
 | [`document-policy`](document-policy.md) | 0 | 7 | 7 | – |
-| [`dom`](dom.md) | 660 | 684 | 6 | 97% |
+| [`dom`](dom.md) | 661 | 684 | 6 | 97% |
 | [`domparsing`](domparsing.md) | 52 | 56 | 0 | 93% |
 | [`domxpath`](domxpath.md) | 28 | 28 | 0 | 100% |
 | [`dpub-aam`](dpub-aam.md) | 0 | 1 | 1 | – |
 | [`ecmascript`](ecmascript.md) | 0 | 2 | 2 | – |
 | [`editing`](editing.md) | 67 | 127 | 0 | 53% |
 | [`element-timing`](element-timing.md) | 50 | 52 | 0 | 96% |
-| [`encoding`](encoding.md) | 147 | 152 | 0 | 97% |
+| [`encoding`](encoding.md) | 148 | 152 | 0 | 97% |
 | [`encoding-detection`](encoding-detection.md) | 5 | 5 | 0 | 100% |
 | [`encrypted-media`](encrypted-media.md) | 0 | 99 | 99 | – |
 | [`entries-api`](entries-api.md) | 0 | 4 | 4 | – |
@@ -221,13 +221,13 @@ The features of `REQUIRES`:
 | [`hr-time`](hr-time.md) | 13 | 13 | 0 | 100% |
 | [`html-aam`](html-aam.md) | 24 | 26 | 0 | 92% |
 | [`html-media-capture`](html-media-capture.md) | 0 | 2 | 2 | – |
-| [`html/browsers`](html/browsers.md) | 692 | 746 | 0 | 93% |
-| [`html/canvas`](html/canvas.md) | 3,070 | 3,165 | 0 | 97% |
+| [`html/browsers`](html/browsers.md) | 693 | 746 | 0 | 93% |
+| [`html/canvas`](html/canvas.md) | 3,071 | 3,165 | 0 | 97% |
 | [`html/cross-origin-embedder-policy`](html/cross-origin-embedder-policy.md) | 53 | 73 | 0 | 73% |
 | [`html/cross-origin-opener-policy`](html/cross-origin-opener-policy.md) | 67 | 114 | 0 | 59% |
 | [`html/dom`](html/dom.md) | 210 | 216 | 0 | 97% |
 | [`html/editing`](html/editing.md) | 119 | 129 | 0 | 92% |
-| [`html/infrastructure`](html/infrastructure.md) | 61 | 69 | 0 | 88% |
+| [`html/infrastructure`](html/infrastructure.md) | 62 | 69 | 0 | 90% |
 | [`html/interaction`](html/interaction.md) | 55 | 58 | 0 | 95% |
 | [`html/links`](html/links.md) | 6 | 6 | 0 | 100% |
 | [`html/meta`](html/meta.md) | 1 | 1 | 0 | 100% |
@@ -235,7 +235,7 @@ The features of `REQUIRES`:
 | [`html/rendering`](html/rendering.md) | 143 | 150 | 0 | 95% |
 | [`html/scripting`](html/scripting.md) | 3 | 3 | 0 | 100% |
 | [`html/select`](html/select.md) | 1 | 1 | 0 | 100% |
-| [`html/semantics`](html/semantics.md) | 2,104 | 2,192 | 31 | 97% |
+| [`html/semantics`](html/semantics.md) | 2,106 | 2,192 | 31 | 97% |
 | [`html/syntax`](html/syntax.md) | 105 | 106 | 0 | 99% |
 | [`html/the-xhtml-syntax`](html/the-xhtml-syntax.md) | 13 | 13 | 0 | 100% |
 | [`html/user-activation`](html/user-activation.md) | 15 | 18 | 0 | 83% |
@@ -306,7 +306,7 @@ The features of `REQUIRES`:
 | [`permissions-revoke`](permissions-revoke.md) | 0 | 1 | 1 | – |
 | [`picture-in-picture`](picture-in-picture.md) | 0 | 18 | 18 | – |
 | [`png`](png.md) | 4 | 4 | 0 | 100% |
-| [`pointerevents`](pointerevents.md) | 166 | 179 | 0 | 93% |
+| [`pointerevents`](pointerevents.md) | 167 | 179 | 0 | 93% |
 | [`pointerlock`](pointerlock.md) | 19 | 19 | 0 | 100% |
 | [`preload`](preload.md) | 63 | 69 | 0 | 91% |
 | [`presentation-api`](presentation-api.md) | 0 | 13 | 13 | – |
@@ -320,7 +320,7 @@ The features of `REQUIRES`:
 | [`requestidlecallback`](requestidlecallback.md) | 20 | 20 | 0 | 100% |
 | [`resize-observer`](resize-observer.md) | 35 | 35 | 0 | 100% |
 | [`resource-timing`](resource-timing.md) | 104 | 118 | 0 | 88% |
-| [`sanitizer-api`](sanitizer-api.md) | 42 | 50 | 0 | 84% |
+| [`sanitizer-api`](sanitizer-api.md) | 43 | 50 | 0 | 86% |
 | [`savedata`](savedata.md) | 0 | 1 | 1 | – |
 | [`scheduler`](scheduler.md) | 24 | 24 | 0 | 100% |
 | [`screen-capture`](screen-capture.md) | 0 | 13 | 13 | – |
@@ -344,7 +344,7 @@ The features of `REQUIRES`:
 | [`storage-access-api`](storage-access-api.md) | 0 | 37 | 37 | – |
 | [`streams`](streams.md) | 68 | 85 | 4 | 84% |
 | [`subresource-integrity`](subresource-integrity.md) | 0 | 5 | 5 | – |
-| [`svg`](svg.md) | 700 | 742 | 2 | 95% |
+| [`svg`](svg.md) | 703 | 742 | 2 | 95% |
 | [`svg-aam`](svg-aam.md) | 5 | 5 | 0 | 100% |
 | [`timing-entrytypes-registry`](timing-entrytypes-registry.md) | 0 | 2 | 2 | – |
 | [`touch-events`](touch-events.md) | 9 | 12 | 0 | 75% |
@@ -370,7 +370,7 @@ The features of `REQUIRES`:
 | [`web-nfc`](web-nfc.md) | 0 | 11 | 11 | – |
 | [`web-otp`](web-otp.md) | 0 | 1 | 1 | – |
 | [`web-share`](web-share.md) | 0 | 14 | 14 | – |
-| [`webaudio`](webaudio.md) | 277 | 298 | 0 | 93% |
+| [`webaudio`](webaudio.md) | 278 | 298 | 0 | 93% |
 | [`webauthn`](webauthn.md) | 0 | 54 | 54 | – |
 | [`webcodecs`](webcodecs.md) | 0 | 86 | 86 | – |
 | [`WebCryptoAPI`](WebCryptoAPI.md) | 135 | 136 | 1 | 100% |
@@ -401,7 +401,7 @@ The features of `REQUIRES`:
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 317 | 330 | 0 | 96% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **25,591** | **29,691** | **2,570** | **94%** |
+| **Total (343 sections)** | **25,610** | **29,691** | **2,570** | **94%** |
 
 ## Tentative tests
 

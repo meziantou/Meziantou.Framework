@@ -157,9 +157,10 @@ internal static class ScrollIntoView
             if (frameFragments.Count == 0)
                 return WhenAll(promises);
 
-            // The viewport of the document is the content box of the frame (the target rectangle is in the coordinates of the
-            // document after the scrolls: the scroll position of the viewport before them gives its position in the viewport)
-            var contentBox = frameFragments[0].ContentBoxRect.Translate(frameFragments[0].GetOffsetInRoot());
+            // The viewport of the document is the content box of the frame, or the rectangle given by object-fit for an SVG
+            // document (the target rectangle is in the coordinates of the document after the scrolls: the scroll position of the
+            // viewport before them gives its position in the viewport)
+            var contentBox = LayoutEngine.GetNestedViewportRect(frameFragments[0]).Translate(frameFragments[0].GetOffsetInRoot());
             rect = rect.Translate(contentBox.Offset - viewportOffset);
             engine = parentEngine;
             document = frame.NodeDocument;

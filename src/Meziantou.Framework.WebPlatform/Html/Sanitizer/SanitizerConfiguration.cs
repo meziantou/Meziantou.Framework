@@ -924,11 +924,29 @@ internal sealed class SanitizerConfiguration
             if (RemovesAttribute(elementName, local, attribute.LocalName, attribute.NamespaceUri, attribute.Value))
             {
                 element.RemoveAttributeNS(attribute.NamespaceUri, attribute.LocalName);
+                if (attribute is { LocalName: "is", NamespaceUri: null })
+                {
+                    ForgetIsValue(element);
+                }
             }
         }
 
         SanitizeChildren(element);
         return false;
+    }
+
+    /// <summary>
+    /// Makes an element created by the parser with an <c>is</c> attribute that the sanitizer removes a built-in element, as
+    /// when the sanitizer runs while parsing (<c>setHTML()</c>): its <c>is</c> value is forgotten, and it is not an undefined
+    /// customized built-in element anymore (it matches <c>:defined</c>). The WPT test is sanitizer-api/sanitizer-custom-elements-is.html.
+    /// </summary>
+    private static void ForgetIsValue(Element element)
+    {
+        if (element.IsValue is null || element.CustomElementState != CustomElementState.Undefined || CustomElements.IsValidCustomElementName(element.LocalName))
+            return;
+
+        element.IsValue = null;
+        element.CustomElementState = CustomElementState.Uncustomized;
     }
 
     /// <summary>https://html.spec.whatwg.org/multipage/dynamic-markup-insertion.html#contains-a-javascript-url</summary>

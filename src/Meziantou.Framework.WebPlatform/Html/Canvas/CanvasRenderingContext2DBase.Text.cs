@@ -600,7 +600,8 @@ public abstract partial class CanvasRenderingContext2DBase
     /// <summary>
     /// The language of the texts (https://html.spec.whatwg.org/multipage/canvas.html#dom-context-2d-lang): the value of
     /// <see cref="Lang"/>, or for <c>inherit</c> the language of the canvas element (for an <see cref="OffscreenCanvas"/>, the
-    /// language of its placeholder canvas element when its control was transferred, else of the document element of its window).
+    /// language of its placeholder canvas element when its control was transferred, else of the document element of its window
+    /// when it was created).
     /// </summary>
     private string? GetLanguage()
     {
@@ -613,7 +614,7 @@ public abstract partial class CanvasRenderingContext2DBase
         if (this is OffscreenCanvasRenderingContext2D { Canvas.InheritedLanguage: { } inherited })
             return inherited.Length == 0 ? null : inherited;
 
-        // An OffscreenCanvas of a window inherits the language of the document element
+        // An OffscreenCanvas created by .NET code, without a current global, inherits the language of the document element
         return Global is Window { Document.DocumentElement: { } root } ? Css.Selectors.HtmlElementStates.GetLanguage(root) : null;
     }
 

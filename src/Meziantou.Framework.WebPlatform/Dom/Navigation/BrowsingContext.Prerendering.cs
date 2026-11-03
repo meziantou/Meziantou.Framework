@@ -30,9 +30,9 @@ public sealed partial class BrowsingContext
     internal BrowsingContext CreatePrerenderingBrowsingContext(Document initiator, PrefetchRecord record)
     {
         var owner = GroupOwner;
+        // (the constructor creates the new browsing context group of the prerendering traversable)
         var context = new BrowsingContext(Options, parent: null, container: null, owner, creator: null, name: "", prerendering: true)
         {
-            _group = new BrowsingContextGroup(),
             PrerenderRecord = record,
             PrerenderInitiator = initiator,
         };

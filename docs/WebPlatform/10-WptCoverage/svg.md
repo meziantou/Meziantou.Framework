@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of svg, and why the tests th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 700 | 742 | 2 | 95% |
+| [Stable](#stable-tests) | 703 | 742 | 2 | 95% |
 | [Tentative](#tentative-tests) | 46 | 47 | 0 | 98% |
 | [Reftests](#reftests) | 555 | 629 | 2 | 89% |
-| **All** | **1,301** | **1,418** | **4** | **92%** |
+| **All** | **1,304** | **1,418** | **4** | **92%** |
 
 ## Stable tests
 
@@ -663,7 +663,7 @@ description: "The results of the web-platform-tests of svg, and why the tests th
 | [`types/SVGElement.ownerSVGElement-02.html`](https://wpt.fyi/results/svg/types/SVGElement.ownerSVGElement-02.html) | Pass | 2 / 2 |  |  |
 | [`types/SameObject-identity.html`](https://wpt.fyi/results/svg/types/SameObject-identity.html) | Pass | 81 / 81 |  |  |
 | [`types/elements/SVGGeometryElement-rect.svg`](https://wpt.fyi/results/svg/types/elements/SVGGeometryElement-rect.svg) | Pass | 3 / 3 |  |  |
-| [`types/scripted/SVGAngle-valueAsString.html`](https://wpt.fyi/results/svg/types/scripted/SVGAngle-valueAsString.html) | Fail | 2 / 4 | BUG | the `SVGAngle` unit conversions that overflow a float give `Infinity` (e.g. `value` of `1e38rad` in degrees, `1e38turn`) where the test expects them clamped to the largest float (`3.4028234663852886e+38`) |
+| [`types/scripted/SVGAngle-valueAsString.html`](https://wpt.fyi/results/svg/types/scripted/SVGAngle-valueAsString.html) | Pass | 4 / 4 |  |  |
 | [`types/scripted/SVGAnimatedAngle-initial-values.html`](https://wpt.fyi/results/svg/types/scripted/SVGAnimatedAngle-initial-values.html) | Pass | 2 / 2 |  |  |
 | [`types/scripted/SVGAnimatedAngle.html`](https://wpt.fyi/results/svg/types/scripted/SVGAnimatedAngle.html) | Pass | 1 / 1 |  |  |
 | [`types/scripted/SVGAnimatedBoolean.html`](https://wpt.fyi/results/svg/types/scripted/SVGAnimatedBoolean.html) | Pass | 1 / 1 |  |  |
@@ -716,8 +716,8 @@ description: "The results of the web-platform-tests of svg, and why the tests th
 | [`types/scripted/SVGGraphicsElement.getBBox-03.html`](https://wpt.fyi/results/svg/types/scripted/SVGGraphicsElement.getBBox-03.html) | Pass | 12 / 12 |  |  |
 | [`types/scripted/SVGGraphicsElement.getBBox-04.html`](https://wpt.fyi/results/svg/types/scripted/SVGGraphicsElement.getBBox-04.html) | Pass | 1 / 1 |  |  |
 | [`types/scripted/SVGGraphicsElement.getBBox-05.html`](https://wpt.fyi/results/svg/types/scripted/SVGGraphicsElement.getBBox-05.html) | Fail | 8 / 15 | NOT IMPLEMENTED | the `markers` and `clipped` options of `getBBox()` (the markers are not laid out, the clipping paths are ignored) |
-| [`types/scripted/SVGGraphicsElement.getBBox-06.html`](https://wpt.fyi/results/svg/types/scripted/SVGGraphicsElement.getBBox-06.html) | Fail | 3 / 5 | BUG | `getBBox()` returns an empty rectangle for every element that is not rendered, where SVG 2 (https://svgwg.org/svg2-draft/coords.html#BoundingBoxes) returns the geometry it would have if rendered for an element in a `symbol` or in a `display: none` group (only a `display: none` element itself returns zero in every browser) |
-| [`types/scripted/SVGGraphicsElement.getBBox-07.html`](https://wpt.fyi/results/svg/types/scripted/SVGGraphicsElement.getBBox-07.html) | Fail | 44 / 49 | BUG | `getBBox()` returns an empty rectangle for every element that is not rendered, where SVG 2 (https://svgwg.org/svg2-draft/coords.html#BoundingBoxes) returns the geometry it would have if rendered for an element in a `defs`, `clipPath` or `mask` element |
+| [`types/scripted/SVGGraphicsElement.getBBox-06.html`](https://wpt.fyi/results/svg/types/scripted/SVGGraphicsElement.getBBox-06.html) | Pass | 5 / 5 |  |  |
+| [`types/scripted/SVGGraphicsElement.getBBox-07.html`](https://wpt.fyi/results/svg/types/scripted/SVGGraphicsElement.getBBox-07.html) | Pass | 49 / 49 |  |  |
 | [`types/scripted/SVGGraphicsElement.getBBox-08.html`](https://wpt.fyi/results/svg/types/scripted/SVGGraphicsElement.getBBox-08.html) | Pass | 20 / 20 |  |  |
 | [`types/scripted/SVGGraphicsElement.getBBox-09.html`](https://wpt.fyi/results/svg/types/scripted/SVGGraphicsElement.getBBox-09.html) | Pass | 24 / 24 |  |  |
 | [`types/scripted/SVGGraphicsElement.getBBox-10.html`](https://wpt.fyi/results/svg/types/scripted/SVGGraphicsElement.getBBox-10.html) | Pass | 4 / 4 |  |  |

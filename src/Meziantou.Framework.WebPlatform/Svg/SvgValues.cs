@@ -449,12 +449,12 @@ public sealed class SvgAngle
         get
         {
             Owner?.Sync();
-            return (float)(_value * GetDegreesFactor());
+            return ToFloat(_value * GetDegreesFactor());
         }
         set
         {
             Owner.BeginChange();
-            _value = (float)(value / GetDegreesFactor());
+            _value = ToFloat(value / GetDegreesFactor());
             Owner?.Commit();
         }
     }
@@ -530,9 +530,12 @@ public sealed class SvgAngle
         var degrees = _value * GetDegreesFactor();
         _unitType = unitType;
         _turn = false;
-        _value = (float)(degrees / GetDegreesFactor());
+        _value = ToFloat(degrees / GetDegreesFactor());
         Owner?.Commit();
     }
+
+    // A conversion that overflows a float gives the largest float, as in the browsers
+    private static float ToFloat(double value) => (float)Math.Clamp(value, float.MinValue, float.MaxValue);
 
     private double GetDegreesFactor()
     {

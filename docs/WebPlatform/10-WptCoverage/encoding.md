@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of encoding, and why the tes
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 147 | 152 | 0 | 97% |
+| [Stable](#stable-tests) | 148 | 152 | 0 | 97% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 4 | 4 | 0 | 100% |
-| **All** | **151** | **156** | **0** | **97%** |
+| **All** | **152** | **156** | **0** | **97%** |
 
 ## Stable tests
 
@@ -28,7 +28,7 @@ description: "The results of the web-platform-tests of encoding, and why the tes
 | [`idlharness.any.js`](https://wpt.fyi/results/encoding/idlharness.any.js) | Pass | 171 / 171 |  |  |
 | [`iso-2022-jp-decoder.any.js`](https://wpt.fyi/results/encoding/iso-2022-jp-decoder.any.js) | Pass | 76 / 76 |  |  |
 | [`iso-2022-jp-encoder.html`](https://wpt.fyi/results/encoding/iso-2022-jp-encoder.html) | Pass | 12 / 12 |  |  |
-| [`json-document-utf8.html`](https://wpt.fyi/results/encoding/json-document-utf8.html) | Fail | 4 / 5 | BUG | a document of a JSON MIME type is decoded with the `charset` parameter of its `Content-Type` (`application/json;charset=windows-1251` gives `{"text":"вѓГ©"}`); JSON is always UTF-8 (RFC 8259), so the parameter must be ignored |
+| [`json-document-utf8.html`](https://wpt.fyi/results/encoding/json-document-utf8.html) | Pass | 5 / 5 |  |  |
 | [`legacy-mb-japanese/euc-jp/eucjp-decode-cseucpkdfmtjapanese.html`](https://wpt.fyi/results/encoding/legacy-mb-japanese/euc-jp/eucjp-decode-cseucpkdfmtjapanese.html) | Pass | 13,459 / 13,459 |  |  |
 | [`legacy-mb-japanese/euc-jp/eucjp-decode-errors.html`](https://wpt.fyi/results/encoding/legacy-mb-japanese/euc-jp/eucjp-decode-errors.html) | Pass | 11 / 11 |  |  |
 | [`legacy-mb-japanese/euc-jp/eucjp-decode-x-euc-jp.html`](https://wpt.fyi/results/encoding/legacy-mb-japanese/euc-jp/eucjp-decode-x-euc-jp.html) | Pass | 13,459 / 13,459 |  |  |

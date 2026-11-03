@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of css/css-view-transitions,
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 151 | 164 | 0 | 92% |
+| [Stable](#stable-tests) | 152 | 164 | 0 | 93% |
 | [Tentative](#tentative-tests) | 4 | 7 | 0 | 57% |
 | [Reftests](#reftests) | 308 | 318 | 0 | 97% |
-| **All** | **463** | **489** | **0** | **95%** |
+| **All** | **464** | **489** | **0** | **95%** |
 
 ## Stable tests
 
@@ -143,7 +143,7 @@ description: "The results of the web-platform-tests of css/css-view-transitions,
 | [`scoped/element-scoped-containment-invalid-state.html`](https://wpt.fyi/results/css/css-view-transitions/scoped/element-scoped-containment-invalid-state.html) | Pass | 5 / 5 |  |  |
 | [`scoped/fill-forwards.html`](https://wpt.fyi/results/css/css-view-transitions/scoped/fill-forwards.html) | Pass | 1 / 1 |  |  |
 | [`scoped/hit-test-captured-scope.html`](https://wpt.fyi/results/css/css-view-transitions/scoped/hit-test-captured-scope.html) | Pass | 4 / 4 |  |  |
-| [`scoped/hit-test-overflow-clipped-scope.html`](https://wpt.fyi/results/css/css-view-transitions/scoped/hit-test-overflow-clipped-scope.html) | Fail | 4 / 8 | BUG | hit testing clips the `::view-transition` of a scoped transition to the overflow clip of its root element (`overflow: hidden`), so the point of the overlay outside the scope hits `#ancestor` instead of `#scope`; the specification exempts the pseudo-element from that clip, as the painting does |
+| [`scoped/hit-test-overflow-clipped-scope.html`](https://wpt.fyi/results/css/css-view-transitions/scoped/hit-test-overflow-clipped-scope.html) | Pass | 8 / 8 |  |  |
 | [`scoped/hit-test-vt-overlay.html`](https://wpt.fyi/results/css/css-view-transitions/scoped/hit-test-vt-overlay.html) | Pass | 1 / 1 |  |  |
 | [`scoped/hit-testing.html`](https://wpt.fyi/results/css/css-view-transitions/scoped/hit-testing.html) | Pass | 1 / 1 |  |  |
 | [`scoped/missing-view-transition-name.html`](https://wpt.fyi/results/css/css-view-transitions/scoped/missing-view-transition-name.html) | Pass | 1 / 1 |  |  |

@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of html/canvas, and why the 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 3,070 | 3,165 | 0 | 97% |
+| [Stable](#stable-tests) | 3,071 | 3,165 | 0 | 97% |
 | [Tentative](#tentative-tests) | 7 | 259 | 0 | 3% |
 | [Reftests](#reftests) | 213 | 552 | 0 | 39% |
-| **All** | **3,290** | **3,976** | **0** | **83%** |
+| **All** | **3,291** | **3,976** | **0** | **83%** |
 
 ## Stable tests
 
@@ -3083,7 +3083,7 @@ description: "The results of the web-platform-tests of html/canvas, and why the 
 | [`offscreen/text/2d.text.measure.fontBoundingBox.html`](https://wpt.fyi/results/html/canvas/offscreen/text/2d.text.measure.fontBoundingBox.html) | Pass | 1 / 1 |  |  |
 | [`offscreen/text/2d.text.measure.fontBoundingBox.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/text/2d.text.measure.fontBoundingBox.worker.js) | Pass | 1 / 1 |  |  |
 | [`offscreen/text/2d.text.measure.lang.html`](https://wpt.fyi/results/html/canvas/offscreen/text/2d.text.measure.lang.html) | Pass | 1 / 1 |  |  |
-| [`offscreen/text/2d.text.measure.lang.inherit.html`](https://wpt.fyi/results/html/canvas/offscreen/text/2d.text.measure.lang.inherit.html) | Fail | 0 / 1 | BUG | the inherited language of an `OffscreenCanvas` created in a window is the language of the document element when the text is measured, not when the `OffscreenCanvas` is created (https://html.spec.whatwg.org/multipage/canvas.html#offscreencanvas-inherited-language): after `document.documentElement.lang = 'en'`, `lang = 'inherit'` measures `fi` with the English ligature (28.975 instead of 29.8) |
+| [`offscreen/text/2d.text.measure.lang.inherit.html`](https://wpt.fyi/results/html/canvas/offscreen/text/2d.text.measure.lang.inherit.html) | Pass | 1 / 1 |  |  |
 | [`offscreen/text/2d.text.measure.lang.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/text/2d.text.measure.lang.worker.js) | Pass | 1 / 1 |  |  |
 | [`offscreen/text/2d.text.measure.width.basic.html`](https://wpt.fyi/results/html/canvas/offscreen/text/2d.text.measure.width.basic.html) | Pass | 1 / 1 |  |  |
 | [`offscreen/text/2d.text.measure.width.basic.worker.js`](https://wpt.fyi/results/html/canvas/offscreen/text/2d.text.measure.width.basic.worker.js) | Pass | 1 / 1 |  |  |

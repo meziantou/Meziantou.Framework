@@ -13161,10 +13161,7 @@
     "total": 1
   },
   "html/canvas/offscreen/text/2d.text.measure.lang.inherit.html": {
-    "total": 1,
-    "failures": {
-      "Testing the lang attribute": "FAIL"
-    }
+    "total": 1
   },
   "html/canvas/offscreen/text/2d.text.measure.lang.worker.js": {
     "total": 1

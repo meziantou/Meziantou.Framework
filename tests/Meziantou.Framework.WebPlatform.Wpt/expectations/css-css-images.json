@@ -1266,28 +1266,16 @@
     "reftest": "TIMEOUT"
   },
   "css/css-images/object-fit-svg-intersection-observer.sub.html": {
-    "total": 3,
-    "failures": {
-      "intersectionRatio follows the clipping by the content box of the object, in a cross-origin iframe": "FAIL",
-      "intersectionRatio follows the position of the fitted SVG document, in a cross-origin iframe": "FAIL",
-      "intersectionRect is in the coordinates of the fitted SVG document, in a same-origin iframe": "FAIL"
-    }
+    "total": 3
   },
   "css/css-images/object-fit-svg-no-natural-dimensions.html": {
     "reftest": "PASS"
   },
   "css/css-images/object-fit-svg-pointer-events.html": {
-    "total": 2,
-    "failures": {
-      "A pointer event over the fitted SVG document targets it, with client coordinates relative to it": "FAIL",
-      "A pointer event where the fitted SVG document does not cover the content box targets the object": "FAIL"
-    }
+    "total": 2
   },
   "css/css-images/object-fit-svg-scroll-into-view.html": {
-    "total": 1,
-    "failures": {
-      "scrollIntoView scrolls to the position of the element in the fitted SVG document": "FAIL"
-    }
+    "total": 1
   },
   "css/css-images/object-position-png-001c.html": {
     "reftest": "PASS"

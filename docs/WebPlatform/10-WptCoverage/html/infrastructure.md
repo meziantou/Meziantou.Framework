@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of html/infrastructure, and 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 61 | 69 | 0 | 88% |
+| [Stable](#stable-tests) | 62 | 69 | 0 | 90% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 0 | 1 | 1 | – |
-| **All** | **61** | **70** | **1** | **88%** |
+| **All** | **62** | **70** | **1** | **90%** |
 
 ## Stable tests
 
@@ -45,7 +45,7 @@ description: "The results of the web-platform-tests of html/infrastructure, and 
 | [`safe-passing-of-structured-data/shared-array-buffers/window-iframe-messagechannel.https.html`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/window-iframe-messagechannel.https.html) | Pass | 4 / 4 |  |  |
 | [`safe-passing-of-structured-data/shared-array-buffers/window-iframe-not-cross-origin-isolated.https.html`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/window-iframe-not-cross-origin-isolated.https.html) | Pass | 2 / 2 |  |  |
 | [`safe-passing-of-structured-data/shared-array-buffers/window-messagechannel-success.https.html`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/window-messagechannel-success.https.html) | Pass | 1 / 1 |  |  |
-| [`safe-passing-of-structured-data/shared-array-buffers/window-noopener-failure.https.html`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/window-noopener-failure.https.html) | Fail | 0 / 1 | BUG | a popup opened with `noopener` gets a new browsing context group (`_group`), but the agent clusters are kept by the `GroupOwner` (the browsing context that opened it), so the popup is in the same agent cluster as its creator and deserializes the `SharedArrayBuffer` sent over the `BroadcastChannel` (a `message` event instead of `messageerror`) |
+| [`safe-passing-of-structured-data/shared-array-buffers/window-noopener-failure.https.html`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/window-noopener-failure.https.html) | Pass | 1 / 1 |  |  |
 | [`safe-passing-of-structured-data/shared-array-buffers/window-opener-success.https.html`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/window-opener-success.https.html) | Pass | 1 / 1 |  |  |
 | [`safe-passing-of-structured-data/shared-array-buffers/window-serviceworker-failure.https.html`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/window-serviceworker-failure.https.html) | Pass | 1 / 1 |  |  |
 | [`safe-passing-of-structured-data/shared-array-buffers/window-sharedworker-failure.https.html`](https://wpt.fyi/results/html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/window-sharedworker-failure.https.html) | Pass | 1 / 1 |  |  |

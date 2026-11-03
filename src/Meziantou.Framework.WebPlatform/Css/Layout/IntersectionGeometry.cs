@@ -360,8 +360,16 @@ internal static class IntersectionGeometry
             if (document.BrowsingContext?.Container is not { } container || CssomViewGeometry.GetLayoutEngine(container) is not { } parentEngine || parentEngine.GetFragments(container) is not [var containerFragment, ..])
                 return false;
 
-            var contentOffset = containerFragment.ContentBoxRect.Offset;
-            rect = parentEngine.ToViewport(LayoutEngine.MapToRoot(containerFragment, rect.Translate(contentOffset))).Bounds;
+            // The nested document is in its viewport: the content box, or the rectangle given by object-fit for an SVG document,
+            // which the content box clips
+            var contentOffset = LayoutEngine.GetNestedViewportRect(containerFragment).Offset;
+            rect = rect.Translate(contentOffset);
+            if (containerFragment.ReplacedContentRect is not null)
+            {
+                intersects &= TryIntersect(rect, effectiveScrollMargin.Apply(containerFragment.ContentBoxRect), out rect);
+            }
+
+            rect = parentEngine.ToViewport(LayoutEngine.MapToRoot(containerFragment, rect)).Bounds;
             (frames ??= []).Add((containerFragment, contentOffset, parentEngine));
             engine = parentEngine;
             document = container.NodeDocument;
@@ -533,7 +541,7 @@ internal static class IntersectionGeometry
             if (engine.Document.BrowsingContext?.Container is not { } container || CssomViewGeometry.GetLayoutEngine(container) is not { } parentEngine || parentEngine.GetFragments(container) is not [var containerFragment, ..])
                 return false;
 
-            rect = parentEngine.ToViewport(LayoutEngine.MapToRoot(containerFragment, rect.Translate(containerFragment.ContentBoxRect.Offset))).Bounds;
+            rect = parentEngine.ToViewport(LayoutEngine.MapToRoot(containerFragment, rect.Translate(LayoutEngine.GetNestedViewportRect(containerFragment).Offset))).Bounds;
             subject = [containerFragment];
             engine = parentEngine;
         }

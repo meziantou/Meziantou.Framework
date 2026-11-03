@@ -773,16 +773,21 @@ internal ref partial struct Av1TileCoder
             else
             {
                 // The angle delta whose prediction is the closest to the block, when it is closer than the one of the mode
-                var bestDelta = 0;
-                var bestError = EstimateLumaMode(contexts, r, c, bw4, bh4, mode, angleDelta: 0, filterIntraMode: -1);
+                var count = 0;
+                _estimateCandidates[count++] = PackCandidate(mode, angleDelta: 0, filterIntraMode: -1);
                 for (var delta = -Av1Constants.MaxAngleDelta; delta <= Av1Constants.MaxAngleDelta; delta++)
                 {
-                    if (delta is 0)
-                        continue;
+                    if (delta is not 0)
+                        _estimateCandidates[count++] = PackCandidate(mode, delta, filterIntraMode: -1);
+                }
 
-                    var error = EstimateLumaMode(contexts, r, c, bw4, bh4, mode, delta, filterIntraMode: -1);
-                    if (error < bestError)
-                        (bestError, bestDelta) = (error, delta);
+                EstimateLumaCandidates(contexts, r, c, bw4, bh4, count);
+                var bestDelta = 0;
+                var bestError = _estimates[0];
+                for (var i = 1; i < count; i++)
+                {
+                    if (_estimates[i] < bestError)
+                        (bestError, bestDelta) = (_estimates[i], UnpackAngleDelta(_estimateCandidates[i]));
                 }
 
                 // The estimates predicted the block: the frame does not hold the best mode any more
@@ -807,13 +812,18 @@ internal ref partial struct Av1TileCoder
                 else
                 {
                     // The recursive filter whose prediction is the closest to the block
+                    for (var mode = 0; mode < Av1Constants.IntraFilterModes; mode++)
+                    {
+                        _estimateCandidates[mode] = PackCandidate(Av1Constants.DcPred, angleDelta: 0, mode);
+                    }
+
+                    EstimateLumaCandidates(contexts, r, c, bw4, bh4, Av1Constants.IntraFilterModes);
                     var bestFilter = 0;
                     var bestError = long.MaxValue;
                     for (var mode = 0; mode < Av1Constants.IntraFilterModes; mode++)
                     {
-                        var error = EstimateLumaMode(contexts, r, c, bw4, bh4, Av1Constants.DcPred, angleDelta: 0, mode);
-                        if (error < bestError)
-                            (bestError, bestFilter) = (error, mode);
+                        if (_estimates[mode] < bestError)
+                            (bestError, bestFilter) = (_estimates[mode], mode);
                     }
 
                     TryLumaMode(ref luma, Av1Constants.DcPred, angleDelta: 0, bestFilter, maxTxSize);
@@ -1187,20 +1197,139 @@ internal ref partial struct Av1TileCoder
         return _estimate;
     }
 
-    // The error of the prediction of the luma samples of the block with a mode: see RankIntraModes
-    private long EstimateLumaMode(Span<byte> contexts, int r, int c, int bw4, int bh4, int mode, int angleDelta, int filterIntraMode)
+    // The errors of the predictions of the luma samples of the block with the count first candidates of
+    // _estimateCandidates, in _estimates: see RankIntraModes. The mode of the block is the last candidate on return
+    private void EstimateLumaCandidates(Span<byte> contexts, int r, int c, int bw4, int bh4, int count)
     {
-        CopyContexts(contexts, r, c, bw4, bh4, save: false);
-        _yMode = mode;
-        _angleDeltaY = angleDelta;
-        _useFilterIntra = filterIntraMode >= 0;
-        _filterIntraMode = Math.Max(filterIntraMode, 0);
         _paletteSizeY = 0;
-        _estimating = true;
-        _estimate = 0;
-        Residual(ResidualOperation.Search, planeMask: 0b001);
-        _estimating = false;
-        return _estimate;
+        EstimateCandidates(contexts, r, c, bw4, bh4, planeMask: 0b001, count);
+    }
+
+    // The errors of the predictions of the blocks of the planes of planeMask with the count first candidates of
+    // _estimateCandidates, in _estimates, from one pass over the transform blocks: the estimate of a transform block replaces
+    // its samples by the ones of the source, which the transform blocks that follow are predicted from, so the transform
+    // blocks of a candidate are predicted as in a pass of its own. The mode of the block is the last candidate on return
+    private void EstimateCandidates(Span<byte> contexts, int r, int c, int bw4, int bh4, int planeMask, int count)
+    {
+        Debug.Assert(count is > 0 and <= 16);
+        CopyContexts(contexts, r, c, bw4, bh4, save: false);
+        _estimateCount = count;
+        for (var i = 0; i < count; i++)
+        {
+            _estimates[i] = 0;
+        }
+
+        Residual(ResidualOperation.Estimate, planeMask);
+        SetCandidate(planeMask is 0b001 ? 0 : 1, _estimateCandidates[count - 1]);
+    }
+
+    // A candidate of EstimateCandidates: an intra mode, its angle delta and its recursive filter (-1 for none)
+    private static int PackCandidate(int mode, int angleDelta, int filterIntraMode) => mode | ((angleDelta + Av1Constants.MaxAngleDelta) << 8) | ((filterIntraMode + 1) << 16);
+
+    private static int UnpackAngleDelta(int candidate) => ((candidate >> 8) & 0xFF) - Av1Constants.MaxAngleDelta;
+
+    // Sets the mode of the luma samples of the block (plane 0) or of its chroma samples to a candidate
+    private void SetCandidate(int plane, int candidate)
+    {
+        if (plane is 0)
+        {
+            _yMode = candidate & 0xFF;
+            _angleDeltaY = UnpackAngleDelta(candidate);
+            var filterIntraMode = (candidate >> 16) - 1;
+            _useFilterIntra = filterIntraMode >= 0;
+            _filterIntraMode = Math.Max(filterIntraMode, 0);
+        }
+        else
+        {
+            _uvMode = candidate & 0xFF;
+        }
+    }
+
+    // The counterpart of SearchTransformBlock for EstimateCandidates: predicts the transform block with every candidate and
+    // adds the sum of the absolute differences of each prediction from the source to the estimate of the candidate, then
+    // replaces the samples by the ones of the source. The candidates are intra modes without palette nor chroma from luma
+    // prediction: the edges of the transform block are the ones of PredictTransformBlock, and are written once
+    [SkipLocalsInit]
+    private void EstimateTransformBlock(int plane, int baseX, int baseY, int txSz, int x, int y)
+    {
+        var startX = baseX + (4 * x);
+        var startY = baseY + (4 * y);
+        if (!IsTransformBlockInFrame(plane, startX, startY))
+            return;
+
+        Debug.Assert(!_isInter && (plane is 0 ? _paletteSizeY : _paletteSizeUv) is 0);
+        var subX = plane > 0 ? _subX : 0;
+        var subY = plane > 0 ? _subY : 0;
+        var subBlockMiRow = ((startY << subY) >> Av1Constants.MiSizeLog2) & _sbMask;
+        var subBlockMiCol = ((startX << subX) >> Av1Constants.MiSizeLog2) & _sbMask;
+        var stepX = Av1Tables.TxWidth[txSz] >> Av1Constants.MiSizeLog2;
+        var stepY = Av1Tables.TxHeight[txSz] >> Av1Constants.MiSizeLog2;
+        var maxX = ((_miCols * Av1Constants.MiSize) >> subX) - 1;
+        var maxY = ((_miRows * Av1Constants.MiSize) >> subY) - 1;
+        var blockDecoded = _scratch.GetBlockDecoded(plane);
+        var log2W = Av1Tables.TxWidthLog2[txSz];
+        var log2H = Av1Tables.TxHeightLog2[txSz];
+        var haveLeft = (plane is 0 ? _availL : _availLChroma) || x > 0;
+        var haveAbove = (plane is 0 ? _availU : _availUChroma) || y > 0;
+        var haveAboveRight = blockDecoded[BlockDecodedIndex((subBlockMiRow >> subY) - 1, (subBlockMiCol >> subX) + stepX)] is not 0;
+        var haveBelowLeft = blockDecoded[BlockDecodedIndex((subBlockMiRow >> subY) + stepY, (subBlockMiCol >> subX) - 1)] is not 0;
+        var smoothNeighbor = _sequence.EnableIntraEdgeFilter && GetFilterType(plane);
+
+        var planeBuffer = _frame.GetPlane(plane);
+        var stride = planeBuffer.Stride;
+        var edgeLength = Av1IntraPredictor.GetEdgeStorageLength(log2W, log2H);
+        Span<int> edges = unsafe(stackalloc int[4 * edgeLength]);
+        var above = edges[..edgeLength];
+        var left = edges.Slice(edgeLength, edgeLength);
+        var filteredAbove = edges.Slice(2 * edgeLength, edgeLength);
+        var filteredLeft = edges.Slice(3 * edgeLength, edgeLength);
+        Av1IntraPredictor.PrepareEdges(planeBuffer.Samples, stride, startX, startY, haveLeft, haveAbove, haveAboveRight, haveBelowLeft, log2W, log2H, maxX, maxY, _bitDepth, above, left);
+
+        var samples = planeBuffer.Samples[((startY * stride) + startX)..];
+        var sourcePlane = _workspace!.GetSource(plane);
+        var source = sourcePlane.Samples[((startY * sourcePlane.Stride) + startX)..];
+        var w = Av1Tables.TxWidth[txSz];
+        var h = Av1Tables.TxHeight[txSz];
+        for (var i = 0; i < _estimateCount; i++)
+        {
+            SetCandidate(plane, _estimateCandidates[i]);
+            var mode = plane is 0 ? _yMode : _uvMode;
+            var filterIntraMode = plane is 0 && _useFilterIntra ? _filterIntraMode : -1;
+            var parameters = new Av1IntraPredictor.Parameters(
+                _bitDepth,
+                mode,
+                plane is 0 ? _angleDeltaY : _angleDeltaUv,
+                filterIntraMode,
+                _sequence.EnableIntraEdgeFilter,
+                smoothNeighbor && IsDirectionalMode(mode));
+            if (filterIntraMode < 0 && IsDirectionalMode(mode))
+            {
+                // A directional mode filters the edges
+                var origin = Av1IntraPredictor.EdgeOrigin - 1;
+                above.Slice(origin, w + h + 1).CopyTo(filteredAbove[origin..]);
+                left.Slice(origin, w + h + 1).CopyTo(filteredLeft[origin..]);
+                Av1IntraPredictor.PredictFromEdges(planeBuffer.Samples, stride, startX, startY, haveLeft, haveAbove, log2W, log2H, maxX, maxY, parameters, filteredAbove, filteredLeft);
+            }
+            else
+            {
+                Av1IntraPredictor.PredictFromEdges(planeBuffer.Samples, stride, startX, startY, haveLeft, haveAbove, log2W, log2H, maxX, maxY, parameters, above, left);
+            }
+
+            _estimates[i] += Av1EncoderKernels.SumOfAbsoluteDifferences(source, sourcePlane.Stride, samples, stride, w, h);
+        }
+
+        for (var i = 0; i < h; i++)
+        {
+            source.Slice(i * sourcePlane.Stride, w).CopyTo(samples.Slice(i * stride, w));
+        }
+
+        if (plane is 0)
+        {
+            _maxLumaW = startX + (stepX * 4);
+            _maxLumaH = startY + (stepY * 4);
+        }
+
+        FinishTransformBlock(plane, txSz, startX, startY);
     }
 
     // Orders the intra modes of the planes of planeMask by the error of their prediction, and returns the number of modes
@@ -1216,26 +1345,20 @@ internal ref partial struct Av1TileCoder
         if (count >= IntraModeCount)
             return IntraModeCount;
 
+        // The luma modes are estimated without angle delta nor recursive filter, which the block has when its search starts
+        Debug.Assert(planeMask is not 0b001 || (_angleDeltaY is 0 && !_useFilterIntra && _filterIntraMode is 0));
         var (yMode, uvMode) = (_yMode, _uvMode);
-        _estimating = true;
         for (var mode = 0; mode < IntraModeCount; mode++)
         {
-            CopyContexts(contexts, r, c, bw4, bh4, save: false);
-            if (planeMask is 0b001)
-            {
-                _yMode = mode;
-            }
-            else
-            {
-                _uvMode = mode;
-            }
-
-            _estimate = 0;
-            Residual(ResidualOperation.Search, planeMask);
-            estimates[mode] = _estimate;
+            _estimateCandidates[mode] = PackCandidate(mode, angleDelta: 0, filterIntraMode: -1);
         }
 
-        _estimating = false;
+        EstimateCandidates(contexts, r, c, bw4, bh4, planeMask, IntraModeCount);
+        for (var mode = 0; mode < IntraModeCount; mode++)
+        {
+            estimates[mode] = _estimates[mode];
+        }
+
         (_yMode, _uvMode) = (yMode, uvMode);
 
         // An insertion sort keeps the order of the modes that have the same error, so the result does not depend on the

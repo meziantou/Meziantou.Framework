@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using Meziantou.Framework.Imaging.Metadata;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -35,6 +36,9 @@ internal sealed class TgaStructureParser : ImageParser<ImageInfo>
     private readonly StructureWalk _walk;
     private readonly TgaDecoder? _decoder;
     private readonly DecodedMetadataBuilder _metadata;
+    // A packet of at most this many bytes is expanded by one 16-byte store: the stored row has as many spare bytes after it
+    private const int ShortPacketLength = 16;
+
     private readonly byte[] _runPixel = new byte[4];
 
     private State _state;
@@ -124,7 +128,7 @@ internal sealed class TgaStructureParser : ImageParser<ImageInfo>
                     {
                         _context.Sequential?.OnHeader(CreateInfo(ImageIdentifyMode.Header));
                         _decoder!.OnHeaderComplete(this);
-                        _storedRow = _context.Scope.Rent(Layout.StoredRowLength, AllocationKind.DecoderState, clear: false);
+                        _storedRow = _context.Scope.Rent(Layout.StoredRowLength + ShortPacketLength, AllocationKind.DecoderState, clear: false);
                         _sourceRow = _context.Scope.Rent(GetExpandedRowLength(), AllocationKind.DecoderState, clear: false);
                         if (Layout.ColorMapStorageLength > 0)
                         {
@@ -410,7 +414,8 @@ internal sealed class TgaStructureParser : ImageParser<ImageInfo>
     private bool ReadRowPackets(ReadOnlySpan<byte> buffer, ref int consumed)
     {
         var bytesPerPixel = Header.BytesPerStoredPixel;
-        var row = _storedRow!.Span[..Layout.StoredRowLength];
+        var storage = _storedRow!.Span[..(Layout.StoredRowLength + ShortPacketLength)];
+        var row = storage[..Layout.StoredRowLength];
         var filled = _storedFilled;
         var pixelsLeft = _pixelsLeft;
         var offset = consumed;
@@ -422,13 +427,28 @@ internal sealed class TgaStructureParser : ImageParser<ImageInfo>
             if (count > pixelsLeft || length > row.Length - filled)
                 break;
 
-            var destination = row.Slice(filled, length);
             if ((packet & TgaFormat.RunLengthPacketFlag) != 0)
             {
                 if (buffer.Length - offset < 1 + bytesPerPixel)
                     break;
 
-                FillPixels(destination, buffer.Slice(offset + 1, bytesPerPixel));
+                var pixel = buffer.Slice(offset + 1, bytesPerPixel);
+                if (length <= ShortPacketLength && bytesPerPixel != 3)
+                {
+                    // One store of the repeated pixel; the bytes after the run are written again by the next packets
+                    var repeated = bytesPerPixel switch
+                    {
+                        1 => Vector128.Create(pixel[0]),
+                        2 => Vector128.Create(unsafe(MemoryMarshal.Read<ushort>(pixel))).AsByte(),
+                        _ => Vector128.Create(unsafe(MemoryMarshal.Read<uint>(pixel))).AsByte(),
+                    };
+                    repeated.CopyTo(storage[filled..]);
+                }
+                else
+                {
+                    FillPixels(row.Slice(filled, length), pixel);
+                }
+
                 offset += 1 + bytesPerPixel;
             }
             else
@@ -436,7 +456,16 @@ internal sealed class TgaStructureParser : ImageParser<ImageInfo>
                 if (buffer.Length - offset < 1 + length)
                     break;
 
-                buffer.Slice(offset + 1, length).CopyTo(destination);
+                if (length <= ShortPacketLength && buffer.Length - offset > ShortPacketLength)
+                {
+                    // One 16-byte copy; the bytes after the packet are written again by the next packets
+                    Vector128.Create(buffer.Slice(offset + 1, ShortPacketLength)).CopyTo(storage[filled..]);
+                }
+                else
+                {
+                    buffer.Slice(offset + 1, length).CopyTo(row[filled..]);
+                }
+
                 offset += 1 + length;
             }
 

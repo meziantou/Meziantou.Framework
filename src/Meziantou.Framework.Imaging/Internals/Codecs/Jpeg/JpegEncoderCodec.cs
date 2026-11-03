@@ -456,120 +456,99 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         return mask;
     }
 
-    /// <summary>
-    /// Copies an 8x8 block of samples starting at (<paramref name="x0"/>, <paramref name="y0"/>) of an MCU-row plane. With
-    /// subsampling factors above 1, each block sample is the mean of the <c>factorX x factorY</c> full-resolution samples
-    /// it covers (box filter: the subsampled sample sits at the center of those samples, the JFIF chroma siting), summed in
-    /// double precision from zero, row by row, then multiplied by <c>1 / (factorX factorY)</c>.
-    /// </summary>
-    /// <param name="plane">The plane.</param>
-    /// <param name="planeWidth">The distance between two rows of the plane.</param>
-    /// <param name="x0">The first column.</param>
-    /// <param name="y0">The first row.</param>
-    /// <param name="factorX">The horizontal subsampling factor.</param>
-    /// <param name="factorY">The vertical subsampling factor.</param>
+    /// <summary>Copies the 8x8 block of samples that starts at <c>plane[0]</c>, whose rows are <paramref name="stride"/> samples apart.</summary>
+    /// <param name="plane">The samples, from the first one of the block.</param>
+    /// <param name="stride">The distance between two rows of the plane.</param>
     /// <param name="block">The 64 samples of the block.</param>
-    /// <remarks>
-    /// With 128-bit hardware vectors, a horizontal factor of 2 (with a vertical factor of 1 or 2) computes two block samples
-    /// at once with the same additions in the same order (four with AVX2, a row of eight with AVX-512), and a factor of 1
-    /// copies 4 samples at a time (8 when 256-bit vectors are accelerated).
-    /// </remarks>
-    internal static void ExtractBlock(ReadOnlySpan<float> plane, int planeWidth, int x0, int y0, int factorX, int factorY, Span<float> block)
+    internal static void CopyBlock(ReadOnlySpan<float> plane, int stride, Span<float> block)
     {
-        if (factorX == 2 && factorY is 1 or 2 && Vector512.IsHardwareAccelerated && Avx512F.IsSupported)
-        {
-            ExtractBlockAvx512(plane, planeWidth, x0, y0, factorY, block);
-        }
-        else if (factorX == 2 && factorY is 1 or 2 && Avx2.IsSupported)
-        {
-            ExtractBlockAvx2(plane, planeWidth, x0, y0, factorY, block);
-        }
-        else if (Vector128.IsHardwareAccelerated && ((factorX == 1 && factorY == 1) || (factorX == 2 && factorY is 1 or 2)))
-        {
-            ExtractBlockVector(plane, planeWidth, x0, y0, factorX, factorY, block);
-        }
-        else
-        {
-            ExtractBlockScalar(plane, planeWidth, x0, y0, factorX, factorY, block);
-        }
-    }
-
-    /// <summary>The scalar reference of <see cref="ExtractBlock"/>.</summary>
-    internal static void ExtractBlockScalar(ReadOnlySpan<float> plane, int planeWidth, int x0, int y0, int factorX, int factorY, Span<float> block)
-    {
-        if (factorX == 1 && factorY == 1)
-        {
-            for (var y = 0; y < 8; y++)
-            {
-                plane.Slice(((y0 + y) * planeWidth) + x0, 8).CopyTo(block.Slice(y * 8, 8));
-            }
-
-            return;
-        }
-
-        var scale = 1d / (factorX * factorY);
-        for (var y = 0; y < 8; y++)
-        {
-            for (var x = 0; x < 8; x++)
-            {
-                var sum = 0d;
-                for (var dy = 0; dy < factorY; dy++)
-                {
-                    var line = plane.Slice(((y0 + (y * factorY) + dy) * planeWidth) + x0 + (x * factorX), factorX);
-                    foreach (var sample in line)
-                    {
-                        sum += sample;
-                    }
-                }
-
-                block[(y * 8) + x] = (float)(sum * scale);
-            }
-        }
-    }
-
-    internal static void ExtractBlockVector(ReadOnlySpan<float> plane, int planeWidth, int x0, int y0, int factorX, int factorY, Span<float> block)
-    {
-        // Bounds are checked once here; the loops below use unchecked references
-        var lastRow = ((y0 + (8 * factorY) - 1) * planeWidth) + x0;
-        _ = plane.Slice(lastRow, 8 * factorX);
-        _ = plane.Slice((y0 * planeWidth) + x0, 8 * factorX);
-        ArgumentOutOfRangeException.ThrowIfLessThan(block.Length, 64);
+        // Bounds are checked once here; the loop below uses unchecked references
+        _ = plane[..((7 * stride) + 8)];
+        _ = block[..64];
         ref var source = ref unsafe(MemoryMarshal.GetReference(plane));
         ref var destination = ref unsafe(MemoryMarshal.GetReference(block));
-        if (factorX == 1)
-        {
-            for (var y = 0; y < 8; y++)
-            {
-                ref var row = ref unsafe(Unsafe.Add(ref source, ((y0 + y) * planeWidth) + x0));
-                if (Vector256.IsHardwareAccelerated)
-                {
-                    unsafe { Vector256.LoadUnsafe(ref row).StoreUnsafe(ref destination, (nuint)(y * 8)); }
-                }
-                else
-                {
-                    unsafe { Vector128.LoadUnsafe(ref row).StoreUnsafe(ref destination, (nuint)(y * 8)); }
-                    unsafe { Vector128.LoadUnsafe(ref row, 4).StoreUnsafe(ref destination, (nuint)((y * 8) + 4)); }
-                }
-            }
-
-            return;
-        }
-
-        var scale = Vector128.Create(1d / (factorX * factorY));
         for (var y = 0; y < 8; y++)
         {
-            ref var first = ref unsafe(Unsafe.Add(ref source, ((y0 + (y * factorY)) * planeWidth) + x0));
-            ref var second = ref unsafe(Unsafe.Add(ref first, factorY == 2 ? planeWidth : 0));
-            for (var x = 0; x < 8; x += 4)
+            ref var row = ref unsafe(Unsafe.Add(ref source, y * stride));
+            if (Vector256.IsHardwareAccelerated)
             {
-                // Block samples x to x + 3 cover the plane samples 2x to 2x + 7: two at a time, (2x, 2x + 2) then (2x + 1, 2x + 3)
-                var low = Mean(ref first, ref second, 2 * x, factorY == 2, scale);
-                var high = Mean(ref first, ref second, (2 * x) + 4, factorY == 2, scale);
-                unsafe { Vector128.Narrow(low, high).StoreUnsafe(ref destination, (nuint)((y * 8) + x)); }
+                unsafe { Vector256.LoadUnsafe(ref row).StoreUnsafe(ref destination, (nuint)(y * 8)); }
+            }
+            else if (Vector128.IsHardwareAccelerated)
+            {
+                unsafe { Vector128.LoadUnsafe(ref row).StoreUnsafe(ref destination, (nuint)(y * 8)); }
+                unsafe { Vector128.LoadUnsafe(ref row, 4).StoreUnsafe(ref destination, (nuint)((y * 8) + 4)); }
+            }
+            else
+            {
+                plane.Slice(y * stride, 8).CopyTo(block.Slice(y * 8, 8));
             }
         }
+    }
 
-        // The mean of the samples (2i, 2i + 1) of one or two rows, for the block samples i and i + 1 (i = start / 2)
+    /// <summary>
+    /// Subsamples a row of chroma samples horizontally by 2, and vertically by 2 when <paramref name="second"/> is not empty:
+    /// each sample is the mean of the 2 or 4 full-resolution samples it covers (box filter: the subsampled sample sits at
+    /// the center of those samples, the JFIF chroma siting), summed in double precision from zero, row by row, then
+    /// multiplied by <c>1 / 2</c> or <c>1 / 4</c>.
+    /// </summary>
+    /// <param name="first">The first full-resolution row, two samples per subsampled sample.</param>
+    /// <param name="second">The second full-resolution row (as long as <paramref name="first"/>), or an empty span for a vertical factor of 1.</param>
+    /// <param name="destination">The subsampled samples.</param>
+    /// <remarks>
+    /// With hardware vectors, two (128-bit), four (AVX2) or eight (AVX-512) samples are computed at once with the same
+    /// additions in the same order: the even and odd samples of a row come from interleaving operations, and with AVX2 and
+    /// AVX-512 a permutation restores the order of the lanes at the end.
+    /// </remarks>
+    internal static void DownsampleRow(ReadOnlySpan<float> first, ReadOnlySpan<float> second, Span<float> destination)
+    {
+        var done = Vector512.IsHardwareAccelerated && Avx512F.IsSupported ? DownsampleRowAvx512(first, second, destination)
+            : Avx2.IsSupported ? DownsampleRowAvx2(first, second, destination)
+            : Vector128.IsHardwareAccelerated ? DownsampleRowVector(first, second, destination)
+            : 0;
+        DownsampleRowScalar(first[(2 * done)..], second.IsEmpty ? second : second[(2 * done)..], destination[done..]);
+    }
+
+    /// <summary>The scalar reference of <see cref="DownsampleRow"/>.</summary>
+    internal static void DownsampleRowScalar(ReadOnlySpan<float> first, ReadOnlySpan<float> second, Span<float> destination)
+    {
+        var scale = second.IsEmpty ? 1d / 2 : 1d / 4;
+        for (var x = 0; x < destination.Length; x++)
+        {
+            var sum = 0d;
+            sum += first[2 * x];
+            sum += first[(2 * x) + 1];
+            if (!second.IsEmpty)
+            {
+                sum += second[2 * x];
+                sum += second[(2 * x) + 1];
+            }
+
+            destination[x] = (float)(sum * scale);
+        }
+    }
+
+    /// <summary>Subsamples the whole pairs of samples with 128-bit vectors, two at a time.</summary>
+    /// <returns>The number of subsampled samples.</returns>
+    internal static int DownsampleRowVector(ReadOnlySpan<float> first, ReadOnlySpan<float> second, Span<float> destination)
+    {
+        var twoRows = !second.IsEmpty;
+        var count = GetDownsampledCount(first, second, destination) & ~3;
+        ref var firstStart = ref unsafe(MemoryMarshal.GetReference(first));
+        ref var secondStart = ref unsafe(MemoryMarshal.GetReference(twoRows ? second : first));
+        ref var output = ref unsafe(MemoryMarshal.GetReference(destination));
+        var scale = Vector128.Create(twoRows ? 1d / 4 : 1d / 2);
+        for (var x = 0; x < count; x += 4)
+        {
+            // Samples x to x + 3 cover the samples 2x to 2x + 7: two at a time, (2x, 2x + 2) then (2x + 1, 2x + 3)
+            var low = Mean(ref firstStart, ref secondStart, 2 * x, twoRows, scale);
+            var high = Mean(ref firstStart, ref secondStart, (2 * x) + 4, twoRows, scale);
+            unsafe { Vector128.Narrow(low, high).StoreUnsafe(ref output, (nuint)x); }
+        }
+
+        return count;
+
+        // The mean of the samples (2i, 2i + 1) of one or two rows, for the samples i and i + 1 (i = start / 2)
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static Vector128<double> Mean(ref float first, ref float second, int start, bool twoRows, Vector128<double> scale)
         {
@@ -592,76 +571,76 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
     }
 
     /// <summary>
-    /// The 2 x 1 or 2 x 2 box filter of <see cref="ExtractBlock"/> with AVX2, four block samples at a time: the even and
-    /// odd samples of a row come from two unpacks, in the lane order 0, 2, 1, 3, restored by one permutation at the end.
+    /// Subsamples the whole groups of four samples with AVX2: the even and odd samples of a row come from two unpacks, in
+    /// the lane order 0, 2, 1, 3, restored by one permutation at the end.
     /// </summary>
-    internal static void ExtractBlockAvx2(ReadOnlySpan<float> plane, int planeWidth, int x0, int y0, int factorY, Span<float> block)
+    /// <returns>The number of subsampled samples.</returns>
+    internal static int DownsampleRowAvx2(ReadOnlySpan<float> first, ReadOnlySpan<float> second, Span<float> destination)
     {
-        // Bounds are checked once here; the loop below uses unchecked references
-        _ = plane.Slice(((y0 + (8 * factorY) - 1) * planeWidth) + x0, 16);
-        _ = plane.Slice((y0 * planeWidth) + x0, 16);
-        ArgumentOutOfRangeException.ThrowIfLessThan(block.Length, 64);
-        ref var source = ref unsafe(MemoryMarshal.GetReference(plane));
-        ref var destination = ref unsafe(MemoryMarshal.GetReference(block));
-        var scale = Vector256.Create(1d / (2 * factorY));
-        for (var y = 0; y < 8; y++)
+        var twoRows = !second.IsEmpty;
+        var count = GetDownsampledCount(first, second, destination) & ~3;
+        ref var firstStart = ref unsafe(MemoryMarshal.GetReference(first));
+        ref var secondStart = ref unsafe(MemoryMarshal.GetReference(twoRows ? second : first));
+        ref var output = ref unsafe(MemoryMarshal.GetReference(destination));
+        var scale = Vector256.Create(twoRows ? 1d / 4 : 1d / 2);
+        for (var x = 0; x < count; x += 4)
         {
-            ref var first = ref unsafe(Unsafe.Add(ref source, ((y0 + (y * factorY)) * planeWidth) + x0));
-            ref var second = ref unsafe(Unsafe.Add(ref first, factorY == 2 ? planeWidth : 0));
-            for (var x = 0; x < 8; x += 4)
+            // Samples 2x to 2x + 7: (0, 1, 2, 3) and (4, 5, 6, 7) give the pairs of the samples (x, x + 2, x + 1, x + 3)
+            var lower = Avx.ConvertToVector256Double(unsafe(Vector128.LoadUnsafe(ref firstStart, (nuint)(2 * x))));
+            var upper = Avx.ConvertToVector256Double(unsafe(Vector128.LoadUnsafe(ref firstStart, (nuint)((2 * x) + 4))));
+            var sum = Vector256<double>.Zero + Avx.UnpackLow(lower, upper);
+            sum += Avx.UnpackHigh(lower, upper);
+            if (twoRows)
             {
-                // Plane samples 2x to 2x + 7: (0, 1, 2, 3) and (4, 5, 6, 7) give the pairs of the block samples (x, x + 2, x + 1, x + 3)
-                var lower = Avx.ConvertToVector256Double(unsafe(Vector128.LoadUnsafe(ref first, (nuint)(2 * x))));
-                var upper = Avx.ConvertToVector256Double(unsafe(Vector128.LoadUnsafe(ref first, (nuint)((2 * x) + 4))));
-                var sum = Vector256<double>.Zero + Avx.UnpackLow(lower, upper);
+                lower = Avx.ConvertToVector256Double(unsafe(Vector128.LoadUnsafe(ref secondStart, (nuint)(2 * x))));
+                upper = Avx.ConvertToVector256Double(unsafe(Vector128.LoadUnsafe(ref secondStart, (nuint)((2 * x) + 4))));
+                sum += Avx.UnpackLow(lower, upper);
                 sum += Avx.UnpackHigh(lower, upper);
-                if (factorY == 2)
-                {
-                    lower = Avx.ConvertToVector256Double(unsafe(Vector128.LoadUnsafe(ref second, (nuint)(2 * x))));
-                    upper = Avx.ConvertToVector256Double(unsafe(Vector128.LoadUnsafe(ref second, (nuint)((2 * x) + 4))));
-                    sum += Avx.UnpackLow(lower, upper);
-                    sum += Avx.UnpackHigh(lower, upper);
-                }
-
-                unsafe { Avx.ConvertToVector128Single(Avx2.Permute4x64(sum * scale, 0b11_01_10_00)).StoreUnsafe(ref destination, (nuint)((y * 8) + x)); }
             }
+
+            unsafe { Avx.ConvertToVector128Single(Avx2.Permute4x64(sum * scale, 0b11_01_10_00)).StoreUnsafe(ref output, (nuint)x); }
         }
+
+        return count;
     }
 
     /// <summary>
-    /// The 2 x 1 or 2 x 2 box filter of <see cref="ExtractBlock"/> with AVX-512, a row of eight block samples at a time:
-    /// the even and odd samples come from two unpacks, in the lane order 0, 4, 1, 5, 2, 6, 3, 7, restored by one
-    /// permutation at the end.
+    /// Subsamples the whole groups of eight samples with AVX-512: the even and odd samples of a row come from two unpacks,
+    /// in the lane order 0, 4, 1, 5, 2, 6, 3, 7, restored by one permutation at the end.
     /// </summary>
-    internal static void ExtractBlockAvx512(ReadOnlySpan<float> plane, int planeWidth, int x0, int y0, int factorY, Span<float> block)
+    /// <returns>The number of subsampled samples.</returns>
+    internal static int DownsampleRowAvx512(ReadOnlySpan<float> first, ReadOnlySpan<float> second, Span<float> destination)
     {
-        // Bounds are checked once here; the loop below uses unchecked references
-        _ = plane.Slice(((y0 + (8 * factorY) - 1) * planeWidth) + x0, 16);
-        _ = plane.Slice((y0 * planeWidth) + x0, 16);
-        ArgumentOutOfRangeException.ThrowIfLessThan(block.Length, 64);
-        ref var source = ref unsafe(MemoryMarshal.GetReference(plane));
-        ref var destination = ref unsafe(MemoryMarshal.GetReference(block));
-        var scale = Vector512.Create(1d / (2 * factorY));
+        var twoRows = !second.IsEmpty;
+        var count = GetDownsampledCount(first, second, destination) & ~7;
+        ref var firstStart = ref unsafe(MemoryMarshal.GetReference(first));
+        ref var secondStart = ref unsafe(MemoryMarshal.GetReference(twoRows ? second : first));
+        ref var output = ref unsafe(MemoryMarshal.GetReference(destination));
+        var scale = Vector512.Create(twoRows ? 1d / 4 : 1d / 2);
         var order = Vector512.Create(0L, 2, 4, 6, 1, 3, 5, 7);
-        for (var y = 0; y < 8; y++)
+        for (var x = 0; x < count; x += 8)
         {
-            ref var first = ref unsafe(Unsafe.Add(ref source, ((y0 + (y * factorY)) * planeWidth) + x0));
-            ref var second = ref unsafe(Unsafe.Add(ref first, factorY == 2 ? planeWidth : 0));
-            var lower = Avx512F.ConvertToVector512Double(unsafe(Vector256.LoadUnsafe(ref first)));
-            var upper = Avx512F.ConvertToVector512Double(unsafe(Vector256.LoadUnsafe(ref first, 8)));
+            var lower = Avx512F.ConvertToVector512Double(unsafe(Vector256.LoadUnsafe(ref firstStart, (nuint)(2 * x))));
+            var upper = Avx512F.ConvertToVector512Double(unsafe(Vector256.LoadUnsafe(ref firstStart, (nuint)((2 * x) + 8))));
             var sum = Vector512<double>.Zero + Avx512F.UnpackLow(lower, upper);
             sum += Avx512F.UnpackHigh(lower, upper);
-            if (factorY == 2)
+            if (twoRows)
             {
-                lower = Avx512F.ConvertToVector512Double(unsafe(Vector256.LoadUnsafe(ref second)));
-                upper = Avx512F.ConvertToVector512Double(unsafe(Vector256.LoadUnsafe(ref second, 8)));
+                lower = Avx512F.ConvertToVector512Double(unsafe(Vector256.LoadUnsafe(ref secondStart, (nuint)(2 * x))));
+                upper = Avx512F.ConvertToVector512Double(unsafe(Vector256.LoadUnsafe(ref secondStart, (nuint)((2 * x) + 8))));
                 sum += Avx512F.UnpackLow(lower, upper);
                 sum += Avx512F.UnpackHigh(lower, upper);
             }
 
-            unsafe { Avx512F.ConvertToVector256Single(Avx512F.PermuteVar8x64(sum * scale, order)).StoreUnsafe(ref destination, (nuint)(y * 8)); }
+            unsafe { Avx512F.ConvertToVector256Single(Avx512F.PermuteVar8x64(sum * scale, order)).StoreUnsafe(ref output, (nuint)x); }
         }
+
+        return count;
     }
+
+    /// <summary>Gets the number of samples that the rows can give: the destination length, at most half of each row.</summary>
+    private static int GetDownsampledCount(ReadOnlySpan<float> first, ReadOnlySpan<float> second, Span<float> destination) =>
+        Math.Min(destination.Length, Math.Min(first.Length, second.IsEmpty ? first.Length : second.Length) / 2);
 
     /// <summary>
     /// The encoding state of one JPEG. The frame operation writes SOI and the JFIF APP0
@@ -732,6 +711,10 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         // The distance between two rows of a plane: an odd number of 64-byte cache lines, so that the rows of a block do not
         // fall in the same sets of the data cache (plane widths are often a multiple of 4 KB)
         private readonly int _planeStride;
+
+        // The width of the rows of the (subsampled) chroma planes, and the distance between two of their rows
+        private readonly int _chromaWidth;
+        private readonly int _chromaStride;
         private readonly ushort[] _luminanceQuantization = new ushort[64];
         private readonly ushort[] _chrominanceQuantization = new ushort[64];
         private readonly double[] _luminanceDivisors = new double[64];
@@ -794,7 +777,9 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             _mcusX = (_width + (8 * _h) - 1) / (8 * _h);
             _mcusY = (_height + (8 * _v) - 1) / (8 * _v);
             _planeWidth = _mcusX * 8 * _h;
-            _planeStride = (((_planeWidth + 15) / 16) | 1) * 16;
+            _planeStride = GetPlaneStride(_planeWidth);
+            _chromaWidth = _planeWidth / _h;
+            _chromaStride = GetPlaneStride(_chromaWidth);
             _blocksPerMcu = _grayscale ? 1 : (_h * _v) + 2;
             _restartInterval = _encoder.RestartInterval;
 
@@ -821,10 +806,13 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
 
             _metadata = new JpegMetadataWriter(options.Metadata);
 
-            // One MCU row of samples per component, at full resolution (chroma is box-filtered when blocks are extracted)
+            // One MCU row of samples per component, the chroma subsampled row by row from two full-resolution rows per
+            // component (one row per row of chroma blocks)
             var planeBytes = (long)_planeStride * 8 * _v * sizeof(float);
+            var chromaBytes = (long)_chromaStride * 8 * sizeof(float);
+            var chromaRowBytes = _h > 1 ? (long)_planeWidth * 4 * sizeof(float) : 0;
             var rowBytes = (long)_width * PixelFormats.GetBytesPerPixel(_workFormat);
-            if (planeBytes > CheckedSizes.MaxBufferLength || rowBytes > CheckedSizes.MaxBufferLength)
+            if (planeBytes > CheckedSizes.MaxBufferLength || chromaRowBytes > CheckedSizes.MaxBufferLength || rowBytes > CheckedSizes.MaxBufferLength)
                 throw CheckedSizes.CreateOverflowException(options.Scope.Limits);
 
             var scope = options.Scope;
@@ -836,7 +824,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                 _transformWorkers = new TransformWorker[workerCount];
                 for (var i = 0; i < workerCount; i++)
                 {
-                    _transformWorkers[i] = new TransformWorker(scope, _sourceFormat != _workFormat ? (int)rowBytes : 0, (int)planeBytes, _grayscale);
+                    _transformWorkers[i] = new TransformWorker(scope, _sourceFormat != _workFormat ? (int)rowBytes : 0, (int)planeBytes, _grayscale ? 0 : (int)chromaBytes, (int)chromaRowBytes);
                 }
 
                 if (workerCount > 1 && !keepCoefficients)
@@ -1258,7 +1246,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             var samples = GetBlockSamples(worker, mcuX, block, out var stride);
             if (stride != 8)
             {
-                ExtractBlock(samples, stride, x0: 0, y0: 0, factorX: 1, factorY: 1, worker.Block);
+                CopyBlock(samples, stride, worker.Block);
                 samples = worker.Block;
             }
 
@@ -1273,29 +1261,22 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             NarrowCoefficients(coefficients, destination);
         }
 
-        /// <summary>
-        /// Gets the samples of a block of an MCU of the loaded row of a worker (the luma blocks in raster order, then the Cb
-        /// and Cr blocks): the rows of the plane, or the box-filtered chroma block copied to <see cref="TransformWorker.Block"/>.
-        /// </summary>
+        /// <summary>Gets the samples of a block of an MCU of the loaded row of a worker (the luma blocks in raster order, then the Cb and Cr blocks): the rows of its plane.</summary>
         /// <param name="worker">The worker.</param>
         /// <param name="mcuX">The MCU.</param>
         /// <param name="block">The block of the MCU.</param>
         /// <param name="stride">The distance between two rows of the samples.</param>
         private ReadOnlySpan<float> GetBlockSamples(TransformWorker worker, int mcuX, int block, out int stride)
         {
-            var x0 = mcuX * 8 * _h;
             var lumaBlocks = _h * _v;
-            stride = _planeStride;
             if (block < lumaBlocks)
-                return worker.PlaneY[((block / _h * 8 * _planeStride) + x0 + (block % _h * 8))..];
+            {
+                stride = _planeStride;
+                return worker.PlaneY[((block / _h * 8 * _planeStride) + (mcuX * 8 * _h) + (block % _h * 8))..];
+            }
 
-            var plane = block == lumaBlocks ? worker.PlaneCb : worker.PlaneCr;
-            if (_h == 1 && _v == 1)
-                return plane[x0..];
-
-            ExtractBlock(plane, _planeStride, x0, 0, _h, _v, worker.Block);
-            stride = 8;
-            return worker.Block;
+            stride = _chromaStride;
+            return (block == lumaBlocks ? worker.PlaneCb : worker.PlaneCr)[(mcuX * 8)..];
         }
 
         /// <returns><see langword="true"/> when the last scan is written.</returns>
@@ -1505,7 +1486,8 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         /// <summary>
         /// Loads the rows of one MCU row: each source row (the last row replicated below the image) is converted to 8-bit RGB
         /// or gray (alpha flattened onto the background and 16-bit samples reduced, by the shared converter), then to
-        /// level-shifted Y, Cb, Cr samples, the last column replicated to the padded width.
+        /// level-shifted Y, Cb, Cr samples, the last column replicated to the padded width. With subsampling, the Cb and Cr
+        /// samples of the rows of a row of chroma blocks are box-filtered (<see cref="DownsampleRow"/>) once they are all converted.
         /// </summary>
         private void LoadMcuRow(TransformWorker worker, PixelStorage storage, int mcuRow)
         {
@@ -1529,12 +1511,26 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                 {
                     ConvertGrayRow(source, planeY.Slice(offset, _planeWidth));
                 }
-                else
+                else if (_h == 1)
                 {
                     ConvertColorRow(source, planeY.Slice(offset, _planeWidth), planeCb.Slice(offset, _planeWidth), planeCr.Slice(offset, _planeWidth));
                 }
+                else
+                {
+                    var pair = r % _v;
+                    ConvertColorRow(source, planeY.Slice(offset, _planeWidth), worker.GetChromaRow(0, pair, _planeWidth), worker.GetChromaRow(1, pair, _planeWidth));
+                    if (pair == _v - 1)
+                    {
+                        var chromaOffset = r / _v * _chromaStride;
+                        DownsampleRow(worker.GetChromaRow(0, 0, _planeWidth), _v == 2 ? worker.GetChromaRow(0, 1, _planeWidth) : default, planeCb.Slice(chromaOffset, _chromaWidth));
+                        DownsampleRow(worker.GetChromaRow(1, 0, _planeWidth), _v == 2 ? worker.GetChromaRow(1, 1, _planeWidth) : default, planeCr.Slice(chromaOffset, _chromaWidth));
+                    }
+                }
             }
         }
+
+        /// <summary>Gets the distance between two rows of a plane: an odd number of 16 samples (64-byte cache lines).</summary>
+        private static int GetPlaneStride(int width) => (((width + 15) / 16) | 1) * 16;
 
         private void ConvertGrayRow(ReadOnlySpan<byte> source, Span<float> luma)
         {
@@ -1836,12 +1832,14 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             private PooledBuffer? _planeY;
             private PooledBuffer? _planeCb;
             private PooledBuffer? _planeCr;
+            private PooledBuffer? _chromaRows;
 
             /// <param name="scope">The scope the buffers are rented from.</param>
             /// <param name="rowBytes">The size of the converted source row, or 0 when the source rows are used as they are.</param>
-            /// <param name="planeBytes">The size of an MCU row of samples of a component.</param>
-            /// <param name="grayscale">Whether there is only the luma plane.</param>
-            public TransformWorker(AllocationScope scope, int rowBytes, int planeBytes, bool grayscale)
+            /// <param name="planeBytes">The size of an MCU row of luma samples.</param>
+            /// <param name="chromaBytes">The size of an MCU row of samples of a chroma component, or 0 for grayscale output.</param>
+            /// <param name="chromaRowBytes">The size of the full-resolution chroma rows to subsample, or 0 without subsampling.</param>
+            public TransformWorker(AllocationScope scope, int rowBytes, int planeBytes, int chromaBytes, int chromaRowBytes)
             {
                 try
                 {
@@ -1851,10 +1849,15 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                     }
 
                     _planeY = scope.Rent(planeBytes, AllocationKind.Temporary, clear: false);
-                    if (!grayscale)
+                    if (chromaBytes > 0)
                     {
-                        _planeCb = scope.Rent(planeBytes, AllocationKind.Temporary, clear: false);
-                        _planeCr = scope.Rent(planeBytes, AllocationKind.Temporary, clear: false);
+                        _planeCb = scope.Rent(chromaBytes, AllocationKind.Temporary, clear: false);
+                        _planeCr = scope.Rent(chromaBytes, AllocationKind.Temporary, clear: false);
+                    }
+
+                    if (chromaRowBytes > 0)
+                    {
+                        _chromaRows = scope.Rent(chromaRowBytes, AllocationKind.Temporary, clear: false);
                     }
                 }
                 catch
@@ -1873,6 +1876,12 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
 
             public Span<float> PlaneCr => _planeCr is null ? default : unsafe(MemoryMarshal.Cast<byte, float>(_planeCr.Span));
 
+            /// <summary>Gets a full-resolution row of chroma samples to subsample.</summary>
+            /// <param name="component">0 for Cb, 1 for Cr.</param>
+            /// <param name="index">The row of the pair, 0 or 1.</param>
+            /// <param name="width">The width of the rows.</param>
+            public Span<float> GetChromaRow(int component, int index, int width) => unsafe(MemoryMarshal.Cast<byte, float>(_chromaRows!.Span)).Slice(((2 * component) + index) * width, width);
+
             public float[] Block { get; } = new float[64];
 
             public double[] Scratch { get; } = new double[64];
@@ -1889,6 +1898,8 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                 _planeCb = null;
                 _planeCr?.Dispose();
                 _planeCr = null;
+                _chromaRows?.Dispose();
+                _chromaRows = null;
             }
         }
 

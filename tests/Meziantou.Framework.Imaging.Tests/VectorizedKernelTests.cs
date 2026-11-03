@@ -1076,61 +1076,75 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
-    public void JpegEncoderBlockExtractionMatchesTheScalarReference()
+    public void JpegEncoderChromaSubsamplingMatchesTheScalarReference()
     {
         var random = new Random(602);
-        const int PlaneWidth = 40;
-        var plane = new float[PlaneWidth * 17];
-        foreach (var (factorX, factorY) in new[] { (1, 1), (2, 1), (2, 2), (1, 2) })
+        for (var length = 0; length < 40; length++)
         {
-            for (var round = 0; round < 200; round++)
+            foreach (var twoRows in new[] { false, true })
             {
-                // Level-shifted luma and chroma values (any float), including the extremes of the range
-                for (var i = 0; i < plane.Length; i++)
+                for (var round = 0; round < 20; round++)
                 {
-                    plane[i] = round % 4 == 0 ? (random.Next(2) == 0 ? -128f : 127f) : (float)((random.NextDouble() * 256) - 128);
-                }
+                    // Level-shifted chroma values (any float), including the extremes of the range
+                    var first = new float[2 * length];
+                    var second = new float[twoRows ? 2 * length : 0];
+                    for (var i = 0; i < first.Length; i++)
+                    {
+                        first[i] = round % 4 == 0 ? (random.Next(2) == 0 ? -128f : 127f) : (float)((random.NextDouble() * 256) - 128);
+                        if (twoRows)
+                        {
+                            second[i] = (float)((random.NextDouble() * 256) - 128);
+                        }
+                    }
 
-                var x0 = random.Next(0, PlaneWidth - (8 * factorX) + 1);
-                var y0 = random.Next(0, 17 - (8 * factorY) + 1);
-                var expected = new float[64];
-                var actual = new float[64];
-                JpegEncoderCodec.ExtractBlockScalar(plane, PlaneWidth, x0, y0, factorX, factorY, expected);
-                JpegEncoderCodec.ExtractBlock(plane, PlaneWidth, x0, y0, factorX, factorY, actual);
-                Assert.Equal(expected, actual);
-                if (factorX == 1 && factorY == 1 && Vector128.IsHardwareAccelerated)
-                {
-                    Array.Clear(actual);
-                    JpegEncoderCodec.ExtractBlockVector(plane, PlaneWidth, x0, y0, factorX, factorY, actual);
-                    Assert.Equal(expected, actual);
-                }
-
-                if (factorX == 2)
-                {
+                    var expected = new float[length];
+                    JpegEncoderCodec.DownsampleRowScalar(first, second, expected);
+                    AssertPath(first, second, expected, JpegEncoderCodec.DownsampleRow);
                     if (Vector128.IsHardwareAccelerated)
                     {
-                        Array.Clear(actual);
-                        JpegEncoderCodec.ExtractBlockVector(plane, PlaneWidth, x0, y0, factorX, factorY, actual);
-                        Assert.Equal(expected, actual);
+                        AssertPath(first, second, expected, (first, second, destination) => Complete(first, second, destination, JpegEncoderCodec.DownsampleRowVector(first, second, destination)));
                     }
 
                     if (Avx2.IsSupported)
                     {
-                        Array.Clear(actual);
-                        JpegEncoderCodec.ExtractBlockAvx2(plane, PlaneWidth, x0, y0, factorY, actual);
-                        Assert.Equal(expected, actual);
+                        AssertPath(first, second, expected, (first, second, destination) => Complete(first, second, destination, JpegEncoderCodec.DownsampleRowAvx2(first, second, destination)));
                     }
 
                     if (Avx512F.IsSupported)
                     {
-                        Array.Clear(actual);
-                        JpegEncoderCodec.ExtractBlockAvx512(plane, PlaneWidth, x0, y0, factorY, actual);
-                        Assert.Equal(expected, actual);
+                        AssertPath(first, second, expected, (first, second, destination) => Complete(first, second, destination, JpegEncoderCodec.DownsampleRowAvx512(first, second, destination)));
                     }
                 }
             }
         }
+
+        // A block copied from the rows of a plane
+        const int Stride = 21;
+        var plane = new float[(7 * Stride) + 8];
+        for (var i = 0; i < plane.Length; i++)
+        {
+            plane[i] = i;
+        }
+
+        var block = new float[64];
+        JpegEncoderCodec.CopyBlock(plane, Stride, block);
+        for (var i = 0; i < 64; i++)
+        {
+            Assert.Equal(plane[(i / 8 * Stride) + (i % 8)], block[i]);
+        }
+
+        static void AssertPath(float[] first, float[] second, float[] expected, DownsampleRow downsample)
+        {
+            var actual = new float[expected.Length];
+            downsample(first, second, actual);
+            Assert.Equal(expected, actual);
+        }
+
+        static void Complete(ReadOnlySpan<float> first, ReadOnlySpan<float> second, Span<float> destination, int done) =>
+            JpegEncoderCodec.DownsampleRowScalar(first[(2 * done)..], second.IsEmpty ? second : second[(2 * done)..], destination[done..]);
     }
+
+    private delegate void DownsampleRow(ReadOnlySpan<float> first, ReadOnlySpan<float> second, Span<float> destination);
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]

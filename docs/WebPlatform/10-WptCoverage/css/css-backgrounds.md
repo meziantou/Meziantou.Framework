@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of css/css-backgrounds, and 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 126 | 132 | 0 | 95% |
+| [Stable](#stable-tests) | 127 | 132 | 0 | 96% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 701 | 719 | 1 | 98% |
-| **All** | **827** | **851** | **1** | **97%** |
+| **All** | **828** | **851** | **1** | **97%** |
 
 ## Stable tests
 
@@ -105,7 +105,7 @@ description: "The results of the web-platform-tests of css/css-backgrounds, and 
 | [`parsing/background-repeat-computed.html`](https://wpt.fyi/results/css/css-backgrounds/parsing/background-repeat-computed.html) | Pass | 13 / 13 |  |  |
 | [`parsing/background-repeat-invalid.html`](https://wpt.fyi/results/css/css-backgrounds/parsing/background-repeat-invalid.html) | Pass | 3 / 3 |  |  |
 | [`parsing/background-repeat-valid.html`](https://wpt.fyi/results/css/css-backgrounds/parsing/background-repeat-valid.html) | Pass | 4 / 4 |  |  |
-| [`parsing/background-shorthand-serialization.html`](https://wpt.fyi/results/css/css-backgrounds/parsing/background-shorthand-serialization.html) | Fail | 21 / 24 | BUG | the `background` shorthand joins the values of `background-position-x` and `background-position-y` (`right 10px 0%`, `0% bottom 20px`), which is not a valid `<bg-position>` when one of them is an edge with an offset, so the shorthand serializes as the empty string instead of `right 10px top 0%` and `left 0% bottom 20px` |
+| [`parsing/background-shorthand-serialization.html`](https://wpt.fyi/results/css/css-backgrounds/parsing/background-shorthand-serialization.html) | Pass | 24 / 24 |  |  |
 | [`parsing/background-size-computed.html`](https://wpt.fyi/results/css/css-backgrounds/parsing/background-size-computed.html) | Pass | 16 / 16 |  |  |
 | [`parsing/background-size-invalid.html`](https://wpt.fyi/results/css/css-backgrounds/parsing/background-size-invalid.html) | Pass | 3 / 3 |  |  |
 | [`parsing/background-size-valid.html`](https://wpt.fyi/results/css/css-backgrounds/parsing/background-size-valid.html) | Pass | 9 / 9 |  |  |

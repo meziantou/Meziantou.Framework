@@ -1809,12 +1809,7 @@
     "total": 15
   },
   "css/css-sizing/parsing/max-size-valid.html": {
-    "total": 14,
-    "failures": {
-      "e.style['max-size'] = \"0\" should set the property value": "FAIL",
-      "e.style['max-size'] = \"100px 100px\" should set the property value": "FAIL",
-      "e.style['max-size'] = \"calc(10% - 0.5em)\" should set the property value": "FAIL"
-    }
+    "total": 14
   },
   "css/css-sizing/parsing/max-width-computed.html": {
     "total": 12
@@ -1841,12 +1836,7 @@
     "total": 15
   },
   "css/css-sizing/parsing/min-size-valid.html": {
-    "total": 14,
-    "failures": {
-      "e.style['min-size'] = \"0\" should set the property value": "FAIL",
-      "e.style['min-size'] = \"100px 100px\" should set the property value": "FAIL",
-      "e.style['min-size'] = \"calc(10% - 0.5em)\" should set the property value": "FAIL"
-    }
+    "total": 14
   },
   "css/css-sizing/parsing/min-width-computed.html": {
     "total": 11
@@ -2246,15 +2236,7 @@
     "reftest": "PASS"
   },
   "css/css-sizing/size-shorthand-serialization.tentative.html": {
-    "total": 15,
-    "failures": {
-      "Content authored with max-size serializes back as the max-width and max-height longhands, not as max-size": "FAIL",
-      "Content authored with min-size serializes back as the min-width and min-height longhands, not as min-size": "FAIL",
-      "Equal max-width and max-height longhands do not collapse into the max-size shorthand when serializing": "FAIL",
-      "Equal min-width and min-height longhands do not collapse into the min-size shorthand when serializing": "FAIL",
-      "max-width and max-height longhands do not collapse into the max-size shorthand when serializing": "FAIL",
-      "min-width and min-height longhands do not collapse into the min-size shorthand when serializing": "FAIL"
-    }
+    "total": 15
   },
   "css/css-sizing/slice-intrinsic-size.html": {
     "reftest": "PASS"

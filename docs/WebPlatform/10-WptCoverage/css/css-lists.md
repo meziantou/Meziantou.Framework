@@ -11,8 +11,8 @@ description: "The results of the web-platform-tests of css/css-lists, and why th
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 38 | 38 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 161 | 182 | 0 | 88% |
-| **All** | **199** | **220** | **0** | **90%** |
+| [Reftests](#reftests) | 163 | 182 | 0 | 90% |
+| **All** | **201** | **220** | **0** | **91%** |
 
 ## Stable tests
 
@@ -239,7 +239,7 @@ description: "The results of the web-platform-tests of css/css-lists, and why th
 | [`outside-marker-taller-than-content.html`](https://wpt.fyi/results/css/css-lists/outside-marker-taller-than-content.html) | Pass | 1 / 1 |  |  |
 | [`outside-marker-with-align-content.html`](https://wpt.fyi/results/css/css-lists/outside-marker-with-align-content.html) | Pass | 1 / 1 |  |  |
 | [`outside-marker-with-block-in-nested-inline.html`](https://wpt.fyi/results/css/css-lists/outside-marker-with-block-in-nested-inline.html) | Pass | 1 / 1 |  |  |
-| [`outside-marker-with-float-in-content.html`](https://wpt.fyi/results/css/css-lists/outside-marker-with-float-in-content.html) | Fail | 0 / 1 | BUG | a float at the start of the first line inside the list item moves the outside marker next to the float: the marker is moved by any float that shortens the line, a behavior meant for a float outside of the list item (css/CSS2/lists/list-style-applies-to-017.html) |
+| [`outside-marker-with-float-in-content.html`](https://wpt.fyi/results/css/css-lists/outside-marker-with-float-in-content.html) | Pass | 1 / 1 |  |  |
 | [`outside-marker-with-relpos-block-content.html`](https://wpt.fyi/results/css/css-lists/outside-marker-with-relpos-block-content.html) | Pass | 1 / 1 |  |  |
-| [`outside-marker-with-text-indent.html`](https://wpt.fyi/results/css/css-lists/outside-marker-with-text-indent.html) | Fail | 0 / 1 | BUG | the outside marker of a list item whose first line is in a descendant block with `text-indent` is not placed as the reference expects (the indent of the descendant block is not taken into account like its inline-start padding) |
+| [`outside-marker-with-text-indent.html`](https://wpt.fyi/results/css/css-lists/outside-marker-with-text-indent.html) | Pass | 1 / 1 |  |  |
 | [`pseudo-element-remove-update.html`](https://wpt.fyi/results/css/css-lists/pseudo-element-remove-update.html) | Pass | 1 / 1 |  |  |

@@ -144,7 +144,14 @@ public sealed class CssPseudoElement : IRealmBoundPlatformObject
     /// Returns the pseudo-element of an element whose style and box have the given name (see <see cref="BoxName"/>), or null when
     /// it is not represented by a <see cref="CssPseudoElement"/> (e.g. a pseudo-element of a form control).
     /// </summary>
-    internal static CssPseudoElement? FromBoxName(Element element, string name) => IsSupported(name) ? GetOrCreate(element, name) : null;
+    internal static CssPseudoElement? FromBoxName(Element element, string name)
+    {
+        // The ::marker of a ::before or ::after pseudo-element (the name of its style, e.g. before::marker)
+        if (name is "before::marker" or "after::marker")
+            return GetOrCreate(element, name[..name.IndexOf(':', StringComparison.Ordinal)]).GetOrCreateChild("marker");
+
+        return IsSupported(name) ? GetOrCreate(element, name) : null;
+    }
 
     /// <summary>Whether a pseudo-element of an element is a tree-abiding pseudo-element that is not element-backed (https://drafts.csswg.org/css-pseudo-4/#treelike).</summary>
     private static bool IsSupported(string name)

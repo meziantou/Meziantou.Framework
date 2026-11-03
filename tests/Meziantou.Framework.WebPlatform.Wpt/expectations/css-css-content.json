@@ -84,10 +84,10 @@
     "total": 64
   },
   "css/css-content/pseudo-element-gradient.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-content/pseudo-element-image-set.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-content/pseudo-element-inline-box.html": {
     "reftest": "PASS"

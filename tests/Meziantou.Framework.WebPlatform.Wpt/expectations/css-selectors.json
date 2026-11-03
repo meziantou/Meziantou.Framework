@@ -159,15 +159,7 @@
     "total": 46
   },
   "css/selectors/featureless-007.html": {
-    "total": 24,
-    "failures": {
-      ":is(:host) does not match the shadow host with a default namespace the host is in": "FAIL",
-      ":is(:host) does not match the shadow host with a foreign default namespace": "FAIL",
-      ":not(:not(:host)) does not match the shadow host with a default namespace the host is in": "FAIL",
-      ":not(:not(:host)) does not match the shadow host with a foreign default namespace": "FAIL",
-      ":where(:host) does not match the shadow host with a default namespace the host is in": "FAIL",
-      ":where(:host) does not match the shadow host with a foreign default namespace": "FAIL"
-    }
+    "total": 24
   },
   "css/selectors/first-child.html": {
     "total": 5
@@ -2475,10 +2467,7 @@
     "reftest": "PASS"
   },
   "css/selectors/webkit-pseudo-element.html": {
-    "total": 6,
-    "failures": {
-      "webkit-prefixed pseudo-element selectors should be accessible from CSSOM": "FAIL"
-    }
+    "total": 6
   },
   "css/selectors/x-pseudo-element.html": {
     "total": 1

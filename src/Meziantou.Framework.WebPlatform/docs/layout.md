@@ -814,7 +814,10 @@ the fragment. The contents of the box (the `foreignObject` boxes of an `svg`) ar
     `CssImageFetching` (recorded per URL in `Document.CssImageNaturalSizes`, 0 until it is fetched), none for a gradient; the
     image of an `image-set()` has the natural resolution of its option (an image of 100x50 image pixels at `0.5x` is
     200x100px), and a `cross-fade()` the weighted average of the natural dimensions of its images. The
-    default object size of a list marker image is 1em square.
+    default object size of a list marker image is 1em square. As in Blink, the image without natural dimensions (no URL, e.g. a gradient) of a pseudo-element whose content is a
+    single image fills the pseudo-element in the dimensions it sets (`width` and `height` other than `auto`, the
+    pseudo-element not being `inline`): its anonymous replaced box is `100%` in these dimensions (a gradient has the size
+    of the pseudo-element instead of the default object size).
   - `object-view-box` ([CSS Images 5](https://drafts.csswg.org/css-images-5/#the-object-view-box), `ReplacedContent.ViewBox`):
     the `inset()`, `rect()` or `xywh()` rectangle, resolved against the rectangle of the natural dimensions, is the contents
     of the element for its sizing and for `object-fit`/`object-position` (the natural size and ratio are the ones of the
@@ -1953,7 +1956,9 @@ an atomic inline laid out while its parent collects its items rents another inst
   baseline on the baseline of the line. A line of an anonymous block box of the list item (e.g. the one of a block-in-inline
   split) places it as a line of the list item: outside of the border box of the list item, as in Blink and Gecko
   (`PendingOutsideMarker.ListItemContentInlineOffset`). A line box shortened by a float on its start side moves the marker beside the float
-  (also the marker of a list item without content, which is where its line box would be). As in the browsers, the marker of a list item with inline content is part of its
+  (also the marker of a list item without content, which is where its line box would be), unless a float of the content of
+  the list item shortens it (a float placed after the list item started, `PendingOutsideMarker.ExclusionCount`). The
+  `text-indent` of a descendant block container moves the marker as its inline-start padding does, as in Blink. As in the browsers, the marker of a list item with inline content is part of its
   first line: its margin box makes the line taller (a marker image, a marker with a larger font; `AlignVertically`), also
   the line of a list item without content (`PlaceWithoutLine`); the marker placed next to a line of a descendant block
   container does not change this line. The outside marker is painted before the content of its list item (it precedes it
@@ -4347,8 +4352,7 @@ only implementation) where the specification is silent or differs. The selectors
     an element that is not a scroll container are disabled.
 - **Hit testing**: the boxes are hit like the other pseudo-element boxes (`elementFromPoint()` and the target of the events
   are the originating element). Their inertness is the one of their scroll container, or `interactivity: inert` on the
-  group (its markers are then inert whatever the inertness of their originating element) or on the pseudo-element itself;
-  `interactivity` has no other effect yet.
+  group (its markers are then inert whatever the inertness of their originating element) or on the pseudo-element itself.
 - Not done: `::scroll-button(prev | next)`; the accessibility roles of the modes
   (the `tabs` mode does not hide the inactive panels); the `::column` pseudo-element only gives the `scroll-snap-align` of
   the scroll targets of the column markers and of the column snap areas (no box, no `getComputedStyle(element, "::column")` of a column,
@@ -5011,7 +5015,8 @@ something asks for the display list (`LayoutEngine.PaintCount` for the tests).
   is inside of the border box; a negative offset does not shrink the outline of a fragment below twice its width in each
   axis; `auto` is the focus ring of Blink: 3px whatever `outline-width` is, two rings of a 2:1 ratio with corners rounded to
   at least 3px, the inner one in the color of the outline (the accent color when `outline-color` is `auto`), the outer one
-  white, or #101010 in a dark color scheme; it does not enclose the overflowing descendants), not for the columns; the gap decorations
+  white, or #101010 in a dark color scheme; as in Blink, the focus ring of a block container that does not clip its overflow
+  encloses its scrollable overflow, e.g. an overflowing line), not for the columns; the gap decorations
   (the column and row rules of the grid, flex and multi-column containers, see [Gap decorations](#gap-decorations-csslayoutgaps);
   `inset`/`outset` as `ridge`/`groove`); the MathML rules and glyphs (`MathFragmentData.PaintItems`).
 - **Shaped borders** (`border-shape`, [CSS Borders 4](https://drafts.csswg.org/css-borders-4/#border-shape);

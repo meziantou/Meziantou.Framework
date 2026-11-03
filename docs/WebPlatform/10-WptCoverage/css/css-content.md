@@ -11,8 +11,8 @@ description: "The results of the web-platform-tests of css/css-content, and why 
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 9 | 9 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 61 | 65 | 0 | 94% |
-| **All** | **70** | **74** | **0** | **95%** |
+| [Reftests](#reftests) | 63 | 65 | 0 | 97% |
+| **All** | **72** | **74** | **0** | **97%** |
 
 ## Stable tests
 
@@ -51,8 +51,8 @@ description: "The results of the web-platform-tests of css/css-content, and why 
 | [`element-replacement-root-canvas-bg.html`](https://wpt.fyi/results/css/css-content/element-replacement-root-canvas-bg.html) | Pass | 1 / 1 |  |  |
 | [`element-replacement-root.html`](https://wpt.fyi/results/css/css-content/element-replacement-root.html) | Pass | 1 / 1 |  |  |
 | [`element-replacement.html`](https://wpt.fyi/results/css/css-content/element-replacement.html) | Pass | 1 / 1 |  |  |
-| [`pseudo-element-gradient.html`](https://wpt.fyi/results/css/css-content/pseudo-element-gradient.html) | Fail | 0 / 1 | BUG | a gradient in the `content` of a pseudo-element is not painted |
-| [`pseudo-element-image-set.html`](https://wpt.fyi/results/css/css-content/pseudo-element-image-set.html) | Fail | 0 / 1 | BUG | an `image-set()` of a gradient in the `content` of a pseudo-element is not painted |
+| [`pseudo-element-gradient.html`](https://wpt.fyi/results/css/css-content/pseudo-element-gradient.html) | Pass | 1 / 1 |  |  |
+| [`pseudo-element-image-set.html`](https://wpt.fyi/results/css/css-content/pseudo-element-image-set.html) | Pass | 1 / 1 |  |  |
 | [`pseudo-element-inline-box.html`](https://wpt.fyi/results/css/css-content/pseudo-element-inline-box.html) | Pass | 1 / 1 |  |  |
 | [`quotes-001.html`](https://wpt.fyi/results/css/css-content/quotes-001.html) | Pass | 1 / 1 |  |  |
 | [`quotes-002.html`](https://wpt.fyi/results/css/css-content/quotes-002.html) | Pass | 1 / 1 |  |  |

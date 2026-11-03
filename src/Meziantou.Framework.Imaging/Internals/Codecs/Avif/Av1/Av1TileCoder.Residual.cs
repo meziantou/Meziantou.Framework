@@ -416,7 +416,8 @@ internal ref partial struct Av1TileCoder
             var coeffBaseOffset = Av1CdfLayout.CoeffBase + ((((txSzCtx * Av1Constants.PlaneTypes) + ptype) * Av1Constants.SigCoefContexts) * Av1CdfLayout.CoeffBaseSize);
             var coeffBaseEobOffset = Av1CdfLayout.CoeffBaseEob + ((((txSzCtx * Av1Constants.PlaneTypes) + ptype) * Av1Constants.SigCoefContextsEob) * Av1CdfLayout.CoeffBaseEobSize);
             var coeffBrOffset = Av1CdfLayout.CoeffBr + ((((Math.Min(txSzCtx, Av1Constants.Tx32x32) * Av1Constants.PlaneTypes) + ptype) * Av1Constants.LevelContexts) * Av1CdfLayout.CoeffBrSize);
-            var levelStride = width + Av1TileScratch.LevelMapPadding;
+            // The rows of the map have the stride of the widest blocks, so the neighbors of a position are at constant offsets
+            var levelStride = Av1CoefficientContexts.LevelStride;
             var levels = _scratch.LevelMap[..((height + Av1TileScratch.LevelMapPadding) * levelStride)];
             levels.Clear();
             var lastPos = scan[eob - 1];
@@ -448,11 +449,11 @@ internal ref partial struct Av1TileCoder
                 }
                 else if (scan.IsWide)
                 {
-                    coefficientCount = ReadLevels2D(_symbols, _cdf, scan.Wide, eob - 1, levels, list, Av1CoefficientContexts.GetBaseOffsets(txSz), txSz, bwl, coeffBaseOffset, coeffBrOffset);
+                    coefficientCount = ReadLevels2D(_symbols, _cdf, scan.Wide, eob - 1, levels, list, Av1CoefficientContexts.GetPositions(txSz), txSz, bwl, coeffBaseOffset, coeffBrOffset);
                 }
                 else
                 {
-                    coefficientCount = ReadLevels2D(_symbols, _cdf, scan.Narrow, eob - 1, levels, list, Av1CoefficientContexts.GetBaseOffsets(txSz), txSz, bwl, coeffBaseOffset, coeffBrOffset);
+                    coefficientCount = ReadLevels2D(_symbols, _cdf, scan.Narrow, eob - 1, levels, list, Av1CoefficientContexts.GetPositions(txSz), txSz, bwl, coeffBaseOffset, coeffBrOffset);
                 }
             }
 
@@ -568,31 +569,32 @@ internal ref partial struct Av1TileCoder
     // The levels of the coefficients before the last one of a transform block of the 2D class, from the last to the first in
     // the scan order (the coeff_base and coeff_br symbols of the coefficients syntax), read on a copy of the state of the symbol
     // decoder: a method of its own, whose few live values let the state stay in registers. The context offsets of the
-    // positions come from a table, and the symbols are read without branches on their values. Returns the length of the list
-    private static int ReadLevels2D<TPosition>(Av1SymbolDecoder symbols, Span<ushort> cdf, ReadOnlySpan<TPosition> scan, int count, Span<byte> levels, Span<int> list, ReadOnlySpan<byte> baseOffsets, int txSz, int bwl, int coeffBaseOffset, int coeffBrOffset)
+    // positions come from a table with their index in the map, and the symbols are read without branches on their values.
+    // Returns the length of the list
+    private static int ReadLevels2D<TPosition>(Av1SymbolDecoder symbols, Span<ushort> cdf, ReadOnlySpan<TPosition> scan, int count, Span<byte> levels, Span<int> list, ReadOnlySpan<ushort> positions, int txSz, int bwl, int coeffBaseOffset, int coeffBrOffset)
         where TPosition : unmanaged, IBinaryInteger<TPosition>
     {
+        const int Stride = Av1CoefficientContexts.LevelStride;
         var state = symbols.Save();
-        var stride = (1 << bwl) + Av1TileScratch.LevelMapPadding;
-        var mask = (1 << bwl) - 1;
         var listCount = 1;
+        var baseCdf = cdf.Slice(coeffBaseOffset, Av1Constants.SigCoefContexts * Av1CdfLayout.CoeffBaseSize);
         for (var c = count - 1; c > 0; c--)
         {
             var pos = int.CreateTruncating(scan[c]);
-            var row = pos >> bwl;
-            var index = pos + (row * Av1TileScratch.LevelMapPadding);
-            var neighbors = levels[index..];
-            var mag = (neighbors[1] & 3) + (neighbors[2] & 3) + (neighbors[stride] & 3) + (neighbors[stride + 1] & 3) + (neighbors[2 * stride] & 3);
-            var ctx = BaseMagnitudeContexts[mag] + baseOffsets[pos];
-            var level = symbols.ReadSymbol4Branchless(ref state, cdf.Slice(coeffBaseOffset + (ctx * Av1CdfLayout.CoeffBaseSize), Av1CdfLayout.CoeffBaseSize));
+            var entry = positions[pos];
+            var index = entry >> Av1CoefficientContexts.IndexShift;
+            var neighbors = levels.Slice(index, (2 * Stride) + 1);
+            var mag = (neighbors[1] & 3) + (neighbors[2] & 3) + (neighbors[Stride] & 3) + (neighbors[Stride + 1] & 3) + (neighbors[2 * Stride] & 3);
+            var ctx = BaseMagnitudeContexts[mag] + (entry & Av1CoefficientContexts.OffsetMask);
+            var level = symbols.ReadSymbol4Branchless(ref state, baseCdf.Slice(ctx * Av1CdfLayout.CoeffBaseSize, Av1CdfLayout.CoeffBaseSize));
             if (level > Av1Constants.NumBaseLevels)
             {
-                var brMag = (neighbors[1] >> 2) + (neighbors[stride] >> 2) + (neighbors[stride + 1] >> 2);
-                var brCtx = BrMagnitudeContexts[brMag] + ((row | (pos & mask)) < 2 ? 7 : 14);
+                var brMag = (neighbors[1] >> 2) + (neighbors[Stride] >> 2) + (neighbors[Stride + 1] >> 2);
+                var brCtx = BrMagnitudeContexts[brMag] + (((pos >> bwl) | (pos & ((1 << bwl) - 1))) < 2 ? 7 : 14);
                 level += ReadBaseRange(symbols, ref state, cdf.Slice(coeffBrOffset + (brCtx * Av1CdfLayout.CoeffBrSize), Av1CdfLayout.CoeffBrSize));
             }
 
-            levels[index] = PackedLevels[level];
+            neighbors[0] = PackedLevels[level];
             list[listCount] = pos | (level << 16);
             listCount += level is not 0 ? 1 : 0;
         }
@@ -620,7 +622,7 @@ internal ref partial struct Av1TileCoder
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int ReadLevel(Av1SymbolDecoder symbols, ref Av1SymbolDecoder.State state, Span<ushort> cdf, int pos, Span<byte> levels, Span<int> list, int listCount, int txSz, int txClass, int bwl, int coeffBaseOffset, int coeffBrOffset)
     {
-        var stride = (1 << bwl) + Av1TileScratch.LevelMapPadding;
+        var stride = Av1CoefficientContexts.LevelStride;
         var row = pos >> bwl;
         var col = pos & ((1 << bwl) - 1);
         var level = symbols.ReadSymbol4Branchless(ref state, cdf.Slice(coeffBaseOffset + (GetPackedCoeffBaseContext(levels, txSz, txClass, stride, row, col) * Av1CdfLayout.CoeffBaseSize), Av1CdfLayout.CoeffBaseSize));

@@ -22,6 +22,12 @@ internal sealed class PendingOutsideMarker(ContainerBox marker, ContainerBox lis
     public double ListItemContentInlineOffset { get; init; }
 
     /// <summary>
+    /// The text-indent of the first line of the list item, when its content is block-level: it does not move the marker, and the
+    /// text-indent of a descendant block container moves it only by how much it exceeds it (an inherited or smaller text-indent does not move it).
+    /// </summary>
+    public double ListItemTextIndent { get; init; }
+
+    /// <summary>
     /// The floats of the block formatting context of the list item when the marker was created, and their number: the floats
     /// added after them are in the content of the list item (see <see cref="ExclusionCount"/>).
     /// </summary>

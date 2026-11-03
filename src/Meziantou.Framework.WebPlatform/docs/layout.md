@@ -1958,7 +1958,8 @@ an atomic inline laid out while its parent collects its items rents another inst
   (`PendingOutsideMarker.ListItemContentInlineOffset`). A line box shortened by a float on its start side moves the marker beside the float
   (also the marker of a list item without content, which is where its line box would be), unless a float of the content of
   the list item shortens it (a float placed after the list item started, `PendingOutsideMarker.ExclusionCount`). The
-  `text-indent` of a descendant block container moves the marker as its inline-start padding does, as in Blink. As in the browsers, the marker of a list item with inline content is part of its
+  `text-indent` of the list item does not move the marker; the one of a descendant block container moves it by how much it
+  exceeds the one of the list item (an inherited or smaller `text-indent` does not move it), as in the browsers. As in the browsers, the marker of a list item with inline content is part of its
   first line: its margin box makes the line taller (a marker image, a marker with a larger font; `AlignVertically`), also
   the line of a list item without content (`PlaceWithoutLine`); the marker placed next to a line of a descendant block
   container does not change this line. The outside marker is painted before the content of its list item (it precedes it

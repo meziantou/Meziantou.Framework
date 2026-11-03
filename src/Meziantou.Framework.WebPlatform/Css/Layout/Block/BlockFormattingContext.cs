@@ -409,7 +409,7 @@ internal sealed class BlockFormattingContext : FormattingContext
         {
             if (child is ContainerBox { IsOutsideMarker: true } markerBox)
             {
-                ownMarker = new PendingOutsideMarker(markerBox, box) { ListItemContentInlineOffset = content.Offset.Inline, Exclusions = blockFormattingContext.Exclusions, ExclusionCount = blockFormattingContext.Exclusions.Exclusions.Count };
+                ownMarker = new PendingOutsideMarker(markerBox, box) { ListItemContentInlineOffset = content.Offset.Inline, ListItemTextIndent = box.Style.Layout.Text.TextIndentHanging ? 0 : box.Style.Layout.Text.TextIndent.Resolve(content.InlineSize), Exclusions = blockFormattingContext.Exclusions, ExclusionCount = blockFormattingContext.Exclusions.Exclusions.Count };
                 marker = ownMarker;
                 break;
             }

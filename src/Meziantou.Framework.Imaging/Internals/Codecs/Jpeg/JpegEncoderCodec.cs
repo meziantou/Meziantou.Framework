@@ -2021,6 +2021,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         }
 
         /// <summary>Counts the symbols that <see cref="EncodeBlock"/> codes for a block of a component, in the tables of the component.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void CountBlock(ReadOnlySpan<short> coefficients, int component)
         {
             var dc = _histograms[component == 0 ? 0 : 2];

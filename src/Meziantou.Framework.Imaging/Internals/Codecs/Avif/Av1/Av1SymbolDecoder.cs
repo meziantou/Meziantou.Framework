@@ -1,4 +1,6 @@
 using System.Numerics;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -98,6 +100,98 @@ internal sealed class Av1SymbolDecoder
         return symbol;
     }
 
+    /// <summary>
+    /// Copies the state of the range decoder, for a loop that decodes many symbols with <see cref="ReadSymbol4"/> and keeps
+    /// the state in locals; <see cref="Restore"/> gives it back to the decoder before its other methods are called.
+    /// </summary>
+    public State Save() => new() { Window = _window, Count = _count, Range = _range, MaxBits = _maxBits };
+
+    /// <summary>Sets the state of the range decoder that <see cref="Save"/> copied and <see cref="ReadSymbol4"/> advanced.</summary>
+    public void Restore(State state)
+    {
+        _window = state.Window;
+        _count = state.Count;
+        _range = state.Range;
+        _maxBits = state.MaxBits;
+    }
+
+    /// <summary>
+    /// <see cref="ReadSymbol"/> for a distribution of 4 symbols (5 values with the counter), on a state copied by
+    /// <see cref="Save"/>: the coefficient levels, most of the symbols of a tile.
+    /// </summary>
+    // The loop of ReadSymbol unrolled for 4 symbols (cur( 3 ) is 0, below every value), Renormalize on the state, and the
+    // adaptation of Av1Cdf.Update with the rate of 4 symbols
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public int ReadSymbol4(ref State state, Span<ushort> cdf)
+    {
+        cdf = cdf[..5];
+        var value = (uint)(state.Window >> state.Count);
+        var range = state.Range;
+        var scale = range >> 8;
+        uint c0 = cdf[0];
+        int symbol;
+        uint prev;
+        uint cur;
+        var cur0 = ((scale * (((1u << 15) - c0) >> Av1Constants.EcProbShift)) >> (7 - Av1Constants.EcProbShift)) + (3 * Av1Constants.EcMinProb);
+        if (value >= cur0)
+        {
+            symbol = 0;
+            prev = range;
+            cur = cur0;
+        }
+        else
+        {
+            uint c1 = cdf[1];
+            var cur1 = ((scale * (((1u << 15) - c1) >> Av1Constants.EcProbShift)) >> (7 - Av1Constants.EcProbShift)) + (2 * Av1Constants.EcMinProb);
+            if (value >= cur1)
+            {
+                symbol = 1;
+                prev = cur0;
+                cur = cur1;
+            }
+            else
+            {
+                uint c2 = cdf[2];
+                var cur2 = ((scale * (((1u << 15) - c2) >> Av1Constants.EcProbShift)) >> (7 - Av1Constants.EcProbShift)) + Av1Constants.EcMinProb;
+                if (value >= cur2)
+                {
+                    symbol = 2;
+                    prev = cur1;
+                    cur = cur2;
+                }
+                else
+                {
+                    symbol = 3;
+                    prev = cur2;
+                    cur = 0;
+                }
+            }
+        }
+
+        Renormalize(ref state, prev - cur, cur);
+        if (!_disableCdfUpdate)
+        {
+            var counter = cdf[4];
+            var rate = 5 + (counter > 15 ? 1 : 0) + (counter > 31 ? 1 : 0);
+            for (var i = 0; i < 3; i++)
+            {
+                if (i < symbol)
+                {
+                    cdf[i] -= (ushort)(cdf[i] >> rate);
+                }
+                else
+                {
+                    cdf[i] += (ushort)(((1 << 15) - cdf[i]) >> rate);
+                }
+            }
+
+            if (counter < 32)
+                cdf[4] = (ushort)(counter + 1);
+        }
+
+        return symbol;
+    }
+
     /// <summary>Decodes a bit with equal probabilities (<c>read_bool()</c>, section 8.2.3).</summary>
     public int ReadBool()
     {
@@ -152,6 +246,39 @@ internal sealed class Av1SymbolDecoder
             Refill();
     }
 
+    // Renormalize on a state copied by Save
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void Renormalize(ref State state, uint newRange, uint subtracted)
+    {
+        state.Window -= (ulong)subtracted << state.Count;
+        var bits = 15 - BitOperations.Log2(newRange);
+        state.Range = newRange << bits;
+        state.MaxBits -= bits;
+        state.Count -= bits;
+        if (state.Count < WindowRefillThreshold)
+        {
+            // The bytes of Refill: until the count is above 40
+            state.Window = RefillWindow(state.Window, state.Count);
+            state.Count += (((40 - state.Count) >> 3) + 1) << 3;
+        }
+    }
+
+    // The window of Refill for a state copied by Save, whose count is not changed: the window and the count of a state stay in
+    // registers when they are not given by reference
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private ulong RefillWindow(ulong window, int count)
+    {
+        while (count <= 40)
+        {
+            var next = _position < _end ? _data[_position] : 0;
+            _position++;
+            window = (window << 8) | (byte)~next;
+            count += 8;
+        }
+
+        return window;
+    }
+
     private void Refill()
     {
         // A byte after the end of the data is a byte of zero bits, which are one bits in the inverted window
@@ -162,5 +289,15 @@ internal sealed class Av1SymbolDecoder
             _window = (_window << 8) | (byte)~next;
             _count += 8;
         }
+    }
+
+    /// <summary>The state of the range decoder: the window of bits, its count, the range and the remaining bits.</summary>
+    [StructLayout(LayoutKind.Auto)]
+    internal struct State
+    {
+        public ulong Window;
+        public int Count;
+        public uint Range;
+        public long MaxBits;
     }
 }

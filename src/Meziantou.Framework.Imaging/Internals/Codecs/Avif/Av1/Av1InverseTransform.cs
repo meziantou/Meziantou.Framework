@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -9,9 +11,6 @@ namespace Meziantou.Framework.Imaging.Internals;
 /// </summary>
 internal static partial class Av1InverseTransform
 {
-    // cos128( angle ) of section 7.13.2.1 for the angles 0 to 255, the values of angle & 255
-    private static readonly int[] Cos128Values = CreateCos128Values();
-
     /// <summary>The one-dimensional transform of the rows or of the columns of a transform type.</summary>
     internal enum Kind
     {
@@ -34,9 +33,38 @@ internal static partial class Av1InverseTransform
     /// <param name="bitDepth">The bit depth of the samples.</param>
     public static void Transform(ReadOnlySpan<int> dequant, Span<int> residual, int txSz, int txType, bool lossless, int bitDepth)
     {
+        var tw = Math.Min(32, (int)Av1Tables.TxWidth[txSz]);
+        var th = Math.Min(32, (int)Av1Tables.TxHeight[txSz]);
+        var rows = 0;
+        var columns = 0;
+        for (var i = 0; i < th; i++)
+        {
+            var last = dequant.Slice(i * tw, tw).LastIndexOfAnyExcept(0);
+            if (last >= 0)
+            {
+                rows = i + 1;
+                columns = Math.Max(columns, last + 1);
+            }
+        }
+
+        var limit = 1 << (7 + bitDepth);
+        Transform(dequant, residual, txSz, txType, lossless, bitDepth, rows, columns, !dequant.ContainsAnyExceptInRange(-limit, limit - 1));
+    }
+
+    /// <summary>
+    /// <see cref="Transform(ReadOnlySpan{int}, Span{int}, int, int, bool, int)"/> for coefficients of the dequantization range
+    /// (-2^(7 + <paramref name="bitDepth"/>) to 2^(7 + <paramref name="bitDepth"/>) - 1, section 7.12.3) that are zero outside
+    /// their first <paramref name="rows"/> rows and first <paramref name="columns"/> columns.
+    /// </summary>
+    public static void Transform(ReadOnlySpan<int> dequant, Span<int> residual, int txSz, int txType, bool lossless, int bitDepth, int rows, int columns)
+        => Transform(dequant, residual, txSz, txType, lossless, bitDepth, rows, columns, inRange: true);
+
+    // inRange: whether the coefficients are in the dequantization range, which the 32-bit products of the vector rows need
+    private static void Transform(ReadOnlySpan<int> dequant, Span<int> residual, int txSz, int txType, bool lossless, int bitDepth, int rows, int columns, bool inRange)
+    {
         if (Av1Simd.IsSupported && !lossless)
         {
-            TransformVector(dequant, residual, txSz, txType, bitDepth);
+            TransformVector(dequant, residual, txSz, txType, bitDepth, rows, columns, inRange);
         }
         else
         {
@@ -44,7 +72,7 @@ internal static partial class Av1InverseTransform
         }
     }
 
-    /// <summary>The scalar reference of <see cref="Transform"/>.</summary>
+    /// <summary>The scalar reference of <see cref="Transform(ReadOnlySpan{int}, Span{int}, int, int, bool, int)"/>.</summary>
     internal static void TransformScalar(ReadOnlySpan<int> dequant, Span<int> residual, int txSz, int txType, bool lossless, int bitDepth)
     {
         var log2W = Av1Tables.TxWidthLog2[txSz];
@@ -705,24 +733,9 @@ internal static partial class Av1InverseTransform
         t[b] = (int)Math.Clamp((long)x - y, min, max);
     }
 
-    private static int Cos128(int angle) => Cos128Values[angle & 255];
-
-    private static int[] CreateCos128Values()
-    {
-        var values = new int[256];
-        for (var angle = 0; angle < values.Length; angle++)
-        {
-            values[angle] = angle switch
-            {
-                <= 64 => Av1Tables.Cos128Lookup[angle],
-                <= 128 => -Av1Tables.Cos128Lookup[128 - angle],
-                <= 192 => -Av1Tables.Cos128Lookup[angle - 128],
-                _ => Av1Tables.Cos128Lookup[256 - angle],
-            };
-        }
-
-        return values;
-    }
+    // cos128( angle ) of section 7.13.2.1, a constant when the angle is one
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int Cos128(int angle) => Av1ForwardTransform.Cos128Values[angle & 255];
 
     // The low numBits bits of x in the reverse order: the reversal of the 6 bits of x, whose top bits are zero, shifted
     private static int BitReverse(int numBits, int x) => BitReverse6[x] >> (6 - numBits);

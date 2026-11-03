@@ -86,14 +86,21 @@ internal sealed class HeifFrameWriter : IDisposable
                 _context.CancellationToken.ThrowIfCancellationRequested();
 
             var sourceY = _crop.Y + y;
-            if (hasChroma)
+            ReadOnlySpan<ushort> uRow = u;
+            ReadOnlySpan<ushort> vRow = v;
+            if (hasChroma && _converter.HasFullResolutionChroma)
+            {
+                uRow = color.GetRow(1, sourceY)[..width];
+                vRow = color.GetRow(2, sourceY)[..width];
+            }
+            else if (hasChroma)
             {
                 _converter.UpsampleChromaRow(color, 1, sourceY, width, _height, u);
                 _converter.UpsampleChromaRow(color, 2, sourceY, width, _height, v);
             }
 
             var alphaRow = alpha is null ? default : alpha.GetRow(0, sourceY)[..width];
-            _converter.ConvertRow(color.GetRow(0, sourceY)[..width], u, v, alphaRow, pixelRow);
+            _converter.ConvertRow(color.GetRow(0, sourceY)[..width], uRow, vRow, alphaRow, pixelRow);
             sink.WriteRow(target, y, pixelRow.Slice(_crop.X * _converter.BytesPerPixel, _crop.Width * _converter.BytesPerPixel));
         }
     }

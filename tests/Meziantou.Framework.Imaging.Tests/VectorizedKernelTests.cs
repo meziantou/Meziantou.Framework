@@ -5086,6 +5086,58 @@ public sealed class VectorizedKernelTests
     [InlineData(10)]
     [InlineData(12)]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Av1QuantizationMatchesTheScalarReference(int bitDepth)
+    {
+        // The vector path zeroes groups of 4 coefficients below the dead zone: every quantizer, denominator and rounding
+        // offset, on coefficients around the thresholds and of the whole 32-bit range (whose magnitudes overflow nothing)
+        var random = new Random(bitDepth * 13);
+        foreach (var denominator in new[] { 1, 2, 4 })
+        {
+            for (var round = 0; round < 400; round++)
+            {
+                var dcQuantizer = Av1Reconstruction.GetDcQuantizer(random.Next(256), bitDepth);
+                var acQuantizer = Av1Reconstruction.GetAcQuantizer(random.Next(256), bitDepth);
+                var rounding = random.Next(Av1Quantizer.RoundingScale + 1);
+                var coefficients = new int[random.Next(1, 40)];
+                for (var i = 0; i < coefficients.Length; i++)
+                {
+                    var quantizer = i is 0 ? dcQuantizer : acQuantizer;
+                    coefficients[i] = (round % 4) switch
+                    {
+                        0 => random.Next(-2 * quantizer, (2 * quantizer) + 1) / denominator,
+                        1 => random.Next(8) is 0 ? random.Next(-100 * quantizer, (100 * quantizer) + 1) : random.Next(-quantizer, quantizer + 1) / denominator,
+                        2 => random.Next(int.MinValue + 1, int.MaxValue),
+                        _ => (quantizer - (quantizer * rounding / Av1Quantizer.RoundingScale) + random.Next(-2, 3)) / denominator * (random.Next(2) is 0 ? 1 : -1),
+                    };
+                }
+
+                var expected = new int[coefficients.Length];
+                for (var i = 0; i < coefficients.Length; i++)
+                {
+                    long quantizer = i is 0 ? dcQuantizer : acQuantizer;
+                    var offset = quantizer * rounding / Av1Quantizer.RoundingScale;
+                    var maxLevel = Math.Min(0xFFFFFF, (((1L << (7 + bitDepth)) - 1) * denominator) + denominator - 1) / quantizer;
+                    var magnitude = (long)Math.Abs(coefficients[i]) * denominator;
+                    var level = magnitude < quantizer - offset ? 0 : Math.Min((magnitude + offset) / quantizer, maxLevel);
+                    expected[i] = coefficients[i] < 0 ? -(int)level : (int)level;
+                }
+
+                var actual = new int[coefficients.Length];
+                Av1Quantizer.Quantize(coefficients, actual, dcQuantizer, acQuantizer, denominator, bitDepth, rounding);
+                Assert.Equal(expected, actual);
+
+                // In place
+                Av1Quantizer.Quantize(coefficients, coefficients, dcQuantizer, acQuantizer, denominator, bitDepth, rounding);
+                Assert.Equal(expected, coefficients);
+            }
+        }
+    }
+
+    [Theory]
+    [InlineData(8)]
+    [InlineData(10)]
+    [InlineData(12)]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void Av1ResidualAdditionMatchesTheScalarReference(int bitDepth)
     {
         // Rows of every transform width, residuals that clamp at both ends and any 32-bit value

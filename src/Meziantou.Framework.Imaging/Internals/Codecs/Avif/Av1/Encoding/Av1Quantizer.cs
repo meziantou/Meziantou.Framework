@@ -1,3 +1,6 @@
+using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <summary>
@@ -36,21 +39,45 @@ internal static class Av1Quantizer
         var offset = (quantizer * rounding) / RoundingScale;
         var maxLevel = GetMaxLevel(quantizer, denominator, bitDepth);
 
-        // Most coefficients are quantized to zero: the ones whose magnitude plus the offset is below the quantizer
+        // Most coefficients are quantized to zero: the ones whose magnitude plus the offset is below the quantizer. With
+        // vectors, 4 coefficients whose magnitudes are all below the threshold are zeros (|c| * denominator < threshold is
+        // |c| < ceil( threshold / denominator ), and the magnitude of int.MinValue as an unsigned value is above every
+        // threshold); the coefficients of the other groups are quantized one at a time. The coefficients can be the levels
         var threshold = quantizer - offset;
-        for (var i = 0; i < coefficients.Length; i++)
+        var i = 0;
+        if (Vector128.IsHardwareAccelerated)
         {
-            var coefficient = coefficients[i];
-            var magnitude = (long)Math.Abs(coefficient) * denominator;
-            if (magnitude < threshold)
+            var zeros = Vector128.Create(threshold > 0 ? (uint)((threshold + denominator - 1) / denominator) : 0u);
+            for (; i <= coefficients.Length - Vector128<int>.Count; i += Vector128<int>.Count)
             {
-                levels[i] = 0;
-                continue;
-            }
+                if (Vector128.LessThanAll(Vector128.Abs(Vector128.Create(coefficients[i..])).AsUInt32(), zeros))
+                {
+                    Vector128<int>.Zero.CopyTo(levels[i..]);
+                    continue;
+                }
 
-            var level = Math.Min((magnitude + offset) / quantizer, maxLevel);
-            levels[i] = coefficient < 0 ? -(int)level : (int)level;
+                for (var k = i; k < i + Vector128<int>.Count; k++)
+                {
+                    levels[k] = Quantize(coefficients[k], quantizer, denominator, offset, threshold, maxLevel);
+                }
+            }
         }
+
+        for (; i < coefficients.Length; i++)
+        {
+            levels[i] = Quantize(coefficients[i], quantizer, denominator, offset, threshold, maxLevel);
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int Quantize(int coefficient, long quantizer, int denominator, long offset, long threshold, long maxLevel)
+    {
+        var magnitude = (long)Math.Abs(coefficient) * denominator;
+        if (magnitude < threshold)
+            return 0;
+
+        var level = Math.Min((magnitude + offset) / quantizer, maxLevel);
+        return coefficient < 0 ? -(int)level : (int)level;
     }
 
     /// <summary>Returns the value that the reconstruction process dequantizes a level to.</summary>

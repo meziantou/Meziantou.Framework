@@ -1,3 +1,5 @@
+using System.Runtime.CompilerServices;
+
 namespace Meziantou.Framework.Imaging.Internals;
 
 /// <content>The residual of a block (AV1 specification, sections 5.11.34 to 5.11.41, 5.11.47 and 5.11.48).</content>
@@ -401,38 +403,26 @@ internal ref partial struct Av1TileCoder
             var levelStride = width + Av1TileScratch.LevelMapPadding;
             var levels = _scratch.LevelMap[..((height + Av1TileScratch.LevelMapPadding) * levelStride)];
             levels.Clear();
-            for (var c = eob - 1; c >= 0; c--)
+            var lastPos = scan[eob - 1];
+            var lastRow = lastPos >> bwl;
+            var lastCol = lastPos & (width - 1);
+            var lastLevel = ReadSymbol(coeffBaseEobOffset + (GetCoeffBaseEobContext(eob - 1, width, height) * Av1CdfLayout.CoeffBaseEobSize), Av1CdfLayout.CoeffBaseEobSize) + 1;
+            if (lastLevel > Av1Constants.NumBaseLevels)
             {
-                var pos = scan[c];
-                var row = pos >> bwl;
-                var col = pos & (width - 1);
-                int level;
-                if (c == eob - 1)
+                var ctx = GetCoeffBrContext(levels, txClass, levelStride, lastRow, lastCol);
+                for (var idx = 0; idx < Av1Constants.CoeffBaseRange / (Av1Constants.BrCdfSize - 1); idx++)
                 {
-                    var ctx = GetCoeffBaseEobContext(c, width, height);
-                    level = ReadSymbol(coeffBaseEobOffset + (ctx * Av1CdfLayout.CoeffBaseEobSize), Av1CdfLayout.CoeffBaseEobSize) + 1;
+                    var coeffBr = ReadSymbol(coeffBrOffset + (ctx * Av1CdfLayout.CoeffBrSize), Av1CdfLayout.CoeffBrSize);
+                    lastLevel += coeffBr;
+                    if (coeffBr < Av1Constants.BrCdfSize - 1)
+                        break;
                 }
-                else
-                {
-                    var ctx = GetCoeffBaseContext(levels, txSz, txClass, levelStride, row, col);
-                    level = ReadSymbol(coeffBaseOffset + (ctx * Av1CdfLayout.CoeffBaseSize), Av1CdfLayout.CoeffBaseSize);
-                }
-
-                if (level > Av1Constants.NumBaseLevels)
-                {
-                    var ctx = GetCoeffBrContext(levels, txClass, levelStride, row, col);
-                    for (var idx = 0; idx < Av1Constants.CoeffBaseRange / (Av1Constants.BrCdfSize - 1); idx++)
-                    {
-                        var coeffBr = ReadSymbol(coeffBrOffset + (ctx * Av1CdfLayout.CoeffBrSize), Av1CdfLayout.CoeffBrSize);
-                        level += coeffBr;
-                        if (coeffBr < Av1Constants.BrCdfSize - 1)
-                            break;
-                    }
-                }
-
-                quant[pos] = level;
-                levels[(row * levelStride) + col] = (byte)level;
             }
+
+            quant[lastPos] = lastLevel;
+            levels[(lastRow * levelStride) + lastCol] = (byte)lastLevel;
+            if (eob > 1)
+                ReadLevels(_symbols, _cdf, scan, eob - 1, levels, quant, txSz, txClass, bwl, levelStride, coeffBaseOffset, coeffBrOffset);
 
             for (var c = 0; c < eob; c++)
             {
@@ -495,6 +485,38 @@ internal ref partial struct Av1TileCoder
         }
 
         return eob;
+    }
+
+    // The levels of the coefficients before the last one, from the last to the first in the scan order (the coeff_base and
+    // coeff_br symbols of the coefficients syntax), read on a copy of the state of the symbol decoder: a method of its own,
+    // whose few live values let the state stay in registers
+    private static void ReadLevels(Av1SymbolDecoder symbols, Span<ushort> cdf, Av1Scan scan, int count, Span<byte> levels, Span<int> quant, int txSz, int txClass, int bwl, int levelStride, int coeffBaseOffset, int coeffBrOffset)
+    {
+        var state = symbols.Save();
+        var mask = (1 << bwl) - 1;
+        for (var c = count - 1; c >= 0; c--)
+        {
+            var pos = scan[c];
+            var row = pos >> bwl;
+            var col = pos & mask;
+            var level = symbols.ReadSymbol4(ref state, cdf.Slice(coeffBaseOffset + (GetCoeffBaseContext(levels, txSz, txClass, levelStride, row, col) * Av1CdfLayout.CoeffBaseSize), Av1CdfLayout.CoeffBaseSize));
+            if (level > Av1Constants.NumBaseLevels)
+            {
+                var brCdf = cdf.Slice(coeffBrOffset + (GetCoeffBrContext(levels, txClass, levelStride, row, col) * Av1CdfLayout.CoeffBrSize), Av1CdfLayout.CoeffBrSize);
+                for (var idx = 0; idx < Av1Constants.CoeffBaseRange / (Av1Constants.BrCdfSize - 1); idx++)
+                {
+                    var coeffBr = symbols.ReadSymbol4(ref state, brCdf);
+                    level += coeffBr;
+                    if (coeffBr < Av1Constants.BrCdfSize - 1)
+                        break;
+                }
+            }
+
+            quant[pos] = level;
+            levels[(row * levelStride) + col] = (byte)level;
+        }
+
+        symbols.Restore(state);
     }
 
     // The CDF selection of all_zero (section 8.3.2)
@@ -577,6 +599,7 @@ internal ref partial struct Av1TileCoder
 
     // The CDF selection of coeff_base: get_coeff_base_ctx with isEob equal to 0. The levels coded so far are in the level
     // map, whose padding makes the neighbors outside the block read as zero
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static int GetCoeffBaseContext(ReadOnlySpan<byte> levels, int txSz, int txClass, int stride, int row, int col)
     {
         var neighbors = levels[((row * stride) + col)..];

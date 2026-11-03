@@ -333,31 +333,6 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         }
     }
 
-    /// <summary>Loads 64 stored coefficients as 32-bit values.</summary>
-    internal static void WidenCoefficients(ReadOnlySpan<short> stored, Span<int> coefficients)
-    {
-        stored = stored[..64];
-        coefficients = coefficients[..64];
-        if (!Vector128.IsHardwareAccelerated)
-        {
-            for (var k = 0; k < 64; k++)
-            {
-                coefficients[k] = stored[k];
-            }
-
-            return;
-        }
-
-        ref var source = ref unsafe(MemoryMarshal.GetReference(stored));
-        ref var target = ref unsafe(MemoryMarshal.GetReference(coefficients));
-        for (var k = 0; k < 64; k += 8)
-        {
-            var (low, high) = Vector128.Widen(unsafe(Vector128.LoadUnsafe(ref source, (nuint)k)));
-            unsafe { low.StoreUnsafe(ref target, (nuint)k); }
-            unsafe { high.StoreUnsafe(ref target, (nuint)(k + 4)); }
-        }
-    }
-
     /// <summary>Gets a mask of the non-zero values among 64 coefficients: bit <c>k</c> is set when <c>coefficients[k]</c> is not zero.</summary>
     /// <param name="coefficients">The 64 coefficients.</param>
     internal static ulong GetNonZeroMask(ReadOnlySpan<int> coefficients)
@@ -409,7 +384,64 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         static Vector128<int> Load(ref int start, int index) => unsafe(Vector128.LoadUnsafe(ref start, (nuint)index));
     }
 
-    /// <summary>The scalar reference of <see cref="GetNonZeroMask"/>.</summary>
+    /// <summary>Gets a mask of the non-zero values among 64 stored (16-bit) coefficients: bit <c>k</c> is set when <c>coefficients[k]</c> is not zero.</summary>
+    /// <param name="coefficients">The 64 coefficients.</param>
+    internal static ulong GetNonZeroMask(ReadOnlySpan<short> coefficients)
+    {
+        coefficients = coefficients[..64];
+        if (!Vector128.IsHardwareAccelerated)
+            return GetNonZeroMaskScalar(coefficients);
+
+        ref var start = ref unsafe(MemoryMarshal.GetReference(coefficients));
+        if (Vector512.IsHardwareAccelerated)
+        {
+            // One mask bit per comparison of 32 coefficients
+            var lower = Vector512.Equals(unsafe(Vector512.LoadUnsafe(ref start)), Vector512<short>.Zero).ExtractMostSignificantBits();
+            var upper = Vector512.Equals(unsafe(Vector512.LoadUnsafe(ref start, 32)), Vector512<short>.Zero).ExtractMostSignificantBits();
+            return ~(lower | (upper << 32));
+        }
+
+        if (AdvSimd.Arm64.IsSupported)
+        {
+            // As for 32-bit coefficients: the comparison results weighted by their bit and summed by groups of 8
+            var weights = Vector128.Create((byte)1, 2, 4, 8, 16, 32, 64, 128, 1, 2, 4, 8, 16, 32, 64, 128);
+            var low = AdvSimd.Arm64.AddPairwise(EqualsZero(ref start, 0) & weights, EqualsZero(ref start, 16) & weights);
+            var high = AdvSimd.Arm64.AddPairwise(EqualsZero(ref start, 32) & weights, EqualsZero(ref start, 48) & weights);
+            var quarters = AdvSimd.Arm64.AddPairwise(low, high);
+            return ~AdvSimd.Arm64.AddPairwise(quarters, quarters).AsUInt64().ToScalar();
+        }
+
+        var zeros = 0UL;
+        for (var i = 0; i < 64; i += 16)
+        {
+            zeros |= (ulong)EqualsZero(ref start, i).ExtractMostSignificantBits() << i;
+        }
+
+        return ~zeros;
+
+        // The comparison results (all ones or zero) of 16 coefficients narrowed to 16 bytes
+        static Vector128<byte> EqualsZero(ref short start, int index) =>
+            Vector128.Narrow(Vector128.Equals(Load(ref start, index), Vector128<short>.Zero), Vector128.Equals(Load(ref start, index + 8), Vector128<short>.Zero)).AsByte();
+
+        static Vector128<short> Load(ref short start, int index) => unsafe(Vector128.LoadUnsafe(ref start, (nuint)index));
+    }
+
+    /// <summary>The scalar reference of <see cref="GetNonZeroMask(ReadOnlySpan{short})"/>.</summary>
+    internal static ulong GetNonZeroMaskScalar(ReadOnlySpan<short> coefficients)
+    {
+        var mask = 0UL;
+        for (var k = 0; k < 64; k++)
+        {
+            if (coefficients[k] != 0)
+            {
+                mask |= 1UL << k;
+            }
+        }
+
+        return mask;
+    }
+
+    /// <summary>The scalar reference of <see cref="GetNonZeroMask(ReadOnlySpan{int})"/>.</summary>
     internal static ulong GetNonZeroMaskScalar(ReadOnlySpan<int> coefficients)
     {
         var mask = 0UL;
@@ -708,7 +740,6 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
 
         // With optimized tables, the symbol counts of the luminance DC and AC tables, then of the chrominance ones
         private readonly uint[][] _histograms = [];
-        private readonly int[] _blockCoefficients = new int[64];
         private JpegHuffmanEncoder _luminanceDc;
         private JpegHuffmanEncoder _luminanceAc;
         private JpegHuffmanEncoder? _chrominanceDc;
@@ -1583,28 +1614,21 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         {
             var coefficients = worker.Coefficients.AsSpan();
             JpegForwardDct.TransformAndQuantize(samples, stride, divisors, worker.Scratch, coefficients);
-            EncodeBlock(ref writer, coefficients, component, dc, ac);
+            EncodeBlock<int>(ref writer, coefficients, component, dc, ac);
         }
 
         /// <summary>Codes an MCU from its stored coefficients: those of the baseline batch, or of the whole image with optimized tables.</summary>
         private void EncodeStoredMcu(int row, int mcuX, ref JpegBlockBitWriter writer)
         {
-            var coefficients = _blockCoefficients.AsSpan();
             for (var block = 0; block < _blocksPerMcu; block++)
             {
-                LoadStoredBlock(row, mcuX, block, coefficients);
-
                 var component = block < _h * _v ? 0 : block - (_h * _v) + 1;
-                EncodeBlock(ref writer, coefficients, component, component == 0 ? _luminanceDc : _chrominanceDc!, component == 0 ? _luminanceAc : _chrominanceAc!);
+                EncodeBlock<short>(ref writer, GetStoredBlock(row, mcuX, block), component, component == 0 ? _luminanceDc : _chrominanceDc!, component == 0 ? _luminanceAc : _chrominanceAc!);
             }
         }
 
-        /// <summary>Copies the stored coefficients of a block of an MCU: those of the baseline batch, or of the whole image with optimized tables.</summary>
-        private void LoadStoredBlock(int row, int mcuX, int block, Span<int> coefficients)
-        {
-            var stored = _batch is not null ? GetBatchBlock(row, mcuX, block) : GetPlaneBlock(row, mcuX, block);
-            WidenCoefficients(stored, coefficients);
-        }
+        /// <summary>Gets the stored coefficients of a block of an MCU: those of the baseline batch, or of the whole image with optimized tables.</summary>
+        private Span<short> GetStoredBlock(int row, int mcuX, int block) => _batch is not null ? GetBatchBlock(row, mcuX, block) : GetPlaneBlock(row, mcuX, block);
 
         /// <summary>
         /// Codes the baseline scan with tables computed from the image (<see cref="JpegEncoder.OptimizeHuffmanTables"/>):
@@ -1623,7 +1647,6 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                     goto case ScanPass.Count;
 
                 case ScanPass.Count:
-                    var coefficients = _blockCoefficients.AsSpan();
                     for (var mcuX = 0; mcuX < _mcusX; mcuX++)
                     {
                         if (IsRestartDue((_mcuRow * _mcusX) + mcuX))
@@ -1633,8 +1656,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
 
                         for (var block = 0; block < _blocksPerMcu; block++)
                         {
-                            LoadStoredBlock(_mcuRow, mcuX, block, coefficients);
-                            CountBlock(coefficients, block < _h * _v ? 0 : block - (_h * _v) + 1);
+                            CountBlock(GetStoredBlock(_mcuRow, mcuX, block), block < _h * _v ? 0 : block - (_h * _v) + 1);
                         }
                     }
 
@@ -1689,7 +1711,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         }
 
         /// <summary>Counts the symbols that <see cref="EncodeBlock"/> codes for a block of a component, in the tables of the component.</summary>
-        private void CountBlock(ReadOnlySpan<int> coefficients, int component)
+        private void CountBlock(ReadOnlySpan<short> coefficients, int component)
         {
             var dc = _histograms[component == 0 ? 0 : 2];
             var ac = _histograms[component == 0 ? 1 : 3];
@@ -1727,16 +1749,20 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
         /// The bits go through a <see cref="JpegBlockBitWriter"/>, which stuffs the run of MCUs once it is coded: the
         /// destination has <see cref="MaxBlockBytes"/> per block and <see cref="JpegBlockBitWriter.SpeculativeBytes"/> bytes.
         /// </remarks>
-        private void EncodeBlock(ref JpegBlockBitWriter bits, Span<int> coefficients, int component, JpegHuffmanEncoder dc, JpegHuffmanEncoder ac)
+        /// <typeparam name="T">The type of the coefficients: <see cref="int"/> when they come from the forward DCT, <see cref="short"/> when they are stored.</typeparam>
+        private void EncodeBlock<T>(ref JpegBlockBitWriter bits, ReadOnlySpan<T> coefficients, int component, JpegHuffmanEncoder dc, JpegHuffmanEncoder ac)
+            where T : unmanaged, IBinaryInteger<T>
         {
             // DC: difference with the previous block of the component, size category then the additional bits (T.81 F.1.2.1)
-            var difference = coefficients[0] - _predictions[component];
-            _predictions[component] = coefficients[0];
+            var first = int.CreateTruncating(coefficients[0]);
+            var difference = first - _predictions[component];
+            _predictions[component] = first;
             WriteValue(ref bits, dc, symbolHigh: 0, difference);
 
             // AC: run lengths of zeros (ZRL for 16), EOB after the last nonzero coefficient (T.81 F.1.2.2); the nonzero
             // coefficients are visited through a bit mask
-            var mask = GetNonZeroMask(coefficients) & ~1UL;
+            var nonZero = typeof(T) == typeof(short) ? GetNonZeroMask(unsafe(MemoryMarshal.Cast<T, short>(coefficients))) : GetNonZeroMask(unsafe(MemoryMarshal.Cast<T, int>(coefficients)));
+            var mask = nonZero & ~1UL;
             var previous = 0;
             while (mask != 0)
             {
@@ -1749,7 +1775,7 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                     run -= 16;
                 }
 
-                WriteValue(ref bits, ac, run, coefficients[k]);
+                WriteValue(ref bits, ac, run, int.CreateTruncating(coefficients[k]));
                 previous = k;
             }
 
@@ -1757,7 +1783,6 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
             {
                 WriteSymbol(ref bits, ac, 0x00);
             }
-
         }
 
         /// <summary>

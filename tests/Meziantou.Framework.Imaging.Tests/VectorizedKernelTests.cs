@@ -1030,6 +1030,10 @@ public sealed class VectorizedKernelTests
             }
 
             Assert.Equal(JpegEncoderCodec.GetNonZeroMaskScalar(coefficients), JpegEncoderCodec.GetNonZeroMask(coefficients));
+
+            // The same values stored as 16-bit coefficients (truncated)
+            var stored = Array.ConvertAll(coefficients, value => (short)value);
+            Assert.Equal(JpegEncoderCodec.GetNonZeroMaskScalar(stored), JpegEncoderCodec.GetNonZeroMask(stored));
         }
     }
 

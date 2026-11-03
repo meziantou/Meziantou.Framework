@@ -311,6 +311,28 @@ internal sealed class JpegEntropyReader : IDisposable
             return value + (((value - (1 << (size - 1))) >> 31) & ((-1 << size) + 1));
         }
 
+        /// <inheritdoc cref="JpegEntropyReader.ReadBits"/>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public int ReadBits(int count)
+        {
+            Debug.Assert(count is > 0 and <= 16 && _count >= count);
+            var value = (int)(_bits >> (64 - count));
+            _bits <<= count;
+            _count -= count;
+            return value;
+        }
+
+        /// <summary>Reads <paramref name="count"/> bits (1 to 32, after a <see cref="Refill"/>) as an unsigned value.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public ulong PeekAndSkip(int count)
+        {
+            Debug.Assert(count is > 0 and <= 32 && _count >= count);
+            var value = _bits >> (64 - count);
+            _bits <<= count;
+            _count -= count;
+            return value;
+        }
+
         /// <summary>Decodes a code longer than <see cref="JpegHuffmanTable.FastLookupBits"/>, without a call.</summary>
         /// <exception cref="InvalidImageContentException">The bits are not a code of the table.</exception>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -164,12 +164,14 @@ internal static class BundledFonts
     }
 
     /// <summary>
-    /// The bundled family of a generic font family, or null when there is none (<c>cursive</c>, <c>fantasy</c>, <c>emoji</c>,
-    /// <c>fangsong</c>: the font matching falls back to the default family).
+    /// The bundled family of a generic font family, or null when there is none (<c>emoji</c>, <c>fangsong</c>: the font
+    /// matching falls back to the default family). There is no cursive nor fantasy font: as fontconfig on a system without
+    /// such fonts, <c>cursive</c> and <c>fantasy</c> are the default (serif) family, so that they are not skipped for the next
+    /// families of the list (WPT css/css-fonts/generic-family-lang-attr-cascade.html).
     /// </summary>
     public static string? GetGenericFamily(string generic) => generic switch
     {
-        "serif" or "ui-serif" => SerifFamily,
+        "serif" or "ui-serif" or "cursive" or "fantasy" => SerifFamily,
         "sans-serif" or "system-ui" or "ui-sans-serif" or "ui-rounded" => SansSerifFamily,
         "monospace" or "ui-monospace" => MonospaceFamily,
         "math" => MathFamily,

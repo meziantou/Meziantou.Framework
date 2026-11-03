@@ -168,6 +168,11 @@ internal sealed partial class InlineLayoutAlgorithm
         // when no other one fits; the last emergency opportunity of overflow-wrap
         var phrase = default(BreakCandidate);
         var emergency = default(BreakCandidate);
+
+        // https://drafts.csswg.org/css-text-4/#wrap-inside: the last opportunity that fits inside the boxes of wrap-inside: avoid,
+        // by nesting depth (an opportunity of an outer box is taken before the ones of an inner box)
+        var wrapAvoidDepths = mode == IntrinsicSizeMode.MinContent ? null : GetWrapAvoidDepths();
+        BreakCandidate[]? avoided = null;
         var pendingItem = -1;
         var pendingWidth = 0d;
         var pendingTrailing = 0d;
@@ -249,7 +254,7 @@ internal sealed partial class InlineLayoutAlgorithm
                         {
                             // https://drafts.csswg.org/css2/#float-position: the float is placed on the current line when it fits next to
                             // the content before it (which must fit on the line), else below the line
-                            if (width - trailing + clonedEnd > availableSize && hasContent && (best.Exists || phrase.Exists || emergency.Exists || DisplacesAll(width - trailing + clonedEnd)))
+                            if (width - trailing + clonedEnd > availableSize && hasContent && (best.Exists || HasAvoided() || phrase.Exists || emergency.Exists || DisplacesAll(width - trailing + clonedEnd)))
                                 return ToFallbackEnd();
 
                             return new LineEnd { Item = index, Position = item.Start, StopsAtFloat = true, ContentStart = contentStart, Width = width - trailing + (hasCharacters ? clonedEnd : 0) };
@@ -265,7 +270,7 @@ internal sealed partial class InlineLayoutAlgorithm
                     {
                         var closeEdge = GetLineEndSpacing(lastContent, lastContentItem, item.Start, isHyphenated: false, isLastLine: false);
                         var closeWidth = width - trailing + closeEdge.Unconditional + closeEdge.Conditional;
-                        if (closeWidth > availableSize && (best.Exists || phrase.Exists || emergency.Exists || DisplacesAll(closeWidth)))
+                        if (closeWidth > availableSize && (best.Exists || HasAvoided() || phrase.Exists || emergency.Exists || DisplacesAll(closeWidth)))
                             return ToFallbackEnd();
                     }
 
@@ -282,7 +287,7 @@ internal sealed partial class InlineLayoutAlgorithm
                     // The content before the forced break must fit: else the line breaks at the last opportunity that fits
                     var forcedEdge = GetLineEndSpacing(lastContent, lastContentItem, item.Start, isHyphenated: false, isLastLine: false);
                     var forcedWidth = width - trailing + clonedEnd + forcedEdge.Unconditional + forcedEdge.Conditional;
-                    if (forcedWidth > availableSize && hasContent && (best.Exists || phrase.Exists || emergency.Exists || DisplacesAll(forcedWidth)))
+                    if (forcedWidth > availableSize && hasContent && (best.Exists || HasAvoided() || phrase.Exists || emergency.Exists || DisplacesAll(forcedWidth)))
                         return ToFallbackEnd();
 
                     var forcedConditional = mode == IntrinsicSizeMode.MaxContent ? trailingPreserved : 0;
@@ -351,7 +356,7 @@ internal sealed partial class InlineLayoutAlgorithm
                     // an atomic inline whose negative margin brings it back in the available space (as in Blink and WebKit, WPT
                     // css/CSS2/linebox/inline-negative-margin-001.html); when it can be broken earlier, it is, as before the end of
                     // an inline box with a negative margin
-                    var fitsWithNegativeMargin = item.InlineSize < 0 && !best.Exists && !phrase.Exists && !emergency.Exists && mode == IntrinsicSizeMode.None
+                    var fitsWithNegativeMargin = item.InlineSize < 0 && !best.Exists && !HasAvoided() && !phrase.Exists && !emergency.Exists && mode == IntrinsicSizeMode.None
                         && width - trailing > availableSize && width - trailing + item.InlineSize <= availableSize;
                     if (!fitsWithNegativeMargin && CheckOpportunity(index, item.Start, out var atomicEnd))
                         return atomicEnd;
@@ -491,7 +496,7 @@ internal sealed partial class InlineLayoutAlgorithm
         // The end of the content: the last line, unless it does not fit
         var edge = GetLineEndSpacing(lastContent, lastContentItem, _length, isHyphenated: false, isLastLine: true);
         var contentWidth = width - trailing + edge.Unconditional + GetRemovedSpaceShapingCorrection(lastContent, lastContentItem, isFirstLine);
-        if (contentWidth + edge.Conditional > availableSize && hasContent && (best.Exists || phrase.Exists || emergency.Exists || DisplacesAll(contentWidth + edge.Conditional)))
+        if (contentWidth + edge.Conditional > availableSize && hasContent && (best.Exists || HasAvoided() || phrase.Exists || emergency.Exists || DisplacesAll(contentWidth + edge.Conditional)))
             return ToFallbackEnd();
 
         return new LineEnd { Item = items.Length, Position = _length, ContentStart = contentStart, Width = contentWidth + (mode == IntrinsicSizeMode.MaxContent ? trailingPreserved : 0) };
@@ -570,6 +575,16 @@ internal sealed partial class InlineLayoutAlgorithm
                     return false;
                 }
             }
+            else if (wrapAvoidDepths is not null && wrapAvoidDepths[position] is > 0 and var depth)
+            {
+                // A break inside a box of wrap-inside: avoid is taken only when no opportunity of its ancestors fits
+                if (fitWidth <= availableSize)
+                {
+                    avoided ??= new BreakCandidate[MaxWrapAvoidDepth + 1];
+                    avoided[depth] = candidate;
+                    return false;
+                }
+            }
             else if (fitWidth <= availableSize)
             {
                 best = candidate;
@@ -577,7 +592,7 @@ internal sealed partial class InlineLayoutAlgorithm
             }
 
             // The content does not fit: break at the last opportunity that fits, or here
-            end = best.Exists || phrase.Exists || emergency.Exists || DisplacesAll(fitWidth) ? ToFallbackEnd() : ToLineEnd(candidate);
+            end = best.Exists || HasAvoided() || phrase.Exists || emergency.Exists || DisplacesAll(fitWidth) ? ToFallbackEnd() : ToLineEnd(candidate);
             return true;
         }
 
@@ -590,10 +605,21 @@ internal sealed partial class InlineLayoutAlgorithm
         // last emergency one; with the block
         // overflow ellipsis, "If this results in the entire contents of the line box being displaced, the line box is considered
         // to contain a strut": the line is empty
+        bool HasAvoided() => avoided is not null && Array.Exists(avoided, candidate => candidate.Exists);
+
         LineEnd ToFallbackEnd()
         {
             if (best.Exists)
                 return ToLineEnd(best);
+
+            if (avoided is not null)
+            {
+                foreach (var candidate in avoided)
+                {
+                    if (candidate.Exists)
+                        return ToLineEnd(candidate);
+                }
+            }
 
             if (phrase.Exists)
                 return ToLineEnd(phrase);
@@ -982,5 +1008,48 @@ internal sealed partial class InlineLayoutAlgorithm
                 or UnicodeCategory.OpenPunctuation or UnicodeCategory.ClosePunctuation or UnicodeCategory.InitialQuotePunctuation or UnicodeCategory.FinalQuotePunctuation
                 or UnicodeCategory.OtherPunctuation);
         }
+    }
+    /// <summary>The deepest nesting of the boxes of <c>wrap-inside: avoid</c> whose opportunities are told apart (the deeper ones are at this depth).</summary>
+    private const int MaxWrapAvoidDepth = 15;
+
+    /// <summary>The number of boxes of <c>wrap-inside: avoid</c> that contain each soft wrap opportunity (see <see cref="GetWrapAvoidDepths"/>).</summary>
+    private byte[]? _wrapAvoidDepths;
+    private bool _wrapAvoidDepthsComputed;
+
+    /// <summary>
+    /// Returns, for each position of the text, the number of inline boxes of <c>wrap-inside: avoid</c>
+    /// (https://drafts.csswg.org/css-text-4/#wrap-inside) that contain the soft wrap opportunity before it: the opportunities at
+    /// the start and at the end of a box are outside of it. Returns null when there is no such box.
+    /// </summary>
+    private byte[]? GetWrapAvoidDepths()
+    {
+        if (_wrapAvoidDepthsComputed)
+            return _wrapAvoidDepths;
+
+        _wrapAvoidDepthsComputed = true;
+        _wrapAvoidDepths = null;
+        var openStarts = new Stack<int>();
+        foreach (ref readonly var item in Items)
+        {
+            if (item.Kind is not (InlineItemKind.OpenTag or InlineItemKind.CloseTag) || item.Box.Style.GetComputedValue("wrap-inside") != "avoid")
+                continue;
+
+            if (item.Kind == InlineItemKind.OpenTag)
+            {
+                openStarts.Push(item.Start);
+                continue;
+            }
+
+            if (!openStarts.TryPop(out var start))
+                continue;
+
+            _wrapAvoidDepths ??= new byte[_length + 1];
+            for (var position = start + 1; position < item.Start; position++)
+            {
+                _wrapAvoidDepths[position] = (byte)Math.Min(MaxWrapAvoidDepth, _wrapAvoidDepths[position] + 1);
+            }
+        }
+
+        return _wrapAvoidDepths;
     }
 }

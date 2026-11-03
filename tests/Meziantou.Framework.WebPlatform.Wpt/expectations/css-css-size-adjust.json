@@ -6,10 +6,7 @@
     "total": 2
   },
   "css/css-size-adjust/parsing/text-size-adjust-computed.html": {
-    "total": 6,
-    "failures": {
-      "Property text-size-adjust value 'none'": "FAIL"
-    }
+    "total": 6
   },
   "css/css-size-adjust/parsing/text-size-adjust-invalid.html": {
     "total": 4

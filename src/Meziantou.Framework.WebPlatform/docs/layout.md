@@ -1447,7 +1447,8 @@ an atomic inline laid out while its parent collects its items rents another inst
   content edge of the block container (the indentation and the floats included). `white-space-trim`
   ([§4.2](https://drafts.csswg.org/css-text-4/#white-space-trim)) is applied while the text is collected: `discard-inner`
   discards the white space (and the preserved segment breaks) at the start and the end of a box, `discard-before`/`discard-after`
-  the collapsible spaces before/after it (no browser implements it).
+  the collapsible spaces before/after it, also for an atomic inline that is a block container (an `inline-block`, not a
+  replaced element nor an `inline-flex`) (no browser implements it).
 - **Text transformation**: `text-transform` (`TextTransformer`, shared with `innerText`) is applied to the collapsed text,
   before the line breaking and the shaping, character by character with the characters around it in its text node (a
   character may be transformed with the ones that follow it: a surrogate pair, a Greek letter with its combining accents):
@@ -1535,7 +1536,10 @@ an atomic inline laid out while its parent collects its items rents another inst
   the hyphen of a soft hyphen). The content fits with a tolerance of 1/64px, the layout unit of the browsers (the used sizes
   are rounded: six inline-blocks of 16.66666667% fit in their container); the flex items are collected into flex lines
   with the same tolerance. When nothing fits, the line breaks at the first opportunity (the content overflows), or at
-  the last emergency opportunity that fits with `overflow-wrap: anywhere | break-word`. The starts of the inline boxes at a
+  the last emergency opportunity that fits with `overflow-wrap: anywhere | break-word`. `wrap-inside: avoid`
+  ([§5.4](https://drafts.csswg.org/css-text-4/#wrap-inside), `GetWrapAvoidDepths`): an opportunity inside an inline box
+  with `avoid` (not at its start nor at its end) is taken only when no opportunity outside of it fits, and one inside nested
+  `avoid` boxes only when none of an outer box fits (the min-content size is not affected). The starts of the inline boxes at a
   break go to the next line (with the out-of-flow boxes after them), and so do the out-of-flow boxes after collapsible spaces
   (the opportunity is after the spaces), unless a collapsed space follows them; the other out-of-flow boxes at a break and the ends of
   the inline boxes (also after a forced break) stay on the line, as in the browsers; an empty inline box (its content collapsed
@@ -1737,7 +1741,8 @@ an atomic inline laid out while its parent collects its items rents another inst
   As in the browsers, the lines of a list item do not use these quirks ([whatwg/quirks#38](https://github.com/whatwg/quirks/issues/38)). The emphasis marks ([CSS Text Decoration §3](https://drafts.csswg.org/css-text-decor-4/#emphasis-marks),
   `TextLayoutStyle.EmphasisMarks`) extend the layout bounds of the boxes with text directly in them by half their font size
   outside of their content area, on the side of `text-emphasis-position` (as in the browsers: the line is taller when the
-  half-leading does not leave room for them).
+  half-leading does not leave room for them); `auto` is `under right` for Chinese (the content language `zh`) and `over right`
+  otherwise (`CssPropertyRules.GetUsedTextEmphasisPosition`).
 - **Ruby** ([CSS Ruby 1](https://drafts.csswg.org/css-ruby-1/#ruby-layout), `InlineLayoutAlgorithm.Ruby.cs`, as Blink does with its
   "ruby columns"):
   - *Collection*: the children of a ruby container are split in ruby segments (a base container, or a sequence of bases with
@@ -5093,7 +5098,7 @@ something asks for the display list (`LayoutEngine.PaintCount` for the tests).
   (the offset is added to the alphabetic baseline, to the underline position of the font for `from-font`, or to the edge of
   the text for `under`, `left` and `right`), `text-decoration-thickness`
   (floored to device pixels as in Blink; the overline is outside of the ascent: a thick overline grows away from the text),
-  the styles (dashes anchored to the coordinates so the fragments are continuous,
+  the styles (dashes and waves anchored to the coordinates so the fragments are continuous,
   wavy as quadratic curves), `text-decoration-skip-ink` (the glyph bounding boxes that cross the line, extended by its
   thickness, at most 13px as in Chrome, are clipped out, their union snapped to the device pixels; also for the sideways
   glyphs of vertical text, not for the upright ones, as in the browsers; the value of the element of the text applies, not
@@ -5535,8 +5540,9 @@ folder for their sources and licenses), loaded on first use and shared by all th
   installed font fallback (for the mathematical symbols and the combining marks that the other bundled fonts do not have).
 
 `BundledFonts.GetGenericFamily` maps the generic families to the bundled families (`ui-serif`, `system-ui`,
-`ui-sans-serif`, `ui-rounded` and `ui-monospace` included) and `math` to STIX Two Math; `cursive`, `fantasy`, `emoji` and
-`fangsong` have no bundled font. As the metric aliases of fontconfig (which the browsers use on Linux), a family that is
+`ui-sans-serif`, `ui-rounded` and `ui-monospace` included) and `math` to STIX Two Math; `cursive` and `fantasy` are mapped
+to the serif family (as fontconfig on a system without cursive and fantasy fonts: they are not skipped for the next families
+of the list); `emoji` and `fangsong` have no bundled font. As the metric aliases of fontconfig (which the browsers use on Linux), a family that is
 neither bundled nor installed by the host and that a bundled family is metric-compatible with uses it
 (`BundledFonts.GetMetricCompatibleFamily`): Arimo for `Arial` and `Helvetica`, Tinos for `Times New Roman` and `Times`,
 Cousine for `Courier New` and `Courier`, so that a page that names these fonts is laid out with their metrics (an

@@ -67,7 +67,7 @@ internal sealed class TailoredCollation
     public bool IsShiftedByDefault { get; }
 
     /// <summary>Gets the permutation of the primary leads of <c>[reorder]</c>, or null.</summary>
-    public ushort[]? ReorderTable { get; }
+    public CollationReorderTable? ReorderTable { get; }
 
     /// <summary>Gets the collation of tailoring rules (built once per process).</summary>
     public static TailoredCollation Get(string rules) => ByRules.GetOrAdd(rules, static r => new Lazy<TailoredCollation>(() => new TailoredCollation(r))).Value;
@@ -221,7 +221,7 @@ internal sealed class StringCollator
     private readonly RootCollation _root;
     private readonly CollatorSettings _settings;
     private readonly bool _backwards;
-    private readonly ushort[]? _reorder;
+    private readonly CollationReorderTable? _reorder;
     private readonly uint _variableTop;
     private readonly uint _firstVariable;
 

@@ -2902,6 +2902,28 @@ public sealed class JsEngineTests
     }
 
     [Fact]
+    public void Documentation_IntlWarmUp()
+    {
+        #region JavaScriptEngine_IntlWarmUp
+        // At startup: load the data of the locales that the scripts will use, for every engine of the process
+        using (var warmUp = new JsEngine())
+        {
+            warmUp.CreateRealm().Execute("""
+                for (const locale of ['en', 'fr', 'zh']) {
+                  new Intl.Collator(locale).compare('a', 'b');
+                  new Intl.NumberFormat(locale).format(1);
+                  new Intl.DateTimeFormat(locale).format(0);
+                }
+                """);
+        }
+
+        // Later: the engines of the requests reuse the data
+        using var engine = new JsEngine();
+        Assert.Equal("a,b,c", engine.CreateRealm().Execute("['c', 'a', 'b'].sort(new Intl.Collator('fr').compare).join()").AsString());
+        #endregion
+    }
+
+    [Fact]
     public void Documentation_Clock()
     {
         #region JavaScriptEngine_Clock

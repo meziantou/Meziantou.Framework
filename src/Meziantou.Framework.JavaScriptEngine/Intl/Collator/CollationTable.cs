@@ -99,7 +99,7 @@ internal sealed class CollationTable
 
     private static bool TryMatchPrefix(CollationMap map, ReadOnlySpan<int> codePoints, int index, out ReadOnlySpan<ulong> elements, out int matchLength)
     {
-        foreach (var mapping in map.GetPrefixMappings(codePoints[index]) ?? [])
+        foreach (var mapping in map.GetPrefixMappings(codePoints[index]))
         {
             var prefix = mapping.Prefix;
             var suffix = mapping.Suffix;

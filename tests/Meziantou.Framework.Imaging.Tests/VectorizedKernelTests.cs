@@ -678,6 +678,98 @@ public sealed class VectorizedKernelTests
     }
 
     [Fact]
+    public void FloatingPointConversionsMatchTheScalarReference()
+    {
+        CheckFloatConversion<RgbaFloat, Rgba32>();
+        CheckFloatConversion<RgbaFloat, Rgba64>();
+        CheckFloatConversion<RgbaFloat, Rgb24>();
+        CheckFloatConversion<RgbaFloat, Gray8>();
+        CheckFloatConversion<RgbaFloat, RgbaHalf>();
+        CheckFloatConversion<RgbaHalf, Rgba32>();
+        CheckFloatConversion<RgbaHalf, Rgba64>();
+        CheckFloatConversion<RgbaHalf, Rgb48>();
+        CheckFloatConversion<RgbaHalf, Gray16>();
+    }
+
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    private static void CheckFloatConversion<TSource, TDestination>()
+        where TSource : unmanaged
+        where TDestination : unmanaged
+    {
+        var random = new Random(typeof(TSource).Name.Length + (37 * typeof(TDestination).Name.Length));
+        var policies = new[] { FloatSampleConversion.Strict, FloatSampleConversion.Clipping };
+        Rgba64?[] backgrounds = [null, new Rgba64(0x1234, 0xABCD, 0x00FF, ushort.MaxValue)];
+        for (var length = 0; length <= 40; length++)
+        {
+            for (var round = 0; round < 8; round++)
+            {
+                var samples = new float[length * 4];
+                for (var i = 0; i < samples.Length; i++)
+                {
+                    samples[i] = round switch
+                    {
+                        // In [0, 1], opaque or not
+                        0 or 1 => (i & 3) == 3 && round == 0 ? 1f : (float)random.NextDouble(),
+
+                        // The ties of 8 and 16 bits, and the floats next to them
+                        2 => BitConverter.Int32BitsToSingle(BitConverter.SingleToInt32Bits((float)((random.Next(255) + 0.5) / (random.Next(2) == 0 ? 255 : 65535))) + random.Next(-1, 2)),
+
+                        // Mostly in [0, 1], with one sample out of range here and there
+                        _ => random.Next(64) switch
+                        {
+                            0 => float.NaN,
+                            1 => float.PositiveInfinity,
+                            2 => -0f,
+                            3 => 1.0000001f,
+                            4 => -1e-30f,
+                            5 => 70000f,
+                            6 => -65519f,
+                            7 => 1e-40f,
+                            _ => (i & 3) == 3 && round > 4 ? 1f : (float)random.NextDouble(),
+                        },
+                    };
+                }
+
+                var source = new TSource[length];
+                if (typeof(TSource) == typeof(RgbaFloat))
+                {
+                    samples.AsSpan().CopyTo(unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<TSource, float>(source.AsSpan())));
+                }
+                else
+                {
+                    var halves = unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<TSource, Half>(source.AsSpan()));
+                    for (var i = 0; i < samples.Length; i++)
+                    {
+                        halves[i] = (Half)samples[i];
+                    }
+                }
+
+                foreach (var policy in policies)
+                {
+                    foreach (var background in backgrounds)
+                    {
+                        var expected = new TDestination[length + 2];
+                        var actual = new TDestination[length + 2];
+                        var expectedBytes = unsafe(System.Runtime.InteropServices.MemoryMarshal.AsBytes(expected.AsSpan()));
+                        var actualBytes = unsafe(System.Runtime.InteropServices.MemoryMarshal.AsBytes(actual.AsSpan()));
+                        expectedBytes.Fill(0xA5);
+                        actualBytes.Fill(0xA5);
+                        var expectedError = Record.Exception(() => PixelConverter.ConvertRowScalar<TSource, TDestination>(source, expected, background, floats: policy));
+                        var actualError = Record.Exception(() => PixelConverter.ConvertRow<TSource, TDestination>(source, actual, background, floats: policy));
+                        Assert.Equal(expectedError?.GetType(), actualError?.GetType());
+                        Assert.Equal(expectedError?.Message, actualError?.Message);
+                        Assert.Equal(expectedBytes.ToArray(), actualBytes.ToArray());
+
+                        // The validation of a conversion plan gives the error of the conversion
+                        var planError = Record.Exception(() => PixelConverter.ValidateFloatRow<TSource>(source, PixelFormats.GetPixelFormat<TSource>(), PixelFormats.GetPixelFormat<TDestination>(), background, ImageFormat.Unknown, policy));
+                        Assert.Equal(expectedError?.Message, planError?.Message);
+                    }
+                }
+            }
+        }
+    }
+
+    [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void JpegInverseDctMatchesTheScalarReferenceBitForBit()
     {

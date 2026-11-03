@@ -111,7 +111,7 @@ internal static partial class PixelConverter
 
         if (IsFloat<TSource>() || IsFloat<TDestination>())
         {
-            ConvertFloatRow(source, destination, background, sourceFormat, destinationFormat, format, floats ?? FloatSampleConversion.Strict);
+            ConvertFloatRow(source, destination, background, sourceFormat, destinationFormat, format, floats ?? FloatSampleConversion.Strict, useVectors);
             return;
         }
 

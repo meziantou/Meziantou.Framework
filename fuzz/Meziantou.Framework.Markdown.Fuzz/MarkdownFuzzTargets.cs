@@ -155,10 +155,10 @@ public static class MarkdownFuzzTargets
     {
         var (extensions, flags, markdown) = ReadInput(data);
         var pipeline = GetPipeline(extensions, flags, trackTrivia: true, minimumThresholds: false);
-        if (!TryParse(markdown, pipeline, out var document))
+        if (!TryParse(markdown, pipeline, out var document) || !TryWriteRoundtrip(document, pipeline, out var written))
             return;
 
-        FuzzAssert.Equal(markdown, WriteRoundtrip(document, pipeline), "The document parsed with trivia is not written back as it was parsed");
+        FuzzAssert.Equal(markdown, written, "The document parsed with trivia is not written back as it was parsed");
     }
 
     // An input is the extensions and the flags of the other targets, the number of edits, three bytes for each edit (the index of
@@ -183,7 +183,7 @@ public static class MarkdownFuzzTargets
         // the inlines, which the edits are applied to in both documents
         var triviaObjects = GetEditableObjects(triviaDocument);
         var expectedObjects = GetEditableObjects(expectedDocument);
-        if (triviaObjects.Count == 0 || !triviaObjects.Select(obj => obj.GetType()).SequenceEqual(expectedObjects.Select(obj => obj.GetType())) || WriteRoundtrip(triviaDocument, triviaPipeline) != markdown)
+        if (triviaObjects.Count == 0 || !triviaObjects.Select(obj => obj.GetType()).SequenceEqual(expectedObjects.Select(obj => obj.GetType())) || !TryWriteRoundtrip(triviaDocument, triviaPipeline, out var written) || written != markdown)
             return;
 
         // The trivia can change the objects that the attributes of the text are attached to. A grid table is written as it is in
@@ -358,6 +358,22 @@ public static class MarkdownFuzzTargets
 
                 attributes.Id = null;
                 return true;
+        }
+    }
+
+    // The renderers limit the nesting depth of the inlines, which the parser allows to be deeper, such as the unresolved link
+    // delimiters of a run of '[' that nest the inlines after them
+    private static bool TryWriteRoundtrip(MarkdownDocument document, MarkdownPipeline pipeline, [NotNullWhen(true)] out string? markdown)
+    {
+        try
+        {
+            markdown = WriteRoundtrip(document, pipeline);
+            return true;
+        }
+        catch (ArgumentException ex) when (IsDepthLimitExceeded(ex))
+        {
+            markdown = null;
+            return false;
         }
     }
 

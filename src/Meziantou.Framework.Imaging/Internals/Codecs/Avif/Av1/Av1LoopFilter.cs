@@ -392,10 +392,19 @@ internal ref struct Av1LoopFilter
             NarrowFilterPairs(v, output, hevMask, useNarrow, bitDepth);
 
         if (useWide8 != Vector128<short>.Zero)
-            WideFilterPairs(v, output, useWide8, plane is 0 ? 3 : 2, plane is 0 ? 0 : 1, log2Size: 3);
+        {
+            if (plane is 0)
+            {
+                WideFilter8Pairs(v, output, useWide8);
+            }
+            else
+            {
+                WideFilter6Pairs(v, output, useWide8);
+            }
+        }
 
         if (useWide16 != Vector128<short>.Zero)
-            WideFilterPairs(v, output, useWide16, 6, 1, log2Size: 4);
+            WideFilter16Pairs(v, output, useWide16);
 
         if (step is 1)
         {
@@ -442,30 +451,121 @@ internal ref struct Av1LoopFilter
         static Vector128<short> Clamp(Vector128<short> value, Vector128<short> min, Vector128<short> max) => Vector128.Min(Vector128.Max(value, min), max);
     }
 
-    // WideFilterVector in 16-bit lanes: the sums are unsigned and wrap, their final values fit 16 bits
-    private static void WideFilterPairs(ReadOnlySpan<Vector128<short>> v, Span<Vector128<short>> output, Vector128<short> selected, int n, int n2, int log2Size)
+    // WideFilterVector in 16-bit lanes: the sums are unsigned and wrap, their final values fit 16 bits. Written out for the
+    // filters of 8 luma samples (n = 3), of 6 chroma samples (n = 2) and of 16 samples (n = 6), with the taps in locals
+    private static void WideFilter8Pairs(ReadOnlySpan<Vector128<short>> v, Span<Vector128<short>> output, Vector128<short> selected)
     {
-        var wide = Vector128<ushort>.Zero;
-        for (var j = -n; j <= n; j++)
-        {
-            wide += Tap(v, -n + j, n);
-        }
+        v = v[..16];
+        output = output[..16];
+        var p3 = v[4].AsUInt16();
+        var p2 = v[5].AsUInt16();
+        var p1 = v[6].AsUInt16();
+        var p0 = v[7].AsUInt16();
+        var q0 = v[8].AsUInt16();
+        var q1 = v[9].AsUInt16();
+        var q2 = v[10].AsUInt16();
+        var q3 = v[11].AsUInt16();
+        var wide = p3 + p3 + p3 + p2 + p1 + p0 + q0;
+        var narrow = p2;
+        var round = Vector128.Create((ushort)4);
+        output[5] = Vector128.ConditionalSelect(selected, ((wide + narrow + round) >> 3).AsInt16(), output[5]);
+        wide += q1 - p3;
+        narrow += p1 - p2;
+        output[6] = Vector128.ConditionalSelect(selected, ((wide + narrow + round) >> 3).AsInt16(), output[6]);
+        wide += q2 - p3;
+        narrow += p0 - p1;
+        output[7] = Vector128.ConditionalSelect(selected, ((wide + narrow + round) >> 3).AsInt16(), output[7]);
+        wide += q3 - p3;
+        narrow += q0 - p0;
+        output[8] = Vector128.ConditionalSelect(selected, ((wide + narrow + round) >> 3).AsInt16(), output[8]);
+        wide += q3 - p2;
+        narrow += q1 - q0;
+        output[9] = Vector128.ConditionalSelect(selected, ((wide + narrow + round) >> 3).AsInt16(), output[9]);
+        wide += q3 - p1;
+        narrow += q2 - q1;
+        output[10] = Vector128.ConditionalSelect(selected, ((wide + narrow + round) >> 3).AsInt16(), output[10]);
+    }
 
-        var narrow = Vector128<ushort>.Zero;
-        for (var j = -n2; j <= n2; j++)
-        {
-            narrow += Tap(v, -n + j, n);
-        }
+    private static void WideFilter6Pairs(ReadOnlySpan<Vector128<short>> v, Span<Vector128<short>> output, Vector128<short> selected)
+    {
+        v = v[..16];
+        output = output[..16];
+        var p2 = v[5].AsUInt16();
+        var p1 = v[6].AsUInt16();
+        var p0 = v[7].AsUInt16();
+        var q0 = v[8].AsUInt16();
+        var q1 = v[9].AsUInt16();
+        var q2 = v[10].AsUInt16();
+        var wide = p2 + p2 + p1 + p0 + q0;
+        var narrow = p2 + p1 + p0;
+        var round = Vector128.Create((ushort)4);
+        output[6] = Vector128.ConditionalSelect(selected, ((wide + narrow + round) >> 3).AsInt16(), output[6]);
+        wide += q1 - p2;
+        narrow += q0 - p2;
+        output[7] = Vector128.ConditionalSelect(selected, ((wide + narrow + round) >> 3).AsInt16(), output[7]);
+        wide += q2 - p2;
+        narrow += q1 - p1;
+        output[8] = Vector128.ConditionalSelect(selected, ((wide + narrow + round) >> 3).AsInt16(), output[8]);
+        wide += q2 - p1;
+        narrow += q2 - p0;
+        output[9] = Vector128.ConditionalSelect(selected, ((wide + narrow + round) >> 3).AsInt16(), output[9]);
+    }
 
-        var round = Vector128.Create((ushort)(1 << (log2Size - 1)));
-        for (var i = -n; i < n; i++)
-        {
-            output[8 + i] = Vector128.ConditionalSelect(selected, ((wide + narrow + round) >> log2Size).AsInt16(), output[8 + i]);
-            wide += Tap(v, i + n + 1, n) - Tap(v, i - n, n);
-            narrow += Tap(v, i + n2 + 1, n) - Tap(v, i - n2, n);
-        }
-
-        static Vector128<ushort> Tap(ReadOnlySpan<Vector128<short>> v, int p, int n) => v[8 + Math.Clamp(p, -(n + 1), n)].AsUInt16();
+    private static void WideFilter16Pairs(ReadOnlySpan<Vector128<short>> v, Span<Vector128<short>> output, Vector128<short> selected)
+    {
+        v = v[..16];
+        output = output[..16];
+        var p6 = v[1].AsUInt16();
+        var p5 = v[2].AsUInt16();
+        var p4 = v[3].AsUInt16();
+        var p3 = v[4].AsUInt16();
+        var p2 = v[5].AsUInt16();
+        var p1 = v[6].AsUInt16();
+        var p0 = v[7].AsUInt16();
+        var q0 = v[8].AsUInt16();
+        var q1 = v[9].AsUInt16();
+        var q2 = v[10].AsUInt16();
+        var q3 = v[11].AsUInt16();
+        var q4 = v[12].AsUInt16();
+        var q5 = v[13].AsUInt16();
+        var q6 = v[14].AsUInt16();
+        var wide = p6 + p6 + p6 + p6 + p6 + p6 + p5 + p4 + p3 + p2 + p1 + p0 + q0;
+        var narrow = p6 + p5 + p4;
+        var round = Vector128.Create((ushort)8);
+        output[2] = Vector128.ConditionalSelect(selected, ((wide + narrow + round) >> 4).AsInt16(), output[2]);
+        wide += q1 - p6;
+        narrow += p3 - p6;
+        output[3] = Vector128.ConditionalSelect(selected, ((wide + narrow + round) >> 4).AsInt16(), output[3]);
+        wide += q2 - p6;
+        narrow += p2 - p5;
+        output[4] = Vector128.ConditionalSelect(selected, ((wide + narrow + round) >> 4).AsInt16(), output[4]);
+        wide += q3 - p6;
+        narrow += p1 - p4;
+        output[5] = Vector128.ConditionalSelect(selected, ((wide + narrow + round) >> 4).AsInt16(), output[5]);
+        wide += q4 - p6;
+        narrow += p0 - p3;
+        output[6] = Vector128.ConditionalSelect(selected, ((wide + narrow + round) >> 4).AsInt16(), output[6]);
+        wide += q5 - p6;
+        narrow += q0 - p2;
+        output[7] = Vector128.ConditionalSelect(selected, ((wide + narrow + round) >> 4).AsInt16(), output[7]);
+        wide += q6 - p6;
+        narrow += q1 - p1;
+        output[8] = Vector128.ConditionalSelect(selected, ((wide + narrow + round) >> 4).AsInt16(), output[8]);
+        wide += q6 - p5;
+        narrow += q2 - p0;
+        output[9] = Vector128.ConditionalSelect(selected, ((wide + narrow + round) >> 4).AsInt16(), output[9]);
+        wide += q6 - p4;
+        narrow += q3 - q0;
+        output[10] = Vector128.ConditionalSelect(selected, ((wide + narrow + round) >> 4).AsInt16(), output[10]);
+        wide += q6 - p3;
+        narrow += q4 - q1;
+        output[11] = Vector128.ConditionalSelect(selected, ((wide + narrow + round) >> 4).AsInt16(), output[11]);
+        wide += q6 - p2;
+        narrow += q5 - q2;
+        output[12] = Vector128.ConditionalSelect(selected, ((wide + narrow + round) >> 4).AsInt16(), output[12]);
+        wide += q6 - p1;
+        narrow += q6 - q3;
+        output[13] = Vector128.ConditionalSelect(selected, ((wide + narrow + round) >> 4).AsInt16(), output[13]);
     }
 
     // The entries of the vectors of the samples are written before they are read: the masks and the filters read the

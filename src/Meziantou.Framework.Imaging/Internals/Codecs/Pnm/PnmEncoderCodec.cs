@@ -234,10 +234,13 @@ internal sealed class PnmEncoderCodec : ImageEncoderCodec
             }
         }
 
-        /// <summary>Converts one source row to the work format, in the row buffer of the session.</summary>
+        /// <summary>Converts one source row to the work format, in the row buffer of the session (or returns the source row when it is already in the work format).</summary>
         private ReadOnlySpan<byte> ConvertRow(ReadOnlySpan<byte> row)
         {
             var source = row[..(_width * PixelFormats.GetBytesPerPixel(_sourceFormat))];
+            if (_sourceFormat == _workFormat)
+                return source;
+
             var band = _band!.Span[..(_width * PixelFormats.GetBytesPerPixel(_workFormat))];
             PixelConverter.ConvertRow(_sourceFormat, source, _workFormat, band, _flattenFromRgba64 ? null : _background, ImageFormat.Pnm);
             return band;

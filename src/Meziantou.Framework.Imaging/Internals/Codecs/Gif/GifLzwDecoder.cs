@@ -1,3 +1,5 @@
+using System.Buffers.Binary;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -145,13 +147,27 @@ internal sealed class GifLzwDecoder : IDisposable
         {
             while (written < output.Length)
             {
-                while (bitCount < _codeSize)
+                if (bitCount < _codeSize)
                 {
-                    if (offset == input.Length)
-                        return written;
+                    if (offset <= input.Length - sizeof(ulong))
+                    {
+                        // Whole bytes up to 56 bits at once, without a branch per byte
+                        bits |= BinaryPrimitives.ReadUInt64LittleEndian(input[offset..]) << bitCount;
+                        offset += (63 - bitCount) >> 3;
+                        bitCount |= 56;
+                    }
+                    else
+                    {
+                        do
+                        {
+                            if (offset == input.Length)
+                                return written;
 
-                    bits |= (ulong)input[offset++] << bitCount;
-                    bitCount += 8;
+                            bits |= (ulong)input[offset++] << bitCount;
+                            bitCount += 8;
+                        }
+                        while (bitCount < _codeSize);
+                    }
                 }
 
                 var code = (int)(bits & (uint)_codeMask);
@@ -285,6 +301,7 @@ internal sealed class GifLzwDecoder : IDisposable
     /// Writes the string of <paramref name="code"/> (<paramref name="length"/> indices) at the start of <paramref name="target"/>
     /// and returns its first index. The indices after the string may be overwritten (they are not written yet).
     /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private static byte Expand(ReadOnlySpan<ushort> heads, ReadOnlySpan<uint> chunks, ReadOnlySpan<byte> chunkBytes, int code, Span<byte> target, int length)
     {
         // The last chunk holds 1 to 4 indices; every chunk before it is full

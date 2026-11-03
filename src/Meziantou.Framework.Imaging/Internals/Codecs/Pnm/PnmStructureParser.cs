@@ -737,8 +737,20 @@ internal sealed class PnmStructureParser : ImageParser<ImageInfo>
             }
         }
 
-        var source = _sourceRow!.Span[..(_header.Width * PixelFormats.GetBytesPerPixel(_header.SourcePixelFormat))];
-        _expander!.ExpandRow(stored, source);
+        var sourceLength = _header.Width * PixelFormats.GetBytesPerPixel(_header.SourcePixelFormat);
+        ReadOnlySpan<byte> source;
+        if (_expander!.IsIdentity)
+        {
+            // The stored row is converted straight into the frame
+            source = stored[..sourceLength];
+        }
+        else
+        {
+            var expanded = _sourceRow!.Span[..sourceLength];
+            _expander.ExpandRow(stored, expanded);
+            source = expanded;
+        }
+
         if (!lease.IsActive)
         {
             lease = decoder.LeaseRows();

@@ -26,11 +26,18 @@ internal sealed class TgaDecoder : IImageDecodeObserver
         _context = context;
     }
 
+    /// <summary>
+    /// Gets a value indicating whether the 24-bit pixels are expanded to opaque <see cref="PixelFormat.Rgba32"/> rows (requested
+    /// so: no conversion) rather than to <see cref="TgaStructureParser.SourcePixelFormat"/>.
+    /// </summary>
+    public bool OpaqueRgbaRows { get; private set; }
+
     public void OnHeaderComplete(TgaStructureParser structure)
     {
         ArgumentNullException.ThrowIfNull(structure);
         _structure = structure;
-        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.Tga, structure.Size, structure.DefaultPixelFormat, structure.SourcePixelFormat, iccProfile: null);
+        OpaqueRgbaRows = structure.Layout.ExpandsToOpaqueRgba && _request.PixelFormat == PixelFormat.Rgba32;
+        _sink = DecodedFrameSink.Create(_context, _request, ImageFormat.Tga, structure.Size, structure.DefaultPixelFormat, OpaqueRgbaRows ? PixelFormat.Rgba32 : structure.SourcePixelFormat, iccProfile: null);
     }
 
     /// <summary>Starts the frame on its first row and leases it; dispose the lease before returning from the parser call.</summary>

@@ -172,7 +172,7 @@ internal sealed class BmpDibLayout
                     // Byte-aligned 8-bit channels (BGRA or BGRX bytes): their expansion to 8 bits is the identity
                     if (hasAlpha)
                     {
-                        PixelConverter.ConvertRow(PixelFormat.Bgra32, source[..(width * 4)], PixelFormat.Rgba32, destination[..(width * 4)]);
+                        PixelConverter.SwapRedAndBlue32(source[..(width * 4)], destination);
                     }
                     else
                     {

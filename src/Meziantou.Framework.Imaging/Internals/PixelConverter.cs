@@ -529,10 +529,35 @@ internal static partial class PixelConverter
         var done = 0;
         if (UseVectors)
         {
-            // 4 pixels per step; the last 4 bytes of a vector are stored unchanged and belong to the next step
             ref var input = ref unsafe(MemoryMarshal.GetReference(source));
             ref var output = ref unsafe(MemoryMarshal.GetReference(destination));
             var order = Vector128.Create((byte)2, 1, 0, 5, 4, 3, 8, 7, 6, 11, 10, 9, 12, 13, 14, 15);
+            if (Avx2.IsSupported && !source.Overlaps(destination))
+            {
+                // Distinct rows only: the wider steps store bytes that the next step loads again
+                if (Avx512Vbmi.IsSupported)
+                {
+                    // 16 pixels per step: 48 of the 64 bytes are exchanged across the whole vector, the others belong to the next step
+                    var order512 = Vector512.Create(SwapRedAndBlue24Order512);
+                    for (; done + Vector512<byte>.Count <= source.Length; done += 48)
+                    {
+                        unsafe { Avx512Vbmi.PermuteVar64x8(Vector512.LoadUnsafe(ref input, (nuint)done), order512).StoreUnsafe(ref output, (nuint)done); }
+                    }
+                }
+
+                // 8 pixels per step: the 32-bit groups of bytes 12 to 27 are moved to the upper lane, each lane is exchanged,
+                // then the lanes are moved together (the last 8 bytes belong to the next step)
+                var spread = Vector256.Create(0, 1, 2, 3, 3, 4, 5, 6);
+                var gather = Vector256.Create(0, 1, 2, 4, 5, 6, 7, 7);
+                var order256 = Vector256.Create(order, order);
+                for (; done + Vector256<byte>.Count <= source.Length; done += 24)
+                {
+                    var pixels = Avx2.PermuteVar8x32(unsafe(Vector256.LoadUnsafe(ref input, (nuint)done)).AsInt32(), spread).AsByte();
+                    unsafe { Avx2.PermuteVar8x32(Avx2.Shuffle(pixels, order256).AsInt32(), gather).AsByte().StoreUnsafe(ref output, (nuint)done); }
+                }
+            }
+
+            // 4 pixels per step; the last 4 bytes of a vector are stored unchanged and belong to the next step
             for (; done + Vector128<byte>.Count <= source.Length; done += 12)
             {
                 unsafe { Vector128.Shuffle(Vector128.LoadUnsafe(ref input, (nuint)done), order).StoreUnsafe(ref output, (nuint)done); }
@@ -542,6 +567,72 @@ internal static partial class PixelConverter
         SwapRedAndBlue24Scalar(source[done..], destination[done..]);
     }
 
+    /// <summary>The byte permutation of <see cref="SwapRedAndBlue24"/> for 64 bytes: 16 pixels exchanged, the last 16 bytes unchanged.</summary>
+    private static ReadOnlySpan<byte> SwapRedAndBlue24Order512 =>
+    [
+        2, 1, 0, 5, 4, 3, 8, 7, 6, 11, 10, 9, 14, 13, 12, 17,
+        16, 15, 20, 19, 18, 23, 22, 21, 26, 25, 24, 29, 28, 27, 32, 31,
+        30, 35, 34, 33, 38, 37, 36, 41, 40, 39, 44, 43, 42, 47, 46, 45,
+        48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63,
+    ];
+
+    /// <summary>
+    /// Exchanges the first and the third byte of every 4-byte pixel (<see cref="Rgba32"/> to <see cref="Bgra32"/> and back),
+    /// without the dispatch of a conversion. <paramref name="destination"/> may be <paramref name="source"/> itself
+    /// (in-place exchange); the rows must not overlap otherwise.
+    /// </summary>
+    /// <param name="source">The pixels; the length is a multiple of 4.</param>
+    /// <param name="destination">At least as many bytes as <paramref name="source"/>.</param>
+    public static void SwapRedAndBlue32(ReadOnlySpan<byte> source, Span<byte> destination)
+    {
+        var count = source.Length / 4;
+        destination = destination[..(count * 4)];
+        var done = UseVectors ? SwapRedAndBlue32Vector(ref unsafe(MemoryMarshal.GetReference(source)), ref unsafe(MemoryMarshal.GetReference(destination)), count) : 0;
+        for (var x = done; x < count; x++)
+        {
+            var offset = 4 * x;
+            var first = source[offset];
+            var third = source[offset + 2];
+            destination[offset] = third;
+            destination[offset + 1] = source[offset + 1];
+            destination[offset + 2] = first;
+            destination[offset + 3] = source[offset + 3];
+        }
+    }
+
+    /// <summary>Exchanges the first and the third byte of the leading whole vectors of 4-byte pixels.</summary>
+    /// <returns>The number of pixels exchanged.</returns>
+    private static int SwapRedAndBlue32Vector(ref byte input, ref byte output, int length)
+    {
+        var i = 0;
+        var order = Vector128.Create((byte)2, 1, 0, 3, 6, 5, 4, 7, 10, 9, 8, 11, 14, 13, 12, 15);
+        if (Avx2.IsSupported)
+        {
+            // The same exchange in each 128-bit lane: 8 or 16 pixels per step
+            var order256 = Vector256.Create(order, order);
+            if (Avx512BW.IsSupported)
+            {
+                var order512 = Vector512.Create(order256, order256);
+                for (; i + 16 <= length; i += 16)
+                {
+                    unsafe { Avx512BW.Shuffle(Vector512.LoadUnsafe(ref input, (nuint)(4 * i)), order512).StoreUnsafe(ref output, (nuint)(4 * i)); }
+                }
+            }
+
+            for (; i + 8 <= length; i += 8)
+            {
+                unsafe { Avx2.Shuffle(Vector256.LoadUnsafe(ref input, (nuint)(4 * i)), order256).StoreUnsafe(ref output, (nuint)(4 * i)); }
+            }
+        }
+
+        for (; i + 4 <= length; i += 4)
+        {
+            unsafe { Vector128.Shuffle(Vector128.LoadUnsafe(ref input, (nuint)(4 * i)), order).StoreUnsafe(ref output, (nuint)(4 * i)); }
+        }
+
+        return i;
+    }
+
     /// <summary>Converts 3-byte pixels to 4-byte pixels, exchanging the first and the third byte, the fourth byte 0xFF (BGR to opaque RGBA).</summary>
     /// <param name="source">The 3-byte pixels.</param>
     /// <param name="destination">At least <c>4 / 3</c> times as many bytes.</param>
@@ -549,20 +640,7 @@ internal static partial class PixelConverter
     {
         var count = source.Length / 3;
         destination = destination[..(count * 4)];
-        var done = 0;
-        if (UseVectors)
-        {
-            // 4 pixels per step: 12 bytes of the 16 loaded
-            ref var input = ref unsafe(MemoryMarshal.GetReference(source));
-            ref var output = ref unsafe(MemoryMarshal.GetReference(destination));
-            var order = Vector128.Create((byte)2, 1, 0, 0xFF, 5, 4, 3, 0xFF, 8, 7, 6, 0xFF, 11, 10, 9, 0xFF);
-            var opaque = Vector128.Create(0xFF000000u).AsByte();
-            for (; (3 * done) + Vector128<byte>.Count <= source.Length; done += 4)
-            {
-                unsafe { (Vector128.Shuffle(Vector128.LoadUnsafe(ref input, (nuint)(3 * done)), order) | opaque).StoreUnsafe(ref output, (nuint)(4 * done)); }
-            }
-        }
-
+        var done = UseVectors ? SwapRedAndBlue24To32Vector(source, ref unsafe(MemoryMarshal.GetReference(destination)), byte.MaxValue) : 0;
         for (var x = done; x < count; x++)
         {
             destination[4 * x] = source[(3 * x) + 2];
@@ -570,6 +648,94 @@ internal static partial class PixelConverter
             destination[(4 * x) + 2] = source[3 * x];
             destination[(4 * x) + 3] = byte.MaxValue;
         }
+    }
+
+    /// <summary>The byte permutation of 16 <see cref="Rgb24"/> pixels to <see cref="Rgba32"/> pixels (the fourth bytes are set afterward).</summary>
+    private static ReadOnlySpan<byte> Rgb24ToRgba32Order512 =>
+    [
+        0, 1, 2, 0, 3, 4, 5, 0, 6, 7, 8, 0, 9, 10, 11, 0,
+        12, 13, 14, 0, 15, 16, 17, 0, 18, 19, 20, 0, 21, 22, 23, 0,
+        24, 25, 26, 0, 27, 28, 29, 0, 30, 31, 32, 0, 33, 34, 35, 0,
+        36, 37, 38, 0, 39, 40, 41, 0, 42, 43, 44, 0, 45, 46, 47, 0,
+    ];
+
+    /// <summary>The byte permutation of <see cref="SwapRedAndBlue24ToOpaque32"/> for 16 pixels (the fourth bytes are replaced afterward).</summary>
+    private static ReadOnlySpan<byte> SwapRedAndBlue24ToOpaque32Order512 =>
+    [
+        2, 1, 0, 0, 5, 4, 3, 0, 8, 7, 6, 0, 11, 10, 9, 0,
+        14, 13, 12, 0, 17, 16, 15, 0, 20, 19, 18, 0, 23, 22, 21, 0,
+        26, 25, 24, 0, 29, 28, 27, 0, 32, 31, 30, 0, 35, 34, 33, 0,
+        38, 37, 36, 0, 41, 40, 39, 0, 44, 43, 42, 0, 47, 46, 45, 0,
+    ];
+
+    /// <summary>
+    /// Converts 3-byte RGB pixels to the color keys of the palette quantizer, <c>(R &lt;&lt; 16) | (G &lt;&lt; 8) | B</c>: the
+    /// pixels of <see cref="SwapRedAndBlue24ToOpaque32"/> with a fourth byte 0, read as little-endian integers.
+    /// </summary>
+    /// <param name="source">The 3-byte pixels.</param>
+    /// <param name="keys">At least one key per pixel.</param>
+    public static void Rgb24ToColorKeys(ReadOnlySpan<byte> source, Span<int> keys)
+    {
+        var count = source.Length / 3;
+        keys = keys[..count];
+        var done = UseVectors ? SwapRedAndBlue24To32Vector(source, ref unsafe(Unsafe.As<int, byte>(ref MemoryMarshal.GetReference(keys))), fourth: 0) : 0;
+        for (var x = done; x < count; x++)
+        {
+            keys[x] = (source[3 * x] << 16) | (source[(3 * x) + 1] << 8) | source[(3 * x) + 2];
+        }
+    }
+
+    /// <summary>
+    /// Converts the leading whole vectors of 3-byte pixels to 4-byte pixels, exchanging the first and the third byte, the
+    /// fourth byte <paramref name="fourth"/>.
+    /// </summary>
+    /// <returns>The number of pixels converted.</returns>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int SwapRedAndBlue24To32Vector(ReadOnlySpan<byte> source, ref byte output, byte fourth)
+    {
+        var done = 0;
+        ref var input = ref unsafe(MemoryMarshal.GetReference(source));
+        var order = Vector128.Create((byte)2, 1, 0, 0xFF, 5, 4, 3, 0xFF, 8, 7, 6, 0xFF, 11, 10, 9, 0xFF);
+        var fill = Vector128.Create((uint)fourth << 24).AsByte();
+        if (Avx2.IsSupported)
+        {
+            if (Avx512Vbmi.IsSupported)
+            {
+                // 16 pixels per step: 48 bytes of the 64 loaded, spread across the whole vector (the fourth bytes are replaced:
+                // cleared, unless they are all set by the fill)
+                var order512 = Vector512.Create(SwapRedAndBlue24ToOpaque32Order512);
+                var color512 = Vector512.Create(0x00FF_FFFFu).AsByte();
+                var fill512 = Vector512.Create(fill);
+                for (; (3 * done) + Vector512<byte>.Count <= source.Length; done += 16)
+                {
+                    var pixels = Avx512Vbmi.PermuteVar64x8(unsafe(Vector512.LoadUnsafe(ref input, (nuint)(3 * done))), order512);
+                    if (fourth != byte.MaxValue)
+                    {
+                        pixels &= color512;
+                    }
+
+                    unsafe { (pixels | fill512).StoreUnsafe(ref output, (nuint)(4 * done)); }
+                }
+            }
+
+            // 8 pixels per step: the 32-bit groups of bytes 12 to 27 are moved to the upper lane, then each lane is expanded
+            var spread = Vector256.Create(0, 1, 2, 3, 3, 4, 5, 6);
+            var order256 = Vector256.Create(order, order);
+            var fill256 = Vector256.Create(fill);
+            for (; (3 * done) + Vector256<byte>.Count <= source.Length; done += 8)
+            {
+                var pixels = Avx2.PermuteVar8x32(unsafe(Vector256.LoadUnsafe(ref input, (nuint)(3 * done))).AsInt32(), spread).AsByte();
+                unsafe { (Avx2.Shuffle(pixels, order256) | fill256).StoreUnsafe(ref output, (nuint)(4 * done)); }
+            }
+        }
+
+        // 4 pixels per step: 12 bytes of the 16 loaded
+        for (; (3 * done) + Vector128<byte>.Count <= source.Length; done += 4)
+        {
+            unsafe { (Vector128.Shuffle(Vector128.LoadUnsafe(ref input, (nuint)(3 * done)), order) | fill).StoreUnsafe(ref output, (nuint)(4 * done)); }
+        }
+
+        return done;
     }
 
     /// <summary>The scalar reference of <see cref="SwapRedAndBlue24"/>.</summary>
@@ -657,30 +823,7 @@ internal static partial class PixelConverter
         if (sourceIs32 && destinationIs32)
         {
             // Rgba32 <-> Bgra32: red and blue are exchanged
-            var order = Vector128.Create((byte)2, 1, 0, 3, 6, 5, 4, 7, 10, 9, 8, 11, 14, 13, 12, 15);
-            if (Avx2.IsSupported)
-            {
-                // The same exchange in each 128-bit lane: 8 or 16 pixels per step
-                var order256 = Vector256.Create(order, order);
-                if (Avx512BW.IsSupported)
-                {
-                    var order512 = Vector512.Create(order256, order256);
-                    for (; i + 16 <= length; i += 16)
-                    {
-                        unsafe { Avx512BW.Shuffle(Vector512.LoadUnsafe(ref input, (nuint)(4 * i)), order512).StoreUnsafe(ref output, (nuint)(4 * i)); }
-                    }
-                }
-
-                for (; i + 8 <= length; i += 8)
-                {
-                    unsafe { Avx2.Shuffle(Vector256.LoadUnsafe(ref input, (nuint)(4 * i)), order256).StoreUnsafe(ref output, (nuint)(4 * i)); }
-                }
-            }
-
-            for (; i + 4 <= length; i += 4)
-            {
-                unsafe { Vector128.Shuffle(Vector128.LoadUnsafe(ref input, (nuint)(4 * i)), order).StoreUnsafe(ref output, (nuint)(4 * i)); }
-            }
+            i = SwapRedAndBlue32Vector(ref input, ref output, length);
         }
         else if (typeof(TSource) == typeof(Rgb24) && destinationIs32)
         {
@@ -693,7 +836,17 @@ internal static partial class PixelConverter
                 // Each 128-bit lane is loaded from the 12 bytes of its 4 pixels (16 bytes are read) and expanded in place
                 var order256 = Vector256.Create(order, order);
                 var opaque256 = Vector256.Create(opaque, opaque);
-                if (Avx512BW.IsSupported)
+                if (Avx512Vbmi.IsSupported)
+                {
+                    // 16 pixels from one 64-byte load (48 bytes are used), spread across the whole vector
+                    var order512 = Vector512.Create(swaps ? SwapRedAndBlue24ToOpaque32Order512 : Rgb24ToRgba32Order512);
+                    var opaque512 = Vector512.Create(opaque256, opaque256);
+                    for (; i + 22 <= length; i += 16)
+                    {
+                        unsafe { (Avx512Vbmi.PermuteVar64x8(Vector512.LoadUnsafe(ref input, (nuint)(3 * i)), order512) | opaque512).StoreUnsafe(ref output, (nuint)(4 * i)); }
+                    }
+                }
+                else if (Avx512BW.IsSupported)
                 {
                     var order512 = Vector512.Create(order256, order256);
                     var opaque512 = Vector512.Create(opaque256, opaque256);

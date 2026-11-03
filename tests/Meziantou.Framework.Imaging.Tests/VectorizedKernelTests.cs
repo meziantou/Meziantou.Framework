@@ -289,11 +289,30 @@ public sealed class VectorizedKernelTests
             Assert.Equal(expected, quantizer.Map((r << 16) | (g << 8) | b));
             Assert.Equal(expected, quantizer.FindNearest(r, g, b, random.Next(colors)));
             Assert.Equal(expected, quantizer.FindNearestSorted(r, g, b, random.Next(colors)));
+
+            // Mapped again: from the cache of the mapped colors
+            Assert.Equal(expected, quantizer.Map((r << 16) | (g << 8) | b));
         }
 
         foreach (var key in quantizer.Palette.ToArray())
         {
             Assert.Equal(key, quantizer.Palette[quantizer.Map(key)]);
+        }
+
+        // White is the key an empty slot of the mapping cache reads as; a new palette empties the cache
+        int[] mapped = [0xFF_FFFF, 0, 0x80_8080, 0x01_0203];
+        for (var palette = 0; palette < 2; palette++)
+        {
+            foreach (var key in mapped)
+            {
+                var expected = quantizer.FindNearestScalar(key >> 16, (key >> 8) & 0xFF, key & 0xFF);
+                Assert.Equal(expected, quantizer.Map(key));
+                Assert.Equal(expected, quantizer.Map(key));
+            }
+
+            quantizer.Begin(256);
+            quantizer.Add([.. keys.Take(Math.Max(1, colors / 2))]);
+            quantizer.BuildPalette(256);
         }
     }
 
@@ -3519,8 +3538,9 @@ public sealed class VectorizedKernelTests
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void RedBlueExchangeMatchesTheScalarReference()
     {
+        // Lengths around the 16-, 32- and 64-byte steps (4, 8 and 16 pixels)
         var random = new Random(605);
-        for (var pixels = 0; pixels <= 40; pixels++)
+        for (var pixels = 0; pixels <= 80; pixels++)
         {
             var source = new byte[pixels * 3];
             random.NextBytes(source);
@@ -3542,11 +3562,62 @@ public sealed class VectorizedKernelTests
 
     [Fact]
     [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void RedBlueExchangeOf32BitPixelsMatchesTheScalarReference()
+    {
+        // Lengths around the 16-, 32- and 64-byte steps (4, 8 and 16 pixels)
+        var random = new Random(3205);
+        for (var pixels = 0; pixels <= 80; pixels++)
+        {
+            var source = new byte[pixels * 4];
+            random.NextBytes(source);
+            var expected = new Bgra32[pixels];
+            PixelConverter.ConvertRowScalar<Rgba32, Bgra32>(unsafe(System.Runtime.InteropServices.MemoryMarshal.Cast<byte, Rgba32>(source)), expected);
+            var expectedBytes = unsafe(System.Runtime.InteropServices.MemoryMarshal.AsBytes(expected.AsSpan())).ToArray();
+
+            // A longer destination keeps its other bytes
+            var actual = new byte[source.Length + 5];
+            Array.Fill(actual, (byte)0xA5);
+            PixelConverter.SwapRedAndBlue32(source, actual);
+            Assert.Equal(expectedBytes, actual[..source.Length]);
+            Assert.All(actual[source.Length..], value => Assert.Equal(0xA5, value));
+
+            // In place
+            PixelConverter.SwapRedAndBlue32(source, source);
+            Assert.Equal(expectedBytes, source);
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void Rgb24ColorKeysMatchTheKeyDefinition()
+    {
+        // Lengths around the 16-, 32- and 64-byte loads (4, 8 and 16 pixels per step), and a longer destination that keeps its other keys
+        var random = new Random(2406);
+        for (var pixels = 0; pixels <= 80; pixels++)
+        {
+            var source = new byte[pixels * 3];
+            random.NextBytes(source);
+            var expected = new int[pixels];
+            for (var x = 0; x < pixels; x++)
+            {
+                expected[x] = (source[3 * x] << 16) | (source[(3 * x) + 1] << 8) | source[(3 * x) + 2];
+            }
+
+            var actual = new int[pixels + 3];
+            Array.Fill(actual, -5);
+            PixelConverter.Rgb24ToColorKeys(source, actual);
+            Assert.Equal(expected, actual[..pixels]);
+            Assert.All(actual[pixels..], value => Assert.Equal(-5, value));
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
     public void SwapRedAndBlue24ToOpaque32MatchesThePixelDefinition()
     {
-        // Lengths around the 16-byte loads (4 pixels per step), and a longer destination that keeps its other bytes
+        // Lengths around the 16-, 32- and 64-byte loads (4, 8 and 16 pixels per step), and a longer destination that keeps its other bytes
         var random = new Random(2405);
-        for (var pixels = 0; pixels <= 40; pixels++)
+        for (var pixels = 0; pixels <= 80; pixels++)
         {
             var source = new byte[pixels * 3];
             random.NextBytes(source);

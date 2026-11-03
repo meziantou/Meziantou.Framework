@@ -1,4 +1,6 @@
 using System.Buffers.Binary;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using Meziantou.Framework.Imaging.Metadata;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -34,6 +36,9 @@ internal sealed class TgaStructureParser : ImageParser<ImageInfo>
     private readonly StructureWalk _walk;
     private readonly TgaDecoder? _decoder;
     private readonly DecodedMetadataBuilder _metadata;
+    // A packet of at most this many bytes is expanded by one 16-byte store: the stored row has as many spare bytes after it
+    private const int ShortPacketLength = 16;
+
     private readonly byte[] _runPixel = new byte[4];
 
     private State _state;
@@ -123,8 +128,8 @@ internal sealed class TgaStructureParser : ImageParser<ImageInfo>
                     {
                         _context.Sequential?.OnHeader(CreateInfo(ImageIdentifyMode.Header));
                         _decoder!.OnHeaderComplete(this);
-                        _storedRow = _context.Scope.Rent(Layout.StoredRowLength, AllocationKind.DecoderState, clear: false);
-                        _sourceRow = _context.Scope.Rent(Layout.SourceRowLength, AllocationKind.DecoderState, clear: false);
+                        _storedRow = _context.Scope.Rent(Layout.StoredRowLength + ShortPacketLength, AllocationKind.DecoderState, clear: false);
+                        _sourceRow = _context.Scope.Rent(GetExpandedRowLength(), AllocationKind.DecoderState, clear: false);
                         if (Layout.ColorMapStorageLength > 0)
                         {
                             // Every entry is stored before the first pixel is expanded
@@ -316,6 +321,13 @@ internal sealed class TgaStructureParser : ImageParser<ImageInfo>
         {
             while (_rowIndex < Header.Height)
             {
+                if (_packetRemaining == 0 && _walk == StructureWalk.Decode && ReadRowPackets(buffer, ref consumed))
+                {
+                    _storedFilled = 0;
+                    EmitRow(ref lease, _storedRow!.Span[..storedRowLength]);
+                    continue;
+                }
+
                 if (_packetRemaining == 0)
                 {
                     var remaining = buffer[consumed..];
@@ -393,6 +405,110 @@ internal sealed class TgaStructureParser : ImageParser<ImageInfo>
         }
     }
 
+    /// <summary>
+    /// Expands the whole packets of the current row that are complete in the input, as long as each one ends within the
+    /// row: the common case, without the state of a packet split across calls. The other packets (incomplete, crossing the
+    /// end of the row, or invalid) are left to the general loop.
+    /// </summary>
+    /// <returns><see langword="true"/> when the row is complete.</returns>
+    private bool ReadRowPackets(ReadOnlySpan<byte> buffer, ref int consumed)
+    {
+        var bytesPerPixel = Header.BytesPerStoredPixel;
+        var storage = _storedRow!.Span[..(Layout.StoredRowLength + ShortPacketLength)];
+        var row = storage[..Layout.StoredRowLength];
+        var filled = _storedFilled;
+        var pixelsLeft = _pixelsLeft;
+        var offset = consumed;
+        while (filled < row.Length && offset < buffer.Length)
+        {
+            var packet = buffer[offset];
+            var count = (packet & 0x7F) + 1;
+            var length = count * bytesPerPixel;
+            if (count > pixelsLeft || length > row.Length - filled)
+                break;
+
+            if ((packet & TgaFormat.RunLengthPacketFlag) != 0)
+            {
+                if (buffer.Length - offset < 1 + bytesPerPixel)
+                    break;
+
+                var pixel = buffer.Slice(offset + 1, bytesPerPixel);
+                if (length <= ShortPacketLength && bytesPerPixel != 3)
+                {
+                    // One store of the repeated pixel; the bytes after the run are written again by the next packets
+                    var repeated = bytesPerPixel switch
+                    {
+                        1 => Vector128.Create(pixel[0]),
+                        2 => Vector128.Create(unsafe(MemoryMarshal.Read<ushort>(pixel))).AsByte(),
+                        _ => Vector128.Create(unsafe(MemoryMarshal.Read<uint>(pixel))).AsByte(),
+                    };
+                    repeated.CopyTo(storage[filled..]);
+                }
+                else
+                {
+                    FillPixels(row.Slice(filled, length), pixel);
+                }
+
+                offset += 1 + bytesPerPixel;
+            }
+            else
+            {
+                if (buffer.Length - offset < 1 + length)
+                    break;
+
+                if (length <= ShortPacketLength && buffer.Length - offset > ShortPacketLength)
+                {
+                    // One 16-byte copy; the bytes after the packet are written again by the next packets
+                    Vector128.Create(buffer.Slice(offset + 1, ShortPacketLength)).CopyTo(storage[filled..]);
+                }
+                else
+                {
+                    buffer.Slice(offset + 1, length).CopyTo(row[filled..]);
+                }
+
+                offset += 1 + length;
+            }
+
+            filled += length;
+            pixelsLeft -= count;
+        }
+
+        _position += offset - consumed;
+        consumed = offset;
+        _storedFilled = filled;
+        _pixelsLeft = pixelsLeft;
+        return filled == row.Length;
+    }
+
+    /// <summary>Repeats one stored pixel over <paramref name="destination"/>.</summary>
+    private static void FillPixels(Span<byte> destination, ReadOnlySpan<byte> pixel)
+    {
+        switch (pixel.Length)
+        {
+            case 1:
+                destination.Fill(pixel[0]);
+                break;
+
+            case 2:
+                unsafe { MemoryMarshal.Cast<byte, ushort>(destination).Fill(MemoryMarshal.Read<ushort>(pixel)); }
+                break;
+
+            case 4:
+                unsafe { MemoryMarshal.Cast<byte, uint>(destination).Fill(MemoryMarshal.Read<uint>(pixel)); }
+                break;
+
+            default:
+                for (var offset = 0; offset < destination.Length; offset += 3)
+                {
+                    destination[offset] = pixel[0];
+                    destination[offset + 1] = pixel[1];
+                    destination[offset + 2] = pixel[2];
+                }
+
+                break;
+        }
+    }
+
     /// <summary>Reads the TGA 2.0 footer and the extension area it points at.</summary>
     /// <param name="trailer">Every byte between the end of the image data (the current position) and the end of the input.</param>
     private void ValidateTrailer(ReadOnlySpan<byte> trailer)
@@ -449,19 +565,32 @@ internal sealed class TgaStructureParser : ImageParser<ImageInfo>
             var destination = decoder.GetDirectRow(lease, y);
             if (!destination.IsEmpty)
             {
-                Layout.ExpandRow(stored, destination);
+                ExpandRow(stored, destination);
                 return;
             }
         }
 
-        var source = _sourceRow!.Span[..Layout.SourceRowLength];
-        Layout.ExpandRow(stored, source);
+        var source = _sourceRow!.Span[..GetExpandedRowLength()];
+        ExpandRow(stored, source);
         if (!lease.IsActive)
         {
             lease = decoder.LeaseRows();
         }
 
         decoder.WriteRow(lease, y, source);
+    }
+
+    private int GetExpandedRowLength() => _decoder!.OpaqueRgbaRows ? Header.Width * 4 : Layout.SourceRowLength;
+
+    private void ExpandRow(ReadOnlySpan<byte> stored, Span<byte> destination)
+    {
+        if (_decoder!.OpaqueRgbaRows)
+        {
+            Layout.ExpandRowToOpaqueRgba(stored, destination);
+            return;
+        }
+
+        Layout.ExpandRow(stored, destination);
     }
 
     private ImageInfo CreateInfo(ImageIdentifyMode mode)

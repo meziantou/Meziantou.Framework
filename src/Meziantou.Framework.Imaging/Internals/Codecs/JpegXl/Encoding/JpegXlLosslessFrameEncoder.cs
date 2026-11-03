@@ -211,12 +211,15 @@ internal sealed class JpegXlLosslessFrameEncoder
 
     /// <summary>
     /// Whether copies are likely to make the frame smaller: the groups of a trial (one in <see cref="Lz77TrialStep"/>, on
-    /// diagonals) are counted with and without copies, the copies found with the token costs of the whole frame, and the two
-    /// codes are compared. A frame of one group, or an effort without a trial, is always parsed.
+    /// diagonals) are counted with and without copies, the copies found with the token costs of the whole frame and a short
+    /// search (<see cref="Lz77TrialChain"/>), and the two codes are compared. A frame of one group, or an effort without a
+    /// trial, is always parsed.
     /// </summary>
     /// <remarks>
     /// The parse was 44 % of the time of an encoding at the effort 5, and on photographs the code with copies was always the
-    /// larger one (1.5 to 9 %); the trial (group 0 is always one of its groups) costs a quarter of a parse.
+    /// larger one (1.5 to 9 %); the trial (group 0 is always one of its groups) costs a tenth of a parse. Its estimate of the
+    /// ratio of the sizes with and without copies was 1.009 to 1.013 on photographs (1.03 to 1.09 written), 0.65 on a
+    /// screenshot (0.62) and 0.98 on rendered code (0.94 to 0.99).
     /// </remarks>
     private bool IsLz77Worthwhile(float[] tokenCosts)
     {
@@ -241,7 +244,7 @@ internal sealed class JpegXlLosslessFrameEncoder
         JpegXlGroupWorkers.Run(
             workers,
             groups.Count,
-            () => new TrialWorker(new StreamWorker(literal, tokenCosts: null, 0, counting: true, _scope), new StreamWorker(lz77, tokenCosts, _settings.Lz77Chain, counting: true, _scope)),
+            () => new TrialWorker(new StreamWorker(literal, tokenCosts: null, 0, counting: true, _scope), new StreamWorker(lz77, tokenCosts, Math.Min(Lz77TrialChain, _settings.Lz77Chain), counting: true, _scope)),
             (worker, index) =>
             {
                 _cancellationToken.ThrowIfCancellationRequested();
@@ -262,7 +265,13 @@ internal sealed class JpegXlLosslessFrameEncoder
     }
 
     /// <summary>The groups of the trial of copies: one in this many.</summary>
-    private const int Lz77TrialStep = 4;
+    private const int Lz77TrialStep = 8;
+
+    /// <summary>
+    /// The largest number of previous positions the trial of copies tries at each value: the long copies that make a frame
+    /// smaller are found at the first ones, and the parse costs the latency of each position it tries.
+    /// </summary>
+    private const int Lz77TrialChain = 2;
 
     /// <summary>
     /// Computes the values of a sub-bitstream, every channel in order, and counts them or adds them to the stream of the

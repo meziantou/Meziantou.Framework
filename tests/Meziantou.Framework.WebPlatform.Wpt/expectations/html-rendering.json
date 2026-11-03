@@ -1365,7 +1365,7 @@
     "reftest": "PASS"
   },
   "html/rendering/widgets/input-checkbox-subpixel-paint-size.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "html/rendering/widgets/input-checkbox-switch-indeterminate.tentative.html": {
     "reftest": "PASS"

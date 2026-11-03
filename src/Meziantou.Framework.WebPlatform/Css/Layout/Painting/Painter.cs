@@ -142,6 +142,20 @@ internal sealed partial class Painter
         return new PhysicalRect(left, top, Math.Max(0, right - left), Math.Max(0, bottom - top));
     }
 
+    /// <summary>
+    /// Snaps a rectangle to the device pixels by rounding its origin and its size independently, so that its painted size does
+    /// not depend on its fractional position (as the glyphs of the checkboxes and radio buttons in the browsers): unlike
+    /// <see cref="SnapToDevicePixels(PhysicalRect)"/>, the same box at two fractional positions is painted with the same size.
+    /// A side that is not empty keeps at least one device pixel.
+    /// </summary>
+    private PhysicalRect SnapToDevicePixelsKeepingSize(PhysicalRect rect)
+    {
+        var pixel = 1 / _devicePixelRatio;
+        var width = rect.Width > 0 ? Math.Max(pixel, SnapToDevicePixels(rect.Width)) : 0;
+        var height = rect.Height > 0 ? Math.Max(pixel, SnapToDevicePixels(rect.Height)) : 0;
+        return new PhysicalRect(SnapToDevicePixels(rect.Left), SnapToDevicePixels(rect.Top), width, height);
+    }
+
     /// <summary>Returns the border box of a fragment at an offset, snapped to the device pixels.</summary>
     private PhysicalRect GetSnappedBorderBox(BoxFragment fragment, PhysicalOffset offset) => SnapToDevicePixels(GetDecorationBox(fragment).Translate(offset));
 

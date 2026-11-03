@@ -520,6 +520,11 @@ internal sealed class BmpEncoderCodec : ImageEncoderCodec
                 {
                     PixelConverter.ConvertRow(_sourceFormat, source, PixelFormat.Bgra32, destination[..samples], background: null, ImageFormat.Bmp);
                 }
+                else if (_layout == BmpPixelLayout.Bgr24 && _sourceFormat == PixelFormat.Rgb24)
+                {
+                    // RGB rows are swapped to blue, green and red straight into the output
+                    PixelConverter.SwapRedAndBlue24(source, destination);
+                }
                 else
                 {
                     var band = _band!.Span[..(_width * 3)];

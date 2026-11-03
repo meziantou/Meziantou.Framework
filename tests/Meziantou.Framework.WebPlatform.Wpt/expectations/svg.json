@@ -3369,7 +3369,7 @@
     "reftest": "FAIL"
   },
   "svg/styling/css-linked-parameters/link-parameters-feimage-subregion.html": {
-    "reftest": "PASS"
+    "reftest": "FAIL"
   },
   "svg/styling/css-linked-parameters/link-parameters-feimage.html": {
     "reftest": "FAIL"

@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of css/css-tables, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 106 | 113 | 0 | 94% |
+| [Stable](#stable-tests) | 107 | 113 | 0 | 95% |
 | [Tentative](#tentative-tests) | 25 | 26 | 0 | 96% |
-| [Reftests](#reftests) | 167 | 173 | 0 | 97% |
-| **All** | **298** | **312** | **0** | **96%** |
+| [Reftests](#reftests) | 170 | 173 | 0 | 98% |
+| **All** | **302** | **312** | **0** | **97%** |
 
 ## Stable tests
 
@@ -68,7 +68,7 @@ description: "The results of the web-platform-tests of css/css-tables, and why t
 | [`parsing/border-collapse-computed.html`](https://wpt.fyi/results/css/css-tables/parsing/border-collapse-computed.html) | Pass | 2 / 2 |  |  |
 | [`parsing/border-collapse-invalid.html`](https://wpt.fyi/results/css/css-tables/parsing/border-collapse-invalid.html) | Pass | 2 / 2 |  |  |
 | [`parsing/border-collapse-valid.html`](https://wpt.fyi/results/css/css-tables/parsing/border-collapse-valid.html) | Pass | 2 / 2 |  |  |
-| [`parsing/border-spacing-computed.html`](https://wpt.fyi/results/css/css-tables/parsing/border-spacing-computed.html) | Fail | 2 / 4 | BUG | a negative `calc()` result in `border-spacing` is not clamped to 0 in the computed value |
+| [`parsing/border-spacing-computed.html`](https://wpt.fyi/results/css/css-tables/parsing/border-spacing-computed.html) | Pass | 4 / 4 |  |  |
 | [`parsing/border-spacing-invalid.html`](https://wpt.fyi/results/css/css-tables/parsing/border-spacing-invalid.html) | Pass | 4 / 4 |  |  |
 | [`parsing/border-spacing-valid.html`](https://wpt.fyi/results/css/css-tables/parsing/border-spacing-valid.html) | Pass | 3 / 3 |  |  |
 | [`parsing/caption-side-computed.html`](https://wpt.fyi/results/css/css-tables/parsing/caption-side-computed.html) | Pass | 2 / 2 |  |  |
@@ -195,9 +195,9 @@ description: "The results of the web-platform-tests of css/css-tables, and why t
 | [`calc-percent-plus-0px-auto.html`](https://wpt.fyi/results/css/css-tables/calc-percent-plus-0px-auto.html) | Pass | 1 / 1 |  |  |
 | [`calc-percent-plus-0px-fixed.html`](https://wpt.fyi/results/css/css-tables/calc-percent-plus-0px-fixed.html) | Pass | 1 / 1 |  |  |
 | [`caption-relative-positioning.html`](https://wpt.fyi/results/css/css-tables/caption-relative-positioning.html) | Pass | 1 / 1 |  |  |
-| [`col-definite-max-size-001.html`](https://wpt.fyi/results/css/css-tables/col-definite-max-size-001.html) | Fail | 0 / 1 | BUG | the `<col>` elements without cell (4 columns for 2 cells): a column whose width is a percentage (`width: 50%`) or is limited by `max-width: 0` is kept with its `border-spacing` although its width is not definite (the table is 76px wide instead of 56px), and `min-width: 100px` is not applied to these columns (232px instead of 452px); only Firefox passes |
-| [`col-definite-min-size-001.html`](https://wpt.fyi/results/css/css-tables/col-definite-min-size-001.html) | Fail | 0 / 1 | BUG | the `min-width: 100px` of the `<col>` elements is not applied to the columns without cell (4 columns for 2 cells): they are 0px wide and the table is 232px wide instead of 452px; only Firefox passes |
-| [`col-definite-size-001.html`](https://wpt.fyi/results/css/css-tables/col-definite-size-001.html) | Fail | 0 / 1 | BUG | a `<col>` without cell whose width is a percentage (`width: 50%`) is kept with its `border-spacing` (the table is 76px wide instead of 56px): as for `calc(100px + 1%)`, only the columns with a definite width should be kept; only Firefox passes |
+| [`col-definite-max-size-001.html`](https://wpt.fyi/results/css/css-tables/col-definite-max-size-001.html) | Pass | 1 / 1 |  |  |
+| [`col-definite-min-size-001.html`](https://wpt.fyi/results/css/css-tables/col-definite-min-size-001.html) | Pass | 1 / 1 |  |  |
+| [`col-definite-size-001.html`](https://wpt.fyi/results/css/css-tables/col-definite-size-001.html) | Pass | 1 / 1 |  |  |
 | [`collapsed-border-background-inset.html`](https://wpt.fyi/results/css/css-tables/collapsed-border-background-inset.html) | Pass | 1 / 1 |  |  |
 | [`collapsed-border-color-change-with-compositing.html`](https://wpt.fyi/results/css/css-tables/collapsed-border-color-change-with-compositing.html) | Pass | 1 / 1 |  |  |
 | [`collapsed-border-fragmentation-001-print.html`](https://wpt.fyi/results/css/css-tables/collapsed-border-fragmentation-001-print.html) | Pass | 1 / 1 |  |  |

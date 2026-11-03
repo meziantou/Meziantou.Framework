@@ -380,36 +380,48 @@ internal static partial class CssValueComputer
 
     /// <summary>
     /// The result of a math function is clamped to the range allowed by the property (https://drafts.csswg.org/css-values-4/#calc-range),
-    /// e.g. flex-shrink: calc(-1) computes to 0 and column-count: calc(0) to 1. Only a value that is a single number,
-    /// percentage or dimension is clamped.
+    /// e.g. flex-shrink: calc(-1) computes to 0 and column-count: calc(0) to 1. Only a value whose components are single numbers,
+    /// percentages or dimensions is clamped (each math function separately, e.g. the two lengths of border-spacing).
     /// </summary>
     private static string ClampMathFunctionResult(CssPropertyDefinition property, string value, string computed)
     {
         if (!value.Contains('(', StringComparison.Ordinal) || CssPropertyRegistry.GetGrammar(property) is not { } grammar)
             return computed;
 
-        if (ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(value)) is not [CssFunction function] || !CssCalc.IsMathFunction(function.Name))
+        var specified = ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(value));
+        var components = ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(computed));
+        var parts = SplitComponents(computed);
+        if (specified.Count == 0 || specified.Count != components.Count || parts.Length != components.Count)
             return computed;
 
-        if (ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(computed)) is not [CssPreservedToken { Type: CssTokenType.Number or CssTokenType.Percentage or CssTokenType.Dimension } token])
-            return computed;
-
-        if (FindRange(grammar, token.Token, depth: 0) is not { } range)
-            return computed;
-
-        var clamped = Math.Clamp(token.Token.NumericValue, range.Min ?? double.NegativeInfinity, range.Max ?? double.PositiveInfinity);
-        if (clamped == token.Token.NumericValue)
-            return computed;
-
-        return SerializeNumber(clamped) + token.Token.Type switch
+        var changed = false;
+        for (var i = 0; i < components.Count; i++)
         {
-            CssTokenType.Percentage => "%",
-            CssTokenType.Dimension => token.Token.Value,
-            _ => "",
-        };
+            if (components[i] is not CssPreservedToken { Type: CssTokenType.Number or CssTokenType.Percentage or CssTokenType.Dimension } token)
+                return computed;
+
+            if (specified[i] is not CssFunction function || !CssCalc.IsMathFunction(function.Name) || FindRange(grammar, token.Token, depth: 0) is not { } range)
+                continue;
+
+            var clamped = Math.Clamp(token.Token.NumericValue, range.Min ?? double.NegativeInfinity, range.Max ?? double.PositiveInfinity);
+            if (clamped == token.Token.NumericValue)
+                continue;
+
+            changed = true;
+            parts[i] = SerializeNumber(clamped) + token.Token.Type switch
+            {
+                CssTokenType.Percentage => "%",
+                CssTokenType.Dimension => token.Token.Value,
+                _ => "",
+            };
+        }
+
+        if (!changed)
+            return computed;
+
+        return parts.Length == 1 ? parts[0] : string.Join(' ', parts);
     }
 
-    /// <summary>Returns the range of the type of the grammar that accepts a numeric token (e.g. [0,∞] for &lt;length [0,∞]&gt;), or null.</summary>
     private static (double? Min, double? Max)? FindRange(GrammarNode node, CssToken token, int depth)
     {
         if (depth > 16)

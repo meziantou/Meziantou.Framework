@@ -12342,6 +12342,7 @@ namespace Meziantou.Framework.WebPlatform.Dom
         public void ReleaseEvents() { }
         public uint RequestAnimationFrame(Meziantou.Framework.WebPlatform.Dom.FrameRequestCallback callback) => throw null;
         public uint RequestIdleCallback(Meziantou.Framework.WebPlatform.Dom.IdleRequestCallback callback, Meziantou.Framework.WebPlatform.Dom.IdleRequestOptions? options = null) => throw null;
+        public void RequestResize() { }
         public void ResizeBy(int x, int y) { }
         public void ResizeTo(int width, int height) { }
         public System.Threading.Tasks.Task Scroll(Meziantou.Framework.WebPlatform.Dom.ScrollToOptions? options = null) => throw null;

@@ -2944,6 +2944,14 @@ public sealed partial class BrowsingContext : IDisposable
             entry.DocumentState.HistoryRequiredContentSecurityPolicy = parameters?.RequiredContentSecurityPolicy;
         }
 
+        // As in Chrome, a responsively-sized iframe forgets the size of its contents when it navigates to another origin (the
+        // size is kept while a same-origin document loads, until its responsive embedded sizing flag is set:
+        // https://drafts.csswg.org/css-sizing-4/#responsive-iframes, WPT css/css-sizing/responsive-iframe/responsive-iframe-navigation.html)
+        if (Container is HtmlIFrameElement { InternalLayoutIntrinsicSize: not null } iframe && Document is { } previous && !OriginRecord.IsSameOrigin(previous.Origin, document.Origin))
+        {
+            iframe.SetInternalLayoutIntrinsicSize(null);
+        }
+
         document.LatestEntry = entry;
         Document = document;
 

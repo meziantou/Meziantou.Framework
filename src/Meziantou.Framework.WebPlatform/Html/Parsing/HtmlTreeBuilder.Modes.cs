@@ -768,7 +768,22 @@ internal sealed partial class HtmlTreeBuilder
     /// Whether the parser inserted the body (or frameset) element of the document: as in the browsers, a document that is
     /// being parsed is not rendered before (see <see cref="Document.IsRenderBlocked"/>).
     /// </summary>
-    internal bool HasInsertedBodyElement { get; private set; }
+    /// <remarks>
+    /// Opening the body element sets the responsive embedded sizing flag of the document to false when it is unset
+    /// (https://drafts.csswg.org/css-sizing-4/#responsive-iframes).
+    /// </remarks>
+    internal bool HasInsertedBodyElement
+    {
+        get;
+        private set
+        {
+            field = value;
+            if (value)
+            {
+                _document.SetResponsiveEmbeddedSizingFlag(false, content: null);
+            }
+        }
+    }
 
     // ----------------------------------------------------------------------------------------------------------------
     // 13.2.6.4.8 The "text" insertion mode

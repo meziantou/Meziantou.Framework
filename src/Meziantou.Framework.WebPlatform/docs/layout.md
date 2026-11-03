@@ -803,7 +803,24 @@ the fragment. The contents of the box (the `foreignObject` boxes of an `svg`) ar
     of a document embedded by reference only give the natural dimensions,
     [SVG](https://www.w3.org/TR/SVG11/coords.html#ViewportSpace)); `iframe`, `frame`, the other `embed`/`object`: none
     (a `frame` that is not a child of a `frameset`: 0x0, its content navigable has an empty viewport and is not painted,
-    see Framesets in [Block formatting context](#block-formatting-context-csslayoutblock)).
+    see Framesets in [Block formatting context](#block-formatting-context-csslayoutblock)), except the responsively-sized
+    `iframe` (see below).
+  - Responsively-sized iframes ([css-sizing-4](https://drafts.csswg.org/css-sizing-4/#responsive-iframes),
+    `Html/Elements/ResponsiveEmbeddedSizing.cs`): an `iframe` whose `frame-sizing` is not `auto` has the natural width or
+    height (the logical values resolve against the writing mode of the `iframe`) of its internal layout intrinsic size; the
+    other dimension has no natural size (the default object size). The embedded document opts in with
+    `<meta name=responsive-embedded-sizing content="allow-origins=…">`: the responsive embedded sizing flag of the
+    document is set when such a meta element is inserted in the document or renamed (by the parser, a script or
+    `document.write()`) before the parser opens the body element, which sets it to false; it does not change afterwards.
+    As in Chrome, the `allow-origins=` list (`*`, `'self'`, a scheme such as `https:`, an origin, or `scheme://*.host:port` for
+    the subdomains) must match the origin of the embedding document: a meta element without it does not resize the
+    `iframe`. The internal layout intrinsic size is the size of the contents of the embedded document (the extent of the
+    root element and its scrollable overflow from the start of the initial containing block, without the initial containing
+    block itself), measured after the `DOMContentLoaded` event, after the `load` event of the window and by
+    `window.requestResize()` (a `NotAllowedError` when the window is not the one of an `iframe` or its document did not opt
+    in). The document locks the size of its initial containing block at its first layout once the flag is set (the locked
+    embedded ICB size: the percentages of the root resolve against it, the viewport units against the viewport). A new
+    document forgets the size of the `iframe` when its flag is set.
   - The outermost `svg` element: its `width`/`height` attributes when they are absolute lengths and the ratio of
     width/height, else of the `viewBox` (`ImageHeaders.GetSvgNaturalSize`, also used for the SVG images and documents);
     the attributes are also presentation attributes of `width`/`height`, which may override them. A natural block size of

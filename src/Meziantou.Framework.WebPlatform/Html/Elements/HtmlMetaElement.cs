@@ -14,6 +14,7 @@ public sealed partial class HtmlMetaElement
             return;
 
         ProcessReferrerMetadata(document);
+        ProcessResponsiveEmbeddedSizing(document);
         document.InvalidatePageColorSchemes(this);
         if (GetAttributeValue("http-equiv") is not { } httpEquiv)
             return;
@@ -58,6 +59,11 @@ public sealed partial class HtmlMetaElement
         if (@namespace is null && localName is "name" or "content" && ReferenceEquals(GetRoot(), NodeDocument))
         {
             ProcessReferrerMetadata(NodeDocument);
+            if (localName == "name")
+            {
+                ProcessResponsiveEmbeddedSizing(NodeDocument);
+            }
+
             NodeDocument.InvalidatePageColorSchemes(this, oldName: localName == "name" ? oldValue : null);
         }
     }
@@ -68,6 +74,19 @@ public sealed partial class HtmlMetaElement
         if (oldAncestor.GetRoot() is Document document)
         {
             document.InvalidatePageColorSchemes(this);
+        }
+    }
+
+    /// <summary>
+    /// https://drafts.csswg.org/css-sizing-4/#responsive-iframes: a meta element named <c>responsive-embedded-sizing</c> that is
+    /// encountered (inserted in the document, or renamed) before the body element is opened sets the responsive embedded
+    /// sizing flag of the document.
+    /// </summary>
+    private void ProcessResponsiveEmbeddedSizing(Document document)
+    {
+        if (string.Equals(GetAttributeValue("name"), ResponsiveEmbeddedSizing.MetaName, StringComparison.OrdinalIgnoreCase))
+        {
+            document.SetResponsiveEmbeddedSizingFlag(true, GetAttributeValue("content"));
         }
     }
 

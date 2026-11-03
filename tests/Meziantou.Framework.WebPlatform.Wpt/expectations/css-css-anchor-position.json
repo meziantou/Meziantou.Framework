@@ -1068,16 +1068,16 @@
     "reftest": "PASS"
   },
   "css/css-anchor-position/position-area-overflow-icb-005-ltr.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-anchor-position/position-area-overflow-icb-005-rtl.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-anchor-position/position-area-overflow-icb-006-ltr.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-anchor-position/position-area-overflow-icb-006-rtl.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-anchor-position/position-area-overflow-icb-007-ltr.html": {
     "reftest": "PASS"

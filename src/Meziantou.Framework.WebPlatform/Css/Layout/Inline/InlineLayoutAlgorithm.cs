@@ -823,10 +823,12 @@ internal sealed partial class InlineLayoutAlgorithm
         var indented = isFirstLine || (afterForcedBreak && text.TextIndentEachLine);
 
         // "The first line of an anonymous block box is only affected if it is the first child of its parent element": the
-        // anonymous blocks of a block container (not the anonymous flex and grid items, which are block containers of their own)
+        // anonymous blocks of a block container (not the anonymous flex and grid items, which are block containers of their own).
+        // With each-line, the line after a block-level box is indented too: the block-level box ends the line before it, as a
+        // forced line break does
         if (isFirstLine && _block.IsAnonymous && _block.Parent is { Display.Inside: DisplayInside.Flow or DisplayInside.FlowRoot } && HasPreviousSiblingBox(_block))
         {
-            indented = false;
+            indented = text.TextIndentEachLine;
         }
 
         if (text.TextIndentHanging)
@@ -1174,7 +1176,7 @@ internal sealed partial class InlineLayoutAlgorithm
         // The marker is next to the line box: a line box shortened by a float on its start side moves it beside the float (as in
         // the browsers, WPT css/CSS2/lists/list-style-applies-to-017.html for a list item without content)
         start += Math.Max(0, lineOffset.Inline - content.Offset.Inline);
-        var inlineOffset = start - margin.InlineEnd - size.Inline;
+        var inlineOffset = start - margin.InlineEnd - marker.Gap - size.Inline;
         builder.AddChild(fragment, new LogicalOffset(inlineOffset, lineOffset.Block + lineBaseline - baseline));
         marker.IsPlaced = true;
     }

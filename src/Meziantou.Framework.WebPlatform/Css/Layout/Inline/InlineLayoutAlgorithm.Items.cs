@@ -344,12 +344,42 @@ internal sealed partial class InlineLayoutAlgorithm
     /// <summary>
     /// Whether the inline edges of an inline box are repeated on each of its fragments (<c>box-decoration-break: clone</c>,
     /// https://drafts.csswg.org/css-break-4/#break-decoration: "Each box fragment is independently wrapped with the border,
-    /// padding, and margin").
+    /// padding, and margin"). A part of a box split around block-level boxes that has no content is not a box fragment to wrap
+    /// (https://github.com/w3c/csswg-drafts/issues/14104): it only has the edges it would have with <c>slice</c>, so an empty
+    /// part between two block-level boxes does not create a line.
     /// </summary>
     private static bool ClonesInlineEdges(ContainerBox box)
     {
         var layout = box.Style.Layout;
-        return layout.MayHaveBoxEdges && layout.Fragmentation.BoxDecorationBreak == BoxDecorationBreak.Clone;
+        return layout.MayHaveBoxEdges && layout.Fragmentation.BoxDecorationBreak == BoxDecorationBreak.Clone
+            && ((box.PreviousContinuation is null && box.Continuation is null) || HasInlineContent(box));
+
+        // The text that is not collapsible white space, the atomic inlines, and the inline boxes that have edges of their own
+        static bool HasInlineContent(ContainerBox box)
+        {
+            for (var child = box.FirstChild; child is not null; child = child.NextSibling)
+            {
+                switch (child)
+                {
+                    case TextRun text when text.IsCollapsibleWhiteSpace:
+                        break;
+
+                    case ContainerBox container when container.IsOutOfFlow:
+                        break;
+
+                    case ContainerBox { IsInlineBox: true } container when !container.Style.Layout.MayHaveBoxEdges:
+                        if (HasInlineContent(container))
+                            return true;
+
+                        break;
+
+                    default:
+                        return true;
+                }
+            }
+
+            return false;
+        }
     }
 
     /// <summary>
@@ -417,6 +447,9 @@ internal sealed partial class InlineLayoutAlgorithm
                     {
                         item.End = end;
                         _items[index] = item;
+
+                        // The text now ends with a non-space: the white space that follows is not collapsed with the discarded one
+                        _afterCollapsibleSpace = false;
                         return;
                     }
 

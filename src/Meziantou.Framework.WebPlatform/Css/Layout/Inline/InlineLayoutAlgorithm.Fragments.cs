@@ -257,7 +257,7 @@ internal sealed partial class InlineLayoutAlgorithm
         // the space of the repeated edges). In a right-to-left box, the start is on the line-right side
         var layout = box.Style.Layout;
         var leftIsStart = layout.Direction != Direction.Rtl;
-        var clones = layout.MayHaveBoxEdges && layout.Fragmentation.BoxDecorationBreak == BoxDecorationBreak.Clone;
+        var clones = ClonesInlineEdges(box);
         var startsHere = clones || (ContainsBox(_openTags, box) && box.PreviousContinuation is null);
         var endsHere = clones || (ContainsBox(_closeTags, box) && box.Continuation is null);
         var hasLeft = isFirst && (leftIsStart ? startsHere : endsHere);

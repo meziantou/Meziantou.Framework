@@ -76,6 +76,13 @@ internal sealed class OutOfFlowCandidate
     public bool StaticPositionIsContainingBlock { get; set; }
 
     /// <summary>
+    /// The padding box of the grid container whose grid area is the containing block of the box (in the coordinates of the fragment
+    /// of the host), or null: the overflow limit rect of a <c>safe</c> alignment at the static position
+    /// (https://drafts.csswg.org/css-align-3/#auto-safety-position), as in the browsers.
+    /// </summary>
+    public PhysicalRect? GridPaddingBox { get; set; }
+
+    /// <summary>
     /// Whether the alignment of the box at its static position is <c>safe</c> in the horizontal axis
     /// (https://drafts.csswg.org/css-align-3/#overflow-values): a margin box that overflows the inset-modified containing block
     /// that the static position gives (https://drafts.csswg.org/css-position-3/#resolving-insets) is aligned with the start edge

@@ -259,7 +259,8 @@ public sealed class BoxAlignmentTests : IDisposable
     [InlineData("center", "top: 20px; bottom: 10px", 95, 5)]
     [InlineData("center", "top: 20px; bottom: 10px", 120, 0)]
     [InlineData("unsafe center", "top: 20px; bottom: 10px", 120, -5)]
-    [InlineData("safe end", "top: 20px; bottom: 10px", 120, 20)]
+    [InlineData("safe end", "top: 20px; bottom: 10px", 80, 10)]
+    [InlineData("safe end", "top: 20px; bottom: 10px", 120, 0)]
     public void Abspos_DefaultOverflowAlignment(string value, string insets, double height, double expectedY)
     {
         var document = Parse($"<div style='position: relative; width: 100px; height: 100px'><div id=a style='position: absolute; {insets}; align-self: {value}'><div style='width: 20px; height: {height}px'></div></div></div>");

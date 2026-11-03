@@ -11,8 +11,8 @@ description: "The results of the web-platform-tests of css/css-overflow, and why
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 214 | 217 | 0 | 99% |
 | [Tentative](#tentative-tests) | 8 | 10 | 0 | 80% |
-| [Reftests](#reftests) | 669 | 686 | 0 | 98% |
-| **All** | **891** | **913** | **0** | **98%** |
+| [Reftests](#reftests) | 671 | 686 | 0 | 98% |
+| **All** | **893** | **913** | **0** | **98%** |
 
 ## Stable tests
 
@@ -559,8 +559,8 @@ description: "The results of the web-platform-tests of css/css-overflow, and why
 | [`line-clamp/line-clamp-with-floats-013.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-floats-013.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-with-floats-014.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-floats-014.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-with-floats-015.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-floats-015.html) | Pass | 1 / 1 |  |  |
-| [`line-clamp/line-clamp-with-floats-016.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-floats-016.html) | Fail | 0 / 1 | BUG | a line-clamp container without a clamp point (fewer lines than `line-clamp`) contains its floats (`LineClamp` extends its height to the end of the floats): it is 200px tall, as its float, instead of ending after its last line (100px) |
-| [`line-clamp/line-clamp-with-floats-017.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-floats-017.html) | Fail | 0 / 1 | BUG | a line-clamp container without a clamp point (as many lines as `line-clamp`) contains its floats (`LineClamp` extends its height to the end of the floats): it is 200px tall, as its float, instead of ending after its last line (100px) |
+| [`line-clamp/line-clamp-with-floats-016.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-floats-016.html) | Pass | 1 / 1 |  |  |
+| [`line-clamp/line-clamp-with-floats-017.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-floats-017.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-with-popover-001.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-popover-001.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-with-text-overflow-string-001.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-text-overflow-string-001.html) | Pass | 1 / 1 |  |  |
 | [`line-clamp/line-clamp-with-text-overflow-string-002.html`](https://wpt.fyi/results/css/css-overflow/line-clamp/line-clamp-with-text-overflow-string-002.html) | Pass | 1 / 1 |  |  |

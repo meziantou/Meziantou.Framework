@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of css/css-flexbox, and why 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 366 | 376 | 0 | 97% |
+| [Stable](#stable-tests) | 367 | 376 | 0 | 98% |
 | [Tentative](#tentative-tests) | 6 | 6 | 0 | 100% |
 | [Reftests](#reftests) | 1,015 | 1,023 | 0 | 99% |
-| **All** | **1,387** | **1,405** | **0** | **99%** |
+| **All** | **1,388** | **1,405** | **0** | **99%** |
 
 ## Stable tests
 
@@ -300,7 +300,7 @@ description: "The results of the web-platform-tests of css/css-flexbox, and why 
 | [`intrinsic-size/col-wrap-010.html`](https://wpt.fyi/results/css/css-flexbox/intrinsic-size/col-wrap-010.html) | Pass | 1 / 1 |  |  |
 | [`intrinsic-size/col-wrap-018.html`](https://wpt.fyi/results/css/css-flexbox/intrinsic-size/col-wrap-018.html) | Pass | 1 / 1 |  |  |
 | [`intrinsic-size/col-wrap-019.html`](https://wpt.fyi/results/css/css-flexbox/intrinsic-size/col-wrap-019.html) | Pass | 1 / 1 |  |  |
-| [`intrinsic-size/col-wrap-baseline-001.html`](https://wpt.fyi/results/css/css-flexbox/intrinsic-size/col-wrap-baseline-001.html) | Fail | 3 / 4 | BUG | the max-content width of a single-line `flex-flow: column wrap` container (`height: auto`) with `align-items: baseline` is the outer width of its widest item (30px) instead of the cross size of the line widened by the baseline alignment of the items whose margins are on opposite sides (50px); with a definite height (several lines) the baseline shift is included |
+| [`intrinsic-size/col-wrap-baseline-001.html`](https://wpt.fyi/results/css/css-flexbox/intrinsic-size/col-wrap-baseline-001.html) | Pass | 4 / 4 |  |  |
 | [`intrinsic-size/col-wrap-calc-size-001.html`](https://wpt.fyi/results/css/css-flexbox/intrinsic-size/col-wrap-calc-size-001.html) | Pass | 2 / 2 |  |  |
 | [`intrinsic-size/col-wrap-grid-item-001.html`](https://wpt.fyi/results/css/css-flexbox/intrinsic-size/col-wrap-grid-item-001.html) | Pass | 1 / 1 |  |  |
 | [`intrinsic-size/col-wrap-percentage-001.html`](https://wpt.fyi/results/css/css-flexbox/intrinsic-size/col-wrap-percentage-001.html) | Pass | 1 / 1 |  |  |

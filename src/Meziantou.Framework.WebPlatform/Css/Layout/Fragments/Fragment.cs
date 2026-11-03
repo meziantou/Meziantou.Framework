@@ -1209,9 +1209,15 @@ internal sealed class BoxFragment : Fragment
                     }
 
                     // "accounting for transforms by projecting each box onto the plane of the element that establishes its 3D
-                    // rendering context"
+                    // rendering context": the transform is seen in the perspective of the parent, so the parts of the box behind
+                    // the viewer do not contribute (see LayoutTransforms.TransformRect)
                     if ((flags & OverflowFlags.Transformed) != OverflowFlags.None && LayoutTransforms.GetMatrix(box) is { } matrix)
                     {
+                        if (LayoutTransforms.GetPerspectiveMatrix(box) is { } perspective)
+                        {
+                            matrix = Values.CssTransforms.Multiply(perspective, matrix);
+                        }
+
                         boxScrollable = LayoutTransforms.TransformRect(boxScrollable, matrix);
                         boxInk = LayoutTransforms.TransformRect(boxInk, matrix);
                     }

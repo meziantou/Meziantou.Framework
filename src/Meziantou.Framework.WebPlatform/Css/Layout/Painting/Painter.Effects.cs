@@ -514,8 +514,14 @@ internal sealed partial class Painter
         return BasicShapePaths.Transform(path, SvgUserSpace.GetTransform(shape).Then(GetClipPathContentTransform(clip, space)));
     }
 
+    /// <summary>
+    /// Returns whether a child of a clipPath element contributes to the clipping region. The conditional processing attributes of
+    /// the clipPath element itself are ignored (https://svgwg.org/svg2-draft/struct.html#ConditionalProcessingOverview: they have
+    /// no effect on never-rendered elements), but the ones of its children apply.
+    /// </summary>
     private static bool IsRenderedClipPathChild(Element child)
-        => child is SvgElement && SvgUserSpace.GetComputedValue(child, "display") != "none" && SvgUserSpace.GetComputedValue(child, "visibility") is not ("hidden" or "collapse");
+        => child is SvgElement && SvgUserSpace.GetComputedValue(child, "display") != "none" && SvgUserSpace.GetComputedValue(child, "visibility") is not ("hidden" or "collapse")
+            && SvgConditionalProcessing.Evaluate(child);
 
     private static FillRule GetClipRule(Element element) => SvgUserSpace.GetComputedValue(element, "clip-rule") == "evenodd" ? FillRule.EvenOdd : FillRule.NonZero;
 

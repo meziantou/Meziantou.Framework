@@ -11,8 +11,8 @@ description: "The results of the web-platform-tests of html/rendering, and why t
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 143 | 150 | 0 | 95% |
 | [Tentative](#tentative-tests) | 3 | 7 | 0 | 43% |
-| [Reftests](#reftests) | 320 | 330 | 0 | 97% |
-| **All** | **466** | **487** | **0** | **96%** |
+| [Reftests](#reftests) | 321 | 330 | 0 | 97% |
+| **All** | **467** | **487** | **0** | **96%** |
 
 ## Stable tests
 
@@ -477,7 +477,7 @@ description: "The results of the web-platform-tests of html/rendering, and why t
 | [`widgets/field-sizing-textarea-relayout.html`](https://wpt.fyi/results/html/rendering/widgets/field-sizing-textarea-relayout.html) | Pass | 1 / 1 |  |  |
 | [`widgets/input-checkbox-disabled-checked.html`](https://wpt.fyi/results/html/rendering/widgets/input-checkbox-disabled-checked.html) | Pass | 1 / 1 |  |  |
 | [`widgets/input-checkbox-no-centering.html`](https://wpt.fyi/results/html/rendering/widgets/input-checkbox-no-centering.html) | Pass | 1 / 1 |  |  |
-| [`widgets/input-checkbox-subpixel-paint-size.html`](https://wpt.fyi/results/html/rendering/widgets/input-checkbox-subpixel-paint-size.html) | Fail | 0 / 1 | BUG | the checkbox and radio glyphs are painted in a rectangle whose edges are snapped to the pixel grid independently, so their painted size depends on the fractional position: the controls at `top: 10.6px`/`10.8px` are a pixel smaller than the ones at `10.2px`/`10.4px`, where the reference expects the same size at every offset |
+| [`widgets/input-checkbox-subpixel-paint-size.html`](https://wpt.fyi/results/html/rendering/widgets/input-checkbox-subpixel-paint-size.html) | Pass | 1 / 1 |  |  |
 | [`widgets/input-checkbox-switch-indeterminate.tentative.html`](https://wpt.fyi/results/html/rendering/widgets/input-checkbox-switch-indeterminate.tentative.html) | Pass | 1 / 1 |  |  |
 | [`widgets/input-checkbox-switch-rtl.tentative.html`](https://wpt.fyi/results/html/rendering/widgets/input-checkbox-switch-rtl.tentative.html) | Pass | 1 / 1 |  |  |
 | [`widgets/input-checkbox-switch.tentative.html`](https://wpt.fyi/results/html/rendering/widgets/input-checkbox-switch.tentative.html) | Pass | 1 / 1 |  |  |

@@ -616,6 +616,12 @@ internal static class PositionedLayout
         var blockAxis = ResolveAxis(containingBlock.BlockStart, containingBlock.BlockEnd, containingBlockSize.Block, insets, candidate, containingBlockRect);
         inlineAxis = inlineAxis with { LimitStart = ToAxisCoordinate(inlineAnchor.LimitLow, inlineAnchor.LimitHigh, containingBlock.InlineStart, containingBlockRect, isStart: true), LimitEnd = ToAxisCoordinate(inlineAnchor.LimitLow, inlineAnchor.LimitHigh, containingBlock.InlineStart, containingBlockRect, isStart: false) };
         blockAxis = blockAxis with { LimitStart = ToAxisCoordinate(blockAnchor.LimitLow, blockAnchor.LimitHigh, containingBlock.BlockStart, containingBlockRect, isStart: true), LimitEnd = ToAxisCoordinate(blockAnchor.LimitLow, blockAnchor.LimitHigh, containingBlock.BlockStart, containingBlockRect, isStart: false) };
+        if (anchor is null && candidate.StaticPositionIsContainingBlock && candidate.GridPaddingBox is { } gridPaddingBox)
+        {
+            inlineAxis = WithGridLimit(inlineAxis, containingBlock.InlineStart, gridPaddingBox, containingBlockRect);
+            blockAxis = WithGridLimit(blockAxis, containingBlock.BlockStart, gridPaddingBox, containingBlockRect);
+        }
+
         var imcbRect = GetInsetModifiedContainingBlock(inlineAxis, blockAxis, containingBlock, containingBlockRect);
         if (measureOnly)
             return new AbsoluteLayoutResult(null!, imcbRect, inlineAxis.IsCorrected || blockAxis.IsCorrected);
@@ -787,6 +793,7 @@ internal static class PositionedLayout
     private static (PhysicalRect Rect, WritingDirection WritingDirection) GetContainingBlockRect(LayoutContext context, OutOfFlowCandidate candidate, ContainerBox host, BoxFragment hostFragment, out PhysicalOffset relativeOffset)
     {
         relativeOffset = PhysicalOffset.Zero;
+        candidate.GridPaddingBox = null;
         var containingBlock = candidate.ContainingBlock;
         if (containingBlock.IsInlineBox && !ReferenceEquals(containingBlock, host))
             return (GetInlineContainingBlockRect(containingBlock, hostFragment, out relativeOffset), WritingDirection.FromStyle(containingBlock.Style.Layout));
@@ -797,6 +804,7 @@ internal static class PositionedLayout
         {
             var writingDirection = hostFragment.WritingDirection;
             var paddingBox = writingDirection.ToLogical(hostFragment.PaddingBoxRect, hostFragment.Size);
+            candidate.GridPaddingBox = hostFragment.PaddingBoxRect;
             return (writingDirection.ToPhysical(grid.GetAbsoluteArea(candidate.Box, paddingBox), hostFragment.Size), writingDirection);
         }
 
@@ -990,6 +998,25 @@ internal static class PositionedLayout
         };
     }
 
+    /// <summary>
+    /// Sets the overflow limit rect of a <c>safe</c> alignment at the static position of a box whose containing block is a grid area
+    /// to the padding box of the grid container (see <see cref="OutOfFlowCandidate.GridPaddingBox"/>).
+    /// </summary>
+    private static AbsoluteAxis WithGridLimit(AbsoluteAxis axis, PhysicalSide start, PhysicalRect gridPaddingBox, PhysicalRect containingBlockRect)
+    {
+        if (!axis.IsSafeAtStaticPosition)
+            return axis;
+
+        var horizontal = start is PhysicalSide.Left or PhysicalSide.Right;
+        var low = horizontal ? gridPaddingBox.Left : gridPaddingBox.Top;
+        var high = horizontal ? gridPaddingBox.Right : gridPaddingBox.Bottom;
+        return axis with
+        {
+            LimitStart = ToAxisCoordinate(low, high, start, containingBlockRect, isStart: true),
+            LimitEnd = ToAxisCoordinate(low, high, start, containingBlockRect, isStart: false),
+        };
+    }
+
     /// <summary>Returns the inset-modified containing block in the coordinates of the host.</summary>
     private static PhysicalRect GetInsetModifiedContainingBlock(in AbsoluteAxis inlineAxis, in AbsoluteAxis blockAxis, WritingDirection containingBlock, PhysicalRect containingBlockRect)
     {
@@ -1180,15 +1207,23 @@ internal static class PositionedLayout
                 // containing block corresponding to its stronger inset (even if this would overflow its containing block)"
                 if (alignment.AnchorCenter is null)
                 {
+                    var staticOuterSize = size + startMargin + endMargin;
+                    var staticMarginBoxStart = AlignCenter
+                        ? ImcbStart + ((ContainingBlockSize - ImcbStart - ImcbEnd - staticOuterSize) / 2)
+                        : AlignEnd ? ContainingBlockSize - ImcbEnd - staticOuterSize : ImcbStart;
+
                     // A safe alignment at the static position: the margin box that overflows the inset-modified containing block
-                    // is aligned with its start edge
-                    if (IsSafeAtStaticPosition && size + startMargin + endMargin > ContainingBlockSize - ImcbStart - ImcbEnd + 1e-7)
-                        return (SafeAlignsEnd ? ContainingBlockSize - ImcbEnd - endMargin - size : ImcbStart + startMargin, startMargin, endMargin);
+                    // is aligned with its start edge, in the writing mode of the static-position containing block
+                    // (when the containing block is a grid area, the overflow limit rect is the padding box of the grid container, and
+                    // the margin box is kept in it as the default overflow alignment does, https://drafts.csswg.org/css-align-3/#auto-safety-position)
+                    if (IsSafeAtStaticPosition && staticOuterSize > ContainingBlockSize - ImcbStart - ImcbEnd + 1e-7)
+                    {
+                        staticMarginBoxStart = LimitStart is not null && LimitEnd is not null
+                            ? GetDefaultOverflowPosition(staticMarginBoxStart, staticOuterSize, infiniteLimitStart: false, infiniteLimitEnd: false)
+                            : SafeAlignsEnd ? ContainingBlockSize - ImcbEnd - staticOuterSize : ImcbStart;
+                    }
 
-                    if (AlignCenter)
-                        return (ImcbStart + (ContainingBlockSize - ImcbStart - ImcbEnd - size - startMargin - endMargin) / 2 + startMargin, startMargin, endMargin);
-
-                    return (AlignEnd ? ContainingBlockSize - ImcbEnd - endMargin - size : ImcbStart + startMargin, startMargin, endMargin);
+                    return (staticMarginBoxStart + startMargin, startMargin, endMargin);
                 }
             }
 
@@ -1210,9 +1245,6 @@ internal static class PositionedLayout
 
                 if (remaining >= 0)
                     return (Math.Clamp(centered, ImcbStart, ImcbStart + remaining) + startMargin, startMargin, endMargin);
-
-                if (alignment.Overflow == OverflowAlignment.Safe)
-                    return (ImcbStart + startMargin, startMargin, endMargin);
 
                 return (GetDefaultOverflowPosition(centered, outerSize, infiniteLimitStart, infiniteLimitEnd) + startMargin, startMargin, endMargin);
             }
@@ -1249,8 +1281,10 @@ internal static class PositionedLayout
             if (alignment.IsNormal)
                 return (ImcbStart + startMargin, startMargin, endMargin);
 
-            var marginBoxStart = ImcbStart + BoxAlignment.GetOffset(alignment.Alignment, remaining, safe: alignment.Overflow == OverflowAlignment.Safe);
-            if (remaining < 0 && alignment.Overflow == OverflowAlignment.Default)
+            // "For absolutely positioned alignment subjects whose relevant used self-alignment property is not normal, the default
+            // and safe overflow alignment behavior is" the one of GetDefaultOverflowPosition
+            var marginBoxStart = ImcbStart + BoxAlignment.GetOffset(alignment.Alignment, remaining, safe: false);
+            if (remaining < 0 && alignment.Overflow != OverflowAlignment.Unsafe)
             {
                 marginBoxStart = GetDefaultOverflowPosition(marginBoxStart, outerSize, infiniteLimitStart, infiniteLimitEnd);
             }

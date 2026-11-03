@@ -1200,18 +1200,28 @@ internal sealed partial class GridLayoutAlgorithm
     private void AddAbsolutelyPositionedChild(FragmentBuilder builder, ContainerBox box)
     {
         var item = new GridItem(box, 0, 0) { WritingDirection = WritingDirection.FromStyle(box.Style.Layout) };
-        var (justify, _, _) = ResolveSelfAlignment(item, GetJustifySelf(item.Style), GridAxis.Columns);
-        var (align, _, _) = ResolveSelfAlignment(item, GetAlignSelf(item.Style), GridAxis.Rows);
+        var (justify, _, justifyIsNormal) = ResolveSelfAlignment(item, GetJustifySelf(item.Style), GridAxis.Columns);
+        var (align, _, alignIsNormal) = ResolveSelfAlignment(item, GetAlignSelf(item.Style), GridAxis.Rows);
         if (_isLanes)
         {
-            // The stacking axis of a grid lanes container: normal aligns with the side where the stacking starts
+            // The stacking axis of a grid lanes container: normal aligns with the side where the stacking starts. The grid axis
+            // of a container with track-reverse: normal aligns with the end side, where the auto-placement starts, both for the
+            // static position and in the grid area of the box (as the browsers, WPT css/css-grid/grid-lanes/abspos/*-track-reverse-*)
             if (_stackAxis == GridAxis.Columns)
             {
                 justify = GetLanesStaticAlignment(item, GetJustifySelf(item.Style));
+                if (TrackReverse && alignIsNormal)
+                {
+                    align = AxisAlignment.End;
+                }
             }
             else
             {
                 align = GetLanesStaticAlignment(item, GetAlignSelf(item.Style));
+                if (TrackReverse && justifyIsNormal)
+                {
+                    justify = AxisAlignment.End;
+                }
             }
         }
 

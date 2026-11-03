@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of css/css-align, and why th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 205 | 241 | 0 | 85% |
+| [Stable](#stable-tests) | 211 | 241 | 0 | 88% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 58 | 64 | 0 | 91% |
-| **All** | **263** | **305** | **0** | **86%** |
+| **All** | **269** | **305** | **0** | **88%** |
 
 ## Stable tests
 
@@ -75,12 +75,12 @@ description: "The results of the web-platform-tests of css/css-align, and why th
 | [`abspos/justify-self-vrl-rtl-htb.html`](https://wpt.fyi/results/css/css-align/abspos/justify-self-vrl-rtl-htb.html) | Pass | 20 / 20 |  |  |
 | [`abspos/justify-self-vrl-rtl-vlr.html`](https://wpt.fyi/results/css/css-align/abspos/justify-self-vrl-rtl-vlr.html) | Pass | 20 / 20 |  |  |
 | [`abspos/justify-self-vrl-rtl-vrl.html`](https://wpt.fyi/results/css/css-align/abspos/justify-self-vrl-rtl-vrl.html) | Pass | 20 / 20 |  |  |
-| [`abspos/safe-align-self-htb.html`](https://wpt.fyi/results/css/css-align/abspos/safe-align-self-htb.html) | Fail | 12 / 24 | BUG | a `safe` self-alignment of an absolutely positioned box whose margin box overflows its inset-modified containing block aligns it with the start edge of the inset-modified containing block (offset 15px, or -5px from the end side), where the test expects the overflow to be limited by the containing block itself (the margin box is kept at its edge: offset 10px, or 0px) |
-| [`abspos/safe-align-self-vlr.html`](https://wpt.fyi/results/css/css-align/abspos/safe-align-self-vlr.html) | Fail | 12 / 24 | BUG | a `safe` self-alignment of an absolutely positioned box whose margin box overflows its inset-modified containing block aligns it with the start edge of the inset-modified containing block (offset 15px, or -5px from the end side), where the test expects the overflow to be limited by the containing block itself (the margin box is kept at its edge: offset 10px, or 0px) |
-| [`abspos/safe-align-self-vrl.html`](https://wpt.fyi/results/css/css-align/abspos/safe-align-self-vrl.html) | Fail | 12 / 24 | BUG | a `safe` self-alignment of an absolutely positioned box whose margin box overflows its inset-modified containing block aligns it with the start edge of the inset-modified containing block (offset 15px, or -5px from the end side), where the test expects the overflow to be limited by the containing block itself (the margin box is kept at its edge: offset 10px, or 0px) |
-| [`abspos/safe-justify-self-htb.html`](https://wpt.fyi/results/css/css-align/abspos/safe-justify-self-htb.html) | Fail | 12 / 24 | BUG | a `safe` self-alignment of an absolutely positioned box whose margin box overflows its inset-modified containing block aligns it with the start edge of the inset-modified containing block (offset 15px, or -5px from the end side), where the test expects the overflow to be limited by the containing block itself (the margin box is kept at its edge: offset 10px, or 0px) |
-| [`abspos/safe-justify-self-vlr.html`](https://wpt.fyi/results/css/css-align/abspos/safe-justify-self-vlr.html) | Fail | 12 / 24 | BUG | a `safe` self-alignment of an absolutely positioned box whose margin box overflows its inset-modified containing block aligns it with the start edge of the inset-modified containing block (offset 15px, or -5px from the end side), where the test expects the overflow to be limited by the containing block itself (the margin box is kept at its edge: offset 10px, or 0px) |
-| [`abspos/safe-justify-self-vrl.html`](https://wpt.fyi/results/css/css-align/abspos/safe-justify-self-vrl.html) | Fail | 12 / 24 | BUG | a `safe` self-alignment of an absolutely positioned box whose margin box overflows its inset-modified containing block aligns it with the start edge of the inset-modified containing block (offset 15px, or -5px from the end side), where the test expects the overflow to be limited by the containing block itself (the margin box is kept at its edge: offset 10px, or 0px) |
+| [`abspos/safe-align-self-htb.html`](https://wpt.fyi/results/css/css-align/abspos/safe-align-self-htb.html) | Pass | 24 / 24 |  |  |
+| [`abspos/safe-align-self-vlr.html`](https://wpt.fyi/results/css/css-align/abspos/safe-align-self-vlr.html) | Pass | 24 / 24 |  |  |
+| [`abspos/safe-align-self-vrl.html`](https://wpt.fyi/results/css/css-align/abspos/safe-align-self-vrl.html) | Pass | 24 / 24 |  |  |
+| [`abspos/safe-justify-self-htb.html`](https://wpt.fyi/results/css/css-align/abspos/safe-justify-self-htb.html) | Pass | 24 / 24 |  |  |
+| [`abspos/safe-justify-self-vlr.html`](https://wpt.fyi/results/css/css-align/abspos/safe-justify-self-vlr.html) | Pass | 24 / 24 |  |  |
+| [`abspos/safe-justify-self-vrl.html`](https://wpt.fyi/results/css/css-align/abspos/safe-justify-self-vrl.html) | Pass | 24 / 24 |  |  |
 | [`abspos/stretch-intrinsic-size-htb-htb.html`](https://wpt.fyi/results/css/css-align/abspos/stretch-intrinsic-size-htb-htb.html) | Pass | 12 / 12 |  |  |
 | [`abspos/stretch-intrinsic-size-htb-vrl.html`](https://wpt.fyi/results/css/css-align/abspos/stretch-intrinsic-size-htb-vrl.html) | Pass | 12 / 12 |  |  |
 | [`abspos/stretch-intrinsic-size-vrl-htb.html`](https://wpt.fyi/results/css/css-align/abspos/stretch-intrinsic-size-vrl-htb.html) | Pass | 12 / 12 |  |  |

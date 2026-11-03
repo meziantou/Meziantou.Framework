@@ -85,7 +85,7 @@ internal sealed class LineClamp
     /// <summary>
     /// The block-end margin edge of the floats of the block formatting context of the container: the floats do not extend the
     /// block size measured for the clamp point (they are clipped to the content box of a clamped container), only the block size
-    /// of a container that is not clamped.
+    /// of a legacy container (<see cref="IsLegacy"/>) that is not clamped.
     /// </summary>
     public double FloatsEnd { get; set; }
 
@@ -289,10 +289,13 @@ internal sealed class LineClamp
 
         static double GetBlockSize(in ContentLayoutResult result) => result.BlockSize + result.EndMargin.Sum;
 
-        // https://drafts.csswg.org/css2/#root-height: a container that is not clamped contains its floats
+        // The floats of a line-clamp container do not make it taller, even when it is not clamped (WPT
+        // css/css-overflow/line-clamp/line-clamp-with-floats-016.html, 017): it ends after its last line. The legacy
+        // -webkit-line-clamp container (display: -webkit-box) establishes an independent formatting context: when it is not
+        // clamped, it contains its floats (https://drafts.csswg.org/css2/#root-height)
         static ContentLayoutResult Finish(ContentLayoutResult result, LineClamp measure, bool clamped)
         {
-            if (!clamped && measure.FloatsEnd > GetBlockSize(result))
+            if (!clamped && measure.IsLegacy && measure.FloatsEnd > GetBlockSize(result))
             {
                 result = result with { BlockSize = measure.FloatsEnd, EndMargin = default, CollapsedThrough = false };
             }

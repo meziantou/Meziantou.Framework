@@ -162,7 +162,7 @@
     "total": 1
   },
   "css/css-tables/collapsed-border-background-inset.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-tables/collapsed-border-color-change-with-compositing.html": {
     "reftest": "PASS"

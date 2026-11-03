@@ -477,7 +477,7 @@
     "reftest": "PASS"
   },
   "css/filter-effects/drop-shadow-scale.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/filter-effects/drop-shadow-transform-in-opacity-overlap.html": {
     "reftest": "PASS"
@@ -642,7 +642,7 @@
     "reftest": "PASS"
   },
   "css/filter-effects/feimage-subregion-beyond-filter-region.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/filter-effects/feimage-svg-fragment.html": {
     "reftest": "PASS"
@@ -654,7 +654,7 @@
     "reftest": "PASS"
   },
   "css/filter-effects/feimage-svg-root-preserveaspectratio.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/filter-effects/filter-3d-child-behind-eye-plane.html": {
     "reftest": "PASS"
@@ -852,7 +852,7 @@
     "reftest": "PASS"
   },
   "css/filter-effects/filter-unbounded-child-in-layer-plane.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/filter-effects/filter-url-to-non-existent-filter-001.html": {
     "reftest": "PASS"

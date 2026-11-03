@@ -11,8 +11,8 @@ description: "The results of the web-platform-tests of css/css-text, and why the
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 340 | 349 | 0 | 97% |
 | [Tentative](#tentative-tests) | 18 | 18 | 0 | 100% |
-| [Reftests](#reftests) | 1,495 | 1,559 | 0 | 96% |
-| **All** | **1,853** | **1,926** | **0** | **96%** |
+| [Reftests](#reftests) | 1,497 | 1,559 | 0 | 96% |
+| **All** | **1,855** | **1,926** | **0** | **96%** |
 
 ## Stable tests
 
@@ -1185,7 +1185,7 @@ description: "The results of the web-platform-tests of css/css-text, and why the
 | [`text-indent/text-indent-dynamic-each-line-002.html`](https://wpt.fyi/results/css/css-text/text-indent/text-indent-dynamic-each-line-002.html) | Pass | 1 / 1 |  |  |
 | [`text-indent/text-indent-dynamic-hanging-001.html`](https://wpt.fyi/results/css/css-text/text-indent/text-indent-dynamic-hanging-001.html) | Pass | 1 / 1 |  |  |
 | [`text-indent/text-indent-dynamic-hanging-002.html`](https://wpt.fyi/results/css/css-text/text-indent/text-indent-dynamic-hanging-002.html) | Pass | 1 / 1 |  |  |
-| [`text-indent/text-indent-each-line-after-block-level-box.html`](https://wpt.fyi/results/css/css-text/text-indent/text-indent-each-line-after-block-level-box.html) | Fail | 0 / 1 | BUG | with `text-indent: 4em each-line`, the line that follows a block-level box (a sibling block, or a block nested in an inline box) is not indented: the first line of the anonymous block box after the block is not treated as a line after a forced line break, only the first line of the element is indented |
+| [`text-indent/text-indent-each-line-after-block-level-box.html`](https://wpt.fyi/results/css/css-text/text-indent/text-indent-each-line-after-block-level-box.html) | Pass | 1 / 1 |  |  |
 | [`text-indent/text-indent-each-line-hanging.html`](https://wpt.fyi/results/css/css-text/text-indent/text-indent-each-line-hanging.html) | Pass | 1 / 1 |  |  |
 | [`text-indent/text-indent-length-001.html`](https://wpt.fyi/results/css/css-text/text-indent/text-indent-length-001.html) | Pass | 1 / 1 |  |  |
 | [`text-indent/text-indent-length-002.html`](https://wpt.fyi/results/css/css-text/text-indent/text-indent-length-002.html) | Pass | 1 / 1 |  |  |
@@ -1754,7 +1754,7 @@ description: "The results of the web-platform-tests of css/css-text, and why the
 | [`white-space/white-space-trim-discard-before-after.html`](https://wpt.fyi/results/css/css-text/white-space/white-space-trim-discard-before-after.html) | Pass | 1 / 1 |  |  |
 | [`white-space/white-space-trim-discard-before.html`](https://wpt.fyi/results/css/css-text/white-space/white-space-trim-discard-before.html) | Pass | 1 / 1 |  |  |
 | [`white-space/white-space-trim-discard-inner-001.xht`](https://wpt.fyi/results/css/css-text/white-space/white-space-trim-discard-inner-001.xht) | Fail | 0 / 1 | TEST BUG | the test colors all the text of its `div` elements in blue (`div { color: Blue; }`), the reference only the `span` elements (`span { color: Blue; }`): the brackets are blue in the test and black in the reference (the positions of all the glyphs match); fails in every browser |
-| [`white-space/white-space-trim-discard-inner.html`](https://wpt.fyi/results/css/css-text/white-space/white-space-trim-discard-inner.html) | Fail | 0 / 1 | BUG | `white-space-trim: discard-before discard-inner` on `a <span> b </span> c` renders `abc` instead of `ab c`: when `discard-inner` trims the trailing space of the text of the box, the collapse state still says the text ends with a collapsible space, so the space after the box collapses and is removed too |
+| [`white-space/white-space-trim-discard-inner.html`](https://wpt.fyi/results/css/css-text/white-space/white-space-trim-discard-inner.html) | Pass | 1 / 1 |  |  |
 | [`white-space/white-space-trim-dynamic.html`](https://wpt.fyi/results/css/css-text/white-space/white-space-trim-dynamic.html) | Pass | 1 / 1 |  |  |
 | [`white-space/white-space-trim-generated-content.html`](https://wpt.fyi/results/css/css-text/white-space/white-space-trim-generated-content.html) | Pass | 1 / 1 |  |  |
 | [`white-space/white-space-trim-inline-block-dynamic.html`](https://wpt.fyi/results/css/css-text/white-space/white-space-trim-inline-block-dynamic.html) | Fail | 0 / 1 | NOT IMPLEMENTED | `white-space-trim: discard-before` and `discard-after` on an atomic `inline-block` (a block container): only the start and the end of inline boxes trim the white space around them, so the spaces next to the inline-block are kept (`a b` instead of `ab`) |

@@ -78,7 +78,9 @@ internal sealed partial class Painter
         if (TextControlLayout.HasInnerEditor(element) || FormControlContents.HasContentsFragment(fragment))
             return;
 
-        var content = SnapToDevicePixels(fragment.ContentBoxRect.Translate(offset));
+        var content = fragment.ContentBoxRect.Translate(offset);
+        var isCheckboxOrRadio = element is HtmlInputElement { InputType: InputType.Checkbox or InputType.Radio } && !FormControlContents.IsSwitch(element);
+        content = isCheckboxOrRadio ? SnapToDevicePixelsKeepingSize(content) : SnapToDevicePixels(content);
         var writingDirection = fragment.WritingDirection;
         var padding = fragment.Padding;
 

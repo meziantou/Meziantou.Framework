@@ -144,9 +144,10 @@ internal static class SvgFilterBuilder
                 return;
         }
 
-        var subregion = GetSubregion(context, element, name, inputs);
+        var unclippedSubregion = GetSubregion(context, element, name, inputs);
+        var subregion = Intersect(unclippedSubregion, context.Region);
         var linear = SvgUserSpace.GetComputedValue(element, "color-interpolation-filters") is not ("srgb" or "sRGB");
-        var primitive = (name == "feImage" ? CreateImage(context, element, subregion) : CreatePrimitive(context, element, name, inputs)) ?? new FloodPrimitive(DisplayColor.Transparent) { Inputs = [] };
+        var primitive = (name == "feImage" ? CreateImage(context, element, subregion, unclippedSubregion) : CreatePrimitive(context, element, name, inputs)) ?? new FloodPrimitive(DisplayColor.Transparent) { Inputs = [] };
         primitive = primitive with
         {
             Inputs = inputs,
@@ -212,7 +213,7 @@ internal static class SvgFilterBuilder
     /// <summary>
     /// Returns the filter primitive subregion (https://drafts.fxtf.org/filter-effects/#FilterPrimitiveSubRegion) in user units: its
     /// <c>x</c>, <c>y</c>, <c>width</c> and <c>height</c>, the missing ones being those of the union of the subregions of its inputs
-    /// (the filter region for a standard input, no input and feTile), clipped to the filter region.
+    /// (the filter region for a standard input, no input and feTile), before it is clipped to the filter region.
     /// </summary>
     private static PhysicalRect GetSubregion(BuildContext context, Element element, string name, int[] inputs)
     {
@@ -244,17 +245,18 @@ internal static class SvgFilterBuilder
         var y = element.GetAnimatedAttributeValue("y") is { } yValue ? space.ResolveCoordinate(element, yValue, box, horizontal: false, position: true) : defaults.Y;
         var width = element.GetAnimatedAttributeValue("width") is { } widthValue ? space.ResolveCoordinate(element, widthValue, box, horizontal: true, position: false) : defaults.Width;
         var height = element.GetAnimatedAttributeValue("height") is { } heightValue ? space.ResolveCoordinate(element, heightValue, box, horizontal: false, position: false) : defaults.Height;
-        var subregion = new PhysicalRect(x, y, Math.Max(0, width), Math.Max(0, height));
-        return Intersect(subregion, context.Region);
+        return new PhysicalRect(x, y, Math.Max(0, width), Math.Max(0, height));
     }
 
     /// <summary>
     /// Creates a feImage primitive (https://drafts.fxtf.org/filter-effects/#feImageElement): an element of the document referenced by
     /// href is painted in the user space of the filtered element, at the origin of the subregion; an image (a data: URL, decoded
-    /// synchronously, or the image fetched by the element, see <see cref="SvgFEImageElement.Image"/>) is drawn into the subregion
-    /// with its preserveAspectRatio. The result is transparent when nothing can be painted (e.g. the image is not loaded yet).
+    /// synchronously, or the image fetched by the element, see <see cref="SvgFEImageElement.Image"/>) is fitted to the whole
+    /// subregion (<paramref name="unclippedUserSubregion"/>, before it is clipped to the filter region, as in the browsers) with
+    /// its preserveAspectRatio, and clipped to the subregion. The result is transparent when nothing can be painted (e.g. the
+    /// image is not loaded yet).
     /// </summary>
-    private static ImagePrimitive? CreateImage(BuildContext context, Element element, PhysicalRect userSubregion)
+    private static ImagePrimitive? CreateImage(BuildContext context, Element element, PhysicalRect userSubregion, PhysicalRect unclippedUserSubregion)
     {
         var href = element.GetAnimatedAttributeValue("href") ?? element.GetAttributeNS(Namespaces.XLink, "href");
         if (string.IsNullOrWhiteSpace(href))
@@ -292,26 +294,34 @@ internal static class SvgFilterBuilder
         }
 
         var subregion = context.Space.ToPainting(userSubregion);
-        if (subregion.IsEmpty)
+        var fitRegion = context.Space.ToPainting(unclippedUserSubregion);
+        if (subregion.IsEmpty || fitRegion.IsEmpty)
             return null;
 
         var builder = new DisplayListBuilder();
+        var preserveAspectRatio = element.GetAnimatedAttributeValue("preserveAspectRatio");
         if (image.IsSvg)
         {
             if (SvgImage.Get(image, document) is not { } svgImage)
                 return null;
 
-            new PaintedImage.SvgPaintedImage(svgImage, 1, colorScheme: null, element.GetAnimatedAttributeValue("preserveAspectRatio")).Draw(builder, subregion, element);
+            // https://drafts.fxtf.org/filter-effects/#feImageElement: "the image resource is rendered according to the behavior of
+            // the image element": fitted to the subregion like the image of an image element
+            var (destination, rootPreserveAspectRatio) = Painter.GetSvgImageDestination(preserveAspectRatio, svgImage, fitRegion);
+            builder.Save();
+            builder.Add(new ClipRectItem(subregion));
+            new PaintedImage.SvgPaintedImage(svgImage, 1, colorScheme: null, rootPreserveAspectRatio).Draw(builder, destination, element);
+            builder.Restore();
         }
         else
         {
             if (image.Width <= 0 || image.Height <= 0)
                 return null;
 
-            var fit = Painter.GetPreserveAspectRatioTransform(element.GetAnimatedAttributeValue("preserveAspectRatio"), image.Width, image.Height, subregion.Width, subregion.Height);
+            var fit = Painter.GetPreserveAspectRatioTransform(preserveAspectRatio, image.Width, image.Height, fitRegion.Width, fitRegion.Height);
             builder.Save();
             builder.Add(new ClipRectItem(subregion));
-            builder.Add(new DrawImageItem(image, new PhysicalRect(0, 0, image.Width, image.Height), new PhysicalRect(subregion.X + fit.E, subregion.Y + fit.F, image.Width * fit.A, image.Height * fit.D), ImageSampling.Smooth) { Source = element });
+            builder.Add(new DrawImageItem(image, new PhysicalRect(0, 0, image.Width, image.Height), new PhysicalRect(fitRegion.X + fit.E, fitRegion.Y + fit.F, image.Width * fit.A, image.Height * fit.D), ImageSampling.Smooth) { Source = element });
             builder.Restore();
         }
 

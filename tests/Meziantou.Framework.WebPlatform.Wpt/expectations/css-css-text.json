@@ -3415,7 +3415,7 @@
     "reftest": "PASS"
   },
   "css/css-text/text-indent/text-indent-each-line-after-block-level-box.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/text-indent/text-indent-each-line-hanging.html": {
     "reftest": "PASS"
@@ -5455,7 +5455,7 @@
     "reftest": "FAIL"
   },
   "css/css-text/white-space/white-space-trim-discard-inner.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-text/white-space/white-space-trim-dynamic.html": {
     "reftest": "PASS"

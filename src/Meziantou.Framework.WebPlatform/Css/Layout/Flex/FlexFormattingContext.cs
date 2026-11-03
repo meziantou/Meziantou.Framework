@@ -31,8 +31,8 @@ internal sealed class FlexFormattingContext : FormattingContext
     /// (https://drafts.csswg.org/css-flexbox-1/#intrinsic-sizes): in the main axis of a row container, the sizes that give the
     /// items their contributions once their flexible lengths are resolved (<see cref="FlexLayoutAlgorithm.ComputeRowIntrinsicSize"/>);
     /// in the cross axis of a column container, the largest contributions of the items (the max-content size of a multi-line
-    /// container whose block size is definite, or limited by a definite maximum, or that is balanced on several lines, is the
-    /// sum of the cross sizes of its lines).
+    /// container whose block size is definite, or limited by a definite maximum, or that is balanced on several lines, or whose
+    /// items are baseline-aligned, is the sum of the cross sizes of its lines).
     /// </summary>
     protected internal override IntrinsicSizes ComputeIntrinsicInlineSizes(LayoutContext context, ContainerBox box, in IntrinsicSizingInput input)
     {
@@ -48,6 +48,7 @@ internal sealed class FlexFormattingContext : FormattingContext
 
         var minContent = 0d;
         var maxContent = 0d;
+        var hasBaselineAlignment = false;
         foreach (var child in box.Children)
         {
             if (child is not ContainerBox item || item.IsOutsideMarker || PositionedLayout.IsAbsolutelyPositioned(item))
@@ -56,6 +57,7 @@ internal sealed class FlexFormattingContext : FormattingContext
             var (itemMin, itemMax) = IntrinsicSizing.GetContribution(context, item, writingDirection, input.ContentBlockSize);
             minContent = Math.Max(minContent, itemMin);
             maxContent = Math.Max(maxContent, itemMax);
+            hasBaselineAlignment |= properties.GetAlignSelf(item.Style.Layout).Keyword is AlignmentKeyword.Baseline or AlignmentKeyword.LastBaseline;
         }
 
         // A multi-line column container whose block size is definite: the items are collected into lines in its block size, its
@@ -71,8 +73,10 @@ internal sealed class FlexFormattingContext : FormattingContext
                 maxContentBlockSize = Math.Max(0, maxBlockSize.Value.Resolve(0) - edges);
             }
 
-            // (a balanced container has at least flex-line-count lines, whatever its block size)
-            if (input.ContentBlockSize is not null || maxContentBlockSize is not null || (properties.IsBalanced && properties.LineCount > 1))
+            // (a balanced container has at least flex-line-count lines, whatever its block size; the single line of a container
+            // with an indefinite block size is widened by the baseline alignment of its items, as in the browsers, WPT
+            // css/css-flexbox/intrinsic-size/col-wrap-baseline-001.html: https://drafts.csswg.org/css-flexbox-1/#algo-cross-line)
+            if (input.ContentBlockSize is not null || maxContentBlockSize is not null || (properties.IsBalanced && properties.LineCount > 1) || hasBaselineAlignment)
             {
                 maxContent = Math.Max(minContent, FlexLayoutAlgorithm.ComputeColumnLinesCrossSize(context, box, input.ContentBlockSize, maxContentBlockSize));
             }

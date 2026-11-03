@@ -111,8 +111,9 @@ internal static class FilterEffects
 
             case "drop-shadow":
             {
-                // https://drafts.fxtf.org/filter-effects/#funcdef-filter-drop-shadow: [<color>? && <length>{2,3}], the standard
-                // deviation is half the blur radius
+                // https://drafts.fxtf.org/filter-effects/#funcdef-filter-drop-shadow: [<color>? && <length>{2,3}], "values are
+                // interpreted as for box-shadow but with the optional 3rd <length> value being the standard deviation instead of
+                // blur radius"
                 var lengths = new List<double>(3);
                 var color = DisplayColor.Parse(style.GetUsedValue("color")) ?? DisplayColor.Black;
                 foreach (var argument in arguments)
@@ -130,7 +131,7 @@ internal static class FilterEffects
                 if (lengths.Count < 2)
                     return null;
 
-                return new DropShadowFilter(new PhysicalOffset(lengths[0], lengths[1]), lengths.Count > 2 ? lengths[2] / 2 : 0, color);
+                return new DropShadowFilter(new PhysicalOffset(lengths[0], lengths[1]), lengths.Count > 2 ? lengths[2] : 0, color);
             }
 
             case "hue-rotate":

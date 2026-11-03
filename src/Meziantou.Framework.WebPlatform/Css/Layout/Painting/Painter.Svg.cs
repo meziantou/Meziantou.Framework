@@ -322,8 +322,10 @@ internal sealed partial class Painter
         }
 
         // The overflow of an SVG viewport is clipped to the viewport (in the coordinate system of the element, before its viewBox)
+        var viewportClipSaveCount = -1;
         if (viewportRect is { } clipRect && ClipsSvgViewport(style))
         {
+            viewportClipSaveCount = _builder.SaveCount;
             _builder.Save();
             AddSvgClipRect(GetSvgViewportClip(style, clipRect), frameToRoot);
         }
@@ -350,6 +352,12 @@ internal sealed partial class Painter
             case "image":
                 PaintSvgImage((SvgImageElement)element, style, toGroup, context, source);
                 break;
+        }
+
+        // The clip of the viewport applies to the content of the element, not to its outline, which is around the viewport
+        if (viewportClipSaveCount >= 0)
+        {
+            _builder.RestoreTo(viewportClipSaveCount);
         }
 
         if (HasOutline(style))
@@ -766,7 +774,7 @@ internal sealed partial class Painter
     /// <summary>
     /// Paints an image element (https://svgwg.org/svg2-draft/embedded.html#ImageElement): the image in the rectangle of its x, y, width
     /// and height (auto is the size of the image), fitted by its <c>preserveAspectRatio</c> for a raster image, clipped to the rectangle
-    /// (the user agent style sheet sets overflow: hidden). An SVG image is laid out in the rectangle.
+    /// (the user agent style sheet sets overflow: hidden). An SVG image is laid out in the rectangle of <see cref="GetSvgImageDestination"/>.
     /// </summary>
     private void PaintSvgImage(SvgImageElement element, ComputedStyle style, SvgAffine toGroup, SvgPaintContext context, Element source)
     {
@@ -789,11 +797,10 @@ internal sealed partial class Painter
         var opacity = 1d;
         if (image.IsSvg)
         {
-            // https://svgwg.org/svg2-draft/embedded.html#ImageElement: the image is laid out in the viewport, the preserveAspectRatio of
-            // the image element replacing the one of the root of the image
             if (SvgImage.Get(image, _document) is { } svgImage)
             {
-                new PaintedImage.SvgPaintedImage(svgImage, 1, CssValueComputer.GetUsedColorScheme(style), element.GetAnimatedAttributeValue("preserveAspectRatio")).Draw(_builder, viewport, source);
+                var (destination, rootPreserveAspectRatio) = GetSvgImageDestination(element.GetAnimatedAttributeValue("preserveAspectRatio"), svgImage, viewport);
+                new PaintedImage.SvgPaintedImage(svgImage, 1, CssValueComputer.GetUsedColorScheme(style), rootPreserveAspectRatio).Draw(_builder, destination, source);
             }
         }
         else if (image.Width > 0 && image.Height > 0)
@@ -821,6 +828,24 @@ internal sealed partial class Painter
             return null;
 
         return new PhysicalRect(x, y, width, height);
+    }
+
+    /// <summary>
+    /// Returns the rectangle in which an SVG image drawn by an element with a <c>preserveAspectRatio</c> attribute (an image
+    /// element) is laid out (https://svgwg.org/svg2-draft/embedded.html#ImageElement), and the <c>preserveAspectRatio</c> that applies
+    /// on the root of the image. An image with a natural size is fitted into the viewport of the element per the
+    /// <c>preserveAspectRatio</c> of the element (<c>xMidYMid meet</c> when it has none), and laid out in the resulting rectangle with
+    /// the <c>preserveAspectRatio</c> of its root treated as none ("the preserveAspectRatio attribute on the root element in the
+    /// referenced SVG image shall be ignored"). As in the browsers, an image without natural size is laid out in the whole viewport,
+    /// the <c>preserveAspectRatio</c> of the element replacing the one of the root when it is specified.
+    /// </summary>
+    internal static (PhysicalRect Destination, string? RootPreserveAspectRatio) GetSvgImageDestination(string? preserveAspectRatio, SvgImage image, PhysicalRect viewport)
+    {
+        if (image.NaturalSize is not { Width: > 0 and var width, Height: > 0 and var height })
+            return (viewport, preserveAspectRatio);
+
+        var fit = GetPreserveAspectRatioTransform(preserveAspectRatio, width, height, viewport.Width, viewport.Height);
+        return (new PhysicalRect(viewport.X + fit.E, viewport.Y + fit.F, width * fit.A, height * fit.D), "none");
     }
 
     /// <summary>

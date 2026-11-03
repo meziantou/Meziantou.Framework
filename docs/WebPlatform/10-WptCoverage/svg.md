@@ -11,8 +11,8 @@ description: "The results of the web-platform-tests of svg, and why the tests th
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 703 | 742 | 2 | 95% |
 | [Tentative](#tentative-tests) | 46 | 47 | 0 | 98% |
-| [Reftests](#reftests) | 552 | 629 | 2 | 88% |
-| **All** | **1,301** | **1,418** | **4** | **92%** |
+| [Reftests](#reftests) | 555 | 629 | 2 | 89% |
+| **All** | **1,304** | **1,418** | **4** | **92%** |
 
 ## Stable tests
 
@@ -888,13 +888,13 @@ description: "The results of the web-platform-tests of svg, and why the tests th
 | [`embedded/image-modify-href-3.svg`](https://wpt.fyi/results/svg/embedded/image-modify-href-3.svg) | Pass | 1 / 1 |  |  |
 | [`embedded/image-modify-href-4.svg`](https://wpt.fyi/results/svg/embedded/image-modify-href-4.svg) | Pass | 1 / 1 |  |  |
 | [`embedded/image-preserveaspectratio-does-not-affect-img.html`](https://wpt.fyi/results/svg/embedded/image-preserveaspectratio-does-not-affect-img.html) | Pass | 1 / 1 |  |  |
-| [`embedded/image-preserveaspectratio-ignores-svg-root-viewbox.html`](https://wpt.fyi/results/svg/embedded/image-preserveaspectratio-ignores-svg-root-viewbox.html) | Fail | 0 / 1 | BUG | an SVG image of an `<image>` element is laid out in the whole positioning rectangle with the element's `preserveAspectRatio` applied to the root's `viewBox`, instead of fitting the natural size of the image (its `width` and `height`, 100x100) into the rectangle and treating the root's `preserveAspectRatio` as `none`: the 2:1 `viewBox` fills the whole 200x100 rectangle instead of a centered 100x100 square |
+| [`embedded/image-preserveaspectratio-ignores-svg-root-viewbox.html`](https://wpt.fyi/results/svg/embedded/image-preserveaspectratio-ignores-svg-root-viewbox.html) | Pass | 1 / 1 |  |  |
 | [`embedded/image-preserveaspectratio-meet-svg-viewbox-only.html`](https://wpt.fyi/results/svg/embedded/image-preserveaspectratio-meet-svg-viewbox-only.html) | Pass | 1 / 1 |  |  |
 | [`embedded/image-preserveaspectratio-meet-svg-with-size.html`](https://wpt.fyi/results/svg/embedded/image-preserveaspectratio-meet-svg-with-size.html) | Pass | 1 / 1 |  |  |
 | [`embedded/image-preserveaspectratio-none-animated-viewbox.html`](https://wpt.fyi/results/svg/embedded/image-preserveaspectratio-none-animated-viewbox.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the animations of the SVG images: an SVG image is sampled at the begin of its timeline, so the `<set>` of the root's `viewBox` at 0.2s is never applied and the red left half stays visible |
 | [`embedded/image-preserveaspectratio-none-shared-document.html`](https://wpt.fyi/results/svg/embedded/image-preserveaspectratio-none-shared-document.html) | Pass | 1 / 1 |  |  |
 | [`embedded/image-preserveaspectratio-none-svg-viewbox-only.html`](https://wpt.fyi/results/svg/embedded/image-preserveaspectratio-none-svg-viewbox-only.html) | Pass | 1 / 1 |  |  |
-| [`embedded/image-preserveaspectratio-overrides-svg-root.html`](https://wpt.fyi/results/svg/embedded/image-preserveaspectratio-overrides-svg-root.html) | Fail | 0 / 1 | BUG | an `<image>` element without `preserveAspectRatio` attribute uses the `preserveAspectRatio` of the root of the SVG image (`xMinYMin meet`) instead of its own default (`xMidYMid meet`): the square image is drawn at the left of the 200x100 rectangle instead of centered |
+| [`embedded/image-preserveaspectratio-overrides-svg-root.html`](https://wpt.fyi/results/svg/embedded/image-preserveaspectratio-overrides-svg-root.html) | Pass | 1 / 1 |  |  |
 | [`embedded/image-preserveaspectratio-slice-svg.html`](https://wpt.fyi/results/svg/embedded/image-preserveaspectratio-slice-svg.html) | Pass | 1 / 1 |  |  |
 | [`embedded/image-remove-href-1.svg`](https://wpt.fyi/results/svg/embedded/image-remove-href-1.svg) | Pass | 1 / 1 |  |  |
 | [`embedded/image-remove-href-2.svg`](https://wpt.fyi/results/svg/embedded/image-remove-href-2.svg) | Pass | 1 / 1 |  |  |
@@ -1212,7 +1212,7 @@ description: "The results of the web-platform-tests of svg, and why the tests th
 | [`shapes/reftests/pathlength-004b.svg`](https://wpt.fyi/results/svg/shapes/reftests/pathlength-004b.svg) | Pass | 1 / 1 |  |  |
 | [`shapes/reftests/pathlength-005.html`](https://wpt.fyi/results/svg/shapes/reftests/pathlength-005.html) | Pass | 1 / 1 |  |  |
 | [`shapes/reftests/polygon-with-filtered-marker.html`](https://wpt.fyi/results/svg/shapes/reftests/polygon-with-filtered-marker.html) | Pass | 1 / 1 |  |  |
-| [`struct/reftests/conditional-processing-never-rendered-resources.svg`](https://wpt.fyi/results/svg/struct/reftests/conditional-processing-never-rendered-resources.svg) | Fail | 0 / 1 | BUG | the children of a `clipPath` whose conditional processing attributes (`systemLanguage`, `requiredExtensions`) evaluate to false still contribute to the clipping region (`IsRenderedClipPathChild` ignores them), so the red rectangles of the first row are not clipped away |
+| [`struct/reftests/conditional-processing-never-rendered-resources.svg`](https://wpt.fyi/results/svg/struct/reftests/conditional-processing-never-rendered-resources.svg) | Pass | 1 / 1 |  |  |
 | [`struct/reftests/currentScale-change-repaint.html`](https://wpt.fyi/results/svg/struct/reftests/currentScale-change-repaint.html) | Pass | 1 / 1 |  |  |
 | [`struct/reftests/currentScale.svg`](https://wpt.fyi/results/svg/struct/reftests/currentScale.svg) | Pass | 1 / 1 |  |  |
 | [`struct/reftests/gradient-in-symbol.svg`](https://wpt.fyi/results/svg/struct/reftests/gradient-in-symbol.svg) | Pass | 1 / 1 |  |  |
@@ -1284,7 +1284,7 @@ description: "The results of the web-platform-tests of svg, and why the tests th
 | [`styling/css-linked-parameters/link-parameters-fallback.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-fallback.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the CSS linked parameters (`link-parameters`, `param()`) |
 | [`styling/css-linked-parameters/link-parameters-feimage-dynamic.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-feimage-dynamic.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the CSS linked parameters (`link-parameters`, `param()`) |
 | [`styling/css-linked-parameters/link-parameters-feimage-resolution.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-feimage-resolution.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the CSS linked parameters (`link-parameters`, `param()`) |
-| [`styling/css-linked-parameters/link-parameters-feimage-subregion.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-feimage-subregion.html) | Pass | 1 / 1 |  |  |
+| [`styling/css-linked-parameters/link-parameters-feimage-subregion.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-feimage-subregion.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the CSS linked parameters (`link-parameters`, `param()`) |
 | [`styling/css-linked-parameters/link-parameters-feimage.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-feimage.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the CSS linked parameters (`link-parameters`, `param()`) |
 | [`styling/css-linked-parameters/link-parameters-fragment-identifier-background.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-fragment-identifier-background.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the CSS linked parameters (`link-parameters`, `param()`) |
 | [`styling/css-linked-parameters/link-parameters-fragment-identifier.html`](https://wpt.fyi/results/svg/styling/css-linked-parameters/link-parameters-fragment-identifier.html) | Fail | 0 / 1 | NOT IMPLEMENTED | the CSS linked parameters (`link-parameters`, `param()`) |
@@ -1393,7 +1393,7 @@ description: "The results of the web-platform-tests of svg, and why the tests th
 | [`text/reftests/text-multiline-003.svg`](https://wpt.fyi/results/svg/text/reftests/text-multiline-003.svg) | Fail | 0 / 1 | NOT IMPLEMENTED | the preserved line breaks of the SVG texts (the pre-formatted multi-line text of SVG 2, which no browser implements): the text is laid out on one line |
 | [`text/reftests/text-path-transformed-002.html`](https://wpt.fyi/results/svg/text/reftests/text-path-transformed-002.html) | Pass | 1 / 1 |  |  |
 | [`text/reftests/text-path-transformed.html`](https://wpt.fyi/results/svg/text/reftests/text-path-transformed.html) | Pass | 1 / 1 |  |  |
-| [`text/reftests/text-positioning-list-combining-marks-indexing.html`](https://wpt.fyi/results/svg/text/reftests/text-positioning-list-combining-marks-indexing.html) | Fail | 0 / 1 | BUG | the `x`, `y`, `dx`, `dy` and `rotate` lists of an SVG text are indexed by typographic character (cluster start) instead of addressable character: the value of the combining mark is shifted onto the next character, so `b` is placed at x=60 instead of x=110 |
+| [`text/reftests/text-positioning-list-combining-marks-indexing.html`](https://wpt.fyi/results/svg/text/reftests/text-positioning-list-combining-marks-indexing.html) | Pass | 1 / 1 |  |  |
 | [`text/reftests/text-positioning-list-combining-marks.html`](https://wpt.fyi/results/svg/text/reftests/text-positioning-list-combining-marks.html) | Pass | 1 / 1 |  |  |
 | [`text/reftests/text-shape-inside-001.svg`](https://wpt.fyi/results/svg/text/reftests/text-shape-inside-001.svg) | Fail | 0 / 1 | NOT IMPLEMENTED | the content areas of `shape-inside` of the SVG texts (the text is laid out on one line at the origin; no browser implements them) |
 | [`text/reftests/text-shape-inside-002.svg`](https://wpt.fyi/results/svg/text/reftests/text-shape-inside-002.svg) | Fail | 0 / 1 | NOT IMPLEMENTED | the content areas of `shape-inside` of the SVG texts (the text is laid out on one line at the origin; no browser implements them) |

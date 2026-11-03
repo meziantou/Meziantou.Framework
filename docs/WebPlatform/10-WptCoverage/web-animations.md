@@ -9,21 +9,21 @@ description: "The results of the web-platform-tests of web-animations, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 115 | 136 | 0 | 85% |
+| [Stable](#stable-tests) | 117 | 136 | 0 | 86% |
 | [Tentative](#tentative-tests) | 3 | 8 | 0 | 38% |
 | [Reftests](#reftests) | 18 | 18 | 0 | 100% |
-| **All** | **136** | **162** | **0** | **84%** |
+| **All** | **138** | **162** | **0** | **85%** |
 
 ## Stable tests
 
 | Test | Result | Subtests | Kind | Description |
 |---|---|--:|---|---|
-| [`animation-model/animation-types/accumulation-per-property-001.html`](https://wpt.fyi/results/web-animations/animation-model/animation-types/accumulation-per-property-001.html) | Fail | 398 / 404 | NOT IMPLEMENTED | `flex-start` and `flex-end` serialized as `flow-start` and `flow-end` (experimental in Chromium, fails in every browser) |
+| [`animation-model/animation-types/accumulation-per-property-001.html`](https://wpt.fyi/results/web-animations/animation-model/animation-types/accumulation-per-property-001.html) | Pass | 404 / 404 |  |  |
 | [`animation-model/animation-types/accumulation-per-property-002.html`](https://wpt.fyi/results/web-animations/animation-model/animation-types/accumulation-per-property-002.html) | Fail | 412 / 413 | TEST BUG | expects the computed `list-style` to include `outside` (it contradicts css/css-lists/parsing/list-style-computed.sub.html) |
-| [`animation-model/animation-types/addition-per-property-001.html`](https://wpt.fyi/results/web-animations/animation-model/animation-types/addition-per-property-001.html) | Fail | 398 / 404 | NOT IMPLEMENTED | `flex-start` and `flex-end` serialized as `flow-start` and `flow-end` (experimental in Chromium, fails in every browser) |
+| [`animation-model/animation-types/addition-per-property-001.html`](https://wpt.fyi/results/web-animations/animation-model/animation-types/addition-per-property-001.html) | Pass | 404 / 404 |  |  |
 | [`animation-model/animation-types/addition-per-property-002.html`](https://wpt.fyi/results/web-animations/animation-model/animation-types/addition-per-property-002.html) | Fail | 408 / 409 | TEST BUG | expects the computed `list-style` to include `outside` (it contradicts css/css-lists/parsing/list-style-computed.sub.html) |
 | [`animation-model/animation-types/discrete.html`](https://wpt.fyi/results/web-animations/animation-model/animation-types/discrete.html) | Pass | 5 / 5 |  |  |
-| [`animation-model/animation-types/interpolation-per-property-001.html`](https://wpt.fyi/results/web-animations/animation-model/animation-types/interpolation-per-property-001.html) | Fail | 497 / 507 | BUG, NOT IMPLEMENTED | the interpolated `hue-rotate()` angle converted from radians keeps 6 decimals (`2869.788976deg` instead of `2869.79deg`); `flex-start` and `flex-end` serialized as `flow-start` and `flow-end` (experimental in Chromium, fails in every browser) |
+| [`animation-model/animation-types/interpolation-per-property-001.html`](https://wpt.fyi/results/web-animations/animation-model/animation-types/interpolation-per-property-001.html) | Fail | 506 / 507 | BUG | the interpolated `hue-rotate()` angle converted from radians keeps 6 decimals (`2869.788976deg` instead of `2869.79deg`) |
 | [`animation-model/animation-types/interpolation-per-property-002.html`](https://wpt.fyi/results/web-animations/animation-model/animation-types/interpolation-per-property-002.html) | Fail | 502 / 505 | TEST BUG | expects the computed `list-style` to include `outside` (it contradicts css/css-lists/parsing/list-style-computed.sub.html) |
 | [`animation-model/animation-types/scrollbar-interpolation.html`](https://wpt.fyi/results/web-animations/animation-model/animation-types/scrollbar-interpolation.html) | Pass | 1 / 1 |  |  |
 | [`animation-model/animation-types/visibility.html`](https://wpt.fyi/results/web-animations/animation-model/animation-types/visibility.html) | Pass | 2 / 2 |  |  |
@@ -36,7 +36,7 @@ description: "The results of the web-platform-tests of web-animations, and why t
 | [`animation-model/keyframe-effects/effect-value-context.html`](https://wpt.fyi/results/web-animations/animation-model/keyframe-effects/effect-value-context.html) | Pass | 5 / 5 |  |  |
 | [`animation-model/keyframe-effects/effect-value-easing-on-keyframe-without-property.html`](https://wpt.fyi/results/web-animations/animation-model/keyframe-effects/effect-value-easing-on-keyframe-without-property.html) | Pass | 2 / 2 |  |  |
 | [`animation-model/keyframe-effects/effect-value-interval-distance.html`](https://wpt.fyi/results/web-animations/animation-model/keyframe-effects/effect-value-interval-distance.html) | Pass | 1 / 1 |  |  |
-| [`animation-model/keyframe-effects/effect-value-iteration-composite-operation.html`](https://wpt.fyi/results/web-animations/animation-model/keyframe-effects/effect-value-iteration-composite-operation.html) | Fail | 29 / 38 | BUG, NOT IMPLEMENTED | the iteration composite operation of mismatched filter and transform lists, intrinsic size keywords, `calc-size()`, `line-height` numbers and lengths, and `clip` rectangles with `auto`; `flex-start` and `flex-end` serialized as `flow-start` and `flow-end` (experimental in Chromium, fails in every browser) |
+| [`animation-model/keyframe-effects/effect-value-iteration-composite-operation.html`](https://wpt.fyi/results/web-animations/animation-model/keyframe-effects/effect-value-iteration-composite-operation.html) | Fail | 30 / 38 | BUG | the iteration composite operation of mismatched filter and transform lists, intrinsic size keywords, `calc-size()`, `line-height` numbers and lengths, and `clip` rectangles with `auto` |
 | [`animation-model/keyframe-effects/effect-value-overlapping-keyframes.html`](https://wpt.fyi/results/web-animations/animation-model/keyframe-effects/effect-value-overlapping-keyframes.html) | Pass | 2 / 2 |  |  |
 | [`animation-model/keyframe-effects/effect-value-replaced-animations.html`](https://wpt.fyi/results/web-animations/animation-model/keyframe-effects/effect-value-replaced-animations.html) | Pass | 5 / 5 |  |  |
 | [`animation-model/keyframe-effects/effect-value-step-easing-reversed-direction.html`](https://wpt.fyi/results/web-animations/animation-model/keyframe-effects/effect-value-step-easing-reversed-direction.html) | Pass | 2 / 2 |  |  |

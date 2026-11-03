@@ -986,7 +986,7 @@ the fragment. The contents of the box (the `foreignObject` boxes of an `svg`) ar
   block size of the content box transferred through the preferred aspect ratio, else the default object size; a box with only
   an aspect ratio has intrinsic sizes of 0 (its `max-content` is the stretch fit into the available space when it is
   definite: WPT `svg-intrinsic-size-*`); as in the browsers, its max-content contribution is the default object size when its
-  inline size is a percentage (`IntrinsicSizing.MeasureContribution`). The intrinsic block sizes (the keywords of `min-height`/`max-height`...) are the
+  inline size is a percentage and no definite block size transfers through the ratio (`IntrinsicSizing.MeasureContribution`). The intrinsic block sizes (the keywords of `min-height`/`max-height`...) are the
   natural block size, or the block size transferred from the used inline size.
 - Not done: `image-resolution` (no browser supports it), the
   `appearance: none` checkboxes/radios with children, the native borders and paddings of the other controls, the `number`

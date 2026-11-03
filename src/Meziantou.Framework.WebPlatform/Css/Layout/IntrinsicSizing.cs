@@ -438,8 +438,10 @@ internal static class IntrinsicSizing
 
         // As in the browsers, the max-content contribution of a replaced element that only has an aspect ratio is the default
         // object size when its inline size is a percentage (zero when it is auto: WPT css/css-sizing/svg-intrinsic-size-009.html;
-        // WPT css/css-flexbox/svg-no-natural-size-grandchild.html)
-        if (ReplacedFormattingContext.HasOnlyAspectRatio(box) && HasPercentageSize(box, containingBlock.IsHorizontal))
+        // WPT css/css-flexbox/svg-no-natural-size-grandchild.html), unless a definite block size transfers through the ratio
+        // (WPT css/css-sizing/replaced-element-max-content-contribution-transferred-size.html)
+        var hasDefiniteBlockSize = space.FixedBlockSize is not null || boxModel.GetSize(blockIsHorizontal).TryResolve(containingBlockBlockSize) is not null;
+        if (!hasDefiniteBlockSize && ReplacedFormattingContext.HasOnlyAspectRatio(box) && HasPercentageSize(box, containingBlock.IsHorizontal))
         {
             var inlinePaddingAndBorder = containingBlock.ToLogical(FormattingContext.ResolvePadding(boxModel, 0).Add(boxModel.BorderWidth)).InlineSum();
             max = Math.Max(max, (containingBlock.IsHorizontal ? ReplacedContent.DefaultWidth : ReplacedContent.DefaultHeight) + inlinePaddingAndBorder + margins);

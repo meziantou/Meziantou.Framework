@@ -99,8 +99,31 @@ internal struct HevcCabacEngine
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int DecodeCoeffAbsLevelRemaining(int cRiceParam, HevcCabacDecoder source)
     {
+        // The prefix is a unary code: the next bins are the binary digits of a quotient (DecodeBypassBits), and the prefix is
+        // their number of leading ones, without a branch on each bin. The bins after the first 0 are not read
+        if (ExtraBits < 16)
+        {
+            (Offset, ExtraBits) = source.ReadAhead(Offset, ExtraBits);
+        }
+
         var prefix = 0;
-        while (DecodeBypass(source) is not 0)
+        var ended = false;
+        var peek = Math.Min(ExtraBits, 16);
+        if (peek > 0)
+        {
+            var shift = ExtraBits - peek;
+            var bins = (uint)((Offset >> shift) / Range);
+            var ones = BitOperations.LeadingZeroCount(~(bins << (32 - peek)));
+            ended = ones < peek;
+
+            // The ones and the 0 that ends them, or all the bins when they are ones
+            var unread = ended ? peek - ones - 1 : 0;
+            Offset -= ((bins >> unread) * (ulong)Range) << (shift + unread);
+            ExtraBits = shift + unread;
+            prefix = ones;
+        }
+
+        while (!ended && DecodeBypass(source) is not 0)
         {
             // The longest codes are those of the largest transform coefficient levels: a longer prefix is not a value
             if (++prefix > 32)

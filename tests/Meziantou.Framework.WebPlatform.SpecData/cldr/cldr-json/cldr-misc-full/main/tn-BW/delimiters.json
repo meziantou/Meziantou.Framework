@@ -6,8 +6,8 @@
         "territory": "BW"
       },
       "delimiters": {
-        "quotationStart": "‘",
-        "quotationEnd": "’",
+        "quotationStart": "“",
+        "quotationEnd": "”",
         "alternateQuotationStart": "“",
         "alternateQuotationEnd": "”"
       }

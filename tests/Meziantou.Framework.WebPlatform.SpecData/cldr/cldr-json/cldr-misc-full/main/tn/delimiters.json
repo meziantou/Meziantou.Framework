@@ -5,8 +5,8 @@
         "language": "tn"
       },
       "delimiters": {
-        "quotationStart": "‘",
-        "quotationEnd": "’",
+        "quotationStart": "“",
+        "quotationEnd": "”",
         "alternateQuotationStart": "“",
         "alternateQuotationEnd": "”"
       }

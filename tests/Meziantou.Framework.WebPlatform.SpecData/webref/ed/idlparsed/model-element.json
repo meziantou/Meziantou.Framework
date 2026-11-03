@@ -14,11 +14,40 @@
     },
     "idlNames": {
       "HTMLModelElement": {
-        "fragment": "[Exposed=Window, SecureContext]\ninterface HTMLModelElement : HTMLElement {\n  readonly attribute Promise<HTMLModelElement> ready;\n  readonly attribute DOMPointReadOnly boundingBoxCenter;\n  readonly attribute DOMPointReadOnly boundingBoxExtents;\n\n  attribute DOMMatrixReadOnly entityTransform;\n\n  attribute USVString environmentMap;\n  readonly attribute Promise<undefined> environmentMapReady;\n\n  [Reflect=stagemode] attribute DOMString stageMode;\n};",
+        "fragment": "[Exposed=Window, SecureContext]\ninterface HTMLModelElement : HTMLElement {\n  [CEReactions, ReflectURL] attribute USVString poster;\n\n  readonly attribute Promise<HTMLModelElement> ready;\n  readonly attribute DOMPointReadOnly boundingBoxCenter;\n  readonly attribute DOMPointReadOnly boundingBoxExtents;\n\n  attribute DOMMatrixReadOnly entityTransform;\n\n  attribute USVString environmentMap;\n  readonly attribute Promise<undefined> environmentMapReady;\n\n  [Reflect=stagemode] attribute DOMString stageMode;\n};",
         "type": "interface",
         "name": "HTMLModelElement",
         "inheritance": "HTMLElement",
         "members": [
+          {
+            "type": "attribute",
+            "name": "poster",
+            "idlType": {
+              "type": "attribute-type",
+              "extAttrs": [],
+              "generic": "",
+              "nullable": false,
+              "union": false,
+              "idlType": "USVString"
+            },
+            "extAttrs": [
+              {
+                "type": "extended-attribute",
+                "name": "CEReactions",
+                "rhs": null,
+                "arguments": []
+              },
+              {
+                "type": "extended-attribute",
+                "name": "ReflectURL",
+                "rhs": null,
+                "arguments": []
+              }
+            ],
+            "special": "",
+            "readonly": false,
+            "href": "https://immersive-web.github.io/model-element/#dom-htmlmodelelement-poster"
+          },
           {
             "type": "attribute",
             "name": "ready",

@@ -1,0 +1,15 @@
+{
+  "main": {
+    "ady": {
+      "identity": {
+        "language": "ady"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

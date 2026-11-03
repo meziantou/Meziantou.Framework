@@ -5,6 +5,8 @@
 
 [Exposed=Window, SecureContext]
 interface HTMLModelElement : HTMLElement {
+  [CEReactions, ReflectURL] attribute USVString poster;
+
   readonly attribute Promise<HTMLModelElement> ready;
   readonly attribute DOMPointReadOnly boundingBoxCenter;
   readonly attribute DOMPointReadOnly boundingBoxExtents;

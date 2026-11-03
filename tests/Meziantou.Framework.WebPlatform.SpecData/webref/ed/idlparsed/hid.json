@@ -1,6 +1,6 @@
 {
   "spec": {
-    "title": "WebHID API",
+    "title": "WebHID Standard",
     "url": "https://hid.spec.whatwg.org/"
   },
   "idlparsed": {
@@ -776,7 +776,7 @@
               }
             ],
             "extAttrs": [],
-            "href": "https://hid.spec.whatwg.org/#dom-hidconnectionevent-constructor"
+            "href": "https://hid.spec.whatwg.org/#dom-hidconnectionevent-hidconnectionevent"
           },
           {
             "type": "attribute",
@@ -902,7 +902,7 @@
               }
             ],
             "extAttrs": [],
-            "href": "https://hid.spec.whatwg.org/#dom-hidinputreportevent-constructor"
+            "href": "https://hid.spec.whatwg.org/#dom-hidinputreportevent-hidinputreportevent"
           },
           {
             "type": "attribute",

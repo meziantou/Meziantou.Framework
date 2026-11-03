@@ -1,0 +1,15 @@
+{
+  "main": {
+    "kbd": {
+      "identity": {
+        "language": "kbd"
+      },
+      "delimiters": {
+        "quotationStart": "«",
+        "quotationEnd": "»",
+        "alternateQuotationStart": "‘",
+        "alternateQuotationEnd": "’"
+      }
+    }
+  }
+}

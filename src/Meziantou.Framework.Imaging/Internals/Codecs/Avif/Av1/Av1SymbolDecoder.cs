@@ -1,6 +1,7 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -159,9 +160,28 @@ internal sealed class Av1SymbolDecoder
         {
             int counter = cdf[4];
             var rate = 5 + (counter > 15 ? 1 : 0) + (counter > 31 ? 1 : 0);
-            cdf[0] = (ushort)(c0 + (((((1u << 15) - c0) >> rate) & ~mask0) - ((c0 >> rate) & mask0)));
-            cdf[1] = (ushort)(c1 + (((((1u << 15) - c1) >> rate) & ~mask1) - ((c1 >> rate) & mask1)));
-            cdf[2] = (ushort)(c2 + (((((1u << 15) - c2) >> rate) & ~mask2) - ((c2 >> rate) & mask2)));
+            if (Vector128.IsHardwareAccelerated)
+            {
+                // The 4 values in the lanes of a vector (the last one is 32768, which neither formula changes), lane i
+                // decreased when i < symbol
+                ref var values = ref unsafe(Unsafe.As<ushort, byte>(ref cdf[0]));
+                var current = Vector128.CreateScalar(unsafe(Unsafe.ReadUnaligned<ulong>(ref values))).AsUInt16();
+                var decreased = Vector128.LessThan(Vector128.Create((short)0, 1, 2, 3, 4, 5, 6, 7), Vector128.Create((short)(below0 + below1 + below2))).AsUInt16();
+                var up = current + Vector128.ShiftRightLogical(Vector128.Create((ushort)(1 << 15)) - current, rate);
+                var down = current - Vector128.ShiftRightLogical(current, rate);
+                var updated = Vector128.ConditionalSelect(decreased, down, up).AsUInt64().ToScalar();
+                unsafe
+                {
+                    Unsafe.WriteUnaligned(ref values, updated);
+                }
+            }
+            else
+            {
+                cdf[0] = (ushort)(c0 + (((((1u << 15) - c0) >> rate) & ~mask0) - ((c0 >> rate) & mask0)));
+                cdf[1] = (ushort)(c1 + (((((1u << 15) - c1) >> rate) & ~mask1) - ((c1 >> rate) & mask1)));
+                cdf[2] = (ushort)(c2 + (((((1u << 15) - c2) >> rate) & ~mask2) - ((c2 >> rate) & mask2)));
+            }
+
             cdf[4] = (ushort)(counter + (counter < 32 ? 1 : 0));
         }
 

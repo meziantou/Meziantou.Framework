@@ -511,6 +511,9 @@ internal sealed class BmpEncoderCodec : ImageEncoderCodec
             var samples = _width * (_bitsPerPixel / 8);
             using var lease = frame.GetStorage().AcquireLease();
             var end = Math.Min(_height, _row + RowsPerCall);
+
+            // The output grows once for the whole band, instead of doubling (and copying) as the rows are appended
+            output.GetSpan((end - _row) * _rowLength);
             for (; _row < end; _row++)
             {
                 CancellationToken.ThrowIfCancellationRequested();

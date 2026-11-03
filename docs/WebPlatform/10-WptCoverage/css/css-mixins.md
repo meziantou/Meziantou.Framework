@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of css/css-mixins, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 46 | 49 | 0 | 94% |
+| [Stable](#stable-tests) | 47 | 49 | 0 | 96% |
 | [Tentative](#tentative-tests) | 7 | 8 | 0 | 88% |
 | Reftests | 0 | 0 | 0 | – |
-| **All** | **53** | **57** | **0** | **93%** |
+| **All** | **54** | **57** | **0** | **95%** |
 
 ## Stable tests
 
@@ -37,7 +37,7 @@ description: "The results of the web-platform-tests of css/css-mixins, and why t
 | [`functions/function-invalidation.html`](https://wpt.fyi/results/css/css-mixins/functions/function-invalidation.html) | Pass | 4 / 4 |  |  |
 | [`functions/function-layer.html`](https://wpt.fyi/results/css/css-mixins/functions/function-layer.html) | Pass | 7 / 7 |  |  |
 | [`functions/function-media-dynamic.html`](https://wpt.fyi/results/css/css-mixins/functions/function-media-dynamic.html) | Pass | 1 / 1 |  |  |
-| [`functions/function-shadow-animations.html`](https://wpt.fyi/results/css/css-mixins/functions/function-shadow-animations.html) | Fail | 0 / 3 | BUG | the custom functions defined in a shadow tree are not resolved in the keyframes |
+| [`functions/function-shadow-animations.html`](https://wpt.fyi/results/css/css-mixins/functions/function-shadow-animations.html) | Pass | 3 / 3 |  |  |
 | [`functions/function-shadow-cache.html`](https://wpt.fyi/results/css/css-mixins/functions/function-shadow-cache.html) | Pass | 1 / 1 |  |  |
 | [`functions/function-shadow-container.html`](https://wpt.fyi/results/css/css-mixins/functions/function-shadow-container.html) | Pass | 3 / 3 |  |  |
 | [`functions/function-shadow.html`](https://wpt.fyi/results/css/css-mixins/functions/function-shadow.html) | Pass | 13 / 13 |  |  |

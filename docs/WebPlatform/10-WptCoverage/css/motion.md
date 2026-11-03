@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of css/motion, and why the t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 45 | 46 | 0 | 98% |
+| [Stable](#stable-tests) | 46 | 46 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
 | [Reftests](#reftests) | 98 | 98 | 0 | 100% |
-| **All** | **143** | **144** | **0** | **99%** |
+| **All** | **144** | **144** | **0** | **100%** |
 
 ## Stable tests
 

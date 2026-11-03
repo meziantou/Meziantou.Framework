@@ -1,6 +1,7 @@
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 
 namespace Meziantou.Framework.Imaging.Internals;
 
@@ -193,7 +194,10 @@ internal readonly ref struct JpegXlMaTreeTable
     /// <see cref="MaxPropertyCount"/> properties (of the sample and its neighbors unless <paramref name="anyProperty"/>). The
     /// leaves and the split values are counted when the table is built.
     /// </summary>
-    public static bool IsCandidate(ReadOnlySpan<JpegXlMaTreeNode> nodes, bool anyProperty)
+    public static bool IsCandidate(ReadOnlySpan<JpegXlMaTreeNode> nodes, bool anyProperty) => IsCandidate(nodes, anyProperty, MaxPropertyCount);
+
+    /// <summary>Returns whether a tree may be a table of at most <paramref name="maxPropertyCount"/> properties (see <see cref="IsCandidate(ReadOnlySpan{JpegXlMaTreeNode}, bool)"/>).</summary>
+    public static bool IsCandidate(ReadOnlySpan<JpegXlMaTreeNode> nodes, bool anyProperty, int maxPropertyCount)
     {
         if (nodes.Length > MaxNodeCount || nodes[0].IsLeaf)
             return false;
@@ -217,19 +221,22 @@ internal readonly ref struct JpegXlMaTreeTable
             }
         }
 
-        return count <= MaxPropertyCount;
+        return count <= Math.Min(maxPropertyCount, MaxPropertyCount);
     }
 
     /// <summary>Returns the leaf of a sample, with the cluster of the context of the leaf in the high byte.</summary>
+    /// <remarks>
+    /// The masks are combined a word at a time: the samples of a channel with the weighted predictor wait for this leaf, and
+    /// the vector loads and extractions of <see cref="GetCell(ReadOnlySpan{int})"/> take longer.
+    /// </remarks>
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int GetCell(int x, int y, int maxError, long left, long top, long topLeft, long topRight, long leftLeft, long topTop)
     {
-        var buffer = _buffer;
         var mask0 = ulong.MaxValue;
         var mask1 = ulong.MaxValue;
         var mask2 = ulong.MaxValue;
         var mask3 = ulong.MaxValue;
-        var isWide = _isWide;
+        var buffer = _buffer;
         foreach (ref readonly var slot in _slots)
         {
             // The properties are those of the general loop of the Modular decoder; the property of a slot does not change,
@@ -251,15 +258,10 @@ internal readonly ref struct JpegXlMaTreeTable
                 _ => maxError,
             };
 
-            // The position in the table of the property, clamped to its first and its last entry without a branch: the
-            // values are not predictable
-            var position = (long)value - slot.Low;
-            position &= ~(position >> 63);
-            var beyond = slot.Last - position;
-            position += beyond & (beyond >> 63);
-            if (isWide)
+            var position = GetPosition(value, in slot);
+            if (_isWide)
             {
-                var mask = slot.TableOffset + ((int)position * 4);
+                var mask = slot.TableOffset + (position * 4);
                 mask0 &= buffer[mask];
                 mask1 &= buffer[mask + 1];
                 mask2 &= buffer[mask + 2];
@@ -267,7 +269,7 @@ internal readonly ref struct JpegXlMaTreeTable
             }
             else
             {
-                var mask = slot.TableOffset + ((int)position * 2);
+                var mask = slot.TableOffset + (position * 2);
                 mask0 &= buffer[mask];
                 mask1 &= buffer[mask + 1];
             }
@@ -280,33 +282,49 @@ internal readonly ref struct JpegXlMaTreeTable
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     public int GetCell(ReadOnlySpan<int> properties)
     {
-        var buffer = _buffer;
         var mask0 = ulong.MaxValue;
         var mask1 = ulong.MaxValue;
         var mask2 = ulong.MaxValue;
         var mask3 = ulong.MaxValue;
-        if (_isWide)
+        var buffer = _buffer;
+        foreach (ref readonly var slot in _slots)
         {
-            foreach (ref readonly var slot in _slots)
+            var position = GetPosition(properties[slot.Property], in slot);
+            if (_isWide)
             {
-                var mask = slot.TableOffset + (GetPosition(properties[slot.Property], in slot) * 4);
+                var mask = slot.TableOffset + (position * 4);
                 mask0 &= buffer[mask];
                 mask1 &= buffer[mask + 1];
                 mask2 &= buffer[mask + 2];
                 mask3 &= buffer[mask + 3];
             }
-        }
-        else
-        {
-            foreach (ref readonly var slot in _slots)
+            else
             {
-                var mask = slot.TableOffset + (GetPosition(properties[slot.Property], in slot) * 2);
+                var mask = slot.TableOffset + (position * 2);
                 mask0 &= buffer[mask];
                 mask1 &= buffer[mask + 1];
             }
         }
 
         return GetFirstLeaf(mask0, mask1, mask2, mask3);
+    }
+
+    /// <summary>
+    /// Returns the leaf of a sample from all its properties, as <see cref="GetCell(ReadOnlySpan{int})"/> does, for samples
+    /// that do not wait for each other (an encoder): the masks are combined two words at a time, with fewer instructions
+    /// and a longer latency.
+    /// </summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public int GetCellVector(ReadOnlySpan<int> properties)
+    {
+        var low = Vector128<ulong>.AllBitsSet;
+        var high = Vector128<ulong>.AllBitsSet;
+        foreach (ref readonly var slot in _slots)
+        {
+            Combine(properties[slot.Property], in slot, ref low, ref high);
+        }
+
+        return GetFirstLeaf(low, high);
     }
 
     /// <summary>Returns the position of a value in the table of a property, clamped to its first and its last entry without a branch: the values are not predictable.</summary>
@@ -319,6 +337,36 @@ internal readonly ref struct JpegXlMaTreeTable
         position += beyond & (beyond >> 63);
         return (int)position;
     }
+
+    /// <summary>Combines the mask of the value of a property with the masks of the other properties, two words at a time.</summary>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private void Combine(int value, in Slot slot, ref Vector128<ulong> low, ref Vector128<ulong> high)
+    {
+        var position = GetPosition(value, in slot);
+        ref var start = ref unsafe(MemoryMarshal.GetReference(_buffer));
+        if (_isWide)
+        {
+            var offset = (nuint)(slot.TableOffset + (position * 4));
+            unsafe
+            {
+                // The position is within the table of the property, whose masks are in the buffer
+                low &= Vector128.LoadUnsafe(ref start, offset);
+                high &= Vector128.LoadUnsafe(ref start, offset + 2);
+            }
+        }
+        else
+        {
+            var offset = (nuint)(slot.TableOffset + (position * 2));
+            unsafe
+            {
+                // The position is within the table of the property, whose masks are in the buffer
+                low &= Vector128.LoadUnsafe(ref start, offset);
+            }
+        }
+    }
+
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private int GetFirstLeaf(Vector128<ulong> low, Vector128<ulong> high) => GetFirstLeaf(low.GetElement(0), low.GetElement(1), high.GetElement(0), high.GetElement(1));
 
     [MethodImpl(MethodImplOptions.AggressiveInlining)]
     private int GetFirstLeaf(ulong mask0, ulong mask1, ulong mask2, ulong mask3)

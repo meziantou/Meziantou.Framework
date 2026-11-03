@@ -268,7 +268,7 @@ internal static class JpegXlTreeCoder
 
                     if (hasTable)
                     {
-                        leafIndex = table.GetCell(properties) & 0xFFFFFF;
+                        leafIndex = table.GetCellVector(properties) & 0xFFFFFF;
                     }
                     else
                     {

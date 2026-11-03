@@ -161,6 +161,9 @@
   "html/semantics/document-metadata/the-link-element/stylesheet-empty-href.html": {
     "reftest": "PASS"
   },
+  "html/semantics/document-metadata/the-link-element/stylesheet-encoding-parse.html": {
+    "total": 1
+  },
   "html/semantics/document-metadata/the-link-element/stylesheet-media-change-no-fetch.html": {
     "total": 1
   },
@@ -752,6 +755,9 @@
   "html/semantics/embedded-content/media-elements/loading-the-media-resource/load-removes-queued-error-event.html": {
     "total": 3
   },
+  "html/semantics/embedded-content/media-elements/loading-the-media-resource/media-blob-url-revoked.window.js": {
+    "total": 3
+  },
   "html/semantics/embedded-content/media-elements/loading-the-media-resource/resource-selection-candidate-insert-before.html": {
     "total": 1
   },
@@ -773,6 +779,9 @@
     "failures": {
       "Test currentSrc behaviour in various playback scenarios": "TIMEOUT"
     }
+  },
+  "html/semantics/embedded-content/media-elements/loading-the-media-resource/resource-selection-encoding-parse.html": {
+    "total": 2
   },
   "html/semantics/embedded-content/media-elements/loading-the-media-resource/resource-selection-invoke-audio-constructor-no-src.html": {
     "total": 1
@@ -3141,7 +3150,7 @@
     }
   },
   "html/semantics/embedded-content/the-img-element/sizes/sizes-2d.tentative.html": {
-    "total": 100,
+    "total": 108,
     "failures": {
       "<img sizes=\"(max-width: 0px) contain 1000px 1000px, contain 10px 1000px\" srcset=\"/images/green-1x1.png?img12 50w 50h, /images/green-16x16.png?img12 51w 51h\">": "FAIL",
       "<img sizes=\"(max-width: 0px) cover 10px 1000px, (min-width: 0px) contain 10px 1000px, 1000px\" srcset=\"/images/green-1x1.png?img13 50w 50h, /images/green-16x16.png?img13 51w 51h\">": "FAIL",
@@ -3151,14 +3160,16 @@
       "<img sizes=\"(min-width: 0px) contain 10px 1000px, 1000px\" srcset=\"/images/green-1x1.png?img11 50w 50h, /images/green-16x16.png?img11 51w 51h\">": "FAIL",
       "<img sizes=\"(min-width: 0px) contain 10px 1000px, cover 10px 1000px\" srcset=\"/images/green-1x1.png?img8 50w 50h, /images/green-16x16.png?img8 51w 51h\">": "FAIL",
       "<img sizes=\"(min-width: 0px) cover 10px 1000px, (min-width: 0px) 1px\" srcset=\"/images/green-1x1.png?img23 50w 50h, /images/green-16x16.png?img23 51w 51h\">": "FAIL",
+      "<img sizes=\"(min-width: 0px) cover 10px 1000px, 1px\" width=\"1\" height=\"1\" srcset=\"/images/green-1x1.png?img32 50w, /images/green-16x16.png?img32 51w\">": "FAIL",
       "<img sizes=\"(width &gt;= 0px) cover 10px 1000px, 1px\" srcset=\"/images/green-1x1.png?img19 50w 50h, /images/green-16x16.png?img19 51w 51h\">": "FAIL",
       "<img sizes=\"CONTAIN 10px 1000px\" srcset=\"/images/green-1x1.png?img2 50w 50h, /images/green-16x16.png?img2 51w 51h\">": "FAIL",
-      "<img sizes=\"auto, (min-width: 0px) cover 10px 1000px, 1px\" srcset=\"/images/green-1x1.png?img34 50w 50h, /images/green-16x16.png?img34 51w 51h\">": "FAIL",
+      "<img sizes=\"auto, (min-width: 0px) cover 10px 1000px, 1px\" srcset=\"/images/green-1x1.png?img37 50w 50h, /images/green-16x16.png?img37 51w 51h\">": "FAIL",
       "<img sizes=\"contain 10px 1000px\" srcset=\"/images/green-1x1.png?img1 50w 50h, /images/green-16x16.png?img1 51w 51h\">": "FAIL",
-      "<img sizes=\"contain 10px 1000px\" style=\"object-fit: cover\" srcset=\"/images/green-1x1.png?img32 50w 50h, /images/green-16x16.png?img32 51w 51h\">": "FAIL",
+      "<img sizes=\"contain 10px 1000px\" style=\"object-fit: cover\" srcset=\"/images/green-1x1.png?img35 50w 50h, /images/green-16x16.png?img35 51w 51h\">": "FAIL",
       "<img sizes=\"contain 10px 1000px, cover 10px 1000px\" srcset=\"/images/green-1x1.png?img5 50w 50h, /images/green-16x16.png?img5 51w 51h\">": "FAIL",
       "<img sizes=\"contain 10px 10px\" srcset=\"/images/green-1x1.png?img7 50w 1h, /images/green-16x16.png?img7 51w 2h\">": "FAIL",
-      "<img sizes=\"cover 10px 1000px\" srcset=\"/images/green-1x1.png?img31 50w, /images/green-16x16.png?img31 51w\">": "FAIL",
+      "<img sizes=\"cover 10px 1000px\" srcset=\"/images/green-1x1.png?img33 50w, /images/green-16x16.png?img33 51w\">": "FAIL",
+      "<img sizes=\"cover 10px 10px\" width=\"1\" height=\"1\" srcset=\"/images/green-1x1.png?img34 50w 50h, /images/green-16x16.png?img34 51w 51h\">": "FAIL",
       "<img sizes=\"not (max-width: 0px) cover 10px 1000px, 1px\" srcset=\"/images/green-1x1.png?img14 50w 50h, /images/green-16x16.png?img14 51w 51h\">": "FAIL",
       "<link rel=\"preload\" as=\"image\" imagesizes=\"(max-width: 0px) contain 1000px 1000px, contain 10px 1000px\" imagesrcset=\"/images/green-1x1.png?link12 50w 50h, /images/green-16x16.png?link12 51w 51h\">": "FAIL",
       "<link rel=\"preload\" as=\"image\" imagesizes=\"(max-width: 0px) cover 10px 1000px, (min-width: 0px) contain 10px 1000px, 1000px\" imagesrcset=\"/images/green-1x1.png?link13 50w 50h, /images/green-16x16.png?link13 51w 51h\">": "FAIL",
@@ -3170,11 +3181,11 @@
       "<link rel=\"preload\" as=\"image\" imagesizes=\"(min-width: 0px) cover 10px 1000px, (min-width: 0px) 1px\" imagesrcset=\"/images/green-1x1.png?link23 50w 50h, /images/green-16x16.png?link23 51w 51h\">": "FAIL",
       "<link rel=\"preload\" as=\"image\" imagesizes=\"(width &gt;= 0px) cover 10px 1000px, 1px\" imagesrcset=\"/images/green-1x1.png?link19 50w 50h, /images/green-16x16.png?link19 51w 51h\">": "FAIL",
       "<link rel=\"preload\" as=\"image\" imagesizes=\"CONTAIN 10px 1000px\" imagesrcset=\"/images/green-1x1.png?link2 50w 50h, /images/green-16x16.png?link2 51w 51h\">": "FAIL",
-      "<link rel=\"preload\" as=\"image\" imagesizes=\"auto, (min-width: 0px) cover 10px 1000px, 1px\" imagesrcset=\"/images/green-1x1.png?link34 50w 50h, /images/green-16x16.png?link34 51w 51h\">": "FAIL",
+      "<link rel=\"preload\" as=\"image\" imagesizes=\"auto, (min-width: 0px) cover 10px 1000px, 1px\" imagesrcset=\"/images/green-1x1.png?link37 50w 50h, /images/green-16x16.png?link37 51w 51h\">": "FAIL",
       "<link rel=\"preload\" as=\"image\" imagesizes=\"contain 10px 1000px\" imagesrcset=\"/images/green-1x1.png?link1 50w 50h, /images/green-16x16.png?link1 51w 51h\">": "FAIL",
       "<link rel=\"preload\" as=\"image\" imagesizes=\"contain 10px 1000px, cover 10px 1000px\" imagesrcset=\"/images/green-1x1.png?link5 50w 50h, /images/green-16x16.png?link5 51w 51h\">": "FAIL",
       "<link rel=\"preload\" as=\"image\" imagesizes=\"contain 10px 10px\" imagesrcset=\"/images/green-1x1.png?link7 50w 1h, /images/green-16x16.png?link7 51w 2h\">": "FAIL",
-      "<link rel=\"preload\" as=\"image\" imagesizes=\"cover 10px 1000px\" imagesrcset=\"/images/green-1x1.png?link31 50w, /images/green-16x16.png?link31 51w\">": "FAIL",
+      "<link rel=\"preload\" as=\"image\" imagesizes=\"cover 10px 1000px\" imagesrcset=\"/images/green-1x1.png?link33 50w, /images/green-16x16.png?link33 51w\">": "FAIL",
       "<link rel=\"preload\" as=\"image\" imagesizes=\"not (max-width: 0px) cover 10px 1000px, 1px\" imagesrcset=\"/images/green-1x1.png?link14 50w 50h, /images/green-16x16.png?link14 51w 51h\">": "FAIL",
       "<picture><source sizes=\"(max-width: 0px) contain 1000px 1000px, contain 10px 1000px\" srcset=\"/images/green-1x1.png?picture12 50w 50h, /images/green-16x16.png?picture12 51w 51h\"><img></picture>": "FAIL",
       "<picture><source sizes=\"(max-width: 0px) cover 10px 1000px, (min-width: 0px) contain 10px 1000px, 1000px\" srcset=\"/images/green-1x1.png?picture13 50w 50h, /images/green-16x16.png?picture13 51w 51h\"><img></picture>": "FAIL",
@@ -3184,23 +3195,30 @@
       "<picture><source sizes=\"(min-width: 0px) contain 10px 1000px, 1000px\" srcset=\"/images/green-1x1.png?picture11 50w 50h, /images/green-16x16.png?picture11 51w 51h\"><img></picture>": "FAIL",
       "<picture><source sizes=\"(min-width: 0px) contain 10px 1000px, cover 10px 1000px\" srcset=\"/images/green-1x1.png?picture8 50w 50h, /images/green-16x16.png?picture8 51w 51h\"><img></picture>": "FAIL",
       "<picture><source sizes=\"(min-width: 0px) cover 10px 1000px, (min-width: 0px) 1px\" srcset=\"/images/green-1x1.png?picture23 50w 50h, /images/green-16x16.png?picture23 51w 51h\"><img></picture>": "FAIL",
+      "<picture><source sizes=\"(min-width: 0px) cover 10px 1000px, 1px\" width=\"1\" height=\"1\" srcset=\"/images/green-1x1.png?picture32 50w, /images/green-16x16.png?picture32 51w\"><img></picture>": "FAIL",
       "<picture><source sizes=\"(width &gt;= 0px) cover 10px 1000px, 1px\" srcset=\"/images/green-1x1.png?picture19 50w 50h, /images/green-16x16.png?picture19 51w 51h\"><img></picture>": "FAIL",
       "<picture><source sizes=\"CONTAIN 10px 1000px\" srcset=\"/images/green-1x1.png?picture2 50w 50h, /images/green-16x16.png?picture2 51w 51h\"><img></picture>": "FAIL",
-      "<picture><source sizes=\"auto, (min-width: 0px) cover 10px 1000px, 1px\" srcset=\"/images/green-1x1.png?picture34 50w 50h, /images/green-16x16.png?picture34 51w 51h\"><img></picture>": "FAIL",
+      "<picture><source sizes=\"auto, (min-width: 0px) cover 10px 1000px, 1px\" srcset=\"/images/green-1x1.png?picture37 50w 50h, /images/green-16x16.png?picture37 51w 51h\"><img></picture>": "FAIL",
       "<picture><source sizes=\"contain 10px 1000px\" srcset=\"/images/green-1x1.png?picture1 50w 50h, /images/green-16x16.png?picture1 51w 51h\"><img></picture>": "FAIL",
-      "<picture><source sizes=\"contain 10px 1000px\" srcset=\"/images/green-1x1.png?picture32 50w 50h, /images/green-16x16.png?picture32 51w 51h\"><img style=\"object-fit: cover\"></picture>": "FAIL",
+      "<picture><source sizes=\"contain 10px 1000px\" srcset=\"/images/green-1x1.png?picture35 50w 50h, /images/green-16x16.png?picture35 51w 51h\"><img style=\"object-fit: cover\"></picture>": "FAIL",
       "<picture><source sizes=\"contain 10px 1000px, cover 10px 1000px\" srcset=\"/images/green-1x1.png?picture5 50w 50h, /images/green-16x16.png?picture5 51w 51h\"><img></picture>": "FAIL",
       "<picture><source sizes=\"contain 10px 10px\" srcset=\"/images/green-1x1.png?picture7 50w 1h, /images/green-16x16.png?picture7 51w 2h\"><img></picture>": "FAIL",
-      "<picture><source sizes=\"cover 10px 1000px\" srcset=\"/images/green-1x1.png?picture31 50w, /images/green-16x16.png?picture31 51w\"><img></picture>": "FAIL",
+      "<picture><source sizes=\"cover 10px 1000px\" srcset=\"/images/green-1x1.png?picture-source-width-only 50w, /images/green-16x16.png?picture-source-width-only 51w\" width=\"1\"><img width=\"1\" height=\"1\"></picture>": "FAIL",
+      "<picture><source sizes=\"cover 10px 1000px\" srcset=\"/images/green-1x1.png?picture33 50w, /images/green-16x16.png?picture33 51w\"><img></picture>": "FAIL",
+      "<picture><source sizes=\"cover 10px 10px\" width=\"1\" height=\"1\" srcset=\"/images/green-1x1.png?picture34 50w 50h, /images/green-16x16.png?picture34 51w 51h\"><img></picture>": "FAIL",
       "<picture><source sizes=\"not (max-width: 0px) cover 10px 1000px, 1px\" srcset=\"/images/green-1x1.png?picture14 50w 50h, /images/green-16x16.png?picture14 51w 51h\"><img></picture>": "FAIL"
     }
   },
   "html/semantics/embedded-content/the-img-element/sizes/sizes-auto-2d.tentative.html": {
     "harness": "TIMEOUT",
-    "total": 13,
+    "total": 20,
     "failures": {
-      "<img loading=\"lazy\" sizes=\"auto\" style=\"object-fit: cover\" srcset=\"/images/green-1x1.png?img9 50w 1h, /images/green-16x16.png?img9 51w 2h\">": "FAIL",
-      "Changing computed object-fit on an auto-sized img updates currentSrc": "TIMEOUT"
+      "<img loading=\"lazy\" sizes=\"auto\" style=\"object-fit: cover\" srcset=\"/images/green-1x1.png?img10 50w 1h, /images/green-16x16.png?img10 51w 2h\">": "FAIL",
+      "<img loading=\"lazy\" sizes=\"auto\" width=\"1\" height=\"1\" style=\"object-fit: cover\" srcset=\"/images/green-1x1.png?img6 50w, /images/green-16x16.png?img6 51w\">": "FAIL",
+      "<picture><source srcset=\"/images/green-1x1.png?picture-img-dims 50w, /images/green-16x16.png?picture-img-dims 51w\"><img loading=\"lazy\" sizes=\"auto\" width=\"1\" height=\"1\" style=\"object-fit: cover;\"></picture>": "FAIL",
+      "<picture><source srcset=\"/images/green-1x1.png?picture-source-dims 50w, /images/green-16x16.png?picture-source-dims 51w\" width=\"1\" height=\"1\"><img loading=\"lazy\" sizes=\"auto\" width=\"1\" height=\"100\" style=\"object-fit: cover;\"></picture>": "FAIL",
+      "Changing computed object-fit on an auto-sized img updates currentSrc": "TIMEOUT",
+      "Changing dimension attributes on an auto-sized img updates currentSrc": "TIMEOUT"
     }
   },
   "html/semantics/embedded-content/the-img-element/sizes/sizes-auto-dynamic-attributes.html": {
@@ -3259,6 +3277,9 @@
   },
   "html/semantics/embedded-content/the-img-element/srcset/srcset-w-reselect-on-resize.html": {
     "total": 1
+  },
+  "html/semantics/embedded-content/the-img-element/svg-image-subpixel-size-loads.html": {
+    "total": 2
   },
   "html/semantics/embedded-content/the-img-element/svg-img-density-vs-zoom.html": {
     "total": 9
@@ -3340,6 +3361,13 @@
   },
   "html/semantics/embedded-content/the-object-element/object-image-only-for-print.html": {
     "reftest": "PASS"
+  },
+  "html/semantics/embedded-content/the-object-element/object-image-style-recalc-fallback.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Redetermining what <object> represents when data and rendering change must be queued on the DOM manipulation task source": "TIMEOUT"
+    }
   },
   "html/semantics/embedded-content/the-object-element/object-in-display-none-load-event.html": {
     "total": 1
@@ -3682,6 +3710,9 @@
   },
   "html/semantics/forms/form-control-infrastructure/form_owner_and_table_3.html": {
     "total": 1
+  },
+  "html/semantics/forms/form-control-infrastructure/parser-reparented-open-element.html": {
+    "total": 2
   },
   "html/semantics/forms/form-submission-0/FormDataEvent.window.js": {
     "total": 2
@@ -4539,6 +4570,9 @@
   "html/semantics/forms/the-input-element/range-2.html": {
     "total": 5
   },
+  "html/semantics/forms/the-input-element/range-drag-after-selection.html": {
+    "total": 2
+  },
   "html/semantics/forms/the-input-element/range-intrinsic-size.html": {
     "reftest": "PASS"
   },
@@ -4853,6 +4887,9 @@
       "single: Home/End/PageUp/PageDown should move focus between options and scroll.": "FAIL"
     }
   },
+  "html/semantics/forms/the-select-element/customizable-select-listbox/select-listbox-option-optgroup-client-rects.html": {
+    "total": 12
+  },
   "html/semantics/forms/the-select-element/customizable-select-listbox/select-listbox-typeahead.optional.html": {
     "total": 2
   },
@@ -4946,6 +4983,13 @@
   },
   "html/semantics/forms/the-select-element/customizable-select/option-list.html": {
     "total": 1
+  },
+  "html/semantics/forms/the-select-element/customizable-select/option-selectedness-wrapper.html": {
+    "total": 32,
+    "failures": {
+      "drop-down box: moving a wrapper with a selected option into the select": "FAIL",
+      "list box: moving a wrapper with a selected option into the select": "FAIL"
+    }
   },
   "html/semantics/forms/the-select-element/customizable-select/picker-and-slotted-invalidation.html": {
     "reftest": "PASS"
@@ -5260,6 +5304,9 @@
   "html/semantics/forms/the-select-element/customizable-select/select-picker-option-hover-while-dragging.optional.html": {
     "total": 2
   },
+  "html/semantics/forms/the-select-element/customizable-select/select-picker-option-optgroup-client-rects.html": {
+    "total": 8
+  },
   "html/semantics/forms/the-select-element/customizable-select/select-picker-popover-open-invalid.tentative.html": {
     "total": 2
   },
@@ -5387,7 +5434,11 @@
     "total": 1
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-queued-update.html": {
-    "total": 8
+    "total": 10,
+    "failures": {
+      "Moving a selectedcontent element and removing the selected option queues a single update.": "FAIL",
+      "Moving a selectedcontent element into a select updates all of its selectedcontent elements.": "FAIL"
+    }
   },
   "html/semantics/forms/the-select-element/customizable-select/selectedcontent-restore.optional.html": {
     "total": 2
@@ -5483,6 +5534,9 @@
     "total": 1
   },
   "html/semantics/forms/the-select-element/select-click-does-not-open-picker.html": {
+    "total": 1
+  },
+  "html/semantics/forms/the-select-element/select-csp-style-src-attr.html": {
     "total": 1
   },
   "html/semantics/forms/the-select-element/select-defineProperty.html": {
@@ -7207,6 +7261,9 @@
   "html/semantics/popovers/popover-close-request.html": {
     "total": 1
   },
+  "html/semantics/popovers/popover-contain-paint-dynamic-z-order.html": {
+    "reftest": "PASS"
+  },
   "html/semantics/popovers/popover-dialog-appearance.html": {
     "reftest": "PASS"
   },
@@ -8074,6 +8131,12 @@
   "html/semantics/scripting-1/the-script-element/fetch-src/failure.html": {
     "total": 1
   },
+  "html/semantics/scripting-1/the-script-element/fetch-src/whitespace-with-base-module.html": {
+    "total": 1
+  },
+  "html/semantics/scripting-1/the-script-element/fetch-src/whitespace-with-base.html": {
+    "total": 1
+  },
   "html/semantics/scripting-1/the-script-element/historical.html": {
     "total": 6
   },
@@ -8126,13 +8189,13 @@
     "total": 2
   },
   "html/semantics/scripting-1/the-script-element/json-module/invalid-content-type.any.js": {
-    "total": 100
+    "total": 106
   },
   "html/semantics/scripting-1/the-script-element/json-module/invalid-content-type.any.js#dedicatedworker": {
-    "total": 100
+    "total": 106
   },
   "html/semantics/scripting-1/the-script-element/json-module/invalid-content-type.any.js#sharedworker": {
-    "total": 100
+    "total": 106
   },
   "html/semantics/scripting-1/the-script-element/json-module/json-module-service-worker-test.https.html": {
     "total": 3

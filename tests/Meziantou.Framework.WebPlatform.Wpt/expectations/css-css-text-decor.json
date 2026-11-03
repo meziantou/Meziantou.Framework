@@ -155,6 +155,9 @@
   "css/css-text-decor/text-decoration-decorating-box-001.html": {
     "reftest": "FAIL"
   },
+  "css/css-text-decor/text-decoration-decorating-box-002.html": {
+    "reftest": "PASS"
+  },
   "css/css-text-decor/text-decoration-dotted-001.html": {
     "reftest": "PASS"
   },
@@ -297,6 +300,9 @@
     "reftest": "PASS"
   },
   "css/css-text-decor/text-decoration-overline-wavy-covers-whole-line-length-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text-decor/text-decoration-propagated-ink-overflow.html": {
     "reftest": "PASS"
   },
   "css/css-text-decor/text-decoration-propagation-01.html": {
@@ -464,10 +470,28 @@
   "css/css-text-decor/text-decoration-thickness-linethrough-001.html": {
     "reftest": "PASS"
   },
+  "css/css-text-decor/text-decoration-thickness-linethrough-block-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text-decor/text-decoration-thickness-linethrough-descendant-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text-decor/text-decoration-thickness-linethrough-descendant-002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text-decor/text-decoration-thickness-linethrough-descendant-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text-decor/text-decoration-thickness-linethrough-descendant-004.html": {
+    "reftest": "PASS"
+  },
   "css/css-text-decor/text-decoration-thickness-non-inherit.html": {
     "reftest": "PASS"
   },
   "css/css-text-decor/text-decoration-thickness-overline-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text-decor/text-decoration-thickness-overline-block-001.html": {
     "reftest": "PASS"
   },
   "css/css-text-decor/text-decoration-thickness-percent-001.html": {
@@ -1062,6 +1086,9 @@
     "reftest": "PASS"
   },
   "css/css-text-decor/text-underline-position-horizontal.html": {
+    "reftest": "PASS"
+  },
+  "css/css-text-decor/text-underline-position-horizontal2.html": {
     "reftest": "PASS"
   },
   "css/css-text-decor/text-underline-position-vertical-ja.html": {

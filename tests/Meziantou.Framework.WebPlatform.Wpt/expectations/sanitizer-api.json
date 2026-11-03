@@ -15,6 +15,15 @@
       "Document.parseHTMLUnsafe: createParserOptions returning undefined succeeds and skips sanitization": "FAIL"
     }
   },
+  "sanitizer-api/sanitizer-a-navigation.html?target=html": {
+    "total": 27
+  },
+  "sanitizer-api/sanitizer-a-navigation.html?target=mathml": {
+    "total": 117
+  },
+  "sanitizer-api/sanitizer-a-navigation.html?target=svg": {
+    "total": 81
+  },
   "sanitizer-api/sanitizer-base-immutable.html": {
     "total": 27
   },
@@ -31,16 +40,27 @@
     "total": 14
   },
   "sanitizer-api/sanitizer-custom-elements-is.html": {
-    "total": 8
+    "total": 20,
+    "failures": {
+      "parseHTML removes body is= attribute with global removeAttributes": "FAIL",
+      "parseHTML removes body is= attribute with local allow attributes": "FAIL",
+      "parseHTML removes body is= attribute with local removeAttributes": "FAIL",
+      "parseHTML removes body is= attribute with the default sanitizer config.": "FAIL",
+      "parseHTML removes div is= attribute with global removeAttributes": "FAIL",
+      "parseHTML removes div is= attribute with local allow attributes": "FAIL",
+      "parseHTML removes div is= attribute with local removeAttributes": "FAIL",
+      "parseHTML removes div is= attribute with the default sanitizer config.": "FAIL",
+      "parseHTML removes html is= attribute with global removeAttributes": "FAIL",
+      "parseHTML removes html is= attribute with local allow attributes": "FAIL",
+      "parseHTML removes html is= attribute with local removeAttributes": "FAIL",
+      "parseHTML removes html is= attribute with the default sanitizer config.": "FAIL"
+    }
   },
   "sanitizer-api/sanitizer-custom-elements-is.tentative.html": {
     "total": 8
   },
   "sanitizer-api/sanitizer-default-config.html": {
-    "total": 1,
-    "failures": {
-      "Get the expected default config": "FAIL"
-    }
+    "total": 1
   },
   "sanitizer-api/sanitizer-duplicate-html-body.html": {
     "total": 12
@@ -64,6 +84,9 @@
   },
   "sanitizer-api/sanitizer-javascript-url.html": {
     "total": 1334
+  },
+  "sanitizer-api/sanitizer-mathml-elements.html": {
+    "total": 84
   },
   "sanitizer-api/sanitizer-modifiers.html": {
     "total": 22

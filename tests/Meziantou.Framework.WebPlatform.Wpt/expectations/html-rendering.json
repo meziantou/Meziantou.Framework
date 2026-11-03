@@ -544,6 +544,9 @@
   "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-vertical.html": {
     "reftest": "PASS"
   },
+  "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/fieldset-with-overhanging-legend-on-a-line.html": {
+    "reftest": "PASS"
+  },
   "html/rendering/non-replaced-elements/the-fieldset-and-legend-elements/flex-legend-float-abspos.html": {
     "total": 4
   },
@@ -1309,6 +1312,9 @@
   "html/rendering/widgets/button-layout/input-type-button-newline.html": {
     "reftest": "PASS"
   },
+  "html/rendering/widgets/button-layout/overflow-hidden-block-child-baseline.html": {
+    "reftest": "PASS"
+  },
   "html/rendering/widgets/button-layout/propagate-text-decoration.html": {
     "reftest": "PASS"
   },
@@ -1357,6 +1363,9 @@
   },
   "html/rendering/widgets/input-checkbox-no-centering.html": {
     "reftest": "PASS"
+  },
+  "html/rendering/widgets/input-checkbox-subpixel-paint-size.html": {
+    "reftest": "FAIL"
   },
   "html/rendering/widgets/input-checkbox-switch-indeterminate.tentative.html": {
     "reftest": "PASS"

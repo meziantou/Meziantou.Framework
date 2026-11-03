@@ -4715,8 +4715,50 @@
   "css/CSS2/floats/float-after-block-with-collapsed-margin-inside-inline.html": {
     "reftest": "PASS"
   },
+  "css/CSS2/floats/float-avoids-float-with-margin-001.html": {
+    "reftest": "PASS"
+  },
+  "css/CSS2/floats/float-avoids-float-with-margin-002.html": {
+    "reftest": "PASS"
+  },
+  "css/CSS2/floats/float-avoids-float-with-margin-003.html": {
+    "reftest": "PASS"
+  },
+  "css/CSS2/floats/float-avoids-float-with-margin-004.html": {
+    "reftest": "PASS"
+  },
+  "css/CSS2/floats/float-avoids-float-with-margin-005.html": {
+    "reftest": "PASS"
+  },
+  "css/CSS2/floats/float-avoids-float-with-margin-006.html": {
+    "reftest": "PASS"
+  },
+  "css/CSS2/floats/float-avoids-float-with-margin-007.html": {
+    "reftest": "PASS"
+  },
+  "css/CSS2/floats/float-avoids-float-with-margin-008.html": {
+    "reftest": "PASS"
+  },
+  "css/CSS2/floats/float-avoids-float-with-margin-009.html": {
+    "reftest": "PASS"
+  },
+  "css/CSS2/floats/float-avoids-float-with-margin-010.html": {
+    "reftest": "PASS"
+  },
+  "css/CSS2/floats/float-avoids-float-with-margin-011.html": {
+    "reftest": "PASS"
+  },
+  "css/CSS2/floats/float-avoids-float-with-margin-012.html": {
+    "reftest": "PASS"
+  },
   "css/CSS2/floats/float-dynamic-formatting-context.html": {
     "total": 12
+  },
+  "css/CSS2/floats/float-in-block-in-inline-001.html": {
+    "reftest": "PASS"
+  },
+  "css/CSS2/floats/float-in-block-in-inline-position-001.html": {
+    "total": 6
   },
   "css/CSS2/floats/float-in-inline-001.html": {
     "reftest": "PASS"
@@ -4782,6 +4824,9 @@
     "reftest": "PASS"
   },
   "css/CSS2/floats/float-under-flatten-under-preserve-3d.html": {
+    "reftest": "PASS"
+  },
+  "css/CSS2/floats/float-wider-than-line-inside-inline-with-block.html": {
     "reftest": "PASS"
   },
   "css/CSS2/floats/float-with-absolutely-positioned-child-with-static-inset.html": {
@@ -9749,6 +9794,18 @@
   "css/CSS2/normal-flow/block-in-inline-insert-018.html": {
     "total": 1
   },
+  "css/CSS2/normal-flow/block-in-inline-margin-after-relayout-001.html": {
+    "total": 1
+  },
+  "css/CSS2/normal-flow/block-in-inline-margin-after-relayout-002.html": {
+    "total": 1
+  },
+  "css/CSS2/normal-flow/block-in-inline-margin-after-relayout.html": {
+    "total": 2
+  },
+  "css/CSS2/normal-flow/block-in-inline-margin-before-relayout.html": {
+    "total": 2
+  },
   "css/CSS2/normal-flow/block-in-inline-margins-001a.xht": {
     "reftest": "PASS"
   },
@@ -9830,6 +9887,9 @@
   "css/CSS2/normal-flow/block-in-inline-remove-006.xht": {
     "reftest": "PASS"
   },
+  "css/CSS2/normal-flow/block-in-inline-self-collapsing-margin-001.html": {
+    "total": 6
+  },
   "css/CSS2/normal-flow/block-in-inline-whitespace-001a.xht": {
     "reftest": "PASS"
   },
@@ -9893,6 +9953,9 @@
   "css/CSS2/normal-flow/block-replaced-width-006.xht": {
     "reftest": "PASS"
   },
+  "css/CSS2/normal-flow/block-with-table-content-is-not-self-collapsing.html": {
+    "total": 3
+  },
   "css/CSS2/normal-flow/blocks-011.xht": {
     "reftest": "PASS"
   },
@@ -9939,6 +10002,9 @@
     "reftest": "PASS"
   },
   "css/CSS2/normal-flow/child-bottom-margin-in-unresolvable-percentage-height.html": {
+    "reftest": "PASS"
+  },
+  "css/CSS2/normal-flow/clearance-covers-the-margin-of-a-collapsed-through-block-in-inline.html": {
     "reftest": "PASS"
   },
   "css/CSS2/normal-flow/containing-block-percent-margin-bottom.html": {
@@ -10503,6 +10569,9 @@
     "reftest": "PASS"
   },
   "css/CSS2/normal-flow/margin-collapse-min-height-003.html": {
+    "reftest": "PASS"
+  },
+  "css/CSS2/normal-flow/margin-collapse-through-block-in-inline-001.html": {
     "reftest": "PASS"
   },
   "css/CSS2/normal-flow/margin-collapse-through-for-various-height-values.tentative.html": {
@@ -11554,6 +11623,9 @@
   },
   "css/CSS2/normal-flow/negative-margin-shrinking-container-size-002.html": {
     "reftest": "PASS"
+  },
+  "css/CSS2/normal-flow/nested-inline-boxes-around-block-in-inline-001.html": {
+    "total": 4
   },
   "css/CSS2/normal-flow/overflow-scroll-paint-order.html": {
     "reftest": "PASS"
@@ -13162,6 +13234,9 @@
   },
   "css/CSS2/positioning/relpos-percentage-left-in-scrollable.html": {
     "total": 1
+  },
+  "css/CSS2/positioning/relpos-percentage-offset-anonymous-block.html": {
+    "total": 5
   },
   "css/CSS2/positioning/relpos-percentage-top-in-scrollable.html": {
     "total": 1
@@ -18580,6 +18655,9 @@
   },
   "css/CSS2/visudet/inline-block-baseline-016.html": {
     "reftest": "PASS"
+  },
+  "css/CSS2/visudet/inline-block-baseline-with-block-in-inline-001.html": {
+    "total": 3
   },
   "css/CSS2/visudet/line-height-201.html": {
     "reftest": "PASS"

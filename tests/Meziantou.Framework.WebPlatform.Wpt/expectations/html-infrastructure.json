@@ -121,6 +121,15 @@
   "html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/window-messagechannel-success.https.html": {
     "total": 1
   },
+  "html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/window-noopener-failure.https.html": {
+    "total": 1,
+    "failures": {
+      "SharedArrayBuffer and a same-origin noopener popup": "FAIL"
+    }
+  },
+  "html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/window-opener-success.https.html": {
+    "total": 1
+  },
   "html/infrastructure/safe-passing-of-structured-data/shared-array-buffers/window-serviceworker-failure.https.html": {
     "total": 1
   },

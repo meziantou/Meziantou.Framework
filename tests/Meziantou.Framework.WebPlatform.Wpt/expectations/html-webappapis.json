@@ -1212,6 +1212,12 @@
   "html/webappapis/timers/type-long-settimeout.any.js#dedicatedworker": {
     "total": 1
   },
+  "html/webappapis/timers/zero-settimeout.any.js": {
+    "total": 1
+  },
+  "html/webappapis/timers/zero-settimeout.any.js#dedicatedworker": {
+    "total": 1
+  },
   "html/webappapis/update-rendering/child-document-raf-order.html": {
     "total": 1,
     "failures": {

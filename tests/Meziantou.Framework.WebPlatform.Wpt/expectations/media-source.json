@@ -240,6 +240,9 @@
   "media-source/mediasource-redundant-seek.html": {
     "total": 1
   },
+  "media-source/mediasource-remove-preserves-currentTime.html": {
+    "total": 1
+  },
   "media-source/mediasource-remove.html": {
     "total": 17
   },
@@ -254,6 +257,9 @@
   },
   "media-source/mediasource-seek-during-pending-seek.html": {
     "total": 2
+  },
+  "media-source/mediasource-seek-unbuffered-readystate.html": {
+    "total": 3
   },
   "media-source/mediasource-seekable.html": {
     "total": 3

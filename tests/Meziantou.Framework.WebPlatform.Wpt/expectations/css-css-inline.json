@@ -631,6 +631,12 @@
   "css/css-inline/initial-letter/initial-letter-with-tab.html": {
     "reftest": "FAIL"
   },
+  "css/css-inline/inline-block-baseline-with-block-in-inline.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/inline-block-last-baseline-skips-non-contributing-block-in-inline.html": {
+    "reftest": "PASS"
+  },
   "css/css-inline/inline-crash-chrome-001.html": {
     "total": 1
   },
@@ -680,7 +686,7 @@
     "total": 9
   },
   "css/css-inline/parsing/line-height-computed.html": {
-    "total": 13
+    "total": 15
   },
   "css/css-inline/parsing/line-height-invalid.html": {
     "total": 8
@@ -797,6 +803,9 @@
     "reftest": "PASS"
   },
   "css/css-inline/text-box-trim/text-box-trim-block-in-inline-start-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-inline/text-box-trim/text-box-trim-both-with-bottom-aligned-box.html": {
     "reftest": "PASS"
   },
   "css/css-inline/text-box-trim/text-box-trim-dynamic-001.html": {

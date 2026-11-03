@@ -616,6 +616,9 @@
   "scroll-animations/css/animation-timeline-scroll-functional-notation.tentative.html": {
     "total": 7
   },
+  "scroll-animations/css/animation-timeline-shared-name-removal.html": {
+    "total": 1
+  },
   "scroll-animations/css/animation-timeline-view-functional-notation.tentative.html": {
     "total": 18
   },

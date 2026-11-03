@@ -77,6 +77,9 @@
   "css/css-variables/variable-animation-to-only.html": {
     "total": 2
   },
+  "css/css-variables/variable-animation-visited-link.html": {
+    "reftest": "PASS"
+  },
   "css/css-variables/variable-created-document.html": {
     "total": 2
   },

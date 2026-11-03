@@ -44,6 +44,12 @@
       "Event handlers which change visibility should not measure next paint.": "FAIL"
     }
   },
+  "event-timing/event-counts-maplike-iterators-always-updated.html": {
+    "total": 1
+  },
+  "event-timing/event-counts-maplike-validate-iterators.html": {
+    "total": 1
+  },
   "event-timing/event-counts-zero.html": {
     "total": 1
   },

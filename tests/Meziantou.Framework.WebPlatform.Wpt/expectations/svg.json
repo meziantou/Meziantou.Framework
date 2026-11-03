@@ -993,6 +993,42 @@
   "svg/coordinate-systems/outer-svg-resize-001o.html": {
     "total": 3
   },
+  "svg/coordinate-systems/outer-svg-transform-attribute-001.html": {
+    "reftest": "PASS"
+  },
+  "svg/coordinate-systems/outer-svg-transform-attribute-002.html": {
+    "reftest": "PASS"
+  },
+  "svg/coordinate-systems/outer-svg-transform-attribute-003.html": {
+    "reftest": "PASS"
+  },
+  "svg/coordinate-systems/outer-svg-transform-attribute-computed-style.html": {
+    "total": 13
+  },
+  "svg/coordinate-systems/outer-svg-transform-attribute-dynamic-001.html": {
+    "reftest": "PASS"
+  },
+  "svg/coordinate-systems/outer-svg-transform-attribute-dynamic-002.html": {
+    "reftest": "PASS"
+  },
+  "svg/coordinate-systems/outer-svg-transform-attribute-individual-transform-properties-001.html": {
+    "reftest": "PASS"
+  },
+  "svg/coordinate-systems/outer-svg-transform-attribute-scrollable-overflow.html": {
+    "total": 1
+  },
+  "svg/coordinate-systems/outer-svg-transform-attribute-stacking-context-001.html": {
+    "reftest": "PASS"
+  },
+  "svg/coordinate-systems/outer-svg-transform-attribute-svg-dom-001.html": {
+    "reftest": "PASS"
+  },
+  "svg/coordinate-systems/outer-svg-transform-attribute-zoom-001.html": {
+    "reftest": "PASS"
+  },
+  "svg/coordinate-systems/outer-svg-transform-attribute-zoom-002.html": {
+    "reftest": "PASS"
+  },
   "svg/coordinate-systems/svgtransformlist-replaceitem.html": {
     "total": 1
   },
@@ -1117,6 +1153,33 @@
   "svg/embedded/image-modify-href-4.svg": {
     "reftest": "PASS"
   },
+  "svg/embedded/image-preserveaspectratio-does-not-affect-img.html": {
+    "reftest": "PASS"
+  },
+  "svg/embedded/image-preserveaspectratio-ignores-svg-root-viewbox.html": {
+    "reftest": "FAIL"
+  },
+  "svg/embedded/image-preserveaspectratio-meet-svg-viewbox-only.html": {
+    "reftest": "PASS"
+  },
+  "svg/embedded/image-preserveaspectratio-meet-svg-with-size.html": {
+    "reftest": "PASS"
+  },
+  "svg/embedded/image-preserveaspectratio-none-animated-viewbox.html": {
+    "reftest": "FAIL"
+  },
+  "svg/embedded/image-preserveaspectratio-none-shared-document.html": {
+    "reftest": "PASS"
+  },
+  "svg/embedded/image-preserveaspectratio-none-svg-viewbox-only.html": {
+    "reftest": "PASS"
+  },
+  "svg/embedded/image-preserveaspectratio-overrides-svg-root.html": {
+    "reftest": "FAIL"
+  },
+  "svg/embedded/image-preserveaspectratio-slice-svg.html": {
+    "reftest": "PASS"
+  },
   "svg/embedded/image-remove-href-1.svg": {
     "reftest": "PASS"
   },
@@ -1151,6 +1214,9 @@
     "reftest": "PASS"
   },
   "svg/extensibility/foreignObject/foreign-object-size.html": {
+    "reftest": "PASS"
+  },
+  "svg/extensibility/foreignObject/foreign-object-visibility-hidden-visible-content.html": {
     "reftest": "PASS"
   },
   "svg/extensibility/foreignObject/foreign-object-with-position-under-clip-path.html": {
@@ -1573,6 +1639,9 @@
       "Inline module script vs. onload": "FAIL"
     }
   },
+  "svg/interact/scripted/non-scaling-stroke-transform-change-hittest.html": {
+    "total": 2
+  },
   "svg/interact/scripted/pointer-events-fill-stroke-hittest.html": {
     "total": 8910
   },
@@ -1584,6 +1653,9 @@
   },
   "svg/interact/scripted/rect-hittest-002.html": {
     "total": 53
+  },
+  "svg/interact/scripted/script-referrerpolicy-idl.html": {
+    "total": 1
   },
   "svg/interact/scripted/svg-pointer-events-bbox.html": {
     "total": 31
@@ -1610,6 +1682,9 @@
   },
   "svg/interact/scripted/text-hittest-003.html": {
     "total": 1
+  },
+  "svg/interact/scripted/transformed-group-hittest.html": {
+    "total": 21
   },
   "svg/interact/use-instance-hover.html": {
     "reftest": "FAIL"
@@ -1764,10 +1839,16 @@
   "svg/linking/reftests/svgview-transform.html": {
     "reftest": "PASS"
   },
+  "svg/linking/reftests/svgview-viewbox-invalid.html": {
+    "reftest": "PASS"
+  },
   "svg/linking/reftests/svgview-viewbox-override-multiple.html": {
     "reftest": "PASS"
   },
   "svg/linking/reftests/svgview-viewbox-then-transform.html": {
+    "reftest": "PASS"
+  },
+  "svg/linking/reftests/svgview-viewbox-zero.html": {
     "reftest": "PASS"
   },
   "svg/linking/reftests/url-processing-fetch-properties-001.sub.svg": {
@@ -1810,6 +1891,9 @@
     "reftest": "PASS"
   },
   "svg/linking/reftests/use-template.html": {
+    "reftest": "PASS"
+  },
+  "svg/linking/reftests/view-viewbox-invalid-fallback.html": {
     "reftest": "PASS"
   },
   "svg/linking/reftests/view-viewbox-override.html": {
@@ -2199,6 +2283,9 @@
   },
   "svg/painting/reftests/marker-context-fill-transform.html": {
     "reftest": "FAIL"
+  },
+  "svg/painting/reftests/marker-data-uri-reference.svg": {
+    "reftest": "PASS"
   },
   "svg/painting/reftests/marker-external-reference.svg": {
     "reftest": "PASS"
@@ -2797,6 +2884,12 @@
   "svg/render/reftests/render-sync-with-font-size.html": {
     "reftest": "PASS"
   },
+  "svg/render/reftests/svg-filter-unresolved-reference.html": {
+    "reftest": "PASS"
+  },
+  "svg/render/reftests/visibility-hidden-container-mask-clip.html": {
+    "reftest": "PASS"
+  },
   "svg/scripted/attr-script-fetchpriority.optional.html": {
     "total": 2,
     "failures": {
@@ -2944,6 +3037,9 @@
   },
   "svg/struct/SVGSVGElement-deselectAll.html": {
     "total": 7
+  },
+  "svg/struct/reftests/conditional-processing-never-rendered-resources.svg": {
+    "reftest": "FAIL"
   },
   "svg/struct/reftests/currentScale-change-repaint.html": {
     "reftest": "PASS"
@@ -3171,6 +3267,9 @@
   "svg/struct/scripted/use-inline-event-handlers.html": {
     "total": 2
   },
+  "svg/struct/scripted/use-inline-event-handlers.tentative.html": {
+    "total": 2
+  },
   "svg/struct/scripted/use-load-error-events.tentative.html": {
     "total": 9,
     "failures": {
@@ -3180,7 +3279,7 @@
     }
   },
   "svg/struct/scripted/use-script-not-executed.html": {
-    "total": 3,
+    "total": 6,
     "failures": {
       "Scripts cloned by a use element while being parsed don't bypass 'strict-dynamic'": "FAIL"
     }
@@ -3208,6 +3307,9 @@
   },
   "svg/styling/attr-style-type.html": {
     "total": 3
+  },
+  "svg/styling/border-spacing-svg-zoom-computed.html": {
+    "total": 8
   },
   "svg/styling/border-spacing-svg-zoom-table-display.html": {
     "reftest": "PASS"
@@ -3258,6 +3360,27 @@
     "reftest": "FAIL"
   },
   "svg/styling/css-linked-parameters/link-parameters-fallback.html": {
+    "reftest": "FAIL"
+  },
+  "svg/styling/css-linked-parameters/link-parameters-feimage-dynamic.html": {
+    "reftest": "FAIL"
+  },
+  "svg/styling/css-linked-parameters/link-parameters-feimage-resolution.html": {
+    "reftest": "FAIL"
+  },
+  "svg/styling/css-linked-parameters/link-parameters-feimage-subregion.html": {
+    "reftest": "PASS"
+  },
+  "svg/styling/css-linked-parameters/link-parameters-feimage.html": {
+    "reftest": "FAIL"
+  },
+  "svg/styling/css-linked-parameters/link-parameters-fragment-identifier-background.html": {
+    "reftest": "FAIL"
+  },
+  "svg/styling/css-linked-parameters/link-parameters-fragment-identifier.html": {
+    "reftest": "FAIL"
+  },
+  "svg/styling/css-linked-parameters/link-parameters-fragment-shared-resource.html": {
     "reftest": "FAIL"
   },
   "svg/styling/css-linked-parameters/link-parameters-geometry.html": {
@@ -3469,6 +3592,9 @@
     "reftest": "PASS"
   },
   "svg/styling/svg-filter-render-srcdoc-frame.tentative.https.html": {
+    "reftest": "PASS"
+  },
+  "svg/styling/svg-filter-render-swap.tentative.https.html": {
     "reftest": "PASS"
   },
   "svg/styling/svg-filter-render-web-plugin.tentative.https.html": {
@@ -3693,6 +3819,12 @@
   "svg/text/reftests/text-path-transformed.html": {
     "reftest": "PASS"
   },
+  "svg/text/reftests/text-positioning-list-combining-marks-indexing.html": {
+    "reftest": "FAIL"
+  },
+  "svg/text/reftests/text-positioning-list-combining-marks.html": {
+    "reftest": "PASS"
+  },
   "svg/text/reftests/text-shape-inside-001.svg": {
     "reftest": "FAIL"
   },
@@ -3706,6 +3838,9 @@
     "reftest": "PASS"
   },
   "svg/text/reftests/text-unknown-element-not-rendered.svg": {
+    "reftest": "PASS"
+  },
+  "svg/text/reftests/text-visibility-hidden-tspan-visible.html": {
     "reftest": "PASS"
   },
   "svg/text/reftests/text-xml-space-001.svg": {
@@ -3933,6 +4068,13 @@
   "svg/types/elements/SVGGeometryElement-rect.svg": {
     "total": 3
   },
+  "svg/types/scripted/SVGAngle-valueAsString.html": {
+    "total": 4,
+    "failures": {
+      "Reflected marker orient attribute clamps overflowing unit conversions and round-trips": "FAIL",
+      "SVGAngle clamps overflowing unit conversions and round-trips valueAsString": "FAIL"
+    }
+  },
   "svg/types/scripted/SVGAnimatedAngle-initial-values.html": {
     "total": 2
   },
@@ -4108,10 +4250,21 @@
     }
   },
   "svg/types/scripted/SVGGraphicsElement.getBBox-06.html": {
-    "total": 3
+    "total": 5,
+    "failures": {
+      "display:none <g>: the rect child reports the geometry it would have if rendered": "FAIL",
+      "symbol: the rect child reports the geometry it would have if rendered": "FAIL"
+    }
   },
   "svg/types/scripted/SVGGraphicsElement.getBBox-07.html": {
-    "total": 49
+    "total": 49,
+    "failures": {
+      "getBBox on circle inside defs returns the circle it would have if rendered": "FAIL",
+      "getBBox on rect inside clipPath returns the rect it would have if rendered": "FAIL",
+      "getBBox on rect inside defs returns the rect it would have if rendered": "FAIL",
+      "getBBox on rect inside group inside defs returns the rect it would have if rendered": "FAIL",
+      "getBBox on rect inside mask returns the rect it would have if rendered": "FAIL"
+    }
   },
   "svg/types/scripted/SVGGraphicsElement.getBBox-08.html": {
     "total": 20

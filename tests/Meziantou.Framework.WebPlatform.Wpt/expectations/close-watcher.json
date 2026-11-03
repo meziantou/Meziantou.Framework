@@ -26,6 +26,15 @@
   "close-watcher/frame-removal.html": {
     "total": 6
   },
+  "close-watcher/iframes/dialog-cross-origin-nn.html": {
+    "total": 1
+  },
+  "close-watcher/iframes/dialog-cross-origin-ynn.html": {
+    "total": 1
+  },
+  "close-watcher/iframes/dialog-cross-origin-ynyn.html": {
+    "total": 1
+  },
   "close-watcher/iframes/dialog-same-origin-nn.html": {
     "total": 1
   },

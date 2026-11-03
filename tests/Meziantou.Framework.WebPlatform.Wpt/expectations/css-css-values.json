@@ -194,6 +194,9 @@
   "css/css-values/calc-background-size-1.html": {
     "reftest": "PASS"
   },
+  "css/css-values/calc-background-size-round-percentage.html": {
+    "reftest": "FAIL"
+  },
   "css/css-values/calc-border-radius-1.html": {
     "reftest": "PASS"
   },
@@ -350,6 +353,9 @@
   "css/css-values/calc-parenthesis-stack.html": {
     "reftest": "PASS"
   },
+  "css/css-values/calc-percentage-in-number-functions.html": {
+    "total": 21
+  },
   "css/css-values/calc-percentage-position.html": {
     "total": 8
   },
@@ -455,6 +461,9 @@
   },
   "css/css-values/calc-size/calc-size-aspect-ratio-005.html": {
     "reftest": "PASS"
+  },
+  "css/css-values/calc-size/calc-size-aspect-ratio-percentage-height-001.html": {
+    "total": 2
   },
   "css/css-values/calc-size/calc-size-flex-001.html": {
     "reftest": "PASS"
@@ -971,7 +980,12 @@
     "total": 1
   },
   "css/css-values/random-computed.tentative.html": {
-    "total": 172
+    "total": 172,
+    "failures": {
+      "Custom property with random() inside transform() should have 'fixed'": "FAIL",
+      "Property border-image-slice value 'random(10%, 30%)'": "FAIL",
+      "random() with percentages inside multiple nested functions should have 'fixed'": "FAIL"
+    }
   },
   "css/css-values/random-in-animations.tentative.html": {
     "total": 37

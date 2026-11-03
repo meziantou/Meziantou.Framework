@@ -12,7 +12,7 @@
     "total": 217
   },
   "wasm/core/binary.wast.js.html": {
-    "total": 276
+    "total": 280
   },
   "wasm/core/block.wast.js.html": {
     "total": 397
@@ -86,6 +86,9 @@
   "wasm/core/endianness.wast.js.html": {
     "total": 121
   },
+  "wasm/core/exceptions/cast.wast.js.html": {
+    "total": 9
+  },
   "wasm/core/exceptions/tag.wast.js.html": {
     "total": 26
   },
@@ -153,13 +156,13 @@
     "total": 37
   },
   "wasm/core/gc/array_init_data.wast.js.html": {
-    "total": 54
+    "total": 58
   },
   "wasm/core/gc/array_init_elem.wast.js.html": {
     "total": 47
   },
   "wasm/core/gc/array_new_data.wast.js.html": {
-    "total": 40
+    "total": 44
   },
   "wasm/core/gc/array_new_elem.wast.js.html": {
     "total": 36
@@ -291,7 +294,11 @@
     "total": 188
   },
   "wasm/core/memory64/memory_grow64.wast.js.html": {
-    "total": 59
+    "total": 66,
+    "failures": {
+      "#65 Test that a WebAssembly code returns a specific result (memory_grow64.wast:105)": "FAIL",
+      "#66 Test that a WebAssembly code returns a specific result (memory_grow64.wast:108)": "FAIL"
+    }
   },
   "wasm/core/memory64/memory_init64.wast.js.html": {
     "total": 377
@@ -318,7 +325,11 @@
     "total": 15
   },
   "wasm/core/memory64/table_grow64.wast.js.html": {
-    "total": 26
+    "total": 33,
+    "failures": {
+      "#32 Test that a WebAssembly code returns a specific result (table_grow64.wast:46)": "FAIL",
+      "#33 Test that a WebAssembly code returns a specific result (table_grow64.wast:49)": "FAIL"
+    }
   },
   "wasm/core/memory64/table_init64.wast.js.html": {
     "total": 1044
@@ -330,7 +341,7 @@
     "total": 41
   },
   "wasm/core/memory_grow.wast.js.html": {
-    "total": 131
+    "total": 136
   },
   "wasm/core/memory_redundancy.wast.js.html": {
     "total": 15
@@ -504,7 +515,7 @@
     "total": 49
   },
   "wasm/core/relaxed-simd/relaxed_madd_nmadd.wast.js.html": {
-    "total": 76
+    "total": 80
   },
   "wasm/core/relaxed-simd/relaxed_min_max.wast.js.html": {
     "total": 101
@@ -723,7 +734,7 @@
     "total": 25
   },
   "wasm/core/table_grow.wast.js.html": {
-    "total": 81
+    "total": 86
   },
   "wasm/core/table_set.wast.js.html": {
     "total": 37
@@ -771,7 +782,7 @@
     "total": 354
   },
   "wasm/core/utf8-invalid-encoding.wast.js.html": {
-    "total": 354
+    "total": 371
   },
   "wasm/create_multiple_memory.worker.js": {
     "total": 1

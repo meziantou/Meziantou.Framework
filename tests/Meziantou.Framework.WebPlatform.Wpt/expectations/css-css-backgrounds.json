@@ -694,6 +694,9 @@
   "css/css-backgrounds/background-image-large-with-auto.html": {
     "reftest": "PASS"
   },
+  "css/css-backgrounds/background-image-no-repeat-does-not-wrap.html": {
+    "reftest": "PASS"
+  },
   "css/css-backgrounds/background-image-none-gradient-repaint.html": {
     "reftest": "PASS"
   },
@@ -2233,6 +2236,15 @@
   "css/css-backgrounds/box-shadow/box-shadow-table-row-display.html": {
     "reftest": "PASS"
   },
+  "css/css-backgrounds/box-shadow/inset-shadow-large-spread-clipped-to-padding-box.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow/inset-shadow-large-spread-cloned-inline.html": {
+    "reftest": "PASS"
+  },
+  "css/css-backgrounds/box-shadow/inset-shadow-large-spread-fragmented-inline.html": {
+    "reftest": "PASS"
+  },
   "css/css-backgrounds/box-shadow/slice-block-fragmentation-001.html": {
     "reftest": "PASS"
   },
@@ -2470,7 +2482,12 @@
     "total": 4
   },
   "css/css-backgrounds/parsing/background-shorthand-serialization.html": {
-    "total": 11
+    "total": 24,
+    "failures": {
+      "horizontal offset from an edge with the initial vertical offset": "FAIL",
+      "the serialized shorthand parses back to itself": "FAIL",
+      "vertical offset from an edge with the initial horizontal offset": "FAIL"
+    }
   },
   "css/css-backgrounds/parsing/background-size-computed.html": {
     "total": 16
@@ -2482,10 +2499,7 @@
     "total": 9
   },
   "css/css-backgrounds/parsing/background-valid.html": {
-    "total": 46,
-    "failures": {
-      "e.style['background'] = \"none\" should set background-color": "FAIL"
-    }
+    "total": 46
   },
   "css/css-backgrounds/parsing/border-color-computed.html": {
     "total": 8

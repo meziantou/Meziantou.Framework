@@ -1203,8 +1203,14 @@
   "css/css-masking/clip-path/clip-path-url-reference-change.html": {
     "reftest": "PASS"
   },
+  "css/css-masking/clip-path/clip-path-url-reference-data-uri-svg-element.html": {
+    "reftest": "PASS"
+  },
   "css/css-masking/clip-path/clip-path-url-reference-empty-while-loading.tentative.html": {
     "reftest": "FAIL"
+  },
+  "css/css-masking/clip-path/clip-path-url-reference-external-svg-element.html": {
+    "reftest": "PASS"
   },
   "css/css-masking/clip-path/clip-path-url-reference-external.html": {
     "reftest": "PASS"

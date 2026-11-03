@@ -267,6 +267,9 @@
   "css/css-properties-values-api/conditional-rules.html": {
     "total": 3
   },
+  "css/css-properties-values-api/custom-property-explicit-inherit-invalidation.html": {
+    "total": 2
+  },
   "css/css-properties-values-api/determine-registration.html": {
     "total": 15
   },

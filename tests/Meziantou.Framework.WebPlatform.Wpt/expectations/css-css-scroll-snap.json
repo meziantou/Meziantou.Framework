@@ -627,6 +627,9 @@
   "css/css-scroll-snap/snap-on-focus.html": {
     "total": 1
   },
+  "css/css-scroll-snap/snap-to-column-scroll-origin.html": {
+    "total": 4
+  },
   "css/css-scroll-snap/snap-to-combination-of-two-elements-1.html": {
     "total": 1
   },

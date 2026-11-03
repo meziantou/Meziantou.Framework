@@ -698,6 +698,9 @@
   "css/css-images/normalization-radial.html": {
     "reftest": "PASS"
   },
+  "css/css-images/object-fit-change-svg-001o.html": {
+    "reftest": "PASS"
+  },
   "css/css-images/object-fit-contain-png-001c.html": {
     "reftest": "PASS"
   },
@@ -798,6 +801,9 @@
     "reftest": "PASS"
   },
   "css/css-images/object-fit-contain-svg-006p.html": {
+    "reftest": "PASS"
+  },
+  "css/css-images/object-fit-contain-svg-zero-height.html": {
     "reftest": "PASS"
   },
   "css/css-images/object-fit-containcontainintrinsicsize-png-001c.tentative.html": {
@@ -932,6 +938,18 @@
   "css/css-images/object-fit-dyn-aspect-ratio-002.html": {
     "reftest": "PASS"
   },
+  "css/css-images/object-fit-embedded-svg-dynamic-change.html": {
+    "reftest": "PASS"
+  },
+  "css/css-images/object-fit-embedded-svg-root-will-change-dynamic-change.html": {
+    "reftest": "PASS"
+  },
+  "css/css-images/object-fit-embedded-svg-root-will-change.html": {
+    "reftest": "PASS"
+  },
+  "css/css-images/object-fit-embedded-svg-will-change.html": {
+    "reftest": "PASS"
+  },
   "css/css-images/object-fit-fill-png-001c.html": {
     "reftest": "PASS"
   },
@@ -1032,6 +1050,9 @@
     "reftest": "PASS"
   },
   "css/css-images/object-fit-fill-svg-006p.html": {
+    "reftest": "PASS"
+  },
+  "css/css-images/object-fit-fill-svg-with-natural-size-and-viewbox.html": {
     "reftest": "PASS"
   },
   "css/css-images/object-fit-none-png-001c.html": {
@@ -1244,8 +1265,29 @@
   "css/css-images/object-fit-stale-image-while-revalidating.html": {
     "reftest": "TIMEOUT"
   },
+  "css/css-images/object-fit-svg-intersection-observer.sub.html": {
+    "total": 3,
+    "failures": {
+      "intersectionRatio follows the clipping by the content box of the object, in a cross-origin iframe": "FAIL",
+      "intersectionRatio follows the position of the fitted SVG document, in a cross-origin iframe": "FAIL",
+      "intersectionRect is in the coordinates of the fitted SVG document, in a same-origin iframe": "FAIL"
+    }
+  },
   "css/css-images/object-fit-svg-no-natural-dimensions.html": {
     "reftest": "PASS"
+  },
+  "css/css-images/object-fit-svg-pointer-events.html": {
+    "total": 2,
+    "failures": {
+      "A pointer event over the fitted SVG document targets it, with client coordinates relative to it": "FAIL",
+      "A pointer event where the fitted SVG document does not cover the content box targets the object": "FAIL"
+    }
+  },
+  "css/css-images/object-fit-svg-scroll-into-view.html": {
+    "total": 1,
+    "failures": {
+      "scrollIntoView scrolls to the position of the element in the fitted SVG document": "FAIL"
+    }
   },
   "css/css-images/object-position-png-001c.html": {
     "reftest": "PASS"
@@ -1306,6 +1348,9 @@
   },
   "css/css-images/object-view-box-contain-intrinsic-size.html": {
     "reftest": "PASS"
+  },
+  "css/css-images/object-view-box-embedded-svg-dynamic-change.html": {
+    "reftest": "FAIL"
   },
   "css/css-images/object-view-box-empty-bounds.html": {
     "reftest": "PASS"

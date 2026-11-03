@@ -155,6 +155,9 @@
   "css/css-anchor-position/anchor-inherited.html": {
     "total": 1
   },
+  "css/css-anchor-position/anchor-inline-box-vrl.html": {
+    "total": 5
+  },
   "css/css-anchor-position/anchor-inside-outside.html": {
     "total": 16
   },
@@ -1046,10 +1049,46 @@
   "css/css-anchor-position/position-area-overflow-icb-002.html": {
     "reftest": "PASS"
   },
+  "css/css-anchor-position/position-area-overflow-icb-003-ltr.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-area-overflow-icb-003-rtl.html": {
+    "reftest": "PASS"
+  },
   "css/css-anchor-position/position-area-overflow-icb-003.html": {
     "reftest": "PASS"
   },
+  "css/css-anchor-position/position-area-overflow-icb-004-ltr.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-area-overflow-icb-004-rtl.html": {
+    "reftest": "PASS"
+  },
   "css/css-anchor-position/position-area-overflow-icb-004.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-area-overflow-icb-005-ltr.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-anchor-position/position-area-overflow-icb-005-rtl.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-anchor-position/position-area-overflow-icb-006-ltr.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-anchor-position/position-area-overflow-icb-006-rtl.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-anchor-position/position-area-overflow-icb-007-ltr.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-area-overflow-icb-007-rtl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-area-overflow-icb-008-ltr.html": {
+    "reftest": "PASS"
+  },
+  "css/css-anchor-position/position-area-overflow-icb-008-rtl.html": {
     "reftest": "PASS"
   },
   "css/css-anchor-position/position-area-parsing.html": {
@@ -1158,6 +1197,9 @@
     "reftest": "PASS"
   },
   "css/css-anchor-position/position-try-fallbacks-no-fit-after-fit.html": {
+    "total": 1
+  },
+  "css/css-anchor-position/position-try-fallbacks-scrollbar.html": {
     "total": 1
   },
   "css/css-anchor-position/position-try-grid-001.html": {

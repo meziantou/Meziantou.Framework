@@ -239,7 +239,13 @@
   "css/filter-effects/backdrop-filter-nested-border-radius-clip.html": {
     "reftest": "PASS"
   },
+  "css/filter-effects/backdrop-filter-on-transformed-layer.html": {
+    "reftest": "PASS"
+  },
   "css/filter-effects/backdrop-filter-opacity-rounded-clip.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/backdrop-filter-over-earlier-backdrop-filter.html": {
     "reftest": "PASS"
   },
   "css/filter-effects/backdrop-filter-paint-order.html": {
@@ -343,6 +349,9 @@
   },
   "css/filter-effects/background-image-blur-repaint.html": {
     "reftest": "PASS"
+  },
+  "css/filter-effects/blur-clip-border-radius.html": {
+    "reftest": "FAIL"
   },
   "css/filter-effects/blur-clip-stacking-context-001.html": {
     "reftest": "PASS"
@@ -451,6 +460,30 @@
   },
   "css/filter-effects/drop-shadow-currentcolor-inheritance.html": {
     "total": 2
+  },
+  "css/filter-effects/drop-shadow-outsets-sample-composited-child-preserve-3d.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/drop-shadow-outsets-sample-composited-child.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/drop-shadow-perspective-rotation.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/drop-shadow-perspective-scale.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/drop-shadow-perspective.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/drop-shadow-scale.html": {
+    "reftest": "FAIL"
+  },
+  "css/filter-effects/drop-shadow-transform-in-opacity-overlap.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/drop-shadow-transform.html": {
+    "reftest": "PASS"
   },
   "css/filter-effects/drop-shadow-with-3d-transform.html": {
     "reftest": "PASS"
@@ -593,6 +626,9 @@
   "css/filter-effects/feconvolve-region-002.html": {
     "reftest": "PASS"
   },
+  "css/filter-effects/feconvolvematrix-order-removal.html": {
+    "reftest": "PASS"
+  },
   "css/filter-effects/fedisplacementmap-non-uniform-transform-001.html": {
     "reftest": "FAIL"
   },
@@ -600,6 +636,36 @@
     "reftest": "PASS"
   },
   "css/filter-effects/feimage-element-ref-geometry.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/feimage-huge-subregion.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/feimage-subregion-beyond-filter-region.html": {
+    "reftest": "FAIL"
+  },
+  "css/filter-effects/feimage-svg-fragment.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/feimage-svg-preserveaspectratio-slice.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/feimage-svg-resolution.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/feimage-svg-root-preserveaspectratio.html": {
+    "reftest": "FAIL"
+  },
+  "css/filter-effects/filter-3d-child-behind-eye-plane.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-3d-child-in-3d-filtered-layer.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-3d-child-spanning-eye-plane.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-3d-children-crossing-eye-plane.html": {
     "reftest": "PASS"
   },
   "css/filter-effects/filter-cb-abspos-inline-001.html": {
@@ -620,6 +686,9 @@
   "css/filter-effects/filter-chained-url-url-001.html": {
     "reftest": "PASS"
   },
+  "css/filter-effects/filter-change-to-reference-filter.html": {
+    "reftest": "PASS"
+  },
   "css/filter-effects/filter-contrast-001.html": {
     "reftest": "PASS"
   },
@@ -627,6 +696,12 @@
     "reftest": "PASS"
   },
   "css/filter-effects/filter-contrast-003.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-degenerate-layer-plane-backdrop.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-degenerate-layer-plane.html": {
     "reftest": "PASS"
   },
   "css/filter-effects/filter-effect-remove-unattached.html": {
@@ -701,6 +776,15 @@
   "css/filter-effects/filter-hue_rotate-002-test.html": {
     "reftest": "PASS"
   },
+  "css/filter-effects/filter-in-3d-transformed-ancestor-child-crossing-eye-plane.html": {
+    "reftest": "FAIL"
+  },
+  "css/filter-effects/filter-in-3d-transformed-ancestor-child-near-eye-plane.html": {
+    "reftest": "FAIL"
+  },
+  "css/filter-effects/filter-in-3d-transformed-ancestor.html": {
+    "reftest": "PASS"
+  },
   "css/filter-effects/filter-invalid.html": {
     "reftest": "PASS"
   },
@@ -708,6 +792,12 @@
     "reftest": "PASS"
   },
   "css/filter-effects/filter-invert-002-test.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-outsets-clipped-by-document-edge.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filter-outsets-do-not-escape-ancestor-clip.html": {
     "reftest": "PASS"
   },
   "css/filter-effects/filter-overflow-transformed-child-001.html": {
@@ -761,6 +851,9 @@
   "css/filter-effects/filter-turbulence-invalid-001.html": {
     "reftest": "PASS"
   },
+  "css/filter-effects/filter-unbounded-child-in-layer-plane.html": {
+    "reftest": "FAIL"
+  },
   "css/filter-effects/filter-url-to-non-existent-filter-001.html": {
     "reftest": "PASS"
   },
@@ -773,7 +866,13 @@
   "css/filter-effects/filtered-html-is-not-container.html": {
     "reftest": "PASS"
   },
+  "css/filter-effects/filtered-inline-applies-to-block.html": {
+    "reftest": "PASS"
+  },
   "css/filter-effects/filtered-inline-applies-to-float.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/filtered-inline-is-container-with-block-content.html": {
     "reftest": "PASS"
   },
   "css/filter-effects/filtered-inline-is-container.html": {
@@ -815,6 +914,9 @@
   "css/filter-effects/fixed-pos-filter-clip-002.html": {
     "reftest": "PASS"
   },
+  "css/filter-effects/grayscale-clip-border-radius.html": {
+    "reftest": "PASS"
+  },
   "css/filter-effects/hidpi-invert-filter-background.html": {
     "reftest": "PASS"
   },
@@ -828,6 +930,9 @@
     "total": 12
   },
   "css/filter-effects/invalidation-css-dropshadow-002.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/invert-scale.html": {
     "reftest": "PASS"
   },
   "css/filter-effects/kernel-unit-length-001.html": {
@@ -909,6 +1014,9 @@
     "reftest": "PASS"
   },
   "css/filter-effects/root-element-with-opacity-filter-001.html": {
+    "reftest": "PASS"
+  },
+  "css/filter-effects/svg-data-uri-filter-resource.html": {
     "reftest": "PASS"
   },
   "css/filter-effects/svg-empty-container-with-filter-content-added.html": {

@@ -493,6 +493,9 @@
   "editing/other/editing-div-outside-body.html?nothing": {
     "total": 11
   },
+  "editing/other/editing-host-with-only-out-of-flow-child.html": {
+    "total": 4
+  },
   "editing/other/editing-style-of-range-around-void-element-child.tentative.html": {
     "total": 8,
     "failures": {

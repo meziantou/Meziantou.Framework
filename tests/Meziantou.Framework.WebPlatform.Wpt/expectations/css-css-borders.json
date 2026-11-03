@@ -242,6 +242,9 @@
   "css/css-borders/corner-shape/corner-shape-box-shadow-spread-elliptical.html": {
     "reftest": "FAIL"
   },
+  "css/css-borders/corner-shape/corner-shape-clip-path-border-box.html": {
+    "reftest": "PASS"
+  },
   "css/css-borders/corner-shape/corner-shape-computed.html": {
     "total": 38
   },
@@ -287,6 +290,24 @@
   "css/css-borders/corner-shape/corner-shape-offset-path-coord-box-002.html": {
     "reftest": "PASS"
   },
+  "css/css-borders/corner-shape/corner-shape-opposite-scale-convex-inert.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-borders/corner-shape/corner-shape-opposite-scale-elliptical.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-opposite-scale-mixed.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-opposite-scale-notch.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-opposite-scale-scoop.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-opposite-scale-superellipse.html": {
+    "reftest": "PASS"
+  },
   "css/css-borders/corner-shape/corner-shape-outline-auto-001.html": {
     "reftest": "PASS"
   },
@@ -296,11 +317,32 @@
   "css/css-borders/corner-shape/corner-shape-outline-auto-003.html": {
     "reftest": "PASS"
   },
+  "css/css-borders/corner-shape/corner-shape-outline-negative-offset-bevel.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-outline-negative-offset-notch001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-outline-negative-offset-notch002.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-outline-negative-offset-notch003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-borders/corner-shape/corner-shape-outline-negative-offset-square.html": {
+    "reftest": "PASS"
+  },
   "css/css-borders/corner-shape/corner-shape-outline-offset-bevel.html": {
     "reftest": "PASS"
   },
   "css/css-borders/corner-shape/corner-shape-outline-offset-elliptical.html": {
     "reftest": "FAIL"
+  },
+  "css/css-borders/corner-shape/corner-shape-outside-content-box.html": {
+    "total": 7
+  },
+  "css/css-borders/corner-shape/corner-shape-outside-corners.html": {
+    "total": 5
   },
   "css/css-borders/corner-shape/corner-shape-outside-left.html": {
     "total": 8,
@@ -308,12 +350,27 @@
       "corner-shape: superellipse(-.8) with shape-outside": "FAIL"
     }
   },
+  "css/css-borders/corner-shape/corner-shape-outside-margin-box.html": {
+    "total": 7,
+    "failures": {
+      "corner-shape: bevel with shape-outside: margin-box": "FAIL",
+      "corner-shape: notch with shape-outside: margin-box": "FAIL",
+      "corner-shape: scoop with shape-outside: margin-box": "FAIL",
+      "corner-shape: superellipse(-.8) with shape-outside: margin-box": "FAIL"
+    }
+  },
+  "css/css-borders/corner-shape/corner-shape-outside-padding-box.html": {
+    "total": 7
+  },
   "css/css-borders/corner-shape/corner-shape-outside-right.html": {
     "total": 8,
     "failures": {
       "corner-shape: notch bevel with shape-outside": "FAIL",
       "corner-shape: notch with shape-outside": "FAIL"
     }
+  },
+  "css/css-borders/corner-shape/corner-shape-outside-shape-margin.html": {
+    "total": 7
   },
   "css/css-borders/corner-shape/corner-shape-overflow-clip-margin.html": {
     "reftest": "PASS"

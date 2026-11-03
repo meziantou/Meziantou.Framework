@@ -68,6 +68,9 @@
   "css/css-counter-styles/cjk-heavenly-stem/css3-counter-styles-206.html": {
     "reftest": "PASS"
   },
+  "css/css-counter-styles/cjk-ideographic/counter-cjk-ideographic-extended-range.optional.html": {
+    "reftest": "PASS"
+  },
   "css/css-counter-styles/counter-name-case-sensitive.html": {
     "reftest": "PASS"
   },
@@ -257,6 +260,9 @@
   "css/css-counter-styles/cssom/cssom-fallback-setter.html": {
     "reftest": "PASS"
   },
+  "css/css-counter-styles/cssom/cssom-name-setter-getter.html": {
+    "total": 4
+  },
   "css/css-counter-styles/cssom/cssom-name-setter-invalid.html": {
     "reftest": "PASS"
   },
@@ -380,6 +386,9 @@
   "css/css-counter-styles/idlharness.html": {
     "total": 37
   },
+  "css/css-counter-styles/japanese-formal/counter-japanese-formal-extended-range.optional.html": {
+    "reftest": "PASS"
+  },
   "css/css-counter-styles/japanese-formal/counter-japanese-formal-extended.html": {
     "reftest": "FAIL"
   },
@@ -399,6 +408,9 @@
     "reftest": "PASS"
   },
   "css/css-counter-styles/japanese-formal/css3-counter-styles-051.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/japanese-informal/counter-japanese-informal-extended-range.optional.html": {
     "reftest": "PASS"
   },
   "css/css-counter-styles/japanese-informal/counter-japanese-informal-extended.html": {
@@ -458,6 +470,9 @@
   "css/css-counter-styles/khmer/css3-counter-styles-163.html": {
     "reftest": "PASS"
   },
+  "css/css-counter-styles/korean-hangul-formal/counter-korean-hangul-formal-extended-range.optional.html": {
+    "reftest": "PASS"
+  },
   "css/css-counter-styles/korean-hangul-formal/counter-korean-hangul-formal-extended.html": {
     "reftest": "FAIL"
   },
@@ -479,6 +494,9 @@
   "css/css-counter-styles/korean-hangul-formal/css3-counter-styles-056.html": {
     "reftest": "PASS"
   },
+  "css/css-counter-styles/korean-hanja-formal/counter-korean-hanja-formal-extended-range.optional.html": {
+    "reftest": "PASS"
+  },
   "css/css-counter-styles/korean-hanja-formal/counter-korean-hanja-formal-extended.html": {
     "reftest": "FAIL"
   },
@@ -498,6 +516,9 @@
     "reftest": "PASS"
   },
   "css/css-counter-styles/korean-hanja-formal/css3-counter-styles-066.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/korean-hanja-informal/counter-korean-hanja-informal-extended-range.optional.html": {
     "reftest": "PASS"
   },
   "css/css-counter-styles/korean-hanja-informal/counter-korean-hanja-informal-extended.html": {
@@ -614,6 +635,9 @@
   "css/css-counter-styles/persian/css3-counter-styles-106.html": {
     "reftest": "PASS"
   },
+  "css/css-counter-styles/simp-chinese-formal/counter-simp-chinese-formal-extended-range.optional.html": {
+    "reftest": "PASS"
+  },
   "css/css-counter-styles/simp-chinese-formal/counter-simp-chinese-formal.html": {
     "reftest": "PASS"
   },
@@ -630,6 +654,9 @@
     "reftest": "PASS"
   },
   "css/css-counter-styles/simp-chinese-formal/css3-counter-styles-080.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/simp-chinese-informal/counter-simp-chinese-informal-extended-range.optional.html": {
     "reftest": "PASS"
   },
   "css/css-counter-styles/simp-chinese-informal/counter-simp-chinese-informal.html": {
@@ -716,6 +743,9 @@
   "css/css-counter-styles/tibetan/css3-counter-styles-157.html": {
     "reftest": "PASS"
   },
+  "css/css-counter-styles/trad-chinese-formal/counter-trad-chinese-formal-extended-range.optional.html": {
+    "reftest": "PASS"
+  },
   "css/css-counter-styles/trad-chinese-formal/counter-trad-chinese-formal.html": {
     "reftest": "PASS"
   },
@@ -732,6 +762,9 @@
     "reftest": "PASS"
   },
   "css/css-counter-styles/trad-chinese-formal/css3-counter-styles-090.html": {
+    "reftest": "PASS"
+  },
+  "css/css-counter-styles/trad-chinese-informal/counter-trad-chinese-informal-extended-range.optional.html": {
     "reftest": "PASS"
   },
   "css/css-counter-styles/trad-chinese-informal/counter-trad-chinese-informal.html": {

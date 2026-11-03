@@ -597,6 +597,9 @@
   "css/css-position/position-relative-aspect-ratio-002.html": {
     "total": 3
   },
+  "css/css-position/position-relative-empty-inline.html": {
+    "reftest": "PASS"
+  },
   "css/css-position/position-relative-table-caption.html": {
     "reftest": "PASS"
   },

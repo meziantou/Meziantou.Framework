@@ -88,6 +88,12 @@
   "html/browsers/browsing-the-web/back-forward-cache/timers.html": {
     "total": 1
   },
+  "html/browsers/browsing-the-web/back-forward-cache/weblocks-worker.https.window.js": {
+    "total": 1,
+    "failures": {
+      "WebLocks grant to worker in BFCache is deferred": "FAIL"
+    }
+  },
   "html/browsers/browsing-the-web/history-traversal/001.html": {
     "total": 1
   },
@@ -158,6 +164,9 @@
     "total": 1
   },
   "html/browsers/browsing-the-web/history-traversal/event-order/same-document-traverse-wait.html": {
+    "total": 1
+  },
+  "html/browsers/browsing-the-web/history-traversal/event-order/same-url-fragment-link-click.html": {
     "total": 1
   },
   "html/browsers/browsing-the-web/history-traversal/events.html": {
@@ -1917,6 +1926,12 @@
   "html/browsers/origin/origin-keyed-agent-clusters/no-content-response.sub.https.html": {
     "total": 1
   },
+  "html/browsers/origin/origin-keyed-agent-clusters/popups/noopener-opener-no-openee-yes-same.https.html": {
+    "total": 2,
+    "failures": {
+      "openee: originAgentCluster must equal true": "FAIL"
+    }
+  },
   "html/browsers/origin/origin-keyed-agent-clusters/popups/opener-no-openee-yes-port.sub.https.html": {
     "total": 4
   },
@@ -2199,6 +2214,10 @@
   },
   "html/browsers/the-window-object/open-close/creating_browsing_context_test_01.html": {
     "total": 4
+  },
+  "html/browsers/the-window-object/open-close/declarative-windowfeatures.tentative.html": {
+    "harness": "TIMEOUT",
+    "total": 0
   },
   "html/browsers/the-window-object/open-close/no_window_open_when_term_nesting_level_nonzero.window.js": {
     "total": 4

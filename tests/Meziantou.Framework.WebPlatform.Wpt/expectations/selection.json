@@ -242,6 +242,9 @@
   "selection/isCollapsed.html": {
     "total": 29
   },
+  "selection/longpress-selection.html": {
+    "total": 1
+  },
   "selection/modify-extend-word-trailing-inline-block.tentative.html": {
     "total": 1
   },

@@ -236,10 +236,10 @@
     "total": 6
   },
   "FileAPI/reading-data-section/FileReader-multiple-reads.any.js": {
-    "total": 8
+    "total": 9
   },
   "FileAPI/reading-data-section/FileReader-multiple-reads.any.js#dedicatedworker": {
-    "total": 8
+    "total": 9
   },
   "FileAPI/reading-data-section/filereader_abort.any.js": {
     "total": 3

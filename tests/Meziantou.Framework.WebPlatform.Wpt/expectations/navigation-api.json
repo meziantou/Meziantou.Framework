@@ -292,6 +292,9 @@
   "navigation-api/navigate-event/intercept-navigation-back.html": {
     "total": 1
   },
+  "navigation-api/navigate-event/intercept-no-beforeunload.html": {
+    "total": 1
+  },
   "navigation-api/navigate-event/intercept-on-synthetic-event.html": {
     "total": 1
   },
@@ -309,6 +312,13 @@
   },
   "navigation-api/navigate-event/intercept-same-document-history-back.html": {
     "total": 1
+  },
+  "navigation-api/navigate-event/intercept-stops-ongoing-cross-document-navigation.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "navigate() whose navigate event is intercepted stops the cross-document navigation it replaces": "TIMEOUT"
+    }
   },
   "navigation-api/navigate-event/intercepted-navigation-after-bfcache-restore.html": {
     "total": 1,
@@ -455,6 +465,9 @@
     "total": 1
   },
   "navigation-api/navigate-event/navigate-navigation-back-same-document.html": {
+    "total": 1
+  },
+  "navigation-api/navigate-event/navigate-navigation-navigate-cross-site-preventDefault.html": {
     "total": 1
   },
   "navigation-api/navigate-event/navigate-navigation-navigate.html": {

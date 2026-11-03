@@ -196,13 +196,13 @@
     "total": 23
   },
   "css/css-typed-om/stylevalue-subclasses/cssUnparsedValue-empty.any.js": {
-    "total": 1
+    "total": 2
   },
   "css/css-typed-om/stylevalue-subclasses/cssUnparsedValue-empty.any.js#dedicatedworker": {
-    "total": 1
+    "total": 2
   },
   "css/css-typed-om/stylevalue-subclasses/cssUnparsedValue-empty.any.js#sharedworker": {
-    "total": 1
+    "total": 2
   },
   "css/css-typed-om/stylevalue-subclasses/cssUnparsedValue-indexed-getter-setter.html": {
     "total": 6

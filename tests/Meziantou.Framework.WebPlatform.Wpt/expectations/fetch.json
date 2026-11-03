@@ -337,6 +337,26 @@
   "fetch/api/basic/scheme-others.sub.any.js#sharedworker": {
     "total": 16
   },
+  "fetch/api/basic/split-byte-order-mark.any.js": {
+    "total": 5,
+    "failures": {
+      "json() strips a UTF-8 byte order mark split across chunks": "FAIL",
+      "text() decodes a UTF-8 sequence split across chunks": "FAIL",
+      "text() does not strip a UTF-8 byte order mark in a later chunk": "FAIL",
+      "text() does not use a UTF-16LE byte order mark split across chunks": "FAIL",
+      "text() strips a UTF-8 byte order mark split across chunks": "FAIL"
+    }
+  },
+  "fetch/api/basic/split-byte-order-mark.any.js#dedicatedworker": {
+    "total": 5,
+    "failures": {
+      "json() strips a UTF-8 byte order mark split across chunks": "FAIL",
+      "text() decodes a UTF-8 sequence split across chunks": "FAIL",
+      "text() does not strip a UTF-8 byte order mark in a later chunk": "FAIL",
+      "text() does not use a UTF-16LE byte order mark split across chunks": "FAIL",
+      "text() strips a UTF-8 byte order mark split across chunks": "FAIL"
+    }
+  },
   "fetch/api/basic/status.h2.any.js": {
     "total": 7
   },

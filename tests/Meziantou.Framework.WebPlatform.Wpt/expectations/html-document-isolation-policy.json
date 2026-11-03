@@ -146,12 +146,18 @@
   "html/document-isolation-policy/cross-origin-frame.tentative.https.html": {
     "total": 2
   },
+  "html/document-isolation-policy/cross-origin-isolated-permissions-policy-nested.tentative.https.html": {
+    "total": 2,
+    "failures": {
+      "A cross-origin frame with isolate-and-require-corp without allow=\"cross-origin-isolated\" is cross-origin isolated, but its child without a policy isn't": "FAIL"
+    }
+  },
   "html/document-isolation-policy/cross-origin-isolated-permissions-policy.tentative.https.html": {
     "total": 3,
     "failures": {
       "A cross-origin frame with isolate-and-require-corp and allow=\"cross-origin-isolated\" is cross-origin isolated and can serialize a SharedArrayBuffer": "FAIL",
-      "A cross-origin frame with isolate-and-require-corp without allow=\"cross-origin-isolated\" is not cross-origin isolated and cannot serialize a SharedArrayBuffer": "FAIL",
-      "A same-origin frame with isolate-and-require-corp and allow=\"cross-origin-isolated 'none'\" is not cross-origin isolated and cannot serialize a SharedArrayBuffer": "FAIL"
+      "A cross-origin frame with isolate-and-require-corp without allow=\"cross-origin-isolated\" is cross-origin isolated and can serialize a SharedArrayBuffer": "FAIL",
+      "A same-origin frame with isolate-and-require-corp and allow=\"cross-origin-isolated 'none'\" is cross-origin isolated and can serialize a SharedArrayBuffer": "FAIL"
     }
   },
   "html/document-isolation-policy/cross-origin-isolated.tentative.https.html": {
@@ -215,6 +221,13 @@
   "html/document-isolation-policy/isolate-and-require-corp.tentative.https.html": {
     "total": 2
   },
+  "html/document-isolation-policy/location-replace-keeps-entry.tentative.https.html": {
+    "total": 2,
+    "failures": {
+      "A frame's document replaced by a same-origin one with a policy keeps the session history entry": "FAIL",
+      "A popup's document replaced by a same-origin one with a policy keeps the session history entry": "FAIL"
+    }
+  },
   "html/document-isolation-policy/message-channel.tentative.https.html": {
     "total": 3,
     "failures": {
@@ -267,9 +280,11 @@
   },
   "html/document-isolation-policy/reporting-cached-and-service-worker-responses.tentative.https.html": {
     "harness": "TIMEOUT",
-    "total": 8,
+    "total": 10,
     "failures": {
+      "Document-Isolation-Policy reports a Cache API response a service worker responds with by its URL": "NOTRUN",
       "Document-Isolation-Policy reports a cross-origin response a service worker responds with": "NOTRUN",
+      "Document-Isolation-Policy reports a redirected response a service worker fetched from another URL by that URL": "NOTRUN",
       "Document-Isolation-Policy reports a redirected response a service worker responds with by its first URL": "NOTRUN",
       "Document-Isolation-Policy reports a response a service worker fetched from another URL by that URL": "NOTRUN",
       "Document-Isolation-Policy reports an image that another document loaded before": "NOTRUN",
@@ -277,6 +292,14 @@
       "Document-Isolation-Policy-Report-Only reports an image the document is still loading with CORS once": "NOTRUN",
       "Document-Isolation-Policy-Report-Only reports an image the document loaded with CORS before": "NOTRUN",
       "Document-Isolation-Policy-Report-Only reports an image the document uses twice once": "NOTRUN"
+    }
+  },
+  "html/document-isolation-policy/reporting-dedicated-worker.tentative.https.html": {
+    "harness": "TIMEOUT",
+    "total": 2,
+    "failures": {
+      "A dedicated worker's loads report to the worker rather than to its owner": "TIMEOUT",
+      "A nested dedicated worker's loads report to that worker rather than to its owner": "NOTRUN"
     }
   },
   "html/document-isolation-policy/reporting-subresource-corp.tentative.https.html": {

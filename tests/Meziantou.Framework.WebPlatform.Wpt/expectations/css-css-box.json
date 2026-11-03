@@ -113,6 +113,15 @@
   "css/css-box/margin-trim/block-container-block-in-inline-007.html": {
     "reftest": "PASS"
   },
+  "css/css-box/margin-trim/block-container-block-in-inline-008.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/block-container-block-in-inline-009.html": {
+    "reftest": "PASS"
+  },
+  "css/css-box/margin-trim/block-container-block-in-inline-010.html": {
+    "reftest": "PASS"
+  },
   "css/css-box/margin-trim/block-container-block-start-001.html": {
     "reftest": "PASS"
   },

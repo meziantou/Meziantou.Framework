@@ -606,6 +606,31 @@
   "html/editing/dnd/remove/001.html": {
     "total": 1
   },
+  "html/editing/dnd/remove/002.html": {
+    "total": 1
+  },
+  "html/editing/dnd/remove/003.html": {
+    "total": 1
+  },
+  "html/editing/dnd/remove/004.html": {
+    "harness": "TIMEOUT",
+    "total": 1,
+    "failures": {
+      "Removing input element during drag and drop of selection": "TIMEOUT"
+    }
+  },
+  "html/editing/dnd/remove/005.html": {
+    "total": 1
+  },
+  "html/editing/dnd/remove/006.html": {
+    "total": 1
+  },
+  "html/editing/dnd/remove/007.html": {
+    "total": 1
+  },
+  "html/editing/dnd/remove/008.html": {
+    "total": 1
+  },
   "html/editing/dnd/synthetic/001.html": {
     "total": 16
   },

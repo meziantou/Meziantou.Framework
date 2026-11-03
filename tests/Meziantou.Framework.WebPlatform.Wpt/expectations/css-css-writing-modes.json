@@ -1355,6 +1355,9 @@
   "css/css-writing-modes/block-plaintext-006.html": {
     "reftest": "PASS"
   },
+  "css/css-writing-modes/block-plaintext-paragraph-after-block-level-box.html": {
+    "reftest": "PASS"
+  },
   "css/css-writing-modes/border-conflict-element-vlr-003.xht": {
     "reftest": "PASS"
   },
@@ -1991,6 +1994,21 @@
   "css/css-writing-modes/forms/text-input-block-size.optional.html": {
     "total": 28
   },
+  "css/css-writing-modes/forms/text-input-scroll-on-blur.html": {
+    "total": 10,
+    "failures": {
+      "input in writing-mode: horizontal-tb; direction: ltr scrolls back to beginning on blur": "FAIL",
+      "input in writing-mode: horizontal-tb; direction: rtl scrolls back to beginning on blur": "FAIL",
+      "input in writing-mode: sideways-lr; direction: ltr scrolls back to beginning on blur": "FAIL",
+      "input in writing-mode: sideways-lr; direction: rtl scrolls back to beginning on blur": "FAIL",
+      "input in writing-mode: sideways-rl; direction: ltr scrolls back to beginning on blur": "FAIL",
+      "input in writing-mode: sideways-rl; direction: rtl scrolls back to beginning on blur": "FAIL",
+      "input in writing-mode: vertical-lr; direction: ltr scrolls back to beginning on blur": "FAIL",
+      "input in writing-mode: vertical-lr; direction: rtl scrolls back to beginning on blur": "FAIL",
+      "input in writing-mode: vertical-rl; direction: ltr scrolls back to beginning on blur": "FAIL",
+      "input in writing-mode: vertical-rl; direction: rtl scrolls back to beginning on blur": "FAIL"
+    }
+  },
   "css/css-writing-modes/forms/text-input-vertical-overflow-no-scroll.html": {
     "total": 16
   },
@@ -2393,6 +2411,12 @@
   "css/css-writing-modes/orthogonal-block-in-inline-inline-size-001.html": {
     "total": 1
   },
+  "css/css-writing-modes/orthogonal-block-in-inline-inline-size-002.html": {
+    "total": 2
+  },
+  "css/css-writing-modes/orthogonal-block-in-inline-line-height-001.html": {
+    "total": 5
+  },
   "css/css-writing-modes/orthogonal-cell-001.html": {
     "reftest": "PASS"
   },
@@ -2505,6 +2529,9 @@
     "reftest": "PASS"
   },
   "css/css-writing-modes/orthogonal-root-resize-icb-007.html": {
+    "reftest": "PASS"
+  },
+  "css/css-writing-modes/orthogonal-static-position-margin.html": {
     "reftest": "PASS"
   },
   "css/css-writing-modes/outline-inline-block-vrl-006.html": {
@@ -2676,6 +2703,18 @@
     "reftest": "PASS"
   },
   "css/css-writing-modes/scrollbar-vertical-rl.html": {
+    "reftest": "PASS"
+  },
+  "css/css-writing-modes/sideways-inline-001.html": {
+    "reftest": "PASS"
+  },
+  "css/css-writing-modes/sideways-inline-002.html": {
+    "reftest": "FAIL"
+  },
+  "css/css-writing-modes/sideways-inline-003.html": {
+    "reftest": "PASS"
+  },
+  "css/css-writing-modes/sideways-inline-004.html": {
     "reftest": "PASS"
   },
   "css/css-writing-modes/sideways-lr-main-axis.html": {

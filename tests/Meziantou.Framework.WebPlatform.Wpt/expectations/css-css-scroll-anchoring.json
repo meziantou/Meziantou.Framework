@@ -44,6 +44,9 @@
   "css/css-scroll-anchoring/anchor-updates-after-explicit-scroll.html": {
     "total": 1
   },
+  "css/css-scroll-anchoring/anchor-used-height-change-does-not-suppress.html": {
+    "total": 1
+  },
   "css/css-scroll-anchoring/anchoring-with-bounds-clamping-div.html": {
     "total": 1
   },
@@ -153,6 +156,9 @@
   "css/css-scroll-anchoring/multicol-fragmented-anchor.html": {
     "total": 1
   },
+  "css/css-scroll-anchoring/negative-layout-overflow-on-anchor.html": {
+    "total": 1
+  },
   "css/css-scroll-anchoring/negative-layout-overflow.html": {
     "total": 1
   },
@@ -210,6 +216,9 @@
   "css/css-scroll-anchoring/scroll-padding-affects-anchoring.html": {
     "total": 1
   },
+  "css/css-scroll-anchoring/scroll-padding-change.html": {
+    "total": 1
+  },
   "css/css-scroll-anchoring/shadow-dom-subscroller.html": {
     "total": 1
   },
@@ -217,6 +226,12 @@
     "total": 10
   },
   "css/css-scroll-anchoring/subtree-exclusion.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/suppress-for-top-change.html": {
+    "total": 1
+  },
+  "css/css-scroll-anchoring/suppress-for-transform-change.html": {
     "total": 1
   },
   "css/css-scroll-anchoring/text-anchor-in-vertical-rl.html": {

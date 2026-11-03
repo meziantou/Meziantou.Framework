@@ -894,6 +894,11 @@ public sealed class VectorizedKernelTests
             if (Avx512F.IsSupported)
             {
                 AssertPath((samples, stride, coefficients) => JpegForwardDct.TransformAndQuantizeAvx512(samples, stride, divisors, coefficients));
+
+                // The 16-bit coefficients stored directly
+                var stored = new short[64];
+                JpegForwardDct.TransformAndQuantizeAvx512<short>(plane, Stride, divisors, stored);
+                Assert.Equal(expected, Array.ConvertAll(stored, value => (int)value));
             }
         }
 

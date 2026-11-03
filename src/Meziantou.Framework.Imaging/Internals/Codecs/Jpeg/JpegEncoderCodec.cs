@@ -1262,7 +1262,14 @@ internal sealed class JpegEncoderCodec : ImageEncoderCodec
                 samples = worker.Block;
             }
 
-            JpegForwardDct.TransformAndQuantize(samples, 8, block < _h * _v ? _luminanceDivisors : _chrominanceDivisors, worker.Scratch, coefficients);
+            var divisors = block < _h * _v ? _luminanceDivisors : _chrominanceDivisors;
+            if (JpegForwardDct.UsesAvx512)
+            {
+                JpegForwardDct.TransformAndQuantizeAvx512(samples, 8, divisors, destination);
+                return;
+            }
+
+            JpegForwardDct.TransformAndQuantize(samples, 8, divisors, worker.Scratch, coefficients);
             NarrowCoefficients(coefficients, destination);
         }
 

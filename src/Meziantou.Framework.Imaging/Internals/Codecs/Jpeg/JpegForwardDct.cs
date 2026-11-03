@@ -73,6 +73,9 @@ internal static class JpegForwardDct
         46, 39, 47, 54, 61, 62, 55, 63,
     ];
 
+    /// <summary>Gets a value indicating whether <see cref="TransformAndQuantize"/> uses the AVX-512 transform, which can also store 16-bit coefficients (<see cref="TransformAndQuantizeAvx512"/>).</summary>
+    public static bool UsesAvx512 => Vector512.IsHardwareAccelerated && Avx512F.IsSupported;
+
     /// <summary>Converts a quantization table to the divisors of <see cref="TransformAndQuantize"/>.</summary>
     /// <param name="quantization">64 quantization values (natural order: <c>Q[v * 8 + u]</c>).</param>
     /// <param name="divisors">64 doubles, in the transposed order: <c>divisors[u * 8 + v] = Q[v * 8 + u]</c>.</param>
@@ -97,7 +100,7 @@ internal static class JpegForwardDct
     /// <param name="coefficients">The 64 quantized coefficients, in zig-zag order.</param>
     public static void TransformAndQuantize(ReadOnlySpan<float> samples, int stride, ReadOnlySpan<double> divisors, Span<double> scratch, Span<int> coefficients)
     {
-        if (Vector512.IsHardwareAccelerated && Avx512F.IsSupported)
+        if (UsesAvx512)
         {
             TransformAndQuantizeAvx512(samples, stride, divisors, coefficients);
         }
@@ -459,7 +462,9 @@ internal static class JpegForwardDct
     /// at once. The quantized values of the transposed order are reordered to the zig-zag order by two-source
     /// permutations of 16 values each (<see cref="ZigZagTransposedIndexes"/>).
     /// </summary>
-    internal static void TransformAndQuantizeAvx512(ReadOnlySpan<float> samples, int stride, ReadOnlySpan<double> divisors, Span<int> coefficients)
+    /// <typeparam name="T">The type of the coefficients: <see cref="int"/>, or <see cref="short"/> to store them directly.</typeparam>
+    internal static void TransformAndQuantizeAvx512<T>(ReadOnlySpan<float> samples, int stride, ReadOnlySpan<double> divisors, Span<T> coefficients)
+        where T : unmanaged
     {
         samples = samples[..((7 * stride) + 8)];
         divisors = divisors[..64];
@@ -508,7 +513,16 @@ internal static class JpegForwardDct
             var index = unsafe(Vector512.LoadUnsafe(ref indexes, (nuint)i));
             var low = Avx512F.PermuteVar16x32x2(first, index, second);
             var high = Avx512F.PermuteVar16x32x2(third, index, fourth);
-            unsafe { Vector512.ConditionalSelect(Vector512.GreaterThan(index, Vector512.Create(31)), high, low).StoreUnsafe(ref output, (nuint)i); }
+            var values = Vector512.ConditionalSelect(Vector512.GreaterThan(index, Vector512.Create(31)), high, low);
+            if (typeof(T) == typeof(short))
+            {
+                // VPMOVDW: the clamped values fit in 16 bits
+                unsafe { Avx512F.ConvertToVector256Int16(values).StoreUnsafe(ref Unsafe.As<T, short>(ref output), (nuint)i); }
+            }
+            else
+            {
+                unsafe { values.StoreUnsafe(ref Unsafe.As<T, int>(ref output), (nuint)i); }
+            }
         }
 
         static Vector512<double> LoadRow(ref float source, int index) => Avx512F.ConvertToVector512Double(unsafe(Vector256.LoadUnsafe(ref source, (nuint)index)));

@@ -268,6 +268,11 @@ internal sealed class JpegEntropyReader : IDisposable
             reader._bitCount = _count;
         }
 
+        /// <summary>Gets the <see cref="AvailableBytes"/> of the reader with this state.</summary>
+        /// <param name="reader">The reader of the cursor.</param>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public readonly int GetAvailableBytes(JpegEntropyReader reader) => reader._end - _position + (_count >> 3);
+
         /// <summary>Loads bytes until the accumulator holds at least 56 bits, when it holds fewer than 32.</summary>
         /// <remarks>See <see cref="JpegEntropyReader.Fill"/> for the bits loaded below the valid ones.</remarks>
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -1052,16 +1052,94 @@ public sealed class VectorizedKernelTests
     }
 
     [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegQuantizedInverseDctMatchesTheScalarReferenceBitForBit()
+    {
+        var random = new Random(23);
+        const int Stride = 13;
+        var coefficients = new short[64];
+        var quantization = new double[64];
+        for (var round = 0; round < 10_000; round++)
+        {
+            // Sparse or dense blocks of small or extreme coefficients and quantization values (samples beyond the range of
+            // 32-bit integers); every other block only has coefficients in its top-left 4x4 corner (the sparse transform)
+            Array.Clear(coefficients);
+            var density = random.NextDouble();
+            var magnitude = round % 8 == 4 ? short.MaxValue : round % 4 == 0 ? 2047 : round % 4 == 1 ? 255 : 16;
+            var sparse = round % 2 == 1;
+            for (var i = 0; i < 64; i++)
+            {
+                quantization[i] = round % 8 == 4 ? ushort.MaxValue : random.Next(1, 256);
+                if ((i == 0 || random.NextDouble() < density) && (!sparse || ((i & 0b100_100) == 0)))
+                {
+                    coefficients[i] = (short)random.Next(-magnitude, magnitude + 1);
+                }
+            }
+
+            var block = new double[64];
+            JpegIdct.DequantizeScalar(coefficients, quantization, block);
+            var expected = new byte[(8 * Stride) + 8];
+            JpegIdct.TransformScalar(block, expected, Stride);
+            var actual = new byte[expected.Length];
+            JpegIdct.TransformQuantized(coefficients, quantization, new double[64], actual, Stride, sparse);
+            Assert.Equal(expected, actual);
+            if (Avx2.IsSupported)
+            {
+                Array.Clear(actual);
+                JpegIdct.TransformQuantizedAvx2(coefficients, quantization, new double[64], actual, Stride, sparse);
+                Assert.Equal(expected, actual);
+            }
+
+            if (Avx512F.IsSupported)
+            {
+                Array.Clear(actual);
+                JpegIdct.TransformQuantizedAvx512(coefficients, quantization, actual, Stride, sparse);
+                Assert.Equal(expected, actual);
+            }
+        }
+    }
+
+    [Fact]
+    [SuppressMessage("Security", "CA5394:Do not use insecure randomness", Justification = "Deterministic seeded test inputs.")]
+    public void JpegNonzeroMaskMatchesTheScalarReference()
+    {
+        var random = new Random(24);
+        var coefficients = new short[64];
+        for (var round = 0; round < 2_000; round++)
+        {
+            var density = round < 64 ? 0 : random.NextDouble();
+            for (var i = 0; i < 64; i++)
+            {
+                coefficients[i] = random.NextDouble() < density ? (short)random.Next(short.MinValue, short.MaxValue + 1) : (short)0;
+            }
+
+            // One coefficient at each position, then random blocks
+            if (round < 64)
+            {
+                coefficients[round] = (short)(round % 2 == 0 ? short.MinValue : 1);
+            }
+
+            var expected = JpegIdct.GetNonzeroMaskScalar(coefficients);
+            for (var i = 0; i < 64; i++)
+            {
+                Assert.Equal(coefficients[i] != 0, (expected & (1UL << i)) != 0);
+            }
+
+            Assert.Equal(expected, JpegIdct.GetNonzeroMask(coefficients));
+        }
+    }
+
+    [Fact]
     public void JpegSparseBlocksAreTheTopLeftQuadrant()
     {
         var coefficients = new short[64];
-        Assert.True(JpegIdct.IsSparse(coefficients));
+        Assert.True(JpegIdct.IsSparse(JpegIdct.GetNonzeroMask(coefficients)));
         for (var i = 0; i < 64; i++)
         {
             Array.Clear(coefficients);
             coefficients[i] = -1;
             var inQuadrant = i / 8 < 4 && i % 8 < 4;
-            Assert.Equal(inQuadrant, JpegIdct.IsSparse(coefficients));
+            Assert.Equal(inQuadrant, JpegIdct.IsSparse(JpegIdct.GetNonzeroMask(coefficients)));
             Assert.Equal(inQuadrant, JpegIdct.IsSparse(i | 64));
         }
 

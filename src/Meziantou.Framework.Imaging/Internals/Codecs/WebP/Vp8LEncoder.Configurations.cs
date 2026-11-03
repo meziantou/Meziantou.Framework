@@ -11,12 +11,17 @@ namespace Meziantou.Framework.Imaging.Internals;
 internal sealed partial class Vp8LEncoder
 {
     /// <summary>
-    /// The effort of the encodings that rank the candidates: 4 predictor modes, no color transform and no color cache, a single
-    /// parse, and no entropy image (it shrinks every candidate alike: the ranking of the test images did not change without
-    /// it). Ranking at effort 3 (14 predictor modes, the color transform) made the outputs 0.1 % smaller for 15 to 25 % more
-    /// time.
+    /// The effort of the encodings that rank the candidates: no color transform and no color cache, a single parse, and no
+    /// entropy image (it shrinks every candidate alike: the ranking of the test images did not change without it). Ranking at
+    /// effort 3 (the color transform) made the outputs of alpha planes 0.1 % smaller for 15 to 25 % more time.
     /// </summary>
     private const int RankingEffort = 2;
+
+    /// <summary>
+    /// The effort from which the two configurations estimated smallest are both encoded, and the smaller stream kept: the
+    /// estimates of the ranking are not exact (for main images; the predictor tiles of 4 and 8 pixels are both candidates).
+    /// </summary>
+    internal const int TwoEncodingsEffort = 8;
 
     /// <summary>Images up to this many pixels are ranked whole; larger ones on a sample of bands of rows.</summary>
     private const int RankingSamplePixels = 1 << 18;
@@ -31,10 +36,11 @@ internal sealed partial class Vp8LEncoder
     /// <param name="height">The height.</param>
     /// <param name="effort">The effort, 0 to 9.</param>
     /// <param name="cancellationToken">Checked between candidates and rows.</param>
+    /// <param name="alphaPlane">Whether the image is the alpha plane of a lossy frame (<see cref="EncodeImageStream"/>).</param>
     /// <returns>At least one configuration.</returns>
-    public static Vp8LConfiguration[] RankConfigurations(AllocationScope scope, ReadOnlySpan<uint> argb, int width, int height, int effort, CancellationToken cancellationToken)
+    public static Vp8LConfiguration[] RankConfigurations(AllocationScope scope, ReadOnlySpan<uint> argb, int width, int height, int effort, CancellationToken cancellationToken, bool alphaPlane = false)
     {
-        var candidates = GetCandidates(effort, CountColors(argb), IsFlat(argb, width));
+        var candidates = GetCandidates(effort, CountColors(argb), IsFlat(argb, width), alphaPlane);
         if (candidates.Length == 1)
             return candidates;
 
@@ -69,7 +75,7 @@ internal sealed partial class Vp8LEncoder
                 }
 
                 using var counter = LsbBitWriter.CreateCounter(scope);
-                using var encoder = new Vp8LEncoder(scope, counter, Math.Min(effort, RankingEffort), candidates[i].EntropyPredictors, cancellationToken) { Ranking = true };
+                using var encoder = new Vp8LEncoder(scope, counter, Math.Min(effort, RankingEffort), candidates[i], alphaPlane, cancellationToken) { Ranking = true };
                 encoder.EncodeMainImage(copy, width, sampleHeight, candidates[i]);
                 sizes[i] = counter.BitCount;
             }
@@ -108,44 +114,59 @@ internal sealed partial class Vp8LEncoder
     /// <remarks>
     /// Measured on screenshots, icons, photographs, gradients and synthetic graphics: the pixels as they are (subtract green
     /// only) win on screenshots and flat graphics and lose by half or more on images that are not flat; the bundled color
-    /// indexing of 16 colors or fewer wins below effort 7; predictor tiles of 16 or 64 pixels differ by 2 % at most.
+    /// indexing of 16 colors or fewer wins below effort 7. Main images: predictor tiles of 8 pixels (color transform tiles of
+    /// 16) are 0.2 to 2 % smaller than tiles of 16 on photographs, and tiles of 4 win or lose 0.6 % depending on the image,
+    /// hence both from effort 8. Alpha planes keep their earlier candidates (predictor tiles of 16 or 64 pixels differ by 2 %
+    /// at most).
     /// </remarks>
-    internal static Vp8LConfiguration[] GetCandidates(int effort, int colorCount, bool flat)
+    internal static Vp8LConfiguration[] GetCandidates(int effort, int colorCount, bool flat, bool alphaPlane = false)
     {
-        var entropy = effort >= 6;
+        var entropy = alphaPlane && effort >= 6;
         var hasPalette = colorCount <= 256;
         if (effort < 3 || (colorCount <= 16 && effort < 7))
-            return [hasPalette ? new(Vp8LTransformMode.Palette, 0, entropy) : new(Vp8LTransformMode.Spatial, effort < 3 ? TransformTileBits : 5, entropy)];
+        {
+            var smallEffortBits = alphaPlane ? (effort < 3 ? TransformTileBits : 5) : effort switch
+            {
+                0 => TransformTileBits,
+                1 => 5,
+                2 => 4,
+                _ => 3,
+            };
+
+            return [hasPalette ? new(Vp8LTransformMode.Palette, 0, entropy, flat) : new(Vp8LTransformMode.Spatial, smallEffortBits, entropy, flat)];
+        }
 
         var candidates = new List<Vp8LConfiguration>();
         if (hasPalette)
         {
-            candidates.Add(new(Vp8LTransformMode.Palette, 0, entropy));
+            candidates.Add(new(Vp8LTransformMode.Palette, 0, entropy, flat));
             if (colorCount > 16 && effort >= 5)
             {
-                candidates.Add(new(Vp8LTransformMode.PredictedPalette, 5, entropy));
+                candidates.Add(new(Vp8LTransformMode.PredictedPalette, 5, entropy, flat));
             }
         }
 
-        int[] bits = effort switch
-        {
-            < 7 => [5],
-            < 9 => [4, 6],
-            _ => [3, 4, 5, 6],
-        };
+        int[] bits = alphaPlane
+            ? effort switch
+            {
+                < 7 => [5],
+                < 9 => [4, 6],
+                _ => [3, 4, 5, 6],
+            }
+            : effort < TwoEncodingsEffort ? [3] : [2, 3];
 
         foreach (var value in bits)
         {
-            candidates.Add(new(Vp8LTransformMode.Spatial, value, entropy));
-            if (effort >= 9)
+            candidates.Add(new(Vp8LTransformMode.Spatial, value, entropy, flat));
+            if (alphaPlane && effort >= 9)
             {
-                candidates.Add(new(Vp8LTransformMode.Spatial, value, !entropy));
+                candidates.Add(new(Vp8LTransformMode.Spatial, value, !entropy, flat));
             }
         }
 
         if (flat)
         {
-            candidates.Add(new(Vp8LTransformMode.SubtractGreen, 0, entropy));
+            candidates.Add(new(Vp8LTransformMode.SubtractGreen, 0, entropy, flat));
         }
 
         return [.. candidates];

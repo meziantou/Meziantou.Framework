@@ -15,6 +15,10 @@ internal static class JpegXlModularDecoder
     private const int MaxPropertyCount = 256;
     private const int MaxLeafTableLength = 2048;
 
+    // The predictors whose predictions the general loop computes all then selects: none, left, top, select, gradient and the
+    // weighted average of the neighbors (13)
+    private const int SelectablePredictors = (1 << 0) | (1 << 1) | (1 << 2) | (1 << 4) | (1 << 5) | (1 << 13);
+
     // The most properties a table of the general loop combines: the loop and the table keep fewer values in the 16 general
     // registers of x64, where a table of more properties is slower than the walk (Windows, Zen 5: +6 to +12% with 12
     // properties, -19% with 6 to 11)
@@ -227,6 +231,21 @@ internal static class JpegXlModularDecoder
         scoped JpegXlMaTreeTable table = default;
         var hasTable = tableBuffer is not null && JpegXlMaTreeTable.TryCreate(nodes, decoder: null, tableBuffer.Span, slots, anyProperty: true, out table);
 
+        // When the leaves mix the predictors none, left, top, select, gradient and the weighted average of the neighbors (13),
+        // which successive samples do not predict, all of them are computed and the prediction is read by the predictor
+        var usedPredictors = 0;
+        foreach (ref readonly var node in nodes)
+        {
+            if (node.IsLeaf)
+            {
+                usedPredictors |= 1 << node.RightOrPredictor;
+            }
+        }
+
+        var selectsPrediction = (usedPredictors & ~SelectablePredictors) == 0 && System.Numerics.BitOperations.PopCount((uint)usedPredictors) > 1;
+        Span<long> predictions = stackalloc long[JpegXlMaTree.PredictorCount];
+        predictions.Clear();
+
         for (var y = 0; y < height; y++)
         {
             if ((y & 63) == 0)
@@ -361,13 +380,26 @@ internal static class JpegXlModularDecoder
 
                 // The predictors that most trees use (zero, the gradient and the weighted predictor) are not dispatched
                 var predictor = leaf.RightOrPredictor;
-                var prediction = predictor switch
+                long prediction;
+                if (selectsPrediction)
                 {
-                    0 => 0,
-                    5 => JpegXlModularTransform.ClampedGradient((int)left, (int)top, (int)topLeft),
-                    6 => weightedPrediction,
-                    _ => JpegXlModularTransform.Predict(predictor, left, top, topTop, topLeft, topRight, leftLeft, topRightRight, weightedPrediction),
-                };
+                    predictions[1] = left;
+                    predictions[2] = top;
+                    predictions[4] = JpegXlModularTransform.SelectWithoutBranch(left, top, topLeft);
+                    predictions[5] = JpegXlModularTransform.ClampedGradientWithoutBranch(left, top, topLeft);
+                    predictions[13] = ((6 * top) - (2 * topTop) + (7 * left) + leftLeft + topRightRight + (3 * topRight) + 8) / 16;
+                    prediction = predictions[predictor];
+                }
+                else
+                {
+                    prediction = predictor switch
+                    {
+                        0 => 0,
+                        5 => JpegXlModularTransform.ClampedGradient((int)left, (int)top, (int)topLeft),
+                        6 => weightedPrediction,
+                        _ => JpegXlModularTransform.Predict(predictor, left, top, topTop, topLeft, topRight, leftLeft, topRightRight, weightedPrediction),
+                    };
+                }
                 var guess = leaf.ValueOrOffset + prediction;
                 var sample = Sample(decoder.Read(reader, leaf.LeftOrContext, distanceMultiplier), leaf.Multiplier, guess);
                 row[x] = sample;

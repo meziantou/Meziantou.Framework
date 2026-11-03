@@ -76,6 +76,20 @@ internal static class JpegForwardDct
     /// <summary>Gets the largest double below one half, <c>0.5 - 2^-54</c>.</summary>
     private const double RoundingBias = 0.49999999999999994;
 
+    /// <summary>
+    /// Gets the position of the coefficient at each zig-zag position in the two vectors of 32 16-bit values that
+    /// VPACKSSDW makes of the quantized values of the transposed order (see <see cref="TransformAndQuantizeAvx512"/>): the
+    /// first vector holds the transposed indexes 0-31, its 128-bit lane <c>l</c> the indexes <c>4l</c> to <c>4l + 3</c>
+    /// then <c>16 + 4l</c> to <c>16 + 4l + 3</c>, and the second one the indexes 32-63 in the same order.
+    /// </summary>
+    private static ReadOnlySpan<short> ZigZagPackedPositions =>
+    [
+        0, 16, 1, 2, 17, 4, 20, 5, 18, 3, 8, 19, 6, 21, 32, 48,
+        33, 22, 7, 24, 9, 10, 25, 12, 23, 34, 49, 36, 52, 37, 50, 35,
+        28, 13, 26, 11, 27, 14, 29, 40, 51, 38, 53, 54, 39, 56, 41, 30,
+        15, 31, 42, 57, 44, 55, 60, 45, 58, 43, 59, 46, 61, 62, 47, 63,
+    ];
+
     /// <summary>Gets a value indicating whether <see cref="TransformAndQuantize"/> uses the AVX-512 transform, which can also store 16-bit coefficients (<see cref="TransformAndQuantizeAvx512"/>).</summary>
     public static bool UsesAvx512 => Vector512.IsHardwareAccelerated && Avx512F.IsSupported;
 
@@ -475,7 +489,8 @@ internal static class JpegForwardDct
     /// <summary>
     /// The transform with AVX-512: the eight columns at once, an 8 x 8 transposition in registers, then the eight rows
     /// at once. The quantized values of the transposed order are reordered to the zig-zag order by two-source
-    /// permutations of 16 values each (<see cref="ZigZagTransposedIndexes"/>).
+    /// permutations of 16 values each (<see cref="ZigZagTransposedIndexes"/>), or for 16-bit coefficients with AVX-512 BW,
+    /// packed to 16 bits and permuted 32 at a time (<see cref="ZigZagPackedPositions"/>).
     /// </summary>
     /// <typeparam name="T">The type of the coefficients: <see cref="int"/>, or <see cref="short"/> to store them directly.</typeparam>
     internal static void TransformAndQuantizeAvx512<T>(ReadOnlySpan<float> samples, int stride, ReadOnlySpan<double> divisors, Span<T> coefficients)
@@ -520,8 +535,20 @@ internal static class JpegForwardDct
         var second = Vector512.Create(QuantizeAvx512(f2, ref divisor, 16), QuantizeAvx512(f3, ref divisor, 24));
         var third = Vector512.Create(QuantizeAvx512(f4, ref divisor, 32), QuantizeAvx512(f5, ref divisor, 40));
         var fourth = Vector512.Create(QuantizeAvx512(f6, ref divisor, 48), QuantizeAvx512(f7, ref divisor, 56));
-        ref var indexes = ref unsafe(MemoryMarshal.GetReference(ZigZagTransposedIndexes));
         ref var output = ref unsafe(MemoryMarshal.GetReference(coefficients));
+        if (typeof(T) == typeof(short) && Avx512BW.IsSupported)
+        {
+            // VPACKSSDW (the clamped values fit in 16 bits) then two-source permutations of 16-bit values (VPERMT2W)
+            var lower = Avx512BW.PackSignedSaturate(first, second);
+            var upper = Avx512BW.PackSignedSaturate(third, fourth);
+            ref var positions = ref unsafe(MemoryMarshal.GetReference(ZigZagPackedPositions));
+            ref var destination = ref unsafe(Unsafe.As<T, short>(ref output));
+            unsafe { Avx512BW.PermuteVar32x16x2(lower, Vector512.LoadUnsafe(ref positions), upper).StoreUnsafe(ref destination); }
+            unsafe { Avx512BW.PermuteVar32x16x2(lower, Vector512.LoadUnsafe(ref positions, 32), upper).StoreUnsafe(ref destination, 32); }
+            return;
+        }
+
+        ref var indexes = ref unsafe(MemoryMarshal.GetReference(ZigZagTransposedIndexes));
         for (var i = 0; i < 64; i += 16)
         {
             // The permutations read bits 0 to 4 of each index: the values of the first or the second half

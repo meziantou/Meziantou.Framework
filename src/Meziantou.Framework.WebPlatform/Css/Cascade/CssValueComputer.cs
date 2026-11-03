@@ -2350,7 +2350,9 @@ internal static partial class CssValueComputer
             return CssHdrColor.Serialize(computed);
         }
 
-        return ResolveColor(value, style, isColorProperty)?.Serialize();
+        // The color of a highlight pseudo-element that depends on currentcolor (e.g. a color-mix()) is not resolved either: it
+        // is inherited down the highlight chain as specified, and resolved against the color of each originating element
+        return ResolveColor(value, style, isColorProperty && !style.IsHighlight)?.Serialize();
     }
 
     /// <summary>Resolves a color (https://drafts.csswg.org/css-color-4/#resolving-color-values), or returns null when it is not a color or depends on currentcolor (outside the color property).</summary>
@@ -2368,6 +2370,9 @@ internal static partial class CssValueComputer
                     return CssColor.Parse(value);
 
                 name = DeprecatedSystemColors.GetValueOrDefault(name, name);
+                if (name is "accentcolor" or "accentcolortext" && style.Environment.ForcedColorsPalette is null && GetAccentColor(style) is { } accentColor)
+                    return name == "accentcolor" ? accentColor : ComputeContrastColor(accentColor);
+
                 return GetSystemColors(style).TryGetValue(name, out var systemColor) ? ParseColor(systemColor) : null;
             }
 
@@ -2517,7 +2522,7 @@ internal static partial class CssValueComputer
     /// The contrast is the WCAG 2.1 contrast ratio (https://www.w3.org/TR/WCAG21/#dfn-contrast-ratio) of the relative
     /// luminance of the opaque color in sRGB; white wins a tie.
     /// </summary>
-    private static CssColor? ComputeContrastColor(CssColor color)
+    internal static CssColor? ComputeContrastColor(CssColor color)
     {
         if (CssColorConversion.FromColor(color) is not { } components)
             return null;
@@ -2556,6 +2561,34 @@ internal static partial class CssValueComputer
 
     /// <summary>Parses a computed color (e.g. the computed value of the color property).</summary>
     private static CssColor? ParseColor(string value) => ValueMatcher.RemoveWhitespace(CssParser.ParseListOfComponentValues(value)) is [var single] ? CssColor.Parse(single) : null;
+
+    /// <summary>
+    /// Returns the accent color of an element (https://drafts.csswg.org/css-ui-4/#widget-accent), which the AccentColor and
+    /// AccentColorText system colors follow, or null when its accent-color is auto (the default accent color). A cycle uses
+    /// the value of the parent: accent-color: AccentColor is the accent color of the parent, and the currentcolor of an
+    /// accent-color in the color property of the same element (color: AccentColor; accent-color: currentcolor) is the color
+    /// of the parent.
+    /// </summary>
+    internal static CssColor? GetAccentColor(ComputedStyle style)
+    {
+        var computing = style.Engine.ComputingProperties;
+        for (var current = style; current is not null; current = current.Parent)
+        {
+            if (computing.Contains(current, "accent-color"))
+                continue;
+
+            var value = current.GetComputedValue("accent-color");
+            if (value is "auto" or "")
+                return null;
+
+            if (value == "currentcolor")
+                return ParseColor(computing.Contains(current, "color") ? GetInheritedColor(current) : current.GetComputedValue("color"));
+
+            return ParseColor(value);
+        }
+
+        return null;
+    }
 
     private static string GetInheritedColor(ComputedStyle style) => style.Parent?.GetComputedValue("color") ?? LightSystemColors["canvastext"];
 

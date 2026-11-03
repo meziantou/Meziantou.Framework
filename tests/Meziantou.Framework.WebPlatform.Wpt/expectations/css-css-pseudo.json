@@ -121,13 +121,7 @@
     "total": 1
   },
   "css/css-pseudo/events-on-pseudo-element-shadow-dom.html": {
-    "total": 6,
-    "failures": {
-      "event.pseudoTarget is null when clicking ::after::marker retargeted across shadow boundary": "FAIL",
-      "event.pseudoTarget is null when clicking ::before::marker retargeted across shadow boundary": "FAIL",
-      "event.pseudoTarget is preserved when clicking host ::after::marker pseudo-element": "FAIL",
-      "event.pseudoTarget is preserved when clicking host ::before::marker pseudo-element": "FAIL"
-    }
+    "total": 6
   },
   "css/css-pseudo/events-on-pseudo-element.tentative.html": {
     "harness": "TIMEOUT",
@@ -428,10 +422,7 @@
     "total": 2
   },
   "css/css-pseudo/highlight-cascade/highlight-cascade-currentcolor-color-mix.html": {
-    "total": 2,
-    "failures": {
-      "currentcolor in a color-mix() resolves against the inheriting element's own color": "FAIL"
-    }
+    "total": 2
   },
   "css/css-pseudo/highlight-cascade/highlight-cascade-parent-style-change.html": {
     "total": 1

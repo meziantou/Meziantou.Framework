@@ -233,6 +233,15 @@ internal sealed partial class Painter
         }
 
         var outer = GetOutlineOuterEdge(fragment, offset, width, outlineOffset);
+
+        // As in Blink, the focus ring of a block container that does not clip its overflow encloses the content that overflows
+        // it (WPT css/css-ui/outline-with-padding-001.html)
+        if (fragment.Box is ContainerBox { Kind: ContainerBoxKind.Normal, Display: not { Outside: DisplayOutside.Inline, Inside: DisplayInside.Flow } } && !fragment.ClipsOverflow
+            && GetDecorationBox(fragment) is var borderBox && borderBox.Union(fragment.ScrollableOverflow) is var enclosed && enclosed != borderBox)
+        {
+            outer = new RoundedRect(SnapToDevicePixels(enclosed.Translate(offset)), default).Inset(Uniform(-(outlineOffset + width)));
+        }
+
         if (outer.Contour is null)
         {
             outer = outer with { Radii = new BorderRadii(Round(outer.Radii.TopLeft), Round(outer.Radii.TopRight), Round(outer.Radii.BottomRight), Round(outer.Radii.BottomLeft)) };

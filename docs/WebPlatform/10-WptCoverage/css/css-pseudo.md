@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of css/css-pseudo, and why t
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 43 | 49 | 0 | 88% |
+| [Stable](#stable-tests) | 45 | 49 | 0 | 92% |
 | [Tentative](#tentative-tests) | 9 | 12 | 0 | 75% |
 | [Reftests](#reftests) | 253 | 275 | 0 | 92% |
-| **All** | **305** | **336** | **0** | **91%** |
+| **All** | **307** | **336** | **0** | **91%** |
 
 ## Stable tests
 
@@ -25,7 +25,7 @@ description: "The results of the web-platform-tests of css/css-pseudo, and why t
 | [`backdrop-pseudo-element-click.html`](https://wpt.fyi/results/css/css-pseudo/backdrop-pseudo-element-click.html) | Pass | 1 / 1 |  |  |
 | [`before-in-display-none-thcrash.html`](https://wpt.fyi/results/css/css-pseudo/before-in-display-none-thcrash.html) | Pass | 1 / 1 |  |  |
 | [`chrome-486467574.html`](https://wpt.fyi/results/css/css-pseudo/chrome-486467574.html) | Pass | 1 / 1 |  |  |
-| [`events-on-pseudo-element-shadow-dom.html`](https://wpt.fyi/results/css/css-pseudo/events-on-pseudo-element-shadow-dom.html) | Fail | 2 / 6 | NOT IMPLEMENTED | the sub-pseudo-elements `::before::marker` and `::after::marker`: their boxes are hit as the `::before`/`::after` (the `pseudoTarget` of `::before` and its retargeting pass) |
+| [`events-on-pseudo-element-shadow-dom.html`](https://wpt.fyi/results/css/css-pseudo/events-on-pseudo-element-shadow-dom.html) | Pass | 6 / 6 |  |  |
 | [`file-selector-button-inherit.html`](https://wpt.fyi/results/css/css-pseudo/file-selector-button-inherit.html) | Pass | 1 / 1 |  |  |
 | [`first-letter-allowed-properties.html`](https://wpt.fyi/results/css/css-pseudo/first-letter-allowed-properties.html) | Pass | 36 / 36 |  |  |
 | [`first-letter-punctuation-and-space.html`](https://wpt.fyi/results/css/css-pseudo/first-letter-punctuation-and-space.html) | Pass | 43 / 43 |  |  |
@@ -35,7 +35,7 @@ description: "The results of the web-platform-tests of css/css-pseudo, and why t
 | [`highlight-cascade/highlight-cascade-009.html`](https://wpt.fyi/results/css/css-pseudo/highlight-cascade/highlight-cascade-009.html) | Pass | 5 / 5 |  |  |
 | [`highlight-cascade/highlight-cascade-010.html`](https://wpt.fyi/results/css/css-pseudo/highlight-cascade/highlight-cascade-010.html) | Pass | 1 / 1 |  |  |
 | [`highlight-cascade/highlight-cascade-011.html`](https://wpt.fyi/results/css/css-pseudo/highlight-cascade/highlight-cascade-011.html) | Pass | 2 / 2 |  |  |
-| [`highlight-cascade/highlight-cascade-currentcolor-color-mix.html`](https://wpt.fyi/results/css/css-pseudo/highlight-cascade/highlight-cascade-currentcolor-color-mix.html) | Fail | 1 / 2 | BUG | a `color-mix()` that contains `currentcolor` in the `color` of a highlight pseudo-element is resolved when it is computed and inherited down the highlight chain as an absolute color; only a bare `currentcolor` is kept unresolved (https://drafts.csswg.org/css-pseudo-4/#highlight-cascade) |
+| [`highlight-cascade/highlight-cascade-currentcolor-color-mix.html`](https://wpt.fyi/results/css/css-pseudo/highlight-cascade/highlight-cascade-currentcolor-color-mix.html) | Pass | 2 / 2 |  |  |
 | [`highlight-cascade/highlight-cascade-parent-style-change.html`](https://wpt.fyi/results/css/css-pseudo/highlight-cascade/highlight-cascade-parent-style-change.html) | Pass | 1 / 1 |  |  |
 | [`highlight-cascade/highlight-cascade-shadow-boundary.html`](https://wpt.fyi/results/css/css-pseudo/highlight-cascade/highlight-cascade-shadow-boundary.html) | Pass | 2 / 2 |  |  |
 | [`highlight-cascade/highlight-currentcolor-computed-inheritance.html`](https://wpt.fyi/results/css/css-pseudo/highlight-cascade/highlight-currentcolor-computed-inheritance.html) | Pass | 6 / 6 |  |  |
@@ -59,7 +59,7 @@ description: "The results of the web-platform-tests of css/css-pseudo, and why t
 | [`marker-variable-computed-style.html`](https://wpt.fyi/results/css/css-pseudo/marker-variable-computed-style.html) | Pass | 2 / 2 |  |  |
 | [`parsing/highlight-pseudos.html`](https://wpt.fyi/results/css/css-pseudo/parsing/highlight-pseudos.html) | Pass | 40 / 40 |  |  |
 | [`parsing/marker-supported-properties-in-animation.html`](https://wpt.fyi/results/css/css-pseudo/parsing/marker-supported-properties-in-animation.html) | Fail | 96 / 98 | TEST BUG | expects the computed `list-style` to include `outside` (it contradicts css/css-lists/parsing/list-style-computed.sub.html) |
-| [`parsing/marker-supported-properties.html`](https://wpt.fyi/results/css/css-pseudo/parsing/marker-supported-properties.html) | Fail | 67 / 68 | BUG | the computed `list-style` shorthand of `::marker` is serialized as `outside` instead of `outside none disc` |
+| [`parsing/marker-supported-properties.html`](https://wpt.fyi/results/css/css-pseudo/parsing/marker-supported-properties.html) | Fail | 67 / 68 | TEST BUG | expects the computed `list-style` to be `outside none disc` instead of its shortest serialization, `outside` (it contradicts css/css-lists/parsing/list-style-valid.html and list-style-computed.sub.html) |
 | [`parsing/tree-abiding-pseudo-elements.html`](https://wpt.fyi/results/css/css-pseudo/parsing/tree-abiding-pseudo-elements.html) | Pass | 41 / 41 |  |  |
 | [`placeholder-inherit.html`](https://wpt.fyi/results/css/css-pseudo/placeholder-inherit.html) | Pass | 1 / 1 |  |  |
 | [`pseudo-element-removal.html`](https://wpt.fyi/results/css/css-pseudo/pseudo-element-removal.html) | Pass | 1 / 1 |  |  |

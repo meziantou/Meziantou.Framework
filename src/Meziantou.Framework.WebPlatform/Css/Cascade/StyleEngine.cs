@@ -515,6 +515,25 @@ internal sealed partial class StyleEngine
     /// </summary>
     public ComputedStyle CreateAnonymousStyle(ComputedStyle parent) => new(this, parent.Element, AnonymousBoxPseudoElement, parent, EmptyCascadedValues, cascadedShared: true) { IncludeTransitions = false };
 
+    /// <summary>
+    /// Creates the style of the image of a pseudo-element whose content is a single image (see
+    /// <see cref="Layout.BoxTreeBuilder"/>): an anonymous style whose width and height are 100% when the ones of the
+    /// pseudo-element are not auto.
+    /// </summary>
+    internal ComputedStyle CreateGeneratedImageStyle(ComputedStyle parent)
+    {
+        var cascaded = new Dictionary<string, CascadedValue>(2, StringComparer.Ordinal);
+        foreach (var name in (ReadOnlySpan<string>)["width", "height"])
+        {
+            if (parent.GetComputedValue(name) != "auto")
+            {
+                cascaded[name] = new CascadedValue(new CssLonghandValue(name, "100%"), 0, source: null);
+            }
+        }
+
+        return new ComputedStyle(this, parent.Element, AnonymousBoxPseudoElement, parent, cascaded) { IncludeTransitions = false };
+    }
+
     /// <summary>The name of the pseudo-element of the styles of the anonymous boxes (no rule matches it).</summary>
     internal const string AnonymousBoxPseudoElement = "-internal-anonymous-box";
 
@@ -2797,7 +2816,9 @@ internal sealed partial class StyleEngine
     /// the form controls (see <see cref="Layout.FormControlContents"/>) are blocks, and the button of a file upload control an
     /// inline-block that does not wrap. The summary that the user agent provides for a details element without summary child,
     /// in its user agent shadow tree (see <see cref="HtmlDetailsElement.ImplicitSummary"/>), has the style of the summary of a
-    /// details element ("details &gt; summary:first-of-type").
+    /// details element ("details &gt; summary:first-of-type"). The inert elements and the modal dialogs have the
+    /// <c>interactivity</c> of CSS UI (https://drafts.csswg.org/css-ui-4/#inertness: "[inert] { interactivity: inert !important }"
+    /// and "dialog:modal { interactivity: auto }"), which the pinned HTML Standard does not have.
     /// </summary>
     private const string SupplementalStyleSheet = """
         textarea { display: inline-block; overflow-wrap: break-word; }
@@ -2888,12 +2909,15 @@ internal sealed partial class StyleEngine
         rtc:lang(zh-TW), :not(rtc) > rt:lang(zh-TW) { font-size: 30%; }
         rtc:lang(zh), rt:lang(zh) { ruby-align: center; }
         ruby { text-indent: 0; }
+        [inert] { interactivity: inert !important; }
+        dialog:modal { interactivity: auto; }
         """;
 
     /// <summary>
     /// The user agent style sheet of the Fullscreen API (https://fullscreen.spec.whatwg.org/#user-agent-level-style-sheet-defaults):
     /// the elements of any namespace that are displayed fullscreen fill the viewport. The <c>:fullscreen</c> pseudo-class is
-    /// written first in the compound selectors: it does not match in most documents.
+    /// written first in the compound selectors: it does not match in most documents. A fullscreen element escapes the
+    /// inertness of its ancestors (<c>interactivity: auto</c>, https://drafts.csswg.org/css-ui-4/#inertness).
     /// </summary>
     private const string FullscreenStyleSheet = """
         *|*:fullscreen:not(:root) {
@@ -2917,6 +2941,9 @@ internal sealed partial class StyleEngine
         }
         *|*:fullscreen:not(:root)::backdrop {
           background: black;
+        }
+        *|*:fullscreen {
+          interactivity: auto;
         }
         """;
 

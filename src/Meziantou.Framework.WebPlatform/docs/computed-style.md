@@ -506,7 +506,10 @@ like the imported style sheets (`DocumentRequest.Initiator` is null), when the d
 - `zoom` computes to a number: a percentage is converted, and the legacy `normal` keyword and `0` compute to `1` (as in the
   browsers).
 - Colors are computed (named colors, system colors in light and dark color schemes or of the palette of the
-  [forced colors mode](#forced-colors-mode), `light-dark()`, `color-mix()` in the
+  [forced colors mode](#forced-colors-mode); outside of the forced colors mode, `AccentColor` is the `accent-color` of the
+  element and `AccentColorText` the contrast color of it, when it is not `auto`: https://drafts.csswg.org/css-ui-4/#widget-accent,
+  `accent-color: AccentColor` is the accent color of the parent and the `currentcolor` of `accent-color` in the `color` of
+  the same element is the color of the parent, also for the colors of a canvas; `light-dark()`, `color-mix()` in the
   sRGB, linear sRGB, XYZ, Lab, LCH, Oklab and Oklch color spaces, `contrast-color()`, which is white or black, whichever has
   the higher WCAG 2.1 contrast ratio); the resolved value of a color is its used value (`currentcolor` is resolved). The
   relative color syntax is kept as specified. `light-dark()` of images computes to the image of the used color scheme
@@ -1002,7 +1005,9 @@ the search, the target element and the restrictions). The highlight pseudo-eleme
 - The applicable properties without a cascaded value (or with `inherit` or `unset`) inherit from the same highlight
   pseudo-element of the parent element in the flat tree, whether they are inherited properties or not. The highlight
   pseudo-elements of the root element inherit `currentcolor` as `color`, and the initial values. The custom properties
-  inherit from the originating element.
+  inherit from the originating element. A `color` that depends on `currentcolor` (e.g. a `color-mix()`) is kept unresolved
+  in the computed value, as a bare `currentcolor`: it is inherited as specified and resolved against the color of each
+  originating element.
 - `currentcolor` is the computed value of `color` when it is specified or inherited, and its used value is the color of
   the originating element (there are no highlight overlays below it).
 - `::highlight(*)` matches every custom highlight, with a zero specificity (`::highlight(\*)` is the highlight named `*`).
@@ -1274,7 +1279,7 @@ contents of a replaced element or a form control, and it is not a never-rendered
 - `UIEvent.pseudoTarget` (https://github.com/w3c/uievents/pull/413, implemented by Blink): the pointer events, the
   compatibility mouse events, `click`, `auxclick`, `dblclick` and `contextmenu` of a pointer that hits the box of a
   pseudo-element represented by a `CSSPseudoElement` have it as their `pseudoTarget` (their target is its originating
-  element), except the boundary events (`*over`, `*out`, `*enter`, `*leave`). The `pseudoTarget` of a mouse event and of a
+  element; the `::marker` of a `::before` or `::after` is a sub-pseudo-element of it), except the boundary events (`*over`, `*out`, `*enter`, `*leave`). The `pseudoTarget` of a mouse event and of a
   click is null when the pseudo-element has no box in the box tree when it is fired (e.g. a listener of the press hid it and a
   layout was computed), and the one of a click is the nearest common ancestor of the pseudo-elements of the press and of the
   release. As specified, `pseudoTarget` is null outside of the dispatch and for the listeners the originating element is

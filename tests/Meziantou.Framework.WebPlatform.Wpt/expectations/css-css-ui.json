@@ -9,32 +9,13 @@
     "reftest": "PASS"
   },
   "css/css-ui/accent-color-keyword-animation.html": {
-    "total": 3,
-    "failures": {
-      "AccentColor mirrors accent-color while animating": "FAIL",
-      "Animated AccentColor updates when accent-color changes": "FAIL",
-      "Animated AccentColorText updates when accent-color changes": "FAIL"
-    }
+    "total": 3
   },
   "css/css-ui/accent-color-keyword-cyclic.html": {
-    "total": 4,
-    "failures": {
-      "AccentColor mirrors accent-color: currentcolor": "FAIL",
-      "Cyclic color: AccentColor with accent-color: currentcolor uses the parent color": "FAIL",
-      "accent-color: AccentColor resolves to the parent's accent-color": "FAIL",
-      "accent-color: currentcolor resolves against the element's own color": "FAIL"
-    }
+    "total": 4
   },
   "css/css-ui/accent-color-keyword-resolution.html": {
-    "total": 6,
-    "failures": {
-      "AccentColor resolves against the element's own accent-color": "FAIL",
-      "AccentColor resolves in a color function in a registered property": "FAIL",
-      "AccentColor resolves in a registered color custom property": "FAIL",
-      "AccentColor updates when accent-color changes": "FAIL",
-      "Canvas AccentColor mirrors inherited and updated accent-color": "FAIL",
-      "Canvas color functions resolve AccentColor against accent-color": "FAIL"
-    }
+    "total": 6
   },
   "css/css-ui/accent-color-parent-currentcolor.html": {
     "reftest": "PASS"
@@ -46,11 +27,7 @@
     "reftest": "PASS"
   },
   "css/css-ui/accent-color-text-keyword-resolution.html": {
-    "total": 3,
-    "failures": {
-      "AccentColorText contrasts against the element's own accent-color": "FAIL",
-      "AccentColorText is black for a light accent-color": "FAIL"
-    }
+    "total": 3
   },
   "css/css-ui/accent-color-visited.html": {
     "reftest": "PASS"
@@ -2808,10 +2785,7 @@
     "total": 1
   },
   "css/css-ui/interactivity-inert-click.html": {
-    "total": 2,
-    "failures": {
-      "No click event for interactivity:inert element": "FAIL"
-    }
+    "total": 2
   },
   "css/css-ui/interactivity-inert-find.html": {
     "total": 3,
@@ -2822,34 +2796,16 @@
     }
   },
   "css/css-ui/interactivity-inert-focus.html": {
-    "total": 3,
-    "failures": {
-      "Try focus inert input": "FAIL"
-    }
+    "total": 3
   },
   "css/css-ui/interactivity-inert-fullscreen-ua.html": {
-    "total": 5,
-    "failures": {
-      "UA :fullscreen rule overriding inherited [inert] 'interactivity:inert' rule": "FAIL",
-      "UA [inert] rule overriding inherited :fullscreen 'interactivity:auto' rule": "FAIL",
-      "UA [inert] rule wins over UA :fullscreen rule": "FAIL"
-    }
+    "total": 5
   },
   "css/css-ui/interactivity-inert-html-attribute-ua.html": {
-    "total": 4,
-    "failures": {
-      "Author interactivity:auto does not override UA [inert] { interactivity: inert } on the element itself": "FAIL",
-      "[inert] { interactivity: inert }": "FAIL",
-      "[inert] { interactivity: inert } inherited": "FAIL"
-    }
+    "total": 4
   },
   "css/css-ui/interactivity-inert-modal-dialog-ua.html": {
-    "total": 5,
-    "failures": {
-      "UA [inert] rule overriding inherited dialog:modal 'interactivity:auto' rule": "FAIL",
-      "UA [inert] rule wins over UA dialog:modal inert rule": "FAIL",
-      "UA dialog:modal rule overriding inherited [inert] 'interactivity:inert' rule": "FAIL"
-    }
+    "total": 5
   },
   "css/css-ui/native-appearance-disabled-for-value-unset.html": {
     "reftest": "PASS"

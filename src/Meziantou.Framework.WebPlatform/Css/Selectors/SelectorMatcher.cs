@@ -339,6 +339,31 @@ internal static class SelectorMatcher
         if (featureless && !HasFeaturelessHostFeature(compound))
             return false;
 
+        // The universal selector implied by a default namespace never matches the featureless host, except in a compound
+        // selector that only contains :host (https://drafts.csswg.org/selectors-4/#featureless): :is(:host) does not match
+        if (featureless && compound.Selectors[0] is TypeSelector { Implicit: true } && !IsHostOnlyCompound(compound))
+            return false;
+
+        return true;
+    }
+
+    private static bool IsHostOnlyCompound(CompoundSelector compound)
+    {
+        foreach (var selector in compound.Selectors.AsSpan()[1..])
+        {
+            switch (selector)
+            {
+                case PseudoElementSelector:
+                    return true;
+
+                case PseudoClassSelector { Kind: PseudoClass.Host or PseudoClass.HostFunction or PseudoClass.HostContext }:
+                    break;
+
+                default:
+                    return false;
+            }
+        }
+
         return true;
     }
 

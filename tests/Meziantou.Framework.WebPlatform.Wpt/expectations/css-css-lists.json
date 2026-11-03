@@ -579,13 +579,13 @@
     "reftest": "PASS"
   },
   "css/css-lists/outside-marker-with-float-in-content.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-lists/outside-marker-with-relpos-block-content.html": {
     "reftest": "PASS"
   },
   "css/css-lists/outside-marker-with-text-indent.html": {
-    "reftest": "FAIL"
+    "reftest": "PASS"
   },
   "css/css-lists/parsing/content-invalid.html": {
     "total": 24

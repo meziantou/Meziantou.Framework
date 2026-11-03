@@ -398,7 +398,8 @@ public sealed partial class UserInput
     /// </summary>
     private static CssPseudoElement? GetLivePseudoTarget(CssPseudoElement? pseudoTarget, Node target)
     {
-        if (pseudoTarget is null || !ReferenceEquals(pseudoTarget.Element, target) || pseudoTarget.BoxName is not { } name)
+        // (the ::marker of a ::before or ::after pseudo-element is an anonymous box of its pseudo-element)
+        if (pseudoTarget is null || !ReferenceEquals(pseudoTarget.Element, target) || (pseudoTarget.BoxName ?? pseudoTarget.ParentPseudoElement?.BoxName) is not { } name)
             return null;
 
         return target.NodeDocument.LayoutEngineOrNull?.BoxTree?.GetPseudoElementBox(pseudoTarget.Element, name) is not null ? pseudoTarget : null;

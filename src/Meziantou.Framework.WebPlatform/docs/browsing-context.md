@@ -2414,7 +2414,9 @@ neither has `display: none`, the element is not in the contents of a replaced el
 it is not in a never-rendered SVG element, no ancestor skips its contents (`content-visibility: hidden`, the contents of a
 closed `details` element other than its summary), and (as in browsers) the element is not `visibility: hidden`. An
 element with `display: contents` delegates its rendering to its children. An element is focusable when it is rendered, it is not
-actually disabled, it is not inert (the `inert` attribute, or a document blocked by a modal dialog), it does not delegate
+actually disabled, it is not inert (the `inert` attribute, a document blocked by a modal dialog, or a computed `interactivity`
+of `inert`, https://drafts.csswg.org/css-ui-4/#inertness: the user agent style sheet sets it on the `[inert]` elements,
+`!important`, and resets it to `auto` on the modal dialogs and the fullscreen elements), it does not delegate
 its focus, and it has a tabindex value or is focusable by default (`a` and SVG `a` with `href`, `button`, `input` that is
 not hidden, `select`, `textarea`, the `summary` of a `details`, the editing hosts, the navigable containers, the media
 elements with `controls`, the options of a `select` whose contents are rendered with base appearance (a list box with

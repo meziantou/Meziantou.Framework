@@ -49,10 +49,10 @@ The features of `REQUIRES`:
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 25,585 | 29,691 | 2,570 | 94% |
+| [Stable](#stable-tests) | 25,588 | 29,691 | 2,570 | 94% |
 | [Tentative](#tentative-tests) | 1,173 | 3,074 | 847 | 53% |
-| [Reftests](#reftests) | 27,773 | 29,220 | 180 | 96% |
-| **All** | **54,531** | **61,985** | **3,597** | **93%** |
+| [Reftests](#reftests) | 27,797 | 29,220 | 180 | 96% |
+| **All** | **54,558** | **61,985** | **3,597** | **93%** |
 
 ## Stable tests
 
@@ -100,9 +100,9 @@ The features of `REQUIRES`:
 | [`css/css-anchor-position`](css/css-anchor-position.md) | 259 | 262 | 0 | 99% |
 | [`css/css-animations`](css/css-animations.md) | 94 | 98 | 0 | 96% |
 | [`css/css-backgrounds`](css/css-backgrounds.md) | 126 | 132 | 0 | 95% |
-| [`css/css-borders`](css/css-borders.md) | 34 | 37 | 0 | 92% |
+| [`css/css-borders`](css/css-borders.md) | 35 | 37 | 0 | 95% |
 | [`css/css-box`](css/css-box.md) | 53 | 79 | 0 | 67% |
-| [`css/css-break`](css/css-break.md) | 41 | 42 | 0 | 98% |
+| [`css/css-break`](css/css-break.md) | 42 | 42 | 0 | 100% |
 | [`css/css-cascade`](css/css-cascade.md) | 86 | 92 | 0 | 93% |
 | [`css/css-color`](css/css-color.md) | 66 | 69 | 0 | 96% |
 | [`css/css-color-adjust`](css/css-color-adjust.md) | 14 | 15 | 0 | 93% |
@@ -116,7 +116,7 @@ The features of `REQUIRES`:
 | [`css/css-easing`](css/css-easing.md) | 11 | 13 | 0 | 85% |
 | [`css/css-env`](css/css-env.md) | 3 | 3 | 0 | 100% |
 | [`css/css-exclusions`](css/css-exclusions.md) | 0 | 8 | 8 | – |
-| [`css/css-flexbox`](css/css-flexbox.md) | 366 | 376 | 0 | 97% |
+| [`css/css-flexbox`](css/css-flexbox.md) | 367 | 376 | 0 | 98% |
 | [`css/css-font-loading`](css/css-font-loading.md) | 22 | 23 | 0 | 96% |
 | [`css/css-fonts`](css/css-fonts.md) | 153 | 167 | 0 | 92% |
 | [`css/css-forced-color-adjust`](css/css-forced-color-adjust.md) | 4 | 4 | 0 | 100% |
@@ -401,7 +401,7 @@ The features of `REQUIRES`:
 | [`x-frame-options`](x-frame-options.md) | 6 | 6 | 0 | 100% |
 | [`xhr`](xhr.md) | 317 | 330 | 0 | 96% |
 | [`xml`](xml.md) | 0 | 12 | 12 | – |
-| **Total (343 sections)** | **25,585** | **29,691** | **2,570** | **94%** |
+| **Total (343 sections)** | **25,588** | **29,691** | **2,570** | **94%** |
 
 ## Tentative tests
 
@@ -607,20 +607,20 @@ The features of `REQUIRES`:
 | [`css/css-fonts`](css/css-fonts.md#reftests) | 359 | 385 | 1 | 93% |
 | [`css/css-forms`](css/css-forms.md#reftests) | 6 | 17 | 0 | 35% |
 | [`css/css-gaps`](css/css-gaps.md#reftests) | 526 | 544 | 0 | 97% |
-| [`css/css-grid`](css/css-grid.md#reftests) | 1,723 | 1,767 | 0 | 98% |
+| [`css/css-grid`](css/css-grid.md#reftests) | 1,731 | 1,767 | 0 | 98% |
 | [`css/css-highlight-api`](css/css-highlight-api.md#reftests) | 112 | 118 | 0 | 95% |
 | [`css/css-image-animation`](css/css-image-animation.md#reftests) | 0 | 22 | 22 | – |
 | [`css/css-images`](css/css-images.md#reftests) | 463 | 476 | 0 | 97% |
 | [`css/css-inline`](css/css-inline.md#reftests) | 184 | 199 | 0 | 92% |
 | [`css/css-layout-api`](css/css-layout-api.md#reftests) | 128 | 135 | 0 | 95% |
-| [`css/css-lists`](css/css-lists.md#reftests) | 160 | 182 | 0 | 88% |
+| [`css/css-lists`](css/css-lists.md#reftests) | 161 | 182 | 0 | 88% |
 | [`css/css-logical`](css/css-logical.md#reftests) | 6 | 6 | 0 | 100% |
 | [`css/css-masking`](css/css-masking.md#reftests) | 484 | 500 | 1 | 97% |
 | [`css/css-multicol`](css/css-multicol.md#reftests) | 459 | 467 | 0 | 98% |
 | [`css/css-namespaces`](css/css-namespaces.md#reftests) | 23 | 23 | 0 | 100% |
 | [`css/css-navigation`](css/css-navigation.md#reftests) | 0 | 3 | 3 | – |
 | [`css/css-nesting`](css/css-nesting.md#reftests) | 17 | 17 | 0 | 100% |
-| [`css/css-overflow`](css/css-overflow.md#reftests) | 669 | 686 | 0 | 98% |
+| [`css/css-overflow`](css/css-overflow.md#reftests) | 671 | 686 | 0 | 98% |
 | [`css/css-page`](css/css-page.md#reftests) | 225 | 229 | 0 | 98% |
 | [`css/css-paint-api`](css/css-paint-api.md#reftests) | 114 | 115 | 0 | 99% |
 | [`css/css-painting`](css/css-painting.md#reftests) | 1 | 1 | 0 | 100% |
@@ -637,13 +637,13 @@ The features of `REQUIRES`:
 | [`css/css-sizing`](css/css-sizing.md#reftests) | 552 | 569 | 0 | 97% |
 | [`css/css-style-attr`](css/css-style-attr.md#reftests) | 16 | 16 | 0 | 100% |
 | [`css/css-syntax`](css/css-syntax.md#reftests) | 1 | 1 | 0 | 100% |
-| [`css/css-tables`](css/css-tables.md#reftests) | 166 | 173 | 0 | 96% |
-| [`css/css-text`](css/css-text.md#reftests) | 1,495 | 1,559 | 0 | 96% |
+| [`css/css-tables`](css/css-tables.md#reftests) | 167 | 173 | 0 | 97% |
+| [`css/css-text`](css/css-text.md#reftests) | 1,497 | 1,559 | 0 | 96% |
 | [`css/css-text-decor`](css/css-text-decor.md#reftests) | 309 | 318 | 0 | 97% |
 | [`css/css-transforms`](css/css-transforms.md#reftests) | 791 | 797 | 0 | 99% |
 | [`css/css-transitions`](css/css-transitions.md#reftests) | 6 | 6 | 0 | 100% |
 | [`css/css-typed-om`](css/css-typed-om.md#reftests) | 5 | 5 | 0 | 100% |
-| [`css/css-ui`](css/css-ui.md#reftests) | 958 | 964 | 0 | 99% |
+| [`css/css-ui`](css/css-ui.md#reftests) | 959 | 964 | 0 | 99% |
 | [`css/css-values`](css/css-values.md#reftests) | 210 | 214 | 0 | 98% |
 | [`css/css-variables`](css/css-variables.md#reftests) | 183 | 183 | 0 | 100% |
 | [`css/css-view-transitions`](css/css-view-transitions.md#reftests) | 308 | 318 | 0 | 97% |
@@ -654,7 +654,7 @@ The features of `REQUIRES`:
 | [`css/cssom`](css/cssom.md#reftests) | 9 | 12 | 0 | 75% |
 | [`css/cssom-view`](css/cssom-view.md#reftests) | 11 | 11 | 0 | 100% |
 | [`css/fill-stroke`](css/fill-stroke.md#reftests) | 1 | 1 | 0 | 100% |
-| [`css/filter-effects`](css/filter-effects.md#reftests) | 375 | 394 | 0 | 95% |
+| [`css/filter-effects`](css/filter-effects.md#reftests) | 379 | 394 | 0 | 96% |
 | [`css/mediaqueries`](css/mediaqueries.md#reftests) | 56 | 58 | 0 | 97% |
 | [`css/motion`](css/motion.md#reftests) | 98 | 98 | 0 | 100% |
 | [`css/printing`](css/printing.md#reftests) | 36 | 39 | 0 | 92% |
@@ -674,13 +674,13 @@ The features of `REQUIRES`:
 | [`gif`](gif.md#reftests) | 1 | 1 | 0 | 100% |
 | [`html-ruby-extensions`](html-ruby-extensions.md#reftests) | 84 | 84 | 0 | 100% |
 | [`html/browsers`](html/browsers.md#reftests) | 4 | 4 | 0 | 100% |
-| [`html/canvas`](html/canvas.md#reftests) | 212 | 552 | 0 | 38% |
+| [`html/canvas`](html/canvas.md#reftests) | 213 | 552 | 0 | 39% |
 | [`html/dom`](html/dom.md#reftests) | 127 | 127 | 0 | 100% |
 | [`html/editing`](html/editing.md#reftests) | 23 | 24 | 1 | 100% |
 | [`html/infrastructure`](html/infrastructure.md#reftests) | 0 | 1 | 1 | – |
 | [`html/interaction`](html/interaction.md#reftests) | 1 | 1 | 0 | 100% |
 | [`html/obsolete`](html/obsolete.md#reftests) | 2 | 2 | 0 | 100% |
-| [`html/rendering`](html/rendering.md#reftests) | 320 | 330 | 0 | 97% |
+| [`html/rendering`](html/rendering.md#reftests) | 321 | 330 | 0 | 97% |
 | [`html/select`](html/select.md#reftests) | 1 | 1 | 0 | 100% |
 | [`html/semantics`](html/semantics.md#reftests) | 327 | 431 | 66 | 90% |
 | [`html/syntax`](html/syntax.md#reftests) | 22 | 22 | 0 | 100% |
@@ -701,10 +701,10 @@ The features of `REQUIRES`:
 | [`selection`](selection.md#reftests) | 19 | 19 | 0 | 100% |
 | [`service-workers`](service-workers.md#reftests) | 1 | 1 | 0 | 100% |
 | [`shadow-dom`](shadow-dom.md#reftests) | 26 | 26 | 0 | 100% |
-| [`svg`](svg.md#reftests) | 552 | 629 | 2 | 88% |
+| [`svg`](svg.md#reftests) | 555 | 629 | 2 | 89% |
 | [`trusted-types`](trusted-types.md#reftests) | 1 | 1 | 0 | 100% |
 | [`web-animations`](web-animations.md#reftests) | 18 | 18 | 0 | 100% |
 | [`webgl`](webgl.md#reftests) | 0 | 2 | 2 | – |
 | [`webvtt`](webvtt.md#reftests) | 182 | 251 | 0 | 73% |
 | [`xml`](xml.md#reftests) | 0 | 3 | 3 | – |
-| **Total (130 sections)** | **27,773** | **29,220** | **180** | **96%** |
+| **Total (130 sections)** | **27,797** | **29,220** | **180** | **96%** |

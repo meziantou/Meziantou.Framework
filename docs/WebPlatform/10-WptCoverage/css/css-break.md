@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of css/css-break, and why th
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 41 | 42 | 0 | 98% |
+| [Stable](#stable-tests) | 42 | 42 | 0 | 100% |
 | [Tentative](#tentative-tests) | 6 | 6 | 0 | 100% |
 | [Reftests](#reftests) | 1,131 | 1,145 | 0 | 99% |
-| **All** | **1,178** | **1,193** | **0** | **99%** |
+| **All** | **1,179** | **1,193** | **0** | **99%** |
 
 ## Stable tests
 
@@ -22,7 +22,7 @@ description: "The results of the web-platform-tests of css/css-break, and why th
 | [`animation/orphans-interpolation.html`](https://wpt.fyi/results/css/css-break/animation/orphans-interpolation.html) | Pass | 120 / 120 |  |  |
 | [`animation/widows-interpolation.html`](https://wpt.fyi/results/css/css-break/animation/widows-interpolation.html) | Pass | 192 / 192 |  |  |
 | [`block-end-aligned-abspos.html`](https://wpt.fyi/results/css/css-break/block-end-aligned-abspos.html) | Pass | 3 / 3 |  |  |
-| [`box-decoration-break-clone-block-in-inline-001.html`](https://wpt.fyi/results/css/css-break/box-decoration-break-clone-block-in-inline-001.html) | Fail | 2 / 5 | BUG | with `box-decoration-break: clone`, the fragment of the inline box between two block-level boxes that only holds an empty inline box is wrapped with the cloned border, so it creates a 20px line (the container is 160px tall instead of 140px and the empty span is 20px tall); per https://github.com/w3c/csswg-drafts/issues/14104 a fragment without content is not wrapped |
+| [`box-decoration-break-clone-block-in-inline-001.html`](https://wpt.fyi/results/css/css-break/box-decoration-break-clone-block-in-inline-001.html) | Pass | 5 / 5 |  |  |
 | [`empty-multicol-at-scrollport-edge.html`](https://wpt.fyi/results/css/css-break/empty-multicol-at-scrollport-edge.html) | Pass | 1 / 1 |  |  |
 | [`hit-test-hidden-overflow.html`](https://wpt.fyi/results/css/css-break/hit-test-hidden-overflow.html) | Pass | 4 / 4 |  |  |
 | [`hit-test-inline-fragmentation-with-border-radius.html`](https://wpt.fyi/results/css/css-break/hit-test-inline-fragmentation-with-border-radius.html) | Pass | 36 / 36 |  |  |

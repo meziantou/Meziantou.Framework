@@ -11,8 +11,8 @@ description: "The results of the web-platform-tests of html/canvas, and why the 
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 3,070 | 3,165 | 0 | 97% |
 | [Tentative](#tentative-tests) | 7 | 259 | 0 | 3% |
-| [Reftests](#reftests) | 212 | 552 | 0 | 38% |
-| **All** | **3,289** | **3,976** | **0** | **83%** |
+| [Reftests](#reftests) | 213 | 552 | 0 | 39% |
+| **All** | **3,290** | **3,976** | **0** | **83%** |
 
 ## Stable tests
 
@@ -3661,7 +3661,7 @@ description: "The results of the web-platform-tests of html/canvas, and why the 
 | [`element/manual/filters/canvas-fillStyle-opacity.html`](https://wpt.fyi/results/html/canvas/element/manual/filters/canvas-fillStyle-opacity.html) | Pass | 1 / 1 |  |  |
 | [`element/manual/filters/canvas-filter-opacity-alpha-and-fillStyle.html`](https://wpt.fyi/results/html/canvas/element/manual/filters/canvas-filter-opacity-alpha-and-fillStyle.html) | Pass | 1 / 1 |  |  |
 | [`element/manual/filters/canvas-filter-opacity.html`](https://wpt.fyi/results/html/canvas/element/manual/filters/canvas-filter-opacity.html) | Pass | 1 / 1 |  |  |
-| [`element/manual/filters/canvas-filter-shadow-and-properties-blur.html`](https://wpt.fyi/results/html/canvas/element/manual/filters/canvas-filter-shadow-and-properties-blur.html) | Fail | 0 / 1 | BUG | the blur of the canvas filter combined with the shadows differs from the browsers (max difference 77) |
+| [`element/manual/filters/canvas-filter-shadow-and-properties-blur.html`](https://wpt.fyi/results/html/canvas/element/manual/filters/canvas-filter-shadow-and-properties-blur.html) | Pass | 1 / 1 |  |  |
 | [`element/manual/filters/canvas-filter-shadow-and-properties.html`](https://wpt.fyi/results/html/canvas/element/manual/filters/canvas-filter-shadow-and-properties.html) | Pass | 1 / 1 |  |  |
 | [`element/manual/filters/canvas-filter-shadow.html`](https://wpt.fyi/results/html/canvas/element/manual/filters/canvas-filter-shadow.html) | Pass | 1 / 1 |  |  |
 | [`element/manual/filters/canvas-globalAlpha.html`](https://wpt.fyi/results/html/canvas/element/manual/filters/canvas-globalAlpha.html) | Pass | 1 / 1 |  |  |

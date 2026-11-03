@@ -11,8 +11,8 @@ description: "The results of the web-platform-tests of css/css-lists, and why th
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 38 | 38 | 0 | 100% |
 | Tentative | 0 | 0 | 0 | – |
-| [Reftests](#reftests) | 160 | 182 | 0 | 88% |
-| **All** | **198** | **220** | **0** | **90%** |
+| [Reftests](#reftests) | 161 | 182 | 0 | 88% |
+| **All** | **199** | **220** | **0** | **90%** |
 
 ## Stable tests
 
@@ -236,7 +236,7 @@ description: "The results of the web-platform-tests of css/css-lists, and why th
 | [`outside-marker-covered-by-relpos-block-link.html`](https://wpt.fyi/results/css/css-lists/outside-marker-covered-by-relpos-block-link.html) | Pass | 1 / 1 |  |  |
 | [`outside-marker-in-multicol-relpos-content.html`](https://wpt.fyi/results/css/css-lists/outside-marker-in-multicol-relpos-content.html) | Pass | 1 / 1 |  |  |
 | [`outside-marker-position-with-cached-line-content.html`](https://wpt.fyi/results/css/css-lists/outside-marker-position-with-cached-line-content.html) | Pass | 1 / 1 |  |  |
-| [`outside-marker-taller-than-content.html`](https://wpt.fyi/results/css/css-lists/outside-marker-taller-than-content.html) | Fail | 0 / 1 | BUG | an outside image marker (`list-style-image`) is placed against the content box of the list item (x = 20 to 60px), where the reference, as the browsers, leaves a 7px gap after it (x = 13 to 53px); the heights of the list items match |
+| [`outside-marker-taller-than-content.html`](https://wpt.fyi/results/css/css-lists/outside-marker-taller-than-content.html) | Pass | 1 / 1 |  |  |
 | [`outside-marker-with-align-content.html`](https://wpt.fyi/results/css/css-lists/outside-marker-with-align-content.html) | Pass | 1 / 1 |  |  |
 | [`outside-marker-with-block-in-nested-inline.html`](https://wpt.fyi/results/css/css-lists/outside-marker-with-block-in-nested-inline.html) | Pass | 1 / 1 |  |  |
 | [`outside-marker-with-float-in-content.html`](https://wpt.fyi/results/css/css-lists/outside-marker-with-float-in-content.html) | Fail | 0 / 1 | BUG | a float at the start of the first line inside the list item moves the outside marker next to the float: the marker is moved by any float that shortens the line, a behavior meant for a float outside of the list item (css/CSS2/lists/list-style-applies-to-017.html) |

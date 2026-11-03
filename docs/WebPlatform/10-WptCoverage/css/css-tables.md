@@ -11,8 +11,8 @@ description: "The results of the web-platform-tests of css/css-tables, and why t
 |---|--:|--:|--:|--:|
 | [Stable](#stable-tests) | 106 | 113 | 0 | 94% |
 | [Tentative](#tentative-tests) | 25 | 26 | 0 | 96% |
-| [Reftests](#reftests) | 166 | 173 | 0 | 96% |
-| **All** | **297** | **312** | **0** | **95%** |
+| [Reftests](#reftests) | 167 | 173 | 0 | 97% |
+| **All** | **298** | **312** | **0** | **96%** |
 
 ## Stable tests
 
@@ -198,7 +198,7 @@ description: "The results of the web-platform-tests of css/css-tables, and why t
 | [`col-definite-max-size-001.html`](https://wpt.fyi/results/css/css-tables/col-definite-max-size-001.html) | Fail | 0 / 1 | BUG | the `<col>` elements without cell (4 columns for 2 cells): a column whose width is a percentage (`width: 50%`) or is limited by `max-width: 0` is kept with its `border-spacing` although its width is not definite (the table is 76px wide instead of 56px), and `min-width: 100px` is not applied to these columns (232px instead of 452px); only Firefox passes |
 | [`col-definite-min-size-001.html`](https://wpt.fyi/results/css/css-tables/col-definite-min-size-001.html) | Fail | 0 / 1 | BUG | the `min-width: 100px` of the `<col>` elements is not applied to the columns without cell (4 columns for 2 cells): they are 0px wide and the table is 232px wide instead of 452px; only Firefox passes |
 | [`col-definite-size-001.html`](https://wpt.fyi/results/css/css-tables/col-definite-size-001.html) | Fail | 0 / 1 | BUG | a `<col>` without cell whose width is a percentage (`width: 50%`) is kept with its `border-spacing` (the table is 76px wide instead of 56px): as for `calc(100px + 1%)`, only the columns with a definite width should be kept; only Firefox passes |
-| [`collapsed-border-background-inset.html`](https://wpt.fyi/results/css/css-tables/collapsed-border-background-inset.html) | Fail | 0 / 1 | BUG | with collapsed borders, the background of a cell in the first or last column is painted over the whole width of its column, including the inner half of a wider collapsed border of another cell of the column at the table edge (25px of the `td` borders): the `th` backgrounds cover the same area as the row background of the mismatch reference, where Blink, Gecko and WebKit inset them |
+| [`collapsed-border-background-inset.html`](https://wpt.fyi/results/css/css-tables/collapsed-border-background-inset.html) | Pass | 1 / 1 |  |  |
 | [`collapsed-border-color-change-with-compositing.html`](https://wpt.fyi/results/css/css-tables/collapsed-border-color-change-with-compositing.html) | Pass | 1 / 1 |  |  |
 | [`collapsed-border-fragmentation-001-print.html`](https://wpt.fyi/results/css/css-tables/collapsed-border-fragmentation-001-print.html) | Pass | 1 / 1 |  |  |
 | [`collapsed-border-fragmentation-002-print.html`](https://wpt.fyi/results/css/css-tables/collapsed-border-fragmentation-002-print.html) | Pass | 1 / 1 |  |  |

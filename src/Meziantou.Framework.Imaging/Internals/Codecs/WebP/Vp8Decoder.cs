@@ -571,7 +571,7 @@ internal sealed class Vp8Decoder : IDisposable
                 for (var x = 0; x < 4; x++)
                 {
                     var above = aboveModes[x];
-                    var mode = (byte)ReadTree(ref d, ref value, ref range, ref bits, BModeTree, ref unsafe(Unsafe.Add(ref probabilities, ((above * 10) + left) * 9)));
+                    var mode = (byte)ReadSubBlockMode(ref d, ref value, ref range, ref bits, ref unsafe(Unsafe.Add(ref probabilities, ((above * 10) + left) * 9)));
                     subModes[(y * 4) + x] = mode;
                     aboveModes[x] = mode;
                     left = mode;
@@ -821,6 +821,41 @@ internal sealed class Vp8Decoder : IDisposable
         }
 
         return i;
+    }
+
+    /// <summary>Decodes a sub-block mode (the tree <see cref="BModeTree"/>) with the arithmetic decoder state held by the caller.</summary>
+    /// <remarks>
+    /// The tree is walked by branches: the probability of each node is at a fixed offset, so that its load does not wait for
+    /// the previous decision (a table walk loads the next node index first).
+    /// </remarks>
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    private static int ReadSubBlockMode(ref Vp8BoolDecoder d, ref ulong value, ref uint range, ref int bits, ref byte p)
+    {
+        // The 9 probabilities of the node pairs 0, 2, ..., 16 of the tree
+        if (!Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, p))
+            return Vp8Tables.BDcPred;
+
+        if (!Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 1))))
+            return Vp8Tables.BTmPred;
+
+        if (!Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 2))))
+            return Vp8Tables.BVePred;
+
+        if (!Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 3))))
+        {
+            if (!Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 4))))
+                return Vp8Tables.BHePred;
+
+            return Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 5))) ? Vp8Tables.BVrPred : Vp8Tables.BRdPred;
+        }
+
+        if (!Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 6))))
+            return Vp8Tables.BLdPred;
+
+        if (!Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 7))))
+            return Vp8Tables.BVlPred;
+
+        return Vp8BoolDecoder.ReadBool(ref d, ref value, ref range, ref bits, unsafe(Unsafe.Add(ref p, 8))) ? Vp8Tables.BHuPred : Vp8Tables.BHdPred;
     }
 
     /// <summary>Decodes a tree-coded value (RFC 6386 section 8.1) with the arithmetic decoder state held by the caller.</summary>

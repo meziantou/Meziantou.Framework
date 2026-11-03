@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Meziantou.Framework.Imaging.Internals;
@@ -658,6 +659,7 @@ internal sealed class ExrHuffman : IDisposable
         /// The bytes completed are stored, and the current byte too, its bits after those written zero: the destination
         /// always holds the bits written so far, padded.
         /// </remarks>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool TryWrite(ulong value, int count)
         {
             if (count == 0)

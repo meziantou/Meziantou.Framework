@@ -886,7 +886,15 @@ internal sealed partial class Vp8LEncoder : IDisposable
 
             var head = chains[..(1 << hashBits)];
             var previous = chains[(1 << hashBits)..];
-            tokenCount = new Matcher(this, pixels, width, hashBits, head, previous).Parse(tokens);
+
+            // The second parse searches the chains at almost every pixel: they are linked by triples of pixels first
+            var linkTriples = isMainImage && CostModelRounds > 0;
+            if (linkTriples)
+            {
+                LinkTriples(pixels, hashBits, head, previous, Math.Max(MatcherChainDepth, CostModelChainDepth));
+            }
+
+            tokenCount = new Matcher(this, pixels, width, hashBits, head, previous, linkTriples).Parse(tokens);
             var collector = new StatisticsSink(statistics);
             Replay(pixels, tokens, tokenCount, ref collector);
             chosen = statistics[0];
@@ -1468,6 +1476,80 @@ internal sealed partial class Vp8LEncoder : IDisposable
         }
     }
 
+    /// <summary>Gets the number of hash chain entries the first parse searches at a pixel.</summary>
+    private int MatcherChainDepth => _effort switch
+    {
+        0 => 4,
+        <= 2 => 8,
+        <= 4 => 16,
+        <= 6 => 32,
+        <= 8 => 128,
+        _ => 512,
+    };
+
+    // A triple link (LinkTriples): the distance to the previous pixel that starts the same three pixels in the low 20 bits,
+    // and the number of hash chain entries it is from the pixel in the high bits; zero when there is none in the window
+    private const int TripleLinkDistanceBits = 20;
+    private const uint TripleLinkDistanceMask = (1u << TripleLinkDistanceBits) - 1;
+
+    /// <summary>
+    /// Inserts every pixel in the hash chains, then replaces the chain of each pixel by its triple link: the closest previous
+    /// pixel of its chain that starts the same three pixels, within the first <paramref name="depth"/> entries of the chain
+    /// and the distance range, or zero.
+    /// </summary>
+    /// <remarks>
+    /// A reference of 3 pixels or more only comes from such a pixel, and the chain of a pixel lists the pixels of its pair of
+    /// pixels, which mostly repeat their third one in a photograph, an entry in 20 or more. Following the triple links, and
+    /// adding up their entry counts against the depth, finds the matches of 3 pixels or more of a chain search, in the same
+    /// order, in a few steps. The links are computed from the last pixel to the first, so that the chain of the pixel being
+    /// linked (its previous pixels) is still intact.
+    /// </remarks>
+    private static void LinkTriples(ReadOnlySpan<uint> pixels, int hashBits, Span<uint> head, Span<uint> previous, int depth)
+    {
+        var count = pixels.Length;
+        head.Fill(uint.MaxValue);
+        for (var position = 0; position < count; position++)
+        {
+            if (position + 1 >= count)
+            {
+                previous[position] = uint.MaxValue;
+                continue;
+            }
+
+            var hash = (int)(((pixels[position] * 0x9E3779B1u) ^ (pixels[position + 1] * 0x85EBCA77u)) >> (32 - hashBits));
+            previous[position] = head[hash];
+            head[hash] = (uint)position;
+        }
+
+        for (var position = count - 1; position >= 0; position--)
+        {
+            uint link = 0;
+            if (position + 2 < count)
+            {
+                var first = pixels[position];
+                var second = pixels[position + 1];
+                var third = pixels[position + 2];
+                var candidate = previous[position];
+                for (var entries = 1; entries <= depth && candidate != uint.MaxValue; entries++)
+                {
+                    var distance = position - (int)candidate;
+                    if (distance > MaxDistance)
+                        break;
+
+                    if (pixels[(int)candidate + 2] == third && pixels[(int)candidate] == first && pixels[(int)candidate + 1] == second)
+                    {
+                        link = ((uint)entries << TripleLinkDistanceBits) | (uint)distance;
+                        break;
+                    }
+
+                    candidate = previous[(int)candidate];
+                }
+            }
+
+            previous[position] = link;
+        }
+    }
+
     /// <summary>The LZ77 parser: hash chains over pairs of pixels, greedy with one step of lazy evaluation.</summary>
     private readonly ref struct Matcher
     {
@@ -1477,8 +1559,10 @@ internal sealed partial class Vp8LEncoder : IDisposable
         private readonly int _hashBits;
         private readonly Span<uint> _head;
         private readonly Span<uint> _previous;
+        private readonly bool _linkedTriples;
 
-        public Matcher(Vp8LEncoder encoder, ReadOnlySpan<uint> pixels, int width, int hashBits, Span<uint> head, Span<uint> previous)
+        /// <summary>Creates a parser; with <paramref name="linkedTriples"/>, <paramref name="previous"/> holds the triple links of every pixel (<see cref="LinkTriples"/>) instead of the hash chains the parser builds.</summary>
+        public Matcher(Vp8LEncoder encoder, ReadOnlySpan<uint> pixels, int width, int hashBits, Span<uint> head, Span<uint> previous, bool linkedTriples)
         {
             _encoder = encoder;
             _pixels = pixels;
@@ -1486,6 +1570,7 @@ internal sealed partial class Vp8LEncoder : IDisposable
             _hashBits = hashBits;
             _head = head;
             _previous = previous;
+            _linkedTriples = linkedTriples;
         }
 
         /// <summary>Parses the pixels into <paramref name="tokens"/> (backward references and runs of literals, see <see cref="GetTokenCapacity"/>).</summary>
@@ -1495,17 +1580,12 @@ internal sealed partial class Vp8LEncoder : IDisposable
             var pixels = _pixels;
             var count = pixels.Length;
             var effort = _encoder._effort;
-            var chainDepth = effort switch
-            {
-                0 => 4,
-                <= 2 => 8,
-                <= 4 => 16,
-                <= 6 => 32,
-                <= 8 => 128,
-                _ => 512,
-            };
+            var chainDepth = _encoder.MatcherChainDepth;
             var lazy = effort >= 3;
-            _head.Fill(uint.MaxValue);
+            if (!_linkedTriples)
+            {
+                _head.Fill(uint.MaxValue);
+            }
             var neighborCodes = NeighborCodes;
             var position = 0;
             var tokenCount = 0;
@@ -1586,6 +1666,9 @@ internal sealed partial class Vp8LEncoder : IDisposable
 
         private void Insert(int position)
         {
+            if (_linkedTriples)
+                return;
+
             if (position + 1 >= _pixels.Length)
             {
                 _previous[position] = uint.MaxValue;
@@ -1615,6 +1698,26 @@ internal sealed partial class Vp8LEncoder : IDisposable
             }
 
             var previous = _previous;
+            if (_linkedTriples)
+            {
+                // Only the matches of 3 pixels or more count, and they are those of the triple links (in the same order)
+                var link = previous[position];
+                var entries = 0;
+                var linkDistance = 0;
+                while (link != 0 && bestLength < maxLength)
+                {
+                    entries += (int)(link >> TripleLinkDistanceBits);
+                    linkDistance += (int)(link & TripleLinkDistanceMask);
+                    if (entries > chainDepth || linkDistance > MaxDistance)
+                        break;
+
+                    Try(pixels, position, linkDistance, maxLength, ref bestLength, ref bestDistance);
+                    link = previous[position - linkDistance];
+                }
+
+                return (bestLength, bestDistance);
+            }
+
             var candidate = _head[Hash(position)];
             while (candidate != uint.MaxValue && chainDepth-- > 0 && bestLength < maxLength)
             {

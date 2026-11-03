@@ -30,7 +30,7 @@ description: "The results of the web-platform-tests of css/motion, and why the t
 | [`animation/offset-path-interpolation-003.html`](https://wpt.fyi/results/css/motion/animation/offset-path-interpolation-003.html) | Pass | 192 / 192 |  |  |
 | [`animation/offset-path-interpolation-004.html`](https://wpt.fyi/results/css/motion/animation/offset-path-interpolation-004.html) | Pass | 192 / 192 |  |  |
 | [`animation/offset-path-interpolation-005.html`](https://wpt.fyi/results/css/motion/animation/offset-path-interpolation-005.html) | Pass | 502 / 502 |  |  |
-| [`animation/offset-path-interpolation-006.html`](https://wpt.fyi/results/css/motion/animation/offset-path-interpolation-006.html) | Fail | 506 / 510 | BUG | the radius of an `ellipse()` extrapolated below zero is clamped to `0px` instead of `0%` (the unit of the percentage radius is lost when it is clamped) |
+| [`animation/offset-path-interpolation-006.html`](https://wpt.fyi/results/css/motion/animation/offset-path-interpolation-006.html) | Pass | 510 / 510 |  |  |
 | [`animation/offset-path-interpolation-007.html`](https://wpt.fyi/results/css/motion/animation/offset-path-interpolation-007.html) | Pass | 168 / 168 |  |  |
 | [`animation/offset-path-interpolation-008.html`](https://wpt.fyi/results/css/motion/animation/offset-path-interpolation-008.html) | Pass | 614 / 614 |  |  |
 | [`animation/offset-path-interpolation-009.html`](https://wpt.fyi/results/css/motion/animation/offset-path-interpolation-009.html) | Pass | 36 / 36 |  |  |

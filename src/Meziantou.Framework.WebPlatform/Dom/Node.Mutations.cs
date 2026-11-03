@@ -770,6 +770,14 @@ public abstract partial class Node
             FullscreenModel.OnRemoved(document, node);
         }
 
+        // The CSS transitions and animations of the removed elements are canceled now: an element inserted again before the
+        // next style update (re-parented) does not keep them (https://drafts.csswg.org/css-transitions-1/#starting,
+        // https://drafts.csswg.org/css-animations-1/#animations)
+        if (isParentConnected && document.AnimationsOrNull is { HasDeclarativeAnimations: true } animations)
+        {
+            animations.CancelDisconnectedDeclarativeAnimations();
+        }
+
         // https://w3c.github.io/pointerlock/#requirements: the pointer lock is exited when its target is disconnected
         if (isParentConnected && document.BrowsingContext?.Top is { PointerLockTarget: not null } pointerLockContext)
         {

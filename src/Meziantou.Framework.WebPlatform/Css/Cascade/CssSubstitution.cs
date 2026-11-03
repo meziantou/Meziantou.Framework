@@ -128,8 +128,9 @@ internal static class CssSubstitution
 
     private static bool Append(SubstitutionBuilder builder, List<CssComponentValue> values, string source, SubstitutionContext context)
     {
-        foreach (var value in values)
+        for (var i = 0; i < values.Count; i++)
         {
+            var value = values[i];
             switch (value)
             {
                 case CssFunction function when IsSubstitutionFunction(function.Name) || ValueMatcher.IsDashedFunction(function.Name):
@@ -162,7 +163,7 @@ internal static class CssSubstitution
                     }
 
                     if (replacement is null)
-                        return false;
+                        return Fail(values, i + 1, source, context);
 
                     builder.AppendValue(replacement, tainted);
 
@@ -177,7 +178,7 @@ internal static class CssSubstitution
                 case CssFunction function when ValueMatcher.ContainsSubstitutionFunction(function.Value):
                     builder.AppendRaw(CssSerializer.SerializeIdentifier(function.Name) + "(", TokenKind.Function, TokenKind.Other);
                     if (!Append(builder, function.Value, source, context))
-                        return false;
+                        return Fail(values, i + 1, source, context);
 
                     builder.AppendRaw(")", TokenKind.Other, TokenKind.Other);
                     break;
@@ -193,7 +194,7 @@ internal static class CssSubstitution
 
                     builder.AppendRaw(open.ToString(), open == '(' ? TokenKind.LeftParenthesis : TokenKind.Other, TokenKind.Other);
                     if (!Append(builder, block.Value, source, context))
-                        return false;
+                        return Fail(values, i + 1, source, context);
 
                     builder.AppendRaw(close.ToString(), TokenKind.Other, TokenKind.Other);
                     break;
@@ -214,6 +215,42 @@ internal static class CssSubstitution
         }
 
         return true;
+    }
+
+    /// <summary>
+    /// Fails the substitution of a value: the custom properties referenced by the var() functions that follow the invalid one
+    /// (not by their fallbacks) are still resolved, as they can be in a dependency cycle with the property, which makes the
+    /// properties of the cycle invalid (https://drafts.csswg.org/css-variables-2/#cycles). Returns false.
+    /// </summary>
+    private static bool Fail(List<CssComponentValue> values, int start, string source, SubstitutionContext context)
+    {
+        for (var i = start; i < values.Count; i++)
+        {
+            switch (values[i])
+            {
+                case CssFunction function when InfraAscii.EqualsIgnoreAsciiCase(function.Name, "var"):
+                {
+                    var arguments = function.Value;
+                    var index = SkipWhitespace(arguments, 0);
+                    if (index < arguments.Count)
+                    {
+                        _ = ReplaceVar(arguments, index, arguments.FindIndex(index, v => v is CssPreservedToken { Type: CssTokenType.Comma }), source, context, out _);
+                    }
+
+                    break;
+                }
+
+                case CssFunction function when !IsSubstitutionFunction(function.Name) && !ValueMatcher.IsDashedFunction(function.Name):
+                    Fail(function.Value, 0, source, context);
+                    break;
+
+                case CssSimpleBlock block:
+                    Fail(block.Value, 0, source, context);
+                    break;
+            }
+        }
+
+        return false;
     }
 
     /// <summary>

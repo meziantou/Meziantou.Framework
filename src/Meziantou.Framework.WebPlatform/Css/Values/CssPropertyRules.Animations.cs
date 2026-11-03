@@ -161,6 +161,10 @@ internal static partial class CssPropertyRules
             {
                 items.Add(computedLinear);
             }
+            else if (!computed && value is CssFunction specifiedLinear && specifiedLinear.Name.Equals("linear", StringComparison.OrdinalIgnoreCase))
+            {
+                items.Add(SerializeSpecifiedLinearEasing(specifiedLinear));
+            }
             else
             {
                 items.Add(value is CssPreservedToken { Type: CssTokenType.Ident } keyword ? InfraAscii.ToAsciiLowercase(keyword.Token.Value) : SerializeComponent(value, property: null));
@@ -191,6 +195,29 @@ internal static partial class CssPropertyRules
         }
 
         return "cubic-bezier(" + string.Join(", ", values) + ")";
+    }
+
+    /// <summary>
+    /// The specified value of linear(): the output of each stop is serialized before its input progress values, whatever
+    /// the order in which they were written (linear(0% 0) is linear(0 0%)).
+    /// </summary>
+    private static string SerializeSpecifiedLinearEasing(CssFunction function)
+    {
+        var stops = new List<string>();
+        foreach (var argument in ValueMatcher.SplitAtCommas(ValueMatcher.RemoveWhitespace(function.Value)))
+        {
+            var ordered = argument.Where(component => !IsPercentageComponent(component)).Concat(argument.Where(IsPercentageComponent));
+            stops.Add(string.Join(' ', ordered.Select(component => SerializeComponent(component, property: null))));
+        }
+
+        return "linear(" + string.Join(", ", stops) + ")";
+
+        static bool IsPercentageComponent(CssComponentValue component) => component switch
+        {
+            CssPreservedToken { Type: CssTokenType.Percentage } => true,
+            CssFunction math => math.Value.Any(IsPercentageComponent),
+            _ => false,
+        };
     }
 
     /// <summary>

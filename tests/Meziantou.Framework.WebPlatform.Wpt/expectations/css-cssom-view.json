@@ -49,11 +49,7 @@
     "total": 1
   },
   "css/cssom-view/checkVisibility.html": {
-    "total": 21,
-    "failures": {
-      "checkVisibility on content of a closed details element.": "FAIL",
-      "checkVisibility on content of an open details element nested in a closed one.": "FAIL"
-    }
+    "total": 21
   },
   "css/cssom-view/client-props-inline-list-item.html": {
     "total": 1

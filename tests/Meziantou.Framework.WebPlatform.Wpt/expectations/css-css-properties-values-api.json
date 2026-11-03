@@ -178,10 +178,7 @@
     "total": 1
   },
   "css/css-properties-values-api/animation/custom-property-transition-property-all.html": {
-    "total": 1,
-    "failures": {
-      "A custom property can yield a CSS Transition with transition-property: all": "FAIL"
-    }
+    "total": 1
   },
   "css/css-properties-values-api/animation/custom-property-transition-resolution.html": {
     "total": 1

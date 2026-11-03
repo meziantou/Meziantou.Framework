@@ -9,10 +9,10 @@ description: "The results of the web-platform-tests of css/css-transitions, and 
 
 | Group | Passing | Tests | Disabled | Pass rate |
 |---|--:|--:|--:|--:|
-| [Stable](#stable-tests) | 94 | 107 | 0 | 88% |
+| [Stable](#stable-tests) | 98 | 107 | 0 | 92% |
 | [Tentative](#tentative-tests) | 13 | 18 | 0 | 72% |
 | [Reftests](#reftests) | 6 | 6 | 0 | 100% |
-| **All** | **113** | **131** | **0** | **86%** |
+| **All** | **117** | **131** | **0** | **89%** |
 
 ## Stable tests
 
@@ -39,7 +39,7 @@ description: "The results of the web-platform-tests of css/css-transitions, and 
 | [`changing-while-transition-004.html`](https://wpt.fyi/results/css/css-transitions/changing-while-transition-004.html) | Pass | 1 / 1 |  |  |
 | [`currentcolor-animation-001.html`](https://wpt.fyi/results/css/css-transitions/currentcolor-animation-001.html) | Pass | 1 / 1 |  |  |
 | [`custom-property-and-allow-discrete.html`](https://wpt.fyi/results/css/css-transitions/custom-property-and-allow-discrete.html) | Pass | 2 / 2 |  |  |
-| [`disconnected-element-001.html`](https://wpt.fyi/results/css/css-transitions/disconnected-element-001.html) | Timeout | 4 / 6 | BUG | re-parenting or removing an element does not cancel its transitions and animations |
+| [`disconnected-element-001.html`](https://wpt.fyi/results/css/css-transitions/disconnected-element-001.html) | Pass | 6 / 6 |  |  |
 | [`display-none-no-animations.html`](https://wpt.fyi/results/css/css-transitions/display-none-no-animations.html) | Pass | 1 / 1 |  |  |
 | [`dynamic-root-element.html`](https://wpt.fyi/results/css/css-transitions/dynamic-root-element.html) | Pass | 1 / 1 |  |  |
 | [`events-001.html`](https://wpt.fyi/results/css/css-transitions/events-001.html) | Pass | 9 / 9 |  |  |
@@ -58,7 +58,7 @@ description: "The results of the web-platform-tests of css/css-transitions, and 
 | [`inheritance.html`](https://wpt.fyi/results/css/css-transitions/inheritance.html) | Pass | 8 / 8 |  |  |
 | [`no-transition-for-unchanged-pointer-valued-properties.html`](https://wpt.fyi/results/css/css-transitions/no-transition-for-unchanged-pointer-valued-properties.html) | Pass | 1 / 1 |  |  |
 | [`non-rendered-element-001.html`](https://wpt.fyi/results/css/css-transitions/non-rendered-element-001.html) | Pass | 4 / 4 |  |  |
-| [`non-rendered-element-002.html`](https://wpt.fyi/results/css/css-transitions/non-rendered-element-002.html) | Timeout | 0 / 1 | BUG | the transitions of `::before` and `::after` are not canceled when `content` is cleared |
+| [`non-rendered-element-002.html`](https://wpt.fyi/results/css/css-transitions/non-rendered-element-002.html) | Pass | 1 / 1 |  |  |
 | [`parsing/starting-style-parsing.html`](https://wpt.fyi/results/css/css-transitions/parsing/starting-style-parsing.html) | Pass | 5 / 5 |  |  |
 | [`parsing/transition-behavior.html`](https://wpt.fyi/results/css/css-transitions/parsing/transition-behavior.html) | Pass | 28 / 28 |  |  |
 | [`parsing/transition-computed.html`](https://wpt.fyi/results/css/css-transitions/parsing/transition-computed.html) | Pass | 10 / 10 |  |  |
@@ -94,7 +94,7 @@ description: "The results of the web-platform-tests of css/css-transitions, and 
 | [`starting-style-name-defining-rules.html`](https://wpt.fyi/results/css/css-transitions/starting-style-name-defining-rules.html) | Pass | 2 / 2 |  |  |
 | [`starting-style-revert-layer-cascade.html`](https://wpt.fyi/results/css/css-transitions/starting-style-revert-layer-cascade.html) | Pass | 2 / 2 |  |  |
 | [`starting-style-rule-basic.html`](https://wpt.fyi/results/css/css-transitions/starting-style-rule-basic.html) | Pass | 3 / 3 |  |  |
-| [`starting-style-rule-none.html`](https://wpt.fyi/results/css/css-transitions/starting-style-rule-none.html) | Fail | 0 / 1 | BUG | `display: none` in `@starting-style` does not prevent the transition |
+| [`starting-style-rule-none.html`](https://wpt.fyi/results/css/css-transitions/starting-style-rule-none.html) | Pass | 1 / 1 |  |  |
 | [`starting-style-rule-pseudo-elements.html`](https://wpt.fyi/results/css/css-transitions/starting-style-rule-pseudo-elements.html) | Pass | 3 / 3 |  |  |
 | [`starting-style-size-container.html`](https://wpt.fyi/results/css/css-transitions/starting-style-size-container.html) | Pass | 2 / 2 |  |  |
 | [`transition-001.html`](https://wpt.fyi/results/css/css-transitions/transition-001.html) | Pass | 13 / 13 |  |  |
@@ -116,7 +116,7 @@ description: "The results of the web-platform-tests of css/css-transitions, and 
 | [`transition-property-001.html`](https://wpt.fyi/results/css/css-transitions/transition-property-001.html) | Pass | 5 / 5 |  |  |
 | [`transition-property-002.html`](https://wpt.fyi/results/css/css-transitions/transition-property-002.html) | Pass | 7 / 7 |  |  |
 | [`transition-remove-and-change-immediate.html`](https://wpt.fyi/results/css/css-transitions/transition-remove-and-change-immediate.html) | Pass | 1 / 1 |  |  |
-| [`transition-reparented.html`](https://wpt.fyi/results/css/css-transitions/transition-reparented.html) | Fail | 0 / 1 | BUG | re-parenting or removing an element does not cancel its transitions and animations |
+| [`transition-reparented.html`](https://wpt.fyi/results/css/css-transitions/transition-reparented.html) | Pass | 1 / 1 |  |  |
 | [`transition-zero-duration-with-delay.html`](https://wpt.fyi/results/css/css-transitions/transition-zero-duration-with-delay.html) | Pass | 1 / 1 |  |  |
 | [`transitioncancel-001.html`](https://wpt.fyi/results/css/css-transitions/transitioncancel-001.html) | Pass | 1 / 1 |  |  |
 | [`transitioncancel-002.html`](https://wpt.fyi/results/css/css-transitions/transitioncancel-002.html) | Pass | 1 / 1 |  |  |

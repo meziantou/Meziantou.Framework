@@ -120,12 +120,7 @@
     "total": 2
   },
   "css/css-transitions/disconnected-element-001.html": {
-    "harness": "TIMEOUT",
-    "total": 6,
-    "failures": {
-      "Transitions are canceled when an element is re-parented": "TIMEOUT",
-      "Transitions are canceled when an element is re-parented to the same node": "NOTRUN"
-    }
+    "total": 6
   },
   "css/css-transitions/display-none-no-animations.html": {
     "total": 1
@@ -203,11 +198,7 @@
     "total": 4
   },
   "css/css-transitions/non-rendered-element-002.html": {
-    "harness": "TIMEOUT",
-    "total": 1,
-    "failures": {
-      "Transitions on ::before/::after pseudo-elements are canceled when the content property is cleared": "TIMEOUT"
-    }
+    "total": 1
   },
   "css/css-transitions/non-rendered-element-004.tentative.html": {
     "harness": "TIMEOUT",
@@ -425,10 +416,7 @@
     "total": 3
   },
   "css/css-transitions/starting-style-rule-none.html": {
-    "total": 1,
-    "failures": {
-      "@starting-style with display:none": "FAIL"
-    }
+    "total": 1
   },
   "css/css-transitions/starting-style-rule-pseudo-elements.html": {
     "total": 3
@@ -494,10 +482,7 @@
     "total": 1
   },
   "css/css-transitions/transition-reparented.html": {
-    "total": 1,
-    "failures": {
-      "When an element is reparented, any CSS Transition on it should be cancelled": "FAIL"
-    }
+    "total": 1
   },
   "css/css-transitions/transition-test.html": {
     "reftest": "PASS"

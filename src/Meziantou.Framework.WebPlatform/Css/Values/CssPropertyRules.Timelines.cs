@@ -131,7 +131,8 @@ internal static partial class CssPropertyRules
     }
 
     /// <summary>
-    /// https://drafts.csswg.org/scroll-animations-1/#scroll-timeline-shorthand: each item is a name followed by an optional axis.
+    /// https://drafts.csswg.org/scroll-animations-1/#scroll-timeline-shorthand: each item is a name followed by an optional axis
+    /// (also pointer-timeline, https://drafts.csswg.org/pointer-animations-1/#pointer-timeline-shorthand).
     /// </summary>
     private static Dictionary<string, string>? ExpandScrollTimeline(CssPropertyDefinition shorthand, List<CssComponentValue> significant)
     {
@@ -146,20 +147,20 @@ internal static partial class CssPropertyRules
             axes.Add(item.Count == 2 ? InfraAscii.ToAsciiLowercase(SerializeComponent(item[1], property: null)) : "block");
         }
 
-        if (ParseListLonghand("scroll-timeline-name", names) is not { } nameValue || ParseListLonghand("scroll-timeline-axis", axes) is not { } axisValue)
+        if (ParseListLonghand(shorthand.Name + "-name", names) is not { } nameValue || ParseListLonghand(shorthand.Name + "-axis", axes) is not { } axisValue)
             return null;
 
         return new(StringComparer.Ordinal)
         {
-            ["scroll-timeline-name"] = nameValue,
-            ["scroll-timeline-axis"] = axisValue,
+            [shorthand.Name + "-name"] = nameValue,
+            [shorthand.Name + "-axis"] = axisValue,
         };
     }
 
     /// <summary>The axis of each item is omitted when it is block; the longhands must have the same number of items.</summary>
     private static string? SerializeScrollTimeline(CssPropertyDefinition shorthand, Dictionary<string, string> lookup)
     {
-        if (!lookup.TryGetValue("scroll-timeline-name", out var nameValue) || !lookup.TryGetValue("scroll-timeline-axis", out var axisValue))
+        if (!lookup.TryGetValue(shorthand.Name + "-name", out var nameValue) || !lookup.TryGetValue(shorthand.Name + "-axis", out var axisValue))
             return null;
 
         var names = SplitItems(nameValue);
